@@ -13,27 +13,15 @@ from retraction import retract_deactivated_pids as rdp
 import sandbox as sb
 from common import JINJA_ENV
 
-DEACTIVATED_PIDS_SCHEMA = [{
-    "type": "integer",
-    "name": "person_id",
-    "mode": "required",
-    "description": ""
-}, {
-    "type": "date",
-    "name": "deactivated_date",
-    "mode": "nullable",
-    "description": ""
-}]
-
 DEACTIVATED_PIDS = JINJA_ENV.from_string("""
 INSERT INTO `{{deact_table.project}}.{{deact_table.dataset_id}}.{{deact_table.table_id}}` 
-(person_id, deactivated_date) 
+(person_id, suspension_status, deactivated_date) 
 VALUES
-(1,'2009-07-25'),
-(2,'2009-03-14'),
-(3,'2009-11-18'),
-(4,'2009-11-25'),
-(5,'2009-09-20')
+(1,'NO_CONTACT','2009-07-25'),
+(2,'NO_CONTACT','2009-03-14'),
+(3,'NO_CONTACT','2009-11-18'),
+(4,'NO_CONTACT','2009-11-25'),
+(5,'NO_CONTACT','2009-09-20')
 """)
 
 TABLE_ROWS = {
@@ -133,12 +121,11 @@ class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
 
     def setup_data(self):
         # setup deactivated participants table
-        self.deact_table = f'{self.project_id}.{self.deact_dataset_id}.deactivated_participants'
+        self.deact_table = f'{self.project_id}.{self.deact_dataset_id}._deactivated_participants'
         deact_table_ref = gbq.TableReference.from_string(self.deact_table)
         bq.create_tables(self.client,
                          self.project_id, [self.deact_table],
-                         exists_ok=True,
-                         fields=[DEACTIVATED_PIDS_SCHEMA])
+                         exists_ok=True)
         job_config = gbq.QueryJobConfig()
         job = self.client.query(
             DEACTIVATED_PIDS.render(deact_table=deact_table_ref), job_config)

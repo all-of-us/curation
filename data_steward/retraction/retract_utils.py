@@ -1,8 +1,10 @@
+# Python imports
 import os
 import re
 import argparse
 import logging
 
+# Project imports
 import common
 from utils import bq
 from constants.retraction import retract_utils as consts
@@ -131,6 +133,36 @@ def get_datasets_list(project_id, dataset_ids_list):
 
     LOGGER.info(f"Found datasets to retract from: {', '.join(dataset_ids)}")
     return dataset_ids
+
+
+def is_deid_label_or_id(client, project_id, dataset_id):
+    """
+    Validates if a dataset is labeled deid or contains deid in the dataset_id
+
+    :param client: BigQuery client
+    :param project_id: project containing the dataset
+    :param dataset_id: dataset to identify
+    :return: Boolean indicating if a dataset is a deid dataset
+    """
+    label = is_labeled_deid(client, project_id, dataset_id)
+    if label is None:
+        return is_deid_dataset(dataset_id)
+    return label
+
+
+def is_labeled_deid(client, project_id, dataset_id):
+    """
+    Returns boolean indicating if a dataset is a deid dataset using the label 'de_identified'
+
+    :param client: BigQuery client object
+    :param project_id: Identifies the project
+    :param dataset_id: Identifies the dataset
+    :return: Boolean indicating if the dataset is labeled a deid dataset or None if unlabeled
+    """
+    dataset = client.get_dataset(f'{project_id}.{dataset_id}')
+    if dataset.labels and consts.DE_IDENTIFIED in dataset.labels:
+        return dataset.labels[consts.DE_IDENTIFIED] == consts.TRUE
+    return None
 
 
 def is_deid_dataset(dataset_id):

@@ -72,29 +72,20 @@ def get_participant_data(url, headers):
     return participant_data
 
 
-def get_deactivated_participants(project_id, dataset_id, tablename, columns):
+def get_deactivated_participants(api_project_id, columns):
     """
     Fetches all deactivated participants via API if suspensionStatus = 'NO_CONTACT'
     and stores all the deactivated participants in a BigQuery dataset table
 
-    :param project_id: The RDR project that contains participant summary data
-    :param dataset_id: The dataset name
-    :param tablename: The name of the table to house the deactivated participant data
+    :param api_project_id: The RDR project that contains participant summary data
     :param columns: columns to be pushed to a table in BigQuery in the form of a list of strings
 
     :return: returns dataset of deactivated participants
     """
 
     # Parameter checks
-    if not isinstance(project_id, str):
+    if not isinstance(api_project_id, str):
         raise RuntimeError(f'Please specify the RDR project')
-
-    if not isinstance(dataset_id, str):
-        raise RuntimeError(f'Please provide a dataset_id')
-
-    if not isinstance(tablename, str):
-        raise RuntimeError(
-            f'Please provide a tablename to house deactivated participant data')
 
     if not isinstance(columns, list):
         raise RuntimeError(
@@ -104,13 +95,16 @@ def get_deactivated_participants(project_id, dataset_id, tablename, columns):
 
     headers = {
         'content-type': 'application/json',
-        'Authorization': 'Bearer {0}'.format(token)
+        'Authorization': f'Bearer {token}'
     }
+
+    field = 'NO_CONTACT'
 
     # Make request to get API version. This is the current RDR version for reference
     # See https://github.com/all-of-us/raw-data-repository/blob/master/opsdataAPI.md for documentation of this api.
-    url = 'https://{0}.appspot.com/rdr/v1/ParticipantSummary?_sort=lastModified&suspensionStatus={1}'.format(
-        project_id, 'NO_CONTACT')
+    url = (f'https://{api_project_id}.appspot.com/rdr/v1/ParticipantSummary'
+           f'?_sort=lastModified'
+           f'&suspensionStatus={field}')
 
     participant_data = get_participant_data(url, headers)
 

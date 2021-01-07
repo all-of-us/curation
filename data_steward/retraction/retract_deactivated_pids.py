@@ -164,7 +164,7 @@ def generate_queries(client,
     table_cols_df = get_table_cols_df(client, project_id, dataset_id)
     table_dates_info = get_table_dates_info(table_cols_df)
     tables = table_cols_df['table_name'].to_list()
-    is_deid = ru.is_deid_dataset(dataset_id)
+    is_deid = ru.is_deid_label_or_id(client, project_id, dataset_id)
     if is_deid and pid_rid_table_ref is None:
         raise RuntimeError(
             f"PID-RID mapping table must be specified for deid dataset {dataset_id}"
@@ -276,16 +276,43 @@ def fq_table_name_verification(fq_table_name):
     raise argparse.ArgumentTypeError(message)
 
 
-def get_parser():
+def fq_deactivated_table_verification(fq_table_name):
+    """
+    Ensures fq_table_name is of the format 'project.dataset.table'
+
+    :param fq_table_name: fully qualified BQ table name
+    :return: fq_table_name if valid
+    :raises: ArgumentTypeError if invalid
+    """
+    fq_table_name = fq_table_name_verification(fq_table_name)
+    if fq_table_name.split('.')[-1] == consts.DEACTIVATED_PARTICIPANTS:
+        return fq_table_name
+    message = f"{fq_table_name} should be of the form 'project.dataset.table'"
+    raise argparse.ArgumentTypeError(message)
+
+
+def get_base_parser():
     parser = argparse.ArgumentParser(
         description='Retracts deactivated participants',
         formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('-p',
-                        '--project_id',
-                        action='store',
-                        dest='project_id',
-                        help='Identifies the project to retract data from',
-                        required=True)
+    parser.add_argument(
+        '-p',
+        '--project_id',
+        action='store',
+        dest='project_id',
+        help=
+        'Identifies the project containing the dataset(s) to retract data from',
+        required=True)
+    parser.add_argument('-s',
+                        '--console_log',
+                        dest='console_log',
+                        action='store_true',
+                        help='Send logs to console')
+    return parser
+
+
+def get_parser():
+    parser = get_base_parser()
     parser.add_argument('-d',
                         '--dataset_ids',
                         action='store',
@@ -310,11 +337,6 @@ def get_parser():
                         type=fq_table_name_verification,
                         help='Specify fully qualified pid-rid mapping table '
                         'as "project.dataset.table"')
-    parser.add_argument('-s',
-                        '--console_log',
-                        dest='console_log',
-                        action='store_true',
-                        help='Send logs to console')
     return parser
 
 
@@ -358,10 +380,10 @@ def run_deactivation(client,
     return job_ids
 
 
-def main():
+def main(args=None):
     pipeline_logging.configure(logging.DEBUG, add_console_handler=True)
     parser = get_parser()
-    args = parser.parse_args()
+    args = parser.parse_args(args)
     client = bq.get_client(args.project_id)
     dataset_ids = ru.get_datasets_list(args.project_id, args.dataset_ids)
     LOGGER.info(

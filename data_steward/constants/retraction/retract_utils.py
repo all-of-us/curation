@@ -9,3 +9,6 @@ PID_QUERY = """
 (SELECT {pid}
 FROM `{pid_source}`)
 """
+
+DE_IDENTIFIED = 'de_identified'
+TRUE = 'true'

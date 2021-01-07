@@ -61,20 +61,23 @@ class RetractDeactivatedEHRDataBqTest(TestCase):
     @mock.patch('retraction.retract_deactivated_pids.get_table_cols_df')
     def test_generate_queries(self, mock_table_cols, mock_table_dates,
                               mock_sandbox):
-        tables_cols_dict = {
+        table_cols_dict = {
             "condition_occurrence": [
                 "condition_start_date", "condition_start_datetime",
                 "condition_end_date", "condition_end_datetime"
             ],
             "measurement": ["measurement_date", "measurement_datetime"]
         }
-        mock_table_cols.return_value = pd.DataFrame.from_dict({
+
+        table_cols_df = pd.DataFrame.from_dict({
             "table_name": [
                 "condition_occurrence", "_mapping_condition_occurrence",
                 "measurement", "measurement_ext"
             ]
         })
-        mock_table_dates.return_value = tables_cols_dict
+
+        mock_table_cols.return_value = table_cols_df
+        mock_table_dates.return_value = table_cols_dict
         mock_sandbox.return_value = self.dataset_id + '_sandbox'
         pid_rid_table_ref = TableReference.from_string(
             f"{self.project_id}.{self.pids_dataset_id}.{self.pids_table}")
@@ -85,8 +88,13 @@ class RetractDeactivatedEHRDataBqTest(TestCase):
         queries = rdp.generate_queries(self.mock_bq_client, self.project_id,
                                        self.dataset_id, pid_rid_table_ref,
                                        deactivated_pids_table_ref)
+
+        mock_table_cols.called_once_with(self.mock_bq_client, self.project_id,
+                                         self.dataset_id)
+        mock_table_dates.called_once_with(table_cols_df)
+
         # count sandbox and clean queries
-        self.assertEqual(len(tables_cols_dict) * 2, len(queries))
+        self.assertEqual(len(table_cols_dict) * 2, len(queries))
 
     def test_get_dates_info(self):
         # preconditions

@@ -11,9 +11,7 @@ Usage: generate_unioned_ehr_dataset.sh
   --vocab_dataset <vocab dataset>
   --ehr_snapshot <EHR dataset>
   --dataset_release_tag <release tag for the CDR>
-  --deact_pids_project_id <Identifies the project where the deactivated pids table is stored>
-  --deact_pids_dataset_id <Identifies the dataset where the deactivated pids table is stored>
-  --deact_pids_table <Identifies the table where the deactivated pids are stored>
+  --api_project_id <Identifies the RDR project for Participant Summary API>
 "
 
 echo
@@ -35,16 +33,8 @@ while true; do
     dataset_release_tag=$2
     shift 2
     ;;
-  --deact_pids_project_id)
-    deact_pids_project_id=$2
-    shift 2
-    ;;
-  --deact_pids_dataset_id)
-    deact_pids_dataset_id=$2
-    shift 2
-    ;;
-  --deact_pids_table)
-    deact_pids_table=$2
+  --api_project_id)
+    api_project_id=$2
     shift 2
     ;;
   --)
@@ -55,8 +45,8 @@ while true; do
   esac
 done
 
-if [[ -z "${key_file}" ]] || [[ -z "${vocab_dataset}" ]] || [[ -z "${ehr_snapshot}" ]] || [[ -z "${dataset_release_tag}" ]] ||
- [[ -z "${deact_pids_project_id}" ]] || [[ -z "${deact_pids_dataset_id}" ]] || [[ -z "${deact_pids_table}" ]]; then
+if [[ -z "${key_file}" ]] || [[ -z "${vocab_dataset}" ]] || [[ -z "${ehr_snapshot}" ]] ||
+  [[ -z "${dataset_release_tag}" ]] || [[ -z "${api_project_id}" ]]; then
   echo "${USAGE}"
   exit 1
 fi
@@ -76,9 +66,7 @@ echo "app_id --> ${app_id}"
 echo "key_file --> ${key_file}"
 echo "vocab_dataset --> ${vocab_dataset}"
 echo "dataset_release_tag --> ${dataset_release_tag}"
-echo "deact_pids_project_id --> ${deact_pids_project_id}"
-echo "deact_pids_dataset_id --> ${deact_pids_dataset_id}"
-echo "deact_pids_table --> ${deact_pids_table}"
+echo "api_project_id --> ${api_project_id}"
 
 export GOOGLE_APPLICATION_CREDENTIALS="${key_file}"
 export GOOGLE_CLOUD_PROJECT="${app_id}"
@@ -146,10 +134,10 @@ data_stage='unioned'
 bq mk --dataset --description "Sandbox created for storing records affected by the cleaning rules applied to ${unioned_ehr_dataset_staging}" --label "phase:sandbox" --label "release_tag:${dataset_release_tag}" --label "de_identified:false" ${app_id}:${unioned_ehr_dataset_staging_sandbox}
 
 # Remove de-activated participants
-python "${CLEANER_DIR}/cleaning_rules/remove_ehr_data_past_deactivation_date.py" --project_id "${app_id}" --dataset_ids "${UNIONED_DATASET_ID}" --fq_deact_table "${deact_pids_project_id}.${deact_pids_dataset_id}.${deact_pids_table}"
+python "${CLEANER_DIR}/cleaning_rules/remove_ehr_data_past_deactivation_date.py" --project_id "${app_id}" --dataset_id "${unioned_ehr_dataset_staging}" --sandbox_dataset_id "${unioned_ehr_dataset_staging_sandbox}" --api_project_id "${api_project_id}"
 
 # run cleaning_rules on a dataset
-python "${CLEANER_DIR}/clean_cdr.py" --project_id ${app_id} --dataset_id ${UNIONED_DATASET_ID} --sandbox_dataset_id ${unioned_ehr_dataset_staging_sandbox} --data_stage ${data_stage} -s 2>&1 | tee unioned_cleaning_log_"${unioned_ehr_dataset_staging}".txt
+python "${CLEANER_DIR}/clean_cdr.py" --project_id "${app_id}" --dataset_id "${unioned_ehr_dataset_staging}" --sandbox_dataset_id "${unioned_ehr_dataset_staging_sandbox}" --data_stage "${data_stage}" -s 2>&1 | tee unioned_cleaning_log_"${unioned_ehr_dataset_staging}".txt
 
 # Create a snapshot dataset with the result
 python "${TOOLS_DIR}/snapshot_by_query.py" --project_id "${app_id}" --dataset_id "${unioned_ehr_dataset_staging}" --snapshot_dataset_id "${unioned_ehr_dataset}"

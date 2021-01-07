@@ -30,8 +30,9 @@ class RemoveEhrDataPastDeactivationDateTest(unittest.TestCase):
     def setUp(self):
         # Input parameters expected by the class
         self.project_id = 'foo_project'
+        self.api_project_id = 'foo_api_project'
         self.dataset_id = 'foo_dataset'
-        self.fq_deact_pids = 'foo_pid_project_id.foo_pid_dataset_id.foo_pid_table'
+        self.fq_deact_pids = 'foo_project.foo_sandbox_dataset._deactivated_participants'
         self.sandbox_dataset_id = 'foo_sandbox_dataset'
         self.columns = ['participantId', 'suspensionStatus', 'suspensionTime']
 
@@ -55,16 +56,16 @@ class RemoveEhrDataPastDeactivationDateTest(unittest.TestCase):
         # test setup
         mock_get_data.return_value = pandas.DataFrame()
         mock_query_creation.return_value = []
-        sandbox_ds = f'{self.dataset_id}_sandbox'
 
         # test
-        red.remove_ehr_data_queries(self.mock_bq_client, self.project_id,
-                                    self.dataset_id, sandbox_ds,
-                                    self.fq_deact_pids)
+        red.remove_ehr_data_queries(self.mock_bq_client, self.api_project_id,
+                                    self.project_id, self.dataset_id,
+                                    self.sandbox_dataset_id)
 
         # post conditions
         mock_query_creation.assert_called_once_with(
-            self.mock_bq_client, self.project_id, self.dataset_id, sandbox_ds,
+            self.mock_bq_client, self.project_id, self.dataset_id,
+            self.sandbox_dataset_id,
             gbq.TableReference.from_string(self.fq_deact_pids))
 
         mock_store_data.assert_called_once_with(
@@ -72,5 +73,4 @@ class RemoveEhrDataPastDeactivationDateTest(unittest.TestCase):
             '.'.join(self.fq_deact_pids.split('.')[1:]))
 
         mock_get_data.assert_called_once_with(
-            *self.fq_deact_pids.split('.'),
-            red.DEACTIVATED_PARTICIPANTS_COLUMNS)
+            self.api_project_id, red.DEACTIVATED_PARTICIPANTS_COLUMNS)
