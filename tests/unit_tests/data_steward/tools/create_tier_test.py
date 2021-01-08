@@ -107,7 +107,6 @@ class CreateTierTest(unittest.TestCase):
                 validate_release_tag_param(tag)
             self.assertIn(expected_error_output, cm.output)
 
-
     def test_validate_tier_param(self):
         # Preconditions
         invalid_tier_params = ['foo', 'bar', 'controled', 'registry']
