@@ -7,6 +7,9 @@ COMBINED = 'combined'
 DEID_BASE = 'deid_base'
 DEID_CLEAN = 'deid_clean'
 FITBIT = 'fitbit'
+CONTROLLED_TIER_DEID = 'controlled_tier_deid'
+CONTROLLED_TIER_DEID_BASE = 'controlled_tier_deid_base'
+CONTROLLED_TIER_DEID_CLEAN = 'controlled_tier_deid_clean'
 
 PERSON_TABLE_NAME = 'person'
 
@@ -44,6 +47,9 @@ class DataStage(Enum):
     DEID_BASE = DEID_BASE
     DEID_CLEAN = DEID_CLEAN
     FITBIT = FITBIT
+    CONTROLLED_TIER_DEID = CONTROLLED_TIER_DEID
+    CONTROLLED_TIER_DEID_BASE = CONTROLLED_TIER_DEID_BASE
+    CONTROLLED_TIER_DEID_CLEAN = CONTROLLED_TIER_DEID_CLEAN
 
     def __str__(self):
         return self.value
