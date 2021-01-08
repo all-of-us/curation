@@ -7,7 +7,6 @@ import re
 
 # Project imports
 
-
 LOGGER = logging.getLogger(__name__)
 
 
