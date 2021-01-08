@@ -33,7 +33,7 @@ def remove_ehr_data_queries(client, api_project_id, project_id, dataset_id,
     Sandboxes and drops all EHR data found for deactivated participants after their deactivation date
 
     :param client: BQ client
-    :param api_project_id: BQ name of the project
+    :param api_project_id: Project containing the RDR Participant Summary API
     :param project_id: Identifies the project containing the target dataset
     :param dataset_id: Identifies the dataset to retract deactivated participants from
     :param sandbox_dataset_id: Identifies the sandbox dataset to store records for dataset_id
