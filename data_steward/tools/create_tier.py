@@ -37,6 +37,7 @@ def validate_tier_param(tier):
             f"Parameter ERROR: {tier} is an incorrect input for the tier parameter, accepted: controlled or "
             f"registered")
 
+
 def validate_deid_stage_param(deid_stage):
     """
     helper function to validate the deid_stage parameter passed is correct, must be 'deid', 'base' or 'clean'
@@ -105,8 +106,7 @@ def parse_deid_args(args=None):
         action='store',
         dest='release_tag',
         help='release tag for dataset in the format of YYYYq#r#',
-        required=True
-    )
+        required=True)
     parser.add_argument('-d',
                         '--deid_stage',
                         action='store',
