@@ -121,7 +121,7 @@ class CreateTierTest(unittest.TestCase):
 
     def test_validate_deid_stage_param(self):
         # Preconditions
-        invalid_deid_stage_params = []
+        invalid_deid_stage_params = ['baseee', 'deid_base', 'deid_clean', 'clean_base']
 
         # Test if invalid parameters are given
         for ds in invalid_deid_stage_params:
