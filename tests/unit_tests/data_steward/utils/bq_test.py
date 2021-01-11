@@ -16,21 +16,17 @@ The intent is to check the proper parameters are passed to define_dataset and up
 import datetime
 import os
 import typing
-import unittest
+from unittest import TestCase
 
 # Third-party imports
 from google.cloud import bigquery
+from google.cloud.bigquery import DatasetReference
+from mock import MagicMock, patch
 
 # Project imports
-from google.cloud.bigquery import DatasetReference
-from mock import MagicMock
-
 import resources
 from tests.bq_test_helpers import mock_query_result, list_item_from_table_id
-from utils.bq import (define_dataset, update_labels_and_tags,
-                      get_create_or_replace_table_ddl, _to_standard_sql_type,
-                      get_table_schema, to_scalar, list_tables,
-                      _MAX_RESULTS_PADDING)
+from utils import bq
 
 
 def _get_all_field_types() -> typing.FrozenSet[str]:
@@ -49,7 +45,7 @@ def _get_all_field_types() -> typing.FrozenSet[str]:
     return frozenset(all_field_types)
 
 
-class BqTest(unittest.TestCase):
+class BqTest(TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -69,25 +65,27 @@ class BqTest(unittest.TestCase):
 
     def test_define_dataset(self):
         # Tests if project_id is given
-        self.assertRaises(RuntimeError, define_dataset, None, self.dataset_id,
-                          self.description, self.existing_labels_or_tags)
+        self.assertRaises(RuntimeError, bq.define_dataset, None,
+                          self.dataset_id, self.description,
+                          self.existing_labels_or_tags)
 
         # Tests if dataset_id is given
-        self.assertRaises(RuntimeError, define_dataset, self.project_id, None,
-                          self.description, self.existing_labels_or_tags)
+        self.assertRaises(RuntimeError, bq.define_dataset, self.project_id,
+                          None, self.description, self.existing_labels_or_tags)
 
         # Tests if description is given
-        self.assertRaises(RuntimeError, define_dataset, self.project_id,
+        self.assertRaises(RuntimeError, bq.define_dataset, self.project_id,
                           self.dataset_id, (None or ''),
                           self.existing_labels_or_tags)
 
         # Tests if no label or tag is given
-        self.assertRaises(RuntimeError, define_dataset, self.project_id,
+        self.assertRaises(RuntimeError, bq.define_dataset, self.project_id,
                           self.dataset_id, self.description, None)
 
         # Pre-conditions
-        results = define_dataset(self.project_id, self.dataset_id,
-                                 self.description, self.existing_labels_or_tags)
+        results = bq.define_dataset(self.project_id, self.dataset_id,
+                                    self.description,
+                                    self.existing_labels_or_tags)
 
         # Post conditions
         self.assertIsInstance(results, bigquery.Dataset)
@@ -95,43 +93,45 @@ class BqTest(unittest.TestCase):
 
     def test_update_labels_and_tags(self):
         # Tests if dataset_id param is provided
-        self.assertRaises(RuntimeError, update_labels_and_tags, None,
+        self.assertRaises(RuntimeError, bq.update_labels_and_tags, None,
                           self.existing_labels_or_tags, self.new_labels_or_tags)
 
         # Tests if new_labels_or_tags param is provided
-        self.assertRaises(RuntimeError, update_labels_and_tags, self.dataset_id,
-                          self.existing_labels_or_tags, None)
+        self.assertRaises(RuntimeError, bq.update_labels_and_tags,
+                          self.dataset_id, self.existing_labels_or_tags, None)
 
         # Pre-conditions
-        results = update_labels_and_tags(self.dataset_id,
-                                         self.existing_labels_or_tags,
-                                         self.new_labels_or_tags, True)
+        results = bq.update_labels_and_tags(self.dataset_id,
+                                            self.existing_labels_or_tags,
+                                            self.new_labels_or_tags, True)
 
         # Post conditions
         self.assertEqual(results, self.updated)
         with self.assertRaises(RuntimeError):
-            update_labels_and_tags(self.dataset_id,
-                                   existing_labels_or_tags={'label': 'apples'},
-                                   new_labels_or_tags={'label': 'oranges'},
-                                   overwrite_ok=False)
+            bq.update_labels_and_tags(
+                self.dataset_id,
+                existing_labels_or_tags={'label': 'apples'},
+                new_labels_or_tags={'label': 'oranges'},
+                overwrite_ok=False)
 
     def test_to_standard_sql_type(self):
         # All types used in schema files should successfully map to standard sql types
         all_field_types = _get_all_field_types()
         for field_type in all_field_types:
-            result = _to_standard_sql_type(field_type)
+            result = bq._to_standard_sql_type(field_type)
             self.assertTrue(result)
 
         # Unknown types should raise ValueError
         with self.assertRaises(ValueError) as c:
-            _to_standard_sql_type('unknown_type')
+            bq._to_standard_sql_type('unknown_type')
             self.assertEqual(str(c.exception),
                              f'unknown_type is not a valid field type')
 
     def test_get_table_ddl(self):
         # Schema is determined by table name
-        ddl = get_create_or_replace_table_ddl(self.project_id, self.dataset_id,
-                                              'observation').strip()
+        ddl = bq.get_create_or_replace_table_ddl(self.project_id,
+                                                 self.dataset_id,
+                                                 'observation').strip()
         self.assertTrue(
             ddl.startswith(
                 f'CREATE OR REPLACE TABLE `{self.project_id}.{self.dataset_id}.observation`'
@@ -139,8 +139,8 @@ class BqTest(unittest.TestCase):
         self.assertTrue(ddl.endswith(')'))
 
         # Explicitly provided table name and schema are rendered
-        observation_schema = get_table_schema('observation')
-        ddl = get_create_or_replace_table_ddl(
+        observation_schema = bq.get_table_schema('observation')
+        ddl = bq.get_create_or_replace_table_ddl(
             self.project_id,
             self.dataset_id,
             table_id='custom_observation',
@@ -156,10 +156,11 @@ class BqTest(unittest.TestCase):
 
         # Parameter as_query is rendered
         fake_as_query = "SELECT 1 FROM fake"
-        ddl = get_create_or_replace_table_ddl(self.project_id,
-                                              self.dataset_id,
-                                              'observation',
-                                              as_query=fake_as_query).strip()
+        ddl = bq.get_create_or_replace_table_ddl(
+            self.project_id,
+            self.dataset_id,
+            'observation',
+            as_query=fake_as_query).strip()
         self.assertTrue(
             ddl.startswith(
                 f'CREATE OR REPLACE TABLE `{self.project_id}.{self.dataset_id}.observation`'
@@ -169,32 +170,32 @@ class BqTest(unittest.TestCase):
     def test_to_scalar(self):
         scalar_int = dict(num=100)
         mock_iter = mock_query_result([scalar_int])
-        result = to_scalar(mock_iter)
+        result = bq.to_scalar(mock_iter)
         self.assertEqual(100, result)
 
         today = datetime.date.today()
         scalar_date = dict(today=today)
         mock_iter = mock_query_result([scalar_date])
-        result = to_scalar(mock_iter)
+        result = bq.to_scalar(mock_iter)
         self.assertEqual(today, result)
 
         now = datetime.datetime.now()
         scalar_datetime = dict(now=now)
         mock_iter = mock_query_result([scalar_datetime])
-        result = to_scalar(mock_iter)
+        result = bq.to_scalar(mock_iter)
         self.assertEqual(now, result)
 
         scalar_struct = dict(num_1=100, num_2=200)
         scalar_struct_iter = mock_query_result([scalar_struct],
                                                ['num_2', 'num_1'])
-        result = to_scalar(scalar_struct_iter)
+        result = bq.to_scalar(scalar_struct_iter)
         self.assertDictEqual(scalar_struct, result)
 
         scalar_int_1 = dict(num=1)
         scalar_int_2 = dict(num=2)
         mock_iter = mock_query_result([scalar_int_1, scalar_int_2])
         with self.assertRaises(ValueError) as c:
-            to_scalar(mock_iter)
+            bq.to_scalar(mock_iter)
 
     def _mock_client_with(self, table_ids):
         """
@@ -206,12 +207,14 @@ class BqTest(unittest.TestCase):
             f'{self.project_id}.{self.dataset_id}.{table_id}'
             for table_id in table_ids
         ]
-        list_tables_results = [
+        bq.list_tables_results = [
             list_item_from_table_id(table_id) for table_id in full_table_ids
         ]
-        table_count_query_results = [dict(table_count=len(list_tables_results))]
+        table_count_query_results = [
+            dict(table_count=len(bq.list_tables_results))
+        ]
         mock_client = MagicMock()
-        mock_client.list_tables.return_value = list_tables_results
+        mock_client.bq.list_tables.return_value = bq.list_tables_results
         mock_client.query.return_value = mock_query_result(
             table_count_query_results)
         return mock_client
@@ -219,9 +222,19 @@ class BqTest(unittest.TestCase):
     def test_list_tables(self):
         table_ids = ['table_1', 'table_2']
         table_count = len(table_ids)
-        expected_max_results = table_count + _MAX_RESULTS_PADDING
+        expected_max_results = table_count + bq._MAX_RESULTS_PADDING
         # mock client calls
         client = self._mock_client_with(table_ids)
-        list_tables(client, self.dataset_ref)
-        client.list_tables.assert_called_with(dataset=self.dataset_ref,
-                                              max_results=expected_max_results)
+        bq.list_tables(client, self.dataset_ref)
+        client.bq.list_tables.assert_called_with(
+            dataset=self.dataset_ref, max_results=expected_max_results)
+
+    @patch('utils.bq.bigquery.Client')
+    def test_bq_client(self, mock_bq_client):
+        credentials = MagicMock()
+        bq.get_client(self.project_id, credentials=credentials)
+        mock_bq_client.assert_called_once_with(project=self.project_id,
+                                               credentials=credentials)
+        bq.get_client(self.project_id, credentials=None)
+        mock_bq_client.assert_called_with(project=self.project_id,
+                                          credentials=None)
