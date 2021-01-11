@@ -207,14 +207,12 @@ class BqTest(TestCase):
             f'{self.project_id}.{self.dataset_id}.{table_id}'
             for table_id in table_ids
         ]
-        bq.list_tables_results = [
+        list_tables_results = [
             list_item_from_table_id(table_id) for table_id in full_table_ids
         ]
-        table_count_query_results = [
-            dict(table_count=len(bq.list_tables_results))
-        ]
+        table_count_query_results = [dict(table_count=len(list_tables_results))]
         mock_client = MagicMock()
-        mock_client.bq.list_tables.return_value = bq.list_tables_results
+        mock_client.list_tables.return_value = list_tables_results
         mock_client.query.return_value = mock_query_result(
             table_count_query_results)
         return mock_client
@@ -226,8 +224,8 @@ class BqTest(TestCase):
         # mock client calls
         client = self._mock_client_with(table_ids)
         bq.list_tables(client, self.dataset_ref)
-        client.bq.list_tables.assert_called_with(
-            dataset=self.dataset_ref, max_results=expected_max_results)
+        client.list_tables.assert_called_with(dataset=self.dataset_ref,
+                                              max_results=expected_max_results)
 
     @patch('utils.bq.bigquery.Client')
     def test_bq_client(self, mock_bq_client):
