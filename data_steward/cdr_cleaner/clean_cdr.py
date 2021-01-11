@@ -327,7 +327,7 @@ def get_missing_custom_params(rules, **kwargs):
 def validate_custom_params(rules, **kwargs):
     """
     Raises error if required custom parameters are missing for any CR in list of CRs
-    
+
     :param rules: list of cleaning rule classes/functions
     :param kwargs: dictionary of provided arguments
     :return: None
@@ -340,8 +340,12 @@ def validate_custom_params(rules, **kwargs):
             f'Missing required custom parameter(s): {missing_param_rules}')
 
 
-if __name__ == '__main__':
-    args, kwargs = fetch_args_kwargs()
+def clean_cdr(args=None):
+    """
+    :param args: list of all the arguments to apply the cleaning rules
+    :return:
+    """
+    args, kwargs = fetch_args_kwargs(args)
 
     rules = DATA_STAGE_RULES_MAPPING[args.data_stage.value]
     validate_custom_params(rules, **kwargs)
@@ -363,3 +367,7 @@ if __name__ == '__main__':
                                    sandbox_dataset_id=args.sandbox_dataset_id,
                                    rules=rules,
                                    **kwargs)
+
+
+if __name__ == '__main__':
+    clean_cdr()
