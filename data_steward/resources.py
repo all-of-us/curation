@@ -22,6 +22,7 @@ tools_path = os.path.join(base_path, 'tools')
 DEID_PATH = os.path.join(base_path, 'deid')
 resource_files_path = os.path.join(base_path, 'resource_files')
 config_path = os.path.join(base_path, 'config')
+environment_config = os.path.join(config_path, 'environment_config.json')
 fields_path = os.path.join(resource_files_path, 'fields')
 cdm_csv_path = os.path.join(resource_files_path, 'cdm.csv')
 hpo_site_mappings_path = os.path.join(config_path, 'hpo_site_mappings.csv')
@@ -61,6 +62,45 @@ PPI_BRANCHING_RULE_PATHS = [
     HEALTHCARE_ACCESS_CSV_PATH, LIFESTYLE_CSV_PATH, OVERALL_HEALTH_CSV_PATH,
     PERSONAL_MEDICAL_HISTORY_CSV_PATH
 ]
+
+
+def create_config(data):
+    """
+    creates environment config file from a dictionary
+    :param data: config passed as a dictionary
+    :return: None
+    """
+    if not os.path.exists(environment_config):
+        with open(environment_config, 'w') as jsonFile:
+            json.dump(data, jsonFile)
+
+
+def update_config(updated_config):
+    """
+    Updates variable 
+    :param updated_config: 
+    :return: 
+    """
+
+    with open(environment_config, "r") as jsonFile:
+        config = json.load(jsonFile)
+
+    config.update(updated_config)
+
+    with open(environment_config, "w") as jsonFile:
+        json.dump(config, jsonFile)
+
+
+def read_config(variable):
+    """
+    Gets the parameters that were set in the config file
+    :param variable: variable name to look for in the config file
+    :return: returns the value set for the required parameter in environment_config file
+    """
+    with open(environment_config, "r") as jsonFile:
+        data = json.load(jsonFile)
+
+    return data[variable]
 
 
 @cachetools.cached(cache={})

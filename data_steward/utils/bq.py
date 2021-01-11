@@ -9,15 +9,15 @@ import warnings
 
 # Third-party imports
 from google.api_core.exceptions import GoogleAPIError, BadRequest
-from google.cloud import bigquery
 from google.auth import default
+from google.cloud import bigquery
 
 # Project Imports
 from app_identity import PROJECT_ID
-from utils import auth
+from common import JINJA_ENV
 from constants.utils import bq as consts
 from resources import fields_for
-from common import JINJA_ENV
+from utils import auth
 
 _MAX_RESULTS_PADDING = 100
 """Constant added to table count in order to list all table results"""
@@ -418,6 +418,76 @@ def update_labels_and_tags(dataset_id,
             raise RuntimeError(f'Cannot update labels on dataset {dataset_id}'
                                f'without overwriting keys {overwrite_keys}')
         return {**existing_labels_or_tags, **updates}
+
+
+def table_copy(client,
+               source_project_id,
+               destination_project_id,
+               source_dataset_id,
+               destination_dataset_id,
+               table_list=None):
+    """
+
+    :param client: BigQuery client object
+    :param source_project_id: identifies source project name
+    :param destination_project_id: identifies destination project name
+    :param source_dataset_id: identifies source dataset
+    :param destination_dataset_id: identifies destination dataset
+    :param table_list: None/ list of tables to be copied
+    :return: job result
+    """
+    if not source_project_id:
+        raise RuntimeError(
+            "Specify the source_project_id for the project containing the source dataset"
+        )
+
+    if not destination_project_id:
+        raise RuntimeError(
+            "Specify the destination_project_id for the project containing the destination dataset"
+        )
+
+    if not source_dataset_id:
+        raise RuntimeError("Provide a source_dataset_id")
+
+    if not destination_dataset_id:
+        raise RuntimeError("Provide a destination_dataset_id")
+
+    dataset_id = f'{source_project_id}.{source_dataset_id}'
+    if not table_list:
+        table_list = [
+            table.table_id for table in client.list_tables(dataset_id)
+        ]
+    results = []
+    for table in table_list:
+        source_fq_table_name = f'{source_project_id}.{source_dataset_id}.{table}'
+        destination_fq_table_name = f'{destination_project_id}.{destination_dataset_id}.{table}'
+        job_config = bigquery.CopyJobConfig()
+        job_config.write_disposition = "WRITE_TRUNCATE"
+        job = client.copy_table(source_fq_table_name,
+                                destination_fq_table_name,
+                                location='US',
+                                job_config=job_config)
+        results.append(job.result())
+    return results
+
+
+def update_dataset(client, project, dataset_id, updated_description,
+                   updated_labels):
+    """
+    updates dataset descriptions and labels
+    :param client: BigQuery client object
+    :param project: identifies the project name
+    :param dataset_id: identifies dataset name
+    :param updated_description: updated description in string format 
+    :param updated_labels: updated labels as a dictionary
+    :return: None
+    """
+
+    dataset_id = f'{project}.{dataset_id}'
+    dataset = client.get_dataset(dataset_id)
+    dataset.description = updated_description
+    dataset.labels = updated_labels
+    dataset = client.update_dataset(dataset, ["description", "labels"])
 
 
 def delete_dataset(project_id,

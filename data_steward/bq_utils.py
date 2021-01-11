@@ -43,51 +43,51 @@ class BigQueryJobWaitError(RuntimeError):
 
 
 def get_output_project_id():
-    return os.environ.get('OUTPUT_PROJECT_ID')
+    return resources.read_config('OUTPUT_PROJECT_ID')
 
 
 def get_dataset_id():
-    return os.environ.get('BIGQUERY_DATASET_ID')
+    return resources.read_config('BIGQUERY_DATASET_ID')
 
 
 def get_unioned_dataset_id():
-    return os.environ.get('UNIONED_DATASET_ID')
+    return resources.read_config('UNIONED_DATASET_ID')
 
 
 def get_rdr_dataset_id():
-    return os.environ.get('RDR_DATASET_ID')
+    return resources.read_config('RDR_DATASET_ID')
 
 
 def get_combined_snapshot_dataset_id():
-    return os.environ.get('COMBINED_SNAPSHOT')
+    return resources.read_config('COMBINED_SNAPSHOT')
 
 
 def get_combined_dataset_id():
-    return os.environ.get('COMBINED_DATASET_ID')
+    return resources.read_config('COMBINED_DATASET_ID')
 
 
 def get_combined_deid_clean_dataset_id():
-    return os.environ.get('COMBINED_DEID_CLEAN_DATASET_ID')
+    return resources.read_config('COMBINED_DEID_CLEAN_DATASET_ID')
 
 
 def get_retraction_type():
-    return os.environ.get('RETRACTION_TYPE')
+    return resources.read_config('RETRACTION_TYPE')
 
 
 def get_retraction_hpo_id():
-    return os.environ.get('RETRACTION_HPO_ID')
+    return resources.read_config('RETRACTION_HPO_ID')
 
 
 def get_retraction_pid_table_id():
-    return os.environ.get('RETRACTION_PID_TABLE_ID')
+    return resources.read_config('RETRACTION_PID_TABLE_ID')
 
 
 def get_retraction_sandbox_dataset_id():
-    return os.environ.get('RETRACTION_SANDBOX_DATASET_ID')
+    return resources.read_config('RETRACTION_SANDBOX_DATASET_ID')
 
 
 def get_fitbit_dataset_id():
-    return os.environ.get('FITBIT_DATASET_ID')
+    return resources.read_config('FITBIT_DATASET_ID')
 
 
 def get_retraction_dataset_ids():
@@ -96,7 +96,7 @@ def get_retraction_dataset_ids():
     If retraction needs to be performed on all datasets in the project, set to 'all_datasets'
     :return: string 'all_datasets' or dataset_ids separated by spaces
     """
-    return os.environ.get('RETRACTION_DATASET_IDS')
+    return resources.read_config('RETRACTION_DATASET_IDS')
 
 
 def get_retraction_submission_folder():
@@ -105,11 +105,11 @@ def get_retraction_submission_folder():
     If retraction needs to be performed on all submissions by a site, set to 'all_folders'
     :return: string 'all_folders' or submission folder name
     """
-    return os.environ.get('RETRACTION_SUBMISSION_FOLDER')
+    return resources.read_config('RETRACTION_SUBMISSION_FOLDER')
 
 
 def get_combined_deid_dataset_id():
-    return os.environ.get('COMBINED_DEID_DATASET_ID')
+    return resources.read_config('COMBINED_DEID_DATASET_ID')
 
 
 def get_validation_results_dataset_id():
