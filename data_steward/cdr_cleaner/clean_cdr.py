@@ -340,7 +340,7 @@ def validate_custom_params(rules, **kwargs):
             f'Missing required custom parameter(s): {missing_param_rules}')
 
 
-def clean_cdr(args=None):
+def main(args=None):
     """
     :param args: list of all the arguments to apply the cleaning rules
     :return:
@@ -370,4 +370,4 @@ def clean_cdr(args=None):
 
 
 if __name__ == '__main__':
-    clean_cdr()
+    main()

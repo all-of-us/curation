@@ -1,5 +1,7 @@
 import unittest
 
+from mock import patch
+
 import cdr_cleaner.clean_cdr as cc
 from constants.cdr_cleaner.clean_cdr import DataStage
 from tests.test_util import FakeRuleClass, fake_rule_func
@@ -248,3 +250,71 @@ class CleanCDRTest(unittest.TestCase):
         actual = cc.get_missing_custom_params([(Fake1,), (fake_1,), (fake_2,)])
         expected = {'required_param_1': ['fake_1']}
         self.assertDictEqual(expected, actual)
+
+    @patch('cdr_cleaner.clean_cdr.clean_engine.clean_dataset')
+    @patch('cdr_cleaner.clean_cdr.clean_engine.get_query_list')
+    @patch('cdr_cleaner.clean_cdr.validate_custom_params')
+    @patch('cdr_cleaner.clean_cdr.fetch_args_kwargs')
+    def test_clean_cdr(self, mock_fetch_args, mock_validate_args,
+                       mock_get_query_list, mock_clean_dataset):
+
+        from argparse import Namespace
+
+        # Test clean_dataset() function call
+        args = [
+            '-p', self.project_id, '-d', self.dataset_id, '-b',
+            self.sandbox_dataset_id, '--data_stage', 'ehr'
+        ]
+        # creates argparse namespace return value
+        expected_args = Namespace(
+            **{
+                'project_id': self.project_id,
+                'dataset_id': self.dataset_id,
+                'sandbox_dataset_id': self.sandbox_dataset_id,
+                'data_stage': DataStage.EHR,
+                'console_log': False,
+                'list_queries': False
+            })
+
+        expected_kargs = {}
+        mock_fetch_args.return_value = expected_args, expected_kargs
+
+        rules = cc.DATA_STAGE_RULES_MAPPING['ehr']
+
+        cc.main(args)
+
+        mock_validate_args.assert_called_once_with(rules, **expected_kargs)
+
+        mock_clean_dataset.assert_called_once_with(
+            project_id=self.project_id,
+            dataset_id=self.dataset_id,
+            sandbox_dataset_id=self.sandbox_dataset_id,
+            rules=rules)
+
+        # Test get_queries() function call
+        args = [
+            '-p', self.project_id, '-d', self.dataset_id, '-b',
+            self.sandbox_dataset_id, '--data_stage', 'ehr', '--list_queries',
+            True
+        ]
+
+        expected_args = Namespace(
+            **{
+                'project_id': self.project_id,
+                'dataset_id': self.dataset_id,
+                'sandbox_dataset_id': self.sandbox_dataset_id,
+                'data_stage': DataStage.EHR,
+                'console_log': False,
+                'list_queries': True
+            })
+
+        expected_kargs = {}
+        mock_fetch_args.return_value = expected_args, expected_kargs
+
+        cc.main(args)
+
+        mock_get_query_list.assert_called_once_with(
+            project_id=self.project_id,
+            dataset_id=self.dataset_id,
+            sandbox_dataset_id=self.sandbox_dataset_id,
+            rules=rules)
