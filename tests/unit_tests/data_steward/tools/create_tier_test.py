@@ -94,9 +94,7 @@ class CreateTierTest(unittest.TestCase):
 
     def test_valid_release_tag(self):
         # Preconditions
-        invalid_release_tags = [
-            '202q3r4', '2020q34r22'
-        ]
+        invalid_release_tags = ['202q3r4', '2020q34r22']
 
         # Test if invalid parameters are given
         for tag in invalid_release_tags:
