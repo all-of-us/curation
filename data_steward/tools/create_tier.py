@@ -10,20 +10,6 @@ import re
 LOGGER = logging.getLogger(__name__)
 
 
-def validate_release_tag_param(release_tag):
-    """
-    helper function to validate the release_tag parameter follows the correct naming convention
-
-    :param release_tag: release tag parameter passed through either list or command line arguments
-    :return: nothing, breaks if not valid
-    """
-    release_tag_regex = re.compile(r'/[0-9]{4}q[0-9]r[0-9]/')
-    if not re.match(release_tag_regex, release_tag):
-        LOGGER.error(
-            f"Parameter ERROR {release_tag} is in an incorrect format, accepted: YYYYq#r#"
-        )
-
-
 def validate_tier_param(tier):
     """
     helper function to validate the tier parameter passed is either 'controlled' or 'registered'
@@ -50,6 +36,22 @@ def validate_deid_stage_param(deid_stage):
             f"deid, base, clean")
 
 
+def valid_release_tag(arg_value):
+    """
+    User defined helper function to validate that the release_tag parameter follows the correct naming convention
+
+    :param arg_value: release tag parameter passed through either the command line arguments
+    :return: arg_value
+    """
+
+    release_tag_regex = re.compile(r'[0-9]{4}q[0-9]r[0-9]')
+    if not re.match(release_tag_regex, arg_value):
+        LOGGER.error(
+            f"Parameter ERROR {arg_value} is in an incorrect format, accepted: YYYYq#r#"
+        )
+    return arg_value
+
+
 def create_tier(credentials_filepath, project_id, tier, input_dataset,
                 release_tag, deid_stage):
     """
@@ -66,7 +68,6 @@ def create_tier(credentials_filepath, project_id, tier, input_dataset,
     """
 
     # validation of params
-    validate_release_tag_param(release_tag)
     validate_tier_param(tier)
     validate_deid_stage_param(deid_stage)
 
@@ -92,7 +93,8 @@ def parse_deid_args(args=None):
                         action='store',
                         dest='tier',
                         help='controlled or registered tier',
-                        required=True)
+                        required=True,
+                        choices=['controlled', 'registered'])
     parser.add_argument('-i',
                         '--idataset',
                         action='store',
@@ -105,19 +107,20 @@ def parse_deid_args(args=None):
         action='store',
         dest='release_tag',
         help='release tag for dataset in the format of YYYYq#r#',
-        required=True)
+        required=True,
+        type=valid_release_tag)
     parser.add_argument('-d',
                         '--deid_stage',
                         action='store',
                         dest='deid_stage',
                         help='deid stage (deid, base or clean)',
-                        required=True)
-    return vars(parser.parse_args(args))
+                        required=True,
+                        choices=['deid', 'base', 'clean'])
+    return parser.parse_args(args)
 
 
-def main(args=None):
-    args_parser = parse_deid_args(args)
-    args = args_parser.parse_args()
+def main(raw_args=None):
+    args = parse_deid_args(raw_args)
     create_tier(args.credentials_filepath, args.project_id, args.tier,
                 args.idataset, args.release_tag, args.deid_stage)
 

@@ -6,8 +6,7 @@ Unit Test for create tier module
 import unittest
 
 # Project imports
-from tools.create_tier import parse_deid_args, validate_deid_stage_param, validate_tier_param, \
-    validate_release_tag_param
+from tools.create_tier import parse_deid_args, validate_deid_stage_param, validate_tier_param, valid_release_tag
 
 
 class CreateTierTest(unittest.TestCase):
@@ -91,12 +90,12 @@ class CreateTierTest(unittest.TestCase):
         results_dict = parse_deid_args(self.correct_parameter_list)
 
         # Post conditions
-        self.assertEqual(correct_parameter_dict, results_dict)
+        self.assertEqual(correct_parameter_dict, vars(results_dict))
 
-    def test_validate_release_tag_param(self):
+    def test_valid_release_tag(self):
         # Preconditions
         invalid_release_tags = [
-            '202q3r4', '2020q34r2', '2020q3r22', '2020qq3r2'
+            '202q3r4', '2020q34r22'
         ]
 
         # Test if invalid parameters are given
@@ -104,8 +103,8 @@ class CreateTierTest(unittest.TestCase):
             expected_error_output = f'ERROR:tools.create_tier:Parameter ERROR {tag} is in an incorrect format, ' \
                                     f'accepted: YYYYq#r#'
             with self.assertLogs() as cm:
-                validate_release_tag_param(tag)
-            self.assertIn(expected_error_output, cm.output)
+                valid_release_tag(tag)
+            self.assertEqual(expected_error_output, cm.output[0])
 
     def test_validate_tier_param(self):
         # Preconditions
