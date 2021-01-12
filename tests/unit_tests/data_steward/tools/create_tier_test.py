@@ -87,10 +87,10 @@ class CreateTierTest(unittest.TestCase):
         }
 
         # Test if correct parameters are given
-        results_dict = parse_deid_args(self.correct_parameter_list)
+        results_dict = vars(parse_deid_args(self.correct_parameter_list))
 
         # Post conditions
-        self.assertEqual(correct_parameter_dict, vars(results_dict))
+        self.assertEqual(correct_parameter_dict, results_dict)
 
     def test_valid_release_tag(self):
         # Preconditions
