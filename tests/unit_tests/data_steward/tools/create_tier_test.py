@@ -145,11 +145,9 @@ class CreateTierTest(unittest.TestCase):
 
         # Test if invalid parameters are given
         for tier in invalid_tier_params:
-            expected_error_output = f"ERROR:tools.create_tier:Parameter ERROR: {tier} is an incorrect input for the " \
-                                    f"tier parameter, accepted: controlled or registered"
-            with self.assertLogs() as cm:
-                validate_tier_param(tier)
-            self.assertIn(expected_error_output, cm.output)
+            # test type error is raised
+            self.assertRaises(argparse.ArgumentTypeError, validate_tier_param,
+                              tier)
 
     def test_validate_deid_stage_param(self):
         # Preconditions
@@ -159,8 +157,6 @@ class CreateTierTest(unittest.TestCase):
 
         # Test if invalid parameters are given
         for ds in invalid_deid_stage_params:
-            expected_error_output = f"ERROR:tools.create_tier:Parameter ERROR: {ds} is an incorrect input for " \
-                                    f"the deid_stage parameter, accepted: deid, base, clean"
-            with self.assertLogs() as cm:
-                validate_deid_stage_param(ds)
-            self.assertIn(expected_error_output, cm.output)
+            # test type error is raised
+            self.assertRaises(argparse.ArgumentTypeError,
+                              validate_deid_stage_param, ds)

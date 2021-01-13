@@ -25,6 +25,7 @@ def validate_tier_param(tier):
         LOGGER.error(
             f"Parameter ERROR: {tier} is an incorrect input for the tier parameter, accepted: controlled or "
             f"registered")
+        raise argparse.ArgumentTypeError
 
 
 def validate_deid_stage_param(deid_stage):
@@ -38,6 +39,7 @@ def validate_deid_stage_param(deid_stage):
         LOGGER.error(
             f"Parameter ERROR: {deid_stage} is an incorrect input for the deid_stage parameter, accepted: "
             f"deid, base, clean")
+        raise argparse.ArgumentTypeError
 
 
 def valid_release_tag(arg_value):
