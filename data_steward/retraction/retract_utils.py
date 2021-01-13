@@ -106,7 +106,7 @@ def get_datasets_list(project_id, dataset_ids_list):
     if not dataset_ids_list or dataset_ids_list == [consts.NONE]:
         dataset_ids = []
         LOGGER.info(
-            "No datasets specified. Defaulting to empty list. Expect bucked only retraction."
+            "No datasets specified. Defaulting to empty list. Expect bucket only retraction."
         )
     elif dataset_ids_list == [consts.ALL_DATASETS]:
         dataset_ids = all_dataset_ids
@@ -373,7 +373,7 @@ def fetch_parser():
                         action='store',
                         nargs='+',
                         dest='dataset_ids',
-                        help='Identifies datasets to target. Set to'
+                        help='Identifies datasets to target. Set to '
                         '-d all_datasets to target all datasets in project '
                         'or specific datasets as -d dataset_1 dataset_2 etc.',
                         required=True)

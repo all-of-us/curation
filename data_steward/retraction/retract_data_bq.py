@@ -676,17 +676,17 @@ if __name__ == '__main__':
         '--dataset_ids',
         action='store',
         dest='dataset_ids',
-        help='Identifies the datasets to retract from, separated by spaces'
-        'specified as -d dataset_id_1 dataset_id_2 dataset_id_3 and so on'
-        'If set as -d none, skips retraction from BigQuery datasets'
-        'If set as -d all_datasets, retracts from all datasets in project',
+        help='Identifies the datasets to retract from, separated by spaces '
+        'specified as -d dataset_id_1 dataset_id_2 dataset_id_3 and so on. '
+        'If set as -d none, skips retraction from BigQuery datasets. '
+        'If set as -d all_datasets, retracts from all datasets in project.',
         required=True)
     parser.add_argument(
         '-r',
         '--retraction_type',
         action='store',
         dest='retraction_type',
-        help='Identifies whether all data needs to be removed, including RDR,'
+        help='Identifies whether all data needs to be removed, including RDR, '
         'or if RDR data needs to be kept intact. Can take the values "rdr_and_ehr" or "only_ehr"',
         required=True)
     args = parser.parse_args()
