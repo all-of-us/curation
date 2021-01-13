@@ -27,7 +27,6 @@ import \
     cdr_cleaner.cleaning_rules.remove_invalid_procedure_source_records as invalid_procedure_source
 import cdr_cleaner.cleaning_rules.remove_non_matching_participant as validate_missing_participants
 import cdr_cleaner.cleaning_rules.remove_records_with_wrong_date as remove_records_with_wrong_date
-import cdr_cleaner.cleaning_rules.repopulate_person_post_deid as repopulate_person
 import cdr_cleaner.cleaning_rules.round_ppi_values_to_nearest_integer as round_ppi_values
 import cdr_cleaner.cleaning_rules.temporal_consistency as bad_end_dates
 import cdr_cleaner.cleaning_rules.update_family_history_qa_codes as update_family_history
@@ -65,6 +64,7 @@ from cdr_cleaner.cleaning_rules.rdr_observation_source_concept_id_suppression im
 from cdr_cleaner.cleaning_rules.remove_multiple_race_ethnicity_answers import RemoveMultipleRaceEthnicityAnswersQueries
 from cdr_cleaner.cleaning_rules.replace_standard_id_in_domain_tables import \
     ReplaceWithStandardConceptId
+from cdr_cleaner.cleaning_rules.repopulate_person_post_deid import RepopulatePersonPostDeid
 from cdr_cleaner.cleaning_rules.truncate_rdr_using_date import TruncateRdrData
 from cdr_cleaner.cleaning_rules.unit_normalization import UnitNormalization
 from cdr_cleaner.cleaning_rules.update_fields_numbers_as_strings import UpdateFieldsNumbersAsStrings
@@ -184,7 +184,7 @@ DEID_BASE_CLEANING_CLASSES = [
     (bad_end_dates.get_bad_end_date_queries,),
     (valid_death_dates.get_valid_death_date_queries,),
     (FillSourceValueTextFields,),
-    (repopulate_person.get_repopulate_person_post_deid_queries,),
+    (RepopulatePersonPostDeid,),
     (DateShiftCopeResponses,),
     (CreatePersonExtTable,),
     (CleanMappingExtTables,),
