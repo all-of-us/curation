@@ -6,6 +6,7 @@ import re
 # Third party imports
 
 # Project imports
+from utils import pipeline_logging
 
 LOGGER = logging.getLogger(__name__)
 
@@ -122,6 +123,8 @@ def parse_deid_args(args=None):
 
 def main(raw_args=None):
     args = parse_deid_args(raw_args)
+    pipeline_logging.configure(level=logging.DEBUG,
+                               add_console_handler=True)
     create_tier(args.credentials_filepath, args.project_id, args.tier,
                 args.idataset, args.release_tag, args.deid_stage)
 
