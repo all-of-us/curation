@@ -1,7 +1,8 @@
-import subprocess
-import papermill as pm
 import argparse
 import logging
+import subprocess
+
+import papermill as pm
 
 # Project imports
 from utils import pipeline_logging
@@ -43,9 +44,12 @@ def generate_report():
 if __name__ == "__main__":
     pipeline_logging.configure(logging.INFO, add_console_handler=True)
     my_parser = argparse.ArgumentParser()
-    my_parser.add_argument('--project_id', type=str, required=True, help='Set the project id in BigQuery')
-    my_parser.add_argument('--old_rdr', type=str, required=True, help='Set the dataset name for the old rdr export')
-    my_parser.add_argument('--new_rdr', type=str, required=True, help='Set the dataset name for the most recent rdr export')
+    my_parser.add_argument('--project_id', type=str, required=True,
+                           help='Set the project id in BigQuery')
+    my_parser.add_argument('--old_rdr', type=str, required=True,
+                           help='Set the dataset name for the old rdr export')
+    my_parser.add_argument('--new_rdr', type=str, required=True,
+                           help='Set the dataset name for the most recent rdr export')
 
     args = my_parser.parse_args()
     PROJECT_ID = args.project_id
@@ -55,12 +59,3 @@ if __name__ == "__main__":
     generate_notebook("rdr_export_qc.py")
     run_notebook_qc(PROJECT_ID, OLD_RDR, NEW_RDR)
     generate_report()
-
-
-
-
-
-
-
-
-
