@@ -10,6 +10,9 @@ from utils import pipeline_logging
 
 LOGGER = logging.getLogger(__name__)
 
+TIER_LIST = ['controlled', 'registered']
+DEID_STAGE_LIST = ['deid', 'base', 'clean']
+
 
 def validate_tier_param(tier):
     """
@@ -18,7 +21,7 @@ def validate_tier_param(tier):
     :param tier: tier parameter passed through from either a list or command line argument
     :return: nothing, breaks if not valid
     """
-    if tier.lower() not in ['controlled', 'registered']:
+    if tier.lower() not in TIER_LIST:
         LOGGER.error(
             f"Parameter ERROR: {tier} is an incorrect input for the tier parameter, accepted: controlled or "
             f"registered")
@@ -31,7 +34,7 @@ def validate_deid_stage_param(deid_stage):
     :param deid_stage: deid_stage parameter passed through from either a list or command line argument
     :return: nothing, breaks if not valid
     """
-    if deid_stage not in ['deid', 'base', 'clean']:
+    if deid_stage not in DEID_STAGE_LIST:
         LOGGER.error(
             f"Parameter ERROR: {deid_stage} is an incorrect input for the deid_stage parameter, accepted: "
             f"deid, base, clean")
@@ -57,7 +60,7 @@ def valid_release_tag(arg_value):
 def create_tier(credentials_filepath, project_id, tier, input_dataset,
                 release_tag, deid_stage):
     """
-    This function is hte main entry point for the deid process.
+    This function is the main entry point for the deid process.
     It passes the required parameters to the implementing functions.
 
     :param credentials_filepath: filepath to credentials to access GCP
@@ -72,6 +75,7 @@ def create_tier(credentials_filepath, project_id, tier, input_dataset,
     # validation of params
     validate_tier_param(tier)
     validate_deid_stage_param(deid_stage)
+    valid_release_tag(release_tag)
 
 
 def parse_deid_args(args=None):
@@ -96,7 +100,7 @@ def parse_deid_args(args=None):
                         dest='tier',
                         help='controlled or registered tier',
                         required=True,
-                        choices=['controlled', 'registered'])
+                        choices=TIER_LIST)
     parser.add_argument('-i',
                         '--idataset',
                         action='store',
@@ -117,14 +121,14 @@ def parse_deid_args(args=None):
                         dest='deid_stage',
                         help='deid stage (deid, base or clean)',
                         required=True,
-                        choices=['deid', 'base', 'clean'])
+                        choices=DEID_STAGE_LIST)
     return parser.parse_args(args)
 
 
 def main(raw_args=None):
     args = parse_deid_args(raw_args)
     pipeline_logging.configure(level=logging.DEBUG,
-                               add_console_handler=True)
+                               add_console_handler=args.console_log)
     create_tier(args.credentials_filepath, args.project_id, args.tier,
                 args.idataset, args.release_tag, args.deid_stage)
 
