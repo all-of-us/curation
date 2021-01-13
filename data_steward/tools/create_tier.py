@@ -49,6 +49,7 @@ def valid_release_tag(arg_value):
         LOGGER.error(
             f"Parameter ERROR {arg_value} is in an incorrect format, accepted: YYYYq#r#"
         )
+        raise argparse.ArgumentTypeError
     return arg_value
 
 
