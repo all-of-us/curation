@@ -81,28 +81,38 @@ class CreateTierTest(unittest.TestCase):
                           self.incorrect_parameter_list_6)
 
         # Tests if incorrect choice for deid_stage are given
-        incorrect_deid_stage_choice_args = [['--credentials_filepath', self.credentials_filepath, '--project_id',
-            self.project_id, '--tier', self.tier, '--idataset',
-            self.input_dataset, '--release_tag', self.release_tag,
-            '--deid_stage', 'deid_base'], ['--credentials_filepath', self.credentials_filepath, '--project_id',
-            self.project_id, '--tier', self.tier, '--idataset',
-            self.input_dataset, '--release_tag', self.release_tag,
-            '--deid_stage', 'deid_clean']]
+        incorrect_deid_stage_choice_args = [
+            [
+                '--credentials_filepath', self.credentials_filepath,
+                '--project_id', self.project_id, '--tier', self.tier,
+                '--idataset', self.input_dataset, '--release_tag',
+                self.release_tag, '--deid_stage', 'deid_base'
+            ],
+            [
+                '--credentials_filepath', self.credentials_filepath,
+                '--project_id', self.project_id, '--tier', self.tier,
+                '--idataset', self.input_dataset, '--release_tag',
+                self.release_tag, '--deid_stage', 'deid_clean'
+            ]
+        ]
         for args in incorrect_deid_stage_choice_args:
             self.assertRaises(SystemExit, parse_deid_args, args)
 
         # Tests if incorrect choice for tier are given
-        incorrect_tier_choice_args = [[
-            '--credentials_filepath', self.credentials_filepath, '--project_id',
-            self.project_id, '--tier', 'uncontrolled', '--idataset',
-            self.input_dataset, '--release_tag', self.release_tag,
-            '--deid_stage', self.deid_stage
-        ], [
-            '--credentials_filepath', self.credentials_filepath, '--project_id',
-            self.project_id, '--tier', 'registry', '--idataset',
-            self.input_dataset, '--release_tag', self.release_tag,
-            '--deid_stage', self.deid_stage
-        ]]
+        incorrect_tier_choice_args = [
+            [
+                '--credentials_filepath', self.credentials_filepath,
+                '--project_id', self.project_id, '--tier', 'uncontrolled',
+                '--idataset', self.input_dataset, '--release_tag',
+                self.release_tag, '--deid_stage', self.deid_stage
+            ],
+            [
+                '--credentials_filepath', self.credentials_filepath,
+                '--project_id', self.project_id, '--tier', 'registry',
+                '--idataset', self.input_dataset, '--release_tag',
+                self.release_tag, '--deid_stage', self.deid_stage
+            ]
+        ]
         for args in incorrect_tier_choice_args:
             self.assertRaises(SystemExit, parse_deid_args, args)
 
@@ -125,7 +135,8 @@ class CreateTierTest(unittest.TestCase):
 
         # Test if invalid parameters are given
         for tag in invalid_release_tags:
-            self.assertRaises(argparse.ArgumentTypeError, valid_release_tag, tag)
+            self.assertRaises(argparse.ArgumentTypeError, valid_release_tag,
+                              tag)
 
     def test_validate_tier_param(self):
         # Preconditions
