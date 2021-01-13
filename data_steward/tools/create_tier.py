@@ -122,6 +122,12 @@ def parse_deid_args(args=None):
                         help='deid stage (deid, base or clean)',
                         required=True,
                         choices=DEID_STAGE_LIST)
+    parser.add_argument('-l',
+                        '--console_log',
+                        dest='console_log',
+                        action='store_true',
+                        required=False,
+                        help='Log to the console as well as to a file.')
     return parser.parse_args(args)
 
 

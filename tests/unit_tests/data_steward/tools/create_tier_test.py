@@ -31,7 +31,7 @@ class CreateTierTest(unittest.TestCase):
             '--credentials_filepath', self.credentials_filepath, '--project_id',
             self.project_id, '--tier', self.tier, '--idataset',
             self.input_dataset, '--release_tag', self.release_tag,
-            '--deid_stage', self.deid_stage
+            '--deid_stage', self.deid_stage, '--console_log'
         ]
         # incorrect parameter lists
         self.incorrect_parameter_list_1 = [
@@ -122,6 +122,7 @@ class CreateTierTest(unittest.TestCase):
         correct_parameter_dict = {
             k.strip('-'): v for (k, v) in correct_parameter_dict.items()
         }
+        correct_parameter_dict['console_log'] = True
 
         # Test if correct parameters are given
         results_dict = vars(parse_deid_args(self.correct_parameter_list))
