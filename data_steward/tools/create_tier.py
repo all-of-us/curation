@@ -42,7 +42,7 @@ def validate_deid_stage_param(deid_stage):
         raise argparse.ArgumentTypeError(msg)
 
 
-def valid_release_tag(arg_value):
+def validate_release_tag_param(arg_value):
     """
     User defined helper function to validate that the release_tag parameter follows the correct naming convention
 
@@ -115,7 +115,7 @@ def parse_deid_args(args=None):
         dest='release_tag',
         help='release tag for dataset in the format of YYYYq#r#',
         required=True,
-        type=valid_release_tag)
+        type=validate_release_tag_param)
     parser.add_argument('-d',
                         '--deid_stage',
                         action='store',

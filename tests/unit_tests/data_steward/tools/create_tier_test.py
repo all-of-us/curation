@@ -7,7 +7,8 @@ import unittest
 import argparse
 
 # Project imports
-from tools.create_tier import parse_deid_args, validate_deid_stage_param, validate_tier_param, valid_release_tag
+from tools.create_tier import parse_deid_args, validate_deid_stage_param, validate_tier_param, \
+    validate_release_tag_param
 
 
 class CreateTierTest(unittest.TestCase):
@@ -130,14 +131,14 @@ class CreateTierTest(unittest.TestCase):
         # Post conditions
         self.assertEqual(correct_parameter_dict, results_dict)
 
-    def test_valid_release_tag(self):
+    def test_validate_release_tag_param(self):
         # Preconditions
         invalid_release_tags = ['202q3r4', '2020q34r22']
 
         # Test if invalid parameters are given
         for tag in invalid_release_tags:
-            self.assertRaises(argparse.ArgumentTypeError, valid_release_tag,
-                              tag)
+            self.assertRaises(argparse.ArgumentTypeError,
+                              validate_release_tag_param, tag)
 
     def test_validate_tier_param(self):
         # Preconditions
