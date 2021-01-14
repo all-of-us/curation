@@ -76,7 +76,7 @@ def create_tier(credentials_filepath, project_id, tier, input_dataset,
     # validation of params
     validate_tier_param(tier)
     validate_deid_stage_param(deid_stage)
-    valid_release_tag(release_tag)
+    validate_release_tag_param(release_tag)
 
 
 def parse_deid_args(args=None):
