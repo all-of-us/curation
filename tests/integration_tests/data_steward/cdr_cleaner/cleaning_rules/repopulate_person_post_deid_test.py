@@ -18,39 +18,36 @@ from tests import test_util
 INSERT_FAKE_PARTICIPANTS_TMPLS = [
     # TODO(calbach): Ideally these tests should not manipulate concept table, not currently hermetic.
     common.JINJA_ENV.from_string("""
-    DROP TABLE IF EXISTS
-  `{{project_id}}.{{dataset_id}}.concept`;
-    CREATE TABLE
-  `{{project_id}}.{{dataset_id}}.concept` AS (
-  WITH
-    w AS (
-    SELECT
-      ARRAY<STRUCT<concept_id INT64, concept_code STRING>>
-  [({{gender_concept_id}}, "gender"),
+    INSERT INTO `{{project_id}}.{{dataset_id}}.concept` (concept_id, concept_code)
+VALUES
+  ({{gender_concept_id}}, "gender"),
   ({{gender_nonbinary_concept_id}}, "nonbinary"),
   ({{gender_nonbinary_source_concept_id}}, "nonbinary_src"),
   ({{sex_at_birth_concept_id}}, "sex"),
   ({{sex_female_concept_id}}, "female"),
-  ({{sex_female_source_concept_id}}, "female_src")] col
-  )
-  select 
-  concept_id,
-  concept_code
-  FROM
-    w,
-    UNNEST(w.col))
+  ({{sex_female_source_concept_id}}, "female_src")
 """),
     common.JINJA_ENV.from_string("""
-INSERT INTO `{{project_id}}.{{dataset_id}}.person` (person_id)
+    INSERT INTO `{{project_id}}.{{dataset_id}}.person` (person_id)
 VALUES (1), (2)
 """),
     common.JINJA_ENV.from_string("""
-INSERT INTO `{{project_id}}.{{dataset_id}}.observation` (person_id, observation_id, observation_source_concept_id, value_as_concept_id, value_source_concept_id)
+    INSERT INTO `{{project_id}}.{{dataset_id}}.observation` (person_id, observation_id, observation_source_concept_id, value_as_concept_id, value_source_concept_id)
 VALUES
   (1, 100, {{gender_concept_id}}, {{gender_nonbinary_concept_id}}, {{gender_nonbinary_source_concept_id}}),
   (1, 101, {{sex_at_birth_concept_id}}, {{sex_female_concept_id}}, {{sex_female_source_concept_id}})
 """)
 ]
+
+
+def drop_concept_table(dataset_id):
+    if bq_utils.table_exists(common.CONCEPT):
+        q = "DROP TABLE {dataset}.concept;".format(dataset=dataset_id)
+        try:
+            bq_utils.query(q)
+        except HttpError as err:
+            if err.resp.status != 404:
+                raise
 
 
 class RepopulatePersonPostDeidTest(unittest.TestCase):
@@ -74,10 +71,9 @@ class RepopulatePersonPostDeidTest(unittest.TestCase):
         # TODO: Reconcile this with a consistent integration testing model. Ideally each test should
         # clean up after itself so that we don't need this defensive check.
         test_util.delete_all_tables(self.dataset_id)
-        # drop existing concept table
-        q = """DROP TABLE {project}.{dataset}.concept;""".format(
-            project=self.project_id, dataset=self.dataset_id)
-        bq_utils.query(q)
+
+        # drop concept table
+        drop_concept_table(self.dataset_id)
 
         create_tables = ['person', 'observation']
         table_fields = {
@@ -96,13 +92,16 @@ class RepopulatePersonPostDeidTest(unittest.TestCase):
 
     def tearDown(self):
         test_util.delete_all_tables(self.dataset_id)
+        # Delete concept table
+        drop_concept_table(self.dataset_id)
 
-        if not bq_utils.table_exists(common.CONCEPT):
-            bq_utils.create_standard_table(common.CONCEPT, common.CONCEPT)
-            q = """INSERT INTO {dataset}.concept
-            SELECT * FROM {vocab}.concept""".format(
-                dataset=self.dataset_id, vocab=common.VOCABULARY_DATASET)
-            bq_utils.query(q)
+        # re create concept table
+        q = """CREATE or REPLACE table `{project}.{dataset}.concept`  as (
+            SELECT * FROM `{project}.{vocab}.concept`)""".format(
+            project=self.project_id,
+            dataset=self.dataset_id,
+            vocab=common.VOCABULARY_DATASET)
+        bq_utils.query(q)
 
     def assertPersonFields(self, person, want):
         for k in want.keys():
