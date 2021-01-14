@@ -41,7 +41,7 @@ itsdangerous==0.24
 Jinja2==2.10
 jsonschema==3.1.1
 jupyter==1.0.0
-jupyter-client==5.3.4
+jupyter-client==6.1.7
 jupyter-console==5.2.0
 jupyter-core==4.6.1
 jupytext==1.7.1
@@ -55,7 +55,7 @@ modernize==0.7
 more-itertools==5.0.0
 moz-sql-parser==2.44.19084
 nbconvert==5.6.1
-nbformat==4.4.0
+nbformat==5.0.8
 networkx==2.4
 notebook==5.7.8
 numpy==1.16.5
@@ -65,6 +65,7 @@ pandas==0.24.2
 pandas-gbq==0.11.0
 pandas-profiling==1.4.0
 pandocfilters==1.4.2
+papermill==2.2.2
 pathlib2==2.3.5
 pbr==3.1.1
 pickleshare==0.7.5

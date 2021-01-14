@@ -1,90 +1,33 @@
+# ---
+# jupyter:
+#   jupytext:
+#     text_representation:
+#       extension: .py
+#       format_name: light
+#       format_version: '1.5'
+#       jupytext_version: 1.7.1
+#   kernelspec:
+#     display_name: Python 3
+#     language: python
+#     name: python3
+# ---
+
+# + tags=["parameters"]
+project_id = ""
+old_rdr = ""
+new_rdr = ""
+# -
+
 # # QC for RDR Export
 #
 # Quality checks performed on a new RDR dataset and comparison with previous RDR dataset.
-# ## Parameters
-# This notebook contains parameters which must be set via the URL. 
-#
-# For example:
-#
-# `https://my_notebooks/../cdr_ops/rdr_export_qc.py?project_id=my_project&old_rdr=rdr1&new_rdr=rdr2`
-#
-# will set variables like these which are used to construct SQL queries:
-#
-#     project_id = "my_project"
-#     old_rdr = "rdr1"
-#     new_rdr = "rdr2"
 
 # +
 import urllib
 import pandas as pd
 
-NOTEBOOK_URL = None
-
-# Parameters required by this notebook
-REQUIRED_PARAMS = [
-    # identifies the google cloud project
-    'project_id',
-    # dataset_id of a prior RDR export for comparison
-    'old_rdr',
-    # dataset_id of the RDR export being evaluated
-    'new_rdr'
-]
 pd.options.display.max_rows = 120
-
-
 # -
-
-# ## Parse URL parameters
-# Retrieve parameters from the query string of the notebook URL. This allows sensitive
-# analytical parameters (e.g. project_id, dataset_id) to be specified ad hoc without
-# storing them in the notebook, which must be version controlled.
-#
-# **This approach to parameterizing notebooks has some major limitations and may be replaced in
-# the future.**
-# 1. The user must remember to run the following cells every time the query string is changed
-# 2. It may not be possible to specify the parameters this way when executing the notebook
-# programmatically (i.e. for automation)
-
-# + language="javascript"
-# // conditional needed to prevent warning
-# if (IPython.notebook.kernel) {
-#     // set the Python variable NOTEBOOK_URL
-#     IPython.notebook.kernel.execute("NOTEBOOK_URL = '" + window.location + "'");
-# }
-
-# +
-def get_url_params(url):
-    """
-    Extract params from the query string of a URL
-    
-    :returns: dict where the keys are parameter names
-    """
-    split_url = urllib.parse.urlsplit(url)
-    params = urllib.parse.parse_qs(split_url.query)
-    for key, value in params.items():
-        if len(value) == 1:
-            params[key] = value[0]
-    return params
-
-
-def validate_params(params, required_params):
-    """
-    Raise an error if a required parameter is missing from the params dict
-    """
-    for required_param in required_params:
-        if required_param not in params:
-            raise ValueError(f'Missing query parameter `{required_param}`')
-    global project_id, old_rdr, new_rdr
-    project_id = params.get('project_id')
-    old_rdr = params.get('old_rdr')
-    new_rdr = params.get('new_rdr')
-    print(f'All required parameters are specified.\n{params}')
-
-
-# -
-
-params = get_url_params(NOTEBOOK_URL)
-validate_params(params, REQUIRED_PARAMS)
 
 # # Table comparison
 # The export should generally contain the same tables from month to month. Tables found only in the old or the new export are listed below.
