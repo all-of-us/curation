@@ -52,8 +52,12 @@ WHERE src_id != 'PPI/PM'
 {% endif %}
 
 {% if has_start_date %}
-AND COALESCE({{end_date}}, EXTRACT(DATE FROM {{end_datetime}}),
+AND (COALESCE({{end_date}}, EXTRACT(DATE FROM {{end_datetime}}),
     {{start_date}}, EXTRACT(DATE FROM {{start_datetime}})) >= d.deactivated_date
+{% if table_ref.table_id == 'drug_exposure' %}
+OR verbatim_end_date >= d.deactivated_date)
+{% else %} )
+{% endif %}
 {% elif table_ref.table_id == 'death' %}
 WHERE COALESCE(death_date, EXTRACT(DATE FROM death_datetime)) >= d.deactivated_date
 {% else %}
@@ -287,7 +291,7 @@ def fq_deactivated_table_verification(fq_table_name):
     fq_table_name = fq_table_name_verification(fq_table_name)
     if fq_table_name.split('.')[-1] == consts.DEACTIVATED_PARTICIPANTS:
         return fq_table_name
-    message = f"{fq_table_name} should be of the form 'project.dataset.table'"
+    message = f"{fq_table_name} should be of the form 'project.dataset.{consts.DEACTIVATED_PARTICIPANTS}'"
     raise argparse.ArgumentTypeError(message)
 
 

@@ -66,13 +66,19 @@ class RetractDeactivatedEHRDataBqTest(TestCase):
                 "condition_start_date", "condition_start_datetime",
                 "condition_end_date", "condition_end_datetime"
             ],
-            "measurement": ["measurement_date", "measurement_datetime"]
+            "measurement": ["measurement_date", "measurement_datetime"],
+            'drug_exposure': [
+                'drug_exposure_start_date', 'drug_exposure_start_datetime',
+                'drug_exposure_end_date', 'drug_exposure_end_datetime',
+                'verbatim_end_date'
+            ]
         }
 
         table_cols_df = pd.DataFrame.from_dict({
             "table_name": [
                 "condition_occurrence", "_mapping_condition_occurrence",
-                "measurement", "measurement_ext"
+                "measurement", "measurement_ext", "drug_exposure_ext",
+                "drug_exposure"
             ]
         })
 

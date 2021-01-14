@@ -1,5 +1,6 @@
 # Python imports
 import os
+import time
 from unittest import TestCase
 
 # Third party imports
@@ -32,12 +33,16 @@ class RetractUtilsTest(TestCase):
                                     self.dataset_id)
         self.assertTrue(actual)
 
+        dataset = self.client.get_dataset(
+            f'{self.project_id}.{self.dataset_id}')
         dataset.labels = {"de_identified": "false"}
         self.client.update_dataset(dataset, ["labels"])
         actual = ru.is_labeled_deid(self.client, self.project_id,
                                     self.dataset_id)
         self.assertFalse(actual)
 
+        dataset = self.client.get_dataset(
+            f'{self.project_id}.{self.dataset_id}')
         dataset.labels = {"de_identified": None}
         self.client.update_dataset(dataset, ["labels"])
         actual = ru.is_labeled_deid(self.client, self.project_id,

@@ -117,9 +117,11 @@ class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
         self.deact_dataset_id = os.environ.get('COMBINED_DATASET_ID')
         self.client = bq.get_client(self.project_id)
         self.bq_sandbox_dataset_id = sb.get_sandbox_dataset_id(self.dataset_id)
+        self.tables = {**TABLE_ROWS, **MAPPING_TABLE_ROWS, **EXT_TABLE_ROWS}
         self.setup_data()
 
     def setup_data(self):
+        self.tearDown()
         # setup deactivated participants table
         self.deact_table = f'{self.project_id}.{self.deact_dataset_id}._deactivated_participants'
         deact_table_ref = gbq.TableReference.from_string(self.deact_table)
@@ -132,15 +134,14 @@ class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
         job.result()
 
         # create omop tables and mapping/ext tables
-        tables = {**TABLE_ROWS, **MAPPING_TABLE_ROWS, **EXT_TABLE_ROWS}
-        for table in tables:
+        for table in self.tables:
             fq_table = f'{self.project_id}.{self.dataset_id}.{table}'
             bq.create_tables(self.client,
                              self.project_id, [fq_table],
                              exists_ok=True)
             table_ref = gbq.TableReference.from_string(fq_table)
             job_config = gbq.QueryJobConfig()
-            job = self.client.query(tables[table].render(table=table_ref),
+            job = self.client.query(self.tables[table].render(table=table_ref),
                                     job_config)
             job.result()
 
@@ -173,11 +174,7 @@ class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
                                                    columns=observation_cols)
         drug_exposure_data = [
             (2002, 1, 50, '2008-06-05', '2008-06-05 01:00:00 UTC', '2010-07-05',
-             '2008-06-05 01:00:00 UTC', '2011-04-11', 87),
-            (2003, 2, 21, '2008-11-22', '2008-11-22 02:00:00 UTC', 'None',
-             'NaT', '2010-06-18', 51),
-            (2004, 3, 5241, '2009-08-03', '2009-08-03 05:00:00 UTC', 'None',
-             'NaT', '2009-12-26', 2754)
+             '2008-06-05 01:00:00 UTC', '2011-04-11', 87)
         ]
         drug_exposure_cols = [
             'drug_exposure_id', 'person_id', 'drug_concept_id',
@@ -217,9 +214,10 @@ class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
             pd.testing.assert_frame_equal(actual, expected)
 
     def tearDown(self):
-        for table in TABLE_ROWS:
+        for table in self.tables:
             fq_table = f'{self.project_id}.{self.dataset_id}.{table}'
             table_ref = gbq.TableReference.from_string(fq_table)
             self.client.delete_table(table_ref, not_found_ok=True)
         self.client.delete_dataset(self.bq_sandbox_dataset_id,
-                                   delete_contents=True)
+                                   delete_contents=True,
+                                   not_found_ok=True)
