@@ -22,10 +22,10 @@ def validate_tier_param(tier):
     :return: nothing, breaks if not valid
     """
     if tier.lower() not in TIER_LIST:
-        LOGGER.error(
-            f"Parameter ERROR: {tier} is an incorrect input for the tier parameter, accepted: controlled or "
-            f"registered")
-        raise argparse.ArgumentTypeError
+        msg = f"Parameter ERROR: {tier} is an incorrect input for the tier parameter, accepted: controlled or " \
+              f"registered"
+        LOGGER.error(msg)
+        raise argparse.ArgumentTypeError(msg)
 
 
 def validate_deid_stage_param(deid_stage):
@@ -36,10 +36,10 @@ def validate_deid_stage_param(deid_stage):
     :return: nothing, breaks if not valid
     """
     if deid_stage not in DEID_STAGE_LIST:
-        LOGGER.error(
-            f"Parameter ERROR: {deid_stage} is an incorrect input for the deid_stage parameter, accepted: "
-            f"deid, base, clean")
-        raise argparse.ArgumentTypeError
+        msg = f"Parameter ERROR: {deid_stage} is an incorrect input for the deid_stage parameter, accepted: deid, " \
+              f"base, clean"
+        LOGGER.error(msg)
+        raise argparse.ArgumentTypeError(msg)
 
 
 def valid_release_tag(arg_value):
@@ -52,10 +52,9 @@ def valid_release_tag(arg_value):
 
     release_tag_regex = re.compile(r'[0-9]{4}q[0-9]r[0-9]')
     if not re.match(release_tag_regex, arg_value):
-        LOGGER.error(
-            f"Parameter ERROR {arg_value} is in an incorrect format, accepted: YYYYq#r#"
-        )
-        raise argparse.ArgumentTypeError
+        msg = f"Parameter ERROR {arg_value} is in an incorrect format, accepted: YYYYq#r#"
+        LOGGER.error(msg)
+        raise argparse.ArgumentTypeError(msg)
     return arg_value
 
 
