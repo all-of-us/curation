@@ -58,6 +58,29 @@ def validate_release_tag_param(arg_value):
     return arg_value
 
 
+def get_dataset_name(tier, release_tag, deid_stage):
+    """
+    Helper function to create the dataset name based on the given criteria
+    This function should return a name for the final dataset only (not all steps along the way)
+    The function returns a string in the form: [C|R]{release_tag}_deid[_base|_clean]
+
+    :param tier: controlled or registered tier intended for the output dataset
+    :param release_tag: release tag for dataset in the format of YYYYq#r#
+    :param deid_stage: deid stage (deid, base or clean)
+    :return: a string for the dataset name
+    """
+    # validate parameters
+    validate_tier_param(tier)
+    validate_release_tag_param(release_tag)
+    validate_deid_stage_param(deid_stage)
+
+    tier = tier[0].upper()
+
+    dataset_name = f"{tier}{release_tag}_{deid_stage}"
+
+    return dataset_name
+
+
 def create_tier(credentials_filepath, project_id, tier, input_dataset,
                 release_tag, deid_stage):
     """
