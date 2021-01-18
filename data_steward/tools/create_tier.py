@@ -7,6 +7,7 @@ import re
 
 # Project imports
 from utils import pipeline_logging
+from utils import bq
 
 LOGGER = logging.getLogger(__name__)
 
@@ -79,6 +80,101 @@ def get_dataset_name(tier, release_tag, deid_stage):
     dataset_name = f"{tier}{release_tag}_{deid_stage}"
 
     return dataset_name
+
+
+def create_dataset(client, name, input_dataset, tier, release_tag, deid_stage):
+    """
+    Creates backup, staging, sandbox, and final datasets with the proper descriptions
+    and tag/labels applied
+
+    :param client: an instantiated bigquery client object
+    :param name: the base name of the datasets to be created
+    :param input_dataset: name of the input dataset
+    :param tier: tier parameter passed through from either a list or command line argument
+    :param release_tag: release tag parameter passed through either the command line arguments
+    :param deid_stage: deid_stage parameter passed through from either a list or command line argument
+    :return: tuple of created dataset names
+    """
+
+    if not client:
+        raise RuntimeError("Please specify BigQuery client object")
+    if not name:
+        raise RuntimeError(
+            "Please specify the base name of the datasets to be created")
+    if not input_dataset:
+        raise RuntimeError("Please specify the name of the input dataset")
+
+    # Construct names of datasets need as part of the deid process
+    final_dataset_id = name
+    backup_dataset_id = f'backup_{name}'
+    staging_dataset_id = f'staging_{name}'
+    sandbox_dataset_id = f'sandbox_{name}'
+
+    # base labels and tags for the datasets
+    base_labels_and_tags = {
+        'release_tag': release_tag,
+        'phase': deid_stage,
+        'data_tier': tier
+    }
+
+    # Dataset descriptions
+    backup_dataset_desc = {
+        f'Backup dataset of {input_dataset}. No deid cleaning rules applied'
+    }
+    staging_dataset_desc = {
+        f'Staging dataset of {input_dataset}. Deid cleaning rules have been applied'
+    }
+    sandbox_dataset_desc = {
+        f'Sandbox dataset of {input_dataset}. '
+        f'Contains rows dropped or altered by deid cleaning rules'
+    }
+    final_dataset_desc = {
+        f'Final version of {input_dataset}. All deid cleaning rules have been applied'
+    }
+
+    # Creation of dataset objects
+    backup_dataset_object = bq.define_dataset(client.project, backup_dataset_id,
+                                              backup_dataset_desc,
+                                              base_labels_and_tags)
+    staging_dataset_object = bq.define_dataset(client.project,
+                                               staging_dataset_id,
+                                               staging_dataset_desc,
+                                               base_labels_and_tags)
+    sandbox_dataset_object = bq.define_dataset(client.project,
+                                               sandbox_dataset_id,
+                                               sandbox_dataset_desc,
+                                               base_labels_and_tags)
+    final_dataset_object = bq.define_dataset(client.project, final_dataset_id,
+                                             final_dataset_desc,
+                                             base_labels_and_tags)
+
+    # Creation of datasets
+    client.create_dataset(backup_dataset_object, exists_ok=False)
+    client.create_dataset(staging_dataset_object, exists_ok=False)
+    client.create_dataset(sandbox_dataset_object, exists_ok=False)
+    client.create_dataset(final_dataset_object, exists_ok=False)
+
+    # Update the labels and tags
+    bq.update_labels_and_tags(backup_dataset_id, base_labels_and_tags,
+                              {'de-identified': 'false'})
+    bq.update_labels_and_tags(staging_dataset_id, base_labels_and_tags,
+                              {'de-identified': 'true'})
+    bq.update_labels_and_tags(final_dataset_id, base_labels_and_tags,
+                              {'de-identified': 'true'})
+
+    # Copy input dataset tables to backup and staging datasets
+    tables = client.list_tables(input_dataset)
+    for table in tables:
+        input_tables = f'{input_dataset}.{table.table_id}'
+        backup_tables = f'{backup_dataset_id}.{table.table_id}'
+        client.copy_table(input_tables, backup_tables)
+
+    for table in tables:
+        input_tables = f'{input_dataset}.{table.table_id}'
+        staging_tables = f'{staging_dataset_id}.{table.table_id}'
+        client.copy_table(input_tables, staging_tables)
+
+    return final_dataset_id, backup_dataset_id, staging_dataset_id, sandbox_dataset_id
 
 
 def create_tier(credentials_filepath, project_id, tier, input_dataset,
