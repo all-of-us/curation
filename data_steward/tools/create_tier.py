@@ -103,6 +103,16 @@ def create_dataset(client, name, input_dataset, tier, release_tag, deid_stage):
             "Please specify the base name of the datasets to be created")
     if not input_dataset:
         raise RuntimeError("Please specify the name of the input dataset")
+    if not tier:
+        raise RuntimeError(
+            "Please specify the tier intended for the output datasets")
+    if not release_tag:
+        raise RuntimeError(
+            "Please specify the release tag for the dataset in the format of YYYY#q#r"
+        )
+    if not deid_stage:
+        raise RuntimeError(
+            "Please specify the deid stage (deid, base, or clean)")
 
     # Construct names of datasets need as part of the deid process
     final_dataset_id = name
@@ -118,19 +128,11 @@ def create_dataset(client, name, input_dataset, tier, release_tag, deid_stage):
     }
 
     # Dataset descriptions
-    backup_dataset_desc = {
-        f'Backup dataset of {input_dataset}. No deid cleaning rules applied'
-    }
-    staging_dataset_desc = {
-        f'Staging dataset of {input_dataset}. Deid cleaning rules have been applied'
-    }
-    sandbox_dataset_desc = {
-        f'Sandbox dataset of {input_dataset}. '
-        f'Contains rows dropped or altered by deid cleaning rules'
-    }
-    final_dataset_desc = {
-        f'Final version of {input_dataset}. All deid cleaning rules have been applied'
-    }
+    backup_dataset_desc = f'Backup dataset of {input_dataset}. No deid cleaning rules applied'
+    staging_dataset_desc = f'Staging dataset of {input_dataset}. Deid cleaning rules have been applied'
+    sandbox_dataset_desc = f'Sandbox dataset of {input_dataset}. '\
+                           f'Contains rows dropped or altered by deid cleaning rules'
+    final_dataset_desc = f'Final version of {input_dataset}. All deid cleaning rules have been applied'
 
     # Creation of dataset objects
     backup_dataset_object = bq.define_dataset(client.project, backup_dataset_id,
