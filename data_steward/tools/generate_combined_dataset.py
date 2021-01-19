@@ -64,7 +64,7 @@ def generate_combined_dataset(key_file, vocab_dataset, unioned_ehr_dataset,
 
     # Copy OMOP vocabulary to CDR EHR data set
     cdm.create_vocabulary_tables(combined_backup)
-    table_copy(project_id, project_id, vocab_dataset, combined_backup)
+    table_copy(client, project_id, project_id, vocab_dataset, combined_backup)
 
     # Combine EHR and PPI data sets
     combine_ehr_rdr.main()
@@ -108,7 +108,7 @@ def generate_combined_dataset(key_file, vocab_dataset, unioned_ehr_dataset,
     snapshot_by_query.create_snapshot_dataset(project_id, combined_staging,
                                               combined)
     update_dataset(
-        project_id, combined_staging_sandbox,
+        client, project_id, combined_staging_sandbox,
         f'{version} combined clean version of {rdr_dataset} + {unioned_ehr_dataset}',
         {
             'phase': 'clean',
@@ -126,7 +126,7 @@ def generate_combined_dataset(key_file, vocab_dataset, unioned_ehr_dataset,
             'de_identified': 'False'
         })
 
-    table_copy(project_id, project_id, combined_staging_sandbox,
+    table_copy(client, project_id, project_id, combined_staging_sandbox,
                combined_sandbox)
 
     combined_release = f"{combined}_release"
@@ -140,7 +140,7 @@ def generate_combined_dataset(key_file, vocab_dataset, unioned_ehr_dataset,
             'release_tag': dataset_release_tag,
             'de_identified': 'False'
         })
-    table_copy(project_id, project_id, combined, combined_release)
+    table_copy(client, project_id, project_id, combined, combined_release)
 
 
 def get_args_parser():
