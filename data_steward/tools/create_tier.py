@@ -82,7 +82,7 @@ def get_dataset_name(tier, release_tag, deid_stage):
     return dataset_name
 
 
-def create_dataset(client, name, input_dataset, tier, release_tag, deid_stage):
+def create_datasets(client, name, input_dataset, tier, release_tag, deid_stage):
     """
     Creates backup, staging, sandbox, and final datasets with the proper descriptions
     and tag/labels applied
@@ -120,6 +120,11 @@ def create_dataset(client, name, input_dataset, tier, release_tag, deid_stage):
     staging_dataset_id = f'staging_{name}'
     sandbox_dataset_id = f'sandbox_{name}'
 
+    dataset_ids = [
+        final_dataset_id, backup_dataset_id, staging_dataset_id,
+        sandbox_dataset_id
+    ]
+
     # base labels and tags for the datasets
     base_labels_and_tags = {
         'release_tag': release_tag,
@@ -127,34 +132,18 @@ def create_dataset(client, name, input_dataset, tier, release_tag, deid_stage):
         'data_tier': tier
     }
 
-    # Dataset descriptions
-    backup_dataset_desc = f'Backup dataset of {input_dataset}. No deid cleaning rules applied'
-    staging_dataset_desc = f'Staging dataset of {input_dataset}. Deid cleaning rules have been applied'
-    sandbox_dataset_desc = f'Sandbox dataset of {input_dataset}. '\
-                           f'Contains rows dropped or altered by deid cleaning rules'
-    final_dataset_desc = f'Final version of {input_dataset}. All deid cleaning rules have been applied'
+    description = f'Dataset created for {release_tag} {tier} CDR run'
 
     # Creation of dataset objects
-    backup_dataset_object = bq.define_dataset(client.project, backup_dataset_id,
-                                              backup_dataset_desc,
-                                              base_labels_and_tags)
-    staging_dataset_object = bq.define_dataset(client.project,
-                                               staging_dataset_id,
-                                               staging_dataset_desc,
-                                               base_labels_and_tags)
-    sandbox_dataset_object = bq.define_dataset(client.project,
-                                               sandbox_dataset_id,
-                                               sandbox_dataset_desc,
-                                               base_labels_and_tags)
-    final_dataset_object = bq.define_dataset(client.project, final_dataset_id,
-                                             final_dataset_desc,
-                                             base_labels_and_tags)
+    dataset_objects = []
+    for dataset in dataset_ids:
+        dataset_object = bq.define_dataset(client.project, dataset, description,
+                                           base_labels_and_tags)
+        dataset_objects.append(dataset_object)
 
     # Creation of datasets
-    client.create_dataset(backup_dataset_object, exists_ok=False)
-    client.create_dataset(staging_dataset_object, exists_ok=False)
-    client.create_dataset(sandbox_dataset_object, exists_ok=False)
-    client.create_dataset(final_dataset_object, exists_ok=False)
+    for dataset_object in dataset_objects:
+        client.create_dataset(dataset_object, exists_ok=False)
 
     # Update the labels and tags
     bq.update_labels_and_tags(backup_dataset_id, base_labels_and_tags,
