@@ -180,7 +180,7 @@ class ParticipantSummaryRequestsTest(unittest.TestCase):
 
         # tests
         dataframe_response = psr.get_deactivated_participants(
-            self.project_id, self.dataset_id, self.tablename, self.columns)
+            self.project_id, self.columns)
 
         dataset_response = psr.store_participant_data(dataframe_response,
                                                       self.project_id,

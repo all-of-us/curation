@@ -190,13 +190,13 @@ class RetractUtilsTest(unittest.TestCase):
         mock_all_datasets.return_value = removed_datasets + expected_datasets
 
         # test all_datasets flag
-        ds_list = ru.get_datasets_list('foo', 'all_datasets')
+        ds_list = ru.get_datasets_list('foo', ['all_datasets'])
 
         # post conditions
         self.assertCountEqual(expected_list, ds_list)
 
         # test specific dataset
-        ds_list = ru.get_datasets_list('foo', 'C2020q1r1_deid')
+        ds_list = ru.get_datasets_list('foo', ['C2020q1r1_deid'])
 
         # post conditions
         self.assertEqual(['C2020q1r1_deid'], ds_list)
@@ -370,3 +370,26 @@ class RetractUtilsTest(unittest.TestCase):
         ]
         self.assertRaises((ru.argparse.ArgumentError, SystemExit),
                           parser.parse_args, args_list)
+
+    @mock.patch('retraction.retract_utils.is_labeled_deid')
+    def test_is_deid_label_or_id(self, mock_labeled_deid):
+        client = mock.MagicMock()
+        mock_labeled_deid.return_value = True
+        actual = ru.is_deid_label_or_id(client, self.project_id,
+                                        self.dataset_id)
+        self.assertTrue(actual)
+
+        mock_labeled_deid.return_value = True
+        actual = ru.is_deid_label_or_id(client, self.project_id,
+                                        self.dataset_id)
+        self.assertTrue(actual)
+
+        mock_labeled_deid.return_value = None
+        dataset_id = 'deid_dataset'
+        actual = ru.is_deid_label_or_id(client, self.project_id, dataset_id)
+        self.assertTrue(actual)
+
+        mock_labeled_deid.return_value = None
+        dataset_id = 'dataset'
+        actual = ru.is_deid_label_or_id(client, self.project_id, dataset_id)
+        self.assertFalse(actual)

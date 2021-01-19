@@ -1,8 +1,10 @@
+# Python imports
 import os
 import re
 import argparse
 import logging
 
+# Project imports
 import common
 from utils import bq
 from constants.retraction import retract_utils as consts
@@ -86,13 +88,13 @@ def get_src_id(mapping_type):
     return src_id
 
 
-def get_datasets_list(project_id, dataset_ids_str):
+def get_datasets_list(project_id, dataset_ids_list):
     """
     Returns list of dataset_ids on which to perform retraction
 
     Returns list of rdr, ehr, unioned, combined and deid dataset_ids and excludes sandbox and staging datasets
     :param project_id: identifies the project containing datasets to retract from
-    :param dataset_ids_str: string of datasets to retract from separated by a space. If set to 'all_datasets',
+    :param dataset_ids_list: string of datasets to retract from separated by a space. If set to 'all_datasets',
         retracts from all datasets. If set to 'none', skips retraction from BigQuery datasets
     :return: List of dataset_ids
     :raises: AttributeError if dataset_ids_str does not allow .split()
@@ -101,21 +103,20 @@ def get_datasets_list(project_id, dataset_ids_str):
         dataset.dataset_id for dataset in bq.list_datasets(project_id)
     ]
 
-    if not dataset_ids_str or dataset_ids_str == consts.NONE:
+    if not dataset_ids_list or dataset_ids_list == [consts.NONE]:
         dataset_ids = []
         LOGGER.info(
-            "No datasets specified. Defaulting to empty list. Expect bucked only retraction."
+            "No datasets specified. Defaulting to empty list. Expect bucket only retraction."
         )
-    elif dataset_ids_str == consts.ALL_DATASETS:
+    elif dataset_ids_list == [consts.ALL_DATASETS]:
         dataset_ids = all_dataset_ids
         LOGGER.info(
             f"All datasets are specified. Setting dataset_ids to all datasets in project: {project_id}"
         )
     else:
-        dataset_ids = dataset_ids_str.split()
         # only consider datasets that exist in the project
         dataset_ids = [
-            dataset_id for dataset_id in dataset_ids
+            dataset_id for dataset_id in dataset_ids_list
             if dataset_id in all_dataset_ids
         ]
         LOGGER.info(
@@ -132,6 +133,36 @@ def get_datasets_list(project_id, dataset_ids_str):
 
     LOGGER.info(f"Found datasets to retract from: {', '.join(dataset_ids)}")
     return dataset_ids
+
+
+def is_deid_label_or_id(client, project_id, dataset_id):
+    """
+    Validates if a dataset is labeled deid or contains deid in the dataset_id
+
+    :param client: BigQuery client
+    :param project_id: project containing the dataset
+    :param dataset_id: dataset to identify
+    :return: Boolean indicating if a dataset is a deid dataset
+    """
+    label = is_labeled_deid(client, project_id, dataset_id)
+    if label is None:
+        return is_deid_dataset(dataset_id)
+    return label
+
+
+def is_labeled_deid(client, project_id, dataset_id):
+    """
+    Returns boolean indicating if a dataset is a deid dataset using the label 'de_identified'
+
+    :param client: BigQuery client object
+    :param project_id: Identifies the project
+    :param dataset_id: Identifies the dataset
+    :return: Boolean indicating if the dataset is labeled a deid dataset or None if unlabeled
+    """
+    dataset = client.get_dataset(f'{project_id}.{dataset_id}')
+    if dataset.labels and consts.DE_IDENTIFIED in dataset.labels:
+        return dataset.labels[consts.DE_IDENTIFIED] == consts.TRUE
+    return None
 
 
 def is_deid_dataset(dataset_id):
@@ -342,8 +373,8 @@ def fetch_parser():
                         action='store',
                         nargs='+',
                         dest='dataset_ids',
-                        help='Identifies datasets to target. Set to'
-                        ' "all_datasets" to target all datasets in project '
+                        help='Identifies datasets to target. Set to '
+                        '-d all_datasets to target all datasets in project '
                         'or specific datasets as -d dataset_1 dataset_2 etc.',
                         required=True)
     parser.add_argument('-o',

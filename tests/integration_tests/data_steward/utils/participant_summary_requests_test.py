@@ -13,15 +13,14 @@ The intent of this module is to check that GCR access token is generated properl
 """
 
 # Python imports
-import mock
 import os
 import time
+import datetime
+from unittest import mock
 
 # Third party imports
 import pandas
 import pandas.testing
-import datetime
-from dateutil import parser
 
 # Project imports
 import utils.participant_summary_requests as psr
@@ -127,14 +126,9 @@ class ParticipantSummaryRequests(BaseTest.BigQueryTestBase):
         """
         # Parameter check tests
         self.assertRaises(RuntimeError, psr.get_deactivated_participants, None,
-                          self.dataset_id, self.tablename, self.columns)
+                          self.columns)
         self.assertRaises(RuntimeError, psr.get_deactivated_participants,
-                          self.project_id, None, self.tablename, self.columns)
-        self.assertRaises(RuntimeError, psr.get_deactivated_participants,
-                          self.project_id, self.dataset_id, None, self.columns)
-        self.assertRaises(RuntimeError, psr.get_deactivated_participants,
-                          self.project_id, self.dataset_id, self.tablename,
-                          None)
+                          self.project_id, None)
 
     @mock.patch('utils.participant_summary_requests.requests.get')
     def test_get_deactivated_participants(self, mock_get):
@@ -143,8 +137,7 @@ class ParticipantSummaryRequests(BaseTest.BigQueryTestBase):
         mock_get.return_value.json.return_value = self.json_response_entry
 
         # Tests
-        df = psr.get_deactivated_participants(self.project_id, self.dataset_id,
-                                              self.tablename, self.columns)
+        df = psr.get_deactivated_participants(self.project_id, self.columns)
 
         psr.store_participant_data(df, self.project_id,
                                    f'{self.dataset_id}.{self.tablename}')

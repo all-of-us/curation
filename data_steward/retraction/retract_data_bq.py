@@ -536,7 +536,7 @@ def retraction_query_runner(queries):
 
 
 def run_bq_retraction(project_id, sandbox_dataset_id, pid_project_id,
-                      pid_table_id, hpo_id, dataset_ids_str, retraction_type):
+                      pid_table_id, hpo_id, dataset_ids_list, retraction_type):
     """
     Main function to perform retraction
     pid table must follow schema described above in PID_TABLE_FIELDS and must reside in sandbox_dataset_id
@@ -547,13 +547,13 @@ def run_bq_retraction(project_id, sandbox_dataset_id, pid_project_id,
     :param pid_project_id: identifies the dataset containing the sandbox dataset
     :param pid_table_id: table containing the person_ids and research_ids
     :param hpo_id: hpo_id of the site to retract from
-    :param dataset_ids_str: string of datasets to retract from separated by a space. If set to 'all_datasets',
-        retracts from all datasets. If set to 'none', skips retraction from BigQuery datasets
+    :param dataset_ids_list: list of datasets to retract from separated by a space. If containing only 'all_datasets',
+        retracts from all datasets. If containing only 'none', skips retraction from BigQuery datasets
     :param retraction_type: string indicating whether all data needs to be removed, including RDR,
         or if RDR data needs to be kept intact. Can take the values 'rdr_and_ehr' or 'only_ehr'
     :return:
     """
-    dataset_ids = ru.get_datasets_list(project_id, dataset_ids_str)
+    dataset_ids = ru.get_datasets_list(project_id, dataset_ids_list)
 
     deid_datasets = []
     combined_datasets = []
@@ -676,17 +676,17 @@ if __name__ == '__main__':
         '--dataset_ids',
         action='store',
         dest='dataset_ids',
-        help='Identifies the datasets to retract from, separated by spaces'
-        'Format: "dataset_id_1 dataset_id_2 dataset_id_3" and so on'
-        'If set to "none", skips retraction from BigQuery datasets'
-        'If set to "all_datasets", retracts from all datasets in project',
+        help='Identifies the datasets to retract from, separated by spaces '
+        'specified as -d dataset_id_1 dataset_id_2 dataset_id_3 and so on. '
+        'If set as -d none, skips retraction from BigQuery datasets. '
+        'If set as -d all_datasets, retracts from all datasets in project.',
         required=True)
     parser.add_argument(
         '-r',
         '--retraction_type',
         action='store',
         dest='retraction_type',
-        help='Identifies whether all data needs to be removed, including RDR,'
+        help='Identifies whether all data needs to be removed, including RDR, '
         'or if RDR data needs to be kept intact. Can take the values "rdr_and_ehr" or "only_ehr"',
         required=True)
     args = parser.parse_args()
