@@ -3,7 +3,6 @@ import logging
 import os
 
 import cdm
-import resources
 import utils.bq as bq
 from cdr_cleaner import clean_cdr, clean_cdr_engine
 from tools import (combine_ehr_rdr, snapshot_by_query)
@@ -42,15 +41,12 @@ def generate_combined_dataset(key_file, vocab_dataset, unioned_ehr_dataset,
     combined_staging = f"{combined}_staging"
     combined_staging_sandbox = f"{combined_staging}_sandbox"
 
-    combined_config = {
-        'RDR_DATASET_ID': rdr_dataset,
-        'UNIONED_DATASET_ID': unioned_ehr_dataset,
-        'COMBINED_DATASET_ID': combined_backup,
-        'BIGQUERY_DATASET_ID': unioned_ehr_dataset,
-        'VOCABULARY_DATASET': vocab_dataset,
-        'VALIDATION_RESULTS_DATASET_ID': validation_dataset
-    }
-    resources.create_config(combined_config)
+    os.environ['RDR_DATASET_ID'] = rdr_dataset
+    os.environ['UNIONED_DATASET_ID'] = unioned_ehr_dataset
+    os.environ['COMBINED_DATASET_ID'] = combined_backup
+    os.environ['BIGQUERY_DATASET_ID'] = unioned_ehr_dataset
+    os.environ['VOCABULARY_DATASET'] = vocab_dataset
+    os.environ['VALIDATION_RESULTS_DATASET_ID'] = validation_dataset
     # required by populate_route_ids cleaning rule
     # set env variable for cleaning rule remove_non_matching_participant.py
 
@@ -97,10 +93,8 @@ def generate_combined_dataset(key_file, vocab_dataset, unioned_ehr_dataset,
             'de_identified': 'False'
         })
 
-    resources.update_config({
-        'COMBINED_DATASET_ID': combined_staging,
-        'BIGQUERY_DATASET_ID': combined_staging
-    })
+    os.environ['COMBINED_DATASET_ID'] = combined_staging
+    os.environ['BIGQUERY_DATASET_ID'] = combined_staging
     data_stage = 'combined'
 
     # run cleaning_rules on combined staging dataset

@@ -64,47 +64,6 @@ PPI_BRANCHING_RULE_PATHS = [
 ]
 
 
-def create_config(data):
-    """
-    creates environment config file from a dictionary
-    :param data: initial config passed as a dictionary
-    :return: None
-    """
-    if not os.path.exists(environment_config):
-        with open(environment_config, 'w') as jsonFile:
-            json.dump(data, jsonFile)
-    else:
-        update_config(data)
-
-
-def update_config(updated_config):
-    """
-    Updates Parameters set in environment_config file
-    :param updated_config: a dictionary with parameters that needs to be updated
-    :return: None
-    """
-
-    with open(environment_config, "r") as jsonFile:
-        config = json.load(jsonFile)
-
-    config.update(updated_config)
-
-    with open(environment_config, "w") as jsonFile:
-        json.dump(config, jsonFile)
-
-
-def read_config(variable):
-    """
-    Gets the parameters that were set in the config file
-    :param variable: variable name to look for in the config file
-    :return: returns the value set for the required parameter in environment_config file
-    """
-    with open(environment_config, "r") as jsonFile:
-        data = json.load(jsonFile)
-
-    return data[variable]
-
-
 @cachetools.cached(cache={})
 def csv_to_list(csv_path):
     """
