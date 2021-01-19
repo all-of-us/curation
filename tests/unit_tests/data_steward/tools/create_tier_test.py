@@ -5,10 +5,14 @@ Unit Test for create tier module
 # Python imports
 import unittest
 import argparse
+import mock
+
+# Third party imports
 
 # Project imports
+from utils import bq
 from tools.create_tier import parse_deid_args, validate_deid_stage_param, validate_tier_param, \
-    validate_release_tag_param, get_dataset_name
+    validate_release_tag_param, create_datasets, get_dataset_name
 
 
 class CreateTierTest(unittest.TestCase):
@@ -27,6 +31,18 @@ class CreateTierTest(unittest.TestCase):
         self.input_dataset = 'fake_input'
         self.release_tag = '2020q4r3'
         self.deid_stage = 'deid'
+        self.name = 'foo_name'
+
+        self.description = f'Dataset created for {self.release_tag} {self.tier} CDR run'
+        self.labels_and_tags = {
+            'release_tag': self.release_tag,
+            'phase': self.deid_stage,
+            'data_tier': self.tier,
+        }
+
+        # Tools for mocking the client
+        mock_bq_client_patcher = mock.patch('utils.bq.get_client')
+        self.mock_bq_client = mock_bq_client_patcher.start()
 
         self.correct_parameter_list = [
             '--credentials_filepath', self.credentials_filepath, '--project_id',
@@ -185,3 +201,65 @@ class CreateTierTest(unittest.TestCase):
         self.assertRaises(argparse.ArgumentTypeError, get_dataset_name,
                           self.tier, self.release_tag,
                           incorrect_deid_stage_param)
+
+    @mock.patch('utils.bq.update_labels_and_tags')
+    @mock.patch('utils.bq.define_dataset')
+    @mock.patch('utils.bq.get_client')
+    def test_create_dataset(self, mock_client, mock_define_dataset,
+                            mock_update_labels_tags):
+        # Preconditions
+        client = mock_client.return_value = self.mock_bq_client
+        client.side_effects = create_datasets
+
+        # Tests if incorrect parameters are given
+        self.assertRaises(RuntimeError, create_datasets, None, self.name,
+                          self.input_dataset, self.tier, self.release_tag,
+                          self.deid_stage)
+        self.assertRaises(RuntimeError, create_datasets, client, None,
+                          self.input_dataset, self.tier, self.release_tag,
+                          self.deid_stage)
+        self.assertRaises(RuntimeError, create_datasets, client, self.name,
+                          None, self.tier, self.release_tag, self.deid_stage)
+        self.assertRaises(RuntimeError, create_datasets, client, self.name,
+                          self.input_dataset, None, self.release_tag,
+                          self.deid_stage)
+        self.assertRaises(RuntimeError, create_datasets, client, self.name,
+                          self.input_dataset, self.tier, None, self.deid_stage)
+        self.assertRaises(RuntimeError, create_datasets, client, self.name,
+                          self.input_dataset, self.tier, self.release_tag, None)
+
+        # Test
+        expected = create_datasets(client, self.name, self.input_dataset,
+                                   self.tier, self.release_tag, self.deid_stage)
+
+        # Post conditions
+        client.create_dataset.assert_called()
+
+        self.assertEqual(expected, ('foo_name', 'backup_foo_name',
+                                    'staging_foo_name', 'sandbox_foo_name'))
+
+        # Ensures datasets are created with the proper name, descriptions, and labels and tags
+        self.assertEqual(mock_define_dataset.call_count, 4)
+
+        mock_define_dataset.assert_has_calls([
+            mock.call(client.project, 'foo_name', self.description,
+                      self.labels_and_tags),
+            mock.call(client.project, 'backup_foo_name', self.description,
+                      self.labels_and_tags),
+            mock.call(client.project, 'staging_foo_name', self.description,
+                      self.labels_and_tags),
+            mock.call(client.project, 'sandbox_foo_name', self.description,
+                      self.labels_and_tags)
+        ])
+
+        # Ensures datasets are updated with the proper labels and tags (if dataset is de-identified or not)
+        self.assertEqual(mock_update_labels_tags.call_count, 3)
+
+        mock_update_labels_tags.assert_has_calls([
+            mock.call('backup_foo_name', self.labels_and_tags,
+                      {'de-identified': 'false'}),
+            mock.call('staging_foo_name', self.labels_and_tags,
+                      {'de-identified': 'true'}),
+            mock.call('foo_name', self.labels_and_tags,
+                      {'de-identified': 'true'})
+        ])
