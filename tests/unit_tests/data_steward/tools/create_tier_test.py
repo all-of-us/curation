@@ -8,7 +8,7 @@ import argparse
 
 # Project imports
 from tools.create_tier import parse_deid_args, validate_deid_stage_param, validate_tier_param, \
-    validate_release_tag_param
+    validate_release_tag_param, get_dataset_name
 
 
 class CreateTierTest(unittest.TestCase):
@@ -161,3 +161,27 @@ class CreateTierTest(unittest.TestCase):
             # test type error is raised
             self.assertRaises(argparse.ArgumentTypeError,
                               validate_deid_stage_param, ds)
+
+    def test_get_dataset_name(self):
+        # Preconditions
+        expected_dataset_name = 'C2020q4r3_deid'
+        incorrect_tier_param = 'uncontrolled'
+        incorrect_release_tag_param = '20222q33R5'
+        incorrect_deid_stage_param = 'deid_base_clean'
+
+        # Test if correct parameters are given
+        result = get_dataset_name(self.tier, self.release_tag, self.deid_stage)
+
+        # Post conditions
+        self.assertEqual(result, expected_dataset_name)
+
+        # Test if incorrect parameters are given
+        self.assertRaises(argparse.ArgumentTypeError, get_dataset_name,
+                          incorrect_tier_param, self.release_tag,
+                          self.deid_stage)
+        self.assertRaises(argparse.ArgumentTypeError, get_dataset_name,
+                          self.tier, incorrect_release_tag_param,
+                          self.deid_stage)
+        self.assertRaises(argparse.ArgumentTypeError, get_dataset_name,
+                          self.tier, self.release_tag,
+                          incorrect_deid_stage_param)
