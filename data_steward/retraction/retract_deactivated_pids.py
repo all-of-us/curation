@@ -82,6 +82,9 @@ def get_date_cols_dict(date_cols_list):
 
     Assumes each date column has a corresponding datetime column due to OMOP specifications
     If a date column does not have a corresponding datetime column, skips it
+    Used for determining available dates based on order of precedence stated in the SANDBOX_QUERY
+    end_date > end_datetime > start_date > start_datetime. Non-conforming dates are factored into
+    the query separately, e.g. verbatim_end_date in drug_exposure
     :param date_cols_list: list of date/datetime columns
     :return: dictionary with mappings for START_DATE, START_DATETIME, END_DATE, END_DATETIME
         or DATE, DATETIME

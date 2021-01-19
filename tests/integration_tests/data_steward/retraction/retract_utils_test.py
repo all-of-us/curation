@@ -1,6 +1,5 @@
 # Python imports
 import os
-import time
 from unittest import TestCase
 
 # Third party imports
