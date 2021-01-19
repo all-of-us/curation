@@ -4,7 +4,6 @@ import os
 
 # Third party imports
 from google.cloud import bigquery
-import google.auth
 import pandas as pd
 
 # Project Imports

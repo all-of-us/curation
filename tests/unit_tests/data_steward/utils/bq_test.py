@@ -236,3 +236,4 @@ class BqTest(TestCase):
         bq.get_client(self.project_id, credentials=None)
         mock_bq_client.assert_called_with(project=self.project_id,
                                           credentials=None)
+        self.assertRaises(TypeError, bq.get_client, project=None)
