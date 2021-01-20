@@ -71,10 +71,9 @@ def get_client(project_id, scopes=None, credentials=None):
     Get a client for a specified project.
 
     :param project_id:  Name of the project to create a bigquery library client for
-        It is being nice for now, but will begin to require users to provide
-        the project_id.
     :param scopes: List of Google scopes as strings
-    :param credentials: Google credentials object
+    :param credentials: Google credentials object (ignored if scopes is defined,
+        uses delegated credentials instead)
 
     :return:  A bigquery Client object.
     """
