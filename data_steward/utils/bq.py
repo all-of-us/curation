@@ -13,7 +13,6 @@ from google.cloud import bigquery
 from google.auth import default
 
 # Project Imports
-from app_identity import PROJECT_ID
 from utils import auth
 from constants.utils import bq as consts
 from resources import fields_for
@@ -67,26 +66,21 @@ Requires parameter `dataset`: :class:`DatasetReference` and
 yields a scalar result with column `table_count`: :class:`int`."""
 
 
-def get_client(project_id=None, scopes=None):
+def get_client(project_id, scopes=None, credentials=None):
     """
     Get a client for a specified project.
 
     :param project_id:  Name of the project to create a bigquery library client for
-        It is being nice for now, but will begin to require users to provide
-        the project_id.
     :param scopes: List of Google scopes as strings
+    :param credentials: Google credentials object (ignored if scopes is defined,
+        uses delegated credentials instead)
 
     :return:  A bigquery Client object.
     """
     if scopes:
         credentials, project_id = default()
         credentials = auth.delegated_credentials(credentials, scopes=scopes)
-        return bigquery.Client(project=project_id, credentials=credentials)
-    if project_id is None:
-        LOGGER.info(f"You should specify project_id for a reliable experience."
-                    f"Defaulting to {os.environ.get(PROJECT_ID)}.")
-        return bigquery.Client()
-    return bigquery.Client(project=project_id)
+    return bigquery.Client(project=project_id, credentials=credentials)
 
 
 def get_table_schema(table_name, fields=None):
