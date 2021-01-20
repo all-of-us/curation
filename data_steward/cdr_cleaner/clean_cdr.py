@@ -18,7 +18,6 @@ import cdr_cleaner.cleaning_rules.drop_multiple_measurements as drop_mult_meas
 import \
     cdr_cleaner.cleaning_rules.drop_participants_without_ppi_or_ehr as drop_participants_without_ppi_or_ehr
 import cdr_cleaner.cleaning_rules.drug_refills_days_supply as drug_refills_supply
-import cdr_cleaner.cleaning_rules.id_deduplicate as id_dedup
 import cdr_cleaner.cleaning_rules.maps_to_value_ppi_vocab_update as maps_to_value_vocab_update
 import cdr_cleaner.cleaning_rules.negative_ages as neg_ages
 import cdr_cleaner.cleaning_rules.populate_route_ids as populate_routes
@@ -36,6 +35,7 @@ import cdr_cleaner.manual_cleaning_rules.negative_ppi as negative_ppi
 import cdr_cleaner.manual_cleaning_rules.remove_operational_pii_fields as operational_pii_fields
 import \
     cdr_cleaner.manual_cleaning_rules.update_questiona_answers_not_mapped_to_omop as map_questions_answers_to_omop
+from cdr_cleaner.cleaning_rules.id_deduplicate import DeduplicateIdColumn
 from cdr_cleaner.cleaning_rules.clean_height_weight import CleanHeightAndWeight
 from cdr_cleaner.cleaning_rules.clean_mapping import CleanMappingExtTables
 from cdr_cleaner.cleaning_rules.clean_ppi_numeric_fields_using_parameters import \
@@ -75,11 +75,10 @@ from constants.cdr_cleaner.clean_cdr import DataStage
 
 LOGGER = logging.getLogger(__name__)
 
-EHR_CLEANING_CLASSES = [(id_dedup.get_id_deduplicate_queries,),
-                        (CleanMappingExtTables,)]
+EHR_CLEANING_CLASSES = [(CleanMappingExtTables,)]
 
 UNIONED_EHR_CLEANING_CLASSES = [
-    (id_dedup.get_id_deduplicate_queries,),
+    (DeduplicateIdColumn,),
     (clean_years.get_year_of_birth_queries,),
     (neg_ages.get_negative_ages_queries,),
     (bad_end_dates.get_bad_end_date_queries,),
@@ -147,7 +146,6 @@ COMBINED_CLEANING_CLASSES = [
     (
         domain_alignment.domain_alignment,),
     (drop_participants_without_ppi_or_ehr.get_queries,),
-    (id_dedup.get_id_deduplicate_queries,),
     (clean_years.get_year_of_birth_queries,),
     (neg_ages.get_negative_ages_queries,),
     (bad_end_dates.get_bad_end_date_queries,),
@@ -179,7 +177,6 @@ FITBIT_CLEANING_CLASSES = [
 ]
 
 DEID_BASE_CLEANING_CLASSES = [
-    (id_dedup.get_id_deduplicate_queries,),
     (neg_ages.get_negative_ages_queries,),
     (bad_end_dates.get_bad_end_date_queries,),
     (valid_death_dates.get_valid_death_date_queries,),
