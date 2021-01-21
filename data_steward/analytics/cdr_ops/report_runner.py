@@ -3,6 +3,7 @@
 
 import os
 import sys
+import tempfile
 from stat import S_ISFIFO
 import nbclient
 import nbconvert
@@ -10,6 +11,7 @@ import traceback
 
 import base64
 import logging
+from pathlib import PurePath
 
 import click
 
@@ -18,6 +20,7 @@ import platform
 
 from papermill.execute import execute_notebook
 from papermill.inspection import display_notebook_help
+import jupytext
 
 from papermill import __version__ as papermill_version
 
@@ -37,11 +40,40 @@ def print_papermill_version(ctx, param, value):
     ctx.exit()
 
 
+class NotebookFileParamType(click.Path):
+    name = "notebook_file"
+
+    def __init__(self, exists=False):
+        super().__init__(exists=exists, dir_okay=False)
+
+    def convert(self, value, param, ctx):
+        super().convert(value, param, ctx)
+        extension_whitelist = ['.ipynb', '.py', '.json']
+        try:
+            p = PurePath(value)
+            # if self.exists and not p.exists():
+            #     self.fail(f'file {value} does not exist', param, ctx)
+
+            # if p.is_dir():
+            #     self.fail()
+
+            ext = p.suffix
+            if ext not in extension_whitelist:
+                self.fail(
+                    f'expected notebook file to have extension in {extension_whitelist}',
+                    param, ctx)
+
+            return p
+
+        except Exception as e:
+            self.fail(e, param, ctx)
+
+
 @click.command(context_settings=dict(help_option_names=['-h', '--help']))
 @click.pass_context
 @click.argument('notebook_path',
                 required=not INPUT_PIPED,
-                type=click.Path(exists=True))
+                type=NotebookFileParamType(exists=True))
 @click.argument('output_path', default="", type=click.Path())
 @click.option(
     '--help-notebook',
@@ -114,6 +146,15 @@ def papermill(click_ctx, notebook_path, output_path, help_notebook, parameters,
         sys.exit(
             display_notebook_help(click_ctx, notebook_path, parameters_final))
 
+    if notebook_path.suffix == '.ipynb':
+        pass
+    elif notebook_path.suffix == '.py':
+        converted_nb = jupytext.read(notebook_path)
+        converted_nb_path = f'{notebook_path.stem}2.ipynb'
+        converted_nb_f = tempfile.NamedTemporaryFile(suffix='.ipynb')
+        jupytext.write(converted_nb, converted_nb_f.name)
+        input_path = converted_nb_f.name
+
     try:
         execute_notebook(input_path=input_path,
                          output_path=output_path,
@@ -160,42 +201,6 @@ def _is_float(value):
     else:
         return True
 
-
-# def main():
-#     parser = argparse.ArgumentParser(
-#         description="Execute a jupyter notebook with parameters",
-#         add_help=False)
-#     parser.add_argument('notebook_path', help='path to a jupyter notebook')
-#     # parser.add_argument('--vocab_path',
-#     #                     help='a text filing containing a list of terminologies')
-
-#     args = parser.parse_known_args()
-#     notebook_path = args[0].notebook_path
-
-#     contents = pm.inspect_notebook(notebook_path)
-#     parameter_names = contents.keys()
-
-#     # parser2 = argparse.ArgumentParser(
-#     #     prog=f"{sys.argv[0]} {notebook_path}",
-#     #     description=f"Execute notebook {notebook_path} with parameters")
-
-#     # for param in parameter_names:
-#     #     parser2.add_argument(f"--{param}", required=True)
-
-#     # args2 = parser2.parse_known_args()
-
-#     # print(args2)
-#     parse_notebook_params(notebook_path, parameter_names)
-
-#     # if not (set(parameter_names).issubset(set(args))
-
-#     # vocab_path = args.vocab_path
-
-#     # parameter_names = contents.keys()
-#     # print(vocab_path)
-#     # pm.execute_notebook(notebook_path,
-#     #                     'output.ipynb',
-#     #                     parameters={'vocabulary_file': vocab_path})
 
 if __name__ == '__main__':
     papermill()
