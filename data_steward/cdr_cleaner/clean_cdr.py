@@ -28,7 +28,6 @@ import cdr_cleaner.cleaning_rules.remove_non_matching_participant as validate_mi
 import cdr_cleaner.cleaning_rules.remove_records_with_wrong_date as remove_records_with_wrong_date
 import cdr_cleaner.cleaning_rules.round_ppi_values_to_nearest_integer as round_ppi_values
 import cdr_cleaner.cleaning_rules.update_family_history_qa_codes as update_family_history
-import cdr_cleaner.cleaning_rules.valid_death_dates as valid_death_dates
 import cdr_cleaner.manual_cleaning_rules.clean_smoking_ppi as smoking
 import cdr_cleaner.manual_cleaning_rules.negative_ppi as negative_ppi
 import cdr_cleaner.manual_cleaning_rules.remove_operational_pii_fields as operational_pii_fields
@@ -68,6 +67,7 @@ from cdr_cleaner.cleaning_rules.truncate_rdr_using_date import TruncateRdrData
 from cdr_cleaner.cleaning_rules.unit_normalization import UnitNormalization
 from cdr_cleaner.cleaning_rules.update_fields_numbers_as_strings import UpdateFieldsNumbersAsStrings
 from cdr_cleaner.cleaning_rules.temporal_consistency import TemporalConsistency
+from cdr_cleaner.cleaning_rules.valid_death_dates import ValidDeathDates
 from constants.cdr_cleaner import clean_cdr_engine as ce_consts
 from constants.cdr_cleaner.clean_cdr import DataStage
 
@@ -148,7 +148,7 @@ COMBINED_CLEANING_CLASSES = [
     (clean_years.get_year_of_birth_queries,),
     (neg_ages.get_negative_ages_queries,),
     (NoDataAfterDeath,),
-    (valid_death_dates.get_valid_death_date_queries,),
+    (ValidDeathDates,),
     (drug_refills_supply.get_days_supply_refills_queries,),
     # trying to load a table while creating query strings,
     # won't work with mocked strings.  should use base class
@@ -177,7 +177,6 @@ FITBIT_CLEANING_CLASSES = [
 
 DEID_BASE_CLEANING_CLASSES = [
     (neg_ages.get_negative_ages_queries,),
-    (valid_death_dates.get_valid_death_date_queries,),
     (FillSourceValueTextFields,),
     (RepopulatePersonPostDeid,),
     (DateShiftCopeResponses,),
