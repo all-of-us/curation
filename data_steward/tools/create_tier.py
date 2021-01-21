@@ -156,14 +156,10 @@ def create_datasets(client, name, input_dataset, tier, release_tag, deid_stage):
     # Copy input dataset tables to backup and staging datasets
     tables = client.list_tables(input_dataset)
     for table in tables:
-        input_tables = f'{input_dataset}.{table.table_id}'
-        backup_tables = f'{backup_dataset_id}.{table.table_id}'
-        client.copy_table(input_tables, backup_tables)
-
-    for table in tables:
-        input_tables = f'{input_dataset}.{table.table_id}'
-        staging_tables = f'{staging_dataset_id}.{table.table_id}'
-        client.copy_table(input_tables, staging_tables)
+        backup_table = f'{backup_dataset_id}.{table.table_id}'
+        staging_table = f'{staging_dataset_id}.{table.table_id}'
+        client.copy_table(table, backup_tables)
+        client.copy_table(table, staging_tables)
 
     return final_dataset_id, backup_dataset_id, staging_dataset_id, sandbox_dataset_id
 
