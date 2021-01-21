@@ -41,6 +41,16 @@ def print_papermill_version(ctx, param, value):
     ctx.exit()
 
 
+def create_ipynb_from_py(py_path):
+    py_path = PurePath(py_path)  # if not already
+    converted_nb = jupytext.read(py_path)
+
+    ipynb_path = py_path.with_suffix('.ipynb')
+    jupytext.write(converted_nb, ipynb_path)
+
+    return ipynb_path
+
+
 class NotebookFileParamType(click.Path):
     name = "notebook_file"
 
@@ -52,15 +62,18 @@ class NotebookFileParamType(click.Path):
         super().convert(value, param, ctx)
         extension_whitelist = self.extension_whitelist
         try:
-            p = PurePath(value)
+            if value:
+                p = PurePath(value)
 
-            ext = p.suffix
-            if ext not in extension_whitelist:
-                self.fail(
-                    f'expected notebook file to have extension in {extension_whitelist}',
-                    param, ctx)
+                ext = p.suffix
+                if value and ext not in extension_whitelist:
+                    self.fail(
+                        f'expected notebook file to have extension in {extension_whitelist}',
+                        param, ctx)
 
-            return p
+                return p
+            else:
+                return value
 
         except Exception as e:
             self.fail(e, param, ctx)
@@ -115,10 +128,10 @@ def papermill(click_ctx, notebook_path, output_path, help_notebook, parameters,
     with `papermill - -` being implied by the pipes will read a notebook
     from stdin and write it out to stdout.
     """
-    if not help_notebook:
-        required_output_path = not (INPUT_PIPED or OUTPUT_PIPED)
-        if required_output_path and not output_path:
-            raise click.UsageError("Missing argument 'OUTPUT_PATH'")
+    # if not help_notebook:
+    #     required_output_path = not (INPUT_PIPED or OUTPUT_PIPED)
+    #     if required_output_path and not output_path:
+    #         raise click.UsageError("Missing argument 'OUTPUT_PATH'")
 
     if progress_bar is None:
         progress_bar = not log_output
@@ -130,9 +143,18 @@ def papermill(click_ctx, notebook_path, output_path, help_notebook, parameters,
     for name, value in parameters or []:
         parameters_final[name] = _resolve_type(value)
 
+    surrogate_notebook_path = notebook_path
+    if notebook_path.suffix == '.py':
+        surrogate_notebook_path = create_ipynb_from_py(notebook_path)
+
     if help_notebook:
         sys.exit(
-            display_notebook_help(click_ctx, notebook_path, parameters_final))
+            display_notebook_help(click_ctx, str(surrogate_notebook_path),
+                                  parameters_final))
+
+    if not output_path:
+        output_path = notebook_path.with_suffix('.html')
+        print(output_path)
 
     if notebook_path.suffix == '.ipynb':
         input_path = notebook_path
