@@ -19,6 +19,7 @@ import platform
 
 from papermill.execute import execute_notebook
 from papermill.inspection import display_notebook_help
+from papermill.exceptions import PapermillExecutionError
 import jupytext
 from nbconvert import HTMLExporter
 
@@ -68,7 +69,6 @@ class NotebookFileParamType(click.Path):
 @click.command(context_settings=dict(help_option_names=['-h', '--help']))
 @click.pass_context
 @click.argument('notebook_path',
-                required=not INPUT_PIPED,
                 type=NotebookFileParamType(
                     exists=True, extension_whitelist=['.ipynb', '.py']))
 @click.argument('output_path',
@@ -120,23 +120,10 @@ def papermill(click_ctx, notebook_path, output_path, help_notebook, parameters,
         if required_output_path and not output_path:
             raise click.UsageError("Missing argument 'OUTPUT_PATH'")
 
-    if INPUT_PIPED and notebook_path and not output_path:
-        input_path = '-'
-        output_path = notebook_path
-    else:
-        input_path = notebook_path or '-'
-        output_path = output_path or '-'
-
-    if output_path == '-':
-
-        # Reduce default log level if we pipe to stdout
-        if log_level == 'INFO':
-            log_level = 'ERROR'
-
-    elif progress_bar is None:
+    if progress_bar is None:
         progress_bar = not log_output
 
-    logging.basicConfig(level=log_level, format="%(message)s")
+    # logging.basicConfig(level=log_level, format="%(message)s")
 
     # Read in Parameters
     parameters_final = {}
@@ -179,11 +166,14 @@ def papermill(click_ctx, notebook_path, output_path, help_notebook, parameters,
         # Exiting with a special exit code for dead kernels
         traceback.print_exc()
         sys.exit(138)
+    except PapermillExecutionError:
+        traceback.print_exc()
 
     if output_conversion_req:
         if output_path.suffix == '.py':
             written_nb = jupytext.read(surrogate_output_path)
             jupytext.write(written_nb, output_path)
+
         elif output_path.suffix == '.html':
             html_exporter = HTMLExporter()
             html_exporter.template_name = 'classic'
@@ -192,6 +182,8 @@ def papermill(click_ctx, notebook_path, output_path, help_notebook, parameters,
             (body, resources) = html_exporter.from_notebook_node(written_nb)
             with open(output_path, 'w') as f:
                 f.write(body)
+
+    print(f'Exported notebook to {output_path}')
 
 
 def _resolve_type(value):
