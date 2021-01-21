@@ -158,8 +158,8 @@ def create_datasets(client, name, input_dataset, tier, release_tag, deid_stage):
     for table in tables:
         backup_table = f'{backup_dataset_id}.{table.table_id}'
         staging_table = f'{staging_dataset_id}.{table.table_id}'
-        client.copy_table(table, backup_tables)
-        client.copy_table(table, staging_tables)
+        client.copy_table(table, backup_table)
+        client.copy_table(table, staging_table)
 
     return final_dataset_id, backup_dataset_id, staging_dataset_id, sandbox_dataset_id
 
