@@ -7,20 +7,20 @@ import tempfile
 from stat import S_ISFIFO
 import nbclient
 import nbconvert
+import nbformat
 import traceback
 
-import base64
 import logging
 from pathlib import PurePath
 
 import click
 
-import yaml
 import platform
 
 from papermill.execute import execute_notebook
 from papermill.inspection import display_notebook_help
 import jupytext
+from nbconvert import HTMLExporter
 
 from papermill import __version__ as papermill_version
 
@@ -43,19 +43,15 @@ def print_papermill_version(ctx, param, value):
 class NotebookFileParamType(click.Path):
     name = "notebook_file"
 
-    def __init__(self, exists=False):
+    def __init__(self, exists=False, extension_whitelist=['.ipynb', '.py']):
         super().__init__(exists=exists, dir_okay=False)
+        self.extension_whitelist = extension_whitelist
 
     def convert(self, value, param, ctx):
         super().convert(value, param, ctx)
-        extension_whitelist = ['.ipynb', '.py', '.json']
+        extension_whitelist = self.extension_whitelist
         try:
             p = PurePath(value)
-            # if self.exists and not p.exists():
-            #     self.fail(f'file {value} does not exist', param, ctx)
-
-            # if p.is_dir():
-            #     self.fail()
 
             ext = p.suffix
             if ext not in extension_whitelist:
@@ -73,8 +69,13 @@ class NotebookFileParamType(click.Path):
 @click.pass_context
 @click.argument('notebook_path',
                 required=not INPUT_PIPED,
-                type=NotebookFileParamType(exists=True))
-@click.argument('output_path', default="", type=click.Path())
+                type=NotebookFileParamType(
+                    exists=True, extension_whitelist=['.ipynb', '.py']))
+@click.argument('output_path',
+                default="",
+                type=NotebookFileParamType(
+                    exists=False,
+                    extension_whitelist=['.ipynb', '.py', '.html']))
 @click.option(
     '--help-notebook',
     is_flag=True,
@@ -147,17 +148,30 @@ def papermill(click_ctx, notebook_path, output_path, help_notebook, parameters,
             display_notebook_help(click_ctx, notebook_path, parameters_final))
 
     if notebook_path.suffix == '.ipynb':
-        pass
+        input_path = notebook_path
     elif notebook_path.suffix == '.py':
         converted_nb = jupytext.read(notebook_path)
-        converted_nb_path = f'{notebook_path.stem}2.ipynb'
         converted_nb_f = tempfile.NamedTemporaryFile(suffix='.ipynb')
         jupytext.write(converted_nb, converted_nb_f.name)
         input_path = converted_nb_f.name
 
+    output_conversion_req = False
+    surrogate_output_path = output_path
+    if output_path.suffix == '.ipynb':
+        surrogate_output_path = PurePath(output_path)
+        output_conversion_req = False
+    elif output_path.suffix == '.py':
+        surrogate_output_f = tempfile.NamedTemporaryFile(suffix='.ipynb')
+        surrogate_output_path = PurePath(surrogate_output_f.name)
+        output_conversion_req = True
+    elif output_path.suffix == '.html':
+        surrogate_output_f = tempfile.NamedTemporaryFile(suffix='.ipynb')
+        surrogate_output_path = PurePath(surrogate_output_f.name)
+        output_conversion_req = True
+
     try:
         execute_notebook(input_path=input_path,
-                         output_path=output_path,
+                         output_path=str(surrogate_output_path),
                          parameters=parameters_final,
                          progress_bar=progress_bar,
                          log_output=log_output)
@@ -165,6 +179,19 @@ def papermill(click_ctx, notebook_path, output_path, help_notebook, parameters,
         # Exiting with a special exit code for dead kernels
         traceback.print_exc()
         sys.exit(138)
+
+    if output_conversion_req:
+        if output_path.suffix == '.py':
+            written_nb = jupytext.read(surrogate_output_path)
+            jupytext.write(written_nb, output_path)
+        elif output_path.suffix == '.html':
+            html_exporter = HTMLExporter()
+            html_exporter.template_name = 'classic'
+            with open(surrogate_output_path, 'r') as f:
+                written_nb = nbformat.reads(f.read(), as_version=4)
+            (body, resources) = html_exporter.from_notebook_node(written_nb)
+            with open(output_path, 'w') as f:
+                f.write(body)
 
 
 def _resolve_type(value):
