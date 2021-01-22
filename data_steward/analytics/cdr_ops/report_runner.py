@@ -9,6 +9,14 @@ from nbconvert import HTMLExporter
 import nbconvert
 import nbformat
 import sys
+import logging
+
+handler = logging.StreamHandler()
+handler.setLevel(logging.INFO)
+formatter = logging.Formatter(
+    '%(asctime)s - %(levelname)s - %(name)s - %(message)s')
+handler.setFormatter(formatter)
+logging.getLogger('').addHandler(handler)
 
 
 def create_ipynb_from_py(py_path):
@@ -28,12 +36,22 @@ def create_ipynb_from_py(py_path):
     return ipynb_path
 
 
+def create_html_from_ipynb(ipynb_path, output_path):
+    html_exporter = HTMLExporter()
+    html_exporter.template_name = 'classic'
+    with open(ipynb_path, 'r') as f:
+        written_nb = nbformat.reads(f.read(), as_version=4)
+        (body, resources) = html_exporter.from_notebook_node(written_nb)
+    with open(output_path, 'w') as f:
+        f.write(body)
+
+
 def display_notebook_help(notebook_path, params):
     expected_params = inspect_notebook(notebook_path)
     notebook_name = PurePath(notebook_path).stem
-    print(f'Parameters inferred for notebook {notebook_name}:')
+    logging.info(f'Parameters inferred for notebook {notebook_name}:')
     for name, param in expected_params.items():
-        print(name)
+        logging.info(name)
 
 
 # Usage: report_runner.py [OPTIONS] NOTEBOOK_PATH [OUTPUT_PATH]
@@ -47,7 +65,7 @@ def display_notebook_help(notebook_path, params):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('notebook_path', help='A .py jupytext file.')
-    parser.add_argument('output_path', help='An output .html file')
+    parser.add_argument('output_path', default="", help='An output .html file')
     parser.add_argument('--help_notebook', action='store_true')
     parser.add_argument('--params', '-p', nargs=2, action='append')
 
@@ -72,18 +90,19 @@ def main():
                          str(surrogate_output_path),
                          parameters=params)
     except Exception as e:
-        print(e)
+        logging.error(e)
 
     #Convert output ipynb to html
 
-    html_exporter = HTMLExporter()
-    html_exporter.template_name = 'classic'
-    with open(surrogate_output_path, 'r') as f:
-        written_nb = nbformat.reads(f.read(), as_version=4)
-        (body, resources) = html_exporter.from_notebook_node(written_nb)
-    with open(output_path, 'w') as f:
-        f.write(body)
+    if not output_path:
+        output_path = PurePath(notebook_path).with_suffix('html')
 
+    create_html_from_ipynb(surrogate_output_path, output_path)
+
+    logging.info(f'Notebook exported to {output_path}')
+
+
+# project_id=aou-res-curation-prod&old_rdr=rdr20201102&new_rdr=rdr20201201
 
 if __name__ == '__main__':
     main()
