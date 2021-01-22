@@ -37,7 +37,7 @@ SANDBOX_INVALID_DEATH_DATE_ROWS = common.JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_id}}.{{sandbox_table}}` AS (
 SELECT *
 FROM `{{project_id}}.{{dataset_id}}.{{table}}`
-WHERE {{table}}_date < '{{program_start_date}}' AND {{table}}_date > {{current_date}})
+WHERE {{table}}_date < '{{program_start_date}}' OR {{table}}_date > {{current_date}})
 """)
 
 
