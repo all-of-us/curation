@@ -8,6 +8,7 @@ import re
 # Project imports
 from utils import pipeline_logging
 from utils import bq
+from constants.cdr_cleaner import clean_cdr as consts
 
 LOGGER = logging.getLogger(__name__)
 
@@ -116,9 +117,9 @@ def create_datasets(client, name, input_dataset, tier, release_tag, deid_stage):
 
     # Construct names of datasets need as part of the deid process
     final_dataset_id = name
-    backup_dataset_id = f'backup_{name}'
-    staging_dataset_id = f'staging_{name}'
-    sandbox_dataset_id = f'sandbox_{name}'
+    backup_dataset_id = f'{name}_{consts.BACKUP}'
+    staging_dataset_id = f'{name}_{consts.STAGING}'
+    sandbox_dataset_id = f'{name}_{consts.SANDBOX}'
 
     dataset_ids = [
         final_dataset_id, backup_dataset_id, staging_dataset_id,
@@ -132,7 +133,7 @@ def create_datasets(client, name, input_dataset, tier, release_tag, deid_stage):
         'data_tier': tier
     }
 
-    description = f'Dataset created for {release_tag} {tier} CDR run'
+    description = f'Dataset created for {tier}{release_tag} CDR run'
 
     # Creation of dataset objects
     dataset_objects = []
@@ -161,7 +162,14 @@ def create_datasets(client, name, input_dataset, tier, release_tag, deid_stage):
         client.copy_table(table, backup_table)
         client.copy_table(table, staging_table)
 
-    return final_dataset_id, backup_dataset_id, staging_dataset_id, sandbox_dataset_id
+    datasets = {
+        name: final_dataset_id,
+        consts.BACKUP: backup_dataset_id,
+        consts.STAGING: staging_dataset_id,
+        consts.SANDBOX: sandbox_dataset_id
+    }
+
+    return datasets
 
 
 def create_tier(credentials_filepath, project_id, tier, input_dataset,
