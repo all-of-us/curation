@@ -195,10 +195,14 @@ class NoDataAfterDeath(BaseCleaningRule):
 
         for table in get_affected_tables():
             queries.append({
-                cdr_consts.QUERY: self.get_sandbox_query_for(table),
-                cdr_consts.DESTINATION_TABLE: BaseCleaningRule.sandbox_table_for(self, table),
-                cdr_consts.DESTINATION_DATASET: self.sandbox_dataset_id,
-                cdr_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE
+                cdr_consts.QUERY:
+                    self.get_sandbox_query_for(table),
+                cdr_consts.DESTINATION_TABLE:
+                    BaseCleaningRule.sandbox_table_for(self, table),
+                cdr_consts.DESTINATION_DATASET:
+                    self.sandbox_dataset_id,
+                cdr_consts.DISPOSITION:
+                    bq_consts.WRITE_TRUNCATE
             })
 
             queries.append({
