@@ -39,15 +39,6 @@ class FixUnmappedSurveyAnswersTest(unittest.TestCase):
         # Test
         self.rule_instance.setup_rule(self.client)
 
-    def test_sandbox_table_for(self):
-        self.assertEqual(self.rule_instance.sandbox_table_for(OBSERVATION),
-                         self.sandbox_table_name)
-
-        # Test if the error is raised when the table is not an affected table defined in this
-        # cleaning rule
-        with self.assertRaises(LookupError):
-            self.rule_instance.sandbox_table_for(PERSON)
-
     def test_get_sandbox_tablenames(self):
         self.assertListEqual(self.rule_instance.get_sandbox_tablenames(),
                              [self.sandbox_table_name])
