@@ -83,7 +83,7 @@ def get_dataset_name(tier, release_tag, deid_stage):
     return dataset_name
 
 
-def create_datasets(client, name, input_dataset, tier, release_tag, deid_stage):
+def create_datasets(client, name, input_dataset, tier, release_tag):
     """
     Creates backup, staging, sandbox, and final datasets with the proper descriptions
     and tag/labels applied
@@ -93,7 +93,6 @@ def create_datasets(client, name, input_dataset, tier, release_tag, deid_stage):
     :param input_dataset: name of the input dataset
     :param tier: tier parameter passed through from either a list or command line argument
     :param release_tag: release tag parameter passed through either the command line arguments
-    :param deid_stage: deid_stage parameter passed through from either a list or command line argument
     :return: tuple of created dataset names
     """
 
@@ -111,9 +110,6 @@ def create_datasets(client, name, input_dataset, tier, release_tag, deid_stage):
         raise RuntimeError(
             "Please specify the release tag for the dataset in the format of YYYY#q#r"
         )
-    if not deid_stage:
-        raise RuntimeError(
-            "Please specify the deid stage (deid, base, or clean)")
 
     # Construct names of datasets need as part of the deid process
     final_dataset_id = name
@@ -127,11 +123,7 @@ def create_datasets(client, name, input_dataset, tier, release_tag, deid_stage):
     ]
 
     # base labels and tags for the datasets
-    base_labels_and_tags = {
-        'release_tag': release_tag,
-        'phase': deid_stage,
-        'data_tier': tier
-    }
+    base_labels_and_tags = {'release_tag': release_tag, 'data_tier': tier}
 
     description = f'Dataset created for {tier}{release_tag} CDR run'
 
@@ -147,10 +139,16 @@ def create_datasets(client, name, input_dataset, tier, release_tag, deid_stage):
         client.create_dataset(dataset_object, exists_ok=False)
 
     # Update the labels and tags
-    bq.update_labels_and_tags(backup_dataset_id, base_labels_and_tags,
-                              {'de-identified': 'false'})
-    bq.update_labels_and_tags(staging_dataset_id, base_labels_and_tags,
-                              {'de-identified': 'true'})
+    bq.update_labels_and_tags(sandbox_dataset_id, base_labels_and_tags,
+                              {'phase': {consts.SANDBOX}})
+    bq.update_labels_and_tags(backup_dataset_id, base_labels_and_tags, {
+        'de-identified': 'false',
+        'phase': {consts.BACKUP}
+    })
+    bq.update_labels_and_tags(staging_dataset_id, base_labels_and_tags, {
+        'de-identified': 'true',
+        'phase': {consts.STAGING}
+    })
     bq.update_labels_and_tags(final_dataset_id, base_labels_and_tags,
                               {'de-identified': 'true'})
 
