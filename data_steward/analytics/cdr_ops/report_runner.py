@@ -10,16 +10,21 @@ import nbconvert
 import nbformat
 import sys
 import logging
+import copy
+from collections import OrderedDict
 
-handler = logging.StreamHandler()
-handler.setLevel(logging.INFO)
-formatter = logging.Formatter(
-    '%(asctime)s - %(levelname)s - %(name)s - %(message)s')
-handler.setFormatter(formatter)
-logging.getLogger('').addHandler(handler)
+# Project imports
+from utils import pipeline_logging
+
+LOGGER = logging.getLogger(__name__)
+IPYNB_SUFFIX = '.ipynb'
+HTML_SUFFIX = '.html'
+PARAMETER_DEFAULT = 'default'
+PARAMETER_REQUIRED = 'required'
+PARAMETER_NONE_VALUE = 'None'
 
 
-def create_ipynb_from_py(py_path):
+def create_ipynb_from_py(py_path) -> str:
     """Create an .ipynb notebook file from a Jupytext .py file
 
     :param py_path: path to a Jupytext-generated .py file
@@ -29,14 +34,23 @@ def create_ipynb_from_py(py_path):
     """
     py_path = PurePath(py_path)  # if not already
     converted_nb = jupytext.read(py_path)
-
-    ipynb_path = py_path.with_suffix('.ipynb')
+    ipynb_path = py_path.with_suffix(IPYNB_SUFFIX)
     jupytext.write(converted_nb, ipynb_path)
-
-    return ipynb_path
+    return str(ipynb_path)
 
 
 def create_html_from_ipynb(ipynb_path, output_path):
+    """
+    Create a html page from the output of the jupyter notebook
+    :param ipynb_path: 
+    :param output_path: 
+    :return: 
+    """
+    # Output name defaults to ipynb_path if the output_path is an empty string
+    output_path = output_path if output_path else PurePath(ipynb_path).stem()
+    # Convert output ipynb to html
+    output_path = PurePath(output_path).with_suffix(HTML_SUFFIX)
+
     html_exporter = HTMLExporter()
     html_exporter.template_name = 'classic'
     with open(ipynb_path, 'r') as f:
@@ -45,13 +59,85 @@ def create_html_from_ipynb(ipynb_path, output_path):
     with open(output_path, 'w') as f:
         f.write(body)
 
+    LOGGER.info(f'Notebook exported to {output_path}')
 
-def display_notebook_help(notebook_path, params):
-    expected_params = inspect_notebook(notebook_path)
-    notebook_name = PurePath(notebook_path).stem
-    logging.info(f'Parameters inferred for notebook {notebook_name}:')
-    for name, param in expected_params.items():
-        logging.info(name)
+    return True
+
+
+def infer_notebook_params(notebook_path):
+    """
+    A helper function to infer the notebook params 
+
+    :param notebook_path: 
+    :return: 
+    """
+
+    def infer_required(ordered_dict: OrderedDict) -> OrderedDict:
+        ordered_dict_copy = copy.deepcopy(ordered_dict)
+        for key, value in ordered_dict.items():
+            if key == PARAMETER_DEFAULT:
+                required = (value == PARAMETER_NONE_VALUE) or (
+                    not value.replace('"', ''))
+                ordered_dict_copy[PARAMETER_REQUIRED] = required
+                break
+        return ordered_dict_copy
+
+    return [(name, infer_required(properties))
+            for name, properties in inspect_notebook(notebook_path).items()]
+
+
+def display_notebook_help(notebook_path):
+    """
+    A helper function to display  
+
+    :param notebook_path: 
+    :return: 
+    """
+    LOGGER.info(
+        f'Parameters inferred for notebook {PurePath(notebook_path).stem}:')
+    for _, properties in infer_notebook_params(notebook_path):
+        properties = ', '.join(
+            [f'{key}={value}' for key, value in properties.items()])
+        LOGGER.info(f'Parameter name: {properties}')
+
+
+def validate_notebook_params(notebook_path, provided_params):
+    """
+    This function validates the provided parameters passed to the notebook 
+    
+    :param notebook_path: 
+    :param provided_params: provided parameters from the arg parser 
+    :return: 
+    """
+
+    def is_parameter_required(properties: OrderedDict):
+        for key, value in properties.items():
+            if key == PARAMETER_REQUIRED:
+                return value
+
+    missing_parameters = [
+        (name, properties)
+        for name, properties in infer_notebook_params(notebook_path)
+        if (name not in provided_params) & (is_parameter_required(properties))
+    ]
+
+    missing_values = [
+        (param, value) for param, value in provided_params.items() if not value
+    ]
+
+    if missing_parameters:
+        for name, param in missing_parameters:
+            LOGGER.error(
+                f'Missing the parameter {name} for notebook {PurePath(notebook_path).stem}'
+            )
+
+    if missing_values:
+        for name, value in missing_values:
+            LOGGER.error(
+                f'Missing value for the parameter {name} for notebook {PurePath(notebook_path).stem}'
+            )
+
+    return (not missing_parameters) & (not missing_values)
 
 
 # Usage: report_runner.py [OPTIONS] NOTEBOOK_PATH [OUTPUT_PATH]
@@ -62,47 +148,50 @@ def display_notebook_help(notebook_path, params):
 #   new_rdr: Unknown type (default "")
 
 
-def main():
+def main(notebook_jupytext_path, params, output_path, help_notebook=False):
+    """
+    
+    :param notebook_jupytext_path: 
+    :param params: 
+    :param output_path: 
+    :param help_notebook: 
+    :return: 
+    """
+    # Convert py to ipynb
+    surrogate_output_path = create_ipynb_from_py(notebook_jupytext_path)
+
+    if help_notebook:
+        sys.exit(display_notebook_help(surrogate_output_path))
+
+    if not validate_notebook_params(surrogate_output_path, params):
+        display_notebook_help(surrogate_output_path)
+        sys.exit('Missing required parameters')
+
+    try:
+        # Pass ipynb to papermill
+        execute_notebook(surrogate_output_path,
+                         surrogate_output_path,
+                         parameters=params)
+        create_html_from_ipynb(surrogate_output_path, output_path)
+    except Exception as e:
+        LOGGER.error(e)
+
+
+if __name__ == '__main__':
+    pipeline_logging.configure(logging.INFO, add_console_handler=True)
+
     parser = argparse.ArgumentParser()
-    parser.add_argument('notebook_path', help='A .py jupytext file.')
-    parser.add_argument('output_path', default="", help='An output .html file')
+    parser.add_argument('--notebook_path',
+                        help='A .py jupytext file.',
+                        required=True)
+    parser.add_argument('--output_path',
+                        default="",
+                        help='An output .html file')
     parser.add_argument('--help_notebook', action='store_true')
     parser.add_argument('--params', '-p', nargs=2, action='append')
 
     args = parser.parse_args()
-    notebook_path = args.notebook_path
-    output_path = args.output_path
-    help_notebook = args.help_notebook
-    params = dict(args.params)
+    parsed_params = dict(args.params) if args.params else dict()
 
-    #Convert py to ipynb
-    create_ipynb_from_py(notebook_path)
-    notebook_path = PurePath(notebook_path).with_suffix('.ipynb')
-
-    if help_notebook:
-        sys.exit(display_notebook_help(str(notebook_path), params))
-
-    surrogate_output_path = PurePath(output_path).with_suffix('.ipynb')
-
-    try:
-        #Pass ipynb to papermill
-        execute_notebook(str(notebook_path),
-                         str(surrogate_output_path),
-                         parameters=params)
-    except Exception as e:
-        logging.error(e)
-
-    #Convert output ipynb to html
-
-    if not output_path:
-        output_path = PurePath(notebook_path).with_suffix('html')
-
-    create_html_from_ipynb(surrogate_output_path, output_path)
-
-    logging.info(f'Notebook exported to {output_path}')
-
-
-# project_id=aou-res-curation-prod&old_rdr=rdr20201102&new_rdr=rdr20201201
-
-if __name__ == '__main__':
-    main()
+    main(args.notebook_path, parsed_params, args.output_path,
+         args.help_notebook)
