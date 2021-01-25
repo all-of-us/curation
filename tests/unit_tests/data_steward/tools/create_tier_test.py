@@ -36,7 +36,6 @@ class CreateTierTest(unittest.TestCase):
         self.description = f'Dataset created for {self.tier}{self.release_tag} CDR run'
         self.labels_and_tags = {
             'release_tag': self.release_tag,
-            'phase': self.deid_stage,
             'data_tier': self.tier,
         }
 
@@ -220,24 +219,19 @@ class CreateTierTest(unittest.TestCase):
 
         # Tests if incorrect parameters are given
         self.assertRaises(RuntimeError, create_datasets, None, self.name,
-                          self.input_dataset, self.tier, self.release_tag,
-                          self.deid_stage)
+                          self.input_dataset, self.tier, self.release_tag)
         self.assertRaises(RuntimeError, create_datasets, client, None,
-                          self.input_dataset, self.tier, self.release_tag,
-                          self.deid_stage)
+                          self.input_dataset, self.tier, self.release_tag)
         self.assertRaises(RuntimeError, create_datasets, client, self.name,
-                          None, self.tier, self.release_tag, self.deid_stage)
+                          None, self.tier, self.release_tag)
         self.assertRaises(RuntimeError, create_datasets, client, self.name,
-                          self.input_dataset, None, self.release_tag,
-                          self.deid_stage)
+                          self.input_dataset, None, self.release_tag)
         self.assertRaises(RuntimeError, create_datasets, client, self.name,
-                          self.input_dataset, self.tier, None, self.deid_stage)
-        self.assertRaises(RuntimeError, create_datasets, client, self.name,
-                          self.input_dataset, self.tier, self.release_tag, None)
+                          self.input_dataset, self.tier, None)
 
         # Test
         expected = create_datasets(client, self.name, self.input_dataset,
-                                   self.tier, self.release_tag, self.deid_stage)
+                                   self.tier, self.release_tag)
 
         # Post conditions
         client.create_dataset.assert_called()
@@ -259,13 +253,19 @@ class CreateTierTest(unittest.TestCase):
         ])
 
         # Ensures datasets are updated with the proper labels and tags (if dataset is de-identified or not)
-        self.assertEqual(mock_update_labels_tags.call_count, 3)
+        self.assertEqual(mock_update_labels_tags.call_count, 4)
 
         mock_update_labels_tags.assert_has_calls([
-            mock.call(datasets[consts.BACKUP], self.labels_and_tags,
-                      {'de-identified': 'false'}),
-            mock.call(datasets[consts.STAGING], self.labels_and_tags,
-                      {'de-identified': 'true'}),
+            mock.call(datasets[consts.SANDBOX], self.labels_and_tags,
+                      {'phase': {consts.SANDBOX}}),
+            mock.call(datasets[consts.BACKUP], self.labels_and_tags, {
+                'de-identified': 'false',
+                'phase': {consts.BACKUP}
+            }),
+            mock.call(datasets[consts.STAGING], self.labels_and_tags, {
+                'de-identified': 'true',
+                'phase': {consts.STAGING}
+            }),
             mock.call(datasets[self.name], self.labels_and_tags,
                       {'de-identified': 'true'})
         ])
