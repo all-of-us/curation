@@ -12,6 +12,7 @@ from cdr_cleaner.cleaning_rules.no_data_30_days_after_death import (
 from constants.bq_utils import WRITE_TRUNCATE
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from common import PERSON, VISIT_OCCURRENCE
+from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 
 
 class NoDataAfterDeathTest(unittest.TestCase):
@@ -82,7 +83,7 @@ class NoDataAfterDeathTest(unittest.TestCase):
             end_date=TEMPORAL_TABLES_WITH_END_DATE[VISIT_OCCURRENCE])
         self.assertEqual(expected_query, actual_query)
 
-    @patch.object(NoDataAfterDeath, 'sandbox_table_for')
+    @patch.object(BaseCleaningRule, 'sandbox_table_for')
     def test_get_query_for(self, mock_sandbox_table_for):
         sandbox_table = 'sandbox_table'
         mock_sandbox_table_for.return_value = sandbox_table
@@ -96,7 +97,7 @@ class NoDataAfterDeathTest(unittest.TestCase):
         self.assertEqual(expected_query, actual_query)
 
     @patch.object(NoDataAfterDeath, 'get_query_for')
-    @patch.object(NoDataAfterDeath, 'sandbox_table_for')
+    @patch.object(BaseCleaningRule, 'sandbox_table_for')
     @patch.object(NoDataAfterDeath, 'get_sandbox_query_for')
     @patch(
         'cdr_cleaner.cleaning_rules.no_data_30_days_after_death.get_affected_tables'

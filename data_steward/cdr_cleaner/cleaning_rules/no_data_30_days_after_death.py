@@ -188,7 +188,7 @@ class NoDataAfterDeath(BaseCleaningRule):
             dataset=self.dataset_id,
             sandbox_dataset=self.sandbox_dataset_id,
             table_name=table,
-            sandbox_table_name=self.sandbox_table_for(table))
+            sandbox_table_name=BaseCleaningRule.sandbox_table_for(self, table))
 
     def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
         queries = []
@@ -196,7 +196,7 @@ class NoDataAfterDeath(BaseCleaningRule):
         for table in get_affected_tables():
             queries.append({
                 cdr_consts.QUERY: self.get_sandbox_query_for(table),
-                cdr_consts.DESTINATION_TABLE: self.sandbox_table_for(table),
+                cdr_consts.DESTINATION_TABLE: BaseCleaningRule.sandbox_table_for(self, table),
                 cdr_consts.DESTINATION_DATASET: self.sandbox_dataset_id,
                 cdr_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE
             })
@@ -223,18 +223,6 @@ class NoDataAfterDeath(BaseCleaningRule):
             self.sandbox_table_for(affected_table)
             for affected_table in self.affected_tables
         ]
-
-    def sandbox_table_for(self, affected_table):
-        """
-        A helper function to retrieve the sandbox table name for the affected_table
-        :param affected_table: 
-        :return: 
-        """
-        if affected_table not in self.affected_tables:
-            raise LookupError(
-                f'{affected_table} is not define as an affected table in {self.affected_tables}'
-            )
-        return f'{"_".join(self.issue_numbers).lower()}_{affected_table}'
 
 
 if __name__ == '__main__':
