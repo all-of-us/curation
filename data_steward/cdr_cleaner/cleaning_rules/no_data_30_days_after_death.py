@@ -188,7 +188,7 @@ class NoDataAfterDeath(BaseCleaningRule):
             dataset=self.dataset_id,
             sandbox_dataset=self.sandbox_dataset_id,
             table_name=table,
-            sandbox_table_name=BaseCleaningRule.sandbox_table_for(self, table))
+            sandbox_table_name=self.sandbox_table_for(table))
 
     def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
         queries = []
@@ -198,7 +198,7 @@ class NoDataAfterDeath(BaseCleaningRule):
                 cdr_consts.QUERY:
                     self.get_sandbox_query_for(table),
                 cdr_consts.DESTINATION_TABLE:
-                    BaseCleaningRule.sandbox_table_for(self, table),
+                    self.sandbox_table_for(table),
                 cdr_consts.DESTINATION_DATASET:
                     self.sandbox_dataset_id,
                 cdr_consts.DISPOSITION:
