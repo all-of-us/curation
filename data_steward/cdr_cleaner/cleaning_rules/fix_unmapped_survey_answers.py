@@ -143,8 +143,7 @@ class FixUnmappedSurveyAnswers(BaseCleaningRule):
                 SANDBOX_FIX_UNMAPPED_SURVEY_ANSWERS_QUERY.render(
                     project=self.project_id,
                     sandbox_dataset=self.sandbox_dataset_id,
-                    sandbox_table=BaseCleaningRule.sandbox_table_for(
-                        self, OBSERVATION),
+                    sandbox_table=self.sandbox_table_for(OBSERVATION),
                     dataset=self.dataset_id)
         }
 
@@ -153,8 +152,7 @@ class FixUnmappedSurveyAnswers(BaseCleaningRule):
                 UPDATE_FIX_UNMAPPED_SURVEY_ANSWERS_QUERY.render(
                     project=self.project_id,
                     sandbox_dataset=self.sandbox_dataset_id,
-                    sandbox_table=BaseCleaningRule.sandbox_table_for(
-                        self, OBSERVATION),
+                    sandbox_table=self.sandbox_table_for(OBSERVATION),
                     dataset=self.dataset_id),
             cdr_consts.DESTINATION_TABLE:
                 OBSERVATION,
@@ -183,7 +181,7 @@ class FixUnmappedSurveyAnswers(BaseCleaningRule):
 
     def get_sandbox_tablenames(self):
         return [
-            BaseCleaningRule.sandbox_table_for(self, affected_table)
+            self.sandbox_table_for(affected_table)
             for affected_table in self._affected_tables
         ]
 
