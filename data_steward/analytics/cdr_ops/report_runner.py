@@ -12,6 +12,7 @@ import sys
 import logging
 import copy
 from collections import OrderedDict
+from typing import List, Tuple
 
 # Project imports
 from utils import pipeline_logging
@@ -39,21 +40,18 @@ def create_ipynb_from_py(py_path) -> str:
     return str(ipynb_path)
 
 
-def create_html_from_ipynb(ipynb_path, output_path):
+def create_html_from_ipynb(surrogate_output_path):
     """
     Create a html page from the output of the jupyter notebook
-    :param ipynb_path: 
-    :param output_path: 
+    :param surrogate_output_path: 
     :return: 
     """
-    # Output name defaults to ipynb_path if the output_path is an empty string
-    output_path = output_path if output_path else PurePath(ipynb_path).stem()
     # Convert output ipynb to html
-    output_path = PurePath(output_path).with_suffix(HTML_SUFFIX)
+    output_path = PurePath(surrogate_output_path).with_suffix(HTML_SUFFIX)
 
     html_exporter = HTMLExporter()
     html_exporter.template_name = 'classic'
-    with open(ipynb_path, 'r') as f:
+    with open(surrogate_output_path, 'r') as f:
         written_nb = nbformat.reads(f.read(), as_version=4)
         (body, resources) = html_exporter.from_notebook_node(written_nb)
     with open(output_path, 'w') as f:
@@ -64,7 +62,7 @@ def create_html_from_ipynb(ipynb_path, output_path):
     return True
 
 
-def infer_notebook_params(notebook_path):
+def infer_notebook_params(notebook_path) -> List[Tuple[str, OrderedDict]]:
     """
     A helper function to infer the notebook params 
 
@@ -115,15 +113,21 @@ def validate_notebook_params(notebook_path, provided_params):
             if key == PARAMETER_REQUIRED:
                 return value
 
+    notebook_param_dict = dict(infer_notebook_params(notebook_path))
+
     missing_parameters = [
         (name, properties)
-        for name, properties in infer_notebook_params(notebook_path)
+        for name, properties in notebook_param_dict.items()
         if (name not in provided_params) & (is_parameter_required(properties))
     ]
 
     missing_values = [
         (param, value) for param, value in provided_params.items() if not value
     ]
+
+    unknown_parameters = [(name, value)
+                          for name, value in provided_params.items()
+                          if name not in notebook_param_dict]
 
     if missing_parameters:
         for name, param in missing_parameters:
@@ -133,11 +137,17 @@ def validate_notebook_params(notebook_path, provided_params):
 
     if missing_values:
         for name, value in missing_values:
-            LOGGER.error(
-                f'Missing value for the parameter {name} for notebook {PurePath(notebook_path).stem}'
-            )
+            LOGGER.error(f'Missing value for the parameter {name} for notebook '
+                         f'{PurePath(notebook_path).stem}')
 
-    return (not missing_parameters) & (not missing_values)
+    if unknown_parameters:
+        for name, value in unknown_parameters:
+            LOGGER.error(
+                f'Unknown parameters provided: {name}={value} for notebook '
+                f'{PurePath(notebook_path).stem}')
+
+    return (not missing_parameters) & (not missing_values) & (
+        not unknown_parameters)
 
 
 # Usage: report_runner.py [OPTIONS] NOTEBOOK_PATH [OUTPUT_PATH]
@@ -157,22 +167,28 @@ def main(notebook_jupytext_path, params, output_path, help_notebook=False):
     :param help_notebook: 
     :return: 
     """
+
+    # Output name defaults to ipynb_path if the output_path is an empty string
+
     # Convert py to ipynb
-    surrogate_output_path = create_ipynb_from_py(notebook_jupytext_path)
+    surrogate_input_path = create_ipynb_from_py(notebook_jupytext_path)
+    surrogate_output_path = str(
+        PurePath(output_path if output_path else notebook_jupytext_path).
+        with_suffix(IPYNB_SUFFIX))
 
     if help_notebook:
-        sys.exit(display_notebook_help(surrogate_output_path))
+        sys.exit(display_notebook_help(surrogate_input_path))
 
-    if not validate_notebook_params(surrogate_output_path, params):
-        display_notebook_help(surrogate_output_path)
+    if not validate_notebook_params(surrogate_input_path, params):
+        display_notebook_help(surrogate_input_path)
         sys.exit('Missing required parameters')
 
     try:
         # Pass ipynb to papermill
-        execute_notebook(surrogate_output_path,
+        execute_notebook(surrogate_input_path,
                          surrogate_output_path,
                          parameters=params)
-        create_html_from_ipynb(surrogate_output_path, output_path)
+        create_html_from_ipynb(surrogate_output_path)
     except Exception as e:
         LOGGER.error(e)
 
