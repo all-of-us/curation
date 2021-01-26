@@ -181,7 +181,7 @@ def main(notebook_jupytext_path, params, output_path, help_notebook=False):
 
     if not validate_notebook_params(surrogate_input_path, params):
         display_notebook_help(surrogate_input_path)
-        sys.exit('Missing required parameters')
+        sys.exit(1)
 
     try:
         # Pass ipynb to papermill
