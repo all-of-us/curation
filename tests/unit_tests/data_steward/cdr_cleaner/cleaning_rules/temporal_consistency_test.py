@@ -23,7 +23,7 @@ import resources
 from constants.bq_utils import WRITE_TRUNCATE
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.temporal_consistency import TemporalConsistency, table_dates, visit_occurrence, \
-    placeholder_date, NULL_BAD_END_DATES, POPULATE_VISIT_END_DATES
+    placeholder_date, NULL_BAD_END_DATES, POPULATE_VISIT_END_DATES, SANDBOX_BAD_END_DATES, visit_occurrence_dates
 
 
 class TemporalConsistencyTest(unittest.TestCase):
@@ -62,8 +62,20 @@ class TemporalConsistencyTest(unittest.TestCase):
         result_list = self.rule_instance.get_query_specs()
 
         # Post conditions
-        expected_list = []
+        expected_query_list = []
+        expected_sandbox_query_list = []
         for table in table_dates:
+            sandbox_query = dict()
+            sandbox_query[cdr_consts.QUERY] = SANDBOX_BAD_END_DATES.render(
+                project_id=self.project_id,
+                sandbox_id=self.sandbox_dataset_id,
+                intermediary_table=self.rule_instance.sandbox_table_for(table),
+                dataset_id=self.dataset_id,
+                table=table,
+                table_end_date=table_dates[table][0],
+                table_start_date=table_dates[table][1])
+            expected_sandbox_query_list.append(sandbox_query)
+
             fields = resources.fields_for(table)
             col_exprs = [
                 'r.' + field['name'] if field['name'] == table_dates[table][1]
@@ -81,7 +93,18 @@ class TemporalConsistencyTest(unittest.TestCase):
             query[cdr_consts.DESTINATION_TABLE] = table
             query[cdr_consts.DISPOSITION] = WRITE_TRUNCATE
             query[cdr_consts.DESTINATION_DATASET] = self.dataset_id
-            expected_list.append(query)
+            expected_query_list.append(query)
+        sandbox_query = dict()
+        sandbox_query[cdr_consts.QUERY] = SANDBOX_BAD_END_DATES.render(
+            project_id=self.project_id,
+            sandbox_id=self.sandbox_dataset_id,
+            intermediary_table=self.rule_instance.sandbox_table_for(
+                visit_occurrence),
+            dataset_id=self.dataset_id,
+            table=visit_occurrence,
+            table_end_date=visit_occurrence_dates[visit_occurrence][0],
+            table_start_date=visit_occurrence_dates[visit_occurrence][1])
+        expected_sandbox_query_list.append(sandbox_query)
         query = dict()
         query[cdr_consts.QUERY] = POPULATE_VISIT_END_DATES.render(
             project_id=self.project_id,
@@ -90,6 +113,8 @@ class TemporalConsistencyTest(unittest.TestCase):
         query[cdr_consts.DESTINATION_TABLE] = visit_occurrence
         query[cdr_consts.DISPOSITION] = WRITE_TRUNCATE
         query[cdr_consts.DESTINATION_DATASET] = self.dataset_id
-        expected_list.append(query)
+        expected_query_list.append(query)
+
+        expected_list = [expected_sandbox_query_list, expected_query_list]
 
         self.assertEqual(result_list, expected_list)
