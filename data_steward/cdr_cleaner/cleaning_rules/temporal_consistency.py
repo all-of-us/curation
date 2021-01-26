@@ -154,7 +154,7 @@ class TemporalConsistency(BaseCleaningRule):
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
         desc = (
-            'Returns queries to updated end dates, end dates should not be prior to any start date'
+            'Returns queries to update end dates, end dates should not be prior to any start date'
         )
 
         super().__init__(issue_numbers=JIRA_ISSUE_NUMBERS,
