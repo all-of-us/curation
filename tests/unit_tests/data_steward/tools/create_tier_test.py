@@ -33,7 +33,7 @@ class CreateTierTest(unittest.TestCase):
         self.deid_stage = 'deid'
         self.name = 'foo_name'
 
-        self.description = f'Dataset created for {self.tier}{self.release_tag} CDR run'
+        self.description = f'dataset created from {self.input_dataset} for {self.tier}{self.release_tag} CDR run'
         self.labels_and_tags = {
             'release_tag': self.release_tag,
             'data_tier': self.tier,
@@ -211,7 +211,7 @@ class CreateTierTest(unittest.TestCase):
         client.side_effects = create_datasets
 
         datasets = {
-            self.name: self.name,
+            consts.CLEAN: self.name,
             consts.BACKUP: f'{self.name}_{consts.BACKUP}',
             consts.SANDBOX: f'{self.name}_{consts.SANDBOX}',
             consts.STAGING: f'{self.name}_{consts.STAGING}'
@@ -242,7 +242,7 @@ class CreateTierTest(unittest.TestCase):
         self.assertEqual(mock_define_dataset.call_count, 4)
 
         mock_define_dataset.assert_has_calls([
-            mock.call(client.project, datasets[self.name], self.description,
+            mock.call(client.project, datasets[consts.CLEAN], self.description,
                       self.labels_and_tags),
             mock.call(client.project, datasets[consts.BACKUP], self.description,
                       self.labels_and_tags),
@@ -256,16 +256,18 @@ class CreateTierTest(unittest.TestCase):
         self.assertEqual(mock_update_labels_tags.call_count, 4)
 
         mock_update_labels_tags.assert_has_calls([
-            mock.call(datasets[consts.SANDBOX], self.labels_and_tags,
-                      {'phase': {consts.SANDBOX}}),
+            mock.call(datasets[consts.CLEAN], self.labels_and_tags, {
+                'de-identified': 'true',
+                'phase': consts.CLEAN
+            }),
             mock.call(datasets[consts.BACKUP], self.labels_and_tags, {
                 'de-identified': 'false',
-                'phase': {consts.BACKUP}
+                'phase': consts.BACKUP
             }),
             mock.call(datasets[consts.STAGING], self.labels_and_tags, {
                 'de-identified': 'true',
-                'phase': {consts.STAGING}
+                'phase': consts.STAGING
             }),
-            mock.call(datasets[self.name], self.labels_and_tags,
-                      {'de-identified': 'true'})
+            mock.call(datasets[consts.SANDBOX], self.labels_and_tags,
+                      {'phase': consts.SANDBOX}),
         ])
