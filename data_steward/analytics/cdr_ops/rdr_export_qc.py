@@ -16,7 +16,6 @@
 project_id = ""
 old_rdr = ""
 new_rdr = ""
-#dataset_id=""
 # -
 
 # # QC for RDR Export
