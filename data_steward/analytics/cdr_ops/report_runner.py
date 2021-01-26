@@ -99,6 +99,12 @@ def display_notebook_help(notebook_path):
         LOGGER.info(f'Parameter name: {properties}')
 
 
+def is_parameter_required(properties: OrderedDict):
+    for key, value in properties.items():
+        if key == PARAMETER_REQUIRED:
+            return value
+
+
 def validate_notebook_params(notebook_path, provided_params):
     """
     This function validates the provided parameters passed to the notebook 
@@ -107,11 +113,6 @@ def validate_notebook_params(notebook_path, provided_params):
     :param provided_params: provided parameters from the arg parser 
     :return: 
     """
-
-    def is_parameter_required(properties: OrderedDict):
-        for key, value in properties.items():
-            if key == PARAMETER_REQUIRED:
-                return value
 
     notebook_param_dict = dict(infer_notebook_params(notebook_path))
 
