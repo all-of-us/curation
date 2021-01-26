@@ -34,8 +34,22 @@ table_dates = {
 }
 
 visit_occurrence = common.VISIT_OCCURRENCE
+visit_occurrence_dates = {
+    visit_occurrence: ['visit_start_date', 'visit_end_date']
+}
 placeholder_date = '1900-01-01'
 end_date = 'end_date'
+
+SANDBOX_BAD_END_DATES = JINJA_ENV.from_string("""
+CREATE OR REPLACE `{{project_id}}.{{sandbox_id}}.{{intermediary_table}}` AS (
+  SELECT
+    *
+  FROM
+    `{{project_id}}.{{dataset_id}}.{{table}}`
+  WHERE
+    {{table_end_date}} > {{table_start_date}}
+)
+""")
 
 NULL_BAD_END_DATES = JINJA_ENV.from_string("""
 SELECT
@@ -177,8 +191,21 @@ class TemporalConsistency(BaseCleaningRule):
             are optional but the query is required.
         """
         queries = []
+        sandbox_queries = []
 
         for table in table_dates:
+            # create sandbox queries
+            sandbox_query = dict()
+            sandbox_query[cdr_consts.QUERY] = SANDBOX_BAD_END_DATES.render(
+                project_id=self.project_id,
+                sandbox_id=self.sandbox_dataset_id,
+                intermediary_table=self.sandbox_table_for(table),
+                dataset_id=self.dataset_id,
+                table=table,
+                table_end_date=table_dates[table][0],
+                table_start_date=table_dates[table][1])
+            sandbox_queries.append(sandbox_query)
+
             fields = resources.fields_for(table)
             # Generate column expressions for select
             col_exprs = [
@@ -198,6 +225,17 @@ class TemporalConsistency(BaseCleaningRule):
             query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
             query[cdr_consts.DESTINATION_DATASET] = self.dataset_id
             queries.append(query)
+        # Sandbox query for visit_occurrence
+        sandbox_query = dict()
+        sandbox_query[cdr_consts.QUERY] = SANDBOX_BAD_END_DATES.render(
+            project_id=self.project_id,
+            sandbox_id=self.sandbox_dataset_id,
+            intermediary_table=self.sandbox_table_for(visit_occurrence),
+            dataset_id=self.dataset_id,
+            table=visit_occurrence,
+            table_end_date=visit_occurrence_dates[visit_occurrence][0],
+            table_start_date=visit_occurrence_dates[visit_occurrence][1])
+        sandbox_queries.append(sandbox_query)
         query = dict()
         query[cdr_consts.QUERY] = POPULATE_VISIT_END_DATES.render(
             project_id=self.project_id,
@@ -207,7 +245,7 @@ class TemporalConsistency(BaseCleaningRule):
         query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
         query[cdr_consts.DESTINATION_DATASET] = self.dataset_id
         queries.append(query)
-        return queries
+        return [sandbox_queries, queries]
 
     def setup_rule(self, client, *args, **keyword_args):
         pass
