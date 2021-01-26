@@ -413,6 +413,8 @@ def update_labels_and_tags(dataset_id,
                                f'without overwriting keys {overwrite_keys}')
         return {**existing_labels_or_tags, **updates}
 
+    return {**existing_labels_or_tags, **updates}
+
 
 def delete_dataset(project_id,
                    dataset_id,
