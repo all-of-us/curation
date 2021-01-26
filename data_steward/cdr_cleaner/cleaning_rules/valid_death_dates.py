@@ -4,8 +4,8 @@ Removes data containing death_dates which fall outside of the AoU program dates 
 Original Issues: DC-431, DC-822
 
 The intent is to ensure there are no death dates that occur before the start of the AoU program or after the current
-date. A death date is considered "valid" if it is after the program start date and before the current date. Allowing for more flexibility,
-we chose Jan 1, 2017 as the program start date.
+date. A death date is considered "valid" if it is after the program start date and before the current date. Allowing for
+ more flexibility, we chose Jan 1, 2017 as the program start date.
 """
 
 # Python imports
@@ -55,8 +55,8 @@ class ValidDeathDates(BaseCleaningRule):
         this SQL, append them to the list of Jira Issues.
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
-        desc = 'All rows in the death table that contain a death_date which occurs before the start of the AoU program' \
-               '(Jan 1, 2017) or after the current date will be sandboxed and dropped'
+        desc = 'All rows in the death table that contain a death_date which occurs before the start of the AoU ' \
+               'program (Jan 1, 2017) or after the current date will be sandboxed and dropped'
         super().__init__(issue_numbers=['DC822'],
                          description=desc,
                          affected_datasets=[cdr_consts.COMBINED],
@@ -80,7 +80,7 @@ class ValidDeathDates(BaseCleaningRule):
                     dataset_id=self.dataset_id,
                     table=death,
                     sandbox_id=self.sandbox_dataset_id,
-                    sandbox_table=self.get_sandbox_table_for(death)),
+                    sandbox_table=self.sandbox_table_for(death)),
             cdr_consts.DESTINATION_TABLE:
                 death,
             cdr_consts.DESTINATION_DATASET:
@@ -94,7 +94,7 @@ class ValidDeathDates(BaseCleaningRule):
                 SANDBOX_INVALID_DEATH_DATE_ROWS.render(
                     project_id=self.project_id,
                     sandbox_id=self.sandbox_dataset_id,
-                    sandbox_table=self.get_sandbox_table_for(death),
+                    sandbox_table=self.sandbox_table_for(death),
                     dataset_id=self.dataset_id,
                     table=death,
                     program_start_date=program_start_date,
@@ -110,21 +110,19 @@ class ValidDeathDates(BaseCleaningRule):
         pass
 
     def get_sandbox_tablenames(self):
-        """
-        Get the sandbox dataset id for this class instance
-        """
-        return [
-            self.get_sandbox_table_for(affected_table)
-            for affected_table in self.affected_tables
-        ]
+        pass
 
-    def get_sandbox_table_for(self, affected_table):
+    def sandbox_table_for(self, affected_table):
         """
         A helper function to retrieve the sandbox table name for the affected_table
-        :param affected_table: tables that is affected by running this cleaning rule
-        :return: formatted string name of the sandbox
+        :param affected_table:
+        :return:
         """
-        return f'{self.issue_numbers[0].lower()}_{affected_table}'
+        if affected_table not in self.affected_tables:
+            raise LookupError(
+                f'{affected_table} is not define as an affected table in {self.affected_tables}'
+            )
+        return f'{"_".join(self.issue_numbers).lower()}_{affected_table}'
 
     def setup_validation(self, client, *args, **keyword_args):
         """

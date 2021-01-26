@@ -64,7 +64,7 @@ class ValidDeathDatesTest(unittest.TestCase):
                     dataset_id=self.dataset_id,
                     table=common.DEATH,
                     sandbox_id=self.sandbox_dataset_id,
-                    sandbox_table=self.rule_instance.get_sandbox_table_for(
+                    sandbox_table=self.rule_instance.sandbox_table_for(
                         common.DEATH)),
             cdr_consts.DESTINATION_TABLE:
                 common.DEATH,
@@ -77,7 +77,7 @@ class ValidDeathDatesTest(unittest.TestCase):
                 SANDBOX_INVALID_DEATH_DATE_ROWS.render(
                     project_id=self.project_id,
                     sandbox_id=self.sandbox_dataset_id,
-                    sandbox_table=self.rule_instance.get_sandbox_table_for(
+                    sandbox_table=self.rule_instance.sandbox_table_for(
                         common.DEATH),
                     dataset_id=self.dataset_id,
                     table=common.DEATH,
