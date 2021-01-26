@@ -125,32 +125,51 @@ def create_datasets(client, name, input_dataset, tier, release_tag):
     # base labels and tags for the datasets
     base_labels_and_tags = {'release_tag': release_tag, 'data_tier': tier}
 
-    description = f'Dataset created for {tier}{release_tag} CDR run'
+    description = f'dataset created from {input_dataset} for {tier}{release_tag} CDR run'
 
-    # Creation of dataset objects
-    dataset_objects = []
+    # Creation of dataset objects and dataset label and description updates
     for dataset in dataset_ids:
         dataset_object = bq.define_dataset(client.project, dataset, description,
                                            base_labels_and_tags)
-        dataset_objects.append(dataset_object)
+        client.create_dataset(dataset_object, exists_ok=True)
 
-    # Creation of datasets
-    for dataset_object in dataset_objects:
-        client.create_dataset(dataset_object, exists_ok=False)
-
-    # Update the labels and tags
-    bq.update_labels_and_tags(sandbox_dataset_id, base_labels_and_tags,
-                              {'phase': {consts.SANDBOX}})
-    bq.update_labels_and_tags(backup_dataset_id, base_labels_and_tags, {
-        'de-identified': 'false',
-        'phase': {consts.BACKUP}
-    })
-    bq.update_labels_and_tags(staging_dataset_id, base_labels_and_tags, {
-        'de-identified': 'true',
-        'phase': {consts.STAGING}
-    })
-    bq.update_labels_and_tags(final_dataset_id, base_labels_and_tags,
-                              {'de-identified': 'true'})
+        if dataset is sandbox_dataset_id:
+            new_labels = bq.update_labels_and_tags(sandbox_dataset_id,
+                                                   base_labels_and_tags,
+                                                   {'phase': consts.SANDBOX})
+            dataset = bq.get_dataset(client.project, sandbox_dataset_id)
+            dataset.labels = new_labels
+            dataset.description = f'{consts.SANDBOX} {description}'
+            client.update_dataset(dataset, ["labels", "description"])
+        if dataset is backup_dataset_id:
+            new_labels = bq.update_labels_and_tags(backup_dataset_id,
+                                                   base_labels_and_tags, {
+                                                       'de-identified': 'false',
+                                                       'phase': consts.BACKUP
+                                                   })
+            dataset = bq.get_dataset(client.project, backup_dataset_id)
+            dataset.labels = new_labels
+            dataset.description = f'{consts.BACKUP} {description}'
+            client.update_dataset(dataset, ["labels", "description"])
+        if dataset is staging_dataset_id:
+            new_labels = bq.update_labels_and_tags(staging_dataset_id,
+                                                   base_labels_and_tags, {
+                                                       'de-identified': 'true',
+                                                       'phase': consts.STAGING
+                                                   })
+            dataset = bq.get_dataset(client.project, staging_dataset_id)
+            dataset.labels = new_labels
+            dataset.description = f'{consts.STAGING} {description}'
+            client.update_dataset(dataset, ["labels", "description"])
+        if dataset is final_dataset_id:
+            new_labels = bq.update_labels_and_tags(final_dataset_id,
+                                                   base_labels_and_tags, {
+                                                       'de-identified': 'true',
+                                                       'phase': consts.CLEAN
+                                                   })
+            dataset = bq.get_dataset(client.project, final_dataset_id)
+            dataset.labels = new_labels
+            client.update_dataset(dataset, ["labels"])
 
     # Copy input dataset tables to backup and staging datasets
     tables = client.list_tables(input_dataset)
@@ -161,7 +180,7 @@ def create_datasets(client, name, input_dataset, tier, release_tag):
         client.copy_table(table, staging_table)
 
     datasets = {
-        name: final_dataset_id,
+        consts.CLEAN: final_dataset_id,
         consts.BACKUP: backup_dataset_id,
         consts.STAGING: staging_dataset_id,
         consts.SANDBOX: sandbox_dataset_id
