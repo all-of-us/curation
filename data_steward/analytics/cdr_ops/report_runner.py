@@ -12,7 +12,7 @@ import sys
 import logging
 import copy
 from collections import OrderedDict
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 
 # Project imports
 from utils import pipeline_logging
@@ -62,6 +62,17 @@ def create_html_from_ipynb(surrogate_output_path):
     return True
 
 
+def infer_required(ordered_dict: OrderedDict) -> OrderedDict:
+    ordered_dict_copy = copy.deepcopy(ordered_dict)
+    for key, value in ordered_dict.items():
+        if key == PARAMETER_DEFAULT:
+            required = (value == PARAMETER_NONE_VALUE) or (not value.replace(
+                '"', ''))
+            ordered_dict_copy[PARAMETER_REQUIRED] = required
+            break
+    return ordered_dict_copy
+
+
 def infer_notebook_params(notebook_path) -> List[Tuple[str, OrderedDict]]:
     """
     A helper function to infer the notebook params 
@@ -69,16 +80,6 @@ def infer_notebook_params(notebook_path) -> List[Tuple[str, OrderedDict]]:
     :param notebook_path: 
     :return: 
     """
-
-    def infer_required(ordered_dict: OrderedDict) -> OrderedDict:
-        ordered_dict_copy = copy.deepcopy(ordered_dict)
-        for key, value in ordered_dict.items():
-            if key == PARAMETER_DEFAULT:
-                required = (value == PARAMETER_NONE_VALUE) or (
-                    not value.replace('"', ''))
-                ordered_dict_copy[PARAMETER_REQUIRED] = required
-                break
-        return ordered_dict_copy
 
     return [(name, infer_required(properties))
             for name, properties in inspect_notebook(notebook_path).items()]
@@ -103,9 +104,10 @@ def is_parameter_required(properties: OrderedDict):
     for key, value in properties.items():
         if key == PARAMETER_REQUIRED:
             return value
+    return True
 
 
-def validate_notebook_params(notebook_path, provided_params):
+def validate_notebook_params(notebook_path, provided_params: Dict[str, str]):
     """
     This function validates the provided parameters passed to the notebook 
     
@@ -122,9 +124,9 @@ def validate_notebook_params(notebook_path, provided_params):
         if (name not in provided_params) & (is_parameter_required(properties))
     ]
 
-    missing_values = [
-        (param, value) for param, value in provided_params.items() if not value
-    ]
+    missing_values = [(param, value)
+                      for param, value in provided_params.items()
+                      if value in ("", None)]
 
     unknown_parameters = [(name, value)
                           for name, value in provided_params.items()
