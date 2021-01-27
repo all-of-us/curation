@@ -67,22 +67,22 @@ def create_html_from_ipynb(surrogate_output_path):
     return True
 
 
-def infer_required(ordered_dict: OrderedDict) -> OrderedDict:
+def infer_required(param_properties: OrderedDict) -> OrderedDict:
     """
     This function infers whether the notebook parameter is required or not based on the following 
     heuristics: if the default value is 'None' (notebook translates None to a string version of 
     None) or '""' or '\'\'' (string consists of double quotes or single quotes only)
     
-    :param ordered_dict: 
+    :param param_properties: 
     :return: 
     """
 
     def is_required(param_value):
-        return (param_value == PARAMETER_NONE_VALUE) or (not re.sub(
-            '["\']', '', param_value))
+        return (param_value is None) or (param_value == PARAMETER_NONE_VALUE) \
+               or (not re.sub('["\']', '', param_value))
 
-    ordered_dict_copy = copy.deepcopy(ordered_dict)
-    for key, value in ordered_dict.items():
+    ordered_dict_copy = copy.deepcopy(param_properties)
+    for key, value in param_properties.items():
         if key == PARAMETER_DEFAULT:
             required = is_required(value)
             ordered_dict_copy[PARAMETER_REQUIRED] = required
