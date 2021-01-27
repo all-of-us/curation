@@ -242,3 +242,38 @@ JOIN `{project_id}.{new_rdr}.cope_survey_semantic_version_map` USING (questionna
 GROUP BY 1
 """
 pd.read_gbq(query, dialect='standard')
+
+# # Class of PPI Concepts using vocabulary.py
+# Concept codes which appear in `observation.observation_source_value` should belong to concept class Question.
+# Concept codes which appear in `observation.value_source_value` should belong to concept class Answer. Discreprancies (listed below) can be caused by misclassified entries in Athena or invalid payloads in the RDR and in further upstream data sources.
+
+query = f'''
+WITH ppi_concept_code AS (
+ SELECT 
+   observation_source_value AS code
+  ,'Question'               AS expected_concept_class_id
+  ,COUNT(1) n
+ FROM {project_id}.{new_rdr}.observation
+ GROUP BY 1, 2
+ 
+ UNION ALL
+ 
+ SELECT DISTINCT 
+   value_source_value AS code
+  ,'Answer'           AS expected_concept_class_id 
+  ,COUNT(1) n
+ FROM {project_id}.{new_rdr}.observation
+ GROUP BY 1, 2
+)
+SELECT 
+  code
+ ,expected_concept_class_id
+ ,concept_class_id
+ ,n
+FROM ppi_concept_code
+JOIN {project_id}.{new_rdr}.concept
+ ON LOWER(concept_code)=LOWER(code)
+WHERE LOWER(concept_class_id)<>LOWER(expected_concept_class_id)
+ORDER BY 1, 2, 3
+'''
+pd.read_gbq(query, dialect='standard')
