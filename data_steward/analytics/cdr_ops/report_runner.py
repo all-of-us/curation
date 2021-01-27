@@ -1,19 +1,23 @@
+# System imports
+import re
+import sys
+import logging
+import copy
 import argparse
+from pathlib import PurePath
+from collections import OrderedDict
+from typing import List, Tuple, Dict
+
+# Papermill and Jupytext imports
 from papermill.execute import execute_notebook
 # from papermill.inspection import  display_notebook_help
 from papermill import inspect_notebook
 from papermill.exceptions import PapermillExecutionError
 import jupytext
-from pathlib import PurePath
+import nbformat
+import nbclient
 from nbconvert import HTMLExporter
 import nbconvert
-import nbclient
-import nbformat
-import sys
-import logging
-import copy
-from collections import OrderedDict
-from typing import List, Tuple, Dict
 
 # Project imports
 from utils import pipeline_logging
@@ -64,11 +68,23 @@ def create_html_from_ipynb(surrogate_output_path):
 
 
 def infer_required(ordered_dict: OrderedDict) -> OrderedDict:
+    """
+    This function infers whether the notebook parameter is required or not based on the following 
+    heuristics: if the default value is 'None' (notebook translates None to a string version of 
+    None) or '""' or '\'\'' (string consists of double quotes or single quotes only)
+    
+    :param ordered_dict: 
+    :return: 
+    """
+
+    def is_required(param_value):
+        return (param_value == PARAMETER_NONE_VALUE) or (not re.sub(
+            '["\']', '', param_value))
+
     ordered_dict_copy = copy.deepcopy(ordered_dict)
     for key, value in ordered_dict.items():
         if key == PARAMETER_DEFAULT:
-            required = (value == PARAMETER_NONE_VALUE) or (not value.replace(
-                '"', ''))
+            required = is_required(value)
             ordered_dict_copy[PARAMETER_REQUIRED] = required
             break
     return ordered_dict_copy
@@ -102,6 +118,11 @@ def display_notebook_help(notebook_path):
 
 
 def is_parameter_required(properties: OrderedDict):
+    """
+    This functions checks if the notebook parameter is required
+    :param properties: the properties associated with the parameter
+    :return: 
+    """
     for key, value in properties.items():
         if key == PARAMETER_REQUIRED:
             return value
