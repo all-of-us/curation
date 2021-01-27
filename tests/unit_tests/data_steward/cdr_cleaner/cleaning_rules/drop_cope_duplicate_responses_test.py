@@ -6,7 +6,9 @@ Removes the duplicate sets of COPE responses to the same questions in the same s
 import unittest
 
 from cdr_cleaner.cleaning_rules.drop_cope_duplicate_responses import (
-    DropCopeDuplicateResponses, COPE_SURVEY_VERSION_MAP_TABLE)
+    DropCopeDuplicateResponses, COPE_SURVEY_VERSION_MAP_TABLE, ISSUE_NUMBERS,
+    OBSERVATION, SANDBOX_DUPLICATE_COPE_RESPONSES,
+    REMOVE_DUPLICATE_COPE_RESPONSES)
 from constants.cdr_cleaner import clean_cdr as clean_consts
 
 
@@ -23,6 +25,7 @@ class DropCopeDuplicateResponsesTest(unittest.TestCase):
         self.dataset_id = 'foo_dataset'
         self.sandbox_id = 'foo_sandbox'
         self.client = None
+        self.sandbox_table = f'{ISSUE_NUMBERS[0].lower()}_{OBSERVATION}'
 
         self.rule_instance = DropCopeDuplicateResponses(self.project_id,
                                                         self.dataset_id,
@@ -42,15 +45,20 @@ class DropCopeDuplicateResponsesTest(unittest.TestCase):
         # Post conditions
         sandbox_query = dict()
         sandbox_query[
-            clean_consts.QUERY] = self.rule_instance.get_sandbox_statement(
-                self.project_id, self.dataset_id, self.sandbox_id,
-                self.rule_instance.get_sandbox_tablenames()[0],
-                COPE_SURVEY_VERSION_MAP_TABLE)
+            clean_consts.QUERY] = SANDBOX_DUPLICATE_COPE_RESPONSES.render(
+                project=self.project_id,
+                dataset=self.dataset_id,
+                sandbox_dataset=self.sandbox_id,
+                cope_survey_version_table=COPE_SURVEY_VERSION_MAP_TABLE,
+                intermediary_table=self.sandbox_table)
 
         update_query = dict()
         update_query[
-            clean_consts.QUERY] = self.rule_instance.get_delete_statement(
-                self.project_id, self.dataset_id, COPE_SURVEY_VERSION_MAP_TABLE)
+            clean_consts.QUERY] = REMOVE_DUPLICATE_COPE_RESPONSES.render(
+                project=self.project_id,
+                dataset=self.dataset_id,
+                sandbox_dataset=self.sandbox_id,
+                intermediary_table=self.sandbox_table)
 
         expected_list = [sandbox_query, update_query]
 
@@ -62,13 +70,18 @@ class DropCopeDuplicateResponsesTest(unittest.TestCase):
         self.assertEqual(self.rule_instance.affected_datasets,
                          [clean_consts.RDR])
 
-        store_duplicate_rows = self.rule_instance.get_sandbox_statement(
-            self.project_id, self.dataset_id, self.sandbox_id,
-            self.rule_instance.get_sandbox_tablenames()[0],
-            COPE_SURVEY_VERSION_MAP_TABLE)
+        store_duplicate_rows = SANDBOX_DUPLICATE_COPE_RESPONSES.render(
+            project=self.project_id,
+            dataset=self.dataset_id,
+            sandbox_dataset=self.sandbox_id,
+            cope_survey_version_table=COPE_SURVEY_VERSION_MAP_TABLE,
+            intermediary_table=self.sandbox_table)
 
-        delete_duplicate_rows = self.rule_instance.get_delete_statement(
-            self.project_id, self.dataset_id, COPE_SURVEY_VERSION_MAP_TABLE)
+        delete_duplicate_rows = REMOVE_DUPLICATE_COPE_RESPONSES.render(
+            project=self.project_id,
+            dataset=self.dataset_id,
+            sandbox_dataset=self.sandbox_id,
+            intermediary_table=self.sandbox_table)
 
         # Test
         with self.assertLogs(level='INFO') as cm:

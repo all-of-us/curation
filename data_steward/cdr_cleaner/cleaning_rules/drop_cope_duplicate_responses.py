@@ -13,7 +13,7 @@ cope_survey_semantic_version_map in the rdr dataset can be used to get the cope_
 
 In short the query should achieve
 Step 1:
- Identify most recent questionnaire_response_id for same person, question, answer, cope_month combination.
+ Identify most recent questionnaire_response_id for same person, question, cope_month combination.
 Step 2:
  Prioritize responses with same person, question, cope_month combination with the most recent questionnaire_response_id.
 Step 3:
@@ -31,69 +31,66 @@ LOGGER = logging.getLogger(__name__)
 
 COPE_SURVEY_VERSION_MAP_TABLE = 'cope_survey_semantic_version_map'
 
-SANDBOX_DUPLICATE_COPE_RESPONSES_TEMPLATE = JINJA_ENV.from_string("""
+ISSUE_NUMBERS = ['DC1146', 'DC1135']
+OBSERVATION = 'observation'
+
+SANDBOX_DUPLICATE_COPE_RESPONSES = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE
-    `{{project}}.{{sandbox_dataset}}.{{intermediary_table}}` AS 
+  `{{project}}.{{sandbox_dataset}}.{{intermediary_table}}` AS
 SELECT
-  *
-FROM
-  `{{project}}.{{dataset}}.observation`
-WHERE
-  observation_id IN 
-""")
-
-REMOVE_DUPLICATE_COPE_RESPONSES_TEMPLATE = JINJA_ENV.from_string("""
-DELETE
-FROM
-  `{{project}}.{{dataset}}.observation`
-WHERE
-  observation_id IN 
-""")
-
-IDENTIFY_DUPLICATE_COPE_RESPONSES_TEMPLATE = JINJA_ENV.from_string("""
-    (
-  SELECT
-  observation_id
+  o.* EXCEPT (cope_month,
+              rank_order,
+              is_pmi_skip,
+              max_observation_datetime)
 FROM (
   SELECT
     *,
-    DENSE_RANK() OVER(PARTITION BY person_id,
-     observation_source_concept_id,
-     observation_source_value,
-     cope_month
-     ORDER BY is_pmi_skip ASC,
-     max_observation_datetime DESC,
-     questionnaire_response_id DESC,
-     observation_id DESC
-     ) AS rank_order
-  FROM (
-    SELECT
-      observation_id,
-      person_id,
+    DENSE_RANK() OVER(
+    PARTITION BY person_id,
       observation_source_concept_id,
       observation_source_value,
-      obs.questionnaire_response_id,
+      value_source_value,
+      cope_month 
+      ORDER BY 
+        is_pmi_skip ASC,
+        max_observation_datetime DESC,
+        questionnaire_response_id DESC,
+        observation_id DESC) AS rank_order
+  FROM (
+    SELECT
+      obs.*,
     IF
       (value_source_value = 'PMI_Skip',
         1,
         0) AS is_pmi_skip,
-      MAX(observation_datetime) OVER(PARTITION BY person_id,
-       observation_source_concept_id,
-        observation_source_value,
-        cope.cope_month,
-         obs.questionnaire_response_id
-          ) AS max_observation_datetime,
+      MAX(observation_datetime) OVER(
+      PARTITION BY person_id,
+          observation_source_concept_id, 
+          observation_source_value,
+          cope.cope_month,
+          obs.questionnaire_response_id) AS max_observation_datetime,
       cope.cope_month /* will handle case if obs table has valid cope_month or not */
     FROM
       `{{project}}.{{dataset}}.observation` obs
-    INNER JOIN
+    JOIN
       `{{project}}.{{dataset}}.{{cope_survey_version_table}}` cope
     ON
-      obs.questionnaire_response_id = cope.questionnaire_response_id
-         )
-        ) o
+      obs.questionnaire_response_id = cope.questionnaire_response_id )
+    ) o
 WHERE
-  o.rank_order != 1 )
+  o.rank_order != 1
+""")
+
+REMOVE_DUPLICATE_COPE_RESPONSES = JINJA_ENV.from_string("""
+DELETE
+FROM
+  `{{project}}.{{dataset}}.observation`
+WHERE
+  observation_id IN (
+  SELECT
+    observation_id
+  FROM
+    `{{project}}.{{sandbox_dataset}}.{{intermediary_table}}` )
 """)
 
 
@@ -111,37 +108,13 @@ class DropCopeDuplicateResponses(BaseCleaningRule):
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
         desc = 'Removes the duplicate sets of COPE responses to the same questions from the same survey version.'
-        super().__init__(issue_numbers=['DC1146', 'DC1135'],
+        super().__init__(issue_numbers=ISSUE_NUMBERS,
                          description=desc,
                          affected_datasets=[cdr_consts.RDR],
-                         affected_tables=['observation'],
+                         affected_tables=[OBSERVATION],
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id)
-
-    def get_sandbox_statement(self, project_id, dataset_id, sandbox_dataset_id,
-                              sandbox_table, survey_version_table):
-        duplicate_id_query = IDENTIFY_DUPLICATE_COPE_RESPONSES_TEMPLATE.render(
-            project=project_id,
-            dataset=dataset_id,
-            cope_survey_version_table=survey_version_table)
-
-        select_duplicates_query = SANDBOX_DUPLICATE_COPE_RESPONSES_TEMPLATE.render(
-            project=project_id,
-            dataset=dataset_id,
-            sandbox_dataset=sandbox_dataset_id,
-            intermediary_table=sandbox_table)
-        return select_duplicates_query + duplicate_id_query
-
-    def get_delete_statement(self, project_id, dataset_id,
-                             survey_version_table):
-        duplicate_id_query = IDENTIFY_DUPLICATE_COPE_RESPONSES_TEMPLATE.render(
-            project=project_id,
-            dataset=dataset_id,
-            cope_survey_version_table=survey_version_table)
-        delete_duplicates_template = REMOVE_DUPLICATE_COPE_RESPONSES_TEMPLATE.render(
-            project=project_id, dataset=dataset_id)
-        return delete_duplicates_template + duplicate_id_query
 
     def get_query_specs(self):
         """
@@ -154,16 +127,21 @@ class DropCopeDuplicateResponses(BaseCleaningRule):
 
         sandbox_duplicate_rows = {
             cdr_consts.QUERY:
-                self.get_sandbox_statement(self.project_id, self.dataset_id,
-                                           self.sandbox_dataset_id,
-                                           self.get_sandbox_tablenames()[0],
-                                           COPE_SURVEY_VERSION_MAP_TABLE)
+                SANDBOX_DUPLICATE_COPE_RESPONSES.render(
+                    project=self.project_id,
+                    dataset=self.dataset_id,
+                    sandbox_dataset=self.sandbox_dataset_id,
+                    cope_survey_version_table=COPE_SURVEY_VERSION_MAP_TABLE,
+                    intermediary_table=self.get_sandbox_tablenames()[0])
         }
 
         delete_duplicate_rows = {
             cdr_consts.QUERY:
-                self.get_delete_statement(self.project_id, self.dataset_id,
-                                          COPE_SURVEY_VERSION_MAP_TABLE)
+                REMOVE_DUPLICATE_COPE_RESPONSES.render(
+                    project=self.project_id,
+                    dataset=self.dataset_id,
+                    sandbox_dataset=self.sandbox_dataset_id,
+                    intermediary_table=self.get_sandbox_tablenames()[0])
         }
 
         return [sandbox_duplicate_rows, delete_duplicate_rows]

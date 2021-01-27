@@ -15,7 +15,7 @@ cope_survey_semantic_version_map in the rdr dataset can be used to get the cope_
 
 In short the query should achieve
 Step 1:
- Identify most recent questionnaire_response_id for same person, question, answer, cope_month combination.
+ Identify most recent questionnaire_response_id for same person, question, cope_month combination.
 Step 2:
  Prioritize responses with same person, question, cope_month combination with the most recent questionnaire_response_id.
 Step 3:
@@ -78,7 +78,7 @@ class DropCopeDuplicateResponsesTest(BaseTest.CleaningRulesTestBase):
 
         super().setUp()
 
-    def test_field_cleaning(self):
+    def test_drop_duplicate_cope_responses(self):
         """
         Tests that the specifications for the SANDBOX_QUERY and CLEAN_PPI_NUMERIC_FIELDS_QUERY
         perform as designed.
@@ -109,7 +109,11 @@ VALUES
    'phq_9_5', 'COPE_A_161', 444444444),
    (567, 2222222, 3044964, DATE('2020-07-15'), TIMESTAMP('2020-07-15'), 45905771, 1333276,
    'phq_9_4', 'COPE_A_75', 555555555),
-  (678, 2222222, 3044098, DATE('2020-12-15'), TIMESTAMP('2020-12-15'), 45905771, 1333276,
+   (678, 2222222, 3044964, DATE('2020-07-15'), TIMESTAMP('2020-07-15'), 45905771, 1333276,
+   'phq_9_4', 'COPE_A_75', 555555555),
+   (789, 2222222, 3044964, DATE('2020-07-15'), TIMESTAMP('2020-07-15'), 45905771, 1333276,
+   'phq_9_4', 'COPE_A_161', 555555555),
+  (890, 2222222, 3044098, DATE('2020-12-15'), TIMESTAMP('2020-12-15'), 45905771, 1333276,
    'phq_9_5', 'COPE_A_161', 666666666)""")
 
         tmp2 = self.jinja_env.from_string("""
@@ -149,12 +153,12 @@ CREATE TABLE
                 '.'.join([self.fq_dataset_name, 'observation']),
             'fq_sandbox_table_name':
                 self.fq_sandbox_table_names[0],
-            'loaded_ids': [123, 234, 345, 456, 567, 678],
-            'sandboxed_ids': [345],
+            'loaded_ids': [123, 234, 345, 456, 567, 678, 789, 980],
+            'sandboxed_ids': [345, 678],
             'fields': ['observation_id', 'questionnaire_response_id'],
             'cleaned_values': [(123, 111111111), (234, 222222222),
                                (456, 444444444), (567, 555555555),
-                               (678, 666666666)]
+                               (789, 555555555), (890, 666666666)]
         }]
 
         self.default_test(tables_and_counts)
