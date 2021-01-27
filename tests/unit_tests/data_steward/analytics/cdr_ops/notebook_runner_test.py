@@ -1,9 +1,9 @@
 import unittest
 import mock
 import analytics.cdr_ops.report_runner as runner
-from papermill import execute_notebook
 import pathlib
 from collections import OrderedDict
+from papermill.execute import execute_notebook
 
 from papermill.exceptions import PapermillExecutionError
 
@@ -104,7 +104,7 @@ class TestNotebookRunner(unittest.TestCase):
         self.assertFalse(result)
 
     @mock.patch('analytics.cdr_ops.report_runner.create_html_from_ipynb')
-    @mock.patch('papermill.execute_notebook')
+    @mock.patch('analytics.cdr_ops.report_runner.execute_notebook')
     @mock.patch('analytics.cdr_ops.report_runner.display_notebook_help')
     @mock.patch('analytics.cdr_ops.report_runner.validate_notebook_params')
     @mock.patch('analytics.cdr_ops.report_runner.create_ipynb_from_py')
@@ -122,12 +122,14 @@ class TestNotebookRunner(unittest.TestCase):
 
         runner.main(notebook_jupytext_path, params, output_path, help_notebook)
 
-        #Test exception thrown for execute_notebook
-        mock_execute_notebook.side_effect = TypeError()
+        #Test that html is created even after Papermill execution error
+        mock_execute_notebook.side_effect = PapermillExecutionError(
+            0, 1, 'test', 'test', 'test', '')
         mock_create_ipynb_from_py.return_value = ipynb_path
         mock_validate_notebook_params.return_value = True
 
         runner.main(notebook_jupytext_path, params, output_path, help_notebook)
+        self.assertEqual(mock_create_html_from_ipynb.call_count, 2)
 
 
 if __name__ == '__main__':

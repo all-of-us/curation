@@ -7,6 +7,7 @@ import jupytext
 from pathlib import PurePath
 from nbconvert import HTMLExporter
 import nbconvert
+import nbclient
 import nbformat
 import sys
 import logging
@@ -191,9 +192,15 @@ def main(notebook_jupytext_path, params, output_path, help_notebook=False):
         execute_notebook(surrogate_input_path,
                          surrogate_output_path,
                          parameters=params)
-        create_html_from_ipynb(surrogate_output_path)
-    except Exception as e:
+    except nbclient.exceptions.DeadKernelError as e:
+        # Exiting with a special exit code for dead kernels
         LOGGER.error(e)
+        sys.exit(138)
+    except PapermillExecutionError as e:
+        LOGGER.error(e)
+        create_html_from_ipynb(surrogate_output_path)
+    else:
+        create_html_from_ipynb(surrogate_output_path)
 
 
 if __name__ == '__main__':
