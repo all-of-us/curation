@@ -4,7 +4,8 @@ import sys
 import logging
 import copy
 import argparse
-from pathlib import PurePath
+from enum import Enum
+from pathlib import Path, PurePath
 from collections import OrderedDict
 from typing import List, Tuple, Dict
 
@@ -224,15 +225,44 @@ def main(notebook_jupytext_path, params, output_path, help_notebook=False):
         create_html_from_ipynb(surrogate_output_path)
 
 
+class FileType(Enum):
+    INPUT = 'input'
+    OUTPUT = 'output'
+
+
+class NotebookFileParamType(object):
+
+    def __init__(self, file_type: FileType):
+        self._file_type = file_type
+
+    def __call__(self, value, **kwargs):
+        if (self._file_type == FileType.INPUT) and (not Path(value).exists()):
+            raise argparse.ArgumentTypeError(
+                f'{value} is not a valid input path')
+
+        if self._file_type == FileType.OUTPUT:
+            # If the parent folder doesn't exist, the validation should fail. The only exception
+            # is when the output folder is an empty string, in which case it infers the output
+            # path based on the input path
+            if (not Path(value).parent.exists()) and value:
+                raise argparse.ArgumentTypeError(
+                    f'The parent folder {Path(value).parent} folder doesn`t exist'
+                )
+
+        return value
+
+
 if __name__ == '__main__':
     pipeline_logging.configure(logging.INFO, add_console_handler=True)
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--notebook_path',
                         help='A .py jupytext file.',
+                        type=NotebookFileParamType(FileType.INPUT),
                         required=True)
     parser.add_argument('--output_path',
                         default="",
+                        type=NotebookFileParamType(FileType.OUTPUT),
                         help='An output .html file')
     parser.add_argument('--help_notebook', action='store_true')
     parser.add_argument('--params', '-p', nargs=2, action='append')
