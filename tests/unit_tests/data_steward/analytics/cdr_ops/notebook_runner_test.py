@@ -1,14 +1,135 @@
 import unittest
 import mock
 import analytics.cdr_ops.report_runner as runner
-import pathlib
 from collections import OrderedDict
-from papermill.execute import execute_notebook
+import copy
+from typing import Any, Dict
 
 from papermill.exceptions import PapermillExecutionError
 
 
 class TestNotebookRunner(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        print('**************************************************************')
+        print(cls.__name__)
+        print('**************************************************************')
+
+    def setUp(self):
+        self.notebook_py_path = 'my_notebook_path.py'
+        self.notebook_ipynb_path = 'my_notebook_path.ipynb'
+        self.notebook_html_path = 'my_notebook_path.html'
+
+    @mock.patch('jupytext.write')
+    @mock.patch('jupytext.read')
+    @mock.patch('analytics.cdr_ops.report_runner.PurePath')
+    def test_create_ipynb_from_py(self, mock_pure_path, mock_read, mock_write):
+        # Define the return object for PurePath constructor
+        pure_path_returned_value = mock.MagicMock(
+            name='returned_value_pure_path', return_value=self.notebook_py_path)
+        mock_pure_path.return_value = pure_path_returned_value
+
+        # Set up with_suffix
+        mock_with_suffix = mock_pure_path.return_value.with_suffix
+        with_suffix_returned_value = mock.MagicMock(
+            name='with_suffix', return_value=self.notebook_ipynb_path)
+        # This makes sure str(MagicMock) returns the desired value
+        with_suffix_returned_value.__str__.return_value = self.notebook_ipynb_path
+        mock_with_suffix.return_value = with_suffix_returned_value
+
+        # Set up jupytext.read value
+        jupytext_returned_value = mock.MagicMock(name='mock_read_return_value')
+        mock_read.return_value = jupytext_returned_value
+
+        # Assertions
+        actual_value = runner.create_ipynb_from_py(self.notebook_py_path)
+        self.assertEqual(self.notebook_ipynb_path, actual_value)
+
+        mock_pure_path.assert_called_once_with(self.notebook_py_path)
+        mock_read.assert_called_once_with(pure_path_returned_value)
+        mock_with_suffix.assert_called_once_with(runner.IPYNB_SUFFIX)
+        mock_write.assert_called_once_with(jupytext_returned_value,
+                                           with_suffix_returned_value)
+
+    @mock.patch('nbformat.reads')
+    @mock.patch('builtins.open',
+                new_callable=mock.mock_open,
+                read_data='fake_data')
+    @mock.patch('analytics.cdr_ops.report_runner.HTMLExporter')
+    @mock.patch('analytics.cdr_ops.report_runner.PurePath')
+    def test_create_html_from_ipynb(self, mock_pure_path, mock_html_exporter,
+                                    mock_open, mock_nbformat_reads):
+        # Define the return object for PurePath constructor
+        pure_path_returned_value = mock.MagicMock(
+            name='returned_value_pure_path',
+            return_value=self.notebook_ipynb_path)
+        mock_pure_path.return_value = pure_path_returned_value
+
+        # Set up with_suffix
+        mock_with_suffix = mock_pure_path.return_value.with_suffix
+        with_suffix_returned_value = mock.MagicMock(
+            name='with_suffix', return_value=self.notebook_html_path)
+        # This makes sure str(MagicMock) returns the desired value
+        with_suffix_returned_value.__str__.return_value = self.notebook_html_path
+        mock_with_suffix.return_value = with_suffix_returned_value
+
+        # Set up html_exporter
+        mock_html_exporter.return_value.from_notebook_node.return_value = (
+            'fake_data', '')
+
+        runner.create_html_from_ipynb(self.notebook_ipynb_path)
+
+        # Assertions in reading the notebook
+        mock_open.assert_any_call(self.notebook_ipynb_path, 'r')
+        mock_nbformat_reads.assert_any_call('fake_data', as_version=4)
+        mock_html_exporter.return_value.from_notebook_node.assert_any_call(
+            mock_nbformat_reads.return_value)
+
+        # Assertions in writing the notebook to a html page
+        mock_open.assert_any_call(with_suffix_returned_value, 'w')
+        mock_open.return_value.write.assert_any_call('fake_data')
+
+    def test_infer_required(self):
+
+        def create_base_dict() -> Dict[Any, Any]:
+            return OrderedDict({'name': 'dataset_id', 'default': '""'})
+
+        base_dict = create_base_dict()
+
+        # Case 1 default = '""'
+        actual = runner.infer_required(base_dict)
+        expected = copy.deepcopy(base_dict)
+        expected['required'] = True
+        self.assertEqual(actual, expected)
+
+        # Case 2 default = '\'\''
+        base_dict['default'] = '\'\''
+        actual = runner.infer_required(base_dict)
+        expected = copy.deepcopy(base_dict)
+        expected['required'] = True
+        self.assertEqual(actual, expected)
+
+        # Case 3 default = 'None'
+        base_dict['default'] = 'None'
+        actual = runner.infer_required(base_dict)
+        expected = copy.deepcopy(base_dict)
+        expected['required'] = True
+        self.assertEqual(actual, expected)
+
+        # Case 4 default = None
+        base_dict['default'] = None
+        actual = runner.infer_required(base_dict)
+        expected = copy.deepcopy(base_dict)
+        expected['required'] = True
+        self.assertEqual(actual, expected)
+
+        # Case 4 default = 'dataset_id'
+        base_dict['default'] = 'dataset_id'
+        actual = runner.infer_required(base_dict)
+        expected = copy.deepcopy(base_dict)
+        expected['required'] = False
+        self.assertEqual(actual, expected)
 
     @mock.patch('analytics.cdr_ops.report_runner.is_parameter_required')
     @mock.patch('analytics.cdr_ops.report_runner.infer_notebook_params')

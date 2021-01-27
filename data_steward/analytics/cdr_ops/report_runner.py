@@ -1,19 +1,24 @@
+# System imports
+import re
+import sys
+import logging
+import copy
 import argparse
+from enum import Enum
+from pathlib import Path, PurePath
+from collections import OrderedDict
+from typing import List, Tuple, Dict
+
+# Papermill and Jupytext imports
 from papermill.execute import execute_notebook
 # from papermill.inspection import  display_notebook_help
 from papermill import inspect_notebook
 from papermill.exceptions import PapermillExecutionError
 import jupytext
-from pathlib import PurePath
+import nbformat
+import nbclient
 from nbconvert import HTMLExporter
 import nbconvert
-import nbclient
-import nbformat
-import sys
-import logging
-import copy
-from collections import OrderedDict
-from typing import List, Tuple, Dict
 
 # Project imports
 from utils import pipeline_logging
@@ -63,12 +68,24 @@ def create_html_from_ipynb(surrogate_output_path):
     return True
 
 
-def infer_required(ordered_dict: OrderedDict) -> OrderedDict:
-    ordered_dict_copy = copy.deepcopy(ordered_dict)
-    for key, value in ordered_dict.items():
+def infer_required(param_properties: OrderedDict) -> OrderedDict:
+    """
+    This function infers whether the notebook parameter is required or not based on the following 
+    heuristics: if the default value is 'None' (notebook translates None to a string version of 
+    None) or '""' or '\'\'' (string consists of double quotes or single quotes only)
+    
+    :param param_properties: 
+    :return: 
+    """
+
+    def is_required(param_value):
+        return (param_value is None) or (param_value == PARAMETER_NONE_VALUE) \
+               or (not re.sub('["\']', '', param_value))
+
+    ordered_dict_copy = copy.deepcopy(param_properties)
+    for key, value in param_properties.items():
         if key == PARAMETER_DEFAULT:
-            required = (value == PARAMETER_NONE_VALUE) or (not value.replace(
-                '"', ''))
+            required = is_required(value)
             ordered_dict_copy[PARAMETER_REQUIRED] = required
             break
     return ordered_dict_copy
@@ -102,6 +119,11 @@ def display_notebook_help(notebook_path):
 
 
 def is_parameter_required(properties: OrderedDict):
+    """
+    This functions checks if the notebook parameter is required
+    :param properties: the properties associated with the parameter
+    :return: 
+    """
     for key, value in properties.items():
         if key == PARAMETER_REQUIRED:
             return value
@@ -203,15 +225,44 @@ def main(notebook_jupytext_path, params, output_path, help_notebook=False):
         create_html_from_ipynb(surrogate_output_path)
 
 
+class FileType(Enum):
+    INPUT = 'input'
+    OUTPUT = 'output'
+
+
+class NotebookFileParamType(object):
+
+    def __init__(self, file_type: FileType):
+        self._file_type = file_type
+
+    def __call__(self, value, **kwargs):
+        if (self._file_type == FileType.INPUT) and (not Path(value).exists()):
+            raise argparse.ArgumentTypeError(
+                f'{value} is not a valid input path')
+
+        if self._file_type == FileType.OUTPUT:
+            # If the parent folder doesn't exist, the validation should fail. The only exception
+            # is when the output folder is an empty string, in which case it infers the output
+            # path based on the input path
+            if (not Path(value).parent.exists()) and value:
+                raise argparse.ArgumentTypeError(
+                    f'The parent folder {Path(value).parent} folder doesn`t exist'
+                )
+
+        return value
+
+
 if __name__ == '__main__':
     pipeline_logging.configure(logging.INFO, add_console_handler=True)
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--notebook_path',
                         help='A .py jupytext file.',
+                        type=NotebookFileParamType(FileType.INPUT),
                         required=True)
     parser.add_argument('--output_path',
                         default="",
+                        type=NotebookFileParamType(FileType.OUTPUT),
                         help='An output .html file')
     parser.add_argument('--help_notebook', action='store_true')
     parser.add_argument('--params', '-p', nargs=2, action='append')
