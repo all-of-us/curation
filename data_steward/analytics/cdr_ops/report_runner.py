@@ -258,14 +258,27 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('notebook_path',
-                        help='A .py jupytext file.',
+                        help='A .py jupytext file',
                         type=NotebookFileParamType(FileType.INPUT))
-    parser.add_argument('--output_path',
-                        default="",
-                        type=NotebookFileParamType(FileType.OUTPUT),
-                        help='An output .html file')
-    parser.add_argument('--help_notebook', action='store_true')
-    parser.add_argument('--params', '-p', nargs=2, action='append')
+    parser.add_argument(
+        '--output_path',
+        default="",
+        type=NotebookFileParamType(FileType.OUTPUT),
+        help=
+        'An output .html file. If not provided, defaults to an html path with name of [notebook path]'
+    )
+    parser.add_argument(
+        '--help_notebook',
+        action='store_true',
+        help="Lists the accepted parameters for [notebook_path]")
+    parser.add_argument(
+        '--params',
+        '-p',
+        nargs=2,
+        action='append',
+        metavar=('PARAM_NAME', 'PARAM_VALUE'),
+        help="A parameter to pass to [notebook path] (multiple may be provided)"
+    )
 
     args = parser.parse_args()
     parsed_params = dict(args.params) if args.params else dict()
