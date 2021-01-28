@@ -24,6 +24,8 @@ from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 
 LOGGER = logging.getLogger(__name__)
 
+JIRA_ISSUE_NUMBERS = ['DC388', 'DC807']
+
 FOREIGN_KEYS_FIELDS = [
     'person_id', 'visit_occurrence_id', 'location_id', 'care_site_id',
     'provider_id'
@@ -68,7 +70,7 @@ class NullInvalidForeignKeys(BaseCleaningRule):
         desc = (
             'Ensures that invalid foreign keys are null while the remainder of the rows persist'
         )
-        super().__init__(issue_numbers=['DC388', 'DC807'],
+        super().__init__(issue_numbers=JIRA_ISSUE_NUMBERS,
                          description=desc,
                          affected_datasets=[cdr_consts.COMBINED],
                          project_id=project_id,
@@ -211,8 +213,7 @@ class NullInvalidForeignKeys(BaseCleaningRule):
                         SANDBOX_QUERY.render(
                             project_id=self.project_id,
                             sandbox_dataset_id=self.sandbox_dataset_id,
-                            intermediary_table=self.get_sandbox_table_for(
-                                table),
+                            intermediary_table=self.sandbox_table_for(table),
                             dataset_id=self.dataset_id,
                             table_name=table,
                             sandbox_expr=sandbox_expression),
@@ -251,17 +252,9 @@ class NullInvalidForeignKeys(BaseCleaningRule):
         Get the sandbox dataset id for this class instance
         """
         return [
-            self.get_sandbox_table_for(affected_table)
+            self.sandbox_table_for(affected_table)
             for affected_table in self.affected_tables
         ]
-
-    def get_sandbox_table_for(self, affected_table):
-        """
-        A helper function to retrieve the sandbox table name for the affected_table
-        :param affected_table: tables that is affected by running this cleaning rule
-        :return: formatted string name of the sandbox
-        """
-        return f'{self.issue_numbers[0].lower()}_{affected_table}'
 
     def setup_validation(self, client):
         """

@@ -1,32 +1,32 @@
-"""Original Issues: DC-1043, DC-1053 
-PPI records may have value_as_concept_id set to 0 by the RDR ETL as a result of changes to the 
-vocabulary. This rule sets value_as_concept_id to an appropriate value for these records. Before 
-they are updated rows are stored in a sandbox table with the same columns as observation and 
+"""Original Issues: DC-1043, DC-1053
+PPI records may have value_as_concept_id set to 0 by the RDR ETL as a result of changes to the
+vocabulary. This rule sets value_as_concept_id to an appropriate value for these records. Before
+they are updated rows are stored in a sandbox table with the same columns as observation and
 an additional column new_value_as_concept_id.
 
-The RDR ETL populates value_as_concept_id with a concept in the concept_relationship table 
+The RDR ETL populates value_as_concept_id with a concept in the concept_relationship table
 having the 'Maps to value' relationship with value_source_concept_id, however concept_relationship
-may not have such a mapping for all PPI answer concepts and in these cases the associated 
-value_as_concept_id will get a default value of 0. For these rows this rule uses concepts related 
-to value_source_concept_id by 'Maps to' instead. In order to prevent usage of erroneous mappings 
-which may be present in the vocabulary, the target concept is also constrained to a limited set 
+may not have such a mapping for all PPI answer concepts and in these cases the associated
+value_as_concept_id will get a default value of 0. For these rows this rule uses concepts related
+to value_source_concept_id by 'Maps to' instead. In order to prevent usage of erroneous mappings
+which may be present in the vocabulary, the target concept is also constrained to a limited set
 of concept classes ('Answer', 'Context-dependent', 'Clinical Finding', 'Unit').
-PPI answers are mapped to standard answer concepts in concept_relationship through 'Maps to 
-value' (it has been this case historically and it is still the case now), however, there are a 
-bunch of PPI answer concepts missing such relationships in concept_relationship. Interestingly, 
-the corresponding standard PPI answer concepts could be found through 'Maps to'.  This might have 
-been a bug in the vocabulary and they probably should’ve used 'Maps to value' for mapping Answer 
-concepts. 
+PPI answers are mapped to standard answer concepts in concept_relationship through 'Maps to
+value' (it has been this case historically and it is still the case now), however, there are a
+bunch of PPI answer concepts missing such relationships in concept_relationship. Interestingly,
+the corresponding standard PPI answer concepts could be found through 'Maps to'.  This might have
+been a bug in the vocabulary and they probably should’ve used 'Maps to value' for mapping Answer
+concepts.
 
-There are survey answers (value_source_concept_ids) in observation that are mapped to a '0' 
-value_as_concept_id. Those unmapped survey answers could be standard concepts, non-standard 
-concepts that could be mapped to a standard concept through Maps to in concept_relationship, 
-or deprecated concepts that do not map to anything. 
+There are survey answers (value_source_concept_ids) in observation that are mapped to a '0'
+value_as_concept_id. Those unmapped survey answers could be standard concepts, non-standard
+concepts that could be mapped to a standard concept through Maps to in concept_relationship,
+or deprecated concepts that do not map to anything.
 
-For the standard answers, we could just use it as-is for populating value_as_concept_id. However, 
-among the non-standard concepts, not all of the mapped standard concepts are classified as 
-'Answer' and they could belong to other concept_classes. Below is a list of the concept_class_id 
-of the mapped concepts: 
+For the standard answers, we could just use it as-is for populating value_as_concept_id. However,
+among the non-standard concepts, not all of the mapped standard concepts are classified as
+'Answer' and they could belong to other concept_classes. Below is a list of the concept_class_id
+of the mapped concepts:
 
 Context-dependent
 Answer
@@ -35,15 +35,15 @@ Question
 Unit
 Module
 
-Question or Module concept classes don't make sense so will get excluded. In conclusion, 
+Question or Module concept classes don't make sense so will get excluded. In conclusion,
 
-1. For standard concepts --> Set value_as_concept_id to the value_source_concept_id. 
+1. For standard concepts --> Set value_as_concept_id to the value_source_concept_id.
 
-2. For deprecated concepts --> Set value_as_concept_id to 0. 
-Actually we don't need to do anything for this case because value_as_concept_id is already 0. 
+2. For deprecated concepts --> Set value_as_concept_id to 0.
+Actually we don't need to do anything for this case because value_as_concept_id is already 0.
 
-3, For non-standard concepts --> Set value_as_concept_id to standard concept ids mapped through 
-'Maps to' for the concept classes ( 'Answer', 'Context-dependent', 'Clinical Finding', 
+3, For non-standard concepts --> Set value_as_concept_id to standard concept ids mapped through
+'Maps to' for the concept classes ( 'Answer', 'Context-dependent', 'Clinical Finding',
 'Unit') only. """
 
 import logging
@@ -70,10 +70,10 @@ JOIN
   `{{project}}.{{dataset}}.concept_relationship` AS cr
 ON
   o.value_source_concept_id = cr.concept_id_1 AND cr.relationship_id = 'Maps to'
-JOIN 
+JOIN
   `{{project}}.{{dataset}}.concept` AS c
 ON
-  c.concept_id = cr.concept_id_2 
+  c.concept_id = cr.concept_id_2
     AND c.concept_class_id IN ('Answer', 'Context-dependent', 'Clinical Finding', 'Unit')
 WHERE
     o.observation_type_concept_id = 45905771 --Observation Recorded from a Survey --
@@ -184,18 +184,6 @@ class FixUnmappedSurveyAnswers(BaseCleaningRule):
             self.sandbox_table_for(affected_table)
             for affected_table in self._affected_tables
         ]
-
-    def sandbox_table_for(self, affected_table):
-        """
-        A helper function to retrieve the sandbox table name for the affected_table
-        :param affected_table: 
-        :return: 
-        """
-        if affected_table not in self._affected_tables:
-            raise LookupError(
-                f'{affected_table} is not define as an affected table in {self._affected_tables}'
-            )
-        return f'{"_".join(self._issue_numbers).lower()}_{affected_table}'
 
 
 if __name__ == '__main__':

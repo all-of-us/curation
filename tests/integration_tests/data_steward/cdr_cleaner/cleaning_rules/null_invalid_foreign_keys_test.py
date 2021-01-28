@@ -54,8 +54,7 @@ class NullInvalidForeignKeysTest(BaseTest.CleaningRulesTestBase):
         ]
 
         for table_name in sandbox_table_names:
-            sandbox_table_name = cls.rule_instance.get_sandbox_table_for(
-                table_name)
+            sandbox_table_name = cls.rule_instance.sandbox_table_for(table_name)
             cls.fq_sandbox_table_names.append(
                 f'{cls.project_id}.{cls.sandbox_id}.{sandbox_table_name}')
 

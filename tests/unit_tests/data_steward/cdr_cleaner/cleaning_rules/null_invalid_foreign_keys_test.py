@@ -55,15 +55,15 @@ class NullInvalidForeignKeys(unittest.TestCase):
             """
         self.sandbox_expression = """
             (location_id NOT IN (
-            SELECT location_id 
+            SELECT location_id
             FROM `bar_dataset._mapping_location` AS loc)
-            AND location_id IS NOT NULL) OR 
+            AND location_id IS NOT NULL) OR
             (provider_id NOT IN (
-            SELECT provider_id 
+            SELECT provider_id
             FROM `bar_dataset._mapping_provider` AS pro)
-            AND provider_id IS NOT NULL) OR 
+            AND provider_id IS NOT NULL) OR
             (care_site_id NOT IN (
-            SELECT care_site_id 
+            SELECT care_site_id
             FROM `bar_dataset._mapping_care_site` AS car)
             AND care_site_id IS NOT NULL)
         """
@@ -113,9 +113,6 @@ class NullInvalidForeignKeys(unittest.TestCase):
         # Post conditions
         self.assertEqual(self.rule_instance.get_col_expression(common.PERSON),
                          expected_list)
-
-    def test_sandbox_table_for(self):
-        self.rule_instance.get_sandbox_table_for(common.PERSON)
 
     def test_get_join_expression(self):
         # Pre conditions
@@ -178,12 +175,14 @@ class NullInvalidForeignKeys(unittest.TestCase):
 
         sandbox_query = {
             cdr_consts.QUERY:
-                nifk.SANDBOX_QUERY.render(project_id=self.project_id,
-                                          sandbox_dataset_id=self.sandbox_id,
-                                          intermediary_table='dc388_person',
-                                          dataset_id=self.dataset_id,
-                                          table_name=table,
-                                          sandbox_expr=self.sandbox_expression),
+                nifk.SANDBOX_QUERY.render(
+                    project_id=self.project_id,
+                    sandbox_dataset_id=self.sandbox_id,
+                    intermediary_table=self.rule_instance.sandbox_table_for(
+                        table),
+                    dataset_id=self.dataset_id,
+                    table_name=table,
+                    sandbox_expr=self.sandbox_expression),
         }
 
         invalid_foreign_key_query = {
