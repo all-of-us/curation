@@ -203,7 +203,8 @@ def main(notebook_jupytext_path, params, output_path, help_notebook=False):
         with_suffix(IPYNB_SUFFIX))
 
     if help_notebook:
-        sys.exit(display_notebook_help(surrogate_input_path))
+        display_notebook_help(surrogate_input_path)
+        sys.exit(0)
 
     if not validate_notebook_params(surrogate_input_path, params):
         display_notebook_help(surrogate_input_path)

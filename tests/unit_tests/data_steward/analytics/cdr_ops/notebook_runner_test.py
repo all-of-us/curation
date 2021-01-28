@@ -76,7 +76,7 @@ class TestNotebookRunner(unittest.TestCase):
 
         # Set up html_exporter
         mock_html_exporter.return_value.from_notebook_node.return_value = (
-            'fake_data', '')
+            'return fake_data', '')
 
         runner.create_html_from_ipynb(self.notebook_ipynb_path)
 
@@ -88,7 +88,7 @@ class TestNotebookRunner(unittest.TestCase):
 
         # Assertions in writing the notebook to a html page
         mock_open.assert_any_call(with_suffix_returned_value, 'w')
-        mock_open.return_value.write.assert_any_call('fake_data')
+        mock_open.return_value.write.assert_any_call('return fake_data')
 
     def test_infer_required(self):
 
@@ -183,6 +183,7 @@ class TestNotebookRunner(unittest.TestCase):
 
     @mock.patch('analytics.cdr_ops.report_runner.infer_notebook_params')
     def test_display_notebook_help(self, mock_infer_notebook_params):
+        #Doesn't do much, but useful for testing if function runs
         mock_infer_notebook_params.return_value = [
             ('dataset_id', OrderedDict({
                 'name': 'dataset_id',
@@ -232,25 +233,59 @@ class TestNotebookRunner(unittest.TestCase):
     def test_main(self, mock_create_ipynb_from_py,
                   mock_validate_notebook_params, mock_display_notebook_help,
                   mock_execute_notebook, mock_create_html_from_ipynb):
-        ipynb_path = 'my_notebook.ipynb'
+        ipynb_path = self.notebook_ipynb_path
         mock_create_ipynb_from_py.return_value = ipynb_path
-        mock_validate_notebook_params.return_value = True
 
+        #Case where help_notebook == True
+        mock_validate_notebook_params.return_value = True
+        notebook_jupytext_path = self.notebook_py_path
+        params = {'dataset_id': '3142352351', 'old_rdr': '20201003'}
+        output_path = 'my_notebook.html'
+        help_notebook = True
+
+        with self.assertRaises(SystemExit):
+            runner.main(notebook_jupytext_path, params, output_path,
+                        help_notebook)
+
+        mock_display_notebook_help.assert_called_once_with(ipynb_path)
+
+        #Case where help_notebook == False and notebook params invalid
+        mock_display_notebook_help.reset_mock()
+
+        mock_validate_notebook_params.return_value = False
+        notebook_jupytext_path = self.notebook_py_path
+        params = {'dataset_id': '3142352351', 'old_rdr': '20201003'}
+        output_path = 'my_notebook.html'
+        help_notebook = False
+
+        with self.assertRaises(SystemExit):
+            runner.main(notebook_jupytext_path, params, output_path,
+                        help_notebook)
+
+        mock_display_notebook_help.assert_called_once_with(ipynb_path)
+
+        # Case where help_notebook == False and notebook params valid
+        mock_display_notebook_help.reset_mock()
+
+        mock_validate_notebook_params.return_value = True
         notebook_jupytext_path = 'my_notebook.py'
         params = {'dataset_id': '3142352351', 'old_rdr': '20201003'}
         output_path = 'my_notebook.html'
         help_notebook = False
 
         runner.main(notebook_jupytext_path, params, output_path, help_notebook)
+        mock_execute_notebook.assert_called_once()
 
         #Test that html is created even after Papermill execution error
         mock_execute_notebook.side_effect = PapermillExecutionError(
             0, 1, 'test', 'test', 'test', '')
-        mock_create_ipynb_from_py.return_value = ipynb_path
-        mock_validate_notebook_params.return_value = True
+
+        mock_execute_notebook.reset_mock()
+        mock_create_html_from_ipynb.reset_mock()
 
         runner.main(notebook_jupytext_path, params, output_path, help_notebook)
-        self.assertEqual(mock_create_html_from_ipynb.call_count, 2)
+        mock_execute_notebook.assert_called_once()
+        mock_create_html_from_ipynb.assert_called_once()
 
 
 if __name__ == '__main__':
