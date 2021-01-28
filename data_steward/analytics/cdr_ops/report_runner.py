@@ -257,10 +257,9 @@ if __name__ == '__main__':
     pipeline_logging.configure(logging.INFO, add_console_handler=True)
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--notebook_path',
+    parser.add_argument('notebook_path',
                         help='A .py jupytext file.',
-                        type=NotebookFileParamType(FileType.INPUT),
-                        required=True)
+                        type=NotebookFileParamType(FileType.INPUT))
     parser.add_argument('--output_path',
                         default="",
                         type=NotebookFileParamType(FileType.OUTPUT),
