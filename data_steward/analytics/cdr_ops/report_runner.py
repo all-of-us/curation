@@ -108,12 +108,25 @@ def display_notebook_help(notebook_path):
     :param notebook_path: 
     :return: 
     """
-    LOGGER.info(
-        f'Parameters inferred for notebook {PurePath(notebook_path).stem}:')
+    print(f'Parameters inferred for notebook {PurePath(notebook_path).stem}:')
     for _, properties in infer_notebook_params(notebook_path):
-        properties = ', '.join(
-            [f'{key}={value}' for key, value in properties.items()])
-        LOGGER.info(f'Parameter name: {properties}')
+        type_repr = properties["inferred_type_name"]
+        if type_repr == "None":
+            type_repr = "Unknown type"
+
+        definition = "  {}: {} (default {}, required={})".format(
+            properties["name"], type_repr, properties["default"],
+            properties['required'])
+        if len(definition) > 30:
+            if len(properties["help"]):
+                param_help = "".join(
+                    (definition, "\n", 34 * " ", properties["help"]))
+            else:
+                param_help = definition
+        else:
+            param_help = "{:<34}{}".format(definition, properties["help"])
+
+        print(f'{param_help}')
 
 
 def is_parameter_required(properties: OrderedDict):
@@ -254,7 +267,10 @@ class NotebookFileParamType(object):
 if __name__ == '__main__':
     pipeline_logging.configure(logging.INFO, add_console_handler=True)
 
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        description=
+        "Executes a jupyter notebook with parameters and outputs results to HTML."
+    )
     parser.add_argument('notebook_path',
                         help='A .py jupytext file',
                         type=NotebookFileParamType(FileType.INPUT))
