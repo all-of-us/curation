@@ -268,6 +268,8 @@ class CreateTierTest(unittest.TestCase):
                 'de-identified': 'true',
                 'phase': consts.STAGING
             }),
-            mock.call(datasets[consts.SANDBOX], self.labels_and_tags,
-                      {'phase': consts.SANDBOX}),
+            mock.call(datasets[consts.SANDBOX], self.labels_and_tags, {
+                'de-identified': 'false',
+                'phase': consts.SANDBOX
+            }),
         ])
