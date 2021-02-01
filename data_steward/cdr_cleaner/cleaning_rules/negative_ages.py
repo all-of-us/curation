@@ -32,11 +32,67 @@ date_fields = {
 }
 
 person = common.PERSON
+death = common.DEATH
 MAX_AGE = 150
+affected_tables = list(date_fields.keys())
+affected_tables.append(death)
 
 #sandbox rows to be removed
-SANDBOX_NEGATIVE_AGES_QUERY = JINJA_ENV.from_string("""
+SANDBOX_NEGATIVE_AND_MAX_AGE_QUERY = JINJA_ENV.from_string("""
+CREATE OR REPLACE `{{project_id}}.{{sandbox_id}}.{{intermediary_table}}` AS (
+SELECT
+  *
+FROM
+  `{{project_id}}.{{dataset_id}}.{{table}}`
+WHERE
+  {{table}}_id IN (
+  SELECT
+    t.{{table}}_id
+  FROM
+    `{{project_id}}.{{dataset_id}}.{{table}}` t
+  JOIN
+    `{{project_id}}.{{dataset_id}}.{{person_table}}` p
+  ON
+    t.person_id = p.person_id
+  WHERE
+    t.{{table_date}} < DATE(p.birth_datetime)
+  UNION ALL
+  SELECT
+  t.{{table}}_id
+  FROM
+    `{{project_id}}.{{dataset_id}}.{{table}}` t
+  JOIN
+    `{{project_id}}.{{dataset_id}}.{{person_table}}` p
+  ON
+    t.person_id = p.person_id
+  WHERE
+    EXTRACT(YEAR
+    FROM
+      t.{{table_date}}) - EXTRACT(YEAR
+    FROM
+      p.birth_datetime) > {{MAX_AGE}})
+)
+""")
 
+SANDBOX_NEGATIVE_AGE_DEATH_QUERY = JINJA_ENV.from_string("""
+CREATE OR REPLACE `{{project_id}}.{{sandbox_id}}.{{intermediary_table}}` AS (
+SELECT
+  *
+FROM
+  `{{project_id}}.{{dataset_id}}.{{table}}`
+WHERE
+  person_id IN (
+  SELECT
+    d.person_id
+  FROM
+    `{{project_id}}.{{dataset_id}}.{{table}}` d
+  JOIN
+    `{{project_id}}.{{dataset_id}}.{{person_table}}` p
+  ON
+    d.person_id = p.person_id
+  WHERE
+    d.death_date < DATE(p.birth_datetime))
+)
 """)
 
 # negative age at recorded time in table
@@ -66,7 +122,7 @@ SELECT
 FROM
   `{{project_id}}.{{dataset_id}}.{{table}}`
 WHERE
-  {{TABLE}}_id NOT IN (
+  {{table}}_id NOT IN (
   SELECT
     t.{{TABLE}}_id
   FROM
@@ -121,7 +177,7 @@ class NegativeAges(BaseCleaningRule):
         super().__init__(issue_numbers=JIRA_ISSUE_NUMBERS,
                          description=desc,
                          affected_datasets=[cdr_consts.COMBINED],
-                         affected_tables=list(date_fields.keys()),
+                         affected_tables=affected_tables,
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id)
@@ -135,16 +191,28 @@ class NegativeAges(BaseCleaningRule):
             are optional but the query is required.
         """
 
+        sandbox_queries = []
         queries = []
         for table in date_fields:
+            sandbox_query = dict()
             query_na = dict()
             query_ma = dict()
-            person_table = person
+            sandbox_query[
+                cdr_consts.QUERY] = SANDBOX_NEGATIVE_AND_MAX_AGE_QUERY.render(
+                    project_id=self.project_id,
+                    dataset_id=self.dataset_id,
+                    sandbox_id=self.sandbox_dataset_id,
+                    intermediary_table=self.sandbox_table_for(table),
+                    table=table,
+                    person_table=person,
+                    table_date=date_fields[table],
+                    MAX_AGE=MAX_AGE)
+            sandbox_queries.append(sandbox_query)
             query_na[cdr_consts.QUERY] = NEGATIVE_AGES_QUERY.render(
                 project_id=self.project_id,
                 dataset_id=self.dataset_id,
                 table=table,
-                person_table=person_table,
+                person_table=person,
                 table_date=date_fields[table])
             query_na[cdr_consts.DESTINATION_TABLE] = table
             query_na[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
@@ -153,7 +221,7 @@ class NegativeAges(BaseCleaningRule):
                 project_id=self.project_id,
                 dataset_id=self.dataset_id,
                 table=table,
-                person_table=person_table,
+                person_table=person,
                 table_date=date_fields[table],
                 MAX_AGE=MAX_AGE)
             query_ma[cdr_consts.DESTINATION_TABLE] = table
@@ -162,19 +230,27 @@ class NegativeAges(BaseCleaningRule):
             queries.extend([query_na, query_ma])
 
         # query for death before birthdate
-        death = common.DEATH
+        sandbox_query = dict()
         query = dict()
-        person_table = person
+        sandbox_query[
+            cdr_consts.QUERY] = SANDBOX_NEGATIVE_AGE_DEATH_QUERY.render(
+                project_id=self.project_id,
+                dataset_id=self.dataset_id,
+                sandbox_id=self.sandbox_dataset_id,
+                intermediary_tatble=self.sandbox_table_for(death),
+                table=death,
+                person_table=person)
+        sandbox_queries.append(sandbox_query)
         query[cdr_consts.QUERY] = NEGATIVE_AGE_DEATH_QUERY.render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
             table=death,
-            person_table=person_table)
+            person_table=person)
         query[cdr_consts.DESTINATION_TABLE] = death
         query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
         query[cdr_consts.DESTINATION_DATASET] = self.dataset_id
         queries.append(query)
-        return queries
+        return [sandbox_queries, queries]
 
     def setup_rule(self, client, *args, **keyword_args):
         pass
