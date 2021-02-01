@@ -126,7 +126,8 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
                  dataset_id: str = None,
                  sandbox_dataset_id: str = None,
                  depends_on: cleaning_class_list = None,
-                 affected_tables: List = None):
+                 affected_tables: List = None,
+                 table_namer: str = None):
         """
         Instantiate a cleaning rule with basic attributes.
 
@@ -160,6 +161,8 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
             scope may expand in the future.  Default is an empty list.
         :param affected_tables: a list of tables that are affected by
             running this cleaning rule.
+        :param table_namer: string used to help programmatically create
+            sandbox table names
         """
         self._issue_numbers = issue_numbers
         self._description = description
@@ -170,6 +173,7 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
         self._issue_urls = issue_urls if issue_urls else []
         self._depends_on_classes = depends_on if depends_on else []
         self._affected_tables = affected_tables
+        self._table_namer = table_namer
 
         super().__init__()
 
@@ -334,6 +338,13 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
         """
         return self._affected_tables
 
+    @property
+    def table_namer(self):
+        """
+        Get the table name of the sandbox for this class instance.
+        """
+        return self._table_namer
+
     @affected_tables.setter
     def affected_tables(self, affected_tables):
         """
@@ -346,6 +357,17 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
                 self._affected_tables = affected_tables
         else:
             self._affected_tables = []
+
+    @table_namer.setter
+    def table_namer(self, table_namer, **kwargs):
+        """
+        Set the table_namer for this class instance. If no value is provided, it is set to a default value.
+        """
+        if table_namer is None:
+            for key, value in kwargs.items():
+                self._table_namer = kwargs.get(value)
+        else:
+            self._table_namer = table_namer
 
     def get_table_counts(self, client, dataset, tables):
         """
