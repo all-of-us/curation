@@ -8,6 +8,9 @@ Refer to `data_steward/notebooks/README.md`.
 
 # Notebook Execution
 
+>**<em>**Note: The `my_project_root/data_steward` directory must first be in the PYTHONPATH for the following to work.</em>**
+
+  
 Jupytext notebooks (.py extension) can be executed with supplied parameters and exported to an HTML document using the utility `report_runner.py`.
 
 ```
@@ -37,7 +40,7 @@ In order for an input notebook to accept parameters, it must be prepared in the 
 Within an opened jupyter notebook, do the following:
 1. Select the `View -> Cell Toolbar -> Tags` menu option to activate the notebook's tag view.
 2. In a single cell, define 1 or more variables that will be your parameters.  
-    1. A optional comment on a variable's line will serve as its description.
+    1. An optional comment on a variable's line will serve as its description.
     1. An optional type hint can be provided. 
 3. In your parameter-containing cell, enter the term **parameters** into the textbox adjacent to the <em>Add tag</em> button.
 4. Click the <em>Add tag</em> button to mark the cell with the entered tag.
@@ -81,6 +84,23 @@ Notice that an extra cell containing the passed parameter values was injected in
 ### Debugging
 
 There are a few sets of errors one may encounter when attempting to execute a notebook.
+
+#### Incomplete Path
+
+To run this script, the `my_project_root/data_steward` directory must first be in the PYTHONPATH. If it is not, an error similar to the following may occur:
+
+```
+Traceback (most recent call last):
+  File "report_runner.py", line 22, in <module>
+    from utils import pipeline_logging
+ModuleNotFoundError: No module named 'utils'
+```
+
+A simple fix is to export the PYTHONPATH manually, e.g.:
+
+```
+export PYTHONPATH="/path/to/my_project_root/data_steward"
+```
 
 #### Missing/Unknown Parameters
 
