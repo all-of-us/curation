@@ -7,6 +7,8 @@ import re
 
 # Project imports
 from utils import pipeline_logging
+from utils import bq
+from constants.cdr_cleaner import clean_cdr as consts
 
 LOGGER = logging.getLogger(__name__)
 
@@ -79,6 +81,90 @@ def get_dataset_name(tier, release_tag, deid_stage):
     dataset_name = f"{tier}{release_tag}_{deid_stage}"
 
     return dataset_name
+
+
+def create_datasets(client, name, input_dataset, tier, release_tag):
+    """
+    Creates backup, staging, sandbox, and final datasets with the proper descriptions
+    and tag/labels applied
+
+    :param client: an instantiated bigquery client object
+    :param name: the base name of the datasets to be created
+    :param input_dataset: name of the input dataset
+    :param tier: tier parameter passed through from either a list or command line argument
+    :param release_tag: release tag parameter passed through either the command line arguments
+    :return: tuple of created dataset names
+    """
+
+    if not client:
+        raise RuntimeError("Please specify BigQuery client object")
+    if not name:
+        raise RuntimeError(
+            "Please specify the base name of the datasets to be created")
+    if not input_dataset:
+        raise RuntimeError("Please specify the name of the input dataset")
+    if not tier:
+        raise RuntimeError(
+            "Please specify the tier intended for the output datasets")
+    if not release_tag:
+        raise RuntimeError(
+            "Please specify the release tag for the dataset in the format of YYYY#q#r"
+        )
+
+    # Construct names of datasets need as part of the deid process
+    final_dataset_id = name
+    backup_dataset_id = f'{name}_{consts.BACKUP}'
+    staging_dataset_id = f'{name}_{consts.STAGING}'
+    sandbox_dataset_id = f'{name}_{consts.SANDBOX}'
+
+    datasets = {
+        consts.CLEAN: final_dataset_id,
+        consts.BACKUP: backup_dataset_id,
+        consts.STAGING: staging_dataset_id,
+        consts.SANDBOX: sandbox_dataset_id
+    }
+
+    deid_datasets = [final_dataset_id, staging_dataset_id]
+
+    # base labels and tags for the datasets
+    base_labels_and_tags = {'release_tag': release_tag, 'data_tier': tier}
+
+    description = f'dataset created from {input_dataset} for {tier}{release_tag} CDR run'
+
+    # Creation of dataset objects and dataset label and description updates
+    for phase, dataset_id in datasets.items():
+        dataset_object = bq.define_dataset(client.project, dataset_id,
+                                           description, base_labels_and_tags)
+        client.create_dataset(dataset_object, exists_ok=True)
+        dataset = bq.get_dataset(client.project, dataset_id)
+        if dataset_id in deid_datasets:
+            new_labels = bq.update_labels_and_tags(dataset_id,
+                                                   base_labels_and_tags, {
+                                                       'phase': phase,
+                                                       'de-identified': 'true'
+                                                   })
+            dataset.labels = new_labels
+            dataset.description = f'{phase} {description}'
+            client.update_dataset(dataset, ["labels", "description"])
+        else:
+            new_labels = bq.update_labels_and_tags(dataset_id,
+                                                   base_labels_and_tags, {
+                                                       'phase': phase,
+                                                       'de-identified': 'false'
+                                                   })
+            dataset.labels = new_labels
+            dataset.description = f'{phase} {description}'
+            client.update_dataset(dataset, ["labels", "description"])
+
+    # Copy input dataset tables to backup and staging datasets
+    tables = client.list_tables(input_dataset)
+    for table in tables:
+        backup_table = f'{backup_dataset_id}.{table.table_id}'
+        staging_table = f'{staging_dataset_id}.{table.table_id}'
+        client.copy_table(table, backup_table)
+        client.copy_table(table, staging_table)
+
+    return datasets
 
 
 def create_tier(credentials_filepath, project_id, tier, input_dataset,

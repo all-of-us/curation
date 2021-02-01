@@ -11,6 +11,11 @@ CONTROLLED_TIER_DEID = 'controlled_tier_deid'
 CONTROLLED_TIER_DEID_BASE = 'controlled_tier_deid_base'
 CONTROLLED_TIER_DEID_CLEAN = 'controlled_tier_deid_clean'
 
+BACKUP = 'backup'
+STAGING = 'staging'
+SANDBOX = 'sandbox'
+CLEAN = 'clean'
+
 PERSON_TABLE_NAME = 'person'
 
 # Query dictionary keys
