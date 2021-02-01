@@ -185,14 +185,22 @@ class TestNotebookRunner(unittest.TestCase):
     def test_display_notebook_help(self, mock_infer_notebook_params):
         #Doesn't do much, but useful for testing if function runs
         mock_infer_notebook_params.return_value = [
-            ('dataset_id', OrderedDict({
-                'name': 'dataset_id',
-                'type': 'string'
-            })),
-            ('old_rdr', OrderedDict({
-                'name': 'old_rdr',
-                'type': 'string'
-            })),
+            ('dataset_id',
+             OrderedDict({
+                 'name': 'dataset_id',
+                 'inferred_type_name': 'str',
+                 'default': '',
+                 'required': True,
+                 'help': 'help 1'
+             })),
+            ('old_rdr',
+             OrderedDict({
+                 'name': 'old_rdr',
+                 'inferred_type_name': 'str',
+                 'default': 'str',
+                 'required': True,
+                 'help': 'help 2'
+             })),
         ]
 
         notebook_path = 'my_notebook_path.ipynb'
