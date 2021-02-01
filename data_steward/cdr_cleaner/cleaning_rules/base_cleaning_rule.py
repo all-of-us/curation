@@ -161,7 +161,7 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
             scope may expand in the future.  Default is an empty list.
         :param affected_tables: a list of tables that are affected by
             running this cleaning rule.
-        :param table_namer: stringused to help programmatically create
+        :param table_namer: string used to help programmatically create
             sandbox table names
         """
         self._issue_numbers = issue_numbers
