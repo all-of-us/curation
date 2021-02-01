@@ -1,4 +1,5 @@
 import unittest
+
 import sandbox
 
 
@@ -11,17 +12,10 @@ class SandboxTest(unittest.TestCase):
         print('**************************************************************')
 
     def setUp(self):
-        self.dataset_id = 'test_dataset'
+        self.table_namer = 'controlled'
 
     def test_get_sandbox_table_name(self):
-        rule_name = 'abc_123'
-        expected = '{dataset_id}_{rule_name}'.format(dataset_id=self.dataset_id,
-                                                     rule_name=rule_name)
-        actual = sandbox.get_sandbox_table_name(self.dataset_id, 'abc_123')
-        self.assertEqual(expected, actual)
-        actual = sandbox.get_sandbox_table_name(self.dataset_id, 'abc 123')
-        self.assertEqual(expected, actual)
-        actual = sandbox.get_sandbox_table_name(self.dataset_id, 'abc\t123')
-        self.assertEqual(expected, actual)
-        actual = sandbox.get_sandbox_table_name(self.dataset_id, 'abc~123')
+        base_name = 'base_name'
+        expected = f'{self.table_namer}_{base_name}'
+        actual = sandbox.get_sandbox_table_name(self.table_namer, base_name)
         self.assertEqual(expected, actual)
