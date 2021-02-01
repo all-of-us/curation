@@ -42,6 +42,7 @@ class CreateTierTest(unittest.TestCase):
         # Tools for mocking the client
         mock_bq_client_patcher = mock.patch('utils.bq.get_client')
         self.mock_bq_client = mock_bq_client_patcher.start()
+        self.addCleanup(mock_bq_client_patcher.stop)
 
         self.correct_parameter_list = [
             '--credentials_filepath', self.credentials_filepath, '--project_id',
