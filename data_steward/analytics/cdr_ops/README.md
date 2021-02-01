@@ -142,6 +142,20 @@ TypeError: unsupported operand type(s) for /: 'str' and 'int'
 ```
 ![Failed Execution](./images/error_html_image.png)
 
+##### Failed GCP Authentication
+
+Failed Google Cloud Platform (GCP) authentication is a common error when executing notebooks for curation operations:
+
+![GCP Auth Error](./images/gcp_auth_error.png)
+
+To remedy, export the `GOOGLE_APPLICATION_CREDENTIALS` environment variable with a path to valid credentials, e.g.:
+
+```
+export GOOGLE_APPLICATION_CREDENTIALS=/path/to/data-analytics.json
+```
+
+
+
 ### More Info
 
 To get more info on papermill, the package which this module heavily relies on, visit its [documentation](https://papermill.readthedocs.io/en/latest/).
