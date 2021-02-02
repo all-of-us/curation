@@ -191,7 +191,6 @@ class NegativeAges(BaseCleaningRule):
             are optional but the query is required.
         """
 
-        sandbox_queries = []
         queries = []
         for table in date_fields:
             sandbox_query = dict()
@@ -207,7 +206,7 @@ class NegativeAges(BaseCleaningRule):
                     person_table=person,
                     table_date=date_fields[table],
                     MAX_AGE=MAX_AGE)
-            sandbox_queries.append(sandbox_query)
+            queries.append(sandbox_query)
             query_na[cdr_consts.QUERY] = NEGATIVE_AGES_QUERY.render(
                 project_id=self.project_id,
                 dataset_id=self.dataset_id,
@@ -240,7 +239,7 @@ class NegativeAges(BaseCleaningRule):
                 intermediary_table=self.sandbox_table_for(death),
                 table=death,
                 person_table=person)
-        sandbox_queries.append(sandbox_query)
+        queries.append(sandbox_query)
         query[cdr_consts.QUERY] = NEGATIVE_AGE_DEATH_QUERY.render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
@@ -250,7 +249,7 @@ class NegativeAges(BaseCleaningRule):
         query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
         query[cdr_consts.DESTINATION_DATASET] = self.dataset_id
         queries.append(query)
-        return [sandbox_queries, queries]
+        return queries
 
     def setup_rule(self, client, *args, **keyword_args):
         pass
