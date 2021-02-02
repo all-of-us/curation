@@ -145,6 +145,7 @@ COMBINED_CLEANING_CLASSES = [
         domain_alignment.domain_alignment,),
     (drop_participants_without_ppi_or_ehr.get_queries,),
     (clean_years.get_year_of_birth_queries,),
+    (NegativeAges,),
     (NoDataAfterDeath,),
     (ValidDeathDates,),
     (drug_refills_supply.get_days_supply_refills_queries,),
@@ -164,8 +165,7 @@ COMBINED_CLEANING_CLASSES = [
     (validate_missing_participants.delete_records_for_non_matching_participants,
     ),
     (CleanMappingExtTables,),
-    (TemporalConsistency,),
-    (NegativeAges,)
+    (TemporalConsistency,)
 ]
 
 FITBIT_CLEANING_CLASSES = [
