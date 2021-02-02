@@ -56,7 +56,7 @@ WHERE
     t.person_id = p.person_id
   WHERE
     t.{{table_date}} < DATE(p.birth_datetime)
-  UNION ALL
+  UNION DISTINCT
   SELECT
   t.{{table}}_id
   FROM
@@ -124,7 +124,7 @@ FROM
 WHERE
   {{table}}_id NOT IN (
   SELECT
-    t.{{TABLE}}_id
+    t.{{table}}_id
   FROM
     `{{project_id}}.{{dataset_id}}.{{table}}` t
   JOIN
