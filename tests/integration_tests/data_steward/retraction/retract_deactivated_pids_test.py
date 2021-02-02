@@ -2,16 +2,15 @@
 import os
 import unittest
 
+import google.cloud.bigquery as gbq
 # Third party imports
 import pandas as pd
-import google.cloud.bigquery as gbq
 
 # Project Imports
 import app_identity
-from utils import bq
-from retraction import retract_deactivated_pids as rdp
-import sandbox as sb
 from common import JINJA_ENV
+from retraction import retract_deactivated_pids as rdp
+from utils import bq, sandbox as sb
 
 DEACTIVATED_PIDS = JINJA_ENV.from_string("""
 INSERT INTO `{{deact_table.project}}.{{deact_table.dataset_id}}.{{deact_table.table_id}}` 

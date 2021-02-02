@@ -5,13 +5,12 @@ from unittest import TestCase
 # Third party imports
 from google.cloud.exceptions import NotFound
 
-# Project imports
-import sandbox
-from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
-from utils import bq
-from app_identity import get_application_id
 import cdr_cleaner.clean_cdr_engine as ce
 import constants.cdr_cleaner.clean_cdr as cdr_consts
+from app_identity import get_application_id
+# Project imports
+from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
+from utils import bq, sandbox
 
 
 class CleanCDREngineTest(TestCase):

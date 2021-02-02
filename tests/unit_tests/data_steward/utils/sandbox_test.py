@@ -1,6 +1,6 @@
 import unittest
 
-import sandbox
+from utils import sandbox
 
 
 class SandboxTest(unittest.TestCase):

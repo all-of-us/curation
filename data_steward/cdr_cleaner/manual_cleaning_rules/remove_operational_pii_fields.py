@@ -11,7 +11,7 @@ import logging
 
 import bq_utils
 import constants.cdr_cleaner.clean_cdr as cdr_consts
-import sandbox
+from utils import sandbox
 
 LOGGER = logging.getLogger(__name__)
 
