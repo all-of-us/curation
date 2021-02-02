@@ -39,7 +39,7 @@ affected_tables.append(death)
 
 #sandbox rows to be removed
 SANDBOX_NEGATIVE_AND_MAX_AGE_QUERY = JINJA_ENV.from_string("""
-CREATE OR REPLACE `{{project_id}}.{{sandbox_id}}.{{intermediary_table}}` AS (
+CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_id}}.{{intermediary_table}}` AS (
 SELECT
   *
 FROM
@@ -75,7 +75,7 @@ WHERE
 """)
 
 SANDBOX_NEGATIVE_AGE_DEATH_QUERY = JINJA_ENV.from_string("""
-CREATE OR REPLACE `{{project_id}}.{{sandbox_id}}.{{intermediary_table}}` AS (
+CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_id}}.{{intermediary_table}}` AS (
 SELECT
   *
 FROM
@@ -237,7 +237,7 @@ class NegativeAges(BaseCleaningRule):
                 project_id=self.project_id,
                 dataset_id=self.dataset_id,
                 sandbox_id=self.sandbox_dataset_id,
-                intermediary_tatble=self.sandbox_table_for(death),
+                intermediary_table=self.sandbox_table_for(death),
                 table=death,
                 person_table=person)
         sandbox_queries.append(sandbox_query)
