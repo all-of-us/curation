@@ -5,9 +5,9 @@ from unittest import TestCase, mock
 import pandas as pd
 from google.cloud.bigquery import TableReference
 
+import constants.retraction.retract_deactivated_pids as consts
 # Project imports
 from retraction import retract_deactivated_pids as rdp
-import constants.retraction.retract_deactivated_pids as consts
 
 
 class RetractDeactivatedEHRDataBqTest(TestCase):
@@ -56,7 +56,7 @@ class RetractDeactivatedEHRDataBqTest(TestCase):
         actual = rdp.get_date_cols_dict(date_cols)
         self.assertDictEqual(expected, actual)
 
-    @mock.patch('sandbox.check_and_create_sandbox_dataset')
+    @mock.patch('utils.sandbox.check_and_create_sandbox_dataset')
     @mock.patch('retraction.retract_deactivated_pids.get_table_dates_info')
     @mock.patch('retraction.retract_deactivated_pids.get_table_cols_df')
     def test_generate_queries(self, mock_table_cols, mock_table_dates,
