@@ -5,8 +5,8 @@ This rule generates corrected rows and deletes incorrect rows
 import logging
 
 import bq_utils
-import sandbox
 from constants.cdr_cleaner import clean_cdr as cdr_consts
+from utils import sandbox
 
 LOGGER = logging.getLogger(__name__)
 SMOKING_LOOKUP_TABLE = 'smoking_lookup'

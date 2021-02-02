@@ -7,12 +7,11 @@ from google.cloud.bigquery import Table, TimePartitioning
 
 import app_identity
 import bq_utils
-import sandbox
 from cdr_cleaner.cleaning_rules import ppi_branching
 from cdr_cleaner.cleaning_rules.ppi_branching import PpiBranching
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import \
     BaseTest
-from utils import bq
+from utils import bq, sandbox
 
 TEST_DATA_FIELDS = ('observation_id', 'person_id', 'observation_source_value',
                     'value_as_number', 'value_source_value', 'value_as_string',

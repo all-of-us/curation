@@ -1,11 +1,11 @@
 # Python imports
-import unittest
 import os
+import unittest
 
-# Project Imports
-import sandbox
-from utils.bq import get_client, list_datasets, delete_dataset
 import app_identity
+# Project Imports
+from utils import sandbox
+from utils.bq import get_client, list_datasets, delete_dataset
 
 
 class SandboxTest(unittest.TestCase):

@@ -7,14 +7,13 @@ from concurrent.futures import TimeoutError as TOError
 import google.cloud.bigquery as gbq
 from google.cloud.exceptions import GoogleCloudError
 
-# Project imports
-from utils import bq, pipeline_logging
-import retraction.retract_utils as ru
-import sandbox as sb
 import constants.retraction.retract_deactivated_pids as consts
+import retraction.retract_utils as ru
+from common import JINJA_ENV
 from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as cdr_consts
-from common import JINJA_ENV
+# Project imports
+from utils import bq, pipeline_logging, sandbox as sb
 
 LOGGER = logging.getLogger(__name__)
 

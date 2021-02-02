@@ -6,8 +6,8 @@ import app_identity
 import bq_utils
 import cdr_cleaner.manual_cleaning_rules.remove_operational_pii_fields as remove_operational_pii_fields
 import resources
-import sandbox
 from tests import test_util
+from utils import sandbox
 
 SELECT_RECORDS = """ SELECT * FROM `{project_id}.{dataset_id}.{table_id}`"""
 

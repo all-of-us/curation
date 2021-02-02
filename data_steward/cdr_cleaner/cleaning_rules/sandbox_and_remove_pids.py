@@ -1,10 +1,9 @@
 # Project imports
-import utils.bq
-from constants.cdr_cleaner import clean_cdr as clean_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
-import bq_utils
+import utils.bq
 from constants import bq_utils as bq_consts
-from sandbox import get_sandbox_dataset_id
+from constants.cdr_cleaner import clean_cdr as clean_consts
+from utils.sandbox import get_sandbox_dataset_id
 
 # Query to create tables in sandbox with rows that will be removed per cleaning rule
 SANDBOX_QUERY = """

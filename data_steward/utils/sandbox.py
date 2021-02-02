@@ -1,5 +1,4 @@
 from utils.bq import list_datasets, create_dataset
-import re
 
 SANDBOX_SUFFIX = 'sandbox'
 
@@ -35,17 +34,15 @@ def get_sandbox_dataset_id(dataset_id):
                                                   sandbox_suffix=SANDBOX_SUFFIX)
 
 
-def get_sandbox_table_name(dataset_id, rule_name):
+def get_sandbox_table_name(table_namer, base_name):
     """
     A helper function to create a table in the sandbox dataset
 
-    :param dataset_id: the dataset_id to which the rule is applied
-    :param rule_name: the name of the cleaning rule
+    :param table_namer: the string value returned from the table_namer setter method
+    :param base_name: the name of the cleaning rule
     :return: the concatenated table name
     """
-    return '{dataset_id}_{rule_name}'.format(dataset_id=dataset_id,
-                                             rule_name=re.sub(
-                                                 r'\W', '_', rule_name))
+    return f'{table_namer}_{base_name}'
 
 
 def check_and_create_sandbox_dataset(project_id, dataset_id):
