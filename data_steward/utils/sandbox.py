@@ -42,7 +42,10 @@ def get_sandbox_table_name(table_namer, base_name):
     :param base_name: the name of the cleaning rule
     :return: the concatenated table name
     """
-    return f'{table_namer}_{base_name}'
+    if table_namer is None or table_namer == '':
+        return base_name
+    else:
+        return f'{table_namer}_{base_name}'
 
 
 def check_and_create_sandbox_dataset(project_id, dataset_id):
