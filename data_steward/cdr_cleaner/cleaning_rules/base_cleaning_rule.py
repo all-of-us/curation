@@ -20,6 +20,7 @@ from oauth2client.client import HttpAccessTokenRefreshError
 
 # Project imports
 import constants.cdr_cleaner.clean_cdr as cdr_consts
+from utils.sandbox import get_sandbox_table_name
 
 LOGGER = logging.getLogger(__name__)
 
