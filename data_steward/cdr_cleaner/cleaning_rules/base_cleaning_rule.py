@@ -426,11 +426,8 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
         :param affected_table: 
         :return: 
         """
-        if affected_table not in self.affected_tables:
-            raise LookupError(
-                f'{affected_table} is not define as an affected table in {self.affected_tables}'
-            )
-        return f'{"_".join(self.issue_numbers).lower()}_{affected_table}'
+        base_name = f'{"_".join(self.issue_numbers).lower()}_{affected_table}'
+        return get_sandbox_table_name(self.table_namer, base_name)
 
     def log_queries(self):
         """
