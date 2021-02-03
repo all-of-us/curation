@@ -19,7 +19,6 @@ import \
     cdr_cleaner.cleaning_rules.drop_participants_without_ppi_or_ehr as drop_participants_without_ppi_or_ehr
 import cdr_cleaner.cleaning_rules.drug_refills_days_supply as drug_refills_supply
 import cdr_cleaner.cleaning_rules.maps_to_value_ppi_vocab_update as maps_to_value_vocab_update
-import cdr_cleaner.cleaning_rules.negative_ages as neg_ages
 import cdr_cleaner.cleaning_rules.populate_route_ids as populate_routes
 import cdr_cleaner.cleaning_rules.remove_aian_participants as remove_aian_participants
 import \
@@ -69,6 +68,7 @@ from cdr_cleaner.cleaning_rules.unit_normalization import UnitNormalization
 from cdr_cleaner.cleaning_rules.update_fields_numbers_as_strings import UpdateFieldsNumbersAsStrings
 from cdr_cleaner.cleaning_rules.temporal_consistency import TemporalConsistency
 from cdr_cleaner.cleaning_rules.valid_death_dates import ValidDeathDates
+from cdr_cleaner.cleaning_rules.negative_ages import NegativeAges
 from constants.cdr_cleaner import clean_cdr_engine as ce_consts
 from constants.cdr_cleaner.clean_cdr import DataStage
 
@@ -81,7 +81,6 @@ EHR_CLEANING_CLASSES = [(CleanMappingExtTables,)]
 UNIONED_EHR_CLEANING_CLASSES = [
     (DeduplicateIdColumn,),
     (clean_years.get_year_of_birth_queries,),
-    (neg_ages.get_negative_ages_queries,),
     (drug_refills_supply.get_days_supply_refills_queries,),
     # trying to load a table while creating query strings,
     # won't work with mocked strings.  should use base class
@@ -148,7 +147,7 @@ COMBINED_CLEANING_CLASSES = [
         domain_alignment.domain_alignment,),
     (drop_participants_without_ppi_or_ehr.get_queries,),
     (clean_years.get_year_of_birth_queries,),
-    (neg_ages.get_negative_ages_queries,),
+    (NegativeAges,),
     (NoDataAfterDeath,),
     (ValidDeathDates,),
     (drug_refills_supply.get_days_supply_refills_queries,),
@@ -178,7 +177,6 @@ FITBIT_CLEANING_CLASSES = [
 ]
 
 DEID_BASE_CLEANING_CLASSES = [
-    (neg_ages.get_negative_ages_queries,),
     (FillSourceValueTextFields,),
     (RepopulatePersonPostDeid,),
     (DateShiftCopeResponses,),

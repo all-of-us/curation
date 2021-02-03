@@ -9,8 +9,13 @@ import logging
 import common
 from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as cdr_consts
+from common import JINJA_ENV
+from utils import pipeline_logging
+from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
 
 LOGGER = logging.getLogger(__name__)
+
+JIRA_ISSUE_NUMBERS = ['DC811', 'DC393']
 
 # tables to consider, along with their date/start date fields
 date_fields = {
@@ -27,92 +32,242 @@ date_fields = {
 }
 
 person = common.PERSON
+death = common.DEATH
 MAX_AGE = 150
+affected_tables = list(date_fields.keys())
+affected_tables.append(death)
+
+#sandbox rows to be removed
+SANDBOX_NEGATIVE_AND_MAX_AGE_QUERY = JINJA_ENV.from_string("""
+CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_id}}.{{intermediary_table}}` AS (
+SELECT
+  *
+FROM
+  `{{project_id}}.{{dataset_id}}.{{table}}`
+WHERE
+  {{table}}_id IN (
+  SELECT
+    t.{{table}}_id
+  FROM
+    `{{project_id}}.{{dataset_id}}.{{table}}` t
+  JOIN
+    `{{project_id}}.{{dataset_id}}.{{person_table}}` p
+  ON
+    t.person_id = p.person_id
+  WHERE
+    t.{{table_date}} < DATE(p.birth_datetime)
+  UNION DISTINCT
+  SELECT
+  t.{{table}}_id
+  FROM
+    `{{project_id}}.{{dataset_id}}.{{table}}` t
+  JOIN
+    `{{project_id}}.{{dataset_id}}.{{person_table}}` p
+  ON
+    t.person_id = p.person_id
+  WHERE
+    EXTRACT(YEAR
+    FROM
+      t.{{table_date}}) - EXTRACT(YEAR
+    FROM
+      p.birth_datetime) > {{MAX_AGE}})
+)
+""")
+
+SANDBOX_NEGATIVE_AGE_DEATH_QUERY = JINJA_ENV.from_string("""
+CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_id}}.{{intermediary_table}}` AS (
+SELECT
+  *
+FROM
+  `{{project_id}}.{{dataset_id}}.{{table}}`
+WHERE
+  person_id IN (
+  SELECT
+    d.person_id
+  FROM
+    `{{project_id}}.{{dataset_id}}.{{table}}` d
+  JOIN
+    `{{project_id}}.{{dataset_id}}.{{person_table}}` p
+  ON
+    d.person_id = p.person_id
+  WHERE
+    d.death_date < DATE(p.birth_datetime))
+)
+""")
 
 # negative age at recorded time in table
-NEGATIVE_AGES_QUERY = ('SELECT * '
-                       'FROM `{project_id}.{dataset_id}.{table}` '
-                       'WHERE {table}_id NOT IN '
-                       '(SELECT t.{table}_id '
-                       'FROM `{project_id}.{dataset_id}.{table}` t '
-                       'JOIN `{project_id}.{dataset_id}.{person_table}` p '
-                       'ON t.person_id = p.person_id '
-                       'WHERE t.{table_date} < DATE(p.birth_datetime)) ')
+NEGATIVE_AGES_QUERY = JINJA_ENV.from_string("""
+SELECT
+  *
+FROM
+  `{{project_id}}.{{dataset_id}}.{{table}}`
+WHERE
+  {{table}}_id NOT IN (
+  SELECT
+    t.{{table}}_id
+  FROM
+    `{{project_id}}.{{dataset_id}}.{{table}}` t
+  JOIN
+    `{{project_id}}.{{dataset_id}}.{{person_table}}` p
+  ON
+    t.person_id = p.person_id
+  WHERE
+    t.{{table_date}} < DATE(p.birth_datetime))
+""")
 
 # age > MAX_AGE (=150) at recorded time in table
-MAX_AGE_QUERY = (
-    'SELECT * '
-    'FROM `{project_id}.{dataset_id}.{table}` '
-    'WHERE {table}_id NOT IN '
-    '(SELECT t.{table}_id '
-    'FROM `{project_id}.{dataset_id}.{table}` t '
-    'JOIN `{project_id}.{dataset_id}.{person_table}` p '
-    'ON t.person_id = p.person_id '
-    'WHERE EXTRACT(YEAR FROM t.{table_date}) - EXTRACT(YEAR FROM p.birth_datetime) > {MAX_AGE}) '
-)
+MAX_AGE_QUERY = JINJA_ENV.from_string("""
+SELECT
+  *
+FROM
+  `{{project_id}}.{{dataset_id}}.{{table}}`
+WHERE
+  {{table}}_id NOT IN (
+  SELECT
+    t.{{table}}_id
+  FROM
+    `{{project_id}}.{{dataset_id}}.{{table}}` t
+  JOIN
+    `{{project_id}}.{{dataset_id}}.{{person_table}}` p
+  ON
+    t.person_id = p.person_id
+  WHERE
+    EXTRACT(YEAR
+    FROM
+      t.{{table_date}}) - EXTRACT(YEAR
+    FROM
+      p.birth_datetime) > {{MAX_AGE}})
+""")
 
 # negative age at death
-NEGATIVE_AGE_DEATH_QUERY = ('SELECT * '
-                            'FROM `{project_id}.{dataset_id}.{table}` '
-                            'WHERE person_id NOT IN '
-                            '(SELECT d.person_id '
-                            'FROM `{project_id}.{dataset_id}.{table}` d '
-                            'JOIN `{project_id}.{dataset_id}.{person_table}` p '
-                            'ON d.person_id = p.person_id '
-                            'WHERE d.death_date < DATE(p.birth_datetime)) ')
+NEGATIVE_AGE_DEATH_QUERY = JINJA_ENV.from_string("""
+SELECT
+  *
+FROM
+  `{{project_id}}.{{dataset_id}}.{{table}}`
+WHERE
+  person_id NOT IN (
+  SELECT
+    d.person_id
+  FROM
+    `{{project_id}}.{{dataset_id}}.{{table}}` d
+  JOIN
+    `{{project_id}}.{{dataset_id}}.{{person_table}}` p
+  ON
+    d.person_id = p.person_id
+  WHERE
+    d.death_date < DATE(p.birth_datetime))
+""")
 
 
-def get_negative_ages_queries(project_id, dataset_id, sandbox_dataset_id=None):
-    """
-    This function gets the queries required to remove table records which are prior
-    to the person's birth date or 150 years past the birth date from a dataset
+class NegativeAges(BaseCleaningRule):
 
-    :param project_id: Project name
-    :param dataset_id: Name of the dataset where a rule should be applied
-    :param sandbox_dataset_id: Identifies the sandbox dataset to store rows 
-    #TODO use sandbox_dataset_id for CR
-    :return: a list of queries.
-    """
-    queries = []
-    for table in date_fields:
-        query_na = dict()
-        query_ma = dict()
-        person_table = person
-        query_na[cdr_consts.QUERY] = NEGATIVE_AGES_QUERY.format(
-            project_id=project_id,
-            dataset_id=dataset_id,
-            table=table,
-            person_table=person_table,
-            table_date=date_fields[table])
-        query_na[cdr_consts.DESTINATION_TABLE] = table
-        query_na[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
-        query_na[cdr_consts.DESTINATION_DATASET] = dataset_id
-        query_ma[cdr_consts.QUERY] = MAX_AGE_QUERY.format(
-            project_id=project_id,
-            dataset_id=dataset_id,
-            table=table,
-            person_table=person_table,
-            table_date=date_fields[table],
-            MAX_AGE=MAX_AGE)
-        query_ma[cdr_consts.DESTINATION_TABLE] = table
-        query_ma[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
-        query_ma[cdr_consts.DESTINATION_DATASET] = dataset_id
-        queries.extend([query_na, query_ma])
+    def __init__(self, project_id, dataset_id, sandbox_dataset_id=None):
+        """
+        Initialize the class with proper information.
 
-    # query for death before birthdate
-    death = common.DEATH
-    query = dict()
-    person_table = person
-    query[cdr_consts.QUERY] = NEGATIVE_AGE_DEATH_QUERY.format(
-        project_id=project_id,
-        dataset_id=dataset_id,
-        table=death,
-        person_table=person_table)
-    query[cdr_consts.DESTINATION_TABLE] = death
-    query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
-    query[cdr_consts.DESTINATION_DATASET] = dataset_id
-    queries.append(query)
-    return queries
+        Set the issue numbers, description and affected datasets. As other tickets may affect
+        this SQL, append them to the list of Jira Issues.
+        DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
+        """
+        desc = (
+            'Returns queries to remove table records which are prior to the persons birth date or 150 years past the '
+            'birth date from a dataset.')
+
+        super().__init__(issue_numbers=JIRA_ISSUE_NUMBERS,
+                         description=desc,
+                         affected_datasets=[cdr_consts.COMBINED],
+                         affected_tables=affected_tables,
+                         project_id=project_id,
+                         dataset_id=dataset_id,
+                         sandbox_dataset_id=sandbox_dataset_id)
+
+    def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
+        """
+        Return a list of dictionary query specifications.
+
+        :return:  A list of dictionaries. Each dictionary contains a single query
+            and a specification for how to execute that query. The specifications
+            are optional but the query is required.
+        """
+
+        queries = []
+        for table in date_fields:
+            sandbox_query = dict()
+            query_na = dict()
+            query_ma = dict()
+            sandbox_query[
+                cdr_consts.QUERY] = SANDBOX_NEGATIVE_AND_MAX_AGE_QUERY.render(
+                    project_id=self.project_id,
+                    dataset_id=self.dataset_id,
+                    sandbox_id=self.sandbox_dataset_id,
+                    intermediary_table=self.sandbox_table_for(table),
+                    table=table,
+                    person_table=person,
+                    table_date=date_fields[table],
+                    MAX_AGE=MAX_AGE)
+            queries.append(sandbox_query)
+            query_na[cdr_consts.QUERY] = NEGATIVE_AGES_QUERY.render(
+                project_id=self.project_id,
+                dataset_id=self.dataset_id,
+                table=table,
+                person_table=person,
+                table_date=date_fields[table])
+            query_na[cdr_consts.DESTINATION_TABLE] = table
+            query_na[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
+            query_na[cdr_consts.DESTINATION_DATASET] = self.dataset_id
+            query_ma[cdr_consts.QUERY] = MAX_AGE_QUERY.render(
+                project_id=self.project_id,
+                dataset_id=self.dataset_id,
+                table=table,
+                person_table=person,
+                table_date=date_fields[table],
+                MAX_AGE=MAX_AGE)
+            query_ma[cdr_consts.DESTINATION_TABLE] = table
+            query_ma[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
+            query_ma[cdr_consts.DESTINATION_DATASET] = self.dataset_id
+            queries.extend([query_na, query_ma])
+
+        # query for death before birthdate
+        sandbox_query = dict()
+        query = dict()
+        sandbox_query[
+            cdr_consts.QUERY] = SANDBOX_NEGATIVE_AGE_DEATH_QUERY.render(
+                project_id=self.project_id,
+                dataset_id=self.dataset_id,
+                sandbox_id=self.sandbox_dataset_id,
+                intermediary_table=self.sandbox_table_for(death),
+                table=death,
+                person_table=person)
+        queries.append(sandbox_query)
+        query[cdr_consts.QUERY] = NEGATIVE_AGE_DEATH_QUERY.render(
+            project_id=self.project_id,
+            dataset_id=self.dataset_id,
+            table=death,
+            person_table=person)
+        query[cdr_consts.DESTINATION_TABLE] = death
+        query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
+        query[cdr_consts.DESTINATION_DATASET] = self.dataset_id
+        queries.append(query)
+        return queries
+
+    def setup_rule(self, client, *args, **keyword_args):
+        pass
+
+    def setup_validation(self, client):
+        """
+        Run required steps for validation setup
+        """
+        raise NotImplementedError("Please fix me.")
+
+    def validate_rule(self, client):
+        """
+        Validates the cleaning rule which deletes or updates the data from the tables
+        """
+        raise NotImplementedError("Please fix me.")
+
+    def get_sandbox_tablenames(self):
+        pass
 
 
 if __name__ == '__main__':
@@ -120,17 +275,17 @@ if __name__ == '__main__':
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
     ARGS = parser.parse_args()
+    pipeline_logging.configure(level=logging.DEBUG, add_console_handler=True)
 
     if ARGS.list_queries:
         clean_engine.add_console_logging()
         query_list = clean_engine.get_query_list(ARGS.project_id,
                                                  ARGS.dataset_id,
                                                  ARGS.sandbox_dataset_id,
-                                                 [(get_negative_ages_queries,)])
+                                                 [(NegativeAges,)])
         for query in query_list:
             LOGGER.info(query)
     else:
         clean_engine.add_console_logging(ARGS.console_log)
         clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
-                                   ARGS.sandbox_dataset_id,
-                                   [(get_negative_ages_queries,)])
+                                   ARGS.sandbox_dataset_id, [(NegativeAges,)])
