@@ -39,7 +39,12 @@ def add_console_logging(add_handler=True):
         logging.getLogger('').addHandler(handler)
 
 
-def clean_dataset(project_id, dataset_id, sandbox_dataset_id, rules, table_namer='', **kwargs):
+def clean_dataset(project_id,
+                  dataset_id,
+                  sandbox_dataset_id,
+                  rules,
+                  table_namer='',
+                  **kwargs):
     """
     Run the assigned cleaning rules and return list of BQ job objects
 
@@ -58,7 +63,8 @@ def clean_dataset(project_id, dataset_id, sandbox_dataset_id, rules, table_namer
     for rule_index, rule in enumerate(rules):
         clazz = rule[0]
         query_function, setup_function, rule_info = infer_rule(
-            clazz, project_id, dataset_id, sandbox_dataset_id, table_namer, **kwargs)
+            clazz, project_id, dataset_id, sandbox_dataset_id, table_namer,
+            **kwargs)
 
         LOGGER.info(
             f"Applying cleaning rule {rule_info[cdr_consts.MODULE_NAME]} "
@@ -187,7 +193,8 @@ def get_custom_kwargs(clazz, **kwargs):
     return kwargs
 
 
-def infer_rule(clazz, project_id, dataset_id, sandbox_dataset_id, table_namer, **kwargs):
+def infer_rule(clazz, project_id, dataset_id, sandbox_dataset_id, table_namer,
+               **kwargs):
     """
     Extract information about the cleaning rule
 
@@ -211,9 +218,11 @@ def infer_rule(clazz, project_id, dataset_id, sandbox_dataset_id, table_namer, *
     kwargs = get_custom_kwargs(clazz, **kwargs)
     if inspect.isclass(clazz) and issubclass(clazz, BaseCleaningRule):
         try:
-            instance = clazz(project_id, dataset_id, sandbox_dataset_id, table_namer, **kwargs)
+            instance = clazz(project_id, dataset_id, sandbox_dataset_id,
+                             table_namer, **kwargs)
         except TypeError:
-            instance = clazz(project_id, dataset_id, sandbox_dataset_id, **kwargs)
+            instance = clazz(project_id, dataset_id, sandbox_dataset_id,
+                             **kwargs)
         query_function = instance.get_query_specs
         setup_function = instance.setup_rule
         function_name = query_function.__name__
@@ -247,7 +256,12 @@ def infer_rule(clazz, project_id, dataset_id, sandbox_dataset_id, table_namer, *
     return query_function, setup_function, rule_info
 
 
-def get_query_list(project_id, dataset_id, sandbox_dataset_id, rules, table_namer='', **kwargs):
+def get_query_list(project_id,
+                   dataset_id,
+                   sandbox_dataset_id,
+                   rules,
+                   table_namer='',
+                   **kwargs):
     """
     Generates list of all query_dicts that will be run on the dataset
 
@@ -263,7 +277,8 @@ def get_query_list(project_id, dataset_id, sandbox_dataset_id, rules, table_name
     for rule in rules:
         clazz = rule[0]
         query_function, _, rule_info = infer_rule(clazz, project_id, dataset_id,
-                                                  sandbox_dataset_id, table_namer, **kwargs)
+                                                  sandbox_dataset_id,
+                                                  table_namer, **kwargs)
         query_list = query_function()
         all_queries_list.extend(query_list)
     return all_queries_list
