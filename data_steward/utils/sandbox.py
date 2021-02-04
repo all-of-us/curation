@@ -1,6 +1,30 @@
 from utils.bq import list_datasets, create_dataset
+from common import JINJA_ENV
+from collections import OrderedDict
 
 SANDBOX_SUFFIX = 'sandbox'
+
+TABLE_LABELS_STRING = JINJA_ENV.from_string("""
+    {%- if labels %}
+    labels=[
+        {% for label_key, label_value in labels.items() %}
+        ("{{ label_key }}", "{{ label_value }}"){{ ", " if not loop.last}}
+        {% endfor %}
+    ]
+    {%- endif %}
+""")
+
+TABLE_DESCRIPTION_STRING = JINJA_ENV.from_string("""
+    {%- if description %}
+    description="{{ description }}"
+    {%- endif %}
+""")
+
+TABLE_OPTIONS_CLAUSE = JINJA_ENV.from_string("""
+OPTIONS(
+{{ contents }}
+)
+""")
 
 
 def create_sandbox_dataset(project_id, dataset_id):
@@ -60,3 +84,34 @@ def check_and_create_sandbox_dataset(project_id, dataset_id):
     if sandbox_dataset not in datasets:
         create_sandbox_dataset(project_id, dataset_id)
     return sandbox_dataset
+
+
+def get_sandbox_labels_string(src_dataset_name,
+                              class_name,
+                              table_tag,
+                              shared_lookup=False):
+    STRING_LABELS = ['src_dataset', 'class_name', 'table_tag']
+
+    labels = OrderedDict([('src_dataset', src_dataset_name),
+                          ('class_name', class_name), ('table_tag', table_tag),
+                          ('shared_lookup', shared_lookup)])
+
+    return TABLE_LABELS_STRING.render(labels=labels)
+
+
+def get_sandbox_table_description_string(description):
+    return TABLE_DESCRIPTION_STRING.render(description=description)
+
+
+def get_sandbox_options(dataset_name,
+                        class_name,
+                        table_tag,
+                        desc,
+                        shared_lookup=False):
+    labels_text = get_sandbox_labels_string(dataset_name, class_name, table_tag,
+                                            shared_lookup)
+    description_text = get_sandbox_table_description_string(desc)
+
+    contents = ',\n'.join([description_text, labels_text])
+
+    return TABLE_OPTIONS_CLAUSE.render(contents=contents)
