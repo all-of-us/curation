@@ -23,3 +23,9 @@ class SandboxTest(unittest.TestCase):
                          sandbox.get_sandbox_table_name(None, base_name))
         self.assertEqual(base_name,
                          sandbox.get_sandbox_table_name('', base_name))
+        self.assertEqual(base_name,
+                         sandbox.get_sandbox_table_name('   ', base_name))
+        self.assertEqual(base_name,
+                         sandbox.get_sandbox_table_name('\t', base_name))
+        self.assertEqual(base_name,
+                         sandbox.get_sandbox_table_name('\n', base_name))
