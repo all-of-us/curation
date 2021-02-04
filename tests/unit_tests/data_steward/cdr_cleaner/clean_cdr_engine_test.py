@@ -14,13 +14,15 @@ fake_rule_func_query = 'SELECT "fake_rule_func"'
 class FakeRuleClass(BaseCleaningRule):
 
     def __init__(self, project_id, dataset_id, sandbox_dataset_id):
-        super().__init__(issue_numbers=[''],
-                         description='',
-                         affected_datasets=[cdr_consts.UNIONED],
-                         affected_tables=[],
-                         project_id=project_id,
-                         dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id)
+        super().__init__(
+            issue_numbers=[''],
+            description='',
+            affected_datasets=[cdr_consts.UNIONED],
+            affected_tables=[],
+            project_id=project_id,
+            dataset_id=dataset_id,
+            sandbox_dataset_id=sandbox_dataset_id,
+        )
 
     def get_sandbox_tablenames(self):
         pass
@@ -54,6 +56,7 @@ class CleanCDREngineTest(TestCase):
         self.project = 'test-project'
         self.dataset_id = 'test-dataset'
         self.sandbox_id = 'test-sandbox'
+        self.table_namer = ''
         self.kwargs = {}
 
     def test_get_custom_kwargs(self):
@@ -94,7 +97,8 @@ class CleanCDREngineTest(TestCase):
     def test_infer_rule(self):
         clazz = FakeRuleClass
         _, _, rule_info = ce.infer_rule(clazz, self.project, self.dataset_id,
-                                        self.sandbox_id, **self.kwargs)
+                                        self.sandbox_id, self.table_namer,
+                                        **self.kwargs)
         self.assertTrue(
             inspect.ismethod(rule_info.pop(cdr_consts.QUERY_FUNCTION)))
         self.assertTrue(
@@ -112,7 +116,8 @@ class CleanCDREngineTest(TestCase):
 
         clazz = fake_rule_func
         _, _, rule_info = ce.infer_rule(clazz, self.project, self.dataset_id,
-                                        self.sandbox_id, **self.kwargs)
+                                        self.sandbox_id, self.table_namer,
+                                        **self.kwargs)
         self.assertTrue(
             inspect.isfunction(rule_info.pop(cdr_consts.QUERY_FUNCTION)))
         self.assertTrue(
