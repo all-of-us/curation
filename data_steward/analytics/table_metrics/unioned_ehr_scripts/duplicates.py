@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.4.2
+#       jupytext_version: 1.3.0
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -31,6 +31,7 @@ import warnings
 
 warnings.filterwarnings('ignore')
 import pandas as pd
+from datetime import date
 import matplotlib.pyplot as plt
 import os
 
@@ -100,8 +101,7 @@ foreign_key_df = pd.io.gbq.read_gbq('''
        person_id, visit_concept_id, visit_start_date, visit_start_datetime, visit_end_date, visit_end_datetime,
        visit_type_concept_id, provider_id, care_site_id, visit_source_value, visit_source_concept_id,
        admitting_source_concept_id, admitting_source_value, discharge_to_concept_id,
-       discharge_to_source_value, preceding_visit_occurrence_id,
-        COUNT(*) as cnt
+       discharge_to_source_value, preceding_visit_occurrence_id, COUNT(*) as cnt
     FROM
        `{DATASET}.unioned_ehr_visit_occurrence` AS t1
     INNER JOIN
@@ -120,8 +120,7 @@ foreign_key_df = pd.io.gbq.read_gbq('''
         COUNT(*) > 1
     ORDER BY
         1,2,3,4,5,6,7,8,9
-    '''.format(DATASET=DATASET),
-                                    dialect='standard')
+    '''.format(DATASET=DATASET),dialect='standard')
 print(foreign_key_df.shape[0], 'records received.')
 # -
 
@@ -264,12 +263,13 @@ print('Getting the data from the database...')
 
 foreign_key_df = pd.io.gbq.read_gbq('''
     SELECT
-        src_hpo_id,
-person_id, drug_concept_id, drug_exposure_start_date,drug_exposure_start_datetime, 
-drug_exposure_end_date,drug_exposure_end_datetime, verbatim_end_date, drug_type_concept_id,
-stop_reason, refills, quantity, 
-days_supply, sig, route_concept_id, lot_number, provider_id, visit_occurrence_id, drug_source_value,
-drug_source_concept_id, route_source_value, dose_unit_source_value,
+        src_hpo_id,person_id, drug_concept_id, drug_exposure_start_date,
+        drug_exposure_start_datetime,
+        drug_exposure_end_date,
+        drug_exposure_end_datetime, 
+        verbatim_end_date, drug_type_concept_id,
+        stop_reason, refills, quantity, days_supply, sig, route_concept_id, lot_number, provider_id, 
+        visit_occurrence_id, drug_source_value, drug_source_concept_id, route_source_value, dose_unit_source_value,
         COUNT(*) as cnt
     FROM
        `{DATASET}.unioned_ehr_drug_exposure` AS t1
@@ -289,8 +289,7 @@ drug_source_concept_id, route_source_value, dose_unit_source_value,
         COUNT(*) > 1
     ORDER BY
         1,2,3
-    '''.format(DATASET=DATASET),
-                                    dialect='standard')
+    '''.format(DATASET=DATASET), dialect='standard')
 print(foreign_key_df.shape[0], 'records received.')
 # -
 
@@ -313,11 +312,10 @@ print('Getting the data from the database...')
 
 foreign_key_df = pd.io.gbq.read_gbq('''
     SELECT
-        src_hpo_id,
-person_id, measurement_concept_id, measurement_date, measurement_datetime, measurement_type_concept_id, 
-operator_concept_id, value_as_number, value_as_concept_id, unit_concept_id, range_low, 
-range_high, provider_id, visit_occurrence_id,
-measurement_source_value, measurement_source_concept_id, unit_source_value, value_source_value,
+        src_hpo_id, person_id, measurement_concept_id, measurement_date, measurement_datetime, 
+        measurement_type_concept_id, operator_concept_id, value_as_number, value_as_concept_id, 
+        unit_concept_id, range_low, range_high, provider_id, visit_occurrence_id, 
+        measurement_source_value, measurement_source_concept_id, unit_source_value, value_source_value,
         COUNT(*) as cnt
     FROM
        `{DATASET}.unioned_ehr_measurement` AS t1
@@ -362,8 +360,9 @@ print('Getting the data from the database...')
 foreign_key_df = pd.io.gbq.read_gbq('''
     SELECT
         src_hpo_id,
-        person_id, procedure_concept_id, procedure_date, procedure_datetime, procedure_type_concept_id, modifier_concept_id,
-        quantity, provider_id, visit_occurrence_id, procedure_source_value, procedure_source_concept_id, qualifier_source_value,
+        person_id, procedure_concept_id, procedure_date, procedure_datetime, procedure_type_concept_id, 
+        modifier_concept_id, quantity, provider_id, visit_occurrence_id, procedure_source_value, 
+        procedure_source_concept_id, qualifier_source_value,
         COUNT(*) as cnt
     FROM
        `{DATASET}.unioned_ehr_procedure_occurrence` AS t1
@@ -407,11 +406,11 @@ print('Getting the data from the database...')
 foreign_key_df = pd.io.gbq.read_gbq('''
     SELECT
         src_hpo_id,
-        person_id, observation_concept_id, observation_date, observation_datetime, observation_type_concept_id, value_as_number, 
-        value_as_string, value_as_concept_id, qualifier_concept_id, unit_concept_id, provider_id, visit_occurrence_id, 
-        observation_source_value, observation_source_concept_id, unit_source_value, qualifier_source_value, value_source_concept_id,
-        value_source_value, questionnaire_response_id,
-        COUNT(*) as cnt
+        person_id, observation_concept_id, observation_date, observation_datetime, observation_type_concept_id, 
+        value_as_number, value_as_string, value_as_concept_id, qualifier_concept_id, unit_concept_id, 
+        provider_id, visit_occurrence_id, observation_source_value, observation_source_concept_id, 
+        unit_source_value, qualifier_source_value, value_source_concept_id, value_source_value, 
+        questionnaire_response_id, COUNT(*) as cnt
     FROM
        `{DATASET}.unioned_ehr_observation` AS t1
     INNER JOIN

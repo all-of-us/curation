@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.4.2
+#       jupytext_version: 1.3.0
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -40,7 +40,7 @@ pd.options.display.max_columns = 999
 pd.options.display.max_colwidth = 999
 
 
-def cstr(s, color='black'):
+def cstr(s, color='black'):  
     return "<text style=color:{}>{}</text>".format(color, s)
 
 
@@ -174,8 +174,6 @@ LEFT JOIN
 `{DATASET}.concept` c
 ON
 m.unit_concept_id = c.concept_id
-WHERE
-a.value_source_is_number IS NOT NULL
 GROUP BY
 1
 ORDER BY
@@ -183,6 +181,16 @@ number_of_float_source_values DESC
 """
 
 potential_floats = pd.io.gbq.read_gbq(source_values_that_can_be_converted_to_floats_by_site_query, dialect='standard')
+
+# +
+sites_successful_unit_counts_query = f"""
+SELECT
+*
+FROM
+`{DATASET}.sites_successful_unit_counts`
+"""
+
+potential_floats = pd.io.gbq.read_gbq(sites_successful_unit_counts_query, dialect='standard')
 # -
 
 potential_floats
@@ -201,14 +209,6 @@ AS
     COUNT(*) AS number_successful_units
   FROM
     `{DATASET}.unioned_ehr_measurement` m
-  LEFT JOIN (
-    SELECT
-      DISTINCT m.measurement_id,
-      SAFE_CAST(m.value_source_value AS FLOAT64) AS value_source_is_number
-    FROM
-      `{DATASET}.unioned_ehr_measurement` m) a
-  ON
-    m.measurement_id = a.measurement_id
   LEFT JOIN
     `{DATASET}._mapping_measurement` mm
   ON
@@ -218,8 +218,6 @@ AS
   ON
     m.unit_concept_id = c.concept_id
   WHERE
-    a.value_source_is_number IS NOT NULL
-  AND
     LOWER(c.standard_concept) LIKE '%s%'
   AND
     LOWER(c.domain_id) LIKE '%unit%'
@@ -269,11 +267,6 @@ selected_measurements = str(measurement_codes)
 
 # +
 selected_unit_concept_ids_by_site_query = f"""
-CREATE OR REPLACE TABLE `{DATASET}.sites_unit_counts_selected_measurements`
-OPTIONS (
-expiration_timestamp=TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 3 MINUTE)
-)
-AS
 SELECT
 DISTINCT mm.src_hpo_id,
 COUNT(*) AS number_total_selected_measurements
@@ -284,7 +277,7 @@ LEFT JOIN
 ON
 m.measurement_id = mm.measurement_id
 LEFT JOIN
-`{DATASET}.concept_ancestor` ca
+`{DATASET}.union_concept_ancestor` ca
 ON
 ca.descendant_concept_id = m.measurement_concept_id
 JOIN
@@ -302,17 +295,10 @@ number_total_selected_measurements DESC
 selected_unit_concept_ids_by_site = pd.io.gbq.read_gbq(selected_unit_concept_ids_by_site_query, dialect='standard')
 # -
 
-selected_unit_concept_ids_by_site
-
 # #### Now we want to see what kinds of source values should be converted to values with floats (which should thereby be put into units)
 
 # +
 selected_source_values_that_can_be_converted_to_floats_by_site_query = f"""
-CREATE OR REPLACE TABLE `{DATASET}.sites_successful_unit_counts_selected`
-OPTIONS (
-expiration_timestamp=TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 3 MINUTE)
-)
-AS
 SELECT
 DISTINCT mm.src_hpo_id,
 COUNT(*) AS number_of_float_source_values_selected_measures
@@ -335,12 +321,10 @@ LEFT JOIN
 ON
 m.unit_concept_id = c.concept_id
 LEFT JOIN
-`{DATASET}.concept_ancestor` ca
+`{DATASET}.union_concept_ancestor` ca
 ON
 ca.descendant_concept_id = m.measurement_concept_id
 WHERE
-a.value_source_is_number IS NOT NULL
-AND
 ca.ancestor_concept_id IN {selected_measurements}
 GROUP BY
 1
@@ -351,30 +335,15 @@ number_of_float_source_values_selected_measures DESC
 potential_floats_selected = pd.io.gbq.read_gbq(selected_source_values_that_can_be_converted_to_floats_by_site_query, dialect='standard')
 # -
 
-potential_floats_selected
-
 # #### Below are the 'successful' unit_concept_ids
 
 # +
 successful_unit_concept_ids_by_site_query_selected_meas = f"""
-CREATE OR REPLACE TABLE `{DATASET}.sites_successful_unit_counts_selected_meas`
-OPTIONS (
-expiration_timestamp=TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 3 MINUTE)
-)
-AS
   SELECT
     DISTINCT mm.src_hpo_id,
     COUNT(*) AS number_successful_units_selected_measures
   FROM
     `{DATASET}.unioned_ehr_measurement` m
-  LEFT JOIN (
-    SELECT
-      DISTINCT m.measurement_id,
-      SAFE_CAST(m.value_source_value AS FLOAT64) AS value_source_is_number
-    FROM
-      `{DATASET}.unioned_ehr_measurement` m) a
-  ON
-    m.measurement_id = a.measurement_id
   LEFT JOIN
     `{DATASET}._mapping_measurement` mm
   ON
@@ -383,18 +352,16 @@ AS
     `{DATASET}.concept` c
   ON
     m.unit_concept_id = c.concept_id
-LEFT JOIN
-`{DATASET}.concept_ancestor` ca
-ON
-ca.descendant_concept_id = m.measurement_concept_id
+  LEFT JOIN
+    `{DATASET}.union_concept_ancestor` ca
+  ON
+    ca.descendant_concept_id = m.measurement_concept_id
   WHERE
-    a.value_source_is_number IS NOT NULL
-  AND
     LOWER(c.standard_concept) LIKE '%s%'
   AND
     LOWER(c.domain_id) LIKE '%unit%'
-AND
-ca.ancestor_concept_id IN {selected_measurements}
+  AND
+    ca.ancestor_concept_id IN {selected_measurements}
   GROUP BY
     1
   ORDER BY
@@ -403,9 +370,6 @@ ca.ancestor_concept_id IN {selected_measurements}
 
 successful_selected_unit_concept_ids_by_site = pd.io.gbq.read_gbq(
     successful_unit_concept_ids_by_site_query_selected_meas, dialect='standard')
-# -
-
-successful_selected_unit_concept_ids_by_site
 
 # +
 final_all_units_df = pd.merge(final_all_units_df, selected_unit_concept_ids_by_site, on = 'src_hpo_id', how = 'left')

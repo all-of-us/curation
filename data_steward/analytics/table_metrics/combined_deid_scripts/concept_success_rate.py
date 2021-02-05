@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.4.2
+#       jupytext_version: 1.3.0
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -20,7 +20,7 @@ client = bigquery.Client()
 
 # +
 from notebooks import parameters
-DATASET = parameters.UNIONED_Q4_2018
+DATASET = parameters.UNIONED_Q4_2020
 LOOKUP_TABLES = parameters.LOOKUP_TABLES
 
 print(f"Dataset to use: {DATASET}")
@@ -772,3 +772,5 @@ success_rate = success_rate.fillna(0)
 success_rate
 
 success_rate.to_csv("{cwd}/concept.csv".format(cwd = cwd))
+
+

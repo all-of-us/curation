@@ -31,12 +31,16 @@ from cross_reference_functions import cross_reference_old_metrics
 
 import pandas as pd
 import constants
+import xlrd
+import xlwt
+from xlutils.copy import copy
+from openpyxl import Workbook
 
-old_dashboards = 'june_03_2020_data_quality_issues.xlsx'
+old_dashboards = 'january_22_2021_data_quality_issues.xlsx'
 
-old_excel_file_name = 'june_03_2020.xlsx'
-excel_file_name = 'june_15_2020.xlsx'
-
+old_excel_file_name = 'january_22_2021.xlsx'
+excel_file_name = 'february_01_2021.xlsx'
+##### note: the last cell requires change of file names as well
 
 def create_hpo_objects(file_name):
     """
@@ -271,3 +275,48 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# # to parse each site's info for emailing; update the links & add in summary stats
+
+# to parse each site's info for emailing;
+file_name = "february_01_2021_data_quality_issues.xlsx"
+wb = xlrd.open_workbook(file_name)
+xl = pd.ExcelFile(file_name)
+for sheet in wb.sheets():
+    newwb = pd.ExcelWriter(sheet.name + ".xlsx",
+                        engine='xlsxwriter',
+                        datetime_format='mm-dd-yyyy hh:mm:ss',
+                        date_format='mm-dd-yyyy')
+    df = xl.parse(sheet.name, index_col=0)
+    df = df.sort_values(by=['First Reported'])
+    for i in range(len(df[1:])+1):
+        if df["Metric Type"][i] == "Concept ID Success Rate":
+            df["Link"][i] = "https://sites.google.com/view/ehrupload/data-quality-metrics/weekly-data-quality-metrics/concept-success-rate?authuser=0"
+        elif df["Metric Type"][i] == "Duplicate Records":
+            df["Link"][i] = "https://sites.google.com/view/ehrupload/data-quality-metrics/weekly-data-quality-metrics/duplicates?authuser=0"
+        elif df["Metric Type"][i] == "Visit Date Disparity":
+            df["Link"][i] = "https://sites.google.com/view/ehrupload/data-quality-metrics/weekly-data-quality-metrics/datedatetime-disparity?authuser=0"
+        elif df["Metric Type"][i] == "End Dates Preceding Start Dates":
+            df["Link"][i] = "https://sites.google.com/view/ehrupload/data-quality-metrics/weekly-data-quality-metrics/end-dates-preceding-start-dates?authuser=0"
+        elif df["Metric Type"][i] == "Data After Death":
+            df["Link"][i] = "https://sites.google.com/view/ehrupload/data-quality-metrics/weekly-data-quality-metrics/data-after-death?authuser=0"
+        elif df["Metric Type"][i] == "Unit Concept ID Success Rate":
+            df["Link"][i] = "https://sites.google.com/view/ehrupload/data-quality-metrics/weekly-data-quality-metrics/unit-concept-success-rate?authuser=0"
+        elif df["Metric Type"][i] == "Route Concept ID Success Rate":
+            df["Link"][i] = "https://sites.google.com/view/ehrupload/data-quality-metrics/weekly-data-quality-metrics/route-concept-success-rate?authuser=0"
+        elif df["Metric Type"][i] == "Measurement Integration":
+            df["Link"][i] = "https://sites.google.com/view/ehrupload/data-quality-metrics/weekly-data-quality-metrics/measurement-integration-rate?authuser=0"
+        elif df["Metric Type"][i] == "Drug Ingredient Integration":
+            df["Link"][i] = "https://sites.google.com/view/ehrupload/data-quality-metrics/weekly-data-quality-metrics/drug-ingredient-integration-rate?authuser=0"
+        elif df["Metric Type"][i] == "Erroneous Dates":
+            df["Link"][i] = "https://sites.google.com/view/ehrupload/data-quality-metrics/weekly-data-quality-metrics/erroneous-dates?authuser=0"
+        elif df["Metric Type"][i] == "Person ID Failure Rate":
+            df["Link"][i] = "https://sites.google.com/view/ehrupload/data-quality-metrics/weekly-data-quality-metrics/person-id-failure-rate?authuser=0"
+        elif df["Metric Type"][i] == "Date/Datetime Disparity":
+            df["Link"][i] = "https://sites.google.com/view/ehrupload/data-quality-metrics/weekly-data-quality-metrics/visit-date-disparity?authuser=0"
+        elif df["Metric Type"][i] == "Visit ID Failure Rate":
+            df["Link"][i] = "https://sites.google.com/view/ehrupload/data-quality-metrics/weekly-data-quality-metrics/visit-id-failure-rate?authuser=0"
+    df.to_excel(newwb, sheet.name)
+    newwb.save()
+
+

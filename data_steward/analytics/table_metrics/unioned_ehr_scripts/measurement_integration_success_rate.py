@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.4.2
+#       jupytext_version: 1.3.0
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -95,7 +95,7 @@ CBCwDiff = (40785788, 40785796, 40779195, 40795733, 40795725,
 
 CMP = (3049187, 3053283, 40775801, 40779224, 40782562, 40782579, 40785850,
 40785861, 40785869, 40789180, 40789190, 40789527, 40791227, 40792413, 40792440,
-40795730, 40795740, 40795754)
+40795730, 40795740, 40795754, 40771922)
 
 Physical_Measurement = (40654163, 40655804, 40654162, 40655805, 40654167, 40654164)
 
@@ -112,7 +112,7 @@ num_lipids = len(set(Lipid))
 df = pd.io.gbq.read_gbq('''
 SELECT
     a.src_hpo_id, 
-    round(COUNT(a.src_hpo_id) / {num_lipids} * 100, 2) perc_ancestors
+    round(COUNT(a.src_hpo_id) / {num_lipids} * 100, 2) perc_ancestors -- does not make sense
 FROM
      (
      SELECT
@@ -128,7 +128,7 @@ FROM
      ON
          c.concept_id = m.measurement_concept_id
      JOIN -- ensuring you 'navigate up' the hierarchy
-         `{DATASET}.concept_ancestor` ca
+         `{DATASET}.union_concept_ancestor` ca
      ON
          m.measurement_concept_id = ca.descendant_concept_id
      WHERE
@@ -169,7 +169,7 @@ FROM
      ON
          c.concept_id = m.measurement_concept_id
      JOIN -- ensuring you 'navigate up' the hierarchy
-         `{DATASET}.concept_ancestor` ca
+         `{DATASET}.union_concept_ancestor` ca
      ON
          m.measurement_concept_id = ca.descendant_concept_id
      WHERE
@@ -210,7 +210,7 @@ FROM
      ON
          c.concept_id = m.measurement_concept_id
      JOIN -- ensuring you 'navigate up' the hierarchy
-         `{DATASET}.concept_ancestor` ca
+         `{DATASET}.union_concept_ancestor` ca
      ON
          m.measurement_concept_id = ca.descendant_concept_id
      WHERE
@@ -252,7 +252,7 @@ FROM
      ON
          c.concept_id = m.measurement_concept_id
      JOIN -- ensuring you 'navigate up' the hierarchy
-         `{DATASET}.concept_ancestor` ca
+         `{DATASET}.union_concept_ancestor` ca
      ON
          m.measurement_concept_id = ca.descendant_concept_id
      WHERE
@@ -293,7 +293,7 @@ FROM
      ON
          c.concept_id = m.measurement_concept_id
      JOIN -- ensuring you 'navigate up' the hierarchy
-         `{DATASET}.concept_ancestor` ca
+         `{DATASET}.union_concept_ancestor` ca
      ON
          m.measurement_concept_id = ca.descendant_concept_id
      WHERE
@@ -335,7 +335,7 @@ FROM
      ON
          c.concept_id = m.measurement_concept_id
      JOIN -- ensuring you 'navigate up' the hierarchy
-         `{DATASET}.concept_ancestor` ca
+         `{DATASET}.union_concept_ancestor` ca
      ON
          m.measurement_concept_id = ca.descendant_concept_id
      WHERE

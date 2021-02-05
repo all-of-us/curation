@@ -50,56 +50,56 @@ import constants
 
 relevant_links = {
     constants.concept:
-    "https://sites.google.com/view/ehrupload/"
-    "data-quality-metrics/concept-success-rate?authuser=0",
-
+    "https://sites.google.com/view/ehrupload/data-quality-metrics/"
+    "concept-success-rate?authuser=0",
+   
     constants.duplicates:
-    "https://sites.google.com/view/ehrupload/"
-    "data-quality-metrics/duplicates?authuser=0",
+    "https://sites.google.com/view/ehrupload/data-quality-metrics/"
+    "duplicates?authuser=0",
 
     constants.date_datetime_disparity:
-    "https://sites.google.com/view/ehrupload/"
-    "data-quality-metrics/datedatetime-disparity?authuser=0",
+    "https://sites.google.com/view/ehrupload/data-quality-metrics/"
+    "datedatetime-disparity?authuser=0",
 
     constants.end_before_begin:
-    "https://sites.google.com/view/ehrupload/"
-    "data-quality-metrics/end-dates-preceding-start-dates?authuser=0",
+    "https://sites.google.com/view/ehrupload/data-quality-metrics/"
+    "end-dates-preceding-start-dates?authuser=0",
 
     constants.data_after_death:
-    "https://sites.google.com/view/ehrupload/"
-    "data-quality-metrics/data-after-death?authuser=0",
+    "https://sites.google.com/view/ehrupload/data-quality-metrics/"
+    "data-after-death?authuser=0",
 
     constants.unit_success_rate:
-    "https://sites.google.com/view/ehrupload/"
-    "data-quality-metrics/unit-concept-success-rate?authuser=0",
+    "https://sites.google.com/view/ehrupload/data-quality-metrics/"
+    "unit-concept-success-rate?authuser=0",
 
     constants.drug_routes:
-    "https://sites.google.com/view/ehrupload/"
-    "data-quality-metrics/route-concept-success-rate?authuser=0",
+    "https://sites.google.com/view/ehrupload/data-quality-metrics/"
+    "route-concept-success-rate?authuser=0",
 
     constants.sites_measurement:
-    "https://sites.google.com/view/ehrupload/"
-    "data-quality-metrics/measurement-integration-rate?authuser=0",
+    "https://sites.google.com/view/ehrupload/data-quality-metrics/"
+    "measurement-integration-rate?authuser=0",
 
     constants.drug_success:
-    "https://sites.google.com/view/ehrupload/"
-    "data-quality-metrics/drug-ingredient-integration-rate?authuser=0",
+    "https://sites.google.com/view/ehrupload/data-quality-metrics/"
+    "drug-ingredient-integration-rate?authuser=0",
 
     constants.erroneous_dates:
-    "https://sites.google.com/view/ehrupload/"
-    "data-quality-metrics/erroneous-dates?authuser=0",
+    "https://sites.google.com/view/ehrupload/data-quality-metrics/"
+    "erroneous-dates?authuser=0",
 
     constants.person_id_failure_rate:
-    "https://sites.google.com/view/ehrupload/"
-    "data-quality-metrics/person-id-failure-rate?authuser=0",
+    "https://sites.google.com/view/ehrupload/data-quality-metrics/"
+    "person-id-failure-rate?authuser=0",
 
     constants.visit_date_disparity:
-    "https://sites.google.com/view/ehrupload/"
-    "data-quality-metrics/visit-date-disparity?authuser=0",
+    "https://sites.google.com/view/ehrupload/data-quality-metrics/"
+    "visit-date-disparity?authuser=0",
 
     constants.visit_id_failure_rate:
-    "https://sites.google.com/view/ehrupload/"
-    "data-quality-metrics/visit-id-failure-rate?authuser=0"
+    "https://sites.google.com/view/ehrupload/data-quality-metrics/"
+    "visit-id-failure-rate?authuser=0"
 }
 
 
@@ -172,7 +172,10 @@ full_names = {
     "ipmc_rush": "Rush University",
     "va": "United States Department of Veterans Affairs - Boston",
     "saou_umc": "University Medical Center (UA Tuscaloosa)",
-    "saou_usahs": "University of South Alabama"
+    "saou_usahs": "University of South Alabama",
+    "saou_cgmhs": "Cooper Green Mercy Hospital",
+    "illinois_near_north": "Alliance Chicago",
+    'wisconsin_medical_college_sshc': 'Sixteenth Street Community Health Center Parkway Clinic'
 }
 
 
@@ -331,6 +334,6 @@ metric_type_to_english_dict = {
 }
 
 # currently blank - no new metrics expected
-new_metric_types = [
-    constants.visit_date_disparity_full,
-    constants.visit_id_failure_rate_full]
+new_metric_types = []
+
+
