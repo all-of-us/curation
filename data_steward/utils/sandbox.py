@@ -21,9 +21,11 @@ TABLE_DESCRIPTION_STRING = JINJA_ENV.from_string("""
 """)
 
 TABLE_OPTIONS_CLAUSE = JINJA_ENV.from_string("""
+{%- block options %}
 OPTIONS(
 {{ contents }}
 )
+{%- endblock %}
 """)
 
 
@@ -91,10 +93,26 @@ def get_sandbox_labels_string(src_dataset_name,
                               table_tag,
                               shared_lookup=False):
     STRING_LABELS = ['src_dataset', 'class_name', 'table_tag']
+    BOOL_LABELS = ['shared_lookup']
 
     labels = OrderedDict([('src_dataset', src_dataset_name),
                           ('class_name', class_name), ('table_tag', table_tag),
                           ('shared_lookup', shared_lookup)])
+
+    for label in STRING_LABELS:
+        value = labels[label]
+        if not value or value.isspace():
+            raise ValueError(
+                f"Label '{label}' requires a non-empty string. Received the value '{value}'."
+            )
+
+    for label in BOOL_LABELS:
+        value = labels[label]
+
+        if type(value) != bool:
+            raise ValueError(
+                f"Label '{label}' requires a boolean value of True or False. Received the value '{value}'."
+            )
 
     return TABLE_LABELS_STRING.render(labels=labels)
 
@@ -113,5 +131,4 @@ def get_sandbox_options(dataset_name,
     description_text = get_sandbox_table_description_string(desc)
 
     contents = ',\n'.join([description_text, labels_text])
-
     return TABLE_OPTIONS_CLAUSE.render(contents=contents)
