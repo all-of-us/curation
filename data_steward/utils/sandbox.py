@@ -92,6 +92,17 @@ def get_sandbox_labels_string(src_dataset_name,
                               class_name,
                               table_tag,
                               shared_lookup=False):
+    """A helper function that formats a set of labels for BigQuery
+
+    :param str src_dataset_name: A dataset name
+    :param str class_name: A class name
+    :param str table_tag: A table tag
+    :param bool shared_lookup: A boolean that indicates if a table is a shared lookup, defaults to False
+    :raises ValueError: Raises if one of first three arguments is whitespace or None
+    :raises ValueError: Raises if the `shared_lookup` is not a boolean
+    :return: A formatted string of the arguments concatenated as labels
+    :rtype: str
+    """
     STRING_LABELS = ['src_dataset', 'class_name', 'table_tag']
     BOOL_LABELS = ['shared_lookup']
 
@@ -118,6 +129,12 @@ def get_sandbox_labels_string(src_dataset_name,
 
 
 def get_sandbox_table_description_string(description):
+    """A helper function that returns a formatted description for BigQuery
+
+    :param str description: A table description
+    :return: A formatted table description
+    :rtype: str
+    """
     return TABLE_DESCRIPTION_STRING.render(description=description)
 
 
@@ -126,6 +143,16 @@ def get_sandbox_options(dataset_name,
                         table_tag,
                         desc,
                         shared_lookup=False):
+    """A function that assembles a BigQuery table options clause from labels and descriptions
+
+    :param str dataset_name: A dataset name
+    :param str class_name: A class name
+    :param str table_tag: A table tag
+    :param str description: A table description
+    :param bool shared_lookup: A boolean that indicates if a table is a shared lookup, defaults to False
+    :return: A BigQuery table options clause 
+    :rtype: str
+    """
     labels_text = get_sandbox_labels_string(dataset_name, class_name, table_tag,
                                             shared_lookup)
     description_text = get_sandbox_table_description_string(desc)
