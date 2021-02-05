@@ -91,7 +91,7 @@ def create_test_buckets(config, buckets):
 
 
 if __name__ == "__main__":
-    from ci.setup import get_environment_config, BUCKET_NAMES
+    from ci.test_setup import get_environment_config, BUCKET_NAMES
 
     config = get_environment_config()
     create_test_buckets(config, BUCKET_NAMES)

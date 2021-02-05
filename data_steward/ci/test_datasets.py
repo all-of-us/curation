@@ -121,7 +121,7 @@ def create_test_datasets(config, datasets):
 
 if __name__ == "__main__":
     # only import this if this is running as a standalone module
-    from ci.setup import get_environment_config, DATASET_NAMES
+    from ci.test_setup import get_environment_config, DATASET_NAMES
 
     config = get_environment_config()
     create_test_datasets(config, DATASET_NAMES)
