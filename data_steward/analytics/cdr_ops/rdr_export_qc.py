@@ -70,6 +70,7 @@ domain_table_list = [
     'measurement', 'note', 'observation', 'procedure_occurrence', 'provider',
     'specimen', 'visit_occurrence'
 ]
+queries = []
 for table in domain_table_list:
     query = f'''
     SELECT
@@ -80,8 +81,8 @@ for table in domain_table_list:
     WHERE
       {table}_id > 999999999999999
     '''
-
-    pd.read_gbq(query, dialect='standard')
+    queries.append(query)
+pd.read_gbq('\nUNION ALL\n'.join(queries), dialect='standard')
 
 # ## Concept codes used
 # Identify question and answer concept codes which were either added or removed (appear in only the new or only the old RDR datasets, respectively).
