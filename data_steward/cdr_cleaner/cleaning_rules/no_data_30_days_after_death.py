@@ -3,24 +3,40 @@ If there is a death_date listed for a person_id, ensure that no temporal fields
 (see the CDR cleaning spreadsheet tab labeled all temporal here) for that person_id exist more than
 30 days after the death_date.
 """
+import logging
+from collections import ChainMap
 
 from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as cdr_consts
+from common import JINJA_ENV
+
+from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
+
+LOGGER = logging.getLogger(__name__)
+
+JIRA_ISSUE_NUMBERS = ['DC816', 'DC404']
 
 # add table names as keys and temporal representations as values into a dictionary
-TEMPORAL_TABLES_WITH_END_DATES = {
-    'visit_occurrence': 'visit',
-    'condition_occurrence': 'condition',
-    'drug_exposure': 'drug_exposure',
-    'device_exposure': 'device_exposure'
+TEMPORAL_TABLES_WITH_START_DATE = {
+    'visit_occurrence': 'visit_start_date',
+    'condition_occurrence': 'condition_start_date',
+    'drug_exposure': 'drug_exposure_start_date',
+    'device_exposure': 'device_exposure_start_date'
 }
 
-TEMPORAL_TABLES_WITH_NO_END_DATES = {
-    'person': 'birth',
-    'measurement': 'measurement',
-    'procedure_occurrence': 'procedure',
-    'observation': 'observation',
-    'specimen': 'specimen'
+TEMPORAL_TABLES_WITH_END_DATE = {
+    'visit_occurrence': 'visit_end_date',
+    'condition_occurrence': 'condition_end_date',
+    'drug_exposure': 'drug_exposure_end_date',
+    'device_exposure': 'device_exposure_end_date'
+}
+
+TEMPORAL_TABLES_WITH_DATE = {
+    'person': 'birth_datetime',
+    'measurement': 'measurement_date',
+    'procedure_occurrence': 'procedure_date',
+    'observation': 'observation_date',
+    'specimen': 'specimen_date'
 }
 
 # Join Death to domain_table ON person_id
@@ -29,85 +45,184 @@ TEMPORAL_TABLES_WITH_NO_END_DATES = {
 # use the above generated domain_table_ids as a list
 # select rows in a domain_table where the domain_table_ids not in above generated list of ids
 
-REMOVE_DEATH_DATE_QUERY_WITH_END_DATES = (
-    "SELECT * "
-    "FROM `{project}.{dataset}.{table_name}` "
-    "WHERE {table_name}_id NOT IN ("
-    "  SELECT ma.{table_name}_id "
-    "  FROM `{project}.{dataset}.{table_name}` ma"
-    "  JOIN `{project}.{dataset}.death` d"
-    "  ON ma.person_id = d.person_id"
-    "  WHERE (date_diff(ma.{start_date},d.death_date, DAY) > 30"
-    "  OR date_diff({end_date}, d.death_date, DAY) > 30))")
+SANDBOX_DEATH_DATE_WITH_END_DATES_QUERY = JINJA_ENV.from_string("""
+SELECT ma.*
+FROM `{{project}}.{{dataset}}.{{table_name}}` AS ma
+JOIN `{{project}}.{{dataset}}.death` AS d
+ON ma.person_id = d.person_id
+WHERE date_diff(GREATEST(CAST(ma.{{start_date}} AS DATE), CAST(ma.{{end_date}} AS DATE)), d.death_date, DAY) > 30
+""")
 
-REMOVE_DEATH_DATE_QUERY = (
-    "SELECT * "
-    "FROM `{project}.{dataset}.{table_name}` "
-    "WHERE {table_name}_id NOT IN ("
-    "  SELECT ma.{table_name}_id "
-    "  FROM `{project}.{dataset}.{table_name}` ma"
-    "  JOIN `{project}.{dataset}.death` d"
-    "  ON ma.person_id = d.person_id"
-    "  WHERE (date_diff({date_column}, death_date, DAY) > 30))")
+SANDBOX_DEATH_DATE_QUERY_QUERY = JINJA_ENV.from_string("""
+SELECT ma.*
+FROM `{{project}}.{{dataset}}.{{table_name}}` AS ma
+JOIN `{{project}}.{{dataset}}.death` AS d
+ON ma.person_id = d.person_id
+WHERE date_diff(CAST({{date_column}} AS DATE), death_date, DAY) > 30
+""")
+
+REMOVE_DEATH_DATE_QUERY = JINJA_ENV.from_string("""
+SELECT * 
+FROM `{{project}}.{{dataset}}.{{table_name}}`
+WHERE {{table_name}}_id NOT IN (
+    SELECT {{table_name}}_id 
+    FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table_name}}`
+)
+""")
 
 
-def no_data_30_days_after_death(project_id, dataset_id):
+class TableDateColumnException(Exception):
+
+    def __init__(self, msg):
+        super(TableDateColumnException, self).__init__(msg)
+
+
+def get_affected_tables():
     """
-    Returns a list of queries which will remove data for each person if the data is 30 days after the death date.
-
-    :param project_id: Project associated with the input and output datasets
-    :param dataset_id: Dataset where cleaning rules are to be applied
-    :return: a list of queries
+    A helper function to retrieve the entire list of domain tables that gets affected
+    :return: 
     """
-    queries = []
-    for table in TEMPORAL_TABLES_WITH_NO_END_DATES:
-        if table == cdr_consts.PERSON_TABLE_NAME:
-            date_column = 'DATE({person_table_column}_datetime)'.format(
-                person_table_column=TEMPORAL_TABLES_WITH_NO_END_DATES[table])
-            query = dict()
-            query[cdr_consts.QUERY] = REMOVE_DEATH_DATE_QUERY.format(
-                project=project_id,
-                dataset=dataset_id,
-                table_name=table,
-                date_column=date_column)
-            query[cdr_consts.DESTINATION_TABLE] = table
-            query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
-            query[cdr_consts.DESTINATION_DATASET] = dataset_id
+    return list(
+        ChainMap(TEMPORAL_TABLES_WITH_START_DATE, TEMPORAL_TABLES_WITH_END_DATE,
+                 TEMPORAL_TABLES_WITH_DATE).keys())
 
-            queries.append(query)
-        else:
-            query = dict()
-            date_column = '{table_column}_date'.format(
-                table_column=TEMPORAL_TABLES_WITH_NO_END_DATES[table])
-            query[cdr_consts.QUERY] = REMOVE_DEATH_DATE_QUERY.format(
-                project=project_id,
-                dataset=dataset_id,
-                table_name=table,
-                date_column=date_column)
-            query[cdr_consts.DESTINATION_TABLE] = table
-            query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
-            query[cdr_consts.DESTINATION_DATASET] = dataset_id
 
-            queries.append(query)
+def get_date(table):
+    """
+    A helper function to get the date column
+    :param table: 
+    :return: 
+    """
+    if table not in TEMPORAL_TABLES_WITH_DATE:
+        raise TableDateColumnException(
+            f"{table} does not have a date column defined in {TEMPORAL_TABLES_WITH_DATE}"
+        )
+    return TEMPORAL_TABLES_WITH_DATE[table]
 
-    for table in TEMPORAL_TABLES_WITH_END_DATES:
-        query = dict()
-        start_date = '{table_column}_start_date'.format(
-            table_column=TEMPORAL_TABLES_WITH_END_DATES[table])
-        end_date = '{table_column}_end_date'.format(
-            table_column=TEMPORAL_TABLES_WITH_END_DATES[table])
-        query[cdr_consts.QUERY] = REMOVE_DEATH_DATE_QUERY_WITH_END_DATES.format(
-            project=project_id,
-            dataset=dataset_id,
+
+def get_start_date(table):
+    """
+    A helper function to get the start date column
+    :param table: 
+    :return: 
+    """
+    if table not in TEMPORAL_TABLES_WITH_START_DATE:
+        raise TableDateColumnException(
+            f"{table} does not have a date column defined in {TEMPORAL_TABLES_WITH_START_DATE}"
+        )
+    return TEMPORAL_TABLES_WITH_START_DATE[table]
+
+
+def get_end_date(table):
+    """
+    A helper function to get the end date column
+    :param table: 
+    :return: 
+    """
+    if table not in TEMPORAL_TABLES_WITH_END_DATE:
+        raise TableDateColumnException(
+            f"{table} does not have a date column defined in {TEMPORAL_TABLES_WITH_END_DATE}"
+        )
+    return TEMPORAL_TABLES_WITH_END_DATE[table]
+
+
+class NoDataAfterDeath(BaseCleaningRule):
+
+    def __init__(self, project_id, dataset_id, sandbox_dataset_id):
+        """
+        Initialize the class with proper information.
+
+        Set the issue numbers, description and affected datasets. As other tickets may affect
+        this SQL, append them to the list of Jira Issues.
+        DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
+        """
+        desc = (
+            'If there is a death_date listed for a person_id, ensure that no temporal fields'
+            '(see the CDR cleaning spreadsheet tab labeled all temporal here) for that '
+            'person_id exist more than30 days after the death_date.')
+
+        # get all affected tables by combining the two dicts
+
+        super().__init__(issue_numbers=JIRA_ISSUE_NUMBERS,
+                         description=desc,
+                         affected_datasets=[cdr_consts.COMBINED],
+                         affected_tables=get_affected_tables(),
+                         project_id=project_id,
+                         dataset_id=dataset_id,
+                         sandbox_dataset_id=sandbox_dataset_id)
+
+    def get_sandbox_query_for(self, table):
+        """
+        Instantiate the sandbox query
+        :param table: 
+        :return: 
+        """
+        # Choose a template depending on whether the table has start/end date columns
+        query_template = (SANDBOX_DEATH_DATE_QUERY_QUERY
+                          if table in TEMPORAL_TABLES_WITH_DATE else
+                          SANDBOX_DEATH_DATE_WITH_END_DATES_QUERY)
+
+        query_params = {
+            'project': self.project_id,
+            'dataset': self.dataset_id,
+            'table_name': table
+        }
+
+        specific_params = {
+            'date_column': get_date(table)
+        } if table in TEMPORAL_TABLES_WITH_DATE else {
+            'start_date': get_start_date(table),
+            'end_date': get_end_date(table)
+        }
+
+        return query_template.render(**query_params, **specific_params)
+
+    def get_query_for(self, table):
+        """
+        Instantiate the query
+        :param table: 
+        :return: 
+        """
+        return REMOVE_DEATH_DATE_QUERY.render(
+            project=self.project_id,
+            dataset=self.dataset_id,
+            sandbox_dataset=self.sandbox_dataset_id,
             table_name=table,
-            start_date=start_date,
-            end_date=end_date)
-        query[cdr_consts.DESTINATION_TABLE] = table
-        query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
-        query[cdr_consts.DESTINATION_DATASET] = dataset_id
+            sandbox_table_name=self.sandbox_table_for(table))
 
-        queries.append(query)
-    return queries
+    def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
+        queries = []
+
+        for table in get_affected_tables():
+            queries.append({
+                cdr_consts.QUERY: self.get_sandbox_query_for(table),
+                cdr_consts.DESTINATION_TABLE: self.sandbox_table_for(table),
+                cdr_consts.DESTINATION_DATASET: self.sandbox_dataset_id,
+                cdr_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE
+            })
+
+            queries.append({
+                cdr_consts.QUERY: self.get_query_for(table),
+                cdr_consts.DESTINATION_TABLE: table,
+                cdr_consts.DESTINATION_DATASET: self.dataset_id,
+                cdr_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE
+            })
+        return queries
+
+    def setup_rule(self, client, *args, **keyword_args):
+        pass
+
+    def setup_validation(self, client, *args, **keyword_args):
+        pass
+
+    def validate_rule(self, client, *args, **keyword_args):
+        pass
+
+    def get_sandbox_tablenames(self):
+        return [
+            self.sandbox_table_for(affected_table)
+            for affected_table in self.affected_tables
+        ]
 
 
 if __name__ == '__main__':
@@ -115,6 +230,17 @@ if __name__ == '__main__':
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
     ARGS = parser.parse_args()
-    clean_engine.add_console_logging(ARGS.console_log)
-    query_list = no_data_30_days_after_death(ARGS.project_id, ARGS.dataset_id)
-    clean_engine.clean_dataset(ARGS.project_id, query_list)
+
+    if ARGS.list_queries:
+        clean_engine.add_console_logging()
+        query_list = clean_engine.get_query_list(ARGS.project_id,
+                                                 ARGS.dataset_id,
+                                                 ARGS.sandbox_dataset_id,
+                                                 [(NoDataAfterDeath,)])
+        for query in query_list:
+            LOGGER.info(query)
+    else:
+        clean_engine.add_console_logging(ARGS.console_log)
+        clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
+                                   ARGS.sandbox_dataset_id,
+                                   [(NoDataAfterDeath,)])

@@ -88,7 +88,7 @@ if __name__ == '__main__':
         if args.component == common.VOCABULARY:
             create_vocabulary_tables(args.dataset_id)
         elif args.component == common.ACHILLES:
-            # TODO implement creating achilles tables; need to fix interdependency of common, resources, cdm
+            # TODO implement creating achilles tables; need to fix interdependency of common, resource_files, cdm
             raise NotImplementedError(
                 'Creating achilles tables not yet implemented')
     else:

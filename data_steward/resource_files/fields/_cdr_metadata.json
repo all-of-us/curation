@@ -1,0 +1,50 @@
+[
+    {
+        "type": "string", 
+        "name": "etl_version", 
+        "mode": "nullable", 
+        "description": "The version of pipeline used to generate CDR"
+    }, 
+    {
+        "type": "string", 
+        "name": "ehr_source", 
+        "mode": "nullable", 
+        "description": "EHR dataset used to generate cdr"
+    }, 
+    {
+        "type": "date", 
+        "name": "ehr_cutoff_date", 
+        "mode": "nullable", 
+        "description": "The Cutoff date for the ehr_submissions"
+    }, 
+    {
+        "type": "string", 
+        "name": "rdr_source", 
+        "mode": "nullable", 
+        "description": "RDR dataset used to generate cdr"
+    }, 
+    {
+        "type": "date", 
+        "name": "rdr_export_date", 
+        "mode": "nullable", 
+        "description": "Date RDR export is handed over to curation team"
+    }, 
+    {
+        "type": "date", 
+        "name": "cdr_generation_date", 
+        "mode": "nullable",
+        "description": "The date for which the source data are most current, such as the day the cdr pipeline is initiated."
+    }, 
+    {
+        "type": "date", 
+        "name": "qa_handoff_date", 
+        "mode": "nullable", 
+        "description": "The date on which the CDR is being handed over to the QA team for QA"
+    },
+    {
+        "type": "string", 
+        "name": "vocabulary_version", 
+        "mode": "nullable", 
+        "description": "The version of the vocabulary used"
+    }
+]

@@ -1,6 +1,6 @@
 # Python imports
 import os
-import unittest
+from unittest import mock, TestCase
 
 # Project imports
 import app_identity
@@ -51,7 +51,7 @@ def comparison_view(rs):
              get_int(r, FIELD_RECORD_COUNT)) for r in rs]
 
 
-class TopHeelErrorsTest(unittest.TestCase):
+class TopHeelErrorsTest(TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -100,7 +100,10 @@ class TopHeelErrorsTest(unittest.TestCase):
         actual_results = comparison_view(dataset_errors)
         self.assertCountEqual(actual_results, expected_results)
 
-    def test_top_heel_errors_all_hpo(self):
+    @mock.patch('tools.top_heel_errors.get_hpo_ids')
+    def test_top_heel_errors_all_hpo(self, mock_hpo_ids):
+        hpo_ids = [HPO_NYC, HPO_PITT]
+        mock_hpo_ids.return_value = hpo_ids
         expected_results = []
         for hpo_id in [HPO_NYC, HPO_PITT]:
             rows = self.load_test_data(hpo_id)

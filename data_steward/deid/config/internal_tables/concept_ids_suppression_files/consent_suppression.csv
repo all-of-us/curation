@@ -1,0 +1,4 @@
+vocabulary_id,concept_code,concept_name,concept_id,domain_id,rule
+PPI,Reconsent_HelpWithConsentSignature,Reconsent: Help With Consent Signature,903516,Observation,
+PPI,ResultsConsent_Signature,Results Consent: Signature,903562,Observation,
+PPI,Reconsent_Signature,Reconsent: Signature,903513,Observation,

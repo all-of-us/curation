@@ -1,7 +1,13 @@
 import argparse
 
+from google.cloud import bigquery as bq
+
 import cdm
-from bq_utils import *
+import resources
+from bq_utils import create_dataset, list_all_table_ids, query, wait_on_jobs, BigQueryJobWaitError, \
+    create_standard_table
+
+PERSON = 'person'
 
 
 def create_empty_dataset(project_id, dataset_id, snapshot_dataset_id):
@@ -19,22 +25,68 @@ def create_empty_dataset(project_id, dataset_id, snapshot_dataset_id):
         overwrite_existing=True)
 
 
-def create_empty_cdm_tables(snapshot_dataset_id):
+def has_at_birth_column(dataset_id):
+    query = """SELECT column_name from `{dataset}.INFORMATION_SCHEMA.COLUMNS` where table_name = 'person' """
+    client = bq.Client()
+    result = client.query(query.format(dataset=dataset_id)).to_dataframe()
+    if 'sex_at_birth_concept_id' in result['column_name'].to_list():
+        return True
+    else:
+        return False
+
+
+def create_empty_cdm_tables(snapshot_dataset_id, dataset_id):
     """
     Copy the table content from the current dataset to the snapshot dataset
     :param snapshot_dataset_id:
+    :param dataset_id
     :return:
     """
-    cdm.create_all_tables(snapshot_dataset_id)
+    for table in resources.CDM_TABLES:
+        if table == PERSON and has_at_birth_column(dataset_id):
+            table_id = table
+            table_name = 'post_deid_person'
+        else:
+            table_id = table
+            table_name = table
+        create_standard_table(table_name,
+                              table_id,
+                              drop_existing=True,
+                              dataset_id=snapshot_dataset_id)
     cdm.create_vocabulary_tables(snapshot_dataset_id)
+
+
+def get_field_cast_expr(field, data_type):
+    """
+    generates cast expression based on data_type for the field
+
+    :param field: field name
+    :param data_type: data type of the field
+    :return:  col string
+    """
+    bigquery_int_float = {'integer': 'INT64', 'float': 'FLOAT64'}
+
+    if data_type not in ['integer', 'float']:
+        col = f'CAST({field} AS {data_type.upper()}) AS {field}'
+    else:
+        col = f'CAST({field} AS {bigquery_int_float[data_type]}) AS {field}'
+
+    return col
 
 
 def get_copy_table_query(project_id, dataset_id, table_id):
     try:
-        fields = resources.fields_for(table_id)
-        field_names = [field['name'] for field in fields]
-        col_expr = ', '.join(field_names)
-    except (OSError, IOError) as e:
+        if table_id == PERSON and has_at_birth_column(dataset_id):
+            table_name = 'post_deid_person'
+        else:
+            table_name = table_id
+        fields = resources.fields_for(table_name)
+        fields_with_datatypes = [
+            get_field_cast_expr(field['name'], field['type'])
+            for field in fields
+        ]
+        col_expr = ', '.join(fields_with_datatypes)
+    except (OSError, IOError, RuntimeError):
         # default to select *
         col_expr = '*'
     select_all_query = 'SELECT {col_expr} FROM `{project_id}.{dataset_id}.{table_id}`'
@@ -75,7 +127,7 @@ def create_snapshot_dataset(project_id, dataset_id, snapshot_dataset_id):
     """
     create_empty_dataset(project_id, dataset_id, snapshot_dataset_id)
 
-    create_empty_cdm_tables(snapshot_dataset_id)
+    create_empty_cdm_tables(snapshot_dataset_id, dataset_id)
 
     copy_tables_to_new_dataset(project_id, dataset_id, snapshot_dataset_id)
 

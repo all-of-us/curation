@@ -1,12 +1,13 @@
 """
-    This class applies rules and meta data to yield a certain outpout
+This class applies rules and meta data to yield a certain output
 """
 # Python imports
 import codecs
-from datetime import datetime
 import json
 import logging
 import os
+from abc import ABC, abstractmethod
+from datetime import datetime
 
 # Third party imports
 import pandas as pd
@@ -57,7 +58,7 @@ def set_up_logging(log_path, idataset):
                             format=file_format)
 
 
-class Press(object):
+class Press(ABC):
 
     def __init__(self, **args):
         """
@@ -66,6 +67,7 @@ class Press(object):
         :pipeline   operations and associated sequence in which they should be performed
         """
         self.idataset = args.get('idataset', '')
+        self.odataset = args.get('odataset', '')
         self.tablepath = args.get('table')
         self.tablename = os.path.basename(
             self.tablepath).split('.json')[0].strip()
@@ -136,23 +138,26 @@ class Press(object):
 
         return field_names
 
+    @abstractmethod
     def get_dataframe(self, sql=None, limit=None):
         """
         This function will execute an SQL statement and return the meta data for a given table
         """
-        return None
+        pass
 
+    @abstractmethod
     def submit(self, sql, create, dml=None):
         """
         Should be overridden by subclasses.
         """
-        raise NotImplementedError()
+        pass
 
+    @abstractmethod
     def update_rules(self):
         """
         Should be overridden by subclasses.
         """
-        raise NotImplementedError()
+        pass
 
     def do(self):
         """
@@ -164,8 +169,8 @@ class Press(object):
         p = d.apply(self.table_info, self.store, self.get_tablename())
 
         is_meta = np.sum([1 * ('on' in _item) for _item in p]) != 0
-        LOGGER.info('table:\t%s\t\tis a meta table:\t%s', self.get_tablename(),
-                    is_meta)
+        LOGGER.info(
+            f"table:\t{self.get_tablename()}\t\tis a meta table:\t{is_meta}")
         if not is_meta:
             sql = [self.to_sql(p)]
             _rsql = None
@@ -238,7 +243,7 @@ class Press(object):
                 # Make this threaded if there is a submit action that is associated with it
                 self.simulate(p)
 
-        LOGGER.info('FINISHED de-identification on table:\t%s', self.tablename)
+        LOGGER.info(f"FINISHED de-identification on table:\t{self.tablename}")
 
     def get_tablename(self):
         return self.idataset + "." + self.tablename if self.idataset else self.tablename
@@ -271,8 +276,9 @@ class Press(object):
             labels = item['label'].split('.')
 
             if not (set(labels) & set(self.pipeline)):
-                LOGGER.info('Skipping simulation for table:\t%s\t\tvalues:\t%s',
-                            table_name, labels)
+                LOGGER.info(
+                    f"Skipping simulation for table:\t{table_name}\t\tvalues:\t{labels}"
+                )
                 continue
 
             if labels[0] not in counts:
@@ -318,8 +324,8 @@ class Press(object):
 
             if data_frame.shape[0] == 0:
                 LOGGER.info(
-                    'no data-found for simulation of table:\t%s\t\tfield:\t%s\t\ttype:\t%s',
-                    table_name, field, item['label'])
+                    f"no data-found for simulation of table:\t{table_name}\t\t"
+                    f"field:\t{field}\t\ttype:\t{item['label']}")
                 continue
 
             data_frame.columns = ['original', 'transformed']
@@ -381,8 +387,8 @@ class Press(object):
             _data_frame = _map[path]
             _data_frame.to_csv(path)
 
-        LOGGER.info('simulation completed for table:\t%s\t\tvalue:\t%s',
-                    table_name, root)
+        LOGGER.info(
+            f"simulation completed for table:\t{table_name}\t\tvalue:\t{root}")
 
     def to_sql(self, info):
         """
@@ -396,8 +402,8 @@ class Press(object):
         fields = self.get_table_columns(self.tablename)
         columns = list(fields)
         sql_list = []
-        LOGGER.info('generating-sql for table:\t%s\t\tfields:\t%s', table_name,
-                    fields)
+        LOGGER.info(
+            f"generating-sql for table:\t{table_name}\t\tfields:\t{fields}")
 
         for rule_id in self.pipeline:
             for row in info:
@@ -408,8 +414,8 @@ class Press(object):
 
                 index = fields.index(name)
                 fields[index] = row['apply']
-                LOGGER.info('creating SQL for field:\t%s\t\twith:\t%s', name,
-                            row['apply'])
+                LOGGER.info(
+                    f"creating SQL for field:\t{name}\t\twith:\t{row['apply']}")
 
         sql_list = ['SELECT', ",".join(fields), 'FROM ', table_name]
 
@@ -508,7 +514,7 @@ class Press(object):
         for rule in info:
             if rule.get('dml_statement', False):
                 query = rule.get('apply')
-                LOGGER.info('adding dml statement:  %s', rule.get('name'))
+                LOGGER.info(f"adding dml statement:  {rule.get('name')}")
                 sql_list.append(query)
 
         return sql_list

@@ -1,0 +1,2 @@
+person_id,first_name,last_name,dob,sex,address,phone_number,email,algorithm_validation,manual_validation
+19,John,Doe,1975-05-09,Male,11-5 Lane,9876543210,john.doe@website.com,No,Yes

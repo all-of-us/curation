@@ -20,7 +20,7 @@ norm_path () {
 }
 
 DATA_STEWARD_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
-export DATA_STEWARD_DIR="$(norm_path ${DATA_STEWARD_DIR})"
+export DATA_STEWARD_DIR="$(norm_path "${DATA_STEWARD_DIR}")"
 
 # libs should appear first in PYTHONPATH so we can override versions from
 # the GAE SDK. (Specifically, we need oauth2client >= 4.0.0 and GAE uses 1.x.)

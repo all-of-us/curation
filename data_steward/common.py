@@ -1,7 +1,13 @@
+# Python imports
+import os
+
+# Project imports
 from constants.bq_utils import VALIDATION_DATASET_REGEX
 from constants.validation.participants.identity_match import REPORT_DIRECTORY_REGEX
+import jinja2
 
 # AOU required PII tables
+PII_WILDCARD = 'pii*'
 PII_NAME = 'pii_name'
 PII_EMAIL = 'pii_email'
 PII_PHONE_NUMBER = 'pii_phone_number'
@@ -49,9 +55,25 @@ UNMAPPED_CLINICAL_DATA_TABLES = [DEATH]
 CLINICAL_DATA_TABLES = MAPPED_CLINICAL_DATA_TABLES + UNMAPPED_CLINICAL_DATA_TABLES
 
 # other CDM tables
-OBSERVATION_PERIOD = 'observation_period'
-DRUG_ERA = 'drug_era'
+ATTRIBUTE_DEFINITION = 'attribute_definition'
+COHORT_DEFINITION = 'cohort_definition'
 CONDITION_ERA = 'condition_era'
+DRUG_ERA = 'drug_era'
+DOSE_ERA = 'dose_era'
+DRUG_COST = 'drug_cost'
+VISIT_COST = 'visit_cost'
+DEVICE_COST = 'device_cost'
+PROCEDURE_COST = 'procedure_cost'
+OBSERVATION_PERIOD = 'observation_period'
+PAYER_PLAN_PERIOD = 'payer_plan_period'
+
+OTHER_CDM_TABLES = [
+    ATTRIBUTE_DEFINITION, COHORT_DEFINITION, CONDITION_ERA, DRUG_ERA, DOSE_ERA,
+    DRUG_COST, VISIT_COST, DEVICE_COST, PROCEDURE_COST, OBSERVATION_PERIOD,
+    PAYER_PLAN_PERIOD
+]
+
+CDM_TABLES = AOU_REQUIRED + OTHER_CDM_TABLES
 
 AOU_REQUIRED_FILES = [table + '.csv' for table in AOU_REQUIRED]
 PII_FILES = [table + '.csv' for table in PII_TABLES]
@@ -64,6 +86,17 @@ PERSON_REPORT = 'person'
 DATA_DENSITY_REPORT = 'datadensity'
 ALL_REPORTS = [ACHILLES_HEEL_REPORT, PERSON_REPORT, DATA_DENSITY_REPORT]
 ALL_REPORT_FILES = [report + '.json' for report in ALL_REPORTS]
+
+# Wearables
+ACTIVITY_SUMMARY = 'activity_summary'
+HEART_RATE_MINUTE_LEVEL = 'heart_rate_minute_level'
+HEART_RATE_SUMMARY = 'heart_rate_summary'
+STEPS_INTRADAY = 'steps_intraday'
+
+FITBIT_TABLES = [
+    ACTIVITY_SUMMARY, HEART_RATE_MINUTE_LEVEL, HEART_RATE_SUMMARY,
+    STEPS_INTRADAY
+]
 
 # Vocabulary
 CONCEPT = 'concept'
@@ -97,7 +130,7 @@ IGNORE_STRING_LIST = [ACHILLES_EXPORT_PREFIX_STRING]
 ACHILLES_EXPORT_DATASOURCES_JSON = ACHILLES_EXPORT_PREFIX_STRING + 'datasources.json'
 
 # latest vocabulary dataset name in test and prod
-VOCABULARY_DATASET = 'vocabulary20190423'
+VOCABULARY_DATASET = os.environ.get('VOCABULARY_DATASET')
 CLINICAL = 'clinical'
 ACHILLES = 'achilles'
 CDM_COMPONENTS = [CLINICAL, VOCABULARY, ACHILLES]
@@ -151,18 +184,47 @@ AOU_GEN_VOCABULARY_CONCEPT_ID = '2000000000'
 AOU_GEN_VOCABULARY_REFERENCE = 'https://docs.google.com/document/d/10Gji9VW5-RTysM-yAbRa77rXqVfDfO2li2U4LxUQH9g'
 AOU_CUSTOM_ID = 'AoU_Custom'
 AOU_CUSTOM_NAME = 'AoU_Custom'
-AOU_CUSTOM_VOCABULARY_CONCEPT_ID = '3000000000'
+AOU_CUSTOM_VOCABULARY_CONCEPT_ID = '2100000000'
 AOU_CUSTOM_VOCABULARY_REFERENCE = 'https://precisionmedicineinitiative.atlassian.net/browse/DC-618'
 OMOP_VOCABULARY_CONCEPT_ID = '44819096'
 ERROR_APPENDING = 'Appending to {in_path} which already contains rows for {vocab_id}'
 VERSION_TEMPLATE = 'insert version info here'
 VOCABULARY_UPDATES = {
     AOU_GEN_ID: [
-        AOU_GEN_ID, AOU_GEN_NAME, AOU_GEN_VOCABULARY_CONCEPT_ID,
-        VERSION_TEMPLATE, AOU_GEN_VOCABULARY_REFERENCE
+        AOU_GEN_ID, AOU_GEN_NAME, AOU_GEN_VOCABULARY_REFERENCE,
+        VERSION_TEMPLATE, AOU_GEN_VOCABULARY_CONCEPT_ID
     ],
     AOU_CUSTOM_ID: [
-        AOU_CUSTOM_ID, AOU_CUSTOM_NAME, AOU_CUSTOM_VOCABULARY_CONCEPT_ID,
-        VERSION_TEMPLATE, AOU_CUSTOM_VOCABULARY_REFERENCE
+        AOU_CUSTOM_ID, AOU_CUSTOM_NAME, AOU_CUSTOM_VOCABULARY_REFERENCE,
+        VERSION_TEMPLATE, AOU_CUSTOM_VOCABULARY_CONCEPT_ID
     ]
 }
+
+COMBINED = 'combined'
+UNIONED_EHR = 'unioned_ehr'
+DEID = 'deid'
+EHR = 'ehr'
+RDR = 'rdr'
+RELEASE = 'release'
+OTHER = 'other'
+
+MAPPING = 'mapping'
+MAPPING_PREFIX = '_mapping_'
+EXT = 'ext'
+EXT_SUFFIX = '_ext'
+
+DEID_MAP = '_deid_map'
+
+# JINJA
+JINJA_ENV = jinja2.Environment(
+    # block tags on their own lines
+    # will not cause extra white space
+    trim_blocks=True,
+    lstrip_blocks=True,
+    # syntax highlighting should be better
+    # with these comment delimiters
+    comment_start_string='--',
+    comment_end_string=' --',
+    # in jinja2 autoescape is for html; jinjasql supports autoescape for sql
+    # TODO Look into jinjasql for sql templating
+    autoescape=False)

@@ -2,27 +2,24 @@
 Unit test components of data_steward.validation.main
 """
 from __future__ import print_function
-from io import StringIO
-import datetime
 import json
 import os
-import re
 import unittest
 from io import open
 
-import googleapiclient.errors
 import mock
+from bs4 import BeautifulSoup as bs
 
 import bq_utils
+import app_identity
 import common
 from constants import bq_utils as bq_consts
-from constants.validation import hpo_report as report_consts
-from constants.validation import main as main_constants
-from constants.validation.participants import identity_match as id_match_consts
+from constants.validation import main as main_consts
 import gcs_utils
 import resources
-from tests import test_util as test_util
+from tests import test_util
 from validation import main
+from validation.metrics import required_labs
 
 
 class ValidationMainTest(unittest.TestCase):
@@ -36,6 +33,8 @@ class ValidationMainTest(unittest.TestCase):
     def setUp(self):
         self.hpo_id = test_util.FAKE_HPO_ID
         self.hpo_bucket = gcs_utils.get_hpo_bucket(self.hpo_id)
+        self.project_id = app_identity.get_application_id()
+        self.rdr_dataset_id = bq_utils.get_rdr_dataset_id()
         mock_get_hpo_name = mock.patch('validation.main.get_hpo_name')
 
         self.mock_get_hpo_name = mock_get_hpo_name.start()
@@ -43,19 +42,19 @@ class ValidationMainTest(unittest.TestCase):
         self.addCleanup(mock_get_hpo_name.stop)
 
         self.bigquery_dataset_id = bq_utils.get_dataset_id()
-        self.folder_prefix = '2019-01-01/'
+        self.folder_prefix = '2019-01-01-v1/'
         self._empty_bucket()
         test_util.delete_all_tables(self.bigquery_dataset_id)
-
-
-#        self._create_drug_class_table()
+        self._create_drug_class_table(self.bigquery_dataset_id)
 
     def _empty_bucket(self):
         bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
         for bucket_item in bucket_items:
             gcs_utils.delete_object(self.hpo_bucket, bucket_item['name'])
 
-    def _create_drug_class_table(self):
+    @staticmethod
+    def _create_drug_class_table(bigquery_dataset_id):
+
         table_name = 'drug_class'
         fields = [{
             "type": "integer",
@@ -73,27 +72,24 @@ class ValidationMainTest(unittest.TestCase):
         bq_utils.create_table(table_id=table_name,
                               fields=fields,
                               drop_existing=True,
-                              dataset_id=self.bigquery_dataset_id)
+                              dataset_id=bigquery_dataset_id)
 
-        bq_utils.query(q=main_constants.DRUG_CLASS_QUERY.format(
-            dataset_id=self.bigquery_dataset_id),
+        bq_utils.query(q=main_consts.DRUG_CLASS_QUERY.format(
+            dataset_id=bigquery_dataset_id),
                        use_legacy_sql=False,
                        destination_table_id='drug_class',
                        retry_count=bq_consts.BQ_DEFAULT_RETRY_COUNT,
                        write_disposition='WRITE_TRUNCATE',
-                       destination_dataset_id=self.bigquery_dataset_id)
+                       destination_dataset_id=bigquery_dataset_id)
 
-    # ignore the timestamp and folder tags from testing
-    @staticmethod
-    def _remove_timestamp_tags_from_results(result_file):
-        # convert to list to avoid using regex
-        result_list = result_file.split('\n')
-        remove_start_index = result_list.index('</h1>') + 4
-        # the folder tags span 3 indices starting immediately after h1 tag ends, timestamp tags span 3 indices after
-        output_result_list = result_list[:remove_start_index] + result_list[
-            remove_start_index + 3:]
-        output_result_file = '\n'.join(output_result_list)
-        return output_result_file
+        # ensure concept ancestor table exists
+        if not bq_utils.table_exists(common.CONCEPT_ANCESTOR):
+            bq_utils.create_standard_table(common.CONCEPT_ANCESTOR,
+                                           common.CONCEPT_ANCESTOR)
+            q = """INSERT INTO {dataset}.concept_ancestor
+            SELECT * FROM {vocab}.concept_ancestor""".format(
+                dataset=bigquery_dataset_id, vocab=common.VOCABULARY_DATASET)
+            bq_utils.query(q)
 
     def table_has_clustering(self, table_info):
         clustering = table_info.get('clustering')
@@ -111,8 +107,9 @@ class ValidationMainTest(unittest.TestCase):
             test_util.write_cloud_str(self.hpo_bucket,
                                       self.folder_prefix + cdm_table, ".\n .")
         bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
+        folder_items = main.get_folder_items(bucket_items, self.folder_prefix)
         expected_results = [(f, 1, 0, 0) for f in common.SUBMISSION_FILES]
-        r = main.validate_submission(self.hpo_id, self.hpo_bucket, bucket_items,
+        r = main.validate_submission(self.hpo_id, self.hpo_bucket, folder_items,
                                      self.folder_prefix)
         self.assertSetEqual(set(expected_results), set(r['results']))
 
@@ -130,7 +127,8 @@ class ValidationMainTest(unittest.TestCase):
             expected_item = (file_name, common.UNKNOWN_FILE)
             expected_warnings.append(expected_item)
         bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
-        r = main.validate_submission(self.hpo_id, self.hpo_bucket, bucket_items,
+        folder_items = main.get_folder_items(bucket_items, self.folder_prefix)
+        r = main.validate_submission(self.hpo_id, self.hpo_bucket, folder_items,
                                      self.folder_prefix)
         self.assertCountEqual(expected_warnings, r['warnings'])
 
@@ -152,7 +150,8 @@ class ValidationMainTest(unittest.TestCase):
                 expected_result = (cdm_file, 0, 0, 0)
             expected_results.append(expected_result)
         bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
-        r = main.validate_submission(self.hpo_id, self.hpo_bucket, bucket_items,
+        folder_items = main.get_folder_items(bucket_items, self.folder_prefix)
+        r = main.validate_submission(self.hpo_id, self.hpo_bucket, folder_items,
                                      self.folder_prefix)
         self.assertSetEqual(set(r['results']), set(expected_results))
 
@@ -254,38 +253,89 @@ class ValidationMainTest(unittest.TestCase):
                 expected_results.append(expected_result)
 
         bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
-        r = main.validate_submission(self.hpo_id, self.hpo_bucket, bucket_items,
+        folder_items = main.get_folder_items(bucket_items, self.folder_prefix)
+        r = main.validate_submission(self.hpo_id, self.hpo_bucket, folder_items,
                                      self.folder_prefix)
         self.assertSetEqual(set(expected_results), set(r['results']))
 
+    @mock.patch('validation.main.all_required_files_loaded')
+    @mock.patch('validation.main.extract_date_from_rdr_dataset_id')
+    @mock.patch('validation.main.is_first_validation_run')
     @mock.patch('api_util.check_cron')
-    def _test_html_report_five_person(self, mock_check_cron):
-        # Not sure this test is still relevant (see hpo_report module and tests)
-        # TODO refactor or remove this test
-        folder_prefix = '2019-01-01/'
+    def test_html_report_five_person(self, mock_check_cron, mock_first_run,
+                                     mock_rdr_date, mock_required_files_loaded):
+        mock_required_files_loaded.return_value = False
+        mock_first_run.return_value = False
+        rdr_date = '2020-01-01'
+        mock_rdr_date.return_value = rdr_date
         for cdm_file in test_util.FIVE_PERSONS_FILES:
             test_util.write_cloud_file(self.hpo_bucket,
                                        cdm_file,
-                                       prefix=folder_prefix)
-        # achilles sometimes fails due to rate limits.
-        # using both success and failure cases allow it to fail gracefully until there is a fix for achilles
-        with open(test_util.FIVE_PERSON_RESULTS_FILE, 'r') as f:
-            expected_result_achilles_success = self._remove_timestamp_tags_from_results(
-                f.read())
-        with open(test_util.FIVE_PERSON_RESULTS_ACHILLES_ERROR_FILE, 'r') as f:
-            expected_result_achilles_failure = self._remove_timestamp_tags_from_results(
-                f.read())
-        expected_results = [
-            expected_result_achilles_success, expected_result_achilles_failure
-        ]
+                                       prefix=self.folder_prefix)
+        # load person table in RDR
+        bq_utils.load_table_from_csv(self.project_id, self.rdr_dataset_id,
+                                     common.PERSON,
+                                     test_util.FIVE_PERSONS_PERSON_CSV)
+
+        # Load measurement_concept_sets
+        required_labs.load_measurement_concept_sets_table(
+            project_id=self.project_id, dataset_id=self.bigquery_dataset_id)
+        # Load measurement_concept_sets_descendants
+        required_labs.load_measurement_concept_sets_descendants_table(
+            project_id=self.project_id, dataset_id=self.bigquery_dataset_id)
+
         main.app.testing = True
         with main.app.test_client() as c:
             c.get(test_util.VALIDATE_HPO_FILES_URL)
             actual_result = test_util.read_cloud_file(
-                self.hpo_bucket, folder_prefix + common.RESULTS_HTML)
-            actual_result_file = self._remove_timestamp_tags_from_results(
-                StringIO(actual_result).getvalue())
-            self.assertIn(actual_result_file, expected_results)
+                self.hpo_bucket, self.folder_prefix + common.RESULTS_HTML)
+
+        # ensure emails are not sent
+        bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
+        folder_items = main.get_folder_items(bucket_items, self.folder_prefix)
+        self.assertFalse(main.is_first_validation_run(folder_items))
+
+        # parse html
+        soup = bs(actual_result, parser="lxml", features="lxml")
+        missing_pii_html_table = soup.find('table', id='missing_pii')
+        table_headers = missing_pii_html_table.find_all('th')
+        self.assertEqual('Missing Participant Record Type',
+                         table_headers[0].get_text())
+        self.assertEqual('Count', table_headers[1].get_text())
+
+        table_rows = missing_pii_html_table.find_next('tbody').find_all('tr')
+        missing_record_types = [
+            table_row.find('td').text for table_row in table_rows
+        ]
+        self.assertIn(main_consts.EHR_NO_PII, missing_record_types)
+        self.assertIn(main_consts.PII_NO_EHR, missing_record_types)
+        self.assertIn(main_consts.EHR_NO_RDR.format(date=rdr_date),
+                      missing_record_types)
+        self.assertIn(main_consts.EHR_NO_PARTICIPANT_MATCH,
+                      missing_record_types)
+
+        required_lab_html_table = soup.find('table', id='required-lab')
+        table_headers = required_lab_html_table.find_all('th')
+        self.assertEqual(3, len(table_headers))
+        self.assertEqual('Ancestor Concept ID', table_headers[0].get_text())
+        self.assertEqual('Ancestor Concept Name', table_headers[1].get_text())
+        self.assertEqual('Found', table_headers[2].get_text())
+
+        table_rows = required_lab_html_table.find_next('tbody').find_all('tr')
+        table_rows_last_column = [
+            table_row.find_all('td')[-1] for table_row in table_rows
+        ]
+        submitted_labs = [
+            row for row in table_rows_last_column
+            if 'result-1' in row.attrs['class']
+        ]
+        missing_labs = [
+            row for row in table_rows_last_column
+            if 'result-0' in row.attrs['class']
+        ]
+        self.assertTrue(len(table_rows) > 0)
+        self.assertTrue(len(submitted_labs) > 0)
+        self.assertTrue(len(missing_labs) > 0)
 
     def tearDown(self):
         self._empty_bucket()

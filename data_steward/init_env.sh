@@ -13,14 +13,23 @@ fi
 export GOOGLE_APPLICATION_CREDENTIALS=${HOME}/gcloud-credentials-key.json
 export APPLICATION_ID=aou-res-curation-test
 export GOOGLE_CLOUD_PROJECT=aou-res-curation-test
+export VOCABULARY_DATASET=vocabulary20201008
 
 # Require username in GH_USERNAME or CIRCLE_USERNAME
 export USERNAME=$(echo "${GH_USERNAME:-${CIRCLE_USERNAME:-}}" | tr '[:upper:]' '[:lower:]')
 
 if [ -z "${USERNAME}" ]
 then
-    echo "Please set environment variable GH_USERNAME or CIRCLE_USERNAME";
+  if [ -n "${CIRCLECI}" ]
+  then
+    # If we're on circle without a CIRCLE_NAME, fallback to a default username.
+    # This can happen if a Circle job is triggered outside the context of a
+    # specific user interaction, e.g. during automated nightly cron runs.
+    export USERNAME="circleci"
+  else
+    echo "Please set environment variable GH_USERNAME, CIRCLE_USERNAME, or CIRCLECI";
     exit 1;
+  fi
 fi
 
 # Dataset IDs must be alphanumeric (plus underscores) and <= 1024 characters
@@ -50,6 +59,7 @@ export BIGQUERY_DATASET_ID="${DATASET_PREFIX}_ehr"
 export RDR_DATASET_ID="${DATASET_PREFIX}_rdr"
 export COMBINED_DATASET_ID="${DATASET_PREFIX}_combined"
 export UNIONED_DATASET_ID="${DATASET_PREFIX}_unioned"
+export COMBINED_DEID_DATASET_ID="${DATASET_PREFIX}_deid"
 
 # .circlerc is sourced before each test and deploy command
 # See https://www.compose.com/articles/experience-with-circleci/#dontcommitcredentials
@@ -67,7 +77,9 @@ then
   echo "export BIGQUERY_DATASET_ID=${BIGQUERY_DATASET_ID}" >> ${BASH_ENV}
   echo "export RDR_DATASET_ID=${RDR_DATASET_ID}" >> ${BASH_ENV}
   echo "export COMBINED_DATASET_ID=${COMBINED_DATASET_ID}" >> ${BASH_ENV}
+  echo "export COMBINED_DEID_DATASET_ID=${COMBINED_DEID_DATASET_ID}" >> ${BASH_ENV}
   echo "export UNIONED_DATASET_ID=${UNIONED_DATASET_ID}" >> ${BASH_ENV}
   echo "export BUCKET_NAME_UNIONED_EHR=${BUCKET_NAME_UNIONED_EHR}" >> ${BASH_ENV}
-  echo "export PATH=${PATH}:${CIRCLE_WORKING_DIRECTORY}/ci" >> $BASH_ENV
+  echo "export VOCABULARY_DATASET=${VOCABULARY_DATASET}" >> ${BASH_ENV}
+  echo "export PATH=${PATH}:${CIRCLE_WORKING_DIRECTORY}/ci" >> ${BASH_ENV}
 fi

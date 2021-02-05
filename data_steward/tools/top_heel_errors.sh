@@ -59,14 +59,6 @@ ROOT_DIR=$(git rev-parse --show-toplevel)
 DATA_STEWARD_DIR="${ROOT_DIR}/data_steward"
 TOOLS_DIR="${DATA_STEWARD_DIR}/tools"
 
-virtualenv -p $(which python3.7) "${DATA_STEWARD_DIR}/curation_venv"
-
-# activate it
-source "${DATA_STEWARD_DIR}/curation_venv/bin/activate"
-
-# install the requirements in the virtualenv
-pip install -r "${DATA_STEWARD_DIR}/requirements.txt"
-
 source "${TOOLS_DIR}/set_path.sh"
 
 #----------------Run the heel errors script------------------
@@ -79,4 +71,3 @@ python "${TOOLS_DIR}/top_heel_errors.py" --app_id ${app_id} --dataset_id ${datas
 
 #----------cleanup-------------------
 unset PYTHONPATH
-deactivate

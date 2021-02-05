@@ -198,11 +198,11 @@ class GCPStackDriverLoggerTest(unittest.TestCase):
     @mock.patch('curation_logging.curation_gae_handler.get_gcp_logger')
     def test_initialize_logging(self, mock_get_gcp_logger):
         with patch.dict('os.environ', {'GAE_ENV': ''}):
-            curation_gae_handler.initialize_logging()
+            curation_gae_handler.initialize_logging(logging.DEBUG)
             logging.info(self.info_log_record)
             logging.debug(self.debug_log_line)
             logging.error(self.error_log_record)
-            self.assertEqual(1, mock_get_gcp_logger.call_count)
+            self.assertEqual(3, mock_get_gcp_logger.call_count)
 
     @mock.patch('requests.get')
     def test_setup_logging_zone(self, mock_requests_get):

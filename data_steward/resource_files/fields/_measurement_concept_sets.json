@@ -1,0 +1,26 @@
+[
+  {
+    "type": "string",
+    "name": "panel_name",
+    "mode": "nullable",
+    "description": ""
+  },
+  {
+    "type": "integer",
+    "name": "panel_omop_id",
+    "mode": "nullable",
+    "description": ""
+  },
+  {
+    "type": "string",
+    "name": "measurement_name",
+    "mode": "required",
+    "description": ""
+  },
+  {
+    "type": "integer",
+    "name": "measurement_omop_id",
+    "mode": "required",
+    "description": ""
+  }
+]

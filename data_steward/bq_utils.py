@@ -4,19 +4,20 @@ import logging
 import os
 import socket
 import time
+import warnings
 from datetime import datetime
+from io import open
 
 # Third party imports
-import app_identity
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
 # Project imports
+import app_identity
 import common
 import gcs_utils
 import resources
 from constants import bq_utils as bq_consts
-from io import open
 
 socket.setdefaulttimeout(bq_consts.SOCKET_TIMEOUT)
 
@@ -69,6 +70,10 @@ def get_combined_deid_clean_dataset_id():
     return os.environ.get('COMBINED_DEID_CLEAN_DATASET_ID')
 
 
+def get_retraction_type():
+    return os.environ.get('RETRACTION_TYPE')
+
+
 def get_retraction_hpo_id():
     return os.environ.get('RETRACTION_HPO_ID')
 
@@ -79,6 +84,10 @@ def get_retraction_pid_table_id():
 
 def get_retraction_sandbox_dataset_id():
     return os.environ.get('RETRACTION_SANDBOX_DATASET_ID')
+
+
+def get_fitbit_dataset_id():
+    return os.environ.get('FITBIT_DATASET_ID')
 
 
 def get_retraction_dataset_ids():
@@ -267,8 +276,7 @@ def load_from_csv(hpo_id, table_name, source_folder_prefix=""):
     """
     if resources.is_pii_table(table_name):
         return load_pii_csv(hpo_id, table_name, source_folder_prefix)
-    else:
-        return load_cdm_csv(hpo_id, table_name, source_folder_prefix)
+    return load_cdm_csv(hpo_id, table_name, source_folder_prefix)
 
 
 def delete_table(table_id, dataset_id=None):
@@ -288,8 +296,7 @@ def delete_table(table_id, dataset_id=None):
     delete_job = bq_service.tables().delete(projectId=app_id,
                                             datasetId=dataset_id,
                                             tableId=table_id)
-    logging.info('Deleting {dataset_id}.{table_id}'.format(
-        dataset_id=dataset_id, table_id=table_id))
+    logging.info(f"Deleting {dataset_id}.{table_id}")
     return delete_job.execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
 
 
@@ -315,36 +322,63 @@ def table_exists(table_id, dataset_id=None):
 
 
 def job_status_done(job_id):
+    """
+    Check if the job is complete
+    
+    :param job_id: the job id
+    :return: a bool indicating whether the job is done
+    """
     job_details = get_job_details(job_id)
     job_running_status = job_details['status']['state']
     return job_running_status == 'DONE'
 
 
-def wait_on_jobs(job_ids,
-                 retry_count=bq_consts.BQ_DEFAULT_RETRY_COUNT,
-                 max_poll_interval=300):
+def job_status_errored(job_id):
     """
-    Exponential backoff wait for jobs to complete
-    :param job_ids:
-    :param retry_count:
-    :param max_poll_interval:
+    Check if the job is complete with an error
+
+    :param job_id: the job id
+    :return: a tuple that contains a bool indicating whether the job is errored and its corresponding error message
+    """
+    job_details = get_job_details(job_id)
+    job_status = job_details['status']
+    job_running_state = job_status['state']
+    is_errored = job_running_state == 'DONE' and 'errorResult' in job_status
+    error_message = job_status['errorResult']['message'] if is_errored else None
+    return is_errored, error_message
+
+
+def sleeper(poll_interval):
+    """
+    Calls time.sleep, useful for testing purposes
+    :param poll_interval:
+    :return:
+    """
+    time.sleep(poll_interval)
+    return
+
+
+def wait_on_jobs(job_ids, retry_count=bq_consts.BQ_DEFAULT_RETRY_COUNT):
+    """
+    Implements exponential backoff to wait for jobs to complete
+    :param job_ids: list of job_id strings
+    :param retry_count: max number of iterations for exponent
     :return: list of jobs that failed to complete or empty list if all completed
     """
-    _job_ids = list(job_ids)
+    job_ids = list(job_ids)
     poll_interval = 1
-    for i in range(retry_count):
-        logging.info('Waiting %s seconds for completion of job(s): %s' %
-                     (poll_interval, _job_ids))
-        time.sleep(poll_interval)
-        _job_ids = [
-            job_id for job_id in _job_ids if not job_status_done(job_id)
-        ]
-        if len(_job_ids) == 0:
-            return []
-        if poll_interval < max_poll_interval:
-            poll_interval = 2**i
-    logging.info('Job(s) failed to complete: %s' % _job_ids)
-    return _job_ids
+    for _ in range(retry_count):
+        logging.info(
+            f'Waiting {poll_interval} seconds for completion of job(s): {job_ids}'
+        )
+        sleeper(poll_interval)
+        job_ids = [job_id for job_id in job_ids if not job_status_done(job_id)]
+        if not job_ids:
+            return job_ids
+        if poll_interval < bq_consts.MAX_POLL_INTERVAL:
+            poll_interval *= 2
+    logging.info(f'Job(s) {job_ids} failed to complete')
+    return job_ids
 
 
 def get_job_details(job_id):
@@ -359,66 +393,14 @@ def get_job_details(job_id):
         jobId=job_id).execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
 
 
-def merge_tables(source_dataset_id, source_table_id_list,
-                 destination_dataset_id, destination_table_id):
-    """Takes a list of table names and runs a copy job
-
-    :source_table_name_list: list of tables to merge
-    :source_dataset_name: dataset where all the source tables reside
-    :destination_table_name: data goes into this table
-    :destination_dataset_name: dataset where the destination table resides
-    :returns: True if successfull. Or False if error or taking too long.
-
-    """
-    app_id = app_identity.get_application_id()
-    source_tables = [{
-        "projectId": app_id,
-        "datasetId": source_dataset_id,
-        "tableId": table_name
-    } for table_name in source_table_id_list]
-    job_body = {
-        'configuration': {
-            "copy": {
-                "sourceTables": source_tables,
-                "destinationTable": {
-                    "projectId": app_id,
-                    "datasetId": destination_dataset_id,
-                    "tableId": destination_table_id
-                },
-                "writeDisposition": "WRITE_TRUNCATE",
-            }
-        }
-    }
-
-    bq_service = create_service()
-    insert_result = bq_service.jobs().insert(
-        projectId=app_id,
-        body=job_body).execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
-    job_id = insert_result[bq_consts.JOB_REFERENCE][bq_consts.JOB_ID]
-    incomplete_jobs = wait_on_jobs([job_id])
-
-    if len(incomplete_jobs) == 0:
-        job_status = get_job_details(job_id)['status']
-        if 'errorResult' in job_status:
-            error_messages = [
-                '{}'.format(item['message']) for item in job_status['errors']
-            ]
-            logging.info(' || '.join(error_messages))
-            return False, ' || '.join(error_messages)
-    else:
-        logging.info("Wait timeout exceeded before load job with id '%s' was \
-                     done" % job_id)
-        return False, "Job timeout"
-    return True, ""
-
-
 def query(q,
           use_legacy_sql=False,
           destination_table_id=None,
           retry_count=bq_consts.BQ_DEFAULT_RETRY_COUNT,
           write_disposition=bq_consts.WRITE_EMPTY,
           destination_dataset_id=None,
-          batch=None):
+          batch=None,
+          dry_run=False):
     """
     Execute a SQL query on BigQuery dataset
 
@@ -430,6 +412,7 @@ def query(q,
     :param destination_dataset_id: dataset ID of destination table (EHR dataset by default)
     :param batch: whether the query should be run in INTERACTIVE or BATCH mode.
         Defaults to INTERACTIVE.
+    :param dry_run: Boolean. If true, validates query without running it. Helps with testing
     :return: if destination_table_id is supplied then job info, otherwise job query response
              (see https://goo.gl/AoGY6P and https://goo.gl/bQ7o2t)
     """
@@ -470,6 +453,7 @@ def query(q,
             'query': q,
             'timeoutMs': bq_consts.SOCKET_TIMEOUT,
             'useLegacySql': use_legacy_sql,
+            'dryRun': dry_run,
             bq_consts.PRIORITY_TAG: priority_mode,
         }
         return bq_service.jobs().query(
@@ -553,6 +537,12 @@ def list_tables(dataset_id=None,
       for table in result['tables']:
           print table['id']
     """
+    warnings.warn(
+        "Function bq_utils.list_tables is deprecated and will be removed in a future version. "
+        "Use `utils.bq.list_tables` if needed.",
+        PendingDeprecationWarning,
+        stacklevel=2,
+    )
     bq_service = create_service()
     if project_id is None:
         app_id = app_identity.get_application_id()
@@ -652,6 +642,31 @@ def response2rows(r):
     return [_transform_row(row, schema) for row in rows]
 
 
+def _recurse_on_row(col_dict, nested_value):
+    """
+    Apply the schema specified by the given dict to the nested value by recursing on it.
+
+        :param col_dict: the schema to apply to the nested value.
+        :param nested_value: A value nested in a BigQuery row.
+        :returns: Union[dict, list] objects from applied schema.
+        """
+
+    row_value = None
+
+    # Multiple nested records
+    if col_dict['mode'] == 'REPEATED' and isinstance(nested_value, list):
+        row_value = [
+            _transform_row(record['v'], col_dict['fields'])
+            for record in nested_value
+        ]
+
+    # A single nested record
+    else:
+        row_value = _transform_row(nested_value, col_dict['fields'])
+
+    return row_value
+
+
 def _transform_row(row, schema):
     """
     Apply the given schema to the given BigQuery data row. Adapted from https://goo.gl/dWszQJ.
@@ -675,7 +690,7 @@ def _transform_row(row, schema):
 
         # Recurse on nested records
         if col_dict['type'] == 'RECORD':
-            row_value = self._recurse_on_row(col_dict, row_value)
+            row_value = _recurse_on_row(col_dict, row_value)
 
         # Otherwise just cast the value
         elif col_dict['type'] == 'INTEGER':
@@ -753,7 +768,7 @@ def create_dataset(project_id=None,
     try:
         insert_result = insert_dataset.execute(
             num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
-        logging.info('Created dataset:\t%s.%s', app_id, dataset_id)
+        logging.info(f"Created dataset:\t{app_id}.{dataset_id}")
     except HttpError as error:
         # dataset exists.  try deleting if deleteContents is set and try again.
         if error.resp.status == 409:
@@ -765,23 +780,21 @@ def create_dataset(project_id=None,
                 rm_dataset.execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
                 insert_result = insert_dataset.execute(
                     num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
-                logging.info('Overwrote dataset %s.%s', app_id, dataset_id)
+                logging.info(f"Overwrote dataset {app_id}.{dataset_id}")
             else:
                 logging.exception(
-                    'Trying to create a duplicate dataset without overwriting '
-                    'the existing dataset.  Cannot be done!\n\ncreate_dataset '
-                    'called with values:\n'
-                    'project_id:\t%s\n'
-                    'dataset_id:\t%s\n'
-                    'description:\t%s\n'
-                    'friendly_name:\t%s\n'
-                    'overwrite_existing:\t%s\n\n', project_id, dataset_id,
-                    description, friendly_name, overwrite_existing)
+                    f"Trying to create a duplicate dataset without overwriting "
+                    f"the existing dataset.  Cannot be done!\n\ncreate_dataset "
+                    f"called with values:\n"
+                    f"project_id:\t{project_id}\n"
+                    f"dataset_id:\t{dataset_id}\n"
+                    f"description:\t{description}\n"
+                    f"friendly_name:\t{friendly_name}\n"
+                    f"overwrite_existing:\t{overwrite_existing}\n\n")
                 raise
         else:
-            logging.exception(
-                'Encountered an HttpError when trying to create '
-                'dataset: %s.%s', app_id, dataset_id)
+            logging.exception(f"Encountered an HttpError when trying to create "
+                              f"dataset: {app_id}.{dataset_id}")
             raise
 
     return insert_result
@@ -838,13 +851,14 @@ def load_table_from_csv(project_id,
     :param dataset_id: dataset where the table needs to be created
     :param table_name: name of the table to be created
     :param csv_path: path to the csv file which needs to be loaded into BQ.
-                     If None, assumes that the file exists in the resources folder with the name table_name.csv
+                     If None, assumes that the file exists in the resource_files folder with the name table_name.csv
     :param fields: fields in list of dicts format. If set to None, assumes that
-                   the fields are stored in a json file in resources/fields named table_name.json
+                   the fields are stored in a json file in resource_files/fields named table_name.json
     :return: BQ response for the load query
     """
     if csv_path is None:
-        csv_path = os.path.join(resources.resource_path, table_name + ".csv")
+        csv_path = os.path.join(resources.resource_files_path,
+                                table_name + ".csv")
     table_list = resources.csv_to_list(csv_path)
 
     if fields is None:
@@ -869,6 +883,24 @@ def load_table_from_csv(project_id,
         mapping_list=formatted_mapping_list)
     result = query(table_populate_query)
     return result
+
+
+def get_hpo_info():
+    hpo_list = []
+    project_id = app_identity.get_application_id()
+    hpo_table_query = bq_consts.GET_HPO_CONTENTS_QUERY.format(
+        project_id=project_id,
+        LOOKUP_TABLES_DATASET_ID=bq_consts.LOOKUP_TABLES_DATASET_ID,
+        HPO_SITE_ID_MAPPINGS_TABLE_ID=bq_consts.HPO_SITE_ID_MAPPINGS_TABLE_ID)
+    hpo_response = query(hpo_table_query)
+    hpo_table_contents = response2rows(hpo_response)
+    for hpo_table_row in hpo_table_contents:
+        hpo_id = hpo_table_row[bq_consts.HPO_ID].lower()
+        hpo_name = hpo_table_row[bq_consts.SITE_NAME]
+        if hpo_id and hpo_name:
+            hpo_dict = {"hpo_id": hpo_id, "name": hpo_name}
+            hpo_list.append(hpo_dict)
+    return hpo_list
 
 
 def has_primary_key(table):

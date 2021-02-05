@@ -27,6 +27,12 @@ def _get_field_type(table_name, column_name):
     :return:  The defined type for the field in the table.
     """
     field_type = None
+    if table_name == 'id_match_table':
+        table_name = 'observation'
+    if 'pii' in table_name:
+        table_name = table_name[1:]
+    if 'person' in table_name:
+        table_name = 'person'
     for field in rc.fields_for(table_name):
         if field.get('name', '') == column_name:
             field_type = field.get('type')
@@ -79,7 +85,7 @@ def create_match_values_table(project, rdr_dataset, destination_dataset):
         table=consts.OBSERVATION_TABLE,
         pii_list=','.join(consts.PII_CODES_LIST))
 
-    LOGGER.info("Participant validation ran the query\n%s", query_string)
+    LOGGER.info(f"Participant validation ran the query\n{query_string}")
     results = bq_utils.query(query_string,
                              destination_dataset_id=destination_dataset,
                              destination_table_id=consts.ID_MATCH_TABLE,
@@ -122,7 +128,7 @@ def get_ehr_person_values(project, dataset, table_name, column_name):
         field=column_name,
     )
 
-    LOGGER.info("Participant validation ran the query\n%s", query_string)
+    LOGGER.info(f"Participant validation ran the query\n{query_string}")
     results = bq_utils.query(query_string)
     row_results = bq_utils.large_response_to_rowlist(results)
 
@@ -173,7 +179,7 @@ def get_rdr_match_values(project, dataset, table_name, concept_id):
                                                         table=table_name,
                                                         field_value=concept_id)
 
-    LOGGER.info("Participant validation ran the query\n%s", query_string)
+    LOGGER.info(f"Participant validation ran the query\n{query_string}")
     results = bq_utils.query(query_string)
     row_results = bq_utils.large_response_to_rowlist(results)
 
@@ -201,7 +207,7 @@ def get_hpo_site_names():
     :return:  A list of string hpo site ids
     """
     hpo_ids = []
-    for site in rc.hpo_csv():
+    for site in bq_utils.get_hpo_info():
         hpo_ids.append(site[consts.HPO_ID])
     return hpo_ids
 
@@ -228,7 +234,7 @@ def get_pii_values(project, pii_dataset, hpo, table, field):
                                             field=field,
                                             table_suffix=table)
 
-    LOGGER.info("Participant validation ran the query\n%s", query_string)
+    LOGGER.info(f"Participant validation ran the query\n{query_string}")
 
     results = bq_utils.query(query_string)
     row_results = bq_utils.large_response_to_rowlist(results)
@@ -273,7 +279,7 @@ def get_location_pii(project, rdr_dataset, pii_dataset, hpo, table, field):
         location_id_dict[int(location_id[1])] = location_id[0]
 
     if not location_id_list:
-        LOGGER.info("No location information found for site:\t%s", hpo)
+        LOGGER.info(f"No location information found for site:\t{hpo}")
         return []
 
     location_id_str = ', '.join(location_id_list)
@@ -282,7 +288,7 @@ def get_location_pii(project, rdr_dataset, pii_dataset, hpo, table, field):
                                                      field=field,
                                                      id_list=location_id_str)
 
-    LOGGER.info("Participant validation ran the query\n%s", query_string)
+    LOGGER.info(f"Participant validation ran the query\n{query_string}")
 
     results = bq_utils.query(query_string)
     row_results = bq_utils.large_response_to_rowlist(results)

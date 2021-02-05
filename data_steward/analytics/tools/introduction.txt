@@ -1,5 +1,0 @@
-Dear [EHR site],
-
-My name is {} and I am a Data Analyst at Columbia University Medical Center with the All of Us precision medicine initiative. CUMC has been reviewing your file submissions for the past five weeks and would like to share its findings with you.
-
-In this e-mail, you will see if you have any errors with your most recent submission. We will also attach {} images that display data quality metrics with respect to nonsensical dates (instances where the 'end date' precedes the 'start date'), duplicates, and concept success rates.

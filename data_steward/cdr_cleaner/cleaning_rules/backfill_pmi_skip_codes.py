@@ -1,5 +1,9 @@
+import logging
+
 import constants.bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
+
+LOGGER = logging.getLogger(__name__)
 
 OBSERVATION_TABLE_NAME = 'observation'
 
@@ -121,13 +125,15 @@ PMI_SKIP_FIX_QUERY = """
 """
 
 
-def get_run_pmi_fix_queries(project_id, dataset_id):
+def get_run_pmi_fix_queries(project_id, dataset_id, sandbox_dataset_id=None):
     """
 
     runs the query which adds skipped rows in survey before 2019-04-10 as PMI_Skip
 
     :param project_id: Name of the project
     :param dataset_id: Name of the dataset where the queries should be run
+    :param sandbox_dataset_id: Identifies the sandbox dataset to store rows 
+    #TODO use sandbox_dataset_id for CR
 
     :return:
     """
@@ -151,6 +157,16 @@ if __name__ == '__main__':
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
     ARGS = parser.parse_args()
-    clean_engine.add_console_logging(ARGS.console_log)
-    query_list = get_run_pmi_fix_queries(ARGS.project_id, ARGS.dataset_id)
-    clean_engine.clean_dataset(ARGS.project_id, query_list)
+    if ARGS.list_queries:
+        clean_engine.add_console_logging()
+        query_list = clean_engine.get_query_list(ARGS.project_id,
+                                                 ARGS.dataset_id,
+                                                 ARGS.sandbox_dataset_id,
+                                                 [(get_run_pmi_fix_queries,)])
+        for query in query_list:
+            LOGGER.info(query)
+    else:
+        clean_engine.add_console_logging(ARGS.console_log)
+        clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
+                                   ARGS.sandbox_dataset_id,
+                                   [(get_run_pmi_fix_queries,)])

@@ -1,8 +1,9 @@
 # bq_utils default values
 SOCKET_TIMEOUT = 600000
 BQ_DEFAULT_RETRY_COUNT = 10
+MAX_POLL_INTERVAL = 500
 # Maximum results returned by list_tables (API has a low default value)
-LIST_TABLES_MAX_RESULTS = 2000
+LIST_TABLES_MAX_RESULTS = 10000
 DATE_FORMAT = '%Y%m%d'
 BLANK = ''
 
@@ -37,15 +38,29 @@ DATASET_ID = 'datasetId'
 TRUE = 'true'
 FALSE = 'false'
 
+# HPO table info
+LOOKUP_TABLES_DATASET_ID = 'lookup_tables'
+HPO_SITE_ID_MAPPINGS_TABLE_ID = 'hpo_site_id_mappings'
+HPO_ID_BUCKET_NAME_TABLE_ID = 'hpo_id_bucket_name'
+
+HPO_ID = 'HPO_ID'
+SITE_NAME = 'Site_Name'
+
 # Dataset Environment variable names
 MATCH_DATASET = 'VALIDATION_RESULTS_DATASET_ID'
 
 # Dataset name formats
 VALIDATION_DATASET_FORMAT = 'validation_{}'
 VALIDATION_DATASET_REGEX = 'validation_\d{8}'
+VALIDATION_DATE_FORMAT = '%Y%m%d'
 
 INSERT_QUERY = """
 INSERT INTO `{project_id}.{dataset_id}.{table_id}`
   ({columns})
 VALUES {mapping_list}
+"""
+
+GET_HPO_CONTENTS_QUERY = """
+SELECT *
+FROM `{project_id}.{LOOKUP_TABLES_DATASET_ID}.{HPO_SITE_ID_MAPPINGS_TABLE_ID}`
 """

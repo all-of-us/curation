@@ -37,7 +37,7 @@ def write_to_result_table(project, dataset, site, match_values):
               googleapiclient.errors.HttpError
     """
     if not match_values:
-        LOGGER.info("No values to insert for site: %s", site)
+        LOGGER.info(f"No values to insert for site: {site}")
         return None
 
     result_table = site + consts.VALIDATION_TABLE_SUFFIX
@@ -52,7 +52,7 @@ def write_to_result_table(project, dataset, site, match_values):
     field_list_str = ','.join(field_list) + '\n'
     results.write(field_list_str)
 
-    LOGGER.info("Generating csv values to write to storage for site: %s", site)
+    LOGGER.info(f"Generating csv values to write to storage for site: {site}")
 
     for person_key, person_values in match_values.items():
         str_list = [str(person_key)]
@@ -64,23 +64,23 @@ def write_to_result_table(project, dataset, site, match_values):
         val_str = ','.join(str_list)
         results.write(val_str + '\n')
 
-    LOGGER.info("Writing csv file to cloud storage for site: %s", site)
+    LOGGER.info(f"Writing csv file to cloud storage for site: {site}")
 
     # write results
     results.seek(0)
     gcs_utils.upload_object(bucket, path, results)
     results.close()
 
-    LOGGER.info("Wrote %d items to cloud storage for site: %s",
-                len(match_values), site)
+    LOGGER.info(
+        f"Wrote {len(match_values)} items to cloud storage for site: {site}")
 
     # wait on results to be written
 
     schema_path = os.path.join(fields_path, 'identity_match.json')
 
     LOGGER.info(
-        "Beginning load of identity match values from csv into BigQuery "
-        "for site: %s", site)
+        f"Beginning load of identity match values from csv into BigQuery "
+        "for site: {site}")
     try:
         # load csv file into bigquery
         results = bq_utils.load_csv(schema_path,
@@ -99,11 +99,11 @@ def write_to_result_table(project, dataset, site, match_values):
     except (oauth2client.client.HttpAccessTokenRefreshError,
             googleapiclient.errors.HttpError):
         LOGGER.exception(
-            "Encountered an exception when loading records from csv for site: %s",
-            site)
+            f"Encountered an exception when loading records from csv for site: {site}"
+        )
         raise
 
-    LOGGER.info("Loaded match values for site: %s", site)
+    LOGGER.info(f"Loaded match values for site: {site}")
 
     return results
 
@@ -221,5 +221,5 @@ def create_site_validation_report(project, dataset, hpo_list, bucket, filename):
     report_result = gcs_utils.upload_object(bucket, filename, report_file)
     report_file.close()
 
-    LOGGER.info("Wrote validation report csv:  %s", bucket + filename)
+    LOGGER.info(f"Wrote validation report csv: {bucket}{filename}")
     return report_result, read_errors

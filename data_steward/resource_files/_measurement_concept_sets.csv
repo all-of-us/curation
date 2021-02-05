@@ -1,0 +1,114 @@
+panel_name,panel_omop_id,measurement_name,measurement_omop_id
+CBC w/Diff,40758558,RBC morphology,3012764
+CBC w/Diff,40758558,Platelet morphology,3003214
+CBC w/Diff,40758558,WBC morphology,3008757
+CBC w/Diff,40758558,Eosinophils %,3006504
+CBC w/Diff,40758558,Monocytes %,3019069
+CBC w/Diff,40758558,Neutrophils %,3018010
+CBC w/Diff,40758558,Promyelocytes %,3021440
+CBC w/Diff,40758558,Metamyelocytes %,3002179
+CBC w/Diff,40758558,Basophils %,3022096
+CBC w/Diff,40758558,Hematocrit,3009542
+CBC w/Diff,40758558,Lymphocytes %,3002030
+CBC w/Diff,40758558,Bands %,3004809
+CBC w/Diff,40758558,Blasts %,3025159
+CBC w/Diff,40758558,Myelocytes %,3017181
+CBC w/Diff,40758558,Reticulocytes %,3027945
+CBC w/Diff,40758558,MCH,3035941
+CBC w/Diff,40758558,MCV,3024731
+CBC w/Diff,40758558,MCHC,3003338
+CBC w/Diff,40758558,Red blood cell (RBC) count,3026361
+CBC w/Diff,40758558,Hemoglobin,3000963
+CBC w/Diff,40758558,Platelet count,3007461
+CBC w/Diff,40758558,White Blood cell (WBC) count (leukocyte),3010813
+CMP,3026023,Albumin/Globulin [Mass Ratio] in Serum or Plasma,3020509
+BMP,3026023,Bicarbonate [Moles/volume] in Serum or Plasma,3016293
+CMP,3026023,Bicarbonate [Moles/volume] in Serum or Plasma,3016293
+CMP,3026023,Carbon dioxide serum/plasma,3015632
+BMP,3026023,Carbon dioxide serum/plasma,3015632
+BMP,3026023,Chloride serum/plasma,3014576
+CMP,3026023,Chloride serum/plasma,3014576
+BMP,3026023,Potassium serum/plasma,3023103
+CMP,3026023,Potassium serum/plasma,3023103
+BMP,3026023,Sodium serum/plasma,3019550
+CMP,3026023,Sodium serum/plasma,3019550
+CMP,3026023,Anion gap serum/plasma,3045716
+BMP,3026023,Anion gap serum/plasma,3045716
+BMP,3026023,Glomerular filtration rate/1.73 sq M.predicted [Volume Rate/Area] in Serum or Plasma by Creatinine-based formula (MDRD),3030354
+CMP,3026023,Glomerular filtration rate/1.73 sq M.predicted [Volume Rate/Area] in Serum or Plasma by Creatinine-based formula (MDRD),3030354
+CMP,3026023,"Glomerular filtration rate/1.73 sq M predicted among females [Volume Rate/Area] in Serum, Plasma or Blood by Creatinine-based formula (MDRD)",3029829
+BMP,3026023,"Glomerular filtration rate/1.73 sq M predicted among females [Volume Rate/Area] in Serum, Plasma or Blood by Creatinine-based formula (MDRD)",3029829
+CMP,3026023,Total Bilirubin serum/plasma,3024128
+BMP,3026023,Creatinine serum/plasma,3016723
+CMP,3026023,Creatinine serum/plasma,3016723
+CMP,3026023,Glucose lab,3004501
+BMP,3026023,Glucose lab,3004501
+BMP,3026023,Urea nitrogen serum/plasma,3013682
+CMP,3026023,Urea nitrogen serum/plasma,3013682
+BMP,3026023,Calcium serum/plasma serum/plasma,3006906
+CMP,3026023,Calcium serum/plasma serum/plasma,3006906
+BMP,3026023,Urea nitrogen/Creatinine serum/plasma,3018311
+CMP,3026023,Urea nitrogen/Creatinine serum/plasma,3018311
+BMP,3026023,eGFR with normals for non-black,3049187
+CMP,3026023,eGFR with normals for non-black,3049187
+BMP,3026023,eGFR with normals for black,3053283
+CMP,3026023,eGFR with normals for black,3053283
+CMP,3026023,Globulin [Mass/volume] in Serum by calculation,3027970
+CMP,3026023,Protein serum/plasma,3020630
+CMP,3026023,Alkaline phosphatase serum/plasma,3035995
+CMP,3026023,Alanine aminotransferase serum/plasma,3006923
+CMP,3026023,Aspartate aminotransferase serum/plasma,3013721
+CMP,3026023,Albumin serum/plasma,3024561
+CBC,40761511,Erythrocyte distribution width [Ratio] by Automated count,3019897
+CBC,40761511,Hematocrit [Volume Fraction] of Blood by Automated count,3023314
+CBC,40761511,MCH [Entitic mass] by Automated count,3012030
+CBC,40761511,MCV [Entitic volume] by Automated count,3023599
+CBC,40761511,Platelet distribution width [Entitic volume] in Blood by Automated count,3002736
+CBC,40761511,Platelet mean volume [Entitic volume] in Blood by Automated count,3043111
+CBC,40761511,Erythrocyte distribution width [Entitic volume] by Automated count,3015182
+CBC,40761511,MCHC [Mass/volume] by Automated count,3009744
+CBC,40761511,Hemoglobin,3000963
+CBC,40761511,Platelets [#/volume] in Blood by Automated count,3024929
+CBC,40761511,Leukocytes [#/volume] in Blood by Automated count,3000905
+CBC,40761511,Erythrocytes [#/volume] in Blood by Automated count,3020416
+Physical Measurement/Vital Signs,3044313,Body position,3019204
+Physical Measurement/Vital Signs,3044313,Body height,3036277
+Physical Measurement/Vital Signs,3044313,BP diastolic,3012888
+Physical Measurement/Vital Signs,3044313,Mean blood pressure,3027598
+Physical Measurement/Vital Signs,3044313,BP systolic,3004249
+Physical Measurement/Vital Signs,3044313,Body temperature,3020891
+Physical Measurement/Vital Signs,3044313,Body weight Measured,3013762
+Physical Measurement/Vital Signs,3044313,Respiratory rate,3024171
+Physical Measurement/Vital Signs,3044313,Heart rate,3027018
+Lipids,3010946,Cholesterol [Moles/volume] in Serum or Plasma,3019900
+Lipids,3010946,Cholesterol [Mass/volume] in Serum or Plasma,3027114
+Lipids,3010946,Cholesterol [Mass/volume] in Serum or Plasma ultracentrifugate,3049873
+Lipids,3010946,Cholesterol in HDL [Mass/volume] in Serum or Plasma,3007070
+Lipids,3010946,Cholesterol in HDL [Moles/volume] in Serum or Plasma,3023602
+Lipids,3010946,Cholesterol in HDL [Units/volume] in Serum or Plasma by Electrophoresis,3034482
+Lipids,3010946,Cholesterol in HDL [Mass/volume] in Serum or Plasma by Electrophoresis,3053286
+Lipids,3010946,Cholesterol in LDL [Moles/volume] in Serum or Plasma,3001308
+Lipids,3010946,Cholesterol in LDL [Mass/volume] in Serum or Plasma by calculation,3028288
+Lipids,3010946,Cholesterol in LDL [Mass/volume] in Serum or Plasma,3028437
+Lipids,3010946,Cholesterol in LDL [Units/volume] in Serum or Plasma by Electrophoresis,3035009
+Lipids,3010946,Cholesterol in LDL [Mass/volume] in Serum or Plasma ultracentrifugate,3035899
+Lipids,3010946,Cholesterol in LDL [Moles/volume] in Serum or Plasma by calculation,3038988
+Lipids,3010946,Cholesterol in LDL [Moles/volume] in Serum or Plasma by Direct assay,42870529
+Lipids,3010946,Cholesterol in LDL [Mass/volume] in Serum or Plasma by Direct assay,3009966
+Lipids,3010946,Cholesterol in LDL [Mass/volume] in Serum or Plasma by Electrophoresis,3053341
+Lipids,3010946,Cholesterol in LDL/Cholesterol in HDL [Mass Ratio] in Serum or Plasma,3002109
+Lipids,3010946,Cholesterol in LDL/Cholesterol in HDL [Molar ratio] in Serum or Plasma,3045001
+Lipids,3010946,Cholesterol in VLDL [Mass/volume] in Serum or Plasma,3007352
+Lipids,3010946,Cholesterol in VLDL [Mass/volume] in Serum or Plasma by calculation,3009596
+Lipids,3010946,Cholesterol in VLDL [Moles/volume] in Serum or Plasma,3022487
+Lipids,3010946,Cholesterol in VLDL [Moles/volume] in Serum or Plasma by calculation,40768809
+Lipids,3010946,Cholesterol.total/Cholesterol in HDL [Mass Ratio] in Serum or Plasma,3011163
+Lipids,3010946,Cholesterol.total/Cholesterol in HDL [Molar ratio] in Serum or Plasma,3016087
+Lipids,3010946,Triglyceride [Mass/volume] in Serum or Plasma by calculation,3007943
+Lipids,3010946,Triglyceride [Moles/volume] in Serum or Plasma --12 hours fasting,3019038
+Lipids,3010946,Triglyceride [Mass/volume] in Serum or Plasma --12 hours fasting,3013678
+Lipids,3010946,Triglyceride [Mass/volume] in Blood,3022038
+Lipids,3010946,Triglyceride [Mass/volume] in Serum or Plasma,3022192
+Lipids,3010946,Triglyceride [Moles/volume] in Serum or Plasma,3025839
+Lipids,3010946,Triglyceride [Mass/volume] in Serum or Plasma --fasting,3027997
+Lipids,3010946,Triglyceride [Moles/volume] in Blood,42868692

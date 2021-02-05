@@ -12,6 +12,15 @@ Usage: run_curation_pipeline.sh
   --rdr_dataset <RDR dataset ID>
   --result_bucket <Internal bucket name>
   --dataset_release_tag <release tag for the CDR>
+  --ehr_cutoff <ehr_cut_off date format yyyy-mm-dd>
+  --rdr_export_date <date RDR export is run format yyyy-mm-dd>
+  --ticket_number <Ticket number corresponding to removing deactivated participants data, to append sandbox table names>
+  --pids_project_id <Identifies the project where the pids table is stored>
+  --pids_dataset_id <Identifies the dataset where the pids table is stored>
+  --pids_table <Identifies the table where the pids are stored>
+  --cope_survey_dataset <dataset where RDR provided cope survey mapping table is loaded>
+  --cope_survey_table_name <name of the cope survey mappig table>
+  --deid_max_age <integer maximum age for de-identified participants>
 "
 
 while true; do
@@ -40,6 +49,42 @@ while true; do
     dataset_release_tag=$2
     shift 2
     ;;
+    --ehr_cutoff)
+    ehr_cutoff=$2
+    shift 2
+    ;;
+  --rdr_export_date)
+    rdr_export_date=$2
+    shift 2
+    ;;
+  --ticket_number)
+    ticket_number=$2
+    shift 2
+    ;;
+  --pids_project_id)
+    pids_project_id=$2
+    shift 2
+    ;;
+  --pids_dataset_id)
+    pids_dataset_id=$2
+    shift 2
+    ;;
+  --pids_table)
+    pids_table=$2
+    shift 2
+    ;;
+  --cope_survey_dataset)
+    cope_survey_dataset=$2
+    shift 2
+    ;;
+  --cope_survey_table_name)
+    cope_survey_table_name=$2
+    shift 2
+    ;;
+  --deid_max_age)
+    deid_max_age=$2
+    shift 2
+    ;;
   --)
     shift
     break
@@ -48,8 +93,10 @@ while true; do
   esac
 done
 
-if [[ -z "${key_file}" ]] || [[ -z "${vocab_dataset}" ]] || [[ -z "${ehr_dataset}" ]] ||
-  [[ -z "${rdr_dataset}" ]] || [[ -z "${result_bucket}" ]] || [[ -z "${dataset_release_tag}" ]]; then
+if [[ -z "${key_file}" ]] || [[ -z "${vocab_dataset}" ]] || [[ -z "${ehr_dataset}" ]] || [[ -z "${rdr_dataset}" ]] ||
+ [[ -z "${result_bucket}" ]] || [[ -z "${dataset_release_tag}" ]] || [[ -z "${ehr_cutoff}" ]] || [[ -z "${rdr_export_date}" ]] ||
+ [[ -z "${ticket_number}" ]] || [[ -z "${pids_project_id}" ]] || [[ -z "${pids_dataset_id}" ]] || [[ -z "${pids_table}" ]] ||
+  [[ -z "${cope_survey_dataset}" ]] || [[ -z "${cope_survey_table_name}" ]] || [[ -z "${deid_max_age}" ]]; then
   echo "Specify the key file location, vocabulary and dataset release tag. $USAGE"
   exit 1
 fi
@@ -67,6 +114,15 @@ echo "rdr_dataset --> ${rdr_dataset}"
 echo "vocab_dataset --> ${vocab_dataset}"
 echo "result_bucket --> ${result_bucket}"
 echo "dataset_release_tag --> ${dataset_release_tag}"
+echo "ehr_cutoff_date --> ${ehr_cutoff}"
+echo "rdr_export_date --> ${rdr_export_date}"
+echo "ticket_number --> ${ticket_number}"
+echo "pids_project_id --> ${pids_project_id}"
+echo "pids_dataset_id --> ${pids_dataset_id}"
+echo "pids_table --> ${pids_table}"
+echo "cope_survey_dataset --> ${cope_survey_dataset}"
+echo "cope_survey_table_name --> ${cope_survey_table_name}"
+echo "deid_max_age --> ${deid_max_age}"
 
 #---------------------------------------------------------
 # Step 1 create EHR and RDR snapshot
@@ -78,14 +134,16 @@ echo "-------------------------->Take a Snapshot of EHR Dataset (step 1)"
 echo "-------------------------->Generate Unioned ehr dataset (step 2)"
 ehr_snapshot="${dataset_release_tag}_ehr"
 echo "ehr_snapshot ----> ${ehr_snapshot}"
-"${TOOLS_DIR}/generate_unioned_ehr_dataset.sh" --key_file ${key_file} --ehr_snap_dataset ${ehr_snapshot} --vocab_dataset ${vocab_dataset} --dataset_release_tag ${dataset_release_tag}
+"${TOOLS_DIR}/generate_unioned_ehr_dataset.sh" --key_file ${key_file} --ehr_snapshot ${ehr_snapshot} --vocab_dataset ${vocab_dataset} --dataset_release_tag ${dataset_release_tag} \
+--ticket_number ${ticket_number} --pids_project_id ${pids_project_id} --pids_dataset_id ${pids_dataset_id} --pids_table ${pids_table}
 
 #---------------------------------------------------------
 # Step 3 Generate combined dataset
 echo "-------------------------->Generate combined ehr rdr dataset (step 3)"
 unioned_ehr_dataset="${dataset_release_tag}_unioned_ehr"
 echo "unioned_ehr_dataset --> $unioned_ehr_dataset"
-"${TOOLS_DIR}/generate_combined_dataset.sh" --key_file ${key_file} --vocab_dataset ${vocab_dataset} --unioned_ehr_dataset ${unioned_ehr_dataset} --rdr_dataset ${rdr_dataset} --dataset_release_tag ${dataset_release_tag}
+"${TOOLS_DIR}/generate_combined_dataset.sh" --key_file ${key_file} --vocab_dataset ${vocab_dataset} --unioned_ehr_dataset ${unioned_ehr_dataset} \
+--rdr_dataset ${rdr_dataset} --dataset_release_tag ${dataset_release_tag} --ehr_cutoff_date ${ehr_cutoff_date} --rdr_export_date ${rdr_export_date}
 
 #-------------------------------------------------------
 # Step 4 Run achilles on combined dataset
@@ -96,18 +154,20 @@ export BUCKET_NAME_NYC="test-bucket"
 
 # Running Achilles analysis on Combined dataset
 export BIGQUERY_DATASET_ID="${combined_backup}"
-"${TOOLS_DIR}/run_achilles_report.sh" --dataset ${combined_backup} --key_file ${key_file} --result_bucket ${result_bucket}
+"${TOOLS_DIR}/run_achilles_report.sh" --dataset ${combined_backup} --key_file ${key_file} --result_bucket ${result_bucket} --vocab_dataset ${vocab_dataset}
 
 # Running Achilles analysis on combined clean datased
 export BIGQUERY_DATASET_ID="${combined_dataset}"
-"${TOOLS_DIR}/run_achilles_report.sh" --dataset ${combined_dataset} --key_file ${key_file} --result_bucket ${result_bucket}
+"${TOOLS_DIR}/run_achilles_report.sh" --dataset ${combined_dataset} --key_file ${key_file} --result_bucket ${result_bucket} --vocab_dataset ${vocab_dataset}
 
 #--------------------------------------------------------
 # Step 5 Run deid on cdr
 echo "-------------------------->Run de identification on the identified CDR"
-cdr_deid="${combined_dataset}_deid"
-echo "cdr_deid --> ${cdr_deid}"
-"${TOOLS_DIR}/deid_runner.sh" --key_file ${key_file} --cdr_id ${combined_dataset} --vocab_dataset ${vocab_dataset} --dataset_release_tag ${dataset_release_tag}
+cdr_deid="R${dataset_release_tag}_deid"
+echo "cdr_deid --> ${cdr_deid}"
+
+"${TOOLS_DIR}/deid_runner.sh" --key_file ${key_file} --cdr_id ${combined_dataset} --vocab_dataset ${vocab_dataset} --dataset_release_tag ${dataset_release_tag} \
+--cope_survey_dataset ${cope_survey_dataset} --cope_survey_table_name ${cope_survey_table_name} --deid_max_age ${deid_max_age}
 
 #-------------------------------------------------------
 # Step 6 Run achilles on de-identified dataset
@@ -118,18 +178,10 @@ export BUCKET_NAME_NYC="test-bucket"
 
 # Running Achilles analysis on deid_base dataset
 export BIGQUERY_DATASET_ID="${cdr_deid_base}"
-"${TOOLS_DIR}/run_achilles_report.sh" --dataset ${cdr_deid_base} --key_file ${key_file} --result_bucket ${result_bucket}
+"${TOOLS_DIR}/run_achilles_report.sh" --dataset ${cdr_deid_base} --key_file ${key_file} --result_bucket ${result_bucket} --vocab_dataset ${vocab_dataset}
 
 # Running Achilles analysis on deid_clean dataset
 export BIGQUERY_DATASET_ID="${cdr_deid_clean}"
-"${TOOLS_DIR}/run_achilles_report.sh" --dataset ${cdr_deid_clean} --key_file ${key_file} --result_bucket ${result_bucket}
-
-#---------------------------------------------------------
-# Step 7 Snapshot result datasets for cohort builder team to use
-output_base="${dataset_release_tag}_deid_output_base"
-output="${dataset_release_tag}_deid_output"
-"${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${cdr_deid_base} --target_dataset ${output_base} --sync false
-
-"${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${cdr_deid_clean} --target_dataset ${output} --sync false
+"${TOOLS_DIR}/run_achilles_report.sh" --dataset ${cdr_deid_clean} --key_file ${key_file} --result_bucket ${result_bucket} --vocab_dataset ${vocab_dataset}
 
 set +ex

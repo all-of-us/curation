@@ -1,0 +1,20 @@
+[
+  {
+    "type": "datetime",
+    "name": "datetime",
+    "mode": "nullable",
+    "description": ""
+  },
+  {
+    "type": "integer",
+    "name": "heart_rate_value",
+    "mode": "nullable",
+    "description": ""
+  },
+  {
+    "type": "integer",
+    "name": "person_id",
+    "mode": "nullable",
+    "description": ""
+  }
+]

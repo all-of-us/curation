@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Applies yapf to the entire curation repository. Fails if there are any
 # formatting issues.
 

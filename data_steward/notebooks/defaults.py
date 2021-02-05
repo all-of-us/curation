@@ -1,13 +1,15 @@
 import collections
 import re
 
-import google.datalab.bigquery as bq
+from google.cloud import bigquery
+
+client = bigquery.Client()
 
 VOCABULARY_DATASET_RE = re.compile(r'^vocabulary\d{8}$')
 RDR_DATASET_RE = re.compile(r'^rdr\d{8}$')
-UNIONED_DATASET_RE = re.compile(r'^unioned_ehr\d{8}$')
-COMBINED_DATASET_RE = re.compile(r'^combined\d{8}(?:v\d+)$')
-DEID_DATASET_RE = re.compile(r'^combined\d{8}.*_deid(?:_clean)$')
+UNIONED_DATASET_RE = re.compile(r'^\d{4}q\dr\d_unioned_ehr$')
+COMBINED_DATASET_RE = re.compile(r'^\d{4}q\dr\d_combined$')
+DEID_DATASET_RE = re.compile(r'^R\d{4}q\dr\d_deid(?:_clean)$')
 TREND_N = 3
 
 
@@ -33,8 +35,8 @@ def is_deid_dataset(dataset_id):
 
 def _datasets():
     DefaultDatasets = collections.namedtuple('DefaultDatasets', 'latest trend')
-    dataset_list = list(bq.Datasets())
-    dataset_list.sort(key=lambda d: d.name.dataset_id, reverse=True)
+    dataset_list = list(client.list_datasets())
+    dataset_list.sort(key=lambda d: d.dataset_id, reverse=True)
     vocabulary = []
     rdr = []
     unioned = []
@@ -42,7 +44,7 @@ def _datasets():
     deid = []
 
     for dataset in dataset_list:
-        dataset_id = dataset.name.dataset_id
+        dataset_id = dataset.dataset_id
         if is_vocabulary_dataset(dataset_id):
             vocabulary.append(dataset_id)
         elif is_rdr_dataset(dataset_id):
@@ -57,10 +59,10 @@ def _datasets():
     LatestDatasets = collections.namedtuple(
         'LatestDatasets', 'vocabulary rdr unioned combined deid')
     latest = LatestDatasets(vocabulary=vocabulary[0],
-                            rdr=rdr[0],
-                            unioned=unioned[0],
-                            combined=combined[0],
-                            deid=deid[0])
+                            rdr=rdr[0] if rdr else [],
+                            unioned=unioned[0] if unioned else [],
+                            combined=combined[0] if combined else [],
+                            deid=deid[0] if deid else [])
 
     TrendDatasets = collections.namedtuple('TrendDatasets',
                                            'rdr unioned combined deid')

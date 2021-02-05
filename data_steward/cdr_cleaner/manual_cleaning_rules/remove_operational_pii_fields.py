@@ -11,11 +11,11 @@ import logging
 
 import bq_utils
 import constants.cdr_cleaner.clean_cdr as cdr_consts
-import sandbox
+from utils import sandbox
 
 LOGGER = logging.getLogger(__name__)
 
-OPERATIONAL_PII_FIELDS_TABLE = 'operational_pii_fields'
+OPERATIONAL_PII_FIELDS_TABLE = '_operational_pii_fields'
 INTERMEDIARY_TABLE = 'remove_operational_pii_fields_observation'
 
 OPERATION_PII_FIELDS_INTERMEDIARY_QUERY = """
@@ -24,7 +24,7 @@ CREATE OR REPLACE TABLE
   SELECT
     *
   FROM
-    {dataset}.observation
+    `{project}.{dataset}.observation`
   WHERE
     observation_id IN (
     SELECT
@@ -42,7 +42,7 @@ CREATE OR REPLACE TABLE
 DELETE_OPERATIONAL_PII_FIELDS_QUERY = """
 DELETE
 FROM
-    {dataset}.observation
+    `{project}.{dataset}.observation`
   WHERE
     observation_id IN (
     SELECT
@@ -60,7 +60,7 @@ FROM
 
 def load_operational_pii_fields_lookup_table(project_id, sandbox_dataset_id):
     """
-        Loads the operational pii fields from resources/operational_pii_fields.csv
+        Loads the operational pii fields from resource_files/operational_pii_fields.csv
         into project_id.sandbox_dataset_id.operational_pii_fields in BQ
 
         :param project_id: Project where the sandbox dataset resides
@@ -149,10 +149,15 @@ if __name__ == '__main__':
 
     ARGS = parser.parse_args()
 
-    sandbox_dataset_id = sandbox.create_sandbox_dataset(
-        project_id=ARGS.project_id, dataset_id=ARGS.dataset_id)
-
-    clean_engine.add_console_logging(ARGS.console_log)
-    query_list = get_remove_operational_pii_fields_query(
-        ARGS.project_id, ARGS.dataset_id, sandbox_dataset_id)
-    clean_engine.clean_dataset(ARGS.project_id, query_list)
+    if ARGS.list_queries:
+        clean_engine.add_console_logging()
+        query_list = clean_engine.get_query_list(
+            ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id,
+            [(get_remove_operational_pii_fields_query,)])
+        for query in query_list:
+            LOGGER.info(query)
+    else:
+        clean_engine.add_console_logging(ARGS.console_log)
+        clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
+                                   ARGS.sandbox_dataset_id,
+                                   [(get_remove_operational_pii_fields_query,)])

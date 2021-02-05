@@ -89,9 +89,11 @@ from google.oauth2 import service_account
 # Project imports
 import bq_utils
 import constants.bq_utils as bq_consts
+from constants.deid.deid import MAX_AGE
 from deid.parser import parse_args
 from deid.press import Press
 from resources import DEID_PATH
+from tools.concept_ids_suppression import get_all_concept_ids
 
 LOGGER = logging.getLogger(__name__)
 
@@ -104,36 +106,6 @@ def milliseconds_since_epoch():
     """
     return int(
         (datetime.utcnow() - datetime(1970, 1, 1)).total_seconds() * 1000)
-
-
-def create_participant_mapping_table(table, map_tablename, lower_bound,
-                                     max_day_shift, credentials):
-    # create the deid_map table.  set upper and lower bounds of the research_id array
-    records = table.shape[0]
-    upper_bound = lower_bound + (10 * records)
-    map_table = pd.DataFrame({"person_id": table['person_id'].tolist()})
-
-    # generate random research_ids
-    research_id_array = np.random.choice(np.arange(lower_bound, upper_bound),
-                                         records,
-                                         replace=False)
-
-    # throw in some extra, non-deterministic shuffling
-    for _ in range(milliseconds_since_epoch() % 5):
-        np.random.shuffle(research_id_array)
-    map_table['research_id'] = research_id_array
-
-    # generate date shift values
-    shift_array = np.random.choice(np.arange(1, max_day_shift), records)
-
-    # throw in some extra, non-deterministic shuffling
-    for _ in range(milliseconds_since_epoch() % 5):
-        np.random.shuffle(shift_array)
-    map_table['shift'] = shift_array
-
-    # write this to bigquery.
-    map_table.to_gbq(map_tablename, credentials=credentials, if_exists='fail')
-    LOGGER.info('created new patient mapping table')
 
 
 def create_person_id_src_hpo_map(input_dataset, credentials):
@@ -204,7 +176,7 @@ def create_person_id_src_hpo_map(input_dataset, credentials):
                    destination_table_id=map_tablename,
                    destination_dataset_id=input_dataset,
                    write_disposition=bq_consts.WRITE_TRUNCATE)
-    LOGGER.info("Created mapping table:\t%s.%s", input_dataset, map_tablename)
+    LOGGER.info(f"Created mapping table:\t{input_dataset}.{map_tablename}")
 
 
 def create_allowed_states_table(input_dataset, credentials):
@@ -257,6 +229,28 @@ def create_questionnaire_mapping_table(table,
     LOGGER.info('created new questionnaire response mapping table')
 
 
+def create_concept_id_lookup_table(input_dataset, credentials):
+    """
+    Create a lookup table of concept_id's to suppress
+
+    :param input_dataset: input dataset to save lookup table to
+    :param credentials: bigquery credentials
+    """
+
+    lookup_tablename = input_dataset + "._concept_ids_suppression"
+    columns = [
+        'vocabulary_id', 'concept_code', 'concept_name', 'concept_id',
+        'domain_id', 'rule', 'question'
+    ]
+    client = bq.Client(credentials=credentials)
+
+    # use utility to get and append concept_ids from csv files and queries
+    data = get_all_concept_ids(columns, input_dataset, client)
+
+    # write this to bigquery.
+    data.to_gbq(lookup_tablename, credentials=credentials, if_exists='replace')
+
+
 class AOU(Press):
 
     def __init__(self, **args):
@@ -265,7 +259,6 @@ class AOU(Press):
         self.private_key = args.get('private_key', '')
         self.credentials = service_account.Credentials.from_service_account_file(
             self.private_key)
-        self.odataset = self.idataset + '_deid'
         self.partition = args.get('cluster', False)
         self.priority = args.get('interactive', 'BATCH')
 
@@ -274,29 +267,26 @@ class AOU(Press):
             # Minor updates that are the result of a limitation as to how rules are specified.
             # @TODO: Improve the rule specification language
             shift_days = (
-                'SELECT shift from {idataset}._deid_map '
-                'WHERE _deid_map.person_id = {tablename}.person_id'.format(
-                    idataset=self.idataset, tablename=self.tablename))
+                f'SELECT shift from {self.idataset}._deid_map '
+                f'WHERE _deid_map.person_id = {self.tablename}.person_id')
             self.deid_rules['shift'] = json.loads(
                 json.dumps(self.deid_rules['shift']).replace(
                     ":SHIFT", shift_days))
 
     def initialize(self, **args):
         Press.initialize(self, **args)
-        LOGGER.info('BEGINNING de-identification on table:\t%s', self.tablename)
+        LOGGER.info(f"BEGINNING de-identification on table:\t{self.tablename}")
 
-        age_limit = args['age_limit']
-        max_day_shift = args['max_day_shift']
+        age_limit = args.get('age_limit', MAX_AGE)
+        LOGGER.info(f"Using participant age limit of {age_limit}")
+
         million = 1000000
         map_tablename = self.idataset + "._deid_map"
 
-        sql = (
-            "SELECT DISTINCT person_id, EXTRACT(YEAR FROM CURRENT_DATE()) - year_of_birth as age "
-            "FROM person ORDER BY 2")
-        job_config = {'query': {'defaultDataset': {'datasetId': self.idataset}}}
-        person_table = self.get_dataframe(sql=sql, query_config=job_config)
-        LOGGER.info('patient count is:\t%s', person_table.shape[0])
         map_table = pd.DataFrame()
+
+        # Create concept_id lookup table for suppressions
+        create_concept_id_lookup_table(self.idataset, self.credentials)
 
         # only need to create these tables deidentifying the observation table
         if 'observation' in self.get_tablename().lower().split('.'):
@@ -304,45 +294,37 @@ class AOU(Press):
             self.map_questionnaire_response_ids(million)
             create_person_id_src_hpo_map(self.idataset, self.credentials)
 
-        if person_table.shape[0] > 0:
-            person_table = person_table[person_table.age < age_limit]
-            map_sql = 'SELECT * FROM ' + map_tablename
-            job_config = {
-                'query': {
-                    'defaultDataset': {
-                        'datasetId': self.idataset
-                    }
-                }
-            }
-            map_table = self.get_dataframe(sql=map_sql, query_config=job_config)
-            if map_table.shape[0] > 0:
-                # Make sure the mapping table is mapping the expected data
-                map_table_set = set(map_table.loc[:, 'person_id'].tolist())
-                person_set = set(person_table.loc[:, 'person_id'].tolist())
-                if map_table_set == person_set:
-                    LOGGER.info('participant mapping table contains '
-                                'all person ids.  continuing...')
-                else:
-                    LOGGER.info(
-                        "creating new participant mapping table because the current mapping table doesn't match"
-                    )
-                    create_participant_mapping_table(person_table,
-                                                     map_tablename, million,
-                                                     max_day_shift,
-                                                     self.credentials)
-            else:
-                LOGGER.info(
-                    "creating new participant mapping table because one doesn't exist"
-                )
-                create_participant_mapping_table(person_table, map_tablename,
-                                                 million, max_day_shift,
-                                                 self.credentials)
-        else:
-            LOGGER.error("Unable to initialize Deid.  Check "
-                         "configuration files, parameters, and credentials.")
+        # ensure mapping table only contains participants within age limits
+        sql = (f"SELECT DISTINCT p.person_id, "
+               f"EXTRACT(YEAR FROM CURRENT_DATE()) - year_of_birth AS age "
+               f"FROM {self.idataset}.person AS p "
+               f"JOIN {map_tablename} AS map "
+               f"USING (person_id) "
+               f"ORDER BY age")
+        job_config = {'query': {'defaultDataset': {'datasetId': self.idataset}}}
+        person_table = self.get_dataframe(sql=sql, query_config=job_config)
+        LOGGER.info(f"possible patient count is:\t{person_table.shape[0]}")
 
-        LOGGER.info('map table contains %d participants.', map_table.shape[0])
-        return person_table.shape[0] > 0 or map_table.shape[0] > 0
+        # ensure age eligible participants exist in the mapping table
+        eligible_person_table = person_table[person_table.age < age_limit]
+        if eligible_person_table.shape[0] < 1:
+            LOGGER.error(
+                f"Unable to initialize Deid. {map_tablename} table cannot be "
+                f"joined to {self.idataset}.person table to verify age requirements."
+            )
+
+        # ensure no age ineligible participants are available in the mapping table
+        ineligible_person_table = person_table[person_table.age >= age_limit]
+        if ineligible_person_table.shape[0] > 0:
+            LOGGER.error(f"{ineligible_person_table.shape[0]} age ineligible "
+                         f"participants are available in "
+                         f"{map_tablename}.  Deid is bailing out!!")
+
+        LOGGER.info(f"map table contains {eligible_person_table.shape[0]} "
+                    f"records.")
+
+        return eligible_person_table.shape[
+            0] > 0 and ineligible_person_table.shape[0] < 1
 
     def map_questionnaire_response_ids(self, lower_bound):
         """
@@ -357,8 +339,9 @@ class AOU(Press):
                "ORDER BY 1")
         job_config = {'query': {'defaultDataset': {'datasetId': self.idataset}}}
         observation_table = self.get_dataframe(sql=sql, query_config=job_config)
-        LOGGER.info('total of distinct questionnaire_response_ids:\t%d',
-                    observation_table.shape[0])
+        LOGGER.info(
+            f"total of distinct questionnaire_response_ids:\t{observation_table.shape[0]}"
+        )
         map_table = pd.DataFrame()
 
         if observation_table.shape[0] > 0:
@@ -401,8 +384,9 @@ class AOU(Press):
         else:
             LOGGER.error("No questionnaire_response_ids found.")
 
-        LOGGER.info('questionnaire response mapping table contains %d records',
-                    map_table.shape[0])
+        LOGGER.info(
+            f"questionnaire response mapping table contains {map_table.shape[0]} records"
+        )
 
     def get_dataframe(self, sql=None, limit=None, query_config=None):
         """
@@ -428,7 +412,7 @@ class AOU(Press):
 
             return df
         except Exception:
-            LOGGER.exception("Unable to execute the query:\t%s", sql)
+            LOGGER.exception(f"Unable to execute the query:\t{sql}")
 
         return pd.DataFrame()
 
@@ -505,7 +489,7 @@ class AOU(Press):
                 self.table_info['shift'] = []
 
             if _toshift:
-                LOGGER.info('shifting fields:\t%s', _toshift)
+                LOGGER.info(f"shifting fields:\t{_toshift}")
                 self.table_info['shift'] += _toshift
 
     def _add_compute_rules(self, columns):
@@ -609,7 +593,7 @@ class AOU(Press):
 
         # create the output table
         if create:
-            LOGGER.info('creating new table:\t%s', self.tablename)
+            LOGGER.info(f"creating new table:\t{self.tablename}")
             bq_utils.create_standard_table(self.tablename,
                                            self.tablename,
                                            drop_existing=True,
@@ -617,7 +601,7 @@ class AOU(Press):
             write_disposition = bq_consts.WRITE_EMPTY
         else:
             write_disposition = bq_consts.WRITE_APPEND
-            LOGGER.info('appending results to table:\t%s', self.tablename)
+            LOGGER.info(f"appending results to table:\t{self.tablename}")
 
         job = bq.QueryJobConfig()
         job.priority = self.priority
@@ -638,8 +622,8 @@ class AOU(Press):
             dml_job = copy(job)
 
         LOGGER.info(
-            'submitting a dry-run for:\t%s\t\tpriority:\t%s\t\tpartition:\t%s',
-            self.get_tablename(), self.priority, self.partition)
+            f"submitting a dry-run for:\t{self.get_tablename()}\t\tpriority:\t%s\t\tpartition:\t%s",
+            self.priority, self.partition)
 
         logpath = os.path.join(self.logpath, self.idataset)
         try:
@@ -652,9 +636,9 @@ class AOU(Press):
             response = client.query(sql, location='US', job_config=job)
         except Exception:
             LOGGER.exception(
-                'dry run query failed for:\t%s\n'
-                '\t\tSQL:\t%s\n'
-                '\t\tjob config:\t%s', self.get_tablename(), sql, job)
+                f"dry run query failed for:\t{self.get_tablename()}\n"
+                f"\t\tSQL:\t{sql}\n"
+                f"\t\tjob config:\t{job}")
         else:
 
             if response.state == 'DONE':
@@ -667,8 +651,8 @@ class AOU(Press):
 
                 response = client.query(sql, location='US', job_config=job)
                 LOGGER.info(
-                    'submitted a %s job for table:\t%s\t\tstatus:\t%s\t\tvalue:\t%s',
-                    'bigquery', table_name, 'pending', response.job_id)
+                    f"submitted a bigquery job for table:\t{table_name}\t\t"
+                    f"status:\t'pending'\t\tvalue:\t{response.job_id}")
                 self.wait(client, response.job_id)
 
     def wait(self, client, job_id):
@@ -678,8 +662,8 @@ class AOU(Press):
         :param client:  The BigQuery client object.
         :param job_id:  job_id to verify finishes.
         """
-        LOGGER.info('sleeping for table:\t%s\t\tjob_id:\t%s',
-                    self.get_tablename(), job_id)
+        LOGGER.info(
+            f"sleeping for table:\t{self.get_tablename()}\t\tjob_id:\t{job_id}")
         status = 'NONE'
 
         while True:
@@ -690,7 +674,7 @@ class AOU(Press):
             else:
                 time.sleep(5)
 
-        LOGGER.info('awake.  status is:\t%s', status)
+        LOGGER.info(f"awake.  status is:\t{status}")
 
 
 def main(raw_args=None):
@@ -704,12 +688,12 @@ def main(raw_args=None):
 
     handle = AOU(**sys_args)
 
-    if handle.initialize(age_limit=sys_args.get('age-limit'),
-                         max_day_shift=365):
+    if handle.initialize(age_limit=sys_args.get('age_limit')):
         handle.do()
     else:
-        print("Unable to initialize process ")
-        print("\tEnsure that the parameters are correct")
+        LOGGER.error(
+            f"Unable to initialize process.  Check _deid_map table "
+            f"contents against {sys_args.get('idataset')}.person contents")
 
 
 if __name__ == '__main__':

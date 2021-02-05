@@ -5,9 +5,12 @@ For all answers for the survey question (43528428) and given pids,
 """
 
 import csv
+import logging
 
 import bq_utils
 from constants.cdr_cleaner import clean_cdr as cdr_consts
+
+LOGGER = logging.getLogger(__name__)
 
 ORIGINAL_OBSERVATION_SOURCE_CONCEPT_ID = 43528428
 HCAU_OBSERVATION_SOURCE_CONCEPT_ID = 1384450
@@ -263,8 +266,15 @@ if __name__ == '__main__':
 
     ARGS = parse_args()
 
-    clean_engine.add_console_logging(ARGS.console_log)
-    query_list = get_queries_health_insurance(ARGS.project_id, ARGS.dataset_id,
-                                              ARGS.sandbox_dataset_id,
-                                              ARGS.file_path)
-    clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id, query_list)
+    if ARGS.list_queries:
+        clean_engine.add_console_logging()
+        query_list = clean_engine.get_query_list(
+            ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id,
+            [(get_queries_health_insurance,)])
+        for query in query_list:
+            LOGGER.info(query)
+    else:
+        clean_engine.add_console_logging(ARGS.console_log)
+        clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
+                                   ARGS.sandbox_dataset_id,
+                                   [(get_queries_health_insurance,)])

@@ -1,21 +1,23 @@
-from __future__ import print_function
-
+# Python imports
+import inspect
 import logging
+from concurrent.futures import TimeoutError as TOError
 
-import googleapiclient
-import oauth2client
-import app_identity
-from constants.cdr_cleaner.clean_cdr import DataStage as stage
+# Third party imports
+import google.cloud.bigquery as gbq
+from google.cloud.exceptions import GoogleCloudError
 
-import bq_utils
+# Project imports
+from utils import bq
+from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as cdr_consts
+from constants.cdr_cleaner import clean_cdr_engine as ce_consts
 
 LOGGER = logging.getLogger(__name__)
-FILENAME = '/tmp/cleaner.log'
 
 
-def add_console_logging(add_handler):
+def add_console_logging(add_handler=True):
     """
 
     This config should be done in a separate module, but that can wait
@@ -24,7 +26,7 @@ def add_console_logging(add_handler):
     """
     logging.basicConfig(
         level=logging.INFO,
-        filename=FILENAME,
+        filename=ce_consts.FILENAME,
         filemode='a',
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
@@ -34,81 +36,230 @@ def add_console_logging(add_handler):
         formatter = logging.Formatter(
             '%(asctime)s - %(levelname)s - %(name)s - %(message)s')
         handler.setFormatter(formatter)
-        LOGGER.addHandler(handler)
+        logging.getLogger('').addHandler(handler)
 
 
-def clean_dataset(project=None, statements=None, data_stage=stage.UNSPECIFIED):
+def clean_dataset(project_id, dataset_id, sandbox_dataset_id, rules, **kwargs):
     """
-       Run the assigned cleaning rules.
+    Run the assigned cleaning rules and return list of BQ job objects
 
-       :param project:  the project name
-       :param statements:  a list of dictionary objects to run the query
-       :param data_stage:  an enum to indicate what stage of the cleaning this is
-       """
-    if project is None or project == '' or project.isspace():
-        project = app_identity.get_application_id()
-        LOGGER.info('Project name not provided.  Using default.')
+    :param project_id: identifies the project
+    :param dataset_id: identifies the dataset to clean
+    :param sandbox_dataset_id: identifies the sandbox dataset to store backup rows
+    :param rules: a list of cleaning rule objects/functions as tuples
+    :param kwargs: keyword arguments a cleaning rule may require
+    :return all_jobs: List of BigQuery job objects
+    """
+    # Set up client
+    client = bq.get_client(project_id=project_id)
 
-    if statements is None:
-        statements = []
+    all_jobs = []
+    for rule_index, rule in enumerate(rules):
+        clazz = rule[0]
+        query_function, setup_function, rule_info = infer_rule(
+            clazz, project_id, dataset_id, sandbox_dataset_id, **kwargs)
 
-    failures = 0
-    successes = 0
-    for statement in statements:
-        rule_query = statement.get(cdr_consts.QUERY, '')
-        legacy_sql = statement.get(cdr_consts.LEGACY_SQL, False)
-        destination_table = statement.get(cdr_consts.DESTINATION_TABLE, None)
-        retry = statement.get(cdr_consts.RETRY_COUNT,
-                              bq_consts.BQ_DEFAULT_RETRY_COUNT)
-        disposition = statement.get(cdr_consts.DISPOSITION,
-                                    bq_consts.WRITE_EMPTY)
-        destination_dataset = statement.get(cdr_consts.DESTINATION_DATASET,
-                                            None)
-        batch = statement.get(cdr_consts.BATCH, None)
+        LOGGER.info(
+            f"Applying cleaning rule {rule_info[cdr_consts.MODULE_NAME]} "
+            f"{rule_index+1}/{len(rules)}")
+        setup_function(client)
+        query_list = query_function()
+        jobs = run_queries(client, query_list, rule_info)
+        LOGGER.info(
+            f"For clean rule {rule_info[cdr_consts.MODULE_NAME]}, {len(jobs)} jobs "
+            f"were run successfully for {len(query_list)} queries")
+        all_jobs.extend(jobs)
+    return all_jobs
 
+
+def generate_job_config(project_id, query_dict):
+    """
+    Generates BigQuery job_configuration object
+
+    :param project_id: Identifies the project
+    :param query_dict: dictionary for the query
+    :return: BQ job_configuration object
+    """
+    job_config = gbq.job.QueryJobConfig()
+    if query_dict.get(cdr_consts.DESTINATION_TABLE) is None:
+        return job_config
+
+    destination_table = gbq.TableReference.from_string(
+        f'{project_id}.{query_dict[cdr_consts.DESTINATION_DATASET]}.{query_dict[cdr_consts.DESTINATION_TABLE]}'
+    )
+
+    job_config.destination = destination_table
+    job_config.use_legacy_sql = query_dict.get(cdr_consts.LEGACY_SQL, False)
+    # allow_large_results can only be used if use_legacy_sql=True
+    job_config.allow_large_results = job_config.use_legacy_sql
+    job_config.write_disposition = query_dict.get(cdr_consts.DISPOSITION,
+                                                  bq_consts.WRITE_EMPTY)
+    return job_config
+
+
+def run_queries(client, query_list, rule_info):
+    """
+    Runs queries from the list of query_dicts
+
+    :param client: BigQuery client
+    :param query_list: list of query_dicts generated by a cleaning rule
+    :param rule_info: contains information about the query function
+    :return: integers indicating the number of queries that succeeded and failed
+    """
+    query_count = len(query_list)
+    jobs = []
+    for query_no, query_dict in enumerate(query_list):
         try:
-            LOGGER.info("Running query %s", rule_query)
-            results = bq_utils.query(rule_query,
-                                     use_legacy_sql=legacy_sql,
-                                     destination_table_id=destination_table,
-                                     retry_count=retry,
-                                     write_disposition=disposition,
-                                     destination_dataset_id=destination_dataset,
-                                     batch=batch)
+            LOGGER.info(
+                ce_consts.QUERY_RUN_MESSAGE_TEMPLATE.render(
+                    query_no=query_no, query_count=query_count, **rule_info))
+            job_config = generate_job_config(client.project, query_dict)
 
-        except (oauth2client.client.HttpAccessTokenRefreshError,
-                googleapiclient.errors.HttpError):
-            LOGGER.exception("FAILED:  Clean rule not executed:\n%s",
-                             rule_query)
-            failures += 1
-            continue
+            module_short_name = rule_info[cdr_consts.MODULE_NAME].split(
+                '.')[-1][:10]
+            query_job = client.query(query=query_dict.get(cdr_consts.QUERY),
+                                     job_config=job_config,
+                                     job_id_prefix=f'{module_short_name}_')
+            jobs.append(query_job)
+            LOGGER.info(f'Running {query_job.job_id}')
+            # wait for job to complete
+            query_job.result()
+            if query_job.errors:
+                raise RuntimeError(
+                    ce_consts.FAILURE_MESSAGE_TEMPLATE.render(
+                        client.project, query_job, **rule_info, **query_dict))
+            LOGGER.info(
+                ce_consts.SUCCESS_MESSAGE_TEMPLATE.render(
+                    project_id=client.project,
+                    query_job=query_job,
+                    query_no=query_no,
+                    query_count=query_count,
+                    **rule_info))
+        except (GoogleCloudError, TOError) as exp:
+            LOGGER.exception(
+                ce_consts.FAILURE_MESSAGE_TEMPLATE.render(
+                    project_id=client.project,
+                    **rule_info,
+                    **query_dict,
+                    exception=exp))
+            raise exp
+    return jobs
 
-        LOGGER.info("Executing query %s", rule_query)
 
-        # wait for job to finish
-        query_job_id = results['jobReference']['jobId']
-        incomplete_jobs = bq_utils.wait_on_jobs([query_job_id])
-        if incomplete_jobs != []:
-            failures += 1
-            raise bq_utils.BigQueryJobWaitError(incomplete_jobs)
+def get_rule_args(clazz):
+    """
+    Gets list of ("param_name", Parameter)
+    :param clazz: 
+    :return: 
+    """
+    params = inspect.signature(clazz).parameters
+    return [
+        dict(name=name, required=param.default is inspect.Parameter.empty)
+        for name, param in params.items()
+    ]
 
-        if destination_table is not None:
-            updated_rows = results.get("totalRows")
-            if updated_rows is not None:
-                LOGGER.info("Query returned %d rows for %s.%s", updated_rows,
-                            destination_dataset, destination_table)
 
-        successes += 1
+def get_custom_kwargs(clazz, **kwargs):
+    """
+    Filters kwargs based on the signature of the 'clazz'
 
-    if successes > 0:
-        LOGGER.info("Successfully applied %d clean rules for %s.%s", successes,
-                    project, data_stage)
+    :param clazz: Clean class or clean function to check the signature of
+    :param kwargs: optional arguments provided by the user
+    :return: filtered dictionary of kwargs
+    :raises ValueError: if a required param for 'clazz' is missing from kwargs
+    """
+    params = inspect.signature(clazz).parameters
+    rule_params = {
+        k: v
+        for k, v in params.items()
+        if k not in ce_consts.CLEAN_ENGINE_REQUIRED_PARAMS
+    }
+    # filter kwargs based on required params
+    kwargs = {k: v for k, v in kwargs.items() if k in rule_params.keys()}
+    missing = [
+        k for k, v in rule_params.items()
+        if k not in kwargs.keys() and v.default is inspect.Parameter.empty
+    ]
+    if missing:
+        raise ValueError(f'Params {missing} '
+                         f'not provided for cleaning rule {clazz.__name__}')
+    return kwargs
+
+
+def infer_rule(clazz, project_id, dataset_id, sandbox_dataset_id, **kwargs):
+    """
+    Extract information about the cleaning rule
+
+    :param clazz: Clean rule class or old style clean function
+    :param project_id: identifies the project
+    :param dataset_id: identifies the dataset to clean
+    :param sandbox_dataset_id: identifies the sandbox dataset to store backup rows
+    :param kwargs: keyword arguments a cleaning rule may require
+    :return:
+        query_function: function that generates query_list
+        setup_function: function that sets up the tables for the rule
+        rule_info: dictionary of information about the rule
+            keys:
+                query_function: function that generates query_list
+                setup_function: function that sets up the tables for the rule
+                function_name: name of the query function
+                module_name: name of the module containing the function
+                line_no: points to the source line where query_function is
+    """
+    kwargs = get_custom_kwargs(clazz, **kwargs)
+    if inspect.isclass(clazz) and issubclass(clazz, BaseCleaningRule):
+        instance = clazz(project_id, dataset_id, sandbox_dataset_id, **kwargs)
+
+        query_function = instance.get_query_specs
+        setup_function = instance.setup_rule
+        function_name = query_function.__name__
+        module_name = inspect.getmodule(query_function).__name__
+        line_no = inspect.getsourcelines(query_function)[1]
     else:
-        LOGGER.warning("No clean rules successfully applied to %s.%s", project,
-                       data_stage)
+        function_name = clazz.__name__
+        module_name = inspect.getmodule(clazz).__name__
+        line_no = inspect.getsourcelines(clazz)[1]
 
-    if failures > 0:
-        print("Failed to apply {} clean rules for {}.{}".format(
-            failures, project, data_stage))
-        LOGGER.warning("Failed to apply %d clean rules for %s.%s", failures,
-                       project, data_stage)
+        def query_function():
+            """
+            Imitates base class get_query_specs()
+
+            :return: list of query dicts generated by rule
+            """
+            return clazz(project_id, dataset_id, sandbox_dataset_id, **kwargs)
+
+        def setup_function(client):
+            """
+            Imitates base class setup_rule()
+            """
+            pass
+
+    rule_info = {
+        cdr_consts.QUERY_FUNCTION: query_function,
+        cdr_consts.SETUP_FUNCTION: setup_function,
+        cdr_consts.FUNCTION_NAME: function_name,
+        cdr_consts.MODULE_NAME: module_name,
+        cdr_consts.LINE_NO: line_no,
+    }
+    return query_function, setup_function, rule_info
+
+
+def get_query_list(project_id, dataset_id, sandbox_dataset_id, rules, **kwargs):
+    """
+    Generates list of all query_dicts that will be run on the dataset
+
+    :param project_id: identifies the project
+    :param dataset_id: identifies the dataset to clean
+    :param sandbox_dataset_id: identifies the sandbox dataset to store backup rows
+    :param rules: a list of cleaning rule objects/functions as tuples
+    :param kwargs: keyword arguments a cleaning rule may require
+    :return list of all query_dicts that will be run on the dataset
+    """
+    all_queries_list = []
+    for rule in rules:
+        clazz = rule[0]
+        query_function, _, rule_info = infer_rule(clazz, project_id, dataset_id,
+                                                  sandbox_dataset_id, **kwargs)
+        query_list = query_function()
+        all_queries_list.extend(query_list)
+    return all_queries_list

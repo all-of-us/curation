@@ -358,13 +358,15 @@ def get_reroute_domain_queries(project_id, dataset_id):
     return queries
 
 
-def domain_alignment(project_id, dataset_id):
+def domain_alignment(project_id, dataset_id, sandbox_dataset_id=None):
     """
 
     This function returns a list of dictionaries containing query parameters required for applying domain alignment.
 
     :param project_id: the project_id in which the query is run
     :param dataset_id: the dataset_id in which the query is run
+    :param sandbox_dataset_id: Identifies the sandbox dataset to store rows 
+    #TODO use sandbox_dataset_id for CR
     :return: a list of query dicts for rerouting the records to the corresponding destination table
     """
     queries_list = []
@@ -379,7 +381,17 @@ if __name__ == '__main__':
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
     ARGS = parser.parse_args()
-    # Uncomment this line if testing locally
-    clean_engine.add_console_logging(ARGS.console_log)
-    query_list = domain_alignment(ARGS.project_id, ARGS.dataset_id)
-    clean_engine.clean_dataset(ARGS.project_id, query_list)
+
+    if ARGS.list_queries:
+        clean_engine.add_console_logging()
+        query_list = clean_engine.get_query_list(ARGS.project_id,
+                                                 ARGS.dataset_id,
+                                                 ARGS.sandbox_dataset_id,
+                                                 [(domain_alignment,)])
+        for query in query_list:
+            LOGGER.info(query)
+    else:
+        clean_engine.add_console_logging(ARGS.console_log)
+        clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
+                                   ARGS.sandbox_dataset_id,
+                                   [(domain_alignment,)])

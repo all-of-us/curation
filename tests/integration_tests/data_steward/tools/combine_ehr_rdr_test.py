@@ -1,7 +1,5 @@
 # Python imports
-import logging
 import os
-import sys
 import unittest
 from io import open
 
@@ -12,17 +10,17 @@ import resources
 from tests import test_util
 from constants.tools.combine_ehr_rdr import EHR_CONSENT_TABLE_ID, RDR_TABLES_TO_COPY, DOMAIN_TABLES
 from tools.combine_ehr_rdr import (copy_rdr_table, ehr_consent, main,
-                                   mapping_table_for, create_cdm_tables, logger)
+                                   mapping_table_for, create_cdm_tables)
 
 UNCONSENTED_EHR_COUNTS_QUERY = (
     '  select \'{domain_table}\' as table_id, count(1) as n from (SELECT DISTINCT'
     '  v.src_hpo_id AS src_hpo_id,'
     '  t.{domain_table}_id  AS {domain_table}_id'
-    '  FROM {ehr_dataset_id}.{domain_table} t'
-    '  JOIN {ehr_dataset_id}._mapping_{domain_table}  v'
-    '  on t.{domain_table}_id = v.{domain_table}_id'
+    '  FROM `{ehr_dataset_id}.{domain_table}` AS t'
+    '  JOIN `{ehr_dataset_id}._mapping_{domain_table}` AS v'
+    '  ON t.{domain_table}_id = v.{domain_table}_id'
     '  WHERE NOT EXISTS'
-    '  (SELECT 1 FROM {combined_dataset_id}.{ehr_consent_table_id} c'
+    '  (SELECT 1 FROM `{combined_dataset_id}.{ehr_consent_table_id}` AS c'
     '  WHERE t.person_id = c.person_id))')
 
 
@@ -34,9 +32,6 @@ class CombineEhrRdrTest(unittest.TestCase):
         print(cls.__name__)
         print('**************************************************************')
         # TODO base class this
-        logger.level = logging.INFO
-        stream_handler = logging.StreamHandler(sys.stdout)
-        logger.addHandler(stream_handler)
         ehr_dataset_id = bq_utils.get_dataset_id()
         rdr_dataset_id = bq_utils.get_rdr_dataset_id()
         test_util.delete_all_tables(ehr_dataset_id)
@@ -143,17 +138,18 @@ class CombineEhrRdrTest(unittest.TestCase):
                 msg='RDR table {table} should be copied'.format(table=table))
 
             # Check that row count in combined is same as rdr
-            query = ('WITH rdr AS '
-                     ' (SELECT COUNT(1) n FROM {rdr_dataset_id}.{table}), '
-                     'combined AS '
-                     ' (SELECT COUNT(1) n FROM {combined_dataset_id}.{table}) '
-                     'SELECT '
-                     'rdr.n AS rdr_count, '
-                     'combined.n AS combined_count '
-                     'FROM rdr, combined ').format(
-                         rdr_dataset_id=self.rdr_dataset_id,
-                         combined_dataset_id=self.combined_dataset_id,
-                         table=table)
+            query = (
+                'WITH rdr AS '
+                ' (SELECT COUNT(1) n FROM `{rdr_dataset_id}.{table}`), '
+                'combined AS '
+                ' (SELECT COUNT(1) n FROM `{combined_dataset_id}.{table}`) '
+                'SELECT '
+                'rdr.n AS rdr_count, '
+                'combined.n AS combined_count '
+                'FROM rdr, combined ').format(
+                    rdr_dataset_id=self.rdr_dataset_id,
+                    combined_dataset_id=self.combined_dataset_id,
+                    table=table)
             response = bq_utils.query(query)
             rows = bq_utils.response2rows(response)
             self.assertTrue(len(rows) == 1)  # sanity check
@@ -172,17 +168,17 @@ class CombineEhrRdrTest(unittest.TestCase):
         """
         query = ('WITH ehr_only AS '
                  ' (SELECT person_id '
-                 '  FROM {ehr_dataset_id}.person ep '
+                 '  FROM `{ehr_dataset_id}.person` AS ep '
                  '  WHERE NOT EXISTS '
                  '    (SELECT 1 '
-                 '     FROM {rdr_dataset_id}.person rp '
+                 '     FROM `{rdr_dataset_id}.person` AS rp '
                  '     WHERE rp.person_id = ep.person_id) '
                  ' ) '
                  'SELECT '
                  'ehr_only.person_id AS ehr_person_id, '
                  'p.person_id AS combined_person_id '
                  'FROM ehr_only '
-                 'LEFT JOIN {combined_dataset_id}.person p '
+                 'LEFT JOIN `{combined_dataset_id}.person` AS p '
                  'ON ehr_only.person_id = p.person_id').format(
                      ehr_dataset_id=self.ehr_dataset_id,
                      rdr_dataset_id=self.rdr_dataset_id,
@@ -215,7 +211,7 @@ class CombineEhrRdrTest(unittest.TestCase):
         """
         where = (
             'WHERE EXISTS '
-            '  (SELECT 1 FROM {combined_dataset_id}.{ehr_consent_table_id} c '
+            '  (SELECT 1 FROM `{combined_dataset_id}.{ehr_consent_table_id}` AS c '
             '   WHERE t.person_id = c.person_id)').format(
                 combined_dataset_id=self.combined_dataset_id,
                 ehr_consent_table_id=EHR_CONSENT_TABLE_ID)
@@ -269,13 +265,13 @@ class CombineEhrRdrTest(unittest.TestCase):
             mapping_table = mapping_table_for(domain_table)
             query = (
                 'SELECT rt.{domain_table}_id as id '
-                'FROM {rdr_dataset_id}.{domain_table} rt '
-                'LEFT JOIN {combined_dataset_id}.{mapping_table} m '
+                'FROM `{rdr_dataset_id}.{domain_table}` AS rt '
+                'LEFT JOIN `{combined_dataset_id}.{mapping_table}` AS m '
                 'ON rt.{domain_table}_id = m.src_{domain_table}_id '
                 'WHERE '
                 '  m.{domain_table}_id IS NULL '
                 'OR NOT EXISTS '
-                ' (SELECT 1 FROM {combined_dataset_id}.{domain_table} t '
+                ' (SELECT 1 FROM `{combined_dataset_id}.{domain_table}` AS t '
                 '  WHERE t.{domain_table}_id = m.{domain_table}_id)').format(
                     domain_table=domain_table,
                     rdr_dataset_id=bq_utils.get_rdr_dataset_id(),
@@ -333,4 +329,3 @@ class CombineEhrRdrTest(unittest.TestCase):
         rdr_dataset_id = bq_utils.get_rdr_dataset_id()
         test_util.delete_all_tables(ehr_dataset_id)
         test_util.delete_all_tables(rdr_dataset_id)
-        logger.handlers = []

@@ -7,6 +7,7 @@ Usage: create_ehr_snapshot.sh
   --key_file <path to key file>
   --ehr_dataset <EHR dataset ID>
   --rdr_dataset <RDR dataset ID>
+  --validation_dataset <Validation dataset ID>
   --dataset_release_tag <release tag for the CDR>
 "
 
@@ -24,6 +25,10 @@ while true; do
     rdr_dataset=$2
     shift 2
     ;;
+  --validation_dataset)
+    validation_dataset=$2
+    shift 2
+    ;;
   --dataset_release_tag)
     dataset_release_tag=$2
     shift 2
@@ -36,8 +41,8 @@ while true; do
   esac
 done
 
-if [[ -z "${key_file}" ]] || [[ -z "${ehr_dataset}" ]] || [[ -z "${rdr_dataset}" ]] || [[ -z "${dataset_release_tag}" ]]; then
-  echo "Specify the key file location and ehr_dataset ID, rdr_dataset ID and Dataset release tag . $USAGE"
+if [[ -z "${key_file}" ]] || [[ -z "${ehr_dataset}" ]] || [[ -z "${rdr_dataset}" ]] || [[ -z "${validation_dataset}" ]] || [[ -z "${dataset_release_tag}" ]] ; then
+  echo "Specify the key file location and ehr_dataset ID, rdr_dataset ID, validation_dataset ID and Dataset release tag . $USAGE"
   exit 1
 fi
 
@@ -45,6 +50,7 @@ app_id=$(python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_
 
 echo "ehr_dataset --> ${ehr_dataset}"
 echo "rdr_dataset --> ${rdr_dataset}"
+echo "validation_dataset --> ${validation_dataset}"
 echo "app_id --> ${app_id}"
 echo "key_file --> ${key_file}"
 echo "dataset_release_tag --> ${dataset_release_tag}"
@@ -57,63 +63,69 @@ CLEANER_DIR="${DATA_STEWARD_DIR}/cdr_cleaner"
 export GOOGLE_APPLICATION_CREDENTIALS="${key_file}"
 export GOOGLE_CLOUD_PROJECT="${app_id}"
 
+# set env variable for cleaning rule remove_non_matching_participant.py
+export VALIDATION_RESULTS_DATASET_ID="${validation_dataset}"
+
 #set application environment (ie dev, test, prod)
 gcloud auth activate-service-account --key-file=${key_file}
 gcloud config set project ${app_id}
 
-#---------Create curation virtual environment----------
-# create a new environment in directory curation_venv
-virtualenv -p "$(which python3.7)" "${DATA_STEWARD_DIR}/curation_venv"
-
-# activate it
-source "${DATA_STEWARD_DIR}/curation_venv/bin/activate"
-
-# install the requirements in the virtualenv
-pip install -r "${DATA_STEWARD_DIR}/requirements.txt"
-
 # shellcheck source=src/set_path.sh
 source "${TOOLS_DIR}/set_path.sh"
 #------------------------------------------------------
+tag=$(git describe --abbrev=0 --tags)
+version=${tag}
+
 
 echo "-------------------------->Snapshotting EHR Dataset (step 4)"
 ehr_snapshot="${dataset_release_tag}_ehr"
 echo "ehr_snapshot --> ${ehr_snapshot}"
 
-bq mk --dataset --description "snapshot of latest EHR dataset ${ehr_dataset}" ${app_id}:${ehr_snapshot}
+bq mk --dataset --description "snapshot of latest EHR dataset ${ehr_dataset} ran on $(date +'%Y-%m-%d')" --label "release_tag:${dataset_release_tag}" --label "de_identified:false" ${app_id}:${ehr_snapshot}
 
 #copy tables
 "${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${ehr_dataset} --target_dataset ${ehr_snapshot} --sync false
 
 echo "--------------------------> Snapshotting  and cleaning RDR Dataset (step 5)"
-rdr_snapshot="${dataset_release_tag}_rdr"
-rdr_snapshot_staging="${rdr_snapshot}_staging"
+rdr_clean="${dataset_release_tag}_rdr"
+rdr_clean_staging="${rdr_clean}_staging"
+rdr_clean_sandbox="${rdr_clean}_sandbox"
+rdr_clean_staging_sandbox="${rdr_clean_staging}_sandbox"
 
-bq mk --dataset --description "snapshot of latest RDR dataset ${rdr_dataset}" ${app_id}:${rdr_snapshot_staging}
+# create empty staging dataset
+bq mk --dataset --description "Intermediary dataset to apply cleaning rules on ${rdr_dataset}" --label "phase:staging" --label "release_tag:${dataset_release_tag}" --label "de_identified:false"  "${app_id}":"${rdr_clean_staging}"
+
+# create empty sandbox dataset
+bq mk --dataset --description "Sandbox created for storing records affected by the cleaning rules applied to ${rdr_clean_staging}" --label "phase:sandbox" --label "release_tag:${dataset_release_tag}" --label "de_identified:false"  "${app_id}":"${rdr_clean_staging_sandbox}"
 
 #copy tables
-"${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${rdr_dataset} --target_dataset ${rdr_snapshot_staging} --sync false
+"${TOOLS_DIR}/table_copy.sh" --source_app_id "${app_id}" --target_app_id "${app_id}" --source_dataset "${rdr_dataset}" --target_dataset "${rdr_clean_staging}" --sync false
 
 #set BIGQUERY_DATASET_ID variable to dataset name where the vocabulary exists
-export BIGQUERY_DATASET_ID="${rdr_snapshot_staging}"
-export RDR_DATASET_ID="${rdr_snapshot_staging}"
+export BIGQUERY_DATASET_ID="${rdr_clean_staging}"
+export RDR_DATASET_ID="${rdr_clean_staging}"
 echo "Cleaning the RDR data"
 data_stage="rdr"
 
-python "${CLEANER_DIR}/clean_cdr.py" --data_stage ${data_stage} -s
+# apply cleaning rules on staging
+python "${CLEANER_DIR}/clean_cdr.py"  --project_id "${app_id}" --dataset_id "${rdr_clean_staging}" --sandbox_dataset_id "${rdr_clean_staging_sandbox}" --data_stage ${data_stage} -s 2>&1 | tee rdr_cleaning_log_"${rdr_clean}".txt
 
 # Create a snapshot dataset with the result
-python "${TOOLS_DIR}/snapshot_by_query.py" -p "${app_id}" -d "${rdr_snapshot_staging}" -n "${rdr_snapshot}"
+python "${TOOLS_DIR}/snapshot_by_query.py" --project_id "${app_id}" --dataset_id "${rdr_clean_staging}" --snapshot_dataset_id "${rdr_clean}"
+
+bq update --description "${version} clean version of ${rdr_dataset}" --set_label "phase:clean" --set_label "release_tag:${dataset_release_tag}" --set_label "de_identified:false" ${app_id}:${rdr_clean}
 
 #copy sandbox dataset
-"${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset "${rdr_snapshot_staging}_sandbox" --target_dataset "${rdr_snapshot}_sandbox"
+"${TOOLS_DIR}/table_copy.sh" --source_app_id "${app_id}" --target_app_id "${app_id}" --source_dataset "${rdr_clean_staging_sandbox}" --target_dataset "${rdr_clean_sandbox}"
 
-bq rm -r -d "${rdr_snapshot_staging}_sandbox" 
-bq rm -r -d "${rdr_snapshot_staging}" 
+# Update sandbox description
+bq update --description "Sandbox created for storing records affected by the cleaning rules applied to ${rdr_clean}" --set_label "phase:sandbox" --set_label "release_tag:${dataset_release_tag}" --set_label "de_identified:false" "${app_id}":"${rdr_clean_sandbox}"
+
+bq rm -r -d "${rdr_clean_staging_sandbox}"
+bq rm -r -d "${rdr_clean_staging}"
 
 echo "Done."
 
-# deactivate venv and unset PYTHONPATH
-deactivate
 unset PYTHONPATH
 
 set +ex

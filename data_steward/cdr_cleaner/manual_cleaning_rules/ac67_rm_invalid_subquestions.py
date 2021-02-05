@@ -12,7 +12,7 @@
 
 import pandas as pd
 import os
-from bq import query
+from utils.bq import query
 
 PROJECT_ID = os.environ.get('APPLICATION_ID')
 SANDBOX_DATASET_ID = ''  # dataset where intermediary tables are stored

@@ -2,12 +2,15 @@ import csv
 import hashlib
 import inspect
 import json
+import logging
 import os
+from io import open
 
 import cachetools
 
-from common import ACHILLES_TABLES, ACHILLES_HEEL_TABLES, VOCABULARY_TABLES, PROCESSED_TXT, RESULTS_HTML
-from io import open
+from common import ACHILLES_TABLES, ACHILLES_HEEL_TABLES, VOCABULARY_TABLES, PROCESSED_TXT, RESULTS_HTML, FITBIT_TABLES
+
+LOGGER = logging.getLogger(__name__)
 
 base_path = os.path.dirname(
     os.path.abspath(inspect.getfile(inspect.currentframe())))
@@ -17,26 +20,47 @@ tools_path = os.path.join(base_path, 'tools')
 
 # resources/*
 DEID_PATH = os.path.join(base_path, 'deid')
-resource_path = os.path.join(base_path, 'resources')
-hpo_csv_path = os.path.join(resource_path, 'hpo.csv')
-fields_path = os.path.join(resource_path, 'fields')
-cdm_csv_path = os.path.join(resource_path, 'cdm.csv')
-achilles_index_path = os.path.join(resource_path, 'curation_report')
-AOU_VOCAB_PATH = os.path.join(resource_path, 'aou_vocab')
+resource_files_path = os.path.join(base_path, 'resource_files')
+config_path = os.path.join(base_path, 'config')
+fields_path = os.path.join(resource_files_path, 'fields')
+cdm_csv_path = os.path.join(resource_files_path, 'cdm.csv')
+hpo_site_mappings_path = os.path.join(config_path, 'hpo_site_mappings.csv')
+achilles_index_path = os.path.join(resource_files_path, 'curation_report')
+AOU_VOCAB_PATH = os.path.join(resource_files_path, 'aou_vocab')
 AOU_VOCAB_CONCEPT_CSV_PATH = os.path.join(AOU_VOCAB_PATH, 'concept.csv')
-TEMPLATES_PATH = os.path.join(resource_path, 'templates')
+TEMPLATES_PATH = os.path.join(resource_files_path, 'templates')
 HPO_REPORT_HTML = 'hpo_report.html'
 html_boilerplate_path = os.path.join(TEMPLATES_PATH, HPO_REPORT_HTML)
 CRON_TPL_YAML = 'cron.tpl.yaml'
 
-DATASOURCES_JSON = os.path.join(achilles_index_path, 'data/datasources.json')
+achilles_images_path = os.path.join(achilles_index_path, 'images')
+achilles_data_path = os.path.join(achilles_index_path, 'data')
+DATASOURCES_JSON = os.path.join(achilles_data_path, 'datasources.json')
 
-domain_mappings_path = os.path.join(resource_path, 'domain_mappings')
+domain_mappings_path = os.path.join(resource_files_path, 'domain_mappings')
 field_mappings_replaced_path = os.path.join(domain_mappings_path,
                                             'field_mappings_replaced.csv')
 table_mappings_path = os.path.join(domain_mappings_path, 'table_mappings.csv')
 field_mappings_path = os.path.join(domain_mappings_path, 'field_mappings.csv')
 value_mappings_path = os.path.join(domain_mappings_path, 'value_mappings.csv')
+CDR_CLEANER_PATH = os.path.join(resource_files_path, 'cdr_cleaner')
+DC732_CONCEPT_LOOKUP_CSV_PATH = os.path.join(CDR_CLEANER_PATH,
+                                             'dc732_concept_lookup.csv')
+PPI_BRANCHING_PATH = os.path.join(CDR_CLEANER_PATH, 'ppi_branching')
+BASICS_CSV_PATH = os.path.join(PPI_BRANCHING_PATH, 'basics.csv')
+COPE_CSV_PATH = os.path.join(PPI_BRANCHING_PATH, 'cope.csv')
+FAMILY_HISTORY_CSV_PATH = os.path.join(PPI_BRANCHING_PATH, 'family_history.csv')
+HEALTHCARE_ACCESS_CSV_PATH = os.path.join(PPI_BRANCHING_PATH,
+                                          'healthcare_access.csv')
+LIFESTYLE_CSV_PATH = os.path.join(PPI_BRANCHING_PATH, 'lifestyle.csv')
+OVERALL_HEALTH_CSV_PATH = os.path.join(PPI_BRANCHING_PATH, 'overall_health.csv')
+PERSONAL_MEDICAL_HISTORY_CSV_PATH = os.path.join(
+    PPI_BRANCHING_PATH, 'personal_medical_history.csv')
+PPI_BRANCHING_RULE_PATHS = [
+    BASICS_CSV_PATH, COPE_CSV_PATH, FAMILY_HISTORY_CSV_PATH,
+    HEALTHCARE_ACCESS_CSV_PATH, LIFESTYLE_CSV_PATH, OVERALL_HEALTH_CSV_PATH,
+    PERSONAL_MEDICAL_HISTORY_CSV_PATH
+]
 
 
 @cachetools.cached(cache={})
@@ -82,11 +106,6 @@ def cdm_csv():
     return csv_to_list(cdm_csv_path)
 
 
-def hpo_csv():
-    # TODO get this from file; currently limited for pre- alpha release
-    return csv_to_list(hpo_csv_path)
-
-
 def achilles_index_files():
     achilles_index_files = []
     for path, subdirs, files in os.walk(achilles_index_path):
@@ -95,21 +114,111 @@ def achilles_index_files():
     return achilles_index_files
 
 
-def fields_for(table):
-    json_path = os.path.join(fields_path, table + '.json')
+def fields_for(table, sub_path=None):
+    """
+    Return the json schema for any table identified in the fields directory.
+
+    Uses os.walk to traverse subdirectories
+
+    :param table: The table to get a schema for
+    :param sub_path: A string identifying a sub-directory in resource_files/fields.
+        If provided, this directory will be searched.
+    :returns: a json object representing the fields for the named table
+    """
+    path = os.path.join(fields_path, sub_path if sub_path else '')
+
+    # default setting
+    json_path = os.path.join(path, table + '.json')
+
+    unique_count = 0
+    for dirpath, _, files in os.walk(path):
+        if sub_path and os.path.basename(sub_path) != os.path.basename(dirpath):
+            continue
+
+        for filename in files:
+            if filename[:-5] == table:
+                json_path = os.path.join(dirpath, filename)
+                unique_count = unique_count + 1
+
+    if unique_count > 1:
+        raise RuntimeError(
+            f"Unable to read schema file because multiple schemas exist for:\t"
+            f"{table} in path {path}")
+    elif unique_count == 0:
+        raise RuntimeError(
+            f"Unable to find schema file for {table} in path {path}")
+
     with open(json_path, 'r') as fp:
         fields = json.load(fp)
+
     return fields
 
 
 def is_internal_table(table_id):
     """
-    Return True if specified table is an internal table for pipeline (e.g. mapping tables)
+    Return True if specified table is an internal table or mapping table for
+    pipeline (e.g. logging tables or mapping tables)
 
     :param table_id: identifies the table
     :return: True if specified table is an internal table, False otherwise
     """
     return table_id.startswith('_')
+
+
+def is_extension_table(table_id):
+    """
+    Return True if specified table is an OMOP extension table.
+
+    Extension tables provide additional detail about an OMOP records taht does
+    not inherently fit in with the OMOP common data model.
+
+    :param table_id: identifies the table
+    :return: True if specified table is an internal table, False otherwise
+    """
+    return table_id.endswith('_ext')
+
+
+def is_deid_table(table_id):
+    """
+    Return True if specified table is an deid generated table.
+
+    Currently the deid mapping table is generated by deid
+    :param table_id: identifies the table
+    :return: True if specified table is a deid table, False otherwise
+    """
+    return table_id == '_deid_map'
+
+
+def is_wearables_table(table_id):
+    """
+    Return True if specified table is a wearables table, currently for FitBit.
+
+    Custom tables for the AOU program to ingest wearables data
+    :param table_id: identifies the table
+    :return: True if specified table is a wearables table (eg fitbit), False otherwise
+    """
+    return table_id in FITBIT_TABLES
+
+
+def is_additional_rdr_table(table_id):
+    """
+        Return True if specified table is an additional table submitted by RDR.
+
+        Currently includes pid_rid_mapping
+        :param table_id: identifies the table
+        :return: True if specified table is an additional table submitted by RDR
+        """
+    return table_id == 'pid_rid_mapping'
+
+
+def is_mapping_table(table_id):
+    """
+    Return True if specified table is a mapping table
+
+    :param table_id: identifies the table
+    :return: True if specified table is an mapping table, False otherwise
+    """
+    return table_id.startswith('_mapping_')
 
 
 def is_pii_table(table_id):
@@ -141,25 +250,52 @@ def cdm_schemas(include_achilles=False, include_vocabulary=False):
     :return:
     """
     result = dict()
+    # TODO:  update this code as part of DC-1015 and remove this comment
+    for dir_path, _, files in os.walk(fields_path):
+        for f in files:
+            file_path = os.path.join(dir_path, f)
+            with open(file_path, 'r') as fp:
+                file_name = os.path.basename(f)
+                table_name = file_name.split('.')[0]
+                schema = json.load(fp)
+                include_table = True
+                if table_name in VOCABULARY_TABLES and not include_vocabulary:
+                    include_table = False
+                elif table_name in ACHILLES_TABLES + ACHILLES_HEEL_TABLES and not include_achilles:
+                    include_table = False
+                elif is_internal_table(table_name):
+                    include_table = False
+                elif is_pii_table(table_name):
+                    include_table = False
+                elif is_id_match(table_name):
+                    include_table = False
+                elif is_extension_table(table_name):
+                    include_table = False
+                elif is_additional_rdr_table(table_name):
+                    include_table = False
+                elif is_deid_table(table_name):
+                    include_table = False
+                elif is_wearables_table(table_name):
+                    include_table = False
+                elif table_name == 'post_deid_person':
+                    include_table = False
+                if include_table:
+                    result[table_name] = schema
+
+    return result
+
+
+def mapping_schemas():
+    result = dict()
     for f in os.listdir(fields_path):
         file_path = os.path.join(fields_path, f)
-        with open(file_path, 'r') as fp:
-            file_name = os.path.basename(f)
-            table_name = file_name.split('.')[0]
-            schema = json.load(fp)
-            include_table = True
-            if table_name in VOCABULARY_TABLES and not include_vocabulary:
-                include_table = False
-            elif table_name in ACHILLES_TABLES + ACHILLES_HEEL_TABLES and not include_achilles:
-                include_table = False
-            elif is_internal_table(table_name):
-                include_table = False
-            elif is_pii_table(table_name):
-                include_table = False
-            elif is_id_match(table_name):
-                include_table = False
-            if include_table:
-                result[table_name] = schema
+        table_name = f.split('.')[0]
+
+        if is_mapping_table(table_name):
+            # only open and load mapping tables, instead of all tables
+            with open(file_path, 'r') as fp:
+                result[table_name] = json.load(fp)
+
     return result
 
 
@@ -177,10 +313,11 @@ def hash_dir(in_dir):
 
 
 CDM_TABLES = list(cdm_schemas().keys())
+MAPPING_TABLES = list(mapping_schemas().keys())
 ACHILLES_INDEX_FILES = achilles_index_files()
 CDM_FILES = [table + '.csv' for table in CDM_TABLES]
 ALL_ACHILLES_INDEX_FILES = [
-    name.split(resource_path + os.sep)[1].strip()
+    name.split(resource_files_path + os.sep)[1].strip()
     for name in ACHILLES_INDEX_FILES
 ]
 IGNORE_LIST = [PROCESSED_TXT, RESULTS_HTML] + ALL_ACHILLES_INDEX_FILES

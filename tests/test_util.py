@@ -6,7 +6,8 @@ import requests
 
 import bq_utils
 import common
-from constants.validation import main as main
+from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
+from constants.validation import main
 import gcs_utils
 import resources
 
@@ -39,11 +40,15 @@ FIVE_PERSONS_MEASUREMENT_CSV = os.path.join(FIVE_PERSONS_PATH,
                                             'measurement.csv')
 FIVE_PERSON_FACT_RELATIONSHIP_CSV = os.path.join(FIVE_PERSONS_PATH,
                                                  'fact_relationship.csv')
+FIVE_PERSONS_PII_NAME_CSV = os.path.join(FIVE_PERSONS_PATH, 'pii_name.csv')
+FIVE_PERSONS_PARTICIPANT_MATCH_CSV = os.path.join(FIVE_PERSONS_PATH,
+                                                  'participant_match.csv')
 FIVE_PERSONS_FILES = [
     FIVE_PERSONS_PERSON_CSV, FIVE_PERSONS_VISIT_OCCURRENCE_CSV,
     FIVE_PERSONS_CONDITION_OCCURRENCE_CSV,
     FIVE_PERSONS_PROCEDURE_OCCURRENCE_CSV, FIVE_PERSONS_DRUG_EXPOSURE_CSV,
-    FIVE_PERSONS_MEASUREMENT_CSV
+    FIVE_PERSONS_MEASUREMENT_CSV, FIVE_PERSONS_PII_NAME_CSV,
+    FIVE_PERSONS_PARTICIPANT_MATCH_CSV
 ]
 
 FIVE_PERSONS_SUCCESS_RESULT_CSV = os.path.join(
@@ -99,6 +104,7 @@ PITT_FIVE_PERSONS_FILES = [
 ]
 
 RDR_PATH = os.path.join(TEST_DATA_PATH, 'rdr')
+RDR_PERSON_PATH = os.path.join(RDR_PATH, 'person.csv')
 
 TEST_DATA_EXPORT_PATH = os.path.join(TEST_DATA_PATH, 'export')
 TEST_DATA_EXPORT_SYNPUF_PATH = os.path.join(TEST_DATA_EXPORT_PATH, 'synpuf')
@@ -109,8 +115,9 @@ PII_MRN_BAD_PERSON_ID_FILE = os.path.join(TEST_DATA_PATH, 'pii_mrn.csv')
 PII_FILE_LOAD_RESULT_CSV = os.path.join(TEST_DATA_PATH,
                                         'pii_file_load_result.csv')
 
-PERSON_ONLY_RESULTS_FILE = os.path.join(TEST_DATA_PATH,
-                                        'person_only_results.html')
+# Removed from repo, generate if required by running the test:
+# integration_tests.data_steward.validation.main_test.test_html_report_five_person and place it in the path below
+# TODO update html file with results.html generated from synthetic data if needed
 FIVE_PERSON_RESULTS_FILE = os.path.join(TEST_DATA_PATH,
                                         'five_person_results.html')
 FIVE_PERSON_RESULTS_ACHILLES_ERROR_FILE = os.path.join(
@@ -123,6 +130,7 @@ TEST_VOCABULARY_VOCABULARY_CSV = os.path.join(TEST_VOCABULARY_PATH,
 
 TEST_DATA_METRICS_PATH = os.path.join(TEST_DATA_PATH, 'metrics')
 TEST_NYC_CU_COLS_CSV = os.path.join(TEST_DATA_METRICS_PATH, 'nyc_cu_cols.csv')
+TEST_MEASUREMENT_CSV = os.path.join(TEST_DATA_METRICS_PATH, 'measurement.csv')
 
 
 def _create_five_persons_success_result():
@@ -434,3 +442,34 @@ def normalize_field_payload(field):
     if DESCRIPTION not in field:
         result[DESCRIPTION] = ''
     return result
+
+
+class FakeRuleClass(BaseCleaningRule):
+
+    def __init__(self, project_id, dataset_id, sandbox_dataset_id):
+        super().__init__(issue_numbers=[''],
+                         description='',
+                         affected_datasets=[],
+                         affected_tables=[],
+                         project_id=project_id,
+                         dataset_id=dataset_id,
+                         sandbox_dataset_id=sandbox_dataset_id)
+
+    def get_sandbox_tablenames(self):
+        pass
+
+    def setup_rule(self, client, *args, **keyword_args):
+        pass
+
+    def setup_validation(self, client, *args, **keyword_args):
+        pass
+
+    def get_query_specs(self, *args, **keyword_args):
+        pass
+
+    def validate_rule(self, client, *args, **keyword_args):
+        pass
+
+
+def fake_rule_func(project_id, dataset_id, sandbox_dataset_id):
+    pass

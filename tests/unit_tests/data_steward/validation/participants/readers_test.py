@@ -17,7 +17,7 @@ class ReadersTest(unittest.TestCase):
         print(cls.__name__)
         print('**************************************************************')
 
-    @patch('validation.participants.readers.rc.hpo_csv')
+    @patch('bq_utils.get_hpo_info')
     def test_get_hpo_site_names(self, mock_csv_list):
         # pre-conditions
         mock_csv_list.return_value = [
@@ -33,6 +33,20 @@ class ReadersTest(unittest.TestCase):
         # post conditions
         expected = ['tatoo']
         self.assertEqual(actual, expected)
+
+    @patch('resources.fields_for')
+    def test_get_field_type(self, mock_fields_for):
+        reader._get_field_type('id_match_table',
+                               'observation_source_concept_id')
+        mock_fields_for.assert_called_with('observation')
+        reader._get_field_type('_pii_name', 'pii_field')
+        mock_fields_for.assert_called_with('pii_name')
+        reader._get_field_type('_pii_email', 'pii_field')
+        mock_fields_for.assert_called_with('pii_email')
+        reader._get_field_type('_pii_mrn', 'pii_field')
+        mock_fields_for.assert_called_with('pii_mrn')
+        reader._get_field_type('hpo_id_person', 'person_field')
+        mock_fields_for.assert_called_with('person')
 
     @patch('validation.participants.readers.bq_utils.wait_on_jobs')
     @patch('validation.participants.readers.bq_utils.query')

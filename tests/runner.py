@@ -46,7 +46,7 @@ def print_unsuccessful(function, trace, msg_type):
     print(
         '\n======================================================================'
     )
-    print('{}:  {}'.format(msg_type, function))
+    print(f'{msg_type}:  {function}')
     print(
         '----------------------------------------------------------------------'
     )
@@ -69,7 +69,9 @@ def main(test_path, test_pattern, coverage_filepath):
     start_time = time.time()
     for mod_tests in suite:
         if mod_tests.countTestCases():
-            runner = xmlrunner.XMLTestRunner(output=output_file, verbosity=2)
+            runner = xmlrunner.XMLTestRunner(stream=sys.stdout,
+                                             output=output_file,
+                                             verbosity=2)
             result = runner.run(mod_tests)
             all_results.append(result)
 
@@ -106,17 +108,17 @@ def main(test_path, test_pattern, coverage_filepath):
     print(
         '**********************************************************************'
     )
-    message = "Ran {} tests in {} seconds.".format(run, end_time - start_time)
+    message = f"Ran {run} tests in {end_time - start_time} seconds."
 
     if errors:
         for err in errors:
             print_unsuccessful(err[0], err[1], 'ERROR')
-        message += "\n{} error(s).  ".format(len(errors))
+        message += f"\n{len(errors)} error(s).  "
 
     if failures:
         for fail in failures:
             print_unsuccessful(fail[0], fail[1], 'FAIL')
-        message += "\n{} failure(s).".format(len(failures))
+        message += f"\n{len(failures)} failure(s)."
 
     print(message)
     return not errors and not failures

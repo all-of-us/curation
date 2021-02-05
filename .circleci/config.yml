@@ -1,6 +1,11 @@
-version: 2
-jobs:
-  build:
+version: 2.1
+
+orbs:
+  # Send notifications for failed builds on master, develop branches using Slack orb (https://circleci.com/orbs/registry/orb/circleci/slack). Refer to the
+  # For channels to notify and webhook URL refer to the CircleCI Slack App page (https://slack.com/apps/A0F7VRE7N-circleci).
+  slack: circleci/slack@3.4.2
+
+job_defaults: &job_defaults
     working_directory: ~/curation/data_steward
     parallelism: 1
     shell: /bin/bash --login
@@ -8,9 +13,44 @@ jobs:
     # If any of these refer to each other, rewrite them so that they don't or see https://circleci.com/docs/2.0/env-vars/#interpolating-environment-variables-to-set-other-environment-variables .
     environment:
       - CIRCLE_ARTIFACTS: /tmp/circleci-artifacts
-
     docker:
       - image: circleci/python:3.7.4
+
+commands:
+  # Define reusable sets of steps to be run within the testing jobs.
+  lint_setup:
+    steps:
+      - checkout:
+          path: ~/curation
+      # Dependencies
+      - restore_cache:
+          keys:
+            - pip-cache-{{ checksum "requirements.txt" }}-{{ checksum "dev_requirements.txt" }}-{{ checksum "deid/requirements.txt" }}
+            - pip-cache-
+      - run:
+          name: Add virtual environment activation to bash startup
+          command: python3 -m venv ~/curation_venv && echo "source ~/curation_venv/bin/activate" >> $BASH_ENV
+      - run:
+          working_directory: ~/curation/data_steward
+          name: Upgrade pip and install requirements
+          command: |
+            pip install --upgrade pip setuptools
+            pip install -r requirements.txt
+            pip install -r dev_requirements.txt
+            pip install -r deid/requirements.txt
+      - run:
+          name: Show bashrc file
+          command: cat ${BASH_ENV}
+  lint_teardown:
+    steps:
+      - save_cache:
+          paths:
+            ~/curation_venv
+          key: pip-cache-{{ checksum "requirements.txt" }}-{{ checksum "dev_requirements.txt" }}-{{ checksum "deid/requirements.txt" }}
+      - slack/status:
+          fail_only: true
+          only_for_branches: master,develop
+  test_setup:
     steps:
       - checkout:
           path: ~/curation
@@ -33,19 +73,11 @@ jobs:
             sudo apt-get update
             sudo apt-get install dpkg
             sudo apt-get install google-cloud-sdk
-      - run:
-          name: Make scripts executable
-          command: chmod 700 ./ci/activate_creds.sh && chmod 700 ./ci/setup.sh && chmod 700 ./ci/create_bucket.sh
-      - run:
-          name: Activate service account
-          command: ./ci/activate_creds.sh ${HOME}/gcloud-credentials-key.json
-      - run:
-          name: Set up environment variables
-          command: ./init_env.sh
-      - run:
-          name: Create buckets and datasets
-          command: ./ci/setup.sh
       # Dependencies
+      - restore_cache:
+          keys:
+          - pip-cache-{{ checksum "requirements.txt" }}-{{ checksum "dev_requirements.txt" }}-{{ checksum "deid/requirements.txt" }}
+          - pip-cache-
       - run:
           name: Add virtual environment activation to bash startup
           command: python3 -m venv ~/curation_venv && echo "source ~/curation_venv/bin/activate" >> $BASH_ENV
@@ -54,46 +86,17 @@ jobs:
           command: |
             pip install --upgrade pip setuptools
             pip install -r requirements.txt
-            pip install -r deid/requirements.txt
             pip install -r dev_requirements.txt
+            pip install -r deid/requirements.txt
       - run:
           name: Show bashrc file
           command: cat ${BASH_ENV}
-      - run:
-          name: Check Python lint
-          working_directory: ~/curation
-          command: tools/yapf_lint.sh
-      # Test
-      #   This would typically be a build job when using workflows, possibly combined with build
-      - run:
-          name: Run unit tests
-          working_directory: ~/curation
-          command: |
-            mkdir -p tests/results/coverage/unit/xml
-            mkdir -p tests/results/coverage/unit/html
-            # store test results in junit format to allow CircleCI Test Summary reporting
-            #  https://circleci.com/docs/2.0/collect-test-data/
-            mkdir -p tests/results/junit/unit
-            ./tests/run_tests.sh -s unit
-          no_output_timeout: 300s
-          when:  always
-      - run:
-          name: Run integration tests
-          working_directory: ~/curation
-          command: |
-            t=$(git log -1 --pretty=%B)
-            if [[ "$t" == *"all tests"* ]] || [[ -n "${CIRCLE_PULL_REQUEST}" ]] || [[ -n "${CIRCLE_PULL_REQUESTS}" ]];
-            then
-                mkdir -p tests/results/coverage/integration/xml
-                mkdir -p tests/results/coverage/integration/html
-                # store test results in junit format to allow CircleCI Test Summary reporting
-                #  https://circleci.com/docs/2.0/collect-test-data/
-                mkdir -p tests/results/junit/integration
-                ./tests/run_tests.sh -s integration
-            else
-                echo "Skipping integration tests"
-            fi
-          no_output_timeout: 3000s
+  test_teardown:
+    steps:
+      - save_cache:
+          paths:
+            ~/curation_venv
+          key: pip-cache-{{ checksum "requirements.txt" }}-{{ checksum "dev_requirements.txt" }}-{{ checksum "deid/requirements.txt" }}
       - run:
           name: Combine Coverage Results
           working_directory: ~/curation
@@ -107,3 +110,114 @@ jobs:
       - store_artifacts:
           path: ~/curation/tests/results/coverage
           destination: test_results
+      - slack/status:
+          fail_only: true
+          only_for_branches: master,develop
+
+jobs:
+  linting_checks:
+    <<: *job_defaults
+    steps:
+      - lint_setup
+      - run:
+          name: Checking commit messages for Jira tag
+          working_directory: ~/curation
+          command: tools/validate_commit_message.sh
+      - run:
+          name: Checking PR title for Jira tag
+          working_directory: ~/curation
+          command: tools/validate_pr_title.sh
+      - run:
+          name: Checking Python lint with yapf
+          working_directory: ~/curation
+          command: tools/yapf_lint.sh
+      - run:
+          name: Checking Python lint with Pylint
+          working _directory: ~/curation
+          command: pylint -E data_steward tests
+      - lint_teardown
+
+  unit_test:
+    <<: *job_defaults
+    steps:
+      - test_setup
+      - run:
+          name: Run unit tests
+          working_directory: ~/curation
+          # TODO: These env vars should not be required to run the unit tests.
+          environment:
+            BUCKET_NAME_FAKE: curation-fake
+            RDR_DATASET_ID: curation_fake_rdr
+          command: |
+            mkdir -p tests/results/coverage/unit/xml
+            mkdir -p tests/results/coverage/unit/html
+            # store test results in junit format to allow CircleCI Test Summary reporting
+            #  https://circleci.com/docs/2.0/collect-test-data/
+            mkdir -p tests/results/junit/unit
+            ./tests/run_tests.sh -s unit
+          no_output_timeout: 300s
+          when:  always
+      - test_teardown
+
+  integration_test:
+    <<: *job_defaults
+    steps:
+      - test_setup
+      # Setup GCP access and create cloud resources as needed.
+      - run:
+          name: Activate service account
+          command: ./ci/activate_creds.sh ${HOME}/gcloud-credentials-key.json
+      - run:
+          name: Set up environment variables
+          command: ./init_env.sh
+      - run:
+          name: Create buckets and datasets
+          command: PYTHONPATH=./:$PYTHONPATH python ./ci/test_setup.py
+      - run:
+          name: Run integration tests
+          working_directory: ~/curation
+          command: |
+            t=$(git log -1 --pretty=%B)
+            # If this gets triggered on develop or master, let it run. Note
+            # however that on develop, this job is only triggered nightly.
+            # Always run on PRs and on any repo commits that include "all tests".
+            if [[ "${CIRCLE_BRANCH}" == "develop" ]] || [[ "${CIRCLE_BRANCH}" == "master" ]] || \
+                [[ "$t" == *"all tests"* ]] || [[ -n "${CIRCLE_PULL_REQUEST}" ]] || [[ -n "${CIRCLE_PULL_REQUESTS}" ]];
+            then
+                mkdir -p tests/results/coverage/integration/xml
+                mkdir -p tests/results/coverage/integration/html
+                # store test results in junit format to allow CircleCI Test Summary reporting
+                #  https://circleci.com/docs/2.0/collect-test-data/
+                mkdir -p tests/results/junit/integration
+                ./tests/run_tests.sh -s integration
+            else
+                echo "Skipping integration tests"
+            fi
+          no_output_timeout: 3000s
+      - run:
+          name: Delete buckets and datasets
+          command: ./ci/teardown.sh
+          when: on_success
+      - test_teardown
+
+workflows:
+  version: 2
+  test:
+    jobs:
+      - linting_checks
+      - unit_test
+      - integration_test:
+          filters:
+            branches:
+              # This would cause too much noise to run on commit, run nightly
+              # instead per below workflow.
+              ignore: develop
+  nightly:
+    triggers:
+      - schedule:
+          cron: "0 6 * * *" # midnight CST
+          filters:
+            branches:
+              only: develop
+    jobs:
+      - integration_test

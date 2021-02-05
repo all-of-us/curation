@@ -1,6 +1,13 @@
 # Tests for Curation
 
-These tests can be run with:
+Before running tests, load environment variables:
+
+```Shell
+$ source ./data_steward/init_env.sh
+```
+
+In the same shell, run the tests with:
+
 
 ```Shell
 $ ./tests/run_tests.sh -s [unit|integration|all] -r [file name pattern]

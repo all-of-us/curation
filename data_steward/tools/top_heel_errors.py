@@ -10,10 +10,8 @@ import app_identity
 
 import bq_utils
 import common
-import resources
 from io import open
 
-HPO_ID_LIST = [item['hpo_id'] for item in resources.hpo_csv()]
 JSON = 'json'
 CSV = 'csv'
 OUTPUT_FORMATS = [CSV, JSON]
@@ -56,6 +54,15 @@ UNION ALL
 '''
 
 
+def get_hpo_ids():
+    """
+    Retrieves list of hpo_ids from lookup_tables.hpo_site_id_mappings
+
+    :return: List of hpo_ids
+    """
+    return [item['hpo_id'] for item in bq_utils.get_hpo_info()]
+
+
 def save_csv(l, file_name):
     """
     Save results to a local comma-separated file
@@ -86,7 +93,7 @@ def save_json(l, file_name):
 
 def get_hpo_subqueries(app_id, dataset_id, all_table_ids):
     result = []
-    for hpo_id in HPO_ID_LIST:
+    for hpo_id in get_hpo_ids():
         table_id = bq_utils.get_table_id(hpo_id, common.ACHILLES_HEEL_RESULTS)
         if table_id in all_table_ids:
             subquery = QUERY_FORMAT(dataset_name=hpo_id,

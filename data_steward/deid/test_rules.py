@@ -20,6 +20,7 @@ db = MongoClient()['deid']
 r = list(db.rules.find())
 cache = {}
 
+# updates default rules with existing rules
 for row in r:
     row_id = row['_id']
     del row['_id']

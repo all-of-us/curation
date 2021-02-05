@@ -1,7 +1,23 @@
-from cdr_cleaner.cleaning_rules import field_mapping
+"""
+Ensuring there are no null datetimes.
+
+Original Issues: DC-614, DC-509, and DC-432
+
+The intent is to copy the date over to the datetime field if the datetime
+field is null or incorrect.
+"""
+
+# Python imports
+import logging
+
+import common
+# Project imports
 import constants.bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
-import common
+from cdr_cleaner.cleaning_rules import field_mapping
+from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
+
+LOGGER = logging.getLogger(__name__)
 
 TABLE_DATES = {
     common.CONDITION_OCCURRENCE: {
@@ -46,62 +62,127 @@ SELECT {cols}
 FROM `{project_id}.{dataset_id}.{table_id}`
 """
 
+FIX_NULL_OR_INCORRECT_DATETIME_QUERY = """
+CASE
+WHEN {field} IS NULL
+THEN CAST(DATETIME({date_field}, TIME(00,00,00)) AS TIMESTAMP)
+WHEN EXTRACT(DATE FROM {field}) = {date_field}
+THEN {field}
+ELSE CAST(DATETIME({date_field}, EXTRACT(TIME FROM {field})) AS TIMESTAMP)
+END AS {field}
+"""
 
-def get_cols(table_id):
-    """
-    Generates the fields to choose along with case statements to generate datetime
 
-    :param table_id: table for which the fields
-    :return:
+class EnsureDateDatetimeConsistency(BaseCleaningRule):
     """
-    table_fields = field_mapping.get_domain_fields(table_id)
-    col_exprs = []
-    for field in table_fields:
-        if field in TABLE_DATES[table_id]:
-            if field_mapping.is_field_required(table_id, field):
-                col_expr = (
-                    ' CASE'
-                    ' WHEN EXTRACT(DATE FROM {field}) = {date_field}'
-                    ' THEN {field}'
-                    ' ELSE CAST(DATETIME({date_field}, EXTRACT(TIME FROM {field})) AS TIMESTAMP)'
-                    ' END AS {field}').format(
-                        field=field, date_field=TABLE_DATES[table_id][field])
+    Ensure no nulls and consistency in the datetime and date fields
+    """
+
+    def __init__(self, project_id, dataset_id, sandbox_dataset_id):
+        """
+        Initialize the class with proper information.
+
+        Set the issue numbers, description and affected datasets. As other tickets may affect this SQL,
+        append them to the list of Jira Issues.
+        DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
+        """
+        desc = (
+            'Ensures consistency when the datetime field is null or when the date and datetime fields are equal by '
+            '(1) If the datetime field is null: Setting the datetime field\'s values to the date field\'s date and '
+            'midnight (00:00:00); or '
+            '(2) If the date and datetime fields are equal: Setting the datetime field\'s values to the date from the '
+            'date field and the time from the datetime field.')
+        super().__init__(issue_numbers=['DC-614', 'DC-509', 'DC-432'],
+                         description=desc,
+                         affected_datasets=[
+                             cdr_consts.RDR, cdr_consts.UNIONED,
+                             cdr_consts.COMBINED
+                         ],
+                         project_id=project_id,
+                         dataset_id=dataset_id,
+                         sandbox_dataset_id=sandbox_dataset_id,
+                         affected_tables=[
+                             common.CONDITION_OCCURRENCE, common.DRUG_EXPOSURE,
+                             common.DEVICE_EXPOSURE, common.MEASUREMENT,
+                             common.OBSERVATION, common.PROCEDURE_OCCURRENCE,
+                             common.SPECIMEN, common.DEATH,
+                             common.OBSERVATION_PERIOD, common.VISIT_OCCURRENCE
+                         ])
+
+    def get_cols(self, table):
+        """
+        Generates the fields to choose along with case statements to generate datetime
+        And ensures no null datetime values
+
+        :param self: instance of EnsureDateDatetimeConsistency class
+        :param table: table for which the fields are pulled
+        :return: cols
+        """
+        table_fields = field_mapping.get_domain_fields(table)
+        col_exprs = []
+        for field in table_fields:
+            if field in TABLE_DATES[table]:
+                col_expr = FIX_NULL_OR_INCORRECT_DATETIME_QUERY.format(
+                    field=field, date_field=TABLE_DATES[table][field])
             else:
-                col_expr = (' CASE'
-                            ' WHEN EXTRACT(DATE FROM {field}) = {date_field}'
-                            ' THEN {field}'
-                            ' ELSE NULL'
-                            ' END AS {field}').format(
-                                field=field,
-                                date_field=TABLE_DATES[table_id][field])
-        else:
-            col_expr = field
-        col_exprs.append(col_expr)
-    cols = ', '.join(col_exprs)
-    return cols
+                col_expr = field
+            col_exprs.append(col_expr)
+        cols = ', '.join(col_exprs)
+        return cols
 
+    def get_query_specs(self):
+        """
+        This function generates a list of query dicts for ensuring the dates and datetimes are consistent
 
-def get_fix_incorrect_datetime_to_date_queries(project_id, dataset_id):
-    """
-    This function generates a list of query dicts for ensuring the dates and datetimes are consistent
+        :return: a list of query dicts for ensuring the dates and datetimes are consistent
+        """
+        queries = []
+        for table in TABLE_DATES:
+            query = dict()
+            query[cdr_consts.QUERY] = FIX_DATETIME_QUERY.format(
+                project_id=self.project_id,
+                dataset_id=self.dataset_id,
+                table_id=table,
+                cols=self.get_cols(table))
+            query[cdr_consts.DESTINATION_TABLE] = table
+            query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
+            query[cdr_consts.DESTINATION_DATASET] = self.dataset_id
+            queries.append(query)
+        return queries
 
-    :param project_id: the project_id in which the query is run
-    :param dataset_id: the dataset_id in which the query is run
-    :return: a list of query dicts for ensuring the dates and datetimes are consistent
-    """
-    queries = []
-    for table in TABLE_DATES:
-        query = dict()
-        query[cdr_consts.QUERY] = FIX_DATETIME_QUERY.format(
-            project_id=project_id,
-            dataset_id=dataset_id,
-            table_id=table,
-            cols=get_cols(table))
-        query[cdr_consts.DESTINATION_TABLE] = table
-        query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
-        query[cdr_consts.DESTINATION_DATASET] = dataset_id
-        queries.append(query)
-    return queries
+    def setup_rule(self, client):
+        """
+        Function to run any data upload options before executing a query.
+        """
+        pass
+
+    def get_sandbox_tablenames(self):
+        """
+        Returns an empty list because this rule does not use sandbox tables.
+        """
+        return []
+
+    def setup_validation(self, client):
+        """
+        Run required steps for validation setup
+
+        This abstract method was added to the base class after this rule was authored.
+        This rule needs to implement logic to setup validation on cleaning rules that
+        will be updating or deleting the values.
+        Until done no issue exists for this yet.
+        """
+        raise NotImplementedError("Please fix me.")
+
+    def validate_rule(self, client):
+        """
+        Validates the cleaning rule which deletes or updates the data from the tables
+
+        This abstract method was added to the base class after this rule was authored.
+        This rule needs to implement logic to run validation on cleaning rules that will
+        be updating or deleting the values.
+        Until done no issue exists for this yet.
+        """
+        raise NotImplementedError("Please fix me.")
 
 
 if __name__ == '__main__':
@@ -110,7 +191,15 @@ if __name__ == '__main__':
 
     ARGS = parser.parse_args()
 
-    clean_engine.add_console_logging(ARGS.console_log)
-    query_list = get_fix_incorrect_datetime_to_date_queries(
-        ARGS.project_id, ARGS.dataset_id)
-    clean_engine.clean_dataset(ARGS.project_id, query_list)
+    if ARGS.list_queries:
+        clean_engine.add_console_logging()
+        query_list = clean_engine.get_query_list(
+            ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id,
+            [(EnsureDateDatetimeConsistency,)])
+        for query in query_list:
+            LOGGER.info(query)
+    else:
+        clean_engine.add_console_logging(ARGS.console_log)
+        clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
+                                   ARGS.sandbox_dataset_id,
+                                   [(EnsureDateDatetimeConsistency,)])

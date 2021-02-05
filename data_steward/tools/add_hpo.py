@@ -1,22 +1,21 @@
-import logging
-
-from googleapiclient.errors import HttpError
-
-import bq_utils
-from tools import cli_util
-import gcs_utils
-import resources
-
-DESCRIPTION = """
-Add a new HPO site to hpo.csv and BigQuery lookup tables
+"""
+Add a new HPO site to config file and BigQuery lookup tables
 
 Note: GAE environment must still be set manually
 """
+import logging
+import csv
 
-LOOKUP_TABLES_DATASET_ID = 'lookup_tables'
-HPO_SITE_ID_MAPPINGS_TABLE_ID = 'hpo_site_id_mappings'
-HPO_ID_BUCKET_NAME_TABLE_ID = 'hpo_id_bucket_name'
-HPO_CSV_LINE_FMT = '"{hpo_id}","{hpo_name}"\n'
+from googleapiclient.errors import HttpError
+import pandas as pd
+
+import bq_utils
+import resources
+import constants.bq_utils as bq_consts
+from tools import cli_util
+import gcs_utils
+
+LOGGER = logging.getLogger(__name__)
 
 DEFAULT_DISPLAY_ORDER = """
 SELECT MAX(Display_Order) + 1 AS display_order FROM {hpo_site_id_mappings_table_id}
@@ -37,18 +36,69 @@ SELECT '{hpo_id}' AS hpo_id, '{bucket_name}' AS bucket_name
 """
 
 
-def find_hpo(hpo_id, hpo_name):
+def verify_hpo_mappings_up_to_date(hpo_file_df, hpo_table_df):
     """
-    Finds if the HPO  are already available in hpo.csv
-    :param hpo_id: hpo identifier
-    :param hpo_name: HPO name
+    Verifies that the hpo_mappings.csv file is up to date with lookup_tables.hpo_site_id_mappings
+
+    :param hpo_file_df: df loaded from config/hpo_site_mappings.csv
+    :param hpo_table_df: df loaded from lookup_tables.hpo_site_id_mappings
+    :raises ValueError: If config/hpo_site_mappings.csv is out of sync
+        with lookup_tables.hpo_site_id_mappings
+    """
+    hpo_ids_df = hpo_file_df['HPO_ID'].dropna()
+    if set(hpo_table_df['hpo_id'].to_list()) != set(
+            hpo_ids_df.str.lower().to_list()):
+        raise ValueError(
+            f'Please update the config/hpo_site_mappings.csv file '
+            f'to the latest version from curation-devops repository.')
+
+
+def add_hpo_site_mappings_file_df(hpo_id, hpo_name, org_id, display_order):
+    """
+    Creates dataframe with hpo_id, hpo_name, org_id, display_order
+
+    :param hpo_id: hpo_ identifier
+    :param hpo_name: name of the hpo
+    :param org_id: hpo organization identifier
+    :param display_order: index number in which hpo should be added in table
+    :raises ValueError if hpo_id already exists in the lookup table
+    """
+    hpo_table = bq_utils.get_hpo_info()
+    hpo_table_df = pd.DataFrame(hpo_table)
+    if hpo_id in hpo_table_df['hpo_id'] or hpo_name in hpo_table_df['name']:
+        raise ValueError(
+            f"{hpo_id}/{hpo_name} already exists in site lookup table")
+
+    hpo_file_df = pd.read_csv(resources.hpo_site_mappings_path)
+    verify_hpo_mappings_up_to_date(hpo_file_df, hpo_table_df)
+
+    if display_order is None:
+        display_order = hpo_file_df['Display_Order'].max() + 1
+
+    hpo_file_df.loc[hpo_file_df['Display_Order'] >= display_order,
+                    'Display_Order'] += 1
+    hpo_file_df.loc['-1'] = [org_id, hpo_id, hpo_name, display_order]
+    LOGGER.info(f'Added new entry for hpo_id {hpo_id} to '
+                f'config/hpo_site_mappings.csv at position {display_order}. '
+                f'Please upload to curation-devops repo.')
+    return hpo_file_df.sort_values(by='Display_Order')
+
+
+def add_hpo_site_mappings_csv(hpo_id, hpo_name, org_id, display_order=None):
+    """
+    Writes df with hpo_id, hpo_name, org_id, display_order to the hpo_site_id_mappings config file
+
+    :param hpo_id: hpo_ identifier
+    :param hpo_name: name of the hpo
+    :param org_id: hpo organization identifier
+    :param display_order: index number in which hpo should be added in table
     :return:
     """
-    hpos = resources.hpo_csv()
-    for hpo in hpos:
-        if hpo['hpo_id'] == hpo_id or hpo['name'] == hpo_name:
-            return hpo
-    return None
+    hpo_file_df = add_hpo_site_mappings_file_df(hpo_id, hpo_name, org_id,
+                                                display_order)
+    hpo_file_df.to_csv(resources.hpo_site_mappings_path,
+                       quoting=csv.QUOTE_ALL,
+                       index=False)
 
 
 def get_last_display_order():
@@ -57,7 +107,7 @@ def get_last_display_order():
     :return:
     """
     q = DEFAULT_DISPLAY_ORDER.format(
-        hpo_site_id_mappings_table_id=HPO_SITE_ID_MAPPINGS_TABLE_ID)
+        hpo_site_id_mappings_table_id=bq_consts.HPO_SITE_ID_MAPPINGS_TABLE_ID)
     query_response = bq_utils.query(q)
     rows = bq_utils.response2rows(query_response)
     row = rows[0]
@@ -73,8 +123,8 @@ def shift_display_orders(at_display_order):
     """
     q = SHIFT_HPO_SITE_DISPLAY_ORDER.format(
         display_order=at_display_order,
-        hpo_site_id_mappings_table_id=HPO_ID_BUCKET_NAME_TABLE_ID)
-    logging.info('Shifting lookup with the following query:\n %s\n...' % q)
+        hpo_site_id_mappings_table_id=bq_consts.HPO_SITE_ID_MAPPINGS_TABLE_ID)
+    LOGGER.info(f'Shifting lookup with the following query:\n {q}\n')
     query_response = bq_utils.query(q)
     return query_response
 
@@ -92,11 +142,10 @@ def add_hpo_mapping(hpo_id, hpo_name, org_id, display_order):
                                        hpo_name=hpo_name,
                                        org_id=org_id,
                                        display_order=display_order)
-    logging.info('Adding mapping lookup with the following query:\n %s\n...' %
-                 q)
+    LOGGER.info(f'Adding mapping lookup with the following query:\n {q}\n')
     query_response = bq_utils.query(
         q,
-        destination_table_id=HPO_SITE_ID_MAPPINGS_TABLE_ID,
+        destination_table_id=bq_consts.HPO_SITE_ID_MAPPINGS_TABLE_ID,
         write_disposition='WRITE_APPEND')
     return query_response
 
@@ -109,10 +158,10 @@ def add_hpo_bucket(hpo_id, bucket_name):
     :return:
     """
     q = ADD_HPO_ID_BUCKET_NAME.format(hpo_id=hpo_id, bucket_name=bucket_name)
-    logging.info('Adding bucket lookup with the following query:\n %s\n...' % q)
+    LOGGER.info(f'Adding bucket lookup with the following query:\n {q}\n')
     query_response = bq_utils.query(
         q,
-        destination_table_id=HPO_ID_BUCKET_NAME_TABLE_ID,
+        destination_table_id=bq_consts.HPO_ID_BUCKET_NAME_TABLE_ID,
         write_disposition='WRITE_APPEND')
     return query_response
 
@@ -128,28 +177,12 @@ def add_lookups(hpo_id, hpo_name, org_id, bucket_name, display_order=None):
     :param display_order: site's display order in dashboard; if unset, site appears last
     :return:
     """
-    if not isinstance(display_order, int):
+    if display_order is None:
         display_order = get_last_display_order()
     else:
         shift_display_orders(display_order)
     add_hpo_mapping(hpo_id, hpo_name, org_id, display_order)
     add_hpo_bucket(hpo_id, bucket_name)
-
-
-def add_hpo_csv(hpo_id, hpo_name):
-    """
-    Add an entry to the hpo csv file
-
-    :return:
-    """
-    if find_hpo(hpo_id, hpo_name):
-        raise IOError(
-            'Entry not added. A site with hpo_id {hpo_id} and name {name} already exists.'
-        )
-    logging.info('Adding new entry for hpo_id %s to hpo.csv...' % hpo_id)
-    line = HPO_CSV_LINE_FMT.format(hpo_id=hpo_id, hpo_name=hpo_name)
-    with open(resources.hpo_csv_path, 'a') as hpo_fp:
-        hpo_fp.writelines([line])
 
 
 def bucket_access_configured(bucket_name):
@@ -167,7 +200,7 @@ def bucket_access_configured(bucket_name):
         raise
 
 
-def main(hpo_id, org_id, hpo_name, bucket_name, display_order):
+def main(hpo_id, org_id, hpo_name, bucket_name, display_order, addition_type):
     """
     adds HPO name and details in to hpo_csv and adds HPO to the lookup tables in bigquery
     :param hpo_id: HPO identifier
@@ -175,21 +208,25 @@ def main(hpo_id, org_id, hpo_name, bucket_name, display_order):
     :param hpo_name: name of the HPO
     :param bucket_name: bucket name assigned to HPO
     :param display_order: index where new HPO should be added
+    :param addition_type: indicates if hpo is added to config file or to lookup tables
+        This is necessary because a config update will need to be verified in the curation_devops repo
+        before updating the lookup tables. Can take values "update_config" or "update_lookup_tables"
     :return:
     """
-    if bucket_access_configured(bucket_name):
-        logging.info(
-            'Accessing bucket %s successful. Proceeding to add site...' %
-            bucket_name)
-        add_hpo_csv(hpo_id, hpo_name)
-        add_lookups(hpo_id, hpo_name, org_id, bucket_name, display_order)
+    if addition_type == "update_config":
+        add_hpo_site_mappings_csv(hpo_id, hpo_name, org_id, display_order)
+    elif addition_type == "update_lookup_tables":
+        if bucket_access_configured(bucket_name):
+            LOGGER.info(f'Accessing bucket {bucket_name} successful. '
+                        f'Proceeding to add site.')
+            add_lookups(hpo_id, hpo_name, org_id, bucket_name, display_order)
 
 
 if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser(
-        description='Add a new HPO site to hpo.csv and lookup tables',
+        description='Add a new HPO site to hpo config file and lookup tables',
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('-c',
                         '--credentials',
@@ -212,13 +249,24 @@ if __name__ == '__main__':
                         required=True,
                         help='Name of the GCS bucket')
     parser.add_argument(
+        '-t',
+        '--addition_type',
+        required=True,
+        help='indicates if hpo is added to config file or to lookup tables. '
+        'This is necessary because a config update will need to be verified '
+        'in the curation_devops repo before updating the lookup tables. '
+        'Can take values "update_config" or "update_lookup_tables"')
+    parser.add_argument(
+        '-d',
         '--display_order',
+        type=int,
         required=False,
+        default=None,
         help='Display order in dashboard; increments display order by default')
 
     args = parser.parse_args()
     creds_path = args.credentials
     cli_util.activate_creds(creds_path)
-    cli_util.set_default_dataset_id(LOOKUP_TABLES_DATASET_ID)
+    cli_util.set_default_dataset_id(bq_consts.LOOKUP_TABLES_DATASET_ID)
     main(args.hpo_id, args.org_id, args.hpo_name, args.bucket_name,
-         args.display_order)
+         args.display_order, args.addition_type)

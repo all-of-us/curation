@@ -1,6 +1,6 @@
 #!/bin/bash
 # generates app.yaml from app_base.yaml and environment name ($1)
-hpos=( $(cut -d ',' -f1 ./resources/hpo.csv) )
+hpos=( $(cut -d ',' -f2 ./data_steward/config/hpo_site_mappings.csv) )
 hpos=("${hpos[@]:1}")
 
 if [ -z "$1" ]
@@ -25,7 +25,7 @@ for i in "${hpos[@]}"
 do
   temp="${i%\"}"
   temp="${temp#\"}"
-  echo "  BUCKET_NAME_${temp^^}: \"$APPLICATION_ID-$temp\"" >> app.yaml
+  echo "  BUCKET_NAME_${temp}: \"$APPLICATION_ID-${temp,,}\"" >> app.yaml
 done
 
 

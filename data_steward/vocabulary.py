@@ -78,7 +78,7 @@ def transform_file(file_path, out_dir):
     try:
         os.makedirs(err_dir)
     except OSError:
-        logging.info("Error directory:\t%s\t already exists", err_dir)
+        logging.info(f"Error directory:\t{err_dir}\t already exists")
 
     with open(file_path,
               'r') as in_fp, open(out_file_name,

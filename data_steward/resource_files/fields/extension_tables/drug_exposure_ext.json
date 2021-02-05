@@ -1,0 +1,11 @@
+[{
+    "type": "integer",
+    "name": "drug_exposure_id",
+    "mode": "nullable",
+    "description": "The drug_exposure_id used in the drug exposure table."
+}, {
+    "type": "string",
+    "name": "src_id",
+    "mode": "nullable",
+    "description": "The provenance of the data associated with the drug_exposure_id."
+}]

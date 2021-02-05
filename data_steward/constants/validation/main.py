@@ -15,6 +15,9 @@ RESULT_PASS_CODE = '&#x2714'
 RESULT_FAIL_COLOR = 'red'
 RESULT_PASS_COLOR = 'green'
 
+# datetime format
+DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S %Z'
+
 # Table Headers
 RESULT_FILE_HEADERS = ["File Name", "Found", "Parsed", "Loaded"]
 ERROR_FILE_HEADERS = ["File Name", "Message"]
@@ -43,37 +46,39 @@ HEEL_ERROR_FAIL_ROWS = [(NULL_MESSAGE, HEEL_ERROR_FAIL_MESSAGE, NULL_MESSAGE,
 
 # Used in get_drug_checks_in_results_html()
 DRUG_CHECKS_QUERY_VALIDATION = '''
-    SELECT
-        init.*,
-        CONCAT(CAST(ROUND(init.count/(
-            SELECT
-                COUNT(*)
-            FROM
-                `{project_id}.{dataset_id}.{table_id}`)*100, 2) AS STRING), '%') AS percentage
-    FROM (
-        SELECT
-            concept_classes.concept_id AS concept_id,
-            concept_classes.drug_class_name AS drug_class,
-            concept_classes.concept_name AS concept_name,
-            COUNT(drug_exposure.drug_exposure_id) AS count
-        FROM
-            `{project_id}.{dataset_id}.{table_id}` AS drug_exposure
-        JOIN
-            `{project_id}.{dataset_id}.concept_ancestor` AS ancestor
-        ON
-            ancestor.descendant_concept_id = drug_exposure.drug_concept_id
-        RIGHT JOIN 
-            `{project_id}.{dataset_id}.drug_class` AS concept_classes
-        ON
-            concept_classes.concept_id = ancestor.ancestor_concept_id
-        AND ancestor.min_levels_of_separation != 0
-        GROUP BY
-            concept_classes.concept_id,
-            concept_classes.concept_name,
-            concept_classes.drug_class_name) AS init
-    ORDER BY
-        count DESC,
-        concept_id
+SELECT
+  init.*,
+  CASE
+    WHEN ( SELECT COUNT(*) FROM `{project_id}.{dataset_id}.{table_id}`) > 0
+    THEN CONCAT(CAST(ROUND(init.count/( SELECT COUNT(*) FROM `{project_id}.{dataset_id}.{table_id}`)*100, 2) AS STRING), '%')
+  ELSE
+    '0'
+  END
+    AS percentage
+FROM (
+  SELECT
+    concept_classes.concept_id AS concept_id,
+    concept_classes.drug_class_name AS drug_class,
+    concept_classes.concept_name AS concept_name,
+    COUNT(drug_exposure.drug_exposure_id) AS count
+  FROM
+    `{project_id}.{dataset_id}.{table_id}` AS drug_exposure
+  JOIN
+    `{project_id}.{dataset_id}.concept_ancestor` AS ancestor
+  ON
+    ancestor.descendant_concept_id = drug_exposure.drug_concept_id
+  RIGHT JOIN
+    `{project_id}.{dataset_id}.drug_class` AS concept_classes
+  ON
+    concept_classes.concept_id = ancestor.ancestor_concept_id
+    AND ancestor.min_levels_of_separation != 0
+  GROUP BY
+    concept_classes.concept_id,
+    concept_classes.concept_name,
+    concept_classes.drug_class_name) AS init
+ORDER BY
+  count DESC,
+  concept_id
     '''
 
 # Used in _create_drug_class_table()
@@ -133,20 +138,66 @@ DUPLICATE_IDS_SUBQUERY = '''
         COUNT({table_name}_id) > 1)
     '''
 
+EHR_NO_PII = 'EHR person record exists but no PII Name record'
+EHR_NO_RDR = 'EHR person record exists but no consent record as of {date}'
+PII_NO_EHR = 'PII record exists but no EHR person record'
+EHR_NO_PARTICIPANT_MATCH = 'EHR record exists but no participant match record'
+
+MISSING_PII_QUERY = '''
+WITH ehr_persons AS
+(SELECT person_id
+FROM `{project_id}.{dataset_id}.{person_table_id}`),
+rdr_persons AS
+(SELECT person_id
+FROM `{project_id}.{rdr_dataset_id}.{rdr_person_table_id}`),
+pii_names AS
+(SELECT person_id
+FROM `{project_id}.{dataset_id}.{pii_name_table_id}`),
+all_pii AS
+(SELECT DISTINCT person_id
+FROM `{project_id}.{dataset_id}.{pii_wildcard}`),
+participant_records AS
+(SELECT person_id
+FROM `{project_id}.{dataset_id}.{participant_match_table_id}`)
+(SELECT DISTINCT '{ehr_no_pii}' AS missingness_type,
+    COUNT(person_id) AS count
+FROM (SELECT person_id FROM ehr_persons
+    EXCEPT DISTINCT
+    SELECT person_id FROM pii_names))
+UNION ALL
+(SELECT DISTINCT '{ehr_no_rdr}' AS missingness_type,
+    COUNT(person_id) AS count
+FROM (SELECT person_id FROM ehr_persons
+    EXCEPT DISTINCT
+    SELECT person_id FROM rdr_persons))
+UNION ALL
+(SELECT DISTINCT '{pii_no_ehr}' AS missingness_type,
+    COUNT(person_id) AS count
+FROM (SELECT person_id FROM all_pii
+    EXCEPT DISTINCT
+    SELECT person_id FROM ehr_persons))
+UNION ALL
+(SELECT DISTINCT '{ehr_no_participant_match}' AS missingness_type,
+    COUNT(person_id) AS count
+FROM (SELECT person_id FROM ehr_persons
+    EXCEPT DISTINCT
+    SELECT person_id FROM participant_records))
+ORDER BY count DESC
+'''
+
 PREFIX = '/data_steward/v1/'
 
 # Cron URLs
 PARTICIPANT_VALIDATION = 'ParticipantValidation/'
-WRITE_DRC_VALIDATION_FILE = PARTICIPANT_VALIDATION + 'DRCFile'
-WRITE_SITE_VALIDATION_FILES = PARTICIPANT_VALIDATION + 'SiteFiles'
 
 # Return Values
 VALIDATION_SUCCESS = 'participant-validation-done'
-DRC_VALIDATION_REPORT_SUCCESS = 'drc-participant-validation-report-written'
-SITES_VALIDATION_REPORT_SUCCESS = 'sites-participant-validation-reports-written'
 
 CONTENT_TYPE = 'content-type'
 APPLICATION_JSON = 'application/json'
 ERROR = 'error'
 ERRORS = 'errors'
 REASON = 'reason'
+
+FOLDER_NAME_REGEX = r'\d{4}-\d{2}-\d{2}-v\d+'
+FOLDER_NAMING_CONVENTION = 'YYYY-MM-DD-vN/'

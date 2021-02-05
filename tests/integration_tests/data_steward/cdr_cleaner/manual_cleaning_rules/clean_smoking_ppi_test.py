@@ -4,9 +4,9 @@ import unittest
 
 import app_identity
 import bq_utils
+import cdr_cleaner.manual_cleaning_rules.clean_smoking_ppi as smoking_ppi
 import resources
 from tests import test_util
-import cdr_cleaner.manual_cleaning_rules.clean_smoking_ppi as smoking_ppi
 
 SELECT_RECORDS = """ SELECT * FROM `{project_id}.{dataset_id}.{table_id}`"""
 
@@ -25,7 +25,7 @@ class CleanSmokingPPITest(unittest.TestCase):
 
     def test_integration_load_smoking_lookup_table(self):
         csv_file = 'smoking_lookup.csv'
-        csv_path = os.path.join(resources.resource_path, csv_file)
+        csv_path = os.path.join(resources.resource_files_path, csv_file)
         with open(csv_path, 'r') as f:
             expected = list(csv.DictReader(f))
 

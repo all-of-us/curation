@@ -1,13 +1,11 @@
 import logging
 import os
 import re
+from io import open
 
 import bq_utils
 import resources
 from validation import sql_wrangle
-from io import open
-from constants import bq_utils as bq_consts
-from validation import achilles
 
 ACHILLES_HEEL_RESULTS = 'achilles_heel_results'
 ACHILLES_RESULTS_DERIVED = 'achilles_results_derived'
@@ -19,7 +17,7 @@ SPLIT_PATTERN = ';zzzzzz'
 TRUNCATE_TABLE_PATTERN = re.compile('\s*truncate\s+table\s+([^\s]+)')
 DROP_TABLE_PATTERN = re.compile('\s*drop\s+table\s+([^\s]+)')
 
-ACHILLES_HEEL_DML = os.path.join(resources.resource_path,
+ACHILLES_HEEL_DML = os.path.join(resources.resource_files_path,
                                  'achilles_heel_dml.sql')
 
 

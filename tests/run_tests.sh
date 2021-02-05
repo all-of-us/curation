@@ -4,7 +4,7 @@
 set -x
 
 BASE_DIR="$(git rev-parse --show-toplevel)"
-. ${BASE_DIR}/data_steward/tools/set_path.sh
+. "${BASE_DIR}/data_steward/tools/set_path.sh"
 
 subset="all"
 
@@ -16,25 +16,21 @@ function usage() {
   exit 1
 }
 
-while getopts "s:h:r:" opt; do
-  case $opt in
-    s)
-      subset=$OPTARG
+while true; do
+  case "$1" in
+    -s)
+      subset=$2
+      shift 2
       ;;
-    r)
-      substring=$OPTARG
+    -r)
+      substring=$2
+      shift 2
       ;;
-    \?)
-      echo "Invalid option: -$OPTARG" >&2
-      exit 1
+    --)
+      shift
+      break
       ;;
-    :)
-      echo "Option -$OPTARG requires an argument." >&2
-      exit 1
-      ;;
-    h|*)
-      usage
-      ;;
+    *) break ;;
   esac
 done
 
@@ -63,7 +59,7 @@ else
   cmd="tests/runner.py --test-path ${path} ${sdk_dir} --test-pattern $substring --coverage-file ${coverage_file}"
 fi
 
-(cd ${BASE_DIR}; PYTHONPATH=./:./data_steward:${PYTHONPATH} python ${cmd})
+(cd "${BASE_DIR}"; PYTHONPATH=./:./data_steward:${PYTHONPATH} python ${cmd})
 
 # stop printing executed commands
 set +x

@@ -59,7 +59,9 @@ EXISTING_AND_VALID_CONSENTING_RECORDS = (
     'JOIN ppi_mappings AS maps ON maps.{table}_id = entry.{table}_id ')
 
 
-def get_person_id_validation_queries(project=None, dataset=None):
+def get_person_id_validation_queries(project=None,
+                                     dataset=None,
+                                     sandbox_dataset_id=None):
     """
     Return query list of queries to ensure valid people are in the tables.
 
@@ -67,6 +69,8 @@ def get_person_id_validation_queries(project=None, dataset=None):
     combined and unidentified dataset, the last portion of the dataset name is
     removed to access these tables.  Any other dataset is expected to have
     these tables and uses the mapping tables from within the same dataset.
+    :param sandbox_dataset_id: Identifies the sandbox dataset to store rows 
+    #TODO use sandbox_dataset_id for CR
 
     :return:  A list of string queries that can be executed to delete invalid
         records for invalid persons
@@ -113,6 +117,15 @@ if __name__ == '__main__':
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
     ARGS = parser.parse_args()
-    clean_engine.add_console_logging(ARGS.console_log)
-    Q_LIST = get_person_id_validation_queries(ARGS.project_id, ARGS.dataset_id)
-    clean_engine.clean_dataset(ARGS.project_id, Q_LIST)
+    if ARGS.list_queries:
+        clean_engine.add_console_logging()
+        query_list = clean_engine.get_query_list(
+            ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id,
+            [(get_person_id_validation_queries,)])
+        for query in query_list:
+            LOGGER.info(query)
+    else:
+        clean_engine.add_console_logging(ARGS.console_log)
+        clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
+                                   ARGS.sandbox_dataset_id,
+                                   [(get_person_id_validation_queries,)])

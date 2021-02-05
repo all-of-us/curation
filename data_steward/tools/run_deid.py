@@ -3,16 +3,24 @@ Deid runner.
 
 A central script to execute deid for each table needing de-identification.
 """
+
+# Python imports
 from datetime import datetime
 import logging
 import os
 from argparse import ArgumentParser
 
+# Third party imports
 import google
+import app_identity
 
+# Project imports
 import bq_utils
 import deid.aou as aou
+from deid.parser import odataset_name_verification
 from resources import fields_for, fields_path, DEID_PATH
+from utils import bq
+from common import JINJA_ENV
 
 LOGGER = logging.getLogger(__name__)
 DEID_TABLES = [
@@ -28,8 +36,30 @@ VOCABULARY_TABLES = [
     'relationship', 'concept_synonym', 'concept_ancestor',
     'source_to_concept_map', 'drug_strength'
 ]
+DEID_MAP_TABLE = '_deid_map'
+PIPELINE_TABLES_DATASET = 'pipeline_tables'
 
 LOGS_PATH = 'LOGS'
+
+COPY_PID_RID_QUERY = JINJA_ENV.from_string("""
+CREATE or REPLACE TABLE {{map_table}} as
+SELECT
+  *
+FROM
+  `{{project}}.{{lookup_dataset}}.{{pid_rid_table}}`
+WHERE
+  person_id IN (
+  SELECT
+    person_id
+  FROM (
+    SELECT
+      DISTINCT person_id,
+      EXTRACT(YEAR FROM CURRENT_DATE()) - year_of_birth AS age
+    FROM `{{project}}.{{input_dataset}}.person`
+    ORDER BY 2)
+  WHERE
+    age < {{max_age}})
+""")
 
 
 def add_console_logging(add_handler):
@@ -148,8 +178,7 @@ def parse_args(raw_args=None):
                         '--idataset',
                         action='store',
                         dest='input_dataset',
-                        help=('Name of the input dataset (an output dataset '
-                              'with suffix _deid will be generated)'),
+                        help='Name of the input dataset',
                         required=True)
     parser.add_argument('-p',
                         '--private_key',
@@ -157,6 +186,13 @@ def parse_args(raw_args=None):
                         action='store',
                         required=True,
                         help='Service account file location')
+    parser.add_argument('-o',
+                        '--odataset',
+                        action='store',
+                        dest='odataset',
+                        type=odataset_name_verification,
+                        help='Name of the output dataset must end with _deid ',
+                        required=True)
     parser.add_argument(
         '-a',
         '--action',
@@ -198,9 +234,62 @@ def parse_args(raw_args=None):
                         dest='console_log',
                         action='store_true',
                         required=False,
-                        help=('Log to the console as well as to a file.'))
+                        help='Log to the console as well as to a file.')
     parser.add_argument('--version', action='version', version='deid-02')
+    parser.add_argument('-m',
+                        '--age_limit',
+                        dest='age_limit',
+                        action='store',
+                        required=True,
+                        help='Set the maximum allowable age of participants.')
     return parser.parse_args(raw_args)
+
+
+def copy_deid_map_table(deid_map_table, project_id, lookup_dataset_id,
+                        input_dataset_id, age_limit, client):
+    """
+    Copies research_ids for participants whose age is below max_age limit from pipeline_tables._deid_map table
+     to input_dataset._deid_map table.
+
+    :param deid_map_table: Fully Qualified(fq) _deid_map table name to create
+    :param project_id: Project identifier 
+    :param lookup_dataset_id: Name of the dataset where the master _deid_map table is stored
+    :param input_dataset_id: Name of the dataset where _deid_map dataset needs to be created.
+    :param age_limit: Allowed Max_age of a participant
+    :param client: Bigquery client
+    :return: None
+    """
+    q = COPY_PID_RID_QUERY.render(map_table=deid_map_table,
+                                  project=project_id,
+                                  lookup_dataset=lookup_dataset_id,
+                                  input_dataset=input_dataset_id,
+                                  max_age=age_limit,
+                                  pid_rid_table=DEID_MAP_TABLE)
+
+    query_job = client.query(q)
+    query_job.result()
+    if query_job.exception():
+        logging.error(f"The _deid_map table was not copied successfully")
+
+
+def load_deid_map_table(deid_map_dataset_name, age_limit):
+
+    # Create _deid_map table in input dataset
+    project_id = app_identity.get_application_id()
+    client = bq.get_client(project_id)
+    deid_map_table = f'{project_id}.{deid_map_dataset_name}.{DEID_MAP_TABLE}'
+    # Copy master _deid_map table records to _deid_map table
+    if bq_utils.table_exists(DEID_MAP_TABLE,
+                             dataset_id=PIPELINE_TABLES_DATASET):
+        copy_deid_map_table(deid_map_table, project_id, PIPELINE_TABLES_DATASET,
+                            deid_map_dataset_name, age_limit, client)
+        logging.info(
+            f"copied participants younger than {age_limit} to the table {deid_map_table}"
+        )
+    else:
+        raise RuntimeError(
+            f'{DEID_MAP_TABLE} is not available in {project_id}.{PIPELINE_TABLES_DATASET}'
+        )
 
 
 def main(raw_args=None):
@@ -216,6 +305,10 @@ def main(raw_args=None):
     configured_tables = get_known_tables(deid_tables_path)
     tables = get_output_tables(args.input_dataset, known_tables,
                                args.skip_tables, args.tables)
+    logging.info(f"Loading {DEID_MAP_TABLE} table...")
+    load_deid_map_table(deid_map_dataset_name=args.input_dataset,
+                        age_limit=args.age_limit)
+    logging.info(f"Loaded {DEID_MAP_TABLE} table.")
 
     exceptions = []
     successes = []
@@ -230,7 +323,8 @@ def main(raw_args=None):
             '--rules',
             os.path.join(DEID_PATH, 'config', 'ids', 'config.json'),
             '--private_key', args.private_key, '--table', tablepath, '--action',
-            args.action, '--idataset', args.input_dataset, '--log', LOGS_PATH
+            args.action, '--idataset', args.input_dataset, '--log', LOGS_PATH,
+            '--odataset', args.odataset, '--age-limit', args.age_limit
         ]
 
         if args.interactive_mode:
@@ -240,8 +334,9 @@ def main(raw_args=None):
         if 'person_id' in field_names:
             parameter_list.append('--cluster')
 
-        LOGGER.info('Executing deid with:\n\tpython deid/aou.py %s',
-                    ' '.join(parameter_list))
+        LOGGER.info(
+            f"Executing deid with:\n\tpython deid/aou.py {' '.join(parameter_list)}"
+        )
 
         try:
             aou.main(parameter_list)
@@ -249,17 +344,17 @@ def main(raw_args=None):
             LOGGER.exception("Encountered deid exception:\n")
             exceptions.append(table)
         else:
-            LOGGER.info('Successfully executed deid on table: %s', table)
+            LOGGER.info(f"Successfully executed deid on table: {table}")
             successes.append(table)
 
-    copy_suppressed_table_schemas(known_tables, args.input_dataset + '_deid')
+    copy_suppressed_table_schemas(known_tables, args.odataset)
 
-    LOGGER.info('Deid has finished.  Successfully executed on tables:  %s',
-                '\n'.join(successes))
+    LOGGER.info(
+        "Deid has finished.  Successfully executed on tables: {}".format(
+            '\n'.join(successes)))
     for exc in exceptions:
-        LOGGER.error(
-            "Deid encountered exceptions when processing table: %s"
-            ".  Fix problems and re-run deid for table if needed.", exc)
+        LOGGER.error(f"Deid encountered exceptions when processing table: {exc}"
+                     f".  Fix problems and re-run deid for table if needed.")
 
 
 if __name__ == '__main__':

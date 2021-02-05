@@ -3,20 +3,19 @@ Unit test components of data_steward.validation.main
 """
 import datetime
 import re
-import unittest
+from unittest import TestCase, mock
 
 import googleapiclient.errors
-import mock
 
 import common
-from constants.validation import hpo_report as report_consts
-from constants.validation import main as main_constants
-from constants.validation.participants import identity_match as id_match_consts
 import resources
+from constants.validation import hpo_report as report_consts
+from constants.validation import main as main_consts
+from constants.validation.participants import identity_match as id_match_consts
 from validation import main
 
 
-class ValidationMainTest(unittest.TestCase):
+class ValidationMainTest(TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -27,14 +26,13 @@ class ValidationMainTest(unittest.TestCase):
     def setUp(self):
         self.hpo_id = 'fake_hpo_id'
         self.hpo_bucket = 'fake_aou_000'
+        self.project_id = 'fake_project_id'
+        self.bigquery_dataset_id = 'fake_dataset_id'
         mock_get_hpo_name = mock.patch('validation.main.get_hpo_name')
-
         self.mock_get_hpo_name = mock_get_hpo_name.start()
         self.mock_get_hpo_name.return_value = 'Fake HPO'
         self.addCleanup(mock_get_hpo_name.stop)
-
-        self.bigquery_dataset_id = 'fake_dataset_id'
-        self.folder_prefix = '2019-01-01/'
+        self.folder_prefix = '2019-01-01-v1/'
 
     def test_retention_checks_list_submitted_bucket_items(self):
         outside_retention = datetime.datetime.today() - datetime.timedelta(
@@ -170,11 +168,7 @@ class ValidationMainTest(unittest.TestCase):
         :return:
         """
         folder_prefix = '2019-01-01/'
-        bucket_items = [{
-            'name': folder_prefix + 'person.csv'
-        }, {
-            'name': folder_prefix + 'invalid_file.csv'
-        }]
+        folder_items = ['person.csv', 'invalid_file.csv']
 
         perform_validation_on_file_returns = dict()
         expected_results = []
@@ -206,46 +200,63 @@ class ValidationMainTest(unittest.TestCase):
         mock_perform_validation_on_file.side_effect = perform_validation_on_file
 
         actual_result = main.validate_submission(self.hpo_id, self.hpo_bucket,
-                                                 bucket_items, folder_prefix)
+                                                 folder_items, folder_prefix)
         self.assertCountEqual(expected_results, actual_result.get('results'))
         self.assertCountEqual(expected_errors, actual_result.get('errors'))
         self.assertCountEqual(expected_warnings, actual_result.get('warnings'))
 
     @mock.patch('validation.main.gcs_utils.get_hpo_bucket')
-    @mock.patch('resources.hpo_csv')
+    @mock.patch('bq_utils.get_hpo_info')
     @mock.patch('validation.main.list_bucket')
-    @mock.patch('logging.error')
+    @mock.patch('logging.exception')
     @mock.patch('api_util.check_cron')
     def test_validate_all_hpos_exception(self, check_cron, mock_logging_error,
                                          mock_list_bucket, mock_hpo_csv,
                                          mock_hpo_bucket):
+        http_error_string = 'fake http error'
         mock_hpo_csv.return_value = [{'hpo_id': self.hpo_id}]
         mock_list_bucket.side_effect = googleapiclient.errors.HttpError(
-            'fake http error', b'fake http error')
+            http_error_string, http_error_string.encode())
         with main.app.test_client() as c:
-            c.get(main_constants.PREFIX + 'ValidateAllHpoFiles')
-        expected_call = mock.call(
-            'Failed to process hpo_id `{}` due to the following '
-            'HTTP error: fake http error'.format(self.hpo_id))
-        self.assertIn(expected_call, mock_logging_error.mock_calls)
+            c.get(main_consts.PREFIX + 'ValidateAllHpoFiles')
+            expected_call = mock.call(
+                f"Failed to process hpo_id '{self.hpo_id}' due to the following "
+                f"HTTP error: {http_error_string}")
+            self.assertIn(expected_call, mock_logging_error.mock_calls)
 
+    def test_extract_date_from_rdr(self):
+        rdr_dataset_id = 'rdr20200201'
+        bad_rdr_dataset_id = 'ehr2019-02-01'
+        expected_date = '2020-02-01'
+        rdr_date = main.extract_date_from_rdr_dataset_id(rdr_dataset_id)
+        self.assertEqual(rdr_date, expected_date)
+        self.assertRaises(ValueError, main.extract_date_from_rdr_dataset_id,
+                          bad_rdr_dataset_id)
+
+    @mock.patch('bq_utils.table_exists', mock.MagicMock())
+    @mock.patch('bq_utils.query')
+    @mock.patch('validation.main.is_valid_folder_prefix_name')
     @mock.patch('validation.main.run_export')
     @mock.patch('validation.main.run_achilles')
     @mock.patch('gcs_utils.upload_object')
     @mock.patch('validation.main.all_required_files_loaded')
     @mock.patch('validation.main.query_rows')
     @mock.patch('validation.main.get_duplicate_counts_query')
-    @mock.patch('validation.main._write_string_to_file')
+    @mock.patch('validation.main.upload_string_to_gcs')
     @mock.patch('validation.main.get_hpo_name')
     @mock.patch('validation.main.validate_submission')
+    @mock.patch('validation.main.get_folder_items')
+    @mock.patch('validation.main.is_first_validation_run')
+    @mock.patch('validation.main.is_valid_rdr')
     @mock.patch('gcs_utils.list_bucket')
     @mock.patch('gcs_utils.get_hpo_bucket')
     def test_process_hpo_ignore_dirs(
-        self, mock_hpo_bucket, mock_bucket_list, mock_validation,
-        mock_get_hpo_name, mock_write_string_to_file,
+        self, mock_hpo_bucket, mock_bucket_list, mock_valid_rdr,
+        mock_first_validation, mock_folder_items, mock_validation,
+        mock_get_hpo_name, mock_upload_string_to_gcs,
         mock_get_duplicate_counts_query, mock_query_rows,
         mock_all_required_files_loaded, mock_upload, mock_run_achilles,
-        mock_export):
+        mock_export, mock_valid_folder_name, mock_query):
         """
         Test process_hpo with directories we want to ignore.
 
@@ -259,18 +270,24 @@ class ValidationMainTest(unittest.TestCase):
         :param mock_hpo_bucket: mock the hpo bucket name.
         :param mock_bucket_list: mocks the list of items in the hpo bucket.
         :param mock_validation: mock performing validation
-        :param mock_validation: mock generate metrics
+        :param mock_folder_items: mock get_folder_items
+        :param mock_first_validation: mock first validation run
+        :param mock_valid_rdr: mock valid rdr dataset
         :param mock_upload: mock uploading to a bucket
         :param mock_run_achilles: mock running the achilles reports
         :param mock_export: mock exporting the files
         """
         # pre-conditions
+        mock_valid_folder_name.return_value = True
         mock_hpo_bucket.return_value = 'noob'
         mock_all_required_files_loaded.return_value = True
+        mock_query.return_value = {}
         mock_query_rows.return_value = []
         mock_get_duplicate_counts_query.return_value = ''
         mock_get_hpo_name.return_value = 'noob'
-        mock_write_string_to_file.return_value = ''
+        mock_upload_string_to_gcs.return_value = ''
+        mock_valid_rdr.return_value = True
+        mock_first_validation.return_value = False
         yesterday = datetime.datetime.now() - datetime.timedelta(hours=24)
         yesterday = yesterday.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
         moment = datetime.datetime.now()
@@ -307,19 +324,25 @@ class ValidationMainTest(unittest.TestCase):
             'warnings': []
         }
 
+        mock_folder_items.return_value = ['measurement.csv']
+
         # test
         main.process_hpo('noob', force_run=True)
 
         # post conditions
+        self.assertTrue(mock_folder_items.called)
+        self.assertEqual(
+            mock_folder_items.assert_called_once_with(
+                mock_bucket_list.return_value, 'SUBMISSION/'), None)
         self.assertTrue(mock_validation.called)
         self.assertEqual(
             mock_validation.assert_called_once_with(
-                'noob', 'noob', mock_bucket_list.return_value, 'SUBMISSION/'),
+                'noob', 'noob', mock_folder_items.return_value, 'SUBMISSION/'),
             None)
         self.assertTrue(mock_run_achilles.called)
         self.assertTrue(mock_export.called)
         self.assertEqual(
-            mock_export.assert_called_once_with(hpo_id='noob',
+            mock_export.assert_called_once_with(datasource_id='noob',
                                                 folder_prefix='SUBMISSION/'),
             None)
         # make sure upload is called for only the most recent
@@ -426,6 +449,8 @@ class ValidationMainTest(unittest.TestCase):
                 raise AssertionError(
                     "Unexpected call in mock_copy calls:  {}".format(call))
 
+    @mock.patch('bq_utils.table_exists', mock.MagicMock())
+    @mock.patch('bq_utils.query', mock.MagicMock())
     def test_generate_metrics(self):
         summary = {
             report_consts.RESULTS_REPORT_KEY: [{
@@ -447,18 +472,22 @@ class ValidationMainTest(unittest.TestCase):
         def query_rows_error(q):
             raise googleapiclient.errors.HttpError(500, b'bar', 'baz')
 
-        def _write_string_to_file(bucket, filename, content):
+        def upload_string_to_gcs(bucket, filename, content):
             return True
 
         def get_duplicate_counts_query(hpo_id):
             return ''
+
+        def is_valid_rdr(rdr_dataset_id):
+            return True
 
         with mock.patch.multiple(
                 'validation.main',
                 all_required_files_loaded=all_required_files_loaded,
                 query_rows=query_rows,
                 get_duplicate_counts_query=get_duplicate_counts_query,
-                _write_string_to_file=_write_string_to_file):
+                upload_string_to_gcs=upload_string_to_gcs,
+                is_valid_rdr=is_valid_rdr):
             result = main.generate_metrics(self.hpo_id, self.hpo_bucket,
                                            self.folder_prefix, summary)
             self.assertIn(report_consts.RESULTS_REPORT_KEY, result)
@@ -476,10 +505,30 @@ class ValidationMainTest(unittest.TestCase):
                 all_required_files_loaded=all_required_files_loaded,
                 query_rows=query_rows_error,
                 get_duplicate_counts_query=get_duplicate_counts_query,
-                _write_string_to_file=_write_string_to_file):
-            with self.assertRaises(googleapiclient.errors.HttpError):
-                result = main.generate_metrics(self.hpo_id, self.hpo_bucket,
-                                               self.folder_prefix, summary)
-                error_occurred = result.get(
-                    report_consts.ERROR_OCCURRED_REPORT_KEY)
-                self.assertEqual(error_occurred, True)
+                upload_string_to_gcs=upload_string_to_gcs,
+                is_valid_rdr=is_valid_rdr):
+            result = main.generate_metrics(self.hpo_id, self.hpo_bucket,
+                                           self.folder_prefix, summary)
+            error_occurred = result.get(report_consts.ERROR_OCCURRED_REPORT_KEY)
+            self.assertEqual(error_occurred, True)
+
+    @mock.patch('bq_utils.get_hpo_info')
+    @mock.patch('validation.main.upload_string_to_gcs')
+    def test_html_incorrect_folder_name(self, mock_string_to_file,
+                                        mock_hpo_csv):
+        mock_hpo_csv.return_value = [{'hpo_id': self.hpo_id}]
+
+        # validate folder name
+        self.assertEqual(
+            bool(main.is_valid_folder_prefix_name(self.folder_prefix)), True)
+        incorrect_folder_prefix = '2020-01-01/'
+        self.assertEqual(
+            bool(main.is_valid_folder_prefix_name(incorrect_folder_prefix)),
+            False)
+
+        # validate report data
+        report_data = main.generate_empty_report(self.hpo_id,
+                                                 incorrect_folder_prefix)
+        self.assertIn(report_consts.SUBMISSION_ERROR_REPORT_KEY, report_data)
+        self.assertIn(incorrect_folder_prefix,
+                      report_data[report_consts.SUBMISSION_ERROR_REPORT_KEY])

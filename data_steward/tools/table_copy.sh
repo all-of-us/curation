@@ -6,10 +6,12 @@
 # # Example Usages
 #
 # ## Copy `dataset1.prefix_tableA` to `dataset2.tableA`
-# > tools/table_copy.sh --source_dataset dataset1 --source_prefix prefix_ --target_dataset dataset2
+# > tools/table_copy.sh --source_app_id project --target_app_id project
+#                       --source_dataset dataset1 --source_prefix prefix_ --target_dataset dataset2
 #
 # ## Copy `dataset1.tableA` to `dataset1.prefix_tableA`
-# > tools/table_copy.sh --source_dataset dataset1 --target_prefix prefix_ --target_dataset dataset1
+# > tools/table_copy.sh --source_app_id project --target_app_id project
+#                       --source_dataset dataset1 --target_prefix prefix_ --target_dataset dataset1
 
 SYNC=''
 USAGE="tools/table_copy.sh
@@ -84,7 +86,7 @@ TARGET_DATASET=$([[ "${TARGET_APPLICATION_ID}" ]] && echo "${TARGET_APPLICATION_
 # Copy the tables
 #( [[ "${SOURCE_PREFIX}" ]] && grep ${SOURCE_PREFIX} || cat )) essentially is and if/else statement
 # if SOURCE_PREFIX is not empty then grep for SOURCE_PREFIX else CAT the input
-for t in $(bq ls -n 2000 ${SOURCE_DATASET} |
+for t in $(bq ls -n 10000 ${SOURCE_DATASET} |
   grep TABLE |
   awk '{print $1}' |
   #           grep -v ^\_ |  #Tables beginning with underscore "_" are skipped

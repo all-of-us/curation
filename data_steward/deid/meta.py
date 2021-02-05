@@ -37,20 +37,25 @@ class Meta(object):
         Get information about a bigquery table.
 
         This function will return the meta data associated with a table in a
-        bigquery dataset (or schema)
+        bigquery dataset
 
         :param path:   path of the key file
         :param table:  name of the table
-        :param schema:
+        :param project:  name of the bigquery project
         :param dataset:  name of the dataset
 
         :return:  table meta data
         """
-        table_name = args['table']
-        schema = args['schema'] if 'schema' in args else args['dataset']
-        private_key = args['path']
+        table_name = args.get('table')
+        private_key = args.get('path')
+        project_id = args.get('project_id')
+        dataset_id = args.get('dataset_id')
+        schema = args.get('schema', dataset_id)
+
+        fq_dataset_id = project_id + '.' + dataset_id
         client = bq.Client.from_service_account_json(private_key)
-        tables = client.list_tables(bq.dataset(schema))
+        dataset_ref = client.get_dataset(fq_dataset_id)
+        tables = client.list_tables(dataset_ref)
         tables = [table for table in tables if table.table_id == table_name]
         return tables[0] if tables else None
 
