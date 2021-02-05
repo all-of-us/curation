@@ -31,6 +31,7 @@ FROM
   WHERE t.table_id = '%s_person'
   AND m.HPO_ID = '%s'
   AND person_id IN (
+    SELECT DISTINCT person_id FROM `{{project_id}}.{{ehr_dataset_id}}.%s_person` UNION ALL
     SELECT DISTINCT person_id FROM `{{project_id}}.{{ehr_dataset_id}}.%s_condition_occurrence` UNION ALL
     SELECT DISTINCT person_id FROM `{{project_id}}.{{ehr_dataset_id}}.%s_procedure_occurrence` UNION ALL
     SELECT DISTINCT person_id FROM `{{project_id}}.{{ehr_dataset_id}}.%s_drug_exposure` UNION ALL
