@@ -28,8 +28,7 @@ class SandboxTest(unittest.TestCase):
         self.assertEqual(base_name,
                          sandbox.get_sandbox_table_name('\t', base_name))
         self.assertEqual(base_name,
-                         sandbox.get_sandbox_table_name('\n', base_name))    
-
+                         sandbox.get_sandbox_table_name('\n', base_name))
 
     def test_get_sandbox_labels_string(self):
         dataset_name = "my_dataset_name"
