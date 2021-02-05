@@ -13,7 +13,7 @@ from google.cloud.bigquery import Client, Dataset, SchemaField, LoadJob, LoadJob
     QueryJobConfig, Table
 
 from common import VOCABULARY_TABLES
-from sandbox import get_sandbox_dataset_id
+from utils.sandbox import get_sandbox_dataset_id
 from utils import bq
 
 LOGGER = logging.getLogger(__name__)
@@ -165,8 +165,8 @@ def main(project_id: str, bucket_name: str, dst_dataset_id: str):
     Transform and load vocabulary files from Athena to a BigQuery dataset
 
     :param project_id:
-    :param bucket_name:
-    :param dst_dataset_id:
+    :param bucket_name: refers to the bucket containing vocabulary files from bundle
+    :param dst_dataset_id: final destination to load the vocabulary in BigQuery
     """
     bq_client = bq.get_client(project_id=project_id)
     sandbox_dataset_id = get_sandbox_dataset_id(dst_dataset_id)
@@ -248,7 +248,7 @@ def get_release_date(release_date: datetime.date = None) -> str:
 
 
 def get_target_dataset_id(release_tag: str) -> str:
-    return f'vocab_{release_tag}'
+    return f'vocabulary{release_tag}'
 
 
 if __name__ == '__main__':
