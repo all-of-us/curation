@@ -141,7 +141,7 @@ def get_sandbox_table_description_string(description):
 
     if not description or description.isspace():
         raise ValueError(
-            f"Description must be a non-empty string. Received teh value '{description}'."
+            f"Description must be a non-empty string. Received the value '{description}'."
         )
 
     return TABLE_DESCRIPTION_STRING.render(description=description)
