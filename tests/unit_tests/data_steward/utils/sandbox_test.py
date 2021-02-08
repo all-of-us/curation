@@ -70,6 +70,11 @@ class SandboxTest(unittest.TestCase):
         actual = sandbox.get_sandbox_table_description_string(description)
         self.assertIn(f'description="{description}"', actual)
 
+        #Test description empty
+        description = "    "
+        with self.assertRaises(ValueError):
+            sandbox.get_sandbox_table_description_string(description)
+
     @patch('utils.sandbox.get_sandbox_labels_string')
     @patch('utils.sandbox.get_sandbox_table_description_string')
     def test_get_sandbox_options(self,
