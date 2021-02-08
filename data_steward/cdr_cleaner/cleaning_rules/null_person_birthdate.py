@@ -43,14 +43,13 @@ class NullPersonBirthdate(BaseCleaningRule):
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
         desc = 'Set Patient Birthdate Fields to NULL'
-        super().__init__(
-            issue_numbers=['DC1356'],
-            description=desc,
-            affected_datasets=[cdr_consts.CONTROLLED_TIER_DEID_BASE],
-            affected_tables=[PERSON],
-            project_id=project_id,
-            dataset_id=dataset_id,
-            sandbox_dataset_id=sandbox_dataset_id)
+        super().__init__(issue_numbers=['DC1356'],
+                         description=desc,
+                         affected_datasets=[cdr_consts.CONTROLLED_TIER_DEID],
+                         affected_tables=[PERSON],
+                         project_id=project_id,
+                         dataset_id=dataset_id,
+                         sandbox_dataset_id=sandbox_dataset_id)
 
     def setup_rule(self, client=None):
         """
