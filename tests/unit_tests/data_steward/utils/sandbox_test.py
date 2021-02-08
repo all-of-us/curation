@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 
 from utils import sandbox
 
@@ -68,3 +69,44 @@ class SandboxTest(unittest.TestCase):
 
         actual = sandbox.get_sandbox_table_description_string(description)
         self.assertIn(f'description="{description}"', actual)
+
+    @patch('utils.sandbox.get_sandbox_labels_string')
+    @patch('utils.sandbox.get_sandbox_table_description_string')
+    def test_get_sandbox_options(self,
+                                 mock_get_sandbox_table_description_string,
+                                 mock_get_sandbox_labels_string):
+
+        self.maxDiff = None
+
+        dataset_name = "my_dataset_name"
+        class_name = "my_class_name"
+        table_tag = "my_table_tag"
+        shared_lookup = True
+        description = "This is a helpful description."
+
+        labels_string = f"""
+            labels=[
+                ("src_dataset", "{dataset_name}"),
+                ("class_name", "{class_name}"),
+                ("table_tag", "{table_tag}"),
+                ("shared_lookup", "{shared_lookup}")
+            ]
+        """
+
+        description_string = f"""
+            description="{description}"
+        """
+
+        mock_get_sandbox_labels_string.return_value = labels_string
+
+        mock_get_sandbox_table_description_string.return_value = description_string
+
+        #Test that contents are formatted as expected
+        actual_options = sandbox.get_sandbox_options(dataset_name, class_name,
+                                                     table_tag, description,
+                                                     shared_lookup)
+
+        expected_options = sandbox.TABLE_OPTIONS_CLAUSE.render(
+            contents=',\n'.join([description_string, labels_string]))
+
+        self.assertEqual(actual_options, expected_options)

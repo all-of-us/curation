@@ -106,21 +106,21 @@ def get_sandbox_labels_string(src_dataset_name,
     :return: A formatted string of the arguments concatenated as labels
     :rtype: str
     """
-    STRING_LABELS = ['src_dataset', 'class_name', 'table_tag']
-    BOOL_LABELS = ['shared_lookup']
+    string_labels = ['src_dataset', 'class_name', 'table_tag']
+    bool_labels = ['shared_lookup']
 
     labels = OrderedDict([('src_dataset', src_dataset_name),
                           ('class_name', class_name), ('table_tag', table_tag),
                           ('shared_lookup', shared_lookup)])
 
-    for label in STRING_LABELS:
+    for label in string_labels:
         value = labels[label]
         if not value or value.isspace():
             raise ValueError(
                 f"Label '{label}' requires a non-empty string. Received the value '{value}'."
             )
 
-    for label in BOOL_LABELS:
+    for label in bool_labels:
         value = labels[label]
 
         if type(value) != bool:
@@ -151,7 +151,7 @@ def get_sandbox_options(dataset_name,
     :param str dataset_name: A dataset name
     :param str class_name: A class name
     :param str table_tag: A table tag
-    :param str description: A table description
+    :param str desc: A table description
     :param bool shared_lookup: A boolean that indicates if a table is a shared lookup, defaults to False
     :return: A BigQuery table options clause 
     :rtype: str
