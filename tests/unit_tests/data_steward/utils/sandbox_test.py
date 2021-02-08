@@ -45,7 +45,7 @@ class SandboxTest(unittest.TestCase):
         self.assertIn(f'("src_dataset", "{dataset_name}")', actual)
         self.assertIn(f'("class_name", "{class_name}")', actual)
         self.assertIn(f'("table_tag", "{table_tag}")', actual)
-        self.assertIn(f'("shared_lookup", "{shared_lookup}")', actual)
+        self.assertIn(f'("shared_lookup", "true")', actual)
 
         #Test that an empty string argument will throw an error
         empty_class_name = ""
@@ -94,7 +94,7 @@ class SandboxTest(unittest.TestCase):
                 ("src_dataset", "{dataset_name}"),
                 ("class_name", "{class_name}"),
                 ("table_tag", "{table_tag}"),
-                ("shared_lookup", "{shared_lookup}")
+                ("shared_lookup", "true")
             ]
         """
 

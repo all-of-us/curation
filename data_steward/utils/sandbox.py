@@ -128,6 +128,9 @@ def get_sandbox_labels_string(src_dataset_name,
                 f"Label '{label}' requires a boolean value of True or False. Received the value '{value}'."
             )
 
+        #Convert bools to lowered strings for BQ
+        labels[label] = str(value).lower()
+
     return TABLE_LABELS_STRING.render(labels=labels)
 
 
