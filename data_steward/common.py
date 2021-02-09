@@ -214,6 +214,8 @@ EXT = 'ext'
 EXT_SUFFIX = '_ext'
 
 DEID_MAP = '_deid_map'
+PID_RID_MAPPING = 'pid_rid_mapping'
+PIPELINE_TABLES = 'pipeline_tables'
 
 # JINJA
 JINJA_ENV = jinja2.Environment(
