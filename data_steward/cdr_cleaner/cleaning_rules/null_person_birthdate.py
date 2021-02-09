@@ -65,7 +65,7 @@ class NullPersonBirthdate(BaseCleaningRule):
         """
         pass
 
-    def get_query_specs(self):
+    def get_query_specs(self, *args, **keyword_args):
         """
         Interface to return a list of query dictionaries.
 
