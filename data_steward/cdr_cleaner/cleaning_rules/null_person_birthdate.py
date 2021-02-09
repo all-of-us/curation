@@ -96,7 +96,7 @@ class NullPersonBirthdate(BaseCleaningRule):
         the logic to get the row counts of the tables prior to applying cleaning rule
 
         """
-        pass
+        raise NotImplementedError("Please fix me.")
 
     def validate_rule(self, client, *args, **keyword_args):
         """
@@ -115,7 +115,7 @@ class NullPersonBirthdate(BaseCleaningRule):
         Raises RunTimeError if the validation fails.
         """
 
-        pass
+        raise NotImplementedError("Please fix me.")
 
     def get_sandbox_tablenames(self):
         return [self.sandbox_table_for(PERSON)]
