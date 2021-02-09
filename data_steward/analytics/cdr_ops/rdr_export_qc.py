@@ -61,6 +61,29 @@ ORDER BY ABS(curr.row_count - prev.row_count) DESC;
 '''
 pd.read_gbq(query, dialect='standard')
 
+# ## ID range check
+# Combine step may break if any row IDs in the RDR are larger than the added constant(1,000,000,000,000,000).
+# Rows that are greater than 999,999,999,999,999 the will be listed out here.
+
+domain_table_list = [
+    'condition_occurrence', 'device_exposure', 'drug_exposure', 'location',
+    'measurement', 'note', 'observation', 'procedure_occurrence', 'provider',
+    'specimen', 'visit_occurrence'
+]
+queries = []
+for table in domain_table_list:
+    query = f'''
+    SELECT
+        '{table}' AS domain_table_name,
+        {table}_id AS domain_table_id
+    FROM
+     `{project_id}.{new_rdr}.{table}`
+    WHERE
+      {table}_id > 999999999999999
+    '''
+    queries.append(query)
+pd.read_gbq('\nUNION ALL\n'.join(queries), dialect='standard')
+
 # ## Concept codes used
 # Identify question and answer concept codes which were either added or removed (appear in only the new or only the old RDR datasets, respectively).
 
