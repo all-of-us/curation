@@ -467,5 +467,8 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
         :param shared: boolean if the sandbox table will be shared
         :return: string of the sandbox options
         """
-        return get_sandbox_options(self.dataset_id, self.__class__.__name__, self.table_tag, self.description,
+        return get_sandbox_options(self.dataset_id,
+                                   self.__class__.__name__,
+                                   self.table_tag,
+                                   self.description,
                                    shared_lookup=shared)
