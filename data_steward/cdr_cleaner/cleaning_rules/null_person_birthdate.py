@@ -15,6 +15,7 @@ import constants.bq_utils as bq_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from common import JINJA_ENV
+from utils import pipeline_logging
 
 LOGGER = logging.getLogger(__name__)
 
@@ -126,6 +127,7 @@ if __name__ == '__main__':
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
     ARGS = parser.parse_args()
+    pipeline_logging.configure(level=logging.DEBUG, add_console_handler=True)
 
     if ARGS.list_queries:
         clean_engine.add_console_logging()
