@@ -351,6 +351,7 @@ def main(args=None):
             dataset_id=args.dataset_id,
             sandbox_dataset_id=args.sandbox_dataset_id,
             rules=rules,
+            table_namer=args.data_stage.value,
             **kwargs)
         for query in query_list:
             LOGGER.info(query)
@@ -360,6 +361,7 @@ def main(args=None):
                                    dataset_id=args.dataset_id,
                                    sandbox_dataset_id=args.sandbox_dataset_id,
                                    rules=rules,
+                                   table_namer=args.data_stage.value,
                                    **kwargs)
 
 
