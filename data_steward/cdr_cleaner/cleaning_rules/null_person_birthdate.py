@@ -7,10 +7,10 @@ The year_of_birth field should remain unchanged.
 Original Issue: DC-1356
 """
 
-#Python imports
+# Python imports
 import logging
 
-#Project imports
+# Project imports
 import constants.bq_utils as bq_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.cdr_cleaner import clean_cdr as cdr_consts
