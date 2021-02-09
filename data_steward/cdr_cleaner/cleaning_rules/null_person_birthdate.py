@@ -78,9 +78,8 @@ class NullPersonBirthdate(BaseCleaningRule):
             project_id=self.project_id,
             dataset_id=self.dataset_id,
             person_table=PERSON)
-        update_query[cdr_consts.DESTINATION_TABLE] = super().sandbox_table_for(
-            PERSON)
-        update_query[cdr_consts.DESTINATION_DATASET] = self.sandbox_dataset_id
+        update_query[cdr_consts.DESTINATION_TABLE] = PERSON
+        update_query[cdr_consts.DESTINATION_DATASET] = self.dataset_id
         update_query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
         return [update_query]
 
@@ -119,7 +118,7 @@ class NullPersonBirthdate(BaseCleaningRule):
         pass
 
     def get_sandbox_tablenames(self):
-        pass
+        return [self.sandbox_table_for(PERSON)]
 
 
 if __name__ == '__main__':
