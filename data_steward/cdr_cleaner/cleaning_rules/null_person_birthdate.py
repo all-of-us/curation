@@ -14,12 +14,10 @@ import logging
 import constants.bq_utils as bq_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.cdr_cleaner import clean_cdr as cdr_consts
-from common import JINJA_ENV
+from common import JINJA_ENV, PERSON
 from utils import pipeline_logging
 
 LOGGER = logging.getLogger(__name__)
-
-PERSON = 'person'
 
 NULL_DATE_QUERY = JINJA_ENV.from_string("""
 SELECT
