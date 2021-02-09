@@ -68,7 +68,10 @@ class QRIDtoRID(BaseCleaningRule):
                f'the deid questionnaire response mapping lookup table.'
         super().__init__(issue_numbers=ISSUE_NUMBERS,
                          description=desc,
-                         affected_datasets=[cdr_consts.CONTROLLED_TIER_DEID, cdr_consts.COMBINED],
+                         affected_datasets=[
+                             cdr_consts.CONTROLLED_TIER_DEID,
+                             cdr_consts.COMBINED
+                         ],
                          affected_tables=OBSERVATION,
                          project_id=project_id,
                          dataset_id=dataset_id,
