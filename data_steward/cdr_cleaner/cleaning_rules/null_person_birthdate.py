@@ -51,7 +51,7 @@ class NullPersonBirthdate(BaseCleaningRule):
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id)
 
-    def setup_rule(self, client=None):
+    def setup_rule(self, client, *args, **keyword_args):
         """
         Load required resources prior to executing cleaning rule queries.
 
