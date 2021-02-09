@@ -1,5 +1,5 @@
 """
-DEID rule to change PIDs to RIDs for specific tables
+DEID rule to change PIDs to RIDs for Fitbit tables
 """
 # Python Imports
 import logging
@@ -15,7 +15,7 @@ ISSUE_NUMBERS = ['DC-1000']
 
 class FitbitPIDtoRID(PIDtoRID):
     """
-    Use RID instead of PID for specific tables
+    Use RID instead of PID for Fitbit tables
     """
 
     def __init__(self, project_id, dataset_id, sandbox_dataset_id,
@@ -34,6 +34,12 @@ class FitbitPIDtoRID(PIDtoRID):
                          mapping_table_id=mapping_table_id,
                          affected_tables=FITBIT_TABLES,
                          issue_numbers=ISSUE_NUMBERS)
+
+    def setup_validation(self, client):
+        """
+        Run required steps for validation setup
+        """
+        pass
 
 
 if __name__ == '__main__':
