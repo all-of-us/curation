@@ -37,7 +37,7 @@ class QRIDtoRIDTest(unittest.TestCase):
         self.client = None
 
         self.rule_instance = QRIDtoRID(self.project_id, self.dataset_id,
-                                             self.sandbox_dataset_id)
+                                       self.sandbox_dataset_id)
 
         self.assertEqual(self.rule_instance.project_id, self.project_id)
         self.assertEqual(self.rule_instance.dataset_id, self.dataset_id)
@@ -57,20 +57,18 @@ class QRIDtoRIDTest(unittest.TestCase):
         result_list = self.rule_instance.get_query_specs()
 
         # Post conditions
-        expected_list =[{
+        expected_list = [{
             cdr_consts.QUERY:
                 LOOKUP_TABLE_CREATION_QUERY.render(
                     project_id=self.project_id,
                     shared_sandbox_id=self.sandbox_dataset_id,
-                    dataset_id=self.dataset_id
-                )
+                    dataset_id=self.dataset_id)
         }, {
             cdr_consts.QUERY:
                 QRID_RID_MAPPING_QUERY.render(
                     project_id=self.project_id,
                     dataset_id=self.dataset_id,
-                    shared_sandbox_id=self.sandbox_dataset_id
-                ),
+                    shared_sandbox_id=self.sandbox_dataset_id),
             cdr_consts.DESTINATION_TABLE:
                 common.OBSERVATION,
             cdr_consts.DESTINATION_DATASET:
