@@ -116,7 +116,6 @@ def load_stage(dst_dataset: Dataset, bq_client: Client,
                                                  job_config=job_config)
         load_jobs.append(load_job)
         LOGGER.info(f'table:{destination} job_id:{load_job.job_id}')
-    wait_jobs(load_jobs)
     return load_jobs
 
 
@@ -157,7 +156,7 @@ def load(project_id,
         query_job = bq_client.query(query, job_config=job_config)
         LOGGER.info(f'table:{destination} job_id:{query_job.job_id}')
         query_jobs.append(query_job)
-    wait_jobs(query_jobs)
+    return query_jobs
 
 
 def main(project_id: str, bucket_name: str, dst_dataset_id: str):
@@ -176,12 +175,14 @@ def main(project_id: str, bucket_name: str, dst_dataset_id: str):
         f'Vocabulary loaded from gs://{bucket_name}',
         label_or_tag={'type': 'vocabulary'},
         overwrite_existing=True)
-    load_stage(sandbox_dataset, bq_client, bucket_name)
-    load(project_id,
-         bq_client,
-         sandbox_dataset_id,
-         dst_dataset_id,
-         overwrite_ok=True)
+    stage_jobs = load_stage(sandbox_dataset, bq_client, bucket_name)
+    wait_jobs(stage_jobs)
+    load_jobs = load(project_id,
+                     bq_client,
+                     sandbox_dataset_id,
+                     dst_dataset_id,
+                     overwrite_ok=True)
+    wait_jobs(load_jobs)
 
 
 def get_arg_parser() -> argparse.ArgumentParser:

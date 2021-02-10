@@ -33,7 +33,6 @@ class LoadVocabTest(unittest.TestCase):
         self.assertEqual(expected, actual)
 
     def test_load_stage(self):
-        # TODO check the calls to load_table_from_uri
         # TODO check that extra files are skipped
         mock_list_blobs = [
             Blob(f'{table}.csv', self.bucket_name)
@@ -42,12 +41,21 @@ class LoadVocabTest(unittest.TestCase):
         with mock.patch.object(load_vocab.storage.Client,
                                'list_blobs',
                                return_value=mock_list_blobs):
-            spec = dict(errors=None, job_id='fake_job')
             with mock.patch.object(load_vocab.Client,
                                    'load_table_from_uri',
-                                   return_value=mock.MagicMock(spec=spec)):
-                result = load_vocab.load_stage(self.dst_dataset, self.bq_client,
-                                               self.bucket_name)
+                                   autospec=True) as mock_ltfu:
+                load_vocab.load_stage(self.dst_dataset, self.bq_client,
+                                      self.bucket_name)
+            # the expected calls to load_table_from_uri
+            expected_calls = [(f'gs://{self.bucket_name}/{table}.csv',
+                               self.dst_dataset.table(table))
+                              for table in common.VOCABULARY_TABLES]
+            actual_calls = [
+                (source_uri, destination)
+                for (_self, source_uri,
+                     destination), kwargs in mock_ltfu.call_args_list
+            ]
+            self.assertListEqual(expected_calls, actual_calls)
 
         # throws error when vocabulary files are missing
         expected_missing = [common.DOMAIN, common.CONCEPT_SYNONYM]
