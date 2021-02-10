@@ -20,7 +20,7 @@ from oauth2client.client import HttpAccessTokenRefreshError
 
 # Project imports
 import constants.cdr_cleaner.clean_cdr as cdr_consts
-from utils.sandbox import get_sandbox_table_name
+from utils.sandbox import get_sandbox_table_name, get_sandbox_options
 
 LOGGER = logging.getLogger(__name__)
 
@@ -128,7 +128,8 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
                  sandbox_dataset_id: str = None,
                  depends_on: cleaning_class_list = None,
                  affected_tables: List = None,
-                 table_namer: str = None):
+                 table_namer: str = None,
+                 table_tag: str = None):
         """
         Instantiate a cleaning rule with basic attributes.
 
@@ -164,6 +165,7 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
             running this cleaning rule.
         :param table_namer: string used to help programmatically create
             sandbox table names
+        :param table_tag: string used to create a label in the sandbox options
         """
         self._issue_numbers = issue_numbers
         self._description = description
@@ -175,6 +177,7 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
         self._depends_on_classes = depends_on if depends_on else []
         self._affected_tables = affected_tables
         self._table_namer = table_namer
+        self._table_tag = table_tag
 
         super().__init__()
 
@@ -346,6 +349,13 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
         """
         return self._table_namer
 
+    @property
+    def table_tag(self):
+        """
+        Get the table tag of the sandbox for this class instance.
+        """
+        return self._table_tag
+
     @affected_tables.setter
     def affected_tables(self, affected_tables):
         """
@@ -449,3 +459,16 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
             LOGGER.info(
                 f"Generated SQL Query:\n{query.get(cdr_consts.QUERY, 'NO QUERY FOUND')}"
             )
+
+    def get_sandbox_options_string(self, shared=False):
+        """
+        Helper function to retrieve the sandbox options which includes the description and labels
+
+        :param shared: boolean if the sandbox table will be shared
+        :return: string of the sandbox options
+        """
+        return get_sandbox_options(self.dataset_id,
+                                   self.__class__.__name__,
+                                   self.table_tag,
+                                   self.description,
+                                   shared_lookup=shared)
