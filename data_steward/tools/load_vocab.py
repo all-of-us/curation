@@ -170,12 +170,12 @@ def main(project_id: str, bucket_name: str, dst_dataset_id: str):
     """
     bq_client = bq.get_client(project_id=project_id)
     sandbox_dataset_id = get_sandbox_dataset_id(dst_dataset_id)
-    sandbox_dataset = bq.define_dataset(
+    sandbox_dataset = bq.create_dataset(
         project_id,
         sandbox_dataset_id,
         f'Vocabulary loaded from gs://{bucket_name}',
-        label_or_tag={'type': 'vocabulary'})
-    sandbox_dataset = bq_client.create_dataset(sandbox_dataset, exists_ok=True)
+        label_or_tag={'type': 'vocabulary'},
+        overwrite_existing=True)
     load_stage(sandbox_dataset, bq_client, bucket_name)
     load(project_id,
          bq_client,
