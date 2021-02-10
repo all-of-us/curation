@@ -226,14 +226,6 @@ def get_arg_parser() -> argparse.ArgumentParser:
     return argument_parser
 
 
-def parse_args() -> argparse.Namespace:
-    """
-
-    """
-    argument_parser = get_arg_parser()
-    return argument_parser.parse_args()
-
-
 def get_release_date(release_date: datetime.date = None) -> str:
     """
     Get the name of a vocabulary release based on date
@@ -254,7 +246,7 @@ def get_target_dataset_id(release_tag: str) -> str:
 if __name__ == '__main__':
     import sys
 
-    ARGS = parse_args()
+    ARGS = get_arg_parser().parse_args()
 
     RELEASE_TAG = ARGS.release_date or get_release_date()
     TARGET_DATASET_ID = ARGS.target_dataset_id or get_target_dataset_id(
