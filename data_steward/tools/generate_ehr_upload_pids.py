@@ -31,12 +31,13 @@ FROM
   WHERE t.table_id = '%s_person'
   AND m.HPO_ID = '%s'
   AND person_id IN (
-    SELECT DISTINCT person_id FROM `{{project_id}}.{{ehr_dataset_id}}.%s_condition_occurrence` UNION ALL
-    SELECT DISTINCT person_id FROM `{{project_id}}.{{ehr_dataset_id}}.%s_procedure_occurrence` UNION ALL
-    SELECT DISTINCT person_id FROM `{{project_id}}.{{ehr_dataset_id}}.%s_drug_exposure` UNION ALL
-    SELECT DISTINCT person_id FROM `{{project_id}}.{{ehr_dataset_id}}.%s_observation` UNION ALL
-    SELECT DISTINCT person_id FROM `{{project_id}}.{{ehr_dataset_id}}.%s_visit_occurrence`)""", 
-    LOWER(HPO_ID), LOWER(HPO_ID), HPO_ID, LOWER(HPO_ID), LOWER(HPO_ID), 
+    SELECT person_id FROM `{{project_id}}.{{ehr_dataset_id}}.%s_person` UNION DISTINCT
+    SELECT person_id FROM `{{project_id}}.{{ehr_dataset_id}}.%s_condition_occurrence` UNION DISTINCT
+    SELECT person_id FROM `{{project_id}}.{{ehr_dataset_id}}.%s_procedure_occurrence` UNION DISTINCT
+    SELECT person_id FROM `{{project_id}}.{{ehr_dataset_id}}.%s_drug_exposure` UNION DISTINCT
+    SELECT person_id FROM `{{project_id}}.{{ehr_dataset_id}}.%s_observation` UNION DISTINCT
+    SELECT person_id FROM `{{project_id}}.{{ehr_dataset_id}}.%s_visit_occurrence`)""", 
+    LOWER(HPO_ID), LOWER(HPO_ID), HPO_ID, LOWER(HPO_ID), LOWER(HPO_ID), LOWER(HPO_ID), 
     LOWER(HPO_ID), LOWER(HPO_ID), LOWER(HPO_ID))), "\\nUNION ALL \\n") as q
 FROM `{{project_id}}.{{lookup_dataset_id}}.{{hpo_mappings}}`
 WHERE HPO_ID NOT IN ({{excluded_sites_str}})
