@@ -4,12 +4,12 @@ from datetime import datetime
 
 # Project Imports
 from app_identity import PROJECT_ID
-import cdr_cleaner.cleaning_rules.deid.pid_rid_map as pr
+import cdr_cleaner.cleaning_rules.deid.fitbit_pid_rid_map as pr
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 from common import ACTIVITY_SUMMARY, HEART_RATE_SUMMARY, HEART_RATE_MINUTE_LEVEL, STEPS_INTRADAY, DEID_MAP
 
 
-class PIDtoRIDTest(BaseTest.CleaningRulesTestBase):
+class FitbitPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
 
     @classmethod
     def setUpClass(cls):
@@ -37,9 +37,10 @@ class PIDtoRIDTest(BaseTest.CleaningRulesTestBase):
         })
         cls.fq_deid_map_table = f'{project_id}.{mapping_dataset_id}.{mapping_table_id}'
 
-        cls.rule_instance = pr.PIDtoRID(project_id, cls.dataset_id,
-                                        cls.sandbox_id, mapping_dataset_id,
-                                        mapping_table_id)
+        cls.rule_instance = pr.FitbitPIDtoRID(project_id, cls.dataset_id,
+                                              cls.sandbox_id,
+                                              mapping_dataset_id,
+                                              mapping_table_id)
 
         cls.fq_sandbox_table_names = []
 
