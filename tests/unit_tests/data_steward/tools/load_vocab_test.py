@@ -1,3 +1,4 @@
+import datetime
 import unittest
 
 import mock
@@ -24,6 +25,12 @@ class LoadVocabTest(unittest.TestCase):
         self.dst_dataset = Dataset(dataset_ref)
         self.bq_client = Client(project_id)
         self.bucket_name = bucket_name
+
+    def test_get_release_date(self):
+        release_date = datetime.date(2021, 2, 10)
+        expected = '20210210'
+        actual = load_vocab.get_release_date(release_date)
+        self.assertEqual(expected, actual)
 
     def test_load_stage(self):
         # TODO check the calls to load_table_from_uri

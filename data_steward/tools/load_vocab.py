@@ -235,7 +235,7 @@ def get_release_date(release_date: datetime.date = None) -> str:
     """
     if not release_date:
         release_date = datetime.date.today()
-    release_date_str = release_date.strftime("%Y%m%D")
+    release_date_str = release_date.strftime("%Y%m%d")
     return release_date_str
 
 
