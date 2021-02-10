@@ -120,7 +120,7 @@ class PIDtoRID(BaseCleaningRule):
         """
         Run required steps for validation setup
         """
-        raise NotImplementedError("Please fix me.")
+        pass
 
     def validate_rule(self, client):
         """

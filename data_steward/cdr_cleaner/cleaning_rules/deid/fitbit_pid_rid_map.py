@@ -35,12 +35,6 @@ class FitbitPIDtoRID(PIDtoRID):
                          affected_tables=FITBIT_TABLES,
                          issue_numbers=ISSUE_NUMBERS)
 
-    def setup_validation(self, client):
-        """
-        Run required steps for validation setup
-        """
-        pass
-
 
 if __name__ == '__main__':
     import cdr_cleaner.args_parser as parser
