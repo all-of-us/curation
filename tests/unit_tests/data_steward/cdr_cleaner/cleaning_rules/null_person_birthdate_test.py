@@ -1,9 +1,9 @@
 # Python imports
 import unittest
 
+# Project imports
 from cdr_cleaner.cleaning_rules.null_person_birthdate import (
     NullPersonBirthdate, NULL_DATE_QUERY)
-# Project imports
 from constants.bq_utils import WRITE_TRUNCATE
 from constants.cdr_cleaner import clean_cdr as clean_consts
 from common import PERSON
@@ -49,7 +49,7 @@ class NullPersonBirthdateTest(unittest.TestCase):
             clean_consts.DESTINATION_DATASET:
                 self.dataset_id,
             clean_consts.DISPOSITION:
-                'WRITE_TRUNCATE'
+                WRITE_TRUNCATE
         }]
 
         self.assertEqual(results_list, expected_list)
