@@ -69,6 +69,7 @@ from cdr_cleaner.cleaning_rules.update_fields_numbers_as_strings import UpdateFi
 from cdr_cleaner.cleaning_rules.temporal_consistency import TemporalConsistency
 from cdr_cleaner.cleaning_rules.valid_death_dates import ValidDeathDates
 from cdr_cleaner.cleaning_rules.negative_ages import NegativeAges
+from cdr_cleaner.cleaning_rules.null_person_birthdate import NullPersonBirthdate
 from constants.cdr_cleaner import clean_cdr_engine as ce_consts
 from constants.cdr_cleaner.clean_cdr import DataStage
 
@@ -192,7 +193,7 @@ DEID_CLEAN_CLEANING_CLASSES = [
     (CleanMappingExtTables,)
 ]
 
-CONTROLLED_TIER_DEID_CLEANING_CLASSES = []
+CONTROLLED_TIER_DEID_CLEANING_CLASSES = [(NullPersonBirthdate,)]
 
 CONTROLLED_TIER_DEID_BASE_CLEANING_CLASSES = []
 
