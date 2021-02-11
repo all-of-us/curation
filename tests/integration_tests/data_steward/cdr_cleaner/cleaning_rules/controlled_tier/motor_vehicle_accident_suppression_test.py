@@ -12,7 +12,7 @@ import os
 from google.cloud.bigquery import Table
 
 # Project Imports
-from common import CONDITION_OCCURRENCE, MEASUREMENT
+from common import CONDITION_OCCURRENCE, MEASUREMENT, VOCABULARY_TABLES
 from utils import bq
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.controlled_tier.motor_vehicle_accident_suppression import \
@@ -192,9 +192,12 @@ class MotorVehicleAccidentSuppressionTestBase(BaseTest.CleaningRulesTestBase):
 
     def tearDown(self):
         super().tearDown()
-        fq_concept_suppression_lookup_table = f'{self.project_id}.{self.sandbox_id}.' \
-                                              f'{self.rule_instance.concept_suppression_lookup_table}'
-        self.client.delete_table(fq_concept_suppression_lookup_table)
+
+        lookup_table = self.rule_instance.concept_suppression_lookup_table
+        for table in VOCABULARY_TABLES + [
+                f'{self.project_id}.{self.sandbox_id}.{lookup_table}'
+        ]:
+            self.client.delete_table(table)
 
     def test_motor_vehicle_accident(self):
 
