@@ -16,7 +16,7 @@ from common import CONDITION_OCCURRENCE, MEASUREMENT, VOCABULARY_TABLES
 from utils import bq
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.controlled_tier.motor_vehicle_accident_suppression import \
-    MotorVehicleAccidentSuppression
+    MotorVehicleAccidentSuppression, SUPPRESSION_RULE_CONCEPT_TABLE
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import \
     BaseTest
 
@@ -43,9 +43,15 @@ class MotorVehicleAccidentSuppressionTestBase(BaseTest.CleaningRulesTestBase):
             cls.project_id, cls.dataset_id, cls.sandbox_id)
 
         # Generates list of fully qualified table names
-        for table_name in [CONDITION_OCCURRENCE, MEASUREMENT]:
+        for table_name in [CONDITION_OCCURRENCE, MEASUREMENT
+                          ] + VOCABULARY_TABLES:
             cls.fq_table_names.append(
                 f'{cls.project_id}.{cls.dataset_id}.{table_name}')
+
+        for table_name in [
+                CONDITION_OCCURRENCE, MEASUREMENT,
+                SUPPRESSION_RULE_CONCEPT_TABLE
+        ]:
             sandbox_table_name = cls.rule_instance.sandbox_table_for(table_name)
             cls.fq_sandbox_table_names.append(
                 f'{cls.project_id}.{cls.sandbox_id}.{sandbox_table_name}')
@@ -189,15 +195,6 @@ class MotorVehicleAccidentSuppressionTestBase(BaseTest.CleaningRulesTestBase):
             f'''{insert_condition_query};
                 {insert_observation_query};'''
         ])
-
-    def tearDown(self):
-        super().tearDown()
-
-        lookup_table = self.rule_instance.concept_suppression_lookup_table
-        for table in VOCABULARY_TABLES + [
-                f'{self.project_id}.{self.sandbox_id}.{lookup_table}'
-        ]:
-            self.client.delete_table(table)
 
     def test_motor_vehicle_accident(self):
 
