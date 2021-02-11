@@ -1,6 +1,7 @@
 import logging
 from abc import abstractmethod
 from google.cloud.bigquery.client import Client
+from google.cloud.exceptions import GoogleCloudError
 
 from resources import table_contains_concept_id, concept_id_fields
 from common import JINJA_ENV
@@ -65,6 +66,12 @@ class AbstractConceptSuppression(BaseCleaningRule):
                 dataset=self.dataset_id,
                 table_names=self.affected_tables))
         result = query_job.result()
+
+        if hasattr(result, 'errors') and result.errors:
+            LOGGER.error(f"Error running job {result.job_id}: {result.errors}")
+            raise GoogleCloudError(
+                f"Error running job {result.job_id}: {result.errors}")
+
         self.affected_tables = [
             dict(row.items())[self.TABLE_ID] for row in result
         ]
@@ -180,7 +187,7 @@ class AbstractBqLookupTableConceptSuppression(AbstractConceptSuppression):
         return self._concept_suppression_lookup_table
 
     def setup_rule(self, client: Client, *args, **keyword_args):
-        # Pass it down to the super class
+        # Pass it up to the super class
         super().setup_rule(client, *args, **keyword_args)
         # Create the suppression lookup table
         self.create_suppression_lookup_table(client)
