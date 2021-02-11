@@ -2,7 +2,7 @@
 Maps questionnaire_response_ids from the observation table to the research_response_id in the
 _deid_questionnaire_response_map lookup table.
 
-Original Issue: DC-1347
+Original Issue: DC-1347, DC-518
 
 The purpose of this cleaning rule is to create (if it does not already exist) the questionnaire mapping lookup table
 and use that lookup table to remap the questionnaire_response_id in the observation table to the randomly
@@ -21,7 +21,7 @@ from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 
 LOGGER = logging.getLogger(__name__)
 
-ISSUE_NUMBERS = ['DC1347']
+ISSUE_NUMBERS = ['DC1347', 'DC518']
 
 # Creates _deid_questionnaire_response_map lookup table and populates with the questionnaire_response_id's
 # from the observation table as well as randomly generates values for hte research_response_id column
@@ -29,7 +29,7 @@ LOOKUP_TABLE_CREATION_QUERY = JINJA_ENV.from_string("""
 CREATE TABLE IF NOT EXISTS `{{project_id}}.{{shared_sandbox_id}}._deid_questionnaire_response_map` 
 (questionnaire_response_id INT64, research_response_id INT64)
 OPTIONS (description='lookup table for questionnaire response ids') AS
-SELECT DISTINCT questionnaire_response_id AS questionnaire_response_id, ROW_NUMBER() OVER(ORDER BY GENERATE_UUID())
+SELECT DISTINCT questionnaire_response_id AS questionnaire_response_id, 1000000 + ROW_NUMBER() OVER(ORDER BY GENERATE_UUID())
     AS research_response_id
 FROM `{{project_id}}.{{dataset_id}}.observation`
 WHERE questionnaire_response_id IS NOT NULL
