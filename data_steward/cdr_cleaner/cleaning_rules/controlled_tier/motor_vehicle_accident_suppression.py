@@ -1,4 +1,5 @@
 import logging
+from google.cloud.exceptions import GoogleCloudError
 
 import resources
 from common import JINJA_ENV
@@ -128,13 +129,24 @@ class MotorVehicleAccidentSuppression(AbstractBqLookupTableConceptSuppression):
             concept_suppression_lookup_table=SUPPRESSION_RULE_CONCEPT_TABLE)
 
     def create_suppression_lookup_table(self, client):
+        """
+        
+        :param client: 
+        :return:
+        
+        raises google.cloud.exceptions.GoogleCloudError if a QueryJob fails 
+        """
         concept_suppression_lookup_query = MOTOR_VEHICLE_ACCIDENT_CONCEPT_QUERY.render(
             project=self.project_id,
             dataset=self.dataset_id,
-            concept_suppression_lookup=self.get_suppression_concept_table_name(
-            ))
+            concept_suppression_lookup=self.concept_suppression_lookup_table)
         query_job = client.query(concept_suppression_lookup_query)
-        query_job.result()
+        result = query_job.result()
+
+        if hasattr(result, 'errors') and result.errors:
+            LOGGER.error(f"Error running job {result.job_id}: {result.errors}")
+            raise GoogleCloudError(
+                f"Error running job {result.job_id}: {result.errors}")
 
 
 if __name__ == '__main__':
