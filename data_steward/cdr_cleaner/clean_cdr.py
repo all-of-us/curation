@@ -194,8 +194,10 @@ DEID_CLEAN_CLEANING_CLASSES = [
     (CleanMappingExtTables,)
 ]
 
-CONTROLLED_TIER_DEID_CLEANING_CLASSES = [(QRIDtoRID,),
-                                         (NullPersonBirthdate,)]
+CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
+    (QRIDtoRID,),  # Should run before any row suppression rules
+    (NullPersonBirthdate,)
+]
 
 CONTROLLED_TIER_DEID_BASE_CLEANING_CLASSES = []
 
