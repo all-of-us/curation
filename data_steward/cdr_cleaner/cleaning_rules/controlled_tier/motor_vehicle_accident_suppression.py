@@ -1,12 +1,10 @@
 import logging
-from typing import Dict, List
-from google.cloud.bigquery.client import Client
 
 import resources
 from common import JINJA_ENV
-from constants import bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
-from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
+from cdr_cleaner.cleaning_rules.controlled_tier.concept_suppression import \
+    AbstractBqLookupTableConceptSuppression
 
 LOGGER = logging.getLogger(__name__)
 
@@ -14,20 +12,9 @@ ISSUE_NUMBERS = ['DC1367']
 
 SUPPRESSION_RULE_CONCEPT_TABLE = 'motor_vehicle_accident_suppression_concept'
 
-TABLE_ID = 'table_id'
-
-GET_ALL_TABLES_QUERY_TEMPLATE = JINJA_ENV.from_string("""
-SELECT
-  table_id
-FROM `{{project}}.{{dataset}}.__TABLES__`
-WHERE table_id IN (
-{% for table_name in table_names %}
-    {% if loop.previtem is defined %}, {% else %}  {% endif %} '{{table_name}}'
-{% endfor %}
-)
-""")
-
 MOTOR_VEHICLE_ACCIDENT_CONCEPT_QUERY = JINJA_ENV.from_string("""
+CREATE OR REPLACE TABLE {{project}}.{{dataset}}.{{concept_suppression_lookup}}
+AS
 WITH icd_vehicle_list AS (
   SELECT 
     *
@@ -116,31 +103,8 @@ SELECT
 FROM icd_vehicle_list 
 """)
 
-SUPPRESION_RECORD_SANDBOX_QUERY_TEMPLATE = JINJA_ENV.from_string("""
-SELECT
-  d.*
-FROM `{{project}}.{{dataset}}.{{domain_table}}` AS d
-{% for concept_field in concept_fields %}
-LEFT JOIN `{{project}}.{{sandbox_dataset}}.{{suppression_concept}}` AS s{{loop.index}}
-  ON d.{{concept_field}} = s{{loop.index}}.concept_id 
-{% endfor %}
-WHERE COALESCE(
-{% for concept_field in concept_fields %}
-    {% if loop.previtem is defined %}, {% else %}  {% endif %} s{{loop.index}}.concept_id
-{% endfor %}) IS NOT NULL
-""")
 
-SUPPRESION_RECORD_QUERY_TEMPLATE = JINJA_ENV.from_string("""
-SELECT
-  d.*
-FROM `{{project}}.{{dataset}}.{{domain_table}}` AS d
-LEFT JOIN `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` AS s
-    ON d.{{domain_table}}_id = s.{{domain_table}}_id
-WHERE s.{{domain_table}}_id IS NULL
-""")
-
-
-class MotorVehicleAccidentSuppression(BaseCleaningRule):
+class MotorVehicleAccidentSuppression(AbstractBqLookupTableConceptSuppression):
 
     def __init__(self, project_id, dataset_id, sandbox_dataset_id):
         """
@@ -153,133 +117,24 @@ class MotorVehicleAccidentSuppression(BaseCleaningRule):
         desc = (
             'Sandbox and record suppress all records with a concept_id or concept_code '
             'relating to a motor vehicle accident. ')
-        super().__init__(issue_numbers=ISSUE_NUMBERS,
-                         description=desc,
-                         affected_datasets=[cdr_consts.CONTROLLED_TIER_DEID],
-                         project_id=project_id,
-                         dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id,
-                         affected_tables=resources.CDM_TABLES)
+        super().__init__(
+            issue_numbers=ISSUE_NUMBERS,
+            description=desc,
+            affected_datasets=[cdr_consts.CONTROLLED_TIER_DEID],
+            project_id=project_id,
+            dataset_id=dataset_id,
+            sandbox_dataset_id=sandbox_dataset_id,
+            affected_tables=resources.CDM_TABLES,
+            concept_suppression_lookup_table=SUPPRESSION_RULE_CONCEPT_TABLE)
 
-    def setup_rule(self, client: Client, *args, **keyword_args):
-        query_job = client.query(
-            GET_ALL_TABLES_QUERY_TEMPLATE.render(
-                project=self.project_id,
-                dataset=self.dataset_id,
-                table_names=self.affected_tables))
-        result = query_job.result()
-        self.affected_tables = [dict(row.items())[TABLE_ID] for row in result]
-
-    def get_suppression_concept_table_name(self) -> str:
-        """
-        Get the suppression concept table name specific to this suppression rule
-        :return:
-        """
-        return SUPPRESSION_RULE_CONCEPT_TABLE
-
-    def get_concept_suppression_query(self) -> Dict[str, str]:
-        """
-        Get a dictionary that contains the query for generating the suppression concept table
-        :return:
-        """
-        suppression_concept_query = MOTOR_VEHICLE_ACCIDENT_CONCEPT_QUERY.render(
-            project=self.project_id, dataset=self.dataset_id)
-        return {
-            cdr_consts.QUERY:
-                suppression_concept_query,
-            cdr_consts.DESTINATION_TABLE:
-                self.get_suppression_concept_table_name(),
-            cdr_consts.DISPOSITION:
-                bq_consts.WRITE_TRUNCATE,
-            cdr_consts.DESTINATION_DATASET:
-                self.sandbox_dataset_id
-        }
-
-    def get_sandbox_tablenames(self):
-        return [
-            self.sandbox_table_for(affected_table)
-            for affected_table in self._affected_tables
-        ]
-
-    def setup_validation(self, client, *args, **keyword_args):
-        pass
-
-    def validate_rule(self, client, *args, **keyword_args):
-        pass
-
-    def concept_id_fields(self, table_name) -> List[str]:
-        """
-        Determine if column is a concept_id column
-
-        :param table_name: 
-        :return: True if column is a concept_id column, False otherwise
-        """
-        return [
-            field_name['name']
-            for field_name in resources.fields_for(table_name)
-            if field_name['name'].endswith('concept_id')
-        ]
-
-    def table_contains_concept_id(self, table_name) -> bool:
-        return len(self.concept_id_fields(table_name)) > 0
-
-    def get_sandbox_query(self, table_name):
-        """
-        Sandbox records in the given table whose concept id fields contain any concepts in the 
-        suppression concept table 
-        
-        :param table_name: 
-        :return: 
-        """
-        suppression_record_sandbox_query = SUPPRESION_RECORD_SANDBOX_QUERY_TEMPLATE.render(
+    def create_suppression_lookup_table(self, client):
+        concept_suppression_lookup_query = MOTOR_VEHICLE_ACCIDENT_CONCEPT_QUERY.render(
             project=self.project_id,
             dataset=self.dataset_id,
-            sandbox_dataset=self.sandbox_dataset_id,
-            domain_table=table_name,
-            concept_fields=self.concept_id_fields(table_name),
-            suppression_concept=self.get_suppression_concept_table_name())
-
-        return {
-            cdr_consts.QUERY: suppression_record_sandbox_query,
-            cdr_consts.DESTINATION_TABLE: self.sandbox_table_for(table_name),
-            cdr_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE,
-            cdr_consts.DESTINATION_DATASET: self.sandbox_dataset_id
-        }
-
-    def get_suppression_query(self, table_name):
-        """
-        Get the suppression query that deletes records that are in the corresponding sandbox table
-        
-        :param table_name: 
-        :return: 
-        """
-        suppression_record_query = SUPPRESION_RECORD_QUERY_TEMPLATE.render(
-            project=self.project_id,
-            dataset=self.dataset_id,
-            sandbox_dataset=self.sandbox_dataset_id,
-            domain_table=table_name,
-            sandbox_table=self.sandbox_table_for(table_name))
-
-        return {
-            cdr_consts.QUERY: suppression_record_query,
-            cdr_consts.DESTINATION_DATASET: self.dataset_id
-        }
-
-    def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
-        sandbox_queries = [
-            self.get_sandbox_query(table_name)
-            for table_name in self.affected_tables
-            if self.table_contains_concept_id(table_name)
-        ]
-
-        queries = [
-            self.get_suppression_query(table_name)
-            for table_name in self.affected_tables
-            if self.table_contains_concept_id(table_name)
-        ]
-
-        return [self.get_concept_suppression_query()
-               ] + sandbox_queries + queries
+            concept_suppression_lookup=self.get_suppression_concept_table_name(
+            ))
+        query_job = client.query(concept_suppression_lookup_query)
+        query_job.result()
 
 
 if __name__ == '__main__':
