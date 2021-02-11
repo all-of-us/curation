@@ -109,7 +109,9 @@ class AbstractConceptSuppression(BaseCleaningRule):
 
         return {
             cdr_consts.QUERY: suppression_record_query,
-            cdr_consts.DESTINATION_DATASET: self.dataset_id
+            cdr_consts.DESTINATION_DATASET: self.dataset_id,
+            cdr_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE,
+            cdr_consts.DESTINATION_TABLE: table_name
         }
 
     def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
