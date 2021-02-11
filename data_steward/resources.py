@@ -5,10 +5,12 @@ import json
 import logging
 import os
 from io import open
+from typing import List
 
 import cachetools
 
-from common import ACHILLES_TABLES, ACHILLES_HEEL_TABLES, VOCABULARY_TABLES, PROCESSED_TXT, RESULTS_HTML, FITBIT_TABLES
+from common import ACHILLES_TABLES, ACHILLES_HEEL_TABLES, VOCABULARY_TABLES, PROCESSED_TXT, \
+    RESULTS_HTML, FITBIT_TABLES
 
 LOGGER = logging.getLogger(__name__)
 
@@ -358,3 +360,26 @@ def get_domain(domain_table):
     """
     domain = domain_table.split('_')[0].capitalize()
     return domain
+
+
+def concept_id_fields(table_name) -> List[str]:
+    """
+    Determine if column is a concept_id column
+
+    :param table_name: 
+    :return: True if column is a concept_id column, False otherwise
+    """
+    return [
+        field_name['name']
+        for field_name in fields_for(table_name)
+        if field_name['name'].endswith('concept_id')
+    ]
+
+
+def table_contains_concept_id(table_name) -> bool:
+    """
+    A helper function to check if the table contains any concept ids
+    :param table_name: 
+    :return: 
+    """
+    return len(concept_id_fields(table_name)) > 0
