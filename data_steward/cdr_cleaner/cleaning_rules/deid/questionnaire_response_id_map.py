@@ -29,8 +29,8 @@ LOOKUP_TABLE_CREATION_QUERY = JINJA_ENV.from_string("""
 CREATE TABLE IF NOT EXISTS `{{project_id}}.{{shared_sandbox_id}}._deid_questionnaire_response_map` 
 (questionnaire_response_id INT64, research_response_id INT64)
 OPTIONS (description='lookup table for questionnaire response ids') AS
-SELECT DISTINCT questionnaire_response_id AS questionnaire_response_id, 1000000 + ROW_NUMBER() OVER(ORDER BY GENERATE_UUID())
-    AS research_response_id
+SELECT DISTINCT questionnaire_response_id AS questionnaire_response_id, 1000000 + ROW_NUMBER() 
+    OVER(ORDER BY GENERATE_UUID()) AS research_response_id
 FROM `{{project_id}}.{{dataset_id}}.observation`
 WHERE questionnaire_response_id IS NOT NULL
 GROUP BY questionnaire_response_id
