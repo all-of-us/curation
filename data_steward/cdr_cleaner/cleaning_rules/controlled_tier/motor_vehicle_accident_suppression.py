@@ -14,7 +14,7 @@ ISSUE_NUMBERS = ['DC1367']
 SUPPRESSION_RULE_CONCEPT_TABLE = 'motor_vehicle_accident_suppression_concept'
 
 MOTOR_VEHICLE_ACCIDENT_CONCEPT_QUERY = JINJA_ENV.from_string("""
-CREATE OR REPLACE TABLE {{project}}.{{dataset}}.{{concept_suppression_lookup}}
+CREATE OR REPLACE TABLE {{project}}.{{sandbox_dataset}}.{{concept_suppression_lookup}}
 AS
 WITH icd_vehicle_list AS (
   SELECT 
@@ -139,6 +139,7 @@ class MotorVehicleAccidentSuppression(AbstractBqLookupTableConceptSuppression):
         concept_suppression_lookup_query = MOTOR_VEHICLE_ACCIDENT_CONCEPT_QUERY.render(
             project=self.project_id,
             dataset=self.dataset_id,
+            sandbox_dataset=self.sandbox_dataset_id,
             concept_suppression_lookup=self.concept_suppression_lookup_table)
         query_job = client.query(concept_suppression_lookup_query)
         result = query_job.result()
