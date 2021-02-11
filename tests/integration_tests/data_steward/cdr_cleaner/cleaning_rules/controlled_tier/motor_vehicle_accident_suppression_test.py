@@ -12,7 +12,7 @@ import os
 from google.cloud.bigquery import Table
 
 # Project Imports
-from common import CONDITION_OCCURRENCE, MEASUREMENT, VOCABULARY_TABLES
+from common import CONDITION_OCCURRENCE, OBSERVATION, VOCABULARY_TABLES
 from utils import bq
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.controlled_tier.motor_vehicle_accident_suppression import \
@@ -43,13 +43,13 @@ class MotorVehicleAccidentSuppressionTestBase(BaseTest.CleaningRulesTestBase):
             cls.project_id, cls.dataset_id, cls.sandbox_id)
 
         # Generates list of fully qualified table names
-        for table_name in [CONDITION_OCCURRENCE, MEASUREMENT
+        for table_name in [CONDITION_OCCURRENCE, OBSERVATION
                           ] + VOCABULARY_TABLES:
             cls.fq_table_names.append(
                 f'{cls.project_id}.{cls.dataset_id}.{table_name}')
 
         for table_name in [
-                CONDITION_OCCURRENCE, MEASUREMENT,
+                CONDITION_OCCURRENCE, OBSERVATION,
                 SUPPRESSION_RULE_CONCEPT_TABLE
         ]:
             sandbox_table_name = cls.rule_instance.sandbox_table_for(table_name)
