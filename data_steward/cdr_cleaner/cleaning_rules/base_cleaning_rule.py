@@ -21,6 +21,7 @@ from oauth2client.client import HttpAccessTokenRefreshError
 # Project imports
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from utils.sandbox import get_sandbox_table_name, get_sandbox_options
+from common import JINJA_ENV
 
 LOGGER = logging.getLogger(__name__)
 
@@ -117,6 +118,26 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
     string_list = List[str]
     cleaning_class_list = List[AbstractBaseCleaningRule]
     TABLE_COUNT_QUERY = ''' SELECT COALESCE(COUNT(*), 0) AS row_count FROM `{dataset}.{table}` '''
+
+    # A query for dropping all empty sandbox tables
+    DROP_EMPTY_SANDBOX_TABLES_QUERY = JINJA_ENV.from_string("""
+    DECLARE i INT64 DEFAULT 0;
+    DECLARE tables DEFAULT (
+      SELECT
+        ARRAY_AGG(FORMAT("`%s.%s.%s`", project_id, dataset_id, table_id))
+      FROM
+        `{{project}}.{{dataset}}.__TABLES__`
+      WHERE
+        row_count = 0 AND table_id IN ({{table_ids}}));
+
+    LOOP
+      SET i = i + 1;
+      IF i > ARRAY_LENGTH(tables) THEN 
+        LEAVE; 
+      END IF;
+      EXECUTE IMMEDIATE '''DROP TABLE ''' || tables[ORDINAL(i)];
+    END LOOP
+    """)
 
     def __init__(self,
                  issue_numbers: string_list = None,
@@ -472,3 +493,22 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
                                    self.table_tag,
                                    self.description,
                                    shared_lookup=shared)
+
+    def get_delete_empty_sandbox_tables_queries(self):
+        """
+        Generate the query that drop the empty sandbox tables
+        :return: 
+        """
+
+        table_ids = ','.join(
+            map(lambda sandbox_table: f'"{sandbox_table}"',
+                self.get_sandbox_tablenames()))
+        return [{
+            cdr_consts.QUERY:
+                self.DROP_EMPTY_SANDBOX_TABLES_QUERY.render(
+                    project=self.project_id,
+                    dataset=self.sandbox_dataset_id,
+                    table_ids=table_ids),
+            cdr_consts.DESTINATION_DATASET:
+                self.sandbox_dataset_id
+        }]

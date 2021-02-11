@@ -13,6 +13,7 @@ from mock import patch
 
 # Project imports
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
+from constants.cdr_cleaner import clean_cdr as cdr_consts
 
 
 class Inheritance(BaseCleaningRule):
@@ -479,3 +480,29 @@ class BaseCleaningRuleTest(unittest.TestCase):
                     'Cannot list queries for Inheritance')
                 self.assertEqual([cm.output[0][:len(expected_msg)]],
                                  [expected_msg])
+
+    @patch.object(Inheritance, 'get_sandbox_tablenames')
+    def test_get_delete_empty_sandbox_tables_queries(
+        self, mock_get_sandbox_tablenames):
+
+        alpha = Inheritance(self.project_id, self.dataset_id,
+                            self.sandbox_dataset_id)
+        sandbox_condition_table = 'condition'
+        sandbox_procedure_table = 'procedure'
+        mock_get_sandbox_tablenames.return_value = [
+            sandbox_condition_table, sandbox_procedure_table
+        ]
+
+        expected_table_ids = f'"{sandbox_condition_table}","{sandbox_procedure_table}"'
+        expected_query = [{
+            cdr_consts.QUERY:
+                BaseCleaningRule.DROP_EMPTY_SANDBOX_TABLES_QUERY.render(
+                    project=self.project_id,
+                    dataset=self.sandbox_dataset_id,
+                    table_ids=expected_table_ids),
+            cdr_consts.DESTINATION_DATASET:
+                self.sandbox_dataset_id
+        }]
+
+        actual_query = alpha.get_delete_empty_sandbox_tables_queries()
+        self.assertCountEqual(actual_query, expected_query)
