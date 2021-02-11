@@ -170,25 +170,6 @@ LEFT JOIN
 ON src_id = {{domain_table}}_id AND domain_table = '{{domain_table}}'
 """)
 
-DROP_EMPTY_SANDBOX_TABLES_QUERY = JINJA_ENV.from_string("""
-DECLARE i INT64 DEFAULT 0;
-DECLARE tables DEFAULT (
-  SELECT
-    ARRAY_AGG(FORMAT("`%s.%s.%s`", project_id, dataset_id, table_id))
-  FROM
-    `{{project}}.{{dataset}}.__TABLES__`
-  WHERE
-    row_count = 0 AND table_id IN ({{table_ids}}));
-
-LOOP
-  SET i = i + 1;
-  IF i > ARRAY_LENGTH(tables) THEN 
-    LEAVE; 
-  END IF;
-  EXECUTE IMMEDIATE '''DROP TABLE ''' || tables[ORDINAL(i)];
-END LOOP
-""")
-
 
 class ReplaceWithStandardConceptId(BaseCleaningRule):
 
@@ -409,25 +390,6 @@ class ReplaceWithStandardConceptId(BaseCleaningRule):
             cdr_consts.DESTINATION_DATASET: self.sandbox_dataset_id
         }]
         return queries + update_queries
-
-    def get_delete_empty_sandbox_tables_queries(self):
-        """
-        Generate the query that drop the empty sandbox tables
-        :return: 
-        """
-
-        table_ids = ','.join(
-            map(lambda sandbox_table: f'"{sandbox_table}"',
-                self.get_sandbox_tablenames()))
-        return [{
-            cdr_consts.QUERY:
-                DROP_EMPTY_SANDBOX_TABLES_QUERY.render(
-                    project=self.project_id,
-                    dataset=self.sandbox_dataset_id,
-                    table_ids=table_ids),
-            cdr_consts.DESTINATION_DATASET:
-                self.sandbox_dataset_id
-        }]
 
     def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
         """
