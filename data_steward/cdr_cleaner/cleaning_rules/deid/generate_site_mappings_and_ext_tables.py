@@ -1,15 +1,14 @@
 """
-Rule to create non-deterministic site ids for ehr sites.
+Rule to create non-deterministic site ids for ehr sites and create the ext_tables
 """
 # Python Imports
 import logging
-import random
 
 # Project imports
-import bq_utils
 from constants.bq_utils import LOOKUP_TABLES_DATASET_ID, HPO_SITE_ID_MAPPINGS_TABLE_ID
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
+from tools.generate_ext_tables import get_generate_ext_table_queries
 from common import JINJA_ENV
 
 LOGGER = logging.getLogger(__name__)
@@ -52,12 +51,13 @@ select {{ppi_pm}} as hpo_id, {{rdr}} as src_id
 """)
 
 
-class GenerateSiteMappings(BaseCleaningRule):
+class GenerateSiteMappingsAndExtTables(BaseCleaningRule):
     """
     Generates non-deterministic site_ids for hpo sites.
     """
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id):
+    def __init__(self, project_id, dataset_id, sandbox_dataset_id,
+                 mapping_dataset_id):
         """
         Initialize the class with proper info.
 
@@ -66,6 +66,9 @@ class GenerateSiteMappings(BaseCleaningRule):
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
         desc = f'Change PIDs to RIDs in specified tables'
+
+        self.mapping_dataset_id = mapping_dataset_id
+
         super().__init__(issue_numbers=ISSUE_NUMBERS,
                          description=desc,
                          affected_datasets=[cdr_consts.CONTROLLED_TIER_DEID],
@@ -82,6 +85,7 @@ class GenerateSiteMappings(BaseCleaningRule):
             single query and a specification for how to execute that query.
             The specifications are optional but the query is required.
         """
+        query_list = []
         query = dict()
         query[cdr_consts.QUERY] = SITE_MAPPINGS_QUERY.render(
             project_id=self.project_id,
@@ -92,6 +96,14 @@ class GenerateSiteMappings(BaseCleaningRule):
             hpo_site_id_mappings_table=HPO_SITE_ID_MAPPINGS_TABLE_ID,
             ppi_pm=PPI_PM,
             rdr=RDR)
+        query_list.append(query)
+
+        # gather queries to generate ext tables
+        query_list.append(
+            get_generate_ext_table_queries(self.project_id,
+                                           self.sandbox_dataset_id,
+                                           self.sandbox_dataset_id,
+                                           self.mapping_dataset_id))
         return [query]
 
     def get_sandbox_tablenames(self):
@@ -120,18 +132,33 @@ if __name__ == '__main__':
     import cdr_cleaner.args_parser as parser
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
-    ARGS = parser.default_parse_args()
+    mapping_dataset_arg = {
+        parser.SHORT_ARGUMENT:
+            '-m',
+        parser.LONG_ARGUMENT:
+            '--mapping_dataset_id',
+        parser.ACTION:
+            'store',
+        parser.DEST:
+            'mapping_dataset_id',
+        parser.HELP:
+            'The dataset containing mapping tables, typically the combined_dataset',
+        parser.REQUIRED:
+            True
+    }
+
+    ARGS = parser.default_parse_args([mapping_dataset_arg])
 
     if ARGS.list_queries:
         clean_engine.add_console_logging()
-        query_list = clean_engine.get_query_list(ARGS.project_id,
-                                                 ARGS.dataset_id,
-                                                 ARGS.sandbox_dataset_id,
-                                                 [(GenerateSiteMappings,)])
+        query_list = clean_engine.get_query_list(
+            ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id,
+            [(GenerateSiteMappingsAndExtTables,)], ARGS.mapping_dataset_id)
         for query in query_list:
             LOGGER.info(query)
     else:
         clean_engine.add_console_logging(ARGS.console_log)
         clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
                                    ARGS.sandbox_dataset_id,
-                                   [(GenerateSiteMappings,)])
+                                   [(GenerateSiteMappingsAndExtTables,)],
+                                   ARGS.mapping_dataset_id)

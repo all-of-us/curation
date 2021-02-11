@@ -38,7 +38,7 @@ from cdr_cleaner.cleaning_rules.clean_ppi_numeric_fields_using_parameters import
     CleanPPINumericFieldsUsingParameters
 from cdr_cleaner.cleaning_rules.create_person_ext_table import CreatePersonExtTable
 from cdr_cleaner.cleaning_rules.date_shift_cope_responses import DateShiftCopeResponses
-from cdr_cleaner.cleaning_rules.deid.generate_site_mappings import GenerateSiteMappings
+from cdr_cleaner.cleaning_rules.deid.generate_site_mappings_and_ext_tables import GenerateSiteMappingsAndExtTables
 from cdr_cleaner.cleaning_rules.deid.fitbit_dateshift import FitbitDateShiftRule
 from cdr_cleaner.cleaning_rules.deid.pid_rid_map import PIDtoRID
 from cdr_cleaner.cleaning_rules.deid.remove_fitbit_data_if_max_age_exceeded import \
