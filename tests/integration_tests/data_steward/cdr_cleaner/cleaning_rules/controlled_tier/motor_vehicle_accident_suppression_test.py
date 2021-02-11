@@ -48,22 +48,21 @@ class MotorVehicleAccidentSuppressionTestBase(BaseTest.CleaningRulesTestBase):
             cls.fq_table_names.append(
                 f'{cls.project_id}.{cls.dataset_id}.{table_name}')
 
-        for table_name in [
-                CONDITION_OCCURRENCE, OBSERVATION,
-                SUPPRESSION_RULE_CONCEPT_TABLE
-        ]:
+        for table_name in [CONDITION_OCCURRENCE, OBSERVATION]:
             sandbox_table_name = cls.rule_instance.sandbox_table_for(table_name)
             cls.fq_sandbox_table_names.append(
                 f'{cls.project_id}.{cls.sandbox_id}.{sandbox_table_name}')
+        # Add SUPPRESSION_RULE_CONCEPT_TABLE to fq_sandbox_table_names so it gets deleted after
+        # the test
+        cls.fq_sandbox_table_names.append(
+            f'{cls.project_id}.{cls.sandbox_id}.{SUPPRESSION_RULE_CONCEPT_TABLE}'
+        )
 
         # call super to set up the client, create datasets
         cls.up_class = super().setUpClass()
 
         # Copy vocab tables over to the test dataset
         cls.copy_vocab_tables(cls.vocabulary_id)
-
-        # Build the lookup table manually here
-        cls.rule_instance.create_suppression_lookup_table(cls.client)
 
     @classmethod
     def copy_vocab_tables(cls, vocabulary_id):
