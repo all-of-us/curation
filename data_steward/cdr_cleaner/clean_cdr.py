@@ -200,7 +200,8 @@ CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     (QRIDtoRID,),  # Should run before any row suppression rules
     (NullPersonBirthdate,),
     (TableSuppression,),
-    (RaceEthnicityRecordSuppression,),  # Should run after any data remapping rules
+    (RaceEthnicityRecordSuppression,
+    )  # Should run after any data remapping rules
 ]
 
 CONTROLLED_TIER_DEID_BASE_CLEANING_CLASSES = []
