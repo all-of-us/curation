@@ -14,6 +14,12 @@ ISSUE_NUMBERS = ['DC1367']
 SUPPRESSION_RULE_CONCEPT_TABLE = 'motor_vehicle_accident_suppression_concept'
 
 MOTOR_VEHICLE_ACCIDENT_CONCEPT_QUERY = JINJA_ENV.from_string("""
+-- This query generates a lookup table that contains all the suppressed concepts related -- 
+-- to motor vehicle accident. This table is generated using three sources of information --
+-- 1. ICD9CM E800 - E849 --
+-- 2. ICD10CM any code that starts with V* --
+-- 3. SNOMED: a list of manually curated concepts and their descendants --
+-- In addition, we translate all standard SNOMED concepts to non-standard SNOMED concepts -- 
 CREATE OR REPLACE TABLE {{project}}.{{sandbox_dataset}}.{{concept_suppression_lookup}}
 AS
 WITH icd_vehicle_list AS (
@@ -21,9 +27,9 @@ WITH icd_vehicle_list AS (
     *
   FROM `{{project}}.{{dataset}}.concept`
   WHERE
-  # get all possible codes from E800 - E849
+  -- get all possible codes from E800 - E849 --
   REGEXP_CONTAINS(concept_code, r"^E8[0-4][0-9]")
-  # cut out codes from E8000 and up
+  --  cut out codes from E8000 and up --
   AND NOT REGEXP_CONTAINS(concept_code, r"E8[0-4][0-9][\d]")
     AND vocabulary_id = 'ICD9CM'
 
@@ -33,12 +39,12 @@ WITH icd_vehicle_list AS (
     *
   FROM `{{project}}.{{dataset}}.concept`
   WHERE REGEXP_CONTAINS(concept_code, r"^V")
-  # vocabulary identification is important
+  -- vocabulary identification is important --
   AND REGEXP_CONTAINS(vocabulary_id, r"^ICD10")
 
   UNION ALL
 
-  SELECT #This list contains the concepts that can not be captured by the ICD hierarchy
+  SELECT -- This list contains the concepts that can not be captured by the ICD hierarchy. --
     *
   FROM `{{project}}.{{dataset}}.concept`
   WHERE concept_id in (1575835, 44833005, 44831866)
@@ -148,6 +154,12 @@ class MotorVehicleAccidentSuppression(AbstractBqLookupTableConceptSuppression):
             LOGGER.error(f"Error running job {result.job_id}: {result.errors}")
             raise GoogleCloudError(
                 f"Error running job {result.job_id}: {result.errors}")
+
+    def setup_validation(self, client, *args, **keyword_args):
+        pass
+
+    def validate_rule(self, client, *args, **keyword_args):
+        pass
 
 
 if __name__ == '__main__':

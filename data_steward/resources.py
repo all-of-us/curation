@@ -362,7 +362,7 @@ def get_domain(domain_table):
     return domain
 
 
-def concept_id_fields(table_name) -> List[str]:
+def get_concept_id_fields(table_name) -> List[str]:
     """
     Determine if column is a concept_id column
 
@@ -374,12 +374,3 @@ def concept_id_fields(table_name) -> List[str]:
         for field_name in fields_for(table_name)
         if field_name['name'].endswith('concept_id')
     ]
-
-
-def table_contains_concept_id(table_name) -> bool:
-    """
-    A helper function to check if the table contains any concept ids
-    :param table_name: 
-    :return: 
-    """
-    return len(concept_id_fields(table_name)) > 0

@@ -1,10 +1,10 @@
 """
-Integration test for fix_unmapped_survey_answers module
+Integration test for motor_vehicle_accident_suppression module
 
-Original Issues: DC-1043, DC-1053
+Original Issues: DC-1367
 
-The intent is to map the unmapped survey answers (value_as_concept_ids=0) using 
-value_source_concept_id through 'Maps to' relationship """
+The intent is to suppress the vehicle accident related concepts across all *concept_id fields in 
+all domain tables """
 
 # Python Imports
 import os

@@ -3,7 +3,7 @@ from abc import abstractmethod
 from google.cloud.bigquery.client import Client
 from google.cloud.exceptions import GoogleCloudError
 
-from resources import table_contains_concept_id, concept_id_fields
+from resources import get_concept_id_fields
 from common import JINJA_ENV
 from constants import bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
@@ -79,7 +79,7 @@ class AbstractConceptSuppression(BaseCleaningRule):
     def get_sandbox_tablenames(self):
         return [
             self.sandbox_table_for(affected_table)
-            for affected_table in self._affected_tables
+            for affected_table in self.affected_tables
         ]
 
     @abstractmethod
@@ -119,14 +119,14 @@ class AbstractConceptSuppression(BaseCleaningRule):
         sandbox_queries = [
             self.get_sandbox_query(table_name)
             for table_name in self.affected_tables
-            if table_contains_concept_id(table_name)
+            if get_concept_id_fields(table_name)
         ]
 
         # Queries for dropping records based on the sandboxed records
         queries = [
             self.get_suppression_query(table_name)
             for table_name in self.affected_tables
-            if table_contains_concept_id(table_name)
+            if get_concept_id_fields(table_name)
         ]
 
         # Clean up the empty sandbox tables
@@ -135,16 +135,10 @@ class AbstractConceptSuppression(BaseCleaningRule):
 
         return sandbox_queries + queries + delete_empty_sandbox_queries
 
-    def setup_validation(self, client, *args, **keyword_args):
-        pass
-
-    def validate_rule(self, client, *args, **keyword_args):
-        pass
-
 
 class AbstractBqLookupTableConceptSuppression(AbstractConceptSuppression):
     """
-    Abstract class for bigquery lookup table based concept suppression
+    This class is to be extended when creating a concept_id suppression table
     """
     BQ_LOOKUP_TABLE_SANDBOX_QUERY_TEMPLATE = JINJA_ENV.from_string("""
     SELECT
@@ -217,7 +211,7 @@ class AbstractBqLookupTableConceptSuppression(AbstractConceptSuppression):
             dataset=self.dataset_id,
             sandbox_dataset=self.sandbox_dataset_id,
             domain_table=table_name,
-            concept_fields=concept_id_fields(table_name),
+            concept_fields=get_concept_id_fields(table_name),
             suppression_concept=self.concept_suppression_lookup_table)
 
         return {
@@ -229,6 +223,9 @@ class AbstractBqLookupTableConceptSuppression(AbstractConceptSuppression):
 
 
 class AbstractInMemoryLookupTableConceptSuppression(AbstractConceptSuppression):
+    """
+    This class is intended to be extended when providing a short list of concept_ids for suppression
+    """
     IN_MEMORY_SANDBOX_QUERY_TEMPLATE = JINJA_ENV.from_string("""
     WITH suppressed_concepts AS 
     (
@@ -270,7 +267,7 @@ class AbstractInMemoryLookupTableConceptSuppression(AbstractConceptSuppression):
             dataset=self.dataset_id,
             sandbox_dataset=self.sandbox_dataset_id,
             domain_table=table_name,
-            concept_fields=concept_id_fields(table_name),
+            concept_fields=get_concept_id_fields(table_name),
             suppressed_concept_ids=self.get_suppressed_concept_ids())
 
         return {
