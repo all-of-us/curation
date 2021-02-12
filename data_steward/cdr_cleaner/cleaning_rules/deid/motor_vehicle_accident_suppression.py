@@ -20,7 +20,7 @@ MOTOR_VEHICLE_ACCIDENT_CONCEPT_QUERY = JINJA_ENV.from_string("""
 -- 2. ICD10CM any code that starts with V* --
 -- 3. SNOMED: a list of manually curated concepts and their descendants --
 -- In addition, we translate all standard SNOMED concepts to non-standard SNOMED concepts -- 
-CREATE OR REPLACE TABLE {{project}}.{{sandbox_dataset}}.{{concept_suppression_lookup}}
+CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{concept_suppression_lookup}}`
 AS
 WITH icd_vehicle_list AS (
   SELECT 
