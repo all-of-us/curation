@@ -58,6 +58,14 @@ class RaceEthnicityRecordSuppressionTest(unittest.TestCase):
         # Post conditions
         expected_list = [{
             cdr_consts.QUERY:
+                SANDBOX_RECORDS_QUERY.render(
+                    project_id=self.project_id,
+                    sandbox_id=self.sandbox_dataset_id,
+                    sandbox_table=self.rule_instance.sandbox_table_for(
+                        common.OBSERVATION),
+                    dataset_id=self.dataset_id)
+        }, {
+            cdr_consts.QUERY:
                 DROP_RECORDS_QUERY.render(
                     project_id=self.project_id,
                     dataset_id=self.dataset_id,
@@ -70,14 +78,6 @@ class RaceEthnicityRecordSuppressionTest(unittest.TestCase):
                 self.dataset_id,
             cdr_consts.DISPOSITION:
                 WRITE_TRUNCATE
-        }, {
-            cdr_consts.QUERY:
-                SANDBOX_RECORDS_QUERY.render(
-                    project_id=self.project_id,
-                    sandbox_id=self.sandbox_dataset_id,
-                    sandbox_table=self.rule_instance.sandbox_table_for(
-                        common.OBSERVATION),
-                    dataset_id=self.dataset_id)
         }]
 
         self.assertEqual(results_list, expected_list)
