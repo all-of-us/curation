@@ -69,6 +69,7 @@ from cdr_cleaner.cleaning_rules.update_fields_numbers_as_strings import UpdateFi
 from cdr_cleaner.cleaning_rules.temporal_consistency import TemporalConsistency
 from cdr_cleaner.cleaning_rules.valid_death_dates import ValidDeathDates
 from cdr_cleaner.cleaning_rules.negative_ages import NegativeAges
+from cdr_cleaner.cleaning_rules.deid.questionnaire_response_id_map import QRIDtoRID
 from cdr_cleaner.cleaning_rules.null_person_birthdate import NullPersonBirthdate
 from cdr_cleaner.cleaning_rules.table_suppression import TableSuppression
 from constants.cdr_cleaner import clean_cdr_engine as ce_consts
@@ -194,8 +195,12 @@ DEID_CLEAN_CLEANING_CLASSES = [
     (CleanMappingExtTables,)
 ]
 
-CONTROLLED_TIER_DEID_CLEANING_CLASSES = [(NullPersonBirthdate,),
-                                         (TableSuppression,)]
+
+CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
+    (QRIDtoRID,),  # Should run before any row suppression rules
+    (NullPersonBirthdate,),
+    (TableSuppression,)
+]
 
 CONTROLLED_TIER_DEID_BASE_CLEANING_CLASSES = []
 
