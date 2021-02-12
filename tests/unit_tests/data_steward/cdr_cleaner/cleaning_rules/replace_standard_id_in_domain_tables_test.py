@@ -52,8 +52,9 @@ class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
     def tearDown(self):
         self.mock_domain_table_names_patcher.stop()
 
-    @patch.object(ReplaceWithStandardConceptId,
-                  'get_delete_empty_sandbox_tables_queries')
+    @mock.patch(
+        'cdr_cleaner.cleaning_rules.replace_standard_id_in_domain_tables.get_delete_empty_sandbox_tables_queries'
+    )
     @patch.object(ReplaceWithStandardConceptId,
                   'get_mapping_table_update_queries')
     @patch.object(ReplaceWithStandardConceptId,

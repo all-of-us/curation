@@ -43,7 +43,8 @@ from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 import resources
 from validation.ehr_union import mapping_table_for
-from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
+from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list, \
+    get_delete_empty_sandbox_tables_queries
 
 LOGGER = logging.getLogger(__name__)
 
@@ -400,7 +401,10 @@ class ReplaceWithStandardConceptId(BaseCleaningRule):
         queries_list.extend(self.get_sandbox_src_concept_id_update_queries())
         queries_list.extend(self.get_src_concept_id_update_queries())
         queries_list.extend(self.get_mapping_table_update_queries())
-        queries_list.extend(self.get_delete_empty_sandbox_tables_queries())
+        queries_list.extend(
+            get_delete_empty_sandbox_tables_queries(
+                self.project_id, self.sandbox_dataset_id,
+                self.get_sandbox_tablenames()))
         return queries_list
 
     def setup_rule(self, client, *args, **keyword_args):

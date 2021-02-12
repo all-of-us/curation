@@ -12,7 +12,8 @@ import oauth2client
 from mock import patch
 
 # Project imports
-from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
+from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, \
+    get_delete_empty_sandbox_tables_queries, DROP_EMPTY_SANDBOX_TABLES_QUERY
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 
 
@@ -481,22 +482,16 @@ class BaseCleaningRuleTest(unittest.TestCase):
                 self.assertEqual([cm.output[0][:len(expected_msg)]],
                                  [expected_msg])
 
-    @patch.object(Inheritance, 'get_sandbox_tablenames')
-    def test_get_delete_empty_sandbox_tables_queries(
-        self, mock_get_sandbox_tablenames):
+    def test_get_delete_empty_sandbox_tables_queries(self):
 
-        alpha = Inheritance(self.project_id, self.dataset_id,
-                            self.sandbox_dataset_id)
         sandbox_condition_table = 'condition'
         sandbox_procedure_table = 'procedure'
-        mock_get_sandbox_tablenames.return_value = [
-            sandbox_condition_table, sandbox_procedure_table
-        ]
+        sandbox_tablenames = [sandbox_condition_table, sandbox_procedure_table]
 
         expected_table_ids = f'"{sandbox_condition_table}","{sandbox_procedure_table}"'
         expected_query = [{
             cdr_consts.QUERY:
-                BaseCleaningRule.DROP_EMPTY_SANDBOX_TABLES_QUERY.render(
+                DROP_EMPTY_SANDBOX_TABLES_QUERY.render(
                     project=self.project_id,
                     dataset=self.sandbox_dataset_id,
                     table_ids=expected_table_ids),
@@ -504,5 +499,12 @@ class BaseCleaningRuleTest(unittest.TestCase):
                 self.sandbox_dataset_id
         }]
 
-        actual_query = alpha.get_delete_empty_sandbox_tables_queries()
-        self.assertCountEqual(actual_query, expected_query)
+        actual_query = get_delete_empty_sandbox_tables_queries(
+            self.project_id, self.sandbox_dataset_id, sandbox_tablenames)
+        self.assertEqual(actual_query, expected_query)
+
+        # Return an empty list if the sandbox_names is empty
+        actual_query = get_delete_empty_sandbox_tables_queries(
+            self.project_id, self.sandbox_dataset_id, [])
+
+        self.assertEqual(actual_query, [])

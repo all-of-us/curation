@@ -28,6 +28,53 @@ LOGGER = logging.getLogger(__name__)
 query_spec = NewType('QuerySpec', {})
 query_spec_list = List[query_spec]
 
+# A query for dropping all empty sandbox tables
+DROP_EMPTY_SANDBOX_TABLES_QUERY = JINJA_ENV.from_string("""
+DECLARE i INT64 DEFAULT 0;
+DECLARE tables DEFAULT (
+  SELECT
+    ARRAY_AGG(FORMAT("`%s.%s.%s`", project_id, dataset_id, table_id))
+  FROM
+    `{{project}}.{{dataset}}.__TABLES__`
+  WHERE
+    row_count = 0 AND table_id IN ({{table_ids}}));
+
+LOOP
+  SET i = i + 1;
+  IF i > ARRAY_LENGTH(tables) THEN 
+    LEAVE; 
+  END IF;
+  EXECUTE IMMEDIATE '''DROP TABLE ''' || tables[ORDINAL(i)];
+END LOOP
+""")
+
+
+def get_delete_empty_sandbox_tables_queries(project_id, sandbox_dataset_id,
+                                            sandbox_tablenames):
+    """
+    Generate the query that drop the empty sandbox tables
+    
+    :param project_id: 
+    :param sandbox_dataset_id: 
+    :param sandbox_tablenames: 
+    :return: 
+    """
+
+    # If there is not sandbox tables associated with the cleaning rule, return an empty list
+    if not sandbox_tablenames:
+        return list()
+
+    table_ids = ','.join(
+        map(lambda sandbox_table: f'"{sandbox_table}"', sandbox_tablenames))
+    return [{
+        cdr_consts.QUERY:
+            DROP_EMPTY_SANDBOX_TABLES_QUERY.render(project=project_id,
+                                                   dataset=sandbox_dataset_id,
+                                                   table_ids=table_ids),
+        cdr_consts.DESTINATION_DATASET:
+            sandbox_dataset_id
+    }]
+
 
 class AbstractBaseCleaningRule(ABC):
     """
@@ -118,26 +165,6 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
     string_list = List[str]
     cleaning_class_list = List[AbstractBaseCleaningRule]
     TABLE_COUNT_QUERY = ''' SELECT COALESCE(COUNT(*), 0) AS row_count FROM `{dataset}.{table}` '''
-
-    # A query for dropping all empty sandbox tables
-    DROP_EMPTY_SANDBOX_TABLES_QUERY = JINJA_ENV.from_string("""
-    DECLARE i INT64 DEFAULT 0;
-    DECLARE tables DEFAULT (
-      SELECT
-        ARRAY_AGG(FORMAT("`%s.%s.%s`", project_id, dataset_id, table_id))
-      FROM
-        `{{project}}.{{dataset}}.__TABLES__`
-      WHERE
-        row_count = 0 AND table_id IN ({{table_ids}}));
-
-    LOOP
-      SET i = i + 1;
-      IF i > ARRAY_LENGTH(tables) THEN 
-        LEAVE; 
-      END IF;
-      EXECUTE IMMEDIATE '''DROP TABLE ''' || tables[ORDINAL(i)];
-    END LOOP
-    """)
 
     def __init__(self,
                  issue_numbers: string_list = None,
@@ -493,26 +520,3 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
                                    self.table_tag,
                                    self.description,
                                    shared_lookup=shared)
-
-    def get_delete_empty_sandbox_tables_queries(self):
-        """
-        Generate the query that drop the empty sandbox tables
-        :return: 
-        """
-
-        # If there is not sandbox tables associated with the cleaning rule, return an empty list
-        if len(self.get_sandbox_tablenames()) == 0:
-            return list()
-
-        table_ids = ','.join(
-            map(lambda sandbox_table: f'"{sandbox_table}"',
-                self.get_sandbox_tablenames()))
-        return [{
-            cdr_consts.QUERY:
-                self.DROP_EMPTY_SANDBOX_TABLES_QUERY.render(
-                    project=self.project_id,
-                    dataset=self.sandbox_dataset_id,
-                    table_ids=table_ids),
-            cdr_consts.DESTINATION_DATASET:
-                self.sandbox_dataset_id
-        }]

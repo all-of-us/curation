@@ -7,7 +7,8 @@ from resources import get_concept_id_fields
 from common import JINJA_ENV
 from constants import bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
-from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
+from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list, \
+    get_delete_empty_sandbox_tables_queries
 
 LOGGER = logging.getLogger(__name__)
 
@@ -130,8 +131,9 @@ class AbstractConceptSuppression(BaseCleaningRule):
         ]
 
         # Clean up the empty sandbox tables
-        delete_empty_sandbox_queries = self.get_delete_empty_sandbox_tables_queries(
-        )
+        delete_empty_sandbox_queries = get_delete_empty_sandbox_tables_queries(
+            self.project_id, self.sandbox_dataset_id,
+            self.get_sandbox_tablenames())
 
         return sandbox_queries + queries + delete_empty_sandbox_queries
 
