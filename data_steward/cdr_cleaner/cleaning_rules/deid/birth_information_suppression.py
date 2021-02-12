@@ -37,6 +37,12 @@ class BirthInformationSuppression(AbstractInMemoryLookupTableConceptSuppression
         # https://athena.ohdsi.org/search-terms/terms/4083587
         return [1585259, 4083587]
 
+    def setup_validation(self, client, *args, **keyword_args):
+        pass
+
+    def validate_rule(self, client, *args, **keyword_args):
+        pass
+
 
 if __name__ == '__main__':
     import cdr_cleaner.args_parser as parser
