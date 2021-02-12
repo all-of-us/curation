@@ -99,13 +99,13 @@ class RaceEthnicityRecordSuppressionTest(BaseTest.CleaningRulesTestBase):
             'fq_table_name':
                 '.'.join([self.fq_dataset_name, 'observation']),
             'fq_sandbox_table_name':
-                self.fq_sandbox_table_names,
+                self.fq_sandbox_table_names[0],
             'fields': [
                 'observation_id', 'person_id', 'observation_concept_id',
                 'observation_date', 'observation_type_concept_id',
                 'observation_source_concept_id'
             ],
-            'loaded_id': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+            'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
             'sandboxed_ids': [3, 4, 5, 6, 7, 8, 9, 10],
             'cleaned_values': [(1, 101, 11, self.date, 500, 1111111),
                                (2, 102, 22, self.date, 501, 2222222)]
