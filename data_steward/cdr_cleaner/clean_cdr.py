@@ -194,10 +194,8 @@ DEID_CLEAN_CLEANING_CLASSES = [
     (CleanMappingExtTables,)
 ]
 
-CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
-    (NullPersonBirthdate,),
-    (TableSuppression,)
-]
+CONTROLLED_TIER_DEID_CLEANING_CLASSES = [(NullPersonBirthdate,),
+                                         (TableSuppression,)]
 
 CONTROLLED_TIER_DEID_BASE_CLEANING_CLASSES = []
 
