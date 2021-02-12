@@ -15,7 +15,7 @@ from google.cloud.bigquery import Table
 from common import CONDITION_OCCURRENCE, OBSERVATION, VOCABULARY_TABLES
 from utils import bq
 from app_identity import PROJECT_ID
-from cdr_cleaner.cleaning_rules.controlled_tier.motor_vehicle_accident_suppression import \
+from cdr_cleaner.cleaning_rules.deid.motor_vehicle_accident_suppression import \
     MotorVehicleAccidentSuppression, SUPPRESSION_RULE_CONCEPT_TABLE
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import \
     BaseTest

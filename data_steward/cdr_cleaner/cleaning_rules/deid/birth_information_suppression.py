@@ -1,9 +1,8 @@
 import logging
 
-import resources
 from common import OBSERVATION
 import constants.cdr_cleaner.clean_cdr as cdr_consts
-from cdr_cleaner.cleaning_rules.controlled_tier.concept_suppression import \
+from cdr_cleaner.cleaning_rules.deid.concept_suppression import \
     AbstractInMemoryLookupTableConceptSuppression
 
 LOGGER = logging.getLogger(__name__)
