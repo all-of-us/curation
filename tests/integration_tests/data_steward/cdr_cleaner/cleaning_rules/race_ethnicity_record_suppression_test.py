@@ -47,13 +47,9 @@ class RaceEthnicityRecordSuppressionTest(BaseTest.CleaningRulesTestBase):
             project_id, dataset_id, sandbox_id)
 
         sb_table_names = cls.rule_instance.get_sandbox_tablenames()
-        print(f'sandbox table names: {sb_table_names}')
 
-        cls.fq_sandbox_table_names.append(f'{cls.project_id}.{cls.sandbox_id}.{sb_table_names}')
-
-        # for table_name in sb_table_names:
-        #     cls.fq_sandbox_table_names.append(
-        #         f'{cls.project_id}.{cls.sandbox_id}.{table_name}')
+        cls.fq_sandbox_table_names.append(
+            f'{cls.project_id}.{cls.sandbox_id}.{sb_table_names}')
 
         cls.fq_table_names = [f'{project_id}.{dataset_id}.observation']
 
@@ -102,12 +98,17 @@ class RaceEthnicityRecordSuppressionTest(BaseTest.CleaningRulesTestBase):
         tables_and_counts = [{
             'fq_table_name':
                 '.'.join([self.fq_dataset_name, 'observation']),
-            'fq_sandbox_table_name': self.fq_sandbox_table_names,
-            'fields': ['observation_id', 'person_id', 'observation_concept_id',
-                       'observation_date', 'observation_type_concept_id', 'observation_source_concept_id'],
+            'fq_sandbox_table_name':
+                self.fq_sandbox_table_names,
+            'fields': [
+                'observation_id', 'person_id', 'observation_concept_id',
+                'observation_date', 'observation_type_concept_id',
+                'observation_source_concept_id'
+            ],
             'loaded_id': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
             'sandboxed_ids': [3, 4, 5, 6, 7, 8, 9, 10],
-            'cleaned_values': [(1, 101, 11, self.date, 500, 1111111), (2, 102, 22, self.date, 501, 2222222)]
+            'cleaned_values': [(1, 101, 11, self.date, 500, 1111111),
+                               (2, 102, 22, self.date, 501, 2222222)]
         }]
 
         self.default_test(tables_and_counts)
