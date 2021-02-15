@@ -58,29 +58,11 @@ def get_update_ppi_queries(project_id, dataset_id, sandbox_dataset_id):
     return queries
 
 
-def parse_args():
-    """
-    This function expands the default argument list defined in cdr_cleaner.args_parser
-    :return: an expanded argument list object
-    """
-    import cdr_cleaner.args_parser as parser
-
-    additional_argument = {
-        parser.SHORT_ARGUMENT: '-n',
-        parser.LONG_ARGUMENT: '--sandbox_dataset_id',
-        parser.ACTION: 'store',
-        parser.DEST: 'sandbox_dataset_id',
-        parser.HELP: 'Specify the sandbox_dataset_id',
-        parser.REQUIRED: True
-    }
-    args = parser.default_parse_args([additional_argument])
-    return args
-
-
 if __name__ == '__main__':
+    import cdr_cleaner.args_parser as parser
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
-    ARGS = parse_args()
+    ARGS = parser.get_argument_parser().parse_args()
 
     if ARGS.list_queries:
         clean_engine.add_console_logging()

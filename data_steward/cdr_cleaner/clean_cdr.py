@@ -78,7 +78,9 @@ from constants.cdr_cleaner.clean_cdr import DataStage
 
 LOGGER = logging.getLogger(__name__)
 
-EHR_CLEANING_CLASSES = [(CleanMappingExtTables,)]
+EHR_CLEANING_CLASSES = [
+    (CleanMappingExtTables,),  # should be one of the last cleaning rules run
+]
 
 UNIONED_EHR_CLEANING_CLASSES = [
     (DeduplicateIdColumn,),
@@ -93,7 +95,7 @@ UNIONED_EHR_CLEANING_CLASSES = [
     (remove_records_with_wrong_date.get_remove_records_with_wrong_date_queries,
     ),
     (invalid_procedure_source.get_remove_invalid_procedure_source_queries,),
-    (CleanMappingExtTables,),
+    (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
 RDR_CLEANING_CLASSES = [
@@ -104,10 +106,10 @@ RDR_CLEANING_CLASSES = [
     (
         FixUnmappedSurveyAnswers,),
     (ObservationSourceConceptIDRowSuppression,),
+    (UpdateFieldsNumbersAsStrings,),
     (maps_to_value_vocab_update.get_maps_to_value_ppi_vocab_update_queries,),
     (back_fill_pmi_skip.get_run_pmi_fix_queries,),
     (CleanPPINumericFieldsUsingParameters,),
-    (NullConceptIDForNumericPPI,),
     (RemoveMultipleRaceEthnicityAnswersQueries,),
     (negative_ppi.get_update_ppi_queries,),
     # trying to load a table while creating query strings,
@@ -130,10 +132,10 @@ RDR_CLEANING_CLASSES = [
         get_update_questions_answers_not_mapped_to_omop,),
     (round_ppi_values.get_round_ppi_values_queries,),
     (update_family_history.get_update_family_history_qa_queries,),
+    (NullConceptIDForNumericPPI,),
     (DropDuplicatePpiQuestionsAndAnswers,),
     (extreme_measurements.get_drop_extreme_measurement_queries,),
     (drop_mult_meas.get_drop_multiple_measurement_queries,),
-    (UpdateFieldsNumbersAsStrings,),
 ]
 
 COMBINED_CLEANING_CLASSES = [
@@ -168,8 +170,8 @@ COMBINED_CLEANING_CLASSES = [
     (remove_aian_participants.get_queries,),
     (validate_missing_participants.delete_records_for_non_matching_participants,
     ),
-    (CleanMappingExtTables,),
-    (TemporalConsistency,)
+    (TemporalConsistency,),
+    (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
 FITBIT_CLEANING_CLASSES = [
@@ -183,7 +185,7 @@ DEID_BASE_CLEANING_CLASSES = [
     (RepopulatePersonPostDeid,),
     (DateShiftCopeResponses,),
     (CreatePersonExtTable,),
-    (CleanMappingExtTables,),
+    (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
 DEID_CLEAN_CLEANING_CLASSES = [
@@ -191,7 +193,7 @@ DEID_CLEAN_CLEANING_CLASSES = [
     (CleanHeightAndWeight,),  # dependent on MeasurementRecordsSuppression
     (UnitNormalization,),  # dependent on CleanHeightAndWeight
     (DropZeroConceptIDs,),
-    (CleanMappingExtTables,)
+    (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
 CONTROLLED_TIER_DEID_CLEANING_CLASSES = [

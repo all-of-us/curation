@@ -83,11 +83,11 @@ SELECT
     value_source_concept_id,
     value_source_value,
     questionnaire_response_id
-FROM 
+FROM
 (SELECT
     observation_id,
     person_id,
-    new_observation_concept_id as observation_concept_id, 
+    new_observation_concept_id as observation_concept_id,
     observation_date,
     observation_datetime,
     observation_type_concept_id,
@@ -104,11 +104,11 @@ FROM
     qualifier_source_value,
     new_value_source_concept_id as value_source_concept_id,
     value_source_value,
-    questionnaire_response_id, 
+    questionnaire_response_id,
     ROW_NUMBER() OVER(PARTITION BY person_id, new_observation_source_concept_id ORDER BY rank ASC) AS this_row
 FROM
     `{project_id}.{sandbox_dataset_id}.{smoking_lookup_table}`
-JOIN `{project_id}.{combined_dataset_id}.observation` 
+JOIN `{project_id}.{dataset_id}.observation`
     USING (observation_source_concept_id, value_as_concept_id)
 )
 WHERE this_row=1
@@ -116,7 +116,7 @@ WHERE this_row=1
 
 DELETE_INCORRECT_RECORDS = """
 DELETE
-FROM `{project_id}.{combined_dataset_id}.observation`
+FROM `{project_id}.{dataset_id}.observation`
 WHERE observation_source_concept_id IN
 (SELECT
   observation_source_concept_id
@@ -125,7 +125,7 @@ FROM `{project_id}.{sandbox_dataset_id}.{smoking_lookup_table}`
 """
 
 INSERT_CORRECTED_RECORDS = """
-INSERT INTO `{project_id}.{combined_dataset_id}.observation` 
+INSERT INTO `{project_id}.{dataset_id}.observation`
     (observation_id,
     person_id,
     observation_concept_id,
@@ -188,7 +188,7 @@ def get_queries_clean_smoking(project_id, dataset_id, sandbox_dataset_id):
     sandbox_query = dict()
     sandbox_query[cdr_consts.QUERY] = SANDBOX_CREATE_QUERY.format(
         project_id=project_id,
-        combined_dataset_id=dataset_id,
+        dataset_id=dataset_id,
         sandbox_dataset_id=sandbox_dataset_id,
         new_smoking_rows=NEW_SMOKING_ROWS,
         smoking_lookup_table=SMOKING_LOOKUP_TABLE)
@@ -197,7 +197,7 @@ def get_queries_clean_smoking(project_id, dataset_id, sandbox_dataset_id):
     delete_query = dict()
     delete_query[cdr_consts.QUERY] = DELETE_INCORRECT_RECORDS.format(
         project_id=project_id,
-        combined_dataset_id=dataset_id,
+        dataset_id=dataset_id,
         sandbox_dataset_id=sandbox_dataset_id,
         smoking_lookup_table=SMOKING_LOOKUP_TABLE)
     queries.append(delete_query)
@@ -205,7 +205,7 @@ def get_queries_clean_smoking(project_id, dataset_id, sandbox_dataset_id):
     insert_query = dict()
     insert_query[cdr_consts.QUERY] = INSERT_CORRECTED_RECORDS.format(
         project_id=project_id,
-        combined_dataset_id=dataset_id,
+        dataset_id=dataset_id,
         sandbox_dataset_id=sandbox_dataset_id,
         new_smoking_rows=NEW_SMOKING_ROWS)
     queries.append(insert_query)
@@ -213,30 +213,11 @@ def get_queries_clean_smoking(project_id, dataset_id, sandbox_dataset_id):
     return queries
 
 
-def parse_args():
-    """
-    Add sandbox_dataset_id to the default cdr_cleaner.args_parser argument list
-
-    :return: an expanded argument list object
-    """
-    import cdr_cleaner.args_parser as parser
-
-    additional_argument = {
-        parser.SHORT_ARGUMENT: '-n',
-        parser.LONG_ARGUMENT: '--sandbox_dataset_id',
-        parser.ACTION: 'store',
-        parser.DEST: 'sandbox_dataset_id',
-        parser.HELP: 'Please specify the sandbox_dataset_id',
-        parser.REQUIRED: True
-    }
-    args = parser.default_parse_args([additional_argument])
-    return args
-
-
 if __name__ == '__main__':
+    import cdr_cleaner.args_parser as parser
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
-    ARGS = parse_args()
+    ARGS = parser.get_argument_parser().parse_args()
 
     if ARGS.list_queries:
         clean_engine.add_console_logging()
