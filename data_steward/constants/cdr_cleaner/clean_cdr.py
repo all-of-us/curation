@@ -7,9 +7,12 @@ COMBINED = 'combined'
 DEID_BASE = 'deid_base'
 DEID_CLEAN = 'deid_clean'
 FITBIT = 'fitbit'
+
 CONTROLLED_TIER_DEID = 'controlled_tier_deid'
 CONTROLLED_TIER_DEID_BASE = 'controlled_tier_deid_base'
 CONTROLLED_TIER_DEID_CLEAN = 'controlled_tier_deid_clean'
+
+REGISTERED_TIER_DEID = 'registered_tier_died'
 
 BACKUP = 'backup'
 STAGING = 'staging'
@@ -55,6 +58,7 @@ class DataStage(Enum):
     CONTROLLED_TIER_DEID = CONTROLLED_TIER_DEID
     CONTROLLED_TIER_DEID_BASE = CONTROLLED_TIER_DEID_BASE
     CONTROLLED_TIER_DEID_CLEAN = CONTROLLED_TIER_DEID_CLEAN
+    REGISTERED_TIER_DEID = REGISTERED_TIER_DEID
 
     def __str__(self):
         return self.value
