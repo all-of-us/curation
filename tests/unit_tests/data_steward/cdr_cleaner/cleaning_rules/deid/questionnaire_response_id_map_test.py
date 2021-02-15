@@ -51,7 +51,7 @@ class QRIDtoRIDTest(unittest.TestCase):
     def test_get_query_spec(self):
         # Pre conditions
         self.assertEqual(self.rule_instance.affected_datasets,
-                         [cdr_consts.CONTROLLED_TIER_DEID, cdr_consts.COMBINED])
+                         [cdr_consts.CONTROLLED_TIER_DEID, cdr_consts.REGISTERED_TIER_DEID])
 
         # Test
         result_list = self.rule_instance.get_query_specs()
