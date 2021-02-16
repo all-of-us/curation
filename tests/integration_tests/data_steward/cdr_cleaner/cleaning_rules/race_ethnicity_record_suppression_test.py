@@ -18,6 +18,7 @@ import os
 from dateutil import parser
 
 # Project imports
+from common import OBSERVATION
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.race_ethnicity_record_suppression import RaceEthnicityRecordSuppression
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
@@ -46,7 +47,7 @@ class RaceEthnicityRecordSuppressionTest(BaseTest.CleaningRulesTestBase):
         cls.rule_instance = RaceEthnicityRecordSuppression(
             project_id, dataset_id, sandbox_id)
 
-        sb_table_names = cls.rule_instance.get_sandbox_tablenames()
+        sb_table_names = cls.rule_instance.sandbox_table_for(OBSERVATION)
 
         cls.fq_sandbox_table_names.append(
             f'{cls.project_id}.{cls.sandbox_id}.{sb_table_names}')

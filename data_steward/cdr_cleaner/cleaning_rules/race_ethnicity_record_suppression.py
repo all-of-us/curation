@@ -85,7 +85,7 @@ class RaceEthnicityRecordSuppression(BaseCleaningRule):
                 SANDBOX_RECORDS_QUERY.render(
                     project_id=self.project_id,
                     sandbox_id=self.sandbox_dataset_id,
-                    sandbox_table=self.get_sandbox_tablenames(),
+                    sandbox_table=self.sandbox_table_for(OBSERVATION),
                     dataset_id=self.dataset_id)
         }
 
@@ -95,7 +95,7 @@ class RaceEthnicityRecordSuppression(BaseCleaningRule):
                     project_id=self.project_id,
                     dataset_id=self.dataset_id,
                     sandbox_id=self.sandbox_dataset_id,
-                    sandbox_table=self.get_sandbox_tablenames()),
+                    sandbox_table=self.sandbox_table_for(OBSERVATION)),
             cdr_consts.DESTINATION_TABLE:
                 OBSERVATION,
             cdr_consts.DESTINATION_DATASET:
@@ -113,7 +113,7 @@ class RaceEthnicityRecordSuppression(BaseCleaningRule):
         pass
 
     def get_sandbox_tablenames(self):
-        return self.sandbox_table_for(OBSERVATION)
+        pass
 
     def setup_validation(self, client, *args, **keyword_args):
         """
