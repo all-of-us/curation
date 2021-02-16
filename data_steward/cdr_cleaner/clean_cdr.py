@@ -72,6 +72,8 @@ from cdr_cleaner.cleaning_rules.negative_ages import NegativeAges
 from cdr_cleaner.cleaning_rules.deid.questionnaire_response_id_map import QRIDtoRID
 from cdr_cleaner.cleaning_rules.null_person_birthdate import NullPersonBirthdate
 from cdr_cleaner.cleaning_rules.generalize_zip_codes import GeneralizeZipCodes
+from cdr_cleaner.cleaning_rules.race_ethnicity_record_suppression import RaceEthnicityRecordSuppression
+from cdr_cleaner.cleaning_rules.table_suppression import TableSuppression
 from constants.cdr_cleaner import clean_cdr_engine as ce_consts
 from constants.cdr_cleaner.clean_cdr import DataStage
 
@@ -198,7 +200,10 @@ DEID_CLEAN_CLEANING_CLASSES = [
 CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     (QRIDtoRID,),  # Should run before any row suppression rules
     (NullPersonBirthdate,),
-    (GeneralizeZipCodes,)
+    (TableSuppression,),
+    (RaceEthnicityRecordSuppression,
+    )  # Should run after any data remapping rules
+    (GeneralizeZipCodes,)  
 ]
 
 CONTROLLED_TIER_DEID_BASE_CLEANING_CLASSES = []
