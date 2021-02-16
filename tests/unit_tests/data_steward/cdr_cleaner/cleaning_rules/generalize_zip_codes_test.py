@@ -16,6 +16,7 @@ import unittest
 # Project imports
 from cdr_cleaner.cleaning_rules.generalize_zip_codes import (
     GeneralizeZipCodes, GENERALIZE_ZIP_CODES_QUERY)
+from constants.bq_utils import WRITE_TRUNCATE
 from constants.cdr_cleaner import clean_cdr as clean_consts
 from common import OBSERVATION
 
@@ -54,7 +55,13 @@ class GeneralizeZipCodesTest(unittest.TestCase):
             clean_consts.QUERY:
                 GENERALIZE_ZIP_CODES_QUERY.render(project_id=self.project_id,
                                                   dataset_id=self.dataset_id,
-                                                  obs_table=OBSERVATION)
+                                                  obs_table=OBSERVATION),
+            clean_consts.DESTINATION_TABLE:
+                OBSERVATION,
+            clean_consts.DESTINATION_DATASET:
+                self.dataset_id,
+            clean_consts.DISPOSITION:
+                WRITE_TRUNCATE
         }]
 
         self.assertEqual(results_list, expected_list)

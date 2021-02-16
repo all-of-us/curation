@@ -18,6 +18,7 @@ from datetime import datetime
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.generalize_zip_codes import GeneralizeZipCodes
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
+from constants.bq_utils import WRITE_TRUNCATE
 from common import OBSERVATION
 
 
