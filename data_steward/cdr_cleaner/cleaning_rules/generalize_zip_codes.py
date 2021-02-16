@@ -20,12 +20,15 @@ from utils import pipeline_logging
 LOGGER = logging.getLogger(__name__)
 
 GENERALIZE_ZIP_CODES_QUERY = JINJA_ENV.from_string("""
-UPDATE `{{project_id}}.{{dataset_id}}.{{obs_table}}`
-SET value_as_string = RPAD(
-    SUBSTR(value_as_string, 1, 3),
-    LENGTH(value_as_string),
-    '*'
-)
+SELECT
+    * REPLACE(
+        RPAD(
+            SUBSTR(value_as_string, 1, 3),
+            LENGTH(value_as_string),
+            '*'
+        ) AS value_as_string        
+    )
+FROM `{{project_id}}.{{dataset_id}}.{{obs_table}}`
 WHERE observation_source_concept_id IN (1585250)
 """)
 
@@ -96,6 +99,10 @@ class GeneralizeZipCodes(BaseCleaningRule):
             project_id=self.project_id,
             dataset_id=self.dataset_id,
             obs_table=OBSERVATION)
+        update_query[cdr_consts.DESTINATION_TABLE] = OBSERVATION
+        update_query[cdr_consts.DESTINATION_DATASET] = self.dataset_id
+        update_query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
+
         return [update_query]
 
     def setup_validation(self, client, *args, **keyword_args):
