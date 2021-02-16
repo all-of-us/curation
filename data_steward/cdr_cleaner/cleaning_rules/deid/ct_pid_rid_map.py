@@ -1,8 +1,11 @@
 """
-DEID rule to change PIDs to RIDs for Fitbit tables
+DEID rule to change PIDs to RIDs for OMOP tables
 """
 # Python Imports
 import logging
+
+# Third party imports
+import google.cloud.bigquery as gbq
 
 # Project imports
 from cdr_cleaner.cleaning_rules.deid.pid_rid_map import PIDtoRID
@@ -23,7 +26,7 @@ AND NOT STARTS_WITH(table_name, '_')
 
 class CtPIDtoRID(PIDtoRID):
     """
-    Use RID instead of PID for Fitbit tables
+    Use RID instead of PID for OMOP tables
     """
 
     def __init__(self, project_id, dataset_id, sandbox_dataset_id,
@@ -43,19 +46,20 @@ class CtPIDtoRID(PIDtoRID):
                          affected_tables=CDM_TABLES,
                          issue_numbers=ISSUE_NUMBERS)
 
-    @staticmethod
-    def get_pid_tables(client):
-        pid_tables_query = GET_PID_TABLES.render()
+    def get_pid_tables(self, client):
+        pid_tables_query = GET_PID_TABLES.render(project_id=self.project_id,
+                                                 dataset_id=self.dataset_id)
         query_job = client.query(pid_tables_query)
         result_df = query_job.result().to_dataframe()
         return result_df.get('table_name').to_list()
 
     def setup_rule(self, client):
-        super().pid_tables = [
-            f'{self.project_id}.{self.dataset_id}.{table_id}'
+        self.pid_tables = [
+            gbq.TableReference.from_string(
+                f'{self.project_id}.{self.dataset_id}.{table_id}')
             for table_id in self.get_pid_tables(client)
         ]
-        super(CtPIDtoRID, self).setup_rule(client)
+        super().setup_rule(client)
 
 
 if __name__ == '__main__':
