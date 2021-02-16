@@ -19,7 +19,6 @@ from utils import pipeline_logging
 
 LOGGER = logging.getLogger(__name__)
 
-#### Constants go here.
 GENERALIZE_ZIP_CODES_QUERY = JINJA_ENV.from_string("""
 UPDATE `{{project_id}}.{{dataset_id}}.{{obs_table}}`
 SET value_as_string = RPAD(
@@ -29,7 +28,6 @@ SET value_as_string = RPAD(
 )
 WHERE observation_source_concept_id IN (1585250)
 """)
-####
 
 
 class GeneralizeZipCodes(BaseCleaningRule):
