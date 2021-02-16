@@ -36,7 +36,7 @@ class GeneralizeZipCodesTest(BaseTest.CleaningRulesTestBase):
         cls.project_id = project_id
 
         # set the expected test datasets
-        dataset_id = os.environ.get('MY_DATASET_ID')
+        dataset_id = os.environ.get('COMBINED_DATASET_ID')
         cls.dataset_id = dataset_id
         sandbox_id = dataset_id + '_sandbox'
         cls.sandbox_id = sandbox_id
