@@ -202,7 +202,7 @@ CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     (NullPersonBirthdate,),
     (TableSuppression,),
     (RaceEthnicityRecordSuppression,
-    )  # Should run after any data remapping rules
+    ),  # Should run after any data remapping rules
     (GeneralizeZipCodes,)
 ]
 
