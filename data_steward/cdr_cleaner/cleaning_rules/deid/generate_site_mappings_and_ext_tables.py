@@ -8,7 +8,7 @@ import logging
 from constants.bq_utils import LOOKUP_TABLES_DATASET_ID, HPO_SITE_ID_MAPPINGS_TABLE_ID
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
-from tools.generate_ext_tables import get_generate_ext_table_queries
+from tools.generate_ext_tables import get_generate_ext_table_queries, parse_args
 from common import JINJA_ENV
 
 LOGGER = logging.getLogger(__name__)
@@ -99,12 +99,11 @@ class GenerateSiteMappingsAndExtTables(BaseCleaningRule):
         query_list.append(query)
 
         # gather queries to generate ext tables
-        query_list.append(
-            get_generate_ext_table_queries(self.project_id,
-                                           self.sandbox_dataset_id,
+        query_list.extend(
+            get_generate_ext_table_queries(self.project_id, self.dataset_id,
                                            self.sandbox_dataset_id,
                                            self.mapping_dataset_id))
-        return [query]
+        return query_list
 
     def get_sandbox_tablenames(self):
         return []
@@ -129,25 +128,9 @@ class GenerateSiteMappingsAndExtTables(BaseCleaningRule):
 
 
 if __name__ == '__main__':
-    import cdr_cleaner.args_parser as parser
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
-    mapping_dataset_arg = {
-        parser.SHORT_ARGUMENT:
-            '-m',
-        parser.LONG_ARGUMENT:
-            '--mapping_dataset_id',
-        parser.ACTION:
-            'store',
-        parser.DEST:
-            'mapping_dataset_id',
-        parser.HELP:
-            'The dataset containing mapping tables, typically the combined_dataset',
-        parser.REQUIRED:
-            True
-    }
-
-    ARGS = parser.default_parse_args([mapping_dataset_arg])
+    ARGS = parse_args()
 
     if ARGS.list_queries:
         clean_engine.add_console_logging()

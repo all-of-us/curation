@@ -125,26 +125,31 @@ def get_generate_ext_table_queries(project_id, dataset_id, sandbox_dataset_id,
     return queries
 
 
-if __name__ == '__main__':
+def parse_args():
+    """
+    Expands the default argument list defined in cdr_cleaner.args_parser
+    :return: an expanded argument list object
+    """
     import cdr_cleaner.args_parser as parser
+
+    argument_parser = parser.get_argument_parser()
+
+    argument_parser.add_argument(
+        '-m',
+        '--mapping_dataset_id',
+        dest='mapping_dataset_id',
+        action='store',
+        help=
+        'The dataset containing mapping tables, typically the combined_dataset',
+        required=True)
+
+    return argument_parser.parse_args()
+
+
+if __name__ == '__main__':
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
-    mapping_dataset_arg = {
-        parser.SHORT_ARGUMENT:
-            '-m',
-        parser.LONG_ARGUMENT:
-            '--mapping_dataset_id',
-        parser.ACTION:
-            'store',
-        parser.DEST:
-            'mapping_dataset_id',
-        parser.HELP:
-            'The dataset containing mapping tables, typically the combined_dataset',
-        parser.REQUIRED:
-            True
-    }
-
-    ARGS = parser.default_parse_args([mapping_dataset_arg])
+    ARGS = parse_args()
 
     if ARGS.list_queries:
         clean_engine.add_console_logging()

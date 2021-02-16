@@ -34,7 +34,7 @@ class GenerateSiteMappingsTest(unittest.TestCase):
         self.project_id = 'foo_project'
         self.dataset_id = 'foo_dataset'
         self.sandbox_id = 'foo_sandbox_dataset'
-        self.mapping_dataset_id = 'foo_dataset'
+        self.mapping_dataset_id = 'foo_mapping_dataset'
         self.mapping_tables = [
             gen_ext.MAPPING_PREFIX + cdm_table
             for cdm_table in common.AOU_REQUIRED
@@ -91,7 +91,7 @@ class GenerateSiteMappingsTest(unittest.TestCase):
                 query[cdr_consts.QUERY] = gen_ext.REPLACE_SRC_QUERY.render(
                     project_id=self.project_id,
                     dataset_id=self.dataset_id,
-                    mapping_dataset_id=self.dataset_id,
+                    mapping_dataset_id=self.mapping_dataset_id,
                     sandbox_dataset_id=self.sandbox_id,
                     mapping_table_id=gen_ext.MAPPING_PREFIX + cdm_table,
                     site_mappings_table_id=SITE_TABLE_ID,
@@ -101,19 +101,5 @@ class GenerateSiteMappingsTest(unittest.TestCase):
                 query[cdr_consts.DESTINATION_DATASET] = self.dataset_id
                 query[cdr_consts.DISPOSITION] = bq_consts.WRITE_EMPTY
                 expected_list.append(query)
-
-        # Post conditions
-        expected_list = [{
-            clean_consts.QUERY:
-                SITE_MAPPINGS_QUERY.render(
-                    project_id=self.project_id,
-                    dataset_id=self.sandbox_id,
-                    table_id=SITE_TABLE_ID,
-                    site_prefix=EHR_SITE_PREFIX,
-                    lookup_tabels_dataset=LOOKUP_TABLES_DATASET_ID,
-                    hpo_site_id_mappings_table=HPO_SITE_ID_MAPPINGS_TABLE_ID,
-                    ppi_pm=PPI_PM,
-                    rdr=RDR)
-        }]
 
         self.assertEqual(actual_list, expected_list)
