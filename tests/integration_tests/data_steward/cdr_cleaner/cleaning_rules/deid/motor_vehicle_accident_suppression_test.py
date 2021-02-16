@@ -102,13 +102,13 @@ class MotorVehicleAccidentSuppressionTestBase(BaseTest.CleaningRulesTestBase):
                     condition_source_concept_id int64,
                     condition_status_concept_id int64
                     >>
-                    # Concepts to suppress
-                    # 443645: Injury in water transport caused by loading machinery, swimmer injured
-                    # 4106309: Driver in watercraft accident
+                    -- Concepts to suppress --
+                    -- 443645: Injury in water transport caused by loading machinery, swimmer injured --
+                    -- 4106309: Driver in watercraft accident --
                     
-                    # Concepts to keep
-                    # 201826: Type 2 Diabetes Mellitus
-                    # 320128: Essential hypertension
+                    -- Concepts to keep --
+                    -- 201826: Type 2 Diabetes Mellitus --
+                    -- 320128: Essential hypertension --
                   [(1, 1, 443645, 0, 0, 0),
                    (2, 1, 0, 4106309, 0, 0),
                    (3, 1, 0, 0, 443645, 0),
@@ -147,17 +147,17 @@ class MotorVehicleAccidentSuppressionTestBase(BaseTest.CleaningRulesTestBase):
                     qualifier_concept_id int64,
                     unit_concept_id int64
                     >>
-                  # Concepts to suppress
-                  # 46271039: Motor vehicle accident with ejection of person from vehicle
-                  # 4305858: Voluntary parachute descent accident
-                  # 44791617: Pedal cycle accident involving collision between pedal cycle and motor vehicle
-                  # 4145511: Automobile accident
-                  # 44803087: Collision of spacecraft with other spacecraft
+                  -- Concepts to suppress --
+                  -- 46271039: Motor vehicle accident with ejection of person from vehicle --
+                  -- 4305858: Voluntary parachute descent accident --
+                  -- 44791617: Pedal cycle accident involving collision between pedal cycle and motor vehicle --
+                  -- 4145511: Automobile accident --
+                  -- 44803087: Collision of spacecraft with other spacecraft --
                   
-                  # Concepts to keep
-                  # 42628400: Follow-up service
-                  # 1332785: Smoking more cigarettes or vaping more
-                  # 43533330: Left main coronary artery
+                  -- Concepts to keep --
+                  -- 42628400: Follow-up service --
+                  -- 1332785: Smoking more cigarettes or vaping more --
+                  -- 43533330: Left main coronary artery --
                   [(1, 1, 46271039, 0, 0, 0, 0, 0, 0),
                    (2, 1, 0, 4305858, 0, 0, 0, 0, 0),
                    (3, 1, 0, 0, 44791617, 0, 0, 0, 0),
