@@ -193,42 +193,6 @@ def create_allowed_states_table(input_dataset, credentials):
     data.to_gbq(map_tablename, credentials=credentials, if_exists='replace')
 
 
-def create_questionnaire_mapping_table(table,
-                                       map_tablename,
-                                       lower_bound,
-                                       credentials,
-                                       exists_flag=None):
-    """
-    Create a random mapping table for questionnaire response ids.
-
-    :param lower_bound:  The smallest number that may be used as an identifier.
-    """
-    if not exists_flag:
-        exists_flag = 'fail'
-
-    # create the deid table.  set upper and lower bounds of the research_id array
-    records = table.shape[0]
-    upper_bound = lower_bound + (10 * records)
-    qr_id_list = table['questionnaire_response_id'].tolist()
-    map_table = pd.DataFrame({"questionnaire_response_id": qr_id_list})
-
-    # generate random research_questionnaire_response_ids
-    research_id_array = np.random.choice(np.arange(lower_bound, upper_bound),
-                                         records,
-                                         replace=False)
-
-    # throw in some extra, non-deterministic shuffling
-    for _ in range(milliseconds_since_epoch() % 5):
-        np.random.shuffle(research_id_array)
-    map_table['research_response_id'] = research_id_array
-
-    # write this to bigquery.
-    map_table.to_gbq(map_tablename,
-                     credentials=credentials,
-                     if_exists=exists_flag)
-    LOGGER.info('created new questionnaire response mapping table')
-
-
 def create_concept_id_lookup_table(input_dataset, credentials):
     """
     Create a lookup table of concept_id's to suppress
@@ -291,7 +255,6 @@ class AOU(Press):
         # only need to create these tables deidentifying the observation table
         if 'observation' in self.get_tablename().lower().split('.'):
             create_allowed_states_table(self.idataset, self.credentials)
-            self.map_questionnaire_response_ids(million)
             create_person_id_src_hpo_map(self.idataset, self.credentials)
 
         # ensure mapping table only contains participants within age limits
@@ -325,68 +288,6 @@ class AOU(Press):
 
         return eligible_person_table.shape[
             0] > 0 and ineligible_person_table.shape[0] < 1
-
-    def map_questionnaire_response_ids(self, lower_bound):
-        """
-        Create a random mapping table for questionnaire response ids.
-
-        :param lower_bound:  The smallest number that may be used as an identifier.
-        """
-        map_tablename = self.idataset + "._deid_questionnaire_response_map"
-        sql = ("SELECT DISTINCT o.questionnaire_response_id "
-               "FROM observation as o "
-               "WHERE o.questionnaire_response_id IS NOT NULL "
-               "ORDER BY 1")
-        job_config = {'query': {'defaultDataset': {'datasetId': self.idataset}}}
-        observation_table = self.get_dataframe(sql=sql, query_config=job_config)
-        LOGGER.info(
-            f"total of distinct questionnaire_response_ids:\t{observation_table.shape[0]}"
-        )
-        map_table = pd.DataFrame()
-
-        if observation_table.shape[0] > 0:
-            map_sql = 'SELECT * FROM ' + map_tablename
-            job_config = {
-                'query': {
-                    'defaultDataset': {
-                        'datasetId': self.idataset
-                    }
-                }
-            }
-            map_table = self.get_dataframe(sql=map_sql, query_config=job_config)
-            if map_table.shape[0] > 0:
-                # Make sure the mapping table is mapping the expected data
-                map_table_set = set(
-                    map_table.loc[:, 'questionnaire_response_id'].tolist())
-                observation_set = set(
-                    observation_table.loc[:,
-                                          'questionnaire_response_id'].tolist())
-                if map_table_set == observation_set:
-                    LOGGER.info('questionnaire response mapping table contains '
-                                'all questionnaire response ids')
-                else:
-                    LOGGER.warning(
-                        'creating new questionnaire response mapping '
-                        'table because the existing table doesn\'t match')
-                    # The tables do NOT contain the same mapped elements
-                    create_questionnaire_mapping_table(observation_table,
-                                                       map_tablename,
-                                                       lower_bound,
-                                                       self.credentials,
-                                                       'replace')
-            else:
-                LOGGER.info('creating a new questionnaire response mapping '
-                            'table because it doesn\'t exist')
-                # create the deid table.  set upper and lower bounds of the research_id array
-                create_questionnaire_mapping_table(observation_table,
-                                                   map_tablename, lower_bound,
-                                                   self.credentials)
-        else:
-            LOGGER.error("No questionnaire_response_ids found.")
-
-        LOGGER.info(
-            f"questionnaire response mapping table contains {map_table.shape[0]} records"
-        )
 
     def get_dataframe(self, sql=None, limit=None, query_config=None):
         """
