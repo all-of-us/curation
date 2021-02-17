@@ -96,15 +96,6 @@
             "copy_to": ["value_as_concept_id"]
          }
     ],
-    "compute": [
-        {
-            "rules": "@compute.response_id",
-            "fields": ["questionnaire_response_id"],
-            "table": ":idataset.deid_questionnaire_response_map as map_response",
-            "key_field": "map_user.questionnaire_response_id",
-            "value_field": "observation.questionnaire_response_id"
-        }
-    ],
     "shift": [
         {"rules": "@shift.date",
          "fields": ["observation_date"]},
