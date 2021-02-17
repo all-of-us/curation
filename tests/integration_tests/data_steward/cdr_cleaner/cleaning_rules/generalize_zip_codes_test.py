@@ -98,7 +98,7 @@ class GeneralizeZipCodesTest(BaseTest.CleaningRulesTestBase):
             'fq_sandbox_table_name':
                 '',
             'loaded_ids': [
-                1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009, 1010
+                1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009, 1010, 1011
             ],
             'sandboxed_ids': [],
             'fields': [
@@ -138,6 +138,9 @@ class GeneralizeZipCodesTest(BaseTest.CleaningRulesTestBase):
                 (1010, 1010, 0, datetime.strptime('2020-08-30',
                                                   '%Y-%m-%d').date(), 1010,
                  'StreetAddress_PIIZIP', 1585250, '723**'),
+                (1011, 1011, 0, datetime.strptime('2020-08-30',
+                                                  '%Y-%m-%d').date(), 1011,
+                 'StreetAddress_PIIZIP', 1585247, '37218')
             ]
         }]
 
