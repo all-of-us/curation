@@ -60,6 +60,10 @@ from cdr_cleaner.cleaning_rules.ppi_branching import PpiBranching
 from cdr_cleaner.cleaning_rules.rdr_observation_source_concept_id_suppression import (
     ObservationSourceConceptIDRowSuppression)
 from cdr_cleaner.cleaning_rules.remove_multiple_race_ethnicity_answers import RemoveMultipleRaceEthnicityAnswersQueries
+from cdr_cleaner.cleaning_rules.deid.motor_vehicle_accident_suppression import \
+    MotorVehicleAccidentSuppression
+from cdr_cleaner.cleaning_rules.deid.birth_information_suppression import \
+    BirthInformationSuppression
 from cdr_cleaner.cleaning_rules.replace_standard_id_in_domain_tables import \
     ReplaceWithStandardConceptId
 from cdr_cleaner.cleaning_rules.repopulate_person_post_deid import RepopulatePersonPostDeid
@@ -201,7 +205,9 @@ CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     (NullPersonBirthdate,),
     (TableSuppression,),
     (RaceEthnicityRecordSuppression,
-    )  # Should run after any data remapping rules
+    ),  # Should run after any data remapping rules,
+    (MotorVehicleAccidentSuppression,),
+    (BirthInformationSuppression,)
 ]
 
 CONTROLLED_TIER_DEID_BASE_CLEANING_CLASSES = []
