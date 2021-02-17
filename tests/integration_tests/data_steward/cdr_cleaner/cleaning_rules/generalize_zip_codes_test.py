@@ -83,8 +83,8 @@ class GeneralizeZipCodesTest(BaseTest.CleaningRulesTestBase):
                 (1005, 1005, 0, '2020-08-30', 1005, 'StreetAddress_PIIZIP', 1585250, '00589'),
                 (1006, 1006, 0, '2020-08-30', 1006, 'StreetAddress_PIIZIP', 1585250, '23591'),
                 (1007, 1007, 0, '2020-08-30', 1007, 'StreetAddress_PIIZIP', 1585250, '23512-4'),
-                (1008, 1008, 0, '2020-08-30', 1008, 'StreetAddress_PIIZIP', 1585250, '21092'),
-                (1009, 1009, 0, '2020-08-30', 1009, 'StreetAddress_PIIZIP', 1585250, '72612'),
+                (1008, 1008, 0, '2020-08-30', 1008, 'StreetAddress_PIICity', 1585248, 'New York'),
+                (1009, 1009, 0, '2020-08-30', 1009, 'StreetAddress_PIIState', 1585249, 'NY'),
                 (1010, 1010, 0, '2020-08-30', 1010, 'StreetAddress_PIIZIP', 1585250, '72321')
         """).render(fq_dataset_name=self.fq_dataset_name)
         queries.append(zipcodes_tmpl)
@@ -130,10 +130,10 @@ class GeneralizeZipCodesTest(BaseTest.CleaningRulesTestBase):
                  'StreetAddress_PIIZIP', 1585250, '235****'),
                 (1008, 1008, 0, datetime.strptime('2020-08-30',
                                                   '%Y-%m-%d').date(), 1008,
-                 'StreetAddress_PIIZIP', 1585250, '210**'),
+                 'StreetAddress_PIICity', 1585248, 'New York'),
                 (1009, 1009, 0, datetime.strptime('2020-08-30',
                                                   '%Y-%m-%d').date(), 1009,
-                 'StreetAddress_PIIZIP', 1585250, '726**'),
+                 'StreetAddress_PIIState', 1585249, 'NY'),
                 (1010, 1010, 0, datetime.strptime('2020-08-30',
                                                   '%Y-%m-%d').date(), 1010,
                  'StreetAddress_PIIZIP', 1585250, '723**'),
