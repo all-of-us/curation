@@ -14,7 +14,7 @@ from google.cloud.bigquery import Client, Dataset, SchemaField, LoadJob, LoadJob
 
 from common import VOCABULARY_TABLES
 from utils.sandbox import get_sandbox_dataset_id
-from utils import bq
+from utils import bq, pipeline_logging
 
 LOGGER = logging.getLogger(__name__)
 DATE_TIME_TYPES = ['date', 'timestamp', 'datetime']
@@ -75,17 +75,17 @@ def _filename_to_table_name(filename: str) -> str:
     return filename.replace('.csv', '').lower()
 
 
-def load_stage(dst_dataset: Dataset, bq_client: Client,
-               bucket_name: str) -> List[LoadJob]:
+def load_stage(dst_dataset: Dataset, bq_client: Client, bucket_name: str,
+               gcs_client: storage.Client) -> List[LoadJob]:
     """
     Stage files from a bucket to a dataset
 
     :param dst_dataset: reference to destination dataset object
     :param bq_client: a BigQuery client object
     :param bucket_name: the location in GCS containing the vocabulary files
+    :param gcs_client: a Cloud Storage client object
     :return: list of completed load jobs
     """
-    gcs_client = storage.Client()
     blobs = list(gcs_client.list_blobs(bucket_name))
 
     table_blobs = [_filename_to_table_name(blob.name) for blob in blobs]
@@ -161,13 +161,14 @@ def load(project_id,
 
 def main(project_id: str, bucket_name: str, dst_dataset_id: str):
     """
-    Transform and load vocabulary files from Athena to a BigQuery dataset
+    Load and transform vocabulary files in GCS to a BigQuery dataset
 
     :param project_id:
-    :param bucket_name: refers to the bucket containing vocabulary files from bundle
+    :param bucket_name: refers to the bucket containing vocabulary files
     :param dst_dataset_id: final destination to load the vocabulary in BigQuery
     """
-    bq_client = bq.get_client(project_id=project_id)
+    bq_client = bq.get_client(project_id)
+    gcs_client = storage.Client(project_id)
     sandbox_dataset_id = get_sandbox_dataset_id(dst_dataset_id)
     sandbox_dataset = bq.create_dataset(
         project_id,
@@ -175,7 +176,7 @@ def main(project_id: str, bucket_name: str, dst_dataset_id: str):
         f'Vocabulary loaded from gs://{bucket_name}',
         label_or_tag={'type': 'vocabulary'},
         overwrite_existing=True)
-    stage_jobs = load_stage(sandbox_dataset, bq_client, bucket_name)
+    stage_jobs = load_stage(sandbox_dataset, bq_client, bucket_name, gcs_client)
     wait_jobs(stage_jobs)
     load_jobs = load(project_id,
                      bq_client,
@@ -245,19 +246,9 @@ def get_target_dataset_id(release_tag: str) -> str:
 
 
 if __name__ == '__main__':
-    import sys
-
     ARGS = get_arg_parser().parse_args()
-
     RELEASE_TAG = ARGS.release_date or get_release_date()
     TARGET_DATASET_ID = ARGS.target_dataset_id or get_target_dataset_id(
         RELEASE_TAG)
-
-    handlers = [logging.StreamHandler(sys.stdout)]
-    logging.basicConfig(
-        level=logging.DEBUG,
-        format=
-        '[%(asctime)s] {%(filename)s:%(lineno)d} %(levelname)s - %(message)s',
-        handlers=handlers)
-
+    pipeline_logging.configure(add_console_handler=True)
     main(ARGS.project_id, ARGS.bucket_name, TARGET_DATASET_ID)
