@@ -43,7 +43,8 @@ from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 import resources
 from validation.ehr_union import mapping_table_for
-from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
+from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list, \
+    get_delete_empty_sandbox_tables_queries
 
 LOGGER = logging.getLogger(__name__)
 
@@ -168,25 +169,6 @@ FROM
 LEFT JOIN
     `{{project}}.{{sandbox_dataset}}.{{logging_table}}` as log
 ON src_id = {{domain_table}}_id AND domain_table = '{{domain_table}}'
-""")
-
-DROP_EMPTY_SANDBOX_TABLES_QUERY = JINJA_ENV.from_string("""
-DECLARE i INT64 DEFAULT 0;
-DECLARE tables DEFAULT (
-  SELECT
-    ARRAY_AGG(FORMAT("`%s.%s.%s`", project_id, dataset_id, table_id))
-  FROM
-    `{{project}}.{{dataset}}.__TABLES__`
-  WHERE
-    row_count = 0 AND table_id IN ({{table_ids}}));
-
-LOOP
-  SET i = i + 1;
-  IF i > ARRAY_LENGTH(tables) THEN 
-    LEAVE; 
-  END IF;
-  EXECUTE IMMEDIATE '''DROP TABLE ''' || tables[ORDINAL(i)];
-END LOOP
 """)
 
 
@@ -410,25 +392,6 @@ class ReplaceWithStandardConceptId(BaseCleaningRule):
         }]
         return queries + update_queries
 
-    def get_delete_empty_sandbox_tables_queries(self):
-        """
-        Generate the query that drop the empty sandbox tables
-        :return: 
-        """
-
-        table_ids = ','.join(
-            map(lambda sandbox_table: f'"{sandbox_table}"',
-                self.get_sandbox_tablenames()))
-        return [{
-            cdr_consts.QUERY:
-                DROP_EMPTY_SANDBOX_TABLES_QUERY.render(
-                    project=self.project_id,
-                    dataset=self.sandbox_dataset_id,
-                    table_ids=table_ids),
-            cdr_consts.DESTINATION_DATASET:
-                self.sandbox_dataset_id
-        }]
-
     def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
         """
         :return: a list of query dicts for replacing standard_concept_ids in domain_tables
@@ -438,7 +401,10 @@ class ReplaceWithStandardConceptId(BaseCleaningRule):
         queries_list.extend(self.get_sandbox_src_concept_id_update_queries())
         queries_list.extend(self.get_src_concept_id_update_queries())
         queries_list.extend(self.get_mapping_table_update_queries())
-        queries_list.extend(self.get_delete_empty_sandbox_tables_queries())
+        queries_list.extend(
+            get_delete_empty_sandbox_tables_queries(
+                self.project_id, self.sandbox_dataset_id,
+                self.get_sandbox_tablenames()))
         return queries_list
 
     def setup_rule(self, client, *args, **keyword_args):

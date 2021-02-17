@@ -60,6 +60,10 @@ from cdr_cleaner.cleaning_rules.ppi_branching import PpiBranching
 from cdr_cleaner.cleaning_rules.rdr_observation_source_concept_id_suppression import (
     ObservationSourceConceptIDRowSuppression)
 from cdr_cleaner.cleaning_rules.remove_multiple_race_ethnicity_answers import RemoveMultipleRaceEthnicityAnswersQueries
+from cdr_cleaner.cleaning_rules.deid.motor_vehicle_accident_suppression import \
+    MotorVehicleAccidentSuppression
+from cdr_cleaner.cleaning_rules.deid.birth_information_suppression import \
+    BirthInformationSuppression
 from cdr_cleaner.cleaning_rules.replace_standard_id_in_domain_tables import \
     ReplaceWithStandardConceptId
 from cdr_cleaner.cleaning_rules.repopulate_person_post_deid import RepopulatePersonPostDeid
@@ -74,6 +78,7 @@ from cdr_cleaner.cleaning_rules.null_person_birthdate import NullPersonBirthdate
 from cdr_cleaner.cleaning_rules.generalize_zip_codes import GeneralizeZipCodes
 from cdr_cleaner.cleaning_rules.race_ethnicity_record_suppression import RaceEthnicityRecordSuppression
 from cdr_cleaner.cleaning_rules.table_suppression import TableSuppression
+from cdr_cleaner.cleaning_rules.deid.questionnaire_response_id_map import QRIDtoRID
 from constants.cdr_cleaner import clean_cdr_engine as ce_consts
 from constants.cdr_cleaner.clean_cdr import DataStage
 
@@ -203,12 +208,18 @@ CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     (TableSuppression,),
     (RaceEthnicityRecordSuppression,
     ),  # Should run after any data remapping rules
-    (GeneralizeZipCodes,)  # Should occur after data remapping rules
+    (GeneralizeZipCodes,),  # Should occur after data remapping rules
+    (MotorVehicleAccidentSuppression,),
+    (BirthInformationSuppression,)
 ]
 
 CONTROLLED_TIER_DEID_BASE_CLEANING_CLASSES = []
 
 CONTROLLED_TIER_DEID_CLEAN_CLEANING_CLASSES = []
+
+REGISTERED_TIER_DEID_CLEANING_CLASSES = [
+    (QRIDtoRID,)  # Should run before any row suppression rules
+]
 
 DATA_STAGE_RULES_MAPPING = {
     DataStage.EHR.value:
@@ -231,6 +242,8 @@ DATA_STAGE_RULES_MAPPING = {
         CONTROLLED_TIER_DEID_BASE_CLEANING_CLASSES,
     DataStage.CONTROLLED_TIER_DEID_CLEAN.value:
         CONTROLLED_TIER_DEID_CLEAN_CLEANING_CLASSES,
+    DataStage.REGISTERED_TIER_DEID.value:
+        REGISTERED_TIER_DEID_CLEANING_CLASSES
 }
 
 

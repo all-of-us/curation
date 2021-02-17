@@ -8,8 +8,7 @@ from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.replace_standard_id_in_domain_tables import (
     SRC_CONCEPT_ID_TABLE_NAME, SRC_CONCEPT_ID_UPDATE_QUERY,
-    UPDATE_MAPPING_TABLES_QUERY, DROP_EMPTY_SANDBOX_TABLES_QUERY,
-    ReplaceWithStandardConceptId)
+    UPDATE_MAPPING_TABLES_QUERY, ReplaceWithStandardConceptId)
 
 
 class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
@@ -53,8 +52,9 @@ class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
     def tearDown(self):
         self.mock_domain_table_names_patcher.stop()
 
-    @patch.object(ReplaceWithStandardConceptId,
-                  'get_delete_empty_sandbox_tables_queries')
+    @mock.patch(
+        'cdr_cleaner.cleaning_rules.replace_standard_id_in_domain_tables.get_delete_empty_sandbox_tables_queries'
+    )
     @patch.object(ReplaceWithStandardConceptId,
                   'get_mapping_table_update_queries')
     @patch.object(ReplaceWithStandardConceptId,
@@ -361,25 +361,3 @@ class ReplaceStandardIdInDomainTablesTest(unittest.TestCase):
             self.condition_mapping_table,
         )
         self.assertEqual(actual_query, expected_query)
-
-    @patch.object(ReplaceWithStandardConceptId, 'get_sandbox_tablenames')
-    def test_get_delete_empty_sandbox_tables_queries(
-        self, mock_get_sandbox_tablenames):
-        mock_get_sandbox_tablenames.return_value = [
-            self.sandbox_condition_table, self.sandbox_procedure_table
-        ]
-
-        expected_table_ids = f'"{self.sandbox_condition_table}","{self.sandbox_procedure_table}"'
-        expected_query = [{
-            cdr_consts.QUERY:
-                DROP_EMPTY_SANDBOX_TABLES_QUERY.render(
-                    project=self.project_id,
-                    dataset=self.sandbox_id,
-                    table_ids=expected_table_ids),
-            cdr_consts.DESTINATION_DATASET:
-                self.sandbox_id
-        }]
-
-        actual_query = self.rule_instance.get_delete_empty_sandbox_tables_queries(
-        )
-        self.assertCountEqual(actual_query, expected_query)
