@@ -12,7 +12,9 @@ import oauth2client
 from mock import patch
 
 # Project imports
-from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
+from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, \
+    get_delete_empty_sandbox_tables_queries, DROP_EMPTY_SANDBOX_TABLES_QUERY
+from constants.cdr_cleaner import clean_cdr as cdr_consts
 
 
 class Inheritance(BaseCleaningRule):
@@ -479,3 +481,30 @@ class BaseCleaningRuleTest(unittest.TestCase):
                     'Cannot list queries for Inheritance')
                 self.assertEqual([cm.output[0][:len(expected_msg)]],
                                  [expected_msg])
+
+    def test_get_delete_empty_sandbox_tables_queries(self):
+
+        sandbox_condition_table = 'condition'
+        sandbox_procedure_table = 'procedure'
+        sandbox_tablenames = [sandbox_condition_table, sandbox_procedure_table]
+
+        expected_table_ids = f'"{sandbox_condition_table}","{sandbox_procedure_table}"'
+        expected_query = [{
+            cdr_consts.QUERY:
+                DROP_EMPTY_SANDBOX_TABLES_QUERY.render(
+                    project=self.project_id,
+                    dataset=self.sandbox_dataset_id,
+                    table_ids=expected_table_ids),
+            cdr_consts.DESTINATION_DATASET:
+                self.sandbox_dataset_id
+        }]
+
+        actual_query = get_delete_empty_sandbox_tables_queries(
+            self.project_id, self.sandbox_dataset_id, sandbox_tablenames)
+        self.assertEqual(actual_query, expected_query)
+
+        # Return an empty list if the sandbox_names is empty
+        actual_query = get_delete_empty_sandbox_tables_queries(
+            self.project_id, self.sandbox_dataset_id, [])
+
+        self.assertEqual(actual_query, [])
