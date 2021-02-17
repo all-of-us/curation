@@ -67,7 +67,7 @@ class GenerateSiteMappingsAndExtTables(BaseCleaningRule):
         """
         desc = f'Change PIDs to RIDs in specified tables'
 
-        self.mapping_dataset_id = mapping_dataset_id
+        self._mapping_dataset_id = mapping_dataset_id
 
         super().__init__(issue_numbers=ISSUE_NUMBERS,
                          description=desc,
@@ -76,6 +76,13 @@ class GenerateSiteMappingsAndExtTables(BaseCleaningRule):
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
                          affected_tables=[])
+
+    @property
+    def mapping_dataset_id(self):
+        """
+        Get the mapping dataset id for this class instance.
+        """
+        return self._mapping_dataset_id
 
     def get_query_specs(self):
         """
@@ -135,13 +142,16 @@ if __name__ == '__main__':
     if ARGS.list_queries:
         clean_engine.add_console_logging()
         query_list = clean_engine.get_query_list(
-            ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id,
-            [(GenerateSiteMappingsAndExtTables,)], ARGS.mapping_dataset_id)
+            ARGS.project_id,
+            ARGS.dataset_id,
+            ARGS.sandbox_dataset_id, [(GenerateSiteMappingsAndExtTables,)],
+            mappind_dataset_id=ARGS.mapping_dataset_id)
         for query in query_list:
             LOGGER.info(query)
     else:
         clean_engine.add_console_logging(ARGS.console_log)
-        clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
+        clean_engine.clean_dataset(ARGS.project_id,
+                                   ARGS.dataset_id,
                                    ARGS.sandbox_dataset_id,
                                    [(GenerateSiteMappingsAndExtTables,)],
-                                   ARGS.mapping_dataset_id)
+                                   mappind_dataset_id=ARGS.mapping_dataset_id)

@@ -55,21 +55,22 @@ class GenerateSiteMappingsTest(unittest.TestCase):
         # Test
         self.rule_instance.setup_rule(self.client)
 
-    @mock.patch('bq_utils.create_table')
-    @mock.patch('tools.generate_ext_tables.get_mapping_table_ids')
-    def test_get_query_specs(
-        self,
-        mock_mapping_tables,
-        mock_create_table,
-    ):
-        mock_mapping_tables.return_value = self.mapping_tables
+    @mock.patch(
+        'cdr_cleaner.cleaning_rules.deid.generate_site_mappings_and_ext_tables.get_generate_ext_table_queries'
+    )
+    def test_get_query_specs(self, mock_get_generate_ext_table_queries):
         self.assertEqual(self.rule_instance.affected_datasets,
                          [clean_consts.CONTROLLED_TIER_DEID])
-
+        fake_query_dict = {
+            clean_consts.QUERY: 'Fake query',
+            cdr_consts.DESTINATION_TABLE: 'fake_table',
+            cdr_consts.DESTINATION_DATASET: self.dataset_id,
+            cdr_consts.DISPOSITION: bq_consts.WRITE_EMPTY
+        }
+        mock_get_generate_ext_table_queries.return_value = [fake_query_dict]
         # Test
         actual_list = self.rule_instance.get_query_specs()
-
-        mock_mapping_tables.return_value = self.mapping_tables
+        # mock_mapping_tables.return_value = self.mapping_tables
         expected_list = [{
             clean_consts.QUERY:
                 SITE_MAPPINGS_QUERY.render(
@@ -81,25 +82,6 @@ class GenerateSiteMappingsTest(unittest.TestCase):
                     hpo_site_id_mappings_table=HPO_SITE_ID_MAPPINGS_TABLE_ID,
                     ppi_pm=PPI_PM,
                     rdr=RDR)
-        }]
-
-        for cdm_table in common.AOU_REQUIRED:
-            if cdm_table not in [
-                    common.PERSON, common.DEATH, common.FACT_RELATIONSHIP
-            ]:
-                query = dict()
-                query[cdr_consts.QUERY] = gen_ext.REPLACE_SRC_QUERY.render(
-                    project_id=self.project_id,
-                    dataset_id=self.dataset_id,
-                    mapping_dataset_id=self.mapping_dataset_id,
-                    sandbox_dataset_id=self.sandbox_id,
-                    mapping_table_id=gen_ext.MAPPING_PREFIX + cdm_table,
-                    site_mappings_table_id=SITE_TABLE_ID,
-                    cdm_table_id=cdm_table)
-                query[cdr_consts.
-                      DESTINATION_TABLE] = cdm_table + gen_ext.EXT_TABLE_SUFFIX
-                query[cdr_consts.DESTINATION_DATASET] = self.dataset_id
-                query[cdr_consts.DISPOSITION] = bq_consts.WRITE_EMPTY
-                expected_list.append(query)
+        }, fake_query_dict]
 
         self.assertEqual(actual_list, expected_list)
