@@ -1,6 +1,6 @@
 """
-This cleaning rule generalizes all PPI concepts containing zip codes to their
-primary three digit representation, (e.g. 35400 → 354**).
+This cleaning rule generalizes all PPI concepts containing zip codes (observation_source_concept_id = 1585250)
+to their primary three digit representation, (e.g. 35400 → 354**).
 
 This cleaning rule is specific to the controlled tier.
 
