@@ -367,7 +367,7 @@ def get_concept_id_fields(table_name) -> List[str]:
     Determine if column is a concept_id column
 
     :param table_name: 
-    :return: True if column is a concept_id column, False otherwise
+    :return: all *concept_id fields given a table
     """
     return [
         field_name['name']
