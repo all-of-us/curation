@@ -77,6 +77,7 @@ from cdr_cleaner.cleaning_rules.deid.questionnaire_response_id_map import QRIDto
 from cdr_cleaner.cleaning_rules.null_person_birthdate import NullPersonBirthdate
 from cdr_cleaner.cleaning_rules.race_ethnicity_record_suppression import RaceEthnicityRecordSuppression
 from cdr_cleaner.cleaning_rules.table_suppression import TableSuppression
+from cdr_cleaner.cleaning_rules.deid.questionnaire_response_id_map import QRIDtoRID
 from constants.cdr_cleaner import clean_cdr_engine as ce_consts
 from constants.cdr_cleaner.clean_cdr import DataStage
 
@@ -214,6 +215,10 @@ CONTROLLED_TIER_DEID_BASE_CLEANING_CLASSES = []
 
 CONTROLLED_TIER_DEID_CLEAN_CLEANING_CLASSES = []
 
+REGISTERED_TIER_DEID_CLEANING_CLASSES = [
+    (QRIDtoRID,)  # Should run before any row suppression rules
+]
+
 DATA_STAGE_RULES_MAPPING = {
     DataStage.EHR.value:
         EHR_CLEANING_CLASSES,
@@ -235,6 +240,8 @@ DATA_STAGE_RULES_MAPPING = {
         CONTROLLED_TIER_DEID_BASE_CLEANING_CLASSES,
     DataStage.CONTROLLED_TIER_DEID_CLEAN.value:
         CONTROLLED_TIER_DEID_CLEAN_CLEANING_CLASSES,
+    DataStage.REGISTERED_TIER_DEID.value:
+        REGISTERED_TIER_DEID_CLEANING_CLASSES
 }
 
 

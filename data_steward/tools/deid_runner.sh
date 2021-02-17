@@ -77,6 +77,7 @@ TOOLS_DIR="${DATA_STEWARD_DIR}/tools"
 DEID_DIR="${DATA_STEWARD_DIR}/deid"
 CLEANER_DIR="${DATA_STEWARD_DIR}/cdr_cleaner"
 HANDOFF_DATE="$(date -v +1d +'%Y-%m-%d')"
+data_stage="deid"
 
 export BIGQUERY_DATASET_ID="${registered_cdr_deid}"
 export PYTHONPATH="${PYTHONPATH}:${DEID_DIR}:${DATA_STEWARD_DIR}"
@@ -94,7 +95,10 @@ python "${DATA_STEWARD_DIR}/cdm.py" "${registered_cdr_deid}"
 python "${DATA_STEWARD_DIR}/cdm.py" --component vocabulary "${registered_cdr_deid}"
 "${TOOLS_DIR}"/table_copy.sh --source_app_id "${APP_ID}" --target_app_id "${APP_ID}" --source_dataset "${vocab_dataset}" --target_dataset "${registered_cdr_deid}"
 
-# apply deidentification on combined dataset
+# run cleaning_rules on registered tier dataset
+python "${CLEANER_DIR}/clean_cdr.py" --project_id "${APP_ID}" --dataset_id "${registered_cdr_deid}" --sandbox_dataset_id "${registered_cdr_deid_sandbox}" --data_stage ${data_stage} -s 2>&1 | tee registered_tier_cleaning_log.txt
+
+# apply deidentification on registered tier dataset
 python "${TOOLS_DIR}/run_deid.py" --idataset "${cdr_id}" --private_key "${key_file}" --action submit --interactive --console-log --age_limit "${deid_max_age}" --odataset "${registered_cdr_deid}" 2>&1 | tee deid_run.txt
 
 # create empty sandbox dataset for the deid
