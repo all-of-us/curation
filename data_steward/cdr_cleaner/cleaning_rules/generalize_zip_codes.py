@@ -22,14 +22,17 @@ LOGGER = logging.getLogger(__name__)
 GENERALIZE_ZIP_CODES_QUERY = JINJA_ENV.from_string("""
 SELECT
     * REPLACE(
-        RPAD(
-            SUBSTR(value_as_string, 1, 3),
-            LENGTH(value_as_string),
-            '*'
-        ) AS value_as_string        
+        IF (
+            observation_source_concept_id IN (1585250),
+            RPAD(
+                SUBSTR(value_as_string, 1, 3),
+                LENGTH(value_as_string),
+                '*'
+            ),
+            value_as_string
+        )  AS value_as_string       
     )
 FROM `{{project_id}}.{{dataset_id}}.{{obs_table}}`
-WHERE observation_source_concept_id IN (1585250)
 """)
 
 
