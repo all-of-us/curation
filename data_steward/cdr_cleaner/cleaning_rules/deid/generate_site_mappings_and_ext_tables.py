@@ -33,9 +33,9 @@ CREATE TABLE IF NOT EXISTS
     UNNEST(GENERATE_ARRAY(100, 999)) AS new_id
 )
 SELECT
-  r.hpo_id as src_id,
-  LOWER(m.hpo_id) as hpo_id
-FROM
+    LOWER(m.hpo_id) as hpo_id,
+    r.hpo_id as src_id
+  FROM
 (
   SELECT
     m.*,
