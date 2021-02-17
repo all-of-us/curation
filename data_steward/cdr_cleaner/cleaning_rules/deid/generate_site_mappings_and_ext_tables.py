@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS
     WITH random_ids AS
 (
   SELECT
-    CONCAT({{site_prefix}}, new_id) AS hpo_id,
+    CONCAT('{{site_prefix}}', new_id) AS hpo_id,
     ROW_NUMBER() OVER(ORDER BY GENERATE_UUID()) AS row_id
   FROM
     UNNEST(GENERATE_ARRAY(100, 999)) AS new_id
@@ -46,7 +46,7 @@ FROM
 JOIN random_ids AS r
 USING (row_id)
 union all
-select {{ppi_pm}} as hpo_id, {{rdr}} as src_id
+select '{{ppi_pm}}' as hpo_id, '{{rdr}}' as src_id
 )
 """)
 
@@ -145,7 +145,7 @@ if __name__ == '__main__':
             ARGS.project_id,
             ARGS.dataset_id,
             ARGS.sandbox_dataset_id, [(GenerateSiteMappingsAndExtTables,)],
-            mappind_dataset_id=ARGS.mapping_dataset_id)
+            mapping_dataset_id=ARGS.mapping_dataset_id)
         for query in query_list:
             LOGGER.info(query)
     else:
@@ -154,4 +154,4 @@ if __name__ == '__main__':
                                    ARGS.dataset_id,
                                    ARGS.sandbox_dataset_id,
                                    [(GenerateSiteMappingsAndExtTables,)],
-                                   mappind_dataset_id=ARGS.mapping_dataset_id)
+                                   mapping_dataset_id=ARGS.mapping_dataset_id)
