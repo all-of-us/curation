@@ -1,5 +1,4 @@
 import logging
-import random
 
 import bq_utils
 import constants.bq_utils as bq_consts
@@ -21,34 +20,14 @@ EXT_FIELD_TEMPLATE = [{
     "description": "The provenance of the data associated with the {table}_id."
 }]
 
-SITE_MAPPING_FIELDS = [{
-    "type": "string",
-    "name": "hpo_id",
-    "mode": "nullable",
-    "description": "The hpo_id of the hpo site/RDR."
-}, {
-    "type": "string",
-    "name": "src_id",
-    "mode": "nullable",
-    "description": "The masked id of the hpo site/RDR."
-}]
-
 EXT_TABLE_SUFFIX = '_ext'
 MAPPING_PREFIX = '_mapping_'
 SITE_TABLE_ID = '_site_mappings'
-EHR_SITE_PREFIX = 'EHR site '
-RDR = 'rdr'
-PPI_PM = 'PPI/PM'
-
-INSERT_SITE_MAPPINGS_QUERY = JINJA_ENV.from_string("""
-INSERT INTO `{{project_id}}.{{mapping_dataset_id}}.{{table_id}}` (hpo_id, src_id)
-VALUES {{values}}
-""")
 
 REPLACE_SRC_QUERY = JINJA_ENV.from_string("""
 SELECT m.{{cdm_table_id}}_id, s.src_id
 FROM `{{project_id}}.{{mapping_dataset_id}}.{{mapping_table_id}}` m
-JOIN `{{project_id}}.{{mapping_dataset_id}}.{{site_mappings_table_id}}` s
+JOIN `{{project_id}}.{{sandbox_dataset_id}}.{{site_mappings_table_id}}` s
 ON m.src_hpo_id = s.hpo_id
 """)
 
@@ -96,46 +75,6 @@ def get_mapping_table_ids(project_id, mapping_dataset_id):
     return mapping_table_ids
 
 
-def generate_site_mappings():
-    """
-    Generates the mapping table for the site names and the masked names
-    :return: returns dict with key: hpo_id, value: rand int
-    """
-    hpo_list = bq_utils.get_hpo_info()
-    rand_list = random.sample(range(100, 999), len(hpo_list))
-    mapping_dict = dict()
-    for i, hpo_dict in enumerate(hpo_list):
-        mapping_dict[hpo_dict["hpo_id"]] = rand_list[i]
-    return mapping_dict
-
-
-def get_hpo_and_rdr_mappings():
-    """
-    generates list of lists containing the hpo_id and the identifier
-    :return: list of lists (eg. [[hpo_id_1, id_1], [hpo_id_2, id_2], ...)
-    """
-    site_mapping_dict = generate_site_mappings()
-    mappings_list = []
-    for hpo_id in site_mapping_dict:
-        mappings_list.append(
-            [hpo_id, EHR_SITE_PREFIX + str(site_mapping_dict[hpo_id])])
-    mappings_list.append([RDR, PPI_PM])
-    return mappings_list
-
-
-def convert_to_bq_string(mapping_list):
-    """
-    Converts list of lists to bq INSERT friendly string
-    :param mapping_list: list of lists where the inner lists have two items
-    :return: bq INSERT formatted string
-    """
-    bq_insert_list = []
-    for hpo_rdr_item in mapping_list:
-        bq_insert_list.append(f'("{hpo_rdr_item[0]}", "{hpo_rdr_item[1]}")')
-    bq_insert_string = ', '.join(bq_insert_list)
-    return bq_insert_string
-
-
 def get_cdm_table_from_mapping(mapping_table_id):
     """
     Returns the cdm table after stripping off the mapping table prefix
@@ -143,29 +82,6 @@ def get_cdm_table_from_mapping(mapping_table_id):
     :return: cdm table id
     """
     return mapping_table_id[len(MAPPING_PREFIX):]
-
-
-def create_and_populate_source_mapping_table(project_id, dataset_id):
-    """
-    creates the site mapping table and inserts the site mappings
-    :param project_id: project_id containing the dataset
-    :param dataset_id: dataset to create the mapping table in
-    :return: number of rows inserted in string from
-    """
-    mapping_list = get_hpo_and_rdr_mappings()
-    site_mapping_insert_string = convert_to_bq_string(mapping_list)
-    result = bq_utils.create_table(SITE_TABLE_ID,
-                                   SITE_MAPPING_FIELDS,
-                                   drop_existing=True,
-                                   dataset_id=dataset_id)
-    site_mappings_insert_query = INSERT_SITE_MAPPINGS_QUERY.render(
-        mapping_dataset_id=dataset_id,
-        project_id=project_id,
-        table_id=SITE_TABLE_ID,
-        values=site_mapping_insert_string)
-    result = bq_utils.query(site_mappings_insert_query)
-    rows_affected = result['numDmlAffectedRows']
-    return rows_affected
 
 
 def get_generate_ext_table_queries(project_id, dataset_id, sandbox_dataset_id,
@@ -184,7 +100,6 @@ def get_generate_ext_table_queries(project_id, dataset_id, sandbox_dataset_id,
     LOGGER.info(f'sandbox_dataset_id : {sandbox_dataset_id}')
 
     mapping_table_ids = get_mapping_table_ids(project_id, mapping_dataset_id)
-    create_and_populate_source_mapping_table(project_id, mapping_dataset_id)
 
     for mapping_table_id in mapping_table_ids:
         cdm_table_id = get_cdm_table_from_mapping(mapping_table_id)
@@ -197,6 +112,7 @@ def get_generate_ext_table_queries(project_id, dataset_id, sandbox_dataset_id,
         query = dict()
         query[cdr_consts.QUERY] = REPLACE_SRC_QUERY.render(
             project_id=project_id,
+            sandbox_dataset_id=sandbox_dataset_id,
             mapping_dataset_id=mapping_dataset_id,
             mapping_table_id=mapping_table_id,
             site_mappings_table_id=SITE_TABLE_ID,

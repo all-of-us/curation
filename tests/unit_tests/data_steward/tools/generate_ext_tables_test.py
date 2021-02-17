@@ -4,7 +4,6 @@ import unittest
 
 import mock
 
-import bq_utils
 import common
 import constants.bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
@@ -106,51 +105,10 @@ class GenerateExtTablesTest(unittest.TestCase):
         # post conditions
         self.assertCountEqual(expected, actual)
 
-    @mock.patch('bq_utils.get_hpo_info')
-    def test_site_mapping_dict(self, mock_hpo_list):
-        mock_hpo_list.return_value = self.hpo_list
-        mapping_dict = gen_ext.generate_site_mappings()
-        self.assertEqual(len(mapping_dict), len(self.hpo_list))
-        for hpo_id in mapping_dict:
-            self.assertGreaterEqual(mapping_dict[hpo_id], 100)
-            self.assertLessEqual(mapping_dict[hpo_id], 999)
-
-    @mock.patch('bq_utils.get_hpo_info')
-    def test_get_hpo_and_rdr_mappings(self, mock_hpo_list):
-        mock_hpo_list.return_value = self.hpo_list
-        expected = [hpo_dict["hpo_id"] for hpo_dict in self.hpo_list
-                   ] + [gen_ext.RDR]
-        hpo_rdr_mapping_list = gen_ext.get_hpo_and_rdr_mappings()
-        self.assertEqual(len(hpo_rdr_mapping_list), len(expected))
-        for hpo_rdr_id in expected:
-            self.assertIn(hpo_rdr_id,
-                          [hpo_item[0] for hpo_item in hpo_rdr_mapping_list])
-        for hpo_item in hpo_rdr_mapping_list:
-            self.assertIn(hpo_item[0], expected)
-            if hpo_item[0] == gen_ext.RDR:
-                self.assertEqual(hpo_item[1], gen_ext.PPI_PM)
-
-    @mock.patch('bq_utils.get_hpo_info')
-    def test_convert_to_bq_string(self, mock_hpo_list):
-        mock_hpo_list.return_value = self.hpo_list
-        hpo_rdr_mapping_list = gen_ext.get_hpo_and_rdr_mappings()
-        hpo_bq_list = []
-        for hpo in bq_utils.get_hpo_info():
-            hpo_bq_list.append(self.bq_string.format(hpo_name=hpo["hpo_id"]))
-        hpo_bq_list.append(f'("{gen_ext.RDR}", "{gen_ext.PPI_PM}")')
-        expected = ', '.join(hpo_bq_list)
-        actual = gen_ext.convert_to_bq_string(hpo_rdr_mapping_list)
-        self.assertEqual(len(actual), len(expected))
-
-    @mock.patch('bq_utils.get_hpo_info')
     @mock.patch('bq_utils.create_table')
-    @mock.patch(
-        'tools.generate_ext_tables.create_and_populate_source_mapping_table')
     @mock.patch('tools.generate_ext_tables.get_mapping_table_ids')
     def test_generate_ext_table_queries(self, mock_mapping_tables,
-                                        mock_create_and_populate_mapping_table,
-                                        mock_create_table, mock_hpo_list):
-        mock_hpo_list.return_value = self.hpo_list
+                                        mock_create_table):
         mock_mapping_tables.return_value = self.mapping_tables
         expected = []
         for cdm_table in common.AOU_REQUIRED:
@@ -162,6 +120,7 @@ class GenerateExtTablesTest(unittest.TestCase):
                     project_id=self.project_id,
                     dataset_id=self.dataset_id,
                     mapping_dataset_id=self.dataset_id,
+                    sandbox_dataset_id=self.sandbox_id,
                     mapping_table_id=gen_ext.MAPPING_PREFIX + cdm_table,
                     site_mappings_table_id=gen_ext.SITE_TABLE_ID,
                     cdm_table_id=cdm_table)
