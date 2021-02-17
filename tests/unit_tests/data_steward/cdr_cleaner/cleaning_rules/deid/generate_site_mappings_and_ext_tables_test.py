@@ -70,7 +70,6 @@ class GenerateSiteMappingsTest(unittest.TestCase):
         mock_get_generate_ext_table_queries.return_value = [fake_query_dict]
         # Test
         actual_list = self.rule_instance.get_query_specs()
-        # mock_mapping_tables.return_value = self.mapping_tables
         expected_list = [{
             clean_consts.QUERY:
                 SITE_MAPPINGS_QUERY.render(

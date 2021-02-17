@@ -65,7 +65,7 @@ class GenerateSiteMappingsAndExtTables(BaseCleaningRule):
         tickets may affect this SQL, append them to the list of Jira Issues.
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
-        desc = f'Change PIDs to RIDs in specified tables'
+        desc = f'Create non-deterministic site ids for ehr sites and create the ext_tables'
 
         self._mapping_dataset_id = mapping_dataset_id
 
