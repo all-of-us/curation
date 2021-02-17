@@ -9,6 +9,7 @@ Usage: create_ehr_snapshot.sh
   --rdr_dataset <RDR dataset ID>
   --validation_dataset <Validation dataset ID>
   --dataset_release_tag <release tag for the CDR>
+  --truncation_date date to truncate the RDR data to. The cleaning rules defaults to the current date if unset.
 "
 
 while true; do
@@ -33,6 +34,10 @@ while true; do
     dataset_release_tag=$2
     shift 2
     ;;
+  --truncation_date)
+    truncation_date=$2
+    shift 2
+    ;;
   --)
     shift
     break
@@ -46,6 +51,11 @@ if [[ -z "${key_file}" ]] || [[ -z "${ehr_dataset}" ]] || [[ -z "${rdr_dataset}"
   exit 1
 fi
 
+# specific check on truncation_date. It should not cause a failure if it is not set.
+if [[ -z "${truncation_date}" ]] ; then
+  echo "truncation_date is unset.  Will default to the current date in the cleaning rule."
+fi
+
 app_id=$(python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);' < "${key_file}")
 
 echo "ehr_dataset --> ${ehr_dataset}"
@@ -54,6 +64,7 @@ echo "validation_dataset --> ${validation_dataset}"
 echo "app_id --> ${app_id}"
 echo "key_file --> ${key_file}"
 echo "dataset_release_tag --> ${dataset_release_tag}"
+echo "rdr truncation_date --> .  ${truncation_date}  ."
 
 ROOT_DIR=$(git rev-parse --show-toplevel)
 DATA_STEWARD_DIR="${ROOT_DIR}/data_steward"
@@ -108,7 +119,7 @@ echo "Cleaning the RDR data"
 data_stage="rdr"
 
 # apply cleaning rules on staging
-python "${CLEANER_DIR}/clean_cdr.py"  --project_id "${app_id}" --dataset_id "${rdr_clean_staging}" --sandbox_dataset_id "${rdr_clean_staging_sandbox}" --data_stage ${data_stage} -s 2>&1 | tee rdr_cleaning_log_"${rdr_clean}".txt
+python "${CLEANER_DIR}/clean_cdr.py"  --project_id "${app_id}" --dataset_id "${rdr_clean_staging}" --sandbox_dataset_id "${rdr_clean_staging_sandbox}" --data_stage ${data_stage} --truncation_date "${truncation_date}" -s 2>&1 | tee rdr_cleaning_log_"${rdr_clean}".txt
 
 # Create a snapshot dataset with the result
 python "${TOOLS_DIR}/snapshot_by_query.py" --project_id "${app_id}" --dataset_id "${rdr_clean_staging}" --snapshot_dataset_id "${rdr_clean}"
