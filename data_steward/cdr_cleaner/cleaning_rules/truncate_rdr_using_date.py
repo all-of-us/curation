@@ -82,7 +82,7 @@ class TruncateRdrData(BaseCleaningRule):
                          sandbox_dataset_id=sandbox_dataset_id)
         try:
             self.cutoff_date = validate_date_string(truncation_date)
-        except ValueError:
+        except (TypeError, ValueError):
             self.cutoff_date = str(datetime.now().date())
 
     def get_query_specs(self):
