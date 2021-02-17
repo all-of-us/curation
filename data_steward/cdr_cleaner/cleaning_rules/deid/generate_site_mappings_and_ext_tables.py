@@ -33,8 +33,8 @@ CREATE TABLE IF NOT EXISTS
     UNNEST(GENERATE_ARRAY(100, 999)) AS new_id
 )
 SELECT
-  r.hpo_id,
-  LOWER(m.hpo_id) as src_id
+  r.hpo_id as src_id,
+  LOWER(m.hpo_id) as hpo_id
 FROM
 (
   SELECT
@@ -46,7 +46,7 @@ FROM
 JOIN random_ids AS r
 USING (row_id)
 union all
-select '{{ppi_pm}}' as hpo_id, '{{rdr}}' as src_id
+select '{{rdr}}' as hpo_id, '{{ppi_pm}}' as src_id
 )
 """)
 
