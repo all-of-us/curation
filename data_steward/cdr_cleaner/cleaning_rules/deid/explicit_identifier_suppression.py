@@ -12,7 +12,6 @@ The concept_ids to suppress can be determined from the vocabulary with the follo
 """
 # Python imports
 import logging
-from typing import List
 
 # Project imports
 from resources import get_concept_id_fields
@@ -24,7 +23,7 @@ from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 LOGGER = logging.getLogger(__name__)
 
 ISSUE_NUMBERS = ['DC1363']
-EXPLICIT_IDENTIFIER_CONCEPTS = '_explicit_record_identifiers'
+EXPLICIT_IDENTIFIER_CONCEPTS = '_explicit_records_identifier_concepts'
 
 # Creates _explicit_identifier_concepts lookup table and populates with the concept_ids that are
 # from the concept table
@@ -32,7 +31,7 @@ LOOKUP_TABLE_CREATION_QUERY = JINJA_ENV.from_string("""
 CREATE TABLE IF NOT EXISTS `{{project_id}}.{{sandbox_dataset}}.{{lookup_table}}` AS 
 (
 WITH
-  explicit__concept_ids AS (
+  explicit_concept_ids AS (
   SELECT
     *
   FROM
@@ -58,7 +57,7 @@ WHERE
   SELECT
     cr.concept_id_2
   FROM
-    explicit__concept_ids AS c
+    explicit_concept_ids AS c
   JOIN
     `{{project_id}}.{{dataset_id}}.concept_relationship` AS cr
   ON
@@ -70,18 +69,20 @@ WHERE
 
 # Sandbox query to identify all the records with possible explicit record identifier concepts
 SANDBOX_EXPLICIT_IDENTIFIER_RECORDS = JINJA_ENV.from_string("""
-CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{intermediary_table}}`
+CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{intermediary_table}}` AS
+(
 SELECT
       ob.*
     FROM `{{project_id}}.{{dataset_id}}.{{observation_table}}` AS ob
     {% for concept_field in concept_fields %}
     LEFT JOIN `{{project_id}}.{{sandbox_dataset_id}}.{{lookup_table}}` AS s{{loop.index}}
-      ON d.{{concept_field}} = s{{loop.index}}.concept_id 
+      ON ob.{{concept_field}} = s{{loop.index}}.concept_id 
     {% endfor %}
     WHERE COALESCE(
     {% for concept_field in concept_fields %}
         {% if loop.previtem is defined %}, {% else %}  {% endif %} s{{loop.index}}.concept_id
     {% endfor %}) IS NOT NULL
+)
 """)
 
 SUPPRESS_EXPLICIT_IDENTIFIER_RECORDS = JINJA_ENV.from_string("""
@@ -89,7 +90,7 @@ SUPPRESS_EXPLICIT_IDENTIFIER_RECORDS = JINJA_ENV.from_string("""
   `{{project_id}}.{{dataset_id}}.{{observation_table}}`
 WHERE
 observation_id 
-NOT IN( SELECT
+IN( SELECT
     observation_id
     FROM `{{project_id}}.{{sandbox_dataset_id}}.{{intermediary_table}}` )
     """)
