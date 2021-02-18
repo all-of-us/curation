@@ -77,7 +77,7 @@ TOOLS_DIR="${DATA_STEWARD_DIR}/tools"
 DEID_DIR="${DATA_STEWARD_DIR}/deid"
 CLEANER_DIR="${DATA_STEWARD_DIR}/cdr_cleaner"
 HANDOFF_DATE="$(date -v +1d +'%Y-%m-%d')"
-data_stage="deid"
+data_stage="registered_tier_died"
 
 export BIGQUERY_DATASET_ID="${registered_cdr_deid}"
 export PYTHONPATH="${PYTHONPATH}:${DEID_DIR}:${DATA_STEWARD_DIR}"
@@ -95,17 +95,14 @@ python "${DATA_STEWARD_DIR}/cdm.py" "${registered_cdr_deid}"
 python "${DATA_STEWARD_DIR}/cdm.py" --component vocabulary "${registered_cdr_deid}"
 "${TOOLS_DIR}"/table_copy.sh --source_app_id "${APP_ID}" --target_app_id "${APP_ID}" --source_dataset "${vocab_dataset}" --target_dataset "${registered_cdr_deid}"
 
-# run cleaning_rules on registered tier dataset
-python "${CLEANER_DIR}/clean_cdr.py" --project_id "${APP_ID}" --dataset_id "${registered_cdr_deid}" --sandbox_dataset_id "${registered_cdr_deid_sandbox}" --data_stage ${data_stage} -s 2>&1 | tee registered_tier_cleaning_log.txt
-
-# apply deidentification on registered tier dataset
+# apply de-identification on registered tier dataset
 python "${TOOLS_DIR}/run_deid.py" --idataset "${cdr_id}" --private_key "${key_file}" --action submit --interactive --console-log --age_limit "${deid_max_age}" --odataset "${registered_cdr_deid}" 2>&1 | tee deid_run.txt
+
+# apply de-identification rules on registered tier dataset 
+python "${CLEANER_DIR}/clean_cdr.py" --project_id "${APP_ID}" --dataset_id "${registered_cdr_deid}" --sandbox_dataset_id "${registered_cdr_deid_sandbox}" --data_stage ${data_stage} --mapping_dataset_id "${cdr_id}" -s 2>&1 | tee registered_tier_cleaning_log.txt
 
 # create empty sandbox dataset for the deid
 bq mk --dataset --description "${version} sandbox dataset to apply cleaning rules on ${registered_cdr_deid}" --label "phase:sandbox" --label "release_tag:${dataset_release_tag}" --label "de_identified:true" "${APP_ID}":"${registered_cdr_deid_sandbox}"
-
-# generate ext tables in deid dataset
-python "${TOOLS_DIR}/generate_ext_tables.py" --project_id "${APP_ID}" --dataset_id "${registered_cdr_deid}" --sandbox_dataset_id "${registered_cdr_deid_sandbox}" --mapping_dataset_id "${cdr_id}" -s 2>&1 | tee generate_ext_tables.txt
 
 # update the observation_ext table with survey_version info.  should become a formal cleaning rule in the future.
 python "${CLEANER_DIR}/manual_cleaning_rules/survey_version_info.py" --project_id "${APP_ID}" --dataset_id "${registered_cdr_deid}" --sandbox_dataset_id "${registered_cdr_deid_sandbox}" --mapping_dataset "${cdr_id}" --cope_survey_dataset "${cope_survey_dataset}" --cope_survey_table "${cope_survey_table_name}" -s 2>&1 | tee survey_versioning.txt
