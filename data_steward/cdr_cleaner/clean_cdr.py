@@ -39,8 +39,9 @@ from cdr_cleaner.cleaning_rules.clean_ppi_numeric_fields_using_parameters import
 from cdr_cleaner.cleaning_rules.create_person_ext_table import CreatePersonExtTable
 from cdr_cleaner.cleaning_rules.date_shift_cope_responses import DateShiftCopeResponses
 from cdr_cleaner.cleaning_rules.deid.generate_site_mappings_and_ext_tables import GenerateSiteMappingsAndExtTables
+from cdr_cleaner.cleaning_rules.deid.ct_pid_rid_map import CtPIDtoRID
 from cdr_cleaner.cleaning_rules.deid.fitbit_dateshift import FitbitDateShiftRule
-from cdr_cleaner.cleaning_rules.deid.pid_rid_map import PIDtoRID
+from cdr_cleaner.cleaning_rules.deid.fitbit_pid_rid_map import FitbitPIDtoRID
 from cdr_cleaner.cleaning_rules.deid.remove_fitbit_data_if_max_age_exceeded import \
     RemoveFitbitDataIfMaxAgeExceeded
 from cdr_cleaner.cleaning_rules.drop_cope_duplicate_responses import DropCopeDuplicateResponses
@@ -185,7 +186,7 @@ COMBINED_CLEANING_CLASSES = [
 
 FITBIT_CLEANING_CLASSES = [
     (RemoveFitbitDataIfMaxAgeExceeded,),
-    (PIDtoRID,),
+    (FitbitPIDtoRID,),
     (FitbitDateShiftRule,),
 ]
 
@@ -206,6 +207,7 @@ DEID_CLEAN_CLEANING_CLASSES = [
 ]
 
 CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
+    (CtPIDtoRID,),
     (QRIDtoRID,),  # Should run before any row suppression rules
     (NullPersonBirthdate,),
     (TableSuppression,),

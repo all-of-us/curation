@@ -21,7 +21,7 @@ SELECT
     t.* EXCEPT (person_id),
     d.research_id as person_id
 FROM `{{input_table.project}}.{{input_table.dataset_id}}.{{input_table.table_id}}` t
-LEFT JOIN `{{deid_map.project}}.{{deid_map.dataset_id}}.{{deid_map.table_id}}` d
+JOIN `{{deid_map.project}}.{{deid_map.dataset_id}}.{{deid_map.table_id}}` d
 ON t.person_id = d.person_id
 """
 
@@ -31,7 +31,7 @@ VALIDATE_QUERY = """
 SELECT person_id
 FROM `{{input_table.project}}.{{input_table.dataset_id}}.{{input_table.table_id}}`
 WHERE person_id NOT IN 
-(SELECT research_id
+(SELECT {{pid}}
 FROM `{{deid_map.project}}.{{deid_map.dataset_id}}.{{deid_map.table_id}}`)
 """
 
@@ -101,6 +101,20 @@ class PIDtoRID(BaseCleaningRule):
     def get_sandbox_tablenames(self):
         return []
 
+    def inspect_rule(self, client):
+        """
+        Function to log pre-condition warnings E.g. pids without rids
+        """
+        for table in self.pid_tables:
+            query = VALIDATE_QUERY_TMPL.render(input_table=table,
+                                               deid_map=self.deid_map,
+                                               pid='person_id')
+            result = client.query(query).result()
+            if result.total_rows > 0:
+                pids = result.to_dataframe()['person_id'].to_list()
+                LOGGER.warning(
+                    f'PIDs {pids} excluded since no mapped research_ids found')
+
     def setup_rule(self, client):
         """
         Function to run any data upload options before executing a query.
@@ -127,11 +141,10 @@ class PIDtoRID(BaseCleaningRule):
         Validates the cleaning rule which deletes or updates the data from the tables
         """
         for table in self.pid_tables:
-            query = VALIDATE_QUERY_TMPL.render(
-                input_table=table,
-                deid_map=self.deid_map,
-            )
+            query = VALIDATE_QUERY_TMPL.render(input_table=table,
+                                               deid_map=self.deid_map,
+                                               pid='research_id')
             result = client.query(query).result()
             if result.total_rows > 0:
-                raise RuntimeError(
-                    f'PIDs {result.total_rows} not converted to research_ids')
+                pids = result.to_dataframe()['person_id'].to_list()
+                raise RuntimeError(f'PIDs {pids} not converted to research_ids')
