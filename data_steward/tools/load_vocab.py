@@ -7,12 +7,11 @@ import datetime
 import logging
 from typing import List, Iterable, Union
 
-import jinja2
 from google.cloud import storage
 from google.cloud.bigquery import Client, Dataset, SchemaField, LoadJob, LoadJobConfig, QueryJob, \
     QueryJobConfig, Table
 
-from common import VOCABULARY_TABLES
+from common import VOCABULARY_TABLES, JINJA_ENV
 from utils.sandbox import get_sandbox_dataset_id
 from utils import bq, pipeline_logging
 
@@ -20,7 +19,6 @@ LOGGER = logging.getLogger(__name__)
 DATE_TIME_TYPES = ['date', 'timestamp', 'datetime']
 MAX_BAD_RECORDS = 0
 FIELD_DELIMITER = '\t'
-JINJA_ENV = jinja2.Environment()
 SELECT_TPL = JINJA_ENV.from_string("""
     SELECT 
     {% for field in fields %}
