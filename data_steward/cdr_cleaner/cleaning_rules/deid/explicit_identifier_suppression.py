@@ -30,41 +30,35 @@ EXPLICIT_IDENTIFIER_CONCEPTS = '_explicit_records_identifier_concepts'
 LOOKUP_TABLE_CREATION_QUERY = JINJA_ENV.from_string("""
 CREATE TABLE IF NOT EXISTS `{{project_id}}.{{sandbox_dataset}}.{{lookup_table}}` AS 
 (
-WITH
-  explicit_concept_ids AS (
+with explicit_concept_ids AS
+(
   SELECT
     *
   FROM
     `{{project_id}}.{{dataset_id}}.concept`
   WHERE
-    REGEXP_CONTAINS(concept_code, 'Signature') OR((REGEXP_CONTAINS(concept_code, 'Name')
-        AND REGEXP_CONTAINS(concept_code, r'(First)|(Last)|(Middle)|(Help)'))) OR((REGEXP_CONTAINS(concept_code, '(Address)|(PhoneNumber)')
-        AND NOT REGEXP_CONTAINS(concept_code, '(PIIState)|(State_)|(ZIP)'))
-      AND concept_class_id != 'Topic') OR(REGEXP_CONTAINS(concept_code, 'SecondaryContactInfo')
-      AND concept_class_id = 'Question') OR((REGEXP_CONTAINS(concept_code, 'SocialSecurity')
-        AND concept_class_id = 'Question')))
+    REGEXP_CONTAINS(concept_code, 'Signature')
+    OR (REGEXP_CONTAINS(concept_code, 'Name') AND REGEXP_CONTAINS(concept_code, r'(First)|(Last)|(Middle)|(Help)'))
+    OR (REGEXP_CONTAINS(concept_code, '(Address)|(PhoneNumber)')
+        AND NOT REGEXP_CONTAINS(concept_code, '(PIIState)|(State_)|(ZIP)') AND concept_class_id != 'Topic') 
+    OR (REGEXP_CONTAINS(concept_code, 'SecondaryContactInfo') AND concept_class_id = 'Question')
+    OR (REGEXP_CONTAINS(concept_code, 'SocialSecurity') AND concept_class_id = 'Question')
+))
 SELECT
    DISTINCT *
 FROM
   explicit_concept_ids
 UNION DISTINCT
-SELECT
-  DISTINCT *
+SELECT DISTINCT
+  c2.*
 FROM
-  `{{project_id}}.{{dataset_id}}.concept`
-WHERE
-  concept_id IN(
-  SELECT
-    cr.concept_id_2
-  FROM
-    explicit_concept_ids AS c
-  JOIN
-    `{{project_id}}.{{dataset_id}}.concept_relationship` AS cr
-  ON
-    c.concept_id = cr.concept_id_1
-  WHERE
-    cr.relationship_id = 'Maps to')
-)
+  explicit_concept_ids AS c
+JOIN
+  `{{project_id}}.{{dataset_id}}.concept_relationship` AS cr
+ON
+  c.concept_id = cr.concept_id_1 AND cr.relationship_id = 'Maps to'
+JOIN {{project_id}}.{{dataset_id}}.concept AS c2
+  cr.concept_id_2 = c2.concept_id
 """)
 
 # Sandbox query to identify all the records with possible explicit record identifier concepts
@@ -146,7 +140,7 @@ class ExplicitIdentifierSuppression(BaseCleaningRule):
                     dataset_id=self.dataset_id,
                     sandbox_dataset_id=self.sandbox_dataset_id,
                     observation_table=OBSERVATION,
-                    intermediary_table=self.get_sandbox_tablenames(),
+                    intermediary_table=self.get_sandbox_tablenames()[0],
                     lookup_table=EXPLICIT_IDENTIFIER_CONCEPTS,
                     concept_fields=get_concept_id_fields(OBSERVATION))
         }
@@ -157,7 +151,7 @@ class ExplicitIdentifierSuppression(BaseCleaningRule):
                     project_id=self.project_id,
                     dataset_id=self.dataset_id,
                     sandbox_dataset_id=self.sandbox_dataset_id,
-                    intermediary_table=self.get_sandbox_tablenames(),
+                    intermediary_table=self.get_sandbox_tablenames()[0],
                     observation_table=OBSERVATION)
         }
 
@@ -170,7 +164,7 @@ class ExplicitIdentifierSuppression(BaseCleaningRule):
         pass
 
     def get_sandbox_tablenames(self):
-        return self.sandbox_table_for(OBSERVATION)
+        return [self.sandbox_table_for(OBSERVATION)]
 
     def setup_validation(self, client, *args, **keyword_args):
         """
