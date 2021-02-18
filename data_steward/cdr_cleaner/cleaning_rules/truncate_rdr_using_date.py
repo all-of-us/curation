@@ -72,7 +72,16 @@ class TruncateRdrData(BaseCleaningRule):
         :params: truncation_date: the last date that should be included in the
             dataset
         """
-        desc = 'All rows of data in the August RDR export with dates after 08/01/2020 will be truncated.'
+        try:
+            # set to provided date string if the date string is valid
+            self.cutoff_date = validate_date_string(truncation_date)
+        except (TypeError, ValueError):
+            # otherwise, default to using todays date as the date string
+            self.cutoff_date = str(datetime.now().date())
+
+        desc = (f'All rows of data in the RDR export with dates after '
+                f'{self.cutoff_date} will be truncated.')
+
         super().__init__(issue_numbers=['DC1009'],
                          description=desc,
                          affected_datasets=[cdr_consts.RDR],
@@ -80,10 +89,6 @@ class TruncateRdrData(BaseCleaningRule):
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id)
-        try:
-            self.cutoff_date = validate_date_string(truncation_date)
-        except (TypeError, ValueError):
-            self.cutoff_date = str(datetime.now().date())
 
     def get_query_specs(self):
         """
@@ -156,7 +161,11 @@ def validate_date_string(date_string):
     """
     Validates the date string is a valid date in the YYYY-MM-DD format.
 
+    If the string is valid, it returns the string.  Otherwise, it raises either
+    a ValueError or TypeError.
+
     :param date_string: The string to validate
+
     :return:  a valid date string
     :raises:  A ValueError if the date string is not a valid date or
         doesn't conform to the specified format.
