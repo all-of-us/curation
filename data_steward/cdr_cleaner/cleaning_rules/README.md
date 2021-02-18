@@ -33,7 +33,7 @@ clean_cdr.py --data_stage FITBIT
              --dataset_id fitbit
              --sandbox_dataset_id fitbit_sandbox
 
-MissingParameterError: the parameter 'mapping_dataset_id' required by generate_ext_tables, RemoveFitbitDataIfMaxAgeExceeded, PIDtoRID FitbitDateShift was not supplied. No cleaning rules have been applied.
+MissingParameterError: the parameter 'mapping_dataset_id' required by RemoveFitbitDataIfMaxAgeExceeded, PIDtoRID FitbitDateShift was not supplied. No cleaning rules have been applied.
 ```
 
 ## Configuration dependencies
@@ -67,16 +67,14 @@ Depending on the rule(s) being applied, additional configuration parameters may 
 | [tablename](#)[^2] | |
 [^2]: these parameters defined in remove_ehr_data_past_deactivation_date will probably be refactored
 ### mapping_dataset_id
- - generate_ext_tables [^3] : creates and loads `_site_mappings` table in this dataset
  - RemoveFitbitDataIfMaxAgeExceeded
  - PIDtoRID
- - FitbitDateShift 
-[^3]: The cleaning rule `generate_ext_tables` does not conform to many conventions and we eventually intend to refactor it
+ - FitbitDateShift
 ### mapping_table_id
  - PIDtoRID
  - FitbitDateShift
 ### combined_dataset_id
- - generate_ext_tables: creates `{domain_table}_ext` using `_mapping{_domain_table}`  and `_site_mappings`
+
 ### ehr_dataset_id
  - remove_non_matching_participant (optional)
 ### validation_dataset_id
