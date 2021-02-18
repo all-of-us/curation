@@ -43,7 +43,7 @@ with explicit_concept_ids AS
         AND NOT REGEXP_CONTAINS(concept_code, '(PIIState)|(State_)|(ZIP)') AND concept_class_id != 'Topic') 
     OR (REGEXP_CONTAINS(concept_code, 'SecondaryContactInfo') AND concept_class_id = 'Question')
     OR (REGEXP_CONTAINS(concept_code, 'SocialSecurity') AND concept_class_id = 'Question')
-))
+)
 SELECT
    DISTINCT *
 FROM
@@ -58,7 +58,8 @@ JOIN
 ON
   c.concept_id = cr.concept_id_1 AND cr.relationship_id = 'Maps to'
 JOIN {{project_id}}.{{dataset_id}}.concept AS c2
-  cr.concept_id_2 = c2.concept_id
+  ON cr.concept_id_2 = c2.concept_id 
+)
 """)
 
 # Sandbox query to identify all the records with possible explicit record identifier concepts
