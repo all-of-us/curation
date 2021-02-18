@@ -104,9 +104,6 @@ python "${TOOLS_DIR}/run_deid.py" --idataset "${cdr_id}" --private_key "${key_fi
 # create empty sandbox dataset for the deid
 bq mk --dataset --description "${version} sandbox dataset to apply cleaning rules on ${registered_cdr_deid}" --label "phase:sandbox" --label "release_tag:${dataset_release_tag}" --label "de_identified:true" "${APP_ID}":"${registered_cdr_deid_sandbox}"
 
-# generate ext tables in deid dataset
-python "${TOOLS_DIR}/generate_ext_tables.py" --project_id "${APP_ID}" --dataset_id "${registered_cdr_deid}" --sandbox_dataset_id "${registered_cdr_deid_sandbox}" --mapping_dataset_id "${cdr_id}" -s 2>&1 | tee generate_ext_tables.txt
-
 # update the observation_ext table with survey_version info.  should become a formal cleaning rule in the future.
 python "${CLEANER_DIR}/manual_cleaning_rules/survey_version_info.py" --project_id "${APP_ID}" --dataset_id "${registered_cdr_deid}" --sandbox_dataset_id "${registered_cdr_deid_sandbox}" --mapping_dataset "${cdr_id}" --cope_survey_dataset "${cope_survey_dataset}" --cope_survey_table "${cope_survey_table_name}" -s 2>&1 | tee survey_versioning.txt
 
