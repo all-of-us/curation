@@ -57,7 +57,7 @@ JOIN
   `{{project_id}}.{{dataset_id}}.concept_relationship` AS cr
 ON
   c.concept_id = cr.concept_id_1 AND cr.relationship_id = 'Maps to'
-JOIN {{project_id}}.{{dataset_id}}.concept AS c2
+JOIN `{{project_id}}.{{dataset_id}}.concept` AS c2
   ON cr.concept_id_2 = c2.concept_id 
 )
 """)
