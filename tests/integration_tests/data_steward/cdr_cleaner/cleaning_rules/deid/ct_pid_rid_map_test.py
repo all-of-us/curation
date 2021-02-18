@@ -5,6 +5,7 @@ from datetime import datetime
 # Project Imports
 from app_identity import PROJECT_ID
 import cdr_cleaner.cleaning_rules.deid.ct_pid_rid_map as cr
+from cdr_cleaner.cleaning_rules.deid.pid_rid_map import LOGGER
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 from common import DEID_MAP, CONDITION_OCCURRENCE, PERSON
 
@@ -112,11 +113,21 @@ class CtPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
             (1234, 234, 256),
             (5678, 678, 250),
             (2345, 345, 255),
-            (6789, 789, 256),
-            (3456, 456, 255)""").render(fq_table=self.fq_deid_map_table)
+            (6789, 789, 256)""").render(fq_table=self.fq_deid_map_table)
         queries.append(map_query)
 
         self.load_test_data(queries)
+
+        self.rule_instance.setup_rule(self.client)
+
+        # verify pid 3456 is excluded and logged
+        log_module = 'cdr_cleaner.cleaning_rules.deid.pid_rid_map'
+        log_level = 'WARNING'
+        log_message = 'PIDs [3456] excluded since no mapped research_ids found'
+        expected_log_msg = f"{log_level}:{log_module}:{log_message}"
+        with self.assertLogs(LOGGER, level='WARN') as ir:
+            self.rule_instance.inspect_rule(self.client)
+        self.assertEqual(ir.output, [expected_log_msg])
 
         # Expected results list
         tables_and_counts = [{
@@ -136,9 +147,7 @@ class CtPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
                 (50003, 345, 500, datetime.fromisoformat('2020-08-17').date(),
                  datetime.fromisoformat('2020-08-17 13:00:00+00:00'), 12),
                 (50004, 789, 800, datetime.fromisoformat('2020-08-17').date(),
-                 datetime.fromisoformat('2020-08-17 12:00:00+00:00'), 13),
-                (50005, 456, 1000, datetime.fromisoformat('2020-08-17').date(),
-                 datetime.fromisoformat('2020-08-17 11:00:00+00:00'), 14)
+                 datetime.fromisoformat('2020-08-17 12:00:00+00:00'), 13)
             ]
         }]
 
