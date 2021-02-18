@@ -1,10 +1,11 @@
 # Python imports
+from datetime import datetime
 import unittest
 
 # Project imports
 from cdr_cleaner.cleaning_rules.truncate_rdr_using_date import (
-    TruncateRdrData, TABLES_DATES_FIELDS, CUTOFF_DATE, SANDBOX_QUERY,
-    TRUNCATE_ROWS)
+    TruncateRdrData, TABLES_DATES_FIELDS, SANDBOX_QUERY, TRUNCATE_ROWS,
+    validate_date_string)
 from constants.cdr_cleaner import clean_cdr as clean_consts
 
 
@@ -20,6 +21,9 @@ class TruncateRdrDataTest(unittest.TestCase):
         self.project_id = 'foo_project'
         self.dataset_id = 'bar_dataset'
         self.sandbox_id = 'baz_sandbox'
+
+        self.cutoff_date = '2021-01-01'
+        self.today = str(datetime.now().date())
 
         self.rule_instance = TruncateRdrData(self.project_id, self.dataset_id,
                                              self.sandbox_id)
@@ -50,7 +54,7 @@ class TruncateRdrDataTest(unittest.TestCase):
                                          get_sandbox_tablenames()[counter],
                                          table_name=table,
                                          field_name=TABLES_DATES_FIELDS[table],
-                                         cutoff_date=CUTOFF_DATE)
+                                         cutoff_date=self.today)
             }
 
             sandbox_queries.append(save_changed_rows)
@@ -61,7 +65,7 @@ class TruncateRdrDataTest(unittest.TestCase):
                                          dataset=self.dataset_id,
                                          table_name=table,
                                          field_name=TABLES_DATES_FIELDS[table],
-                                         cutoff_date=CUTOFF_DATE),
+                                         cutoff_date=self.today),
             }
 
             truncate_queries.append(truncate_query)
@@ -70,6 +74,14 @@ class TruncateRdrDataTest(unittest.TestCase):
         expected_list = sandbox_queries + truncate_queries
 
         self.assertEqual(results_list, expected_list)
+
+    def test_validate_date_string(self):
+        self.assertRaises(TypeError, validate_date_string, None)
+        self.assertRaises(TypeError, validate_date_string, 18)
+        self.assertRaises(ValueError, validate_date_string, '01-11-2019')
+
+        self.assertEqual(validate_date_string(self.cutoff_date),
+                         self.cutoff_date)
 
     def test_log_queries(self):
         # Pre conditions
@@ -89,7 +101,7 @@ class TruncateRdrDataTest(unittest.TestCase):
                                          get_sandbox_tablenames()[counter],
                                          table_name=table,
                                          field_name=TABLES_DATES_FIELDS[table],
-                                         cutoff_date=CUTOFF_DATE)
+                                         cutoff_date=self.today)
             }
 
             sandbox_queries.append(
@@ -102,7 +114,7 @@ class TruncateRdrDataTest(unittest.TestCase):
                                          dataset=self.dataset_id,
                                          table_name=table,
                                          field_name=TABLES_DATES_FIELDS[table],
-                                         cutoff_date=CUTOFF_DATE),
+                                         cutoff_date=self.today),
             }
 
             truncate_queries.append(

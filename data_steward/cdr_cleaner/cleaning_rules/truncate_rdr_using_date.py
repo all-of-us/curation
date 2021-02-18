@@ -9,6 +9,7 @@ All rows of data in the August RDR export with dates after 08/01/2020 should be 
 """
 
 # Python imports
+from datetime import datetime
 import logging
 
 # Project imports
@@ -29,8 +30,6 @@ TABLES_DATES_FIELDS = {
     common.MEASUREMENT: 'measurement_date',
     common.PROCEDURE_OCCURRENCE: 'procedure_date'
 }
-
-CUTOFF_DATE = '2020-08-01'
 
 # Query to create tables in sandbox with the rows that will be removed per cleaning rule
 SANDBOX_QUERY = common.JINJA_ENV.from_string("""
@@ -58,15 +57,31 @@ class TruncateRdrData(BaseCleaningRule):
     sandboxed dataset prior to use of the RDR export to create the CDR
     """
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id):
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 truncation_date=None):
         """
         Initialize the class with proper information.
 
         Set the issue numbers, description and affected datasets. As other tickets may affect
         this SQL, append them to the list of Jira Issues.
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
+
+        :params: truncation_date: the last date that should be included in the
+            dataset
         """
-        desc = 'All rows of data in the August RDR export with dates after 08/01/2020 will be truncated.'
+        try:
+            # set to provided date string if the date string is valid
+            self.cutoff_date = validate_date_string(truncation_date)
+        except (TypeError, ValueError):
+            # otherwise, default to using todays date as the date string
+            self.cutoff_date = str(datetime.now().date())
+
+        desc = (f'All rows of data in the RDR export with dates after '
+                f'{self.cutoff_date} will be truncated.')
+
         super().__init__(issue_numbers=['DC1009'],
                          description=desc,
                          affected_datasets=[cdr_consts.RDR],
@@ -98,7 +113,7 @@ class TruncateRdrData(BaseCleaningRule):
                         [counter],
                         table_name=table,
                         field_name=TABLES_DATES_FIELDS[table],
-                        cutoff_date=CUTOFF_DATE)
+                        cutoff_date=self.cutoff_date)
             }
 
             sandbox_queries.append(save_changed_rows)
@@ -109,7 +124,7 @@ class TruncateRdrData(BaseCleaningRule):
                                          dataset=self.dataset_id,
                                          table_name=table,
                                          field_name=TABLES_DATES_FIELDS[table],
-                                         cutoff_date=CUTOFF_DATE),
+                                         cutoff_date=self.cutoff_date),
             }
 
             truncate_queries.append(truncate_query)
@@ -142,22 +157,52 @@ class TruncateRdrData(BaseCleaningRule):
         return sandbox_tables
 
 
+def validate_date_string(date_string):
+    """
+    Validates the date string is a valid date in the YYYY-MM-DD format.
+
+    If the string is valid, it returns the string.  Otherwise, it raises either
+    a ValueError or TypeError.
+
+    :param date_string: The string to validate
+
+    :return:  a valid date string
+    :raises:  A ValueError if the date string is not a valid date or
+        doesn't conform to the specified format.
+    """
+    datetime.strptime(date_string, '%Y-%m-%d')
+    return date_string
+
+
 if __name__ == '__main__':
     import cdr_cleaner.args_parser as parser
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
-    ARGS = parser.parse_args()
+    ext_parser = parser.get_argument_parser()
+    ext_parser.add_argument(
+        '--truncation_date',
+        dest='cutoff_date',
+        action='store',
+        help=('Cutoff date for data based on <table_name>_date fields.  '
+              'Should be in the form YYYY-MM-DD.'),
+        required=True,
+        type=validate_date_string,
+    )
+    ARGS = ext_parser.parse_args()
 
     if ARGS.list_queries:
         clean_engine.add_console_logging()
         query_list = clean_engine.get_query_list(ARGS.project_id,
                                                  ARGS.dataset_id,
                                                  ARGS.sandbox_dataset_id,
-                                                 [(TruncateRdrData,)])
+                                                 [(TruncateRdrData,)],
+                                                 cutoff_date=ARGS.cutoff_date)
         for query in query_list:
             LOGGER.info(query)
     else:
         clean_engine.add_console_logging(ARGS.console_log)
-        clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
+        clean_engine.clean_dataset(ARGS.project_id,
+                                   ARGS.dataset_id,
                                    ARGS.sandbox_dataset_id,
-                                   [(TruncateRdrData,)])
+                                   ARGS.cutoff_date, [(TruncateRdrData,)],
+                                   cutoff_date=ARGS.cutoff_date)
