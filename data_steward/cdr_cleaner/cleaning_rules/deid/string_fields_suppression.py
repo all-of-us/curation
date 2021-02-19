@@ -30,14 +30,16 @@ WHERE d.{{field_name}} = {{field_value}} and s.{{domain_table}}_id IS NULL
 """)
 
 STRING_FIELD_SUPPRESSION_QUERY_TEMPLATE = JINJA_ENV.from_string("""
+-- The query is written using REPLACE because it is easier for writing the integration test --
+-- otherwise one would have to define all the columns in the integration test --
 SELECT
-{% for field in fields %}
-{% if field['type'] == 'string' -%}
-    {{'\t'}}CAST({% if field['mode'] == 'required' %} '' {%- else -%} NULL {%- endif %} AS STRING) AS {{field['name']}}
-{%- else -%}
-    {{'\t'}}{{field['name']}}
-{%- endif %} {%- if loop.nextitem is defined %}, {% endif %} --Add a comma at the end --  
-{% endfor %}
+    d.* 
+    REPLACE(
+    {% for field in string_fields %}
+        CAST({% if field['mode'] == 'required' %} '' {%- else -%} NULL {%- endif %} AS STRING) AS {{field['name']}}
+        {%- if loop.nextitem is defined %}, {% endif %} --Add a comma at the end --  
+    {% endfor %}
+    )
 FROM `{{project}}.{{dataset}}.{{domain_table}}` AS d
 """)
 
@@ -58,8 +60,8 @@ SELECT
 FROM `{{project}}.{{dataset}}.{{domain_table}}` AS d
 WHERE
 {% set string_fields = [] %}
-{% for field_name in string_field_names -%}
-    ({{field_name}} IS NOT NULL OR {{field_name}} <> '')
+{% for field in string_fields -%}
+    ({{field['name']}} IS NOT NULL OR {{field['name']}} <> '')
     {%- if loop.nextitem is defined %} OR {% endif -%}
 {% endfor %}
 """)
@@ -74,7 +76,7 @@ class SuppressionException(NamedTuple):
     domain_table: the table from which the records are identified to sandbox for later recovery.
     sandbox_table: the sandbox table for storing the records
     field_name: the field for identifying records 
-    field_value: the value for identifying such records
+    field_value: the value for identifying records
     restore_fields: a list of string fields to recover after suppression has been applied
     """
     domain_table: str
@@ -82,6 +84,18 @@ class SuppressionException(NamedTuple):
     field_name: str
     field_value: Union[str, int]
     restore_fields: List[str]
+
+
+def get_string_fields(domain_table):
+    """
+    Get string fields associated for the table
+    :param domain_table: 
+    :return: 
+    """
+    return [
+        field for field in resources.fields_for(domain_table)
+        if field['type'] == 'string'
+    ]
 
 
 class StringFieldsSuppression(BaseCleaningRule):
@@ -185,17 +199,19 @@ class StringFieldsSuppression(BaseCleaningRule):
             })
 
         for affected_table in self.affected_tables:
-            string_suppression_query = STRING_FIELD_SUPPRESSION_QUERY_TEMPLATE.render(
-                project=self.project_id,
-                dataset=self.dataset_id,
-                domain_table=affected_table,
-                fields=resources.fields_for(affected_table))
-            queries.append({
-                cdr_consts.QUERY: string_suppression_query,
-                cdr_consts.DESTINATION_TABLE: affected_table,
-                cdr_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE,
-                cdr_consts.DESTINATION_DATASET: self.dataset_id
-            })
+            string_fields = get_string_fields(affected_table)
+            if string_fields:
+                string_suppression_query = STRING_FIELD_SUPPRESSION_QUERY_TEMPLATE.render(
+                    project=self.project_id,
+                    dataset=self.dataset_id,
+                    domain_table=affected_table,
+                    string_fields=string_fields)
+                queries.append({
+                    cdr_consts.QUERY: string_suppression_query,
+                    cdr_consts.DESTINATION_TABLE: affected_table,
+                    cdr_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE,
+                    cdr_consts.DESTINATION_DATASET: self.dataset_id
+                })
 
         # Post suppression, restore the records that are excluded from the suppression rule
         for rule_exception in self.get_rule_exceptions():
@@ -228,17 +244,13 @@ class StringFieldsSuppression(BaseCleaningRule):
         :return: 
         """
         for table in self.affected_tables:
-            string_field_names = [
-                field['name']
-                for field in resources.fields_for(table)
-                if field['type'] == 'string'
-            ]
-            if string_field_names:
+            string_fields = get_string_fields(table)
+            if string_fields:
                 validation_query = VALIDATION_QUERY_TEMPLATE.render(
                     project=self.project_id,
                     dataset=self.dataset_id,
                     domain_table=table,
-                    string_field_names=string_field_names)
+                    string_fields=string_fields)
                 result = client.query(validation_query).result()
                 if result.total_rows > 0:
                     raise RuntimeError(
