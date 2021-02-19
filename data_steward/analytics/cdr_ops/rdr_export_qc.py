@@ -16,6 +16,7 @@
 project_id = ""
 old_rdr = ""
 new_rdr = ""
+key_file = ""
 # -
 
 # # QC for RDR Export
@@ -26,40 +27,45 @@ new_rdr = ""
 import urllib
 import pandas as pd
 
+from google.oauth2 import service_account
+
 pd.options.display.max_rows = 120
+
+creds = service_account.Credentials.from_service_account_file(key_file)
+
 # -
 
 # # Table comparison
 # The export should generally contain the same tables from month to month. Tables found only in the old or the new export are listed below.
 
 query = f'''
-SELECT 
+SELECT
   COALESCE(curr.table_id, prev.table_id) AS table_id
- ,curr.row_count AS {new_rdr}
- ,prev.row_count AS {old_rdr}
- ,(curr.row_count - prev.row_count) row_diff
-FROM `{project_id}.{new_rdr}.__TABLES__` curr 
+ ,curr.row_count AS _{new_rdr}
+ ,prev.row_count AS _{old_rdr}
+ ,(curr.row_count - prev.row_count) AS row_diff
+FROM `{project_id}.{new_rdr}.__TABLES__` curr
 FULL OUTER JOIN `{project_id}.{old_rdr}.__TABLES__` prev
   USING (table_id)
 WHERE curr.table_id IS NULL OR prev.table_id IS NULL
 '''
-pd.read_gbq(query, dialect='standard')
+pd.read_gbq(query, dialect='standard', credentials=creds)
 
 # ## Row count comparison
 # Generally the row count of clinical tables should increase from one export to the next.
 
 query = f'''
-SELECT 
+SELECT
   curr.table_id AS table_id
- ,prev.row_count AS {old_rdr}
- ,curr.row_count AS {new_rdr}
+ ,prev.row_count AS _{old_rdr}
+ ,curr.row_count AS _{new_rdr}
  ,(curr.row_count - prev.row_count) row_diff
-FROM `{project_id}.{new_rdr}.__TABLES__` curr 
+FROM `{project_id}.{new_rdr}.__TABLES__` curr
 JOIN `{project_id}.{old_rdr}.__TABLES__` prev
   USING (table_id)
 ORDER BY ABS(curr.row_count - prev.row_count) DESC;
 '''
-pd.read_gbq(query, dialect='standard')
+pd.read_gbq(query, dialect='standard', credentials=creds)
 
 # ## ID range check
 # Combine step may break if any row IDs in the RDR are larger than the added constant(1,000,000,000,000,000).
@@ -82,55 +88,57 @@ for table in domain_table_list:
       {table}_id > 999999999999999
     '''
     queries.append(query)
-pd.read_gbq('\nUNION ALL\n'.join(queries), dialect='standard')
+pd.read_gbq('\nUNION ALL\n'.join(queries),
+            dialect='standard',
+            credentials=creds)
 
 # ## Concept codes used
 # Identify question and answer concept codes which were either added or removed (appear in only the new or only the old RDR datasets, respectively).
 
 query = f'''
 WITH curr_code AS (
-SELECT 
+SELECT
   observation_source_value value
  ,'observation_source_value' field
- ,COUNT(1) row_count 
+ ,COUNT(1) row_count
 FROM `{project_id}.{new_rdr}.observation` GROUP BY 1
 
 UNION ALL
 
-SELECT 
+SELECT
   value_source_value value
- ,'value_source_value' field 
- ,COUNT(1) row_count 
+ ,'value_source_value' field
+ ,COUNT(1) row_count
 FROM `{project_id}.{new_rdr}.observation` GROUP BY 1),
 
 prev_code AS (
-SELECT 
+SELECT
   observation_source_value value
- ,'observation_source_value' field 
- ,COUNT(1) row_count 
+ ,'observation_source_value' field
+ ,COUNT(1) row_count
 FROM `{project_id}.{old_rdr}.observation` GROUP BY 1
 
 UNION ALL
 
-SELECT 
-  value_source_value value 
+SELECT
+  value_source_value value
  ,'value_source_value' field
- ,COUNT(1) row_count 
+ ,COUNT(1) row_count
 FROM `{project_id}.{old_rdr}.observation` GROUP BY 1)
 
-SELECT 
+SELECT
   prev_code.value prev_code_value
  ,prev_code.field prev_code_field
  ,prev_code.row_count prev_code_row_count
  ,curr_code.value curr_code_value
  ,curr_code.field curr_code_field
  ,curr_code.row_count curr_code_row_count
-FROM curr_code 
+FROM curr_code
  FULL OUTER JOIN prev_code
   USING (field, value)
 WHERE prev_code.value IS NULL OR curr_code.value IS NULL
 '''
-pd.read_gbq(query, dialect='standard')
+pd.read_gbq(query, dialect='standard', credentials=creds)
 
 # # Question codes should have mapped `concept_id`s
 # Question codes in `observation_source_value` should be associated with the concept identified by `observation_source_concept_id` and mapped to a standard concept identified by `observation_concept_id`. The table below lists codes having rows where either field is null or zero and the number of rows where this occurs. This may be associated with an issue in the PPI vocabulary or in the RDR ETL process.
@@ -149,13 +157,13 @@ GROUP BY 1
 HAVING source_concept_id_null + source_concept_id_zero + concept_id_null + concept_id_zero > 0
 ORDER BY 2 DESC, 3 DESC, 4 DESC, 5 DESC
 """
-pd.read_gbq(query, dialect='standard')
+pd.read_gbq(query, dialect='standard', credentials=creds)
 
 # # Answer codes should have mapped `concept_id`s
 # Answer codes in value_source_value should be associated with the concept identified by value_source_concept_id and mapped to a standard concept identified by value_as_concept_id. The table below lists codes having rows where either field is null or zero and the number of rows where this occurs. This may be associated with an issue in the PPI vocabulary or in the RDR ETL process.
 
 query = f"""
-SELECT 
+SELECT
   value_source_value
  ,COUNTIF(value_source_concept_id IS NULL) AS source_concept_id_null
  ,COUNTIF(value_source_concept_id=0)       AS source_concept_id_zero
@@ -168,13 +176,13 @@ GROUP BY 1
 HAVING source_concept_id_null + source_concept_id_zero + concept_id_null + concept_id_zero > 0
 ORDER BY 2 DESC, 3 DESC, 4 DESC, 5 DESC
 """
-pd.read_gbq(query, dialect='standard')
+pd.read_gbq(query, dialect='standard', credentials=creds)
 
 # # Dates are equal in observation_date and observation_datetime
 # Any mismatches are listed below.
 
 query = f"""
-SELECT 
+SELECT
   observation_id
  ,person_id
  ,observation_date
@@ -182,7 +190,7 @@ SELECT
 FROM `{project_id}.{new_rdr}.observation`
 WHERE observation_date != EXTRACT(DATE FROM observation_datetime)
 """
-pd.read_gbq(query, dialect='standard')
+pd.read_gbq(query, dialect='standard', credentials=creds)
 
 # # Check for duplicates
 
@@ -201,7 +209,7 @@ with duplicates AS (
     INNER JOIN `{project_id}.{new_rdr}.cope_survey_semantic_version_map` USING (questionnaire_response_id) -- For COPE only
     GROUP BY 1,2,3,4,5,6
 )
-SELECT 
+SELECT
   n_data   AS duplicates
  ,COUNT(1) AS n_duplicates
 FROM duplicates
@@ -209,9 +217,10 @@ WHERE n_data > 1
 GROUP BY 1
 ORDER BY 2 DESC
 """
-pd.read_gbq(query, dialect='standard')
+pd.read_gbq(query, dialect='standard', credentials=creds)
 
 # # Check if numeric data in value_as_string
+# Some numeric data is expected in value_as_string.  For example, zip codes or other contact specific information.
 
 query = f"""
 SELECT
@@ -222,7 +231,7 @@ WHERE SAFE_CAST(value_as_string AS INT64) IS NOT NULL
 GROUP BY 1
 ORDER BY 2 DESC
 """
-pd.read_gbq(query, dialect='standard')
+pd.read_gbq(query, dialect='standard', credentials=creds)
 
 # # All COPE `questionnaire_response_id`s are in COPE version map
 # Any `questionnaire_response_id`s missing from the map will be listed below.
@@ -233,12 +242,12 @@ SELECT
  ,person_id
  ,questionnaire_response_id
 FROM `{project_id}.{new_rdr}.observation`
- INNER JOIN `{project_id}.pipeline_tables.cope_concepts` 
+ INNER JOIN `{project_id}.pipeline_tables.cope_concepts`
   ON observation_source_value = concept_code
-WHERE questionnaire_response_id NOT IN 
+WHERE questionnaire_response_id NOT IN
 (SELECT questionnaire_response_id FROM `{project_id}.{new_rdr}.cope_survey_semantic_version_map`)
 """
-pd.read_gbq(query, dialect='standard')
+pd.read_gbq(query, dialect='standard', credentials=creds)
 
 # # No duplicate `questionnaire_response_id`s in COPE version map
 # Any duplicated `questionnaire_response_id`s will be listed below.
@@ -247,13 +256,15 @@ query = f"""
 SELECT
   questionnaire_response_id
  ,COUNT(*) n
-FROM `{project_id}.{new_rdr}.cope_survey_semantic_version_map` 
+FROM `{project_id}.{new_rdr}.cope_survey_semantic_version_map`
 GROUP BY questionnaire_response_id
 HAVING n > 1
 """
-pd.read_gbq(query, dialect='standard')
+pd.read_gbq(query, dialect='standard', credentials=creds)
 
 # # Survey version and dates
+# Cope survey versions and the minimum and maximum dates associated with those surveys are listed.
+# Dates should roughly line up with survey opening and closing dates.
 
 query = f"""
 SELECT
@@ -264,7 +275,7 @@ FROM `{project_id}.{new_rdr}.observation`
 JOIN `{project_id}.{new_rdr}.cope_survey_semantic_version_map` USING (questionnaire_response_id)
 GROUP BY 1
 """
-pd.read_gbq(query, dialect='standard')
+pd.read_gbq(query, dialect='standard', credentials=creds)
 
 # # Class of PPI Concepts using vocabulary.py
 # Concept codes which appear in `observation.observation_source_value` should belong to concept class Question.
@@ -272,31 +283,51 @@ pd.read_gbq(query, dialect='standard')
 
 query = f'''
 WITH ppi_concept_code AS (
- SELECT 
+ SELECT
    observation_source_value AS code
   ,'Question'               AS expected_concept_class_id
   ,COUNT(1) n
- FROM {project_id}.{new_rdr}.observation
+ FROM `{project_id}.{new_rdr}.observation`
  GROUP BY 1, 2
- 
+
  UNION ALL
- 
- SELECT DISTINCT 
+
+ SELECT DISTINCT
    value_source_value AS code
-  ,'Answer'           AS expected_concept_class_id 
+  ,'Answer'           AS expected_concept_class_id
   ,COUNT(1) n
- FROM {project_id}.{new_rdr}.observation
+ FROM `{project_id}.{new_rdr}.observation`
  GROUP BY 1, 2
 )
-SELECT 
+SELECT
   code
  ,expected_concept_class_id
  ,concept_class_id
  ,n
 FROM ppi_concept_code
-JOIN {project_id}.{new_rdr}.concept
+JOIN `{project_id}.{new_rdr}.concept`
  ON LOWER(concept_code)=LOWER(code)
 WHERE LOWER(concept_class_id)<>LOWER(expected_concept_class_id)
 ORDER BY 1, 2, 3
 '''
-pd.read_gbq(query, dialect='standard')
+pd.read_gbq(query, dialect='standard', credentials=creds)
+
+# # Make sure smoking data still exists
+# Make sure that the cleaning rule clash that previously wiped out all numeric smoking data is corrected.
+# If any of the counts come back as zero, there is a problem and it should be fixed.  Zero counts in the
+# obs_src_count column when running on an rdr import indicate problems with the RDR ETL and will require
+# cross team coordination.  Zero counts in the obs_src_count column when running on a cleaned rdr import
+# indicate problems with cleaning rules that should be remediated by curation.
+
+query = f'''
+SELECT
+    observation_source_value
+    , observation_source_concept_id
+    , count(*) AS obs_src_count
+FROM `{project_id}.{new_rdr}.observation`
+WHERE observation_source_concept_id IN (1585864, 1585870,1585873, 1586159,1586162)
+    AND value_as_number IS NOT NULL
+GROUP BY observation_source_concept_id, observation_source_value
+ORDER BY observation_source_concept_id
+'''
+pd.read_gbq(query, dialect='standard', credentials=creds)
