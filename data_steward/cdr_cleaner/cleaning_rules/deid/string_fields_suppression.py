@@ -20,7 +20,7 @@ VALUE_AS_STRING = 'value_as_string'
 PPI_ZIP_CODE_CONCEPT_ID = 1585250
 
 SUPPRESSION_EXCEPTION_SANDBOX_QUERY_TEMPLATE = JINJA_ENV.from_string("""
--- Only sandboxing records that are not already in sandbox_table --
+-- Only sandboxing records that are not in sandbox_table --
 SELECT
     d.*
 FROM `{{project}}.{{dataset}}.{{domain_table}}` AS d
@@ -31,7 +31,7 @@ WHERE d.{{field_name}} = {{field_value}} and s.{{domain_table}}_id IS NULL
 
 STRING_FIELD_SUPPRESSION_QUERY_TEMPLATE = JINJA_ENV.from_string("""
 -- The query is written using REPLACE because it is easier for writing the integration test --
--- otherwise one would have to define all the columns in the integration test --
+-- otherwise one would have to define all the fields in the test data  --
 SELECT
     d.* 
     REPLACE(

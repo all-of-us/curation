@@ -30,8 +30,8 @@ WHERE table_id IN (
 def get_tables_in_dataset(client: Client, project_id, dataset_id,
                           table_names) -> List[str]:
     """
-    This function retrieves the list of tables that exist in given dataset. This function raises 
-    GoogleCloudError in the event of an error thrown in running the query for retrieving tables 
+    This function retrieves tables that exist in dataset for an inital list table_names . This 
+    function raises GoogleCloudError if the query throws an error
     
     :param client: 
     :param project_id: 
