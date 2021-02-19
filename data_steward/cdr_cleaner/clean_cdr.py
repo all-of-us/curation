@@ -83,6 +83,7 @@ from cdr_cleaner.cleaning_rules.table_suppression import TableSuppression
 from cdr_cleaner.cleaning_rules.deid.questionnaire_response_id_map import QRIDtoRID
 from cdr_cleaner.cleaning_rules.generalize_zip_codes import GeneralizeZipCodes
 from cdr_cleaner.cleaning_rules.cancer_concept_suppression import CancerConceptSuppression
+from cdr_cleaner.cleaning_rules.identifying_field_suppression import IDFieldSuppression
 from constants.cdr_cleaner import clean_cdr_engine as ce_consts
 from constants.cdr_cleaner.clean_cdr import DataStage
 
@@ -220,6 +221,7 @@ CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     (ExplicitIdentifierSuppression,),
     (GeoLocationConceptSuppression,),
     (BirthInformationSuppression,),
+    (IDFieldSuppression,),  # Should run after any data remapping
     (GenerateSiteMappingsAndExtTables,),
     (CancerConceptSuppression,)  # Should run after any data remapping rules
 ]
