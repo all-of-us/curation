@@ -52,6 +52,18 @@ WHERE d.{{domain_table}}_id = s.{{domain_table}}_id
     AND s.{{field_name}} = {{field_value}}
 """)
 
+VALIDATION_QUERY_TEMPLATE = JINJA_ENV.from_string("""
+SELECT
+  d.*
+FROM `{{project}}.{{dataset}}.{{domain_table}}` AS d
+WHERE
+{% set string_fields = [] %}
+{% for field_name in string_field_names -%}
+    ({{field_name}} IS NOT NULL OR {{field_name}} <> '')
+    {%- if loop.nextitem is defined %} OR {% endif -%}
+{% endfor %}
+""")
+
 
 class SuppressionException(NamedTuple):
     """
@@ -208,7 +220,30 @@ class StringFieldsSuppression(BaseCleaningRule):
         pass
 
     def validate_rule(self, client, *args, **keyword_args):
-        pass
+        """
+        Validate whether any string field is not null (nullable) or non-empty (required). 
+        :param client: 
+        :param args: 
+        :param keyword_args: 
+        :return: 
+        """
+        for table in self.affected_tables:
+            string_field_names = [
+                field['name']
+                for field in resources.fields_for(table)
+                if field['type'] == 'string'
+            ]
+            if string_field_names:
+                validation_query = VALIDATION_QUERY_TEMPLATE.render(
+                    project=self.project_id,
+                    dataset=self.dataset_id,
+                    domain_table=table,
+                    string_field_names=string_field_names)
+                result = client.query(validation_query).result()
+                if result.total_rows > 0:
+                    raise RuntimeError(
+                        f'{table} has {result.total_rows} records that have non-null string values'
+                    )
 
 
 if __name__ == '__main__':
