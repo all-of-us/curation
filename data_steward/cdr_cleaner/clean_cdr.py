@@ -214,7 +214,7 @@ CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     (TableSuppression,),
     (GeneralizeZipCodes,),  # Should run after any data remapping rules
     (RaceEthnicityRecordSuppression,
-    ),  # Should run after any data remapping rules,
+    ),  # Should run after any data remapping rules
     (MotorVehicleAccidentSuppression,),
     (ExplicitIdentifierSuppression,),
     (BirthInformationSuppression,),
