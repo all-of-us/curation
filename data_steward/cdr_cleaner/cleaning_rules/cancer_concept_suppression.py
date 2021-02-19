@@ -21,10 +21,10 @@ from utils import pipeline_logging
 LOGGER = logging.getLogger(__name__)
 
 SANDBOXING_QUERY = JINJA_ENV.from_string("""
-CREATE OR REPLACE TABLE {{project_id}}.{{sandbox_id}}.{{sandbox_table}} AS
+CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_id}}.{{sandbox_table}}` AS
 SELECT  o.*
 FROM `{{project_id}}.{{dataset_id}}.observation` o
-JOIN ``{{project_id}}.{{dataset_id}}.concept` c
+JOIN `{{project_id}}.{{dataset_id}}.concept` c
     ON c.concept_id = o.observation_concept_id
 WHERE REGEXP_CONTAINS(c.concept_code, 
     r'(History_WhichConditions)|(Condition_OtherCancer)|(History_AdditionalDiagnosis)|(OutsideTravel6MonthWhere)'
@@ -34,7 +34,7 @@ WHERE REGEXP_CONTAINS(c.concept_code,
 CONCEPT_SUPPRESSION_QUERY = JINJA_ENV.from_string("""
 SELECT  o.*
 FROM `{{project_id}}.{{dataset_id}}.observation` o
-JOIN ``{{project_id}}.{{dataset_id}}.concept` c
+JOIN `{{project_id}}.{{dataset_id}}.concept` c
     ON c.concept_id = o.observation_concept_id
 WHERE NOT REGEXP_CONTAINS(c.concept_code, 
     r'(History_WhichConditions)|(Condition_OtherCancer)|(History_AdditionalDiagnosis)|(OutsideTravel6MonthWhere)'
@@ -140,7 +140,7 @@ class CancerConceptSuppression(BaseCleaningRule):
         pass
 
     def get_sandbox_tablenames(self):
-        raise NotImplementedError("Please fix me.")
+        return [self.sandbox_table_for(OBSERVATION)]
 
 
 if __name__ == '__main__':
