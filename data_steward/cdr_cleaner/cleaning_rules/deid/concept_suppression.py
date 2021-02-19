@@ -1,4 +1,5 @@
 import logging
+from typing import List
 from abc import abstractmethod
 from google.cloud.bigquery.client import Client
 from google.cloud.exceptions import GoogleCloudError
@@ -12,24 +13,51 @@ from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, quer
 
 LOGGER = logging.getLogger(__name__)
 
+TABLE_ID = 'table_id'
+
+GET_ALL_TABLES_QUERY_TEMPLATE = JINJA_ENV.from_string("""
+SELECT
+  table_id
+FROM `{{project}}.{{dataset}}.__TABLES__`
+WHERE table_id IN (
+{% for table_name in table_names %}
+    {% if loop.previtem is defined %}, {% else %}  {% endif %} '{{table_name}}'
+{% endfor %}
+)
+""")
+
+
+def get_tables_in_dataset(client: Client, project_id, dataset_id,
+                          table_names) -> List[str]:
+    """
+    This function retrieves the list of tables that exist in given dataset. This function raises 
+    GoogleCloudError in the event of an error thrown in running the query for retrieving tables 
+    
+    :param client: 
+    :param project_id: 
+    :param dataset_id: 
+    :param table_names: 
+    :return: a list of tables that exist in the given dataset
+    """
+    # The following makes sure the tables exist in the dataset
+    query_job = client.query(
+        GET_ALL_TABLES_QUERY_TEMPLATE.render(project=project_id,
+                                             dataset=dataset_id,
+                                             table_names=table_names))
+    result = query_job.result()
+
+    if hasattr(result, 'errors') and result.errors:
+        # LOGGER.error(f"Error running job {result.job_id}: {result.errors}")
+        raise GoogleCloudError(
+            f"Error running job {result.job_id}: {result.errors}")
+
+    return [dict(row.items())[TABLE_ID] for row in result]
+
 
 class AbstractConceptSuppression(BaseCleaningRule):
     """
     Abstract class for creating concept suppression rules
     """
-
-    TABLE_ID = 'table_id'
-
-    GET_ALL_TABLES_QUERY_TEMPLATE = JINJA_ENV.from_string("""
-    SELECT
-      table_id
-    FROM `{{project}}.{{dataset}}.__TABLES__`
-    WHERE table_id IN (
-    {% for table_name in table_names %}
-        {% if loop.previtem is defined %}, {% else %}  {% endif %} '{{table_name}}'
-    {% endfor %}
-)
-    """)
 
     SUPPRESSION_RECORD_QUERY_TEMPLATE = JINJA_ENV.from_string("""
     SELECT
@@ -61,21 +89,12 @@ class AbstractConceptSuppression(BaseCleaningRule):
 
     def setup_rule(self, client: Client, *args, **keyword_args):
         # The following makes sure the tables exist in the dataset
-        query_job = client.query(
-            self.GET_ALL_TABLES_QUERY_TEMPLATE.render(
-                project=self.project_id,
-                dataset=self.dataset_id,
-                table_names=self.affected_tables))
-        result = query_job.result()
-
-        if hasattr(result, 'errors') and result.errors:
-            LOGGER.error(f"Error running job {result.job_id}: {result.errors}")
-            raise GoogleCloudError(
-                f"Error running job {result.job_id}: {result.errors}")
-
-        self.affected_tables = [
-            dict(row.items())[self.TABLE_ID] for row in result
-        ]
+        try:
+            self.affected_tables = get_tables_in_dataset(
+                client, self.project_id, self.dataset_id, self.affected_tables)
+        except GoogleCloudError as error:
+            LOGGER.error(error)
+            raise
 
     def get_sandbox_tablenames(self):
         return [
