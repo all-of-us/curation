@@ -59,7 +59,6 @@ SELECT
   d.*
 FROM `{{project}}.{{dataset}}.{{domain_table}}` AS d
 WHERE
-{% set string_fields = [] %}
 {% for field in string_fields -%}
     ({{field['name']}} IS NOT NULL OR {{field['name']}} <> '')
     {%- if loop.nextitem is defined %} OR {% endif -%}
