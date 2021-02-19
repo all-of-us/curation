@@ -60,14 +60,13 @@ class IDFieldSuppressionTest(BaseTest.CleaningRulesTestBase):
         sandbox_id = dataset_id + '_sandbox'
         cls.sandbox_id = sandbox_id
 
-        cls.rule_instance = IDFieldSuppression(
-            project_id, dataset_id, sandbox_id)
+        cls.rule_instance = IDFieldSuppression(project_id, dataset_id,
+                                               sandbox_id)
 
         # Generates list of fully qualified table names and their corresponding sandbox table names
         for table_name in cls.rule_instance.affected_tables:
             cls.fq_table_names.append(
-                f'{cls.project_id}.{cls.dataset_id}.{table_name}'
-            )
+                f'{cls.project_id}.{cls.dataset_id}.{table_name}')
 
         # call super to set up the client, create datasets, and create
         # empty test tables
@@ -88,8 +87,7 @@ class IDFieldSuppressionTest(BaseTest.CleaningRulesTestBase):
 
         super().setUp()
 
-        care_site_data_query = self.jinja_env.from_string(
-            """
+        care_site_data_query = self.jinja_env.from_string("""
             DROP TABLE IF EXISTS
               `{{project_id}}.{{dataset_id}}.measurement`;
             CREATE TABLE
@@ -107,14 +105,9 @@ class IDFieldSuppressionTest(BaseTest.CleaningRulesTestBase):
             VALUES
               (321, 12345, 111, 444, 789),
               (123, 6789, 222, 555, 1011)
-            """
-        ).render(
-            project_id=self.project_id,
-            dataset_id=self.dataset_id
-        )
+            """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
-        person_data_query = self.jinja_env.from_string(
-            """
+        person_data_query = self.jinja_env.from_string("""
             DROP TABLE IF EXISTS
               `{{project_id}}.{{dataset_id}}.person`;
             CREATE TABLE
@@ -138,14 +131,9 @@ class IDFieldSuppressionTest(BaseTest.CleaningRulesTestBase):
             VALUES
               (12345, 1, 1990, 12, 29, 22, 33, 44),
               (6789, 2, 1980, 11, 20, 40, 50, 60)
-            """
-        ).render(
-            project_id=self.project_id,
-            dataset_id=self.dataset_id
-        )
+            """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
-        fact_relationship_data_query = self.jinja_env.from_string(
-            """
+        fact_relationship_data_query = self.jinja_env.from_string("""
             DROP TABLE IF EXISTS
               `{{project_id}}.{{dataset_id}}.fact_relationship`;
             CREATE TABLE
@@ -163,13 +151,12 @@ class IDFieldSuppressionTest(BaseTest.CleaningRulesTestBase):
             VALUES
               (12345, 1111, 9101112, 131415, 161718),
               (6789, 2222, 891011, 121314, 151617)
-            """
-        ).render(
-            project_id=self.project_id,
-            dataset_id=self.dataset_id
-        )
+            """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
-        self.load_test_data([care_site_data_query, person_data_query, fact_relationship_data_query])
+        self.load_test_data([
+            care_site_data_query, person_data_query,
+            fact_relationship_data_query
+        ])
 
     def test_identifying_field_suppression(self):
         """
@@ -181,28 +168,41 @@ class IDFieldSuppressionTest(BaseTest.CleaningRulesTestBase):
 
         tables_and_counts = [
             {
-                'fq_table_name': '.'.join([self.fq_dataset_name, 'measurement']),
-                'fields': ['measurement_id', 'person_id', 'measurement_concept_id', 'measurement_type_concept_id',
-                           'provider_id'],
+                'fq_table_name':
+                    '.'.join([self.fq_dataset_name, 'measurement']),
+                'fields': [
+                    'measurement_id', 'person_id', 'measurement_concept_id',
+                    'measurement_type_concept_id', 'provider_id'
+                ],
                 'loaded_ids': [321, 123],
                 'cleaned_values': [(321, 12345, 111, 444, None),
                                    (123, 6789, 222, 555, None)]
             },
             {
-                'fq_table_name': '.'.join([self.fq_dataset_name, 'person']),
-                'fields': ['person_id', 'gender_concept_id', 'year_of_birth', 'month_of_birth', 'day_of_birth',
-                           'location_id', 'provider_id', 'care_site_id'],
+                'fq_table_name':
+                    '.'.join([self.fq_dataset_name, 'person']),
+                'fields': [
+                    'person_id', 'gender_concept_id', 'year_of_birth',
+                    'month_of_birth', 'day_of_birth', 'location_id',
+                    'provider_id', 'care_site_id'
+                ],
                 'loaded_ids': [12345, 6789],
-                'cleaned_values': [(12345, 1, 1990, None, None, None, None, None),
-                                   (6789, 2, 1980, None, None, None, None, None)]
+                'cleaned_values': [
+                    (12345, 1, 1990, None, None, None, None, None),
+                    (6789, 2, 1980, None, None, None, None, None)
+                ]
             },
             # Should remain the same since death table does not contain any identifying fields
             {
-                'fq_table_name': '.'.join([self.fq_dataset_name, 'fact_relationship']),
-                'fields': ['domain_concept_id_1', 'fact_id_1', 'domain_concept_id_2', 'fact_id_2',
-                           'relationship_concept_id'],
+                'fq_table_name':
+                    '.'.join([self.fq_dataset_name, 'fact_relationship']),
+                'fields': [
+                    'domain_concept_id_1', 'fact_id_1', 'domain_concept_id_2',
+                    'fact_id_2', 'relationship_concept_id'
+                ],
                 'loaded_ids': [12345, 6789],
-                'cleaned_values': [(12345, 1111, 9101112, 131415, 161718), (6789, 2222, 891011, 121314, 151617)]
+                'cleaned_values': [(12345, 1111, 9101112, 131415, 161718),
+                                   (6789, 2222, 891011, 121314, 151617)]
             }
         ]
 

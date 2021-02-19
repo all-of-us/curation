@@ -218,7 +218,7 @@ CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     (MotorVehicleAccidentSuppression,),
     (ExplicitIdentifierSuppression,),
     (BirthInformationSuppression,),
-    (IDFieldSuppression,),
+    (IDFieldSuppression,),  # Should run after any data remapping rules
     (GenerateSiteMappingsAndExtTables,)
 ]
 
