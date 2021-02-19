@@ -76,6 +76,7 @@ from cdr_cleaner.cleaning_rules.temporal_consistency import TemporalConsistency
 from cdr_cleaner.cleaning_rules.valid_death_dates import ValidDeathDates
 from cdr_cleaner.cleaning_rules.negative_ages import NegativeAges
 from cdr_cleaner.cleaning_rules.deid.explicit_identifier_suppression import ExplicitIdentifierSuppression
+from cdr_cleaner.cleaning_rules.deid.geolocation_concept_suppression import GeoLocationConceptSuppression
 from cdr_cleaner.cleaning_rules.null_person_birthdate import NullPersonBirthdate
 from cdr_cleaner.cleaning_rules.race_ethnicity_record_suppression import RaceEthnicityRecordSuppression
 from cdr_cleaner.cleaning_rules.table_suppression import TableSuppression
@@ -217,6 +218,7 @@ CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     ),  # Should run after any data remapping rules,
     (MotorVehicleAccidentSuppression,),
     (ExplicitIdentifierSuppression,),
+    (GeoLocationConceptSuppression,),
     (BirthInformationSuppression,),
     (GenerateSiteMappingsAndExtTables,),
     (CancerConceptSuppression,)  # Should run after any data remapping rules

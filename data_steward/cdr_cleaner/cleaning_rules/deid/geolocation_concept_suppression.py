@@ -1,5 +1,5 @@
 """
-Cleaning rule to suppress geolocation identifier concepts
+Sandbox and record suppress all records with a concept_id or concept_code relating to Geo Location information.
 
 Original Issue: DC-1385
 
@@ -75,7 +75,7 @@ class GeoLocationConceptSuppression(AbstractBqLookupTableConceptSuppression):
         """
         desc = (
             'Sandbox and record suppress all records with a concept_id or concept_code '
-            'relating to birth information. ')
+            'relating to Geo Location information. ')
         super().__init__(issue_numbers=ISSUE_NUMBERS,
                          description=desc,
                          affected_datasets=[cdr_consts.CONTROLLED_TIER_DEID],
