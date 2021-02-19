@@ -7,7 +7,6 @@ Usage: create_ehr_snapshot.sh
   --key_file <path to key file>
   --ehr_dataset <EHR dataset ID>
   --rdr_dataset <RDR dataset ID>
-  --validation_dataset <Validation dataset ID>
   --dataset_release_tag <release tag for the CDR>
   --truncation_date date to truncate the RDR data to. The cleaning rules defaults to the current date if unset.
 "
@@ -26,10 +25,6 @@ while true; do
     rdr_dataset=$2
     shift 2
     ;;
-  --validation_dataset)
-    validation_dataset=$2
-    shift 2
-    ;;
   --dataset_release_tag)
     dataset_release_tag=$2
     shift 2
@@ -46,8 +41,8 @@ while true; do
   esac
 done
 
-if [[ -z "${key_file}" ]] || [[ -z "${ehr_dataset}" ]] || [[ -z "${rdr_dataset}" ]] || [[ -z "${validation_dataset}" ]] || [[ -z "${dataset_release_tag}" ]] ; then
-  echo "Specify the key file location and ehr_dataset ID, rdr_dataset ID, validation_dataset ID and Dataset release tag . $USAGE"
+if [[ -z "${key_file}" ]] || [[ -z "${ehr_dataset}" ]] || [[ -z "${rdr_dataset}" ]] || [[ -z "${dataset_release_tag}" ]] ; then
+  echo "${USAGE}"
   exit 1
 fi
 
@@ -60,7 +55,6 @@ app_id=$(python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_
 
 echo "ehr_dataset --> ${ehr_dataset}"
 echo "rdr_dataset --> ${rdr_dataset}"
-echo "validation_dataset --> ${validation_dataset}"
 echo "app_id --> ${app_id}"
 echo "key_file --> ${key_file}"
 echo "dataset_release_tag --> ${dataset_release_tag}"
@@ -73,9 +67,6 @@ CLEANER_DIR="${DATA_STEWARD_DIR}/cdr_cleaner"
 
 export GOOGLE_APPLICATION_CREDENTIALS="${key_file}"
 export GOOGLE_CLOUD_PROJECT="${app_id}"
-
-# set env variable for cleaning rule remove_non_matching_participant.py
-export VALIDATION_RESULTS_DATASET_ID="${validation_dataset}"
 
 #set application environment (ie dev, test, prod)
 gcloud auth activate-service-account --key-file=${key_file}
