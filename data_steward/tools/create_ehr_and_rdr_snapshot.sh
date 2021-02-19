@@ -42,7 +42,7 @@ while true; do
 done
 
 if [[ -z "${key_file}" ]] || [[ -z "${ehr_dataset}" ]] || [[ -z "${rdr_dataset}" ]] || [[ -z "${dataset_release_tag}" ]] ; then
-  echo "Specify the key file location and ehr_dataset ID, rdr_dataset ID, validation_dataset ID and Dataset release tag . $USAGE"
+  echo "${USAGE}"
   exit 1
 fi
 
