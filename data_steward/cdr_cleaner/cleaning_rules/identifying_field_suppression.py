@@ -75,7 +75,8 @@ class IDFieldSuppression(BaseCleaningRule):
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
         desc = (
-            'Returns queries to null the data in identifying fields for all OMOP common data model tables.')
+            'Returns queries to null the data in identifying fields for all OMOP common data model tables.'
+        )
 
         super().__init__(issue_numbers=JIRA_ISSUE_NUMBERS,
                          description=desc,
@@ -99,8 +100,9 @@ class IDFieldSuppression(BaseCleaningRule):
         # loop through tables to create replace statements
         for table in CDM_TABLES:
             # change to root directory to access fields files
-            ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            os.chdir(ROOT_DIR)
+            root_dir = os.path.dirname(
+                os.path.dirname(os.path.abspath(__file__)))
+            os.chdir(root_dir)
 
             # create replace statement by looping through schema
             with open(f'../resource_files/fields/{table}.json') as f:
@@ -115,9 +117,7 @@ class IDFieldSuppression(BaseCleaningRule):
                         elif item['type'] == 'string':
                             value = ''
                         suppression_statement = REPLACE_STRING.render(
-                            suppression_statement=value,
-                            field=item['name']
-                        )
+                            suppression_statement=value, field=item['name'])
                         statements.append(suppression_statement)
                 if statements:
                     suppression_statement = ', '.join(statements)
@@ -173,4 +173,5 @@ if __name__ == '__main__':
     else:
         clean_engine.add_console_logging(ARGS.console_log)
         clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
-                                   ARGS.sandbox_dataset_id, [(IDFieldSuppression,)])
+                                   ARGS.sandbox_dataset_id,
+                                   [(IDFieldSuppression,)])
