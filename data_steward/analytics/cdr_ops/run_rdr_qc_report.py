@@ -5,25 +5,25 @@ import subprocess
 import papermill as pm
 
 # Project imports
-from utils import pipeline_logging
+# from utils import pipeline_logging
 
 NOTEBOOK_TEMPLATE_NAME = "rdr_qc_template.ipynb"
 EXECUTED_NOTEBOOK_NAME = "rdr_qc_export.ipynb"
-LOGGER = logging.getLogger(__name__)
+# LOGGER = logging.getLogger(__name__)
 
 
 def generate_notebook(python_file):
     """Create a template notebook from a .py file using jupytext"""
-    LOGGER.info("Generating notebook from .py file...")
+    # LOGGER.info("Generating notebook from .py file...")
     subprocess.run(
-        ["jupytext", python_file, f"-o={NOTEBOOK_TEMPLATE_NAME}", "--set-kernel", "-"]
+        ["jupytext", python_file, f"-o={NOTEBOOK_TEMPLATE_NAME}"]
     )
     return True
 
 
 def run_notebook_qc(project_id, old_rdr, new_rdr):
     """Run the parameterized notebook using Papermill"""
-    LOGGER.info("Running the rdr export QC notebook...")
+    # LOGGER.info("Running the rdr export QC notebook...")
     pm.execute_notebook(
         f"{NOTEBOOK_TEMPLATE_NAME}",
         f"{EXECUTED_NOTEBOOK_NAME}",
@@ -34,7 +34,7 @@ def run_notebook_qc(project_id, old_rdr, new_rdr):
 
 def generate_report():
     """Convert the QC notebook into an HTML report"""
-    LOGGER.info("Generating HTML report for the rdr export QC...")
+   # LOGGER.info("Generating HTML report for the rdr export QC...")
     subprocess.run(
         ["jupyter", "nbconvert", f"{EXECUTED_NOTEBOOK_NAME}", "--to=html", "--no-input"]
     )
@@ -42,7 +42,7 @@ def generate_report():
 
 
 if __name__ == "__main__":
-    pipeline_logging.configure(logging.INFO, add_console_handler=True)
+   # pipeline_logging.configure(logging.INFO, add_console_handler=True)
     my_parser = argparse.ArgumentParser()
     my_parser.add_argument('--project_id', type=str, required=True,
                            help='Set the project id in BigQuery')
