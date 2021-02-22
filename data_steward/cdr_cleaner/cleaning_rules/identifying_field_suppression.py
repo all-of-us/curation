@@ -85,9 +85,8 @@ class IDFieldSuppression(BaseCleaningRule):
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
-                         depends_on=[
-                             TableSuppression
-                         ])  # table_suppression.py module will handle identifying fields in provider, care_site,
+                         depends_on=[TableSuppression]
+                         )  # table_suppression.py module will handle identifying fields in provider, care_site,
         # location
 
     def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
