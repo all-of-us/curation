@@ -13,35 +13,29 @@ import logging
 
 # Project imports
 import constants.bq_utils as bq_consts
-from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
+from cdr_cleaner.cleaning_rules.deid.concept_suppression import AbstractBqLookupTableConceptSuppression
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from common import JINJA_ENV, OBSERVATION
 from utils import pipeline_logging
 
+# Third party imports
+from google.cloud.exceptions import GoogleCloudError
+
 LOGGER = logging.getLogger(__name__)
 
-SANDBOXING_QUERY = JINJA_ENV.from_string("""
-CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_id}}.{{sandbox_table}}` AS
-SELECT  o.*
-FROM `{{project_id}}.{{dataset_id}}.observation` o
-JOIN `{{project_id}}.{{dataset_id}}.concept` c
-    ON c.concept_id = o.observation_concept_id
+SUPPRESSION_RULE_CONCEPT_TABLE = 'cancer_condition_concepts'
+
+CANCER_CONCEPT_QUERY = JINJA_ENV.from_string("""
+CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_id}}.{{concept_suppression_lookup_table}}` AS
+SELECT  c.*
+FROM `{{project_id}}.{{dataset_id}}.concept` c
 WHERE REGEXP_CONTAINS(c.concept_code, 
     r'(History_WhichConditions)|(Condition_OtherCancer)|(History_AdditionalDiagnosis)|(OutsideTravel6MonthWhere)'
 )
 """)
 
-CONCEPT_SUPPRESSION_QUERY = JINJA_ENV.from_string("""
-SELECT  o.*
-FROM `{{project_id}}.{{dataset_id}}.observation` o
-LEFT JOIN `{{project_id}}.{{sandbox_id}}.{{sandbox_table}}` AS so
-    ON so.observation_id = o.observation_id
-WHERE so.observation IS NULL
-)
-""")
 
-
-class CancerConceptSuppression(BaseCleaningRule):
+class CancerConceptSuppression(AbstractBqLookupTableConceptSuppression):
 
     def __init__(self, project_id, dataset_id, sandbox_dataset_id):
         """
@@ -52,49 +46,30 @@ class CancerConceptSuppression(BaseCleaningRule):
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
         desc = 'Sandbox and removes records for some cancer condition concepts.'
-        super().__init__(issue_numbers=['DC1381'],
-                         description=desc,
-                         affected_datasets=[cdr_consts.CONTROLLED_TIER_DEID],
-                         affected_tables=[OBSERVATION],
-                         project_id=project_id,
-                         dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id)
+        super().__init__(
+            issue_numbers=['DC1381'],
+            description=desc,
+            affected_datasets=[cdr_consts.CONTROLLED_TIER_DEID],
+            affected_tables=[OBSERVATION],
+            project_id=project_id,
+            dataset_id=dataset_id,
+            sandbox_dataset_id=sandbox_dataset_id,
+            concept_suppression_lookup_table=SUPPRESSION_RULE_CONCEPT_TABLE)
 
-    def get_query_specs(self, *args, **keyword_args):
-        """
-        Interface to return a list of query dictionaries.
+    def create_suppression_lookup_table(self, client):
+        concept_suppression_lookup_query = CANCER_CONCEPT_QUERY.render(
+            project_id=self.project_id,
+            dataset_id=self.dataset_id,
+            sandbox_id=self.sandbox_dataset_id,
+            concept_suppression_lookup_table=self.
+            concept_suppression_lookup_table)
+        query_job = client.query(concept_suppression_lookup_query)
+        result = query_job.result()
 
-        :returns:  a list of query dictionaries.  Each dictionary specifies
-            the query to execute and how to execute.  The dictionaries are
-            stored in list order and returned in list order to maintain
-            an ordering.
-        """
-
-        sandboxing_query = {
-            cdr_consts.QUERY:
-                SANDBOXING_QUERY.render(
-                    project_id=self.project_id,
-                    sandbox_id=self.sandbox_dataset_id,
-                    sandbox_table=self.sandbox_table_for(OBSERVATION),
-                    dataset_id=self.dataset_id)
-        }
-
-        concept_suppression_query = {
-            cdr_consts.QUERY:
-                CONCEPT_SUPPRESSION_QUERY.render(
-                    project_id=self.project_id,
-                    dataset_id=self.dataset_id,
-                    sandbox_id=self.sandbox_dataset_id,
-                    sandbox_table=self.sandbox_table_for(OBSERVATION)),
-            cdr_consts.DESTINATION_TABLE:
-                OBSERVATION,
-            cdr_consts.DESTINATION_DATASET:
-                self.dataset_id,
-            cdr_consts.DISPOSITION:
-                bq_consts.WRITE_TRUNCATE
-        }
-
-        return [sandboxing_query, concept_suppression_query]
+        if hasattr(result, 'errors') and result.errors:
+            LOGGER.error(f"Error running job {result.job_id}: {result.errors}")
+            raise GoogleCloudError(
+                f"Error running job {result.job_id}: {result.errors}")
 
     def setup_validation(self, client, *args, **keyword_args):
         """
@@ -129,20 +104,6 @@ class CancerConceptSuppression(BaseCleaningRule):
         """
 
         raise NotImplementedError("Please fix me.")
-
-    def setup_rule(self, client, *args, **keyword_args):
-        """
-        Load required resources prior to executing cleaning rule queries.
-
-        Method to run data upload options before executing the first cleaning
-        rule of a class.  For example, if your class requires loading a static
-        table, that load operation should be defined here.  It SHOULD NOT BE
-        defined as part of get_query_specs().
-        """
-        pass
-
-    def get_sandbox_tablenames(self):
-        return [self.sandbox_table_for(OBSERVATION)]
 
 
 if __name__ == '__main__':
