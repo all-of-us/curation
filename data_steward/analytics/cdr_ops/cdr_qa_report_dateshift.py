@@ -19,15 +19,6 @@ new_cdr = ""
 dataset1=""
 com_cdr2=""
 
-# + papermill={"duration": 0.046903, "end_time": "2021-02-02T22:30:31.927723", "exception": false, "start_time": "2021-02-02T22:30:31.880820", "status": "completed"} tags=["injected-parameters"]
-# Parameters
-# project_id = "aou-res-curation-prod"
-# dataset1= "pipeline_tables"
-# com_cdr = "2020q4r1_combined_release"
-# new_cdr = "R2020q4r1_deid"
-# com_cdr2="combined20191004_clean"
-
-
 # + [markdown] papermill={"duration": 0.024011, "end_time": "2021-02-02T22:30:31.951734", "exception": false, "start_time": "2021-02-02T22:30:31.927723", "status": "completed"} tags=[]
 # #  QA queries on new CDR dateshift
 #
