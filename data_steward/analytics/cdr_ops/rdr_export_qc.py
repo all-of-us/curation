@@ -16,7 +16,6 @@
 project_id = ""
 old_rdr = ""
 new_rdr = ""
-key_file = ""
 # -
 
 # # QC for RDR Export
@@ -27,11 +26,7 @@ key_file = ""
 import urllib
 import pandas as pd
 
-from google.oauth2 import service_account
-
 pd.options.display.max_rows = 120
-
-creds = service_account.Credentials.from_service_account_file(key_file)
 
 # -
 
@@ -49,7 +44,7 @@ FULL OUTER JOIN `{project_id}.{old_rdr}.__TABLES__` prev
   USING (table_id)
 WHERE curr.table_id IS NULL OR prev.table_id IS NULL
 '''
-pd.read_gbq(query, dialect='standard', credentials=creds)
+pd.read_gbq(query, dialect='standard')
 
 # ## Row count comparison
 # Generally the row count of clinical tables should increase from one export to the next.
@@ -65,7 +60,7 @@ JOIN `{project_id}.{old_rdr}.__TABLES__` prev
   USING (table_id)
 ORDER BY ABS(curr.row_count - prev.row_count) DESC;
 '''
-pd.read_gbq(query, dialect='standard', credentials=creds)
+pd.read_gbq(query, dialect='standard')
 
 # ## ID range check
 # Combine step may break if any row IDs in the RDR are larger than the added constant(1,000,000,000,000,000).
@@ -88,9 +83,7 @@ for table in domain_table_list:
       {table}_id > 999999999999999
     '''
     queries.append(query)
-pd.read_gbq('\nUNION ALL\n'.join(queries),
-            dialect='standard',
-            credentials=creds)
+pd.read_gbq('\nUNION ALL\n'.join(queries), dialect='standard')
 
 # ## Concept codes used
 # Identify question and answer concept codes which were either added or removed (appear in only the new or only the old RDR datasets, respectively).
@@ -138,7 +131,7 @@ FROM curr_code
   USING (field, value)
 WHERE prev_code.value IS NULL OR curr_code.value IS NULL
 '''
-pd.read_gbq(query, dialect='standard', credentials=creds)
+pd.read_gbq(query, dialect='standard')
 
 # # Question codes should have mapped `concept_id`s
 # Question codes in `observation_source_value` should be associated with the concept identified by `observation_source_concept_id` and mapped to a standard concept identified by `observation_concept_id`. The table below lists codes having rows where either field is null or zero and the number of rows where this occurs. This may be associated with an issue in the PPI vocabulary or in the RDR ETL process.
@@ -157,7 +150,7 @@ GROUP BY 1
 HAVING source_concept_id_null + source_concept_id_zero + concept_id_null + concept_id_zero > 0
 ORDER BY 2 DESC, 3 DESC, 4 DESC, 5 DESC
 """
-pd.read_gbq(query, dialect='standard', credentials=creds)
+pd.read_gbq(query, dialect='standard')
 
 # # Answer codes should have mapped `concept_id`s
 # Answer codes in value_source_value should be associated with the concept identified by value_source_concept_id and mapped to a standard concept identified by value_as_concept_id. The table below lists codes having rows where either field is null or zero and the number of rows where this occurs. This may be associated with an issue in the PPI vocabulary or in the RDR ETL process.
@@ -176,7 +169,7 @@ GROUP BY 1
 HAVING source_concept_id_null + source_concept_id_zero + concept_id_null + concept_id_zero > 0
 ORDER BY 2 DESC, 3 DESC, 4 DESC, 5 DESC
 """
-pd.read_gbq(query, dialect='standard', credentials=creds)
+pd.read_gbq(query, dialect='standard')
 
 # # Dates are equal in observation_date and observation_datetime
 # Any mismatches are listed below.
@@ -190,7 +183,7 @@ SELECT
 FROM `{project_id}.{new_rdr}.observation`
 WHERE observation_date != EXTRACT(DATE FROM observation_datetime)
 """
-pd.read_gbq(query, dialect='standard', credentials=creds)
+pd.read_gbq(query, dialect='standard')
 
 # # Check for duplicates
 
@@ -217,7 +210,7 @@ WHERE n_data > 1
 GROUP BY 1
 ORDER BY 2 DESC
 """
-pd.read_gbq(query, dialect='standard', credentials=creds)
+pd.read_gbq(query, dialect='standard')
 
 # # Check if numeric data in value_as_string
 # Some numeric data is expected in value_as_string.  For example, zip codes or other contact specific information.
@@ -231,7 +224,7 @@ WHERE SAFE_CAST(value_as_string AS INT64) IS NOT NULL
 GROUP BY 1
 ORDER BY 2 DESC
 """
-pd.read_gbq(query, dialect='standard', credentials=creds)
+pd.read_gbq(query, dialect='standard')
 
 # # All COPE `questionnaire_response_id`s are in COPE version map
 # Any `questionnaire_response_id`s missing from the map will be listed below.
@@ -247,7 +240,7 @@ FROM `{project_id}.{new_rdr}.observation`
 WHERE questionnaire_response_id NOT IN
 (SELECT questionnaire_response_id FROM `{project_id}.{new_rdr}.cope_survey_semantic_version_map`)
 """
-pd.read_gbq(query, dialect='standard', credentials=creds)
+pd.read_gbq(query, dialect='standard')
 
 # # No duplicate `questionnaire_response_id`s in COPE version map
 # Any duplicated `questionnaire_response_id`s will be listed below.
@@ -260,7 +253,7 @@ FROM `{project_id}.{new_rdr}.cope_survey_semantic_version_map`
 GROUP BY questionnaire_response_id
 HAVING n > 1
 """
-pd.read_gbq(query, dialect='standard', credentials=creds)
+pd.read_gbq(query, dialect='standard')
 
 # # Survey version and dates
 # Cope survey versions and the minimum and maximum dates associated with those surveys are listed.
@@ -275,7 +268,7 @@ FROM `{project_id}.{new_rdr}.observation`
 JOIN `{project_id}.{new_rdr}.cope_survey_semantic_version_map` USING (questionnaire_response_id)
 GROUP BY 1
 """
-pd.read_gbq(query, dialect='standard', credentials=creds)
+pd.read_gbq(query, dialect='standard')
 
 # # Class of PPI Concepts using vocabulary.py
 # Concept codes which appear in `observation.observation_source_value` should belong to concept class Question.
@@ -310,7 +303,7 @@ JOIN `{project_id}.{new_rdr}.concept`
 WHERE LOWER(concept_class_id)<>LOWER(expected_concept_class_id)
 ORDER BY 1, 2, 3
 '''
-pd.read_gbq(query, dialect='standard', credentials=creds)
+pd.read_gbq(query, dialect='standard')
 
 # # Make sure smoking data still exists
 # Make sure that the cleaning rule clash that previously wiped out all numeric smoking data is corrected.
@@ -330,4 +323,4 @@ WHERE observation_source_concept_id IN (1585864, 1585870,1585873, 1586159,158616
 GROUP BY observation_source_concept_id, observation_source_value
 ORDER BY observation_source_concept_id
 '''
-pd.read_gbq(query, dialect='standard', credentials=creds)
+pd.read_gbq(query, dialect='standard')
