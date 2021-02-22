@@ -33,7 +33,7 @@ clean_cdr.py --data_stage FITBIT
              --dataset_id fitbit
              --sandbox_dataset_id fitbit_sandbox
 
-MissingParameterError: the parameter 'mapping_dataset_id' required by RemoveFitbitDataIfMaxAgeExceeded, PIDtoRID FitbitDateShift was not supplied. No cleaning rules have been applied.
+MissingParameterError: the parameter 'mapping_dataset_id' required by GenerateSiteMappingsAndExtTables, RemoveFitbitDataIfMaxAgeExceeded, PIDtoRID FitbitDateShift was not supplied. No cleaning rules have been applied.
 ```
 
 ## Configuration dependencies
@@ -73,8 +73,6 @@ Depending on the rule(s) being applied, additional configuration parameters may 
 ### mapping_table_id
  - PIDtoRID
  - FitbitDateShift
-### combined_dataset_id
-
 ### ehr_dataset_id
  - remove_non_matching_participant (optional)
 ### validation_dataset_id
