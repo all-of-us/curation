@@ -34,10 +34,9 @@ WHERE REGEXP_CONTAINS(c.concept_code,
 CONCEPT_SUPPRESSION_QUERY = JINJA_ENV.from_string("""
 SELECT  o.*
 FROM `{{project_id}}.{{dataset_id}}.observation` o
-JOIN `{{project_id}}.{{dataset_id}}.concept` c
-    ON c.concept_id = o.observation_concept_id
-WHERE NOT REGEXP_CONTAINS(c.concept_code, 
-    r'(History_WhichConditions)|(Condition_OtherCancer)|(History_AdditionalDiagnosis)|(OutsideTravel6MonthWhere)'
+LEFT JOIN `{{project_id}}.{{sandbox_id}}.{{sandbox_table}}` AS so
+    ON so.observation_id = o.observation_id
+WHERE so.observation IS NULL
 )
 """)
 
@@ -82,8 +81,11 @@ class CancerConceptSuppression(BaseCleaningRule):
 
         concept_suppression_query = {
             cdr_consts.QUERY:
-                CONCEPT_SUPPRESSION_QUERY.render(project_id=self.project_id,
-                                                 dataset_id=self.dataset_id),
+                CONCEPT_SUPPRESSION_QUERY.render(
+                    project_id=self.project_id,
+                    dataset_id=self.dataset_id,
+                    sandbox_id=self.sandbox_dataset_id,
+                    sandbox_table=self.sandbox_table_for(OBSERVATION)),
             cdr_consts.DESTINATION_TABLE:
                 OBSERVATION,
             cdr_consts.DESTINATION_DATASET:
