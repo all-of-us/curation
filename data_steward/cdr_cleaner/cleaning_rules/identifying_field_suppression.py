@@ -78,16 +78,16 @@ class IDFieldSuppression(BaseCleaningRule):
             'Returns queries to null the data in identifying fields for all OMOP common data model tables.'
         )
 
-        super().__init__(issue_numbers=JIRA_ISSUE_NUMBERS,
-                         description=desc,
-                         affected_datasets=[cdr_consts.COMBINED],
-                         affected_tables=CDM_TABLES,
-                         project_id=project_id,
-                         dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id,
-                         depends_on=[TableSuppression]
-                         )  # table_suppression.py module will handle identifying fields in provider, care_site,
-        # location
+        super().__init__(
+            issue_numbers=JIRA_ISSUE_NUMBERS,
+            description=desc,
+            affected_datasets=[cdr_consts.COMBINED],
+            affected_tables=CDM_TABLES,
+            project_id=project_id,
+            dataset_id=dataset_id,
+            sandbox_dataset_id=sandbox_dataset_id,
+            depends_on=[TableSuppression]
+        )  # table_suppression.py module will handle identifying fields in provider, care_site, location
 
     def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
         """
