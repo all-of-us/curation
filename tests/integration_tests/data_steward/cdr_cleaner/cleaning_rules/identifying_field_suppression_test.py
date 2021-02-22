@@ -1,5 +1,5 @@
 """
-Integration test to ensure the records that are properly sandboxed and dropped in the
+Integration test to ensure the identifying fields are accurately suppressed in the
 identifying_field_suppression.py module
 
 Original Issue: DC-1372
@@ -87,6 +87,7 @@ class IDFieldSuppressionTest(BaseTest.CleaningRulesTestBase):
 
         super().setUp()
 
+        # test data for measurement table, identifying fields: provider_id
         care_site_data_query = self.jinja_env.from_string("""
             DROP TABLE IF EXISTS
               `{{project_id}}.{{dataset_id}}.measurement`;
@@ -107,6 +108,8 @@ class IDFieldSuppressionTest(BaseTest.CleaningRulesTestBase):
               (123, 6789, 222, 555, 1011)
             """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
+        # test data for person table, identifying fields:
+        # month_of_birth, day_of_birth, location_id, provider_id, care_site_id
         person_data_query = self.jinja_env.from_string("""
             DROP TABLE IF EXISTS
               `{{project_id}}.{{dataset_id}}.person`;
@@ -133,6 +136,7 @@ class IDFieldSuppressionTest(BaseTest.CleaningRulesTestBase):
               (6789, 2, 1980, 11, 20, 40, 50, 60)
             """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
+        # test data for fact_relationship table, no identifying fields contained in table
         fact_relationship_data_query = self.jinja_env.from_string("""
             DROP TABLE IF EXISTS
               `{{project_id}}.{{dataset_id}}.fact_relationship`;
