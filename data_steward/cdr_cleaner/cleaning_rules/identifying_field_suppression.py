@@ -85,7 +85,8 @@ class IDFieldSuppression(BaseCleaningRule):
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
-                         depends_on=[TableSuppression])
+                         depends_on=[TableSuppression])  # table_suppression.py module will handle identifying fields
+        # in provider, care_site, location
 
     def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
         """
@@ -96,7 +97,7 @@ class IDFieldSuppression(BaseCleaningRule):
             are optional but the query is required.
         """
         queries = []
-
+        current_dir = os.getcwd()
         # loop through tables to create replace statements
         for table in CDM_TABLES:
             # change to root directory to access fields files
@@ -134,6 +135,8 @@ class IDFieldSuppression(BaseCleaningRule):
 
                 else:
                     continue
+        # change back to previous directory
+        os.chdir(current_dir)
         return queries
 
     def setup_rule(self, client, *args, **keyword_args):
