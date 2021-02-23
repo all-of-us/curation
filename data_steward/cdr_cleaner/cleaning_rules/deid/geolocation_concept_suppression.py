@@ -88,10 +88,8 @@ class GeoLocationConceptSuppression(AbstractBqLookupTableConceptSuppression):
 
     def create_suppression_lookup_table(self, client):
         """
-
-        :param client: 
-        :return:
-
+        :param client: Bigquery client
+        :return: None
         raises google.cloud.exceptions.GoogleCloudError if a QueryJob fails 
         """
         concept_suppression_lookup_query = GEO_LOCATION_CONCEPT_SUPPRESSION_LOOKUP_QUERY.render(
@@ -116,7 +114,10 @@ class GeoLocationConceptSuppression(AbstractBqLookupTableConceptSuppression):
 
 if __name__ == '__main__':
     import cdr_cleaner.args_parser as parser
+    from utils import pipeline_logging
     import cdr_cleaner.clean_cdr_engine as clean_engine
+
+    pipeline_logging.configure(level=logging.DEBUG, add_console_handler=True)
 
     ARGS = parser.default_parse_args()
 
