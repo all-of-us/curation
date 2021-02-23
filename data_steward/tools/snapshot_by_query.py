@@ -118,14 +118,19 @@ def copy_tables_to_new_dataset(project_id, dataset_id, snapshot_dataset_id):
         raise BigQueryJobWaitError(incomplete_jobs)
 
 
-def create_snapshot_dataset(project_id, dataset_id, snapshot_dataset_id):
+def create_schemaed_snapshot_dataset(project_id,
+                                     dataset_id,
+                                     snapshot_dataset_id,
+                                     overwrite_existing=True):
     """
     :param project_id:
     :param dataset_id:
     :param snapshot_dataset_id:
+    :param overwrite_existing: Default is True, False if a dataset is already created.
     :return:
     """
-    create_empty_dataset(project_id, dataset_id, snapshot_dataset_id)
+    if overwrite_existing:
+        create_empty_dataset(project_id, dataset_id, snapshot_dataset_id)
 
     create_empty_cdm_tables(snapshot_dataset_id, dataset_id)
 
@@ -157,5 +162,5 @@ if __name__ == '__main__':
                         required=True)
     args = parser.parse_args()
 
-    create_snapshot_dataset(args.project_id, args.dataset_id,
-                            args.snapshot_dataset_id)
+    create_schemaed_snapshot_dataset(args.project_id, args.dataset_id,
+                                     args.snapshot_dataset_id)

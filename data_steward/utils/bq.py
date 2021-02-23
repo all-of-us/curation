@@ -604,3 +604,19 @@ def list_tables(
     table_count = get_table_count(client, dataset)
     return client.list_tables(dataset=dataset,
                               max_results=table_count + _MAX_RESULTS_PADDING)
+
+
+def copy_datasets(client: bigquery.Client, input_dataset, output_dataset):
+    """
+    Copies tables from source dataset to a destination datasets
+
+    :param client: an instantiated bigquery client object
+    :param input_dataset: name of the input dataset
+    :param output_dataset: name of the output dataset
+    :return:
+    """
+    # Copy input dataset tables to backup and staging datasets
+    tables = client.list_tables(input_dataset)
+    for table in tables:
+        staging_table = f'{output_dataset}.{table.table_id}'
+        client.copy_table(table, staging_table)

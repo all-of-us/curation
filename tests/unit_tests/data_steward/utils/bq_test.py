@@ -27,6 +27,7 @@ from mock import MagicMock, patch
 import resources
 from tests.bq_test_helpers import mock_query_result, list_item_from_table_id
 from utils import bq
+from resources import CDM_TABLES
 
 
 def _get_all_field_types() -> typing.FrozenSet[str]:
@@ -237,3 +238,20 @@ class BqTest(TestCase):
         mock_bq_client.assert_called_with(project=self.project_id,
                                           credentials=None)
         self.assertRaises(TypeError, bq.get_client, project=None)
+
+    @patch('utils.bq.bigquery.Client.copy_table')
+    @patch('utils.bq.bigquery.Client.list_tables')
+    def test_copy_datasets(self, mock_list_tables, mock_copy_table):
+        client = bq.get_client(self.project_id)
+        full_table_ids = [
+            f'{self.project_id}.{self.dataset_id}.{table_id}'
+            for table_id in CDM_TABLES
+        ]
+        list_tables_results = [
+            list_item_from_table_id(table_id) for table_id in full_table_ids
+        ]
+        mock_list_tables.return_value = list_tables_results
+
+        bq.copy_datasets(client, self.dataset_id, f'{self.dataset_id}_snapshot')
+        mock_list_tables.assert_called_once_with(self.dataset_id)
+        self.assertEqual(mock_copy_table.call_count, len(list_tables_results))

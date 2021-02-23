@@ -9,12 +9,18 @@ import re
 from utils import auth
 from utils import bq
 from utils import pipeline_logging
+from cdr_cleaner import clean_cdr
+from tools.snapshot_by_query import create_schemaed_snapshot_dataset
 from constants.cdr_cleaner import clean_cdr as consts
 
 LOGGER = logging.getLogger(__name__)
 
 TIER_LIST = ['controlled', 'registered']
 DEID_STAGE_LIST = ['deid', 'base', 'clean']
+SCOPES = [
+    'https://www.googleapis.com/auth/bigquery',
+    'https://www.googleapis.com/auth/devstorage.read_write',
+]
 
 
 def validate_tier_param(tier):
@@ -61,6 +67,17 @@ def validate_release_tag_param(arg_value):
     return arg_value
 
 
+def validate_create_tier_args(tier, stage, tag):
+    """
+    User defined helper function to validate that the tier, deid_stage, release_tag parameter
+     follows the correct naming convention
+    :return: None, breaks if not valid params are passed
+    """
+    validate_tier_param(tier)
+    validate_deid_stage_param(stage)
+    validate_release_tag_param(tag)
+
+
 def get_dataset_name(tier, release_tag, deid_stage):
     """
     Helper function to create the dataset name based on the given criteria
@@ -73,9 +90,7 @@ def get_dataset_name(tier, release_tag, deid_stage):
     :return: a string for the dataset name
     """
     # validate parameters
-    validate_tier_param(tier)
-    validate_release_tag_param(release_tag)
-    validate_deid_stage_param(deid_stage)
+    validate_create_tier_args(tier, deid_stage, release_tag)
 
     tier = tier[0].upper()
 
@@ -114,13 +129,11 @@ def create_datasets(client, name, input_dataset, tier, release_tag):
 
     # Construct names of datasets need as part of the deid process
     final_dataset_id = name
-    backup_dataset_id = f'{name}_{consts.BACKUP}'
     staging_dataset_id = f'{name}_{consts.STAGING}'
     sandbox_dataset_id = f'{name}_{consts.SANDBOX}'
 
     datasets = {
         consts.CLEAN: final_dataset_id,
-        consts.BACKUP: backup_dataset_id,
         consts.STAGING: staging_dataset_id,
         consts.SANDBOX: sandbox_dataset_id
     }
@@ -157,14 +170,6 @@ def create_datasets(client, name, input_dataset, tier, release_tag):
             dataset.description = f'{phase} {description}'
             client.update_dataset(dataset, ["labels", "description"])
 
-    # Copy input dataset tables to backup and staging datasets
-    tables = client.list_tables(input_dataset)
-    for table in tables:
-        backup_table = f'{backup_dataset_id}.{table.table_id}'
-        staging_table = f'{staging_dataset_id}.{table.table_id}'
-        client.copy_table(table, backup_table)
-        client.copy_table(table, staging_table)
-
     return datasets
 
 
@@ -183,19 +188,33 @@ def create_tier(credentials_filepath, project_id, tier, input_dataset,
     :param run_as: email address of the service acocunt to impersonate
     :return: name of created controlled or registered dataset
     """
-
     # validation of params
-    validate_tier_param(tier)
-    validate_deid_stage_param(deid_stage)
-    validate_release_tag_param(release_tag)
+    validate_create_tier_args(tier, deid_stage, release_tag)
 
-    # get credentials
-    scopes = [
-        'https://www.googleapis.com/auth/bigquery',
-        'https://www.googleapis.com/auth/devstorage.read_write',
-    ]
+    # get credentials and create client
     impersonation_creds = auth.get_impersonation_credentials(
-        run_as, scopes, credentials_filepath)
+        run_as, SCOPES, credentials_filepath)
+
+    client = bq.get_client(project_id, impersonation_creds)
+
+    # Get Final Dataset name
+    final_dataset_name = get_dataset_name(tier, release_tag, deid_stage)
+
+    # Create intermediary datasets and copy tables from input dataset to newly created dataset
+    datasets = create_datasets(client, final_dataset_name, input_dataset, tier,
+                               release_tag)
+    bq.copy_datasets(client, input_dataset, datasets[consts.STAGING])
+
+    # Run cleaning rules
+    controlled_tier_cleaning_args = [
+        '-p', project_id, '-d', datasets[consts.STAGING], '-b',
+        datasets[consts.SANDBOX], '--data_stage', tier
+    ]
+    clean_cdr.main(args=controlled_tier_cleaning_args)
+
+    # Snapshot the staging dataset to final dataset
+    create_schemaed_snapshot_dataset(project_id, datasets[consts.STAGING],
+                                     final_dataset_name, False)
 
 
 def parse_deid_args(args=None):

@@ -12,7 +12,9 @@ import mock
 # Project imports
 from constants.cdr_cleaner import clean_cdr as consts
 from tools.create_tier import parse_deid_args, validate_deid_stage_param, validate_tier_param, \
-    validate_release_tag_param, create_datasets, get_dataset_name
+    validate_release_tag_param, create_datasets, get_dataset_name, create_tier, SCOPES
+
+from utils import bq
 
 
 class CreateTierTest(unittest.TestCase):
@@ -33,6 +35,7 @@ class CreateTierTest(unittest.TestCase):
         self.deid_stage = 'deid'
         self.name = 'foo_name'
         self.run_as = 'foo@bar.com'
+        self.client = bq.get_client(self.project_id)
 
         self.description = f'dataset created from {self.input_dataset} for {self.tier}{self.release_tag} CDR run'
         self.labels_and_tags = {
@@ -269,7 +272,6 @@ class CreateTierTest(unittest.TestCase):
 
         datasets = {
             consts.CLEAN: self.name,
-            consts.BACKUP: f'{self.name}_{consts.BACKUP}',
             consts.SANDBOX: f'{self.name}_{consts.SANDBOX}',
             consts.STAGING: f'{self.name}_{consts.STAGING}'
         }
@@ -296,12 +298,10 @@ class CreateTierTest(unittest.TestCase):
         self.assertEqual(expected, datasets)
 
         # Ensures datasets are created with the proper name, descriptions, and labels and tags
-        self.assertEqual(mock_define_dataset.call_count, 4)
+        self.assertEqual(mock_define_dataset.call_count, 3)
 
         mock_define_dataset.assert_has_calls([
             mock.call(client.project, datasets[consts.CLEAN], self.description,
-                      self.labels_and_tags),
-            mock.call(client.project, datasets[consts.BACKUP], self.description,
                       self.labels_and_tags),
             mock.call(client.project, datasets[consts.STAGING],
                       self.description, self.labels_and_tags),
@@ -310,16 +310,12 @@ class CreateTierTest(unittest.TestCase):
         ])
 
         # Ensures datasets are updated with the proper labels and tags (if dataset is de-identified or not)
-        self.assertEqual(mock_update_labels_tags.call_count, 4)
+        self.assertEqual(mock_update_labels_tags.call_count, 3)
 
         mock_update_labels_tags.assert_has_calls([
             mock.call(datasets[consts.CLEAN], self.labels_and_tags, {
                 'de-identified': 'true',
                 'phase': consts.CLEAN
-            }),
-            mock.call(datasets[consts.BACKUP], self.labels_and_tags, {
-                'de-identified': 'false',
-                'phase': consts.BACKUP
             }),
             mock.call(datasets[consts.STAGING], self.labels_and_tags, {
                 'de-identified': 'true',
@@ -330,3 +326,58 @@ class CreateTierTest(unittest.TestCase):
                 'phase': consts.SANDBOX
             }),
         ])
+
+    @mock.patch('tools.create_tier.create_schemaed_snapshot_dataset')
+    @mock.patch('tools.create_tier.clean_cdr.main')
+    @mock.patch('tools.create_tier.bq.copy_datasets')
+    @mock.patch('tools.create_tier.create_datasets')
+    @mock.patch('tools.create_tier.get_dataset_name')
+    @mock.patch('tools.create_tier.bq.get_client')
+    @mock.patch('tools.create_tier.auth.get_impersonation_credentials')
+    @mock.patch('tools.create_tier.validate_create_tier_args')
+    def test_create_tier(self, mock_validate_args, mock_impersonate_credentials,
+                         mock_get_client, mock_dataset_name,
+                         mock_create_datasets, mock_copy_datasets,
+                         mock_cdr_main, mock_create_schemaed_snapshot):
+        final_dataset_name = f"{self.tier[0].upper()}{self.release_tag}_{self.deid_stage}"
+        datasets = {
+            consts.CLEAN: final_dataset_name,
+            consts.STAGING: f'{final_dataset_name}_staging',
+            consts.SANDBOX: f'{final_dataset_name}_sandbox'
+        }
+        mock_dataset_name.return_value = final_dataset_name
+        mock_create_datasets.return_value = datasets
+
+        create_tier(self.credentials_filepath, self.project_id, self.tier,
+                    self.input_dataset, self.release_tag, self.deid_stage,
+                    self.run_as)
+
+        mock_validate_args.assert_called_with(self.tier, self.deid_stage,
+                                              self.release_tag)
+
+        mock_impersonate_credentials.assert_called_with(
+            self.run_as, SCOPES, self.credentials_filepath)
+
+        mock_get_client.assert_called_with(self.project_id,
+                                           mock_impersonate_credentials())
+
+        mock_dataset_name.assert_called_with(self.tier, self.release_tag,
+                                             self.deid_stage)
+
+        mock_create_datasets.asserd_called_with(mock_get_client(),
+                                                final_dataset_name,
+                                                self.input_dataset, self.tier,
+                                                self.release_tag)
+
+        mock_copy_datasets.assert_called_with(mock_get_client(),
+                                              self.input_dataset,
+                                              datasets[consts.STAGING])
+
+        controlled_tier_cleaning_args = [
+            '-p', self.project_id, '-d', datasets[consts.STAGING], '-b',
+            datasets[consts.SANDBOX], '--data_stage', self.tier
+        ]
+        mock_cdr_main.assert_called_with(args=controlled_tier_cleaning_args)
+        mock_create_schemaed_snapshot.assert_called_with(
+            self.project_id, datasets[consts.STAGING], final_dataset_name,
+            False)
