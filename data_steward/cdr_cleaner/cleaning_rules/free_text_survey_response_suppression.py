@@ -6,7 +6,6 @@ Original Issue: DC-1387
 
 # Python imports
 import logging
-from abc import ABC
 
 from google.cloud.exceptions import GoogleCloudError
 
@@ -23,13 +22,14 @@ SUPPRESSION_RULE_CONCEPT_TABLE = 'free_text_suppression_concept'
 FREE_TEXT_CONCEPT_QUERY = JINJA_ENV.from_string("""
 -- This query generates a lookup table that contains all the suppressed concepts relating to  --
 -- free text generated using REGEX --
-CREATE OR REPLACE TABLE `{{project_id}}.{{dataset_id}}.{{concept_suppression_table}}` AS
+CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset}}.{{concept_suppression_table}}` AS
 (SELECT * FROM `{{project_id}}.{{dataset_id}}.concept`
 WHERE REGEXP_CONTAINS(concept_code, r'(FreeText)|(TextBox)') OR concept_code = 'notes')
 """)
 
 
-class FreeTextSurveyResponseSuppression(AbstractBqLookupTableConceptSuppression):
+class FreeTextSurveyResponseSuppression(AbstractBqLookupTableConceptSuppression
+                                       ):
     """
     Any record in the observation table with a free text concept should be sandboxed and suppressed
     """
@@ -43,14 +43,15 @@ class FreeTextSurveyResponseSuppression(AbstractBqLookupTableConceptSuppression)
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
         desc = 'Sandbox and record suppress any records containing concepts related to free text responses'
-        super().__init__(issue_numbers=['DC1387'],
-                         description=desc,
-                         affected_datasets=[cdr_consts.CONTROLLED_TIER_DEID],
-                         affected_tables=OBSERVATION,
-                         project_id=project_id,
-                         dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id,
-                         concept_suppression_lookup_table=SUPPRESSION_RULE_CONCEPT_TABLE)
+        super().__init__(
+            issue_numbers=['DC1387'],
+            description=desc,
+            affected_datasets=[cdr_consts.CONTROLLED_TIER_DEID],
+            affected_tables=[OBSERVATION],
+            project_id=project_id,
+            dataset_id=dataset_id,
+            sandbox_dataset_id=sandbox_dataset_id,
+            concept_suppression_lookup_table=SUPPRESSION_RULE_CONCEPT_TABLE)
 
     def create_suppression_lookup_table(self, client):
         """
