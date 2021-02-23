@@ -75,9 +75,12 @@ class FreeTextSurveyResponseSuppressionTest(BaseTest.CleaningRulesTestBase):
         fq_dataset_name = self.fq_table_names[0].split('.')
         self.fq_dataset_name = '.'.join(fq_dataset_name[:-1])
 
+        fq_sandbox_name = self.fq_sandbox_table_names[0].split('.')
+        self.fq_sandbox_name = '.'.join(fq_sandbox_name[:-1])
+
         super().setUp()
 
-    def test_generalize_zip_codes_cleaning(self):
+    def test_free_text_suppression_cleaning(self):
         """
         Tests that the specifications for FREE_TEXT_RECORD_SUPPRESSION query perform as designed.
 
@@ -188,7 +191,7 @@ class FreeTextSurveyResponseSuppressionTest(BaseTest.CleaningRulesTestBase):
             'fq_table_name':
                 f'{self.fq_dataset_name}.observation',
             'fq_sandbox_table_name':
-                f'{self.fq_sandbox_table_names}.{self.rule_instance.sandbox_table_for(OBSERVATION)}',
+                f'{self.fq_sandbox_name}.{self.rule_instance.sandbox_table_for(OBSERVATION)}',
             'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9],
             'sandboxed_ids': [1, 2, 3, 4, 5, 6, 7],
             'fields': [
