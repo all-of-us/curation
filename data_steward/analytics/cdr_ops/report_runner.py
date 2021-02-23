@@ -19,7 +19,7 @@ import nbclient
 from nbconvert import HTMLExporter
 
 # Project imports
-from utils import pipeline_logging
+from utils import pipeline_logging 
 
 LOGGER = logging.getLogger(__name__)
 IPYNB_SUFFIX = '.ipynb'
@@ -265,7 +265,7 @@ class NotebookFileParamType(object):
 
 
 if __name__ == '__main__':
-    pipeline_logging.configure(logging.INFO, add_console_handler=True)
+    pipeline_logging.configure(logging.INFO, add_console_handler=True) 
 
     parser = argparse.ArgumentParser(
         description=
