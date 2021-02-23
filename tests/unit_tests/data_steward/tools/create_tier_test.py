@@ -32,6 +32,7 @@ class CreateTierTest(unittest.TestCase):
         self.release_tag = '2020q4r3'
         self.deid_stage = 'deid'
         self.name = 'foo_name'
+        self.run_as = 'foo@bar.com'
 
         self.description = f'dataset created from {self.input_dataset} for {self.tier}{self.release_tag} CDR run'
         self.labels_and_tags = {
@@ -45,37 +46,54 @@ class CreateTierTest(unittest.TestCase):
         self.addCleanup(mock_bq_client_patcher.stop)
 
         self.correct_parameter_list = [
-            '--credentials_filepath', self.credentials_filepath, '--project_id',
-            self.project_id, '--tier', self.tier, '--idataset',
-            self.input_dataset, '--release_tag', self.release_tag,
-            '--deid_stage', self.deid_stage, '--console_log'
+            '--credentials_filepath',
+            self.credentials_filepath,
+            '--project_id',
+            self.project_id,
+            '--tier',
+            self.tier,
+            '--idataset',
+            self.input_dataset,
+            '--release_tag',
+            self.release_tag,
+            '--deid_stage',
+            self.deid_stage,
+            '--console_log',
+            '--run_as',
+            self.run_as,
         ]
+
         # incorrect parameter lists
         self.incorrect_parameter_list_1 = [
             '--project_id', self.project_id, '--tier', self.tier, '--idataset',
             self.input_dataset, '--release_tag', self.release_tag,
             '--deid_stage', self.deid_stage
         ]
+
         self.incorrect_parameter_list_2 = [
             '--credentials_filepath', self.credentials_filepath, '--tier',
             self.tier, '--idataset', self.input_dataset, '--release_tag',
             self.release_tag, '--deid_stage', self.deid_stage
         ]
+
         self.incorrect_parameter_list_3 = [
             '--credentials_filepath', self.credentials_filepath, '--project_id',
             self.project_id, '--idataset', self.input_dataset, '--release_tag',
             self.release_tag, '--deid_stage', self.deid_stage
         ]
+
         self.incorrect_parameter_list_4 = [
             '--credentials_filepath', self.credentials_filepath, '--project_id',
             self.project_id, '--tier', self.tier, '--release_tag',
             self.release_tag, '--deid_stage', self.deid_stage
         ]
+
         self.incorrect_parameter_list_5 = [
             '--credentials_filepath', self.credentials_filepath, '--project_id',
             self.project_id, '--tier', self.tier, '--idataset',
             self.input_dataset, '--deid_stage', self.deid_stage
         ]
+
         self.incorrect_parameter_list_6 = [
             '--credentials_filepath', self.credentials_filepath, '--project_id',
             self.project_id, '--tier', self.tier, '--idataset',
@@ -98,38 +116,74 @@ class CreateTierTest(unittest.TestCase):
                           self.incorrect_parameter_list_6)
 
         # Tests if incorrect choice for deid_stage are given
-        incorrect_deid_stage_choice_args = [
-            [
-                '--credentials_filepath', self.credentials_filepath,
-                '--project_id', self.project_id, '--tier', self.tier,
-                '--idataset', self.input_dataset, '--release_tag',
-                self.release_tag, '--deid_stage', 'deid_base'
-            ],
-            [
-                '--credentials_filepath', self.credentials_filepath,
-                '--project_id', self.project_id, '--tier', self.tier,
-                '--idataset', self.input_dataset, '--release_tag',
-                self.release_tag, '--deid_stage', 'deid_clean'
-            ]
-        ]
+        incorrect_deid_stage_choice_args = [[
+            '--credentials_filepath',
+            self.credentials_filepath,
+            '--project_id',
+            self.project_id,
+            '--tier',
+            self.tier,
+            '--idataset',
+            self.input_dataset,
+            '--release_tag',
+            self.release_tag,
+            '--deid_stage',
+            'deid_base',
+            '--run_as',
+            self.run_as,
+        ],
+                                            [
+                                                '--credentials_filepath',
+                                                self.credentials_filepath,
+                                                '--project_id',
+                                                self.project_id,
+                                                '--tier',
+                                                self.tier,
+                                                '--idataset',
+                                                self.input_dataset,
+                                                '--release_tag',
+                                                self.release_tag,
+                                                '--deid_stage',
+                                                'deid_clean',
+                                                '--run_as',
+                                                self.run_as,
+                                            ]]
         for args in incorrect_deid_stage_choice_args:
             self.assertRaises(SystemExit, parse_deid_args, args)
 
         # Tests if incorrect choice for tier are given
-        incorrect_tier_choice_args = [
-            [
-                '--credentials_filepath', self.credentials_filepath,
-                '--project_id', self.project_id, '--tier', 'uncontrolled',
-                '--idataset', self.input_dataset, '--release_tag',
-                self.release_tag, '--deid_stage', self.deid_stage
-            ],
-            [
-                '--credentials_filepath', self.credentials_filepath,
-                '--project_id', self.project_id, '--tier', 'registry',
-                '--idataset', self.input_dataset, '--release_tag',
-                self.release_tag, '--deid_stage', self.deid_stage
-            ]
-        ]
+        incorrect_tier_choice_args = [[
+            '--credentials_filepath',
+            self.credentials_filepath,
+            '--project_id',
+            self.project_id,
+            '--tier',
+            'uncontrolled',
+            '--idataset',
+            self.input_dataset,
+            '--release_tag',
+            self.release_tag,
+            '--deid_stage',
+            self.deid_stage,
+            '--run_as',
+            self.run_as,
+        ],
+                                      [
+                                          '--credentials_filepath',
+                                          self.credentials_filepath,
+                                          '--project_id',
+                                          self.project_id,
+                                          '--tier',
+                                          'registry',
+                                          '--idataset',
+                                          self.input_dataset,
+                                          '--release_tag',
+                                          self.release_tag,
+                                          '--deid_stage',
+                                          self.deid_stage,
+                                          '--run_as',
+                                          self.run_as,
+                                      ]]
         for args in incorrect_tier_choice_args:
             self.assertRaises(SystemExit, parse_deid_args, args)
 
