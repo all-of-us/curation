@@ -68,8 +68,6 @@ class FreeTextSurveyResponseSuppressionTest(BaseTest.CleaningRulesTestBase):
         Creates common expected parameter types from cleaned tables and a common
         fully qualified (fq) dataset name string used to load the data.
         """
-        self.valid_start_date = parser.parse('2016-05-01').date()
-        self.valid_end_date = parser.parse('2016-05-02').date()
         self.observation_date = parser.parse('2017-05-02').date()
 
         fq_dataset_name = self.fq_table_names[0].split('.')
@@ -82,8 +80,6 @@ class FreeTextSurveyResponseSuppressionTest(BaseTest.CleaningRulesTestBase):
 
     def test_free_text_suppression_cleaning(self):
         """
-        Tests that the specifications for FREE_TEXT_RECORD_SUPPRESSION query perform as designed.
-
         Validates pre conditions, tests execution, and post conditions based on the load
         statements and the tables_and_counts variable.
         """
