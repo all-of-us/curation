@@ -58,9 +58,9 @@ class CreateTierTest(unittest.TestCase):
             self.release_tag,
             '--deid_stage',
             self.deid_stage,
-            '--console_log',
             '--run_as',
             self.run_as,
+            '--console_log',
         ]
 
         # incorrect parameter lists
@@ -193,6 +193,8 @@ class CreateTierTest(unittest.TestCase):
         correct_parameter_dict = {
             k.strip('-'): v for (k, v) in correct_parameter_dict.items()
         }
+        correct_parameter_dict['target_principal'] = correct_parameter_dict.pop(
+            'run_as', 'f@b.com')
         correct_parameter_dict['console_log'] = True
 
         # Test if correct parameters are given
