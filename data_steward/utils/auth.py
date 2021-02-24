@@ -154,5 +154,5 @@ def get_impersonation_credentials(target_principal,
                 target_scopes=target_scopes,
                 lifetime=IMPERSONATION_LIFETIME)
         except (OSError, ValueError, TypeError, RuntimeError) as exc:
-            print("An unexpected error was encountered in {}")
+            LOGGER.exception("An unexpected error was encountered")
             raise (exc)
