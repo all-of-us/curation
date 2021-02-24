@@ -100,9 +100,10 @@ def get_impersonation_credentials(target_principal,
         LOGGER.warning(f"Using default scopes: {DEFAULT_SCOPES}")
         target_scopes = DEFAULT_SCOPES
 
-    if not isinstance(target_scopes, list):
-        LOGGER.warning(f"Target scopes requires a list.  Using"
-                       f" default scopes: {DEFAULT_SCOPES}.")
+    if not isinstance(target_scopes, (list, tuple)):
+        LOGGER.warning(f"Target scopes requires an iterable.  Currently "
+                       f"for lists and tuples.  Using "
+                       f"default scopes: {DEFAULT_SCOPES}.")
         target_scopes = DEFAULT_SCOPES
 
     if key_file:
