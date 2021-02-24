@@ -101,7 +101,7 @@ class FreeTextSurveyResponseSuppressionTest(BaseTest.CleaningRulesTestBase):
                     >>
             [(111, 'Something Text Box', 'Observation', 'SNOWMED', 'Context-dependent', 'WhiteFreeText', 
                     '2016-05-01', '2016-05-02'),
-                (222, 'Something Free Text', 'Observation', 'SNOWMED', 'Context-dependent', 'BlackFreeText', 
+                (222, 'TextBox', 'Observation', 'SNOWMED', 'Context-dependent', 'BlackFreeText', 
                     '2016-05-01', '2016-05-02'),
                 (333, 'None Of These', 'Observation', 'SNOWMED', 'Context-dependent', 'notes', 
                     '2016-05-01', '2016-05-02'),

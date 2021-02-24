@@ -42,7 +42,8 @@ class FreeTextSurveyResponseSuppression(AbstractBqLookupTableConceptSuppression
         this SQL, append them to the list of Jira Issues.
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
-        desc = 'Sandbox and record suppress any records containing concepts related to free text responses'
+        desc = (f'Sandbox and record suppress any records containing '
+                f'concepts related to free text responses')
         super().__init__(
             issue_numbers=['DC1387'],
             description=desc,
