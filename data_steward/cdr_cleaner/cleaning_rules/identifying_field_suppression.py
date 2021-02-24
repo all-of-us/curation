@@ -35,7 +35,7 @@ import os
 from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from common import JINJA_ENV, CDM_TABLES
-from utils import pipeline_logging
+from utils import pipeline_logging, bq
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
 from cdr_cleaner.cleaning_rules.table_suppression import TableSuppression
 
@@ -98,46 +98,39 @@ class IDFieldSuppression(BaseCleaningRule):
             are optional but the query is required.
         """
         queries = []
-        current_dir = os.getcwd()
-        # loop through tables to create replace statements
-        for table in CDM_TABLES:
-            # change to root directory to access fields files
-            root_dir = os.path.dirname(
-                os.path.dirname(os.path.abspath(__file__)))
-            os.chdir(root_dir)
+        for table in self.affected_tables:
+            schema = bq.get_table_schema(table)
+            statements = []
+            for item in schema:
+                if item.name in fields:
+                    if item.mode == 'nullable':
+                        value = 'NULL'
+                    elif item.field_type == 'integer':
+                        value = 0
+                    elif item.field_type == 'string':
+                        value = ''
+                    else:
+                        raise RuntimeError(
+                            f"Required field {item.name} needs to be integer or string type to be replaced"
+                        )
+                    suppression_statement = REPLACE_STRING.render(
+                        suppression_statement=value, field=item.name)
+                    statements.append(suppression_statement)
+            if statements:
+                suppression_statement = ', '.join(statements)
+                query = dict()
+                query[cdr_consts.QUERY] = ID_FIELD_SUPPRESSION_QUERY.render(
+                    project_id=self.project_id,
+                    dataset_id=self.dataset_id,
+                    table=table,
+                    replace_statement=suppression_statement)
+                query[cdr_consts.DESTINATION_TABLE] = table
+                query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
+                query[cdr_consts.DESTINATION_DATASET] = self.dataset_id
+                queries.append(query)
 
-            # create replace statement by looping through schema
-            with open(f'../resource_files/fields/{table}.json') as f:
-                schema = json.load(f)
-                statements = []
-                for item in schema:
-                    if item['name'] in fields:
-                        if item['mode'] == 'nullable':
-                            value = 'NULL'
-                        elif item['type'] == 'integer':
-                            value = 0
-                        elif item['type'] == 'string':
-                            value = ''
-                        suppression_statement = REPLACE_STRING.render(
-                            suppression_statement=value, field=item['name'])
-                        statements.append(suppression_statement)
-                if statements:
-                    suppression_statement = ', '.join(statements)
-                    query = dict()
-                    query[cdr_consts.QUERY] = ID_FIELD_SUPPRESSION_QUERY.render(
-                        project_id=self.project_id,
-                        dataset_id=self.dataset_id,
-                        table=table,
-                        replace_statement=suppression_statement)
-                    query[cdr_consts.DESTINATION_TABLE] = table
-                    query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
-                    query[cdr_consts.DESTINATION_DATASET] = self.dataset_id
-                    queries.append(query)
-
-                else:
-                    continue
-        # change back to previous directory
-        os.chdir(current_dir)
+            else:
+                continue
         return queries
 
     def setup_rule(self, client, *args, **keyword_args):

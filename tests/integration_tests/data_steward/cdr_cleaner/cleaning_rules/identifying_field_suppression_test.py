@@ -88,7 +88,7 @@ class IDFieldSuppressionTest(BaseTest.CleaningRulesTestBase):
         super().setUp()
 
         # test data for measurement table, identifying fields: provider_id
-        care_site_data_query = self.jinja_env.from_string("""
+        measurement_data_query = self.jinja_env.from_string("""
             DROP TABLE IF EXISTS
               `{{project_id}}.{{dataset_id}}.measurement`;
             CREATE TABLE
@@ -158,7 +158,7 @@ class IDFieldSuppressionTest(BaseTest.CleaningRulesTestBase):
             """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
         self.load_test_data([
-            care_site_data_query, person_data_query,
+            measurement_data_query, person_data_query,
             fact_relationship_data_query
         ])
 
