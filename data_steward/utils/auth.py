@@ -97,12 +97,12 @@ def get_impersonation_credentials(target_principal,
             "Cannot impersonate.  No impersonation target specified.")
 
     if not target_scopes:
-        LOGGER.warn(f"Using default scopes: {DEFAULT_SCOPES}")
+        LOGGER.warning(f"Using default scopes: {DEFAULT_SCOPES}")
         target_scopes = DEFAULT_SCOPES
 
     if not isinstance(target_scopes, list):
-        LOGGER.warn(f"Target scopes requires a list.  Using"
-                    f" default scopes: {DEFAULT_SCOPES}.")
+        LOGGER.warning(f"Target scopes requires a list.  Using"
+                       f" default scopes: {DEFAULT_SCOPES}.")
         target_scopes = DEFAULT_SCOPES
 
     if key_file:
