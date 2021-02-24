@@ -123,7 +123,7 @@ class COPESurveyVersionTaskTest(BaseTest.DeidRulesTestBase):
         700 AS participant_id,
         30 AS questionnaire_response_id,
         'V2020.11.06' AS semantic_version,
-        'november' AS cope_month)
+        'nov' AS cope_month)
         """)
         ]
 
