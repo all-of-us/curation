@@ -25,7 +25,7 @@ ZIP_CODE_AGGREGATION_MAP = 'zip_code_aggregation_map'
 ZIP_CODES_AND_STATES_TO_MODIFY = '_zip_codes_and_states_to_modify'
 
 FIND_ZIP_CODES_AND_STATES_QUERY = JINJA_ENV.from_string("""
-SELECT DISTINCT
+SELECT
     zip_code_obs.person_id, zip_code_obs.observation_id zip_code_observation_id,
     state_obs.observation_id state_observation_id, 
     map.zip_code_3, map.state,
