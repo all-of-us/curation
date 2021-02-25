@@ -7,7 +7,7 @@ It is expected that this lookup table will be static and will remain unchanged.
 It is based on US population, and not on participant address metrics.
 
 
-Original Issue: DC1379
+Original Issue: DC-1379
 """
 
 # Python imports

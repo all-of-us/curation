@@ -15,6 +15,7 @@ import logging
 import constants.bq_utils as bq_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from cdr_cleaner.cleaning_rules.generalize_zip_codes import GeneralizeZipCodes
+from cdr_cleaner.cleaning_rules.deid.string_fields_suppression import StringFieldsSuppression
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from common import JINJA_ENV, OBSERVATION, PIPELINE_TABLES
 from utils import pipeline_logging
@@ -92,14 +93,16 @@ class AggregateZipCodes(BaseCleaningRule):
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
         desc = 'Aggregates generalized zip codes based on first digits.'
-        super().__init__(issue_numbers=['DC1379'],
-                         description=desc,
-                         affected_datasets=[cdr_consts.CONTROLLED_TIER_DEID],
-                         affected_tables=[OBSERVATION],
-                         project_id=project_id,
-                         dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id,
-                         depends_on=[GeneralizeZipCodes])
+        super().__init__(
+            issue_numbers=['DC1379'],
+            description=desc,
+            affected_datasets=[cdr_consts.CONTROLLED_TIER_DEID],
+            affected_tables=[OBSERVATION],
+            project_id=project_id,
+            dataset_id=dataset_id,
+            sandbox_dataset_id=sandbox_dataset_id,
+            depends_on=[GeneralizeZipCodes, StringFieldsSuppression])
+        # Identifiable information may exist if StringFieldsSuppression rule fails
 
     def get_query_specs(self, *args, **keyword_args):
         """
