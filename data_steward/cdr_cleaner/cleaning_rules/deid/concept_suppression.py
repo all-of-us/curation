@@ -46,8 +46,8 @@ def get_tables_in_dataset(client: Client, project_id, dataset_id,
                                              table_names=table_names))
     result = query_job.result()
 
-    if hasattr(result, 'errors') and result.errors:
-        # LOGGER.error(f"Error running job {result.job_id}: {result.errors}")
+    if query_job.errors or query_job.error_results:
+        LOGGER.error(f"Error running job {result.job_id}: {result.errors}")
         raise GoogleCloudError(
             f"Error running job {result.job_id}: {result.errors}")
 
