@@ -70,7 +70,7 @@ class FreeTextSurveyResponseSuppression(AbstractBqLookupTableConceptSuppression
         query_job = client.query(concept_suppression_lookup_query)
         result = query_job.result()
 
-        if hasattr(result, 'errors') and result.errors:
+        if query_job.errors or query_job.error_result:
             LOGGER.error(f"Error running job {result.job_id}: {result.errors}")
             raise GoogleCloudError(
                 f"Error running job {result.job_id}: {result.errors}")
