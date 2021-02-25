@@ -62,7 +62,8 @@ class AggregateZipCodesTest(unittest.TestCase):
                     pii_state_vocab=PII_STATE_VOCAB,
                     zip_code_aggregation_map=ZIP_CODE_AGGREGATION_MAP),
             clean_consts.DESTINATION_TABLE:
-                ZIP_CODES_AND_STATES_TO_MODIFY,
+                self.rule_instance.sandbox_table_for(
+                    ZIP_CODES_AND_STATES_TO_MODIFY),
             clean_consts.DESTINATION_DATASET:
                 self.sandbox_id,
             clean_consts.DISPOSITION:
@@ -74,8 +75,8 @@ class AggregateZipCodesTest(unittest.TestCase):
                     dataset_id=self.dataset_id,
                     obs_table=OBSERVATION,
                     sandbox_id=self.sandbox_id,
-                    modified_zip_codes_and_states_table=
-                    ZIP_CODES_AND_STATES_TO_MODIFY),
+                    modified_zip_codes_and_states_table=self.rule_instance.
+                    sandbox_table_for(ZIP_CODES_AND_STATES_TO_MODIFY)),
             clean_consts.DESTINATION_TABLE:
                 OBSERVATION,
             clean_consts.DESTINATION_DATASET:
@@ -89,8 +90,8 @@ class AggregateZipCodesTest(unittest.TestCase):
                     dataset_id=self.dataset_id,
                     obs_table=OBSERVATION,
                     sandbox_id=self.sandbox_id,
-                    modified_zip_codes_and_states_table=
-                    ZIP_CODES_AND_STATES_TO_MODIFY,
+                    modified_zip_codes_and_states_table=self.rule_instance.
+                    sandbox_table_for(ZIP_CODES_AND_STATES_TO_MODIFY),
                     pipeline_tables_dataset=PIPELINE_TABLES,
                     pii_state_vocab=PII_STATE_VOCAB),
             clean_consts.DESTINATION_TABLE:

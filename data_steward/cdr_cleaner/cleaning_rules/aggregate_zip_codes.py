@@ -120,19 +120,22 @@ class AggregateZipCodes(BaseCleaningRule):
                 pii_state_vocab=PII_STATE_VOCAB,
                 zip_code_aggregation_map=ZIP_CODE_AGGREGATION_MAP)
         find_zip_codes_and_states_query[
-            cdr_consts.DESTINATION_TABLE] = ZIP_CODES_AND_STATES_TO_MODIFY
+            cdr_consts.DESTINATION_TABLE] = self.sandbox_table_for(
+                ZIP_CODES_AND_STATES_TO_MODIFY)
         find_zip_codes_and_states_query[
             cdr_consts.DESTINATION_DATASET] = self.sandbox_dataset_id
         find_zip_codes_and_states_query[
             cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
 
         modify_zip_codes_query = dict()
-        modify_zip_codes_query[cdr_consts.QUERY] = MODIFY_ZIP_CODES_QUERY.render(
-            project_id=self.project_id,
-            dataset_id=self.dataset_id,
-            obs_table=OBSERVATION,
-            sandbox_id=self.sandbox_dataset_id,
-            modified_zip_codes_and_states_table=ZIP_CODES_AND_STATES_TO_MODIFY)
+        modify_zip_codes_query[
+            cdr_consts.QUERY] = MODIFY_ZIP_CODES_QUERY.render(
+                project_id=self.project_id,
+                dataset_id=self.dataset_id,
+                obs_table=OBSERVATION,
+                sandbox_id=self.sandbox_dataset_id,
+                modified_zip_codes_and_states_table=self.sandbox_table_for(
+                    ZIP_CODES_AND_STATES_TO_MODIFY))
         modify_zip_codes_query[cdr_consts.DESTINATION_TABLE] = OBSERVATION
         modify_zip_codes_query[cdr_consts.DESTINATION_DATASET] = self.dataset_id
         modify_zip_codes_query[
@@ -144,7 +147,8 @@ class AggregateZipCodes(BaseCleaningRule):
             dataset_id=self.dataset_id,
             obs_table=OBSERVATION,
             sandbox_id=self.sandbox_dataset_id,
-            modified_zip_codes_and_states_table=ZIP_CODES_AND_STATES_TO_MODIFY,
+            modified_zip_codes_and_states_table=self.sandbox_table_for(
+                ZIP_CODES_AND_STATES_TO_MODIFY),
             pipeline_tables_dataset=PIPELINE_TABLES,
             pii_state_vocab=PII_STATE_VOCAB)
         modify_states_query[cdr_consts.DESTINATION_TABLE] = OBSERVATION
