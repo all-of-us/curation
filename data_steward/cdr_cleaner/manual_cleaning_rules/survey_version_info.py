@@ -36,6 +36,9 @@ CREATE OR REPLACE TABLE `{{project_id}}.{{out_dataset_id}}.observation_ext` AS (
       WHEN cssf.cope_month = 'may' THEN 2100000002
       WHEN cssf.cope_month = 'june' THEN 2100000003
       WHEN cssf.cope_month = 'july' THEN 2100000004
+      WHEN cssf.cope_month = 'nov' THEN 2100000005
+      WHEN cssf.cope_month = 'dec' THEN 2100000006
+      WHEN cssf.cope_month = 'feb' THEN 2100000007
       ELSE survey_version_concept_id 
     END AS survey_version_concept_id
     FROM `{{project_id}}.{{out_dataset_id}}.observation_ext` AS oe

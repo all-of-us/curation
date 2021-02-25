@@ -80,8 +80,9 @@ class COPESurveyVersionTaskTest(BaseTest.DeidRulesTestBase):
         (observation_id, person_id, observation_concept_id, observation_date,
          observation_type_concept_id, questionnaire_response_id)
         VALUES
-          -- represents COPE survey record --
+          -- represents COPE survey records --
           (801, 337361, 1585899, date('2016-05-01'), 45905771, 100),
+          (804, 337361, 1585899, date('2020-11-01'), 45905771, 150),
           -- represents other survey record --
           (802, 337361, 1585899, date('2019-01-01'), 45905771, 200),
           -- represents an EHR observation record --
@@ -94,7 +95,8 @@ class COPESurveyVersionTaskTest(BaseTest.DeidRulesTestBase):
         VALUES
           (801, 'PPI/PM', null),
           (802, 'PPI/PM', null),
-          (803, 'EHR site 222', null)
+          (803, 'EHR site 222', null),
+          (804, 'PPI/PM', null)
         """),
             self.jinja_env.from_string("""
         -- set up questionnaire response mapping table, a post-deid table --
@@ -102,7 +104,8 @@ class COPESurveyVersionTaskTest(BaseTest.DeidRulesTestBase):
         (questionnaire_response_id, research_response_id)
         VALUES
           (10, 100),
-          (20, 200)
+          (20, 200),
+          (30, 150)
         """),
             self.jinja_env.from_string("""
         CREATE OR REPLACE TABLE `{{project}}.{{cope_dataset}}.{{cope_table_name}}` AS (
@@ -114,7 +117,13 @@ class COPESurveyVersionTaskTest(BaseTest.DeidRulesTestBase):
         -- semantic version provided by RDR but not strictly used by curation --
         'V2020.05.06' AS semantic_version,
         -- cope month provided by RDR team --
-        'may' AS cope_month)
+        'may' AS cope_month
+        UNION ALL
+        SELECT
+        700 AS participant_id,
+        30 AS questionnaire_response_id,
+        'V2020.11.06' AS semantic_version,
+        'nov' AS cope_month)
         """)
         ]
 
@@ -141,10 +150,11 @@ class COPESurveyVersionTaskTest(BaseTest.DeidRulesTestBase):
             'fq_table_name':
                 self.fq_table_names[1],
             'fields': ['observation_id', 'src_id', 'survey_version_concept_id'],
-            'loaded_ids': [801, 802, 803],
+            'loaded_ids': [801, 802, 803, 804],
             'cleaned_values': [(801, 'PPI/PM', 2100000002),
                                (802, 'PPI/PM', None),
-                               (803, 'EHR site 222', None)]
+                               (803, 'EHR site 222', None),
+                               (804, 'PPI/PM', 2100000005)]
         }]
 
         self.default_test(tables_and_counts)
