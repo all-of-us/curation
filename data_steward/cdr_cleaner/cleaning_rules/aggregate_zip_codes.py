@@ -25,7 +25,7 @@ ZIP_CODE_AGGREGATION_MAP = 'zip_code_aggregation_map'
 ZIP_CODES_AND_STATES_TO_MODIFY = '_zip_codes_and_states_to_modify'
 
 FIND_ZIP_CODES_AND_STATES_QUERY = JINJA_ENV.from_string("""
-SELECT
+SELECT DISTINCT
     zip_code_obs.person_id, zip_code_obs.observation_id zip_code_observation_id,
     state_obs.observation_id state_observation_id, 
     map.zip_code_3, map.state,
@@ -43,17 +43,29 @@ WHERE zip_code_obs.observation_source_concept_id = 1585250
 """)
 
 MODIFY_ZIP_CODES_QUERY = JINJA_ENV.from_string("""
+WITH unique_zip_code_transforms AS (
+    SELECT DISTINCT
+        person_id, zip_code_observation_id, zip_code_3,
+        transformed_zip_code_3
+    FROM `{{project_id}}.{{sandbox_id}}.{{modified_zip_codes_and_states_table}}` mzc
+)
 SELECT
     zip_code_obs.* REPLACE (
         COALESCE(mzc.transformed_zip_code_3, zip_code_obs.value_as_string) AS value_as_string
     )
 FROM `{{project_id}}.{{dataset_id}}.{{obs_table}}` zip_code_obs
-LEFT JOIN `{{project_id}}.{{sandbox_id}}.{{modified_zip_codes_and_states_table}}` mzc
+LEFT JOIN unique_zip_code_transforms mzc
     ON mzc.zip_code_observation_id = zip_code_obs.observation_id
         AND mzc.person_id = zip_code_obs.person_id
 """)
 
 MODIFY_STATES_QUERY = JINJA_ENV.from_string("""
+WITH unique_state_transforms AS (
+    SELECT DISTINCT
+        person_id, state_observation_id, state,
+        transformed_state
+    FROM `{{project_id}}.{{sandbox_id}}.{{modified_zip_codes_and_states_table}}` mzc
+)
 SELECT
     state_obs.* REPLACE (
         COALESCE(state_vocab.concept_id, state_obs.value_source_concept_id) AS value_source_concept_id,
@@ -61,44 +73,12 @@ SELECT
         COALESCE(state_vocab.concept_code, state_obs.value_source_value) AS value_source_value
     )
 FROM `{{project_id}}.{{dataset_id}}.{{obs_table}}` state_obs
-LEFT JOIN `{{project_id}}.{{sandbox_id}}.{{modified_zip_codes_and_states_table}}` mzc
+LEFT JOIN unique_state_transforms mzc
     ON mzc.state_observation_id = state_obs.observation_id
         AND mzc.person_id = state_obs.person_id
 LEFT JOIN `{{project_id}}.{{pipeline_tables_dataset}}.{{pii_state_vocab}}` state_vocab
     ON state_vocab.postal_code = mzc.transformed_state
 """)
-
-# AGGREGATE_ZIP_CODES_QUERY = JINJA_ENV.from_string("""
-# SELECT
-#     obs.* REPLACE(
-#         map.transformed_zip_code_3 AS value_as_string
-#     )
-# FROM `{{project_id}}.{{dataset_id}}.{{obs_table}}` obs
-# JOIN `{{project_id}}.{{pipeline_tables_dataset}}.{{zip_code_aggregation_map}}` map
-#     ON map.zip_code_3 = obs.value_as_string
-# WHERE obs.observation_source_concept_id = (1585250)
-# """)
-
-# SHIFT_STATES_QUERY = JINJA_ENV.from_string("""
-# WITH modified_zip_code_persons AS (
-#     SELECT DISTINCT
-#         person_id, value_as_string modified_zip_code
-#     FROM `{{project_id}}.{{sandbox_id}}.{{modified_zip_codes}}` modified_zip_codes
-# )
-# SELECT
-#     obs.* REPLACE(
-#         states.concept_id AS value_source_concept_id,
-#         states.concept_id AS value_as_concept_id,
-#         value_source_value
-#     )
-# FROM `{{project_id}}.{{dataset_id}}.{{obs_table}}` obs
-# JOIN `{{project_id}}.{{pipeline_tables_dataset}}.{{pii_state_vocab}}` states
-#     ON states.concept_id = obs.value_source_concept_id
-# JOIN `{{project_id}}.{{pipeline_tables_dataset}}.{{zip_code_aggregation_map}}` map
-#     ON map.zip_code_3 = modified_zip_code_persons.modified_zip_code
-#         AND map.state = states.
-# WHERE obs.observation_source_concept_id = 1585249
-# """)
 
 
 class AggregateZipCodes(BaseCleaningRule):
