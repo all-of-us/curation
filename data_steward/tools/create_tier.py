@@ -6,8 +6,9 @@ import re
 # Third party imports
 
 # Project imports
-from utils import pipeline_logging
+from utils import auth
 from utils import bq
+from utils import pipeline_logging
 from constants.cdr_cleaner import clean_cdr as consts
 
 LOGGER = logging.getLogger(__name__)
@@ -168,7 +169,7 @@ def create_datasets(client, name, input_dataset, tier, release_tag):
 
 
 def create_tier(credentials_filepath, project_id, tier, input_dataset,
-                release_tag, deid_stage):
+                release_tag, deid_stage, run_as):
     """
     This function is the main entry point for the deid process.
     It passes the required parameters to the implementing functions.
@@ -179,6 +180,7 @@ def create_tier(credentials_filepath, project_id, tier, input_dataset,
     :param input_dataset: name of the input dataset
     :param release_tag: release tag for dataset in the format of YYYYq#r#
     :param deid_stage: deid stage (deid, base or clean)
+    :param run_as: email address of the service acocunt to impersonate
     :return: name of created controlled or registered dataset
     """
 
@@ -186,6 +188,14 @@ def create_tier(credentials_filepath, project_id, tier, input_dataset,
     validate_tier_param(tier)
     validate_deid_stage_param(deid_stage)
     validate_release_tag_param(release_tag)
+
+    # get credentials
+    scopes = [
+        'https://www.googleapis.com/auth/bigquery',
+        'https://www.googleapis.com/auth/devstorage.read_write',
+    ]
+    impersonation_creds = auth.get_impersonation_credentials(
+        run_as, scopes, credentials_filepath)
 
 
 def parse_deid_args(args=None):
@@ -195,7 +205,13 @@ def parse_deid_args(args=None):
                         '--credentials_filepath',
                         dest='credentials_filepath',
                         action='store',
+                        default='',
                         help='file path to credentials for GCP to access BQ',
+                        required=False)
+    parser.add_argument('--run_as',
+                        dest='target_principal',
+                        action='store',
+                        help='Email address of service account to impersonate.',
                         required=True)
     parser.add_argument('-p',
                         '--project_id',
@@ -246,7 +262,8 @@ def main(raw_args=None):
     pipeline_logging.configure(level=logging.DEBUG,
                                add_console_handler=args.console_log)
     create_tier(args.credentials_filepath, args.project_id, args.tier,
-                args.idataset, args.release_tag, args.deid_stage)
+                args.idataset, args.release_tag, args.deid_stage,
+                args.target_principal)
 
 
 if __name__ == '__main__':
