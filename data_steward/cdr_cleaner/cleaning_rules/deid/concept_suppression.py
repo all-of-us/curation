@@ -44,14 +44,21 @@ def get_tables_in_dataset(client: Client, project_id, dataset_id,
         GET_ALL_TABLES_QUERY_TEMPLATE.render(project=project_id,
                                              dataset=dataset_id,
                                              table_names=table_names))
-    result = query_job.result()
 
-    if query_job.errors or query_job.error_results:
-        LOGGER.error(f"Error running job {result.job_id}: {result.errors}")
-        raise GoogleCloudError(
-            f"Error running job {result.job_id}: {result.errors}")
+    try:
+        result = query_job.result()
+        # Raise the Runtime Error if the errors are neither GoogleCloudError nor TimeoutError
+        if query_job.errors:
+            raise RuntimeError(result.errors)
 
-    return [dict(row.items())[TABLE_ID] for row in result]
+        return [dict(row.items())[TABLE_ID] for row in result]
+
+    except (GoogleCloudError, TimeoutError, RuntimeError) as e:
+        # Catch GoogleCloudError and TimeoutError that could be raised by query_job.result()
+        # Also catch the RuntimeError raised from the try block
+        # Log the error and raise it again
+        LOGGER.error(f"Error running job {result.job_id}: {e}")
+        raise
 
 
 class AbstractConceptSuppression(BaseCleaningRule):
