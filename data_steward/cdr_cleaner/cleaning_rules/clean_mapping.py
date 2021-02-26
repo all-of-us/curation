@@ -85,7 +85,10 @@ class CleanMappingExtTables(BaseCleaningRule):
                 'by a cleaning rule')
         super().__init__(issue_numbers=[ISSUE_NUMBER],
                          description=desc,
-                         affected_datasets=[cdr_consts.RDR],
+                         affected_datasets=[
+                             cdr_consts.RDR,
+                             cdr_consts.CONTROLLED_TIER_DEID_CLEAN
+                         ],
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,

@@ -231,7 +231,13 @@ CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
 
 CONTROLLED_TIER_DEID_BASE_CLEANING_CLASSES = []
 
-CONTROLLED_TIER_DEID_CLEAN_CLEANING_CLASSES = []
+CONTROLLED_TIER_DEID_CLEAN_CLEANING_CLASSES = [
+    (MeasurementRecordsSuppression,),
+    (CleanHeightAndWeight,),  # dependent on MeasurementRecordsSuppression
+    (UnitNormalization,),  # dependent on CleanHeightAndWeight
+    (DropZeroConceptIDs,),
+    (CleanMappingExtTables,),  # should be one of the last cleaning rules run
+]
 
 REGISTERED_TIER_DEID_CLEANING_CLASSES = [
     (QRIDtoRID,),  # Should run before any row suppression rules
