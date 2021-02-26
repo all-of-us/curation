@@ -5,6 +5,7 @@ import pandas as pd
 
 import cdr_cleaner.cleaning_rules.clean_mapping as cm
 import common
+from constants.cdr_cleaner import clean_cdr as clean_consts
 
 
 class CleanMappingTest(unittest.TestCase):
@@ -39,6 +40,10 @@ class CleanMappingTest(unittest.TestCase):
 
         # test
         self.rule_instance.setup_rule(self.client)
+
+        self.assertEqual(
+            self.rule_instance.affected_datasets,
+            [clean_consts.RDR, clean_consts.CONTROLLED_TIER_DEID_CLEAN])
 
         # post conditions
         self.assertEqual(['_mapping_drug'], self.rule_instance.mapping_tables)

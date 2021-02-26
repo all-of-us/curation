@@ -121,7 +121,10 @@ class DropZeroConceptIDs(BaseCleaningRule):
         )
         super().__init__(issue_numbers=['DC975'],
                          description=desc,
-                         affected_datasets=[cdr_consts.DEID_CLEAN],
+                         affected_datasets=[
+                             cdr_consts.DEID_CLEAN,
+                             cdr_consts.CONTROLLED_TIER_DEID_CLEAN
+                         ],
                          affected_tables=tables,
                          project_id=project_id,
                          dataset_id=dataset_id,
