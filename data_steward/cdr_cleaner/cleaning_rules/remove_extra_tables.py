@@ -129,12 +129,6 @@ class RemoveExtraTables(BaseCleaningRule):
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id)
 
-        client = get_client(project_id)
-        dataset_ref = bigquery.DatasetReference(client.project, dataset_id)
-        current_tables = list_tables(client, dataset_ref)
-        current_tables = [table.table_id for table in current_tables]
-        self.extra_tables = list(set(current_tables) - set(FINAL_TABLES))
-
     def get_query_specs(self, *args, **keyword_args):
         """
         Interface to return a list of query dictionaries.
@@ -145,23 +139,30 @@ class RemoveExtraTables(BaseCleaningRule):
             an ordering.
         """
 
-        sandbox_tables_query = dict()
-        sandbox_tables_query[cdr_consts.QUERY] = SANDBOX_TABLES_QUERY.render(
-            project_id=self.project_id,
-            dataset_id=self.dataset_id,
-            sandbox_id=self.sandbox_dataset_id,
-            extra_tables=self.extra_tables,
-            sandboxed_extra_tables=[
-                self.sandbox_table_for(table) for table in self.extra_tables
-            ])
+        queries = []
 
-        drop_tables_query = dict()
-        drop_tables_query[cdr_consts.QUERY] = DROP_TABLES_QUERY.render(
-            project_id=self.project_id,
-            dataset_id=self.dataset_id,
-            extra_tables=self.extra_tables)
+        if self.extra_tables:
+            sandbox_tables_query = dict()
+            sandbox_tables_query[
+                cdr_consts.QUERY] = SANDBOX_TABLES_QUERY.render(
+                    project_id=self.project_id,
+                    dataset_id=self.dataset_id,
+                    sandbox_id=self.sandbox_dataset_id,
+                    extra_tables=self.extra_tables,
+                    sandboxed_extra_tables=[
+                        self.sandbox_table_for(table)
+                        for table in self.extra_tables
+                    ])
 
-        return [sandbox_tables_query, drop_tables_query]
+            drop_tables_query = dict()
+            drop_tables_query[cdr_consts.QUERY] = DROP_TABLES_QUERY.render(
+                project_id=self.project_id,
+                dataset_id=self.dataset_id,
+                extra_tables=self.extra_tables)
+
+            queries = [sandbox_tables_query, drop_tables_query]
+
+        return queries
 
     def get_sandbox_tablenames(self):
         return [self.sandbox_table_for(table) for table in self.extra_tables]
@@ -210,7 +211,10 @@ class RemoveExtraTables(BaseCleaningRule):
         defined as part of get_query_specs().
         """
 
-        pass
+        dataset_ref = bigquery.DatasetReference(client.project, self.dataset_id)
+        current_tables = list_tables(client, dataset_ref)
+        current_tables = [table.table_id for table in current_tables]
+        self.extra_tables = list(set(current_tables) - set(FINAL_TABLES))
 
 
 if __name__ == '__main__':
