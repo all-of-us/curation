@@ -241,8 +241,9 @@ class BqTest(TestCase):
 
     @patch('utils.bq.bigquery.Client.copy_table')
     @patch('utils.bq.bigquery.Client.list_tables')
-    def test_copy_datasets(self, mock_list_tables, mock_copy_table):
-        client = bq.get_client(self.project_id)
+    @patch('utils.bq.bigquery.Client')
+    def test_copy_datasets(self, mock_client, mock_list_tables,
+                           mock_copy_table):
         full_table_ids = [
             f'{self.project_id}.{self.dataset_id}.{table_id}'
             for table_id in CDM_TABLES
@@ -252,6 +253,7 @@ class BqTest(TestCase):
         ]
         mock_list_tables.return_value = list_tables_results
 
-        bq.copy_datasets(client, self.dataset_id, f'{self.dataset_id}_snapshot')
+        bq.copy_datasets(mock_client, self.dataset_id,
+                         f'{self.dataset_id}_snapshot')
         mock_list_tables.assert_called_once_with(self.dataset_id)
         self.assertEqual(mock_copy_table.call_count, len(list_tables_results))
