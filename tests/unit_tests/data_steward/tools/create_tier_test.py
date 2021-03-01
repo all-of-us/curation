@@ -14,8 +14,6 @@ from constants.cdr_cleaner import clean_cdr as consts
 from tools.create_tier import parse_deid_args, validate_deid_stage_param, validate_tier_param, \
     validate_release_tag_param, create_datasets, get_dataset_name, create_tier, SCOPES
 
-from utils import bq
-
 
 class CreateTierTest(unittest.TestCase):
 
@@ -35,7 +33,6 @@ class CreateTierTest(unittest.TestCase):
         self.deid_stage = 'deid'
         self.name = 'foo_name'
         self.run_as = 'foo@bar.com'
-        self.client = bq.get_client(self.project_id)
 
         self.description = f'dataset created from {self.input_dataset} for {self.tier}{self.release_tag} CDR run'
         self.labels_and_tags = {
@@ -347,6 +344,7 @@ class CreateTierTest(unittest.TestCase):
         }
         mock_dataset_name.return_value = final_dataset_name
         mock_create_datasets.return_value = datasets
+        client = mock_get_client.return_value = self.mock_bq_client
 
         create_tier(self.credentials_filepath, self.project_id, self.tier,
                     self.input_dataset, self.release_tag, self.deid_stage,
@@ -364,13 +362,11 @@ class CreateTierTest(unittest.TestCase):
         mock_dataset_name.assert_called_with(self.tier, self.release_tag,
                                              self.deid_stage)
 
-        mock_create_datasets.asserd_called_with(mock_get_client(),
-                                                final_dataset_name,
+        mock_create_datasets.asserd_called_with(client, final_dataset_name,
                                                 self.input_dataset, self.tier,
                                                 self.release_tag)
 
-        mock_copy_datasets.assert_called_with(mock_get_client(),
-                                              self.input_dataset,
+        mock_copy_datasets.assert_called_with(client, self.input_dataset,
                                               datasets[consts.STAGING])
 
         controlled_tier_cleaning_args = [
