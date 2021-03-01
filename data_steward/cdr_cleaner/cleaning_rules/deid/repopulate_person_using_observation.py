@@ -33,8 +33,6 @@ from common import JINJA_ENV, PERSON
 
 LOGGER = logging.getLogger(__name__)
 
-JIRA_ISSUE_NUMBERS = ['DC-1439']
-
 GENDER_CONCEPT_ID = 1585838
 SEX_AT_BIRTH_CONCEPT_ID = 1585845
 AOU_NONE_INDICATED_CONCEPT_ID = 2100000001
@@ -88,7 +86,9 @@ class AbstractRepopulatePerson(BaseCleaningRule):
     RACE = 'race'
     ETHNICITY = 'ethnicity'
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id):
+    def __init__(self, project_id, dataset_id, sandbox_dataset_id,
+                 issue_numbers, description, affected_datasets,
+                 affected_tables):
         """
         Initialize the class with proper information.
 
@@ -96,18 +96,14 @@ class AbstractRepopulatePerson(BaseCleaningRule):
         this SQL, append them to the list of Jira Issues.
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
-        desc = (
-            'Returns a parsed query to repopulate the person table using observation.'
-        )
 
-        super().__init__(
-            issue_numbers=JIRA_ISSUE_NUMBERS,
-            description=desc,
-            affected_datasets=[cdr_consts.CONTROLLED_TIER_DEID_BASE],
-            affected_tables=[PERSON],
-            project_id=project_id,
-            dataset_id=dataset_id,
-            sandbox_dataset_id=sandbox_dataset_id)
+        super().__init__(issue_numbers=issue_numbers,
+                         description=description,
+                         affected_datasets=affected_datasets,
+                         affected_tables=affected_tables,
+                         project_id=project_id,
+                         dataset_id=dataset_id,
+                         sandbox_dataset_id=sandbox_dataset_id)
 
     @abstractmethod
     def get_gender_query(self, gender_sandbox_table) -> dict:
@@ -232,24 +228,3 @@ class AbstractRepopulatePerson(BaseCleaningRule):
             self.get_sex_at_birth_sandbox_table(),
             self.get_birth_info_sandbox_table()
         ]
-
-
-if __name__ == '__main__':
-    import cdr_cleaner.args_parser as parser
-    import cdr_cleaner.clean_cdr_engine as clean_engine
-
-    ARGS = parser.parse_args()
-
-    if ARGS.list_queries:
-        clean_engine.add_console_logging()
-        query_list = clean_engine.get_query_list(ARGS.project_id,
-                                                 ARGS.dataset_id,
-                                                 ARGS.sandbox_dataset_id,
-                                                 [(AbstractRepopulatePerson,)])
-        for query in query_list:
-            LOGGER.info(query)
-    else:
-        clean_engine.add_console_logging(ARGS.console_log)
-        clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
-                                   ARGS.sandbox_dataset_id,
-                                   [(AbstractRepopulatePerson,)])
