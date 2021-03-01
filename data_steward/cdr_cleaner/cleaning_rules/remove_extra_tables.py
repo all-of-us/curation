@@ -92,6 +92,16 @@ FINAL_TABLES = [
     'vocabulary',
 ]
 
+SANDBOX_TABLES_QUERY = JINJA_ENV.from_string("""
+{% for sandboxed_extra_table in sandboxed_extra_tables %}
+CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_id}}.{{sandboxed_extra_table}}` AS (
+SELECT
+    *
+FROM `{{project_id}}.{{dataset_id}}.{{extra_tables[loop.index0]}}`
+);
+{% endfor %}
+""")
+
 DROP_TABLES_QUERY = JINJA_ENV.from_string("""
 {% for extra_table in extra_tables %}
 DROP TABLE IF EXISTS `{{project_id}}.{{dataset_id}}.{{extra_table}}`;
@@ -123,7 +133,7 @@ class RemoveExtraTables(BaseCleaningRule):
         dataset_ref = bigquery.DatasetReference(client.project, dataset_id)
         current_tables = list_tables(client, dataset_ref)
         current_tables = [table.table_id for table in current_tables]
-        self.extra_tables = set(current_tables) - set(FINAL_TABLES)
+        self.extra_tables = list(set(current_tables) - set(FINAL_TABLES))
 
     def get_query_specs(self, *args, **keyword_args):
         """
@@ -134,17 +144,27 @@ class RemoveExtraTables(BaseCleaningRule):
             stored in list order and returned in list order to maintain
             an ordering.
         """
-        drop_tables_query = dict()
 
+        sandbox_tables_query = dict()
+        sandbox_tables_query[cdr_consts.QUERY] = SANDBOX_TABLES_QUERY.render(
+            project_id=self.project_id,
+            dataset_id=self.dataset_id,
+            sandbox_id=self.sandbox_dataset_id,
+            extra_tables=self.extra_tables,
+            sandboxed_extra_tables=[
+                self.sandbox_table_for(table) for table in self.extra_tables
+            ])
+
+        drop_tables_query = dict()
         drop_tables_query[cdr_consts.QUERY] = DROP_TABLES_QUERY.render(
             project_id=self.project_id,
-            dataset_id=self._dataset_id,
+            dataset_id=self.dataset_id,
             extra_tables=self.extra_tables)
 
-        return [drop_tables_query]
+        return [sandbox_tables_query, drop_tables_query]
 
     def get_sandbox_tablenames(self):
-        raise NotImplementedError("Please fix me.")
+        return [self.sandbox_table_for(table) for table in self.extra_tables]
 
     def setup_validation(self, client, *args, **keyword_args):
         """
