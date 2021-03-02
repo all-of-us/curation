@@ -50,6 +50,11 @@ class AggregateZipCodesTest(BaseTest.CleaningRulesTestBase):
             f'{project_id}.{dataset_id}.{OBSERVATION}',
         ]
 
+        sb_table_name = cls.rule_instance.sandbox_table_for(OBSERVATION)
+
+        cls.fq_sandbox_table_names.append(
+            f'{cls.project_id}.{cls.sandbox_id}.{sb_table_name}')
+
         # call super to set up the client, create datasets, and create
         # empty test tables
         # NOTE:  does not create empty sandbox tables.
@@ -103,9 +108,9 @@ class AggregateZipCodesTest(BaseTest.CleaningRulesTestBase):
             'fq_table_name':
                 '.'.join([self.fq_dataset_name, 'observation']),
             'fq_sandbox_table_name':
-                '',
+                self.fq_sandbox_table_names[0],
             'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-            'sandboxed_ids': [],
+            'sandboxed_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
             'fields': [
                 'observation_id', 'person_id', 'observation_date',
                 'value_as_string', 'value_as_concept_id',

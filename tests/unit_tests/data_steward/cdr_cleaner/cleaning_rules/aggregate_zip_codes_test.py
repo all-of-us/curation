@@ -57,8 +57,9 @@ class AggregateZipCodesTest(unittest.TestCase):
                     project_id=self.project_id,
                     dataset_id=self.dataset_id,
                     obs_table=OBSERVATION,
-                    pipeline_tables_dataset=PIPELINE_TABLES,
-                    zip_code_aggregation_map=ZIP_CODE_AGGREGATION_MAP),
+                    pii_state_vocab=PII_STATE_VOCAB,
+                    zip_code_aggregation_map=ZIP_CODE_AGGREGATION_MAP,
+                    pipeline_tables_dataset=PIPELINE_TABLES),
             clean_consts.DESTINATION_TABLE:
                 self.rule_instance.sandbox_table_for(OBSERVATION),
             clean_consts.DESTINATION_DATASET:
