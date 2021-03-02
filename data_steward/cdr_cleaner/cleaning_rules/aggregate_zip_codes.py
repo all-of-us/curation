@@ -25,48 +25,90 @@ PII_STATE_VOCAB = 'pii_state_vocab'
 ZIP_CODE_AGGREGATION_MAP = 'zip_code_aggregation_map'
 ZIP_CODES_AND_STATES_TO_MODIFY = '_zip_codes_and_states_to_modify'
 
-FIND_ZIP_CODES_AND_STATES_QUERY = JINJA_ENV.from_string("""
+SANDBOX_QUERY = JINJA_ENV.from_string("""
 SELECT
-    zip_code_obs.person_id, zip_code_obs.observation_id zip_code_observation_id,
-    state_obs.observation_id state_observation_id, 
-    map.zip_code_3, map.state,
-    map.transformed_zip_code_3, map.transformed_state
+    zip_code_obs.*
 FROM `{{project_id}}.{{dataset_id}}.{{obs_table}}` zip_code_obs
-JOIN `{{project_id}}.{{pipeline_tables_dataset}}.{{zip_code_aggregation_map}}` map
-    ON map.zip_code_3 = zip_code_obs.value_as_string
-JOIN `{{project_id}}.{{pipeline_tables_dataset}}.{{pii_state_vocab}}` state_vocab
-    ON state_vocab.postal_code = map.state
-LEFT JOIN `{{project_id}}.{{dataset_id}}.{{obs_table}}` state_obs
-    ON state_obs.person_id = zip_code_obs.person_id
-        AND state_obs.observation_source_concept_id = 1585249
-        AND state_vocab.concept_id = state_obs.value_source_concept_id
-WHERE zip_code_obs.observation_source_concept_id = 1585250
+WHERE
+  zip_code_obs.observation_source_concept_id = 1585250
+    AND zip_code_obs.value_as_string IN (
+        SELECT
+            zip_code_3
+        FROM
+            `{{project_id}}.{{pipeline_tables_dataset}}.{{zip_code_aggregation_map}}`
+    )
+UNION ALL
+SELECT
+    state_obs.*
+FROM
+    `{{project_id}}.{{dataset_id}}.{{obs_table}}` state_obs
+WHERE
+    state_obs.observation_source_concept_id = 1585249
+        AND state_obs.person_id IN (
+            SELECT
+                person_id
+            FROM
+                `{{project_id}}.{{dataset_id}}.{{obs_table}}`
+            WHERE
+                observation_source_concept_id = 1585250
+                    AND value_as_string IN (
+                        SELECT
+                            zip_code_3
+                        FROM
+                            `{{project_id}}.{{pipeline_tables_dataset}}.{{zip_code_aggregation_map}}`
+                )
+        )
 """)
 
-MODIFY_ZIP_CODES_QUERY = JINJA_ENV.from_string("""
-WITH unique_zip_code_transforms AS (
+MODIFY_ZIP_CODES_AND_STATES_QUERY = JINJA_ENV.from_string("""
+WITH modified_zip_codes_and_states AS (
     SELECT DISTINCT
-        person_id, zip_code_observation_id, zip_code_3,
-        transformed_zip_code_3
-    FROM `{{project_id}}.{{sandbox_id}}.{{modified_zip_codes_and_states_table}}` mzc
+        zip_code_obs.person_id, zip_code_obs.observation_id zip_code_observation_id,
+        map.zip_code_3, map.transformed_zip_code_3,
+        state_obs.observation_id state_observation_id, 
+        map.state, map.transformed_state
+    FROM `{{project_id}}.{{dataset_id}}.{{obs_table}}` zip_code_obs
+    JOIN `{{project_id}}.{{pipeline_tables_dataset}}.{{zip_code_aggregation_map}}` map
+        ON map.zip_code_3 = zip_code_obs.value_as_string
+    JOIN `{{project_id}}.{{pipeline_tables_dataset}}.{{pii_state_vocab}}` state_vocab
+        ON state_vocab.postal_code = map.state
+    LEFT JOIN `{{project_id}}.{{dataset_id}}.{{obs_table}}` state_obs
+        ON state_obs.person_id = zip_code_obs.person_id
+            AND state_obs.observation_source_concept_id = 1585249
+            AND state_vocab.concept_id = state_obs.value_source_concept_id
+    WHERE zip_code_obs.observation_source_concept_id = 1585250    
+),
+unique_zip_code_transforms AS (
+    SELECT DISTINCT
+        person_id, zip_code_observation_id,
+        zip_code_3, transformed_zip_code_3
+    FROM modified_zip_codes_and_states mzc 
+),
+unique_state_transforms AS (
+    SELECT DISTINCT
+        person_id, state_observation_id, 
+        state, transformed_state
+    FROM modified_zip_codes_and_states mzc
 )
+SELECT
+    obs.*
+FROM `{{project_id}}.{{dataset_id}}.{{obs_table}}` obs
+LEFT JOIN unique_zip_code_transforms t1
+    ON t1.zip_code_observation_id = obs.observation_id
+LEFT JOIN unique_state_transforms t2
+    ON t2.state_observation_id = obs.observation_id
+WHERE t1.zip_code_observation_id IS NULL 
+    AND t2.state_observation_id IS NULL
+UNION ALL
 SELECT
     obs.* REPLACE (
         COALESCE(mzc.transformed_zip_code_3, obs.value_as_string) AS value_as_string
     )
 FROM `{{project_id}}.{{dataset_id}}.{{obs_table}}` obs
-LEFT JOIN unique_zip_code_transforms mzc
+JOIN unique_zip_code_transforms mzc
     ON mzc.zip_code_observation_id = obs.observation_id
         AND mzc.person_id = obs.person_id
-""")
-
-MODIFY_STATES_QUERY = JINJA_ENV.from_string("""
-WITH unique_state_transforms AS (
-    SELECT DISTINCT
-        person_id, state_observation_id, state,
-        transformed_state
-    FROM `{{project_id}}.{{sandbox_id}}.{{modified_zip_codes_and_states_table}}` mzc
-)
+UNION ALL
 SELECT
     obs.* REPLACE (
         COALESCE(state_vocab.concept_id, obs.value_source_concept_id) AS value_source_concept_id,
@@ -74,12 +116,63 @@ SELECT
         COALESCE(state_vocab.concept_code, obs.value_source_value) AS value_source_value
     )
 FROM `{{project_id}}.{{dataset_id}}.{{obs_table}}` obs
-LEFT JOIN unique_state_transforms mzc
+JOIN unique_state_transforms mzc
     ON mzc.state_observation_id = obs.observation_id
         AND mzc.person_id = obs.person_id
 LEFT JOIN `{{project_id}}.{{pipeline_tables_dataset}}.{{pii_state_vocab}}` state_vocab
     ON state_vocab.postal_code = mzc.transformed_state
 """)
+
+# MODIFY_ZIP_CODES_QUERY = JINJA_ENV.from_string("""
+# WITH unique_zip_code_transforms AS (
+#     SELECT DISTINCT
+#         zip_code_obs.person_id, zip_code_obs.observation_id zip_code_observation_id,
+#         map.zip_code_3, map.transformed_zip_code_3
+#     FROM `{{project_id}}.{{dataset_id}}.{{obs_table}}` zip_code_obs
+#     JOIN `{{project_id}}.{{pipeline_tables_dataset}}.{{zip_code_aggregation_map}}` map
+#         ON map.zip_code_3 = zip_code_obs.value_as_string
+#     WHERE zip_code_obs.observation_source_concept_id = 1585250
+# )
+# SELECT
+#     obs.* REPLACE (
+#         COALESCE(mzc.transformed_zip_code_3, obs.value_as_string) AS value_as_string
+#     )
+# FROM `{{project_id}}.{{dataset_id}}.{{obs_table}}` obs
+# LEFT JOIN unique_zip_code_transforms mzc
+#     ON mzc.zip_code_observation_id = obs.observation_id
+#         AND mzc.person_id = obs.person_id
+# """)
+
+# MODIFY_STATES_QUERY = JINJA_ENV.from_string("""
+# WITH unique_state_transforms AS (
+#     SELECT DISTINCT
+#         zip_code_obs.person_id,
+#         state_obs.observation_id state_observation_id,
+#         map.state, map.transformed_state
+#     FROM `{{project_id}}.{{dataset_id}}.{{obs_table}}` zip_code_obs
+#     JOIN `{{project_id}}.{{pipeline_tables_dataset}}.{{zip_code_aggregation_map}}` map
+#         ON map.zip_code_3 = zip_code_obs.value_as_string
+#     JOIN `{{project_id}}.{{pipeline_tables_dataset}}.{{pii_state_vocab}}` state_vocab
+#         ON state_vocab.postal_code = map.state
+#     LEFT JOIN `{{project_id}}.{{dataset_id}}.{{obs_table}}` state_obs
+#         ON state_obs.person_id = zip_code_obs.person_id
+#             AND state_obs.observation_source_concept_id = 1585249
+#             AND state_vocab.concept_id = state_obs.value_source_concept_id
+#     WHERE zip_code_obs.observation_source_concept_id = 1585250
+# )
+# SELECT
+#     obs.* REPLACE (
+#         COALESCE(state_vocab.concept_id, obs.value_source_concept_id) AS value_source_concept_id,
+#         COALESCE(state_vocab.concept_id, obs.value_as_concept_id) AS value_as_concept_id,
+#         COALESCE(state_vocab.concept_code, obs.value_source_value) AS value_source_value
+#     )
+# FROM `{{project_id}}.{{dataset_id}}.{{obs_table}}` obs
+# LEFT JOIN unique_state_transforms mzc
+#     ON mzc.state_observation_id = obs.observation_id
+#         AND mzc.person_id = obs.person_id
+# LEFT JOIN `{{project_id}}.{{pipeline_tables_dataset}}.{{pii_state_vocab}}` state_vocab
+#     ON state_vocab.postal_code = mzc.transformed_state
+# """)
 
 
 class AggregateZipCodes(BaseCleaningRule):
@@ -113,55 +206,36 @@ class AggregateZipCodes(BaseCleaningRule):
             stored in list order and returned in list order to maintain
             an ordering.
         """
-        find_zip_codes_and_states_query = dict()
-        find_zip_codes_and_states_query[
-            cdr_consts.QUERY] = FIND_ZIP_CODES_AND_STATES_QUERY.render(
-                project_id=self.project_id,
-                dataset_id=self.dataset_id,
-                obs_table=OBSERVATION,
-                pipeline_tables_dataset=PIPELINE_TABLES,
-                pii_state_vocab=PII_STATE_VOCAB,
-                zip_code_aggregation_map=ZIP_CODE_AGGREGATION_MAP)
-        find_zip_codes_and_states_query[
-            cdr_consts.DESTINATION_TABLE] = self.sandbox_table_for(
-                ZIP_CODES_AND_STATES_TO_MODIFY)
-        find_zip_codes_and_states_query[
-            cdr_consts.DESTINATION_DATASET] = self.sandbox_dataset_id
-        find_zip_codes_and_states_query[
-            cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
 
-        modify_zip_codes_query = dict()
-        modify_zip_codes_query[
-            cdr_consts.QUERY] = MODIFY_ZIP_CODES_QUERY.render(
-                project_id=self.project_id,
-                dataset_id=self.dataset_id,
-                obs_table=OBSERVATION,
-                sandbox_id=self.sandbox_dataset_id,
-                modified_zip_codes_and_states_table=self.sandbox_table_for(
-                    ZIP_CODES_AND_STATES_TO_MODIFY))
-        modify_zip_codes_query[cdr_consts.DESTINATION_TABLE] = OBSERVATION
-        modify_zip_codes_query[cdr_consts.DESTINATION_DATASET] = self.dataset_id
-        modify_zip_codes_query[
-            cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
-
-        modify_states_query = dict()
-        modify_states_query[cdr_consts.QUERY] = MODIFY_STATES_QUERY.render(
+        sandbox_query = dict()
+        sandbox_query[cdr_consts.QUERY] = SANDBOX_QUERY.render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
             obs_table=OBSERVATION,
-            sandbox_id=self.sandbox_dataset_id,
-            modified_zip_codes_and_states_table=self.sandbox_table_for(
-                ZIP_CODES_AND_STATES_TO_MODIFY),
             pipeline_tables_dataset=PIPELINE_TABLES,
-            pii_state_vocab=PII_STATE_VOCAB)
-        modify_states_query[cdr_consts.DESTINATION_TABLE] = OBSERVATION
-        modify_states_query[cdr_consts.DESTINATION_DATASET] = self.dataset_id
-        modify_states_query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
+            zip_code_aggregation_map=ZIP_CODE_AGGREGATION_MAP)
+        sandbox_query[cdr_consts.DESTINATION_TABLE] = self.sandbox_table_for(
+            OBSERVATION)
+        sandbox_query[cdr_consts.DESTINATION_DATASET] = self.sandbox_dataset_id
+        sandbox_query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
 
-        return [
-            find_zip_codes_and_states_query, modify_zip_codes_query,
-            modify_states_query
-        ]
+        modify_zip_codes_and_states_query = dict()
+        modify_zip_codes_and_states_query[
+            cdr_consts.QUERY] = MODIFY_ZIP_CODES_AND_STATES_QUERY.render(
+                project_id=self.project_id,
+                dataset_id=self.dataset_id,
+                obs_table=OBSERVATION,
+                pii_state_vocab=PII_STATE_VOCAB,
+                zip_code_aggregation_map=ZIP_CODE_AGGREGATION_MAP,
+                pipeline_tables_dataset=PIPELINE_TABLES)
+        modify_zip_codes_and_states_query[
+            cdr_consts.DESTINATION_TABLE] = OBSERVATION
+        modify_zip_codes_and_states_query[
+            cdr_consts.DESTINATION_DATASET] = self.dataset_id
+        modify_zip_codes_and_states_query[
+            cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
+
+        return [sandbox_query, modify_zip_codes_and_states_query]
 
     def get_sandbox_tablenames(self):
         raise NotImplementedError("Please fix me.")
