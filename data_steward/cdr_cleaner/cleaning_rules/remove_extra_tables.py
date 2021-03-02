@@ -199,7 +199,14 @@ class RemoveExtraTables(BaseCleaningRule):
         Raises RunTimeError if the validation fails.
         """
 
-        raise NotImplementedError("Please fix me.")
+        dataset_ref = bigquery.DatasetReference(client.project, self.dataset_id)
+        current_tables = list_tables(client, dataset_ref)
+        current_tables = [table.table_id for table in current_tables]
+        extra_tables = list(set(current_tables) - set(FINAL_TABLES))
+
+        if extra_tables:
+            raise RuntimeError(
+                f'Some extra tables remain in the dataset: {extra_tables}')
 
     def setup_rule(self, client, *args, **keyword_args):
         """
