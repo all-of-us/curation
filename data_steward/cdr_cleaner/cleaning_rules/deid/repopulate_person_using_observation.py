@@ -33,38 +33,38 @@ from common import JINJA_ENV, PERSON
 
 LOGGER = logging.getLogger(__name__)
 
-GENDER_CONCEPT_ID = 1585838
-SEX_AT_BIRTH_CONCEPT_ID = 1585845
 AOU_NONE_INDICATED_CONCEPT_ID = 2100000001
+AOU_NONE_INDICATED_SOURCE_VALUE = 'AoUDRC_NoneIndicated'
 
 REPOPULATE_PERSON_QUERY_TEMPLATE = JINJA_ENV.from_string("""
-SELECT
-      p.person_id,
-      bs.birth_datetime,
-      bs.year_of_birth,
-      bs.month_of_birth,
-      bs.day_of_birth,
-      gs.gender_concept_id,
-      gs.gender_source_value,
-      gs.gender_source_concept_id,
-      CASE
-        WHEN (es.ethnicity_concept_id = 38003563 AND rs.race_concept_id = 0) 
-        THEN {{aou_non_indicated_concept_id}}
-      ELSE AS race_concept_id,
-        CASE
-        WHEN (ethnicity_concept_id = 38003563 AND race_concept_id = 0) THEN "None Indicated"
-      ELSE AS race_source_value,
-      rs.race_source_concept_id,
-      CAST(p.location_id AS INT64) AS location_id,
-      CAST(p.provider_id AS INT64) AS provider_id,
-      CAST(p.care_site_id AS INT64) AS care_site_id,
-      p.person_source_value,
-      es.ethnicity_concept_id,
-      es.ethnicity_source_value,
-      es.ethnicity_source_concept_id,
-      ss.sex_at_birth_concept_id,
-      ss.sex_at_birth_source_concept_id,
-      ss.sex_at_birth_source_value
+SELECT DISTINCT 
+    p.person_id,
+    bs.birth_datetime,
+    bs.year_of_birth,
+    bs.month_of_birth,
+    bs.day_of_birth,
+    gs.gender_concept_id,
+    gs.gender_source_value,
+    gs.gender_source_concept_id,
+    CASE 
+        WHEN (es.ethnicity_concept_id = 38003563 AND rs.race_concept_id = 0)  THEN {{aou_none_indicated_concept_id}}
+        ELSE rs.race_concept_id 
+    END AS race_concept_id,
+    CASE 
+        WHEN (es.ethnicity_concept_id = 38003563 AND rs.race_concept_id = 0) THEN '{{aou_none_indicated_source_value}}'
+        ELSE rs.race_source_value 
+    END AS race_source_value,
+    rs.race_source_concept_id,
+    CAST(p.location_id AS INT64) AS location_id,
+    CAST(p.provider_id AS INT64) AS provider_id,
+    CAST(p.care_site_id AS INT64) AS care_site_id,
+    p.person_source_value,
+    es.ethnicity_concept_id,
+    es.ethnicity_source_value,
+    es.ethnicity_source_concept_id,
+    ss.sex_at_birth_concept_id,
+    ss.sex_at_birth_source_concept_id,
+    ss.sex_at_birth_source_value
 FROM {{project}}.{{dataset}}.person AS p
 LEFT JOIN {{project}}.{{sandbox_dataset}}.{{gender_sandbox_table}} AS gs
     ON p.person_id = gs.person_id
@@ -164,19 +164,19 @@ class AbstractRepopulatePerson(BaseCleaningRule):
         pass
 
     def get_gender_sandbox_table(self):
-        self.sandbox_table_for(self.GENDER)
+        return self.sandbox_table_for(self.GENDER)
 
     def get_sex_at_birth_sandbox_table(self):
-        self.sandbox_table_for(self.SEX_AT_BIRTH)
+        return self.sandbox_table_for(self.SEX_AT_BIRTH)
 
     def get_race_sandbox_table(self):
-        self.sandbox_table_for(self.RACE)
+        return self.sandbox_table_for(self.RACE)
 
     def get_ethnicity_sandbox_table(self):
-        self.sandbox_table_for(self.ETHNICITY)
+        return self.sandbox_table_for(self.ETHNICITY)
 
     def get_birth_info_sandbox_table(self):
-        self.sandbox_table_for(self.BIRTH)
+        return self.sandbox_table_for(self.BIRTH)
 
     def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
         """
@@ -203,7 +203,8 @@ class AbstractRepopulatePerson(BaseCleaningRule):
             race_sandbox_table=self.get_race_sandbox_table(),
             ethnicity_sandbox_table=self.get_ethnicity_sandbox_table(),
             birth_info_sandbox_table=self.get_birth_info_sandbox_table(),
-            aou_non_indicated_concept_id=AOU_NONE_INDICATED_CONCEPT_ID)
+            aou_none_indicated_concept_id=AOU_NONE_INDICATED_CONCEPT_ID,
+            aou_none_indicated_source_value=AOU_NONE_INDICATED_SOURCE_VALUE)
 
         queries = [{
             cdr_consts.QUERY: repopulate_person_query,
