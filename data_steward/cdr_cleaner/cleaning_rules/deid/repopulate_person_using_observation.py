@@ -37,29 +37,61 @@ AOU_NONE_INDICATED_CONCEPT_ID = 2100000001
 AOU_NONE_INDICATED_SOURCE_VALUE = 'AoUDRC_NoneIndicated'
 
 REPOPULATE_PERSON_QUERY_TEMPLATE = JINJA_ENV.from_string("""
+WITH race AS 
+(
+    -- Below PPI race concepts are translated to the standard OMOP race concepts --
+    -- The manual mapping is necessary because the PPI race concepts are in the Answer class --
+    -- where as the OMOP race concepts are in the race class --
+    -- such mappings do not exist in concept_relationship --  
+    SELECT
+        * REPLACE (
+            CASE race_source_concept_id 
+                WHEN 1586142 THEN 8515 /*asian*/
+                WHEN 1586143 THEN 8516 /*black/aa*/
+                WHEN 1586146 THEN 8527 /*white*/
+                WHEN 1586144 THEN 38003615 /*MENA*/
+                WHEN 1586145 THEN 8557 /*NHPI*/
+                WHEN 1586141 THEN 8657 /*AIAN*/
+                ELSE race_concept_id
+            END AS race_concept_id
+        )
+    FROM {{project}}.{{sandbox_dataset}}.{{race_sandbox_table}}
+),
+ethnicity AS
+(
+    -- This manual mapping of the concept id 1586147 (hispanic or latino) to the standard OMOP -- 
+    -- concept id 38003563 is necessary because the mapping is missing in concept_relationship -- 
+    -- we want to use the Ethnicity vocabulary in ethnicity_concept_id in the person table -- 
+    SELECT  
+        * REPLACE (
+            IF(ethnicity_source_concept_id = 1586147, 38003563, ethnicity_concept_id) AS ethnicity_concept_id
+        )
+    FROM {{project}}.{{sandbox_dataset}}.{{ethnicity_sandbox_table}}
+) 
+
 SELECT DISTINCT 
     p.person_id,
-    bs.birth_datetime,
+    gs.gender_concept_id,
     bs.year_of_birth,
     bs.month_of_birth,
     bs.day_of_birth,
-    gs.gender_concept_id,
-    gs.gender_source_value,
-    gs.gender_source_concept_id,
+    bs.birth_datetime,
     CASE 
         WHEN (es.ethnicity_concept_id = 38003563 AND rs.race_concept_id = 0)  THEN {{aou_none_indicated_concept_id}}
         ELSE rs.race_concept_id 
     END AS race_concept_id,
+    es.ethnicity_concept_id,
+    CAST(p.location_id AS INT64) AS location_id,
+    CAST(p.provider_id AS INT64) AS provider_id,
+    CAST(p.care_site_id AS INT64) AS care_site_id,
+    p.person_source_value,
+    gs.gender_source_value,
+    gs.gender_source_concept_id,
     CASE 
         WHEN (es.ethnicity_concept_id = 38003563 AND rs.race_concept_id = 0) THEN '{{aou_none_indicated_source_value}}'
         ELSE rs.race_source_value 
     END AS race_source_value,
     rs.race_source_concept_id,
-    CAST(p.location_id AS INT64) AS location_id,
-    CAST(p.provider_id AS INT64) AS provider_id,
-    CAST(p.care_site_id AS INT64) AS care_site_id,
-    p.person_source_value,
-    es.ethnicity_concept_id,
     es.ethnicity_source_value,
     es.ethnicity_source_concept_id,
     ss.sex_at_birth_concept_id,
@@ -70,9 +102,9 @@ LEFT JOIN {{project}}.{{sandbox_dataset}}.{{gender_sandbox_table}} AS gs
     ON p.person_id = gs.person_id
 LEFT JOIN {{project}}.{{sandbox_dataset}}.{{sex_at_birth_sandbox_table}} AS ss
     ON p.person_id = ss.person_id
-LEFT JOIN {{project}}.{{sandbox_dataset}}.{{race_sandbox_table}} AS rs
+LEFT JOIN race AS rs
     ON p.person_id = rs.person_id
-LEFT JOIN {{project}}.{{sandbox_dataset}}.{{ethnicity_sandbox_table}} AS es 
+LEFT JOIN ethnicity AS es 
     ON p.person_id = es.person_id
 LEFT JOIN {{project}}.{{sandbox_dataset}}.{{birth_info_sandbox_table}} AS bs 
     ON p.person_id = bs.person_id
