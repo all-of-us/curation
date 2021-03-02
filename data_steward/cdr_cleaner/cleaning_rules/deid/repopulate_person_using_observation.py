@@ -247,12 +247,6 @@ class AbstractRepopulatePerson(BaseCleaningRule):
 
         return sandbox_queries + queries
 
-    def validate_rule(self, client):
-        """
-        Validates the cleaning rule which deletes or updates the data from the tables
-        """
-        raise NotImplementedError("Please fix me.")
-
     def get_sandbox_tablenames(self):
         return [
             self.get_race_sandbox_table(),

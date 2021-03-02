@@ -15,7 +15,7 @@ LOGGER = logging.getLogger(__name__)
 
 JIRA_ISSUE_NUMBERS = ['DC1439']
 
-# Gender question cocnept id
+# Gender question concept id
 GENDER_IDENTITY_CONCEPT_ID = 1585838
 # Generalized gender identity concept id
 GENERALIZED_GENDER_IDENTITY_CONCEPT_ID = 2000000002
@@ -33,6 +33,7 @@ GENERALIZED_RACE_CONCEPT_ID = 2000000008
 GENERALIZED_RACE_SOURCE_VALUE = 'WhatRaceEthnicity_GeneralizedMultPopulations'
 # Hispanic or Latino response concept id
 HISPANIC_LATINO_CONCEPT_ID = 1586147
+HISPANIC_LATINO_CONCEPT_SOURCE_VALUE = 'WhatRaceEthnicity_Hispanic'
 
 # Aou Non Indicated concept_id and the corresponding source value
 AOU_NONE_INDICATED_CONCEPT_ID = 2100000001
@@ -160,6 +161,9 @@ class RepopulatePersonControlledTier(AbstractRepopulatePerson):
     def setup_validation(self, client, *args, **keyword_args):
         pass
 
+    def validate_rule(self, client):
+        pass
+
     def get_gender_query(self, gender_sandbox_table) -> dict:
         gender_join_expressions = [
             JoinExpression(field_name=OBSERVATION_SOURCE_CONCEPT_ID,
@@ -275,9 +279,6 @@ class RepopulatePersonControlledTier(AbstractRepopulatePerson):
             cdr_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE,
             cdr_consts.DESTINATION_TABLE: birth_info_sandbox_table
         }
-
-    def validate_rule(self, client):
-        pass
 
 
 if __name__ == '__main__':
