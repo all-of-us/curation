@@ -234,7 +234,13 @@ CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
-CONTROLLED_TIER_DEID_BASE_CLEANING_CLASSES = []
+CONTROLLED_TIER_DEID_BASE_CLEANING_CLASSES = [
+    (FillSourceValueTextFields,),
+    (RepopulatePersonPostDeid,
+    ),  # TODO: Replace this if the Cleaning rule classname is changed
+    (CreatePersonExtTable,),
+    (CleanMappingExtTables,),  # should be one of the last cleaning rules run
+]
 
 CONTROLLED_TIER_DEID_CLEAN_CLEANING_CLASSES = [
     (MeasurementRecordsSuppression,),
