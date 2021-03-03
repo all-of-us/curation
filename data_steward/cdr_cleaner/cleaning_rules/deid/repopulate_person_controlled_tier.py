@@ -319,6 +319,15 @@ class RepopulatePersonControlledTier(AbstractRepopulatePerson):
         pass
 
     def get_race_manual_translation(self) -> List[ConceptTranslation]:
+        """
+        The manual mapping of PPI concepts to the standard OMOP race concepts. 
+        Find all the  answers of the PPI race questions here 
+        https://athena.ohdsi.org/search-terms/terms/1586140. 
+        Find all the standard OMOP race concepts here 
+        https://athena.ohdsi.org/search-terms/terms?conceptClass=Race. 
+        
+        :return: 
+        """
         return [
             ConceptTranslation(concept_id=1586142,
                                translated_concept_id=8515,
@@ -328,10 +337,21 @@ class RepopulatePersonControlledTier(AbstractRepopulatePerson):
                                comment='black/aa'),
             ConceptTranslation(concept_id=1586146,
                                translated_concept_id=8527,
-                               comment='white')
+                               comment='white'),
+            ConceptTranslation(concept_id=1586141,
+                               translated_concept_id=8657,
+                               comment='AIAN'),
+            ConceptTranslation(concept_id=1586145,
+                               translated_concept_id=8557,
+                               comment='NHPI'),
+            ConceptTranslation(concept_id=1586144,
+                               translated_concept_id=38003615,
+                               comment='MENA')
         ]
 
     def get_ethnicity_manual_translation(self) -> List[ConceptTranslation]:
+        # translate from https://athena.ohdsi.org/search-terms/terms/1586147
+        # to https://athena.ohdsi.org/search-terms/terms/38003563
         return [
             ConceptTranslation(concept_id=1586147,
                                translated_concept_id=38003563,
