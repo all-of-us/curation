@@ -68,6 +68,7 @@ from cdr_cleaner.cleaning_rules.deid.birth_information_suppression import \
     BirthInformationSuppression
 from cdr_cleaner.cleaning_rules.replace_standard_id_in_domain_tables import \
     ReplaceWithStandardConceptId
+from cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff import EhrSubmissionDataCutoff
 from cdr_cleaner.cleaning_rules.repopulate_person_post_deid import RepopulatePersonPostDeid
 from cdr_cleaner.cleaning_rules.truncate_rdr_using_date import TruncateRdrData
 from cdr_cleaner.cleaning_rules.unit_normalization import UnitNormalization
@@ -105,6 +106,7 @@ UNIONED_EHR_CLEANING_CLASSES = [
     # setup_query_execution function to load dependencies before query execution
     (
         populate_routes.get_route_mapping_queries,),
+    (EhrSubmissionDataCutoff,), # should run before EnsureDateDatetimeConsistency
     (EnsureDateDatetimeConsistency,),
     (remove_records_with_wrong_date.get_remove_records_with_wrong_date_queries,
     ),
