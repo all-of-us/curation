@@ -1,6 +1,6 @@
 # system imports
 import logging
-from typing import NamedTuple, Union
+from typing import NamedTuple, Union, List
 
 from enum import Enum
 
@@ -9,7 +9,7 @@ from common import JINJA_ENV, PERSON
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from constants import bq_utils as bq_consts
 from cdr_cleaner.cleaning_rules.deid.repopulate_person_using_observation import \
-    AbstractRepopulatePerson
+    AbstractRepopulatePerson, ConceptTranslation
 
 LOGGER = logging.getLogger(__name__)
 
@@ -91,16 +91,43 @@ GROUP BY g.person_id
 )
 
 SELECT
-    mr.*,
-    IF(mr.is_generalized = 1, {{generalized_concept}}, mr.{{prefix}}_concept_ids[OFFSET(0)]) AS {{prefix}}_concept_id,
-    IF(mr.is_generalized = 1, {{generalized_concept}}, mr.{{prefix}}_source_concept_ids[OFFSET(0)]) AS {{prefix}}_source_concept_id,
-    IF(mr.is_generalized = 1, '{{generalized_concept_source_value}}', mr.{{prefix}}_source_values[OFFSET(0)]) AS {{prefix}}_source_value
-FROM multiple_ppi_responses AS mr
+    mr.*
+    {% if translate_source_concepts is not none and translate_source_concepts|length > 0 -%}{{'\t'}}
+    REPLACE(
+        CASE {{prefix}}_source_concept_id
+        {% for translate_source_concept in translate_source_concepts %}
+            WHEN {{translate_source_concept.concept_id}} THEN {{translate_source_concept.translated_concept_id}}
+            {%- if translate_source_concept.comment is not none %} /*{{translate_source_concept.comment}}*/ {% endif %}{{'\n'}}
+        {%- endfor %}
+            ELSE {{prefix}}_concept_id
+        END AS {{prefix}}_concept_id
+    )
+    {% endif %}
+FROM
+(
+    SELECT
+        mr.*,
+        IF(mr.is_generalized = 1, {{generalized_concept}}, mr.{{prefix}}_concept_ids[OFFSET(0)]) AS {{prefix}}_concept_id,
+        IF(mr.is_generalized = 1, {{generalized_concept}}, mr.{{prefix}}_source_concept_ids[OFFSET(0)]) AS {{prefix}}_source_concept_id,
+        IF(mr.is_generalized = 1, '{{generalized_concept_source_value}}', mr.{{prefix}}_source_values[OFFSET(0)]) AS {{prefix}}_source_value
+    FROM multiple_ppi_responses AS mr
+) mr
 """)
 
 SINGLE_RESPONSE_QUERY_TEMPLATE = JINJA_ENV.from_string("""
 SELECT DISTINCT
     o.* EXCEPT (rank_order)
+    {% if translate_source_concepts is not none and translate_source_concepts|length > 0 -%}{{'\t'}}   
+    REPLACE(
+        CASE {{prefix}}_source_concept_id
+        {% for translate_source_concept in translate_source_concepts %}
+            WHEN {{translate_source_concept.concept_id}} THEN {{translate_source_concept.translated_concept_id}}
+            {%- if translate_source_concept.comment is not none %} /*{{translate_source_concept.comment}}*/{%- endif %}{{'\n'}}
+        {%- endfor %}
+            ELSE {{prefix}}_concept_id
+        END AS {{prefix}}_concept_id
+    )
+    {% endif %}
 FROM 
 (
     SELECT
@@ -180,7 +207,8 @@ class RepopulatePersonControlledTier(AbstractRepopulatePerson):
             GENERALIZED_GENDER_IDENTITY_SOURCE_VALUE,
             join_expressions=gender_join_expressions,
             default_answer_concept_id=NO_MATCHING_CONCEPT_ID,
-            default_answer_source_value=NO_MATCHING_SOURCE_VALUE)
+            default_answer_source_value=NO_MATCHING_SOURCE_VALUE,
+            translate_source_concepts=self.get_gender_manual_translation())
 
         return {
             cdr_consts.QUERY: gender_query,
@@ -202,7 +230,9 @@ class RepopulatePersonControlledTier(AbstractRepopulatePerson):
             prefix=self.SEX_AT_BIRTH,
             join_expressions=sex_at_birth_join_expressions,
             default_answer_concept_id=NO_MATCHING_CONCEPT_ID,
-            default_answer_source_value=NO_MATCHING_SOURCE_VALUE)
+            default_answer_source_value=NO_MATCHING_SOURCE_VALUE,
+            translate_source_concepts=self.get_sex_at_birth_manual_translation(
+            ))
 
         return {
             cdr_consts.QUERY: sex_at_birth_query,
@@ -233,7 +263,8 @@ class RepopulatePersonControlledTier(AbstractRepopulatePerson):
             generalized_concept_source_value=GENERALIZED_RACE_SOURCE_VALUE,
             join_expressions=race_join_expressions,
             default_answer_concept_id=NO_MATCHING_CONCEPT_ID,
-            default_answer_source_value=NO_MATCHING_SOURCE_VALUE)
+            default_answer_source_value=NO_MATCHING_SOURCE_VALUE,
+            translate_source_concepts=self.get_race_manual_translation())
 
         return {
             cdr_consts.QUERY: race_query,
@@ -258,7 +289,8 @@ class RepopulatePersonControlledTier(AbstractRepopulatePerson):
             prefix=self.ETHNICITY,
             join_expressions=ethnicity_join_expressions,
             default_answer_concept_id=AOU_NONE_INDICATED_CONCEPT_ID,
-            default_answer_source_value=AOU_NONE_INDICATED_SOURCE_VALUE)
+            default_answer_source_value=AOU_NONE_INDICATED_SOURCE_VALUE,
+            translate_source_concepts=self.get_ethnicity_manual_translation())
 
         return {
             cdr_consts.QUERY: ethnicity_query,
@@ -279,6 +311,32 @@ class RepopulatePersonControlledTier(AbstractRepopulatePerson):
             cdr_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE,
             cdr_consts.DESTINATION_TABLE: birth_info_sandbox_table
         }
+
+    def get_gender_manual_translation(self) -> List[ConceptTranslation]:
+        pass
+
+    def get_sex_at_birth_manual_translation(self) -> List[ConceptTranslation]:
+        pass
+
+    def get_race_manual_translation(self) -> List[ConceptTranslation]:
+        return [
+            ConceptTranslation(concept_id=1586142,
+                               translated_concept_id=8515,
+                               comment='asian'),
+            ConceptTranslation(concept_id=1586143,
+                               translated_concept_id=8516,
+                               comment='black/aa'),
+            ConceptTranslation(concept_id=1586146,
+                               translated_concept_id=8527,
+                               comment='white')
+        ]
+
+    def get_ethnicity_manual_translation(self) -> List[ConceptTranslation]:
+        return [
+            ConceptTranslation(concept_id=1586147,
+                               translated_concept_id=38003563,
+                               comment='Hispanic or Latino')
+        ]
 
 
 if __name__ == '__main__':
