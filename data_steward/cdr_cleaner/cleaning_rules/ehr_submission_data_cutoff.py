@@ -153,7 +153,8 @@ class EhrSubmissionDataCutoff(BaseCleaningRule):
                     cdr_consts.DESTINATION_DATASET:
                         self.dataset_id,
                     cdr_consts.DISPOSITION:
-                        bq_consts.WRITE_TRUNCATE}
+                        bq_consts.WRITE_TRUNCATE
+                }
 
                 queries_list.append(date_cutoff_query)
 

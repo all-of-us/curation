@@ -83,7 +83,8 @@ class EhrSubmissionDataCutoffTest(unittest.TestCase):
                 data_cutoff.SANDBOX_QUERY.render(
                     project_id=self.project_id,
                     sandbox_id=self.sandbox_id,
-                    intermediary_table=self.rule_instance.sandbox_table_for(table),
+                    intermediary_table=self.rule_instance.sandbox_table_for(
+                        table),
                     dataset_id=self.dataset_id,
                     cdm_table=table,
                     date_fields=(", ".join(self.date_fields)),
@@ -98,7 +99,8 @@ class EhrSubmissionDataCutoffTest(unittest.TestCase):
                     dataset_id=self.dataset_id,
                     cdm_table=table,
                     sandbox_id=self.sandbox_id,
-                    intermediary_table=self.rule_instance.sandbox_table_for(table)),
+                    intermediary_table=self.rule_instance.sandbox_table_for(
+                        table)),
             cdr_consts.DESTINATION_TABLE:
                 table,
             cdr_consts.DESTINATION_DATASET:
@@ -114,7 +116,3 @@ class EhrSubmissionDataCutoffTest(unittest.TestCase):
 
         # Post conditions
         self.assertEqual(results_list, expected_list)
-
-
-
-
