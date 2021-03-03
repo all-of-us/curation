@@ -34,6 +34,7 @@ from common import JINJA_ENV, PERSON
 
 LOGGER = logging.getLogger(__name__)
 
+# Aou Non Indicated concept_id and the corresponding source value
 AOU_NONE_INDICATED_CONCEPT_ID = 2100000001
 AOU_NONE_INDICATED_SOURCE_VALUE = 'AoUDRC_NoneIndicated'
 

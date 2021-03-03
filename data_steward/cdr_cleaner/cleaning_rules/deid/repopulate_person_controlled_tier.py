@@ -9,7 +9,8 @@ from common import JINJA_ENV, PERSON
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from constants import bq_utils as bq_consts
 from cdr_cleaner.cleaning_rules.deid.repopulate_person_using_observation import \
-    AbstractRepopulatePerson, ConceptTranslation
+    AbstractRepopulatePerson, ConceptTranslation, AOU_NONE_INDICATED_CONCEPT_ID, \
+    AOU_NONE_INDICATED_SOURCE_VALUE
 
 LOGGER = logging.getLogger(__name__)
 
@@ -34,10 +35,6 @@ GENERALIZED_RACE_SOURCE_VALUE = 'WhatRaceEthnicity_GeneralizedMultPopulations'
 # Hispanic or Latino response concept id
 HISPANIC_LATINO_CONCEPT_ID = 1586147
 HISPANIC_LATINO_CONCEPT_SOURCE_VALUE = 'WhatRaceEthnicity_Hispanic'
-
-# Aou Non Indicated concept_id and the corresponding source value
-AOU_NONE_INDICATED_CONCEPT_ID = 2100000001
-AOU_NONE_INDICATED_SOURCE_VALUE = 'AoUDRC_NoneIndicated'
 
 # OMOP non matching concept id
 NO_MATCHING_CONCEPT_ID = 0
