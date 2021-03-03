@@ -16,7 +16,6 @@ import unittest
 # Project imports
 from cdr_cleaner.cleaning_rules.remove_extra_tables import (
     RemoveExtraTables, SANDBOX_TABLES_QUERY, DROP_TABLES_QUERY)
-from constants.bq_utils import WRITE_TRUNCATE
 from constants.cdr_cleaner import clean_cdr as clean_consts
 
 

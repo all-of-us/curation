@@ -14,12 +14,11 @@ import logging
 from google.cloud import bigquery
 
 # Project imports
-import constants.bq_utils as bq_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from common import JINJA_ENV
 from utils import pipeline_logging
-from utils.bq import get_client, list_tables
+from utils.bq import list_tables
 
 LOGGER = logging.getLogger(__name__)
 
