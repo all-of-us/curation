@@ -4,7 +4,7 @@ from abc import abstractmethod
 from google.cloud.bigquery.client import Client
 from google.cloud.exceptions import GoogleCloudError
 
-from resources import get_concept_id_fields
+from resources import get_concept_id_fields, has_domain_table_id
 from common import JINJA_ENV
 from constants import bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
@@ -146,14 +146,16 @@ class AbstractConceptSuppression(BaseCleaningRule):
         sandbox_queries = [
             self.get_sandbox_query(table_name)
             for table_name in self.affected_tables
-            if get_concept_id_fields(table_name)
+            if (get_concept_id_fields(table_name) and
+                has_domain_table_id(table_name))
         ]
 
         # Queries for dropping records based on the sandboxed records
         queries = [
             self.get_suppression_query(table_name)
             for table_name in self.affected_tables
-            if get_concept_id_fields(table_name)
+            if (get_concept_id_fields(table_name) and
+                has_domain_table_id(table_name))
         ]
 
         # Clean up the empty sandbox tables
