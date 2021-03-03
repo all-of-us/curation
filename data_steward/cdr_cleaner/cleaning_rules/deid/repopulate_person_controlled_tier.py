@@ -1,3 +1,36 @@
+"""Repopulate the person table using the PPI responses stored in the observation table for 
+gender, sex_at_birth, race, and ethnicity. For multi-select questions such as gender and race, 
+PNA and other responses are mutually exclusive so we don't need to worry about the cases where a 
+participant submits multiple responses and one of which is PNA. In addition, the Birth related 
+fields in the person table are generalized as well.  Below is a high-level summary of how we 
+populate each type of demographics information. 
+
+Race: we translate the PPI race concepts manually to the standard OMOP race concepts. The reason 
+we need to do this is that PPI race concepts are in the Answer class whereas the OMOP race 
+concepts are in the race class such mappings do not exist in concept_relationship. In case of 
+multiple race responses, we replace the multiple responses with a generalized concept 2000000008 
+(WhatRaceEthnicity_GeneralizedMultPopulations). 
+
+Ethnicity: "Hispanic or Latino" is one of the responses in "what is your race/ethnicity?" question. 
+Participants can only indicate their ethnicity to be "Hispanic or Latino" but doesn't have the 
+option to indicate they are "Not Hispanic or Latino". We manually map the PPI response 1586147 to 
+the standard OMOP concept 38003563. For those participants who didn't check this option, we will set 
+their ethnicity_concept_id = 2100000001, ethnicity_source_concept_id = 2100000001, 
+and ethnicity_source_value = ‘AoUDRC_NoneIndicated’ 
+
+Gender: the standard OMOP gender concepts are very limiting and the PPI gender concepts are used 
+instead, so there is no manual mapping for gender. In case of multiple gender responses, 
+we replace the multiple responses with a generalized concept 2000000002 (
+GenderIdentity_GeneralizedDiffGender) 
+
+Sex_at_birth: PPI sex_at_birth concepts are used directly for populating the person table. 
+    
+birth information: 
+    - null out month_of_birth and day_of_birth fields.
+    - year_of_birth remains the same
+    - birth_datetime: defaults to June 15, year_of_birth 00:00:00
+"""
+
 # system imports
 import logging
 from typing import NamedTuple, Union, List
