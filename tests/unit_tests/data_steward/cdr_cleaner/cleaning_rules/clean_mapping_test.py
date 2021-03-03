@@ -43,6 +43,7 @@ class CleanMappingTest(unittest.TestCase):
 
         self.assertEqual(self.rule_instance.affected_datasets, [
             clean_consts.RDR, clean_consts.CONTROLLED_TIER_DEID,
+            clean_consts.CONTROLLED_TIER_DEID_BASE,
             clean_consts.CONTROLLED_TIER_DEID_CLEAN
         ])
 
