@@ -86,6 +86,7 @@ from cdr_cleaner.cleaning_rules.free_text_survey_response_suppression import Fre
 from cdr_cleaner.cleaning_rules.cancer_concept_suppression import CancerConceptSuppression
 from cdr_cleaner.cleaning_rules.identifying_field_suppression import IDFieldSuppression
 from cdr_cleaner.cleaning_rules.aggregate_zip_codes import AggregateZipCodes
+from cdr_cleaner.cleaning_rules.remove_extra_tables import RemoveExtraTables
 from constants.cdr_cleaner import clean_cdr_engine as ce_consts
 from constants.cdr_cleaner.clean_cdr import DataStage
 
@@ -228,7 +229,8 @@ CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     (IDFieldSuppression,),  # Should run after any data remapping
     (GenerateSiteMappingsAndExtTables,),
     (CancerConceptSuppression,),  # Should run after any data remapping rules
-    (AggregateZipCodes,)
+    (AggregateZipCodes,),
+    (RemoveExtraTables,)  # Should be last cleaning rule to be run
 ]
 
 CONTROLLED_TIER_DEID_BASE_CLEANING_CLASSES = []
