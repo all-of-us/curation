@@ -12,7 +12,7 @@ import mock
 # Project imports
 from constants.cdr_cleaner import clean_cdr as consts
 from tools.create_tier import parse_deid_args, validate_deid_stage_param, validate_tier_param, \
-    validate_release_tag_param, create_datasets, get_dataset_name, create_tier, SCOPES
+    validate_release_tag_param, create_datasets, get_dataset_name, create_tier, SCOPES, add_kwargs_to_args
 
 
 class CreateTierTest(unittest.TestCase):
@@ -198,7 +198,8 @@ class CreateTierTest(unittest.TestCase):
         correct_parameter_dict['console_log'] = True
 
         # Test if correct parameters are given
-        results_dict = vars(parse_deid_args(self.correct_parameter_list))
+        args, kwargs = parse_deid_args(self.correct_parameter_list)
+        results_dict = vars(args)
 
         # Post conditions
         self.assertEqual(correct_parameter_dict, results_dict)
@@ -221,6 +222,25 @@ class CreateTierTest(unittest.TestCase):
             # test type error is raised
             self.assertRaises(argparse.ArgumentTypeError, validate_tier_param,
                               tier)
+
+    def test_add_kwargs_to_args(self):
+        actual_args = [
+            '-p', self.project_id, '-d', self.input_dataset, '-b',
+            f'{self.input_dataset}_sandbox', '--data_stage',
+            f'{self.tier}_tier_{self.deid_stage}'
+        ]
+        expected_kwargs = [
+            '-p', self.project_id, '-d', self.input_dataset, '-b',
+            f'{self.input_dataset}_sandbox', '--data_stage',
+            f'{self.tier}_tier_{self.deid_stage}', '--key', 'fake', '-w',
+            'fake2'
+        ]
+        kwargs = {'key': 'fake', 'w': 'fake2'}
+        no_kwargs = {}
+        self.assertEqual(actual_args,
+                         add_kwargs_to_args(actual_args, no_kwargs))
+        self.assertEqual(expected_kwargs,
+                         add_kwargs_to_args(actual_args, kwargs))
 
     def test_validate_deid_stage_param(self):
         # Preconditions
@@ -326,6 +346,7 @@ class CreateTierTest(unittest.TestCase):
 
     @mock.patch('tools.create_tier.create_schemaed_snapshot_dataset')
     @mock.patch('tools.create_tier.clean_cdr.main')
+    @mock.patch('tools.create_tier.add_kwargs_to_args')
     @mock.patch('tools.create_tier.bq.copy_datasets')
     @mock.patch('tools.create_tier.create_datasets')
     @mock.patch('tools.create_tier.get_dataset_name')
@@ -335,20 +356,28 @@ class CreateTierTest(unittest.TestCase):
     def test_create_tier(self, mock_validate_args, mock_impersonate_credentials,
                          mock_get_client, mock_dataset_name,
                          mock_create_datasets, mock_copy_datasets,
-                         mock_cdr_main, mock_create_schemaed_snapshot):
+                         mock_add_kwargs, mock_cdr_main,
+                         mock_create_schemaed_snapshot):
         final_dataset_name = f"{self.tier[0].upper()}{self.release_tag}_{self.deid_stage}"
         datasets = {
             consts.CLEAN: final_dataset_name,
             consts.STAGING: f'{final_dataset_name}_staging',
             consts.SANDBOX: f'{final_dataset_name}_sandbox'
         }
+        controlled_tier_cleaning_args = [
+            '-p', self.project_id, '-d', datasets[consts.STAGING], '-b',
+            datasets[consts.SANDBOX], '--data_stage',
+            f'{self.tier}_tier_{self.deid_stage}'
+        ]
         mock_dataset_name.return_value = final_dataset_name
         mock_create_datasets.return_value = datasets
         client = mock_get_client.return_value = self.mock_bq_client
+        cleaning_args = mock_add_kwargs.return_value = controlled_tier_cleaning_args
+        kwargs = {}
 
         create_tier(self.credentials_filepath, self.project_id, self.tier,
                     self.input_dataset, self.release_tag, self.deid_stage,
-                    self.run_as)
+                    self.run_as, **kwargs)
 
         mock_validate_args.assert_called_with(self.tier, self.deid_stage,
                                               self.release_tag)
@@ -356,8 +385,8 @@ class CreateTierTest(unittest.TestCase):
         mock_impersonate_credentials.assert_called_with(
             self.run_as, SCOPES, self.credentials_filepath)
 
-        mock_get_client.assert_called_with(self.project_id,
-                                           mock_impersonate_credentials())
+        mock_get_client.assert_called_with(
+            self.project_id, credentials=mock_impersonate_credentials())
 
         mock_dataset_name.assert_called_with(self.tier, self.release_tag,
                                              self.deid_stage)
@@ -369,11 +398,9 @@ class CreateTierTest(unittest.TestCase):
         mock_copy_datasets.assert_called_with(client, self.input_dataset,
                                               datasets[consts.STAGING])
 
-        controlled_tier_cleaning_args = [
-            '-p', self.project_id, '-d', datasets[consts.STAGING], '-b',
-            datasets[consts.SANDBOX], '--data_stage', self.tier
-        ]
-        mock_cdr_main.assert_called_with(args=controlled_tier_cleaning_args)
+        mock_add_kwargs.assert_called_with(controlled_tier_cleaning_args,
+                                           kwargs)
+        mock_cdr_main.assert_called_with(args=cleaning_args)
         mock_create_schemaed_snapshot.assert_called_with(
             self.project_id, datasets[consts.STAGING], final_dataset_name,
             False)
