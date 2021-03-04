@@ -308,6 +308,7 @@ PARSING_ERROR_MESSAGE_FORMAT = (
 
 
 def _to_kwarg_key(arg):
+    # TODO: Move this function to as project level arg_parser so it can be reused.
     if not arg.startswith('--'):
         raise RuntimeError(PARSING_ERROR_MESSAGE_FORMAT.format(arg=arg))
     key = arg[2:]
@@ -317,6 +318,7 @@ def _to_kwarg_key(arg):
 
 
 def _to_kwarg_val(val):
+    # TODO: Move this function to as project level arg_parser so it can be reused.
     # likely invalid use of args- allowing single dash e.g. negative values
     if val.startswith('--'):
         raise RuntimeError(PARSING_ERROR_MESSAGE_FORMAT.format(arg=val))
@@ -324,6 +326,8 @@ def _to_kwarg_val(val):
 
 
 def _get_kwargs(optional_args):
+    # TODO: Move this function to as project level arg_parser so it can be reused.
+    # TODO: Move this function to as project level arg_parser so it can be reused.
     if len(optional_args) % 2:
         raise RuntimeError(
             f'All provided arguments need key-value pairs in {optional_args}')
@@ -342,6 +346,7 @@ def fetch_args_kwargs(args=None):
                 as specified in args_parser.get_base_arg_parser which a cleaning
                 rule might require
     """
+    # TODO: Move this function to as project level arg_parser so it can be reused.
     basic_parser = get_parser()
     common_args, unknown_args = basic_parser.parse_known_args(args)
     custom_args = _get_kwargs(unknown_args)
