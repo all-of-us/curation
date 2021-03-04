@@ -25,8 +25,9 @@ SANDBOX_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_id}}.{{intermediary_table}}` AS (
 SELECT * FROM `{{project_id}}.{{dataset_id}}.{{cdm_table}}`
 WHERE 
-    (coalesce({{date_fields}}) < DATE("{{cutoff_date}}")) 
-    AND coalesce({{datetime_fields}}) < TIMESTAMP("{{cutoff_date}}"))
+    ((GREATEST({{date_fields}}) IS NOT NULL) AND (GREATEST({{date_fields}}) < DATE("{{cutoff_date}}"))) AND
+    ((GREATEST({{datetime_fields}}) IS NOT NULL) AND (GREATEST({{datetime_fields}}) < TIMESTAMP("{{cutoff_date}}")))
+)
 """)
 
 DATE_CUTOFF_QUERY = JINJA_ENV.from_string("""
