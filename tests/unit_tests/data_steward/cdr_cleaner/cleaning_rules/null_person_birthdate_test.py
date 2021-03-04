@@ -43,13 +43,7 @@ class NullPersonBirthdateTest(unittest.TestCase):
             clean_consts.QUERY:
                 NULL_DATE_QUERY.render(project_id=self.project_id,
                                        dataset_id=self.dataset_id,
-                                       person_table=PERSON),
-            clean_consts.DESTINATION_TABLE:
-                PERSON,
-            clean_consts.DESTINATION_DATASET:
-                self.dataset_id,
-            clean_consts.DISPOSITION:
-                WRITE_TRUNCATE
+                                       person_table=PERSON)
         }]
 
         self.assertEqual(results_list, expected_list)
