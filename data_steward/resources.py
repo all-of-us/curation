@@ -384,5 +384,5 @@ def has_domain_table_id(table_name):
     :return: True/False if domain_table_id is available is table fields
     """
     return f'{table_name}_id' in [
-        field['name'] for field in fields_for(table_name)
+        field.get('name', '') for field in fields_for(table_name)
     ]

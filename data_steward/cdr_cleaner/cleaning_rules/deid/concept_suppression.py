@@ -86,6 +86,12 @@ class AbstractConceptSuppression(BaseCleaningRule):
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
 
+        affected_tables = [
+            table_name for table_name in affected_tables
+            if (get_concept_id_fields(table_name) and
+                has_domain_table_id(table_name))
+        ]
+
         super().__init__(issue_numbers=issue_numbers,
                          description=description,
                          affected_datasets=affected_datasets,
@@ -146,16 +152,12 @@ class AbstractConceptSuppression(BaseCleaningRule):
         sandbox_queries = [
             self.get_sandbox_query(table_name)
             for table_name in self.affected_tables
-            if (get_concept_id_fields(table_name) and
-                has_domain_table_id(table_name))
         ]
 
         # Queries for dropping records based on the sandboxed records
         queries = [
             self.get_suppression_query(table_name)
             for table_name in self.affected_tables
-            if (get_concept_id_fields(table_name) and
-                has_domain_table_id(table_name))
         ]
 
         # Clean up the empty sandbox tables
