@@ -50,27 +50,6 @@ class EhrSubmissionDataCutoffTest(unittest.TestCase):
 
         # No errors are raised, nothing will happen
 
-    def test_get_affected_tables(self):
-        """
-        Will test that the affected tables generated do no include the person table
-        """
-        # Pre conditions
-        expected_tables = [
-            'observation_period', 'visit_cost', 'drug_cost',
-            'procedure_occurrence', 'payer_plan_period', 'device_cost',
-            'device_exposure', 'procedure_cost', 'source_to_concept_map',
-            'observation', 'location', 'cohort', 'cost', 'death',
-            'drug_exposure', 'measurement', 'condition_era', 'note',
-            'cohort_definition', 'dose_era', 'care_site', 'fact_relationship',
-            'cohort_attribute', 'provider', 'condition_occurrence',
-            'cdm_source', 'attribute_definition', 'visit_occurrence',
-            'drug_era', 'specimen', 'cope_survey_semantic_version_map'
-        ]
-
-        actual_tables = self.rule_instance.get_affected_tables()
-
-        self.assertEqual(expected_tables, actual_tables)
-
     @patch.object(data_cutoff.EhrSubmissionDataCutoff, 'get_affected_tables')
     def test_get_query_specs(self, mock_get_affected_tables):
         # Pre conditions
