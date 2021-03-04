@@ -230,7 +230,8 @@ CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     (GenerateSiteMappingsAndExtTables,),
     (CancerConceptSuppression,),  # Should run after any data remapping rules
     (AggregateZipCodes,),
-    (RemoveExtraTables,)  # Should be last cleaning rule to be run
+    (RemoveExtraTables,),  # Should be last cleaning rule to be run
+    (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
 CONTROLLED_TIER_DEID_BASE_CLEANING_CLASSES = []
