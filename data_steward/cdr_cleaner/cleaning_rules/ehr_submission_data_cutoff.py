@@ -53,7 +53,7 @@ class EhrSubmissionDataCutoff(BaseCleaningRule):
         this SQL, append them to the list of Jira Issues.
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
 
-        :params: truncation_date: the last date that should be included in the
+        :params: cutoff_date: the last date that should be included in the
             dataset
         """
         try:
@@ -181,7 +181,7 @@ class EhrSubmissionDataCutoff(BaseCleaningRule):
     def get_sandbox_tablenames(self):
         sandbox_tables = []
         for table in self.affected_tables:
-            sandbox_tables.append(f'{self._issue_numbers[0].lower()}_{table}')
+            sandbox_tables.append(self.sandbox_table_for(table))
         return sandbox_tables
 
 
