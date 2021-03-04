@@ -374,3 +374,15 @@ def get_concept_id_fields(table_name) -> List[str]:
         for field_name in fields_for(table_name)
         if field_name['name'].endswith('concept_id')
     ]
+
+
+def has_domain_table_id(table_name):
+    """
+    Determines if a table has domain_table_id
+    
+    :param table_name: Name of a cdm domain table
+    :return: True/False if domain_table_id is available is table fields
+    """
+    return f'{table_name}_id' in [
+        field.get('name', '') for field in fields_for(table_name)
+    ]
