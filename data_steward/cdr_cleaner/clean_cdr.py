@@ -59,6 +59,7 @@ from cdr_cleaner.cleaning_rules.no_data_30_days_after_death import NoDataAfterDe
 from cdr_cleaner.cleaning_rules.null_concept_ids_for_numeric_ppi import NullConceptIDForNumericPPI
 from cdr_cleaner.cleaning_rules.null_invalid_foreign_keys import NullInvalidForeignKeys
 from cdr_cleaner.cleaning_rules.ppi_branching import PpiBranching
+from cdr_cleaner.cleaning_rules.prefer_not_to_answer_codes_suppression import PreferNotToAnswerSuppression
 from cdr_cleaner.cleaning_rules.rdr_observation_source_concept_id_suppression import (
     ObservationSourceConceptIDRowSuppression)
 from cdr_cleaner.cleaning_rules.remove_multiple_race_ethnicity_answers import RemoveMultipleRaceEthnicityAnswersQueries
@@ -122,6 +123,7 @@ RDR_CLEANING_CLASSES = [
     (
         FixUnmappedSurveyAnswers,),
     (ObservationSourceConceptIDRowSuppression,),
+    (PreferNotToAnswerSuppression,),
     (UpdateFieldsNumbersAsStrings,),
     (maps_to_value_vocab_update.get_maps_to_value_ppi_vocab_update_queries,),
     (back_fill_pmi_skip.get_run_pmi_fix_queries,),
