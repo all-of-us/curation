@@ -51,7 +51,8 @@ class EhrSubmissionDataCutoffTest(BaseTest.CleaningRulesTestBase):
             cls.fq_sandbox_table_names.append(
                 f'{cls.project_id}.{cls.sandbox_id}.{sandbox_table_name}')
 
-        cls.fq_table_names.append(f'{cls.project_id}.{cls.dataset_id}.{common.VISIT_OCCURRENCE}')
+        cls.fq_table_names.append(
+            f'{cls.project_id}.{cls.dataset_id}.{common.VISIT_OCCURRENCE}')
 
         # call super to set up the client, create datasets, and create
         # empty test tables
