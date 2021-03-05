@@ -28,7 +28,8 @@ LOGGER = logging.getLogger(__name__)
 PERSON_EXT_TABLE_QUERY = JINJA_ENV.from_string("""
 SELECT p.person_id, e.src_id,
 o.value_source_concept_id AS state_of_residence_concept_id,
-c.concept_name AS state_of_residence_source_value
+c.concept_name AS state_of_residence_source_value,
+o.value_source_concept_id AS state_of_residence_source_concept_id
 FROM `{{project}}.{{dataset}}.person` p
 LEFT JOIN `{{project}}.{{dataset}}.observation` o
 ON p.person_id = o.person_id AND o.observation_source_concept_id = 1585249
