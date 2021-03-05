@@ -16,7 +16,7 @@ from constants.cdr_cleaner import clean_cdr as consts
 LOGGER = logging.getLogger(__name__)
 
 TIER_LIST = ['controlled', 'registered']
-DEID_STAGE_LIST = ['deid', 'base', 'clean']
+DEID_STAGE_LIST = ['deid', 'deid_base', 'deid_clean']
 SCOPES = [
     'https://www.googleapis.com/auth/bigquery',
     'https://www.googleapis.com/auth/devstorage.read_write',
