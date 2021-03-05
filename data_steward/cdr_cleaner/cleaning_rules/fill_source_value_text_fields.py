@@ -205,7 +205,10 @@ class FillSourceValueTextFields(BaseCleaningRule):
 
         super().__init__(issue_numbers=JIRA_ISSUE_NUMBERS,
                          description=desc,
-                         affected_datasets=[cdr_consts.DEID_BASE],
+                         affected_datasets=[
+                             cdr_consts.DEID_BASE,
+                             cdr_consts.CONTROLLED_TIER_DEID_BASE
+                         ],
                          affected_tables=get_affected_tables(),
                          project_id=project_id,
                          dataset_id=dataset_id,

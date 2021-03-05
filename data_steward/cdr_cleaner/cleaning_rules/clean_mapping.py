@@ -87,6 +87,7 @@ class CleanMappingExtTables(BaseCleaningRule):
                          description=desc,
                          affected_datasets=[
                              cdr_consts.RDR, cdr_consts.CONTROLLED_TIER_DEID,
+                             cdr_consts.CONTROLLED_TIER_DEID_BASE,
                              cdr_consts.CONTROLLED_TIER_DEID_CLEAN
                          ],
                          project_id=project_id,

@@ -129,8 +129,9 @@ class FillSourceValueTextFieldsTest(unittest.TestCase):
 
         mock_fields_for.call_any_args('visit_occurrence')
 
-        self.assertEqual(self.rule_instance.affected_datasets,
-                         [cdr_consts.DEID_BASE])
+        self.assertEqual(
+            self.rule_instance.affected_datasets,
+            [cdr_consts.DEID_BASE, cdr_consts.CONTROLLED_TIER_DEID_BASE])
 
         expected = self.expected_query
 
