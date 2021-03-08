@@ -5,7 +5,12 @@ participant submits multiple responses and one of which is PNA. In addition, the
 fields in the person table are generalized as well.  Below is a high-level summary of how we 
 populate each type of demographics information. 
 
-Race: we translate the PPI race concepts manually to the standard OMOP race concepts. The reason 
+Race: since race and ethnicity are grouped under the same question  "what is your 
+race/ethnicity?" when querying the race responses only, we need to exclude ethnicity response, 
+this can be done by value_source_concept_id != 1586147. This makes the assumption that all 
+responses except for value_source_concept_id != 1586147 are valid race responses. 
+
+Then we translate the PPI race concepts manually to the standard OMOP race concepts. The reason 
 we need to do this is that PPI race concepts are in the Answer class whereas the OMOP race 
 concepts are in the race class such mappings do not exist in concept_relationship. In case of 
 multiple race responses, we replace the multiple responses with a generalized concept 2000000008 
@@ -60,9 +65,6 @@ SEX_AT_BIRTH_CONCEPT_ID = 1585845
 
 # Race question and response concepts
 RACE_CONCEPT_ID = 1586140
-RACE_RESPONSE_CONCEPT_IDS = [
-    1586141, 1586142, 1586143, 1586144, 1586145, 1586146
-]
 GENERALIZED_RACE_CONCEPT_ID = 2000000008
 GENERALIZED_RACE_SOURCE_VALUE = 'WhatRaceEthnicity_GeneralizedMultPopulations'
 # Hispanic or Latino response concept id
@@ -278,11 +280,7 @@ class RepopulatePersonControlledTier(AbstractRepopulatePerson):
                            value=RACE_CONCEPT_ID),
             JoinExpression(field_name=VALUE_SOURCE_CONCEPT_ID,
                            join_operator=JoinOperator.NOT_EQUAL,
-                           value=HISPANIC_LATINO_CONCEPT_ID),
-            JoinExpression(
-                field_name=VALUE_SOURCE_CONCEPT_ID,
-                join_operator=JoinOperator.IN,
-                value=f'({",".join(map(str, RACE_RESPONSE_CONCEPT_IDS))})'),
+                           value=HISPANIC_LATINO_CONCEPT_ID)
         ]
 
         race_query = MULTIPLE_RESPONSES_GENERALIZATION_QUERY_TEMPLATE.render(
