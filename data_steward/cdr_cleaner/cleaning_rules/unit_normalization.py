@@ -164,6 +164,10 @@ class UnitNormalization(BaseCleaningRule):
         defined as part of get_query_specs().
         :param client:
         :return:
+
+        :raises:  BadRequest, OSError, AttributeError, TypeError, ValueError if
+            the load job fails. Error raised from bq.upload_csv_data_to_bq_table
+            helper function.
         """
 
         # creating _unit_mapping table
@@ -178,11 +182,10 @@ class UnitNormalization(BaseCleaningRule):
         # Uploading data to _unit_mapping table
         unit_mappings_csv_path = os.path.join(resources.resource_files_path,
                                               UNIT_MAPPING_FILE)
-        job = bq.upload_csv_data_to_bq_table(client, self.sandbox_dataset_id,
-                                             UNIT_MAPPING_TABLE,
-                                             unit_mappings_csv_path,
-                                             UNIT_MAPPING_TABLE_DISPOSITION)
-        job.result()
+        result = bq.upload_csv_data_to_bq_table(client, self.sandbox_dataset_id,
+                                                UNIT_MAPPING_TABLE,
+                                                unit_mappings_csv_path,
+                                                UNIT_MAPPING_TABLE_DISPOSITION)
         LOGGER.info(
             f"Created {self.sandbox_dataset_id}.{UNIT_MAPPING_TABLE} and "
             f"loaded data from {unit_mappings_csv_path}")
