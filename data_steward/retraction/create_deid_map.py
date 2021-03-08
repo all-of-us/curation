@@ -144,7 +144,7 @@ def run_queries(queries):
     query_job_ids = []
     for query in queries:
         logging.info('Creating or renaming _deid_map table with query: %s' %
-                     (query))
+                     query)
         job_results = bq_utils.query(q=query, batch=True)
         logging.info('_deid_map table created.')
         query_job_id = job_results['jobReference']['jobId']
