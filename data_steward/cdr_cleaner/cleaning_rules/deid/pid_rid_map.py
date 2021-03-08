@@ -69,8 +69,6 @@ class PIDtoRID(BaseCleaningRule):
         ]
         fq_deid_map_table = f'{self.project_id}.{mapping_dataset_id}.{mapping_table_id}'
         self.deid_map = gbq.TableReference.from_string(fq_deid_map_table)
-        self.person = gbq.TableReference.from_string(
-            f'{self.project_id}.{mapping_dataset_id}.{PERSON}')
 
     def get_query_specs(self):
         """

@@ -29,18 +29,10 @@ class CtPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
         cls.dataset_id = os.environ.get('UNIONED_DATASET_ID')
         cls.sandbox_id = cls.dataset_id + '_sandbox'
 
-        mapping_dataset_id = os.environ.get('COMBINED_DATASET_ID')
-        mapping_table_id = DEID_MAP
-        cls.mapping_dataset_id = mapping_dataset_id
-        cls.kwargs.update({
-            'mapping_dataset_id': mapping_dataset_id,
-            'mapping_table_id': mapping_table_id
-        })
-        cls.fq_deid_map_table = f'{project_id}.{mapping_dataset_id}.{mapping_table_id}'
+        cls.fq_deid_map_table = f'{project_id}.{cls.sandbox_id}.{DEID_MAP}'
 
         cls.rule_instance = cr.CtPIDtoRID(project_id, cls.dataset_id,
-                                          cls.sandbox_id, mapping_dataset_id,
-                                          mapping_table_id)
+                                          cls.sandbox_id)
 
         cls.fq_sandbox_table_names = []
 
@@ -48,7 +40,7 @@ class CtPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
             f'{project_id}.{cls.dataset_id}.{table_id}'
             for table_id in [CONDITION_OCCURRENCE]
         ] + [cls.fq_deid_map_table
-            ] + [f'{project_id}.{mapping_dataset_id}.{PERSON}']
+            ] + [f'{project_id}.{cls.sandbox_id}.{PERSON}']
 
         # call super to set up the client, create datasets, and create
         # empty test tables
@@ -103,7 +95,7 @@ class CtPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
             (2345, 0, 1980, 0, 0),
             (6789, 0, 1990, 0, 0),
             (3456, 0, 1965, 0, 0)""").render(
-            fq_dataset_name=f'{self.project_id}.{self.mapping_dataset_id}')
+            fq_dataset_name=f'{self.project_id}.{self.sandbox_id}')
         queries.append(pid_query)
 
         map_query = self.jinja_env.from_string("""
