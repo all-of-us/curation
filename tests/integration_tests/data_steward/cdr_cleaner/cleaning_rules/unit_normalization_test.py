@@ -35,7 +35,7 @@ class UnitNormalizationTest(unittest.TestCase):
     def test_setup_rule(self):
 
         # test if intermediary table exists before running the cleaning rule
-        intermediary_table = f'{self.project_id}.{self.dataset_id}.{UNIT_MAPPING_TABLE}'
+        intermediary_table = f'{self.project_id}.{self.sandbox_id}.{UNIT_MAPPING_TABLE}'
 
         client = bq.get_client(self.project_id)
         # run setup_rule and see if the table is created
