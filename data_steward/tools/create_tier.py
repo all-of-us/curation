@@ -2,6 +2,7 @@
 import argparse
 import logging
 import re
+from datetime import datetime
 
 # Third party imports
 
@@ -17,6 +18,8 @@ LOGGER = logging.getLogger(__name__)
 
 TIER_LIST = ['controlled', 'registered']
 DEID_STAGE_LIST = ['deid', 'deid_base', 'deid_clean']
+BASE = 'base'
+
 SCOPES = [
     'https://www.googleapis.com/auth/bigquery',
     'https://www.googleapis.com/auth/devstorage.read_write',
@@ -300,6 +303,13 @@ def parse_deid_args(args=None):
                         action='store_true',
                         required=False,
                         help='Log to the console as well as to a file.')
+    parser.add_argument(
+        '-qa',
+        '--qa_handoff_date',
+        dest='qa_handoff_date',
+        help='Will default to today\'s date for QA dataset handoff',
+        default=datetime.today(),
+        required=False)
 
     common_args, unknown_args = parser.parse_known_args(args)
     custom_args = clean_cdr._get_kwargs(unknown_args)
