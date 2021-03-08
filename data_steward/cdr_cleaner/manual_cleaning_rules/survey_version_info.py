@@ -20,6 +20,7 @@ from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 # Project imports
 from common import OBSERVATION, JINJA_ENV
 from constants.cdr_cleaner import clean_cdr as cdr_consts
+from cdr_cleaner.cleaning_rules.deid.generate_site_mappings_and_ext_tables import GenerateSiteMappingsAndExtTables
 
 LOGGER = logging.getLogger(__name__)
 
@@ -82,7 +83,8 @@ class COPESurveyVersionTask(BaseCleaningRule):
             project_id=project_id,
             dataset_id=dataset_id,
             sandbox_dataset_id=sandbox_dataset_id,
-            affected_tables=[OBSERVATION + '_ext'])
+            affected_tables=[OBSERVATION + '_ext'],
+            depends_on=[GenerateSiteMappingsAndExtTables])
 
         self.qrid_map_dataset_id = qrid_map_dataset_id
         self.cope_lookup_dataset_id = cope_lookup_dataset_id
