@@ -9,12 +9,39 @@ import re
 from utils import auth
 from utils import bq
 from utils import pipeline_logging
+from cdr_cleaner import clean_cdr
+from tools.snapshot_by_query import create_schemaed_snapshot_dataset
 from constants.cdr_cleaner import clean_cdr as consts
 
 LOGGER = logging.getLogger(__name__)
 
 TIER_LIST = ['controlled', 'registered']
-DEID_STAGE_LIST = ['deid', 'base', 'clean']
+DEID_STAGE_LIST = ['deid', 'deid_base', 'deid_clean']
+SCOPES = [
+    'https://www.googleapis.com/auth/bigquery',
+    'https://www.googleapis.com/auth/devstorage.read_write',
+]
+
+
+def add_kwargs_to_args(args_list, kwargs):
+    """
+    adds kwargs to the list of default arguments
+
+    :param args_list: list of required args for clean_cdr.main()
+    :param kwargs: dictionary with key word arguments passed
+    :return: list of input args for clean_cdr.main()
+    """
+    if kwargs:
+        kwargs_list = []
+        for kwarg, kwarg_value in kwargs.items():
+            if len(kwarg) == 1:
+                kwargs_list.append(f'-{kwarg}')
+            else:
+                kwargs_list.append(f'--{kwarg}')
+            kwargs_list.append(kwarg_value)
+        return args_list + kwargs_list
+    else:
+        return args_list
 
 
 def validate_tier_param(tier):
@@ -61,6 +88,20 @@ def validate_release_tag_param(arg_value):
     return arg_value
 
 
+def validate_create_tier_args(tier, stage, tag):
+    """
+    User defined helper function to validate that the tier, deid_stage, release_tag parameter
+     follows the correct naming convention
+    :param tier: tier parameter passed through from either a list or command line argument
+    :param stage: deid_stage parameter passed through from either a list or command line argument
+    :param tag: release tag parameter passed through either the command line arguments
+    :return: None, breaks if not valid params are passed
+    """
+    validate_tier_param(tier)
+    validate_deid_stage_param(stage)
+    validate_release_tag_param(tag)
+
+
 def get_dataset_name(tier, release_tag, deid_stage):
     """
     Helper function to create the dataset name based on the given criteria
@@ -73,9 +114,7 @@ def get_dataset_name(tier, release_tag, deid_stage):
     :return: a string for the dataset name
     """
     # validate parameters
-    validate_tier_param(tier)
-    validate_release_tag_param(release_tag)
-    validate_deid_stage_param(deid_stage)
+    validate_create_tier_args(tier, deid_stage, release_tag)
 
     tier = tier[0].upper()
 
@@ -114,13 +153,11 @@ def create_datasets(client, name, input_dataset, tier, release_tag):
 
     # Construct names of datasets need as part of the deid process
     final_dataset_id = name
-    backup_dataset_id = f'{name}_{consts.BACKUP}'
     staging_dataset_id = f'{name}_{consts.STAGING}'
     sandbox_dataset_id = f'{name}_{consts.SANDBOX}'
 
     datasets = {
         consts.CLEAN: final_dataset_id,
-        consts.BACKUP: backup_dataset_id,
         consts.STAGING: staging_dataset_id,
         consts.SANDBOX: sandbox_dataset_id
     }
@@ -157,19 +194,11 @@ def create_datasets(client, name, input_dataset, tier, release_tag):
             dataset.description = f'{phase} {description}'
             client.update_dataset(dataset, ["labels", "description"])
 
-    # Copy input dataset tables to backup and staging datasets
-    tables = client.list_tables(input_dataset)
-    for table in tables:
-        backup_table = f'{backup_dataset_id}.{table.table_id}'
-        staging_table = f'{staging_dataset_id}.{table.table_id}'
-        client.copy_table(table, backup_table)
-        client.copy_table(table, staging_table)
-
     return datasets
 
 
 def create_tier(credentials_filepath, project_id, tier, input_dataset,
-                release_tag, deid_stage, run_as):
+                release_tag, deid_stage, run_as, **kwargs):
     """
     This function is the main entry point for the deid process.
     It passes the required parameters to the implementing functions.
@@ -183,19 +212,36 @@ def create_tier(credentials_filepath, project_id, tier, input_dataset,
     :param run_as: email address of the service acocunt to impersonate
     :return: name of created controlled or registered dataset
     """
-
     # validation of params
-    validate_tier_param(tier)
-    validate_deid_stage_param(deid_stage)
-    validate_release_tag_param(release_tag)
+    validate_create_tier_args(tier, deid_stage, release_tag)
 
-    # get credentials
-    scopes = [
-        'https://www.googleapis.com/auth/bigquery',
-        'https://www.googleapis.com/auth/devstorage.read_write',
-    ]
+    # get credentials and create client
     impersonation_creds = auth.get_impersonation_credentials(
-        run_as, scopes, credentials_filepath)
+        run_as, SCOPES, credentials_filepath)
+
+    client = bq.get_client(project_id, credentials=impersonation_creds)
+
+    # Get Final Dataset name
+    final_dataset_name = get_dataset_name(tier, release_tag, deid_stage)
+
+    # Create intermediary datasets and copy tables from input dataset to newly created dataset
+    datasets = create_datasets(client, final_dataset_name, input_dataset, tier,
+                               release_tag)
+    bq.copy_datasets(client, input_dataset, datasets[consts.STAGING])
+
+    # Run cleaning rules
+    cleaning_args = [
+        '-p', project_id, '-d', datasets[consts.STAGING], '-b',
+        datasets[consts.SANDBOX], '--data_stage', f'{tier}_tier_{deid_stage}'
+    ]
+    controlled_tier_cleaning_args = add_kwargs_to_args(cleaning_args, kwargs)
+    clean_cdr.main(args=controlled_tier_cleaning_args)
+
+    # Snapshot the staging dataset to final dataset
+    create_schemaed_snapshot_dataset(project_id, datasets[consts.STAGING],
+                                     final_dataset_name, False)
+
+    return datasets
 
 
 def parse_deid_args(args=None):
@@ -254,16 +300,29 @@ def parse_deid_args(args=None):
                         action='store_true',
                         required=False,
                         help='Log to the console as well as to a file.')
-    return parser.parse_args(args)
+
+    common_args, unknown_args = parser.parse_known_args(args)
+    custom_args = clean_cdr._get_kwargs(unknown_args)
+    return common_args, custom_args
 
 
 def main(raw_args=None):
-    args = parse_deid_args(raw_args)
+    # Parses the required arguments and keyword arguments required by cleaning rules
+    args, kwargs = parse_deid_args(raw_args)
+    # Sets logging level
     pipeline_logging.configure(level=logging.DEBUG,
                                add_console_handler=args.console_log)
-    create_tier(args.credentials_filepath, args.project_id, args.tier,
-                args.idataset, args.release_tag, args.deid_stage,
-                args.target_principal)
+    # Identify the cleaning classes being run for specified data_stage
+    # and validate if all the required arguments are supplied
+    cleaning_classes = clean_cdr.DATA_STAGE_RULES_MAPPING[
+        f'{args.tier}_tier_{args.deid_stage}']
+    clean_cdr.validate_custom_params(cleaning_classes, **kwargs)
+
+    # Runs create_tier in order to generate the {args.tier}_tier_{args.data_stage} datasets and apply cleaning rules
+    datasets = create_tier(args.credentials_filepath, args.project_id,
+                           args.tier, args.idataset, args.release_tag,
+                           args.deid_stage, args.target_principal, **kwargs)
+    return datasets
 
 
 if __name__ == '__main__':
