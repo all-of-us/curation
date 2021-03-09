@@ -161,10 +161,11 @@ class RemoveRecordsWithWrongDateTest(unittest.TestCase):
         args, _ = mock_parse_remove_records_with_wrong_date_query.call_args_list[
             0]
         self.assertEqual((self.project_id, self.dataset_id, OBSERVATION_TABLE,
-                          OBSERVATION_DEFAULT_YEAR_THRESHOLD), args)
+                          OBSERVATION_DEFAULT_YEAR_THRESHOLD, self.cutoff_date),
+                         args)
 
         args, _ = mock_parse_remove_records_with_wrong_date_query.call_args_list[
             1]
-        self.assertEqual((self.project_id, self.dataset_id,
-                          self.condition_occurrence, DEFAULT_YEAR_THRESHOLD),
-                         args)
+        self.assertEqual(
+            (self.project_id, self.dataset_id, self.condition_occurrence,
+             DEFAULT_YEAR_THRESHOLD, self.cutoff_date), args)

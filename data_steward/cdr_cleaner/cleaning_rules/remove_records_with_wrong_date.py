@@ -140,7 +140,8 @@ def get_remove_records_with_wrong_date_queries(
 
     query = dict()
     query[cdr_consts.QUERY] = parse_remove_records_with_wrong_date_query(
-        project_id, dataset_id, OBSERVATION_TABLE, observation_year_threshold)
+        project_id, dataset_id, OBSERVATION_TABLE, observation_year_threshold,
+        cutoff_date)
     query[cdr_consts.DESTINATION_TABLE] = OBSERVATION_TABLE
     query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
     query[cdr_consts.DESTINATION_DATASET] = dataset_id
@@ -150,7 +151,7 @@ def get_remove_records_with_wrong_date_queries(
     for domain_table in DOMAIN_TABLES_EXCEPT_OBSERVATION:
         query = dict()
         query[cdr_consts.QUERY] = parse_remove_records_with_wrong_date_query(
-            project_id, dataset_id, domain_table, year_threshold)
+            project_id, dataset_id, domain_table, year_threshold, cutoff_date)
         query[cdr_consts.DESTINATION_TABLE] = domain_table
         query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
         query[cdr_consts.DESTINATION_DATASET] = dataset_id
