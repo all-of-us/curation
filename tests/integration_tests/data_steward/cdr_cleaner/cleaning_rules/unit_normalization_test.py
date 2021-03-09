@@ -58,3 +58,4 @@ class UnitNormalizationTest(unittest.TestCase):
 
     def tearDown(self):
         test_util.delete_all_tables(self.dataset_id)
+        test_util.delete_all_tables(self.sandbox_id)
