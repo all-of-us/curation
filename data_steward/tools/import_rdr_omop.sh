@@ -73,6 +73,7 @@ bq mk -f --description "RDR DUMP loaded from ${RDR_DIRECTORY} dated ${RDR_UPLOAD
 python "${DATA_STEWARD_DIR}/cdm.py" "${RDR_DATASET}"
 # accommodate new file "pid_rid_mapping" by RDR
 bq mk --table "${GOOGLE_CLOUD_PROJECT}:${RDR_DATASET}.pid_rid_mapping" "${FIELDS_DIR}/additional_rdr_tables/pid_rid_mapping.json"
+bq mk --table "${GOOGLE_CLOUD_PROJECT}:${RDR_DATASET}.cope_survey_semantic_version_map" "${FIELDS_DIR}/additional_rdr_tables/cope_survey_semantic_version_map.json"
 
 cdm_files=$(gsutil ls gs://${RDR_PROJECT}-cdm/${RDR_DIRECTORY})
 if [[ $? -ne 0 ]]; then
@@ -92,7 +93,7 @@ for file in $cdm_files; do
     JAGGED_ROWS="--allow_jagged_rows"
   fi
   schema_file="${FIELDS_DIR}/${table_name}.json"
-  if [[ "${filename}" == "pid_rid_mapping.csv" ]]; then
+  if [[ "${filename}" == "pid_rid_mapping.csv" || "${filename}" == "cope_survey_semantic_version_map.csv" ]]; then
     schema_file="${FIELDS_DIR}/additional_rdr_tables/${table_name}.json"
   fi
   bq load --project_id ${GOOGLE_CLOUD_PROJECT} --replace --allow_quoted_newlines ${JAGGED_ROWS} ${CLUSTERING_ARGS} --skip_leading_rows=1 ${GOOGLE_CLOUD_PROJECT}:${RDR_DATASET}.${table_name} $file $schema_file
