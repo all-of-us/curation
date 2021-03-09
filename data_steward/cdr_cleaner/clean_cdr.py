@@ -44,6 +44,8 @@ from cdr_cleaner.cleaning_rules.deid.fitbit_dateshift import FitbitDateShiftRule
 from cdr_cleaner.cleaning_rules.deid.fitbit_pid_rid_map import FitbitPIDtoRID
 from cdr_cleaner.cleaning_rules.deid.remove_fitbit_data_if_max_age_exceeded import \
     RemoveFitbitDataIfMaxAgeExceeded
+from cdr_cleaner.cleaning_rules.deid.repopulate_person_controlled_tier import \
+    RepopulatePersonControlledTier
 from cdr_cleaner.cleaning_rules.drop_cope_duplicate_responses import DropCopeDuplicateResponses
 from cdr_cleaner.cleaning_rules.drop_duplicate_ppi_questions_and_answers import \
     DropDuplicatePpiQuestionsAndAnswers
@@ -244,8 +246,7 @@ CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
 
 CONTROLLED_TIER_DEID_BASE_CLEANING_CLASSES = [
     (FillSourceValueTextFields,),
-    (RepopulatePersonPostDeid,
-    ),  # TODO: Replace this if the Cleaning rule classname is changed
+    (RepopulatePersonControlledTier,),
     (CreatePersonExtTable,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
