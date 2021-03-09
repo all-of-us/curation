@@ -12,6 +12,7 @@ Usage: generate_unioned_ehr_dataset.sh
   --ehr_snapshot <EHR dataset>
   --dataset_release_tag <release tag for the CDR>
   --api_project_id <Identifies the RDR project for Participant Summary API>
+  --ehr_cutoff_date <ehr_cut_off date format yyyy-mm-dd>
 "
 
 echo
@@ -37,6 +38,10 @@ while true; do
     api_project_id=$2
     shift 2
     ;;
+  --ehr_cutoff_date)
+    ehr_cutoff_date=$2
+    shift 2
+    ;;
   --)
     shift
     break
@@ -46,7 +51,7 @@ while true; do
 done
 
 if [[ -z "${key_file}" ]] || [[ -z "${vocab_dataset}" ]] || [[ -z "${ehr_snapshot}" ]] ||
-  [[ -z "${dataset_release_tag}" ]] || [[ -z "${api_project_id}" ]]; then
+  [[ -z "${dataset_release_tag}" ]] || [[ -z "${api_project_id}" ]] || [[ -z "${ehr_cutoff_date}" ]]; then
   echo "${USAGE}"
   exit 1
 fi
@@ -67,6 +72,7 @@ echo "key_file --> ${key_file}"
 echo "vocab_dataset --> ${vocab_dataset}"
 echo "dataset_release_tag --> ${dataset_release_tag}"
 echo "api_project_id --> ${api_project_id}"
+echo "ehr_cutoff_date --> ${ehr_cutoff_date}"
 
 export GOOGLE_APPLICATION_CREDENTIALS="${key_file}"
 export GOOGLE_CLOUD_PROJECT="${app_id}"
@@ -137,7 +143,7 @@ bq mk --dataset --description "Sandbox created for storing records affected by t
 python "${CLEANER_DIR}/cleaning_rules/remove_ehr_data_past_deactivation_date.py" --project_id "${app_id}" --dataset_id "${unioned_ehr_dataset_staging}" --sandbox_dataset_id "${unioned_ehr_dataset_staging_sandbox}" --api_project_id "${api_project_id}"
 
 # run cleaning_rules on a dataset
-python "${CLEANER_DIR}/clean_cdr.py" --project_id "${app_id}" --dataset_id "${unioned_ehr_dataset_staging}" --sandbox_dataset_id "${unioned_ehr_dataset_staging_sandbox}" --data_stage "${data_stage}" -s 2>&1 | tee unioned_cleaning_log_"${unioned_ehr_dataset_staging}".txt
+python "${CLEANER_DIR}/clean_cdr.py" --project_id "${app_id}" --dataset_id "${unioned_ehr_dataset_staging}" --sandbox_dataset_id "${unioned_ehr_dataset_staging_sandbox}" --data_stage "${data_stage}" -s --cutoff_date "${ehr_cutoff_date}" 2>&1 | tee unioned_cleaning_log_"${unioned_ehr_dataset_staging}".txt
 
 # Create a snapshot dataset with the result
 python "${TOOLS_DIR}/snapshot_by_query.py" --project_id "${app_id}" --dataset_id "${unioned_ehr_dataset_staging}" --snapshot_dataset_id "${unioned_ehr_dataset}"
