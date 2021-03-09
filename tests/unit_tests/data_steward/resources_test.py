@@ -142,4 +142,4 @@ class ResourcesTest(unittest.TestCase):
             'drug_era', 'specimen'
         ]
         actual = resources.CDM_TABLES
-        self.assertEqual(actual, expected)
+        self.assertCountEqual(actual, expected)
