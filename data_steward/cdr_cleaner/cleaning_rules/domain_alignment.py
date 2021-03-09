@@ -9,7 +9,9 @@ import constants.bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules import domain_mapping, field_mapping
 import resources
+from common import JINJA_ENV
 from cdr_cleaner.cleaning_rules.domain_mapping import EMPTY_STRING, METADATA_DOMAIN
+from tools.combine_ehr_rdr import mapping_table_for
 from resources import get_domain_id_field
 
 LOGGER = logging.getLogger(__name__)
@@ -108,10 +110,38 @@ WHERE m.dest_id IS NULL
 CLEAN_DOMAIN_RECORD_QUERY_TEMPLATE = JINJA_ENV.from_string("""
 SELECT
   d.*
-FROM `{{project_id}}.{{dataset_id}}.{{domain_table}}` AS d
+FROM `{{project_id}}.{{dataset_id}}.{% if is_mapping %}_mapping_{% endif %}{{domain_table}}` AS d
 LEFT JOIN `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table}}` AS s
   ON d.{{domain_table}}_id = s.{{domain_table}}_id
 WHERE s.{{domain_table}}_id IS NULL
+""")
+
+REROUTE_DOMAIN_MAPPING_RECORD_QUERY = JINJA_ENV.from_string("""
+{% for src_table in src_tables %}
+    {% if loop.previtem is defined %}{{'\n'}}UNION ALL{{'\n\n'}}{% endif %}
+    
+-- if src_table is the same as dest_table, we want to keep all the records --
+{% if src_table == dest_table %}
+SELECT
+    src.*
+FROM `{{project_id}}.{{dataset_id}}._mapping_{{src_table}}` AS src
+{% else %}
+-- if src_table and dest_table are not the same -- 
+-- we want to reroute the mapping records from _mapping_src_table to the _mapping_dest_table --
+SELECT
+    src.src_{{src_table}}_id AS src_{{dest_table}}_id,
+    dest.{{dest_table}}_id,
+    src.src_dataset_id,
+    src.src_hpo_id,
+    src.src_table_id
+FROM `{{project_id}}.{{dataset_id}}._logging_domain_alignment` AS m
+JOIN `{{project_id}}.{{dataset_id}}._mapping_{{src_table}}` AS src
+    ON m.src_id = src.{{src_table}}_id AND m.src_table = '{{src_table}}'
+JOIN `{{project_id}}.{{dataset_id}}._mapping_{{dest_table}}` AS dest
+    ON m.dest_id = dest.{{dest_table}}_id AND m.dest_table = '{{dest_table}}'
+WHERE m.is_rerouted = True
+{% endif %}
+{% endfor %}
 """)
 
 CASE_STATEMENT = (' CASE {src_field} '
@@ -430,6 +460,7 @@ def get_clean_domain_queries(project_id, dataset_id, sandbox_dataset_id):
             cdr_consts.DESTINATION_DATASET:
                 sandbox_dataset_id
         })
+        # add the clean-up query for the domain table
         queries.append({
             cdr_consts.QUERY:
                 CLEAN_DOMAIN_RECORD_QUERY_TEMPLATE.render(
@@ -437,7 +468,8 @@ def get_clean_domain_queries(project_id, dataset_id, sandbox_dataset_id):
                     dataset_id=dataset_id,
                     sandbox_dataset_id=sandbox_dataset_id,
                     domain_table=domain_table,
-                    sandbox_table=sandbox_name_for(domain_table)),
+                    sandbox_table=sandbox_name_for(domain_table),
+                    is_mapping=False),
             cdr_consts.DESTINATION_TABLE:
                 domain_table,
             cdr_consts.DISPOSITION:
@@ -445,7 +477,61 @@ def get_clean_domain_queries(project_id, dataset_id, sandbox_dataset_id):
             cdr_consts.DESTINATION_DATASET:
                 dataset_id
         })
+        # add the clean-up query for the corresponding mapping of the domain table
+        queries.append({
+            cdr_consts.QUERY:
+                CLEAN_DOMAIN_RECORD_QUERY_TEMPLATE.render(
+                    project_id=project_id,
+                    dataset_id=dataset_id,
+                    sandbox_dataset_id=sandbox_dataset_id,
+                    domain_table=domain_table,
+                    sandbox_table=sandbox_name_for(domain_table),
+                    is_mapping=True),
+            cdr_consts.DESTINATION_TABLE:
+                mapping_table_for(domain_table),
+            cdr_consts.DISPOSITION:
+                bq_consts.WRITE_TRUNCATE,
+            cdr_consts.DESTINATION_DATASET:
+                dataset_id
+        })
     return sandbox_queries + queries
+
+
+def get_reroute_domain_mapping_queries(project_id, dataset_id):
+    """
+    The functions generates a list of query dicts for rerouting the mapping records to the 
+    approapriate domain.
+
+    :param project_id: the project_id in which the query is run
+    :param dataset_id: the dataset_id in which the query is run
+    :return: a list of query dicts for rerouting the mapping records to the corresponding mapping 
+    table
+    """
+    queries = []
+
+    for dest_table in domain_mapping.DOMAIN_TABLE_NAMES:
+        # Figure out all possible rerouting source tables for a given destination table
+        src_tables = [
+            src_table for src_table in domain_mapping.DOMAIN_TABLE_NAMES
+            if (src_table == dest_table) or
+            domain_mapping.exist_domain_mappings(src_table, dest_table)
+        ]
+
+        queries.append({
+            cdr_consts.QUERY:
+                REROUTE_DOMAIN_MAPPING_RECORD_QUERY.render(
+                    project_id=project_id,
+                    dataset_id=dataset_id,
+                    src_tables=src_tables,
+                    dest_table=dest_table),
+            cdr_consts.DESTINATION_TABLE:
+                mapping_table_for(dest_table),
+            cdr_consts.DISPOSITION:
+                bq_consts.WRITE_TRUNCATE,
+            cdr_consts.DESTINATION_DATASET:
+                dataset_id
+        })
+    return queries
 
 
 def sandbox_name_for(domain_table):
@@ -473,6 +559,8 @@ def domain_alignment(project_id, dataset_id, sandbox_dataset_id=None):
     queries_list = []
     queries_list.extend(get_domain_mapping_queries(project_id, dataset_id))
     queries_list.extend(get_reroute_domain_queries(project_id, dataset_id))
+    queries_list.extend(
+        get_reroute_domain_mapping_queries(project_id, dataset_id))
     queries_list.extend(
         get_clean_domain_queries(project_id, dataset_id, sandbox_dataset_id))
 
