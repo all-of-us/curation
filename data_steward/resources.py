@@ -233,6 +233,16 @@ def is_pii_table(table_id):
     return table_id.startswith('pii') or table_id.startswith('participant')
 
 
+def is_cope_survey_table(table_id):
+    """
+    Return True if specified table is the cope survey table
+
+    :param table_id: table to check
+    :return: Boolean indicating whether the table is the cope survey table
+    """
+    return table_id == 'cope_survey_semantic_version_map'
+
+
 def is_id_match(table_id):
     """
     Return True if specified table is a identity_match table
@@ -278,6 +288,8 @@ def cdm_schemas(include_achilles=False, include_vocabulary=False):
                 elif is_deid_table(table_name):
                     include_table = False
                 elif is_wearables_table(table_name):
+                    include_table = False
+                elif is_cope_survey_table(table_name):
                     include_table = False
                 elif table_name == 'post_deid_person':
                     include_table = False
