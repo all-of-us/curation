@@ -9,6 +9,7 @@ from datetime import datetime
 # Project imports
 from utils import auth
 from utils import bq
+from common import JINJA_ENV
 from utils import pipeline_logging
 from cdr_cleaner import clean_cdr
 from tools.snapshot_by_query import create_schemaed_snapshot_dataset
@@ -24,6 +25,11 @@ SCOPES = [
     'https://www.googleapis.com/auth/bigquery',
     'https://www.googleapis.com/auth/devstorage.read_write',
 ]
+
+ADD_ETL_METADATA_QUERY = JINJA_ENV.from_string("""
+INSERT INTO `{project_id}.{dataset_id}._cdr_metadata` (qa_handoff_date)
+VALUES ({field_value})
+""")
 
 
 def add_kwargs_to_args(args_list, kwargs):
@@ -212,11 +218,14 @@ def create_tier(credentials_filepath, project_id, tier, input_dataset,
     :param input_dataset: name of the input dataset
     :param release_tag: release tag for dataset in the format of YYYYq#r#
     :param deid_stage: deid stage (deid, base or clean)
-    :param run_as: email address of the service acocunt to impersonate
+    :param run_as: email address of the service account to impersonate
     :return: name of created controlled or registered dataset
     """
     # validation of params
     validate_create_tier_args(tier, deid_stage, release_tag)
+
+    # today's date for QA handoff
+    qa_handoff_date = datetime.strftime(datetime.now(), '%Y-%m-%d')
 
     # get credentials and create client
     impersonation_creds = auth.get_impersonation_credentials(
@@ -237,6 +246,18 @@ def create_tier(credentials_filepath, project_id, tier, input_dataset,
         '-p', project_id, '-d', datasets[consts.STAGING], '-b',
         datasets[consts.SANDBOX], '--data_stage', f'{tier}_tier_{deid_stage}'
     ]
+
+    if deid_stage == 'base':
+        add_etl_metadata_query = ADD_ETL_METADATA_QUERY.render(
+            project_id=project_id,
+            dataset_id=final_dataset_name,
+            field_values=qa_handoff_date)
+        client.query(add_etl_metadata_query)
+    else:
+        LOGGER.error(
+            f'deid_stage was not base, no data inserted into _cdr_metadata table'
+        )
+
     controlled_tier_cleaning_args = add_kwargs_to_args(cleaning_args, kwargs)
     clean_cdr.main(args=controlled_tier_cleaning_args)
 
@@ -303,13 +324,6 @@ def parse_deid_args(args=None):
                         action='store_true',
                         required=False,
                         help='Log to the console as well as to a file.')
-    parser.add_argument(
-        '-qa',
-        '--qa_handoff_date',
-        dest='qa_handoff_date',
-        help='Will default to today\'s date for QA dataset handoff',
-        default=datetime.today(),
-        required=False)
 
     common_args, unknown_args = parser.parse_known_args(args)
     custom_args = clean_cdr._get_kwargs(unknown_args)
