@@ -82,7 +82,7 @@ REROUTE_DOMAIN_RECORD_QUERY = (
 
 REROUTE_DOMAIN_MAPPING_RECORD_QUERY = JINJA_ENV.from_string("""
 {% for src_table in src_tables %}
-    {% if loop.previtem is defined -%} UNION ALL {%- endif %}
+    {% if loop.previtem is defined %}{{'\n'}}UNION ALL{{'\n\n'}}{% endif %}
 SELECT
     src.src_{{src_table}}_id AS src_{{dest_table}}_id,
     dest.{{dest_table}}_id,
