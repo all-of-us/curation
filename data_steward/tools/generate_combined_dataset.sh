@@ -139,7 +139,7 @@ export BIGQUERY_DATASET_ID="${combined_staging}"
 data_stage='combined'
 
 # run cleaning_rules on combined staging dataset
-python "${CLEANER_DIR}/clean_cdr.py" --project_id "${app_id}" --dataset_id "${combined_staging}" --sandbox_dataset_id "${combined_staging_sandbox}" --data_stage ${data_stage} -s 2>&1 | tee combined_cleaning_log_"${combined}".txt
+python "${CLEANER_DIR}/clean_cdr.py" --project_id "${app_id}" --dataset_id "${combined_staging}" --sandbox_dataset_id "${combined_staging_sandbox}" --data_stage ${data_stage} -s --cutoff_date "${ehr_cutoff}" 2>&1 | tee combined_cleaning_log_"${combined}".txt
 
 # Create a snapshot dataset with the result
 python "${TOOLS_DIR}/snapshot_by_query.py" --project_id "${app_id}" --dataset_id "${combined_staging}" --snapshot_dataset_id "${combined}"
