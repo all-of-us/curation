@@ -14,6 +14,9 @@ from resources import get_domain_id_field
 
 LOGGER = logging.getLogger(__name__)
 
+# issue numbers
+ISSUE_NUMBERS = ['DC402', 'DC1466']
+
 # Define constants for SQL reserved values
 AND = ' AND '
 NULL_VALUE = 'NULL'
@@ -91,12 +94,24 @@ SELECT
 FROM `{{project_id}}.{{dataset_id}}.{{dest_table}}`
 """)
 
+SANDBOX_DOMAIN_RECORD_QUERY_TEMPLATE = JINJA_ENV.from_string("""
+SELECT
+  d.*
+FROM `{{project_id}}.{{dataset_id}}.{{domain_table}}` AS d
+LEFT JOIN `{{project_id}}.{{dataset_id}}._logging_domain_alignment` AS m
+  ON d.{{domain_table}}_id = m.dest_id 
+    AND m.dest_table = '{{domain_table}}'
+    AND m.is_rerouted = True 
+WHERE m.dest_id IS NULL
+""")
+
 CLEAN_DOMAIN_RECORD_QUERY_TEMPLATE = JINJA_ENV.from_string("""
 SELECT
   d.*
 FROM `{{project_id}}.{{dataset_id}}.{{domain_table}}` AS d
-JOIN `{{project_id}}.{{dataset_id}}._logging_domain_alignment` AS m
-  ON d.{{domain_table}}_id = m.dest_id AND m.dest_table = '{{domain_table}}'
+LEFT JOIN `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table}}` AS s
+  ON d.{{domain_table}}_id = s.{{domain_table}}_id
+WHERE s.{{domain_table}}_id IS NULL
 """)
 
 CASE_STATEMENT = (' CASE {src_field} '
@@ -388,28 +403,60 @@ def get_reroute_domain_queries(project_id, dataset_id):
     return queries
 
 
-def get_clean_domain_queries(project_id, dataset_id):
+def get_clean_domain_queries(project_id, dataset_id, sandbox_dataset_id):
     """
     This function generates a list of query dicts for dropping records that do not belong to the 
     domain table after rerouting. 
     
     :param project_id: 
     :param dataset_id: 
+    :param sandbox_dataset_id: 
     :return: 
     """
+
     queries = []
+    sandbox_queries = []
     for domain_table in domain_mapping.DOMAIN_TABLE_NAMES:
-        clean_domain_record_query = CLEAN_DOMAIN_RECORD_QUERY_TEMPLATE.render(
-            project_id=project_id,
-            dataset_id=dataset_id,
-            domain_table=domain_table)
-        queries.append({
-            cdr_consts.QUERY: clean_domain_record_query,
-            cdr_consts.DESTINATION_TABLE: domain_table,
-            cdr_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE,
-            cdr_consts.DESTINATION_DATASET: dataset_id
+        sandbox_queries.append({
+            cdr_consts.QUERY:
+                SANDBOX_DOMAIN_RECORD_QUERY_TEMPLATE.render(
+                    project_id=project_id,
+                    dataset_id=dataset_id,
+                    domain_table=domain_table),
+            cdr_consts.DESTINATION_TABLE:
+                sandbox_name_for(domain_table),
+            cdr_consts.DISPOSITION:
+                bq_consts.WRITE_TRUNCATE,
+            cdr_consts.DESTINATION_DATASET:
+                sandbox_dataset_id
         })
-    return queries
+        queries.append({
+            cdr_consts.QUERY:
+                CLEAN_DOMAIN_RECORD_QUERY_TEMPLATE.render(
+                    project_id=project_id,
+                    dataset_id=dataset_id,
+                    sandbox_dataset_id=sandbox_dataset_id,
+                    domain_table=domain_table,
+                    sandbox_table=sandbox_name_for(domain_table)),
+            cdr_consts.DESTINATION_TABLE:
+                domain_table,
+            cdr_consts.DISPOSITION:
+                bq_consts.WRITE_TRUNCATE,
+            cdr_consts.DESTINATION_DATASET:
+                dataset_id
+        })
+    return sandbox_queries + queries
+
+
+def sandbox_name_for(domain_table):
+    """
+    This function is used temporarily and can be replaced by the class method once this CR is 
+    upgraded to the baseclass 
+    
+    :param domain_table: 
+    :return: 
+    """
+    return f'{"_".join(ISSUE_NUMBERS).lower()}_{domain_table}'
 
 
 def domain_alignment(project_id, dataset_id, sandbox_dataset_id=None):
@@ -426,7 +473,8 @@ def domain_alignment(project_id, dataset_id, sandbox_dataset_id=None):
     queries_list = []
     queries_list.extend(get_domain_mapping_queries(project_id, dataset_id))
     queries_list.extend(get_reroute_domain_queries(project_id, dataset_id))
-    queries_list.extend(get_clean_domain_queries(project_id, dataset_id))
+    queries_list.extend(
+        get_clean_domain_queries(project_id, dataset_id, sandbox_dataset_id))
 
     return queries_list
 

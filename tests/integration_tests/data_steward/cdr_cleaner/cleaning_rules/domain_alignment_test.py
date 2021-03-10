@@ -13,11 +13,10 @@ from google.cloud.bigquery import Table
 from common import VOCABULARY_TABLES
 from cdr_cleaner.cleaning_rules.domain_mapping import DOMAIN_TABLE_NAMES
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
-from tools.combine_ehr_rdr import mapping_table_for
 from utils import bq
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.domain_alignment import domain_alignment, \
-    DOMAIN_ALIGNMENT_TABLE_NAME
+    DOMAIN_ALIGNMENT_TABLE_NAME, sandbox_name_for
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import \
     BaseTest
 
@@ -86,9 +85,8 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
 
         # Generates list of fully qualified mapping table names
         for table_name in DOMAIN_TABLE_NAMES:
-            cls.fq_table_names.append(
-                f'{cls.project_id}.{cls.dataset_id}.{mapping_table_for(table_name)}'
-            )
+            sandbox_table = f'{cls.project_id}.{cls.sandbox_id}.{sandbox_name_for(table_name)}'
+            cls.fq_sandbox_table_names.append(sandbox_table)
 
         # call super to set up the client, create datasets
         cls.up_class = super().setUpClass()
