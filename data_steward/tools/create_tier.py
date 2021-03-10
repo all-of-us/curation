@@ -19,7 +19,6 @@ LOGGER = logging.getLogger(__name__)
 
 TIER_LIST = ['controlled', 'registered']
 DEID_STAGE_LIST = ['deid', 'deid_base', 'deid_clean']
-BASE = 'base'
 
 SCOPES = [
     'https://www.googleapis.com/auth/bigquery',
@@ -28,7 +27,7 @@ SCOPES = [
 
 ADD_ETL_METADATA_QUERY = JINJA_ENV.from_string("""
 INSERT INTO `{project_id}.{dataset_id}._cdr_metadata` (qa_handoff_date)
-VALUES ({field_value})
+VALUES ('{field_value}')
 """)
 
 
@@ -247,14 +246,15 @@ def create_tier(credentials_filepath, project_id, tier, input_dataset,
         datasets[consts.SANDBOX], '--data_stage', f'{tier}_tier_{deid_stage}'
     ]
 
-    if deid_stage == 'base':
+    if 'base' in deid_stage:
         add_etl_metadata_query = ADD_ETL_METADATA_QUERY.render(
             project_id=project_id,
             dataset_id=final_dataset_name,
             field_values=qa_handoff_date)
-        client.query(add_etl_metadata_query)
+        query_job = client.query(add_etl_metadata_query)
+        query_job.result()
     else:
-        LOGGER.error(
+        LOGGER.info(
             f'deid_stage was not base, no data inserted into _cdr_metadata table'
         )
 
