@@ -22,62 +22,67 @@ UNION_ALL = '\n\tUNION ALL\n'
 # Define the name of the domain alignment table name
 DOMAIN_ALIGNMENT_TABLE_NAME = '_logging_domain_alignment'
 
-DOMAIN_REROUTE_INCLUDED_INNER_QUERY = (
-    '    SELECT '
-    '        \'{src_table}\' AS src_table, '
-    '        \'{dest_table}\' AS dest_table, '
-    '        {src_id} AS src_id, '
-    '        {dest_id} AS dest_id, '
-    '        True AS is_rerouted '
-    '    FROM `{project_id}.{dataset_id}.{src_table}` AS s '
-    '    JOIN `{project_id}.{dataset_id}.concept` AS c '
-    '        ON s.{domain_concept_id} = c.concept_id '
-    '    WHERE c.domain_id in ({domain}) ')
+DOMAIN_REROUTE_INCLUDED_INNER_QUERY = JINJA_ENV.from_string("""
+SELECT 
+    '{{src_table}}' AS src_table, 
+    '{{dest_table}}' AS dest_table, 
+    {{src_id}} AS src_id, 
+    {{dest_id}} AS dest_id, 
+    True AS is_rerouted 
+FROM `{{project_id}}.{{dataset_id}}.{{src_table}}` AS s 
+JOIN `{{project_id}}.{{dataset_id}}.concept` AS c 
+    ON s.{{domain_concept_id}} = c.concept_id 
+WHERE c.domain_id in ({{domain}}) 
+""")
 
-DOMAIN_REROUTE_EXCLUDED_INNER_QUERY = (
-    '    SELECT  '
-    '        \'{src_table}\' AS src_table, '
-    '        CAST(NULL AS STRING) AS dest_table, '
-    '        s.{src_id} AS src_id, '
-    '        NULL AS dest_id, '
-    '        False AS is_rerouted '
-    '    FROM `{project_id}.{dataset_id}.{src_table}` AS s '
-    '    LEFT JOIN `{project_id}.{dataset_id}._logging_domain_alignment` AS m '
-    '        ON s.{src_id} = m.src_id '
-    '            AND m.src_table = \'{src_table}\' '
-    '    WHERE m.src_id IS NULL')
+DOMAIN_REROUTE_EXCLUDED_INNER_QUERY = JINJA_ENV.from_string("""
+SELECT  
+    '{{src_table}}' AS src_table, 
+    CAST(NULL AS STRING) AS dest_table, 
+    s.{{src_id}} AS src_id, 
+    NULL AS dest_id, 
+    False AS is_rerouted 
+FROM `{{project_id}}.{{dataset_id}}.{{src_table}}` AS s 
+LEFT JOIN `{{project_id}}.{{dataset_id}}._logging_domain_alignment` AS m 
+    ON s.{{src_id}} = m.src_id 
+        AND m.src_table = '{{src_table}}' 
+WHERE m.src_id IS NULL
+""")
 
-MAXIMUM_DOMAIN_ID_QUERY = (
-    '    SELECT '
-    '        MAX({domain_id_field}) AS max_id '
-    '    FROM `{project_id}.{dataset_id}.{domain_table}` ')
+MAXIMUM_DOMAIN_ID_QUERY = JINJA_ENV.from_string("""
+SELECT
+    MAX({{domain_id_field}}) AS max_id
+FROM `{{project_id}}.{{dataset_id}}.{{domain_table}}`
+""")
 
-DOMAIN_MAPPING_OUTER_QUERY = (
-    'SELECT '
-    '    u.src_table, '
-    '    u.dest_table, '
-    '    u.src_id, '
-    '    ROW_NUMBER() OVER(ORDER BY u.src_table, u.src_id) + src.max_id AS dest_id, '
-    '    u.is_rerouted '
-    'FROM  '
-    '( '
-    '    {union_query} '
-    ') u '
-    'CROSS JOIN '
-    '( '
-    '    {domain_query} '
-    ') src ')
+DOMAIN_MAPPING_OUTER_QUERY = JINJA_ENV.from_string("""
+SELECT 
+    u.src_table, 
+    u.dest_table, 
+    u.src_id, 
+    ROW_NUMBER() OVER(ORDER BY u.src_table, u.src_id) + src.max_id AS dest_id, 
+    u.is_rerouted 
+FROM  
+( 
+    {{union_query}} 
+) u 
+CROSS JOIN 
+( 
+    {{domain_query}} 
+) src 
+""")
 
-REROUTE_DOMAIN_RECORD_QUERY = (
-    'SELECT '
-    'm.dest_id AS {dest_domain_id_field}, '
-    '{field_mapping_expr} '
-    'FROM `{project_id}.{dataset_id}.{src_table}` AS s '
-    'JOIN `{project_id}.{dataset_id}._logging_domain_alignment` AS m '
-    'ON s.{src_domain_id_field} = m.src_id '
-    'AND m.src_table = \'{src_table}\' '
-    'AND m.dest_table = \'{dest_table}\' '
-    'AND m.is_rerouted = True ')
+REROUTE_DOMAIN_RECORD_QUERY = JINJA_ENV.from_string("""
+SELECT 
+    m.dest_id AS {{dest_domain_id_field}}, 
+    {{field_mapping_expr}} 
+FROM `{{project_id}}.{{dataset_id}}.{{src_table}}` AS s 
+JOIN `{{project_id}}.{{dataset_id}}._logging_domain_alignment` AS m 
+ON s.{{src_domain_id_field}} = m.src_id 
+    AND m.src_table = '{{src_table}}' 
+    AND m.dest_table = '{{dest_table}}' 
+    AND m.is_rerouted = True 
+""")
 
 SELECT_DOMAIN_RECORD_QUERY = JINJA_ENV.from_string("""
 SELECT
@@ -134,7 +139,7 @@ def parse_domain_mapping_query_cross_domain(project_id, dataset_id, dest_table):
             if union_query != EMPTY_STRING:
                 union_query += UNION_ALL
 
-            union_query += DOMAIN_REROUTE_INCLUDED_INNER_QUERY.format(
+            union_query += DOMAIN_REROUTE_INCLUDED_INNER_QUERY.render(
                 project_id=project_id,
                 dataset_id=dataset_id,
                 src_table=src_table,
@@ -154,13 +159,13 @@ def parse_domain_mapping_query_cross_domain(project_id, dataset_id, dest_table):
 
     if union_query != EMPTY_STRING:
         # the query to get the max id for the dest table
-        domain_query = MAXIMUM_DOMAIN_ID_QUERY.format(
+        domain_query = MAXIMUM_DOMAIN_ID_QUERY.render(
             project_id=project_id,
             dataset_id=dataset_id,
             domain_table=dest_table,
             domain_id_field=dest_id_field)
 
-        output_query = DOMAIN_MAPPING_OUTER_QUERY.format(
+        output_query = DOMAIN_MAPPING_OUTER_QUERY.render(
             union_query=union_query, domain_query=domain_query)
     return output_query
 
@@ -185,7 +190,7 @@ def parse_domain_mapping_query_for_same_domains(project_id, dataset_id):
         if union_query != EMPTY_STRING:
             union_query += UNION_ALL
 
-        union_query += DOMAIN_REROUTE_INCLUDED_INNER_QUERY.format(
+        union_query += DOMAIN_REROUTE_INCLUDED_INNER_QUERY.render(
             project_id=project_id,
             dataset_id=dataset_id,
             src_table=domain_table,
@@ -216,7 +221,7 @@ def parse_domain_mapping_query_for_excluded_records(project_id, dataset_id):
         if union_query != EMPTY_STRING:
             union_query += UNION_ALL
 
-        union_query += DOMAIN_REROUTE_EXCLUDED_INNER_QUERY.format(
+        union_query += DOMAIN_REROUTE_EXCLUDED_INNER_QUERY.render(
             project_id=project_id,
             dataset_id=dataset_id,
             src_table=domain_table,
@@ -345,7 +350,7 @@ def parse_reroute_domain_query(project_id, dataset_id, dest_table):
         elif domain_mapping.exist_domain_mappings(src_table, dest_table):
             # We are only rerouting the records between domain tables that are not the same
             union_queries.append(
-                REROUTE_DOMAIN_RECORD_QUERY.format(
+                REROUTE_DOMAIN_RECORD_QUERY.render(
                     project_id=project_id,
                     dataset_id=dataset_id,
                     src_table=src_table,

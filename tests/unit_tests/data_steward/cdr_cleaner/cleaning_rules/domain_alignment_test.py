@@ -90,17 +90,16 @@ class DomainAlignmentTest(unittest.TestCase):
                    dest_domain_id_field=self.condition_occurrence_id,
                    field_mapping_expr=self.condition_condition_alias)
         expected_query += domain_alignment.UNION_ALL
-        expected_query += domain_alignment. \
-            REROUTE_DOMAIN_RECORD_QUERY. \
-            format(project_id=self.project_id,
-                   dataset_id=self.dataset_id,
-                   src_table=self.procedure_table,
-                   dest_table=self.condition_table,
-                   src_domain_id_field=self.procedure_occurrence_id,
-                   dest_domain_id_field=self.condition_occurrence_id,
-                   _logging_domain_alignment=domain_alignment.DOMAIN_ALIGNMENT_TABLE_NAME,
-                   field_mapping_expr=self.condition_procedure_alias
-                   )
+        expected_query += domain_alignment.REROUTE_DOMAIN_RECORD_QUERY.render(
+            project_id=self.project_id,
+            dataset_id=self.dataset_id,
+            src_table=self.procedure_table,
+            dest_table=self.condition_table,
+            src_domain_id_field=self.procedure_occurrence_id,
+            dest_domain_id_field=self.condition_occurrence_id,
+            _logging_domain_alignment=domain_alignment.
+            DOMAIN_ALIGNMENT_TABLE_NAME,
+            field_mapping_expr=self.condition_procedure_alias)
 
         self.assertEqual(
             re.sub(self.chars_to_replace, self.single_space, actual_query),
@@ -124,7 +123,7 @@ class DomainAlignmentTest(unittest.TestCase):
         actual_query = domain_alignment.parse_domain_mapping_query_for_same_domains(
             self.project_id, self.dataset_id)
 
-        expected_query = domain_alignment.DOMAIN_REROUTE_INCLUDED_INNER_QUERY.format(
+        expected_query = domain_alignment.DOMAIN_REROUTE_INCLUDED_INNER_QUERY.render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
             src_table=self.condition_table,
@@ -136,7 +135,7 @@ class DomainAlignmentTest(unittest.TestCase):
                 [self.condition, domain_alignment.METADATA_DOMAIN])))
 
         expected_query += domain_alignment.UNION_ALL
-        expected_query += domain_alignment.DOMAIN_REROUTE_INCLUDED_INNER_QUERY.format(
+        expected_query += domain_alignment.DOMAIN_REROUTE_INCLUDED_INNER_QUERY.render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
             src_table=self.procedure_table,
@@ -175,7 +174,7 @@ class DomainAlignmentTest(unittest.TestCase):
             dataset_id=self.dataset_id,
             dest_table=self.condition_table)
 
-        expected_inner_query = domain_alignment.DOMAIN_REROUTE_INCLUDED_INNER_QUERY.format(
+        expected_inner_query = domain_alignment.DOMAIN_REROUTE_INCLUDED_INNER_QUERY.render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
             src_table=self.procedure_table,
@@ -187,13 +186,13 @@ class DomainAlignmentTest(unittest.TestCase):
 
         expected_inner_query += domain_alignment.AND + self.rerouting_criteria
 
-        expected_maximum_id_query = domain_alignment.MAXIMUM_DOMAIN_ID_QUERY.format(
+        expected_maximum_id_query = domain_alignment.MAXIMUM_DOMAIN_ID_QUERY.render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
             domain_table=self.condition_table,
             domain_id_field=self.condition_occurrence_id)
 
-        expected_query = domain_alignment.DOMAIN_MAPPING_OUTER_QUERY.format(
+        expected_query = domain_alignment.DOMAIN_MAPPING_OUTER_QUERY.render(
             union_query=expected_inner_query,
             domain_query=expected_maximum_id_query)
 
@@ -208,7 +207,7 @@ class DomainAlignmentTest(unittest.TestCase):
             self.condition_occurrence_id, self.procedure_occurrence_id
         ]
 
-        expected_query = domain_alignment.DOMAIN_REROUTE_EXCLUDED_INNER_QUERY.format(
+        expected_query = domain_alignment.DOMAIN_REROUTE_EXCLUDED_INNER_QUERY.render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
             src_table=self.condition_table,
@@ -217,7 +216,7 @@ class DomainAlignmentTest(unittest.TestCase):
 
         expected_query += domain_alignment.UNION_ALL
 
-        expected_query += domain_alignment.DOMAIN_REROUTE_EXCLUDED_INNER_QUERY.format(
+        expected_query += domain_alignment.DOMAIN_REROUTE_EXCLUDED_INNER_QUERY.render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
             src_table=self.procedure_table,
