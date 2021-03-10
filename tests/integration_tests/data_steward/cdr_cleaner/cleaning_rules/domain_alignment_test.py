@@ -162,7 +162,11 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
         tables_and_counts = [{
             'fq_table_name':
                 f'{self.project_id}.{self.dataset_id}.condition_occurrence',
+            'fq_sandbox_table_name':
+                f'{self.project_id}.{self.sandbox_id}.'
+                f'{sandbox_name_for("condition_occurrence")}',
             'loaded_ids': [100, 101, 102, 103, 104],
+            'sandboxed_ids': [101, 104],
             'fields': [
                 'condition_occurrence_id', 'person_id', 'condition_concept_id',
                 'condition_start_date', 'condition_start_datetime',
@@ -179,7 +183,11 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
         }, {
             'fq_table_name':
                 f'{self.project_id}.{self.dataset_id}.procedure_occurrence',
+            'fq_sandbox_table_name':
+                f'{self.project_id}.{self.sandbox_id}.'
+                f'{sandbox_name_for("procedure_occurrence")}',
             'loaded_ids': [200, 201],
+            'sandboxed_ids': [201],
             'fields': [
                 'procedure_occurrence_id', 'person_id', 'procedure_concept_id',
                 'procedure_date', 'procedure_datetime',
