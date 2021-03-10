@@ -129,17 +129,21 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
                     (condition_occurrence_id, person_id, condition_concept_id, 
                     condition_start_date, condition_start_datetime, condition_type_concept_id,
                     visit_occurrence_id)
+                    -- 36676219 is a procedure and would be rerouted to procedure_occurrence --
+                    -- 3009160 is a lab test (measurement) and rerouting from condition_occurrence to measurement is not possible, therefore this record would be dropped --
                     VALUES
                         (100, 1, 201826, '2015-07-15', TIMESTAMP '2015-07-15T00:00:00', 42894222, 1),
                         (101, 2, 36676219, '2015-07-15', TIMESTAMP '2015-07-15T00:00:00', 42865906, 2),
                         (102, 3, 201826, '2015-07-15', TIMESTAMP '2015-07-15T00:00:00', 42894222, 3),
-                        (103, 4, 201826, '2015-07-15', TIMESTAMP '2015-07-15T00:00:00', 42894222, 4)
+                        (103, 4, 201826, '2015-07-15', TIMESTAMP '2015-07-15T00:00:00', 42894222, 4),
+                        (104, 5, 3009160, '2015-07-15', TIMESTAMP '2015-07-15T00:00:00', 42894222, 4)
                     """)
 
         procedure_occurrence_tmpl = self.jinja_env.from_string("""
                     INSERT INTO `{{project_id}}.{{dataset_id}}.procedure_occurrence`
                     (procedure_occurrence_id, person_id, procedure_concept_id, procedure_date, 
                      procedure_datetime, procedure_type_concept_id, visit_occurrence_id)
+                     -- 320128 is essential hypertension (condition) and would be rerouted to condition_occurrence --
                     VALUES
                         (200, 5, 36676219, '2015-07-15', TIMESTAMP '2015-07-15T00:00:00', 42865906, 5),
                         (201, 6, 320128, '2015-08-15', TIMESTAMP '2015-08-15T00:00:00', 42894222, 6)
@@ -163,7 +167,7 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
         tables_and_counts = [{
             'fq_table_name':
                 f'{self.project_id}.{self.dataset_id}.condition_occurrence',
-            'loaded_ids': [100, 102, 103, 104],
+            'loaded_ids': [100, 101, 102, 103, 104],
             'fields': [
                 'condition_occurrence_id', 'person_id', 'condition_concept_id',
                 'condition_start_date', 'condition_start_datetime',
@@ -175,12 +179,12 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
                                 parse('2015-07-15 00:00:00 UTC'), 42894222, 3),
                                (103, 4, 201826, date(2015, 7, 15),
                                 parse('2015-07-15 00:00:00 UTC'), 42894222, 4),
-                               (104, 6, 320128, date(2015, 8, 15),
+                               (105, 6, 320128, date(2015, 8, 15),
                                 parse('2015-08-15 00:00:00 UTC'), None, 6)]
         }, {
             'fq_table_name':
                 f'{self.project_id}.{self.dataset_id}.procedure_occurrence',
-            'loaded_ids': [200, 202],
+            'loaded_ids': [200, 201],
             'fields': [
                 'procedure_occurrence_id', 'person_id', 'procedure_concept_id',
                 'procedure_date', 'procedure_datetime',
