@@ -1,13 +1,10 @@
 """
-Integration test for motor_vehicle_accident_suppression module
-
-Original Issues: DC-1367
-
-The intent is to suppress the vehicle accident related concepts across all *concept_id fields in 
-all domain tables """
+Integration test for domain_alignment module
+"""
 
 # Python Imports
 import os
+from datetime import date
 from dateutil.parser import parse
 
 from google.cloud.bigquery import Table
@@ -162,7 +159,7 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
         ])
 
     def test_domain_alignment(self):
-        from datetime import date
+
         # Expected results list
         tables_and_counts = [{
             'fq_table_name':
