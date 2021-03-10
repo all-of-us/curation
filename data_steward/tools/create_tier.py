@@ -2,12 +2,14 @@
 import argparse
 import logging
 import re
+from datetime import datetime
 
 # Third party imports
 
 # Project imports
 from utils import auth
 from utils import bq
+from common import JINJA_ENV
 from utils import pipeline_logging
 from cdr_cleaner import clean_cdr
 from tools.snapshot_by_query import create_schemaed_snapshot_dataset
@@ -17,10 +19,16 @@ LOGGER = logging.getLogger(__name__)
 
 TIER_LIST = ['controlled', 'registered']
 DEID_STAGE_LIST = ['deid', 'deid_base', 'deid_clean']
+
 SCOPES = [
     'https://www.googleapis.com/auth/bigquery',
     'https://www.googleapis.com/auth/devstorage.read_write',
 ]
+
+ADD_ETL_METADATA_QUERY = JINJA_ENV.from_string("""
+INSERT INTO `{project_id}.{dataset_id}._cdr_metadata` (qa_handoff_date)
+VALUES ('{field_value}')
+""")
 
 
 def add_kwargs_to_args(args_list, kwargs):
@@ -209,11 +217,14 @@ def create_tier(credentials_filepath, project_id, tier, input_dataset,
     :param input_dataset: name of the input dataset
     :param release_tag: release tag for dataset in the format of YYYYq#r#
     :param deid_stage: deid stage (deid, base or clean)
-    :param run_as: email address of the service acocunt to impersonate
+    :param run_as: email address of the service account to impersonate
     :return: name of created controlled or registered dataset
     """
     # validation of params
     validate_create_tier_args(tier, deid_stage, release_tag)
+
+    # today's date for QA handoff
+    qa_handoff_date = datetime.strftime(datetime.now(), '%Y-%m-%d')
 
     # get credentials and create client
     impersonation_creds = auth.get_impersonation_credentials(
@@ -234,6 +245,19 @@ def create_tier(credentials_filepath, project_id, tier, input_dataset,
         '-p', project_id, '-d', datasets[consts.STAGING], '-b',
         datasets[consts.SANDBOX], '--data_stage', f'{tier}_tier_{deid_stage}'
     ]
+
+    if 'base' in deid_stage:
+        add_etl_metadata_query = ADD_ETL_METADATA_QUERY.render(
+            project_id=project_id,
+            dataset_id=final_dataset_name,
+            field_values=qa_handoff_date)
+        query_job = client.query(add_etl_metadata_query)
+        query_job.result()
+    else:
+        LOGGER.info(
+            f'deid_stage was not base, no data inserted into _cdr_metadata table'
+        )
+
     controlled_tier_cleaning_args = add_kwargs_to_args(cleaning_args, kwargs)
     clean_cdr.main(args=controlled_tier_cleaning_args)
 
