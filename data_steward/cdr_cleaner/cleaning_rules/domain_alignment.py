@@ -85,15 +85,15 @@ REROUTE_DOMAIN_MAPPING_RECORD_QUERY = JINJA_ENV.from_string("""
     {% if loop.previtem is defined %}{{'\n'}}UNION ALL{{'\n\n'}}{% endif %}
 SELECT
     src.src_{{src_table}}_id AS src_{{dest_table}}_id,
-    dest.{{dest_table}}_id,
+    m.dest_id AS {{dest_table}}_id,
     src.src_dataset_id,
     src.src_hpo_id,
     src.src_table_id
 FROM `{{project_id}}.{{dataset_id}}._logging_domain_alignment` AS m
 JOIN `{{project_id}}.{{dataset_id}}._mapping_{{src_table}}` AS src
-    ON m.src_id = src.{{src_table}}_id AND m.src_table = '{{src_table}}'
-JOIN `{{project_id}}.{{dataset_id}}._mapping_{{dest_table}}` AS dest
-    ON m.dest_id = dest.{{dest_table}}_id AND m.dest_table = '{{dest_table}}'
+    ON m.src_id = src.{{src_table}}_id 
+        AND m.src_table = '{{src_table}}' 
+        AND m.dest_table = '{{dest_table}}'
 WHERE m.is_rerouted = True
 {% endfor %}
 """)
