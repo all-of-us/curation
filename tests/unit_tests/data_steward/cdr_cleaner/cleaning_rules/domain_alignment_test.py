@@ -8,7 +8,7 @@ from mock import patch
 import cdr_cleaner.cleaning_rules.domain_alignment as domain_alignment
 from cdr_cleaner.cleaning_rules.domain_alignment import (
     WHEN_STATEMENT, DOMAIN_ALIGNMENT_TABLE_NAME, CASE_STATEMENT,
-    SRC_FIELD_AS_DEST_FIELD)
+    SRC_FIELD_AS_DEST_FIELD, SELECT_DOMAIN_RECORD_QUERY)
 from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 
@@ -83,16 +83,12 @@ class DomainAlignmentTest(unittest.TestCase):
                                                     self.condition_table)
 
         expected_query = domain_alignment. \
-            REROUTE_DOMAIN_RECORD_QUERY. \
-            format(project_id=self.project_id,
+            SELECT_DOMAIN_RECORD_QUERY. \
+            render(project_id=self.project_id,
                    dataset_id=self.dataset_id,
-                   src_table=self.condition_table,
                    dest_table=self.condition_table,
-                   src_domain_id_field=self.condition_occurrence_id,
                    dest_domain_id_field=self.condition_occurrence_id,
-                   _logging_domain_alignment=domain_alignment.DOMAIN_ALIGNMENT_TABLE_NAME,
-                   field_mapping_expr=self.condition_condition_alias
-                   )
+                   field_mapping_expr=self.condition_condition_alias)
         expected_query += domain_alignment.UNION_ALL
         expected_query += domain_alignment. \
             REROUTE_DOMAIN_RECORD_QUERY. \

@@ -136,18 +136,6 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
                         (103, 4, 201826, '2015-07-15', TIMESTAMP '2015-07-15T00:00:00', 42894222, 4)
                     """)
 
-        mapping_condition_occurrence_data_template = self.jinja_env.from_string(
-            """
-                    INSERT INTO `{{project_id}}.{{dataset_id}}._mapping_condition_occurrence`
-                    (condition_occurrence_id, src_dataset_id, src_condition_occurrence_id, 
-                     src_hpo_id, src_table_id)
-                    VALUES
-                        (100, '{{dataset_id}}', 1, 'hpo_1', 'condition_occurrence'),
-                        (101, '{{dataset_id}}', 2, 'hpo_2', 'condition_occurrence'),
-                        (102, '{{dataset_id}}', 3, 'hpo_3', 'condition_occurrence'),
-                        (103, '{{dataset_id}}', 4, 'hpo_4', 'condition_occurrence')
-                    """)
-
         procedure_occurrence_tmpl = self.jinja_env.from_string("""
                     INSERT INTO `{{project_id}}.{{dataset_id}}.procedure_occurrence`
                     (procedure_occurrence_id, person_id, procedure_concept_id, procedure_date, 
@@ -157,34 +145,16 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
                         (201, 6, 320128, '2015-08-15', TIMESTAMP '2015-08-15T00:00:00', 42894222, 6)
                         """)
 
-        mapping_procedure_occurrence_data_template = self.jinja_env.from_string(
-            """
-                    INSERT INTO `{{project_id}}.{{dataset_id}}._mapping_procedure_occurrence`
-                    (procedure_occurrence_id, src_dataset_id, src_procedure_occurrence_id, 
-                     src_hpo_id, src_table_id)
-                    VALUES
-                        (200, '{{dataset_id}}', 10, 'hpo_1', 'procedure_occurrence'),
-                        (201, '{{dataset_id}}', 20, 'hpo_2', 'procedure_occurrence')
-                    """)
-
         insert_condition_query = condition_occurrence_data_template.render(
-            project_id=self.project_id, dataset_id=self.dataset_id)
-
-        insert_condition_mapping_query = mapping_condition_occurrence_data_template.render(
             project_id=self.project_id, dataset_id=self.dataset_id)
 
         insert_procedure_query = procedure_occurrence_tmpl.render(
             project_id=self.project_id, dataset_id=self.dataset_id)
 
-        insert_procedure_mapping_query = mapping_procedure_occurrence_data_template.render(
-            project_id=self.project_id, dataset_id=self.dataset_id)
-
         # Load test data
         self.load_test_data([
             f'''{insert_condition_query};
-                {insert_condition_mapping_query};
-                {insert_procedure_query};
-                {insert_procedure_mapping_query}; '''
+                {insert_procedure_query};'''
         ])
 
     def test_domain_alignment(self):

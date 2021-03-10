@@ -4,6 +4,7 @@ COMBINED_SNAPSHOT should be set to create a new snapshot dataset while running t
 import logging
 
 import bq_utils
+from common import JINJA_ENV
 import constants.bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules import domain_mapping, field_mapping
@@ -77,6 +78,21 @@ REROUTE_DOMAIN_RECORD_QUERY = (
     'AND m.src_table = \'{src_table}\' '
     'AND m.dest_table = \'{dest_table}\' '
     'AND m.is_rerouted = True ')
+
+SELECT_DOMAIN_RECORD_QUERY = JINJA_ENV.from_string("""
+SELECT
+    {{dest_domain_id_field}},
+    {{field_mapping_expr}} 
+FROM `{{project_id}}.{{dataset_id}}.{{dest_table}}`
+""")
+
+CLEAN_DOMAIN_RECORD_QUERY_TEMPLATE = JINJA_ENV.from_string("""
+SELECT
+  d.*
+FROM `{{project_id}}.{{dataset_id}}.{{domain_table}}` AS d
+JOIN `{{project_id}}.{{dataset_id}}._logging_domain_alignment` AS m
+  ON d.{{domain_table}}_id = m.dest_id AND m.dest_table = '{{domain_table}}'
+""")
 
 CASE_STATEMENT = (' CASE {src_field} '
                   ' {statements} '
@@ -309,34 +325,43 @@ def parse_reroute_domain_query(project_id, dataset_id, dest_table):
     :param dest_table: the destination CDM table for rerouting
     :return: a query that reroutes the records from all domain tables for the given dest_table
     """
-    union_query = EMPTY_STRING
+    union_queries = []
 
     for src_table in domain_mapping.DOMAIN_TABLE_NAMES:
-        if src_table == dest_table or domain_mapping.exist_domain_mappings(
-                src_table, dest_table):
+        src_domain_id_field = get_domain_id_field(src_table)
+        dest_domain_id_field = get_domain_id_field(dest_table)
+        field_mapping_expr = resolve_field_mappings(src_table, dest_table)
 
-            src_domain_id_field = get_domain_id_field(src_table)
-            dest_domain_id_field = get_domain_id_field(dest_table)
-            field_mapping_expr = resolve_field_mappings(src_table, dest_table)
+        if src_table == dest_table:
+            # We are doing this to make sure the schema doesn't change and also keep all the
+            # records in the domain table for later rerouting to the other domains
+            union_queries.append(
+                SELECT_DOMAIN_RECORD_QUERY.render(
+                    project_id=project_id,
+                    dataset_id=dataset_id,
+                    dest_table=dest_table,
+                    field_mapping_expr=field_mapping_expr,
+                    dest_domain_id_field=dest_domain_id_field))
+        elif domain_mapping.exist_domain_mappings(src_table, dest_table):
+            # We are only rerouting the records between domain tables that are not the same
+            union_queries.append(
+                REROUTE_DOMAIN_RECORD_QUERY.format(
+                    project_id=project_id,
+                    dataset_id=dataset_id,
+                    src_table=src_table,
+                    dest_table=dest_table,
+                    src_domain_id_field=src_domain_id_field,
+                    dest_domain_id_field=dest_domain_id_field,
+                    field_mapping_expr=field_mapping_expr))
 
-            if union_query != EMPTY_STRING:
-                union_query += UNION_ALL
-
-            union_query += REROUTE_DOMAIN_RECORD_QUERY.format(
-                project_id=project_id,
-                dataset_id=dataset_id,
-                src_table=src_table,
-                dest_table=dest_table,
-                src_domain_id_field=src_domain_id_field,
-                dest_domain_id_field=dest_domain_id_field,
-                field_mapping_expr=field_mapping_expr)
-    return union_query
+    return UNION_ALL.join(union_queries)
 
 
 def get_reroute_domain_queries(project_id, dataset_id):
     """
-    This function creates a new dataset called snapshot_dataset_id and copies all content from dataset_id to it.
-    It generates a list of query dicts for rerouting the records to the corresponding destination table.
+    This function creates a new dataset called snapshot_dataset_id and copies all content from 
+    dataset_id to it. It generates a list of query dicts for rerouting the records to the 
+    corresponding destination table. 
 
     :param project_id: the project_id in which the query is run
     :param dataset_id: the dataset_id in which the query is run
@@ -358,6 +383,30 @@ def get_reroute_domain_queries(project_id, dataset_id):
     return queries
 
 
+def get_clean_domain_queries(project_id, dataset_id):
+    """
+    This function generates a list of query dicts for dropping records that do not belong to the 
+    domain table after rerouting. 
+    
+    :param project_id: 
+    :param dataset_id: 
+    :return: 
+    """
+    queries = []
+    for domain_table in domain_mapping.DOMAIN_TABLE_NAMES:
+        clean_domain_record_query = CLEAN_DOMAIN_RECORD_QUERY_TEMPLATE.render(
+            project_id=project_id,
+            dataset_id=dataset_id,
+            domain_table=domain_table)
+        queries.append({
+            cdr_consts.QUERY: clean_domain_record_query,
+            cdr_consts.DESTINATION_TABLE: domain_table,
+            cdr_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE,
+            cdr_consts.DESTINATION_DATASET: dataset_id
+        })
+    return queries
+
+
 def domain_alignment(project_id, dataset_id, sandbox_dataset_id=None):
     """
 
@@ -372,6 +421,7 @@ def domain_alignment(project_id, dataset_id, sandbox_dataset_id=None):
     queries_list = []
     queries_list.extend(get_domain_mapping_queries(project_id, dataset_id))
     queries_list.extend(get_reroute_domain_queries(project_id, dataset_id))
+    queries_list.extend(get_clean_domain_queries(project_id, dataset_id))
 
     return queries_list
 
