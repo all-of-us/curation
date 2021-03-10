@@ -52,7 +52,7 @@ class UnitNormalizationTest(unittest.TestCase):
         sandbox_query = dict()
         sandbox_query[clean_consts.QUERY] = SANDBOX_UNITS_QUERY.render(
             project_id=self.project_id,
-            sandbox_dataset=self.sandbox_id,
+            sandbox_dataset_id=self.sandbox_id,
             intermediary_table=self.rule_instance.get_sandbox_tablenames()[0],
             dataset_id=self.dataset_id,
             unit_table_name=UNIT_MAPPING_TABLE,
@@ -62,6 +62,7 @@ class UnitNormalizationTest(unittest.TestCase):
         update_query[clean_consts.QUERY] = UNIT_NORMALIZATION_QUERY.render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
+            sandbox_dataset_id=self.sandbox_id,
             unit_table_name=UNIT_MAPPING_TABLE,
             measurement_table=MEASUREMENT)
         update_query[clean_consts.DESTINATION_TABLE] = MEASUREMENT
@@ -81,7 +82,7 @@ class UnitNormalizationTest(unittest.TestCase):
 
         store_rows_to_be_changed = SANDBOX_UNITS_QUERY.render(
             project_id=self.project_id,
-            sandbox_dataset=self.sandbox_id,
+            sandbox_dataset_id=self.sandbox_id,
             intermediary_table=self.rule_instance.get_sandbox_tablenames()[0],
             dataset_id=self.dataset_id,
             unit_table_name=UNIT_MAPPING_TABLE,
@@ -90,6 +91,7 @@ class UnitNormalizationTest(unittest.TestCase):
         select_rows_to_be_changed = UNIT_NORMALIZATION_QUERY.render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
+            sandbox_dataset_id=self.sandbox_id,
             unit_table_name=UNIT_MAPPING_TABLE,
             measurement_table=MEASUREMENT)
 
