@@ -44,7 +44,9 @@ PMI_SKIP_FIX_QUERY = """
      when value_source_concept_id = 903096 Then 'PMI_Skip' 
      else obs.value_source_value 
      end as value_source_value, 
-       questionnaire_response_id 
+      coalesce(
+        obs.questionnaire_response_id,
+        ques.questionnaire_response_id) AS questionnaire_response_id 
      FROM
        `{project}.{dataset}.observation` AS obs
       FULL OUTER JOIN (
@@ -52,6 +54,7 @@ PMI_SKIP_FIX_QUERY = """
          per AS (
          SELECT
            DISTINCT obs.person_id,
+           obs.questionnaire_response_id,
            per.gender_concept_id
          FROM
            `{project}.{dataset}.observation` obs
@@ -101,6 +104,7 @@ PMI_SKIP_FIX_QUERY = """
        FROM (
          SELECT
            per.person_id,
+           per.questionnaire_response_id,
            observation_concept_id,
            observation_source_concept_id,
            observation_source_value,
@@ -122,6 +126,7 @@ PMI_SKIP_FIX_QUERY = """
       ON
        obs.person_id = ques.person_id
        AND obs.observation_concept_id = ques.observation_concept_id
+       AND obs.questionnaire_response_id = ques.questionnaire_response_id
 """
 
 
