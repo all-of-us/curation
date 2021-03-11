@@ -320,7 +320,7 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
         cols = ',\n        '.join(col_exprs)
         return f'''
     SELECT {cols} 
-    FROM {input_dataset_id}.{table_id}'''
+    FROM `{input_dataset_id}.{table_id}`'''
     else:
         # Ensure that we
         #  1) populate primary key from the mapping table and
@@ -376,7 +376,7 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
             src_visit_table_id = bq_utils.get_table_id(hpo_id,
                                                        common.VISIT_OCCURRENCE)
             visit_join_expr = f'''
-            LEFT JOIN {output_dataset_id}.{mv} mv 
+            LEFT JOIN `{output_dataset_id}.{mv}` mv 
               ON t.visit_occurrence_id = mv.src_visit_occurrence_id 
              AND mv.src_table_id = '{src_visit_table_id}'
             '''
@@ -388,7 +388,7 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
             src_care_site_table_id = bq_utils.get_table_id(
                 hpo_id, common.CARE_SITE)
             care_site_join_expr = f'''
-                        LEFT JOIN {output_dataset_id}.{cs} mcs 
+                        LEFT JOIN `{output_dataset_id}.{cs}` mcs 
                           ON t.care_site_id = mcs.src_care_site_id 
                          AND mcs.src_table_id = '{src_care_site_table_id}'
                         '''
@@ -400,7 +400,7 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
             src_location_table_id = bq_utils.get_table_id(
                 hpo_id, common.LOCATION)
             location_join_expr = f'''
-                        LEFT JOIN {output_dataset_id}.{lc} loc 
+                        LEFT JOIN `{output_dataset_id}.{lc}` loc 
                           ON t.location_id = loc.src_location_id 
                          AND loc.src_table_id = '{src_location_table_id}'
                         '''
@@ -408,7 +408,7 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
         if table_name == common.PERSON:
             return f'''
                     SELECT {cols} 
-                    FROM {input_dataset_id}.{table_id} t
+                    FROM `{input_dataset_id}.{table_id}` t
                        {location_join_expr}
                        {care_site_join_expr} 
                     '''
@@ -421,9 +421,9 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
                 *,
                 ROW_NUMBER() OVER (PARTITION BY nm.{table_name}_id) AS row_num
             FROM
-                {input_dataset_id}.{table_id} AS nm) AS t
+                `{input_dataset_id}.{table_id}` AS nm) AS t
         JOIN
-            {output_dataset_id}.{mapping_table} AS m
+            `{output_dataset_id}.{mapping_table}` AS m
         ON
             t.{table_name}_id = m.src_{table_name}_id
         AND m.src_table_id = '{table_id}'
@@ -543,7 +543,7 @@ def get_person_to_observation_query(dataset_id):
             NULL as value_as_string,
             race_source_value as observation_source_value,
             race_source_concept_id as observation_source_concept_id
-        FROM {dataset_id}.unioned_ehr_person
+        FROM `{dataset_id}.unioned_ehr_person`
         WHERE birth_datetime IS NOT NULL OR (month_of_birth IS NOT NULL AND day_of_birth IS NOT NULL)
 
         UNION ALL
@@ -562,7 +562,7 @@ def get_person_to_observation_query(dataset_id):
             NULL as value_as_string,
             ethnicity_source_value as observation_source_value,
             ethnicity_source_concept_id as observation_source_concept_id
-        FROM {dataset_id}.unioned_ehr_person
+        FROM `{dataset_id}.unioned_ehr_person`
         WHERE birth_datetime IS NOT NULL OR (month_of_birth IS NOT NULL AND day_of_birth IS NOT NULL)
 
         UNION ALL
@@ -581,7 +581,7 @@ def get_person_to_observation_query(dataset_id):
             NULL as value_as_string,
             gender_source_value as observation_source_value,
             gender_source_concept_id as observation_source_concept_id
-        FROM {dataset_id}.unioned_ehr_person
+        FROM `{dataset_id}.unioned_ehr_person`
         WHERE birth_datetime IS NOT NULL OR (month_of_birth IS NOT NULL AND day_of_birth IS NOT NULL)
 
         UNION ALL
@@ -600,7 +600,7 @@ def get_person_to_observation_query(dataset_id):
             birth_datetime as value_as_string,
             NULL as observation_source_value,
             NULL as observation_source_concept_id
-        FROM {dataset_id}.unioned_ehr_person
+        FROM `{dataset_id}.unioned_ehr_person`
         WHERE birth_datetime IS NOT NULL OR (month_of_birth IS NOT NULL AND day_of_birth IS NOT NULL)
         """
     return q
@@ -686,7 +686,7 @@ def map_ehr_person_to_observation(output_dataset_id):
         FROM
             ({person_to_obs_query}) AS pto
             JOIN
-            {output_dataset_id}._mapping_person AS mp
+            `{output_dataset_id}._mapping_person` AS mp
             ON pto.person_id = mp.src_person_id
         '''.format(
         output_dataset_id=output_dataset_id,
@@ -761,6 +761,9 @@ def main(input_dataset_id, output_dataset_id, project_id, hpo_ids=None):
 
 
 if __name__ == '__main__':
+    from utils import pipeline_logging
+
+    pipeline_logging.configure(logging.INFO, add_console_handler=True)
     parser = argparse.ArgumentParser(
         description=
         'Create a new CDM dataset which is the union of all EHR datasets submitted by HPOs',
