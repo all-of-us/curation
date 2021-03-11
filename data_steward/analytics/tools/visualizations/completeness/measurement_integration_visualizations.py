@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.4.2
+#       jupytext_version: 1.3.0
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -45,7 +45,7 @@ table_sheets = []
 
 for file in file_names:
     for sheet in sheet_names:
-        s = pd.read_excel(file, sheet)
+        s = pd.read_excel(file, sheet, index_col=0)
         table_sheets.append(s)
 
 date_cols = table_sheets[0].columns
@@ -77,6 +77,7 @@ fig, ax = plt.subplots(figsize=(18, 12))
 sns.heatmap(new_table_sheets['All Measurements'], annot=True, annot_kws={"size": 10},
             fmt='g', linewidths=.5, ax=ax, yticklabels=hpo_id_cols,
             xticklabels=date_cols, cmap="RdYlGn", vmin=0, vmax=100)
+ax.set_ylim(len(hpo_id_cols)-0.1, 0)
 
 ax.set_title("All Measurements Integration", size=14)
 plt.savefig("all_measurements_integration_table.png")
@@ -94,23 +95,23 @@ site_name_list = x1.sheet_names
 num_hpo_sheets = len(site_name_list)
 
 print(f"There are {num_hpo_sheets} HPO sheets.")
+# -
 
-# +
-name_of_interest = 'aggregate_info'
-
-if name_of_interest not in site_name_list:
-    raise ValueError("Name not found in the list of HPO site names.")    
-
-for idx, site in enumerate(site_name_list):
-    if site == name_of_interest:
-        idx_of_interest = idx
+# name_of_interest = 'aggregate_info'
+#
+# if name_of_interest not in site_name_list:
+#     raise ValueError("Name not found in the list of HPO site names.")    
+#
+# for idx, site in enumerate(site_name_list):
+#     if site == name_of_interest:
+#         idx_of_interest = idx
 
 # +
 hpo_sheets = []
 
 for file in file_names_hpo_sheets:
     for sheet in site_name_list:
-        s = pd.read_excel(file, sheet)
+        s = pd.read_excel(file, sheet, index_col=0)
         hpo_sheets.append(s)
         
 
@@ -121,11 +122,9 @@ date_cols = (list(date_cols))
 
 # +
 new_hpo_sheets = []
-start_idx = 0
 
 for sheet in hpo_sheets:
     sheet_cols = sheet.columns
-    sheet_cols = sheet_cols[start_idx:]
     new_df = pd.DataFrame(columns=sheet_cols)
 
     for col in sheet_cols:
@@ -138,124 +137,23 @@ for sheet in hpo_sheets:
 
 # ### Showing for one particular site
 
-# +
-fig, ax = plt.subplots(figsize=(9, 6))
-sns.heatmap(new_hpo_sheets[idx_of_interest], annot=True, annot_kws={"size": 14},
+for i in range(len(site_name_list)):
+    name_of_interest = site_name_list[i]
+    idx_of_interest = i
+
+    fig, ax = plt.subplots(figsize=(9, 6))
+    data = new_hpo_sheets[idx_of_interest]
+    mask = data.isnull()
+    g = sns.heatmap(data, annot=True, annot_kws={"size": 14},
             fmt='g', linewidths=.5, ax=ax, yticklabels=table_id_cols,
-            xticklabels=date_cols, cmap="RdYlGn", vmin=0, vmax=100)
+            xticklabels=date_cols, cmap="RdYlGn", vmin=0, vmax=100, mask=mask)
+    g.set_facecolor("lightgrey")
 
-ax.set_title(f"Measurement Integration Rates for {name_of_interest}", size=14)
+    ax.set_title(f"Measurement Integration Rates for {name_of_interest}", size=14)
+    ax.set_ylim(len(table_id_cols)-0.1, 0)
+    ax.set_xticklabels(ax.get_xticklabels(), rotation=45)
 
-plt.tight_layout()
-img_name = name_of_interest + "_measurement_integration_rates.png"
+    plt.tight_layout()
+    img_name = name_of_interest + "_measurement_integration_rates.png"
 
-plt.savefig(img_name)
-# -
-
-dates = new_hpo_sheets[0].columns.tolist()
-
-# ## NOTE: This is more experimental than anything else. Could be improved upon in the future. This particular graphic is also only quasi-informative.
-
-# +
-num_tables = len(new_hpo_sheets[0]) - 1  # do not include aggregate
-
-angles = [(angle / num_tables) * (2 * pi) for angle in range(num_tables)]
-angles += angles[:1] # back to the start
-
-
-# +
-max_val = 0
-
-site = new_hpo_sheets[idx_of_interest]
-site_name = site_name_list[idx_of_interest]
-
-for date in dates:
-    date_vals = site[date].values
-    date_vals = date_vals.flatten().tolist()[:-1]  # cut off aggregate
-    
-    for value in date_vals:
-        if value > max_val:
-            max_val = value
-
-y_ticks = [max_val / 5, max_val * 2 / 5, max_val * 3 / 5, max_val * 4 / 5, max_val]
-y_ticks_str = []
-
-for val in y_ticks:
-    string = str(val)
-    y_ticks_str.append(string)
-
-# +
-fig, ax = plt.subplots(figsize=(9, 6))
-ax = plt.subplot(111, polar = True)  # initialize
-
-ax.set_theta_offset(pi / 2)  # flip to top
-ax.set_theta_direction(-1)
-
-plt.xticks(angles[:-1],table_id_cols)
-
-# Draw ylabels
-ax.set_rlabel_position(0)
-plt.yticks(y_ticks, y_ticks_str, color="grey", size=8)
-plt.ylim(0, max_val)
-
-
-for date_idx in range(len(dates)):
-    date_vals = site[dates[date_idx]].values
-    date = date_vals.flatten().tolist()[:-1]  # cut off aggregate
-    date += date[:1]  # round out the graph
-    
-    ax.plot(angles, date, linewidth=1, linestyle='solid', label=dates[date_idx])
-    ax.fill(angles, date, alpha=0.1)
-
-plt.title(f"Measurement Integration: {name_of_interest}", size=15, y = 1.1)
-plt.legend(loc='upper right', bbox_to_anchor=(0.1, 0.1))
-# -
-
-dates = new_hpo_sheets[idx_of_interest].columns
-
-# ## Want a line chart over time.
-
-times=new_hpo_sheets[idx_of_interest].columns.tolist()
-
-# +
-success_rates = {}
-
-for table_num, table_type in enumerate(table_id_cols):
-    table_metrics_over_time = new_hpo_sheets[idx_of_interest].iloc[table_num]
-    success_rates[table_type] = table_metrics_over_time.values.tolist()
-
-date_idxs = []
-for x in range(len(dates)):
-    date_idxs.append(x)
-
-# +
-for table, values_over_time in success_rates.items():
-    sample_list = [x for x in success_rates[table] if str(x) != 'nan']
-    if len(sample_list) > 1:
-        plt.plot(date_idxs, success_rates[table], '--', label=table)
-    
-for table, values_over_time in success_rates.items():
-    non_nan_idx = 0
-    new_lst = []
-    
-    for idx, x in enumerate(success_rates[table]):
-        if str(x) != 'nan':
-            new_lst.append(x)
-            non_nan_idx = idx
-    
-    if len(new_lst) == 1:
-        plt.plot(date_idxs[non_nan_idx], new_lst, 'o', label=table)
-
-plt.legend(loc="upper left", bbox_to_anchor=(1,1))
-plt.title(f"{name_of_interest} Measurement Integration Rates Over Time")
-plt.ylabel("Integration Rate (%)")
-plt.xlabel("")
-plt.xticks(date_idxs, times, rotation = 'vertical')
-
-handles, labels = ax.get_legend_handles_labels()
-lgd = ax.legend(handles, labels, loc='upper center', bbox_to_anchor=(0.5,-0.1))
-
-img_name = name_of_interest + "_measurement_integration_rate_line_graph.png"
-# plt.savefig(img_name, bbox_extraartist=(lgd,), bbox_inches='tight')
-# -
-
+    plt.savefig(img_name)

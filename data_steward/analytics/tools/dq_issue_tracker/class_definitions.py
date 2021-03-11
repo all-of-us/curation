@@ -292,7 +292,8 @@ class HPO:
         for unit_obj in self.unit_success:
             if unit_obj.value < thresholds[constants.unit_success_min]:
                 failing_metrics.append(unit_obj)
-
+        
+        '''
         for measurement_integration_obj in self.measurement_integration:
             if measurement_integration_obj.value < \
                     thresholds[constants.measurement_integration_min]:
@@ -302,6 +303,7 @@ class HPO:
             if ingredient_integration_obj.value < \
                     thresholds[constants.route_success_min]:
                 failing_metrics.append(ingredient_integration_obj)
+        '''
 
         for date_datetime_disp_obj in self.date_datetime_disparity:
             if date_datetime_disp_obj.value > \

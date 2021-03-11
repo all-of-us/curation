@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.4.2
+#       jupytext_version: 1.3.0
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -85,6 +85,8 @@ cols_to_join = ['src_hpo_id']
 site_df = pd.merge(site_df, full_names_df, on=['src_hpo_id'], how='left')
 # -
 
+site_df
+
 # # Age of participant should NOT be below 18 and should NOT be too high (Achilles rule_id #20 and 21)
 
 # ## Count number of unique participants with age <18
@@ -99,11 +101,9 @@ birth_df = pd.io.gbq.read_gbq('''
     SELECT
         COUNT(*) AS total,
         sum(case when (DATE_DIFF(CURRENT_DATE, EXTRACT(DATE FROM birth_datetime), YEAR)<18) then 1 else 0 end) as minors_in_dataset
-         
     FROM
        `{DATASET}.unioned_ehr_person` AS t1
-    '''.format(DATASET=DATASET),
-                              dialect='standard')
+    '''.format(DATASET=DATASET), dialect='standard')
 print(birth_df.shape[0], 'records received.')
 # -
 
@@ -126,6 +126,8 @@ birth_df = pd.io.gbq.read_gbq('''
 print(birth_df.shape[0], 'records received.')
 # -
 
+birth_df
+
 # ## Count number of unique participants with age >120
 
 # +
@@ -143,6 +145,9 @@ birth_df = pd.io.gbq.read_gbq('''
        `{DATASET}.unioned_ehr_person` AS t1
     '''.format(DATASET=DATASET), dialect='standard')
 print(birth_df.shape[0], 'records received.')
+# -
+
+birth_df
 
 # +
 ######################################
@@ -192,7 +197,7 @@ birth_df['AGE'].hist(bins=88)
 persons_with_conditions_related_to_diabetes_query = """
 CREATE TABLE `{DATASET}.persons_with_diabetes_according_to_condition_table`
 OPTIONS
-(expiration_timestamp=TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 3 MINUTE)
+(expiration_timestamp=TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 10 MINUTE)
 )
 AS
 SELECT
@@ -256,7 +261,7 @@ diabetics_per_site
 # ## Drug
 
 create_table_with_substantiating_diabetic_drug_concept_ids = """
-CREATE TABLE `{DATASET}.substantiating_diabetic_drug_concept_ids`
+CREATE OR REPLACE TABLE `{DATASET}.substantiating_diabetic_drug_concept_ids`
 OPTIONS (
 expiration_timestamp=TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 3 MINUTE)
 ) AS
@@ -266,7 +271,7 @@ ca.descendant_concept_id
 FROM
 `{DATASET}.concept` c
 JOIN
-`{DATASET}.concept_ancestor` ca
+`{DATASET}.union_concept_ancestor` ca
 ON
 c.concept_id = ca.ancestor_concept_id 
 WHERE
@@ -314,8 +319,8 @@ diabetics_with_substantiating_drugs.shape
 
 # ## glucose_lab
 
-valid_glucose_measurements_query = """
-CREATE TABLE `{DATASET}.valid_glucose_labs`
+valid_glucose_labs = """
+CREATE OR REPLACE TABLE `{DATASET}.valid_glucose_labs`
 OPTIONS (
 expiration_timestamp=TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 3 MINUTE)
 ) AS
@@ -325,7 +330,7 @@ c.concept_id, c.concept_name
 FROM
 `{DATASET}.concept` c
 JOIN
-`{DATASET}.concept_ancestor` ca
+`{DATASET}.union_concept_ancestor` ca
 ON
 c.concept_id = ca.descendant_concept_id
 WHERE
@@ -336,7 +341,7 @@ OR
 c.invalid_reason = ''
 """.format(DATASET = DATASET)
 
-valid_glucose_measurements = pd.io.gbq.read_gbq(valid_glucose_measurements_query, dialect='standard')
+valid_glucose_labs = pd.io.gbq.read_gbq(valid_glucose_labs, dialect='standard')
 
 # #### diabetic persons who have at least one 'glucose' measurement
 
@@ -365,7 +370,7 @@ diabetics_with_glucose_measurement.shape
 # ## a1c
 
 hemoglobin_a1c_desc_query = """
-CREATE TABLE `{DATASET}.a1c_descendants`
+CREATE OR REPLACE TABLE `{DATASET}.a1c_descendants`
 OPTIONS (
 expiration_timestamp=TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 3 MINUTE)
 )
@@ -374,7 +379,7 @@ SELECT
 DISTINCT
 ca.descendant_concept_id as concept_id
 FROM
-`{DATASET}.concept_ancestor` ca
+`{DATASET}.union_concept_ancestor` ca
 WHERE
 ca.ancestor_concept_id IN (40789263)
 """.format(DATASET = DATASET)

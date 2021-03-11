@@ -34,7 +34,7 @@ from functions_to_create_hpo_objects import establish_hpo_objects, \
 
 from organize_relevant_dqms import create_string_for_failing_metrics
 
-from messages import introduction, sign_off, sign_off, link
+from messages import introduction, sign_off, sign_off, link, email
 
 from dictionaries_and_lists import full_names
 
@@ -42,7 +42,7 @@ from contact_list import recipient_dict
 
 from dictionaries_and_lists import metric_names
 
-report1 = 'june_15_2020.xlsx'
+report1 = 'february_01_2021.xlsx'
 
 report_names = [report1]
 
@@ -110,9 +110,9 @@ def assemble_final_messages(unique_metrics, hpo_id):
         user entered
     """
     ehr_site = full_names[hpo_id]
-    name = "Noah Engel"
+    name = "Hongjue Wang"
     num_metrics = len(metric_names)
-    date = "June 14th, 2020"
+    date = "January 31st, 2021"
 
     message = introduction.format(
         ehr_site=ehr_site, name=name,
@@ -121,14 +121,14 @@ def assemble_final_messages(unique_metrics, hpo_id):
     message += unique_metrics
 
     message += sign_off.format(
-        link=link)
+        link=link, email=email)
 
     relevant_persons = recipient_dict[hpo_id]
 
     message += f"""
     Email Title:
     ------------
-    Data Check Feedback (June 2020) - {ehr_site}"""
+    Data Check Feedback (February 2021) - {ehr_site}"""
 
     message += f"""
     Contact the following individuals:
@@ -172,3 +172,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+

@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.4.2
+#       jupytext_version: 1.3.0
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -462,7 +462,7 @@ observation_concept_df = pd.io.gbq.read_gbq('''
             ON
                 t3.concept_id = t1.observation_concept_id
             WHERE 
-                 t3.standard_concept="S" 
+                 t3.standard_concept="S" and t3.domain_id="Observation"
             GROUP BY
                 1
         ),
@@ -780,3 +780,5 @@ success_rate = success_rate.fillna(0)
 success_rate
 
 success_rate.to_csv("{cwd}/concept.csv".format(cwd = cwd))
+
+
