@@ -769,13 +769,16 @@ if __name__ == '__main__':
         'Create a new CDM dataset which is the union of all EHR datasets submitted by HPOs',
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument(
-        'project_id',
+        '--project_id',
+        dest='project_id',
         help='Project associated with the input and output datasets')
-    parser.add_argument('input_dataset_id',
+    parser.add_argument('--input_dataset_id',
+                        dest='input_dataset_id',
                         help='Dataset where HPO submissions are stored')
-    parser.add_argument('output_dataset_id',
+    parser.add_argument('--output_dataset_id',
+                        dest='output_dataset_id',
                         help='Dataset where the results should be stored')
-    parser.add_argument('-hpo_id',
+    parser.add_argument('--hpo_id',
                         nargs='+',
                         help='HPOs to process (all by default)')
     args = parser.parse_args()
