@@ -61,9 +61,8 @@ WHERE p0.procedure_occurrence_id = p1.procedure_occurrence_id)
 """
 
 
-def get_remove_invalid_procedure_source_queries(project_id,
-                                                dataset_id,
-                                                sandbox_dataset_id=None):
+def get_remove_invalid_procedure_source_queries(project_id, dataset_id,
+                                                sandbox_dataset_id):
     """
     runs the query which removes records that contain incorrect values in the procedure_source_concept_id field
     invalid procedure_source_concept_ids are where it is not in the procedure domain and
@@ -84,7 +83,7 @@ def get_remove_invalid_procedure_source_queries(project_id,
             project=project_id,
             dataset=dataset_id,
             table=TABLE,
-            sandbox_dataset=get_sandbox_dataset_id(dataset_id),
+            sandbox_dataset=sandbox_dataset_id,
             intermediary_table=INTERMEDIARY_TABLE_NAME)
     queries_list.append(invalid_records)
 
@@ -93,7 +92,7 @@ def get_remove_invalid_procedure_source_queries(project_id,
         project=project_id,
         dataset=dataset_id,
         table=TABLE,
-        sandbox_dataset=get_sandbox_dataset_id(dataset_id),
+        sandbox_dataset=sandbox_dataset_id,
         intermediary_table=INTERMEDIARY_TABLE_NAME)
     queries_list.append({
         clean_consts.QUERY: valid_records,
