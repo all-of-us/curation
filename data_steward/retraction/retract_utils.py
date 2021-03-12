@@ -127,8 +127,8 @@ def get_datasets_list(project_id, dataset_ids_list):
     dataset_ids = [
         dataset_id for dataset_id in dataset_ids
         if get_dataset_type(dataset_id) != common.OTHER and
-        not is_sandbox_dataset(dataset_id) and
-        not is_staging_dataset(dataset_id)
+        not is_sandbox_dataset(dataset_id)
+        # and not is_staging_dataset(dataset_id)
     ]
 
     LOGGER.info(f"Found datasets to retract from: {', '.join(dataset_ids)}")
