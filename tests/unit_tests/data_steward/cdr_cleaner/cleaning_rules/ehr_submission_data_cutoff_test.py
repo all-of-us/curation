@@ -34,7 +34,15 @@ class EhrSubmissionDataCutoffTest(unittest.TestCase):
         self.client = None
 
         self.date_fields = ['visit_start_date', 'visit_end_date']
+        self.updated_date_fields = [
+            f'COALESCE({field}, DATE("1900-01-01"))'
+            for field in self.date_fields
+        ]
         self.datetime_fields = ['visit_start_datetime', 'visit_end_datetime']
+        self.updated_datetime_fields = [
+            f'COALESCE({field}, TIMESTAMP("1900-01-01"))'
+            for field in self.datetime_fields
+        ]
         self.cutoff_date = str(datetime.now().date())
 
         self.rule_instance = data_cutoff.EhrSubmissionDataCutoff(
@@ -66,8 +74,8 @@ class EhrSubmissionDataCutoffTest(unittest.TestCase):
                         table),
                     dataset_id=self.dataset_id,
                     cdm_table=table,
-                    date_fields=(", ".join(self.date_fields)),
-                    datetime_fields=(", ".join(self.datetime_fields)),
+                    date_fields=(", ".join(self.updated_date_fields)),
+                    datetime_fields=(", ".join(self.updated_datetime_fields)),
                     cutoff_date=self.cutoff_date),
         }
 
