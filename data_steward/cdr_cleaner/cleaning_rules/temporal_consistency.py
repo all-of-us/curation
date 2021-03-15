@@ -41,7 +41,7 @@ placeholder_date = '1900-01-01'
 end_date = 'end_date'
 
 SANDBOX_BAD_END_DATES = JINJA_ENV.from_string("""
-CREATE OR REPLACE `{{project_id}}.{{sandbox_id}}.{{intermediary_table}}` AS (
+CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_id}}.{{intermediary_table}}` AS (
   SELECT
     *
   FROM
@@ -53,18 +53,18 @@ CREATE OR REPLACE `{{project_id}}.{{sandbox_id}}.{{intermediary_table}}` AS (
 
 NULL_BAD_END_DATES = JINJA_ENV.from_string("""
 SELECT
-  {cols}
+  {{cols}}
 FROM
-  `{project_id}.{dataset_id}.{table}` l
+  `{{project_id}}.{{dataset_id}}.{{table}}` l
 LEFT JOIN (
   SELECT
     *
   FROM
-    `{project_id}.{dataset_id}.{table}`
+    `{{project_id}}.{{dataset_id}}.{{table}}`
   WHERE
-    NOT {table_end_date} < {table_start_date}) r
+    NOT {{table_end_date}} < {{table_start_date}}) r
 ON
-  l.{TABLE}_id = r.{TABLE}_id
+  l.{{table}}_id = r.{{table}}_id
 """)
 
 POPULATE_VISIT_END_DATES = JINJA_ENV.from_string("""
@@ -75,7 +75,7 @@ SELECT
   visit_start_date,
   visit_start_datetime,
   CASE
-    WHEN visit_concept_id = 9201 AND max_end_date != "{placeholder_date}" THEN max_end_date
+    WHEN visit_concept_id = 9201 AND max_end_date != "{{placeholder_date}}" THEN max_end_date
   ELSE
   visit_start_date
 END
@@ -95,36 +95,36 @@ FROM (
   SELECT
     GREATEST(
       CASE
-        WHEN MAX(co.condition_end_date) IS NULL THEN "{placeholder_date}"
+        WHEN MAX(co.condition_end_date) IS NULL THEN "{{placeholder_date}}"
       ELSE
       MAX(co.condition_end_date)
     END
       ,
       CASE
-        WHEN MAX(dre.drug_exposure_end_date) IS NULL THEN "{placeholder_date}"
+        WHEN MAX(dre.drug_exposure_end_date) IS NULL THEN "{{placeholder_date}}"
       ELSE
       MAX(dre.drug_exposure_end_date)
     END
       ,
       CASE
-        WHEN MAX(dve.device_exposure_end_date) IS NULL THEN "{placeholder_date}"
+        WHEN MAX(dve.device_exposure_end_date) IS NULL THEN "{{placeholder_date}}"
       ELSE
       MAX(dve.device_exposure_end_date)
     END
       ) AS max_end_date,
     vo.*
   FROM
-    `{project_id}.{dataset_id}.visit_occurrence` vo
+    `{{project_id}}.{{dataset_id}}.visit_occurrence` vo
   LEFT JOIN
-    `{project_id}.{dataset_id}.condition_occurrence` co
+    `{{project_id}}.{{dataset_id}}.condition_occurrence` co
   ON
     vo.visit_occurrence_id = co.visit_occurrence_id
   LEFT JOIN
-    `{project_id}.{dataset_id}.drug_exposure` dre
+    `{{project_id}}.{{dataset_id}}.drug_exposure` dre
   ON
     vo.visit_occurrence_id = dre.visit_occurrence_id
   LEFT JOIN
-    `{project_id}.{dataset_id}.device_exposure` dve
+    `{{project_id}}.{{dataset_id}}.device_exposure` dve
   ON
     vo.visit_occurrence_id = dve.visit_occurrence_id
   WHERE
@@ -151,7 +151,7 @@ UNION ALL
 SELECT
   *
 FROM
-  `{project_id}.{dataset_id}.visit_occurrence`
+  `{{project_id}}.{{dataset_id}}.visit_occurrence`
 WHERE
   visit_start_date <= visit_end_date
 """)
@@ -245,7 +245,7 @@ class TemporalConsistency(BaseCleaningRule):
         query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
         query[cdr_consts.DESTINATION_DATASET] = self.dataset_id
         queries.append(query)
-        return [sandbox_queries, queries]
+        return sandbox_queries + queries
 
     def setup_rule(self, client, *args, **keyword_args):
         pass
