@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 
 from cdr_cleaner.cleaning_rules import field_mapping
 import constants.bq_utils as bq_consts
@@ -27,11 +28,11 @@ WHERE {where_clause}
 '''
 
 WHERE_CLAUSE_REQUIRED_FIELD = (
-    '(EXTRACT(YEAR FROM {date_field_name}) > {year_threshold} AND CAST({date_field_name} AS DATE) <= DATE({cutoff_date}))'
+    '(EXTRACT(YEAR FROM {date_field_name}) > {year_threshold} AND CAST({date_field_name} AS DATE) <= DATE("{cutoff_date}"))'
 )
 
 NULLABLE_DATE_FIELD_EXPRESSION = (
-    'IF(EXTRACT(YEAR FROM {date_field_name}) <= {year_threshold} OR CAST({date_field_name} AS DATE) > DATE({cutoff_date}), NULL, {date_field_name}) AS {date_field_name}'
+    'IF(EXTRACT(YEAR FROM {date_field_name}) <= {year_threshold} OR CAST({date_field_name} AS DATE) > DATE("{cutoff_date}"), NULL, {date_field_name}) AS {date_field_name}'
 )
 
 AND = ' AND '
@@ -120,8 +121,8 @@ def parse_remove_records_with_wrong_date_query(project_id, dataset_id, table_id,
 def get_remove_records_with_wrong_date_queries(
     project_id,
     dataset_id,
-    cutoff_date,
-    sandbox_dataset_id=None,
+    sandbox_dataset_id,
+    cutoff_date=None,
     year_threshold=DEFAULT_YEAR_THRESHOLD,
     observation_year_threshold=OBSERVATION_DEFAULT_YEAR_THRESHOLD):
     """
@@ -135,7 +136,8 @@ def get_remove_records_with_wrong_date_queries(
     :param observation_year_threshold: the year threshold applied to observation
     :return: a list of query dicts for removing the records with wrong date in the corresponding destination table
     """
-
+    if not cutoff_date:
+        cutoff_date = str(datetime.now().date())
     queries = []
 
     query = dict()

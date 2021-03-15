@@ -135,7 +135,7 @@ class RemoveRecordsWithWrongDateTest(unittest.TestCase):
         mock_domain_tables.__iter__.return_value = [self.condition_occurrence]
 
         actual = remove_records_with_wrong_date.get_remove_records_with_wrong_date_queries(
-            self.project_id, self.dataset_id, self.cutoff_date, None,
+            self.project_id, self.dataset_id, None, self.cutoff_date,
             DEFAULT_YEAR_THRESHOLD, OBSERVATION_DEFAULT_YEAR_THRESHOLD)
 
         expected_queries = []
