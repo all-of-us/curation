@@ -18,6 +18,7 @@ ISSUE_NUMBERS = ['DC1369']
 OBSERVATION_SOURCE_CONCEPT_ID = 'observation_source_concept_id'
 VALUE_AS_STRING = 'value_as_string'
 PPI_ZIP_CODE_CONCEPT_ID = 1585250
+APPROXIMATE_DATE_OF_SYMPTOMS = 715711
 
 SUPPRESSION_EXCEPTION_SANDBOX_QUERY_TEMPLATE = JINJA_ENV.from_string("""
 -- Only sandboxing records that are not in sandbox_table --
@@ -174,6 +175,12 @@ class StringFieldsSuppression(BaseCleaningRule):
                 sandbox_table=self.sandbox_table_for(OBSERVATION),
                 field_name=OBSERVATION_SOURCE_CONCEPT_ID,
                 field_value=PPI_ZIP_CODE_CONCEPT_ID,
+                restore_fields=[VALUE_AS_STRING]),
+            SuppressionException(
+                domain_table=OBSERVATION,
+                sandbox_table=self.sandbox_table_for(OBSERVATION),
+                field_name=OBSERVATION_SOURCE_CONCEPT_ID,
+                field_value=APPROXIMATE_DATE_OF_SYMPTOMS,
                 restore_fields=[VALUE_AS_STRING])
         ]
 

@@ -95,11 +95,11 @@ class StringFieldsSuppressionTestBase(BaseTest.CleaningRulesTestBase):
         observation_data_template = self.jinja_env.from_string("""
             CREATE OR REPLACE TABLE `{{project_id}}.{{dataset_id}}.observation`
             (
-                observation_id int64, 
-                person_id int64, 
+                observation_id int64,
+                person_id int64,
                 observation_concept_id int64,
                 observation_source_concept_id int64,
-                value_as_string STRING, 
+                value_as_string STRING,
                 observation_source_value STRING,
                 unit_source_value STRING,
                 qualifier_source_value STRING,
@@ -123,7 +123,8 @@ class StringFieldsSuppressionTestBase(BaseTest.CleaningRulesTestBase):
                    (2, 1, 0, 0, 'value_as_string', 'observation_source_value', 'unit_source_value', 'qualifier_source_value', 'value_source_value'),
                    (3, 1, 0, 0, 'value_as_string', 'observation_source_value', 'unit_source_value', 'qualifier_source_value', 'value_source_value'),
                    (4, 1, 0, 0, 'value_as_string', 'observation_source_value', 'unit_source_value', 'qualifier_source_value', 'value_source_value'),
-                   (5, 1, 0, 0, 'value_as_string', 'observation_source_value', 'unit_source_value', 'qualifier_source_value', 'value_source_value')] col
+                   (5, 1, 0, 0, 'value_as_string', 'observation_source_value', 'unit_source_value', 'qualifier_source_value', 'value_source_value'),
+                   (6, 1, 0, 715711, 'foo_date', 'observation_source_value', 'unit_source_value', 'qualifier_source_value', 'value_source_value')] col
             )
             SELECT 
                 observation_id,
@@ -172,20 +173,22 @@ class StringFieldsSuppressionTestBase(BaseTest.CleaningRulesTestBase):
                 f'{self.project_id}.{self.dataset_id}.observation',
             'fq_sandbox_table_name':
                 self.fq_sandbox_table_names[0],
-            'loaded_ids': [1, 2, 3, 4, 5],
-            'sandboxed_ids': [1],
+            'loaded_ids': [1, 2, 3, 4, 5, 6],
+            'sandboxed_ids': [1, 6],
             'fields': [
                 'observation_id', 'person_id', 'observation_concept_id',
                 'observation_source_concept_id', 'value_as_string',
                 'observation_source_value', 'unit_source_value',
                 'qualifier_source_value', 'value_source_value'
             ],
-            'cleaned_values': [(1, 1, 0, 1585250, '111111', None, None,
-                                None, None),
-                               (2, 1, 0, 0, None, None, None, None, None),
-                               (3, 1, 0, 0, None, None, None, None, None),
-                               (4, 1, 0, 0, None, None, None, None, None),
-                               (5, 1, 0, 0, None, None, None, None, None)]
+            'cleaned_values': [
+                (1, 1, 0, 1585250, '111111', None, None, None, None),
+                (2, 1, 0, 0, None, None, None, None, None),
+                (3, 1, 0, 0, None, None, None, None, None),
+                (4, 1, 0, 0, None, None, None, None, None),
+                (5, 1, 0, 0, None, None, None, None, None),
+                (6, 1, 0, 715711, 'foo_date', None, None, None, None)
+            ]
         }]
 
         self.default_test(tables_and_counts)

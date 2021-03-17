@@ -92,6 +92,7 @@ from cdr_cleaner.cleaning_rules.identifying_field_suppression import IDFieldSupp
 from cdr_cleaner.cleaning_rules.aggregate_zip_codes import AggregateZipCodes
 from cdr_cleaner.cleaning_rules.remove_extra_tables import RemoveExtraTables
 from cdr_cleaner.manual_cleaning_rules.survey_version_info import COPESurveyVersionTask
+from cdr_cleaner.cleaning_rules.deid.string_fields_suppression import StringFieldsSuppression
 from constants.cdr_cleaner import clean_cdr_engine as ce_consts
 from constants.cdr_cleaner.clean_cdr import DataStage
 
@@ -234,6 +235,7 @@ CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     (ExplicitIdentifierSuppression,),
     (GeoLocationConceptSuppression,),
     (BirthInformationSuppression,),
+    (StringFieldsSuppression,),
     (IDFieldSuppression,),  # Should run after any data remapping
     (GenerateSiteMappingsAndExtTables,),
     (COPESurveyVersionTask,
