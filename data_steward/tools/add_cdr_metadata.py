@@ -207,7 +207,7 @@ def main(raw_args=None):
             args.rdr_source, args.rdr_export_date, args.cdr_generation_date,
             args.qa_handoff_date, args.vocabulary_version
         ]))
-    print(field_values_dict)
+
     if args.component == INSERT:
         add_metadata(args.target_dataset, args.project_id, fields,
                      field_values_dict)
