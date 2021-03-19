@@ -73,7 +73,7 @@ def copy_metadata_table(project_id, source_dataset_id, target_dataset_id,
     :return: None
     """
     create_metadata_table(target_dataset_id, table_fields)
-    query = COPY_QUERY.format(project=project_id,
+    query = COPY_QUERY.render(project=project_id,
                               dataset=source_dataset_id,
                               metadata_table=METADATA_TABLE)
     bq_utils.query(query,
@@ -122,7 +122,7 @@ def get_etl_version(dataset_id, project_id):
     :param project_id: Name of the project
     :return: etl version
     """
-    etl_version = bq.query(ETL_VERSION_CHECK.format(etl=ETL_VERSION,
+    etl_version = bq.query(ETL_VERSION_CHECK.render(etl=ETL_VERSION,
                                                     project=project_id,
                                                     dataset=dataset_id,
                                                     table=METADATA_TABLE),
