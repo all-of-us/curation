@@ -26,8 +26,8 @@ SCOPES = [
 ]
 
 ADD_ETL_METADATA_QUERY = JINJA_ENV.from_string("""
-INSERT INTO `{project_id}.{dataset_id}._cdr_metadata` (qa_handoff_date)
-VALUES ('{field_value}')
+INSERT INTO `{{project_id}}.{{dataset_id}}._cdr_metadata` (qa_handoff_date)
+VALUES ('{{field_value}}')
 """)
 
 
@@ -249,8 +249,8 @@ def create_tier(credentials_filepath, project_id, tier, input_dataset,
     if 'base' in deid_stage:
         add_etl_metadata_query = ADD_ETL_METADATA_QUERY.render(
             project_id=project_id,
-            dataset_id=final_dataset_name,
-            field_values=qa_handoff_date)
+            dataset_id=datasets[consts.STAGING],
+            field_value=qa_handoff_date)
         query_job = client.query(add_etl_metadata_query)
         query_job.result()
     else:
