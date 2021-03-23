@@ -201,14 +201,14 @@ def main(raw_args=None):
     if args.component == COPY:
         copy_metadata_table(args.project_id, args.source_dataset,
                             args.target_dataset, fields)
-    field_values_dict = dict(
-        zip([field[NAME] for field in fields], [
-            args.etl_version, args.ehr_source, args.ehr_cutoff_date,
-            args.rdr_source, args.rdr_export_date, args.cdr_generation_date,
-            args.qa_handoff_date, args.vocabulary_version
-        ]))
 
     if args.component == INSERT:
+        field_values_dict = dict(
+            zip([field[NAME] for field in fields], [
+                args.etl_version, args.ehr_source, args.ehr_cutoff_date,
+                args.rdr_source, args.rdr_export_date, args.cdr_generation_date,
+                args.qa_handoff_date, args.vocabulary_version
+            ]))
         add_metadata(args.target_dataset, args.project_id, fields,
                      field_values_dict)
 
