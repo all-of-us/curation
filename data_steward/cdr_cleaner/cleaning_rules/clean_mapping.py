@@ -19,12 +19,11 @@ from utils import bq
 
 LOGGER = logging.getLogger(__name__)
 
-SELECT_RECORDS_QUERY = """
-SELECT m.*
-FROM `{project}.{dataset}.{table}` m
-LEFT JOIN `{project}.{dataset}.{cdm_table}` c
-USING ({table_id})
-WHERE c.{table_id} IS {value}
+RECORDS_QUERY = """
+{query_stmt}
+FROM `{project}.{dataset}.{table}`
+WHERE {table_id} NOT IN 
+(SELECT {table_id} FROM `{project}.{dataset}.{cdm_table}`)
 """
 
 GET_TABLES_QUERY = """
@@ -41,10 +40,7 @@ MAPPING_PREFIX = '_{}_'.format(MAPPING)
 EXT = 'ext'
 EXT_SUFFIX = '_{}'.format(EXT)
 
-NULL = 'NULL'
-NOT_NULL = 'NOT NULL'
-
-ISSUE_NUMBER = 'DC-715'
+ISSUE_NUMBERS = ['DC-715', 'DC-1513']
 
 
 def get_mapping_tables():
@@ -83,7 +79,7 @@ class CleanMappingExtTables(BaseCleaningRule):
         desc = ('Sandboxes the mapping table records and rows dropped '
                 'when the record of the row reference has been dropped '
                 'by a cleaning rule')
-        super().__init__(issue_numbers=[ISSUE_NUMBER],
+        super().__init__(issue_numbers=ISSUE_NUMBERS,
                          description=desc,
                          affected_datasets=[
                              cdr_consts.RDR, cdr_consts.CONTROLLED_TIER_DEID,
@@ -172,13 +168,13 @@ class CleanMappingExtTables(BaseCleaningRule):
             table_id = cdm_table + '_id'
 
             sandbox_query = dict()
-            sandbox_query[cdr_consts.QUERY] = SELECT_RECORDS_QUERY.format(
+            sandbox_query[cdr_consts.QUERY] = RECORDS_QUERY.format(
+                query_stmt='SELECT *',
                 project=self.project_id,
                 dataset=self.dataset_id,
                 table=table,
                 cdm_table=cdm_table,
-                table_id=table_id,
-                value=NULL)
+                table_id=table_id)
             sandbox_query[
                 cdr_consts.DESTINATION_DATASET] = self.sandbox_dataset_id
             sandbox_query[cdr_consts.DESTINATION_TABLE] = table
@@ -186,16 +182,13 @@ class CleanMappingExtTables(BaseCleaningRule):
             queries.append(sandbox_query)
 
             query = dict()
-            query[cdr_consts.QUERY] = SELECT_RECORDS_QUERY.format(
+            query[cdr_consts.QUERY] = RECORDS_QUERY.format(
+                query_stmt='DELETE',
                 project=self.project_id,
                 dataset=self.dataset_id,
                 table=table,
                 cdm_table=cdm_table,
-                table_id=table_id,
-                value=NOT_NULL)
-            query[cdr_consts.DESTINATION_DATASET] = self.dataset_id
-            query[cdr_consts.DESTINATION_TABLE] = table
-            query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
+                table_id=table_id)
             queries.append(query)
         return queries
 
