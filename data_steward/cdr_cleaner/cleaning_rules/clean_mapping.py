@@ -20,11 +20,17 @@ from utils import bq
 LOGGER = logging.getLogger(__name__)
 
 SELECT_RECORDS_QUERY = """
-SELECT m.*
-FROM `{project}.{dataset}.{table}` m
-LEFT JOIN `{project}.{dataset}.{cdm_table}` c
-USING ({table_id})
-WHERE c.{table_id} IS {value}
+SELECT *
+FROM `{project}.{dataset}.{table}`
+WHERE {table_id} NOT IN 
+(SELECT {table_id} FROM `{project}.{dataset}.{cdm_table}`)
+"""
+
+DELETE_RECORDS_QUERY = """
+DELETE
+FROM `{project}.{dataset}.{table}`
+WHERE {table_id} NOT IN 
+(SELECT {table_id} FROM `{project}.{dataset}.{cdm_table}`)
 """
 
 GET_TABLES_QUERY = """
@@ -177,8 +183,7 @@ class CleanMappingExtTables(BaseCleaningRule):
                 dataset=self.dataset_id,
                 table=table,
                 cdm_table=cdm_table,
-                table_id=table_id,
-                value=NULL)
+                table_id=table_id)
             sandbox_query[
                 cdr_consts.DESTINATION_DATASET] = self.sandbox_dataset_id
             sandbox_query[cdr_consts.DESTINATION_TABLE] = table
@@ -186,16 +191,12 @@ class CleanMappingExtTables(BaseCleaningRule):
             queries.append(sandbox_query)
 
             query = dict()
-            query[cdr_consts.QUERY] = SELECT_RECORDS_QUERY.format(
+            query[cdr_consts.QUERY] = DELETE_RECORDS_QUERY.format(
                 project=self.project_id,
                 dataset=self.dataset_id,
                 table=table,
                 cdm_table=cdm_table,
-                table_id=table_id,
-                value=NOT_NULL)
-            query[cdr_consts.DESTINATION_DATASET] = self.dataset_id
-            query[cdr_consts.DESTINATION_TABLE] = table
-            query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
+                table_id=table_id)
             queries.append(query)
         return queries
 
