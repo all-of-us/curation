@@ -16,7 +16,7 @@ import os
 # Third party imports
 from dateutil import parser
 
-#Project imports
+# Project imports
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.aggregate_zip_codes import AggregateZipCodes
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
