@@ -90,7 +90,8 @@ class ValidDeathDatesTest(BaseTest.CleaningRulesTestBase):
         (104, DATE_ADD(CURRENT_DATE(), INTERVAL 5 DAY), 4), -- death_date will be five days in the future --
         -- records won't be dropped because death_date is between AoU program start date and current date --
         (105, DATE('2017-01-01'), 5),
-        (106, DATE('2020-01-01'), 6)""").render(fq_dataset_name=self.fq_dataset_name)
+        (106, DATE('2020-01-01'), 6)""").render(
+            fq_dataset_name=self.fq_dataset_name)
 
         self.load_test_data([death])
 
@@ -99,18 +100,11 @@ class ValidDeathDatesTest(BaseTest.CleaningRulesTestBase):
                 '.'.join([self.fq_dataset_name, DEATH]),
             'fq_sandbox_table_name':
                 self.fq_sandbox_table_names[0],
-            'loaded_ids': [
-                101, 102, 103, 104, 105, 106
-            ],
+            'loaded_ids': [101, 102, 103, 104, 105, 106],
             'sandboxed_ids': [101, 102, 103, 104],
-            'fields': [
-                'person_id', 'death_date', 'death_type_concept_id'
-            ],
+            'fields': ['person_id', 'death_date', 'death_type_concept_id'],
             'cleaned_values': [(105, parse('2017-01-01').date(), 5),
-                               (106, parse('2020-01-01').date(), 6)
-                               ]
+                               (106, parse('2020-01-01').date(), 6)]
         }]
 
         self.default_test(tables_and_counts)
-
-
