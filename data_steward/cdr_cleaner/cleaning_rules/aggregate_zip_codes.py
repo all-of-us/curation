@@ -5,7 +5,7 @@ those zip codes with low population density.
 It is expected that this lookup table will be static and will remain unchanged. 
 It is based on US population, and not on participant address metrics.
 
-Original Issues: DC-1379
+Original Issues: DC-1379, DC-1504
 """
 
 # Python imports
@@ -114,8 +114,7 @@ UNION ALL
 SELECT
     obs.* REPLACE (
         COALESCE(state_vocab.concept_id, obs.value_source_concept_id) AS value_source_concept_id,
-        COALESCE(state_vocab.concept_id, obs.value_as_concept_id) AS value_as_concept_id,
-        COALESCE(state_vocab.concept_code, obs.value_source_value) AS value_source_value
+        COALESCE(state_vocab.concept_id, obs.value_as_concept_id) AS value_as_concept_id
     )
 FROM `{{project_id}}.{{dataset_id}}.{{obs_table}}` obs
 JOIN unique_state_transforms mzc
@@ -124,57 +123,6 @@ JOIN unique_state_transforms mzc
 LEFT JOIN `{{project_id}}.{{pipeline_tables_dataset}}.{{pii_state_vocab}}` state_vocab
     ON state_vocab.postal_code = mzc.transformed_state
 """)
-
-# MODIFY_ZIP_CODES_QUERY = JINJA_ENV.from_string("""
-# WITH unique_zip_code_transforms AS (
-#     SELECT DISTINCT
-#         zip_code_obs.person_id, zip_code_obs.observation_id zip_code_observation_id,
-#         map.zip_code_3, map.transformed_zip_code_3
-#     FROM `{{project_id}}.{{dataset_id}}.{{obs_table}}` zip_code_obs
-#     JOIN `{{project_id}}.{{pipeline_tables_dataset}}.{{zip_code_aggregation_map}}` map
-#         ON map.zip_code_3 = zip_code_obs.value_as_string
-#     WHERE zip_code_obs.observation_source_concept_id = 1585250
-# )
-# SELECT
-#     obs.* REPLACE (
-#         COALESCE(mzc.transformed_zip_code_3, obs.value_as_string) AS value_as_string
-#     )
-# FROM `{{project_id}}.{{dataset_id}}.{{obs_table}}` obs
-# LEFT JOIN unique_zip_code_transforms mzc
-#     ON mzc.zip_code_observation_id = obs.observation_id
-#         AND mzc.person_id = obs.person_id
-# """)
-
-# MODIFY_STATES_QUERY = JINJA_ENV.from_string("""
-# WITH unique_state_transforms AS (
-#     SELECT DISTINCT
-#         zip_code_obs.person_id,
-#         state_obs.observation_id state_observation_id,
-#         map.state, map.transformed_state
-#     FROM `{{project_id}}.{{dataset_id}}.{{obs_table}}` zip_code_obs
-#     JOIN `{{project_id}}.{{pipeline_tables_dataset}}.{{zip_code_aggregation_map}}` map
-#         ON map.zip_code_3 = zip_code_obs.value_as_string
-#     JOIN `{{project_id}}.{{pipeline_tables_dataset}}.{{pii_state_vocab}}` state_vocab
-#         ON state_vocab.postal_code = map.state
-#     LEFT JOIN `{{project_id}}.{{dataset_id}}.{{obs_table}}` state_obs
-#         ON state_obs.person_id = zip_code_obs.person_id
-#             AND state_obs.observation_source_concept_id = 1585249
-#             AND state_vocab.concept_id = state_obs.value_source_concept_id
-#     WHERE zip_code_obs.observation_source_concept_id = 1585250
-# )
-# SELECT
-#     obs.* REPLACE (
-#         COALESCE(state_vocab.concept_id, obs.value_source_concept_id) AS value_source_concept_id,
-#         COALESCE(state_vocab.concept_id, obs.value_as_concept_id) AS value_as_concept_id,
-#         COALESCE(state_vocab.concept_code, obs.value_source_value) AS value_source_value
-#     )
-# FROM `{{project_id}}.{{dataset_id}}.{{obs_table}}` obs
-# LEFT JOIN unique_state_transforms mzc
-#     ON mzc.state_observation_id = obs.observation_id
-#         AND mzc.person_id = obs.person_id
-# LEFT JOIN `{{project_id}}.{{pipeline_tables_dataset}}.{{pii_state_vocab}}` state_vocab
-#     ON state_vocab.postal_code = mzc.transformed_state
-# """)
 
 
 class AggregateZipCodes(BaseCleaningRule):

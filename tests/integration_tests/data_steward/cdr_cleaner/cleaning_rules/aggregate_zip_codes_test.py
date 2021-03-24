@@ -7,7 +7,7 @@ It is expected that this lookup table will be static and will remain unchanged.
 It is based on US population, and not on participant address metrics.
 
 
-Original Issue: DC-1379
+Original Issue: DC-1379, DC-1504
 """
 
 # Python Imports
@@ -16,7 +16,7 @@ import os
 # Third party imports
 from dateutil import parser
 
-#Project imports
+# Project imports
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.aggregate_zip_codes import AggregateZipCodes
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
@@ -70,14 +70,13 @@ class AggregateZipCodesTest(BaseTest.CleaningRulesTestBase):
 
     def test_aggregate_zip_codes_cleaning(self):
         """
-        Tests that the sepcifications for queries perform as designed.
+        Tests that the specifications for queries perform as designed.
 
         Validates pre conditions, tests execution, and post conditions based on the load
         statements and the tables_and_counts variable.        
         """
-        queries = []
 
-        #Append some queries
+        # Append some queries
         observations_query_tmpl = self.jinja_env.from_string("""
             INSERT INTO `{{fq_dataset_name}}.observation`
                 (observation_id, person_id, observation_date,
@@ -101,8 +100,6 @@ class AggregateZipCodesTest(BaseTest.CleaningRulesTestBase):
 
         queries = [observations_query_tmpl]
         self.load_test_data(queries)
-
-        #Uncomment below and fill
 
         tables_and_counts = [{
             'fq_table_name':
@@ -130,7 +127,7 @@ class AggregateZipCodesTest(BaseTest.CleaningRulesTestBase):
                 (5, 5, self.date, "062**", 0, 1585250, 0, None,
                  "StreetAddress_PIIZIP", 0, 0),
                 (6, 1, self.date, "New York", 1585268, 1585249, 1585268,
-                 "PIIState_CT", "StreetAddress_PIIState", 0, 0),
+                 "PIIState_NY", "StreetAddress_PIIState", 0, 0),
                 (7, 1, self.date, "Connecticut", 1585268, 1585249, 1585268,
                  "PIIState_CT", "StreetAddress_PIIState", 0, 0),
                 (8, 2, self.date, "Minnesota", 1585288, 1585249, 1585288,
