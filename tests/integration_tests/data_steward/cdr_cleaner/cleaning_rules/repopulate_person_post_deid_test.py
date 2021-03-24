@@ -102,8 +102,6 @@ class RepopulatePersonPostDeidTest(BaseTest.CleaningRulesTestBase):
         statements and the tables_and_counts variable.        
         """
 
-        queries = []
-
         insert_concepts_query = self.jinja_env.from_string("""
             INSERT INTO `{{fq_dataset_name}}.concept` (concept_id, concept_name, domain_id, vocabulary_id, concept_class_id, concept_code, valid_start_date, valid_end_date)
             VALUES
