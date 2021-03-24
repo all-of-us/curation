@@ -1,3 +1,31 @@
+"""
+Integration test for repopulate_person_post_deid module
+
+The de-id scripts removes all fields in the person table except for the person_id and the birthdate_time field.
+Before CDR handoff to the Workbench team, we need to repopulate the following fields with demographic information
+from the observation table.
+
+These are the following fields in the person table will be repopulated:
+
+gender_concept_id
+year_of_birth
+month_of_birth
+day_of_birth
+race_concept_id
+ethnicity_concept_id
+gender_source_value
+gender_source_concept_id
+race_source_value
+race_source_concept_id
+ethnicity_source_value
+ethnicity_source_concept_id
+sex_at_birth_concept_id (extension)
+sex_at_birth_source_concept_id (extension)
+sex_at_birth_source_value (extension)
+
+Original Issue: DC-516
+"""
+
 # Python imports
 from datetime import date
 import os
