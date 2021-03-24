@@ -85,7 +85,7 @@ for file in $cdm_files; do
   table_name=${filename%.*}
   echo "Importing ${RDR_DATASET}.${table_name}..."
   CLUSTERING_ARGS=""
-  if grep -q person_id resource_files/fields/"${table_name}".json; then
+  if grep -q person_id resource_files/schemas/"${table_name}".json; then
     CLUSTERING_ARGS="--time_partitioning_type=DAY --clustering_fields person_id"
   fi
   JAGGED_ROWS=""
