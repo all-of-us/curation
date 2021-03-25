@@ -17,12 +17,10 @@ from common import JINJA_ENV, PERSON, DEID_MAP, PID_RID_MAPPING, PIPELINE_TABLES
 LOGGER = logging.getLogger(__name__)
 
 PID_RID_QUERY = """
-SELECT
-    t.* EXCEPT (person_id),
-    d.research_id as person_id
-FROM `{{input_table.project}}.{{input_table.dataset_id}}.{{input_table.table_id}}` t
-JOIN `{{deid_map.project}}.{{deid_map.dataset_id}}.{{deid_map.table_id}}` d
-ON t.person_id = d.person_id
+UPDATE `{{input_table.project}}.{{input_table.dataset_id}}.{{input_table.table_id}}` t
+SET person_id = d.research_id
+FROM `{{deid_map.project}}.{{deid_map.dataset_id}}.{{deid_map.table_id}}` d
+WHERE t.person_id = d.person_id
 """
 
 PID_RID_QUERY_TMPL = JINJA_ENV.from_string(PID_RID_QUERY)
@@ -84,13 +82,7 @@ class PIDtoRID(BaseCleaningRule):
             table_query = {
                 cdr_consts.QUERY:
                     PID_RID_QUERY_TMPL.render(input_table=table,
-                                              deid_map=self.deid_map),
-                cdr_consts.DESTINATION_TABLE:
-                    table.table_id,
-                cdr_consts.DESTINATION_DATASET:
-                    self.dataset_id,
-                cdr_consts.DISPOSITION:
-                    WRITE_TRUNCATE
+                                              deid_map=self.deid_map)
             }
             queries.append(table_query)
 
