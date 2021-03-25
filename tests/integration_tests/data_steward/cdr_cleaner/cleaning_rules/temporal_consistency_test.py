@@ -36,7 +36,7 @@ class TemporalConsistencyTest(BaseTest.CleaningRulesTestBase):
 
         cls.fq_dataset_id = f'{cls.project_id}.{cls.dataset_id}'
         cls.fq_sandbox_id = f'{cls.project_id}.{cls.sandbox_id}'
-        for table_name in table_dates.keys() + [common.VISIT_OCCURRENCE]:
+        for table_name in list(table_dates.keys()) + [common.VISIT_OCCURRENCE]:
             sandbox_table_name = cls.rule_instance.sandbox_table_for(table_name)
             cls.fq_sandbox_table_names.append(
                 f'{cls.project_id}.{cls.sandbox_id}.{sandbox_table_name}')
@@ -106,7 +106,7 @@ class TemporalConsistencyTest(BaseTest.CleaningRulesTestBase):
             (visit_occurrence_id, person_id, visit_concept_id, visit_start_date,
                 visit_start_datetime, visit_end_date, visit_end_datetime, visit_type_concept_id)
             VALUES
-            (101, 1, 10, date('2019-05-06'), timestamp('2019-05-06 00:00:00'),
+            (101, 1, 9201, date('2019-05-06'), timestamp('2019-05-06 00:00:00'),
                 date('2019-05-05'), timestamp('2019-05-05 00:00:00'), 7),
             (102, 2, 11, date('2021-10-12'), timestamp('2021-10-12 00:00:00'),
                 date('2021-10-18'), timestamp('2021-10-18 00:00:00'), 7)"""
@@ -121,7 +121,7 @@ class TemporalConsistencyTest(BaseTest.CleaningRulesTestBase):
             'fq_sandbox_table_name':
                 self.fq_sandbox_table_names[0],
             'loaded_ids': [100, 101, 102, 103, 104],
-            'sandboxed_ids': [101],
+            'sandboxed_ids': [101, 104],
             'fields': [
                 'condition_occurrence_id', 'person_id', 'condition_concept_id',
                 'condition_start_date', 'condition_start_datetime',
@@ -134,8 +134,8 @@ class TemporalConsistencyTest(BaseTest.CleaningRulesTestBase):
                  dt.fromisoformat('2019-05-19').date(),
                  dt.fromisoformat('2019-05-19 00:00:00+00:00'), 5, 101),
                 (101, 1, 11, dt.fromisoformat('2019-05-25').date(),
-                 dt.fromisoformat('2019-05-25 00:00:00+00:00'), None, None, 6,
-                 101),
+                 dt.fromisoformat('2019-05-25 00:00:00+00:00'), None,
+                 dt.fromisoformat('2019-05-07 00:00:00+00:00'), 6, 101),
                 (102, 1, 12, dt.fromisoformat('2019-05-06').date(),
                  dt.fromisoformat('2019-05-06 00:00:00+00:00'),
                  dt.fromisoformat('2019-05-28').date(),
@@ -144,10 +144,9 @@ class TemporalConsistencyTest(BaseTest.CleaningRulesTestBase):
                  dt.fromisoformat('2021-10-12 00:00:00+00:00'),
                  dt.fromisoformat('2021-10-12').date(),
                  dt.fromisoformat('2021-10-12 00:00:00+00:00'), 8, 102),
-                (104, 2, 14, dt.fromisoformat('2020-10-12').date(),
-                 dt.fromisoformat('2021-10-12 00:00:00+00:00'),
-                 dt.fromisoformat('2021-10-15').date(),
-                 dt.fromisoformat('2021-10-15 00:00:00+00:00'), 8, 102)
+                (104, 2, 14, dt.fromisoformat('2021-10-12').date(),
+                 dt.fromisoformat('2021-10-12 00:00:00+00:00'), None,
+                 dt.fromisoformat('2021-09-12 00:00:00+00:00'), 9, 102)
             ]
         }, {
             'fq_table_name':
@@ -164,15 +163,15 @@ class TemporalConsistencyTest(BaseTest.CleaningRulesTestBase):
             ],
             'cleaned_values': [
                 (101, 1, 10, dt.fromisoformat('2019-05-06').date(),
-                 dt.fromisoformat('2019-05-06 00:00:00+00:00'), None, None, 5,
-                 101),
+                 dt.fromisoformat('2019-05-06 00:00:00+00:00'), None,
+                 dt.fromisoformat('2019-05-01 00:00:00+00:00'), 5, 101),
                 (102, 1, 11, dt.fromisoformat('2019-05-16').date(),
                  dt.fromisoformat('2019-05-16 00:00:00+00:00'),
                  dt.fromisoformat('2019-05-19').date(),
                  dt.fromisoformat('2019-05-19 00:00:00+00:00'), 6, 101),
                 (103, 2, 12, dt.fromisoformat('2021-10-12').date(),
-                 dt.fromisoformat('2021-10-12 00:00:00+00:00'), None, None, 7,
-                 102),
+                 dt.fromisoformat('2021-10-12 00:00:00+00:00'), None,
+                 dt.fromisoformat('2021-10-10 00:00:00+00:00'), 7, 102),
                 (104, 2, 10, dt.fromisoformat('2021-10-12').date(),
                  dt.fromisoformat('2021-10-12 00:00:00+00:00'),
                  dt.fromisoformat('2021-10-15').date(),
@@ -205,14 +204,14 @@ class TemporalConsistencyTest(BaseTest.CleaningRulesTestBase):
                  dt.fromisoformat('2021-10-15').date(),
                  dt.fromisoformat('2021-10-15 00:00:00+00:00'), 4, 102),
                 (104, 2, 7, dt.fromisoformat('2021-10-15').date(),
-                 dt.fromisoformat('2021-10-15 00:00:00+00:00'), None, None, 4,
-                 102)
+                 dt.fromisoformat('2021-10-15 00:00:00+00:00'), None,
+                 dt.fromisoformat('2021-10-10 00:00:00+00:00'), 4, 102)
             ]
         }, {
             'fq_table_name':
                 self.fq_table_names[3],
             'fq_sandbox_table_name':
-                self.fq_table_sandbox_names[3],
+                self.fq_sandbox_table_names[3],
             'loaded_ids': [101, 102],
             'sandboxed_ids': [101],
             'fields': [
@@ -221,10 +220,10 @@ class TemporalConsistencyTest(BaseTest.CleaningRulesTestBase):
                 'visit_end_datetime', 'visit_type_concept_id'
             ],
             'cleaned_values': [
-                (101, 1, 10, dt.fromisoformat('2019-05-06').date(),
+                (101, 1, 9201, dt.fromisoformat('2019-05-06').date(),
                  dt.fromisoformat('2019-05-06 00:00:00+00:00'),
                  dt.fromisoformat('2019-05-28').date(),
-                 dt.fromisoformat('2019-05-28 00:00:00+00:00'), 7),
+                 dt.fromisoformat('2019-05-05 00:00:00+00:00'), 7),
                 (102, 2, 11, dt.fromisoformat('2021-10-12').date(),
                  dt.fromisoformat('2021-10-12 00:00:00+00:00'),
                  dt.fromisoformat('2021-10-18').date(),
