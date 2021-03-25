@@ -20,7 +20,6 @@ import unittest
 
 # Project imports
 import resources
-from constants.bq_utils import WRITE_TRUNCATE
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.temporal_consistency import TemporalConsistency, table_dates, visit_occurrence, \
     placeholder_date, NULL_BAD_END_DATES, POPULATE_VISIT_END_DATES, SANDBOX_BAD_END_DATES, visit_occurrence_dates
@@ -72,8 +71,8 @@ class TemporalConsistencyTest(unittest.TestCase):
                 intermediary_table=self.rule_instance.sandbox_table_for(table),
                 dataset_id=self.dataset_id,
                 table=table,
-                table_end_date=table_dates[table][0],
-                table_start_date=table_dates[table][1])
+                table_end_date=table_dates[table][1],
+                table_start_date=table_dates[table][0])
             expected_sandbox_query_list.append(sandbox_query)
 
             fields = resources.fields_for(table)
@@ -90,9 +89,6 @@ class TemporalConsistencyTest(unittest.TestCase):
                 table=table,
                 table_start_date=table_dates[table][0],
                 table_end_date=table_dates[table][1])
-            query[cdr_consts.DESTINATION_TABLE] = table
-            query[cdr_consts.DISPOSITION] = WRITE_TRUNCATE
-            query[cdr_consts.DESTINATION_DATASET] = self.dataset_id
             expected_query_list.append(query)
         sandbox_query = dict()
         sandbox_query[cdr_consts.QUERY] = SANDBOX_BAD_END_DATES.render(
@@ -102,19 +98,16 @@ class TemporalConsistencyTest(unittest.TestCase):
                 visit_occurrence),
             dataset_id=self.dataset_id,
             table=visit_occurrence,
-            table_end_date=visit_occurrence_dates[visit_occurrence][0],
-            table_start_date=visit_occurrence_dates[visit_occurrence][1])
+            table_end_date=visit_occurrence_dates[visit_occurrence][1],
+            table_start_date=visit_occurrence_dates[visit_occurrence][0])
         expected_sandbox_query_list.append(sandbox_query)
         query = dict()
         query[cdr_consts.QUERY] = POPULATE_VISIT_END_DATES.render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
             placeholder_date=placeholder_date)
-        query[cdr_consts.DESTINATION_TABLE] = visit_occurrence
-        query[cdr_consts.DISPOSITION] = WRITE_TRUNCATE
-        query[cdr_consts.DESTINATION_DATASET] = self.dataset_id
         expected_query_list.append(query)
 
-        expected_list = [expected_sandbox_query_list, expected_query_list]
+        expected_list = expected_sandbox_query_list + expected_query_list
 
         self.assertEqual(result_list, expected_list)
