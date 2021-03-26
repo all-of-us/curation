@@ -43,8 +43,10 @@ class DeduplicateIdColumnTest(unittest.TestCase):
     def tearDown(self):
         self.tables_to_map_patcher.stop()
 
-    def test_setup_rule(self):
+    @patch('cdr_cleaner.cleaning_rules.id_deduplicate.get_tables_in_dataset')
+    def test_setup_rule(self, mock_get_tables):
         # Test
+        mock_get_tables.return_value = self.domain_tables
         self.rule_instance.setup_rule(self.client)
 
     def test_get_sandbox_tablenames(self):
