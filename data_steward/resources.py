@@ -26,6 +26,10 @@ DEID_PATH = os.path.join(base_path, 'deid')
 resource_files_path = os.path.join(base_path, 'resource_files')
 config_path = os.path.join(base_path, 'config')
 fields_path = os.path.join(resource_files_path, 'schemas')
+cdm_fields_path = os.path.join(fields_path, 'cdm')
+internal_fields_path = os.path.join(fields_path, 'internal')
+extension_fields_path = os.path.join(fields_path, 'extension_tables')
+aou_files_path = os.path.join(resource_files_path, 'schemas')
 cdm_csv_path = os.path.join(resource_files_path, 'cdm.csv')
 hpo_site_mappings_path = os.path.join(config_path, 'hpo_site_mappings.csv')
 achilles_index_path = os.path.join(resource_files_path, 'curation_report')
@@ -254,7 +258,7 @@ def cdm_schemas(include_achilles=False, include_vocabulary=False):
     """
     result = dict()
     # TODO:  update this code as part of DC-1015 and remove this comment
-    for dir_path, _, files in os.walk(fields_path):
+    for dir_path, _, files in os.walk(cdm_fields_path):
         for f in files:
             file_path = os.path.join(dir_path, f)
             with open(file_path, 'r') as fp:
@@ -265,22 +269,6 @@ def cdm_schemas(include_achilles=False, include_vocabulary=False):
                 if table_name in VOCABULARY_TABLES and not include_vocabulary:
                     include_table = False
                 elif table_name in ACHILLES_TABLES + ACHILLES_HEEL_TABLES and not include_achilles:
-                    include_table = False
-                elif is_internal_table(table_name):
-                    include_table = False
-                elif is_pii_table(table_name):
-                    include_table = False
-                elif is_id_match(table_name):
-                    include_table = False
-                elif is_extension_table(table_name):
-                    include_table = False
-                elif is_additional_rdr_table(table_name):
-                    include_table = False
-                elif is_deid_table(table_name):
-                    include_table = False
-                elif is_wearables_table(table_name):
-                    include_table = False
-                elif table_name == 'post_deid_person':
                     include_table = False
                 if include_table:
                     result[table_name] = schema

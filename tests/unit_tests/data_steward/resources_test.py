@@ -80,7 +80,7 @@ class ResourcesTest(unittest.TestCase):
 
         # post conditions
         person_path = os.path.join(resources.base_path, 'resource_files',
-                                   'schemas', 'person.json')
+                                   'schemas', 'cdm', 'clinical', 'person.json')
         with open(person_path, 'r') as fp:
             expected_fields = json.load(fp)
 
