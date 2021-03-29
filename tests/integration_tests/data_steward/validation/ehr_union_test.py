@@ -231,13 +231,10 @@ class EhrUnionTest(unittest.TestCase):
             # actual_rows = bq_utils.response2rows(query_response)
 
             # output table has clustering on person_id where applicable
-            fields_file = os.path.join(resources.fields_path,
-                                       table_name + '.json')
-            with open(fields_file, 'r') as fp:
-                fields = json.load(fp)
-                field_names = [field['name'] for field in fields]
-                if 'person_id' in field_names:
-                    self._table_has_clustering(table_info)
+            fields = resources.fields_for(table_name)
+            field_names = [field['name'] for field in fields]
+            if 'person_id' in field_names:
+                self._table_has_clustering(table_info)
 
         actual_output = set(self._dataset_tables(self.output_dataset_id))
         self.assertSetEqual(expected_output, actual_output)

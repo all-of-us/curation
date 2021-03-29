@@ -157,14 +157,12 @@ class ValidationMainTest(unittest.TestCase):
 
         # check tables exist and are clustered as expected
         for table in resources.CDM_TABLES + common.PII_TABLES:
-            fields_file = os.path.join(resources.fields_path, table + '.json')
             table_id = bq_utils.get_table_id(test_util.FAKE_HPO_ID, table)
             table_info = bq_utils.get_table_info(table_id)
-            with open(fields_file, 'r') as fp:
-                fields = json.load(fp)
-                field_names = [field['name'] for field in fields]
-                if 'person_id' in field_names:
-                    self.table_has_clustering(table_info)
+            fields = resources.fields_for(table)
+            field_names = [field['name'] for field in fields]
+            if 'person_id' in field_names:
+                self.table_has_clustering(table_info)
 
     def test_check_processed(self):
         test_util.write_cloud_str(self.hpo_bucket,
