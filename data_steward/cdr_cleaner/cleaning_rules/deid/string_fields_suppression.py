@@ -9,7 +9,7 @@ from common import CDM_TABLES, OBSERVATION, JINJA_ENV
 from constants import bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
-from cdr_cleaner.cleaning_rules.deid.concept_suppression import get_tables_in_dataset
+from cdr_cleaner.clean_cdr_utils import get_tables_in_dataset
 
 LOGGER = logging.getLogger(__name__)
 
