@@ -128,7 +128,7 @@ class DeduplicateIdColumnTestBase(BaseTest.CleaningRulesTestBase):
                 {insert_observation_query};'''
         ])
 
-    def test_motor_vehicle_accident(self):
+    def test_id_deduplicate(self):
 
         # Expected results list
         tables_and_counts = [{
