@@ -18,7 +18,7 @@ LOGGER = logging.getLogger(__name__)
 
 PID_RID_QUERY = """
 UPDATE `{{input_table.project}}.{{input_table.dataset_id}}.{{input_table.table_id}}` t
-SET person_id = d.research_id
+SET t.person_id = d.research_id
 FROM `{{deid_map.project}}.{{deid_map.dataset_id}}.{{deid_map.table_id}}` d
 WHERE t.person_id = d.person_id
 """
