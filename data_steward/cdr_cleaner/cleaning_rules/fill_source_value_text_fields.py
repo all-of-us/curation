@@ -146,7 +146,7 @@ def get_fields_dict(table_name, fields):
     return fields_to_replace
 
 
-def get_modified_columns(fields, fields_to_replace, table=''):
+def get_modified_columns(fields, fields_to_replace, table=None):
     """
 
     This method updates the columns by adding prefix to each column if the column is being replaced and
