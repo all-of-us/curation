@@ -18,7 +18,7 @@ from dateutil import parser
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.fill_source_value_text_fields import FillSourceValueTextFields
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
-from common import OBSERVATION, CONCEPT
+from common import OBSERVATION, CONCEPT, CDM_TABLES, VOCABULARY_TABLES
 
 
 class FillSourceValueTextFieldsTest(BaseTest.CleaningRulesTestBase):
@@ -44,7 +44,7 @@ class FillSourceValueTextFieldsTest(BaseTest.CleaningRulesTestBase):
         cls.rule_instance = FillSourceValueTextFields(project_id, dataset_id,
                                                       sandbox_id)
 
-        table_names = [OBSERVATION, CONCEPT]
+        table_names = CDM_TABLES + VOCABULARY_TABLES
 
         cls.fq_table_names = [
             f'{project_id}.{dataset_id}.{table}' for table in table_names
