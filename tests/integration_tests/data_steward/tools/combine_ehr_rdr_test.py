@@ -64,7 +64,6 @@ class CombineEhrRdrTest(unittest.TestCase):
     def _upload_file_to_bucket(bucket, dataset_id, path, table):
         app_id = bq_utils.app_identity.get_application_id()
         filename = table + '.csv'
-        schema = os.path.join(resources.fields_path, table + '.json')
 
         file_path = os.path.join(path, filename)
         try:
@@ -75,7 +74,7 @@ class CombineEhrRdrTest(unittest.TestCase):
 
         gcs_path = 'gs://{bucket}/{filename}'.format(bucket=bucket,
                                                      filename=filename)
-        load_results = bq_utils.load_csv(schema,
+        load_results = bq_utils.load_csv(table,
                                          gcs_path,
                                          app_id,
                                          dataset_id,

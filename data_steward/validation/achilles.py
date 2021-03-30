@@ -37,9 +37,7 @@ def load_analyses(hpo_id):
     table_name = table_prefix + ACHILLES_ANALYSIS
     csv_path = os.path.join(resources.resource_files_path,
                             ACHILLES_ANALYSIS + '.csv')
-    json_path = os.path.join(resources.fields_path, ACHILLES_ANALYSIS + '.json')
-    with open(json_path, 'r') as f:
-        schema = json.load(f)
+    schema = resources.fields_for(ACHILLES_ANALYSIS)
     bq_utils.load_table_from_csv(project_id, dataset_id, table_name, csv_path,
                                  schema)
 
