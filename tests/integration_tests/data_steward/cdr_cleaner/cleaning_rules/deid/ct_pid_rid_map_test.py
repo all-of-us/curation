@@ -130,7 +130,7 @@ class CtPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
                 'condition_start_date', 'condition_start_datetime',
                 'condition_type_concept_id'
             ],
-            'loaded_ids': [234, 678, 345, 789, 456],
+            'loaded_ids': [234, 678, 345, 789, 3456],
             'cleaned_values': [
                 (50001, 234, 100, datetime.fromisoformat('2020-08-17').date(),
                  datetime.fromisoformat('2020-08-17 15:00:00+00:00'), 10),
@@ -139,7 +139,9 @@ class CtPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
                 (50003, 345, 500, datetime.fromisoformat('2020-08-17').date(),
                  datetime.fromisoformat('2020-08-17 13:00:00+00:00'), 12),
                 (50004, 789, 800, datetime.fromisoformat('2020-08-17').date(),
-                 datetime.fromisoformat('2020-08-17 12:00:00+00:00'), 13)
+                 datetime.fromisoformat('2020-08-17 12:00:00+00:00'), 13),
+                (50005, 3456, 1000, datetime.fromisoformat('2020-08-17').date(),
+                 datetime.fromisoformat('2020-08-17 11:00:00+00:00'), 14)
             ]
         }]
 
