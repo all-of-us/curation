@@ -94,6 +94,10 @@ def store_to_primary_mapping_table(fq_rdr_mapping_table,
     dataset_ref = bigquery.DatasetReference(project, dataset)
     rdr_table = bigquery.TableReference(dataset_ref, table)
 
+    # primary table ref
+    dataset_ref = bigquery.DatasetReference(project, MAPPING_DATASET)
+    primary_mapping_table = bigquery.TableReference(dataset_ref, MAPPING_TABLE)
+
     # Query job config
     labels = {
         'fq_rdr_mapping_table': fq_rdr_mapping_table,
@@ -107,10 +111,9 @@ def store_to_primary_mapping_table(fq_rdr_mapping_table,
 
     LOGGER.info(f'Preparing to run query:\n{query}')
 
-    config = bigquery.job.QueryJobConfig(
-        destination=f'{project}.{MAPPING_DATASET}.{MAPPING_TABLE}',
-        labels=labels,
-        write_disposition='WRITE_APPEND')
+    config = bigquery.job.QueryJobConfig(destination=primary_mapping_table,
+                                         labels=labels,
+                                         write_disposition='WRITE_APPEND')
 
     new_mappings_job = client.query(query,
                                     job_config=config,
