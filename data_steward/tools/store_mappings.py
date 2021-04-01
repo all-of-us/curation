@@ -18,7 +18,8 @@ import time
 from google.cloud import bigquery
 
 # Project imports
-from common import JINJA_ENV
+from common import (JINJA_ENV, MAX_DEID_DATE_SHIFT, PID_RID_MAPPING,
+                    PIPELINE_TABLES)
 from utils import auth, bq
 
 LOGGER = logging.getLogger(__name__)
@@ -45,10 +46,6 @@ AND research_id not in (
   SELECT research_id
   FROM `{{primary.project}}.{{primary.dataset_id}}.{{primary.table_id}}`)
 """)
-
-MAX_SHIFT = 365
-MAPPING_DATASET = 'pipeline_tables'
-MAPPING_TABLE = 'pid_rid_mapping'
 
 
 def store_to_primary_mapping_table(fq_rdr_mapping_table,
@@ -85,7 +82,7 @@ def store_to_primary_mapping_table(fq_rdr_mapping_table,
         f'RDR mapping info: project -> {project}\tdataset -> {dataset}\ttable -> {table}'
     )
     LOGGER.info(f'Primary mapping info: project -> {project}\t'
-                f'dataset -> {MAPPING_DATASET}\ttable -> {MAPPING_TABLE}')
+                f'dataset -> {PIPELINE_TABLES}\ttable -> {PID_RID_MAPPING}')
 
     if not client and not run_as:
         LOGGER.error('Run cannot proceed without proper credentials')
@@ -108,8 +105,9 @@ def store_to_primary_mapping_table(fq_rdr_mapping_table,
     rdr_table = bigquery.TableReference(dataset_ref, table)
 
     # primary table ref
-    dataset_ref = bigquery.DatasetReference(project, MAPPING_DATASET)
-    primary_mapping_table = bigquery.TableReference(dataset_ref, MAPPING_TABLE)
+    dataset_ref = bigquery.DatasetReference(project, PIPELINE_TABLES)
+    primary_mapping_table = bigquery.TableReference(dataset_ref,
+                                                    PID_RID_MAPPING)
 
     # Query job config
     labels = {
@@ -122,7 +120,7 @@ def store_to_primary_mapping_table(fq_rdr_mapping_table,
     job_prefix = inspect.currentframe().f_code.co_name
     query = GET_NEW_MAPPINGS.render(rdr_table=rdr_table,
                                     primary=primary_mapping_table,
-                                    max_shift=MAX_SHIFT)
+                                    max_shift=MAX_DEID_DATE_SHIFT)
 
     LOGGER.info(f'Preparing to run query:\n{query}')
 
