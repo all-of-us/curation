@@ -28,7 +28,7 @@ current_date = 'CURRENT_DATE()'
 KEEP_VALID_DEATH_DATE_ROWS = common.JINJA_ENV.from_string("""
 SELECT * FROM `{{project_id}}.{{dataset_id}}.{{table}}` 
 WHERE person_id NOT IN (
-SELECT person_id FROM `{{project_id}}.{{sandbox_id}}.{{sandbox_table}}`
+SELECT person_id FROM `{{project_id}}.{{sandbox_id}}.{{sandbox_table}}`)
 """)
 
 # Selects all the invalid rows. Invalid means the death_date occurs before the AoU program start
@@ -101,7 +101,7 @@ class ValidDeathDates(BaseCleaningRule):
                     current_date=current_date)
         }
 
-        return [keep_valid_death_dates, sandbox_invalid_death_dates]
+        return [sandbox_invalid_death_dates, keep_valid_death_dates]
 
     def setup_rule(self, client, *args, **keyword_args):
         """

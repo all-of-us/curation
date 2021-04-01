@@ -59,6 +59,17 @@ class ValidDeathDatesTest(unittest.TestCase):
         # Post conditions
         expected_list = [{
             cdr_consts.QUERY:
+                SANDBOX_INVALID_DEATH_DATE_ROWS.render(
+                    project_id=self.project_id,
+                    sandbox_id=self.sandbox_dataset_id,
+                    sandbox_table=self.rule_instance.sandbox_table_for(
+                        common.DEATH),
+                    dataset_id=self.dataset_id,
+                    table=common.DEATH,
+                    program_start_date=program_start_date,
+                    current_date=current_date)
+        }, {
+            cdr_consts.QUERY:
                 KEEP_VALID_DEATH_DATE_ROWS.render(
                     project_id=self.project_id,
                     dataset_id=self.dataset_id,
@@ -72,17 +83,6 @@ class ValidDeathDatesTest(unittest.TestCase):
                 self.dataset_id,
             cdr_consts.DISPOSITION:
                 WRITE_TRUNCATE
-        }, {
-            cdr_consts.QUERY:
-                SANDBOX_INVALID_DEATH_DATE_ROWS.render(
-                    project_id=self.project_id,
-                    sandbox_id=self.sandbox_dataset_id,
-                    sandbox_table=self.rule_instance.sandbox_table_for(
-                        common.DEATH),
-                    dataset_id=self.dataset_id,
-                    table=common.DEATH,
-                    program_start_date=program_start_date,
-                    current_date=current_date)
         }]
 
         self.assertEqual(result_list, expected_list)
