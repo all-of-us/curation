@@ -4,7 +4,6 @@ COMBINED_SNAPSHOT should be set to create a new snapshot dataset while running t
 import logging
 
 import bq_utils
-from common import JINJA_ENV
 import constants.bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules import domain_mapping, field_mapping
@@ -123,22 +122,26 @@ REROUTE_DOMAIN_MAPPING_RECORD_QUERY = JINJA_ENV.from_string("""
 -- if src_table is the same as dest_table, we want to keep all the records --
 {% if src_table == dest_table %}
 SELECT
-    src.*
+    src.src_{{src_table}}_id,
+    src.{{src_table}}_id,
+    src.src_dataset_id,
+    src.src_hpo_id,
+    src.src_table_id
 FROM `{{project_id}}.{{dataset_id}}._mapping_{{src_table}}` AS src
 {% else %}
 -- if src_table and dest_table are not the same -- 
 -- we want to reroute the mapping records from _mapping_src_table to the _mapping_dest_table --
 SELECT
     src.src_{{src_table}}_id AS src_{{dest_table}}_id,
-    dest.{{dest_table}}_id,
+    m.dest_id AS {{dest_table}}_id,
     src.src_dataset_id,
     src.src_hpo_id,
     src.src_table_id
 FROM `{{project_id}}.{{dataset_id}}._logging_domain_alignment` AS m
 JOIN `{{project_id}}.{{dataset_id}}._mapping_{{src_table}}` AS src
-    ON m.src_id = src.{{src_table}}_id AND m.src_table = '{{src_table}}'
-JOIN `{{project_id}}.{{dataset_id}}._mapping_{{dest_table}}` AS dest
-    ON m.dest_id = dest.{{dest_table}}_id AND m.dest_table = '{{dest_table}}'
+    ON m.src_id = src.{{src_table}}_id 
+        AND m.src_table = '{{src_table}}'
+        AND m.dest_table = '{{dest_table}}'
 WHERE m.is_rerouted = True
 {% endif %}
 {% endfor %}
