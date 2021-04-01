@@ -54,7 +54,8 @@ fi
 ROOT_DIR=$(git rev-parse --show-toplevel)
 DATA_STEWARD_DIR="${ROOT_DIR}/data_steward"
 TOOLS_DIR="${DATA_STEWARD_DIR}/tools"
-FIELDS_DIR="${DATA_STEWARD_DIR}/resource_files/fields"
+FIELDS_DIR="${DATA_STEWARD_DIR}/resource_files/schemas"
+RDR_FIELDS_DIR="${FIELDS_DIR}/rdr/"
 CLEANER_DIR="${DATA_STEWARD_DIR}/cdr_cleaner"
 
 app_id=$(python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);' < "${KEY_FILE}")
@@ -72,8 +73,8 @@ bq mk -f --description "RDR DUMP loaded from ${RDR_DIRECTORY} dated ${RDR_UPLOAD
 
 python "${DATA_STEWARD_DIR}/cdm.py" "${RDR_DATASET}"
 # accommodate new file "pid_rid_mapping" by RDR
-bq mk --table "${GOOGLE_CLOUD_PROJECT}:${RDR_DATASET}.pid_rid_mapping" "${FIELDS_DIR}/additional_rdr_tables/pid_rid_mapping.json"
-bq mk --table "${GOOGLE_CLOUD_PROJECT}:${RDR_DATASET}.cope_survey_semantic_version_map" "${FIELDS_DIR}/additional_rdr_tables/cope_survey_semantic_version_map.json"
+bq mk --table "${GOOGLE_CLOUD_PROJECT}:${RDR_DATASET}.pid_rid_mapping" "${FIELDS_DIR}/pid_rid_mapping.json"
+bq mk --table "${GOOGLE_CLOUD_PROJECT}:${RDR_DATASET}.cope_survey_semantic_version_map" "${RDR_FIELDS_DIR}/cope_survey_semantic_version_map.json"
 
 cdm_files=$(gsutil ls gs://${RDR_PROJECT}-cdm/${RDR_DIRECTORY})
 if [[ $? -ne 0 ]]; then
@@ -83,18 +84,15 @@ fi
 for file in $cdm_files; do
   filename=$(basename ${file})
   table_name=${filename%.*}
+  schema_file="$(find "${FIELDS_DIR}" -type f -iname "${table_name}".json)"
   echo "Importing ${RDR_DATASET}.${table_name}..."
   CLUSTERING_ARGS=""
-  if grep -q person_id resource_files/schemas/"${table_name}".json; then
+  if grep -q person_id "${schema_file}"; then
     CLUSTERING_ARGS="--time_partitioning_type=DAY --clustering_fields person_id"
   fi
   JAGGED_ROWS=""
   if [[ "${filename}" == "observation_period.csv" ]]; then
     JAGGED_ROWS="--allow_jagged_rows"
-  fi
-  schema_file="${FIELDS_DIR}/${table_name}.json"
-  if [[ "${filename}" == "pid_rid_mapping.csv" || "${filename}" == "cope_survey_semantic_version_map.csv" ]]; then
-    schema_file="${FIELDS_DIR}/additional_rdr_tables/${table_name}.json"
   fi
   bq load --project_id ${GOOGLE_CLOUD_PROJECT} --replace --allow_quoted_newlines ${JAGGED_ROWS} ${CLUSTERING_ARGS} --skip_leading_rows=1 ${GOOGLE_CLOUD_PROJECT}:${RDR_DATASET}.${table_name} $file $schema_file
 done
