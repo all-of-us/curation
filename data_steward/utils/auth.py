@@ -132,7 +132,8 @@ def get_impersonation_credentials(target_principal,
         try:
             if creds.client_secret:
                 LOGGER.info(
-                    "Using end user account to impersonate: {target_principal}")
+                    f"Using end user account to impersonate: {target_principal}"
+                )
 
             target_credentials = impersonated_credentials.Credentials(
                 source_credentials=creds,
@@ -146,7 +147,7 @@ def get_impersonation_credentials(target_principal,
         except AttributeError:
             if creds.service_account_email:
                 LOGGER.info(
-                    "Using service account to impersonate: {target_principal}")
+                    f"Using service account to impersonate: {target_principal}")
 
             return impersonated_credentials.Credentials(
                 source_credentials=creds,

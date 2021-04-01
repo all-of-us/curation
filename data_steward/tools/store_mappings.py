@@ -2,15 +2,11 @@
 Background
 
 The Genomics program requires stable research IDs (RIDs). This is a script that will
-add only pid/rid mappings for participants that don't currently exist in the 
-priamry pid_rid_mapping table. 
-
-The regisered tier deid module contained the logic to generate a _deid_map table
-containing person_id, research_id, and date_shift.  The date shift can be created
-here as it was created there.
+add only pid/rid mappings for participants that don't currently exist in the
+priamry pid_rid_mapping table.
 
 These records will be appended to the pipeline_tables.pid_rid_mapping table in BigQuery.
-There cannot be duplicate mappings.
+Duplicate mappings are not allowed.
 """
 # Python imports
 import argparse
@@ -23,7 +19,7 @@ from google.cloud import bigquery
 
 # Project imports
 from common import JINJA_ENV
-from utils import auth, bq, pipeline_logging
+from utils import auth, bq
 
 LOGGER = logging.getLogger(__name__)
 
@@ -33,7 +29,9 @@ SCOPES = [
 ]
 
 GET_NEW_MAPPINGS = JINJA_ENV.from_string("""
-SELECT 
+INSERT INTO  `{{primary.project}}.{{primary.dataset_id}}.{{primary.table_id}}`
+(person_id, research_id, shift)
+SELECT
   person_id
   , research_id
 -- generates random shifts between 1 and max_shift inclusive --
@@ -57,14 +55,29 @@ def store_to_primary_mapping_table(fq_rdr_mapping_table,
                                    client=None,
                                    run_as=None):
     """
-    Method to generate mapping table rows to append to existing mapping table: pipeline_tables._deid_map table
-    Retrieves participants from the participant summary API based on specific parameters. Only retrieving participants
-    who were submitted during the cutoff date range with no age limit and also retrieving participants outside of the
-    cutoff date range above the max age.
+    Store the provided mappings and create required date shifts.
 
-    Creates the research_ids and date shift based on previous logic used in DEID. Queries the current
-    pipeline_tables._deid_map table to retrieve current research_ids to ensure all research_ids are unique.
+    Curation must maintain a stable pid/rid mapping for participants, as well
+    as a date shift integer.  Curation gets the pid/rid mapping table from the
+    RDR team as part of their ETL process.  Curation must identify new pid/rid
+    mapping pairs, create random date shifts for each pair, and store the three
+    tuple to the pipeline_tables.pid_rid_mapping table.
 
+    This script requires either a client object be passed as a parameter or an
+    email address to impersonate be provided.  If both are missing, the script
+    will not execute!
+
+    The script assumes the newly provided mapping table exists in the same
+    project as the primary mapping table.
+
+    :param fq_rdr_mapping_table: a dot separated fully qualified name of the
+        recently imported pid_rid_mapping table.
+    :param client: a client object to use for querying both tables
+    :param run_as: the email address of the service account to run as.  if
+        impersonation is already set up, pass the existing client object instead.
+
+    :return: None
+    :raises: RuntimeError if client and run_as are both None.  BigQuery errors.
     """
     project, dataset, table = fq_rdr_mapping_table.split('.')
 
@@ -100,8 +113,10 @@ def store_to_primary_mapping_table(fq_rdr_mapping_table,
 
     # Query job config
     labels = {
-        'fq_rdr_mapping_table': fq_rdr_mapping_table,
-        'module_name': __file__
+        'rdr_mapping_table':
+            '-'.join(fq_rdr_mapping_table.lower().split('.')[1:])[-63:],
+        'module_name':
+            __file__.lower().replace('/', '-').replace('.', '-')[-63:]
     }
 
     job_prefix = inspect.currentframe().f_code.co_name
@@ -111,9 +126,7 @@ def store_to_primary_mapping_table(fq_rdr_mapping_table,
 
     LOGGER.info(f'Preparing to run query:\n{query}')
 
-    config = bigquery.job.QueryJobConfig(destination=primary_mapping_table,
-                                         labels=labels,
-                                         write_disposition='WRITE_APPEND')
+    config = bigquery.job.QueryJobConfig(labels=labels)
 
     new_mappings_job = client.query(query,
                                     job_config=config,
@@ -124,6 +137,9 @@ def store_to_primary_mapping_table(fq_rdr_mapping_table,
     new_mappings_job.result()
     LOGGER.info('Query has finished.')
 
+    LOGGER.info(f'{new_mappings_job.num_dml_affected_rows} mapping records '
+                f'added to {primary_mapping_table}')
+
     # check if errors were encountered and report any
     if new_mappings_job.errors:
         LOGGER.error(f'Query job finished with errors.  See details of job '
@@ -133,6 +149,17 @@ def store_to_primary_mapping_table(fq_rdr_mapping_table,
 
 
 def check_table_name(name_str):
+    """
+    Make sure the tablename provided follows the fully qualified format.
+
+    If the table name cannot be split into three sections by splitting on a
+    dot, '.', then reject the provided name as incomplete.
+
+    :param name_str: The name of the table as provided by the end user.
+
+    :return: a fully qualified table name string.
+    :raises: ValueError if the name cannot be split.
+    """
     name_parts = name_str.split('.')
     if len(name_parts) != 3:
         raise ValueError(f'A fully qualified table name must be of the form '
@@ -143,6 +170,16 @@ def check_table_name(name_str):
 
 
 def check_email_address(address_str):
+    """
+    Make sure the string provided looks like an email address.
+
+    If the string does not contain `@`, then reject the provided string.
+
+    :param address_str: The email address as provided by the end user.
+
+    :return: a validated email address.
+    :raises: ValueError if the address does not contain `@`.
+    """
     if '@' not in address_str:
         raise ValueError(f'An email address must be specified.  '
                          f'You supplied {address_str}')
@@ -150,7 +187,19 @@ def check_email_address(address_str):
     return address_str
 
 
-if __name__ == '__main__':
+def process_mappings(raw_args=None):
+    """
+    Allow mapping arguments to be validated from other python modules.
+
+    Use parser to validate arguments and then run mapping storage.  This
+    is not strictly required, but will help ensure the
+    `store_to_primary_mapping_table` function works as designed.
+
+    :params raw_args: If provided, a list of arguments and values.
+        If not provided, defaults to command line values.
+    """
+    LOGGER.info("Beginning pid/rid/shift storage process.")
+
     parser = argparse.ArgumentParser(
         description='Add new mappings to our primary pid/rid mapping table.',
         formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -172,5 +221,13 @@ if __name__ == '__main__':
         type=check_email_address)
     args = parser.parse_args()
 
-    pipeline_logging.configure()
     store_to_primary_mapping_table(args.rdr_mapping, run_as=args.run_as)
+
+    LOGGER.info("Finished pid/rid/shift storage process.")
+
+
+if __name__ == '__main__':
+    from utils import pipeline_logging
+
+    pipeline_logging.configure()
+    process_mappings()
