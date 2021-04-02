@@ -6,11 +6,13 @@ Unit Test for create tier module
 import unittest
 import argparse
 import mock
+from datetime import datetime
 
 # Third party imports
 
 # Project imports
 from constants.cdr_cleaner import clean_cdr as consts
+from tools.add_cdr_metadata import INSERT
 from tools.create_tier import parse_deid_args, validate_deid_stage_param, validate_tier_param, \
     validate_release_tag_param, create_datasets, get_dataset_name, create_tier, SCOPES, add_kwargs_to_args
 
@@ -402,3 +404,54 @@ class CreateTierTest(unittest.TestCase):
         mock_create_schemaed_snapshot.assert_called_with(
             self.project_id, datasets[consts.STAGING], final_dataset_name,
             False)
+
+    @mock.patch('tools.create_tier.create_schemaed_snapshot_dataset')
+    @mock.patch('tools.create_tier.clean_cdr.main')
+    @mock.patch('tools.create_tier.add_kwargs_to_args')
+    @mock.patch('tools.create_tier.auth.get_impersonation_credentials')
+    @mock.patch('tools.create_tier.bq.get_client')
+    @mock.patch('tools.add_cdr_metadata.main')
+    @mock.patch('tools.create_tier.create_datasets')
+    @mock.patch('tools.create_tier.get_dataset_name')
+    def test_qa_handoff_date_update(self, mock_dataset_name,
+                                    mock_create_datasets,
+                                    mock_add_cdr_metadata_main, mock_get_client,
+                                    mock_impersonate_credentials,
+                                    mock_add_kwargs, mock_cdr_main, mock_create_schemaed_snapshot):
+        final_dataset_name = f"{self.tier[0].upper()}{self.release_tag}_deid_base"
+        datasets = {
+            consts.CLEAN: final_dataset_name,
+            consts.STAGING: f'{final_dataset_name}_staging',
+            consts.SANDBOX: f'{final_dataset_name}_sandbox'
+        }
+
+        mock_dataset_name.return_value = final_dataset_name
+        mock_create_datasets.return_value = datasets
+
+        controlled_tier_cleaning_args = [
+            '-p', self.project_id, '-d', datasets[consts.STAGING], '-b',
+            datasets[consts.SANDBOX], '--data_stage',
+            f'{self.tier}_tier_deid_base'
+        ]
+
+        mock_get_client.return_value = self.mock_bq_client
+        mock_add_kwargs.return_value = controlled_tier_cleaning_args
+        mock_get_client.return_value = self.mock_bq_client
+        cleaning_args = mock_add_kwargs.return_value = controlled_tier_cleaning_args
+
+        kwargs = {}
+
+        create_tier(self.credentials_filepath, self.project_id, self.tier,
+                    self.input_dataset, self.release_tag, 'deid_base',
+                    self.run_as, **kwargs)
+
+        mock_cdr_main.assert_called_with(args=cleaning_args)
+
+        updated_qa_handoff_date_args = [
+            '--component', INSERT, '--project_id', self.project_id,
+            '--target_dataset', datasets[consts.STAGING], '--qa_handoff_date',
+            datetime.strftime(datetime.now(), '%Y-%m-%d')
+        ]
+
+        mock_add_cdr_metadata_main.assert_called_with(
+            updated_qa_handoff_date_args)
