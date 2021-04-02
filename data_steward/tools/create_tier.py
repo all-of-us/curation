@@ -12,6 +12,7 @@ from utils import bq
 from common import JINJA_ENV
 from utils import pipeline_logging
 from cdr_cleaner import clean_cdr
+from tools import add_cdr_metadata
 from tools.snapshot_by_query import create_schemaed_snapshot_dataset
 from constants.cdr_cleaner import clean_cdr as consts
 
@@ -246,13 +247,13 @@ def create_tier(credentials_filepath, project_id, tier, input_dataset,
         datasets[consts.SANDBOX], '--data_stage', f'{tier}_tier_{deid_stage}'
     ]
 
+    # Will update the qa_handoff_date to current date
     if 'base' in deid_stage:
-        add_etl_metadata_query = ADD_ETL_METADATA_QUERY.render(
-            project_id=project_id,
-            dataset_id=datasets[consts.STAGING],
-            field_value=qa_handoff_date)
-        query_job = client.query(add_etl_metadata_query)
-        query_job.result()
+        add_cdr_metadata.main([
+            '--component', add_cdr_metadata.INSERT, '--project_id', project_id,
+            '--target_dataset', datasets[consts.STAGING], '--qa_handoff_date',
+            qa_handoff_date
+        ])
     else:
         LOGGER.info(
             f'deid_stage was not base, no data inserted into _cdr_metadata table'
