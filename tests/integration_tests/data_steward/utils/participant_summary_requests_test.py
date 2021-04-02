@@ -120,16 +120,6 @@ class ParticipantSummaryRequests(BaseTest.BigQueryTestBase):
         # post conditions
         self.assertEqual(expected_response, self.participant_data)
 
-    def test_get_deactivated_participants_parameters(self):
-        """
-        Ensures error checking is working.
-        """
-        # Parameter check tests
-        self.assertRaises(RuntimeError, psr.get_deactivated_participants, None,
-                          self.columns)
-        self.assertRaises(RuntimeError, psr.get_deactivated_participants,
-                          self.project_id, None)
-
     @mock.patch('utils.participant_summary_requests.requests.get')
     def test_get_deactivated_participants(self, mock_get):
         # Pre conditions
