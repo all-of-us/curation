@@ -55,7 +55,7 @@ ROOT_DIR=$(git rev-parse --show-toplevel)
 DATA_STEWARD_DIR="${ROOT_DIR}/data_steward"
 TOOLS_DIR="${DATA_STEWARD_DIR}/tools"
 FIELDS_DIR="${DATA_STEWARD_DIR}/resource_files/schemas"
-RDR_FIELDS_DIR="${FIELDS_DIR}/rdr/"
+RDR_FIELDS_DIR="${FIELDS_DIR}/rdr"
 CLEANER_DIR="${DATA_STEWARD_DIR}/cdr_cleaner"
 
 app_id=$(python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);' < "${KEY_FILE}")
@@ -73,7 +73,7 @@ bq mk -f --description "RDR DUMP loaded from ${RDR_DIRECTORY} dated ${RDR_UPLOAD
 
 python "${DATA_STEWARD_DIR}/cdm.py" "${RDR_DATASET}"
 # accommodate new file "pid_rid_mapping" by RDR
-bq mk --table "${GOOGLE_CLOUD_PROJECT}:${RDR_DATASET}.pid_rid_mapping" "${FIELDS_DIR}/pid_rid_mapping.json"
+bq mk --table "${GOOGLE_CLOUD_PROJECT}:${RDR_DATASET}.pid_rid_mapping" "${RDR_FIELDS_DIR}/pid_rid_mapping.json"
 bq mk --table "${GOOGLE_CLOUD_PROJECT}:${RDR_DATASET}.cope_survey_semantic_version_map" "${RDR_FIELDS_DIR}/cope_survey_semantic_version_map.json"
 
 cdm_files=$(gsutil ls gs://${RDR_PROJECT}-cdm/${RDR_DIRECTORY})
@@ -84,7 +84,13 @@ fi
 for file in $cdm_files; do
   filename=$(basename ${file})
   table_name=${filename%.*}
-  schema_file="$(find "${FIELDS_DIR}" -type f -iname "${table_name}".json)"
+  # Locate the schema file (ensuring one and only one is found)
+  schema_file=$(find "${FIELDS_DIR}" -type f -iname "${table_name}.json")
+  schema_count=$(echo "$schema_file" | wc -l);
+  if [[ 1 -ne schema_count ]]; then
+    echo "Import failed: ${schema_count} schemas were found for table ${table_name}."
+    exit 1
+  fi
   echo "Importing ${RDR_DATASET}.${table_name}..."
   CLUSTERING_ARGS=""
   if grep -q person_id "${schema_file}"; then
