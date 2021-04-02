@@ -417,7 +417,8 @@ class CreateTierTest(unittest.TestCase):
                                     mock_create_datasets,
                                     mock_add_cdr_metadata_main, mock_get_client,
                                     mock_impersonate_credentials,
-                                    mock_add_kwargs, mock_cdr_main, mock_create_schemaed_snapshot):
+                                    mock_add_kwargs, mock_cdr_main,
+                                    mock_create_schemaed_snapshot):
         final_dataset_name = f"{self.tier[0].upper()}{self.release_tag}_deid_base"
         datasets = {
             consts.CLEAN: final_dataset_name,

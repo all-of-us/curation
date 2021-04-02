@@ -9,7 +9,6 @@ from datetime import datetime
 # Project imports
 from utils import auth
 from utils import bq
-from common import JINJA_ENV
 from utils import pipeline_logging
 from cdr_cleaner import clean_cdr
 from tools import add_cdr_metadata
@@ -25,11 +24,6 @@ SCOPES = [
     'https://www.googleapis.com/auth/bigquery',
     'https://www.googleapis.com/auth/devstorage.read_write',
 ]
-
-ADD_ETL_METADATA_QUERY = JINJA_ENV.from_string("""
-INSERT INTO `{{project_id}}.{{dataset_id}}._cdr_metadata` (qa_handoff_date)
-VALUES ('{{field_value}}')
-""")
 
 
 def add_kwargs_to_args(args_list, kwargs):
