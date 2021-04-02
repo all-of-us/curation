@@ -9,8 +9,9 @@ from typing import List
 
 import cachetools
 
-from common import ACHILLES_TABLES, ACHILLES_HEEL_TABLES, VOCABULARY_TABLES, PROCESSED_TXT, \
-    RESULTS_HTML, FITBIT_TABLES
+from common import (ACHILLES_TABLES, ACHILLES_HEEL_TABLES, VOCABULARY_TABLES,
+                    PROCESSED_TXT, RESULTS_HTML, FITBIT_TABLES, PID_RID_MAPPING,
+                    COPE_SURVEY_MAP)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -210,7 +211,7 @@ def is_additional_rdr_table(table_id):
         :param table_id: identifies the table
         :return: True if specified table is an additional table submitted by RDR
         """
-    return table_id == 'pid_rid_mapping'
+    return table_id in [PID_RID_MAPPING, COPE_SURVEY_MAP]
 
 
 def is_mapping_table(table_id):
@@ -231,16 +232,6 @@ def is_pii_table(table_id):
     :return: True if specified table is a pii table, False otherwise
     """
     return table_id.startswith('pii') or table_id.startswith('participant')
-
-
-def is_cope_survey_table(table_id):
-    """
-    Return True if specified table is the cope survey table
-
-    :param table_id: table to check
-    :return: Boolean indicating whether the table is the cope survey table
-    """
-    return table_id == 'cope_survey_semantic_version_map'
 
 
 def is_id_match(table_id):
@@ -288,8 +279,6 @@ def cdm_schemas(include_achilles=False, include_vocabulary=False):
                 elif is_deid_table(table_name):
                     include_table = False
                 elif is_wearables_table(table_name):
-                    include_table = False
-                elif is_cope_survey_table(table_name):
                     include_table = False
                 elif table_name == 'post_deid_person':
                     include_table = False
