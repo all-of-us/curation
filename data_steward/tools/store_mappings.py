@@ -3,7 +3,7 @@ Background
 
 The Genomics program requires stable research IDs (RIDs). This is a script that will
 add only pid/rid mappings for participants that don't currently exist in the
-priamry pid_rid_mapping table.
+primary pid_rid_mapping table.
 
 These records will be appended to the pipeline_tables.pid_rid_mapping table in BigQuery.
 Duplicate mappings are not allowed.
