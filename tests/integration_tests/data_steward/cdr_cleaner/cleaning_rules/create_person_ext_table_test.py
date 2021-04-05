@@ -137,7 +137,7 @@ class CreatePersonExtTableTest(BaseTest.CleaningRulesTestBase):
                 concept_code,
                 concept_name)
             VALUES
-              (1585264, '', 'PII State: CA'),
+              (1585266, '', 'PII State: CA'),
               (1585847, 'SexAtBirth_Female', '')
             """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
