@@ -61,7 +61,7 @@ class CreatePersonExtTable(BaseCleaningRule):
     state_of_residence_concept_id, state_of_residence_source_value
     """
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id):
+    def __init__(self, project_id, dataset_id, sandbox_dataset_id, table_namer):
         """
         Initialize the class with proper information.
 
@@ -79,7 +79,8 @@ class CreatePersonExtTable(BaseCleaningRule):
                          affected_tables=tables,
                          project_id=project_id,
                          dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id)
+                         sandbox_dataset_id=sandbox_dataset_id,
+                         table_namer=table_namer)
 
     def get_query_specs(self):
         """
