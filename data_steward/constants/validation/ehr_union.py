@@ -5,7 +5,8 @@ CARE_SITE_ID = 'care_site_id'
 PERSON_ID = 'person_id'
 LOCATION_ID = 'location_id'
 
-CONCEPT_CONSTANT_FACTOR = 1000000000000
+CONCEPT_CONSTANT_FACTOR = int(1e14)
+HPO_CONSTANT_FACTOR = int(1e11)
 
 # Starting factor to create ID space for person to observation mapped record
 EHR_PERSON_TO_OBS_CONSTANT = 2 * common.ID_CONSTANT_FACTOR

@@ -616,12 +616,12 @@ def move_ehr_person_to_observation(output_dataset_id):
     q = '''
         SELECT
             CASE observation_concept_id
-                WHEN {gender_concept_id} THEN pto.person_id + {pto_offset} + {gender_offset}
-                WHEN {race_concept_id} THEN pto.person_id + {pto_offset} + {race_offset}
-                WHEN {dob_concept_id} THEN pto.person_id + {pto_offset} + {dob_offset}
-                WHEN {ethnicity_concept_id} THEN pto.person_id + {pto_offset} + {ethnicity_offset}
+                WHEN {gender_concept_id} THEN pto.person_id + {pto_offset} + {gender_offset} + {hpo_offset} * hpo.Display_Order
+                WHEN {race_concept_id} THEN pto.person_id + {pto_offset} + {race_offset} + {hpo_offset} * hpo.Display_Order
+                WHEN {dob_concept_id} THEN pto.person_id + {pto_offset} + {dob_offset} + {hpo_offset} * hpo.Display_Order 
+                WHEN {ethnicity_concept_id} THEN pto.person_id + {pto_offset} + {ethnicity_offset} + {hpo_offset} * hpo.Display_Order
             END AS observation_id,
-            person_id,
+            pto.person_id,
             observation_concept_id,
             EXTRACT(DATE FROM observation_datetime) as observation_date,
             observation_type_concept_id,
@@ -643,6 +643,12 @@ def move_ehr_person_to_observation(output_dataset_id):
         FROM
             ({person_to_obs_query}
             ORDER BY person_id) AS pto
+            JOIN
+            `{output_dataset_id}._mapping_person` AS mp
+            ON pto.person_id = mp.src_person_id
+            JOIN
+            `lookup_tables.hpo_site_id_mappings` AS hpo
+            ON LOWER(hpo.HPO_ID) = mp.src_hpo_id
         '''.format(
         output_dataset_id=output_dataset_id,
         pto_offset=eu_constants.EHR_PERSON_TO_OBS_CONSTANT,
@@ -654,6 +660,7 @@ def move_ehr_person_to_observation(output_dataset_id):
         dob_offset=eu_constants.DOB_CONSTANT_FACTOR,
         ethnicity_concept_id=eu_constants.ETHNICITY_CONCEPT_ID,
         ethnicity_offset=eu_constants.ETHNICITY_CONSTANT_FACTOR,
+        hpo_offset=eu_constants.HPO_CONSTANT_FACTOR,
         person_to_obs_query=get_person_to_observation_query(output_dataset_id))
     logging.info(
         f'Copying EHR person table from {bq_utils.get_dataset_id()} to unioned dataset. Query is `{q}`'
@@ -676,10 +683,10 @@ def map_ehr_person_to_observation(output_dataset_id):
         SELECT
             mp.src_table_id AS src_table_id,
             CASE observation_concept_id
-                WHEN {gender_concept_id} THEN pto.person_id + {pto_offset} + {gender_offset}
-                WHEN {race_concept_id} THEN pto.person_id + {pto_offset} + {race_offset}
-                WHEN {dob_concept_id} THEN pto.person_id + {pto_offset} + {dob_offset}
-                WHEN {ethnicity_concept_id} THEN pto.person_id + {pto_offset} + {ethnicity_offset}
+                WHEN {gender_concept_id} THEN pto.person_id + {pto_offset} + {gender_offset} + {hpo_offset} * hpo.Display_Order
+                WHEN {race_concept_id} THEN pto.person_id + {pto_offset} + {race_offset} + {hpo_offset} * hpo.Display_Order
+                WHEN {dob_concept_id} THEN pto.person_id + {pto_offset} + {dob_offset} + {hpo_offset} * hpo.Display_Order 
+                WHEN {ethnicity_concept_id} THEN pto.person_id + {pto_offset} + {ethnicity_offset} + {hpo_offset} * hpo.Display_Order
             END AS observation_id,
             pto.person_id AS src_observation_id,
             mp.src_hpo_id AS src_hpo_id
@@ -688,6 +695,9 @@ def map_ehr_person_to_observation(output_dataset_id):
             JOIN
             `{output_dataset_id}._mapping_person` AS mp
             ON pto.person_id = mp.src_person_id
+            JOIN
+            `lookup_tables.hpo_site_id_mappings` AS hpo
+            ON LOWER(hpo.HPO_ID) = mp.src_hpo_id            
         '''.format(
         output_dataset_id=output_dataset_id,
         pto_offset=eu_constants.EHR_PERSON_TO_OBS_CONSTANT,
@@ -699,6 +709,7 @@ def map_ehr_person_to_observation(output_dataset_id):
         dob_offset=eu_constants.DOB_CONSTANT_FACTOR,
         ethnicity_concept_id=eu_constants.ETHNICITY_CONCEPT_ID,
         ethnicity_offset=eu_constants.ETHNICITY_CONSTANT_FACTOR,
+        hpo_offset=eu_constants.HPO_CONSTANT_FACTOR,
         person_to_obs_query=get_person_to_observation_query(output_dataset_id))
     dst_dataset_id = output_dataset_id
     dst_table_id = mapping_table_for(table_name)
