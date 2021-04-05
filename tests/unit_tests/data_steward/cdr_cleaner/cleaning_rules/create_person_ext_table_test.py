@@ -39,11 +39,13 @@ class CreatePersonExtTableTest(unittest.TestCase):
         self.project_id = 'test_project'
         self.dataset_id = 'test_dataset'
         self.sandbox_id = 'test_sandbox'
+        self.table_namer = 'test_tablenamer'
         self.client = None
 
         self.rule_instance = CreatePersonExtTable(self.project_id,
                                                   self.dataset_id,
-                                                  self.sandbox_id)
+                                                  self.sandbox_id,
+                                                  self.table_namer)
 
         self.assertEqual(self.rule_instance.project_id, self.project_id)
         self.assertEqual(self.rule_instance.dataset_id, self.dataset_id)

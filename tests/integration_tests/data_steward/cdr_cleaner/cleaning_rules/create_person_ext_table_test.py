@@ -48,9 +48,11 @@ class CreatePersonExtTableTest(BaseTest.CleaningRulesTestBase):
         cls.dataset_id = dataset_id
         sandbox_id = dataset_id + '_sandbox'
         cls.sandbox_id = sandbox_id
+        table_namer = 'test_tablenamer'
+        cls.table_namer = table_namer
 
         cls.rule_instance = CreatePersonExtTable(project_id, dataset_id,
-                                                 sandbox_id)
+                                                 sandbox_id, table_namer)
 
         # Generates list of fully qualified table names and their corresponding sandbox table names
         for table_name in cls.rule_instance.affected_tables:
@@ -137,7 +139,7 @@ class CreatePersonExtTableTest(BaseTest.CleaningRulesTestBase):
                 concept_code,
                 concept_name)
             VALUES
-              (1585266, '', 'PII State: CA'),
+              (1585266, 'PIIState_CA', 'PII State: CA'),
               (1585847, 'SexAtBirth_Female', '')
             """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
@@ -162,13 +164,9 @@ class CreatePersonExtTableTest(BaseTest.CleaningRulesTestBase):
                     """).render(project_id=self.project_id,
                                 dataset_id=self.dataset_id)
 
-        # run query to create person_ext
-        person_ext_query = PERSON_EXT_TABLE_QUERY.render(
-            project=self.project_id, dataset=self.dataset_id)
-
         self.load_test_data([
             person_data_query, observation_data_query, concept_data_query,
-            observation_ext_data_query, person_ext_query
+            observation_ext_data_query
         ])
 
     def test_identifying_field_suppression(self):
@@ -187,7 +185,7 @@ class CreatePersonExtTableTest(BaseTest.CleaningRulesTestBase):
                 'state_of_residence_source_value', 'sex_at_birth_concept_id',
                 'sex_at_birth_source_concept_id', 'sex_at_birth_source_value'
             ],
-            'loaded_ids': [123, 345, 678, 910],
+            'loaded_ids': [],
             'cleaned_values': [(123, 'PPI/PM', 1585266, 'PII State: CA',
                                 45878463, 1585847, 'SexAtBirth_Female'),
                                (345, 'PPI/PM', 1585266, 'PII State: CA',
