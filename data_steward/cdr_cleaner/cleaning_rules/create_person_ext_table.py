@@ -31,6 +31,7 @@ LOGGER = logging.getLogger(__name__)
 
 # Query to create person_ext table
 PERSON_EXT_TABLE_QUERY = JINJA_ENV.from_string("""
+CREATE OR REPLACE TABLE `{{project}}.{{dataset}}.person_ext` AS (
 SELECT p.person_id, 
 e.src_id,
 o.value_source_concept_id AS state_of_residence_concept_id,
@@ -48,7 +49,7 @@ ON o.observation_id = e.observation_id AND o.observation_source_concept_id = 158
 LEFT JOIN `{{project}}.{{dataset}}.observation` os
 ON p.person_id = os.person_id AND os.observation_source_concept_id = 1585845
 LEFT JOIN `{{project}}.{{dataset}}.concept` sc
-ON os.value_source_concept_id = sc.concept_id AND os.observation_source_concept_id = 1585845
+ON os.value_source_concept_id = sc.concept_id AND os.observation_source_concept_id = 1585845)
 """)
 
 tables = ['person_ext']
@@ -89,21 +90,12 @@ class CreatePersonExtTable(BaseCleaningRule):
             are optional but the query is required.
         """
 
-        query_list = []
-        for table in tables:
-            query_list.append({
-                cdr_consts.QUERY:
-                    PERSON_EXT_TABLE_QUERY.render(project=self.project_id,
-                                                  dataset=self.dataset_id),
-                cdr_consts.DESTINATION_TABLE:
-                    table,
-                cdr_consts.DESTINATION_DATASET:
-                    self.dataset_id,
-                cdr_consts.DISPOSITION:
-                    WRITE_TRUNCATE
-            })
-
-        return query_list
+        person_ext_table_query = {
+            cdr_consts.QUERY:
+                PERSON_EXT_TABLE_QUERY.render(project=self.project_id,
+                                              dataset=self.dataset_id)
+        }
+        return [person_ext_table_query]
 
     def setup_rule(self, client):
         """
