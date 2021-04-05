@@ -78,6 +78,7 @@ celerybeat-schedule
 
 # dotenv
 .env
+.envrc
 
 # virtualenv
 .venv/
@@ -94,6 +95,7 @@ curation_venv/
 settings.py
 *.db
 .idea/
+.run/
 
 *.gem
 *.swp
