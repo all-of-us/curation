@@ -1,11 +1,12 @@
 """
-Original Issues: DC-1012
+Original Issues: DC-1012, DC-1514
 
 Background
-In order to avoid further changes to the standard OMOP person table, two non-standard fields will be housed in a
+In order to avoid further changes to the standard OMOP person table, five non-standard fields will be housed in a
 person_ext table.
 
-Cleaning rule script to run AFTER deid.
+Cleaning rule script to run AFTER deid. This needs to happen in deid_base. It depends on the cleaning rules applied in 
+deid to be correctly de-identified.
 This cleaning rule will populate the person_ext table
 The following fields will need to be copied from the observation table:
 src_id (from observation_ext, should all be “PPI/PM”)
@@ -13,6 +14,10 @@ state_of_residence_concept_id: the value_source_concept_id field in the OBSERVAT
 observation_source_concept_id  = 1585249 (StreetAddress_PIIState)
 state_of_residence_source_value: the concept_name from the concept table for the state_of_residence_concept_id
 person_id (as research_id) can be pulled from the person table
+sex_at_birth_concept_id: value_as_concept_id in observation where observation_source_concept_id = 1585845
+sex_at_birth_source_concept_id: value_source_concept_id in observation where observation_source_concept_id = 1585845
+sex_at_birth_source_value: concept_code in the concept table where joining from observation where 
+observation_source_concept_id = 1585845
 """
 import logging
 
@@ -26,9 +31,13 @@ LOGGER = logging.getLogger(__name__)
 
 # Query to create person_ext table
 PERSON_EXT_TABLE_QUERY = JINJA_ENV.from_string("""
-SELECT p.person_id, e.src_id,
+SELECT p.person_id, 
+e.src_id,
 o.value_source_concept_id AS state_of_residence_concept_id,
-c.concept_name AS state_of_residence_source_value
+c.concept_name AS state_of_residence_source_value, 
+os.value_as_concept_id AS sex_at_birth_concept_id,
+os.value_source_concept_id AS sex_at_birth_source_concept_id,
+sc.concept_code AS sex_at_birth_source_value 
 FROM `{{project}}.{{dataset}}.person` p
 LEFT JOIN `{{project}}.{{dataset}}.observation` o
 ON p.person_id = o.person_id AND o.observation_source_concept_id = 1585249
@@ -36,6 +45,10 @@ LEFT JOIN `{{project}}.{{dataset}}.concept` c
 ON o.value_source_concept_id = c.concept_id AND o.observation_source_concept_id = 1585249
 LEFT JOIN  `{{project}}.{{dataset}}.observation_ext` e
 ON o.observation_id = e.observation_id AND o.observation_source_concept_id = 1585249
+LEFT JOIN `{{project}}.{{dataset}}.observation` os
+ON p.person_id = os.person_id AND os.observation_source_concept_id = 1585845
+LEFT JOIN `{{project}}.{{dataset}}.concept` sc
+ON os.value_source_concept_id = sc.concept_id AND os.observation_source_concept_id = 1585845
 """)
 
 tables = ['person_ext']
@@ -56,7 +69,7 @@ class CreatePersonExtTable(BaseCleaningRule):
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
         desc = ('Create person_ext table')
-        super().__init__(issue_numbers=['DC1012'],
+        super().__init__(issue_numbers=['DC1012', 'DC1514'],
                          description=desc,
                          affected_datasets=[
                              cdr_consts.DEID_BASE,
