@@ -243,10 +243,16 @@ def create_tier(credentials_filepath, project_id, tier, input_dataset,
 
     # Will update the qa_handoff_date to current date
     if 'base' in deid_stage:
+        versions = add_cdr_metadata.get_etl_version(datasets[consts.STAGING],
+                                                    project_id)
+        if not versions:
+            raise RuntimeError(
+                'etl version does not exist, make sure _cdr_metadata table was created in combined step'
+            )
         add_cdr_metadata.main([
             '--component', add_cdr_metadata.INSERT, '--project_id', project_id,
             '--target_dataset', datasets[consts.STAGING], '--qa_handoff_date',
-            qa_handoff_date
+            qa_handoff_date, '--etl_version', versions[0]
         ])
     else:
         LOGGER.info(
