@@ -1,8 +1,12 @@
+import logging
+
 from utils.bq import list_datasets, create_dataset
 from common import JINJA_ENV
 from collections import OrderedDict
 
 SANDBOX_SUFFIX = 'sandbox'
+
+LOGGER = logging.getLogger(__name__)
 
 TABLE_LABELS_STRING = JINJA_ENV.from_string("""
     {%- if labels %}
