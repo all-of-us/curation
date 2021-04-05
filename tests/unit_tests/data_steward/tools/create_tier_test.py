@@ -414,12 +414,11 @@ class CreateTierTest(unittest.TestCase):
     @mock.patch('tools.add_cdr_metadata.main')
     @mock.patch('tools.create_tier.create_datasets')
     @mock.patch('tools.create_tier.get_dataset_name')
-    def test_qa_handoff_date_update(self, mock_dataset_name,
-                                    mock_create_datasets,
-                                    mock_add_cdr_metadata_main, mock_get_client,
-                                    mock_impersonate_credentials,
-                                    mock_add_kwargs, mock_cdr_main,
-                                    mock_create_schemaed_snapshot, mock_etl_version):
+    def test_qa_handoff_date_update(
+        self, mock_dataset_name, mock_create_datasets,
+        mock_add_cdr_metadata_main, mock_get_client,
+        mock_impersonate_credentials, mock_add_kwargs, mock_cdr_main,
+        mock_create_schemaed_snapshot, mock_etl_version):
         final_dataset_name = f"{self.tier[0].upper()}{self.release_tag}_deid_base"
         datasets = {
             consts.CLEAN: final_dataset_name,
@@ -453,7 +452,8 @@ class CreateTierTest(unittest.TestCase):
         updated_qa_handoff_date_args = [
             '--component', INSERT, '--project_id', self.project_id,
             '--target_dataset', datasets[consts.STAGING], '--qa_handoff_date',
-            datetime.strftime(datetime.now(), '%Y-%m-%d'), '--etl_version', versions[0]
+            datetime.strftime(datetime.now(),
+                              '%Y-%m-%d'), '--etl_version', versions[0]
         ]
 
         mock_add_cdr_metadata_main.assert_called_with(
