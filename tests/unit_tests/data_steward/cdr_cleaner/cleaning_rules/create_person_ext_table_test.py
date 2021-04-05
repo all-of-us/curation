@@ -65,19 +65,12 @@ class CreatePersonExtTableTest(unittest.TestCase):
         # Post conditions
         expected_query_list = []
 
-        for table in tables:
-            expected_query_list.append({
-                clean_consts.QUERY:
-                    PERSON_EXT_TABLE_QUERY.render(
-                        project=self.project_id,
-                        dataset=self.dataset_id,
-                    ),
-                cdr_consts.DESTINATION_TABLE:
-                    table,
-                cdr_consts.DESTINATION_DATASET:
-                    self.dataset_id,
-                cdr_consts.DISPOSITION:
-                    WRITE_TRUNCATE
-            })
+        expected_query_list.append({
+            clean_consts.QUERY:
+                PERSON_EXT_TABLE_QUERY.render(
+                    project=self.project_id,
+                    dataset=self.dataset_id,
+                )
+        })
 
         self.assertEqual(results_list, expected_query_list)
