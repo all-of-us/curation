@@ -7,7 +7,7 @@ As part of the controlled tier, some table data will be entirely suppressed.  Wh
 needs to maintain it’s expected schema, but drop all of its data.
 
 Apply table suppression to note, location, provider, and care_site tables.
-table schemas should remain intact and match their data_steward/resource_files/fields/<table>.json schema definition.
+table schemas should remain intact and match their data_steward/resource_files/schemas/<table>.json schema definition.
 
 Should be added to list of CONTROLLED_TIER_DEID_CLEANING_CLASSES in data_steward/cdr_cleaner/clean_cdr.py
 all data should be dropped from the tables
