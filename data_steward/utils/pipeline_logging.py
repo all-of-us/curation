@@ -23,12 +23,96 @@ DEFAULT_LOG_LEVEL = logging.INFO
 
 LOG_FORMAT = '%(asctime)s - %(levelname)s - %(name)s - %(message)s'
 LOG_DATEFMT = '%Y-%m-%d %H:%M:%S'
-FILENAME_FMT = '%Y%m%d'
+FILENAME_LOGGERNAME_SLUG = '{loggername}'
+FILENAME_FMT = '%Y%m%d-' + FILENAME_LOGGERNAME_SLUG
 
 _FILE_HANDLER = 'curation_file_handler'
 """Identifies the file log handler"""
 _CONSOLE_HANDLER = 'curation_console_handler'
 """Identifies the console handler"""
+
+
+class PipelineLoggingFileHandler(logging.FileHandler):
+    """
+    PipelineLoggingFileHandler is a simple overload of the upstream logging.FileHandler class that allows for Logger
+    name-specific filename formatting when used in conjunction with our PipelineLogger class
+
+    TODO:
+    """
+
+    def __init__(self, filename, mode='a', encoding=None, delay=True):
+        # define instance var
+        self._logger_name = ""
+        # this handler must not open its file stream prior to the owning logger being defined
+        if delay is False:
+            cname = self.__class__.__name__
+            raise Exception(f'Cannot construct {cname} with delay = False!', delay)
+        # call super
+        super(PipelineLoggingFileHandler, self).__init__(filename, mode, encoding, True)
+
+    """
+    set_logger_name will only ever be called if this handler is utilized by our PipelineLogger class.  In all other
+    cases, this method is pointless.
+    """
+    def set_logger_name(self, logger_name: str) -> None:
+        # if a name has already been set for this file handle...
+        if self._logger_name != "":
+            # ...and the one provided is not equivalent to the original, throw maybe probably informative exception.
+            if logger_name != self._logger_name:
+                current_name = self._logger_name
+                cname = self.__class__.__name__
+                raise Exception(f'This {cname} instance already registered to Logger {current_name}', logger_name)
+
+            # fast-exit this if block if this the result of a command reissue
+            # hopefully won't ever happen _but who knows!_
+            return
+
+        # define logger name
+        self._logger_name = logger_name
+
+        # stream should _not_ be open at this point.
+        if self.stream is not None:
+            # TODO: should this be handled differently?
+            cname = self.__class__.__name__
+            raise Exception(f'Instance of {cname} already has stream open')
+
+        # update base filename
+        self.baseFilename = self.baseFilename.replace(FILENAME_LOGGERNAME_SLUG, logger_name)
+
+
+class PipelineLogger(logging.Logger):
+    """
+    PipelineLogger provides a place to override certain things about the built-in logger
+    """
+
+    def __init__(self, name, level=logging.NOTSET):
+        # store configured name of logger
+        self._name = name
+        # call super
+        super(PipelineLogger, self).__init__(name, level)
+
+    def get_name(self) -> str:
+        """
+        get_name returns the name of this specific logger instance
+        """
+        return self._name
+
+    def addHandler(self, hdlr: logging.Handler) -> None:
+        """
+        addHandler is a simple override of the base logging.Logger.addHandler method to allow us to modify provided
+        handlers as-needed.
+
+
+        Current use case is simply to inject log filenames with the "name" of this logger instance
+        """
+        # if this handler is of our custom file handler type...
+        if isinstance(hdlr, PipelineLoggingFileHandler):
+            # ...set handler logger name attribute
+            # note: if the handler has already been used with a different logger, it will raise an exception here.
+            hdlr.set_logger_name(self._name)
+
+        # execute upstream handler registration call
+        super(PipelineLogger, self).addHandler(hdlr)
 
 
 def _get_date_str():
@@ -76,7 +160,7 @@ def _get_config(level, add_console_handler):
         },
         'handlers': {
             _FILE_HANDLER: {
-                'class': 'logging.FileHandler',
+                'class': PipelineLoggingFileHandler.__qualname__,
                 'mode': 'a',
                 'formatter': 'default',
                 'filename': _get_log_file_path()
@@ -139,6 +223,7 @@ def configure(level=logging.INFO, add_console_handler=False):
     >>>     pipeline_logging.configure()
     >>>     func(1, 2)
     """
+    logging.setLoggerClass(PipelineLogger)
     config = _get_config(level, add_console_handler)
     os.makedirs(DEFAULT_LOG_DIR, exist_ok=True)
     logging.config.dictConfig(config)
