@@ -25,7 +25,7 @@ import os
 
 # Project imports
 from app_identity import PROJECT_ID
-from cdr_cleaner.cleaning_rules.create_person_ext_table import CreatePersonExtTable
+from cdr_cleaner.cleaning_rules.create_person_ext_table import CreatePersonExtTable, PERSON_EXT_TABLE_QUERY
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
 
@@ -162,9 +162,13 @@ class CreatePersonExtTableTest(BaseTest.CleaningRulesTestBase):
                     """).render(project_id=self.project_id,
                                 dataset_id=self.dataset_id)
 
+        # run query to create person_ext
+        person_ext_query = PERSON_EXT_TABLE_QUERY.render(
+            project=self.project_id, dataset=self.dataset_id)
+
         self.load_test_data([
             person_data_query, observation_data_query, concept_data_query,
-            observation_ext_data_query
+            observation_ext_data_query, person_ext_query
         ])
 
     def test_identifying_field_suppression(self):
