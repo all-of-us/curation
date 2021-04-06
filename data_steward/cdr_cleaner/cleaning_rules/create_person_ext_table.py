@@ -61,7 +61,11 @@ class CreatePersonExtTable(BaseCleaningRule):
     state_of_residence_concept_id, state_of_residence_source_value
     """
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id, table_namer):
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 table_namer=''):
         """
         Initialize the class with proper information.
 
@@ -132,12 +136,11 @@ if __name__ == '__main__':
         query_list = clean_engine.get_query_list(ARGS.project_id,
                                                  ARGS.dataset_id,
                                                  ARGS.sandbox_dataset_id,
-                                                 [(CreatePersonExtTable,)],
-                                                 ARGS.table_namer)
+                                                 [(CreatePersonExtTable,)])
         for query in query_list:
             LOGGER.info(query)
     else:
         clean_engine.add_console_logging(ARGS.console_log)
         clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
                                    ARGS.sandbox_dataset_id,
-                                   [(CreatePersonExtTable,)], ARGS.table_namer)
+                                   [(CreatePersonExtTable,)])

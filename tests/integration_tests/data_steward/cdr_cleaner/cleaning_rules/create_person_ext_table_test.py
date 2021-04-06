@@ -25,7 +25,7 @@ import os
 
 # Project imports
 from app_identity import PROJECT_ID
-from cdr_cleaner.cleaning_rules.create_person_ext_table import CreatePersonExtTable, PERSON_EXT_TABLE_QUERY
+from cdr_cleaner.cleaning_rules.create_person_ext_table import CreatePersonExtTable
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
 
@@ -48,7 +48,8 @@ class CreatePersonExtTableTest(BaseTest.CleaningRulesTestBase):
         cls.dataset_id = dataset_id
         sandbox_id = dataset_id + '_sandbox'
         cls.sandbox_id = sandbox_id
-        table_namer = 'test_tablenamer'
+
+        table_namer = 'test_table_namer'
         cls.table_namer = table_namer
 
         cls.rule_instance = CreatePersonExtTable(project_id, dataset_id,
@@ -197,3 +198,11 @@ class CreatePersonExtTableTest(BaseTest.CleaningRulesTestBase):
         }]
 
         self.default_test(tables_and_counts)
+
+    def tearDown(self):
+        tables = ['observation', 'observation_ext', 'concept', 'person']
+        for table in tables:
+            self.client.delete_table('.'.join([self.fq_dataset_name, table]),
+                                     not_found_ok=True)
+
+        super().tearDown()
