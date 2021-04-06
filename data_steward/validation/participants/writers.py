@@ -76,14 +76,14 @@ def write_to_result_table(project, dataset, site, match_values):
 
     # wait on results to be written
 
-    schema_path = os.path.join(fields_path, 'identity_match.json')
+    table_name = 'identity_match'
 
     LOGGER.info(
         f"Beginning load of identity match values from csv into BigQuery "
         "for site: {site}")
     try:
         # load csv file into bigquery
-        results = bq_utils.load_csv(schema_path,
+        results = bq_utils.load_csv(table_name,
                                     'gs://' + bucket + '/' + path,
                                     project,
                                     dataset,

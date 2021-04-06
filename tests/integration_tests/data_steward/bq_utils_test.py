@@ -103,9 +103,7 @@ class BqUtilsTest(unittest.TestCase):
     def test_load_csv(self):
         app_id = app_identity.get_application_id()
         table_name = 'achilles_analysis'
-        schema_file_name = table_name + '.json'
         csv_file_name = table_name + '.csv'
-        schema_path = os.path.join(resources.fields_path, schema_file_name)
         local_csv_path = os.path.join(test_util.TEST_DATA_EXPORT_PATH,
                                       csv_file_name)
         with open(local_csv_path, 'rb') as fp:
@@ -113,7 +111,7 @@ class BqUtilsTest(unittest.TestCase):
         hpo_bucket = self.hpo_bucket
         gcs_object_path = 'gs://%(hpo_bucket)s/%(csv_file_name)s' % locals()
         dataset_id = self.dataset_id
-        load_results = bq_utils.load_csv(schema_path, gcs_object_path, app_id,
+        load_results = bq_utils.load_csv(table_name, gcs_object_path, app_id,
                                          dataset_id, table_name)
 
         load_job_id = load_results['jobReference']['jobId']
