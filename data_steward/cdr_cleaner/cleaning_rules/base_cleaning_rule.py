@@ -583,7 +583,7 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
 
     def get_bq_fields_sql(self, fields):
         """
-        Get the SQL compliant fields defintion from json fields object.
+        Get the SQL compliant fields definition from json fields object.
 
         :param fields: table schema in json format
 
