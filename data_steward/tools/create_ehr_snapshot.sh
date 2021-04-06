@@ -23,10 +23,6 @@ while true; do
     dataset_release_tag=$2
     shift 2
     ;;
-  --truncation_date)
-    truncation_date=$2
-    shift 2
-    ;;
   --)
     shift
     break
@@ -38,11 +34,6 @@ done
 if [[ -z "${key_file}" ]] || [[ -z "${ehr_dataset}" ]] || [[ -z "${dataset_release_tag}" ]] ; then
   echo "${USAGE}"
   exit 1
-fi
-
-# specific check on truncation_date. It should not cause a failure if it is not set.
-if [[ -z "${truncation_date}" ]] ; then
-  echo "truncation_date is unset.  Will default to the current date in the cleaning rule."
 fi
 
 app_id=$(python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);' < "${key_file}")

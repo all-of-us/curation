@@ -125,7 +125,7 @@ echo "cope_survey_table_name --> ${cope_survey_table_name}"
 echo "deid_max_age --> ${deid_max_age}"
 
 #---------------------------------------------------------
-# Step 1 create EHR and RDR snapshot
+# Step 1 create EHR snapshot
 echo "-------------------------->Take a Snapshot of EHR Dataset (step 1)"
 "${TOOLS_DIR}/create_ehr_snapshot.sh" --key_file ${key_file} --ehr_dataset ${ehr_dataset} --dataset_release_tag ${dataset_release_tag}
 
@@ -140,7 +140,7 @@ echo "ehr_snapshot ----> ${ehr_snapshot}"
 #---------------------------------------------------------
 # Step 3 Generate Rdr clean dataset
 echo "-------------------------->Generate Rdr clean dataset (step 3)"
-"${TOOLS_DIR}/create_ehr_snapshot.sh" --key_file ${key_file} --rdr_dataset ${rdr_dataset} --dataset_release_tag ${dataset_release_tag}
+"${TOOLS_DIR}/create_rdr_snapshot.sh" --key_file ${key_file} --rdr_dataset ${rdr_dataset} --dataset_release_tag ${dataset_release_tag}
 
 #---------------------------------------------------------
 # Step 3 Generate combined dataset
