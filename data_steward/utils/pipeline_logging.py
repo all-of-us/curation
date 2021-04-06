@@ -16,6 +16,7 @@ from datetime import datetime
 
 # Project imports
 import resources
+from app_identity import get_application_id
 
 DEFAULT_LOG_DIR = os.path.join(resources.base_path, 'logs')
 """Default location for log files"""
@@ -23,7 +24,8 @@ DEFAULT_LOG_LEVEL = logging.INFO
 
 LOG_FORMAT = '%(asctime)s - %(levelname)s - %(name)s - %(message)s'
 LOG_DATEFMT = '%Y-%m-%d %H:%M:%S'
-FILENAME_FMT = '%Y%m%d-' + os.getenv('GOOGLE_CLOUD_PROJECT', 'UNDEFINED_GOOGLE_PROJECT')
+app_id = get_application_id()
+FILENAME_FMT = f'%Y%m%d-{app_id}'
 
 _FILE_HANDLER = 'curation_file_handler'
 """Identifies the file log handler"""
