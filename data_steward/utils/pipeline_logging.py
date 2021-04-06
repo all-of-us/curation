@@ -160,7 +160,7 @@ def _get_config(level, add_console_handler):
         },
         'handlers': {
             _FILE_HANDLER: {
-                'class': PipelineLoggingFileHandler.__qualname__,
+                'class': PipelineLoggingFileHandler.__module__ + '.' +  PipelineLoggingFileHandler.__qualname__,
                 'mode': 'a',
                 'formatter': 'default',
                 'filename': _get_log_file_path()
