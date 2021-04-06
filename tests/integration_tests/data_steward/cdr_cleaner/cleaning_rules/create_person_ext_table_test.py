@@ -60,6 +60,12 @@ class CreatePersonExtTableTest(BaseTest.CleaningRulesTestBase):
             cls.fq_table_names.append(
                 f'{cls.project_id}.{cls.dataset_id}.{table_name}')
 
+        for table_name in [
+                'observation', 'observation_ext', 'concept', 'person'
+        ]:
+            cls.fq_table_names.append(
+                f'{cls.project_id}.{cls.dataset_id}.{table_name}')
+
         # call super to set up the client, create datasets, and create
         # empty test tables
         # NOTE:  does not create empty sandbox tables.
@@ -81,77 +87,57 @@ class CreatePersonExtTableTest(BaseTest.CleaningRulesTestBase):
 
         # test data for person table
         person_data_query = self.jinja_env.from_string("""
-            DROP TABLE IF EXISTS
-              `{{project_id}}.{{dataset_id}}.person`;
-            CREATE TABLE
-              `{{project_id}}.{{dataset_id}}.person` (
-                person_id INT64
-              );
             INSERT INTO
-              `{{project_id}}.{{dataset_id}}.person` (person_id)
+              `{{project_id}}.{{dataset_id}}.person` 
+            (person_id, gender_concept_id, year_of_birth, race_concept_id, ethnicity_concept_id)
             VALUES
-              (123),
-              (345),
-              (678),
-              (910)
+              (123, 0, 1980, 0, 0),
+              (345, 0, 1981, 0, 0),
+              (678, 0, 1982, 0, 0),
+              (910, 0, 1983, 0, 0)
             """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
         # test data for observation table
         observation_data_query = self.jinja_env.from_string("""
-            DROP TABLE IF EXISTS
-              `{{project_id}}.{{dataset_id}}.observation`;
-            CREATE TABLE
-              `{{project_id}}.{{dataset_id}}.observation` (
-                observation_id INT64,
-                person_id INT64,
-                value_source_concept_id INT64,
-                value_as_concept_id INT64,
-                observation_source_concept_id INT64
-                );
             INSERT INTO
               `{{project_id}}.{{dataset_id}}.observation` (observation_id,
                 person_id,
                 value_source_concept_id,
                 value_as_concept_id,
-                observation_source_concept_id)
+                observation_source_concept_id,
+                observation_concept_id, 
+                observation_date,
+                observation_type_concept_id)
             VALUES
-              (111, 123, 1585266, 0, 1585249),
-              (222, 345, 1585266, 0, 1585249),
-              (333, 678, 1585266, 0, 1585249),
-              (444, 910, 1585266, 0, 1585249),
-              (1122, 123, 1585847, 45878463, 1585845),
-              (3344, 345, 1585847, 45878463, 1585845),
-              (5566, 678, 1585847, 45878463, 1585845),
-              (7788, 910, 1585847, 45878463, 1585845)
+              (111, 123, 1585266, 0, 1585249, 0, date('2021-01-01'), 0),
+              (222, 345, 1585266, 0, 1585249, 0, date('2021-01-01'), 0),
+              (333, 678, 1585266, 0, 1585249, 0, date('2021-01-01'), 0),
+              (444, 910, 1585266, 0, 1585249, 0, date('2021-01-01'), 0),
+              (1122, 123, 1585847, 45878463, 1585845, 0, date('2021-01-01'), 0),
+              (3344, 345, 1585847, 45878463, 1585845, 0, date('2021-01-01'), 0),
+              (5566, 678, 1585847, 45878463, 1585845, 0, date('2021-01-01'), 0),
+              (7788, 910, 1585847, 45878463, 1585845, 0, date('2021-01-01'), 0)
             """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
         # test data for concept table
         concept_data_query = self.jinja_env.from_string("""
-            DROP TABLE IF EXISTS
-              `{{project_id}}.{{dataset_id}}.concept`;
-            CREATE TABLE
-              `{{project_id}}.{{dataset_id}}.concept` (
-                concept_id INT64,
-                concept_code STRING,
-                concept_name STRING);
             INSERT INTO
               `{{project_id}}.{{dataset_id}}.concept` (
                 concept_id,
                 concept_code,
-                concept_name)
+                concept_name,
+                domain_id,
+                vocabulary_id,
+                concept_class_id,
+                valid_start_date,
+                valid_end_date)
             VALUES
-              (1585266, 'PIIState_CA', 'PII State: CA'),
-              (1585847, 'SexAtBirth_Female', '')
+              (1585266, 'PIIState_CA', 'PII State: CA', 'observation', 'PPI', 'answer', date('2017-04-24'), date('2099-12-31')),
+              (1585847, 'SexAtBirth_Female', 'Female', 'observation', 'PPI', 'answer', date('2017-05-22'), date('2099-12-31'))
             """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
         # test data for observation_ext table
         observation_ext_data_query = self.jinja_env.from_string("""
-            DROP TABLE IF EXISTS
-              `{{project_id}}.{{dataset_id}}.observation_ext`;
-            CREATE TABLE
-              `{{project_id}}.{{dataset_id}}.observation_ext` (
-                observation_id INT64,
-                src_id STRING);
             INSERT INTO
               `{{project_id}}.{{dataset_id}}.observation_ext` (
                 observation_id,
@@ -170,9 +156,9 @@ class CreatePersonExtTableTest(BaseTest.CleaningRulesTestBase):
             observation_ext_data_query
         ])
 
-    def test_identifying_field_suppression(self):
+    def test_person_ext_creation(self):
         """
-        Tests that the specifications for SANDBOX_RECORDS_QUERY and DROP_RECORDS_QUERY perform as designed.
+        Tests that the person_ext table is created as designed.
 
         Validates pre conditions, tests execution, and post conditions based on the load
         statements and the tables_and_counts variable.
