@@ -9,10 +9,7 @@ These records will be appended to the pipeline_tables.pid_rid_mapping table in B
 Duplicate mappings are not allowed.
 """
 # Python imports
-import argparse
-import inspect
 import logging
-import time
 
 # Third party imports
 from google.cloud import bigquery
