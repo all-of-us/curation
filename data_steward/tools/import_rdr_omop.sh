@@ -93,7 +93,8 @@ for file in $cdm_files; do
   fi
   echo "Importing ${RDR_DATASET}.${table_name}..."
   CLUSTERING_ARGS=""
-  if grep -q person_id "${schema_file}"; then
+  # Will not add clustering to pid_rid_mapping table
+  if grep -q person_id "${schema_file}" | [[ "${filename}" -ne "pid_rid_mapping.csv" ]]; then
     CLUSTERING_ARGS="--time_partitioning_type=DAY --clustering_fields person_id"
   fi
   JAGGED_ROWS=""
