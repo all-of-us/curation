@@ -48,7 +48,7 @@ def _get_log_filename() -> str:
         # attempt to add application id suffix (google project name)
         app_id = get_application_id()
         filename_suffix = f'-{app_id}'
-    except Exception:
+    except RuntimeError:
         # if we cannot, add "-no-project" suffix as a visual hint that this runtime probably did not interact with a
         # google project
         # TODO: emit warning of some description?
