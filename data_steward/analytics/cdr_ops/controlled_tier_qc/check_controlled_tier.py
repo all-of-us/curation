@@ -19,7 +19,7 @@
 project_id: str = ""  # identifies the project where datasets are located
 post_deid_dataset: str = ""  # the CT deid dataset
 pre_deid_dataset: str = ""  # the combined dataset
-mapping_dataset: str = post_deid_dataset + "_sandbox"  # the sandbox dataset where mappings are
+mapping_dataset: str = ""  # the sandbox dataset where mappings are
 # -
 
 import pandas as pd
