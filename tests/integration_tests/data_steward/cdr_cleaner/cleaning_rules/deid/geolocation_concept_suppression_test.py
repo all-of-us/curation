@@ -115,6 +115,10 @@ class GeoLocationConceptSuppressionTestBase(BaseTest.CleaningRulesTestBase):
                   -- 1586137: The Basics: Country Born Text Box --
                   -- 1585539: Have you ever received care at the Peekskill Health Center --
                     -- or any other HRHCare health center? --
+                  -- 1585553: Have you ever received care at a UPMC healthcare provider? --
+                  -- 1585556: Have you already scheduled an appointment with your local PA Cares for Us team for -- 
+                    -- physical measurements and biosample collection? --
+                  -- 1585559: Are you presently a registered patient at any of the following clinics? --
 
                   -- Concepts to keep --
                   -- 1384550: Insurance Type: Tricare Or Military --
@@ -131,7 +135,10 @@ class GeoLocationConceptSuppressionTestBase(BaseTest.CleaningRulesTestBase):
                    (8, 1, 0, 903152, 0, 0, 0, 0, 0),
                    (9, 1, 0, 0, 903574, 0, 0, 0, 0),
                    (10, 1, 0, 0, 0, 903155, 0, 0, 0),
-                   (11, 1, 1384550, 903152, 903574, 903155, 0, 0, 0)] col
+                   (11, 1, 1384550, 903152, 903574, 903155, 0, 0, 0),
+                   (12, 1, 1585553, 0, 0, 0, 0, 0, 0),
+                   (13, 1, 1585556, 0, 0, 0, 0, 0, 0),
+                   (14, 1, 1585559, 0, 0, 0, 0, 0, 0)] col
             )
             SELECT 
                 observation_id, 
@@ -161,8 +168,8 @@ class GeoLocationConceptSuppressionTestBase(BaseTest.CleaningRulesTestBase):
             'fq_sandbox_table_name':
                 f'{self.project_id}.{self.sandbox_id}.'
                 f'{self.rule_instance.sandbox_table_for("observation")}',
-            'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
-            'sandboxed_ids': [1, 2, 3, 4, 5, 6],
+            'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+            'sandboxed_ids': [1, 2, 3, 4, 5, 6, 12, 13, 14],
             'fields': [
                 'observation_id', 'person_id', 'observation_concept_id',
                 'observation_type_concept_id', 'value_as_concept_id',
