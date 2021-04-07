@@ -1,10 +1,25 @@
+# ---
+# jupyter:
+#   jupytext:
+#     text_representation:
+#       extension: .py
+#       format_name: light
+#       format_version: '1.5'
+#       jupytext_version: 1.7.1
+#   kernelspec:
+#     display_name: Python 3
+#     language: python
+#     name: python3
+# ---
+
 # %load_ext autoreload
 # %autoreload 2
 
-project_id = ""
-post_deid_dataset = ""
-pre_deid_dataset = ""
-mapping_dataset = ""
+# + tags=["parameters"]
+project_id: str = ""  # identifies the project where datasets are located
+post_deid_dataset: str = ""  # the CT deid dataset
+pre_deid_dataset: str = ""  # the combined dataset
+mapping_dataset: str = post_deid_dataset + "_sandbox"  # the sandbox dataset where mappings are
 
 import pandas as pd
 from code.controlled_tier_qc import run_qc, display_check_summary_by_rule, display_check_detail_of_rule
