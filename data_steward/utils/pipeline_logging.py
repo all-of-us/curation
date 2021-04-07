@@ -32,7 +32,7 @@ _CONSOLE_HANDLER = 'curation_console_handler'
 """Identifies the console handler"""
 
 
-def _get_date_str():
+def _get_log_date_str():
     """
     Get current date formatted using LOG_FILENAME_DATEFMT
     :return: 
@@ -47,15 +47,15 @@ def _get_log_filename() -> str:
     try:
         # attempt to add application id suffix (google project name)
         app_id = get_application_id()
-        logfile_suffix = f'-{app_id}'
+        filename_suffix = f'-{app_id}'
     except Exception:
         # if we cannot, add "-no-project" suffix as a visual hint that this runtime probably did not interact with a
         # google project
         # TODO: emit warning of some description?
-        logfile_suffix = '-no-project'
+        filename_suffix = '-no-project'
     finally:
         # compile and return final log filename
-        return f'{_get_date_str()}{logfile_suffix}.log'
+        return f'{_get_log_date_str()}{filename_suffix}.log'
 
 
 def _get_log_file_path():
