@@ -203,16 +203,16 @@ class EhrUnionTest(unittest.TestCase):
 
         expected_q = MOVE_PER_OBS_QRY.format(
             output_dataset_id=dataset_id,
-            pto_offset=eu_constants.EHR_PERSON_TO_OBS_CONSTANT,
-            gender_concept_id=eu_constants.GENDER_CONCEPT_ID,
-            gender_offset=eu_constants.GENDER_CONSTANT_FACTOR,
-            race_concept_id=eu_constants.RACE_CONCEPT_ID,
-            race_offset=eu_constants.RACE_CONSTANT_FACTOR,
-            dob_concept_id=eu_constants.DOB_CONCEPT_ID,
-            dob_offset=eu_constants.DOB_CONSTANT_FACTOR,
-            ethnicity_concept_id=eu_constants.ETHNICITY_CONCEPT_ID,
-            ethnicity_offset=eu_constants.ETHNICITY_CONSTANT_FACTOR,
-            hpo_offset=eu_constants.HPO_CONSTANT_FACTOR,
+            pto_offset=2000000000000000,
+            gender_concept_id=4135376,
+            gender_offset=100000000000000,
+            race_concept_id=4013886,
+            race_offset=200000000000000,
+            dob_concept_id=4083587,
+            dob_offset=300000000000000,
+            ethnicity_concept_id=4271761,
+            ethnicity_offset=400000000000000,
+            hpo_offset=100000000000,
             person_to_obs_query="SELECT COLUMN FROM TABLE")
 
         #Make sure queries are the same
@@ -236,16 +236,16 @@ class EhrUnionTest(unittest.TestCase):
 
         expected_q = MAP_PER_OBS_QRY.format(
             output_dataset_id=dataset_id,
-            pto_offset=eu_constants.EHR_PERSON_TO_OBS_CONSTANT,
-            gender_concept_id=eu_constants.GENDER_CONCEPT_ID,
-            gender_offset=eu_constants.GENDER_CONSTANT_FACTOR,
-            race_concept_id=eu_constants.RACE_CONCEPT_ID,
-            race_offset=eu_constants.RACE_CONSTANT_FACTOR,
-            dob_concept_id=eu_constants.DOB_CONCEPT_ID,
-            dob_offset=eu_constants.DOB_CONSTANT_FACTOR,
-            ethnicity_concept_id=eu_constants.ETHNICITY_CONCEPT_ID,
-            ethnicity_offset=eu_constants.ETHNICITY_CONSTANT_FACTOR,
-            hpo_offset=eu_constants.HPO_CONSTANT_FACTOR,
+            pto_offset=2000000000000000,
+            gender_concept_id=4135376,
+            gender_offset=100000000000000,
+            race_concept_id=4013886,
+            race_offset=200000000000000,
+            dob_concept_id=4083587,
+            dob_offset=300000000000000,
+            ethnicity_concept_id=4271761,
+            ethnicity_offset=400000000000000,
+            hpo_offset=100000000000,
             person_to_obs_query="SELECT COLUMN FROM TABLE")
 
         #Make sure queries are the same
