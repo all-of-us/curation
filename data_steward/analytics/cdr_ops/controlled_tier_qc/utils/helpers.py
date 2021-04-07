@@ -42,10 +42,7 @@ def extract_valid_codes_to_run(check_df, rule_code):
     valid_rule_code = []
     if not isinstance(rule_code, list):
         rule_code = [rule_code]
-    for code in rule_code:
-        if is_rule_valid(check_df, code):
-            valid_rule_code.append(code)
-    return valid_rule_code
+    return [code for code in rule_code if is_rule_valid(check_df, code)]
 
 
 def filter_data_by_rule(check_df, rule_code):
