@@ -51,6 +51,7 @@ def _get_log_filename() -> str:
     except Exception:
         # if we cannot, add "-no-project" suffix as a visual hint that this runtime probably did not interact with a
         # google project
+        # TODO: emit warning of some description?
         logfile_suffix = '-no-project'
     finally:
         # compile and return final log filename
