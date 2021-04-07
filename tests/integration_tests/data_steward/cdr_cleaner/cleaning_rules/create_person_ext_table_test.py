@@ -184,11 +184,3 @@ class CreatePersonExtTableTest(BaseTest.CleaningRulesTestBase):
         }]
 
         self.default_test(tables_and_counts)
-
-    def tearDown(self):
-        tables = ['observation', 'observation_ext', 'concept', 'person']
-        for table in tables:
-            self.client.delete_table('.'.join([self.fq_dataset_name, table]),
-                                     not_found_ok=True)
-
-        super().tearDown()
