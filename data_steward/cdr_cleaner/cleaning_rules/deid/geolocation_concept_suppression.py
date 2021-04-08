@@ -37,7 +37,7 @@ CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{lookup_table}}`
     FROM
       `{{project_id}}.{{dataset_id}}.concept`
     WHERE
-      REGEXP_CONTAINS(concept_code, r'(SitePairing)|(City)|(ArizonaSpecific)|(Michigan)|(_Country)| (ExtraConsent_[A-Za-z]+((Care)|(Registered)))')AND concept_class_id = 'Question')
+      REGEXP_CONTAINS(concept_code, r'(SitePairing)|(City)|(ArizonaSpecific)|(Michigan)|(_Country)|(ExtraConsent_[A-Za-z]+((Care)|(Registered)))')AND concept_class_id = 'Question')
     SELECT
       DISTINCT *
     FROM
