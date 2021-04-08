@@ -70,7 +70,6 @@ def _get_log_file_path():
     return os.path.join(DEFAULT_LOG_DIR, get_log_filename())
 
 
-
 def _get_config(level, add_console_handler):
     """
     Get a dictionary which describes the logging configuration
