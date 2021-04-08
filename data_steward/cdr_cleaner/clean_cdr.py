@@ -92,6 +92,7 @@ from cdr_cleaner.cleaning_rules.cancer_concept_suppression import CancerConceptS
 from cdr_cleaner.cleaning_rules.identifying_field_suppression import IDFieldSuppression
 from cdr_cleaner.cleaning_rules.aggregate_zip_codes import AggregateZipCodes
 from cdr_cleaner.cleaning_rules.remove_extra_tables import RemoveExtraTables
+from cdr_cleaner.cleaning_rules.store_pid_rid_mappings import StoreNewPidRidMappings
 from cdr_cleaner.manual_cleaning_rules.survey_version_info import COPESurveyVersionTask
 from cdr_cleaner.cleaning_rules.deid.string_fields_suppression import StringFieldsSuppression
 from constants.cdr_cleaner import clean_cdr_engine as ce_consts
@@ -124,6 +125,7 @@ UNIONED_EHR_CLEANING_CLASSES = [
 ]
 
 RDR_CLEANING_CLASSES = [
+    (StoreNewPidRidMappings,),
     (TruncateRdrData,),
     (PpiBranching,),
     # execute FixUnmappedSurveyAnswers before the dropping responses rules get executed
