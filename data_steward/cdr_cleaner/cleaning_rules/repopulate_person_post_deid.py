@@ -22,6 +22,9 @@ ethnicity_source_concept_id
 sex_at_birth_concept_id (extension)
 sex_at_birth_source_concept_id (extension)
 sex_at_birth_source_value (extension)
+
+As per ticket DC-1446, for participants who have not answered the question "What is you race/ethnicity" we need to set
+    their race_concept_id to 2100000001.
 """
 import logging
 
@@ -32,7 +35,7 @@ from common import JINJA_ENV, PERSON
 
 LOGGER = logging.getLogger(__name__)
 
-JIRA_ISSUE_NUMBERS = ['DC516', 'DC836']
+JIRA_ISSUE_NUMBERS = ['DC516', 'DC836', 'DC1446']
 
 GENDER_CONCEPT_ID = 1585838
 SEX_AT_BIRTH_CONCEPT_ID = 1585845
@@ -181,7 +184,7 @@ SELECT
   day_of_birth,
   birth_datetime,
   CASE
-    WHEN (ethnicity_concept_id = 38003563 AND race_concept_id = 0) THEN {{aou_custom_concept}}
+    WHEN race_concept_id = 0 THEN {{aou_custom_concept}}
   ELSE
   race_concept_id
 END
@@ -194,7 +197,7 @@ END
   gender_source_value,
   gender_source_concept_id,
   CASE
-    WHEN (ethnicity_concept_id = 38003563 AND race_concept_id = 0) THEN "None Indicated"
+    WHEN race_concept_id = 0 THEN "None Indicated"
   ELSE
   race_source_value
 END

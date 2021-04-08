@@ -22,6 +22,9 @@ ethnicity_source_concept_id
 sex_at_birth_concept_id (extension)
 sex_at_birth_source_concept_id (extension)
 sex_at_birth_source_value (extension)
+
+As per ticket DC-1446, for participants who have not answered the question "What is you race/ethnicity" we need to set
+    their race_concept_id to 2100000001.
 """
 import logging
 from abc import abstractmethod
@@ -47,7 +50,7 @@ SELECT DISTINCT
     bs.day_of_birth,
     bs.birth_datetime,
     CASE -- a special case to handle that requires inputs from both race ethnicity --
-        WHEN (es.ethnicity_concept_id = 38003563 AND rs.race_concept_id = 0)  THEN {{aou_none_indicated_concept_id}}
+        WHEN rs.race_concept_id = 0  THEN {{aou_none_indicated_concept_id}}
         ELSE rs.race_concept_id 
     END AS race_concept_id,
     es.ethnicity_concept_id,
@@ -58,7 +61,7 @@ SELECT DISTINCT
     gs.gender_source_value,
     gs.gender_source_concept_id,
     CASE -- a special case to handle that requires inputs from both race ethnicity --
-        WHEN (es.ethnicity_concept_id = 38003563 AND rs.race_concept_id = 0) THEN '{{aou_none_indicated_source_value}}'
+        WHEN rs.race_concept_id = 0 THEN '{{aou_none_indicated_source_value}}'
         ELSE rs.race_source_value 
     END AS race_source_value,
     rs.race_source_concept_id,
