@@ -114,7 +114,7 @@ class PipelineLoggingTest(unittest.TestCase):
     @mock.patch.dict(os.environ, {PROJECT_ID: ''})
     def test_configure_no_app_id(self, mock_open):
         """
-        Verify that root level and handlers are properly set after configure
+        Verify that root level and handlers are properly set after configure when GOOGLE_PROJECT_ID is not set / empty
         :param mock_open: mock to prevent side effect of opening file
         """
         self.assert_sane_configure()
@@ -124,8 +124,7 @@ class PipelineLoggingTest(unittest.TestCase):
     @mock.patch.dict(os.environ, {PROJECT_ID: 'unit-test-project-this-is-not-real'})
     def test_configure_defined_app_id(self, mock_open):
         """
-        Verify that root level and handlers are properly set after configure when there the appropriate app id envvar
-        is defined
+        Verify that root level and handlers are properly set after configure when GOOGLE_PROJECT_ID is set
         :param mock_open: mock to prevent side effect of opening file
         """
         self.assert_sane_configure()
