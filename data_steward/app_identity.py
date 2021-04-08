@@ -10,13 +10,11 @@ def get_application_id():
     :return:
     """
     # NOTE: Google interchangeably refers to this identifier as application_id or project_id
-    project_id = os.environ.get(PROJECT_ID)
+    project_id = os.getenv(PROJECT_ID, '').strip()
 
     # ensure project id is a non-empty string
-    if isinstance(project_id, str):
-        project_id = project_id.strip()
-        if project_id is not '':
-            return project_id
+    if project_id:
+        return project_id
 
     # in all other cases, OBJECTION!
     raise RuntimeError(f'{PROJECT_ID} is not set.  Set and retry.')
