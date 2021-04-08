@@ -10,12 +10,14 @@ Original Issue = DC-637
 """
 
 # Python imports
+import os
 import unittest
 import logging
 import mock
 
 # Project imports
 import utils.pipeline_logging as pl
+from app_identity import PROJECT_ID
 
 
 class PipelineLoggingTest(unittest.TestCase):
@@ -89,6 +91,21 @@ class PipelineLoggingTest(unittest.TestCase):
         actual_hdlrs = [hdlr.name for hdlr in logging.root.handlers]
         expected_hdlrs = [pl._FILE_HANDLER, pl._CONSOLE_HANDLER]
         self.assertEqual(expected_hdlrs, actual_hdlrs)
+
+    @mock.patch('logging.FileHandler._open')
+    @mock.patch.dict(os.environ, {PROJECT_ID: 'unit-test-project-this-is-not-real'})
+    def test_configure_defined_app_id(self, mock_open):
+        """
+        Verify that root level and handlers are properly set after configure when there the appropriate app id envvar
+        is defined
+        :param mock_open: mock to prevent side effect of opening file
+        """
+        pl.configure(add_console_handler=True)
+        lggr = logging.getLogger("my super neato test logger")
+        # TODO: this is super hacky - dpc
+        log_filename = logging.root.handlers[0].baseFilename
+        log_basename = os.path.basename(log_filename)
+        self.assertTrue(log_basename.endswith(f'{os.getenv(PROJECT_ID)}.log'))
 
     @mock.patch('logging.StreamHandler.emit')
     @mock.patch('logging.FileHandler.emit')

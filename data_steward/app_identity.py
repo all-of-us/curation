@@ -15,4 +15,4 @@ def get_application_id():
     if project_id:
         return project_id
     else:
-        raise RuntimeError('{} is not set.  Set and retry.'.format(PROJECT_ID))
+        raise RuntimeError(f'{PROJECT_ID} is not set.  Set and retry.')
