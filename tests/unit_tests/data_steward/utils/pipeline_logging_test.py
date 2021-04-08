@@ -62,7 +62,8 @@ class PipelineLoggingTest(unittest.TestCase):
                   for (log_record,), _ in mock_stream_emit.call_args_list]
         self.assertListEqual(expected, actual)
 
-    def assert_correct_log_filename(self, file_handler: logging.FileHandler, expected_basename: str):
+    def assert_correct_log_filename(self, file_handler: logging.FileHandler,
+                                    expected_basename: str):
         """
         Verifies that the provided logging.FileHandler instance would be writing to a file whose name matches
         expected_basename
@@ -109,7 +110,6 @@ class PipelineLoggingTest(unittest.TestCase):
         expected_hdlrs = [pl._FILE_HANDLER, pl._CONSOLE_HANDLER]
         self.assertEqual(expected_hdlrs, actual_hdlrs)
 
-
     @mock.patch('logging.FileHandler._open')
     @mock.patch.dict(os.environ, {PROJECT_ID: ''})
     def test_configure_no_app_id(self, mock_open):
@@ -119,9 +119,9 @@ class PipelineLoggingTest(unittest.TestCase):
         """
         self.assert_sane_configure()
 
-
     @mock.patch('logging.FileHandler._open')
-    @mock.patch.dict(os.environ, {PROJECT_ID: 'unit-test-project-this-is-not-real'})
+    @mock.patch.dict(os.environ,
+                     {PROJECT_ID: 'unit-test-project-this-is-not-real'})
     def test_configure_defined_app_id(self, mock_open):
         """
         Verify that root level and handlers are properly set after configure when GOOGLE_PROJECT_ID is set
