@@ -40,7 +40,7 @@ def _get_log_date_str():
     return datetime.today().strftime(LOG_FILENAME_DATEFMT)
 
 
-def _get_log_filename() -> str:
+def get_log_filename() -> str:
     """
     Construct runtime-specific log filename
     """
@@ -67,7 +67,7 @@ def _get_log_file_path():
 
     :return: absolute path to the log file
     """
-    return os.path.join(DEFAULT_LOG_DIR, _get_log_filename())
+    return os.path.join(DEFAULT_LOG_DIR, get_log_filename())
 
 
 

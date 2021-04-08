@@ -62,16 +62,29 @@ class PipelineLoggingTest(unittest.TestCase):
                   for (log_record,), _ in mock_stream_emit.call_args_list]
         self.assertListEqual(expected, actual)
 
-    @mock.patch('logging.FileHandler._open')
-    def test_configure(self, mock_open):
+    def assert_correct_log_filename(self, file_handler: logging.FileHandler, expected_basename: str):
         """
-        Verify that root level and handlers are properly set after configure
-        :param mock_open: mock to prevent side effect of opening file
+        Verifies that the provided logging.FileHandler instance would be writing to a file whose name matches
+        expected_basename
+        :param file_handler: logging.FileHandler instance to test
+        :param expected_basename: expected basename of log file
+        """
+        log_filename = file_handler.baseFilename
+        log_basename = os.path.basename(log_filename)
+        # use endswith as opposed to .assertEquals so we don't care about slash type.
+        self.assertTrue(log_filename.endswith(expected_basename))
+
+    def assert_sane_configure(self):
+        """
+        verifies that a utils.pipeline_logger.configure() call executed successfully
+
+        TODO: pass in expected basename of log file? bit more flexible explicit, but may not worth the refactor.
         """
         # names are used to uniquely identify handlers both in standard logging module
         # and in this test case
         expected_hdlrs = [pl._FILE_HANDLER]
 
+        # execute configuration
         pl.configure()
         # root level is set to default (i.e. INFO)
         self.assertEqual(logging.root.level, pl.DEFAULT_LOG_LEVEL)
@@ -86,11 +99,26 @@ class PipelineLoggingTest(unittest.TestCase):
         actual_hdlrs = [hdlr.name for hdlr in logging.root.handlers]
         self.assertEqual(expected_hdlrs, actual_hdlrs)
 
+        for hdlr in logging.root.handlers:
+            if isinstance(hdlr, logging.FileHandler):
+                self.assert_correct_log_filename(hdlr, pl.get_log_filename())
+
         # add console log handler to configuration
         pl.configure(add_console_handler=True)
         actual_hdlrs = [hdlr.name for hdlr in logging.root.handlers]
         expected_hdlrs = [pl._FILE_HANDLER, pl._CONSOLE_HANDLER]
         self.assertEqual(expected_hdlrs, actual_hdlrs)
+
+
+    @mock.patch('logging.FileHandler._open')
+    @mock.patch.dict(os.environ, {PROJECT_ID: ''})
+    def test_configure_no_app_id(self, mock_open):
+        """
+        Verify that root level and handlers are properly set after configure
+        :param mock_open: mock to prevent side effect of opening file
+        """
+        self.assert_sane_configure()
+
 
     @mock.patch('logging.FileHandler._open')
     @mock.patch.dict(os.environ, {PROJECT_ID: 'unit-test-project-this-is-not-real'})
@@ -100,12 +128,7 @@ class PipelineLoggingTest(unittest.TestCase):
         is defined
         :param mock_open: mock to prevent side effect of opening file
         """
-        pl.configure(add_console_handler=True)
-        lggr = logging.getLogger("my super neato test logger")
-        # TODO: this is super hacky - dpc
-        log_filename = logging.root.handlers[0].baseFilename
-        log_basename = os.path.basename(log_filename)
-        self.assertTrue(log_basename.endswith(f'{os.getenv(PROJECT_ID)}.log'))
+        self.assert_sane_configure()
 
     @mock.patch('logging.StreamHandler.emit')
     @mock.patch('logging.FileHandler.emit')
