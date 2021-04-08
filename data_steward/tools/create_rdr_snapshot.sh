@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
 set -ex
-# This Script automates the process of generating the ehr_snapshot
+# This Script automates the process of generating the rdr_snapshot and apply rdr cleaning rules
 
 USAGE="
-Usage: create_ehr_snapshot.sh
+Usage: create_rdr_snapshot.sh
   --key_file <path to key file>
-  --ehr_dataset <EHR dataset ID>
   --rdr_dataset <RDR dataset ID>
   --dataset_release_tag <release tag for the CDR>
   --truncation_date date to truncate the RDR data to. The cleaning rules defaults to the current date if unset.
@@ -15,10 +14,6 @@ while true; do
   case "$1" in
   --key_file)
     key_file=$2
-    shift 2
-    ;;
-  --ehr_dataset)
-    ehr_dataset=$2
     shift 2
     ;;
   --rdr_dataset)
@@ -41,7 +36,7 @@ while true; do
   esac
 done
 
-if [[ -z "${key_file}" ]] || [[ -z "${ehr_dataset}" ]] || [[ -z "${rdr_dataset}" ]] || [[ -z "${dataset_release_tag}" ]] ; then
+if [[ -z "${key_file}" ]] ||  [[ -z "${rdr_dataset}" ]] || [[ -z "${dataset_release_tag}" ]] ; then
   echo "${USAGE}"
   exit 1
 fi
@@ -53,7 +48,6 @@ fi
 
 app_id=$(python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);' < "${key_file}")
 
-echo "ehr_dataset --> ${ehr_dataset}"
 echo "rdr_dataset --> ${rdr_dataset}"
 echo "app_id --> ${app_id}"
 echo "key_file --> ${key_file}"
@@ -78,27 +72,16 @@ source "${TOOLS_DIR}/set_path.sh"
 tag=$(git describe --abbrev=0 --tags)
 version=${tag}
 
-
-echo "-------------------------->Snapshotting EHR Dataset (step 4)"
-ehr_snapshot="${dataset_release_tag}_ehr"
-echo "ehr_snapshot --> ${ehr_snapshot}"
-
-bq mk --dataset --description "snapshot of latest EHR dataset ${ehr_dataset} ran on $(date +'%Y-%m-%d')" --label "release_tag:${dataset_release_tag}" --label "de_identified:false" ${app_id}:${ehr_snapshot}
-
-#copy tables
-"${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${ehr_dataset} --target_dataset ${ehr_snapshot} --sync false
-
-echo "--------------------------> Snapshotting  and cleaning RDR Dataset (step 5)"
+echo "--------------------------> Snapshotting  and cleaning RDR Dataset"
 rdr_clean="${dataset_release_tag}_rdr"
 rdr_clean_staging="${rdr_clean}_staging"
-rdr_clean_sandbox="${rdr_clean}_sandbox"
-rdr_clean_staging_sandbox="${rdr_clean_staging}_sandbox"
+rdr_sandbox="${rdr_clean}_sandbox"
 
 # create empty staging dataset
 bq mk --dataset --description "Intermediary dataset to apply cleaning rules on ${rdr_dataset}" --label "phase:staging" --label "release_tag:${dataset_release_tag}" --label "de_identified:false"  "${app_id}":"${rdr_clean_staging}"
 
 # create empty sandbox dataset
-bq mk --dataset --description "Sandbox created for storing records affected by the cleaning rules applied to ${rdr_clean_staging}" --label "phase:sandbox" --label "release_tag:${dataset_release_tag}" --label "de_identified:false"  "${app_id}":"${rdr_clean_staging_sandbox}"
+bq mk --dataset --description "Sandbox created for storing records affected by the cleaning rules applied to ${rdr_clean_staging}" --label "phase:sandbox" --label "release_tag:${dataset_release_tag}" --label "de_identified:false"  "${app_id}":"${rdr_sandbox}"
 
 #copy tables
 "${TOOLS_DIR}/table_copy.sh" --source_app_id "${app_id}" --target_app_id "${app_id}" --source_dataset "${rdr_dataset}" --target_dataset "${rdr_clean_staging}" --sync false
@@ -109,22 +92,16 @@ export RDR_DATASET_ID="${rdr_clean_staging}"
 echo "Cleaning the RDR data"
 data_stage="rdr"
 
-# apply cleaning rules on staging
-python "${CLEANER_DIR}/clean_cdr.py"  --project_id "${app_id}" --dataset_id "${rdr_clean_staging}" --sandbox_dataset_id "${rdr_clean_staging_sandbox}" --data_stage ${data_stage} --truncation_date "${truncation_date}" -s 2>&1 | tee rdr_cleaning_log_"${rdr_clean}".txt
+echo "--------------------------> applying cleaning rules on staging"
+python "${CLEANER_DIR}/clean_cdr.py"  --project_id "${app_id}" --dataset_id "${rdr_clean_staging}" --sandbox_dataset_id "${rdr_sandbox}" --data_stage ${data_stage} --truncation_date "${truncation_date}" -s 2>&1 | tee rdr_cleaning_log_"${rdr_clean}".txt
 
 # Create a snapshot dataset with the result
 python "${TOOLS_DIR}/snapshot_by_query.py" --project_id "${app_id}" --dataset_id "${rdr_clean_staging}" --snapshot_dataset_id "${rdr_clean}"
 
 bq update --description "${version} clean version of ${rdr_dataset}" --set_label "phase:clean" --set_label "release_tag:${dataset_release_tag}" --set_label "de_identified:false" ${app_id}:${rdr_clean}
 
-#copy sandbox dataset
-"${TOOLS_DIR}/table_copy.sh" --source_app_id "${app_id}" --target_app_id "${app_id}" --source_dataset "${rdr_clean_staging_sandbox}" --target_dataset "${rdr_clean_sandbox}"
-
 # Update sandbox description
 bq update --description "Sandbox created for storing records affected by the cleaning rules applied to ${rdr_clean}" --set_label "phase:sandbox" --set_label "release_tag:${dataset_release_tag}" --set_label "de_identified:false" "${app_id}":"${rdr_clean_sandbox}"
-
-bq rm -r -d "${rdr_clean_staging_sandbox}"
-bq rm -r -d "${rdr_clean_staging}"
 
 echo "Done."
 

@@ -125,9 +125,9 @@ echo "cope_survey_table_name --> ${cope_survey_table_name}"
 echo "deid_max_age --> ${deid_max_age}"
 
 #---------------------------------------------------------
-# Step 1 create EHR and RDR snapshot
+# Step 1 create EHR snapshot
 echo "-------------------------->Take a Snapshot of EHR Dataset (step 1)"
-"${TOOLS_DIR}/create_ehr_and_rdr_snapshot.sh" --key_file ${key_file} --ehr_dataset ${ehr_dataset} --rdr_dataset ${rdr_dataset} --dataset_release_tag ${dataset_release_tag}
+"${TOOLS_DIR}/create_ehr_snapshot.sh" --key_file ${key_file} --ehr_dataset ${ehr_dataset} --dataset_release_tag ${dataset_release_tag}
 
 #---------------------------------------------------------
 # Step 2 Generate Unioned ehr dataset
@@ -138,15 +138,20 @@ echo "ehr_snapshot ----> ${ehr_snapshot}"
 --ticket_number ${ticket_number} --pids_project_id ${pids_project_id} --pids_dataset_id ${pids_dataset_id} --pids_table ${pids_table}
 
 #---------------------------------------------------------
+# Step 3 Generate Rdr clean dataset
+echo "-------------------------->Generate Rdr clean dataset (step 3)"
+"${TOOLS_DIR}/create_rdr_snapshot.sh" --key_file ${key_file} --rdr_dataset ${rdr_dataset} --dataset_release_tag ${dataset_release_tag}
+
+#---------------------------------------------------------
 # Step 3 Generate combined dataset
-echo "-------------------------->Generate combined ehr rdr dataset (step 3)"
+echo "-------------------------->Generate combined ehr rdr dataset (step 4)"
 unioned_ehr_dataset="${dataset_release_tag}_unioned_ehr"
 echo "unioned_ehr_dataset --> $unioned_ehr_dataset"
 "${TOOLS_DIR}/generate_combined_dataset.sh" --key_file ${key_file} --vocab_dataset ${vocab_dataset} --unioned_ehr_dataset ${unioned_ehr_dataset} \
 --rdr_dataset ${rdr_dataset} --dataset_release_tag ${dataset_release_tag} --ehr_cutoff_date ${ehr_cutoff_date} --rdr_export_date ${rdr_export_date}
 
 #-------------------------------------------------------
-# Step 4 Run achilles on combined dataset
+# Step 5 Run achilles on combined dataset
 echo "-------------------------->Run achilles on identified CDR"
 combined_dataset="${dataset_release_tag}_combined"
 combined_backup="${combined_dataset}_backup"
@@ -161,7 +166,7 @@ export BIGQUERY_DATASET_ID="${combined_dataset}"
 "${TOOLS_DIR}/run_achilles_report.sh" --dataset ${combined_dataset} --key_file ${key_file} --result_bucket ${result_bucket} --vocab_dataset ${vocab_dataset}
 
 #--------------------------------------------------------
-# Step 5 Run deid on cdr
+# Step 6 Run deid on cdr
 echo "-------------------------->Run de identification on the identified CDR"
 cdr_deid="R${dataset_release_tag}_deid"
 echo "cdr_deid --> ${cdr_deid}"
@@ -170,7 +175,7 @@ echo "cdr_deid --> ${cdr_deid}"
 --cope_survey_dataset ${cope_survey_dataset} --cope_survey_table_name ${cope_survey_table_name} --deid_max_age ${deid_max_age}
 
 #-------------------------------------------------------
-# Step 6 Run achilles on de-identified dataset
+# Step 7 Run achilles on de-identified dataset
 echo "-------------------------->Run achilles on de-identified CDR"
 cdr_deid_base="${cdr_deid}_base"
 cdr_deid_clean="${cdr_deid}_clean"
