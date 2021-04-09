@@ -36,7 +36,8 @@ from dateutil import parser
 # Project imports
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.repopulate_person_post_deid import (
-    RepopulatePersonPostDeid, GENDER_CONCEPT_ID, SEX_AT_BIRTH_CONCEPT_ID)
+    RepopulatePersonPostDeid, GENDER_CONCEPT_ID, SEX_AT_BIRTH_CONCEPT_ID,
+    AOU_NONE_INDICATED_CONCEPT_ID)
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 from common import PERSON, OBSERVATION, CONCEPT
 
@@ -162,11 +163,13 @@ class RepopulatePersonPostDeidTest(BaseTest.CleaningRulesTestBase):
                 'sex_at_birth_concept_id', 'sex_at_birth_source_concept_id',
                 'sex_at_birth_source_value'
             ],
-            'cleaned_values': [(1, 1585841, 1991, 0, 38003564, "nonbinary_src",
-                                123, SEX_FEMALE_CONCEPT_ID,
-                                SEX_FEMALE_SOURCE_CONCEPT_ID, "female_src"),
-                               (2, 0, 1976, 0, 38003564, "No matching concept",
-                                0, 0, 0, "No matching concept")]
+            'cleaned_values': [
+                (1, 1585841, 1991, AOU_NONE_INDICATED_CONCEPT_ID, 38003564,
+                 "nonbinary_src", 123, SEX_FEMALE_CONCEPT_ID,
+                 SEX_FEMALE_SOURCE_CONCEPT_ID, "female_src"),
+                (2, 0, 1976, AOU_NONE_INDICATED_CONCEPT_ID, 38003564,
+                 "No matching concept", 0, 0, 0, "No matching concept")
+            ]
         }]
 
         self.default_test(tables_and_counts)
