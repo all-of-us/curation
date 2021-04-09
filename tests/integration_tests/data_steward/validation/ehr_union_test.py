@@ -211,7 +211,7 @@ class EhrUnionTest(unittest.TestCase):
             actual_num_rows = int(mapping_table_info.get('numRows', -1))
             message = 'Table %s has %s rows when %s expected' % (
                 mapping_table, actual_num_rows, expected_num_rows)
-            # self.assertEqual(expected_num_rows, actual_num_rows, message)
+            self.assertEqual(expected_num_rows, actual_num_rows, message)
 
         # check for each output table
         for table_name in resources.CDM_TABLES:
