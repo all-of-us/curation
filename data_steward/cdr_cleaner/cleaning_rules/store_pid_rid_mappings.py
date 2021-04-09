@@ -11,6 +11,7 @@ Duplicate mappings are not allowed.
 # Python imports
 import logging
 from datetime import datetime
+from dateutil.parser import parse
 
 # Third party imports
 from google.cloud import bigquery
@@ -107,9 +108,9 @@ class StoreNewPidRidMappings(BaseCleaningRule):
 
         # set export date
         if not export_date:
-            export_date = datetime.now().strftime('%Y-%m-%d')
-
-        self.export_date = datetime.strptime(export_date).strftime('%Y-%m-%d')
+            self.export_date = datetime.now().strftime('%Y-%m-%d')
+        else:
+            self.export_date = parse(export_date).strftime('%Y-%m-%d')
 
     def get_query_specs(self):
         """
@@ -189,7 +190,8 @@ if __name__ == '__main__':
         '--export_date',
         action='store',
         dest='export_date',
-        help=('Date of the RDR export.'),
+        help=('Date of the RDR export. Should adhere to '
+              'YYYY-MM-DD format'),
     )
 
     ARGS = ext_parser.parse_args()
