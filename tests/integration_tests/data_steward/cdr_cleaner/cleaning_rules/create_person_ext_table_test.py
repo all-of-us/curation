@@ -24,7 +24,7 @@ observation_source_concept_id = 1585845
 import os
 
 # Project imports
-from app_identity import PROJECT_ID
+from app_identity import get_application_id
 from cdr_cleaner.cleaning_rules.create_person_ext_table import CreatePersonExtTable
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
@@ -40,7 +40,7 @@ class CreatePersonExtTableTest(BaseTest.CleaningRulesTestBase):
         super().initialize_class_vars()
 
         # set the test project identifier
-        project_id = os.environ.get(PROJECT_ID)
+        project_id = get_application_id()
         cls.project_id = project_id
 
         # set the expected test datasets

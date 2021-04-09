@@ -24,7 +24,6 @@ import logging
 # Project imports
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
-from constants.bq_utils import WRITE_TRUNCATE
 from common import JINJA_ENV
 
 LOGGER = logging.getLogger(__name__)
