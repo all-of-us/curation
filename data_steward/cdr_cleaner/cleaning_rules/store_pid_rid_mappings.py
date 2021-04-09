@@ -3,9 +3,9 @@ Background
 
 The Genomics program requires stable research IDs (RIDs). This is a script that will
 add only pid/rid mappings for participants that don't currently exist in the
-primary pid_rid_mapping table.
+primary_pid_rid_mapping table.
 
-These records will be appended to the pipeline_tables.pid_rid_mapping table in BigQuery.
+These records will be appended to the pipeline_tables.primary_pid_rid_mapping table in BigQuery.
 Duplicate mappings are not allowed.
 """
 # Python imports
@@ -19,7 +19,7 @@ from google.cloud import bigquery
 # Project imports
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from common import (JINJA_ENV, MAX_DEID_DATE_SHIFT, PID_RID_MAPPING,
-                    PIPELINE_TABLES)
+                    PIPELINE_TABLES, PRIMARY_PID_RID_MAPPING)
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from resources import fields_for
 
@@ -80,7 +80,7 @@ class StoreNewPidRidMappings(BaseCleaningRule):
         desc = (f'All new pid/rid mappings will be identified via SQL and '
                 f'stored, along with a shift integer, in a sandbox table.  '
                 f'The table will be read to load into the primary pipeline '
-                f'table, pipeline_tables.pid_rid_mapping.')
+                f'table, pipeline_tables.primary_pid_rid_mapping.')
 
         super().__init__(issue_numbers=['DC1543'],
                          description=desc,
@@ -93,7 +93,7 @@ class StoreNewPidRidMappings(BaseCleaningRule):
         # primary table ref
         dataset_ref = bigquery.DatasetReference(project_id, PIPELINE_TABLES)
         self.primary_mapping_table = bigquery.TableReference(
-            dataset_ref, PID_RID_MAPPING)
+            dataset_ref, PRIMARY_PID_RID_MAPPING)
         # rdr table ref
         dataset_ref = bigquery.DatasetReference(project_id, dataset_id)
         self.rdr_table = bigquery.TableReference(dataset_ref, PID_RID_MAPPING)
@@ -101,10 +101,11 @@ class StoreNewPidRidMappings(BaseCleaningRule):
         # rdr sandbox table ref
         dataset_ref = bigquery.DatasetReference(project_id, sandbox_dataset_id)
         self.rdr_sandbox_table = bigquery.TableReference(
-            dataset_ref, self.sandbox_table_for('pid_rid_mapping'))
+            dataset_ref, self.sandbox_table_for(PID_RID_MAPPING))
 
         # store fields as json object
-        self.fields = fields_for(PID_RID_MAPPING, sub_path='pipeline_tables')
+        self.fields = fields_for(PRIMARY_PID_RID_MAPPING,
+                                 sub_path='pipeline_tables')
 
         # set export date
         if not export_date:
@@ -120,7 +121,7 @@ class StoreNewPidRidMappings(BaseCleaningRule):
         as a date shift integer.  Curation gets the pid/rid mapping table from the
         RDR team as part of their ETL process.  Curation must identify new pid/rid
         mapping pairs, create random date shifts for each pair, and store the three
-        tuple to the pipeline_tables.pid_rid_mapping table.
+        tuple to the pipeline_tables.primary_pid_rid_mapping table.
 
         The script assumes the newly provided mapping table exists in the same
         project as the primary mapping table.
