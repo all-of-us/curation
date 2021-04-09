@@ -10,7 +10,7 @@ def get_application_id():
     :return:
     """
     # NOTE: Google interchangeably refers to this identifier as application_id or project_id
-    project_id = os.getenv(PROJECT_ID, '').strip()
+    project_id = os.getenv(PROJECT_ID, '')
 
     # ensure project id is a non-empty string
     if project_id:
