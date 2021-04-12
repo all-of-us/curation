@@ -71,8 +71,9 @@ class PipelineLoggingTest(unittest.TestCase):
         :param expected_basename: expected basename of log file
         """
         log_filename = file_handler.baseFilename
+        log_basename = os.path.normpath(log_filename).split(os.path.sep).pop()
         # use endswith as opposed to .assertEquals so we don't care about slash type.
-        self.assertTrue(log_filename.endswith(expected_basename))
+        self.assertEqual(log_basename, expected_basename)
 
     def assert_sane_configure(self):
         """
