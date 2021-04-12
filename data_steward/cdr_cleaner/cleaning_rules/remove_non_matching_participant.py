@@ -158,11 +158,10 @@ def get_non_match_participant_query(project_id, validation_dataset_id,
     return select_non_match_participants_query
 
 
-def delete_records_for_non_matching_participants(project_id,
-                                                 dataset_id,
-                                                 sandbox_dataset_id=None,
-                                                 ehr_dataset_id=None,
-                                                 validation_dataset_id=None):
+def delete_records_for_non_matching_participants(project_id, dataset_id,
+                                                 sandbox_dataset_id,
+                                                 ehr_dataset_id,
+                                                 validation_dataset_id):
     """
     This function generates the queries that delete participants and their corresponding data points, for which the 
     participant_match data is missing and DRC matching algorithm flags it as a no match 
@@ -178,10 +177,14 @@ def delete_records_for_non_matching_participants(project_id,
     """
 
     if ehr_dataset_id is None:
-        ehr_dataset_id = bq_utils.get_unioned_dataset_id()
+        raise RuntimeError(
+            'Required parameter ehr_dataset_id not'
+            'set in delete_records_for_non_matching_participants')
 
     if validation_dataset_id is None:
-        validation_dataset_id = bq.get_latest_validation_dataset_id(project_id)
+        raise RuntimeError(
+            'Required parameter validation_dataset_id not'
+            'set in delete_records_for_non_matching_participants')
 
     non_matching_person_ids = []
 
@@ -208,7 +211,7 @@ def delete_records_for_non_matching_participants(project_id,
             .format(person_ids=non_matching_person_ids,
                     combined_dataset_id=dataset_id))
 
-        queries.append(
+        queries.extend(
             remove_pids.get_sandbox_queries(project_id, dataset_id,
                                             non_matching_person_ids,
                                             TICKET_NUMBER))
