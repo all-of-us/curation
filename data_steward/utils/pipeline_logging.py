@@ -16,6 +16,7 @@ from datetime import datetime
 
 # Project imports
 import resources
+from app_identity import get_application_id
 
 DEFAULT_LOG_DIR = os.path.join(resources.base_path, 'logs')
 """Default location for log files"""
@@ -23,7 +24,7 @@ DEFAULT_LOG_LEVEL = logging.INFO
 
 LOG_FORMAT = '%(asctime)s - %(levelname)s - %(name)s - %(message)s'
 LOG_DATEFMT = '%Y-%m-%d %H:%M:%S'
-FILENAME_FMT = '%Y%m%d'
+LOG_FILENAME_DATEFMT = '%Y%m%d'
 
 _FILE_HANDLER = 'curation_file_handler'
 """Identifies the file log handler"""
@@ -31,12 +32,30 @@ _CONSOLE_HANDLER = 'curation_console_handler'
 """Identifies the console handler"""
 
 
-def _get_date_str():
+def _get_log_date_str():
     """
-    Get current date formatted using FILENAME_FMT
+    Get current date formatted using LOG_FILENAME_DATEFMT
     :return: 
     """
-    return datetime.today().strftime(FILENAME_FMT)
+    return datetime.today().strftime(LOG_FILENAME_DATEFMT)
+
+
+def get_log_filename() -> str:
+    """
+    Construct runtime-specific log filename
+    """
+    try:
+        # attempt to add application id suffix (google project name)
+        app_id = get_application_id()
+        filename_suffix = f'-{app_id}'
+    except RuntimeError:
+        # if we cannot, add "-no-project" suffix as a visual hint that this runtime probably did not interact with a
+        # google project
+        # TODO: emit warning of some description?
+        filename_suffix = '-no-project'
+    finally:
+        # compile and return final log filename
+        return f'{_get_log_date_str()}{filename_suffix}.log'
 
 
 def _get_log_file_path():
@@ -48,8 +67,7 @@ def _get_log_file_path():
 
     :return: absolute path to the log file
     """
-    date_str = _get_date_str()
-    return os.path.join(DEFAULT_LOG_DIR, f'{date_str}.log')
+    return os.path.join(DEFAULT_LOG_DIR, get_log_filename())
 
 
 def _get_config(level, add_console_handler):
