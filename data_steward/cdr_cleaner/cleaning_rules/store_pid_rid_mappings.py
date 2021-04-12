@@ -32,14 +32,14 @@ CREATE TABLE IF NOT EXISTS `{{rdr_sandbox.project}}.{{rdr_sandbox.dataset_id}}.{
 {{field_definitions}}
 )
 PARTITION BY
-DATE(_PARTITIONTIME)
+import_date
 """)
 
 GENERATE_NEW_MAPPINGS = JINJA_ENV.from_string("""
 INSERT INTO  `{{rdr_sandbox.project}}.{{rdr_sandbox.dataset_id}}.{{rdr_sandbox.table_id}}`
-(_PARTITION_TIME, person_id, research_id, shift)
+(import_date, person_id, research_id, shift)
 SELECT
-  timestamp('{{export_date}}')
+  date('{{export_date}}')
   , person_id
   , research_id
 -- generates random shifts between 1 and max_shift inclusive --
@@ -56,9 +56,9 @@ AND research_id not in (
 
 STORE_NEW_MAPPINGS = JINJA_ENV.from_string("""
 INSERT INTO  `{{primary.project}}.{{primary.dataset_id}}.{{primary.table_id}}`
-(_PARTITIONTIME, person_id, research_id, shift)
+(import_date, person_id, research_id, shift)
 SELECT
-  _PARTITIONTIME
+  import_date
   , person_id
   , research_id
   , shift
@@ -76,11 +76,13 @@ class StoreNewPidRidMappings(BaseCleaningRule):
                  dataset_id,
                  sandbox_dataset_id,
                  export_date=None,
-                 namer='stage_less'):
+                 namer=None):
         desc = (f'All new pid/rid mappings will be identified via SQL and '
                 f'stored, along with a shift integer, in a sandbox table.  '
                 f'The table will be read to load into the primary pipeline '
                 f'table, pipeline_tables.primary_pid_rid_mapping.')
+
+        namer = dataset_id if not namer else namer
 
         super().__init__(issue_numbers=['DC1543'],
                          description=desc,
@@ -169,7 +171,7 @@ class StoreNewPidRidMappings(BaseCleaningRule):
     def get_sandbox_tablenames(self):
         return [self.rdr_sandbox_table]
 
-    def setup_rule(self):
+    def setup_rule(self, export_date):
         pass
 
     def setup_validation(self):
