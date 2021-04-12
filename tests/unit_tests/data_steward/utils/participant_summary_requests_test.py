@@ -17,7 +17,6 @@ import unittest
 import mock
 
 # Third Party imports
-import re
 import pandas
 import pandas.testing
 
@@ -291,3 +290,16 @@ class ParticipantSummaryRequestsTest(unittest.TestCase):
                         self.project_id,
                         if_exists='append',
                         table_schema=mock_fields_for), results)
+
+    @mock.patch('utils.participant_summary_requests.get_access_token')
+    @mock.patch('utils.participant_summary_requests.get_participant_data')
+    def test_get_deactivated_participants_parameters(self, mock_data,
+                                                     mock_token):
+        """
+        Ensures error checking is working.
+        """
+        # Parameter check tests
+        self.assertRaises(RuntimeError, psr.get_deactivated_participants, None,
+                          self.columns)
+        self.assertRaises(RuntimeError, psr.get_deactivated_participants,
+                          self.project_id, None)
