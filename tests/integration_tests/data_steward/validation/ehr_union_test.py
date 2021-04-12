@@ -321,8 +321,8 @@ class EhrUnionTest(unittest.TestCase):
                        self.project_id, self.hpo_ids)
 
         person_query = '''
-            SELECT 
-                person_id,
+            SELECT
+                p.person_id,
                 gender_concept_id,
                 gender_source_value,
                 race_concept_id,
@@ -331,7 +331,9 @@ class EhrUnionTest(unittest.TestCase):
                 ethnicity_concept_id,
                 ethnicity_source_value,
                 EXTRACT(DATE FROM birth_datetime) AS birth_date
-            FROM {output_dataset_id}.unioned_ehr_person
+            FROM {output_dataset_id}.unioned_ehr_person p
+            JOIN {output_dataset_id}._mapping_person AS mp
+                ON mp.person_id = p.person_id
             '''.format(output_dataset_id=self.output_dataset_id)
         person_response = bq_utils.query(person_query)
         person_rows = bq_utils.response2rows(person_response)
@@ -383,8 +385,10 @@ class EhrUnionTest(unittest.TestCase):
                        self.project_id, self.hpo_ids)
 
         q_person = '''
-                    SELECT *
+                    SELECT p.*
                     FROM {output_dataset_id}.unioned_ehr_person AS p
+                    JOIN {output_dataset_id}._mapping_person AS mp
+                        ON mp.person_id = p.person_id
                     '''.format(output_dataset_id=self.output_dataset_id)
         person_response = bq_utils.query(q_person)
         person_rows = bq_utils.response2rows(person_response)
@@ -393,7 +397,7 @@ class EhrUnionTest(unittest.TestCase):
                     FROM {output_dataset_id}.unioned_ehr_observation
                     WHERE observation_type_concept_id = 38000280
                     '''.format(output_dataset_id=self.output_dataset_id)
-        # observation should contain 4 records per person of type EHR
+        # observation should contain 4 records of type EHR per person per hpo
         expected = len(person_rows) * 4
         observation_response = bq_utils.query(q_observation)
         observation_rows = bq_utils.response2rows(observation_response)

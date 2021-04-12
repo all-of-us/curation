@@ -3,6 +3,66 @@ from unittest import mock
 
 import bq_utils
 from validation import ehr_union as eu
+from constants.validation import ehr_union as eu_constants
+
+MOVE_PER_OBS_QRY = '''
+        SELECT
+            CASE observation_concept_id
+                WHEN {gender_concept_id} THEN pto.person_id + {pto_offset} + {gender_offset} + {hpo_offset} * hpo.Display_Order
+                WHEN {race_concept_id} THEN pto.person_id + {pto_offset} + {race_offset} + {hpo_offset} * hpo.Display_Order
+                WHEN {dob_concept_id} THEN pto.person_id + {pto_offset} + {dob_offset} + {hpo_offset} * hpo.Display_Order 
+                WHEN {ethnicity_concept_id} THEN pto.person_id + {pto_offset} + {ethnicity_offset} + {hpo_offset} * hpo.Display_Order
+            END AS observation_id,
+            pto.person_id,
+            observation_concept_id,
+            EXTRACT(DATE FROM observation_datetime) as observation_date,
+            observation_type_concept_id,
+            observation_datetime,
+            CAST(NULL AS FLOAT64) as value_as_number,
+            value_as_concept_id,
+            CAST(value_as_string AS STRING) as value_as_string,
+            observation_source_value,
+            observation_source_concept_id,
+            NULL as qualifier_concept_id,
+            NULL as unit_concept_id,
+            NULL as provider_id,
+            NULL as visit_occurrence_id,
+            CAST(NULL AS STRING) as unit_source_value,
+            CAST(NULL AS STRING) as qualifier_source_value,
+            NULL as value_source_concept_id,
+            CAST(NULL AS STRING) as value_source_value,
+            NULL as questionnaire_response_id
+        FROM
+            ({person_to_obs_query}
+            ORDER BY person_id) AS pto
+            JOIN
+            `{output_dataset_id}._mapping_person` AS mp
+            ON pto.person_id = mp.src_person_id
+            JOIN
+            `lookup_tables.hpo_site_id_mappings` AS hpo
+            ON LOWER(hpo.HPO_ID) = mp.src_hpo_id
+        '''
+
+MAP_PER_OBS_QRY = '''
+        SELECT
+            mp.src_table_id AS src_table_id,
+            CASE observation_concept_id
+                WHEN {gender_concept_id} THEN pto.person_id + {pto_offset} + {gender_offset} + {hpo_offset} * hpo.Display_Order
+                WHEN {race_concept_id} THEN pto.person_id + {pto_offset} + {race_offset} + {hpo_offset} * hpo.Display_Order
+                WHEN {dob_concept_id} THEN pto.person_id + {pto_offset} + {dob_offset} + {hpo_offset} * hpo.Display_Order 
+                WHEN {ethnicity_concept_id} THEN pto.person_id + {pto_offset} + {ethnicity_offset} + {hpo_offset} * hpo.Display_Order
+            END AS observation_id,
+            pto.person_id AS src_observation_id,
+            mp.src_hpo_id AS src_hpo_id
+        FROM
+            ({person_to_obs_query}) AS pto
+            JOIN
+            `{output_dataset_id}._mapping_person` AS mp
+            ON pto.person_id = mp.src_person_id
+            JOIN
+            `lookup_tables.hpo_site_id_mappings` AS hpo
+            ON LOWER(hpo.HPO_ID) = mp.src_hpo_id            
+        '''
 
 
 class EhrUnionTest(unittest.TestCase):
@@ -128,6 +188,72 @@ class EhrUnionTest(unittest.TestCase):
         self.assertEqual(
             expected_query.strip(), query.strip(),
             "Mapping query for \n {q} \n to is not as expected".format(q=query))
+
+    @mock.patch('validation.ehr_union.output_table_for')
+    @mock.patch('validation.ehr_union.get_person_to_observation_query')
+    @mock.patch('validation.ehr_union.query')
+    def test_move_ehr_person_to_observation(
+        self, mock_query, mock_get_person_to_observation_query,
+        mock_output_table_for):
+        dataset_id = 'fake_dataset'
+        output_table = 'fake_table'
+
+        mock_get_person_to_observation_query.return_value = "SELECT COLUMN FROM TABLE"
+        mock_output_table_for.return_value = output_table
+
+        expected_q = MOVE_PER_OBS_QRY.format(
+            output_dataset_id=dataset_id,
+            pto_offset=2000000000000000,
+            gender_concept_id=4135376,
+            gender_offset=100000000000000,
+            race_concept_id=4013886,
+            race_offset=200000000000000,
+            dob_concept_id=4083587,
+            dob_offset=300000000000000,
+            ethnicity_concept_id=4271761,
+            ethnicity_offset=400000000000000,
+            hpo_offset=100000000000,
+            person_to_obs_query="SELECT COLUMN FROM TABLE")
+
+        #Make sure queries are the same
+        eu.move_ehr_person_to_observation(dataset_id)
+        mock_query.assert_called_with(expected_q,
+                                      output_table,
+                                      dataset_id,
+                                      write_disposition='WRITE_APPEND')
+
+    @mock.patch('validation.ehr_union.mapping_table_for')
+    @mock.patch('validation.ehr_union.get_person_to_observation_query')
+    @mock.patch('validation.ehr_union.query')
+    def test_map_ehr_person_to_observation(self, mock_query,
+                                           mock_get_person_to_observation_query,
+                                           mock_mapping_table_for):
+        dataset_id = 'fake_dataset'
+        mapping_table = 'fake_table'
+
+        mock_get_person_to_observation_query.return_value = "SELECT COLUMN FROM TABLE"
+        mock_mapping_table_for.return_value = mapping_table
+
+        expected_q = MAP_PER_OBS_QRY.format(
+            output_dataset_id=dataset_id,
+            pto_offset=2000000000000000,
+            gender_concept_id=4135376,
+            gender_offset=100000000000000,
+            race_concept_id=4013886,
+            race_offset=200000000000000,
+            dob_concept_id=4083587,
+            dob_offset=300000000000000,
+            ethnicity_concept_id=4271761,
+            ethnicity_offset=400000000000000,
+            hpo_offset=100000000000,
+            person_to_obs_query="SELECT COLUMN FROM TABLE")
+
+        #Make sure queries are the same
+        eu.map_ehr_person_to_observation(dataset_id)
+        mock_query.assert_called_with(expected_q,
+                                      mapping_table,
+                                      dataset_id,
+                                      write_disposition='WRITE_APPEND')
 
     def tearDown(self):
         pass
