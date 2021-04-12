@@ -70,10 +70,15 @@ class PipelineLoggingTest(unittest.TestCase):
         :param file_handler: logging.FileHandler instance to test
         :param expected_basename: expected basename of log file
         """
+        # extract target filename from logging filehandler
         log_filename = file_handler.baseFilename
-        log_basename = os.path.normpath(log_filename).split(os.path.sep).pop()
-        # use endswith as opposed to .assertEquals so we don't care about slash type.
-        self.assertEqual(log_basename, expected_basename)
+        # assert value is of correct type and non-empty
+        self.assertIsInstance(log_filename, str)
+        self.assertNotEqual(log_filename, '')
+        # normalize then split path based on local os path separator
+        log_path_split = os.path.normpath(log_filename).split(os.path.sep)
+        # assert last piece is expected log basename
+        self.assertEqual(log_path_split[-1], expected_basename)
 
     def assert_sane_configure(self):
         """
