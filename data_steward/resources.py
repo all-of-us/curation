@@ -261,7 +261,7 @@ def cdm_schemas(include_achilles=False, include_vocabulary=False):
     for dir_path, _, files in os.walk(cdm_fields_path):
         for f in files:
             file_path = os.path.join(dir_path, f)
-            with open(file_path, 'r') as fp:
+            with open(file_path, 'r', encoding='utf-8') as fp:
                 file_name = os.path.basename(f)
                 table_name = file_name.split('.')[0]
                 schema = json.load(fp)
