@@ -12,7 +12,7 @@ OrganTransplantDescription_OtherTissue - 1585808 -> https://athena.ohdsi.org/sea
 import logging
 
 # Project imports
-from common import OBSERVATION
+from common import AOU_REQUIRED
 from utils import pipeline_logging
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.deid.concept_suppression import AbstractInMemoryLookupTableConceptSuppression
@@ -39,7 +39,7 @@ class OrganTransplantConceptSuppression(
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
-                         affected_tables=[OBSERVATION])
+                         affected_tables=AOU_REQUIRED)
 
     def get_suppressed_concept_ids(self):
         # OrganTransplantDescription_OtherOrgan - 1585807 -> https://athena.ohdsi.org/search-terms/terms/1585807
