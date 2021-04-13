@@ -12,12 +12,13 @@ import logging
 from datetime import datetime
 
 # Project imports
+from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from common import JINJA_ENV
-from utils import pipeline_logging
 from constants import bq_utils as bq_consts
 from resources import fields_for, CDM_TABLES
+from utils import pipeline_logging
+from utils.bq import validate_bq_date_string
 import constants.cdr_cleaner.clean_cdr as cdr_consts
-from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 
 LOGGER = logging.getLogger(__name__)
 
@@ -59,7 +60,7 @@ class EhrSubmissionDataCutoff(BaseCleaningRule):
         """
         try:
             # set to provided date string if the date string is valid
-            self.cutoff_date = validate_date_string(cutoff_date)
+            self.cutoff_date = validate_bq_date_string(cutoff_date)
         except (TypeError, ValueError):
             # otherwise, default to using today's date as the date string
             self.cutoff_date = str(datetime.now().date())
@@ -186,23 +187,6 @@ class EhrSubmissionDataCutoff(BaseCleaningRule):
         return sandbox_tables
 
 
-def validate_date_string(date_string):
-    """
-    Validates the date string is a valid date in the YYYY-MM-DD format.
-
-    If the string is valid, it returns the string.  Otherwise, it raises either
-    a ValueError or TypeError.
-
-    :param date_string: The string to validate
-
-    :return:  a valid date string
-    :raises:  A ValueError if the date string is not a valid date or
-        doesn't conform to the specified format.
-    """
-    datetime.strptime(date_string, '%Y-%m-%d')
-    return date_string
-
-
 if __name__ == '__main__':
     import cdr_cleaner.args_parser as parser
     import cdr_cleaner.clean_cdr_engine as clean_engine
@@ -216,7 +200,7 @@ if __name__ == '__main__':
         ('Cutoff date for data based on <table_name>_date and <table_name>_datetime fields.  '
          'Should be in the form YYYY-MM-DD.'),
         required=True,
-        type=validate_date_string,
+        type=validate_bq_date_string,
     )
 
     ARGS = ext_parser.parse_args()

@@ -11,7 +11,6 @@ Duplicate mappings are not allowed.
 # Python imports
 import logging
 from datetime import datetime
-from dateutil.parser import parse
 
 # Third party imports
 from google.cloud import bigquery
@@ -22,6 +21,7 @@ from common import (JINJA_ENV, MAX_DEID_DATE_SHIFT, PID_RID_MAPPING,
                     PIPELINE_TABLES, PRIMARY_PID_RID_MAPPING)
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from resources import fields_for
+from utils.bq import validate_bq_date_string
 
 LOGGER = logging.getLogger(__name__)
 
@@ -110,10 +110,13 @@ class StoreNewPidRidMappings(BaseCleaningRule):
                                  sub_path='pipeline_tables')
 
         # set export date
-        if not export_date:
+        try:
+            self.export_date = validate_bq_date_string(export_date)
+        except (TypeError, ValueError):
+            # otherwise, default to using today's date
+            LOGGER.info(f"Failed to validate the export_date:  '{export_date}'")
             self.export_date = datetime.now().strftime('%Y-%m-%d')
-        else:
-            self.export_date = parse(export_date).strftime('%Y-%m-%d')
+            LOGGER.info(f"Setting export_date to now: '{self.export_date}'")
 
     def get_query_specs(self):
         """
@@ -195,6 +198,7 @@ if __name__ == '__main__':
         dest='export_date',
         help=('Date of the RDR export. Should adhere to '
               'YYYY-MM-DD format'),
+        type=validate_bq_date_string,
     )
 
     ARGS = ext_parser.parse_args()
