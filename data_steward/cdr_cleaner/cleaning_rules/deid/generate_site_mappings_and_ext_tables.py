@@ -5,7 +5,6 @@ Rule to create non-deterministic site ids for ehr sites and create the ext_table
 import logging
 
 # Project imports
-from constants.bq_utils import LOOKUP_TABLES_DATASET_ID, HPO_SITE_ID_MAPPINGS_TABLE_ID
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from tools.generate_ext_tables import get_generate_ext_table_queries, parse_args
@@ -13,41 +12,22 @@ from common import JINJA_ENV
 
 LOGGER = logging.getLogger(__name__)
 
-ISSUE_NUMBERS = ['DC-1351']
+ISSUE_NUMBERS = ['DC-1351', 'DC-1500']
+SITE_MASKING_TABLE_ID = 'site_maskings'
+PIPELINE_TABLES_DATASET = 'pipeline_tables'
 
-SITE_TABLE_ID = '_site_mappings'
-EHR_SITE_PREFIX = 'EHR site '
-RDR = 'rdr'
-PPI_PM = 'PPI/PM'
-
-SITE_MAPPINGS_QUERY = JINJA_ENV.from_string("""
-CREATE TABLE IF NOT EXISTS
-  `{{project_id}}.{{dataset_id}}.{{table_id}}` (hpo_id STRING OPTIONS(description="The hpo_id of the hpo site/RDR."),
-    src_id STRING OPTIONS(description="The masked id of the hpo site/RDR.")) AS (
-    WITH random_ids AS
-(
-  SELECT
-    CONCAT('{{site_prefix}}', new_id) AS hpo_id,
-    ROW_NUMBER() OVER(ORDER BY GENERATE_UUID()) AS row_id
-  FROM
-    UNNEST(GENERATE_ARRAY(100, 999)) AS new_id
-)
+SITE_MASKINGS_QUERY = JINJA_ENV.from_string("""
+CREATE OR REPLACE TABLE
+  `{{project_id}}.{{dataset_id}}.{{site_masking_table}}`
+  (
+    hpo_id STRING OPTIONS(description="The hpo_id of the hpo site/RDR."),
+    src_id STRING OPTIONS(description="The masked id of the hpo site/RDR.") 
+  ) AS
 SELECT
-    LOWER(m.hpo_id) as hpo_id,
-    r.hpo_id as src_id
-  FROM
-(
-  SELECT
-    m.*,
-    ROW_NUMBER() OVER(ORDER BY GENERATE_UUID()) AS row_id
-  FROM `{{project_id}}.{{lookup_tabels_dataset}}.{{hpo_site_id_mappings_table}}` AS m
-  WHERE m.HPO_ID IS NOT NULL AND m.HPO_ID != ''
-) AS m
-JOIN random_ids AS r
-USING (row_id)
-union all
-select '{{rdr}}' as hpo_id, '{{ppi_pm}}' as src_id
-)
+  hpo_id,
+  src_id
+FROM
+  `{{project_id}}.{{pipelines_dataset}}.{{site_masking_table}}`
 """)
 
 
@@ -94,15 +74,11 @@ class GenerateSiteMappingsAndExtTables(BaseCleaningRule):
         """
         query_list = []
         query = dict()
-        query[cdr_consts.QUERY] = SITE_MAPPINGS_QUERY.render(
+        query[cdr_consts.QUERY] = SITE_MASKINGS_QUERY.render(
             project_id=self.project_id,
             dataset_id=self.sandbox_dataset_id,
-            table_id=SITE_TABLE_ID,
-            site_prefix=EHR_SITE_PREFIX,
-            lookup_tabels_dataset=LOOKUP_TABLES_DATASET_ID,
-            hpo_site_id_mappings_table=HPO_SITE_ID_MAPPINGS_TABLE_ID,
-            ppi_pm=PPI_PM,
-            rdr=RDR)
+            pipelines_dataset=PIPELINE_TABLES_DATASET,
+            site_masking_table=SITE_MASKING_TABLE_ID)
         query_list.append(query)
 
         # gather queries to generate ext tables
