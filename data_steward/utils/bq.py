@@ -2,6 +2,7 @@
 A utility to standardize use of the BigQuery python client library.
 """
 # Python Imports
+from datetime import datetime
 import logging
 import os
 import typing
@@ -620,3 +621,20 @@ def copy_datasets(client: bigquery.Client, input_dataset, output_dataset):
     for table in tables:
         staging_table = f'{output_dataset}.{table.table_id}'
         client.copy_table(table, staging_table)
+
+
+def validate_bq_date_string(date_string):
+    """
+    Validates the date string is a valid date in the YYYY-MM-DD format.
+
+    If the string is valid, the string is returned.  Otherwise, strptime
+    raises either a ValueError or TypeError.
+
+    :param date_string: The string to validate adheres to YYYY-MM-DD format
+
+    :return:  a bq conforming date string
+    :raises:  A ValueError if the date string is not a valid date or
+        doesn't conform to the specified format.
+    """
+    datetime.strptime(date_string, '%Y-%m-%d')
+    return date_string

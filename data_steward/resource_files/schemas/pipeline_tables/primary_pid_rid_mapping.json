@@ -16,5 +16,11 @@
     "name": "shift",
     "mode": "required",
     "description": "The number of days to shift all dates into the past for each participant. A random number from 1 - 365."
+  },
+  {
+    "type": "date",
+    "name": "import_date",
+    "mode": "required",
+    "description": "Date of the rdr import that first identified this mapping.  Used for partitioning."
   }
 ]

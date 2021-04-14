@@ -3,13 +3,14 @@ Background
 
 The Genomics program requires stable research IDs (RIDs). This is a script that will
 add only pid/rid mappings for participants that don't currently exist in the
-primary pid_rid_mapping table.
+primary_pid_rid_mapping table.
 
-These records will be appended to the pipeline_tables.pid_rid_mapping table in BigQuery.
+These records will be appended to the pipeline_tables.primary_pid_rid_mapping table in BigQuery.
 Duplicate mappings are not allowed.
 """
 # Python imports
 import logging
+from datetime import datetime
 
 # Third party imports
 from google.cloud import bigquery
@@ -17,9 +18,10 @@ from google.cloud import bigquery
 # Project imports
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from common import (JINJA_ENV, MAX_DEID_DATE_SHIFT, PID_RID_MAPPING,
-                    PIPELINE_TABLES)
+                    PIPELINE_TABLES, PRIMARY_PID_RID_MAPPING)
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from resources import fields_for
+from utils.bq import validate_bq_date_string
 
 LOGGER = logging.getLogger(__name__)
 
@@ -29,13 +31,16 @@ CREATE TABLE IF NOT EXISTS `{{rdr_sandbox.project}}.{{rdr_sandbox.dataset_id}}.{
 (
 {{field_definitions}}
 )
+PARTITION BY
+import_date
 """)
 
 GENERATE_NEW_MAPPINGS = JINJA_ENV.from_string("""
 INSERT INTO  `{{rdr_sandbox.project}}.{{rdr_sandbox.dataset_id}}.{{rdr_sandbox.table_id}}`
-(person_id, research_id, shift)
+(import_date, person_id, research_id, shift)
 SELECT
-  person_id
+  date('{{export_date}}')
+  , person_id
   , research_id
 -- generates random shifts between 1 and max_shift inclusive --
   , CAST(FLOOR({{max_shift}} * RAND() + 1) AS INT64) as shift
@@ -51,9 +56,10 @@ AND research_id not in (
 
 STORE_NEW_MAPPINGS = JINJA_ENV.from_string("""
 INSERT INTO  `{{primary.project}}.{{primary.dataset_id}}.{{primary.table_id}}`
-(person_id, research_id, shift)
+(import_date, person_id, research_id, shift)
 SELECT
-  person_id
+  import_date
+  , person_id
   , research_id
   , shift
 FROM `{{rdr_sandbox.project}}.{{rdr_sandbox.dataset_id}}.{{rdr_sandbox.table_id}}`
@@ -69,11 +75,14 @@ class StoreNewPidRidMappings(BaseCleaningRule):
                  project_id,
                  dataset_id,
                  sandbox_dataset_id,
-                 namer='stage_less'):
+                 export_date=None,
+                 namer=None):
         desc = (f'All new pid/rid mappings will be identified via SQL and '
                 f'stored, along with a shift integer, in a sandbox table.  '
                 f'The table will be read to load into the primary pipeline '
-                f'table, pipeline_tables.pid_rid_mapping.')
+                f'table, pipeline_tables.primary_pid_rid_mapping.')
+
+        namer = dataset_id if not namer else namer
 
         super().__init__(issue_numbers=['DC1543'],
                          description=desc,
@@ -86,7 +95,7 @@ class StoreNewPidRidMappings(BaseCleaningRule):
         # primary table ref
         dataset_ref = bigquery.DatasetReference(project_id, PIPELINE_TABLES)
         self.primary_mapping_table = bigquery.TableReference(
-            dataset_ref, PID_RID_MAPPING)
+            dataset_ref, PRIMARY_PID_RID_MAPPING)
         # rdr table ref
         dataset_ref = bigquery.DatasetReference(project_id, dataset_id)
         self.rdr_table = bigquery.TableReference(dataset_ref, PID_RID_MAPPING)
@@ -94,10 +103,20 @@ class StoreNewPidRidMappings(BaseCleaningRule):
         # rdr sandbox table ref
         dataset_ref = bigquery.DatasetReference(project_id, sandbox_dataset_id)
         self.rdr_sandbox_table = bigquery.TableReference(
-            dataset_ref, self.sandbox_table_for('pid_rid_mapping'))
+            dataset_ref, self.sandbox_table_for(PID_RID_MAPPING))
 
         # store fields as json object
-        self.fields = fields_for(PID_RID_MAPPING, sub_path='pipeline_tables')
+        self.fields = fields_for(PRIMARY_PID_RID_MAPPING,
+                                 sub_path='pipeline_tables')
+
+        # set export date
+        try:
+            self.export_date = validate_bq_date_string(export_date)
+        except (TypeError, ValueError):
+            # otherwise, default to using today's date
+            LOGGER.info(f"Failed to validate the export_date:  '{export_date}'")
+            self.export_date = datetime.now().strftime('%Y-%m-%d')
+            LOGGER.info(f"Setting export_date to now: '{self.export_date}'")
 
     def get_query_specs(self):
         """
@@ -107,7 +126,7 @@ class StoreNewPidRidMappings(BaseCleaningRule):
         as a date shift integer.  Curation gets the pid/rid mapping table from the
         RDR team as part of their ETL process.  Curation must identify new pid/rid
         mapping pairs, create random date shifts for each pair, and store the three
-        tuple to the pipeline_tables.pid_rid_mapping table.
+        tuple to the pipeline_tables.primary_pid_rid_mapping table.
 
         The script assumes the newly provided mapping table exists in the same
         project as the primary mapping table.
@@ -132,6 +151,7 @@ class StoreNewPidRidMappings(BaseCleaningRule):
             rdr_table=self.rdr_table,
             rdr_sandbox=self.rdr_sandbox_table,
             primary=self.primary_mapping_table,
+            export_date=self.export_date,
             max_shift=MAX_DEID_DATE_SHIFT)
 
         insert_query = STORE_NEW_MAPPINGS.render(
@@ -154,7 +174,7 @@ class StoreNewPidRidMappings(BaseCleaningRule):
     def get_sandbox_tablenames(self):
         return [self.rdr_sandbox_table]
 
-    def setup_rule(self):
+    def setup_rule(self, export_date):
         pass
 
     def setup_validation(self):
@@ -171,6 +191,15 @@ if __name__ == '__main__':
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
     ext_parser = parser.get_argument_parser()
+    ext_parser.add_argument(
+        '-e',
+        '--export_date',
+        action='store',
+        dest='export_date',
+        help=('Date of the RDR export. Should adhere to '
+              'YYYY-MM-DD format'),
+        type=validate_bq_date_string,
+    )
 
     ARGS = ext_parser.parse_args()
     pipeline_logging.configure(level=logging.DEBUG, add_console_handler=True)
@@ -180,11 +209,13 @@ if __name__ == '__main__':
         query_list = clean_engine.get_query_list(ARGS.project_id,
                                                  ARGS.dataset_id,
                                                  ARGS.sandbox_dataset_id,
-                                                 [(StoreNewPidRidMappings,)])
+                                                 [(StoreNewPidRidMappings,)],
+                                                 ARGS.export_date)
         for query in query_list:
             LOGGER.info(query)
     else:
         clean_engine.add_console_logging(ARGS.console_log)
         clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
                                    ARGS.sandbox_dataset_id,
-                                   [(StoreNewPidRidMappings,)])
+                                   [(StoreNewPidRidMappings,)],
+                                   ARGS.export_date)

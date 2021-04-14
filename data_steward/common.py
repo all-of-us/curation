@@ -214,8 +214,9 @@ EXT = 'ext'
 EXT_SUFFIX = '_ext'
 
 DEID_MAP = '_deid_map'
-MAX_DEID_DATE_SHIFT = 365
+MAX_DEID_DATE_SHIFT = 364
 PID_RID_MAPPING = 'pid_rid_mapping'
+PRIMARY_PID_RID_MAPPING = 'primary_pid_rid_mapping'
 PIPELINE_TABLES = 'pipeline_tables'
 COPE_SURVEY_MAP = 'cope_survey_semantic_version_map'
 

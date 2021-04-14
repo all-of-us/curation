@@ -12,7 +12,7 @@ from google.cloud.exceptions import NotFound
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.bq_utils import WRITE_TRUNCATE
 from constants.cdr_cleaner import clean_cdr as cdr_consts
-from common import JINJA_ENV, PERSON, DEID_MAP, PID_RID_MAPPING, PIPELINE_TABLES
+from common import JINJA_ENV, PERSON, DEID_MAP, PRIMARY_PID_RID_MAPPING, PIPELINE_TABLES
 
 LOGGER = logging.getLogger(__name__)
 
@@ -113,11 +113,11 @@ class PIDtoRID(BaseCleaningRule):
             client.get_table(self.deid_map)
         except NotFound:
             job = client.copy_table(
-                f'{self.project_id}.{PIPELINE_TABLES}.{PID_RID_MAPPING}',
+                f'{self.project_id}.{PIPELINE_TABLES}.{PRIMARY_PID_RID_MAPPING}',
                 f'{self.project_id}.{self.sandbox_dataset_id}.{DEID_MAP}')
             job.result()
             LOGGER.info(
-                f'Copied {PIPELINE_TABLES}.{PID_RID_MAPPING} to {self.sandbox_dataset_id}.{DEID_MAP}'
+                f'Copied {PIPELINE_TABLES}.{PRIMARY_PID_RID_MAPPING} to {self.sandbox_dataset_id}.{DEID_MAP}'
             )
 
     def setup_validation(self, client):
