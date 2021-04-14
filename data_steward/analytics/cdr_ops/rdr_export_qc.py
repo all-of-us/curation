@@ -301,6 +301,8 @@ FROM ppi_concept_code
 JOIN `{project_id}.{new_rdr}.concept`
  ON LOWER(concept_code)=LOWER(code)
 WHERE LOWER(concept_class_id)<>LOWER(expected_concept_class_id)
+AND CASE WHEN expected_concept_class_id = 'Question' THEN concept_class_id NOT IN('Topic','PPI Modifier') END
+AND concept_class_id != 'Qualifier Value'
 ORDER BY 1, 2, 3
 '''
 pd.read_gbq(query, dialect='standard')
