@@ -1,6 +1,8 @@
 from datetime import datetime
 import os
 
+import mock
+
 from app_identity import get_application_id
 from common import PID_RID_MAPPING, PIPELINE_TABLES, PRIMARY_PID_RID_MAPPING
 from resources import fields_for
@@ -36,8 +38,11 @@ class StoreMappingsTest(BaseTest.CleaningRulesTestBase):
                 f'{cls.project_id}.{cls.sandbox_id}.{table_name}')
 
         cls.import_map_name = f'{cls.project_id}.{cls.dataset_id}.{PID_RID_MAPPING}'
-        cls.stable_map_name = f'{cls.project_id}.{PIPELINE_TABLES}.{PRIMARY_PID_RID_MAPPING}'
+        # This will normally be the PIPELINE_TABLES dataset, but is being
+        # mocked for this test
+        cls.stable_map_name = f'{cls.project_id}.{cls.dataset_id}.{PRIMARY_PID_RID_MAPPING}'
         cls.fq_table_names = [cls.import_map_name, cls.stable_map_name]
+
         # call super to set up the client, create datasets, and create
         # empty test tables
         # NOTE:  does not create empty sandbox tables.
@@ -86,6 +91,7 @@ class StoreMappingsTest(BaseTest.CleaningRulesTestBase):
                 500000000, 1000000000, 200000000, 300000000, 800000000
             ],
             'cleaned_values': [
+                # Should exist without having been overwritten
                 (500000000, 88, datetime.strptime('2020-09-01',
                                                   '%Y-%m-%d').date()),
                 (1000000000, 100, datetime.strptime('2020-08-01',
@@ -96,18 +102,15 @@ class StoreMappingsTest(BaseTest.CleaningRulesTestBase):
                                                   '%Y-%m-%d').date()),
                 (800000000, 20, datetime.strptime('2020-05-01',
                                                   '%Y-%m-%d').date()),
-                # should have been added, it is unique --
+                # should have been added by the rule, each is unique
                 (400000000, 45, datetime.now().date()),
                 (600000000, 70, datetime.now().date())
             ]
         }]
 
-        self.default_test(tables_and_counts)
-
-
-#    def tearDown(self):
-#        print("SKIPPING TEAR DOWN PROCESS")
-#
-#    @classmethod
-#    def tearDownClass(cls):
-#        print("SKIPPING TEAR DOWN CLASS PROCESS")
+        # mock the PIPELINE_TABLES variable so tests on different branches
+        # don't overwrite each other.
+        with mock.patch(
+                'cdr_cleaner.cleaning_rules.store_pid_rid_mappings.PIPELINE_TABLES',
+                self.dataset_id):
+            self.default_test(tables_and_counts)
