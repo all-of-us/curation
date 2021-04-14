@@ -10,9 +10,8 @@ from google.cloud.exceptions import NotFound
 
 # Project imports
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
-from constants.bq_utils import WRITE_TRUNCATE
 from constants.cdr_cleaner import clean_cdr as cdr_consts
-from common import JINJA_ENV, PERSON, DEID_MAP, PRIMARY_PID_RID_MAPPING, PIPELINE_TABLES
+from common import JINJA_ENV, DEID_MAP, PRIMARY_PID_RID_MAPPING, PIPELINE_TABLES
 
 LOGGER = logging.getLogger(__name__)
 
@@ -24,6 +23,16 @@ WHERE t.person_id = d.person_id
 """
 
 PID_RID_QUERY_TMPL = JINJA_ENV.from_string(PID_RID_QUERY)
+
+DELETE_PID_QUERY = """
+DELETE
+FROM `{{input_table.project}}.{{input_table.dataset_id}}.{{input_table.table_id}}`
+WHERE person_id NOT IN 
+(SELECT research_id
+FROM `{{deid_map.project}}.{{deid_map.dataset_id}}.{{deid_map.table_id}}`)
+"""
+
+DELETE_PID_QUERY_TMPL = JINJA_ENV.from_string(DELETE_PID_QUERY)
 
 VALIDATE_QUERY = """
 SELECT person_id
@@ -76,7 +85,8 @@ class PIDtoRID(BaseCleaningRule):
             single query and a specification for how to execute that query.
             The specifications are optional but the query is required.
         """
-        queries = []
+        update_queries = []
+        delete_queries = []
 
         for table in self.pid_tables:
             table_query = {
@@ -84,9 +94,15 @@ class PIDtoRID(BaseCleaningRule):
                     PID_RID_QUERY_TMPL.render(input_table=table,
                                               deid_map=self.deid_map)
             }
-            queries.append(table_query)
+            update_queries.append(table_query)
+            delete_query = {
+                cdr_consts.QUERY:
+                    DELETE_PID_QUERY_TMPL.render(input_table=table,
+                                                 deid_map=self.deid_map)
+            }
+            delete_queries.append(delete_query)
 
-        return queries
+        return update_queries + delete_queries
 
     def get_sandbox_tablenames(self):
         return []
@@ -103,7 +119,8 @@ class PIDtoRID(BaseCleaningRule):
             if result.total_rows > 0:
                 pids = result.to_dataframe()['person_id'].to_list()
                 LOGGER.warning(
-                    f'PIDs {pids} excluded since no mapped research_ids found')
+                    f'Records for PIDs {pids} will be deleted since no mapped research_ids found'
+                )
 
     def setup_rule(self, client):
         """
