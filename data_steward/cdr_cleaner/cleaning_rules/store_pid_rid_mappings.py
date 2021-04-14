@@ -172,7 +172,7 @@ class StoreNewPidRidMappings(BaseCleaningRule):
         ]
 
     def get_sandbox_tablenames(self):
-        return [self.rdr_sandbox_table]
+        return [self.rdr_sandbox_table.table_id]
 
     def setup_rule(self, export_date):
         pass
