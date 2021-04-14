@@ -4,7 +4,7 @@ import os
 import mock
 
 from app_identity import get_application_id
-from common import PID_RID_MAPPING, PIPELINE_TABLES, PRIMARY_PID_RID_MAPPING
+from common import PID_RID_MAPPING, PRIMARY_PID_RID_MAPPING
 from resources import fields_for
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 from cdr_cleaner.cleaning_rules.store_pid_rid_mappings import StoreNewPidRidMappings
