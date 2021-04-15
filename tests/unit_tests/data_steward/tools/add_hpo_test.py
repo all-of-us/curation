@@ -82,9 +82,11 @@ class AddHPOTest(TestCase):
                           new_site['hpo_id'], new_site['hpo_name'],
                           new_site['org_id'], new_site['display_order'])
 
-    @mock.patch('cdr_cleaner.cleaning_rules.deid.generate_site_mappings_and_ext_tables')
+    @mock.patch(
+        'cdr_cleaner.cleaning_rules.deid.generate_site_mappings_and_ext_tables')
     @mock.patch('utils.bq.get_client')
-    def test_update_site_masking_table(self, mock_client, mock_generate_site_mappings):
+    def test_update_site_masking_table(self, mock_client,
+                                       mock_generate_site_mappings):
         # Preconditions
         client = mock_client.return_value = self.mock_bq_client
         client.side_effects = add_hpo.update_site_masking_table()
@@ -94,7 +96,3 @@ class AddHPOTest(TestCase):
 
         # Post conditions
         self.assertEqual(mock_client.call_count, 2)
-
-
-
-
