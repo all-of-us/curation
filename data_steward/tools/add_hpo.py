@@ -244,8 +244,8 @@ def update_site_masking_table():
 
     update_site_maskings_query = UPDATE_SITE_MASKING_QUERY.render(
         project_id=project_id,
-        dataset_id=dataset_id,
-        pipeline_dataset_id=intermediary_dataset_id,
+        pipeline_dataset_id=PIPELINE_TABLES,
+        pipeline_sandbox_id=intermediary_dataset_id,
         table_id=table_id)
     queries.append(update_site_maskings_query)
 
@@ -258,7 +258,7 @@ def update_site_masking_table():
     for query in queries:
         query_job = client.query(query)
         if query_job.errors:
-            raise RuntimeError(f'{query} failed to run.')
+            raise RuntimeError(f'{query} failed to run because of {query_job.errors}.')
         jobs.append(query_job.result())
 
     return jobs
