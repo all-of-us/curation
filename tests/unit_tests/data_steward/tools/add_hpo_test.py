@@ -6,7 +6,7 @@ import pandas as pd
 
 # Project imports
 from tools import add_hpo
-from cdr_cleaner.cleaning_rules.deid.generate_site_mappings_and_ext_tables import GenerateSiteMappingsAndExtTables
+import app_identity
 
 
 class AddHPOTest(TestCase):
@@ -22,11 +22,6 @@ class AddHPOTest(TestCase):
         self.dataset_id = 'dataset_id'
         self.sandbox_dataset_id = 'sandbox_dataset_id'
         self.table_id = 'site_maskings'
-
-        # Tools for mocking the client
-        mock_bq_client_patcher = mock.patch('utils.bq.get_client')
-        self.mock_bq_client = mock_bq_client_patcher.start()
-        self.addCleanup(mock_bq_client_patcher.stop)
 
     def test_verify_hpo_mappings_up_to_date(self):
         df_1 = pd.DataFrame({'HPO_ID': ['FAKE_1', 'FAKE_2']})
@@ -82,17 +77,40 @@ class AddHPOTest(TestCase):
                           new_site['hpo_id'], new_site['hpo_name'],
                           new_site['org_id'], new_site['display_order'])
 
-    @mock.patch(
-        'cdr_cleaner.cleaning_rules.deid.generate_site_mappings_and_ext_tables')
     @mock.patch('utils.bq.get_client')
-    def test_update_site_masking_table(self, mock_client,
-                                       mock_generate_site_mappings):
+    def test_update_site_masking_table(self, mock_get_client):
         # Preconditions
-        client = mock_client.return_value = self.mock_bq_client
-        client.side_effects = add_hpo.update_site_masking_table()
+        project_id = app_identity.get_application_id()
+        intermediary_dataset_id = add_hpo.PIPELINE_TABLES + '_sandbox'
 
-        # test
-        add_hpo.update_site_masking_table()
+        mock_query = mock_get_client.return_value.query
+
+        # Mocks the job returns
+        query_job_reference_1 = mock.MagicMock(name="query_job_reference_1")
+        query_job_reference_1_results = mock.MagicMock(name="query_job_reference_result_1")
+        query_job_reference_1.result.return_value = query_job_reference_1_results
+
+        query_job_reference_2 = mock.MagicMock(name="query_job_reference_2")
+        query_job_reference_2_results = mock.MagicMock(name="query_job_reference_result_2")
+        query_job_reference_2.result.return_value = query_job_reference_2_results
+
+        type(query_job_reference_1).errors = mock.PropertyMock(
+            name="query_job_property_1", return_value=[])
+        type(query_job_reference_2).errors = mock.PropertyMock(
+            name="query_job_property_2", return_value=[])
+        mock_query.side_effect = [query_job_reference_1, query_job_reference_2]
+
+        # Test
+        actual_jobs = add_hpo.update_site_masking_table()
 
         # Post conditions
-        self.assertEqual(mock_client.call_count, 2)
+        update_site_masking_query = add_hpo.UPDATE_SITE_MASKING_QUERY.render(
+            project_id=project_id,
+            pipeline_dataset_id=add_hpo.PIPELINE_TABLES,
+            pipeline_sandbox_id=intermediary_dataset_id,
+            table_id=add_hpo.SITE_TABLE_ID)
+
+        expected_jobs = [query_job_reference_1_results, query_job_reference_2_results]
+        mock_query.assert_any_call(update_site_masking_query)
+
+        self.assertEqual(actual_jobs, expected_jobs)
