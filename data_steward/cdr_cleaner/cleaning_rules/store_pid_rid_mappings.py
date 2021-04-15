@@ -96,6 +96,7 @@ class StoreNewPidRidMappings(BaseCleaningRule):
         dataset_ref = bigquery.DatasetReference(project_id, PIPELINE_TABLES)
         self.primary_mapping_table = bigquery.TableReference(
             dataset_ref, PRIMARY_PID_RID_MAPPING)
+
         # rdr table ref
         dataset_ref = bigquery.DatasetReference(project_id, dataset_id)
         self.rdr_table = bigquery.TableReference(dataset_ref, PID_RID_MAPPING)
@@ -172,7 +173,7 @@ class StoreNewPidRidMappings(BaseCleaningRule):
         ]
 
     def get_sandbox_tablenames(self):
-        return [self.rdr_sandbox_table]
+        return [self.rdr_sandbox_table.table_id]
 
     def setup_rule(self, export_date):
         pass
