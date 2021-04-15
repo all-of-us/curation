@@ -1,8 +1,12 @@
+# Python imports
 from unittest import TestCase, mock
 
+# Third party imports
 import pandas as pd
 
+# Project imports
 from tools import add_hpo
+from cdr_cleaner.cleaning_rules.deid.generate_site_mappings_and_ext_tables import GenerateSiteMappingsAndExtTables
 
 
 class AddHPOTest(TestCase):
@@ -16,6 +20,13 @@ class AddHPOTest(TestCase):
     def setUp(self):
         self.project_id = 'project_id'
         self.dataset_id = 'dataset_id'
+        self.sandbox_dataset_id = 'sandbox_dataset_id'
+        self.table_id = 'site_maskings'
+
+        # Tools for mocking the client
+        mock_bq_client_patcher = mock.patch('utils.bq.get_client')
+        self.mock_bq_client = mock_bq_client_patcher.start()
+        self.addCleanup(mock_bq_client_patcher.stop)
 
     def test_verify_hpo_mappings_up_to_date(self):
         df_1 = pd.DataFrame({'HPO_ID': ['FAKE_1', 'FAKE_2']})
@@ -70,3 +81,20 @@ class AddHPOTest(TestCase):
         self.assertRaises(ValueError, add_hpo.add_hpo_site_mappings_file_df,
                           new_site['hpo_id'], new_site['hpo_name'],
                           new_site['org_id'], new_site['display_order'])
+
+    @mock.patch('cdr_cleaner.cleaning_rules.deid.generate_site_mappings_and_ext_tables')
+    @mock.patch('utils.bq.get_client')
+    def test_update_site_masking_table(self, mock_client, mock_generate_site_mappings):
+        # Preconditions
+        client = mock_client.return_value = self.mock_bq_client
+        client.side_effects = add_hpo.update_site_masking_table()
+
+        # test
+        add_hpo.update_site_masking_table()
+
+        # Post conditions
+        self.assertEqual(mock_client.call_count, 2)
+
+
+
+
