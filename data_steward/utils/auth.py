@@ -123,11 +123,10 @@ def get_impersonation_credentials(target_principal,
             lifetime=IMPERSONATION_LIFETIME)
 
     else:
-        with warnings.catch_warnings():
-            # the library sends a UserWarning about end user credentials.
-            # this context manager will ignore that one warning
-            warnings.simplefilter("ignore", category=UserWarning)
-            creds, _ = default()
+        # the library sends a UserWarning about end user credentials.
+        # this simplefilter will ignore that one warning
+        warnings.simplefilter("ignore", category=UserWarning)
+        creds, _ = default()
 
         try:
             if creds.client_secret:
