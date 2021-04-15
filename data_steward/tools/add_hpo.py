@@ -21,7 +21,7 @@ import constants.bq_utils as bq_consts
 from utils import bq
 from cdr_cleaner.cleaning_rules.deid.generate_site_mappings_and_ext_tables import GenerateSiteMappingsAndExtTables, \
     SITE_TABLE_ID
-# from tools import cli_util
+from tools import cli_util
 from common import JINJA_ENV, PIPELINE_TABLES
 
 LOGGER = logging.getLogger(__name__)
