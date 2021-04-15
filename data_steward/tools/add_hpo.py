@@ -258,7 +258,8 @@ def update_site_masking_table():
     for query in queries:
         query_job = client.query(query)
         if query_job.errors:
-            raise RuntimeError(f'{query} failed to run because of {query_job.errors}.')
+            raise RuntimeError(
+                f'{query} failed to run because of {query_job.errors}.')
         jobs.append(query_job.result())
 
     return jobs

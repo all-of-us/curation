@@ -87,11 +87,13 @@ class AddHPOTest(TestCase):
 
         # Mocks the job returns
         query_job_reference_1 = mock.MagicMock(name="query_job_reference_1")
-        query_job_reference_1_results = mock.MagicMock(name="query_job_reference_result_1")
+        query_job_reference_1_results = mock.MagicMock(
+            name="query_job_reference_result_1")
         query_job_reference_1.result.return_value = query_job_reference_1_results
 
         query_job_reference_2 = mock.MagicMock(name="query_job_reference_2")
-        query_job_reference_2_results = mock.MagicMock(name="query_job_reference_result_2")
+        query_job_reference_2_results = mock.MagicMock(
+            name="query_job_reference_result_2")
         query_job_reference_2.result.return_value = query_job_reference_2_results
 
         type(query_job_reference_1).errors = mock.PropertyMock(
@@ -110,7 +112,9 @@ class AddHPOTest(TestCase):
             pipeline_sandbox_id=intermediary_dataset_id,
             table_id=add_hpo.SITE_TABLE_ID)
 
-        expected_jobs = [query_job_reference_1_results, query_job_reference_2_results]
+        expected_jobs = [
+            query_job_reference_1_results, query_job_reference_2_results
+        ]
         mock_query.assert_any_call(update_site_masking_query)
 
         self.assertEqual(actual_jobs, expected_jobs)
