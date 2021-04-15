@@ -532,3 +532,47 @@ class ValidationMainTest(TestCase):
         self.assertIn(report_consts.SUBMISSION_ERROR_REPORT_KEY, report_data)
         self.assertIn(incorrect_folder_prefix,
                       report_data[report_consts.SUBMISSION_ERROR_REPORT_KEY])
+
+    @mock.patch('validation.main._upload_achilles_files')
+    @mock.patch('validation.main.run_export')
+    @mock.patch('validation.main.run_achilles')
+    @mock.patch('validation.ehr_union.main')
+    @mock.patch('bq_utils.get_unioned_dataset_id')
+    @mock.patch('bq_utils.get_dataset_id')
+    @mock.patch('bq_utils.app_identity.get_application_id')
+    @mock.patch('utils.slack_alerts.post_message')
+    @mock.patch('api_util.check_cron')
+    def test_union_ehr(self, mock_check_cron, mock_post_message,
+                       mock_get_application_id, mock_get_dataset_id,
+                       mock_get_unioned_dataset_id, mock_ehr_union_main,
+                       mock_run_achilles, mock_run_export,
+                       mock_upload_achilles_files):
+
+        current_datetime = datetime.datetime.now()
+        application_id = 'application_id'
+        input_dataset = 'input_dataset'
+        output_dataset = 'output_dataset'
+
+        mock_check_cron.return_value = True
+        mock_get_application_id.return_value = application_id
+        mock_get_dataset_id.return_value = input_dataset
+        mock_get_unioned_dataset_id.return_value = output_dataset
+
+        main.app.testing = True
+        main.before_first_request_funcs = []
+        with main.app.test_client() as c:
+            c.get(main_consts.PREFIX + 'UnionEHR')
+
+            mock_ehr_union_main.assert_called_once_with(input_dataset,
+                                                        output_dataset,
+                                                        application_id)
+            mock_run_achilles.assert_called_once_with('unioned_ehr')
+
+            # assertions on the decorator log_event_factory
+            self.assertEqual(mock_post_message.call_count, 2)
+            mock_post_message.assert_any_call('The ehr union job has started.')
+            mock_post_message.assert_any_call(
+                'The ehr union job has completed successfully.')
+
+            self.assertEqual(mock_run_export.call_count, 1)
+            self.assertEqual(mock_upload_achilles_files.call_count, 1)
