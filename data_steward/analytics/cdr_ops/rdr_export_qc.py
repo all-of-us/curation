@@ -272,7 +272,9 @@ pd.read_gbq(query, dialect='standard')
 
 # # Class of PPI Concepts using vocabulary.py
 # Concept codes which appear in `observation.observation_source_value` should belong to concept class Question.
-# Concept codes which appear in `observation.value_source_value` should belong to concept class Answer. Discreprancies (listed below) can be caused by misclassified entries in Athena or invalid payloads in the RDR and in further upstream data sources.
+# Concept codes which appear in `observation.value_source_value` should belong to concept class Answer.
+# Concepts of class Qualifier Value are permitted as a value & Concepts of class Topic and PPI Modifier are permitted as a question
+# Discreprancies (listed below) can be caused by misclassified entries in Athena or invalid payloads in the RDR and in further upstream data sources.
 
 query = f'''
 WITH ppi_concept_code AS (
