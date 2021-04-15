@@ -115,7 +115,7 @@ class CtPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
         # verify pid 3456 is excluded and logged
         log_module = 'cdr_cleaner.cleaning_rules.deid.pid_rid_map'
         log_level = 'WARNING'
-        log_message = 'PIDs [3456] excluded since no mapped research_ids found'
+        log_message = 'Records for PIDs [3456] will be deleted since no mapped research_ids found'
         expected_log_msg = f"{log_level}:{log_module}:{log_message}"
         with self.assertLogs(LOGGER, level='WARN') as ir:
             self.rule_instance.inspect_rule(self.client)
@@ -139,9 +139,7 @@ class CtPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
                 (50003, 345, 500, datetime.fromisoformat('2020-08-17').date(),
                  datetime.fromisoformat('2020-08-17 13:00:00+00:00'), 12),
                 (50004, 789, 800, datetime.fromisoformat('2020-08-17').date(),
-                 datetime.fromisoformat('2020-08-17 12:00:00+00:00'), 13),
-                (50005, 3456, 1000, datetime.fromisoformat('2020-08-17').date(),
-                 datetime.fromisoformat('2020-08-17 11:00:00+00:00'), 14)
+                 datetime.fromisoformat('2020-08-17 12:00:00+00:00'), 13)
             ]
         }]
 
