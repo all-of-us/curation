@@ -1,19 +1,28 @@
 """
-Add a new HPO site to config file and BigQuery lookup tables
+Add a new HPO site to config file and BigQuery lookup tables and adds the new masked src_id and hpo_id to
+    the pipeline_tables.site_maskings table
 
 Note: GAE environment must still be set manually
 """
+# Python imports
 import logging
 import csv
 
+# Third party imports
 from googleapiclient.errors import HttpError
 import pandas as pd
 
+# Project imports
 import bq_utils
 import resources
-import constants.bq_utils as bq_consts
-from tools import cli_util
 import gcs_utils
+import app_identity
+import constants.bq_utils as bq_consts
+from utils import bq
+from cdr_cleaner.cleaning_rules.deid.generate_site_mappings_and_ext_tables import GenerateSiteMappingsAndExtTables, \
+    SITE_TABLE_ID
+# from tools import cli_util
+from common import JINJA_ENV, PIPELINE_TABLES
 
 LOGGER = logging.getLogger(__name__)
 
@@ -34,6 +43,16 @@ SELECT '{org_id}' AS Org_ID, '{hpo_id}' AS HPO_ID, '{hpo_name}' AS Site_Name, {d
 ADD_HPO_ID_BUCKET_NAME = """
 SELECT '{hpo_id}' AS hpo_id, '{bucket_name}' AS bucket_name
 """
+
+UPDATE_SITE_MASKING_QUERY = JINJA_ENV.from_string("""
+-- site_masking table will be updated with new hpo_id and src_id if hpo_id is not found in site_masking --
+-- sandbox table -- 
+INSERT INTO `{{project_id}}.{{pipeline_dataset_id}}.{{table_id}}` (hpo_id, src_id)
+(SELECT *
+FROM `{{project_id}}.{{pipeline_sandbox_id}}.{{table_id}}` m
+WHERE hpo_id NOT IN (
+SELECT hpo_id FROM `{{project_id}}.{{pipeline_dataset_id}}.{{table_id}}`))
+""")
 
 
 def verify_hpo_mappings_up_to_date(hpo_file_df, hpo_table_df):
@@ -200,9 +219,55 @@ def bucket_access_configured(bucket_name):
         raise
 
 
+def update_site_masking_table():
+    """
+    Creates a unique `site_maskings` sandbox table and updates the `pipeline_tables.site_maskings` table with the
+        new site maskings
+    """
+
+    project_id = app_identity.get_application_id()
+    dataset_id = PIPELINE_TABLES
+    intermediary_dataset_id = dataset_id + '_sandbox'
+    table_id = SITE_TABLE_ID
+
+    client = bq.get_client(project_id)
+    queries = []
+    jobs = []
+
+    obj = GenerateSiteMappingsAndExtTables(project_id,
+                                           dataset_id,
+                                           intermediary_dataset_id,
+                                           mapping_dataset_id=None)
+    generate_site_maskings = obj.generate_site_maskings_sandbox_table()
+    site_masking_query = ''.join(q['query'] for q in generate_site_maskings)
+    queries.append(site_masking_query)
+
+    update_site_maskings_query = UPDATE_SITE_MASKING_QUERY.render(
+        project_id=project_id,
+        dataset_id=dataset_id,
+        pipeline_dataset_id=intermediary_dataset_id,
+        table_id=table_id)
+    queries.append(update_site_maskings_query)
+
+    LOGGER.info(
+        f'Generating the `pipeline_tables_sandbox.site_masking` table via the following '
+        f'query:\n {site_masking_query}\n '
+        f'Updating site_masking table with new hpo_id and src_id with the following '
+        f'query:\n {update_site_maskings_query}\n ')
+
+    for query in queries:
+        query_job = client.query(query)
+        if query_job.errors:
+            raise RuntimeError(f'{query} failed to run.')
+        jobs.append(query_job.result())
+
+    return jobs
+
+
 def main(hpo_id, org_id, hpo_name, bucket_name, display_order, addition_type):
     """
     adds HPO name and details in to hpo_csv and adds HPO to the lookup tables in bigquery
+    adds new site masking to pipeline_tables.site_maskings
     :param hpo_id: HPO identifier
     :param org_id: HPO organisation identifier
     :param hpo_name: name of the HPO
@@ -220,6 +285,11 @@ def main(hpo_id, org_id, hpo_name, bucket_name, display_order, addition_type):
             LOGGER.info(f'Accessing bucket {bucket_name} successful. '
                         f'Proceeding to add site.')
             add_lookups(hpo_id, hpo_name, org_id, bucket_name, display_order)
+
+            LOGGER.info(
+                f'hpo_site_id_mappings table successfully updated. Updating `pipeline_table.site_masking` '
+                f'table')
+            update_site_masking_table()
 
 
 if __name__ == '__main__':
