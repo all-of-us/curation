@@ -213,8 +213,8 @@ class ValidationMainTest(TestCase):
         bucket_items = list()
         for i in range(3):
             bucket_items.extend(self._build_mock_file_list(include_all_required=True,
-                                                           directory=f'f{i}',
-                                                           valid_updated=True,
+                                                           directory=f't{i}',
+                                                           valid_updated=i == 2,
                                                            valid_created=True))
 
 
@@ -402,9 +402,9 @@ class ValidationMainTest(TestCase):
         mock_valid_rdr.return_value = True
         mock_first_validation.return_value = False
         yesterday = datetime.datetime.now() - datetime.timedelta(hours=24)
-        yesterday = yesterday.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+        yesterday = yesterday.strftime(self._DT_FMT)
         moment = datetime.datetime.now()
-        now = moment.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+        now = moment.strftime(self._DT_FMT)
         mock_bucket_list.return_value = [{
             'name': 'unknown.pdf',
             'timeCreated': now,
