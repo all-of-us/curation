@@ -58,8 +58,8 @@ class ValidationMainTest(TestCase):
         return out.strftime(self._DT_FMT)
 
     def _build_mock_file(self,
-                         fname: str,
-                         dirname: str,
+                         filename: str,
+                         directory: str,
                          valid_created: bool,
                          valid_updated: bool,
                          meta=None):
@@ -67,15 +67,15 @@ class ValidationMainTest(TestCase):
         Constructs a mock file representation with minimum required fields, with optionally
         valid timestamps
 
-        :param fname: Base name of file
-        :param dirname: Directory to build filepath with
+        :param filename: Base name of file
+        :param directory: Directory to build filepath with
         :param valid_created: Whether to construct file with "valid" created date
         :param valid_updated: Whether to construct file with "valid" updated date
         :param meta: Optional dict of values to merge with base dict
         :return: file meta dictionary
         """
         out = {
-            'name': os.path.join(dirname, fname),
+            'name': os.path.join(directory, filename),
             'timeCreated': self._build_mock_file_created(valid_created),
             'updated':self._build_mock_file_updated(valid_updated),
         }
@@ -117,8 +117,8 @@ class ValidationMainTest(TestCase):
         if include_all_required:
             # build output with all required files present
             for req in common.AOU_REQUIRED_FILES:
-                out.append(self._build_mock_file(fname=req,
-                                                 dirname=directory,
+                out.append(self._build_mock_file(filename=req,
+                                                 directory=directory,
                                                  valid_created=valid_created,
                                                  valid_updated=valid_updated,
                                                  meta=(file_meta[req] if file_meta and file_meta[
@@ -129,14 +129,44 @@ class ValidationMainTest(TestCase):
         else:
             # build output based on file_attr_dict
             for fname in file_meta:
-                out.append(self._build_mock_file(fname=fname,
-                                                 dirname=directory,
+                out.append(self._build_mock_file(filename=fname,
+                                                 directory=directory,
                                                  valid_created=valid_created,
                                                  valid_updated=valid_updated,
                                                  meta=file_meta[fname]))
 
         return out
 
+
+    def _build_mock_file_validation(self,
+                                    filename: str,
+                                    directory: str,
+                                    found: bool=True,
+                                    parsed: bool=True,
+                                    loaded: bool=True,
+                                    err=None):
+        """
+        Constructs the expected Tuple as would be returned by the "perform_validation_on_file" func
+
+        :param filename: Name of file
+        :param directory: Directory to prefix filename with
+        :param found: If the response should mark the file as having been "found"
+        :param parsed: If the response should mark the file as having been "parsed"
+        :param loaded: If the response should mark the file as having been "loaded"
+        :param err: If the response should be an error message
+        :return: Tuple[filename, found, parsed, loaded] OR Tuple[filename, error]
+        """
+        if err is None:
+            return (
+                os.path.join(directory, filename),
+                1 if found else 0,
+                1 if parsed else 0,
+                1 if loaded else 0
+            )
+        return (
+            os.path.join(directory, filename),
+            err
+        )
 
     @classmethod
     def setUpClass(cls):
@@ -214,7 +244,7 @@ class ValidationMainTest(TestCase):
         for i in range(3):
             bucket_items.extend(self._build_mock_file_list(include_all_required=True,
                                                            directory=f't{i}',
-                                                           valid_updated=i == 2,
+                                                           valid_updated=(i is 2),
                                                            valid_created=True))
 
 
@@ -401,43 +431,46 @@ class ValidationMainTest(TestCase):
         mock_upload_string_to_gcs.return_value = ''
         mock_valid_rdr.return_value = True
         mock_first_validation.return_value = False
-        yesterday = datetime.datetime.now() - datetime.timedelta(hours=24)
-        yesterday = yesterday.strftime(self._DT_FMT)
-        moment = datetime.datetime.now()
-        now = moment.strftime(self._DT_FMT)
-        mock_bucket_list.return_value = [{
-            'name': 'unknown.pdf',
-            'timeCreated': now,
-            'updated': now
-        }, {
-            'name': 'participant/no-site/foo.pdf',
-            'timeCreated': now,
-            'updated': now
-        }, {
-            'name': 'PARTICIPANT/siteone/foo.pdf',
-            'timeCreated': now,
-            'updated': now
-        }, {
-            'name': 'Participant/sitetwo/foo.pdf',
-            'timeCreated': now,
-            'updated': now
-        }, {
-            'name': 'submission/person.csv',
-            'timeCreated': yesterday,
-            'updated': yesterday
-        }, {
-            'name': 'SUBMISSION/measurement.csv',
-            'timeCreated': now,
-            'updated': now
-        }]
+        mock_bucket_list.return_value = [
+            self._build_mock_file(filename='unknown.pdf',
+                                  directory='',
+                                  valid_created=True,
+                                  valid_updated=False),
+            self._build_mock_file(filename='foo.pdf',
+                                  directory='participants/no-site',
+                                  valid_created=True,
+                                  valid_updated=False),
+            self._build_mock_file(filename='foo.pdf',
+                                  directory='PARTICIPANT/siteone',
+                                  valid_created=True,
+                                  valid_updated=False),
+            self._build_mock_file(filename='foo.pdf',
+                                  directory='Participant/sitetwo',
+                                  valid_created=True,
+                                  valid_updated=False),
+            self._build_mock_file(filename='person.csv',
+                                  directory='submission',
+                                  valid_created=True,
+                                  valid_updated=True),
+        ].extend(self._build_mock_file_list(include_all_required=True,
+                                             directory='SUBMISSION',
+                                             valid_created=True,
+                                             valid_updated=True))
 
         mock_validation.return_value = {
-            'results': [('SUBMISSION/measurement.csv', 1, 1, 1)],
+            'results': list([
+                self._build_mock_file_validation(req,
+                                                 directory='SUBMISSION',
+                                                 found=True,
+                                                 parsed=True,
+                                                 loaded=True)
+                for req in common.AOU_REQUIRED_FILES
+            ]),
             'errors': [],
             'warnings': []
         }
 
-        mock_folder_items.return_value = ['measurement.csv']
+        mock_folder_items.return_value = common.AOU_REQUIRED_FILES
 
         # test
         main.process_hpo('noob', force_run=True)

@@ -754,7 +754,7 @@ def list_submitted_bucket_items(folder_bucketitems):
     # will eventually contain the list of files that fit within the desired time bracket
     files_list = []
 
-    object_retention_days = datetime.timedelta(days=29)
+    object_retention_days = datetime.timedelta(days=30)
     object_minimum_age = datetime.timedelta(minutes=5)
 
     # when is we?
@@ -858,6 +858,11 @@ def _get_submission_folder(bucket, bucket_items, force_process=False):
         has been processed and force_process is False or no submission
         directory exists
     """
+
+    # fast exit
+    if bucket_items is None or len(bucket_items) is 0:
+        return None
+
     # files in root are ignored here
     all_folder_list = set([
         item['name'].split('/')[0] + '/'
