@@ -27,7 +27,6 @@ import common
 import gcs_utils
 import resources
 from utils.slack_alerts import log_event_factory
-from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON
 from constants.validation import hpo_report as report_consts
 from constants.validation import main as consts
 from curation_logging.curation_gae_handler import begin_request_logging, end_request_logging, \
@@ -751,18 +750,47 @@ def list_submitted_bucket_items(folder_bucketitems):
     :param folder_bucketitems: List of Bucket items
     :return: list of files
     """
+    # will eventually contain the list of files that fit within the desired time bracket
     files_list = []
-    object_retention_days = 30
-    today = datetime.datetime.today()
-    for file_name in folder_bucketitems:
-        if basename(file_name) not in resources.IGNORE_LIST:
-            # in common.CDM_FILES or is_pii(basename(file_name)):
-            created_date = initial_date_time_object(file_name)
-            retention_time = datetime.timedelta(days=object_retention_days)
-            retention_start_time = datetime.timedelta(days=1)
-            age_threshold = created_date + retention_time - retention_start_time
-            if age_threshold > today:
-                files_list.append(file_name)
+
+    object_retention_days = datetime.timedelta(days=29)
+    object_minimum_age = datetime.timedelta(minutes=5)
+
+    # when is we?
+    now = datetime.datetime.now()
+    created_base = datetime.datetime(year=now.year,
+                                     month=now.month,
+                                     day=now.day)
+
+    for file_meta in folder_bucketitems:  # type: dict
+        fname = basename(file_meta)
+
+        # ignore the ignorable
+        if fname in resources.IGNORE_LIST:
+            continue
+
+        # in common.CDM_FILES or is_pii(basename(file_name)): TODO: what was this for...?
+
+        # build timestamps
+        tmp = initial_date_time_object(file_meta)
+        created_date = datetime.datetime(year=tmp.year,
+                                         month=tmp.month,
+                                         day=tmp.day)
+        updated_date = updated_date_time_object(file_meta)
+
+        # only add to return if the file is less than 30 days and more than 5 minutes old.
+        if created_date < (created_base - object_retention_days):
+            logging.warn(
+                f'Filtering file {fname} as it > 30 days old ({(created_base - created_date).days} days old)'
+            )
+        elif updated_date > (now - object_minimum_age):
+            logging.warn(
+                f'Filtering file {fname} as it was last modified less than 5 minutes ago ({(now - updated_date).seconds} second(s) old)'
+            )
+        else:
+            logging.debug(f'Adding {fname} to files_list')
+            files_list.append(file_meta)
+
     return files_list
 
 
@@ -774,6 +802,41 @@ def initial_date_time_object(gcs_object_metadata):
     date_created = datetime.datetime.strptime(
         gcs_object_metadata['timeCreated'], '%Y-%m-%dT%H:%M:%S.%fZ')
     return date_created
+
+
+def updated_date_time_object(gcs_object_metadata):
+    """
+    updated_date_time_object returns a datetime.datetime instance built
+    from the last time the metadata indicates the object was updated
+
+    :param gcs_object_metadata: metadata dict for a particular object
+    :return: datetime.datetime
+    """
+    return datetime.datetime.strptime(gcs_object_metadata['updated'],
+                                      '%Y-%m-%dT%H:%M:%S.%fZ')
+
+
+def _get_missing_required_files(submitted_bucket_items):
+    """
+    _get_missing_required_files returns a list of the names of the "required"
+    we expect to see in a given HPO upload set.
+
+    If the returned list is greater than 1, the consumer should assume the
+    targeted set is invalid or incomplete
+
+    :param submitted_bucket_items: list of string "file" names from bucket
+    :return: list of strings of missing require file names
+    """
+
+    # if the provided input is empty, state that all required files are missing
+    if submitted_bucket_items is None or len(submitted_bucket_items) is 0:
+        return common.AOU_REQUIRED_FILES
+
+    # build list of file basenames, removing any paths
+    file_basenames = set([basename(fname) for fname in submitted_bucket_items])
+
+    return set(
+        [req for req in common.AOU_REQUIRED_FILES if req not in file_basenames])
 
 
 def _get_submission_folder(bucket, bucket_items, force_process=False):
@@ -824,8 +887,18 @@ def _get_submission_folder(bucket, bucket_items, force_process=False):
             item for item in bucket_items
             if item['name'].startswith(folder_name)
         ]
+
+        # filter files based on age
         submitted_bucket_items = list_submitted_bucket_items(
             folder_bucket_items)
+
+        # determine if the above is missing any of the "required" files
+        missing_required = _get_missing_required_files(submitted_bucket_items)
+        if len(missing_required) > 0:
+            logging.warn(
+                f'Bucket {bucket} directory {folder_name} is missing the following required files: {*missing_required,}'
+            )
+            continue
 
         if submitted_bucket_items and submitted_bucket_items != []:
             folders_with_submitted_files.append(folder_name)
