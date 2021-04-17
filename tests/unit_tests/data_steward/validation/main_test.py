@@ -85,18 +85,15 @@ class ValidationMainTest(TestCase):
 
         return out
 
-    def _build_mock_file_list(self,
-                              include_all_required: bool,
-                              directory: str,
-                              valid_created: bool=True,
-                              valid_updated: bool=True,
-                              file_meta=None):
+    def _build_mock_required_file_list(self,
+                                       directory: str,
+                                       valid_created: bool=True,
+                                       valid_updated: bool=True,
+                                       file_meta=None):
         """
         _build_mock_file_list will construct a list of dicts describing each file that is
         expected to be in an hpo upload directory for it to be considered valid
 
-        :param include_all_required: Whether to use the full REQUIRED file list as the base or
-                                     use the file_meta param as the base
         :param directory: Directory to prefix file names with
         :param valid_created: Whether to create files with a valid "created" time
         :param valid_updated: Whether to create files with a valid "updated" time
@@ -114,26 +111,13 @@ class ValidationMainTest(TestCase):
         # contains our final list of "file" dicts
         out = list()
 
-        if include_all_required:
-            # build output with all required files present
-            for req in common.AOU_REQUIRED_FILES:
-                out.append(self._build_mock_file(filename=req,
-                                                 directory=directory,
-                                                 valid_created=valid_created,
-                                                 valid_updated=valid_updated,
-                                                 meta=(file_meta[req] if file_meta and file_meta[
-                                                     req] else None)))
-        elif file_meta is None:
-            # if include_all_required is false, we must have a file_meta dict to use as the base
-            raise ValueError(f'Parameter "file_attr_dict" is required when "include_all_required" is False')
-        else:
-            # build output based on file_attr_dict
-            for fname in file_meta:
-                out.append(self._build_mock_file(filename=fname,
-                                                 directory=directory,
-                                                 valid_created=valid_created,
-                                                 valid_updated=valid_updated,
-                                                 meta=file_meta[fname]))
+        for req in common.AOU_REQUIRED_FILES:
+            out.append(self._build_mock_file(filename=req,
+                                             directory=directory,
+                                             valid_created=valid_created,
+                                             valid_updated=valid_updated,
+                                             meta=(file_meta[req] if file_meta and file_meta[
+                                                 req] else None)))
 
         return out
 
@@ -242,10 +226,9 @@ class ValidationMainTest(TestCase):
         expected = 't2/'
         bucket_items = list()
         for i in range(3):
-            bucket_items.extend(self._build_mock_file_list(include_all_required=True,
-                                                           directory=f't{i}',
-                                                           valid_updated=(i is 2),
-                                                           valid_created=True))
+            bucket_items.extend(self._build_mock_required_file_list(directory=f't{i}',
+                                                                    valid_updated=(i is 2),
+                                                                    valid_created=True))
 
 
         # mock bypasses api call and says no folders were processed
@@ -452,10 +435,9 @@ class ValidationMainTest(TestCase):
                                   directory='submission',
                                   valid_created=True,
                                   valid_updated=True),
-        ].extend(self._build_mock_file_list(include_all_required=True,
-                                             directory='SUBMISSION',
-                                             valid_created=True,
-                                             valid_updated=True))
+        ].extend(self._build_mock_required_file_list(directory='SUBMISSION',
+                                                     valid_created=True,
+                                                     valid_updated=True))
 
         mock_validation.return_value = {
             'results': list([
