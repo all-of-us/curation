@@ -118,8 +118,8 @@ class ValidationMainTest(unittest.TestCase):
             "avisit_occurrence.csv",
             "condition_occurence.csv",  # misspelled
             "person_final.csv",
-            "procedure_occurrence.tsv"
-        ]  # unsupported file extension
+            "procedure_occurrence.tsv"  # unsupported file extension
+        ]
         expected_warnings = []
         for file_name in bad_file_names:
             test_util.write_cloud_str(self.hpo_bucket,

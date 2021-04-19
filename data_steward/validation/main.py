@@ -82,7 +82,7 @@ def save_datasources_json(datasource_id=None,
     datasources = dict(datasources=[datasource])
     datasources_fp = StringIO(json.dumps(datasources))
     result = gcs_utils.upload_object(
-        target_bucket, folder_prefix + ACHILLES_EXPORT_DATASOURCES_JSON,
+        target_bucket, folder_prefix + common.ACHILLES_EXPORT_DATASOURCES_JSON,
         datasources_fp)
     return result
 
@@ -110,7 +110,7 @@ def run_export(datasource_id=None, folder_prefix="", target_bucket=None):
         f"Exporting {datasource_name} report to bucket {target_bucket}")
 
     # Run export queries and store json payloads in specified folder in the target bucket
-    reports_prefix = folder_prefix + ACHILLES_EXPORT_PREFIX_STRING + datasource_name + '/'
+    reports_prefix = folder_prefix + common.ACHILLES_EXPORT_PREFIX_STRING + datasource_name + '/'
     for export_name in common.ALL_REPORTS:
         sql_path = os.path.join(export.EXPORT_PATH, export_name)
         result = export.export_from_path(sql_path, datasource_id)
