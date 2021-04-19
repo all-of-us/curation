@@ -388,7 +388,7 @@ class CleanHeightWeightTest(BaseTest.CleaningRulesTestBase):
                 {concept_ancestor_data_query}'''
         ])
 
-    def assert_test_get_query_specs(self):
+    def assert_get_query_specs(self):
         """
         Tests that queries run successfully and sandbox tables are generated
         Note: This does NOT validate logic
@@ -410,7 +410,7 @@ class CleanHeightWeightTest(BaseTest.CleaningRulesTestBase):
         for sandbox_table in self.rule_instance.get_sandbox_tablenames():
             self.assertIn(sandbox_table, table_ids)
 
-    def assert_test_height_and_weight_cleaning(self):
+    def assert_height_and_weight_cleaning(self):
         """
         Tests the Height and weight cleaning for the loaded test data
         """
