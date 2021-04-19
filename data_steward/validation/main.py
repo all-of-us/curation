@@ -48,6 +48,7 @@ app.register_blueprint(errors_blueprint)
 
 _GCS_DATE_FMT = '%Y-%m-%dT%H:%M:%S.%fZ'
 
+
 def all_required_files_loaded(result_items):
     for (file_name, _, _, loaded) in result_items:
         if file_name in common.REQUIRED_FILES:
@@ -754,7 +755,7 @@ def list_submitted_bucket_items(folder_bucketitems):
     # will eventually contain the list of files that fit within the desired time bracket
     files_list = []
 
-    object_retention_days = datetime.timedelta(days=30)
+    object_retention_days = datetime.timedelta(days=28)
     object_minimum_age = datetime.timedelta(minutes=5)
 
     # when is we?
@@ -795,13 +796,24 @@ def list_submitted_bucket_items(folder_bucketitems):
     return files_list
 
 
+def parse_date_time_object(gcs_object_metadata, key: str) -> datetime.datetime:
+    """
+    parse_date_time_object extracts a particular value from the provided metadata,
+    attempting to parse it as a datetime object
+    
+    :param gcs_object_metadata: object metadata dict
+    :param key: key of target date value in metadata
+    :return datetime.datetime:
+    """
+    return datetime.datetime.strptime(gcs_object_metadata[key], _GCS_DATE_FMT)
+
+
 def initial_date_time_object(gcs_object_metadata):
     """
     :param gcs_object_metadata: metadata as returned by list bucket
     :return: datetime object
     """
-    return datetime.datetime.strptime(gcs_object_metadata['timeCreated'],
-                                      _GCS_DATE_FMT)
+    return parse_date_time_object(gcs_object_metadata, 'timeCreated')
 
 
 def updated_date_time_object(gcs_object_metadata):
@@ -812,8 +824,8 @@ def updated_date_time_object(gcs_object_metadata):
     :param gcs_object_metadata: metadata dict for a particular object
     :return: datetime.datetime
     """
-    return datetime.datetime.strptime(gcs_object_metadata['updated'],
-                                      _GCS_DATE_FMT)
+    return parse_date_time_object(gcs_object_metadata, 'updated')
+
 
 
 def _get_missing_required_files(submitted_bucket_items):
