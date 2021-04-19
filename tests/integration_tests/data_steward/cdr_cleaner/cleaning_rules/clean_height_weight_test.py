@@ -452,5 +452,3 @@ class CleanHeightWeightTest(BaseTest.CleaningRulesTestBase):
             self.assert_get_query_specs()
         with self.subTest("height_and_weight_cleaning"):
             self.assert_height_and_weight_cleaning()
-
-
