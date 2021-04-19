@@ -294,20 +294,24 @@ class CreateTierTest(unittest.TestCase):
         }
 
         # Tests if incorrect parameters are given
-        self.assertRaises(RuntimeError, create_datasets, None, self.dataset_name,
-                          self.input_dataset, self.tier, self.release_tag)
+        self.assertRaises(RuntimeError, create_datasets, None,
+                          self.dataset_name, self.input_dataset, self.tier,
+                          self.release_tag)
         self.assertRaises(RuntimeError, create_datasets, client, None,
                           self.input_dataset, self.tier, self.release_tag)
-        self.assertRaises(RuntimeError, create_datasets, client, self.dataset_name,
-                          None, self.tier, self.release_tag)
-        self.assertRaises(RuntimeError, create_datasets, client, self.dataset_name,
-                          self.input_dataset, None, self.release_tag)
-        self.assertRaises(RuntimeError, create_datasets, client, self.dataset_name,
-                          self.input_dataset, self.tier, None)
+        self.assertRaises(RuntimeError, create_datasets, client,
+                          self.dataset_name, None, self.tier, self.release_tag)
+        self.assertRaises(RuntimeError, create_datasets, client,
+                          self.dataset_name, self.input_dataset, None,
+                          self.release_tag)
+        self.assertRaises(RuntimeError, create_datasets, client,
+                          self.dataset_name, self.input_dataset, self.tier,
+                          None)
 
         # Test
-        expected = create_datasets(client, self.dataset_name, self.input_dataset,
-                                   self.tier, self.release_tag)
+        expected = create_datasets(client, self.dataset_name,
+                                   self.input_dataset, self.tier,
+                                   self.release_tag)
 
         # Post conditions
         client.create_dataset.assert_called()
