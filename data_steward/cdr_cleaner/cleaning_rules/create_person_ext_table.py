@@ -30,25 +30,46 @@ LOGGER = logging.getLogger(__name__)
 
 # Query to create person_ext table
 PERSON_EXT_TABLE_QUERY = JINJA_ENV.from_string("""
-CREATE OR REPLACE TABLE `{{project}}.{{dataset}}.person_ext` AS (
-SELECT p.person_id, 
-e.src_id,
-o.value_source_concept_id AS state_of_residence_concept_id,
-c.concept_name AS state_of_residence_source_value, 
-os.value_as_concept_id AS sex_at_birth_concept_id,
-os.value_source_concept_id AS sex_at_birth_source_concept_id,
-sc.concept_code AS sex_at_birth_source_value 
-FROM `{{project}}.{{dataset}}.person` p
-LEFT JOIN `{{project}}.{{dataset}}.observation` o
-ON p.person_id = o.person_id AND o.observation_source_concept_id = 1585249
-LEFT JOIN `{{project}}.{{dataset}}.concept` c
-ON o.value_source_concept_id = c.concept_id AND o.observation_source_concept_id = 1585249
-LEFT JOIN  `{{project}}.{{dataset}}.observation_ext` e
-ON o.observation_id = e.observation_id AND o.observation_source_concept_id = 1585249
-LEFT JOIN `{{project}}.{{dataset}}.observation` os
-ON p.person_id = os.person_id AND os.observation_source_concept_id = 1585845
-LEFT JOIN `{{project}}.{{dataset}}.concept` sc
-ON os.value_source_concept_id = sc.concept_id AND os.observation_source_concept_id = 1585845)
+CREATE OR REPLACE TABLE
+  `{{project}}.{{dataset}}.person_ext` AS (
+  SELECT
+    p.person_id,
+    e.src_id,
+    o.value_source_concept_id AS state_of_residence_concept_id,
+    c.concept_name AS state_of_residence_source_value,
+    coalesce(os.value_as_concept_id,
+      0) AS sex_at_birth_concept_id,
+    coalesce(os.value_source_concept_id,
+      0) AS sex_at_birth_source_concept_id,
+    coalesce(sc.concept_code,
+      'No matching concept') AS sex_at_birth_source_value
+  FROM
+    `{{project}}.{{dataset}}.person` p
+  LEFT JOIN
+    `{{project}}.{{dataset}}.observation` o
+  ON
+    p.person_id = o.person_id
+    AND o.observation_source_concept_id = 1585249
+  LEFT JOIN
+    `{{project}}.{{dataset}}.concept` c
+  ON
+    o.value_source_concept_id = c.concept_id
+    AND o.observation_source_concept_id = 1585249
+  LEFT JOIN
+    `{{project}}.{{dataset}}.observation_ext` e
+  ON
+    o.observation_id = e.observation_id
+    AND o.observation_source_concept_id = 1585249
+  LEFT JOIN
+    `{{project}}.{{dataset}}.observation` os
+  ON
+    p.person_id = os.person_id
+    AND os.observation_source_concept_id = 1585845
+  LEFT JOIN
+    `{{project}}.{{dataset}}.concept` sc
+  ON
+    os.value_source_concept_id = sc.concept_id
+    AND os.observation_source_concept_id = 1585845)
 """)
 
 tables = ['person_ext']
