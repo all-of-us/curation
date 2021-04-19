@@ -157,7 +157,7 @@ def create_datasets(client, name, input_dataset, tier, release_tag):
     # Construct names of datasets need as part of the deid process
     final_dataset_id = name
     staging_dataset_id = f'{name}_{consts.STAGING}'
-    sandbox_dataset_id = f'{name}_{consts.SANDBOX}'
+    sandbox_dataset_id = f'{name[1:]}_{consts.SANDBOX}'
 
     datasets = {
         consts.CLEAN: final_dataset_id,
