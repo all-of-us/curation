@@ -12,9 +12,8 @@ import mock
 
 # Project imports
 from cdr_cleaner.cleaning_rules.deid.generate_site_mappings_and_ext_tables import (
-    GenerateSiteMappingsAndExtTables, SITE_MAPPINGS_QUERY, SITE_TABLE_ID,
-    HPO_SITE_ID_MAPPINGS_TABLE_ID, LOOKUP_TABLES_DATASET_ID, EHR_SITE_PREFIX,
-    RDR, PPI_PM)
+    GenerateSiteMappingsAndExtTables, SITE_MASKINGS_QUERY,
+    PIPELINE_TABLES_DATASET, SITE_MASKING_TABLE_ID)
 from constants.cdr_cleaner import clean_cdr as clean_consts
 import common
 import constants.bq_utils as bq_consts
@@ -72,15 +71,11 @@ class GenerateSiteMappingsTest(unittest.TestCase):
         actual_list = self.rule_instance.get_query_specs()
         expected_list = [{
             clean_consts.QUERY:
-                SITE_MAPPINGS_QUERY.render(
+                SITE_MASKINGS_QUERY.render(
                     project_id=self.project_id,
                     dataset_id=self.sandbox_id,
-                    table_id=SITE_TABLE_ID,
-                    site_prefix=EHR_SITE_PREFIX,
-                    lookup_tabels_dataset=LOOKUP_TABLES_DATASET_ID,
-                    hpo_site_id_mappings_table=HPO_SITE_ID_MAPPINGS_TABLE_ID,
-                    ppi_pm=PPI_PM,
-                    rdr=RDR)
+                    pipelines_dataset=PIPELINE_TABLES_DATASET,
+                    site_masking_table=SITE_MASKING_TABLE_ID)
         }, fake_query_dict]
 
         self.assertEqual(actual_list, expected_list)
