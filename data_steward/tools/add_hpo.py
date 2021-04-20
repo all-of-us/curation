@@ -19,10 +19,11 @@ import gcs_utils
 import app_identity
 import constants.bq_utils as bq_consts
 from utils import bq
+from tools import cli_util
+from utils import pipeline_logging
+from common import JINJA_ENV, PIPELINE_TABLES
 from cdr_cleaner.cleaning_rules.deid.generate_site_mappings_and_ext_tables import GenerateSiteMappingsAndExtTables, \
     SITE_TABLE_ID
-from tools import cli_util
-from common import JINJA_ENV, PIPELINE_TABLES
 
 LOGGER = logging.getLogger(__name__)
 
@@ -295,6 +296,8 @@ def main(hpo_id, org_id, hpo_name, bucket_name, display_order, addition_type):
 
 if __name__ == '__main__':
     import argparse
+
+    pipeline_logging.configure(level=logging.DEBUG, add_console_handler=True)
 
     parser = argparse.ArgumentParser(
         description='Add a new HPO site to hpo config file and lookup tables',
