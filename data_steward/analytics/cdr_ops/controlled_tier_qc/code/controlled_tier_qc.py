@@ -16,7 +16,7 @@ from code.check_concept_suppression import check_concept_suppression
 from code.check_mapping import check_mapping, check_site_mapping, check_mapping_zipcode_generalization, check_mapping_zipcode_transformation
 
 # funtions from utils
-from utils.helpers import highlight, load_check_description, load_tables_for_check, filter_data_by_rule
+from utils.helpers import highlight, load_check_description, load_tables_for_check, filter_data_by_rule, pretty_print
 
 import logging
 import sys
@@ -65,4 +65,4 @@ def display_check_summary_by_rule(checks_df):
 
     
 def display_check_detail_of_rule(checks_df, rule):
-    return checks_df[checks_df['rule'] == rule].dropna(axis=1, how='all') if rule in checks_df['rule'].values else 'Nothing to report or not run'
+    return pretty_print(checks_df[checks_df['rule'] == rule].dropna(axis=1, how='all')) if rule in checks_df['rule'].values else 'Nothing to report or not run'
