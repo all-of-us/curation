@@ -96,7 +96,7 @@ def upload_stage(bucket_name: str, vocab_folder_path: Path,
         file_path = vocab_folder_path / file_name
         blob = bucket.blob(file_name)
         blob.upload_from_filename(str(file_path))
-        LOGGER.info(f'Vocabulary file in {str(file_path)} uploaded '
+        LOGGER.info(f'Vocabulary file {str(file_path)} uploaded '
                     f'successfully to GCS bucket {bucket_name}')
     return
 
