@@ -53,13 +53,16 @@ def display_check_summary_by_rule(checks_df):
                             .filter(items=needed_description_columns)
                         )
     if not by_rule.empty:
-        by_rule = by_rule.merge(check_description, how='inner', on='rule')
+        rules_not_run = set(check_description['rule']) - set(by_rule['rule'])
+        by_rule = by_rule.merge(check_description, how='outer', on='rule')
+        by_rule.loc[by_rule['rule'].isin(rules_not_run), 'note'] = 'NOT RUN'
     else:
         by_rule = check_description.copy()
         by_rule['n_row_violation'] = 0
+        by_rule['note'] = 'NOT RUN'
     by_rule['n_row_violation'] = by_rule['n_row_violation'].fillna(0).astype(int)
     return by_rule.style.apply(highlight, axis=1)
 
     
 def display_check_detail_of_rule(checks_df, rule):
-    return checks_df[checks_df['rule'] == rule].dropna(axis=1, how='all') if rule in checks_df['rule'].values else 'Nothing to report'
+    return checks_df[checks_df['rule'] == rule].dropna(axis=1, how='all') if rule in checks_df['rule'].values else 'Nothing to report or not run'
