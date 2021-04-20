@@ -118,7 +118,7 @@ def check_and_create_sandbox_dataset(dst_dataset_id, bucket_name, bq_client):
         sandbox_dataset.description = f'Vocabulary loaded from gs://{bucket_name}'
         sandbox_dataset.labels = {'type': 'vocabulary'}
         sandbox_dataset.location = "US"
-        sandbox_dataset = bq_client.create_dataset(sandbox_dataset_id)
+        sandbox_dataset = bq_client.create_dataset(sandbox_dataset)
         LOGGER.info(f'Successfully created dataset {sandbox_dataset_id}')
     return sandbox_dataset
 
@@ -188,11 +188,7 @@ def load_stage(dst_dataset: Dataset, bq_client: Client, bucket_name: str,
     return load_jobs
 
 
-def load(project_id,
-         bq_client,
-         src_dataset_id,
-         dst_dataset_id,
-         overwrite_ok=False):
+def load(project_id, bq_client, src_dataset_id, dst_dataset_id):
     """
     Transform safely loaded tables and store results in target dataset.
 
@@ -200,14 +196,13 @@ def load(project_id,
     :param bq_client: a BigQuery client object
     :param src_dataset_id: reference to source dataset object
     :param dst_dataset_id: reference to destination dataset object
-    :param overwrite_ok: if True and the dest dataset already exists the dataset is recreated
     :return: List of BQ job_ids
     """
-    if overwrite_ok:
-        bq_client.delete_dataset(dst_dataset_id,
-                                 delete_contents=True,
-                                 not_found_ok=True)
-    bq_client.create_dataset(dst_dataset_id)
+    dst_dataset = Dataset(f'{bq_client.project}.{dst_dataset_id}')
+    dst_dataset.description = f'Vocabulary cleaned and loaded from {src_dataset_id}'
+    dst_dataset.labels = {'type': 'vocabulary'}
+    dst_dataset.location = "US"
+    bq_client.create_dataset(dst_dataset, exists_ok=True)
     src_tables = list(bq_client.list_tables(dataset=src_dataset_id))
 
     job_config = QueryJobConfig()
@@ -251,11 +246,7 @@ def main(project_id: str, bucket_name: str, vocab_folder_path: str,
     sandbox_dataset = check_and_create_sandbox_dataset(dst_dataset_id,
                                                        bucket_name, bq_client)
     load_stage(sandbox_dataset, bq_client, bucket_name, gcs_client)
-    load(project_id,
-         bq_client,
-         sandbox_dataset.dataset_id,
-         dst_dataset_id,
-         overwrite_ok=True)
+    load(project_id, bq_client, sandbox_dataset.dataset_id, dst_dataset_id)
     return
 
 
