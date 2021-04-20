@@ -265,3 +265,18 @@ WHERE {{ column_name }} IN (
     OR concept_code = 'notes'
 )
 """
+
+QUERY_GEOLOCATION_SUPPRESSION = """
+SELECT
+    '{{ table_name }}' AS table_name,
+    '{{ column_name }}' AS column_name,
+    COUNT(*) AS n_row_violation
+FROM `{{ project_id }}.{{ post_deid_dataset }}.{{ table_name }}`
+WHERE {{ column_name }} IN (
+    SELECT concept_id
+    FROM `{{ project_id }}.{{ post_deid_dataset }}.concept`
+    WHERE REGEXP_CONTAINS(concept_code, r"(SitePairing)|(City)|(ArizonaSpecific)|(Michigan)|(_Country)|(ExtraConsent_[A-Za-z]+((Care)|(Registered)))")
+    AND (concept_class_id = 'Question' OR concept_class_id = 'Topic')
+    AND vocabulary_id = 'PPI'
+)
+"""

@@ -4,7 +4,7 @@ from code.config import (CSV_FOLDER, COLUMNS_IN_CHECK_RESULT, TABLE_CSV_FILE,
                         FIELD_CSV_FILE, CONCEPT_CSV_FILE, MAPPING_CSV_FILE, CHECK_LIST_CSV_FILE)
 
 from collections import defaultdict
-
+from IPython.display import display, HTML
 
 def load_check_description(rule_code=None):
     """Extract the csv file containing the descriptions of checks
@@ -164,12 +164,13 @@ def run_check_by_row(df, template_query, project_id, post_deid_dataset, pre_deid
                 concept_id=concept_id, concept_code=concept_code, data_type=data_type,
                 primary_key=primary_key, new_id=new_id, mapping_dataset=mapping_dataset, mapping_table=mapping_table)
         result_df = pd.read_gbq(query, dialect="standard")
+        result_df['query'] = str(query)
         results.append(result_df)
 
     results_df = (pd.concat(results, sort=True)
                     .pipe(format_cols_to_string))
     merge_cols = get_list_of_common_columns_for_merge(check_df, results_df)
-    result_columns = merge_cols + ['rule', 'n_row_violation']
+    result_columns = merge_cols + ['rule', 'n_row_violation', 'query']
     final_result =  (check_df.merge(results_df, on=merge_cols, how='left')
                             .filter(items=result_columns)
                             .query('n_row_violation > 0')
@@ -193,3 +194,7 @@ def highlight(row):
     else:
         css = ''
     return [css] * len(row)
+
+
+def pretty_print(df):
+    return display(HTML(df.to_html().replace("\\n","<br>")))
