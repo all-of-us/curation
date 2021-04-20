@@ -23,7 +23,7 @@ class LoadVocabTest(unittest.TestCase):
     def setUp(self):
         self.project_id = app_identity.get_application_id()
         self.dataset_id = os.environ.get('UNIONED_DATASET_ID')
-        self.sandbox_dataset_id = f'{self.dataset_id}_sandbox'
+        self.staging_dataset_id = f'{self.dataset_id}_staging'
         self.bucket = os.environ.get('BUCKET_NAME_FAKE')
         self.account = os.environ.get('SERVICE_ACCOUNT')
         impersonation_credentials = auth.get_impersonation_credentials(
@@ -45,7 +45,7 @@ class LoadVocabTest(unittest.TestCase):
         lv.main(self.project_id, self.bucket, self.test_vocab_folder_path,
                 self.account, self.dataset_id)
         expected_row_count = {'concept': 101, 'vocabulary': 52}
-        for dataset in [self.sandbox_dataset_id, self.dataset_id]:
+        for dataset in [self.staging_dataset_id, self.dataset_id]:
             for vocab in self.test_vocabs:
                 content_query = f'SELECT * FROM `{self.project_id}.{dataset}.{vocab}`'
                 content_job = self.bq_client.query(content_query)
@@ -58,7 +58,7 @@ class LoadVocabTest(unittest.TestCase):
             blob = bucket.blob(f'{vocab}.csv')
             blob.delete()
             self.bq_client.delete_table(f'{self.dataset_id}.{vocab}')
-            self.bq_client.delete_table(f'{self.sandbox_dataset_id}.{vocab}')
+            self.bq_client.delete_table(f'{self.staging_dataset_id}.{vocab}')
             vocab_path = self.test_vocab_folder_path / f'{vocab}.csv'
             with vocab_path.open('w') as f:
                 f.write(self.contents[vocab])

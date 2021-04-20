@@ -16,7 +16,6 @@ from google.cloud.bigquery import Client, Dataset, SchemaField, LoadJob, LoadJob
 
 from common import VOCABULARY_TABLES, JINJA_ENV, CONCEPT, VOCABULARY, VOCABULARY_UPDATES
 from resources import AOU_VOCAB_PATH
-from utils.sandbox import get_sandbox_dataset_id
 from utils import bq, pipeline_logging, auth
 
 LOGGER = logging.getLogger(__name__)
@@ -102,25 +101,25 @@ def upload_stage(bucket_name: str, vocab_folder_path: Path,
     return
 
 
-def check_and_create_sandbox_dataset(dst_dataset_id, bucket_name, bq_client):
+def check_and_create_staging_dataset(dst_dataset_id, bucket_name, bq_client):
     """
 
     :param dst_dataset_id: final destination to load the vocabulary in BigQuery
     :param bucket_name: the location in GCS containing the vocabulary files
     :param bq_client: google bigquery client
-    :return: sandbox dataset object
+    :return: staging dataset object
     """
-    sandbox_dataset_id = get_sandbox_dataset_id(dst_dataset_id)
-    sandbox_dataset = Dataset(f'{bq_client.project}.{sandbox_dataset_id}')
+    staging_dataset_id = f'{dst_dataset_id}_staging'
+    staging_dataset = Dataset(f'{bq_client.project}.{staging_dataset_id}')
     try:
-        bq_client.get_dataset(sandbox_dataset)
+        bq_client.get_dataset(staging_dataset)
     except NotFound:
-        sandbox_dataset.description = f'Vocabulary loaded from gs://{bucket_name}'
-        sandbox_dataset.labels = {'type': 'vocabulary'}
-        sandbox_dataset.location = "US"
-        sandbox_dataset = bq_client.create_dataset(sandbox_dataset)
-        LOGGER.info(f'Successfully created dataset {sandbox_dataset_id}')
-    return sandbox_dataset
+        staging_dataset.description = f'Vocabulary loaded from gs://{bucket_name}'
+        staging_dataset.labels = {'type': 'vocabulary'}
+        staging_dataset.location = "US"
+        staging_dataset = bq_client.create_dataset(staging_dataset)
+        LOGGER.info(f'Successfully created dataset {staging_dataset_id}')
+    return staging_dataset
 
 
 def safe_schema_for(table: str) -> List[SchemaField]:
@@ -243,10 +242,10 @@ def main(project_id: str, bucket_name: str, vocab_folder_path: str,
     vocab_folder_path = Path(vocab_folder_path)
     update_aou_vocabs(vocab_folder_path)
     upload_stage(bucket_name, vocab_folder_path, gcs_client)
-    sandbox_dataset = check_and_create_sandbox_dataset(dst_dataset_id,
+    staging_dataset = check_and_create_staging_dataset(dst_dataset_id,
                                                        bucket_name, bq_client)
-    load_stage(sandbox_dataset, bq_client, bucket_name, gcs_client)
-    load(project_id, bq_client, sandbox_dataset.dataset_id, dst_dataset_id)
+    load_stage(staging_dataset, bq_client, bucket_name, gcs_client)
+    load(project_id, bq_client, staging_dataset.dataset_id, dst_dataset_id)
     return
 
 
@@ -305,11 +304,11 @@ def get_arg_parser() -> argparse.ArgumentParser:
         required=False)
     argument_parser.add_argument(
         '-s',
-        '--sandbox_dataset_id',
-        dest='sandbox_dataset_id',
+        '--staging_dataset_id',
+        dest='staging_dataset_id',
         action='store',
         help=
-        'Identifies the sandbox dataset where the vocabulary is to be staged',
+        'Identifies the staging dataset where the vocabulary is to be staged',
         required=False)
     return argument_parser
 
