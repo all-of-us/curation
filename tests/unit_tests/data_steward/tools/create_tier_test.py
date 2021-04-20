@@ -309,14 +309,13 @@ class CreateTierTest(unittest.TestCase):
                           None)
 
         # Test
-        expected = create_datasets(client, self.dataset_name,
-                                   self.input_dataset, self.tier,
-                                   self.release_tag)
+        actual = create_datasets(client, self.dataset_name, self.input_dataset,
+                                 self.tier, self.release_tag)
 
         # Post conditions
         client.create_dataset.assert_called()
 
-        self.assertEqual(expected, datasets)
+        self.assertEqual(actual, datasets)
 
         # Ensures datasets are created with the proper name, descriptions, and labels and tags
         self.assertEqual(mock_define_dataset.call_count, 3)
