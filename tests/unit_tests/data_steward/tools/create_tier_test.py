@@ -33,8 +33,8 @@ class CreateTierTest(unittest.TestCase):
         self.input_dataset = 'fake_input'
         self.release_tag = '2020q4r3'
         self.deid_stage = 'deid'
-        self.name = 'foo_name'
         self.run_as = 'foo@bar.com'
+        self.dataset_name = 'C2020q4r3'
 
         self.description = f'dataset created from {self.input_dataset} for {self.tier}{self.release_tag} CDR run'
         self.labels_and_tags = {
@@ -288,31 +288,34 @@ class CreateTierTest(unittest.TestCase):
         client.side_effects = create_datasets
 
         datasets = {
-            consts.CLEAN: self.name,
-            consts.SANDBOX: f'{self.name}_{consts.SANDBOX}',
-            consts.STAGING: f'{self.name}_{consts.STAGING}'
+            consts.CLEAN: self.dataset_name,
+            consts.SANDBOX: f'{self.dataset_name[1:]}_{consts.SANDBOX}',
+            consts.STAGING: f'{self.dataset_name}_{consts.STAGING}'
         }
 
         # Tests if incorrect parameters are given
-        self.assertRaises(RuntimeError, create_datasets, None, self.name,
-                          self.input_dataset, self.tier, self.release_tag)
+        self.assertRaises(RuntimeError, create_datasets, None,
+                          self.dataset_name, self.input_dataset, self.tier,
+                          self.release_tag)
         self.assertRaises(RuntimeError, create_datasets, client, None,
                           self.input_dataset, self.tier, self.release_tag)
-        self.assertRaises(RuntimeError, create_datasets, client, self.name,
-                          None, self.tier, self.release_tag)
-        self.assertRaises(RuntimeError, create_datasets, client, self.name,
-                          self.input_dataset, None, self.release_tag)
-        self.assertRaises(RuntimeError, create_datasets, client, self.name,
-                          self.input_dataset, self.tier, None)
+        self.assertRaises(RuntimeError, create_datasets, client,
+                          self.dataset_name, None, self.tier, self.release_tag)
+        self.assertRaises(RuntimeError, create_datasets, client,
+                          self.dataset_name, self.input_dataset, None,
+                          self.release_tag)
+        self.assertRaises(RuntimeError, create_datasets, client,
+                          self.dataset_name, self.input_dataset, self.tier,
+                          None)
 
         # Test
-        expected = create_datasets(client, self.name, self.input_dataset,
-                                   self.tier, self.release_tag)
+        actual = create_datasets(client, self.dataset_name, self.input_dataset,
+                                 self.tier, self.release_tag)
 
         # Post conditions
         client.create_dataset.assert_called()
 
-        self.assertEqual(expected, datasets)
+        self.assertEqual(actual, datasets)
 
         # Ensures datasets are created with the proper name, descriptions, and labels and tags
         self.assertEqual(mock_define_dataset.call_count, 3)
