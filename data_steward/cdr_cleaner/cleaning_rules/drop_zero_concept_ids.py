@@ -87,15 +87,15 @@ CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` as(
 SELECT *
 FROM `{{project}}.{{dataset}}.{{table}}`
 WHERE
-{{source_concept_id}} IN (NULL, 0)
-AND {{concept_id}} IN (NULL, 0))
+({{source_concept_id}} is NULL or {{source_concept_id}} = 0)
+AND ({{concept_id}} is NULL or {{concept_id}} = 0)
+)
 """)
 
 DROP_ZERO_CONCEPT_IDS_QUERY = JINJA_ENV.from_string("""
-SELECT *
-FROM `{{project}}.{{dataset}}.{{table}}`
+DELETE FROM `{{project}}.{{dataset}}.{{table}}`
 WHERE
-{{unique_identifier}} NOT IN (
+{{unique_identifier}} IN (
 SELECT {{unique_identifier}}
 FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}`
 )
@@ -161,13 +161,7 @@ class DropZeroConceptIDs(BaseCleaningRule):
                         table=table,
                         unique_identifier=unique_identifier[table],
                         sandbox_dataset=self.sandbox_dataset_id,
-                        sandbox_table=self.get_sandbox_tablenames()[i]),
-                cdr_consts.DESTINATION_TABLE:
-                    table,
-                cdr_consts.DESTINATION_DATASET:
-                    self.dataset_id,
-                cdr_consts.DISPOSITION:
-                    WRITE_TRUNCATE
+                        sandbox_table=self.get_sandbox_tablenames()[i])
             })
 
         return sandbox_queries_list + drop_queries_list

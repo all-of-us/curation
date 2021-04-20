@@ -109,13 +109,7 @@ class DropZeroConceptIDsTest(unittest.TestCase):
                         unique_identifier=unique_identifier[table],
                         sandbox_dataset=self.sandbox_id,
                         sandbox_table=self.rule_instance.get_sandbox_tablenames(
-                        )[i]),
-                cdr_consts.DESTINATION_TABLE:
-                    table,
-                cdr_consts.DESTINATION_DATASET:
-                    self.dataset_id,
-                cdr_consts.DISPOSITION:
-                    WRITE_TRUNCATE
+                        )[i])
             })
 
         self.assertEqual(
