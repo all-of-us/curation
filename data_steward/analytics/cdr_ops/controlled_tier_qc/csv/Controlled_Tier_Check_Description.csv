@@ -15,3 +15,4 @@ DC-1380,Mapping,check_mapping_zipcode_transformation,Verify generalized zip code
 DC-1382,Field,check_field_cancer_concept_suppression,Verify record suppression of some cancer condition concepts
 DC-1388,Field,check_field_freetext_response_suppression,Verify Free text survey response records are suppressed
 DC-1496,Concept,check_concept_suppression,Verify suppression of some COPE survey responses
+DC-1527,Concept,check_concept_suppression,Verify suppression of organ transplant concepts
