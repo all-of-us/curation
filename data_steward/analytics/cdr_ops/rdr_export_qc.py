@@ -343,3 +343,13 @@ AND SAFE_CAST(value_as_string AS DATE) IS NULL
 AND value_as_string != 'PMI Skip'
 '''
 pd.read_gbq(query, dialect='standard')
+
+# Check pid_rid_mapping table
+query = f'''
+SELECT
+    person_id
+    ,research_id
+FROM `{project_id}.{new_rdr}.pid_rid_mapping`
+WHERE 
+'''
+pd.read_gbq(query, dialect='standard')
