@@ -134,16 +134,16 @@ def list_bucket_prefixes(gcs_path):
     return all_objects
 
 
-def get_object(bucket, name, as_text=True):
+def get_object(bucket, object_path, as_text=True):
     """
     Download object from a bucket
     :param bucket: the bucket containing the file
-    :param name: name of the file to download
+    :param object_path: name of the file to download
     :param as_text: True if result should be decoded as text (default) otherwise bytes are returned
     :return: file contents
     """
     service = create_service()
-    req = service.objects().get_media(bucket=bucket, object=name)
+    req = service.objects().get_media(bucket=bucket, object=object_path)
     out_file = BytesIO()
     downloader = googleapiclient.http.MediaIoBaseDownload(out_file, req)
     done = False
@@ -156,21 +156,21 @@ def get_object(bucket, name, as_text=True):
     return result_bytes
 
 
-def upload_object(bucket, name, fp):
+def upload_object(bucket, object_path, fp):
     """
     Upload file to a GCS bucket
     :param bucket: name of the bucket
-    :param name: name for the file
+    :param object_path: name for the file
     :param fp: a file-like object containing file contents
     :return: metadata about the uploaded file
     """
     service = create_service()
-    body = {'name': name}
-    ext = name.split('.')[-1]
+    body = {'name': object_path}
+    ext = object_path.split('.')[-1]
     if ext in MIMETYPES:
         mimetype = MIMETYPES[ext]
     else:
-        (mimetype, encoding) = mimetypes.guess_type(name)
+        (mimetype, encoding) = mimetypes.guess_type(object_path)
     media_body = googleapiclient.http.MediaIoBaseUpload(fp, mimetype)
     req = service.objects().insert(bucket=bucket,
                                    body=body,

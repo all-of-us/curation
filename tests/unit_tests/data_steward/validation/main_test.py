@@ -101,9 +101,10 @@ class ValidationMainTest(TestCase):
         bucket_items = list()
         for i in range(3):
             bucket_items.extend(
-                test_util.build_mock_required_file_list(directory=f't{i}',
-                                                        valid_updated=(i is 2),
-                                                        valid_created=True))
+                test_util.build_mock_required_hpo_file_list(
+                    directory=f't{i}',
+                    valid_updated=(i is 2),
+                    valid_created=True))
 
         # mock bypasses api call and says no folders were processed
         with mock.patch(
@@ -289,42 +290,42 @@ class ValidationMainTest(TestCase):
         mock_valid_rdr.return_value = True
         mock_first_validation.return_value = False
         mrv = [
-            test_util.build_mock_file(filename='unknown.pdf',
-                                      directory='',
-                                      valid_created=True,
-                                      valid_updated=False),
-            test_util.build_mock_file(filename='foo.pdf',
-                                      directory='participants/no-site',
-                                      valid_created=True,
-                                      valid_updated=False),
-            test_util.build_mock_file(filename='foo.pdf',
-                                      directory='PARTICIPANT/siteone',
-                                      valid_created=True,
-                                      valid_updated=False),
-            test_util.build_mock_file(filename='foo.pdf',
-                                      directory='Participant/sitetwo',
-                                      valid_created=True,
-                                      valid_updated=False),
-            test_util.build_mock_file(filename='person.csv',
-                                      directory='submission',
-                                      valid_created=True,
-                                      valid_updated=True),
+            test_util.build_mock_hpo_file(filename='unknown.pdf',
+                                          directory='',
+                                          valid_created=True,
+                                          valid_updated=False),
+            test_util.build_mock_hpo_file(filename='foo.pdf',
+                                          directory='participants/no-site',
+                                          valid_created=True,
+                                          valid_updated=False),
+            test_util.build_mock_hpo_file(filename='foo.pdf',
+                                          directory='PARTICIPANT/siteone',
+                                          valid_created=True,
+                                          valid_updated=False),
+            test_util.build_mock_hpo_file(filename='foo.pdf',
+                                          directory='Participant/sitetwo',
+                                          valid_created=True,
+                                          valid_updated=False),
+            test_util.build_mock_hpo_file(filename='person.csv',
+                                          directory='submission',
+                                          valid_created=True,
+                                          valid_updated=True),
         ]
         mrv.extend(
-            test_util.build_mock_required_file_list(directory='SUBMISSION',
-                                                    valid_created=True,
-                                                    valid_updated=True))
+            test_util.build_mock_required_hpo_file_list(directory='SUBMISSION',
+                                                        valid_created=True,
+                                                        valid_updated=True))
         mock_bucket_list.return_value = mrv
 
         mock_validation.return_value = {
             'results':
                 list([
-                    test_util.build_mock_file_validation(req,
-                                                         directory='SUBMISSION',
-                                                         found=True,
-                                                         parsed=True,
-                                                         loaded=True)
-                    for req in common.AOU_REQUIRED_FILES
+                    test_util.build_mock_hpo_file_validation(
+                        req,
+                        directory='SUBMISSION',
+                        found=True,
+                        parsed=True,
+                        loaded=True) for req in common.AOU_REQUIRED_FILES
                 ]),
             'errors': [],
             'warnings': []

@@ -265,24 +265,61 @@ def get_synpuf_results_files():
                 file_id, os.path.join(TEST_DATA_EXPORT_SYNPUF_PATH, file_name))
 
 
-def read_cloud_file(bucket, name):
-    return gcs_utils.get_object(bucket, name)
+def read_cloud_file(bucket, object_path, as_text=True):
+    """
+    read_cloud_path attempts to read an object out of a GCS bucket
+
+    :param bucket: bucket name
+    :param object_path: target object name, including path
+    :param as_text: if true, contents of object will be extracted and returned as a string
+    :return: file contents
+    """
+    return gcs_utils.get_object(bucket=bucket,
+                                object_path=object_path,
+                                as_text=as_text)
 
 
-def write_cloud_str(bucket, name, contents_str):
+def write_cloud_str(bucket, object_path, contents_str):
+    """
+    write_cloud_str wraps the provided "contents_str" value with a
+    stream buffer before calling "write_cloud_fp"
+    
+    :param bucket: bucket name
+    :param object_path: path of of object be created relative to bucket root
+    :param contents_str: desired contents of file
+    :return: metadata about the uploaded file
+    """
     from io import StringIO
     fp = StringIO(contents_str)
-    return write_cloud_fp(bucket, name, fp)
+    return write_cloud_fp(bucket, object_path, fp)
 
 
-def write_cloud_file(bucket, f, prefix=""):
-    name = os.path.basename(f)
-    with open(f, 'rb') as fp:
+def write_cloud_file(bucket, filepath, prefix=""):
+    """
+    write_cloud_file uploads a file to a bucket, optionally nesting it
+    under a path
+    
+    :param bucket: bucket name
+    :param filepath: full path to file you wish to upload
+    :param prefix: (optional) prefix to nest uploaded file under
+    :return: metadata about the uploaded file
+    """
+    name = os.path.basename(filepath)
+    with open(filepath, 'rb') as fp:
         return write_cloud_fp(bucket, prefix + name, fp)
 
 
-def write_cloud_fp(bucket, name, fp):
-    return gcs_utils.upload_object(bucket, name, fp)
+def write_cloud_fp(bucket, object_path, fp):
+    """
+    write_cloud_fp creates / overwrites an object in a google cloud bucket
+    at the specified path with the contents of the provided io buffer
+
+    :param bucket: bucket name
+    :param object_path: path of of object be created relative to bucket root
+    :param fp: io buffer with desire contents of object
+    :return: metadata about the uploaded file
+    """
+    return gcs_utils.upload_object(bucket, object_path, fp)
 
 
 def populate_achilles(hpo_bucket, hpo_id=FAKE_HPO_ID, include_heel=True):
@@ -447,7 +484,7 @@ def normalize_field_payload(field):
     return result
 
 
-def build_mock_file_created(valid: bool):
+def build_mock_hpo_file_created(valid: bool):
     """
     Constructs a parseable file created time, either within or beyond the "valid" time range
 
@@ -462,7 +499,7 @@ def build_mock_file_created(valid: bool):
     return out.strftime(gcs_utils.GCS_META_DATETIME_FMT)
 
 
-def build_mock_file_updated(valid: bool):
+def build_mock_hpo_file_updated(valid: bool):
     """
     Constructs a parseable file updated time, either within or beyond the "valid" time range
 
@@ -478,11 +515,11 @@ def build_mock_file_updated(valid: bool):
     return out.strftime(gcs_utils.GCS_META_DATETIME_FMT)
 
 
-def build_mock_file(filename: str,
-                    directory: str,
-                    valid_created: bool,
-                    valid_updated: bool,
-                    meta=None):
+def build_mock_hpo_file(filename: str,
+                        directory: str,
+                        valid_created: bool,
+                        valid_updated: bool,
+                        meta=None):
     """
     Constructs a mock file representation with minimum required fields, with optionally
     valid timestamps
@@ -496,8 +533,8 @@ def build_mock_file(filename: str,
     """
     out = {
         'name': os.path.join(directory, filename),
-        'timeCreated': build_mock_file_created(valid_created),
-        'updated': build_mock_file_updated(valid_updated),
+        'timeCreated': build_mock_hpo_file_created(valid_created),
+        'updated': build_mock_hpo_file_updated(valid_updated),
     }
 
     if meta:
@@ -506,10 +543,10 @@ def build_mock_file(filename: str,
     return out
 
 
-def build_mock_required_file_list(directory: str,
-                                  valid_created: bool = True,
-                                  valid_updated: bool = True,
-                                  file_meta=None):
+def build_mock_required_hpo_file_list(directory: str,
+                                      valid_created: bool = True,
+                                      valid_updated: bool = True,
+                                      file_meta=None):
     """
     _build_mock_file_list will construct a list of dicts describing each file that is
     expected to be in an hpo upload directory for it to be considered valid
@@ -533,22 +570,22 @@ def build_mock_required_file_list(directory: str,
 
     for req in common.AOU_REQUIRED_FILES:
         out.append(
-            build_mock_file(filename=req,
-                            directory=directory,
-                            valid_created=valid_created,
-                            valid_updated=valid_updated,
-                            meta=(file_meta[req]
-                                  if file_meta and file_meta[req] else None)))
+            build_mock_hpo_file(filename=req,
+                                directory=directory,
+                                valid_created=valid_created,
+                                valid_updated=valid_updated,
+                                meta=(file_meta[req] if file_meta and
+                                      file_meta[req] else None)))
 
     return out
 
 
-def build_mock_file_validation(filename: str,
-                               directory: str,
-                               found: bool = True,
-                               parsed: bool = True,
-                               loaded: bool = True,
-                               err=None):
+def build_mock_hpo_file_validation(filename: str,
+                                   directory: str,
+                                   found: bool = True,
+                                   parsed: bool = True,
+                                   loaded: bool = True,
+                                   err=None):
     """
     Constructs the expected Tuple as would be returned by the "perform_validation_on_file" func
 
