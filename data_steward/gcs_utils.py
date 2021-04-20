@@ -16,6 +16,8 @@ MIMETYPES = {
 }
 GCS_DEFAULT_RETRY_COUNT = 5
 
+GCS_META_DATETIME_FMT = '%Y-%m-%dT%H:%M:%S.%fZ'
+
 
 def get_drc_bucket():
     result = os.environ.get('DRC_BUCKET_NAME')
