@@ -118,6 +118,10 @@ class UnitNormalizationTest(BaseTest.CleaningRulesTestBase):
             cls.fq_sandbox_table_names.append(
                 f'{cls.project_id}.{cls.sandbox_id}.{table}')
 
+        # Appending UNIT_MAPPING_TABLE table to fq_sandbox_table_names to delete after the test
+        cls.fq_sandbox_table_names.append(
+            f'{cls.project_id}.{cls.sandbox_id}.{UNIT_MAPPING_TABLE}')
+
         # call super to set up the client, create datasets
         cls.up_class = super().setUpClass()
 
@@ -186,5 +190,5 @@ class UnitNormalizationTest(BaseTest.CleaningRulesTestBase):
         self.default_test(tables_and_counts)
 
     def tearDown(self):
-        test_util.delete_all_tables(self.dataset_id)
-        test_util.delete_all_tables(self.sandbox_id)
+        for table in self.fq_table_names + self.fq_sandbox_table_names:
+            self.client.delete_table(table, not_found_ok=True)
