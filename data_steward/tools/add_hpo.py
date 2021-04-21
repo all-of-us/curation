@@ -1,6 +1,6 @@
 """
 Add a new HPO site to config file and BigQuery lookup tables and adds the new masked src_id and hpo_id to
-    the pipeline_tables.site_maskings table
+    the site_maskings table
 
 Note: GAE environment must still be set manually
 """
@@ -22,10 +22,14 @@ from utils import bq
 from tools import cli_util
 from utils import pipeline_logging
 from common import JINJA_ENV, PIPELINE_TABLES
-from cdr_cleaner.cleaning_rules.deid.generate_site_mappings_and_ext_tables import GenerateSiteMappingsAndExtTables, \
-    SITE_TABLE_ID
+from cdr_cleaner.cleaning_rules.deid.generate_site_mappings_and_ext_tables import SITE_MASKING_TABLE_ID
+
 
 LOGGER = logging.getLogger(__name__)
+
+EHR_SITE_PREFIX = 'EHR site '
+RDR = 'rdr'
+PPI_PM = 'PPI/PM'
 
 DEFAULT_DISPLAY_ORDER = """
 SELECT MAX(Display_Order) + 1 AS display_order FROM {hpo_site_id_mappings_table_id}
@@ -46,13 +50,38 @@ SELECT '{hpo_id}' AS hpo_id, '{bucket_name}' AS bucket_name
 """
 
 UPDATE_SITE_MASKING_QUERY = JINJA_ENV.from_string("""
--- site_masking table will be updated with new hpo_id and src_id if hpo_id is not found in site_masking --
--- sandbox table -- 
-INSERT INTO `{{project_id}}.{{pipeline_dataset_id}}.{{table_id}}` (hpo_id, src_id)
-(SELECT *
-FROM `{{project_id}}.{{pipeline_sandbox_id}}.{{table_id}}` m
-WHERE hpo_id NOT IN (
-SELECT hpo_id FROM `{{project_id}}.{{pipeline_dataset_id}}.{{table_id}}`))
+INSERT INTO
+   `{{project_id}}.{{dataset_id}}.{{table_id}}` (hpo_id, src_id) 
+     WITH random_ids AS
+ (
+ -- Generates the random EHR site id for the new hpo_site --
+  SELECT
+    CONCAT('EHR site ', new_id) AS hpo_id,
+    ROW_NUMBER() OVER(ORDER BY GENERATE_UUID()) AS row_id
+  FROM
+    UNNEST(GENERATE_ARRAY(100, 999)) AS new_id
+)
+SELECT
+    LOWER(m.hpo_id) as hpo_id,
+    r.hpo_id as src_id
+  FROM
+(
+  -- Selects the hpo_sites that are located in the hpo_site_id_mappings table but not the --
+  -- sandboxed site masking table --
+   SELECT
+     m.*,
+     ROW_NUMBER() OVER(ORDER BY GENERATE_UUID()) AS row_id
+   FROM `{{project_id}}.{{lookup_tables_dataset}}.{{hpo_site_id_mappings_table}}` AS m
+   WHERE m.HPO_ID IS NOT NULL AND m.HPO_ID != '' AND m.HPO_ID NOT IN (
+   SELECT hpo_id FROM `{{project_id}}.{{sandbox_id}}.{{table_id}}`)
+ ) AS m
+ JOIN random_ids AS r
+USING (row_id)
+UNION ALL
+-- Adds rdr record if one does not already exist in the sandboxed site_maskings table --
+SELECT 'rdr' AS hpo_id, 'PPI/PM' AS src_id FROM `{{project_id}}.{{dataset_id}}.{{table_id}}` WHERE
+ 'rdr' NOT IN (
+SELECT hpo_id FROM `{{project_id}}.{{sandbox_id}}.{{table_id}}`)
 """)
 
 
@@ -222,48 +251,31 @@ def bucket_access_configured(bucket_name):
 
 def update_site_masking_table():
     """
-    Creates a unique `site_maskings` sandbox table and updates the `pipeline_tables.site_maskings` table with the
+    Creates a unique `site_maskings` sandbox table and updates the `site_maskings` table with the
         new site maskings
     """
 
     project_id = app_identity.get_application_id()
-    dataset_id = PIPELINE_TABLES
-    intermediary_dataset_id = dataset_id + '_sandbox'
-    table_id = SITE_TABLE_ID
+    sandbox_id = PIPELINE_TABLES + '_sandbox'
 
     client = bq.get_client(project_id)
-    queries = []
-    jobs = []
-
-    obj = GenerateSiteMappingsAndExtTables(project_id,
-                                           dataset_id,
-                                           intermediary_dataset_id,
-                                           mapping_dataset_id=None)
-    generate_site_maskings = obj.generate_site_maskings_sandbox_table()
-    site_masking_query = ''.join(q['query'] for q in generate_site_maskings)
-    queries.append(site_masking_query)
 
     update_site_maskings_query = UPDATE_SITE_MASKING_QUERY.render(
         project_id=project_id,
-        pipeline_dataset_id=PIPELINE_TABLES,
-        pipeline_sandbox_id=intermediary_dataset_id,
-        table_id=table_id)
-    queries.append(update_site_maskings_query)
+        dataset_id=PIPELINE_TABLES,
+        sandbox_id=sandbox_id,
+        table_id=SITE_MASKING_TABLE_ID,
+        lookup_tables_dataset=bq_consts.LOOKUP_TABLES_DATASET_ID,
+        hpo_site_id_mappings_table=bq_consts.HPO_SITE_ID_MAPPINGS_TABLE_ID
+    )
 
     LOGGER.info(
-        f'Generating the `pipeline_tables_sandbox.site_masking` table via the following '
-        f'query:\n {site_masking_query}\n '
         f'Updating site_masking table with new hpo_id and src_id with the following '
         f'query:\n {update_site_maskings_query}\n ')
 
-    for query in queries:
-        query_job = client.query(query)
-        if query_job.errors:
-            raise RuntimeError(
-                f'{query} failed to run because of {query_job.errors}.')
-        jobs.append(query_job.result())
+    query_job = client.query(update_site_maskings_query)
 
-    return jobs
+    return query_job
 
 
 def main(hpo_id, org_id, hpo_name, bucket_name, display_order, addition_type):
@@ -289,7 +301,7 @@ def main(hpo_id, org_id, hpo_name, bucket_name, display_order, addition_type):
             add_lookups(hpo_id, hpo_name, org_id, bucket_name, display_order)
 
             LOGGER.info(
-                f'hpo_site_id_mappings table successfully updated. Updating `pipeline_table.site_masking` '
+                f'hpo_site_id_mappings table successfully updated. Updating `{bq_consts.HPO_SITE_ID_MAPPINGS_TABLE_ID}` '
                 f'table')
             update_site_masking_table()
 
