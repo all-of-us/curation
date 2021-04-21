@@ -479,7 +479,8 @@ def create_dataset(project_id,
                    description=None,
                    label_or_tag=None,
                    friendly_name=None,
-                   overwrite_existing=False):
+                   overwrite_existing=False,
+                   client=None):
     """
     Creates a new dataset
 
@@ -493,7 +494,8 @@ def create_dataset(project_id,
                                Overwrites ony if explicitly told to
     :return: a new dataset returned from the API
     """
-    client = get_client(project_id)
+    if not client:
+        client = get_client(project_id)
 
     # Check to see if dataset already exists
     all_datasets = [d.dataset_id for d in list_datasets(project_id)]
@@ -525,8 +527,10 @@ def create_dataset(project_id,
     return dataset
 
 
-def query_sheet_linked_bq_table(project_id, table_content_query,
-                                external_data_scopes):
+def query_sheet_linked_bq_table(project_id,
+                                table_content_query,
+                                external_data_scopes=None,
+                                client=None):
     """
     Queries Google Sheet sourced BigQuery Table and returns results dataframe
 
@@ -536,7 +540,8 @@ def query_sheet_linked_bq_table(project_id, table_content_query,
     :return: result dataframe
     """
     # add Google OAuth2.0 scopes
-    client = get_client(project_id, external_data_scopes)
+    if not client:
+        client = get_client(project_id, external_data_scopes)
     query_job_config = bigquery.job.QueryJobConfig(use_query_cache=False)
     result_df = client.query(table_content_query,
                              job_config=query_job_config).to_dataframe()

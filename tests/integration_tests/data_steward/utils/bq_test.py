@@ -7,7 +7,7 @@ from google.cloud import bigquery
 import pandas as pd
 
 # Project Imports
-from utils import bq
+from utils import bq, auth
 import app_identity
 from constants.utils import bq as consts
 
@@ -25,12 +25,26 @@ class BQTest(unittest.TestCase):
         self.dataset_id = os.environ.get('UNIONED_DATASET_ID')
         self.description = 'Unioned test dataset'
         self.label_or_tag = {'test': 'bq'}
+        # add Google Drive scope
+        external_data_scopes = [
+            "https://www.googleapis.com/auth/drive",
+            "https://www.googleapis.com/auth/cloud-platform"
+        ]
+        impersonation_creds = auth.get_impersonation_credentials(
+            'SERVICE_ACCOUNT', external_data_scopes, None)
+        self.client = bq.get_client(self.project_id,
+                                    credentials=impersonation_creds)
         # Remove dataset if it already exists
-        bq.delete_dataset(self.project_id, self.dataset_id)
+        self.client.delete_dataset(self.dataset_id,
+                                   delete_contents=True,
+                                   not_found_ok=True)
 
     def test_create_dataset(self):
-        dataset = bq.create_dataset(self.project_id, self.dataset_id,
-                                    self.description, self.label_or_tag)
+        dataset = bq.create_dataset(self.project_id,
+                                    self.dataset_id,
+                                    self.description,
+                                    self.label_or_tag,
+                                    client=self.client)
         self.assertEqual(dataset.dataset_id, self.dataset_id)
 
         # Try to create same dataset, which now already exists
@@ -41,7 +55,8 @@ class BQTest(unittest.TestCase):
                                     self.dataset_id,
                                     self.description,
                                     self.label_or_tag,
-                                    overwrite_existing=True)
+                                    overwrite_existing=True,
+                                    client=self.client)
         self.assertEqual(dataset.dataset_id, self.dataset_id)
 
     def test_define_dataset(self):
@@ -60,14 +75,11 @@ class BQTest(unittest.TestCase):
         self.assertEqual(dataset.dataset_id, self.dataset_id)
 
     def test_query_sheet_linked_bq_table(self):
-        dataset = bq.create_dataset(self.project_id, self.dataset_id,
-                                    self.description, self.label_or_tag)
-        # add Google Drive scope
-        external_data_scopes = [
-            "https://www.googleapis.com/auth/drive",
-            "https://www.googleapis.com/auth/cloud-platform"
-        ]
-        client = bq.get_client(self.project_id, external_data_scopes)
+        dataset = bq.create_dataset(self.project_id,
+                                    self.dataset_id,
+                                    self.description,
+                                    self.label_or_tag,
+                                    client=self.client)
 
         # Configure the external data source and query job.
         external_config = bigquery.ExternalConfig("GOOGLE_SHEETS")
@@ -92,11 +104,11 @@ class BQTest(unittest.TestCase):
         table = bigquery.Table(dataset.table(table_id), schema=schema)
         table.external_data_configuration = external_config
 
-        table = client.create_table(table)
+        table = self.client.create_table(table)
         table_content_query = f'SELECT * FROM `{dataset.dataset_id}.{table.table_id}`'
         actual_df = bq.query_sheet_linked_bq_table(self.project_id,
                                                    table_content_query,
-                                                   external_data_scopes)
+                                                   client=self.client)
         expected_dict = [{
             'site_name':
                 'Fake Site Name 1',

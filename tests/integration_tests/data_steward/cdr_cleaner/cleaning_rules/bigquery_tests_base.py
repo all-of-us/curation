@@ -22,6 +22,11 @@ from cdr_cleaner import clean_cdr_engine as engine
 from utils import bq
 from common import JINJA_ENV
 
+SCOPES = [
+    'https://www.googleapis.com/auth/bigquery',
+    'https://www.googleapis.com/auth/devstorage.read_write',
+]
+
 
 class BaseTest:
 
@@ -73,7 +78,12 @@ class BaseTest:
                     f'Provide a list of fully qualified table names the '
                     f'test will manipulate.')
 
-            cls.client = bq.get_client(cls.project_id)
+            from utils import auth
+            impersonation_creds = auth.get_impersonation_credentials(
+                'SERVICE_ACCOUNT', SCOPES, None)
+
+            cls.client = bq.get_client(cls.project_id,
+                                       credentials=impersonation_creds)
 
             # get or create datasets, cleaning rules can assume the datasets exist
             required_datasets = []
@@ -302,8 +312,8 @@ class BaseTest:
                 # test: run the queries
                 rule_class = self.rule_instance.__class__
                 engine.clean_dataset(self.project_id, self.dataset_id,
-                                     self.sandbox_id, [(rule_class,)],
-                                     **self.kwargs)
+                                     self.sandbox_id, [(rule_class,)], None,
+                                     self.client, **self.kwargs)
             else:
                 raise RuntimeError(f"Cannot use the default_test method for "
                                    f"{self.__class__.__name__} because "

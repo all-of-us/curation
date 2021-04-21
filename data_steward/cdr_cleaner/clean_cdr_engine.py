@@ -44,6 +44,7 @@ def clean_dataset(project_id,
                   sandbox_dataset_id,
                   rules,
                   table_namer='',
+                  client=None,
                   **kwargs):
     """
     Run the assigned cleaning rules and return list of BQ job objects
@@ -57,7 +58,8 @@ def clean_dataset(project_id,
     :return all_jobs: List of BigQuery job objects
     """
     # Set up client
-    client = bq.get_client(project_id=project_id)
+    if not client:
+        client = bq.get_client(project_id=project_id)
 
     all_jobs = []
     for rule_index, rule in enumerate(rules):
