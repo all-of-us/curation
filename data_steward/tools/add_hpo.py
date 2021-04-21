@@ -1,7 +1,8 @@
 """
-Add a new HPO site to config file and BigQuery lookup tables and adds the new masked src_id and hpo_id to
-    the site_maskings table
-
+Add a new HPO site to config file and BigQuery lookup tables and updates the `pipeline_table_sandbox.site_masking`
+    sandbox table created in `generate_site_mappings_and_ext_tables` with any missing hpo_sites in
+    `lookup_tables.hpo_site_id_mappings`
+    
 Note: GAE environment must still be set manually
 """
 # Python imports
