@@ -16,16 +16,12 @@ from google.cloud.bigquery import Client, Dataset, SchemaField, LoadJob, LoadJob
 
 from common import VOCABULARY_TABLES, JINJA_ENV, CONCEPT, VOCABULARY, VOCABULARY_UPDATES
 from resources import AOU_VOCAB_PATH
-from utils import bq, pipeline_logging, auth
+from utils import bq, pipeline_logging
 
 LOGGER = logging.getLogger(__name__)
 DATE_TIME_TYPES = ['date', 'timestamp', 'datetime']
 MAX_BAD_RECORDS = 0
 FIELD_DELIMITER = '\t'
-SCOPES = [
-    'https://www.googleapis.com/auth/bigquery',
-    'https://www.googleapis.com/auth/devstorage.read_write'
-]
 SELECT_TPL = JINJA_ENV.from_string("""
     SELECT 
     {% for field in fields %}
@@ -224,7 +220,7 @@ def load(project_id, bq_client, src_dataset_id, dst_dataset_id):
 
 
 def main(project_id: str, bucket_name: str, vocab_folder_path: str,
-         impersonation_acc, dst_dataset_id: str):
+         dst_dataset_id: str):
     """
     Load and transform vocabulary files in GCS to a BigQuery dataset
 
@@ -234,11 +230,8 @@ def main(project_id: str, bucket_name: str, vocab_folder_path: str,
     :param impersonation_acc: account to impersonate
     :param dst_dataset_id: final destination to load the vocabulary in BigQuery
     """
-    impersonation_credentials = auth.get_impersonation_credentials(
-        impersonation_acc, SCOPES)
-    bq_client = bq.get_client(project_id, credentials=impersonation_credentials)
-    gcs_client = storage.Client(project_id,
-                                credentials=impersonation_credentials)
+    bq_client = bq.get_client(project_id)
+    gcs_client = storage.Client(project_id)
     vocab_folder_path = Path(vocab_folder_path)
     update_aou_vocabs(vocab_folder_path)
     upload_stage(bucket_name, vocab_folder_path, gcs_client)
@@ -279,13 +272,6 @@ def get_arg_parser() -> argparse.ArgumentParser:
         dest='vocab_folder_path',
         action='store',
         help='Identifies the path to the folder containing the vocabulary files',
-        required=True)
-    argument_parser.add_argument(
-        '-i',
-        '--impersonation_account',
-        dest='impersonation_account',
-        action='store',
-        help='Identifies the service account to impersonate',
         required=True)
     argument_parser.add_argument(
         '-r',
@@ -337,4 +323,4 @@ if __name__ == '__main__':
         RELEASE_TAG)
     pipeline_logging.configure(add_console_handler=True)
     main(ARGS.project_id, ARGS.bucket_name, ARGS.vocab_folder_path,
-         ARGS.impersonation_account, TARGET_DATASET_ID)
+         TARGET_DATASET_ID)

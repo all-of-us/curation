@@ -8,7 +8,6 @@ from google.cloud import storage, bigquery
 import app_identity
 from tests.test_util import TEST_VOCABULARY_PATH
 from common import CONCEPT, VOCABULARY
-from utils import auth
 from tools import load_vocab as lv
 
 
@@ -25,13 +24,8 @@ class LoadVocabTest(unittest.TestCase):
         self.dataset_id = os.environ.get('UNIONED_DATASET_ID')
         self.staging_dataset_id = f'{self.dataset_id}_staging'
         self.bucket = os.environ.get('BUCKET_NAME_FAKE')
-        self.account = os.environ.get('SERVICE_ACCOUNT')
-        impersonation_credentials = auth.get_impersonation_credentials(
-            self.account, lv.SCOPES)
-        self.bq_client = bigquery.Client(project=self.project_id,
-                                         credentials=impersonation_credentials)
-        self.gcs_client = storage.Client(project=self.project_id,
-                                         credentials=impersonation_credentials)
+        self.bq_client = bigquery.Client(project=self.project_id)
+        self.gcs_client = storage.Client(project=self.project_id)
         self.test_vocab_folder_path = Path(TEST_VOCABULARY_PATH)
         self.test_vocabs = [CONCEPT, VOCABULARY]
         self.contents = {}
@@ -43,7 +37,7 @@ class LoadVocabTest(unittest.TestCase):
     @mock.patch('tools.load_vocab.VOCABULARY_TABLES', [CONCEPT, VOCABULARY])
     def test_upload_stage(self):
         lv.main(self.project_id, self.bucket, self.test_vocab_folder_path,
-                self.account, self.dataset_id)
+                self.dataset_id)
         expected_row_count = {'concept': 101, 'vocabulary': 52}
         for dataset in [self.staging_dataset_id, self.dataset_id]:
             for vocab in self.test_vocabs:
