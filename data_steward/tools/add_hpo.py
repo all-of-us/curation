@@ -24,7 +24,6 @@ from utils import pipeline_logging
 from common import JINJA_ENV, PIPELINE_TABLES
 from cdr_cleaner.cleaning_rules.deid.generate_site_mappings_and_ext_tables import SITE_MASKING_TABLE_ID
 
-
 LOGGER = logging.getLogger(__name__)
 
 EHR_SITE_PREFIX = 'EHR site '
@@ -266,8 +265,7 @@ def update_site_masking_table():
         sandbox_id=sandbox_id,
         table_id=SITE_MASKING_TABLE_ID,
         lookup_tables_dataset=bq_consts.LOOKUP_TABLES_DATASET_ID,
-        hpo_site_id_mappings_table=bq_consts.HPO_SITE_ID_MAPPINGS_TABLE_ID
-    )
+        hpo_site_id_mappings_table=bq_consts.HPO_SITE_ID_MAPPINGS_TABLE_ID)
 
     LOGGER.info(
         f'Updating site_masking table with new hpo_id and src_id with the following '

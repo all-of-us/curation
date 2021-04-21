@@ -88,11 +88,10 @@ class AddHPOTest(TestCase):
 
         mock_query = mock_get_client.return_value.query
 
-        # Mocks the job returns
+        # Mocks the job return
         query_job_reference_results = mock.MagicMock(
             name="query_job_reference_results")
         query_job_reference_results.return_value = query_job_reference_results
-
         mock_query.side_effect = query_job_reference_results
 
         # Test
