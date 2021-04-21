@@ -56,7 +56,7 @@ def update_aou_vocabs(vocab_folder_path: Path):
 
     :param vocab_folder_path: directory containing vocabulary files updated with cpt4 concepts
     """
-    concept_file = f'{CONCEPT}.csv'
+    concept_file = _table_name_to_filename(CONCEPT)
     concept_path = vocab_folder_path / concept_file
     aou_custom_path = Path(AOU_VOCAB_PATH) / concept_file
     with aou_custom_path.open('r') as custom_concept, concept_path.open(
@@ -65,7 +65,7 @@ def update_aou_vocabs(vocab_folder_path: Path):
             vocab_concept.write(line)
         LOGGER.info(f'Successfully updated file {str(concept_path)}')
 
-    vocabulary_file = f'{VOCABULARY}.csv'
+    vocabulary_file = _table_name_to_filename(VOCABULARY)
     vocabulary_path = vocab_folder_path / vocabulary_file
     aou_vocab_version = hash_dir(vocab_folder_path)
     with vocabulary_path.open('a') as vocab_vocabulary:
@@ -88,7 +88,7 @@ def upload_stage(bucket_name: str, vocab_folder_path: Path,
     bucket = gcs_client.get_bucket(bucket_name)
     LOGGER.info(f'GCS bucket {bucket_name} found successfully')
     for table in VOCABULARY_TABLES:
-        file_name = f'{table}.csv'
+        file_name = _table_name_to_filename(table)
         file_path = vocab_folder_path / file_name
         blob = bucket.blob(file_name)
         blob.upload_from_filename(str(file_path))
@@ -135,6 +135,10 @@ def safe_schema_for(table: str) -> List[SchemaField]:
 
 def _filename_to_table_name(filename: str) -> str:
     return filename.replace('.csv', '').lower()
+
+
+def _table_name_to_filename(table_name: str) -> str:
+    return f'{table_name.upper()}.csv'
 
 
 def load_stage(dst_dataset: Dataset, bq_client: Client, bucket_name: str,
