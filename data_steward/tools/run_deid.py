@@ -30,7 +30,7 @@ DEID_TABLES = [
 ]
 # these tables will be suppressed.  This means an empty table with the same schema will
 # exist.  It overrides the DEID_TABLES list
-SUPPRESSED_TABLES = ['note', 'note_nlp', 'location']
+SUPPRESSED_TABLES = ['note', 'note_nlp', 'location', 'care_site']
 VOCABULARY_TABLES = [
     'concept', 'vocabulary', 'domain', 'concept_class', 'concept_relationship',
     'relationship', 'concept_synonym', 'concept_ancestor',
