@@ -26,11 +26,11 @@ LOGGER = logging.getLogger(__name__)
 DEID_TABLES = [
     'person', 'observation', 'visit_occurrence', 'condition_occurrence',
     'drug_exposure', 'procedure_occurrence', 'device_exposure', 'death',
-    'measurement', 'location', 'care_site', 'specimen', 'observation_period'
+    'measurement', 'location', 'specimen', 'observation_period'
 ]
 # these tables will be suppressed.  This means an empty table with the same schema will
 # exist.  It overrides the DEID_TABLES list
-SUPPRESSED_TABLES = ['note', 'note_nlp', 'location']
+SUPPRESSED_TABLES = ['note', 'note_nlp', 'location', 'care_site']
 VOCABULARY_TABLES = [
     'concept', 'vocabulary', 'domain', 'concept_class', 'concept_relationship',
     'relationship', 'concept_synonym', 'concept_ancestor',
