@@ -293,36 +293,30 @@ def get_domain_mapping_queries(project_id, dataset_id):
                                    drop_existing=True,
                                    dataset_id=dataset_id)
 
-    queries = []
+    domain_mapping_queries = []
 
     for domain_table in domain_mapping.DOMAIN_TABLE_NAMES:
-        query = dict()
-        query[cdr_consts.QUERY] = parse_domain_mapping_query_cross_domain(
-            project_id, dataset_id, domain_table)
-        query[cdr_consts.DESTINATION_TABLE] = DOMAIN_ALIGNMENT_TABLE_NAME
-        query[cdr_consts.DISPOSITION] = bq_consts.WRITE_APPEND
-        query[cdr_consts.DESTINATION_DATASET] = dataset_id
-        queries.append(query)
+        query = parse_domain_mapping_query_cross_domain(project_id, dataset_id,
+                                                        domain_table)
+        domain_mapping_queries.append(query)
 
     # Create the query for creating field_mappings for the records moving between the same domain
-    query = dict()
-    query[cdr_consts.QUERY] = parse_domain_mapping_query_for_same_domains(
-        project_id, dataset_id)
-    query[cdr_consts.DESTINATION_TABLE] = DOMAIN_ALIGNMENT_TABLE_NAME
-    query[cdr_consts.DISPOSITION] = bq_consts.WRITE_APPEND
-    query[cdr_consts.DESTINATION_DATASET] = dataset_id
-    queries.append(query)
+    query = parse_domain_mapping_query_for_same_domains(project_id, dataset_id)
+    domain_mapping_queries.append(query)
 
     # Create the query for the records that are in the wrong domain but will not be moved
-    query = dict()
-    query[cdr_consts.QUERY] = parse_domain_mapping_query_for_excluded_records(
+    query = parse_domain_mapping_query_for_excluded_records(
         project_id, dataset_id)
-    query[cdr_consts.DESTINATION_TABLE] = DOMAIN_ALIGNMENT_TABLE_NAME
-    query[cdr_consts.DISPOSITION] = bq_consts.WRITE_APPEND
-    query[cdr_consts.DESTINATION_DATASET] = dataset_id
-    queries.append(query)
+    domain_mapping_queries.append(query)
 
-    return queries
+    unioned_query = {
+        cdr_consts.QUERY: UNION_ALL.join(domain_mapping_queries),
+        cdr_consts.DESTINATION_TABLE: DOMAIN_ALIGNMENT_TABLE_NAME,
+        cdr_consts.DISPOSITION: bq_consts.WRITE_EMPTY,
+        cdr_consts.DESTINATION_DATASET: dataset_id
+    }
+
+    return [unioned_query]
 
 
 def resolve_field_mappings(src_table, dest_table):
