@@ -26,7 +26,7 @@ LOGGER = logging.getLogger(__name__)
 DEID_TABLES = [
     'person', 'observation', 'visit_occurrence', 'condition_occurrence',
     'drug_exposure', 'procedure_occurrence', 'device_exposure', 'death',
-    'measurement', 'location', 'specimen', 'observation_period'
+    'measurement', 'location', 'care_site', 'specimen', 'observation_period'
 ]
 # these tables will be suppressed.  This means an empty table with the same schema will
 # exist.  It overrides the DEID_TABLES list
