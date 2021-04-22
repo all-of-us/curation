@@ -515,11 +515,11 @@ def build_mock_hpo_file_updated(valid: bool):
     return out.strftime(gcs_utils.GCS_META_DATETIME_FMT)
 
 
-def build_mock_hpo_file(filename: str,
-                        directory: str,
-                        valid_created: bool,
-                        valid_updated: bool,
-                        meta=None):
+def build_mock_hpo_file_metadata(filename: str,
+                                 directory: str,
+                                 valid_created: bool,
+                                 valid_updated: bool,
+                                 meta=None):
     """
     Constructs a mock file representation with minimum required fields, with optionally
     valid timestamps
@@ -543,10 +543,10 @@ def build_mock_hpo_file(filename: str,
     return out
 
 
-def build_mock_required_hpo_file_list(directory: str,
-                                      valid_created: bool = True,
-                                      valid_updated: bool = True,
-                                      file_meta=None):
+def build_mock_required_hpo_file_metadata(directory: str,
+                                          valid_created: bool = True,
+                                          valid_updated: bool = True,
+                                          file_meta=None):
     """
     _build_mock_file_list will construct a list of dicts describing each file that is
     expected to be in an hpo upload directory for it to be considered valid
@@ -570,14 +570,20 @@ def build_mock_required_hpo_file_list(directory: str,
 
     for req in common.AOU_REQUIRED_FILES:
         out.append(
-            build_mock_hpo_file(filename=req,
-                                directory=directory,
-                                valid_created=valid_created,
-                                valid_updated=valid_updated,
-                                meta=(file_meta[req] if file_meta and
-                                      file_meta[req] else None)))
+            build_mock_hpo_file_metadata(filename=req,
+                                         directory=directory,
+                                         valid_created=valid_created,
+                                         valid_updated=valid_updated,
+                                         meta=(file_meta[req] if file_meta and
+                                               file_meta[req] else None)))
 
     return out
+
+
+def push_mock_required_hpo_files(bucket: str, object_path: str):
+    """
+
+    """
 
 
 def build_mock_hpo_file_validation(filename: str,
