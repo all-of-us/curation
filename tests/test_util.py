@@ -580,10 +580,31 @@ def build_mock_required_hpo_file_metadata(directory: str,
     return out
 
 
-def push_mock_required_hpo_files(bucket: str, object_path: str):
+def push_mock_required_hpo_files(bucket: str,
+                                 directory: str = "/",
+                                 valid_created: bool = True,
+                                 valid_updated: bool = True,
+                                 contents_dict: dict = None):
     """
+    push_mock_required_hpo_files creates each of the files required for an upload from an HPO
+    to be considered valid
 
+    NOTE: does _not_ produce _valid_ files as the modify time will be ~= time of creation.
+          If fully valid files are required, you must delay n minutes before testing.
+
+    :param bucket: name of bucket to push to
+    :param path_prefix: (Optional) path to prefix to each file pushed
+    :param contents_dict: (Optional) optional dict of filename : string value to provide a value
+                          for the created file.  If left blank or not defined in the dict, a
+                          random string will be used.
     """
+    # get list of required file metadatas
+    req_files = build_mock_required_hpo_file_metadata(
+        directory=directory,
+        valid_created=valid_created,
+        valid_updated=valid_updated)
+
+    # loop through, pushing each to the target bucket
 
 
 def build_mock_hpo_file_validation(filename: str,
