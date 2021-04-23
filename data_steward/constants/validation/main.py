@@ -139,7 +139,8 @@ DUPLICATE_IDS_SUBQUERY = '''
     '''
 
 EHR_NO_PII = 'EHR person record exists but no PII Name record'
-EHR_NO_RDR = 'EHR person record exists but no consent record as of {date}'
+EHR_NO_RDR = 'EHR person record exists but data/consent records not found as of {date}. Please contact ' \
+             'EHR Ops for details.'
 PII_NO_EHR = 'PII record exists but no EHR person record'
 EHR_NO_PARTICIPANT_MATCH = 'EHR record exists but no participant match record'
 
