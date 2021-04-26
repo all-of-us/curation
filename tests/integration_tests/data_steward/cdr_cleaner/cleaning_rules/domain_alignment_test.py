@@ -7,6 +7,7 @@ import os
 from datetime import date
 from dateutil.parser import parse
 
+# Third party imports
 from google.cloud.bigquery import Table
 
 # Project Imports
@@ -182,10 +183,8 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
 
         # Load test data
         self.load_test_data([
-            f'''{insert_condition_query};
-                {insert_condition_mapping_query};
-                {insert_procedure_query};
-                {insert_procedure_mapping_query};'''
+            insert_condition_query, insert_condition_mapping_query,
+            insert_procedure_query, insert_procedure_mapping_query
         ])
 
     def test_domain_alignment(self):
