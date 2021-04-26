@@ -62,21 +62,21 @@ export COMBINED_DEID_DATASET_ID="${DATASET_PREFIX}_deid"
 # .circlerc is sourced before each test and deploy command
 # See https://www.compose.com/articles/experience-with-circleci/#dontcommitcredentials
 if [ -n "${CIRCLECI}" ]; then
-  echo "export GOOGLE_APPLICATION_CREDENTIALS=${HOME}/gcloud-credentials-key.json" >>${BASH_ENV}
-  echo "export APPLICATION_ID=${APPLICATION_ID}" >>${BASH_ENV}
-  echo "export GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}" >>${BASH_ENV}
-  echo "export USERNAME=${USERNAME}" >>${BASH_ENV}
-  echo "export DRC_BUCKET_NAME=${DRC_BUCKET_NAME}" >>${BASH_ENV}
-  echo "export BUCKET_NAME_FAKE=${BUCKET_NAME_FAKE}" >>${BASH_ENV}
-  echo "export BUCKET_NAME_NYC=${BUCKET_NAME_NYC}" >>${BASH_ENV}
-  echo "export BUCKET_NAME_PITT=${BUCKET_NAME_PITT}" >>${BASH_ENV}
-  echo "export BUCKET_NAME_CHS=${BUCKET_NAME_CHS}" >>${BASH_ENV}
-  echo "export BIGQUERY_DATASET_ID=${BIGQUERY_DATASET_ID}" >>${BASH_ENV}
-  echo "export RDR_DATASET_ID=${RDR_DATASET_ID}" >>${BASH_ENV}
-  echo "export COMBINED_DATASET_ID=${COMBINED_DATASET_ID}" >>${BASH_ENV}
-  echo "export COMBINED_DEID_DATASET_ID=${COMBINED_DEID_DATASET_ID}" >>${BASH_ENV}
-  echo "export UNIONED_DATASET_ID=${UNIONED_DATASET_ID}" >>${BASH_ENV}
-  echo "export BUCKET_NAME_UNIONED_EHR=${BUCKET_NAME_UNIONED_EHR}" >>${BASH_ENV}
-  echo "export VOCABULARY_DATASET=${VOCABULARY_DATASET}" >>${BASH_ENV}
-  echo "export PATH=${PATH}:${CIRCLE_WORKING_DIRECTORY}/ci" >>${BASH_ENV}
+  echo "export GOOGLE_APPLICATION_CREDENTIALS=${HOME}/gcloud-credentials-key.json" >>"${BASH_ENV}"
+  echo "export APPLICATION_ID=${APPLICATION_ID}" >>"${BASH_ENV}"
+  echo "export GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}" >>"${BASH_ENV}"
+  echo "export USERNAME=${USERNAME}" >>"${BASH_ENV}"
+  echo "export DRC_BUCKET_NAME=${DRC_BUCKET_NAME}" >>"${BASH_ENV}"
+  echo "export BUCKET_NAME_FAKE=${BUCKET_NAME_FAKE}" >>"${BASH_ENV}"
+  echo "export BUCKET_NAME_NYC=${BUCKET_NAME_NYC}" >>"${BASH_ENV}"
+  echo "export BUCKET_NAME_PITT=${BUCKET_NAME_PITT}" >>"${BASH_ENV}"
+  echo "export BUCKET_NAME_CHS=${BUCKET_NAME_CHS}" >>"${BASH_ENV}"
+  echo "export BIGQUERY_DATASET_ID=${BIGQUERY_DATASET_ID}" >>"${BASH_ENV}"
+  echo "export RDR_DATASET_ID=${RDR_DATASET_ID}" >>"${BASH_ENV}"
+  echo "export COMBINED_DATASET_ID=${COMBINED_DATASET_ID}" >>"${BASH_ENV}"
+  echo "export COMBINED_DEID_DATASET_ID=${COMBINED_DEID_DATASET_ID}" >>"${BASH_ENV}"
+  echo "export UNIONED_DATASET_ID=${UNIONED_DATASET_ID}" >>"${BASH_ENV}"
+  echo "export BUCKET_NAME_UNIONED_EHR=${BUCKET_NAME_UNIONED_EHR}" >>"${BASH_ENV}"
+  echo "export VOCABULARY_DATASET=${VOCABULARY_DATASET}" >>"${BASH_ENV}"
+  echo "export PATH=${PATH}:${CIRCLE_WORKING_DIRECTORY}/ci" >>"${BASH_ENV}"
 fi
