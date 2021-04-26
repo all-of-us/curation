@@ -4,15 +4,18 @@
 """
 import argparse
 import datetime
+import hashlib
 import logging
-from typing import List, Iterable, Union
+from pathlib import Path
+from typing import List
 
 from google.cloud import storage
-from google.cloud.bigquery import Client, Dataset, SchemaField, LoadJob, LoadJobConfig, QueryJob, \
+from google.cloud.exceptions import NotFound
+from google.cloud.bigquery import Client, Dataset, SchemaField, LoadJob, LoadJobConfig, \
     QueryJobConfig, Table
 
-from common import VOCABULARY_TABLES, JINJA_ENV
-from utils.sandbox import get_sandbox_dataset_id
+from common import VOCABULARY_TABLES, JINJA_ENV, CONCEPT, VOCABULARY, VOCABULARY_UPDATES
+from resources import AOU_VOCAB_PATH
 from utils import bq, pipeline_logging
 
 LOGGER = logging.getLogger(__name__)
@@ -33,25 +36,86 @@ SELECT_TPL = JINJA_ENV.from_string("""
 """)
 
 
-def wait_jobs(jobs: Iterable[Union[QueryJob, LoadJob]]):
+def hash_dir(vocab_folder_path: Path) -> str:
     """
-    Run multiple jobs to completion
+    Generate an MD5 digest from the contents of a directory
 
-    :param jobs: jobs to run
-    :return: the completed jobs
-
-    :raises RuntimeError if a LoadJob completes with errors
-    :raises google.cloud.exceptions.GoogleCloudError if a QueryJob fails
+    :param vocab_folder_path: Path
+    :returns MD5 digest
     """
-    _jobs = []
-    for job in jobs:
-        _job = job.result()
-        _jobs.append(_job)
-        if hasattr(_job, 'errors') and _job.errors:
-            LOGGER.error(f"Error running job {_job.job_id}: {_job.errors}")
-            raise RuntimeError(
-                f"Error running job {_job.job_id}: {_job.errors}")
-    return _jobs
+    hash_obj = hashlib.sha256()
+    for vocab_file in vocab_folder_path.glob('*.csv'):
+        with vocab_file.open('rb') as fp:
+            hash_obj.update(fp.read())
+    return hash_obj.hexdigest()
+
+
+def update_aou_vocabs(vocab_folder_path: Path):
+    """
+    Add vocabularies AoU_General and AoU_Custom to the vocabulary at specified path
+
+    :param vocab_folder_path: directory containing vocabulary files updated with cpt4 concepts
+    """
+    concept_file = _table_name_to_filename(CONCEPT)
+    concept_path = vocab_folder_path / concept_file
+    aou_custom_path = Path(AOU_VOCAB_PATH) / concept_file
+    with aou_custom_path.open('r') as custom_concept, concept_path.open(
+            'a') as vocab_concept:
+        for line in custom_concept.readlines()[1:]:
+            vocab_concept.write(line)
+        LOGGER.info(f'Successfully updated file {str(concept_path)}')
+
+    vocabulary_file = _table_name_to_filename(VOCABULARY)
+    vocabulary_path = vocab_folder_path / vocabulary_file
+    aou_vocab_version = hash_dir(vocab_folder_path)
+    with vocabulary_path.open('a') as vocab_vocabulary:
+        for _, vocab_list in VOCABULARY_UPDATES.items():
+            vocab_list[-2] = aou_vocab_version
+            vocab_vocabulary.write(f'{FIELD_DELIMITER.join(vocab_list)}\n')
+        LOGGER.info(f'Successfully updated file {str(vocabulary_path)}')
+    return
+
+
+def upload_stage(bucket_name: str, vocab_folder_path: Path,
+                 gcs_client: storage.Client):
+    """
+    Upload vocabulary tables to cloud storage
+
+    :param bucket_name: the location in GCS containing the vocabulary files
+    :param vocab_folder_path: points to the directory containing files downloaded from athena with CPT4 applied
+    :param gcs_client: google cloud storage client
+    """
+    bucket = gcs_client.get_bucket(bucket_name)
+    LOGGER.info(f'GCS bucket {bucket_name} found successfully')
+    for table in VOCABULARY_TABLES:
+        file_name = _table_name_to_filename(table)
+        file_path = vocab_folder_path / file_name
+        blob = bucket.blob(file_name)
+        blob.upload_from_filename(str(file_path))
+        LOGGER.info(f'Vocabulary file {str(file_path)} uploaded '
+                    f'successfully to GCS bucket {bucket_name}')
+    return
+
+
+def check_and_create_staging_dataset(dst_dataset_id, bucket_name, bq_client):
+    """
+
+    :param dst_dataset_id: final destination to load the vocabulary in BigQuery
+    :param bucket_name: the location in GCS containing the vocabulary files
+    :param bq_client: google bigquery client
+    :return: staging dataset object
+    """
+    staging_dataset_id = f'{dst_dataset_id}_staging'
+    staging_dataset = Dataset(f'{bq_client.project}.{staging_dataset_id}')
+    try:
+        bq_client.get_dataset(staging_dataset)
+    except NotFound:
+        staging_dataset.description = f'Vocabulary loaded from gs://{bucket_name}'
+        staging_dataset.labels = {'type': 'vocabulary', 'phase': 'staging'}
+        staging_dataset.location = "US"
+        staging_dataset = bq_client.create_dataset(staging_dataset)
+        LOGGER.info(f'Successfully created dataset {staging_dataset_id}')
+    return staging_dataset
 
 
 def safe_schema_for(table: str) -> List[SchemaField]:
@@ -71,6 +135,10 @@ def safe_schema_for(table: str) -> List[SchemaField]:
 
 def _filename_to_table_name(filename: str) -> str:
     return filename.replace('.csv', '').lower()
+
+
+def _table_name_to_filename(table_name: str) -> str:
+    return f'{table_name.upper()}.csv'
 
 
 def load_stage(dst_dataset: Dataset, bq_client: Client, bucket_name: str,
@@ -107,36 +175,33 @@ def load_stage(dst_dataset: Dataset, bq_client: Client, bucket_name: str,
         job_config.skip_leading_rows = 1
         job_config.field_delimiter = FIELD_DELIMITER
         job_config.max_bad_records = MAX_BAD_RECORDS
+        job_config.source_format = 'CSV'
         job_config.quote_character = ''
         source_uri = f'gs://{bucket_name}/{blob.name}'
         load_job = bq_client.load_table_from_uri(source_uri,
                                                  destination,
                                                  job_config=job_config)
-        load_jobs.append(load_job)
         LOGGER.info(f'table:{destination} job_id:{load_job.job_id}')
+        load_jobs.append(load_job)
+        load_job.result()
     return load_jobs
 
 
-def load(project_id,
-         bq_client,
-         src_dataset_id,
-         dst_dataset_id,
-         overwrite_ok=False):
+def load(project_id, bq_client, src_dataset_id, dst_dataset_id):
     """
     Transform safely loaded tables and store results in target dataset.
 
-    :param project_id:
-    :param bq_client:
-    :param src_dataset_id:
-    :param dst_dataset_id:
-    :param overwrite_ok: if True and the dest dataset already exists the dataset is recreated
-    :return:
+    :param project_id: Identifies the BQ project
+    :param bq_client: a BigQuery client object
+    :param src_dataset_id: reference to source dataset object
+    :param dst_dataset_id: reference to destination dataset object
+    :return: List of BQ job_ids
     """
-    if overwrite_ok:
-        bq_client.delete_dataset(dst_dataset_id,
-                                 delete_contents=True,
-                                 not_found_ok=True)
-    bq_client.create_dataset(dst_dataset_id)
+    dst_dataset = Dataset(f'{bq_client.project}.{dst_dataset_id}')
+    dst_dataset.description = f'Vocabulary cleaned and loaded from {src_dataset_id}'
+    dst_dataset.labels = {'type': 'vocabulary'}
+    dst_dataset.location = "US"
+    bq_client.create_dataset(dst_dataset, exists_ok=True)
     src_tables = list(bq_client.list_tables(dataset=src_dataset_id))
 
     job_config = QueryJobConfig()
@@ -154,34 +219,30 @@ def load(project_id,
         query_job = bq_client.query(query, job_config=job_config)
         LOGGER.info(f'table:{destination} job_id:{query_job.job_id}')
         query_jobs.append(query_job)
+        query_job.result()
     return query_jobs
 
 
-def main(project_id: str, bucket_name: str, dst_dataset_id: str):
+def main(project_id: str, bucket_name: str, vocab_folder_path: str,
+         dst_dataset_id: str):
     """
     Load and transform vocabulary files in GCS to a BigQuery dataset
 
-    :param project_id:
+    :param project_id: Identifies the BQ project
     :param bucket_name: refers to the bucket containing vocabulary files
+    :param vocab_folder_path: points to the directory containing files downloaded from athena with CPT4 applied
     :param dst_dataset_id: final destination to load the vocabulary in BigQuery
     """
     bq_client = bq.get_client(project_id)
     gcs_client = storage.Client(project_id)
-    sandbox_dataset_id = get_sandbox_dataset_id(dst_dataset_id)
-    sandbox_dataset = bq.create_dataset(
-        project_id,
-        sandbox_dataset_id,
-        f'Vocabulary loaded from gs://{bucket_name}',
-        label_or_tag={'type': 'vocabulary'},
-        overwrite_existing=True)
-    stage_jobs = load_stage(sandbox_dataset, bq_client, bucket_name, gcs_client)
-    wait_jobs(stage_jobs)
-    load_jobs = load(project_id,
-                     bq_client,
-                     sandbox_dataset_id,
-                     dst_dataset_id,
-                     overwrite_ok=True)
-    wait_jobs(load_jobs)
+    vocab_folder_path = Path(vocab_folder_path)
+    update_aou_vocabs(vocab_folder_path)
+    upload_stage(bucket_name, vocab_folder_path, gcs_client)
+    staging_dataset = check_and_create_staging_dataset(dst_dataset_id,
+                                                       bucket_name, bq_client)
+    load_stage(staging_dataset, bq_client, bucket_name, gcs_client)
+    load(project_id, bq_client, staging_dataset.dataset_id, dst_dataset_id)
+    return
 
 
 def get_arg_parser() -> argparse.ArgumentParser:
@@ -207,6 +268,13 @@ def get_arg_parser() -> argparse.ArgumentParser:
         dest='bucket_name',
         action='store',
         help='Bucket containing CSV files downloaded from Athena',
+        required=True)
+    argument_parser.add_argument(
+        '-f',
+        '--vocab_folder_path',
+        dest='vocab_folder_path',
+        action='store',
+        help='Identifies the path to the folder containing the vocabulary files',
         required=True)
     argument_parser.add_argument(
         '-r',
@@ -249,4 +317,5 @@ if __name__ == '__main__':
     TARGET_DATASET_ID = ARGS.target_dataset_id or get_target_dataset_id(
         RELEASE_TAG)
     pipeline_logging.configure(add_console_handler=True)
-    main(ARGS.project_id, ARGS.bucket_name, TARGET_DATASET_ID)
+    main(ARGS.project_id, ARGS.bucket_name, ARGS.vocab_folder_path,
+         TARGET_DATASET_ID)
