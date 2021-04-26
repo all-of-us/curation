@@ -8,7 +8,7 @@ from mock import patch
 import cdr_cleaner.cleaning_rules.domain_alignment as domain_alignment
 from cdr_cleaner.cleaning_rules.domain_alignment import (
     WHEN_STATEMENT, DOMAIN_ALIGNMENT_TABLE_NAME, CASE_STATEMENT,
-    SRC_FIELD_AS_DEST_FIELD, SELECT_DOMAIN_RECORD_QUERY)
+    SRC_FIELD_AS_DEST_FIELD)
 from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 
@@ -361,33 +361,28 @@ class DomainAlignmentTest(unittest.TestCase):
         mock_parse_domain_mapping_query_for_excluded_records.return_value = excluded_records_query
 
         # Define the expected queries
-        expected_queries = [{
-            cdr_consts.QUERY: cross_domain_query_condition,
-            cdr_consts.DESTINATION_TABLE: DOMAIN_ALIGNMENT_TABLE_NAME,
-            cdr_consts.DISPOSITION: bq_consts.WRITE_APPEND,
-            cdr_consts.DESTINATION_DATASET: self.dataset_id
-        }, {
-            cdr_consts.QUERY: cross_domain_query_procedure,
-            cdr_consts.DESTINATION_TABLE: DOMAIN_ALIGNMENT_TABLE_NAME,
-            cdr_consts.DISPOSITION: bq_consts.WRITE_APPEND,
-            cdr_consts.DESTINATION_DATASET: self.dataset_id
-        }, {
-            cdr_consts.QUERY: same_domain_query,
-            cdr_consts.DESTINATION_TABLE: DOMAIN_ALIGNMENT_TABLE_NAME,
-            cdr_consts.DISPOSITION: bq_consts.WRITE_APPEND,
-            cdr_consts.DESTINATION_DATASET: self.dataset_id
-        }, {
-            cdr_consts.QUERY: excluded_records_query,
-            cdr_consts.DESTINATION_TABLE: DOMAIN_ALIGNMENT_TABLE_NAME,
-            cdr_consts.DISPOSITION: bq_consts.WRITE_APPEND,
-            cdr_consts.DESTINATION_DATASET: self.dataset_id
-        }]
+        expected_query = {
+            cdr_consts.QUERY:
+                domain_alignment.UNION_ALL.join([
+                    cross_domain_query_condition,
+                    cross_domain_query_procedure,
+                    same_domain_query,
+                    excluded_records_query,
+                ]),
+            cdr_consts.DESTINATION_TABLE:
+                DOMAIN_ALIGNMENT_TABLE_NAME,
+            cdr_consts.DISPOSITION:
+                bq_consts.WRITE_EMPTY,
+            cdr_consts.DESTINATION_DATASET:
+                self.dataset_id
+        }
 
         actual_queries = domain_alignment.get_domain_mapping_queries(
             self.project_id, self.dataset_id)
+        actual_query = actual_queries[0]
 
         # Test the content of the expected and actual queries
-        self.assertCountEqual(expected_queries, actual_queries)
+        self.assertDictEqual(expected_query, actual_query)
 
         mock_create_standard_table.assert_called_once_with(
             DOMAIN_ALIGNMENT_TABLE_NAME,
