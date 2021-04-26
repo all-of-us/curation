@@ -79,7 +79,8 @@ class DeduplicateIdColumnTestBase(BaseTest.CleaningRulesTestBase):
         # Load the test data
         insert_observation_query = self.jinja_env.from_string("""
             INSERT INTO `{{project_id}}.{{dataset_id}}.observation` 
-                (observation_id, person_id, observation_concept_id, observation_date, observation_type_concept_id)
+                (observation_id, person_id, observation_concept_id, 
+                observation_date, observation_type_concept_id)
             VALUES (1, 1, 0, '2010-01-01', 1),
                    (1, 1, 0, '2010-01-01', 1),
                    (2, 1, 0, '2010-01-01', 1),
