@@ -52,8 +52,10 @@ class LoadVocabTest(unittest.TestCase):
             bucket = self.gcs_client.bucket(self.bucket)
             blob = bucket.blob(lv._table_name_to_filename(vocab))
             blob.delete()
-            self.bq_client.delete_table(f'{self.dataset_id}.{vocab}')
-            self.bq_client.delete_table(f'{self.staging_dataset_id}.{vocab}')
+            self.bq_client.delete_table(f'{self.dataset_id}.{vocab}',
+                                        not_found_ok=True)
+            self.bq_client.delete_table(f'{self.staging_dataset_id}.{vocab}',
+                                        not_found_ok=True)
             vocab_path = self.test_vocab_folder_path / lv._table_name_to_filename(
                 vocab)
             with vocab_path.open('w') as f:

@@ -72,3 +72,13 @@ class LoadVocabTest(unittest.TestCase):
                                   self.bucket_name, self.gcs_client)
             self.assertIsInstance(c.exception, RuntimeError)
             self.assertEqual(str(c.exception), expected_msg)
+
+    def test_table_name_to_filename(self):
+        expected = 'CONCEPT.csv'
+        actual = load_vocab._table_name_to_filename('concept')
+        self.assertEqual(expected, actual)
+
+    def test_filename_to_table_name(self):
+        expected = 'concept'
+        actual = load_vocab._filename_to_table_name('CONCEPT.csv')
+        self.assertEqual(expected, actual)

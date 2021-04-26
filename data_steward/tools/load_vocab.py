@@ -111,7 +111,7 @@ def check_and_create_staging_dataset(dst_dataset_id, bucket_name, bq_client):
         bq_client.get_dataset(staging_dataset)
     except NotFound:
         staging_dataset.description = f'Vocabulary loaded from gs://{bucket_name}'
-        staging_dataset.labels = {'type': 'vocabulary'}
+        staging_dataset.labels = {'type': 'vocabulary', 'phase': 'staging'}
         staging_dataset.location = "US"
         staging_dataset = bq_client.create_dataset(staging_dataset)
         LOGGER.info(f'Successfully created dataset {staging_dataset_id}')
@@ -231,7 +231,6 @@ def main(project_id: str, bucket_name: str, vocab_folder_path: str,
     :param project_id: Identifies the BQ project
     :param bucket_name: refers to the bucket containing vocabulary files
     :param vocab_folder_path: points to the directory containing files downloaded from athena with CPT4 applied
-    :param impersonation_acc: account to impersonate
     :param dst_dataset_id: final destination to load the vocabulary in BigQuery
     """
     bq_client = bq.get_client(project_id)
@@ -291,14 +290,6 @@ def get_arg_parser() -> argparse.ArgumentParser:
         action='store',
         help=
         'Identifies the target dataset where the vocabulary is to be loaded',
-        required=False)
-    argument_parser.add_argument(
-        '-s',
-        '--staging_dataset_id',
-        dest='staging_dataset_id',
-        action='store',
-        help=
-        'Identifies the staging dataset where the vocabulary is to be staged',
         required=False)
     return argument_parser
 
