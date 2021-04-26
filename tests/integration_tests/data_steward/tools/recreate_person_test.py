@@ -95,9 +95,11 @@ class RecreatePersonTest(TestCase):
         person_ext_vals = self.client.query(person_ext_cols).to_dataframe()
         testing.assert_frame_equal(
             new_person_vals.set_index(
-                ['state_of_residence_concept_id', 'sex_at_birth_concept_id']).sort_index(),
+                ['state_of_residence_concept_id',
+                 'sex_at_birth_concept_id']).sort_index(),
             person_ext_vals.set_index(
-                ['state_of_residence_concept_id', 'sex_at_birth_concept_id']).sort_index())
+                ['state_of_residence_concept_id',
+                 'sex_at_birth_concept_id']).sort_index())
 
     def tearDown(self) -> None:
         for table in self.table_ids:
