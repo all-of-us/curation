@@ -15,12 +15,11 @@ The intent of this module is to check that GCR access token is generated properl
 # Python imports
 import os
 import time
-import datetime
+from datetime import date
 from unittest import mock
 
 # Third party imports
-import pandas
-import pandas.testing
+from pandas import DataFrame
 
 # Project imports
 import utils.participant_summary_requests as psr
@@ -52,12 +51,13 @@ class ParticipantSummaryRequests(BaseTest.BigQueryTestBase):
     def setUp(self):
         self.columns = ['participantId', 'suspensionStatus', 'suspensionTime']
         self.bq_columns = ['person_id', 'suspension_status', 'deactivated_date']
-        self.deactivated_participants = [[
-            111, 'NO_CONTACT', datetime.date(2018, 12, 7)
-        ], [222, 'NO_CONTACT', datetime.date(2018, 12, 7)]]
+        self.deactivated_participants = [[111, 'NO_CONTACT',
+                                          date(2018, 12, 7)],
+                                         [222, 'NO_CONTACT',
+                                          date(2018, 12, 7)]]
 
-        self.fake_dataframe = pandas.DataFrame(self.deactivated_participants,
-                                               columns=self.bq_columns)
+        self.fake_dataframe = DataFrame(self.deactivated_participants,
+                                        columns=self.bq_columns)
 
         self.url = 'www.fake_site.com'
         self.headers = {
@@ -133,8 +133,8 @@ class ParticipantSummaryRequests(BaseTest.BigQueryTestBase):
                                    f'{self.dataset_id}.{self.tablename}')
 
         # Post conditions
-        values = [(111, 'NO_CONTACT', datetime.date(2018, 12, 7)),
-                  (222, 'NO_CONTACT', datetime.date(2018, 12, 7))]
+        values = [(111, 'NO_CONTACT', date(2018, 12, 7)),
+                  (222, 'NO_CONTACT', date(2018, 12, 7))]
         self.assertTableValuesMatch(
             '.'.join([self.project_id, self.destination_table]),
             self.bq_columns, values)
@@ -149,8 +149,8 @@ class ParticipantSummaryRequests(BaseTest.BigQueryTestBase):
                                    self.destination_table)
 
         # Post conditions
-        values = [(111, 'NO_CONTACT', datetime.date(2018, 12, 7)),
-                  (222, 'NO_CONTACT', datetime.date(2018, 12, 7))]
+        values = [(111, 'NO_CONTACT', date(2018, 12, 7)),
+                  (222, 'NO_CONTACT', date(2018, 12, 7))]
         self.assertTableValuesMatch(
             '.'.join([self.project_id, self.destination_table]),
             self.bq_columns, values)
