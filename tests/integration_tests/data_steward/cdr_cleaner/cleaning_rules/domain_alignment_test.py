@@ -7,6 +7,7 @@ import os
 from datetime import date
 from dateutil.parser import parse
 
+# Third party imports
 from google.cloud.bigquery import Table
 
 # Project Imports
@@ -123,52 +124,50 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
         super().setUp()
 
         # Load the test data
-        condition_occurrence_data_template = self.jinja_env.from_string("""
-                    INSERT INTO `{{project_id}}.{{dataset_id}}.condition_occurrence`
-                    (condition_occurrence_id, person_id, condition_concept_id, 
-                    condition_start_date, condition_start_datetime, condition_type_concept_id,
-                    visit_occurrence_id)
-                    -- 36676219 is a procedure and would be rerouted to procedure_occurrence --
-                    -- 3009160 is a lab test (measurement) and rerouting from condition_occurrence to measurement is not possible, therefore this record would be dropped --
-                    VALUES
-                        (100, 1, 201826, '2015-07-15', TIMESTAMP '2015-07-15T00:00:00', 42894222, 1),
-                        (101, 2, 36676219, '2015-07-15', TIMESTAMP '2015-07-15T00:00:00', 42865906, 2),
-                        (102, 3, 201826, '2015-07-15', TIMESTAMP '2015-07-15T00:00:00', 42894222, 3),
-                        (103, 4, 201826, '2015-07-15', TIMESTAMP '2015-07-15T00:00:00', 42894222, 4),
-                        (104, 5, 3009160, '2015-07-15', TIMESTAMP '2015-07-15T00:00:00', 42894222, 4)
-                    """)
+        condition_occurrence_data_template = self.jinja_env.from_string(
+            """INSERT INTO `{{project_id}}.{{dataset_id}}.condition_occurrence`
+                (condition_occurrence_id, person_id, condition_concept_id, 
+                condition_start_date, condition_start_datetime, condition_type_concept_id,
+                visit_occurrence_id)
+                -- 36676219 is a procedure and would be rerouted to procedure_occurrence --
+                -- 3009160 is a lab test (measurement) and rerouting from condition_occurrence --
+                -- to measurement is not possible, therefore this record would be dropped --
+                VALUES
+                (100, 1, 201826, '2015-07-15', timestamp('2015-07-15'), 42894222, 1),
+                (101, 2, 36676219, '2015-07-15', timestamp('2015-07-15'), 42865906, 2),
+                (102, 3, 201826, '2015-07-15', timestamp('2015-07-15'), 42894222, 3),
+                (103, 4, 201826, '2015-07-15', timestamp('2015-07-15'), 42894222, 4),
+                (104, 5, 3009160, '2015-07-15', timestamp('2015-07-15'), 42894222, 4)"""
+        )
 
         mapping_condition_occurrence_data_template = self.jinja_env.from_string(
-            """
-                    INSERT INTO `{{project_id}}.{{dataset_id}}._mapping_condition_occurrence`
-                    (condition_occurrence_id, src_dataset_id, src_condition_occurrence_id, 
-                     src_hpo_id, src_table_id)
-                    VALUES
-                        (100, '{{dataset_id}}', 1, 'hpo_1', 'condition_occurrence'),
-                        (101, '{{dataset_id}}', 2, 'hpo_2', 'condition_occurrence'),
-                        (102, '{{dataset_id}}', 3, 'hpo_3', 'condition_occurrence'),
-                        (103, '{{dataset_id}}', 4, 'hpo_4', 'condition_occurrence'),
-                        (104, '{{dataset_id}}', 5, 'hpo_5', 'condition_occurrence')
-                    """)
+            """INSERT INTO `{{project_id}}.{{dataset_id}}._mapping_condition_occurrence`
+                (condition_occurrence_id, src_dataset_id, src_condition_occurrence_id, 
+                 src_hpo_id, src_table_id)
+                VALUES
+                (100, '{{dataset_id}}', 1, 'hpo_1', 'condition_occurrence'),
+                (101, '{{dataset_id}}', 2, 'hpo_2', 'condition_occurrence'),
+                (102, '{{dataset_id}}', 3, 'hpo_3', 'condition_occurrence'),
+                (103, '{{dataset_id}}', 4, 'hpo_4', 'condition_occurrence'),
+                (104, '{{dataset_id}}', 5, 'hpo_5', 'condition_occurrence')""")
 
-        procedure_occurrence_tmpl = self.jinja_env.from_string("""
-                    INSERT INTO `{{project_id}}.{{dataset_id}}.procedure_occurrence`
-                    (procedure_occurrence_id, person_id, procedure_concept_id, procedure_date, 
-                     procedure_datetime, procedure_type_concept_id, visit_occurrence_id)
-                     -- 320128 is essential hypertension (condition) and would be rerouted to condition_occurrence --
-                    VALUES
-                        (200, 5, 36676219, '2015-07-15', TIMESTAMP '2015-07-15T00:00:00', 42865906, 5),
-                        (201, 6, 320128, '2015-08-15', TIMESTAMP '2015-08-15T00:00:00', 42894222, 6)
-                        """)
+        procedure_occurrence_tmpl = self.jinja_env.from_string(
+            """INSERT INTO `{{project_id}}.{{dataset_id}}.procedure_occurrence`
+                (procedure_occurrence_id, person_id, procedure_concept_id, procedure_date, 
+                 procedure_datetime, procedure_type_concept_id, visit_occurrence_id)
+                 -- 320128 is essential hypertension (condition) and would be rerouted --
+                 -- to condition_occurrence --
+                VALUES
+                (200, 5, 36676219, '2015-07-15', timestamp('2015-07-15'), 42865906, 5),
+                (201, 6, 320128, '2015-08-15', timestamp('2015-08-15'), 42894222, 6)"""
+        )
         mapping_procedure_occurrence_data_template = self.jinja_env.from_string(
-            """
-                    INSERT INTO `{{project_id}}.{{dataset_id}}._mapping_procedure_occurrence`
-                    (procedure_occurrence_id, src_dataset_id, src_procedure_occurrence_id, 
-                     src_hpo_id, src_table_id)
-                    VALUES
-                        (200, '{{dataset_id}}', 10, 'hpo_1', 'procedure_occurrence'),
-                        (201, '{{dataset_id}}', 20, 'hpo_2', 'procedure_occurrence')
-                    """)
+            """INSERT INTO `{{project_id}}.{{dataset_id}}._mapping_procedure_occurrence`
+                (procedure_occurrence_id, src_dataset_id, src_procedure_occurrence_id, 
+                 src_hpo_id, src_table_id)
+                VALUES
+                (200, '{{dataset_id}}', 10, 'hpo_1', 'procedure_occurrence'),
+                (201, '{{dataset_id}}', 20, 'hpo_2', 'procedure_occurrence')""")
 
         insert_condition_query = condition_occurrence_data_template.render(
             project_id=self.project_id, dataset_id=self.dataset_id)
@@ -184,10 +183,8 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
 
         # Load test data
         self.load_test_data([
-            f'''{insert_condition_query};
-                {insert_condition_mapping_query};
-                {insert_procedure_query};
-                {insert_procedure_mapping_query};'''
+            insert_condition_query, insert_condition_mapping_query,
+            insert_procedure_query, insert_procedure_mapping_query
         ])
 
     def test_domain_alignment(self):

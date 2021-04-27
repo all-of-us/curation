@@ -1,17 +1,19 @@
 """
 COMBINED_SNAPSHOT should be set to create a new snapshot dataset while running this cleaning rule.
 """
+# Python imports
 import logging
 
-import bq_utils
+# Project imports
 import constants.bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules import domain_mapping, field_mapping
 import resources
+from resources import get_domain_id_field
 from common import JINJA_ENV
 from cdr_cleaner.cleaning_rules.domain_mapping import EMPTY_STRING, METADATA_DOMAIN
 from tools.combine_ehr_rdr import mapping_table_for
-from resources import get_domain_id_field
+from utils import bq
 
 LOGGER = logging.getLogger(__name__)
 
@@ -288,41 +290,35 @@ def get_domain_mapping_queries(project_id, dataset_id):
     :return: a list of query dicts for creating id mappings in _logging_domain_alignment
     """
     # Create _logging_domain_alignment
-    bq_utils.create_standard_table(DOMAIN_ALIGNMENT_TABLE_NAME,
-                                   DOMAIN_ALIGNMENT_TABLE_NAME,
-                                   drop_existing=True,
-                                   dataset_id=dataset_id)
+    client = bq.get_client(project_id)
+    table_id = f'{project_id}.{dataset_id}.{DOMAIN_ALIGNMENT_TABLE_NAME}'
+    client.delete_table(table_id, not_found_ok=True)
+    bq.create_tables(client, project_id, [table_id], exists_ok=False)
 
-    queries = []
+    domain_mapping_queries = []
 
     for domain_table in domain_mapping.DOMAIN_TABLE_NAMES:
-        query = dict()
-        query[cdr_consts.QUERY] = parse_domain_mapping_query_cross_domain(
-            project_id, dataset_id, domain_table)
-        query[cdr_consts.DESTINATION_TABLE] = DOMAIN_ALIGNMENT_TABLE_NAME
-        query[cdr_consts.DISPOSITION] = bq_consts.WRITE_APPEND
-        query[cdr_consts.DESTINATION_DATASET] = dataset_id
-        queries.append(query)
+        query = parse_domain_mapping_query_cross_domain(project_id, dataset_id,
+                                                        domain_table)
+        domain_mapping_queries.append(query)
 
     # Create the query for creating field_mappings for the records moving between the same domain
-    query = dict()
-    query[cdr_consts.QUERY] = parse_domain_mapping_query_for_same_domains(
-        project_id, dataset_id)
-    query[cdr_consts.DESTINATION_TABLE] = DOMAIN_ALIGNMENT_TABLE_NAME
-    query[cdr_consts.DISPOSITION] = bq_consts.WRITE_APPEND
-    query[cdr_consts.DESTINATION_DATASET] = dataset_id
-    queries.append(query)
+    query = parse_domain_mapping_query_for_same_domains(project_id, dataset_id)
+    domain_mapping_queries.append(query)
 
     # Create the query for the records that are in the wrong domain but will not be moved
-    query = dict()
-    query[cdr_consts.QUERY] = parse_domain_mapping_query_for_excluded_records(
+    query = parse_domain_mapping_query_for_excluded_records(
         project_id, dataset_id)
-    query[cdr_consts.DESTINATION_TABLE] = DOMAIN_ALIGNMENT_TABLE_NAME
-    query[cdr_consts.DISPOSITION] = bq_consts.WRITE_APPEND
-    query[cdr_consts.DESTINATION_DATASET] = dataset_id
-    queries.append(query)
+    domain_mapping_queries.append(query)
 
-    return queries
+    unioned_query = {
+        cdr_consts.QUERY: UNION_ALL.join(domain_mapping_queries),
+        cdr_consts.DESTINATION_TABLE: DOMAIN_ALIGNMENT_TABLE_NAME,
+        cdr_consts.DISPOSITION: bq_consts.WRITE_EMPTY,
+        cdr_consts.DESTINATION_DATASET: dataset_id
+    }
+
+    return [unioned_query]
 
 
 def resolve_field_mappings(src_table, dest_table):
@@ -412,9 +408,9 @@ def parse_reroute_domain_query(project_id, dataset_id, dest_table):
 
 def get_reroute_domain_queries(project_id, dataset_id):
     """
-    This function creates a new dataset called snapshot_dataset_id and copies all content from 
-    dataset_id to it. It generates a list of query dicts for rerouting the records to the 
-    corresponding destination table. 
+    This function creates a new dataset called snapshot_dataset_id and copies all content from
+    dataset_id to it. It generates a list of query dicts for rerouting the records to the
+    corresponding destination table.
 
     :param project_id: the project_id in which the query is run
     :param dataset_id: the dataset_id in which the query is run
@@ -438,13 +434,13 @@ def get_reroute_domain_queries(project_id, dataset_id):
 
 def get_clean_domain_queries(project_id, dataset_id, sandbox_dataset_id):
     """
-    This function generates a list of query dicts for dropping records that do not belong to the 
-    domain table after rerouting. 
+    This function generates a list of query dicts for dropping records that do not belong to the
+    domain table after rerouting.
     
-    :param project_id: 
-    :param dataset_id: 
-    :param sandbox_dataset_id: 
-    :return: 
+    :param project_id: the project_id in which the query is run
+    :param dataset_id: the dataset_id in which the query is run
+    :param sandbox_dataset_id: sandbox dataset for dataset_id
+    :return: list of query dicts to run
     """
 
     queries = []
@@ -502,12 +498,12 @@ def get_clean_domain_queries(project_id, dataset_id, sandbox_dataset_id):
 
 def get_reroute_domain_mapping_queries(project_id, dataset_id):
     """
-    The functions generates a list of query dicts for rerouting the mapping records to the 
+    The functions generates a list of query dicts for rerouting the mapping records to the
     approapriate domain.
 
     :param project_id: the project_id in which the query is run
     :param dataset_id: the dataset_id in which the query is run
-    :return: a list of query dicts for rerouting the mapping records to the corresponding mapping 
+    :return: a list of query dicts for rerouting the mapping records to the corresponding mapping
     table
     """
     queries = []
@@ -539,11 +535,11 @@ def get_reroute_domain_mapping_queries(project_id, dataset_id):
 
 def sandbox_name_for(domain_table):
     """
-    This function is used temporarily and can be replaced by the class method once this CR is 
-    upgraded to the baseclass 
-    
-    :param domain_table: 
-    :return: 
+    This function is used temporarily and can be replaced by the class method once this CR is
+    upgraded to the baseclass
+
+    :param domain_table: CDM table name
+    :return: sandbox table name for the CDM table
     """
     return f'{"_".join(ISSUE_NUMBERS).lower()}_{domain_table}'
 
@@ -555,7 +551,7 @@ def domain_alignment(project_id, dataset_id, sandbox_dataset_id=None):
 
     :param project_id: the project_id in which the query is run
     :param dataset_id: the dataset_id in which the query is run
-    :param sandbox_dataset_id: Identifies the sandbox dataset to store rows 
+    :param sandbox_dataset_id: Identifies the sandbox dataset to store rows
     #TODO use sandbox_dataset_id for CR
     :return: a list of query dicts for rerouting the records to the corresponding destination table
     """
