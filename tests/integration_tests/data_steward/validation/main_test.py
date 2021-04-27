@@ -2,10 +2,13 @@
 Unit test components of data_steward.validation.main
 """
 from __future__ import print_function
+
+import datetime
 import json
 import os
 import unittest
 from io import open
+import time
 
 import mock
 from bs4 import BeautifulSoup as bs
@@ -22,39 +25,54 @@ from validation import main
 from validation.metrics import required_labs
 
 
-class ValidationMainTest(unittest.TestCase):
+class ValidationMainTest_Base(unittest.TestCase):
+    hpo_id: str
+    hpo_bucket: str
+    project_id: str
+    rdr_dataset_id: str
+    bigquery_dataset_id: str
+    gcs_folder_prefix: str
 
     @classmethod
     def setUpClass(cls):
+        """
+        Defines a few class attributes to be re-used in all tests
+        """
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
+        # used throughout
+        cls.hpo_id = test_util.FAKE_HPO_ID
+        cls.hpo_bucket = gcs_utils.get_hpo_bucket(cls.hpo_id)
+        cls.project_id = app_identity.get_application_id()
+        cls.rdr_dataset_id = bq_utils.get_rdr_dataset_id()
+        cls.bigquery_dataset_id = bq_utils.get_dataset_id()
+        cls.gcs_folder_prefix = datetime.datetime.now().strftime('%Y-%m-%d-01')
 
-    def setUp(self):
-        self.hpo_id = test_util.FAKE_HPO_ID
-        self.hpo_bucket = gcs_utils.get_hpo_bucket(self.hpo_id)
-        self.project_id = app_identity.get_application_id()
-        self.rdr_dataset_id = bq_utils.get_rdr_dataset_id()
-        mock_get_hpo_name = mock.patch('validation.main.get_hpo_name')
+        # clear bucket state
+        test_util.empty_bucket(cls.hpo_bucket)
+        # clear dataset state
+        test_util.delete_all_tables(cls.bigquery_dataset_id)
 
-        self.mock_get_hpo_name = mock_get_hpo_name.start()
-        self.mock_get_hpo_name.return_value = 'Fake HPO'
-        self.addCleanup(mock_get_hpo_name.stop)
+    @classmethod
+    def tearDownClass(cls) -> None:
+        """
+        Empty out the entirety of our test gcs bucket and bq dataset instances.
+        """
+        test_util.empty_bucket(cls.hpo_bucket)
+        test_util.delete_all_tables(cls.bigquery_dataset_id)
 
-        self.bigquery_dataset_id = bq_utils.get_dataset_id()
-        self.folder_prefix = '2019-01-01-v1/'
-        self._empty_bucket()
-        test_util.delete_all_tables(self.bigquery_dataset_id)
-        self._create_drug_class_table(self.bigquery_dataset_id)
-
-    def _empty_bucket(self):
-        bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
-        for bucket_item in bucket_items:
-            gcs_utils.delete_object(self.hpo_bucket, bucket_item['name'])
+    def _test_folder_name(self, test_name: str) -> str:
+        """
+        _gcs_folder_name creates and returns a test-specific folder name for a given test
+        """
+        return '/'.join([self.gcs_folder_prefix, test_name]) + '/'
 
     @staticmethod
     def _create_drug_class_table(bigquery_dataset_id):
-
+        """
+        Creates the drug class table for use in
+        """
         table_name = 'drug_class'
         fields = [{
             "type": "integer",
@@ -87,9 +105,128 @@ class ValidationMainTest(unittest.TestCase):
             bq_utils.create_standard_table(common.CONCEPT_ANCESTOR,
                                            common.CONCEPT_ANCESTOR)
             q = """INSERT INTO {dataset}.concept_ancestor
-            SELECT * FROM {vocab}.concept_ancestor""".format(
+                SELECT * FROM {vocab}.concept_ancestor""".format(
                 dataset=bigquery_dataset_id, vocab=common.VOCABULARY_DATASET)
             bq_utils.query(q)
+
+
+class ValidationMainTest_GCSInteraction(ValidationMainTest_Base):
+    """
+    Tests components of the HPO validation logic that _only_ require gcs bucket interaction
+    """
+
+    def tearDown(self) -> None:
+        """
+        This teardown exclusively cleans up the test bucket
+        """
+        test_util.empty_bucket(self.hpo_bucket)
+
+    def test_target_bucket_upload(self):
+        # get test dir name
+        folder_name = self._test_folder_name('test_target_bucket_upload')
+
+        bucket = gcs_utils.get_hpo_bucket(self.hpo_bucket)
+        test_util.empty_bucket(bucket)
+
+        main._upload_achilles_files(hpo_id=None,
+                                    folder_prefix=folder_name,
+                                    target_bucket=bucket)
+        actual_bucket_files = set(
+            [item['name'] for item in gcs_utils.list_bucket(bucket)])
+        expected_bucket_files = set([
+            os.path.join([folder_name, item])
+            for item in resources.ALL_ACHILLES_INDEX_FILES
+        ])
+        self.assertSetEqual(expected_bucket_files, actual_bucket_files)
+
+    def test_check_processed(self):
+        # get test dir name
+        folder_name = self._test_folder_name('test_check_processed')
+
+        test_util.push_mock_required_hpo_files(bucket=self.hpo_bucket,
+                                               directory=folder_name,
+                                               valid_created=True,
+                                               valid_updated=True)
+        test_util.write_cloud_str(self.hpo_bucket,
+                                  folder_name + common.PROCESSED_TXT, '\n')
+
+        bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
+        result = main._get_submission_folder(self.hpo_bucket,
+                                             bucket_items,
+                                             force_process=False)
+        self.assertIsNone(result)
+        result = main._get_submission_folder(self.hpo_bucket,
+                                             bucket_items,
+                                             force_process=True)
+        self.assertEqual(result, self.gcs_folder_prefix)
+
+    @mock.patch('api_util.check_cron')
+    def test_copy_five_persons(self, mock_check_cron):
+        # get test dir name
+        src_folder_name = self._test_folder_name('tset_copy_five_persons')
+        cpy_folder_name = '/'.join([src_folder_name, 'copy'])
+
+        # upload all five_persons files
+        for cdm_file in test_util.FIVE_PERSONS_FILES:
+            # upload to "source" directory
+            test_util.write_cloud_file(self.hpo_bucket,
+                                       cdm_file,
+                                       prefix=src_folder_name)
+            # upload to "copy" directory
+            test_util.write_cloud_file(self.hpo_bucket,
+                                       cdm_file,
+                                       prefix=cpy_folder_name)
+
+        main.app.testing = True
+        with main.app.test_client() as c:
+            c.get(test_util.COPY_HPO_FILES_URL)
+
+            src_prefix = '/'.join(
+                [self.hpo_id, self.hpo_bucket, src_folder_name])
+            cpy_prefix = '/'.join([src_prefix, 'copy'])
+
+            # add expected "source" objects
+            expected_bucket_items = [
+                src_prefix + item.split('/')[-1]
+                for item in test_util.FIVE_PERSONS_FILES
+            ]
+
+            # add expected "copy" objects
+            expected_bucket_items.extend([
+                cpy_prefix + item.split('/')[-1]
+                for item in test_util.FIVE_PERSONS_FILES
+            ])
+
+            list_bucket_result = gcs_utils.list_bucket(
+                gcs_utils.get_drc_bucket())
+            actual_bucket_items = [item['name'] for item in list_bucket_result]
+            self.assertSetEqual(set(expected_bucket_items),
+                                set(actual_bucket_items))
+
+
+class ValidationMainTest_ValidateSubmission(ValidationMainTest_Base):
+    """
+    Contains tests that require calls to "main.validate_submission", which itself requires
+    both GCS and BQ interaction(s)
+    """
+
+    def setUp(self):
+        mock_get_hpo_name = mock.patch('validation.main.get_hpo_name')
+
+        self.mock_get_hpo_name = mock_get_hpo_name.start()
+        self.mock_get_hpo_name.return_value = 'Fake HPO'
+        self.addCleanup(mock_get_hpo_name.stop)
+
+        self._empty_bucket()
+        test_util.delete_all_tables(self.bigquery_dataset_id)
+        self._create_drug_class_table(self.bigquery_dataset_id)
+
+    def tearDown(self):
+        self._empty_bucket()
+        bucket_nyc = gcs_utils.get_hpo_bucket('nyc')
+        test_util.empty_bucket(bucket_nyc)
+        test_util.empty_bucket(gcs_utils.get_drc_bucket())
+        test_util.delete_all_tables(self.bigquery_dataset_id)
 
     def table_has_clustering(self, table_info):
         clustering = table_info.get('clustering')
@@ -105,12 +242,14 @@ class ValidationMainTest(unittest.TestCase):
         # TODO possible bug: if no pre-existing table, results in bq table not found error
         for cdm_table in common.SUBMISSION_FILES:
             test_util.write_cloud_str(self.hpo_bucket,
-                                      self.folder_prefix + cdm_table, ".\n .")
+                                      self.gcs_folder_prefix + cdm_table,
+                                      ".\n .")
         bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
-        folder_items = main.get_folder_items(bucket_items, self.folder_prefix)
+        folder_items = main.get_folder_items(bucket_items,
+                                             self.gcs_folder_prefix)
         expected_results = [(f, 1, 0, 0) for f in common.SUBMISSION_FILES]
         r = main.validate_submission(self.hpo_id, self.hpo_bucket, folder_items,
-                                     self.folder_prefix)
+                                     self.gcs_folder_prefix)
         self.assertSetEqual(set(expected_results), set(r['results']))
 
     def test_bad_file_names(self):
@@ -123,13 +262,14 @@ class ValidationMainTest(unittest.TestCase):
         expected_warnings = []
         for file_name in bad_file_names:
             test_util.write_cloud_str(self.hpo_bucket,
-                                      self.folder_prefix + file_name, ".")
+                                      self.gcs_folder_prefix + file_name, ".")
             expected_item = (file_name, common.UNKNOWN_FILE)
             expected_warnings.append(expected_item)
         bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
-        folder_items = main.get_folder_items(bucket_items, self.folder_prefix)
+        folder_items = main.get_folder_items(bucket_items,
+                                             self.gcs_folder_prefix)
         r = main.validate_submission(self.hpo_id, self.hpo_bucket, folder_items,
-                                     self.folder_prefix)
+                                     self.gcs_folder_prefix)
         self.assertCountEqual(expected_warnings, r['warnings'])
 
     @mock.patch('api_util.check_cron')
@@ -145,14 +285,15 @@ class ValidationMainTest(unittest.TestCase):
                 test_file = os.path.join(test_util.FIVE_PERSONS_PATH, cdm_file)
                 test_util.write_cloud_file(self.hpo_bucket,
                                            test_file,
-                                           prefix=self.folder_prefix)
+                                           prefix=self.gcs_folder_prefix)
             else:
                 expected_result = (cdm_file, 0, 0, 0)
             expected_results.append(expected_result)
         bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
-        folder_items = main.get_folder_items(bucket_items, self.folder_prefix)
+        folder_items = main.get_folder_items(bucket_items,
+                                             self.gcs_folder_prefix)
         r = main.validate_submission(self.hpo_id, self.hpo_bucket, folder_items,
-                                     self.folder_prefix)
+                                     self.gcs_folder_prefix)
         self.assertSetEqual(set(r['results']), set(expected_results))
 
         # check tables exist and are clustered as expected
@@ -164,70 +305,6 @@ class ValidationMainTest(unittest.TestCase):
             if 'person_id' in field_names:
                 self.table_has_clustering(table_info)
 
-    def test_check_processed(self):
-        test_util.write_cloud_str(self.hpo_bucket,
-                                  self.folder_prefix + 'person.csv', '\n')
-        test_util.write_cloud_str(self.hpo_bucket,
-                                  self.folder_prefix + common.PROCESSED_TXT,
-                                  '\n')
-
-        bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
-        result = main._get_submission_folder(self.hpo_bucket,
-                                             bucket_items,
-                                             force_process=False)
-        self.assertIsNone(result)
-        result = main._get_submission_folder(self.hpo_bucket,
-                                             bucket_items,
-                                             force_process=True)
-        self.assertEqual(result, self.folder_prefix)
-
-    @mock.patch('api_util.check_cron')
-    def test_copy_five_persons(self, mock_check_cron):
-        # upload all five_persons files
-        for cdm_file in test_util.FIVE_PERSONS_FILES:
-            test_util.write_cloud_file(self.hpo_bucket,
-                                       cdm_file,
-                                       prefix=self.folder_prefix)
-            test_util.write_cloud_file(self.hpo_bucket,
-                                       cdm_file,
-                                       prefix=self.folder_prefix +
-                                       self.folder_prefix)
-
-        main.app.testing = True
-        with main.app.test_client() as c:
-            c.get(test_util.COPY_HPO_FILES_URL)
-            prefix = test_util.FAKE_HPO_ID + '/' + self.hpo_bucket + '/' + self.folder_prefix
-            expected_bucket_items = [
-                prefix + item.split(os.sep)[-1]
-                for item in test_util.FIVE_PERSONS_FILES
-            ]
-            expected_bucket_items.extend([
-                prefix + self.folder_prefix + item.split(os.sep)[-1]
-                for item in test_util.FIVE_PERSONS_FILES
-            ])
-
-            list_bucket_result = gcs_utils.list_bucket(
-                gcs_utils.get_drc_bucket())
-            actual_bucket_items = [item['name'] for item in list_bucket_result]
-            self.assertSetEqual(set(expected_bucket_items),
-                                set(actual_bucket_items))
-
-    def test_target_bucket_upload(self):
-        bucket_nyc = gcs_utils.get_hpo_bucket('nyc')
-        folder_prefix = 'test-folder-fake/'
-        test_util.empty_bucket(bucket_nyc)
-
-        main._upload_achilles_files(hpo_id=None,
-                                    folder_prefix=folder_prefix,
-                                    target_bucket=bucket_nyc)
-        actual_bucket_files = set(
-            [item['name'] for item in gcs_utils.list_bucket(bucket_nyc)])
-        expected_bucket_files = set([
-            'test-folder-fake/' + item
-            for item in resources.ALL_ACHILLES_INDEX_FILES
-        ])
-        self.assertSetEqual(expected_bucket_files, actual_bucket_files)
-
     @mock.patch('api_util.check_cron')
     def test_pii_files_loaded(self, mock_check_cron):
         # tests if pii files are loaded
@@ -237,10 +314,10 @@ class ValidationMainTest(unittest.TestCase):
         test_file_names = [os.path.basename(f) for f in test_file_paths]
         test_util.write_cloud_file(self.hpo_bucket,
                                    test_util.PII_NAME_FILE,
-                                   prefix=self.folder_prefix)
+                                   prefix=self.gcs_folder_prefix)
         test_util.write_cloud_file(self.hpo_bucket,
                                    test_util.PII_MRN_BAD_PERSON_ID_FILE,
-                                   prefix=self.folder_prefix)
+                                   prefix=self.gcs_folder_prefix)
 
         rs = resources.csv_to_list(test_util.PII_FILE_LOAD_RESULT_CSV)
         expected_results = [(r['file_name'], int(r['found']), int(r['parsed']),
@@ -251,9 +328,10 @@ class ValidationMainTest(unittest.TestCase):
                 expected_results.append(expected_result)
 
         bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
-        folder_items = main.get_folder_items(bucket_items, self.folder_prefix)
+        folder_items = main.get_folder_items(bucket_items,
+                                             self.gcs_folder_prefix)
         r = main.validate_submission(self.hpo_id, self.hpo_bucket, folder_items,
-                                     self.folder_prefix)
+                                     self.gcs_folder_prefix)
         self.assertSetEqual(set(expected_results), set(r['results']))
 
     @mock.patch('validation.main.all_required_files_loaded')
@@ -269,7 +347,7 @@ class ValidationMainTest(unittest.TestCase):
         for cdm_file in test_util.FIVE_PERSONS_FILES:
             test_util.write_cloud_file(self.hpo_bucket,
                                        cdm_file,
-                                       prefix=self.folder_prefix)
+                                       prefix=self.gcs_folder_prefix)
         # load person table in RDR
         bq_utils.load_table_from_csv(self.project_id, self.rdr_dataset_id,
                                      common.PERSON,
@@ -286,11 +364,12 @@ class ValidationMainTest(unittest.TestCase):
         with main.app.test_client() as c:
             c.get(test_util.VALIDATE_HPO_FILES_URL)
             actual_result = test_util.read_cloud_file(
-                self.hpo_bucket, self.folder_prefix + common.RESULTS_HTML)
+                self.hpo_bucket, self.gcs_folder_prefix + common.RESULTS_HTML)
 
         # ensure emails are not sent
         bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
-        folder_items = main.get_folder_items(bucket_items, self.folder_prefix)
+        folder_items = main.get_folder_items(bucket_items,
+                                             self.gcs_folder_prefix)
         self.assertFalse(main.is_first_validation_run(folder_items))
 
         # parse html
@@ -334,10 +413,3 @@ class ValidationMainTest(unittest.TestCase):
         self.assertTrue(len(table_rows) > 0)
         self.assertTrue(len(submitted_labs) > 0)
         self.assertTrue(len(missing_labs) > 0)
-
-    def tearDown(self):
-        self._empty_bucket()
-        bucket_nyc = gcs_utils.get_hpo_bucket('nyc')
-        test_util.empty_bucket(bucket_nyc)
-        test_util.empty_bucket(gcs_utils.get_drc_bucket())
-        test_util.delete_all_tables(self.bigquery_dataset_id)

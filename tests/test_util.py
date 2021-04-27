@@ -2,7 +2,8 @@ import datetime
 import inspect
 from io import open
 import os
-from random import seed, randint
+from random import seed, randint, choice
+from string import ascii_letters
 import time
 
 import requests
@@ -584,7 +585,7 @@ def push_mock_required_hpo_files(bucket: str,
                                  directory: str = "/",
                                  valid_created: bool = True,
                                  valid_updated: bool = True,
-                                 contents_dict: dict = None):
+                                 contents_dict: dict = None) -> None:
     """
     push_mock_required_hpo_files creates each of the files required for an upload from an HPO
     to be considered valid
@@ -605,6 +606,17 @@ def push_mock_required_hpo_files(bucket: str,
         valid_updated=valid_updated)
 
     # loop through, pushing each to the target bucket
+    for req_file in common.AOU_REQUIRED_FILES:
+        # determine contents
+        if contents_dict and contents_dict[req_file]:
+            contents = contents_dict[req_file]
+        else:
+            contents = ''.join(choice(ascii_letters) for i in range(10))
+
+        # push it good
+        write_cloud_str(bucket=bucket,
+                        object_path=os.path.join(directory, req_file),
+                        contents_str=contents)
 
 
 def build_mock_hpo_file_validation(filename: str,
