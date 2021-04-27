@@ -7,15 +7,15 @@ The schema for the pid table is located in retract_data_bq.py as PID_TABLE_FIELD
 If the submission folder is set to 'all_folders', all the submissions from the site will be considered for retraction
 If a submission folder is specified, only that folder will be considered for retraction
 """
-
+import os
 from io import BytesIO
 import argparse
 import logging
 
-import bq_utils
+from google.cloud import storage, bigquery
+
 import common
-import gcs_utils
-import resources
+from utils import pipeline_logging, gcs
 
 EXTRACT_PIDS_QUERY = """
 SELECT person_id
@@ -30,8 +30,14 @@ PID_IN_COL2 = [
 ]
 
 
-def run_gcs_retraction(project_id, sandbox_dataset_id, pid_table_id, hpo_id,
-                       folder, force_flag):
+def run_gcs_retraction(project_id,
+                       sandbox_dataset_id,
+                       pid_table_id,
+                       hpo_id,
+                       folder,
+                       force_flag,
+                       bucket=None,
+                       site_bucket=None):
     """
     Retract from a folder/folders in a GCS bucket all records associated with a pid
 
@@ -42,24 +48,30 @@ def run_gcs_retraction(project_id, sandbox_dataset_id, pid_table_id, hpo_id,
     :param folder: the site's submission folder; if set to 'all_folders', retract from all folders by the site
         if set to 'none', skip retraction from bucket folders
     :param force_flag: if False then prompt for each file
+    :param bucket: DRC bucket maintained by curation
+    :param site_bucket: Site's bucket name
     :return: metadata for each object updated in order to retract as a list of lists
     """
 
     # extract the pids
     pids = extract_pids_from_table(project_id, sandbox_dataset_id, pid_table_id)
 
-    bucket = gcs_utils.get_drc_bucket()
-    logging.info('Retracting from bucket %s' % bucket)
+    if not bucket:
+        bucket = os.environ.get('DRC_BUCKET_NAME')
+    gcs_client = storage.Client(project_id)
+    logging.info(f'Retracting from bucket {bucket}')
 
     if hpo_id == 'none':
         logging.info('"RETRACTION_HPO_ID" set to "none", skipping retraction')
         full_bucket_path = ''
         folder_prefixes = []
     else:
-        site_bucket = gcs_utils.get_hpo_bucket(hpo_id)
+        if not site_bucket:
+            site_bucket = os.environ.get(f'BUCKET_NAME_{hpo_id.upper()}')
         full_bucket_path = bucket + '/' + hpo_id + '/' + site_bucket
-        folder_prefixes = gcs_utils.list_bucket_prefixes(full_bucket_path)
+        prefix = f'{hpo_id}/{site_bucket}/'
         # retract from latest folders first
+        folder_prefixes = gcs.list_sub_prefixes(gcs_client, bucket, prefix)
         folder_prefixes.sort(reverse=True)
 
     result_dict = {}
@@ -76,8 +88,9 @@ def run_gcs_retraction(project_id, sandbox_dataset_id, pid_table_id, hpo_id,
         if folder_path in folder_prefixes:
             to_process_folder_list = [folder_path]
         else:
-            logging.info('Folder %s does not exist in %s. Exiting' %
-                         (folder, full_bucket_path))
+            logging.info(
+                f'Folder {folder} does not exist in {full_bucket_path}. Exiting'
+            )
             return result_dict
 
     logging.info("Retracting data from the following folders:")
@@ -86,20 +99,19 @@ def run_gcs_retraction(project_id, sandbox_dataset_id, pid_table_id, hpo_id,
     ])
 
     for folder_prefix in to_process_folder_list:
-        logging.info('Processing gs://%s/%s' % (bucket, folder_prefix))
+        logging.info(f'Processing gs://{bucket}/{folder_prefix}')
         # separate cdm from the unknown (unexpected) files
-        bucket_items = gcs_utils.list_bucket_dir(bucket + '/' +
-                                                 folder_prefix[:-1])
+        bucket_item_objs = gcs_client.list_blobs(bucket,
+                                                 prefix=folder_prefix,
+                                                 delimiter='/')
+        folder_items = [blob.name for blob in bucket_item_objs]
         found_files = []
-        folder_items = [
-            item['name'].split('/')[-1]
-            for item in bucket_items
-            if item['name'].startswith(folder_prefix)
-        ]
-        for item in folder_items:
-            # Only retract from CDM or PII files
+        file_names = [item.split('/')[-1] for item in folder_items]
+        for item in file_names:
+            # Only retract from CDM or PII files containing PIDs
             item = item.lower()
-            if item in resources.CDM_FILES or item in common.PII_FILES:
+            table_name = item.split('.')[0]
+            if table_name in PID_IN_COL1 + PID_IN_COL2:
                 found_files.append(item)
 
         logging.info('Found the following files to retract data from:')
@@ -111,31 +123,33 @@ def run_gcs_retraction(project_id, sandbox_dataset_id, pid_table_id, hpo_id,
         logging.info("Proceed?")
         if force_flag:
             logging.info(
-                "Attempting to force retract for folder %s in bucket %s" %
-                (folder_prefix, bucket))
+                f"Attempting to force retract for folder {folder_prefix} in bucket {bucket}"
+            )
             response = "Y"
         else:
             # Make sure user types Y to proceed
             response = get_response()
         if response == "Y":
-            folder_upload_output = retract(pids, bucket, found_files,
-                                           folder_prefix, force_flag)
+            folder_upload_output = retract(gcs_client, pids, bucket,
+                                           found_files, folder_prefix,
+                                           force_flag)
             result_dict[folder_prefix] = folder_upload_output
-            logging.info("Retraction completed for folder %s/%s " %
-                         (bucket, folder_prefix))
+            logging.info(
+                f"Retraction completed for folder {bucket}/{folder_prefix}")
         elif response.lower() == "n":
-            logging.info("Skipping folder %s" % folder_prefix)
+            logging.info(f"Skipping folder {folder_prefix}")
     logging.info("Retraction from GCS complete")
     return result_dict
 
 
-def retract(pids, bucket, found_files, folder_prefix, force_flag):
+def retract(gcs_client, pids, bucket, found_files, folder_prefix, force_flag):
     """
     Retract from a folder in a GCS bucket all records associated with a pid
     pid table must follow schema described in retract_data_bq.PID_TABLE_FIELDS and must reside in sandbox_dataset_id
     This function removes lines from all files containing person_ids if they exist in pid_table_id
     Throws SyntaxError/TypeError/ValueError if non-ints are found
 
+    :param gcs_client: google cloud storage client
     :param pids: person_ids to retract
     :param bucket: bucket containing records to retract
     :param found_files: files found in the current folder
@@ -147,30 +161,28 @@ def retract(pids, bucket, found_files, folder_prefix, force_flag):
     for file_name in found_files:
         table_name = file_name.split(".")[0]
         lines_removed = 0
-        file_gcs_path = '%s/%s%s' % (bucket, folder_prefix, file_name)
+        file_gcs_path = f'{bucket}/{folder_prefix}{file_name}'
         if force_flag:
-            logging.info(
-                "Attempting to force retract for person_ids %s in path %s/%s%s"
-                % (pids, bucket, folder_prefix, file_name))
+            logging.info(f"Downloading file in path {file_gcs_path}")
             response = "Y"
         else:
             # Make sure user types Y to proceed
             logging.info(
-                "Are you sure you want to retract rows for person_ids %s from path %s/%s%s?"
-                % (pids, bucket, folder_prefix, file_name))
+                f"Are you sure you want to retract rows for person_ids {pids} from path {file_gcs_path}?"
+            )
             response = get_response()
         if response == "Y":
             # Output and input file content initialization
             retracted_file_string = BytesIO()
-            input_file_bytes = gcs_utils.get_object(bucket,
-                                                    folder_prefix + file_name,
-                                                    as_text=False)
-            input_file_lines = input_file_bytes.split(b'\n')
+            input_file_lines = gcs.retrieve_file_contents_as_list(
+                gcs_client, bucket, folder_prefix, file_name)
+            if len(input_file_lines) < 2:
+                continue
             input_header = input_file_lines[0]
             input_contents = input_file_lines[1:]
             retracted_file_string.write(input_header + b'\n')
-            logging.info("Checking for person_ids %s in path %s" %
-                         (pids, file_gcs_path))
+            logging.info(
+                f"Checking for person_ids {pids} in path {file_gcs_path}")
 
             # Check if file has person_id in first or second column
             for input_line in input_contents:
@@ -180,12 +192,14 @@ def retract(pids, bucket, found_files, folder_prefix, force_flag):
                     cols = input_line.split(b',')
                     # ensure at least two columns exist
                     if len(cols) > 1:
-                        col_1 = cols[0]
-                        col_2 = cols[1]
+                        col_1 = cols[0].replace(b'"', b'')
+                        col_2 = cols[1].replace(b'"', b'')
                         # skip if non-integer is encountered and keep the line as is
                         try:
-                            if (table_name in PID_IN_COL1 and int(col_1) in pids) or \
-                                    (table_name in PID_IN_COL2 and int(col_2) in pids):
+                            if ((table_name in PID_IN_COL1 and
+                                 int(col_1) in pids) or
+                                (table_name in PID_IN_COL2 and
+                                 int(col_2) in pids)):
                                 # do not write back this line since it contains a pid to retract
                                 # increment removed lines counter
                                 lines_removed += 1
@@ -201,18 +215,24 @@ def retract(pids, bucket, found_files, folder_prefix, force_flag):
 
             # Write result back to bucket
             if lines_removed > 0:
-                logging.info("%d rows retracted from %s, overwriting..." %
-                             (lines_removed, file_gcs_path))
-                upload_result = gcs_utils.upload_object(
-                    bucket, folder_prefix + file_name, retracted_file_string)
+                logging.info(
+                    f"{lines_removed} rows retracted from {file_gcs_path}")
+                logging.info(f"Uploading to overwrite...")
+                upload_result = gcs.upload_file_to_gcs(gcs_client,
+                                                       bucket,
+                                                       folder_prefix,
+                                                       file_name,
+                                                       retracted_file_string,
+                                                       rewind=True,
+                                                       content_type='text/csv')
                 result_list.append(upload_result)
-                logging.info("Retraction successful for file %s" %
-                             file_gcs_path)
+                logging.info(f"Retraction successful for file {file_gcs_path}")
             else:
-                logging.info("Not updating file %s since pids %s not found" %
-                             (file_gcs_path, pids))
+                logging.info(
+                    f"Not updating file {file_gcs_path} since pids {pids} not found"
+                )
         elif response.lower() == "n":
-            logging.info("Skipping file %s" % file_gcs_path)
+            logging.info(f"Skipping file {file_gcs_path}")
     return result_list
 
 
@@ -237,15 +257,15 @@ def extract_pids_from_table(project_id, sandbox_dataset_id, pid_table_id):
     q = EXTRACT_PIDS_QUERY.format(project_id=project_id,
                                   sandbox_dataset_id=sandbox_dataset_id,
                                   pid_table_id=pid_table_id)
-    r = bq_utils.query(q)
-    rows = bq_utils.response2rows(r)
-    pids = set()
-    for row in rows:
-        pids.add(int(row['person_id']))
+    client = bigquery.Client(project_id)
+    job = client.query(q)
+    pids = job.result().to_dataframe()['person_id'].to_list()
     return pids
 
 
 if __name__ == '__main__':
+    pipeline_logging.configure(logging.DEBUG, add_console_handler=True)
+
     parser = argparse.ArgumentParser(
         description=
         'Performs retraction on bucket files for site to retract data for, '
