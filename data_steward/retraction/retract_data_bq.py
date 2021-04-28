@@ -12,7 +12,7 @@ import logging
 # Third party imports
 
 # Project imports
-from utils import pipeline_logging
+from utils import pipeline_logging, bq
 import common
 from common import JINJA_ENV
 import bq_utils
@@ -129,8 +129,7 @@ def get_site_table(hpo_id, table):
 def get_table_id(table):
     if table == common.DEATH:
         return common.PERSON + '_id'
-    else:
-        return table + '_id'
+    return table + '_id'
 
 
 def list_existing_tables(client, project_id, dataset_id):
@@ -153,6 +152,7 @@ def queries_to_retract_from_ehr_dataset(project_id, dataset_id, pid_project_id,
     :param sandbox_dataset_id: identifies the dataset containing the pid table
     :param hpo_id: identifies the HPO site
     :param pid_table_id: table containing the person_ids and research_ids
+    :param client: bigquery client
     :return: list of dict with keys query, dataset, table, delete_flag
     """
     LOGGER.info(f'Checking existing tables for {project_id}.{dataset_id}')
@@ -224,7 +224,7 @@ def queries_to_retract_from_ehr_dataset(project_id, dataset_id, pid_project_id,
 
 def queries_to_retract_from_unioned_dataset(project_id, dataset_id,
                                             pid_project_id, sandbox_dataset_id,
-                                            pid_table_id):
+                                            pid_table_id, client):
     """
     Get list of queries to remove all records in all tables associated with supplied ids
 
@@ -233,10 +233,11 @@ def queries_to_retract_from_unioned_dataset(project_id, dataset_id,
     :param pid_project_id: identifies the project containing the sandbox dataset
     :param sandbox_dataset_id: identifies the dataset containing the pid table
     :param pid_table_id: table containing the person_ids and research_ids
+    :param client: bigquery client
     :return: list of dict with keys query, dataset, table
     """
     LOGGER.info(f'Checking existing tables for {project_id}.{dataset_id}')
-    existing_tables = list_existing_tables(project_id, dataset_id)
+    existing_tables = list_existing_tables(client, project_id, dataset_id)
     unioned_mapping_queries = []
     unioned_queries = []
     for table in TABLES_FOR_RETRACTION:
@@ -307,7 +308,7 @@ def queries_to_retract_from_unioned_dataset(project_id, dataset_id,
 
 def queries_to_retract_from_combined_or_deid_dataset(
     project_id, dataset_id, pid_project_id, sandbox_dataset_id, pid_table_id,
-    retraction_type, deid_flag):
+    retraction_type, client, deid_flag):
     """
     Get list of queries to remove all records in all tables associated with supplied ids
 
@@ -318,11 +319,12 @@ def queries_to_retract_from_combined_or_deid_dataset(
     :param pid_table_id: table containing the person_ids and research_ids
     :param retraction_type: string indicating whether all data needs to be removed, including RDR,
         or if RDR data needs to be kept intact. Can take the values 'rdr_and_ehr' or 'only_ehr'
+    :param client: bigquery client
     :param deid_flag: flag indicating if running on a deid dataset
     :return: list of dict with keys query, dataset, table
     """
     LOGGER.info(f'Checking existing tables for {project_id}.{dataset_id}')
-    existing_tables = list_existing_tables(project_id, dataset_id)
+    existing_tables = list_existing_tables(client, project_id, dataset_id)
 
     # retract from ehr and rdr or only ehr
     if retraction_type == 'rdr_and_ehr':
@@ -459,6 +461,7 @@ def run_bq_retraction(project_id, sandbox_dataset_id, pid_project_id,
         or if RDR data needs to be kept intact. Can take the values 'rdr_and_ehr' or 'only_ehr'
     :return:
     """
+    client = bq.get_client(project_id)
     dataset_ids = ru.get_datasets_list(project_id, dataset_ids_list)
 
     deid_datasets = []
@@ -486,7 +489,7 @@ def run_bq_retraction(project_id, sandbox_dataset_id, pid_project_id,
     for dataset in ehr_datasets:
         ehr_mapping_queries, ehr_queries = queries_to_retract_from_ehr_dataset(
             project_id, dataset, pid_project_id, sandbox_dataset_id, hpo_id,
-            pid_table_id)
+            pid_table_id, client)
         retraction_query_runner(ehr_mapping_queries)
         retraction_query_runner(ehr_queries)
     LOGGER.info('Finished retracting from EHR datasets')
@@ -496,7 +499,7 @@ def run_bq_retraction(project_id, sandbox_dataset_id, pid_project_id,
     for dataset in unioned_datasets:
         unioned_mapping_queries, unioned_queries = queries_to_retract_from_unioned_dataset(
             project_id, dataset, pid_project_id, sandbox_dataset_id,
-            pid_table_id)
+            pid_table_id, client)
         retraction_query_runner(unioned_mapping_queries)
         retraction_query_runner(unioned_queries)
     LOGGER.info('Finished retracting from UNIONED datasets')
@@ -511,6 +514,7 @@ def run_bq_retraction(project_id, sandbox_dataset_id, pid_project_id,
             sandbox_dataset_id,
             pid_table_id,
             retraction_type,
+            client,
             deid_flag=False)
         retraction_query_runner(combined_mapping_queries)
         retraction_query_runner(combined_queries)
@@ -526,6 +530,7 @@ def run_bq_retraction(project_id, sandbox_dataset_id, pid_project_id,
             sandbox_dataset_id,
             pid_table_id,
             retraction_type,
+            client,
             deid_flag=True)
         retraction_query_runner(deid_mapping_queries)
         retraction_query_runner(deid_queries)
