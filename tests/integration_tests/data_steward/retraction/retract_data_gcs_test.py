@@ -9,7 +9,6 @@ from google.cloud import storage
 
 # Project imports
 import app_identity
-from utils import gcs
 from tests import test_util
 from retraction import retract_data_gcs as rd
 
@@ -37,6 +36,7 @@ class RetractDataGcsTest(TestCase):
         self.project_id = 'project_id'
         self.sandbox_dataset_id = os.environ.get('UNIONED_DATASET_ID')
         self.pid_table_id = 'pid_table'
+        self.gcs_bucket = self.client.bucket(self.bucket)
         self._empty_bucket()
 
     def _empty_bucket(self):
@@ -67,18 +67,10 @@ class RetractDataGcsTest(TestCase):
                         expected_lines_post[file_name].append(line)
 
                 # write file to cloud for testing
-                gcs.upload_file_to_gcs(self.client,
-                                       self.bucket,
-                                       prefix=self.folder_prefix_1,
-                                       file_name=file_name,
-                                       file_obj=f,
-                                       rewind=True)
-                gcs.upload_file_to_gcs(self.client,
-                                       self.bucket,
-                                       prefix=self.folder_prefix_2,
-                                       file_name=file_name,
-                                       file_obj=f,
-                                       rewind=True)
+                blob = self.gcs_bucket.blob(self.folder_prefix_1 + file_name)
+                blob.upload_from_file(f, rewind=True, content_type='text/csv')
+                blob = self.gcs_bucket.blob(self.folder_prefix_2 + file_name)
+                blob.upload_from_file(f, rewind=True, content_type='text/csv')
 
         rd.run_gcs_retraction(self.project_id,
                               self.sandbox_dataset_id,
@@ -92,8 +84,8 @@ class RetractDataGcsTest(TestCase):
         total_lines_post = {}
         for file_path in test_util.FIVE_PERSONS_FILES:
             file_name = file_path.split('/')[-1]
-            actual_result_contents = gcs.retrieve_file_contents_as_list(
-                self.client, self.bucket, self.folder_prefix_1, file_name)
+            blob = self.gcs_bucket.blob(self.folder_prefix_1 + file_name)
+            actual_result_contents = blob.download_as_string().split(b'\n')
             # convert to list and remove header and last list item since it is a newline
             total_lines_post[file_name] = actual_result_contents[1:-1]
 
@@ -131,18 +123,10 @@ class RetractDataGcsTest(TestCase):
                             expected_lines_post[file_name].append(line)
 
                 # write file to cloud for testing
-                gcs.upload_file_to_gcs(self.client,
-                                       self.bucket,
-                                       prefix=self.folder_prefix_1,
-                                       file_name=file_name,
-                                       file_obj=f,
-                                       rewind=True)
-                gcs.upload_file_to_gcs(self.client,
-                                       self.bucket,
-                                       prefix=self.folder_prefix_2,
-                                       file_name=file_name,
-                                       file_obj=f,
-                                       rewind=True)
+                blob = self.gcs_bucket.blob(self.folder_prefix_1 + file_name)
+                blob.upload_from_file(f, rewind=True, content_type='text/csv')
+                blob = self.gcs_bucket.blob(self.folder_prefix_2 + file_name)
+                blob.upload_from_file(f, rewind=True, content_type='text/csv')
 
         rd.run_gcs_retraction(self.project_id,
                               self.sandbox_dataset_id,
@@ -156,8 +140,8 @@ class RetractDataGcsTest(TestCase):
         total_lines_post = {}
         for file_path in test_util.FIVE_PERSONS_FILES:
             file_name = file_path.split('/')[-1]
-            actual_result_contents = gcs.retrieve_file_contents_as_list(
-                self.client, self.bucket, self.folder_prefix_1, file_name)
+            blob = self.gcs_bucket.blob(self.folder_prefix_1 + file_name)
+            actual_result_contents = blob.download_as_string().split(b'\n')
             # convert to list and remove header and last list item since it is a newline
             total_lines_post[file_name] = actual_result_contents[1:-1]
 

@@ -49,32 +49,3 @@ class GCSTest(TestCase):
         self.assertEqual(args['items_key'], 'prefixes')
         self.assertIsInstance(args['item_to_value'], Callable)
         self.assertEqual(args['extra_params'], extra_params)
-
-    @patch('utils.gcs.BytesIO')
-    def test_retrieve_file_contents_as_list(self, mock_call_file_obj):
-        fake_lines = [None]
-        fake_file_obj = MagicMock()
-        mock_call_file_obj.return_value = fake_file_obj
-        fake_file_obj.seek = MagicMock()
-        fake_file_obj.readlines.return_value = fake_lines
-
-        blob_obj = MagicMock()
-        self.bucket_obj.blob.return_value = blob_obj
-        blob_obj.download_to_file = MagicMock()
-        contents = gcs.retrieve_file_contents_as_list(self.client, self.bucket,
-                                                      self.folder_prefix,
-                                                      self.file_name)
-        blob_obj.download_to_file.assert_called_once_with(fake_file_obj)
-        self.assertEqual(contents, fake_lines)
-
-    def test_upload_file_to_gcs(self):
-        rewind = True
-        content_type = 'text/csv'
-        blob_obj = MagicMock()
-        self.bucket_obj.blob.return_value = blob_obj
-        blob_obj.upload_from_file = MagicMock()
-        gcs.upload_file_to_gcs(self.client, self.bucket, self.folder_prefix,
-                               self.file_name, self.fake_file_obj, rewind,
-                               content_type)
-        blob_obj.upload_from_file.assert_called_once_with(
-            self.fake_file_obj, rewind=rewind, content_type=content_type)

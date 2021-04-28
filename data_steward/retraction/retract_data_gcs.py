@@ -50,7 +50,6 @@ def run_gcs_retraction(project_id,
     :param force_flag: if False then prompt for each file
     :param bucket: DRC bucket maintained by curation
     :param site_bucket: Site's bucket name
-    :return: metadata for each object updated in order to retract as a list of lists
     """
 
     # extract the pids
@@ -74,7 +73,6 @@ def run_gcs_retraction(project_id,
         folder_prefixes = gcs.list_sub_prefixes(gcs_client, bucket, prefix)
         folder_prefixes.sort(reverse=True)
 
-    result_dict = {}
     if folder == 'all_folders':
         to_process_folder_list = folder_prefixes
     elif folder == 'none':
@@ -91,7 +89,7 @@ def run_gcs_retraction(project_id,
             logging.info(
                 f'Folder {folder} does not exist in {full_bucket_path}. Exiting'
             )
-            return result_dict
+            return
 
     logging.info("Retracting data from the following folders:")
     logging.info([
@@ -130,16 +128,14 @@ def run_gcs_retraction(project_id,
             # Make sure user types Y to proceed
             response = get_response()
         if response == "Y":
-            folder_upload_output = retract(gcs_client, pids, bucket,
-                                           found_files, folder_prefix,
-                                           force_flag)
-            result_dict[folder_prefix] = folder_upload_output
+            retract(gcs_client, pids, bucket, found_files, folder_prefix,
+                    force_flag)
             logging.info(
                 f"Retraction completed for folder {bucket}/{folder_prefix}")
         elif response.lower() == "n":
             logging.info(f"Skipping folder {folder_prefix}")
     logging.info("Retraction from GCS complete")
-    return result_dict
+    return
 
 
 def retract(gcs_client, pids, bucket, found_files, folder_prefix, force_flag):
@@ -155,9 +151,7 @@ def retract(gcs_client, pids, bucket, found_files, folder_prefix, force_flag):
     :param found_files: files found in the current folder
     :param folder_prefix: current folder being processed
     :param force_flag: if False then prompt for each file
-    :return: metadata for each object updated in order to retract
     """
-    result_list = []
     for file_name in found_files:
         table_name = file_name.split(".")[0]
         lines_removed = 0
@@ -174,8 +168,9 @@ def retract(gcs_client, pids, bucket, found_files, folder_prefix, force_flag):
         if response == "Y":
             # Output and input file content initialization
             retracted_file_string = BytesIO()
-            input_file_lines = gcs.retrieve_file_contents_as_list(
-                gcs_client, bucket, folder_prefix, file_name)
+            gcs_bucket = gcs_client.bucket(bucket)
+            blob = gcs_bucket.blob(folder_prefix + file_name)
+            input_file_lines = blob.download_as_string().split(b'\n')
             if len(input_file_lines) < 2:
                 continue
             input_header = input_file_lines[0]
@@ -218,14 +213,9 @@ def retract(gcs_client, pids, bucket, found_files, folder_prefix, force_flag):
                 logging.info(
                     f"{lines_removed} rows retracted from {file_gcs_path}")
                 logging.info(f"Uploading to overwrite...")
-                upload_result = gcs.upload_file_to_gcs(gcs_client,
-                                                       bucket,
-                                                       folder_prefix,
-                                                       file_name,
-                                                       retracted_file_string,
-                                                       rewind=True,
-                                                       content_type='text/csv')
-                result_list.append(upload_result)
+                blob.upload_from_file(retracted_file_string,
+                                      rewind=True,
+                                      content_type='text/csv')
                 logging.info(f"Retraction successful for file {file_gcs_path}")
             else:
                 logging.info(
@@ -233,7 +223,7 @@ def retract(gcs_client, pids, bucket, found_files, folder_prefix, force_flag):
                 )
         elif response.lower() == "n":
             logging.info(f"Skipping file {file_gcs_path}")
-    return result_list
+    return
 
 
 # Make sure user types Y to proceed
@@ -320,7 +310,6 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    # result is mainly for debugging file uploads
-    result = run_gcs_retraction(args.project_id, args.sandbox_dataset_id,
-                                args.pid_table_id, args.hpo_id,
-                                args.folder_name, args.force_flag)
+    run_gcs_retraction(args.project_id, args.sandbox_dataset_id,
+                       args.pid_table_id, args.hpo_id, args.folder_name,
+                       args.force_flag)
