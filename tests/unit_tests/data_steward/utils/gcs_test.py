@@ -41,7 +41,7 @@ class GCSTest(TestCase):
         }
 
         gcs.list_sub_prefixes(self.client, self.bucket, self.folder_prefix)
-        assert mock_iterator.HTTPIterator.call_count == 1
+        self.assertEqual(mock_iterator.HTTPIterator.call_count, 1)
         args = mock_iterator.HTTPIterator.call_args[1]
         self.assertEqual(args['client'], self.client)
         self.assertEqual(args['api_request'], fake_request)
