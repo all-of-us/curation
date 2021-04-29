@@ -379,8 +379,11 @@ class CleanHeightWeightTest(BaseTest.CleaningRulesTestBase):
             vocab_dataset=self.vocab_dataset)
 
         # Load test data
-        self.load_test_data([person_data_query, measurement_data_query, measurement_ext_data_query,
-                             condition_data_query, concept_data_query, concept_ancestor_data_query])
+        self.load_test_data([
+            person_data_query, measurement_data_query,
+            measurement_ext_data_query, condition_data_query,
+            concept_data_query, concept_ancestor_data_query
+        ])
 
     def assert_get_query_specs(self):
         """
