@@ -336,9 +336,10 @@ pd.read_gbq(query, dialect='standard')
 # Curation needs to contact the RDR team about data discrepancies
 
 query = f'''
-SELECT observation_id, person_id, value_as_string 
+SELECT observation_id, person_id, value_as_string
 FROM `{project_id}.{new_rdr}.observation` 
 WHERE observation_source_concept_id = 715711
-AND SAFE_CAST(value_as_string AS DATE) is NULL
+AND SAFE_CAST(value_as_string AS DATE) IS NULL 
+AND value_as_string != 'PMI Skip'
 '''
 pd.read_gbq(query, dialect='standard')
