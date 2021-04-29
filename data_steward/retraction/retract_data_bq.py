@@ -58,23 +58,35 @@ SELECT
 FROM `{{pid_project}}.{{sandbox_dataset_id}}.{{pid_table_id}}`
 """
 
+JOIN_MAPPING = """
+JOIN `{{project}}.{{dataset}}.{{mapping_table}}`
+USING ({{table_id}})
+"""
+
 TABLE_ID_QUERY = """
 SELECT
   {{table_id}}
 FROM `{{project}}.{{dataset}}.{{table}}`
-WHERE person_id IN (
-  {{person_id_query}}
-)
-"""
-
-RETRACT_DATA_QUERY = """
-DELETE
-FROM `{{project}}.{{dataset}}.{{table}}`
+{% if src_id_condition is defined %}{{join_mapping}}
 WHERE person_id IN (
   {{person_id_query}}
 )
 {% if src_id_condition is defined %}{{src_id_condition}}
 """
+
+RETRACT_DATA_PERSON_QUERY = """
+DELETE
+FROM `{{project}}.{{dataset}}.{{table}}`
+WHERE person_id IN (
+  {{person_id_query}}
+)"""
+
+RETRACT_DATA_TABLE_QUERY = """
+DELETE
+FROM `{{project}}.{{dataset}}.{{table}}`
+WHERE {{table_id}} IN (
+  {{table_id_query}}
+)"""
 
 SRC_ID_CONDITION = """
 AND {{src_id}} != 'PPI/PM'
@@ -86,7 +98,6 @@ FROM `{{project}}.{{dataset}}.{{mapping_table}}`
 WHERE {{table_id}} IN (
   {{table_id_query}}
 )
-{% if src_id_condition is defined %}{{src_id_condition}}
 """
 
 RETRACT_DATA_FACT_RELATIONSHIP = """
@@ -106,8 +117,7 @@ WHERE (
       {{person_id_query}}
     )
   )
-)
-"""
+)"""
 
 PID_TABLE_FIELDS = [{
     "type": "integer",
@@ -149,7 +159,8 @@ def queries_to_retract_from_ehr_dataset(client, project_id, dataset_id, hpo_id,
     :param project_id: identifies associated project
     :param dataset_id: identifies associated dataset
     :param hpo_id: identifies the HPO site
-    :return: list of dict with keys query, dataset, table, delete_flag
+    :param person_id_query: query to select person_ids to retract
+    :return: list of queries to run
     """
     LOGGER.info(f'Checking existing tables for {project_id}.{dataset_id}')
     existing_tables = list_existing_tables(client, project_id, dataset_id)
@@ -211,20 +222,34 @@ def queries_to_retract_from_ehr_dataset(client, project_id, dataset_id, hpo_id,
         UNIONED] + queries[SITE]
 
 
-def queries_to_retract_from_unioned_dataset(client, project_id, dataset_id,
-                                            person_id_query):
+def queries_to_retract_from_dataset(client, project_id, dataset_id,
+                                    person_id_query, retraction_type,
+                                    src_id_condition):
     """
     Get list of queries to remove all records in all tables associated with supplied ids
 
     :param client: bigquery client
     :param project_id: identifies associated project
     :param dataset_id: identifies associated dataset
+    :param person_id_query: query to select person_ids to retract
+    :param retraction_type: string indicating whether all data needs to be removed, including RDR,
+        or if RDR data needs to be kept intact. Can take the values 'rdr_and_ehr' or 'only_ehr'
+    :param src_id_condition: query condition to select non-RDR records
     :return: list of dict with keys query, dataset, table
     """
     LOGGER.info(f'Checking existing tables for {project_id}.{dataset_id}')
     existing_tables = list_existing_tables(client, project_id, dataset_id)
     queries = {UNIONED: [], MAPPING: []}
-    for table in TABLES_FOR_RETRACTION & set(NON_EHR_TABLES):
+    tables_to_retract = TABLES_FOR_RETRACTION
+    if ru.is_unioned_dataset(dataset_id) or retraction_type == 'ehr_and_rdr':
+        tables_to_retract &= set(NON_EHR_TABLES)
+    for table in tables_to_retract:
+        table_id_query = JINJA_ENV.from_string(TABLE_ID_QUERY).render(
+            table_id=get_table_id(table),
+            project=project_id,
+            dataset=dataset_id,
+            table=table,
+            person_id_query=person_id_query)
         if table is not common.DEATH:
             unioned_mapping_table = ehr_union.mapping_table_for(table)
             if unioned_mapping_table in existing_tables:
@@ -234,7 +259,8 @@ def queries_to_retract_from_unioned_dataset(client, project_id, dataset_id,
                     mapping_table=unioned_mapping_table,
                     table_id=get_table_id(table),
                     table=table,
-                    person_id_query=person_id_query)
+                    table_id_query=table_id_query,
+                    src_id_condition=src_id_condition)
                 queries[MAPPING].append(q_unioned_mapping)
 
         if table in existing_tables:
@@ -256,102 +282,6 @@ def queries_to_retract_from_unioned_dataset(client, project_id, dataset_id,
         queries[UNIONED].append(q_fact_relationship)
 
     return queries[MAPPING], queries[UNIONED]
-
-
-def queries_to_retract_from_combined_or_deid_dataset(client, project_id,
-                                                     dataset_id,
-                                                     retraction_type, deid_flag,
-                                                     person_id_query,
-                                                     src_id_condition):
-    """
-    Get list of queries to remove all records in all tables associated with supplied ids
-
-    :param client: bigquery client
-    :param project_id: identifies associated project
-    :param dataset_id: identifies associated dataset
-    :param retraction_type: string indicating whether all data needs to be removed, including RDR,
-        or if RDR data needs to be kept intact. Can take the values 'rdr_and_ehr' or 'only_ehr'
-    :param deid_flag: flag indicating if running on a deid dataset
-    :return: list of dict with keys query, dataset, table
-    """
-    LOGGER.info(f'Checking existing tables for {project_id}.{dataset_id}')
-    existing_tables = list_existing_tables(client, project_id, dataset_id)
-
-    # retract from ehr and rdr or only ehr
-    if retraction_type == 'rdr_and_ehr':
-        LOGGER.info(f'Retracting from RDR and EHR data for {dataset_id}')
-        constant_factor_rdr = 0
-    elif retraction_type == 'only_ehr':
-        LOGGER.info(
-            f'Retracting from EHR data while retaining RDR for {dataset_id}')
-        constant_factor_rdr = common.RDR_ID_CONSTANT + common.ID_CONSTANT_FACTOR
-    else:
-        raise ValueError(f'{retraction_type} is not a valid retraction type')
-
-    combined_mapping_queries = []
-    combined_queries = []
-    for table in TABLES_FOR_RETRACTION:
-        table_id_query = JINJA_ENV.from_string(TABLE_ID_QUERY).render(
-            table_id=get_table_id(table),
-            project=project_id,
-            dataset=dataset_id,
-            table=table,
-            person_id_query=person_id_query)
-        if table is not common.DEATH:
-            combined_mapping = ehr_union.mapping_table_for(table)
-            if combined_mapping in existing_tables:
-                q_combined_mapping = RETRACT_MAPPING_QUERY.format(
-                    project=project_id,
-                    dataset=dataset_id,
-                    mapping_table=combined_mapping,
-                    table_id=get_table_id(table),
-                    table=table,
-                    table_id_query=table_id_query,
-                    src_id_condition=src_id_condition)
-                combined_mapping_queries.append(q_combined_mapping)
-
-        if table in existing_tables:
-            q_combined = RETRACT_DATA_QUERY.format(
-                project=project_id,
-                dataset=dataset_id,
-                table=table,
-                table_id=get_table_id(table),
-                person_id_query=person_id_query)
-            combined_queries.append(q_combined)
-
-    if retraction_type == 'rdr_and_ehr':
-        # retract from person
-        q_combined_person = dict()
-        q_combined_person[DEST_DATASET] = dataset_id
-        q_combined_person[DEST_TABLE] = common.PERSON
-        if q_combined_person[DEST_TABLE] in existing_tables:
-            q_combined_person[QUERY] = RETRACT_DATA_QUERY.format(
-                project=project_id,
-                dataset=q_combined_person[DEST_DATASET],
-                table=q_combined_person[DEST_TABLE],
-                person_id_query=person_id_query)
-            combined_queries.append(q_combined_person)
-
-    # fix death query to exclude constant
-    for q in combined_queries:
-        if q[DEST_TABLE] is common.DEATH:
-            q[QUERY] = RETRACT_DATA_QUERY.format(
-                project=project_id,
-                dataset=q[DEST_DATASET],
-                table=q[DEST_TABLE],
-                person_id_query=person_id_query)
-
-    table = common.FACT_RELATIONSHIP
-    if table in existing_tables:
-        q_fact_relationship = RETRACT_DATA_FACT_RELATIONSHIP.format(
-            project=project_id,
-            dataset=dataset_id,
-            table=table,
-            PERSON_DOMAIN=PERSON_DOMAIN,
-            person_id_query=person_id_query)
-        combined_queries.append(q_fact_relationship)
-
-    return combined_mapping_queries, combined_queries
 
 
 def retraction_query_runner(queries):
@@ -435,7 +365,7 @@ def run_bq_retraction(project_id, sandbox_dataset_id, pid_project_id,
     LOGGER.info(
         f"Retracting from UNIONED datasets: {', '.join(unioned_datasets)}")
     for dataset in unioned_datasets:
-        unioned_mapping_queries, unioned_queries = queries_to_retract_from_unioned_dataset(
+        unioned_mapping_queries, unioned_queries = queries_to_retract_from_dataset(
             client, project_id, dataset, person_id_query)
         retraction_query_runner(unioned_mapping_queries)
         retraction_query_runner(unioned_queries)
@@ -445,22 +375,26 @@ def run_bq_retraction(project_id, sandbox_dataset_id, pid_project_id,
         src_id='src_id')
     LOGGER.info(
         f"Retracting from COMBINED datasets: {', '.join(combined_datasets)}")
-    deid_flag = False
     for dataset in combined_datasets:
-        combined_mapping_queries, combined_queries = queries_to_retract_from_combined_or_deid_dataset(
+        combined_mapping_queries, combined_queries = queries_to_retract_from_dataset(
             client, project_id, dataset, retraction_type, deid_flag,
-            person_id_query, src_id_condition)
+            person_id_query, retraction_type, src_id_condition)
         retraction_query_runner(combined_mapping_queries)
         retraction_query_runner(combined_queries)
     LOGGER.info('Finished retracting from COMBINED datasets')
 
+    research_id_query = JINJA_ENV.from_string(PERSON_ID_QUERY).render(
+        person_research_id=RESEARCH_ID,
+        pid_project=pid_project_id,
+        sandbox_dataset_id=sandbox_dataset_id,
+        pid_table_id=pid_table_id)
     # TODO ensure the correct research_ids for persons_ids are used for each deid retraction
     LOGGER.info(f"Retracting from DEID datasets: {', '.join(deid_datasets)}")
     deid_flag = True
     for dataset in deid_datasets:
-        deid_mapping_queries, deid_queries = queries_to_retract_from_combined_or_deid_dataset(
+        deid_mapping_queries, deid_queries = queries_to_retract_from_dataset(
             client, project_id, dataset, retraction_type, deid_flag,
-            person_id_query, src_id_condition)
+            research_id_query, retraction_type, src_id_condition)
         retraction_query_runner(deid_mapping_queries)
         retraction_query_runner(deid_queries)
     LOGGER.info('Finished retracting from DEID datasets')
