@@ -328,3 +328,18 @@ GROUP BY observation_source_concept_id, observation_source_value
 ORDER BY observation_source_concept_id
 '''
 pd.read_gbq(query, dialect='standard')
+
+# # Date conformance check
+# COPE surveys contain some concepts that must enforce dates in the observation.value_as_string field.
+# For the observation_source_concept_id = 715711, if the value in value_as_string does not meet a standard date format
+# of YYYY-mm-dd, return a dataframe with the observation_id and person_id
+# Curation needs to contact the RDR team about data discrepancies
+
+query = f'''
+SELECT observation_id, person_id, value_as_string
+FROM `{project_id}.{new_rdr}.observation` 
+WHERE observation_source_concept_id = 715711
+AND SAFE_CAST(value_as_string AS DATE) IS NULL 
+AND value_as_string != 'PMI Skip'
+'''
+pd.read_gbq(query, dialect='standard')
