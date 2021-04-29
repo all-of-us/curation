@@ -7,6 +7,7 @@ The intent is remove duplicate primary keys all domain tables excluding person t
 
 # Python Imports
 import os
+from datetime import date, datetime
 
 # Project Imports
 from common import CONDITION_OCCURRENCE, OBSERVATION
@@ -108,10 +109,26 @@ class DeduplicateIdColumnTestBase(BaseTest.CleaningRulesTestBase):
             'loaded_ids': [1, 1, 2, 3, 3, 4, 5, 6, 6, 7],
             'sandboxed_ids': [1, 1, 3, 3, 6, 6],
             'fields': [
-                'condition_occurrence_id', 'person_id', 'condition_concept_id'
+                'condition_occurrence_id', 'person_id', 'condition_concept_id',
+                'condition_start_date', 'condition_start_datetime',
+                'condition_type_concept_id'
             ],
-            'cleaned_values': [(1, 1, 0), (2, 1, 0), (3, 1, 0), (4, 1, 0),
-                               (5, 1, 0), (6, 1, 0), (7, 1, 0)]
+            'cleaned_values': [
+                (1, 1, 0, date.fromisoformat('2010-01-01'),
+                 datetime.fromisoformat('2010-01-01 00:00:00+00:00'), 1),
+                (2, 1, 0, date.fromisoformat('2010-01-01'),
+                 datetime.fromisoformat('2010-01-01 00:00:00+00:00'), 1),
+                (3, 1, 0, date.fromisoformat('2010-01-01'),
+                 datetime.fromisoformat('2010-01-01 00:00:00+00:00'), 1),
+                (4, 1, 0, date.fromisoformat('2010-01-01'),
+                 datetime.fromisoformat('2010-01-01 00:00:00+00:00'), 1),
+                (5, 1, 0, date.fromisoformat('2010-01-01'),
+                 datetime.fromisoformat('2010-01-01 00:00:00+00:00'), 1),
+                (6, 1, 0, date.fromisoformat('2010-01-01'),
+                 datetime.fromisoformat('2010-01-01 00:00:00+00:00'), 1),
+                (7, 1, 0, date.fromisoformat('2010-01-01'),
+                 datetime.fromisoformat('2010-01-01 00:00:00+00:00'), 1)
+            ]
         }, {
             'fq_table_name':
                 f'{self.project_id}.{self.dataset_id}.observation',
@@ -120,9 +137,17 @@ class DeduplicateIdColumnTestBase(BaseTest.CleaningRulesTestBase):
                 f'{self.rule_instance.sandbox_table_for("observation")}',
             'loaded_ids': [1, 1, 2, 3, 3, 4, 5, 6, 6, 7],
             'sandboxed_ids': [1, 1, 3, 3, 6, 6],
-            'fields': ['observation_id', 'person_id', 'observation_concept_id'],
-            'cleaned_values': [(1, 1, 0), (2, 1, 0), (3, 1, 0), (4, 1, 0),
-                               (5, 1, 0), (6, 1, 0), (7, 1, 0)]
+            'fields': [
+                'observation_id', 'person_id', 'observation_concept_id',
+                'observation_date', 'observation_type_concept_id'
+            ],
+            'cleaned_values': [(1, 1, 0, date.fromisoformat('2010-01-01'), 1),
+                               (2, 1, 0, date.fromisoformat('2010-01-01'), 1),
+                               (3, 1, 0, date.fromisoformat('2010-01-01'), 1),
+                               (4, 1, 0, date.fromisoformat('2010-01-01'), 1),
+                               (5, 1, 0, date.fromisoformat('2010-01-01'), 1),
+                               (6, 1, 0, date.fromisoformat('2010-01-01'), 1),
+                               (7, 1, 0, date.fromisoformat('2010-01-01'), 1)]
         }]
 
         self.default_test(tables_and_counts)
