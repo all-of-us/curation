@@ -7,6 +7,7 @@ The intent is remove duplicate primary keys all domain tables excluding person t
 
 # Python Imports
 import os
+from datetime import date, datetime
 
 # Project Imports
 from common import CONDITION_OCCURRENCE, OBSERVATION
@@ -39,11 +40,11 @@ class DeduplicateIdColumnTestBase(BaseTest.CleaningRulesTestBase):
                                                 cls.sandbox_id)
 
         # Generates list of fully qualified table names
-        for table_name in [CONDITION_OCCURRENCE, OBSERVATION]:
+        for table_name in cls.affected_tables:
             cls.fq_table_names.append(
                 f'{cls.project_id}.{cls.dataset_id}.{table_name}')
 
-        for table_name in [CONDITION_OCCURRENCE, OBSERVATION]:
+        for table_name in cls.affected_tables:
             sandbox_table_name = cls.rule_instance.sandbox_table_for(table_name)
             cls.fq_sandbox_table_names.append(
                 f'{cls.project_id}.{cls.sandbox_id}.{sandbox_table_name}')
@@ -59,77 +60,45 @@ class DeduplicateIdColumnTestBase(BaseTest.CleaningRulesTestBase):
         super().setUp()
 
         # Load the test data
-        condition_occurrence_data_template = self.jinja_env.from_string("""
-            DROP TABLE IF EXISTS `{{project_id}}.{{dataset_id}}.condition_occurrence`;
-            CREATE TABLE `{{project_id}}.{{dataset_id}}.condition_occurrence`
-            AS (
-            WITH w AS (
-              SELECT ARRAY<STRUCT<
-                    condition_occurrence_id int64, 
-                    person_id int64, 
-                    condition_concept_id int64
-                    >>
-                  [(1, 1, 0),
-                   (1, 1, 0),
-                   (2, 1, 0),
-                   (3, 1, 0),
-                   (3, 1, 0),
-                   (4, 1, 0),
-                   (5, 1, 0),
-                   (6, 1, 0),
-                   (6, 1, 0),
-                   (7, 1, 0)] col
-            )
-            SELECT 
-                condition_occurrence_id, 
-                person_id, 
-                condition_concept_id
-            FROM w, UNNEST(w.col))
-            """)
+        insert_condition_occurrence_query = self.jinja_env.from_string(
+            """
+            INSERT INTO `{{project_id}}.{{dataset_id}}.condition_occurrence`
+                (condition_occurrence_id, person_id, condition_concept_id,
+                condition_start_date, condition_start_datetime, condition_type_concept_id)
+            VALUES (1, 1, 0, '2010-01-01', timestamp('2010-01-01'), 1),
+                   (1, 1, 0, '2010-01-01', timestamp('2010-01-01'), 1),
+                   (2, 1, 0, '2010-01-01', timestamp('2010-01-01'), 1),
+                   (3, 1, 0, '2010-01-01', timestamp('2010-01-01'), 1),
+                   (3, 1, 0, '2010-01-01', timestamp('2010-01-01'), 1),
+                   (4, 1, 0, '2010-01-01', timestamp('2010-01-01'), 1),
+                   (5, 1, 0, '2010-01-01', timestamp('2010-01-01'), 1),
+                   (6, 1, 0, '2010-01-01', timestamp('2010-01-01'), 1),
+                   (6, 1, 0, '2010-01-01', timestamp('2010-01-01'), 1),
+                   (7, 1, 0, '2010-01-01', timestamp('2010-01-01'), 1)"""
+        ).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
         # Load the test data
-        observation_data_template = self.jinja_env.from_string("""
-            DROP TABLE IF EXISTS `{{project_id}}.{{dataset_id}}.observation`;
-            CREATE TABLE `{{project_id}}.{{dataset_id}}.observation`
-            AS (
-            WITH w AS (
-              SELECT ARRAY<STRUCT<
-                    observation_id int64, 
-                    person_id int64, 
-                    observation_concept_id int64
-                    >>
-                  [(1, 1, 0),
-                   (1, 1, 0),
-                   (2, 1, 0),
-                   (3, 1, 0),
-                   (3, 1, 0),
-                   (4, 1, 0),
-                   (5, 1, 0),
-                   (6, 1, 0),
-                   (6, 1, 0),
-                   (7, 1, 0)] col
-            )
-            SELECT 
-                observation_id, 
-                person_id, 
-                observation_concept_id
-            FROM w, UNNEST(w.col))
-            """)
-
-        insert_condition_query = condition_occurrence_data_template.render(
-            project_id=self.project_id, dataset_id=self.dataset_id)
-
-        insert_observation_query = observation_data_template.render(
+        insert_observation_query = self.jinja_env.from_string("""
+            INSERT INTO `{{project_id}}.{{dataset_id}}.observation` 
+                (observation_id, person_id, observation_concept_id, 
+                observation_date, observation_type_concept_id)
+            VALUES (1, 1, 0, '2010-01-01', 1),
+                   (1, 1, 0, '2010-01-01', 1),
+                   (2, 1, 0, '2010-01-01', 1),
+                   (3, 1, 0, '2010-01-01', 1),
+                   (3, 1, 0, '2010-01-01', 1),
+                   (4, 1, 0, '2010-01-01', 1),
+                   (5, 1, 0, '2010-01-01', 1),
+                   (6, 1, 0, '2010-01-01', 1),
+                   (6, 1, 0, '2010-01-01', 1),
+                   (7, 1, 0, '2010-01-01', 1)""").render(
             project_id=self.project_id, dataset_id=self.dataset_id)
 
         # Load test data
-        self.load_test_data([
-            f'''{insert_condition_query};
-                {insert_observation_query};'''
-        ])
+        self.load_test_data(
+            [insert_condition_occurrence_query, insert_observation_query])
 
     def test_id_deduplicate(self):
-
         # Expected results list
         tables_and_counts = [{
             'fq_table_name':
@@ -140,10 +109,26 @@ class DeduplicateIdColumnTestBase(BaseTest.CleaningRulesTestBase):
             'loaded_ids': [1, 1, 2, 3, 3, 4, 5, 6, 6, 7],
             'sandboxed_ids': [1, 1, 3, 3, 6, 6],
             'fields': [
-                'condition_occurrence_id', 'person_id', 'condition_concept_id'
+                'condition_occurrence_id', 'person_id', 'condition_concept_id',
+                'condition_start_date', 'condition_start_datetime',
+                'condition_type_concept_id'
             ],
-            'cleaned_values': [(1, 1, 0), (2, 1, 0), (3, 1, 0), (4, 1, 0),
-                               (5, 1, 0), (6, 1, 0), (7, 1, 0)]
+            'cleaned_values': [
+                (1, 1, 0, date.fromisoformat('2010-01-01'),
+                 datetime.fromisoformat('2010-01-01 00:00:00+00:00'), 1),
+                (2, 1, 0, date.fromisoformat('2010-01-01'),
+                 datetime.fromisoformat('2010-01-01 00:00:00+00:00'), 1),
+                (3, 1, 0, date.fromisoformat('2010-01-01'),
+                 datetime.fromisoformat('2010-01-01 00:00:00+00:00'), 1),
+                (4, 1, 0, date.fromisoformat('2010-01-01'),
+                 datetime.fromisoformat('2010-01-01 00:00:00+00:00'), 1),
+                (5, 1, 0, date.fromisoformat('2010-01-01'),
+                 datetime.fromisoformat('2010-01-01 00:00:00+00:00'), 1),
+                (6, 1, 0, date.fromisoformat('2010-01-01'),
+                 datetime.fromisoformat('2010-01-01 00:00:00+00:00'), 1),
+                (7, 1, 0, date.fromisoformat('2010-01-01'),
+                 datetime.fromisoformat('2010-01-01 00:00:00+00:00'), 1)
+            ]
         }, {
             'fq_table_name':
                 f'{self.project_id}.{self.dataset_id}.observation',
@@ -152,9 +137,17 @@ class DeduplicateIdColumnTestBase(BaseTest.CleaningRulesTestBase):
                 f'{self.rule_instance.sandbox_table_for("observation")}',
             'loaded_ids': [1, 1, 2, 3, 3, 4, 5, 6, 6, 7],
             'sandboxed_ids': [1, 1, 3, 3, 6, 6],
-            'fields': ['observation_id', 'person_id', 'observation_concept_id'],
-            'cleaned_values': [(1, 1, 0), (2, 1, 0), (3, 1, 0), (4, 1, 0),
-                               (5, 1, 0), (6, 1, 0), (7, 1, 0)]
+            'fields': [
+                'observation_id', 'person_id', 'observation_concept_id',
+                'observation_date', 'observation_type_concept_id'
+            ],
+            'cleaned_values': [(1, 1, 0, date.fromisoformat('2010-01-01'), 1),
+                               (2, 1, 0, date.fromisoformat('2010-01-01'), 1),
+                               (3, 1, 0, date.fromisoformat('2010-01-01'), 1),
+                               (4, 1, 0, date.fromisoformat('2010-01-01'), 1),
+                               (5, 1, 0, date.fromisoformat('2010-01-01'), 1),
+                               (6, 1, 0, date.fromisoformat('2010-01-01'), 1),
+                               (7, 1, 0, date.fromisoformat('2010-01-01'), 1)]
         }]
 
         self.default_test(tables_and_counts)
