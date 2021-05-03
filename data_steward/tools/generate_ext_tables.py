@@ -28,7 +28,7 @@ EXT_FIELD_TEMPLATE = [{
 
 EXT_TABLE_SUFFIX = '_ext'
 MAPPING_PREFIX = '_mapping_'
-SITE_TABLE_ID = '_site_mappings'
+SITE_TABLE_ID = 'site_maskings'
 
 REPLACE_SRC_QUERY = JINJA_ENV.from_string("""
 SELECT m.{{cdm_table_id}}_id, s.src_id
