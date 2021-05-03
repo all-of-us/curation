@@ -15,19 +15,15 @@ import logging
 from utils import pipeline_logging, bq
 import common
 from common import JINJA_ENV
-import bq_utils
 from validation import ehr_union
 from retraction import retract_utils as ru
 
 LOGGER = logging.getLogger(__name__)
 
 UNIONED_EHR = 'unioned_ehr_'
-QUERY = 'QUERY'
-DEST_TABLE = 'DEST_TABLE'
-DEST_DATASET = 'DEST_DATASET'
-WRITE_TRUNCATE = 'WRITE_TRUNCATE'
 SITE = 'site'
 UNIONED = 'unioned'
+TABLES = 'tables'
 MAPPING = 'mapping'
 LEGACY_MAPPING = 'legacy_mapping'
 
@@ -89,7 +85,7 @@ WHERE {{table_id}} IN (
 )"""
 
 SRC_ID_CONDITION = """
-AND {{src_id}} != 'PPI/PM'
+AND src_id != 'PPI/PM'
 """
 
 RETRACT_MAPPING_QUERY = """
@@ -97,8 +93,16 @@ DELETE
 FROM `{{project}}.{{dataset}}.{{mapping_table}}`
 WHERE {{table_id}} IN (
   {{table_id_query}}
-)
-"""
+)"""
+
+RETRACT_PERSON_MAPPING_QUERY = """
+DELETE
+FROM `{{project}}.{{dataset}}.{{mapping_table}}`
+WHERE person_id IN (
+  {{person_id_query}}
+) OR src_person_id IN (
+  {{person_id_query}}
+)"""
 
 RETRACT_DATA_FACT_RELATIONSHIP = """
 DELETE
@@ -172,11 +176,12 @@ def queries_to_retract_from_ehr_dataset(client, project_id, dataset_id, hpo_id,
         }
         for table_type in [SITE, UNIONED]:
             if table_names[table_type] in existing_tables:
-                q_site = JINJA_ENV.from_string(RETRACT_DATA_QUERY).render(
-                    project=project_id,
-                    dataset=dataset_id,
-                    table=table_names[table_type],
-                    person_id_query=person_id_query)
+                q_site = JINJA_ENV.from_string(
+                    RETRACT_DATA_PERSON_QUERY).render(
+                        project=project_id,
+                        dataset=dataset_id,
+                        table=table_names[table_type],
+                        person_id_query=person_id_query)
                 queries[table_type].append(q_site)
 
         table_id_query = JINJA_ENV.from_string(TABLE_ID_QUERY).render(
@@ -188,20 +193,33 @@ def queries_to_retract_from_ehr_dataset(client, project_id, dataset_id, hpo_id,
 
         # death does not have mapping table
         if table is not common.DEATH:
-            mapping_table_names = {
-                MAPPING: ehr_union.mapping_table_for(table),
-                LEGACY_MAPPING: UNIONED_EHR + ehr_union.mapping_table_for(table)
-            }
-            for table_type in [MAPPING, LEGACY_MAPPING]:
-                if mapping_table_names[table_type] in existing_tables:
-                    q_unioned_mapping = JINJA_ENV.from_string(
-                        RETRACT_MAPPING_QUERY).render(
+            if table is common.PERSON:
+                mapping_person = ehr_union.mapping_table_for(table)
+                if mapping_person in existing_tables:
+                    mapping_person = JINJA_ENV.from_string(
+                        RETRACT_PERSON_MAPPING_QUERY).render(
                             project=project_id,
                             dataset=dataset_id,
-                            mapping_table=mapping_table_names[table_type],
-                            table_id=get_table_id(table),
-                            table_id_query=table_id_query)
-                    queries[table_type].append(q_unioned_mapping)
+                            mapping_table=mapping_person,
+                            person_id_query=person_id_query)
+                    queries[MAPPING].append(mapping_person)
+            else:
+                mapping_table_names = {
+                    MAPPING:
+                        ehr_union.mapping_table_for(table),
+                    LEGACY_MAPPING:
+                        UNIONED_EHR + ehr_union.mapping_table_for(table)
+                }
+                for table_type in [MAPPING, LEGACY_MAPPING]:
+                    if mapping_table_names[table_type] in existing_tables:
+                        q_unioned_mapping = JINJA_ENV.from_string(
+                            RETRACT_MAPPING_QUERY).render(
+                                project=project_id,
+                                dataset=dataset_id,
+                                mapping_table=mapping_table_names[table_type],
+                                table_id=get_table_id(table),
+                                table_id_query=table_id_query)
+                        queries[table_type].append(q_unioned_mapping)
 
     # Remove fact_relationship records referencing retracted person_ids
     fact_rel_table_names = {
@@ -218,13 +236,15 @@ def queries_to_retract_from_ehr_dataset(client, project_id, dataset_id, hpo_id,
                 person_id_query=person_id_query)
             queries[table_type].append(q_site_fact_relationship)
 
-    return queries[LEGACY_MAPPING] + queries[MAPPING], queries[
-        UNIONED] + queries[SITE]
+    return queries[UNIONED] + queries[SITE], queries[LEGACY_MAPPING] + queries[
+        MAPPING]
 
 
-def queries_to_retract_from_dataset(client, project_id, dataset_id,
-                                    person_id_query, retraction_type,
-                                    src_id_condition):
+def queries_to_retract_from_dataset(client,
+                                    project_id,
+                                    dataset_id,
+                                    person_id_query,
+                                    retraction_type=None):
     """
     Get list of queries to remove all records in all tables associated with supplied ids
 
@@ -234,42 +254,67 @@ def queries_to_retract_from_dataset(client, project_id, dataset_id,
     :param person_id_query: query to select person_ids to retract
     :param retraction_type: string indicating whether all data needs to be removed, including RDR,
         or if RDR data needs to be kept intact. Can take the values 'rdr_and_ehr' or 'only_ehr'
-    :param src_id_condition: query condition to select non-RDR records
     :return: list of dict with keys query, dataset, table
     """
     LOGGER.info(f'Checking existing tables for {project_id}.{dataset_id}')
     existing_tables = list_existing_tables(client, project_id, dataset_id)
-    queries = {UNIONED: [], MAPPING: []}
+    queries = {TABLES: [], MAPPING: []}
     tables_to_retract = TABLES_FOR_RETRACTION
+    src_id_condition = SRC_ID_CONDITION
+    join_mapping = ""
     if ru.is_unioned_dataset(dataset_id) or retraction_type == 'ehr_and_rdr':
         tables_to_retract &= set(NON_EHR_TABLES)
+        src_id_condition = ""
     for table in tables_to_retract:
+        if src_id_condition:
+            join_mapping = JINJA_ENV.from_string(JOIN_MAPPING).render(
+                project=project_id,
+                dataset=dataset_id,
+                mapping_table=ehr_union.mapping_table_for(table),
+                table_id=get_table_id(table))
         table_id_query = JINJA_ENV.from_string(TABLE_ID_QUERY).render(
             table_id=get_table_id(table),
             project=project_id,
             dataset=dataset_id,
             table=table,
-            person_id_query=person_id_query)
-        if table is not common.DEATH:
-            unioned_mapping_table = ehr_union.mapping_table_for(table)
-            if unioned_mapping_table in existing_tables:
+            join_mapping=join_mapping,
+            person_id_query=person_id_query,
+            src_id_condition=src_id_condition)
+
+        if table in existing_tables:
+            if table in [common.DEATH, common.PERSON]:
+                q_unioned = RETRACT_DATA_PERSON_QUERY.format(
+                    project=project_id,
+                    dataset=dataset_id,
+                    table=table,
+                    person_id_query=person_id_query)
+                queries[TABLES].append(q_unioned)
+                if table == common.PERSON:
+                    person_mapping = ehr_union.mapping_table_for(table)
+                    if person_mapping in existing_tables:
+                        q_person_mapping = RETRACT_PERSON_MAPPING_QUERY.format(
+                            project=project_id,
+                            dataset=dataset_id,
+                            mapping_table=person_mapping,
+                            person_id_query=person_id_query)
+                        queries[MAPPING].append(q_person_mapping)
+            else:
                 q_unioned_mapping = RETRACT_MAPPING_QUERY.format(
                     project=project_id,
                     dataset=dataset_id,
-                    mapping_table=unioned_mapping_table,
-                    table_id=get_table_id(table),
                     table=table,
-                    table_id_query=table_id_query,
-                    src_id_condition=src_id_condition)
+                    table_id=get_table_id(table),
+                    mapping_table=ehr_union.mapping_table_for(table),
+                    table_id_query=table_id_query)
                 queries[MAPPING].append(q_unioned_mapping)
 
-        if table in existing_tables:
-            q_unioned = RETRACT_DATA_QUERY.format(
-                project=project_id,
-                dataset=dataset_id,
-                table=table,
-                person_id_query=person_id_query)
-            queries[UNIONED].append(q_unioned)
+                q_unioned = RETRACT_DATA_TABLE_QUERY.format(
+                    project=project_id,
+                    dataset=dataset_id,
+                    table=table,
+                    table_id=get_table_id(table),
+                    table_id_query=table_id_query)
+                queries[TABLES].append(q_unioned)
 
     table = common.FACT_RELATIONSHIP
     if table in existing_tables:
@@ -279,31 +324,19 @@ def queries_to_retract_from_dataset(client, project_id, dataset_id,
             table=table,
             PERSON_DOMAIN=PERSON_DOMAIN,
             person_id_query=person_id_query)
-        queries[UNIONED].append(q_fact_relationship)
+        queries[TABLES].append(q_fact_relationship)
 
-    return queries[MAPPING], queries[UNIONED]
+    return queries[TABLES], queries[MAPPING]
 
 
-def retraction_query_runner(queries):
-    query_job_ids = []
-    for query_dict in queries:
+def retraction_query_runner(client, queries):
+    for query in queries:
+        job = client.query(query)
+        LOGGER.info(f'Running query for job_id {job.job_id}')
+        result = job.result()
         LOGGER.info(
-            f'Retracting from {query_dict[DEST_DATASET]}.{query_dict[DEST_TABLE]} '
-            f'using query {query_dict[QUERY]}')
-        job_results = bq_utils.query(q=query_dict[QUERY], batch=True)
-        rows_affected = job_results['numDmlAffectedRows']
-        LOGGER.info(
-            f'{rows_affected} rows deleted from {query_dict[DEST_DATASET]}.{query_dict[DEST_TABLE]}'
-        )
-        query_job_id = job_results['jobReference']['jobId']
-        query_job_ids.append(query_job_id)
-
-    incomplete_jobs = bq_utils.wait_on_jobs(query_job_ids)
-    if incomplete_jobs:
-        LOGGER.info(
-            f'Failed on {len(incomplete_jobs)} job ids {incomplete_jobs}')
-        LOGGER.info('Terminating retraction')
-        raise bq_utils.BigQueryJobWaitError(incomplete_jobs)
+            f'Removed {job.num_dml_affected_rows} rows for job_id {job.job_id}')
+    return
 
 
 def run_bq_retraction(project_id, sandbox_dataset_id, pid_project_id,
@@ -327,77 +360,44 @@ def run_bq_retraction(project_id, sandbox_dataset_id, pid_project_id,
     client = bq.get_client(project_id)
     dataset_ids = ru.get_datasets_list(project_id, dataset_ids_list)
 
-    deid_datasets = []
-    combined_datasets = []
-    unioned_datasets = []
-    ehr_datasets = []
+    queries, mapping_queries = [], []
     for dataset in dataset_ids:
         if ru.is_deid_dataset(dataset):
-            deid_datasets.append(dataset)
-        elif ru.is_combined_dataset(dataset):
-            combined_datasets.append(dataset)
-        elif ru.is_unioned_dataset(dataset):
-            unioned_datasets.append(dataset)
-        elif ru.is_ehr_dataset(dataset):
-            ehr_datasets.append(dataset)
-
-    # skip ehr datasets if hpo_id is indicated as none
-    if hpo_id == 'none':
-        LOGGER.info(
-            '"RETRACTION_HPO_ID" set to "none", skipping retraction from EHR datasets'
-        )
-        ehr_datasets = []
-
-    person_id_query = JINJA_ENV.from_string(PERSON_ID_QUERY).render(
-        person_research_id=PERSON_ID,
-        pid_project=pid_project_id,
-        sandbox_dataset_id=sandbox_dataset_id,
-        pid_table_id=pid_table_id)
-
-    LOGGER.info(f"Retracting from EHR datasets: {', '.join(ehr_datasets)}")
-    for dataset in ehr_datasets:
-        ehr_mapping_queries, ehr_queries = queries_to_retract_from_ehr_dataset(
-            client, project_id, dataset, hpo_id, person_id_query)
-        retraction_query_runner(ehr_mapping_queries)
-        retraction_query_runner(ehr_queries)
-    LOGGER.info('Finished retracting from EHR datasets')
-
-    LOGGER.info(
-        f"Retracting from UNIONED datasets: {', '.join(unioned_datasets)}")
-    for dataset in unioned_datasets:
-        unioned_mapping_queries, unioned_queries = queries_to_retract_from_dataset(
-            client, project_id, dataset, person_id_query)
-        retraction_query_runner(unioned_mapping_queries)
-        retraction_query_runner(unioned_queries)
-    LOGGER.info('Finished retracting from UNIONED datasets')
-
-    src_id_condition = JINJA_ENV.from_string(SRC_ID_CONDITION).render(
-        src_id='src_id')
-    LOGGER.info(
-        f"Retracting from COMBINED datasets: {', '.join(combined_datasets)}")
-    for dataset in combined_datasets:
-        combined_mapping_queries, combined_queries = queries_to_retract_from_dataset(
-            client, project_id, dataset, retraction_type, deid_flag,
-            person_id_query, retraction_type, src_id_condition)
-        retraction_query_runner(combined_mapping_queries)
-        retraction_query_runner(combined_queries)
-    LOGGER.info('Finished retracting from COMBINED datasets')
-
-    research_id_query = JINJA_ENV.from_string(PERSON_ID_QUERY).render(
-        person_research_id=RESEARCH_ID,
-        pid_project=pid_project_id,
-        sandbox_dataset_id=sandbox_dataset_id,
-        pid_table_id=pid_table_id)
-    # TODO ensure the correct research_ids for persons_ids are used for each deid retraction
-    LOGGER.info(f"Retracting from DEID datasets: {', '.join(deid_datasets)}")
-    deid_flag = True
-    for dataset in deid_datasets:
-        deid_mapping_queries, deid_queries = queries_to_retract_from_dataset(
-            client, project_id, dataset, retraction_type, deid_flag,
-            research_id_query, retraction_type, src_id_condition)
-        retraction_query_runner(deid_mapping_queries)
-        retraction_query_runner(deid_queries)
-    LOGGER.info('Finished retracting from DEID datasets')
+            LOGGER.info(f"Retracting from DEID dataset {dataset}")
+            research_id_query = JINJA_ENV.from_string(PERSON_ID_QUERY).render(
+                person_research_id=RESEARCH_ID,
+                pid_project=pid_project_id,
+                sandbox_dataset_id=sandbox_dataset_id,
+                pid_table_id=pid_table_id)
+            queries, mapping_queries = queries_to_retract_from_dataset(
+                client, project_id, dataset, research_id_query, retraction_type)
+        else:
+            person_id_query = JINJA_ENV.from_string(PERSON_ID_QUERY).render(
+                person_research_id=PERSON_ID,
+                pid_project=pid_project_id,
+                sandbox_dataset_id=sandbox_dataset_id,
+                pid_table_id=pid_table_id)
+            if ru.is_combined_dataset(dataset):
+                LOGGER.info(f"Retracting from Combined dataset {dataset}")
+                queries, mapping_queries = queries_to_retract_from_dataset(
+                    client, project_id, dataset, person_id_query)
+            if ru.is_unioned_dataset(dataset):
+                LOGGER.info(f"Retracting from Unioned dataset {dataset}")
+                queries, mapping_queries = queries_to_retract_from_dataset(
+                    client, project_id, dataset, person_id_query)
+            elif ru.is_ehr_dataset(dataset):
+                if hpo_id == 'none':
+                    LOGGER.info(
+                        f'"RETRACTION_HPO_ID" set to "none", skipping retraction from {dataset}'
+                    )
+                else:
+                    LOGGER.info(f"Retracting from EHR dataset {dataset}")
+                    queries, mapping_queries = queries_to_retract_from_ehr_dataset(
+                        client, project_id, dataset, hpo_id, person_id_query)
+        retraction_query_runner(client, queries)
+        retraction_query_runner(client, mapping_queries)
+    LOGGER.info('Retraction complete')
+    return
 
 
 if __name__ == '__main__':
