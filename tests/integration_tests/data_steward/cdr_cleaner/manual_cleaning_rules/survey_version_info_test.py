@@ -59,8 +59,11 @@ class COPESurveyVersionTaskTest(BaseTest.DeidRulesTestBase):
             f"{project_id}.{dataset_id}.observation",
             f"{project_id}.{dataset_id}.observation_ext"
         ]
+
         cls.dataset_id = dataset_id
-        cls.fq_questionnaire_tablename = f'{project_id}.{cls.mapping_dataset_id}._deid_questionnaire_response_map'
+        cls.sandbox_id = sandbox_id
+
+        cls.fq_questionnaire_tablename = f'{project_id}.{sandbox_id}._deid_questionnaire_response_map'
         # call super to set up the client, create datasets, and create
         # empty test tables
         # NOTE:  does not create empty sandbox tables.
@@ -100,7 +103,7 @@ class COPESurveyVersionTaskTest(BaseTest.DeidRulesTestBase):
         """),
             self.jinja_env.from_string("""
         -- set up questionnaire response mapping table, a post-deid table --
-        INSERT INTO `{{project}}.{{mapping_dataset}}._deid_questionnaire_response_map`
+        INSERT INTO `{{project}}.{{qrid_map_dataset_id}}._deid_questionnaire_response_map`
         (questionnaire_response_id, research_response_id)
         VALUES
           (10, 100),
@@ -131,7 +134,7 @@ class COPESurveyVersionTaskTest(BaseTest.DeidRulesTestBase):
         for statement in insert_fake_measurements:
             sql = statement.render(project=self.project_id,
                                    dataset=self.dataset_id,
-                                   mapping_dataset=self.mapping_dataset_id,
+                                   qrid_map_dataset_id=self.sandbox_id,
                                    cope_dataset=self.cope_dataset_id,
                                    cope_table_name=self.cope_tablename)
             load_statements.append(sql)
