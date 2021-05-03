@@ -36,7 +36,7 @@ VOCABULARY_TABLES = [
     'relationship', 'concept_synonym', 'concept_ancestor',
     'source_to_concept_map', 'drug_strength'
 ]
-DEID_MAP_TABLE = '_deid_map'
+DEID_MAP_TABLE = 'primary_pid_rid_mapping'
 PIPELINE_TABLES_DATASET = 'pipeline_tables'
 
 LOGS_PATH = 'LOGS'
