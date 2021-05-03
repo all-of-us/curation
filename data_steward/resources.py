@@ -28,6 +28,7 @@ config_path = os.path.join(base_path, 'config')
 fields_path = os.path.join(resource_files_path, 'schemas')
 cdm_fields_path = os.path.join(fields_path, 'cdm')
 internal_fields_path = os.path.join(fields_path, 'internal')
+mapping_fields_path = os.path.join(internal_fields_path, 'mapping_tables')
 extension_fields_path = os.path.join(fields_path, 'extension_tables')
 aou_files_path = os.path.join(resource_files_path, 'schemas')
 cdm_csv_path = os.path.join(resource_files_path, 'cdm.csv')
@@ -278,8 +279,8 @@ def cdm_schemas(include_achilles=False, include_vocabulary=False):
 
 def mapping_schemas():
     result = dict()
-    for f in os.listdir(fields_path):
-        file_path = os.path.join(fields_path, f)
+    for f in os.listdir(mapping_fields_path):
+        file_path = os.path.join(mapping_fields_path, f)
         table_name = f.split('.')[0]
 
         if is_mapping_table(table_name):
