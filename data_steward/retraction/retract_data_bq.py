@@ -64,10 +64,12 @@ SELECT
   {{table_id}}
 FROM `{{project}}.{{dataset}}.{{table}}`
 {% if src_id_condition is defined %}{{join_mapping}}
+{% endif %}
 WHERE person_id IN (
   {{person_id_query}}
 )
 {% if src_id_condition is defined %}{{src_id_condition}}
+{% endif %}
 """
 
 RETRACT_DATA_PERSON_QUERY = """
@@ -169,7 +171,8 @@ def queries_to_retract_from_ehr_dataset(client, project_id, dataset_id, hpo_id,
     LOGGER.info(f'Checking existing tables for {project_id}.{dataset_id}')
     existing_tables = list_existing_tables(client, project_id, dataset_id)
     queries = {SITE: [], UNIONED: [], MAPPING: [], LEGACY_MAPPING: []}
-    for table in TABLES_FOR_RETRACTION & set(NON_EHR_TABLES):
+    tables_to_retract = TABLES_FOR_RETRACTION | set(NON_EHR_TABLES)
+    for table in tables_to_retract:
         table_names = {
             SITE: get_site_table(hpo_id, table),
             UNIONED: UNIONED_EHR + table
@@ -228,12 +231,13 @@ def queries_to_retract_from_ehr_dataset(client, project_id, dataset_id, hpo_id,
     }
     for table_type in [SITE, UNIONED]:
         if fact_rel_table_names[table_type] in existing_tables:
-            q_site_fact_relationship = RETRACT_DATA_FACT_RELATIONSHIP.format(
-                project=project_id,
-                dataset=dataset_id,
-                table=fact_rel_table_names[table_type],
-                PERSON_DOMAIN=PERSON_DOMAIN,
-                person_id_query=person_id_query)
+            q_site_fact_relationship = JINJA_ENV.from_string(
+                RETRACT_DATA_FACT_RELATIONSHIP).render(
+                    project=project_id,
+                    dataset=dataset_id,
+                    table=fact_rel_table_names[table_type],
+                    PERSON_DOMAIN=PERSON_DOMAIN,
+                    person_id_query=person_id_query)
             queries[table_type].append(q_site_fact_relationship)
 
     return queries[UNIONED] + queries[SITE], queries[LEGACY_MAPPING] + queries[
@@ -263,7 +267,7 @@ def queries_to_retract_from_dataset(client,
     src_id_condition = SRC_ID_CONDITION
     join_mapping = ""
     if ru.is_unioned_dataset(dataset_id) or retraction_type == 'ehr_and_rdr':
-        tables_to_retract &= set(NON_EHR_TABLES)
+        tables_to_retract |= set(NON_EHR_TABLES)
         src_id_condition = ""
     for table in tables_to_retract:
         if src_id_condition:
@@ -283,47 +287,52 @@ def queries_to_retract_from_dataset(client,
 
         if table in existing_tables:
             if table in [common.DEATH, common.PERSON]:
-                q_unioned = RETRACT_DATA_PERSON_QUERY.format(
-                    project=project_id,
-                    dataset=dataset_id,
-                    table=table,
-                    person_id_query=person_id_query)
+                q_unioned = JINJA_ENV.from_string(
+                    RETRACT_DATA_PERSON_QUERY).render(
+                        project=project_id,
+                        dataset=dataset_id,
+                        table=table,
+                        person_id_query=person_id_query)
                 queries[TABLES].append(q_unioned)
                 if table == common.PERSON:
                     person_mapping = ehr_union.mapping_table_for(table)
                     if person_mapping in existing_tables:
-                        q_person_mapping = RETRACT_PERSON_MAPPING_QUERY.format(
-                            project=project_id,
-                            dataset=dataset_id,
-                            mapping_table=person_mapping,
-                            person_id_query=person_id_query)
+                        q_person_mapping = JINJA_ENV.from_string(
+                            RETRACT_PERSON_MAPPING_QUERY).render(
+                                project=project_id,
+                                dataset=dataset_id,
+                                mapping_table=person_mapping,
+                                person_id_query=person_id_query)
                         queries[MAPPING].append(q_person_mapping)
             else:
-                q_unioned_mapping = RETRACT_MAPPING_QUERY.format(
-                    project=project_id,
-                    dataset=dataset_id,
-                    table=table,
-                    table_id=get_table_id(table),
-                    mapping_table=ehr_union.mapping_table_for(table),
-                    table_id_query=table_id_query)
+                q_unioned_mapping = JINJA_ENV.from_string(
+                    RETRACT_MAPPING_QUERY).render(
+                        project=project_id,
+                        dataset=dataset_id,
+                        table=table,
+                        table_id=get_table_id(table),
+                        mapping_table=ehr_union.mapping_table_for(table),
+                        table_id_query=table_id_query)
                 queries[MAPPING].append(q_unioned_mapping)
 
-                q_unioned = RETRACT_DATA_TABLE_QUERY.format(
-                    project=project_id,
-                    dataset=dataset_id,
-                    table=table,
-                    table_id=get_table_id(table),
-                    table_id_query=table_id_query)
+                q_unioned = JINJA_ENV.from_string(
+                    RETRACT_DATA_TABLE_QUERY).render(
+                        project=project_id,
+                        dataset=dataset_id,
+                        table=table,
+                        table_id=get_table_id(table),
+                        table_id_query=table_id_query)
                 queries[TABLES].append(q_unioned)
 
     table = common.FACT_RELATIONSHIP
     if table in existing_tables:
-        q_fact_relationship = RETRACT_DATA_FACT_RELATIONSHIP.format(
-            project=project_id,
-            dataset=dataset_id,
-            table=table,
-            PERSON_DOMAIN=PERSON_DOMAIN,
-            person_id_query=person_id_query)
+        q_fact_relationship = JINJA_ENV.from_string(
+            RETRACT_DATA_FACT_RELATIONSHIP).render(
+                project=project_id,
+                dataset=dataset_id,
+                table=table,
+                PERSON_DOMAIN=PERSON_DOMAIN,
+                person_id_query=person_id_query)
         queries[TABLES].append(q_fact_relationship)
 
     return queries[TABLES], queries[MAPPING]
