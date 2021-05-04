@@ -798,6 +798,6 @@ class Deid(Rules):
                                 else:
                                     out += _item
             else:
-                LOGGER.error('rule_id:  {} not in info'.format(rule_id))
+                LOGGER.info('rule_id:  {} not in info'.format(rule_id))
 
         return out
