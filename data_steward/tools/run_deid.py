@@ -277,7 +277,7 @@ def load_deid_map_table(deid_map_dataset_name, age_limit):
     # Create _deid_map table in input dataset
     project_id = app_identity.get_application_id()
     client = bq.get_client(project_id)
-    deid_map_table = f'{project_id}.{deid_map_dataset_name}.{DEID_MAP_TABLE}'
+    deid_map_table = f'{project_id}.{deid_map_dataset_name}._deid_map'
     # Copy master _deid_map table records to _deid_map table
     if bq_utils.table_exists(DEID_MAP_TABLE,
                              dataset_id=PIPELINE_TABLES_DATASET):
