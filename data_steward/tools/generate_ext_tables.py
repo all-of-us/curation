@@ -75,10 +75,11 @@ def get_mapping_table_ids(project_id, mapping_dataset_id):
     client = bq.get_client(project_id)
     dataset_ref = DatasetReference(project_id, mapping_dataset_id)
     table_objs = bq.list_tables(client, dataset_ref)
-    mapping_table_ids = []
-    for table_obj in table_objs:
-        if table_obj.table_id in MAPPING_TABLES:
-            mapping_table_ids.append(table_obj.table_id)
+    mapping_table_ids = [
+        table_obj.table_id
+        for table_obj in table_objs
+        if table_obj.table_id in MAPPING_TABLES
+    ]
     return mapping_table_ids
 
 
