@@ -1,10 +1,16 @@
+# Python imports
 import logging
 
+# Third party imports
+from google.cloud.bigquery import DatasetReference
+
+# Project imports
 import bq_utils
 import constants.bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
-from resources import fields_for, MAPPING_TABLES
+from utils import bq
 from common import JINJA_ENV
+from resources import fields_for, MAPPING_TABLES
 
 LOGGER = logging.getLogger(__name__)
 
@@ -66,12 +72,14 @@ def get_mapping_table_ids(project_id, mapping_dataset_id):
     :param mapping_dataset_id: dataset_id containing mapping tables
     :return: returns mapping table ids
     """
-    table_objs = bq_utils.list_tables(mapping_dataset_id, project_id=project_id)
-    mapping_table_ids = []
-    for table_obj in table_objs:
-        table_id = bq_utils.get_table_id_from_obj(table_obj)
-        if table_id in MAPPING_TABLES:
-            mapping_table_ids.append(table_id)
+    client = bq.get_client(project_id)
+    dataset_ref = DatasetReference(project_id, mapping_dataset_id)
+    table_objs = bq.list_tables(client, dataset_ref)
+    mapping_table_ids = [
+        table_obj.table_id
+        for table_obj in table_objs
+        if table_obj.table_id in MAPPING_TABLES
+    ]
     return mapping_table_ids
 
 
