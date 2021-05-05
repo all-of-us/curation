@@ -86,7 +86,7 @@ class COPESurveyVersionTask(BaseCleaningRule):
             affected_tables=[OBSERVATION + '_ext'],
             depends_on=[GenerateSiteMappingsAndExtTables])
 
-        self.qrid_map_dataset_id = qrid_map_dataset_id
+        self.qrid_map_dataset_id = sandbox_dataset_id
         self.cope_lookup_dataset_id = cope_lookup_dataset_id
         self.cope_survey_table = cope_table_name
 
