@@ -202,6 +202,13 @@
         "datetime": "TIMESTAMP_SUB( CAST(:FIELD AS TIMESTAMP), INTERVAL (:SHIFT) DAY) AS :FIELD"
     },
     {
+         "_id": "compute",
+         "id": ["(SELECT research_id FROM :idataset._deid_map WHERE _deid_map.person_id = :value_field) as :FIELD"],
+         "month": ["EXTRACT (MONTH FROM :value_field) AS :FIELD"],
+         "day": ["EXTRACT (DAY FROM :value_field) AS :FIELD"],
+         "year": ["EXTRACT (YEAR FROM :value_field) AS :FIELD"]
+    },
+    {
         "_id": "dml_statements",
         "comment": [
             "A place to define Data Manipulation Statments to execute after creating ",
