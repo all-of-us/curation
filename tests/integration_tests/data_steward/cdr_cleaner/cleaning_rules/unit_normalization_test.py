@@ -105,7 +105,7 @@ class UnitNormalizationTest(BaseTest.CleaningRulesTestBase):
         cls.project_id = os.environ.get(PROJECT_ID)
 
         # Set the expected test datasets
-        cls.dataset_id = os.environ.get('COMBINED_DEID_DATASET_ID')
+        cls.dataset_id = os.environ.get('COMBINED_DATASET_ID')
         cls.sandbox_id = cls.dataset_id + '_sandbox'
         cls.rule_instance = UnitNormalization(cls.project_id, cls.dataset_id,
                                               cls.sandbox_id)
