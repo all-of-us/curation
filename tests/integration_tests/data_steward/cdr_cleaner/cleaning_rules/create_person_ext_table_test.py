@@ -94,7 +94,8 @@ class CreatePersonExtTableTest(BaseTest.CleaningRulesTestBase):
               (123, 0, 1980, 0, 0),
               (345, 0, 1981, 0, 0),
               (678, 0, 1982, 0, 0),
-              (910, 0, 1983, 0, 0)
+              (910, 0, 1983, 0, 0),
+              (1122, 0, 1984, 0, 0)
             """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
         # test data for observation table
@@ -116,7 +117,9 @@ class CreatePersonExtTableTest(BaseTest.CleaningRulesTestBase):
               (1122, 123, 1585847, 45878463, 1585845, 0, date('2021-01-01'), 0),
               (3344, 345, 1585847, 45878463, 1585845, 0, date('2021-01-01'), 0),
               (5566, 678, 1585847, 45878463, 1585845, 0, date('2021-01-01'), 0),
-              (7788, 910, 1585847, 45878463, 1585845, 0, date('2021-01-01'), 0)
+              (7788, 910, 1585847, 45878463, 1585845, 0, date('2021-01-01'), 0),
+              (9910, 1112, 1585266, 0, 1585249, 0, date('2021-01-01'), 0),
+              (1112, 1112, 1585848, 45878463, 1585845, 0, date('2021-01-01'), 0)
             """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
         # test data for concept table
@@ -180,7 +183,9 @@ class CreatePersonExtTableTest(BaseTest.CleaningRulesTestBase):
                                (678, 'PPI/PM', 1585266, 'PII State: CA',
                                 45878463, 1585847, 'SexAtBirth_Female'),
                                (910, 'PPI/PM', 1585266, 'PII State: CA',
-                                45878463, 1585847, 'SexAtBirth_Female')]
+                                45878463, 1585847, 'SexAtBirth_Female'),
+                               (1112, 'PPI/PM', 1585266, 'PII State: CA', 0, 0,
+                                'No matching concept')]
         }]
 
         self.default_test(tables_and_counts)
