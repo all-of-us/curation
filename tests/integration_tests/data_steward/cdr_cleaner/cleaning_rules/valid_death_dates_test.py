@@ -22,7 +22,6 @@ from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.valid_death_dates import ValidDeathDates, program_start_date, current_date
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
-
 DEATH_DATA_QUERY = JINJA_ENV.from_string("""
 DROP TABLE IF EXISTS
   `{{fq_dataset_name}}.death`;
@@ -53,6 +52,8 @@ CREATE TABLE
     w,
     UNNEST(w.col))
 """)
+
+
 class ValidDeathDatesTest(BaseTest.CleaningRulesTestBase):
 
     @classmethod
@@ -108,7 +109,8 @@ class ValidDeathDatesTest(BaseTest.CleaningRulesTestBase):
         Validates pre conditions, tests execution, and post conditions based on the load
         statements and the tables_and_counts variable.
         """
-        input_death_data = DEATH_DATA_QUERY.render(fq_dataset_name=self.fq_dataset_name)
+        input_death_data = DEATH_DATA_QUERY.render(
+            fq_dataset_name=self.fq_dataset_name)
 
         self.load_test_data([f'{input_death_data}'])
 
