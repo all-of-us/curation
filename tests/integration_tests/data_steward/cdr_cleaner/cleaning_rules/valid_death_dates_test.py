@@ -17,10 +17,41 @@ import os
 from dateutil.parser import parse
 
 # Project imports
-from common import DEATH
+from common import DEATH, JINJA_ENV
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.valid_death_dates import ValidDeathDates, program_start_date, current_date
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
+
+DEATH_DATA_QUERY = JINJA_ENV.from_string("""
+DROP TABLE IF EXISTS
+  `{{fq_dataset_name}}.death`;
+CREATE TABLE
+  `{{fq_dataset_name}}.death` AS (
+  WITH
+    w AS (
+    SELECT
+      ARRAY<STRUCT<person_id INT64,
+      death_date DATE,
+      death_type_concept_id INT64>>
+      -- records will be dropped because death_date is before AoU start date (Jan 1, 2017) --
+      [(101, DATE('2015-01-01'), 1),
+      (102, DATE('2016-01-01'), 2),
+      -- records will be dropped because death_date is in the future --
+      (103, DATE_ADD(CURRENT_DATE(), INTERVAL 1 DAY), 3),
+      -- death_date will be one day in the future --
+      (104, DATE_ADD(CURRENT_DATE(), INTERVAL 5 DAY), 4),
+      -- death_date will be five days in the future --
+      -- records won't be dropped because death_date is between AoU program start date and current date --
+      (105, DATE('2017-01-01'), 5),
+      (106, DATE('2020-01-01'), 6)] col )
+  SELECT
+    person_id,
+    death_date,
+    death_type_concept_id
+  FROM
+    w,
+    UNNEST(w.col))
+""")
 
 
 class ValidDeathDatesTest(BaseTest.CleaningRulesTestBase):
@@ -78,22 +109,10 @@ class ValidDeathDatesTest(BaseTest.CleaningRulesTestBase):
         Validates pre conditions, tests execution, and post conditions based on the load
         statements and the tables_and_counts variable.
         """
-
-        death = self.jinja_env.from_string("""
-        INSERT INTO `{{fq_dataset_name}}.death` (person_id, death_date, death_type_concept_id)
-        VALUES 
-        -- records will be dropped because death_date is before AoU start date (Jan 1, 2017) --
-        (101, DATE('2015-01-01'), 1), 
-        (102, DATE('2016-01-01'), 2),
-        -- records will be dropped because death_date is in the future -- 
-        (103, DATE_ADD(CURRENT_DATE(), INTERVAL 1 DAY), 3), -- death_date will be one day in the future -- 
-        (104, DATE_ADD(CURRENT_DATE(), INTERVAL 5 DAY), 4), -- death_date will be five days in the future --
-        -- records won't be dropped because death_date is between AoU program start date and current date --
-        (105, DATE('2017-01-01'), 5),
-        (106, DATE('2020-01-01'), 6)""").render(
+        input_death_data = DEATH_DATA_QUERY.render(
             fq_dataset_name=self.fq_dataset_name)
 
-        self.load_test_data([death])
+        self.load_test_data([f'{input_death_data}'])
 
         tables_and_counts = [{
             'fq_table_name':
