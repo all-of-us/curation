@@ -19,12 +19,14 @@ race_source_value
 race_source_concept_id
 ethnicity_source_value
 ethnicity_source_concept_id
-sex_at_birth_concept_id (extension)
-sex_at_birth_source_concept_id (extension)
-sex_at_birth_source_value (extension)
 
 As per ticket DC-1446, for participants who have not answered the question "What is you race/ethnicity" we need to set
     their race_concept_id to 2100000001.
+    
+Per ticket DC-1584, The sex_at_birth_concept_id, sex_at_ birth_source_concept_id, and sex_at_birth_source_value columns 
+were defined and set in multiple repopulate person scripts. This was redundant and caused unwanted schema changes for 
+the person table.  With the implementation of DC-1514 and DC-1570 these columns are to be removed from all
+repopulate_person_* files.
 """
 import logging
 from abc import abstractmethod
@@ -66,15 +68,10 @@ SELECT DISTINCT
     END AS race_source_value,
     rs.race_source_concept_id,
     es.ethnicity_source_value,
-    es.ethnicity_source_concept_id,
-    ss.sex_at_birth_concept_id,
-    ss.sex_at_birth_source_concept_id,
-    ss.sex_at_birth_source_value
+    es.ethnicity_source_concept_id
 FROM {{project}}.{{dataset}}.person AS p
 LEFT JOIN {{project}}.{{sandbox_dataset}}.{{gender_sandbox_table}} AS gs
     ON p.person_id = gs.person_id
-LEFT JOIN {{project}}.{{sandbox_dataset}}.{{sex_at_birth_sandbox_table}} AS ss
-    ON p.person_id = ss.person_id
 LEFT JOIN {{project}}.{{sandbox_dataset}}.{{race_sandbox_table}} AS rs
     ON p.person_id = rs.person_id
 LEFT JOIN {{project}}.{{sandbox_dataset}}.{{ethnicity_sandbox_table}} AS es 
@@ -99,7 +96,6 @@ class ConceptTranslation(NamedTuple):
 class AbstractRepopulatePerson(BaseCleaningRule):
     BIRTH = 'birth'
     GENDER = 'gender'
-    SEX_AT_BIRTH = 'sex_at_birth'
     RACE = 'race'
     ETHNICITY = 'ethnicity'
 
@@ -129,17 +125,6 @@ class AbstractRepopulatePerson(BaseCleaningRule):
         version of the gender information 
         
         :param gender_sandbox_table: 
-        :return: 
-        """
-        pass
-
-    @abstractmethod
-    def get_sex_at_birth_query(self, sex_at_birth_sandbox_table) -> dict:
-        """
-        This method creates a query for generating a sandbox table for storing the cleaned up 
-        version of the sex at birth information 
-        
-        :param sex_at_birth_sandbox_table: 
         :return: 
         """
         pass
@@ -193,18 +178,6 @@ class AbstractRepopulatePerson(BaseCleaningRule):
         pass
 
     @abstractmethod
-    def get_sex_at_birth_manual_translation(self) -> List[ConceptTranslation]:
-        """
-        Define manual mappings to translate PPI sex_at_birth concepts to the standard OMOP gender 
-        concepts. The reason we need to do this manually is that PPI gender concepts are in the 
-        Answer class  whereas the OMOP gender concepts are in the gender class such mappings do 
-        not exist in concept_relationship 
-
-        :return: 
-        """
-        pass
-
-    @abstractmethod
     def get_race_manual_translation(self) -> List[ConceptTranslation]:
         """
         Define manual mappings to translate PPI race concepts to the standard OMOP race concepts. 
@@ -235,14 +208,6 @@ class AbstractRepopulatePerson(BaseCleaningRule):
         :return: 
         """
         return self.sandbox_table_for(self.GENDER)
-
-    def get_sex_at_birth_sandbox_table(self):
-        """
-        Sandbox table for storing the sex_at_birth information for repopulating person
-
-        :return: 
-        """
-        return self.sandbox_table_for(self.SEX_AT_BIRTH)
 
     def get_race_sandbox_table(self):
         """
@@ -278,7 +243,6 @@ class AbstractRepopulatePerson(BaseCleaningRule):
         """
         sandbox_queries = [
             self.get_gender_query(self.get_gender_sandbox_table()),
-            self.get_sex_at_birth_query(self.get_sex_at_birth_sandbox_table()),
             self.get_race_query(self.get_race_sandbox_table()),
             self.get_ethnicity_query(self.get_ethnicity_sandbox_table()),
             self.get_birth_info_query(self.get_birth_info_sandbox_table())
@@ -289,7 +253,6 @@ class AbstractRepopulatePerson(BaseCleaningRule):
             dataset=self.dataset_id,
             sandbox_dataset=self.sandbox_dataset_id,
             gender_sandbox_table=self.get_gender_sandbox_table(),
-            sex_at_birth_sandbox_table=self.get_sex_at_birth_sandbox_table(),
             race_sandbox_table=self.get_race_sandbox_table(),
             ethnicity_sandbox_table=self.get_ethnicity_sandbox_table(),
             birth_info_sandbox_table=self.get_birth_info_sandbox_table(),
@@ -310,6 +273,5 @@ class AbstractRepopulatePerson(BaseCleaningRule):
             self.get_race_sandbox_table(),
             self.get_ethnicity_sandbox_table(),
             self.get_gender_sandbox_table(),
-            self.get_sex_at_birth_sandbox_table(),
             self.get_birth_info_sandbox_table()
         ]
