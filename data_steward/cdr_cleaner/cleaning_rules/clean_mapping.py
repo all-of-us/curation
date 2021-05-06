@@ -167,19 +167,20 @@ class CleanMappingExtTables(BaseCleaningRule):
 
             table_id = cdm_table + '_id'
 
-            sandbox_query = dict()
-            sandbox_query[cdr_consts.QUERY] = RECORDS_QUERY.format(
-                query_stmt='SELECT *',
-                project=self.project_id,
-                dataset=self.dataset_id,
-                table=table,
-                cdm_table=cdm_table,
-                table_id=table_id)
-            sandbox_query[
-                cdr_consts.DESTINATION_DATASET] = self.sandbox_dataset_id
-            sandbox_query[cdr_consts.DESTINATION_TABLE] = table
-            sandbox_query[cdr_consts.DISPOSITION] = bq_consts.WRITE_APPEND
-            queries.append(sandbox_query)
+            if self.sandbox_dataset_id is not None:
+                sandbox_query = dict()
+                sandbox_query[cdr_consts.QUERY] = RECORDS_QUERY.format(
+                    query_stmt='SELECT *',
+                    project=self.project_id,
+                    dataset=self.dataset_id,
+                    table=table,
+                    cdm_table=cdm_table,
+                    table_id=table_id)
+                sandbox_query[
+                    cdr_consts.DESTINATION_DATASET] = self.sandbox_dataset_id
+                sandbox_query[cdr_consts.DESTINATION_TABLE] = table
+                sandbox_query[cdr_consts.DISPOSITION] = bq_consts.WRITE_APPEND
+                queries.append(sandbox_query)
 
             query = dict()
             query[cdr_consts.QUERY] = RECORDS_QUERY.format(

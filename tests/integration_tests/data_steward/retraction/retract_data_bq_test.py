@@ -1,19 +1,22 @@
+# Python imports
 import os
 from io import open
 from unittest import TestCase, mock
 import logging
 
+# Third party imports
 from google.cloud import bigquery
 import pandas as pd
 
+# Project imports
 import app_identity
 from utils import bq
 from tests import test_util
-from retraction import retract_data_bq
+from retraction import retract_data_bq as rbq
 
 TABLE_ROWS_QUERY = 'SELECT * FROM {dataset_id}.__TABLES__ '
 
-EXPECTED_ROWS_QUERY = ('SELECT COUNT(*) as count'
+EXPECTED_ROWS_QUERY = ('SELECT COUNT(*) as count '
                        'FROM {dataset_id}.{table_id} '
                        'WHERE person_id IN '
                        '(SELECT person_id '
@@ -65,7 +68,7 @@ class RetractDataBqTest(TestCase):
                 f'{self.test_project_id}.{self.bq_dataset_id}.{self.pid_table_id}'
             ],
             exists_ok=False,
-            fields=retract_data_bq.PID_TABLE_FIELDS)
+            fields=[rbq.PID_TABLE_FIELDS])
         bq_formatted_insert_values = ', '.join([
             f'({person_id}, {research_id})'
             for (person_id, research_id) in self.person_research_ids
@@ -98,7 +101,8 @@ class RetractDataBqTest(TestCase):
                 job_config.schema = bq.get_table_schema(cdm_table)
                 load_job = self.client.load_table_from_file(
                     f,
-                    f'{self.test_project_id}.{self.bq_dataset_id}.{hpo_table}')
+                    f'{self.test_project_id}.{self.bq_dataset_id}.{hpo_table}',
+                    job_config=job_config)
                 load_job.result()
         logging.info('All tables loaded successfully')
 
@@ -114,26 +118,26 @@ class RetractDataBqTest(TestCase):
         q = TABLE_ROWS_QUERY.format(dataset_id=self.bq_dataset_id)
         job = self.client.query(q)
         result = job.result().to_dataframe()
-        row_counts_before_retraction = pd.Series(result.row_count.values,
-                                                 index='table_id').to_dict()
+        row_counts_before_retraction = pd.Series(
+            result.row_count.values, index=result.table_id).to_dict()
 
         # perform retraction
-        retract_data_bq.run_bq_retraction(self.test_project_id,
-                                          self.bq_dataset_id,
-                                          self.test_project_id,
-                                          self.pid_table_id, self.hpo_id,
-                                          self.dataset_ids,
-                                          self.retraction_type)
+        rbq.run_bq_retraction(self.test_project_id, self.bq_dataset_id,
+                              self.test_project_id, self.pid_table_id,
+                              self.hpo_id, self.dataset_ids,
+                              self.retraction_type)
 
         # find actual deleted rows
         job = self.client.query(q)
         result = job.result().to_dataframe()
-        row_counts_after_retraction = pd.Series(result.row_count.values,
-                                                index='table_id').to_dict()
+        row_counts_after_retraction = pd.Series(
+            result.row_count.values, index=result.table_id).to_dict()
+
         for table in expected_row_count:
             self.assertEqual(
                 expected_row_count[table], row_counts_before_retraction[table] -
                 row_counts_after_retraction[table])
 
     def tearDown(self):
-        test_util.delete_all_tables(self.bq_dataset_id)
+        for table in self.client.list_tables(self.bq_dataset_id):
+            self.client.delete_table(table, not_found_ok=True)
