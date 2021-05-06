@@ -66,7 +66,7 @@ class CleanMappingTest(unittest.TestCase):
     @mock.patch('utils.bq.query')
     def test_get_tables(self, mock_tables):
         tables = [
-            '_mapping_observation', '_site_mappings', 'measurement_ext',
+            '_mapping_observation', 'site_maskings', 'measurement_ext',
             '_mapping_drug', 'extension_observation'
         ]
         mock_tables.return_value = pd.DataFrame({cm.TABLE_NAME: tables})
