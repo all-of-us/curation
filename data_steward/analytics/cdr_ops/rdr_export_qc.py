@@ -318,8 +318,8 @@ pd.read_gbq(query, dialect='standard')
 query = f'''
 SELECT
     observation_source_value
-    , observation_source_concept_id
-    , count(*) AS obs_src_count
+    ,observation_source_concept_id
+    ,count(*) AS obs_src_count
 FROM `{project_id}.{new_rdr}.observation`
 WHERE observation_source_concept_id IN (1585864, 1585870,1585873, 1586159,1586162)
     AND value_as_number IS NOT NULL
@@ -335,7 +335,10 @@ pd.read_gbq(query, dialect='standard')
 # Curation needs to contact the RDR team about data discrepancies
 
 query = f'''
-SELECT observation_id, person_id, value_as_string
+SELECT
+    observation_id
+    ,person_id
+    ,value_as_string
 FROM `{project_id}.{new_rdr}.observation` 
 WHERE observation_source_concept_id = 715711
 AND SAFE_CAST(value_as_string AS DATE) IS NULL 
@@ -343,29 +346,58 @@ AND value_as_string != 'PMI Skip'
 '''
 pd.read_gbq(query, dialect='standard')
 
-# Check pid_rid_mapping table for duplicates
+# # Check pid_rid_mapping table for duplicates
+# Duplicates are not allowed in the person_id or research_id columns of the pid_rid_mapping table.
+# If found, there is a problem with the RDR import. An RDR On-Call ticket should be opened
+# to report the problem. In ideal circumstances, this query will not return any results.
+# If a result set is returned, an error has been found for the identified field.
+# If the table was not imported, the filename changed, or field names changed,
+# this query will fail by design to indicate an unexpected change has occurred.
+
 query = f'''
-SELECT 'person_id' as id_type, person_id as id, COUNT(person_id) as count
+SELECT
+    'person_id' as id_type
+    ,person_id as id
+    ,COUNT(person_id) as count
 FROM `{project_id}.{new_rdr}.pid_rid_mapping`
 GROUP BY person_id
 HAVING count > 1
+
 UNION ALL
-SELECT 'research_id' as id_type, research_id as id, COUNT(research_id) as count
+
+SELECT
+    'research_id' as id_type
+    ,research_id as id
+    ,COUNT(research_id) as count
 FROM `{project_id}.{new_rdr}.pid_rid_mapping`
 GROUP BY research_id
 HAVING count > 1
 '''
 pd.read_gbq(query, dialect='standard')
 
-# Ensure all person_ids exist in the person table
+# # Ensure all person_ids exist in the person table and have mappings
+# All person_ids in the pid_rid_mapping table should exist in the person table.
+# If the person record does not exist for a mapping record, there is a problem with the RDR import.
+# An RDR On-Call ticket should be opened to report the problem.
+# All person_ids in the person table should have a mapping in the pid_rid_mapping table.
+# If any person_ids do not have a mapping record, there is a problem with the RDR import.
+# An RDR On-Call ticket should be opened to report the problem.
+# In ideal circumstances, this query will not return any results.
+
 query = f'''
-SELECT 'missing_person' as issue_type, person_id
+SELECT
+    'missing_person' as issue_type
+    ,person_id
 FROM `{project_id}.{new_rdr}.pid_rid_mapping`
 WHERE person_id NOT IN 
 (SELECT person_id
 FROM `{project_id}.{new_rdr}.person`)
-UNION ALL 
-SELECT 'unmapped_person' as issue_type, person_id
+
+UNION ALL
+
+SELECT 
+    'unmapped_person' as issue_type
+    ,person_id
 FROM `{project_id}.{new_rdr}.person`
 WHERE person_id NOT IN 
 (SELECT person_id
@@ -373,12 +405,20 @@ FROM `{project_id}.{new_rdr}.pid_rid_mapping`)
 '''
 pd.read_gbq(query, dialect='standard')
 
-# Check for inconsistencies between primary and rdr pid_rid_mappings
+# # Check for inconsistencies between primary and RDR pid_rid_mappings
 # Mappings which were in previous exports may be removed from a new export for two reasons:
 #   1. Participants have withdrawn or
 #   2. They were identified as test or dummy data
+# Missing mappings from the previous RDR export are therefore not a significant cause for concern.
+# However, mappings in the RDR pid_rid_mapping should always be consistent with the
+# primary_pid_rid_mapping in pipeline_tables for existing mappings.
+# If the same pid has different rids in the pid_rid_mapping and the primary_pid_rid_mapping,
+# there is a problem with the RDR import. An RDR On-Call ticket should be opened to report the problem.
+# In ideal circumstances, this query will not return any results.
+
 query = f'''
-SELECT person_id
+SELECT
+    person_id
 FROM `{project_id}.{new_rdr}.pid_rid_mapping` rdr
 JOIN `{project_id}.pipeline_tables.primary_pid_rid_mapping` primary
 ON (person_id)
