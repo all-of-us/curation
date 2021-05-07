@@ -23,7 +23,6 @@ new_rdr = ""
 # Quality checks performed on a new RDR dataset and comparison with previous RDR dataset.
 
 # +
-import urllib
 import pandas as pd
 
 pd.options.display.max_rows = 120
@@ -344,12 +343,45 @@ AND value_as_string != 'PMI Skip'
 '''
 pd.read_gbq(query, dialect='standard')
 
-# Check pid_rid_mapping table
+# Check pid_rid_mapping table for duplicates
 query = f'''
-SELECT
-    person_id
-    ,research_id
+SELECT 'person_id' as id_type, person_id as id, COUNT(person_id) as count
 FROM `{project_id}.{new_rdr}.pid_rid_mapping`
-WHERE 
+GROUP BY person_id
+HAVING count > 1
+UNION ALL
+SELECT 'research_id' as id_type, research_id as id, COUNT(research_id) as count
+FROM `{project_id}.{new_rdr}.pid_rid_mapping`
+GROUP BY research_id
+HAVING count > 1
+'''
+pd.read_gbq(query, dialect='standard')
+
+# Ensure all person_ids exist in the person table
+query = f'''
+SELECT 'missing_person' as issue_type, person_id
+FROM `{project_id}.{new_rdr}.pid_rid_mapping`
+WHERE person_id NOT IN 
+(SELECT person_id
+FROM `{project_id}.{new_rdr}.person`)
+UNION ALL 
+SELECT 'unmapped_person' as issue_type, person_id
+FROM `{project_id}.{new_rdr}.person`
+WHERE person_id NOT IN 
+(SELECT person_id
+FROM `{project_id}.{new_rdr}.pid_rid_mapping`)
+'''
+pd.read_gbq(query, dialect='standard')
+
+# Check for inconsistencies between primary and rdr pid_rid_mappings
+# Mappings which were in previous exports may be removed from a new export for two reasons:
+#   1. Participants have withdrawn or
+#   2. They were identified as test or dummy data
+query = f'''
+SELECT person_id
+FROM `{project_id}.{new_rdr}.pid_rid_mapping` rdr
+JOIN `{project_id}.pipeline_tables.primary_pid_rid_mapping` primary
+ON (person_id)
+WHERE primary.research_id <> rdr.research_id
 '''
 pd.read_gbq(query, dialect='standard')
