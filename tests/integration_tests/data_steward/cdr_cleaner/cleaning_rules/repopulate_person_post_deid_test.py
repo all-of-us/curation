@@ -19,9 +19,6 @@ race_source_value
 race_source_concept_id
 ethnicity_source_value
 ethnicity_source_concept_id
-sex_at_birth_concept_id (extension)
-sex_at_birth_source_concept_id (extension)
-sex_at_birth_source_value (extension)
 
 Original Issue: DC-516
 """
@@ -36,8 +33,7 @@ from dateutil import parser
 # Project imports
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.repopulate_person_post_deid import (
-    RepopulatePersonPostDeid, GENDER_CONCEPT_ID, SEX_AT_BIRTH_CONCEPT_ID,
-    AOU_NONE_INDICATED_CONCEPT_ID)
+    RepopulatePersonPostDeid, GENDER_CONCEPT_ID, AOU_NONE_INDICATED_CONCEPT_ID)
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 from common import PERSON, OBSERVATION, CONCEPT
 
@@ -108,16 +104,12 @@ class RepopulatePersonPostDeidTest(BaseTest.CleaningRulesTestBase):
             VALUES
                 ({{gender_concept_id}}, "some text", "some text", "some text", "some text", "gender", date('2020-05-05'), date('2020-05-05')),
                 ({{gender_nonbinary_concept_id}}, "some text", "some text", "some text", "some text", "nonbinary", date('2020-05-05'), date('2020-05-05')),
-                ({{gender_nonbinary_source_concept_id}}, "some text", "some text", "some text", "some text", "nonbinary_src", date('2020-05-05'), date('2020-05-05')),
-                ({{sex_at_birth_concept_id}}, "some text", "some text", "some text", "some text", "sex", date('2020-05-05'), date('2020-05-05')),
-                ({{sex_female_concept_id}}, "some text", "some text", "some text", "some text", "female", date('2020-05-05'), date('2020-05-05')),
-                ({{sex_female_source_concept_id}}, "some text", "some text", "some text", "some text", "female_src", date('2020-05-05'), date('2020-05-05'))
+                ({{gender_nonbinary_source_concept_id}}, "some text", "some text", "some text", "some text", "nonbinary_src", date('2020-05-05'), date('2020-05-05'))
         """).render(fq_dataset_name=self.fq_dataset_name,
                     gender_concept_id=GENDER_CONCEPT_ID,
                     gender_nonbinary_concept_id=GENDER_NONBINARY_CONCEPT_ID,
                     gender_nonbinary_source_concept_id=
                     GENDER_NONBINARY_SOURCE_CONCEPT_ID,
-                    sex_at_birth_concept_id=SEX_AT_BIRTH_CONCEPT_ID,
                     sex_female_concept_id=SEX_FEMALE_CONCEPT_ID,
                     sex_female_source_concept_id=SEX_FEMALE_SOURCE_CONCEPT_ID)
 
@@ -132,14 +124,12 @@ class RepopulatePersonPostDeidTest(BaseTest.CleaningRulesTestBase):
             INSERT INTO `{{fq_dataset_name}}.observation` (person_id, observation_id, observation_source_concept_id, value_as_concept_id, value_source_concept_id,
                 observation_date, observation_type_concept_id, observation_concept_id)
             VALUES
-                (1, 100, {{gender_concept_id}}, {{gender_nonbinary_concept_id}}, {{gender_nonbinary_source_concept_id}}, date('2020-05-05'), 1, 1),
-                (1, 101, {{sex_at_birth_concept_id}}, {{sex_female_concept_id}}, {{sex_female_source_concept_id}}, date('2020-05-05'), 2, 2)
+                (1, 100, {{gender_concept_id}}, {{gender_nonbinary_concept_id}}, {{gender_nonbinary_source_concept_id}}, date('2020-05-05'), 1, 1)
         """).render(fq_dataset_name=self.fq_dataset_name,
                     gender_concept_id=GENDER_CONCEPT_ID,
                     gender_nonbinary_concept_id=GENDER_NONBINARY_CONCEPT_ID,
                     gender_nonbinary_source_concept_id=
                     GENDER_NONBINARY_SOURCE_CONCEPT_ID,
-                    sex_at_birth_concept_id=SEX_AT_BIRTH_CONCEPT_ID,
                     sex_female_concept_id=SEX_FEMALE_CONCEPT_ID,
                     sex_female_source_concept_id=SEX_FEMALE_SOURCE_CONCEPT_ID)
 
@@ -159,17 +149,12 @@ class RepopulatePersonPostDeidTest(BaseTest.CleaningRulesTestBase):
             'fields': [
                 'person_id', 'gender_concept_id', 'year_of_birth',
                 'race_concept_id', 'ethnicity_concept_id',
-                'gender_source_value', 'gender_source_concept_id',
-                'sex_at_birth_concept_id', 'sex_at_birth_source_concept_id',
-                'sex_at_birth_source_value'
+                'gender_source_value', 'gender_source_concept_id'
             ],
-            'cleaned_values': [
-                (1, 1585841, 1991, AOU_NONE_INDICATED_CONCEPT_ID, 38003564,
-                 "nonbinary_src", 123, SEX_FEMALE_CONCEPT_ID,
-                 SEX_FEMALE_SOURCE_CONCEPT_ID, "female_src"),
-                (2, 0, 1976, AOU_NONE_INDICATED_CONCEPT_ID, 38003564,
-                 "No matching concept", 0, 0, 0, "No matching concept")
-            ]
+            'cleaned_values': [(1, 1585841, 1991, AOU_NONE_INDICATED_CONCEPT_ID,
+                                38003564, "nonbinary_src", 123),
+                               (2, 0, 1976, AOU_NONE_INDICATED_CONCEPT_ID,
+                                38003564, "No matching concept", 0)]
         }]
 
         self.default_test(tables_and_counts)

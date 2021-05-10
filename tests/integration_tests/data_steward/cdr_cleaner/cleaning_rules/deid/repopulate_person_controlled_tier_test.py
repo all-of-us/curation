@@ -196,9 +196,7 @@ class RepopulatePersonControlledTierTestBase(BaseTest.CleaningRulesTestBase):
                 'provider_id', 'care_site_id', 'person_source_value',
                 'gender_source_value', 'gender_source_concept_id',
                 'race_source_value', 'race_source_concept_id',
-                'ethnicity_source_value', 'ethnicity_source_concept_id',
-                'sex_at_birth_concept_id', 'sex_at_birth_source_concept_id',
-                'sex_at_birth_source_value'
+                'ethnicity_source_value', 'ethnicity_source_concept_id'
             ],
             'cleaned_values': [
                 (1, 45878463, 1990, None, None,
@@ -207,8 +205,7 @@ class RepopulatePersonControlledTierTestBase(BaseTest.CleaningRulesTestBase):
                  None, None, None, 'person_source_value',
                  'GenderIdentity_Woman', 1585840, GENERALIZED_RACE_SOURCE_VALUE,
                  GENERALIZED_RACE_CONCEPT_ID, AOU_NONE_INDICATED_SOURCE_VALUE,
-                 AOU_NONE_INDICATED_CONCEPT_ID, 45878463, 1585847,
-                 'SexAtBirth_Female'),
+                 AOU_NONE_INDICATED_CONCEPT_ID),
                 (2, GENERALIZED_GENDER_IDENTITY_CONCEPT_ID, 1980, None, None,
                  parser.parse('1980-06-15 00:00:00 UTC'), 8515, 38003563, 1, 1,
                  1, 'person_source_value',
@@ -216,8 +213,7 @@ class RepopulatePersonControlledTierTestBase(BaseTest.CleaningRulesTestBase):
                  GENERALIZED_GENDER_IDENTITY_CONCEPT_ID,
                  'WhatRaceEthnicity_Asian', 1586142,
                  HISPANIC_LATINO_CONCEPT_SOURCE_VALUE,
-                 HISPANIC_LATINO_CONCEPT_ID, 45880669, 1585846,
-                 'SexAtBirth_Male')
+                 HISPANIC_LATINO_CONCEPT_ID)
             ]
         }]
 

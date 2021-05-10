@@ -1,5 +1,5 @@
 """Repopulate the person table using the PPI responses stored in the observation table for 
-gender, sex_at_birth, race, and ethnicity. For multi-select questions such as gender and race, 
+gender, race, and ethnicity. For multi-select questions such as gender and race, 
 PNA and other responses are mutually exclusive so we don't need to worry about the cases where a 
 participant submits multiple responses and one of which is PNA. In addition, the Birth related 
 fields in the person table are generalized as well.  Below is a high-level summary of how we 
@@ -27,13 +27,16 @@ Gender: the standard OMOP gender concepts are very limiting and the PPI gender c
 instead, so there is no manual mapping for gender. In case of multiple gender responses, 
 we replace the multiple responses with a generalized concept 2000000002 (
 GenderIdentity_GeneralizedDiffGender) 
-
-Sex_at_birth: PPI sex_at_birth concepts are used directly for populating the person table. 
     
 birth information: 
     - null out month_of_birth and day_of_birth fields.
     - year_of_birth remains the same
     - birth_datetime: defaults to June 15, year_of_birth 00:00:00
+    
+Per ticket DC-1584, The sex_at_birth_concept_id, sex_at_ birth_source_concept_id, and sex_at_birth_source_value columns 
+were defined and set in multiple repopulate person scripts. This was redundant and caused unwanted schema changes for 
+the person table.  With the implementation of DC-1514 and DC-1570 these columns are to be removed from all
+repopulate_person_* files.
 """
 
 # system imports
@@ -52,16 +55,13 @@ from cdr_cleaner.cleaning_rules.deid.repopulate_person_using_observation import 
 
 LOGGER = logging.getLogger(__name__)
 
-JIRA_ISSUE_NUMBERS = ['DC1439', 'DC1446']
+JIRA_ISSUE_NUMBERS = ['DC1439', 'DC1446', 'DC1584']
 
 # Gender question concept id
 GENDER_IDENTITY_CONCEPT_ID = 1585838
 # Generalized gender identity concept id
 GENERALIZED_GENDER_IDENTITY_CONCEPT_ID = 2000000002
 GENERALIZED_GENDER_IDENTITY_SOURCE_VALUE = 'GenderIdentity_GeneralizedDiffGender'
-
-# Sex at birth question concept id
-SEX_AT_BIRTH_CONCEPT_ID = 1585845
 
 # Race question and response concepts
 RACE_CONCEPT_ID = 1586140
@@ -249,30 +249,6 @@ class RepopulatePersonControlledTier(AbstractRepopulatePerson):
             cdr_consts.DESTINATION_TABLE: gender_sandbox_table
         }
 
-    def get_sex_at_birth_query(self, sex_at_birth_sandbox_table) -> dict:
-        sex_at_birth_join_expressions = [
-            JoinExpression(field_name=OBSERVATION_SOURCE_CONCEPT_ID,
-                           join_operator=JoinOperator.EQUAL,
-                           value=SEX_AT_BIRTH_CONCEPT_ID)
-        ]
-
-        sex_at_birth_query = SINGLE_RESPONSE_QUERY_TEMPLATE.render(
-            project=self.project_id,
-            dataset=self.dataset_id,
-            prefix=self.SEX_AT_BIRTH,
-            join_expressions=sex_at_birth_join_expressions,
-            default_answer_concept_id=NO_MATCHING_CONCEPT_ID,
-            default_answer_source_value=NO_MATCHING_SOURCE_VALUE,
-            translate_source_concepts=self.get_sex_at_birth_manual_translation(
-            ))
-
-        return {
-            cdr_consts.QUERY: sex_at_birth_query,
-            cdr_consts.DESTINATION_DATASET: self.sandbox_dataset_id,
-            cdr_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE,
-            cdr_consts.DESTINATION_TABLE: sex_at_birth_sandbox_table
-        }
-
     def get_race_query(self, race_sandbox_table) -> dict:
         race_join_expressions = [
             JoinExpression(field_name=OBSERVATION_SOURCE_CONCEPT_ID,
@@ -341,9 +317,6 @@ class RepopulatePersonControlledTier(AbstractRepopulatePerson):
         }
 
     def get_gender_manual_translation(self) -> List[ConceptTranslation]:
-        pass
-
-    def get_sex_at_birth_manual_translation(self) -> List[ConceptTranslation]:
         pass
 
     def get_race_manual_translation(self) -> List[ConceptTranslation]:
