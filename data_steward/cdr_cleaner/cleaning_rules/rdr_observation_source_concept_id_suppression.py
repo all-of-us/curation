@@ -28,7 +28,7 @@ LOGGER = logging.getLogger(__name__)
 
 OBS_SRC_CONCEPTS = '43530490,43528818,43530333,903079'
 
-ISSUE_NUMBERS = ['DC-529', 'DC-520', 'DC-702']
+ISSUE_NUMBERS = ['DC-529', 'DC-520', 'DC-702', 'DC-1619']
 
 # Save rows that will be dropped to a sandboxed dataset.
 DROP_SELECTION_QUERY = """
@@ -40,16 +40,10 @@ WHERE observation_source_concept_id IN ({{obs_concepts}})
 
 DROP_SELECTION_QUERY_TMPL = Template(DROP_SELECTION_QUERY)
 
-# Query uses 'NOT EXISTS' because the observation_source_concept_id field
-# is nullable.
 DROP_QUERY = """
-SELECT * FROM `{{project}}.{{dataset}}.observation` AS o
-WHERE NOT EXISTS (
-    SELECT 1
-    FROM `{{project}}.{{dataset}}.observation` AS n
-    WHERE o.observation_id = n.observation_id AND
-    n.observation_source_concept_id IN ({{obs_concepts}})
-)"""
+DELETE FROM `{{project}}.{{dataset}}.observation` AS o
+WHERE observation_source_concept_id IN ({{obs_concepts}})
+"""
 
 DROP_QUERY_TMPL = Template(DROP_QUERY)
 
@@ -100,12 +94,6 @@ class ObservationSourceConceptIDRowSuppression(BaseCleaningRule):
                 DROP_QUERY_TMPL.render(project=self.project_id,
                                        dataset=self.dataset_id,
                                        obs_concepts=OBS_SRC_CONCEPTS),
-            cdr_consts.DESTINATION_TABLE:
-                OBSERVATION,
-            cdr_consts.DESTINATION_DATASET:
-                self.dataset_id,
-            cdr_consts.DISPOSITION:
-                WRITE_TRUNCATE
         }
 
         return [save_dropped_rows, drop_rows_query]
