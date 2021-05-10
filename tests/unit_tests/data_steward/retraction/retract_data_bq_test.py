@@ -1,4 +1,5 @@
-from unittest import TestCase, mock
+from unittest import TestCase
+from unittest.mock import MagicMock
 import re
 
 import bq_utils
@@ -23,20 +24,24 @@ class RetractDataBqTest(TestCase):
         self.combined_dataset_id = 'combined20190801'
         self.deid_dataset_id = 'r2021q2r1_deid'
         self.sandbox_dataset_id = 'sandbox_dataset'
-        self.client = 'fake_client'
+        self.client = MagicMock()
+        self.client.list_tables = MagicMock()
         self.pid_table_id = 'pid_table'
         self.retraction_type_1 = 'rdr_and_ehr'
         self.retraction_type_2 = 'only_ehr'
         self.tables_to_retract_unioned = rbq.TABLES_FOR_RETRACTION | {
             common.FACT_RELATIONSHIP, common.PERSON
         }
-        self.tables_to_retract_combined = rbq.TABLES_FOR_RETRACTION | {
-            common.FACT_RELATIONSHIP
+        # Type 1 retraction should affect person table (rdr and ehr)
+        self.tables_to_retract_combined_deid_type_1 = rbq.TABLES_FOR_RETRACTION | {
+            common.FACT_RELATIONSHIP, common.PERSON
+        }
+        # Type 2 retraction should not affect person table (only ehr)
+        self.tables_to_retract_combined_deid_type_2 = self.tables_to_retract_combined_deid_type_1 - {
+            common.PERSON
         }
 
-    @mock.patch('retraction.retract_data_bq.list_existing_tables')
-    def test_queries_to_retract_from_ehr_dataset(self,
-                                                 mock_list_existing_tables):
+    def test_queries_to_retract_from_ehr_dataset(self):
         hpo_person = bq_utils.get_table_id(self.hpo_id, common.PERSON)
         hpo_death = bq_utils.get_table_id(self.hpo_id, common.DEATH)
 
@@ -55,7 +60,7 @@ class RetractDataBqTest(TestCase):
             if cdm_table not in self.tables_to_retract_unioned:
                 ignored_tables.append(unioned_table_id)
 
-        mock_list_existing_tables.return_value = existing_table_ids
+        self.client.list_tables.return_value = existing_table_ids
         person_id_query = rbq.JINJA_ENV.from_string(rbq.PERSON_ID_QUERY).render(
             person_research_id=rbq.PERSON_ID,
             pid_project=self.project_id,
@@ -76,26 +81,26 @@ class RetractDataBqTest(TestCase):
                 actual_tables.add(table)
         self.assertSetEqual(expected_tables, actual_tables)
 
-    @mock.patch('retraction.retract_data_bq.list_existing_tables')
-    def test_queries_to_retract_from_combined_dataset(
-        self, mock_list_existing_tables):
+    def test_queries_to_retract_from_combined_dataset(self):
         existing_table_ids = []
         ignored_tables = []
         for cdm_table in resources.CDM_TABLES:
             existing_table_ids.append(cdm_table)
-            if cdm_table not in self.tables_to_retract_combined:
+            if cdm_table not in self.tables_to_retract_combined_deid_type_1:
                 ignored_tables.append(cdm_table)
 
-        mock_list_existing_tables.return_value = existing_table_ids
+        self.client.list_tables.return_value = existing_table_ids
         person_id_query = rbq.JINJA_ENV.from_string(rbq.PERSON_ID_QUERY).render(
             person_research_id=rbq.PERSON_ID,
             pid_project=self.project_id,
             sandbox_dataset_id=self.sandbox_dataset_id,
             pid_table_id=self.pid_table_id)
+
+        # Test type 1 retraction (rdr and ehr)
         qs = rbq.queries_to_retract_from_dataset(self.client, self.project_id,
                                                  self.combined_dataset_id,
                                                  person_id_query,
-                                                 self.retraction_type_2)
+                                                 self.retraction_type_1)
 
         expected_tables = set(existing_table_ids) - set(ignored_tables)
         actual_tables = set()
@@ -104,25 +109,50 @@ class RetractDataBqTest(TestCase):
             if fq_table:
                 table = fq_table.group(1).split('.')[-1]
                 actual_tables.add(table)
+                if table not in [
+                        common.PERSON, common.DEATH, common.FACT_RELATIONSHIP
+                ]:
+                    self.assertIn(str(0), query)
         self.assertSetEqual(expected_tables, actual_tables)
 
-    @mock.patch('retraction.retract_data_bq.list_existing_tables')
-    def test_queries_to_retract_from_deid_dataset(self,
-                                                  mock_list_existing_tables):
+        # Test type 2 retraction (only ehr)
+        qs = rbq.queries_to_retract_from_dataset(self.client, self.project_id,
+                                                 self.deid_dataset_id,
+                                                 person_id_query,
+                                                 self.retraction_type_2)
+        # Exclude person table
+        expected_tables = set(existing_table_ids) - set(ignored_tables) - {
+            common.PERSON
+        }
+        actual_tables = set()
+        for query in qs:
+            fq_table = re.search('`(.*)`', query)
+            if fq_table:
+                table = fq_table.group(1).split('.')[-1]
+                actual_tables.add(table)
+                if table not in [
+                        common.PERSON, common.DEATH, common.FACT_RELATIONSHIP
+                ]:
+                    self.assertIn(str(2 * rbq.ID_CONSTANT_FACTOR), query)
+        self.assertSetEqual(expected_tables, actual_tables)
+
+    def test_queries_to_retract_from_deid_dataset(self):
         existing_table_ids = []
         ignored_tables = []
         for cdm_table in resources.CDM_TABLES:
             existing_table_ids.append(cdm_table)
-            if cdm_table not in self.tables_to_retract_combined:
+            if cdm_table not in self.tables_to_retract_combined_deid_type_1:
                 ignored_tables.append(cdm_table)
 
-        mock_list_existing_tables.return_value = existing_table_ids
+        self.client.list_tables.return_value = existing_table_ids
         research_id_query = rbq.JINJA_ENV.from_string(
             rbq.PERSON_ID_QUERY).render(
                 person_research_id=rbq.RESEARCH_ID,
                 pid_project=self.project_id,
                 sandbox_dataset_id=self.sandbox_dataset_id,
                 pid_table_id=self.pid_table_id)
+
+        # Test type 1 retraction (rdr and ehr)
         qs = rbq.queries_to_retract_from_dataset(self.client, self.project_id,
                                                  self.deid_dataset_id,
                                                  research_id_query,
@@ -138,26 +168,32 @@ class RetractDataBqTest(TestCase):
                 if table not in [
                         common.PERSON, common.DEATH, common.FACT_RELATIONSHIP
                 ]:
-                    self.assertIn(str(2 * rbq.ID_CONSTANT_FACTOR), query)
+                    self.assertIn(str(0), query)
         self.assertSetEqual(expected_tables, actual_tables)
 
+        # Test type 2 retraction (only ehr)
         qs = rbq.queries_to_retract_from_dataset(self.client, self.project_id,
                                                  self.deid_dataset_id,
                                                  research_id_query,
                                                  self.retraction_type_2)
 
-        expected_tables = set(existing_table_ids) - set(ignored_tables)
+        # Exclude person table
+        expected_tables = set(existing_table_ids) - set(ignored_tables) - {
+            common.PERSON
+        }
         actual_tables = set()
         for query in qs:
             fq_table = re.search('`(.*)`', query)
             if fq_table:
                 table = fq_table.group(1).split('.')[-1]
                 actual_tables.add(table)
+                if table not in [
+                        common.PERSON, common.DEATH, common.FACT_RELATIONSHIP
+                ]:
+                    self.assertIn(str(2 * rbq.ID_CONSTANT_FACTOR), query)
         self.assertSetEqual(expected_tables, actual_tables)
 
-    @mock.patch('retraction.retract_data_bq.list_existing_tables')
-    def test_queries_to_retract_from_unioned_dataset(self,
-                                                     mock_list_existing_tables):
+    def test_queries_to_retract_from_unioned_dataset(self):
         existing_table_ids = []
         ignored_tables = []
         for cdm_table in resources.CDM_TABLES:
@@ -165,7 +201,7 @@ class RetractDataBqTest(TestCase):
             if cdm_table not in self.tables_to_retract_unioned:
                 ignored_tables.append(cdm_table)
 
-        mock_list_existing_tables.return_value = existing_table_ids
+        self.client.list_tables.return_value = existing_table_ids
         person_id_query = rbq.JINJA_ENV.from_string(rbq.PERSON_ID_QUERY).render(
             person_research_id=rbq.PERSON_ID,
             pid_project=self.project_id,
@@ -183,4 +219,8 @@ class RetractDataBqTest(TestCase):
             if fq_table:
                 table = fq_table.group(1).split('.')[-1]
                 actual_tables.add(table)
+                if table not in [
+                        common.PERSON, common.DEATH, common.FACT_RELATIONSHIP
+                ]:
+                    self.assertIn(str(0), query)
         self.assertSetEqual(expected_tables, actual_tables)

@@ -27,6 +27,11 @@ TABLES = 'tables'
 PERSON_ID = 'person_id'
 RESEARCH_ID = 'research_id'
 
+RETRACTION_RDR_EHR = 'rdr_and_ehr'
+RETRACTION_EHR = 'only_ehr'
+
+NONE_STR = 'none'
+
 PERSON_DOMAIN = 56
 
 NON_PID_TABLES = [
@@ -39,11 +44,6 @@ NON_EHR_TABLES = [common.PERSON]
 TABLES_FOR_RETRACTION = set(common.PII_TABLES + common.AOU_REQUIRED +
                             OTHER_PID_TABLES) - set(NON_PID_TABLES +
                                                     NON_EHR_TABLES)
-
-EXISTING_TABLES_QUERY = """
-SELECT table_name
-FROM `{{project}}.{{dataset}}.INFORMATION_SCHEMA.COLUMNS`
-"""
 
 PERSON_ID_QUERY = """
 SELECT
@@ -97,20 +97,24 @@ PID_TABLE_FIELDS = [{
 
 
 def get_site_table(hpo_id, table):
-    return hpo_id + '_' + table
+    """
+    Return hpo table for site
+
+    :param hpo_id: identifies the hpo site as str
+    :param table: identifies the cdm table as str
+    :return: cdm table name for the site as str
+    """
+    return f'{hpo_id}_{table}'
 
 
 def get_table_id(table):
-    if table == common.DEATH:
-        return common.PERSON + '_id'
-    return table + '_id'
+    """
+    Returns primary key for the CDM table
 
-
-def list_existing_tables(client, project_id, dataset_id):
-    query = JINJA_ENV.from_string(EXISTING_TABLES_QUERY).render(
-        project=project_id, dataset=dataset_id)
-    existing_tables = client.query(query).to_dataframe()['table_name'].to_list()
-    return existing_tables
+    :param table: CDM table as str
+    :return: primary key as str
+    """
+    return f'{common.PERSON}_id' if table == common.DEATH else f'{table}_id'
 
 
 def queries_to_retract_from_ehr_dataset(client, project_id, dataset_id, hpo_id,
@@ -126,7 +130,7 @@ def queries_to_retract_from_ehr_dataset(client, project_id, dataset_id, hpo_id,
     :return: list of queries to run
     """
     LOGGER.info(f'Checking existing tables for {project_id}.{dataset_id}')
-    existing_tables = list_existing_tables(client, project_id, dataset_id)
+    existing_tables = client.list_tables(f'{project_id}.{dataset_id}')
     queries = {SITE: [], UNIONED: []}
     tables_to_retract = TABLES_FOR_RETRACTION | set(NON_EHR_TABLES)
     for table in tables_to_retract:
@@ -179,12 +183,13 @@ def queries_to_retract_from_dataset(client,
     :return: list of dict with keys query, dataset, table
     """
     LOGGER.info(f'Checking existing tables for {project_id}.{dataset_id}')
-    existing_tables = list_existing_tables(client, project_id, dataset_id)
+    existing_tables = client.list_tables(f'{project_id}.{dataset_id}')
     queries = {TABLES: []}
-    tables_to_retract = TABLES_FOR_RETRACTION
-    # Ignore RDR rows using id constant factor
+    tables_to_retract = set(list(TABLES_FOR_RETRACTION))
+    # Ignore RDR rows using id constant factor if retraction type is 'only_ehr'
     id_const = 2 * ID_CONSTANT_FACTOR
-    if ru.is_unioned_dataset(dataset_id) or retraction_type == 'ehr_and_rdr':
+    if ru.is_unioned_dataset(
+            dataset_id) or retraction_type == RETRACTION_RDR_EHR:
         tables_to_retract |= set(NON_EHR_TABLES)
         id_const = 0
     for table in tables_to_retract:
@@ -283,9 +288,9 @@ def run_bq_retraction(project_id, sandbox_dataset_id, pid_project_id,
                 queries = queries_to_retract_from_dataset(
                     client, project_id, dataset, person_id_query)
             elif ru.is_ehr_dataset(dataset):
-                if hpo_id == 'none':
+                if hpo_id == NONE_STR:
                     LOGGER.info(
-                        f'"RETRACTION_HPO_ID" set to "none", skipping retraction from {dataset}'
+                        f'"RETRACTION_HPO_ID" set to "{NONE_STR}", skipping retraction from {dataset}'
                     )
                 else:
                     LOGGER.info(f"Retracting from EHR dataset {dataset}")
@@ -347,22 +352,25 @@ if __name__ == '__main__':
         action='store',
         dest='dataset_ids',
         nargs='+',
-        help='Identifies the datasets to retract from, separated by spaces '
-        'specified as -d dataset_id_1 dataset_id_2 dataset_id_3 and so on. '
-        'If set as -d none, skips retraction from BigQuery datasets. '
-        'If set as -d all_datasets, retracts from all datasets in project.',
+        help=(
+            'Identifies the datasets to retract from, separated by spaces '
+            'specified as -d dataset_id_1 dataset_id_2 dataset_id_3 and so on. '
+            f'If set as -d {NONE_STR}, skips retraction from BigQuery datasets. '
+            'If set as -d all_datasets, retracts from all datasets in project.'
+        ),
         required=True)
     parser.add_argument(
         '-r',
         '--retraction_type',
         action='store',
         dest='retraction_type',
-        help='Identifies whether all data needs to be removed, including RDR, '
-        'or if RDR data needs to be kept intact. Can take the values "rdr_and_ehr" or "only_ehr"',
+        help=(
+            f'Identifies whether all data needs to be removed, including RDR, '
+            f'or if RDR data needs to be kept intact. Can take the values '
+            f'"{RETRACTION_RDR_EHR}" or "{RETRACTION_EHR}"'),
         required=True)
     args = parser.parse_args()
 
     run_bq_retraction(args.project_id, args.sandbox_dataset_id,
                       args.pid_project_id, args.pid_table_id, args.hpo_id,
                       args.dataset_ids, args.retraction_type)
-    LOGGER.info('Retraction complete')
