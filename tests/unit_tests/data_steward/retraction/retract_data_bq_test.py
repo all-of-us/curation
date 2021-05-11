@@ -60,7 +60,14 @@ class RetractDataBqTest(TestCase):
             if cdm_table not in self.tables_to_retract_unioned:
                 ignored_tables.append(unioned_table_id)
 
-        self.client.list_tables.return_value = existing_table_ids
+        # mock existing tables
+        mock_table_ids = []
+        for table_id in existing_table_ids:
+            mock_table_id = MagicMock()
+            mock_table_id.table_id = table_id
+            mock_table_ids.append(mock_table_id)
+        self.client.list_tables.return_value = mock_table_ids
+
         person_id_query = rbq.JINJA_ENV.from_string(rbq.PERSON_ID_QUERY).render(
             person_research_id=rbq.PERSON_ID,
             pid_project=self.project_id,
@@ -89,7 +96,13 @@ class RetractDataBqTest(TestCase):
             if cdm_table not in self.tables_to_retract_combined_deid_type_1:
                 ignored_tables.append(cdm_table)
 
-        self.client.list_tables.return_value = existing_table_ids
+        # mock existing tables
+        mock_table_ids = []
+        for table_id in existing_table_ids:
+            mock_table_id = MagicMock()
+            mock_table_id.table_id = table_id
+            mock_table_ids.append(mock_table_id)
+        self.client.list_tables.return_value = mock_table_ids
         person_id_query = rbq.JINJA_ENV.from_string(rbq.PERSON_ID_QUERY).render(
             person_research_id=rbq.PERSON_ID,
             pid_project=self.project_id,
@@ -144,7 +157,14 @@ class RetractDataBqTest(TestCase):
             if cdm_table not in self.tables_to_retract_combined_deid_type_1:
                 ignored_tables.append(cdm_table)
 
-        self.client.list_tables.return_value = existing_table_ids
+        # mock existing tables
+        mock_table_ids = []
+        for table_id in existing_table_ids:
+            mock_table_id = MagicMock()
+            mock_table_id.table_id = table_id
+            mock_table_ids.append(mock_table_id)
+        self.client.list_tables.return_value = mock_table_ids
+
         research_id_query = rbq.JINJA_ENV.from_string(
             rbq.PERSON_ID_QUERY).render(
                 person_research_id=rbq.RESEARCH_ID,
@@ -201,7 +221,14 @@ class RetractDataBqTest(TestCase):
             if cdm_table not in self.tables_to_retract_unioned:
                 ignored_tables.append(cdm_table)
 
-        self.client.list_tables.return_value = existing_table_ids
+        # mock existing tables
+        mock_table_ids = []
+        for table_id in existing_table_ids:
+            mock_table_id = MagicMock()
+            mock_table_id.table_id = table_id
+            mock_table_ids.append(mock_table_id)
+        self.client.list_tables.return_value = mock_table_ids
+
         person_id_query = rbq.JINJA_ENV.from_string(rbq.PERSON_ID_QUERY).render(
             person_research_id=rbq.PERSON_ID,
             pid_project=self.project_id,
