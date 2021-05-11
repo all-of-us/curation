@@ -130,7 +130,10 @@ def queries_to_retract_from_ehr_dataset(client, project_id, dataset_id, hpo_id,
     :return: list of queries to run
     """
     LOGGER.info(f'Checking existing tables for {project_id}.{dataset_id}')
-    existing_tables = client.list_tables(f'{project_id}.{dataset_id}')
+    existing_tables = [
+        table.table_id
+        for table in client.list_tables(f'{project_id}.{dataset_id}')
+    ]
     queries = {SITE: [], UNIONED: []}
     tables_to_retract = TABLES_FOR_RETRACTION | set(NON_EHR_TABLES)
     for table in tables_to_retract:
@@ -183,7 +186,10 @@ def queries_to_retract_from_dataset(client,
     :return: list of dict with keys query, dataset, table
     """
     LOGGER.info(f'Checking existing tables for {project_id}.{dataset_id}')
-    existing_tables = client.list_tables(f'{project_id}.{dataset_id}')
+    existing_tables = [
+        table.table_id
+        for table in client.list_tables(f'{project_id}.{dataset_id}')
+    ]
     queries = {TABLES: []}
     tables_to_retract = set(list(TABLES_FOR_RETRACTION))
     # Ignore RDR rows using id constant factor if retraction type is 'only_ehr'
