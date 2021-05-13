@@ -61,41 +61,20 @@ class OrganTransplantConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
 
         # Load the test data
         observation_tmpl = self.jinja_env.from_string("""
-        DROP TABLE IF EXISTS `{{project_id}}.{{dataset_id}}.observation`;
-        CREATE TABLE `{{project_id}}.{{dataset_id}}.observation`
-        AS (
-        WITH w AS (
-            SELECT ARRAY<STRUCT<
-                observation_id INT64,
-                person_id INT64,
-                observation_concept_id INT64,
-                observation_type_concept_id INT64,
-                value_as_concept_id INT64,
-                qualifier_concept_id INT64,
-                unit_concept_id INT64,
-                observation_source_concept_id INT64,
-                value_source_concept_id INT64
-                >>
-              -- Concepts to suppress --
-              -- OrganTransplantDescription_OtherOrgan - 1585807 --
-              -- OrganTransplantDescription_OtherTissue - 1585808 --
-              [(1, 1, 0, 0, 0, 0, 0, 0, 1585808),
-               (2, 1, 0, 0, 0, 0, 0, 0, 1585807),
-               (3, 1, 0, 0, 0, 0, 0, 0, 1585806),
-               (4, 1, 0, 0, 0, 0, 0, 0, 1585834),
-               (5, 1, 0, 0, 0, 0, 0, 0, 1585825)] col
-            )
-            SELECT
-                observation_id,
-                person_id,
-                observation_concept_id,
-                observation_type_concept_id,
-                value_as_concept_id,
-                qualifier_concept_id,
-                unit_concept_id,
-                observation_source_concept_id,
-                value_source_concept_id
-            FROM w, UNNEST(w.col))
+        INSERT INTO `{{project_id}}.{{dataset_id}}.observation`
+        (observation_id, person_id, observation_concept_id,
+         observation_date, observation_type_concept_id, value_as_concept_id,
+         qualifier_concept_id, unit_concept_id, observation_source_concept_id,
+         value_source_concept_id)
+         VALUES
+      -- Concepts to suppress --
+      -- 903079: PMI Prefer Not To Answer --
+         (1, 1, 0, '2017-05-02', 0, 0, 0, 0, 0, 1585808),
+         (2, 1, 0, '2017-05-02', 0, 0, 0, 0, 0, 1585807),
+         (3, 1, 0, '2017-05-02', 0, 0, 0, 0, 0, 1585806),
+         (4, 1, 0, '2017-05-02', 0, 0, 0, 0, 0, 1585834),
+         (5, 1, 0, '2017-05-02', 0, 0, 0, 0, 0, 1585825),
+         (6, 1, 0, '2017-05-02', 0, 0, 0, 0, 903079, 0)
             """)
 
         insert_observation_query = observation_tmpl.render(
@@ -112,7 +91,7 @@ class OrganTransplantConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
             'fq_sandbox_table_name':
                 f'{self.project_id}.{self.sandbox_id}.'
                 f'{self.rule_instance.sandbox_table_for("observation")}',
-            'loaded_ids': [1, 2, 3, 4, 5],
+            'loaded_ids': [1, 2, 3, 4, 5, 6],
             'sandboxed_ids': [1, 2],
             'fields': [
                 'observation_id', 'person_id', 'observation_concept_id',
@@ -122,7 +101,8 @@ class OrganTransplantConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
             ],
             'cleaned_values': [(3, 1, 0, 0, 0, 0, 0, 0, 1585806),
                                (4, 1, 0, 0, 0, 0, 0, 0, 1585834),
-                               (5, 1, 0, 0, 0, 0, 0, 0, 1585825)]
+                               (5, 1, 0, 0, 0, 0, 0, 0, 1585825),
+                               (6, 1, 0, 0, 0, 0, 0, 903079, 0)]
         }]
 
         self.default_test(tables_and_counts)
