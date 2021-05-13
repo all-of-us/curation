@@ -20,16 +20,16 @@ LOGGER = logging.getLogger(__name__)
 PARTICIPANT_THRESH = 200
 
 STATE_GENERALIZATION_QUERY = JINJA_ENV.from_string("""
-    UPDATE `{project_id}.{dataset_id}.observation`
+    UPDATE `{{project_id}}.{{dataset_id}}.observation`
     SET value_source_concept_id = 2000000011,
         value_as_concept_id = 2000000011
     WHERE value_source_concept_id IN (
         SELECT
             value_source_concept_id
-        FROM `{project_id}.{dataset_id}.observation`
+        FROM `{{project_id}}.{{dataset_id}}.observation`
         WHERE observation_source_concept_id = 1585249
         GROUP BY value_source_concept_id
-        HAVING COUNT(*) < {threshold}
+        HAVING COUNT(*) < {{threshold}}
     )
 """)
 
@@ -47,7 +47,7 @@ class GeneralizeStateByPopulation(BaseCleaningRule):
         desc = "This cleaning rules generalizes states that don't achieve a set threshold."
         super().__init__(issue_numbers=['DC1614'],
                          description=desc,
-                         affected_datasets=[cdr_consts.REGISTERED_TIER_DIED],
+                         affected_datasets=[cdr_consts.REGISTERED_TIER_DEID],
                          affected_tables=[OBSERVATION],
                          project_id=project_id,
                          dataset_id=dataset_id,
@@ -65,10 +65,12 @@ class GeneralizeStateByPopulation(BaseCleaningRule):
             stored in list order and returned in list order to maintain
             an ordering.
         """
-        state_generalization_query = STATE_GENERALIZATION_QUERY.render(
-            project_id=self.project_id,
-            dataset_id=self.dataset_id,
-            threshold=PARTICIPANT_THRESH)
+        state_generalization_query = dict()
+        state_generalization_query[
+            cdr_consts.QUERY] = STATE_GENERALIZATION_QUERY.render(
+                project_id=self.project_id,
+                dataset_id=self.dataset_id,
+                threshold=PARTICIPANT_THRESH)
 
         return [state_generalization_query]
 
