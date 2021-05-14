@@ -63,9 +63,8 @@ def parse_rdr_args(raw_args=None):
         help=('date to truncate the RDR data to.  The cleaning rule defaults '
               'to the current date if unset.'))
 
-    common_args, unknown_args = parser.parse_known_args(args)
+    common_args, unknown_args = parser.parse_known_args(raw_args)
     custom_args = clean_cdr._get_kwargs(unknown_args)
-    #    return parser.parse_args(raw_args)
     return common_args, custom_args
 
 
@@ -73,7 +72,7 @@ def main(raw_args=None):
     """
     Clean an RDR import.
 
-    Assumes you are passing arguments either via command line or a 
+    Assumes you are passing arguments either via command line or a
     list.
     """
     args, kwargs = parse_rdr_args(raw_args)
@@ -101,16 +100,35 @@ def main(raw_args=None):
     datasets = create_datasets(client, args.rdr_dataset, args.release_tag)
 
     # copy raw data into staging dataset
-    copy_raw_rdr_tables(client, rdr_dataset, datasets[1])
+    copy_raw_rdr_tables(client, args.rdr_dataset, datasets.get('staging'))
 
     # clean the RDR staging dataset
     cleaning_args = [
-        '-p', args.curation_project_id, '-d', datasets[1], '-b', datasets[2],
-        '--data_stage', 'rdr'
+        '-p', args.curation_project_id, '-d',
+        datasets.get('staging', 'UNSET'), '-b',
+        datasets.get('sandbox', 'UNSET'), '--data_stage', 'rdr'
     ]
 
     all_cleaning_args = add_kwargs_to_args(cleaning_args, kwargs)
     clean_cdr.main(args=all_cleaning_args)
+
+    bq.build_and_copy_contents(client, datasets.get('staging', 'UNSET'),
+                               datasets.get('clean', 'UNSET'))
+
+    # update sandbox description and labels
+    sandbox_dataset = client.get_dataset(datasets.get(
+        'sandbox', 'UNSET'))  # Make an API request.
+    sandbox_dataset.description = (
+        f'Sandbox created for storing records affected by the cleaning '
+        f'rules applied to {datasets.get("clean")}')
+    sandbox_dataset.labels['phase'] = 'sandbox'
+    sandbox_dataset = client.update_dataset(
+        sandbox_dataset, ["description"])  # Make an API request.
+
+    full_dataset_id = f'{sandbox_dataset.project}.{sandbox_dataset.dataset_id}'
+    LOGGER.info(
+        f'Updated dataset `{full_dataset_id}` with description `{sandbox_dataset.description}`'
+    )
 
 
 def copy_raw_rdr_tables(client, rdr_dataset, rdr_staging):
@@ -118,13 +136,13 @@ def copy_raw_rdr_tables(client, rdr_dataset, rdr_staging):
         f'Beginning COPY of raw rdr tables from `{rdr_dataset}` to `{rdr_staging}`'
     )
     # get list of tables
-    rdr_tables = client.list_tables(rdr_dataset)
+    src_tables = client.list_tables(rdr_dataset)
 
     # create a copy job config
     job_config = bigquery.job.CopyJobConfig(
         write_disposition=bigquery.job.WriteDisposition.WRITE_EMPTY)
 
-    for table_item in vocab_tables:
+    for table_item in src_tables:
         job_config.labels = {
             'table_name': table_item.table_id,
             'copy_from': rdr_dataset,
@@ -170,36 +188,13 @@ def create_datasets(client, rdr_dataset, release_tag):
 
     version = 'implement getting software version'
     clean_desc = (f'{version} clean version of {rdr_dataset}')
-    clean_labels["phase"] = "clean"
+    labels["phase"] = "clean"
     clean_dataset_object = bq.define_dataset(client.project, rdr_clean,
                                              clean_desc, labels)
     client.create_dataset(clean_dataset_object)
 
-    return (rdr_clean, rdr_staging, rdr_sandbox)
+    return {'clean': rdr_clean, 'staging': rdr_staging, 'sandbox': rdr_sandbox}
 
 
 if __name__ == '__main__':
     main()
-#tag=$(git describe --abbrev=0 --tags)
-#version=${tag}
-
-#echo "--------------------------> Snapshotting  and cleaning RDR Dataset"
-#rdr_clean="${dataset_release_tag}_rdr"
-#rdr_clean_staging="${rdr_clean}_staging"
-#rdr_sandbox="${rdr_clean}_sandbox"
-##set BIGQUERY_DATASET_ID variable to dataset name where the vocabulary exists
-#export BIGQUERY_DATASET_ID="${rdr_clean_staging}"
-#export RDR_DATASET_ID="${rdr_clean_staging}"
-#echo "Cleaning the RDR data"
-#data_stage="rdr"
-#
-#echo "--------------------------> applying cleaning rules on staging"
-
-# Create a snapshot dataset with the result
-#python "${TOOLS_DIR}/snapshot_by_query.py" --project_id "${app_id}" --dataset_id "${rdr_clean_staging}" --snapshot_dataset_id "${rdr_clean}"
-
-# created at this point in the new code
-####bq update --description "${version} clean version of ${rdr_dataset}" --set_label "phase:clean" --set_label "release_tag:${dataset_release_tag}" --set_label "de_identified:false" ${app_id}:${rdr_clean}
-
-# Update sandbox description
-#bq update --description "Sandbox created for storing records affected by the cleaning rules applied to ${rdr_clean}" --set_label "phase:sandbox" --set_label "release_tag:${dataset_release_tag}" --set_label "de_identified:false" "${app_id}":"${rdr_sandbox}"

@@ -11,6 +11,7 @@ import logging
 from google.cloud import bigquery
 from google.api_core.exceptions import NotFound
 
+from common import AOU_REQUIRED
 from utils import auth
 from utils import bq
 from utils import pipeline_logging
@@ -120,6 +121,12 @@ def create_rdr_tables(client, rdr_dataset, bucket):
         except NotFound:
             LOGGER.info(f'{table} not provided by RDR team.  Will not exist in '
                         f'rdr dataset: `{rdr_dataset}`')
+            if table in AOU_REQUIRED:
+                LOGGER.info(f'Creating empty AOU_REQUIRED table, `{table}`')
+                dest_table = f'{client.project}.{rdr_dataset}.{table}'
+                dest_table = bigquery.Table(dest_table, schema=schema_list)
+                dest_table = client.create_table(dest_table)
+                LOGGER.info(f'Created empty table `{dest_table.full_table_id}`')
         else:
             destination_table = client.get_table(
                 table_id)  # Make an API request.
@@ -177,7 +184,7 @@ def main(raw_args=None):
     """
     Run a full RDR import.
 
-    Assumes you are passing arguments either via command line or a 
+    Assumes you are passing arguments either via command line or a
     list.
     """
     args = parse_rdr_args(raw_args)
