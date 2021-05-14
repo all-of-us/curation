@@ -20,6 +20,8 @@ LOGGER = logging.getLogger(__name__)
 
 ISSUE_NUMBERS = ["DC584", "DC696", "DC706"]
 
+BASICS_MODULE_CONCEPT_ID = 1586134
+
 SELECT_QUERY = common.JINJA_ENV.from_string("""
 CREATE OR REPLACE `{{project}}.{{sandbox_dataset}}.{{sandbox_table}} AS
 SELECT p.*
@@ -34,7 +36,7 @@ WHERE person_id NOT IN
   FROM `{{project}}.{{dataset}}.concept_ancestor`
   INNER JOIN `{{project}}.{{dataset}}.observation` o ON observation_concept_id = descendant_concept_id
   INNER JOIN `{{project}}.{{dataset}}.concept` d ON d.concept_id = descendant_concept_id
-  WHERE ancestor_concept_id = 1586134
+  WHERE ancestor_concept_id = {{basics_concept_id}}
 
   UNION DISTINCT
 
@@ -96,22 +98,25 @@ def get_queries(project_id=None, dataset_id=None, sandbox_dataset_id=None):
         [issue_num.lower() for issue_num in ISSUE_NUMBERS])
 
     queries = []
+    templates = {'basics': PERSON_WITH_NO_BASICS, 'ehr': PERSON_WITH_NO_EHR}
     for missing_type in ['basics', 'ehr']:
         select_stmt = SELECT_QUERY.render(
             project=project_id,
             sandbox_dataset=sandbox_dataset_id,
             sandbox_table=f'{issue_numbers_str}_no_{missing_type}')
 
-        select_query = PERSON_WITH_NO_BASICS.render(
+        select_query = templates[missing_type].render(
             query_type=select_stmt,
             project=project_id,
             dataset=dataset_id,
+            basics_concept_id=BASICS_MODULE_CONCEPT_ID,
             mapped_clinical_data_configs=mapped_clinical_data_configs)
 
-        delete_query = PERSON_WITH_NO_BASICS.render(
+        delete_query = templates[missing_type].render(
             query_type="DELETE",
             project=project_id,
             dataset=dataset_id,
+            basics_concept_id=BASICS_MODULE_CONCEPT_ID,
             mapped_clinical_data_configs=mapped_clinical_data_configs)
         queries.append({clean_consts.QUERY: select_query})
         queries.append({clean_consts.QUERY: delete_query})
