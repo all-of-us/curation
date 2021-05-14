@@ -1,13 +1,21 @@
 import common
 from constants.cdr_cleaner import clean_cdr as clean_consts
-from constants import bq_utils as bq_consts
-import resources
+
+NON_PID_TABLES = [
+    common.CARE_SITE, common.LOCATION, common.FACT_RELATIONSHIP, common.PROVIDER
+]
+
+TABLES_TO_DELETE_FROM = set(common.AOU_REQUIRED +
+                            [common.OBSERVATION_PERIOD]) - set(NON_PID_TABLES)
 
 # Select rows where the person_id is in the person table
-SELECT_EXISTING_PERSON_IDS = (
-    'SELECT {fields} FROM `{project}.{dataset}.{table}` AS entry '
-    'JOIN `{project}.{dataset}.person` AS person '
-    'ON entry.person_id = person.person_id')
+DELETE_NON_EXISTING_PERSON_IDS = common.JINJA_ENV.from_string("""
+DELETE
+FROM `{project}.{dataset}.{table}`
+WHERE person_id NOT IN
+(SELECT person_id
+FROM `{project}.{dataset}.person`)
+""")
 
 
 def get_queries(project=None, dataset=None, sandbox_dataset_id=None):
@@ -16,29 +24,18 @@ def get_queries(project=None, dataset=None, sandbox_dataset_id=None):
 
     Removes data from person_id linked tables for any persons which do not
     exist in the person table.
-    :param sandbox_dataset_id: Identifies the sandbox dataset to store rows 
+    :param sandbox_dataset_id: Identifies the sandbox dataset to store rows
     #TODO use sandbox_dataset_id for CR
 
     :return:  A list of string queries that can be executed to delete data from
         other tables for non-person users.
     """
     query_list = []
-    for table in common.CLINICAL_DATA_TABLES:
-        field_names = [
-            'entry.' + field['name'] for field in resources.fields_for(table)
-        ]
-        fields = ', '.join(field_names)
+    for table in TABLES_TO_DELETE_FROM:
+        delete_query = DELETE_NON_EXISTING_PERSON_IDS.render(project=project,
+                                                             dataset=dataset,
+                                                             table=table)
 
-        delete_query = SELECT_EXISTING_PERSON_IDS.format(project=project,
-                                                         dataset=dataset,
-                                                         table=table,
-                                                         fields=fields)
-
-        query_list.append({
-            clean_consts.QUERY: delete_query,
-            clean_consts.DESTINATION_TABLE: table,
-            clean_consts.DESTINATION_DATASET: dataset,
-            clean_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE,
-        })
+        query_list.append({clean_consts.QUERY: delete_query})
 
     return query_list
