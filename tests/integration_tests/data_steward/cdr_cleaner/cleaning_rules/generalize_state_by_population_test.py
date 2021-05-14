@@ -147,7 +147,6 @@ class GeneralizeStateByPopulationTest(BaseTest.CleaningRulesTestBase):
                 })
         expected_rows_df = pd.DataFrame(expected_rows,
                                         columns=list(expected_rows[0].keys()))
-        # expected_rows_df['observation_date'] = self.date_str
 
         #Insert rows
         self.load_test_data(inserted_rows_df, self.project_id, self.dataset_id,
