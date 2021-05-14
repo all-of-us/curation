@@ -655,7 +655,7 @@ def build_and_copy_contents(client, src_dataset, dest_dataset):
 
     for table_item in table_list:
         # create empty schemaed tablle with client object
-        schema_list = bq.get_table_schema(table_item.table_id)
+        schema_list = get_table_schema(table_item.table_id)
         dest_table = f'{client.project}.{dest_dataset}.{table_item.table_id}'
         dest_table = bigquery.Table(dest_table, schema=schema_list)
         dest_table = client.create_table(dest_table)  # Make an API request.
