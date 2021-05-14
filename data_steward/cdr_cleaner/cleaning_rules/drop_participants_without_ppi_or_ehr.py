@@ -9,46 +9,58 @@ Drops all data for participants who:
 module. (2) is achieved by checking all mapping tables for all person_id tables,
 to confirm whether any data is sourced from EHR per participant.
 """
-from jinja2 import Template
 import logging
 
-from cdr_cleaner.cleaning_rules import drop_rows_for_missing_persons
 import common
-from constants import bq_utils as bq_consts
-from constants.cdr_cleaner import clean_cdr as clean_consts
 import resources
+from cdr_cleaner.cleaning_rules import drop_rows_for_missing_persons
+from constants.cdr_cleaner import clean_cdr as clean_consts
 
 LOGGER = logging.getLogger(__name__)
 
-BASICS_MODULE_CONCEPT_ID = 1586134
+DELETE_PERSON_WITH_NO_BASICS = common.JINJA_ENV.from_string("""
+DELETE
+FROM `{{project}}.{{dataset}}.person` person
+WHERE person_id NOT IN
+(SELECT
+    person_id
+  FROM `{{project}}.{{dataset}}.concept_ancestor`
+  INNER JOIN `{{project}}.{{dataset}}.observation` o ON observation_concept_id = descendant_concept_id
+  INNER JOIN `{{project}}.{{dataset}}.concept` d ON d.concept_id = descendant_concept_id
+  WHERE ancestor_concept_id = 1586134
 
-SELECT_PERSON_WITH_BASICS_OR_EHR_TMPL = Template("""
-SELECT {{ fields | join(", ") }}
-FROM `{{ project }}.{{ dataset }}.person` person
-LEFT JOIN (
-  SELECT DISTINCT o.person_id
-  FROM `{{ project }}.{{ dataset }}.concept_ancestor`
-  INNER JOIN `{{ project }}.{{ dataset }}.observation` o ON observation_concept_id = descendant_concept_id
-  INNER JOIN `{{ project }}.{{ dataset }}.concept` d ON d.concept_id = descendant_concept_id
-  WHERE ancestor_concept_id = {{ basics_module_concept_id }}) basics
-ON
-  person.person_id = basics.person_id
+  UNION DISTINCT
+
+  SELECT
+    person_id
+  FROM `{{project}}.{{dataset}}.concept`
+  JOIN `{{project}}.{{dataset}}.concept_ancestor`
+    ON (concept_id = ancestor_concept_id)
+  JOIN `{{project}}.{{dataset}}.observation`
+    ON (descendant_concept_id = observation_concept_id)
+  JOIN `{{project}}.{{dataset}}._mapping_observation`
+    USING (observation_id)
+  WHERE concept_class_id = 'Module'
+    AND concept_name IN ('The Basics')
+    AND src_hpo_id = 'rdr'
+    AND questionnaire_response_id IS NOT NULL)
+""")
+
+DELETE_PERSON_WITH_NO_EHR = common.JINJA_ENV.from_string("""
+DELETE
+FROM `{{project}}.{{dataset}}.person` person
+WHERE person_id NOT IN (
 {% for table, config in mapped_clinical_data_configs.items() %}
-  LEFT JOIN (
-    SELECT DISTINCT t.person_id AS person_id
-    FROM `{{ project }}.{{ dataset }}.{{ table }}` t
-    LEFT JOIN `{{ project }}.{{ dataset }}._mapping_{{ table }}` m
-    ON t.{{ config["id_column"] }} = m.{{ config["id_column"] }}
-    # The source HPO is either the "rdr", or a site ID; we only want to capture sites here.
-    WHERE m.src_hpo_id != "rdr"
-  ) {{ table }}_ehr
-  ON person.person_id = {{ table }}_ehr.person_id
+  SELECT
+    person_id
+  FROM `{{project}}.{{dataset}}.{{table}}` t
+  JOIN `{{project}}.{{dataset}}._mapping_{{table}}` m
+  USING ({{table}}_id)
+  -- The source HPO is either the "rdr", or a site ID; we only want to capture sites here. --
+  WHERE m.src_hpo_id != "rdr"
+  {% if loop.nextitem is defined %}UNION DISTINCT{% endif %}
 {% endfor %}
-WHERE
-  basics.person_id IS NOT NULL
-  {% for table in mapped_clinical_data_configs.keys() %}
-    OR {{ table }}_ehr.person_id IS NOT NULL
-  {% endfor %}
+)
 """)
 
 
@@ -62,34 +74,31 @@ def get_queries(project=None, dataset=None, sandbox_dataset_id=None):
 
     These participants are not particularly useful for analysis, so remove them
     here.
-    :param sandbox_dataset_id: Identifies the sandbox dataset to store rows 
+    :param sandbox_dataset_id: Identifies the sandbox dataset to store rows
     #TODO use sandbox_dataset_id for CR
 
     :return:  A list of string queries that can be executed to delete data-poor
         participants and corresponding rows from the dataset.
     """
-    fields = [
-        'person.' + field['name'] for field in resources.fields_for('person')
-    ]
     mapped_clinical_data_configs = {
         t: {
             'id_column': resources.get_domain_id_field(t)
         } for t in common.MAPPED_CLINICAL_DATA_TABLES
     }
 
-    delete_query = SELECT_PERSON_WITH_BASICS_OR_EHR_TMPL.render(
-        fields=fields,
+    delete_no_basics_query = DELETE_PERSON_WITH_NO_BASICS.render(
+        project=project, dataset=dataset)
+
+    delete_no_ehr_query = DELETE_PERSON_WITH_NO_EHR.render(
         project=project,
         dataset=dataset,
-        basics_module_concept_id=BASICS_MODULE_CONCEPT_ID,
         mapped_clinical_data_configs=mapped_clinical_data_configs)
 
     # drop from the person table, then delete all corresponding data for the now missing persons
     return [{
-        clean_consts.QUERY: delete_query,
-        clean_consts.DESTINATION_TABLE: 'person',
-        clean_consts.DESTINATION_DATASET: dataset,
-        clean_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE,
+        clean_consts.QUERY: delete_no_basics_query
+    }, {
+        clean_consts.QUERY: delete_no_ehr_query
     }] + drop_rows_for_missing_persons.get_queries(project, dataset)
 
 
