@@ -13,14 +13,15 @@ import os
 
 # Third party imports
 import pandas as pd
-import pandas_gbq
 from dateutil import parser
+from google.cloud.bigquery import LoadJobConfig
 
 # Project imports
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.generalize_state_by_population import GeneralizeStateByPopulation
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 from common import OBSERVATION
+from utils.bq import get_table_schema, get_client
 
 PARTICIPANT_THRESH = 200
 
@@ -87,12 +88,19 @@ class GeneralizeStateByPopulationTest(BaseTest.CleaningRulesTestBase):
         """
         Add data to the tables for the rule to run on.
 
-        :param sql_statements: a list of sql statements to load for testing.
+        :param df: a dataframe containing data to insert
+        :param project_id
+        :param dataset_id
+        :param table
         """
-        pandas_gbq.to_gbq(df,
-                          f'{dataset_id}.{table}',
-                          project_id=project_id,
-                          if_exists='replace')
+        client = get_client(project_id)
+        schema = get_table_schema(table)
+        schema = [field for field in schema if field.name in list(df.columns)]
+        load_job_config = LoadJobConfig(schema=schema)
+        load_job = client.load_table_from_dataframe(df,
+                                                    f'{dataset_id}.{table}',
+                                                    job_config=load_job_config)
+        load_job.result()
 
     def test_generalize_state_by_population_cleaning(self):
         """
@@ -139,7 +147,7 @@ class GeneralizeStateByPopulationTest(BaseTest.CleaningRulesTestBase):
                 })
         expected_rows_df = pd.DataFrame(expected_rows,
                                         columns=list(expected_rows[0].keys()))
-        expected_rows_df['observation_date'] = self.date_str
+        # expected_rows_df['observation_date'] = self.date_str
 
         #Insert rows
         self.load_test_data(inserted_rows_df, self.project_id, self.dataset_id,
