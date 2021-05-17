@@ -23,7 +23,8 @@ class PersonIDValidatorTest(unittest.TestCase):
 
     def setUp(self):
         self.mapped_tables = copy.copy(common.MAPPED_CLINICAL_DATA_TABLES)
-        self.all_tables = copy.copy(common.CLINICAL_DATA_TABLES)
+        self.drop_tables = copy.copy(
+            drop_rows_for_missing_persons.TABLES_TO_DELETE_FROM)
 
     def test_get_person_id_validation_queries(self):
         # pre conditions
@@ -32,10 +33,11 @@ class PersonIDValidatorTest(unittest.TestCase):
         results = validator.get_person_id_validation_queries('foo', 'bar')
 
         # post conditions
-        self.assertEqual(len(results), ((len(self.all_tables) * 2) - 1))
+        self.assertEqual(len(results),
+                         len(self.drop_tables) + len(self.mapped_tables))
 
         existing_and_consenting = validator.EXISTING_AND_VALID_CONSENTING_RECORDS
-        existing_in_person_table = drop_rows_for_missing_persons.SELECT_EXISTING_PERSON_IDS
+        existing_in_person_table = drop_rows_for_missing_persons.DELETE_NON_EXISTING_PERSON_IDS
 
         expected = []
         for table in self.mapped_tables:
@@ -60,25 +62,12 @@ class PersonIDValidatorTest(unittest.TestCase):
                     bq_consts.WRITE_TRUNCATE,
             })
 
-        for table in self.all_tables:
-            field_names = [
-                'entry.' + field['name']
-                for field in resources.fields_for(table)
-            ]
-            fields = ', '.join(field_names)
-
+        for table in self.drop_tables:
             expected.append({
                 clean_consts.QUERY:
-                    existing_in_person_table.format(project='foo',
+                    existing_in_person_table.render(project='foo',
                                                     dataset='bar',
-                                                    table=table,
-                                                    fields=fields),
-                clean_consts.DESTINATION_TABLE:
-                    table,
-                clean_consts.DESTINATION_DATASET:
-                    'bar',
-                clean_consts.DISPOSITION:
-                    bq_consts.WRITE_TRUNCATE,
+                                                    table=table)
             })
 
         self.assertEqual(expected, results)
@@ -90,10 +79,11 @@ class PersonIDValidatorTest(unittest.TestCase):
         results = validator.get_person_id_validation_queries('foo', 'bar_deid')
 
         # post conditions
-        self.assertEqual(len(results), ((len(self.all_tables) * 2) - 1))
+        self.assertEqual(len(results),
+                         len(self.mapped_tables) + len(self.drop_tables))
 
         existing_and_consenting = validator.EXISTING_AND_VALID_CONSENTING_RECORDS
-        existing_in_person_table = drop_rows_for_missing_persons.SELECT_EXISTING_PERSON_IDS
+        existing_in_person_table = drop_rows_for_missing_persons.DELETE_NON_EXISTING_PERSON_IDS
 
         expected = []
         for table in self.mapped_tables:
@@ -118,25 +108,12 @@ class PersonIDValidatorTest(unittest.TestCase):
                     bq_consts.WRITE_TRUNCATE,
             })
 
-        for table in self.all_tables:
-            field_names = [
-                'entry.' + field['name']
-                for field in resources.fields_for(table)
-            ]
-            fields = ', '.join(field_names)
-
+        for table in self.drop_tables:
             expected.append({
                 clean_consts.QUERY:
-                    existing_in_person_table.format(project='foo',
+                    existing_in_person_table.render(project='foo',
                                                     dataset='bar_deid',
-                                                    table=table,
-                                                    fields=fields),
-                clean_consts.DESTINATION_TABLE:
-                    table,
-                clean_consts.DESTINATION_DATASET:
-                    'bar_deid',
-                clean_consts.DISPOSITION:
-                    bq_consts.WRITE_TRUNCATE,
+                                                    table=table)
             })
 
         self.assertEqual(expected, results)
