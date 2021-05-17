@@ -39,7 +39,7 @@ def is_rule_valid(check_df, code):
     return code in check_df['rule'].values
 
 def extract_valid_codes_to_run(check_df, rule_code):
-    valid_rule_code = []
+    # valid_rule_code = []
     if not isinstance(rule_code, list):
         rule_code = [rule_code]
     return [code for code in rule_code if is_rule_valid(check_df, code)]
@@ -148,7 +148,6 @@ def run_check_by_row(df, template_query, project_id, post_deid_dataset, pre_deid
         return pd.DataFrame(columns=[col for col in df if col in COLUMNS_IN_CHECK_RESULT])
 
     check_df = df.copy()
-    queries = ""
     results = []
     for _, row in check_df.iterrows():
         column_name = form_field_param_from_row(row, 'column_name')
@@ -169,12 +168,19 @@ def run_check_by_row(df, template_query, project_id, post_deid_dataset, pre_deid
 
     results_df = (pd.concat(results, sort=True)
                     .pipe(format_cols_to_string))
+
+    for col in results_df:
+        if col == 'concept_id' or col == 'concept_code':
+            results_df[col] = results_df[col].str.replace('nan', '')
+            check_df[col] = check_df[col].fillna('')
+
     merge_cols = get_list_of_common_columns_for_merge(check_df, results_df)
     result_columns = merge_cols + ['rule', 'n_row_violation', 'query']
-    final_result =  (check_df.merge(results_df, on=merge_cols, how='left')
+    final_result =  (results_df.merge(check_df, on=merge_cols, how='inner')
                             .filter(items=result_columns)
                             .query('n_row_violation > 0')
             )
+
     if not final_result.empty and mapping_issue_description:
         final_result['mapping_issue'] = mapping_issue_description
     return final_result if not final_result.empty else pd.DataFrame(columns=result_columns)

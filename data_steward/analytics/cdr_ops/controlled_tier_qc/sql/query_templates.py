@@ -57,14 +57,8 @@ SELECT
 FROM `{{ project_id }}.{{ post_deid_dataset }}.{{ table_name }}`
 {% if concept_id|int(-999) != -999 %}
     WHERE {{ column_name }} IN ({{ concept_id|int }})
-    OR {{ column_name }} IN (
-        SELECT concept_id
-        FROM `{{ project_id }}.{{ post_deid_dataset }}.concept`
-        WHERE REGEXP_CONTAINS(concept_code, r"^SecondaryContactInfo")
-    )
 {% else %}
     WHERE {{ column_name }} IN ('{{ concept_code|string }}')
-    OR REGEXP_CONTAINS({{ column_name }}, r"^SecondaryContactInfo")
 {% endif %}
 """
 
