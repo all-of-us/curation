@@ -95,6 +95,7 @@ from cdr_cleaner.cleaning_rules.remove_extra_tables import RemoveExtraTables
 from cdr_cleaner.cleaning_rules.store_pid_rid_mappings import StoreNewPidRidMappings
 from cdr_cleaner.manual_cleaning_rules.survey_version_info import COPESurveyVersionTask
 from cdr_cleaner.cleaning_rules.deid.string_fields_suppression import StringFieldsSuppression
+from cdr_cleaner.cleaning_rules.generalize_state_by_population import GeneralizeStateByPopulation
 from constants.cdr_cleaner import clean_cdr_engine as ce_consts
 from constants.cdr_cleaner.clean_cdr import DataStage
 
@@ -267,7 +268,8 @@ CONTROLLED_TIER_DEID_CLEAN_CLEANING_CLASSES = [
 
 REGISTERED_TIER_DEID_CLEANING_CLASSES = [
     (QRIDtoRID,),  # Should run before any row suppression rules
-    (GenerateSiteMappingsAndExtTables,)
+    (GenerateSiteMappingsAndExtTables,),
+    (GeneralizeStateByPopulation,),
 ]
 
 DATA_STAGE_RULES_MAPPING = {
