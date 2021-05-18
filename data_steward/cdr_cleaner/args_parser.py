@@ -132,3 +132,24 @@ def get_report_parser():
                         type=check_output_filepath)
 
     return parser
+
+
+def add_kwargs_to_args(args_list, kwargs):
+    """
+    adds kwargs to the list of default arguments
+
+    :param args_list: list of required args for clean_cdr.main()
+    :param kwargs: dictionary with key word arguments passed
+    :return: list of input args for clean_cdr.main()
+    """
+    if kwargs:
+        kwargs_list = []
+        for kwarg, kwarg_value in kwargs.items():
+            if len(kwarg) == 1:
+                kwargs_list.append(f'-{kwarg}')
+            else:
+                kwargs_list.append(f'--{kwarg}')
+            kwargs_list.append(kwarg_value)
+        return args_list + kwargs_list
+
+    return args_list

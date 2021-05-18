@@ -7,10 +7,11 @@ from datetime import datetime
 # Third party imports
 
 # Project imports
+from cdr_cleaner import clean_cdr
+from cdr_cleaner.args_parser import add_kwargs_to_args
 from utils import auth
 from utils import bq
 from utils import pipeline_logging
-from cdr_cleaner import clean_cdr
 from tools import add_cdr_metadata
 from tools.snapshot_by_query import create_schemaed_snapshot_dataset
 from constants.cdr_cleaner import clean_cdr as consts
@@ -24,27 +25,6 @@ SCOPES = [
     'https://www.googleapis.com/auth/bigquery',
     'https://www.googleapis.com/auth/devstorage.read_write',
 ]
-
-
-def add_kwargs_to_args(args_list, kwargs):
-    """
-    adds kwargs to the list of default arguments
-
-    :param args_list: list of required args for clean_cdr.main()
-    :param kwargs: dictionary with key word arguments passed
-    :return: list of input args for clean_cdr.main()
-    """
-    if kwargs:
-        kwargs_list = []
-        for kwarg, kwarg_value in kwargs.items():
-            if len(kwarg) == 1:
-                kwargs_list.append(f'-{kwarg}')
-            else:
-                kwargs_list.append(f'--{kwarg}')
-            kwargs_list.append(kwarg_value)
-        return args_list + kwargs_list
-    else:
-        return args_list
 
 
 def validate_tier_param(tier):
