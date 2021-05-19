@@ -15,7 +15,6 @@ from common import AOU_REQUIRED
 from utils import auth
 from utils import bq
 from utils import pipeline_logging
-import cdm
 import resources
 
 LOGGER = logging.getLogger(__name__)

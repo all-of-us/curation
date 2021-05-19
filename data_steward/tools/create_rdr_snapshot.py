@@ -6,15 +6,12 @@ from datetime import datetime
 import logging
 
 from google.cloud import bigquery
-from google.api_core.exceptions import NotFound
 
 from cdr_cleaner import clean_cdr
 from cdr_cleaner.args_parser import add_kwargs_to_args
 from utils import auth
 from utils import bq
 from utils import pipeline_logging
-import cdm
-import resources
 
 LOGGER = logging.getLogger(__name__)
 
@@ -130,6 +127,9 @@ def main(raw_args=None):
         f'Updated dataset `{full_dataset_id}` with description `{sandbox_dataset.description}`'
     )
 
+    LOGGER.info(f'RDR snapshot and cleaning, '
+                f'`{client.project}.{datasets.get("clean")}`, is complete.')
+
 
 def copy_raw_rdr_tables(client, rdr_dataset, rdr_staging):
     LOGGER.info(
@@ -178,6 +178,7 @@ def create_datasets(client, rdr_dataset, release_tag):
     staging_dataset_object = bq.define_dataset(client.project, rdr_staging,
                                                staging_desc, labels)
     client.create_dataset(staging_dataset_object)
+    LOGGER.info(f'Created dataset `{client.project}.{rdr_staging}`')
 
     sandbox_desc = (f'Sandbox created for storing records affected by the '
                     f'cleaning rules applied to {rdr_staging}')
@@ -185,6 +186,7 @@ def create_datasets(client, rdr_dataset, release_tag):
     sandbox_dataset_object = bq.define_dataset(client.project, rdr_sandbox,
                                                sandbox_desc, labels)
     client.create_dataset(sandbox_dataset_object)
+    LOGGER.info(f'Created dataset `{client.project}.{rdr_sandbox}`')
 
     version = 'implement getting software version'
     clean_desc = (f'{version} clean version of {rdr_dataset}')
@@ -192,6 +194,7 @@ def create_datasets(client, rdr_dataset, release_tag):
     clean_dataset_object = bq.define_dataset(client.project, rdr_clean,
                                              clean_desc, labels)
     client.create_dataset(clean_dataset_object)
+    LOGGER.info(f'Created dataset `{client.project}.{rdr_clean}`')
 
     return {'clean': rdr_clean, 'staging': rdr_staging, 'sandbox': rdr_sandbox}
 

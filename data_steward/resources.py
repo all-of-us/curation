@@ -117,7 +117,7 @@ def cdm_csv():
 
 def achilles_index_files():
     achilles_index_files = []
-    for path, subdirs, files in os.walk(achilles_index_path):
+    for path, _, files in os.walk(achilles_index_path):
         for name in files:
             achilles_index_files.append(os.path.join(path, name))
     return achilles_index_files
@@ -376,7 +376,7 @@ def get_concept_id_fields(table_name) -> List[str]:
     """
     Determine if column is a concept_id column
 
-    :param table_name: 
+    :param table_name:
     :return: all *concept_id schemas given a table
     """
     return [
@@ -389,7 +389,7 @@ def get_concept_id_fields(table_name) -> List[str]:
 def has_domain_table_id(table_name):
     """
     Determines if a table has domain_table_id
-    
+
     :param table_name: Name of a cdm domain table
     :return: True/False if domain_table_id is available is table schemas
     """
