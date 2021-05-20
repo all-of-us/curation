@@ -60,51 +60,8 @@ class CopeSurveyResponseSuppressionTest(BaseTest.CleaningRulesTestBase):
 
         # Load the test data
         observation_data_template = self.jinja_env.from_string("""
-            DROP TABLE IF EXISTS `{{project_id}}.{{dataset_id}}.observation`;
-            CREATE TABLE `{{project_id}}.{{dataset_id}}.observation`
-            AS (
-            WITH w AS (
-              SELECT ARRAY<STRUCT<
-                    observation_id int64, 
-                    person_id int64, 
-                    observation_concept_id int64, 
-                    observation_type_concept_id int64,
-                    value_as_concept_id int64,
-                    observation_source_concept_id int64,
-                    value_source_concept_id int64,
-                    qualifier_concept_id int64,
-                    unit_concept_id int64
-                    >>
-                    
-                  -- Concepts to suppress --
-                  -- 1333234: What breathing treatments did you receive? --
-                  -- 1310066: How were you tested? --
-                  -- 715725: What do you think is the main reason(s) for these experiences? --
-                  -- 1310147: How has your prenatal care changed since COVID-19? --
-                  -- 702686: Who do you know who has died? --
-                  -- 1310054: Were you tested for COVID-19? --
-                  -- 715726: Are you currently covered by any of the following types of health insurance...? --
-                  -- 715724: Other substance? --
-                  -- 715714: What type of household do you live in? --
-                  -- 1310146: What factors might make you less likely to get the vaccine? --
-                  -- 1310058: Thinking about your current social habits, in the last 5 days: I have...? --
-
-                  [(1, 101, 0, 0, 0, 1333234, 0, 0, 0),
-                   (2, 102, 0, 0, 0, 1310066, 0, 0, 0),
-                   (3, 103, 0, 0, 0, 715725, 0, 0, 0),
-                   (4, 104, 0, 0, 0, 1310147, 0, 0, 0),
-                   (5, 105, 0, 0, 0, 702686, 0, 0, 0),
-                   (6, 106, 0, 0, 0, 1310054, 0, 0, 0),
-                   (7, 107, 0, 0, 0, 715726, 0, 0, 0),
-                   (8, 108, 0, 0, 0, 715724, 0, 0, 0),
-                   (9, 109, 0, 0, 0, 715714, 0, 0, 0),
-                   (10, 110, 0, 0, 0, 1310146, 0, 0, 0),
-                   (11, 111, 0, 0, 0, 1310058, 0, 0, 0),
-                   -- not concepts to be suppressed --
-                   (12, 112, 0, 0, 0, 1111111, 0, 0, 0),
-                   (13, 113, 0, 0, 0, 2222222, 0, 0, 0)] col
-            )
-            SELECT 
+            INSERT INTO `{{project_id}}.{{dataset_id}}.observation`
+            (
                 observation_id, 
                 person_id, 
                 observation_concept_id, 
@@ -113,8 +70,37 @@ class CopeSurveyResponseSuppressionTest(BaseTest.CleaningRulesTestBase):
                 observation_source_concept_id,
                 value_source_concept_id,
                 qualifier_concept_id,
-                unit_concept_id
-            FROM w, UNNEST(w.col))
+                unit_concept_id,
+                observation_date
+            )
+            VALUES
+              -- Concepts to suppress --
+              -- 1333234: What breathing treatments did you receive? --
+              -- 1310066: How were you tested? --
+              -- 715725: What do you think is the main reason(s) for these experiences? --
+              -- 1310147: How has your prenatal care changed since COVID-19? --
+              -- 702686: Who do you know who has died? --
+              -- 1310054: Were you tested for COVID-19? --
+              -- 715726: Are you currently covered by any of the following types of health insurance...? --
+              -- 715724: Other substance? --
+              -- 715714: What type of household do you live in? --
+              -- 1310146: What factors might make you less likely to get the vaccine? --
+              -- 1310058: Thinking about your current social habits, in the last 5 days: I have...? --
+
+              (1, 101, 0, 0, 0, 1333234, 0, 0, 0, '2020-01-01'),
+              (2, 102, 0, 0, 0, 1310066, 0, 0, 0, '2020-01-01'),
+              (3, 103, 0, 0, 0, 715725, 0, 0, 0, '2020-01-01'),
+              (4, 104, 0, 0, 0, 1310147, 0, 0, 0, '2020-01-01'),
+              (5, 105, 0, 0, 0, 702686, 0, 0, 0, '2020-01-01'),
+              (6, 106, 0, 0, 0, 1310054, 0, 0, 0, '2020-01-01'),
+              (7, 107, 0, 0, 0, 715726, 0, 0, 0, '2020-01-01'),
+              (8, 108, 0, 0, 0, 715724, 0, 0, 0, '2020-01-01'),
+              (9, 109, 0, 0, 0, 715714, 0, 0, 0, '2020-01-01'),
+              (10, 110, 0, 0, 0, 1310146, 0, 0, 0, '2020-01-01'),
+              (11, 111, 0, 0, 0, 1310058, 0, 0, 0, '2020-01-01'),
+              -- not concepts to be suppressed --
+              (12, 112, 0, 0, 0, 1111111, 0, 0, 0, '2020-01-01'),
+              (13, 113, 0, 0, 0, 2222222, 0, 0, 0, '2020-01-01')
             """)
 
         insert_observation_query = observation_data_template.render(
