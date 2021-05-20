@@ -3,7 +3,7 @@ Integration test for repopulate_person_controlled_tier module
 
 Original Issues: DC-1439
 
-The intent is to repopulate the person table using the PPI responses based on the controlled tier 
+The intent is to repopulate the person table using the PPI responses based on the controlled tier
 privacy requirements """
 
 # Python Imports
@@ -99,36 +99,27 @@ class RepopulatePersonControlledTierTestBase(BaseTest.CleaningRulesTestBase):
         """)
 
         observation_data_template = self.jinja_env.from_string("""
-            DROP TABLE IF EXISTS `{{project_id}}.{{dataset_id}}.observation`;
-            CREATE TABLE `{{project_id}}.{{dataset_id}}.observation`
-            AS (
-            WITH w AS (
-                SELECT ARRAY<STRUCT<
-                        observation_id int64, 
-                        person_id int64, 
-                        value_as_concept_id int64,
-                        observation_source_concept_id int64,
-                        value_source_concept_id int64
-                        >>
-                      [(1, 1, 45877987, 1586140, 1586146),
-                       (2, 1, 1586143, 1586140, 1586143),
-                       (3, 2, 45879439, 1586140, 1586142),
-                       (4, 2, 1586147, 1586140, 1586147),
-                       (5, 1, 45878463, 1585838, 1585840),
-                       (6, 2, 45880669, 1585838, 1585839),
-                       (7, 2, 1585841, 1585838, 1585841),
-                       (8, 1, 45878463, 1585845, 1585847),
-                       (9, 2, 45880669, 1585845, 1585846)] col
-                )
-                SELECT 
-                    observation_id, 
-                    person_id, 
-                    observation_datetime,
-                    value_as_concept_id,
-                    observation_source_concept_id,
-                    value_source_concept_id
-                FROM w, UNNEST(w.col)
+            INSERT INTO `{{project_id}}.{{dataset_id}}.observation`
+            (
+                observation_id,
+                person_id,
+                value_as_concept_id,
+                observation_source_concept_id,
+                value_source_concept_id,
+                observation_date,
+                observation_concept_id,
+                observation_type_concept_id
             )
+            VALUES
+                (1, 1, 45877987, 1586140, 1586146, '2020-01-01', 0, 0),
+                (2, 1, 1586143, 1586140, 1586143, '2020-01-01', 0, 0),
+                (3, 2, 45879439, 1586140, 1586142, '2020-01-01', 0, 0),
+                (4, 2, 1586147, 1586140, 1586147, '2020-01-01', 0, 0),
+                (5, 1, 45878463, 1585838, 1585840, '2020-01-01', 0, 0),
+                (6, 2, 45880669, 1585838, 1585839, '2020-01-01', 0, 0),
+                (7, 2, 1585841, 1585838, 1585841, '2020-01-01', 0, 0),
+                (8, 1, 45878463, 1585845, 1585847, '2020-01-01', 0, 0),
+                (9, 2, 45880669, 1585845, 1585846, '2020-01-01', 0, 0)
         """)
         insert_person_query = person_data_template.render(
             project_id=self.project_id, dataset_id=self.dataset_id)
@@ -136,10 +127,8 @@ class RepopulatePersonControlledTierTestBase(BaseTest.CleaningRulesTestBase):
             project_id=self.project_id, dataset_id=self.dataset_id)
 
         # Load test data
-        self.load_test_data([
-            f'''{insert_person_query};
-                {insert_observation_query};'''
-        ])
+        self.load_test_data(
+            [f'{insert_person_query}', f'{insert_observation_query}'])
 
     def test_repopulate_person_controlled_tier(self):
 

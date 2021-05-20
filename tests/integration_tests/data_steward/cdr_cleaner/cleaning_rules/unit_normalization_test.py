@@ -7,9 +7,9 @@ Original Issue: DC-414
 import os
 
 # Third party imports
+from google.cloud import bigquery
 
 # Project Imports
-from utils import bq
 import tests.test_util as test_util
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.unit_normalization import UnitNormalization, UNIT_MAPPING_TABLE
@@ -20,32 +20,27 @@ from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_te
 test_query = JINJA_ENV.from_string("""select * from `{{intermediary_table}}`""")
 
 INSERT_UNITS_RAW_DATA = JINJA_ENV.from_string("""
-DROP TABLE IF EXISTS
-  `{{project_id}}.{{dataset_id}}.measurement`;
-CREATE TABLE
-  `{{project_id}}.{{dataset_id}}.measurement` AS (
-  WITH
-    w AS (
-    SELECT
-      ARRAY<STRUCT<measurement_id INT64,
-      person_id INT64,
-      measurement_concept_id INT64,
-      value_as_number FLOAT64,
-      unit_concept_id INT64,
-      range_low FLOAT64,
-      range_high FLOAT64,
-      measurement_date INT64,
-      measurement_datetime INT64,
-      measurement_type_concept_id INT64,
-      operator_concept_id INT64,
-      value_as_concept_id INT64,
-      provider_id INT64,
-      visit_occurrence_id INT64,
-      measurement_source_value INT64,
-      measurement_source_concept_id INT64,
-      unit_source_value INT64,
-      value_source_value INT64
-      >>
+  INSERT INTO `{{project_id}}.{{dataset_id}}.measurement` (
+      measurement_id,
+      person_id,
+      measurement_concept_id,
+      value_as_number,
+      unit_concept_id,
+      range_low,
+      range_high,
+      measurement_date,
+      measurement_datetime,
+      measurement_type_concept_id,
+      operator_concept_id,
+      value_as_concept_id,
+      provider_id,
+      visit_occurrence_id,
+      measurement_source_value,
+      measurement_source_concept_id,
+      unit_source_value,
+      value_source_value
+      )
+    VALUES
     -- 3020509 Albumin/Globulin [Mass Ratio] in Serum or Plasma https://athena.ohdsi.org/search-terms/terms/3020509 --
     -- 3020891 Body temperature https://athena.ohdsi.org/search-terms/terms/3020891 --
     -- 3016293 Bicarbonate [Moles/volume] in Serum or Plasma https://athena.ohdsi.org/search-terms/terms/3016293 --
@@ -54,40 +49,16 @@ CREATE TABLE
     -- 000905 Leukocytes [#/volume] in Blood by Automated count https://athena.ohdsi.org/search-terms/terms/3000905 --
     -- 3020630 Protein [Mass/volume] in Serum or Plasma https://athena.ohdsi.org/search-terms/terms/3020630 --
     -- 3020416 Erythrocytes [#/volume] in Blood by Automated count https://athena.ohdsi.org/search-terms/terms/3020416 --
-      [
-      (1,1,3020509,0.4,8523,1.0,2.4,0,0,0,0,0,0,0,0,0,0,0),
-      (2,1,3020891,97.7,9289,0.0,150.0,0,0,0,0,0,0,0,0,0,0,0),
-      (3,1,3016293,25.0,8753,21.0,31.0,0,0,0,0,0,0,0,0,0,0,0),
-      (4,1,3027970,2.3,8713,1.5,4.5,0,0,0,0,0,0,0,0,0,0,0),
-      (5,1,3027970,2.6,4121395,1.9,3.7,0,0,0,0,0,0,0,0,0,0,0),
-      (6,1,3000963,15.8,4121395,13.2,17.1,0,0,0,0,0,0,0,0,0,0,0),
-      (7,1,3000905,10.1,8647,4.5,11.0,0,0,0,0,0,0,0,0,0,0,0),
-      (8,1,3020630,6.2,8840,6.4,8.2,0,0,0,0,0,0,0,0,0,0,0),
-      (9,1,3020416,5.06,8816,4.2,5.8,0,0,0,0,0,0,0,0,0,0,0),
-      (10,1,3000963,3.4,8554,0.5,5.0,0,0,0,0,0,0,0,0,0,0,0)] col
-)
-SELECT
-    measurement_id,
-    person_id,
-    measurement_concept_id,
-    value_as_number,
-    unit_concept_id,
-    range_low,
-    range_high,
-    measurement_date,
-    measurement_datetime,
-    measurement_type_concept_id,
-    operator_concept_id,
-    value_as_concept_id,
-    provider_id,
-    visit_occurrence_id,
-    measurement_source_value,
-    measurement_source_concept_id,
-    unit_source_value,
-    value_source_value
-  FROM
-    w,
-    UNNEST(w.col))
+      (1,1,3020509,0.4,8523,1.0,2.4,'2020-01-01', '2020-01-01 01:01:01' ,0,0,0,0,0,null,0,null,null),
+      (2,1,3020891,97.7,9289,0.0,150.0,'2020-01-01', '2020-01-01 01:01:01' ,0,0,0,0,0,null,0,null,null),
+      (3,1,3016293,25.0,8753,21.0,31.0,'2020-01-01', '2020-01-01 01:01:01' ,0,0,0,0,0,null,0,null,null),
+      (4,1,3027970,2.3,8713,1.5,4.5,'2020-01-01', '2020-01-01 01:01:01' ,0,0,0,0,0,null,0,null,null),
+      (5,1,3027970,2.6,4121395,1.9,3.7,'2020-01-01', '2020-01-01 01:01:01' ,0,0,0,0,0,null,0,null,null),
+      (6,1,3000963,15.8,4121395,13.2,17.1,'2020-01-01', '2020-01-01 01:01:01' ,0,0,0,0,0,null,0,null,null),
+      (7,1,3000905,10.1,8647,4.5,11.0,'2020-01-01', '2020-01-01 01:01:01' ,0,0,0,0,0,null,0,null,null),
+      (8,1,3020630,6.2,8840,6.4,8.2,'2020-01-01', '2020-01-01 01:01:01' ,0,0,0,0,0,null,0,null,null),
+      (9,1,3020416,5.06,8816,4.2,5.8,'2020-01-01', '2020-01-01 01:01:01' ,0,0,0,0,0,null,0,null,null),
+      (10,1,3000963,3.4,8554,0.5,5.0,'2020-01-01', '2020-01-01 01:01:01' ,0,0,0,0,0,null,0,null,null)
 """)
 
 
@@ -132,30 +103,30 @@ class UnitNormalizationTest(BaseTest.CleaningRulesTestBase):
             project_id=self.project_id, dataset_id=self.dataset_id)
 
         # Load test data
-        self.load_test_data([f'''{raw_units_load_query}'''])
+        self.load_test_data([f'{raw_units_load_query}'])
 
     def test_setup_rule(self):
 
         # test if intermediary table exists before running the cleaning rule
         intermediary_table = f'{self.project_id}.{self.sandbox_id}.{UNIT_MAPPING_TABLE}'
 
-        client = bq.get_client(self.project_id)
         # run setup_rule and see if the table is created
-        self.rule_instance.setup_rule(client)
+        self.rule_instance.setup_rule(self.client)
 
-        actual_table = client.get_table(intermediary_table)
+        actual_table = self.client.get_table(intermediary_table)
         self.assertIsNotNone(actual_table.created)
 
         # test if exception is raised if table already exists
         with self.assertRaises(RuntimeError) as c:
-            self.rule_instance.setup_rule(client)
+            self.rule_instance.setup_rule(self.client)
 
         self.assertEqual(str(c.exception),
                          f"Unable to create tables: ['{intermediary_table}']")
 
         query = test_query.render(intermediary_table=intermediary_table)
-        query_job_config = bq.bigquery.job.QueryJobConfig(use_query_cache=False)
-        result = client.query(query, job_config=query_job_config).to_dataframe()
+        query_job_config = bigquery.job.QueryJobConfig(use_query_cache=False)
+        result = self.client.query(query,
+                                   job_config=query_job_config).to_dataframe()
         self.assertEqual(result.empty, False)
 
     def test_unit_normalization(self):
@@ -188,7 +159,3 @@ class UnitNormalizationTest(BaseTest.CleaningRulesTestBase):
         }]
 
         self.default_test(tables_and_counts)
-
-    def tearDown(self):
-        for table in self.fq_table_names + self.fq_sandbox_table_names:
-            self.client.delete_table(table, not_found_ok=True)
