@@ -99,20 +99,20 @@ def get_queries(project_id=None, dataset_id=None, sandbox_dataset_id=None):
 
     queries = []
     templates = {'basics': PERSON_WITH_NO_BASICS, 'ehr': PERSON_WITH_NO_EHR}
-    for missing_type in ['basics', 'ehr']:
+    for missing_type, template in templates.items():
         select_stmt = SELECT_QUERY.render(
             project=project_id,
             sandbox_dataset=sandbox_dataset_id,
             sandbox_table=f'{issue_numbers_str}_no_{missing_type}')
 
-        select_query = templates[missing_type].render(
+        select_query = template.render(
             query_type=select_stmt,
             project=project_id,
             dataset=dataset_id,
             basics_concept_id=BASICS_MODULE_CONCEPT_ID,
             mapped_clinical_data_configs=mapped_clinical_data_configs)
 
-        delete_query = templates[missing_type].render(
+        delete_query = template.render(
             query_type="DELETE",
             project=project_id,
             dataset=dataset_id,
