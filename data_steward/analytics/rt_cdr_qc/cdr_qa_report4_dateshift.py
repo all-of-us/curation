@@ -46,7 +46,7 @@ JOIN `{project_id}.{com_cdr}.observation` i
 ON m.person_id = i.person_id
 JOIN `{project_id}.{deid_cdr}.observation` d
 ON d.observation_id = i.observation_id)
-SELECT count(*) from df1
+SELECT COUNT(*) from df1
 WHERE diff !=0
 
 '''
@@ -72,7 +72,7 @@ JOIN `{project_id}.{com_cdr}.observation_period` i
 ON m.person_id = i.person_id
 JOIN `{project_id}.{deid_cdr}.observation_period` d
 ON d.observation_period_id = i.observation_period_id)
-SELECT count(*) from df1
+SELECT COUNT(*) from df1
 WHERE diff !=0
 
 '''
@@ -100,7 +100,7 @@ ON m.person_id = i.person_id
 JOIN `{project_id}.{deid_cdr}.person` d
 ON d.person_id = m.research_id
 )
-SELECT count(*) from df1
+SELECT COUNT(*) from df1
 WHERE diff !=0
 '''
 df1=pd.read_gbq(query, dialect='standard')
@@ -127,7 +127,7 @@ ON m.person_id = i.person_id
 JOIN `{project_id}.{deid_cdr}.specimen` d
 ON d.specimen_id = i.specimen_id
 )
-SELECT count(*) from df1
+SELECT COUNT(*) from df1
 WHERE diff !=0
   
 '''
@@ -143,8 +143,6 @@ df1
 
 # # 6 DS_6 Verify that the field identified to follow the date shift rule as de-identification action in DEATH table have been randomly date shifted. 
 
-# # error in both old and new cdr , different death date for same person here?
-
 query = f'''
 
 WITH df1 as (
@@ -155,8 +153,9 @@ JOIN `{project_id}.{com_cdr}.death` i
 ON m.person_id = i.person_id
 JOIN `{project_id}.{deid_cdr}.death` d
 ON m.research_id = d.person_id 
+AND i.death_type_concept_id = d.death_type_concept_id
  )
-SELECT count (*) from df1
+SELECT COUNT (*) from df1
 WHERE diff !=0
   
 '''
@@ -167,34 +166,6 @@ if df1.eq(0).any().any():
 else:
  df = df.append({'query' : 'Query6 Death', 'result' : ''},  
                 ignore_index = True) 
-df1
-
-# +
-# adding site info
-query = f'''
-
-WITH df1 as (
-SELECT i.person_id,m.research_id,m.shift,
-DATE_DIFF(DATE(i.death_date), DATE(d.death_date),day)-m.shift as diff,
-i.death_date as com_cdr_death_date, d.death_date as deid_death_date, src_id
-FROM `{project_id}.{pipeline}.pid_rid_mapping` m
-JOIN `{project_id}.{com_cdr}.death` i
-ON m.person_id = i.person_id
-JOIN `{project_id}.{deid_cdr}.death` d
-ON m.research_id = d.person_id 
-JOIN `{project_id}.{deid_cdr}.condition_occurrence` cond
-ON m.research_id = cond.person_id 
-JOIN `{project_id}.{deid_cdr}.condition_occurrence_ext` ext
-ON cond.condition_occurrence_id = ext.condition_occurrence_id
-
- )
-SELECT * from df1
-WHERE diff !=0
-group by 1,2,3,4,5,6,7
-  
-'''
-df1=pd.read_gbq(query, dialect='standard')
-
 df1
 
 # + [markdown] papermill={"duration": 0.023411, "end_time": "2021-02-02T22:30:39.091846", "exception": false, "start_time": "2021-02-02T22:30:39.068435", "status": "completed"} tags=[]
@@ -211,7 +182,7 @@ ON m.person_id = i.person_id
 JOIN `{project_id}.{deid_cdr}.visit_occurrence` d
 ON d.visit_occurrence_id = i.visit_occurrence_id
 )
-SELECT count (*) from df1
+SELECT COUNT (*) from df1
 WHERE diff !=0
   
 '''
@@ -237,7 +208,7 @@ ON m.person_id = i.person_id
 JOIN `{project_id}.{deid_cdr}.procedure_occurrence` d
 ON d.procedure_occurrence_id = i.procedure_occurrence_id
 )
-SELECT count(*) from df1
+SELECT COUNT(*) from df1
 WHERE diff !=0
   
 '''
@@ -262,7 +233,7 @@ ON m.person_id = i.person_id
 JOIN `{project_id}.{deid_cdr}.drug_exposure` d
 ON i.drug_exposure_id = d.drug_exposure_id
 )
-SELECT count(*) from df1
+SELECT COUNT(*) from df1
 WHERE diff !=0
 '''
 df9=pd.read_gbq(query, dialect='standard')
@@ -287,7 +258,7 @@ ON m.person_id = i.person_id
 JOIN `{project_id}.{deid_cdr}.device_exposure` d
 ON i.device_exposure_id = d.device_exposure_id
   )
-SELECT count(*) from df1
+SELECT COUNT(*) from df1
 WHERE diff !=0
   '''
 df1=pd.read_gbq(query, dialect='standard')
@@ -311,7 +282,7 @@ ON m.person_id = i.person_id
 JOIN `{project_id}.{deid_cdr}.condition_occurrence` d
 ON i.condition_occurrence_id = d.condition_occurrence_id
   )
-SELECT count(*) from df1
+SELECT COUNT(*) from df1
 WHERE diff !=0
   
 '''
@@ -337,7 +308,7 @@ ON m.person_id = i.person_id
 JOIN `{project_id}.{deid_cdr}.measurement` d
 ON d.measurement_id = i.measurement_id
   )
-SELECT count(*) from df1
+SELECT COUNT(*) from df1
 WHERE diff !=0
   
 '''
@@ -355,7 +326,7 @@ df1
 # # 13 DS_13 Verify the date shift has been implemented following the date shift noted in the deid_map table in the non-deid dataset.
 
 query = f'''
-SELECT count (*)
+SELECT COUNT (*)
 FROM  `{project_id}.{pipeline}.pid_rid_mapping`
 WHERE shift <=0
 
@@ -376,7 +347,7 @@ df1
 
 query = f'''
 WITH df1 as (
-SELECT count (*) as c1
+SELECT COUNT (*) as c1
 FROM  `{project_id}.{com_cdr}.observation` non_deid
 join `{project_id}.{pipeline}.pid_rid_mapping` m
 on m.person_id=non_deid.person_id
@@ -385,7 +356,7 @@ WHERE deid.person_id !=m.research_id
 ),
 
 df2 as (
-SELECT count (*) as c1
+SELECT COUNT (*) as c1
 FROM  `{project_id}.{com_cdr}.measurement` non_deid
 join `{project_id}.{pipeline}.pid_rid_mapping` m
 on m.person_id=non_deid.person_id
@@ -394,7 +365,7 @@ WHERE deid.person_id !=m.research_id
 ),
 
 df3 as (
-SELECT count (*) as c1
+SELECT COUNT (*) as c1
 FROM  `{project_id}.{com_cdr}.condition_occurrence` non_deid
 join `{project_id}.{pipeline}.pid_rid_mapping` m
 on m.person_id=non_deid.person_id
@@ -403,7 +374,7 @@ WHERE deid.person_id !=m.research_id
 ),
 
 df4 as (
-SELECT count (*) as c1
+SELECT COUNT (*) as c1
 FROM  `{project_id}.{com_cdr}.drug_exposure` non_deid
 join `{project_id}.{pipeline}.pid_rid_mapping` m
 on m.person_id=non_deid.person_id
@@ -412,7 +383,7 @@ WHERE deid.person_id !=m.research_id
 ),
 
 df5 as (
-SELECT count (*) as c1
+SELECT COUNT (*) as c1
 FROM  `{project_id}.{com_cdr}.device_exposure` non_deid
 join `{project_id}.{pipeline}.pid_rid_mapping` m
 on m.person_id=non_deid.person_id
@@ -421,7 +392,7 @@ WHERE deid.person_id !=m.research_id
 ),
 
 df6 as (
-SELECT count (*) as c1
+SELECT COUNT (*) as c1
 FROM  `{project_id}.{com_cdr}.procedure_occurrence` non_deid
 join `{project_id}.{pipeline}.pid_rid_mapping` m
 on m.person_id=non_deid.person_id
@@ -430,7 +401,7 @@ WHERE deid.person_id !=m.research_id
 ),
 
 df7 as (
-SELECT count (*) as c1
+SELECT COUNT (*) as c1
 FROM  `{project_id}.{com_cdr}.visit_occurrence` non_deid
 join `{project_id}.{pipeline}.pid_rid_mapping` m
 on m.person_id=non_deid.person_id
@@ -439,7 +410,7 @@ WHERE deid.person_id !=m.research_id
 ),
 
 df8 as (
-SELECT count (*) as c1
+SELECT COUNT (*) as c1
 FROM  `{project_id}.{com_cdr}.specimen` non_deid
 join `{project_id}.{pipeline}.pid_rid_mapping` m
 on m.person_id=non_deid.person_id
