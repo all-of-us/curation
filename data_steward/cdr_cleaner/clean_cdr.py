@@ -108,6 +108,8 @@ EHR_CLEANING_CLASSES = [
 ]
 
 UNIONED_EHR_CLEANING_CLASSES = [
+    (EhrSubmissionDataCutoff,
+    ),  # should run before EnsureDateDatetimeConsistency
     (DeduplicateIdColumn,),
     (clean_years.get_year_of_birth_queries,),
     (drug_refills_supply.get_days_supply_refills_queries,),
@@ -116,8 +118,6 @@ UNIONED_EHR_CLEANING_CLASSES = [
     # setup_query_execution function to load dependencies before query execution
     (
         populate_routes.get_route_mapping_queries,),
-    (EhrSubmissionDataCutoff,
-    ),  # should run before EnsureDateDatetimeConsistency
     (EnsureDateDatetimeConsistency,),
     (remove_records_with_wrong_date.get_remove_records_with_wrong_date_queries,
     ),
