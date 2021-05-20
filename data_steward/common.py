@@ -220,6 +220,8 @@ PRIMARY_PID_RID_MAPPING = 'primary_pid_rid_mapping'
 PIPELINE_TABLES = 'pipeline_tables'
 COPE_SURVEY_MAP = 'cope_survey_semantic_version_map'
 
+ZIP3_LOOKUP = 'zip3_lookup'
+
 # JINJA
 JINJA_ENV = jinja2.Environment(
     # block tags on their own lines
