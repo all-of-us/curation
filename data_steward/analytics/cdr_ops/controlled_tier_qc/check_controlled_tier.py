@@ -20,10 +20,14 @@ project_id: str = ""  # identifies the project where datasets are located
 post_deid_dataset: str = ""  # the CT deid dataset
 pre_deid_dataset: str = ""  # the combined dataset
 mapping_dataset: str = ""  # the sandbox dataset where mappings are
-# -
 
+# +
 import pandas as pd
 from code.controlled_tier_qc import run_qc, display_check_summary_by_rule, display_check_detail_of_rule
+
+pd.set_option('display.max_colwidth', -1)
+pd.set_option('display.width', None)
+# -
 
 # to_include = ['DC-1370', 'DC-1377', 'DC-1346', 'DC-1348', 'DC-1355', 'DC-1357', 'DC-1359', 
 #             'DC-1362', 'DC-1364', 'DC-1366', 'DC-1368', 'DC-1373',
@@ -97,6 +101,12 @@ display_check_detail_of_rule(checks, 'DC-1382')
 
 display_check_detail_of_rule(checks, 'DC-1388')
 
+# # [DC-1527: Suppression of organ transplant rows](https://precisionmedicineinitiative.atlassian.net/browse/DC-1527)
 
+display_check_detail_of_rule(checks, 'DC-1527')
+
+# # [DC-1535: Suppression of geolocation records](https://precisionmedicineinitiative.atlassian.net/browse/DC-1535)
+
+display_check_detail_of_rule(checks, 'DC-1535')
 
 
