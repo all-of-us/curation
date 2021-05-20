@@ -6,8 +6,11 @@ This cleaning rule sandboxes and updates any invalid zip codes.
 Original Issues: DC-1633, DC-1645
 
 Ensures that any invalid zip codes are sandboxed and updated. Invalid zip codes are those that are less than 5 digits
-    in length or do not match a zip3 value in the zip3 lookup table. If a zip code is invalid, the value_as_string is
-    updated to 'Invalid Zip' and the value_as_number is updated to 0.
+    in length or do not match a zip3 value in the zip3 lookup table. If a zip code is invalid the record is sandboxed
+    and updated to have the following information:
+        value_as_string and value_source_value = 'Response removed due to invalid value'
+        value_as_number = 0
+        value_source_concept_id = 2000000010
 """
 
 # Python imports
@@ -39,8 +42,7 @@ class UpdateInvalidZipCodesTest(BaseTest.CleaningRulesTestBase):
         cls.project_id = project_id
 
         # set the expected test datasets
-        # intended to be run on the deid_base dataset.  The combined dataset
-        # environment variable should be guaranteed to exist
+        # intended to be run on the rdr dataset
         dataset_id = os.environ.get('RDR_DATASET_ID')
         cls.dataset_id = dataset_id
         sandbox_id = dataset_id + '_sandbox'

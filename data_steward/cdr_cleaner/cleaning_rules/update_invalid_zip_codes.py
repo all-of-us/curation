@@ -44,8 +44,6 @@ AND z.zip3 IS NULL)
 ) AS R ON L.person_id = R.person_id)
 """)
 
-# Updates value_as_string to 'Invalid Zip', and value_as_number to 0 in observation table if that record is found
-# in the sandbox table.
 UPDATE_INVALID_ZIP_CODES = JINJA_ENV.from_string("""
 UPDATE `{{project_id}}.{{dataset_id}}.{{obs_table}}` SET
 value_as_string = 'Response removed due to invalid value',
