@@ -228,3 +228,5 @@ observation,qualifier_concept_id,INT64,YES,,DC-1388
 observation,unit_concept_id,INT64,YES,,DC-1388
 observation,observation_source_concept_id,INT64,YES,,DC-1388
 observation,value_source_concept_id,INT64,YES,,DC-1388
+observation,observation_concept_id,INT64,NO,,DC-1535
+observation,observation_source_concept_id,INT64,YES,,DC-1535
