@@ -1,0 +1,14 @@
+[
+  {
+    "type": "integer",
+    "name": "zip3",
+    "mode": "nullable",
+    "description": "Integer representation of ZIP3 code (e.g. 3, 370, etc.)"
+  },
+  {
+    "type": "string",
+    "name": "zip3_as_string",
+    "mode": "nullable",
+    "description": "String representation of de-ied ZIP3 value (e.g. 003**, 370**)"
+  }
+]
