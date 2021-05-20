@@ -19,7 +19,6 @@ import logging
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as clean_consts
-from utils.sandbox import get_sandbox_dataset_id
 
 LOGGER = logging.getLogger(__name__)
 
