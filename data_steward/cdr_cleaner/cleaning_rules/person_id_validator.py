@@ -69,7 +69,7 @@ def get_person_id_validation_queries(project=None,
     combined and unidentified dataset, the last portion of the dataset name is
     removed to access these tables.  Any other dataset is expected to have
     these tables and uses the mapping tables from within the same dataset.
-    :param sandbox_dataset_id: Identifies the sandbox dataset to store rows 
+    :param sandbox_dataset_id: Identifies the sandbox dataset to store rows
     #TODO use sandbox_dataset_id for CR
 
     :return:  A list of string queries that can be executed to delete invalid
@@ -105,9 +105,21 @@ def get_person_id_validation_queries(project=None,
         }
         query_list.append(query_dict)
 
+    # TODO use inheritance from DropMissingParticipants to create PersonIdValidator cleaning rule
+    # and reorganize similar to drop_participants_without_ppi_or_ehr
+    drop_rows_for_missing_persons_rule_instance = drop_rows_for_missing_persons.DropMissingParticipants(
+        issue_numbers=[],
+        description='',
+        affected_datasets=[],
+        affected_tables=[],
+        project_id=project,
+        dataset_id=dataset,
+        sandbox_dataset_id=sandbox_dataset_id,
+        namer='data_stage')
+
     # generate queries to remove person_ids of people not in the person table
     query_list.extend(
-        drop_rows_for_missing_persons.get_queries(project, dataset))
+        drop_rows_for_missing_persons_rule_instance.get_query_specs())
 
     return query_list
 
