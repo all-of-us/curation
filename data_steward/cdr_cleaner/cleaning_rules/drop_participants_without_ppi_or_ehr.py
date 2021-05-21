@@ -3,18 +3,23 @@ Run the drop_participants_without_ppi_or_ehr validation clean rule.
 
 Drops all data for participants who:
   1. have not completed "The Basics" PPI module, via the RDR
-  2. do not have any EHR data
+  2. do not have any EHR data (- excluded as of DC-706 as noted below)
 
 (1) is achieved by checking the observation table for children of TheBasics
 module. (2) is achieved by checking all mapping tables for all person_id tables,
 to confirm whether any data is sourced from EHR per participant.
+
+As part of DC-696, several participants were found with no basics survey still persisting in the CDR
+These records were removed, and DC-706 was created to remove such participants in the future.
+
+As part of this effort, the condition for dropping has been modified to participants who:
+  1. have not completed "The Basics" PPI module, via the RDR
 """
 import logging
 
-import common
-import resources
-from cdr_cleaner.cleaning_rules import drop_rows_for_missing_persons
-from constants.cdr_cleaner import clean_cdr as clean_consts
+from common import JINJA_ENV, PERSON
+from cdr_cleaner.cleaning_rules.drop_rows_for_missing_persons import DropMissingParticipants
+from constants.cdr_cleaner import clean_cdr as cdr_consts
 
 LOGGER = logging.getLogger(__name__)
 
@@ -22,12 +27,12 @@ ISSUE_NUMBERS = ["DC584", "DC696", "DC706"]
 
 BASICS_MODULE_CONCEPT_ID = 1586134
 
-SELECT_QUERY = common.JINJA_ENV.from_string("""
+SELECT_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE `{{project}}.{{sandbox_dataset}}.{{sandbox_table}} AS
 SELECT p.*
 """)
 
-PERSON_WITH_NO_BASICS = common.JINJA_ENV.from_string("""
+PERSON_WITH_NO_BASICS = JINJA_ENV.from_string("""
 {{query_type}}
 FROM `{{project}}.{{dataset}}.person` p
 WHERE person_id NOT IN
@@ -55,75 +60,66 @@ WHERE person_id NOT IN
     AND questionnaire_response_id IS NOT NULL)
 """)
 
-PERSON_WITH_NO_EHR = common.JINJA_ENV.from_string("""
-{{query_type}}
-FROM `{{project}}.{{dataset}}.person` p
-WHERE person_id NOT IN (
-{% for table, config in mapped_clinical_data_configs.items() %}
-  SELECT
-    person_id
-  FROM `{{project}}.{{dataset}}.{{table}}` t
-  JOIN `{{project}}.{{dataset}}._mapping_{{table}}` m
-  USING ({{table}}_id)
-  -- The source HPO is either the "rdr", or a site ID; we only want to capture sites here. --
-  WHERE m.src_hpo_id != "rdr"
-  {% if loop.nextitem is defined %}UNION DISTINCT{% endif %}
-{% endfor %}
-)
-""")
 
-
-def get_queries(project_id=None, dataset_id=None, sandbox_dataset_id=None):
+class DropParticipantsWithoutPPI(DropMissingParticipants):
     """
-    Return a list of queries to remove data-poor participant rows.
-
-    The removal criteria is for participants is as follows:
-    1. They have not completed "The Basics" PPI module, via the RDR
-    2. They do not have any EHR data
-    These participants are not particularly useful for analysis, so remove them
-    here.
-    :param project_id: identifies the project
-    :param dataset_id: identifies the dataset
-    :param sandbox_dataset_id: Identifies the sandbox dataset to store rows
-    :return:  A list of string queries that can be executed to sandbox and delete data-poor
-        participants and corresponding rows from relevant tables in the dataset.
+    Drops participants without basics survey or EHR data
     """
-    mapped_clinical_data_configs = {
-        t: {
-            'id_column': resources.get_domain_id_field(t)
-        } for t in common.MAPPED_CLINICAL_DATA_TABLES
-    }
 
-    issue_numbers_str = '_'.join(
-        [issue_num.lower() for issue_num in ISSUE_NUMBERS])
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 namer='stage_less'):
+        desc = (f'Sandbox and remove PIDs with no PPI basics or EHR data.'
+                f'Use drop missing participants CR to remove their records.')
 
-    queries = []
-    templates = {'basics': PERSON_WITH_NO_BASICS, 'ehr': PERSON_WITH_NO_EHR}
-    for missing_type, template in templates.items():
+        super().__init__(issue_numbers=ISSUE_NUMBERS,
+                         description=desc,
+                         affected_datasets=[cdr_consts.COMBINED],
+                         affected_tables=[PERSON],
+                         project_id=project_id,
+                         dataset_id=dataset_id,
+                         sandbox_dataset_id=sandbox_dataset_id,
+                         namer=namer)
+
+    def get_query_specs(self):
+        """
+        Return a list of queries to remove data-poor participant rows.
+
+        The removal criteria is for participants is as follows:
+        1. They have not completed "The Basics" PPI module, via the RDR
+        OR
+        2. They do not have any EHR data
+        These participants are not particularly useful for analysis, so remove them
+        here.
+        :return:  A list of string queries that can be executed to sandbox and delete data-poor
+            participants and corresponding rows from relevant tables in the dataset.
+        """
+
+        queries = []
         select_stmt = SELECT_QUERY.render(
-            project=project_id,
-            sandbox_dataset=sandbox_dataset_id,
-            sandbox_table=f'{issue_numbers_str}_no_{missing_type}')
+            project=self.project_id,
+            sandbox_dataset=self.sandbox_dataset_id,
+            sandbox_table=self.sandbox_table_for(PERSON))
 
-        select_query = template.render(
+        select_query = PERSON_WITH_NO_BASICS.render(
             query_type=select_stmt,
-            project=project_id,
-            dataset=dataset_id,
-            basics_concept_id=BASICS_MODULE_CONCEPT_ID,
-            mapped_clinical_data_configs=mapped_clinical_data_configs)
+            project=self.project_id,
+            dataset=self.dataset_id,
+            basics_concept_id=BASICS_MODULE_CONCEPT_ID)
+        queries.append({cdr_consts.QUERY: select_query})
 
-        delete_query = template.render(
+        delete_query = PERSON_WITH_NO_BASICS.render(
             query_type="DELETE",
-            project=project_id,
-            dataset=dataset_id,
-            basics_concept_id=BASICS_MODULE_CONCEPT_ID,
-            mapped_clinical_data_configs=mapped_clinical_data_configs)
-        queries.append({clean_consts.QUERY: select_query})
-        queries.append({clean_consts.QUERY: delete_query})
+            project=self.project_id,
+            dataset=self.dataset_id,
+            basics_concept_id=BASICS_MODULE_CONCEPT_ID)
+        queries.append({cdr_consts.QUERY: delete_query})
 
-    # drop from the person table, then delete all corresponding data for the now missing persons
-    return queries + drop_rows_for_missing_persons.get_queries(
-        project_id, dataset_id)
+        # drop from the person table, then delete all corresponding data for the now missing persons
+        queries.extend(super().get_query_specs())
+        return queries
 
 
 if __name__ == '__main__':
@@ -134,13 +130,13 @@ if __name__ == '__main__':
 
     if ARGS.list_queries:
         clean_engine.add_console_logging()
-        query_list = clean_engine.get_query_list(ARGS.project_id,
-                                                 ARGS.dataset_id,
-                                                 ARGS.sandbox_dataset_id,
-                                                 [(get_queries,)])
+        query_list = clean_engine.get_query_list(
+            ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id,
+            [(DropParticipantsWithoutPPI,)])
         for query in query_list:
             LOGGER.info(query)
     else:
         clean_engine.add_console_logging(ARGS.console_log)
         clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
-                                   ARGS.sandbox_dataset_id, [(get_queries,)])
+                                   ARGS.sandbox_dataset_id,
+                                   [(DropParticipantsWithoutPPI,)])
