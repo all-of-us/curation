@@ -89,8 +89,6 @@ class DropParticipantsWithoutPPI(DropMissingParticipants):
 
         The removal criteria is for participants is as follows:
         1. They have not completed "The Basics" PPI module, via the RDR
-        OR
-        2. They do not have any EHR data
         These participants are not particularly useful for analysis, so remove them
         here.
         :return:  A list of string queries that can be executed to sandbox and delete data-poor
