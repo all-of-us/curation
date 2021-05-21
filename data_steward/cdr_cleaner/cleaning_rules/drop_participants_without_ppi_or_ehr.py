@@ -28,7 +28,7 @@ ISSUE_NUMBERS = ["DC584", "DC696", "DC706"]
 BASICS_MODULE_CONCEPT_ID = 1586134
 
 SELECT_QUERY = JINJA_ENV.from_string("""
-CREATE OR REPLACE `{{project}}.{{sandbox_dataset}}.{{sandbox_table}} AS
+CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` AS
 SELECT p.*
 """)
 

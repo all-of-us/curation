@@ -37,9 +37,11 @@ class DropParticipantsWithoutPPITest(BaseTest.CleaningRulesTestBase):
                                                        cls.sandbox_id)
 
         cls.tables = [common.PERSON, common.OBSERVATION, common.DRUG_EXPOSURE]
+        supporting_tables = ['_mapping_observation']
         # Generates list of fully qualified table names and their corresponding sandbox table names
         cls.fq_table_names = [
-            f"{cls.project_id}.{cls.dataset_id}.{table}" for table in cls.tables
+            f"{cls.project_id}.{cls.dataset_id}.{table}"
+            for table in cls.tables + supporting_tables
         ]
 
         cls.fq_sandbox_table_names = [
@@ -65,10 +67,10 @@ class DropParticipantsWithoutPPITest(BaseTest.CleaningRulesTestBase):
         drug_tmpl = self.jinja_env.from_string("""
             INSERT INTO `{{project_id}}.{{dataset_id}}.drug_exposure`
                 (drug_exposure_id, person_id, drug_concept_id, drug_exposure_start_date,
-                drug_exposure_start_datetime)
+                drug_exposure_start_datetime, drug_type_concept_id)
             VALUES
-                (200, 3, 10, '2021-01-01', TIMESTAMP('2021-01-01')),
-                (201, 4, 11, '2021-01-01', TIMESTAMP('2021-01-01'))
+                (200, 3, 10, '2021-01-01', TIMESTAMP('2021-01-01'), 1),
+                (201, 4, 11, '2021-01-01', TIMESTAMP('2021-01-01'), 2)
             """)
         observation_tmpl = self.jinja_env.from_string("""
             INSERT INTO `{{project_id}}.{{dataset_id}}.observation`
@@ -77,8 +79,19 @@ class DropParticipantsWithoutPPITest(BaseTest.CleaningRulesTestBase):
             VALUES
                 (100, 2, {{rdr_basics_concept_id}}, '2021-01-01', {{survey_concept_id}}),
                 (101, 2, {{rdr_consent_concept_id}}, '2021-01-01', {{survey_concept_id}}),
-                (102, 4, {{rdr_basics_concept_id}}), '2021-01-01', {{survey_concept_id}},
-                (103, 5, {{rdr_consent_concept_id}}, '2021-01-01', {{survey_concept_id}})
+                (102, 4, {{rdr_basics_concept_id}}, '2021-01-01', {{survey_concept_id}}),
+                (103, 5, {{rdr_consent_concept_id}}, '2021-01-01', {{survey_concept_id}}),
+                (104, 6, 12345, '2021-01-01', 23456)
+            """)
+        mapping_observation_tmpl = self.jinja_env.from_string("""
+            INSERT INTO `{{project_id}}.{{dataset_id}}._mapping_observation`
+                (observation_id, src_hpo_id)
+            VALUES
+                (100, 'rdr'),
+                (101, 'rdr'),
+                (102, 'rdr'),
+                (103, 'rdr'),
+                (104, 'fake')
             """)
         person_tmpl = self.jinja_env.from_string("""
             INSERT INTO `{{project_id}}.{{dataset_id}}.person`
@@ -92,19 +105,24 @@ class DropParticipantsWithoutPPITest(BaseTest.CleaningRulesTestBase):
                 (6, 7, 2002, 7, 8)
             """)
 
-        drug_query = drug_tmpl.render(project=self.project_id,
-                                      dataset=self.dataset_id)
+        drug_query = drug_tmpl.render(project_id=self.project_id,
+                                      dataset_id=self.dataset_id)
         observation_query = observation_tmpl.render(
-            project=self.project_id,
-            dataset=self.dataset_id,
+            project_id=self.project_id,
+            dataset_id=self.dataset_id,
             rdr_basics_concept_id=BASICS_CONCEPT_ID,
             rdr_consent_concept_id=CONSENT_CONCEPT_ID,
             survey_concept_id=TYPE_CONCEPT_ID_SURVEY)
-        person_query = person_tmpl.render(project=self.project_id,
-                                          dataset=self.dataset_id)
+        mapping_observation_query = mapping_observation_tmpl.render(
+            project_id=self.project_id, dataset_id=self.dataset_id)
+        person_query = person_tmpl.render(project_id=self.project_id,
+                                          dataset_id=self.dataset_id)
 
         # load the test data
-        self.load_test_data([drug_query, observation_query, person_query])
+        self.load_test_data([
+            drug_query, observation_query, mapping_observation_query,
+            person_query
+        ])
 
     def copy_vocab_tables(self):
         self.client.copy_table(
@@ -136,13 +154,15 @@ class DropParticipantsWithoutPPITest(BaseTest.CleaningRulesTestBase):
                 'observation_id', 'person_id', 'observation_concept_id',
                 'observation_date', 'observation_type_concept_id'
             ],
-            'loaded_ids': [100, 101, 102, 103],
-            'cleaned_values': [(100, 2, BASICS_CONCEPT_ID, date('2021-01-01'),
-                                TYPE_CONCEPT_ID_SURVEY),
-                               (101, 2, CONSENT_CONCEPT_ID, date('2021-01-01'),
-                                TYPE_CONCEPT_ID_SURVEY),
-                               (102, 4, BASICS_CONCEPT_ID, date('2021-01-01'),
-                                TYPE_CONCEPT_ID_SURVEY)]
+            'loaded_ids': [100, 101, 102, 103, 104],
+            'cleaned_values': [
+                (100, 2, BASICS_CONCEPT_ID, date.fromisoformat('2021-01-01'),
+                 TYPE_CONCEPT_ID_SURVEY),
+                (101, 2, CONSENT_CONCEPT_ID, date.fromisoformat('2021-01-01'),
+                 TYPE_CONCEPT_ID_SURVEY),
+                (102, 4, BASICS_CONCEPT_ID, date.fromisoformat('2021-01-01'),
+                 TYPE_CONCEPT_ID_SURVEY)
+            ]
         }, {
             'name':
                 common.DRUG_EXPOSURE,
@@ -150,13 +170,14 @@ class DropParticipantsWithoutPPITest(BaseTest.CleaningRulesTestBase):
                 self.fq_table_names[2],
             'fields': [
                 'drug_exposure_id', 'person_id', 'drug_concept_id',
-                'drug_exposure_start_date', 'drug_exposure_start_datetime'
+                'drug_exposure_start_date', 'drug_exposure_start_datetime',
+                'drug_type_concept_id'
             ],
             'loaded_ids': [200, 201],
-            'cleaned_values': [(200, 3, 10, date('2021-01-01'),
-                                datetime.fromisoformat('2021-01-01+00:00')),
-                               (201, 4, 11, date('2021-01-01'),
-                                datetime.fromisoformat('2021-01-01+00:00'))]
+            'cleaned_values': [(200, 3, 10, date.fromisoformat('2021-01-01'),
+                                datetime.fromisoformat('2021-01-01+00:00'), 1),
+                               (201, 4, 11, date.fromisoformat('2021-01-01'),
+                                datetime.fromisoformat('2021-01-01+00:00'), 2)]
         }]
 
         self.default_test(tables_and_counts)

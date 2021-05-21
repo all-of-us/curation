@@ -18,17 +18,18 @@ NON_PID_TABLES = [
 ]
 
 TABLES_TO_DELETE_FROM = set(common.AOU_REQUIRED +
-                            [common.OBSERVATION_PERIOD]) - set(NON_PID_TABLES)
+                            [common.OBSERVATION_PERIOD]) - set(NON_PID_TABLES +
+                                                               [common.PERSON])
 
 SELECT_QUERY = common.JINJA_ENV.from_string("""
-CREATE OR REPLACE `{{project}}.{{sandbox_dataset}}.{{sandbox_table}} AS
+CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` AS
 SELECT *
 """)
 
 # Delete rows in tables where the person_id is not in the person table
 RECORDS_FOR_NON_EXISTING_PIDS = common.JINJA_ENV.from_string("""
 {{query_type}}
-FROM `{{project}}.{{dataset}}.{{table_id}}`
+FROM `{{project}}.{{dataset}}.{{table}}`
 WHERE person_id NOT IN
 (SELECT person_id
 FROM `{{project}}.{{dataset}}.person`)
@@ -67,7 +68,7 @@ class DropMissingParticipants(BaseCleaningRule):
             other tables for non-person users.
         """
         query_list = []
-        for table in TABLES_TO_DELETE_FROM:
+        for table in self.affected_tables:
             create_sandbox_ddl = SELECT_QUERY.render(
                 project=self.project_id,
                 sandbox_dataset=self.sandbox_dataset_id,
