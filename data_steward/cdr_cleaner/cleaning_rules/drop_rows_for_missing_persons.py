@@ -52,7 +52,7 @@ class DropMissingParticipants(BaseCleaningRule):
             issue_numbers=list(set(ISSUE_NUMBERS) | set(issue_numbers)),
             description=f'{description} AND {desc}',
             affected_datasets=affected_datasets,
-            affected_tables=affected_tables + list(TABLES_TO_DELETE_FROM),
+            affected_tables=list(TABLES_TO_DELETE_FROM),
             project_id=project_id,
             dataset_id=dataset_id,
             sandbox_dataset_id=sandbox_dataset_id,

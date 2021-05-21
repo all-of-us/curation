@@ -1,6 +1,7 @@
 # Python imports
 import os
 from datetime import date, datetime
+from unittest.mock import patch
 
 # Third party imports
 
@@ -36,17 +37,19 @@ class DropParticipantsWithoutPPITest(BaseTest.CleaningRulesTestBase):
                                                        cls.dataset_id,
                                                        cls.sandbox_id)
 
-        cls.tables = [common.PERSON, common.OBSERVATION, common.DRUG_EXPOSURE]
+        cls.affected_tables = [
+            common.PERSON, common.OBSERVATION, common.DRUG_EXPOSURE
+        ]
         supporting_tables = ['_mapping_observation']
         # Generates list of fully qualified table names and their corresponding sandbox table names
         cls.fq_table_names = [
             f"{cls.project_id}.{cls.dataset_id}.{table}"
-            for table in cls.tables + supporting_tables
+            for table in cls.affected_tables + supporting_tables
         ]
 
         cls.fq_sandbox_table_names = [
             f'{cls.project_id}.{cls.sandbox_id}.{cls.rule_instance.sandbox_table_for(table)}'
-            for table in cls.tables
+            for table in cls.affected_tables
         ]
 
         # call super to set up the client, create datasets
@@ -132,6 +135,9 @@ class DropParticipantsWithoutPPITest(BaseTest.CleaningRulesTestBase):
             f'{self.project_id}.{self.vocabulary_id}.concept_ancestor',
             f'{self.project_id}.{self.dataset_id}.concept_ancestor')
 
+    @patch(
+        'cdr_cleaner.cleaning_rules.drop_rows_for_missing_persons.TABLES_TO_DELETE_FROM',
+        [common.PERSON, common.OBSERVATION, common.DRUG_EXPOSURE])
     def test_queries(self):
         """
         Validates pre-conditions, test execution and post conditions based on the tables_and_counts variable.
@@ -174,10 +180,10 @@ class DropParticipantsWithoutPPITest(BaseTest.CleaningRulesTestBase):
                 'drug_type_concept_id'
             ],
             'loaded_ids': [200, 201],
-            'cleaned_values': [(200, 3, 10, date.fromisoformat('2021-01-01'),
-                                datetime.fromisoformat('2021-01-01+00:00'), 1),
-                               (201, 4, 11, date.fromisoformat('2021-01-01'),
-                                datetime.fromisoformat('2021-01-01+00:00'), 2)]
+            'cleaned_values': [
+                (201, 4, 11, date.fromisoformat('2021-01-01'),
+                 datetime.fromisoformat('2021-01-01 00:00:00+00:00'), 2)
+            ]
         }]
 
         self.default_test(tables_and_counts)
