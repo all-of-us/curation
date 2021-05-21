@@ -180,8 +180,11 @@ COMBINED_CLEANING_CLASSES = [
     (drop_participants_without_ppi_or_ehr.get_queries,),
     (clean_years.get_year_of_birth_queries,),
     (NegativeAges,),
+    # Valid Death dates needs to be applied before no data after death as running no data after death is
+    # wiping out the needed consent related data for cleaning.
+    (
+        ValidDeathDates,),
     (NoDataAfterDeath,),
-    (ValidDeathDates,),
     (drug_refills_supply.get_days_supply_refills_queries,),
     # trying to load a table while creating query strings,
     # won't work with mocked strings.  should use base class

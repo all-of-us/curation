@@ -56,7 +56,9 @@ class ValidDeathDates(BaseCleaningRule):
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
         desc = 'All rows in the death table that contain a death_date which occurs before the start of the AoU ' \
-               'program (Jan 1, 2017) or after the current date will be sandboxed and dropped'
+               'program (Jan 1, 2017) or after the current date will be sandboxed and dropped.' \
+               'Valid Death dates needs to be applied before no data after death as running no data after death is' \
+               ' wiping out the needed consent related data for cleaning'
         super().__init__(issue_numbers=['DC822'],
                          description=desc,
                          affected_datasets=[cdr_consts.COMBINED],
