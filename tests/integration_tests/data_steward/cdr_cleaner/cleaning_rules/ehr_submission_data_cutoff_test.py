@@ -113,19 +113,22 @@ class EhrSubmissionDataCutoffTest(BaseTest.CleaningRulesTestBase):
             'fq_sandbox_table_name':
                 f'{self.fq_sandbox_name}.{self.rule_instance.sandbox_table_for(common.VISIT_OCCURRENCE)}',
             'loaded_ids': [111, 222, 333, 444, 555],
-            'sandboxed_ids': [111, 222, 333],
+            'sandboxed_ids': [444, 555],
             'fields': [
                 'visit_occurrence_id', 'person_id', 'visit_concept_id',
                 'visit_start_date', 'visit_start_datetime', 'visit_end_date',
                 'visit_end_datetime', 'visit_type_concept_id'
             ],
             'cleaned_values': [
-                (444, 555, 3, parse('2021-03-06').date(),
-                 parse('2021-03-06 11:00:00 UTC'), parse('2021-03-07').date(),
-                 parse('2021-03-07 11:00:00 UTC'), 4),
-                (555, 666, 3, parse('2022-03-06').date(),
-                 parse('2022-03-06 11:00:00 UTC'), parse('2022-03-07').date(),
-                 parse('2022-03-07 11:00:00 UTC'), 4)
+                (111, 222, 3, parse('2018-03-06').date(),
+                 parse('2018-03-06 11:00:00 UTC'), parse('2018-03-07').date(),
+                 parse('2018-03-07 11:00:00 UTC'), 4),
+                (222, 333, 3, parse('2019-03-06').date(),
+                 parse('2019-03-06 11:00:00 UTC'), parse('2019-03-07').date(),
+                 parse('2019-03-07 11:00:00 UTC'), 4),
+                (333, 444, 3, parse('2020-03-06').date(),
+                 parse('2020-03-06 11:00:00 UTC'), parse('2020-03-07').date(),
+                 parse('2020-03-07 11:00:00 UTC'), 4)
             ]
         }]
 
