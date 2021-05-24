@@ -105,7 +105,7 @@ SELECT distinct value_source_concept_id,value_as_concept_id
  WHERE value_source_concept_id in (2000000001,2000000008,1586142,1586143,1586146,1586147,1586148,903079,903096)
  )
 
-SELECT count (*) FROM df1
+SELECT COUNT (*) AS n_row_not_matched FROM df1
 WHERE (value_source_concept_id=2000000001 AND value_as_concept_id !=2000000001)
  OR (value_source_concept_id=2000000008 AND value_as_concept_id !=2000000008)
  OR (value_source_concept_id=1586142 AND value_as_concept_id !=45879439)
@@ -165,14 +165,14 @@ AND com.race_source_concept_id in (1586142, 1586143, 1586146 )
  ),
  
 df2 AS (
-SELECT DISTINCT person_id , count (distinct value_source_concept_id ) AS countp
+SELECT DISTINCT person_id , COUNT (distinct value_source_concept_id ) AS countp
 FROM `{project_id}.{deid_base_cdr}.observation`
 WHERE  observation_source_value = 'Race_WhatRaceEthnicity' 
 GROUP BY person_id
  )
  
- SELECT count (*) FROM df2
- WHERE person_id IN (SELECT person_id FROM df1) AND countp !=2 
+SELECT COUNT (*) AS n_not_two_rows FROM df2
+WHERE person_id IN (SELECT person_id FROM df1) AND countp !=2 
 
     '''
 df1=pd.read_gbq(query, dialect='standard')
@@ -184,7 +184,7 @@ else:
                 ignore_index = True) 
 df1
 
-# ## one error in new cdr
+# ## one error in new cdr. this person_id fails to meet the rule.
 
 # +
 query=f''' 
@@ -199,16 +199,18 @@ AND com.race_source_concept_id in (1586142, 1586143, 1586146 )
  ),
  
 df2 AS (
-SELECT *
+SELECT DISTINCT person_id , count (distinct value_source_concept_id ) AS countp
 FROM `{project_id}.{deid_base_cdr}.observation`
 WHERE  observation_source_value = 'Race_WhatRaceEthnicity' 
-
+GROUP BY person_id
  )
  
- SELECT * FROM df2
- WHERE person_id IN (1611212) 
-
-    '''
+SELECT distinct person_id, value_source_concept_id, value_source_value
+FROM `{project_id}.{deid_base_cdr}.observation`
+WHERE  observation_source_value = 'Race_WhatRaceEthnicity' 
+AND person_id IN (SELECT person_id from df2 where countp !=2 )
+AND person_id IN (SELECT person_id FROM df1) 
+'''
 df1=pd.read_gbq(query, dialect='standard')
 
 df1
@@ -237,7 +239,7 @@ AND value_source_concept_id IN (2000000001 ,1586147)
 GROUP BY person_id
 )
  
-SELECT count (*) FROM df1
+SELECT COUNT (*) AS n_row_not_pass FROM df1
 WHERE person_id NOT IN (SELECT person_id FROM df2 WHERE countp=2)
     '''
 df1=pd.read_gbq(query, dialect='standard')
@@ -270,7 +272,7 @@ WHERE  observation_source_value = 'Race_WhatRaceEthnicity'
 GROUP BY person_id
  )
  
-SELECT count (*) FROM df2
+SELECT COUNT (*) AS n_row_not_pass FROM df2
 WHERE person_id IN (SELECT person_id FROM df1) AND countp <2 
 
     '''
@@ -298,7 +300,7 @@ SELECT distinct race_source_value,race_source_concept_id ,race_concept_id
 FROM `{project_id}.{deid_base_cdr}.person`
 WHERE race_concept_id = 2100000001 )
 
-SELECT count (*) FROM df1
+SELECT COUNT (*) AS n_row_not_pass FROM df1
 WHERE  race_source_concept_id !=0 OR race_source_value !='None Indicated'
 
 '''
@@ -351,7 +353,7 @@ SELECT distinct value_source_concept_id,value_as_concept_id
  WHERE value_source_concept_id in (2000000003,1585900)
  )
  
-SELECT count (*) FROM df1
+SELECT COUNT (*) AS n_row_not_pass FROM df1
 WHERE (value_source_concept_id=2000000003 AND value_as_concept_id !=2000000003)
 OR (value_source_concept_id=1585900 AND value_as_concept_id !=4069091)
 
@@ -398,7 +400,7 @@ FROM `{project_id}.{deid_base_cdr}.observation`
 WHERE value_as_concept_id =2000000003
 )
 
-SELECT count (distinct person_id) FROM df1
+SELECT COUNT (distinct person_id) AS n_PERSON_ID_not_pass FROM df1
 WHERE countp >1
 AND person_id NOT IN (SELECT distinct person_id FROM df2 )
 
@@ -459,7 +461,7 @@ SELECT distinct value_source_concept_id,value_as_concept_id
  WHERE value_source_concept_id IN (2000000002,1585840,1585839)
  )
 
-SELECT count (*) FROM df1
+SELECT COUNT (*) AS n_row_not_pass FROM df1
 WHERE (value_source_concept_id=2000000002 AND value_as_concept_id !=2000000002)
 OR (value_source_concept_id=1585840 AND value_as_concept_id !=45878463)
 OR (value_source_concept_id=1585839 AND value_as_concept_id !=45880669)
@@ -481,7 +483,7 @@ df1
 query=f''' 
 
 
-SELECT count (distinct p.person_id)
+SELECT COUNT (distinct p.person_id) AS n_PERSON_ID_not_pass
 FROM  `{project_id}.{com_cdr}.observation` com
 JOIN  `{project_id}.{pipeline}.pid_rid_mapping` m 
 ON com.person_id=m.person_id
@@ -536,7 +538,7 @@ HAVING count (distinct value_source_value)=2
 )
 
   
-SELECT COUNT (*) FROM `{project_id}.{deid_base_cdr}.person` 
+SELECT COUNT (*) AS n_row_not_pass FROM `{project_id}.{deid_base_cdr}.person` 
 JOIN `{project_id}.{deid_base_cdr}.person_ext` using (person_id)
 WHERE person_id IN (SELECT person_id FROM df1)
 AND (sex_at_birth_source_value !='SexAtBirth_Female' AND gender_source_concept_id !=2000000002)
@@ -567,7 +569,7 @@ HAVING count (distinct value_source_value)=2
   
   )
   
-SELECT count (*) FROM `{project_id}.{deid_cdr}.observation` 
+SELECT COUNT (*) AS n_row_not_pass FROM `{project_id}.{deid_cdr}.observation` 
 WHERE person_id IN (SELECT person_id FROM df1)
 AND observation_source_value LIKE 'Gender_GenderIdentity'
 AND (value_as_concept_id !=2000000002 AND value_source_concept_id !=2000000002)
@@ -598,7 +600,7 @@ GROUP BY m.research_id
 HAVING count (distinct value_source_value)=2 
   )
   
-SELECT count (*) FROM `{project_id}.{deid_base_cdr}.person` 
+SELECT COUNT (*) AS n_row_not_pass FROM `{project_id}.{deid_base_cdr}.person` 
 JOIN `{project_id}.{deid_base_cdr}.person_ext` using (person_id)
 WHERE person_id IN (SELECT person_id FROM df1) 
 AND (sex_at_birth_source_value !='SexAtBirth_Male' AND gender_source_concept_id !=2000000002) 
@@ -629,7 +631,7 @@ GROUP BY m.research_id
 HAVING count (distinct value_source_value)=2 
 )
   
-SELECT count (*) FROM  `{project_id}.{deid_cdr}.observation`
+SELECT COUNT (*) AS n_row_not_pass FROM  `{project_id}.{deid_cdr}.observation`
 WHERE person_id IN (SELECT person_id FROM df1)
 AND observation_source_value LIKE 'Gender_GenderIdentity'
 AND (value_as_concept_id !=2000000002 AND value_source_concept_id !=2000000002)
@@ -676,7 +678,7 @@ FROM `{project_id}.{deid_cdr}.observation`
 WHERE value_source_concept_id IN (2000000009,1585847,1585846)
  )
 
-SELECT count (*) FROM df1
+SELECT COUNT (*) AS n_row_not_pass FROM df1
 WHERE (value_source_concept_id=2000000009 AND value_as_concept_id !=2000000009)
 OR (value_source_concept_id=1585847 AND value_as_concept_id !=45878463)
 OR (value_source_concept_id=1585846 AND value_as_concept_id !=45880669)
@@ -723,7 +725,7 @@ FROM `{project_id}.{deid_cdr}.observation`
 WHERE value_source_concept_id IN (2000000007, 2000000006,1585945,1585946,903079,903096)
  )
   
-SELECT count (*) FROM df1
+SELECT COUNT (*) AS n_row_not_pass FROM df1
 WHERE (value_source_concept_id=2000000007 AND value_as_concept_id !=2000000007)
 OR (value_source_concept_id=2000000006 AND value_as_concept_id !=2000000006)
 OR (value_source_concept_id=1585945 AND value_as_concept_id !=43021808)
@@ -771,7 +773,7 @@ FROM `{project_id}.{deid_cdr}.observation`
 WHERE value_source_concept_id IN (2000000005, 2000000004,903079,903096)
  )
  
-SELECT count (*) FROM df1
+SELECT COUNT (*) AS n_row_not_pass FROM df1
 WHERE (value_source_concept_id=2000000005 AND value_as_concept_id !=2000000005)
 OR (value_source_concept_id=2000000004 AND value_as_concept_id !=2000000004)
 OR (value_source_concept_id=903079 AND value_as_concept_id !=1177221)
