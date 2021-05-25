@@ -20,9 +20,6 @@ from cdr_cleaner.cleaning_rules.no_data_30_days_after_death import (
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import \
     BaseTest
 
-# The existing person table is created and partitioned on the pseudo column _PARTITIONTIME,
-# partitioning by _PARTITIONTIME doesn't work using a query_statement for creating a table,
-# therefore CREATE OR REPLACE TABLE doesn' work and we need to DROP the table first.
 PERSON_DATA_TEMPLATE = JINJA_ENV.from_string("""
 INSERT INTO `{{project_id}}.{{dataset_id}}.person`
 (person_id, birth_datetime, gender_concept_id, year_of_birth, race_concept_id, ethnicity_concept_id)

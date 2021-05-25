@@ -77,9 +77,6 @@ from common import MEASUREMENT
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import \
     BaseTest
 
-# The existing person table is created and partitioned on the pseudo column _PARTITIONTIME,
-# partitioning by _PARTITIONTIME doesn't work using a query_statement for creating a table,
-# therefore CREATE OR REPLACE TABLE doesn' work and we need to DROP the table first.
 MEASUREMENT_DATA_TEMPLATE = JINJA_ENV.from_string("""
     INSERT INTO `{{project_id}}.{{dataset_id}}.measurement` (
       measurement_id,
