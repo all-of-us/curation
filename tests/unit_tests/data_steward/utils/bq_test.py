@@ -21,7 +21,7 @@ from unittest import TestCase
 # Third-party imports
 from google.cloud import bigquery
 from google.cloud.bigquery import DatasetReference
-from mock import MagicMock, patch
+from mock import MagicMock, patch, mock_open
 
 # Project imports
 import resources
@@ -262,3 +262,24 @@ class BqTest(TestCase):
                          f'{self.dataset_id}_snapshot')
         mock_list_tables.assert_called_once_with(self.dataset_id)
         self.assertEqual(mock_copy_table.call_count, len(list_tables_results))
+
+    def test_read_dataset_access_entries(self):
+        mock_json = '''[
+         { "role": "OWNER", "specialGroup": "projectOwners" },
+         { "role": "WRITER", "userByEmail": "fake.person@pmi-ops.org" }
+        ]'''
+        expected = [
+            bigquery.AccessEntry(
+                role='OWNER',
+                entity_type='specialGroup',
+                entity_id='projectOwners',
+            ),
+            bigquery.AccessEntry(
+                role='WRITER',
+                entity_type='userByEmail',
+                entity_id='fake.person@pmi-ops.org',
+            )
+        ]
+        with patch('utils.bq.open', mock_open(read_data=mock_json)):
+            actual = bq.read_dataset_access_entries('fake_json_path.json')
+        self.assertSequenceEqual(expected, actual)

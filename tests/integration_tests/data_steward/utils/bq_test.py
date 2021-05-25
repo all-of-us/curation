@@ -1,4 +1,5 @@
 # Python imports
+import json
 import unittest
 import os
 
@@ -25,8 +26,9 @@ class BQTest(unittest.TestCase):
         self.dataset_id = os.environ.get('UNIONED_DATASET_ID')
         self.description = 'Unioned test dataset'
         self.label_or_tag = {'test': 'bq'}
+        self.client = bq.get_client(self.project_id)
         # Remove dataset if it already exists
-        bq.delete_dataset(self.project_id, self.dataset_id)
+        self.client.delete_dataset(self.dataset_id, delete_contents=True, not_found_ok=True)
 
     def test_create_dataset(self):
         dataset = bq.create_dataset(self.project_id, self.dataset_id,
@@ -127,3 +129,34 @@ class BQTest(unittest.TestCase):
             expected_dict,
             columns=["site_name", "hpo_id", "site_point_of_contact"])
         pd.testing.assert_frame_equal(actual_df, expected_df)
+
+    @staticmethod
+    def get_current_gcp_account():
+        """
+        Get the account (client_email) associated with the key file
+        :return: the email of the account
+        """
+        creds_path = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
+        with open(creds_path) as creds_fp:
+            creds = json.load(creds_fp)
+        return creds.get('client_email')
+
+    def test_update_dataset_access_entries(self):
+        dataset = self.client.create_dataset(self.dataset_id)
+        expected = dataset.access_entries.copy()
+        # add an access entry that would not be present by default
+        # valid account needed for test to pass
+        entity_id = self.get_current_gcp_account()
+        entry = bigquery.AccessEntry(role='READER',
+                                     entity_type="userByEmail",
+                                     entity_id=entity_id)
+        expected.append(entry)
+        bq.update_dataset_access_entries(self.client,
+                                         dataset,
+                                         expected)
+        dataset = self.client.get_dataset(self.dataset_id)
+        self.assertSequenceEqual(expected,
+                                 dataset.access_entries)
+
+    def tearDown(self):
+        self.client.delete_dataset(self.dataset_id, delete_contents=True, not_found_ok=True)
