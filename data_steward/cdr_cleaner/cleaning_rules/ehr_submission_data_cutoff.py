@@ -13,11 +13,11 @@ from datetime import datetime
 
 # Project imports
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
-from common import JINJA_ENV
+from common import JINJA_ENV, AOU_REQUIRED
 from constants import bq_utils as bq_consts
-from resources import fields_for, CDM_TABLES
 from utils import pipeline_logging
 from utils.bq import validate_bq_date_string
+from resources import fields_for
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 
 LOGGER = logging.getLogger(__name__)
@@ -25,9 +25,11 @@ LOGGER = logging.getLogger(__name__)
 SANDBOX_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_id}}.{{intermediary_table}}` AS (
 SELECT * FROM `{{project_id}}.{{dataset_id}}.{{cdm_table}}`
-WHERE 
-    ((GREATEST({{date_fields}}) IS NOT NULL) AND (GREATEST({{date_fields}}) < DATE("{{cutoff_date}}"))) AND
-    ((GREATEST({{datetime_fields}}) IS NOT NULL) AND (GREATEST({{datetime_fields}}) < TIMESTAMP("{{cutoff_date}}")))
+WHERE
+    (GREATEST({{date_fields}}) > DATE("{{cutoff_date}}"))
+{% if datetime_fields != '' %}
+    AND (GREATEST({{datetime_fields}}) > TIMESTAMP("{{cutoff_date}}"))
+{% endif %}
 )
 """)
 
@@ -85,7 +87,7 @@ class EhrSubmissionDataCutoff(BaseCleaningRule):
         :return: list of affected tables
         """
         tables = []
-        for table in CDM_TABLES:
+        for table in AOU_REQUIRED:
 
             # skips the person table
             if table == 'person':
@@ -118,11 +120,13 @@ class EhrSubmissionDataCutoff(BaseCleaningRule):
             for field in fields:
                 # appends only the date columns to the date_fields list
                 if field['type'] in ['date']:
-                    date_fields.append(field['name'])
+                    date_fields.append(
+                        f'COALESCE({field["name"]}, DATE("1900-01-01"))')
 
                 # appends only the datetime columns to the datetime_fields list
                 if field['type'] in ['timestamp']:
-                    datetime_fields.append(field['name'])
+                    datetime_fields.append(
+                        f'COALESCE({field["name"]}, TIMESTAMP("1900-01-01"))')
 
             # will render the queries only if a CDM table contains a date or datetime field
             # will ignore the CDM tables that do not have a date or datetime field
@@ -187,12 +191,30 @@ class EhrSubmissionDataCutoff(BaseCleaningRule):
         return sandbox_tables
 
 
+def validate_date_string(date_string):
+    """
+    Validates the date string is a valid date in the YYYY-MM-DD format.
+
+    If the string is valid, it returns the string.  Otherwise, it raises either
+    a ValueError or TypeError.
+
+    :param date_string: The string to validate
+
+    :return:  a valid date string
+    :raises:  A ValueError if the date string is not a valid date or
+        doesn't conform to the specified format.
+    """
+    datetime.strptime(date_string, '%Y-%m-%d')
+    return date_string
+
+
 if __name__ == '__main__':
     import cdr_cleaner.args_parser as parser
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
     ext_parser = parser.get_argument_parser()
     ext_parser.add_argument(
+        '-c',
         '--cutoff_date',
         dest='cutoff_date',
         action='store',

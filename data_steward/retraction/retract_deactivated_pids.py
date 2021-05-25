@@ -26,7 +26,7 @@ FROM `{{project}}.{{dataset}}.INFORMATION_SCHEMA.COLUMNS`
 
 # Queries to create tables in associated sandbox with rows that will be removed per cleaning rule
 SANDBOX_QUERY = JINJA_ENV.from_string("""
-CREATE TABLE `{{sandbox_ref.project}}.{{sandbox_ref.dataset_id}}.{{sandbox_ref.table_id}}` AS (
+CREATE OR REPLACE TABLE `{{sandbox_ref.project}}.{{sandbox_ref.dataset_id}}.{{sandbox_ref.table_id}}` AS (
 SELECT t.*
 FROM `{{table_ref.project}}.{{table_ref.dataset_id}}.{{table_ref.table_id}}` t
 
@@ -59,6 +59,8 @@ OR verbatim_end_date >= d.deactivated_date)
 {% endif %}
 {% elif table_ref.table_id == 'death' %}
 WHERE COALESCE(death_date, EXTRACT(DATE FROM death_datetime)) >= d.deactivated_date
+{% elif table_ref.table_id in ['drug_era', 'condition_era', 'dose_era', 'payer_plan_period']  %}
+AND COALESCE({{table_ref.table_id + '_end_date'}}, {{table_ref.table_id + '_start_date'}}) >= d.deactivated_date
 {% else %}
 AND COALESCE({{date}}, EXTRACT(DATE FROM {{datetime}})) >= d.deactivated_date
 {% endif %})

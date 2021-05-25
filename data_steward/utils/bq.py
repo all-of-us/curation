@@ -567,8 +567,8 @@ def to_scalar(
     _, row = next(enumerate(row_iter))
     if len(row_iter.schema) == 1:
         return row[0]
-    else:
-        return dict(row.items())
+
+    return dict(row.items())
 
 
 def get_table_count(client: bigquery.Client,
@@ -663,9 +663,10 @@ def build_and_copy_contents(client, src_dataset, dest_dataset):
             f'Created empty table `{dest_table.project}.{dest_table.dataset_id}.{dest_table.table_id}`'
         )
 
+        fields_name_str = ',\n'.join([item.name for item in schema_list])
         # copy contents from non-schemaed source to schemaed dest
         sql = (
-            f'SELECT * '
+            f'SELECT {fields_name_str} '
             f'FROM `{table_item.project}.{table_item.dataset_id}.{table_item.table_id}`'
         )
         job_config = bigquery.job.QueryJobConfig(
