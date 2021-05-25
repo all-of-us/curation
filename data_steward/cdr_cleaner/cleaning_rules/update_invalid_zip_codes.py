@@ -58,8 +58,8 @@ WHERE (observation_source_concept_id = 1585250 AND z.zip3 IS NULL)))
 CLEAN_ZIPS_OF_WHITESPACE = JINJA_ENV.from_string("""
 UPDATE `{{project_id}}.{{dataset_id}}.{{obs_table}}` SET
 value_as_string = TRIM(value_as_string)
-WHERE person_id IN (
-SELECT person_id FROM `{{project_id}}.{{sandbox_dataset_id}}.{{whitespace_sandbox}}`)
+WHERE observation_id IN (
+SELECT observation_id FROM `{{project_id}}.{{sandbox_dataset_id}}.{{whitespace_sandbox}}`)
 """)
 
 UPDATE_INVALID_ZIP_CODES = JINJA_ENV.from_string("""
@@ -68,8 +68,8 @@ value_as_string = 'Response removed due to invalid value',
 value_source_value = 'Response removed due to invalid value',
 value_as_number = 0,
 value_source_concept_id = 2000000010
-WHERE person_id IN (
-SELECT person_id FROM `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table}}`)
+WHERE observation_id IN (
+SELECT observation_id FROM `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table}}`)
 """)
 
 
