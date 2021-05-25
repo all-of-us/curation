@@ -187,21 +187,26 @@ def load_stage(dst_dataset: Dataset, bq_client: Client, bucket_name: str,
     return load_jobs
 
 
-def load(project_id, bq_client, src_dataset_id, dst_dataset_id):
+def load(project_id,
+         bq_client,
+         src_dataset_id,
+         dst_dataset_id,
+         dataset_access_json_path=None):
     """
-    Transform safely loaded tables and store results in target dataset.
-
+    Transform safely loaded tables and store
     :param project_id: Identifies the BQ project
     :param bq_client: a BigQuery client object
     :param src_dataset_id: reference to source dataset object
-    :param dst_dataset_id: reference to destination dataset object
+    :param dst_dataset_id: reference to destination dataset object results in target dataset.
+    :param dataset_access_json_path: path to a JSON file that defines dataset access 
+      (structure described at https://tinyurl.com/269xprpe)
     :return: List of BQ job_ids
     """
     dst_dataset = Dataset(f'{bq_client.project}.{dst_dataset_id}')
     dst_dataset.description = f'Vocabulary cleaned and loaded from {src_dataset_id}'
     dst_dataset.labels = {'type': 'vocabulary'}
     dst_dataset.location = "US"
-    bq_client.create_dataset(dst_dataset, exists_ok=True)
+    dst_dataset = bq_client.create_dataset(dst_dataset, exists_ok=True)
     src_tables = list(bq_client.list_tables(dataset=src_dataset_id))
 
     job_config = QueryJobConfig()
@@ -220,11 +225,19 @@ def load(project_id, bq_client, src_dataset_id, dst_dataset_id):
         LOGGER.info(f'table:{destination} job_id:{query_job.job_id}')
         query_jobs.append(query_job)
         query_job.result()
+    if dataset_access_json_path:
+        # to prevent sharing dataset that fails to load
+        # only set dataset access policy at the end
+        bq.update_dataset_access_entries(bq_client, dst_dataset,
+                                         dataset_access_json_path)
     return query_jobs
 
 
-def main(project_id: str, bucket_name: str, vocab_folder_path: str,
-         dst_dataset_id: str):
+def main(project_id: str,
+         bucket_name: str,
+         vocab_folder_path: str,
+         dst_dataset_id: str,
+         dataset_access_json_path: str = None):
     """
     Load and transform vocabulary files in GCS to a BigQuery dataset
 
@@ -232,6 +245,8 @@ def main(project_id: str, bucket_name: str, vocab_folder_path: str,
     :param bucket_name: refers to the bucket containing vocabulary files
     :param vocab_folder_path: points to the directory containing files downloaded from athena with CPT4 applied
     :param dst_dataset_id: final destination to load the vocabulary in BigQuery
+    :param dataset_access_json_path: path to a JSON file that defines dataset access 
+      (structure described at https://tinyurl.com/269xprpe)
     """
     bq_client = bq.get_client(project_id)
     gcs_client = storage.Client(project_id)
@@ -241,7 +256,8 @@ def main(project_id: str, bucket_name: str, vocab_folder_path: str,
     staging_dataset = check_and_create_staging_dataset(dst_dataset_id,
                                                        bucket_name, bq_client)
     load_stage(staging_dataset, bq_client, bucket_name, gcs_client)
-    load(project_id, bq_client, staging_dataset.dataset_id, dst_dataset_id)
+    load(project_id, bq_client, staging_dataset.dataset_id, dst_dataset_id,
+         dataset_access_json_path)
     return
 
 
@@ -291,6 +307,13 @@ def get_arg_parser() -> argparse.ArgumentParser:
         help=
         'Identifies the target dataset where the vocabulary is to be loaded',
         required=False)
+    # this file should be in curation-devops
+    argument_parser.add_argument(
+        '--dataset_access_json_path',
+        dest='dataset_access_json_path',
+        action='store',
+        help='Path to a JSON file that defines dataset access',
+        required=True)
     return argument_parser
 
 
@@ -318,4 +341,4 @@ if __name__ == '__main__':
         RELEASE_TAG)
     pipeline_logging.configure(add_console_handler=True)
     main(ARGS.project_id, ARGS.bucket_name, ARGS.vocab_folder_path,
-         TARGET_DATASET_ID)
+         TARGET_DATASET_ID, ARGS.dataset_access_json_path)
