@@ -23,34 +23,24 @@ from cdr_cleaner.cleaning_rules.valid_death_dates import ValidDeathDates, progra
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
 DEATH_DATA_QUERY = JINJA_ENV.from_string("""
-DROP TABLE IF EXISTS
-  `{{fq_dataset_name}}.death`;
-CREATE TABLE
-  `{{fq_dataset_name}}.death` AS (
-  WITH
-    w AS (
-    SELECT
-      ARRAY<STRUCT<person_id INT64,
-      death_date DATE,
-      death_type_concept_id INT64>>
+  INSERT INTO `{{fq_dataset_name}}.death`
+    (
+        person_id,
+        death_date,
+        death_type_concept_id
+    )
+    VALUES
       -- records will be dropped because death_date is before AoU start date (Jan 1, 2017) --
-      [(101, DATE('2015-01-01'), 1),
-      (102, DATE('2016-01-01'), 2),
+      (101, '2015-01-01', 1),
+      (102, '2016-01-01', 2),
       -- records will be dropped because death_date is in the future --
       (103, DATE_ADD(CURRENT_DATE(), INTERVAL 1 DAY), 3),
       -- death_date will be one day in the future --
       (104, DATE_ADD(CURRENT_DATE(), INTERVAL 5 DAY), 4),
       -- death_date will be five days in the future --
       -- records won't be dropped because death_date is between AoU program start date and current date --
-      (105, DATE('2017-01-01'), 5),
-      (106, DATE('2020-01-01'), 6)] col )
-  SELECT
-    person_id,
-    death_date,
-    death_type_concept_id
-  FROM
-    w,
-    UNNEST(w.col))
+      (105, '2017-01-01', 5),
+      (106, '2020-01-01', 6)
 """)
 
 

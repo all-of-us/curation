@@ -70,104 +70,67 @@ class ReplaceWithStandardConceptIdTest(BaseTest.CleaningRulesTestBase):
         # Create tables required for the test
         super().setUp()
 
-        # The existing table is created and partitioned on the pseudo column _PARTITIONTIME,
-        # partitioning by _PARTITIONTIME doesn't work using a query_statement for creating a
-        # table, therefore CREATE OR REPLACE TABLE doesn' work and we need to DROP the table
-        # first. The cleaning rule generates queries that explicitly list out all the columns
-        # associated with the domain table in SELECT, due to this reason, we have to create those
-        # columns as well in the test table.
         condition_occurrence_data_template = JINJA_ENV.from_string("""
-        DROP TABLE IF EXISTS `{{project_id}}.{{dataset_id}}.condition_occurrence`;
-        CREATE TABLE `{{project_id}}.{{dataset_id}}.condition_occurrence`
-        AS (
-        WITH w AS (
-          SELECT ARRAY<STRUCT<
-                condition_occurrence_id int64, 
-                person_id int64, 
-                condition_concept_id int64, 
-                condition_start_date date,
-                condition_start_datetime timestamp,
-                condition_end_date date,
-                condition_end_datetime timestamp,
-                condition_type_concept_id int64,
-                stop_reason string,
-                provider_id int64,
-                visit_occurrence_id int64,
-                condition_source_value string,
-                condition_source_concept_id int64,
-                condition_status_source_value string,
-                condition_status_concept_id int64
-                >>
-              [(1, 1, 319835, null, null, null, null, null, null, null, null, null, 45567179, null, null),
-               (2, 1, 0, null, null, null, null, null, null, null, null, null, 45567179, null, null),
-               (3, 1, 45567179, null, null, null, null, null, null, null, null, null, 0, null, null),
-               (4, 1, 45567179, null, null, null, null, null, null, null, null, null, 45567179, null, null), 
-               (5, 1, 40398862, null, null, null, null, null, null, null, null, null, 40398862, null, null),
-               (6, 1, 45587397, null, null, null, null, null, null, null, null, null, 45587397, null, null)] col
-        )
-        SELECT 
-            condition_occurrence_id, 
-            person_id, 
-            condition_concept_id, 
-            condition_start_date,
-            condition_start_datetime,
-            condition_end_date,
-            condition_end_datetime,
-            condition_type_concept_id,
-            stop_reason,
-            provider_id,
-            visit_occurrence_id,
-            condition_source_value,
-            condition_source_concept_id,
-            condition_status_source_value,
-            condition_status_concept_id 
-        FROM w, UNNEST(w.col))
+        INSERT INTO `{{project_id}}.{{dataset_id}}.condition_occurrence` (
+                condition_occurrence_id, 
+                person_id, 
+                condition_concept_id, 
+                condition_start_date,
+                condition_start_datetime,
+                condition_end_date,
+                condition_end_datetime,
+                condition_type_concept_id,
+                stop_reason,
+                provider_id,
+                visit_occurrence_id,
+                condition_source_value,
+                condition_source_concept_id,
+                condition_status_source_value,
+                condition_status_concept_id)
+        VALUES
+              (1, 1, 319835, '2020-05-10', timestamp('2020-05-10 00:00:00 UTC'), null, null, 0, null, null, null, null, 45567179, null, null),
+               (2, 1, 0, '2020-05-10', timestamp('2020-05-10 00:00:00 UTC'), null, null, 0, null, null, null, null, 45567179, null, null),
+               (3, 1, 45567179, '2020-05-10', timestamp('2020-05-10 00:00:00 UTC'), null, null, 0, null, null, null, null, 0, null, null),
+               (4, 1, 45567179, '2020-05-10', timestamp('2020-05-10 00:00:00 UTC'), null, null, 0, null, null, null, null, 45567179, null, null), 
+               (5, 1, 40398862, '2020-05-10', timestamp('2020-05-10 00:00:00 UTC'), null, null, 0, null, null, null, null, 40398862, null, null),
+               (6, 1, 45587397, '2020-05-10', timestamp('2020-05-10 00:00:00 UTC'), null, null, 0, null, null, null, null, 45587397, null, null)
         """)
 
         mapping_condition_occurrence_data_template = JINJA_ENV.from_string("""
-        DROP TABLE IF EXISTS `{{project_id}}.{{dataset_id}}._mapping_condition_occurrence`;
-        CREATE TABLE `{{project_id}}.{{dataset_id}}._mapping_condition_occurrence`
-        AS (
-        WITH w AS (
-          SELECT ARRAY<STRUCT<condition_occurrence_id int64, src_table_id string, src_dataset_id string, src_condition_occurrence_id int64, src_hpo_id string>>
-              [(1, 'hpo_condition_occurrence', 'hpo_dataset', 10, 'test_hpo'),
+        INSERT INTO `{{project_id}}.{{dataset_id}}._mapping_condition_occurrence`
+        (
+          condition_occurrence_id, src_table_id, src_dataset_id, src_condition_occurrence_id, src_hpo_id)
+        VALUES
+               (1, 'hpo_condition_occurrence', 'hpo_dataset', 10, 'test_hpo'),
                (2, 'hpo_condition_occurrence', 'hpo_dataset', 20, 'test_hpo'),
                (3, 'hpo_condition_occurrence', 'hpo_dataset', 30, 'test_hpo'),
                (4, 'hpo_condition_occurrence', 'hpo_dataset', 40, 'test_hpo'), 
                (5, 'hpo_condition_occurrence', 'hpo_dataset', 50, 'test_hpo'),
-               (6, 'hpo_condition_occurrence', 'hpo_dataset', 60, 'test_hpo')] col
-        )
-        SELECT condition_occurrence_id, src_table_id, src_dataset_id, src_condition_occurrence_id, src_hpo_id FROM w, UNNEST(w.col))
+               (6, 'hpo_condition_occurrence', 'hpo_dataset', 60, 'test_hpo')
         """)
 
         concept_data_template = JINJA_ENV.from_string("""
-        DROP TABLE IF EXISTS `{{project_id}}.{{dataset_id}}.concept`;
-        CREATE TABLE `{{project_id}}.{{dataset_id}}.concept`
-        AS (
-        WITH w AS (
-          SELECT ARRAY<STRUCT<concept_id int64, concept_name string, standard_concept string>>
-              [(319835, 'Congested Heart Failure', 'S'),
-               (45567179, 'Congested Heart Failure', 'C'),
-               (45587397, 'Anaemia complicating pregnancy, childbirth and the puerperium', 'C'),
-               (434701, 'Anemia in mother complicating pregnancy, childbirth AND/OR puerperium', 'S'),
-               (444094, 'Finding related to pregnancy', 'S'), 
-               (40398862, 'Ischemic chest pain', 'C')] col
-        )
-        SELECT concept_id, concept_name, standard_concept FROM w, UNNEST(w.col))
+        INSERT INTO `{{project_id}}.{{dataset_id}}.concept`
+        (
+          concept_id, concept_name, standard_concept, domain_id, vocabulary_id, concept_class_id, concept_code, valid_start_date, valid_end_date)
+        VALUES
+               (319835, 'Congested Heart Failure', 'S', 'foo', 'bar', 'baz', 'alpha', '2020-01-01', '2099-12-31'),
+               (45567179, 'Congested Heart Failure', 'C', 'foo', 'bar', 'baz', 'beta', '2020-01-01', '2099-12-31'),
+               (45587397, 'Anaemia complicating pregnancy, childbirth and the puerperium', 'C', 'foo', 'bar', 'baz', 'gamma', '2020-01-01', '2099-12-31'),
+               (434701, 'Anemia in mother complicating pregnancy, childbirth AND/OR puerperium', 'S', 'foo', 'bar', 'baz', 'rho', '2020-01-01', '2099-12-31'),
+               (444094, 'Finding related to pregnancy', 'S', 'foo', 'bar', 'baz', 'phi', '2020-01-01', '2099-12-31'), 
+               (40398862, 'Ischemic chest pain', 'C', 'foo', 'bar', 'baz', 'zed', '2020-01-01', '2099-12-31')
         """)
 
         concept_relationship_data_template = JINJA_ENV.from_string("""
-        DROP TABLE IF EXISTS `{{project_id}}.{{dataset_id}}.concept_relationship`;
-        CREATE TABLE `{{project_id}}.{{dataset_id}}.concept_relationship`
-        AS (
-        WITH w AS (
-          SELECT ARRAY<STRUCT<concept_id_1 int64, concept_id_2 int64, relationship_id string>>
-              [(319835, 319835, 'Maps to'),
-               (45567179, 319835, 'Maps to'),
-               (45587397, 434701, 'Maps to'),
-               (45587397, 444094, 'Maps to')] col
-        )
-        SELECT concept_id_1, concept_id_2, relationship_id FROM w, UNNEST(w.col))
+        INSERT INTO `{{project_id}}.{{dataset_id}}.concept_relationship`
+        (
+          concept_id_1, concept_id_2, relationship_id, valid_start_date, valid_end_date)
+        VALUES
+               (319835, 319835, 'Maps to', '2020-01-01', '2099-12-31'),
+               (45567179, 319835, 'Maps to', '2020-01-01', '2099-12-31'),
+               (45587397, 434701, 'Maps to', '2020-01-01', '2099-12-31'),
+               (45587397, 444094, 'Maps to', '2020-01-01', '2099-12-31')
         """)
 
         concept_data_query = concept_data_template.render(

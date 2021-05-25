@@ -59,7 +59,10 @@ class DropCopeDuplicateResponsesTest(BaseTest.CleaningRulesTestBase):
             cls.fq_sandbox_table_names.append(
                 f'{project_id}.{sandbox_id}.{table_name}')
 
-        cls.fq_table_names = [f'{project_id}.{dataset_id}.observation']
+        cls.fq_table_names = [
+            f'{project_id}.{dataset_id}.observation',
+            f'{project_id}.{dataset_id}.cope_survey_semantic_version_map'
+        ]
 
         # call super to set up the client, create datasets, and create
         # empty test tables
@@ -117,28 +120,14 @@ VALUES
    'phq_9_5', 'COPE_A_161', 666666666)""")
 
         tmp2 = self.jinja_env.from_string("""
-         DROP TABLE IF EXISTS
-  `{{fq_dataset_name}}.cope_survey_semantic_version_map`;
-CREATE TABLE
-  `{{fq_dataset_name}}.cope_survey_semantic_version_map` AS (
-  WITH
-    w AS (
-    SELECT
-      ARRAY<STRUCT<participant_id INT64,
-      questionnaire_response_id INT64,
-      semantic_version INT64,
-      cope_month STRING>> [(2222222, 333333333, 4, 'jul' ),
-      (2222222, 555555555, 4, 'jul' ),
-      (2222222, 444444444, 6, 'aug' ),
-      (2222222, 666666666, 14,'dec' )] col )
-  SELECT
-    participant_id,
-    questionnaire_response_id,
-    semantic_version,
-    cope_month
-  FROM
-    w,
-    UNNEST(w.col))
+INSERT INTO `{{fq_dataset_name}}.cope_survey_semantic_version_map` (
+      participant_id, questionnaire_response_id,
+      semantic_version,
+      cope_month)
+VALUES (2222222, 333333333, '4', 'jul' ),
+      (2222222, 555555555, '4', 'jul' ),
+      (2222222, 444444444, '6', 'aug' ),
+      (2222222, 666666666, '14','dec' )
         """)
 
         query = tmpl.render(fq_dataset_name=self.fq_dataset_name)

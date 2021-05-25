@@ -40,7 +40,8 @@ class NegativeAgesTest(BaseTest.CleaningRulesTestBase):
 
         cls.rule_instance = NegativeAges(project_id, dataset_id, sandbox_id)
 
-        for table in cls.rule_instance.affected_tables:
+        # adding person table for setup/cleanup utilities
+        for table in cls.rule_instance.affected_tables + ['person']:
             cls.fq_table_names.append(
                 f'{cls.project_id}.{cls.dataset_id}.{table}')
 
@@ -65,69 +66,50 @@ class NegativeAgesTest(BaseTest.CleaningRulesTestBase):
 
         # test data for person table
         person_data_query = self.jinja_env.from_string("""
-            DROP TABLE IF EXISTS
-                `{{project_id}}.{{dataset_id}}.person`;
-            CREATE TABLE
-                `{{project_id}}.{{dataset_id}}.person` 
-                    (person_id INT64, birth_datetime TIMESTAMP);
             INSERT INTO
                 `{{project_id}}.{{dataset_id}}.person`
-                    (person_id, birth_datetime)
+                    (person_id, birth_datetime, gender_concept_id, year_of_birth, race_concept_id, ethnicity_concept_id)
             VALUES
-                (1, '1988-12-29 15:00:00'),
-                (2, '1980-11-20 15:00:00'),
-                (3, '2020-09-17 15:00:00'),
-                (4, '1861-09-17 15:00:00'),
-                (5, '1930-03-15 15:00:00'),
-                (5, '1940-04-09 15:00:00')
+                (1, '1988-12-29 15:00:00', 0, 1988, 0, 0),
+                (2, '1980-11-20 15:00:00', 0, 1980, 0, 0),
+                (3, '2020-09-17 15:00:00', 0, 2020, 0, 0),
+                (4, '1861-09-17 15:00:00', 0, 1861, 0, 0),
+                (5, '1930-03-15 15:00:00', 0, 1930, 0, 0),
+                (5, '1940-04-09 15:00:00', 0, 1940, 0, 0)
         """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
         # test data for negative age at recorded time in table
         measurement_data_query = self.jinja_env.from_string("""
-            DROP TABLE IF EXISTS
-                `{{project_id}}.{{dataset_id}}.measurement`;
-            CREATE TABLE
-                 `{{project_id}}.{{dataset_id}}.measurement` 
-                 (measurement_id INT64, person_id INT64, measurement_date DATE);
             INSERT INTO
                   `{{project_id}}.{{dataset_id}}.measurement` 
-                  (measurement_id, person_id, measurement_date)
+                  (measurement_id, person_id, measurement_date, measurement_type_concept_id, measurement_concept_id)
             VALUES
-                  (123, 1, date('2020-01-17')),
-                  (456, 2, date('2020-03-17')),
-                  (789, 3, date('2019-08-17'))
+                  (123, 1, date('2020-01-17'), 0, 0),
+                  (456, 2, date('2020-03-17'), 0, 0),
+                  (789, 3, date('2019-08-17'), 0, 0)
             """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
         # test data for age > MAX_AGE (=150) at recorded time in table
         observation_data_query = self.jinja_env.from_string("""
-            DROP TABLE IF EXISTS
-                `{{project_id}}.{{dataset_id}}.observation`;
-            CREATE TABLE
-                `{{project_id}}.{{dataset_id}}.observation`
-                (observation_id INT64, person_id INT64, observation_date DATE);
             INSERT INTO
                 `{{project_id}}.{{dataset_id}}.observation`
-                (observation_id, person_id, observation_date)
+                (observation_id, person_id, observation_date,
+                 observation_concept_id, observation_type_concept_id)
             VALUES
-                (111, 1, date('2019-07-04')),
-                (222, 2, date('2020-02-13')),
-                (333, 3, date('2021-02-17')),
-                (444, 4, date('2021-01-17'))
+                (111, 1, date('2019-07-04'),0 ,0),
+                (222, 2, date('2020-02-13'),0 ,0),
+                (333, 3, date('2021-02-17'),0 ,0),
+                (444, 4, date('2021-01-17'),0 ,0)
             """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
         # test data for negative age at death
         death_data_query = self.jinja_env.from_string("""
-            DROP TABLE IF EXISTS
-                `{{project_id}}.{{dataset_id}}.death`;
-            CREATE TABLE
-                `{{project_id}}.{{dataset_id}}.death`
-                (person_id INT64, death_date DATE);
             INSERT INTO
                 `{{project_id}}.{{dataset_id}}.death`
-                (person_id, death_date)
+                (person_id, death_date, death_type_concept_id)
             VALUES
-                (5, date('1915-05-05')),
-                (6, date('2020-08-15'))
+                (5, date('1915-05-05'), 0),
+                (6, date('2020-08-15'), 0)
             """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
         self.load_test_data([

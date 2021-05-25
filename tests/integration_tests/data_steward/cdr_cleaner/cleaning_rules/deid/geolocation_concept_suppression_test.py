@@ -18,7 +18,6 @@ from google.cloud.bigquery import Table
 
 # Project Imports
 from common import OBSERVATION, VOCABULARY_TABLES
-from utils import bq
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.deid.geolocation_concept_suppression import \
     GeoLocationConceptSuppression, GEO_LOCATION_SUPPRESSION_CONCEPT_TABLE
@@ -65,24 +64,9 @@ class GeoLocationConceptSuppressionTestBase(BaseTest.CleaningRulesTestBase):
         cls.up_class = super().setUpClass()
 
         # Copy vocab tables over to the test dataset
-        cls.copy_vocab_tables(cls.vocabulary_id)
-
-    @classmethod
-    def copy_vocab_tables(cls, vocabulary_id):
-        """
-        A function for copying the vocab tables to the test dataset_id
-        :param vocabulary_id: 
-        :return: 
-        """
-        # Copy vocab tables over to the test dataset
-        vocabulary_dataset = bq.get_dataset(cls.project_id, vocabulary_id)
-        for src_table in bq.list_tables(cls.client, vocabulary_dataset):
-            schema = bq.get_table_schema(src_table.table_id)
+        for src_table in cls.client.list_tables(cls.vocabulary_id):
             destination = f'{cls.project_id}.{cls.dataset_id}.{src_table.table_id}'
-            dst_table = cls.client.create_table(Table(destination,
-                                                      schema=schema),
-                                                exists_ok=True)
-            cls.client.copy_table(src_table, dst_table)
+            cls.client.copy_table(src_table, destination)
 
     def setUp(self):
         """
@@ -93,54 +77,8 @@ class GeoLocationConceptSuppressionTestBase(BaseTest.CleaningRulesTestBase):
 
         # Load the test data
         observation_data_template = self.jinja_env.from_string("""
-            DROP TABLE IF EXISTS `{{project_id}}.{{dataset_id}}.observation`;
-            CREATE TABLE `{{project_id}}.{{dataset_id}}.observation`
-            AS (
-            WITH w AS (
-              SELECT ARRAY<STRUCT<
-                    observation_id int64, 
-                    person_id int64, 
-                    observation_concept_id int64, 
-                    observation_type_concept_id int64,
-                    value_as_concept_id int64,
-                    observation_source_concept_id int64,
-                    value_source_concept_id int64,
-                    qualifier_concept_id int64,
-                    unit_concept_id int64
-                    >>
-                  -- Subset of Concepts to suppress --
-                  -- 903074: Reside AZS Arizona: AZS Arizona Specific --
-                  -- 1585543: San Diego Site Pairing: San Diego Blood Bank --
-                  -- 1585912: Person One Address: Person One Address City --
-                  -- 1586137: The Basics: Country Born Text Box --
-                  -- 1585539: Have you ever received care at the Peekskill Health Center --
-                    -- or any other HRHCare health center? --
-                  -- 1585553: Have you ever received care at a UPMC healthcare provider? --
-                  -- 1585556: Have you already scheduled an appointment with your local PA Cares for Us team for -- 
-                    -- physical measurements and biosample collection? --
-                  -- 1585559: Are you presently a registered patient at any of the following clinics? --
-
-                  -- Concepts to keep --
-                  -- 1384550: Insurance Type: Tricare Or Military --
-                  -- 903152: Hair style or head gear --
-                  -- 903574: Disability: Blind --
-                  -- 903155: Manual heart rate --
-                  [(1, 1, 903074, 0, 0, 0, 0, 0, 0),
-                   (2, 1, 0, 1585543, 0, 0, 0, 0, 0),
-                   (3, 1, 0, 0, 1585912, 0, 0, 0, 0),
-                   (4, 1, 0, 0, 0, 1586137, 0, 0, 0),
-                   (5, 1, 0, 0, 0, 0, 1585539, 0, 0),
-                   (6, 1, 903074, 1585543, 1585912, 1586137, 1585539, 0, 0),
-                   (7, 1, 1384550, 0, 0, 0, 0, 0, 0),
-                   (8, 1, 0, 903152, 0, 0, 0, 0, 0),
-                   (9, 1, 0, 0, 903574, 0, 0, 0, 0),
-                   (10, 1, 0, 0, 0, 903155, 0, 0, 0),
-                   (11, 1, 1384550, 903152, 903574, 903155, 0, 0, 0),
-                   (12, 1, 1585553, 0, 0, 0, 0, 0, 0),
-                   (13, 1, 1585556, 0, 0, 0, 0, 0, 0),
-                   (14, 1, 1585559, 0, 0, 0, 0, 0, 0)] col
-            )
-            SELECT 
+            INSERT INTO `{{project_id}}.{{dataset_id}}.observation`
+            (
                 observation_id, 
                 person_id, 
                 observation_concept_id, 
@@ -149,8 +87,41 @@ class GeoLocationConceptSuppressionTestBase(BaseTest.CleaningRulesTestBase):
                 observation_source_concept_id,
                 value_source_concept_id,
                 qualifier_concept_id,
-                unit_concept_id
-            FROM w, UNNEST(w.col))
+                unit_concept_id,
+                observation_date
+            )
+            VALUES
+              -- Subset of Concepts to suppress --
+              -- 903074: Reside AZS Arizona: AZS Arizona Specific --
+              -- 1585543: San Diego Site Pairing: San Diego Blood Bank --
+              -- 1585912: Person One Address: Person One Address City --
+              -- 1586137: The Basics: Country Born Text Box --
+              -- 1585539: Have you ever received care at the Peekskill Health Center --
+              -- or any other HRHCare health center? --
+              -- 1585553: Have you ever received care at a UPMC healthcare provider? --
+              -- 1585556: Have you already scheduled an appointment with your local PA Cares for Us team for -- 
+              -- physical measurements and biosample collection? --
+              -- 1585559: Are you presently a registered patient at any of the following clinics? --
+
+              -- Concepts to keep --
+              -- 1384550: Insurance Type: Tricare Or Military --
+              -- 903152: Hair style or head gear --
+              -- 903574: Disability: Blind --
+              -- 903155: Manual heart rate --
+              (1, 1, 903074, 0, 0, 0, 0, 0, 0, '2020-01-01'),
+              (2, 1, 0, 1585543, 0, 0, 0, 0, 0, '2020-01-01'),
+              (3, 1, 0, 0, 1585912, 0, 0, 0, 0, '2020-01-01'),
+              (4, 1, 0, 0, 0, 1586137, 0, 0, 0, '2020-01-01'),
+              (5, 1, 0, 0, 0, 0, 1585539, 0, 0, '2020-01-01'),
+              (6, 1, 903074, 1585543, 1585912, 1586137, 1585539, 0, 0, '2020-01-01'),
+              (7, 1, 1384550, 0, 0, null, null, 0, 0, '2020-01-01'),
+              (8, 1, 0, 903152, 0, 0, 0, 0, 0, '2020-01-01'),
+              (9, 1, 0, 0, 903574, 0, 0, 0, 0, '2020-01-01'),
+              (10, 1, 0, 0, 0, 903155, 0, 0, 0, '2020-01-01'),
+              (11, 1, 1384550, 903152, 903574, 903155, 0, 0, 0, '2020-01-01'),
+              (12, 1, 1585553, 0, 0, 0, 0, 0, 0, '2020-01-01'),
+              (13, 1, 1585556, 0, 0, 0, 0, 0, 0, '2020-01-01'),
+              (14, 1, 1585559, 0, 0, 0, 0, 0, 0, '2020-01-01')
             """)
 
         insert_observation_query = observation_data_template.render(
@@ -176,7 +147,7 @@ class GeoLocationConceptSuppressionTestBase(BaseTest.CleaningRulesTestBase):
                 'observation_source_concept_id', 'value_source_concept_id',
                 'qualifier_concept_id', 'unit_concept_id'
             ],
-            'cleaned_values': [(7, 1, 1384550, 0, 0, 0, 0, 0, 0),
+            'cleaned_values': [(7, 1, 1384550, 0, 0, None, None, 0, 0),
                                (8, 1, 0, 903152, 0, 0, 0, 0, 0),
                                (9, 1, 0, 0, 903574, 0, 0, 0, 0),
                                (10, 1, 0, 0, 0, 903155, 0, 0, 0),

@@ -13,11 +13,11 @@ import os
 from dateutil import parser
 
 # Project imports
-from common import OBSERVATION
+from common import CONCEPT, OBSERVATION
 from app_identity import PROJECT_ID
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
-from cdr_cleaner.cleaning_rules.free_text_survey_response_suppression import FreeTextSurveyResponseSuppression,\
-    SUPPRESSION_RULE_CONCEPT_TABLE
+from cdr_cleaner.cleaning_rules.free_text_survey_response_suppression import (
+    FreeTextSurveyResponseSuppression, SUPPRESSION_RULE_CONCEPT_TABLE)
 
 
 class FreeTextSurveyResponseSuppressionTest(BaseTest.CleaningRulesTestBase):
@@ -45,6 +45,7 @@ class FreeTextSurveyResponseSuppressionTest(BaseTest.CleaningRulesTestBase):
 
         cls.fq_table_names = [
             f'{project_id}.{dataset_id}.{OBSERVATION}',
+            f'{project_id}.{dataset_id}.{CONCEPT}'
         ]
 
         for table_name in [OBSERVATION]:
@@ -85,32 +86,8 @@ class FreeTextSurveyResponseSuppressionTest(BaseTest.CleaningRulesTestBase):
         """
 
         concept_table_tmpl = self.jinja_env.from_string("""
-            DROP TABLE IF EXISTS `{{fq_dataset_name}}.concept`;
-            CREATE TABLE `{{fq_dataset_name}}.concept` 
-            AS (
-            WITH w AS (
-                SELECT ARRAY<STRUCT<
-                    concept_id INT64,
-                    concept_name STRING,
-                    domain_id STRING,
-                    vocabulary_id STRING,
-                    concept_class_id STRING,
-                    concept_code STRING,
-                    valid_start_date STRING,
-                    valid_end_date STRING
-                    >>
-            [(111, 'Something Text Box', 'Observation', 'SNOWMED', 'Context-dependent', 'WhiteFreeText', 
-                    '2016-05-01', '2016-05-02'),
-                (222, 'Text Box', 'Observation', 'SNOWMED', 'Context-dependent', 'ATextBox', 
-                    '2016-05-01', '2016-05-02'),
-                (333, 'None Of These', 'Observation', 'SNOWMED', 'Context-dependent', 'notes', 
-                    '2016-05-01', '2016-05-02'),
-                (444, 'Will Not Be Dropped', 'Observation', 'SNOWMED', 'Context-dependent', '0036T',
-                    '2016-05-01', '2016-05-02'),
-                (555, 'Will Not Be Dropped', 'Observation', 'SNOWMED', 'Context-dependent', '46938', 
-                    '2016-05-01', '2016-05-02')] col
-            )
-            SELECT
+            INSERT INTO `{{fq_dataset_name}}.concept` 
+             (
                 concept_id,
                 concept_name,
                 domain_id,
@@ -118,46 +95,23 @@ class FreeTextSurveyResponseSuppressionTest(BaseTest.CleaningRulesTestBase):
                 concept_class_id,
                 concept_code,
                 valid_start_date,
-                valid_end_date
-            FROM w, UNNEST(w.col))
+                valid_end_date)
+            VALUES
+            (111, 'Something Text Box', 'Observation', 'SNOWMED', 
+             'Context-dependent', 'WhiteFreeText', '2016-05-01', '2016-05-02'),
+            (222, 'Text Box', 'Observation', 'SNOWMED', 'Context-dependent', 
+             'ATextBox', '2016-05-01', '2016-05-02'),
+           (333, 'None Of These', 'Observation', 'SNOWMED', 'Context-dependent',
+            'notes', '2016-05-01', '2016-05-02'),
+           (444, 'Will Not Be Dropped', 'Observation', 'SNOWMED', 
+            'Context-dependent', '0036T', '2016-05-01', '2016-05-02'),
+           (555, 'Will Not Be Dropped', 'Observation', 'SNOWMED', 
+            'Context-dependent', '46938', '2016-05-01', '2016-05-02')
         """)
 
         observation_table_tmpl = self.jinja_env.from_string("""
-            DROP TABLE IF EXISTS `{{fq_dataset_name}}.observation`;
-            CREATE TABLE `{{fq_dataset_name}}.observation`
-            AS (
-            WITH w AS (
-                SELECT ARRAY<STRUCT<
-                    observation_id INT64,
-                    person_id INT64,
-                    observation_concept_id INT64,
-                    observation_date DATE,
-                    observation_type_concept_id INT64,
-                    value_as_concept_id INT64,
-                    qualifier_concept_id INT64,
-                    unit_concept_id INT64,
-                    observation_source_concept_id INT64,
-                    value_source_concept_id INT64
-                    >>
-                [-- observation_concept_id corresponds to a free text value and record will be dropped --
-                    (1, 2, 111, date('2017-05-02'), 0, 0, 0, 0, 0, 0),
-                -- observation_type_concept_id corresponds to a free text value and record will be dropped --
-                    (2, 3, 0, date('2017-05-02'), 222, 0, 0, 0, 0, 0),
-                -- value_as_concept_id corresponds to a free text value and record will be dropped --
-                    (3, 4, 0, date('2017-05-02'), 0, 333, 0, 0, 0, 0),
-                -- qualifier_concept_id corresponds to a free text value and record will be dropped --
-                    (4, 5, 0, date('2017-05-02'), 0, 0, 111, 0, 0, 0),
-                -- unit_concept_id corresponds to a free text value and record will be dropped --
-                    (5, 6, 0, date('2017-05-02'), 0, 0, 0, 222, 0, 0),
-                -- observation_source_concept_id corresponds to a free text value and record will be dropped --
-                    (6, 7, 0, date('2017-05-02'), 0, 0, 0, 0, 333, 0),
-                -- value_source_concept_id corresponds to a free text value and record will be dropped --
-                    (7, 8, 0, date('2017-05-02'), 0, 0, 0, 0, 0, 111),
-                -- all valid *_concept_id, no records will dropped --
-                    (8, 9, 444, date('2017-05-02'), 444, 444, 444, 444, 444, 444),
-                    (9, 10, 555, date('2017-05-02'), 555, 555, 555, 555, 555, 555)] col
-            )
-            SELECT
+            INSERT INTO `{{fq_dataset_name}}.observation`
+            (
                 observation_id,
                 person_id,
                 observation_concept_id,
@@ -167,8 +121,25 @@ class FreeTextSurveyResponseSuppressionTest(BaseTest.CleaningRulesTestBase):
                 qualifier_concept_id,
                 unit_concept_id,
                 observation_source_concept_id,
-                value_source_concept_id
-            FROM w, UNNEST(w.col))
+                value_source_concept_id)
+            VALUES
+            -- observation_concept_id corresponds to a free text value and record will be dropped --
+                (1, 2, 111, date('2017-05-02'), 0, 0, 0, 0, 0, 0),
+            -- observation_type_concept_id corresponds to a free text value and record will be dropped --
+                (2, 3, 0, date('2017-05-02'), 222, 0, 0, 0, 0, 0),
+            -- value_as_concept_id corresponds to a free text value and record will be dropped --
+                (3, 4, 0, date('2017-05-02'), 0, 333, 0, 0, 0, 0),
+            -- qualifier_concept_id corresponds to a free text value and record will be dropped --
+                (4, 5, 0, date('2017-05-02'), 0, 0, 111, 0, 0, 0),
+            -- unit_concept_id corresponds to a free text value and record will be dropped --
+                (5, 6, 0, date('2017-05-02'), 0, 0, 0, 222, 0, 0),
+            -- observation_source_concept_id corresponds to a free text value and record will be dropped --
+                (6, 7, 0, date('2017-05-02'), 0, 0, 0, 0, 333, 0),
+            -- value_source_concept_id corresponds to a free text value and record will be dropped --
+                (7, 8, 0, date('2017-05-02'), 0, 0, 0, 0, 0, 111),
+            -- all valid *_concept_id, no records will dropped --
+                (8, 9, 444, date('2017-05-02'), 444, 444, 444, 444, 444, 444),
+                (9, 10, 555, date('2017-05-02'), 555, 555, 555, 555, 555, 555)
         """)
 
         insert_concept_query = concept_table_tmpl.render(
@@ -177,10 +148,8 @@ class FreeTextSurveyResponseSuppressionTest(BaseTest.CleaningRulesTestBase):
             fq_dataset_name=self.fq_dataset_name)
 
         # Load test data
-        self.load_test_data([
-            f'''{insert_concept_query};
-                                 {insert_observation_query};'''
-        ])
+        self.load_test_data(
+            [f'{insert_concept_query};', f'{insert_observation_query};'])
 
         # Expected results list
         tables_and_counts = [{

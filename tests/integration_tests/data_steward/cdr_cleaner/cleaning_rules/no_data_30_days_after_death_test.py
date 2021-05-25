@@ -20,61 +20,42 @@ from cdr_cleaner.cleaning_rules.no_data_30_days_after_death import (
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import \
     BaseTest
 
-# The existing person table is created and partitioned on the pseudo column _PARTITIONTIME,
-# partitioning by _PARTITIONTIME doesn't work using a query_statement for creating a table,
-# therefore CREATE OR REPLACE TABLE doesn' work and we need to DROP the table first.
 PERSON_DATA_TEMPLATE = JINJA_ENV.from_string("""
-DROP TABLE IF EXISTS `{{project_id}}.{{dataset_id}}.person`;
-CREATE TABLE `{{project_id}}.{{dataset_id}}.person`
-AS (
-WITH w AS (
-  SELECT ARRAY<STRUCT<person_id int64, birth_datetime TIMESTAMP>>
-      [(1, '1970-01-01 00:00:00 EST'),
-       (2, '1970-01-01 00:00:00 EST'),
-       (3, '1970-01-01 00:00:00 EST')] col
-)
-SELECT person_id, birth_datetime FROM w, UNNEST(w.col))
+INSERT INTO `{{project_id}}.{{dataset_id}}.person`
+(person_id, birth_datetime, gender_concept_id, year_of_birth, race_concept_id, ethnicity_concept_id)
+VALUES
+      (1, '1970-01-01 00:00:00 EST', 0, 1970, 0, 0),
+      (2, '1970-01-01 00:00:00 EST', 0, 1970, 0, 0),
+      (3, '1970-01-01 00:00:00 EST', 0, 1970, 0, 0)
 """)
 
 DEATH_DATA_TEMPLATE = JINJA_ENV.from_string("""
-DROP TABLE IF EXISTS `{{project_id}}.{{dataset_id}}.death`;
-CREATE TABLE `{{project_id}}.{{dataset_id}}.death`
-AS (
-WITH w AS (
-  SELECT ARRAY<STRUCT<person_id int64, death_date DATE>>
-      [(1, '1969-01-01'),
-       (2, '2020-01-01')] col
-)
-SELECT person_id, death_date FROM w, UNNEST(w.col))
+INSERT INTO `{{project_id}}.{{dataset_id}}.death`
+(person_id, death_date, death_type_concept_id)
+VALUES
+      (1, '1969-01-01', 0),
+      (2, '2020-01-01', 0)
 """)
 
 VISIT_OCCURRENCE_DATA_TEMPLATE = JINJA_ENV.from_string("""
-DROP TABLE IF EXISTS `{{project_id}}.{{dataset_id}}.visit_occurrence`;
-CREATE TABLE `{{project_id}}.{{dataset_id}}.visit_occurrence`
-AS (
-WITH w AS (
-  SELECT ARRAY<STRUCT<visit_occurrence_id int64, person_id int64, visit_start_date DATE, visit_end_date DATE>>
-      [(1, 1, '2000-01-01', '2000-01-02'),
-       (2, 1, '2000-01-02', '2000-01-03'),
-       (3, 2, '2000-01-01', '2020-03-01'),
-       (4, 3, '2000-01-02', '2000-01-03')] col
-)
-SELECT visit_occurrence_id, person_id, visit_start_date, visit_end_date FROM w, UNNEST(w.col))
+INSERT INTO `{{project_id}}.{{dataset_id}}.visit_occurrence`
+      (visit_occurrence_id, person_id, visit_start_date, visit_end_date, visit_concept_id, visit_type_concept_id)
+VALUES
+      (1, 1, '2000-01-01', '2000-01-02', 0, 0),
+      (2, 1, '2000-01-02', '2000-01-03', 0, 0),
+      (3, 2, '2000-01-01', '2020-03-01', 0, 0),
+      (4, 3, '2000-01-02', '2000-01-03', 0, 0)
 """)
 
 OBSERVATION_DATA_TEMPLATE = JINJA_ENV.from_string("""
-DROP TABLE IF EXISTS `{{project_id}}.{{dataset_id}}.observation`;
-CREATE TABLE `{{project_id}}.{{dataset_id}}.observation`
-AS (
-WITH w AS (
-  SELECT ARRAY<STRUCT<observation_id int64, person_id int64, observation_date DATE>>
-      [(1, 1, '2000-01-01'),
-       (2, 1, '2000-01-02'),
-       (3, 2, '2020-03-01'),
-       (4, 2, '2020-01-05'),
-       (5, 3, '2020-05-05')] col
-)
-SELECT observation_id, person_id, observation_date FROM w, UNNEST(w.col))
+INSERT INTO `{{project_id}}.{{dataset_id}}.observation`
+(observation_id, person_id, observation_date, observation_concept_id, observation_type_concept_id)
+VALUES
+      (1, 1, '2000-01-01', 0, 0),
+      (2, 1, '2000-01-02', 0, 0),
+      (3, 2, '2020-03-01', 0, 0),
+      (4, 2, '2020-01-05', 0, 0),
+      (5, 3, '2020-05-05', 0, 0)
 """)
 
 
@@ -99,7 +80,8 @@ class NoDataAfterDeathTest(BaseTest.CleaningRulesTestBase):
                                              cls.sandbox_id)
 
         # Generates list of fully qualified table names and their corresponding sandbox table names
-        for table_name in get_affected_tables():
+        # adding death table name for setup/cleanup operations
+        for table_name in get_affected_tables() + ['death']:
             cls.fq_table_names.append(
                 f'{cls.project_id}.{cls.dataset_id}.{table_name}')
             sandbox_table_name = cls.rule_instance.sandbox_table_for(table_name)

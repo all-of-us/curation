@@ -89,39 +89,21 @@ class IDFieldSuppressionTest(BaseTest.CleaningRulesTestBase):
 
         # test data for measurement table, identifying fields: provider_id
         measurement_data_query = self.jinja_env.from_string("""
-            DROP TABLE IF EXISTS
-              `{{project_id}}.{{dataset_id}}.measurement`;
-            CREATE TABLE
-              `{{project_id}}.{{dataset_id}}.measurement` (measurement_id INT64 NOT NULL,
-                person_id INT64 NOT NULL,
-                measurement_concept_id INT64 NOT NULL,
-                measurement_type_concept_id INT64 NOT NULL,
-                provider_id INT64);
-            INSERT INTO
-              `{{project_id}}.{{dataset_id}}.measurement` (measurement_id,
+            INSERT INTO `{{project_id}}.{{dataset_id}}.measurement` (
+                measurement_id,
                 person_id,
                 measurement_concept_id,
                 measurement_type_concept_id,
-                provider_id)
+                provider_id,
+                measurement_date)
             VALUES
-              (321, 12345, 111, 444, 789),
-              (123, 6789, 222, 555, 1011)
+              (321, 12345, 111, 444, 789, '2020-01-01'),
+              (123, 6789, 222, 555, 1011, '2020-01-01')
             """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
         # test data for person table, identifying fields:
         # month_of_birth, day_of_birth, location_id, provider_id, care_site_id
         person_data_query = self.jinja_env.from_string("""
-            DROP TABLE IF EXISTS
-              `{{project_id}}.{{dataset_id}}.person`;
-            CREATE TABLE
-              `{{project_id}}.{{dataset_id}}.person` (person_id INT64 NOT NULL,
-                gender_concept_id INT64 NOT NULL,
-                year_of_birth INT64 NOT NULL,
-                month_of_birth INT64,
-                day_of_birth INT64,
-                location_id INT64,
-                provider_id INT64,
-                care_site_id INT64);
             INSERT INTO
               `{{project_id}}.{{dataset_id}}.person` (person_id,
                 gender_concept_id,
@@ -130,22 +112,16 @@ class IDFieldSuppressionTest(BaseTest.CleaningRulesTestBase):
                 day_of_birth,
                 location_id,
                 provider_id,
-                care_site_id)
+                care_site_id,
+                race_concept_id,
+                ethnicity_concept_id)
             VALUES
-              (12345, 1, 1990, 12, 29, 22, 33, 44),
-              (6789, 2, 1980, 11, 20, 40, 50, 60)
+              (12345, 1, 1990, 12, 29, 22, 33, 44, 0, 0),
+              (6789, 2, 1980, 11, 20, 40, 50, 60, 0, 0)
             """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
         # test data for fact_relationship table, no identifying fields contained in table
         fact_relationship_data_query = self.jinja_env.from_string("""
-            DROP TABLE IF EXISTS
-              `{{project_id}}.{{dataset_id}}.fact_relationship`;
-            CREATE TABLE
-              `{{project_id}}.{{dataset_id}}.fact_relationship` (domain_concept_id_1 INT64 NOT NULL,
-                fact_id_1 INT64 NOT NULL,
-                domain_concept_id_2 INT64 NOT NULL,
-                fact_id_2 INT64 NOT NULL,
-                relationship_concept_id INT64 NOT NULL);
             INSERT INTO
               `{{project_id}}.{{dataset_id}}.fact_relationship` (domain_concept_id_1,
                 fact_id_1,
