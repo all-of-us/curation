@@ -710,9 +710,9 @@ def read_dataset_access_entries(
     ]
 
 
-def update_dataset_access_entries(client: bigquery.Client,
-                                  dataset: bigquery.Dataset,
-                                  access_entries: typing.List[bigquery.AccessEntry]) -> bigquery.Dataset:
+def update_dataset_access_entries(
+        client: bigquery.Client, dataset: bigquery.Dataset,
+        access_entries: typing.List[bigquery.AccessEntry]) -> bigquery.Dataset:
     """
     Assign dataset access controls as defined by a specified JSON file
 

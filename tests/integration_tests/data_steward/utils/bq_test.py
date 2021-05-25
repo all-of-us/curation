@@ -28,7 +28,9 @@ class BQTest(unittest.TestCase):
         self.label_or_tag = {'test': 'bq'}
         self.client = bq.get_client(self.project_id)
         # Remove dataset if it already exists
-        self.client.delete_dataset(self.dataset_id, delete_contents=True, not_found_ok=True)
+        self.client.delete_dataset(self.dataset_id,
+                                   delete_contents=True,
+                                   not_found_ok=True)
 
     def test_create_dataset(self):
         dataset = bq.create_dataset(self.project_id, self.dataset_id,
@@ -151,12 +153,11 @@ class BQTest(unittest.TestCase):
                                      entity_type="userByEmail",
                                      entity_id=entity_id)
         expected.append(entry)
-        bq.update_dataset_access_entries(self.client,
-                                         dataset,
-                                         expected)
+        bq.update_dataset_access_entries(self.client, dataset, expected)
         dataset = self.client.get_dataset(self.dataset_id)
-        self.assertSequenceEqual(expected,
-                                 dataset.access_entries)
+        self.assertSequenceEqual(expected, dataset.access_entries)
 
     def tearDown(self):
-        self.client.delete_dataset(self.dataset_id, delete_contents=True, not_found_ok=True)
+        self.client.delete_dataset(self.dataset_id,
+                                   delete_contents=True,
+                                   not_found_ok=True)
