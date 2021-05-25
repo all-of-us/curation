@@ -22,7 +22,7 @@ LOGGER = logging.getLogger(__name__)
 SUPPRESSION_RULE_CONCEPT_TABLE = 'section_participation_concepts'
 
 SECTION_PARTICIPATION_CONCEPT_QUERY = JINJA_ENV.from_string("""
-CREATE OR REPLACE `{{project_id}}.{{sandbox_id}}.{{concept_suppression_lookup_table}}` AS
+CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_id}}.{{concept_suppression_lookup_table}}` AS
 SELECT c.*
 FROM `{{project_id}}.{{dataset_id}}.concept` c
 WHERE c.concept_id IN (903632)
@@ -106,20 +106,6 @@ class SectionParticipationConceptSuppression(
         Raises RunTimeError if the validation fails.
         """
 
-        raise NotImplementedError("Please fix me.")
-
-    def setup_rule(self, client, *args, **keyword_args):
-        """
-        Load required resources prior to executing cleaning rule queries.
-
-        Method to run data upload options before executing the first cleaning
-        rule of a class.  For example, if your class requires loading a static
-        table, that load operation should be defined here.  It SHOULD NOT BE
-        defined as part of get_query_specs().
-        """
-        raise NotImplementedError("Please fix me.")
-
-    def get_sandbox_tablenames(self):
         raise NotImplementedError("Please fix me.")
 
 
