@@ -37,6 +37,7 @@ from cdr_cleaner.cleaning_rules.clean_ppi_numeric_fields_using_parameters import
     CleanPPINumericFieldsUsingParameters
 from cdr_cleaner.cleaning_rules.create_person_ext_table import CreatePersonExtTable
 from cdr_cleaner.cleaning_rules.date_shift_cope_responses import DateShiftCopeResponses
+from cdr_cleaner.cleaning_rules.remove_ehr_data_without_consent import RemoveEhrDataWithoutConsent
 from cdr_cleaner.cleaning_rules.deid.generate_site_mappings_and_ext_tables import GenerateSiteMappingsAndExtTables
 from cdr_cleaner.cleaning_rules.deid.ct_pid_rid_map import CtPIDtoRID
 from cdr_cleaner.cleaning_rules.deid.fitbit_dateshift import FitbitDateShiftRule
@@ -187,6 +188,7 @@ COMBINED_CLEANING_CLASSES = [
     (
         ValidDeathDates,),
     (NoDataAfterDeath,),
+    (RemoveEhrDataWithoutConsent,),
     (drug_refills_supply.get_days_supply_refills_queries,),
     # trying to load a table while creating query strings,
     # won't work with mocked strings.  should use base class
