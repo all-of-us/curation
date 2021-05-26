@@ -96,6 +96,7 @@ from cdr_cleaner.cleaning_rules.update_invalid_zip_codes import UpdateInvalidZip
 from cdr_cleaner.manual_cleaning_rules.survey_version_info import COPESurveyVersionTask
 from cdr_cleaner.cleaning_rules.deid.string_fields_suppression import StringFieldsSuppression
 from cdr_cleaner.cleaning_rules.generalize_state_by_population import GeneralizeStateByPopulation
+from cdr_cleaner.cleaning_rules.section_participation_concept_suppression import SectionParticipationConceptSuppression
 from constants.cdr_cleaner import clean_cdr_engine as ce_consts
 from constants.cdr_cleaner.clean_cdr import DataStage
 
@@ -251,6 +252,7 @@ CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     ),  # Should run after GenerateSiteMappingsAndExtTables and before CleanMappingExtTables
     (CancerConceptSuppression,),  # Should run after any data remapping rules
     (AggregateZipCodes,),
+    (SectionParticipationConceptSuppression,),
     (RemoveExtraTables,),  # Should be last cleaning rule to be run
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
@@ -274,6 +276,7 @@ REGISTERED_TIER_DEID_CLEANING_CLASSES = [
     (QRIDtoRID,),  # Should run before any row suppression rules
     (GenerateSiteMappingsAndExtTables,),
     (GeneralizeStateByPopulation,),
+    (SectionParticipationConceptSuppression,),
 ]
 
 DATA_STAGE_RULES_MAPPING = {
