@@ -32,7 +32,7 @@ Archive/sandbox those rows
 
 As of DC-1661, the death table has been removed.
 This allows the death table with suppressed cause_concept_id and
-cause_source_concept_id to persist without being deleted.9
+cause_source_concept_id to persist without being deleted.
 """
 
 # Python imports

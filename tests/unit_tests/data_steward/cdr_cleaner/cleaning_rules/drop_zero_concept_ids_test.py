@@ -28,12 +28,13 @@ observation
 measurement
     - measurement_source_concept_id
     - measurement_concept_id
-death
-    - cause_source_concept_id
-    - cause_concept_id
 
 Remove those rows from the clean dataset
 Archive/sandbox those rows
+
+As of DC-1661, the death table has been removed.
+This allows the death table with suppressed cause_concept_id and
+cause_source_concept_id to persist without being deleted.
 """
 
 # Python imports
@@ -42,9 +43,7 @@ import unittest
 # Project imports
 from cdr_cleaner.cleaning_rules.drop_zero_concept_ids import DropZeroConceptIDs, SANDBOX_ZERO_CONCEPT_IDS_QUERY, \
     DROP_ZERO_CONCEPT_IDS_QUERY, tables, unique_identifier, concept_id_columns, source_concept_id_columns
-from constants.bq_utils import WRITE_TRUNCATE
 from constants.cdr_cleaner import clean_cdr as clean_consts
-import constants.cdr_cleaner.clean_cdr as cdr_consts
 
 
 class DropZeroConceptIDsTest(unittest.TestCase):
