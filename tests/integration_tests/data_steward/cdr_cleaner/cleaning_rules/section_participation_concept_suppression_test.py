@@ -45,15 +45,19 @@ class SectionParticipationConceptSuppressionTest(BaseTest.CleaningRulesTestBase
         cls.rule_instance = SectionParticipationConceptSuppression(
             project_id, dataset_id, sandbox_id)
 
+        cls.vocab_tables = ['concept']
+
         cls.fq_table_names = [
             f'{project_id}.{dataset_id}.{OBSERVATION}',
+        ] + [
+            f'{project_id}.{dataset_id}.{vocab_table}'
+            for vocab_table in cls.vocab_tables
         ]
 
         cls.fq_sandbox_table_names = [
             f'{project_id}.{sandbox_id}.{cls.rule_instance.sandbox_table_for(OBSERVATION)}',
         ]
 
-        cls.vocab_tables = ['concept']
         # call super to set up the client, create datasets, and create
         # empty test tables
         # NOTE:  does not create empty sandbox tables.
