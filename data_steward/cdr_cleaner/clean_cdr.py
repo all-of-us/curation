@@ -83,6 +83,7 @@ from cdr_cleaner.cleaning_rules.null_person_birthdate import NullPersonBirthdate
 from cdr_cleaner.cleaning_rules.race_ethnicity_record_suppression import RaceEthnicityRecordSuppression
 from cdr_cleaner.cleaning_rules.table_suppression import TableSuppression
 from cdr_cleaner.cleaning_rules.deid.cope_survey_response_suppression import CopeSurveyResponseSuppression
+from cdr_cleaner.cleaning_rules.deid.registered_cope_survey_suppression import RegisteredCopeSurveyQuestionsSuppression
 from cdr_cleaner.cleaning_rules.deid.questionnaire_response_id_map import QRIDtoRID
 from cdr_cleaner.cleaning_rules.generalize_zip_codes import GeneralizeZipCodes
 from cdr_cleaner.cleaning_rules.free_text_survey_response_suppression import FreeTextSurveyResponseSuppression
@@ -277,6 +278,7 @@ REGISTERED_TIER_DEID_CLEANING_CLASSES = [
     (GenerateSiteMappingsAndExtTables,),
     (GeneralizeStateByPopulation,),
     (SectionParticipationConceptSuppression,),
+    (RegisteredCopeSurveyQuestionsSuppression,),
 ]
 
 DATA_STAGE_RULES_MAPPING = {
