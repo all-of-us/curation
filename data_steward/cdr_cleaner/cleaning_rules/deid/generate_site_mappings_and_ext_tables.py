@@ -5,14 +5,15 @@ Rule to create non-deterministic site ids for ehr sites and create the ext_table
 import logging
 
 # Project imports
+from common import JINJA_ENV
+from utils import pipeline_logging
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
-from tools.generate_ext_tables import get_generate_ext_table_queries, parse_args
-from common import JINJA_ENV
+from cdr_cleaner.cleaning_rules.generate_ext_tables import GenerateExtTables
 
 LOGGER = logging.getLogger(__name__)
 
-ISSUE_NUMBERS = ['DC-1351', 'DC-1500']
+ISSUE_NUMBERS = ['DC-1351', 'DC-1500', 'DC-1640']
 SITE_MASKING_TABLE_ID = 'site_maskings'
 PIPELINE_TABLES_DATASET = 'pipeline_tables'
 
@@ -82,10 +83,11 @@ class GenerateSiteMappingsAndExtTables(BaseCleaningRule):
         query_list.append(query)
 
         # gather queries to generate ext tables
-        query_list.extend(
-            get_generate_ext_table_queries(self.project_id, self.dataset_id,
-                                           self.sandbox_dataset_id,
-                                           self.mapping_dataset_id))
+        rule_instance = GenerateExtTables(self.project_id, self.dataset_id,
+                                          self.sandbox_dataset_id,
+                                          self._mapping_dataset_id)
+        query_list.extend(rule_instance.get_query_specs())
+
         return query_list
 
     def get_sandbox_tablenames(self):
@@ -111,9 +113,20 @@ class GenerateSiteMappingsAndExtTables(BaseCleaningRule):
 
 
 if __name__ == '__main__':
+    import cdr_cleaner.args_parser as parser
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
-    ARGS = parse_args()
+    mapping_dataset_arg = {
+        parser.SHORT_ARGUMENT: '-m',
+        parser.LONG_ARGUMENT: '--mapping_dataset_id',
+        parser.ACTION: 'store',
+        parser.DEST: 'mapping_dataset_id',
+        parser.HELP: 'Identifies the dataset containing the mapping tables',
+        parser.REQUIRED: True
+    }
+
+    ARGS = parser.default_parse_args([mapping_dataset_arg])
+    pipeline_logging.configure(level=logging.DEBUG, add_console_handler=True)
 
     if ARGS.list_queries:
         clean_engine.add_console_logging()
