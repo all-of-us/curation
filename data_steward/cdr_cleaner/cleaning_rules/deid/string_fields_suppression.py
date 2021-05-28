@@ -10,7 +10,6 @@ from constants import bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
 from cdr_cleaner.clean_cdr_utils import get_tables_in_dataset
-from utils import pipeline_logging
 
 LOGGER = logging.getLogger(__name__)
 
@@ -115,7 +114,7 @@ class StringFieldsSuppression(BaseCleaningRule):
                          description=desc,
                          affected_datasets=[
                              cdr_consts.CONTROLLED_TIER_DEID,
-                             cdr_consts.CONTROLLED_TIER_DEID
+                             cdr_consts.REGISTERED_TIER_DEID
                          ],
                          project_id=project_id,
                          dataset_id=dataset_id,
@@ -271,6 +270,7 @@ class StringFieldsSuppression(BaseCleaningRule):
 if __name__ == '__main__':
     import cdr_cleaner.args_parser as parser
     import cdr_cleaner.clean_cdr_engine as clean_engine
+    from utils import pipeline_logging
 
     ARGS = parser.default_parse_args()
     pipeline_logging.configure(level=logging.DEBUG, add_console_handler=True)
