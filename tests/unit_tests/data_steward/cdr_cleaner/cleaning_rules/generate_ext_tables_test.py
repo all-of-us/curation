@@ -7,7 +7,7 @@ import mock
 import common
 import constants.bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
-import tools.generate_ext_tables as gen_ext
+import cdr_cleaner.cleaning_rules.generate_ext_tables as gen_ext
 from resources import fields_path
 
 
