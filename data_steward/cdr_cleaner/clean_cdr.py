@@ -274,7 +274,7 @@ CONTROLLED_TIER_DEID_CLEAN_CLEANING_CLASSES = [
 
 REGISTERED_TIER_DEID_CLEANING_CLASSES = [
     (QRIDtoRID,),  # Should run before any row suppression rules
-    (FillSourceValueTextFields,),
+    (StringFieldsSuppression,),
     (GenerateSiteMappingsAndExtTables,),
     (GeneralizeStateByPopulation,),
     (SectionParticipationConceptSuppression,),
