@@ -112,7 +112,10 @@ class StringFieldsSuppression(BaseCleaningRule):
 
         super().__init__(issue_numbers=ISSUE_NUMBERS,
                          description=desc,
-                         affected_datasets=[cdr_consts.CONTROLLED_TIER_DEID],
+                         affected_datasets=[
+                             cdr_consts.CONTROLLED_TIER_DEID,
+                             cdr_consts.REGISTERED_TIER_DEID
+                         ],
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
@@ -267,8 +270,10 @@ class StringFieldsSuppression(BaseCleaningRule):
 if __name__ == '__main__':
     import cdr_cleaner.args_parser as parser
     import cdr_cleaner.clean_cdr_engine as clean_engine
+    from utils import pipeline_logging
 
     ARGS = parser.default_parse_args()
+    pipeline_logging.configure(level=logging.DEBUG, add_console_handler=True)
 
     if ARGS.list_queries:
         clean_engine.add_console_logging()
