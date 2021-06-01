@@ -104,7 +104,9 @@ class ValidationMainTest(TestCase):
                 test_util.build_mock_required_hpo_file_metadata(
                     directory=f't{i}',
                     valid_updated=(i is 2),
-                    valid_created=True))
+                    valid_created=True,
+                    tzinfo=None,
+                ))
 
         # mock bypasses api call and says no folders were processed
         with mock.patch(
@@ -290,33 +292,49 @@ class ValidationMainTest(TestCase):
         mock_valid_rdr.return_value = True
         mock_first_validation.return_value = False
         mrv = [
-            test_util.build_mock_hpo_file_metadata(filename='unknown.pdf',
-                                                   directory='',
-                                                   valid_created=True,
-                                                   valid_updated=False),
+            test_util.build_mock_hpo_file_metadata(
+                filename='unknown.pdf',
+                directory='',
+                valid_created=True,
+                valid_updated=False,
+                tzinfo=None,
+            ),
             test_util.build_mock_hpo_file_metadata(
                 filename='foo.pdf',
                 directory='participants/no-site',
                 valid_created=True,
-                valid_updated=False),
+                valid_updated=False,
+                tzinfo=None,
+            ),
             test_util.build_mock_hpo_file_metadata(
                 filename='foo.pdf',
                 directory='PARTICIPANT/siteone',
                 valid_created=True,
-                valid_updated=False),
+                valid_updated=False,
+                tzinfo=None,
+            ),
             test_util.build_mock_hpo_file_metadata(
                 filename='foo.pdf',
                 directory='Participant/sitetwo',
                 valid_created=True,
-                valid_updated=False),
-            test_util.build_mock_hpo_file_metadata(filename='person.csv',
-                                                   directory='submission',
-                                                   valid_created=True,
-                                                   valid_updated=True),
+                valid_updated=False,
+                tzinfo=None,
+            ),
+            test_util.build_mock_hpo_file_metadata(
+                filename='person.csv',
+                directory='submission',
+                valid_created=True,
+                valid_updated=True,
+                tzinfo=None,
+            ),
         ]
         mrv.extend(
             test_util.build_mock_required_hpo_file_metadata(
-                directory='SUBMISSION', valid_created=True, valid_updated=True))
+                directory='SUBMISSION',
+                valid_created=True,
+                valid_updated=True,
+                tzinfo=None,
+            ))
         mock_bucket_list.return_value = mrv
 
         mock_validation.return_value = {
@@ -327,7 +345,9 @@ class ValidationMainTest(TestCase):
                         directory='SUBMISSION',
                         found=True,
                         parsed=True,
-                        loaded=True) for req in common.AOU_REQUIRED_FILES
+                        loaded=True,
+                        tzinfo=None,
+                    ) for req in common.AOU_REQUIRED_FILES
                 ]),
             'errors': [],
             'warnings': []

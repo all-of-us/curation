@@ -5,6 +5,7 @@ import os
 from random import seed, randint, choice
 from string import ascii_letters
 import time
+from typing import Optional
 
 import requests
 
@@ -485,22 +486,44 @@ def normalize_field_payload(field):
     return result
 
 
-def build_mock_hpo_file_created(valid: bool):
+def build_mock_hpo_file_base_datetime(
+        tzinfo: Optional[datetime.tzinfo]) -> datetime.datetime:
+    """
+    Constructs a base datetime object to use in mock hpo file tests
+
+    :param tzinfo: (Optional) Timezone to use
+    """
+    # determine "now"
+    now = datetime.datetime.now()
+
+    # if None was provided to tzinfo, set to local TZ
+    if tzinfo is None:
+        tzinfo = now.tzinfo
+
+    # return in appropriate timezone
+    return now.astimezone(tzinfo)
+
+
+def build_mock_hpo_file_created(valid: bool,
+                                tzinfo: Optional[datetime.tzinfo]) -> str:
     """
     Constructs a parseable file created time, either within or beyond the "valid" time range
 
-    :param valid: if True, will construct a time string less than 30 days ago
+    :param valid: If True, will construct a time string less than 30 days ago
+    :param tzinfo: Timezone to use for created date
     :return: str
     """
-    now = datetime.datetime.now()
+    base = build_mock_hpo_file_base_datetime(tzinfo)
     if valid:
-        out = now - datetime.timedelta(days=randint(0, 28))
+        out = base - datetime.timedelta(days=randint(0, 28))
     else:
-        out = now - datetime.timedelta(days=randint(29, 9001))
-    return out.strftime(gcs_utils.GCS_META_DATETIME_FMT)
+        out = base - datetime.timedelta(days=randint(29, 9001))
+
+    return base.strftime(gcs_utils.GCS_META_DATETIME_FMT)
 
 
-def build_mock_hpo_file_updated(valid: bool):
+def build_mock_hpo_file_updated(valid: bool,
+                                tzinfo: Optional[datetime.tzinfo]) -> str:
     """
     Constructs a parseable file updated time, either within or beyond the "valid" time range
 
@@ -508,11 +531,11 @@ def build_mock_hpo_file_updated(valid: bool):
                   but less than 30 days ago
     :return: str
     """
-    now = datetime.datetime.now()
+    base = build_mock_hpo_file_base_datetime(tzinfo)
     if valid:
-        out = now - datetime.timedelta(minutes=randint(6, 300))
+        out = base - datetime.timedelta(minutes=randint(6, 300))
     else:
-        out = now - datetime.timedelta(minutes=randint(0, 5))
+        out = base - datetime.timedelta(minutes=randint(0, 5))
     return out.strftime(gcs_utils.GCS_META_DATETIME_FMT)
 
 
@@ -520,6 +543,7 @@ def build_mock_hpo_file_metadata(filename: str,
                                  directory: str,
                                  valid_created: bool,
                                  valid_updated: bool,
+                                 tzinfo: Optional[datetime.tzinfo],
                                  meta=None):
     """
     Constructs a mock file representation with minimum required fields, with optionally
@@ -533,9 +557,12 @@ def build_mock_hpo_file_metadata(filename: str,
     :return: file meta dictionary
     """
     out = {
-        'name': os.path.join(directory, filename),
-        'timeCreated': build_mock_hpo_file_created(valid_created),
-        'updated': build_mock_hpo_file_updated(valid_updated),
+        'name':
+            os.path.join(directory, filename),
+        'timeCreated':
+            build_mock_hpo_file_created(valid=valid_created, tzinfo=tzinfo),
+        'updated':
+            build_mock_hpo_file_updated(valid=valid_updated, tzinfo=tzinfo),
     }
 
     if meta:
@@ -545,8 +572,9 @@ def build_mock_hpo_file_metadata(filename: str,
 
 
 def build_mock_required_hpo_file_metadata(directory: str,
-                                          valid_created: bool = True,
-                                          valid_updated: bool = True,
+                                          valid_created: bool,
+                                          valid_updated: bool,
+                                          tzinfo: Optional[datetime.tzinfo],
                                           file_meta=None):
     """
     _build_mock_file_list will construct a list of dicts describing each file that is
@@ -555,6 +583,7 @@ def build_mock_required_hpo_file_metadata(directory: str,
     :param directory: Directory to prefix file names with
     :param valid_created: Whether to create files with a valid "created" time
     :param valid_updated: Whether to create files with a valid "updated" time
+    :param tzinfo: Timezone to use for mock datetime values
     :param file_meta: (Optional) dictionary with the following structure:
                         {
                             "filename": {
@@ -575,6 +604,7 @@ def build_mock_required_hpo_file_metadata(directory: str,
                                          directory=directory,
                                          valid_created=valid_created,
                                          valid_updated=valid_updated,
+                                         tzinfo=tzinfo,
                                          meta=(file_meta[req] if file_meta and
                                                file_meta[req] else None)))
 
@@ -582,9 +612,10 @@ def build_mock_required_hpo_file_metadata(directory: str,
 
 
 def push_mock_required_hpo_files(bucket: str,
-                                 directory: str = "/",
-                                 valid_created: bool = True,
-                                 valid_updated: bool = True,
+                                 directory: str,
+                                 valid_created: bool,
+                                 valid_updated: bool,
+                                 tzinfo: Optional[datetime.tzinfo],
                                  contents_dict: dict = None) -> None:
     """
     push_mock_required_hpo_files creates each of the files required for an upload from an HPO
@@ -603,7 +634,9 @@ def push_mock_required_hpo_files(bucket: str,
     req_files = build_mock_required_hpo_file_metadata(
         directory=directory,
         valid_created=valid_created,
-        valid_updated=valid_updated)
+        valid_updated=valid_updated,
+        tzinfo=tzinfo,
+    )
 
     # loop through, pushing each to the target bucket
     for req_file in common.AOU_REQUIRED_FILES:

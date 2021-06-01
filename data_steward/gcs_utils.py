@@ -31,13 +31,15 @@ def get_hpo_bucket(hpo_id):
     :return: name of the bucket
     """
     # TODO reconsider how to map bucket name
-    bucket_env = 'BUCKET_NAME_' + hpo_id.upper()
+    bucket_env = f'BUCKET_NAME_{hpo_id.upper()}'
     hpo_bucket_name = os.getenv(bucket_env)
 
     if hpo_bucket_name is None:
         # should not use hpo_id in message if sent to end user.  For now,
         # only sent to alert messages slack channel.
-        raise OSError('No bucket name defined for hpo_id: {}'.format(hpo_id))
+        raise OSError(
+            f'Unable to locate bucket for hpo_id "{hpo_id}", expected environment variable "{bucket_env}" not defined'
+        )
 
     return hpo_bucket_name
 

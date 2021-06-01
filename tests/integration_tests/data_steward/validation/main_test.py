@@ -146,7 +146,8 @@ class ValidationMainTest_GCSInteraction(ValidationMainTest_Base):
         test_util.push_mock_required_hpo_files(bucket=self.hpo_bucket,
                                                directory=folder_name,
                                                valid_created=True,
-                                               valid_updated=True)
+                                               valid_updated=True,
+                                               tzinfo=None)
         test_util.write_cloud_str(self.hpo_bucket,
                                   folder_name + common.PROCESSED_TXT, '\n')
 
@@ -217,12 +218,11 @@ class ValidationMainTest_ValidateSubmission(ValidationMainTest_Base):
         self.mock_get_hpo_name.return_value = 'Fake HPO'
         self.addCleanup(mock_get_hpo_name.stop)
 
-        self._empty_bucket()
+        test_util.empty_bucket(gcs_utils.get_drc_bucket())
         test_util.delete_all_tables(self.bigquery_dataset_id)
         self._create_drug_class_table(self.bigquery_dataset_id)
 
     def tearDown(self):
-        self._empty_bucket()
         bucket_nyc = gcs_utils.get_hpo_bucket('nyc')
         test_util.empty_bucket(bucket_nyc)
         test_util.empty_bucket(gcs_utils.get_drc_bucket())

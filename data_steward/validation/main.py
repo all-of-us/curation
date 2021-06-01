@@ -11,6 +11,7 @@ import json
 import logging
 import os
 import re
+import time
 from io import StringIO, open
 
 # Third party imports
@@ -45,8 +46,6 @@ app = Flask(__name__)
 
 # register application error handlers
 app.register_blueprint(errors_blueprint)
-
-_GCS_DATE_FMT = '%Y-%m-%dT%H:%M:%S.%fZ'
 
 
 def all_required_files_loaded(result_items):
@@ -759,10 +758,7 @@ def list_submitted_bucket_items(folder_bucketitems):
     object_minimum_age = datetime.timedelta(minutes=5)
 
     # when is we?
-    now = datetime.datetime.now()
-    created_base = datetime.datetime(year=now.year,
-                                     month=now.month,
-                                     day=now.day)
+    now = datetime.datetime.now().astimezone()
 
     for file_meta in folder_bucketitems:  # type: dict
         fname = basename(file_meta)
@@ -774,20 +770,50 @@ def list_submitted_bucket_items(folder_bucketitems):
         # in common.CDM_FILES or is_pii(basename(file_name)): TODO: what was this for...?
 
         # build timestamps
-        tmp = initial_date_time_object(file_meta)
+        tmp = parse_object_created_datetime(file_meta)
+        obj_tzinfo = tmp.tzinfo
+        updated_date = parse_object_updated_datetime(file_meta).astimezone(
+            obj_tzinfo)
         created_date = datetime.datetime(year=tmp.year,
                                          month=tmp.month,
-                                         day=tmp.day)
-        updated_date = updated_date_time_object(file_meta)
+                                         day=tmp.day).astimezone(obj_tzinfo)
+
+        relative_now = now.astimezone(obj_tzinfo)
+
+        # create here so we can use the local timezone of the bucket in our test.
+        max_age = datetime.datetime(
+            year=relative_now.year,
+            month=relative_now.month,
+            day=relative_now.day,
+            tzinfo=relative_now.tzinfo,
+        ) - object_retention_days
+        min_age = datetime.datetime(
+            year=relative_now.year,
+            month=relative_now.month,
+            day=relative_now.day,
+            hour=relative_now.hour,
+            minute=relative_now.minute,
+            second=relative_now.second,
+            tzinfo=obj_tzinfo,
+        ) - object_minimum_age
+
+        # print(f'fname={fname}')
+        # print(f'now={now} {now.tzinfo}')
+        # print(f'relative_now={relative_now} {relative_now.tzinfo}')
+        # print(f'created={created_date} {created_date.tzinfo}')
+        # print(f'updated={updated_date} {updated_date.tzinfo}')
+        # print(f'max_age={max_age} {max_age.tzinfo}')
+        # print(f'min_age={min_age} {min_age.tzinfo}')
+        # print("\n\n\n")
 
         # only add to return if the file is less than 30 days and more than 5 minutes old.
-        if created_date < (created_base - object_retention_days):
+        if created_date < max_age:
             logging.warn(
-                f'Filtering file {fname} as it > 30 days old ({(created_base - created_date).days} days old)'
+                f'Filtering file {fname} as it > 30 days old ({(relative_now - created_date).days} days old)'
             )
-        elif updated_date > (now - object_minimum_age):
+        elif updated_date > min_age:
             logging.warn(
-                f'Filtering file {fname} as it was last modified less than 5 minutes ago ({(now - updated_date).seconds} second(s) old)'
+                f'Filtering file {fname} as it was last modified less than 5 minutes ago ({(relative_now - updated_date).seconds} second(s) old)'
             )
         else:
             logging.debug(f'Adding {fname} to files_list')
@@ -800,15 +826,21 @@ def parse_date_time_object(gcs_object_metadata, key: str) -> datetime.datetime:
     """
     parse_date_time_object extracts a particular value from the provided metadata,
     attempting to parse it as a datetime object
+
+    It will also correctly set timezone to UTC if no zone is parsed from the object.
     
     :param gcs_object_metadata: object metadata dict
     :param key: key of target date value in metadata
     :return datetime.datetime:
     """
-    return datetime.datetime.strptime(gcs_object_metadata[key], _GCS_DATE_FMT)
+    out = datetime.datetime.strptime(gcs_object_metadata[key],
+                                     gcs_utils.GCS_META_DATETIME_FMT)
+    if out.tzinfo is None:
+        return out.replace(tzinfo=datetime.timezone.utc)
+    return out
 
 
-def initial_date_time_object(gcs_object_metadata):
+def parse_object_created_datetime(gcs_object_metadata) -> datetime.datetime:
     """
     :param gcs_object_metadata: metadata as returned by list bucket
     :return: datetime object
@@ -816,7 +848,7 @@ def initial_date_time_object(gcs_object_metadata):
     return parse_date_time_object(gcs_object_metadata, 'timeCreated')
 
 
-def updated_date_time_object(gcs_object_metadata):
+def parse_object_updated_datetime(gcs_object_metadata) -> datetime.datetime:
     """
     updated_date_time_object returns a datetime.datetime instance built
     from the last time the metadata indicates the object was updated
@@ -825,7 +857,6 @@ def updated_date_time_object(gcs_object_metadata):
     :return: datetime.datetime
     """
     return parse_date_time_object(gcs_object_metadata, 'updated')
-
 
 
 def _get_missing_required_files(submitted_bucket_items):
