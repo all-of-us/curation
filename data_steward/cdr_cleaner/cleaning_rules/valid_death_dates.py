@@ -35,9 +35,24 @@ SELECT person_id FROM `{{project_id}}.{{sandbox_id}}.{{sandbox_table}}`)
 # or after the current date.
 SANDBOX_INVALID_DEATH_DATE_ROWS = common.JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_id}}.{{sandbox_table}}` AS (
-SELECT *
-FROM `{{project_id}}.{{dataset_id}}.{{table}}`
-WHERE {{table}}_date < '{{program_start_date}}' OR {{table}}_date > {{current_date}})
+SELECT d.*
+FROM `{{project_id}}.{{dataset_id}}.{{table}}` d
+LEFT JOIN (
+        SELECT
+            person_id, MIN(o.observation_date) first_ppi_date
+        FROM `{{project_id}}.{{dataset_id}}.observation` o
+        JOIN `{{project_id}}.{{dataset_id}}.concept` c
+            ON c.concept_id =  o.observation_source_concept_id
+        WHERE c.vocabulary_id = 'PPI'
+        GROUP BY person_id
+) first_ppi_date
+    ON first_ppi_date.person_id = d.person_id
+WHERE {{table}}_date < '{{program_start_date}}' OR {{table}}_date > {{current_date}}
+    OR (
+        first_ppi_date.person_id IS NULL 
+        OR DATE_DIFF(first_ppi_date.first_ppi_date, d.{{table}}_date, DAY) >= 1
+    ) 
+)
 """)
 
 

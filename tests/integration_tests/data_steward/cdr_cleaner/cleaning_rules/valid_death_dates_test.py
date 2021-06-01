@@ -17,7 +17,7 @@ import os
 from dateutil.parser import parse
 
 # Project imports
-from common import DEATH, JINJA_ENV
+from common import DEATH, OBSERVATION, CONCEPT, JINJA_ENV
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.valid_death_dates import ValidDeathDates, program_start_date, current_date
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
@@ -38,9 +38,28 @@ DEATH_DATA_QUERY = JINJA_ENV.from_string("""
       -- death_date will be one day in the future --
       (104, DATE_ADD(CURRENT_DATE(), INTERVAL 5 DAY), 4),
       -- death_date will be five days in the future --
-      -- records won't be dropped because death_date is between AoU program start date and current date --
+      -- records won't be dropped because death_date is between AoU program start date and current date 
+        and before first ppi date --
       (105, '2017-01-01', 5),
-      (106, '2020-01-01', 6)
+      (106, '2020-01-01', 6),
+      -- records will be dropped because death date is before first ppi date --
+      (107, '2019-01-01', 7),
+      (108, '2019-01-01', 8)
+""")
+
+INSERT_OBSERVATIONS_QUERY = JINJA_ENV.from_string("""
+    INSERT INTO `{{fq_dataset_name}}.observation`
+        (observation_id, person_id, observation_concept_id, observation_source_concept_id, observation_date, 
+        observation_type_concept_id)
+    VALUES
+        (1, 101, 1585250, 1585250, date('2020-05-05'), 1),
+        (2, 102, 1585250, 1585250, date('2020-05-05'), 2),
+        (3, 103, 1585250, 1585250, date('2020-05-05'), 3),
+        (4, 104, 1585250, 1585250, date('2020-05-05'), 4),
+        (5, 105, 1585250, 1585250, date('2016-05-05'), 5),
+        (6, 106, 1585250, 1585250, date('2019-05-05'), 6),
+        (7, 107, 1585250, 1585250, date('2019-01-03'), 7),
+        (8, 108, 1585250, 1585250, date('2019-01-02'), 8)
 """)
 
 
@@ -63,8 +82,11 @@ class ValidDeathDatesTest(BaseTest.CleaningRulesTestBase):
         cls.dataset_id = dataset_id
         sandbox_id = dataset_id + '_sandbox'
         cls.sandbox_id = sandbox_id
+        cls.vocabulary_id = os.environ.get('VOCABULARY_DATASET')
 
         cls.rule_instance = ValidDeathDates(project_id, dataset_id, sandbox_id)
+
+        cls.vocab_tables = [CONCEPT]
 
         sb_table_names = cls.rule_instance.sandbox_table_for(DEATH)
 
@@ -72,7 +94,11 @@ class ValidDeathDatesTest(BaseTest.CleaningRulesTestBase):
         cls.fq_sandbox_table_names.append(
             f'{cls.project_id}.{cls.sandbox_id}.{sb_table_names}')
 
-        cls.fq_table_names = [f'{project_id}.{cls.dataset_id}.{DEATH}']
+        cls.fq_table_names = [
+            f'{project_id}.{cls.dataset_id}.{DEATH}',
+            f'{project_id}.{cls.dataset_id}.{OBSERVATION}',
+            f'{project_id}.{cls.dataset_id}.{CONCEPT}',
+        ]
 
         # call super to set up the client, create datasets, and create
         # empty test tables
@@ -89,7 +115,15 @@ class ValidDeathDatesTest(BaseTest.CleaningRulesTestBase):
         fq_dataset_name = self.fq_table_names[0].split('.')
         self.fq_dataset_name = '.'.join(fq_dataset_name[:-1])
 
+        self.copy_vocab_tables()
+
         super().setUp()
+
+    def copy_vocab_tables(self):
+        for table in self.vocab_tables:
+            self.client.copy_table(
+                f'{self.project_id}.{self.vocabulary_id}.{table}',
+                f'{self.project_id}.{self.dataset_id}.{table}')
 
     def test_valid_death_dates(self):
         """
@@ -102,15 +136,18 @@ class ValidDeathDatesTest(BaseTest.CleaningRulesTestBase):
         input_death_data = DEATH_DATA_QUERY.render(
             fq_dataset_name=self.fq_dataset_name)
 
-        self.load_test_data([f'{input_death_data}'])
+        insert_observation_query = INSERT_OBSERVATIONS_QUERY.render(
+            fq_dataset_name=self.fq_dataset_name)
+
+        self.load_test_data([f'{input_death_data}', insert_observation_query])
 
         tables_and_counts = [{
             'fq_table_name':
                 '.'.join([self.fq_dataset_name, DEATH]),
             'fq_sandbox_table_name':
                 self.fq_sandbox_table_names[0],
-            'loaded_ids': [101, 102, 103, 104, 105, 106],
-            'sandboxed_ids': [101, 102, 103, 104],
+            'loaded_ids': [101, 102, 103, 104, 105, 106, 107, 108],
+            'sandboxed_ids': [101, 102, 103, 104, 107, 108],
             'fields': ['person_id', 'death_date', 'death_type_concept_id'],
             'cleaned_values': [(105, parse('2017-01-01').date(), 5),
                                (106, parse('2020-01-01').date(), 6)]
