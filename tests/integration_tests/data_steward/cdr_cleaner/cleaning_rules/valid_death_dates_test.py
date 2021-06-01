@@ -119,15 +119,13 @@ class ValidDeathDatesTest(BaseTest.CleaningRulesTestBase):
         fq_dataset_name = self.fq_table_names[0].split('.')
         self.fq_dataset_name = '.'.join(fq_dataset_name[:-1])
 
-        self.copy_vocab_tables()
-
-        super().setUp()
-
-    def copy_vocab_tables(self):
+        #Copy all needed vocab tables to the dataset
         for table in self.vocab_tables:
             self.client.copy_table(
                 f'{self.project_id}.{self.vocabulary_id}.{table}',
                 f'{self.project_id}.{self.dataset_id}.{table}')
+
+        super().setUp()
 
     def test_valid_death_dates(self):
         """
