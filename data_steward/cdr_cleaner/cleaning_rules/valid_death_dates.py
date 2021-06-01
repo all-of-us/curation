@@ -37,6 +37,7 @@ SANDBOX_INVALID_DEATH_DATE_ROWS = common.JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_id}}.{{sandbox_table}}` AS (
 SELECT d.*
 FROM `{{project_id}}.{{dataset_id}}.{{table}}` d
+-- Find the latest PPI observation for each person --
 LEFT JOIN (
         SELECT
             person_id, MAX(o.observation_date) last_ppi_date
@@ -48,6 +49,7 @@ LEFT JOIN (
 ) last_ppi_date
     ON last_ppi_date.person_id = d.person_id
 WHERE {{table}}_date < '{{program_start_date}}' OR {{table}}_date > {{current_date}}
+    -- Sandbox death record if it is >=1 day before latest PPI observation or no PPI observation exists --
     OR (
         last_ppi_date.person_id IS NULL 
         OR DATE_DIFF(last_ppi_date.last_ppi_date, d.{{table}}_date, DAY) >= 1
