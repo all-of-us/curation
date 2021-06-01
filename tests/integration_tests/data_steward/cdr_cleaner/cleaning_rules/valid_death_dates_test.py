@@ -44,7 +44,9 @@ DEATH_DATA_QUERY = JINJA_ENV.from_string("""
       (106, '2020-01-01', 6),
       -- records will be dropped because death date is before first ppi date --
       (107, '2019-01-01', 7),
-      (108, '2019-01-01', 8)
+      (108, '2019-01-01', 8),
+      -- record should be dropped because a PPI record exists after this date --
+      (109, '2020-08-01', 0)
 """)
 
 INSERT_OBSERVATIONS_QUERY = JINJA_ENV.from_string("""
@@ -59,7 +61,9 @@ INSERT_OBSERVATIONS_QUERY = JINJA_ENV.from_string("""
         (5, 105, 1585250, 1585250, date('2016-05-05'), 5),
         (6, 106, 1585250, 1585250, date('2019-05-05'), 6),
         (7, 107, 1585250, 1585250, date('2019-01-03'), 7),
-        (8, 108, 1585250, 1585250, date('2019-01-02'), 8)
+        (8, 108, 1585250, 1585250, date('2019-01-02'), 8),
+        (9, 109, 1585250, 1585250, '2020-01-01', 0),
+        (10, 109, 1585250, 1585250, '2021-01-01', 0)
 """)
 
 
@@ -146,8 +150,8 @@ class ValidDeathDatesTest(BaseTest.CleaningRulesTestBase):
                 '.'.join([self.fq_dataset_name, DEATH]),
             'fq_sandbox_table_name':
                 self.fq_sandbox_table_names[0],
-            'loaded_ids': [101, 102, 103, 104, 105, 106, 107, 108],
-            'sandboxed_ids': [101, 102, 103, 104, 107, 108],
+            'loaded_ids': [101, 102, 103, 104, 105, 106, 107, 108, 109],
+            'sandboxed_ids': [101, 102, 103, 104, 107, 108, 109],
             'fields': ['person_id', 'death_date', 'death_type_concept_id'],
             'cleaned_values': [(105, parse('2017-01-01').date(), 5),
                                (106, parse('2020-01-01').date(), 6)]
