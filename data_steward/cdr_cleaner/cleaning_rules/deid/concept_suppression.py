@@ -28,9 +28,15 @@ class AbstractConceptSuppression(BaseCleaningRule):
     WHERE s.{{domain_table}}_id IS NULL
     """)
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id,
-                 issue_numbers, description, affected_datasets,
-                 affected_tables):
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 issue_numbers,
+                 description,
+                 affected_datasets,
+                 affected_tables,
+                 table_namer=None):
         """
         Initialize the class with proper info.
 
@@ -51,7 +57,8 @@ class AbstractConceptSuppression(BaseCleaningRule):
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
-                         affected_tables=affected_tables)
+                         affected_tables=affected_tables,
+                         table_namer=table_namer)
 
     def setup_rule(self, client: Client, *args, **keyword_args):
         # The following makes sure the tables exist in the dataset
@@ -139,9 +146,16 @@ class AbstractBqLookupTableConceptSuppression(AbstractConceptSuppression):
     {% endfor %}) IS NOT NULL
     """)
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id,
-                 issue_numbers, description, affected_datasets, affected_tables,
-                 concept_suppression_lookup_table):
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 issue_numbers,
+                 description,
+                 affected_datasets,
+                 affected_tables,
+                 concept_suppression_lookup_table,
+                 table_namer=None):
         """
         Initialize the class with proper info.
 
@@ -156,7 +170,8 @@ class AbstractBqLookupTableConceptSuppression(AbstractConceptSuppression):
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
-                         affected_tables=affected_tables)
+                         affected_tables=affected_tables,
+                         table_namer=table_namer)
 
         self._concept_suppression_lookup_table = concept_suppression_lookup_table
 
