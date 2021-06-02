@@ -100,16 +100,17 @@ class RegisteredCopeSurveyQuestionsSuppressionTest(
               (9, 109, 0, 0, 0, 715714, 0, 0, 0, '2020-01-01'),
               (10, 110, 0, 0, 0, 1333156, 0, 0, 0, '2020-01-01'),
               (11, 111, 0, 0, 0, 713888, 0, 0, 0, '2020-01-01'),
-              -- not concepts to be suppressed --
+              -- concepts not to be suppressed --
               (12, 112, 0, 0, 0, 1111111, 0, 0, 0, '2020-01-01'),
-              (13, 113, 0, 0, 0, 2222222, 0, 0, 0, '2020-01-01')
+              (13, 113, 0, 0, 0, 2222222, 0, 0, 0, '2020-01-01'),
+              (14, 114, 0, 0, 0, null, 0, 0, 0, '2020-01-01')
             """)
 
         insert_observation_query = observation_data_template.render(
             project_id=self.project_id, dataset_id=self.dataset_id)
 
         # Load test data
-        self.load_test_data([f'''{insert_observation_query};'''])
+        self.load_test_data([f'{insert_observation_query};'])
 
     def test_registered_cope_survey_suppression(self):
         # Expected results list
@@ -119,7 +120,7 @@ class RegisteredCopeSurveyQuestionsSuppressionTest(
             'fq_sandbox_table_name':
                 f'{self.project_id}.{self.sandbox_id}.'
                 f'{self.rule_instance.sandbox_table_for("observation")}',
-            'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13],
+            'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
             'sandboxed_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
             'fields': [
                 'observation_id', 'person_id', 'observation_concept_id',
@@ -128,7 +129,8 @@ class RegisteredCopeSurveyQuestionsSuppressionTest(
                 'qualifier_concept_id', 'unit_concept_id'
             ],
             'cleaned_values': [(12, 112, 0, 0, 0, 1111111, 0, 0, 0),
-                               (13, 113, 0, 0, 0, 2222222, 0, 0, 0)]
+                               (13, 113, 0, 0, 0, 2222222, 0, 0, 0),
+                               (14, 114, 0, 0, 0, None, 0, 0, 0)]
         }]
 
         self.default_test(tables_and_counts)
