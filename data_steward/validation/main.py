@@ -872,8 +872,7 @@ def _get_missing_required_files(submitted_bucket_items):
     """
 
     # if the provided input is empty, state that all required files are missing
-    if submitted_bucket_items is None or len(submitted_bucket_items) is 0:
-        return common.AOU_REQUIRED_FILES
+    if not submitted_bucket_items:
 
     # build list of file basenames, removing any paths
     file_basenames = set([basename(fname) for fname in submitted_bucket_items])
@@ -903,7 +902,7 @@ def _get_submission_folder(bucket, bucket_items, force_process=False):
     """
 
     # fast exit
-    if bucket_items is None or len(bucket_items) is 0:
+    if not bucket_items:
         return None
 
     # files in root are ignored here
@@ -942,7 +941,7 @@ def _get_submission_folder(bucket, bucket_items, force_process=False):
 
         # determine if the above is missing any of the "required" files
         missing_required = _get_missing_required_files(submitted_bucket_items)
-        if len(missing_required) > 0:
+        if missing_required:
             logging.warn(
                 f'Bucket {bucket} directory {folder_name} is missing the following required files: {*missing_required,}'
             )
