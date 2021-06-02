@@ -49,7 +49,7 @@ class ValidationMainTest(TestCase):
             'updated': outside_retention_str
         }]
         # if the file expires within a day it should not be returned
-        actual_result = main.list_submitted_bucket_items(bucket_items)
+        actual_result = main.get_date_filtered_bucket_objects(bucket_items)
         expected_result = []
         self.assertCountEqual(expected_result, actual_result)
 
@@ -65,10 +65,10 @@ class ValidationMainTest(TestCase):
         }
         bucket_items.append(item_2)
         expected_result = [item_2]
-        actual_result = main.list_submitted_bucket_items(bucket_items)
+        actual_result = main.get_date_filtered_bucket_objects(bucket_items)
         self.assertCountEqual(expected_result, actual_result)
 
-        actual_result = main.list_submitted_bucket_items([])
+        actual_result = main.get_date_filtered_bucket_objects([])
         self.assertCountEqual([], actual_result)
 
         unknown_item = {
@@ -77,14 +77,14 @@ class ValidationMainTest(TestCase):
             'updated': within_retention_str
         }
         bucket_items = [unknown_item]
-        actual_result = main.list_submitted_bucket_items(bucket_items)
+        actual_result = main.get_date_filtered_bucket_objects(bucket_items)
         self.assertCountEqual(actual_result, bucket_items)
 
         ignored_item = dict(name='2018-09-01/' + common.RESULTS_HTML,
                             timeCreated=within_retention_str,
                             updated=within_retention_str)
         bucket_items = [ignored_item]
-        actual_result = main.list_submitted_bucket_items(bucket_items)
+        actual_result = main.get_date_filtered_bucket_objects(bucket_items)
         self.assertCountEqual([], actual_result)
 
     def test_folder_list(self):

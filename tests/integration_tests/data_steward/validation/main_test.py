@@ -151,14 +151,21 @@ class ValidationMainTest_GCSInteraction(ValidationMainTest_Base):
         test_util.write_cloud_str(self.hpo_bucket,
                                   folder_name + common.PROCESSED_TXT, '\n')
 
+        # sleep for 10 seconds
+        time.sleep(10)
+
         bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
-        result = main._get_submission_folder(self.hpo_bucket,
-                                             bucket_items,
-                                             force_process=False)
+        result = main._get_submission_folder(
+            self.hpo_bucket,
+            bucket_items,
+            force_process=False,
+            obj_wait_ttl=datetime.timedelta(seconds=5))
         self.assertIsNone(result)
-        result = main._get_submission_folder(self.hpo_bucket,
-                                             bucket_items,
-                                             force_process=True)
+        result = main._get_submission_folder(
+            self.hpo_bucket,
+            bucket_items,
+            force_process=True,
+            obj_wait_ttl=datetime.timedelta(seconds=5))
         self.assertEqual(result, self.gcs_folder_prefix)
 
     @mock.patch('api_util.check_cron')

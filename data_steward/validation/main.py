@@ -746,21 +746,39 @@ def updated_datetime_object(gcs_object_metadata):
                                       '%Y-%m-%dT%H:%M:%S.%fZ')
 
 
-def list_submitted_bucket_items(folder_bucketitems):
+def get_date_filtered_bucket_objects(
+    bucket_objects,
+    obj_stale_ttl: datetime.timedelta = datetime.timedelta(days=28),
+    obj_wait_ttl: datetime.timedelta = datetime.timedelta(minutes=5)):
     """
-    :param folder_bucketitems: List of Bucket items
+    :param bucket_objects: List of Bucket items
+    :param obj_stale_ttl: Maximum age of an object, before which we consider it "stale" and not fit for use.
+    :param obj_wait_ttl: Minimum age of an object, after which we consider it "too new" and possibly still being
+                        modified
     :return: list of files
     """
+
+    if obj_stale_ttl.total_seconds() < 0:
+        raise ValueError(
+            f'Expected positive obj_stale_ttl, provided value equates to {obj_stale_ttl.total_seconds()}'
+        )
+    if obj_wait_ttl.total_seconds() < 0:
+        raise ValueError(
+            f'Expected positive obj_wait_ttl, provided value equates to {obj_wait_ttl.total_seconds()}'
+        )
+    if obj_wait_ttl.total_seconds() > obj_stale_ttl.total_seconds():
+        raise ValueError(
+            f'obj_stale_ttl must be greater than obj_wait_ttl, saw:'
+            f' obj_stale_ttl={obj_stale_ttl.total_seconds()};'
+            f' obj_wait_ttl={obj_wait_ttl.total_seconds()})')
+
     # will eventually contain the list of files that fit within the desired time bracket
     files_list = []
-
-    object_retention_days = datetime.timedelta(days=28)
-    object_minimum_age = datetime.timedelta(minutes=5)
 
     # when is we?
     now = datetime.datetime.now().astimezone()
 
-    for file_meta in folder_bucketitems:  # type: dict
+    for file_meta in bucket_objects:  # type: dict
         fname = basename(file_meta)
 
         # ignore the ignorable
@@ -786,7 +804,7 @@ def list_submitted_bucket_items(folder_bucketitems):
             month=relative_now.month,
             day=relative_now.day,
             tzinfo=relative_now.tzinfo,
-        ) - object_retention_days
+        ) - obj_stale_ttl
         min_age = datetime.datetime(
             year=relative_now.year,
             month=relative_now.month,
@@ -795,16 +813,16 @@ def list_submitted_bucket_items(folder_bucketitems):
             minute=relative_now.minute,
             second=relative_now.second,
             tzinfo=obj_tzinfo,
-        ) - object_minimum_age
+        ) - obj_wait_ttl
 
-        # print(f'fname={fname}')
-        # print(f'now={now} {now.tzinfo}')
-        # print(f'relative_now={relative_now} {relative_now.tzinfo}')
-        # print(f'created={created_date} {created_date.tzinfo}')
-        # print(f'updated={updated_date} {updated_date.tzinfo}')
-        # print(f'max_age={max_age} {max_age.tzinfo}')
-        # print(f'min_age={min_age} {min_age.tzinfo}')
-        # print("\n\n\n")
+        print(f'fname={fname}')
+        print(f'now={now} {now.tzinfo}')
+        print(f'relative_now={relative_now} {relative_now.tzinfo}')
+        print(f'created={created_date} {created_date.tzinfo}')
+        print(f'updated={updated_date} {updated_date.tzinfo}')
+        print(f'max_age={max_age} {max_age.tzinfo}')
+        print(f'min_age={min_age} {min_age.tzinfo}')
+        print("\n\n\n")
 
         # only add to return if the file is less than 30 days and more than 5 minutes old.
         if created_date < max_age:
@@ -873,6 +891,7 @@ def _get_missing_required_files(submitted_bucket_items):
 
     # if the provided input is empty, state that all required files are missing
     if not submitted_bucket_items:
+        return common.AOU_REQUIRED_FILES
 
     # build list of file basenames, removing any paths
     file_basenames = set([basename(fname) for fname in submitted_bucket_items])
@@ -881,7 +900,12 @@ def _get_missing_required_files(submitted_bucket_items):
         [req for req in common.AOU_REQUIRED_FILES if req not in file_basenames])
 
 
-def _get_submission_folder(bucket, bucket_items, force_process=False):
+def _get_submission_folder(
+    bucket,
+    bucket_items,
+    force_process: bool = False,
+    obj_stale_ttl: datetime.timedelta = datetime.timedelta(days=28),
+    obj_wait_ttl: datetime.timedelta = datetime.timedelta(minutes=5)):
     """
     Get the string name of the most recent submission directory for validation
 
@@ -936,8 +960,10 @@ def _get_submission_folder(bucket, bucket_items, force_process=False):
         ]
 
         # filter files based on age
-        submitted_bucket_items = list_submitted_bucket_items(
-            folder_bucket_items)
+        submitted_bucket_items = get_date_filtered_bucket_objects(
+            bucket_objects=folder_bucket_items,
+            obj_stale_ttl=obj_stale_ttl,
+            obj_wait_ttl=obj_wait_ttl)
 
         # determine if the above is missing any of the "required" files
         missing_required = _get_missing_required_files(submitted_bucket_items)
