@@ -134,7 +134,7 @@ class ValidationMainTest_GCSInteraction(ValidationMainTest_Base):
         actual_bucket_files = set(
             [item['name'] for item in gcs_utils.list_bucket(bucket)])
         expected_bucket_files = set([
-            os.path.join([folder_name, item])
+            '/'.join([folder_name, item])
             for item in resources.ALL_ACHILLES_INDEX_FILES
         ])
         self.assertSetEqual(expected_bucket_files, actual_bucket_files)

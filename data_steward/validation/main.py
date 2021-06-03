@@ -722,19 +722,6 @@ def _validation_done(bucket, folder):
     return False
 
 
-def basename(gcs_object_metadata):
-    """returns name of file inside folder
-
-    :gcs_object_metadata: metadata as returned by list bucket
-    :returns: name without folder name
-
-    """
-    name = gcs_object_metadata['name']
-    if len(name.split('/')) > 1:
-        return '/'.join(name.split('/')[1:])
-    return ''
-
-
 def updated_datetime_object(gcs_object_metadata):
     """returns update datetime
 
@@ -749,7 +736,8 @@ def updated_datetime_object(gcs_object_metadata):
 def get_date_filtered_bucket_objects(
     bucket_objects,
     obj_stale_ttl: datetime.timedelta = datetime.timedelta(days=28),
-    obj_wait_ttl: datetime.timedelta = datetime.timedelta(minutes=5)):
+    obj_wait_ttl: datetime.timedelta = datetime.timedelta(minutes=5)
+) -> list:
     """
     :param bucket_objects: List of Bucket items
     :param obj_stale_ttl: Maximum age of an object, before which we consider it "stale" and not fit for use.
@@ -758,28 +746,28 @@ def get_date_filtered_bucket_objects(
     :return: list of files
     """
 
-    if obj_stale_ttl.total_seconds() < 0:
+    if obj_stale_ttl.total_seconds() < 1:
         raise ValueError(
-            f'Expected positive obj_stale_ttl, provided value equates to {obj_stale_ttl.total_seconds()}'
+            f'Expected obj_stale_ttl to be >= 1 second, saw {obj_stale_ttl.total_seconds()}'
         )
-    if obj_wait_ttl.total_seconds() < 0:
+    if obj_wait_ttl.total_seconds() < 1:
         raise ValueError(
-            f'Expected positive obj_wait_ttl, provided value equates to {obj_wait_ttl.total_seconds()}'
+            f'Expected obj_wait_ttl to be >= 1 second, saw {obj_wait_ttl.total_seconds()}'
         )
-    if obj_wait_ttl.total_seconds() > obj_stale_ttl.total_seconds():
+    if obj_wait_ttl.total_seconds() >= obj_stale_ttl.total_seconds():
         raise ValueError(
             f'obj_stale_ttl must be greater than obj_wait_ttl, saw:'
             f' obj_stale_ttl={obj_stale_ttl.total_seconds()};'
             f' obj_wait_ttl={obj_wait_ttl.total_seconds()})')
 
     # will eventually contain the list of files that fit within the desired time bracket
-    files_list = []
+    files_list = list()
 
     # when is we?
     now = datetime.datetime.now().astimezone()
 
     for file_meta in bucket_objects:  # type: dict
-        fname = basename(file_meta)
+        fname = os.path.basename(file_meta['name'])
 
         # ignore the ignorable
         if fname in resources.IGNORE_LIST:
@@ -814,15 +802,6 @@ def get_date_filtered_bucket_objects(
             second=relative_now.second,
             tzinfo=obj_tzinfo,
         ) - obj_wait_ttl
-
-        print(f'fname={fname}')
-        print(f'now={now} {now.tzinfo}')
-        print(f'relative_now={relative_now} {relative_now.tzinfo}')
-        print(f'created={created_date} {created_date.tzinfo}')
-        print(f'updated={updated_date} {updated_date.tzinfo}')
-        print(f'max_age={max_age} {max_age.tzinfo}')
-        print(f'min_age={min_age} {min_age.tzinfo}')
-        print("\n\n\n")
 
         # only add to return if the file is less than 30 days and more than 5 minutes old.
         if created_date < max_age:
@@ -877,7 +856,7 @@ def parse_object_updated_datetime(gcs_object_metadata) -> datetime.datetime:
     return parse_date_time_object(gcs_object_metadata, 'updated')
 
 
-def _get_missing_required_files(submitted_bucket_items):
+def _get_missing_required_files(submitted_bucket_items) -> list:
     """
     _get_missing_required_files returns a list of the names of the "required"
     we expect to see in a given HPO upload set.
@@ -894,10 +873,16 @@ def _get_missing_required_files(submitted_bucket_items):
         return common.AOU_REQUIRED_FILES
 
     # build list of file basenames, removing any paths
-    file_basenames = set([basename(fname) for fname in submitted_bucket_items])
+    file_basenames = set([
+        os.path.basename(obj_meta['name'])
+        for obj_meta in submitted_bucket_items
+    ])
 
-    return set(
-        [req for req in common.AOU_REQUIRED_FILES if req not in file_basenames])
+    return list(
+        set([
+            req for req in common.AOU_REQUIRED_FILES
+            if req not in file_basenames
+        ]))
 
 
 def _get_submission_folder(
