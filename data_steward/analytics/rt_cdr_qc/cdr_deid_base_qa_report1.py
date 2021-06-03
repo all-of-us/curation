@@ -22,7 +22,6 @@ pd.options.display.max_rows = 120
 # + tags=["parameters"]
 project_id = ""
 com_cdr = ""
-# deid_cdr=""
 deid_base_cdr=""
 pipeline=""
 # -
