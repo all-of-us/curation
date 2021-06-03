@@ -46,11 +46,15 @@ class CovidEHRVaccineConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
         cls.vocab_tables = [CONCEPT, CONCEPT_RELATIONSHIP, CONCEPT_ANCESTOR]
 
         cls.fq_table_names = [
+            f'{project_id}.{dataset_id}.{CONCEPT}',
+            f'{project_id}.{dataset_id}.{CONCEPT_RELATIONSHIP}',
+            f'{project_id}.{dataset_id}.{CONCEPT_ANCESTOR}',
             f'{project_id}.{dataset_id}.{OBSERVATION}',
         ]
 
         cls.fq_sandbox_table_names.append(
-            f'{cls.project_id}.{cls.sandbox_id}.{OBSERVATION}')
+            f'{cls.project_id}.{cls.sandbox_id}.{cls.rule_instance.sandbox_table_for(OBSERVATION)}'
+        )
 
         # call super to set up the client, create datasets, and create
         # empty test tables
@@ -63,11 +67,11 @@ class CovidEHRVaccineConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
 
         self.date = parse('2020-05-05').date()
 
-        # #Copy all needed vocab tables to the dataset
-        # for table in self.vocab_tables:
-        #     self.client.copy_table(
-        #         f'{self.project_id}.{self.vocabulary_id}.{table}',
-        #         f'{self.project_id}.{self.dataset_id}.{table}')
+        #Copy all needed vocab tables to the dataset
+        for table in self.vocab_tables:
+            self.client.copy_table(
+                f'{self.project_id}.{self.vocabulary_id}.{table}',
+                f'{self.project_id}.{self.dataset_id}.{table}')
 
         super().setUp()
 
@@ -79,33 +83,28 @@ class CovidEHRVaccineConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
         statements and the tables_and_counts variable.        
         """
 
-        INSERT_CONCEPTS_QUERY = JINJA_ENV.from_string("""
-            INSERT INTO `{{fq_dataset_name}}.concept`
-            (concept_id, concept_name, domain_id, vocabulary_id, concept_class_id, concept_code, valid_start_date,
-            valid_end_date)
-            VALUES
-            -- Suppressed concepts via name, vocab, and code --
-            (724904, 'SARS-COV-2 (COVID-19) vaccine, UNSPECIFIED', 'Drug', 'CVX', 'CVX', 213, '2020-11-16', '2099-12-31')
-        """)
-
         INSERT_OBSERVATIONS_QUERY = JINJA_ENV.from_string("""
             INSERT INTO `{{fq_dataset_name}}.observation`
                 (observation_id, person_id, observation_concept_id, observation_source_concept_id, observation_date, 
                 observation_type_concept_id)
             VALUES
-                -- Records suppressed due to COVID vaccine observation_concept_id --
-                (1, 101, 42794278, 0, date('2020-05-05'), 1),
-                (2, 102, 37003434, 0, date('2020-05-05'), 2),
-                (3, 103, 766239, 0, date('2020-05-05'), 3),
-                -- Records suppressed due to COVID vaccine observation_source_concept_id --
-                (4, 104, 0, 42794278, date('2020-05-05'), 4),
-                (5, 105, 0, 37003434, date('2020-05-05'), 5),
-                (6, 106, 0, 766239, date('2020-05-05'), 6),
-                -- Records not suppressed due to lack of COVID vaccine concepts --
-                (7, 107, 1585250, 0, date('2020-05-05'), 7),
-                (8, 108, 1585250, 1585250, date('2020-05-05'), 8),
-                (9, 109, 1585248, 1585248, date('2020-05-05'), 0),
-                (10, 109, 0, 1585224, date('2020-05-05'), 0)
+                -- Suppressed concepts via name, vocab, and code --
+                (1, 101, 724904, 0, date('2020-05-05'), 1),
+                (2, 102, 0, 724904, date('2020-05-05'), 2),
+                (3, 103, 42796198, 0, date('2020-05-05'), 3),
+
+                -- Suppressed concepts via relationship --
+                (4, 116, 766241, 0, date('2020-05-05'), 2),
+                (5, 109, 3548105, 0, date('2020-05-05'), 3),
+                (6, 110, 0, 42796343, date('2020-05-05'), 3),
+
+                -- Suppressed concepts via ancestor --
+                (7, 104, 37003432, 0, date('2020-05-05'), 3),
+                (8, 104, 0, 37301121, date('2020-05-05'), 3),
+
+                -- Not suppressed --
+                (9, 115, 55, 0, date('2020-05-05'), 2),
+                (10, 116, 0, 98, date('2020-05-05'), 1)                
         """).render(fq_dataset_name=self.fq_dataset_name)
 
         queries = [INSERT_OBSERVATIONS_QUERY]
@@ -118,15 +117,14 @@ class CovidEHRVaccineConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
             'fq_sandbox_table_name':
                 self.fq_sandbox_table_names[0],
             'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-            'sandboxed_ids': [1, 2, 3, 4, 5, 6],
+            'sandboxed_ids': [1, 2, 3, 4, 5, 6, 7, 8],
             'fields': [
                 'observation_id', 'person_id', 'observation_concept_id',
                 'observation_source_concept_id', 'observation_date',
                 'observation_type_concept_id'
             ],
-            'cleaned_values': [(8, 108, 1585250, 1585250, self.date, 8),
-                               (9, 109, 1585248, 1585248, self.date, 0),
-                               (10, 109, 0, 1585224, self.date, 0)]
+            'cleaned_values': [(9, 115, 55, 0, self.date, 2),
+                               (10, 116, 0, 98, self.date, 1)]
         }]
 
         self.default_test(tables_and_counts)
