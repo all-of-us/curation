@@ -14,8 +14,7 @@ import logging
 from google.cloud.bigquery import DatasetReference
 
 # Project imports
-from utils import bq
-from common import JINJA_ENV
+from common import JINJA_ENV, PIPELINE_TABLES, SITE_MASKING_TABLE_ID
 from utils import pipeline_logging
 from resources import fields_for, MAPPING_TABLES
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
@@ -23,6 +22,7 @@ import constants.cdr_cleaner.clean_cdr as cdr_consts
 
 LOGGER = logging.getLogger(__name__)
 
+ISSUE_NUMBERS = ['DC-1351', 'DC-1500', 'DC-1640']
 EXT_FIELD_TEMPLATE = [{
     "type": "integer",
     "name": "{table}_id",
@@ -52,7 +52,7 @@ ON m.src_hpo_id = s.hpo_id
 
 class GenerateExtTables(BaseCleaningRule):
     """
-    Generates extension tables and populates with the proper data from the site_maskings table
+    Generates extension tables and populates with the site maskings stored in the site_maskings table
     """
 
     def __init__(self, project_id, dataset_id, sandbox_dataset_id,
@@ -63,9 +63,17 @@ class GenerateExtTables(BaseCleaningRule):
         Set the issue numbers, description and affected datasets. As other tickets may affect
         this SQL, append them to the list of Jira Issues.
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
+
+        :param project_id: project identifier
+        :param dataset_id: dataset identifier.  extension tables will be created
+            in this dataset
+        :param sandbox_dataset_id:  dataset identifier.  this dataset will hold
+            helper/logging/lookup tables
+        :param mapping_dataset_id: dataset identifier.  identifies a dataset that
+            contains mapping tables to convert to extension tables.
         """
-        desc = 'Generate extension tables and populate with proper data from the site_maskings table'
-        super().__init__(issue_numbers=['DC1640'],
+        desc = 'Generate extension tables and populate with masking data from the site_maskings table'
+        super().__init__(issue_numbers=ISSUE_NUMBERS,
                          description=desc,
                          affected_datasets=[
                              cdr_consts.REGISTERED_TIER_DEID,
@@ -77,6 +85,7 @@ class GenerateExtTables(BaseCleaningRule):
                          sandbox_dataset_id=sandbox_dataset_id)
 
         self._mapping_dataset_id = mapping_dataset_id
+        self.mapping_table_ids = []
 
     def get_table_fields_str(self, table, ext_table_id):
         """
@@ -107,30 +116,22 @@ class GenerateExtTables(BaseCleaningRule):
 
         return table_field_str
 
-    def get_mapping_table_ids(self, project_id, mapping_dataset_id):
+    def get_mapping_table_ids(self, client):
         """
         returns all the mapping table ids found in the dataset
         :param project_id: project_id containing the dataset
         :param mapping_dataset_id: dataset_id containing mapping tables
         :return: returns mapping table ids
         """
-        client = bq.get_client(project_id)
-        dataset_ref = DatasetReference(project_id, mapping_dataset_id)
-        table_objs = bq.list_tables(client, dataset_ref)
+        dataset_ref = DatasetReference(self.project_id,
+                                       self._mapping_dataset_id)
+        table_objs = client.list_tables(dataset_ref)
         mapping_table_ids = [
             table_obj.table_id
             for table_obj in table_objs
             if table_obj.table_id in MAPPING_TABLES
         ]
         return mapping_table_ids
-
-    def get_cdm_table_from_mapping(self, mapping_table_id):
-        """
-        Returns the cdm table after stripping off the mapping table prefix
-        :param mapping_table_id: mapping table id to generate the cdm table for
-        :return: cdm table id
-        """
-        return mapping_table_id[len(MAPPING_PREFIX):]
 
     def get_query_specs(self):
         """
@@ -142,11 +143,9 @@ class GenerateExtTables(BaseCleaningRule):
         """
         queries = []
 
-        mapping_table_ids = self.get_mapping_table_ids(self.project_id,
-                                                       self._mapping_dataset_id)
-
-        for mapping_table_id in mapping_table_ids:
-            cdm_table_id = self.get_cdm_table_from_mapping(mapping_table_id)
+        for mapping_table_id in self.mapping_table_ids:
+            # get cdm table name
+            cdm_table_id = mapping_table_id[len(MAPPING_PREFIX):]
             ext_table_id = cdm_table_id + EXT_TABLE_SUFFIX
             ext_table_fields_str = self.get_table_fields_str(
                 cdm_table_id, ext_table_id)
@@ -171,7 +170,18 @@ class GenerateExtTables(BaseCleaningRule):
         """
         Function to run any data upload options before executing a query.
         """
-        pass
+        try:
+            client.get_table(
+                f'{self.project_id}.{self.sandbox_dataset_id}.{SITE_TABLE_ID}')
+        except NotFound:
+            job = client.copy_table(
+                f'{self.project_id}.{PIPELINE_TABLES}.{SITE_MASKING_TABLE_ID}',
+                f'{self.project_id}.{self.sandbox_dataset_id}.{SITE_TABLE_ID}')
+            job.result()
+            LOGGER.info(f'Copied {PIPELINE_TABLES}.{SITE_MASKING_TABLE_ID} to '
+                        f'{self.sandbox_dataset_id}.{SITE_TABLE_ID}')
+
+        self.mapping_table_ids = get_mapping_table_ids(client)
 
     def get_sandbox_tablenames(self):
         """
