@@ -2,7 +2,7 @@
 Add a new HPO site to config file and BigQuery lookup tables and updates the `pipeline_table_sandbox.site_masking`
     sandbox table created in `generate_site_mappings_and_ext_tables` with any missing hpo_sites in
     `lookup_tables.hpo_site_id_mappings`
-    
+
 Note: GAE environment must still be set manually
 """
 # Python imports
@@ -14,16 +14,15 @@ from googleapiclient.errors import HttpError
 import pandas as pd
 
 # Project imports
-import bq_utils
-import resources
-import gcs_utils
 import app_identity
+import bq_utils
 import constants.bq_utils as bq_consts
-from utils import bq
+import gcs_utils
+import resources
 from tools import cli_util
+from utils import bq
 from utils import pipeline_logging
-from common import JINJA_ENV, PIPELINE_TABLES
-from cdr_cleaner.cleaning_rules.deid.generate_site_mappings_and_ext_tables import SITE_MASKING_TABLE_ID
+from common import JINJA_ENV, PIPELINE_TABLES, SITE_MASKING_TABLE_ID
 
 LOGGER = logging.getLogger(__name__)
 
@@ -51,7 +50,7 @@ SELECT '{hpo_id}' AS hpo_id, '{bucket_name}' AS bucket_name
 
 UPDATE_SITE_MASKING_QUERY = JINJA_ENV.from_string("""
 INSERT INTO
-   `{{project_id}}.{{dataset_id}}.{{table_id}}` (hpo_id, src_id) 
+   `{{project_id}}.{{dataset_id}}.{{table_id}}` (hpo_id, src_id)
      WITH random_ids AS
  (
  -- Generates the random EHR site id for the new hpo_site --
