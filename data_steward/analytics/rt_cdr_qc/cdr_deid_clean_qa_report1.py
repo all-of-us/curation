@@ -38,7 +38,11 @@ query = f'''
 
 SELECT 
 SUM(CASE WHEN observation_source_concept_id = 0 AND observation_concept_id = 0 THEN 1 ELSE 0 END) AS n_observation_source_concept_id_both_0,
-SUM(CASE WHEN observation_source_concept_id IS NULL AND observation_concept_id IS NULL THEN 1 ELSE 0 END) AS n_observation_source_concept_id_both_null
+SUM(CASE WHEN observation_source_concept_id IS NULL AND observation_concept_id IS NULL THEN 1 ELSE 0 END) AS n_observation_source_concept_id_both_null,
+SUM(CASE WHEN observation_source_concept_id = 0 AND observation_concept_id IS NULL THEN 1 ELSE 0 END) AS n_observation_source_concept_id_either_0,
+SUM(CASE WHEN observation_source_concept_id IS NULL AND observation_concept_id=0 THEN 1 ELSE 0 END) AS n_observation_source_concept_id_either_null
+
+
 FROM `{project_id}.{deid_clean}.observation`
 '''
 df1=pd.read_gbq(query, dialect='standard')
@@ -48,7 +52,7 @@ if df1.loc[0].sum()==0:
 else:
  df = df.append({'query' : 'Query1 observation', 'result' : ''},  
                 ignore_index = True) 
-df1
+df1.T
 
 # + [markdown] papermill={"duration": 0.023633, "end_time": "2021-02-02T22:30:36.860798", "exception": false, "start_time": "2021-02-02T22:30:36.837165", "status": "completed"} tags=[]
 # # 2   Verify that in condition_occurrence if condition_occurrence_source_concept_id AND the condition_occurrence_concept_id both of those fields are null OR zero, the row should be removed. 
@@ -58,7 +62,11 @@ query = f'''
 
 SELECT  
 SUM(CASE WHEN condition_source_concept_id = 0 AND condition_concept_id = 0 THEN 1 ELSE 0 END) AS n_condition_source_concept_id_both_0,
-SUM(CASE WHEN condition_source_concept_id IS NULL AND condition_concept_id IS NULL THEN 1 ELSE 0 END) AS n_condition_source_concept_id_both_null
+SUM(CASE WHEN condition_source_concept_id IS NULL AND condition_concept_id IS NULL THEN 1 ELSE 0 END) AS n_condition_source_concept_id_both_null,
+SUM(CASE WHEN condition_source_concept_id = 0 AND condition_concept_id IS NULL THEN 1 ELSE 0 END) AS n_condition_source_concept_id_either_0,
+SUM(CASE WHEN condition_source_concept_id IS NULL AND condition_concept_id=0 THEN 1 ELSE 0 END) AS n_condition_source_concept_id_either_null
+
+
 FROM `{project_id}.{deid_clean}.condition_occurrence`
 WHERE (condition_source_concept_id = 0 AND  condition_concept_id=0)
 OR ( condition_source_concept_id IS NULL AND condition_concept_id IS NULL)
@@ -70,7 +78,7 @@ if df1.loc[0].sum()==0:
 else:
  df = df.append({'query' : 'Query2 condition', 'result' : ''},  
                 ignore_index = True) 
-df1
+df1.T
 
 # # 3  Verify that in procedure_occurrence table if procedure_occurrence_source_concept_id AND the procedure_occurrence_concept_id both of those fields are null OR zero, the row should be removed. 
 
@@ -78,7 +86,10 @@ query = f'''
 
 SELECT 
 SUM(CASE WHEN procedure_source_concept_id = 0 AND procedure_concept_id = 0 THEN 1 ELSE 0 END) AS n_procedure_source_concept_id_both_0,
-SUM(CASE WHEN procedure_source_concept_id IS NULL AND procedure_concept_id IS NULL THEN 1 ELSE 0 END) AS n_procedure_source_concept_id_both_null
+SUM(CASE WHEN procedure_source_concept_id IS NULL AND procedure_concept_id IS NULL THEN 1 ELSE 0 END) AS n_procedure_source_concept_id_both_null,
+SUM(CASE WHEN procedure_source_concept_id = 0 AND procedure_concept_id IS NULL THEN 1 ELSE 0 END) AS n_procedure_source_concept_id_either_0,
+SUM(CASE WHEN procedure_source_concept_id IS NULL AND procedure_concept_id=0 THEN 1 ELSE 0 END) AS n_procedure_source_concept_id_either_null
+
 FROM `{project_id}.{deid_clean}.procedure_occurrence`
 '''
 df1=pd.read_gbq(query, dialect='standard')
@@ -88,7 +99,7 @@ if df1.loc[0].sum()==0:
 else:
  df = df.append({'query' : 'Query3 procedure', 'result' : ''},  
                 ignore_index = True) 
-df1
+df1.T
 
 # + [markdown] papermill={"duration": 0.023649, "end_time": "2021-02-02T22:30:39.115495", "exception": false, "start_time": "2021-02-02T22:30:39.091846", "status": "completed"} tags=[]
 # # 4 Verify that in visit_occurrence table if visit_occurrence_source_concept_id AND the visit_occurrence_concept_id both of those fields are null OR zero, the row should be removed. 
@@ -98,7 +109,9 @@ query = f'''
 
 SELECT
 SUM(CASE WHEN visit_source_concept_id = 0 AND visit_concept_id = 0 THEN 1 ELSE 0 END) AS n_visit_source_concept_id_both_0,
-SUM(CASE WHEN visit_source_concept_id IS NULL AND visit_concept_id IS NULL THEN 1 ELSE 0 END) AS n_visit_source_concept_id_both_null
+SUM(CASE WHEN visit_source_concept_id IS NULL AND visit_concept_id IS NULL THEN 1 ELSE 0 END) AS n_visit_source_concept_id_both_null,
+SUM(CASE WHEN visit_source_concept_id = 0 AND visit_concept_id IS NULL THEN 1 ELSE 0 END) AS n_visit_source_concept_id_either_0,
+SUM(CASE WHEN visit_source_concept_id IS NULL AND visit_concept_id =0 THEN 1 ELSE 0 END) AS n_visit_source_concept_id_either_null
 FROM `{project_id}.{deid_clean}.visit_occurrence`
 '''
 df1=pd.read_gbq(query, dialect='standard')
@@ -108,7 +121,7 @@ if df1.loc[0].sum()==0:
 else:
  df = df.append({'query' : 'Query4 visit', 'result' : ''},  
                 ignore_index = True) 
-df1
+df1.T
 
 
 # + [markdown] papermill={"duration": 0.023649, "end_time": "2021-02-02T22:30:39.115495", "exception": false, "start_time": "2021-02-02T22:30:39.091846", "status": "completed"} tags=[]
@@ -119,7 +132,9 @@ query = f'''
 
 SELECT 
 SUM(CASE WHEN drug_source_concept_id = 0 AND drug_concept_id = 0 THEN 1 ELSE 0 END) AS n_drug_source_concept_id_both_0,
-SUM(CASE WHEN drug_source_concept_id IS NULL AND drug_concept_id IS NULL THEN 1 ELSE 0 END) AS n_drug_source_concept_id_both_null
+SUM(CASE WHEN drug_source_concept_id IS NULL AND drug_concept_id IS NULL THEN 1 ELSE 0 END) AS n_drug_source_concept_id_both_null,
+SUM(CASE WHEN drug_source_concept_id = 0 AND drug_concept_id IS NULL THEN 1 ELSE 0 END) AS n_drug_source_concept_id_either_0,
+SUM(CASE WHEN drug_source_concept_id IS NULL AND drug_concept_id =0 THEN 1 ELSE 0 END) AS n_drug_source_concept_id_either_null
 FROM `{project_id}.{deid_clean}.drug_exposure`
 '''
 df1=pd.read_gbq(query, dialect='standard')
@@ -129,7 +144,7 @@ if df1.loc[0].sum()==0:
 else:
  df = df.append({'query' : 'Query5 drug_exposure', 'result' : ''},  
                 ignore_index = True) 
-df1
+df1.T
 
 # + [markdown] papermill={"duration": 0.023649, "end_time": "2021-02-02T22:30:39.115495", "exception": false, "start_time": "2021-02-02T22:30:39.091846", "status": "completed"} tags=[]
 # # 6 Verify that in device_exposure table if device_exposure_source_concept_id AND the device_exposure_concept_id both of those fields are null OR zero, the row should be removed. 
@@ -139,7 +154,9 @@ query = f'''
 
 SELECT 
 SUM(CASE WHEN device_source_concept_id = 0 AND device_concept_id = 0 THEN 1 ELSE 0 END) AS n_device_source_concept_id_both_0,
-SUM(CASE WHEN device_source_concept_id IS NULL AND device_concept_id IS NULL THEN 1 ELSE 0 END) AS n_device_source_concept_id_both_null
+SUM(CASE WHEN device_source_concept_id IS NULL AND device_concept_id IS NULL THEN 1 ELSE 0 END) AS n_device_source_concept_id_both_null,
+SUM(CASE WHEN device_source_concept_id = 0 AND device_concept_id IS NULL THEN 1 ELSE 0 END) AS n_device_source_concept_id_either_0,
+SUM(CASE WHEN device_source_concept_id IS NULL AND device_concept_id =0 THEN 1 ELSE 0 END) AS n_device_source_concept_id_either_null
 FROM `{project_id}.{deid_clean}.device_exposure`
 '''
 df1=pd.read_gbq(query, dialect='standard')
@@ -149,7 +166,7 @@ if df1.loc[0].sum()==0:
 else:
  df = df.append({'query' : 'Query6 device', 'result' : ''},  
                 ignore_index = True) 
-df1
+df1.T
 
 # + [markdown] papermill={"duration": 0.023649, "end_time": "2021-02-02T22:30:39.115495", "exception": false, "start_time": "2021-02-02T22:30:39.091846", "status": "completed"} tags=[]
 # # 7 Verify that in measurement table if measurement_source_concept_id AND the measurement_concept_id both of those fields are null OR zero, the row should be removed. 
@@ -159,7 +176,9 @@ query = f'''
 
 SELECT
 SUM(CASE WHEN measurement_source_concept_id = 0 AND measurement_concept_id = 0 THEN 1 ELSE 0 END) AS n_measurement_source_concept_id_both_0,
-SUM(CASE WHEN measurement_source_concept_id IS NULL AND measurement_concept_id IS NULL THEN 1 ELSE 0 END) AS n_measurement_source_concept_id_both_null
+SUM(CASE WHEN measurement_source_concept_id IS NULL AND measurement_concept_id IS NULL THEN 1 ELSE 0 END) AS n_measurement_source_concept_id_both_null,
+SUM(CASE WHEN measurement_source_concept_id = 0 AND measurement_concept_id IS NULL THEN 1 ELSE 0 END) AS n_measurement_source_concept_id_either_0,
+SUM(CASE WHEN measurement_source_concept_id IS NULL AND measurement_concept_id =0 THEN 1 ELSE 0 END) AS n_measurement_source_concept_id_either_null
 FROM`{project_id}.{deid_clean}.measurement`
 '''
 df1=pd.read_gbq(query, dialect='standard')
@@ -169,7 +188,7 @@ if df1.loc[0].sum()==0:
 else:
  df = df.append({'query' : 'Query7 measurement', 'result' : ''},  
                 ignore_index = True) 
-df1
+df1.T
 # -
 
 # # 8 Verify that in death table if cause_source_concept_id AND the cause_concept_id both of those fields are null OR zero, the row should be removed. 
@@ -182,8 +201,10 @@ df1
 query = f'''
 
 SELECT
-SUM(CASE WHEN cause_source_concept_id != 0 AND cause_concept_id != 0 THEN 1 ELSE 0 END) AS n_cause_source_concept_id_both_0,
-SUM(CASE WHEN cause_source_concept_id IS NOT NULL AND cause_concept_id IS NOT NULL THEN 1 ELSE 0 END) AS n_cause_source_concept_id_both_null
+SUM(CASE WHEN cause_source_concept_id != 0 AND cause_concept_id != 0 THEN 1 ELSE 0 END) AS n_cause_source_concept_id_both_not_0,
+SUM(CASE WHEN cause_source_concept_id IS NOT NULL AND cause_concept_id IS NOT NULL THEN 1 ELSE 0 END) AS n_cause_source_concept_id_both_not_null,
+SUM(CASE WHEN cause_source_concept_id != 0 AND cause_concept_id IS NOT NULL THEN 1 ELSE 0 END) AS n_cause_source_concept_id_either_0,
+SUM(CASE WHEN cause_source_concept_id IS NOT NULL AND cause_concept_id !=0 THEN 1 ELSE 0 END) AS n_cause_source_concept_id_either_null
 FROM `{project_id}.{deid_clean}.death`
 
 '''
@@ -195,7 +216,7 @@ else:
  df = df.append({'query' : 'Query8 cause_source_concept_id/cause_concept_id is null in dealth table', 'result' : ''},  
                 ignore_index = True) 
  
-df1
+df1.T
 # -
 
 # # 9  check State_of_Residence fields in the person_ext table in deid_clean
