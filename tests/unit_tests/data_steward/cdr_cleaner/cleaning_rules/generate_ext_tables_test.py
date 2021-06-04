@@ -8,11 +8,12 @@ The intent of this unit test is to ensure the cleaning rule is generating the ex
 """
 
 # Python imports
+import json
+import os
 import unittest
 
 # Third Party imports
-import os
-import json
+from google.cloud import bigquery
 import mock
 
 # Project imports
@@ -66,11 +67,22 @@ class GenerateExtTablesTest(unittest.TestCase):
                 "The provenance of the data associated with the foo_id."
         }]
 
-        self.mapping_tables = [
-            gen_ext.MAPPING_PREFIX + cdm_table
-            for cdm_table in common.AOU_REQUIRED
-            if cdm_table not in
+        mapped_table_names = [
+            cdm_table for cdm_table in common.AOU_REQUIRED if cdm_table not in
             [common.PERSON, common.DEATH, common.FACT_RELATIONSHIP]
+        ]
+
+        mapping_table_names = [
+            gen_ext.MAPPING_PREFIX + cdm_table
+            for cdm_table in mapped_table_names
+        ]
+
+        dataset_ref = bigquery.DatasetReference(self.project_id,
+                                                self.dataset_id)
+
+        self.mapping_table_objs = [
+            bigquery.TableReference(dataset_ref, table_name)
+            for table_name in mapping_table_names + mapped_table_names
         ]
 
         self.rule_instance = gen_ext.GenerateExtTables(self.project_id,
@@ -144,27 +156,9 @@ class GenerateExtTablesTest(unittest.TestCase):
         self.assertIn(static_msg, cm.output[0])
         self.assertCountEqual(fields_str, actual)
 
-    @mock.patch('bq_utils.get_hpo_info')
-    def test_get_cdm_table_id(self, mock_hpo_list):
-        mock_hpo_list.return_value = self.hpo_list
-        # pre-conditions
-        observation_table_id = common.OBSERVATION
-        expected = observation_table_id
-        mapping_observation = f'{gen_ext.MAPPING_PREFIX}{observation_table_id}'
-
-        # test
-        actual = self.rule_instance.get_cdm_table_from_mapping(
-            mapping_observation)
-
-        # post conditions
-        self.assertCountEqual(expected, actual)
-
-    @mock.patch('bq_utils.create_table')
-    @mock.patch(
-        'cdr_cleaner.cleaning_rules.generate_ext_tables.GenerateExtTables.get_mapping_table_ids'
-    )
-    def test_get_query_specs(self, mock_mapping_tables, mock_create_table):
-        mock_mapping_tables.return_value = self.mapping_tables
+    def test_get_query_specs(self):
+        mock_client = mock.Mock()
+        mock_client.list_tables.return_value = self.mapping_table_objs
         expected = []
         for cdm_table in common.AOU_REQUIRED:
             ext_table_fields_str = self.rule_instance.get_table_fields_str(
@@ -186,6 +180,7 @@ class GenerateExtTablesTest(unittest.TestCase):
                 expected.append(query)
 
         # Test
+        self.rule_instance.setup_rule(mock_client)
         actual = self.rule_instance.get_query_specs()
 
         # Post conditions

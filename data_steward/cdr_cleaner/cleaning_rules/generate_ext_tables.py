@@ -12,6 +12,7 @@ import logging
 
 # Third party imports
 from google.cloud.bigquery import DatasetReference
+from google.cloud.exceptions import NotFound
 
 # Project imports
 from common import JINJA_ENV, PIPELINE_TABLES, SITE_MASKING_TABLE_ID
@@ -102,7 +103,7 @@ class GenerateExtTables(BaseCleaningRule):
             table_fields = fields_for(ext_table_id)
             LOGGER.info(
                 f"using json schema file definition for table: {ext_table_id}")
-        except (RuntimeError):
+        except RuntimeError:
             for field in EXT_FIELD_TEMPLATE:
                 table_field = dict()
                 for key in field:
@@ -181,7 +182,7 @@ class GenerateExtTables(BaseCleaningRule):
             LOGGER.info(f'Copied {PIPELINE_TABLES}.{SITE_MASKING_TABLE_ID} to '
                         f'{self.sandbox_dataset_id}.{SITE_TABLE_ID}')
 
-        self.mapping_table_ids = get_mapping_table_ids(client)
+        self.mapping_table_ids = self.get_mapping_table_ids(client)
 
     def get_sandbox_tablenames(self):
         """
@@ -225,8 +226,8 @@ if __name__ == '__main__':
             ARGS.dataset_id,
             ARGS.sandbox_dataset_id, [(GenerateExtTables,)],
             mapping_dataset_id=ARGS.mapping_dataset_id)
-        for query in query_list:
-            LOGGER.info(query)
+        for query_info in query_list:
+            LOGGER.info(query_info)
     else:
         clean_engine.add_console_logging(ARGS.console_log)
         clean_engine.clean_dataset(ARGS.project_id,
