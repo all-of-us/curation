@@ -51,7 +51,6 @@ class COPESurveyVersionTaskTest(BaseTest.DeidRulesTestBase):
 
         cls.rule_instance = COPESurveyVersionTask(project_id, dataset_id,
                                                   sandbox_id,
-                                                  cls.mapping_dataset_id,
                                                   cls.cope_dataset_id,
                                                   cls.cope_tablename)
 
