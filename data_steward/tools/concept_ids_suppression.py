@@ -27,19 +27,6 @@ from common import JINJA_ENV
 LOGGER = logging.getLogger(__name__)
 LOGS_PATH = '../logs'
 
-COVID_CONCEPT_IDS_QUERY = """
-SELECT
-  vocabulary_id, concept_code, concept_name, concept_id, domain_id
-FROM
-  `{{input_dataset}}.concept_ancestor` ca
-JOIN
-  `{{input_dataset}}.concept` c
-ON
-  ca.descendant_concept_id = c.concept_id
-WHERE
-  ca.ancestor_concept_id IN (756055, 4100065, 37311061, 439676, 37311060, 45763724)
-"""
-
 
 def get_all_concept_ids(columns, input_dataset, client):
     """
@@ -127,7 +114,8 @@ def get_concepts_via_query(input_dataset, client):
     """
 
     # Add queries from above to queries list, to append return values to _concept_ids_suppression lookup table
-    queries = [COVID_CONCEPT_IDS_QUERY]
+    queries = []
+
     final_query_data_df = pd.DataFrame()
 
     LOGGER.info(
