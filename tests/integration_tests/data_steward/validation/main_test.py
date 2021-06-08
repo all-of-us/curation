@@ -144,12 +144,10 @@ class ValidationMainTest_GCSInteraction(ValidationMainTest_Base):
         folder_name = self._test_folder_name('test_check_processed')
 
         test_util.push_mock_required_hpo_files(bucket=self.hpo_bucket,
-                                               directory=folder_name,
-                                               valid_created=True,
-                                               valid_updated=True,
-                                               tzinfo=None)
-        test_util.write_cloud_str(self.hpo_bucket,
-                                  folder_name + common.PROCESSED_TXT, '\n')
+                                               directory=folder_name)
+        test_util.write_cloud_str(
+            self.hpo_bucket, os.path.join(folder_name, common.PROCESSED_TXT),
+            '\n')
 
         # sleep for 10 seconds
         time.sleep(10)

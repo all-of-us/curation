@@ -39,30 +39,34 @@ class ValidationMainTest(TestCase):
         self.folder_prefix = '2019-01-01-v1/'
 
     def test_retention_checks_list_submitted_bucket_items(self):
-        outside_retention = datetime.datetime.today() - datetime.timedelta(
-            days=29)
+        outside_retention = datetime.datetime.today().astimezone(
+            datetime.timezone.utc) - datetime.timedelta(days=30)
         outside_retention_str = outside_retention.strftime(
             gcs_utils.GCS_META_DATETIME_FMT)
+
         bucket_items = [{
             'name': '2018-09-01/person.csv',
             'timeCreated': outside_retention_str,
             'updated': outside_retention_str
         }]
+
         # if the file expires within a day it should not be returned
         actual_result = main.get_date_filtered_bucket_objects(bucket_items)
         expected_result = []
         self.assertCountEqual(expected_result, actual_result)
 
         # if the file within retention period it should be returned
-        within_retention = datetime.datetime.today() - datetime.timedelta(
-            days=25)
+        within_retention = datetime.datetime.today().astimezone(
+            datetime.timezone.utc) - datetime.timedelta(days=25)
         within_retention_str = within_retention.strftime(
             gcs_utils.GCS_META_DATETIME_FMT)
+
         item_2 = {
             'name': '2018-09-01/visit_occurrence.csv',
             'timeCreated': within_retention_str,
             'updated': within_retention_str
         }
+
         bucket_items.append(item_2)
         expected_result = [item_2]
         actual_result = main.get_date_filtered_bucket_objects(bucket_items)
@@ -88,24 +92,28 @@ class ValidationMainTest(TestCase):
         self.assertCountEqual([], actual_result)
 
     def test_folder_list(self):
-        now = datetime.datetime.now()
-        t0 = (now - datetime.timedelta(days=3)).strftime(
+        now_utc = datetime.datetime.now().astimezone(datetime.timezone.utc)
+
+        t0 = (now_utc - datetime.timedelta(days=3)).strftime(
             gcs_utils.GCS_META_DATETIME_FMT)
-        t1 = (now - datetime.timedelta(days=2)).strftime(
+        t1 = (now_utc - datetime.timedelta(days=2)).strftime(
             gcs_utils.GCS_META_DATETIME_FMT)
-        t2 = (now - datetime.timedelta(days=1)).strftime(
+        t2 = (now_utc - datetime.timedelta(days=1)).strftime(
             gcs_utils.GCS_META_DATETIME_FMT)
-        t3 = (now - datetime.timedelta(hours=1)).strftime(
+        t3 = (now_utc - datetime.timedelta(hours=1)).strftime(
             gcs_utils.GCS_META_DATETIME_FMT)
+
         expected = 't2/'
+
         bucket_items = list()
+
         for i in range(3):
             bucket_items.extend(
                 test_util.build_mock_required_hpo_file_metadata(
                     directory=f't{i}',
                     valid_updated=(i is 2),
                     valid_created=True,
-                    tzinfo=None,
+                    tzinfo=datetime.timezone.utc,
                 ))
 
         # mock bypasses api call and says no folders were processed
@@ -120,7 +128,7 @@ class ValidationMainTest(TestCase):
 
             # report dir should be ignored despite being more recent than t2
             report_dir = id_match_consts.REPORT_DIRECTORY.format(
-                date=now.strftime('%Y%m%d'))
+                date=now_utc.strftime('%Y%m%d'))
             # sanity check
             compiled_exp = re.compile(id_match_consts.REPORT_DIRECTORY_REGEX)
             assert (compiled_exp.match(report_dir))
@@ -218,8 +226,14 @@ class ValidationMainTest(TestCase):
                                          mock_hpo_bucket):
         http_error_string = 'fake http error'
         mock_hpo_csv.return_value = [{'hpo_id': self.hpo_id}]
+        fake_resp = test_util.FakeHTTPResponse(
+            content=http_error_string.encode(),
+            status_code=500,
+        )
         mock_list_bucket.side_effect = googleapiclient.errors.HttpError(
-            http_error_string, http_error_string.encode())
+            fake_resp,
+            http_error_string.encode(),
+        )
         with main.app.test_client() as c:
             c.get(main_consts.PREFIX + 'ValidateAllHpoFiles')
             expected_call = mock.call(
@@ -346,7 +360,7 @@ class ValidationMainTest(TestCase):
                         found=True,
                         parsed=True,
                         loaded=True,
-                        tzinfo=None,
+                        err=None,
                     ) for req in common.AOU_REQUIRED_FILES
                 ]),
             'errors': [],
@@ -499,7 +513,15 @@ class ValidationMainTest(TestCase):
             return []
 
         def query_rows_error(q):
-            raise googleapiclient.errors.HttpError(500, b'bar', 'baz')
+            fake_response = test_util.FakeHTTPResponse(
+                status_code=500,
+                content=b'bar',
+                reason='baz',
+            )
+            raise googleapiclient.errors.HttpError(
+                resp=fake_response,
+                content=fake_response.content,
+            )
 
         def upload_string_to_gcs(bucket, filename, content):
             return True

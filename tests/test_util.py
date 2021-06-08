@@ -5,7 +5,7 @@ import os
 from random import seed, randint, choice
 from string import ascii_letters
 import time
-from typing import Optional
+from typing import Optional, Tuple, Union
 
 import requests
 
@@ -613,32 +613,23 @@ def build_mock_required_hpo_file_metadata(directory: str,
 
 def push_mock_required_hpo_files(bucket: str,
                                  directory: str,
-                                 valid_created: bool,
-                                 valid_updated: bool,
-                                 tzinfo: Optional[datetime.tzinfo],
                                  contents_dict: dict = None) -> None:
     """
     push_mock_required_hpo_files creates each of the files required for an upload from an HPO
     to be considered valid
 
-    NOTE: does _not_ produce _valid_ files as the modify time will be ~= time of creation.
-          If fully valid files are required, you must delay n minutes before testing.
+    NOTE: the created and updated date values of files pushed by this func will be effectively the same.  if you need
+            variability there, you'll have to implement it yourself.
+
+            pr's welcome.
 
     :param bucket: name of bucket to push to
-    :param path_prefix: (Optional) path to prefix to each file pushed
+    :param directory: directory to place each created file within
     :param contents_dict: (Optional) optional dict of filename : string value to provide a value
                           for the created file.  If left blank or not defined in the dict, a
                           random string will be used.
     """
-    # get list of required file metadatas
-    req_files = build_mock_required_hpo_file_metadata(
-        directory=directory,
-        valid_created=valid_created,
-        valid_updated=valid_updated,
-        tzinfo=tzinfo,
-    )
-
-    # loop through, pushing each to the target bucket
+    # loop through and push a junk file with the correct name into the specified directory
     for req_file in common.AOU_REQUIRED_FILES:
         # determine contents
         if contents_dict and contents_dict[req_file]:
@@ -652,12 +643,13 @@ def push_mock_required_hpo_files(bucket: str,
                         contents_str=contents)
 
 
-def build_mock_hpo_file_validation(filename: str,
-                                   directory: str,
-                                   found: bool = True,
-                                   parsed: bool = True,
-                                   loaded: bool = True,
-                                   err=None):
+def build_mock_hpo_file_validation(
+        filename: str,
+        directory: str,
+        found: bool = True,
+        parsed: bool = True,
+        loaded: bool = True,
+        err=None) -> Union[Tuple[str, int, int, int], Tuple[str, int]]:
     """
     Constructs the expected Tuple as would be returned by the "perform_validation_on_file" func
 
@@ -667,7 +659,7 @@ def build_mock_hpo_file_validation(filename: str,
     :param parsed: If the response should mark the file as having been "parsed"
     :param loaded: If the response should mark the file as having been "loaded"
     :param err: If the response should be an error message
-    :return: Tuple[filename, found, parsed, loaded] OR Tuple[filename, error]
+    :return: Union[Tuple[filename, found, parsed, loaded], Tuple[filename, error]]
     """
     if err is None:
         return (os.path.join(directory, filename), 1 if found else 0,
@@ -704,3 +696,37 @@ class FakeRuleClass(BaseCleaningRule):
 
 def fake_rule_func(project_id, dataset_id, sandbox_dataset_id):
     pass
+
+
+class FakeHTTPResponse(requests.Response):
+
+    def __init__(self,
+                 url: str = 'https://127.0.0.1',
+                 status_code: int = 200,
+                 reason: str = 'OK',
+                 content: bytes = b'OK',
+                 **kwargs):
+        """
+        Build yerself a fake response
+
+        :param url: final url of request, if ye want.
+        :param status_code: response code
+        :param reason: response code reason value
+        :param content: response content bytes
+        :param **kwargs: anything else you wanna set.
+        """
+        # init to set up default values
+        super().__init__()
+
+        # set a few specific values
+        self.url = url
+        self.status_code = status_code
+        self.reason = reason
+        self._content = content
+
+        # loop through any / all others and set them.
+        for k, v in kwargs.items():
+            if k == 'reason' or k == 'content' or k == 'status_code' or k == 'url':
+                continue
+            else:
+                self.k = v
