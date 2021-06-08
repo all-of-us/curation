@@ -10,5 +10,11 @@
     "name": "research_id",
     "mode": "nullable",
     "description": "Research ID to replace the person_id in de-identified datasets"
+  },
+  {
+    "type": "integer",
+    "name": "vibrent_id",
+    "mode": "nullable",
+    "description": "External ID used by Vibrent, might be used to replace the person_id in fitbit de-identified datasets"
   }
 ]
