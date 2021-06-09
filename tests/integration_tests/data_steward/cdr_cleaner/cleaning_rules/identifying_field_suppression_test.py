@@ -155,8 +155,8 @@ class IDFieldSuppressionTest(BaseTest.CleaningRulesTestBase):
                     'measurement_type_concept_id', 'provider_id'
                 ],
                 'loaded_ids': [321, 123],
-                'cleaned_values': [(321, 12345, 111, 444, None),
-                                   (123, 6789, 222, 555, None)]
+                'cleaned_values': [(321, 12345, 111, 444, 0),
+                                   (123, 6789, 222, 555, 0)]
             },
             {
                 'fq_table_name':
@@ -167,10 +167,8 @@ class IDFieldSuppressionTest(BaseTest.CleaningRulesTestBase):
                     'provider_id', 'care_site_id'
                 ],
                 'loaded_ids': [12345, 6789],
-                'cleaned_values': [
-                    (12345, 1, 1990, None, None, None, None, None),
-                    (6789, 2, 1980, None, None, None, None, None)
-                ]
+                'cleaned_values': [(12345, 1, 1990, 0, 0, 0, 0, 0),
+                                   (6789, 2, 1980, 0, 0, 0, 0, 0)]
             },
             # Should remain the same since death table does not contain any identifying fields
             {

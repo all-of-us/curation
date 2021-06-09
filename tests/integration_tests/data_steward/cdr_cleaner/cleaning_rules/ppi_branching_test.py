@@ -2,6 +2,7 @@ import datetime
 import time
 from typing import Any, Optional, Union, Tuple, Set, Dict
 
+import google.api_core.exceptions
 from google.cloud import bigquery
 from google.cloud.bigquery import Table, TimePartitioning
 
@@ -15,36 +16,39 @@ from utils import bq, sandbox
 
 TEST_DATA_FIELDS = ('observation_id', 'person_id', 'observation_source_value',
                     'value_as_number', 'value_source_value', 'value_as_string',
-                    'questionnaire_response_id')
+                    'questionnaire_response_id', 'observation_date')
 """The columns associated with `TEST_DATA_ROWS`"""
+
+_observed_now = datetime.date.today().strftime('%Y-%m-%d')
 
 TEST_DATA_ROWS = {
     (2000, 2000, 'Race_WhatRaceEthnicity', None,
-     'WhatRaceEthnicity_RaceEthnicityNoneOfThese', None, 1),
+     'WhatRaceEthnicity_RaceEthnicityNoneOfThese', None, 1, _observed_now),
     (2001, 2000, 'RaceEthnicityNoneOfThese_RaceEthnicityFreeTextBox', None,
-     None, 'Mexican and Filipino', 1),
+     None, 'Mexican and Filipino', 1, _observed_now),
     (3000, 3000, 'Race_WhatRaceEthnicity', None, 'WhatRaceEthnicity_White',
-     None, 2),
+     None, 2, _observed_now),
     (3001, 3000, 'RaceEthnicityNoneOfThese_RaceEthnicityFreeTextBox', None,
-     'PMI_Skip', None, 2),
+     'PMI_Skip', None, 2, _observed_now),
     (4000, 4000, 'OverallHealth_OrganTransplant', None, 'OrganTransplant_Yes',
-     None, 3),
+     None, 3, _observed_now),
     (4001, 4000, 'OrganTransplant_OrganTransplantDescription', None, None,
-     'Cornea', 3),
+     'Cornea', 3, _observed_now),
     (5000, 5000, 'OverallHealth_OrganTransplant', None, 'OrganTransplant_No',
-     None, 4),
+     None, 4, _observed_now),
     (5001, 5000, 'OrganTransplant_OrganTransplantDescription', None, 'PMI_Skip',
-     None, 4), (6000, 6000, 'eds_9', None, 'COPE_A_120', None, 5),
-    (6001, 6000, 'eds_6', None, 'COPE_A_62', None, 5),
-    (6002, 6000, 'eds_follow_up_1', None, 'PMI_Skip', None, 5),
-    (7000, 7000, 'basics_xx', 2, None, None, 6),
-    (7001, 7000, 'basics_xx20', None, 'PMI_Skip', None, 6),
-    (8000, 8000, 'basics_xx', None, 'PMI_Skip', None, 7),
-    (8001, 8000, 'basics_xx20', None, 'PMI_Skip', None, 7),
-    (9000, 9000, 'basics_xx', 0.1, 'PMI_Skip', None, 7),
-    (9001, 9000, 'basics_xx20', None, 'PMI_Skip', None, 7),
-    (10000, 10000, 'basics_xx', 0.0, 'PMI_Skip', None, 8),
-    (10001, 10000, 'basics_xx20', None, 'PMI_Skip', None, 8)
+     None, 4, _observed_now),
+    (6000, 6000, 'eds_9', None, 'COPE_A_120', None, 5, _observed_now),
+    (6001, 6000, 'eds_6', None, 'COPE_A_62', None, 5, _observed_now),
+    (6002, 6000, 'eds_follow_up_1', None, 'PMI_Skip', None, 5, _observed_now),
+    (7000, 7000, 'basics_xx', 2, None, None, 6, _observed_now),
+    (7001, 7000, 'basics_xx20', None, 'PMI_Skip', None, 6, _observed_now),
+    (8000, 8000, 'basics_xx', None, 'PMI_Skip', None, 7, _observed_now),
+    (8001, 8000, 'basics_xx20', None, 'PMI_Skip', None, 7, _observed_now),
+    (9000, 9000, 'basics_xx', 0.1, 'PMI_Skip', None, 7, _observed_now),
+    (9001, 9000, 'basics_xx20', None, 'PMI_Skip', None, 7, _observed_now),
+    (10000, 10000, 'basics_xx', 0.0, 'PMI_Skip', None, 8, _observed_now),
+    (10001, 10000, 'basics_xx20', None, 'PMI_Skip', None, 8, _observed_now),
 }
 """Set of tuples used to create rows in the observation table"""
 
@@ -55,6 +59,19 @@ TEST_DATA_DROP = {
 
 TEST_DATA_KEEP = set(TEST_DATA_ROWS) - set(TEST_DATA_DROP)
 """Set of tuples in TEST_DATA_ROWS that should remain after rule is run"""
+
+
+def _res_date_to_str(res):
+    out = set()
+    for row in res:
+        rs = list()
+        for v in row:
+            if type(v) is datetime.date:
+                rs.append(v.strftime('%Y-%m-%d'))
+            else:
+                rs.append(v)
+        out.add(tuple(rs))
+    return out
 
 
 def _default_value_for(field: bigquery.SchemaField) -> Optional[Any]:
@@ -162,10 +179,15 @@ class PPiBranchingTest(BaseTest.CleaningRulesTestBase):
             type_=bigquery.TimePartitioningType.DAY)
         job_config.schema = Observation.SCHEMA
         job_config.create_disposition = bigquery.CreateDisposition.CREATE_IF_NEEDED
-        self.client.load_table_from_json(
+        load_job = self.client.load_table_from_json(
             self.data,
             destination=f'{self.dataset_id}.{ppi_branching.OBSERVATION}',
-            job_config=job_config).result()
+            job_config=job_config)
+        try:
+            load_job.result()
+        except google.api_core.exceptions.BadRequest:
+            self.assertEqual(0, len(load_job.errors),
+                             f'job errors={load_job.errors}')
 
     def load_observation_table(self):
         """
@@ -280,13 +302,13 @@ class PPiBranchingTest(BaseTest.CleaningRulesTestBase):
         q = f'''SELECT * FROM {_fq_table_name(rule.backup_table)}
                         ORDER BY observation_id'''
         rows, _ = self._query(q)
-        self.assertSetEqual(TEST_DATA_DROP, rows)
+        self.assertSetEqual(TEST_DATA_DROP, _res_date_to_str(rows))
 
         # source table is cleaned
         q = f'''SELECT * FROM {_fq_table_name(rule.observation_table)} 
                 ORDER BY observation_id'''
         rows, _ = self._query(q)
-        self.assertSetEqual(TEST_DATA_KEEP, rows)
+        self.assertSetEqual(TEST_DATA_KEEP, _res_date_to_str(rows))
 
         # repeated cleaning yields same output (no rows are backed up)
         _, drop_job = self._query(clean_table_script)
@@ -304,4 +326,4 @@ class PPiBranchingTest(BaseTest.CleaningRulesTestBase):
         q = f'''SELECT * FROM {_fq_table_name(rule.observation_table)} 
                         ORDER BY observation_id'''
         rows, _ = self._query(q)
-        self.assertSetEqual(TEST_DATA_KEEP, rows)
+        self.assertSetEqual(TEST_DATA_KEEP, _res_date_to_str(rows))

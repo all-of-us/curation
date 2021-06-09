@@ -9,6 +9,7 @@ import unittest
 # Third party imports
 import googleapiclient
 import oauth2client
+import test_util
 from mock import patch
 
 # Project imports
@@ -463,7 +464,7 @@ class BaseCleaningRuleTest(unittest.TestCase):
             KeyError('bad fake key'),
             oauth2client.client.HttpAccessTokenRefreshError(
                 'bad refresh token'),
-            googleapiclient.errors.HttpError(b'404', b'bad http error')
+            test_util.mock_google_http_error(status_code=404)
         ]
         mock_query_list.side_effect = error_list
 
