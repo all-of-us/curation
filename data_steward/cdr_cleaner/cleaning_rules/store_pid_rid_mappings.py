@@ -113,11 +113,12 @@ class StoreNewPidRidMappings(BaseCleaningRule):
         # set export date
         try:
             self.export_date = validate_bq_date_string(export_date)
+            LOGGER.info(f'Using provided export_date: `{export_date}`')
         except (TypeError, ValueError):
             # otherwise, default to using today's date
-            LOGGER.info(f"Failed to validate the export_date:  '{export_date}'")
+            LOGGER.warning(f"Failed to validate the export_date:  '{export_date}'")
             self.export_date = datetime.now().strftime('%Y-%m-%d')
-            LOGGER.info(f"Setting export_date to now: '{self.export_date}'")
+            LOGGER.warning(f"Setting export_date to now: '{self.export_date}'")
 
     def get_query_specs(self):
         """
