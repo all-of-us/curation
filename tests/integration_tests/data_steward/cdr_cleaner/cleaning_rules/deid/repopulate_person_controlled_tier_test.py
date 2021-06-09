@@ -19,7 +19,7 @@ from cdr_cleaner.cleaning_rules.deid.repopulate_person_controlled_tier import \
     RepopulatePersonControlledTier, GENERALIZED_RACE_CONCEPT_ID, GENERALIZED_RACE_SOURCE_VALUE, \
     GENERALIZED_GENDER_IDENTITY_CONCEPT_ID, GENERALIZED_GENDER_IDENTITY_SOURCE_VALUE, \
     HISPANIC_LATINO_CONCEPT_ID, HISPANIC_LATINO_CONCEPT_SOURCE_VALUE, NON_HISPANIC_LATINO_CONCEPT_ID, \
-    NO_MATCHING_CONCEPT_ID, NO_MATCHING_SOURCE_VALUE
+    NO_MATCHING_CONCEPT_ID, NO_MATCHING_SOURCE_VALUE, SKIP_CONCEPT_ID
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import \
     BaseTest
 
@@ -95,7 +95,8 @@ class RepopulatePersonControlledTierTestBase(BaseTest.CleaningRulesTestBase):
             )
             VALUES
             (1, 0, 1990, 1, 1, '1990-01-01T00:00:01', 0, 0, NULL, NULL, NULL, 'person_source_value', 'gender_source_value', 0, 'race_source_value', 0, 'ethnicity', 0),
-            (2, 0, 1980, 1, 1, '1980-01-01T00:00:01', 0, 0, 1, 1, 1, 'person_source_value', 'gender_source_value', 0, 'race_source_value', 0, 'ethnicity', 0)
+            (2, 0, 1980, 1, 1, '1980-01-01T00:00:01', 0, 0, 1, 1, 1, 'person_source_value', 'gender_source_value', 0, 'race_source_value', 0, 'ethnicity', 0),
+            (3, 0, 1970, 1, 1, '1970-01-01T00:00:01', 0, 0, NULL, NULL, NULL, 'person_source_value', 'gender_source_value', 0, 'race_source_value', 0, 'ethnicity', 0)
         """)
 
         observation_data_template = self.jinja_env.from_string("""
@@ -120,7 +121,11 @@ class RepopulatePersonControlledTierTestBase(BaseTest.CleaningRulesTestBase):
                 (6, 2, 45880669, 1585838, 1585839, 'GenderIdentity_Man', '2020-01-01', 0, 0),
                 (7, 2, 1585841, 1585838, 1585841, 'GenderIdentity_NonBinary', '2020-01-01', 0, 0),
                 (8, 1, 45878463, 1585845, 1585847, 'SexAtBirth_Female', '2020-01-01', 0, 0),
-                (9, 2, 45880669, 1585845, 1585846, 'SexAtBirth_Male', '2020-01-01', 0, 0)
+                (9, 2, 45880669, 1585845, 1585846, 'SexAtBirth_Male', '2020-01-01', 0, 0),
+                (10, 3, 903096, 1586140, 903096, 'PMI_Skip', '2020-01-01', 0, 0),
+                (11, 3, 45878463, 1585838, 1585840, 'GenderIdentity_Woman', '2020-01-01', 0, 0),
+                (12, 3, 45878463, 1585845, 1585847, 'SexAtBirth_Female', '2020-01-01', 0, 0)
+
         """)
         insert_person_query = person_data_template.render(
             project_id=self.project_id, dataset_id=self.dataset_id)
@@ -137,7 +142,7 @@ class RepopulatePersonControlledTierTestBase(BaseTest.CleaningRulesTestBase):
         tables_and_counts = [{
             'fq_table_name':
                 f'{self.project_id}.{self.dataset_id}.person',
-            'loaded_ids': [1, 2],
+            'loaded_ids': [1, 2, 3],
             'fields': [
                 'person_id', 'gender_concept_id', 'year_of_birth',
                 'month_of_birth', 'day_of_birth', 'birth_datetime',
@@ -162,7 +167,12 @@ class RepopulatePersonControlledTierTestBase(BaseTest.CleaningRulesTestBase):
                  GENERALIZED_GENDER_IDENTITY_CONCEPT_ID,
                  'WhatRaceEthnicity_Asian', 1586142,
                  HISPANIC_LATINO_CONCEPT_SOURCE_VALUE,
-                 HISPANIC_LATINO_CONCEPT_ID)
+                 HISPANIC_LATINO_CONCEPT_ID),
+                (3, 45878463, 1970, None, None,
+                 parser.parse('1970-06-15 00:00:00 UTC'), SKIP_CONCEPT_ID,
+                 SKIP_CONCEPT_ID, None, None, None, 'person_source_value',
+                 'GenderIdentity_Woman', 1585840, 'PMI_Skip', 903096,
+                 'PMI_Skip', NO_MATCHING_CONCEPT_ID),
             ]
         }]
 
