@@ -208,14 +208,22 @@ FROM
 (
     SELECT
         p.person_id,
-        COALESCE(ethnicity_ob.value_as_concept_id,
+        IF
+        (ethnicity_ob.value_as_concept_id IS NULL,
+            /*Case this out based on the race_ob (race) values, ie if it's a skip/pna respect that.*/
             CASE race_ob.value_source_concept_id
                 WHEN  {{no_matching_concept_id}} THEN {{no_matching_concept_id}} /*missing answer*/
                 WHEN  NULL THEN {{no_matching_concept_id}} /*missing answer*/
                 WHEN  {{pna_concept_id}} THEN {{pna_concept_id}} /*PNA*/
                 WHEN  {{skip_concept_id}} THEN {{skip_concept_id}} /*Skip*/
                 WHEN  {{none_of_these_concept_id}} THEN {{none_of_these_concept_id}} /*None of these*/
-            ELSE {{default_answer_concept_id}} END) AS {{prefix}}_concept_id,
+            /*otherwise, it's non-hispanic*/
+            ELSE
+            {{default_answer_concept_id}}
+        END
+            /*Assign HLS if it's present*/
+            ,
+            {{hispanic_latino_concept_id}}) AS {{prefix}}_concept_id,
         COALESCE(ethnicity_ob.value_source_concept_id, {{no_matching_concept_id}}) AS {{prefix}}_source_concept_id,
         COALESCE(ethnicity_ob.value_source_value,
                 /*fill in the skip/pna/none of these if needed*/
@@ -372,6 +380,7 @@ class RepopulatePersonControlledTier(AbstractRepopulatePerson):
             pna_concept_id=PNA_CONCEPT_ID,
             none_of_these_concept_id=NONE_OF_THESE_CONCEPT_ID,
             default_answer_concept_id=NON_HISPANIC_LATINO_CONCEPT_ID,
+            hispanic_latino_concept_id=HISPANIC_LATINO_CONCEPT_ID,
             translate_source_concepts=self.get_ethnicity_manual_translation())
 
         return {
