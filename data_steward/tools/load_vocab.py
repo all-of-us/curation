@@ -5,14 +5,15 @@
 import argparse
 import datetime
 import hashlib
+import json
 import logging
 from pathlib import Path
-from typing import List
+from typing import List, Dict
 
 from google.cloud import storage
 from google.cloud.exceptions import NotFound
-from google.cloud.bigquery import Client, Dataset, SchemaField, LoadJob, LoadJobConfig, \
-    QueryJobConfig, Table
+from google.cloud.bigquery import Client, Dataset, SchemaField, LoadJob, LoadJobConfig
+from google.cloud.bigquery import QueryJobConfig, Table, AccessEntry
 
 from common import VOCABULARY_TABLES, JINJA_ENV, CONCEPT, VOCABULARY, VOCABULARY_UPDATES
 from resources import AOU_VOCAB_PATH
@@ -187,19 +188,45 @@ def load_stage(dst_dataset: Dataset, bq_client: Client, bucket_name: str,
     return load_jobs
 
 
+# TODO Move this to another module (auth, admin?). It can be reused
+#  if/when setting standard properties on other datasets
+def dataset_properties_from_file(json_path: str) -> Dict[str, object]:
+    """
+    Read and validate a JSON file containing dataset properties to update
+    (structure described at https://tinyurl.com/269xprpe)
+
+    :param json_path: path to a JSON file that defines dataset access
+      (follows API resource structure described at https://tinyurl.com/269xprpe)
+
+    :return: a dict which maps (dataset field name => value)
+    """
+    with open(json_path, 'r', encoding='utf-8') as json_fp:
+        resource_properties = json.load(json_fp)
+    if 'access' not in resource_properties:
+        raise RuntimeError(f'Missing "access" field in {json_path}')
+    if not isinstance(resource_properties['access'], list):
+        raise TypeError(f'Field "access" in {json_path} must refer to a list')
+    dataset_properties = dict()
+    dataset_properties['access_entries'] = [
+        AccessEntry.from_api_repr(access_entry)
+        for access_entry in resource_properties['access']
+    ]
+    return dataset_properties
+
+
 def load(project_id,
          bq_client,
          src_dataset_id,
          dst_dataset_id,
-         dataset_access_json_path=None):
+         dataset_properties):
     """
     Transform safely loaded tables and store
     :param project_id: Identifies the BQ project
     :param bq_client: a BigQuery client object
     :param src_dataset_id: reference to source dataset object
     :param dst_dataset_id: reference to destination dataset object results in target dataset.
-    :param dataset_access_json_path: path to a JSON file that defines dataset access 
-      (structure described at https://tinyurl.com/269xprpe)
+    :param dataset_properties: a dict specifying target dataset properties to
+      set (i.e. access_entries)
     :return: List of BQ job_ids
     """
     dst_dataset = Dataset(f'{bq_client.project}.{dst_dataset_id}')
@@ -225,11 +252,12 @@ def load(project_id,
         LOGGER.info(f'table:{destination} job_id:{query_job.job_id}')
         query_jobs.append(query_job)
         query_job.result()
-    if dataset_access_json_path:
-        # to prevent sharing dataset that fails to load
-        # only set dataset access policy at the end
-        bq.update_dataset_access_entries(bq_client, dst_dataset,
-                                         dataset_access_json_path)
+
+    # to prevent sharing a dataset that fails to load
+    # only set dataset access policy at the end
+    dst_dataset.access_entries = dataset_properties['access_entries']
+    bq_client.update_dataset(dst_dataset, ['access_entries'])
+
     return query_jobs
 
 
@@ -237,7 +265,7 @@ def main(project_id: str,
          bucket_name: str,
          vocab_folder_path: str,
          dst_dataset_id: str,
-         dataset_access_json_path: str = None):
+         dataset_json_path: str):
     """
     Load and transform vocabulary files in GCS to a BigQuery dataset
 
@@ -245,9 +273,11 @@ def main(project_id: str,
     :param bucket_name: refers to the bucket containing vocabulary files
     :param vocab_folder_path: points to the directory containing files downloaded from athena with CPT4 applied
     :param dst_dataset_id: final destination to load the vocabulary in BigQuery
-    :param dataset_access_json_path: path to a JSON file that defines dataset access 
-      (structure described at https://tinyurl.com/269xprpe)
+    :param dataset_json_path: path to a JSON file that defines dataset access
+      (must follow API resource structure described at https://tinyurl.com/269xprpe)
     """
+    # reading file first to ensure early failure on bad input
+    dataset_props = dataset_properties_from_file(dataset_json_path)
     bq_client = bq.get_client(project_id)
     gcs_client = storage.Client(project_id)
     vocab_folder_path = Path(vocab_folder_path)
@@ -257,7 +287,7 @@ def main(project_id: str,
                                                        bucket_name, bq_client)
     load_stage(staging_dataset, bq_client, bucket_name, gcs_client)
     load(project_id, bq_client, staging_dataset.dataset_id, dst_dataset_id,
-         dataset_access_json_path)
+         dataset_props)
     return
 
 
