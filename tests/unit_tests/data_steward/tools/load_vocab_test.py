@@ -102,8 +102,11 @@ class LoadVocabTest(unittest.TestCase):
                     role='WRITER',
                     entity_type='userByEmail',
                     entity_id='fake.person@pmi-ops.org',
-                )]
+                )
+            ]
         }
-        with mock.patch('tools.load_vocab.open', mock.mock_open(read_data=mock_json)):
-            actual = load_vocab.dataset_properties_from_file('fake_json_path.json')
+        with mock.patch('tools.load_vocab.open',
+                        mock.mock_open(read_data=mock_json)):
+            actual = load_vocab.dataset_properties_from_file(
+                'fake_json_path.json')
         self.assertDictEqual(expected, actual)
