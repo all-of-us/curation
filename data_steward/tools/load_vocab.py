@@ -214,10 +214,7 @@ def dataset_properties_from_file(json_path: str) -> Dict[str, object]:
     return dataset_properties
 
 
-def load(project_id,
-         bq_client,
-         src_dataset_id,
-         dst_dataset_id,
+def load(project_id, bq_client, src_dataset_id, dst_dataset_id,
          dataset_properties):
     """
     Transform safely loaded tables and store
@@ -261,11 +258,8 @@ def load(project_id,
     return query_jobs
 
 
-def main(project_id: str,
-         bucket_name: str,
-         vocab_folder_path: str,
-         dst_dataset_id: str,
-         dataset_json_path: str):
+def main(project_id: str, bucket_name: str, vocab_folder_path: str,
+         dst_dataset_id: str, dataset_json_path: str):
     """
     Load and transform vocabulary files in GCS to a BigQuery dataset
 
