@@ -104,6 +104,3 @@ class GenerateExtTablesTest(BaseTest.CleaningRulesTestBase):
                 self.dataset_id):
             self.rule_instance.setup_rule(self.client)
             self.default_test(tables_and_counts)
-
-    def tearDown(self):
-        print("Do Nothing")
