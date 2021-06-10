@@ -1,7 +1,6 @@
 """
-Add a new HPO site to config file and BigQuery lookup tables and updates the `pipeline_table_sandbox.site_masking`
-    sandbox table created in `generate_site_mappings_and_ext_tables` with any missing hpo_sites in
-    `lookup_tables.hpo_site_id_mappings`
+Add a new HPO site to config file and BigQuery lookup tables and updates the `pipeline_table.site_maskings`
+    table with any missing hpo_sites in `lookup_tables.hpo_site_id_mappings`
 
 Note: GAE environment must still be set manually
 """

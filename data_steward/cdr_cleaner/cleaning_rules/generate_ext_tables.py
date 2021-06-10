@@ -43,7 +43,16 @@ SITE_TABLE_ID = 'site_maskings'
 REPLACE_SRC_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project_id}}.{{dataset_id}}.{{ext_table}}` ({{ext_table_fields}})
 AS (
-SELECT m.{{cdm_table_id}}_id, s.src_id
+SELECT 
+    m.{{cdm_table_id}}_id 
+    , s.src_id
+    {% for field in additional_fields %}
+        {% if field is in mapping_fields %}
+          , m.{{field}}
+        {% else %}
+          , null as {{field}}
+        {% endif %}
+    {% endfor %}
 FROM `{{project_id}}.{{mapping_dataset_id}}.{{mapping_table_id}}` m
 JOIN `{{project_id}}.{{shared_sandbox_id}}.{{site_maskings_table_id}}` s
 ON m.src_hpo_id = s.hpo_id
@@ -153,11 +162,24 @@ class GenerateExtTables(BaseCleaningRule):
 
             query = dict()
 
+            mapping_field_names = fields_for(mapping_table_id)
+            mapping_field_names = [
+                field.get('name') for field in mapping_field_names
+            ]
+
+            ext_field_names = fields_for(ext_table_id)
+            additional_field_names = [
+                field.get('name')
+                for field in ext_field_names
+                if field.get('name') not in ['src_id', f'{cdm_table_id}_id']
+            ]
+
             query[cdr_consts.QUERY] = REPLACE_SRC_QUERY.render(
                 project_id=self.project_id,
                 dataset_id=self.dataset_id,
                 ext_table=ext_table_id,
                 ext_table_fields=ext_table_fields_str,
+                additional_fields=additional_field_names,
                 cdm_table_id=cdm_table_id,
                 mapping_dataset_id=self._mapping_dataset_id,
                 mapping_table_id=mapping_table_id,
@@ -165,6 +187,9 @@ class GenerateExtTables(BaseCleaningRule):
                 site_maskings_table_id=SITE_TABLE_ID)
             queries.append(query)
 
+            print(query)
+
+            print('\n\n')
         return queries
 
     def setup_rule(self, client, *args, **keyword_args):
@@ -186,9 +211,9 @@ class GenerateExtTables(BaseCleaningRule):
 
     def get_sandbox_tablenames(self):
         """
-        Get the sandbox dataset id for this class instance
+        Get the sandbox table ids for this class instance
         """
-        pass
+        return [SITE_TABLE_ID]
 
     def setup_validation(self, client, *args, **keyword_args):
         """
