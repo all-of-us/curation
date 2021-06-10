@@ -211,12 +211,12 @@ FROM
         IF
         (ethnicity_ob.value_as_concept_id IS NULL,
             /*Case this out based on the race_ob (race) values, ie if it's a skip/pna respect that.*/
-            CASE race_ob.value_source_concept_id
-                WHEN  {{no_matching_concept_id}} THEN {{no_matching_concept_id}} /*missing answer*/
-                WHEN  NULL THEN {{no_matching_concept_id}} /*missing answer*/
-                WHEN  {{pna_concept_id}} THEN {{pna_concept_id}} /*PNA*/
-                WHEN  {{skip_concept_id}} THEN {{skip_concept_id}} /*Skip*/
-                WHEN  {{none_of_these_concept_id}} THEN {{none_of_these_concept_id}} /*None of these*/
+            CASE 
+                WHEN race_ob.value_source_concept_id = {{no_matching_concept_id}} THEN {{no_matching_concept_id}} /*missing answer*/
+                WHEN race_ob.value_source_concept_id IS NULL THEN {{no_matching_concept_id}} /*missing answer*/
+                WHEN race_ob.value_source_concept_id = {{pna_concept_id}} THEN {{pna_concept_id}} /*PNA*/
+                WHEN race_ob.value_source_concept_id = {{skip_concept_id}} THEN {{skip_concept_id}} /*Skip*/
+                WHEN race_ob.value_source_concept_id = {{none_of_these_concept_id}} THEN {{none_of_these_concept_id}} /*None of these*/
             /*otherwise, it's non-hispanic*/
             ELSE
             {{default_answer_concept_id}}
