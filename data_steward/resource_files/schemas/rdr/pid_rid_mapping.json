@@ -15,6 +15,6 @@
     "type": "integer",
     "name": "vibrent_id",
     "mode": "nullable",
-    "description": "External ID used by Vibrent, might be used to replace the person_id in fitbit de-identified datasets"
+    "description": "External ID used by Vibrent, used to map the fitbit data to the correct person_id"
   }
 ]
