@@ -3,7 +3,6 @@ A utility to standardize use of the BigQuery python client library.
 """
 # Python Imports
 from datetime import datetime
-import json
 import logging
 import os
 import typing
