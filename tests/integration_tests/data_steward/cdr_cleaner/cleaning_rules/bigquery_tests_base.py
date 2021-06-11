@@ -289,7 +289,7 @@ class BaseTest:
             tables_created_at_setup = []
             for values_list in tables_and_test_values:
                 rule_setup_creation_list = values_list.get(
-                    'tables_created_on_setup')
+                    'tables_created_on_setup', [])
                 tables_created_at_setup.extend(rule_setup_creation_list)
 
             for fq_table_name in self.fq_sandbox_table_names:
