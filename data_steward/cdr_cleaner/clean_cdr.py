@@ -278,14 +278,22 @@ CONTROLLED_TIER_DEID_CLEAN_CLEANING_CLASSES = [
 
 REGISTERED_TIER_DEID_CLEANING_CLASSES = [
     # Data mappings/re-mappings
-    (QRIDtoRID,),  # Should run before any row suppression rules
+    ####################################
+    (
+        QRIDtoRID,),  # Should run before any row suppression rules
     (GenerateExtTables,),
     (COPESurveyVersionTask,
     ),  # Should run after GenerateExtTables and before CleanMappingExtTables
+
     # Data generalizations
-    (GeneralizeStateByPopulation,),
+    ####################################
+    (
+        GeneralizeStateByPopulation,),
+
     # Data suppressions
-    (CovidEHRVaccineConceptSuppression,),  # should run after QRIDtoRID
+    ####################################
+    (
+        CovidEHRVaccineConceptSuppression,),  # should run after QRIDtoRID
     (StringFieldsSuppression,),
     (SectionParticipationConceptSuppression,),
     (RegisteredCopeSurveyQuestionsSuppression,),
