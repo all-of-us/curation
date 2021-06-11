@@ -167,12 +167,15 @@ class GenerateExtTables(BaseCleaningRule):
                 field.get('name') for field in mapping_field_names
             ]
 
-            ext_field_names = fields_for(ext_table_id)
-            additional_field_names = [
-                field.get('name')
-                for field in ext_field_names
-                if field.get('name') not in ['src_id', f'{cdm_table_id}_id']
-            ]
+            try:
+                ext_field_names = fields_for(ext_table_id)
+            except RuntimeError:
+                ext_field_names = EXT_FIELD_TEMPLATE
+            finally:
+                additional_field_names = [
+                    field.get('name') for field in ext_field_names if field.get(
+                        'name') not in ['src_id', f'{cdm_table_id}_id']
+                ]
 
             query[cdr_consts.QUERY] = REPLACE_SRC_QUERY.render(
                 project_id=self.project_id,
