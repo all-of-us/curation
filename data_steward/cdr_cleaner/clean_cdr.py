@@ -38,7 +38,7 @@ from cdr_cleaner.cleaning_rules.clean_ppi_numeric_fields_using_parameters import
 from cdr_cleaner.cleaning_rules.create_person_ext_table import CreatePersonExtTable
 from cdr_cleaner.cleaning_rules.date_shift_cope_responses import DateShiftCopeResponses
 from cdr_cleaner.cleaning_rules.remove_ehr_data_without_consent import RemoveEhrDataWithoutConsent
-from cdr_cleaner.cleaning_rules.deid.generate_site_mappings_and_ext_tables import GenerateSiteMappingsAndExtTables
+from cdr_cleaner.cleaning_rules.generate_ext_tables import GenerateExtTables
 from cdr_cleaner.cleaning_rules.deid.ct_pid_rid_map import CtPIDtoRID
 from cdr_cleaner.cleaning_rules.deid.fitbit_dateshift import FitbitDateShiftRule
 from cdr_cleaner.cleaning_rules.deid.fitbit_pid_rid_map import FitbitPIDtoRID
@@ -251,9 +251,9 @@ CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     (StringFieldsSuppression,),
     (CopeSurveyResponseSuppression,),
     (IDFieldSuppression,),  # Should run after any data remapping
-    (GenerateSiteMappingsAndExtTables,),
+    (GenerateExtTables,),
     (COPESurveyVersionTask,
-    ),  # Should run after GenerateSiteMappingsAndExtTables and before CleanMappingExtTables
+    ),  # Should run after GenerateExtTables and before CleanMappingExtTables
     (CancerConceptSuppression,),  # Should run after any data remapping rules
     (AggregateZipCodes,),
     (SectionParticipationConceptSuppression,),
@@ -277,11 +277,24 @@ CONTROLLED_TIER_DEID_CLEAN_CLEANING_CLASSES = [
 ]
 
 REGISTERED_TIER_DEID_CLEANING_CLASSES = [
-    (QRIDtoRID,),  # Should run before any row suppression rules
-    (CovidEHRVaccineConceptSuppression,),  # should run after QRIDtoRID
+    # Data mappings/re-mappings
+    ####################################
+    (
+        QRIDtoRID,),  # Should run before any row suppression rules
+    (GenerateExtTables,),
+    (COPESurveyVersionTask,
+    ),  # Should run after GenerateExtTables and before CleanMappingExtTables
+
+    # Data generalizations
+    ####################################
+    (
+        GeneralizeStateByPopulation,),
+
+    # Data suppressions
+    ####################################
+    (
+        CovidEHRVaccineConceptSuppression,),  # should run after QRIDtoRID
     (StringFieldsSuppression,),
-    (GenerateSiteMappingsAndExtTables,),
-    (GeneralizeStateByPopulation,),
     (SectionParticipationConceptSuppression,),
     (RegisteredCopeSurveyQuestionsSuppression,),
 ]

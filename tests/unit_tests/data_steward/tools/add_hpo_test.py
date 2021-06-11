@@ -8,8 +8,7 @@ import pandas as pd
 import app_identity
 import constants.bq_utils as bq_consts
 from tools import add_hpo
-from common import PIPELINE_TABLES
-from cdr_cleaner.cleaning_rules.deid.generate_site_mappings_and_ext_tables import SITE_MASKING_TABLE_ID
+from common import PIPELINE_TABLES, SITE_MASKING_TABLE_ID
 
 
 class AddHPOTest(TestCase):
