@@ -124,7 +124,7 @@ class GenerateExtTables(BaseCleaningRule):
 
         table_field_str = self.get_bq_fields_sql(table_fields)
 
-        return table_field_str
+        return (table_field_str, table_fields)
 
     def get_mapping_table_ids(self, client):
         """
@@ -157,7 +157,7 @@ class GenerateExtTables(BaseCleaningRule):
             # get cdm table name
             cdm_table_id = mapping_table_id[len(MAPPING_PREFIX):]
             ext_table_id = cdm_table_id + EXT_TABLE_SUFFIX
-            ext_table_fields_str = self.get_table_fields_str(
+            ext_table_fields_str, table_fields = self.get_table_fields_str(
                 cdm_table_id, ext_table_id)
 
             query = dict()
@@ -167,15 +167,11 @@ class GenerateExtTables(BaseCleaningRule):
                 field.get('name') for field in mapping_field_names
             ]
 
-            try:
-                ext_field_names = fields_for(ext_table_id)
-            except RuntimeError:
-                ext_field_names = EXT_FIELD_TEMPLATE
-            finally:
-                additional_field_names = [
-                    field.get('name') for field in ext_field_names if field.get(
-                        'name') not in ['src_id', f'{cdm_table_id}_id']
-                ]
+            additional_field_names = [
+                field.get('name')
+                for field in table_fields
+                if field.get('name') not in ['src_id', f'{cdm_table_id}_id']
+            ]
 
             query[cdr_consts.QUERY] = REPLACE_SRC_QUERY.render(
                 project_id=self.project_id,
@@ -190,9 +186,6 @@ class GenerateExtTables(BaseCleaningRule):
                 site_maskings_table_id=SITE_TABLE_ID)
             queries.append(query)
 
-            print(query)
-
-            print('\n\n')
         return queries
 
     def setup_rule(self, client, *args, **keyword_args):

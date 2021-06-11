@@ -18,7 +18,7 @@ import mock
 
 # Project imports
 import common
-from resources import fields_path
+from resources import fields_for, fields_path
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 import cdr_cleaner.cleaning_rules.generate_ext_tables as gen_ext
 
@@ -116,12 +116,13 @@ class GenerateExtTablesTest(unittest.TestCase):
 
         # test
         with self.assertLogs(level='INFO') as cm:
-            actual = self.rule_instance.get_table_fields_str(table, ext_table)
+            actual_str, _ = self.rule_instance.get_table_fields_str(
+                table, ext_table)
 
         # post conditions
         static_msg = 'using dynamic extension table schema for table:'
         self.assertIn(static_msg, cm.output[0])
-        self.assertCountEqual(fields_str, actual)
+        self.assertCountEqual(fields_str, actual_str)
 
     def test_get_schema_defined_table_fields(self):
         """
@@ -149,20 +150,32 @@ class GenerateExtTablesTest(unittest.TestCase):
 
         # test
         with self.assertLogs(level='INFO') as cm:
-            actual = self.rule_instance.get_table_fields_str(table, ext_table)
+            actual_str, _ = self.rule_instance.get_table_fields_str(
+                table, ext_table)
 
         # post conditions
         static_msg = 'using json schema file definition for table:'
         self.assertIn(static_msg, cm.output[0])
-        self.assertCountEqual(fields_str, actual)
+        self.assertCountEqual(fields_str, actual_str)
 
     def test_get_query_specs(self):
         mock_client = mock.Mock()
         mock_client.list_tables.return_value = self.mapping_table_objs
         expected = []
         for cdm_table in common.AOU_REQUIRED:
-            ext_table_fields_str = self.rule_instance.get_table_fields_str(
+            ext_table_fields_str, _ = self.rule_instance.get_table_fields_str(
                 cdm_table, (cdm_table + gen_ext.EXT_TABLE_SUFFIX))
+
+            additional_fields = _get_field_names(
+                f'{cdm_table}{common.EXT_SUFFIX}')
+            additional_fields = [
+                f for f in additional_fields
+                if f not in ['src_id', f'{cdm_table}_id']
+            ]
+
+            mapping_fields = _get_field_names(
+                f'{common.MAPPING_PREFIX}{cdm_table}')
+
             if cdm_table not in [
                     common.PERSON, common.DEATH, common.FACT_RELATIONSHIP
             ]:
@@ -173,6 +186,8 @@ class GenerateExtTablesTest(unittest.TestCase):
                     ext_table=cdm_table + gen_ext.EXT_TABLE_SUFFIX,
                     ext_table_fields=ext_table_fields_str,
                     cdm_table_id=cdm_table,
+                    additional_fields=additional_fields,
+                    mapping_fields=mapping_fields,
                     mapping_dataset_id=self.mapping_dataset_id,
                     mapping_table_id=gen_ext.MAPPING_PREFIX + cdm_table,
                     shared_sandbox_id=self.sandbox_dataset_id,
@@ -185,3 +200,14 @@ class GenerateExtTablesTest(unittest.TestCase):
 
         # Post conditions
         self.assertCountEqual(expected, actual)
+
+
+def _get_field_names(tablename):
+    try:
+        fields = fields_for(tablename)
+    except RuntimeError:
+        additional_fields = []
+    else:
+        additional_fields = [f.get('name') for f in fields]
+
+    return additional_fields
