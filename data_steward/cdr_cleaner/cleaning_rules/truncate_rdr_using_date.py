@@ -79,7 +79,8 @@ class TruncateRdrData(BaseCleaningRule):
         except (TypeError, ValueError):
             # otherwise, default to using todays date as the date string
             self.cutoff_date = str(datetime.now().date())
-            LOGGER.warning(f'Using current date for truncation.  This may be undesirable.')
+            LOGGER.warning(
+                f'Using current date for truncation.  This may be undesirable.')
 
         desc = (f'All rows of data in the RDR export with dates after '
                 f'{self.cutoff_date} will be truncated.')
