@@ -96,12 +96,12 @@ WITH
     IF
       (ethnicity_ob.value_as_concept_id IS NULL,
         /*Case this out based on the race_ob (race) values, ie if it's a skip/pna respect that.*/
-        CASE race_ob.value_source_concept_id
-          WHEN  0 THEN 0 /*missing answer*/
-          WHEN  NULL THEN 0 /*missing answer*/
-          WHEN  903079 THEN 903079 /*PNA*/
-          WHEN  903096 THEN 903096 /*Skip*/
-          WHEN  1586148 THEN 1586148 /*None of these*/
+        CASE 
+          WHEN race_ob.value_source_concept_id = 0 THEN 0 /*missing answer*/
+          WHEN race_ob.value_source_concept_id IS NULL THEN 0 /*missing answer*/
+          WHEN race_ob.value_source_concept_id = 903079 THEN 903079/*PNA*/
+          WHEN race_ob.value_source_concept_id = 903096 THEN 903096 /*Skip*/
+          WHEN race_ob.value_source_concept_id = 1586148 THEN 1586148 /*None of these*/
         /*otherwise, it's non-hispanic*/
         ELSE
         38003564

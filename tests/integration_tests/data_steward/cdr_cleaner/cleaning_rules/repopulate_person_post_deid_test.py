@@ -124,7 +124,9 @@ class RepopulatePersonPostDeidTest(BaseTest.CleaningRulesTestBase):
             INSERT INTO `{{fq_dataset_name}}.observation` (person_id, observation_id, observation_source_concept_id, value_as_concept_id, value_source_concept_id,
                 observation_date, observation_type_concept_id, observation_concept_id)
             VALUES
-                (1, 100, {{gender_concept_id}}, {{gender_nonbinary_concept_id}}, {{gender_nonbinary_source_concept_id}}, date('2020-05-05'), 1, 1)
+                (1, 100, {{gender_concept_id}}, {{gender_nonbinary_concept_id}}, {{gender_nonbinary_source_concept_id}}, date('2020-05-05'), 1, 1),
+                (1, 101, 1586140, 45877987, 1586146, '2020-01-01', 1, 1586140),
+                (2, 102, 1586140, 45876489, 1586143, '2020-01-01', 1, 1586140)
         """).render(fq_dataset_name=self.fq_dataset_name,
                     gender_concept_id=GENDER_CONCEPT_ID,
                     gender_nonbinary_concept_id=GENDER_NONBINARY_CONCEPT_ID,
@@ -151,10 +153,10 @@ class RepopulatePersonPostDeidTest(BaseTest.CleaningRulesTestBase):
                 'race_concept_id', 'ethnicity_concept_id',
                 'gender_source_value', 'gender_source_concept_id'
             ],
-            'cleaned_values': [(1, 1585841, 1991, AOU_NONE_INDICATED_CONCEPT_ID,
-                                38003564, "nonbinary_src", 123),
-                               (2, 0, 1976, AOU_NONE_INDICATED_CONCEPT_ID,
-                                38003564, "No matching concept", 0)]
+            'cleaned_values': [
+                (1, 1585841, 1991, 8527, 38003564, "nonbinary_src", 123),
+                (2, 0, 1976, 8516, 38003564, "No matching concept", 0)
+            ]
         }]
 
         self.default_test(tables_and_counts)

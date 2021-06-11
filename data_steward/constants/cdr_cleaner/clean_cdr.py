@@ -12,7 +12,7 @@ CONTROLLED_TIER_DEID = 'controlled_tier_deid'
 CONTROLLED_TIER_DEID_BASE = 'controlled_tier_deid_base'
 CONTROLLED_TIER_DEID_CLEAN = 'controlled_tier_deid_clean'
 
-REGISTERED_TIER_DEID = 'registered_tier_died'
+REGISTERED_TIER_DEID = 'registered_tier_deid'
 
 BACKUP = 'backup'
 STAGING = 'staging'
