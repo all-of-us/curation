@@ -1,13 +1,15 @@
-import unittest
 import os
+import shutil
+import tempfile
+import unittest
 from pathlib import Path
-import mock
 
+import mock
 from google.cloud import storage, bigquery
 
 import app_identity
-from tests.test_util import TEST_VOCABULARY_PATH
 from common import CONCEPT, VOCABULARY
+from tests.test_util import TEST_VOCABULARY_PATH
 from tools import load_vocab as lv
 
 
@@ -26,19 +28,31 @@ class LoadVocabTest(unittest.TestCase):
         self.bucket = os.environ.get('BUCKET_NAME_FAKE')
         self.bq_client = bigquery.Client(project=self.project_id)
         self.gcs_client = storage.Client(project=self.project_id)
-        self.test_vocab_folder_path = Path(TEST_VOCABULARY_PATH)
         self.test_vocabs = [CONCEPT, VOCABULARY]
-        self.contents = {}
+
+        # copy files to temp dir where safe to modify
+        self.test_vocab_folder_path = Path(tempfile.mkdtemp())
         for vocab in self.test_vocabs:
-            vocab_path = self.test_vocab_folder_path / lv._table_name_to_filename(
-                vocab)
-            with vocab_path.open('r') as f:
-                self.contents[vocab] = f.read()
+            filename = lv._table_name_to_filename(vocab)
+            file_path = os.path.join(TEST_VOCABULARY_PATH, filename)
+            shutil.copy(file_path, self.test_vocab_folder_path)
+
+        # mock dataset_properties_from_file
+        # using the default properties
+        dataset = self.bq_client.create_dataset(
+            f'{self.project_id}.{self.dataset_id}', exists_ok=True)
+        mock_dataset_properties_from_file = mock.patch(
+            'tools.load_vocab.dataset_properties_from_file')
+        self.mock_bq_query = mock_dataset_properties_from_file.start()
+        self.mock_bq_query.return_value = {
+            'access_entries': dataset.access_entries
+        }
+        self.addCleanup(mock_dataset_properties_from_file.stop)
 
     @mock.patch('tools.load_vocab.VOCABULARY_TABLES', [CONCEPT, VOCABULARY])
     def test_upload_stage(self):
         lv.main(self.project_id, self.bucket, self.test_vocab_folder_path,
-                self.dataset_id)
+                self.dataset_id, 'fake_dataset_props.json')
         expected_row_count = {CONCEPT: 101, VOCABULARY: 52}
         for dataset in [self.staging_dataset_id, self.dataset_id]:
             for vocab in self.test_vocabs:
@@ -48,15 +62,18 @@ class LoadVocabTest(unittest.TestCase):
                 self.assertEqual(len(list(rows)), expected_row_count[vocab])
 
     def tearDown(self) -> None:
-        for vocab in self.test_vocabs:
-            bucket = self.gcs_client.bucket(self.bucket)
-            blob = bucket.blob(lv._table_name_to_filename(vocab))
-            blob.delete()
-            self.bq_client.delete_table(f'{self.dataset_id}.{vocab}',
-                                        not_found_ok=True)
-            self.bq_client.delete_table(f'{self.staging_dataset_id}.{vocab}',
-                                        not_found_ok=True)
-            vocab_path = self.test_vocab_folder_path / lv._table_name_to_filename(
-                vocab)
-            with vocab_path.open('w') as f:
-                f.write(self.contents[vocab])
+        # Delete files using a single API request
+        bucket = self.gcs_client.bucket(self.bucket)
+        blob_names = [lv._table_name_to_filename(t) for t in self.test_vocabs]
+        bucket.delete_blobs(blob_names)
+
+        # Drop tables using a single API request
+        drop_tables_query = '\n'.join([
+            f'''DROP TABLE IF EXISTS `{self.project_id}.{dataset}.{table}`;'''
+            for dataset in [self.dataset_id, self.staging_dataset_id]
+            for table in self.test_vocabs
+        ])
+        self.bq_client.query(drop_tables_query).result()
+
+        # remove the temp dir
+        shutil.rmtree(self.test_vocab_folder_path)
