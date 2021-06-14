@@ -86,8 +86,6 @@ def create_rdr_tables(client, rdr_dataset, bucket):
     for table, schema in schema_dict.items():
         schema_list = bq.get_table_schema(table, schema)
         table_id = f'{project}.{rdr_dataset}.{table}'
-        table = bigquery.Table(table_id, schema=schema_list)
-        table = client.create_table(table)
         job_config = bigquery.LoadJobConfig(
             schema=schema_list,
             skip_leading_rows=1,
@@ -122,12 +120,12 @@ def create_rdr_tables(client, rdr_dataset, bucket):
         except NotFound:
             LOGGER.info(f'{table} not provided by RDR team.  Will not exist in '
                         f'rdr dataset: `{rdr_dataset}`')
-            if table in AOU_REQUIRED:
-                LOGGER.info(f'Creating empty AOU_REQUIRED table, `{table}`')
-                dest_table = f'{client.project}.{rdr_dataset}.{table}'
-                dest_table = bigquery.Table(dest_table, schema=schema_list)
-                dest_table = client.create_table(dest_table)
-                LOGGER.info(f'Created empty table `{dest_table.full_table_id}`')
+
+            LOGGER.info(f'Creating empty CDM table, `{table}`')
+            dest_table = f'{client.project}.{rdr_dataset}.{table}'
+            dest_table = bigquery.Table(dest_table, schema=schema_list)
+            dest_table = client.create_table(dest_table)
+            LOGGER.info(f'Created empty table `{dest_table.full_table_id}`')
         else:
             destination_table = client.get_table(
                 table_id)  # Make an API request.

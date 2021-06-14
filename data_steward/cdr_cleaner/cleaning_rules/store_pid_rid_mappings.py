@@ -116,7 +116,8 @@ class StoreNewPidRidMappings(BaseCleaningRule):
             LOGGER.info(f'Using provided export_date: `{export_date}`')
         except (TypeError, ValueError):
             # otherwise, default to using today's date
-            LOGGER.warning(f"Failed to validate the export_date:  '{export_date}'")
+            LOGGER.warning(
+                f"Failed to validate the export_date:  '{export_date}'")
             self.export_date = datetime.now().strftime('%Y-%m-%d')
             LOGGER.warning(f"Setting export_date to now: '{self.export_date}'")
 
