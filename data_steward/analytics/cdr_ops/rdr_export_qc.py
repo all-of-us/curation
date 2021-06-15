@@ -421,7 +421,7 @@ SELECT
     person_id
 FROM `{project_id}.{new_rdr}.pid_rid_mapping` rdr
 JOIN `{project_id}.pipeline_tables.primary_pid_rid_mapping` primary
-ON (person_id)
+USING (person_id)
 WHERE primary.research_id <> rdr.research_id
 '''
 pd.read_gbq(query, dialect='standard')

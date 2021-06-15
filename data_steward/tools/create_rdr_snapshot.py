@@ -59,6 +59,14 @@ def parse_rdr_args(raw_args=None):
         required=False,
         help=('date to truncate the RDR data to.  The cleaning rule defaults '
               'to the current date if unset.'))
+    parser.add_argument(
+        '--export_date',
+        action='store',
+        dest='export_date',
+        required=False,
+        help=
+        'Raw rdr export date. store_pid_rid_mappings default to current date if unset'
+    )
 
     common_args, unknown_args = parser.parse_known_args(raw_args)
     custom_args = clean_cdr._get_kwargs(unknown_args)
@@ -103,7 +111,9 @@ def main(raw_args=None):
     cleaning_args = [
         '-p', args.curation_project_id, '-d',
         datasets.get('staging', 'UNSET'), '-b',
-        datasets.get('sandbox', 'UNSET'), '--data_stage', 'rdr'
+        datasets.get('sandbox',
+                     'UNSET'), '--data_stage', 'rdr', '--truncation_date',
+        args.truncation_date, '--export_date', args.export_date
     ]
 
     all_cleaning_args = add_kwargs_to_args(cleaning_args, kwargs)
