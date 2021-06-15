@@ -118,19 +118,19 @@ def create_rdr_tables(client, rdr_dataset, bucket):
 
             load_job.result()  # Waits for the job to complete.
         except NotFound:
-            LOGGER.info(f'{table} not provided by RDR team.  Will not exist in '
-                        f'rdr dataset: `{rdr_dataset}`')
+            LOGGER.info(
+                f'{table} not provided by RDR team.  Creating empty table '
+                f'in dataset: `{rdr_dataset}`')
 
             LOGGER.info(f'Creating empty CDM table, `{table}`')
-            dest_table = f'{client.project}.{rdr_dataset}.{table}'
-            dest_table = bigquery.Table(dest_table, schema=schema_list)
-            dest_table = client.create_table(dest_table)
-            LOGGER.info(f'Created empty table `{dest_table.full_table_id}`')
+            destination_table = bigquery.Table(table_id, schema=schema_list)
+            destination_table = client.create_table(destination_table)
+            LOGGER.info(f'Created empty table `{destination_table.table_id}`')
         else:
             destination_table = client.get_table(
                 table_id)  # Make an API request.
-            LOGGER.info(f'Loaded {destination_table.num_rows} rows into '
-                        f'`{destination_table.full_table_id}`.')
+        LOGGER.info(f'Loaded {destination_table.num_rows} rows into '
+                    f'`{destination_table.table_id}`.')
 
     LOGGER.info(f"Finished RDR table LOAD from bucket gs://{bucket}")
 
