@@ -1,5 +1,8 @@
 import logging
 
+from google.cloud.bigquery import Table
+from google.cloud.bigquery.job import QueryJobConfig
+
 from cdr_cleaner import clean_cdr, args_parser
 from common import FITBIT_TABLES
 from utils import auth, bq, pipeline_logging
@@ -48,9 +51,21 @@ def create_fitbit_datasets(client, release_tag):
 
 def copy_fitbit_tables(client, from_dataset, to_dataset, table_prefix):
     for table in FITBIT_TABLES:
-        table_view = f'{client.project}.{from_dataset}.{table_prefix}{table}'
-        output_table = f'{client.project}.{to_dataset}.{table}'
-        client.copy_table(table_view, output_table)
+        schema_list = bq.get_table_schema(table)
+        fq_dest_table = f'{client.project}.{to_dataset}.{table}'
+        dest_table = Table(fq_dest_table, schema=schema_list)
+        dest_table = client.create_table(dest_table)
+        LOGGER.info(f'Created empty table {fq_dest_table}')
+
+        fields_name_str = ',\n'.join([item.name for item in schema_list])
+        job_config = QueryJobConfig(write_disposition="WRITE_EMPTY",
+                                    destination=fq_dest_table,
+                                    autodetect=False)
+        content_query = (
+            f'SELECT {fields_name_str} '
+            f'FROM `{client.project}.{from_dataset}.{table_prefix}{table}`')
+        job = client.query(content_query, job_config=job_config)
+        job.result()
 
     LOGGER.info(f'Copied fitbit tables from `{from_dataset}` to `{to_dataset}`')
 
@@ -117,7 +132,7 @@ def main(raw_args=None):
     client = bq.get_client(args.curation_project_id,
                            credentials=impersonation_creds)
 
-    # create staging, sandbox, and clean datasets with descriptions and labels
+    # create staging, sandbox, backup and clean datasets with descriptions and labels
     fitbit_datasets = create_fitbit_datasets(client, args.release_tag)
 
     copy_fitbit_tables(client,
