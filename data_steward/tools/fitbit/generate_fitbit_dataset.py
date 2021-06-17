@@ -1,3 +1,6 @@
+"""
+Generate and clean fitbit dataset
+"""
 import logging
 
 from google.cloud.bigquery import Table
@@ -14,6 +17,13 @@ SCOPES = ['https://www.googleapis.com/auth/bigquery']
 
 
 def create_fitbit_datasets(client, release_tag):
+    """
+    Creates staging, sandbox, backup and clean datasets with descriptions and labels
+
+    :param client: bq client
+    :param release_tag: string of the form "YYYYqNrN"
+    :return: dict of dataset names with keys 'clean', 'backup', 'staging', 'sandbox'
+    """
     fitbit_datasets = {
         consts.CLEAN: f'{release_tag}_fitbit',
         consts.BACKUP: f'{release_tag}_fitbit_backup',
@@ -49,7 +59,17 @@ def create_fitbit_datasets(client, release_tag):
     return fitbit_datasets
 
 
-def copy_fitbit_tables(client, from_dataset, to_dataset, table_prefix):
+def copy_fitbit_tables_from_views(client, from_dataset, to_dataset,
+                                  table_prefix):
+    """
+    Copies tables from views with prefix
+
+    :param client: bq client
+    :param from_dataset: dataset containing views
+    :param to_dataset: dataset to create tables
+    :param table_prefix: prefix added to table_ids
+    :return: 
+    """
     for table in FITBIT_TABLES:
         schema_list = bq.get_table_schema(table)
         fq_dest_table = f'{client.project}.{to_dataset}.{table}'
@@ -135,14 +155,14 @@ def main(raw_args=None):
     # create staging, sandbox, backup and clean datasets with descriptions and labels
     fitbit_datasets = create_fitbit_datasets(client, args.release_tag)
 
-    copy_fitbit_tables(client,
-                       args.fitbit_dataset,
-                       fitbit_datasets[consts.BACKUP],
-                       table_prefix='v_')
-    copy_fitbit_tables(client,
-                       args.fitbit_dataset,
-                       fitbit_datasets[consts.STAGING],
-                       table_prefix='v_')
+    copy_fitbit_tables_from_views(client,
+                                  args.fitbit_dataset,
+                                  fitbit_datasets[consts.BACKUP],
+                                  table_prefix='v_')
+    copy_fitbit_tables_from_views(client,
+                                  args.fitbit_dataset,
+                                  fitbit_datasets[consts.STAGING],
+                                  table_prefix='v_')
 
     common_cleaning_args = [
         '-p', args.project_id, '-d', fitbit_datasets[consts.STAGING], '-b',

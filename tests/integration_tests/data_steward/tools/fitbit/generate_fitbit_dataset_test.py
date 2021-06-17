@@ -74,7 +74,8 @@ class GenerateFitbitDatasetTest(TestCase):
                                         table_id=self.table_id)
         view_job = self.client.query(create_view)
         view_job.result()
-        gfd.copy_fitbit_tables(self.client, self.dataset, self.dataset, 'view_')
+        gfd.copy_fitbit_tables_from_views(self.client, self.dataset,
+                                          self.dataset, 'view_')
 
         query_contents = content_query.render(project_id=self.project_id,
                                               dataset_id=self.dataset,
