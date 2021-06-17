@@ -66,7 +66,7 @@ class TruncateFitbitDataTest(unittest.TestCase):
                         table_name=table,
                         date_field=truncate_fitbit.
                         FITBIT_TABLES_DATE_FIELDS[table],
-                        cutoff_date=self.truncation_date)
+                        cutoff_date=f"DATE('{self.truncation_date}')")
             }
             sandbox_queries.append(save_dropped_date_rows)
 
@@ -99,7 +99,7 @@ class TruncateFitbitDataTest(unittest.TestCase):
                         table_name=table,
                         date_field=truncate_fitbit.
                         FITBIT_TABLES_DATETIME_FIELDS[table],
-                        cutoff_date=f'DATETIME({self.truncation_date})')
+                        cutoff_date=f"DATETIME('{self.truncation_date}')")
             }
             sandbox_queries.append(save_dropped_datetime_rows)
 
