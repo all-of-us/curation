@@ -6,7 +6,6 @@ and runs the recreate_person tool.
 # Python imports
 import logging
 import argparse
-import time
 
 # Project imports
 from utils import bq, auth, pipeline_logging
