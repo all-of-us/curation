@@ -13,69 +13,12 @@ from utils import bq, auth, pipeline_logging
 from tools.create_tier import (TIER_LIST, DEID_STAGE_LIST, get_dataset_name)
 from tools.recreate_person import update_person
 
-# Third party imports
-from google.cloud import bigquery_datatransfer
-from google.auth import impersonated_credentials
-from google.protobuf.timestamp_pb2 import Timestamp
-from google.cloud.bigquery_datatransfer import TransferState
-
 SCOPES = [
     'https://www.googleapis.com/auth/bigquery',
     'https://www.googleapis.com/auth/devstorage.read_write',
     'https://www.googleapis.com/auth/cloud-platform'
 ]
 LOGGER = logging.getLogger(__name__)
-
-
-def copy_dataset(src_project_id: str, src_dataset_id: str, dest_project_id: str,
-                 dest_dataset_id: str,
-                 credentials: impersonated_credentials.Credentials):
-    """Copy tables in a dataset between projects.
-
-    :param src_project_id: The project id of the source project.
-    :param src_dataset_id: The source dataset id.
-    :param dest_project_id: The project id of the destination project.
-    :param dest_dataset_id: The destination dataset id.
-    :param credentials: Impersonation credentials.
-    """
-    client = bigquery_datatransfer.DataTransferServiceClient(
-        credentials=credentials)
-
-    # Set up a transfer config
-    transfer_config = bigquery_datatransfer.TransferConfig(
-        destination_dataset_id=dest_dataset_id,
-        display_name="Output Prod Transfer",
-        data_source_id="cross_region_copy",
-        params={
-            "source_project_id": src_project_id,
-            "source_dataset_id": src_dataset_id,
-        },
-        # Auto-scheduling is disabled to prevent repeat run
-        schedule_options={'disable_auto_scheduling': True})
-
-    transfer_config = client.create_transfer_config(
-        parent=client.common_project_path(dest_project_id),
-        transfer_config=transfer_config)
-
-    # The requested runtime must not be in the future
-    start_time = Timestamp(seconds=int(time.time()) - 5)
-
-    # Begin transfer run
-    transfer_run = client.start_manual_transfer_runs(request={
-        "parent": transfer_config.name,
-        "requested_run_time": start_time
-    }).runs[0]
-
-    # Wait for transfer run to conclude
-    while transfer_run.state != TransferState.SUCCEEDED:
-        time.sleep(20)
-
-        transfer_run = client.get_transfer_run(name=transfer_run.name)
-        LOGGER.info(f'Copy status:\t{TransferState(transfer_run.state).name}')
-        if transfer_run.state in (TransferState.FAILED,
-                                  TransferState.CANCELLED):
-            RuntimeError(
-                f"Data transfer failed with: {transfer_run.error_status}")
 
 
 def get_arg_parser() -> argparse.ArgumentParser:
@@ -140,7 +83,7 @@ if __name__ == '__main__':
     #Set up pipeline logging
     pipeline_logging.configure(level=logging.DEBUG, add_console_handler=True)
 
-    #Get credentials
+    #Get credentials and instantiate client
     impersonation_creds = auth.get_impersonation_credentials(
         args.run_as_email, SCOPES)
 
@@ -168,9 +111,8 @@ if __name__ == '__main__':
     LOGGER.info(
         f'Copying tables from dataset {args.src_project_id}.{args.src_dataset_id} to {args.output_prod_project_id}.{output_dataset_name}...'
     )
-    copy_dataset(args.src_project_id, args.src_dataset_id,
-                 args.output_prod_project_id, output_dataset_name,
-                 impersonation_creds)
+    bq.copy_datasets(client, f'{args.src_project_id}.{args.src_dataset_id}',
+                     f'{args.output_prod_project_id}.{output_dataset_name}')
 
     #Append extra columns to person table
     LOGGER.info(f'Appending extract columns to the person table...')
