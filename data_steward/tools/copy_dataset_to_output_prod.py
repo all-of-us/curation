@@ -9,7 +9,8 @@ import argparse
 
 # Project imports
 from utils import bq, auth, pipeline_logging
-from tools.create_tier import (TIER_LIST, DEID_STAGE_LIST, get_dataset_name)
+from tools.create_tier import (TIER_LIST, DEID_STAGE_LIST,
+                               validate_create_tier_args)
 from tools.recreate_person import update_person
 
 SCOPES = [
@@ -18,6 +19,29 @@ SCOPES = [
     'https://www.googleapis.com/auth/cloud-platform'
 ]
 LOGGER = logging.getLogger(__name__)
+
+
+def get_dataset_name(tier, release_tag, deid_stage):
+    """
+    Helper function to create the output prod dataset name based on the given criteria
+    This function should return a name for the final dataset only (not all steps along the way)
+    The function returns a string in the form: [C|R]{release_tag}[_base|_clean]
+
+    :param tier: controlled or registered tier intended for the output dataset
+    :param release_tag: release tag for dataset in the format of YYYYq#r#
+    :param deid_stage: deid stage (deid, base or clean)
+    :return: a string for the dataset name
+    """
+    # validate parameters
+    validate_create_tier_args(tier, deid_stage, release_tag)
+
+    tier = tier[0].upper()
+    release_tag = release_tag.upper()
+    deid_stage = deid_stage.replace('deid', '')
+
+    dataset_name = f"{tier}{release_tag}{deid_stage}"
+
+    return dataset_name
 
 
 def get_arg_parser() -> argparse.ArgumentParser:
