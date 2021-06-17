@@ -1,5 +1,5 @@
 """
-Integration test for genarilze_cope_insurance_answers module
+Integration test for generalize_cope_insurance_answers module
 
 13332904 and 1333140 have been identified as potentially re-identifying answers to question 1332737.
 Privacy has determined these responses must be generalized to 1333127.
@@ -62,7 +62,7 @@ class GeneralizeCopeInsuranceAnswersTest(BaseTest.CleaningRulesTestBase):
 
     def test_generalize_cope_insurance_answers(self):
         """
-        Tests that the sepcifications for GENERALIZE_ZIP_CODES_QUERY perform as designed.
+        Tests that the specifications for GeneralizeCopeInsuranceAnswers perform as designed.
 
         Validates pre conditions, tests execution, and post conditions based on the load
         statements and the tables_and_counts variable.
