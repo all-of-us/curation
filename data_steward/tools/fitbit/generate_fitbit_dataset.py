@@ -13,7 +13,10 @@ from constants.cdr_cleaner import clean_cdr as consts
 
 LOGGER = logging.getLogger(__name__)
 
-SCOPES = ['https://www.googleapis.com/auth/bigquery']
+SCOPES = [
+    'https://www.googleapis.com/auth/bigquery',
+    'https://www.googleapis.com/auth/cloud-platform'
+]
 
 
 def create_fitbit_datasets(client, release_tag):

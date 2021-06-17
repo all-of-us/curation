@@ -10,6 +10,7 @@ by sandboxing the applicable records and then dropping them.
 
 # Python Imports
 import logging
+from datetime import datetime
 
 # Project Imports
 import common
@@ -18,8 +19,6 @@ from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.bq_utils import WRITE_TRUNCATE
 
 LOGGER = logging.getLogger(__name__)
-
-CUTOFF_DATE = '2019-11-26'
 
 FITBIT_DATE_TABLES = [common.ACTIVITY_SUMMARY, common.HEART_RATE_SUMMARY]
 FITBIT_DATETIME_TABLES = [common.HEART_RATE_MINUTE_LEVEL, common.STEPS_INTRADAY]
@@ -38,7 +37,7 @@ SANDBOX_QUERY = common.JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project}}.{{sandbox}}.{{intermediary_table}}` AS (
 SELECT * 
 FROM `{{project}}.{{dataset}}.{{table_name}}`
-WHERE {{date_field}} > '{{cutoff_date}}')""")
+WHERE {{date_field}} > {{cutoff_date}})""")
 
 # Drop any FitBit data that is newer than the cutoff date
 TRUNCATE_FITBIT_DATA_QUERY = common.JINJA_ENV.from_string("""
@@ -57,7 +56,7 @@ class TruncateFitbitData(BaseCleaningRule):
                  project_id,
                  dataset_id,
                  sandbox_dataset_id,
-                 truncation_date=CUTOFF_DATE):
+                 truncation_date=None):
         """
         Initialize the class with proper information.
 
@@ -65,8 +64,17 @@ class TruncateFitbitData(BaseCleaningRule):
         this SQL, append them to the list of Jira Issues.
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
-        self.truncation_date = truncation_date
-        desc = 'All rows of data in the FitBit tables with dates after 11/26/2019 will be truncated.'
+        try:
+            # set to provided date string if the date string is valid
+            datetime.strptime(truncation_date, '%Y-%m-%d')
+            self.truncation_date = truncation_date
+        except (TypeError, ValueError):
+            # otherwise, default to using today's date as the date string
+            self.truncation_date = str(datetime.now().date())
+
+        desc = (
+            f'All rows of data in the Fitbit dataset {dataset_id} with dates after '
+            f'{self.truncation_date} will be sandboxed and dropped.')
         super().__init__(issue_numbers=['DC1046'],
                          description=desc,
                          affected_datasets=[cdr_consts.FITBIT],
@@ -98,7 +106,7 @@ class TruncateFitbitData(BaseCleaningRule):
                         dataset=self.dataset_id,
                         table_name=table,
                         date_field=FITBIT_TABLES_DATE_FIELDS[table],
-                        cutoff_date=self.truncation_date)
+                        cutoff_date=f"DATE('{self.truncation_date}')")
             }
             sandbox_queries.append(save_dropped_date_rows)
 
@@ -130,7 +138,7 @@ class TruncateFitbitData(BaseCleaningRule):
                         dataset=self.dataset_id,
                         table_name=table,
                         date_field=FITBIT_TABLES_DATETIME_FIELDS[table],
-                        cutoff_date=f'DATETIME({self.truncation_date})')
+                        cutoff_date=f"DATETIME('{self.truncation_date}')")
             }
             sandbox_queries.append(save_dropped_datetime_rows)
 
