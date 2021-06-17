@@ -20,7 +20,6 @@ from constants.bq_utils import WRITE_TRUNCATE
 LOGGER = logging.getLogger(__name__)
 
 CUTOFF_DATE = '2019-11-26'
-CUTOFF_DATETIME = '2019-11-26T00:00:00'
 
 FITBIT_DATE_TABLES = [common.ACTIVITY_SUMMARY, common.HEART_RATE_SUMMARY]
 FITBIT_DATETIME_TABLES = [common.HEART_RATE_MINUTE_LEVEL, common.STEPS_INTRADAY]
@@ -54,7 +53,11 @@ class TruncateFitbitData(BaseCleaningRule):
     Heart Rate Minute Level, Heart Rate Summary, and Steps Intraday tables to a sandboxed FitBit dataset
     """
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id):
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 truncation_date=CUTOFF_DATE):
         """
         Initialize the class with proper information.
 
@@ -62,6 +65,7 @@ class TruncateFitbitData(BaseCleaningRule):
         this SQL, append them to the list of Jira Issues.
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
+        self.truncation_date = truncation_date
         desc = 'All rows of data in the FitBit tables with dates after 11/26/2019 will be truncated.'
         super().__init__(issue_numbers=['DC1046'],
                          description=desc,
@@ -94,7 +98,7 @@ class TruncateFitbitData(BaseCleaningRule):
                         dataset=self.dataset_id,
                         table_name=table,
                         date_field=FITBIT_TABLES_DATE_FIELDS[table],
-                        cutoff_date=CUTOFF_DATE)
+                        cutoff_date=self.truncation_date)
             }
             sandbox_queries.append(save_dropped_date_rows)
 
@@ -126,7 +130,7 @@ class TruncateFitbitData(BaseCleaningRule):
                         dataset=self.dataset_id,
                         table_name=table,
                         date_field=FITBIT_TABLES_DATETIME_FIELDS[table],
-                        cutoff_date=CUTOFF_DATETIME)
+                        cutoff_date=f'DATETIME({self.truncation_date})')
             }
             sandbox_queries.append(save_dropped_datetime_rows)
 
