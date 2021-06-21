@@ -425,3 +425,20 @@ USING (person_id)
 WHERE primary.research_id <> rdr.research_id
 '''
 pd.read_gbq(query, dialect='standard')
+
+# Checks for basics survey module
+# Participants with data in other survey modules must also have data from the basics survey module.
+# This check identifies survey responses associated with participants that do not have any responses
+# associated with the basics survey module.
+# In ideal circumstances, this query will not return any results.
+
+query = f'''SELECT DISTINCT person_id FROM `{project_id}.{new_rdr}.person` 
+WHERE NOT EXISTS (
+SELECT DISTINCT person_id FROM `{project_id}.{new_rdr}.concept`  
+JOIN `{project_id}.{new_rdr}.concept_ancestor` on (concept_id=ancestor_concept_id)
+JOIN `{project_id}.{new_rdr}.observation` on (descendant_concept_id=observation_concept_id)
+WHERE concept_class_id='Module'
+AND concept_name IN ('The Basics')
+AND questionnaire_response_id IS NOT NULL)
+'''
+pd.read_gbq(query, dialect='standard')
