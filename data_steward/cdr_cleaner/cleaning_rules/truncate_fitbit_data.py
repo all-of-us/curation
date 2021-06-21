@@ -48,7 +48,7 @@ SELECT * FROM `{{project}}.{{sandbox}}.{{intermediary_table}}`""")
 
 class TruncateFitbitData(BaseCleaningRule):
     """
-    All rows of FitBit data with dates after 11/26/2019 should be moved from the Activity Summary,
+    All rows of FitBit data with dates after the truncation date should be moved from the Activity Summary,
     Heart Rate Minute Level, Heart Rate Summary, and Steps Intraday tables to a sandboxed FitBit dataset
     """
 
