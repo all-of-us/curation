@@ -82,13 +82,11 @@ def copy_fitbit_tables_from_views(client, from_dataset, to_dataset,
         LOGGER.info(f'Created empty table {fq_dest_table}')
 
         fields_name_str = ',\n'.join([item.name for item in schema_list])
-        job_config = QueryJobConfig(write_disposition="WRITE_EMPTY",
-                                    destination=fq_dest_table,
-                                    autodetect=False)
         content_query = (
+            f'INSERT INTO `{fq_dest_table}` ({fields_name_str}) '
             f'SELECT {fields_name_str} '
             f'FROM `{client.project}.{from_dataset}.{table_prefix}{table}`')
-        job = client.query(content_query, job_config=job_config)
+        job = client.query(content_query)
         job.result()
 
     LOGGER.info(f'Copied fitbit tables from `{from_dataset}` to `{to_dataset}`')
