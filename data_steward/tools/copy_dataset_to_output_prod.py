@@ -6,11 +6,10 @@ and runs the recreate_person tool.
 # Python imports
 import logging
 import argparse
+import re
 
 # Project imports
 from utils import bq, auth, pipeline_logging
-from tools.create_tier import (TIER_LIST, DEID_STAGE_LIST,
-                               validate_create_tier_args)
 from tools.recreate_person import update_person
 
 SCOPES = [
@@ -20,6 +19,67 @@ SCOPES = [
 ]
 LOGGER = logging.getLogger(__name__)
 
+TIER_LIST = ['controlled', 'registered']
+DEID_STAGE_LIST = ['deid', 'base', 'clean']
+
+
+def validate_tier_param(tier):
+    """
+    helper function to validate the tier parameter passed is either 'controlled' or 'registered'
+
+    :param tier: tier parameter passed through from either a list or command line argument
+    :return: nothing, breaks if not valid
+    """
+    if tier.lower() not in TIER_LIST:
+        msg = f"Parameter ERROR: {tier} is an incorrect input for the tier parameter, accepted: controlled or " \
+              f"registered"
+        LOGGER.error(msg)
+        raise argparse.ArgumentTypeError(msg)
+
+
+def validate_deid_stage_param(deid_stage):
+    """
+    helper function to validate the deid_stage parameter passed is correct, must be 'deid', 'base' or 'clean'
+
+    :param deid_stage: deid_stage parameter passed through from either a list or command line argument
+    :return: nothing, breaks if not valid
+    """
+    if deid_stage not in DEID_STAGE_LIST:
+        msg = f"Parameter ERROR: {deid_stage} is an incorrect input for the deid_stage parameter, accepted: deid, " \
+              f"base, clean"
+        LOGGER.error(msg)
+        raise argparse.ArgumentTypeError(msg)
+
+
+def validate_release_tag_param(arg_value):
+    """
+    User defined helper function to validate that the release_tag parameter follows the correct naming convention
+
+    :param arg_value: release tag parameter passed through either the command line arguments
+    :return: arg_value
+    """
+
+    release_tag_regex = re.compile(r'[0-9]{4}Q[0-9]R[0-9]')
+    if not re.match(release_tag_regex, arg_value):
+        msg = f"Parameter ERROR {arg_value} is in an incorrect format, accepted: YYYYQ#R#"
+        LOGGER.error(msg)
+        raise argparse.ArgumentTypeError(msg)
+    return arg_value
+
+
+def validate_create_tier_args(tier, stage, tag):
+    """
+    User defined helper function to validate that the tier, deid_stage, release_tag parameter
+     follows the correct naming convention
+    :param tier: tier parameter passed through from either a list or command line argument
+    :param stage: deid_stage parameter passed through from either a list or command line argument
+    :param tag: release tag parameter passed through either the command line arguments
+    :return: None, breaks if not valid params are passed
+    """
+    validate_tier_param(tier)
+    validate_deid_stage_param(stage)
+    validate_release_tag_param(tag)
+
 
 def get_dataset_name(tier, release_tag, deid_stage):
     """
@@ -28,7 +88,7 @@ def get_dataset_name(tier, release_tag, deid_stage):
     The function returns a string in the form: [C|R]{release_tag}[_base|_clean]
 
     :param tier: controlled or registered tier intended for the output dataset
-    :param release_tag: release tag for dataset in the format of YYYYq#r#
+    :param release_tag: release tag for dataset in the format of YYYYQ#R#
     :param deid_stage: deid stage (deid, base or clean)
     :return: a string for the dataset name
     """
@@ -37,7 +97,7 @@ def get_dataset_name(tier, release_tag, deid_stage):
 
     tier = tier[0].upper()
     release_tag = release_tag.upper()
-    deid_stage = deid_stage.replace('deid', '')
+    deid_stage = '' if release_tag == 'deid' else f'_{deid_stage}'
 
     dataset_name = f"{tier}{release_tag}{deid_stage}"
 
@@ -79,7 +139,7 @@ def get_arg_parser() -> argparse.ArgumentParser:
         '--release_tag',
         action='store',
         dest='release_tag',
-        help='release tag for dataset in the format of YYYYq#r#',
+        help='release tag for dataset in the format of YYYYQ#R#',
         required=True)
     argument_parser.add_argument('-t',
                                  '--tier',
@@ -118,9 +178,9 @@ if __name__ == '__main__':
                                            args.deid_stage)
     description = f'{args.deid_stage} dataset created from {args.src_dataset_id} for {args.tier}{args.release_tag} CDR run'
     labels = {
-        'clean': 'yes' if args.deid_stage == 'deid_clean' else 'no',
-        'data_tier': args.tier,
-        'release_tag': args.release_tag
+        'clean': 'yes' if args.deid_stage == 'clean' else 'no',
+        'data_tier': args.tier.lower(),
+        'release_tag': args.release_tag.lower()
     }
 
     LOGGER.info(
