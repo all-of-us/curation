@@ -5,10 +5,9 @@ import logging
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
 
 from google.cloud.bigquery import Table
-from google.cloud.bigquery.job import QueryJobConfig
 
 from cdr_cleaner import clean_cdr, args_parser
-from common import FITBIT_TABLES
+from common import FITBIT_TABLES, JINJA_ENV
 from utils import auth, bq, pipeline_logging
 from constants.cdr_cleaner import clean_cdr as consts
 
@@ -18,6 +17,11 @@ SCOPES = [
     'https://www.googleapis.com/auth/bigquery',
     'https://www.googleapis.com/auth/cloud-platform'
 ]
+
+INSERT_QUERY = JINJA_ENV.from_string("""
+INSERT INTO `{{fq_dest_table}}` ({{fields}})
+SELECT {{fields}}
+FROM `{{client.project}}.{{from_dataset}}.{{table_prefix}}{{table}}`""")
 
 
 def create_fitbit_datasets(client, release_tag):
@@ -82,10 +86,12 @@ def copy_fitbit_tables_from_views(client, from_dataset, to_dataset,
         LOGGER.info(f'Created empty table {fq_dest_table}')
 
         fields_name_str = ',\n'.join([item.name for item in schema_list])
-        content_query = (
-            f'INSERT INTO `{fq_dest_table}` ({fields_name_str}) '
-            f'SELECT {fields_name_str} '
-            f'FROM `{client.project}.{from_dataset}.{table_prefix}{table}`')
+        content_query = INSERT_QUERY.render(fq_dest_table=fq_dest_table,
+                                            fields=fields_name_str,
+                                            client=client,
+                                            from_dataset=from_dataset,
+                                            table_prefix=table_prefix,
+                                            table=table)
         job = client.query(content_query)
         job.result()
 
