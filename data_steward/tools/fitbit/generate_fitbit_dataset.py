@@ -2,6 +2,7 @@
 Generate and clean fitbit dataset
 """
 import logging
+from argparse import ArgumentParser, RawDescriptionHelpFormatter
 
 from google.cloud.bigquery import Table
 from google.cloud.bigquery.job import QueryJobConfig
@@ -71,7 +72,7 @@ def copy_fitbit_tables_from_views(client, from_dataset, to_dataset,
     :param from_dataset: dataset containing views
     :param to_dataset: dataset to create tables
     :param table_prefix: prefix added to table_ids
-    :return: 
+    :return:
     """
     for table in FITBIT_TABLES:
         schema_list = bq.get_table_schema(table)
@@ -94,7 +95,8 @@ def copy_fitbit_tables_from_views(client, from_dataset, to_dataset,
 
 
 def get_fitbit_parser():
-    parser = clean_cdr.get_parser()
+    parser = ArgumentParser(description=__doc__,
+                            formatter_class=RawDescriptionHelpFormatter)
     parser.add_argument('-p',
                         '--curation_project',
                         action='store',
