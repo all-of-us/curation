@@ -23,34 +23,6 @@ TIER_LIST = ['controlled', 'registered']
 DEID_STAGE_LIST = ['deid', 'base', 'clean']
 
 
-def validate_tier_param(tier):
-    """
-    helper function to validate the tier parameter passed is either 'controlled' or 'registered'
-
-    :param tier: tier parameter passed through from either a list or command line argument
-    :return: nothing, breaks if not valid
-    """
-    if tier.lower() not in TIER_LIST:
-        msg = f"Parameter ERROR: {tier} is an incorrect input for the tier parameter, accepted: controlled or " \
-              f"registered"
-        LOGGER.error(msg)
-        raise argparse.ArgumentTypeError(msg)
-
-
-def validate_deid_stage_param(deid_stage):
-    """
-    helper function to validate the deid_stage parameter passed is correct, must be 'deid', 'base' or 'clean'
-
-    :param deid_stage: deid_stage parameter passed through from either a list or command line argument
-    :return: nothing, breaks if not valid
-    """
-    if deid_stage not in DEID_STAGE_LIST:
-        msg = f"Parameter ERROR: {deid_stage} is an incorrect input for the deid_stage parameter, accepted: deid, " \
-              f"base, clean"
-        LOGGER.error(msg)
-        raise argparse.ArgumentTypeError(msg)
-
-
 def validate_release_tag_param(arg_value):
     """
     User defined helper function to validate that the release_tag parameter follows the correct naming convention
@@ -67,20 +39,6 @@ def validate_release_tag_param(arg_value):
     return arg_value
 
 
-def validate_create_tier_args(tier, stage, tag):
-    """
-    User defined helper function to validate that the tier, deid_stage, release_tag parameter
-     follows the correct naming convention
-    :param tier: tier parameter passed through from either a list or command line argument
-    :param stage: deid_stage parameter passed through from either a list or command line argument
-    :param tag: release tag parameter passed through either the command line arguments
-    :return: None, breaks if not valid params are passed
-    """
-    validate_tier_param(tier)
-    validate_deid_stage_param(stage)
-    validate_release_tag_param(tag)
-
-
 def get_dataset_name(tier, release_tag, deid_stage):
     """
     Helper function to create the output prod dataset name based on the given criteria
@@ -92,12 +50,10 @@ def get_dataset_name(tier, release_tag, deid_stage):
     :param deid_stage: deid stage (deid, base or clean)
     :return: a string for the dataset name
     """
-    # validate parameters
-    validate_create_tier_args(tier, deid_stage, release_tag)
 
     tier = tier[0].upper()
     release_tag = release_tag.upper()
-    deid_stage = '' if release_tag == 'deid' else f'_{deid_stage}'
+    deid_stage = f'_{deid_stage}' if deid_stage == 'base' else ''
 
     dataset_name = f"{tier}{release_tag}{deid_stage}"
 
@@ -140,6 +96,7 @@ def get_arg_parser() -> argparse.ArgumentParser:
         action='store',
         dest='release_tag',
         help='release tag for dataset in the format of YYYYQ#R#',
+        type=validate_release_tag_param,
         required=True)
     argument_parser.add_argument('-t',
                                  '--tier',
