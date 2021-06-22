@@ -433,7 +433,7 @@ pd.read_gbq(query, dialect='standard')
 # In ideal circumstances, this query will not return any results.
 
 query = f'''SELECT DISTINCT person_id FROM `{project_id}.{new_rdr}.person` 
-WHERE NOT EXISTS (
+WHERE person_id NOT IN (
 SELECT DISTINCT person_id FROM `{project_id}.{new_rdr}.concept`  
 JOIN `{project_id}.{new_rdr}.concept_ancestor` on (concept_id=ancestor_concept_id)
 JOIN `{project_id}.{new_rdr}.observation` on (descendant_concept_id=observation_concept_id)
