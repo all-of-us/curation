@@ -223,6 +223,10 @@ FITBIT_DEID_CLEANING_CLASSES = [
     (FitbitDateShiftRule,),
 ]
 
+CONTROLLED_TIER_FITBIT_CLEANING_CLASSES = [
+    (FitbitPIDtoRID,),
+]
+
 DEID_BASE_CLEANING_CLASSES = [
     (FillSourceValueTextFields,),
     (RepopulatePersonPostDeid,),
@@ -322,6 +326,8 @@ DATA_STAGE_RULES_MAPPING = {
         DEID_CLEAN_CLEANING_CLASSES,
     DataStage.FITBIT.value:
         FITBIT_CLEANING_CLASSES,
+    DataStage.CONTROLLED_TIER_FITBIT.value:
+        CONTROLLED_TIER_FITBIT_CLEANING_CLASSES,
     DataStage.FITBIT_DEID.value:
         FITBIT_DEID_CLEANING_CLASSES,
     DataStage.CONTROLLED_TIER_DEID.value:
