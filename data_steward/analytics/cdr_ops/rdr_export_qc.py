@@ -432,9 +432,10 @@ pd.read_gbq(query, dialect='standard')
 # associated with the basics survey module.
 # In ideal circumstances, this query will not return any results.
 
-query = f'''SELECT DISTINCT person_id FROM `{project_id}.{new_rdr}.person` 
-WHERE person_id NOT IN (
-SELECT DISTINCT person_id FROM `{project_id}.{new_rdr}.concept`  
+query = f'''SELECT DISTINCT person_id FROM `{project_id}.{new_rdr}.observation` 
+JOIN `{project_id}.{new_rdr}.concept` on (observation_source_concept_id=concept_id)
+WHERE vocabulary_id = 'PPI' AND person_id NOT IN (
+SELECT DISTINCT person_id FROM `{project_id}.{new_rdr}.rdr20191203.concept`  
 JOIN `{project_id}.{new_rdr}.concept_ancestor` on (concept_id=ancestor_concept_id)
 JOIN `{project_id}.{new_rdr}.observation` on (descendant_concept_id=observation_concept_id)
 WHERE concept_class_id='Module'
