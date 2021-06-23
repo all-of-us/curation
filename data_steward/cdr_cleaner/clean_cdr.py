@@ -101,6 +101,7 @@ from cdr_cleaner.cleaning_rules.deid.string_fields_suppression import StringFiel
 from cdr_cleaner.cleaning_rules.generalize_state_by_population import GeneralizeStateByPopulation
 from cdr_cleaner.cleaning_rules.section_participation_concept_suppression import SectionParticipationConceptSuppression
 from cdr_cleaner.cleaning_rules.covid_ehr_vaccine_concept_suppression import CovidEHRVaccineConceptSuppression
+from cdr_cleaner.cleaning_rules.truncate_fitbit_data import TruncateFitbitData
 from constants.cdr_cleaner import clean_cdr_engine as ce_consts
 from constants.cdr_cleaner.clean_cdr import DataStage
 
@@ -213,6 +214,10 @@ COMBINED_CLEANING_CLASSES = [
 ]
 
 FITBIT_CLEANING_CLASSES = [
+    (TruncateFitbitData,),
+]
+
+FITBIT_DEID_CLEANING_CLASSES = [
     (RemoveFitbitDataIfMaxAgeExceeded,),
     (FitbitPIDtoRID,),
     (FitbitDateShiftRule,),
@@ -317,6 +322,8 @@ DATA_STAGE_RULES_MAPPING = {
         DEID_CLEAN_CLEANING_CLASSES,
     DataStage.FITBIT.value:
         FITBIT_CLEANING_CLASSES,
+    DataStage.FITBIT_DEID.value:
+        FITBIT_DEID_CLEANING_CLASSES,
     DataStage.CONTROLLED_TIER_DEID.value:
         CONTROLLED_TIER_DEID_CLEANING_CLASSES,
     DataStage.CONTROLLED_TIER_DEID_BASE.value:
@@ -384,7 +391,7 @@ def _get_kwargs(optional_args):
     }
 
 
-def fetch_args_kwargs(args=None):
+def fetch_args_kwargs(parser, args=None):
     """
     Fetch parsers and parse input to generate full list of args and keyword args
 
@@ -394,8 +401,7 @@ def fetch_args_kwargs(args=None):
                 rule might require
     """
     # TODO: Move this function to as project level arg_parser so it can be reused.
-    basic_parser = get_parser()
-    common_args, unknown_args = basic_parser.parse_known_args(args)
+    common_args, unknown_args = parser.parse_known_args(args)
     custom_args = _get_kwargs(unknown_args)
     return common_args, custom_args
 
@@ -450,7 +456,8 @@ def main(args=None):
     :param args: list of all the arguments to apply the cleaning rules
     :return:
     """
-    args, kwargs = fetch_args_kwargs(args)
+    parser = get_parser()
+    args, kwargs = fetch_args_kwargs(parser, args)
 
     rules = DATA_STAGE_RULES_MAPPING[args.data_stage.value]
     validate_custom_params(rules, **kwargs)

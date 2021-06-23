@@ -30,9 +30,11 @@ class TruncateFitbitDataTest(unittest.TestCase):
         self.project_id = 'foo_project'
         self.dataset_id = 'bar_dataset'
         self.sandbox_id = 'baz_sandbox'
+        self.truncation_date = '2020-01-01'
 
         self.rule_instance = truncate_fitbit.TruncateFitbitData(
-            self.project_id, self.dataset_id, self.sandbox_id)
+            self.project_id, self.dataset_id, self.sandbox_id,
+            self.truncation_date)
 
         self.assertEqual(self.rule_instance.project_id, self.project_id)
         self.assertEqual(self.rule_instance.dataset_id, self.dataset_id)
@@ -64,7 +66,7 @@ class TruncateFitbitDataTest(unittest.TestCase):
                         table_name=table,
                         date_field=truncate_fitbit.
                         FITBIT_TABLES_DATE_FIELDS[table],
-                        cutoff_date=truncate_fitbit.CUTOFF_DATE)
+                        cutoff_date=f"DATE('{self.truncation_date}')")
             }
             sandbox_queries.append(save_dropped_date_rows)
 
@@ -97,7 +99,7 @@ class TruncateFitbitDataTest(unittest.TestCase):
                         table_name=table,
                         date_field=truncate_fitbit.
                         FITBIT_TABLES_DATETIME_FIELDS[table],
-                        cutoff_date=truncate_fitbit.CUTOFF_DATETIME)
+                        cutoff_date=f"DATETIME('{self.truncation_date}')")
             }
             sandbox_queries.append(save_dropped_datetime_rows)
 
