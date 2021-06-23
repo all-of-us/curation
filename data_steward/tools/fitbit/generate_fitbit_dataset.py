@@ -124,10 +124,10 @@ def get_fitbit_parser():
     parser = ArgumentParser(description=__doc__,
                             formatter_class=RawDescriptionHelpFormatter)
     parser.add_argument('-p',
-                        '--curation_project',
+                        '--project_id',
                         action='store',
-                        dest='curation_project_id',
-                        help='Curation project to load the fitbit data into.',
+                        dest='project_id',
+                        help='Curation project containing fitbit data',
                         required=True)
     parser.add_argument('-f',
                         '--fitbit_dataset',
@@ -180,8 +180,7 @@ def main(raw_args=None):
     impersonation_creds = auth.get_impersonation_credentials(
         args.run_as_email, SCOPES)
 
-    client = bq.get_client(args.curation_project_id,
-                           credentials=impersonation_creds)
+    client = bq.get_client(args.project_id, credentials=impersonation_creds)
 
     # create staging, sandbox, backup and clean datasets with descriptions and labels
     fitbit_datasets = create_fitbit_datasets(client, args.release_tag)
@@ -190,10 +189,8 @@ def main(raw_args=None):
                                   args.fitbit_dataset,
                                   fitbit_datasets[consts.BACKUP],
                                   table_prefix='v_')
-    copy_fitbit_tables_from_views(client,
-                                  args.fitbit_dataset,
-                                  fitbit_datasets[consts.STAGING],
-                                  table_prefix='v_')
+    bq.copy_datasets(client, fitbit_datasets[consts.BACKUP],
+                     fitbit_datasets[consts.STAGING])
 
     common_cleaning_args = [
         '-p', args.project_id, '-d', fitbit_datasets[consts.STAGING], '-b',
