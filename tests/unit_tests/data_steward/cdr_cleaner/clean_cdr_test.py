@@ -97,22 +97,23 @@ class CleanCDRTest(unittest.TestCase):
             'console_log': False,
             'list_queries': False
         }
-        actual_args, actual_kwargs = cc.fetch_args_kwargs(test_args +
-                                                          expected_kwargs_list)
+        parser = cc.get_parser()
+        actual_args, actual_kwargs = cc.fetch_args_kwargs(
+            parser, test_args + expected_kwargs_list)
         self.assertDictEqual(actual_args.__dict__, expected_args)
         self.assertDictEqual(expected_kwargs, actual_kwargs)
 
-        actual_args, actual_kwargs = cc.fetch_args_kwargs(test_args +
-                                                          ['--v', '-1'])
+        actual_args, actual_kwargs = cc.fetch_args_kwargs(
+            parser, test_args + ['--v', '-1'])
         self.assertDictEqual(actual_args.__dict__, expected_args)
         self.assertDictEqual({'v': '-1'}, actual_kwargs)
 
         test_args_incorrect = test_args + ['-v', 'value']
-        self.assertRaises(RuntimeError, cc.fetch_args_kwargs,
+        self.assertRaises(RuntimeError, cc.fetch_args_kwargs, parser,
                           test_args_incorrect)
 
         test_args_incorrect = test_args + ['--v', 'v', '--odd']
-        self.assertRaises(RuntimeError, cc.fetch_args_kwargs,
+        self.assertRaises(RuntimeError, cc.fetch_args_kwargs, parser,
                           test_args_incorrect)
 
     def test_get_required_params(self):

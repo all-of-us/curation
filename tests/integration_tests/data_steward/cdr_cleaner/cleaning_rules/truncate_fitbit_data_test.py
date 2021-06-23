@@ -40,9 +40,13 @@ class TruncateFitbitDataTest(BaseTest.CleaningRulesTestBase):
         cls.dataset_id = dataset_id
         sandbox_id = dataset_id + '_sandbox'
         cls.sandbox_id = sandbox_id
+        truncation_date = '2019-11-26'
+        cls.kwargs.update({'truncation_date': truncation_date})
 
-        cls.rule_instance = TruncateFitbitData(project_id, dataset_id,
-                                               sandbox_id)
+        cls.rule_instance = TruncateFitbitData(project_id,
+                                               dataset_id,
+                                               sandbox_id,
+                                               truncation_date=truncation_date)
 
         # Generates list of fully qualified sandbox table names
         sb_date_table_names, sb_datetime_table_names = cls.rule_instance.get_sandbox_tablenames(
