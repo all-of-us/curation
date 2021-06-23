@@ -20,7 +20,7 @@ SCOPES = [
 
 INSERT_QUERY = JINJA_ENV.from_string("""
 INSERT INTO `{{fq_dest_table}}` ({{fields}})
-SELECT {{fields}}
+SELECT {{fields_casted}}
 FROM `{{client.project}}.{{from_dataset}}.{{table_prefix}}{{table}}`""")
 
 
@@ -67,6 +67,23 @@ def create_fitbit_datasets(client, release_tag):
     return fitbit_datasets
 
 
+def cast_to_schema_type(field, schema_type):
+    """
+    generates cast expression to the type specified by the schema
+
+    :param field: field name
+    :param schema_type: type of the field as specified in the schema
+    :return: string of cast expression
+    """
+    bq_int_float = {'integer': 'INT64', 'float': 'FLOAT64'}
+
+    if schema_type not in bq_int_float:
+        col = f'SAFE_CAST({field} AS {schema_type.upper()}) AS {field}'
+    else:
+        col = f'SAFE_CAST({field} AS {bq_int_float[schema_type]}) AS {field}'
+    return col
+
+
 def copy_fitbit_tables_from_views(client, from_dataset, to_dataset,
                                   table_prefix):
     """
@@ -86,8 +103,13 @@ def copy_fitbit_tables_from_views(client, from_dataset, to_dataset,
         LOGGER.info(f'Created empty table {fq_dest_table}')
 
         fields_name_str = ',\n'.join([item.name for item in schema_list])
+        fields_casted_str = ',\n'.join([
+            cast_to_schema_type(item.name, item.field_type)
+            for item in schema_list
+        ])
         content_query = INSERT_QUERY.render(fq_dest_table=fq_dest_table,
                                             fields=fields_name_str,
+                                            fields_casted=fields_casted_str,
                                             client=client,
                                             from_dataset=from_dataset,
                                             table_prefix=table_prefix,
