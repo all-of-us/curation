@@ -297,6 +297,21 @@ def rdr_specific_schemas():
     return result
 
 
+def get_person_id_tables(domain_tables):
+    """
+    A helper function to get list of CDM_tables with person_id
+    :param domain_tables: List of domain tables
+    return: list of domain tables containing person_id field.
+    """
+    person_id_tables = []
+    for table in domain_tables:
+        fields = fields_for(table)
+        field_names = [field['name'] for field in fields]
+        if 'person_id' in field_names:
+            person_id_tables.append(table)
+    return person_id_tables
+
+
 def mapping_schemas():
     result = dict()
     for f in os.listdir(mapping_fields_path):
