@@ -74,15 +74,15 @@ FROM (
     vo.*
   FROM
     `{{project_id}}.{{dataset_id}}.visit_occurrence` vo
-  JOIN
+  LEFT JOIN
     `{{project_id}}.{{dataset_id}}.condition_occurrence` co
   ON
     vo.visit_occurrence_id = co.visit_occurrence_id
-  JOIN
+  LEFT JOIN
     `{{project_id}}.{{dataset_id}}.drug_exposure` dre
   ON
     vo.visit_occurrence_id = dre.visit_occurrence_id
-  JOIN
+  LEFT JOIN
     `{{project_id}}.{{dataset_id}}.device_exposure` dve
   ON
     vo.visit_occurrence_id = dve.visit_occurrence_id
