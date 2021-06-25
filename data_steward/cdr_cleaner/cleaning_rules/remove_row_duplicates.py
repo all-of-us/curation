@@ -5,7 +5,7 @@ import logging
 
 # Project imports
 import cdm
-from utils.bq import fields_for
+from resources import fields_for
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
 from cdr_cleaner.clean_cdr_utils import get_tables_in_dataset
@@ -68,7 +68,8 @@ class DeduplicateExceptIdColumn(BaseCleaningRule):
             cols = [
                 column.get('name')
                 for column in schema
-                if column.get('name') != f'{table_name}_id'
+                if (column.get('name') != f'{table_name}_id' and
+                    column.get('type') != 'float')
             ]
             sandbox_queries.append({
                 cdr_consts.QUERY:
