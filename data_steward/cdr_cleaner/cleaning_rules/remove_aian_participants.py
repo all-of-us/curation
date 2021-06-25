@@ -44,7 +44,7 @@ def get_pids_list(project_id, dataset_id, pids_query):
     return pid_list
 
 
-def get_queries(project_id, dataset_id, sandbox_dataset_id=None):
+def get_queries(project_id, dataset_id, sandbox_dataset_id):
     """
     return a list of queries to remove AIAN participant rows
     :param project_id: Name of the project
@@ -60,7 +60,8 @@ def get_queries(project_id, dataset_id, sandbox_dataset_id=None):
     queries_list.extend(
         sandbox_and_remove_pids.get_sandbox_queries(
             project_id, dataset_id,
-            get_pids_list(project_id, dataset_id, PIDS_QUERY), TICKET_NUMBER))
+            get_pids_list(project_id, dataset_id, PIDS_QUERY), TICKET_NUMBER,
+            sandbox_dataset_id))
     queries_list.extend(
         sandbox_and_remove_pids.get_remove_pids_queries(
             project_id, dataset_id,
