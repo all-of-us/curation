@@ -21,6 +21,7 @@ class RemoveAIANParticipantsTest(unittest.TestCase):
     def setUp(self):
         self.project_id = 'project_id'
         self.dataset_id = 'dataset_id'
+        self.sandbox_id = 'sandbox_id'
         self.pids_list = [
             324264993, 307753491, 335484227, 338965846, 354812933, 324983298,
             366423185, 352721597, 352775367, 314281264, 319123185, 325306942,
@@ -59,7 +60,8 @@ class RemoveAIANParticipantsTest(unittest.TestCase):
                               mock_get_pids_list, mock_get_remove_pids_queries):
 
         mock_get_pids_list.return_value = self.pids_list
-        result = remove_aian.get_queries(self.project_id, self.dataset_id)
+        result = remove_aian.get_queries(self.project_id, self.dataset_id,
+                                         self.sandbox_id)
 
         expected = list()
         expected.extend(mock_get_remove_pids_queries.return_value)
