@@ -105,9 +105,9 @@ FROM (
     admitting_source_value,
     discharge_to_concept_id,
     discharge_to_source_value,
-    preceding_visit_occurrence_id)
+    preceding_visit_occurrence_id) v
 WHERE
-  t.visit_start_date > t.visit_end_date
+  t.visit_occurrence_id = v.visit_occurrence_id
 """)
 
 
