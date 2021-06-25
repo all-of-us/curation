@@ -31,7 +31,7 @@ WHERE row_num > 1
 DE_DUP_QUERY_TEMPLATE = JINJA_ENV.from_string("""
 DELETE
 FROM `{{project_id}}.{{dataset_id}}.{{table_name}}`
-WHERE table_id IN
+WHERE {{table_name}}_id IN
 (SELECT {{table_name}}_id
 FROM `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table_name}}`)
 """)
