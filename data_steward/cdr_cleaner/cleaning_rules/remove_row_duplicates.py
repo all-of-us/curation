@@ -5,6 +5,7 @@ import logging
 
 # Project imports
 import cdm
+from utils.bq import fields_for
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from constants.bq_utils import WRITE_TRUNCATE
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
@@ -64,6 +65,12 @@ class DeduplicateExceptIdColumn(BaseCleaningRule):
         sandbox_queries = []
         # iterate through the list of CDM tables with an id column
         for table_name in self.affected_tables:
+            schema = fields_for(table_name)
+            cols = [
+                column.get('name')
+                for column in schema
+                if column.get('name') != f'{table_name}_id'
+            ]
             sandbox_queries.append({
                 cdr_consts.QUERY:
                     DE_DUP_SANDBOX_QUERY_TEMPLATE.render(
@@ -71,7 +78,8 @@ class DeduplicateExceptIdColumn(BaseCleaningRule):
                         dataset_id=self.dataset_id,
                         sandbox_dataset_id=self.sandbox_dataset_id,
                         table_name=table_name,
-                        sandbox_table_name=self.sandbox_table_for(table_name)),
+                        sandbox_table_name=self.sandbox_table_for(table_name),
+                        cols=',\n'.join(cols)),
                 cdr_consts.DESTINATION_TABLE:
                     self.sandbox_table_for(table_name),
                 cdr_consts.DISPOSITION:
