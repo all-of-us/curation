@@ -7,7 +7,6 @@ import logging
 import cdm
 from utils.bq import fields_for
 from constants.cdr_cleaner import clean_cdr as cdr_consts
-from constants.bq_utils import WRITE_TRUNCATE
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
 from cdr_cleaner.clean_cdr_utils import get_tables_in_dataset
 from common import JINJA_ENV
@@ -79,13 +78,7 @@ class DeduplicateExceptIdColumn(BaseCleaningRule):
                         sandbox_dataset_id=self.sandbox_dataset_id,
                         table_name=table_name,
                         sandbox_table_name=self.sandbox_table_for(table_name),
-                        cols=',\n'.join(cols)),
-                cdr_consts.DESTINATION_TABLE:
-                    self.sandbox_table_for(table_name),
-                cdr_consts.DISPOSITION:
-                    WRITE_TRUNCATE,
-                cdr_consts.DESTINATION_DATASET:
-                    self.sandbox_dataset_id
+                        cols=',\n'.join(cols))
             })
 
         queries = []
