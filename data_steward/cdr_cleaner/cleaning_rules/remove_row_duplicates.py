@@ -98,13 +98,7 @@ class DeduplicateExceptIdColumn(BaseCleaningRule):
                         dataset_id=self.dataset_id,
                         sandbox_dataset_id=self.sandbox_dataset_id,
                         table_name=table_name,
-                        sandbox_table_name=self.sandbox_table_for(table_name)),
-                cdr_consts.DESTINATION_TABLE:
-                    table_name,
-                cdr_consts.DISPOSITION:
-                    WRITE_TRUNCATE,
-                cdr_consts.DESTINATION_DATASET:
-                    self.dataset_id
+                        sandbox_table_name=self.sandbox_table_for(table_name))
             })
 
         return sandbox_queries + queries
