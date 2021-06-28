@@ -109,7 +109,9 @@ class TemporalConsistencyTest(BaseTest.CleaningRulesTestBase):
             (101, 1, 9201, date('2019-05-06'), timestamp('2019-05-06 00:00:00'),
                 date('2019-05-05'), timestamp('2019-05-05 00:00:00'), 7),
             (102, 2, 11, date('2021-10-12'), timestamp('2021-10-12 00:00:00'),
-                date('2021-10-18'), timestamp('2021-10-18 00:00:00'), 7)"""
+                date('2021-10-18'), timestamp('2021-10-18 00:00:00'), 7),
+            (201, 2, 9201, date('2021-10-01'), timestamp('2021-10-01 00:00:00'),
+                date('2021-09-30'), timestamp('2021-09-30 00:00:00'), 7)"""
         ).render(fq_table_id=self.fq_table_names[3])
         queries.append(vo_insert)
 
@@ -212,8 +214,8 @@ class TemporalConsistencyTest(BaseTest.CleaningRulesTestBase):
                 self.fq_table_names[3],
             'fq_sandbox_table_name':
                 self.fq_sandbox_table_names[3],
-            'loaded_ids': [101, 102],
-            'sandboxed_ids': [101],
+            'loaded_ids': [101, 102, 201],
+            'sandboxed_ids': [101, 201],
             'fields': [
                 'visit_occurrence_id', 'person_id', 'visit_concept_id',
                 'visit_start_date', 'visit_start_datetime', 'visit_end_date',
@@ -227,7 +229,11 @@ class TemporalConsistencyTest(BaseTest.CleaningRulesTestBase):
                 (102, 2, 11, dt.fromisoformat('2021-10-12').date(),
                  dt.fromisoformat('2021-10-12 00:00:00+00:00'),
                  dt.fromisoformat('2021-10-18').date(),
-                 dt.fromisoformat('2021-10-18 00:00:00+00:00'), 7)
+                 dt.fromisoformat('2021-10-18 00:00:00+00:00'), 7),
+                (201, 2, 9201, dt.fromisoformat('2021-10-01').date(),
+                 dt.fromisoformat('2021-10-01 00:00:00+00:00'),
+                 dt.fromisoformat('2021-10-01').date(),
+                 dt.fromisoformat('2021-09-30 00:00:00+00:00'), 7)
             ]
         }]
         self.default_test(table_and_counts)

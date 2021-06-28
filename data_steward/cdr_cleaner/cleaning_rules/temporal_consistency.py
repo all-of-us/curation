@@ -67,23 +67,9 @@ SET visit_end_date =
 FROM (
   SELECT
     GREATEST(
-      CASE
-        WHEN MAX(co.condition_end_date) IS NULL THEN "{{placeholder_date}}"
-      ELSE
-      MAX(co.condition_end_date)
-    END
-      ,
-      CASE
-        WHEN MAX(dre.drug_exposure_end_date) IS NULL THEN "{{placeholder_date}}"
-      ELSE
-      MAX(dre.drug_exposure_end_date)
-    END
-      ,
-      CASE
-        WHEN MAX(dve.device_exposure_end_date) IS NULL THEN "{{placeholder_date}}"
-      ELSE
-      MAX(dve.device_exposure_end_date)
-    END
+      COALESCE(MAX(co.condition_end_date), "{{placeholder_date}}"),
+      COALESCE(MAX(dre.drug_exposure_end_date), "{{placeholder_date}}"),
+      COALESCE(MAX(dve.device_exposure_end_date), "{{placeholder_date}}")
       ) AS max_end_date,
     vo.*
   FROM
@@ -119,9 +105,9 @@ FROM (
     admitting_source_value,
     discharge_to_concept_id,
     discharge_to_source_value,
-    preceding_visit_occurrence_id)
+    preceding_visit_occurrence_id) v
 WHERE
-  t.visit_start_date > t.visit_end_date
+  t.visit_occurrence_id = v.visit_occurrence_id
 """)
 
 
