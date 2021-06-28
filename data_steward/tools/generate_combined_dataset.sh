@@ -136,7 +136,7 @@ bq mk --dataset --description "intermediary dataset to apply cleaning rules on $
 "${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${combined_backup} --target_dataset ${combined_staging}
 
 # create empty sandbox dataset to apply cleaning rules on staging dataset
-bq mk --dataset --description "Sandbox created for storing records affected by the cleaning rules applied to ${combined_staging}" --label "phase:sandbox" --label "release_tag:${dataset_release_tag}" --label "de_identified:false" "${app_id}":"${combined_staging_sandbox}"
+bq mk --dataset --description "Sandbox created for storing records affected by the cleaning rules applied to ${combined_staging}" --label "phase:sandbox" --label "release_tag:${dataset_release_tag}" --label "de_identified:false" "${app_id}":"${combined_sandbox}"
 
 export COMBINED_DATASET_ID="${combined_staging}"
 export BIGQUERY_DATASET_ID="${combined_staging}"
