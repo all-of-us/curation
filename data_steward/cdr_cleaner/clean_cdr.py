@@ -199,7 +199,8 @@ COMBINED_CLEANING_CLASSES = [
     # setup_query_execution function to load dependencies before query execution
     (
         populate_routes.get_route_mapping_queries,),
-    (EnsureDateDatetimeConsistency,),
+    (TemporalConsistency,),
+    (EnsureDateDatetimeConsistency,),  # dependent on TemporalConsistency
     (remove_records_with_wrong_date.get_remove_records_with_wrong_date_queries,
     ),
     (drop_duplicate_states.get_drop_duplicate_states_queries,),
@@ -209,7 +210,6 @@ COMBINED_CLEANING_CLASSES = [
     (remove_aian_participants.get_queries,),
     (validate_missing_participants.delete_records_for_non_matching_participants,
     ),
-    (TemporalConsistency,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
