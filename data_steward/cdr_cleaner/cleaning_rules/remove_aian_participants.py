@@ -49,8 +49,7 @@ def get_queries(project_id, dataset_id, sandbox_dataset_id):
     return a list of queries to remove AIAN participant rows
     :param project_id: Name of the project
     :param dataset_id: Name of the dataset where the queries should be run
-    :param sandbox_dataset_id: Identifies the sandbox dataset to store rows 
-    #TODO use sandbox_dataset_id for CR
+    :param sandbox_dataset_id: Identifies the sandbox dataset to store rows
     :return: A list of string queries that can be executed to delete AIAN participants and
     all corresponding rows from the dataset with the associated PID.
     """
