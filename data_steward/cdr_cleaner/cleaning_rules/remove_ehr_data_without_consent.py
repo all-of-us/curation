@@ -15,6 +15,7 @@ from google.cloud.exceptions import GoogleCloudError
 # Project imports
 import common
 import constants.cdr_cleaner.clean_cdr as cdr_consts
+from resources import get_person_id_tables
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from cdr_cleaner.clean_cdr_utils import get_tables_in_dataset
 
@@ -23,7 +24,7 @@ LOGGER = logging.getLogger(__name__)
 EHR_UNCONSENTED_PARTICIPANTS_LOOKUP_TABLE = '_ehr_unconsented_pids'
 
 AFFECTED_TABLES = [
-    table for table in common.AOU_REQUIRED
+    table for table in get_person_id_tables(common.AOU_REQUIRED)
     if table not in [common.PERSON, common.DEATH]
 ]
 
