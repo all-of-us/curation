@@ -53,7 +53,7 @@ class DeduplicateExceptIdColumn(BaseCleaningRule):
 
         super().__init__(issue_numbers=JIRA_ISSUE_NUMBERS,
                          description=desc,
-                         affected_datasets=[cdr_consts.UNIONED],
+                         affected_datasets=[cdr_consts.COMBINED],
                          affected_tables=cdm.tables_to_map(),
                          project_id=project_id,
                          dataset_id=dataset_id,
