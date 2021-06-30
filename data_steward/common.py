@@ -223,6 +223,10 @@ COPE_SURVEY_MAP = 'cope_survey_semantic_version_map'
 
 ZIP3_LOOKUP = 'zip3_lookup'
 
+# Participant Summary
+DRC_OPS = 'drc_ops'
+PS_API_VALUES = 'ps_api_values'
+
 # JINJA
 JINJA_ENV = jinja2.Environment(
     # block tags on their own lines

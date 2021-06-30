@@ -44,6 +44,7 @@ HPO_SITE_ID_MAPPINGS_TABLE_ID = 'hpo_site_id_mappings'
 HPO_ID_BUCKET_NAME_TABLE_ID = 'hpo_id_bucket_name'
 
 HPO_ID = 'HPO_ID'
+ORG_ID = 'Org_ID'
 SITE_NAME = 'Site_Name'
 
 # Dataset Environment variable names

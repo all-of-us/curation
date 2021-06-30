@@ -38,7 +38,7 @@ to the Curation naming convention in the `get_site_participant_information` func
 """
 
 
-def get_access_token():
+def get_access_token(credentials=None):
     """
     Obtains GCP Bearer token
 
@@ -49,7 +49,9 @@ def get_access_token():
         'https://www.googleapis.com/auth/cloud-platform', 'email', 'profile'
     ]
 
-    credentials, _ = default()
+    if not credentials:
+        credentials, _ = default()
+
     credentials = auth.delegated_credentials(credentials, scopes=scopes)
 
     request = req.Request()
@@ -250,6 +252,85 @@ def get_site_participant_information(project_id, hpo_id):
     return df
 
 
+def get_org_participant_information(project_id, org_id, credentials=None):
+    """
+    Fetches the necessary participant information for a particular organization.
+
+    :param project_id: The RDR project hosting the API
+    :param org_id: organization name of the site
+
+    :return: a dataframe of participant information
+    :raises: RuntimeError if the project_id and hpo_id are not strings
+    :raises: TimeoutError if response takes longer than 10 minutes
+    """
+    # Parameter checks
+    if not isinstance(project_id, str):
+        raise RuntimeError(f'Please specify the RDR project')
+
+    if not isinstance(org_id, str):
+        raise RuntimeError(f'Please provide an org_id')
+
+    token = get_access_token(credentials=credentials)
+
+    headers = {
+        'content-type': 'application/json',
+        'Authorization': f'Bearer {token}'
+    }
+
+    # Make request to get API version. This is the current RDR version for reference see
+    # see https://github.com/all-of-us/raw-data-repository/blob/master/opsdataAPI.md for documentation of this API.
+    # consentForElectronicHealthRecords=SUBMITTED -- ensures only consenting participants are returned via the API
+    #   regardless if there is EHR data uploaded for that participant
+    # suspensionStatus=NOT_SUSPENDED and withdrawalStatus=NOT_WITHDRAWN -- ensures only active participants returned
+    #   via the API
+    url = (f'https://{project_id}.appspot.com/rdr/v1/ParticipantSummary'
+           f'?organization={org_id}'
+           f'&suspensionStatus=NOT_SUSPENDED'
+           f'&consentForElectronicHealthRecords=SUBMITTED'
+           f'&withdrawalStatus=NOT_WITHDRAWN'
+           f'&_sort=participantId'
+           f'&_count=1000')
+
+    participant_data = get_participant_data(url, headers)
+
+    # Columns of interest for participants of a desired site
+    participant_information_cols = FIELDS_OF_INTEREST_FOR_VALIDATION
+
+    participant_information = []
+
+    # Loop over participant summary records, insert participant data in
+    # the same order as participant_information_cols
+    for entry in participant_data:
+        item = []
+        for col in participant_information_cols:
+            for key, val in entry.get('resource', {}).items():
+                if col == key:
+                    item.append(val)
+        participant_information.append(item)
+
+    df = pandas.DataFrame(participant_information,
+                          columns=participant_information_cols)
+
+    # Transforms participantId to an integer string
+    df['participantId'] = df['participantId'].apply(participant_id_to_int)
+
+    # Rename columns to be consistent with the curation software
+    bq_columns = [
+        '_'.join(re.split('(?=[A-Z])', k)).lower()
+        for k in participant_information_cols
+    ]
+    bq_columns = [
+        'person_id' if k == 'participant_id' else k for k in bq_columns
+    ]
+    column_map = {
+        k: v for k, v in zip(participant_information_cols, bq_columns)
+    }
+
+    df = df.rename(columns=column_map)
+
+    return df
+
+
 def participant_id_to_int(participant_id):
     """
     Transforms the participantId received from RDR ParticipantSummary API from an
@@ -262,7 +343,11 @@ def participant_id_to_int(participant_id):
     return int(participant_id[1:])
 
 
-def store_participant_data(df, project_id, destination_table):
+def store_participant_data(df,
+                           project_id,
+                           destination_table,
+                           schema=None,
+                           credentials=None):
     """
     Stores the fetched participant data in a BigQuery dataset. If the
     table doesn't exist, it will create that table. If the table does
@@ -280,10 +365,11 @@ def store_participant_data(df, project_id, destination_table):
         raise RuntimeError(
             f'Please specify the project in which to create the tables')
 
-    client = get_client(project_id)
+    client = get_client(project_id, credentials=credentials)
+    if not schema:
+        schema = get_table_schema(destination_table.split('.')[-1])
 
-    load_job_config = LoadJobConfig(
-        schema=get_table_schema(destination_table.split('.')[-1]))
+    load_job_config = LoadJobConfig(schema=schema)
     job = client.load_table_from_dataframe(df,
                                            destination_table,
                                            job_config=load_job_config)
