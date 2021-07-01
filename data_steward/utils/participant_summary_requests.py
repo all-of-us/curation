@@ -15,12 +15,15 @@ The intent of the get_participant_information function is to retrieve the inform
 """
 # Python imports
 import re
+from pandas.core.frame import DataFrame
 import requests
+from typing import List
 
 # Third party imports
 import pandas
 import google.auth.transport.requests as req
 from google.auth import default
+from google.cloud.bigquery.schema import SchemaField
 from google.cloud.bigquery import LoadJobConfig
 
 # Project imports
@@ -38,7 +41,7 @@ to the Curation naming convention in the `get_site_participant_information` func
 """
 
 
-def get_access_token(credentials=None):
+def get_access_token():
     """
     Obtains GCP Bearer token
 
@@ -49,9 +52,7 @@ def get_access_token(credentials=None):
         'https://www.googleapis.com/auth/cloud-platform', 'email', 'profile'
     ]
 
-    if not credentials:
-        credentials, _ = default()
-
+    credentials, _ = default()
     credentials = auth.delegated_credentials(credentials, scopes=scopes)
 
     request = req.Request()
@@ -135,15 +136,16 @@ def get_deactivated_participants(api_project_id, columns):
     deactivated_participants = []
     # loop over participant summary records, insert participant data in same order as deactivated_participant_cols
     for entry in participant_data:
-        item = []
-        for col in deactivated_participants_cols:
-            for key, val in entry.get('resource', {}).items():
-                if col == key:
-                    item.append(val)
-        deactivated_participants.append(item)
+        resource = entry.get('resource', {})
+        items = {
+            k: v
+            for k, v in resource.items()
+            if k in deactivated_participants_cols
+        }
+        deactivated_participants.append(items)
 
-    df = pandas.DataFrame(deactivated_participants,
-                          columns=deactivated_participants_cols)
+    df = pandas.DataFrame.from_records(deactivated_participants,
+                                       columns=deactivated_participants_cols)
 
     # Converts column `suspensionTime` from string to timestamp
     if 'suspensionTime' in deactivated_participants_cols:
@@ -222,15 +224,16 @@ def get_site_participant_information(project_id, hpo_id):
     # Loop over participant summary records, insert participant data in
     # the same order as participant_information_cols
     for entry in participant_data:
-        item = []
-        for col in participant_information_cols:
-            for key, val in entry.get('resource', {}).items():
-                if col == key:
-                    item.append(val)
-        participant_information.append(item)
+        resource = entry.get('resource', {})
+        items = {
+            k: v
+            for k, v in resource.items()
+            if k in participant_information_cols
+        }
+        participant_information.append(items)
 
-    df = pandas.DataFrame(participant_information,
-                          columns=participant_information_cols)
+    df = pandas.DataFrame.from_records(participant_information,
+                                       columns=participant_information_cols)
 
     # Transforms participantId to an integer string
     df['participantId'] = df['participantId'].apply(participant_id_to_int)
@@ -252,7 +255,7 @@ def get_site_participant_information(project_id, hpo_id):
     return df
 
 
-def get_org_participant_information(project_id, org_id, credentials=None):
+def get_org_participant_information(project_id, org_id):
     """
     Fetches the necessary participant information for a particular organization.
 
@@ -270,7 +273,7 @@ def get_org_participant_information(project_id, org_id, credentials=None):
     if not isinstance(org_id, str):
         raise RuntimeError(f'Please provide an org_id')
 
-    token = get_access_token(credentials=credentials)
+    token = get_access_token()
 
     headers = {
         'content-type': 'application/json',
@@ -344,22 +347,26 @@ def participant_id_to_int(participant_id):
     return int(participant_id[1:])
 
 
-def set_dataframe_date_fields(df, schema):
+def set_dataframe_date_fields(df: pandas.DataFrame,
+                              schema: List[SchemaField]) -> pandas.DataFrame:
+    """Convert dataframe fields from string to datetime for BQ schema fields
+        with type in ['DATE', 'DATETIME', 'TIMESTAMP'].
+
+    :param df: A dataframe
+    :param schema: A list of schema fields
+    :return: A modified dataframe with date fields converted to type datetime
+    """
     df = df.copy()
     for schema_field in schema:
         field_name = schema_field.name
         if schema_field.field_type.upper() in (
                 'DATE', 'DATETIME', 'TIMESTAMP') and field_name in df.columns:
-            df[field_name] = df[field_name].astype('datetime64[ns]')
+            df[field_name] = pandas.to_datetime(df[field_name], errors='coerce')
 
     return df
 
 
-def store_participant_data(df,
-                           project_id,
-                           destination_table,
-                           schema=None,
-                           credentials=None):
+def store_participant_data(df, project_id, destination_table, schema=None):
     """
     Stores the fetched participant data in a BigQuery dataset. If the
     table doesn't exist, it will create that table. If the table does
@@ -377,7 +384,7 @@ def store_participant_data(df,
         raise RuntimeError(
             f'Please specify the project in which to create the tables')
 
-    client = get_client(project_id, credentials=credentials)
+    client = get_client(project_id)
     if not schema:
         schema = get_table_schema(destination_table.split('.')[-1])
 
