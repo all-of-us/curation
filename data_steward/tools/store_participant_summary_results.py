@@ -1,3 +1,7 @@
+""" Module responsible for calling the Participant Summary Api for a set of sites and storing in tables.
+
+"""
+
 # Python imports
 import argparse
 import logging
@@ -44,17 +48,20 @@ def get_hpo_info(project_id: str) -> List[Dict]:
         org_id = hpo_table_row[bq_consts.ORG_ID]
         hpo_name = hpo_table_row[bq_consts.SITE_NAME]
         if hpo_id and hpo_name:
-            hpo_dict = {"hpo_id": hpo_id, "org_id": org_id, "name": hpo_name}
+            hpo_dict = {"hpo_id": hpo_id, "org_id": org_id}
             hpo_list.append(hpo_dict)
     return hpo_list
 
 
-def main(project_id, rdr_project_id):
+def main(project_id, rdr_project_id, org_id=None, hpo_id=None):
 
     #Get list of hpos
     LOGGER.info('Getting hpo list...')
-    hpo_list = get_hpo_info(project_id)
-    hpo_list = [hpo for hpo in hpo_list if hpo['hpo_id']]
+    if org_id:
+        hpo_list = [{"hpo_id": hpo_id, "org_id": org_id}]
+    else:
+        hpo_list = get_hpo_info(project_id)
+
     LOGGER.info(hpo_list)
 
     for hpo in hpo_list:
@@ -96,12 +103,24 @@ def main(project_id, rdr_project_id):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description="Store participant summary api results in BigQuery tables.")
+        description=""" Store participant summary api results in BigQuery tables.
+            Pass --org_id and --hpo_id to query a single site. Otherwise, all sites are queried.
+            Environment variables GOOGLE_APPLICATION_CREDENTIALS and GOOGLE_CLOUD_PROJECT must be set before running.
+        """)
     parser.add_argument('--project_id', '-p', required=True)
     parser.add_argument('--rdr_project_id', '-r', required=True)
+    parser.add_argument('--org_id', required=False)
+    parser.add_argument('--hpo_id', required=False)
 
     args = parser.parse_args()
 
     pipeline_logging.configure(level=logging.DEBUG, add_console_handler=True)
 
-    main(args.project_id, args.rdr_project_id)
+    if (args.org_id and not args.hpo_id) or (args.hpo_id and not args.org_id):
+        parser.error(
+            "--org_id requires --hpo_id and --hpo_id required --org_id.")
+
+    main(args.project_id,
+         args.rdr_project_id,
+         org_id=args.org_id,
+         hpo_id=args.hpo_id)
