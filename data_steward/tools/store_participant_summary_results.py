@@ -1,16 +1,16 @@
 # Python imports
 import argparse
 import logging
+from typing import List, Dict
 
 # Third party imports
 from google.cloud import bigquery
-from google.cloud.bigquery import dataset
 
 # Project imports
 from utils.participant_summary_requests import get_org_participant_information, store_participant_data
-from bq_utils import table_exists, response2rows
+from bq_utils import table_exists
 from common import PS_API_VALUES, DRC_OPS
-from utils import bq, auth, pipeline_logging
+from utils import bq, pipeline_logging
 from constants import bq_utils as bq_consts
 
 LOGGER = logging.getLogger(__name__)
@@ -23,7 +23,14 @@ SCOPES = [
 DATASET_ID = DRC_OPS
 
 
-def get_hpo_info(project_id):
+def get_hpo_info(project_id: str) -> List[Dict]:
+    """ Returns a list of HPOs
+
+    :param project_id
+    :type project_id: str
+    :return: a list of HPOs
+    :rtype: List[Dict]
+    """
     client = bq.get_client(project_id)
     hpo_list = []
     hpo_table_query = bq_consts.GET_HPO_CONTENTS_QUERY.format(
