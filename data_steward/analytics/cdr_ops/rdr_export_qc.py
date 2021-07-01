@@ -16,6 +16,7 @@
 project_id = ""
 old_rdr = ""
 new_rdr = ""
+snap_dataset = ""
 # -
 
 # # QC for RDR Export
@@ -145,6 +146,7 @@ SELECT
 FROM `{project_id}.{new_rdr}.observation`
 WHERE observation_source_value IS NOT NULL
 AND observation_source_value != ''
+AND observation_source_value NOT IN (SELECT concept_code FROM `{project_id}.{snap_dataset}.snap_codes`)
 GROUP BY 1
 HAVING source_concept_id_null + source_concept_id_zero + concept_id_null + concept_id_zero > 0
 ORDER BY 2 DESC, 3 DESC, 4 DESC, 5 DESC
