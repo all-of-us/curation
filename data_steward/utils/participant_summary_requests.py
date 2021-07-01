@@ -301,15 +301,16 @@ def get_org_participant_information(project_id, org_id, credentials=None):
     # Loop over participant summary records, insert participant data in
     # the same order as participant_information_cols
     for entry in participant_data:
-        item = []
-        for col in participant_information_cols:
-            for key, val in entry.get('resource', {}).items():
-                if col == key:
-                    item.append(val)
-        participant_information.append(item)
+        resource = entry.get('resource', {})
+        items = {
+            k: v
+            for k, v in resource.items()
+            if k in participant_information_cols
+        }
+        participant_information.append(items)
 
-    df = pandas.DataFrame(participant_information,
-                          columns=participant_information_cols)
+    df = pandas.DataFrame.from_records(participant_information,
+                                       columns=participant_information_cols)
 
     # Transforms participantId to an integer string
     df['participantId'] = df['participantId'].apply(participant_id_to_int)
@@ -343,6 +344,17 @@ def participant_id_to_int(participant_id):
     return int(participant_id[1:])
 
 
+def set_dataframe_date_fields(df, schema):
+    df = df.copy()
+    for schema_field in schema:
+        field_name = schema_field.name
+        if schema_field.field_type.upper() in (
+                'DATE', 'DATETIME', 'TIMESTAMP') and field_name in df.columns:
+            df[field_name] = df[field_name].astype('datetime64[ns]')
+
+    return df
+
+
 def store_participant_data(df,
                            project_id,
                            destination_table,
@@ -368,6 +380,8 @@ def store_participant_data(df,
     client = get_client(project_id, credentials=credentials)
     if not schema:
         schema = get_table_schema(destination_table.split('.')[-1])
+
+    df = set_dataframe_date_fields(df, schema)
 
     load_job_config = LoadJobConfig(schema=schema)
     job = client.load_table_from_dataframe(df,

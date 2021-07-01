@@ -53,7 +53,7 @@ def main(project_id, rdr_project_id, curation_run_as_email, rdr_run_as_email,
     #Get list of hpos
     LOGGER.info('Getting hpo list...')
     hpo_list = get_hpo_info(project_id, credentials=None)
-    hpo_list = [hpo for hpo in hpo_list if hpo['hpo_id']][3:4]
+    hpo_list = [hpo for hpo in hpo_list if hpo['hpo_id']]
     print(hpo_list)
 
     for hpo in hpo_list:
