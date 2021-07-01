@@ -57,7 +57,6 @@ from cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency import \
 from cdr_cleaner.cleaning_rules.fill_source_value_text_fields import FillSourceValueTextFields
 from cdr_cleaner.cleaning_rules.fix_unmapped_survey_answers import FixUnmappedSurveyAnswers
 from cdr_cleaner.cleaning_rules.id_deduplicate import DeduplicateIdColumn
-from cdr_cleaner.cleaning_rules.remove_row_duplicates import DeduplicateExceptIdColumn
 from cdr_cleaner.cleaning_rules.measurement_table_suppression import MeasurementRecordsSuppression
 from cdr_cleaner.cleaning_rules.no_data_30_days_after_death import NoDataAfterDeath
 from cdr_cleaner.cleaning_rules.null_concept_ids_for_numeric_ppi import NullConceptIDForNumericPPI
@@ -179,8 +178,7 @@ COMBINED_CLEANING_CLASSES = [
     # won't work with mocked strings.  should use base class
     # setup_query_execution function to load dependencies before query execution
     (
-        DeduplicateExceptIdColumn,),
-    (ReplaceWithStandardConceptId,),
+        ReplaceWithStandardConceptId,),
     # trying to load a table while creating query strings,
     # won't work with mocked strings.  should use base class
     # setup_query_execution function to load dependencies before query execution
