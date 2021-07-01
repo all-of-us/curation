@@ -47,8 +47,7 @@ def main(project_id, rdr_project_id):
     #Get list of hpos
     LOGGER.info('Getting hpo list...')
     hpo_list = get_hpo_info(project_id)
-    hpo_list = [hpo for hpo in hpo_list if hpo['hpo_id']][5:]
-    # hpo_list = [{'hpo_id': 'pitt', 'org_id': 'PITT_UPMC'}]
+    hpo_list = [hpo for hpo in hpo_list if hpo['hpo_id']]
     LOGGER.info(hpo_list)
 
     for hpo in hpo_list:
