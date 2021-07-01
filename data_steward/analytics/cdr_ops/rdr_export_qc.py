@@ -165,7 +165,8 @@ SELECT
  ,COUNTIF(value_as_concept_id=0)           AS concept_id_zero
 FROM `{project_id}.{new_rdr}.observation`
 WHERE value_source_value IS NOT NULL
-and value_source_value != ''
+AND value_source_value != ''
+AND value_source_value NOT IN (SELECT concept_code FROM `{project_id}.{snap_dataset}.snap_codes`)
 GROUP BY 1
 HAVING source_concept_id_null + source_concept_id_zero + concept_id_null + concept_id_zero > 0
 ORDER BY 2 DESC, 3 DESC, 4 DESC, 5 DESC
