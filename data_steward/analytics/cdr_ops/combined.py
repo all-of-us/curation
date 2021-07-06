@@ -15,7 +15,6 @@
 # ## Notebook parameters
 
 # + tags=["parameters"]
-RUN_AS = ''  # email of the service account to run queries as
 PROJECT_ID = ''  # identifies the project containing the datasets
 DATASET_ID = ''  # the dataset to evaluate
 BASELINE_DATASET_ID = ''  # a baseline dataset for metrics comparison
@@ -28,9 +27,7 @@ from common import JINJA_ENV
 from cdr_cleaner.cleaning_rules.negative_ages import date_fields
 from utils import auth
 
-SCOPES = ['https://www.googleapis.com/auth/bigquery']
-CREDENTIALS = auth.get_impersonation_credentials(RUN_AS, SCOPES)
-CLIENT = bigquery.Client(project=PROJECT_ID, credentials=CREDENTIALS)
+CLIENT = bigquery.Client(project=PROJECT_ID)
 
 pd.options.display.max_rows = 1000
 pd.options.display.max_colwidth = 0
