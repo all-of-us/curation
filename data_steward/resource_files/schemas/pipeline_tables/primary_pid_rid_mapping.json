@@ -1,0 +1,26 @@
+[
+  {
+    "type": "integer",
+    "name": "person_id",
+    "mode": "required",
+    "description": "Synonymous with the AoU Participant_ID"
+  },
+  {
+    "type": "integer",
+    "name": "research_id",
+    "mode": "required",
+    "description": "Research ID to replace the person_id in de-identified datasets"
+  },
+  {
+    "type": "integer",
+    "name": "shift",
+    "mode": "required",
+    "description": "The number of days to shift all dates into the past for each participant. A random number from 1 - 365."
+  },
+  {
+    "type": "date",
+    "name": "import_date",
+    "mode": "required",
+    "description": "Date of the rdr import that first identified this mapping.  Used for partitioning."
+  }
+]

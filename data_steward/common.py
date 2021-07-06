@@ -214,8 +214,14 @@ EXT = 'ext'
 EXT_SUFFIX = '_ext'
 
 DEID_MAP = '_deid_map'
+MAX_DEID_DATE_SHIFT = 364
 PID_RID_MAPPING = 'pid_rid_mapping'
+PRIMARY_PID_RID_MAPPING = 'primary_pid_rid_mapping'
+SITE_MASKING_TABLE_ID = 'site_maskings'
 PIPELINE_TABLES = 'pipeline_tables'
+COPE_SURVEY_MAP = 'cope_survey_semantic_version_map'
+
+ZIP3_LOOKUP = 'zip3_lookup'
 
 # JINJA
 JINJA_ENV = jinja2.Environment(

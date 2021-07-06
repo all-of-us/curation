@@ -12,6 +12,8 @@ from dictionaries_and_lists import new_metric_types
 import constants
 
 
+# ### changed the below cell's  metrics_the_same part re:link !!! 
+
 def cross_reference_old_metrics(
         failing_metrics, old_failing_metrics,
         prev_dashboard, new_hpo_ids, excel_file_name):
@@ -52,6 +54,35 @@ def cross_reference_old_metrics(
     """
     # can only iterate if something to report
     if failing_metrics is not None:
+        
+        # check if the old issue is fixed
+        for idx, old_metric in enumerate(old_failing_metrics):
+            old_fixed = False
+            for new_metric in failing_metrics:
+                metrics_the_same = (
+                    new_metric.hpo.lower() ==
+                    old_metric.hpo.lower() and
+
+                    new_metric.table_or_class.lower() ==
+                    old_metric.table_or_class.lower() and
+
+                    new_metric.metric_type.lower() ==
+                    old_metric.metric_type.lower() and
+
+                    new_metric.data_quality_dimension.lower() ==
+                    old_metric.data_quality_dimension.lower() and
+
+                    new_metric.link.lower() ==
+                    old_metric.link.lower())
+
+                if metrics_the_same == False:
+                    # this means this old issue has been fixed
+                    old_fixed = True
+            # this is suppressing drug and measurement integration
+            if old_fixed:
+                del old_failing_metrics[idx]
+        
+        # check if the new metric existed in old metric & update the first reported date
         for idx, new_metric in enumerate(failing_metrics):
             found_in_old = False
 
@@ -91,9 +122,11 @@ def cross_reference_old_metrics(
 
                     # be sure to replace appropriately
                     failing_metrics[idx] = new_metric
+                    
             except TypeError:
                 pass  # means no 'old metrics' failed
 
+    
     return failing_metrics
 
 
@@ -167,7 +200,16 @@ def find_report_date(
             correct_row = (
                  same_hpo and same_table and same_mt and
                  same_dqd and same_link)
-
+            
+            #print(row[constants.link_col_name].lower(), new_metric.link.lower())  ############
+            '''
+            if same_link == False:
+                print(same_hpo, same_table, same_mt, same_dqd, same_link)
+                old = row[constants.link_col_name].lower()
+                new = new_metric.link.lower()
+                for i in range(len(old)):
+                    if old[i] != new[i]: print(old[i:i+10], "new:", new[i:i+10])
+            ''' 
             # get the date
             if correct_row:
                 report_date = row[constants.first_reported_col_name]
@@ -179,6 +221,7 @@ def find_report_date(
             Date not found in the old dashboard. This applies to
             the following DataQualityMetric object:
             {new_metric.print_dqd_attributes()}"""
+
     else:
         # NOTE: the metric being investigated is new and therefore
         # should not be expected to appear on an old 'data_quality

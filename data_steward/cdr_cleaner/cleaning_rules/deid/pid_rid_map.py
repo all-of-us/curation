@@ -10,22 +10,29 @@ from google.cloud.exceptions import NotFound
 
 # Project imports
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
-from constants.bq_utils import WRITE_TRUNCATE
 from constants.cdr_cleaner import clean_cdr as cdr_consts
-from common import JINJA_ENV, PERSON, DEID_MAP, PID_RID_MAPPING, PIPELINE_TABLES
+from common import JINJA_ENV, DEID_MAP, PRIMARY_PID_RID_MAPPING, PIPELINE_TABLES
 
 LOGGER = logging.getLogger(__name__)
 
 PID_RID_QUERY = """
-SELECT
-    t.* EXCEPT (person_id),
-    d.research_id as person_id
-FROM `{{input_table.project}}.{{input_table.dataset_id}}.{{input_table.table_id}}` t
-JOIN `{{deid_map.project}}.{{deid_map.dataset_id}}.{{deid_map.table_id}}` d
-ON t.person_id = d.person_id
+UPDATE `{{input_table.project}}.{{input_table.dataset_id}}.{{input_table.table_id}}` t
+SET t.person_id = d.research_id
+FROM `{{deid_map.project}}.{{deid_map.dataset_id}}.{{deid_map.table_id}}` d
+WHERE t.person_id = d.person_id
 """
 
 PID_RID_QUERY_TMPL = JINJA_ENV.from_string(PID_RID_QUERY)
+
+DELETE_PID_QUERY = """
+DELETE
+FROM `{{input_table.project}}.{{input_table.dataset_id}}.{{input_table.table_id}}`
+WHERE person_id NOT IN 
+(SELECT research_id
+FROM `{{deid_map.project}}.{{deid_map.dataset_id}}.{{deid_map.table_id}}`)
+"""
+
+DELETE_PID_QUERY_TMPL = JINJA_ENV.from_string(DELETE_PID_QUERY)
 
 VALIDATE_QUERY = """
 SELECT person_id
@@ -69,8 +76,6 @@ class PIDtoRID(BaseCleaningRule):
         ]
         fq_deid_map_table = f'{self.project_id}.{mapping_dataset_id}.{mapping_table_id}'
         self.deid_map = gbq.TableReference.from_string(fq_deid_map_table)
-        self.person = gbq.TableReference.from_string(
-            f'{self.project_id}.{mapping_dataset_id}.{PERSON}')
 
     def get_query_specs(self):
         """
@@ -80,23 +85,24 @@ class PIDtoRID(BaseCleaningRule):
             single query and a specification for how to execute that query.
             The specifications are optional but the query is required.
         """
-        queries = []
+        update_queries = []
+        delete_queries = []
 
         for table in self.pid_tables:
             table_query = {
                 cdr_consts.QUERY:
                     PID_RID_QUERY_TMPL.render(input_table=table,
-                                              deid_map=self.deid_map),
-                cdr_consts.DESTINATION_TABLE:
-                    table.table_id,
-                cdr_consts.DESTINATION_DATASET:
-                    self.dataset_id,
-                cdr_consts.DISPOSITION:
-                    WRITE_TRUNCATE
+                                              deid_map=self.deid_map)
             }
-            queries.append(table_query)
+            update_queries.append(table_query)
+            delete_query = {
+                cdr_consts.QUERY:
+                    DELETE_PID_QUERY_TMPL.render(input_table=table,
+                                                 deid_map=self.deid_map)
+            }
+            delete_queries.append(delete_query)
 
-        return queries
+        return update_queries + delete_queries
 
     def get_sandbox_tablenames(self):
         return []
@@ -113,7 +119,8 @@ class PIDtoRID(BaseCleaningRule):
             if result.total_rows > 0:
                 pids = result.to_dataframe()['person_id'].to_list()
                 LOGGER.warning(
-                    f'PIDs {pids} excluded since no mapped research_ids found')
+                    f'Records for PIDs {pids} will be deleted since no mapped research_ids found'
+                )
 
     def setup_rule(self, client):
         """
@@ -123,11 +130,11 @@ class PIDtoRID(BaseCleaningRule):
             client.get_table(self.deid_map)
         except NotFound:
             job = client.copy_table(
-                f'{self.project_id}.{PIPELINE_TABLES}.{PID_RID_MAPPING}',
+                f'{self.project_id}.{PIPELINE_TABLES}.{PRIMARY_PID_RID_MAPPING}',
                 f'{self.project_id}.{self.sandbox_dataset_id}.{DEID_MAP}')
             job.result()
             LOGGER.info(
-                f'Copied {PIPELINE_TABLES}.{PID_RID_MAPPING} to {self.sandbox_dataset_id}.{DEID_MAP}'
+                f'Copied {PIPELINE_TABLES}.{PRIMARY_PID_RID_MAPPING} to {self.sandbox_dataset_id}.{DEID_MAP}'
             )
 
     def setup_validation(self, client):

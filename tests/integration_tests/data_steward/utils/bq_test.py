@@ -22,11 +22,15 @@ class BQTest(unittest.TestCase):
 
     def setUp(self):
         self.project_id = app_identity.get_application_id()
-        self.dataset_id = os.environ.get('UNIONED_DATASET_ID')
-        self.description = 'Unioned test dataset'
+        # this ensures the dataset is scoped appropriately in test and also
+        # can be dropped in teardown (tests should not delete env resources)
+        unioned_dataset_id = os.environ.get('UNIONED_DATASET_ID')
+        self.dataset_id = f'{unioned_dataset_id}_bq_test'
+        self.description = f'Dataset for {__name__} integration tests'
         self.label_or_tag = {'test': 'bq'}
-        # Remove dataset if it already exists
-        bq.delete_dataset(self.project_id, self.dataset_id)
+        self.client = bq.get_client(self.project_id)
+        self.dataset_ref = bigquery.dataset.DatasetReference(
+            self.project_id, self.dataset_id)
 
     def test_create_dataset(self):
         dataset = bq.create_dataset(self.project_id, self.dataset_id,
@@ -127,3 +131,8 @@ class BQTest(unittest.TestCase):
             expected_dict,
             columns=["site_name", "hpo_id", "site_point_of_contact"])
         pd.testing.assert_frame_equal(actual_df, expected_df)
+
+    def tearDown(self):
+        self.client.delete_dataset(self.dataset_ref,
+                                   delete_contents=True,
+                                   not_found_ok=True)

@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.4.2
+#       jupytext_version: 1.3.0
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -131,7 +131,7 @@ SELECT
  FROM
      `{DATASET}.unioned_ehr_drug_exposure` de
  JOIN
-     `{DATASET}.concept_ancestor` ca
+     `{DATASET}.union_concept_ancestor` ca
  ON
      de.drug_concept_id = ca.descendant_concept_id
  JOIN
@@ -166,7 +166,7 @@ SELECT
  FROM
      `{DATASET}.unioned_ehr_drug_exposure` de
  JOIN
-     `{DATASET}.concept_ancestor` ca
+     `{DATASET}.union_concept_ancestor` ca
  ON
      de.drug_concept_id = ca.descendant_concept_id
  JOIN
@@ -201,7 +201,7 @@ SELECT
  FROM
      `{DATASET}.unioned_ehr_drug_exposure` de
  JOIN
-     `{DATASET}.concept_ancestor` ca
+     `{DATASET}.union_concept_ancestor` ca
  ON
      de.drug_concept_id = ca.descendant_concept_id
  JOIN
@@ -236,7 +236,7 @@ SELECT
  FROM
      `{DATASET}.unioned_ehr_drug_exposure` de
  JOIN
-     `{DATASET}.concept_ancestor` ca
+     `{DATASET}.union_concept_ancestor` ca
  ON
      de.drug_concept_id = ca.descendant_concept_id
  JOIN
@@ -273,7 +273,7 @@ SELECT
  FROM
      `{DATASET}.unioned_ehr_drug_exposure` de
  JOIN
-     `{DATASET}.concept_ancestor` ca
+     `{DATASET}.union_concept_ancestor` ca
  ON
      de.drug_concept_id = ca.descendant_concept_id
  JOIN
@@ -309,7 +309,7 @@ SELECT
  FROM
      `{DATASET}.unioned_ehr_drug_exposure` de
  JOIN
-     `{DATASET}.concept_ancestor` ca
+     `{DATASET}.union_concept_ancestor` ca
  ON
      de.drug_concept_id = ca.descendant_concept_id
  JOIN
@@ -347,7 +347,7 @@ SELECT
  FROM
      `{DATASET}.unioned_ehr_drug_exposure` de
  JOIN
-     `{DATASET}.concept_ancestor` ca
+     `{DATASET}.union_concept_ancestor` ca
  ON
      de.drug_concept_id = ca.descendant_concept_id
  JOIN
@@ -382,7 +382,7 @@ SELECT
  FROM
      `{DATASET}.unioned_ehr_drug_exposure` de
  JOIN
-     `{DATASET}.concept_ancestor` ca
+     `{DATASET}.union_concept_ancestor` ca
  ON
      de.drug_concept_id = ca.descendant_concept_id
  JOIN
@@ -417,7 +417,7 @@ SELECT
  FROM
      `{DATASET}.unioned_ehr_drug_exposure` de
  JOIN
-     `{DATASET}.concept_ancestor` ca
+     `{DATASET}.union_concept_ancestor` ca
  ON
      de.drug_concept_id = ca.descendant_concept_id
  JOIN
@@ -452,7 +452,7 @@ SELECT
  FROM
      `{DATASET}.unioned_ehr_drug_exposure` de
  JOIN
-     `{DATASET}.concept_ancestor` ca
+     `{DATASET}.union_concept_ancestor` ca
  ON
      de.drug_concept_id = ca.descendant_concept_id
  JOIN
@@ -489,7 +489,7 @@ SELECT
  FROM
      `{DATASET}.unioned_ehr_drug_exposure` de
  JOIN
-     `{DATASET}.concept_ancestor` ca
+     `{DATASET}.union_concept_ancestor` ca
  ON
      de.drug_concept_id = ca.descendant_concept_id
  JOIN

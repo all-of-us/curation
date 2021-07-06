@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.4.2
+#       jupytext_version: 1.3.0
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -153,7 +153,7 @@ LEFT JOIN
   p.person_id = mp.person_id
 
 
-  -- anything dropped by the 'left join'
+  -- person ID not existing in person table
   WHERE
   co.person_id NOT IN
     (
@@ -162,10 +162,6 @@ LEFT JOIN
     FROM
     `{DATASET}.unioned_ehr_person` p
     )
-
-  -- same person_id but traced to different sites
-  OR
-  mco.src_hpo_id <> mp.src_hpo_id
 
   GROUP BY 1
   ORDER BY number_rows_w_no_valid_person DESC) invalid_row_count
@@ -228,7 +224,7 @@ LEFT JOIN
   p.person_id = mp.person_id
 
 
-  -- anything dropped by the 'left join'
+  -- person ID not existing in person table
   WHERE
   o.person_id NOT IN
     (
@@ -238,9 +234,6 @@ LEFT JOIN
     `{DATASET}.unioned_ehr_person` p
     )
 
-  -- same person_id but traced to different sites
-  OR
-  mo.src_hpo_id <> mp.src_hpo_id
 
   GROUP BY 1
   ORDER BY number_rows_w_no_valid_person DESC) invalid_row_count
@@ -303,7 +296,7 @@ LEFT JOIN
   p.person_id = mp.person_id
 
 
-  -- anything dropped by the 'left join'
+  -- person ID not existing in person table
   WHERE
   de.person_id NOT IN
     (
@@ -313,9 +306,6 @@ LEFT JOIN
     `{DATASET}.unioned_ehr_person` p
     )
 
-  -- same person_id but traced to different sites
-  OR
-  mde.src_hpo_id <> mp.src_hpo_id
 
   GROUP BY 1
   ORDER BY number_rows_w_no_valid_person DESC) invalid_row_count
@@ -378,7 +368,7 @@ LEFT JOIN
   p.person_id = mp.person_id
 
 
-  -- anything dropped by the 'left join'
+  -- person ID not existing in person table
   WHERE
   po.person_id NOT IN
     (
@@ -387,10 +377,6 @@ LEFT JOIN
     FROM
     `{DATASET}.unioned_ehr_person` p
     )
-
-  -- same person_id but traced to different sites
-  OR
-  mpo.src_hpo_id <> mp.src_hpo_id
 
   GROUP BY 1
   ORDER BY number_rows_w_no_valid_person DESC) invalid_row_count
@@ -452,8 +438,6 @@ LEFT JOIN
   ON
   p.person_id = mp.person_id
 
-
-  -- anything dropped by the 'left join'
   WHERE
   m.person_id NOT IN
     (
@@ -463,9 +447,6 @@ LEFT JOIN
     `{DATASET}.unioned_ehr_person` p
     )
 
-  -- same person_id but traced to different sites
-  OR
-  mm.src_hpo_id <> mp.src_hpo_id
 
   GROUP BY 1
   ORDER BY number_rows_w_no_valid_person DESC) invalid_row_count
@@ -528,7 +509,7 @@ LEFT JOIN
   p.person_id = mp.person_id
 
 
-  -- anything dropped by the 'left join'
+  -- person ID not existing in person table
   WHERE
   vo.person_id NOT IN
     (
@@ -538,9 +519,6 @@ LEFT JOIN
     `{DATASET}.unioned_ehr_person` p
     )
 
-  -- same person_id but traced to different sites
-  OR
-  mvo.src_hpo_id <> mp.src_hpo_id
 
   GROUP BY 1
   ORDER BY number_rows_w_no_valid_person DESC) invalid_row_count

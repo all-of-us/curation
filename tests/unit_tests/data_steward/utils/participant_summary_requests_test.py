@@ -13,11 +13,10 @@ The intent of this module is to check that GCR access token is generated properl
 """
 
 # Python imports
-import unittest
-import mock
+from unittest import TestCase
+from unittest.mock import patch, MagicMock
 
 # Third Party imports
-import re
 import pandas
 import pandas.testing
 
@@ -25,7 +24,7 @@ import pandas.testing
 import utils.participant_summary_requests as psr
 
 
-class ParticipantSummaryRequestsTest(unittest.TestCase):
+class ParticipantSummaryRequestsTest(TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -39,7 +38,7 @@ class ParticipantSummaryRequestsTest(unittest.TestCase):
         self.dataset_id = 'bar_dataset'
         self.tablename = 'baz_table'
         self.fake_hpo = 'foo_hpo'
-        self.destination_table = 'bar_dataset.foo_table'
+        self.destination_table = 'bar_dataset._deactivated_participants'
 
         self.fake_url = 'www.fake_site.com'
         self.fake_headers = {
@@ -132,17 +131,17 @@ class ParticipantSummaryRequestsTest(unittest.TestCase):
             }]
         }
 
-    @mock.patch('utils.participant_summary_requests.default')
-    @mock.patch('utils.participant_summary_requests.auth')
-    @mock.patch('utils.participant_summary_requests.req')
+    @patch('utils.participant_summary_requests.default')
+    @patch('utils.participant_summary_requests.auth')
+    @patch('utils.participant_summary_requests.req')
     def test_get_access_token(self, mock_req, mock_auth, mock_default):
         # pre conditions
         scopes = [
             'https://www.googleapis.com/auth/cloud-platform', 'email', 'profile'
         ]
-        creds = mock.MagicMock()
+        creds = MagicMock()
         mock_default.return_value = (creds, None)
-        req = mock.MagicMock()
+        req = MagicMock()
         mock_req.Request.return_value = req
 
         # test
@@ -158,7 +157,7 @@ class ParticipantSummaryRequestsTest(unittest.TestCase):
 
         self.assertEqual(mock_auth.delegated_credentials().token, actual_token)
 
-    @mock.patch('utils.participant_summary_requests.requests.get')
+    @patch('utils.participant_summary_requests.requests.get')
     def test_get_participant_data(self, mock_get):
         mock_get.return_value.status_code = 200
         mock_get.return_value.json.return_value = self.json_response_entry
@@ -168,9 +167,8 @@ class ParticipantSummaryRequestsTest(unittest.TestCase):
 
         self.assertEqual(expected_response, self.participant_data)
 
-    @mock.patch('utils.participant_summary_requests.store_participant_data')
-    @mock.patch(
-        'utils.participant_summary_requests.get_deactivated_participants')
+    @patch('utils.participant_summary_requests.store_participant_data')
+    @patch('utils.participant_summary_requests.get_deactivated_participants')
     def test_get_deactivated_participants(self,
                                           mock_get_deactivated_participants,
                                           mock_store_participant_data):
@@ -197,8 +195,8 @@ class ParticipantSummaryRequestsTest(unittest.TestCase):
 
         self.assertEqual(expected_response, dataset_response)
 
-    @mock.patch('utils.participant_summary_requests.get_access_token')
-    @mock.patch('utils.participant_summary_requests.get_participant_data')
+    @patch('utils.participant_summary_requests.get_access_token')
+    @patch('utils.participant_summary_requests.get_participant_data')
     def test_get_site_participant_information(self, mock_get_participant_data,
                                               mock_token):
 
@@ -259,35 +257,52 @@ class ParticipantSummaryRequestsTest(unittest.TestCase):
 
         self.assertEqual(expected, 12345)
 
-    @mock.patch('utils.participant_summary_requests.fields_for')
-    @mock.patch('utils.participant_summary_requests.pandas_gbq.to_gbq')
-    def test_store_participant_data(self, mock_to_gbq, mock_fields_for):
-        # pre conditions
-        table_schema = [{
-            "type": "INTEGER",
-            "name": "participantId"
-        }, {
-            "type": "STRING",
-            "name": "suspensionStatus"
-        }, {
-            "type": "TIMESTAMP",
-            "name": "suspensionTime"
-        }]
-        mock_fields_for.return_value = table_schema
+    @patch('utils.participant_summary_requests.get_client')
+    @patch('utils.participant_summary_requests.LoadJobConfig')
+    def test_store_participant_data(self, mock_load_job_config,
+                                    mock_bq_get_client):
+        fake_job_id = 'fake_job_id'
+
+        mock_load_job = MagicMock()
+        mock_load_job.result = MagicMock(return_value=None)
+        mock_load_job.job_id = fake_job_id
+
+        mock_bq_client = MagicMock()
+        mock_bq_get_client.return_value = mock_bq_client
+        mock_bq_client.load_table_from_dataframe = MagicMock(
+            return_value=mock_load_job)
+
+        mock_load_config = MagicMock()
+        mock_load_job_config.return_value = mock_load_config
 
         # parameter check test
         self.assertRaises(RuntimeError, psr.store_participant_data,
                           self.fake_dataframe, None, self.destination_table)
 
         # test
-        results = psr.store_participant_data(self.fake_dataframe,
-                                             self.project_id,
-                                             self.destination_table)
+        actual_job_id = psr.store_participant_data(self.fake_dataframe,
+                                                   self.project_id,
+                                                   self.destination_table)
 
-        # post condition
-        self.assertEqual(
-            mock_to_gbq(self.fake_dataframe,
-                        self.destination_table,
-                        self.project_id,
-                        if_exists='append',
-                        table_schema=mock_fields_for), results)
+        mock_bq_get_client.assert_called_once_with(self.project_id)
+        mock_bq_client.load_table_from_dataframe.assert_called_once_with(
+            self.fake_dataframe,
+            self.destination_table,
+            job_config=mock_load_config)
+        mock_load_job_config.assert_called_once_with(
+            schema=psr.get_table_schema('_deactivated_participants'))
+        mock_load_job.result.assert_called_once_with()
+        self.assertEqual(actual_job_id, fake_job_id)
+
+    @patch('utils.participant_summary_requests.get_access_token')
+    @patch('utils.participant_summary_requests.get_participant_data')
+    def test_get_deactivated_participants_parameters(self, mock_data,
+                                                     mock_token):
+        """
+        Ensures error checking is working.
+        """
+        # Parameter check tests
+        self.assertRaises(RuntimeError, psr.get_deactivated_participants, None,
+                          self.columns)
+        self.assertRaises(RuntimeError, psr.get_deactivated_participants,
+                          self.project_id, None)

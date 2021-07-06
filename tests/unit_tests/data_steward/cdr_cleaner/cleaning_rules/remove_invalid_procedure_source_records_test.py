@@ -19,10 +19,11 @@ class RemoveInvalidProcedureSourceRecordsTest(unittest.TestCase):
     def setUp(self):
         self.project_id = 'test_project_id'
         self.dataset_id = 'test_dataset_id'
+        self.sandbox_dataset_id = 'test_sandbox_id'
 
     def test_query_generation(self):
         result = remove_invalid_procedure_source.get_remove_invalid_procedure_source_queries(
-            self.project_id, self.dataset_id)
+            self.project_id, self.dataset_id, self.sandbox_dataset_id)
 
         expected = list()
         expected.append({
@@ -32,8 +33,7 @@ class RemoveInvalidProcedureSourceRecordsTest(unittest.TestCase):
                     project=self.project_id,
                     dataset=self.dataset_id,
                     table=remove_invalid_procedure_source.TABLE,
-                    sandbox_dataset=remove_invalid_procedure_source.
-                    get_sandbox_dataset_id(self.dataset_id),
+                    sandbox_dataset=self.sandbox_dataset_id,
                     intermediary_table=remove_invalid_procedure_source.
                     INTERMEDIARY_TABLE_NAME)
         })
@@ -44,8 +44,7 @@ class RemoveInvalidProcedureSourceRecordsTest(unittest.TestCase):
                     project=self.project_id,
                     dataset=self.dataset_id,
                     table=remove_invalid_procedure_source.TABLE,
-                    sandbox_dataset=remove_invalid_procedure_source.
-                    get_sandbox_dataset_id(self.dataset_id),
+                    sandbox_dataset=self.sandbox_dataset_id,
                     intermediary_table=remove_invalid_procedure_source.
                     INTERMEDIARY_TABLE_NAME),
             clean_consts.DESTINATION_TABLE:

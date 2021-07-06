@@ -9,7 +9,7 @@ from common import CDM_TABLES, OBSERVATION, JINJA_ENV
 from constants import bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
-from cdr_cleaner.cleaning_rules.deid.concept_suppression import get_tables_in_dataset
+from cdr_cleaner.clean_cdr_utils import get_tables_in_dataset
 
 LOGGER = logging.getLogger(__name__)
 
@@ -18,6 +18,7 @@ ISSUE_NUMBERS = ['DC1369']
 OBSERVATION_SOURCE_CONCEPT_ID = 'observation_source_concept_id'
 VALUE_AS_STRING = 'value_as_string'
 PPI_ZIP_CODE_CONCEPT_ID = 1585250
+APPROXIMATE_DATE_OF_SYMPTOMS = 715711
 
 SUPPRESSION_EXCEPTION_SANDBOX_QUERY_TEMPLATE = JINJA_ENV.from_string("""
 -- Only sandboxing records that are not in sandbox_table --
@@ -111,7 +112,10 @@ class StringFieldsSuppression(BaseCleaningRule):
 
         super().__init__(issue_numbers=ISSUE_NUMBERS,
                          description=desc,
-                         affected_datasets=[cdr_consts.CONTROLLED_TIER_DEID],
+                         affected_datasets=[
+                             cdr_consts.CONTROLLED_TIER_DEID,
+                             cdr_consts.REGISTERED_TIER_DEID
+                         ],
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
@@ -174,6 +178,12 @@ class StringFieldsSuppression(BaseCleaningRule):
                 sandbox_table=self.sandbox_table_for(OBSERVATION),
                 field_name=OBSERVATION_SOURCE_CONCEPT_ID,
                 field_value=PPI_ZIP_CODE_CONCEPT_ID,
+                restore_fields=[VALUE_AS_STRING]),
+            SuppressionException(
+                domain_table=OBSERVATION,
+                sandbox_table=self.sandbox_table_for(OBSERVATION),
+                field_name=OBSERVATION_SOURCE_CONCEPT_ID,
+                field_value=APPROXIMATE_DATE_OF_SYMPTOMS,
                 restore_fields=[VALUE_AS_STRING])
         ]
 
@@ -260,8 +270,10 @@ class StringFieldsSuppression(BaseCleaningRule):
 if __name__ == '__main__':
     import cdr_cleaner.args_parser as parser
     import cdr_cleaner.clean_cdr_engine as clean_engine
+    from utils import pipeline_logging
 
     ARGS = parser.default_parse_args()
+    pipeline_logging.configure(level=logging.DEBUG, add_console_handler=True)
 
     if ARGS.list_queries:
         clean_engine.add_console_logging()

@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.4.2
+#       jupytext_version: 1.3.0
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -88,6 +88,16 @@ cols_to_join = ['src_hpo_id']
 site_df = pd.merge(site_df, full_names_df, on=['src_hpo_id'], how='left')
 # -
 
+site_df
+
+# # Note!!! 
+# Sites that have yet made a submission should be suppressed
+#
+# ## do check again every time before run
+
+site_df = site_df[site_df["src_hpo_id"] != "illinois_near_north"]
+site_df
+
 # ### NOTE: This next section looks at distinct achilles_heel_warnings - NOT just ACHILLES Heel IDs. This means that NOTIFICATIONS (those that are not logged with an analysis_id) are also included in the count.
 
 hpo_ids = site_df['src_hpo_id'].tolist()
@@ -124,7 +134,7 @@ distinct_ahes_df = pd.io.gbq.read_gbq(dataframe_distinct_ahes, dialect='standard
 
 distinct_ahes_df
 
-# ### NOTE: This next section looks at distinct achilles_heel_ids. NOTIFICATIONS are NOT included in this count.
+# ### NOTE: This next section looks at distinct achilles_heel_ids. NOTIFICATIONS and WARNINGS are NOT included in this count.
 
 # +
 subqueries = []
@@ -135,6 +145,7 @@ SELECT
 COUNT(DISTINCT ahr.analysis_id) as num_distinct_ids
 FROM
 `{DATASET}.{hpo_id}_achilles_heel_results` ahr
+WHERE ahr.achilles_heel_warning LIKE "ERROR%"
 """
 
 for hpo_id in hpo_ids:
@@ -201,3 +212,5 @@ final_df.fillna(0)
 final_df
 
 final_df.to_csv("{cwd}/achilles_errors.csv".format(cwd = cwd))
+
+

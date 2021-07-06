@@ -13,18 +13,19 @@ The intent of the get_participant_information function is to retrieve the inform
     are `participantId`, `firstName`, `middleName`, `lastName`, `streetAddress`, `streetAddress2`, `city`, `state`,
     `zipCode`, `phoneNumber`, `email`, `dateOfBirth`, `sex`
 """
+# Python imports
+import re
+import requests
 
 # Third party imports
-import re
 import pandas
-import requests
-import pandas_gbq
 import google.auth.transport.requests as req
 from google.auth import default
+from google.cloud.bigquery import LoadJobConfig
 
 # Project imports
 from utils import auth
-from resources import fields_for
+from utils.bq import get_client, get_table_schema
 
 FIELDS_OF_INTEREST_FOR_VALIDATION = [
     'participantId', 'firstName', 'middleName', 'lastName', 'streetAddress',
@@ -279,10 +280,13 @@ def store_participant_data(df, project_id, destination_table):
         raise RuntimeError(
             f'Please specify the project in which to create the tables')
 
-    table_schema = fields_for(destination_table.split('.')[-1])
+    client = get_client(project_id)
 
-    return pandas_gbq.to_gbq(df,
-                             destination_table,
-                             project_id,
-                             if_exists="replace",
-                             table_schema=table_schema)
+    load_job_config = LoadJobConfig(
+        schema=get_table_schema(destination_table.split('.')[-1]))
+    job = client.load_table_from_dataframe(df,
+                                           destination_table,
+                                           job_config=load_job_config)
+    job.result()
+
+    return job.job_id

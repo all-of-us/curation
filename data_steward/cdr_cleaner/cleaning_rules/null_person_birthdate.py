@@ -20,14 +20,12 @@ from utils import pipeline_logging
 LOGGER = logging.getLogger(__name__)
 
 NULL_DATE_QUERY = JINJA_ENV.from_string("""
-SELECT
-    * REPLACE (
-        NULL AS birth_datetime,
-        NULL AS month_of_birth,
-        NULL AS day_of_birth
-    )
-FROM
-    `{{project_id}}.{{dataset_id}}.{{person_table}}` AS per
+UPDATE `{{project_id}}.{{dataset_id}}.{{person_table}}`
+SET
+birth_datetime = NULL,
+month_of_birth = NULL,
+day_of_birth = NULL
+WHERE TRUE
 """)
 
 
@@ -77,9 +75,6 @@ class NullPersonBirthdate(BaseCleaningRule):
             project_id=self.project_id,
             dataset_id=self.dataset_id,
             person_table=PERSON)
-        update_query[cdr_consts.DESTINATION_TABLE] = PERSON
-        update_query[cdr_consts.DESTINATION_DATASET] = self.dataset_id
-        update_query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
         return [update_query]
 
     def setup_validation(self, client, *args, **keyword_args):

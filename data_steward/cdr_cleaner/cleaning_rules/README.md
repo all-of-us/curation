@@ -60,6 +60,7 @@ Depending on the rule(s) being applied, additional configuration parameters may 
 | [validation_dataset_id](#validation_dataset_id) | Identifies the dataset containing participant match tables |
 | [route_mapping_dataset_id](#route_mapping_dataset_id) | Identifies the dataset containing the route mapping lookup table |
 | [year_threshold](#year_threshold) | |
+| [cutoff_date](#cutoff_date) | Identifies the EHR/RDR cutoff date in 'YYYY-MM-DD' format |
 | [observation_year_threshold](#observation_year_threshold) | |
 | [ticket_number](#)[^2] | |
 | [pids_project_id](#)[^2] | |
@@ -81,5 +82,7 @@ Depending on the rule(s) being applied, additional configuration parameters may 
  - populate_route_ids (optional)
 ### year_threshold
 - remove_records_with_wrong_date (optional)
+### cutoff_date
+- remove_records_with_wrong_date
 ### observation_year_threshold
 - remove_records_with_wrong_date (optional)

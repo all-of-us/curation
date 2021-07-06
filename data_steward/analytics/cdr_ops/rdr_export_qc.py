@@ -23,7 +23,6 @@ new_rdr = ""
 # Quality checks performed on a new RDR dataset and comparison with previous RDR dataset.
 
 # +
-import urllib
 import pandas as pd
 
 pd.options.display.max_rows = 120
@@ -272,7 +271,9 @@ pd.read_gbq(query, dialect='standard')
 
 # # Class of PPI Concepts using vocabulary.py
 # Concept codes which appear in `observation.observation_source_value` should belong to concept class Question.
-# Concept codes which appear in `observation.value_source_value` should belong to concept class Answer. Discreprancies (listed below) can be caused by misclassified entries in Athena or invalid payloads in the RDR and in further upstream data sources.
+# Concept codes which appear in `observation.value_source_value` should belong to concept class Answer.
+# Concepts of class Qualifier Value are permitted as a value & Concepts of class Topic and PPI Modifier are permitted as a question
+# Discreprancies (listed below) can be caused by misclassified entries in Athena or invalid payloads in the RDR and in further upstream data sources.
 
 query = f'''
 WITH ppi_concept_code AS (
@@ -301,6 +302,8 @@ FROM ppi_concept_code
 JOIN `{project_id}.{new_rdr}.concept`
  ON LOWER(concept_code)=LOWER(code)
 WHERE LOWER(concept_class_id)<>LOWER(expected_concept_class_id)
+AND CASE WHEN expected_concept_class_id = 'Question' THEN concept_class_id NOT IN('Topic','PPI Modifier') END
+AND concept_class_id != 'Qualifier Value'
 ORDER BY 1, 2, 3
 '''
 pd.read_gbq(query, dialect='standard')
@@ -315,12 +318,128 @@ pd.read_gbq(query, dialect='standard')
 query = f'''
 SELECT
     observation_source_value
-    , observation_source_concept_id
-    , count(*) AS obs_src_count
+    ,observation_source_concept_id
+    ,count(*) AS obs_src_count
 FROM `{project_id}.{new_rdr}.observation`
 WHERE observation_source_concept_id IN (1585864, 1585870,1585873, 1586159,1586162)
     AND value_as_number IS NOT NULL
 GROUP BY observation_source_concept_id, observation_source_value
 ORDER BY observation_source_concept_id
+'''
+pd.read_gbq(query, dialect='standard')
+
+# # Date conformance check
+# COPE surveys contain some concepts that must enforce dates in the observation.value_as_string field.
+# For the observation_source_concept_id = 715711, if the value in value_as_string does not meet a standard date format
+# of YYYY-mm-dd, return a dataframe with the observation_id and person_id
+# Curation needs to contact the RDR team about data discrepancies
+
+query = f'''
+SELECT
+    observation_id
+    ,person_id
+    ,value_as_string
+FROM `{project_id}.{new_rdr}.observation` 
+WHERE observation_source_concept_id = 715711
+AND SAFE_CAST(value_as_string AS DATE) IS NULL 
+AND value_as_string != 'PMI Skip'
+'''
+pd.read_gbq(query, dialect='standard')
+
+# # Check pid_rid_mapping table for duplicates
+# Duplicates are not allowed in the person_id or research_id columns of the pid_rid_mapping table.
+# If found, there is a problem with the RDR import. An RDR On-Call ticket should be opened
+# to report the problem. In ideal circumstances, this query will not return any results.
+# If a result set is returned, an error has been found for the identified field.
+# If the table was not imported, the filename changed, or field names changed,
+# this query will fail by design to indicate an unexpected change has occurred.
+
+query = f'''
+SELECT
+    'person_id' as id_type
+    ,person_id as id
+    ,COUNT(person_id) as count
+FROM `{project_id}.{new_rdr}.pid_rid_mapping`
+GROUP BY person_id
+HAVING count > 1
+
+UNION ALL
+
+SELECT
+    'research_id' as id_type
+    ,research_id as id
+    ,COUNT(research_id) as count
+FROM `{project_id}.{new_rdr}.pid_rid_mapping`
+GROUP BY research_id
+HAVING count > 1
+'''
+pd.read_gbq(query, dialect='standard')
+
+# # Ensure all person_ids exist in the person table and have mappings
+# All person_ids in the pid_rid_mapping table should exist in the person table.
+# If the person record does not exist for a mapping record, there is a problem with the RDR import.
+# An RDR On-Call ticket should be opened to report the problem.
+# All person_ids in the person table should have a mapping in the pid_rid_mapping table.
+# If any person_ids do not have a mapping record, there is a problem with the RDR import.
+# An RDR On-Call ticket should be opened to report the problem.
+# In ideal circumstances, this query will not return any results.
+
+query = f'''
+SELECT
+    'missing_person' as issue_type
+    ,person_id
+FROM `{project_id}.{new_rdr}.pid_rid_mapping`
+WHERE person_id NOT IN 
+(SELECT person_id
+FROM `{project_id}.{new_rdr}.person`)
+
+UNION ALL
+
+SELECT 
+    'unmapped_person' as issue_type
+    ,person_id
+FROM `{project_id}.{new_rdr}.person`
+WHERE person_id NOT IN 
+(SELECT person_id
+FROM `{project_id}.{new_rdr}.pid_rid_mapping`)
+'''
+pd.read_gbq(query, dialect='standard')
+
+# # Check for inconsistencies between primary and RDR pid_rid_mappings
+# Mappings which were in previous exports may be removed from a new export for two reasons:
+#   1. Participants have withdrawn or
+#   2. They were identified as test or dummy data
+# Missing mappings from the previous RDR export are therefore not a significant cause for concern.
+# However, mappings in the RDR pid_rid_mapping should always be consistent with the
+# primary_pid_rid_mapping in pipeline_tables for existing mappings.
+# If the same pid has different rids in the pid_rid_mapping and the primary_pid_rid_mapping,
+# there is a problem with the RDR import. An RDR On-Call ticket should be opened to report the problem.
+# In ideal circumstances, this query will not return any results.
+
+query = f'''
+SELECT
+    person_id
+FROM `{project_id}.{new_rdr}.pid_rid_mapping` rdr
+JOIN `{project_id}.pipeline_tables.primary_pid_rid_mapping` primary
+USING (person_id)
+WHERE primary.research_id <> rdr.research_id
+'''
+pd.read_gbq(query, dialect='standard')
+
+# Checks for basics survey module
+# Participants with data in other survey modules must also have data from the basics survey module.
+# This check identifies survey responses associated with participants that do not have any responses
+# associated with the basics survey module.
+# In ideal circumstances, this query will not return any results.
+
+query = f'''SELECT DISTINCT person_id FROM `{project_id}.{new_rdr}.observation` 
+JOIN `{project_id}.{new_rdr}.concept` on (observation_source_concept_id=concept_id)
+WHERE vocabulary_id = 'PPI' AND person_id NOT IN (
+SELECT DISTINCT person_id FROM `{project_id}.{new_rdr}.rdr20191203.concept`  
+JOIN `{project_id}.{new_rdr}.concept_ancestor` on (concept_id=ancestor_concept_id)
+JOIN `{project_id}.{new_rdr}.observation` on (descendant_concept_id=observation_concept_id)
+WHERE concept_class_id='Module'
+AND concept_name IN ('The Basics')
+AND questionnaire_response_id IS NOT NULL)
 '''
 pd.read_gbq(query, dialect='standard')

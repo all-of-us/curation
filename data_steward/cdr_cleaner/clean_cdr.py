@@ -15,8 +15,7 @@ import cdr_cleaner.cleaning_rules.domain_alignment as domain_alignment
 import cdr_cleaner.cleaning_rules.drop_duplicate_states as drop_duplicate_states
 import cdr_cleaner.cleaning_rules.drop_extreme_measurements as extreme_measurements
 import cdr_cleaner.cleaning_rules.drop_multiple_measurements as drop_mult_meas
-import \
-    cdr_cleaner.cleaning_rules.drop_participants_without_ppi_or_ehr as drop_participants_without_ppi_or_ehr
+from cdr_cleaner.cleaning_rules.drop_participants_without_ppi_or_ehr import DropParticipantsWithoutPPI
 import cdr_cleaner.cleaning_rules.drug_refills_days_supply as drug_refills_supply
 import cdr_cleaner.cleaning_rules.maps_to_value_ppi_vocab_update as maps_to_value_vocab_update
 import cdr_cleaner.cleaning_rules.populate_route_ids as populate_routes
@@ -38,12 +37,16 @@ from cdr_cleaner.cleaning_rules.clean_ppi_numeric_fields_using_parameters import
     CleanPPINumericFieldsUsingParameters
 from cdr_cleaner.cleaning_rules.create_person_ext_table import CreatePersonExtTable
 from cdr_cleaner.cleaning_rules.date_shift_cope_responses import DateShiftCopeResponses
-from cdr_cleaner.cleaning_rules.deid.generate_site_mappings_and_ext_tables import GenerateSiteMappingsAndExtTables
+from cdr_cleaner.cleaning_rules.remove_ehr_data_without_consent import RemoveEhrDataWithoutConsent
+from cdr_cleaner.cleaning_rules.generate_ext_tables import GenerateExtTables
 from cdr_cleaner.cleaning_rules.deid.ct_pid_rid_map import CtPIDtoRID
 from cdr_cleaner.cleaning_rules.deid.fitbit_dateshift import FitbitDateShiftRule
 from cdr_cleaner.cleaning_rules.deid.fitbit_pid_rid_map import FitbitPIDtoRID
 from cdr_cleaner.cleaning_rules.deid.remove_fitbit_data_if_max_age_exceeded import \
     RemoveFitbitDataIfMaxAgeExceeded
+from cdr_cleaner.cleaning_rules.deid.repopulate_person_controlled_tier import \
+    RepopulatePersonControlledTier
+from cdr_cleaner.cleaning_rules.deid.genaralize_cope_insurance_answers import GeneralizeCopeInsuranceAnswers
 from cdr_cleaner.cleaning_rules.drop_cope_duplicate_responses import DropCopeDuplicateResponses
 from cdr_cleaner.cleaning_rules.drop_duplicate_ppi_questions_and_answers import \
     DropDuplicatePpiQuestionsAndAnswers
@@ -68,6 +71,7 @@ from cdr_cleaner.cleaning_rules.deid.birth_information_suppression import \
     BirthInformationSuppression
 from cdr_cleaner.cleaning_rules.replace_standard_id_in_domain_tables import \
     ReplaceWithStandardConceptId
+from cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff import EhrSubmissionDataCutoff
 from cdr_cleaner.cleaning_rules.repopulate_person_post_deid import RepopulatePersonPostDeid
 from cdr_cleaner.cleaning_rules.truncate_rdr_using_date import TruncateRdrData
 from cdr_cleaner.cleaning_rules.unit_normalization import UnitNormalization
@@ -80,9 +84,24 @@ from cdr_cleaner.cleaning_rules.deid.geolocation_concept_suppression import GeoL
 from cdr_cleaner.cleaning_rules.null_person_birthdate import NullPersonBirthdate
 from cdr_cleaner.cleaning_rules.race_ethnicity_record_suppression import RaceEthnicityRecordSuppression
 from cdr_cleaner.cleaning_rules.table_suppression import TableSuppression
+from cdr_cleaner.cleaning_rules.deid.cope_survey_response_suppression import CopeSurveyResponseSuppression
+from cdr_cleaner.cleaning_rules.deid.registered_cope_survey_suppression import RegisteredCopeSurveyQuestionsSuppression
 from cdr_cleaner.cleaning_rules.deid.questionnaire_response_id_map import QRIDtoRID
 from cdr_cleaner.cleaning_rules.generalize_zip_codes import GeneralizeZipCodes
+from cdr_cleaner.cleaning_rules.free_text_survey_response_suppression import FreeTextSurveyResponseSuppression
 from cdr_cleaner.cleaning_rules.cancer_concept_suppression import CancerConceptSuppression
+from cdr_cleaner.cleaning_rules.deid.organ_transplant_concept_suppression import OrganTransplantConceptSuppression
+from cdr_cleaner.cleaning_rules.identifying_field_suppression import IDFieldSuppression
+from cdr_cleaner.cleaning_rules.aggregate_zip_codes import AggregateZipCodes
+from cdr_cleaner.cleaning_rules.remove_extra_tables import RemoveExtraTables
+from cdr_cleaner.cleaning_rules.store_pid_rid_mappings import StoreNewPidRidMappings
+from cdr_cleaner.cleaning_rules.update_invalid_zip_codes import UpdateInvalidZipCodes
+from cdr_cleaner.manual_cleaning_rules.survey_version_info import COPESurveyVersionTask
+from cdr_cleaner.cleaning_rules.deid.string_fields_suppression import StringFieldsSuppression
+from cdr_cleaner.cleaning_rules.generalize_state_by_population import GeneralizeStateByPopulation
+from cdr_cleaner.cleaning_rules.section_participation_concept_suppression import SectionParticipationConceptSuppression
+from cdr_cleaner.cleaning_rules.covid_ehr_vaccine_concept_suppression import CovidEHRVaccineConceptSuppression
+from cdr_cleaner.cleaning_rules.truncate_fitbit_data import TruncateFitbitData
 from constants.cdr_cleaner import clean_cdr_engine as ce_consts
 from constants.cdr_cleaner.clean_cdr import DataStage
 
@@ -95,6 +114,8 @@ EHR_CLEANING_CLASSES = [
 ]
 
 UNIONED_EHR_CLEANING_CLASSES = [
+    (EhrSubmissionDataCutoff,
+    ),  # should run before EnsureDateDatetimeConsistency
     (DeduplicateIdColumn,),
     (clean_years.get_year_of_birth_queries,),
     (drug_refills_supply.get_days_supply_refills_queries,),
@@ -111,6 +132,7 @@ UNIONED_EHR_CLEANING_CLASSES = [
 ]
 
 RDR_CLEANING_CLASSES = [
+    (StoreNewPidRidMappings,),
     (TruncateRdrData,),
     (PpiBranching,),
     # execute FixUnmappedSurveyAnswers before the dropping responses rules get executed
@@ -148,6 +170,7 @@ RDR_CLEANING_CLASSES = [
     (DropDuplicatePpiQuestionsAndAnswers,),
     (extreme_measurements.get_drop_extreme_measurement_queries,),
     (drop_mult_meas.get_drop_multiple_measurement_queries,),
+    (UpdateInvalidZipCodes,),
 ]
 
 COMBINED_CLEANING_CLASSES = [
@@ -161,18 +184,23 @@ COMBINED_CLEANING_CLASSES = [
     # setup_query_execution function to load dependencies before query execution
     (
         domain_alignment.domain_alignment,),
-    (drop_participants_without_ppi_or_ehr.get_queries,),
+    (DropParticipantsWithoutPPI,),
     (clean_years.get_year_of_birth_queries,),
     (NegativeAges,),
+    # Valid Death dates needs to be applied before no data after death as running no data after death is
+    # wiping out the needed consent related data for cleaning.
+    (
+        ValidDeathDates,),
     (NoDataAfterDeath,),
-    (ValidDeathDates,),
+    (RemoveEhrDataWithoutConsent,),
     (drug_refills_supply.get_days_supply_refills_queries,),
     # trying to load a table while creating query strings,
     # won't work with mocked strings.  should use base class
     # setup_query_execution function to load dependencies before query execution
     (
         populate_routes.get_route_mapping_queries,),
-    (EnsureDateDatetimeConsistency,),
+    (TemporalConsistency,),
+    (EnsureDateDatetimeConsistency,),  # dependent on TemporalConsistency
     (remove_records_with_wrong_date.get_remove_records_with_wrong_date_queries,
     ),
     (drop_duplicate_states.get_drop_duplicate_states_queries,),
@@ -182,14 +210,21 @@ COMBINED_CLEANING_CLASSES = [
     (remove_aian_participants.get_queries,),
     (validate_missing_participants.delete_records_for_non_matching_participants,
     ),
-    (TemporalConsistency,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
 FITBIT_CLEANING_CLASSES = [
+    (TruncateFitbitData,),
+]
+
+FITBIT_DEID_CLEANING_CLASSES = [
     (RemoveFitbitDataIfMaxAgeExceeded,),
     (FitbitPIDtoRID,),
     (FitbitDateShiftRule,),
+]
+
+CONTROLLED_TIER_FITBIT_CLEANING_CLASSES = [
+    (FitbitPIDtoRID,),
 ]
 
 DEID_BASE_CLEANING_CLASSES = [
@@ -215,22 +250,65 @@ CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     (TableSuppression,),
     (GeneralizeZipCodes,),  # Should run after any data remapping rules
     (RaceEthnicityRecordSuppression,
-    ),  # Should run after any data remapping rules,
+    ),  # Should run after any data remapping rules
+    (FreeTextSurveyResponseSuppression,
+    ),  # Should run after any data remapping rules
     (MotorVehicleAccidentSuppression,),
     (ExplicitIdentifierSuppression,),
     (GeoLocationConceptSuppression,),
+    (OrganTransplantConceptSuppression,),
     (BirthInformationSuppression,),
-    (GenerateSiteMappingsAndExtTables,),
-    (CancerConceptSuppression,)  # Should run after any data remapping rules
+    (StringFieldsSuppression,),
+    (CopeSurveyResponseSuppression,),
+    (IDFieldSuppression,),  # Should run after any data remapping
+    (GenerateExtTables,),
+    (COPESurveyVersionTask,
+    ),  # Should run after GenerateExtTables and before CleanMappingExtTables
+    (CancerConceptSuppression,),  # Should run after any data remapping rules
+    (AggregateZipCodes,),
+    (SectionParticipationConceptSuppression,),
+    (RemoveExtraTables,),  # Should be last cleaning rule to be run
+    (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
-CONTROLLED_TIER_DEID_BASE_CLEANING_CLASSES = []
+CONTROLLED_TIER_DEID_BASE_CLEANING_CLASSES = [
+    (FillSourceValueTextFields,),
+    (RepopulatePersonControlledTier,),
+    (CreatePersonExtTable,),
+    (CleanMappingExtTables,),  # should be one of the last cleaning rules run
+]
 
-CONTROLLED_TIER_DEID_CLEAN_CLEANING_CLASSES = []
+CONTROLLED_TIER_DEID_CLEAN_CLEANING_CLASSES = [
+    (MeasurementRecordsSuppression,),
+    (CleanHeightAndWeight,),  # dependent on MeasurementRecordsSuppression
+    (UnitNormalization,),  # dependent on CleanHeightAndWeight
+    (DropZeroConceptIDs,),
+    (CleanMappingExtTables,),  # should be one of the last cleaning rules run
+]
 
 REGISTERED_TIER_DEID_CLEANING_CLASSES = [
-    (QRIDtoRID,),  # Should run before any row suppression rules
-    (GenerateSiteMappingsAndExtTables,)
+    # Data mappings/re-mappings
+    ####################################
+    (
+        QRIDtoRID,),  # Should run before any row suppression rules
+    (GenerateExtTables,),
+    (COPESurveyVersionTask,
+    ),  # Should run after GenerateExtTables and before CleanMappingExtTables
+
+    # Data generalizations
+    ####################################
+    (
+        GeneralizeStateByPopulation,),
+
+    # Data suppressions
+    ####################################
+    (
+        CovidEHRVaccineConceptSuppression,),  # should run after QRIDtoRID
+    (StringFieldsSuppression,),
+    (GeneralizeStateByPopulation,),
+    (GeneralizeCopeInsuranceAnswers,),
+    (SectionParticipationConceptSuppression,),
+    (RegisteredCopeSurveyQuestionsSuppression,),
 ]
 
 DATA_STAGE_RULES_MAPPING = {
@@ -248,6 +326,10 @@ DATA_STAGE_RULES_MAPPING = {
         DEID_CLEAN_CLEANING_CLASSES,
     DataStage.FITBIT.value:
         FITBIT_CLEANING_CLASSES,
+    DataStage.CONTROLLED_TIER_FITBIT.value:
+        CONTROLLED_TIER_FITBIT_CLEANING_CLASSES,
+    DataStage.FITBIT_DEID.value:
+        FITBIT_DEID_CLEANING_CLASSES,
     DataStage.CONTROLLED_TIER_DEID.value:
         CONTROLLED_TIER_DEID_CLEANING_CLASSES,
     DataStage.CONTROLLED_TIER_DEID_BASE.value:
@@ -286,6 +368,7 @@ PARSING_ERROR_MESSAGE_FORMAT = (
 
 
 def _to_kwarg_key(arg):
+    # TODO: Move this function to as project level arg_parser so it can be reused.
     if not arg.startswith('--'):
         raise RuntimeError(PARSING_ERROR_MESSAGE_FORMAT.format(arg=arg))
     key = arg[2:]
@@ -295,6 +378,7 @@ def _to_kwarg_key(arg):
 
 
 def _to_kwarg_val(val):
+    # TODO: Move this function to as project level arg_parser so it can be reused.
     # likely invalid use of args- allowing single dash e.g. negative values
     if val.startswith('--'):
         raise RuntimeError(PARSING_ERROR_MESSAGE_FORMAT.format(arg=val))
@@ -302,6 +386,8 @@ def _to_kwarg_val(val):
 
 
 def _get_kwargs(optional_args):
+    # TODO: Move this function to as project level arg_parser so it can be reused.
+    # TODO: Move this function to as project level arg_parser so it can be reused.
     if len(optional_args) % 2:
         raise RuntimeError(
             f'All provided arguments need key-value pairs in {optional_args}')
@@ -311,7 +397,7 @@ def _get_kwargs(optional_args):
     }
 
 
-def fetch_args_kwargs(args=None):
+def fetch_args_kwargs(parser, args=None):
     """
     Fetch parsers and parse input to generate full list of args and keyword args
 
@@ -320,8 +406,8 @@ def fetch_args_kwargs(args=None):
                 as specified in args_parser.get_base_arg_parser which a cleaning
                 rule might require
     """
-    basic_parser = get_parser()
-    common_args, unknown_args = basic_parser.parse_known_args(args)
+    # TODO: Move this function to as project level arg_parser so it can be reused.
+    common_args, unknown_args = parser.parse_known_args(args)
     custom_args = _get_kwargs(unknown_args)
     return common_args, custom_args
 
@@ -376,7 +462,8 @@ def main(args=None):
     :param args: list of all the arguments to apply the cleaning rules
     :return:
     """
-    args, kwargs = fetch_args_kwargs(args)
+    parser = get_parser()
+    args, kwargs = fetch_args_kwargs(parser, args)
 
     rules = DATA_STAGE_RULES_MAPPING[args.data_stage.value]
     validate_custom_params(rules, **kwargs)

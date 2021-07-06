@@ -1,19 +1,22 @@
+# Python imports
 import os
-import unittest
-import mock
+from io import open
+from unittest import TestCase, mock
 import logging
 
-import app_identity
+# Third party imports
+from google.cloud import bigquery
+import pandas as pd
 
-import bq_utils
-import gcs_utils
+# Project imports
+import app_identity
+from utils import bq
 from tests import test_util
-from retraction import retract_data_bq
-from io import open
+from retraction import retract_data_bq as rbq
 
 TABLE_ROWS_QUERY = 'SELECT * FROM {dataset_id}.__TABLES__ '
 
-EXPECTED_ROWS_QUERY = ('SELECT * '
+EXPECTED_ROWS_QUERY = ('SELECT COUNT(*) as count '
                        'FROM {dataset_id}.{table_id} '
                        'WHERE person_id IN '
                        '(SELECT person_id '
@@ -24,7 +27,7 @@ INSERT_PID_TABLE = ('INSERT INTO {dataset_id}.{pid_table_id} '
                     'VALUES{person_research_ids}')
 
 
-class RetractDataBqTest(unittest.TestCase):
+class RetractDataBqTest(TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -37,7 +40,8 @@ class RetractDataBqTest(unittest.TestCase):
         self.project_id = 'fake-project-id'
         self.test_project_id = app_identity.get_application_id()
         self.pid_table_id = 'pid_table'
-        self.bq_dataset_id = bq_utils.get_unioned_dataset_id()
+        self.bq_dataset_id = os.environ.get('UNIONED_DATASET_ID')
+        self.client = bq.get_client(self.test_project_id)
         self.dataset_ids = 'all_datasets'
         self.retraction_type = 'only_ehr'
         self.person_research_ids = [(1, 6890173), (2, 858761),
@@ -58,81 +62,82 @@ class RetractDataBqTest(unittest.TestCase):
         mock_is_ehr_dataset.return_value = True
 
         # create and load person_ids to pid table
-        bq_utils.create_table(self.pid_table_id,
-                              retract_data_bq.PID_TABLE_FIELDS,
-                              drop_existing=True,
-                              dataset_id=self.bq_dataset_id)
+        bq.create_tables(
+            self.client,
+            self.test_project_id, [
+                f'{self.test_project_id}.{self.bq_dataset_id}.{self.pid_table_id}'
+            ],
+            exists_ok=False,
+            fields=[rbq.PID_TABLE_FIELDS])
         bq_formatted_insert_values = ', '.join([
-            '(%s, %s)' % (person_id, research_id)
+            f'({person_id}, {research_id})'
             for (person_id, research_id) in self.person_research_ids
         ])
         q = INSERT_PID_TABLE.format(
             dataset_id=self.bq_dataset_id,
             pid_table_id=self.pid_table_id,
             person_research_ids=bq_formatted_insert_values)
-        bq_utils.query(q)
+        job = self.client.query(q)
+        job.result()
 
-        job_ids = []
         row_count_queries = {}
         # load the cdm files into dataset
         for cdm_file in test_util.NYC_FIVE_PERSONS_FILES:
             cdm_file_name = os.path.basename(cdm_file)
             cdm_table = cdm_file_name.split('.')[0]
-            hpo_table = bq_utils.get_table_id(self.hpo_id, cdm_table)
+            hpo_table = f'{self.hpo_id}_{cdm_table}'
             # store query for checking number of rows to delete
             row_count_queries[hpo_table] = EXPECTED_ROWS_QUERY.format(
                 dataset_id=self.bq_dataset_id,
                 table_id=hpo_table,
                 pid_table_id=self.pid_table_id)
-            logging.info('Preparing to load table %s.%s' %
-                         (self.bq_dataset_id, hpo_table))
+            logging.info(
+                f'Preparing to load table {self.bq_dataset_id}.{hpo_table}')
             with open(cdm_file, 'rb') as f:
-                gcs_utils.upload_object(gcs_utils.get_hpo_bucket(self.hpo_id),
-                                        cdm_file_name, f)
-            result = bq_utils.load_cdm_csv(self.hpo_id,
-                                           cdm_table,
-                                           dataset_id=self.bq_dataset_id)
-            logging.info('Loading table %s.%s' %
-                         (self.bq_dataset_id, hpo_table))
-            job_id = result['jobReference']['jobId']
-            job_ids.append(job_id)
-        incomplete_jobs = bq_utils.wait_on_jobs(job_ids)
-        self.assertEqual(len(incomplete_jobs), 0,
-                         'NYC five person load job did not complete')
+                job_config = bigquery.LoadJobConfig()
+                job_config.source_format = bigquery.SourceFormat.CSV
+                job_config.skip_leading_rows = 1
+                job_config.write_disposition = 'WRITE_EMPTY'
+                job_config.schema = bq.get_table_schema(cdm_table)
+                load_job = self.client.load_table_from_file(
+                    f,
+                    f'{self.test_project_id}.{self.bq_dataset_id}.{hpo_table}',
+                    job_config=job_config)
+                load_job.result()
         logging.info('All tables loaded successfully')
 
         # use query results to count number of expected row deletions
         expected_row_count = {}
         for table in row_count_queries:
-            result = bq_utils.query(row_count_queries[table])
-            expected_row_count[table] = int(result['totalRows'])
+            job = self.client.query(row_count_queries[table])
+            result = job.result()
+            expected_row_count[table] = result.to_dataframe()['count'].to_list(
+            )[0]
 
         # separate check to find number of actual deleted rows
         q = TABLE_ROWS_QUERY.format(dataset_id=self.bq_dataset_id)
-        q_result = bq_utils.query(q)
-        result = bq_utils.response2rows(q_result)
-        row_count_before_retraction = {}
-        for row in result:
-            row_count_before_retraction[row['table_id']] = row['row_count']
+        job = self.client.query(q)
+        result = job.result().to_dataframe()
+        row_counts_before_retraction = pd.Series(
+            result.row_count.values, index=result.table_id).to_dict()
 
         # perform retraction
-        retract_data_bq.run_bq_retraction(self.test_project_id,
-                                          self.bq_dataset_id,
-                                          self.test_project_id,
-                                          self.pid_table_id, self.hpo_id,
-                                          self.dataset_ids,
-                                          self.retraction_type)
+        rbq.run_bq_retraction(self.test_project_id, self.bq_dataset_id,
+                              self.test_project_id, self.pid_table_id,
+                              self.hpo_id, self.dataset_ids,
+                              self.retraction_type)
 
         # find actual deleted rows
-        q_result = bq_utils.query(q)
-        result = bq_utils.response2rows(q_result)
-        row_count_after_retraction = {}
-        for row in result:
-            row_count_after_retraction[row['table_id']] = row['row_count']
+        job = self.client.query(q)
+        result = job.result().to_dataframe()
+        row_counts_after_retraction = pd.Series(
+            result.row_count.values, index=result.table_id).to_dict()
+
         for table in expected_row_count:
             self.assertEqual(
-                expected_row_count[table], row_count_before_retraction[table] -
-                row_count_after_retraction[table])
+                expected_row_count[table], row_counts_before_retraction[table] -
+                row_counts_after_retraction[table])
 
     def tearDown(self):
-        test_util.delete_all_tables(self.bq_dataset_id)
+        for table in self.client.list_tables(self.bq_dataset_id):
+            self.client.delete_table(table, not_found_ok=True)

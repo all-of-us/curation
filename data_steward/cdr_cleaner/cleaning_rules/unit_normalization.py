@@ -32,13 +32,13 @@ UNIT_MAPPING_TABLE_DISPOSITION = bq.bigquery.job.WriteDisposition.WRITE_EMPTY
 
 SANDBOX_UNITS_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE
-    `{{project_id}}.{{sandbox_dataset}}.{{intermediary_table}}` AS(
+    `{{project_id}}.{{sandbox_dataset_id}}.{{intermediary_table}}` AS(
 SELECT
     m.*
   FROM
   `{{project_id}}.{{dataset_id}}.{{measurement_table}}` as m
 INNER JOIN
-  `{{project_id}}.{{dataset_id}}.{{unit_table_name}}` as um
+  `{{project_id}}.{{sandbox_dataset_id}}.{{unit_table_name}}` as um
 USING
   (measurement_concept_id,
     unit_concept_id))
@@ -66,7 +66,7 @@ UNIT_NORMALIZATION_QUERY = JINJA_ENV.from_string("""SELECT
     WHEN "*10^(-3)" THEN value_as_number * 0.001
     WHEN "*10^(6)" THEN value_as_number * 1000000
     WHEN "*10^(-6)" THEN value_as_number * 0.000001
-    /* when transform_value_as_number is null due to left join */
+    -- when transform_value_as_number is null due to left join --
   ELSE
   value_as_number
 END
@@ -88,7 +88,7 @@ END
     WHEN "*10^(-3)" THEN range_low * 0.001
     WHEN "*10^(6)" THEN range_low * 1000000
     WHEN "*10^(-6)" THEN range_low * 0.000001
-    /* when transform_value_as_number is null due to left join */
+    -- when transform_value_as_number is null due to left join --
   ELSE
   range_low
 END
@@ -107,7 +107,7 @@ END
     WHEN "*10^(-3)" THEN range_high * 0.001
     WHEN "*10^(6)" THEN range_high * 1000000
     WHEN "*10^(-6)" THEN range_high * 0.000001
-    /* when transform_value_as_number is null due to left join */
+    -- when transform_value_as_number is null due to left join --
   ELSE
   range_high
 END
@@ -121,7 +121,7 @@ END
 FROM
   `{{project_id}}.{{dataset_id}}.{{measurement_table}}`
 LEFT JOIN
-  `{{project_id}}.{{dataset_id}}.{{unit_table_name}}`
+  `{{project_id}}.{{sandbox_dataset_id}}.{{unit_table_name}}`
 USING
   (measurement_concept_id,
     unit_concept_id)""")
@@ -140,11 +140,14 @@ class UnitNormalization(BaseCleaningRule):
         this SQL, append them to the list of Jira Issues.
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
-        desc = 'Units for labs/measurements will be normalized using unit_mapping lookup table.'
+        desc = ('Units for labs/measurements will be normalized using '
+                'unit_mapping lookup table.')
         super().__init__(
             issue_numbers=['DC414', 'DC700'],
             description=desc,
-            affected_datasets=[cdr_consts.DEID_CLEAN],
+            affected_datasets=[
+                cdr_consts.DEID_CLEAN, cdr_consts.CONTROLLED_TIER_DEID_CLEAN
+            ],
             affected_tables=['measurement'],
             project_id=project_id,
             dataset_id=dataset_id,
@@ -161,10 +164,16 @@ class UnitNormalization(BaseCleaningRule):
         defined as part of get_query_specs().
         :param client:
         :return:
+
+        :raises:  BadRequest, OSError, AttributeError, TypeError, ValueError if
+            the load job fails. Error raised from bq.upload_csv_data_to_bq_table
+            helper function.
         """
 
         # creating _unit_mapping table
-        unit_mapping_table = f'{self.project_id}.{self.dataset_id}.{UNIT_MAPPING_TABLE}'
+        unit_mapping_table = (f'{self.project_id}.'
+                              f'{self.sandbox_dataset_id}.'
+                              f'{UNIT_MAPPING_TABLE}')
         bq.create_tables(
             client,
             self.project_id,
@@ -173,14 +182,13 @@ class UnitNormalization(BaseCleaningRule):
         # Uploading data to _unit_mapping table
         unit_mappings_csv_path = os.path.join(resources.resource_files_path,
                                               UNIT_MAPPING_FILE)
-        job = bq.upload_csv_data_to_bq_table(client, self.dataset_id,
-                                             UNIT_MAPPING_TABLE,
-                                             unit_mappings_csv_path,
-                                             UNIT_MAPPING_TABLE_DISPOSITION)
-        job.result()
+        result = bq.upload_csv_data_to_bq_table(client, self.sandbox_dataset_id,
+                                                UNIT_MAPPING_TABLE,
+                                                unit_mappings_csv_path,
+                                                UNIT_MAPPING_TABLE_DISPOSITION)
         LOGGER.info(
-            f"Created {self.dataset_id}.{UNIT_MAPPING_TABLE} and loaded data from {unit_mappings_csv_path}"
-        )
+            f"Created {self.sandbox_dataset_id}.{UNIT_MAPPING_TABLE} and "
+            f"loaded data from {unit_mappings_csv_path}")
 
     def get_query_specs(self):
         """
@@ -189,7 +197,7 @@ class UnitNormalization(BaseCleaningRule):
         sandbox_query = dict()
         sandbox_query[cdr_consts.QUERY] = SANDBOX_UNITS_QUERY.render(
             project_id=self.project_id,
-            sandbox_dataset=self.sandbox_dataset_id,
+            sandbox_dataset_id=self.sandbox_dataset_id,
             intermediary_table=self.get_sandbox_tablenames()[0],
             dataset_id=self.dataset_id,
             unit_table_name=UNIT_MAPPING_TABLE,
@@ -199,6 +207,7 @@ class UnitNormalization(BaseCleaningRule):
         update_query[cdr_consts.QUERY] = UNIT_NORMALIZATION_QUERY.render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
+            sandbox_dataset_id=self.sandbox_dataset_id,
             unit_table_name=UNIT_MAPPING_TABLE,
             measurement_table=MEASUREMENT)
         update_query[cdr_consts.DESTINATION_TABLE] = MEASUREMENT

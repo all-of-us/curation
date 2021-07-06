@@ -19,14 +19,14 @@ for row in reader:
         table_map[table_name] = table
     table[row['field']] = row['description']
 
-for f in listdir('../resource_files/fields'):
+for f in listdir('../resource_files/schemas'):
     table_name = f[0:f.index('.')]
     description_map = table_map.get(table_name)
     if not description_map:
         print("No descriptions found for %s; skipping." % table_name)
         continue
     print("Updating descriptions for %s..." % table_name)
-    with open('../resource_files/fields/%s' % f) as json_file:
+    with open('../resource_files/schemas/%s' % f) as json_file:
         schema_json = json.load(json_file, object_pairs_hook=OrderedDict)
         for column in schema_json:
             description = description_map.get(column['name'])
@@ -35,5 +35,5 @@ for f in listdir('../resource_files/fields'):
                       column['name'])
             else:
                 column['description'] = description
-    with open('../resource_files/fields/%s' % f, 'w') as json_file:
+    with open('../resource_files/schemas/%s' % f, 'w') as json_file:
         json.dump(schema_json, json_file, indent=4, ensure_ascii=False)

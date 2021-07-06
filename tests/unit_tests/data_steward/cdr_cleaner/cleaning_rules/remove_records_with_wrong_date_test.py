@@ -29,6 +29,7 @@ class RemoveRecordsWithWrongDateTest(unittest.TestCase):
         self.condition_end_datetime = 'condition_end_datetime'
         self.condition_end_date = 'condition_end_date'
         self.year_threshold = 1980
+        self.cutoff_date = '2019-01-01'
         self.condition_start_date_where_clause = '(condition_start_date where clause)'
         self.condition_end_date_where_clause = '(condition_end_date where clause)'
         self.observation_query = 'SELECT * FROM observation'
@@ -61,14 +62,16 @@ class RemoveRecordsWithWrongDateTest(unittest.TestCase):
         mock_is_field_required.side_effect = [True, True, False, False]
 
         actual = remove_records_with_wrong_date.generate_field_expr(
-            self.condition_occurrence, self.year_threshold)
+            self.condition_occurrence, self.year_threshold, self.cutoff_date)
 
         condition_end_date_col_expr = NULLABLE_DATE_FIELD_EXPRESSION.format(
             date_field_name=self.condition_end_date,
-            year_threshold=self.year_threshold)
+            year_threshold=self.year_threshold,
+            cutoff_date=self.cutoff_date)
         condition_end_datetime_col_expr = NULLABLE_DATE_FIELD_EXPRESSION.format(
             date_field_name=self.condition_end_datetime,
-            year_threshold=self.year_threshold)
+            year_threshold=self.year_threshold,
+            cutoff_date=self.cutoff_date)
         expected_col_expr_list = [
             self.condition_concept_id, self.condition_start_date,
             self.condition_start_datetime, condition_end_date_col_expr,
@@ -94,15 +97,17 @@ class RemoveRecordsWithWrongDateTest(unittest.TestCase):
 
         actual = remove_records_with_wrong_date.parse_remove_records_with_wrong_date_query(
             self.project_id, self.dataset_id, self.condition_occurrence,
-            self.year_threshold)
+            self.year_threshold, self.cutoff_date)
 
         condition_start_date_where_clause = WHERE_CLAUSE_REQUIRED_FIELD.format(
             date_field_name=self.condition_start_date,
-            year_threshold=self.year_threshold)
+            year_threshold=self.year_threshold,
+            cutoff_date=self.cutoff_date)
 
         condition_start_datetime_where_clause = WHERE_CLAUSE_REQUIRED_FIELD.format(
             date_field_name=self.condition_start_datetime,
-            year_threshold=self.year_threshold)
+            year_threshold=self.year_threshold,
+            cutoff_date=self.cutoff_date)
 
         expected = remove_records_with_wrong_date.REMOVE_RECORDS_WITH_WRONG_DATE_FIELD_TEMPLATE.format(
             project_id=self.project_id,
@@ -130,8 +135,8 @@ class RemoveRecordsWithWrongDateTest(unittest.TestCase):
         mock_domain_tables.__iter__.return_value = [self.condition_occurrence]
 
         actual = remove_records_with_wrong_date.get_remove_records_with_wrong_date_queries(
-            self.project_id, self.dataset_id, None, DEFAULT_YEAR_THRESHOLD,
-            OBSERVATION_DEFAULT_YEAR_THRESHOLD)
+            self.project_id, self.dataset_id, None, self.cutoff_date,
+            DEFAULT_YEAR_THRESHOLD, OBSERVATION_DEFAULT_YEAR_THRESHOLD)
 
         expected_queries = []
 
@@ -156,10 +161,11 @@ class RemoveRecordsWithWrongDateTest(unittest.TestCase):
         args, _ = mock_parse_remove_records_with_wrong_date_query.call_args_list[
             0]
         self.assertEqual((self.project_id, self.dataset_id, OBSERVATION_TABLE,
-                          OBSERVATION_DEFAULT_YEAR_THRESHOLD), args)
+                          OBSERVATION_DEFAULT_YEAR_THRESHOLD, self.cutoff_date),
+                         args)
 
         args, _ = mock_parse_remove_records_with_wrong_date_query.call_args_list[
             1]
-        self.assertEqual((self.project_id, self.dataset_id,
-                          self.condition_occurrence, DEFAULT_YEAR_THRESHOLD),
-                         args)
+        self.assertEqual(
+            (self.project_id, self.dataset_id, self.condition_occurrence,
+             DEFAULT_YEAR_THRESHOLD, self.cutoff_date), args)

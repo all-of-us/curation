@@ -5,6 +5,7 @@ import pandas as pd
 
 import cdr_cleaner.cleaning_rules.clean_mapping as cm
 import common
+from constants.cdr_cleaner import clean_cdr as clean_consts
 
 
 class CleanMappingTest(unittest.TestCase):
@@ -40,6 +41,12 @@ class CleanMappingTest(unittest.TestCase):
         # test
         self.rule_instance.setup_rule(self.client)
 
+        self.assertEqual(self.rule_instance.affected_datasets, [
+            clean_consts.RDR, clean_consts.CONTROLLED_TIER_DEID,
+            clean_consts.CONTROLLED_TIER_DEID_BASE,
+            clean_consts.CONTROLLED_TIER_DEID_CLEAN
+        ])
+
         # post conditions
         self.assertEqual(['_mapping_drug'], self.rule_instance.mapping_tables)
         self.assertEqual(['measurement_ext'], self.rule_instance.ext_tables)
@@ -59,7 +66,7 @@ class CleanMappingTest(unittest.TestCase):
     @mock.patch('utils.bq.query')
     def test_get_tables(self, mock_tables):
         tables = [
-            '_mapping_observation', '_site_mappings', 'measurement_ext',
+            '_mapping_observation', 'site_maskings', 'measurement_ext',
             '_mapping_drug', 'extension_observation'
         ]
         mock_tables.return_value = pd.DataFrame({cm.TABLE_NAME: tables})

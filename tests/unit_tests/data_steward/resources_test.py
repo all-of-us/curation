@@ -80,7 +80,7 @@ class ResourcesTest(unittest.TestCase):
 
         # post conditions
         person_path = os.path.join(resources.base_path, 'resource_files',
-                                   'fields', 'person.json')
+                                   'schemas', 'cdm', 'clinical', 'person.json')
         with open(person_path, 'r') as fp:
             expected_fields = json.load(fp)
 
@@ -89,7 +89,7 @@ class ResourcesTest(unittest.TestCase):
         # test
         actual_fields = resources.fields_for('person_ext')
         person_ext_path = os.path.join(resources.base_path, 'resource_files',
-                                       'fields', 'extension_tables',
+                                       'schemas', 'extension_tables',
                                        'person_ext.json')
         with open(person_ext_path, 'r') as fp:
             expected_fields = json.load(fp)
@@ -109,9 +109,9 @@ class ResourcesTest(unittest.TestCase):
         # preconditions
         sub_dir = 'baz'
         # mocks result tuples for os.walk
-        walk_results = [(os.path.join('resource_files', 'fields'), [sub_dir],
+        walk_results = [(os.path.join('resource_files', 'schemas'), [sub_dir],
                          ['duplicate.json', 'unique1.json']),
-                        (os.path.join('resource_files', 'fields', sub_dir), [],
+                        (os.path.join('resource_files', 'schemas', sub_dir), [],
                          ['duplicate.json', 'unique2.json'])]
 
         mock_walk.return_value = walk_results
@@ -128,3 +128,18 @@ class ResourcesTest(unittest.TestCase):
                 mock_json.return_value = json_data
                 actual_fields = resources.fields_for('duplicate', sub_dir)
                 self.assertEqual(actual_fields, json_data)
+
+    def test_cdm_tables(self):
+        expected = [
+            'observation_period', 'visit_cost', 'drug_cost',
+            'procedure_occurrence', 'payer_plan_period', 'device_cost',
+            'device_exposure', 'procedure_cost', 'source_to_concept_map',
+            'observation', 'location', 'cohort', 'cost', 'death',
+            'drug_exposure', 'measurement', 'condition_era', 'person', 'note',
+            'cohort_definition', 'dose_era', 'care_site', 'fact_relationship',
+            'cohort_attribute', 'provider', 'condition_occurrence',
+            'cdm_source', 'attribute_definition', 'visit_occurrence',
+            'drug_era', 'specimen'
+        ]
+        actual = resources.CDM_TABLES
+        self.assertCountEqual(actual, expected)

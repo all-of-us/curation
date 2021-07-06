@@ -26,12 +26,13 @@ observation
 measurement
     - measurement_source_concept_id
     - measurement_concept_id
-death
-    - cause_source_concept_id
-    - cause_concept_id
 
 Remove those rows from the clean dataset
 Archive/sandbox those rows
+
+As of DC-1661, the death table has been removed.
+This allows the death table with suppressed cause_concept_id and
+cause_source_concept_id to persist without being deleted.
 """
 
 # Python imports
@@ -40,14 +41,13 @@ import logging
 # Project imports
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
-from constants.bq_utils import WRITE_TRUNCATE
 from common import JINJA_ENV
 
 LOGGER = logging.getLogger(__name__)
 
 tables = [
     'condition_occurrence', 'procedure_occurrence', 'visit_occurrence',
-    'drug_exposure', 'device_exposure', 'observation', 'measurement', 'death'
+    'drug_exposure', 'device_exposure', 'observation', 'measurement'
 ]
 unique_identifier = {
     'condition_occurrence': 'condition_occurrence_id',
@@ -57,7 +57,6 @@ unique_identifier = {
     'device_exposure': 'device_exposure_id',
     'observation': 'observation_id',
     'measurement': 'measurement_id',
-    'death': 'person_id'
 }
 
 source_concept_id_columns = {
@@ -67,8 +66,7 @@ source_concept_id_columns = {
     'drug_exposure': 'drug_source_concept_id',
     'device_exposure': 'device_source_concept_id',
     'observation': 'observation_source_concept_id',
-    'measurement': 'measurement_source_concept_id',
-    'death': 'cause_source_concept_id'
+    'measurement': 'measurement_source_concept_id'
 }
 concept_id_columns = {
     'condition_occurrence': 'condition_concept_id',
@@ -77,8 +75,7 @@ concept_id_columns = {
     'drug_exposure': 'drug_concept_id',
     'device_exposure': 'device_concept_id',
     'observation': 'observation_concept_id',
-    'measurement': 'measurement_concept_id',
-    'death': 'cause_concept_id'
+    'measurement': 'measurement_concept_id'
 }
 
 # Query to create tables in sandbox with the rows that will be removed per cleaning rule
@@ -87,15 +84,15 @@ CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` as(
 SELECT *
 FROM `{{project}}.{{dataset}}.{{table}}`
 WHERE
-{{source_concept_id}} IN (NULL, 0)
-AND {{concept_id}} IN (NULL, 0))
+({{source_concept_id}} is NULL or {{source_concept_id}} = 0)
+AND ({{concept_id}} is NULL or {{concept_id}} = 0)
+)
 """)
 
 DROP_ZERO_CONCEPT_IDS_QUERY = JINJA_ENV.from_string("""
-SELECT *
-FROM `{{project}}.{{dataset}}.{{table}}`
+DELETE FROM `{{project}}.{{dataset}}.{{table}}`
 WHERE
-{{unique_identifier}} NOT IN (
+{{unique_identifier}} IN (
 SELECT {{unique_identifier}}
 FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}`
 )
@@ -121,7 +118,10 @@ class DropZeroConceptIDs(BaseCleaningRule):
         )
         super().__init__(issue_numbers=['DC975'],
                          description=desc,
-                         affected_datasets=[cdr_consts.DEID_CLEAN],
+                         affected_datasets=[
+                             cdr_consts.DEID_CLEAN,
+                             cdr_consts.CONTROLLED_TIER_DEID_CLEAN
+                         ],
                          affected_tables=tables,
                          project_id=project_id,
                          dataset_id=dataset_id,
@@ -158,13 +158,7 @@ class DropZeroConceptIDs(BaseCleaningRule):
                         table=table,
                         unique_identifier=unique_identifier[table],
                         sandbox_dataset=self.sandbox_dataset_id,
-                        sandbox_table=self.get_sandbox_tablenames()[i]),
-                cdr_consts.DESTINATION_TABLE:
-                    table,
-                cdr_consts.DESTINATION_DATASET:
-                    self.dataset_id,
-                cdr_consts.DISPOSITION:
-                    WRITE_TRUNCATE
+                        sandbox_table=self.get_sandbox_tablenames()[i])
             })
 
         return sandbox_queries_list + drop_queries_list

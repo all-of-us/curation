@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.4.2
+#       jupytext_version: 1.3.0
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -84,6 +84,8 @@ cols_to_join = ['src_hpo_id']
 
 site_df = pd.merge(site_df, full_names_df, on=['src_hpo_id'], how='left')
 # -
+
+site_df
 
 # #  Integration of Routes for Select Drugs:
 # #### This is required for all drugs according to the [AoU EHR Operations Page](https://sites.google.com/view/ehrupload/omop-tables/drug_exposure?authuser=0) 

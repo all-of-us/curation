@@ -52,7 +52,7 @@ import logging
 
 import resources
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
-from common import JINJA_ENV
+from common import JINJA_ENV, OBSERVATION
 from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 
@@ -146,7 +146,7 @@ def get_fields_dict(table_name, fields):
     return fields_to_replace
 
 
-def get_modified_columns(fields, fields_to_replace):
+def get_modified_columns(fields, fields_to_replace, table=None):
     """
 
     This method updates the columns by adding prefix to each column if the column is being replaced and
@@ -154,14 +154,22 @@ def get_modified_columns(fields, fields_to_replace):
 
     :param fields: list of fields of a particular table
     :param fields_to_replace: dictionary of fields of a table which needs to be updated
+    :param table: table with fields to be updated
     :return: a string
     """
     col_exprs = []
     for field in fields:
         if field in fields_to_replace:
-            col_expr = '{prefix}.concept_code as {name}'.format(
-                prefix=fields_to_replace[field]['prefix'],
-                name=fields_to_replace[field]['name'])
+            if table == OBSERVATION and field == 'value_as_string':
+                col_expr = """
+                    IF(observation_source_concept_id = 1585250 AND REGEXP_CONTAINS(value_as_string, r'\*\*$'),
+                        {name}, {prefix}.concept_code) as {name}
+                """.format(prefix=fields_to_replace[field]['prefix'],
+                           name=fields_to_replace[field]['name'])
+            else:
+                col_expr = '{prefix}.concept_code as {name}'.format(
+                    prefix=fields_to_replace[field]['prefix'],
+                    name=fields_to_replace[field]['name'])
         else:
             col_expr = field
         col_exprs.append(col_expr)
@@ -205,7 +213,10 @@ class FillSourceValueTextFields(BaseCleaningRule):
 
         super().__init__(issue_numbers=JIRA_ISSUE_NUMBERS,
                          description=desc,
-                         affected_datasets=[cdr_consts.DEID_BASE],
+                         affected_datasets=[
+                             cdr_consts.DEID_BASE,
+                             cdr_consts.CONTROLLED_TIER_DEID_BASE
+                         ],
                          affected_tables=get_affected_tables(),
                          project_id=project_id,
                          dataset_id=dataset_id,
@@ -219,7 +230,9 @@ class FillSourceValueTextFields(BaseCleaningRule):
             fields_to_replace = get_fields_dict(table, fields)
 
             if fields_to_replace:
-                cols = get_modified_columns(fields, fields_to_replace)
+                cols = get_modified_columns(fields,
+                                            fields_to_replace,
+                                            table=table)
 
                 full_join_expression = get_full_join_expression(
                     self.dataset_id, self.project_id, fields_to_replace)

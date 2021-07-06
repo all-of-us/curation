@@ -28,16 +28,33 @@ current_date = 'CURRENT_DATE()'
 KEEP_VALID_DEATH_DATE_ROWS = common.JINJA_ENV.from_string("""
 SELECT * FROM `{{project_id}}.{{dataset_id}}.{{table}}` 
 WHERE person_id NOT IN (
-SELECT person_id FROM `{{project_id}}.{{sandbox_id}}.{{sandbox_table}}`
+SELECT person_id FROM `{{project_id}}.{{sandbox_id}}.{{sandbox_table}}`)
 """)
 
 # Selects all the invalid rows. Invalid means the death_date occurs before the AoU program start
 # or after the current date.
 SANDBOX_INVALID_DEATH_DATE_ROWS = common.JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_id}}.{{sandbox_table}}` AS (
-SELECT *
-FROM `{{project_id}}.{{dataset_id}}.{{table}}`
-WHERE {{table}}_date < '{{program_start_date}}' OR {{table}}_date > {{current_date}})
+SELECT d.*
+FROM `{{project_id}}.{{dataset_id}}.{{table}}` d
+-- Find the latest PPI observation for each person --
+LEFT JOIN (
+        SELECT
+            person_id, MAX(o.observation_date) last_ppi_date
+        FROM `{{project_id}}.{{dataset_id}}.observation` o
+        JOIN `{{project_id}}.{{dataset_id}}.concept` c
+            ON c.concept_id =  o.observation_source_concept_id
+        WHERE c.vocabulary_id = 'PPI'
+        GROUP BY person_id
+) last_ppi_date
+    ON last_ppi_date.person_id = d.person_id
+WHERE {{table}}_date < '{{program_start_date}}' OR {{table}}_date > {{current_date}}
+    -- Sandbox death record if it is >=1 day before latest PPI observation or no PPI observation exists --
+    OR (
+        last_ppi_date.person_id IS NULL 
+        OR DATE_DIFF(last_ppi_date.last_ppi_date, d.{{table}}_date, DAY) >= 1
+    ) 
+)
 """)
 
 
@@ -56,7 +73,9 @@ class ValidDeathDates(BaseCleaningRule):
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
         desc = 'All rows in the death table that contain a death_date which occurs before the start of the AoU ' \
-               'program (Jan 1, 2017) or after the current date will be sandboxed and dropped'
+               'program (Jan 1, 2017) or after the current date will be sandboxed and dropped.' \
+               'Valid Death dates needs to be applied before no data after death as running no data after death is' \
+               ' wiping out the needed consent related data for cleaning'
         super().__init__(issue_numbers=['DC822'],
                          description=desc,
                          affected_datasets=[cdr_consts.COMBINED],
@@ -101,7 +120,7 @@ class ValidDeathDates(BaseCleaningRule):
                     current_date=current_date)
         }
 
-        return [keep_valid_death_dates, sandbox_invalid_death_dates]
+        return [sandbox_invalid_death_dates, keep_valid_death_dates]
 
     def setup_rule(self, client, *args, **keyword_args):
         """

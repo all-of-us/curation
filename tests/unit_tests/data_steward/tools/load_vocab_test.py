@@ -2,7 +2,7 @@ import datetime
 import unittest
 
 import mock
-from google.cloud.bigquery import Dataset, DatasetReference
+from google.cloud.bigquery import Dataset, DatasetReference, AccessEntry
 from google.cloud.storage import Blob
 
 import common
@@ -72,3 +72,41 @@ class LoadVocabTest(unittest.TestCase):
                                   self.bucket_name, self.gcs_client)
             self.assertIsInstance(c.exception, RuntimeError)
             self.assertEqual(str(c.exception), expected_msg)
+
+    def test_table_name_to_filename(self):
+        expected = 'CONCEPT.csv'
+        actual = load_vocab._table_name_to_filename('concept')
+        self.assertEqual(expected, actual)
+
+    def test_filename_to_table_name(self):
+        expected = 'concept'
+        actual = load_vocab._filename_to_table_name('CONCEPT.csv')
+        self.assertEqual(expected, actual)
+
+    def test_dataset_properties_from_file(self):
+        mock_json = '''{
+         "access": [
+           { "role": "OWNER", "specialGroup": "projectOwners" },
+           { "role": "WRITER", "userByEmail": "fake.person@pmi-ops.org" }
+         ]
+        }'''
+
+        expected = {
+            'access_entries': [
+                AccessEntry(
+                    role='OWNER',
+                    entity_type='specialGroup',
+                    entity_id='projectOwners',
+                ),
+                AccessEntry(
+                    role='WRITER',
+                    entity_type='userByEmail',
+                    entity_id='fake.person@pmi-ops.org',
+                )
+            ]
+        }
+        with mock.patch('tools.load_vocab.open',
+                        mock.mock_open(read_data=mock_json)):
+            actual = load_vocab.dataset_properties_from_file(
+                'fake_json_path.json')
+        self.assertDictEqual(expected, actual)

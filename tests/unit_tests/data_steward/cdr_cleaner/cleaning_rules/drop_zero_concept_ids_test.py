@@ -28,12 +28,13 @@ observation
 measurement
     - measurement_source_concept_id
     - measurement_concept_id
-death
-    - cause_source_concept_id
-    - cause_concept_id
 
 Remove those rows from the clean dataset
 Archive/sandbox those rows
+
+As of DC-1661, the death table has been removed.
+This allows the death table with suppressed cause_concept_id and
+cause_source_concept_id to persist without being deleted.
 """
 
 # Python imports
@@ -42,9 +43,7 @@ import unittest
 # Project imports
 from cdr_cleaner.cleaning_rules.drop_zero_concept_ids import DropZeroConceptIDs, SANDBOX_ZERO_CONCEPT_IDS_QUERY, \
     DROP_ZERO_CONCEPT_IDS_QUERY, tables, unique_identifier, concept_id_columns, source_concept_id_columns
-from constants.bq_utils import WRITE_TRUNCATE
 from constants.cdr_cleaner import clean_cdr as clean_consts
-import constants.cdr_cleaner.clean_cdr as cdr_consts
 
 
 class DropZeroConceptIDsTest(unittest.TestCase):
@@ -75,8 +74,9 @@ class DropZeroConceptIDsTest(unittest.TestCase):
 
     def test_get_query_specs(self):
         # Pre conditions
-        self.assertEqual(self.rule_instance.affected_datasets,
-                         [clean_consts.DEID_CLEAN])
+        self.assertEqual(
+            self.rule_instance.affected_datasets,
+            [clean_consts.DEID_CLEAN, clean_consts.CONTROLLED_TIER_DEID_CLEAN])
 
         # Test
         results_list = self.rule_instance.get_query_specs()
@@ -108,13 +108,7 @@ class DropZeroConceptIDsTest(unittest.TestCase):
                         unique_identifier=unique_identifier[table],
                         sandbox_dataset=self.sandbox_id,
                         sandbox_table=self.rule_instance.get_sandbox_tablenames(
-                        )[i]),
-                cdr_consts.DESTINATION_TABLE:
-                    table,
-                cdr_consts.DESTINATION_DATASET:
-                    self.dataset_id,
-                cdr_consts.DISPOSITION:
-                    WRITE_TRUNCATE
+                        )[i])
             })
 
         self.assertEqual(

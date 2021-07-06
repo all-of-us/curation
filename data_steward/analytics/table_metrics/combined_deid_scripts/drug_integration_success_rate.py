@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.4.2
+#       jupytext_version: 1.3.0
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -20,7 +20,7 @@ client = bigquery.Client()
 
 # +
 from notebooks import parameters
-DATASET = parameters.UNIONED_Q4_2018
+DATASET = parameters.UNIONED_Q4_2020
 LOOKUP_TABLES = parameters.LOOKUP_TABLES
 
 print(f"Dataset to use: {DATASET}")
@@ -115,7 +115,7 @@ SELECT
  FROM
      `{DATASET}.drug_exposure` de
  JOIN
-     `{DATASET}.concept_ancestor` ca
+     `{DATASET}.union_concept_ancestor` ca
  ON
      de.drug_concept_id = ca.descendant_concept_id
  JOIN
@@ -152,7 +152,7 @@ SELECT
  FROM
      `{DATASET}.drug_exposure` de
  JOIN
-     `{DATASET}.concept_ancestor` ca
+     `{DATASET}.union_concept_ancestor` ca
  ON
      de.drug_concept_id = ca.descendant_concept_id
  JOIN
@@ -189,7 +189,7 @@ SELECT
  FROM
      `{DATASET}.drug_exposure` de
  JOIN
-     `{DATASET}.concept_ancestor` ca
+     `{DATASET}.union_concept_ancestor` ca
  ON
      de.drug_concept_id = ca.descendant_concept_id
  JOIN
@@ -226,7 +226,7 @@ SELECT
  FROM
      `{DATASET}.drug_exposure` de
  JOIN
-     `{DATASET}.concept_ancestor` ca
+     `{DATASET}.union_concept_ancestor` ca
  ON
      de.drug_concept_id = ca.descendant_concept_id
  JOIN
@@ -265,7 +265,7 @@ SELECT
  FROM
      `{DATASET}.drug_exposure` de
  JOIN
-     `{DATASET}.concept_ancestor` ca
+     `{DATASET}.union_concept_ancestor` ca
  ON
      de.drug_concept_id = ca.descendant_concept_id
  JOIN
@@ -303,7 +303,7 @@ SELECT
  FROM
      `{DATASET}.drug_exposure` de
  JOIN
-     `{DATASET}.concept_ancestor` ca
+     `{DATASET}.union_concept_ancestor` ca
  ON
      de.drug_concept_id = ca.descendant_concept_id
  JOIN
@@ -343,7 +343,7 @@ SELECT
  FROM
      `{DATASET}.drug_exposure` de
  JOIN
-     `{DATASET}.concept_ancestor` ca
+     `{DATASET}.union_concept_ancestor` ca
  ON
      de.drug_concept_id = ca.descendant_concept_id
  JOIN
@@ -380,7 +380,7 @@ SELECT
  FROM
      `{DATASET}.drug_exposure` de
  JOIN
-     `{DATASET}.concept_ancestor` ca
+     `{DATASET}.union_concept_ancestor` ca
  ON
      de.drug_concept_id = ca.descendant_concept_id
  JOIN
@@ -417,7 +417,7 @@ SELECT
  FROM
      `{DATASET}.drug_exposure` de
  JOIN
-     `{DATASET}.concept_ancestor` ca
+     `{DATASET}.union_concept_ancestor` ca
  ON
      de.drug_concept_id = ca.descendant_concept_id
  JOIN
@@ -454,7 +454,7 @@ SELECT
  FROM
      `{DATASET}.drug_exposure` de
  JOIN
-     `{DATASET}.concept_ancestor` ca
+     `{DATASET}.union_concept_ancestor` ca
  ON
      de.drug_concept_id = ca.descendant_concept_id
  JOIN
@@ -493,7 +493,7 @@ SELECT
  FROM
      `{DATASET}.drug_exposure` de
  JOIN
-     `{DATASET}.concept_ancestor` ca
+     `{DATASET}.union_concept_ancestor` ca
  ON
      de.drug_concept_id = ca.descendant_concept_id
  JOIN
@@ -573,8 +573,10 @@ sites_drug_success = pd.merge(sites_drug_success,
                               on='src_hpo_id')
 sites_drug_success = sites_drug_success.fillna(0)
 
-sites_drug_success = sites_drug_success.sort_values(by='all_drugs', ascending = False)
+sites_drug_success = sites_drug_success.sort_values(by='src_hpo_id', ascending = True)
 
 sites_drug_success
 
 sites_drug_success.to_csv("{cwd}/drug_success.csv".format(cwd = cwd))
+
+

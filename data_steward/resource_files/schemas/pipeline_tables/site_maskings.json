@@ -1,0 +1,14 @@
+[
+  {
+    "type": "string",
+    "name": "hpo_id",
+    "mode": "required",
+    "description": "The hpo_id of the hpo site/RDR."
+  },
+  {
+    "type": "string",
+    "name": "src_id",
+    "mode": "required",
+    "description": "The masked id of the hpo site/RDR."
+  }
+]

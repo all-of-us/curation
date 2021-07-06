@@ -11,7 +11,6 @@ End dates should not be prior to start dates in any table
 import logging
 
 # Project imports
-from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 import resources
 import common
@@ -29,7 +28,7 @@ table_dates = {
         'drug_exposure_start_date', 'drug_exposure_end_date'
     ],
     common.DEVICE_EXPOSURE: [
-        'device_exposure_start_date', 'device_exposure_start_date'
+        'device_exposure_start_date', 'device_exposure_end_date'
     ]
 }
 
@@ -38,93 +37,53 @@ visit_occurrence_dates = {
     visit_occurrence: ['visit_start_date', 'visit_end_date']
 }
 placeholder_date = '1900-01-01'
-end_date = 'end_date'
 
 SANDBOX_BAD_END_DATES = JINJA_ENV.from_string("""
-CREATE OR REPLACE `{{project_id}}.{{sandbox_id}}.{{intermediary_table}}` AS (
+CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_id}}.{{intermediary_table}}` AS (
   SELECT
     *
   FROM
     `{{project_id}}.{{dataset_id}}.{{table}}`
   WHERE
-    {{table_end_date}} > {{table_start_date}}
+    {{table_end_date}} < {{table_start_date}}
 )
 """)
 
 NULL_BAD_END_DATES = JINJA_ENV.from_string("""
-SELECT
-  {cols}
-FROM
-  `{project_id}.{dataset_id}.{table}` l
-LEFT JOIN (
-  SELECT
-    *
-  FROM
-    `{project_id}.{dataset_id}.{table}`
-  WHERE
-    NOT {table_end_date} < {table_start_date}) r
-ON
-  l.{TABLE}_id = r.{TABLE}_id
+UPDATE `{{project_id}}.{{dataset_id}}.{{table}}`
+SET {{table_end_date}} = NULL
+WHERE
+    {{table_end_date}} < {{table_start_date}}
 """)
 
 POPULATE_VISIT_END_DATES = JINJA_ENV.from_string("""
-SELECT
-  visit_occurrence_id,
-  person_id,
-  visit_concept_id,
-  visit_start_date,
-  visit_start_datetime,
-  CASE
-    WHEN visit_concept_id = 9201 AND max_end_date != "{placeholder_date}" THEN max_end_date
-  ELSE
-  visit_start_date
-END
-  AS visit_end_date,
-  visit_end_datetime,
-  visit_type_concept_id,
-  provider_id,
-  care_site_id,
-  visit_source_value,
-  visit_source_concept_id,
-  admitting_source_concept_id,
-  admitting_source_value,
-  discharge_to_concept_id,
-  discharge_to_source_value,
-  preceding_visit_occurrence_id
+UPDATE `{{project_id}}.{{dataset_id}}.visit_occurrence` t
+SET visit_end_date = 
+    CASE
+        WHEN t.visit_concept_id = 9201 AND max_end_date != "{{placeholder_date}}" THEN max_end_date
+    ELSE
+        t.visit_start_date
+    END
 FROM (
   SELECT
     GREATEST(
-      CASE
-        WHEN MAX(co.condition_end_date) IS NULL THEN "{placeholder_date}"
-      ELSE
-      MAX(co.condition_end_date)
-    END
-      ,
-      CASE
-        WHEN MAX(dre.drug_exposure_end_date) IS NULL THEN "{placeholder_date}"
-      ELSE
-      MAX(dre.drug_exposure_end_date)
-    END
-      ,
-      CASE
-        WHEN MAX(dve.device_exposure_end_date) IS NULL THEN "{placeholder_date}"
-      ELSE
-      MAX(dve.device_exposure_end_date)
-    END
+      COALESCE(MAX(co.condition_end_date), "{{placeholder_date}}"),
+      COALESCE(MAX(dre.drug_exposure_end_date), "{{placeholder_date}}"),
+      COALESCE(MAX(dve.device_exposure_end_date), "{{placeholder_date}}")
       ) AS max_end_date,
     vo.*
   FROM
-    `{project_id}.{dataset_id}.visit_occurrence` vo
+    `{{project_id}}.{{dataset_id}}.visit_occurrence` vo
   LEFT JOIN
-    `{project_id}.{dataset_id}.condition_occurrence` co
+    `{{project_id}}.{{dataset_id}}.condition_occurrence` co
   ON
     vo.visit_occurrence_id = co.visit_occurrence_id
   LEFT JOIN
-    `{project_id}.{dataset_id}.drug_exposure` dre
+    `{{project_id}}.{{dataset_id}}.drug_exposure` dre
   ON
     vo.visit_occurrence_id = dre.visit_occurrence_id
   LEFT JOIN
-    `{project_id}.{dataset_id}.device_exposure` dve
+    `{{project_id}}.{{dataset_id}}.device_exposure` dve
   ON
     vo.visit_occurrence_id = dve.visit_occurrence_id
   WHERE
@@ -146,14 +105,9 @@ FROM (
     admitting_source_value,
     discharge_to_concept_id,
     discharge_to_source_value,
-    preceding_visit_occurrence_id)
-UNION ALL
-SELECT
-  *
-FROM
-  `{project_id}.{dataset_id}.visit_occurrence`
+    preceding_visit_occurrence_id) v
 WHERE
-  visit_start_date <= visit_end_date
+  t.visit_occurrence_id = v.visit_occurrence_id
 """)
 
 
@@ -202,8 +156,8 @@ class TemporalConsistency(BaseCleaningRule):
                 intermediary_table=self.sandbox_table_for(table),
                 dataset_id=self.dataset_id,
                 table=table,
-                table_end_date=table_dates[table][0],
-                table_start_date=table_dates[table][1])
+                table_end_date=table_dates[table][1],
+                table_start_date=table_dates[table][0])
             sandbox_queries.append(sandbox_query)
 
             fields = resources.fields_for(table)
@@ -221,31 +175,25 @@ class TemporalConsistency(BaseCleaningRule):
                 table=table,
                 table_start_date=table_dates[table][0],
                 table_end_date=table_dates[table][1])
-            query[cdr_consts.DESTINATION_TABLE] = table
-            query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
-            query[cdr_consts.DESTINATION_DATASET] = self.dataset_id
             queries.append(query)
         # Sandbox query for visit_occurrence
-        sandbox_query = dict()
-        sandbox_query[cdr_consts.QUERY] = SANDBOX_BAD_END_DATES.render(
+        sandbox_vo_query = dict()
+        sandbox_vo_query[cdr_consts.QUERY] = SANDBOX_BAD_END_DATES.render(
             project_id=self.project_id,
             sandbox_id=self.sandbox_dataset_id,
             intermediary_table=self.sandbox_table_for(visit_occurrence),
             dataset_id=self.dataset_id,
             table=visit_occurrence,
-            table_end_date=visit_occurrence_dates[visit_occurrence][0],
-            table_start_date=visit_occurrence_dates[visit_occurrence][1])
-        sandbox_queries.append(sandbox_query)
-        query = dict()
-        query[cdr_consts.QUERY] = POPULATE_VISIT_END_DATES.render(
+            table_end_date=visit_occurrence_dates[visit_occurrence][1],
+            table_start_date=visit_occurrence_dates[visit_occurrence][0])
+        sandbox_queries.append(sandbox_vo_query)
+        vo_query = dict()
+        vo_query[cdr_consts.QUERY] = POPULATE_VISIT_END_DATES.render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
             placeholder_date=placeholder_date)
-        query[cdr_consts.DESTINATION_TABLE] = visit_occurrence
-        query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
-        query[cdr_consts.DESTINATION_DATASET] = self.dataset_id
-        queries.append(query)
-        return [sandbox_queries, queries]
+        queries.append(vo_query)
+        return sandbox_queries + queries
 
     def setup_rule(self, client, *args, **keyword_args):
         pass

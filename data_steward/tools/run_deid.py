@@ -26,17 +26,18 @@ LOGGER = logging.getLogger(__name__)
 DEID_TABLES = [
     'person', 'observation', 'visit_occurrence', 'condition_occurrence',
     'drug_exposure', 'procedure_occurrence', 'device_exposure', 'death',
-    'measurement', 'location', 'care_site', 'specimen', 'observation_period'
+    'measurement', 'location', 'care_site', 'specimen', 'observation_period',
+    'provider'
 ]
 # these tables will be suppressed.  This means an empty table with the same schema will
 # exist.  It overrides the DEID_TABLES list
-SUPPRESSED_TABLES = ['note', 'note_nlp', 'location']
+SUPPRESSED_TABLES = ['note', 'note_nlp', 'location', 'care_site', 'provider']
 VOCABULARY_TABLES = [
     'concept', 'vocabulary', 'domain', 'concept_class', 'concept_relationship',
     'relationship', 'concept_synonym', 'concept_ancestor',
     'source_to_concept_map', 'drug_strength'
 ]
-DEID_MAP_TABLE = '_deid_map'
+DEID_MAP_TABLE = 'primary_pid_rid_mapping'
 PIPELINE_TABLES_DATASET = 'pipeline_tables'
 
 LOGS_PATH = 'LOGS'
@@ -277,7 +278,7 @@ def load_deid_map_table(deid_map_dataset_name, age_limit):
     # Create _deid_map table in input dataset
     project_id = app_identity.get_application_id()
     client = bq.get_client(project_id)
-    deid_map_table = f'{project_id}.{deid_map_dataset_name}.{DEID_MAP_TABLE}'
+    deid_map_table = f'{project_id}.{deid_map_dataset_name}._deid_map'
     # Copy master _deid_map table records to _deid_map table
     if bq_utils.table_exists(DEID_MAP_TABLE,
                              dataset_id=PIPELINE_TABLES_DATASET):

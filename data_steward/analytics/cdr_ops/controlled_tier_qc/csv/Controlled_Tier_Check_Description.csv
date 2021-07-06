@@ -1,0 +1,19 @@
+rule,level,code,description
+DC-1370,Field,check_field_suppression,Verify string type field suppression
+DC-1377,Mapping,check_mapping_zipcode_generalization,Verify all zip code values are generalized
+DC-1346,Mapping,check_mapping,Verify PID to RID ran
+DC-1348,Mapping,check_mapping,Verify Questionnare_response_id mapping ran
+DC-1355,Mapping,check_site_mapping,Verify site id mappings ran
+DC-1357,Field,check_field_suppression,Verify person table does not contain birth info
+DC-1359,Concept,check_concept_suppression,Verify Observation table does not have survey birth info
+DC-1362,Table,check_table_suppression,Verify table suppression
+DC-1364,Concept,check_concept_suppression,Verify Explicit identifier record suppression
+DC-1366,Concept,check_concept_suppression,Verify Race/Ethnicity record suppression
+DC-1368,Field,check_vehicle_accident_suppression,Verify Motor Vehicle Accident record suppression
+DC-1373,Field,check_field_suppression,Verify identifying field suppression works
+DC-1380,Mapping,check_mapping_zipcode_transformation,Verify generalized zip code values are aggregated
+DC-1382,Field,check_field_cancer_concept_suppression,Verify record suppression of some cancer condition concepts
+DC-1388,Field,check_field_freetext_response_suppression,Verify Free text survey response records are suppressed
+DC-1496,Concept,check_concept_suppression,Verify suppression of some COPE survey responses
+DC-1527,Concept,check_concept_suppression,Verify suppression of organ transplant concepts
+DC-1535,Field,check_field_geolocation_records_suppression,Verify suppression of geolocation records

@@ -142,10 +142,10 @@ def run_queries(queries):
     :param queries: list of queries
     """
     query_job_ids = []
-    for query_dict in queries:
+    for query in queries:
         logging.info('Creating or renaming _deid_map table with query: %s' %
-                     (query_dict['query']))
-        job_results = bq_utils.query(q=query_dict['query'], batch=True)
+                     query)
+        job_results = bq_utils.query(q=query, batch=True)
         logging.info('_deid_map table created.')
         query_job_id = job_results['jobReference']['jobId']
         query_job_ids.append(query_job_id)

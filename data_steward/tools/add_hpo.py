@@ -1,21 +1,33 @@
 """
-Add a new HPO site to config file and BigQuery lookup tables
+Add a new HPO site to config file and BigQuery lookup tables and updates the `pipeline_table.site_maskings`
+    table with any missing hpo_sites in `lookup_tables.hpo_site_id_mappings`
 
 Note: GAE environment must still be set manually
 """
+# Python imports
 import logging
 import csv
 
+# Third party imports
 from googleapiclient.errors import HttpError
 import pandas as pd
 
+# Project imports
+import app_identity
 import bq_utils
-import resources
 import constants.bq_utils as bq_consts
-from tools import cli_util
 import gcs_utils
+import resources
+from tools import cli_util
+from utils import bq
+from utils import pipeline_logging
+from common import JINJA_ENV, PIPELINE_TABLES, SITE_MASKING_TABLE_ID
 
 LOGGER = logging.getLogger(__name__)
+
+EHR_SITE_PREFIX = 'EHR site '
+RDR = 'rdr'
+PPI_PM = 'PPI/PM'
 
 DEFAULT_DISPLAY_ORDER = """
 SELECT MAX(Display_Order) + 1 AS display_order FROM {hpo_site_id_mappings_table_id}
@@ -34,6 +46,41 @@ SELECT '{org_id}' AS Org_ID, '{hpo_id}' AS HPO_ID, '{hpo_name}' AS Site_Name, {d
 ADD_HPO_ID_BUCKET_NAME = """
 SELECT '{hpo_id}' AS hpo_id, '{bucket_name}' AS bucket_name
 """
+
+UPDATE_SITE_MASKING_QUERY = JINJA_ENV.from_string("""
+INSERT INTO
+   `{{project_id}}.{{dataset_id}}.{{table_id}}` (hpo_id, src_id)
+     WITH random_ids AS
+ (
+ -- Generates the random EHR site id for the new hpo_site --
+  SELECT
+    CONCAT('EHR site ', new_id) AS hpo_id,
+    ROW_NUMBER() OVER(ORDER BY GENERATE_UUID()) AS row_id
+  FROM
+    UNNEST(GENERATE_ARRAY(100, 999)) AS new_id
+)
+SELECT
+    LOWER(m.hpo_id) as hpo_id,
+    r.hpo_id as src_id
+  FROM
+(
+  -- Selects the hpo_sites that are located in the hpo_site_id_mappings table but not the --
+  -- sandboxed site masking table --
+   SELECT
+     m.*,
+     ROW_NUMBER() OVER(ORDER BY GENERATE_UUID()) AS row_id
+   FROM `{{project_id}}.{{lookup_tables_dataset}}.{{hpo_site_id_mappings_table}}` AS m
+   WHERE m.HPO_ID IS NOT NULL AND m.HPO_ID != '' AND m.HPO_ID NOT IN (
+   SELECT hpo_id FROM `{{project_id}}.{{sandbox_id}}.{{table_id}}`)
+ ) AS m
+ JOIN random_ids AS r
+USING (row_id)
+UNION ALL
+-- Adds rdr record if one does not already exist in the sandboxed site_maskings table --
+SELECT 'rdr' AS hpo_id, 'PPI/PM' AS src_id FROM `{{project_id}}.{{dataset_id}}.{{table_id}}` WHERE
+ 'rdr' NOT IN (
+SELECT hpo_id FROM `{{project_id}}.{{sandbox_id}}.{{table_id}}`)
+""")
 
 
 def verify_hpo_mappings_up_to_date(hpo_file_df, hpo_table_df):
@@ -200,9 +247,38 @@ def bucket_access_configured(bucket_name):
         raise
 
 
+def update_site_masking_table():
+    """
+    Creates a unique `site_maskings` sandbox table and updates the `site_maskings` table with the
+        new site maskings
+    """
+
+    project_id = app_identity.get_application_id()
+    sandbox_id = PIPELINE_TABLES + '_sandbox'
+
+    client = bq.get_client(project_id)
+
+    update_site_maskings_query = UPDATE_SITE_MASKING_QUERY.render(
+        project_id=project_id,
+        dataset_id=PIPELINE_TABLES,
+        sandbox_id=sandbox_id,
+        table_id=SITE_MASKING_TABLE_ID,
+        lookup_tables_dataset=bq_consts.LOOKUP_TABLES_DATASET_ID,
+        hpo_site_id_mappings_table=bq_consts.HPO_SITE_ID_MAPPINGS_TABLE_ID)
+
+    LOGGER.info(
+        f'Updating site_masking table with new hpo_id and src_id with the following '
+        f'query:\n {update_site_maskings_query}\n ')
+
+    query_job = client.query(update_site_maskings_query)
+
+    return query_job
+
+
 def main(hpo_id, org_id, hpo_name, bucket_name, display_order, addition_type):
     """
     adds HPO name and details in to hpo_csv and adds HPO to the lookup tables in bigquery
+    adds new site masking to pipeline_tables.site_maskings
     :param hpo_id: HPO identifier
     :param org_id: HPO organisation identifier
     :param hpo_name: name of the HPO
@@ -221,9 +297,16 @@ def main(hpo_id, org_id, hpo_name, bucket_name, display_order, addition_type):
                         f'Proceeding to add site.')
             add_lookups(hpo_id, hpo_name, org_id, bucket_name, display_order)
 
+            LOGGER.info(
+                f'hpo_site_id_mappings table successfully updated. Updating `{bq_consts.HPO_SITE_ID_MAPPINGS_TABLE_ID}` '
+                f'table')
+            update_site_masking_table()
+
 
 if __name__ == '__main__':
     import argparse
+
+    pipeline_logging.configure(level=logging.DEBUG, add_console_handler=True)
 
     parser = argparse.ArgumentParser(
         description='Add a new HPO site to hpo config file and lookup tables',

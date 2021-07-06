@@ -166,7 +166,7 @@ def get_table_info(table_id, dataset_id=None, project_id=None):
     return job.execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
 
 
-def load_csv(schema_path,
+def load_csv(table_name,
              gcs_object_path,
              project_id,
              dataset_id,
@@ -175,7 +175,7 @@ def load_csv(schema_path,
              allow_jagged_rows=False):
     """
     Load csv file from a bucket into a table in bigquery
-    :param schema_path: Path to the schema json file
+    :param table_name: table_name to load the fields from resource_files/schermas
     :param gcs_object_path: Path to the object (csv file) in GCS
     :param project_id:
     :param dataset_id:
@@ -187,8 +187,7 @@ def load_csv(schema_path,
     """
     bq_service = create_service()
 
-    with open(schema_path, 'r') as schema_file:
-        fields = json.load(schema_file)
+    fields = resources.fields_for(table_name)
     load = {
         'sourceUris': [gcs_object_path],
         bq_consts.SCHEMA: {
@@ -230,13 +229,11 @@ def load_cdm_csv(hpo_id,
     if dataset_id is None:
         dataset_id = get_dataset_id()
     bucket = gcs_utils.get_hpo_bucket(hpo_id)
-    fields_filename = os.path.join(resources.fields_path,
-                                   cdm_table_name + '.json')
     gcs_object_path = 'gs://%s/%s%s.csv' % (bucket, source_folder_prefix,
                                             cdm_table_name)
     table_id = get_table_id(hpo_id, cdm_table_name)
     allow_jagged_rows = cdm_table_name == 'observation'
-    return load_csv(fields_filename,
+    return load_csv(cdm_table_name,
                     gcs_object_path,
                     app_id,
                     dataset_id,
@@ -258,12 +255,10 @@ def load_pii_csv(hpo_id, pii_table_name, source_folder_prefix=""):
     app_id = app_identity.get_application_id()
     dataset_id = get_dataset_id()
     bucket = gcs_utils.get_hpo_bucket(hpo_id)
-    fields_filename = os.path.join(resources.fields_path,
-                                   pii_table_name + '.json')
     gcs_object_path = 'gs://%s/%s%s.csv' % (bucket, source_folder_prefix,
                                             pii_table_name)
     table_id = get_table_id(hpo_id, pii_table_name)
-    return load_csv(fields_filename, gcs_object_path, app_id, dataset_id,
+    return load_csv(pii_table_name, gcs_object_path, app_id, dataset_id,
                     table_id)
 
 
@@ -513,9 +508,7 @@ def create_standard_table(table_name,
     :param force_all_nullable: if True, overrides all fields of the schema to be nullable, primarily for testing
     :return: table reference object
     """
-    fields_filename = os.path.join(resources.fields_path, table_name + '.json')
-    with open(fields_filename, 'r') as fields_file:
-        fields = json.load(fields_file)
+    fields = resources.fields_for(table_name)
     if force_all_nullable:
         for f in fields:
             f["mode"] = "nullable"
@@ -862,10 +855,7 @@ def load_table_from_csv(project_id,
     table_list = resources.csv_to_list(csv_path)
 
     if fields is None:
-        fields_filename = os.path.join(resources.fields_path,
-                                       table_name + '.json')
-        with open(fields_filename, 'r') as f:
-            fields = json.load(f)
+        fields = resources.fields_for(table_name)
     field_names = ', '.join([field['name'] for field in fields])
     row_exprs = [csv_line_to_sql_row_expr(t, fields) for t in table_list]
     formatted_mapping_list = ', '.join(row_exprs)

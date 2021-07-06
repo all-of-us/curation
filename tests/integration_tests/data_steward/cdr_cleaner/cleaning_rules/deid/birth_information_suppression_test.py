@@ -13,7 +13,6 @@ from google.cloud.bigquery import Table
 
 # Project Imports
 from common import OBSERVATION, VOCABULARY_TABLES
-from utils import bq
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.deid.birth_information_suppression import \
     BirthInformationSuppression
@@ -63,41 +62,8 @@ class BirthInformationSuppressionTestBase(BaseTest.CleaningRulesTestBase):
 
         # Load the test data
         observation_data_template = self.jinja_env.from_string("""
-            DROP TABLE IF EXISTS `{{project_id}}.{{dataset_id}}.observation`;
-            CREATE TABLE `{{project_id}}.{{dataset_id}}.observation`
-            AS (
-            WITH w AS (
-              SELECT ARRAY<STRUCT<
-                    observation_id int64, 
-                    person_id int64, 
-                    observation_concept_id int64, 
-                    observation_type_concept_id int64,
-                    value_as_concept_id int64,
-                    observation_source_concept_id int64,
-                    value_source_concept_id int64,
-                    qualifier_concept_id int64,
-                    unit_concept_id int64
-                    >>
-                  -- Concepts to suppress --
-                  -- 1585259: PII Birth Information: Birth Date --
-                  -- 4083587: Date of birth --
-                 
-                  -- Concepts to keep --
-                  -- 42628400: Follow-up service --
-                  -- 1332785: Smoking more cigarettes or vaping more --
-                  -- 43533330: Left main coronary artery --
-                  [(1, 1, 1585259, 0, 0, 0, 0, 0, 0),
-                   (2, 1, 0, 1585259, 0, 0, 0, 0, 0),
-                   (3, 1, 0, 0, 4083587, 0, 0, 0, 0),
-                   (4, 1, 0, 0, 0, 4083587, 0, 0, 0),
-                   (5, 1, 1585259, 0, 0, 0, 44803087, 0, 0),
-                   (6, 1, 42628400, 0, 0, 0, 0, 0, 0),
-                   (7, 1, 0, 1332785, 0, 0, 0, 0, 0),
-                   (8, 1, 0, 0, 43533330, 0, 0, 0, 0),
-                   (9, 1, 0, 0, 0, 43533330, 0, 0, 0),
-                   (10, 1, 42628400, 1332785, 43533330, 43533330, 0, 0, 0)] col
-            )
-            SELECT 
+            INSERT INTO `{{project_id}}.{{dataset_id}}.observation`
+            (
                 observation_id, 
                 person_id, 
                 observation_concept_id, 
@@ -106,8 +72,28 @@ class BirthInformationSuppressionTestBase(BaseTest.CleaningRulesTestBase):
                 observation_source_concept_id,
                 value_source_concept_id,
                 qualifier_concept_id,
-                unit_concept_id
-            FROM w, UNNEST(w.col))
+                unit_concept_id,
+                observation_date
+            )
+            VALUES
+              -- Concepts to suppress --
+              -- 1585259: PII Birth Information: Birth Date --
+              -- 4083587: Date of birth --
+             
+              -- Concepts to keep --
+              -- 42628400: Follow-up service --
+              -- 1332785: Smoking more cigarettes or vaping more --
+              -- 43533330: Left main coronary artery --
+              (1, 1, 1585259, 0, 0, 0, 0, 0, 0, '2020-01-01'),
+              (2, 1, 0, 1585259, 0, 0, 0, 0, 0, '2020-01-01'),
+              (3, 1, 0, 0, 4083587, 0, 0, 0, 0, '2020-01-01'),
+              (4, 1, 0, 0, 0, 4083587, 0, 0, 0, '2020-01-01'),
+              (5, 1, 1585259, 0, 0, 0, 44803087, 0, 0, '2020-01-01'),
+              (6, 1, 42628400, 0, 0, 0, 0, 0, 0, '2020-01-01'),
+              (7, 1, 0, 1332785, 0, 0, 0, 0, 0, '2020-01-01'),
+              (8, 1, 0, 0, 43533330, 0, 0, 0, 0, '2020-01-01'),
+              (9, 1, 0, 0, 0, 43533330, 0, 0, 0, '2020-01-01'),
+              (10, 1, 42628400, 1332785, 43533330, 43533330, 0, 0, 0, '2020-01-01')
             """)
 
         insert_observation_query = observation_data_template.render(

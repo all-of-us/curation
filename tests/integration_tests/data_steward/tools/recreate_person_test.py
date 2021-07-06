@@ -26,13 +26,14 @@ VALUES
 
 POPULATE_PERSON_EXT = JINJA_ENV.from_string("""
 INSERT INTO `{{person_ext.project}}.{{person_ext.dataset_id}}.person_ext`
-(person_id, state_of_residence_concept_id, state_of_residence_source_value)
+(person_id, state_of_residence_concept_id, state_of_residence_source_value, sex_at_birth_concept_id, 
+    sex_at_birth_source_concept_id, sex_at_birth_source_value)
 VALUES 
-    (1, 1585266, 'PIIState_CA'),
-    (2, 1585297, 'PIIState_NY'),
-    (3, 1585286, 'PIIState_MA'),
-    (4, 1585297, 'PIIState_NY'),
-    (5, 1585266, 'PIIState_CA')
+    (1, 1585266, 'PIIState_CA', 123, 101, 'gender'),
+    (2, 1585297, 'PIIState_NY', 234, 202, 'gender'),
+    (3, 1585286, 'PIIState_MA', 345, 303, 'gender'),
+    (4, 1585297, 'PIIState_NY', 456, 404, 'gender'),
+    (5, 1585266, 'PIIState_CA', 567, 505, 'gender')
 """)
 
 
@@ -83,18 +84,22 @@ class RecreatePersonTest(TestCase):
         recreate_person.update_person(self.client, self.project_id,
                                       self.dataset_id)
         new_person_cols = (
-            f'SELECT state_of_residence_concept_id, state_of_residence_source_value '
+            f'SELECT state_of_residence_concept_id, state_of_residence_source_value, '
+            f'sex_at_birth_concept_id, sex_at_birth_source_concept_id, sex_at_birth_source_value '
             f'FROM {self.project_id}.{self.dataset_id}.person')
         person_ext_cols = (
-            f'SELECT state_of_residence_concept_id, state_of_residence_source_value '
+            f'SELECT state_of_residence_concept_id, state_of_residence_source_value, '
+            f'sex_at_birth_concept_id, sex_at_birth_source_concept_id, sex_at_birth_source_value '
             f'FROM {self.project_id}.{self.dataset_id}.person_ext')
         new_person_vals = self.client.query(new_person_cols).to_dataframe()
         person_ext_vals = self.client.query(person_ext_cols).to_dataframe()
         testing.assert_frame_equal(
             new_person_vals.set_index(
-                'state_of_residence_concept_id').sort_index(),
+                ['state_of_residence_concept_id',
+                 'sex_at_birth_concept_id']).sort_index(),
             person_ext_vals.set_index(
-                'state_of_residence_concept_id').sort_index())
+                ['state_of_residence_concept_id',
+                 'sex_at_birth_concept_id']).sort_index())
 
     def tearDown(self) -> None:
         for table in self.table_ids:

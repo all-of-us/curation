@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.4.2
+#       jupytext_version: 1.3.0
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -40,7 +40,7 @@ table_sheets = []
 
 for file in file_names:
     for sheet in sheet_names:
-        s = pd.read_excel(file, sheet)
+        s = pd.read_excel(file, sheet, index_col=0)
         table_sheets.append(s)
 
 date_cols = table_sheets[0].columns
@@ -75,6 +75,7 @@ fig, ax = plt.subplots(figsize=(18, 12))
 sns.heatmap(new_table_sheets['All Tables'], annot=True, annot_kws={"size": 10},
             fmt='g', linewidths=.5, ax=ax, yticklabels=hpo_id_cols,
             xticklabels=date_cols, cmap="YlGnBu")
+ax.set_ylim(len(hpo_id_cols)-0.1, 0)
 
 ax.set_title("Number of ACHILLES Heel Errors", size=14)
 # plt.savefig("achilles_heel_errors_all_sites.jpg")
@@ -92,23 +93,23 @@ site_name_list = x1.sheet_names
 num_hpo_sheets = len(site_name_list)
 
 print(f"There are {num_hpo_sheets} HPO sheets.")
+# -
 
-# +
-name_of_interest = 'aggregate_info'
-
-if name_of_interest not in site_name_list:
-    raise ValueError("Name not found in the list of HPO site names.")    
-
-for idx, site in enumerate(site_name_list):
-    if site == name_of_interest:
-        idx_of_interest = idx
+# name_of_interest = 'aggregate_info'
+#
+# if name_of_interest not in site_name_list:
+#     raise ValueError("Name not found in the list of HPO site names.")    
+#
+# for idx, site in enumerate(site_name_list):
+#     if site == name_of_interest:
+#         idx_of_interest = idx
 
 # +
 hpo_sheets = []
 
 for file in file_names_hpo_sheets:
     for sheet in site_name_list:
-        s = pd.read_excel(file, sheet)
+        s = pd.read_excel(file, sheet, index_col=0)
         hpo_sheets.append(s)
         
 
@@ -119,11 +120,9 @@ date_cols = (list(date_cols))
 
 # +
 new_hpo_sheets = []
-start_idx = 0
 
 for sheet in hpo_sheets:
     sheet_cols = sheet.columns
-    sheet_cols = sheet_cols[start_idx:]
     new_df = pd.DataFrame(columns=sheet_cols)
 
     for col in sheet_cols:
@@ -136,65 +135,22 @@ for sheet in hpo_sheets:
 
 # ### Showing for one particular site
 
-# +
-fig, ax = plt.subplots(figsize=(9, 6))
-sns.heatmap(new_hpo_sheets[idx_of_interest], annot=True, annot_kws={"size": 14},
-            fmt='g', linewidths=.5, ax=ax, yticklabels=table_id_cols,
-            xticklabels=date_cols, cmap="YlGnBu")
+for i in range(len(site_name_list)):
+    name_of_interest = site_name_list[i]
+    idx_of_interest = i
 
-ax.set_title(f"Number of Achilles Heel Errors for {name_of_interest}", size=14)
+    fig, ax = plt.subplots(figsize=(9, 6))
+    data = new_hpo_sheets[idx_of_interest]
+    mask = data.isnull()
+    g = sns.heatmap(data, annot=True, annot_kws={"size": 14},
+                fmt='g', linewidths=.5, ax=ax, yticklabels=table_id_cols,
+                xticklabels=date_cols, cmap="YlGnBu", mask=mask)
+    g.set_facecolor("lightgrey")
 
-plt.tight_layout()
-img_name = name_of_interest + "_achilles_errors.png"
+    ax.set_title(f"Number of Achilles Heel Errors for {name_of_interest}", size=14)
+    ax.set_ylim(len(table_id_cols)-0.1, 0)
 
-plt.savefig(img_name)
-# -
+    plt.tight_layout()
+    img_name = name_of_interest + "_achilles_errors.png"
 
-dates = new_hpo_sheets[idx_of_interest].columns
-
-# ## Want a line chart over time.
-
-times=new_hpo_sheets[idx_of_interest].columns.tolist()
-
-# +
-success_rates = {}
-
-for table_num, table_type in enumerate(table_id_cols):
-    table_metrics_over_time = new_hpo_sheets[idx_of_interest].iloc[table_num]
-    success_rates[table_type] = table_metrics_over_time.values.tolist()
-
-date_idxs = []
-for x in range(len(dates)):
-    date_idxs.append(x)
-
-# +
-for table, values_over_time in success_rates.items():
-    sample_list = [x for x in success_rates[table] if str(x) != 'nan']
-    if len(sample_list) > 1:
-        plt.plot(date_idxs, success_rates[table], '--', label=table)
-    
-for table, values_over_time in success_rates.items():
-    non_nan_idx = 0
-    new_lst = []
-    
-    for idx, x in enumerate(success_rates[table]):
-        if str(x) != 'nan':
-            new_lst.append(x)
-            non_nan_idx = idx
-    
-    if len(new_lst) == 1:
-        plt.plot(date_idxs[non_nan_idx], new_lst, 'o', label=table)
-
-plt.legend(loc="upper left", bbox_to_anchor=(1,1))
-plt.title(f"{name_of_interest} ACHILLES Heel Errors Over Time")
-plt.ylabel("Number of ACHILLES Heel Errors")
-plt.xlabel("")
-plt.xticks(date_idxs, times, rotation = 'vertical')
-
-handles, labels = ax.get_legend_handles_labels()
-lgd = ax.legend(handles, labels, loc='upper center', bbox_to_anchor=(0.5,-0.1))
-
-img_name = name_of_interest + "_achilles_errors_line_graph.jpg"
-# plt.savefig(img_name, bbox_extraartist=(lgd,), bbox_inches='tight')
-# -
-
+    plt.savefig(img_name)
