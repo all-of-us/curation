@@ -15,10 +15,12 @@ The intent of this module is to check that GCR access token is generated properl
 # Python imports
 from unittest import TestCase
 from unittest.mock import patch, MagicMock
+from numpy.core.numeric import NaN
 
 # Third Party imports
 import pandas
 import pandas.testing
+import numpy as np
 
 # Project imports
 import utils.participant_summary_requests as psr
@@ -62,6 +64,12 @@ class ParticipantSummaryRequestsTest(TestCase):
             'foo_street_address_2', 'foo_city', 'foo_state', '12345',
             '1112223333', 'foo_email', '1900-01-01', 'SexAtBirth_Male'
         ], [444, 'bar_first', 'bar_last']]
+
+        self.updated_org_participant_information = [[
+            333, 'foo_first', 'foo_middle', 'foo_last', 'foo_street_address',
+            'foo_street_address_2', 'foo_city', 'foo_state', '12345',
+            '1112223333', 'foo_email', '1900-01-01', 'SexAtBirth_Male'
+        ], [444, 'bar_first', np.nan, 'bar_last']]
 
         self.fake_dataframe = pandas.DataFrame(
             self.updated_deactivated_participants, columns=self.columns)
@@ -228,6 +236,43 @@ class ParticipantSummaryRequestsTest(TestCase):
 
         # Tests
         actual_dataframe = psr.get_site_participant_information(
+            self.project_id, self.fake_hpo)
+
+        # Post conditions
+        pandas.testing.assert_frame_equal(expected_dataframe, actual_dataframe)
+
+    @patch('utils.participant_summary_requests.get_access_token')
+    @patch('utils.participant_summary_requests.get_participant_data')
+    def test_get_org_participant_information(self, mock_get_participant_data,
+                                             mock_token):
+
+        # Pre conditions
+        updated_fields = {
+            'participantId': 'person_id',
+            'firstName': 'first_name',
+            'middleName': 'middle_name',
+            'lastName': 'last_name',
+            'streetAddress': 'street_address',
+            'streetAddress2': 'street_address2',
+            'city': 'city',
+            'state': 'state',
+            'zipCode': 'zip_code',
+            'phoneNumber': 'phone_number',
+            'email': 'email',
+            'dateOfBirth': 'date_of_birth',
+            'sex': 'sex'
+        }
+
+        mock_get_participant_data.return_value = self.site_participant_info_data
+
+        expected_dataframe = pandas.DataFrame(
+            self.updated_org_participant_information,
+            columns=psr.FIELDS_OF_INTEREST_FOR_VALIDATION)
+
+        expected_dataframe = expected_dataframe.rename(columns=updated_fields)
+
+        # Tests
+        actual_dataframe = psr.get_org_participant_information(
             self.project_id, self.fake_hpo)
 
         # Post conditions
