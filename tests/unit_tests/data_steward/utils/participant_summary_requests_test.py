@@ -22,6 +22,7 @@ import pandas.testing
 
 # Project imports
 import utils.participant_summary_requests as psr
+from common import PS_API_VALUES
 
 
 class ParticipantSummaryRequestsTest(TestCase):
@@ -280,17 +281,22 @@ class ParticipantSummaryRequestsTest(TestCase):
                           self.fake_dataframe, None, self.destination_table)
 
         # test
-        actual_job_id = psr.store_participant_data(self.fake_dataframe,
-                                                   self.project_id,
-                                                   self.destination_table)
+        actual_job_id = psr.store_participant_data(
+            self.fake_dataframe,
+            self.project_id,
+            self.destination_table,
+            schema=psr.get_table_schema(PS_API_VALUES))
 
         mock_bq_get_client.assert_called_once_with(self.project_id)
-        mock_bq_client.load_table_from_dataframe.assert_called_once_with(
-            self.fake_dataframe,
-            self.destination_table,
-            job_config=mock_load_config)
+        mod_fake_dataframe = psr.set_dataframe_date_fields(
+            self.fake_dataframe, psr.get_table_schema(PS_API_VALUES))
+        # mock_bq_client.load_table_from_dataframe.assert_called_once_with(
+        #     mod_fake_dataframe, self.destination_table, job_config=mock_load_config)
+        pandas.testing.assert_frame_equal(
+            mock_bq_client.load_table_from_dataframe.call_args[0][0],
+            mod_fake_dataframe)
         mock_load_job_config.assert_called_once_with(
-            schema=psr.get_table_schema('_deactivated_participants'))
+            schema=psr.get_table_schema(PS_API_VALUES))
         mock_load_job.result.assert_called_once_with()
         self.assertEqual(actual_job_id, fake_job_id)
 

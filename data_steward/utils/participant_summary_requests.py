@@ -99,10 +99,8 @@ def get_deactivated_participants(api_project_id, columns):
     """
     Fetches all deactivated participants via API if suspensionStatus = 'NO_CONTACT'
     and stores all the deactivated participants in a BigQuery dataset table
-
     :param api_project_id: The RDR project that contains participant summary data
     :param columns: columns to be pushed to a table in BigQuery in the form of a list of strings
-
     :return: returns dataframe of deactivated participants
     """
 
@@ -136,16 +134,15 @@ def get_deactivated_participants(api_project_id, columns):
     deactivated_participants = []
     # loop over participant summary records, insert participant data in same order as deactivated_participant_cols
     for entry in participant_data:
-        resource = entry.get('resource', {})
-        items = {
-            k: v
-            for k, v in resource.items()
-            if k in deactivated_participants_cols
-        }
-        deactivated_participants.append(items)
+        item = []
+        for col in deactivated_participants_cols:
+            for key, val in entry.get('resource', {}).items():
+                if col == key:
+                    item.append(val)
+        deactivated_participants.append(item)
 
-    df = pandas.DataFrame.from_records(deactivated_participants,
-                                       columns=deactivated_participants_cols)
+    df = pandas.DataFrame(deactivated_participants,
+                          columns=deactivated_participants_cols)
 
     # Converts column `suspensionTime` from string to timestamp
     if 'suspensionTime' in deactivated_participants_cols:
@@ -178,10 +175,8 @@ def get_deactivated_participants(api_project_id, columns):
 def get_site_participant_information(project_id, hpo_id):
     """
     Fetches the necessary participant information for a particular site.
-
     :param project_id: The RDR project hosting the API
     :param hpo_id: awardee name of the site
-
     :return: a dataframe of participant information
     :raises: RuntimeError if the project_id and hpo_id are not strings
     :raises: TimeoutError if response takes longer than 10 minutes
@@ -224,16 +219,15 @@ def get_site_participant_information(project_id, hpo_id):
     # Loop over participant summary records, insert participant data in
     # the same order as participant_information_cols
     for entry in participant_data:
-        resource = entry.get('resource', {})
-        items = {
-            k: v
-            for k, v in resource.items()
-            if k in participant_information_cols
-        }
-        participant_information.append(items)
+        item = []
+        for col in participant_information_cols:
+            for key, val in entry.get('resource', {}).items():
+                if col == key:
+                    item.append(val)
+        participant_information.append(item)
 
-    df = pandas.DataFrame.from_records(participant_information,
-                                       columns=participant_information_cols)
+    df = pandas.DataFrame(participant_information,
+                          columns=participant_information_cols)
 
     # Transforms participantId to an integer string
     df['participantId'] = df['participantId'].apply(participant_id_to_int)
@@ -375,6 +369,7 @@ def store_participant_data(df, project_id, destination_table, schema=None):
     :param df: pandas dataframe created to hold participant data fetched from ParticipantSummary API
     :param project_id: identifies the project
     :param destination_table: name of the table to be written in the form of dataset.tablename
+    :param schema: a list of SchemaField objects corresponding to the destination table
 
     :return: returns a dataset with the participant data
     """
@@ -388,6 +383,7 @@ def store_participant_data(df, project_id, destination_table, schema=None):
     if not schema:
         schema = get_table_schema(destination_table.split('.')[-1])
 
+    # Dataframe data fields must be of type datetime
     df = set_dataframe_date_fields(df, schema)
 
     load_job_config = LoadJobConfig(schema=schema)
