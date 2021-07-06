@@ -1,21 +1,6 @@
 #!/usr/bin/env bash
 
-USAGE="start.sh --key_file <Path to service account key>"
-
-while true; do
-  case "$1" in
-    --key_file) KEY_FILE=$2; shift 2;;
-    --app_id) APP_ID=$2; shift 2;;
-    -- ) shift; break ;;
-    * ) break ;;
-  esac
-done
-
-if [[ -z "${KEY_FILE}" ]]
-then
-  echo "Usage: $USAGE"
-  exit 1
-fi
+USAGE="start.sh"
 
 # Determine separator to use for directories and PYTHONPATH
 # only tested on Git Bash for Windows
@@ -26,19 +11,8 @@ fi
 
 NOTEBOOKS_DIR="$( cd "$(dirname "$0")" ; pwd -P )"
 BASE_DIR="$( cd "${NOTEBOOKS_DIR}" && cd .. && pwd )"
+
 export PYTHONPATH="${PYTHONPATH}${SEP}${BASE_DIR}"
-export GOOGLE_APPLICATION_CREDENTIALS="${KEY_FILE}"
-
-export APPLICATION_ID=$(cat ${KEY_FILE} | python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);')
-export PROJECT_ID="${APPLICATION_ID}"
-
-ACCOUNT=$(cat ${KEY_FILE} | python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["client_email"]);')
-
-echo "Activating service account ${ACCOUNT} for application ID ${APPLICATION_ID}..."
-
-gcloud auth activate-service-account ${ACCOUNT} --key-file=${KEY_FILE}
-gcloud config set project "${APPLICATION_ID}"
-
 echo "Which python: $(which python)"
 
 # The path set to /c/path/to/file gets converted to C:\\c\\path\\to\\file
