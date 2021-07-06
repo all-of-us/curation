@@ -11,7 +11,6 @@ import app_identity
 from validation import email_notification as en
 from validation.main import get_eastern_time
 from constants.validation import email_notification as consts
-from tests.test_util import FIVE_PERSON_RESULTS_FILE
 
 
 class EmailNotificationUnitTest(TestCase):
@@ -146,11 +145,7 @@ class EmailNotificationUnitTest(TestCase):
             mock_fake_info_1, mock_fake_info_2, mock_fake_info_3,
             mock_fake_info_4
         ]
-        # The five_person_results.html file referenced below is removed. To generate it, please run
-        # integration_tests.data_steward.validation.main_test.test_html_report_five_person
         results_html_str = ''
-        # with open(FIVE_PERSON_RESULTS_FILE, 'r') as f:
-        #     results_html_str = f.read()
         email_msg = en.generate_email_message(self.hpo_id_1, results_html_str,
                                               self.fake_html_path,
                                               self.report_data)
@@ -162,9 +157,9 @@ class EmailNotificationUnitTest(TestCase):
         self.assertDictEqual(email_msg['images'][0], expected_image)
         self.assertTrue(email_msg['auto_html'])
         self.assertEqual(email_msg['from_email'], consts.NO_REPLY_ADDRESS)
-        self.assertEqual(email_msg['from_name'], consts.DATA_CURATION)
+        self.assertEqual(email_msg['from_name'], consts.EHR_OPERATIONS)
         self.assertEqual(email_msg['headers']['Reply-To'],
-                         consts.DATA_CURATION_LISTSERV)
+                         consts.EHR_OPS_ZENDESK)
         self.assertFalse(email_msg['important'])
         self.assertTrue(email_msg['preserve_recipients'])
         self.assertEqual(email_msg['subject'],

@@ -47,16 +47,6 @@
                     "WHERE observation_source_concept_id = 1585249  AND state IS NULL))"
                 ],
                 "into": 2000000011
-            },
-            {
-                "comment": "generalize the PIIState for participants with a low participant total",
-                "qualifier": "IN",
-                "values": [
-                    1585299, 1585304, 1585284, 1585315, 1585271, 1585263,
-                    1585306, 1585274, 1585270, 1585411, 1585313, 1585409,
-                    1585262, 1585309, 1585307, 1585275
-                ],
-                "into": 2000000011
             }
         ],
         "SEXUAL-ORIENTATION":[
@@ -200,6 +190,13 @@
         "day": "SELECT date_shift from :table where :key_field=:key_value ",
         "date": "DATE_SUB( CAST(:FIELD AS DATE), INTERVAL (:SHIFT) DAY) AS :FIELD",
         "datetime": "TIMESTAMP_SUB( CAST(:FIELD AS TIMESTAMP), INTERVAL (:SHIFT) DAY) AS :FIELD"
+    },
+    {
+         "_id": "compute",
+         "id": ["(SELECT research_id FROM :idataset._deid_map WHERE _deid_map.person_id = :value_field) as :FIELD"],
+         "month": ["EXTRACT (MONTH FROM :value_field) AS :FIELD"],
+         "day": ["EXTRACT (DAY FROM :value_field) AS :FIELD"],
+         "year": ["EXTRACT (YEAR FROM :value_field) AS :FIELD"]
     },
     {
         "_id": "dml_statements",

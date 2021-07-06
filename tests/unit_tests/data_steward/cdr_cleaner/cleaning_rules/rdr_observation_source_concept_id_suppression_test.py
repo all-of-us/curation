@@ -71,13 +71,7 @@ class ObservationSourceConceptIDRowSuppressionTest(unittest.TestCase):
             clean_consts.QUERY:
                 DROP_QUERY_TMPL.render(project=self.project_id,
                                        dataset=self.dataset_id,
-                                       obs_concepts=OBS_SRC_CONCEPTS),
-            clean_consts.DESTINATION_TABLE:
-                OBSERVATION,
-            clean_consts.DESTINATION_DATASET:
-                self.dataset_id,
-            clean_consts.DISPOSITION:
-                WRITE_TRUNCATE
+                                       obs_concepts=OBS_SRC_CONCEPTS)
         }]
 
         self.assertEqual(result_list, expected_list)

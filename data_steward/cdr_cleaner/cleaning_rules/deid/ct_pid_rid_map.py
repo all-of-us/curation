@@ -9,7 +9,7 @@ import google.cloud.bigquery as gbq
 
 # Project imports
 from cdr_cleaner.cleaning_rules.deid.pid_rid_map import PIDtoRID
-from common import JINJA_ENV
+from common import JINJA_ENV, DEID_MAP
 from resources import CDM_TABLES
 
 LOGGER = logging.getLogger(__name__)
@@ -29,8 +29,7 @@ class CtPIDtoRID(PIDtoRID):
     Use RID instead of PID for OMOP tables
     """
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id,
-                 mapping_dataset_id, mapping_table_id):
+    def __init__(self, project_id, dataset_id, sandbox_dataset_id):
         """
         Initialize the class with proper info.
 
@@ -41,8 +40,8 @@ class CtPIDtoRID(PIDtoRID):
         super().__init__(project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
-                         mapping_dataset_id=mapping_dataset_id,
-                         mapping_table_id=mapping_table_id,
+                         mapping_dataset_id=sandbox_dataset_id,
+                         mapping_table_id=DEID_MAP,
                          affected_tables=CDM_TABLES,
                          issue_numbers=ISSUE_NUMBERS)
 
@@ -66,40 +65,17 @@ if __name__ == '__main__':
     import cdr_cleaner.args_parser as parser
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
-    mapping_dataset_arg = {
-        parser.SHORT_ARGUMENT: '-m',
-        parser.LONG_ARGUMENT: '--mapping_dataset_id',
-        parser.ACTION: 'store',
-        parser.DEST: 'mapping_dataset_id',
-        parser.HELP: 'Identifies the dataset containing pid-rid map table',
-        parser.REQUIRED: True
-    }
-
-    mapping_table_arg = {
-        parser.SHORT_ARGUMENT: '-t',
-        parser.LONG_ARGUMENT: '--mapping_table_id',
-        parser.ACTION: 'store',
-        parser.DEST: 'mapping_table_id',
-        parser.HELP: 'Identifies the pid-rid map table, typically _deid_map',
-        parser.REQUIRED: True
-    }
-
-    ARGS = parser.default_parse_args([mapping_dataset_arg, mapping_table_arg])
+    ARGS = parser.default_parse_args()
 
     if ARGS.list_queries:
         clean_engine.add_console_logging()
-        query_list = clean_engine.get_query_list(
-            ARGS.project_id,
-            ARGS.dataset_id,
-            ARGS.sandbox_dataset_id, [(CtPIDtoRID,)],
-            mapping_dataset_id=ARGS.mapping_dataset_id,
-            mapping_table_id=ARGS.mapping_table_id)
+        query_list = clean_engine.get_query_list(ARGS.project_id,
+                                                 ARGS.dataset_id,
+                                                 ARGS.sandbox_dataset_id,
+                                                 [(CtPIDtoRID,)])
         for query in query_list:
             LOGGER.info(query)
     else:
         clean_engine.add_console_logging(ARGS.console_log)
-        clean_engine.clean_dataset(ARGS.project_id,
-                                   ARGS.dataset_id,
-                                   ARGS.sandbox_dataset_id, [(CtPIDtoRID,)],
-                                   mapping_dataset_id=ARGS.mapping_dataset_id,
-                                   mapping_table_id=ARGS.mapping_table_id)
+        clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
+                                   ARGS.sandbox_dataset_id, [(CtPIDtoRID,)])

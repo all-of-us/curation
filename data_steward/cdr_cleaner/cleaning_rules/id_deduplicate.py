@@ -8,6 +8,7 @@ import logging
 import cdm
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
+from cdr_cleaner.clean_cdr_utils import get_tables_in_dataset
 from common import JINJA_ENV
 from constants.bq_utils import WRITE_TRUNCATE
 
@@ -79,7 +80,7 @@ class DeduplicateIdColumn(BaseCleaningRule):
 
         sandbox_queries = []
         # iterate through the list of CDM tables with an id column
-        for table_name in cdm.tables_to_map():
+        for table_name in self.affected_tables:
             sandbox_queries.append({
                 cdr_consts.QUERY:
                     ID_DE_DUP_SANDBOX_QUERY_TEMPLATE.render(
@@ -96,7 +97,7 @@ class DeduplicateIdColumn(BaseCleaningRule):
 
         queries = []
         # iterate through the list of CDM tables with an id column
-        for table_name in cdm.tables_to_map():
+        for table_name in self.affected_tables:
             queries.append({
                 cdr_consts.QUERY:
                     ID_DE_DUP_QUERY_TEMPLATE.render(project_id=self.project_id,
@@ -119,7 +120,9 @@ class DeduplicateIdColumn(BaseCleaningRule):
         ]
 
     def setup_rule(self, client, *args, **keyword_args):
-        pass
+        self.affected_tables = get_tables_in_dataset(client, self.project_id,
+                                                     self.dataset_id,
+                                                     self.affected_tables)
 
     def setup_validation(self, client, *args, **keyword_args):
         pass

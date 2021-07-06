@@ -2,8 +2,7 @@ import re
 import unittest
 from collections import OrderedDict
 
-import mock
-from mock import patch
+from mock import patch, MagicMock
 
 import cdr_cleaner.cleaning_rules.domain_alignment as domain_alignment
 from cdr_cleaner.cleaning_rules.domain_alignment import (
@@ -54,11 +53,9 @@ class DomainAlignmentTest(unittest.TestCase):
     def tearDown(self):
         self.mock_domain_table_names_patcher.stop()
 
-    @mock.patch(
-        'cdr_cleaner.cleaning_rules.domain_alignment.resolve_field_mappings')
-    @mock.patch('resources.get_domain_id_field')
-    @mock.patch(
-        'cdr_cleaner.cleaning_rules.domain_mapping.exist_domain_mappings')
+    @patch('cdr_cleaner.cleaning_rules.domain_alignment.resolve_field_mappings')
+    @patch('resources.get_domain_id_field')
+    @patch('cdr_cleaner.cleaning_rules.domain_mapping.exist_domain_mappings')
     def test_parse_reroute_domain_query(self, mock_exist_domain_mappings,
                                         mock_get_domain_id_field,
                                         mock_resolve_field_mappings):
@@ -83,36 +80,31 @@ class DomainAlignmentTest(unittest.TestCase):
                                                     self.condition_table)
 
         expected_query = domain_alignment. \
-            REROUTE_DOMAIN_RECORD_QUERY. \
-            format(project_id=self.project_id,
+            SELECT_DOMAIN_RECORD_QUERY. \
+            render(project_id=self.project_id,
                    dataset_id=self.dataset_id,
-                   src_table=self.condition_table,
                    dest_table=self.condition_table,
-                   src_domain_id_field=self.condition_occurrence_id,
                    dest_domain_id_field=self.condition_occurrence_id,
-                   _logging_domain_alignment=domain_alignment.DOMAIN_ALIGNMENT_TABLE_NAME,
-                   field_mapping_expr=self.condition_condition_alias
-                   )
+                   field_mapping_expr=self.condition_condition_alias)
         expected_query += domain_alignment.UNION_ALL
-        expected_query += domain_alignment. \
-            REROUTE_DOMAIN_RECORD_QUERY. \
-            format(project_id=self.project_id,
-                   dataset_id=self.dataset_id,
-                   src_table=self.procedure_table,
-                   dest_table=self.condition_table,
-                   src_domain_id_field=self.procedure_occurrence_id,
-                   dest_domain_id_field=self.condition_occurrence_id,
-                   _logging_domain_alignment=domain_alignment.DOMAIN_ALIGNMENT_TABLE_NAME,
-                   field_mapping_expr=self.condition_procedure_alias
-                   )
+        expected_query += domain_alignment.REROUTE_DOMAIN_RECORD_QUERY.render(
+            project_id=self.project_id,
+            dataset_id=self.dataset_id,
+            src_table=self.procedure_table,
+            dest_table=self.condition_table,
+            src_domain_id_field=self.procedure_occurrence_id,
+            dest_domain_id_field=self.condition_occurrence_id,
+            _logging_domain_alignment=domain_alignment.
+            DOMAIN_ALIGNMENT_TABLE_NAME,
+            field_mapping_expr=self.condition_procedure_alias)
 
         self.assertEqual(
             re.sub(self.chars_to_replace, self.single_space, actual_query),
             re.sub(self.chars_to_replace, self.single_space, expected_query))
 
-    @mock.patch('resources.get_domain')
-    @mock.patch('resources.get_domain_id_field')
-    @mock.patch('resources.get_domain_concept_id')
+    @patch('resources.get_domain')
+    @patch('resources.get_domain_id_field')
+    @patch('resources.get_domain_concept_id')
     def test_parse_mapping_id_query_for_same_domains(self,
                                                      mock_get_domain_concept_id,
                                                      mock_get_domain_id_field,
@@ -128,7 +120,7 @@ class DomainAlignmentTest(unittest.TestCase):
         actual_query = domain_alignment.parse_domain_mapping_query_for_same_domains(
             self.project_id, self.dataset_id)
 
-        expected_query = domain_alignment.DOMAIN_REROUTE_INCLUDED_INNER_QUERY.format(
+        expected_query = domain_alignment.DOMAIN_REROUTE_INCLUDED_INNER_QUERY.render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
             src_table=self.condition_table,
@@ -140,7 +132,7 @@ class DomainAlignmentTest(unittest.TestCase):
                 [self.condition, domain_alignment.METADATA_DOMAIN])))
 
         expected_query += domain_alignment.UNION_ALL
-        expected_query += domain_alignment.DOMAIN_REROUTE_INCLUDED_INNER_QUERY.format(
+        expected_query += domain_alignment.DOMAIN_REROUTE_INCLUDED_INNER_QUERY.render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
             src_table=self.procedure_table,
@@ -155,13 +147,11 @@ class DomainAlignmentTest(unittest.TestCase):
             re.sub(self.chars_to_replace, self.single_space, actual_query),
             re.sub(self.chars_to_replace, self.single_space, expected_query))
 
-    @mock.patch(
-        'cdr_cleaner.cleaning_rules.domain_mapping.get_rerouting_criteria')
-    @mock.patch(
-        'cdr_cleaner.cleaning_rules.domain_mapping.exist_domain_mappings')
-    @mock.patch('resources.get_domain_concept_id')
-    @mock.patch('resources.get_domain_id_field')
-    @mock.patch('resources.get_domain')
+    @patch('cdr_cleaner.cleaning_rules.domain_mapping.get_rerouting_criteria')
+    @patch('cdr_cleaner.cleaning_rules.domain_mapping.exist_domain_mappings')
+    @patch('resources.get_domain_concept_id')
+    @patch('resources.get_domain_id_field')
+    @patch('resources.get_domain')
     def test_parse_domain_mapping_query_cross_domain(
         self, mock_get_domain, mock_get_domain_id_field,
         mock_get_domain_concept_id, mock_exist_domain_mappings,
@@ -179,7 +169,7 @@ class DomainAlignmentTest(unittest.TestCase):
             dataset_id=self.dataset_id,
             dest_table=self.condition_table)
 
-        expected_inner_query = domain_alignment.DOMAIN_REROUTE_INCLUDED_INNER_QUERY.format(
+        expected_inner_query = domain_alignment.DOMAIN_REROUTE_INCLUDED_INNER_QUERY.render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
             src_table=self.procedure_table,
@@ -191,13 +181,13 @@ class DomainAlignmentTest(unittest.TestCase):
 
         expected_inner_query += domain_alignment.AND + self.rerouting_criteria
 
-        expected_maximum_id_query = domain_alignment.MAXIMUM_DOMAIN_ID_QUERY.format(
+        expected_maximum_id_query = domain_alignment.MAXIMUM_DOMAIN_ID_QUERY.render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
             domain_table=self.condition_table,
             domain_id_field=self.condition_occurrence_id)
 
-        expected_query = domain_alignment.DOMAIN_MAPPING_OUTER_QUERY.format(
+        expected_query = domain_alignment.DOMAIN_MAPPING_OUTER_QUERY.render(
             union_query=expected_inner_query,
             domain_query=expected_maximum_id_query)
 
@@ -205,14 +195,14 @@ class DomainAlignmentTest(unittest.TestCase):
             re.sub(self.chars_to_replace, self.single_space, actual_query),
             re.sub(self.chars_to_replace, self.single_space, expected_query))
 
-    @mock.patch('resources.get_domain_id_field')
+    @patch('resources.get_domain_id_field')
     def test_parse_domain_mapping_query_for_excluded_records(
         self, mock_get_domain_id_field):
         mock_get_domain_id_field.side_effect = [
             self.condition_occurrence_id, self.procedure_occurrence_id
         ]
 
-        expected_query = domain_alignment.DOMAIN_REROUTE_EXCLUDED_INNER_QUERY.format(
+        expected_query = domain_alignment.DOMAIN_REROUTE_EXCLUDED_INNER_QUERY.render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
             src_table=self.condition_table,
@@ -221,7 +211,7 @@ class DomainAlignmentTest(unittest.TestCase):
 
         expected_query += domain_alignment.UNION_ALL
 
-        expected_query += domain_alignment.DOMAIN_REROUTE_EXCLUDED_INNER_QUERY.format(
+        expected_query += domain_alignment.DOMAIN_REROUTE_EXCLUDED_INNER_QUERY.render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
             src_table=self.procedure_table,
@@ -235,11 +225,11 @@ class DomainAlignmentTest(unittest.TestCase):
             re.sub(self.chars_to_replace, self.single_space, actual_query),
             re.sub(self.chars_to_replace, self.single_space, expected_query))
 
-    @mock.patch('cdr_cleaner.cleaning_rules.field_mapping.is_field_required')
-    @mock.patch('cdr_cleaner.cleaning_rules.domain_mapping.get_value_mappings')
-    @mock.patch(
+    @patch('cdr_cleaner.cleaning_rules.field_mapping.is_field_required')
+    @patch('cdr_cleaner.cleaning_rules.domain_mapping.get_value_mappings')
+    @patch(
         'cdr_cleaner.cleaning_rules.domain_mapping.value_requires_translation')
-    @mock.patch('cdr_cleaner.cleaning_rules.domain_mapping.get_field_mappings')
+    @patch('cdr_cleaner.cleaning_rules.domain_mapping.get_field_mappings')
     def test_resolve_field_mappings_value_requires_translation(
         self, mock_get_field_mappings, mock_value_requires_translation,
         mock_get_value_mappings, mock_is_field_required):
@@ -268,10 +258,10 @@ class DomainAlignmentTest(unittest.TestCase):
             re.sub(self.chars_to_replace, self.single_space, expected),
             re.sub(self.chars_to_replace, self.single_space, actual))
 
-    @mock.patch('cdr_cleaner.cleaning_rules.domain_mapping.get_value_mappings')
-    @mock.patch(
+    @patch('cdr_cleaner.cleaning_rules.domain_mapping.get_value_mappings')
+    @patch(
         'cdr_cleaner.cleaning_rules.domain_mapping.value_requires_translation')
-    @mock.patch('cdr_cleaner.cleaning_rules.domain_mapping.get_field_mappings')
+    @patch('cdr_cleaner.cleaning_rules.domain_mapping.get_field_mappings')
     def test_resolve_field_mappings(self, mock_get_field_mappings,
                                     mock_value_requires_translation,
                                     mock_get_value_mappings):
@@ -324,28 +314,25 @@ class DomainAlignmentTest(unittest.TestCase):
         self.assertEqual(mock_value_requires_translation.call_count, 2)
         self.assertEqual(mock_get_value_mappings.call_count, 1)
 
-    @mock.patch(
+    @patch(
         'cdr_cleaner.cleaning_rules.domain_alignment.parse_domain_mapping_query_for_excluded_records'
     )
-    @mock.patch(
+    @patch(
         'cdr_cleaner.cleaning_rules.domain_alignment.parse_domain_mapping_query_for_same_domains'
     )
-    @mock.patch(
+    @patch(
         'cdr_cleaner.cleaning_rules.domain_alignment.parse_domain_mapping_query_cross_domain'
     )
-    @mock.patch(
-        'cdr_cleaner.cleaning_rules.domain_alignment.bq_utils.create_standard_table'
-    )
+    @patch('cdr_cleaner.cleaning_rules.domain_alignment.bq.get_client')
+    @patch('cdr_cleaner.cleaning_rules.domain_alignment.bq.create_tables')
     def test_get_domain_mapping_queries(
-        self, mock_create_standard_table,
+        self, mock_create_tables, mock_bq_client,
         mock_parse_domain_mapping_query_cross_domain,
         mock_parse_domain_mapping_query_for_same_domains,
         mock_parse_domain_mapping_query_for_excluded_records):
-        mock_create_standard_table.return_value = {
-            bq_consts.DATASET_REF: {
-                bq_consts.DATASET_ID: self.dataset_id
-            }
-        }
+        bq_client = MagicMock()
+        mock_bq_client.return_value = bq_client
+        bq_client.delete_table = MagicMock()
 
         # Fake the queries returned by the other functions inside of get_domain_mapping_queries
         cross_domain_query_condition = 'SELECT cross_domain_query_condition'
@@ -366,39 +353,37 @@ class DomainAlignmentTest(unittest.TestCase):
         mock_parse_domain_mapping_query_for_excluded_records.return_value = excluded_records_query
 
         # Define the expected queries
-        expected_queries = [{
-            cdr_consts.QUERY: cross_domain_query_condition,
-            cdr_consts.DESTINATION_TABLE: DOMAIN_ALIGNMENT_TABLE_NAME,
-            cdr_consts.DISPOSITION: bq_consts.WRITE_APPEND,
-            cdr_consts.DESTINATION_DATASET: self.dataset_id
-        }, {
-            cdr_consts.QUERY: cross_domain_query_procedure,
-            cdr_consts.DESTINATION_TABLE: DOMAIN_ALIGNMENT_TABLE_NAME,
-            cdr_consts.DISPOSITION: bq_consts.WRITE_APPEND,
-            cdr_consts.DESTINATION_DATASET: self.dataset_id
-        }, {
-            cdr_consts.QUERY: same_domain_query,
-            cdr_consts.DESTINATION_TABLE: DOMAIN_ALIGNMENT_TABLE_NAME,
-            cdr_consts.DISPOSITION: bq_consts.WRITE_APPEND,
-            cdr_consts.DESTINATION_DATASET: self.dataset_id
-        }, {
-            cdr_consts.QUERY: excluded_records_query,
-            cdr_consts.DESTINATION_TABLE: DOMAIN_ALIGNMENT_TABLE_NAME,
-            cdr_consts.DISPOSITION: bq_consts.WRITE_APPEND,
-            cdr_consts.DESTINATION_DATASET: self.dataset_id
-        }]
+        expected_query = {
+            cdr_consts.QUERY:
+                domain_alignment.UNION_ALL.join([
+                    cross_domain_query_condition,
+                    cross_domain_query_procedure,
+                    same_domain_query,
+                    excluded_records_query,
+                ]),
+            cdr_consts.DESTINATION_TABLE:
+                DOMAIN_ALIGNMENT_TABLE_NAME,
+            cdr_consts.DISPOSITION:
+                bq_consts.WRITE_EMPTY,
+            cdr_consts.DESTINATION_DATASET:
+                self.dataset_id
+        }
 
         actual_queries = domain_alignment.get_domain_mapping_queries(
             self.project_id, self.dataset_id)
+        actual_query = actual_queries[0]
 
         # Test the content of the expected and actual queries
-        self.assertCountEqual(expected_queries, actual_queries)
+        self.assertDictEqual(expected_query, actual_query)
 
-        mock_create_standard_table.assert_called_once_with(
-            DOMAIN_ALIGNMENT_TABLE_NAME,
-            DOMAIN_ALIGNMENT_TABLE_NAME,
-            drop_existing=True,
-            dataset_id=self.dataset_id)
+        mock_bq_client.assert_called_once_with(self.project_id)
+        fake_table = f'{self.project_id}.{self.dataset_id}.{DOMAIN_ALIGNMENT_TABLE_NAME}'
+        bq_client.delete_table.assert_called_once_with(fake_table,
+                                                       not_found_ok=True)
+        mock_create_tables.assert_called_once_with(bq_client,
+                                                   self.project_id,
+                                                   [fake_table],
+                                                   exists_ok=False)
 
         # Test the function calls with the corresponding arguments
         mock_parse_domain_mapping_query_cross_domain.assert_any_call(
@@ -410,7 +395,7 @@ class DomainAlignmentTest(unittest.TestCase):
         mock_parse_domain_mapping_query_for_excluded_records.assert_called_once_with(
             self.project_id, self.dataset_id)
 
-    @mock.patch(
+    @patch(
         'cdr_cleaner.cleaning_rules.domain_alignment.parse_reroute_domain_query'
     )
     def test_get_reroute_domain_queries(self, mock_parse_reroute_domain_query):

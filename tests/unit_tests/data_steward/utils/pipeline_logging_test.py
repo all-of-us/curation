@@ -10,12 +10,14 @@ Original Issue = DC-637
 """
 
 # Python imports
+import os
 import unittest
 import logging
 import mock
 
 # Project imports
 import utils.pipeline_logging as pl
+from app_identity import PROJECT_ID
 
 
 class PipelineLoggingTest(unittest.TestCase):
@@ -60,16 +62,35 @@ class PipelineLoggingTest(unittest.TestCase):
                   for (log_record,), _ in mock_stream_emit.call_args_list]
         self.assertListEqual(expected, actual)
 
-    @mock.patch('logging.FileHandler._open')
-    def test_configure(self, mock_open):
+    def assert_correct_log_filename(self, file_handler: logging.FileHandler,
+                                    expected_basename: str):
         """
-        Verify that root level and handlers are properly set after configure
-        :param mock_open: mock to prevent side effect of opening file
+        Verifies that the provided logging.FileHandler instance would be writing to a file whose name matches
+        expected_basename
+        :param file_handler: logging.FileHandler instance to test
+        :param expected_basename: expected basename of log file
+        """
+        # extract target filename from logging filehandler
+        log_filename = file_handler.baseFilename
+        # assert value is of correct type and non-empty
+        self.assertIsInstance(log_filename, str)
+        self.assertNotEqual(log_filename, '')
+        # normalize then split path based on local os path separator
+        log_path_split = os.path.normpath(log_filename).split(os.path.sep)
+        # assert last piece is expected log basename
+        self.assertEqual(log_path_split[-1], expected_basename)
+
+    def assert_sane_configure(self):
+        """
+        verifies that a utils.pipeline_logger.configure() call executed successfully
+
+        TODO: pass in expected basename of log file? bit more flexible explicit, but may not worth the refactor.
         """
         # names are used to uniquely identify handlers both in standard logging module
         # and in this test case
         expected_hdlrs = [pl._FILE_HANDLER]
 
+        # execute configuration
         pl.configure()
         # root level is set to default (i.e. INFO)
         self.assertEqual(logging.root.level, pl.DEFAULT_LOG_LEVEL)
@@ -84,11 +105,34 @@ class PipelineLoggingTest(unittest.TestCase):
         actual_hdlrs = [hdlr.name for hdlr in logging.root.handlers]
         self.assertEqual(expected_hdlrs, actual_hdlrs)
 
+        for hdlr in logging.root.handlers:
+            if isinstance(hdlr, logging.FileHandler):
+                self.assert_correct_log_filename(hdlr, pl.get_log_filename())
+
         # add console log handler to configuration
         pl.configure(add_console_handler=True)
         actual_hdlrs = [hdlr.name for hdlr in logging.root.handlers]
         expected_hdlrs = [pl._FILE_HANDLER, pl._CONSOLE_HANDLER]
         self.assertEqual(expected_hdlrs, actual_hdlrs)
+
+    @mock.patch('logging.FileHandler._open')
+    @mock.patch.dict(os.environ, {PROJECT_ID: ''})
+    def test_configure_no_app_id(self, mock_open):
+        """
+        Verify that root level and handlers are properly set after configure when GOOGLE_PROJECT_ID is not set / empty
+        :param mock_open: mock to prevent side effect of opening file
+        """
+        self.assert_sane_configure()
+
+    @mock.patch('logging.FileHandler._open')
+    @mock.patch.dict(os.environ,
+                     {PROJECT_ID: 'unit-test-project-this-is-not-real'})
+    def test_configure_defined_app_id(self, mock_open):
+        """
+        Verify that root level and handlers are properly set after configure when GOOGLE_PROJECT_ID is set
+        :param mock_open: mock to prevent side effect of opening file
+        """
+        self.assert_sane_configure()
 
     @mock.patch('logging.StreamHandler.emit')
     @mock.patch('logging.FileHandler.emit')

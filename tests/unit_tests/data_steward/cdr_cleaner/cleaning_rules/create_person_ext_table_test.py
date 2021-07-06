@@ -39,11 +39,13 @@ class CreatePersonExtTableTest(unittest.TestCase):
         self.project_id = 'test_project'
         self.dataset_id = 'test_dataset'
         self.sandbox_id = 'test_sandbox'
+        self.table_namer = 'test_tablenamer'
         self.client = None
 
         self.rule_instance = CreatePersonExtTable(self.project_id,
                                                   self.dataset_id,
-                                                  self.sandbox_id)
+                                                  self.sandbox_id,
+                                                  self.table_namer)
 
         self.assertEqual(self.rule_instance.project_id, self.project_id)
         self.assertEqual(self.rule_instance.dataset_id, self.dataset_id)
@@ -55,8 +57,9 @@ class CreatePersonExtTableTest(unittest.TestCase):
 
     def test_get_query_specs(self):
         # Pre conditions
-        self.assertEqual(self.rule_instance.affected_datasets,
-                         [clean_consts.DEID_BASE])
+        self.assertEqual(
+            self.rule_instance.affected_datasets,
+            [clean_consts.DEID_BASE, clean_consts.CONTROLLED_TIER_DEID_BASE])
 
         # Test
         results_list = self.rule_instance.get_query_specs()
@@ -64,19 +67,12 @@ class CreatePersonExtTableTest(unittest.TestCase):
         # Post conditions
         expected_query_list = []
 
-        for table in tables:
-            expected_query_list.append({
-                clean_consts.QUERY:
-                    PERSON_EXT_TABLE_QUERY.render(
-                        project=self.project_id,
-                        dataset=self.dataset_id,
-                    ),
-                cdr_consts.DESTINATION_TABLE:
-                    table,
-                cdr_consts.DESTINATION_DATASET:
-                    self.dataset_id,
-                cdr_consts.DISPOSITION:
-                    WRITE_TRUNCATE
-            })
+        expected_query_list.append({
+            clean_consts.QUERY:
+                PERSON_EXT_TABLE_QUERY.render(
+                    project=self.project_id,
+                    dataset=self.dataset_id,
+                )
+        })
 
         self.assertEqual(results_list, expected_query_list)

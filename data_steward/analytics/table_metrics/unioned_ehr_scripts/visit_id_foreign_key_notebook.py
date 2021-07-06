@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.4.2
+#       jupytext_version: 1.3.0
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -169,6 +169,7 @@ LEFT JOIN
   
   OR
   co.visit_occurrence_id = 0
+  
   OR
   co.visit_occurrence_id IS NULL
 
@@ -248,8 +249,6 @@ LEFT JOIN
   mo.src_hpo_id <> mvo.src_hpo_id
   
   OR o.visit_occurrence_id = 0
-  
-  OR o.visit_occurrence_id IS NULL
 
   GROUP BY 1
   ORDER BY number_rows_w_no_valid_vo DESC) invalid_row_count
@@ -327,8 +326,6 @@ LEFT JOIN
   mm.src_hpo_id <> mvo.src_hpo_id
   
   OR m.visit_occurrence_id = 0
-  
-  OR m.visit_occurrence_id IS NULL
 
   GROUP BY 1
   ORDER BY number_rows_w_no_valid_vo DESC) invalid_row_count
@@ -406,8 +403,6 @@ LEFT JOIN
   mde.src_hpo_id <> mvo.src_hpo_id
   
   OR de.visit_occurrence_id = 0
-  
-  OR de.visit_occurrence_id IS NULL
 
   GROUP BY 1
   ORDER BY number_rows_w_no_valid_vo DESC) invalid_row_count
@@ -500,7 +495,7 @@ procedure_occurrence_df = pd.io.gbq.read_gbq(procedure_occurrence_query, dialect
 
 procedure_occurrence_df
 
-final_success_df = pd.merge(site_df, drug_exposure_df, how='inner', on='src_hpo_id') 
+final_success_df = pd.merge(site_df, drug_exposure_df, how='left', on='src_hpo_id') 
 
 # +
 final_success_df = pd.merge(final_success_df, observation_df, how='outer', on='src_hpo_id') 

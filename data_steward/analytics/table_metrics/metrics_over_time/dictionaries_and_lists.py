@@ -301,7 +301,10 @@ full_names = {
     "ipmc_rush": "Rush University",
     "va": "United States Department of Veterans Affairs - Boston",
     "saou_umc": "University Medical Center (UA Tuscaloosa)",
-    "saou_usahs": "University of South Alabama"
+    "saou_usahs": "University of South Alabama",
+    'saou_cgmhs': "Cooper Green Mercy Health Services",
+    'illinois_near_north': "Alliance Chicago",
+    'wisconsin_medical_college_sshc': 'Sixteenth Street Community Health Center Parkway Clinic'
 }
 
 row_count_col_names = [

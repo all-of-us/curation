@@ -98,7 +98,8 @@ class BaseTest:
             Remove the test dataset table(s).
             """
             for table in cls.fq_table_names + cls.fq_sandbox_table_names:
-                cls.client.delete_table(table, not_found_ok=True)
+                #                cls.client.delete_table(table, not_found_ok=True)
+                pass
 
         def drop_rows(self, fq_table_name):
             """
@@ -285,8 +286,15 @@ class BaseTest:
             """
             # pre-conditions
             # validate sandbox tables don't exist yet
+            tables_created_at_setup = []
+            for values_list in tables_and_test_values:
+                rule_setup_creation_list = values_list.get(
+                    'tables_created_on_setup', [])
+                tables_created_at_setup.extend(rule_setup_creation_list)
+
             for fq_table_name in self.fq_sandbox_table_names:
-                self.assertTableDoesNotExist(fq_table_name)
+                if fq_table_name not in tables_created_at_setup:
+                    self.assertTableDoesNotExist(fq_table_name)
 
             # validate only anticipated input records exist before starting
             for table_info in tables_and_test_values:
@@ -296,7 +304,10 @@ class BaseTest:
                 # first in the fields list.  this check verifies by id field
                 # that the table data loaded correctly.
                 fields = [table_info.get('fields', [])[0]]
-                self.assertRowIDsMatch(fq_table_name, fields, values)
+                check_preconditions = table_info.get('check_preconditions',
+                                                     True)
+                if check_preconditions:
+                    self.assertRowIDsMatch(fq_table_name, fields, values)
 
             if self.rule_instance:
                 # test: run the queries

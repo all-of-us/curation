@@ -288,13 +288,12 @@ def populate_achilles(hpo_bucket, hpo_id=FAKE_HPO_ID, include_heel=True):
     test_file_name = achilles.ACHILLES_ANALYSIS + '.csv'
     achilles_analysis_file_path = os.path.join(TEST_DATA_EXPORT_PATH,
                                                test_file_name)
-    schema_path = os.path.join(resources.fields_path,
-                               achilles.ACHILLES_ANALYSIS + '.json')
+    schema_name = achilles.ACHILLES_ANALYSIS
     write_cloud_file(hpo_bucket, achilles_analysis_file_path)
     gcs_path = 'gs://' + hpo_bucket + '/' + test_file_name
     dataset_id = bq_utils.get_dataset_id()
     table_id = bq_utils.get_table_id(hpo_id, achilles.ACHILLES_ANALYSIS)
-    bq_utils.load_csv(schema_path, gcs_path, app_id, dataset_id, table_id)
+    bq_utils.load_csv(schema_name, gcs_path, app_id, dataset_id, table_id)
 
     table_names = [achilles.ACHILLES_RESULTS, achilles.ACHILLES_RESULTS_DIST]
     if include_heel:
@@ -302,8 +301,6 @@ def populate_achilles(hpo_bucket, hpo_id=FAKE_HPO_ID, include_heel=True):
 
     running_jobs = []
     for table_name in table_names:
-        schema_file_name = table_name + '.json'
-        schema_path = os.path.join(resources.fields_path, schema_file_name)
         test_file_name = table_name + '.csv'
         test_file_path = os.path.join(TEST_DATA_EXPORT_SYNPUF_PATH,
                                       table_name + '.csv')
@@ -311,7 +308,7 @@ def populate_achilles(hpo_bucket, hpo_id=FAKE_HPO_ID, include_heel=True):
         gcs_path = 'gs://' + hpo_bucket + '/' + test_file_name
         dataset_id = bq_utils.get_dataset_id()
         table_id = bq_utils.get_table_id(hpo_id, table_name)
-        load_results = bq_utils.load_csv(schema_path, gcs_path, app_id,
+        load_results = bq_utils.load_csv(table_name, gcs_path, app_id,
                                          dataset_id, table_id)
         running_jobs.append(load_results['jobReference']['jobId'])
     bq_utils.wait_on_jobs(running_jobs)

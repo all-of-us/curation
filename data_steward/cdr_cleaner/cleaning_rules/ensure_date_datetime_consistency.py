@@ -14,7 +14,7 @@ import common
 # Project imports
 import constants.bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
-from cdr_cleaner.cleaning_rules import field_mapping
+from cdr_cleaner.cleaning_rules import field_mapping, temporal_consistency
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 
 LOGGER = logging.getLogger(__name__)
@@ -107,7 +107,8 @@ class EnsureDateDatetimeConsistency(BaseCleaningRule):
                              common.OBSERVATION, common.PROCEDURE_OCCURRENCE,
                              common.SPECIMEN, common.DEATH,
                              common.OBSERVATION_PERIOD, common.VISIT_OCCURRENCE
-                         ])
+                         ],
+                         depends_on=[temporal_consistency.TemporalConsistency])
 
     def get_cols(self, table):
         """

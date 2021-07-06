@@ -16,8 +16,9 @@ import logging
 # Third party imports
 from google.api_core.exceptions import BadRequest, NotFound
 
-from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 # Project imports
+from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
+from cdr_cleaner.cleaning_rules.generate_ext_tables import GenerateExtTables
 from common import OBSERVATION, JINJA_ENV
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 
@@ -36,7 +37,10 @@ CREATE OR REPLACE TABLE `{{project_id}}.{{out_dataset_id}}.observation_ext` AS (
       WHEN cssf.cope_month = 'may' THEN 2100000002
       WHEN cssf.cope_month = 'june' THEN 2100000003
       WHEN cssf.cope_month = 'july' THEN 2100000004
-      ELSE survey_version_concept_id 
+      WHEN cssf.cope_month = 'nov' THEN 2100000005
+      WHEN cssf.cope_month = 'dec' THEN 2100000006
+      WHEN cssf.cope_month = 'feb' THEN 2100000007
+      ELSE survey_version_concept_id
     END AS survey_version_concept_id
     FROM `{{project_id}}.{{out_dataset_id}}.observation_ext` AS oe
     JOIN `{{project_id}}.{{out_dataset_id}}.observation` AS o
@@ -59,7 +63,7 @@ class COPESurveyVersionTask(BaseCleaningRule):
     """
 
     def __init__(self, project_id, dataset_id, sandbox_dataset_id,
-                 qrid_map_dataset_id, cope_lookup_dataset_id, cope_table_name):
+                 cope_lookup_dataset_id, cope_table_name):
         """
         Initialize the class with proper info.
 
@@ -79,9 +83,10 @@ class COPESurveyVersionTask(BaseCleaningRule):
             project_id=project_id,
             dataset_id=dataset_id,
             sandbox_dataset_id=sandbox_dataset_id,
-            affected_tables=[OBSERVATION + '_ext'])
+            affected_tables=[OBSERVATION + '_ext'],
+            depends_on=[GenerateExtTables])
 
-        self.qrid_map_dataset_id = qrid_map_dataset_id
+        self.qrid_map_dataset_id = sandbox_dataset_id
         self.cope_lookup_dataset_id = cope_lookup_dataset_id
         self.cope_survey_table = cope_table_name
 
@@ -226,7 +231,6 @@ if __name__ == '__main__':
     add_console_logging(ARGS.console_log)
     version_task = COPESurveyVersionTask(ARGS.project_id, ARGS.dataset_id,
                                          ARGS.sandbox_dataset_id,
-                                         ARGS.mapping_dataset_id,
                                          ARGS.cope_survey_dataset_id,
                                          ARGS.cope_survey_table)
     query_list = version_task.get_query_specs()
@@ -234,14 +238,14 @@ if __name__ == '__main__':
     if ARGS.list_queries:
         version_task.log_queries()
     else:
-        client = bq.get_client(ARGS.project_id)
-        version_task.setup_rule(client)
+        client_obj = bq.get_client(ARGS.project_id)
+        version_task.setup_rule(client_obj)
         # clean_engine.clean_dataset(ARGS.project_id, query_list)
         for query in query_list:
             q = query.get(cdr_consts.QUERY)
             if q:
-                query_job = client.query(q)
-                status = query_job.result()
+                query_job = client_obj.query(q)
+                query_job.result()
                 if query_job.exception():
                     LOGGER.error(
                         "BAIL OUT!!  SURVEY VERSION TASK encountered an exception"

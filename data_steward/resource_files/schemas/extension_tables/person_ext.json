@@ -1,0 +1,44 @@
+[
+    {
+        "type": "integer", 
+        "name": "person_id", 
+        "mode": "required", 
+        "description": "A unique identifier for each person."
+    },
+    {
+        "type": "string",
+        "name": "src_id",
+        "mode": "nullable",
+        "description": "A foreign key to the participant's source EHR site."
+    },
+    {
+        "type": "integer", 
+        "name": "state_of_residence_concept_id", 
+        "mode": "nullable", 
+        "description": "[All of Us OMOP extension] A foreign key to the participant's state of residence concept."
+    },
+    {
+        "type": "string", 
+        "name": "state_of_residence_source_value", 
+        "mode": "nullable", 
+        "description": "[All of Us OMOP extension] The source code for the participant's state of residence."
+    },
+    {
+        "type": "integer", 
+        "name": "sex_at_birth_concept_id", 
+        "mode": "nullable", 
+        "description": "[All of Us OMOP extension] A foreign key to the biological sex at birth concept."
+    }, 
+    {
+        "type": "integer", 
+        "name": "sex_at_birth_source_concept_id", 
+        "mode": "nullable", 
+        "description": "[All of Us OMOP extension] A foreign key to the biological sex at birth source concept."
+    }, 
+    {
+        "type": "string", 
+        "name": "sex_at_birth_source_value", 
+        "mode": "nullable", 
+        "description": "[All of Us OMOP extension] The source code for the biological sex at birth."
+    }
+]

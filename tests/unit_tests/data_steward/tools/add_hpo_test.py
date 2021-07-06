@@ -1,8 +1,14 @@
+# Python imports
 from unittest import TestCase, mock
 
+# Third party imports
 import pandas as pd
 
+# Project imports
+import app_identity
+import constants.bq_utils as bq_consts
 from tools import add_hpo
+from common import PIPELINE_TABLES, SITE_MASKING_TABLE_ID
 
 
 class AddHPOTest(TestCase):
@@ -16,6 +22,8 @@ class AddHPOTest(TestCase):
     def setUp(self):
         self.project_id = 'project_id'
         self.dataset_id = 'dataset_id'
+        self.sandbox_dataset_id = 'sandbox_dataset_id'
+        self.table_id = 'site_maskings'
 
     def test_verify_hpo_mappings_up_to_date(self):
         df_1 = pd.DataFrame({'HPO_ID': ['FAKE_1', 'FAKE_2']})
@@ -70,3 +78,35 @@ class AddHPOTest(TestCase):
         self.assertRaises(ValueError, add_hpo.add_hpo_site_mappings_file_df,
                           new_site['hpo_id'], new_site['hpo_name'],
                           new_site['org_id'], new_site['display_order'])
+
+    @mock.patch('utils.bq.get_client')
+    def test_update_site_masking_table(self, mock_get_client):
+        # Preconditions
+        project_id = app_identity.get_application_id()
+        sandbox_id = PIPELINE_TABLES + '_sandbox'
+
+        mock_query = mock_get_client.return_value.query
+
+        # Mocks the job return
+        query_job_reference_results = mock.MagicMock(
+            name="query_job_reference_results")
+        query_job_reference_results.return_value = query_job_reference_results
+        mock_query.side_effect = query_job_reference_results
+
+        # Test
+        actual_job = add_hpo.update_site_masking_table()
+
+        # Post conditions
+        update_site_masking_query = add_hpo.UPDATE_SITE_MASKING_QUERY.render(
+            project_id=project_id,
+            dataset_id=PIPELINE_TABLES,
+            sandbox_id=sandbox_id,
+            table_id=SITE_MASKING_TABLE_ID,
+            lookup_tables_dataset=bq_consts.LOOKUP_TABLES_DATASET_ID,
+            hpo_site_id_mappings_table=bq_consts.HPO_SITE_ID_MAPPINGS_TABLE_ID)
+
+        expected_job = query_job_reference_results
+
+        mock_query.assert_any_call(update_site_masking_query)
+
+        self.assertEqual(actual_job, expected_job)

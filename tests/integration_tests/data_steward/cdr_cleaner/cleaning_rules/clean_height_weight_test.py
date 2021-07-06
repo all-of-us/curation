@@ -77,36 +77,28 @@ from common import MEASUREMENT
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import \
     BaseTest
 
-# The existing person table is created and partitioned on the pseudo column _PARTITIONTIME,
-# partitioning by _PARTITIONTIME doesn't work using a query_statement for creating a table,
-# therefore CREATE OR REPLACE TABLE doesn' work and we need to DROP the table first.
 MEASUREMENT_DATA_TEMPLATE = JINJA_ENV.from_string("""
-DROP TABLE IF EXISTS
-  `{{project_id}}.{{dataset_id}}.measurement`;
-CREATE TABLE
-  `{{project_id}}.{{dataset_id}}.measurement` AS (
-  WITH
-    w AS (
-    SELECT
-      ARRAY<STRUCT<measurement_id INT64,
-      person_id INT64,
-      measurement_concept_id INT64,
-      measurement_date DATE,
-      measurement_datetime TIMESTAMP,
-      measurement_type_concept_id INT64,
-      operator_concept_id INT64,
-      value_as_number FLOAT64,
-      value_as_concept_id INT64,
-      unit_concept_id INT64,
-      range_low FLOAT64,
-      range_high FLOAT64,
-      provider_id INT64,
-      visit_occurrence_id INT64,
-      measurement_source_value STRING,
-      measurement_source_concept_id INT64,
-      unit_source_value STRING,
-      value_source_value STRING>>
-      [(1,1,3036277,"2017-03-25","2017-03-25 01:00:00 UTC",44818701,4172703,5.6,0,9330,null,null,null,1,"8302-2",3036277,"in",""),
+    INSERT INTO `{{project_id}}.{{dataset_id}}.measurement` (
+      measurement_id,
+      person_id,
+      measurement_concept_id,
+      measurement_date,
+      measurement_datetime,
+      measurement_type_concept_id,
+      operator_concept_id,
+      value_as_number,
+      value_as_concept_id,
+      unit_concept_id,
+      range_low,
+      range_high,
+      provider_id,
+      visit_occurrence_id,
+      measurement_source_value,
+      measurement_source_concept_id,
+      unit_source_value,
+      value_source_value)
+    VALUES
+       (1,1,3036277,"2017-03-25","2017-03-25 01:00:00 UTC",44818701,4172703,5.6,0,9330,null,null,null,1,"8302-2",3036277,"in",""),
         (2,2,3036277,"2017-10-18","2017-10-18 01:00:00 UTC",44818701,4172703,62.5,0,9330,null,null,null,2,"8302-2",3036277,"in",""),
         (3,3,3036277,"2017-02-07","2017-02-07 01:00:00 UTC",44818701,4172703,1.8,null,8582,null,null,null,3,"8302-2",3036277,"cm",""),
         (4,4,3036277,"2017-01-06","2017-01-06 01:00:00 UTC",44818701,4172703,193.0,0,8582,null,null,null,4,"8302-2",3036277,"cm",""),
@@ -146,54 +138,11 @@ CREATE TABLE
         (38,4,3025315,"2018-06-19","2018-06-19 01:00:00 UTC",44818701,4172703,67.9,0,9529,null,null,null,38,"29463-7",3025315,"KG",""),
         (39,4,3025315,"2018-06-19","2018-06-19 01:00:00 UTC",44818701,4172703,81.4,0,9529,null,null,null,39,"29463-7",3025315,"KG",""),
         (40,2,3025315,"2018-04-01","2018-04-01 01:00:00 UTC",44818701,4172703,24.9,0,9529,null,null,null,40,"29463-7",3025315,"KG",""),
-        (41,2,3025315,"2018-04-20","2018-04-20 01:00:00 UTC",44818701,4172703,40.0,0,9529,null,null,null,40,"29463-7",3025315,"KG","")] col
-)
- SELECT
-    measurement_id,
-    person_id,
-    measurement_concept_id,
-    measurement_date,
-    measurement_datetime,
-    measurement_type_concept_id,
-    operator_concept_id,
-    value_as_number,
-    value_as_concept_id,
-    unit_concept_id,
-    range_low,
-    range_high,
-    provider_id,
-    visit_occurrence_id,
-    measurement_source_value,
-    measurement_source_concept_id,
-    unit_source_value,
-    value_source_value
-  FROM
-    w,
-    UNNEST(w.col))
+        (41,2,3025315,"2018-04-20","2018-04-20 01:00:00 UTC",44818701,4172703,40.0,0,9529,null,null,null,40,"29463-7",3025315,"KG","")
 """)
 
 CONDITION_OCCURRENCE_DATA_TEMPLATE = JINJA_ENV.from_string("""
-DROP TABLE IF EXISTS
-  `{{project_id}}.{{dataset_id}}.condition_occurrence`;
-CREATE TABLE
-  `{{project_id}}.{{dataset_id}}.condition_occurrence` AS (
-  WITH
-    w AS (
-    SELECT
-      ARRAY<STRUCT<condition_occurrence_id INT64,
-      person_id INT64,
-      condition_concept_id INT64,
-      condition_start_date DATE,
-      condition_start_datetime TIMESTAMP,
-      condition_end_date DATE,
-      condition_end_datetime TIMESTAMP,
-      condition_type_concept_id INT64>>
-            [(1,7,80502,"2019-08-20","2019-08-20 01:00:00 UTC",null,null,38000245),
-             (2,8,321661,"2018-09-10","2018-09-10 01:00:00 UTC",null,null,38000245),
-             (3,1,435928,"2017-08-15","2017-08-15 00:00:00 UTC",null,null,38000245),
-             (4,4,434005,"2018-08-03","2018-08-03 05:00:00 UTC",null,null,32020)] col
-)
-SELECT
+    INSERT INTO `{{project_id}}.{{dataset_id}}.condition_occurrence` (
     condition_occurrence_id,
     person_id,
     condition_concept_id,
@@ -201,23 +150,20 @@ SELECT
     condition_start_datetime,
     condition_end_date,
     condition_end_datetime,
-    condition_type_concept_id,
-  FROM
-    w,
-    UNNEST(w.col))
+    condition_type_concept_id)
+    VALUES
+        (1,7,80502,"2019-08-20","2019-08-20 01:00:00 UTC",null,null,38000245),
+        (2,8,321661,"2018-09-10","2018-09-10 01:00:00 UTC",null,null,38000245),
+        (3,1,435928,"2017-08-15","2017-08-15 00:00:00 UTC",null,null,38000245),
+        (4,4,434005,"2018-08-03","2018-08-03 05:00:00 UTC",null,null,32020)
 """)
 
 MEASUREMENT_EXT_TEMPLATE = JINJA_ENV.from_string("""
-DROP TABLE IF EXISTS
-  `{{project_id}}.{{dataset_id}}.measurement_ext`;
-CREATE TABLE
-  `{{project_id}}.{{dataset_id}}.measurement_ext` AS (
-  WITH
-    w AS (
-    SELECT
-      ARRAY<STRUCT<measurement_id INT64,
-      src_id STRING>>
-      [(1,"EHR site 111"),
+INSERT INTO `{{project_id}}.{{dataset_id}}.measurement_ext` (
+      measurement_id,
+      src_id)
+VALUES
+        (1,"EHR site 111"),
         (2,"EHR site 111"),
         (3,"EHR site 111"),
         (4,"EHR site 111"),
@@ -257,67 +203,74 @@ CREATE TABLE
         (38,"EHR site 111"),
         (39,"EHR site 111"),
         (40,"EHR site 111"),
-        (41,"EHR site 111")] col
-    )
-    SELECT
-        measurement_id,
-        src_id
-    FROM
-        w,
-        UNNEST(w.col))
+        (41,"EHR site 111")
 """)
 
 PERSON_DATA_TEMPLATE = JINJA_ENV.from_string("""
-DROP TABLE IF EXISTS
-  `{{project_id}}.{{dataset_id}}.person`;
-CREATE TABLE
-  `{{project_id}}.{{dataset_id}}.person` AS (
-  WITH
-    w AS (
-    SELECT
-      ARRAY<STRUCT<person_id INT64,
-      gender_concept_id INT64,
-      birth_datetime TIMESTAMP>>
-        [(1,8507,"1990-03-03 00:00:00 UTC"),
-        (2,8507,"1984-02-08 00:00:00 UTC"),
-        (3,8532,"1983-10-29 00:00:00 UTC"),
-        (4,8532,"1971-05-31 00:00:00 UTC"),
-        (5,8507,"1990-05-07 00:00:00 UTC"),
-        (6,8532,"1969-04-29 00:00:00 UTC"),
-        (7,8532,"1975-09-23 00:00:00 UTC"),
-        (8,8507,"1976-03-17 00:00:00 UTC"),
-        (9,8532,"1993-03-20 00:00:00 UTC"),
-        (10,8532,"1982-03-08 00:00:00 UTC")] col
-)
-    SELECT
-        person_id,
-        gender_concept_id,
-        birth_datetime
-    FROM
-        w,
-        UNNEST(w.col))
+INSERT INTO `{{project_id}}.{{dataset_id}}.person` (
+      person_id,
+      gender_concept_id,
+      birth_datetime,
+      year_of_birth,
+      race_concept_id,
+      ethnicity_concept_id)
+    VALUES
+        (1,8507,"1990-03-03 00:00:00 UTC", 1990, 0, 0),
+        (2,8507,"1984-02-08 00:00:00 UTC", 1984, 0, 0),
+        (3,8532,"1983-10-29 00:00:00 UTC", 1983, 0, 0),
+        (4,8532,"1971-05-31 00:00:00 UTC", 1971, 0, 0),
+        (5,8507,"1990-05-07 00:00:00 UTC", 1990, 0, 0),
+        (6,8532,"1969-04-29 00:00:00 UTC", 1969, 0, 0),
+        (7,8532,"1975-09-23 00:00:00 UTC", 1975, 0, 0),
+        (8,8507,"1976-03-17 00:00:00 UTC", 1976, 0, 0),
+        (9,8532,"1993-03-20 00:00:00 UTC", 1993, 0, 0),
+        (10,8532,"1982-03-08 00:00:00 UTC", 1983, 0, 0)
 """)
 
 CONCEPT_TEMPLATE = JINJA_ENV.from_string("""
-DROP TABLE IF EXISTS
-  `{{project_id}}.{{dataset_id}}.concept`;
-CREATE TABLE
-  `{{project_id}}.{{dataset_id}}.concept` AS (
+INSERT INTO
+  `{{project_id}}.{{dataset_id}}.concept` (
+    concept_id,
+    concept_name,
+    domain_id,
+    vocabulary_id,
+    concept_class_id,
+    standard_concept,
+    concept_code,
+    valid_start_date,
+    valid_end_date,
+    invalid_reason
+) 
   SELECT
-    *
+    concept_id,
+    concept_name,
+    domain_id,
+    vocabulary_id,
+    concept_class_id,
+    standard_concept,
+    concept_code,
+    valid_start_date,
+    valid_end_date,
+    invalid_reason
   FROM
-    `{{project_id}}.{{vocab_dataset}}.concept` )
+    `{{project_id}}.{{vocab_dataset}}.concept`
 """)
 
 CONCEPT_ANCESTOR_TEMPLATE = JINJA_ENV.from_string("""
-DROP TABLE IF EXISTS
-  `{{project_id}}.{{dataset_id}}.concept_ancestor`;
-CREATE TABLE
-  `{{project_id}}.{{dataset_id}}.concept_ancestor` AS (
+INSERT INTO
+  `{{project_id}}.{{dataset_id}}.concept_ancestor`(
+    ancestor_concept_id,
+    descendant_concept_id,
+    min_levels_of_separation,
+    max_levels_of_separation
+)
   SELECT
-    *
+    ancestor_concept_id,
+    descendant_concept_id,
+    min_levels_of_separation,
+    max_levels_of_separation
   FROM
-    `{{project_id}}.{{vocab_dataset}}.concept_ancestor` )
+    `{{project_id}}.{{vocab_dataset}}.concept_ancestor`
 """)
 
 
@@ -343,8 +296,14 @@ class CleanHeightWeightTest(BaseTest.CleaningRulesTestBase):
                                                  cls.sandbox_id)
 
         # Generates list of fully qualified table names and their corresponding sandbox table names
-        cls.fq_table_names.append(
-            f'{cls.project_id}.{cls.dataset_id}.{MEASUREMENT}')
+        cls.fq_table_names.extend([
+            f'{cls.project_id}.{cls.dataset_id}.{MEASUREMENT}',
+            f'{cls.project_id}.{cls.dataset_id}.measurement_ext',
+            f'{cls.project_id}.{cls.dataset_id}.condition_occurrence',
+            f'{cls.project_id}.{cls.dataset_id}.person',
+            f'{cls.project_id}.{cls.dataset_id}.concept',
+            f'{cls.project_id}.{cls.dataset_id}.concept_ancestor'
+        ])
         sandbox_table_names = cls.rule_instance.get_sandbox_tablenames()
         for table in sandbox_table_names:
             cls.fq_sandbox_table_names.append(
@@ -380,15 +339,12 @@ class CleanHeightWeightTest(BaseTest.CleaningRulesTestBase):
 
         # Load test data
         self.load_test_data([
-            f'''{person_data_query};
-                {measurement_data_query};
-                {measurement_ext_data_query};
-                {condition_data_query};
-                {concept_data_query};
-                {concept_ancestor_data_query}'''
+            person_data_query, measurement_data_query,
+            measurement_ext_data_query, condition_data_query,
+            concept_data_query, concept_ancestor_data_query
         ])
 
-    def test_get_query_specs(self):
+    def assert_get_query_specs(self):
         """
         Tests that queries run successfully and sandbox tables are generated
         Note: This does NOT validate logic
@@ -410,7 +366,7 @@ class CleanHeightWeightTest(BaseTest.CleaningRulesTestBase):
         for sandbox_table in self.rule_instance.get_sandbox_tablenames():
             self.assertIn(sandbox_table, table_ids)
 
-    def test_height_and_weight_cleaning(self):
+    def assert_height_and_weight_cleaning(self):
         """
         Tests the Height and weight cleaning for the loaded test data
         """
@@ -446,3 +402,9 @@ class CleanHeightWeightTest(BaseTest.CleaningRulesTestBase):
         }]
 
         self.default_test(tables_and_counts)
+
+    def test_cleaning_results(self):
+        with self.subTest("height_and_weight_cleaning"):
+            self.assert_height_and_weight_cleaning()
+        with self.subTest("get_query_specs"):
+            self.assert_get_query_specs()

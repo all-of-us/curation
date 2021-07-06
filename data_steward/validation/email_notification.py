@@ -133,7 +133,7 @@ def generate_html_body(site_name, folder_uri, report_data):
         site_name=site_name,
         ehr_ops_site_url=consts.EHR_OPS_SITE_URL,
         submission_folder_url=submission_folder_url,
-        dc_listserv=consts.DATA_CURATION_LISTSERV,
+        eo_zendesk=consts.EHR_OPS_ZENDESK,
         aou_logo=consts.AOU_LOGO,
         **report_data)
     LOGGER.info(f"Generated html email body")
@@ -178,9 +178,9 @@ def generate_email_message(hpo_id, results_html, folder_uri, report_data):
         }],
         'auto_html': True,
         'from_email': consts.NO_REPLY_ADDRESS,
-        'from_name': consts.DATA_CURATION,
+        'from_name': consts.EHR_OPERATIONS,
         'headers': {
-            'Reply-To': consts.DATA_CURATION_LISTSERV
+            'Reply-To': consts.EHR_OPS_ZENDESK
         },
         'html': html_body,
         'images': [{

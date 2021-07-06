@@ -94,8 +94,46 @@ def post_message(text):
     :param text: the message to post
     :return:
     """
+
     slack_client = _get_slack_client()
     slack_channel_name = _get_slack_channel_name()
     return slack_client.chat_postMessage(channel=slack_channel_name,
                                          text=text,
                                          verify=False)
+
+
+def log_event_factory(job_name=None):
+    # TODO: This is only a temporary solution. The problem is that slack_logging_handler is
+    #  set to the WARNING level, calling logging.info would not send the message to the slack
+    #  channel. The reason we set it to WARNING is that we don't want to flood the slack
+    #  channel with trivial information and only want to get logs at the warning level and
+    #  above. We need to replace the below code with the unified logging infrastructure in
+    #  the future
+    def log_event(func):
+
+        display_job_name = job_name if job_name else func.__name__
+        start_message = f'The {display_job_name} job has started.'
+        end_message = f'The {display_job_name} job has completed successfully.'
+
+        def wrapper(*args, **kwargs):
+            try:
+                post_message(start_message)
+                logging.info(start_message)
+
+                returned_val = func(*args, **kwargs)
+
+                post_message(end_message)
+                logging.info(end_message)
+
+                return returned_val
+            except (SlackConfigurationError, SlackApiError) as e:
+                # if the environment variables are missing or the slack api failed to identify the
+                # channel
+                logging.exception(
+                    f'Slack is not configured for posting messages, refer to playbook. {e}'
+                )
+                raise
+
+        return wrapper
+
+    return log_event

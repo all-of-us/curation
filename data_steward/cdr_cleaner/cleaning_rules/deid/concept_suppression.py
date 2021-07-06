@@ -1,10 +1,10 @@
 import logging
-from typing import List
 from abc import abstractmethod
 from google.cloud.bigquery.client import Client
 from google.cloud.exceptions import GoogleCloudError
 
-from resources import get_concept_id_fields
+from cdr_cleaner.clean_cdr_utils import get_tables_in_dataset
+from resources import get_concept_id_fields, has_domain_table_id
 from common import JINJA_ENV
 from constants import bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
@@ -12,46 +12,6 @@ from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, quer
     get_delete_empty_sandbox_tables_queries
 
 LOGGER = logging.getLogger(__name__)
-
-TABLE_ID = 'table_id'
-
-GET_ALL_TABLES_QUERY_TEMPLATE = JINJA_ENV.from_string("""
-SELECT
-  table_id
-FROM `{{project}}.{{dataset}}.__TABLES__`
-WHERE table_id IN (
-{% for table_name in table_names %}
-    {% if loop.previtem is defined %}, {% else %}  {% endif %} '{{table_name}}'
-{% endfor %}
-)
-""")
-
-
-def get_tables_in_dataset(client: Client, project_id, dataset_id,
-                          table_names) -> List[str]:
-    """
-    This function retrieves tables that exist in dataset for an inital list table_names . This 
-    function raises GoogleCloudError if the query throws an error
-    
-    :param client: 
-    :param project_id: 
-    :param dataset_id: 
-    :param table_names: 
-    :return: a list of tables that exist in the given dataset
-    """
-    # The following makes sure the tables exist in the dataset
-    query_job = client.query(
-        GET_ALL_TABLES_QUERY_TEMPLATE.render(project=project_id,
-                                             dataset=dataset_id,
-                                             table_names=table_names))
-    result = query_job.result()
-
-    if hasattr(result, 'errors') and result.errors:
-        # LOGGER.error(f"Error running job {result.job_id}: {result.errors}")
-        raise GoogleCloudError(
-            f"Error running job {result.job_id}: {result.errors}")
-
-    return [dict(row.items())[TABLE_ID] for row in result]
 
 
 class AbstractConceptSuppression(BaseCleaningRule):
@@ -68,9 +28,15 @@ class AbstractConceptSuppression(BaseCleaningRule):
     WHERE s.{{domain_table}}_id IS NULL
     """)
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id,
-                 issue_numbers, description, affected_datasets,
-                 affected_tables):
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 issue_numbers,
+                 description,
+                 affected_datasets,
+                 affected_tables,
+                 table_namer=None):
         """
         Initialize the class with proper info.
 
@@ -79,13 +45,20 @@ class AbstractConceptSuppression(BaseCleaningRule):
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
 
+        affected_tables = [
+            table_name for table_name in affected_tables
+            if (get_concept_id_fields(table_name) and
+                has_domain_table_id(table_name))
+        ]
+
         super().__init__(issue_numbers=issue_numbers,
                          description=description,
                          affected_datasets=affected_datasets,
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
-                         affected_tables=affected_tables)
+                         affected_tables=affected_tables,
+                         table_namer=table_namer)
 
     def setup_rule(self, client: Client, *args, **keyword_args):
         # The following makes sure the tables exist in the dataset
@@ -139,14 +112,12 @@ class AbstractConceptSuppression(BaseCleaningRule):
         sandbox_queries = [
             self.get_sandbox_query(table_name)
             for table_name in self.affected_tables
-            if get_concept_id_fields(table_name)
         ]
 
         # Queries for dropping records based on the sandboxed records
         queries = [
             self.get_suppression_query(table_name)
             for table_name in self.affected_tables
-            if get_concept_id_fields(table_name)
         ]
 
         # Clean up the empty sandbox tables
@@ -175,9 +146,16 @@ class AbstractBqLookupTableConceptSuppression(AbstractConceptSuppression):
     {% endfor %}) IS NOT NULL
     """)
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id,
-                 issue_numbers, description, affected_datasets, affected_tables,
-                 concept_suppression_lookup_table):
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 issue_numbers,
+                 description,
+                 affected_datasets,
+                 affected_tables,
+                 concept_suppression_lookup_table,
+                 table_namer=None):
         """
         Initialize the class with proper info.
 
@@ -192,7 +170,8 @@ class AbstractBqLookupTableConceptSuppression(AbstractConceptSuppression):
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
-                         affected_tables=affected_tables)
+                         affected_tables=affected_tables,
+                         table_namer=table_namer)
 
         self._concept_suppression_lookup_table = concept_suppression_lookup_table
 

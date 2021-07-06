@@ -29,18 +29,10 @@ class CtPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
         cls.dataset_id = os.environ.get('UNIONED_DATASET_ID')
         cls.sandbox_id = cls.dataset_id + '_sandbox'
 
-        mapping_dataset_id = os.environ.get('COMBINED_DATASET_ID')
-        mapping_table_id = DEID_MAP
-        cls.mapping_dataset_id = mapping_dataset_id
-        cls.kwargs.update({
-            'mapping_dataset_id': mapping_dataset_id,
-            'mapping_table_id': mapping_table_id
-        })
-        cls.fq_deid_map_table = f'{project_id}.{mapping_dataset_id}.{mapping_table_id}'
+        cls.fq_deid_map_table = f'{project_id}.{cls.sandbox_id}.{DEID_MAP}'
 
         cls.rule_instance = cr.CtPIDtoRID(project_id, cls.dataset_id,
-                                          cls.sandbox_id, mapping_dataset_id,
-                                          mapping_table_id)
+                                          cls.sandbox_id)
 
         cls.fq_sandbox_table_names = []
 
@@ -48,7 +40,7 @@ class CtPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
             f'{project_id}.{cls.dataset_id}.{table_id}'
             for table_id in [CONDITION_OCCURRENCE]
         ] + [cls.fq_deid_map_table
-            ] + [f'{project_id}.{mapping_dataset_id}.{PERSON}']
+            ] + [f'{project_id}.{cls.sandbox_id}.{PERSON}']
 
         # call super to set up the client, create datasets, and create
         # empty test tables
@@ -103,7 +95,7 @@ class CtPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
             (2345, 0, 1980, 0, 0),
             (6789, 0, 1990, 0, 0),
             (3456, 0, 1965, 0, 0)""").render(
-            fq_dataset_name=f'{self.project_id}.{self.mapping_dataset_id}')
+            fq_dataset_name=f'{self.project_id}.{self.sandbox_id}')
         queries.append(pid_query)
 
         map_query = self.jinja_env.from_string("""
@@ -123,7 +115,7 @@ class CtPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
         # verify pid 3456 is excluded and logged
         log_module = 'cdr_cleaner.cleaning_rules.deid.pid_rid_map'
         log_level = 'WARNING'
-        log_message = 'PIDs [3456] excluded since no mapped research_ids found'
+        log_message = 'Records for PIDs [3456] will be deleted since no mapped research_ids found'
         expected_log_msg = f"{log_level}:{log_module}:{log_message}"
         with self.assertLogs(LOGGER, level='WARN') as ir:
             self.rule_instance.inspect_rule(self.client)
@@ -138,7 +130,7 @@ class CtPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
                 'condition_start_date', 'condition_start_datetime',
                 'condition_type_concept_id'
             ],
-            'loaded_ids': [234, 678, 345, 789, 456],
+            'loaded_ids': [234, 678, 345, 789, 3456],
             'cleaned_values': [
                 (50001, 234, 100, datetime.fromisoformat('2020-08-17').date(),
                  datetime.fromisoformat('2020-08-17 15:00:00+00:00'), 10),

@@ -264,16 +264,22 @@ def create_excel_files(
         output_file_name, engine=constants.xl_writer)
 
     for df_name, dataframe in df_dict.items():
+        if df_name == "Comprehensive Metabolic Panel (CMP)":
+            df_name = "Comprehensive Metabolic Panel"
+        elif df_name == "Complete Blood Count (CBC) with Differential":
+            df_name = "CBC with Differential"
+        else:
+            pass
         dataframe.to_excel(writer, sheet_name=df_name)
 
     writer.save()
 
 
 # EHR Ops Dataset Comparisons
-report1 = 'april_17_2020.xlsx'
-report2 = 'may_18_2020.xlsx'
-report3 = 'june_03_2020.xlsx'
-report4 = 'june_15_2020.xlsx'
+report1 = 'december_16_2020.xlsx'
+report2 = 'january_06_2021.xlsx'
+report3 = 'january_22_2021.xlsx'
+report4 = 'february_01_2021.xlsx'
 
 report_names = [report1, report2, report3, report4]
 
@@ -327,3 +333,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# +
+#total should be 28 files generated

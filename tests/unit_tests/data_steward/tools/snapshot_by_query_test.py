@@ -1,8 +1,6 @@
 import re
 import unittest
 
-import mock
-
 from tools import snapshot_by_query
 
 WHITESPACE = '[\t\n\\s]+'
@@ -17,9 +15,7 @@ class SnapshotByQueryTest(unittest.TestCase):
         print(cls.__name__)
         print('**************************************************************')
 
-    @mock.patch('tools.snapshot_by_query.has_at_birth_column')
-    def test_get_copy_table_query(self, mock_has_at_birth_column):
-        mock_has_at_birth_column.return_value = True
+    def test_get_copy_table_query(self):
         actual_query = snapshot_by_query.get_copy_table_query(
             'test-project', 'test-dataset', 'person')
         expected_query = """SELECT
@@ -40,10 +36,7 @@ class SnapshotByQueryTest(unittest.TestCase):
   CAST(race_source_value AS STRING) AS race_source_value,
   CAST(race_source_concept_id AS INT64) AS race_source_concept_id,
   CAST(ethnicity_source_value AS STRING) AS ethnicity_source_value,
-  CAST(ethnicity_source_concept_id AS INT64) AS ethnicity_source_concept_id,
-  CAST(sex_at_birth_concept_id AS INT64) AS sex_at_birth_concept_id,
-  CAST(sex_at_birth_source_concept_id AS INT64) AS sex_at_birth_source_concept_id,
-  CAST(sex_at_birth_source_value AS STRING) AS sex_at_birth_source_value
+  CAST(ethnicity_source_concept_id AS INT64) AS ethnicity_source_concept_id
 FROM
   `test-project.test-dataset.person`"""
         expected_query = re.sub(WHITESPACE, SPACE, expected_query)

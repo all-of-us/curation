@@ -8,6 +8,7 @@ Usage: generate_combined_dataset.sh
   --vocab_dataset <vocab dataset>
   --unioned_ehr_dataset <unioned dataset>
   --rdr_dataset <RDR dataset>
+  --ehr_dataset <EHR dataset>
   --validation_dataset <Validation dataset ID>
   --dataset_release_tag <release tag for the CDR>
   --ehr_cutoff <ehr_cut_off date format yyyy-mm-dd>
@@ -22,6 +23,10 @@ while true; do
     ;;
   --unioned_ehr_dataset)
     unioned_ehr_dataset=$2
+    shift 2
+    ;;
+  --ehr_dataset)
+    ehr_dataset=$2
     shift 2
     ;;
   --vocab_dataset)
@@ -56,7 +61,7 @@ while true; do
   esac
 done
 
-if [[ -z "${key_file}" ]] || [[ -z "${unioned_ehr_dataset}" ]] || [[ -z "${vocab_dataset}" ]] || [[ -z "${rdr_dataset}" ]] || [[ -z "${validation_dataset}" ]] || [[ -z "${dataset_release_tag}" ]] || [[ -z "${ehr_cutoff}" ]] || [[ -z "${rdr_export_date}" ]]; then
+if [[ -z "${key_file}" ]] || [[ -z "${unioned_ehr_dataset}" ]] || [[ -z "${ehr_dataset}" ]] || [[ -z "${vocab_dataset}" ]] || [[ -z "${rdr_dataset}" ]] || [[ -z "${validation_dataset}" ]] || [[ -z "${dataset_release_tag}" ]] || [[ -z "${ehr_cutoff}" ]] || [[ -z "${rdr_export_date}" ]]; then
   echo "$USAGE"
   exit 1
 fi
@@ -96,7 +101,6 @@ combined="${dataset_release_tag}_combined"
 combined_backup="${combined}_backup"
 combined_sandbox="${combined}_sandbox"
 combined_staging="${combined}_staging"
-combined_staging_sandbox="${combined_staging}_sandbox"
 
 export RDR_DATASET_ID="${rdr_dataset}"
 export UNIONED_DATASET_ID="${unioned_ehr_dataset}"
@@ -132,29 +136,22 @@ bq mk --dataset --description "intermediary dataset to apply cleaning rules on $
 "${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${combined_backup} --target_dataset ${combined_staging}
 
 # create empty sandbox dataset to apply cleaning rules on staging dataset
-bq mk --dataset --description "Sandbox created for storing records affected by the cleaning rules applied to ${combined_staging}" --label "phase:sandbox" --label "release_tag:${dataset_release_tag}" --label "de_identified:false" "${app_id}":"${combined_staging_sandbox}"
+bq mk --dataset --description "Sandbox created for storing records affected by the cleaning rules applied to ${combined_staging}" --label "phase:sandbox" --label "release_tag:${dataset_release_tag}" --label "de_identified:false" "${app_id}":"${combined_sandbox}"
 
 export COMBINED_DATASET_ID="${combined_staging}"
 export BIGQUERY_DATASET_ID="${combined_staging}"
 data_stage='combined'
 
 # run cleaning_rules on combined staging dataset
-python "${CLEANER_DIR}/clean_cdr.py" --project_id "${app_id}" --dataset_id "${combined_staging}" --sandbox_dataset_id "${combined_staging_sandbox}" --data_stage ${data_stage} -s 2>&1 | tee combined_cleaning_log_"${combined}".txt
+python "${CLEANER_DIR}/clean_cdr.py" --project_id "${app_id}" --dataset_id "${combined_staging}" --sandbox_dataset_id "${combined_sandbox}" --data_stage ${data_stage} -s --cutoff_date "${ehr_cutoff}" --validation_dataset_id "${validation_dataset}" --ehr_dataset_id "${ehr_dataset}" 2>&1 | tee combined_cleaning_log_"${combined}".txt
 
 # Create a snapshot dataset with the result
 python "${TOOLS_DIR}/snapshot_by_query.py" --project_id "${app_id}" --dataset_id "${combined_staging}" --snapshot_dataset_id "${combined}"
 
 bq update --description "${version} combined clean version of ${rdr_dataset} + ${unioned_ehr_dataset}" --set_label "phase:clean" --set_label "release_tag:${dataset_release_tag}" --set_label "de_identified:false" ${app_id}:${combined}
 
-#copy sandbox dataset
-"${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset "${combined_staging_sandbox}" --target_dataset "${combined_sandbox}"
-
 # Update sandbox description
 bq update --description "Sandbox created for storing records affected by the cleaning rules applied to ${combined}" --set_label "phase:sandbox" --set_label "release_tag:${dataset_release_tag}" --set_label "de_identified:false" "${app_id}":"${combined_sandbox}"
-
-# Remove intermediary datasets
-bq rm -r -d "${combined_staging_sandbox}"
-bq rm -r -d "${combined_staging}"
 
 combined_release="${combined}_release"
 

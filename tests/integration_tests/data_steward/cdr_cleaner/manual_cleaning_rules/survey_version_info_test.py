@@ -51,7 +51,6 @@ class COPESurveyVersionTaskTest(BaseTest.DeidRulesTestBase):
 
         cls.rule_instance = COPESurveyVersionTask(project_id, dataset_id,
                                                   sandbox_id,
-                                                  cls.mapping_dataset_id,
                                                   cls.cope_dataset_id,
                                                   cls.cope_tablename)
 
@@ -59,8 +58,11 @@ class COPESurveyVersionTaskTest(BaseTest.DeidRulesTestBase):
             f"{project_id}.{dataset_id}.observation",
             f"{project_id}.{dataset_id}.observation_ext"
         ]
+
         cls.dataset_id = dataset_id
-        cls.fq_questionnaire_tablename = f'{project_id}.{cls.mapping_dataset_id}._deid_questionnaire_response_map'
+        cls.sandbox_id = sandbox_id
+
+        cls.fq_questionnaire_tablename = f'{project_id}.{sandbox_id}._deid_questionnaire_response_map'
         # call super to set up the client, create datasets, and create
         # empty test tables
         # NOTE:  does not create empty sandbox tables.
@@ -80,8 +82,9 @@ class COPESurveyVersionTaskTest(BaseTest.DeidRulesTestBase):
         (observation_id, person_id, observation_concept_id, observation_date,
          observation_type_concept_id, questionnaire_response_id)
         VALUES
-          -- represents COPE survey record --
+          -- represents COPE survey records --
           (801, 337361, 1585899, date('2016-05-01'), 45905771, 100),
+          (804, 337361, 1585899, date('2020-11-01'), 45905771, 150),
           -- represents other survey record --
           (802, 337361, 1585899, date('2019-01-01'), 45905771, 200),
           -- represents an EHR observation record --
@@ -94,15 +97,17 @@ class COPESurveyVersionTaskTest(BaseTest.DeidRulesTestBase):
         VALUES
           (801, 'PPI/PM', null),
           (802, 'PPI/PM', null),
-          (803, 'EHR site 222', null)
+          (803, 'EHR site 222', null),
+          (804, 'PPI/PM', null)
         """),
             self.jinja_env.from_string("""
         -- set up questionnaire response mapping table, a post-deid table --
-        INSERT INTO `{{project}}.{{mapping_dataset}}._deid_questionnaire_response_map`
+        INSERT INTO `{{project}}.{{qrid_map_dataset_id}}._deid_questionnaire_response_map`
         (questionnaire_response_id, research_response_id)
         VALUES
           (10, 100),
-          (20, 200)
+          (20, 200),
+          (30, 150)
         """),
             self.jinja_env.from_string("""
         CREATE OR REPLACE TABLE `{{project}}.{{cope_dataset}}.{{cope_table_name}}` AS (
@@ -114,7 +119,13 @@ class COPESurveyVersionTaskTest(BaseTest.DeidRulesTestBase):
         -- semantic version provided by RDR but not strictly used by curation --
         'V2020.05.06' AS semantic_version,
         -- cope month provided by RDR team --
-        'may' AS cope_month)
+        'may' AS cope_month
+        UNION ALL
+        SELECT
+        700 AS participant_id,
+        30 AS questionnaire_response_id,
+        'V2020.11.06' AS semantic_version,
+        'nov' AS cope_month)
         """)
         ]
 
@@ -122,7 +133,7 @@ class COPESurveyVersionTaskTest(BaseTest.DeidRulesTestBase):
         for statement in insert_fake_measurements:
             sql = statement.render(project=self.project_id,
                                    dataset=self.dataset_id,
-                                   mapping_dataset=self.mapping_dataset_id,
+                                   qrid_map_dataset_id=self.sandbox_id,
                                    cope_dataset=self.cope_dataset_id,
                                    cope_table_name=self.cope_tablename)
             load_statements.append(sql)
@@ -141,10 +152,11 @@ class COPESurveyVersionTaskTest(BaseTest.DeidRulesTestBase):
             'fq_table_name':
                 self.fq_table_names[1],
             'fields': ['observation_id', 'src_id', 'survey_version_concept_id'],
-            'loaded_ids': [801, 802, 803],
+            'loaded_ids': [801, 802, 803, 804],
             'cleaned_values': [(801, 'PPI/PM', 2100000002),
                                (802, 'PPI/PM', None),
-                               (803, 'EHR site 222', None)]
+                               (803, 'EHR site 222', None),
+                               (804, 'PPI/PM', 2100000005)]
         }]
 
         self.default_test(tables_and_counts)
