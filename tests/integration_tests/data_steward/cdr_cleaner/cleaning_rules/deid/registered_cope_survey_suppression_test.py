@@ -1,11 +1,11 @@
 """
 Integration test to ensure records are properly sandboxed and dropped in the registered_cope_survey_suppression.py module.
 
-Removes any records that have an observation_source_concept_id as any of these values: 1310058, 1333325, 1333235,
- 1310065, 1333012, 1333234, 1332769, 702686, 1333156, 713888, 1333327, 1333118, 1310054, 1333326, 1310066, 596884,
-    596885, 596886, 596887, 596888, 596889, 1310137, 1310146, 1333015, 1333023, 1333016, 715714, 1310147, 715726.
+Removes any records that have an observation_source_concept_id as any of these values: 1310058, 1310065, 1333012,
+ 1333234, 702686, 1333327, 1333118, 1310054, 1333326, 1310066, 596884, 596885, 596886, 596887, 596888, 596889, 1310137,
+ 1310146, 1333015, 1333023, 1333016, 715714, 1310147, 715726.
 
-Original Issue: DC-1666
+Original Issue: DC-1666, DC-1740
 
 The intent is to ensure that no records exists that have any of the observation_source_concept_id above by sandboxing
 the rows and removing them from the observation table.
@@ -121,14 +121,19 @@ class RegisteredCopeSurveyQuestionsSuppressionTest(
                 f'{self.project_id}.{self.sandbox_id}.'
                 f'{self.rule_instance.sandbox_table_for("observation")}',
             'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
-            'sandboxed_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+            'sandboxed_ids': [1, 4, 5, 6, 8, 9],
             'fields': [
                 'observation_id', 'person_id', 'observation_concept_id',
                 'observation_type_concept_id', 'value_as_concept_id',
                 'observation_source_concept_id', 'value_source_concept_id',
                 'qualifier_concept_id', 'unit_concept_id'
             ],
-            'cleaned_values': [(12, 112, 0, 0, 0, 1111111, 0, 0, 0),
+            'cleaned_values': [(2, 102, 0, 0, 0, 1333325, 0, 0, 0),
+                               (3, 103, 0, 0, 0, 1333235, 0, 0, 0),
+                               (7, 107, 0, 0, 0, 1332769, 0, 0, 0),
+                               (10, 110, 0, 0, 0, 1333156, 0, 0, 0),
+                               (11, 111, 0, 0, 0, 713888, 0, 0, 0),
+                               (12, 112, 0, 0, 0, 1111111, 0, 0, 0),
                                (13, 113, 0, 0, 0, 2222222, 0, 0, 0),
                                (14, 114, 0, 0, 0, None, 0, 0, 0)]
         }]
