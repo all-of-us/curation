@@ -33,8 +33,7 @@ CREDENTIALS = auth.get_impersonation_credentials(RUN_AS, SCOPES)
 CLIENT = bigquery.Client(project=PROJECT_ID, credentials=CREDENTIALS)
 
 pd.options.display.max_rows = 1000
-pd.options.display.min_rows = 250
-pd.options.display.max_colwidth = None
+pd.options.display.max_colwidth = 0
 pd.options.display.max_columns = None
 pd.options.display.width = None
 
@@ -83,7 +82,6 @@ WHERE EXISTS
 # Note that this differs from the minimum age at enrollment ([DC-1724](https://precisionmedicineinitiative.atlassian.net/browse/DC-1724)). Participants may
 # contribute historical EHR data that precede the enrollment date.
 
-# +
 tpl = JINJA_ENV.from_string('''
 {% for table_name, date_field in date_fields.items() %}
 SELECT 
@@ -109,7 +107,6 @@ WHERE
 ''')
 query = tpl.render(dataset_id=DATASET_ID, date_fields=date_fields)
 q(query)
-# -
 
 # ## Participants must have basics data
 # Identify any participants who have don't have any responses
@@ -327,6 +324,26 @@ DECLARE query DEFAULT (
     FROM field_comparison
 );
 EXECUTE IMMEDIATE query;
+''')
+
+q(f'''
+SELECT
+ project_id
+,dataset_id
+,table_id
+,row_count
+FROM `2021q2r1_combined_release.__TABLES__` 
+WHERE table_id = 'note'
+
+UNION ALL
+
+SELECT
+ project_id
+,dataset_id
+,table_id
+,row_count
+FROM `2021q3r1_combined_release.__TABLES__` 
+WHERE table_id = 'note'
 ''')
 
 # ---
