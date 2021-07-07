@@ -443,3 +443,19 @@ AND concept_name IN ('The Basics')
 AND questionnaire_response_id IS NOT NULL)
 '''
 pd.read_gbq(query, dialect='standard')
+
+
+# Add a check for participants under 18 [DC-1723]
+# concept_id 1585482 is the date for consent
+# As far as we know, AOU participants are required to be 18+ years of age at the time of enrollment. 
+# A check must be added to the RDR notebook which identifies participant records that do not meet 
+# this criteria. This will facilitate reporting the issue to the RDR team 
+
+query = f'''
+SELECT *
+FROM `{project_id}.{new_rdr}.observation`
+JOIN `{project_id}.{new_rdr}.person` USING (person_id)
+WHERE  (observation_source_concept_id=1585482 OR observation_concept_id=1585482)
+AND DATE_DIFF(DATE(observation_date), DATE(birth_datetime), YEAR) < 18
+'''
+pd.read_gbq(query, dialect='standard')
