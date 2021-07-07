@@ -5,15 +5,10 @@ to be suppressed from the registered tier CDR
 | observation_source_concept_id |                                                               |
 |-------------------------------|---------------------------------------------------------------|
 | 1310058                       | https://athena.ohdsi.org/search-terms/terms/1310058           |
-| 1333325                       | https://athena.ohdsi.org/search-terms/terms/1333325           |
-| 1333235                       | https://athena.ohdsi.org/search-terms/terms/1333235           |
 | 1310065                       | https://athena.ohdsi.org/search-terms/terms/1310065           |
 | 1333012                       | https://athena.ohdsi.org/search-terms/terms/1333012           |
 | 1333234                       | https://athena.ohdsi.org/search-terms/terms/1333234           |
-| 1332769                       | https://athena.ohdsi.org/search-terms/terms/1332769           |
 | 702686                        | https://athena.ohdsi.org/search-terms/terms/702686            |
-| 1333156                       | https://athena.ohdsi.org/search-terms/terms/1333156           |
-| 713888                        | https://athena.ohdsi.org/search-terms/terms/713888            |
 | 1333327                       | https://athena.ohdsi.org/search-terms/terms/1333327           |
 | 1333118                       | https://athena.ohdsi.org/search-terms/terms/1333118           |
 | 1310054                       | https://athena.ohdsi.org/search-terms/terms/1310054           |
@@ -35,7 +30,7 @@ to be suppressed from the registered tier CDR
 | 715726                        | https://athena.ohdsi.org/search-terms/terms/715726            |
 -------------------------------------------------------------------------------------------------
 
-Original Issue: DC-1666
+Original Issue: DC-1666, DC-1740
 
 The intent of this cleaning rule is to sandbox and suppress all records with observation_source_concept_id in the
     above table which exist in the observation table. This will be done by providing a list containing the above
@@ -56,10 +51,9 @@ from cdr_cleaner.cleaning_rules.deid.concept_suppression import \
 LOGGER = logging.getLogger(__name__)
 
 REGISTERED_COPE_SURVEY_SUPPRESS_CONCEPT_LIST = [
-    1310058, 1333325, 1333235, 1310065, 1333012, 1333234, 1332769, 702686,
-    1333156, 713888, 1333327, 1333118, 1310054, 1333326, 1310066, 596884,
-    596885, 596886, 596887, 596888, 596889, 1310137, 1310146, 1333015, 1333023,
-    1333016, 715714, 1310147, 715726
+    1310058, 1310065, 1333012, 1333234, 702686, 1333327, 1333118, 1310054,
+    1333326, 1310066, 596884, 596885, 596886, 596887, 596888, 596889, 1310137,
+    1310146, 1333015, 1333023, 1333016, 715714, 1310147, 715726
 ]
 
 
@@ -76,7 +70,7 @@ class RegisteredCopeSurveyQuestionsSuppression(
         """
         desc = f'Any record with an observation_source_concept_id equal to any concept_id in ' \
                f'{REGISTERED_COPE_SURVEY_SUPPRESS_CONCEPT_LIST} will be sandboxed and dropped from observation table.'
-        super().__init__(issue_numbers=['DC1666'],
+        super().__init__(issue_numbers=['DC1666', 'DC1740'],
                          description=desc,
                          affected_datasets=[cdr_consts.REGISTERED_TIER_DEID],
                          project_id=project_id,
