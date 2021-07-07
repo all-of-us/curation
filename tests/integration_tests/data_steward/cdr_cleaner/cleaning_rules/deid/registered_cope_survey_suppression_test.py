@@ -79,28 +79,28 @@ class RegisteredCopeSurveyQuestionsSuppressionTest(
             -- subset of Concepts to suppress --
             -- 1310058 Thinking about your current social habits, in the last 5 days: -- 
                     -- I have attended social gatherings of MORE than 50 people. Please specify: --
-            -- 1333325 In the past month, have you been sick for more than one day with a new illness related to -- 
-                    -- COVID-19 or flu-like symptoms? --
-            -- 1333235 Which of the following symptoms did you have? (select all that apply). --
             -- 1310065 Which of the following symptoms did you have? Select all that apply. Please specify: --
             -- 1333012 What breathing treatment did you receive? Please select all that apply. --
             -- 1333234 What other breathing treatment did you receive? Please specify. --
-            -- 1332769 Who do you know who has died? Check all that apply. --
             -- 702686  Who do you know who has died? Please specify. --
-            -- 1333156 Do you think you have had COVID-19? --
-            -- 713888  When did your COVID-19 symptoms begin? --
               (1, 101, 0, 0, 0, 1310058, 0, 0, 0, '2020-01-01'),
-              (2, 102, 0, 0, 0, 1333325, 0, 0, 0, '2020-01-01'),
-              (3, 103, 0, 0, 0, 1333235, 0, 0, 0, '2020-01-01'),
-              (4, 104, 0, 0, 0, 1310065, 0, 0, 0, '2020-01-01'),
-              (5, 105, 0, 0, 0, 1333012, 0, 0, 0, '2020-01-01'),
-              (6, 106, 0, 0, 0, 1333234, 0, 0, 0, '2020-01-01'),
-              (7, 107, 0, 0, 0, 1332769, 0, 0, 0, '2020-01-01'),
-              (8, 108, 0, 0, 0, 702686, 0, 0, 0, '2020-01-01'),
-              (9, 109, 0, 0, 0, 715714, 0, 0, 0, '2020-01-01'),
+              (2, 102, 0, 0, 0, 1310065, 0, 0, 0, '2020-01-01'),
+              (3, 103, 0, 0, 0, 1333012, 0, 0, 0, '2020-01-01'),
+              (4, 104, 0, 0, 0, 1333234, 0, 0, 0, '2020-01-01'),
+              (5, 105, 0, 0, 0, 702686, 0, 0, 0, '2020-01-01'),
+              (6, 106, 0, 0, 0, 715714, 0, 0, 0, '2020-01-01'),
+              -- concepts not to be suppressed --
+               -- 1333325 In the past month, have you been sick for more than one day with a new illness related to -- 
+                    -- COVID-19 or flu-like symptoms? --
+               -- 1333235 Which of the following symptoms did you have? (select all that apply). --
+               -- 1332769 Who do you know who has died? Check all that apply. --
+               -- 1333156 Do you think you have had COVID-19? --
+               -- 713888  When did your COVID-19 symptoms begin? --
+              (7, 107, 0, 0, 0, 1333325, 0, 0, 0, '2020-01-01'),
+              (8, 108, 0, 0, 0, 1333235, 0, 0, 0, '2020-01-01'),
+              (9, 109, 0, 0, 0, 1332769, 0, 0, 0, '2020-01-01'),
               (10, 110, 0, 0, 0, 1333156, 0, 0, 0, '2020-01-01'),
               (11, 111, 0, 0, 0, 713888, 0, 0, 0, '2020-01-01'),
-              -- concepts not to be suppressed --
               (12, 112, 0, 0, 0, 1111111, 0, 0, 0, '2020-01-01'),
               (13, 113, 0, 0, 0, 2222222, 0, 0, 0, '2020-01-01'),
               (14, 114, 0, 0, 0, null, 0, 0, 0, '2020-01-01')
@@ -121,16 +121,16 @@ class RegisteredCopeSurveyQuestionsSuppressionTest(
                 f'{self.project_id}.{self.sandbox_id}.'
                 f'{self.rule_instance.sandbox_table_for("observation")}',
             'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
-            'sandboxed_ids': [1, 4, 5, 6, 8, 9],
+            'sandboxed_ids': [1, 2, 3, 4, 5, 6],
             'fields': [
                 'observation_id', 'person_id', 'observation_concept_id',
                 'observation_type_concept_id', 'value_as_concept_id',
                 'observation_source_concept_id', 'value_source_concept_id',
                 'qualifier_concept_id', 'unit_concept_id'
             ],
-            'cleaned_values': [(2, 102, 0, 0, 0, 1333325, 0, 0, 0),
-                               (3, 103, 0, 0, 0, 1333235, 0, 0, 0),
-                               (7, 107, 0, 0, 0, 1332769, 0, 0, 0),
+            'cleaned_values': [(7, 107, 0, 0, 0, 1333325, 0, 0, 0),
+                               (8, 108, 0, 0, 0, 1333235, 0, 0, 0),
+                               (9, 109, 0, 0, 0, 1332769, 0, 0, 0),
                                (10, 110, 0, 0, 0, 1333156, 0, 0, 0),
                                (11, 111, 0, 0, 0, 713888, 0, 0, 0),
                                (12, 112, 0, 0, 0, 1111111, 0, 0, 0),
