@@ -299,14 +299,13 @@ REGISTERED_TIER_DEID_CLEANING_CLASSES = [
     ####################################
     (
         GeneralizeStateByPopulation,),
+    (GeneralizeCopeInsuranceAnswers,),
 
     # Data suppressions
     ####################################
     (
         CovidEHRVaccineConceptSuppression,),  # should run after QRIDtoRID
     (StringFieldsSuppression,),
-    (GeneralizeStateByPopulation,),
-    (GeneralizeCopeInsuranceAnswers,),
     (SectionParticipationConceptSuppression,),
     (RegisteredCopeSurveyQuestionsSuppression,),
 ]
