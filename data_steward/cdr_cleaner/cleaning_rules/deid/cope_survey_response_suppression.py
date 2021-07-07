@@ -15,6 +15,7 @@ Ensures that the below list of observation_source_concept_id are sandboxed and s
 | 715714                        |
 | 1310146                       |
 | 1310058                       |
+| 1310065                       |
 ---------------------------------
 
 Original Issue: DC-1492
@@ -72,9 +73,10 @@ class CopeSurveyResponseSuppression(
         # https://athena.ohdsi.org/search-terms/terms/715714
         # https://athena.ohdsi.org/search-terms/terms/1310146
         # https://athena.ohdsi.org/search-terms/terms/1310058
+        # https://athena.ohdsi.org/search-terms/terms/1310065
         return [
             1333234, 1310066, 715725, 1310147, 702686, 1310054, 715726, 715724,
-            715714, 1310146, 1310058
+            715714, 1310146, 1310058, 1310065
         ]
 
     def setup_validation(self, client, *args, **keyword_args):
