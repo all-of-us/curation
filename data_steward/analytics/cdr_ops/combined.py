@@ -382,10 +382,10 @@ q(query)
 # values in this dataset should generally be non-increasing compared to baseline.
 # If the prevalence of invalid concepts is increasing, EHR Ops should be alerted.
 
-FQN_INVALID_CONCEPT = 'curation_sandbox.invalid_concept'
+FQN_INVALID_CONCEPT = f'{DATASET_ID}_sandbox.invalid_concept'
 
 query = f'''
-CREATE OR REPLACE TABLE `{FQN_INVALID_CONCEPT}` 
+CREATE TABLE IF NOT EXISTS `{FQN_INVALID_CONCEPT}` 
 (dataset_id  STRING NOT NULL OPTIONS(description="Identifies the dataset")
 ,table_name  STRING NOT NULL OPTIONS(description="Identifies the table")
 ,column_name STRING NOT NULL OPTIONS(description="Identifies the concept_id field")
