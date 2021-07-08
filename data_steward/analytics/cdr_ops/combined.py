@@ -190,7 +190,10 @@ WHERE min_death_date < max_ppi_date
 q(query)
 
 # ## Consent required for EHR Data
-# If EHR records are found for participants who have not consented this may indicate a bug in the pipeline as these should have been removed. These records should also be reported to EHR Ops so that sites may cease to send the information.
+# If EHR records are found for participants who have not consented this may 
+# indicate a bug in the pipeline as these should have been removed. These 
+# records should also be reported to EHR Ops so that sites may cease to send 
+# the information.
 
 # +
 EHR_CONSENT_PERMISSION_CONCEPT_ID = 1586099
@@ -263,12 +266,20 @@ q(query)
 # -
 
 # ## Date and datetime fields should have the same date
-# The date represented by associated `_date` and `_datetime` fields of the same row should be the same. If there any discrepancies, there may be a bug in the pipeline (i.e. `ensure_date_datetime_consistency`). It may also be useful to report discrepancies to EHR Ops.
+# The date represented by associated `_date` and `_datetime` fields of the same 
+# row should be the same. If there any discrepancies, there may be a bug in the 
+# pipeline (i.e. `ensure_date_datetime_consistency`). It may also be useful to 
+# report discrepancies to EHR Ops.
 #
 # ### Implementation notes
-# For each associated date/timestamp pair in the dataset the script that follows assembles a universal subquery which can be applied to all pertinent tables and whose results can be compiled together into a single result set that provides relevant troubleshooting information. For legibility, a maximum of 10 problem rows is returned for each table.
+# For each associated date/timestamp pair in the dataset the script that follows 
+# assembles a universal subquery which can be applied to all pertinent tables and 
+# whose results can be compiled together into a single result set that provides 
+# relevant troubleshooting information. For legibility, a maximum of 10 problem 
+# rows is returned for each table.
 #
-# As an example, the subquery for the `observation` table should look something like this:
+# As an example, the subquery for the `observation` table should look something 
+# like this:
 #
 # ```sql
 # SELECT
