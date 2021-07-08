@@ -334,26 +334,6 @@ DECLARE query DEFAULT (
 EXECUTE IMMEDIATE query;
 ''')
 
-q(f'''
-SELECT
- project_id
-,dataset_id
-,table_id
-,row_count
-FROM `2021q2r1_combined_release.__TABLES__` 
-WHERE table_id = 'note'
-
-UNION ALL
-
-SELECT
- project_id
-,dataset_id
-,table_id
-,row_count
-FROM `2021q3r1_combined_release.__TABLES__` 
-WHERE table_id = 'note'
-''')
-
 # ---
 # # Manual Review
 # The following evaluation metrics require manual/visual review.
