@@ -455,8 +455,7 @@ AND questionnaire_response_id IS NOT NULL)
 '''
 pd.read_gbq(query, dialect='standard')
 
-
-# ## Participants must be 18 years of age or older to consent 
+# ## Participants must be 18 years of age or older to consent. 
 #
 # AOU participants are required to be 18+ years of age at the time of consent ([DC-1724](https://precisionmedicineinitiative.atlassian.net/browse/DC-1724)), based on the date associated with the [ExtraConsent_TodaysDate](https://athena.ohdsi.org/search-terms/terms/1585482) row. Any violations should be reported to the RDR team as these should have been filtered out by the RDR ETL process ([DA-2073](https://precisionmedicineinitiative.atlassian.net/browse/DA-2073)).
 
