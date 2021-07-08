@@ -134,6 +134,10 @@ pd.read_gbq(query, dialect='standard')
 
 # # Question codes should have mapped `concept_id`s
 # Question codes in `observation_source_value` should be associated with the concept identified by `observation_source_concept_id` and mapped to a standard concept identified by `observation_concept_id`. The table below lists codes having rows where either field is null or zero and the number of rows where this occurs. This may be associated with an issue in the PPI vocabulary or in the RDR ETL process.
+#
+# Note: Snap codes are not modeled in the vocabulary but may be used in the RDR export. 
+# They are excluded here by filtering out snap codes in the Public PPI Codebook 
+# which were loaded into `curation_sandbox.snap_codes`.
 
 query = f"""
 SELECT
@@ -145,6 +149,7 @@ SELECT
 FROM `{project_id}.{new_rdr}.observation`
 WHERE observation_source_value IS NOT NULL
 AND observation_source_value != ''
+AND observation_source_value NOT IN (SELECT concept_code FROM `{project_id}.curation_sandbox.snap_codes`)
 GROUP BY 1
 HAVING source_concept_id_null + source_concept_id_zero + concept_id_null + concept_id_zero > 0
 ORDER BY 2 DESC, 3 DESC, 4 DESC, 5 DESC
@@ -153,6 +158,11 @@ pd.read_gbq(query, dialect='standard')
 
 # # Answer codes should have mapped `concept_id`s
 # Answer codes in value_source_value should be associated with the concept identified by value_source_concept_id and mapped to a standard concept identified by value_as_concept_id. The table below lists codes having rows where either field is null or zero and the number of rows where this occurs. This may be associated with an issue in the PPI vocabulary or in the RDR ETL process.
+#
+# Note: Snap codes are not modeled in the vocabulary but may be used in the RDR export. 
+# They are excluded here by filtering out snap codes in the Public PPI Codebook 
+# which were loaded into `curation_sandbox.snap_codes`.
+#
 
 query = f"""
 SELECT
@@ -163,7 +173,8 @@ SELECT
  ,COUNTIF(value_as_concept_id=0)           AS concept_id_zero
 FROM `{project_id}.{new_rdr}.observation`
 WHERE value_source_value IS NOT NULL
-and value_source_value != ''
+AND value_source_value != ''
+AND value_source_value NOT IN (SELECT concept_code FROM `{project_id}.curation_sandbox.snap_codes`)
 GROUP BY 1
 HAVING source_concept_id_null + source_concept_id_zero + concept_id_null + concept_id_zero > 0
 ORDER BY 2 DESC, 3 DESC, 4 DESC, 5 DESC
