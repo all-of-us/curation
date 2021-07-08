@@ -3,7 +3,7 @@ Integration test to ensure records are properly sandboxed and dropped in the reg
 
 Removes any records that have an observation_source_concept_id as any of these values: 1310058, 1310065, 1333012,
  1333234, 702686, 1333327, 1333118, 1310054, 1333326, 1310066, 596884, 596885, 596886, 596887, 596888, 596889, 1310137,
- 1310146, 1333015, 1333023, 1333016, 715714, 1310147, 715726.
+ 1310146, 1333016, 715714, 1310147, 715726.
 
 Original Issue: DC-1666, DC-1740
 
@@ -103,7 +103,9 @@ class RegisteredCopeSurveyQuestionsSuppressionTest(
               (11, 111, 0, 0, 0, 713888, 0, 0, 0, '2020-01-01'),
               (12, 112, 0, 0, 0, 1111111, 0, 0, 0, '2020-01-01'),
               (13, 113, 0, 0, 0, 2222222, 0, 0, 0, '2020-01-01'),
-              (14, 114, 0, 0, 0, null, 0, 0, 0, '2020-01-01')
+              (14, 114, 0, 0, 0, null, 0, 0, 0, '2020-01-01'),
+              (15, 115, 0, 0, 0, 1333023, 0, 0, 0, '2020-01-01'),
+              (16, 116, 0, 0, 0, 1333015, 0, 0, 0, '2020-01-01')
             """)
 
         insert_observation_query = observation_data_template.render(
@@ -120,7 +122,9 @@ class RegisteredCopeSurveyQuestionsSuppressionTest(
             'fq_sandbox_table_name':
                 f'{self.project_id}.{self.sandbox_id}.'
                 f'{self.rule_instance.sandbox_table_for("observation")}',
-            'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+            'loaded_ids': [
+                1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16
+            ],
             'sandboxed_ids': [1, 2, 3, 4, 5, 6],
             'fields': [
                 'observation_id', 'person_id', 'observation_concept_id',
@@ -135,7 +139,9 @@ class RegisteredCopeSurveyQuestionsSuppressionTest(
                                (11, 111, 0, 0, 0, 713888, 0, 0, 0),
                                (12, 112, 0, 0, 0, 1111111, 0, 0, 0),
                                (13, 113, 0, 0, 0, 2222222, 0, 0, 0),
-                               (14, 114, 0, 0, 0, None, 0, 0, 0)]
+                               (14, 114, 0, 0, 0, None, 0, 0, 0),
+                               (15, 115, 0, 0, 0, 1333023, 0, 0, 0),
+                               (16, 116, 0, 0, 0, 1333015, 0, 0, 0)]
         }]
 
         self.default_test(tables_and_counts)
