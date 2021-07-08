@@ -17,7 +17,7 @@
 # + tags=["parameters"]
 PROJECT_ID = ''  # identifies the project containing the datasets
 DATASET_ID = ''  # the dataset to evaluate
-BASELINE_DATASET_ID = ''  # a baseline dataset for metrics comparison
+BASELINE_DATASET_ID = ''  # a baseline dataset for metrics comparison (ex: a prior combined dataset)
 
 # +
 from google.cloud import bigquery
