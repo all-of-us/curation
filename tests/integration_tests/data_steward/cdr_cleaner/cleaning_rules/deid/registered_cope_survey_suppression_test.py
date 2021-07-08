@@ -3,7 +3,7 @@ Integration test to ensure records are properly sandboxed and dropped in the reg
 
 Removes any records that have an observation_source_concept_id as any of these values: 1310058, 1310065, 1333012,
  1333234, 702686, 1333327, 1333118, 1310054, 1333326, 1310066, 596884, 596885, 596886, 596887, 596888, 596889, 1310137,
- 1310146, 1333016, 715714, 1310147, 715726.
+ 1310146, 1333016, 715714, 1310147, 715724, 715725, 715726.
 
 Original Issue: DC-1666, DC-1740
 
@@ -89,6 +89,8 @@ class RegisteredCopeSurveyQuestionsSuppressionTest(
               (4, 104, 0, 0, 0, 1333234, 0, 0, 0, '2020-01-01'),
               (5, 105, 0, 0, 0, 702686, 0, 0, 0, '2020-01-01'),
               (6, 106, 0, 0, 0, 715714, 0, 0, 0, '2020-01-01'),
+              (17, 117, 0, 0, 0, 715724, 0, 0, 0, '2020-01-01'),
+              (18, 118, 0, 0, 0, 715725, 0, 0, 0, '2020-01-01'),
               -- concepts not to be suppressed --
                -- 1333325 In the past month, have you been sick for more than one day with a new illness related to -- 
                     -- COVID-19 or flu-like symptoms? --
@@ -123,9 +125,9 @@ class RegisteredCopeSurveyQuestionsSuppressionTest(
                 f'{self.project_id}.{self.sandbox_id}.'
                 f'{self.rule_instance.sandbox_table_for("observation")}',
             'loaded_ids': [
-                1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16
+                1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18
             ],
-            'sandboxed_ids': [1, 2, 3, 4, 5, 6],
+            'sandboxed_ids': [1, 2, 3, 4, 5, 6, 17, 18],
             'fields': [
                 'observation_id', 'person_id', 'observation_concept_id',
                 'observation_type_concept_id', 'value_as_concept_id',
