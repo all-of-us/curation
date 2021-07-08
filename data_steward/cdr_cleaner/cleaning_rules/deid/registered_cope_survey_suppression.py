@@ -25,6 +25,8 @@ to be suppressed from the registered tier CDR
 | 1333016                       | https://athena.ohdsi.org/search-terms/terms/1333016           |
 | 715714                        | https://athena.ohdsi.org/search-terms/terms/715714            |
 | 1310147                       | https://athena.ohdsi.org/search-terms/terms/1310147           |
+| 715724                        | https://athena.ohdsi.org/search-terms/terms/715724            |
+| 715725                        | https://athena.ohdsi.org/search-terms/terms/715725            |
 | 715726                        | https://athena.ohdsi.org/search-terms/terms/715726            |
 -------------------------------------------------------------------------------------------------
 
@@ -51,7 +53,7 @@ LOGGER = logging.getLogger(__name__)
 REGISTERED_COPE_SURVEY_SUPPRESS_CONCEPT_LIST = [
     1310058, 1310065, 1333012, 1333234, 702686, 1333327, 1333118, 1310054,
     1333326, 1310066, 596884, 596885, 596886, 596887, 596888, 596889, 1310137,
-    1310146, 1333016, 715714, 1310147, 715726
+    1310146, 1333016, 715714, 1310147, 715724, 715725, 715726
 ]
 
 
@@ -68,7 +70,7 @@ class RegisteredCopeSurveyQuestionsSuppression(
         """
         desc = f'Any record with an observation_source_concept_id equal to any concept_id in ' \
                f'{REGISTERED_COPE_SURVEY_SUPPRESS_CONCEPT_LIST} will be sandboxed and dropped from observation table.'
-        super().__init__(issue_numbers=['DC1666', 'DC1740', 'DC1747'],
+        super().__init__(issue_numbers=['DC1666', 'DC1740', 'DC1745', 'DC1747'],
                          description=desc,
                          affected_datasets=[cdr_consts.REGISTERED_TIER_DEID],
                          project_id=project_id,
