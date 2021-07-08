@@ -445,11 +445,9 @@ AND questionnaire_response_id IS NOT NULL)
 pd.read_gbq(query, dialect='standard')
 
 
-# Add a check for participants under 18 [DC-1723]
-# concept_id 1585482 is the date for consent
-# As far as we know, AOU participants are required to be 18+ years of age at the time of enrollment. 
-# A check must be added to the RDR notebook which identifies participant records that do not meet 
-# this criteria. This will facilitate reporting the issue to the RDR team 
+# ## Participants must be 18 years of age or older to consent 
+#
+# AOU participants are required to be 18+ years of age at the time of consent ([DC-1724](https://precisionmedicineinitiative.atlassian.net/browse/DC-1724)), based on the date associated with the [ExtraConsent_TodaysDate](https://athena.ohdsi.org/search-terms/terms/1585482) row. Any violations should be reported to the RDR team as these should have been filtered out by the RDR ETL process ([DA-2073](https://precisionmedicineinitiative.atlassian.net/browse/DA-2073)).
 
 query = f'''
 SELECT *
