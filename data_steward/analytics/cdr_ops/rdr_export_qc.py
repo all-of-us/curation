@@ -454,3 +454,16 @@ AND concept_name IN ('The Basics')
 AND questionnaire_response_id IS NOT NULL)
 '''
 pd.read_gbq(query, dialect='standard')
+
+# ## Participants must be 18 years of age or older to consent 
+#
+# AOU participants are required to be 18+ years of age at the time of consent ([DC-1724](https://precisionmedicineinitiative.atlassian.net/browse/DC-1724)), based on the date associated with the [ExtraConsent_TodaysDate](https://athena.ohdsi.org/search-terms/terms/1585482) row. Any violations should be reported to the RDR team as these should have been filtered out by the RDR ETL process ([DA-2073](https://precisionmedicineinitiative.atlassian.net/browse/DA-2073)).
+
+query = f'''
+SELECT *
+FROM `{project_id}.{new_rdr}.observation`
+JOIN `{project_id}.{new_rdr}.person` USING (person_id)
+WHERE  (observation_source_concept_id=1585482 OR observation_concept_id=1585482)
+AND DATE_DIFF(DATE(observation_date), DATE(birth_datetime), YEAR) < 18
+'''
+pd.read_gbq(query, dialect='standard')
