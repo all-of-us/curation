@@ -48,11 +48,11 @@ def q(query):
 # -
 
 # ## Check for duplicates in observation
-# In the past duplicates were introduced in observation due
-# to multiple sites submitting data for the same participant (see [DC-1512](https://precisionmedicineinitiative.atlassian.net/browse/DC-1512)).
-# If any duplicates are found there may be a bug in the
-# pipeline- particularly in
-# `ehr_union.move_ehr_person_to_observation`.
+# In the past duplicate `observation_id`s were introduced in observation due
+# to multiple sites submitting data for the same participant (see 
+# [DC-1512](https://precisionmedicineinitiative.atlassian.net/browse/DC-1512)).
+# If any duplicates are found there may be a bug in the pipeline- 
+# particularly in `ehr_union.move_ehr_person_to_observation`.
 
 q(f'''
 WITH 
