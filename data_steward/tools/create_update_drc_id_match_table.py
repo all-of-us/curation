@@ -15,9 +15,6 @@ Original Issue: DC-1216
 import logging
 import argparse
 
-# Third party imports
-from google.cloud import bigquery
-
 # Project imports
 import resources
 from utils import bq
@@ -138,6 +135,9 @@ def update_site_drc_table(client, project_id, table_id):
     """
     schema_list = bq.get_table_schema(IDENTITY_MATCH_TABLE)
     fields_name_str = ',\n'.join([item.name for item in schema_list])
+
+    # person_id will not need to be updated since it will always be in table since it
+    # is a required field
     fields = fields_name_str.replace('person_id,', '')
     id_match_table_id = table_id
 

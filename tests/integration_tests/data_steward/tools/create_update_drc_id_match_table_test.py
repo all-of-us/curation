@@ -43,6 +43,7 @@ SELECT *
 FROM {{project_id}}.{{drc_dataset_id}}.{{id_match_table_id}}
 """)
 
+
 class CreateUpdateDrcIdMatchTableTest(TestCase):
 
     @classmethod
@@ -144,9 +145,10 @@ class CreateUpdateDrcIdMatchTableTest(TestCase):
         id_validation.copy_ps_values_data_to_id_match_table(
             self.client, self.project_id, self.id_match_table_id, self.hpo_id)
 
-        query_contents = CONTENT_QUERY.render(project_id=self.project_id,
-                                              drc_dataset_id=self.dataset_id,
-                                              id_match_table_id=self.id_match_table_id)
+        query_contents = CONTENT_QUERY.render(
+            project_id=self.project_id,
+            drc_dataset_id=self.dataset_id,
+            id_match_table_id=self.id_match_table_id)
 
         content_job = self.client.query(query_contents)
         contents = list(content_job.result())
@@ -179,11 +181,13 @@ class CreateUpdateDrcIdMatchTableTest(TestCase):
 
         # Test
 
-        id_validation.update_site_drc_table(self.client, self.project_id, self.id_match_table_id)
+        id_validation.update_site_drc_table(self.client, self.project_id,
+                                            self.id_match_table_id)
 
-        query_contents = CONTENT_QUERY.render(project_id=self.project_id,
-                                              drc_dataset_id=self.dataset_id,
-                                              id_match_table_id=self.id_match_table_id)
+        query_contents = CONTENT_QUERY.render(
+            project_id=self.project_id,
+            drc_dataset_id=self.dataset_id,
+            id_match_table_id=self.id_match_table_id)
 
         content_job = self.client.query(query_contents)
         contents = list(content_job.result())
