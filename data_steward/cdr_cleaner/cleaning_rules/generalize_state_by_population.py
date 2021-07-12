@@ -30,6 +30,7 @@ STATE_GENERALIZATION_QUERY = JINJA_ENV.from_string("""
         GROUP BY value_source_concept_id
         HAVING COUNT(*) < {{threshold}}
     )
+    and observation_source_concept_id = 1585249
 """)
 
 

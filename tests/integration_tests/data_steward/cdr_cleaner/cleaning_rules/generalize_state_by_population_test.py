@@ -9,6 +9,7 @@ Original Issue: DC-1614
 """
 
 # Python imports
+import copy
 import os
 
 # Third party imports
@@ -107,7 +108,7 @@ class GeneralizeStateByPopulationTest(BaseTest.CleaningRulesTestBase):
         Tests that the specifications for STATE_GENERALIZATION_QUERY perform as designed.
 
         Validates pre conditions, tests execution, and post conditions based on the load
-        statements and the tables_and_counts variable.        
+        statements and the tables_and_counts variable.
         """
 
         #Rows to insert
@@ -133,14 +134,49 @@ class GeneralizeStateByPopulationTest(BaseTest.CleaningRulesTestBase):
 
                 inserted_rows.append(row)
                 test_obs_id += 1
+
+        # add value_source_concept_id = 0 checks for state records
+        row = {
+            'observation_id': test_obs_id,
+            'person_id': test_obs_id,
+            'observation_concept_id': 40766229,
+            'observation_date': self.date,
+            'observation_type_concept_id': 45905771,
+            'value_as_concept_id': 1,
+            'observation_source_concept_id': 1585249,
+            'value_source_value': 'random state value',
+            'value_source_concept_id': 0
+        }
+
+        inserted_rows.append(row)
+        test_obs_id += 1
+
+        # add value_source_concept_id = 0 checks for non-state records
+        row = {
+            'observation_id': test_obs_id,
+            'person_id': test_obs_id,
+            'observation_concept_id': 40766229,
+            'observation_date': self.date,
+            'observation_type_concept_id': 45905771,
+            'value_as_concept_id': 1,
+            'observation_source_concept_id': 100,
+            'value_source_value': 'not a state record',
+            'value_source_concept_id': 0
+        }
+
+        inserted_rows.append(row)
+        test_obs_id += 1
+
         inserted_rows_df = pd.DataFrame(inserted_rows,
                                         columns=list(inserted_rows[0].keys()))
 
         #Rows to expect
-        expected_rows = inserted_rows
+        expected_rows = copy.deepcopy(inserted_rows)
         for i, expected_row in enumerate(expected_rows):
-            if TEST_STATES[expected_row['value_source_value']][
-                    'participant_count'] < PARTICIPANT_THRESH:
+            if ((TEST_STATES.get(
+                    expected_row.get('value_source_value'), {}).get(
+                        'participant_count', 0) < PARTICIPANT_THRESH) and
+                (expected_row.get('observation_source_concept_id') == 1585249)):
                 expected_rows[i].update({
                     'value_source_concept_id': 2000000011,
                     'value_as_concept_id': 2000000011
