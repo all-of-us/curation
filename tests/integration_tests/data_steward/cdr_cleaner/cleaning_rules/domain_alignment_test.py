@@ -178,6 +178,7 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
             (102, 1002, 8621, '2015-07-15', 45905771, 'ipaq_3_cope_a_24', 1332871),
             (103, 1003, 8621, '2015-07-15', 45905771, 'ipaq_5_cope_a_24', 1332872),
             (104, 1004, 61909002, '2015-07-15', 45905771, 'Language_SpokenWrittenLanguage', 1585413),
+            -- will be transferred to condition_occurence --
             (105, 1005, 45769242, '2015-07-15', 44814721, 'IS_ILLICIT_DRUG_USER', 0)
         """)
 
@@ -190,6 +191,7 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
                 (102, '{{dataset_id}}', 20, 'hpo_2', 'observation'),
                 (103, '{{dataset_id}}', 30, 'hpo_3', 'observation'),
                 (104, '{{dataset_id}}', 40, 'hpo_4', 'observation'),
+                -- will be transferred to _mapping_condition_occurence --
                 (105, '{{dataset_id}}', 50, 'hpo_5', 'observation')
             """)
 
@@ -240,7 +242,9 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
                                 parse('2015-07-15 00:00:00 UTC'), 42894222, 3),
                                (103, 4, 201826, date(2015, 7, 15),
                                 parse('2015-07-15 00:00:00 UTC'), 42894222, 4),
-                               (105, 6, 320128, date(2015, 8, 15),
+                               (105, 1005, 45769242, date(2015, 7,
+                                                          15), None, 0, None),
+                               (106, 6, 320128, date(2015, 8, 15),
                                 parse('2015-08-15 00:00:00 UTC'), None, 6)]
         }, {
             'fq_table_name':
@@ -266,23 +270,22 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
                 f'{self.project_id}.{self.sandbox_id}.'
                 f'{sandbox_name_for("observation")}',
             'loaded_ids': [101, 102, 103, 104, 105],
-            'sandboxed_ids': [],
+            'sandboxed_ids': [105],
             'fields': [
                 'observation_id', 'person_id', 'observation_concept_id',
                 'observation_date', 'observation_type_concept_id',
                 'observation_source_value', 'observation_source_concept_id'
             ],
-            'cleaned_values': [(101, 1001, 8621, date(2015, 7, 15), 45905771,
-                                'ipaq_1_cope_a_24', 1332870),
-                               (102, 1002, 8621, date(2015, 7, 15), 45905771,
-                                'ipaq_3_cope_a_24', 1332871),
-                               (103, 1003, 8621, date(2015, 7, 15), 45905771,
-                                'ipaq_5_cope_a_24', 1332872),
-                               (104, 1004, 61909002, date(2015, 7,
-                                                          15), 45905771,
-                                'Language_SpokenWrittenLanguage', 1585413),
-                               (105, 1005, 45769242, date(2015, 7, 15),
-                                44814721, 'IS_ILLICIT_DRUG_USER', 0)]
+            'cleaned_values': [
+                (101, 1001, 8621, date(2015, 7, 15), 45905771,
+                 'ipaq_1_cope_a_24', 1332870),
+                (102, 1002, 8621, date(2015, 7, 15), 45905771,
+                 'ipaq_3_cope_a_24', 1332871),
+                (103, 1003, 8621, date(2015, 7, 15), 45905771,
+                 'ipaq_5_cope_a_24', 1332872),
+                (104, 1004, 61909002, date(2015, 7, 15), 45905771,
+                 'Language_SpokenWrittenLanguage', 1585413),
+            ]
         }]
 
         mapping_tables_and_counts = [{
@@ -297,7 +300,8 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
                 (100, self.dataset_id, 1, 'hpo_1', 'condition_occurrence'),
                 (102, self.dataset_id, 3, 'hpo_3', 'condition_occurrence'),
                 (103, self.dataset_id, 4, 'hpo_4', 'condition_occurrence'),
-                (105, self.dataset_id, 20, 'hpo_2', 'procedure_occurrence')
+                (105, self.dataset_id, 50, 'hpo_5', 'observation'),
+                (106, self.dataset_id, 20, 'hpo_2', 'procedure_occurrence')
             ]
         }, {
             'fq_table_name':
@@ -324,7 +328,6 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
                 (102, self.dataset_id, 20, 'hpo_2', 'observation'),
                 (103, self.dataset_id, 30, 'hpo_3', 'observation'),
                 (104, self.dataset_id, 40, 'hpo_4', 'observation'),
-                (105, self.dataset_id, 50, 'hpo_5', 'observation'),
             ]
         }]
 
