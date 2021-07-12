@@ -44,6 +44,9 @@ TABLE_DATES = {
     common.DEATH: {
         'death_datetime': 'death_date'
     },
+    common.NOTE: {
+        'note_datetime': 'note_date'
+    },
     common.SPECIMEN: {
         'specimen_datetime': 'specimen_date'
     },
@@ -105,7 +108,7 @@ class EnsureDateDatetimeConsistency(BaseCleaningRule):
                              common.CONDITION_OCCURRENCE, common.DRUG_EXPOSURE,
                              common.DEVICE_EXPOSURE, common.MEASUREMENT,
                              common.OBSERVATION, common.PROCEDURE_OCCURRENCE,
-                             common.SPECIMEN, common.DEATH,
+                             common.SPECIMEN, common.DEATH, common.NOTE,
                              common.OBSERVATION_PERIOD, common.VISIT_OCCURRENCE
                          ],
                          depends_on=[temporal_consistency.TemporalConsistency])

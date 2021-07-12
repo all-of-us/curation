@@ -72,6 +72,8 @@ class EnsureDateDatetimeConsistencyTest(BaseTest.CleaningRulesTestBase):
         self.end_date = parser.parse('2016-05-02').date()
         self.end_datetime = parser.parse('2016-05-02 11:00:00 UTC')
         self.end_default_datetime = parser.parse('2016-05-02 00:00:00 UTC')
+        self.note_date = parser.parse('2016-05-01').date()
+        self.note_datetime = parser.parse('2016-05-01 11:00:00 UTC')
 
         fq_dataset_name = self.fq_table_names[0].split('.')
         self.fq_dataset_name = '.'.join(fq_dataset_name[:-1])
@@ -124,7 +126,7 @@ class EnsureDateDatetimeConsistencyTest(BaseTest.CleaningRulesTestBase):
         The datetime is required in one pair and may be nullable in the
         other comparison pair.
         """
-        tmpl = self.jinja_env.from_string("""
+        condition_tmpl = self.jinja_env.from_string("""
         INSERT INTO `{{fq_dataset_name}}.condition_occurrence`
         (condition_occurrence_id, person_id, condition_concept_id, condition_start_date,
          condition_start_datetime, condition_type_concept_id, condition_end_date, condition_end_datetime)
@@ -140,8 +142,23 @@ class EnsureDateDatetimeConsistencyTest(BaseTest.CleaningRulesTestBase):
           (108, 888888, 0, date('2016-05-01'), timestamp('2016-05-01 11:00:00'), 0, date('2016-05-02'), timestamp('2016-04-15 11:00:00'))
         """)
 
-        query = tmpl.render(fq_dataset_name=self.fq_dataset_name)
-        self.load_test_data([query])
+        note_tmpl = self.jinja_env.from_string("""
+                INSERT INTO `{{fq_dataset_name}}.note`
+                (note_id, person_id, note_date, note_datetime, note_type_concept_id, note_class_concept_id,
+                 note_title, note_text, encoding_concept_id, language_concept_id)
+                VALUES
+                  (101, 222222, date('2016-05-01'), timestamp('2016-05-01 11:00:00'), 0, 0, '', '', 0, 0 ),
+                  (102, 333333, date('2016-05-01'), timestamp('2016-05-07 11:00:00'), 0, 0, '', '', 0, 0),
+                  (103, 444444, date('2016-05-01'), timestamp('2015-05-07 11:00:00'), 0, 0, '', '', 0, 0),
+                  (104, 555555, date('2016-05-01'), timestamp('2016-05-01 11:00:00'), 0, 0, '', '', 0, 0),
+                  (105, 666666, date('2016-05-01'), timestamp('2016-05-01 11:00:00'), 0, 0, '', '', 0, 0),
+                  (106, 777777, date('2016-05-01'), timestamp('2016-05-01 11:00:00'), 0, 0, '', '', 0, 0),
+                  (107, 888888, date('2016-05-01'), timestamp('2016-05-01 11:00:00'), 0, 0, '', '', 0, 0)
+                """)
+        condition_query = condition_tmpl.render(
+            fq_dataset_name=self.fq_dataset_name)
+        note_query = note_tmpl.render(fq_dataset_name=self.fq_dataset_name)
+        self.load_test_data([condition_query, note_query])
 
         tables_and_counts = [{
             'fq_table_name':
@@ -169,6 +186,28 @@ class EnsureDateDatetimeConsistencyTest(BaseTest.CleaningRulesTestBase):
                                 self.end_date, self.end_datetime),
                                (108, self.start_date, self.start_datetime,
                                 self.end_date, self.end_datetime)]
+        }, {
+            'fq_table_name':
+                '.'.join([self.fq_dataset_name, 'note']),
+            'fq_sandbox_table_name':
+                '',
+            'loaded_ids': [101, 102, 103, 104, 105, 106, 107],
+            'sandboxed_ids': [],
+            'fields': [
+                'note_id',
+                'note_date',
+                'note_datetime',
+            ],
+            'cleaned_values': [(
+                101,
+                self.start_date,
+                self.start_datetime,
+            ), (102, self.start_date, self.start_datetime),
+                               (103, self.note_date, self.note_datetime),
+                               (104, self.note_date, self.note_datetime),
+                               (105, self.note_date, self.note_datetime),
+                               (106, self.note_date, self.note_datetime),
+                               (107, self.note_date, self.note_datetime)]
         }]
 
         self.default_test(tables_and_counts)
