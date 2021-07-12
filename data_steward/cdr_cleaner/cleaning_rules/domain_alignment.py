@@ -106,7 +106,7 @@ LEFT JOIN `{{project_id}}.{{dataset_id}}._logging_domain_alignment` AS m
     AND m.dest_table = '{{domain_table}}'
     AND m.is_rerouted = True 
 WHERE m.dest_id IS NULL
-    --exclude PPI records from sandboxing
+    -- exclude PPI records from sandboxing --
     AND d.{{domain_concept_id}} NOT IN (
         SELECT
             c.concept_id
