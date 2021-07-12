@@ -764,14 +764,13 @@ def get_bq_fields_sql(fields):
     """
     fields_list = []
     for field in fields:
-        rendered = FIELDS_TMPL.render(
-            name=field.get('name'),
-            col_type=get_bq_col_type(field.get('type')),
-            mode=get_bq_mode(field.get('mode')),
-            desc=field.get('description'))
+        rendered = FIELDS_TMPL.render(name=field.get('name'),
+                                      col_type=get_bq_col_type(
+                                          field.get('type')),
+                                      mode=get_bq_mode(field.get('mode')),
+                                      desc=field.get('description'))
 
         fields_list.append(rendered)
 
     fields_str = ','.join(fields_list)
     return fields_str
-
