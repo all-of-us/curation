@@ -169,6 +169,30 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
                 (200, '{{dataset_id}}', 10, 'hpo_1', 'procedure_occurrence'),
                 (201, '{{dataset_id}}', 20, 'hpo_2', 'procedure_occurrence')""")
 
+        observation_data_tmpl = self.jinja_env.from_string(
+            """INSERT INTO `{{project_id}}.{{dataset_id}}.observation`
+            (observation_id, person_id, observation_concept_id, observation_date, 
+            observation_type_concept_id, observation_source_value, observation_source_concept_id)
+            VALUES
+            (101, 1001, 8621, '2015-07-15', 45905771, 'ipaq_1_cope_a_24', 1332870),
+            (102, 1002, 8621, '2015-07-15', 45905771, 'ipaq_3_cope_a_24', 1332871),
+            (103, 1003, 8621, '2015-07-15', 45905771, 'ipaq_5_cope_a_24', 1332872),
+            (104, 1004, 61909002, '2015-07-15', 45905771, 'Language_SpokenWrittenLanguage', 1585413),
+            (105, 1005, 45769242, '2015-07-15', 44814721, 'IS_ILLICIT_DRUG_USER', 0)
+        """)
+
+        mapping_observation_data_template = self.jinja_env.from_string(
+            """INSERT INTO `{{project_id}}.{{dataset_id}}._mapping_observation`
+                (observation_id, src_dataset_id, src_observation_id, 
+                 src_hpo_id, src_table_id)
+                VALUES
+                (101, '{{dataset_id}}', 10, 'hpo_1', 'observation'),
+                (102, '{{dataset_id}}', 20, 'hpo_2', 'observation'),
+                (103, '{{dataset_id}}', 30, 'hpo_3', 'observation'),
+                (104, '{{dataset_id}}', 40, 'hpo_4', 'observation'),
+                (105, '{{dataset_id}}', 50, 'hpo_5', 'observation')
+            """)
+
         insert_condition_query = condition_occurrence_data_template.render(
             project_id=self.project_id, dataset_id=self.dataset_id)
 
@@ -181,10 +205,17 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
         insert_procedure_mapping_query = mapping_procedure_occurrence_data_template.render(
             project_id=self.project_id, dataset_id=self.dataset_id)
 
+        insert_observation_query = observation_data_tmpl.render(
+            project_id=self.project_id, dataset_id=self.dataset_id)
+
+        insert_observation_mapping_query = mapping_observation_data_template.render(
+            project_id=self.project_id, dataset_id=self.dataset_id)
+
         # Load test data
         self.load_test_data([
             insert_condition_query, insert_condition_mapping_query,
-            insert_procedure_query, insert_procedure_mapping_query
+            insert_procedure_query, insert_procedure_mapping_query,
+            insert_observation_query, insert_observation_mapping_query
         ])
 
     def test_domain_alignment(self):
@@ -228,6 +259,30 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
                                 parse('2015-07-15 00:00:00 UTC'), 42865906, 5),
                                (202, 2, 36676219, date(2015, 7, 15),
                                 parse('2015-07-15 00:00:00 UTC'), None, 2)]
+        }, {
+            'fq_table_name':
+                f'{self.project_id}.{self.dataset_id}.observation',
+            'fq_sandbox_table_name':
+                f'{self.project_id}.{self.sandbox_id}.'
+                f'{sandbox_name_for("observation")}',
+            'loaded_ids': [101, 102, 103, 104, 105],
+            'sandboxed_ids': [],
+            'fields': [
+                'observation_id', 'person_id', 'observation_concept_id',
+                'observation_date', 'observation_type_concept_id',
+                'observation_source_value', 'observation_source_concept_id'
+            ],
+            'cleaned_values': [(101, 1001, 8621, date(2015, 7, 15), 45905771,
+                                'ipaq_1_cope_a_24', 1332870),
+                               (102, 1002, 8621, date(2015, 7, 15), 45905771,
+                                'ipaq_3_cope_a_24', 1332871),
+                               (103, 1003, 8621, date(2015, 7, 15), 45905771,
+                                'ipaq_5_cope_a_24', 1332872),
+                               (104, 1004, 61909002, date(2015, 7,
+                                                          15), 45905771,
+                                'Language_SpokenWrittenLanguage', 1585413),
+                               (105, 1005, 45769242, date(2015, 7, 15),
+                                44814721, 'IS_ILLICIT_DRUG_USER', 0)]
         }]
 
         mapping_tables_and_counts = [{
@@ -255,6 +310,21 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
             'cleaned_values': [
                 (200, self.dataset_id, 10, 'hpo_1', 'procedure_occurrence'),
                 (202, self.dataset_id, 2, 'hpo_2', 'condition_occurrence')
+            ]
+        }, {
+            'fq_table_name':
+                f'{self.project_id}.{self.dataset_id}._mapping_observation',
+            'loaded_ids': [101, 102, 103, 104, 105],
+            'fields': [
+                'observation_id', 'src_dataset_id', 'src_observation_id',
+                'src_hpo_id', 'src_table_id'
+            ],
+            'cleaned_values': [
+                (101, self.dataset_id, 10, 'hpo_1', 'observation'),
+                (102, self.dataset_id, 20, 'hpo_2', 'observation'),
+                (103, self.dataset_id, 30, 'hpo_3', 'observation'),
+                (104, self.dataset_id, 40, 'hpo_4', 'observation'),
+                (105, self.dataset_id, 50, 'hpo_5', 'observation'),
             ]
         }]
 
