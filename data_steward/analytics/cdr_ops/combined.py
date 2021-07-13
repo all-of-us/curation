@@ -203,30 +203,7 @@ tpl = JINJA_ENV.from_string('''
 -- For participants who do NOT satisfy EHR consent requirements as determined 
 -- by the temp table below, this dynamic query will provide the      --
 -- table_name, person_id, and hpo_id where any EHR records are found --
-DECLARE query DEFAULT
-(SELECT
-
- -- Generate a subquery for any table containing HPO-submitted data                    --
- -- which finds any HPO-submitted rows whose pids are not in the consent lookup table. --
-
- STRING_AGG(
-     '(SELECT DISTINCT '
-      || '"' || table_name || '" AS table_name '
-      || ',t.person_id           AS person_id '
-      || ',m.src_hpo_id          AS hpo_id '
-      || 'FROM `' || table_schema || '.' || table_name || '` t '
-      || 'JOIN `' || table_schema || '.' || table_id || '` m ' 
-      || 'USING (' || table_name ||'_id) '
-      || 'LEFT JOIN consented c '
-      || ' USING (person_id)'
-      || 'WHERE m.src_hpo_id <> "rdr" AND c.person_id IS NULL)'
-   , ' UNION ALL ')
- FROM `{{DATASET_ID}}.INFORMATION_SCHEMA.COLUMNS` c
- JOIN `{{DATASET_ID}}.__TABLES__` t
-  ON t.table_id = '_mapping_' || c.table_name
- WHERE column_name = 'person_id'
-   AND t.row_count > 0
-);
+DECLARE query STRING; 
 
 -- PIDs whose last EHR consent response was affirmative --
 CREATE OR REPLACE TEMP TABLE consented AS
@@ -254,6 +231,32 @@ CREATE OR REPLACE TEMP TABLE consented AS
   FROM pid_last_consent_response
   WHERE 
       last_value_source_concept_id = {{YES_CONCEPT_ID}}
+);
+
+
+SET query = (
+ SELECT
+
+ -- Generate a subquery for any table containing HPO-submitted data                    --
+ -- which finds any HPO-submitted rows whose pids are not in the consent lookup table. --
+
+ STRING_AGG(
+     '(SELECT DISTINCT '
+      || '"' || table_name || '" AS table_name '
+      || ',t.person_id           AS person_id '
+      || ',m.src_hpo_id          AS hpo_id '
+      || 'FROM `' || table_schema || '.' || table_name || '` t '
+      || 'JOIN `' || table_schema || '.' || table_id || '` m ' 
+      || 'USING (' || table_name ||'_id) '
+      || 'LEFT JOIN consented c '
+      || ' USING (person_id)'
+      || 'WHERE m.src_hpo_id <> "rdr" AND c.person_id IS NULL)'
+   , ' UNION ALL ')
+ FROM `{{DATASET_ID}}.INFORMATION_SCHEMA.COLUMNS` c
+ JOIN `{{DATASET_ID}}.__TABLES__` t
+  ON t.table_id = '_mapping_' || c.table_name
+ WHERE column_name = 'person_id'
+   AND t.row_count > 0
 );
 
 EXECUTE IMMEDIATE query;
