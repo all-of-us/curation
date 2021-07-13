@@ -347,32 +347,9 @@ EXECUTE IMMEDIATE query;
 # parameters (e.g. `combined`, `release_tag=2021q3r1`, `phase=clean`). Currently
 # there is no way to specify `combined`.
 
-query = f'''
-WITH schema_opts AS
-(SELECT 
- catalog_name
-,schema_name
-,SPLIT( REPLACE( REPLACE( REPLACE( 
-        SUBSTR(option_value, 2, LENGTH(option_value)-4), 
-        "STRUCT(\\"", '' ), 
-        "\\", \\"", ":" ), 
-        "\\"), ", "," )
-      ) AS labels
-FROM `INFORMATION_SCHEMA.SCHEMATA_OPTIONS` 
-WHERE OPTION_NAME="labels")
-SELECT 
- catalog_name
-,schema_name
-,STRUCT(
-    ARRAY_AGG(STRUCT(SPLIT(un_labels, ":")[OFFSET(0)]         AS name,
-    SPLIT(un_labels, ":")[OFFSET(1)] AS value) RESPECT NULLS) AS label_object
- ) AS label
-FROM schema_opts
-LEFT JOIN UNNEST(labels) AS un_labels
-WHERE schema_name='{DATASET_ID}'
-GROUP BY 1, 2
-'''
-q(query)
+dataset = CLIENT.get_dataset(dataset_ref=f'{PROJECT_ID}.{DATASET_ID}')
+
+print(dataset.labels)
 
 # ## Invalid concept prevalence
 # EHR submissions may provide source `concept_id`s which we assume would be
