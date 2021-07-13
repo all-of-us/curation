@@ -9,8 +9,8 @@ Usage: deid_runner.sh
   --cdr_id <combined_dataset name>
   --vocab_dataset <vocabulary dataset name>
   --dataset_release_tag <release tag for the CDR>
-  --cope_survey_dataset <dataset where RDR provided cope survey mapping table is loaded>
-  --cope_survey_table_name <name of the cope survey mappig table>
+  --cope_lookup_dataset_id <dataset where RDR provided cope survey mapping table is loaded>
+  --cope_table_name <name of the cope survey mappig table>
   --deid_max_age <integer maximum age for de-identified participants>
 "
 
@@ -32,12 +32,12 @@ while true; do
     dataset_release_tag=$2
     shift 2
     ;;
-  --cope_survey_dataset)
-    cope_survey_dataset=$2
+  --cope_lookup_dataset_id)
+    cope_lookup_dataset_id=$2
     shift 2
     ;;
-  --cope_survey_table_name)
-    cope_survey_table_name=$2
+  --cope_table_name)
+    cope_table_name=$2
     shift 2
     ;;
   --deid_max_age)
@@ -52,7 +52,7 @@ while true; do
   esac
 done
 
-if [[ -z "${key_file}" ]] || [[ -z "${cdr_id}" ]] || [[ -z "${vocab_dataset}" ]] || [[ -z "${dataset_release_tag}" ]] || [[ -z "${cope_survey_dataset}" ]] || [[ -z "${cope_survey_table_name}" ]] || [[ -z "${deid_max_age}" ]]; then
+if [[ -z "${key_file}" ]] || [[ -z "${cdr_id}" ]] || [[ -z "${vocab_dataset}" ]] || [[ -z "${dataset_release_tag}" ]] || [[ -z "${cope_lookup_dataset_id}" ]] || [[ -z "${cope_table_name}" ]] || [[ -z "${deid_max_age}" ]]; then
   echo "${USAGE}"
   exit 1
 fi
@@ -77,7 +77,7 @@ TOOLS_DIR="${DATA_STEWARD_DIR}/tools"
 DEID_DIR="${DATA_STEWARD_DIR}/deid"
 CLEANER_DIR="${DATA_STEWARD_DIR}/cdr_cleaner"
 HANDOFF_DATE="$(date -v +1d +'%Y-%m-%d')"
-data_stage="registered_tier_died"
+data_stage="registered_tier_deid"
 
 export BIGQUERY_DATASET_ID="${registered_cdr_deid}"
 export PYTHONPATH="${PYTHONPATH}:${DEID_DIR}:${DATA_STEWARD_DIR}"
@@ -102,7 +102,7 @@ python "${TOOLS_DIR}/run_deid.py" --idataset "${cdr_id}" --private_key "${key_fi
 bq mk --dataset --force --description "${version} sandbox dataset to apply cleaning rules on ${registered_cdr_deid}" --label "phase:sandbox" --label "release_tag:${dataset_release_tag}" --label "de_identified:true" "${APP_ID}":"${registered_cdr_deid_sandbox}"
 
 # apply de-identification rules on registered tier dataset 
-python "${CLEANER_DIR}/clean_cdr.py" --project_id "${APP_ID}" --dataset_id "${registered_cdr_deid}" --sandbox_dataset_id "${registered_cdr_deid_sandbox}" --data_stage ${data_stage} --mapping_dataset_id "${cdr_id}"  --cope_survey_dataset "${cope_survey_dataset}" --cope_survey_table "${cope_survey_table_name}" -s 2>&1 | tee registered_tier_cleaning_log.txt
+python "${CLEANER_DIR}/clean_cdr.py" --project_id "${APP_ID}" --dataset_id "${registered_cdr_deid}" --sandbox_dataset_id "${registered_cdr_deid_sandbox}" --data_stage ${data_stage} --mapping_dataset_id "${cdr_id}"  --cope_lookup_dataset_id "${cope_lookup_dataset_id}" --cope_table_name "${cope_table_name}" -s 2>&1 | tee registered_tier_cleaning_log.txt
 
 cdr_deid_base_staging="${registered_cdr_deid}_base_staging"
 cdr_deid_base_staging_sandbox="${registered_cdr_deid}_base_staging_sandbox"
