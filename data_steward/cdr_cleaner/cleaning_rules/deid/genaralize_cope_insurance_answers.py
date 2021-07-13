@@ -1,7 +1,7 @@
 """
 This cleaning rule will generalize answers to COPE insurance question.
 
-13332904 and 1333140 have been identified as potentially re-identifying answers to question 1332737.
+1332904 and 1333140 have been identified as potentially re-identifying answers to question 1332737.
 Privacy has determined these responses must be generalized to 1333127.
 This question is a multi-select question.  Potential duplicates will need to be dropped after generalization.
 
