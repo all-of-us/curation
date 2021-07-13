@@ -72,8 +72,6 @@ class EnsureDateDatetimeConsistencyTest(BaseTest.CleaningRulesTestBase):
         self.end_date = parser.parse('2016-05-02').date()
         self.end_datetime = parser.parse('2016-05-02 11:00:00 UTC')
         self.end_default_datetime = parser.parse('2016-05-02 00:00:00 UTC')
-        self.note_date = parser.parse('2016-05-01').date()
-        self.note_datetime = parser.parse('2016-05-01 11:00:00 UTC')
 
         fq_dataset_name = self.fq_table_names[0].split('.')
         self.fq_dataset_name = '.'.join(fq_dataset_name[:-1])
@@ -148,12 +146,7 @@ class EnsureDateDatetimeConsistencyTest(BaseTest.CleaningRulesTestBase):
                  note_title, note_text, encoding_concept_id, language_concept_id)
                 VALUES
                   (101, 222222, date('2016-05-01'), timestamp('2016-05-01 11:00:00'), 0, 0, '', '', 0, 0 ),
-                  (102, 333333, date('2016-05-01'), timestamp('2016-05-07 11:00:00'), 0, 0, '', '', 0, 0),
-                  (103, 444444, date('2016-05-01'), timestamp('2015-05-07 11:00:00'), 0, 0, '', '', 0, 0),
-                  (104, 555555, date('2016-05-01'), timestamp('2016-05-01 11:00:00'), 0, 0, '', '', 0, 0),
-                  (105, 666666, date('2016-05-01'), timestamp('2016-05-01 11:00:00'), 0, 0, '', '', 0, 0),
-                  (106, 777777, date('2016-05-01'), timestamp('2016-05-01 11:00:00'), 0, 0, '', '', 0, 0),
-                  (107, 888888, date('2016-05-01'), timestamp('2016-05-01 11:00:00'), 0, 0, '', '', 0, 0)
+                  (102, 333333, date('2016-05-01'), timestamp('2016-05-07 11:00:00'), 0, 0, '', '', 0, 0)
                 """)
         condition_query = condition_tmpl.render(
             fq_dataset_name=self.fq_dataset_name)
@@ -191,7 +184,7 @@ class EnsureDateDatetimeConsistencyTest(BaseTest.CleaningRulesTestBase):
                 '.'.join([self.fq_dataset_name, 'note']),
             'fq_sandbox_table_name':
                 '',
-            'loaded_ids': [101, 102, 103, 104, 105, 106, 107],
+            'loaded_ids': [101, 102],
             'sandboxed_ids': [],
             'fields': [
                 'note_id',
@@ -202,12 +195,7 @@ class EnsureDateDatetimeConsistencyTest(BaseTest.CleaningRulesTestBase):
                 101,
                 self.start_date,
                 self.start_datetime,
-            ), (102, self.start_date, self.start_datetime),
-                               (103, self.note_date, self.note_datetime),
-                               (104, self.note_date, self.note_datetime),
-                               (105, self.note_date, self.note_datetime),
-                               (106, self.note_date, self.note_datetime),
-                               (107, self.note_date, self.note_datetime)]
+            ), (102, self.start_date, self.start_datetime)]
         }]
 
         self.default_test(tables_and_counts)
