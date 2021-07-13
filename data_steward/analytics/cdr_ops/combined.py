@@ -362,12 +362,13 @@ print(dataset.labels)
 # values in this dataset should generally be non-increasing compared to baseline.
 # If the prevalence of invalid concepts is increasing, EHR Ops should be alerted.
 
-FQN_INVALID_CONCEPT = f'{DATASET_ID}_sandbox.invalid_concept'
-
-query = f'''
-CREATE TABLE IF NOT EXISTS `{FQN_INVALID_CONCEPT}` 
-(dataset_id  STRING NOT NULL OPTIONS(description="Identifies the dataset")
-,table_name  STRING NOT NULL OPTIONS(description="Identifies the table")
+tpl = JINJA_ENV.from_string('''
+-- Construct a table that summarizes all rows in all tables --
+-- where concept_id fields have an invalid value and reports --
+-- the row count per site --
+DECLARE ddl DEFAULT("""
+CREATE TABLE IF NOT EXISTS `{{DATASET_ID}}_sandbox.invalid_concept` 
+(table_name  STRING NOT NULL OPTIONS(description="Identifies the table")
 ,column_name STRING NOT NULL OPTIONS(description="Identifies the concept_id field")
 ,src_hpo_id  STRING NOT NULL OPTIONS(description="Identifies the HPO that supplied the records")
 ,concept_id  INT64           OPTIONS(description="A value that is not in the associated concept table (can be NULL)")
@@ -375,18 +376,12 @@ CREATE TABLE IF NOT EXISTS `{FQN_INVALID_CONCEPT}`
 OPTIONS
 (description='Count of invalid values provided in required concept_id fields for multiple datasets.'
 ,expiration_timestamp=TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 7 DAY) )
-'''
-execute(query)
+""");
 
-tpl = JINJA_ENV.from_string('''
--- Construct a query that finds all rows in all tables --
--- where concept_id fields have an invalid value and reports --
--- the row count per site --
 DECLARE query DEFAULT (
     SELECT 
- STRING_AGG('SELECT ' 
-     || '"{{DATASET_ID}}"'  || ' AS dataset_id '
-     || ',"' || table_name  || '"  AS table_name '
+ STRING_AGG('SELECT '
+     || '"' || table_name  || '" AS table_name '
      || ',"' || column_name || '" AS column_name '
      || ', m.src_hpo_id AS src_hpo_id '
      || ',' || column_name  || ' AS concept_id '
@@ -400,7 +395,7 @@ DECLARE query DEFAULT (
      
      -- invalid concept_id --
      || 'WHERE c.concept_id IS NULL '
-     || 'GROUP BY 2, 3, 4, 5',
+     || 'GROUP BY 1, 2, 3, 4',
            ' UNION ALL ')
 FROM `{{DATASET_ID}}.INFORMATION_SCHEMA.COLUMNS` c
 JOIN `{{DATASET_ID}}.__TABLES__` t
@@ -420,23 +415,20 @@ WHERE 1=1
   AND ENDS_WITH(LOWER(column_name), 'concept_id')
   AND is_nullable = 'NO'
 );
-EXECUTE IMMEDIATE (
- 'INSERT `{{FQN_INVALID_CONCEPT}}` (dataset_id, table_name, column_name, src_hpo_id, concept_id, row_count) ' || query);
+
+EXECUTE IMMEDIATE (ddl || ' AS ' || query);
 ''')
-execute(
-    tpl.render(DATASET_ID=DATASET_ID, FQN_INVALID_CONCEPT=FQN_INVALID_CONCEPT))
-execute(
-    tpl.render(DATASET_ID=BASELINE_DATASET_ID,
-               FQN_INVALID_CONCEPT=FQN_INVALID_CONCEPT))
+query = tpl.render(DATASET_ID=DATASET_ID)
+execute(query)
+query = tpl.render(DATASET_ID=BASELINE_DATASET_ID)
+execute(query)
 
 execute(f'''
 WITH 
  baseline AS
- (SELECT * FROM `{FQN_INVALID_CONCEPT}`
-  WHERE dataset_id="{BASELINE_DATASET_ID}")
+ (SELECT * FROM `{BASELINE_DATASET_ID}_sandbox.invalid_concept`)
 ,latest AS
- (SELECT * FROM `{FQN_INVALID_CONCEPT}`
-  WHERE dataset_id="{DATASET_ID}")
+ (SELECT * FROM `{DATASET_ID}_sandbox.invalid_concept`)
 SELECT
  table_name
 ,column_name
