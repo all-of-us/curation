@@ -352,9 +352,29 @@ execute(query)
 # parameters (e.g. `combined`, `release_tag=2021q3r1`, `phase=clean`). Currently
 # there is no way to specify `combined`.
 
-dataset = CLIENT.get_dataset(dataset_ref=f'{PROJECT_ID}.{DATASET_ID}')
+# +
+def verify_dataset_labels(dataset):
+    """
+    Print a warning if labels are missing or do not have expected values
+    """
+    expected_keys = ['phase', 'de_identified', 'release_tag']
+    missing_keys = list(expected_keys - dataset.labels.keys())
+    if missing_keys:
+        print(f"Dataset label validation failed because keys were missing entirely: {missing_keys}")
 
-print(dataset.labels)
+    expected = {'phase': 'clean', 'de_identified': 'false'}
+    for key, value in expected.items():
+        if key not in missing_keys:
+            if dataset.labels[key] != expected[key]:
+                print(f"Label '{key}' was not set to expected value '{value}'")
+
+    # Check that the release tag is somewhere in the dataset name
+    # TODO create a check on release_tag that is independent of dataset_id
+    if dataset.labels['release_tag'] not in dataset.dataset_id:
+        print(f"Relase tag '{release_tag}' not in dataset_id '{dataset.dataset_id}'")
+
+verify_dataset_labels(CLIENT.get_dataset(DATASET_ID))
+# -
 
 # ## Invalid concept prevalence
 # EHR submissions may provide source `concept_id`s which we assume would be
