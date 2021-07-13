@@ -10,7 +10,7 @@ Usage: deid_runner.sh
   --vocab_dataset <vocabulary dataset name>
   --dataset_release_tag <release tag for the CDR>
   --cope_lookup_dataset_id <dataset where RDR provided cope survey mapping table is loaded>
-  --cope_table_name <name of the cope survey mappig table>
+  --cope_table_name <name of the cope survey mapping table>
   --deid_max_age <integer maximum age for de-identified participants>
 "
 
