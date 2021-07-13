@@ -35,7 +35,7 @@ pd.options.display.max_columns = None
 pd.options.display.width = None
 
 
-def q(query):
+def execute(query):
     """
     Execute a bigquery command and return the results in a dataframe
     
@@ -49,12 +49,12 @@ def q(query):
 
 # ## Check for duplicates in observation
 # In the past duplicate `observation_id`s were introduced in observation due
-# to multiple sites submitting data for the same participant (see 
+# to multiple sites submitting data for the same participant (see
 # [DC-1512](https://precisionmedicineinitiative.atlassian.net/browse/DC-1512)).
-# If any duplicates are found there may be a bug in the pipeline- 
+# If any duplicates are found there may be a bug in the pipeline-
 # particularly in `ehr_union.move_ehr_person_to_observation`.
 
-q(f'''
+execute(f'''
 WITH 
  dupe AS
  (SELECT 
@@ -103,7 +103,7 @@ WHERE
 {% endfor %}
 ''')
 query = tpl.render(dataset_id=DATASET_ID, date_fields=date_fields)
-q(query)
+execute(query)
 
 # ## Participants must have basics data
 # Identify any participants who have don't have any responses
@@ -152,7 +152,7 @@ SELECT *
 FROM pid_basics
 WHERE ARRAY_LENGTH(basics_codes) = 0
 '''
-q(query)
+execute(query)
 # -
 
 # ## PPI records should never follow death date
@@ -187,12 +187,12 @@ SELECT *
 FROM pid_ppi
 WHERE min_death_date < max_ppi_date
 '''
-q(query)
+execute(query)
 
 # ## Consent required for EHR Data
-# If EHR records are found for participants who have not consented this may 
-# indicate a bug in the pipeline as these should have been removed. These 
-# records should also be reported to EHR Ops so that sites may cease to send 
+# If EHR records are found for participants who have not consented this may
+# indicate a bug in the pipeline as these should have been removed. These
+# records should also be reported to EHR Ops so that sites may cease to send
 # the information.
 
 # +
@@ -262,23 +262,23 @@ query = tpl.render(
     DATASET_ID=DATASET_ID,
     EHR_CONSENT_PERMISSION_CONCEPT_ID=EHR_CONSENT_PERMISSION_CONCEPT_ID,
     YES_CONCEPT_ID=YES_CONCEPT_ID)
-q(query)
+execute(query)
 # -
 
 # ## Date and datetime fields should have the same date
-# The date represented by associated `_date` and `_datetime` fields of the same 
-# row should be the same. If there any discrepancies, there may be a bug in the 
-# pipeline (i.e. `ensure_date_datetime_consistency`). It may also be useful to 
+# The date represented by associated `_date` and `_datetime` fields of the same
+# row should be the same. If there any discrepancies, there may be a bug in the
+# pipeline (i.e. `ensure_date_datetime_consistency`). It may also be useful to
 # report discrepancies to EHR Ops.
 #
 # ### Implementation notes
-# For each associated date/timestamp pair in the dataset the script that follows 
-# assembles a universal subquery which can be applied to all pertinent tables and 
-# whose results can be compiled together into a single result set that provides 
-# relevant troubleshooting information. For legibility, a maximum of 10 problem 
+# For each associated date/timestamp pair in the dataset the script that follows
+# assembles a universal subquery which can be applied to all pertinent tables and
+# whose results can be compiled together into a single result set that provides
+# relevant troubleshooting information. For legibility, a maximum of 10 problem
 # rows is returned for each table.
 #
-# As an example, the subquery for the `observation` table should look something 
+# As an example, the subquery for the `observation` table should look something
 # like this:
 #
 # ```sql
@@ -295,7 +295,7 @@ q(query)
 # ```
 #
 
-q(f'''
+execute(f'''
 DECLARE query DEFAULT (
     WITH 
 
@@ -373,7 +373,7 @@ OPTIONS
 (description='Count of invalid values provided in required concept_id fields for multiple datasets.'
 ,expiration_timestamp=TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 7 DAY) )
 '''
-q(query)
+execute(query)
 
 tpl = JINJA_ENV.from_string('''
 -- Construct a query that finds all rows in all tables --
@@ -420,12 +420,13 @@ WHERE 1=1
 EXECUTE IMMEDIATE (
  'INSERT `{{FQN_INVALID_CONCEPT}}` (dataset_id, table_name, column_name, src_hpo_id, concept_id, row_count) ' || query);
 ''')
-q(tpl.render(DATASET_ID=DATASET_ID, FQN_INVALID_CONCEPT=FQN_INVALID_CONCEPT))
-q(
+execute(
+    tpl.render(DATASET_ID=DATASET_ID, FQN_INVALID_CONCEPT=FQN_INVALID_CONCEPT))
+execute(
     tpl.render(DATASET_ID=BASELINE_DATASET_ID,
                FQN_INVALID_CONCEPT=FQN_INVALID_CONCEPT))
 
-q(f'''
+execute(f'''
 WITH 
  baseline AS
  (SELECT * FROM `{FQN_INVALID_CONCEPT}`
