@@ -54,7 +54,7 @@ def execute(query):
 # If any duplicates are found there may be a bug in the pipeline-
 # particularly in `ehr_union.move_ehr_person_to_observation`.
 
-execute(f'''
+query = f'''
 WITH 
  dupe AS
  (SELECT 
@@ -70,7 +70,8 @@ WHERE EXISTS
  WHERE 1=1
   AND row_count > 1
   AND d.observation_id = o.observation_id)
-''')
+'''
+execute(query)
 
 # ## No records where participant age <0 or >150
 # Any records where participant age would be <=0 or >=150 are
@@ -298,7 +299,7 @@ execute(query)
 # ```
 #
 
-execute(f'''
+query = f'''
 DECLARE query DEFAULT (
     WITH 
 
@@ -335,7 +336,8 @@ DECLARE query DEFAULT (
     FROM field_comparison
 );
 EXECUTE IMMEDIATE query;
-''')
+'''
+execute(query)
 
 # ---
 # # Manual Review
@@ -423,7 +425,7 @@ execute(query)
 query = tpl.render(DATASET_ID=BASELINE_DATASET_ID)
 execute(query)
 
-execute(f'''
+query = f'''
 WITH 
  baseline AS
  (SELECT * FROM `{BASELINE_DATASET_ID}_sandbox.invalid_concept`)
@@ -440,4 +442,5 @@ FROM baseline
 FULL OUTER JOIN latest
  USING (table_name, column_name, src_hpo_id, concept_id)
 ORDER BY ABS(latest.row_count - baseline.row_count) DESC
-''')
+'''
+execute(query)
