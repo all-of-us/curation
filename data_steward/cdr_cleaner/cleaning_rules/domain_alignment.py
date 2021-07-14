@@ -10,7 +10,7 @@ import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules import domain_mapping, field_mapping
 import resources
 from resources import get_domain_id_field
-from common import JINJA_ENV
+from common import JINJA_ENV, OBSERVATION
 from cdr_cleaner.cleaning_rules.domain_mapping import EMPTY_STRING, METADATA_DOMAIN
 from tools.combine_ehr_rdr import mapping_table_for
 from utils import bq
@@ -38,7 +38,7 @@ SELECT
 FROM `{{project_id}}.{{dataset_id}}.{{src_table}}` AS s 
 JOIN `{{project_id}}.{{dataset_id}}.concept` AS c 
     ON s.{{domain_concept_id}} = c.concept_id 
-WHERE c.domain_id in ({{domain}}) 
+WHERE c.domain_id in ({{domain}})
 """)
 
 DOMAIN_REROUTE_EXCLUDED_INNER_QUERY = JINJA_ENV.from_string("""
@@ -106,6 +106,13 @@ LEFT JOIN `{{project_id}}.{{dataset_id}}._logging_domain_alignment` AS m
     AND m.dest_table = '{{domain_table}}'
     AND m.is_rerouted = True 
 WHERE m.dest_id IS NULL
+    -- exclude PPI records from sandboxing --
+    AND d.{{domain_concept_id}} NOT IN (
+        SELECT
+            c.concept_id
+        FROM `{{project_id}}.{{dataset_id}}.concept` c
+        WHERE c.vocabulary_id = 'PPI'
+    )
 """)
 
 CLEAN_DOMAIN_RECORD_QUERY_TEMPLATE = JINJA_ENV.from_string("""
@@ -446,12 +453,19 @@ def get_clean_domain_queries(project_id, dataset_id, sandbox_dataset_id):
     queries = []
     sandbox_queries = []
     for domain_table in domain_mapping.DOMAIN_TABLE_NAMES:
+        #Use non-standard concept if table is observation
+        if domain_table == OBSERVATION:
+            domain_concept_id = 'observation_source_concept_id'
+        else:
+            domain_concept_id = resources.get_domain_concept_id(domain_table)
+
         sandbox_queries.append({
             cdr_consts.QUERY:
                 SANDBOX_DOMAIN_RECORD_QUERY_TEMPLATE.render(
                     project_id=project_id,
                     dataset_id=dataset_id,
-                    domain_table=domain_table),
+                    domain_table=domain_table,
+                    domain_concept_id=domain_concept_id),
             cdr_consts.DESTINATION_TABLE:
                 sandbox_name_for(domain_table),
             cdr_consts.DISPOSITION:
