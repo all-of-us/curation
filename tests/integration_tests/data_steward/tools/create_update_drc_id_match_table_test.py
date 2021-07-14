@@ -86,7 +86,8 @@ class CreateUpdateDrcIdMatchTableTest(TestCase):
 
     @mock.patch('resources.fields_for')
     @mock.patch('utils.bq.get_table_schema')
-    def test_validation_creation_and_population(self, mock_table_schema, mock_fields_for):
+    def test_validation_creation_and_population(self, mock_table_schema,
+                                                mock_fields_for):
         # Preconditions
         mock_table_schema.return_value = self.schema
         mock_fields_for.return_value = self.fields
@@ -110,8 +111,8 @@ class CreateUpdateDrcIdMatchTableTest(TestCase):
         }]
 
         # Tests that validation table created properly
-        validation_table = id_validation.create_drc_validation_table(self.client, self.project_id,
-                                                                     self.id_match_table_id)
+        validation_table = id_validation.create_drc_validation_table(
+            self.client, self.project_id, self.id_match_table_id)
 
         all_tables_obj = self.client.list_tables(self.dataset_id)
         all_tables = [t.table_id for t in all_tables_obj]
@@ -120,7 +121,8 @@ class CreateUpdateDrcIdMatchTableTest(TestCase):
 
         # Test validation table population
         id_validation.populate_validation_table(self.client, self.project_id,
-                                                self.id_match_table_id, self.hpo_id)
+                                                self.id_match_table_id,
+                                                self.hpo_id)
 
         query_contents = CONTENT_QUERY.render(
             project_id=self.project_id,
