@@ -115,7 +115,20 @@
     }, 
     {
         "type": "string", 
-        "name": "reveue_code_source_value", 
-        "mode": "nullable"
+        "name": "revenue_code_source_value", 
+        "mode": "nullable", 
+        "description": "The source code for the Revenue code as it appears in the source data, stored here for reference."
+    }, 
+    {
+        "type": "integer", 
+        "name": "drg_concept_id", 
+        "mode": "nullable", 
+        "description": "A foreign key to the predefined concept in the DRG Vocabulary reflecting the DRG for a visit."
+    }, 
+    {
+        "type": "string", 
+        "name": "drg_source_value", 
+        "mode": "nullable", 
+        "description": "The 3-digit DRG source code as it appears in the source data."
     }
 ]

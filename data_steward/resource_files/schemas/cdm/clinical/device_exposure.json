@@ -26,7 +26,7 @@
     {
         "type": "timestamp", 
         "name": "device_exposure_start_datetime", 
-        "mode": "required", 
+        "mode": "nullable", 
         "description": "The date and time the Device or supply was applied or used."
     }, 
     {
@@ -72,6 +72,12 @@
         "description": "A foreign key to the visit in the VISIT_OCCURRENCE table during which the device was used."
     }, 
     {
+        "type": "integer", 
+        "name": "visit_detail_id", 
+        "mode": "nullable", 
+        "description": "A foreign key to the visit detail in the VISIT_DETAIL table during which the Drug Exposure was initiated."
+    }, 
+    {
         "type": "string", 
         "name": "device_source_value", 
         "mode": "nullable", 
@@ -80,6 +86,7 @@
     {
         "type": "integer", 
         "name": "device_source_concept_id", 
-        "mode": "nullable"
+        "mode": "nullable", 
+        "description": "A foreign key to a Device Concept that refers to the code used in the source."
     }
 ]

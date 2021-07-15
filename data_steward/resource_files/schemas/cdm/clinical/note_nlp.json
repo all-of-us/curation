@@ -1,0 +1,86 @@
+[
+    {
+        "type": "integer", 
+        "name": "note_nlp_id", 
+        "mode": "nullable", 
+        "description": "A UNIQUE IDENTIFIER FOR EACH TERM EXTRACTED FROM A NOTE."
+    }, 
+    {
+        "type": "integer", 
+        "name": "note_id", 
+        "mode": "nullable", 
+        "description": "A FOREIGN KEY TO THE NOTE TABLE NOTE THE TERM WAS EXTRACTED FROM."
+    }, 
+    {
+        "type": "integer", 
+        "name": "section_concept_id", 
+        "mode": "nullable", 
+        "description": "A FOREIGN KEY TO THE PREDEFINED CONCEPT IN THE STANDARDIZED VOCABULARIES REPRESENTING THE SECTION OF THE EXTRACTED TERM."
+    }, 
+    {
+        "type": "string", 
+        "name": "snippet", 
+        "mode": "nullable", 
+        "description": "A SMALL WINDOW OF TEXT SURROUNDING THE TERM."
+    }, 
+    {
+        "type": "string", 
+        "name": "offset", 
+        "mode": "nullable", 
+        "description": "CHARACTER OFFSET OF THE EXTRACTED TERM IN THE INPUT NOTE."
+    }, 
+    {
+        "type": "string", 
+        "name": "lexical_variant", 
+        "mode": "nullable", 
+        "description": "RAW TEXT EXTRACTED FROM THE NLP TOOL."
+    }, 
+    {
+        "type": "integer", 
+        "name": "note_nlp_concept_id", 
+        "mode": "nullable", 
+        "description": "A FOREIGN KEY TO THE PREDEFINED CONCEPT IN THE STANDARDIZED VOCABULARIES REFLECTING THE NORMALIZED CONCEPT FOR THE EXTRACTED TERM. DOMAIN OF THE TERM IS REPRESENTED AS PART OF THE CONCEPT TABLE."
+    }, 
+    {
+        "type": "integer", 
+        "name": "note_nlp_source_concept_id", 
+        "mode": "nullable", 
+        "description": "A FOREIGN KEY TO A CONCEPT THAT REFERS TO THE CODE IN THE SOURCE VOCABULARY USED BY THE NLP SYSTEM"
+    }, 
+    {
+        "type": "string", 
+        "name": "nlp_system", 
+        "mode": "nullable", 
+        "description": "NAME AND VERSION OF THE NLP SYSTEM THAT EXTRACTED THE TERM.USEFUL FOR DATA PROVENANCE."
+    }, 
+    {
+        "type": "date", 
+        "name": "nlp_date", 
+        "mode": "nullable", 
+        "description": "THE DATE OF THE NOTE PROCESSING.USEFUL FOR DATA PROVENANCE."
+    }, 
+    {
+        "type": "timestamp", 
+        "name": "nlp_datetime", 
+        "mode": "nullable", 
+        "description": "THE DATE AND TIME OF THE NOTE PROCESSING. USEFUL FOR DATA PROVENANCE."
+    }, 
+    {
+        "type": "string", 
+        "name": "term_exists", 
+        "mode": "nullable", 
+        "description": "A SUMMARY MODIFIER THAT SIGNIFIES PRESENCE OR ABSENCE OF THE TERM FOR A GIVEN PATIENT. USEFUL FOR QUICK QUERYING."
+    }, 
+    {
+        "type": "string", 
+        "name": "term_temporal", 
+        "mode": "nullable", 
+        "description": "AN OPTIONAL TIME MODIFIER ASSOCIATED WITH THE EXTRACTED TERM. (FOR NOW \ufffdPAST\ufffd OR \ufffdPRESENT\ufffd ONLY). STANDARDIZE IT LATER."
+    }, 
+    {
+        "type": "string", 
+        "name": "term_modifiers", 
+        "mode": "nullable", 
+        "description": "A COMPACT DESCRIPTION OF ALL THE MODIFIERS OF THE SPECIFIC TERM EXTRACTED BY THE NLP SYSTEM. (E.G. \ufffdSON HAS RASH\ufffd ? \ufffdNEGATED=NO,SUBJECT=FAMILY, CERTAINTY=UNDEF,CONDITIONAL=FALSE,GENERAL=FALSE\ufffd)."
+    }
+]

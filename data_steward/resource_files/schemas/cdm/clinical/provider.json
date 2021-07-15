@@ -14,12 +14,14 @@
     {
         "type": "string", 
         "name": "NPI", 
-        "mode": "nullable"
+        "mode": "nullable", 
+        "description": "The National Provider Identifier (NPI) of the provider."
     }, 
     {
         "type": "string", 
         "name": "DEA", 
-        "mode": "nullable"
+        "mode": "nullable", 
+        "description": "The Drug Enforcement Administration (DEA) number of the provider."
     }, 
     {
         "type": "integer", 

@@ -30,6 +30,12 @@
         "description": "The date and time of the Measurement. Some database systems don't have a datatype of time. To accomodate all temporal analyses, datatype datetime can be used (combining measurement_date and measurement_time [forum discussion](http://forums.ohdsi.org/t/date-time-and-datetime-problem-and-the-world-of-hours-and-1day/314))"
     }, 
     {
+        "type": "string", 
+        "name": "measurement_time", 
+        "mode": "nullable", 
+        "description": "The time of the Measurement. This is present for backwards compatibility and will deprecated in an upcoming version"
+    }, 
+    {
         "type": "integer", 
         "name": "measurement_type_concept_id", 
         "mode": "required", 
@@ -82,6 +88,12 @@
         "name": "visit_occurrence_id", 
         "mode": "nullable", 
         "description": "A foreign key to the Visit in the VISIT_OCCURRENCE table during which the Measurement was recorded."
+    }, 
+    {
+        "type": "integer", 
+        "name": "visit_detail_id", 
+        "mode": "nullable", 
+        "description": "A foreign key to the Visit Detail in the VISIT_DETAIL table during which the Measurement was recorded."
     }, 
     {
         "type": "string", 

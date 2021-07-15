@@ -26,13 +26,13 @@
     {
         "type": "timestamp", 
         "name": "drug_exposure_start_datetime", 
-        "mode": "required", 
+        "mode": "nullable", 
         "description": "The start date and time for the current instance of Drug utilization. Valid entries include a start date of a prescription, the date a prescription was filled, or the date on which a Drug administration procedure was recorded."
     }, 
     {
         "type": "date", 
         "name": "drug_exposure_end_date", 
-        "mode": "nullable", 
+        "mode": "required", 
         "description": "The end date for the current instance of Drug utilization. It is not available from all sources."
     }, 
     {
@@ -106,6 +106,12 @@
         "name": "visit_occurrence_id", 
         "mode": "nullable", 
         "description": "A foreign key to the Visit in the VISIT_OCCURRENCE table during which the Drug Exposure was initiated."
+    }, 
+    {
+        "type": "integer", 
+        "name": "visit_detail_id", 
+        "mode": "nullable", 
+        "description": "A foreign key to the Visit Detail in the VISIT_DETAIL table during which the Drug Exposure was initiated."
     }, 
     {
         "type": "string", 

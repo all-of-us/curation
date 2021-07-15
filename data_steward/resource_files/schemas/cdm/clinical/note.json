@@ -20,7 +20,7 @@
     {
         "type": "timestamp", 
         "name": "note_datetime", 
-        "mode": "required",
+        "mode": "nullable", 
         "description": "The date and time the note was recorded."
     }, 
     {
@@ -36,9 +36,9 @@
         "description": "A foreign key to the predefined Concept in the Standardized Vocabularies reflecting the HL7 LOINC Document Type Vocabulary classification of the note."
     },
     {
-        "type": "string",
-        "name": "note_title",
-        "mode": "required",
+        "type": "string", 
+        "name": "note_title", 
+        "mode": "nullable", 
         "description": "The title of the Note as it appears in the source."
     },
     {
@@ -70,6 +70,12 @@
         "name": "visit_occurrence_id", 
         "mode": "nullable", 
         "description": "A foreign key to the Visit in the VISIT_OCCURRENCE table when the Note was taken."
+    }, 
+    {
+        "type": "integer", 
+        "name": "visit_detail_id", 
+        "mode": "nullable", 
+        "description": "A foreign key to the Visit in the VISIT_DETAIL table when the Note was taken."
     }, 
     {
         "type": "string", 

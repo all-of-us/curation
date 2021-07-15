@@ -32,7 +32,8 @@
     {
         "type": "string", 
         "name": "cdm_etl_reference", 
-        "mode": "nullable"
+        "mode": "nullable", 
+        "description": "URL or other external reference to location of ETL specification documentation and ETL source code"
     }, 
     {
         "type": "date", 

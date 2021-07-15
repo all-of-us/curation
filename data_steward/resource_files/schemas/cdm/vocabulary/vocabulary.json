@@ -14,7 +14,7 @@
     {
         "type": "string", 
         "name": "vocabulary_reference", 
-        "mode": "nullable", 
+        "mode": "required", 
         "description": "External reference to documentation or available download of the about the vocabulary."
     }, 
     {
