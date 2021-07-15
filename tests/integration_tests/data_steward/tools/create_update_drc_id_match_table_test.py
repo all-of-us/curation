@@ -20,9 +20,11 @@ from unittest import TestCase
 from google.cloud.bigquery import DatasetReference, SchemaField
 
 # Project imports
+import bq_utils
 from utils import bq
-from common import JINJA_ENV
+from tests import test_util
 from app_identity import PROJECT_ID
+from common import JINJA_ENV, DRC_OPS
 from tools import create_update_drc_id_match_table as id_validation
 
 POPULATE_PS_VALUES = JINJA_ENV.from_string("""
@@ -71,18 +73,44 @@ class CreateUpdateDrcIdMatchTableTest(TestCase):
         self.id_match_table_id = f'drc_identity_match_{self.hpo_id}'
         self.ps_values_table_id = f'ps_api_values_{self.hpo_id}'
 
+        # Create and populate the ps_values site table
+        bq_utils.create_table(self.ps_values_table_id,
+                              self.fields,
+                              drop_existing=True,
+                              dataset_id=DRC_OPS)
+
+        populate_query = POPULATE_PS_VALUES.render(
+            project_id=self.project_id,
+            drc_dataset_id=DRC_OPS,
+            ps_values_table_id=self.ps_values_table_id)
+        self.client.query(populate_query)
+
     @mock.patch('utils.bq.get_table_schema')
     def test_get_case_statements(self, mock_table_schema):
         # Pre conditions
         mock_table_schema.return_value = self.schema
 
-        expected = f'\nCASE WHEN first_name IS NULL THEN \'missing_rdr\' ELSE \'missing_ehr\' END AS first_name, , \n' \
+        expected = f'\nCASE WHEN first_name IS NULL THEN \'missing_rdr\' ELSE \'missing_ehr\' END AS first_name, \n' \
                    f'CASE WHEN last_name IS NULL THEN \'missing_rdr\' ELSE \'missing_ehr\' END AS last_name'
 
         # Test
         actual = id_validation.get_case_statements()
 
         self.assertEqual(actual, expected)
+
+    @mock.patch('resources.fields_for')
+    def test_create_drc_validation_table(self, mock_fields_for):
+        # Preconditions
+        mock_fields_for.return_value = self.fields
+
+        # Test
+        expected = id_validation.create_drc_validation_table(
+            self.client, self.project_id, self.id_match_table_id)
+
+        all_tables_obj = self.client.list_tables(self.dataset_id)
+        all_tables = [t.table_id for t in all_tables_obj]
+
+        self.assertTrue(expected in all_tables)
 
     @mock.patch('resources.fields_for')
     @mock.patch('utils.bq.get_table_schema')
@@ -110,14 +138,12 @@ class CreateUpdateDrcIdMatchTableTest(TestCase):
             'last_name': 'missing_rdr'
         }]
 
-        # Tests that validation table created properly
-        validation_table = id_validation.create_drc_validation_table(
-            self.client, self.project_id, self.id_match_table_id)
-
-        all_tables_obj = self.client.list_tables(self.dataset_id)
-        all_tables = [t.table_id for t in all_tables_obj]
-
-        self.assertTrue(validation_table in all_tables)
+        # Creates validation table if it does not already exist
+        # Will need to be created if this test is ran individually
+        if not bq_utils.table_exists(self.id_match_table_id, self.dataset_id):
+            id_validation.create_drc_validation_table(self.client,
+                                                      self.project_id,
+                                                      self.id_match_table_id)
 
         # Test validation table population
         id_validation.populate_validation_table(self.client, self.project_id,
@@ -134,3 +160,6 @@ class CreateUpdateDrcIdMatchTableTest(TestCase):
         actual = [dict(row.items()) for row in contents]
 
         self.assertCountEqual(actual, expected)
+
+    def tearDown(self):
+        test_util.delete_all_tables(DRC_OPS)

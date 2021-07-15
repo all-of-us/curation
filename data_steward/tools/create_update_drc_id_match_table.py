@@ -57,7 +57,8 @@ def create_drc_validation_table(client, project_id, table_id):
                                        drc_dataset_id=DRC_OPS,
                                        id_match_table_id=table_id,
                                        fields=bq.get_bq_fields_sql(fields))
-    client.query(create_table)
+    job = client.query(create_table)
+    job.result()
 
     LOGGER.info(f'Created {table_id}.')
 
