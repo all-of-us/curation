@@ -20,26 +20,16 @@ BASELINE_EHR_DATASET_ID = ""  # Identifies the dataset the snapshot was created 
 EHR_SNAPSHOT_DATASET_ID = ""  # Identifies the snapshot dataset
 
 # +
-from google.cloud import bigquery
 import pandas as pd
 
-CLIENT = bigquery.Client(project=PROJECT_ID)
+from utils.bq import get_client, execute
+
+client = get_client(PROJECT_ID)
 
 pd.options.display.max_rows = 1000
 pd.options.display.max_colwidth = 0
 pd.options.display.max_columns = None
 pd.options.display.width = None
-
-
-def execute(query):
-    """
-    Execute a bigquery command and return the results in a dataframe
-
-    :param query: the query to execute
-    """
-    print(query)
-    return CLIENT.query(query).to_dataframe()
-
 
 # -
 
@@ -62,7 +52,7 @@ USING (table_id)
 WHERE NOT (table_id LIKE '%mapping%' OR table_id LIKE '%unioned%')
 AND n.row_count IS NULL
 '''
-execute(query)
+execute(client, query)
 # -
 
 # # Row count comparison
@@ -80,7 +70,7 @@ USING (table_id)
 WHERE NOT (table_id LIKE '%mapping%' OR table_id LIKE '%unioned%')
 AND o.row_count - n.row_count != 0
 '''
-execute(query)
+execute(client, query)
 
 # # Zero row counts
 # The snapshot should contain tables with zero rows for sites that are excluded by EHR Ops,
@@ -97,4 +87,4 @@ AND REGEXP_CONTAINS(table_id, r'(person)|(observation)|(care_site)|(occurrence)|
 AND NOT REGEXP_CONTAINS(table_id, r'(sets)')
 ORDER BY table_id
 '''
-execute(query)
+execute(client, query)

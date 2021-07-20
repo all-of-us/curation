@@ -20,30 +20,18 @@ DATASET_ID = ''  # the dataset to evaluate
 BASELINE_DATASET_ID = ''  # a baseline dataset for metrics comparison (ex: a prior combined dataset)
 
 # +
-from google.cloud import bigquery
 import pandas as pd
 
 from common import JINJA_ENV
 from cdr_cleaner.cleaning_rules.negative_ages import date_fields
-from utils import auth
+from utils.bq import get_client, execute
 
-CLIENT = bigquery.Client(project=PROJECT_ID)
+client = get_client(PROJECT_ID)
 
 pd.options.display.max_rows = 1000
 pd.options.display.max_colwidth = 0
 pd.options.display.max_columns = None
 pd.options.display.width = None
-
-
-def execute(query):
-    """
-    Execute a bigquery command and return the results in a dataframe
-    
-    :param query: the query to execute
-    """
-    print(query)
-    return CLIENT.query(query).to_dataframe()
-
 
 # -
 
@@ -71,7 +59,7 @@ WHERE EXISTS
   AND row_count > 1
   AND d.observation_id = o.observation_id)
 '''
-execute(query)
+execute(client, query)
 
 # ## No records where participant age <0 or >150
 # Any records where participant age would be <=0 or >=150 are
@@ -104,7 +92,7 @@ WHERE
 {% endfor %}
 ''')
 query = tpl.render(dataset_id=DATASET_ID, date_fields=date_fields)
-execute(query)
+execute(client, query)
 
 # ## Participants must have basics data
 # Identify any participants who have don't have any responses
@@ -153,7 +141,7 @@ SELECT *
 FROM pid_basics
 WHERE ARRAY_LENGTH(basics_codes) = 0
 '''
-execute(query)
+execute(client, query)
 # -
 
 # ## PPI records should never follow death date
@@ -188,7 +176,7 @@ SELECT *
 FROM pid_ppi
 WHERE min_death_date < max_ppi_date
 '''
-execute(query)
+execute(client, query)
 
 # ## Consent required for EHR Data
 # If EHR records are found for participants who have not consented this may
@@ -266,7 +254,7 @@ query = tpl.render(
     DATASET_ID=DATASET_ID,
     EHR_CONSENT_PERMISSION_CONCEPT_ID=EHR_CONSENT_PERMISSION_CONCEPT_ID,
     YES_CONCEPT_ID=YES_CONCEPT_ID)
-execute(query)
+execute(client, query)
 # -
 
 # ## Date and datetime fields should have the same date
@@ -337,7 +325,7 @@ DECLARE query DEFAULT (
 );
 EXECUTE IMMEDIATE query;
 '''
-execute(query)
+execute(client, query)
 
 # ---
 # # Manual Review
@@ -352,6 +340,7 @@ execute(query)
 # parameters (e.g. `combined`, `release_tag=2021q3r1`, `phase=clean`). Currently
 # there is no way to specify `combined`.
 
+
 # +
 def verify_dataset_labels(dataset):
     """
@@ -360,7 +349,9 @@ def verify_dataset_labels(dataset):
     expected_keys = ['phase', 'de_identified', 'release_tag']
     missing_keys = list(expected_keys - dataset.labels.keys())
     if missing_keys:
-        print(f"Dataset label validation failed because keys were missing entirely: {missing_keys}")
+        print(
+            f"Dataset label validation failed because keys were missing entirely: {missing_keys}"
+        )
 
     expected = {'phase': 'clean', 'de_identified': 'false'}
     for key, value in expected.items():
@@ -370,10 +361,14 @@ def verify_dataset_labels(dataset):
 
     # Check that the release tag is somewhere in the dataset name
     # TODO create a check on release_tag that is independent of dataset_id
-    if dataset.labels['release_tag'] not in dataset.dataset_id:
-        print(f"Relase tag '{release_tag}' not in dataset_id '{dataset.dataset_id}'")
+    release_tag = dataset.labels['release_tag']
+    if release_tag not in dataset.dataset_id:
+        print(
+            f"Release tag '{release_tag}' not in dataset_id '{dataset.dataset_id}'"
+        )
 
-verify_dataset_labels(CLIENT.get_dataset(DATASET_ID))
+
+verify_dataset_labels(client.get_dataset(DATASET_ID))
 # -
 
 # ## Invalid concept prevalence
@@ -441,9 +436,9 @@ WHERE 1=1
 EXECUTE IMMEDIATE (ddl || ' AS ' || query);
 ''')
 query = tpl.render(DATASET_ID=DATASET_ID)
-execute(query)
+execute(client, query)
 query = tpl.render(DATASET_ID=BASELINE_DATASET_ID)
-execute(query)
+execute(client, query)
 
 query = f'''
 WITH 
@@ -463,4 +458,4 @@ FULL OUTER JOIN latest
  USING (table_name, column_name, src_hpo_id, concept_id)
 ORDER BY ABS(latest.row_count - baseline.row_count) DESC
 '''
-execute(query)
+execute(client, query)
