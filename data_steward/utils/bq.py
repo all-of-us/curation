@@ -66,6 +66,10 @@ TABLE_COUNT_TPL = JINJA_ENV.from_string(
 Requires parameter `dataset`: :class:`DatasetReference` and
 yields a scalar result with column `table_count`: :class:`int`."""
 
+FIELDS_TMPL = JINJA_ENV.from_string("""
+    {{name}} {{col_type}} {{mode}} OPTIONS(description="{{desc}}")
+""")
+
 
 def get_client(project_id, scopes=None, credentials=None):
     """
@@ -690,3 +694,83 @@ def build_and_copy_contents(client, src_dataset, dest_dataset):
 
     LOGGER.info(f'Completed copy of data from unschemaed dataset, '
                 f'`{src_dataset}`, to schemaed dataset, `{dest_dataset}`.')
+
+
+def get_bq_col_type(col_type):
+    """
+    Return correct SQL column type representation.
+
+    :param col_type: The type of column as defined in json schema files.
+
+    :return: A SQL column type compatible with BigQuery
+    """
+    lower_col_type = col_type.lower()
+    if lower_col_type == 'integer':
+        return 'INT64'
+
+    if lower_col_type == 'string':
+        return 'STRING'
+
+    if lower_col_type == 'float':
+        return 'FLOAT64'
+
+    if lower_col_type == 'numeric':
+        return 'DECIMAL'
+
+    if lower_col_type == 'time':
+        return 'TIME'
+
+    if lower_col_type == 'timestamp':
+        return 'TIMESTAMP'
+
+    if lower_col_type == 'date':
+        return 'DATE'
+
+    if lower_col_type == 'datetime':
+        return 'DATETIME'
+
+    if lower_col_type == 'bool':
+        return 'BOOL'
+
+    return 'UNSET'
+
+
+def get_bq_mode(mode):
+    """
+    Return correct SQL for column mode.
+
+    :param mode:  either nullable or required as defined in json schema files.
+
+    :return: NOT NULL or empty string
+    """
+    lower_mode = mode.lower()
+    if lower_mode == 'nullable':
+        return ''
+
+    if lower_mode == 'required':
+        return 'NOT NULL'
+
+    return 'UNSET'
+
+
+def get_bq_fields_sql(fields):
+    """
+    Get the SQL compliant fields definition from json fields object.
+
+    :param fields: table schema in json format
+
+    :return: a string that can be added to SQL to generate a correct
+        table.
+    """
+    fields_list = []
+    for field in fields:
+        rendered = FIELDS_TMPL.render(name=field.get('name'),
+                                      col_type=get_bq_col_type(
+                                          field.get('type')),
+                                      mode=get_bq_mode(field.get('mode')),
+                                      desc=field.get('description'))
+
+        fields_list.append(rendered)
+
+    fields_str = ','.join(fields_list)
+    return fields_str
