@@ -83,7 +83,8 @@ class CreateUpdateDrcIdMatchTableTest(TestCase):
             project_id=self.project_id,
             drc_dataset_id=DRC_OPS,
             ps_values_table_id=self.ps_values_table_id)
-        self.client.query(populate_query)
+        job = self.client.query(populate_query)
+        job.result()
 
     @mock.patch('utils.bq.get_table_schema')
     def test_get_case_statements(self, mock_table_schema):
