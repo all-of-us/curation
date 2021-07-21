@@ -24,7 +24,8 @@ import pandas as pd
 
 from common import JINJA_ENV
 from cdr_cleaner.cleaning_rules.negative_ages import date_fields
-from utils.bq import get_client, execute
+from utils.bq import get_client
+from analytics.cdr_ops.utils import execute
 
 client = get_client(PROJECT_ID)
 

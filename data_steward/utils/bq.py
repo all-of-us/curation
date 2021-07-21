@@ -302,18 +302,6 @@ def query(q, project_id=None, use_cache=False):
     return client.query(q, job_config=query_job_config).to_dataframe()
 
 
-def execute(client, query):
-    """
-    Execute a bigquery command and return the results in a dataframe
-
-    :param client: an instantiated bigquery client object
-    :param query: the query to execute
-    :return pandas dataframe object
-    """
-    print(query)
-    return client.query(query).to_dataframe()
-
-
 def list_datasets(project_id):
     """
     Lists all datasets existing in a project.
