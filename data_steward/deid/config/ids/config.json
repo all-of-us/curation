@@ -135,16 +135,18 @@
         ],
         "EMPLOYMENT":[
             {
-                "comment":"this will generalize values to unemployed or not employed",
+                "comment":"this will generalize values to unemployed or not employed.  first row is basics survey answer values and the second row is cope survey answer values",
                 "qualifier":"IN",
-                "values":[1585955, 1585956, 1585957, 1585958, 1585959, 1585960],
+                "values":[1585955, 1585956, 1585957, 1585958, 1585959, 1585960,
+                          1333224, 1333132, 1332926, 1332757, 1332716, 1333197],
                 "into":2000000005,
                 "drop_duplicates": "True"
             },
             {
-                "comment":"generalizing to currently employed",
+                "comment":"generalizing to currently employed. first row is basics survey answer values and the second row is cope survey answer values.",
                 "qualifier":"IN",
-                "values":[1585953, 1585954],
+                "values":[1585953, 1585954,
+                          1333341, 1333321],
                 "into":2000000004,
                 "drop_duplicates": "True"
             }

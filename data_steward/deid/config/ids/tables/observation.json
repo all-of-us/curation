@@ -91,7 +91,7 @@
             "on": {
                 "field": "observation_source_concept_id",
                 "qualifier": "in",
-                "values": [1585952]
+                "values": [1585952, 1332843]
             },
             "copy_to": ["value_as_concept_id"]
          }
