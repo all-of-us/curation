@@ -51,7 +51,7 @@ def create_on_string(item):
 
         # turn a list into a single string
         values = [str(value) for value in values]
-        values = ' '.join(values)
+        values = ', '.join(values)
 
         string = ' '.join([field, qualifier, '(', values, ')'])
         return string, field
