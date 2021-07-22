@@ -43,10 +43,10 @@ OR
 OR
     (observation_concept_id = 1586162 AND (value_as_number < 0 OR value_as_number > 99))
 OR
-    -- from dc1058: sandbox any participant data who have a household size greater than 11 --
+    -- from dc1061: sandbox any participant data who have a household size greater than 11 --
     (observation_concept_id IN (1333015, 1585889) AND (value_as_number < 0 OR value_as_number > 10))
 OR
-    -- from dc1061: sandbox any participant data who have 6 or more members under 18 in their household --
+    -- from dc1058: sandbox any participant data who have 6 or more members under 18 in their household --
     (observation_concept_id IN (1333023, 1585890) AND (value_as_number < 0 OR value_as_number > 5)))
 """)
 
