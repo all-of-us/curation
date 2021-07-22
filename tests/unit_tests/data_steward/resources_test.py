@@ -133,13 +133,12 @@ class ResourcesTest(unittest.TestCase):
         expected = [
             'observation_period', 'visit_cost', 'drug_cost',
             'procedure_occurrence', 'payer_plan_period', 'device_cost',
-            'device_exposure', 'procedure_cost', 'source_to_concept_map',
-            'observation', 'location', 'cohort', 'cost', 'death',
-            'drug_exposure', 'measurement', 'condition_era', 'person', 'note',
-            'cohort_definition', 'dose_era', 'care_site', 'fact_relationship',
-            'cohort_attribute', 'provider', 'condition_occurrence',
-            'cdm_source', 'attribute_definition', 'visit_occurrence',
-            'drug_era', 'specimen'
+            'device_exposure', 'procedure_cost', 'observation', 'location',
+            'cohort', 'cost', 'death', 'drug_exposure', 'measurement',
+            'condition_era', 'person', 'note', 'cohort_definition', 'dose_era',
+            'care_site', 'fact_relationship', 'cohort_attribute', 'provider',
+            'condition_occurrence', 'cdm_source', 'attribute_definition',
+            'visit_occurrence', 'drug_era', 'specimen'
         ]
         actual = resources.CDM_TABLES
         self.assertCountEqual(actual, expected)

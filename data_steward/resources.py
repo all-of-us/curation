@@ -27,6 +27,7 @@ resource_files_path = os.path.join(base_path, 'resource_files')
 config_path = os.path.join(base_path, 'config')
 fields_path = os.path.join(resource_files_path, 'schemas')
 cdm_fields_path = os.path.join(fields_path, 'cdm')
+vocabulary_fields_path = os.path.join(cdm_fields_path, 'vocabulary')
 rdr_fields_path = os.path.join(fields_path, 'rdr')
 internal_fields_path = os.path.join(fields_path, 'internal')
 mapping_fields_path = os.path.join(internal_fields_path, 'mapping_tables')
@@ -250,6 +251,19 @@ def is_id_match(table_id):
     return table_id.startswith('identity_')
 
 
+def vocabulary_schemas():
+    vocabulare_schemas = dict()
+    for dir_path, _, files in os.walk(vocabulary_fields_path):
+        for f in files:
+            file_path = os.path.join(dir_path, f)
+            with open(file_path, 'r', encoding='utf-8') as file_path:
+                file_name = os.path.basename(f)
+                table_name = file_name.split('.')[0]
+                schema = json.load(file_path)
+                vocabulare_schemas[table_name] = schema
+    return vocabulare_schemas
+
+
 def cdm_schemas(include_achilles=False, include_vocabulary=False):
     """
     Get a dictionary mapping table_name -> schema
@@ -268,7 +282,8 @@ def cdm_schemas(include_achilles=False, include_vocabulary=False):
                 table_name = file_name.split('.')[0]
                 schema = json.load(fp)
                 include_table = True
-                if table_name in VOCABULARY_TABLES and not include_vocabulary:
+                if table_name in vocabulary_schemas(
+                ) and not include_vocabulary:
                     include_table = False
                 elif table_name in ACHILLES_TABLES + ACHILLES_HEEL_TABLES and not include_achilles:
                     include_table = False
