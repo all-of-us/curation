@@ -252,7 +252,7 @@ def is_id_match(table_id):
 
 
 def vocabulary_schemas():
-    vocabulare_schemas = dict()
+    vocab_schemas = dict()
     for dir_path, _, files in os.walk(vocabulary_fields_path):
         for f in files:
             file_path = os.path.join(dir_path, f)
@@ -260,8 +260,8 @@ def vocabulary_schemas():
                 file_name = os.path.basename(f)
                 table_name = file_name.split('.')[0]
                 schema = json.load(file_path)
-                vocabulare_schemas[table_name] = schema
-    return vocabulare_schemas
+                vocab_schemas[table_name] = schema
+    return vocab_schemas
 
 
 def cdm_schemas(include_achilles=False, include_vocabulary=False):
