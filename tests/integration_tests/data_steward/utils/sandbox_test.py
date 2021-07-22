@@ -5,7 +5,7 @@ import unittest
 import app_identity
 # Project Imports
 from utils import sandbox
-from utils.bq import get_client, list_datasets, delete_dataset
+from utils.bq import get_client
 
 
 class SandboxTest(unittest.TestCase):
@@ -20,24 +20,35 @@ class SandboxTest(unittest.TestCase):
         self.project_id = app_identity.get_application_id()
         self.dataset_id = os.environ.get('UNIONED_DATASET_ID')
         self.sandbox_id = sandbox.get_sandbox_dataset_id(self.dataset_id)
+        self.fq_sandbox_id = f'{self.project_id}.{self.sandbox_id}'
         # Removing any existing datasets that might interfere with the test
         self.client = get_client(self.project_id)
-        self.client.delete_dataset(f'{self.project_id}.{self.sandbox_id}',
-                                   delete_contents=True,
-                                   not_found_ok=True)
 
     def test_create_sandbox_dataset(self):
+        # pre-conditions
+        pre_test_datasets_obj = list(self.client.list_datasets(self.project_id))
+        pre_test_datasets = [d.dataset_id for d in pre_test_datasets_obj]
+
         # Create sandbox dataset
         sandbox_dataset = sandbox.create_sandbox_dataset(
             self.project_id, self.dataset_id)
-        all_datasets_obj = list_datasets(self.project_id)
-        all_datasets = [d.dataset_id for d in all_datasets_obj]
 
-        self.assertTrue(sandbox_dataset in all_datasets)
+        # Post condition checks
+        post_test_datasets_obj = list(self.client.list_datasets(
+            self.project_id))
+        post_test_datasets = [d.dataset_id for d in post_test_datasets_obj]
+
+        # make sure the dataset didn't already exist
+        self.assertTrue(sandbox_dataset not in pre_test_datasets)
+        # make sure it was actually created
+        self.assertTrue(sandbox_dataset in post_test_datasets)
 
         # Try to create same sandbox, which now already exists
         self.assertRaises(RuntimeError, sandbox.create_sandbox_dataset,
                           self.project_id, self.dataset_id)
 
+    def tearDown(self):
         # Remove fake dataset created in project
-        delete_dataset(self.project_id, sandbox_dataset)
+        self.client.delete_dataset(self.fq_sandbox_id,
+                                   delete_contents=True,
+                                   not_found_ok=True)

@@ -481,8 +481,7 @@ def create_dataset(project_id,
     all_datasets = [d.dataset_id for d in list_datasets(project_id)]
     if dataset_id in all_datasets:
         if overwrite_existing:
-            client.delete_dataset(project_id,
-                                  dataset_id,
+            client.delete_dataset(dataset_id,
                                   delete_contents=True,
                                   not_found_ok=True)
         else:
