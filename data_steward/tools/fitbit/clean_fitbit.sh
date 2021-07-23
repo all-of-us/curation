@@ -61,6 +61,7 @@ echo "mapping_table --> ${mapping_table}"
 APP_ID=$(python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);' <"${key_file}")
 export GOOGLE_APPLICATION_CREDENTIALS="${key_file}"
 export GOOGLE_CLOUD_PROJECT="${APP_ID}"
+today=$(date '+%Y%m%d')
 
 #set application environment (ie dev, test, prod)
 gcloud auth activate-service-account --key-file="${key_file}"
@@ -90,7 +91,7 @@ LOGS_DIR="${DATA_STEWARD_DIR}/logs"
 mkdir -p "${LOGS_DIR}"
 
 # Apply cleaning rules
-python "${CLEANER_DIR}/clean_cdr.py" --project_id "${APP_ID}" --dataset_id "${fitbit_deid_dataset}" --sandbox_dataset_id "${sandbox_dataset}" --data_stage "${data_stage}" --combined_dataset_id "${combined_dataset}" --mapping_dataset_id "${mapping_dataset}" --mapping_table_id "${mapping_table}" -s 2>&1 | tee "${LOGS_DIR}/rt_fitbit_cleaning_log.txt"
+python "${CLEANER_DIR}/clean_cdr.py" --project_id "${APP_ID}" --dataset_id "${fitbit_deid_dataset}" --sandbox_dataset_id "${sandbox_dataset}" --data_stage "${data_stage}" --combined_dataset_id "${combined_dataset}" --mapping_dataset_id "${mapping_dataset}" --mapping_table_id "${mapping_table}" -s 2>&1 | tee -a "${LOGS_DIR}/${today}_rt_fitbit_cleaning_log.txt"
 
 bq update --set_label "phase:clean" --set_label "de_identified:true" "${APP_ID}":"${fitbit_deid_dataset}"
 
