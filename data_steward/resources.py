@@ -9,9 +9,8 @@ from typing import List
 
 import cachetools
 
-from common import (ACHILLES_TABLES, ACHILLES_HEEL_TABLES, VOCABULARY_TABLES,
-                    PROCESSED_TXT, RESULTS_HTML, FITBIT_TABLES, PID_RID_MAPPING,
-                    COPE_SURVEY_MAP)
+from common import (VOCABULARY, ACHILLES, PROCESSED_TXT, RESULTS_HTML,
+                    FITBIT_TABLES, PID_RID_MAPPING, COPE_SURVEY_MAP)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -27,6 +26,7 @@ resource_files_path = os.path.join(base_path, 'resource_files')
 config_path = os.path.join(base_path, 'config')
 fields_path = os.path.join(resource_files_path, 'schemas')
 cdm_fields_path = os.path.join(fields_path, 'cdm')
+vocabulary_fields_path = os.path.join(cdm_fields_path, 'vocabulary')
 rdr_fields_path = os.path.join(fields_path, 'rdr')
 internal_fields_path = os.path.join(fields_path, 'internal')
 mapping_fields_path = os.path.join(internal_fields_path, 'mapping_tables')
@@ -260,21 +260,21 @@ def cdm_schemas(include_achilles=False, include_vocabulary=False):
     """
     result = dict()
     # TODO:  update this code as part of DC-1015 and remove this comment
-    for dir_path, _, files in os.walk(cdm_fields_path):
+    exclude_directories = list()
+    if not include_achilles:
+        exclude_directories.append(ACHILLES)
+    if not include_vocabulary:
+        exclude_directories.append(VOCABULARY)
+    for dir_path, dirs, files in os.walk(cdm_fields_path, topdown=True):
+        # The following line updates the dirs list gathered by os.walk to exclude directories in exclude_directories[]
+        dirs[:] = [d for d in dirs if d not in set(exclude_directories)]
         for f in files:
             file_path = os.path.join(dir_path, f)
             with open(file_path, 'r', encoding='utf-8') as fp:
                 file_name = os.path.basename(f)
                 table_name = file_name.split('.')[0]
                 schema = json.load(fp)
-                include_table = True
-                if table_name in VOCABULARY_TABLES and not include_vocabulary:
-                    include_table = False
-                elif table_name in ACHILLES_TABLES + ACHILLES_HEEL_TABLES and not include_achilles:
-                    include_table = False
-                if include_table:
-                    result[table_name] = schema
-
+                result[table_name] = schema
     return result
 
 
