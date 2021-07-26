@@ -467,3 +467,19 @@ WHERE  (observation_source_concept_id=1585482 OR observation_concept_id=1585482)
 AND DATE_DIFF(DATE(observation_date), DATE(birth_datetime), YEAR) < 18
 '''
 pd.read_gbq(query, dialect='standard')
+
+# # Check for missing questionnaire_response_id
+
+# Survey data in the RDR export should all have **questionnaire_response_id** [DC-1776](https://precisionmedicineinitiative.atlassian.net/browse/DC-1776). Any violations should be reported to the RDR team.
+
+query = f"""
+SELECT 
+    observation_id, 
+    person_id, 
+    observation_concept_id
+FROM `{project_id}.{new_rdr}.observation`
+WHERE questionnaire_response_id IS NULL
+"""
+pd.read_gbq(query, dialect='standard')
+
+
