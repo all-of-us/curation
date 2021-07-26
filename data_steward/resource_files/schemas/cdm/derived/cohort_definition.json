@@ -38,6 +38,7 @@
   {
     "type": "date",
     "name": "cohort_initiation_date",
-    "mode": "nullable"
+    "mode": "nullable",
+    "description": "A date to indicate when the Cohort was initiated in the COHORT table."
   }
 ]
