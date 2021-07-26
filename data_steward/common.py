@@ -107,6 +107,7 @@ CONCEPT_SYNONYM = 'concept_synonym'
 DOMAIN = 'domain'
 DRUG_STRENGTH = 'drug_strength'
 RELATIONSHIP = 'relationship'
+SOURCE_TO_CONCEPT_MAP = 'source_to_concept_map'
 VOCABULARY = 'vocabulary'
 VOCABULARY_TABLES = [
     CONCEPT, CONCEPT_ANCESTOR, CONCEPT_CLASS, CONCEPT_RELATIONSHIP,

@@ -61,7 +61,8 @@ class ResourcesTest(unittest.TestCase):
 
         result_vocab_tables = [
             table_name for table_name in table_names
-            if table_name in resources.VOCABULARY_TABLES
+            if table_name in common.VOCABULARY_TABLES +
+            [common.SOURCE_TO_CONCEPT_MAP]
         ]
         self.assertCountEqual(
             [],

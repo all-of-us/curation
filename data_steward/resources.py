@@ -9,9 +9,8 @@ from typing import List
 
 import cachetools
 
-from common import (ACHILLES_TABLES, ACHILLES_HEEL_TABLES, VOCABULARY_TABLES,
-                    PROCESSED_TXT, RESULTS_HTML, FITBIT_TABLES, PID_RID_MAPPING,
-                    COPE_SURVEY_MAP)
+from common import (VOCABULARY, ACHILLES, PROCESSED_TXT, RESULTS_HTML,
+                    FITBIT_TABLES, PID_RID_MAPPING, COPE_SURVEY_MAP)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -263,9 +262,9 @@ def cdm_schemas(include_achilles=False, include_vocabulary=False):
     # TODO:  update this code as part of DC-1015 and remove this comment
     exclude_directories = list()
     if not include_achilles:
-        exclude_directories.append('achilles')
+        exclude_directories.append(ACHILLES)
     if not include_vocabulary:
-        exclude_directories.append('vocabulary')
+        exclude_directories.append(VOCABULARY)
     for dir_path, dirs, files in os.walk(cdm_fields_path, topdown=True):
         dirs[:] = [d for d in dirs if d not in set(exclude_directories)]
         for f in files:
