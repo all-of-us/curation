@@ -2,12 +2,11 @@
 An administrative utility to remove datasets.
 
 Original purpose is to identify and remove datasets with a given
-substring in the dataset name. 
+substring in the dataset name.
 """
 # Python imports
 import argparse
 import logging
-import sys
 
 # Third party imports
 from googleapiclient.errors import HttpError
@@ -63,8 +62,8 @@ def run_deletion(project_id, name_substrings):
         LOGGER.info(f'User requested to exit the deletion script.\n'
                     f'Exiting clean_project_datasets script now.')
         return
-    else:
-        LOGGER.info('Continuing with dataset deletions...')
+
+    LOGGER.info('Continuing with dataset deletions...')
 
     client = bq.get_client(project_id)
 
