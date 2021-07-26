@@ -1,0 +1,79 @@
+[
+  {
+    "type": "integer",
+    "name": "note_nlp_id",
+    "mode": "required",
+    "description": "A unique identifier for the NLP record."
+  },
+  {
+    "type": "integer",
+    "name": "note_id",
+    "mode": "required",
+    "description": "This is the NOTE_ID for the NOTE record the NLP record is associated to."
+  },
+  {
+    "type": "integer",
+    "name": "section_concept_id",
+    "mode": "nullable"
+  },
+  {
+    "type": "string",
+    "name": "snippet",
+    "mode": "nullable",
+    "description": "A small window of text surrounding the term"
+  },
+  {
+    "type": "string",
+    "name": "offset",
+    "mode": "nullable",
+    "description": "Character offset of the extracted term in the input note"
+  },
+  {
+    "type": "string",
+    "name": "lexical_variant",
+    "mode": "required",
+    "description": "Raw text extracted from the NLP tool."
+  },
+  {
+    "type": "integer",
+    "name": "note_nlp_concept_id",
+    "mode": "nullable"
+  },
+  {
+    "type": "integer",
+    "name": "note_nlp_source_concept_id",
+    "mode": "nullable"
+  },
+  {
+    "type": "string",
+    "name": "nlp_system",
+    "mode": "nullable"
+  },
+  {
+    "type": "date",
+    "name": "nlp_date",
+    "mode": "required",
+    "description": "The date of the note processing."
+  },
+  {
+    "type": "timestamp",
+    "name": "nlp_datetime",
+    "mode": "nullable",
+    "description": "The date and time of the note processing."
+  },
+  {
+    "type": "string",
+    "name": "term_exists",
+    "mode": "nullable"
+  },
+  {
+    "type": "string",
+    "name": "term_temporal",
+    "mode": "nullable"
+  },
+  {
+    "type": "string",
+    "name": "term_modifiers",
+    "mode": "nullable"
+  }
+]
