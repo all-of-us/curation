@@ -19,22 +19,14 @@ from utils import pipeline_logging
 LOGGER = logging.getLogger(__name__)
 
 
-def delete_datasets(client, datasets_to_delete_list, test_env=True):
+def _delete_datasets(client, datasets_to_delete_list):
     """
     Deletes datasets using their dataset_ids
 
     :param client: client object associated with project to delete datasets from
     :param datasets_to_delete_list: list of dataset_ids to delete
-    :param offboarding_dev: boolean set to true to ensure if you are deleting 
-        datasets outside of test environment, you really intend to do that
     :return:
     """
-    # a fail safe to prevent deleting datasets in environments other than test.
-    if 'test' not in client.project and test_env:
-        raise RuntimeError(
-            "Attempting to delete datasets out of non-test environment "
-            "while not explicitly making this choice!!")
-
     failed_to_delete = []
     for dataset in datasets_to_delete_list:
         dataset_id = f'{client.project}.{dataset}'
@@ -52,15 +44,28 @@ def delete_datasets(client, datasets_to_delete_list, test_env=True):
             f'The following datasets could not be deleted: {failed_to_delete}')
 
 
-def run_deletion(project_id, name_substrings, env):
+def run_deletion(project_id, name_substrings):
     """
     Deletes datasets from project containing any of the name_substrings
 
     :param project_id: identifies the project
     :param name_substrings: Identifies substrings that help identify datasets to delete
-    :param env: explicit environment the user intends to delete from
     :return:
     """
+    # make the developer running this script approve the environment.
+    proceed = input(f'This will remove datasets from the `{project_id}` '
+                    f'environment.\nAre you sure you with to proceed?  '
+                    f'[Y/y/N/n]:  ')
+
+    LOGGER.info(f'User entered: "{proceed}"')
+
+    if proceed.lower() != 'y':
+        LOGGER.info(f'User requested to exit the deletion script.\n'
+                    f'Exiting clean_project_datasets script now.')
+        return
+    else:
+        LOGGER.info('Continuing with dataset deletions...')
+
     client = bq.get_client(project_id)
 
     all_datasets = [
@@ -82,7 +87,7 @@ def run_deletion(project_id, name_substrings, env):
     response = get_response()
 
     if response == "Y":
-        delete_datasets(client, datasets_with_substrings, env == 'test')
+        _delete_datasets(client, datasets_with_substrings)
     else:
         LOGGER.info("Proper consent was not given.  Aborting deletion.")
 
@@ -124,16 +129,6 @@ def get_arguments(raw_args=None):
               'A dataset containing any of these substrings within in their '
               'dataset_id will be deleted.'),
         required=True)
-    parser.add_argument(
-        '-e',
-        '--env',
-        dest='env',
-        help=(
-            'Double check on the environment this is intended to remove from.'),
-        required=False,
-        nargs='?',
-        choices=('test', 'production', 'staging', 'stable'),
-        default='test')
     parser.add_argument('-s',
                         '--console_log',
                         dest='console_log',
@@ -148,7 +143,7 @@ def main(raw_args=None):
 
     pipeline_logging.configure(add_console_handler=args.console_log)
 
-    run_deletion(args.project_id, args.name_substrings, args.env)
+    run_deletion(args.project_id, args.name_substrings)
 
 
 if __name__ == '__main__':
