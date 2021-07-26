@@ -251,21 +251,6 @@ def is_id_match(table_id):
     return table_id.startswith('identity_')
 
 
-def vocabulary_tables():
-    """
-    Returns list of vocabulary table names using schema organization structure
-    """
-    vocab_schemas = list()
-    for dir_path, _, files in os.walk(vocabulary_fields_path):
-        for f in files:
-            file_path = os.path.join(dir_path, f)
-            with open(file_path, 'r', encoding='utf-8') as file_path:
-                file_name = os.path.basename(f)
-                table_name = file_name.split('.')[0]
-                vocab_schemas.append(table_name)
-    return vocab_schemas
-
-
 def cdm_schemas(include_achilles=False, include_vocabulary=False):
     """
     Get a dictionary mapping table_name -> schema
@@ -276,21 +261,20 @@ def cdm_schemas(include_achilles=False, include_vocabulary=False):
     """
     result = dict()
     # TODO:  update this code as part of DC-1015 and remove this comment
-    for dir_path, _, files in os.walk(cdm_fields_path):
+    exclude_directories = list()
+    if not include_achilles:
+        exclude_directories.append('achilles')
+    if not include_vocabulary:
+        exclude_directories.append('vocabulary')
+    for dir_path, dirs, files in os.walk(cdm_fields_path, topdown=True):
+        dirs[:] = [d for d in dirs if d not in set(exclude_directories)]
         for f in files:
             file_path = os.path.join(dir_path, f)
             with open(file_path, 'r', encoding='utf-8') as fp:
                 file_name = os.path.basename(f)
                 table_name = file_name.split('.')[0]
                 schema = json.load(fp)
-                include_table = True
-                if table_name in vocabulary_tables() and not include_vocabulary:
-                    include_table = False
-                elif table_name in ACHILLES_TABLES + ACHILLES_HEEL_TABLES and not include_achilles:
-                    include_table = False
-                if include_table:
-                    result[table_name] = schema
-
+                result[table_name] = schema
     return result
 
 
