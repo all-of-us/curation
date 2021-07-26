@@ -1,56 +1,56 @@
 [
-    {
-        "type": "string", 
-        "name": "source_code", 
-        "mode": "required", 
-        "description": "The source code being translated into a Standard Concept."
-    }, 
-    {
-        "type": "integer", 
-        "name": "source_concept_id", 
-        "mode": "required", 
-        "description": "A foreign key to the Source Concept that is being translated into a Standard Concept."
-    }, 
-    {
-        "type": "string", 
-        "name": "source_vocabulary_id", 
-        "mode": "required", 
-        "description": "A foreign key to the VOCABULARY table defining the vocabulary of the source code that is being translated to a Standard Concept."
-    }, 
-    {
-        "type": "string", 
-        "name": "source_code_description", 
-        "mode": "nullable", 
-        "description": "An optional description for the source code. This is included as a convenience to compare the description of the source code to the name of the concept."
-    }, 
-    {
-        "type": "integer", 
-        "name": "target_concept_id", 
-        "mode": "required", 
-        "description": "A foreign key to the target Concept to which the source code is being mapped."
-    }, 
-    {
-        "type": "string", 
-        "name": "target_vocabulary_id", 
-        "mode": "required", 
-        "description": "A foreign key to the VOCABULARY table defining the vocabulary of the target Concept."
-    }, 
-    {
-        "type": "date", 
-        "name": "valid_start_date", 
-        "mode": "required", 
-        "description": "The date when the mapping instance was first recorded."
-    }, 
-    {
-        "type": "date", 
-        "name": "valid_end_date", 
-        "mode": "required", 
-        "description": "The date when the mapping instance became invalid because it was deleted or superseded (updated) by a new relationship. Default value is 31-Dec-2099."
-    }, 
-    {
-        "type": "string", 
-        "name": "invalid_reason", 
-        "mode": "nullable", 
-        "description": "Reason the mapping instance was invalidated. Possible values are D (deleted), U (replaced with an update) or NULL when valid_end_date has the default value."
-    }
+  {
+    "type": "string",
+    "name": "source_code",
+    "mode": "required",
+    "description": "The source code being translated into a Standard Concept."
+  },
+  {
+    "type": "integer",
+    "name": "source_concept_id",
+    "mode": "required",
+    "description": "A foreign key to the Source Concept that is being translated into a Standard Concept."
+  },
+  {
+    "type": "string",
+    "name": "source_vocabulary_id",
+    "mode": "required",
+    "description": "A foreign key to the VOCABULARY table defining the vocabulary of the source code that is being translated to a Standard Concept."
+  },
+  {
+    "type": "string",
+    "name": "source_code_description",
+    "mode": "nullable",
+    "description": "An optional description for the source code. This is included as a convenience to compare the description of the source code to the name of the concept."
+  },
+  {
+    "type": "integer",
+    "name": "target_concept_id",
+    "mode": "required",
+    "description": "A foreign key to the target Concept to which the source code is being mapped."
+  },
+  {
+    "type": "string",
+    "name": "target_vocabulary_id",
+    "mode": "required",
+    "description": "A foreign key to the VOCABULARY table defining the vocabulary of the target Concept."
+  },
+  {
+    "type": "date",
+    "name": "valid_start_date",
+    "mode": "required",
+    "description": "The date when the mapping instance was first recorded."
+  },
+  {
+    "type": "date",
+    "name": "valid_end_date",
+    "mode": "required",
+    "description": "The date when the mapping instance became invalid because it was deleted or superseded (updated) by a new relationship. Default value is 31-Dec-2099."
+  },
+  {
+    "type": "string",
+    "name": "invalid_reason",
+    "mode": "nullable",
+    "description": "Reason the mapping instance was invalidated. Possible values are D (deleted), U (replaced with an update) or NULL when valid_end_date has the default value."
+  }
 ]
