@@ -266,6 +266,7 @@ def cdm_schemas(include_achilles=False, include_vocabulary=False):
     if not include_vocabulary:
         exclude_directories.append(VOCABULARY)
     for dir_path, dirs, files in os.walk(cdm_fields_path, topdown=True):
+        # The following line updates the dirs list gathered by os.walk to exclude directories in exclude_directories[]
         dirs[:] = [d for d in dirs if d not in set(exclude_directories)]
         for f in files:
             file_path = os.path.join(dir_path, f)
