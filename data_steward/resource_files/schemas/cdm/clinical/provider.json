@@ -13,13 +13,15 @@
   },
   {
     "type": "string",
-    "name": "NPI",
-    "mode": "nullable"
+    "name": "npi",
+    "mode": "nullable",
+    "description": "This is the National Provider Number issued to health care providers in the US by the Centers for Medicare and Medicaid Services (CMS)."
   },
   {
     "type": "string",
-    "name": "DEA",
-    "mode": "nullable"
+    "name": "dea",
+    "mode": "nullable",
+    "description": "This is the identifier issued by the DEA, a US federal agency, that allows a provider to write prescriptions for controlled substances."
   },
   {
     "type": "integer",
