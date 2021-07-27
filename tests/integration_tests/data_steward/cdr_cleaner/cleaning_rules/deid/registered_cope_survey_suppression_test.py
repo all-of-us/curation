@@ -95,6 +95,9 @@ class RegisteredCopeSurveyQuestionsSuppressionTest(
               (20, 120, 0, 0, 0, 1333324, 0, 0, 0, '2020-01-01'),
               (21, 121, 0, 0, 0, 1333014, 0, 0, 0, '2020-01-01'),
               (22, 122, 0, 0, 0, 715711, 0, 0, 0, '2020-01-01'),
+              (23, 123, 0, 0, 0, 1310144, 0, 0, 0, '2020-01-01'),
+              (24, 124, 0, 0, 0, 1310145, 0, 0, 0, '2020-01-01'),
+              (25, 125, 0, 0, 0, 1310148, 0, 0, 0, '2020-01-01'),
               -- concepts not to be suppressed --
                -- 1333325 In the past month, have you been sick for more than one day with a new illness related to -- 
                     -- COVID-19 or flu-like symptoms? --
@@ -130,9 +133,11 @@ class RegisteredCopeSurveyQuestionsSuppressionTest(
                 f'{self.rule_instance.sandbox_table_for("observation")}',
             'loaded_ids': [
                 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18,
-                19, 20, 21, 22
+                19, 20, 21, 22, 23, 24, 25
             ],
-            'sandboxed_ids': [1, 2, 3, 4, 5, 6, 17, 18, 19, 20, 21, 22],
+            'sandboxed_ids': [
+                1, 2, 3, 4, 5, 6, 17, 18, 19, 20, 21, 22, 23, 24, 25
+            ],
             'fields': [
                 'observation_id', 'person_id', 'observation_concept_id',
                 'observation_type_concept_id', 'value_as_concept_id',
