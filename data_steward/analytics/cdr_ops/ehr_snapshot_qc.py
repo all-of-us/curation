@@ -23,7 +23,7 @@ EHR_SNAPSHOT_DATASET_ID = ""  # Identifies the snapshot dataset
 import pandas as pd
 
 from utils.bq import get_client
-from analytics.cdr_ops.utils import execute
+from analytics.cdr_ops.notebook_utils import execute
 
 client = get_client(PROJECT_ID)
 
