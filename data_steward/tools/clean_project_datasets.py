@@ -52,9 +52,12 @@ def run_deletion(project_id, name_substrings):
     :return:
     """
     # make the developer running this script approve the environment.
-    proceed = input(f'This will remove datasets from the `{project_id}` '
-                    f'environment.\nAre you sure you with to proceed?  '
-                    f'[Y/y/N/n]:  ')
+    msg = (f'This will remove datasets from the `{project_id}` '
+           f'environment.\nAre you sure you with to proceed?  '
+           f'[Y/y/N/n]:  ')
+
+    LOGGER.info(msg)
+    proceed = input(msg)
 
     LOGGER.info(f'User entered: "{proceed}"')
 
@@ -81,26 +84,18 @@ def run_deletion(project_id, name_substrings):
     for dataset in datasets_with_substrings:
         LOGGER.info(f'\t{dataset}')
 
-    LOGGER.info(f'After reviewing datasets, proceed?  This action '
-                f'cannot be reversed.')
-    response = get_response()
+    msg = (f'After reviewing datasets, proceed?\nThis action '
+           f'cannot be reversed.\n'
+           f'[Y/y/N/n]:  ')
+    LOGGER.info(msg)
+    response = input(msg)
 
-    if response == "Y":
+    if response.lower() == 'y':
         _delete_datasets(client, datasets_with_substrings)
     else:
         LOGGER.info("Proper consent was not given.  Aborting deletion.")
 
     LOGGER.info("Dataset deletion completed.")
-
-
-# Make sure user types Y to proceed
-def get_response():
-    """Return input from user denoting yes/no"""
-    prompt_text = 'Please press Y/n\n'
-    response = input(prompt_text)
-    while response not in ('Y', 'n', 'N'):
-        response = input(prompt_text)
-    return response
 
 
 def get_arguments(raw_args=None):
@@ -131,14 +126,20 @@ def get_arguments(raw_args=None):
     parser.add_argument('-s',
                         '--console_log',
                         dest='console_log',
-                        action='store_false',
-                        help='Send logs to console.  Turned on be default.')
+                        action='store_true',
+                        help='Send logs to console.')
 
     return parser.parse_args(raw_args)
 
 
 def main(raw_args=None):
     args = get_arguments(raw_args)
+
+    if not args.console_log:
+        print(f'===============================================\n'
+              f'Warning!!  By not logging to the console you \n'
+              f'may miss important information!\n'
+              f'===============================================\n')
 
     pipeline_logging.configure(add_console_handler=args.console_log)
 
