@@ -131,8 +131,8 @@ def get_arguments(raw_args=None):
     parser.add_argument('-s',
                         '--console_log',
                         dest='console_log',
-                        action='store_true',
-                        help='Send logs to console')
+                        action='store_false',
+                        help='Send logs to console.  Turned on be default.')
 
     return parser.parse_args(raw_args)
 
