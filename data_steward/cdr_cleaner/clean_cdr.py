@@ -24,7 +24,7 @@ import \
     cdr_cleaner.cleaning_rules.remove_invalid_procedure_source_records as invalid_procedure_source
 import cdr_cleaner.cleaning_rules.remove_non_matching_participant as validate_missing_participants
 import cdr_cleaner.cleaning_rules.remove_records_with_wrong_date as remove_records_with_wrong_date
-import cdr_cleaner.cleaning_rules.round_ppi_values_to_nearest_integer as round_ppi_values
+from cdr_cleaner.cleaning_rules.round_ppi_values_to_nearest_integer import RoundPpiValuesToNearestInteger
 import cdr_cleaner.cleaning_rules.update_family_history_qa_codes as update_family_history
 import cdr_cleaner.manual_cleaning_rules.clean_smoking_ppi as smoking
 import cdr_cleaner.manual_cleaning_rules.negative_ppi as negative_ppi
@@ -164,7 +164,7 @@ RDR_CLEANING_CLASSES = [
     (
         map_questions_answers_to_omop.
         get_update_questions_answers_not_mapped_to_omop,),
-    (round_ppi_values.get_round_ppi_values_queries,),
+    (RoundPpiValuesToNearestInteger,),
     (update_family_history.get_update_family_history_qa_queries,),
     (NullConceptIDForNumericPPI,),
     (DropDuplicatePpiQuestionsAndAnswers,),
