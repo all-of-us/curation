@@ -53,7 +53,7 @@ def run_deletion(project_id, name_substrings):
     """
     # make the developer running this script approve the environment.
     msg = (f'This will remove datasets from the `{project_id}` '
-           f'environment.\nAre you sure you with to proceed?  '
+           f'environment.\nAre you sure you want to proceed?  '
            f'[Y/y/N/n]:  ')
 
     LOGGER.info(msg)
@@ -84,7 +84,8 @@ def run_deletion(project_id, name_substrings):
     for dataset in datasets_with_substrings:
         LOGGER.info(f'\t{dataset}')
 
-    msg = (f'After reviewing datasets, proceed?\nThis action '
+    msg = (f'After reviewing datasets, proceed?\nYou will need to review '
+           f'the log file if you are not printing to the console.\nThis action '
            f'cannot be reversed.\n'
            f'[Y/y/N/n]:  ')
     LOGGER.info(msg)
