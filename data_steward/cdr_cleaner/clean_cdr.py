@@ -308,6 +308,7 @@ REGISTERED_TIER_DEID_CLEANING_CLASSES = [
     (StringFieldsSuppression,),
     (SectionParticipationConceptSuppression,),
     (RegisteredCopeSurveyQuestionsSuppression,),
+    (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
 DATA_STAGE_RULES_MAPPING = {
