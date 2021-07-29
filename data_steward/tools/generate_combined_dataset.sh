@@ -128,7 +128,9 @@ python "${TOOLS_DIR}/add_cdr_metadata.py" --component "create" --project_id ${ap
 
 # Add data to cdr_metadata table
 python "${TOOLS_DIR}/add_cdr_metadata.py" --component "insert" --project_id ${app_id} --target_dataset ${combined_backup} \
---etl_version ${version} --ehr_source ${unioned_ehr_dataset} --ehr_cutoff_date ${ehr_cutoff} --rdr_source ${rdr_dataset} --cdr_generation_date ${today} --vocabulary_version ${vocab_dataset}
+--etl_version ${version} --ehr_source ${unioned_ehr_dataset} --ehr_cutoff_date ${ehr_cutoff} \
+--rdr_source ${rdr_dataset} --cdr_generation_date ${today} --vocabulary_version ${vocab_dataset} \
+--rdr_export_date ${rdr_export_date}
 
 # create an intermediary table to apply cleaning rules on
 bq mk --dataset --description "intermediary dataset to apply cleaning rules on ${combined_backup}" --label "phase:staging" --label "release_tag:${dataset_release_tag}" --label "de_identified:false" ${app_id}:${combined_staging}
