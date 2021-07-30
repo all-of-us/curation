@@ -26,7 +26,7 @@
   {
     "type": "timestamp",
     "name": "device_exposure_start_datetime",
-    "mode": "nullable",
+    "mode": "required",
     "description": "The date and time the Device or supply was applied or used."
   },
   {

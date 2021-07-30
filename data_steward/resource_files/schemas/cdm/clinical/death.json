@@ -2,13 +2,13 @@
   {
     "type": "integer",
     "name": "person_id",
-    "mode": "nullable",
+    "mode": "required",
     "description": "A foreign key identifier to the deceased person. The demographic details of that person are stored in the person table."
   },
   {
     "type": "date",
     "name": "death_date",
-    "mode": "nullable",
+    "mode": "required",
     "description": "The date the person was deceased. If the precise date including day or month is not known or not allowed, December is used as the default month, and the last day of the month the default day."
   },
   {
@@ -20,7 +20,7 @@
   {
     "type": "integer",
     "name": "death_type_concept_id",
-    "mode": "nullable",
+    "mode": "required",
     "description": "A foreign key referring to the predefined concept identifier in the Standardized Vocabularies reflecting how the death was represented in the source data."
   },
   {
