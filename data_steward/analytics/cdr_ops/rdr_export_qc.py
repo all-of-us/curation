@@ -467,3 +467,23 @@ WHERE  (observation_source_concept_id=1585482 OR observation_concept_id=1585482)
 AND DATE_DIFF(DATE(observation_date), DATE(birth_datetime), YEAR) < 18
 '''
 pd.read_gbq(query, dialect='standard')
+
+# # Check for missing questionnaire_response_id
+
+# Survey data in the RDR export should all have **questionnaire_response_id** [DC-1776](https://precisionmedicineinitiative.atlassian.net/browse/DC-1776). Any violations should be reported to the RDR team.
+
+query = f"""
+SELECT  
+    person_id, 
+    STRING_AGG(observation_source_value) AS observation_source_value
+FROM `{project_id}.{new_rdr}.concept` 
+JOIN `{project_id}.{new_rdr}.concept_ancestor` ON (concept_id=ancestor_concept_id)
+JOIN `{project_id}.{new_rdr}.observation` ON (descendant_concept_id=observation_concept_id)
+WHERE concept_class_id='Module'
+AND concept_name IN ('The Basics', 'Lifestyle', 'Overall Health') -- restrict to PPI 1-3
+AND questionnaire_response_id IS NULL
+GROUP BY 1
+"""
+pd.read_gbq(query, dialect='standard')
+
+
