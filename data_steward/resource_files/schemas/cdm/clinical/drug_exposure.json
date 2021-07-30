@@ -26,13 +26,13 @@
   {
     "type": "timestamp",
     "name": "drug_exposure_start_datetime",
-    "mode": "nullable",
+    "mode": "required",
     "description": "The start date and time for the current instance of Drug utilization. Valid entries include a start date of a prescription, the date a prescription was filled, or the date on which a Drug administration procedure was recorded."
   },
   {
     "type": "date",
     "name": "drug_exposure_end_date",
-    "mode": "required",
+    "mode": "nullable",
     "description": "The end date for the current instance of Drug utilization. It is not available from all sources."
   },
   {
