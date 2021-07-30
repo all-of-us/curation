@@ -26,7 +26,7 @@
   {
     "type": "timestamp",
     "name": "condition_start_datetime",
-    "mode": "nullable",
+    "mode": "required",
     "description": "The date and time when the instance of the Condition is recorded."
   },
   {

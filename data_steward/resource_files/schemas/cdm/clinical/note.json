@@ -20,7 +20,7 @@
   {
     "type": "timestamp",
     "name": "note_datetime",
-    "mode": "nullable",
+    "mode": "required",
     "description": "The date and time the note was recorded."
   },
   {
@@ -38,7 +38,7 @@
   {
     "type": "string",
     "name": "note_title",
-    "mode": "nullable",
+    "mode": "required",
     "description": "The title of the Note as it appears in the source."
   },
   {
