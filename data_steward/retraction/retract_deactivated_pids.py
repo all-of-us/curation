@@ -17,7 +17,7 @@ from utils import bq, pipeline_logging, sandbox as sb
 
 LOGGER = logging.getLogger(__name__)
 
-ISSUE_NUMBERS = ["DC-686", "DC-1184"]
+ISSUE_NUMBERS = ["DC-686", "DC-1184", "DC-1791"]
 
 TABLE_INFORMATION_SCHEMA = JINJA_ENV.from_string("""
 SELECT *
@@ -43,15 +43,10 @@ USING (person_id)
 {% if has_mapping or has_ext %}
 LEFT JOIN `{{mapping_ext_ref.project}}.{{mapping_ext_ref.dataset_id}}.{{mapping_ext_ref.table_id}}` m
 USING ({{table_id}})
-{% if has_mapping %}
-WHERE src_hpo_id != 'PPI/PM'
-{% elif has_ext %}
-WHERE src_id != 'PPI/PM'
-{% endif %}
 {% endif %}
 
 {% if has_start_date %}
-AND (COALESCE({{end_date}}, EXTRACT(DATE FROM {{end_datetime}}),
+WHERE (COALESCE({{end_date}}, EXTRACT(DATE FROM {{end_datetime}}),
     {{start_date}}, EXTRACT(DATE FROM {{start_datetime}})) >= d.deactivated_date
 {% if table_ref.table_id == 'drug_exposure' %}
 OR verbatim_end_date >= d.deactivated_date)
@@ -60,9 +55,9 @@ OR verbatim_end_date >= d.deactivated_date)
 {% elif table_ref.table_id == 'death' %}
 WHERE COALESCE(death_date, EXTRACT(DATE FROM death_datetime)) >= d.deactivated_date
 {% elif table_ref.table_id in ['drug_era', 'condition_era', 'dose_era', 'payer_plan_period']  %}
-AND COALESCE({{table_ref.table_id + '_end_date'}}, {{table_ref.table_id + '_start_date'}}) >= d.deactivated_date
+WHERE COALESCE({{table_ref.table_id + '_end_date'}}, {{table_ref.table_id + '_start_date'}}) >= d.deactivated_date
 {% else %}
-AND COALESCE({{date}}, EXTRACT(DATE FROM {{datetime}})) >= d.deactivated_date
+WHERE COALESCE({{date}}, EXTRACT(DATE FROM {{datetime}})) >= d.deactivated_date
 {% endif %})
 """)
 

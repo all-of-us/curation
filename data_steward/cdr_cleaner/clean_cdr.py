@@ -71,6 +71,8 @@ from cdr_cleaner.cleaning_rules.deid.birth_information_suppression import \
     BirthInformationSuppression
 from cdr_cleaner.cleaning_rules.replace_standard_id_in_domain_tables import \
     ReplaceWithStandardConceptId
+from cdr_cleaner.cleaning_rules.remove_participant_data_past_deactivation_date import RemoveParticipantDataPastDeactivationDate
+from cdr_cleaner.cleaning_rules.remove_fitbit_data_past_deactivation_date import RemoveFitbitDataPastDeactivationDate
 from cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff import EhrSubmissionDataCutoff
 from cdr_cleaner.cleaning_rules.repopulate_person_post_deid import RepopulatePersonPostDeid
 from cdr_cleaner.cleaning_rules.truncate_rdr_using_date import TruncateRdrData
@@ -208,6 +210,7 @@ COMBINED_CLEANING_CLASSES = [
     (
         NullInvalidForeignKeys,),
     (remove_aian_participants.get_queries,),
+    (RemoveParticipantDataPastDeactivationDate,),
     (validate_missing_participants.delete_records_for_non_matching_participants,
     ),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
@@ -215,6 +218,7 @@ COMBINED_CLEANING_CLASSES = [
 
 FITBIT_CLEANING_CLASSES = [
     (TruncateFitbitData,),
+    (RemoveFitbitDataPastDeactivationDate,),
 ]
 
 FITBIT_DEID_CLEANING_CLASSES = [

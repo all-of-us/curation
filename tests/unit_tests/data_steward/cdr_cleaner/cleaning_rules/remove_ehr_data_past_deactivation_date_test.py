@@ -16,7 +16,7 @@ import google.cloud.bigquery as gbq
 import pandas
 
 # Project imports
-import cdr_cleaner.cleaning_rules.remove_ehr_data_past_deactivation_date as red
+import cdr_cleaner.cleaning_rules.remove_participant_data_past_deactivation_date as red
 
 
 class RemoveEhrDataPastDeactivationDateTest(unittest.TestCase):
