@@ -19,7 +19,7 @@ import pandas
 import cdr_cleaner.cleaning_rules.remove_participant_data_past_deactivation_date as red
 
 
-class RemoveEhrDataPastDeactivationDateTest(unittest.TestCase):
+class RemoveParticipantDataPastDeactivationDateTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):

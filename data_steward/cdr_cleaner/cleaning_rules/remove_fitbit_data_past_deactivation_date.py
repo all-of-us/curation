@@ -26,7 +26,7 @@ DEACTIVATED_PARTICIPANTS_COLUMNS = [
 
 SANDBOX_QUERY = common.JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{sandbox_table_name}}` AS (
-SELECT t.*
+SELECT distinct t.*
 FROM `{{project}}.{{dataset}}.{{table}}` t
 JOIN `{{project}}.{{sandbox_dataset}}.{{deact_pids_table}}` d
 USING (person_id)
