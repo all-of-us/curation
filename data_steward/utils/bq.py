@@ -441,13 +441,14 @@ def get_latest_validation_dataset_id(project_id):
     :return: the most recent validation_dataset_id
     """
 
+    client = get_client(project_id)
     dataset_id = os.environ.get(consts.MATCH_DATASET, consts.BLANK)
     if dataset_id == consts.BLANK:
         validation_datasets = []
         for dataset in list_datasets(project_id):
             dataset_id = dataset.dataset_id
             if is_validation_dataset_id(dataset_id):
-                dataset = get_dataset(project_id, dataset_id)
+                dataset = client.get_dataset(project_id, dataset_id)
                 validation_datasets.append((dataset.created, dataset_id))
 
         if validation_datasets:
