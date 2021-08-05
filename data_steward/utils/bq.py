@@ -435,7 +435,7 @@ def get_latest_validation_dataset_id(project_id):
         for dataset in list_datasets(project_id):
             dataset_id = dataset.dataset_id
             if is_validation_dataset_id(dataset_id):
-                dataset = client.get_dataset(project_id, dataset_id)
+                dataset = client.get_dataset(dataset_id)
                 validation_datasets.append((dataset.created, dataset_id))
 
         if validation_datasets:
