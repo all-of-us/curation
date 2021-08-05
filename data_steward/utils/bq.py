@@ -329,19 +329,6 @@ def dataset_columns_query(project_id: str, dataset_id: str) -> str:
                                       dataset_id=dataset_id)
 
 
-def get_dataset(project_id, dataset_id):
-    """
-    Returns the dataset object associated with the dataset_id
-
-    :param project_id: identifies the project
-    :param dataset_id: identifies the dataset
-    :return: dataset object
-    """
-    client = get_client(project_id)
-    dataset = client.get_dataset(dataset_id)
-    return dataset
-
-
 def define_dataset(project_id, dataset_id, description, label_or_tag):
     """
     Define the dataset reference.
