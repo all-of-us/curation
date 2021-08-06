@@ -157,7 +157,7 @@ def create_datasets(client, name, input_dataset, tier, release_tag):
         dataset_object = bq.define_dataset(client.project, dataset_id,
                                            description, base_labels_and_tags)
         client.create_dataset(dataset_object, exists_ok=True)
-        dataset = bq.get_dataset(client.project, dataset_id)
+        dataset = client.get_dataset(dataset_id)
         if dataset_id in deid_datasets:
             new_labels = bq.update_labels_and_tags(dataset_id,
                                                    base_labels_and_tags, {
