@@ -24,9 +24,11 @@ import pandas as pd
 pd.options.display.max_rows = 120
 
 # + papermill={"duration": 0.023643, "end_time": "2021-02-02T22:30:31.880820", "exception": false, "start_time": "2021-02-02T22:30:31.857177", "status": "completed"} tags=["parameters"]
+# Parameters
 project_id = ""
 com_cdr = ""
 deid_cdr = ""
+deid_sandbox=""
 # deid_base_cdr=""
 # -
 
@@ -276,14 +278,14 @@ DECLARE vocabulary_tables DEFAULT ['vocabulary', 'concept', 'source_to_concept_m
 
 DECLARE query STRING;
 
-CREATE OR REPLACE TABLE `aou-res-curation-prod.R2021q3r1_deid_sandbox.concept_usage` (
+CREATE OR REPLACE TABLE `{project_id}.{deid_sandbox}.concept_usage` (
  concept_id   INT64
 ,table_name   STRING NOT NULL
 ,column_name  STRING NOT NULL
 ,row_count    INT64 NOT NULL
 )
 OPTIONS (
-  description='Concept usage counts in R2021q3r1_deid'
+  description='Concept usage counts in deid_cdr'
  ,expiration_timestamp=TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 60 DAY)
 );
 
@@ -297,8 +299,8 @@ SELECT
      || 'FROM `' || table_schema || '.' || table_name || '` t '
      || 'GROUP BY 1, 2, 3',
            ' UNION ALL ')
-FROM `R2021q3r1_deid.INFORMATION_SCHEMA.COLUMNS` c
-JOIN `R2021q3r1_deid.__TABLES__` t
+FROM `{deid_cdr}.INFORMATION_SCHEMA.COLUMNS` c
+JOIN `{deid_cdr}.__TABLES__` t
  ON c.table_name = t.table_id
 WHERE 
       table_name NOT IN UNNEST(vocabulary_tables)
@@ -307,13 +309,13 @@ WHERE
   AND LOWER(column_name) LIKE '%concept_id%'
 );
 
-EXECUTE IMMEDIATE 'INSERT `aou-res-curation-prod.R2021q3r1_deid_sandbox.concept_usage`' || query;
+EXECUTE IMMEDIATE 'INSERT `{project_id}.{deid_sandbox}.concept_usage`' || query;
 
 WITH 
 vaccine_concept AS
 (
  SELECT *
- FROM `aou-res-curation-prod.R2021q3r1_deid.concept` 
+ FROM `{project_id}.{deid_cdr}.concept` 
  WHERE (
         -- done by name and vocab -- this alone should be enough, no need for others--
         REGEXP_CONTAINS(concept_name, r'(?i)(COVID)') AND
@@ -332,7 +334,7 @@ vaccine_concept AS
 
 SELECT u.* 
 FROM
-`aou-res-curation-prod.R2021q3r1_deid_sandbox.concept_usage` u
+`{project_id}.{deid_sandbox}.concept_usage` u
 JOIN vaccine_concept c
 USING (concept_id)
 ORDER BY row_count DESC

@@ -17,7 +17,7 @@
 
  
 
-```python report_runner.py "cdr_deid_qa_report7_cope_survey.py" -p project_id "my_project_id" -p deid_cdr "my_deid" -p com_cdr "my_com_cdr"  ```
+```python report_runner.py "cdr_deid_qa_report7_cope_survey.py" -p project_id "my_project_id" -p deid_cdr "my_deid" -p com_cdr "my_com_cdr" -p deid_sandbox "my_deid_sandbox"   ```
 
 ```python report_runner.py "cdr_deid_qa_report8_household_state_genera.py" -p project_id "my_project_id" -p deid_cdr "my_deid" -p com_cdr "my_com_cdr"  ```
 
