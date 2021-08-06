@@ -40,11 +40,6 @@ JOIN `{{deact_pids_table.project}}.{{deact_pids_table.dataset_id}}.{{deact_pids_
 USING (person_id)
 {% endif %}
 
-{% if has_mapping or has_ext %}
-LEFT JOIN `{{mapping_ext_ref.project}}.{{mapping_ext_ref.dataset_id}}.{{mapping_ext_ref.table_id}}` m
-USING ({{table_id}})
-{% endif %}
-
 {% if has_start_date %}
 WHERE (COALESCE({{end_date}}, EXTRACT(DATE FROM {{end_datetime}}),
     {{start_date}}, EXTRACT(DATE FROM {{start_datetime}})) >= d.deactivated_date
@@ -177,22 +172,6 @@ def generate_queries(client,
     for table in table_dates_info:
         table_ref = gbq.TableReference.from_string(
             f"{project_id}.{dataset_id}.{table}")
-        mapping_table = f'_mapping_{table}'
-        ext_table = f'{table}_ext'
-        has_mapping = mapping_table in tables
-        has_ext = ext_table in tables
-        if has_mapping:
-            mapping_ext_ref = gbq.TableReference.from_string(
-                f'{project_id}.{dataset_id}.{mapping_table}')
-        elif has_ext:
-            mapping_ext_ref = gbq.TableReference.from_string(
-                f'{project_id}.{dataset_id}.{ext_table}')
-        elif table == 'death':
-            mapping_ext_ref = None
-        else:
-            raise RuntimeError(
-                f"No mapping or ext tables for {table}, cannot identify EHR data"
-            )
         sandbox_table = f"{'_'.join(ISSUE_NUMBERS).lower().replace('-', '_')}_{table}"
         sandbox_ref = gbq.TableReference.from_string(
             f"{project_id}.{sandbox_dataset_id}.{sandbox_table}")
@@ -201,9 +180,6 @@ def generate_queries(client,
         sandbox_queries.append({
             cdr_consts.QUERY:
                 SANDBOX_QUERY.render(table_ref=table_ref,
-                                     mapping_ext_ref=mapping_ext_ref,
-                                     has_mapping=has_mapping,
-                                     has_ext=has_ext,
                                      table_id=f'{table}_id',
                                      sandbox_ref=sandbox_ref,
                                      pid_rid_table=pid_rid_table_ref,

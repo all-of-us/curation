@@ -32,7 +32,7 @@ DEACTIVATED_PARTICIPANTS_COLUMNS = [
 def remove_ehr_data_queries(client, api_project_id, project_id, dataset_id,
                             sandbox_dataset_id):
     """
-    Sandboxes and drops all EHR data found for deactivated participants after their deactivation date
+    Sandboxes and drops all data found for deactivated participants after their deactivation date
 
     :param client: BQ client
     :param api_project_id: Project containing the RDR Participant Summary API
