@@ -62,7 +62,7 @@ drug_exposure_end_date, drug_exposure_end_datetime, verbatim_end_date, drug_type
 VALUES
 (2002,1,50,'2008-06-05','2008-06-05 01:00:00 UTC','2010-07-05','2008-06-05 01:00:00 UTC','2011-04-11',87),
 (2003,2,21,'2008-11-22','2008-11-22 02:00:00 UTC',null,null,'2010-06-18',51),
-(2004,3,5241,'2009-08-03','2009-08-03 05:00:00 UTC',null,null,'2009-12-26',2754),
+(2004,3,5241,'2009-08-03','2009-08-03 05:00:00 UTC',null,null,'2009-10-26',2754),
 (2005,4,76536,'2010-02-17','2010-02-17 08:00:00 UTC',null,null,'2008-03-04',24),
 (2006,5,274,'2009-04-19','2009-04-19 11:00:00 UTC',null,'2010-11-19 01:00:00 UTC','2011-10-22',436)
 """)
@@ -167,18 +167,16 @@ class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
         observation_data = [
             (1001, 1, 0, '2008-07-25', '2008-07-25 01:00:00 UTC', 45905771),
             (1005, 2, 0, '2008-03-14', '2008-03-14 02:00:00 UTC', 45905771),
-            (1004, 4, 0, '2009-11-25', '2009-11-25 08:00:00 UTC', 45905771),
         ]
         observation_df = pd.DataFrame.from_records(observation_data,
                                                    columns=observation_cols)
         drug_exposure_data = [
-            (2002, 1, 50, '2008-06-05', '2008-06-05 01:00:00 UTC', '2010-07-05',
-             '2008-06-05 01:00:00 UTC', '2011-04-11', 87)
+            (2004, 3, 5241, '2009-08-03', '2009-08-03 05:00:00 UTC',
+             '2009-10-26', 2754),
         ]
         drug_exposure_cols = [
             'drug_exposure_id', 'person_id', 'drug_concept_id',
             'drug_exposure_start_date', 'drug_exposure_start_datetime',
-            'drug_exposure_end_date', 'drug_exposure_end_datetime',
             'verbatim_end_date', 'drug_type_concept_id'
         ]
         drug_exposure_df = pd.DataFrame.from_records(drug_exposure_data,
