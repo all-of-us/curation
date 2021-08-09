@@ -116,7 +116,7 @@ WHERE (value_source_concept_id=2000000001 AND value_as_concept_id !=2000000001)
  
 '''
 df1=pd.read_gbq(query, dialect='standard')  
-if df1.eq(0).any().any():
+if df1['n_row_not_pass'].sum()==0:
  df = df.append({'query' : 'Query1.2 GR01 Race_value_source_concept_id matched value_as_concept_id in observation', 'result' : 'PASS'},  
                 ignore_index = True) 
 else:
@@ -170,7 +170,7 @@ OR (value_source_concept_id=1585900 AND value_as_concept_id !=4069091)
 
 '''
 df1=pd.read_gbq(query, dialect='standard')  
-if df1.eq(0).any().any():
+if df1['n_row_not_pass'].sum()==0:
  df = df.append({'query' : 'Query2.2 GR02 TheBasics_SexualOrientation matched value_source_concept_id in observation', 'result' : 'PASS'},  
                 ignore_index = True) 
 else:
@@ -277,7 +277,7 @@ OR (value_source_concept_id=1585839 AND value_as_concept_id !=45880669)
 
 '''
 df1=pd.read_gbq(query, dialect='standard')  
-if df1.eq(0).any().any():
+if df1['n_row_not_pass'].sum()==0:
  df = df.append({'query' : 'Query3 GR03 Gender_value_source_concept_id matched value_as_concept_id in observation', 'result' : 'PASS'},  
                 ignore_index = True) 
 else:
@@ -372,7 +372,7 @@ AND (value_as_concept_id !=2000000002 AND value_source_concept_id !=2000000002)
 
  '''
 df1=pd.read_gbq(query, dialect='standard')  
-if df1.eq(0).any().any():
+if df1['n_row_not_pass'].sum()==0:
  df = df.append({'query' : 'Query3.3.2 GR_03_1 Sex_female/gender_man mismatch in deid_cdr.observation', 'result' : 'PASS'},  
                 ignore_index = True) 
 else:
@@ -402,7 +402,7 @@ AND observation_source_value LIKE 'Gender_GenderIdentity'
 AND (value_as_concept_id !=2000000002 AND value_source_concept_id !=2000000002)
 '''
 df1=pd.read_gbq(query, dialect='standard')  
-if df1.eq(0).any().any():
+if df1['n_row_not_pass'].sum()==0:
  df = df.append({'query' : 'Query3.3.4 GR_03_1 Sex_male/gender_woman mismatch in deid_cdr.observation', 'result' : 'PASS'},  
                 ignore_index = True) 
 else:
@@ -452,7 +452,7 @@ OR (value_source_concept_id=903079 AND value_as_concept_id !=1177221)
 
 '''
 df1=pd.read_gbq(query, dialect='standard')  
-if df1.eq(0).any().any():
+if df1['n_row_not_pass'].sum()==0:
  df = df.append({'query' : 'Query4 Education Generalization Rule in observation', 'result' : 'PASS'},  
                 ignore_index = True) 
 else:
@@ -498,13 +498,40 @@ OR (value_source_concept_id=903096 AND value_as_concept_id !=903096)
 
 '''
 df1=pd.read_gbq(query, dialect='standard')  
-if df1.eq(0).any().any():
+if df1['n_row_not_pass'].sum()==0:
  df = df.append({'query' : 'Query5 Employment Generalization Rule in observation', 'result' : 'PASS'},  
                 ignore_index = True) 
 else:
  df = df.append({'query' : 'Query5 GR_06 Employment Generalization Rule in observation', 'result' : ''},  
                 ignore_index = True) 
 df1
+
+# # 6 Gender_concept_id should be 0, instead of null in person table
+#
+# [DC-1785]
+#
+# The person.gender_concept_id column, should be de-identified at the end of the Registered Tier run.  It will be repopulated with properly de-identified data from the observation table in the next data stage.  This field is a required field, so it cannot be set to null.  All values in this field should be set to 0.  We need to update the existing notebooks to ensure we are suppressing this data at the RT deid data stage.  
+#
+# If given a dataset where any person.gender_concept_id field is not 0 will produce a failure.
+
+# +
+query = f'''
+
+SELECT
+SUM(CASE WHEN gender_concept_id !=0 THEN 1 ELSE 0 END) AS n_gender_concept_id_not_zero,
+SUM(CASE WHEN gender_concept_id IS NULL THEN 1 ELSE 0 END) AS n_gender_concept_id_is_null
+FROM `{project_id}.{deid_cdr}.person`
+'''
+df1=pd.read_gbq(query, dialect='standard')  
+
+if df1.loc[0].sum()==0:
+ df = df.append({'query' : 'Query6 Gender_concept_id should be 0 in person table', 'result' : 'PASS'},  
+                ignore_index = True) 
+else:
+ df = df.append({'query' : 'Query6 GR_06 Gender_concept_id should be 0 in person table', 'result' : ''},  
+                ignore_index = True) 
+df1
+# -
 
 # # Summary_cdr_deid_Generalization_rule
 
