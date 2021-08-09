@@ -74,13 +74,15 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
         desc = (
             'Sandbox and drop records dated after the date of deactivation for participants'
             'who have deactivated from the Program.')
+
         super().__init__(issue_numbers=['1791'],
                          description=desc,
                          affected_datasets=[cdr_consts.COMBINED],
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
-                         affected_tables=common.CDM_TABLES)
+                         affected_tables=common.CDM_TABLES +
+                         common.FITBIT_TABLES)
         self.api_project_id = api_project_id
 
     def get_query_specs(self):
