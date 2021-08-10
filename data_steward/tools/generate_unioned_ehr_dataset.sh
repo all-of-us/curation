@@ -11,7 +11,6 @@ Usage: generate_unioned_ehr_dataset.sh
   --vocab_dataset <vocab dataset>
   --ehr_snapshot <EHR dataset>
   --dataset_release_tag <release tag for the CDR>
-  --api_project_id <Identifies the RDR project for Participant Summary API>
   --ehr_cutoff_date <ehr_cut_off date format yyyy-mm-dd>
 "
 
@@ -34,10 +33,6 @@ while true; do
     dataset_release_tag=$2
     shift 2
     ;;
-  --api_project_id)
-    api_project_id=$2
-    shift 2
-    ;;
   --ehr_cutoff_date)
     ehr_cutoff_date=$2
     shift 2
@@ -51,7 +46,7 @@ while true; do
 done
 
 if [[ -z "${key_file}" ]] || [[ -z "${vocab_dataset}" ]] || [[ -z "${ehr_snapshot}" ]] ||
-  [[ -z "${dataset_release_tag}" ]] || [[ -z "${api_project_id}" ]] || [[ -z "${ehr_cutoff_date}" ]]; then
+  [[ -z "${dataset_release_tag}" ]]  || [[ -z "${ehr_cutoff_date}" ]]; then
   echo "${USAGE}"
   exit 1
 fi
@@ -71,7 +66,6 @@ echo "app_id --> ${app_id}"
 echo "key_file --> ${key_file}"
 echo "vocab_dataset --> ${vocab_dataset}"
 echo "dataset_release_tag --> ${dataset_release_tag}"
-echo "api_project_id --> ${api_project_id}"
 echo "ehr_cutoff_date --> ${ehr_cutoff_date}"
 
 export GOOGLE_APPLICATION_CREDENTIALS="${key_file}"
@@ -137,9 +131,6 @@ data_stage='unioned'
 
 # create sandbox dataset
 bq mk --dataset --description "Sandbox created for storing records affected by the cleaning rules applied to ${unioned_ehr_dataset}" --label "phase:sandbox" --label "release_tag:${dataset_release_tag}" --label "de_identified:false" ${app_id}:${unioned_ehr_dataset_sandbox}
-
-# Remove de-activated participants
-python "${CLEANER_DIR}/cleaning_rules/remove_ehr_data_past_deactivation_date.py" --project_id "${app_id}" --dataset_id "${unioned_ehr_dataset_staging}" --sandbox_dataset_id "${unioned_ehr_dataset_sandbox}" --api_project_id "${api_project_id}"
 
 # run cleaning_rules on a dataset
 python "${CLEANER_DIR}/clean_cdr.py" --project_id "${app_id}" --dataset_id "${unioned_ehr_dataset_staging}" --sandbox_dataset_id "${unioned_ehr_dataset_sandbox}" --data_stage "${data_stage}" -s --cutoff_date "${ehr_cutoff_date}" 2>&1 | tee unioned_cleaning_log_"${unioned_ehr_dataset_staging}".txt
