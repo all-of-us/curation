@@ -13,7 +13,7 @@
 
 ```python report_runner.py "cdr_deid_qa_report5_row_suppression_icd.py" -p project_id "my_project_id" -p deid_cdr "my_deid"  ```
 
-```python report_runner.py "cdr_deid_qa_report6_fitdata.py" -p project_id "my_project_id" -p pipeline "my_pipeline" -p non_deid "my_non_deid" -p deid_cdr "my_deid_cdr" -p com_cdr "my_com_cdr"  ```
+```python report_runner.py "cdr_deid_qa_report6_fitdata.py" -p project_id "my_project_id" -p pipeline "my_pipeline" -p non_deid_fitbit "my_non_deid_fitbit" -p deid_cdr_fitbit "my_deid_cdr_fitbit" -p com_cdr "my_com_cdr" -p deid_cdr "my_deid_cdr" -p truncation_date "2019-11-26" -p maximum_age "89"  ```
 
  
 
