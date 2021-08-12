@@ -25,7 +25,7 @@ import \
 import cdr_cleaner.cleaning_rules.remove_non_matching_participant as validate_missing_participants
 import cdr_cleaner.cleaning_rules.remove_records_with_wrong_date as remove_records_with_wrong_date
 from cdr_cleaner.cleaning_rules.round_ppi_values_to_nearest_integer import RoundPpiValuesToNearestInteger
-import cdr_cleaner.cleaning_rules.update_family_history_qa_codes as update_family_history
+from cdr_cleaner.cleaning_rules.update_family_history_qa_codes import UpdateFamilyHistoryCodes
 import cdr_cleaner.manual_cleaning_rules.clean_smoking_ppi as smoking
 import cdr_cleaner.manual_cleaning_rules.negative_ppi as negative_ppi
 import cdr_cleaner.manual_cleaning_rules.remove_operational_pii_fields as operational_pii_fields
@@ -167,7 +167,7 @@ RDR_CLEANING_CLASSES = [
         map_questions_answers_to_omop.
         get_update_questions_answers_not_mapped_to_omop,),
     (RoundPpiValuesToNearestInteger,),
-    (update_family_history.get_update_family_history_qa_queries,),
+    (UpdateFamilyHistoryCodes,),
     (NullConceptIDForNumericPPI,),
     (DropDuplicatePpiQuestionsAndAnswers,),
     (extreme_measurements.get_drop_extreme_measurement_queries,),
