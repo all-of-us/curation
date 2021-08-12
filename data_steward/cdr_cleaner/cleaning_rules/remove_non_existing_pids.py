@@ -14,27 +14,27 @@ LOGGER = logging.getLogger(__name__)
 JIRA_ISSUE_NUMBERS = ['DC1787']
 
 SANDBOX_NON_EXISTING_PIDS = JINJA_ENV.from_string("""
-CREATE OR REPLACE TABLE `{project_id}.{sandbox_dataset_id}.{sandbox_table_id}` AS
+CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table_id}}` AS
 SELECT *
-FROM `{project_id}.{dataset_id}.{table_id}`
+FROM `{{project_id}}.{{dataset_id}}.{{table_id}}`
 WHERE person_id NOT IN
 (SELECT person_id
-FROM `{project_id}.{cdr_dataset_id}.person`)
+FROM `{{project_id}}.{{reference_dataset_id}}.person`)
 """)
 
 DELETE_NON_EXISTING_PIDS = JINJA_ENV.from_string("""
 DELETE
-FROM `{project_id}.{dataset_id}.{table_id}`
+FROM `{{project_id}}.{{dataset_id}}.{{table_id}}`
 WHERE person_id NOT IN
 (SELECT person_id
-FROM `{project_id}.{cdr_dataset_id}.person`)
+FROM `{{project_id}}.{{reference_dataset_id}}.person`)
 """)
 
 
 class RemoveNonExistingPids(BaseCleaningRule):
 
     def __init__(self, project_id, dataset_id, sandbox_dataset_id,
-                 cdr_dataset_id):
+                 reference_dataset_id):
         """
         Initialize the class with proper information.
 
@@ -45,7 +45,7 @@ class RemoveNonExistingPids(BaseCleaningRule):
         desc = (
             'Remove records for PIDs not belonging in the corresponding CDR')
 
-        self.cdr_dataset_id = cdr_dataset_id
+        self.reference_dataset_id = reference_dataset_id
 
         super().__init__(issue_numbers=JIRA_ISSUE_NUMBERS,
                          description=desc,
@@ -66,7 +66,9 @@ class RemoveNonExistingPids(BaseCleaningRule):
                     SANDBOX_NON_EXISTING_PIDS.render(
                         project_id=self.project_id,
                         dataset_id=self.dataset_id,
-                        cdr_dataset_id=self.cdr_dataset_id,
+                        sandbox_dataset_id=self.sandbox_dataset_id,
+                        sandbox_table_id=self.sandbox_table_for(table),
+                        reference_dataset_id=self.reference_dataset_id,
                         table_id=table)
             })
             queries.append({
@@ -74,7 +76,7 @@ class RemoveNonExistingPids(BaseCleaningRule):
                     DELETE_NON_EXISTING_PIDS.render(
                         project_id=self.project_id,
                         dataset_id=self.dataset_id,
-                        cdr_dataset_id=self.cdr_dataset_id,
+                        reference_dataset_id=self.reference_dataset_id,
                         table_id=table)
             })
 
@@ -101,19 +103,36 @@ class RemoveNonExistingPids(BaseCleaningRule):
 if __name__ == '__main__':
     import cdr_cleaner.args_parser as parser
     import cdr_cleaner.clean_cdr_engine as clean_engine
+    from utils import pipeline_logging
 
-    ARGS = parser.default_parse_args()
+    ext_parser = parser.get_argument_parser()
+    ext_parser.add_argument(
+        '-r',
+        '--reference_dataset_id',
+        dest='reference_dataset_id',
+        action='store',
+        help='CT or RT dataset to use as reference containing valid PIDs',
+        required=True,
+    )
+
+    ARGS = ext_parser.parse_args()
+    pipeline_logging.configure(level=logging.DEBUG, add_console_handler=True)
 
     if ARGS.list_queries:
         clean_engine.add_console_logging()
-        query_list = clean_engine.get_query_list(ARGS.project_id,
-                                                 ARGS.dataset_id,
-                                                 ARGS.sandbox_dataset_id,
-                                                 [(RemoveNonExistingPids,)])
+        query_list = clean_engine.get_query_list(
+            ARGS.project_id,
+            ARGS.dataset_id,
+            ARGS.sandbox_dataset_id, [(RemoveNonExistingPids,)],
+            table_namer='',
+            reference_dataset_id=ARGS.reference_dataset_id)
         for query in query_list:
             LOGGER.info(query)
     else:
         clean_engine.add_console_logging(ARGS.console_log)
-        clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
-                                   ARGS.sandbox_dataset_id,
-                                   [(RemoveNonExistingPids,)])
+        clean_engine.clean_dataset(
+            ARGS.project_id,
+            ARGS.dataset_id,
+            ARGS.sandbox_dataset_id, [(RemoveNonExistingPids,)],
+            table_namer='',
+            reference_dataset_id=ARGS.reference_dataset_id)
