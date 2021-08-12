@@ -135,8 +135,8 @@ pd.read_gbq(query, dialect='standard')
 # # Question codes should have mapped `concept_id`s
 # Question codes in `observation_source_value` should be associated with the concept identified by `observation_source_concept_id` and mapped to a standard concept identified by `observation_concept_id`. The table below lists codes having rows where either field is null or zero and the number of rows where this occurs. This may be associated with an issue in the PPI vocabulary or in the RDR ETL process.
 #
-# Note: Snap codes are not modeled in the vocabulary but may be used in the RDR export. 
-# They are excluded here by filtering out snap codes in the Public PPI Codebook 
+# Note: Snap codes are not modeled in the vocabulary but may be used in the RDR export.
+# They are excluded here by filtering out snap codes in the Public PPI Codebook
 # which were loaded into `curation_sandbox.snap_codes`.
 
 query = f"""
@@ -159,8 +159,8 @@ pd.read_gbq(query, dialect='standard')
 # # Answer codes should have mapped `concept_id`s
 # Answer codes in value_source_value should be associated with the concept identified by value_source_concept_id and mapped to a standard concept identified by value_as_concept_id. The table below lists codes having rows where either field is null or zero and the number of rows where this occurs. This may be associated with an issue in the PPI vocabulary or in the RDR ETL process.
 #
-# Note: Snap codes are not modeled in the vocabulary but may be used in the RDR export. 
-# They are excluded here by filtering out snap codes in the Public PPI Codebook 
+# Note: Snap codes are not modeled in the vocabulary but may be used in the RDR export.
+# They are excluded here by filtering out snap codes in the Public PPI Codebook
 # which were loaded into `curation_sandbox.snap_codes`.
 #
 
@@ -446,7 +446,7 @@ pd.read_gbq(query, dialect='standard')
 query = f'''SELECT DISTINCT person_id FROM `{project_id}.{new_rdr}.observation` 
 JOIN `{project_id}.{new_rdr}.concept` on (observation_source_concept_id=concept_id)
 WHERE vocabulary_id = 'PPI' AND person_id NOT IN (
-SELECT DISTINCT person_id FROM `{project_id}.{new_rdr}.rdr20191203.concept`  
+SELECT DISTINCT person_id FROM `{project_id}.{new_rdr}.concept`  
 JOIN `{project_id}.{new_rdr}.concept_ancestor` on (concept_id=ancestor_concept_id)
 JOIN `{project_id}.{new_rdr}.observation` on (descendant_concept_id=observation_concept_id)
 WHERE concept_class_id='Module'
@@ -455,7 +455,7 @@ AND questionnaire_response_id IS NOT NULL)
 '''
 pd.read_gbq(query, dialect='standard')
 
-# ## Participants must be 18 years of age or older to consent 
+# ## Participants must be 18 years of age or older to consent
 #
 # AOU participants are required to be 18+ years of age at the time of consent ([DC-1724](https://precisionmedicineinitiative.atlassian.net/browse/DC-1724)), based on the date associated with the [ExtraConsent_TodaysDate](https://athena.ohdsi.org/search-terms/terms/1585482) row. Any violations should be reported to the RDR team as these should have been filtered out by the RDR ETL process ([DA-2073](https://precisionmedicineinitiative.atlassian.net/browse/DA-2073)).
 
@@ -485,5 +485,3 @@ AND questionnaire_response_id IS NULL
 GROUP BY 1
 """
 pd.read_gbq(query, dialect='standard')
-
-
