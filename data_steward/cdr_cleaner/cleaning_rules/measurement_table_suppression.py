@@ -100,33 +100,11 @@ AND m.value_as_number = 0
 # Update value_as_number for any site that has only submitted junk, i.e. 0 or null
 # for value_as_number
 SET_NULL_WHEN_ONLY_ZEROS_SUBMITTED = JINJA_ENV.from_string("""
-SELECT
-  measurement_id,
-  person_id,
-  measurement_concept_id,
-  measurement_date,
-  measurement_datetime,
-  measurement_type_concept_id,
-  operator_concept_id,
-  value_as_concept_id,
-  unit_concept_id,
-  range_low,
-  range_high,
-  provider_id,
-  visit_occurrence_id,
-  measurement_source_value,
-  measurement_source_concept_id,
-  unit_source_value,
-  value_source_value,
-  CASE
-    WHEN value_as_number = 0 AND me.src_id IN (SELECT src_id FROM `{{project}}.{{sandbox}}.{{id_table}}`) THEN NULL
-  ELSE
-  value_as_number
-END
-  AS value_as_number
-FROM `{{project}}.{{dataset}}.measurement` AS m
-JOIN `{{project}}.{{dataset}}.measurement_ext` AS me
-USING (measurement_id)
+UPDATE `{{project}}.{{dataset}}.measurement` as m
+SET value_as_number = NULL
+FROM `{{project}}.{{dataset}}.measurement_ext` AS me
+WHERE m.measurement_id = me.measurement_id
+AND me.src_id IN (SELECT src_id FROM `{{project}}.{{sandbox}}.{{id_table}}`)
 """)
 
 # Save records that will be dropped when

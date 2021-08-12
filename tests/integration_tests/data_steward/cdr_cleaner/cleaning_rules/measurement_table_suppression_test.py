@@ -155,7 +155,7 @@ class MeasurementTableSuppressionTest(BaseTest.CleaningRulesTestBase):
             'fields': ['measurement_id', 'value_as_number'],
             'loaded_ids': [801, 802, 803, 804, 805],
             'sandboxed_ids': [801],
-            'cleaned_values': [(802, 0), (803, 0), (804, 1)]
+            'cleaned_values': [(802, None), (803, 0), (804, 1)]
         }, {
             'name': self.fq_table_names[0].split('.')[-1],
             'fq_table_name': self.fq_table_names[0],
@@ -163,7 +163,7 @@ class MeasurementTableSuppressionTest(BaseTest.CleaningRulesTestBase):
             'fields': ['measurement_id', 'value_as_number'],
             'loaded_ids': [801, 802, 803, 804, 805],
             'sandboxed_ids': [802],
-            'cleaned_values': [(802, 0), (803, 0), (804, 1)]
+            'cleaned_values': [(802, None), (803, 0), (804, 1)]
         }, {
             'name': self.fq_table_names[0].split('.')[-1],
             'fq_table_name': self.fq_table_names[0],
@@ -171,7 +171,7 @@ class MeasurementTableSuppressionTest(BaseTest.CleaningRulesTestBase):
             'fields': ['measurement_id', 'value_as_number'],
             'loaded_ids': [801, 802, 803, 804, 805],
             'sandboxed_ids': [801, 805],
-            'cleaned_values': [(802, 0), (803, 0), (804, 1)]
+            'cleaned_values': [(802, None), (803, 0), (804, 1)]
         }]
 
         self.default_test(tables_and_counts)
