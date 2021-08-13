@@ -49,6 +49,7 @@ COUNT(*) AS total
 FROM `{{project_id}}.{{dataset_id}}.{{obs_table}}`
 """)
 
+
 class UpdateFamilyHistoryCodes(BaseCleaningRule):
     """
     Update family history answer codes that are using known old answer codes.
@@ -81,11 +82,9 @@ class UpdateFamilyHistoryCodes(BaseCleaningRule):
                          sandbox_dataset_id=sandbox_dataset_id,
                          table_namer=table_namer)
 
-        self.counts_query = COUNTS_QUERY.render(
-            project_id=self.project_id,
-            dataset_id=self.dataset_id,
-            obs_table=OBSERVATION)
-
+        self.counts_query = COUNTS_QUERY.render(project_id=self.project_id,
+                                                dataset_id=self.dataset_id,
+                                                obs_table=OBSERVATION)
 
     def get_query_specs(self):
         """
@@ -125,7 +124,6 @@ class UpdateFamilyHistoryCodes(BaseCleaningRule):
         if self.init_counts.get('total_rows') == 0:
             raise RuntimeError('NO DATA EXISTS IN OBSERVATION TABLE')
 
-
     def validate_rule(self, client):
         """
         Validates the cleaning rule which deletes or updates the data from the tables
@@ -141,8 +139,8 @@ class UpdateFamilyHistoryCodes(BaseCleaningRule):
                 f'initial count is: {self.init_counts.get("total_rows")}\n'
                 f'clean count is: {clean_counts.get("total_rows")}')
 
-        if clean_counts.get('43529632_count')
-        or clean_counts.get('43529637_count')
+        if clean_counts.get('43529632_count') \
+        or clean_counts.get('43529637_count') \
         or clean_counts.get('43529636_count'):
             raise RuntimeError(
                 f'{self.__class__.__name__} did not clean as expected.\n'
@@ -175,8 +173,12 @@ class UpdateFamilyHistoryCodes(BaseCleaningRule):
                 n_43529637 = item.get('n_old_43529637', 0)
                 n_43529636 = item.get('n_old_43529636', 0)
 
-        return {'total_rows': total, '43529632_count': n_43529632,
-                '43529637_count': n_43529637, '43529636_count': n_43529636}
+        return {
+            'total_rows': total,
+            '43529632_count': n_43529632,
+            '43529637_count': n_43529637,
+            '43529636_count': n_43529636
+        }
 
 
 if __name__ == '__main__':
