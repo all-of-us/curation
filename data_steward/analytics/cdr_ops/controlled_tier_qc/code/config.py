@@ -1,6 +1,6 @@
 from pathlib import Path
 
-CSV_FOLDER = Path('analytics/cdr_ops/controlled_tier_qc/CSV')
+CSV_FOLDER = Path('analytics/cdr_ops/controlled_tier_qc/csv')
 SQL_FOLDER = Path('analytics/cdr_ops/controlled_tier_qc/sql')
 
 CHECK_LIST_CSV_FILE = "Controlled_Tier_Check_Description.csv"
