@@ -1,10 +1,12 @@
 import pandas as pd
 from jinja2 import Template
-from code.config import (CSV_FOLDER, COLUMNS_IN_CHECK_RESULT, TABLE_CSV_FILE, 
-                        FIELD_CSV_FILE, CONCEPT_CSV_FILE, MAPPING_CSV_FILE, CHECK_LIST_CSV_FILE)
+from analytics.cdr_ops.controlled_tier_qc.code.config import (
+    CSV_FOLDER, COLUMNS_IN_CHECK_RESULT, TABLE_CSV_FILE, FIELD_CSV_FILE,
+    CONCEPT_CSV_FILE, MAPPING_CSV_FILE, CHECK_LIST_CSV_FILE)
 
 from collections import defaultdict
 from IPython.display import display, HTML
+
 
 def load_check_description(rule_code=None):
     """Extract the csv file containing the descriptions of checks
@@ -19,15 +21,16 @@ def load_check_description(rule_code=None):
     pd.DataFrame
 
     """
-    check_df = pd.read_csv(CSV_FOLDER/CHECK_LIST_CSV_FILE, dtype='object')
+    check_df = pd.read_csv(CSV_FOLDER / CHECK_LIST_CSV_FILE, dtype='object')
     if rule_code:
         valid_rule_code = extract_valid_codes_to_run(check_df, rule_code)
         if valid_rule_code:
-            make_header(f"Running the following checks {str(valid_rule_code)}")  
+            make_header(f"Running the following checks {str(valid_rule_code)}")
             check_df = filter_data_by_rule(check_df, valid_rule_code)
         else:
             make_header("Code(s) invalid so running all checks...")
     return check_df
+
 
 def make_header(message):
     print("#####################################################")
@@ -35,8 +38,10 @@ def make_header(message):
     print("#####################################################\n")
     return True
 
+
 def is_rule_valid(check_df, code):
     return code in check_df['rule'].values
+
 
 def extract_valid_codes_to_run(check_df, rule_code):
     # valid_rule_code = []
@@ -73,11 +78,13 @@ def load_tables_for_check():
     dict
     """
     check_dict = defaultdict()
-    list_of_files = [TABLE_CSV_FILE, FIELD_CSV_FILE, CONCEPT_CSV_FILE, MAPPING_CSV_FILE]
+    list_of_files = [
+        TABLE_CSV_FILE, FIELD_CSV_FILE, CONCEPT_CSV_FILE, MAPPING_CSV_FILE
+    ]
     list_of_levels = ['Table', 'Field', 'Concept', 'Mapping']
 
     for level, filename in zip(list_of_levels, list_of_files):
-        check_dict[level]= pd.read_csv(CSV_FOLDER/filename, dtype='object')
+        check_dict[level] = pd.read_csv(CSV_FOLDER / filename, dtype='object')
     return check_dict
 
 
@@ -122,7 +129,13 @@ def format_cols_to_string(df):
     return df
 
 
-def run_check_by_row(df, template_query, project_id, post_deid_dataset, pre_deid_dataset=None, mapping_issue_description=None, mapping_dataset=None):
+def run_check_by_row(df,
+                     template_query,
+                     project_id,
+                     post_deid_dataset,
+                     pre_deid_dataset=None,
+                     mapping_issue_description=None,
+                     mapping_dataset=None):
     """Run all checks in a dataframe row by row
 
     Parameters
@@ -145,7 +158,8 @@ def run_check_by_row(df, template_query, project_id, post_deid_dataset, pre_deid
     pd.DataFrame
     """
     if df.empty:
-        return pd.DataFrame(columns=[col for col in df if col in COLUMNS_IN_CHECK_RESULT])
+        return pd.DataFrame(
+            columns=[col for col in df if col in COLUMNS_IN_CHECK_RESULT])
 
     check_df = df.copy()
     results = []
@@ -157,17 +171,24 @@ def run_check_by_row(df, template_query, project_id, post_deid_dataset, pre_deid
         primary_key = form_field_param_from_row(row, 'primary_key')
         mapping_table = form_field_param_from_row(row, 'mapping_table')
         new_id = form_field_param_from_row(row, 'new_id')
-        query = Template(template_query).render(project_id=project_id, 
-                post_deid_dataset=post_deid_dataset, pre_deid_dataset=pre_deid_dataset,
-                table_name=row['table_name'],column_name=column_name,
-                concept_id=concept_id, concept_code=concept_code, data_type=data_type,
-                primary_key=primary_key, new_id=new_id, mapping_dataset=mapping_dataset, mapping_table=mapping_table)
+        query = Template(template_query).render(
+            project_id=project_id,
+            post_deid_dataset=post_deid_dataset,
+            pre_deid_dataset=pre_deid_dataset,
+            table_name=row['table_name'],
+            column_name=column_name,
+            concept_id=concept_id,
+            concept_code=concept_code,
+            data_type=data_type,
+            primary_key=primary_key,
+            new_id=new_id,
+            mapping_dataset=mapping_dataset,
+            mapping_table=mapping_table)
         result_df = pd.read_gbq(query, dialect="standard")
         result_df['query'] = str(query)
         results.append(result_df)
 
-    results_df = (pd.concat(results, sort=True)
-                    .pipe(format_cols_to_string))
+    results_df = (pd.concat(results, sort=True).pipe(format_cols_to_string))
 
     for col in results_df:
         if col == 'concept_id' or col == 'concept_code':
@@ -176,14 +197,14 @@ def run_check_by_row(df, template_query, project_id, post_deid_dataset, pre_deid
 
     merge_cols = get_list_of_common_columns_for_merge(check_df, results_df)
     result_columns = merge_cols + ['rule', 'n_row_violation', 'query']
-    final_result =  (results_df.merge(check_df, on=merge_cols, how='inner')
-                            .filter(items=result_columns)
-                            .query('n_row_violation > 0')
-            )
+    final_result = (results_df.merge(
+        check_df, on=merge_cols,
+        how='inner').filter(items=result_columns).query('n_row_violation > 0'))
 
     if not final_result.empty and mapping_issue_description:
         final_result['mapping_issue'] = mapping_issue_description
-    return final_result if not final_result.empty else pd.DataFrame(columns=result_columns)
+    return final_result if not final_result.empty else pd.DataFrame(
+        columns=result_columns)
 
 
 def highlight(row):
@@ -203,4 +224,4 @@ def highlight(row):
 
 
 def pretty_print(df):
-    return display(HTML(df.to_html().replace("\\n","<br>")))
+    return display(HTML(df.to_html().replace("\\n", "<br>")))
