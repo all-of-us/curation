@@ -39,11 +39,13 @@ from cdr_cleaner.cleaning_rules.create_person_ext_table import CreatePersonExtTa
 from cdr_cleaner.cleaning_rules.date_shift_cope_responses import DateShiftCopeResponses
 from cdr_cleaner.cleaning_rules.remove_ehr_data_without_consent import RemoveEhrDataWithoutConsent
 from cdr_cleaner.cleaning_rules.generate_ext_tables import GenerateExtTables
-from cdr_cleaner.cleaning_rules.deid.ct_pid_rid_map import CtPIDtoRID
+from cdr_cleaner.cleaning_rules.truncate_fitbit_data import TruncateFitbitData
+from cdr_cleaner.cleaning_rules.remove_non_existing_pids import RemoveNonExistingPids
 from cdr_cleaner.cleaning_rules.deid.fitbit_dateshift import FitbitDateShiftRule
 from cdr_cleaner.cleaning_rules.deid.fitbit_pid_rid_map import FitbitPIDtoRID
 from cdr_cleaner.cleaning_rules.deid.remove_fitbit_data_if_max_age_exceeded import \
     RemoveFitbitDataIfMaxAgeExceeded
+from cdr_cleaner.cleaning_rules.deid.ct_pid_rid_map import CtPIDtoRID
 from cdr_cleaner.cleaning_rules.deid.repopulate_person_controlled_tier import \
     RepopulatePersonControlledTier
 from cdr_cleaner.cleaning_rules.deid.genaralize_cope_insurance_answers import GeneralizeCopeInsuranceAnswers
@@ -103,7 +105,6 @@ from cdr_cleaner.cleaning_rules.deid.string_fields_suppression import StringFiel
 from cdr_cleaner.cleaning_rules.generalize_state_by_population import GeneralizeStateByPopulation
 from cdr_cleaner.cleaning_rules.section_participation_concept_suppression import SectionParticipationConceptSuppression
 from cdr_cleaner.cleaning_rules.covid_ehr_vaccine_concept_suppression import CovidEHRVaccineConceptSuppression
-from cdr_cleaner.cleaning_rules.truncate_fitbit_data import TruncateFitbitData
 from constants.cdr_cleaner import clean_cdr_engine as ce_consts
 from constants.cdr_cleaner.clean_cdr import DataStage
 
@@ -224,11 +225,13 @@ FITBIT_CLEANING_CLASSES = [
 FITBIT_DEID_CLEANING_CLASSES = [
     (RemoveFitbitDataIfMaxAgeExceeded,),
     (FitbitPIDtoRID,),
+    (RemoveNonExistingPids,),  # assumes RT dataset is ready for reference
     (FitbitDateShiftRule,),
 ]
 
 CONTROLLED_TIER_FITBIT_CLEANING_CLASSES = [
     (FitbitPIDtoRID,),
+    (RemoveNonExistingPids,),  # assumes CT dataset is ready for reference
 ]
 
 DEID_BASE_CLEANING_CLASSES = [
