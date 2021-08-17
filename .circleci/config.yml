@@ -29,7 +29,9 @@ commands:
             - pip-cache-
       - run:
           name: Add virtual environment activation to bash startup
-          command: python3 -m venv ~/curation_venv && echo "source ~/curation_venv/bin/activate" >> $BASH_ENV
+          command: |
+            python3 -m venv ~/curation_venv
+            echo "source ~/curation_venv/bin/activate" >> $BASH_ENV
       - run:
           working_directory: ~/curation/data_steward
           name: Upgrade pip and install requirements
