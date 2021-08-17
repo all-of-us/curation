@@ -32,10 +32,10 @@ commands:
           command: |
             python --version
             python3 --version
-            python3 -m venv ~/curation_venv
-            echo $?
-            pwd
-            ls ~/*
+#            python3 -m venv ~/curation_venv
+#            echo $?
+#            pwd
+#            ls ~/*
 #            echo $BASH_ENV
 #            source ~/curation_venv/bin/activate
 #            echo $BASH_ENV 
@@ -49,8 +49,8 @@ commands:
             pip install -r dev_requirements.txt
             pip install -r deid/requirements.txt
       - run:
-          name: Show bashrc file
-          command: cat ${BASH_ENV}
+          name: Show env  file
+          command: env 
   lint_teardown:
     steps:
       - save_cache:
