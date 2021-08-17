@@ -30,6 +30,8 @@ commands:
       - run:
           name: Add virtual environment activation to bash startup
           command: |
+            python --version
+            python3 --version
             python3 -m venv ~/curation_venv
             whereis python3
             ls ~/
