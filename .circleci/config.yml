@@ -14,7 +14,7 @@ job_defaults: &job_defaults
     environment:
       - CIRCLE_ARTIFACTS: /tmp/circleci-artifacts
     docker:
-      - image: circleci/python:3.7.4
+      - image: cimg/python:3.7
 
 commands:
   # Define reusable sets of steps to be run within the testing jobs.
