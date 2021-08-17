@@ -32,6 +32,7 @@ commands:
           command: |
             python --version
             python3 --version
+            mkdir ~/curation_venv
             python3 -m venv ~/curation_venv
             whereis python3
             ls ~/
