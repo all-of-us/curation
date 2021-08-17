@@ -32,11 +32,11 @@ commands:
           command: |
             python --version
             python3 --version
-            mkdir ~/curation_venv
             python3 -m venv ~/curation_venv
-            whereis python3
-            ls ~/
-            echo "source ~/curation_venv/bin/activate" >> $BASH_ENV
+            echo $BASH_ENV
+            source ~/curation_venv/bin/activate
+            echo $BASH_ENV 
+            echo env
       - run:
           working_directory: ~/curation/data_steward
           name: Upgrade pip and install requirements
