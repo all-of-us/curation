@@ -32,7 +32,10 @@ commands:
           command: |
             python --version
             python3 --version
-            python -m venv ~/curation_venv
+            python3 -m venv ~/curation_venv
+            echo $?
+            pwd
+            ls ~/*
 #            echo $BASH_ENV
 #            source ~/curation_venv/bin/activate
 #            echo $BASH_ENV 
