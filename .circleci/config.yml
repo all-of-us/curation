@@ -28,28 +28,16 @@ commands:
             - pip-cache-{{ checksum "requirements.txt" }}-{{ checksum "dev_requirements.txt" }}-{{ checksum "deid/requirements.txt" }}
             - pip-cache-
       - run:
-          name: Add virtual environment activation to bash startup
-          command: |
-            python --version
-            python3 --version
-#            python3 -m venv ~/curation_venv
-#            echo $?
-#            pwd
-#            ls ~/*
-#            echo $BASH_ENV
-#            source ~/curation_venv/bin/activate
-#            echo $BASH_ENV 
-#            env
-      - run:
           working_directory: ~/curation/data_steward
           name: Upgrade pip and install requirements
           command: |
+            echo "Installing directly to docker image.  No virtual environment."
             pip install --upgrade pip setuptools
             pip install -r requirements.txt
             pip install -r dev_requirements.txt
             pip install -r deid/requirements.txt
       - run:
-          name: Show env  file
+          name: Show env variables
           command: env 
   lint_teardown:
     steps:
@@ -90,7 +78,12 @@ commands:
           - pip-cache-
       - run:
           name: Add virtual environment activation to bash startup
-          command: python3 -m venv ~/curation_venv && echo "source ~/curation_venv/bin/activate" >> $BASH_ENV
+          command: |
+            echo ${BASH_ENV}
+            echo "\n\n"
+            cat ${BASH_ENV}
+            python3 -m venv ~/curation_venv 
+            echo "source ~/curation_venv/bin/activate" >> $BASH_ENV
       - run:
           name: Upgrade pip and install requirements
           command: |
