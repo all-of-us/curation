@@ -113,12 +113,12 @@ jobs:
     <<: *job_defaults
     steps:
       - test_setup
-      - run: 
+      - run:
           name: Set up coverage result directories
           working_directory: ~/curation
           command: |
-            mkdir -p tests/results/coverage/unit/xml 
-            mkdir -p tests/results/coverage/unit/html 
+            mkdir -p tests/results/coverage/unit/xml
+            mkdir -p tests/results/coverage/unit/html
             # store test results in junit format to allow CircleCI Test Summary reporting
             #  https://circleci.com/docs/2.0/collect-test-data/
             mkdir -p tests/results/junit/unit
@@ -152,12 +152,12 @@ jobs:
           command: |
             cd ~/curation/data_steward
             PYTHONPATH=./:$PYTHONPATH poetry run python ./ci/test_setup.py
-      - run: 
+      - run:
           name: Set up coverage result directories
           working_directory: ~/curation
           command: |
-            mkdir -p tests/results/coverage/integration/xml 
-            mkdir -p tests/results/coverage/integration/html 
+            mkdir -p tests/results/coverage/integration/xml
+            mkdir -p tests/results/coverage/integration/html
             # store test results in junit format to allow CircleCI Test Summary reporting
             #  https://circleci.com/docs/2.0/collect-test-data/
             mkdir -p tests/results/junit/integration
