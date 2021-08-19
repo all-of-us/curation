@@ -52,29 +52,37 @@ commands:
     steps:
       - checkout:
           path: ~/curation
-      - run:
-          name: Allow google cloud to be added as apt repo
-          command: |
-            sudo apt-get update
-            sudo apt install software-properties-common
-      # Prepare for artifact and test results  collection equivalent to how it was done on 1.0.
+#      - run:
+#          name: Allow google cloud to be added as apt repo
+#          command: |
+#            sudo apt-get update
+#            sudo apt install software-properties-common
+#      # Prepare for artifact and test results  collection equivalent to how it was done on 1.0.
       - run: mkdir -p $CIRCLE_ARTIFACTS
+#      - run:
+#          name: Add google-cloud-sdk repo to apt
+#          command: |
+#            echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" 
+#            sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+#            sudo apt-get -y install apt-transport-https ca-certificates gnupg
+#      - run:
+#          name: Add google key to apt
+#          command: curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+##          command: curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
+#      - run:
+#          name: Install google-cloud-sdk
+#          command: |
+#            sudo apt-get update
+#            #sudo apt-get install dpkg
+#            sudo apt-get -y install google-cloud-sdk
       - run:
-          name: Add google-cloud-sdk repo to apt
-          command: |
-            echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" 
-            sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
-            sudo apt-get -y install apt-transport-https ca-certificates gnupg
-      - run:
-          name: Add google key to apt
-          command: curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
-#          command: curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
-      - run:
-          name: Install google-cloud-sdk
-          command: |
-            sudo apt-get update
-            #sudo apt-get install dpkg
-            sudo apt-get -y install google-cloud-sdk
+            name: Install google-cloud-sdk in one step
+            command: |
+              echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+              sudo apt-get install apt-transport-https ca-certificates gnupg
+              cat /etc/apt/sources.list.d/google-cloud-sdk.list
+              curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+              sudo apt-get update && sudo apt-get install google-cloud-sdk 
       # Dependencies
       - restore_cache:
           keys:
