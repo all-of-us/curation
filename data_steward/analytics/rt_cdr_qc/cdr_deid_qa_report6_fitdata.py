@@ -37,7 +37,7 @@ df = pd.DataFrame(columns = ['query', 'result'])
 #
 #
 
-# # 1 Verify that the data newer than truncation_date (i.e.,11/26/2019) is truncated in fitbit tables (suppressed).
+# # Verify that the data newer than truncation_date (i.e.,11/26/2019) is truncated in fitbit tables (suppressed).
 #
 # DC-1046
 #
@@ -88,7 +88,7 @@ else:
                 ignore_index = True) 
 df1
 
-# # 2 Verify if that the fitdata data is removed FROM the fitbit tables for participants exceeding allowable age (maximum_age, i.e.,89). ((row counts = 0))
+# # Verify if that the fitdata data is removed FROM the fitbit tables for participants exceeding allowable age (maximum_age, i.e.,89). ((row counts = 0))
 #
 # DC-1001
 
@@ -146,7 +146,7 @@ else:
                 ignore_index = True) 
 df1               
 
-# # 3 Verify that correct date shift is applied to the fitbit data
+# # Verify that correct date shift is applied to the fitbit data
 #
 # DC-1005
 #
@@ -179,9 +179,7 @@ ON m.research_id = d.person_id
 )
 
 SELECT COUNT (*) n_row_not_pass FROM df2
-FULL OUTER JOIN df1 
-ON df1.i_newc=df2.d_newc
-WHERE i_newc !=d_newc
+WHERE d_newc NOT IN (SELECT i_newc FROM df1)
 '''
 df1=pd.read_gbq(query, dialect='standard')  
 if df1.eq(0).any().any():
@@ -212,9 +210,7 @@ ON m.research_id = d.person_id
 )
 
 SELECT COUNT (*) n_row_not_pass FROM df2
-FULL OUTER JOIN df1 
-ON df1.i_newc=df2.d_newc
-WHERE i_newc !=d_newc
+WHERE d_newc NOT IN (SELECT i_newc FROM df1)
 '''
 df1=pd.read_gbq(query, dialect='standard')  
 if df1.eq(0).any().any():
@@ -225,7 +221,9 @@ else:
                 ignore_index = True) 
 df1        
 
+# +
 # heart_rate_minute_level
+
 query=f''' 
 
 WITH df1 AS (
@@ -245,9 +243,7 @@ ON m.research_id = d.person_id
 )
 
 SELECT COUNT (*) n_row_not_pass FROM df2
-FULL OUTER JOIN df1 
-ON df1.i_newc=df2.d_newc
-WHERE i_newc !=d_newc
+WHERE d_newc NOT IN (SELECT i_newc FROM df1)
 '''
 df1=pd.read_gbq(query, dialect='standard')  
 if df1.eq(0).any().any():
@@ -256,9 +252,11 @@ if df1.eq(0).any().any():
 else:
  df = df.append({'query' : 'Query3.3 Date shifted in heart_rate_minute_level', 'result' : ''},  
                 ignore_index = True) 
-df1        
+df1       
 
+# +
 # steps_intraday
+
 query=f''' 
 
 WITH df1 AS (
@@ -278,9 +276,7 @@ ON m.research_id = d.person_id
 )
 
 SELECT COUNT (*) n_row_not_pass FROM df2
-FULL OUTER JOIN df1 
-ON df1.i_newc=df2.d_newc
-WHERE i_newc !=d_newc
+WHERE d_newc NOT IN (SELECT i_newc FROM df1)
 '''
 df1=pd.read_gbq(query, dialect='standard')  
 if df1.eq(0).any().any():
@@ -289,9 +285,10 @@ if df1.eq(0).any().any():
 else:
  df = df.append({'query' : 'Query3.4 Date shifted in steps_intraday', 'result' : ''},  
                 ignore_index = True) 
-df1        
+df1   
+# -
 
-# # 4 Verify that the participants are correctly mapped to their Research ID 
+# # Verify that the participants are correctly mapped to their Research ID 
 #
 # DC-1000
 
@@ -408,7 +405,7 @@ else:
                 ignore_index = True) 
 df1     
 
-# # 5 Verify all person_ids in fitbit datasets exsit in deid_cdr person table
+# # Verify all person_ids in fitbit datasets exsit in deid_cdr person table
 #
 # [DC-1788] Add additional person existence check to Fitbit notebook
 #
