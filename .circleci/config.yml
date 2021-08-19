@@ -23,10 +23,10 @@ commands:
       - checkout:
           path: ~/curation
       # Dependencies
-#      - restore_cache:
-#          keys:
-#            - pip-cache-{{ checksum "requirements.txt" }}-{{ checksum "dev_requirements.txt" }}-{{ checksum "deid/requirements.txt" }}
-#            - pip-cache-
+      - restore_cache:
+          keys:
+            - pip-cache-{{ checksum "requirements.txt" }}-{{ checksum "dev_requirements.txt" }}-{{ checksum "deid/requirements.txt" }}
+            - pip-cache-
       - run:
           working_directory: ~/curation/data_steward
           name: Upgrade pip and install requirements
@@ -44,7 +44,7 @@ commands:
       - save_cache:
           paths:
             ~/curation_venv
-#          key: pip-cache-{{ checksum "requirements.txt" }}-{{ checksum "dev_requirements.txt" }}-{{ checksum "deid/requirements.txt" }}
+          key: pip-cache-{{ checksum "requirements.txt" }}-{{ checksum "dev_requirements.txt" }}-{{ checksum "deid/requirements.txt" }}
       - slack/status:
           fail_only: true
           only_for_branches: master,develop
