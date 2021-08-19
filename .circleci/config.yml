@@ -23,10 +23,10 @@ commands:
       - checkout:
           path: ~/curation
       # Dependencies
-      - restore_cache:
-          keys:
-            - pip-cache-{{ checksum "requirements.txt" }}-{{ checksum "dev_requirements.txt" }}-{{ checksum "deid/requirements.txt" }}
-            - pip-cache-
+#      - restore_cache:
+#          keys:
+#            - pip-cache-{{ checksum "requirements.txt" }}-{{ checksum "dev_requirements.txt" }}-{{ checksum "deid/requirements.txt" }}
+#            - pip-cache-
       - run:
           working_directory: ~/curation/data_steward
           name: Upgrade pip and install requirements
@@ -44,7 +44,7 @@ commands:
       - save_cache:
           paths:
             ~/curation_venv
-          key: pip-cache-{{ checksum "requirements.txt" }}-{{ checksum "dev_requirements.txt" }}-{{ checksum "deid/requirements.txt" }}
+#          key: pip-cache-{{ checksum "requirements.txt" }}-{{ checksum "dev_requirements.txt" }}-{{ checksum "deid/requirements.txt" }}
       - slack/status:
           fail_only: true
           only_for_branches: master,develop
@@ -78,10 +78,12 @@ commands:
       - run:
             name: Install google-cloud-sdk in one step
             command: |
-              echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
-              sudo apt-get install apt-transport-https ca-certificates gnupg
-              cat /etc/apt/sources.list.d/google-cloud-sdk.list
+              echo "deb http://packages.cloud.google.com/apt cloud-sdk-$(lsb_release -c -s) main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
               curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+#             echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+              sudo apt-get install apt-transport-https ca-certificates gnupg
+              #cat /etc/apt/sources.list.d/google-cloud-sdk.list
+              #curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
               sudo apt-get update && sudo apt-get install google-cloud-sdk 
       # Dependencies
       - restore_cache:
