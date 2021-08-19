@@ -5,6 +5,8 @@ import time
 import unittest
 from io import open
 
+from google.cloud import storage
+
 import bq_utils
 import common
 import app_identity
@@ -81,12 +83,16 @@ class BqUtilsTest(unittest.TestCase):
             }
         ]
         self.DT_FORMAT = '%Y-%m-%d %H:%M:%S'
+
+        self.storage_client = storage.Client(self.project_id)
         self._empty_bucket()
 
     def _empty_bucket(self):
-        bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
-        for bucket_item in bucket_items:
-            gcs_utils.delete_object(self.hpo_bucket, bucket_item['name'])
+        bucket = storage.Bucket(self.storage_client,
+                                self.hpo_bucket,
+                                user_project=self.project_id)
+        bucket_items = list(self.storage_client.list_blobs(bucket))
+        bucket.delete_blobs(bucket_items, client=self.storage_client)
 
     def _drop_tables(self):
         tables = bq_utils.list_tables()
