@@ -82,8 +82,8 @@ commands:
 #              curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
 #              sudo apt-get update && sudo apt-get install google-cloud-sdk 
       - run:
-            name: Install google-cloud-sdk in one step
-            command: |
+          name: Install google-cloud-sdk in one step
+          command: |
               echo "deb http://packages.cloud.google.com/apt cloud-sdk-$(lsb_release -c -s) main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
               curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
               sudo apt-get install apt-transport-https ca-certificates gnupg
