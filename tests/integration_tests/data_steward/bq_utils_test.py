@@ -13,6 +13,7 @@ import resources
 from tests import test_util
 from tests.test_util import (FAKE_HPO_ID, FIVE_PERSONS_PERSON_CSV,
                              PITT_FIVE_PERSONS_OBSERVATION_CSV)
+from utils import bq
 from validation.achilles import ACHILLES_TABLES
 
 
@@ -28,8 +29,12 @@ class BqUtilsTest(unittest.TestCase):
         self.hpo_bucket = gcs_utils.get_hpo_bucket(FAKE_HPO_ID)
         self.person_table_id = bq_utils.get_table_id(FAKE_HPO_ID, common.PERSON)
         self.dataset_id = bq_utils.get_dataset_id()
-        test_util.delete_all_tables(self.dataset_id)
+
         self.project_id = app_identity.get_application_id()
+        self.client = bq.get_client(self.project_id)
+        for table in self.client.list_tables(self.dataset_id):
+            self.client.delete_table(table.full_table_id.replace(':', '.'))
+
         self.TEST_FIELDS = [
             {
                 "type": "integer",
@@ -368,5 +373,6 @@ class BqUtilsTest(unittest.TestCase):
             f'Value not provided for required field required_integer_col')
 
     def tearDown(self):
-        test_util.delete_all_tables(self.dataset_id)
+        for table in self.client.list_tables(self.dataset_id):
+            self.client.delete_table(table.full_table_id.replace(':', '.'))
         self._empty_bucket()
