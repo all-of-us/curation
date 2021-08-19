@@ -142,7 +142,6 @@ jobs:
       - run:
           name: Activate service account
           command: |
-            source /home/circleci/curation/data_steward/google-cloud-sdk/path.bash.inc
             ./ci/activate_creds.sh ${HOME}/gcloud-credentials-key.json
       - run:
           name: Set up environment variables
