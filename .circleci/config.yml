@@ -52,55 +52,30 @@ commands:
     steps:
       - checkout:
           path: ~/curation
-#      - run:
-#          name: Allow google cloud to be added as apt repo
-#          command: |
-#            sudo apt-get update
-#            sudo apt install software-properties-common
-#      # Prepare for artifact and test results  collection equivalent to how it was done on 1.0.
+      # Prepare for artifact and test results  collection equivalent to how it was done on 1.0.
       - run: mkdir -p $CIRCLE_ARTIFACTS
-#      - run:
-#          name: Add google-cloud-sdk repo to apt
-#          command: |
-#            echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" 
-#            sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
-#            sudo apt-get -y install apt-transport-https ca-certificates gnupg
-#      - run:
-#          name: Add google key to apt
-#          command: curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
-##          command: curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
-#      - run:
-#          name: Install google-cloud-sdk
-#          command: |
-#            sudo apt-get update
-#            #sudo apt-get install dpkg
-#            sudo apt-get -y install google-cloud-sdk
-#
-#             echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
-#              sudo apt-get install apt-transport-https ca-certificates gnupg
-#              cat /etc/apt/sources.list.d/google-cloud-sdk.list
-#              curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
-#              sudo apt-get update && sudo apt-get install google-cloud-sdk 
       - run:
-          name: Install google-cloud-sdk in one step
+          name: Install google-cloud-sdk
           command: |
-              echo "deb http://packages.cloud.google.com/apt cloud-sdk-$(lsb_release -c -s) main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
-              curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
-              sudo apt-get install apt-transport-https ca-certificates gnupg
-              sudo apt-get update && sudo apt-get install google-cloud-sdk 
+            # don't suppress errors.
+            set -e
+            # TODO: this is done as there is currently (as of 2021.08.19) no 20.04 release in the google repo for...reasons
+            # TODO: parameterize gsdk version and sha
+            wget https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-353.0.0-linux-x86_64.tar.gz
+            # verify integrity
+            echo 94fcb77632fed5b6fa61d1bf6c619cbfceb63f3d95911bfe15e7caa401df81c0 \
+              google-cloud-sdk-353.0.0-linux-x86_64.tar.gz | sha256sum --check --status && if [[ "$?" -ne 0 ]]; then exit 1; fi
+
+            # if we get here, assume things are ok
+            tar -xzvf google-cloud-sdk-353.0.0-linux-x86_64.tar.gz
+
+            # run installer in non-interactive mode
+            cd ./google-cloud-sdk && ./install.sh --quiet
       # Dependencies
       - restore_cache:
           keys:
           - pip-cache-{{ checksum "requirements.txt" }}-{{ checksum "dev_requirements.txt" }}-{{ checksum "deid/requirements.txt" }}
           - pip-cache-
-      - run:
-          name: Add virtual environment activation to bash startup
-          command: |
-            echo ${BASH_ENV}
-            echo "\n\n"
-            cat ${BASH_ENV}
-            python3 -m venv ~/curation_venv 
-            echo "source ~/curation_venv/bin/activate" >> $BASH_ENV
       - run:
           name: Upgrade pip and install requirements
           command: |
@@ -109,8 +84,8 @@ commands:
             pip install -r dev_requirements.txt
             pip install -r deid/requirements.txt
       - run:
-          name: Show bashrc file
-          command: cat ${BASH_ENV}
+          name: Show env vars 
+          command: env
   test_teardown:
     steps:
       - save_cache:
@@ -186,7 +161,9 @@ jobs:
       # Setup GCP access and create cloud resources as needed.
       - run:
           name: Activate service account
-          command: ./ci/activate_creds.sh ${HOME}/gcloud-credentials-key.json
+          command: |
+            source /home/circleci/curation/data_steward/google-cloud-sdk/path.bash.inc
+            ./ci/activate_creds.sh ${HOME}/gcloud-credentials-key.json
       - run:
           name: Set up environment variables
           command: ./init_env.sh
