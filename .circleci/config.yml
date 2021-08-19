@@ -72,9 +72,9 @@ commands:
       - run:
           name: Install google-cloud-sdk
           command: |
-            #sudo apt-get update
-            sudo apt-get install dpkg
-            sudo apt-get install google-cloud-sdk
+            sudo apt-get update
+            #sudo apt-get install dpkg
+            sudo apt-get -y install google-cloud-sdk
       # Dependencies
       - restore_cache:
           keys:
