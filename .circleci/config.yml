@@ -65,12 +65,19 @@ commands:
             # verify integrity
             echo 94fcb77632fed5b6fa61d1bf6c619cbfceb63f3d95911bfe15e7caa401df81c0 \
               google-cloud-sdk-353.0.0-linux-x86_64.tar.gz | sha256sum --check --status && if [[ "$?" -ne 0 ]]; then exit 1; fi
+            # if we get here, assume things are ok and do the following:
+            # 1. untar source
+            # 2. execute installer
+            # 3. cd back to home
+            # 4. update components (should help us not have to manually manage sha and wget version)
+            tar -xzvf google-cloud-sdk-353.0.0-linux-x86_64.tar.gz \
+              && cd ./google-cloud-sdk \
+              && ./install.sh --quiet \
+              && echo "source $(pwd)/path.bash.inc" >> /home/circleci/.profile \
+              && cd .. \
+              && ./google-cloud-sdk/bin/gcloud components update --quiet
+            # finally, add to path
 
-            # if we get here, assume things are ok
-            tar -xzvf google-cloud-sdk-353.0.0-linux-x86_64.tar.gz
-
-            # run installer in non-interactive mode
-            cd ./google-cloud-sdk && ./install.sh --quiet
       # Dependencies
       - restore_cache:
           keys:
@@ -79,7 +86,7 @@ commands:
       - run:
           name: Upgrade pip and install requirements
           command: |
-            pip install --upgrade pip setuptools
+            pip install --upgrade pip setuptools certifi
             pip install -r requirements.txt
             pip install -r dev_requirements.txt
             pip install -r deid/requirements.txt
