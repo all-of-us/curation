@@ -31,7 +31,8 @@ commands:
           working_directory: ~/curation/data_steward
           name: Upgrade pip and install requirements
           command: |
-            pyenv virtualenv 3.7 venv
+            pyenv virtualenv pipeline_venv
+            pyenv local pipeline_venv
             pip install --upgrade pip setuptools
             pip install -r requirements.txt
             pip install -r dev_requirements.txt
@@ -86,7 +87,8 @@ commands:
       - run:
           name: Upgrade pip and install requirements
           command: |
-            pyenv virtualenv 3.7 venv
+            pyenv virtualenv pipeline_venv
+            pyenv local pipeline_venv
             pip install --upgrade pip setuptools
             pip install -r requirements.txt
             pip install -r dev_requirements.txt
