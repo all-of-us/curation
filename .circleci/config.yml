@@ -33,13 +33,14 @@ commands:
           command: |
             pyenv virtualenv pipeline_venv
             pyenv local pipeline_venv
-            export PYTHONPATH=./
+            echo "export PYTHONPATH=./" >> ~/..bashrc
             eval "$(pyenv init -)" >> ~/.bashrc
             eval "$(pyenv virtualenv-init -)" >> ~/.bashrc
             pip install --upgrade pip setuptools
             pip install -r requirements.txt
             pip install -r dev_requirements.txt
             pip install -r deid/requirements.txt
+            echo $PYTHONPATH
       - run:
           name: Show env variables
           command: env 
@@ -88,9 +89,14 @@ commands:
           - pip-cache-{{ checksum "requirements.txt" }}-{{ checksum "dev_requirements.txt" }}-{{ checksum "deid/requirements.txt" }}
           - pip-cache-
       - run:
+          working_directory: ~/curation/data_steward
           name: Create virtualenv and install requirements
           command: |
             pyenv virtualenv pipeline_venv
+            export PYTHONPATH=./
+            echo $PYTHONPATH
+            echo "export PYTHONPATH=./" >> ~/..bashrc
+            echo $PYTHONPATH
             eval "$(pyenv init -)" >> ~/.bashrc
             eval "$(pyenv virtualenv-init -)" >> ~/.bashrc
             pyenv local pipeline_venv
