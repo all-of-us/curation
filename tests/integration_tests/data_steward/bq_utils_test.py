@@ -19,6 +19,7 @@ from utils import bq
 from validation.achilles import ACHILLES_TABLES
 
 
+#@unittest.skipIf(os.getenv('CIRCLECI', 'False') == 'true'), 'Skipping tests.  This will fail on the new cimg.  The need for this code should be removed with a sufficient refactor.')
 class BqUtilsTest(unittest.TestCase):
 
     @classmethod
@@ -123,7 +124,7 @@ class BqUtilsTest(unittest.TestCase):
         local_csv_path = os.path.join(test_util.TEST_DATA_EXPORT_PATH,
                                       csv_file_name)
 
-        self._upload_blobs(self.hpo_bucket, local_csv_path, csv_filename)
+        self._upload_blobs(self.hpo_bucket, local_csv_path, csv_file_name)
 
         hpo_bucket = self.hpo_bucket
         gcs_object_path = 'gs://%(hpo_bucket)s/%(csv_file_name)s' % locals()
