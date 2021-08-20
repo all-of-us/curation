@@ -92,9 +92,9 @@ commands:
           name: Create virtualenv and install requirements
           command: |
             pyenv virtualenv pipeline_venv
-            echo "export PATH=${HOME}/curation/data_steward:${PATH}" >> /home/circleci/.profile
-            eval "$(pyenv init -)" >> /home/circleci/.profile
-            eval "$(pyenv virtualenv-init -)" >> /home/circleci/.profile
+            export PYTHONPATH=${HOME}/curation:${HOME}/curation/data_steward
+            eval "$(pyenv init -)" 
+            eval "$(pyenv virtualenv-init -)"
             pyenv local pipeline_venv
             pip install --upgrade pip setuptools
             pip install -r requirements.txt
@@ -107,8 +107,9 @@ commands:
 #            echo "export PYTHONPATH=$(pwd):${PYENV_ROOT}/bin:${PYTHONPATH}" >> /home/circleci/.profile
 #            source ~/.profile
       - run:
-          name: Show env vars 
-          command: env
+          working_directory: ~/curation/data_steward
+          name: Show env vars and files
+          command: env && ls -a
   test_teardown:
     steps:
       - save_cache:
