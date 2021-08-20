@@ -34,7 +34,6 @@ commands:
             pyenv virtualenv pipeline_venv
             eval "$(pyenv init -)" >> ~/.bashrc
             eval "$(pyenv virtualenv-init -)" >> ~/.bashrc
-            source ~/.bashrc
             pyenv local pipeline_venv
             pip install --upgrade pip setuptools
             pip install -r requirements.txt
@@ -88,17 +87,19 @@ commands:
           - pip-cache-{{ checksum "requirements.txt" }}-{{ checksum "dev_requirements.txt" }}-{{ checksum "deid/requirements.txt" }}
           - pip-cache-
       - run:
-          name: Upgrade pip and install requirements
+          name: Create virtualenv and install requirements
           command: |
             pyenv virtualenv pipeline_venv
             eval "$(pyenv init -)" >> ~/.bashrc
             eval "$(pyenv virtualenv-init -)" >> ~/.bashrc
-            source ~/.bashrc
             pyenv local pipeline_venv
             pip install --upgrade pip setuptools
             pip install -r requirements.txt
             pip install -r dev_requirements.txt
             pip install -r deid/requirements.txt
+            echo $PYTHONPATH
+            pwd
+            ls -a
 #      - run:
 #          working_directory: ~/curation/data_steward
 #          name: Set PYTHONPATH and PYTHONVERSION
