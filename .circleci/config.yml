@@ -32,9 +32,10 @@ commands:
           name: Upgrade pip and install requirements
           command: |
             pyenv virtualenv pipeline_venv
+            pyenv local pipeline_venv
+            export PYTHONPATH=./
             eval "$(pyenv init -)" >> ~/.bashrc
             eval "$(pyenv virtualenv-init -)" >> ~/.bashrc
-            pyenv local pipeline_venv
             pip install --upgrade pip setuptools
             pip install -r requirements.txt
             pip install -r dev_requirements.txt
