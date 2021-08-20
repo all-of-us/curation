@@ -32,14 +32,24 @@ commands:
           name: Upgrade pip and install requirements
           command: |
             pyenv virtualenv curation_venv
+            eval "$(pyenv init -)"
+            eval "$(pyenv virtualenv-init -)"
             pyenv local curation_venv
-            echo "export PYTHONPATH=${HOME}/curation/data_steward:${PYENV_ROOT}/bin:${PATH}" >> /home/circleci/.profile
-            eval "$(pyenv init -)" >> /home/circleci/.profile
-            eval "$(pyenv virtualenv-init -)" >> /home/circleci/.profile
-            pip install --upgrade pip setuptools
-            pip install -r requirements.txt
-            pip install -r dev_requirements.txt
-            pip install -r deid/requirements.txt
+            pyenv virtualenvs
+            pip install --upgrade pip setuptools \
+            && pip install -r requirements.txt \
+            && pip install -r dev_requirements.txt \
+            && pip install -r deid/requirements.txt 
+            echo "-----------------------"
+            echo "export PYTHONPATH=${HOME}/curation/data_steward:${HOME}/curation" >> ${BASH_ENV}
+            echo "export PYTHONPATH=${HOME}/curation/data_steward:${HOME}/curation"
+            echo "-----------------------"
+            echo "eval \"$(pyenv init -)\"" >> ${BASH_ENV}
+            echo "-----------------------"
+            echo "eval \"$(pyenv virtualenv-init -)\"" >> ${BASH_ENV}
+            echo "-----------------------"
+            echo "pyenv activate curation_venv" >> ${BASH_ENV}
+            echo "-----------------------"
       - run:
           name: Show env variables
           command: env 
@@ -101,7 +111,8 @@ commands:
             && pip install -r dev_requirements.txt \
             && pip install -r deid/requirements.txt 
             echo "-----------------------"
-            echo "export PYTHONPATH=${HOME}/curation:${HOME}/curation/data_steward" >> ${BASH_ENV}
+            echo "export PYTHONPATH=${HOME}/curation/data_steward:${HOME}/curation" >> ${BASH_ENV}
+            echo "export PYTHONPATH=${HOME}/curation/data_steward:${HOME}/curation"
             echo "-----------------------"
             echo "eval \"$(pyenv init -)\"" >> ${BASH_ENV}
             echo "-----------------------"
