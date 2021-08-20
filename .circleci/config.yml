@@ -86,10 +86,13 @@ commands:
       - run:
           name: Upgrade pip and install requirements
           command: |
-            pip install --upgrade pip setuptools certifi
+            pip install --upgrade pip setuptools
             pip install -r requirements.txt
             pip install -r dev_requirements.txt
             pip install -r deid/requirements.txt
+      - run:
+          name: Show ssl
+          command: cat /etc/ssl/openssl.cnf
       - run:
           name: Show env vars 
           command: env
