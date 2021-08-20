@@ -100,6 +100,7 @@ commands:
             pip install -r requirements.txt
             pip install -r dev_requirements.txt
             pip install -r deid/requirements.txt
+            echo "source $(pwd)/pipeline_venv/bin/activate" >> ${BASH_ENV}
             echo "eval \"$(pyenv init -)\"" >> ${BASH_ENV}
             echo "eval \"$(pyenv virtualenv-init -)\"" >> ${BASH_ENV}
       - run:
