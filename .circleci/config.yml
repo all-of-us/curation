@@ -156,7 +156,7 @@ jobs:
             # store test results in junit format to allow CircleCI Test Summary reporting
             #  https://circleci.com/docs/2.0/collect-test-data/
             mkdir -p tests/results/junit/unit
-            ./tests/run_tests.sh -s unit
+            PYTHONPATH=./data_steward:$PYTHONPATH ./tests/run_tests.sh -s unit
           no_output_timeout: 300s
           when:  always
       - test_teardown
@@ -176,7 +176,9 @@ jobs:
           command: ./init_env.sh
       - run:
           name: Create buckets and datasets
-          command: PYTHONPATH=./:$PYTHONPATH python ./ci/test_setup.py
+          command: |
+            cd ~/curation/data_steward
+            PYTHONPATH=./:$PYTHONPATH python ./ci/test_setup.py
       - run:
           name: Run integration tests
           working_directory: ~/curation
@@ -193,7 +195,7 @@ jobs:
                 # store test results in junit format to allow CircleCI Test Summary reporting
                 #  https://circleci.com/docs/2.0/collect-test-data/
                 mkdir -p tests/results/junit/integration
-                ./tests/run_tests.sh -s integration
+                PYTHONPATH=./data_steward:$PYTHONPATH ./tests/run_tests.sh -s integration
             else
                 echo "Skipping integration tests"
             fi
