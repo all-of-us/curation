@@ -92,18 +92,23 @@ commands:
           name: Create virtualenv and install requirements
           command: |
             pyenv virtualenv curation_venv
-            echo "export PYTHONPATH=${HOME}/curation:${HOME}/curation/data_steward" >> ${BASH_ENV}
             eval "$(pyenv init -)"
             eval "$(pyenv virtualenv-init -)"
             pyenv local curation_venv
             pyenv virtualenvs
-            pip install --upgrade pip setuptools
-            pip install -r requirements.txt
-            pip install -r dev_requirements.txt
-            pip install -r deid/requirements.txt
+            pip install --upgrade pip setuptools \
+            && pip install -r requirements.txt \
+            && pip install -r dev_requirements.txt \
+            && pip install -r deid/requirements.txt 
+            echo "-----------------------"
+            echo "export PYTHONPATH=${HOME}/curation:${HOME}/curation/data_steward" >> ${BASH_ENV}
+            echo "-----------------------"
             echo "source ${HOME}/curation_venv/bin/activate" >> ${BASH_ENV}
+            echo "-----------------------"
             echo "eval \"$(pyenv init -)\"" >> ${BASH_ENV}
+            echo "-----------------------"
             echo "eval \"$(pyenv virtualenv-init -)\"" >> ${BASH_ENV}
+            echo "-----------------------"
       - run:
           working_directory: ~/curation/data_steward
           name: Show env vars and files
