@@ -33,14 +33,13 @@ commands:
           command: |
             pyenv virtualenv pipeline_venv
             pyenv local pipeline_venv
-            echo "export PYTHONPATH=./" >> ~/..bashrc
-            eval "$(pyenv init -)" >> ~/.bashrc
-            eval "$(pyenv virtualenv-init -)" >> ~/.bashrc
+            echo "export PYTHONPATH=${HOME}/curation/data_steward:${PYENV_ROOT}/bin" >> /home/circleci/.profile
+            eval "$(pyenv init -)" >> /home/circleci/.profile
+            eval "$(pyenv virtualenv-init -)" >> /home/circleci/.profile
             pip install --upgrade pip setuptools
             pip install -r requirements.txt
             pip install -r dev_requirements.txt
             pip install -r deid/requirements.txt
-            echo $PYTHONPATH
       - run:
           name: Show env variables
           command: env 
@@ -93,10 +92,7 @@ commands:
           name: Create virtualenv and install requirements
           command: |
             pyenv virtualenv pipeline_venv
-            export PYTHONPATH=${HOME}/curation/data_steward
-            echo $PYTHONPATH
-            echo "export PYTHONPATH=./" >> /home/circleci/.profile
-            echo $PYTHONPATH
+            echo "export PYTHONPATH=${HOME}/curation/data_steward:${PYENV_ROOT}/bin" >> /home/circleci/.profile
             eval "$(pyenv init -)" >> /home/circleci/.profile
             eval "$(pyenv virtualenv-init -)" >> /home/circleci/.profile
             pyenv local pipeline_venv
@@ -104,9 +100,6 @@ commands:
             pip install -r requirements.txt
             pip install -r dev_requirements.txt
             pip install -r deid/requirements.txt
-            echo $PYTHONPATH
-            pwd
-            ls -a
 #      - run:
 #          working_directory: ~/curation/data_steward
 #          name: Set PYTHONPATH and PYTHONVERSION
