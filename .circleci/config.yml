@@ -91,9 +91,6 @@ commands:
             pip install -r dev_requirements.txt
             pip install -r deid/requirements.txt
       - run:
-          name: Show ssl
-          command: cat /etc/ssl/openssl.cnf
-      - run:
           name: Show env vars 
           command: env
   test_teardown:
