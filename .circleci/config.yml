@@ -91,6 +91,13 @@ commands:
             pip install -r dev_requirements.txt
             pip install -r deid/requirements.txt
       - run:
+          working_directory: ~/curation/data_steward
+          name: Set PYTHONPATH and PYTHONVERSION
+          command: |
+            echo "PYTHONPATH=$(pwd):${PYENV_ROOT}:${PYTHONPATH}" >> ~/.profile
+            cat ~/.profile
+            source ~/.profile
+      - run:
           name: Show env vars 
           command: env
   test_teardown:
@@ -156,7 +163,7 @@ jobs:
             # store test results in junit format to allow CircleCI Test Summary reporting
             #  https://circleci.com/docs/2.0/collect-test-data/
             mkdir -p tests/results/junit/unit
-            PYTHONPATH=./data_steward:$PYTHONPATH ./tests/run_tests.sh -s unit
+            ./tests/run_tests.sh -s unit
           no_output_timeout: 300s
           when:  always
       - test_teardown
@@ -178,7 +185,7 @@ jobs:
           name: Create buckets and datasets
           command: |
             cd ~/curation/data_steward
-            PYTHONPATH=./:$PYTHONPATH python ./ci/test_setup.py
+            python ./ci/test_setup.py
       - run:
           name: Run integration tests
           working_directory: ~/curation
@@ -195,7 +202,7 @@ jobs:
                 # store test results in junit format to allow CircleCI Test Summary reporting
                 #  https://circleci.com/docs/2.0/collect-test-data/
                 mkdir -p tests/results/junit/integration
-                PYTHONPATH=./data_steward:$PYTHONPATH ./tests/run_tests.sh -s integration
+                ./tests/run_tests.sh -s integration
             else
                 echo "Skipping integration tests"
             fi
