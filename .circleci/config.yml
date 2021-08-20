@@ -94,8 +94,7 @@ commands:
           working_directory: ~/curation/data_steward
           name: Set PYTHONPATH and PYTHONVERSION
           command: |
-            echo "PYTHONPATH=$(pwd):${PYENV_ROOT}:${PYTHONPATH}" >> ~/.profile
-            cat ~/.profile
+            echo "export PYTHONPATH=$(pwd):${PYENV_ROOT}:${PYTHONPATH}" >> /home/circleci/.profile
             source ~/.profile
       - run:
           name: Show env vars 
