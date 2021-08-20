@@ -32,6 +32,9 @@ commands:
           name: Upgrade pip and install requirements
           command: |
             pyenv virtualenv pipeline_venv
+            eval "$(pyenv init -)" >> ~/.bashrc
+            eval "$(pyenv virtualenv-init -)" >> ~/.bashrc
+            source ~/.bashrc
             pyenv local pipeline_venv
             pip install --upgrade pip setuptools
             pip install -r requirements.txt
@@ -88,6 +91,9 @@ commands:
           name: Upgrade pip and install requirements
           command: |
             pyenv virtualenv pipeline_venv
+            eval "$(pyenv init -)" >> ~/.bashrc
+            eval "$(pyenv virtualenv-init -)" >> ~/.bashrc
+            source ~/.bashrc
             pyenv local pipeline_venv
             pip install --upgrade pip setuptools
             pip install -r requirements.txt
