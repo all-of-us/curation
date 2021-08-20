@@ -103,11 +103,11 @@ commands:
             echo "-----------------------"
             echo "export PYTHONPATH=${HOME}/curation:${HOME}/curation/data_steward" >> ${BASH_ENV}
             echo "-----------------------"
-            echo "source ${HOME}/curation_venv/bin/activate" >> ${BASH_ENV}
-            echo "-----------------------"
             echo "eval \"$(pyenv init -)\"" >> ${BASH_ENV}
             echo "-----------------------"
             echo "eval \"$(pyenv virtualenv-init -)\"" >> ${BASH_ENV}
+            echo "-----------------------"
+            echo "pyenv activate curation_venv" >> ${BASH_ENV}
             echo "-----------------------"
       - run:
           working_directory: ~/curation/data_steward

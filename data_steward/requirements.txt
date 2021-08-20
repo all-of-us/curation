@@ -29,7 +29,7 @@ googleapis-common-protos==1.6.0
 GoogleAppEngineCloudStorageClient==1.9.22.1
 grpcio==1.25.0
 gunicorn==20.0.2
-httplib2==0.10.3
+httplib2==0.15.0
 idna==2.6
 importlib-metadata==0.23
 ipaddress==1.0.23
