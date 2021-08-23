@@ -25,7 +25,7 @@ commands:
       # Dependencies
       - restore_cache:
           keys:
-            - pip-cache-{{ checksum "requirements.txt" }}-{{ checksum "dev_requirements.txt" }}-{{ checksum "deid/requirements.txt" }}
+            - pip-cache-{{ checksum "requirements.txt" }}-{{ checksum "dev_requirements.txt" }}
             - pip-cache-
       - run:
           working_directory: ~/curation/data_steward
@@ -38,8 +38,7 @@ commands:
             pyenv virtualenvs
             pip install --upgrade pip setuptools \
             && pip install -r requirements.txt \
-            && pip install -r dev_requirements.txt \
-            && pip install -r deid/requirements.txt 
+            && pip install -r dev_requirements.txt
             echo "-----------------------"
             echo "export PYTHONPATH=${HOME}/curation/data_steward:${HOME}/curation" >> ${BASH_ENV}
             echo "export PYTHONPATH=${HOME}/curation/data_steward:${HOME}/curation"
@@ -58,7 +57,7 @@ commands:
       - save_cache:
           paths:
             ~/curation_venv
-          key: pip-cache-{{ checksum "requirements.txt" }}-{{ checksum "dev_requirements.txt" }}-{{ checksum "deid/requirements.txt" }}
+          key: pip-cache-{{ checksum "requirements.txt" }}-{{ checksum "dev_requirements.txt" }}
       - slack/status:
           fail_only: true
           only_for_branches: master,develop
@@ -95,7 +94,7 @@ commands:
       # Dependencies
       - restore_cache:
           keys:
-          - pip-cache-{{ checksum "requirements.txt" }}-{{ checksum "dev_requirements.txt" }}-{{ checksum "deid/requirements.txt" }}
+          - pip-cache-{{ checksum "requirements.txt" }}-{{ checksum "dev_requirements.txt" }}
           - pip-cache-
       - run:
           working_directory: ~/curation/data_steward
@@ -108,8 +107,7 @@ commands:
             pyenv virtualenvs
             pip install --upgrade pip setuptools \
             && pip install -r requirements.txt \
-            && pip install -r dev_requirements.txt \
-            && pip install -r deid/requirements.txt 
+            && pip install -r dev_requirements.txt 
             echo "-----------------------"
             echo "export PYTHONPATH=${HOME}/curation/data_steward:${HOME}/curation" >> ${BASH_ENV}
             echo "export PYTHONPATH=${HOME}/curation/data_steward:${HOME}/curation"
@@ -129,7 +127,7 @@ commands:
       - save_cache:
           paths:
             ~/curation_venv
-          key: pip-cache-{{ checksum "requirements.txt" }}-{{ checksum "dev_requirements.txt" }}-{{ checksum "deid/requirements.txt" }}
+          key: pip-cache-{{ checksum "requirements.txt" }}-{{ checksum "dev_requirements.txt" }}
       - run:
           name: Combine Coverage Results
           working_directory: ~/curation
