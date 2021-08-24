@@ -306,17 +306,6 @@ def query(q, project_id=None, use_cache=False):
     return client.query(q, job_config=query_job_config).to_dataframe()
 
 
-def list_datasets(project_id):
-    """
-    Lists all datasets existing in a project.
-
-    :return: List of dataset objects
-    """
-    client = get_client(project_id)
-    datasets = list(client.list_datasets())
-    return datasets
-
-
 def dataset_columns_query(project_id: str, dataset_id: str) -> str:
     """
     Get INFORMATION_SCHEMA.COLUMNS query for a specified dataset
