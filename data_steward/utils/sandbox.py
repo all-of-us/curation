@@ -1,8 +1,8 @@
 import logging
-
-from utils.bq import list_datasets, create_dataset
-from common import JINJA_ENV
 from collections import OrderedDict
+
+from utils.bq import get_client, create_dataset
+from common import JINJA_ENV
 
 SANDBOX_SUFFIX = 'sandbox'
 
@@ -74,8 +74,7 @@ def get_sandbox_table_name(table_namer, base_name):
     """
     if table_namer and not table_namer.isspace():
         return f'{table_namer}_{base_name}'
-    else:
-        return base_name
+    return base_name
 
 
 def check_and_create_sandbox_dataset(project_id, dataset_id):
@@ -86,8 +85,9 @@ def check_and_create_sandbox_dataset(project_id, dataset_id):
     :param dataset_id: the dataset_id to verify
     :return: the sandbox dataset_name that either exists or was created
     """
+    client = get_client(project_id)
     sandbox_dataset = get_sandbox_dataset_id(dataset_id)
-    dataset_objs = list_datasets(project_id)
+    dataset_objs = list(client.list_datasets(project_id))
     datasets = [d.dataset_id for d in dataset_objs]
 
     if sandbox_dataset not in datasets:
@@ -166,7 +166,7 @@ def get_sandbox_options(dataset_name,
     :param str table_tag: A table tag
     :param str desc: A table description
     :param bool shared_lookup: A boolean that indicates if a table is a shared lookup, defaults to False
-    :return: A BigQuery table options clause 
+    :return: A BigQuery table options clause
     :rtype: str
     """
     labels_text = get_sandbox_labels_string(dataset_name, class_name, table_tag,
