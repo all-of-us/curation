@@ -28,27 +28,17 @@ commands:
             - pip-cache-{{ checksum "requirements.txt" }}-{{ checksum "dev_requirements.txt" }}
             - pip-cache-
       - run:
-          working_directory: ~/curation/data_steward
-          name: Upgrade pip and install requirements
+          working_directory: ~/curation
+          name: Install requirements via poetry, upgrade pip, activate shell
           command: |
-            pyenv virtualenv curation_venv
-            eval "$(pyenv init -)"
-            eval "$(pyenv virtualenv-init -)"
-            pyenv local curation_venv
-            pyenv virtualenvs
-            pip install --upgrade pip setuptools \
-            && pip install -r requirements.txt \
-            && pip install -r dev_requirements.txt
+            cat data_steward/requirements.txt | xargs poetry add \
+            && cat data_steward/dev_requirements.txt | xargs poetry add --dev
+            poetry shell
+            pip install --upgrade pip setuptools
             echo "-----------------------"
             echo "export PYTHONPATH=${HOME}/curation/data_steward:${HOME}/curation" >> ${BASH_ENV}
             echo $?
-            echo "export PYTHONPATH=${HOME}/curation/data_steward:${HOME}/curation"
-            echo $?
-            echo "eval \"$(pyenv init -)\"" >> ${BASH_ENV}
-            echo $?
-            echo "eval \"$(pyenv virtualenv-init -)\"" >> ${BASH_ENV}
-            echo $?
-            echo "pyenv activate curation_venv" >> ${BASH_ENV}
+            echo "poetry shell" >> ${BASH_ENV}
             echo $?
             echo "-----------------------"
       - run:
