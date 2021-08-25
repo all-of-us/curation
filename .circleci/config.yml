@@ -127,7 +127,6 @@ jobs:
           working_directory: ~/curation
           # TODO: These env vars should not be required to run the unit tests.
           environment:
-#            BUCKET_NAME_FAKE: curation-fake
             RDR_DATASET_ID: curation_fake_rdr
           command:
             poetry run ./tests/run_tests.sh -s unit
@@ -152,7 +151,16 @@ jobs:
           name: Create buckets and datasets
           command: |
             cd ~/curation/data_steward
-            python ./ci/test_setup.py
+            PYTHONPATH=./:$PYTHONPATH poetry run python ./ci/test_setup.py
+      - run: 
+          name: Set up coverage result directories
+          working_directory: ~/curation
+          command: |
+            mkdir -p tests/results/coverage/integration/xml 
+            mkdir -p tests/results/coverage/integration/html 
+            # store test results in junit format to allow CircleCI Test Summary reporting
+            #  https://circleci.com/docs/2.0/collect-test-data/
+            mkdir -p tests/results/junit/integration
       - run:
           name: Run integration tests
           working_directory: ~/curation
@@ -164,12 +172,7 @@ jobs:
             if [[ "${CIRCLE_BRANCH}" == "develop" ]] || [[ "${CIRCLE_BRANCH}" == "master" ]] || \
                 [[ "$t" == *"all tests"* ]] || [[ -n "${CIRCLE_PULL_REQUEST}" ]] || [[ -n "${CIRCLE_PULL_REQUESTS}" ]];
             then
-                mkdir -p tests/results/coverage/integration/xml
-                mkdir -p tests/results/coverage/integration/html
-                # store test results in junit format to allow CircleCI Test Summary reporting
-                #  https://circleci.com/docs/2.0/collect-test-data/
-                mkdir -p tests/results/junit/integration
-                ./tests/run_tests.sh -s integration
+                poetry run ./tests/run_tests.sh -s integration
             else
                 echo "Skipping integration tests"
             fi
@@ -186,12 +189,12 @@ workflows:
     jobs:
       - linting_checks
       - unit_test
-#      - integration_test:
-#          filters:
-#            branches:
-#              # This would cause too much noise to run on commit, run nightly
-#              # instead per below workflow.
-#              ignore: develop
+      - integration_test:
+          filters:
+            branches:
+              # This would cause too much noise to run on commit, run nightly
+              # instead per below workflow.
+              ignore: develop
   nightly:
     triggers:
       - schedule:
