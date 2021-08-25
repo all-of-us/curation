@@ -4,6 +4,8 @@ orbs:
   # Send notifications for failed builds on master, develop branches using Slack orb (https://circleci.com/orbs/registry/orb/circleci/slack). Refer to the
   # For channels to notify and webhook URL refer to the CircleCI Slack App page (https://slack.com/apps/A0F7VRE7N-circleci).
   slack: circleci/slack@3.4.2
+  # Invoke python orb
+  python: circleci/python@1.4.0
 
 job_defaults: &job_defaults
     working_directory: ~/curation/data_steward
@@ -153,6 +155,9 @@ jobs:
           path: ~/curation
       - python/install-packages:
           pkg-manager: poetry
+          app-dir: ~/curation/data_steward
+          include-branch-in-cache-key: false
+          venv-cache: true
       - run:
           name: Checking commit messages for Jira tag
           working_directory: ~/curation
