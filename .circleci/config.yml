@@ -146,8 +146,13 @@ commands:
 jobs:
   linting_checks:
     <<: *job_defaults
+    executor: python/default
     steps:
-      - lint_setup
+      #- lint_setup
+      - checkout:
+          path: ~/curation
+      - python/install-packages:
+          pkg-manager: poetry
       - run:
           name: Checking commit messages for Jira tag
           working_directory: ~/curation
@@ -164,7 +169,7 @@ jobs:
           name: Checking Python lint with Pylint
           working _directory: ~/curation
           command: pylint -E data_steward tests
-      - lint_teardown
+      #- lint_teardown
 
   unit_test:
     <<: *job_defaults
