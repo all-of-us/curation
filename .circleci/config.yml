@@ -142,7 +142,7 @@ jobs:
           name: Checking Python lint with Pylint
           working_directory: ~/curation
           command: |
-            poetry run pylint -E data_steward tests
+            PYTHONPATH=./data_steward:./tests:$PYTHONPATH poetry run pylint -E data_steward tests
       - lint_teardown
 
   unit_test:
