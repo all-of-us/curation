@@ -113,19 +113,21 @@ jobs:
     <<: *job_defaults
     steps:
       - test_setup
-      - run:
-          name: Run unit tests
-          working_directory: ~/curation
-          # TODO: These env vars should not be required to run the unit tests.
-          environment:
-            BUCKET_NAME_FAKE: curation-fake
-            RDR_DATASET_ID: curation_fake_rdr
+      - run: Set up coverage result directories
           command: |
-            mkdir -p tests/results/coverage/unit/xml \
-            && mkdir -p tests/results/coverage/unit/html \
+            mkdir -p tests/results/coverage/unit/xml 
+            mkdir -p tests/results/coverage/unit/html 
             # store test results in junit format to allow CircleCI Test Summary reporting
             #  https://circleci.com/docs/2.0/collect-test-data/
-            && mkdir -p tests/results/junit/unit
+            mkdir -p tests/results/junit/unit
+      - run:
+          name: Run unit tests with poetry
+          working_directory: ~/curation
+          # TODO: These env vars should not be required to run the unit tests.
+#          environment:
+#            BUCKET_NAME_FAKE: curation-fake
+#            RDR_DATASET_ID: curation_fake_rdr
+          command: |
             poetry run ./tests/run_tests.sh -s unit
           no_output_timeout: 300s
           when:  always
