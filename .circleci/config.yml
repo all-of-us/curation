@@ -19,39 +19,8 @@ job_defaults: &job_defaults
       - image: cimg/python:3.7
 
 commands:
-  # Define reusable sets of steps to be run within the testing jobs.
-  lint_setup:
-    steps:
-      - checkout:
-          path: ~/curation
-      # Dependencies
-      - restore_cache:
-          keys:
-            - pip-cache-{{ checksum "requirements.txt" }}-{{ checksum "dev_requirements.txt" }}
-            - pip-cache-
-      - run:
-          working_directory: ~/curation
-          name: Install requirements via poetry, upgrade pip, activate shell
-          command: |
-            cat data_steward/requirements.txt | xargs poetry add \
-            && cat data_steward/dev_requirements.txt | xargs poetry add --dev
-            poetry shell
-            pip install --upgrade pip setuptools
-            echo "-----------------------"
-            echo "export PYTHONPATH=${HOME}/curation/data_steward:${HOME}/curation" >> ${BASH_ENV}
-            echo $?
-            echo "poetry shell" >> ${BASH_ENV}
-            echo $?
-            echo "-----------------------"
-      - run:
-          name: Show env variables
-          command: env 
   lint_teardown:
     steps:
-      - save_cache:
-          paths:
-            ~/curation_venv
-          key: pip-cache-{{ checksum "requirements.txt" }}-{{ checksum "dev_requirements.txt" }}
       - slack/status:
           fail_only: true
           only_for_branches: master,develop
@@ -150,9 +119,8 @@ jobs:
     <<: *job_defaults
     executor: python/default
     steps:
-      #- lint_setup
       - checkout:
-          path: ~/curation
+          path: ~/
       - python/install-packages:
           pkg-manager: poetry
           app-dir: ~/curation/data_steward
@@ -172,9 +140,11 @@ jobs:
           command: tools/yapf_lint.sh
       - run:
           name: Checking Python lint with Pylint
-          working _directory: ~/curation
-          command: pylint -E data_steward tests
-      #- lint_teardown
+          working_directory: ~/curation
+          command: |
+            env
+            pylint -E data_steward tests
+      - lint_teardown
 
   unit_test:
     <<: *job_defaults
@@ -248,13 +218,13 @@ workflows:
   test:
     jobs:
       - linting_checks
-      - unit_test
-      - integration_test:
-          filters:
-            branches:
-              # This would cause too much noise to run on commit, run nightly
-              # instead per below workflow.
-              ignore: develop
+#      - unit_test
+#      - integration_test:
+#          filters:
+#            branches:
+#              # This would cause too much noise to run on commit, run nightly
+#              # instead per below workflow.
+#              ignore: develop
   nightly:
     triggers:
       - schedule:
