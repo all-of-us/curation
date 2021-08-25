@@ -120,10 +120,10 @@ jobs:
     executor: python/default
     steps:
       - checkout:
-          path: ~/
+          path: ~/curation
       - python/install-packages:
           pkg-manager: poetry
-          app-dir: ~/curation/data_steward
+          app-dir: ~/curation
           include-branch-in-cache-key: false
           venv-cache: true
       - run:
