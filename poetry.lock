@@ -1066,6 +1066,19 @@ optional = false
 python-versions = "*"
 
 [[package]]
+name = "mock"
+version = "4.0.3"
+description = "Rolling backport of unittest.mock for all Pythons"
+category = "dev"
+optional = false
+python-versions = ">=3.6"
+
+[package.extras]
+build = ["twine", "wheel", "blurb"]
+docs = ["sphinx"]
+test = ["pytest (<5.4)", "pytest-cov"]
+
+[[package]]
 name = "modernize"
 version = "0.7"
 description = "A hack on top of 2to3 for modernizing code for hybrid codebases."
@@ -2176,7 +2189,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=1.2.3)", "pytest-flake8", "pyt
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7.1,<3.10"
-content-hash = "824d037cd9a15e64536543fe4a6ddca462febdec668cec45f10e6d6015387826"
+content-hash = "4d4660f076608aeaf8316c21f4da3d7a30be6fc0e3bf29813e3f60852810ecf5"
 
 [metadata.files]
 aiohttp = [
@@ -2868,6 +2881,10 @@ mistune = [
 ]
 mo-future = [
     {file = "mo-future-2.48.19205.tar.gz", hash = "sha256:fbf214dd1e1bbbab196d36b4baf9420229baab00c8eae11c623b616953caf12f"},
+]
+mock = [
+    {file = "mock-4.0.3-py3-none-any.whl", hash = "sha256:122fcb64ee37cfad5b3f48d7a7d51875d7031aaf3d8be7c42e2bee25044eee62"},
+    {file = "mock-4.0.3.tar.gz", hash = "sha256:7d3fbbde18228f4ff2f1f119a45cdffa458b4c0dee32eb4d2bb2f82554bac7bc"},
 ]
 modernize = [
     {file = "modernize-0.7-py2.py3-none-any.whl", hash = "sha256:74083e971b0b33dcdbfbc5e25628ae7673aa9ede2ce9b7e86fe6a3e52b26c550"},
