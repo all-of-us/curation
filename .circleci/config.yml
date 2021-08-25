@@ -113,7 +113,9 @@ jobs:
     <<: *job_defaults
     steps:
       - test_setup
-      - run: Set up coverage result directories
+      - run: 
+          name: Set up coverage result directories
+          working_directory: ~/curation
           command: |
             mkdir -p tests/results/coverage/unit/xml 
             mkdir -p tests/results/coverage/unit/html 
@@ -127,7 +129,7 @@ jobs:
 #          environment:
 #            BUCKET_NAME_FAKE: curation-fake
 #            RDR_DATASET_ID: curation_fake_rdr
-          command: |
+          command:
             poetry run ./tests/run_tests.sh -s unit
           no_output_timeout: 300s
           when:  always
