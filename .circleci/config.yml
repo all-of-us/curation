@@ -142,8 +142,7 @@ jobs:
           name: Checking Python lint with Pylint
           working_directory: ~/curation
           command: |
-            env
-            pylint -E data_steward tests
+            poetry run pylint -E data_steward tests
       - lint_teardown
 
   unit_test:

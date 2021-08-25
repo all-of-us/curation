@@ -4,6 +4,7 @@ version = "0.4.6"
 description = "Packages and scripts to ingest EHR, Fitbit, and Survey data from multiple sources.  The pipeline aggregates this disparate data into multipe datasets for release."
 authors = ["Lauren Biggers <lauren.r.biggers@vumc.org>"]
 license = "MIT"
+packages = [{include = "data_steward"}, {include = "tests"}]
 
 [tool.poetry.dependencies]
 python = "^3.7.1,<3.10"
