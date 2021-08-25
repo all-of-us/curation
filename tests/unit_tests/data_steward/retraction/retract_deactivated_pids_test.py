@@ -91,9 +91,14 @@ class RetractDeactivatedEHRDataBqTest(TestCase):
             f"{self.project_id}.{self.deactivated_pids_dataset_id}.{self.deactivated_pids_table}"
         )
 
-        queries = rdp.generate_queries(self.mock_bq_client, self.project_id,
-                                       self.dataset_id, pid_rid_table_ref,
-                                       deactivated_pids_table_ref)
+        queries = rdp.generate_queries(
+            client=self.mock_bq_client,
+            project_id=self.project_id,
+            dataset_id=self.dataset_id,
+            sandbox_dataset_id=self.dataset_id,
+            deact_pids_table_ref=deactivated_pids_table_ref,
+            pid_rid_table_ref=pid_rid_table_ref,
+        )
 
         mock_table_cols.called_once_with(self.mock_bq_client, self.project_id,
                                          self.dataset_id)

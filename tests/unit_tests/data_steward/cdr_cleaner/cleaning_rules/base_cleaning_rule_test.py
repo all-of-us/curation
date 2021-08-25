@@ -15,6 +15,7 @@ from mock import patch
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, \
     get_delete_empty_sandbox_tables_queries, DROP_EMPTY_SANDBOX_TABLES_QUERY
 from constants.cdr_cleaner import clean_cdr as cdr_consts
+import test_util
 
 
 class Inheritance(BaseCleaningRule):
@@ -463,7 +464,7 @@ class BaseCleaningRuleTest(unittest.TestCase):
             KeyError('bad fake key'),
             oauth2client.client.HttpAccessTokenRefreshError(
                 'bad refresh token'),
-            googleapiclient.errors.HttpError(b'404', b'bad http error')
+            test_util.mock_google_http_error(status_code=404)
         ]
         mock_query_list.side_effect = error_list
 

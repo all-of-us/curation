@@ -8,10 +8,11 @@ from unittest import TestCase, mock
 import googleapiclient.errors
 
 import common
-import resources
 from constants.validation import hpo_report as report_consts
 from constants.validation import main as main_consts
 from constants.validation.participants import identity_match as id_match_consts
+import resources
+import test_util
 from validation import main
 
 
@@ -215,8 +216,8 @@ class ValidationMainTest(TestCase):
                                          mock_hpo_bucket):
         http_error_string = 'fake http error'
         mock_hpo_csv.return_value = [{'hpo_id': self.hpo_id}]
-        mock_list_bucket.side_effect = googleapiclient.errors.HttpError(
-            http_error_string, http_error_string.encode())
+        mock_list_bucket.side_effect = test_util.mock_google_http_error(
+            content=http_error_string.encode())
         with main.app.test_client() as c:
             c.get(main_consts.PREFIX + 'ValidateAllHpoFiles')
             expected_call = mock.call(
@@ -470,7 +471,9 @@ class ValidationMainTest(TestCase):
             return []
 
         def query_rows_error(q):
-            raise googleapiclient.errors.HttpError(500, b'bar', 'baz')
+            raise test_util.mock_google_http_error(status_code=500,
+                                                   reason='baz',
+                                                   content=b'bar')
 
         def upload_string_to_gcs(bucket, filename, content):
             return True

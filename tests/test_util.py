@@ -1,7 +1,9 @@
 import inspect
 import os
 from io import open
+from typing import Optional
 
+import googleapiclient.errors
 import requests
 
 import bq_utils
@@ -470,3 +472,53 @@ class FakeRuleClass(BaseCleaningRule):
 
 def fake_rule_func(project_id, dataset_id, sandbox_dataset_id):
     pass
+
+
+class FakeHTTPResponse(requests.Response):
+
+    def __init__(self,
+                 url: str = 'https://127.0.0.1',
+                 status_code: int = 200,
+                 reason: str = 'OK',
+                 content: bytes = b'OK',
+                 **kwargs):
+        """
+        Build yerself a fake response
+        :param url: final url of request, if ye want.
+        :param status_code: response code
+        :param reason: response code reason value
+        :param content: response content bytes
+        :param **kwargs: anything else you wanna set.
+        """
+        # init to set up default values
+        super().__init__()
+
+        # set a few specific values
+        self.url = url
+        self.status_code = status_code
+        self.reason = reason
+        self._content = content
+
+        # loop through any / all others and set them.
+        for k, v in kwargs.items():
+            if k == 'reason' or k == 'content' or k == 'status_code' or k == 'url':
+                continue
+            else:
+                self.k = v
+
+
+def mock_google_http_error(status_code: int = 418,
+                           content: bytes = b'418: I\'m a teapot',
+                           uri: Optional[str] = None,
+                           **resp_kwargs) -> googleapiclient.errors.HttpError:
+    """
+    Creates a mock google api client http error, complete with mock'd http response
+    :param status_code: Code to set in mock response
+    :param content: Content, as bytes, of mock response
+    :param uri: (Optional) URI of mock request
+    :param resp_kwargs: Other fields to apply to
+    """
+    return googleapiclient.errors.HttpError(FakeHTTPResponse(
+        status_code=status_code, content=content, uri=uri, **resp_kwargs),
+                                            content=content,
+                                            uri=uri)

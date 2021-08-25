@@ -126,9 +126,9 @@ jobs:
           name: Run unit tests with poetry
           working_directory: ~/curation
           # TODO: These env vars should not be required to run the unit tests.
-#          environment:
+          environment:
 #            BUCKET_NAME_FAKE: curation-fake
-#            RDR_DATASET_ID: curation_fake_rdr
+            RDR_DATASET_ID: curation_fake_rdr
           command:
             poetry run ./tests/run_tests.sh -s unit
           no_output_timeout: 300s

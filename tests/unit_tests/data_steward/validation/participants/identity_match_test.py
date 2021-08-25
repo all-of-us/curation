@@ -8,6 +8,7 @@ import googleapiclient
 from mock import call, patch
 
 # Project imports
+import test_util
 from constants import bq_utils as bq_consts
 from constants.validation.participants import identity_match as consts
 from validation.participants import identity_match as id_match
@@ -286,8 +287,8 @@ class IdentityMatchTest(unittest.TestCase):
 
     def test_match_participants_same_participant_simulate_ehr_read_errors(self):
         # pre conditions
-        self.mock_ehr_person.side_effect = googleapiclient.errors.HttpError(
-            500, b'bar', b'baz')
+        self.mock_ehr_person.side_effect = test_util.mock_google_http_error(
+            status_code=500, content=b'bar', reason='baz')
 
         # test
         id_match.match_participants(self.project, self.rdr_dataset,
@@ -327,8 +328,8 @@ class IdentityMatchTest(unittest.TestCase):
 
     def test_match_participants_same_participant_simulate_write_errors(self):
         # pre conditions
-        self.mock_table_write.side_effect = googleapiclient.errors.HttpError(
-            500, b'bar', b'baz')
+        self.mock_table_write.side_effect = test_util.mock_google_http_error(
+            status_code=500, content=b'bar', reason='baz')
 
         # test
         id_match.match_participants(self.project, self.rdr_dataset,
@@ -369,8 +370,8 @@ class IdentityMatchTest(unittest.TestCase):
     def test_match_participants_same_participant_simulate_location_pii_read_errors(
         self):
         # pre conditions
-        self.mock_location_pii.side_effect = googleapiclient.errors.HttpError(
-            500, b'bar', b'baz')
+        self.mock_location_pii.side_effect = test_util.mock_google_http_error(
+            status_code=500, content=b'bar', reason='baz')
 
         # test
         id_match.match_participants(self.project, self.rdr_dataset,
@@ -410,8 +411,8 @@ class IdentityMatchTest(unittest.TestCase):
 
     def test_match_participants_same_participant_simulate_pii_read_errors(self):
         # pre conditions
-        self.mock_pii_values.side_effect = googleapiclient.errors.HttpError(
-            500, b'bar', b'baz')
+        self.mock_pii_values.side_effect = test_util.mock_google_http_error(
+            status_code=500, content=b'bar', reason='baz')
 
         # test
         id_match.match_participants(self.project, self.rdr_dataset,
