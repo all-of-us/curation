@@ -54,49 +54,13 @@ commands:
               && ./google-cloud-sdk/bin/gcloud components update --quiet
             # finally, add to path
 
-      # Dependencies
-      - restore_cache:
-          keys:
-          - pip-cache-{{ checksum "requirements.txt" }}-{{ checksum "dev_requirements.txt" }}
-          - pip-cache-
-      - run:
-          working_directory: ~/curation/data_steward
-          name: Create virtualenv and install requirements
-          command: |
-            pyenv virtualenv curation_venv
-            eval "$(pyenv init -)"
-            eval "$(pyenv virtualenv-init -)"
-            pyenv local curation_venv
-            pyenv virtualenvs
-            pip install --upgrade pip setuptools \
-            && pip install -r requirements.txt \
-            && pip install -r dev_requirements.txt 
-            echo "-----------------------"
-            echo "export PYTHONPATH=${HOME}/curation/data_steward:${HOME}/curation" >> ${BASH_ENV}
-            echo $?
-            echo "export PYTHONPATH=${HOME}/curation/data_steward:${HOME}/curation"
-            echo $?
-            echo "-----------------------"
-            echo "eval \"$(pyenv init -)\"" >> ${BASH_ENV}
-            echo $?
-            echo "-----------------------"
-            echo "eval \"$(pyenv virtualenv-init -)\"" >> ${BASH_ENV}
-            echo $?
-            echo "-----------------------"
-            echo "pyenv activate curation_venv" >> ${BASH_ENV}
-            echo $?
-            echo "-----------------------"
-            echo $?
-      - run:
-          working_directory: ~/curation/data_steward
-          name: Show env vars and files
-          command: env && ls -a
+      - python/install-packages:
+          pkg-manager: poetry
+          app-dir: ~/curation
+          include-branch-in-cache-key: false
+          venv-cache: true
   test_teardown:
     steps:
-      - save_cache:
-          paths:
-            ~/curation_venv
-          key: pip-cache-{{ checksum "requirements.txt" }}-{{ checksum "dev_requirements.txt" }}
       - run:
           name: Combine Coverage Results
           working_directory: ~/curation
@@ -157,12 +121,12 @@ jobs:
             BUCKET_NAME_FAKE: curation-fake
             RDR_DATASET_ID: curation_fake_rdr
           command: |
-            mkdir -p tests/results/coverage/unit/xml
-            mkdir -p tests/results/coverage/unit/html
+            mkdir -p tests/results/coverage/unit/xml \
+            && mkdir -p tests/results/coverage/unit/html \
             # store test results in junit format to allow CircleCI Test Summary reporting
             #  https://circleci.com/docs/2.0/collect-test-data/
-            mkdir -p tests/results/junit/unit
-            ./tests/run_tests.sh -s unit
+            && mkdir -p tests/results/junit/unit
+            poetry run ./tests/run_tests.sh -s unit
           no_output_timeout: 300s
           when:  always
       - test_teardown
@@ -217,7 +181,7 @@ workflows:
   test:
     jobs:
       - linting_checks
-#      - unit_test
+      - unit_test
 #      - integration_test:
 #          filters:
 #            branches:
