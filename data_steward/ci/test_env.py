@@ -71,10 +71,10 @@ def main(raw_args=None):
 
     config = get_environment_config()
 
-    if args.get('action') == 'setup':
+    if args.action == 'setup':
         create_test_buckets(config, BUCKET_NAMES)
         create_test_datasets(config, DATASET_NAMES)
-    elif args.get('action') == 'teardown':
+    elif args.action == 'teardown':
         delete_test_datasets(config, DATASET_NAMES)
         delete_test_buckets(config, BUCKET_NAMES)
 
