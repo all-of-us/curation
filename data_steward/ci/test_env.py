@@ -54,18 +54,20 @@ def get_args(raw_args=None):
     parser = argparse.ArgumentParser(
         "Test dataset and bucket setup and teardown script")
     parser.add_argument('action',
-                        choices=('setup', 'teardown'),
-                        help=('Action to take.  Either \'setup\', (create), or '
-                              '\'teardown\', (delete), test resources.'))
+                        choices=('setup', 'teardown', 'cleanup'),
+                        help=('Action to take.  Either \'setup\', (create), '
+                              '\'teardown\', (delete), or \'cleanup\' (remove old) '
+                              'test resources.  \'cleanup\' targets buckets older '
+                              '90 days.'))
     test_args = parser.parse_args()
     return test_args
 
 
 def main(raw_args=None):
     """
-    Controller function for creating test resources.
+    Controller function for test resources.
 
-    Oversees creating test buckets and datasets.
+    Oversees creation and cleanup of test buckets and datasets.
     """
     args = get_args(raw_args)
 
@@ -77,6 +79,12 @@ def main(raw_args=None):
     elif args.action == 'teardown':
         delete_test_datasets(config, DATASET_NAMES)
         delete_test_buckets(config, BUCKET_NAMES)
+    elif args.action == 'cleanup':
+        delete_old_test_buckets(config)
+    else:
+        print(f'action \'{action}\' not understood.  nothing done.')
+
+    print('Test resource controller done.')
 
 
 if __name__ == "__main__":

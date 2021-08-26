@@ -28,32 +28,11 @@ commands:
     steps:
       - checkout:
           path: ~/curation
-      # Prepare for artifact and test results  collection equivalent to how it was done on 1.0.
+      # Prepare for artifact and test results collection equivalent to how it was done on 1.0.
       - run: mkdir -p $CIRCLE_ARTIFACTS
       - run:
           name: Install google-cloud-sdk
-          command: |
-            # don't suppress errors.
-            set -e
-            # TODO: this is done as there is currently (as of 2021.08.19) no 20.04 release in the google repo for...reasons
-            # TODO: parameterize gsdk version and sha
-            wget https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-353.0.0-linux-x86_64.tar.gz
-            # verify integrity
-            echo 94fcb77632fed5b6fa61d1bf6c619cbfceb63f3d95911bfe15e7caa401df81c0 \
-              google-cloud-sdk-353.0.0-linux-x86_64.tar.gz | sha256sum --check --status && if [[ "$?" -ne 0 ]]; then exit 1; fi
-            # if we get here, assume things are ok and do the following:
-            # 1. untar source
-            # 2. execute installer
-            # 3. cd back to home
-            # 4. update components (should help us not have to manually manage sha and wget version)
-            tar -xzvf google-cloud-sdk-353.0.0-linux-x86_64.tar.gz \
-              && cd ./google-cloud-sdk \
-              && ./install.sh --quiet \
-              && echo "source $(pwd)/path.bash.inc" >> /home/circleci/.profile \
-              && cd .. \
-              && ./google-cloud-sdk/bin/gcloud components update --quiet
-            # finally, add to path
-
+          command: ./tools/install_google_cloud_sdk.sh
       - python/install-packages:
           pkg-manager: poetry
           app-dir: ~/curation
@@ -64,7 +43,7 @@ commands:
       - run:
           name: Combine Coverage Results
           working_directory: ~/curation
-          command: |
+          command:
               . tests/combine_coverage.sh
           no_output_timeout: 30s
       # Save test results
@@ -105,7 +84,7 @@ jobs:
       - run:
           name: Checking Python lint with Pylint
           working_directory: ~/curation
-          command: |
+          command:
             PYTHONPATH=./data_steward:./tests:$PYTHONPATH poetry run pylint -E data_steward tests
       - lint_teardown
 
@@ -113,15 +92,10 @@ jobs:
     <<: *job_defaults
     steps:
       - test_setup
-      - run: 
+      - run:
           name: Set up coverage result directories
           working_directory: ~/curation
-          command: |
-            mkdir -p tests/results/coverage/unit/xml 
-            mkdir -p tests/results/coverage/unit/html 
-            # store test results in junit format to allow CircleCI Test Summary reporting
-            #  https://circleci.com/docs/2.0/collect-test-data/
-            mkdir -p tests/results/junit/unit
+          command: ./tools/make_report_directories.sh unit
       - run:
           name: Run unit tests with poetry
           working_directory: ~/curation
@@ -149,38 +123,40 @@ jobs:
           command: ./init_env.sh
       - run:
           name: Create buckets and datasets
-          command: |
-            cd ~/curation/data_steward
+          working_directory: ~/curation/data_steward
+          command:
             PYTHONPATH=./:$PYTHONPATH poetry run python ./ci/test_env.py setup
-      - run: 
+      - run:
           name: Set up coverage result directories
           working_directory: ~/curation
-          command: |
-            mkdir -p tests/results/coverage/integration/xml 
-            mkdir -p tests/results/coverage/integration/html 
-            # store test results in junit format to allow CircleCI Test Summary reporting
-            #  https://circleci.com/docs/2.0/collect-test-data/
-            mkdir -p tests/results/junit/integration
-#      - run:
-#          name: Run integration tests
-#          working_directory: ~/curation
-#          command: |
-#            t=$(git log -1 --pretty=%B)
-#            # If this gets triggered on develop or master, let it run. Note
-#            # however that on develop, this job is only triggered nightly.
-#            # Always run on PRs and on any repo commits that include "all tests".
-#            if [[ "${CIRCLE_BRANCH}" == "develop" ]] || [[ "${CIRCLE_BRANCH}" == "master" ]] || \
-#                [[ "$t" == *"all tests"* ]] || [[ -n "${CIRCLE_PULL_REQUEST}" ]] || [[ -n "${CIRCLE_PULL_REQUESTS}" ]];
-#            then
-#                poetry run ./tests/run_tests.sh -s integration
-#            else
-#                echo "Skipping integration tests"
-#            fi
-#          no_output_timeout: 3000s
+          command: ./tools/make_report_directories.sh integration
+      - run:
+          name: Run integration tests
+          working_directory: ~/curation
+          command: ./tools/run_circleci_integration_tests.sh
+          no_output_timeout: 3000s
       - run:
           name: Delete buckets and datasets
           command: PYTHONPATH=./:$PYTHONPATH poetry run python ./ci/test_env.py teardown
           when: on_success
+      - test_teardown
+
+  remove_old_test_resources:
+    <<: *job_defaults
+    steps:
+      - test_setup
+      # Setup GCP access and create cloud resources as needed.
+      - run:
+          name: Activate service account
+          command: |
+            source /home/circleci/curation/data_steward/google-cloud-sdk/path.bash.inc
+            ./ci/activate_creds.sh ${HOME}/gcloud-credentials-key.json
+      - run:
+          name: Set up environment variables
+          command: ./init_env.sh
+      - run:
+          name: Delete old buckets
+          command: PYTHONPATH=./:$PYTHONPATH poetry run python ./ci/test_env.py cleanup
       - test_teardown
 
 workflows:
@@ -204,3 +180,4 @@ workflows:
               only: develop
     jobs:
       - integration_test
+      - remove_old_test_resources

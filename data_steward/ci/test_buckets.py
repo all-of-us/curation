@@ -5,6 +5,8 @@ Creates buckets with a 30 day lifecycle.
 Bucket deletion and modification functions (for testing purposes) should be
 added to this module.
 """
+from datetime import datetime, timedelta
+
 from google.cloud import storage
 from google.cloud.exceptions import Conflict, NotFound
 from google.oauth2 import service_account
@@ -108,13 +110,11 @@ def _delete_bucket(config, bucket_name):
     try:
         bucket = storage_client.get_bucket(f'gs://{bucket_name}')
     except NotFound:
-        print(
-            f"Bucket gs://'{bucket_name}' does not exist and cannot be deleted."
-        )
+        print(f"Bucket 'gs://{bucket_name}' does not exist and cannot be deleted.")
     else:
         # remove bucket contents and delete bucket
         bucket.delete(force=True, client=storage_client)
-        print(f"Bucket gs://{bucket.name} deleted.")
+        print(f"Bucket 'gs://{bucket.name}' deleted.")
 
 
 def delete_test_buckets(config, buckets):
@@ -131,3 +131,25 @@ def delete_test_buckets(config, buckets):
     for name_id in buckets:
         name = config.get(name_id)
         _delete_bucket(config, name)
+
+def delete_old_test_buckets(config):
+    """
+    Delete test buckets older than 90 days.
+
+    Limit to removing 500 per call to prevent overloading the system.
+
+    :param config: environment variables dictionary
+    """
+    storage_client = get_client(config.get('APPLICATION_ID', 'NOT SET'),
+                                config.get('GOOGLE_APPLICATION_CREDENTIALS'))
+
+    old_buckets = []
+    for bucket in storage_client.list_buckets(500):
+        if bucket.time_created < datetime.now() - timedelta(days=90):
+            old_buckets.append(bucket)
+
+    for bucket in old_buckets:
+        if list(storage_client.list_blobs(bucket, max_results=2):
+            print(f"Bucket 'gs://{bucket.name}' is not empty.  Skipping removal.")
+        else:
+            _delete_bucket(config, bucket.name)
