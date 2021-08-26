@@ -6,7 +6,7 @@ Bucket deletion and modification functions (for testing purposes) should be
 added to this module.
 """
 from google.cloud import storage
-from google.cloud.exceptions import Conflict
+from google.cloud.exceptions import Conflict, NotFound
 from google.oauth2 import service_account
 
 CLIENT = None
@@ -106,13 +106,15 @@ def _delete_bucket(config, bucket_name):
 
     # Get the bucket
     try:
-        bucket = storage_client.get_bucket(bucket_name)
-    except google.cloud.exceptions.NotFound:
-        print(f"Bucket '{bucket_name}' does not exist and cannot be deleted.")
+        bucket = storage_client.get_bucket(f'gs://{bucket_name}')
+    except NotFound:
+        print(
+            f"Bucket gs://'{bucket_name}' does not exist and cannot be deleted."
+        )
     else:
         # remove bucket contents and delete bucket
         bucket.delete(force=True, client=storage_client)
-        print(f"Bucket {bucket.name} deleted.")
+        print(f"Bucket gs://{bucket.name} deleted.")
 
 
 def delete_test_buckets(config, buckets):
