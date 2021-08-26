@@ -110,7 +110,9 @@ def _delete_bucket(config, bucket_name):
     try:
         bucket = storage_client.get_bucket(f'gs://{bucket_name}')
     except NotFound:
-        print(f"Bucket 'gs://{bucket_name}' does not exist and cannot be deleted.")
+        print(
+            f"Bucket 'gs://{bucket_name}' does not exist and cannot be deleted."
+        )
     else:
         # remove bucket contents and delete bucket
         bucket.delete(force=True, client=storage_client)
@@ -132,6 +134,7 @@ def delete_test_buckets(config, buckets):
         name = config.get(name_id)
         _delete_bucket(config, name)
 
+
 def delete_old_test_buckets(config):
     """
     Delete test buckets older than 90 days.
@@ -149,7 +152,8 @@ def delete_old_test_buckets(config):
             old_buckets.append(bucket)
 
     for bucket in old_buckets:
-        if list(storage_client.list_blobs(bucket, max_results=2):
-            print(f"Bucket 'gs://{bucket.name}' is not empty.  Skipping removal.")
+        if list(storage_client.list_blobs(bucket, max_results=2)):
+            print(
+                f"Bucket 'gs://{bucket.name}' is not empty.  Skipping removal.")
         else:
             _delete_bucket(config, bucket.name)
