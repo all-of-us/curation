@@ -7,8 +7,8 @@ This includes coordinating the creation of buckets and datasets.
 import argparse
 import os
 
-from ci.test_buckets import create_test_buckets
-from ci.test_datasets import create_test_datasets
+from ci.test_buckets import create_test_buckets, delete_test_buckets
+from ci.test_datasets import create_test_datasets, delete_test_datasets
 
 DATASET_NAMES = [
     'RDR_DATASET_ID', 'COMBINED_DATASET_ID', 'BIGQUERY_DATASET_ID',
