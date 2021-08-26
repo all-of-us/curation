@@ -161,22 +161,22 @@ jobs:
             # store test results in junit format to allow CircleCI Test Summary reporting
             #  https://circleci.com/docs/2.0/collect-test-data/
             mkdir -p tests/results/junit/integration
-      - run:
-          name: Run integration tests
-          working_directory: ~/curation
-          command: |
-            t=$(git log -1 --pretty=%B)
-            # If this gets triggered on develop or master, let it run. Note
-            # however that on develop, this job is only triggered nightly.
-            # Always run on PRs and on any repo commits that include "all tests".
-            if [[ "${CIRCLE_BRANCH}" == "develop" ]] || [[ "${CIRCLE_BRANCH}" == "master" ]] || \
-                [[ "$t" == *"all tests"* ]] || [[ -n "${CIRCLE_PULL_REQUEST}" ]] || [[ -n "${CIRCLE_PULL_REQUESTS}" ]];
-            then
-                poetry run ./tests/run_tests.sh -s integration
-            else
-                echo "Skipping integration tests"
-            fi
-          no_output_timeout: 3000s
+#      - run:
+#          name: Run integration tests
+#          working_directory: ~/curation
+#          command: |
+#            t=$(git log -1 --pretty=%B)
+#            # If this gets triggered on develop or master, let it run. Note
+#            # however that on develop, this job is only triggered nightly.
+#            # Always run on PRs and on any repo commits that include "all tests".
+#            if [[ "${CIRCLE_BRANCH}" == "develop" ]] || [[ "${CIRCLE_BRANCH}" == "master" ]] || \
+#                [[ "$t" == *"all tests"* ]] || [[ -n "${CIRCLE_PULL_REQUEST}" ]] || [[ -n "${CIRCLE_PULL_REQUESTS}" ]];
+#            then
+#                poetry run ./tests/run_tests.sh -s integration
+#            else
+#                echo "Skipping integration tests"
+#            fi
+#          no_output_timeout: 3000s
       - run:
           name: Delete buckets and datasets
           command: PYTHONPATH=./:$PYTHONPATH poetry run python ./ci/test_env.py teardown
