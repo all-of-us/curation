@@ -42,12 +42,14 @@ commands:
             echo 94fcb77632fed5b6fa61d1bf6c619cbfceb63f3d95911bfe15e7caa401df81c0 \
               google-cloud-sdk-353.0.0-linux-x86_64.tar.gz | sha256sum --check --status && if [[ "$?" -ne 0 ]]; then exit 1; fi
             # if we get here, assume things are ok and do the following:
-            #  1. untar source
-            #  2. execute installer
-            #  3. add path modifier to .profile
-            #  5. cd back to home
-            #  6. update components (should help us not have to manually manage sha and wget version)
-            tar -xzvf google-cloud-sdk-353.0.0-linux-x86_64.tar.gz \
+            # 1. untar source
+            # 2. delete tarball
+            # 3. execute installer
+            # 4. add gsdk path helper to runtime user shell .profile
+            # 5. cd back to home
+            # 6. update components (should help us not have to manually manage sha and wget version)
+            tar -xzf google-cloud-sdk-353.0.0-linux-x86_64.tar.gz \
+              && rm google-cloud-sdk-353.0.0-linux-x86_64.tar.gz \
               && cd ./google-cloud-sdk \
               && ./install.sh --quiet \
               && echo "source $(pwd)/path.bash.inc" >> /home/circleci/.profile \
