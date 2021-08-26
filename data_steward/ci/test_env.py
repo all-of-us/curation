@@ -55,7 +55,6 @@ def get_args(raw_args=None):
         "Test dataset and bucket setup and teardown script")
     parser.add_argument('action',
                         choices=('setup', 'teardown'),
-                        dest='action',
                         help=('Action to take.  Either \'setup\', (create), or '
                               '\'teardown\', (delete), test resources.'))
     test_args = parser.parse_args()
