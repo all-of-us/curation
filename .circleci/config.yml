@@ -32,7 +32,8 @@ commands:
       - run: mkdir -p $CIRCLE_ARTIFACTS
       - run:
           name: Install google-cloud-sdk
-          command: ./tools/install_google_cloud_sdk.sh
+          working_directory: ~/curation
+          command: source tools/install_google_cloud_sdk.sh
       - python/install-packages:
           pkg-manager: poetry
           app-dir: ~/curation
@@ -95,7 +96,7 @@ jobs:
       - run:
           name: Set up coverage result directories
           working_directory: ~/curation
-          command: ./tools/make_report_directories.sh unit
+          command: source tools/make_report_directories.sh unit
       - run:
           name: Run unit tests with poetry
           working_directory: ~/curation
@@ -129,11 +130,11 @@ jobs:
       - run:
           name: Set up coverage result directories
           working_directory: ~/curation
-          command: ./tools/make_report_directories.sh integration
+          command: source tools/make_report_directories.sh integration
       - run:
           name: Run integration tests
           working_directory: ~/curation
-          command: ./tools/run_circleci_integration_tests.sh
+          command: source tools/run_circleci_integration_tests.sh
           no_output_timeout: 3000s
       - run:
           name: Delete buckets and datasets

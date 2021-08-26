@@ -53,12 +53,13 @@ def get_environment_config():
 def get_args(raw_args=None):
     parser = argparse.ArgumentParser(
         "Test dataset and bucket setup and teardown script")
-    parser.add_argument('action',
-                        choices=('setup', 'teardown', 'cleanup'),
-                        help=('Action to take.  Either \'setup\', (create), '
-                              '\'teardown\', (delete), or \'cleanup\' (remove old) '
-                              'test resources.  \'cleanup\' targets buckets older '
-                              '90 days.'))
+    parser.add_argument(
+        'action',
+        choices=('setup', 'teardown', 'cleanup'),
+        help=('Action to take.  Either \'setup\', (create), '
+              '\'teardown\', (delete), or \'cleanup\' (remove old) '
+              'test resources.  \'cleanup\' targets buckets older '
+              '90 days.'))
     test_args = parser.parse_args()
     return test_args
 
