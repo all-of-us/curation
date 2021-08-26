@@ -173,8 +173,8 @@ class RetractUtilsTest(unittest.TestCase):
             ru.get_mapping_tables(common.EXT,
                                   self.mapping_tables + self.other_tables), [])
 
-    @mock.patch('utils.bq.list_datasets')
-    def test_get_datasets_list(self, mock_all_datasets):
+    @mock.patch('utils.bq.get_client')
+    def test_get_datasets_list(self, mock_get_client):
         #pre-conditions
         removed_datasets = [
             data_ref('foo', 'vocabulary20201010'),
@@ -187,7 +187,9 @@ class RetractUtilsTest(unittest.TestCase):
             data_ref('foo', '2018q4r1_rdr')
         ]
         expected_list = [dataset.dataset_id for dataset in expected_datasets]
-        mock_all_datasets.return_value = removed_datasets + expected_datasets
+        mock_client = mock.MagicMock()
+        mock_get_client.return_value = mock_client
+        mock_client.list_datasets.return_value = removed_datasets + expected_datasets
 
         # test all_datasets flag
         ds_list = ru.get_datasets_list('foo', ['all_datasets'])
@@ -293,14 +295,15 @@ class RetractUtilsTest(unittest.TestCase):
         self.assertNotEqual(ru.get_dataset_type('ehr_43269'), common.COMBINED)
         self.assertNotEqual(ru.get_dataset_type('ehr_43269'), common.OTHER)
 
-    @mock.patch('utils.bq.list_datasets')
-    def test_get_dataset_ids_to_target(self, mock_datasets_list):
+    @mock.patch('retraction.retract_utils.bq.get_client')
+    def test_get_dataset_ids_to_target(self, mock_get_client):
         dataset_id_1 = 'dataset_id_1'
         dataset_id_2 = 'dataset_id_2'
         dataset_1 = mock.Mock(spec=['dataset_1'], dataset_id=dataset_id_1)
         dataset_2 = mock.Mock(spec=['dataset_2'], dataset_id=dataset_id_2)
-        mock_datasets_list.return_value = [dataset_1, dataset_2]
-
+        mock_client = mock.MagicMock()
+        mock_get_client.return_value = mock_client
+        mock_client.list_datasets.return_value = [dataset_1, dataset_2]
         expected = [dataset_id_1, dataset_id_2]
         actual = ru.get_dataset_ids_to_target(self.project_id)
         self.assertListEqual(expected, actual)
