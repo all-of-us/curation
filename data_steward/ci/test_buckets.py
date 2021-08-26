@@ -29,7 +29,7 @@ def get_client(project_id, app_creds):
     return CLIENT
 
 
-def create_bucket(config, bucket_name):
+def _create_bucket(config, bucket_name):
     """
     Create a bucket in the test project.
 
@@ -37,7 +37,8 @@ def create_bucket(config, bucket_name):
         the test bucket.
     :param bucket_name:  the string used to name the bucket.
     """
-    storage_client = get_client('aou-res-curation-test',
+    app_id = config.get('APPLICATION_ID', 'NOT SET')
+    storage_client = get_client(app_id,
                                 config.get('GOOGLE_APPLICATION_CREDENTIALS'))
 
     # Creates the new bucket
@@ -59,8 +60,8 @@ def create_bucket(config, bucket_name):
                 "roles/storage.objectAdmin",
             "members": [
                 "group:all-of-us-data-curation-eng.staging@staging.pmi-ops.org",
-                "serviceAccount:aou-res-curation-test@appspot.gserviceaccount.com",
-                "serviceAccount:circleci-test@aou-res-curation-test.iam.gserviceaccount.com"
+                f"serviceAccount:{app_id}@appspot.gserviceaccount.com",
+                f"serviceAccount:circleci-test@{app_id}.iam.gserviceaccount.com"
             ]
         })
         policy.bindings.append({
@@ -68,13 +69,13 @@ def create_bucket(config, bucket_name):
                 "roles/storage.objectViewer",
             "members": [
                 "group:all-of-us-data-curation-eng.staging@staging.pmi-ops.org",
-                "serviceAccount:aou-res-curation-test@appspot.gserviceaccount.com",
-                "serviceAccount:circleci-test@aou-res-curation-test.iam.gserviceaccount.com"
+                f"serviceAccount:{app_id}@appspot.gserviceaccount.com",
+                f"serviceAccount:circleci-test@{app_id}.iam.gserviceaccount.com"
             ]
         })
         bucket.set_iam_policy(policy)
 
-        print("Bucket {} created.".format(bucket.name))
+        print(f"Bucket {bucket.name} created.")
 
 
 def create_test_buckets(config, buckets):
@@ -87,11 +88,44 @@ def create_test_buckets(config, buckets):
     """
     for name_id in buckets:
         name = config.get(name_id)
-        create_bucket(config, name)
+        _create_bucket(config, name)
 
 
-if __name__ == "__main__":
-    from ci.test_setup import get_environment_config, BUCKET_NAMES
+def _delete_bucket(config, bucket_name):
+    """
+    Delete a bucket and log.
 
-    config = get_environment_config()
-    create_test_buckets(config, BUCKET_NAMES)
+    Delete a bucket and its contents.  If the bucket is not found, report
+    that too.
+
+    :param config: dictionary of environment variables.
+    :param bucket_name: name of the bucket to identify and delete
+    """
+    storage_client = get_client(config.get('APPLICATION_ID', 'NOT SET'),
+                                config.get('GOOGLE_APPLICATION_CREDENTIALS'))
+
+    # Get the bucket
+    try:
+        bucket = storage_client.get_bucket(bucket_name)
+    except google.cloud.exceptions.NotFound:
+        print(f"Bucket '{bucket_name}' does not exist and cannot be deleted.")
+    else:
+        # remove bucket contents and delete bucket
+        bucket.delete(force=True, client=storage_client)
+        print(f"Bucket {bucket.name} deleted.")
+
+
+def delete_test_buckets(config, buckets):
+    """
+    Delete test buckets.
+
+    Delete buckets older than a maximum age that are also empty.
+
+    :param config: a dictionary of environment variables and vaues needed
+        to delete buckets
+    :param buckets: an iterable containing strings to use as bucket names
+        to delete
+    """
+    for name_id in buckets:
+        name = config.get(name_id)
+        _delete_bucket(config, name)

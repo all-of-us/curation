@@ -101,7 +101,7 @@ jobs:
       - run:
           name: Checking Python lint with yapf
           working_directory: ~/curation
-          command: tools/yapf_lint.sh
+          command: poetry run tools/yapf_lint.sh
       - run:
           name: Checking Python lint with Pylint
           working_directory: ~/curation
@@ -151,7 +151,7 @@ jobs:
           name: Create buckets and datasets
           command: |
             cd ~/curation/data_steward
-            PYTHONPATH=./:$PYTHONPATH poetry run python ./ci/test_setup.py
+            PYTHONPATH=./:$PYTHONPATH poetry run python ./ci/test_env.py setup
       - run: 
           name: Set up coverage result directories
           working_directory: ~/curation
@@ -179,7 +179,7 @@ jobs:
           no_output_timeout: 3000s
       - run:
           name: Delete buckets and datasets
-          command: ./ci/teardown.sh
+          command: PYTHONPATH=./:$PYTHONPATH poetry run python ./ci/test_env.py teardown
           when: on_success
       - test_teardown
 

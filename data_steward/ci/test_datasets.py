@@ -65,9 +65,11 @@ def create_datasets(project, config, datasets):
                        config.get('GOOGLE_APPLICATION_CREDENTIALS'))
 
 
-def remove_datasets(project, creds_path, config, datasets):
+def _remove_datasets(project, creds_path, config, datasets):
     """
     Remove datasets from the defined project.
+
+    Remove dataset and any tables from the test project.
 
     :param  project: The project_id to delete datasets from.
     :param creds_path: The filepath to an appropriate credentials file
@@ -105,23 +107,29 @@ def create_test_datasets(config, datasets):
     """
     Create test datasets for automated integration  tests.
 
-    :param config: A dictionary of environment variables  relevant to creating
+    :param config: A dictionary of environment variables relevant to creating
         new datasets.
     :param datasets: An iterable of strings where each string represents a dataset
-        name  to create.
+        name to create.
     """
     project = config.get('APPLICATION_ID')
-    remove_datasets(project, config.get('GOOGLE_APPLICATION_CREDENTIALS'),
-                    config, datasets)
+    _remove_datasets(project, config.get('GOOGLE_APPLICATION_CREDENTIALS'),
+                     config, datasets)
     create_datasets(project, config, datasets)
     vocab_dataset = f"{project}.{config.get('VOCABULARY_DATASET')}"
     dest_prefix = f"{project}.{config.get('BIGQUERY_DATASET_ID')}"
     copy_vocab_tables(vocab_dataset, dest_prefix)
 
 
-if __name__ == "__main__":
-    # only import this if this is running as a standalone module
-    from ci.test_setup import get_environment_config, DATASET_NAMES
+def delete_test_datasets(config, datasets):
+    """
+    Delete datasets created for the test.
 
-    config = get_environment_config()
-    create_test_datasets(config, DATASET_NAMES)
+    :param config: a dictionary of environment variables relevant to deleting
+        test resource datasets.
+    :param datasets: An iterable of strings where each string represents a
+        dataset name to delete.
+    """
+    app_id = config.get('APPLICATION_ID')
+    _remove_datasets(app_id, config.get('GOOGLE_APPLICATION_CREDENTIALS'),
+                     config, datasets)

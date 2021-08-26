@@ -4,6 +4,7 @@ Test resource creation entry module.
 This module coordinates creating resources used in tests.
 This includes coordinating the creation of buckets and datasets.
 """
+import argparse
 import os
 
 from ci.test_buckets import create_test_buckets
@@ -49,16 +50,34 @@ def get_environment_config():
     return config
 
 
-def main():
+def get_args(raw_args=None):
+    parser = argparse.ArgumentParser(
+        "Test dataset and bucket setup and teardown script")
+    parser.add_argument('action',
+                        choices=('setup', 'teardown'),
+                        dest='action',
+                        help=('Action to take.  Either \'setup\', (create), or '
+                              '\'teardown\', (delete), test resources.'))
+    test_args = parser.parse_args()
+    return test_args
+
+
+def main(raw_args=None):
     """
     Controller function for creating test resources.
 
     Oversees creating test buckets and datasets.
     """
+    args = get_args(raw_args)
+
     config = get_environment_config()
 
-    create_test_buckets(config, BUCKET_NAMES)
-    create_test_datasets(config, DATASET_NAMES)
+    if args.get('action') == 'setup':
+        create_test_buckets(config, BUCKET_NAMES)
+        create_test_datasets(config, DATASET_NAMES)
+    elif args.get('action') == 'teardown':
+        delete_test_datasets(config, DATASET_NAMES)
+        delete_test_buckets(config, BUCKET_NAMES)
 
 
 if __name__ == "__main__":
