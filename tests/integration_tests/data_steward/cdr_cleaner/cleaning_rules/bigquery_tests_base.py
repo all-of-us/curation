@@ -152,11 +152,13 @@ class BaseTest:
 
             :param fq_table_name: a fully qualified table name
             """
-            response = self.client.query(
-                f"select count(*) from `{fq_table_name}`")
-            self.assertRaises(gc_exc.GoogleCloudError,
-                              response.result,
-                              timeout=15)
+            stmt = f"select count(*) from `{fq_table_name}`"
+            with self.assertRaises(
+                    gc_exc.GoogleCloudError,
+                    msg=
+                    f'Query "{stmt}" expected to raise table not found exception'
+            ) as cm:
+                self.client.query(stmt).result()
 
         def assertRowIDsMatch(self, fq_table_name, fields, expected_values):
             """

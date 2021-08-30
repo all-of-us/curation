@@ -213,9 +213,10 @@ def retract(gcs_client, pids, bucket, found_files, folder_prefix, force_flag):
                 logging.info(
                     f"{lines_removed} rows retracted from {file_gcs_path}")
                 logging.info(f"Uploading to overwrite...")
-                blob.upload_from_file(retracted_file_string,
-                                      rewind=True,
-                                      content_type='text/csv')
+                new_blob = gcs_bucket.blob(folder_prefix + file_name)
+                new_blob.upload_from_file(retracted_file_string,
+                                          rewind=True,
+                                          content_type='text/csv')
                 logging.info(f"Retraction successful for file {file_gcs_path}")
             else:
                 logging.info(

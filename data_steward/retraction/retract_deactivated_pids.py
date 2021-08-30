@@ -19,13 +19,15 @@ LOGGER = logging.getLogger(__name__)
 
 ISSUE_NUMBERS = ["DC-686", "DC-1184", "DC-1791"]
 
-TABLE_INFORMATION_SCHEMA = JINJA_ENV.from_string("""
+TABLE_INFORMATION_SCHEMA = JINJA_ENV.from_string(  # language=JINJA2
+    """
 SELECT *
 FROM `{{project}}.{{dataset}}.INFORMATION_SCHEMA.COLUMNS`
 """)
 
 # Queries to create tables in associated sandbox with rows that will be removed per cleaning rule
-SANDBOX_QUERY = JINJA_ENV.from_string("""
+SANDBOX_QUERY = JINJA_ENV.from_string(  # language=JINJA2
+    """
 CREATE OR REPLACE TABLE `{{sandbox_ref.project}}.{{sandbox_ref.dataset_id}}.{{sandbox_ref.table_id}}` AS (
 SELECT t.*
 FROM `{{table_ref.project}}.{{table_ref.dataset_id}}.{{table_ref.table_id}}` t
@@ -62,7 +64,8 @@ WHERE COALESCE({{date}}, EXTRACT(DATE FROM {{datetime}})) >= d.deactivated_date
 
 # Queries to truncate existing tables to remove deactivated EHR PIDS, two different queries for
 # tables with standard entry dates vs. tables with start and end dates
-CLEAN_QUERY = JINJA_ENV.from_string("""
+CLEAN_QUERY = JINJA_ENV.from_string(  # language=JINJA2
+    """
 SELECT *
 FROM `{{table_ref.project}}.{{table_ref.dataset_id}}.{{table_ref.table_id}}`
 EXCEPT DISTINCT
@@ -192,6 +195,7 @@ def generate_queries(client,
                                      has_start_date=has_start_date,
                                      **date_cols)
         })
+
         clean_queries.append({
             cdr_consts.QUERY:
                 CLEAN_QUERY.render(table_ref=table_ref,

@@ -74,11 +74,19 @@ class ReportRunnerTest(unittest.TestCase):
         # Testing the content of the HTML page
         with open(self.notebook_html_path, 'r') as f:
             soup = bs(f, parser="lxml", features="lxml")
-            all_div_elements = soup.findAll('div', {"class": "output_text"})
-            self.assertEqual(len(all_div_elements), 1)
-            all_pre_elements = all_div_elements[0].findAll('pre')
-            self.assertEqual(len(all_pre_elements), 1)
-            actual = all_pre_elements[0].get_text().strip()
+            output_divs = soup.findAll('div', {"class": "jp-RenderedText"})
+            output_div_count = len(output_divs)
+            self.assertEqual(
+                output_div_count, 1,
+                f'Expected exactly 1 <div class="jp-RenderedText"> element, saw {output_div_count}'
+            )
+            output_pres = output_divs[0].findAll('pre')
+            output_pres_count = len(output_pres)
+            self.assertEqual(
+                output_pres_count, 1,
+                f'Expected exactly one <pre> element under <div class="jp-RenderedText">, saw {output_pres_count}'
+            )
+            actual = output_pres[0].get_text().strip()
             expected = ', '.join(
                 [f'{k}={v}' for k, v in self.parameters.items()])
             self.assertEqual(actual, expected)
