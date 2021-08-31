@@ -32,7 +32,6 @@ internal_fields_path = os.path.join(fields_path, 'internal')
 mapping_fields_path = os.path.join(internal_fields_path, 'mapping_tables')
 extension_fields_path = os.path.join(fields_path, 'extension_tables')
 aou_files_path = os.path.join(resource_files_path, 'schemas')
-cdm_csv_path = os.path.join(resource_files_path, 'cdm.csv')
 hpo_site_mappings_path = os.path.join(config_path, 'hpo_site_mappings.csv')
 achilles_index_path = os.path.join(resource_files_path, 'curation_report')
 AOU_VOCAB_PATH = os.path.join(resource_files_path, 'aou_vocab')
@@ -109,10 +108,6 @@ def field_mappings_csv():
 
 def value_mappings_csv():
     return csv_to_list(value_mappings_path)
-
-
-def cdm_csv():
-    return csv_to_list(cdm_csv_path)
 
 
 def achilles_index_files():
