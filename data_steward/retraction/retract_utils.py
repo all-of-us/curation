@@ -99,8 +99,9 @@ def get_datasets_list(project_id, dataset_ids_list):
     :return: List of dataset_ids
     :raises: AttributeError if dataset_ids_str does not allow .split()
     """
+    client = bq.get_client(project_id)
     all_dataset_ids = [
-        dataset.dataset_id for dataset in bq.list_datasets(project_id)
+        dataset.dataset_id for dataset in list(client.list_datasets(project_id))
     ]
 
     if not dataset_ids_list or dataset_ids_list == [consts.NONE]:
@@ -322,7 +323,8 @@ def get_dataset_ids_to_target(project_id, dataset_ids=None):
     :param dataset_ids: list identifying datasets or None for all datasets
     :return: List of dataset_ids in the project to target
     """
-    all_datasets = bq.list_datasets(project_id)
+    client = bq.get_client(project_id)
+    all_datasets = list(client.list_datasets(project_id))
     all_dataset_ids = [dataset.dataset_id for dataset in all_datasets]
     result_dataset_ids = []
     if dataset_ids is None:

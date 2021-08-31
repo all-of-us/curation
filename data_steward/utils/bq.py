@@ -306,17 +306,6 @@ def query(q, project_id=None, use_cache=False):
     return client.query(q, job_config=query_job_config).to_dataframe()
 
 
-def list_datasets(project_id):
-    """
-    Lists all datasets existing in a project.
-
-    :return: List of dataset objects
-    """
-    client = get_client(project_id)
-    datasets = list(client.list_datasets())
-    return datasets
-
-
 def dataset_columns_query(project_id: str, dataset_id: str) -> str:
     """
     Get INFORMATION_SCHEMA.COLUMNS query for a specified dataset
@@ -432,7 +421,7 @@ def get_latest_validation_dataset_id(project_id):
     dataset_id = os.environ.get(consts.MATCH_DATASET, consts.BLANK)
     if dataset_id == consts.BLANK:
         validation_datasets = []
-        for dataset in list_datasets(project_id):
+        for dataset in client.list_datasets(project_id):
             dataset_id = dataset.dataset_id
             if is_validation_dataset_id(dataset_id):
                 dataset = client.get_dataset(dataset_id)
@@ -466,7 +455,7 @@ def create_dataset(project_id,
     client = get_client(project_id)
 
     # Check to see if dataset already exists
-    all_datasets = [d.dataset_id for d in list_datasets(project_id)]
+    all_datasets = [d.dataset_id for d in client.list_datasets(project_id)]
     if dataset_id in all_datasets:
         if overwrite_existing:
             client.delete_dataset(dataset_id,

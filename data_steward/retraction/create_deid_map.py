@@ -21,7 +21,7 @@ import logging
 import pandas as pd
 
 # Project imports
-import utils.bq
+from utils import bq
 import bq_utils
 from retraction.retract_utils import DEID_REGEX
 from constants.retraction import create_deid_map as consts
@@ -34,7 +34,8 @@ def get_combined_datasets_for_deid_map(project_id):
     :param project_id: bq name of project_id
     :return: list of combined_datasets that should contain a _deid_map table
     """
-    all_datasets_obj = utils.bq.list_datasets(project_id)
+    client = bq.get_client(project_id)
+    all_datasets_obj = list(client.list_datasets(project_id))
     all_datasets = [d.dataset_id for d in all_datasets_obj]
     deid_datasets = []
 
@@ -50,8 +51,8 @@ def get_combined_datasets_for_deid_map(project_id):
     deid_and_combined_df = get_corresponding_combined_dataset(
         all_datasets, deid_datasets)
     df_row_count = len(deid_and_combined_df.index)
-    logging.info('%s datasets with combined and corresponding deid.' %
-                 df_row_count)
+    logging.info(
+        f'{df_row_count} datasets with combined and corresponding deid.')
     return deid_and_combined_df
 
 
@@ -79,14 +80,14 @@ def get_corresponding_combined_dataset(all_datasets, deid_datasets):
             deid_and_combined_datasets_df = deid_and_combined_datasets_df.append(
                 new_row, ignore_index=True)
         else:
-            logging.info('combined dataset not found for %s' % d)
+            logging.info(f'combined dataset not found for {d}')
 
     return deid_and_combined_datasets_df
 
 
 def get_table_info_for_dataset(project_id, dataset):
-    bq_client = utils.bq.get_client(project_id)
-    cols_query = utils.bq.dataset_columns_query(project_id, dataset)
+    bq_client = bq.get_client(project_id)
+    cols_query = bq.dataset_columns_query(project_id, dataset)
     table_info_df = bq_client.query(cols_query).to_dataframe()
     return table_info_df
 
@@ -105,8 +106,7 @@ def check_if_deid_map_exists(project_id, dataset):
         return consts.SKIP
     elif 'deid_map' in column_list:
         return consts.RENAME
-    else:
-        return consts.CREATE
+    return consts.CREATE
 
 
 def create_deid_map_table_queries(project):
@@ -143,8 +143,8 @@ def run_queries(queries):
     """
     query_job_ids = []
     for query in queries:
-        logging.info('Creating or renaming _deid_map table with query: %s' %
-                     query)
+        logging.info(
+            f'Creating or renaming _deid_map table with query: {query}')
         job_results = bq_utils.query(q=query, batch=True)
         logging.info('_deid_map table created.')
         query_job_id = job_results['jobReference']['jobId']
@@ -152,8 +152,8 @@ def run_queries(queries):
 
     incomplete_jobs = bq_utils.wait_on_jobs(query_job_ids)
     if incomplete_jobs:
-        logging.info('Failed on {count} job ids {ids}'.format(
-            count=len(incomplete_jobs), ids=incomplete_jobs))
+        logging.info(
+            f'Failed on {len(incomplete_jobs)} job ids {incomplete_jobs}')
         logging.info('Terminating _deid_map creation')
         raise bq_utils.BigQueryJobWaitError(incomplete_jobs)
 

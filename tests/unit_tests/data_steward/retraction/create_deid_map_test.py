@@ -7,7 +7,7 @@ import mock
 import pandas as pd
 
 # Project imports
-import retraction.create_deid_map as create_deid_map
+from retraction import create_deid_map
 import common
 from constants.retraction import create_deid_map as consts
 
@@ -32,8 +32,8 @@ class CreateDeidMapTest(unittest.TestCase):
             'R2021q1r1_combined', 'R2021q1r2_combined', '2021q1r3_combined'
         ]
 
-    @mock.patch('retraction.create_deid_map.utils.bq.list_datasets')
-    def test_get_combined_datasets_for_deid_map(self, mock_list_datasets):
+    @mock.patch('retraction.create_deid_map.bq.get_client')
+    def test_get_combined_datasets_for_deid_map(self, mock_get_client):
         result_all_datasets = self.all_datasets
         result_deid_datasets = []
         result_release_datasets = [
@@ -46,7 +46,9 @@ class CreateDeidMapTest(unittest.TestCase):
         result_deid_and_combined_df = create_deid_map.get_corresponding_combined_dataset(
             result_all_datasets, result_deid_datasets)
 
-        expected_all_datasets = mock_list_datasets.return_value = self.all_datasets
+        mock_client = mock.MagicMock()
+        mock_get_client.return_value = mock_client
+        expected_all_datasets = mock_client.list_datasets.return_value = self.all_datasets
         expected_deid_datasets = self.deid_datasets
         expected_combined_datasets_df = create_deid_map.get_corresponding_combined_dataset(
             expected_all_datasets, expected_deid_datasets)
@@ -100,10 +102,10 @@ class CreateDeidMapTest(unittest.TestCase):
             self.project_id, self.dataset_id)
         self.assertEquals(result, consts.RENAME)
 
-    @mock.patch('retraction.create_deid_map.utils.bq.list_datasets')
+    @mock.patch('retraction.create_deid_map.bq.get_client')
     @mock.patch('retraction.create_deid_map.get_table_info_for_dataset')
     def test_create_deid_map_table_queries(self, mock_table_info,
-                                           mock_list_datasets):
+                                           mock_get_client):
 
         result = [
             consts.CREATE_DEID_MAP_TABLE_QUERY.format(
@@ -112,7 +114,9 @@ class CreateDeidMapTest(unittest.TestCase):
                 project=self.project_id, dataset='2021q1r3_combined')
         ]
 
-        mock_list_datasets.return_value = self.all_datasets
+        mock_client = mock.MagicMock()
+        mock_get_client.return_value = mock_client
+        mock_client.list_datasets.return_value = self.all_datasets
         dataframe_1 = pd.DataFrame(data={
             'table_name': ['_ehr_consent', common.PERSON, common.OBSERVATION]
         })
