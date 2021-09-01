@@ -4,11 +4,12 @@ set -e
 
 echo "Executing yapf diff..."
 
-function yapfit() {
+function yapfit {
   set +e
   local res
   res=$(cd "${CIRCLE_WORKING_DIRECTORY}" && yapf -drp .)
-  if [ -z "${res}" ]; then
+  if [ -z "${res}" ];
+  then
     set -e
     return 0
   else
@@ -18,7 +19,8 @@ function yapfit() {
   fi
 }
 
-if ! yapfit; then
+if ! yapfit;
+then
   echo "yapf errors found"
   echo
   echo "${YAPF_RESULT}"

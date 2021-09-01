@@ -4,11 +4,12 @@ set -e
 
 echo "Executing pylint..."
 
-function pylintit() {
+function pylintit {
   set +e
   local res
   res=$(cd "${CIRCLE_WORKING_DIRECTORY}" && pylint -E data_steward tests)
-  if [ -z "${res}" ]; then
+  if [ -z "${res}" ];
+  then
     set -e
     return 0
   else
@@ -18,7 +19,8 @@ function pylintit() {
   fi
 }
 
-if ! pylintit; then
+if ! pylintit ;
+then
   echo "pylint errors"
   echo ""
   echo "${PYLINT_RESULT}"
