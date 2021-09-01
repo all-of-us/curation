@@ -1,3 +1,6 @@
 _pb2.py
 data_steward/analytics
 data_steward/lib
+curation_venv/
+.run/
+.git/
