@@ -1,0 +1,43 @@
+version: "3"
+
+services:
+  # base image upon which all other containers are derived
+  base:
+    image: "curation:base-18.04"
+    build:
+      context: .
+      dockerfile: docker/base/Dockerfile
+      # build-time arguments that can be used within the Dockerfile as though
+      # they were envvars.  it may be necessary to replicate some of these in the
+      # runtime "environments" config key
+      args:
+          UID: "${UID:-1000}"
+          GID: "${GID:-1000}"
+          GSDK_VERSION: "355.0.0"
+          GSDK_CHECKSUM: "ab5f228e6b7b4736fcf3f2b59ce5426244367643580ef73fd5abe90708ba51f6"
+  # local development container to simulate running circle-ci jobs
+  tests:
+    # this is the name of the image on your machine once this service has been built
+    image: "curation:tests-18.04"
+    build:
+      # we want the build context to be the root of the project so we can
+      # reference any folder / file therein during the build
+      context: .
+      # for this specific service, we'll use the local-ci Dockerfile as it's based
+      # on the circle-ci image
+      dockerfile: docker/tests/Dockerfile
+    # run-time environment variable values.
+    # may containe duplicates from "build.args" map
+    environment:
+      USERNAME: "${USER}"
+      APPLICATION_ID: "aou-res-curation-test"
+      GOOGLE_CLOUD_PROJECT: "aou-res-curation-test"
+      CIRCLE_PROJECT_USERNAME: "all-of-us"
+    stdin_open: true # docker run -i
+    tty: true        # docker run -t
+    volumes:
+      # mount code inside the container
+      - "./.git:/home/curation/project/curation/.git:ro"
+      - "./data_steward:/home/curation/project/curation/data_steward:rw"
+      - "./tests:/home/curation/project/curation/tests:rw"
+      - "./tools:/home/curation/project/curation/tools:ro"
