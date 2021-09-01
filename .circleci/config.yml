@@ -75,8 +75,6 @@ jobs:
               -e GCLOUD_CREDENTIALS="${GCLOUD_CREDENTIALS}" \
               -e CI="${CI}" \
               -e CIRCLECI="${CIRCLECI}" \
-              -e CIRCLE_PULL_REQUEST="${CIRCLE_PULL_REQUEST:-}" \
-              -e CIRCLE_PULL_REQUESTS="${CIRCLE_PULL_REQUESTS:-}" \
               tests \
               unit
       - test_teardown
@@ -94,11 +92,13 @@ jobs:
               -e GCLOUD_CREDENTIALS="${GCLOUD_CREDENTIALS}" \
               -e CI="${CI}" \
               -e CIRCLECI="${CIRCLECI}" \
-              -e CIRCLE_PULL_REQUEST="${CIRCLE_PULL_REQUEST:-}" \
-              -e CIRCLE_PULL_REQUESTS="${CIRCLE_PULL_REQUESTS:-}" \
               tests \
               integration
           no_output_timeout: 3000s
+      - run:
+          name: Delete buckets and datasets
+          command: ./ci/scripts/tests_integration_99_teardown.sh
+          when: on_success
       - test_teardown
 
 workflows:
