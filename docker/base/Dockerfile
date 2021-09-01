@@ -61,7 +61,7 @@ ENV VENV_PATH "${CIRCLE_WORKING_DIRECTORY}/curation_venv"
 ENV VENV_ACTIVATE "${VENV_PATH}/bin/activate"
 
 # google envvars
-ENV GOOGLE_APPLICATION_CREDENTIALS "${CIRCLE_WORKING_DIRECTORY}/aou-res-curation-test.json"
+ENV GOOGLE_APPLICATION_CREDENTIALS "/home/curation/project/curation/aou-res-curation-test.json"
 
 # CONTAINER SETUP
 
@@ -135,3 +135,6 @@ RUN python -m venv "${VENV_PATH}" \
 
 # remove data_steward dir as it will be mounted inside the container as a volume later.
 RUN rm -rf "${CIRCLE_WORKING_DIRECTORY}/data_steward"
+
+# set our final working directory
+WORKDIR "${CIRCLE_WORKING_DIRECTORY}"
