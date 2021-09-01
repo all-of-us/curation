@@ -1,10 +1,4 @@
 FROM curation:base-18.04
-LABEL org.opencontainers.image.authors="daniel.p.carbone@vumc.org"
-LABEL org.opencontainers.image.url="https://github.com/all-of-us/curation"
-LABEL org.opencontainers.image.documentation="https://github.com/all-of-us/curation"
-LABEL org.opencontainers.image.licenses="MIT"
-LABEL org.opencontainers.image.title="All of Us Curation tests development image"
-LABEL org.opencontainers.image.description="Tests development container image used by the All of Us Curationm team"
 
 # copy in our entrypoint script
 COPY --chmod=755 docker/tests/entrypoint.sh /entrypoint.sh
