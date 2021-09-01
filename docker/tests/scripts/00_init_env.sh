@@ -7,7 +7,7 @@ source "${HOME}/.bashrc"
 source "${HOME}/.profile"
 
 # import funcs
-source "${CURATION_SCRIPTS_DIR}"/funcs.sh
+source "${CIRCLE_SCRIPTS_DIR}"/funcs.sh
 
 # determine username
 determined_username=$(define_username)
@@ -55,3 +55,4 @@ set_env "BUCKET_NAME_PITT" "${BUCKET_PREFIX}"_pitt
 set_env "BUCKET_NAME_CHS" "${BUCKET_PREFIX}"_chs
 set_env "BUCKET_NAME_UNIONED_EHR" "${BUCKET_PREFIX}"_unioned_ehr
 set_env "BUCKET_NAME_${BUCKET_PREFIX}_FAKE" "${BUCKET_NAME_FAKE}"
+
