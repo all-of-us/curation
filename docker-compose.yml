@@ -1,0 +1,48 @@
+version: "3"
+
+services:
+  # local development container to simulate running circle-ci jobs
+  curation-ci:
+    # this is the name of the image on your machine once this service has been built
+    image: "dev-curation-local-ci"
+    build:
+      # we want the build context to be the root of the project so we can
+      # reference any folder / file therein during the build
+      context: .
+      # for this specific service, we'll use the local-ci Dockerfile as it's based
+      # on the circle-ci image
+      dockerfile: docker/local-ci/Dockerfile
+      # build-time arguments that can be used within the Dockerfile as though
+      # they were envvars.  it may be necessary to replicate some of these in the
+      # runtime "environments" config key
+      args:
+        UID: "${UID:-1000}"
+        GID: "${GID:-1000}"
+        CIRCLE_WORKING_DIRECTORY: "/home/circleci/project/curation"
+        CIRCLE_ARTIFACTS: "/tmp/circleci-artifacts"
+        VENV_NAME: "curation_venv"
+        GSDK_VERSION: "${GSDK_VERSION:-355.0.0}"
+        GSDK_CHECKSUM: "${GSDK_CHECKSUM:-ab5f228e6b7b4736fcf3f2b59ce5426244367643580ef73fd5abe90708ba51f6}"
+    # run-time environment variable values.
+    # may containe duplicates from "build.args" map
+    environment:
+      USERNAME: "${USER}"
+      CIRCLE_WORKING_DIRECTORY: "/home/circleci/project/curation"
+      CIRCLE_PROJECT_USERNAME: "all-of-us"
+      CIRCLE_ARTIFACTS: "/tmp/circleci-artifacts"
+      APPLICATION_ID: "aou-res-curation-test"
+      GOOGLE_CLOUD_PROJECT: "aou-res-curation-test"
+      GOOGLE_APPLICATION_CREDENTIALS: "/aou-res-curation-test.json"
+      VENV_NAME: "curation_venv"
+    stdin_open: true # docker run -i
+    tty: true        # docker run -t
+    # run-time volume mounts. this is done so you don't have to re-build the
+    # entire container for re-running with a code change
+    volumes:
+      # mount code inside the container
+      - "./.git:/home/circleci/project/curation/.git:ro"
+      - "./data_steward:/home/circleci/project/curation/data_steward:ro"
+      - "./tests:/home/circleci/project/curation/tests:rw"
+      - "./tools:/home/circleci/project/curation/tools:ro"
+      # mount your SA credentials inside the container
+      - "${GOOGLE_APPLICATION_CREDENTIALS}:/aou-res-curation-test.json"
