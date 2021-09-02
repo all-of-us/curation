@@ -495,42 +495,9 @@ SELECT
     observation_source_value,
     COUNT(1) AS n_row_violation
 FROM `{project_id}.{new_rdr}.observation`
-WHERE observation_source_value IN ('EHRConsentPII','EHRConsentPII_Signature','EHRConsentPII_TodaysDate',
-'EHRConsentPII_AreYouReady','AreYouReady_Yes','AreYouReady_No','EHRConsentPII_AllOfAccess','AllOfAccess_Yes',
-'AllOfAccess_No','EHRConsentPII_SensitiveInfoAccess','SensitiveInfoAccess_Yes','SensitiveInfoAccess_No',
-'EHRConsentPII_AccessChangeMind','AccessChangeMind_Yes','AccessChangeMind_No','EHRConsentPII_AccessPrivacyGuaruntee',
-'AccessPrivacyGuaruntee_Yes','AccessPrivacyGuaruntee_No','EHRConsentPII_NavigationalText','NavigationalText_Ready',
-'NavigationalText_later','EHRConsentPII_AccessHER','EHRConsentPII_PrivacyRisk','EHRConsentPII_TakeAsMuchTime',
-'TakeAsMuchTime_Review','TakeAsMuchTime_Next','EHRConsentPII_JoinAllOfUs','JoinAllOfUs_Ready','JoinAllOfUs_Help',
-'EHRConsentPII_EmailCopy','EHRConsentPII_YoutubeVideos','YoutubeVideos_WhatAreWeAsking','YoutubeVideos_RiskToPrivacy',
-'EHRConsentPII_TXandMAHIPPA','TXandMAHIPPA_IDoAgree','TXandMAHIPPA_IDoNotAgree','EHRConsentPII_ILHIPPAWitnessSignature',
-'EHRConsentPII_TodaysDateILHIPPAWitness','EHRConsentPII_ILHIPPAReminder','ILHIPPAReminder_Yes','ILHIPPAReminder_No',
-'General Consent (Suppress The Following)','ExtraConsent_FitnessTrackerVideo','ConsentPII_ExtraConsent',
-'ExtraConsent_18YearsofAge','18YearsofAge_18YearsYes','18YearsofAge_18YearsNo','ExtraConsent_PhysicalMeausrementsVideo',
-'ExtraConsent_WelcomeVideo','ExtraConsent_HealthDataVideo','ExtraConsent_SamplesVideo','ExtraConsent_HealthRecordVideo',
-'ExtraConsent_Signature','ExtraConsent__CABoRTodaysDate','ExtraConsent_KeepinginTouchVideo',
-'ExtraConsent_OtherHealthDataVideo','ExtraConsent_CABoRSignature','ExtraConsent_DataSharingVideo',
-'ExtraConsent_EmailACopyToMe','ExtraConsent_DataShaingVideo','ExtraConsent_RisktoPrivacyVideo',
-'ExtraConsent_AllOfUsPurpose','AllOfUsPurpose_GiveMedicalAdvice','AllOfUsPurpose_HelpScientistsDiscover',
-'ExtraConsent_TakePartAllOfUs','TakePartAllOfUs_TakingPartIsVoluntary','TakePartAllOfUs_TakingPartIsRequired',
-'ExtraConsent_CanIWithdraw','CanIWithdraw_ICanWithdraw','CanIWithdraw_ICannotWithdraw',
-'ExtraConsent_PrivacyGuaranteeQuestion','PrivacyGuaranteeQuestion_PrivacyGuaranteed',
-'PrivacyGuaranteeQuestion_RisksAreMinimized','ExtraConsent_ReadyOrNeedHelp','ReadyOrNeedHelp_Ready',
-'ReadyOrNeedHelp_NeedHelp','ExtraConsent_AgreeToConsent','ConsentPII_SanDiegoSitePairing',
-'SanDiegoSitePairing_SanDiegoBloodBank','ConsentPII_SitePairing','SitePairing_CurrentlyReside',
-'CurrentlyReside_ResideAZSArizona','CurrentlyReside_ResideAZCArizona','CurrentlyReside_ResideNeither',
-'ResideAZSArizona_AZSArizonaSpecific','ResideAZCArizona_AZCArizonaSpecific','AZCArizonaSpecific_BannerBehavioralHealth',
-'AZCArizonaSpecific_AZBannerGoldfieldMedical','AZCArizonaSpecific_AZBannerCasaGrande',
-'AZCArizonaSpecific_AZBannerIronwoodMedical','AZSArizonaSpecific_AZUofArizona','AZSArizonaSpecific_AZBannerGatewayMed',
-'AZSArizonaSpecific_AZBannerThunderbirdMed','AZSArizonaSpecific_AZBannerMDAnderson',
-'AZSArizonaSpecific_AZBannerDelEWebbMed','AZSArizonaSpecific_AZBannerBoswellMed','AZSArizonaSpecific_AZUAHN',
-'AZSArizonaSpecific_AZ_no','AZSArizonaSpecific_AZUPH','AZSArizonaSpecific_AZUofACancerCenter',
-'AZSArizonaSpecific_AZBannerDesertMed','AZSArizonaSpecific_AZ_yes','AZSArizonaSpecific_AZBannerUMed',
-'AZSArizonaSpecific_AZBannerEstrellaMed','AZSArizonaSpecific_AZUMI','AZCArizonaSpecific_AZBannerBaywoodMed',
-'AZCArizonaSpecific_AZBannerHeartHospital','AZCArizonaSpecific_CardonChildrensMedical','ExtraConsent_21YearsofAge',
-'21YearsofAge_21YearsYes','21YearsofAge_21YearsNo','ExtraConsent_19YearsofAge','19YearsofAge_19YearsYes',
-'19YearsofAge_19YearsNo','ReceiveCare_PIIState','VeteransHealthAdministration_Consent','VeteransHealthAdministration',
-'VeteransHealthAdministration_CareYes','VeteransHealthAdministration_CareNo','StateOfResidence','ExtraConsent_DNAVideo')
+WHERE observation_source_value IN (
+  SELECT observation_source_value FROM `{project_id}.operational_data.operational_ehr_consent`
+)
 GROUP BY 1
 HAVING count(1) > 0
 """
