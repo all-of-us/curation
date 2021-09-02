@@ -30,7 +30,8 @@ pd.options.display.max_rows = 120
 # -
 
 # # Table comparison
-# The export should generally contain the same tables from month to month. Tables found only in the old or the new export are listed below.
+# The export should generally contain the same tables from month to month.
+# Tables found only in the old or the new export are listed below.
 
 query = f'''
 SELECT
@@ -85,7 +86,8 @@ for table in domain_table_list:
 pd.read_gbq('\nUNION ALL\n'.join(queries), dialect='standard')
 
 # ## Concept codes used
-# Identify question and answer concept codes which were either added or removed (appear in only the new or only the old RDR datasets, respectively).
+# Identify question and answer concept codes which were either added or removed
+# (appear in only the new or only the old RDR datasets, respectively).
 
 query = f'''
 WITH curr_code AS (
@@ -133,7 +135,10 @@ WHERE prev_code.value IS NULL OR curr_code.value IS NULL
 pd.read_gbq(query, dialect='standard')
 
 # # Question codes should have mapped `concept_id`s
-# Question codes in `observation_source_value` should be associated with the concept identified by `observation_source_concept_id` and mapped to a standard concept identified by `observation_concept_id`. The table below lists codes having rows where either field is null or zero and the number of rows where this occurs. This may be associated with an issue in the PPI vocabulary or in the RDR ETL process.
+# Question codes in `observation_source_value` should be associated with the concept identified by
+# `observation_source_concept_id` and mapped to a standard concept identified by `observation_concept_id`.
+# The table below lists codes having rows where either field is null or zero and the number of rows where this occurs.
+# This may be associated with an issue in the PPI vocabulary or in the RDR ETL process.
 #
 # Note: Snap codes are not modeled in the vocabulary but may be used in the RDR export.
 # They are excluded here by filtering out snap codes in the Public PPI Codebook
@@ -157,7 +162,10 @@ ORDER BY 2 DESC, 3 DESC, 4 DESC, 5 DESC
 pd.read_gbq(query, dialect='standard')
 
 # # Answer codes should have mapped `concept_id`s
-# Answer codes in value_source_value should be associated with the concept identified by value_source_concept_id and mapped to a standard concept identified by value_as_concept_id. The table below lists codes having rows where either field is null or zero and the number of rows where this occurs. This may be associated with an issue in the PPI vocabulary or in the RDR ETL process.
+# Answer codes in value_source_value should be associated with the concept identified by value_source_concept_id
+# and mapped to a standard concept identified by value_as_concept_id. The table below lists codes having rows
+# where either field is null or zero and the number of rows where this occurs.
+# This may be associated with an issue in the PPI vocabulary or in the RDR ETL process.
 #
 # Note: Snap codes are not modeled in the vocabulary but may be used in the RDR export.
 # They are excluded here by filtering out snap codes in the Public PPI Codebook
@@ -209,7 +217,8 @@ with duplicates AS (
    --,questionnaire_response_id
      ,COUNT(1) AS n_data
     FROM `{project_id}.{new_rdr}.observation`
-    INNER JOIN `{project_id}.{new_rdr}.cope_survey_semantic_version_map` USING (questionnaire_response_id) -- For COPE only
+    INNER JOIN `{project_id}.{new_rdr}.cope_survey_semantic_version_map` 
+        USING (questionnaire_response_id) -- For COPE only
     GROUP BY 1,2,3,4,5,6
 )
 SELECT
@@ -283,8 +292,10 @@ pd.read_gbq(query, dialect='standard')
 # # Class of PPI Concepts using vocabulary.py
 # Concept codes which appear in `observation.observation_source_value` should belong to concept class Question.
 # Concept codes which appear in `observation.value_source_value` should belong to concept class Answer.
-# Concepts of class Qualifier Value are permitted as a value & Concepts of class Topic and PPI Modifier are permitted as a question
-# Discreprancies (listed below) can be caused by misclassified entries in Athena or invalid payloads in the RDR and in further upstream data sources.
+# Concepts of class Qualifier Value are permitted as a value and
+# Concepts of class Topic and PPI Modifier are permitted as a question
+# Discreprancies (listed below) can be caused by misclassified entries in Athena or
+# invalid payloads in the RDR and in further upstream data sources.
 
 query = f'''
 WITH ppi_concept_code AS (
@@ -457,7 +468,11 @@ pd.read_gbq(query, dialect='standard')
 
 # ## Participants must be 18 years of age or older to consent
 #
-# AOU participants are required to be 18+ years of age at the time of consent ([DC-1724](https://precisionmedicineinitiative.atlassian.net/browse/DC-1724)), based on the date associated with the [ExtraConsent_TodaysDate](https://athena.ohdsi.org/search-terms/terms/1585482) row. Any violations should be reported to the RDR team as these should have been filtered out by the RDR ETL process ([DA-2073](https://precisionmedicineinitiative.atlassian.net/browse/DA-2073)).
+# AOU participants are required to be 18+ years of age at the time of consent
+# ([DC-1724](https://precisionmedicineinitiative.atlassian.net/browse/DC-1724)),
+# based on the date associated with the [ExtraConsent_TodaysDate](https://athena.ohdsi.org/search-terms/terms/1585482)
+# row. Any violations should be reported to the RDR team as these should have been filtered out by the RDR ETL process
+# ([DA-2073](https://precisionmedicineinitiative.atlassian.net/browse/DA-2073)).
 
 query = f'''
 SELECT *
@@ -470,7 +485,9 @@ pd.read_gbq(query, dialect='standard')
 
 # # Check for missing questionnaire_response_id
 
-# Survey data in the RDR export should all have **questionnaire_response_id** [DC-1776](https://precisionmedicineinitiative.atlassian.net/browse/DC-1776). Any violations should be reported to the RDR team.
+# Survey data in the RDR export should all have **questionnaire_response_id**
+# [DC-1776](https://precisionmedicineinitiative.atlassian.net/browse/DC-1776).
+# Any violations should be reported to the RDR team.
 
 query = f"""
 SELECT  
@@ -488,7 +505,9 @@ pd.read_gbq(query, dialect='standard')
 
 # # Check if concepts for operational use still exist in the data
 
-# According to [this ticket](https://precisionmedicineinitiative.atlassian.net/browse/DC-1792), the RDR export should not contain some operational concepts that are irrelevant to researchers. Any violations should be reported to the RDR team.
+# According to [this ticket](https://precisionmedicineinitiative.atlassian.net/browse/DC-1792),
+# the RDR export should not contain some operational concepts that are irrelevant to researchers.
+# Any violations should be reported to the RDR team.
 
 query = f"""
 SELECT 
