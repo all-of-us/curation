@@ -258,13 +258,15 @@ class DomainAlignmentTest(unittest.TestCase):
             re.sub(self.chars_to_replace, self.single_space, expected),
             re.sub(self.chars_to_replace, self.single_space, actual))
 
+    @patch('cdr_cleaner.cleaning_rules.domain_alignment.fetch_dummy_value')
     @patch('cdr_cleaner.cleaning_rules.domain_mapping.get_value_mappings')
     @patch(
         'cdr_cleaner.cleaning_rules.domain_mapping.value_requires_translation')
     @patch('cdr_cleaner.cleaning_rules.domain_mapping.get_field_mappings')
     def test_resolve_field_mappings(self, mock_get_field_mappings,
                                     mock_value_requires_translation,
-                                    mock_get_value_mappings):
+                                    mock_get_value_mappings,
+                                    mock_fetch_dummy_value):
         get_field_mappings_return_value = OrderedDict()
         get_field_mappings_return_value[
             self.procedure_concept_id] = self.condition_concept_id
@@ -276,6 +278,7 @@ class DomainAlignmentTest(unittest.TestCase):
         mock_get_value_mappings.return_value = {
             self.primary_procedure_concept_id: self.primary_condition_concept_id
         }
+        mock_fetch_dummy_value.return_value = 0
 
         actual = domain_alignment.resolve_field_mappings(
             self.condition_table, self.procedure_table)
@@ -289,7 +292,7 @@ class DomainAlignmentTest(unittest.TestCase):
             statements=WHEN_STATEMENT.format(
                 src_value=self.primary_condition_concept_id,
                 dest_value=self.primary_procedure_concept_id),
-            dummy_value=0,
+            dummy_value=mock_fetch_dummy_value.return_value,
             dest_field=self.procedure_type_concept_id)
 
         expected = ',\n\t'.join([select_field_1, select_field_2])
