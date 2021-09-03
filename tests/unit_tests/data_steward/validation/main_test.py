@@ -84,6 +84,34 @@ class ValidationMainTest(TestCase):
         actual_result = main.list_submitted_bucket_items(bucket_items)
         self.assertCountEqual([], actual_result)
 
+        # if the file has been updated less than 5 minutes ago it should not be returned
+        before_lag_time = datetime.datetime.today() - datetime.timedelta(
+            minutes=3)
+        before_lag_time_str = before_lag_time.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+        item_3 = {
+            'name': '2018-09-01/nyc_cu_person.csv',
+            'timeCreated': within_retention_str,
+            'updated': before_lag_time_str
+        }
+        bucket_items = [item_3]
+        actual_result = main.list_submitted_bucket_items(bucket_items)
+        expected_result = []
+        self.assertCountEqual(expected_result, actual_result)
+
+        # if the file has been updated 5 or more minutes ago it should be returned
+        after_lag_time = datetime.datetime.today() - datetime.timedelta(
+            minutes=7)
+        after_lag_time_str = after_lag_time.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+        item_4 = {
+            'name': '2018-09-01/nyc_cu_person.csv',
+            'timeCreated': within_retention_str,
+            'updated': after_lag_time_str
+        }
+        bucket_items = [item_4]
+        expected_result = [item_4]
+        actual_result = main.list_submitted_bucket_items(bucket_items)
+        self.assertCountEqual(expected_result, actual_result)
+
     def test_folder_list(self):
         fmt = '%Y-%m-%dT%H:%M:%S.%fZ'
         now = datetime.datetime.now()

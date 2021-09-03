@@ -753,6 +753,7 @@ def list_submitted_bucket_items(folder_bucketitems):
     """
     files_list = []
     object_retention_days = 30
+    object_process_lag_minutes = 5
     today = datetime.datetime.today()
     for file_name in folder_bucketitems:
         if basename(file_name) not in resources.IGNORE_LIST:
@@ -760,8 +761,14 @@ def list_submitted_bucket_items(folder_bucketitems):
             created_date = initial_date_time_object(file_name)
             retention_time = datetime.timedelta(days=object_retention_days)
             retention_start_time = datetime.timedelta(days=1)
-            age_threshold = created_date + retention_time - retention_start_time
-            if age_threshold > today:
+            upper_age_threshold = created_date + retention_time - retention_start_time
+
+            # delay processing time for 5 minutes after
+            updated_date = updated_datetime_object(file_name)
+            lag_time = datetime.timedelta(minutes=object_process_lag_minutes)
+            lower_age_threshold = updated_date + lag_time
+
+            if upper_age_threshold > today and lower_age_threshold <= today:
                 files_list.append(file_name)
     return files_list
 
