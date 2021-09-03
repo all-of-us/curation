@@ -22,10 +22,13 @@ PERSON_DATA_TEMPLATE = JINJA_ENV.from_string("""
 INSERT INTO `{{project_id}}.{{dataset_id}}.person`
 (person_id, birth_datetime, gender_concept_id, year_of_birth, race_concept_id, ethnicity_concept_id)
 VALUES
-      (1, '1970-01-01 00:00:00 EST', 0, 1970, 0, 0),
-      (2, '2002-01-01 00:00:00 EST', 0, 2002, 0, 0),
-      (3, '2003-01-01 00:00:00 EST', 0, 2003, 0, 0),
-      (4, '2015-01-01 00:00:00 EST', 0, 2015, 0, 0)
+      /* Adding participans with different ranges of birthdays.*/
+      /* Participant 4's birth_datetime was set to 2021.*/
+      /* The data belonging to this participant from all the domain tables should be dropped.*/  
+      (1, '1970-01-01 00:00:00 UTC', 0, 1970, 0, 0),
+      (2, '2002-01-01 00:00:00 UTC', 0, 2002, 0, 0),
+      (3, '2003-01-01 00:00:00 UTC', 0, 2003, 0, 0),
+      (4, '2021-01-01 00:00:00 UTC', 0, 2015, 0, 0)
 """)
 VISIT_OCCURRENCE_DATA_TEMPLATE = JINJA_ENV.from_string("""
 INSERT INTO `{{project_id}}.{{dataset_id}}.visit_occurrence`
