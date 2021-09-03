@@ -29,8 +29,8 @@ CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_id}}.{{concept_suppression_loo
 MISSING_CONCEPTS_QUERY = JINJA_ENV.from_string("""
     SELECT DISTINCT
         t.{{concept_id_field}} concept_id
-    FROM {{project_id}}.{{dataset_id}}.{{tablename}} t
-    LEFT JOIN {{project_id}}.{{dataset_id}}.concept c
+    FROM `{{project_id}}.{{dataset_id}}.{{tablename}}` t
+    LEFT JOIN `{{project_id}}.{{dataset_id}}.concept` c
         ON c.concept_id = t.{{concept_id_field}}
     WHERE c.concept_id IS NULL
         AND (t.{{concept_id_field}} IS NOT NULL AND t.{{concept_id_field}} <> 0)
