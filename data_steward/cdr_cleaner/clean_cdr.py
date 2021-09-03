@@ -24,6 +24,7 @@ import \
     cdr_cleaner.cleaning_rules.remove_invalid_procedure_source_records as invalid_procedure_source
 import cdr_cleaner.cleaning_rules.remove_non_matching_participant as validate_missing_participants
 import cdr_cleaner.cleaning_rules.remove_records_with_wrong_date as remove_records_with_wrong_date
+from cdr_cleaner.cleaning_rules.remove_participants_under_18years import RemoveParticipantsUnder18Years
 from cdr_cleaner.cleaning_rules.round_ppi_values_to_nearest_integer import RoundPpiValuesToNearestInteger
 from cdr_cleaner.cleaning_rules.update_family_history_qa_codes import UpdateFamilyHistoryCodes
 import cdr_cleaner.manual_cleaning_rules.clean_smoking_ppi as smoking
@@ -137,6 +138,7 @@ UNIONED_EHR_CLEANING_CLASSES = [
 RDR_CLEANING_CLASSES = [
     (StoreNewPidRidMappings,),
     (TruncateRdrData,),
+    (RemoveParticipantsUnder18Years,),
     (PpiBranching,),
     # execute FixUnmappedSurveyAnswers before the dropping responses rules get executed
     # (e.g. DropPpiDuplicateResponses and DropDuplicatePpiQuestionsAndAnswers)
