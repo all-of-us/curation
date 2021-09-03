@@ -106,6 +106,7 @@ from cdr_cleaner.cleaning_rules.deid.string_fields_suppression import StringFiel
 from cdr_cleaner.cleaning_rules.generalize_state_by_population import GeneralizeStateByPopulation
 from cdr_cleaner.cleaning_rules.section_participation_concept_suppression import SectionParticipationConceptSuppression
 from cdr_cleaner.cleaning_rules.covid_ehr_vaccine_concept_suppression import CovidEHRVaccineConceptSuppression
+from cdr_cleaner.cleaning_rules.missing_concept_record_suppression import MissingConceptRecordSuppression
 from constants.cdr_cleaner import clean_cdr_engine as ce_consts
 from constants.cdr_cleaner.clean_cdr import DataStage
 
@@ -216,6 +217,7 @@ COMBINED_CLEANING_CLASSES = [
     (RemoveParticipantDataPastDeactivationDate,),
     (validate_missing_participants.delete_records_for_non_matching_participants,
     ),
+    (MissingConceptRecordSuppression,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
