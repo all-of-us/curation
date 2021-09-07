@@ -36,14 +36,28 @@ class ValidationMainTest(TestCase):
         self.folder_prefix = '2019-01-01-v1/'
 
     def test_retention_checks_list_submitted_bucket_items(self):
+
+        #Define times to use
+        within_retention = datetime.datetime.today() - datetime.timedelta(
+            days=25)
+        within_retention_str = within_retention.strftime(
+            '%Y-%m-%dT%H:%M:%S.%fZ')
         outside_retention = datetime.datetime.today() - datetime.timedelta(
             days=29)
         outside_retention_str = outside_retention.strftime(
             '%Y-%m-%dT%H:%M:%S.%fZ')
+        before_lag_time = datetime.datetime.today() - datetime.timedelta(
+            minutes=3)
+        before_lag_time_str = before_lag_time.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+
+        after_lag_time = datetime.datetime.today() - datetime.timedelta(
+            minutes=7)
+        after_lag_time_str = after_lag_time.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+
         bucket_items = [{
             'name': '2018-09-01/person.csv',
             'timeCreated': outside_retention_str,
-            'updated': outside_retention_str
+            'updated': after_lag_time_str
         }]
         # if the file expires within a day it should not be returned
         actual_result = main.list_submitted_bucket_items(bucket_items)
@@ -51,14 +65,10 @@ class ValidationMainTest(TestCase):
         self.assertCountEqual(expected_result, actual_result)
 
         # if the file within retention period it should be returned
-        within_retention = datetime.datetime.today() - datetime.timedelta(
-            days=25)
-        within_retention_str = within_retention.strftime(
-            '%Y-%m-%dT%H:%M:%S.%fZ')
         item_2 = {
             'name': '2018-09-01/visit_occurrence.csv',
             'timeCreated': within_retention_str,
-            'updated': within_retention_str
+            'updated': after_lag_time_str
         }
         bucket_items.append(item_2)
         expected_result = [item_2]
@@ -71,7 +81,7 @@ class ValidationMainTest(TestCase):
         unknown_item = {
             'name': '2018-09-01/nyc_cu_person.csv',
             'timeCreated': within_retention_str,
-            'updated': within_retention_str
+            'updated': after_lag_time_str
         }
         bucket_items = [unknown_item]
         actual_result = main.list_submitted_bucket_items(bucket_items)
@@ -84,31 +94,32 @@ class ValidationMainTest(TestCase):
         actual_result = main.list_submitted_bucket_items(bucket_items)
         self.assertCountEqual([], actual_result)
 
-        # if the file has been updated less than 5 minutes ago it should not be returned
-        before_lag_time = datetime.datetime.today() - datetime.timedelta(
-            minutes=3)
-        before_lag_time_str = before_lag_time.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
-        item_3 = {
-            'name': '2018-09-01/nyc_cu_person.csv',
+        # if any AOU_REQUIRED file has been updated less than 5 minutes ago, no files should be returned
+
+        bucket_items = [{
+            'name': '2018-09-01/observation.csv',
             'timeCreated': within_retention_str,
             'updated': before_lag_time_str
-        }
-        bucket_items = [item_3]
+        }, {
+            'name': '2018-09-01/nyc_cu_person.csv',
+            'timeCreated': within_retention_str,
+            'updated': after_lag_time_str
+        }]
         actual_result = main.list_submitted_bucket_items(bucket_items)
         expected_result = []
         self.assertCountEqual(expected_result, actual_result)
 
-        # if the file has been updated 5 or more minutes ago it should be returned
-        after_lag_time = datetime.datetime.today() - datetime.timedelta(
-            minutes=7)
-        after_lag_time_str = after_lag_time.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
-        item_4 = {
-            'name': '2018-09-01/nyc_cu_person.csv',
+        # if all AOU_REQUIRED files have been updated 5 or more minutes ago, submission should be processed
+        bucket_items = [{
+            'name': '2018-09-01/observation.csv',
             'timeCreated': within_retention_str,
             'updated': after_lag_time_str
-        }
-        bucket_items = [item_4]
-        expected_result = [item_4]
+        }, {
+            'name': '2018-09-01/nyc_cu_person.csv',
+            'timeCreated': within_retention_str,
+            'updated': before_lag_time_str
+        }]
+        expected_result = bucket_items
         actual_result = main.list_submitted_bucket_items(bucket_items)
         self.assertCountEqual(expected_result, actual_result)
 

@@ -27,7 +27,7 @@ import common
 import gcs_utils
 import resources
 from utils.slack_alerts import log_event_factory
-from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON
+from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON, AOU_REQUIRED_FILES
 from constants.validation import hpo_report as report_consts
 from constants.validation import main as consts
 from curation_logging.curation_gae_handler import begin_request_logging, end_request_logging, \
@@ -763,13 +763,18 @@ def list_submitted_bucket_items(folder_bucketitems):
             retention_start_time = datetime.timedelta(days=1)
             upper_age_threshold = created_date + retention_time - retention_start_time
 
-            # delay processing time for 5 minutes after
-            updated_date = updated_datetime_object(file_name)
-            lag_time = datetime.timedelta(minutes=object_process_lag_minutes)
-            lower_age_threshold = updated_date + lag_time
-
-            if upper_age_threshold > today and lower_age_threshold <= today:
+            if upper_age_threshold > today:
                 files_list.append(file_name)
+
+            if basename(file_name) in AOU_REQUIRED_FILES:
+                # restrict processing time for 5 minutes after all required files
+                updated_date = updated_datetime_object(file_name)
+                lag_time = datetime.timedelta(
+                    minutes=object_process_lag_minutes)
+                lower_age_threshold = updated_date + lag_time
+
+                if lower_age_threshold > today:
+                    return []
     return files_list
 
 
