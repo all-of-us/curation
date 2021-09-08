@@ -37,9 +37,9 @@ commands:
       - restore_cache:
           name: Restore pyenv directory
           keys:
-            - pip-cache-{{ checksum "data_steward/requirements.txt" }}-{{ checksum "data_steward/dev_requirements.txt" }}-{{ checksum "data_steward/deid/requirements.txt" }}
+            - pip-cache-v2-{{ checksum "data_steward/requirements.txt" }}-{{ checksum "data_steward/dev_requirements.txt" }}-{{ checksum "data_steward/deid/requirements.txt" }}
             # if cache for exact version of `project.clj` is not present then load any most recent one
-            - pip-cache-
+            - pip-cache-v2-
       # this will ensure the pyenv is accurate as of this run
       - run:
           name: Initialize Python venv
@@ -47,7 +47,7 @@ commands:
       # this will ensure that our pyenv cache is up to date as of this run
       - save_cache:
           name: Save pyenv dir
-          key: pip-cache-{{ checksum "data_steward/requirements.txt" }}-{{ checksum "data_steward/dev_requirements.txt" }}-{{ checksum "data_steward/deid/requirements.txt" }}
+          key: pip-cache-v2-{{ checksum "data_steward/requirements.txt" }}-{{ checksum "data_steward/dev_requirements.txt" }}-{{ checksum "data_steward/deid/requirements.txt" }}
           paths:
             - ./${VENV_NAME}
       - run:
