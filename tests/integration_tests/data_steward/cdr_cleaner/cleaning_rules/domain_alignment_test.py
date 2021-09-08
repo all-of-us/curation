@@ -6,6 +6,7 @@ Integration test for domain_alignment module
 import os
 from datetime import date
 from dateutil.parser import parse
+import pytz
 
 # Third party imports
 from google.cloud.bigquery import Table
@@ -236,16 +237,20 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
                 'condition_start_date', 'condition_start_datetime',
                 'condition_type_concept_id', 'visit_occurrence_id'
             ],
-            'cleaned_values': [(100, 1, 201826, date(2015, 7, 15),
-                                parse('2015-07-15 00:00:00 UTC'), 42894222, 1),
-                               (102, 3, 201826, date(2015, 7, 15),
-                                parse('2015-07-15 00:00:00 UTC'), 42894222, 3),
-                               (103, 4, 201826, date(2015, 7, 15),
-                                parse('2015-07-15 00:00:00 UTC'), 42894222, 4),
-                               (105, 1005, 45769242, date(2015, 7,
-                                                          15), None, 0, None),
-                               (106, 6, 320128, date(2015, 8, 15),
-                                parse('2015-08-15 00:00:00 UTC'), None, 6)]
+            'cleaned_values': [
+                (100, 1, 201826, date(2015, 7, 15),
+                 parse('2015-07-15 00:00:00 UTC').astimezone(pytz.utc),
+                 42894222, 1),
+                (102, 3, 201826, date(2015, 7, 15),
+                 parse('2015-07-15 00:00:00 UTC').astimezone(pytz.utc),
+                 42894222, 3),
+                (103, 4, 201826, date(2015, 7, 15),
+                 parse('2015-07-15 00:00:00 UTC').astimezone(pytz.utc),
+                 42894222, 4),
+                (105, 1005, 45769242, date(2015, 7, 15), None, 0, None),
+                (106, 6, 320128, date(2015, 8, 15),
+                 parse('2015-08-15 00:00:00 UTC').astimezone(pytz.utc), 0, 6)
+            ]
         }, {
             'fq_table_name':
                 f'{self.project_id}.{self.dataset_id}.procedure_occurrence',
@@ -259,10 +264,13 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
                 'procedure_date', 'procedure_datetime',
                 'procedure_type_concept_id', 'visit_occurrence_id'
             ],
-            'cleaned_values': [(200, 5, 36676219, date(2015, 7, 15),
-                                parse('2015-07-15 00:00:00 UTC'), 42865906, 5),
-                               (202, 2, 36676219, date(2015, 7, 15),
-                                parse('2015-07-15 00:00:00 UTC'), None, 2)]
+            'cleaned_values': [
+                (200, 5, 36676219, date(2015, 7, 15),
+                 parse('2015-07-15 00:00:00 UTC').astimezone(pytz.utc),
+                 42865906, 5),
+                (202, 2, 36676219, date(2015, 7, 15),
+                 parse('2015-07-15 00:00:00 UTC'), 0, 2)
+            ]
         }, {
             'fq_table_name':
                 f'{self.project_id}.{self.dataset_id}.observation',

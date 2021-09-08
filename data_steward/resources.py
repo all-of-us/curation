@@ -406,3 +406,19 @@ def has_domain_table_id(table_name):
     return f'{table_name}_id' in [
         field.get('name', '') for field in fields_for(table_name)
     ]
+
+
+def get_field_type(table_name, field_name):
+    """
+    :param table_name: name of the table which the field belongs to
+    :param field_name: name of the field for which data type is to be identified
+    :return: Returns fields data type as a string value if not none
+    """
+    fields = fields_for(table_name)
+    field_type = [
+        field['type'] for field in fields if field['name'] == field_name
+    ]
+    if len(field_type) == 0:
+        return None
+    else:
+        return field_type[0]

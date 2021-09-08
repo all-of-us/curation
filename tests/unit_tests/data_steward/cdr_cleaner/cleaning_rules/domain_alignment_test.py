@@ -153,9 +153,9 @@ class DomainAlignmentTest(unittest.TestCase):
     @patch('resources.get_domain_id_field')
     @patch('resources.get_domain')
     def test_parse_domain_mapping_query_cross_domain(
-        self, mock_get_domain, mock_get_domain_id_field,
-        mock_get_domain_concept_id, mock_exist_domain_mappings,
-        mock_get_rerouting_criteria):
+            self, mock_get_domain, mock_get_domain_id_field,
+            mock_get_domain_concept_id, mock_exist_domain_mappings,
+            mock_get_rerouting_criteria):
         mock_get_domain.side_effect = [self.condition, self.procedure]
         mock_get_domain_id_field.side_effect = [
             self.condition_occurrence_id, self.procedure_occurrence_id
@@ -197,7 +197,7 @@ class DomainAlignmentTest(unittest.TestCase):
 
     @patch('resources.get_domain_id_field')
     def test_parse_domain_mapping_query_for_excluded_records(
-        self, mock_get_domain_id_field):
+            self, mock_get_domain_id_field):
         mock_get_domain_id_field.side_effect = [
             self.condition_occurrence_id, self.procedure_occurrence_id
         ]
@@ -231,8 +231,8 @@ class DomainAlignmentTest(unittest.TestCase):
         'cdr_cleaner.cleaning_rules.domain_mapping.value_requires_translation')
     @patch('cdr_cleaner.cleaning_rules.domain_mapping.get_field_mappings')
     def test_resolve_field_mappings_value_requires_translation(
-        self, mock_get_field_mappings, mock_value_requires_translation,
-        mock_get_value_mappings, mock_is_field_required):
+            self, mock_get_field_mappings, mock_value_requires_translation,
+            mock_get_value_mappings, mock_is_field_required):
         get_field_mappings_return_value = OrderedDict()
         get_field_mappings_return_value[
             self.procedure_concept_id] = self.condition_concept_id
@@ -258,13 +258,15 @@ class DomainAlignmentTest(unittest.TestCase):
             re.sub(self.chars_to_replace, self.single_space, expected),
             re.sub(self.chars_to_replace, self.single_space, actual))
 
+    @patch('cdr_cleaner.cleaning_rules.domain_alignment.fetch_dummy_value')
     @patch('cdr_cleaner.cleaning_rules.domain_mapping.get_value_mappings')
     @patch(
         'cdr_cleaner.cleaning_rules.domain_mapping.value_requires_translation')
     @patch('cdr_cleaner.cleaning_rules.domain_mapping.get_field_mappings')
     def test_resolve_field_mappings(self, mock_get_field_mappings,
                                     mock_value_requires_translation,
-                                    mock_get_value_mappings):
+                                    mock_get_value_mappings,
+                                    mock_fetch_dummy_value):
         get_field_mappings_return_value = OrderedDict()
         get_field_mappings_return_value[
             self.procedure_concept_id] = self.condition_concept_id
@@ -276,6 +278,7 @@ class DomainAlignmentTest(unittest.TestCase):
         mock_get_value_mappings.return_value = {
             self.primary_procedure_concept_id: self.primary_condition_concept_id
         }
+        mock_fetch_dummy_value.return_value = 0
 
         actual = domain_alignment.resolve_field_mappings(
             self.condition_table, self.procedure_table)
@@ -289,6 +292,7 @@ class DomainAlignmentTest(unittest.TestCase):
             statements=WHEN_STATEMENT.format(
                 src_value=self.primary_condition_concept_id,
                 dest_value=self.primary_procedure_concept_id),
+            dummy_value=mock_fetch_dummy_value.return_value,
             dest_field=self.procedure_type_concept_id)
 
         expected = ',\n\t'.join([select_field_1, select_field_2])
@@ -326,10 +330,10 @@ class DomainAlignmentTest(unittest.TestCase):
     @patch('cdr_cleaner.cleaning_rules.domain_alignment.bq.get_client')
     @patch('cdr_cleaner.cleaning_rules.domain_alignment.bq.create_tables')
     def test_get_domain_mapping_queries(
-        self, mock_create_tables, mock_bq_client,
-        mock_parse_domain_mapping_query_cross_domain,
-        mock_parse_domain_mapping_query_for_same_domains,
-        mock_parse_domain_mapping_query_for_excluded_records):
+            self, mock_create_tables, mock_bq_client,
+            mock_parse_domain_mapping_query_cross_domain,
+            mock_parse_domain_mapping_query_for_same_domains,
+            mock_parse_domain_mapping_query_for_excluded_records):
         bq_client = MagicMock()
         mock_bq_client.return_value = bq_client
         bq_client.delete_table = MagicMock()

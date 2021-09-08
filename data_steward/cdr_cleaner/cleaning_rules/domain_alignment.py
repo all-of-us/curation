@@ -158,7 +158,7 @@ WHERE m.is_rerouted = True
 
 CASE_STATEMENT = (' CASE {src_field} '
                   ' {statements} '
-                  ' ELSE NULL '
+                  ' ELSE {dummy_value} '
                   ' END AS {dest_field} ')
 
 WHEN_STATEMENT = 'WHEN {src_value} THEN {dest_value}'
@@ -168,6 +168,29 @@ SRC_FIELD_AS_DEST_FIELD = '{src_field} AS {dest_field}'
 NULL_AS_DEST_FIELD = 'NULL AS {dest_field}'
 
 ZERO_AS_DEST_FIELD = '0 AS {dest_field}'
+
+
+def fetch_dummy_value(table, field):
+    """
+    This utility function returns a dummy value based on the data type of the field
+
+    :param table: table name which the field belongs too
+    :param field: field name for which a dummy value is expected
+    :return: Returns a value that can be used to add in a required field
+    """
+    if resources.get_field_type(table, field) == 'integer':
+        dummy_value = 0
+    elif resources.get_field_type(table, field) == 'float':
+        dummy_value = 0.0
+    elif resources.get_field_type(table, field) == 'string':
+        dummy_value = ''
+    elif resources.get_field_type(table, field) == 'date':
+        dummy_value = 'DATE(\'1970-01-01\')'
+    elif resources.get_field_type(table, field) == 'timestamp':
+        dummy_value = 'TIMESTAMP(\'1970-01-01\')'
+    else:
+        raise RuntimeError(f'Dummy value for the {field} cannot be found')
+    return dummy_value
 
 
 def parse_domain_mapping_query_cross_domain(project_id, dataset_id, dest_table):
@@ -358,9 +381,14 @@ def resolve_field_mappings(src_table, dest_table):
                     for d, s in value_mappings.items()
                 ])
 
+                dummy_value = fetch_dummy_value(
+                    dest_table, dest_field) if field_mapping.is_field_required(
+                        dest_table, dest_field) else NULL_VALUE
+
                 case_statements = CASE_STATEMENT.format(
                     src_field=src_field,
                     dest_field=dest_field,
+                    dummy_value=dummy_value,
                     statements=case_statements)
             select_statements.append(case_statements)
         else:
