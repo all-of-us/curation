@@ -15,7 +15,6 @@ job_defaults: &job_defaults
       - CIRCLE_ARTIFACTS: /tmp/circleci-artifacts
       - GSDK_VERSION: 355.0.0
       - GSDK_CHECKSUM: ab5f228e6b7b4736fcf3f2b59ce5426244367643580ef73fd5abe90708ba51f6
-      - VENV_NAME: curation_venv
     docker:
       - image: cimg/base:stable-18.04
 
@@ -47,7 +46,7 @@ commands:
           name: Save pyenv dir
           key: pip-cache-v2-{{ checksum "data_steward/requirements.txt" }}-{{ checksum "data_steward/dev_requirements.txt" }}-{{ checksum "data_steward/deid/requirements.txt" }}
           paths:
-            - ./${VENV_NAME}
+            - ./curation_venv
       - run:
           name: Initialize Environment Variables
           command: ./ci/scripts/common_20_init_env.sh
