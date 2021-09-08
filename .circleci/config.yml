@@ -25,16 +25,31 @@ commands:
   # Define reusable sets of steps to be run within the testing jobs.
   project_setup:
     steps:
+      # this will check out the curation code into the working directory.  in our case, it is defined
+      # by job_defaults above
       - checkout
+      # this performs some updates
       - run:
           name: Initialize OS Image
-          command: ./ci/scripts/common_00_init_image.sh
+          command: ./ci/scripts/common_00_init_apt.sh
+      # attempts to restore a previous pyenv directory if one exists.
+      # subsequent steps will refresh this cache if need be
       - restore_cache:
           name: Restore pyenv directory
-          key: pip-cache-{{ checksum "data_steward/requirements.txt" }}-{{ checksum "data_steward/dev_requirements.txt" }}-{{ checksum "data_steward/deid/requirements.txt" }}
+          keys:
+            - pip-cache-{{ checksum "data_steward/requirements.txt" }}-{{ checksum "data_steward/dev_requirements.txt" }}-{{ checksum "data_steward/deid/requirements.txt" }}
+            # if cache for exact version of `project.clj` is not present then load any most recent one
+            - pip-cache-
+      # this will ensure the pyenv is accurate as of this run
       - run:
           name: Initialize Python venv
           command: ./ci/scripts/common_10_init_venv.sh
+      # this will ensure that our pyenv cache is up to date as of this run
+      - save_cache:
+          name: Save pyenv dir
+          key: pip-cache-{{ checksum "data_steward/requirements.txt" }}-{{ checksum "data_steward/dev_requirements.txt" }}-{{ checksum "data_steward/deid/requirements.txt" }}
+          paths:
+            - ./${VENV_NAME}
       - run:
           name: Initialize Environment Variables
           command: ./ci/scripts/common_20_init_env.sh
@@ -70,13 +85,6 @@ commands:
       - slack/status:
           fail_only: true
           only_for_branches: master,develop
-  project_teardown:
-    steps:
-      - save_cache:
-          name: Save pyenv dir
-          key: pip-cache-{{ checksum "data_steward/requirements.txt" }}-{{ checksum "data_steward/dev_requirements.txt" }}-{{ checksum "data_steward/deid/requirements.txt" }}
-          paths:
-            - ./${VENV_NAME}
 
 jobs:
   linting_checks:
