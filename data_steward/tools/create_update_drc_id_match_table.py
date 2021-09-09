@@ -26,6 +26,22 @@ from constants.validation.participants.identity_match import IDENTITY_MATCH_TABL
 
 LOGGER = logging.getLogger(__name__)
 
+IDENTITY_MATCH_PS_API_FIELD_MAP = {
+    'person_id': 'person_id',
+    'first_name': 'first_name',
+    'middle_name': 'middle_name',
+    'last_name': 'last_name',
+    'phone_number': 'phone_number',
+    'email': 'email',
+    'address_1': 'street_address',
+    'address_2': 'street_address2',
+    'city': 'city',
+    'state': 'state',
+    'zip': 'zip_code',
+    'birth_date': 'date_of_birth',
+    'sex': 'sex'
+}
+
 CREATE_TABLE = JINJA_ENV.from_string("""
 CREATE TABLE `{{project_id}}.{{drc_dataset_id}}.{{id_match_table_id}}` ({{fields}})
 PARTITION BY DATE_TRUNC(_PARTITIONTIME, HOUR)
@@ -34,12 +50,12 @@ PARTITION BY DATE_TRUNC(_PARTITIONTIME, HOUR)
 POPULATE_VALIDATION_TABLE = JINJA_ENV.from_string("""
 INSERT INTO `{{project_id}}.{{drc_dataset_id}}.{{id_match_table_id}}` (_PARTITIONTIME, {{fields}}) 
 SELECT TIMESTAMP_TRUNC(CURRENT_TIMESTAMP, HOUR), person_id, 
-{{case_statements}}
+{{case_statements}}, 'no' algorithm
 FROM `{{project_id}}.{{drc_dataset_id}}.{{ps_values_table_id}}`
 """)
 
 CASE_EXPRESSION = JINJA_ENV.from_string("""
-CASE WHEN {{field}} IS NULL THEN 'missing_rdr' ELSE 'missing_ehr' END AS {{field}}
+CASE WHEN {{ps_api_field}} IS NULL THEN 'missing_rdr' ELSE 'missing_ehr' END AS {{identity_match_field}}
 """)
 
 
@@ -78,9 +94,14 @@ def get_case_statements():
 
     # this removes the person_id as it is primary key and will not be updated in case statement
     field_list.remove('person_id')
+    # this removes algorithm as it is not updated in case statement
+    field_list.remove('algorithm')
 
     for item in field_list:
-        case_statements.append(CASE_EXPRESSION.render(field=item))
+        ps_api_item = IDENTITY_MATCH_PS_API_FIELD_MAP[item]
+        case_statements.append(
+            CASE_EXPRESSION.render(identity_match_field=item,
+                                   ps_api_field=ps_api_item))
 
     return ', '.join(case_statements)
 
