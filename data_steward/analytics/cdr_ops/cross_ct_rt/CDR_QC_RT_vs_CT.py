@@ -51,6 +51,9 @@ df = pd.DataFrame(columns = ['query', 'result'])
 
 # +
 query = JINJA_ENV.from_string("""
+
+
+
 SELECT 
 countif((c.questionnaire_response_id IS NOT NULL AND r.questionnaire_response_id IS NOT NULL) AND c.questionnaire_response_id = r.questionnaire_response_id) AS matches,
 countif((c.questionnaire_response_id IS NOT NULL AND r.questionnaire_response_id IS NOT NULL) AND c.questionnaire_response_id != r.questionnaire_response_id) AS mismatches,
@@ -64,7 +67,9 @@ END
  AS success
 FROM `{{project_id}}.{{ct_dataset}}.observation` c
 FULL OUTER JOIN `{{project_id}}.{{rt_dataset}}.observation` r
-USING (observation_id)
+USING (observation_id);
+
+
 """)
 
 q = query.render(project_id=project_id, rt_dataset=rt_dataset, ct_dataset=ct_dataset)
@@ -470,6 +475,7 @@ LOOP
 INSERT rt_person_id
 SELECT DISTINCT person_id
 FROM `{{project_id}}.{{rt_dataset}}.''' || person_tables[ORDINAL(i)] || '''`
+WHERE person_id NOT IN (SELECT DISTINCT person_id FROM rt_person_id)
 ''';
 
 END LOOP;
@@ -484,6 +490,7 @@ LOOP
 INSERT ct_person_id
 SELECT DISTINCT person_id
 FROM `{{project_id}}.{{ct_dataset}}.''' || person_tables[ORDINAL(i)] || '''`
+WHERE person_id NOT IN (SELECT DISTINCT person_id FROM ct_person_id)
 ''';
 
 END LOOP;
