@@ -60,6 +60,12 @@ commands:
           include-branch-in-cache-key: false
           include-python-in-cache-key: true
           pip-dependency-file: data_steward/requirements.txt
+          pypi-cache: true
+      - python/install-packages:
+          pkg-manager: pip
+          app-dir: ~/curation
+          include-branch-in-cache-key: false
+          include-python-in-cache-key: true
           pip-dependency-file: data_steward/dev_requirements.txt
           pypi-cache: true
       - run:
@@ -96,6 +102,12 @@ jobs:
           include-branch-in-cache-key: false
           include-python-in-cache-key: true
           pip-dependency-file: data_steward/requirements.txt
+          pypi-cache: true
+      - python/install-packages:
+          pkg-manager: pip
+          app-dir: ~/curation
+          include-branch-in-cache-key: false
+          include-python-in-cache-key: true
           pip-dependency-file: data_steward/dev_requirements.txt
           pypi-cache: true
       - run:
