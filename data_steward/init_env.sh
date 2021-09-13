@@ -78,5 +78,5 @@ if [ -n "${CIRCLECI}" ]; then
   echo "export UNIONED_DATASET_ID=${UNIONED_DATASET_ID}" >>"${BASH_ENV}"
   echo "export BUCKET_NAME_UNIONED_EHR=${BUCKET_NAME_UNIONED_EHR}" >>"${BASH_ENV}"
   echo "export VOCABULARY_DATASET=${VOCABULARY_DATASET}" >>"${BASH_ENV}"
-  echo 'export PATH=${PATH}:${CIRCLE_WORKING_DIRECTORY}/ci' >>"${BASH_ENV}"
+  echo "export PATH=${PATH}:${CIRCLE_WORKING_DIRECTORY}/ci" >>"${BASH_ENV}"
 fi
