@@ -755,6 +755,16 @@ def list_submitted_bucket_items(folder_bucketitems):
     object_retention_days = 30
     object_process_lag_minutes = 5
     today = datetime.datetime.today()
+
+    # If any required file missing, stop submission
+    folder_bucketitems_basenames = [
+        basename(file_name) for file_name in folder_bucketitems
+    ]
+
+    if not set(AOU_REQUIRED_FILES).issubset(set(folder_bucketitems_basenames)):
+        return []
+
+    # Validate submission times
     for file_name in folder_bucketitems:
         if basename(file_name) not in resources.IGNORE_LIST:
             # in common.CDM_FILES or is_pii(basename(file_name)):
