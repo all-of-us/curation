@@ -4,6 +4,8 @@ orbs:
   # Send notifications for failed builds on master, develop branches using Slack orb (https://circleci.com/orbs/registry/orb/circleci/slack). Refer to the
   # For channels to notify and webhook URL refer to the CircleCI Slack App page (https://slack.com/apps/A0F7VRE7N-circleci).
   slack: circleci/slack@3.4.2
+  # Invoke python orb
+  python: circleci/python@1.4.0
 
 job_defaults: &job_defaults
     working_directory: ~/curation/data_steward
@@ -13,8 +15,9 @@ job_defaults: &job_defaults
     # If any of these refer to each other, rewrite them so that they don't or see https://circleci.com/docs/2.0/env-vars/#interpolating-environment-variables-to-set-other-environment-variables .
     environment:
       - CIRCLE_ARTIFACTS: /tmp/circleci-artifacts
+      - PYTHONPATH: ~/curation/data_steward:~/curation/tests:$PYTHONPATH
     docker:
-      - image: circleci/python:3.7.4
+      - image: cimg/python:3.7
 
 commands:
   # Define reusable sets of steps to be run within the testing jobs.
@@ -22,11 +25,6 @@ commands:
     steps:
       - checkout:
           path: ~/curation
-      # Dependencies
-      - restore_cache:
-          keys:
-            - pip-cache-{{ checksum "requirements.txt" }}-{{ checksum "dev_requirements.txt" }}-{{ checksum "deid/requirements.txt" }}
-            - pip-cache-
       - run:
           name: Add virtual environment activation to bash startup
           command: python3 -m venv ~/curation_venv && echo "source ~/curation_venv/bin/activate" >> $BASH_ENV
@@ -43,10 +41,6 @@ commands:
           command: cat ${BASH_ENV}
   lint_teardown:
     steps:
-      - save_cache:
-          paths:
-            ~/curation_venv
-          key: pip-cache-{{ checksum "requirements.txt" }}-{{ checksum "dev_requirements.txt" }}-{{ checksum "deid/requirements.txt" }}
       - slack/status:
           fail_only: true
           only_for_branches: master,develop
@@ -54,54 +48,29 @@ commands:
     steps:
       - checkout:
           path: ~/curation
-      - run:
-          name: Allow google cloud to be added as apt repo
-          command: |
-            sudo apt-get update
-            sudo apt install software-properties-common
       # Prepare for artifact and test results  collection equivalent to how it was done on 1.0.
       - run: mkdir -p $CIRCLE_ARTIFACTS
       - run:
-          name: Add google-cloud-sdk repo to apt
-          command: echo "deb http://packages.cloud.google.com/apt cloud-sdk-$(lsb_release -c -s) main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
-      - run:
-          name: Add google key to apt
-          command: curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
-      - run:
           name: Install google-cloud-sdk
-          command: |
-            sudo apt-get update
-            sudo apt-get install dpkg
-            sudo apt-get install google-cloud-sdk
-      # Dependencies
-      - restore_cache:
-          keys:
-          - pip-cache-{{ checksum "requirements.txt" }}-{{ checksum "dev_requirements.txt" }}-{{ checksum "deid/requirements.txt" }}
-          - pip-cache-
-      - run:
-          name: Add virtual environment activation to bash startup
-          command: python3 -m venv ~/curation_venv && echo "source ~/curation_venv/bin/activate" >> $BASH_ENV
-      - run:
-          name: Upgrade pip and install requirements
-          command: |
-            pip install --upgrade pip setuptools
-            pip install -r requirements.txt
-            pip install -r dev_requirements.txt
-            pip install -r deid/requirements.txt
+          working_directory: ~/curation
+          command: source tools/install_google_cloud_sdk.sh  # need to get the other code for this
+      - python/install-packages:
+          pkg-manager: pip
+          app-dir: ~/curation
+          include-branch-in-cache-key: false
+          include-python-in-cache-key: true
+          pip-dependency-file: data_steward/requirements.txt
+          pip-dependency-file: data_steward/dev_requirements.txt
+          pypi-cache: true
       - run:
           name: Show bashrc file
           command: cat ${BASH_ENV}
   test_teardown:
     steps:
-      - save_cache:
-          paths:
-            ~/curation_venv
-          key: pip-cache-{{ checksum "requirements.txt" }}-{{ checksum "dev_requirements.txt" }}-{{ checksum "deid/requirements.txt" }}
       - run:
           name: Combine Coverage Results
           working_directory: ~/curation
-          command: |
-              . tests/combine_coverage.sh
+          command: . tests/combine_coverage.sh
           no_output_timeout: 30s
       # Save test results
       - store_test_results:
@@ -117,8 +86,18 @@ commands:
 jobs:
   linting_checks:
     <<: *job_defaults
+    executor: python/default
     steps:
-      - lint_setup
+      - checkout:
+          path: ~/curation
+      - python/install-packages:
+          pkg-manager: pip
+          app-dir: ~/curation
+          include-branch-in-cache-key: false
+          include-python-in-cache-key: true
+          pip-dependency-file: data_steward/requirements.txt
+          pip-dependency-file: data_steward/dev_requirements.txt
+          pypi-cache: true
       - run:
           name: Checking commit messages for Jira tag
           working_directory: ~/curation
