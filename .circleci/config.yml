@@ -36,9 +36,6 @@ commands:
             pip install -r requirements.txt
             pip install -r dev_requirements.txt
             pip install -r deid/requirements.txt
-      - run:
-          name: Show bashrc file
-          command: cat ${BASH_ENV}
   lint_teardown:
     steps:
       - slack/status:
@@ -91,9 +88,6 @@ commands:
           include-python-in-cache-key: true
           pip-dependency-file: data_steward/dev_requirements.txt
           pypi-cache: true
-      - run:
-          name: Show bashrc file
-          command: cat ${BASH_ENV}
   test_teardown:
     steps:
       - run:
