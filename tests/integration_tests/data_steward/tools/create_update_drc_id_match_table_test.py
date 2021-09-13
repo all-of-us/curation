@@ -61,12 +61,20 @@ class CreateUpdateDrcIdMatchTableTest(TestCase):
             SchemaField("person_id", "INT64"),
             SchemaField("first_name", "STRING"),
             SchemaField("last_name", "STRING"),
+            SchemaField("algorithm", "STRING")
         ]
 
-        self.fields = [
+        self.ps_api_fields = [
             dict(name='person_id', type='integer', mode='nullable'),
             dict(name='first_name', type='string', mode='nullable'),
             dict(name='last_name', type='string', mode='nullable')
+        ]
+
+        self.id_match_fields = [
+            dict(name='person_id', type='integer', mode='nullable'),
+            dict(name='first_name', type='string', mode='nullable'),
+            dict(name='last_name', type='string', mode='nullable'),
+            dict(name='algorithm', type='string', mode='nullable')
         ]
 
         self.hpo_id = 'fake_site'
@@ -75,7 +83,7 @@ class CreateUpdateDrcIdMatchTableTest(TestCase):
 
         # Create and populate the ps_values site table
         bq_utils.create_table(self.ps_values_table_id,
-                              self.fields,
+                              self.ps_api_fields,
                               drop_existing=True,
                               dataset_id=DRC_OPS)
 
@@ -102,7 +110,7 @@ class CreateUpdateDrcIdMatchTableTest(TestCase):
     @mock.patch('resources.fields_for')
     def test_create_drc_validation_table(self, mock_fields_for):
         # Preconditions
-        mock_fields_for.return_value = self.fields
+        mock_fields_for.return_value = self.id_match_fields
 
         # Test
         expected = id_validation.create_drc_validation_table(
@@ -119,24 +127,28 @@ class CreateUpdateDrcIdMatchTableTest(TestCase):
                                                 mock_fields_for):
         # Preconditions
         mock_table_schema.return_value = self.schema
-        mock_fields_for.return_value = self.fields
+        mock_fields_for.return_value = self.id_match_fields
 
         expected = [{
             'person_id': 1,
             'first_name': 'missing_ehr',
-            'last_name': 'missing_ehr'
+            'last_name': 'missing_ehr',
+            'algorithm': 'no'
         }, {
             'person_id': 2,
             'first_name': 'missing_rdr',
-            'last_name': 'missing_ehr'
+            'last_name': 'missing_ehr',
+            'algorithm': 'no'
         }, {
             'person_id': 3,
             'first_name': 'missing_ehr',
-            'last_name': 'missing_rdr'
+            'last_name': 'missing_rdr',
+            'algorithm': 'no'
         }, {
             'person_id': 4,
             'first_name': 'missing_rdr',
-            'last_name': 'missing_rdr'
+            'last_name': 'missing_rdr',
+            'algorithm': 'no'
         }]
 
         # Creates validation table if it does not already exist
