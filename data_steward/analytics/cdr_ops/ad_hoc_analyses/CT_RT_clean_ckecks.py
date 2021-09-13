@@ -31,21 +31,18 @@ from analytics.cdr_ops.notebook_utils import execute
 from utils import auth
 from utils.bq import get_client
 
-
 pd.options.display.max_rows = 120
 
 # -
 
-
 SCOPES = [
     'https://www.googleapis.com/auth/bigquery',
 ]
-impersonation_creds = auth.get_impersonation_credentials(
-    run_as, SCOPES)
+impersonation_creds = auth.get_impersonation_credentials(run_as, SCOPES)
 
 client = get_client(project_id, credentials=impersonation_creds)
 
-# # Verify measurement records are dropped 
+# # Verify measurement records are dropped
 # Set all value_as_number = 9999999 to NULL.  If not null, an error happened.
 
 query = f'''
@@ -70,7 +67,7 @@ FROM `{project_id}.{clean_dataset}.measurement`
 '''
 execute(client, query)
 
-# All meausrement records for the following sites should be dropped.  This happens if the site only 
+# All meausrement records for the following sites should be dropped.  This happens if the site only
 # submits 0 in value_as_number for all their records.  IF a site is singled out, use the CTE query
 # to determine the offending values.
 
@@ -141,7 +138,7 @@ WHERE src_id in (
 execute(client, query)
 
 # There should not be any duplicate rows based on the person_id, measurement_source_concept_id,
-# unit_concept_id, measurement_concept_id, measurement_datetime, value_as_number, and 
+# unit_concept_id, measurement_concept_id, measurement_datetime, value_as_number, and
 # value_as_concept_id fields.  All such duplicates should be dropped.  If this query
 # returns any values, there is an error with MeasurementRecordsSuppression.
 
@@ -231,48 +228,10 @@ WHERE n_records_to_drop > 0
 '''
 execute(client, query)
 
-# # Simplified Clean Weight Check
-# Not checking all the clean weight bells and whistles.  Just checking to make sure no site
-# has submitted rows with measurement_concept_id in (3025315, 3013762, 3023166).  If any
-# of these values are greater than 0, a portion of the clean_height_weight rule failed.
-# Based on query defiend in line 561 of clean_height_weight.py
-# # IGNORE THESE RESULTS.  BAD ANALYSIS. 
-
-query = f'''
-SELECT 
-COUNTIF(m.measurement_concept_id = 3025315) as n_3025315,
-COUNTIF(m.measurement_concept_id = 3013762) as n_3013762,
-COUNTIF(m.measurement_concept_id = 3023166) as n_3023166
-FROM `{project_id}.{clean_dataset}.measurement` as m
-LEFT JOIN `{project_id}.{clean_dataset}.measurement_ext` as me
-USING (measurement_id)
-WHERE not REGEXP_CONTAINS(me.src_id, r'(?i)PPI/PM')
-'''
-#execute(client, query)
-
-# # Simplified Clean Height Check
-# Not checking all the clean height bells and whistles.  Just checking to make sure no site
-# has submitted rows with measurement_concept_id in (3036277, 3023540, 3019171).  If any
-# of these values are greater than 0, a portion of the clean_height_weight rule failed.
-# Based on query defined in line 249 of clean_height_weight.py.
-# # IGNORE THESE RESULTS.  BAD ANALYSIS. 
-
-query = f'''
-SELECT 
-COUNTIF(m.measurement_concept_id = 3036277) as n_3036277,
-COUNTIF(m.measurement_concept_id = 3023540) as n_3023540,
-COUNTIF(m.measurement_concept_id = 3019171) as n_3019171
-FROM `{project_id}.{clean_dataset}.measurement` as m
-LEFT JOIN `{project_id}.{clean_dataset}.measurement_ext` as me
-USING (measurement_id)
-WHERE not REGEXP_CONTAINS(me.src_id, r'(?i)PPI/PM')
-'''
-#execute(client, query)
-
 # # Make sure specific units have been converted
 # This attempts to make sure unit_concept_id's have been converted as specified in the _unit_mapping
 # table by ensuring the measurement_concept_id/unit_concept_id pairs do not exist in the cleaned
-# dataset.  It does not attempt to check the performed calculation.  It just makes sure the 
+# dataset.  It does not attempt to check the performed calculation.  It just makes sure the
 # values do not exist any longer as evidence that the rule ran.  If values are returned, curation
 # should investigate.
 
