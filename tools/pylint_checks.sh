@@ -4,8 +4,11 @@
 
 set +e
 
+echo "-----------------------"
+echo "${PYTHONPATH}"
+echo "-----------------------"
 pushd $(git rev-parse --show-toplevel) > /dev/null
-lint_out=$(pylint -E data_steward tests)
+lint_out=$(PYTHONPATH=./data_steward:./tests pylint -E data_steward tests)
 
 echo "-----------------------"
 echo "${lint_out}"
