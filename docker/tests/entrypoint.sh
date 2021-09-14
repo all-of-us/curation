@@ -70,13 +70,11 @@ fi
 
 if [ "${RUN_UNIT}" -eq 1 ];
 then
-  echo "Running unit tests..."
   require_ok "tests_unit_00_execute.sh"
 fi
 
 if [ "${RUN_INTEGRATION}" -eq 1 ];
 then
-  echo "Running integration tests..."
   if ! in_ci ;
   then
       export FORCE_RUN_INTEGRATION=1
