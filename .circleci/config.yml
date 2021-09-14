@@ -104,6 +104,9 @@ jobs:
           path: ~/curation
       - virtual_env_setup
       - run:
+          name: Set up environment variables
+          command: ./init_env.sh
+      - run:
           name: Checking commit messages for Jira tag
           working_directory: ~/curation
           command: tools/validate_commit_message.sh
