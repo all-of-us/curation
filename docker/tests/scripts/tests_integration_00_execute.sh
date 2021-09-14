@@ -3,7 +3,8 @@
 # this script is slightly more complex than the unit test script
 # as there isn't a great way to terminate a circle-ci job early
 
-set -ex
+set -e
+set +x
 
 function is_forced_run {
   if [[ -n "${FORCE_RUN_INTEGRATION}" ]] && [[ "${FORCE_RUN_INTEGRATION}" == "1" ]];
