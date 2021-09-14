@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-function in_circleci {
+function in_ci {
   if [[ -n "${CIRCLECI}" ]] && [[ "${CIRCLECI}" == "true" ]];
   then
     return 0
