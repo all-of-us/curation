@@ -39,10 +39,6 @@ commands:
           include-python-in-cache-key: true
           pip-dependency-file: data_steward/dev_requirements.txt
           pypi-cache: true
-#      - run:
-#          name: Set PYTHONPATH explicitly
-#          working_directory: ~/curation
-#          command: echo 'export PYTHONPATH=$CIRCLE_WORKING_DIRECTORY/data_steward:$CIRCLE_WORKING_DIRECTORY/tests:$PYTHONPATH' >> $BASH_ENV
   lint_teardown:
     steps:
       - slack/status:
@@ -123,7 +119,7 @@ jobs:
       - run:
           name: Checking Python lint with Pylint
           working_directory: ~/curation
-          command: toolls/pylint_checks.sh
+          command: tools/pylint_checks.sh
       - lint_teardown
 
   unit_test:
