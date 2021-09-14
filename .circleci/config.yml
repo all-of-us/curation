@@ -95,10 +95,6 @@ jobs:
               tests \
               integration
           no_output_timeout: 3000s
-      - run:
-          name: Delete buckets and datasets
-          command: ./ci/scripts/tests_integration_99_teardown.sh
-          when: on_success
       - test_teardown
 
 workflows:
