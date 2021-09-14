@@ -2,5 +2,5 @@
 
 set -e
 
-cd "${CIRCLE_WORKING_DIRECTORY}" \
-  && tests/run_tests.sh -s unit
+cd "${CIRCLE_WORKING_DIRECTORY}" &&
+  tests/run_tests.sh -s unit
