@@ -77,7 +77,10 @@ fi
 if [ "${RUN_INTEGRATION}" -eq 1 ];
 then
   echo "Running integration tests..."
-  echo "export FORCE_RUN_INTEGRATION=1" | tee -a "${HOME}"/.bashrc "${HOME}"/.profile
+  if ! in_ci ;
+  then
+      export FORCE_RUN_INTEGRATION=1
+  fi
   require_ok "tests_integration_00_execute.sh"
   require_ok "tests_integration_99_teardown.sh"
 fi
