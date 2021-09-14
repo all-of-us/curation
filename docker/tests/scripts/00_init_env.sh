@@ -7,7 +7,7 @@ source "${HOME}/.bashrc"
 source "${HOME}/.profile"
 
 # import funcs
-source "${CIRCLE_SCRIPTS_DIR}"/funcs.sh
+source "${CURATION_SCRIPTS_DIR}"/funcs.sh
 
 # determine username
 determined_username=$(define_username)
