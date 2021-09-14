@@ -3,7 +3,7 @@
 set -e
 
 # load funcs
-source "${CIRCLE_WORKING_DIRECTORY}"/ci/scripts/funcs.sh
+source "${CIRCLE_SCRIPTS_DIR}"/funcs.sh
 
 echo "Activating Google Cloud Credentials..."
 
