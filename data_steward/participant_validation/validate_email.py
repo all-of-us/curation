@@ -36,7 +36,8 @@ CREATE_EMAIL_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
 
 MATCH_EMAIL_QUERY = JINJA_ENV.from_string("""
     UPDATE `{{project_id}}.{{drc_dataset_id}}.{{id_match_table_id}}` upd
-    SET upd.email = `{{project_id}}.{{drc_dataset_id}}.CompareEmail`(ps.email, ehr.email)
+    SET upd.email = `{{project_id}}.{{drc_dataset_id}}.CompareEmail`(ps.email, ehr.email),
+        upd.algorithm = 'yes'
     FROM `{{project_id}}.{{drc_dataset_id}}.{{id_match_table_id}}` id_match
     LEFT JOIN `{{project_id}}.{{drc_dataset_id}}.{{ps_api_table_id}}` ps
         ON ps.person_id = id_match.person_id
@@ -46,7 +47,8 @@ MATCH_EMAIL_QUERY = JINJA_ENV.from_string("""
 """)
 
 
-def identify_rdr_ehr_email_match(client, project_id, hpo_id):
+def identify_rdr_ehr_email_match(client, project_id, hpo_id,
+                                 ehr_ops_dataset_id):
 
     id_match_table_id = f'drc_identity_match_{hpo_id}'
     hpo_pii_email_table_id = f'{hpo_id}_pii_email'
@@ -61,7 +63,7 @@ def identify_rdr_ehr_email_match(client, project_id, hpo_id):
         hpo_pii_email_table_id=hpo_pii_email_table_id,
         ps_api_table_id=ps_api_table_id,
         drc_dataset_id=DRC_OPS,
-        ehr_ops_dataset_id=EHR_OPS)
+        ehr_ops_dataset_id=ehr_ops_dataset_id)
 
     LOGGER.info("Creating `CompareEmail` function if doesn't exist.")
     job = client.query(create_email_query)
@@ -110,7 +112,7 @@ def main():
     client = bq.get_client(args.project_id, credentials=impersonation_creds)
 
     # Populates the validation table for the site
-    identify_rdr_ehr_email_match(client, args.project_id, args.hpo_id)
+    identify_rdr_ehr_email_match(client, args.project_id, args.hpo_id, EHR_OPS)
 
     LOGGER.info('Done.')
 
