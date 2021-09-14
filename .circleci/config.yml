@@ -15,7 +15,6 @@ job_defaults: &job_defaults
     # If any of these refer to each other, rewrite them so that they don't or see https://circleci.com/docs/2.0/env-vars/#interpolating-environment-variables-to-set-other-environment-variables .
     environment:
       - CIRCLE_ARTIFACTS: /tmp/circleci-artifacts
-      - PYTHONPATH: ~/curation/data_steward:~/curation/tests:$PYTHONPATH
     docker:
       - image: cimg/python:3.7
 
