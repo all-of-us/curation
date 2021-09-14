@@ -71,9 +71,9 @@ function set_env {
 
 function require_ok {
   # shellcheck source=/dev/null
-  if ! . "${CURATION_SCRIPTS_DIR}/$1" ;
+  if ! . "${CURATION_SCRIPTS_DIR}/${1}" ;
   then
-    echo "Error running \$1"
+    echo "Error running script \"${CURATION_SCRIPTS_DIR}/${1}\""
     exit 1
   fi
   return 0
