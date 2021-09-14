@@ -141,7 +141,7 @@ jobs:
           command: tools/yapf_lint.sh
       - run:
           name: Checking Python lint with Pylint
-          working _directory: ~/curation
+          working_directory: ~/curation
           command: pylint -E data_steward tests
       - lint_teardown
 
@@ -178,10 +178,15 @@ jobs:
       - run:
           name: Set up environment variables
           working_directory: ~/curation/data_steward
-          command: ./init_env.sh
+          command: |
+            echo $CIRCLE_WORKING_DIRECTORY
+            ./init_env.sh
       - run:
           name: Create buckets and datasets
-          command: PYTHONPATH=./:$PYTHONPATH python ./ci/test_setup.py
+          command: |
+            echo $CIRCLE_WORKING_DIRECTORY
+            echo $PYTHONPATH
+            PYTHONPATH=./:$PYTHONPATH python ./ci/test_setup.py
       - run:
           name: Run integration tests
           working_directory: ~/curation
