@@ -177,6 +177,7 @@ jobs:
           command: ./ci/activate_creds.sh ${HOME}/gcloud-credentials-key.json
       - run:
           name: Set up environment variables
+          working_directory: ~/curation/data_steward
           command: ./init_env.sh
       - run:
           name: Create buckets and datasets
