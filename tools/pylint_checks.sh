@@ -4,11 +4,13 @@
 
 set +e
 
-echo "-----------------------"
-echo $PYTHONPATH
-echo "-----------------------"
 pushd $(git rev-parse --show-toplevel) > /dev/null
 lint_out=$(pylint -E data_steward tests)
+
+echo "-----------------------"
+echo "${lint_out}"
+echo "-----------------------"
+
 if [ -z "$lint_out" ]; then
   echo "Passed pylint linter!"
   exit 0
