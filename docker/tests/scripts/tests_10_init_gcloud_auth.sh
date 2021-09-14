@@ -15,7 +15,7 @@ then
 fi
 
 # test if we're running within CircleCI
-if in_circleci;
+if in_ci;
 then
   if [[ -z "${GCLOUD_CREDENTIALS_KEY}" ]] || [[ -z "${GCLOUD_CREDENTIALS}" ]];
   then
