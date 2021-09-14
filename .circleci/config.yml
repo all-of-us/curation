@@ -21,21 +21,24 @@ job_defaults: &job_defaults
 
 commands:
   # Define reusable sets of steps to be run within the testing jobs.
-  lint_setup:
+  virtual_env_setup:
     steps:
       - checkout:
           path: ~/curation
-      - run:
-          name: Add virtual environment activation to bash startup
-          command: python3 -m venv ~/curation_venv && echo "source ~/curation_venv/bin/activate" >> $BASH_ENV
-      - run:
-          working_directory: ~/curation/data_steward
-          name: Upgrade pip and install requirements
-          command: |
-            pip install --upgrade pip setuptools
-            pip install -r requirements.txt
-            pip install -r dev_requirements.txt
-            pip install -r deid/requirements.txt
+      - python/install-packages:
+          pkg-manager: pip
+          app-dir: ~/curation
+          include-branch-in-cache-key: false
+          include-python-in-cache-key: true
+          pip-dependency-file: data_steward/requirements.txt
+          pypi-cache: true
+      - python/install-packages:
+          pkg-manager: pip
+          app-dir: ~/curation
+          include-branch-in-cache-key: false
+          include-python-in-cache-key: true
+          pip-dependency-file: data_steward/dev_requirements.txt
+          pypi-cache: true
   lint_teardown:
     steps:
       - slack/status:
@@ -74,20 +77,7 @@ commands:
               && ./google-cloud-sdk/bin/gcloud components update --quiet
             # finally, add to path
             set +e
-      - python/install-packages:
-          pkg-manager: pip
-          app-dir: ~/curation
-          include-branch-in-cache-key: false
-          include-python-in-cache-key: true
-          pip-dependency-file: data_steward/requirements.txt
-          pypi-cache: true
-      - python/install-packages:
-          pkg-manager: pip
-          app-dir: ~/curation
-          include-branch-in-cache-key: false
-          include-python-in-cache-key: true
-          pip-dependency-file: data_steward/dev_requirements.txt
-          pypi-cache: true
+      - virtual_env_setup
   test_teardown:
     steps:
       - run:
@@ -113,20 +103,7 @@ jobs:
     steps:
       - checkout:
           path: ~/curation
-      - python/install-packages:
-          pkg-manager: pip
-          app-dir: ~/curation
-          include-branch-in-cache-key: false
-          include-python-in-cache-key: true
-          pip-dependency-file: data_steward/requirements.txt
-          pypi-cache: true
-      - python/install-packages:
-          pkg-manager: pip
-          app-dir: ~/curation
-          include-branch-in-cache-key: false
-          include-python-in-cache-key: true
-          pip-dependency-file: data_steward/dev_requirements.txt
-          pypi-cache: true
+      - virtual_env_setup
       - run:
           name: Checking commit messages for Jira tag
           working_directory: ~/curation
@@ -177,16 +154,10 @@ jobs:
           command: ./ci/activate_creds.sh ${HOME}/gcloud-credentials-key.json
       - run:
           name: Set up environment variables
-          working_directory: ~/curation/data_steward
-          command: |
-            echo $CIRCLE_WORKING_DIRECTORY
-            ./init_env.sh
+          command: ./init_env.sh
       - run:
           name: Create buckets and datasets
-          command: |
-            echo $CIRCLE_WORKING_DIRECTORY
-            echo $PYTHONPATH
-            PYTHONPATH=./:$PYTHONPATH python ./ci/test_setup.py
+          command: PYTHONPATH=./:$PYTHONPATH python ./ci/test_setup.py
       - run:
           name: Run integration tests
           working_directory: ~/curation
