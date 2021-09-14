@@ -8,23 +8,21 @@ set +x
 
 ## FUNCTIONS
 
-function in_ci {
-  if [[ -n "${CI}" ]] && [[ "${CI}" == "true" ]];
-  then
+function in_ci() {
+  if [[ -n "${CI}" ]] && [[ "${CI}" == "true" ]]; then
     return 0
   fi
   return 1
 }
 
-function missing_required_env {
+function missing_required_env() {
   echo Required environment variable \""${1}"\" is missing or empty
   exit 1
 }
 
-if [ -z "$1" ];
-then
+if [ -z "$1" ]; then
   echo At least one argument must be provided, and \
-  it must be the name of a service within docker-compose.yml
+    it must be the name of a service within docker-compose.yml
 
   exit 1
 fi
@@ -49,8 +47,7 @@ echo Running "$1" as user "${whoiis}" \("${uid}:${gid}"\)...
 # 2. ensure they have credentials we can use
 # 3. utilize compose v2 syntax (i.e. "docker compose" vs. "docker-compose")
 #   3a. this can probably be changed with updates to CI env.
-if ! in_ci;
-then
+if ! in_ci; then
   echo Running outside CI.
 
   # when run on a developer machine, utilize compose v2
@@ -71,8 +68,7 @@ then
   set -e
 
   # verify build succeeded before proceeding
-  if [ $build_ok -ne 0 ];
-  then
+  if [ $build_ok -ne 0 ]; then
     echo "Build base step failed"
     exit 1
   fi
@@ -80,8 +76,7 @@ then
   echo Base image build successful.
 
   # when run locally, ensure we have google app creds to provide inside container
-  if [[ -z "${GOOGLE_APPLICATION_CREDENTIALS}" ]];
-  then
+  if [[ -z "${GOOGLE_APPLICATION_CREDENTIALS}" ]]; then
     missing_required_env "GOOGLE_APPLICATION_CREDENTIALS"
   fi
   # TODO: docker-compose vs. docker compose have different full-name volume flags
