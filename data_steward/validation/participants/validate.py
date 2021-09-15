@@ -1,3 +1,19 @@
+"""
+Script to update a site's DRC identity match table with indications of matches
+between EHR submitted fields and Participant Summary API fields.
+
+There should be a record for each participant and the record should be filled with default values of `missing_rdr` or
+    `missing_ehr`. Each record should contain data for the fields: person_id, first_name, middle_name, last_name,
+    phone_number, email, address_1, address_2, city, state, zip, birth_date, sex, and algorithm.
+
+The record for each of the above fields should default to `missing_rdr` if the joined record in the
+    ps_api_values_<hpo_id> table does not contain any information otherwise, it should default to `missing_ehr`
+
+A match is indicated by a field value of 'match' and a non-match is indicated by a field values of 'non_match'
+
+Original Issue: DC-1127
+"""
+
 # Python imports
 import logging
 import argparse
@@ -6,7 +22,7 @@ import argparse
 from utils import bq, pipeline_logging, auth
 from tools.create_tier import SCOPES
 from common import JINJA_ENV, PS_API_VALUES, DRC_OPS
-from .participant_validation_queries import CREATE_COMPARISON_FUNCTION_QUERIES
+from participant_validation_queries import CREATE_COMPARISON_FUNCTION_QUERIES
 
 LOGGER = logging.getLogger(__name__)
 

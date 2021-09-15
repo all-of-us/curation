@@ -40,15 +40,6 @@ VALUES
     (4,'missing_ehr', 'no')
 """)
 
-POPULATE_PII_EMAILS = JINJA_ENV.from_string("""
-INSERT INTO `{{project_id}}.{{drc_dataset_id}}.{{pii_email_table_id}}` 
-(person_id, email)
-VALUES 
-    (1, 'john2@gmail.com'),
-    (2, 'REBECCA@gmail.com'),
-    (4, '   chris@GMAIL.com    ')
-""")
-
 ID_MATCH_CONTENT_QUERY = JINJA_ENV.from_string("""
     SELECT
         *
@@ -127,14 +118,23 @@ class ValidateTest(TestCase):
                               drop_existing=True,
                               dataset_id=DRC_OPS)
 
+    def test_identify_rdr_ehr_email_match(self):
+
+        POPULATE_PII_EMAILS = JINJA_ENV.from_string("""
+        INSERT INTO `{{project_id}}.{{drc_dataset_id}}.{{pii_email_table_id}}` 
+        (person_id, email)
+        VALUES 
+            (1, 'john2@gmail.com'), -- wrong email (non_match) --
+            (2, 'REBECCA@gmail.com'), -- capitalized characters (match) --
+            (4, '   chris@GMAIL.com    ') -- whitespace padding (match) --
+        """)
+
         populate_query = POPULATE_PII_EMAILS.render(
             project_id=self.project_id,
             drc_dataset_id=DRC_OPS,
             pii_email_table_id=self.pii_email_table_id)
         job = self.client.query(populate_query)
         job.result()
-
-    def test_identify_rdr_ehr_email_match(self):
 
         # Execute email match
         identify_rdr_ehr_match(self.client, self.project_id, self.hpo_id,
