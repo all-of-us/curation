@@ -50,6 +50,11 @@ echo Running "$1" as user "${whoiis}" \("${uid}:${gid}"\)...
 if ! in_ci; then
   echo Running outside CI.
 
+  # when run locally, ensure we have google app creds to provide inside container
+  if [[ -z "${GOOGLE_APPLICATION_CREDENTIALS}" ]]; then
+    missing_required_env "GOOGLE_APPLICATION_CREDENTIALS"
+  fi
+
   # when run on a developer machine, utilize compose v2
   COMPOSE_EXEC="docker compose"
 
@@ -57,28 +62,28 @@ if ! in_ci; then
   # 1. last build date > 1 week
   # 2. data_steward/requirements.txt checksum changes
 
-  echo Ensuring base image is up to date...
+  echo Ensuring base and tests image are up to date...
 
   # TODO: only output full build log with "verbose" flag
 
   # execute base image build
   set +e
-  docker compose build base
+  docker compose build \
+    --build-arg UID="${uid}" \
+    --build-arg GID="${gid}" \
+    base tests
+
   build_ok=$?
   set -e
 
   # verify build succeeded before proceeding
   if [ $build_ok -ne 0 ]; then
-    echo "Build base step failed"
+    echo "Build step failed"
     exit 1
   fi
 
-  echo Base image build successful.
+  echo Image build successful.
 
-  # when run locally, ensure we have google app creds to provide inside container
-  if [[ -z "${GOOGLE_APPLICATION_CREDENTIALS}" ]]; then
-    missing_required_env "GOOGLE_APPLICATION_CREDENTIALS"
-  fi
   # TODO: docker-compose vs. docker compose have different full-name volume flags
   # docker-compose -> --volume
   # docker compose -> --volumes
