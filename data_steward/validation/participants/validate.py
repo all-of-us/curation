@@ -6,77 +6,66 @@ import argparse
 from utils import bq, pipeline_logging, auth
 from tools.create_tier import SCOPES
 from common import JINJA_ENV, PS_API_VALUES, DRC_OPS
+from .participant_validation_queries import CREATE_COMPARISON_FUNCTION_QUERIES
 
 LOGGER = logging.getLogger(__name__)
 
 EHR_OPS = 'ehr_ops'
+MATCH = 'match'
+NO_MATCH = 'no_match'
+MISSING_RDR = 'missing_rdr'
+MISSING_EHR = 'missing_ehr'
 
-CREATE_EMAIL_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
-    CREATE FUNCTION IF NOT EXISTS `{{project_id}}.{{drc_dataset_id}}.CompareEmail`(rdr_email string, ehr_email string)
-    RETURNS string
-    AS ((
-        WITH normalized_rdr_email AS (
-            SELECT LOWER(TRIM(rdr_email)) AS rdr_email
-        )
-        , normalized_ehr_email AS (
-            SELECT LOWER(TRIM(ehr_email)) AS ehr_email
-        )
-        SELECT
-            CASE 
-                WHEN normalized_rdr_email.rdr_email = normalized_ehr_email.ehr_email
-                    AND REGEXP_CONTAINS(normalized_rdr_email.rdr_email, '@') THEN 'match'
-                WHEN normalized_rdr_email.rdr_email IS NOT NULL AND normalized_ehr_email.ehr_email IS NOT NULL THEN 'no_match'
-                WHEN normalized_rdr_email.rdr_email IS NULL THEN 'missing_rdr'
-                ELSE 'missing_ehr'
-            END AS email
-        FROM normalized_rdr_email, normalized_ehr_email 
-
-    ));
-""")
-
-MATCH_EMAIL_QUERY = JINJA_ENV.from_string("""
+MATCH_FIELDS_QUERY = JINJA_ENV.from_string("""
     UPDATE `{{project_id}}.{{drc_dataset_id}}.{{id_match_table_id}}` upd
     SET upd.email = `{{project_id}}.{{drc_dataset_id}}.CompareEmail`(ps.email, ehr.email),
         upd.algorithm = 'yes'
-    FROM `{{project_id}}.{{drc_dataset_id}}.{{id_match_table_id}}` id_match
-    LEFT JOIN `{{project_id}}.{{drc_dataset_id}}.{{ps_api_table_id}}` ps
-        ON ps.person_id = id_match.person_id
+    FROM `{{project_id}}.{{drc_dataset_id}}.{{ps_api_table_id}}` ps
     LEFT JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_email_table_id}}` ehr
-        ON ehr.person_id = id_match.person_id
-    WHERE upd.person_id = id_match.person_id
+        ON ehr.person_id = ps.person_id
+    WHERE upd.person_id = ps.person_id
+        -- AND PARTITION = PARTITION --
 """)
 
 
-def identify_rdr_ehr_email_match(client, project_id, hpo_id,
-                                 ehr_ops_dataset_id):
+def identify_rdr_ehr_match(client, project_id, hpo_id, ehr_ops_dataset_id):
 
     id_match_table_id = f'drc_identity_match_{hpo_id}'
     hpo_pii_email_table_id = f'{hpo_id}_pii_email'
     ps_api_table_id = f'{PS_API_VALUES}_{hpo_id}'
 
-    create_email_query = CREATE_EMAIL_COMPARISON_FUNCTION.render(
-        project_id=project_id, drc_dataset_id=DRC_OPS)
+    for item in CREATE_COMPARISON_FUNCTION_QUERIES:
+        LOGGER.info(f"Creating `{item['name']}` function if doesn't exist.")
+        query = item['query'].render(project_id=project_id,
+                                     drc_dataset_id=DRC_OPS,
+                                     match=MATCH,
+                                     no_match=NO_MATCH,
+                                     missing_rdr=MISSING_RDR,
+                                     missing_ehr=MISSING_EHR)
+        job = client.query(query)
+        job.result()
 
-    match_email_query = MATCH_EMAIL_QUERY.render(
+    match_query = MATCH_FIELDS_QUERY.render(
         project_id=project_id,
         id_match_table_id=id_match_table_id,
         hpo_pii_email_table_id=hpo_pii_email_table_id,
         ps_api_table_id=ps_api_table_id,
         drc_dataset_id=DRC_OPS,
-        ehr_ops_dataset_id=ehr_ops_dataset_id)
+        ehr_ops_dataset_id=ehr_ops_dataset_id,
+        match=MATCH,
+        no_match=NO_MATCH,
+        missing_rdr=MISSING_RDR,
+        missing_ehr=MISSING_EHR)
 
-    LOGGER.info("Creating `CompareEmail` function if doesn't exist.")
-    job = client.query(create_email_query)
-    job.result()
-
-    LOGGER.info(f"Matching email field for {hpo_id}.")
-    job = client.query(match_email_query)
+    LOGGER.info(f"Matching fields for {hpo_id}.")
+    job = client.query(match_query)
     job.result()
 
 
 def get_arg_parser():
     parser = argparse.ArgumentParser(
-        description=""" Create and update DRC match table for hpo sites.""")
+        description=
+        """Identify matches between participant summary api and EHR data.""")
     parser.add_argument('-p',
                         '--project_id',
                         action='store',
@@ -112,7 +101,7 @@ def main():
     client = bq.get_client(args.project_id, credentials=impersonation_creds)
 
     # Populates the validation table for the site
-    identify_rdr_ehr_email_match(client, args.project_id, args.hpo_id, EHR_OPS)
+    identify_rdr_ehr_match(client, args.project_id, args.hpo_id, EHR_OPS)
 
     LOGGER.info('Done.')
 

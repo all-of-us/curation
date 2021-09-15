@@ -18,7 +18,7 @@ from utils import bq
 from tests import test_util
 from app_identity import PROJECT_ID
 from common import JINJA_ENV, DRC_OPS, PS_API_VALUES
-from participant_validation.validate_email import identify_rdr_ehr_email_match
+from validation.participants.validate import identify_rdr_ehr_match
 
 POPULATE_PS_VALUES = JINJA_ENV.from_string("""
 INSERT INTO `{{project_id}}.{{drc_dataset_id}}.{{ps_values_table_id}}` 
@@ -56,7 +56,7 @@ ID_MATCH_CONTENT_QUERY = JINJA_ENV.from_string("""
 """)
 
 
-class ValidateEmailTest(TestCase):
+class ValidateTest(TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -137,8 +137,8 @@ class ValidateEmailTest(TestCase):
     def test_identify_rdr_ehr_email_match(self):
 
         # Execute email match
-        identify_rdr_ehr_email_match(self.client, self.project_id, self.hpo_id,
-                                     self.dataset_id)
+        identify_rdr_ehr_match(self.client, self.project_id, self.hpo_id,
+                               self.dataset_id)
 
         expected = [{
             'person_id': 1,
