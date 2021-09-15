@@ -84,7 +84,7 @@ if ! in_ci; then
 
   # execute tests image build
   set +e
-  docker compose build tests
+  docker compose build "${1}"
   build_ok=$?
   set -e
 
