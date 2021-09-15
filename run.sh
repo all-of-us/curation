@@ -71,14 +71,25 @@ if ! in_ci; then
   docker compose build \
     --build-arg UID="${uid}" \
     --build-arg GID="${gid}" \
-    base tests
+    base
 
   build_ok=$?
   set -e
 
   # verify build succeeded before proceeding
   if [ $build_ok -ne 0 ]; then
-    echo "Build step failed"
+    echo "Build base step failed"
+    exit 1
+  fi
+
+  # execute tests image build
+  set +e
+  docker compose build tests
+  build_ok=$?
+  set -e
+
+  if [ $build_ok -ne 0 ]; then
+    echo "Build tests step failed"
     exit 1
   fi
 
