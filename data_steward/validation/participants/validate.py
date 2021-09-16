@@ -22,7 +22,7 @@ import argparse
 from utils import bq, pipeline_logging, auth
 from tools.create_tier import SCOPES
 from common import JINJA_ENV, PS_API_VALUES, DRC_OPS
-from participant_validation_queries import CREATE_COMPARISON_FUNCTION_QUERIES
+from .participant_validation_queries import CREATE_COMPARISON_FUNCTION_QUERIES
 
 LOGGER = logging.getLogger(__name__)
 
@@ -40,7 +40,7 @@ MATCH_FIELDS_QUERY = JINJA_ENV.from_string("""
     LEFT JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_email_table_id}}` ehr
         ON ehr.person_id = ps.person_id
     WHERE upd.person_id = ps.person_id
-        -- AND PARTITION = PARTITION --
+        AND upd._PARTITIONTIME = ps._PARTITIONTIME
 """)
 
 

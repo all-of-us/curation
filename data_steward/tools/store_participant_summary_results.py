@@ -88,7 +88,7 @@ def main(project_id, rdr_project_id, org_id=None, hpo_id=None):
             table = bigquery.Table(f'{project_id}.{DATASET_ID}.{tablename}',
                                    schema=schema)
             table.time_partitioning = bigquery.TimePartitioning(
-                type_=bigquery.TimePartitioningType.DAY)
+                type_=bigquery.TimePartitioningType.HOUR)
             table = client.create_table(table)
 
         # Insert summary data into table
