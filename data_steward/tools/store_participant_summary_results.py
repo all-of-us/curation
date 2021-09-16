@@ -1,5 +1,6 @@
 """ Module responsible for calling the Participant Summary Api for a set of sites and storing in tables.
 
+Original Issue: DC-1214
 """
 
 # Python imports
@@ -77,13 +78,13 @@ def main(project_id, rdr_project_id, org_id=None, hpo_id=None):
         schema = bq.get_table_schema(PS_API_VALUES)
         tablename = f'{PS_API_VALUES}_{hpo_id}'
 
+        client = bq.get_client(project_id)
         try:
-            table = client.get_table(table)
+            table = client.get_table(f'{project_id}.{DATASET_ID}.{tablename}')
         except NotFound:
             LOGGER.info(
                 f'Creating table {project_id}.{DATASET_ID}.{tablename}...')
 
-            client = bq.get_client(project_id)
             table = bigquery.Table(f'{project_id}.{DATASET_ID}.{tablename}',
                                    schema=schema)
             table.time_partitioning = bigquery.TimePartitioning(

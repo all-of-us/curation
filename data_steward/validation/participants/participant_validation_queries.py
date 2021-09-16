@@ -24,6 +24,7 @@ CREATE_EMAIL_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
     ));
 """)
 
+#Contains list of create function queries to execute
 CREATE_COMPARISON_FUNCTION_QUERIES = [{
     'name': 'CompareEmail',
     'query': CREATE_EMAIL_COMPARISON_FUNCTION
