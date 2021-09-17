@@ -15,9 +15,9 @@ The intent of the get_participant_information function is to retrieve the inform
 """
 # Python imports
 import re
-from pandas.core.frame import DataFrame
+import logging
+from typing import List, Dict
 import requests
-from typing import List
 
 # Third party imports
 import pandas
@@ -30,15 +30,15 @@ from google.cloud.bigquery import LoadJobConfig
 from utils import auth
 from utils.bq import get_client, get_table_schema
 
+LOGGER = logging.getLogger(__name__)
+
+# These fields are coming in from RDR with their naming convention and will be converted
+# to the Curation naming convention in the `get_site_participant_information` function
 FIELDS_OF_INTEREST_FOR_VALIDATION = [
     'participantId', 'firstName', 'middleName', 'lastName', 'streetAddress',
     'streetAddress2', 'city', 'state', 'zipCode', 'phoneNumber', 'email',
     'dateOfBirth', 'sex'
 ]
-"""
-These fields are coming in from RDR with their naming convention and will be converted
-to the Curation naming convention in the `get_site_participant_information` function
-"""
 
 
 def get_access_token():
@@ -62,40 +62,85 @@ def get_access_token():
     return access_token
 
 
-def get_participant_data(url, headers):
+def get_participant_data(api_project_id: str, params: Dict) -> List[Dict]:
     """
     Fetches participant data via ParticipantSummary API
 
-    :param url: the /ParticipantSummary endpoint to fetch information about the participant
-    :param headers: the metadata associated with the API request and response
+    :param api_project_id: RDR project id when PS API rests
+    :param params: the fields and their values
 
     :return: list of data fetched from the ParticipantSummary API
     """
+    # Base /ParticipantSummary endpoint to fetch information about the participant
+    url = f'https://{api_project_id}.appspot.com/rdr/v1/ParticipantSummary'
 
     done = False
     participant_data = []
-    original_url = url
-    next_url = url
+
+    token = get_access_token()
+
+    headers = {
+        'content-type': 'application/json',
+        'Authorization': f'Bearer {token}'
+    }
+
+    session = requests.Session()
 
     while not done:
-        resp = requests.get(next_url, headers=headers)
+        resp = session.get(url, headers=headers, data=params)
         if not resp or resp.status_code != 200:
-            print(f'Error: API request failed because {resp}')
+            LOGGER.warning(f'Error: API request failed because {resp}')
         else:
             r_json = resp.json()
             participant_data += r_json.get('entry', {})
             if 'link' in r_json:
                 link_obj = r_json.get('link')
                 link_url = link_obj[0].get('url')
-                next_url = original_url + '&' + link_url[link_url.find('_token'
-                                                                      ):]
+                params['_token'] = link_url[link_url.find('_token') +
+                                            len('_token') + 1:]
             else:
                 done = True
 
     return participant_data
 
 
-def get_deactivated_participants(api_project_id, columns):
+def process_api_data_to_df(data: List[Dict], columns: List[str],
+                           column_map: Dict) -> pandas.DataFrame:
+    """
+    Converts data retrieved from PS API to curation table formatted df
+
+    :param data: data retrieved from PS API
+    :param columns: columns of interest
+    :param column_map: columns to be renamed as {old_name: new_name, ..}
+    :return: dataframe with supplied columns and renamed as per column_map
+    """
+    participant_records = []
+
+    # loop over participant summary records, insert participant data in same order as deactivated_participant_cols
+    for full_participant_record in data:
+        resource = full_participant_record.get('resource', {})
+        # loop over fields that exist in both resource_dict and columns and save key-value pairs
+        limited_participant_record = {
+            col: resource[col] for col in resource.keys() & columns
+        }
+        participant_records.append(limited_participant_record)
+
+    df = pandas.DataFrame.from_records(participant_records, columns=columns)
+
+    # Transforms participantId to an integer string
+    df['participantId'] = df['participantId'].apply(participant_id_to_int)
+
+    # Rename columns to be consistent with curation naming convention
+    bq_columns = {
+        k: '_'.join(re.split('(?=[A-Z])', k)).lower() for k in columns
+    }
+    df.rename(bq_columns, axis='columns', inplace=True)
+    df.rename(column_map, axis='columns', inplace=True)
+    return df
+
+
+def get_deactivated_participants(api_project_id: str,
+                                 columns: List[str]) -> pandas.DataFrame:
     """
     Fetches all deactivated participants via API if suspensionStatus = 'NO_CONTACT'
     and stores all the deactivated participants in a BigQuery dataset table
@@ -112,67 +157,23 @@ def get_deactivated_participants(api_project_id, columns):
         raise RuntimeError(
             'Please provide a list of columns to be pushed to BigQuery table')
 
-    token = get_access_token()
-
-    headers = {
-        'content-type': 'application/json',
-        'Authorization': f'Bearer {token}'
-    }
-
-    field = 'NO_CONTACT'
-
     # Make request to get API version. This is the current RDR version for reference
     # See https://github.com/all-of-us/raw-data-repository/blob/master/opsdataAPI.md for documentation of this api.
-    url = (f'https://{api_project_id}.appspot.com/rdr/v1/ParticipantSummary'
-           f'?_sort=lastModified'
-           f'&suspensionStatus={field}')
+    params = {'_sort': 'lastModified', 'suspensionStatus': 'NO_CONTACT'}
 
-    participant_data = get_participant_data(url, headers)
+    participant_data = get_participant_data(api_project_id, params=params)
 
-    deactivated_participants_cols = columns
-
-    deactivated_participants = []
-    # loop over participant summary records, insert participant data in same order as deactivated_participant_cols
-    for entry in participant_data:
-        item = []
-        for col in deactivated_participants_cols:
-            for key, val in entry.get('resource', {}).items():
-                if col == key:
-                    item.append(val)
-        deactivated_participants.append(item)
-
-    df = pandas.DataFrame(deactivated_participants,
-                          columns=deactivated_participants_cols)
-
-    # Converts column `suspensionTime` from string to timestamp
-    if 'suspensionTime' in deactivated_participants_cols:
-        df['suspensionTime'] = pandas.to_datetime(df['suspensionTime'])
-        df['suspensionTime'] = df['suspensionTime'].dt.date
-
-    # Transforms participantId to an integer string
-    df['participantId'] = df['participantId'].apply(participant_id_to_int)
-
-    # Rename columns to be consistent with the curation software
-    bq_columns = [
-        '_'.join(re.split('(?=[A-Z])', k)).lower()
-        for k in deactivated_participants_cols
-    ]
-    bq_columns = [
-        'person_id' if k == 'participant_id' else k for k in bq_columns
-    ]
-    bq_columns = [
-        'deactivated_date' if k == 'suspension_time' else k for k in bq_columns
-    ]
     column_map = {
-        k: v for k, v in zip(deactivated_participants_cols, bq_columns)
+        'participant_id': 'person_id',
+        'suspension_time': 'deactivated_date'
     }
 
-    df = df.rename(columns=column_map)
+    df = process_api_data_to_df(participant_data, columns, column_map)
 
     return df
 
 
-def get_site_participant_information(project_id, hpo_id):
+def get_site_participant_information(project_id: str, hpo_id: str):
     """
     Fetches the necessary participant information for a particular site.
     :param project_id: The RDR project hosting the API
@@ -188,68 +189,33 @@ def get_site_participant_information(project_id, hpo_id):
     if not isinstance(hpo_id, str):
         raise RuntimeError(f'Please provide an hpo_id')
 
-    token = get_access_token()
-
-    headers = {
-        'content-type': 'application/json',
-        'Authorization': f'Bearer {token}'
-    }
-
     # Make request to get API version. This is the current RDR version for reference see
     # see https://github.com/all-of-us/raw-data-repository/blob/master/opsdataAPI.md for documentation of this API.
     # consentForElectronicHealthRecords=SUBMITTED -- ensures only consenting participants are returned via the API
     #   regardless if there is EHR data uploaded for that participant
     # suspensionStatus=NOT_SUSPENDED and withdrawalStatus=NOT_WITHDRAWN -- ensures only active participants returned
     #   via the API
-    url = (f'https://{project_id}.appspot.com/rdr/v1/ParticipantSummary'
-           f'?awardee={hpo_id}'
-           f'&suspensionStatus=NOT_SUSPENDED'
-           f'&consentForElectronicHealthRecords=SUBMITTED'
-           f'&withdrawalStatus=NOT_WITHDRAWN'
-           f'&_sort=participantId'
-           f'&_count=1000')
-
-    participant_data = get_participant_data(url, headers)
-
-    # Columns of interest for participants of a desired site
-    participant_information_cols = FIELDS_OF_INTEREST_FOR_VALIDATION
-
-    participant_information = []
-
-    # Loop over participant summary records, insert participant data in
-    # the same order as participant_information_cols
-    for entry in participant_data:
-        item = []
-        for col in participant_information_cols:
-            for key, val in entry.get('resource', {}).items():
-                if col == key:
-                    item.append(val)
-        participant_information.append(item)
-
-    df = pandas.DataFrame(participant_information,
-                          columns=participant_information_cols)
-
-    # Transforms participantId to an integer string
-    df['participantId'] = df['participantId'].apply(participant_id_to_int)
-
-    # Rename columns to be consistent with the curation software
-    bq_columns = [
-        '_'.join(re.split('(?=[A-Z])', k)).lower()
-        for k in participant_information_cols
-    ]
-    bq_columns = [
-        'person_id' if k == 'participant_id' else k for k in bq_columns
-    ]
-    column_map = {
-        k: v for k, v in zip(participant_information_cols, bq_columns)
+    params = {
+        'awardee': f'{hpo_id}',
+        'suspensionStatus': 'NOT_SUSPENDED',
+        'consentForElectronicHealthRecords': 'SUBMITTED',
+        'withdrawalStatus': 'NOT_WITHDRAWN',
+        '_sort': 'participantId',
+        '_count': '1000'
     }
 
-    df = df.rename(columns=column_map)
+    participant_data = get_participant_data(project_id, params=params)
+
+    column_map = {'participant_id': 'person_id'}
+
+    df = process_api_data_to_df(participant_data,
+                                FIELDS_OF_INTEREST_FOR_VALIDATION, column_map)
 
     return df
 
 
-def get_org_participant_information(project_id, org_id):
+def get_org_participant_information(project_id: str,
+                                    org_id: str) -> pandas.DataFrame:
     """
     Fetches the necessary participant information for a particular organization.
 
@@ -267,64 +233,27 @@ def get_org_participant_information(project_id, org_id):
     if not isinstance(org_id, str):
         raise RuntimeError(f'Please provide an org_id')
 
-    token = get_access_token()
-
-    headers = {
-        'content-type': 'application/json',
-        'Authorization': f'Bearer {token}'
-    }
-
     # Make request to get API version. This is the current RDR version for reference see
     # see https://github.com/all-of-us/raw-data-repository/blob/master/opsdataAPI.md for documentation of this API.
     # consentForElectronicHealthRecords=SUBMITTED -- ensures only consenting participants are returned via the API
     #   regardless if there is EHR data uploaded for that participant
     # suspensionStatus=NOT_SUSPENDED and withdrawalStatus=NOT_WITHDRAWN -- ensures only active participants returned
     #   via the API
-    url = (f'https://{project_id}.appspot.com/rdr/v1/ParticipantSummary'
-           f'?organization={org_id}'
-           f'&suspensionStatus=NOT_SUSPENDED'
-           f'&consentForElectronicHealthRecords=SUBMITTED'
-           f'&withdrawalStatus=NOT_WITHDRAWN'
-           f'&_sort=participantId'
-           f'&_count=1000')
-
-    participant_data = get_participant_data(url, headers)
-
-    # Columns of interest for participants of a desired site
-    participant_information_cols = FIELDS_OF_INTEREST_FOR_VALIDATION
-
-    participant_information = []
-
-    # Loop over participant summary records, insert participant data in
-    # the same order as participant_information_cols
-    for entry in participant_data:
-        resource = entry.get('resource', {})
-        items = {
-            k: v
-            for k, v in resource.items()
-            if k in participant_information_cols
-        }
-        participant_information.append(items)
-
-    df = pandas.DataFrame.from_records(participant_information,
-                                       columns=participant_information_cols)
-
-    # Transforms participantId to an integer string
-    df['participantId'] = df['participantId'].apply(participant_id_to_int)
-
-    # Rename columns to be consistent with the curation software
-    bq_columns = [
-        '_'.join(re.split('(?=[A-Z])', k)).lower()
-        for k in participant_information_cols
-    ]
-    bq_columns = [
-        'person_id' if k == 'participant_id' else k for k in bq_columns
-    ]
-    column_map = {
-        k: v for k, v in zip(participant_information_cols, bq_columns)
+    params = {
+        'organization': f'{org_id}',
+        'suspensionStatus': 'NOT_SUSPENDED',
+        'consentForElectronicHealthRecords': 'SUBMITTED',
+        'withdrawalStatus': 'NOT_WITHDRAWN',
+        '_sort': 'participantId',
+        '_count': '1000'
     }
 
-    df = df.rename(columns=column_map)
+    participant_data = get_participant_data(project_id, params=params)
+
+    column_map = {'participant_id': 'person_id'}
+
+    df = process_api_data_to_df(participant_data,
+                                FIELDS_OF_INTEREST_FOR_VALIDATION, column_map)
 
     return df
 
