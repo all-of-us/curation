@@ -26,6 +26,7 @@ from tests import test_util
 from app_identity import PROJECT_ID
 from common import JINJA_ENV, DRC_OPS
 from tools import create_update_drc_id_match_table as id_validation
+from constants.validation.participants.identity_match import IDENTITY_MATCH_TABLE
 
 POPULATE_PS_VALUES = JINJA_ENV.from_string("""
 INSERT INTO `{{project_id}}.{{drc_dataset_id}}.{{ps_values_table_id}}` 
@@ -78,7 +79,7 @@ class CreateUpdateDrcIdMatchTableTest(TestCase):
         ]
 
         self.hpo_id = 'fake_site'
-        self.id_match_table_id = f'drc_identity_match_{self.hpo_id}'
+        self.id_match_table_id = f'{IDENTITY_MATCH_TABLE}_{self.hpo_id}'
         self.ps_values_table_id = f'ps_api_values_{self.hpo_id}'
 
         # Create and populate the ps_values site table

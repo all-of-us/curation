@@ -19,6 +19,7 @@ from tests import test_util
 from app_identity import PROJECT_ID
 from common import JINJA_ENV, DRC_OPS, PS_API_VALUES
 from validation.participants.validate import identify_rdr_ehr_match
+from constants.validation.participants.identity_match import IDENTITY_MATCH_TABLE
 
 POPULATE_PS_VALUES = JINJA_ENV.from_string("""
 INSERT INTO `{{project_id}}.{{drc_dataset_id}}.{{ps_values_table_id}}` 
@@ -62,7 +63,7 @@ class ValidateTest(TestCase):
         self.client = bq.get_client(self.project_id)
 
         self.hpo_id = 'fake_site'
-        self.id_match_table_id = f'drc_identity_match_{self.hpo_id}'
+        self.id_match_table_id = f'{IDENTITY_MATCH_TABLE}_{self.hpo_id}'
         self.ps_values_table_id = f'{PS_API_VALUES}_{self.hpo_id}'
         self.pii_email_table_id = f'{self.hpo_id}_pii_email'
 

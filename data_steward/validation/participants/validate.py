@@ -23,6 +23,7 @@ from utils import bq, pipeline_logging, auth
 from tools.create_tier import SCOPES
 from common import JINJA_ENV, PS_API_VALUES, DRC_OPS
 from .participant_validation_queries import CREATE_COMPARISON_FUNCTION_QUERIES
+from constants.validation.participants.identity_match import IDENTITY_MATCH_TABLE
 
 LOGGER = logging.getLogger(__name__)
 
@@ -46,7 +47,7 @@ MATCH_FIELDS_QUERY = JINJA_ENV.from_string("""
 
 def identify_rdr_ehr_match(client, project_id, hpo_id, ehr_ops_dataset_id):
 
-    id_match_table_id = f'drc_identity_match_{hpo_id}'
+    id_match_table_id = f'{IDENTITY_MATCH_TABLE}_{hpo_id}'
     hpo_pii_email_table_id = f'{hpo_id}_pii_email'
     ps_api_table_id = f'{PS_API_VALUES}_{hpo_id}'
 

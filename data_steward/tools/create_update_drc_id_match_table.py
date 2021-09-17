@@ -171,7 +171,7 @@ def main():
 
     client = bq.get_client(args.project_id, credentials=impersonation_creds)
 
-    table_id = f'drc_identity_match_{args.hpo_id}'
+    table_id = f'{IDENTITY_MATCH_TABLE}_{args.hpo_id}'
 
     # Creates hpo_site identity match table if it does not exist
     if not table_exists(table_id, DRC_OPS):
