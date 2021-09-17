@@ -35,22 +35,23 @@ class ValidationMainTest(TestCase):
         self.addCleanup(mock_get_hpo_name.stop)
         self.folder_prefix = '2019-01-01-v1/'
 
+    def _create_dummy_bucket_items(self,
+                                   time_created,
+                                   updated,
+                                   file_exclusions=[],
+                                   folder="2018-09-01"):
+        bucket_items = []
+        for file_name in common.AOU_REQUIRED_FILES:
+            if file_name not in file_exclusions:
+                bucket_items.append({
+                    'name': f'{folder}/{file_name}',
+                    'timeCreated': time_created,
+                    'updated': updated
+                })
+
+        return bucket_items
+
     def test_retention_checks_list_submitted_bucket_items(self):
-
-        def create_dummy_bucket_items(time_created,
-                                      updated,
-                                      file_exclusions=[]):
-            bucket_items = []
-            for file_name in common.AOU_REQUIRED_FILES:
-                if file_name not in file_exclusions:
-                    bucket_items.append({
-                        'name': f'2018-09-01/{file_name}',
-                        'timeCreated': time_created,
-                        'updated': updated
-                    })
-
-            return bucket_items
-
         #Define times to use
         within_retention = datetime.datetime.today() - datetime.timedelta(
             days=25)
@@ -69,17 +70,18 @@ class ValidationMainTest(TestCase):
         after_lag_time_str = after_lag_time.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
 
         # If any required files are missing, nothing should be returned
-        bucket_items = create_dummy_bucket_items(
+        bucket_items = self._create_dummy_bucket_items(
             within_retention_str,
             after_lag_time_str,
             file_exclusions=['visit_occurrence.csv'])
         actual_result = main.list_submitted_bucket_items(bucket_items)
         expected_result = []
+        self.maxDiff = None
         self.assertCountEqual(expected_result, actual_result)
 
         # If all required files are present and files within retention period, files should be returned
-        bucket_items = create_dummy_bucket_items(within_retention_str,
-                                                 after_lag_time_str)
+        bucket_items = self._create_dummy_bucket_items(within_retention_str,
+                                                       after_lag_time_str)
         actual_result = main.list_submitted_bucket_items(bucket_items)
         expected_result = bucket_items
         self.assertCountEqual(expected_result, actual_result)
@@ -91,9 +93,10 @@ class ValidationMainTest(TestCase):
         # }]
 
         # if a file expires within a day, it should not be returned
-        bucket_items = create_dummy_bucket_items(within_retention_str,
-                                                 after_lag_time_str,
-                                                 file_exclusions=['person.csv'])
+        bucket_items = self._create_dummy_bucket_items(
+            within_retention_str,
+            after_lag_time_str,
+            file_exclusions=['person.csv'])
         bucket_items_with_modified_person = bucket_items.copy()
         bucket_items_with_modified_person.append({
             'name': '2018-09-01/person.csv',
@@ -110,8 +113,8 @@ class ValidationMainTest(TestCase):
         self.assertCountEqual([], actual_result)
 
         #If unknown item and all other conditions met, return the item
-        bucket_items = create_dummy_bucket_items(within_retention_str,
-                                                 after_lag_time_str)
+        bucket_items = self._create_dummy_bucket_items(within_retention_str,
+                                                       after_lag_time_str)
         unknown_item = {
             'name': '2018-09-01/nyc_cu_person.csv',
             'timeCreated': within_retention_str,
@@ -123,8 +126,8 @@ class ValidationMainTest(TestCase):
         self.assertCountEqual(actual_result, bucket_items)
 
         # If ignored item and all other conditions met, only exclude the ignored item
-        bucket_items = create_dummy_bucket_items(within_retention_str,
-                                                 after_lag_time_str)
+        bucket_items = self._create_dummy_bucket_items(within_retention_str,
+                                                       after_lag_time_str)
         bucket_items_with_ignored_item = bucket_items.copy()
         ignored_item = dict(name='2018-09-01/' + common.RESULTS_HTML,
                             timeCreated=within_retention_str,
@@ -136,7 +139,7 @@ class ValidationMainTest(TestCase):
         self.assertCountEqual(expected_result, actual_result)
 
         # If any AOU_REQUIRED file has been updated less than 5 minutes ago, no files should be returned
-        bucket_items = create_dummy_bucket_items(
+        bucket_items = self._create_dummy_bucket_items(
             within_retention_str,
             after_lag_time_str,
             file_exclusions=['observation.csv'])
@@ -159,7 +162,10 @@ class ValidationMainTest(TestCase):
         t2 = (now - datetime.timedelta(days=1)).strftime(fmt)
         t3 = (now - datetime.timedelta(hours=1)).strftime(fmt)
         expected = 't2/'
-        bucket_items = [{
+
+        bucket_items = self._create_dummy_bucket_items(
+            t2, t2, file_exclusions=["person.csv"], folder="t2")
+        bucket_items.extend([{
             'name': 't0/person.csv',
             'updated': t0,
             'timeCreated': t0
@@ -171,7 +177,7 @@ class ValidationMainTest(TestCase):
             'name': '%sperson.csv' % expected,
             'updated': t2,
             'timeCreated': t2
-        }]
+        }])
 
         # mock bypasses api call and says no folders were processed
         with mock.patch(
