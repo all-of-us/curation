@@ -135,6 +135,3 @@ RUN python -m venv "${VENV_PATH}" \
 
 # remove data_steward dir as it will be mounted inside the container as a volume later.
 RUN rm -rf "${CIRCLE_WORKING_DIRECTORY}/data_steward"
-
-# set our final working directory
-WORKDIR "${CIRCLE_WORKING_DIRECTORY}"
