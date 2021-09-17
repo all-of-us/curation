@@ -15,7 +15,6 @@ job_defaults: &job_defaults
     # If any of these refer to each other, rewrite them so that they don't or see https://circleci.com/docs/2.0/env-vars/#interpolating-environment-variables-to-set-other-environment-variables .
     environment:
       - CIRCLE_ARTIFACTS: /tmp/circleci-artifacts
-      - PYTHONPATH: ~/curation/data_steward:~/curation/tests:$PYTHONPATH
     docker:
       - image: cimg/python:3.7
 
@@ -38,6 +37,13 @@ commands:
           include-branch-in-cache-key: false
           include-python-in-cache-key: true
           pip-dependency-file: data_steward/dev_requirements.txt
+          pypi-cache: true
+      - python/install-packages:
+          pkg-manager: pip
+          app-dir: ~/curation
+          include-branch-in-cache-key: false
+          include-python-in-cache-key: true
+          pip-dependency-file: data_steward/deid/requirements.txt
           pypi-cache: true
   lint_teardown:
     steps:
@@ -119,7 +125,7 @@ jobs:
       - run:
           name: Checking Python lint with Pylint
           working_directory: ~/curation
-          command: pylint -E data_steward tests
+          command: tools/pylint_checks.sh
       - lint_teardown
 
   unit_test:
