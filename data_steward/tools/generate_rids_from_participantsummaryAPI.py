@@ -16,7 +16,7 @@ The data cutoff data for the Oct 2020 CDR is 8/1/2020.
 """
 # Python imports
 import argparse
-from datetime import datetime, date
+from datetime import datetime
 
 # Third party imports
 from google.cloud import bigquery
@@ -25,7 +25,7 @@ import numpy as np
 import pandas_gbq
 
 # Project imports
-from utils.participant_summary_requests import get_access_token, get_participant_data
+from utils.participant_summary_requests import get_participant_data
 from common import JINJA_ENV
 
 GET_EXISTING_RIDS = JINJA_ENV.from_string("""
@@ -72,36 +72,40 @@ def get_participants(api_project_id, existing_pids):
 
     # Make request to get API version. This is the current RDR version for reference
     # See https://github.com/all-of-us/raw-data-repository/blob/master/opsdataAPI.md for documentation of this api.
-    request_url_cutoff_participants = "https://{0}.appspot.com/rdr/v1/ParticipantSummary?_sort=" \
-                                      "consentForStudyEnrollmentAuthored&withdrawalStatus={1}" \
-                                      "&consentForStudyEnrollmentAuthored=gt{2}&consentForStudyEnrollmentAuthored=" \
-                                      "lt{3}".format(api_project_id, 'NOT_WITHDRAWN', bin_1_gt_datetime,
-                                                     bin_1_lt_datetime)
-    request_url_max_age_participants_1 = "https://{0}.appspot.com/rdr/v1/ParticipantSummary?_sort=" \
-                                         "consentForStudyEnrollmentAuthored&withdrawalStatus={1}" \
-                                         "&consentForStudyEnrollmentAuthored=lt{2}".format(api_project_id,
-                                                                                           'NOT_WITHDRAWN',
-                                                                                           bin_2_datetime)
-    request_url_max_age_participants_2 = "https://{0}.appspot.com/rdr/v1/ParticipantSummary?_sort=" \
-                                         "consentForStudyEnrollmentAuthored&withdrawalStatus={1}" \
-                                         "&consentForStudyEnrollmentAuthored=gt{2}&consentForStudyEnrollmentAuthored=" \
-                                         "lt{3}".format(api_project_id, 'NOT_WITHDRAWN', bin_3_gt_datetime,
-                                                        bin_3_lt_datetime)
+    request_url_cutoff_participants = {
+        "_sort":
+            "consentForStudyEnrollmentAuthored",
+        "withdrawalStatus":
+            "NOT_WITHDRAWN",
+        "consentForStudyEnrollmentAuthored": [
+            f"gt{bin_1_gt_datetime}", f"lt{bin_1_lt_datetime}"
+        ]
+    }
+    request_url_max_age_participants_1 = {
+        "_sort": "consentForStudyEnrollmentAuthored",
+        "withdrawalStatus": "NOT_WITHDRAWN",
+        "consentForStudyEnrollmentAuthored": f"lt{bin_2_datetime}"
+    }
+    request_url_max_age_participants_2 = {
+        "_sort":
+            "consentForStudyEnrollmentAuthored",
+        "withdrawalStatus":
+            "NOT_WITHDRAWN",
+        "consentForStudyEnrollmentAuthored": [
+            f"gt{bin_3_gt_datetime}", f"lt{bin_3_lt_datetime}"
+        ]
+    }
 
-    list_url_requests = [
+    list_url_request_params = [
         request_url_cutoff_participants, request_url_max_age_participants_1,
         request_url_max_age_participants_2
     ]
     participant_data = []
 
     # loop through urls and create new tokens each request to avoid API timing out
-    for url in list_url_requests:
-        token = get_access_token()
-        headers = {
-            'content-type': 'application/json',
-            'Authorization': 'Bearer {0}'.format(token)
-        }
-        participant_data = participant_data + get_participant_data(url, headers)
+    for params in list_url_request_params:
+        participant_data = participant_data + get_participant_data(
+            api_project_id, params)
 
     participants = pd.DataFrame(columns=['person_id'])
     # Loop through participant_data to retrieve only person_id
