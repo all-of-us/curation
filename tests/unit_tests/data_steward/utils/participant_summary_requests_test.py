@@ -15,7 +15,6 @@ The intent of this module is to check that GCR access token is generated properl
 # Python imports
 from unittest import TestCase
 from unittest.mock import patch, MagicMock
-from numpy.core.numeric import NaN
 
 # Third Party imports
 import pandas
@@ -43,10 +42,11 @@ class ParticipantSummaryRequestsTest(TestCase):
         self.fake_hpo = 'foo_hpo'
         self.destination_table = 'bar_dataset._deactivated_participants'
 
+        self.fake_token = 'ya29.12345'
         self.fake_url = 'www.fake_site.com'
         self.fake_headers = {
             'content-type': 'application/json',
-            'Authorization': 'Bearer ya29.12345'
+            'Authorization': f'Bearer {self.fake_token}'
         }
 
         self.columns = ['participantId', 'suspensionStatus', 'suspensionTime']
@@ -63,7 +63,7 @@ class ParticipantSummaryRequestsTest(TestCase):
             333, 'foo_first', 'foo_middle', 'foo_last', 'foo_street_address',
             'foo_street_address_2', 'foo_city', 'foo_state', '12345',
             '1112223333', 'foo_email', '1900-01-01', 'SexAtBirth_Male'
-        ], [444, 'bar_first', 'bar_last']]
+        ], [444, 'bar_first', np.nan, 'bar_last']]
 
         self.updated_org_participant_information = [[
             333, 'foo_first', 'foo_middle', 'foo_last', 'foo_street_address',
@@ -166,15 +166,19 @@ class ParticipantSummaryRequestsTest(TestCase):
 
         self.assertEqual(mock_auth.delegated_credentials().token, actual_token)
 
-    @patch('utils.participant_summary_requests.requests.get')
-    def test_get_participant_data(self, mock_get):
-        mock_get.return_value.status_code = 200
-        mock_get.return_value.json.return_value = self.json_response_entry
+    @patch('utils.participant_summary_requests.get_access_token')
+    @patch('utils.participant_summary_requests.requests.Session')
+    def test_get_participant_data(self, mock_get_session, mock_token):
+        mock_token.return_value = self.fake_token
+        mock_session = MagicMock()
+        mock_get_session.return_value = mock_session
+        mock_session.get.return_value.status_code = 200
+        mock_session.get.return_value.json.return_value = self.json_response_entry
 
-        expected_response = psr.get_participant_data(self.fake_url,
-                                                     self.fake_headers)
+        actual_response = psr.get_participant_data(self.fake_url,
+                                                   self.fake_headers)
 
-        self.assertEqual(expected_response, self.participant_data)
+        self.assertEqual(actual_response, self.participant_data)
 
     @patch('utils.participant_summary_requests.store_participant_data')
     @patch('utils.participant_summary_requests.get_deactivated_participants')
@@ -232,7 +236,9 @@ class ParticipantSummaryRequestsTest(TestCase):
             self.updated_site_participant_information,
             columns=psr.FIELDS_OF_INTEREST_FOR_VALIDATION)
 
-        expected_dataframe = expected_dataframe.rename(columns=updated_fields)
+        expected_dataframe.fillna(value=np.nan, inplace=True)
+
+        expected_dataframe.rename(columns=updated_fields, inplace=True)
 
         # Tests
         actual_dataframe = psr.get_site_participant_information(
