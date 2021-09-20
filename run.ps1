@@ -16,12 +16,9 @@ function missing_required_env
 
 if (($args.Count) -eq 0)
 {
-  echo "At least one argument must be provided, and it must be the name of a service within docker-compose.yml"
+  echo "At least one argument must be provided, and one must be the name of a service within docker-compose.yml"
   exit 1
 }
-
-# name of service in docker-compose.yml
-$service=$args[0]
 
 # args defined in docker-compose.yml
 $uid=1000
@@ -38,8 +35,7 @@ $run_args = @(
   "-v", """${pwd}/.git:/home/curation/project/curation/.git""",
   "-v", """${pwd}/data_steward:/home/curation/project/curation/data_steward""",
   "-v", """${pwd}/tests:/home/curation/project/curation/tests""",
-  "-v", """${pwd}/tools:/home/curation/project/curation/tools""",
-  ${service}
+  "-v", """${pwd}/tools:/home/curation/project/curation/tools"""
 )
 
 if (-not (in_ci))
@@ -63,13 +59,6 @@ if (-not (in_ci))
     exit 1
   }
 
-  docker compose build ${service}
-  if ($lastexitcode -ne 0)
-  {
-    write-host "Error(s) occurred while building ""$service"" image"
-    exit 1
-  }
-
   # add gcreds path volume mount to runtime args
   $run_args += "-v"
   $run_args += """${gcreds}:/home/curation/project/curation/aou-res-curation-test.json"""
@@ -82,9 +71,9 @@ else
 }
 
 # finally add any / all remaining args provided to this script as args to pass into container
-for (($i = 1); $i -lt ($args.count); $i++)
+for ($a in $args)
 {
-  $run_args += $args[$i]
+  $run_args += $a
 }
 
 # do the thing.
