@@ -69,7 +69,6 @@ class AchillesHeelTest(unittest.TestCase):
     def test_heel_analyses(self, mock_hpo_bucket):
         # Long-running test
         mock_hpo_bucket.return_value = self.get_mock_hpo_bucket()
-        test_util.get_synpuf_results_files()
 
         # create randomized tables to bypass BQ rate limits
         random_string = str(randint(10000, 99999))
