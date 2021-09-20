@@ -71,7 +71,7 @@ else
 }
 
 # finally add any / all remaining args provided to this script as args to pass into container
-for ($a in $args)
+foreach ($a in $args)
 {
   $run_args += $a
 }
