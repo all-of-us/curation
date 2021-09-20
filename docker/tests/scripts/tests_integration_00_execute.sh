@@ -83,7 +83,9 @@ if [[ $should_run -eq 0 ]]; then
     PYTHONPATH=./:$PYTHONPATH python ./ci/test_setup.py
 
   cd "${CIRCLE_WORKING_DIRECTORY}" &&
-    ./tests/run_tests.sh -s integration
+    python tests/runner.py \
+      --test-path "${CIRCLE_WORKING_DIRECTORY}/integration_tests" \
+      --coverage-file ".coverage_integration"
 else
   echo "Skipping integration tests"
 fi

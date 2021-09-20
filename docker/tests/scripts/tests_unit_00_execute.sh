@@ -3,4 +3,6 @@
 set -e
 
 cd "${CIRCLE_WORKING_DIRECTORY}" &&
-  tests/run_tests.sh -s unit
+  python tests/runner.py \
+    --test-path "${CIRCLE_WORKING_DIRECTORY}/tests/unit_tests" \
+    --coverage-file ".coveragerc_unit"
