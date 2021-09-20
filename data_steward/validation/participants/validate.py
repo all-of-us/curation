@@ -45,7 +45,11 @@ MATCH_FIELDS_QUERY = JINJA_ENV.from_string("""
 """)
 
 
-def identify_rdr_ehr_match(client, project_id, hpo_id, ehr_ops_dataset_id):
+def identify_rdr_ehr_match(client,
+                           project_id,
+                           hpo_id,
+                           ehr_ops_dataset_id,
+                           drc_dataset_id=DRC_OPS):
 
     id_match_table_id = f'{IDENTITY_MATCH_TABLE}_{hpo_id}'
     hpo_pii_email_table_id = f'{hpo_id}_pii_email'
@@ -54,7 +58,7 @@ def identify_rdr_ehr_match(client, project_id, hpo_id, ehr_ops_dataset_id):
     for item in CREATE_COMPARISON_FUNCTION_QUERIES:
         LOGGER.info(f"Creating `{item['name']}` function if doesn't exist.")
         query = item['query'].render(project_id=project_id,
-                                     drc_dataset_id=DRC_OPS,
+                                     drc_dataset_id=drc_dataset_id,
                                      match=MATCH,
                                      no_match=NO_MATCH,
                                      missing_rdr=MISSING_RDR,
@@ -67,7 +71,7 @@ def identify_rdr_ehr_match(client, project_id, hpo_id, ehr_ops_dataset_id):
         id_match_table_id=id_match_table_id,
         hpo_pii_email_table_id=hpo_pii_email_table_id,
         ps_api_table_id=ps_api_table_id,
-        drc_dataset_id=DRC_OPS,
+        drc_dataset_id=drc_dataset_id,
         ehr_ops_dataset_id=ehr_ops_dataset_id,
         match=MATCH,
         no_match=NO_MATCH,

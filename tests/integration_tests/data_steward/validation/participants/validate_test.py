@@ -58,7 +58,7 @@ class ValidateTest(TestCase):
 
     def setUp(self):
         self.project_id = os.environ.get(PROJECT_ID)
-        self.dataset_id = 'drc_ops'
+        self.dataset_id = os.environ.get('COMBINED_DATASET_ID')
         self.dataset_ref = DatasetReference(self.project_id, self.dataset_id)
         self.client = bq.get_client(self.project_id)
 
@@ -78,11 +78,11 @@ class ValidateTest(TestCase):
         bq_utils.create_table(self.ps_values_table_id,
                               ps_values_fields,
                               drop_existing=True,
-                              dataset_id=DRC_OPS)
+                              dataset_id=self.dataset_id)
 
         populate_query = POPULATE_PS_VALUES.render(
             project_id=self.project_id,
-            drc_dataset_id=DRC_OPS,
+            drc_dataset_id=self.dataset_id,
             ps_values_table_id=self.ps_values_table_id)
         job = self.client.query(populate_query)
         job.result()
@@ -98,11 +98,11 @@ class ValidateTest(TestCase):
         bq_utils.create_table(self.id_match_table_id,
                               id_match_fields,
                               drop_existing=True,
-                              dataset_id=DRC_OPS)
+                              dataset_id=self.dataset_id)
 
         populate_query = POPULATE_ID_MATCH.render(
             project_id=self.project_id,
-            drc_dataset_id=DRC_OPS,
+            drc_dataset_id=self.dataset_id,
             id_match_table_id=self.id_match_table_id)
         job = self.client.query(populate_query)
         job.result()
@@ -117,7 +117,7 @@ class ValidateTest(TestCase):
         bq_utils.create_table(self.pii_email_table_id,
                               pii_email_fields,
                               drop_existing=True,
-                              dataset_id=DRC_OPS)
+                              dataset_id=self.dataset_id)
 
     def test_identify_rdr_ehr_email_match(self):
 
@@ -132,14 +132,17 @@ class ValidateTest(TestCase):
 
         populate_query = POPULATE_PII_EMAILS.render(
             project_id=self.project_id,
-            drc_dataset_id=DRC_OPS,
+            drc_dataset_id=self.dataset_id,
             pii_email_table_id=self.pii_email_table_id)
         job = self.client.query(populate_query)
         job.result()
 
         # Execute email match
-        identify_rdr_ehr_match(self.client, self.project_id, self.hpo_id,
-                               self.dataset_id)
+        identify_rdr_ehr_match(self.client,
+                               self.project_id,
+                               self.hpo_id,
+                               self.dataset_id,
+                               drc_dataset_id=self.dataset_id)
 
         expected = [{
             'person_id': 1,
@@ -171,4 +174,4 @@ class ValidateTest(TestCase):
         self.assertCountEqual(actual, expected)
 
     def tearDown(self):
-        test_util.delete_all_tables(DRC_OPS)
+        test_util.delete_all_tables(self.dataset_id)

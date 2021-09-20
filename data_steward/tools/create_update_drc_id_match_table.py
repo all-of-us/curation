@@ -44,15 +44,13 @@ IDENTITY_MATCH_PS_API_FIELD_MAP = {
 
 CREATE_TABLE = JINJA_ENV.from_string("""
 CREATE TABLE `{{project_id}}.{{drc_dataset_id}}.{{id_match_table_id}}` ({{fields}})
-PARTITION BY DATE_TRUNC(_PARTITIONTIME, HOUR)
+PARTITION BY TIMESTAMP_TRUNC(_PARTITIONTIME, HOUR)
 """)
 
 POPULATE_VALIDATION_TABLE = JINJA_ENV.from_string("""
 INSERT INTO `{{project_id}}.{{drc_dataset_id}}.{{id_match_table_id}}` (_PARTITIONTIME, {{fields}}) 
 SELECT
-    CASE WHEN ABS(TIMESTAMP_DIFF(TIMESTAMP_TRUNC(CURRENT_TIMESTAMP, HOUR), _PARTITIONTIME, HOUR)) < 2
-        THEN _PARTITIONTIME 
-        ELSE TIMESTAMP_TRUNC(CURRENT_TIMESTAMP, HOUR) END, 
+    _PARTITIONTIME, 
     person_id, {{case_statements}}, 'no' algorithm
 FROM `{{project_id}}.{{drc_dataset_id}}.{{ps_values_table_id}}`
 WHERE ABS(TIMESTAMP_DIFF(TIMESTAMP_TRUNC(CURRENT_TIMESTAMP, HOUR), _PARTITIONTIME, HOUR)) < 2
@@ -63,7 +61,10 @@ CASE WHEN {{ps_api_field}} IS NULL THEN 'missing_rdr' ELSE 'missing_ehr' END AS 
 """)
 
 
-def create_drc_validation_table(client, project_id, table_id):
+def create_drc_validation_table(client,
+                                project_id,
+                                table_id,
+                                drc_dataset_id=DRC_OPS):
     """
     Creates the partitioned DRC validation table, partitioned by HOUR.
 
@@ -74,7 +75,7 @@ def create_drc_validation_table(client, project_id, table_id):
     fields = resources.fields_for(IDENTITY_MATCH_TABLE)
 
     create_table = CREATE_TABLE.render(project_id=project_id,
-                                       drc_dataset_id=DRC_OPS,
+                                       drc_dataset_id=drc_dataset_id,
                                        id_match_table_id=table_id,
                                        fields=bq.get_bq_fields_sql(fields))
     job = client.query(create_table)
@@ -110,7 +111,11 @@ def get_case_statements():
     return ', '.join(case_statements)
 
 
-def populate_validation_table(client, project_id, table_id, hpo_id):
+def populate_validation_table(client,
+                              project_id,
+                              table_id,
+                              hpo_id,
+                              drc_dataset_id=DRC_OPS):
     """
     Populates validation table with 'missing_rdr' or 'missing_ehr' data. Populated with 'missing_rdr' if data IS NOT
         found in the ps_values table. Populated with 'missing_ehr' as default.
@@ -129,7 +134,7 @@ def populate_validation_table(client, project_id, table_id, hpo_id):
 
     populate_query = POPULATE_VALIDATION_TABLE.render(
         project_id=project_id,
-        drc_dataset_id=DRC_OPS,
+        drc_dataset_id=drc_dataset_id,
         id_match_table_id=id_match_table_id,
         fields=fields_name_str,
         case_statements=get_case_statements(),

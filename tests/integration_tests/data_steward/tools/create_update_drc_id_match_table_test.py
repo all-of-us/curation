@@ -17,14 +17,14 @@ import mock
 from unittest import TestCase
 
 # Third party imports
-from google.cloud.bigquery import DatasetReference, SchemaField
+from google.cloud.bigquery import DatasetReference, SchemaField, Table, TimePartitioning, TimePartitioningType
 
 # Project imports
 import bq_utils
 from utils import bq
 from tests import test_util
 from app_identity import PROJECT_ID
-from common import JINJA_ENV, DRC_OPS
+from common import JINJA_ENV, DRC_OPS, PS_API_VALUES
 from tools import create_update_drc_id_match_table as id_validation
 from constants.validation.participants.identity_match import IDENTITY_MATCH_TABLE
 
@@ -54,7 +54,7 @@ class CreateUpdateDrcIdMatchTableTest(TestCase):
 
     def setUp(self):
         self.project_id = os.environ.get(PROJECT_ID)
-        self.dataset_id = 'drc_ops'
+        self.dataset_id = os.environ.get('COMBINED_DATASET_ID')
         self.dataset_ref = DatasetReference(self.project_id, self.dataset_id)
         self.client = bq.get_client(self.project_id)
 
@@ -83,14 +83,19 @@ class CreateUpdateDrcIdMatchTableTest(TestCase):
         self.ps_values_table_id = f'ps_api_values_{self.hpo_id}'
 
         # Create and populate the ps_values site table
-        bq_utils.create_table(self.ps_values_table_id,
-                              self.ps_api_fields,
-                              drop_existing=True,
-                              dataset_id=DRC_OPS)
+
+        schema = bq.get_table_schema(PS_API_VALUES)
+        tablename = self.ps_values_table_id
+
+        table = Table(f'{self.project_id}.{self.dataset_id}.{tablename}',
+                      schema=schema)
+        table.time_partitioning = TimePartitioning(
+            type_=TimePartitioningType.HOUR)
+        table = self.client.create_table(table)
 
         populate_query = POPULATE_PS_VALUES.render(
             project_id=self.project_id,
-            drc_dataset_id=DRC_OPS,
+            drc_dataset_id=self.dataset_id,
             ps_values_table_id=self.ps_values_table_id)
         job = self.client.query(populate_query)
         job.result()
@@ -115,7 +120,10 @@ class CreateUpdateDrcIdMatchTableTest(TestCase):
 
         # Test
         expected = id_validation.create_drc_validation_table(
-            self.client, self.project_id, self.id_match_table_id)
+            self.client,
+            self.project_id,
+            self.id_match_table_id,
+            drc_dataset_id=self.dataset_id)
 
         all_tables_obj = self.client.list_tables(self.dataset_id)
         all_tables = [t.table_id for t in all_tables_obj]
@@ -155,14 +163,18 @@ class CreateUpdateDrcIdMatchTableTest(TestCase):
         # Creates validation table if it does not already exist
         # Will need to be created if this test is ran individually
         if not bq_utils.table_exists(self.id_match_table_id, self.dataset_id):
-            id_validation.create_drc_validation_table(self.client,
-                                                      self.project_id,
-                                                      self.id_match_table_id)
+            id_validation.create_drc_validation_table(
+                self.client,
+                self.project_id,
+                self.id_match_table_id,
+                drc_dataset_id=self.dataset_id)
 
         # Test validation table population
-        id_validation.populate_validation_table(self.client, self.project_id,
+        id_validation.populate_validation_table(self.client,
+                                                self.project_id,
                                                 self.id_match_table_id,
-                                                self.hpo_id)
+                                                self.hpo_id,
+                                                drc_dataset_id=self.dataset_id)
 
         query_contents = CONTENT_QUERY.render(
             project_id=self.project_id,
@@ -176,4 +188,4 @@ class CreateUpdateDrcIdMatchTableTest(TestCase):
         self.assertCountEqual(actual, expected)
 
     def tearDown(self):
-        test_util.delete_all_tables(DRC_OPS)
+        test_util.delete_all_tables(self.dataset_id)
