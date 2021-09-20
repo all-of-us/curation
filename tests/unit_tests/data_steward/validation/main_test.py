@@ -368,32 +368,46 @@ class ValidationMainTest(TestCase):
         yesterday = yesterday.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
         moment = datetime.datetime.now()
         now = moment.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
-        mock_bucket_list.return_value = [{
-            'name': 'unknown.pdf',
-            'timeCreated': now,
-            'updated': now
-        }, {
-            'name': 'participant/no-site/foo.pdf',
-            'timeCreated': now,
-            'updated': now
-        }, {
-            'name': 'PARTICIPANT/siteone/foo.pdf',
-            'timeCreated': now,
-            'updated': now
-        }, {
-            'name': 'Participant/sitetwo/foo.pdf',
-            'timeCreated': now,
-            'updated': now
-        }, {
-            'name': 'submission/person.csv',
-            'timeCreated': yesterday,
-            'updated': yesterday
-        }, {
-            'name': 'SUBMISSION/measurement.csv',
-            'timeCreated': now,
-            'updated': now
-        }]
 
+        after_lag_time = datetime.datetime.today() - datetime.timedelta(
+            minutes=7)
+        after_lag_time_str = after_lag_time.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+
+        buckets_items = self._create_dummy_bucket_items(
+            now,
+            after_lag_time_str,
+            file_exclusions=['person.csv'],
+            folder='submission') + self._create_dummy_bucket_items(
+                now,
+                after_lag_time_str,
+                file_exclusions=['measurement.csv'],
+                folder='SUBMISSION') + [{
+                    'name': 'unknown.pdf',
+                    'timeCreated': now,
+                    'updated': after_lag_time_str
+                }, {
+                    'name': 'participant/no-site/foo.pdf',
+                    'timeCreated': now,
+                    'updated': after_lag_time_str
+                }, {
+                    'name': 'PARTICIPANT/siteone/foo.pdf',
+                    'timeCreated': now,
+                    'updated': after_lag_time_str
+                }, {
+                    'name': 'Participant/sitetwo/foo.pdf',
+                    'timeCreated': now,
+                    'updated': after_lag_time_str
+                }, {
+                    'name': 'submission/person.csv',
+                    'timeCreated': yesterday,
+                    'updated': after_lag_time_str
+                }, {
+                    'name': 'SUBMISSION/measurement.csv',
+                    'timeCreated': now,
+                    'updated': after_lag_time_str
+                }]
+
+        mock_bucket_list.return_value = buckets_items
         mock_validation.return_value = {
             'results': [('SUBMISSION/measurement.csv', 1, 1, 1)],
             'errors': [],
