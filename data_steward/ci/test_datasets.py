@@ -8,6 +8,7 @@ should be added here as well.
 from google.oauth2 import service_account
 from google.cloud import bigquery
 
+from common import JINJA_ENV
 from utils import bq
 
 CLIENT = None
@@ -101,7 +102,7 @@ def copy_vocab_tables(vocab_dataset, dest_prefix):
         print(f"copied '{vocab_table}' to '{dest_table}'")
 
 
-def create_test_datasets(config, datasets):
+def create_test_datasets(config, dataset_keys):
     """
     Create test datasets for automated integration  tests.
 
@@ -111,12 +112,36 @@ def create_test_datasets(config, datasets):
         name  to create.
     """
     project = config.get('APPLICATION_ID')
-    remove_datasets(project, config.get('GOOGLE_APPLICATION_CREDENTIALS'),
-                    config, datasets)
-    create_datasets(project, config, datasets)
+    datasets = [config.get(dataset_key) for dataset_key in dataset_keys]
     vocab_dataset = f"{project}.{config.get('VOCABULARY_DATASET')}"
-    dest_prefix = f"{project}.{config.get('BIGQUERY_DATASET_ID')}"
-    copy_vocab_tables(vocab_dataset, dest_prefix)
+    dst_dataset = f"{project}.{config.get('BIGQUERY_DATASET_ID')}"
+    username = config.get('USERNAME', 'default')
+    tpl = JINJA_ENV.from_string('''
+    {% for dataset in datasets %}
+      {% set dataset_name = dataset.split('_')[0] %}
+      DROP SCHEMA IF EXISTS `{{ project }}.{{ dataset }}` CASCADE;
+      CREATE SCHEMA `{{ project }}.{{ dataset }}`
+       OPTIONS(
+         description="Test {{ dataset_name }} dataset for {{ username }}"
+       );
+    {% endfor %}
+
+    {% for src_table in src_tables %}
+      CREATE OR REPLACE TABLE `{{ dst_dataset }}.{{ src_table.table_id }}`
+      COPY `{{ src_table.project }}.{{ src_table.dataset_id }}.{{ src_table.table_id }}`;
+    {% endfor %}
+    ''')
+    creds_path = config.get('GOOGLE_APPLICATION_CREDENTIALS')
+    client = get_client(project, creds_path)
+    src_tables = client.list_tables(vocab_dataset)
+    script = tpl.render(project=project,
+                        username=username,
+                        datasets=datasets,
+                        src_tables=src_tables,
+                        dst_dataset=dst_dataset)
+    setup_job = client.query(script)
+    print(f'BigQuery job {setup_job.job_id} started to set up test datasets {datasets}.')
+    return setup_job.result()
 
 
 if __name__ == "__main__":
