@@ -55,6 +55,7 @@ SELECT
         ELSE TIMESTAMP_TRUNC(CURRENT_TIMESTAMP, HOUR) END, 
     person_id, {{case_statements}}, 'no' algorithm
 FROM `{{project_id}}.{{drc_dataset_id}}.{{ps_values_table_id}}`
+WHERE ABS(TIMESTAMP_DIFF(TIMESTAMP_TRUNC(CURRENT_TIMESTAMP, HOUR), _PARTITIONTIME, HOUR)) < 2
 """)
 
 CASE_EXPRESSION = JINJA_ENV.from_string("""
