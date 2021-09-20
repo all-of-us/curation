@@ -49,8 +49,11 @@ PARTITION BY DATE_TRUNC(_PARTITIONTIME, HOUR)
 
 POPULATE_VALIDATION_TABLE = JINJA_ENV.from_string("""
 INSERT INTO `{{project_id}}.{{drc_dataset_id}}.{{id_match_table_id}}` (_PARTITIONTIME, {{fields}}) 
-SELECT TIMESTAMP_TRUNC(CURRENT_TIMESTAMP, HOUR), person_id, 
-{{case_statements}}, 'no' algorithm
+SELECT
+    CASE WHEN ABS(TIMESTAMP_DIFF(TIMESTAMP_TRUNC(CURRENT_TIMESTAMP, HOUR), _PARTITIONTIME, HOUR)) < 2
+        THEN _PARTITIONTIME 
+        ELSE TIMESTAMP_TRUNC(CURRENT_TIMESTAMP, HOUR) END, 
+    person_id, {{case_statements}}, 'no' algorithm
 FROM `{{project_id}}.{{drc_dataset_id}}.{{ps_values_table_id}}`
 """)
 
