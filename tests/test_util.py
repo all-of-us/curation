@@ -13,6 +13,7 @@ from constants.validation import main
 import gcs_utils
 import resources
 
+TEST_RESOURCES_BUCKET = 'aou-res-curation-test-resources'
 FAKE_HPO_ID = 'fake'
 VALIDATE_HPO_FILES_URL = main.PREFIX + 'ValidateHpoFiles/' + FAKE_HPO_ID
 COPY_HPO_FILES_URL = main.PREFIX + 'CopyFiles/' + FAKE_HPO_ID
@@ -281,33 +282,18 @@ def write_cloud_fp(bucket, name, fp):
     return gcs_utils.upload_object(bucket, name, fp)
 
 
-def populate_achilles(hpo_bucket, hpo_id=FAKE_HPO_ID, include_heel=True):
+def populate_achilles(hpo_id=FAKE_HPO_ID, include_heel=True):
     from validation import achilles, achilles_heel
     import app_identity
 
     app_id = app_identity.get_application_id()
-
-    test_file_name = achilles.ACHILLES_ANALYSIS + '.csv'
-    achilles_analysis_file_path = os.path.join(TEST_DATA_EXPORT_PATH,
-                                               test_file_name)
-    schema_name = achilles.ACHILLES_ANALYSIS
-    write_cloud_file(hpo_bucket, achilles_analysis_file_path)
-    gcs_path = 'gs://' + hpo_bucket + '/' + test_file_name
-    dataset_id = bq_utils.get_dataset_id()
-    table_id = bq_utils.get_table_id(hpo_id, achilles.ACHILLES_ANALYSIS)
-    bq_utils.load_csv(schema_name, gcs_path, app_id, dataset_id, table_id)
-
-    table_names = [achilles.ACHILLES_RESULTS, achilles.ACHILLES_RESULTS_DIST]
+    table_names = [achilles.ACHILLES_ANALYSIS, achilles.ACHILLES_RESULTS, achilles.ACHILLES_RESULTS_DIST]
     if include_heel:
         table_names.append(achilles_heel.ACHILLES_HEEL_RESULTS)
 
     running_jobs = []
     for table_name in table_names:
-        test_file_name = table_name + '.csv'
-        test_file_path = os.path.join(TEST_DATA_EXPORT_SYNPUF_PATH,
-                                      table_name + '.csv')
-        write_cloud_file(hpo_bucket, test_file_path)
-        gcs_path = 'gs://' + hpo_bucket + '/' + test_file_name
+        gcs_path = f'gs://{TEST_RESOURCES_BUCKET}/{table_name}.csv'
         dataset_id = bq_utils.get_dataset_id()
         table_id = bq_utils.get_table_id(hpo_id, table_name)
         load_results = bq_utils.load_csv(table_name, gcs_path, app_id,

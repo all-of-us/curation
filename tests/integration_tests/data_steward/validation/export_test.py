@@ -22,11 +22,9 @@ class ExportTest(unittest.TestCase):
             '\n**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
-        fake_bucket = gcs_utils.get_hpo_bucket(test_util.FAKE_HPO_ID)
         dataset_id = bq_utils.get_dataset_id()
         test_util.delete_all_tables(dataset_id)
-        test_util.get_synpuf_results_files()
-        test_util.populate_achilles(fake_bucket)
+        test_util.populate_achilles()
 
     def setUp(self):
         self.hpo_bucket = gcs_utils.get_hpo_bucket(FAKE_HPO_ID)
