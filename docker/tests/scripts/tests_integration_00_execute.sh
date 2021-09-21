@@ -83,7 +83,7 @@ if [[ $should_run -eq 0 ]]; then
 
   python "${CIRCLE_WORKING_DIRECTORY}/tests/runner.py" \
       --test-path "${CIRCLE_WORKING_DIRECTORY}/tests/integration_tests" \
-      --coverage-file "${CIRCLE_WORKING_DIRECTORY}/.coverage_integration"
+      --coverage-file "${CIRCLE_WORKING_DIRECTORY}/.coveragerc_integration"
 else
   echo "Skipping integration tests"
 fi
