@@ -2,7 +2,6 @@
 
 set -e
 
-cd "${CIRCLE_WORKING_DIRECTORY}" &&
-  python tests/runner.py \
+python "${CIRCLE_WORKING_DIRECTORY}/tests/runner.py" \
     --test-path "${CIRCLE_WORKING_DIRECTORY}/tests/unit_tests" \
-    --coverage-file ".coveragerc_unit"
+    --coverage-file "${CIRCLE_WORKING_DIRECTORY}/.coveragerc_unit"

@@ -79,13 +79,11 @@ if [[ $should_run -eq 0 ]]; then
   echo "Running integration tests..."
 
   # todo: this inline PYTHONPATH modification is silly.
-  cd "${CIRCLE_WORKING_DIRECTORY}"/data_steward &&
-    PYTHONPATH=./:$PYTHONPATH python ./ci/test_setup.py
+  python "${CIRCLE_WORKING_DIRECTORY}/data_steward/ci/test_setup.py"
 
-  cd "${CIRCLE_WORKING_DIRECTORY}" &&
-    python tests/runner.py \
+  python "${CIRCLE_WORKING_DIRECTORY}/tests/runner.py" \
       --test-path "${CIRCLE_WORKING_DIRECTORY}/integration_tests" \
-      --coverage-file ".coverage_integration"
+      --coverage-file "${CIRCLE_WORKING_DIRECTORY}/.coverage_integration"
 else
   echo "Skipping integration tests"
 fi
