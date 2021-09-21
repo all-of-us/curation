@@ -2,6 +2,11 @@
 Utility functions for notebooks related to CDR generation
 """
 
+IMPERSONATION_SCOPES = [
+    'https://www.googleapis.com/auth/drive.readonly',
+    'https://www.googleapis.com/auth/bigquery'
+]
+
 
 def execute(client, query):
     """
