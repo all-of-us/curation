@@ -10,16 +10,17 @@ import os
 from unittest import TestCase
 
 # Third party imports
-from google.cloud.bigquery import DatasetReference
+from google.cloud.bigquery import DatasetReference, Table, TimePartitioning, TimePartitioningType
 
 # Project imports
 import bq_utils
 from utils import bq
 from tests import test_util
 from app_identity import PROJECT_ID
-from common import JINJA_ENV, DRC_OPS, PS_API_VALUES
+from common import JINJA_ENV, PS_API_VALUES, PII_EMAIL
 from validation.participants.validate import identify_rdr_ehr_match
 from constants.validation.participants.identity_match import IDENTITY_MATCH_TABLE
+import resources
 
 POPULATE_PS_VALUES = JINJA_ENV.from_string("""
 INSERT INTO `{{project_id}}.{{drc_dataset_id}}.{{ps_values_table_id}}` 
@@ -69,16 +70,13 @@ class ValidateTest(TestCase):
 
         # Create and populate the ps_values site table
 
-        ps_values_fields = [
-            dict(name='person_id', type='integer', mode='nullable'),
-            dict(name='email', type='string', mode='nullable'),
-            dict(name='algorithm', type='string', mode='nullable')
-        ]
-
-        bq_utils.create_table(self.ps_values_table_id,
-                              ps_values_fields,
-                              drop_existing=True,
-                              dataset_id=self.dataset_id)
+        schema = resources.fields_for(f'{PS_API_VALUES}')
+        table = Table(
+            f'{self.project_id}.{self.dataset_id}.{self.ps_values_table_id}',
+            schema=schema)
+        table.time_partitioning = TimePartitioning(
+            type_=TimePartitioningType.HOUR)
+        table = self.client.create_table(table)
 
         populate_query = POPULATE_PS_VALUES.render(
             project_id=self.project_id,
@@ -89,16 +87,13 @@ class ValidateTest(TestCase):
 
         # Create and populate the drc_id_match_table
 
-        id_match_fields = [
-            dict(name='person_id', type='integer', mode='nullable'),
-            dict(name='email', type='string', mode='nullable'),
-            dict(name='algorithm', type='string', mode='nullable')
-        ]
-
-        bq_utils.create_table(self.id_match_table_id,
-                              id_match_fields,
-                              drop_existing=True,
-                              dataset_id=self.dataset_id)
+        schema = resources.fields_for(f'{IDENTITY_MATCH_TABLE}')
+        table = Table(
+            f'{self.project_id}.{self.dataset_id}.{self.id_match_table_id}',
+            schema=schema)
+        table.time_partitioning = TimePartitioning(
+            type_=TimePartitioningType.HOUR)
+        table = self.client.create_table(table)
 
         populate_query = POPULATE_ID_MATCH.render(
             project_id=self.project_id,
@@ -109,15 +104,13 @@ class ValidateTest(TestCase):
 
         # Create and populate pii_email table
 
-        pii_email_fields = [
-            dict(name='person_id', type='integer', mode='nullable'),
-            dict(name='email', type='string', mode='nullable')
-        ]
-
-        bq_utils.create_table(self.pii_email_table_id,
-                              pii_email_fields,
-                              drop_existing=True,
-                              dataset_id=self.dataset_id)
+        schema = resources.fields_for(f'{PII_EMAIL}')
+        table = Table(
+            f'{self.project_id}.{self.dataset_id}.{self.pii_email_table_id}',
+            schema=schema)
+        table.time_partitioning = TimePartitioning(
+            type_=TimePartitioningType.HOUR)
+        table = self.client.create_table(table)
 
     def test_identify_rdr_ehr_email_match(self):
 
@@ -143,6 +136,9 @@ class ValidateTest(TestCase):
                                self.hpo_id,
                                self.dataset_id,
                                drc_dataset_id=self.dataset_id)
+
+        # Subset of id match fields to test
+        subset_fields = ['person_id', 'email', 'algorithm']
 
         expected = [{
             'person_id': 1,
@@ -170,6 +166,9 @@ class ValidateTest(TestCase):
         content_job = self.client.query(content_query)
         contents = list(content_job.result())
         actual = [dict(row.items()) for row in contents]
+        actual = [{
+            key: value for key, value in row.items() if key in subset_fields
+        } for row in actual]
 
         self.assertCountEqual(actual, expected)
 

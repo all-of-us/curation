@@ -18,7 +18,7 @@ from common import JINJA_ENV, PS_API_VALUES
 from google.cloud import bigquery
 
 # Project imports
-from tools.store_participant_summary_results import get_hpo_info, main, DATASET_ID
+from tools.store_participant_summary_results import get_hpo_info, main
 from utils.bq import get_client
 
 from app_identity import PROJECT_ID
@@ -40,7 +40,7 @@ class StoreParticipantSummaryResultsTest(TestCase):
         print('**************************************************************')
 
         cls.project_id = os.environ.get(PROJECT_ID)
-        # cls.dataset_id = os.environ.get('COMBINED_DATASET_ID')
+        cls.dataset_id = os.environ.get('COMBINED_DATASET_ID')
         cls.client = get_client(cls.project_id)
 
         cls.hpo_id = 'fake_hpo'
@@ -48,7 +48,7 @@ class StoreParticipantSummaryResultsTest(TestCase):
         cls.ps_api_table = f'{PS_API_VALUES}_{cls.hpo_id}'
 
         cls.fq_table_names = [
-            f'{cls.project_id}.{DATASET_ID}.{cls.ps_api_table}'
+            f'{cls.project_id}.{cls.dataset_id}.{cls.ps_api_table}'
         ]
 
     def test_get_hpo_info(self):
@@ -92,10 +92,14 @@ class StoreParticipantSummaryResultsTest(TestCase):
             bigquery.SchemaField('first_name', 'string'),
             bigquery.SchemaField('last_name', 'string')
         ]
-        main(self.project_id, 'rdr_project', self.org_id, self.hpo_id)
+        main(self.project_id,
+             'rdr_project',
+             self.org_id,
+             self.hpo_id,
+             dataset_id=self.dataset_id)
 
         query = PS_API_CONTENTS_QUERY.render(project_id=self.project_id,
-                                             dataset_id=DATASET_ID,
+                                             dataset_id=self.dataset_id,
                                              ps_api_table_id=self.ps_api_table)
 
         job = self.client.query(query)

@@ -25,8 +25,6 @@ SCOPES = [
     'https://www.googleapis.com/auth/cloud-platform'
 ]
 
-DATASET_ID = DRC_OPS
-
 
 def get_hpo_info(project_id: str) -> List[Dict]:
     """ Returns a list of HPOs
@@ -54,7 +52,11 @@ def get_hpo_info(project_id: str) -> List[Dict]:
     return hpo_list
 
 
-def main(project_id, rdr_project_id, org_id=None, hpo_id=None):
+def main(project_id,
+         rdr_project_id,
+         org_id=None,
+         hpo_id=None,
+         dataset_id=DRC_OPS):
 
     #Get list of hpos
     LOGGER.info('Getting hpo list...')
@@ -80,12 +82,12 @@ def main(project_id, rdr_project_id, org_id=None, hpo_id=None):
 
         client = bq.get_client(project_id)
         try:
-            table = client.get_table(f'{project_id}.{DATASET_ID}.{tablename}')
+            table = client.get_table(f'{project_id}.{dataset_id}.{tablename}')
         except NotFound:
             LOGGER.info(
-                f'Creating table {project_id}.{DATASET_ID}.{tablename}...')
+                f'Creating table {project_id}.{dataset_id}.{tablename}...')
 
-            table = bigquery.Table(f'{project_id}.{DATASET_ID}.{tablename}',
+            table = bigquery.Table(f'{project_id}.{dataset_id}.{tablename}',
                                    schema=schema)
             table.time_partitioning = bigquery.TimePartitioning(
                 type_=bigquery.TimePartitioningType.HOUR)
@@ -93,11 +95,11 @@ def main(project_id, rdr_project_id, org_id=None, hpo_id=None):
 
         # Insert summary data into table
         LOGGER.info(
-            f'Storing participant data for {org_id} in table {project_id}.{DATASET_ID}.{tablename}...'
+            f'Storing participant data for {org_id} in table {project_id}.{dataset_id}.{tablename}...'
         )
         store_participant_data(participant_info,
                                project_id,
-                               f'{DATASET_ID}.{tablename}',
+                               f'{dataset_id}.{tablename}',
                                schema=schema)
 
     LOGGER.info(f'Done.')
