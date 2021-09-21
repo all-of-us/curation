@@ -78,9 +78,10 @@ fi
 if [[ $should_run -eq 0 ]]; then
   echo "Running integration tests..."
 
-  # todo: this inline PYTHONPATH modification is silly.
+  # bootstrap buckets & datasets
   python "${CIRCLE_WORKING_DIRECTORY}/data_steward/ci/test_setup.py"
 
+  # execute tests
   python "${CIRCLE_WORKING_DIRECTORY}/tests/runner.py" \
       --test-path "${CIRCLE_WORKING_DIRECTORY}/tests/integration_tests" \
       --coverage-file "${CIRCLE_WORKING_DIRECTORY}/.coveragerc_integration"
