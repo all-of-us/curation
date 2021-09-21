@@ -244,7 +244,10 @@ def populate_achilles(hpo_id=FAKE_HPO_ID, include_heel=True):
     import app_identity
 
     app_id = app_identity.get_application_id()
-    table_names = [achilles.ACHILLES_ANALYSIS, achilles.ACHILLES_RESULTS, achilles.ACHILLES_RESULTS_DIST]
+    table_names = [
+        achilles.ACHILLES_ANALYSIS, achilles.ACHILLES_RESULTS,
+        achilles.ACHILLES_RESULTS_DIST
+    ]
     if include_heel:
         table_names.append(achilles_heel.ACHILLES_HEEL_RESULTS)
 
