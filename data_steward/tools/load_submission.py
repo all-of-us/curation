@@ -49,15 +49,6 @@ def load_stage(dst_dataset, bq_client, bucket_name, prefix, gcs_client, hpo_id):
     """
     blobs = list(gcs_client.list_blobs(bucket_name, prefix=prefix))
 
-    table_blobs = [_filename_to_table_name(blob.name) for blob in blobs]
-    missing_blobs = [
-        table for table in AOU_REQUIRED if table not in table_blobs
-    ]
-    if missing_blobs:
-        raise RuntimeError(
-            f'Bucket {bucket_name}/{prefix} is missing files for tables {missing_blobs}'
-        )
-
     load_jobs = []
     for blob in blobs:
         table_name = _filename_to_table_name(blob.name)
