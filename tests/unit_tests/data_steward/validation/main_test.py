@@ -320,6 +320,7 @@ class ValidationMainTest(TestCase):
     @mock.patch('validation.main.get_hpo_name')
     @mock.patch('validation.main.validate_submission')
     @mock.patch('validation.main.get_folder_items')
+    @mock.patch('validation.main._has_all_required_files')
     @mock.patch('validation.main.is_first_validation_run')
     @mock.patch('validation.main.extract_date_from_rdr_dataset_id')
     @mock.patch('validation.main.is_valid_rdr')
@@ -327,8 +328,9 @@ class ValidationMainTest(TestCase):
     @mock.patch('gcs_utils.get_hpo_bucket')
     def test_process_hpo_ignore_dirs(
         self, mock_hpo_bucket, mock_bucket_list, mock_valid_rdr,
-        mock_extract_rdr_date, mock_first_validation, mock_folder_items,
-        mock_validation, mock_get_hpo_name, mock_upload_string_to_gcs,
+        mock_extract_rdr_date, mock_first_validation,
+        mock_has_all_required_files, mock_folder_items, mock_validation,
+        mock_get_hpo_name, mock_upload_string_to_gcs,
         mock_get_duplicate_counts_query, mock_query_rows,
         mock_all_required_files_loaded, mock_upload, mock_run_achilles,
         mock_export, mock_valid_folder_name, mock_query):
@@ -356,6 +358,7 @@ class ValidationMainTest(TestCase):
         mock_valid_folder_name.return_value = True
         mock_hpo_bucket.return_value = 'noob'
         mock_all_required_files_loaded.return_value = True
+        mock_has_all_required_files.return_value = True
         mock_query.return_value = {}
         mock_query_rows.return_value = []
         mock_get_duplicate_counts_query.return_value = ''
@@ -373,41 +376,32 @@ class ValidationMainTest(TestCase):
             minutes=7)
         after_lag_time_str = after_lag_time.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
 
-        buckets_items = self._create_dummy_bucket_items(
-            now,
-            after_lag_time_str,
-            file_exclusions=['person.csv'],
-            folder='submission') + self._create_dummy_bucket_items(
-                now,
-                after_lag_time_str,
-                file_exclusions=['measurement.csv'],
-                folder='SUBMISSION') + [{
-                    'name': 'unknown.pdf',
-                    'timeCreated': now,
-                    'updated': after_lag_time_str
-                }, {
-                    'name': 'participant/no-site/foo.pdf',
-                    'timeCreated': now,
-                    'updated': after_lag_time_str
-                }, {
-                    'name': 'PARTICIPANT/siteone/foo.pdf',
-                    'timeCreated': now,
-                    'updated': after_lag_time_str
-                }, {
-                    'name': 'Participant/sitetwo/foo.pdf',
-                    'timeCreated': now,
-                    'updated': after_lag_time_str
-                }, {
-                    'name': 'submission/person.csv',
-                    'timeCreated': yesterday,
-                    'updated': after_lag_time_str
-                }, {
-                    'name': 'SUBMISSION/measurement.csv',
-                    'timeCreated': now,
-                    'updated': after_lag_time_str
-                }]
+        mock_bucket_list.return_value = [{
+            'name': 'unknown.pdf',
+            'timeCreated': now,
+            'updated': after_lag_time_str
+        }, {
+            'name': 'participant/no-site/foo.pdf',
+            'timeCreated': now,
+            'updated': after_lag_time_str
+        }, {
+            'name': 'PARTICIPANT/siteone/foo.pdf',
+            'timeCreated': now,
+            'updated': after_lag_time_str
+        }, {
+            'name': 'Participant/sitetwo/foo.pdf',
+            'timeCreated': now,
+            'updated': after_lag_time_str
+        }, {
+            'name': 'submission/person.csv',
+            'timeCreated': yesterday,
+            'updated': yesterday
+        }, {
+            'name': 'SUBMISSION/measurement.csv',
+            'timeCreated': now,
+            'updated': after_lag_time_str
+        }]
 
-        mock_bucket_list.return_value = buckets_items
         mock_validation.return_value = {
             'results': [('SUBMISSION/measurement.csv', 1, 1, 1)],
             'errors': [],

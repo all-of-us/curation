@@ -746,6 +746,10 @@ def updated_datetime_object(gcs_object_metadata):
                                       '%Y-%m-%dT%H:%M:%S.%fZ')
 
 
+def _has_all_required_files(folder_bucketitems_basenames):
+    return set(AOU_REQUIRED_FILES).issubset(set(folder_bucketitems_basenames))
+
+
 def list_submitted_bucket_items(folder_bucketitems):
     """
     :param folder_bucketitems: List of Bucket items
@@ -761,7 +765,7 @@ def list_submitted_bucket_items(folder_bucketitems):
         basename(file_name) for file_name in folder_bucketitems
     ]
 
-    if not set(AOU_REQUIRED_FILES).issubset(set(folder_bucketitems_basenames)):
+    if not _has_all_required_files(folder_bucketitems_basenames):
         return []
 
     # Validate submission times

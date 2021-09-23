@@ -2,10 +2,12 @@
 Unit test components of data_steward.validation.main
 """
 from __future__ import print_function
+import datetime
 import json
 import os
 import unittest
 from io import open
+from time import sleep
 
 import mock
 from bs4 import BeautifulSoup as bs
@@ -164,9 +166,19 @@ class ValidationMainTest(unittest.TestCase):
             if 'person_id' in field_names:
                 self.table_has_clustering(table_info)
 
-    def test_check_processed(self):
-        test_util.write_cloud_str(self.hpo_bucket,
-                                  self.folder_prefix + 'person.csv', '\n')
+    @mock.patch('validation.main.updated_datetime_object')
+    def test_check_processed(self, mock_updated_datetime_object):
+
+        mock_updated_datetime_object.return_value = datetime.datetime.today(
+        ) - datetime.timedelta(minutes=7)
+
+        for fname in common.AOU_REQUIRED_FILES:
+
+            test_util.write_cloud_str(self.hpo_bucket,
+                                      self.folder_prefix + fname, '\n')
+            #brief sleep between writes
+            sleep(1)
+
         test_util.write_cloud_str(self.hpo_bucket,
                                   self.folder_prefix + common.PROCESSED_TXT,
                                   '\n')
