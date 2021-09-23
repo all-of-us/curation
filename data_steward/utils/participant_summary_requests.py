@@ -87,7 +87,7 @@ def get_participant_data(api_project_id: str, params: Dict) -> List[Dict]:
     session = requests.Session()
 
     while not done:
-        resp = session.get(url, headers=headers, data=params)
+        resp = session.get(url, headers=headers, params=params)
         if not resp or resp.status_code != 200:
             LOGGER.warning(f'Error: API request failed because {resp}')
         else:
