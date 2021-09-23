@@ -16,6 +16,7 @@
 project_id = ""
 old_rdr = ""
 new_rdr = ""
+run_as = ""
 # -
 
 # # QC for RDR Export
@@ -23,15 +24,20 @@ new_rdr = ""
 # Quality checks performed on a new RDR dataset and comparison with previous RDR dataset.
 
 # +
-import pandas as pd
-
-pd.options.display.max_rows = 120
+from utils import auth
+from utils.bq import get_client
+from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
 
 # -
 
 # # Table comparison
 # The export should generally contain the same tables from month to month.
 # Tables found only in the old or the new export are listed below.
+
+impersonation_creds = auth.get_impersonation_credentials(
+    run_as, target_scopes=IMPERSONATION_SCOPES)
+
+client = get_client(project_id, credentials=impersonation_creds)
 
 query = f'''
 SELECT
@@ -44,7 +50,7 @@ FULL OUTER JOIN `{project_id}.{old_rdr}.__TABLES__` prev
   USING (table_id)
 WHERE curr.table_id IS NULL OR prev.table_id IS NULL
 '''
-pd.read_gbq(query, dialect='standard')
+execute(client, query)
 
 # ## Row count comparison
 # Generally the row count of clinical tables should increase from one export to the next.
@@ -60,7 +66,7 @@ JOIN `{project_id}.{old_rdr}.__TABLES__` prev
   USING (table_id)
 ORDER BY ABS(curr.row_count - prev.row_count) DESC;
 '''
-pd.read_gbq(query, dialect='standard')
+execute(client, query)
 
 # ## ID range check
 # Combine step may break if any row IDs in the RDR are larger than the added constant(1,000,000,000,000,000).
@@ -83,7 +89,7 @@ for table in domain_table_list:
       {table}_id > 999999999999999
     '''
     queries.append(query)
-pd.read_gbq('\nUNION ALL\n'.join(queries), dialect='standard')
+execute(client, '\nUNION ALL\n'.join(queries))
 
 # ## Concept codes used
 # Identify question and answer concept codes which were either added or removed
@@ -132,7 +138,7 @@ FROM curr_code
   USING (field, value)
 WHERE prev_code.value IS NULL OR curr_code.value IS NULL
 '''
-pd.read_gbq(query, dialect='standard')
+execute(client, query)
 
 # # Question codes should have mapped `concept_id`s
 # Question codes in `observation_source_value` should be associated with the concept identified by
@@ -159,7 +165,7 @@ GROUP BY 1
 HAVING source_concept_id_null + source_concept_id_zero + concept_id_null + concept_id_zero > 0
 ORDER BY 2 DESC, 3 DESC, 4 DESC, 5 DESC
 """
-pd.read_gbq(query, dialect='standard')
+execute(client, query)
 
 # # Answer codes should have mapped `concept_id`s
 # Answer codes in value_source_value should be associated with the concept identified by value_source_concept_id
@@ -187,7 +193,7 @@ GROUP BY 1
 HAVING source_concept_id_null + source_concept_id_zero + concept_id_null + concept_id_zero > 0
 ORDER BY 2 DESC, 3 DESC, 4 DESC, 5 DESC
 """
-pd.read_gbq(query, dialect='standard')
+execute(client, query)
 
 # # Dates are equal in observation_date and observation_datetime
 # Any mismatches are listed below.
@@ -201,7 +207,7 @@ SELECT
 FROM `{project_id}.{new_rdr}.observation`
 WHERE observation_date != EXTRACT(DATE FROM observation_datetime)
 """
-pd.read_gbq(query, dialect='standard')
+execute(client, query)
 
 # # Check for duplicates
 
@@ -229,7 +235,7 @@ WHERE n_data > 1
 GROUP BY 1
 ORDER BY 2 DESC
 """
-pd.read_gbq(query, dialect='standard')
+execute(client, query)
 
 # # Check if numeric data in value_as_string
 # Some numeric data is expected in value_as_string.  For example, zip codes or other contact specific information.
@@ -243,7 +249,7 @@ WHERE SAFE_CAST(value_as_string AS INT64) IS NOT NULL
 GROUP BY 1
 ORDER BY 2 DESC
 """
-pd.read_gbq(query, dialect='standard')
+execute(client, query)
 
 # # All COPE `questionnaire_response_id`s are in COPE version map
 # Any `questionnaire_response_id`s missing from the map will be listed below.
@@ -259,7 +265,7 @@ FROM `{project_id}.{new_rdr}.observation`
 WHERE questionnaire_response_id NOT IN
 (SELECT questionnaire_response_id FROM `{project_id}.{new_rdr}.cope_survey_semantic_version_map`)
 """
-pd.read_gbq(query, dialect='standard')
+execute(client, query)
 
 # # No duplicate `questionnaire_response_id`s in COPE version map
 # Any duplicated `questionnaire_response_id`s will be listed below.
@@ -272,7 +278,7 @@ FROM `{project_id}.{new_rdr}.cope_survey_semantic_version_map`
 GROUP BY questionnaire_response_id
 HAVING n > 1
 """
-pd.read_gbq(query, dialect='standard')
+execute(client, query)
 
 # # Survey version and dates
 # Cope survey versions and the minimum and maximum dates associated with those surveys are listed.
@@ -287,7 +293,7 @@ FROM `{project_id}.{new_rdr}.observation`
 JOIN `{project_id}.{new_rdr}.cope_survey_semantic_version_map` USING (questionnaire_response_id)
 GROUP BY 1
 """
-pd.read_gbq(query, dialect='standard')
+execute(client, query)
 
 # # Class of PPI Concepts using vocabulary.py
 # Concept codes which appear in `observation.observation_source_value` should belong to concept class Question.
@@ -328,7 +334,7 @@ AND CASE WHEN expected_concept_class_id = 'Question' THEN concept_class_id NOT I
 AND concept_class_id != 'Qualifier Value'
 ORDER BY 1, 2, 3
 '''
-pd.read_gbq(query, dialect='standard')
+execute(client, query)
 
 # # Make sure smoking data still exists
 # Make sure that the cleaning rule clash that previously wiped out all numeric smoking data is corrected.
@@ -348,7 +354,7 @@ WHERE observation_source_concept_id IN (1585864, 1585870,1585873, 1586159,158616
 GROUP BY observation_source_concept_id, observation_source_value
 ORDER BY observation_source_concept_id
 '''
-pd.read_gbq(query, dialect='standard')
+execute(client, query)
 
 # # Date conformance check
 # COPE surveys contain some concepts that must enforce dates in the observation.value_as_string field.
@@ -366,7 +372,7 @@ WHERE observation_source_concept_id = 715711
 AND SAFE_CAST(value_as_string AS DATE) IS NULL 
 AND value_as_string != 'PMI Skip'
 '''
-pd.read_gbq(query, dialect='standard')
+execute(client, query)
 
 # # Check pid_rid_mapping table for duplicates
 # Duplicates are not allowed in the person_id or research_id columns of the pid_rid_mapping table.
@@ -395,7 +401,7 @@ FROM `{project_id}.{new_rdr}.pid_rid_mapping`
 GROUP BY research_id
 HAVING count > 1
 '''
-pd.read_gbq(query, dialect='standard')
+execute(client, query)
 
 # # Ensure all person_ids exist in the person table and have mappings
 # All person_ids in the pid_rid_mapping table should exist in the person table.
@@ -425,7 +431,7 @@ WHERE person_id NOT IN
 (SELECT person_id
 FROM `{project_id}.{new_rdr}.pid_rid_mapping`)
 '''
-pd.read_gbq(query, dialect='standard')
+execute(client, query)
 
 # # Check for inconsistencies between primary and RDR pid_rid_mappings
 # Mappings which were in previous exports may be removed from a new export for two reasons:
@@ -446,7 +452,7 @@ JOIN `{project_id}.pipeline_tables.primary_pid_rid_mapping` primary
 USING (person_id)
 WHERE primary.research_id <> rdr.research_id
 '''
-pd.read_gbq(query, dialect='standard')
+execute(client, query)
 
 # Checks for basics survey module
 # Participants with data in other survey modules must also have data from the basics survey module.
@@ -464,7 +470,7 @@ WHERE concept_class_id='Module'
 AND concept_name IN ('The Basics')
 AND questionnaire_response_id IS NOT NULL)
 '''
-pd.read_gbq(query, dialect='standard')
+execute(client, query)
 
 # ## Participants must be 18 years of age or older to consent
 #
@@ -481,7 +487,7 @@ JOIN `{project_id}.{new_rdr}.person` USING (person_id)
 WHERE  (observation_source_concept_id=1585482 OR observation_concept_id=1585482)
 AND DATE_DIFF(DATE(observation_date), DATE(birth_datetime), YEAR) < 18
 '''
-pd.read_gbq(query, dialect='standard')
+execute(client, query)
 
 # # Check for missing questionnaire_response_id
 
@@ -501,7 +507,7 @@ AND concept_name IN ('The Basics', 'Lifestyle', 'Overall Health') -- restrict to
 AND questionnaire_response_id IS NULL
 GROUP BY 1
 """
-pd.read_gbq(query, dialect='standard')
+execute(client, query)
 
 # # Check if concepts for operational use still exist in the data
 
@@ -520,4 +526,4 @@ WHERE observation_source_value IN (
 GROUP BY 1
 HAVING count(1) > 0
 """
-pd.read_gbq(query, dialect='standard')
+execute(client, query)
