@@ -70,6 +70,10 @@ class MissingConceptRecordSuppression(AbstractBqLookupTableConceptSuppression):
         union_distinct = "\nUNION DISTINCT\n"
         for table in tables:
             concept_id_fields = get_concept_id_fields(table)
+            concept_id_fields = [
+                field for field in concept_id_fields
+                if 'source_concept_id' not in field
+            ]
             for concept_id_field in concept_id_fields:
                 query = MISSING_CONCEPTS_QUERY.render(
                     project_id=self.project_id,

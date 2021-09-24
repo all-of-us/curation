@@ -189,7 +189,8 @@ COMBINED_CLEANING_CLASSES = [
     # won't work with mocked strings.  should use base class
     # setup_query_execution function to load dependencies before query execution
     (
-        domain_alignment.domain_alignment,),
+        MissingConceptRecordSuppression,),
+    (domain_alignment.domain_alignment,),
     (DropParticipantsWithoutPPI,),
     (clean_years.get_year_of_birth_queries,),
     (NegativeAges,),
@@ -217,7 +218,6 @@ COMBINED_CLEANING_CLASSES = [
     (RemoveParticipantDataPastDeactivationDate,),
     (validate_missing_participants.delete_records_for_non_matching_participants,
     ),
-    (MissingConceptRecordSuppression,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
