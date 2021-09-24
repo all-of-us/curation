@@ -66,9 +66,11 @@ ENV GOOGLE_APPLICATION_CREDENTIALS "${CIRCLE_WORKING_DIRECTORY}/aou-res-curation
 # CONTAINER SETUP
 
 # create runtime user group
-RUN addgroup \
+RUN if [[ -z $(grep ":${GID}:" /etc/group) ]]; then \
+    addgroup \
     --gid "${GID}" \
-    "${CURATION_USER}"
+    "${CURATION_USER}"; \
+fi
 
 # create runtime user
 RUN adduser \
