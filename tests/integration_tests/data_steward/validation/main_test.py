@@ -2,10 +2,12 @@
 Unit test components of data_steward.validation.main
 """
 from __future__ import print_function
+import datetime
 import json
 import os
 import unittest
 from io import open
+from time import sleep
 
 import mock
 from bs4 import BeautifulSoup as bs
@@ -164,9 +166,19 @@ class ValidationMainTest(unittest.TestCase):
             if 'person_id' in field_names:
                 self.table_has_clustering(table_info)
 
-    def test_check_processed(self):
-        test_util.write_cloud_str(self.hpo_bucket,
-                                  self.folder_prefix + 'person.csv', '\n')
+    @mock.patch('validation.main.updated_datetime_object')
+    def test_check_processed(self, mock_updated_datetime_object):
+
+        mock_updated_datetime_object.return_value = datetime.datetime.today(
+        ) - datetime.timedelta(minutes=7)
+
+        for fname in common.AOU_REQUIRED_FILES:
+
+            test_util.write_cloud_str(self.hpo_bucket,
+                                      self.folder_prefix + fname, '\n')
+            #brief sleep between writes
+            sleep(1)
+
         test_util.write_cloud_str(self.hpo_bucket,
                                   self.folder_prefix + common.PROCESSED_TXT,
                                   '\n')
@@ -256,16 +268,24 @@ class ValidationMainTest(unittest.TestCase):
                                      self.folder_prefix)
         self.assertSetEqual(set(expected_results), set(r['results']))
 
+    @mock.patch('validation.main.updated_datetime_object')
+    @mock.patch('validation.main._has_all_required_files')
     @mock.patch('validation.main.all_required_files_loaded')
     @mock.patch('validation.main.extract_date_from_rdr_dataset_id')
     @mock.patch('validation.main.is_first_validation_run')
     @mock.patch('api_util.check_cron')
     def test_html_report_five_person(self, mock_check_cron, mock_first_run,
-                                     mock_rdr_date, mock_required_files_loaded):
+                                     mock_rdr_date, mock_required_files_loaded,
+                                     mock_has_all_required_files,
+                                     mock_updated_datetime_object):
         mock_required_files_loaded.return_value = False
         mock_first_run.return_value = False
         rdr_date = '2020-01-01'
         mock_rdr_date.return_value = rdr_date
+        mock_has_all_required_files.return_value = True
+        mock_updated_datetime_object.return_value = datetime.datetime.today(
+        ) - datetime.timedelta(minutes=7)
+
         for cdm_file in test_util.FIVE_PERSONS_FILES:
             test_util.write_cloud_file(self.hpo_bucket,
                                        cdm_file,
