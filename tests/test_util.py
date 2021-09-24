@@ -13,7 +13,7 @@ from constants.validation import main
 import gcs_utils
 import resources
 
-TEST_RESOURCES_BUCKET = 'aou-res-curation-test-resources'
+RESOURCES_BUCKET_FMT = '{project_id}-resources'
 FAKE_HPO_ID = 'fake'
 VALIDATE_HPO_FILES_URL = main.PREFIX + 'ValidateHpoFiles/' + FAKE_HPO_ID
 COPY_HPO_FILES_URL = main.PREFIX + 'CopyFiles/' + FAKE_HPO_ID
@@ -244,6 +244,7 @@ def populate_achilles(hpo_id=FAKE_HPO_ID, include_heel=True):
     import app_identity
 
     app_id = app_identity.get_application_id()
+    test_resources_bucket = RESOURCES_BUCKET_FMT.format(project_id=app_id)
     table_names = [
         achilles.ACHILLES_ANALYSIS, achilles.ACHILLES_RESULTS,
         achilles.ACHILLES_RESULTS_DIST
@@ -253,7 +254,7 @@ def populate_achilles(hpo_id=FAKE_HPO_ID, include_heel=True):
 
     running_jobs = []
     for table_name in table_names:
-        gcs_path = f'gs://{TEST_RESOURCES_BUCKET}/{table_name}.csv'
+        gcs_path = f'gs://{test_resources_bucket}/{table_name}.csv'
         dataset_id = bq_utils.get_dataset_id()
         table_id = bq_utils.get_table_id(hpo_id, table_name)
         load_results = bq_utils.load_csv(table_name, gcs_path, app_id,
