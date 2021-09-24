@@ -6,6 +6,7 @@ import csv
 import logging
 import os
 from copy import copy
+from inspect import signature
 
 # Third party imports
 from googleapiclient.errors import HttpError
@@ -18,6 +19,7 @@ import cdr_cleaner.clean_cdr as control
 import cdr_cleaner.clean_cdr_engine as engine
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 import constants.cdr_cleaner.reporter as report_consts
+from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 
 LOGGER = logging.getLogger(__name__)
 
@@ -96,58 +98,64 @@ def get_stage_elements(data_stage, fields_list):
     for rule in control.DATA_STAGE_RULES_MAPPING.get(data_stage, []):
         rule_info = {}
 
+        clazz = rule[0]
         try:
-            clazz = rule[0]
-            instance = clazz('foo', 'bar', 'baz')
-            LOGGER.info(f"{clazz} ducktyped to a class")
+            if not issubclass(clazz, BaseCleaningRule):
+                LOGGER.info(f"{rule} is NOT base-classed cleaning rule")
+                rule_info = get_function_info(clazz, fields_list)
+                report_rows.append(rule_info)
 
-        except (RuntimeError, TypeError, HttpError, BadRequest,
-                DefaultCredentialsError):
-            LOGGER.info(f"{rule} did NOT ducktype to a class")
+            else:
+                # this is a classed cleaning rule
+                sig = signature(clazz)
+                params = ['foo'] * len(sig.parameters)
+                LOGGER.info(f"initializing instance as {clazz.__name__}({', '.join(params)})")
+                instance = clazz(*params)
+                LOGGER.info(f"{clazz} a base-classed cleaning rule")
+                try:
+                    _ = instance.get_query_specs()
+                    for field in fields_list:
+                        try:
+                            value = 'NO DATA'
+                            if field in report_consts.FIELDS_PROPERTIES_MAP:
+                                func = report_consts.FIELDS_PROPERTIES_MAP[field]
+                                value = getattr(instance, func, 'no data')
+                            elif field in report_consts.FIELDS_METHODS_MAP:
+                                func = report_consts.FIELDS_METHODS_MAP[field]
+                                value = getattr(instance, func, 'no data')()
+                            elif field in report_consts.CLASS_ATTRIBUTES_MAP:
+                                func = report_consts.CLASS_ATTRIBUTES_MAP[field]
+
+                                value = None
+                                for item in func.split('.'):
+                                    if not value:
+                                        value = getattr(instance, item)
+                                    else:
+                                        value = getattr(value, item)
+
+                            rule_info[field] = value
+
+                        except AttributeError:
+                            # an error occurred trying to access an expected attribute.
+                            # did the base class definition change recently?
+                            LOGGER.exception(
+                                f'An error occurred trying to get the value for {field}'
+                            )
+                            rule_info[field] = report_consts.UNKNOWN
+                except (TypeError, AttributeError):
+                    # an error occurred indicating this is not a rule extending the
+                    # base cleaning rule.  provide the info we can and move on.
+                    LOGGER.exception(f'{clazz} does not implement get_query_specs')
+                    # this is a function
+                    rule_info = get_function_info(clazz, fields_list)
+
+            report_rows.append(rule_info)
+
+        except (TypeError, RuntimeError, HttpError, BadRequest, DefaultCredentialsError):
+            LOGGER.info(f"{rule} is NOT a class")
             rule_info = get_function_info(clazz, fields_list)
             report_rows.append(rule_info)
 
-        else:
-            try:
-                # this is a class
-                _ = instance.get_query_specs()
-                LOGGER.info(f"{clazz} is a class")
-                for field in fields_list:
-                    try:
-                        value = 'NO DATA'
-                        if field in report_consts.FIELDS_PROPERTIES_MAP:
-                            func = report_consts.FIELDS_PROPERTIES_MAP[field]
-                            value = getattr(instance, func, 'no data')
-                        elif field in report_consts.FIELDS_METHODS_MAP:
-                            func = report_consts.FIELDS_METHODS_MAP[field]
-                            value = getattr(instance, func, 'no data')()
-                        elif field in report_consts.CLASS_ATTRIBUTES_MAP:
-                            func = report_consts.CLASS_ATTRIBUTES_MAP[field]
-
-                            value = None
-                            for item in func.split('.'):
-                                if not value:
-                                    value = getattr(instance, item)
-                                else:
-                                    value = getattr(value, item)
-
-                        rule_info[field] = value
-
-                    except AttributeError:
-                        # an error occurred trying to access an expected attribute.
-                        # did the base class definition change recently?
-                        LOGGER.exception(
-                            f'An error occurred trying to get the value for {field}'
-                        )
-                        rule_info[field] = report_consts.UNKNOWN
-            except (TypeError, AttributeError):
-                # an error occurred indicating this is not a rule extending the
-                # base cleaning rule.  provide the info we can and move on.
-                LOGGER.exception(f'{clazz} is not a class')
-                # this is a function
-                rule_info = get_function_info(clazz, fields_list)
-
-            report_rows.append(rule_info)
 
     return report_rows
 
