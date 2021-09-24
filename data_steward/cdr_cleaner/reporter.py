@@ -109,7 +109,9 @@ def get_stage_elements(data_stage, fields_list):
                 # this is a classed cleaning rule
                 sig = signature(clazz)
                 params = ['foo'] * len(sig.parameters)
-                LOGGER.info(f"initializing instance as {clazz.__name__}({', '.join(params)})")
+                LOGGER.info(
+                    f"initializing instance as {clazz.__name__}({', '.join(params)})"
+                )
                 instance = clazz(*params)
                 LOGGER.info(f"{clazz} a base-classed cleaning rule")
                 try:
@@ -118,7 +120,8 @@ def get_stage_elements(data_stage, fields_list):
                         try:
                             value = 'NO DATA'
                             if field in report_consts.FIELDS_PROPERTIES_MAP:
-                                func = report_consts.FIELDS_PROPERTIES_MAP[field]
+                                func = report_consts.FIELDS_PROPERTIES_MAP[
+                                    field]
                                 value = getattr(instance, func, 'no data')
                             elif field in report_consts.FIELDS_METHODS_MAP:
                                 func = report_consts.FIELDS_METHODS_MAP[field]
@@ -145,17 +148,18 @@ def get_stage_elements(data_stage, fields_list):
                 except (TypeError, AttributeError):
                     # an error occurred indicating this is not a rule extending the
                     # base cleaning rule.  provide the info we can and move on.
-                    LOGGER.exception(f'{clazz} does not implement get_query_specs')
+                    LOGGER.exception(
+                        f'{clazz} does not implement get_query_specs')
                     # this is a function
                     rule_info = get_function_info(clazz, fields_list)
 
             report_rows.append(rule_info)
 
-        except (TypeError, RuntimeError, HttpError, BadRequest, DefaultCredentialsError):
+        except (TypeError, RuntimeError, HttpError, BadRequest,
+                DefaultCredentialsError):
             LOGGER.info(f"{rule} is NOT a class")
             rule_info = get_function_info(clazz, fields_list)
             report_rows.append(rule_info)
-
 
     return report_rows
 
