@@ -35,9 +35,9 @@ services:
       CIRCLE_PROJECT_USERNAME: "all-of-us"
     stdin_open: true # docker run -i
     tty: true        # docker run -t
-    volumes:
-      # mount code inside the container
-      - "./.git:/home/curation/project/curation/.git:ro"
-      - "./data_steward:/home/curation/project/curation/data_steward:rw"
-      - "./tests:/home/curation/project/curation/tests:rw"
-      - "./tools:/home/curation/project/curation/tools:ro"
+    # volumes:
+    #   # mount code inside the container
+    #   - "./.git:/home/curation/project/curation/.git:ro"
+    #   - "./data_steward:/home/curation/project/curation/data_steward:rw"
+    #   - "./tests:/home/curation/project/curation/tests:rw"
+    #   - "./tools:/home/curation/project/curation/tools:ro"
