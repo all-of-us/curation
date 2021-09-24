@@ -1,61 +1,61 @@
 [
-    {
-        "type": "string", 
-        "name": "cdm_source_name", 
-        "mode": "required", 
-        "description": "The full name of the source"
-    }, 
-    {
-        "type": "string", 
-        "name": "cdm_source_abbreviation", 
-        "mode": "nullable", 
-        "description": "An abbreviation of the name"
-    }, 
-    {
-        "type": "string", 
-        "name": "cdm_holder", 
-        "mode": "nullable", 
-        "description": "The name of the organization responsible for the development of the CDM instance"
-    }, 
-    {
-        "type": "string", 
-        "name": "source_description", 
-        "mode": "nullable", 
-        "description": "A description of the source data origin and purpose for collection. The description may contain a summary of the period of time that is expected to be covered by this dataset."
-    }, 
-    {
-        "type": "string", 
-        "name": "source_documentation_reference", 
-        "mode": "nullable", 
-        "description": "URL or other external reference to location of source documentation"
-    }, 
-    {
-        "type": "string", 
-        "name": "cdm_etl_reference", 
-        "mode": "nullable"
-    }, 
-    {
-        "type": "date", 
-        "name": "source_release_date", 
-        "mode": "nullable", 
-        "description": "The date for which the source data are most current, such as the last day of data capture"
-    }, 
-    {
-        "type": "date", 
-        "name": "cdm_release_date", 
-        "mode": "nullable", 
-        "description": "The date when the CDM was instantiated"
-    }, 
-    {
-        "type": "string", 
-        "name": "cdm_version", 
-        "mode": "nullable", 
-        "description": "The version of CDM used"
-    }, 
-    {
-        "type": "string", 
-        "name": "vocabulary_version", 
-        "mode": "nullable", 
-        "description": "The version of the vocabulary used"
-    }
+  {
+    "type": "string",
+    "name": "cdm_source_name",
+    "mode": "required",
+    "description": "The full name of the source"
+  },
+  {
+    "type": "string",
+    "name": "cdm_source_abbreviation",
+    "mode": "nullable",
+    "description": "An abbreviation of the name"
+  },
+  {
+    "type": "string",
+    "name": "cdm_holder",
+    "mode": "nullable",
+    "description": "The name of the organization responsible for the development of the CDM instance"
+  },
+  {
+    "type": "string",
+    "name": "source_description",
+    "mode": "nullable",
+    "description": "A description of the source data origin and purpose for collection. The description may contain a summary of the period of time that is expected to be covered by this dataset."
+  },
+  {
+    "type": "string",
+    "name": "source_documentation_reference",
+    "mode": "nullable",
+    "description": "URL or other external reference to location of source documentation"
+  },
+  {
+    "type": "string",
+    "name": "cdm_etl_reference",
+    "mode": "nullable"
+  },
+  {
+    "type": "date",
+    "name": "source_release_date",
+    "mode": "nullable",
+    "description": "The date for which the source data are most current, such as the last day of data capture"
+  },
+  {
+    "type": "date",
+    "name": "cdm_release_date",
+    "mode": "nullable",
+    "description": "The date when the CDM was instantiated"
+  },
+  {
+    "type": "string",
+    "name": "cdm_version",
+    "mode": "nullable",
+    "description": "The version of CDM used"
+  },
+  {
+    "type": "string",
+    "name": "vocabulary_version",
+    "mode": "nullable",
+    "description": "The version of the vocabulary used"
+  }
 ]
