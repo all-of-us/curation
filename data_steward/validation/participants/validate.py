@@ -35,11 +35,14 @@ MISSING_EHR = 'missing_ehr'
 
 MATCH_FIELDS_QUERY = JINJA_ENV.from_string("""
     UPDATE `{{project_id}}.{{drc_dataset_id}}.{{id_match_table_id}}` upd
-    SET upd.email = `{{project_id}}.{{drc_dataset_id}}.CompareEmail`(ps.email, ehr.email),
+    SET upd.email = `{{project_id}}.{{drc_dataset_id}}.CompareEmail`(ps.email, ehr_email.email),
+        upd.phone_number = `{{project_id}}.{{drc_dataset_id}}.ComparePhoneNumber`(ps.phone_number, ehr_phone.phone_number),
         upd.algorithm = 'yes'
     FROM `{{project_id}}.{{drc_dataset_id}}.{{ps_api_table_id}}` ps
-    LEFT JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_email_table_id}}` ehr
-        ON ehr.person_id = ps.person_id
+    LEFT JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_email_table_id}}` ehr_email
+        ON ehr_email.person_id = ps.person_id
+    LEFT JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_phone_number_table_id}}` ehr_phone
+        ON ehr_phone.person_id = ps.person_id
     WHERE upd.person_id = ps.person_id
         AND upd._PARTITIONTIME = ps._PARTITIONTIME
 """)
@@ -53,6 +56,7 @@ def identify_rdr_ehr_match(client,
 
     id_match_table_id = f'{IDENTITY_MATCH_TABLE}_{hpo_id}'
     hpo_pii_email_table_id = f'{hpo_id}_pii_email'
+    hpo_pii_phone_number_table_id = f'{hpo_id}_pii_phone_number'
     ps_api_table_id = f'{PS_API_VALUES}_{hpo_id}'
 
     for item in CREATE_COMPARISON_FUNCTION_QUERIES:
@@ -70,6 +74,7 @@ def identify_rdr_ehr_match(client,
         project_id=project_id,
         id_match_table_id=id_match_table_id,
         hpo_pii_email_table_id=hpo_pii_email_table_id,
+        hpo_pii_phone_number_table_id=hpo_pii_phone_number_table_id,
         ps_api_table_id=ps_api_table_id,
         drc_dataset_id=drc_dataset_id,
         ehr_ops_dataset_id=ehr_ops_dataset_id,
