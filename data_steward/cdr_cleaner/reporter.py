@@ -137,7 +137,8 @@ def get_stage_elements(data_stage, fields_list):
                         f'An error occurred trying to get the value for {field}'
                     )
                     rule_info[field] = report_consts.UNKNOWN
-        except (TypeError, AttributeError, RuntimeError, HttpError, BadRequest, DefaultCredentialsError):
+        except (TypeError, AttributeError, RuntimeError, HttpError, BadRequest,
+                DefaultCredentialsError):
             # an error occurred indicating this is not a rule extending the
             # base cleaning rule.  provide the info we can and move on.
             LOGGER.exception(f'{clazz} is not a class')
