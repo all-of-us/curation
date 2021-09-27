@@ -167,7 +167,7 @@ class ParticipantSummaryRequestsTest(TestCase):
         self.assertEqual(mock_auth.delegated_credentials().token, actual_token)
 
     @patch('utils.participant_summary_requests.get_access_token')
-    @patch('utils.participant_summary_requests.requests.Session')
+    @patch('utils.participant_summary_requests.Session')
     def test_get_participant_data(self, mock_get_session, mock_token):
         mock_token.return_value = self.fake_token
         mock_session = MagicMock()

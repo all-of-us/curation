@@ -51,10 +51,8 @@ class ParticipantSummaryRequests(BaseTest.BigQueryTestBase):
     def setUp(self):
         self.columns = ['participantId', 'suspensionStatus', 'suspensionTime']
         self.bq_columns = ['person_id', 'suspension_status', 'deactivated_date']
-        self.deactivated_participants = [[111, 'NO_CONTACT',
-                                          date(2018, 12, 7)],
-                                         [222, 'NO_CONTACT',
-                                          date(2018, 12, 7)]]
+        self.deactivated_participants = [[111, 'NO_CONTACT', '2018-12-7'],
+                                         [222, 'NO_CONTACT', '2018-12-7']]
 
         self.fake_dataframe = DataFrame(self.deactivated_participants,
                                         columns=self.bq_columns)
@@ -105,14 +103,20 @@ class ParticipantSummaryRequests(BaseTest.BigQueryTestBase):
 
         super().setUp()
 
-    @mock.patch('utils.participant_summary_requests.requests.get')
-    def test_get_participant_data(self, mock_get):
+    @mock.patch('utils.participant_summary_requests.get_access_token')
+    @mock.patch('utils.participant_summary_requests.Session')
+    def test_get_participant_data(self, mock_get_session, mock_token):
         """
         Mocks calling the participant summary api.
         """
         # pre conditions
-        mock_get.return_value.status_code = 200
-        mock_get.return_value.json.return_value = self.json_response_entry
+        mock_token.return_value = 'fake_token'
+        mock_session = mock.MagicMock()
+        mock_get_session.return_value = mock_session
+        mock_resp = mock.MagicMock()
+        mock_session.get.return_value = mock_resp
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = self.json_response_entry
 
         # test
         expected_response = psr.get_participant_data(self.url, self.headers)
@@ -120,11 +124,17 @@ class ParticipantSummaryRequests(BaseTest.BigQueryTestBase):
         # post conditions
         self.assertEqual(expected_response, self.participant_data)
 
-    @mock.patch('utils.participant_summary_requests.requests.get')
-    def test_get_deactivated_participants(self, mock_get):
+    @mock.patch('utils.participant_summary_requests.get_access_token')
+    @mock.patch('utils.participant_summary_requests.Session')
+    def test_get_deactivated_participants(self, mock_get_session, mock_token):
         # Pre conditions
-        mock_get.return_value.status_code = 200
-        mock_get.return_value.json.return_value = self.json_response_entry
+        mock_token.return_value = 'fake_token'
+        mock_session = mock.MagicMock()
+        mock_get_session.return_value = mock_session
+        mock_resp = mock.MagicMock()
+        mock_session.get.return_value = mock_resp
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = self.json_response_entry
 
         # Tests
         df = psr.get_deactivated_participants(self.project_id, self.columns)

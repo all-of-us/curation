@@ -17,7 +17,7 @@ The intent of the get_participant_information function is to retrieve the inform
 import re
 import logging
 from typing import List, Dict
-import requests
+from requests import Session
 
 # Third party imports
 import pandas
@@ -84,7 +84,7 @@ def get_participant_data(api_project_id: str, params: Dict) -> List[Dict]:
         'Authorization': f'Bearer {token}'
     }
 
-    session = requests.Session()
+    session = Session()
 
     while not done:
         resp = session.get(url, headers=headers, params=params)
@@ -285,6 +285,8 @@ def set_dataframe_date_fields(df: pandas.DataFrame,
         if schema_field.field_type.upper() in (
                 'DATE', 'DATETIME', 'TIMESTAMP') and field_name in df.columns:
             df[field_name] = pandas.to_datetime(df[field_name], errors='coerce')
+            if schema_field.field_type.upper() == 'DATE':
+                df[field_name] = df[field_name].dt.date
 
     return df
 
