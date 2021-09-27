@@ -27,7 +27,7 @@ import common
 import gcs_utils
 import resources
 from utils.slack_alerts import log_event_factory
-from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON
+from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON, AOU_REQUIRED_FILES
 from constants.validation import hpo_report as report_consts
 from constants.validation import main as consts
 from curation_logging.curation_gae_handler import begin_request_logging, end_request_logging, \
@@ -746,6 +746,10 @@ def updated_datetime_object(gcs_object_metadata):
                                       '%Y-%m-%dT%H:%M:%S.%fZ')
 
 
+def _has_all_required_files(folder_bucketitems_basenames):
+    return set(AOU_REQUIRED_FILES).issubset(set(folder_bucketitems_basenames))
+
+
 def list_submitted_bucket_items(folder_bucketitems):
     """
     :param folder_bucketitems: List of Bucket items
@@ -753,16 +757,38 @@ def list_submitted_bucket_items(folder_bucketitems):
     """
     files_list = []
     object_retention_days = 30
+    object_process_lag_minutes = 5
     today = datetime.datetime.today()
+
+    # If any required file missing, stop submission
+    folder_bucketitems_basenames = [
+        basename(file_name) for file_name in folder_bucketitems
+    ]
+
+    if not _has_all_required_files(folder_bucketitems_basenames):
+        return []
+
+    # Validate submission times
     for file_name in folder_bucketitems:
         if basename(file_name) not in resources.IGNORE_LIST:
             # in common.CDM_FILES or is_pii(basename(file_name)):
             created_date = initial_date_time_object(file_name)
             retention_time = datetime.timedelta(days=object_retention_days)
             retention_start_time = datetime.timedelta(days=1)
-            age_threshold = created_date + retention_time - retention_start_time
-            if age_threshold > today:
+            upper_age_threshold = created_date + retention_time - retention_start_time
+
+            if upper_age_threshold > today:
                 files_list.append(file_name)
+
+            if basename(file_name) in AOU_REQUIRED_FILES:
+                # restrict processing time for 5 minutes after all required files
+                updated_date = updated_datetime_object(file_name)
+                lag_time = datetime.timedelta(
+                    minutes=object_process_lag_minutes)
+                lower_age_threshold = updated_date + lag_time
+
+                if lower_age_threshold > today:
+                    return []
     return files_list
 
 
