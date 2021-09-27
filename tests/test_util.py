@@ -13,6 +13,7 @@ from constants.validation import main
 import gcs_utils
 import resources
 
+RESOURCES_BUCKET_FMT = '{project_id}-resources'
 FAKE_HPO_ID = 'fake'
 VALIDATE_HPO_FILES_URL = main.PREFIX + 'ValidateHpoFiles/' + FAKE_HPO_ID
 COPY_HPO_FILES_URL = main.PREFIX + 'CopyFiles/' + FAKE_HPO_ID
@@ -218,49 +219,6 @@ def delete_all_tables(dataset_id):
     return deleted
 
 
-def download_file_from_google_drive(id, destination):
-    URL = "https://docs.google.com/uc?export=download"
-
-    session = requests.Session()
-
-    response = session.get(URL, params={'id': id}, stream=True)
-    token = get_confirm_token(response)
-
-    if token:
-        params = {'id': id, 'confirm': token}
-        response = session.get(URL, params=params, stream=True)
-
-    save_response_content(response, destination)
-
-
-def get_confirm_token(response):
-    for key, value in response.cookies.items():
-        if key.startswith('download_warning'):
-            return value
-
-    return None
-
-
-def save_response_content(response, destination):
-    CHUNK_SIZE = 32768
-
-    with open(destination, "wb") as f:
-        for chunk in response.iter_content(CHUNK_SIZE):
-            if chunk:  # filter out keep-alive new chunks
-                f.write(chunk)
-
-
-def get_synpuf_results_files():
-    files = [('0B8QSHCLE8g4JV1Q4UHFRLXNhM2c', 'achilles_results.csv'),
-             ('0B8QSHCLE8g4JeUUxZEh0SS1YNlk', 'achilles_results_dist.csv'),
-             ('0B8QSHCLE8g4JQUE1dGJLd1RpWEk', 'achilles_heel_results.csv')]
-    for file_id, file_name in files:
-        dest_path = os.path.join(TEST_DATA_EXPORT_SYNPUF_PATH, file_name)
-        if not os.path.exists(dest_path):
-            download_file_from_google_drive(
-                file_id, os.path.join(TEST_DATA_EXPORT_SYNPUF_PATH, file_name))
-
-
 def read_cloud_file(bucket, name):
     return gcs_utils.get_object(bucket, name)
 
@@ -281,33 +239,22 @@ def write_cloud_fp(bucket, name, fp):
     return gcs_utils.upload_object(bucket, name, fp)
 
 
-def populate_achilles(hpo_bucket, hpo_id=FAKE_HPO_ID, include_heel=True):
+def populate_achilles(hpo_id=FAKE_HPO_ID, include_heel=True):
     from validation import achilles, achilles_heel
     import app_identity
 
     app_id = app_identity.get_application_id()
-
-    test_file_name = achilles.ACHILLES_ANALYSIS + '.csv'
-    achilles_analysis_file_path = os.path.join(TEST_DATA_EXPORT_PATH,
-                                               test_file_name)
-    schema_name = achilles.ACHILLES_ANALYSIS
-    write_cloud_file(hpo_bucket, achilles_analysis_file_path)
-    gcs_path = 'gs://' + hpo_bucket + '/' + test_file_name
-    dataset_id = bq_utils.get_dataset_id()
-    table_id = bq_utils.get_table_id(hpo_id, achilles.ACHILLES_ANALYSIS)
-    bq_utils.load_csv(schema_name, gcs_path, app_id, dataset_id, table_id)
-
-    table_names = [achilles.ACHILLES_RESULTS, achilles.ACHILLES_RESULTS_DIST]
+    test_resources_bucket = RESOURCES_BUCKET_FMT.format(project_id=app_id)
+    table_names = [
+        achilles.ACHILLES_ANALYSIS, achilles.ACHILLES_RESULTS,
+        achilles.ACHILLES_RESULTS_DIST
+    ]
     if include_heel:
         table_names.append(achilles_heel.ACHILLES_HEEL_RESULTS)
 
     running_jobs = []
     for table_name in table_names:
-        test_file_name = table_name + '.csv'
-        test_file_path = os.path.join(TEST_DATA_EXPORT_SYNPUF_PATH,
-                                      table_name + '.csv')
-        write_cloud_file(hpo_bucket, test_file_path)
-        gcs_path = 'gs://' + hpo_bucket + '/' + test_file_name
+        gcs_path = f'gs://{test_resources_bucket}/{table_name}.csv'
         dataset_id = bq_utils.get_dataset_id()
         table_id = bq_utils.get_table_id(hpo_id, table_name)
         load_results = bq_utils.load_csv(table_name, gcs_path, app_id,
