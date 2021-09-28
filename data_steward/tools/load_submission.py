@@ -4,11 +4,11 @@ Loads a submission into bq from the archive
 import logging
 import argparse
 from typing import List
+from concurrent.futures import TimeoutError
 
 from google.cloud.bigquery import LoadJobConfig, LoadJob, Table, Client as BQClient
 from google.cloud.storage import Client as GCSClient
 from google.cloud.exceptions import GoogleCloudError
-from concurrent.futures import TimeoutError
 
 from common import AOU_REQUIRED, JINJA_ENV
 from utils.bq import get_table_schema, get_client
@@ -63,9 +63,9 @@ def _filename_to_table_name(filename: str) -> str:
     return filename.split('/')[-1].replace('.csv', '').lower()
 
 
-def load_stage(dst_dataset: str, bq_client: BQClient, bucket_name: str,
-               prefix: str, gcs_client: GCSClient,
-               hpo_id: str) -> List[LoadJob]:
+def load_folder(dst_dataset: str, bq_client: BQClient, bucket_name: str,
+                prefix: str, gcs_client: GCSClient,
+                hpo_id: str) -> List[LoadJob]:
     """
     Stage files from a bucket to a dataset
 
@@ -94,7 +94,6 @@ def load_stage(dst_dataset: str, bq_client: BQClient, bucket_name: str,
         job_config.schema = schema
         job_config.skip_leading_rows = 1
         job_config.source_format = 'CSV'
-        job_config
         source_uri = f'gs://{bucket_name}/{blob.name}'
         load_job = bq_client.load_table_from_uri(source_uri,
                                                  destination,
@@ -159,7 +158,7 @@ def main(project_id, dataset_id, bucket_name, hpo_id, folder_name):
     prefix = f'{hpo_id}/{site_bucket}/{folder_name}'
     LOGGER.info(
         f'Starting jobs for loading {bucket_name}/{prefix} into {dataset_id}')
-    load_stage(dataset_id, bq_client, bucket_name, prefix, gcs_client, hpo_id)
+    load_folder(dataset_id, bq_client, bucket_name, prefix, gcs_client, hpo_id)
     LOGGER.info(f'Successfully loaded {bucket_name}/{prefix} into {dataset_id}')
 
 
