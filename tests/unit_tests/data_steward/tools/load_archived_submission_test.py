@@ -5,7 +5,7 @@ from tools import load_archived_submission as ls
 import common
 
 
-class LoadVocabTest(TestCase):
+class LoadArchivedSubmissionTest(TestCase):
 
     @classmethod
     def setUpClass(cls):
