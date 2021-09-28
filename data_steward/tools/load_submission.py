@@ -89,15 +89,17 @@ def load_stage(dst_dataset: str, bq_client: BQClient, bucket_name: str,
         hpo_table_name = f'{hpo_id}_{table_name}'
         fq_hpo_table = f'{bq_client.project}.{dst_dataset}.{hpo_table_name}'
         destination = Table(fq_hpo_table, schema=schema)
-        destination = bq_client.create_table(destination, exists_ok=True)
+        destination = bq_client.create_table(destination)
         job_config = LoadJobConfig()
         job_config.schema = schema
         job_config.skip_leading_rows = 1
         job_config.source_format = 'CSV'
+        job_config
         source_uri = f'gs://{bucket_name}/{blob.name}'
         load_job = bq_client.load_table_from_uri(source_uri,
                                                  destination,
-                                                 job_config=job_config)
+                                                 job_config=job_config,
+                                                 job_id_prefix=__name__)
         LOGGER.info(f'table:{destination} job_id:{load_job.job_id}')
         load_jobs.append(load_job)
         load_job.result()
@@ -141,11 +143,24 @@ def get_arg_parser():
 
 
 def main(project_id, dataset_id, bucket_name, hpo_id, folder_name):
+    """
+    Main function to load submission into dataset
+
+    :param project_id: Identifies the project
+    :param dataset_id: Identifies the destination dataset
+    :param bucket_name: the bucket in GCS containing the archive files
+    :param hpo_id: Identifies the HPO site
+    :param folder_name: Name of the submission folder to load
+    :return:
+    """
     bq_client = get_client(project_id)
     gcs_client = GCSClient(project_id)
     site_bucket = get_bucket(bq_client, hpo_id)
     prefix = f'{hpo_id}/{site_bucket}/{folder_name}'
+    LOGGER.info(
+        f'Starting jobs for loading {bucket_name}/{prefix} into {dataset_id}')
     load_stage(dataset_id, bq_client, bucket_name, prefix, gcs_client, hpo_id)
+    LOGGER.info(f'Successfully loaded {bucket_name}/{prefix} into {dataset_id}')
 
 
 if __name__ == '__main__':
