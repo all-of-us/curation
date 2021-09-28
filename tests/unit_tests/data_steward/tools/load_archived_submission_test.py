@@ -1,7 +1,7 @@
 from unittest import TestCase, mock
 from unittest.mock import ANY
 
-from tools import load_submission as ls
+from tools import load_archived_submission as ls
 import common
 
 

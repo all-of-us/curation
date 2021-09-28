@@ -158,7 +158,8 @@ def main(project_id, dataset_id, bucket_name, hpo_id, folder_name):
     prefix = f'{hpo_id}/{site_bucket}/{folder_name}'
     LOGGER.info(
         f'Starting jobs for loading {bucket_name}/{prefix} into {dataset_id}')
-    load_folder(dataset_id, bq_client, bucket_name, prefix, gcs_client, hpo_id)
+    _ = load_folder(dataset_id, bq_client, bucket_name, prefix, gcs_client,
+                    hpo_id)
     LOGGER.info(f'Successfully loaded {bucket_name}/{prefix} into {dataset_id}')
 
 
