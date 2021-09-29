@@ -4,7 +4,7 @@ Loads a submission into bq from the archive
 import logging
 import argparse
 from typing import List
-from concurrent.futures import TimeoutError
+from concurrent.futures import TimeoutError as TOError
 
 from google.cloud.bigquery import LoadJobConfig, LoadJob, Table, Client as BQClient
 from google.cloud.storage import Client as GCSClient
@@ -47,7 +47,7 @@ def get_bucket(client: BQClient, hpo_id: str) -> str:
                 f'Found more than one bucket name for site {hpo_id}: {bucket_names}'
             )
         bucket_name = bucket_names[0]
-    except (GoogleCloudError, TimeoutError) as e:
+    except (GoogleCloudError, TOError) as e:
         LOGGER.error(f'Job failed with error {str(e)}')
         raise e
     return bucket_name
@@ -95,10 +95,11 @@ def load_folder(dst_dataset: str, bq_client: BQClient, bucket_name: str,
         job_config.skip_leading_rows = 1
         job_config.source_format = 'CSV'
         source_uri = f'gs://{bucket_name}/{blob.name}'
-        load_job = bq_client.load_table_from_uri(source_uri,
-                                                 destination,
-                                                 job_config=job_config,
-                                                 job_id_prefix=__name__)
+        load_job = bq_client.load_table_from_uri(
+            source_uri,
+            destination,
+            job_config=job_config,
+            job_id_prefix=f"{__file__.split('/')[-1].split('.')[0]}_")
         LOGGER.info(f'table:{destination} job_id:{load_job.job_id}')
         load_jobs.append(load_job)
         load_job.result()
