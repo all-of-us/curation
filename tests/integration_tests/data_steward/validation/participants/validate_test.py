@@ -120,7 +120,7 @@ class ValidateTest(TestCase):
             type_=TimePartitioningType.HOUR)
         table = self.client.create_table(table, exists_ok=True)
 
-    def test_identify_rdr_ehr_email_match(self):
+    def test_identify_rdr_ehr_match(self):
 
         POPULATE_PII_EMAILS = JINJA_ENV.from_string("""
         INSERT INTO `{{project_id}}.{{drc_dataset_id}}.{{pii_email_table_id}}` 
