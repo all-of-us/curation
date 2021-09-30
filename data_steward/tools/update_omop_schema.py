@@ -76,11 +76,12 @@ def read():
         reader = csv.DictReader(csvfile)
         in_fields = list(reader)
     for in_field in in_fields:
-        yield dict(table=in_field['cdmTableName'].lower(),
-                   type=convert_type(in_field['cdmDatatype']),
-                   name=in_field['cdmFieldName'].lower(),
-                   mode='required' if in_field['isRequired'] == 'Yes' else 'nullable',
-                   description=in_field['userGuidance'])
+        yield dict(
+            table=in_field['cdmTableName'].lower(),
+            type=convert_type(in_field['cdmDatatype']),
+            name=in_field['cdmFieldName'].lower(),
+            mode='required' if in_field['isRequired'] == 'Yes' else 'nullable',
+            description=in_field['userGuidance'])
 
 
 def get_table(row):
@@ -120,7 +121,8 @@ def update_fields():
 
         # overwrite existing files, wherever they are
         # and write new schema files to cdm directory
-        output_path = find_current_path(filename) or os.path.join(cdm_fields_path, filename)
+        output_path = find_current_path(filename) or os.path.join(
+            cdm_fields_path, filename)
         print(f'Writing to {output_path}...')
         with open(output_path, 'w', encoding='utf8') as fp:
             json.dump(field_items, fp, indent=2, ensure_ascii=False)
