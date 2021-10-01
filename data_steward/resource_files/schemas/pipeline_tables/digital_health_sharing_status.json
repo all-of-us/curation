@@ -1,0 +1,46 @@
+[
+  {
+    "type": "integer",
+    "name": "person_id",
+    "mode": "nullable",
+    "description": "Synonymous with the AoU Participant_ID"
+  },
+  {
+    "type": "string",
+    "name": "wearable",
+    "mode": "nullable",
+    "description": "Wearable type the record is associated with"
+  },
+  {
+    "type": "string",
+    "name": "status",
+    "mode": "nullable",
+    "description": "Current digitalHealthSharingStatus for the participant's corresponding wearables data"
+  },
+  {
+    "type": "timestamp",
+    "name": "authored_time",
+    "mode": "nullable",
+    "description": "Timestamp the latest status was recorded"
+  },
+  {
+    "type": "record",
+    "name": "history",
+    "mode": "repeated",
+    "description": "History of the participant's digitalHealthSharingStatus",
+    "fields": [
+      {
+        "type": "string",
+        "name": "status",
+        "mode": "nullable",
+        "description": "digitalHealthSharingStatus for the participant's corresponding wearables data"
+      },
+      {
+        "type": "timestamp",
+        "name": "authored_time",
+        "mode": "nullable",
+        "description": "Timestamp the status was recorded"
+      }
+    ]
+  }
+]
