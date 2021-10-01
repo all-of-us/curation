@@ -40,6 +40,11 @@ FIELDS_OF_INTEREST_FOR_VALIDATION = [
     'dateOfBirth', 'sex'
 ]
 
+FIELDS_OF_INTEREST_FOR_DIGITAL_HEALTH = [
+    'participantId', 'suspensionStatus', 'withdrawalStatus',
+    'digitalHealthSharingStatus'
+]
+
 
 def get_access_token():
     """
@@ -62,12 +67,16 @@ def get_access_token():
     return access_token
 
 
-def get_participant_data(api_project_id: str, params: Dict) -> List[Dict]:
+def get_participant_data(api_project_id: str,
+                         params: Dict,
+                         required_fields: List[str] = None) -> List[Dict]:
     """
     Fetches participant data via ParticipantSummary API
 
     :param api_project_id: RDR project id when PS API rests
     :param params: the fields and their values
+    :param required_fields: filter participants not containing any of the fields.
+        Use only if API cannot filter fields via params. If unspecified, fetches all participants
 
     :return: list of data fetched from the ParticipantSummary API
     """
@@ -91,8 +100,14 @@ def get_participant_data(api_project_id: str, params: Dict) -> List[Dict]:
         if not resp or resp.status_code != 200:
             LOGGER.warning(f'Error: API request failed because {resp}')
         else:
+            LOGGER.info(f'Fetching data from PS API using params:{params}')
             r_json = resp.json()
-            participant_data += r_json.get('entry', {})
+            participant_data += r_json.get(
+                'entry', {}) if not required_fields else [
+                    row for row in r_json.get('entry', {})
+                    if row.get('resource', {}).keys() &
+                    set(required_fields) == set(required_fields)
+                ]
             if 'link' in r_json:
                 link_obj = r_json.get('link')
                 link_url = link_obj[0].get('url')
@@ -104,12 +119,12 @@ def get_participant_data(api_project_id: str, params: Dict) -> List[Dict]:
     return participant_data
 
 
-def process_api_data_to_df(data: List[Dict], columns: List[str],
+def process_api_data_to_df(api_data: List[Dict], columns: List[str],
                            column_map: Dict) -> pandas.DataFrame:
     """
     Converts data retrieved from PS API to curation table formatted df
 
-    :param data: data retrieved from PS API
+    :param api_data: data retrieved from PS API
     :param columns: columns of interest
     :param column_map: columns to be renamed as {old_name: new_name, ..}
     :return: dataframe with supplied columns and renamed as per column_map
@@ -117,7 +132,7 @@ def process_api_data_to_df(data: List[Dict], columns: List[str],
     participant_records = []
 
     # loop over participant summary records, insert participant data in same order as deactivated_participant_cols
-    for full_participant_record in data:
+    for full_participant_record in api_data:
         resource = full_participant_record.get('resource', {})
         # loop over fields that exist in both resource_dict and columns and save key-value pairs
         limited_participant_record = {
@@ -126,6 +141,41 @@ def process_api_data_to_df(data: List[Dict], columns: List[str],
         participant_records.append(limited_participant_record)
 
     df = pandas.DataFrame.from_records(participant_records, columns=columns)
+
+    # Transforms participantId to an integer string
+    df['participantId'] = df['participantId'].apply(participant_id_to_int)
+
+    # Rename columns to be consistent with curation naming convention
+    bq_columns = {
+        k: '_'.join(re.split('(?=[A-Z])', k)).lower() for k in columns
+    }
+    df.rename(bq_columns, axis='columns', inplace=True)
+    df.rename(column_map, axis='columns', inplace=True)
+    return df
+
+
+def process_digital_health_data_to_df(api_data: List[Dict], columns: List[str],
+                                      column_map: Dict) -> pandas.DataFrame:
+    """
+    Converts digital health data retrieved from PS API to curation table formatted df
+
+    :param api_data: data retrieved from PS API
+    :param columns: columns of interest
+    :param column_map: columns to be renamed as {old_name: new_name, ..}
+    :return: dataframe with supplied columns and renamed as per column_map
+    """
+    participant_records = []
+
+    # loop over participant summary records, insert participant data in same order as deactivated_participant_cols
+    for full_participant_record in api_data:
+        resource = full_participant_record.get('resource', {})
+        # loop over fields that exist in both resource_dict and columns and save key-value pairs
+        limited_participant_record = {
+            col: resource[col] for col in resource.keys() & columns
+        }
+        participant_records.append(limited_participant_record)
+
+    df = pandas.DataFrame.from_records(participant_records)
 
     # Transforms participantId to an integer string
     df['participantId'] = df['participantId'].apply(participant_id_to_int)
@@ -254,6 +304,35 @@ def get_org_participant_information(project_id: str,
 
     df = process_api_data_to_df(participant_data,
                                 FIELDS_OF_INTEREST_FOR_VALIDATION, column_map)
+
+    return df
+
+
+def get_digital_health_information(project_id: str):
+    """
+    Fetches the necessary participant information for a particular site.
+    :param project_id: The RDR project hosting the API
+    :return: a dataframe of participant information
+    :raises: RuntimeError if the project_id is not a string
+    :raises: TimeoutError if response takes longer than 10 minutes
+    """
+    # Parameter checks
+    if not isinstance(project_id, str):
+        raise RuntimeError(f'Please specify the RDR project')
+
+    # Make request to get API version. This is the current RDR version for reference see
+    # see https://github.com/all-of-us/raw-data-repository/blob/master/opsdataAPI.md for documentation of this API.
+    params = {'_sort': 'participantId', '_count': '5000'}
+
+    participant_data = get_participant_data(
+        project_id,
+        params=params,
+        required_fields=FIELDS_OF_INTEREST_FOR_DIGITAL_HEALTH)
+
+    column_map = {'participant_id': 'person_id'}
+
+    df = process_digital_health_data_to_df(
+        participant_data, FIELDS_OF_INTEREST_FOR_DIGITAL_HEALTH, column_map)
 
     return df
 
