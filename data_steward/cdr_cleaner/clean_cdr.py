@@ -185,12 +185,12 @@ COMBINED_CLEANING_CLASSES = [
     # setup_query_execution function to load dependencies before query execution
     (
         ReplaceWithStandardConceptId,),
+    (MissingConceptRecordSuppression,),
     # trying to load a table while creating query strings,
     # won't work with mocked strings.  should use base class
     # setup_query_execution function to load dependencies before query execution
     (
-        MissingConceptRecordSuppression,),
-    (domain_alignment.domain_alignment,),
+        domain_alignment.domain_alignment,),
     (DropParticipantsWithoutPPI,),
     (clean_years.get_year_of_birth_queries,),
     (NegativeAges,),

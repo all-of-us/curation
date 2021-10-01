@@ -93,7 +93,9 @@ class MissingConceptRecordSuppressionTest(BaseTest.CleaningRulesTestBase):
             VALUES
                 (1, 1, 4225432, date('2020-05-05'), 441840, 441840, 441840, 441840, 441840, 441840),
                 (2, 2, 4297377, date('2020-05-05'), 441840, 441840, 441840, 441840, 441840, 441840),
+                -- Dropped due to unknown observation_concept_id --
                 (3, 3, 50000000, date('2020-05-05'), 441840, 441840, 441840, 441840, 441840, 441840),
+                -- Dropped due to unknown observation_type_concept_id --
                 (4, 4, 4297377, date('2020-05-05'), 19, 441840, 441840, 441840, 441840, 441840)
             """).render(fq_dataset_name=self.fq_dataset_name)
 

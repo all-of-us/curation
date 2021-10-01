@@ -39,7 +39,11 @@ MISSING_CONCEPTS_QUERY = JINJA_ENV.from_string("""
 
 class MissingConceptRecordSuppression(AbstractBqLookupTableConceptSuppression):
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id):
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 table_namer=''):
         """
         Initialize the class with proper information.
 
@@ -47,7 +51,7 @@ class MissingConceptRecordSuppression(AbstractBqLookupTableConceptSuppression):
         this SQL, append them to the list of Jira Issues.
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
-        desc = "Remove records that contain concept_ids that do not belong in the vocabulary."
+        desc = "Remove records that contain concept_ids that do not exist in the vocabulary."
         super().__init__(
             issue_numbers=['DC1601'],
             description=desc,
@@ -56,15 +60,10 @@ class MissingConceptRecordSuppression(AbstractBqLookupTableConceptSuppression):
             project_id=project_id,
             dataset_id=dataset_id,
             sandbox_dataset_id=sandbox_dataset_id,
-            concept_suppression_lookup_table=SUPPRESSION_RULE_CONCEPT_TABLE)
+            concept_suppression_lookup_table=SUPPRESSION_RULE_CONCEPT_TABLE,
+            table_namer=table_namer)
 
     def get_missing_concepts(self, client, tables):
-        # for each table in tables:
-        #     for each concept_id_col in table:
-        #         q = QUERY for render
-        #         queries.append(q)
-
-        # q.join("UNION DISTINCT")
 
         queries = []
         union_distinct = "\nUNION DISTINCT\n"
