@@ -11,6 +11,7 @@ import warnings
 # Third-party imports
 from google.api_core.exceptions import GoogleAPIError, BadRequest
 from google.cloud import bigquery
+from google.cloud.bigquery.schema import _parse_schema_resource
 from google.auth import default
 
 # Project Imports
@@ -112,7 +113,9 @@ def get_table_schema(table_name, fields=None):
         field_type = column.get('type')
         mode = column.get('mode')
         description = column.get('description')
-        column_def = bigquery.SchemaField(name, field_type, mode, description)
+        fields = _parse_schema_resource(column)
+        column_def = bigquery.SchemaField(name, field_type, mode, description,
+                                          fields)
 
         schema.append(column_def)
 
