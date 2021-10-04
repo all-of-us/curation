@@ -3,15 +3,10 @@ A package to generate a csv file type report for cleaning rules.
 """
 # Python imports
 import csv
+import inspect
 import logging
 import os
 from copy import copy
-from inspect import signature
-
-# Third party imports
-from googleapiclient.errors import HttpError
-from google.api_core.exceptions import BadRequest
-from google.auth.exceptions import DefaultCredentialsError
 
 # Project imports
 import cdr_cleaner.args_parser as cleaning_parser
@@ -19,6 +14,7 @@ import cdr_cleaner.clean_cdr as control
 import cdr_cleaner.clean_cdr_engine as engine
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 import constants.cdr_cleaner.reporter as report_consts
+from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 
 LOGGER = logging.getLogger(__name__)
 
@@ -78,6 +74,67 @@ def get_function_info(func, fields_list):
     return func_info
 
 
+def get_class_info(instance: object, fields_list: list) -> dict:
+    """
+    Returns the field info for a rule based on a class
+
+    Defaults all requested fields to "unknown" values.  Adds a "name" and
+    "module" field, even if not requseted, to give more information in the clean
+    rules report.
+
+    :param instance: Instance of class we be lookin' at.
+    :param fields_list: The list of fields to locate.
+
+    :return: A dictionary of values representing the known and requested
+        fields for the given class
+    """
+
+    rule_info = {}
+
+    # seed rule info with a buncha unkonwns
+    for field in fields_list:
+        rule_info[field] = report_consts.UNKNOWN
+
+    # quickly determine if this class extends the base cleaning rule
+    if not issubclass(type(instance), BaseCleaningRule):
+        LOGGER.exception(
+            f'Provided object {type(instance)} is not a subclass of {BaseCleaningRule}'
+        )
+        return rule_info
+
+    LOGGER.info(f'{type(instance)} is a subclass of {BaseCleaningRule}')
+
+    for field in fields_list:
+        try:
+            value = 'NO DATA'
+            if field in report_consts.FIELDS_PROPERTIES_MAP:
+                func = report_consts.FIELDS_PROPERTIES_MAP[field]
+                value = getattr(instance, func, 'no data')
+            elif field in report_consts.FIELDS_METHODS_MAP:
+                func = report_consts.FIELDS_METHODS_MAP[field]
+                value = callable(getattr(instance, func, 'no data'))
+            elif field in report_consts.CLASS_ATTRIBUTES_MAP:
+                func = report_consts.CLASS_ATTRIBUTES_MAP[field]
+
+                value = None
+                for item in func.split('.'):
+                    if not value:
+                        value = getattr(instance, item)
+                    else:
+                        value = getattr(value, item)
+
+            rule_info[field] = value
+
+        except AttributeError:
+            # an error occurred trying to access an expected attribute.
+            # did the base class definition change recently?
+            LOGGER.exception(
+                f'An error occurred trying to get the value for {field}')
+            rule_info[field] = report_consts.UNKNOWN
+
+    return rule_info
+
+
 def get_stage_elements(data_stage, fields_list):
     """
     Return the field info for rules defined for this data_stage.
@@ -93,57 +150,29 @@ def get_stage_elements(data_stage, fields_list):
     :returns: a list of dictionaries representing the requested fields.
     """
     report_rows = []
-    for rule in control.DATA_STAGE_RULES_MAPPING.get(data_stage, []):
-        rule_info = {}
+    for rule_def in control.DATA_STAGE_RULES_MAPPING.get(data_stage, []):
+        LOGGER.info(f'Testing rule definition {rule_def}...')
 
-        try:
-            clazz = rule[0]
+        # first element should be either instance of rule class or legacy rule function
+        rule_type = rule_def[0]
+
+        # determine which we're dealing with
+        if inspect.isclass(rule_type):
+            LOGGER.info(f'{rule_type} is a class')
             # this is a classed cleaning rule
-            sig = signature(clazz)
+            sig = inspect.signature(rule_type)
             params = ['foo'] * len(sig.parameters)
             LOGGER.info(
-                f"initializing instance as {clazz.__name__}({', '.join(params)})"
+                f"Attempting to instantiate {rule_type}: {type(rule_type)}({', '.join(params)})"
             )
-            instance = clazz(*params)
-
-            # this is a class
-            _ = instance.get_query_specs()
-            LOGGER.info(f"{clazz} is a class")
-            for field in fields_list:
-                try:
-                    value = 'NO DATA'
-                    if field in report_consts.FIELDS_PROPERTIES_MAP:
-                        func = report_consts.FIELDS_PROPERTIES_MAP[field]
-                        value = getattr(instance, func, 'no data')
-                    elif field in report_consts.FIELDS_METHODS_MAP:
-                        func = report_consts.FIELDS_METHODS_MAP[field]
-                        value = getattr(instance, func, 'no data')()
-                    elif field in report_consts.CLASS_ATTRIBUTES_MAP:
-                        func = report_consts.CLASS_ATTRIBUTES_MAP[field]
-
-                        value = None
-                        for item in func.split('.'):
-                            if not value:
-                                value = getattr(instance, item)
-                            else:
-                                value = getattr(value, item)
-
-                    rule_info[field] = value
-
-                except AttributeError:
-                    # an error occurred trying to access an expected attribute.
-                    # did the base class definition change recently?
-                    LOGGER.exception(
-                        f'An error occurred trying to get the value for {field}'
-                    )
-                    rule_info[field] = report_consts.UNKNOWN
-        except (TypeError, AttributeError, RuntimeError, HttpError, BadRequest,
-                DefaultCredentialsError):
+            instance = rule_type(*params)
+            rule_info = get_class_info(instance, fields_list)
+        else:
             # an error occurred indicating this is not a rule extending the
             # base cleaning rule.  provide the info we can and move on.
-            LOGGER.exception(f'{clazz} is not a class')
+            LOGGER.exception(f'{rule_type} is not a class')
             # this is a function
-            rule_info = get_function_info(clazz, fields_list)
+            rule_info = get_function_info(rule_type, fields_list)
 
         report_rows.append(rule_info)
 
@@ -210,6 +239,7 @@ def format_values(rules_values, fields_list):
 
     :param rules_values: The list of dictionaries containing field/value pairs for
         each field specified via arguments for each cleaning rule.
+    :param fields_list: The list of fields to inspect
     """
     formatted_values = []
 
@@ -276,8 +306,7 @@ def write_csv_report(output_filepath, stages_list, fields_list):
     if not output_filepath.endswith('.csv'):
         raise RuntimeError(f"This file is not a csv file: {output_filepath}.")
 
-    required_fields_dict = [{}]
-    output_list = [{}]
+    output_list = []
     for stage in stages_list:
         # get the fields and values
         required_fields_dict = get_stage_elements(stage, fields_list)
