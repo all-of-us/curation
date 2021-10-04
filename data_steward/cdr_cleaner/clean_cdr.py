@@ -106,6 +106,7 @@ from cdr_cleaner.cleaning_rules.deid.string_fields_suppression import StringFiel
 from cdr_cleaner.cleaning_rules.generalize_state_by_population import GeneralizeStateByPopulation
 from cdr_cleaner.cleaning_rules.section_participation_concept_suppression import SectionParticipationConceptSuppression
 from cdr_cleaner.cleaning_rules.covid_ehr_vaccine_concept_suppression import CovidEHRVaccineConceptSuppression
+from cdr_cleaner.cleaning_rules.missing_concept_record_suppression import MissingConceptRecordSuppression
 from constants.cdr_cleaner import clean_cdr_engine as ce_consts
 from constants.cdr_cleaner.clean_cdr import DataStage
 
@@ -184,6 +185,7 @@ COMBINED_CLEANING_CLASSES = [
     # setup_query_execution function to load dependencies before query execution
     (
         ReplaceWithStandardConceptId,),
+    (MissingConceptRecordSuppression,),
     # trying to load a table while creating query strings,
     # won't work with mocked strings.  should use base class
     # setup_query_execution function to load dependencies before query execution
