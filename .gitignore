@@ -95,6 +95,7 @@ curation_venv/
 settings.py
 *.db
 .idea/
+.vscode/
 .run/
 
 *.gem

@@ -129,36 +129,12 @@ class ParticipantSummaryRequests(BaseTest.BigQueryTestBase):
         # Tests
         df = psr.get_deactivated_participants(self.project_id, self.columns)
 
-        psr.store_participant_data(df, self.project_id,
-                                   f'{self.dataset_id}.{self.tablename}')
-
-        # Post conditions
-        values = [(111, 'NO_CONTACT', date(2018, 12, 7)),
-                  (222, 'NO_CONTACT', date(2018, 12, 7))]
-        self.assertTableValuesMatch(
-            '.'.join([self.project_id, self.destination_table]),
-            self.bq_columns, values)
-
-    def test_store_participant_data(self):
         # Parameter check test
         self.assertRaises(RuntimeError, psr.store_participant_data,
                           self.fake_dataframe, None, self.destination_table)
 
-        # Test
-        psr.store_participant_data(self.fake_dataframe, self.project_id,
-                                   self.destination_table)
-
-        # Post conditions
-        values = [(111, 'NO_CONTACT', date(2018, 12, 7)),
-                  (222, 'NO_CONTACT', date(2018, 12, 7))]
-        self.assertTableValuesMatch(
-            '.'.join([self.project_id, self.destination_table]),
-            self.bq_columns, values)
-
-    def test_store_participant_summary_results(self):
-        # Test
-        psr.store_participant_data(self.fake_dataframe, self.project_id,
-                                   self.destination_table)
+        psr.store_participant_data(df, self.project_id,
+                                   f'{self.dataset_id}.{self.tablename}')
 
         # Post conditions
         values = [(111, 'NO_CONTACT', date(2018, 12, 7)),
