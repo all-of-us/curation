@@ -13,6 +13,7 @@ Usage: clean_fitbit.sh
   --reference_dataset_id <reference_dataset_id for removing pids from fitbit, can be CT or RT dataset>
   --data_stage <data_stage can be 'controlled_tier_fitbit' or 'fitbit_deid'>
   --dataset_release_tag <release tag for the CDR>
+  --data_tier <data tier to be added as label can be 'registered' or 'controlled'>
 "
 
 while true; do
@@ -49,6 +50,10 @@ while true; do
     data_stage=$2
     shift 2
     ;;
+  --data_tier)
+    data_tier=$2
+    shift 2
+    ;;
   --)
     shift
     break
@@ -57,7 +62,7 @@ while true; do
   esac
 done
 
-if [[ -z "${key_file}" ]] || [[ -z "${combined_dataset}" ]] || [[ -z "${fitbit_dataset}" ]] || [[ -z "${dataset_release_tag}" ]] || [[ -z "${reference_dataset_id}" ]] || [[ -z "${data_stage}" ]] || [[ -z "${mapping_dataset}" ]] || [[ -z "${mapping_table}" ]]; then
+if [[ -z "${key_file}" ]] || [[ -z "${combined_dataset}" ]] || [[ -z "${fitbit_dataset}" ]] || [[ -z "${dataset_release_tag}" ]] || [[ -z "${reference_dataset_id}" ]] || [[ -z "${data_stage}" ]] || [[ -z "${mapping_dataset}" ]] || [[ -z "${mapping_table}" ]] || [[ -z "${data_tier}" ]]; then
   echo "${USAGE}"
   exit 1
 fi
@@ -69,6 +74,7 @@ echo "mapping_dataset --> ${mapping_dataset}"
 echo "mapping_table --> ${mapping_table}"
 echo "data_stage --> ${data_stage}"
 echo "reference_dataset_id --> ${reference_dataset_id}"
+echo "data_tier --> ${data_tier}"
 
 APP_ID=$(python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);' <"${key_file}")
 export GOOGLE_APPLICATION_CREDENTIALS="${key_file}"
@@ -99,12 +105,12 @@ export BIGQUERY_DATASET_ID="${fitbit_dataset}"
 export PYTHONPATH="${PYTHONPATH}:${CLEAN_DEID_DIR}:${DATA_STEWARD_DIR}"
 
 # create empty fitbit de-id dataset
-bq mk --dataset --description "${dataset_release_tag} ${data_stage} de-identified version of ${fitbit_dataset}" --label "phase:staging" --label "release_tag:${dataset_release_tag}" --label "de_identified:false" "${APP_ID}":"${fitbit_deid_dataset}"
+bq mk --dataset --description "${dataset_release_tag} ${data_stage} de-identified version of ${fitbit_dataset}" --label "phase:staging" --label "release_tag:${dataset_release_tag}" --label "data_tier:${data_tier}" --label "de_identified:false" "${APP_ID}":"${fitbit_deid_dataset}"
 "${TOOLS_DIR}"/table_copy.sh --source_app_id "${APP_ID}" --target_app_id "${APP_ID}" --source_dataset "${fitbit_dataset}" --target_dataset "${fitbit_deid_dataset}"
 
 # create empty fitbit sandbox dataset
 sandbox_dataset="${fitbit_deid_dataset}_sandbox"
-bq mk --dataset --description "Sandbox created for storing records affected by the cleaning rules applied to ${fitbit_deid_dataset}" --label "phase:sandbox" --label "release_tag:${dataset_release_tag}" --label "de_identified:false" "${APP_ID}":"${sandbox_dataset}"
+bq mk --dataset --description "Sandbox created for storing records affected by the cleaning rules applied to ${fitbit_deid_dataset}" --label "phase:sandbox" --label "release_tag:${dataset_release_tag}" --label "data_tier:${data_tier}" --label "de_identified:false" "${APP_ID}":"${sandbox_dataset}"
 
 # Create logs dir
 LOGS_DIR="${DATA_STEWARD_DIR}/logs"
