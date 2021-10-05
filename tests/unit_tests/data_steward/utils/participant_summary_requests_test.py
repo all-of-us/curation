@@ -139,6 +139,97 @@ class ParticipantSummaryRequestsTest(TestCase):
                 }
             }]
         }
+        self.api_digital_health_data = [{
+            'fullUrl':
+                f'https//{self.project_id}.appspot.com/rdr/v1/Participant/P123/Summary',
+            'resource': {
+                'participantId': 'P123',
+                'suspensionStatus': 'NOT_SUSPENDED',
+                'withdrawalStatus': 'NOT_WITHDRAWN',
+                'digitalHealthSharingStatus': {
+                    'fitbit': {
+                        'status': 'YES',
+                        'history': [{
+                            'status': 'YES',
+                            'authoredTime': '2020-01-01T12:01:01Z'
+                        }],
+                        'authoredTime': '2020-01-01T12:01:01Z'
+                    }
+                }
+            }
+        }, {
+            'fullUrl':
+                f'https//{self.project_id}.appspot.com/rdr/v1/Participant/P234/Summary',
+            'resource': {
+                'participantId': 'P234',
+                'suspensionStatus': 'NOT_SUSPENDED',
+                'withdrawalStatus': 'NOT_WITHDRAWN',
+                'digitalHealthSharingStatus': {
+                    'fitbit': {
+                        'status': 'YES',
+                        'history': [{
+                            'status': 'YES',
+                            'authoredTime': '2021-01-01T12:01:01Z'
+                        }],
+                        'authoredTime': '2021-01-01T12:01:01Z'
+                    },
+                    'appleHealthKit': {
+                        'status': 'YES',
+                        'history': [{
+                            'status': 'YES',
+                            'authoredTime': '2021-02-01T12:01:01Z'
+                        }, {
+                            'status': 'NO',
+                            'authoredTime': '2020-06-01T12:01:01Z'
+                        }, {
+                            'status': 'YES',
+                            'authoredTime': '2020-03-01T12:01:01Z'
+                        }],
+                        'authoredTime': '2021-02-01T12:01:01Z'
+                    }
+                }
+            }
+        }]
+        self.stored_digital_health_data = [{
+            'person_id': 'P123',
+            'suspension_status': 'NOT_SUSPENDED',
+            'withdrawal_status': 'NOT_WITHDRAWN',
+            'wearable': 'fitbit',
+            'status': 'YES',
+            'history': [{
+                'status': 'YES',
+                'authored_time': '2020-01-01T12:01:01Z'
+            }],
+            'authored_time': '2020-01-01T12:01:01Z'
+        }, {
+            'person_id': 'P234',
+            'suspension_status': 'NOT_SUSPENDED',
+            'withdrawal_status': 'NOT_WITHDRAWN',
+            'wearable': 'fitbit',
+            'status': 'YES',
+            'history': [{
+                'status': 'YES',
+                'authored_time': '2021-01-01T12:01:01Z'
+            }],
+            'authored_time': '2021-01-01T12:01:01Z'
+        }, {
+            'person_id': 'P234',
+            'suspension_status': 'NOT_SUSPENDED',
+            'withdrawal_status': 'NOT_WITHDRAWN',
+            'wearable': 'appleHealthKit',
+            'status': 'YES',
+            'history': [{
+                'status': 'YES',
+                'authored_time': '2021-02-01T12:01:01Z'
+            }, {
+                'status': 'NO',
+                'authored_time': '2020-06-01T12:01:01Z'
+            }, {
+                'status': 'YES',
+                'authored_time': '2020-03-01T12:01:01Z'
+            }],
+            'authored_time': '2021-02-01T12:01:01Z'
+        }]
 
     @patch('utils.participant_summary_requests.default')
     @patch('utils.participant_summary_requests.auth')
@@ -363,3 +454,12 @@ class ParticipantSummaryRequestsTest(TestCase):
                           self.columns)
         self.assertRaises(RuntimeError, psr.get_deactivated_participants,
                           self.project_id, None)
+
+    def test_process_digital_health_data_to_df(self):
+        column_map = {'participant_id': 'person_id'}
+
+        actual = psr.process_digital_health_data_to_df(
+            self.api_digital_health_data,
+            psr.FIELDS_OF_INTEREST_FOR_DIGITAL_HEALTH, column_map)
+
+        self.assertCountEqual(actual, self.stored_digital_health_data)

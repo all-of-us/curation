@@ -1,10 +1,12 @@
 # Python imports
 import os
 
+# Third-party import
+import jinja2
+
 # Project imports
 from constants.bq_utils import VALIDATION_DATASET_REGEX
 from constants.validation.participants.identity_match import REPORT_DIRECTORY_REGEX
-import jinja2
 
 # AOU required PII tables
 PII_WILDCARD = 'pii*'
@@ -216,13 +218,15 @@ EXT_SUFFIX = '_ext'
 
 DEID_MAP = '_deid_map'
 MAX_DEID_DATE_SHIFT = 364
-PID_RID_MAPPING = 'pid_rid_mapping'
-PRIMARY_PID_RID_MAPPING = 'primary_pid_rid_mapping'
-SITE_MASKING_TABLE_ID = 'site_maskings'
-PIPELINE_TABLES = 'pipeline_tables'
 COPE_SURVEY_MAP = 'cope_survey_semantic_version_map'
 
+# pipeline_tables dataset and contents
+PIPELINE_TABLES = 'pipeline_tables'
+SITE_MASKING_TABLE_ID = 'site_maskings'
+PID_RID_MAPPING = 'pid_rid_mapping'
+PRIMARY_PID_RID_MAPPING = 'primary_pid_rid_mapping'
 ZIP3_LOOKUP = 'zip3_lookup'
+DIGITAL_HEALTH_SHARING_STATUS = 'digital_health_sharing_status'
 
 # Participant Summary
 DRC_OPS = 'drc_ops'

@@ -17,6 +17,8 @@ The intent of the get_participant_information function is to retrieve the inform
 import re
 import logging
 from typing import List, Dict
+
+from pandas.io.json import json_normalize
 from requests import Session
 
 # Third party imports
@@ -24,9 +26,11 @@ import pandas
 import google.auth.transport.requests as req
 from google.auth import default
 from google.cloud.bigquery.schema import SchemaField
-from google.cloud.bigquery import LoadJobConfig
+from google.cloud.bigquery import LoadJobConfig, Table, TimePartitioning, TimePartitioningType
+from google.cloud.exceptions import NotFound
 
 # Project imports
+from common import PIPELINE_TABLES, DIGITAL_HEALTH_SHARING_STATUS
 from utils import auth
 from utils.bq import get_client, get_table_schema
 
@@ -119,6 +123,16 @@ def get_participant_data(api_project_id: str,
     return participant_data
 
 
+def camel_to_snake_case(in_str):
+    """
+    Convert camel case to snake case
+
+    :param in_str: camel case formatted string
+    :return snake case formatted string
+    """
+    return '_'.join(re.split('(?=[A-Z])', in_str)).lower()
+
+
 def process_api_data_to_df(api_data: List[Dict], columns: List[str],
                            column_map: Dict) -> pandas.DataFrame:
     """
@@ -146,47 +160,67 @@ def process_api_data_to_df(api_data: List[Dict], columns: List[str],
     df['participantId'] = df['participantId'].apply(participant_id_to_int)
 
     # Rename columns to be consistent with curation naming convention
-    bq_columns = {
-        k: '_'.join(re.split('(?=[A-Z])', k)).lower() for k in columns
-    }
+    bq_columns = {k: camel_to_snake_case(k) for k in columns}
     df.rename(bq_columns, axis='columns', inplace=True)
     df.rename(column_map, axis='columns', inplace=True)
     return df
 
 
 def process_digital_health_data_to_df(api_data: List[Dict], columns: List[str],
-                                      column_map: Dict) -> pandas.DataFrame:
+                                      column_map: Dict) -> List[Dict]:
     """
-    Converts digital health data retrieved from PS API to curation table formatted df
+    Converts digital health data retrieved from PS API to curation convention formatted json objects
 
-    :param api_data: data retrieved from PS API
+    :param api_data: digital_health_sharing_status data retrieved from PS API
     :param columns: columns of interest
     :param column_map: columns to be renamed as {old_name: new_name, ..}
-    :return: dataframe with supplied columns and renamed as per column_map
+    :return: list of json objects with supplied columns and renamed as per column_map
     """
     participant_records = []
 
     # loop over participant summary records, insert participant data in same order as deactivated_participant_cols
     for full_participant_record in api_data:
         resource = full_participant_record.get('resource', {})
-        # loop over fields that exist in both resource_dict and columns and save key-value pairs
+        # loop over fields that exist in both resource_dict and columns and save reformatted key-value pairs
         limited_participant_record = {
-            col: resource[col] for col in resource.keys() & columns
+            camel_to_snake_case(col): resource[col]
+            for col in resource.keys() & columns
         }
-        participant_records.append(limited_participant_record)
 
-    df = pandas.DataFrame.from_records(participant_records)
+        # re-map for columns that are to be mapped
+        for col in column_map & limited_participant_record.keys():
+            limited_participant_record[
+                column_map[col]] = limited_participant_record.pop(col)
 
-    # Transforms participantId to an integer string
-    df['participantId'] = df['participantId'].apply(participant_id_to_int)
+        # Extract all wearables data into a list of dicts
+        wearables_data = limited_participant_record.pop(
+            DIGITAL_HEALTH_SHARING_STATUS)
 
-    # Rename columns to be consistent with curation naming convention
-    bq_columns = {
-        k: '_'.join(re.split('(?=[A-Z])', k)).lower() for k in columns
-    }
-    df.rename(bq_columns, axis='columns', inplace=True)
-    df.rename(column_map, axis='columns', inplace=True)
-    return df
+        # loop over all wearables data
+        for wearable, latest_record in wearables_data.items():
+            # Set type of wearable
+            limited_participant_record['wearable'] = wearable
+
+            # Update participant record with re-formatted keys and latest_record
+            # This will also update the participant record to the next wearable if it exists
+            limited_participant_record.update({
+                camel_to_snake_case(col): val
+                for col, val in latest_record.items()
+            })
+
+            # Extract all historical records for the current wearable
+            historical_records = []
+            for record in limited_participant_record.get('history', []):
+                historical_records.append({
+                    camel_to_snake_case(col): val
+                    for col, val in record.items()
+                })
+            limited_participant_record['history'] = historical_records
+
+            # Store new participant record for each wearable
+            participant_records.append(limited_participant_record.copy())
+
+    return participant_records
 
 
 def get_deactivated_participants(api_project_id: str,
@@ -403,3 +437,39 @@ def store_participant_data(df, project_id, destination_table, schema=None):
     job.result()
 
     return job.job_id
+
+
+def store_digital_health_status_data(json_data, project_id, schema=None):
+    """
+    Stores the fetched digital_health_sharing_status data in a BigQuery dataset. If the
+    table doesn't exist, it will create that table. If the table does
+    exist, it will create a partition in the designated table.
+
+    :param json_data: list of json objects retrieved from process_digital_health_data_to_df
+    :param project_id: identifies the project
+    :param schema: a list of SchemaField objects corresponding to the destination table
+
+    :return: returns a dataset with the participant data
+    """
+
+    # Parameter check
+    if not isinstance(project_id, str):
+        raise RuntimeError(
+            f'Please specify the project in which to create the table')
+
+    client = get_client(project_id)
+    if not schema:
+        schema = get_table_schema(DIGITAL_HEALTH_SHARING_STATUS)
+
+    destination_table = f'{project_id}.{PIPELINE_TABLES}.{DIGITAL_HEALTH_SHARING_STATUS}'
+    try:
+        table = client.get_table(destination_table)
+    except NotFound:
+        table = Table(destination_table, schema=schema)
+        table.time_partitioning = TimePartitioning(
+            type_=TimePartitioningType.DAY)
+        table = client.create_table(table)
+
+    # job.result()
+
+    return  # job.job_id
