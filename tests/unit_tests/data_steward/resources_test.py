@@ -120,7 +120,8 @@ class ResourcesTest(unittest.TestCase):
             'condition_era', 'person', 'note', 'cohort_definition', 'dose_era',
             'care_site', 'fact_relationship', 'cohort_attribute', 'provider',
             'condition_occurrence', 'cdm_source', 'attribute_definition',
-            'visit_occurrence', 'drug_era', 'specimen'
+            'visit_occurrence', 'drug_era', 'specimen', 'note_nlp',
+            'visit_detail', 'metadata'
         ]
         actual = resources.CDM_TABLES
         self.assertCountEqual(actual, expected)
