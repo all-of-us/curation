@@ -5,11 +5,13 @@ from concurrent.futures import TimeoutError as TOError
 
 # Third party imports
 import google.cloud.bigquery as gbq
+import pandas as pd
 from google.cloud.exceptions import GoogleCloudError
 
 import constants.retraction.retract_deactivated_pids as consts
+import resources
 import retraction.retract_utils as ru
-from common import JINJA_ENV
+from common import JINJA_ENV, FITBIT_TABLES, CDM_TABLES
 from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 # Project imports
@@ -118,15 +120,26 @@ def get_table_cols_df(client, project_id, dataset_id):
     :param client: bq client object
     :return: dataframe of columns from INFORMATION_SCHEMA
     """
+    table_cols_df = pd.DataFrame()
     if client:
+        LOGGER.info("Getting column information from live datasets")
         # if possible, read live table schemas
         table_cols_query = TABLE_INFORMATION_SCHEMA.render(project=project_id,
                                                            dataset=dataset_id)
         table_cols_df = client.query(table_cols_query).to_dataframe()
     else:
         # if None is passed to the client, read the table data from JSON schemas
-        pass
-        # TODO: generate a dataframe from schema files
+        # generate a dataframe from schema files
+        LOGGER.info("Getting column information from schema files")
+        table_dict_list = []
+        for table in FITBIT_TABLES + CDM_TABLES:
+            table_fields = resources.fields_for(table)
+            for field in table_fields:
+                field['table_name'] = table
+            table_dict_list.extend(table_fields)
+
+        table_cols_df = pd.DataFrame(table_dict_list)
+        table_cols_df = table_cols_df.rename(columns={"name": "column_name"})
 
     return table_cols_df
 
