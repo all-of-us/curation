@@ -261,6 +261,22 @@ class ParticipantSummaryRequestsTest(TestCase):
 
         self.assertEqual(actual_response, self.participant_data)
 
+    def test_camel_case_to_snake_case(self):
+        expected = 'participant_id'
+        test = 'participantId'
+        actual = psr.camel_to_snake_case(test)
+        self.assertEqual(expected, actual)
+
+        expected = 'sample_order_status1_p_s08_time'
+        test = 'sampleOrderStatus1PS08Time'
+        actual = psr.camel_to_snake_case(test)
+        self.assertEqual(expected, actual)
+
+        expected = 'street_address2'
+        test = 'streetAddress2'
+        actual = psr.camel_to_snake_case(test)
+        self.assertEqual(expected, actual)
+
     @patch('utils.participant_summary_requests.store_participant_data')
     @patch('utils.participant_summary_requests.get_deactivated_participants')
     def test_get_deactivated_participants(self,

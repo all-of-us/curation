@@ -73,13 +73,13 @@ def get_access_token():
 
 def get_participant_data(api_project_id: str,
                          params: Dict,
-                         required_fields: List[str] = None) -> List[Dict]:
+                         expected_fields: List[str] = None) -> List[Dict]:
     """
     Fetches participant data via ParticipantSummary API
 
     :param api_project_id: RDR project id when PS API rests
     :param params: the fields and their values
-    :param required_fields: filter participants not containing any of the fields.
+    :param expected_fields: filter participants not containing any of the fields.
         Use only if API cannot filter fields via params. If unspecified, fetches all participants
 
     :return: list of data fetched from the ParticipantSummary API
@@ -107,11 +107,14 @@ def get_participant_data(api_project_id: str,
             LOGGER.info(f'Fetching data from PS API using params:{params}')
             r_json = resp.json()
             participant_data += r_json.get(
-                'entry', {}) if not required_fields else [
-                    row for row in r_json.get('entry', {})
-                    if row.get('resource', {}).keys() &
-                    set(required_fields) == set(required_fields)
-                ]
+                'entry', {}
+            ) if not expected_fields else [
+                # filter out participants who do not have all fields in expected_fields
+                row
+                for row in r_json.get('entry', {})
+                if row.get('resource', {}).keys() &
+                set(expected_fields) == set(expected_fields)
+            ]
             if 'link' in r_json:
                 link_obj = r_json.get('link')
                 link_url = link_obj[0].get('url')
@@ -371,7 +374,7 @@ def get_digital_health_information(project_id: str):
     participant_data = get_participant_data(
         project_id,
         params=params,
-        required_fields=FIELDS_OF_INTEREST_FOR_DIGITAL_HEALTH)
+        expected_fields=FIELDS_OF_INTEREST_FOR_DIGITAL_HEALTH)
 
     column_map = {'participant_id': 'person_id'}
 
@@ -425,7 +428,7 @@ def store_participant_data(df, project_id, destination_table, schema=None):
     :param destination_table: name of the table to be written in the form of dataset.tablename
     :param schema: a list of SchemaField objects corresponding to the destination table
 
-    :return: returns a dataset with the participant data
+    :return: returns the bq job_id for the loading of participant data
     """
 
     # Parameter check
@@ -463,7 +466,7 @@ def store_digital_health_status_data(project_id,
     :param destination_table: fully qualified destination table name as 'project.dataset.table'
     :param schema: a list of SchemaField objects corresponding to the destination table
 
-    :return: returns a dataset with the participant data
+    :return: returns the bq job_id for the loading of digital health data
     """
 
     # Parameter check
@@ -492,7 +495,8 @@ def store_digital_health_status_data(project_id,
     job = client.load_table_from_file(file_obj,
                                       table,
                                       rewind=True,
-                                      job_config=job_config)
+                                      job_config=job_config,
+                                      job_id_prefix='ps_digital_health_load_')
     job.result()
 
     return job.job_id
