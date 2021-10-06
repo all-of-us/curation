@@ -159,7 +159,7 @@ class FitbitPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
             'fq_table_name':
                 '.'.join([self.fq_dataset_name, ACTIVITY_SUMMARY]),
             'fields': ['person_id', 'activity_calories', 'date'],
-            'loaded_ids': [234, 678, 345, 789, 456],
+            'loaded_ids': [1234, 5678, 2345, 6789, 3456],
             'cleaned_values': [
                 (234, 100, datetime.fromisoformat('2020-08-17').date()),
                 (678, 200, datetime.fromisoformat('2020-08-17').date()),
@@ -171,7 +171,7 @@ class FitbitPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
             'fq_table_name':
                 '.'.join([self.fq_dataset_name, HEART_RATE_MINUTE_LEVEL]),
             'fields': ['person_id', 'heart_rate_value', 'datetime'],
-            'loaded_ids': [234, 678, 345, 789, 456],
+            'loaded_ids': [1234, 5678, 2345, 6789, 3456],
             'cleaned_values': [
                 (234, 60, datetime.fromisoformat('2020-08-17 15:00:00')),
                 (678, 50, datetime.fromisoformat('2020-08-17 15:30:00')),
@@ -183,7 +183,7 @@ class FitbitPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
             'fq_table_name':
                 '.'.join([self.fq_dataset_name, HEART_RATE_SUMMARY]),
             'fields': ['person_id', 'date', 'calorie_count'],
-            'loaded_ids': [234, 678, 345, 789, 456],
+            'loaded_ids': [1234, 5678, 2345, 6789, 3456],
             'cleaned_values': [
                 (234, datetime.fromisoformat('2020-08-17').date(), 100),
                 (678, datetime.fromisoformat('2020-08-17').date(), 200),
@@ -195,7 +195,7 @@ class FitbitPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
             'fq_table_name':
                 '.'.join([self.fq_dataset_name, STEPS_INTRADAY]),
             'fields': ['person_id', 'datetime', 'steps'],
-            'loaded_ids': [234, 678, 345, 789, 456],
+            'loaded_ids': [1234, 5678, 2345, 6789, 3456],
             'cleaned_values': [
                 (234, datetime.fromisoformat('2020-08-17 15:00:00'), 60),
                 (678, datetime.fromisoformat('2020-08-17 15:30:00'), 50),
