@@ -159,6 +159,9 @@ def is_labeled_deid(client, project_id, dataset_id):
     :param dataset_id: Identifies the dataset
     :return: Boolean indicating if the dataset is labeled a deid dataset or None if unlabeled
     """
+    if not client:
+        return None
+
     dataset = client.get_dataset(f'{project_id}.{dataset_id}')
     if dataset.labels and consts.DE_IDENTIFIED in dataset.labels:
         return dataset.labels[consts.DE_IDENTIFIED] == consts.TRUE

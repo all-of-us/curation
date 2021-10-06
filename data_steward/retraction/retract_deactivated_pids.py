@@ -21,7 +21,8 @@ ISSUE_NUMBERS = ["DC-686", "DC-1184", "DC-1791"]
 
 TABLE_INFORMATION_SCHEMA = JINJA_ENV.from_string(  # language=JINJA2
     """
-SELECT *
+SELECT * except(is_generated, generation_expression, is_stored, is_hidden,
+is_updatable, is_system_defined, clustering_ordinal_position)
 FROM `{{project}}.{{dataset}}.INFORMATION_SCHEMA.COLUMNS`
 """)
 
@@ -117,9 +118,16 @@ def get_table_cols_df(client, project_id, dataset_id):
     :param client: bq client object
     :return: dataframe of columns from INFORMATION_SCHEMA
     """
-    table_cols_query = TABLE_INFORMATION_SCHEMA.render(project=project_id,
-                                                       dataset=dataset_id)
-    table_cols_df = client.query(table_cols_query).to_dataframe()
+    if client:
+        # if possible, read live table schemas
+        table_cols_query = TABLE_INFORMATION_SCHEMA.render(project=project_id,
+                                                           dataset=dataset_id)
+        table_cols_df = client.query(table_cols_query).to_dataframe()
+    else:
+        # if None is passed to the client, read the table data from JSON schemas
+        pass
+        # TODO: generate a dataframe from schema files
+
     return table_cols_df
 
 

@@ -29,79 +29,80 @@ DEACTIVATED_PARTICIPANTS_COLUMNS = [
 ]
 
 
-def remove_ehr_data_queries(client, api_project_id, project_id, dataset_id,
-                            sandbox_dataset_id):
-    """
-    Sandboxes and drops all data found for deactivated participants after their deactivation date
-
-    :param client: BQ client
-    :param api_project_id: Project containing the RDR Participant Summary API
-    :param project_id: Identifies the project containing the target dataset
-    :param dataset_id: Identifies the dataset to retract deactivated participants from
-    :param sandbox_dataset_id: Identifies the sandbox dataset to store records for dataset_id
-    :returns queries: List of query dictionaries
-    """
-    # gets the deactivated participant dataset to ensure it's up-to-date
-    df = psr.get_deactivated_participants(api_project_id,
-                                          DEACTIVATED_PARTICIPANTS_COLUMNS)
-
-    # To store dataframe in a BQ dataset table named _deactivated_participants
-    destination_table = f'{sandbox_dataset_id}.{DEACTIVATED_PARTICIPANTS}'
-    psr.store_participant_data(df, project_id, destination_table)
-
-    fq_deact_table = f'{project_id}.{destination_table}'
-    deact_table_ref = gbq.TableReference.from_string(f"{fq_deact_table}")
-    # creates sandbox and truncate queries to run for deactivated participant data drops
-    queries = rdp.generate_queries(client, project_id, dataset_id,
-                                   sandbox_dataset_id, deact_table_ref)
-    return queries
-
-
 class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
     """
     Ensures there is no data past the deactivation date for deactivated participants.
     """
 
     def __init__(self, project_id, dataset_id, sandbox_dataset_id,
-                 api_project_id):
+                 api_project_id, table_namer=None):
         """
         Initialize the class with proper information.
 
-        Set the issue numbers, description and affected datasets. As other tickets may affect this SQL,
-        append them to the list of Jira Issues.
+        Set the issue numbers, description and affected datasets. As other tickets
+        may affect this SQL, append them to the list of Jira Issues.
+
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
         desc = (
             'Sandbox and drop records dated after the date of deactivation for participants'
             'who have deactivated from the Program.')
 
-        super().__init__(issue_numbers=['1791'],
+        super().__init__(issue_numbers=['DC-1791', 'DC-1896'],
                          description=desc,
                          affected_datasets=[cdr_consts.COMBINED],
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
                          affected_tables=common.CDM_TABLES +
-                         common.FITBIT_TABLES)
+                         common.FITBIT_TABLES,
+                         table_namer=table_namer)
         self.api_project_id = api_project_id
+        self.destination_table = (f'{self.project_id}.{self.sandbox_dataset_id}'
+                                  f'.{DEACTIVATED_PARTICIPANTS}')
+
+        # initialized to None so that if setup_rule is skipped, it will not
+        # query live datasets for table information
+        self.client = None
 
     def get_query_specs(self):
         """
-        This function generates a list of query dicts for ensuring the dates and datetimes are consistent
+        This function generates a list of query dicts.
 
-        :return: a list of query dicts for ensuring the dates and datetimes are consistent
+        These queries should sandbox and remove all data past the
+        participant's deactivation date.
+
+        :return: a list of query dicts
         """
-
-        deactivation_queries = remove_ehr_data_queries(
-            bq.get_client(self.project_id), self.api_project_id,
-            self.project_id, self.dataset_id, self.sandbox_dataset_id)
-        return deactivation_queries
+        deact_table_ref = gbq.TableReference.from_string(self.destination_table)
+        # creates sandbox and truncate queries to run for deactivated participant data drops
+        # setup_rule must be run before this to ensure the client is properly
+        # configured.
+        queries = rdp.generate_queries(self.client, self.project_id, self.dataset_id,
+                                       self.sandbox_dataset_id, deact_table_ref)
+        return queries
 
     def setup_rule(self, client):
         """
-        Function to run any data upload options before executing a query.
+        Responsible for grabbing and storing deactivated participant data.
+
+        :param client: client object passed to store the data
         """
-        pass
+        LOGGER.info("Querying RDR API for deactivated participant data")
+        # gets the deactivated participant dataset to ensure it's up-to-date
+        df = psr.get_deactivated_participants(self.api_project_id,
+                                              DEACTIVATED_PARTICIPANTS_COLUMNS)
+
+        LOGGER.info(f"Found '{len(df)}' deactivated participants via RDR API")
+
+        # To store dataframe in a BQ dataset table named _deactivated_participants
+        psr.store_participant_data(df, self.project_id, self.destination_table)
+
+        LOGGER.info(f"Finished stored participant records in: "
+                    f"`{self.destination_table}`")
+
+        LOGGER.debug("instantiating class client object")
+        self.client = client
 
     def get_sandbox_tablenames(self):
         """
