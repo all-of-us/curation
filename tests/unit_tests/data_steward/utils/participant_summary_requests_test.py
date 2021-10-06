@@ -144,8 +144,6 @@ class ParticipantSummaryRequestsTest(TestCase):
                 f'https//{self.project_id}.appspot.com/rdr/v1/Participant/P123/Summary',
             'resource': {
                 'participantId': 'P123',
-                'suspensionStatus': 'NOT_SUSPENDED',
-                'withdrawalStatus': 'NOT_WITHDRAWN',
                 'digitalHealthSharingStatus': {
                     'fitbit': {
                         'status': 'YES',
@@ -162,8 +160,6 @@ class ParticipantSummaryRequestsTest(TestCase):
                 f'https//{self.project_id}.appspot.com/rdr/v1/Participant/P234/Summary',
             'resource': {
                 'participantId': 'P234',
-                'suspensionStatus': 'NOT_SUSPENDED',
-                'withdrawalStatus': 'NOT_WITHDRAWN',
                 'digitalHealthSharingStatus': {
                     'fitbit': {
                         'status': 'YES',
@@ -191,9 +187,7 @@ class ParticipantSummaryRequestsTest(TestCase):
             }
         }]
         self.stored_digital_health_data = [{
-            'person_id': 'P123',
-            'suspension_status': 'NOT_SUSPENDED',
-            'withdrawal_status': 'NOT_WITHDRAWN',
+            'person_id': 123,
             'wearable': 'fitbit',
             'status': 'YES',
             'history': [{
@@ -202,9 +196,7 @@ class ParticipantSummaryRequestsTest(TestCase):
             }],
             'authored_time': '2020-01-01T12:01:01Z'
         }, {
-            'person_id': 'P234',
-            'suspension_status': 'NOT_SUSPENDED',
-            'withdrawal_status': 'NOT_WITHDRAWN',
+            'person_id': 234,
             'wearable': 'fitbit',
             'status': 'YES',
             'history': [{
@@ -213,9 +205,7 @@ class ParticipantSummaryRequestsTest(TestCase):
             }],
             'authored_time': '2021-01-01T12:01:01Z'
         }, {
-            'person_id': 'P234',
-            'suspension_status': 'NOT_SUSPENDED',
-            'withdrawal_status': 'NOT_WITHDRAWN',
+            'person_id': 234,
             'wearable': 'appleHealthKit',
             'status': 'YES',
             'history': [{
@@ -458,7 +448,7 @@ class ParticipantSummaryRequestsTest(TestCase):
     def test_process_digital_health_data_to_df(self):
         column_map = {'participant_id': 'person_id'}
 
-        actual = psr.process_digital_health_data_to_df(
+        actual = psr.process_digital_health_data_to_json(
             self.api_digital_health_data,
             psr.FIELDS_OF_INTEREST_FOR_DIGITAL_HEALTH, column_map)
 

@@ -15,10 +15,10 @@ The intent of the get_participant_information function is to retrieve the inform
 """
 # Python imports
 import re
+from io import StringIO
+import json
 import logging
 from typing import List, Dict
-
-from pandas.io.json import json_normalize
 from requests import Session
 
 # Third party imports
@@ -26,11 +26,12 @@ import pandas
 import google.auth.transport.requests as req
 from google.auth import default
 from google.cloud.bigquery.schema import SchemaField
-from google.cloud.bigquery import LoadJobConfig, Table, TimePartitioning, TimePartitioningType
+from google.cloud.bigquery import (LoadJobConfig, Table, TimePartitioning,
+                                   TimePartitioningType, SourceFormat)
 from google.cloud.exceptions import NotFound
 
 # Project imports
-from common import PIPELINE_TABLES, DIGITAL_HEALTH_SHARING_STATUS
+from common import DIGITAL_HEALTH_SHARING_STATUS
 from utils import auth
 from utils.bq import get_client, get_table_schema
 
@@ -45,8 +46,7 @@ FIELDS_OF_INTEREST_FOR_VALIDATION = [
 ]
 
 FIELDS_OF_INTEREST_FOR_DIGITAL_HEALTH = [
-    'participantId', 'suspensionStatus', 'withdrawalStatus',
-    'digitalHealthSharingStatus'
+    'participantId', 'digitalHealthSharingStatus'
 ]
 
 
@@ -166,8 +166,9 @@ def process_api_data_to_df(api_data: List[Dict], columns: List[str],
     return df
 
 
-def process_digital_health_data_to_df(api_data: List[Dict], columns: List[str],
-                                      column_map: Dict) -> List[Dict]:
+def process_digital_health_data_to_json(api_data: List[Dict],
+                                        columns: List[str],
+                                        column_map: Dict) -> List[Dict]:
     """
     Converts digital health data retrieved from PS API to curation convention formatted json objects
 
@@ -191,6 +192,10 @@ def process_digital_health_data_to_df(api_data: List[Dict], columns: List[str],
         for col in column_map & limited_participant_record.keys():
             limited_participant_record[
                 column_map[col]] = limited_participant_record.pop(col)
+
+        # convert participant id to integer
+        limited_participant_record['person_id'] = participant_id_to_int(
+            limited_participant_record.get('person_id'))
 
         # Extract all wearables data into a list of dicts
         wearables_data = limited_participant_record.pop(
@@ -356,7 +361,12 @@ def get_digital_health_information(project_id: str):
 
     # Make request to get API version. This is the current RDR version for reference see
     # see https://github.com/all-of-us/raw-data-repository/blob/master/opsdataAPI.md for documentation of this API.
-    params = {'_sort': 'participantId', '_count': '5000'}
+    params = {
+        'suspensionStatus': 'NOT_SUSPENDED',
+        'withdrawalStatus': 'NOT_WITHDRAWN',
+        '_sort': 'participantId',
+        '_count': '5000'
+    }
 
     participant_data = get_participant_data(
         project_id,
@@ -365,7 +375,7 @@ def get_digital_health_information(project_id: str):
 
     column_map = {'participant_id': 'person_id'}
 
-    df = process_digital_health_data_to_df(
+    df = process_digital_health_data_to_json(
         participant_data, FIELDS_OF_INTEREST_FOR_DIGITAL_HEALTH, column_map)
 
     return df
@@ -439,14 +449,18 @@ def store_participant_data(df, project_id, destination_table, schema=None):
     return job.job_id
 
 
-def store_digital_health_status_data(json_data, project_id, schema=None):
+def store_digital_health_status_data(project_id,
+                                     json_data,
+                                     destination_table,
+                                     schema=None):
     """
     Stores the fetched digital_health_sharing_status data in a BigQuery dataset. If the
     table doesn't exist, it will create that table. If the table does
     exist, it will create a partition in the designated table.
 
-    :param json_data: list of json objects retrieved from process_digital_health_data_to_df
     :param project_id: identifies the project
+    :param json_data: list of json objects retrieved from process_digital_health_data_to_json
+    :param destination_table: fully qualified destination table name as 'project.dataset.table'
     :param schema: a list of SchemaField objects corresponding to the destination table
 
     :return: returns a dataset with the participant data
@@ -461,7 +475,6 @@ def store_digital_health_status_data(json_data, project_id, schema=None):
     if not schema:
         schema = get_table_schema(DIGITAL_HEALTH_SHARING_STATUS)
 
-    destination_table = f'{project_id}.{PIPELINE_TABLES}.{DIGITAL_HEALTH_SHARING_STATUS}'
     try:
         table = client.get_table(destination_table)
     except NotFound:
@@ -470,6 +483,16 @@ def store_digital_health_status_data(json_data, project_id, schema=None):
             type_=TimePartitioningType.DAY)
         table = client.create_table(table)
 
-    # job.result()
+    file_obj = StringIO()
+    for json_obj in json_data:
+        json.dump(json_obj, file_obj)
+        file_obj.write('\n')
+    job_config = LoadJobConfig(
+        source_format=SourceFormat.NEWLINE_DELIMITED_JSON, schema=schema)
+    job = client.load_table_from_file(file_obj,
+                                      table,
+                                      rewind=True,
+                                      job_config=job_config)
+    job.result()
 
-    return  # job.job_id
+    return job.job_id
