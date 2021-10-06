@@ -34,8 +34,12 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
     Ensures there is no data past the deactivation date for deactivated participants.
     """
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id,
-                 api_project_id, table_namer=None):
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 api_project_id,
+                 table_namer=None):
         """
         Initialize the class with proper information.
 
@@ -78,8 +82,9 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
         # creates sandbox and truncate queries to run for deactivated participant data drops
         # setup_rule must be run before this to ensure the client is properly
         # configured.
-        queries = rdp.generate_queries(self.client, self.project_id, self.dataset_id,
-                                       self.sandbox_dataset_id, deact_table_ref)
+        queries = rdp.generate_queries(self.client, self.project_id,
+                                       self.dataset_id, self.sandbox_dataset_id,
+                                       deact_table_ref)
         return queries
 
     def setup_rule(self, client):
