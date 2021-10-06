@@ -93,7 +93,7 @@ class UpdateFieldsNumbersAsStringsTest(BaseTest.CleaningRulesTestBase):
 
         super().setUp()
 
-    def test(self):
+    def test_update_fields_numbers_as_strings(self):
         """
         Tests that the specifications for the SANDBOX_QUERY and NUMBERS_AS_STRINGS_QUERY
         perform as designed.
