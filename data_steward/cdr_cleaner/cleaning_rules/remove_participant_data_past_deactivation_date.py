@@ -111,9 +111,22 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
 
     def get_sandbox_tablenames(self):
         """
-        Returns an empty list because this rule does not use sandbox tables.
+        Return a list table names created to backup deleted data.
         """
-        return []
+        LOGGER.info("Generating static list of possible sandbox table names")
+
+        if self.client:
+            LOGGER.info(f"Getting live table names from: `{self.dataset_id}`")
+            tables_list = self.client.list_tables(self.dataset_id)
+
+            table_names = [table_item.table_id for table_item in tables_list]
+
+        else:
+            LOGGER.info("Getting table names from self.affected_tables param.")
+            table_names = self.affected_tables
+
+        return [rdp.get_sandbox_table_name(table) for table in table_names]
+
 
     def setup_validation(self, client):
         """

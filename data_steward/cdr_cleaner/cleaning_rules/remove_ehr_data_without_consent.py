@@ -151,7 +151,7 @@ class RemoveEhrDataWithoutConsent(BaseCleaningRule):
                         project=self.project_id,
                         dataset=self.dataset_id,
                         sandbox_dataset=self.sandbox_dataset_id,
-                        sandbox_table=self.get_sandbox_tablenames(table),
+                        sandbox_table=self.sandbox_table_for(table),
                         domain_table=table,
                         unconsented_lookup=
                         EHR_UNCONSENTED_PARTICIPANTS_LOOKUP_TABLE,
@@ -167,7 +167,7 @@ class RemoveEhrDataWithoutConsent(BaseCleaningRule):
                         dataset=self.dataset_id,
                         sandbox_dataset=self.sandbox_dataset_id,
                         domain_table=table,
-                        sandbox_table=self.get_sandbox_tablenames(table))
+                        sandbox_table=self.sandbox_table_for(table))
             }
 
             drop_queries.append(drop_query)
@@ -197,11 +197,15 @@ class RemoveEhrDataWithoutConsent(BaseCleaningRule):
         """
         raise NotImplementedError("Please fix me.")
 
-    def get_sandbox_tablenames(self, table_name):
+    def get_sandbox_tablenames(self):
         """
-        Generates sandbox table name for a given domain table
+        Generates list of sandbox table names created by this rule.
         """
-        return f'{self._issue_numbers[0].lower()}_{table_name}'
+        sandbox_tables = []
+        for table in self.affected_tables:
+            sandbox_tables.append(self.sandbox_table_for(table))
+
+        return sandbox_tables
 
 
 if __name__ == '__main__':

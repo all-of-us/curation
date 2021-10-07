@@ -122,7 +122,7 @@ def get_table_cols_df(client, project_id, dataset_id):
     """
     table_cols_df = pd.DataFrame()
     if client:
-        LOGGER.info("Getting column information from live datasets")
+        LOGGER.info(f"Getting column information from live dataset: `{dataset_id}`")
         # if possible, read live table schemas
         table_cols_query = TABLE_INFORMATION_SCHEMA.render(project=project_id,
                                                            dataset=dataset_id)
@@ -200,7 +200,7 @@ def generate_queries(client,
     for table in table_dates_info:
         table_ref = gbq.TableReference.from_string(
             f"{project_id}.{dataset_id}.{table}")
-        sandbox_table = f"{'_'.join(ISSUE_NUMBERS).lower().replace('-', '_')}_{table}"
+        sandbox_table = get_sandbox_table_name(table)
         sandbox_ref = gbq.TableReference.from_string(
             f"{project_id}.{sandbox_dataset_id}.{sandbox_table}")
         date_cols = get_date_cols_dict(table_dates_info[table])
@@ -229,6 +229,13 @@ def generate_queries(client,
                 bq_consts.WRITE_TRUNCATE
         })
     return sandbox_queries + clean_queries
+
+
+def get_sandbox_table_name(table):
+    """
+    Return formatted sandbox table name.
+    """
+    return f"{'_'.join(ISSUE_NUMBERS).lower().replace('-', '_')}_{table}"
 
 
 def query_runner(client, query_dict):
