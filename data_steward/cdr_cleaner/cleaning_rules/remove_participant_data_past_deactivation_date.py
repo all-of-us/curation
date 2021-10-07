@@ -94,10 +94,13 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
         :param client: client object passed to store the data
         """
         LOGGER.info("Querying RDR API for deactivated participant data")
+        print("HOPE TO MOCK THE NEXT FUNCTION")
         # gets the deactivated participant dataset to ensure it's up-to-date
         df = psr.get_deactivated_participants(self.api_project_id,
                                               DEACTIVATED_PARTICIPANTS_COLUMNS)
 
+        print("MOVING PAST MOCKED FUNCTION")
+        print(df)
         LOGGER.info(f"Found '{len(df)}' deactivated participants via RDR API")
 
         # To store dataframe in a BQ dataset table named _deactivated_participants
@@ -126,7 +129,6 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
             table_names = self.affected_tables
 
         return [rdp.get_sandbox_table_name(table) for table in table_names]
-
 
     def setup_validation(self, client):
         """
@@ -172,7 +174,8 @@ if __name__ == '__main__':
             ARGS.dataset_id,
             ARGS.sandbox_dataset_id,
             [(RemoveParticipantDataPastDeactivationDate,)],
-            api_project_id=ARGS.api_project_id)
+            api_project_id=ARGS.api_project_id,
+            table_namer='manual')
         for query in query_list:
             LOGGER.info(query)
     else:
@@ -182,4 +185,5 @@ if __name__ == '__main__':
             ARGS.dataset_id,
             ARGS.sandbox_dataset_id,
             [(RemoveParticipantDataPastDeactivationDate,)],
-            api_project_id=ARGS.api_project_id)
+            api_project_id=ARGS.api_project_id,
+            table_namer='manual')
