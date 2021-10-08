@@ -122,7 +122,8 @@ def get_table_cols_df(client, project_id, dataset_id):
     """
     table_cols_df = pd.DataFrame()
     if client:
-        LOGGER.info(f"Getting column information from live dataset: `{dataset_id}`")
+        LOGGER.info(
+            f"Getting column information from live dataset: `{dataset_id}`")
         # if possible, read live table schemas
         table_cols_query = TABLE_INFORMATION_SCHEMA.render(project=project_id,
                                                            dataset=dataset_id)
