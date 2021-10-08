@@ -24,7 +24,8 @@ from constants.retraction.retract_deactivated_pids import DEACTIVATED_PARTICIPAN
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
 
-class RemoveParticipantDataPastDeactivationDateTest(BaseTest.CleaningRulesTestBase):
+class RemoveParticipantDataPastDeactivationDateTest(
+        BaseTest.CleaningRulesTestBase):
 
     @classmethod
     def setUpClass(cls):
@@ -44,12 +45,12 @@ class RemoveParticipantDataPastDeactivationDateTest(BaseTest.CleaningRulesTestBa
         sandbox_id = f"{dataset_id}_sandbox"
         cls.sandbox_id = sandbox_id
 
-        cls.kwargs.update({'table_namer': 'bar_ds', 'api_project_id': 'foo-project-id'})
+        cls.kwargs = {
+            'table_namer': 'bar_ds',
+            'api_project_id': 'foo-project-id'
+        }
         cls.rule_instance = RemoveParticipantDataPastDeactivationDate(
-            project_id,
-            dataset_id,
-            sandbox_id,
-            'foo-project-id')
+            project_id, dataset_id, sandbox_id, **cls.kwargs)
 
         sb_table_names = cls.rule_instance.get_sandbox_tablenames()
         cls.fq_sandbox_table_names = [
@@ -66,7 +67,9 @@ class RemoveParticipantDataPastDeactivationDateTest(BaseTest.CleaningRulesTestBa
             for tablename in cls.rule_instance.affected_tables
         ]
 
-        cls.fq_obs_table =  [table for table in cls.fq_table_names if 'observation' in table][0]
+        cls.fq_obs_table = [
+            table for table in cls.fq_table_names if 'observation' in table
+        ][0]
 
         # call super to set up the client, create datasets, and create
         # empty test tables
@@ -100,18 +103,33 @@ class RemoveParticipantDataPastDeactivationDateTest(BaseTest.CleaningRulesTestBa
 
         super().setUp()
 
-    def test_removing_data_past_deactivated_date(self):
+    @mock.patch(
+        'utils.participant_summary_requests.get_deactivated_participants')
+    def test_removing_data_past_deactivated_date(self, mock_func):
         """
-        Use the default drop rows test function.
+        Validate deactivated participant records are dropped via cleaning rule.
 
         Validates pre-conditions, test execution and post conditions based on
-        the load statements and the tables_and_counts variable.
+        the load statements and the tables_and_counts variable.  Uses a mock to
+        return a staged data frame object for this test instead of calling
+        the PS API.
         """
+        columns = ['deactivated_date', 'person_id', 'suspension_status']
+        values = [
+            ['2020-01-01', 1, 'NO_CONTACT'],  # corresponds with record 804
+            ['2020-01-01', 3, 'NO_CONTACT']  # corresponds with record 805
+        ]
+        deactivated_df = pd.DataFrame(values, columns=columns)
+
+        mock_func.return_value = deactivated_df
         self.load_test_data(self.load_statements)
 
         # Using the 0 position because there is only one sandbox table and
         # one affected OMOP table
-        obs_sandbox = [table for table in self.fq_sandbox_table_names if 'observation' in table][0]
+        obs_sandbox = [
+            table for table in self.fq_sandbox_table_names
+            if 'observation' in table
+        ][0]
         tables_and_counts = [{
             'name': 'observation',
             'fq_table_name': self.fq_obs_table,
@@ -122,19 +140,4 @@ class RemoveParticipantDataPastDeactivationDateTest(BaseTest.CleaningRulesTestBa
             'cleaned_values': [(801,), (802,)]
         }]
 
-        columns = ['deactivated_date', 'person_id', 'suspension_status']
-        values = [
-            ['2020-01-01', 804, 'NO_CONTACT'],
-            ['2020-01-01', 805, 'NO_CONTACT']
-        ]
-        deactivated_df = pd.DataFrame(values, columns=columns)
-
-        print(deactivated_df)
-        config = {'method.return_value': deactivated_df}
-        # mock the PS API call and response.  provides the data used
-        # when saving the deactivated_participants lookup table
-        with mock.patch(
-                'utils.participant_summary_requests.get_deactivated_participants',
-                **config):
-            self.default_test(tables_and_counts)
-
+        self.default_test(tables_and_counts)

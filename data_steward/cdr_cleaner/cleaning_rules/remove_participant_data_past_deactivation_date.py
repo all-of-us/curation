@@ -38,8 +38,8 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
                  project_id,
                  dataset_id,
                  sandbox_dataset_id,
-                 api_project_id,
-                 table_namer=None):
+                 table_namer=None,
+                 api_project_id=None):
         """
         Initialize the class with proper information.
 
@@ -51,6 +51,9 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
         desc = (
             'Sandbox and drop records dated after the date of deactivation for participants'
             'who have deactivated from the Program.')
+
+        if not api_project_id:
+            raise TypeError("`api_project_id` cannot be empty")
 
         super().__init__(issue_numbers=['DC-1791', 'DC-1896'],
                          description=desc,
@@ -82,9 +85,12 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
         # creates sandbox and truncate queries to run for deactivated participant data drops
         # setup_rule must be run before this to ensure the client is properly
         # configured.
-        queries = rdp.generate_queries(self.client, self.project_id,
-                                       self.dataset_id, self.sandbox_dataset_id,
-                                       deact_table_ref)
+        queries = rdp.generate_queries(self.client,
+                                       self.project_id,
+                                       self.dataset_id,
+                                       self.sandbox_dataset_id,
+                                       deact_table_ref,
+                                       data_stage_id=self.table_namer)
         return queries
 
     def setup_rule(self, client):
@@ -94,13 +100,10 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
         :param client: client object passed to store the data
         """
         LOGGER.info("Querying RDR API for deactivated participant data")
-        print("HOPE TO MOCK THE NEXT FUNCTION")
         # gets the deactivated participant dataset to ensure it's up-to-date
         df = psr.get_deactivated_participants(self.api_project_id,
                                               DEACTIVATED_PARTICIPANTS_COLUMNS)
 
-        print("MOVING PAST MOCKED FUNCTION")
-        print(df)
         LOGGER.info(f"Found '{len(df)}' deactivated participants via RDR API")
 
         # To store dataframe in a BQ dataset table named _deactivated_participants
@@ -128,7 +131,10 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
             LOGGER.info("Getting table names from self.affected_tables param.")
             table_names = self.affected_tables
 
-        return [rdp.get_sandbox_table_name(table) for table in table_names]
+        return [
+            rdp.create_and_get_sandbox_table_name(table, self.table_namer)
+            for table in table_names
+        ]
 
     def setup_validation(self, client):
         """
