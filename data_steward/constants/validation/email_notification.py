@@ -8,7 +8,7 @@ FROM `{{project}}.{{dataset}}.{{contact_table}}`
 
 EHR_OPERATIONS = 'EHR Ops'
 EHR_OPS_ZENDESK = 'support@aou-ehr-ops.zendesk.com'
-DATA_CURATION_LISTSERV = 'datacuration@researchallofus.org'
+DATA_CURATION_LISTSERV = 'curation@aou-ehr-ops.zendesk.com'
 NO_REPLY_ADDRESS = 'noreply@researchallofus.org'
 NO_DATA_STEWARD = 'no data steward'
 
