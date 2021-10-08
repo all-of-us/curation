@@ -173,7 +173,8 @@ def generate_queries(client,
                      dataset_id,
                      sandbox_dataset_id,
                      deact_pids_table_ref,
-                     pid_rid_table_ref=None):
+                     pid_rid_table_ref=None,
+                     data_stage_id=None):
     """
     Creates queries for sandboxing and deleting records
 
@@ -183,6 +184,7 @@ def generate_queries(client,
     :param sandbox_dataset_id: Identifies the dataset to store records to delete
     :param deact_pids_table_ref: BigQuery table reference to dataset containing deactivated participants
     :param pid_rid_table_ref: BigQuery table reference to dataset containing pid-rid mappings
+    :param data_stage_id: unique identifier to prepend to sandbox table names
     :return: List of query dicts
     :raises:
         RuntimeError: 1. If retracting from deid dataset, pid_rid table must be specified
@@ -201,7 +203,7 @@ def generate_queries(client,
     for table in table_dates_info:
         table_ref = gbq.TableReference.from_string(
             f"{project_id}.{dataset_id}.{table}")
-        sandbox_table = get_sandbox_table_name(table)
+        sandbox_table = create_and_get_sandbox_table_name(table, data_stage_id)
         sandbox_ref = gbq.TableReference.from_string(
             f"{project_id}.{sandbox_dataset_id}.{sandbox_table}")
         date_cols = get_date_cols_dict(table_dates_info[table])
@@ -232,11 +234,12 @@ def generate_queries(client,
     return sandbox_queries + clean_queries
 
 
-def get_sandbox_table_name(table):
+def create_and_get_sandbox_table_name(table, data_stage=None):
     """
     Return formatted sandbox table name.
     """
-    return f"{'_'.join(ISSUE_NUMBERS).lower().replace('-', '_')}_{table}"
+    base_name = f"{'_'.join(ISSUE_NUMBERS).lower().replace('-', '_')}_{table}"
+    return sb.get_sandbox_table_name(data_stage, base_name)
 
 
 def query_runner(client, query_dict):
