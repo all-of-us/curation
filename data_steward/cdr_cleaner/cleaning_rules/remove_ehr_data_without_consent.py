@@ -201,11 +201,7 @@ class RemoveEhrDataWithoutConsent(BaseCleaningRule):
         """
         Generates list of sandbox table names created by this rule.
         """
-        sandbox_tables = []
-        for table in self.affected_tables:
-            sandbox_tables.append(self.sandbox_table_for(table))
-
-        return sandbox_tables
+        return [self.sandbox_table_for(table) for table in self.affected_tables]
 
 
 if __name__ == '__main__':
