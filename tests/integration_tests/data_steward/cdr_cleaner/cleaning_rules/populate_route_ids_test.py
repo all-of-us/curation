@@ -32,8 +32,9 @@ class PopulateRouteIdsTest(unittest.TestCase):
             'de.refills', 'de.quantity', 'de.days_supply', 'de.sig',
             'COALESCE(rm.route_concept_id, de.route_concept_id) AS route_concept_id',
             'de.lot_number', 'de.provider_id', 'de.visit_occurrence_id',
-            'de.visit_detail_id', 'de.drug_source_value', 'de.drug_source_concept_id',
-            'de.route_source_value', 'de.dose_unit_source_value'
+            'de.visit_detail_id', 'de.drug_source_value',
+            'de.drug_source_concept_id', 'de.route_source_value',
+            'de.dose_unit_source_value'
         ]
         self.cols = ', '.join(col_exprs)
 
