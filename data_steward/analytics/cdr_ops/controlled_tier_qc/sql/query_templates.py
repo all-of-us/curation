@@ -157,7 +157,7 @@ FROM `{{ project_id }}.{{ post_deid_dataset }}.{{ table_name }}`
 WHERE {{ column_name }} IN (
     SELECT concept_id
     FROM `{{ project_id }}.{{ post_deid_dataset }}.concept`
-    WHERE REGEXP_CONTAINS(concept_code, r"^E8[0-4][0-9]")
+    WHEREREGEXP_CONTAINS(concept_code, r"^E8[0-4][0-9]")
     AND NOT REGEXP_CONTAINS(concept_code, r"E8[0-4][0-9][\d]")
 )
 """
@@ -171,7 +171,7 @@ FROM `{{ project_id }}.{{ post_deid_dataset }}.{{ table_name }}`
 WHERE {{ column_name }} IN (
     SELECT concept_id
     FROM `{{ project_id }}.{{ post_deid_dataset }}.concept`
-    WHERE  REGEXP_CONTAINS(concept_code, r"^V")
+    WHERE REGEXP_CONTAINS(concept_code, r"^V")
     AND REGEXP_CONTAINS(vocabulary_id, r"^ICD10")
 )
 """
@@ -185,7 +185,7 @@ FROM `{{ project_id }}.{{ post_deid_dataset }}.{{ table_name }}`
 WHERE {{ column_name }} IN (
     SELECT concept_id
     FROM `{{ project_id }}.{{ post_deid_dataset }}.concept`
-    WHERE  REGEXP_CONTAINS(concept_code, r'(History_WhichConditions)|(Condition_OtherCancer)|(History_AdditionalDiagnosis)|(OutsideTravel6MonthsWhere)')
+    WHERE REGEXP_CONTAINS(concept_code, r'(History_WhichConditions)|(Condition_OtherCancer)|(History_AdditionalDiagnosis)|(OutsideTravel6MonthsWhere)')
 )
 """
 
