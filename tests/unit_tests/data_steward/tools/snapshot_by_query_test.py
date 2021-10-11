@@ -1,6 +1,8 @@
 import re
 import unittest
+import mock
 
+import resources
 from tools import snapshot_by_query
 
 WHITESPACE = '[\t\n\\s]+'
@@ -15,9 +17,16 @@ class SnapshotByQueryTest(unittest.TestCase):
         print(cls.__name__)
         print('**************************************************************')
 
-    def test_get_copy_table_query(self):
+        cls.mock_client = ''
+
+    @mock.patch('tools.snapshot_by_query.get_source_fields')
+    def test_get_copy_table_query(self, mock_get_source_fields):
+        mock_get_source_fields.return_value = [
+            field['name'] for field in resources.fields_for('person')
+        ]
+
         actual_query = snapshot_by_query.get_copy_table_query(
-            'test-project', 'test-dataset', 'person')
+            'test-project', 'test-dataset', 'person', self.mock_client)
         expected_query = """SELECT
   CAST(person_id AS INT64) AS person_id,
   CAST(gender_concept_id AS INT64) AS gender_concept_id,
@@ -44,6 +53,6 @@ FROM
                          re.sub(WHITESPACE, SPACE, expected_query))
 
         actual_query = snapshot_by_query.get_copy_table_query(
-            'test-project', 'test-dataset', 'non_cdm_table')
+            'test-project', 'test-dataset', 'non_cdm_table', self.mock_client)
         expected_query = '''SELECT * FROM `test-project.test-dataset.non_cdm_table`'''
         self.assertEqual(actual_query, expected_query)
