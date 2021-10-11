@@ -4,8 +4,7 @@ from analytics.cdr_ops.controlled_tier_qc.utils.helpers import run_check_by_row
 from analytics.cdr_ops.controlled_tier_qc.sql.query_templates import (
     QUERY_ID_NOT_OF_CORRECT_TYPE, QUERY_ID_NOT_CHANGED_BY_DEID,
     QUERY_ID_NOT_IN_MAPPING, QUERY_ID_NOT_MAPPED_PROPERLY,
-    QUERY_SITE_ID_NOT_MAPPED_PROPERLY, QUERY_ZIP_CODE_GENERALIZATION,
-    QUERY_ZIP_CODE_TRANSFORMATION)
+    QUERY_SITE_ID_NOT_MAPPED_PROPERLY, QUERY_ZIP_CODE_GENERALIZATION)
 
 
 def check_mapping(check_df, project_id, post_dataset_id, pre_deid_dataset,
@@ -101,7 +100,7 @@ def check_site_mapping(check_df, project_id, post_dataset_id, pre_deid_dataset,
 
 def check_mapping_zipcode_generalization(check_df, project_id, post_dataset_id,
                                          pre_deid_dataset, mapping_dataset):
-    """Run zipcode generalization check
+    """Run zipcode generalization and transformation check
     
     Parameters
     ----------
@@ -120,17 +119,6 @@ def check_mapping_zipcode_generalization(check_df, project_id, post_dataset_id,
     """
     zip_check = run_check_by_row(check_df, QUERY_ZIP_CODE_GENERALIZATION,
                                  project_id, post_dataset_id, pre_deid_dataset,
-                                 "Zip code value generalized")
+                                 "Zip code value generalized and transformed")
 
     return zip_check
-
-
-def check_mapping_zipcode_transformation(check_df, project_id, post_dataset_id,
-                                         pre_deid_dataset, mapping_dataset):
-    zip_transformation = run_check_by_row(check_df,
-                                          QUERY_ZIP_CODE_TRANSFORMATION,
-                                          project_id, post_dataset_id,
-                                          pre_deid_dataset,
-                                          "Zip code value transformed")
-
-    return zip_transformation

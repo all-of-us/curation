@@ -132,7 +132,6 @@ SELECT
 FROM data
 """
 
-
 QUERY_SITE_ID_NOT_MAPPED_PROPERLY = """
 WITH data AS (
 SELECT
@@ -148,7 +147,6 @@ SELECT
 FROM data
 
 """
-
 
 QUERY_VEHICLE_ACCIDENT_SUPPRESSION_ICD9 = """
 SELECT
@@ -192,58 +190,31 @@ WHERE {{ column_name }} IN (
 """
 
 QUERY_ZIP_CODE_GENERALIZATION = """
-WITH data AS (
-SELECT
-    LEFT(SAFE_CAST(pre_deid.{{ column_name }} AS STRING), 3) AS expected_zip,
-    LENGTH(SAFE_CAST(pre_deid.{{ column_name }} AS STRING)) AS n_expected_zip,
-    SAFE_CAST(post_deid.{{ column_name }} AS STRING) AS output_zip
-FROM `{{ project_id }}.{{ post_deid_dataset }}.{{ table_name }}` post_deid
-LEFT JOIN `{{ project_id }}.{{ pre_deid_dataset }}.{{ table_name }}` pre_deid USING({{ primary_key }})
-WHERE post_deid.observation_source_concept_id IN (1585250)
-AND NOT REGEXP_CONTAINS(SAFE_CAST(pre_deid.{{ column_name }} AS STRING), r'^036|^059|^102|^205|^369|^556|^692|^821|^823|^831|^878|^879|^884|^893|^063|^834')
+WITH zips AS (
+  SELECT
+    CONCAT(LEFT(pre_deid.{{ column_name }}, 3), REPEAT('*',
+        LENGTH(pre_deid.{{ column_name }}) - 3)) AS expected_zip,
+    LENGTH(pre_deid.{{ column_name }}) AS n_expected_zip,
+    post_deid.{{ column_name }} AS output_zip
+  FROM `{{ project_id }}.{{ post_deid_dataset }}.{{ table_name }}` post_deid
+  LEFT JOIN `{{ project_id }}.{{ pre_deid_dataset }}.{{ table_name }}` pre_deid USING({{ primary_key }})
+  WHERE post_deid.observation_source_concept_id IN (1585250)
+), transformed_zips AS (
+  SELECT
+    CASE
+      WHEN expected_zip = zip_code_3 THEN transformed_zip_code_3
+      ELSE expected_zip
+      END
+      AS expected_zip,
+    n_expected_zip,
+    output_zip
+  FROM zips
+  LEFT JOIN `{{ project_id }}.{{ pipeline_dataset }}.{{ zip_table_name }}` zip_agg ON (zips.expected_zip=zip_agg.zip_code_3)
 )
 SELECT
-    '{{ table_name }}' AS table_name,
-    IFNULL(SUM(CASE WHEN output_zip != CONCAT(expected_zip, REPEAT('*', n_expected_zip - 3)) THEN 1 ELSE 0 END), 0) AS n_row_violation
-FROM data
-"""
-
-# TODO: needs to create mapping_table in bigquery with columns old_zip and new_zip
-# Then add the name of the mapping table in mapping.csv
-QUERY_ZIP_CODE_TRANSFORMATION = """
-WITH zip AS (
-  SELECT ARRAY<STRUCT<old_zip string, new_zip string>>
-      [('036**', '035**'),
-       ('059**', '058**'),
-       ('102**', '101**'),
-       ('205**', '203**'),
-       ('369**', '368**'),
-       ('556**', '557**'),
-       ('692**', '691**'),
-       ('821**', '820**'),
-       ('823**', '822**'),
-       ('831**', '830**'),
-       ('878**', '877**'),
-       ('879**', '880**'),
-       ('884**', '883**'),
-       ('893**', '894**'),
-       ('063**', '062**'),
-       ('834**', '833**')] col
-),
-data AS (
-SELECT
-    CONCAT(LEFT(SAFE_CAST(pre_deid.{{ column_name }} AS STRING), 3), '**') AS input_zip,
-    SAFE_CAST(post_deid.{{ column_name }} AS STRING) AS output_zip
-FROM `{{ project_id }}.{{ post_deid_dataset }}.{{ table_name }}` post_deid
-LEFT JOIN `{{ project_id }}.{{ pre_deid_dataset }}.{{ table_name }}` pre_deid USING({{ primary_key }})
-WHERE post_deid.observation_source_concept_id IN (1585250)
-AND REGEXP_CONTAINS(SAFE_CAST(pre_deid.{{ column_name }} AS STRING), r'^036|^059|^102|^205|^369|^556|^692|^821|^823|^831|^878|^879|^884|^893|^063|^834' )
-)
-SELECT
-    '{{ table_name }}' AS table_name,
-    IFNULL(SUM(CASE WHEN d.output_zip != m.new_zip THEN 1 ELSE 0 END), 0) AS n_row_violation
-FROM data d
-LEFT JOIN (SELECT old_zip, new_zip FROM zip, UNNEST(zip.col)) m on d.input_zip = m.old_zip
+  '{{ table_name }}' AS table_name,
+  IFNULL(SUM(CASE WHEN output_zip != expected_zip THEN 1 ELSE 0 END), 0) AS n_row_violation
+FROM transformed_zips
 """
 
 QUERY_SUPPRESSED_FREE_TEXT_RESPONSE = """

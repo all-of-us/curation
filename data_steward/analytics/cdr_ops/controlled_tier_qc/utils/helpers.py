@@ -1,11 +1,13 @@
+from collections import defaultdict
+
 import pandas as pd
 from jinja2 import Template
+from IPython.display import display, HTML
+
 from analytics.cdr_ops.controlled_tier_qc.code.config import (
     CSV_FOLDER, COLUMNS_IN_CHECK_RESULT, TABLE_CSV_FILE, FIELD_CSV_FILE,
     CONCEPT_CSV_FILE, MAPPING_CSV_FILE, CHECK_LIST_CSV_FILE)
-
-from collections import defaultdict
-from IPython.display import display, HTML
+from common import PIPELINE_TABLES, ZIP_CODE_AGGREGATION_MAP
 
 
 def load_check_description(rule_code=None):
@@ -183,7 +185,9 @@ def run_check_by_row(df,
             primary_key=primary_key,
             new_id=new_id,
             mapping_dataset=mapping_dataset,
-            mapping_table=mapping_table)
+            mapping_table=mapping_table,
+            pipeline_dataset=PIPELINE_TABLES,
+            zip_table_name=ZIP_CODE_AGGREGATION_MAP)
         result_df = pd.read_gbq(query, dialect="standard")
         result_df['query'] = str(query)
         results.append(result_df)

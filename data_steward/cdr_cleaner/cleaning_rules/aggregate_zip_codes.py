@@ -17,12 +17,11 @@ from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from cdr_cleaner.cleaning_rules.generalize_zip_codes import GeneralizeZipCodes
 from cdr_cleaner.cleaning_rules.deid.string_fields_suppression import StringFieldsSuppression
 from constants.cdr_cleaner import clean_cdr as cdr_consts
-from common import JINJA_ENV, OBSERVATION, PIPELINE_TABLES
+from common import JINJA_ENV, OBSERVATION, PIPELINE_TABLES, ZIP_CODE_AGGREGATION_MAP
 from utils import pipeline_logging
 
 LOGGER = logging.getLogger(__name__)
 PII_STATE_VOCAB = 'pii_state_vocab'
-ZIP_CODE_AGGREGATION_MAP = 'zip_code_aggregation_map'
 ZIP_CODES_AND_STATES_TO_MODIFY = '_zip_codes_and_states_to_modify'
 
 SANDBOX_QUERY = JINJA_ENV.from_string("""
