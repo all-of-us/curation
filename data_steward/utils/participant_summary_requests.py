@@ -37,13 +37,15 @@ from utils.bq import get_client, get_table_schema
 
 LOGGER = logging.getLogger(__name__)
 
-# These fields are coming in from RDR with their naming convention and will be converted
-# to the Curation naming convention in the `get_site_participant_information` function
 FIELDS_OF_INTEREST_FOR_VALIDATION = [
     'participantId', 'firstName', 'middleName', 'lastName', 'streetAddress',
     'streetAddress2', 'city', 'state', 'zipCode', 'phoneNumber', 'email',
     'dateOfBirth', 'sex'
 ]
+"""
+These fields are coming in from RDR with their naming convention and will be converted
+to the Curation naming convention in the `get_site_participant_information` function
+"""
 
 FIELDS_OF_INTEREST_FOR_DIGITAL_HEALTH = [
     'participantId', 'digitalHealthSharingStatus'
@@ -148,7 +150,6 @@ def process_api_data_to_df(api_data: List[Dict], columns: List[str],
     """
     participant_records = []
 
-    # loop over participant summary records, insert participant data in same order as deactivated_participant_cols
     for full_participant_record in api_data:
         resource = full_participant_record.get('resource', {})
         # loop over fields that exist in both resource_dict and columns and save key-value pairs
@@ -182,7 +183,6 @@ def process_digital_health_data_to_json(api_data: List[Dict],
     """
     participant_records = []
 
-    # loop over participant summary records, insert participant data in same order as deactivated_participant_cols
     for full_participant_record in api_data:
         resource = full_participant_record.get('resource', {})
         # loop over fields that exist in both resource_dict and columns and save reformatted key-value pairs

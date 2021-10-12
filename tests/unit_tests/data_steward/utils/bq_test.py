@@ -73,7 +73,7 @@ class BqTest(TestCase):
         actual_fields = bq.get_table_schema('digital_health_sharing_status')
 
         for field in actual_fields:
-            if field.field_type == "RECORD":
+            if field.field_type.upper() == "RECORD":
                 self.assertEqual(len(field.fields), 2)
 
     def test_define_dataset(self):
@@ -212,9 +212,9 @@ class BqTest(TestCase):
 
     def _mock_client_with(self, table_ids):
         """
-        Get a mock client 
-        :param table_ids: 
-        :return: 
+        Get a mock client
+        :param table_ids:
+        :return:
         """
         full_table_ids = [
             f'{self.project_id}.{self.dataset_id}.{table_id}'

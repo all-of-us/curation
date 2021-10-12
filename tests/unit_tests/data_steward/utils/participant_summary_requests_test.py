@@ -42,7 +42,7 @@ class ParticipantSummaryRequestsTest(TestCase):
         self.fake_hpo = 'foo_hpo'
         self.destination_table = 'bar_dataset._deactivated_participants'
 
-        self.fake_token = 'ya29.12345'
+        self.fake_token = 'fake_token'
         self.fake_url = 'www.fake_site.com'
         self.fake_headers = {
             'content-type': 'application/json',

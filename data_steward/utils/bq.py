@@ -111,11 +111,8 @@ def get_table_schema(table_name, fields=None):
     for column in fields:
         name = column.get('name')
         field_type = column.get('type')
-        mode = column.get('mode')
-        description = column.get('description')
-        fields = _parse_schema_resource(column)
-        column_def = bigquery.SchemaField(name, field_type, mode, description,
-                                          fields)
+        column_def = bigquery.SchemaField(name,
+                                          field_type).from_api_repr(column)
 
         schema.append(column_def)
 

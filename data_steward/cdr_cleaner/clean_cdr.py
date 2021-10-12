@@ -49,7 +49,7 @@ from cdr_cleaner.cleaning_rules.deid.remove_fitbit_data_if_max_age_exceeded impo
 from cdr_cleaner.cleaning_rules.deid.ct_pid_rid_map import CtPIDtoRID
 from cdr_cleaner.cleaning_rules.deid.repopulate_person_controlled_tier import \
     RepopulatePersonControlledTier
-from cdr_cleaner.cleaning_rules.deid.genaralize_cope_insurance_answers import GeneralizeCopeInsuranceAnswers
+from cdr_cleaner.cleaning_rules.deid.generalize_cope_insurance_answers import GeneralizeCopeInsuranceAnswers
 from cdr_cleaner.cleaning_rules.drop_cope_duplicate_responses import DropCopeDuplicateResponses
 from cdr_cleaner.cleaning_rules.drop_duplicate_ppi_questions_and_answers import \
     DropDuplicatePpiQuestionsAndAnswers

@@ -61,9 +61,10 @@ class ParticipantSummaryRequests(BaseTest.BigQueryTestBase):
                                         columns=self.bq_columns)
 
         self.url = 'www.fake_site.com'
+        self.token = 'fake_token'
         self.headers = {
             'content-type': 'application/json',
-            'Authorization': 'Bearer ya29.12345'
+            'Authorization': f'Bearer {self.token}'
         }
 
         self.participant_data = [{
