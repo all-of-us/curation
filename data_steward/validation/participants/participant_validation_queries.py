@@ -12,7 +12,7 @@ CREATE FUNCTION IF NOT EXISTS
       ELSE
       '{{missing_ehr}}'
     END
-      AS sex;
+      AS sex));
 """)
 
 CREATE_EMAIL_COMPARISON_FUNCTION = JINJA_ENV.from_string("""

@@ -35,30 +35,20 @@ MISSING_RDR = 'missing_rdr'
 MISSING_EHR = 'missing_ehr'
 
 MATCH_FIELDS_QUERY = JINJA_ENV.from_string("""
-    WITH ehr_sex 
-    AS 
-    (
-    SELECT
-        person_id,
-        cc.concept_name as sex
-    FROM
-        `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_person_table_id}}`
-    JOIN
-        `{{project_id}}.{{ehr_ops_dataset_id}}.concept` AS cc
-    ON
-        gender_concept_id = concept_id
-    )
     UPDATE `{{project_id}}.{{drc_dataset_id}}.{{id_match_table_id}}` upd
     SET upd.email = `{{project_id}}.{{drc_dataset_id}}.CompareEmail`(ps.email, ehr_email.email),
         upd.phone_number = `{{project_id}}.{{drc_dataset_id}}.ComparePhoneNumber`(ps.phone_number, ehr_phone.phone_number),
-        upd.sex = `{{project_id}}.{{drc_dataset_id}}.ComparePhoneNumber` (ps.sex, ehr_sex.sex),
+        upd.sex = `{{project_id}}.{{drc_dataset_id}}.CompareSexAtBirth`(ps.sex, ehr_sex.sex),
         upd.algorithm = 'yes'
     FROM `{{project_id}}.{{drc_dataset_id}}.{{ps_api_table_id}}` ps
     LEFT JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_email_table_id}}` ehr_email
         ON ehr_email.person_id = ps.person_id
     LEFT JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_phone_number_table_id}}` ehr_phone
         ON ehr_phone.person_id = ps.person_id
-    LEFT JOIN  ehr_sex
+    LEFT JOIN ( SELECT person_id, cc.concept_name as sex
+    FROM `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_person_table_id}}`
+    JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.concept` cc
+    ON gender_concept_id = concept_id ) AS ehr_sex
         ON ehr_sex.person_id = ps.person_id
     WHERE upd.person_id = ps.person_id
         AND upd._PARTITIONTIME = ps._PARTITIONTIME
@@ -79,12 +69,14 @@ def identify_rdr_ehr_match(client,
 
     for item in CREATE_COMPARISON_FUNCTION_QUERIES:
         LOGGER.info(f"Creating `{item['name']}` function if doesn't exist.")
-        query = item['query'].render(project_id=project_id,
-                                     drc_dataset_id=drc_dataset_id,
-                                     match=MATCH,
-                                     no_match=NO_MATCH,
-                                     missing_rdr=MISSING_RDR,
-                                     missing_ehr=MISSING_EHR)
+        query = item['query'].render(
+            project_id=project_id,
+            drc_dataset_id=drc_dataset_id,
+            match=MATCH,
+            no_match=NO_MATCH,
+            missing_rdr=MISSING_RDR,
+            missing_ehr=MISSING_EHR,
+            gender_case_when_conditions=get_gender_comparision_case_statement())
         job = client.query(query)
         job.result()
 
@@ -100,8 +92,7 @@ def identify_rdr_ehr_match(client,
         match=MATCH,
         no_match=NO_MATCH,
         missing_rdr=MISSING_RDR,
-        missing_ehr=MISSING_EHR,
-        gender_case_when_conditions=get_gender_comparision_case_statement())
+        missing_ehr=MISSING_EHR)
 
     LOGGER.info(f"Matching fields for {hpo_id}.")
     job = client.query(match_query)

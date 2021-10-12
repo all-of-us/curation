@@ -24,9 +24,6 @@ GENDER_MATCH = [{
         EHR_SEX: "OTHER"
     }, {
         RDR_SEX: "SexAtBirth_SexAtBirthNoneOfThese",
-        EHR_SEX: "FEMALE"
-    }, {
-        RDR_SEX: "SexAtBirth_SexAtBirthNoneOfThese",
         EHR_SEX: "AMBIGUOUS"
     }]
 }, {
@@ -101,6 +98,9 @@ GENDER_MATCH = [{
     }, {
         RDR_SEX: "SexAtBirth_SexAtBirthNoneOfThese",
         EHR_SEX: "MALE"
+    }, {
+        RDR_SEX: "SexAtBirth_SexAtBirthNoneOfThese",
+        EHR_SEX: "FEMALE"
     }]
 }, {
     MATCH_STATUS:
