@@ -27,7 +27,7 @@ LOGGER = logging.getLogger(__name__)
 CREATE_OR_REPLACE_TABLE_TPL = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project_id}}.{{dataset_id}}.{{table_id}}` (
 {% for field in schema -%}
-  {{ field.name }} {{ field.field_type }} {% if field.mode == 'required' -%} NOT NULL {%- endif %}
+  {{ field.name }} {{ field.field_type }} {% if field.mode.lower() == 'required' -%} NOT NULL {%- endif %}
   {% if field.description %} OPTIONS (description="{{ field.description }}") {%- endif %}
   {% if loop.nextitem %},{% endif -%}
 {%- endfor %} )

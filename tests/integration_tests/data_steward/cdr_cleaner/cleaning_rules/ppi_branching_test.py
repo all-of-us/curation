@@ -81,14 +81,14 @@ def _default_value_for(field: bigquery.SchemaField) -> Optional[Any]:
     :param field: the field
     :return: a value
     """
-    if field.name.endswith('concept_id'):
+    if field.name.lower().endswith('concept_id'):
         return 0
-    if field.mode == 'required':
-        if field.field_type == 'integer':
+    if field.mode.lower() == 'required':
+        if field.field_type.lower() == 'integer':
             return 0
-        elif field.field_type == 'date':
+        elif field.field_type.lower() == 'date':
             return datetime.datetime.today().strftime('%Y-%m-%d')
-        elif field.field_type == 'timestamp':
+        elif field.field_type.lower() == 'timestamp':
             return time.time()
     return None
 
