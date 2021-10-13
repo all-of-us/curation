@@ -157,7 +157,7 @@ FROM `{{ project_id }}.{{ post_deid_dataset }}.{{ table_name }}`
 WHERE {{ column_name }} IN (
     SELECT concept_id
     FROM `{{ project_id }}.{{ post_deid_dataset }}.concept`
-    WHEREREGEXP_CONTAINS(concept_code, r"^E8[0-4][0-9]")
+    WHERE REGEXP_CONTAINS(concept_code, r"^E8[0-4][0-9]")
     AND NOT REGEXP_CONTAINS(concept_code, r"E8[0-4][0-9][\d]")
 )
 """
