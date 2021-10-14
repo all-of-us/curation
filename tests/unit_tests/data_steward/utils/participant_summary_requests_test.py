@@ -15,7 +15,7 @@ The intent of this module is to check that GCR access token is generated properl
 # Python imports
 from unittest import TestCase
 from unittest.mock import patch, MagicMock
-from numpy.core.numeric import NaN
+from requests import Session
 
 # Third Party imports
 import pandas
@@ -25,6 +25,7 @@ import numpy as np
 # Project imports
 import utils.participant_summary_requests as psr
 from common import PS_API_VALUES
+from tests.test_util import FakeHTTPResponse
 
 
 class ParticipantSummaryRequestsTest(TestCase):
@@ -43,10 +44,11 @@ class ParticipantSummaryRequestsTest(TestCase):
         self.fake_hpo = 'foo_hpo'
         self.destination_table = 'bar_dataset._deactivated_participants'
 
+        self.fake_token = 'fake_token'
         self.fake_url = 'www.fake_site.com'
         self.fake_headers = {
             'content-type': 'application/json',
-            'Authorization': 'Bearer ya29.12345'
+            'Authorization': f'Bearer {self.fake_token}'
         }
 
         self.columns = ['participantId', 'suspensionStatus', 'suspensionTime']
@@ -63,7 +65,7 @@ class ParticipantSummaryRequestsTest(TestCase):
             333, 'foo_first', 'foo_middle', 'foo_last', 'foo_street_address',
             'foo_street_address_2', 'foo_city', 'foo_state', '12345',
             '1112223333', 'foo_email', '1900-01-01', 'SexAtBirth_Male'
-        ], [444, 'bar_first', 'bar_last']]
+        ], [444, 'bar_first', np.nan, 'bar_last']]
 
         self.updated_org_participant_information = [[
             333, 'foo_first', 'foo_middle', 'foo_last', 'foo_street_address',
@@ -139,6 +141,89 @@ class ParticipantSummaryRequestsTest(TestCase):
                 }
             }]
         }
+        # Used in test_process_digital_health_data_to_df. Mimics data from the RDR PS API.
+        self.api_digital_health_data = [{
+            'fullUrl':
+                f'https//{self.project_id}.appspot.com/rdr/v1/Participant/P123/Summary',
+            'resource': {
+                'participantId': 'P123',
+                'digitalHealthSharingStatus': {
+                    'fitbit': {
+                        'status': 'YES',
+                        'history': [{
+                            'status': 'YES',
+                            'authoredTime': '2020-01-01T12:01:01Z'
+                        }],
+                        'authoredTime': '2020-01-01T12:01:01Z'
+                    }
+                }
+            }
+        }, {
+            'fullUrl':
+                f'https//{self.project_id}.appspot.com/rdr/v1/Participant/P234/Summary',
+            'resource': {
+                'participantId': 'P234',
+                'digitalHealthSharingStatus': {
+                    'fitbit': {
+                        'status': 'YES',
+                        'history': [{
+                            'status': 'YES',
+                            'authoredTime': '2021-01-01T12:01:01Z'
+                        }],
+                        'authoredTime': '2021-01-01T12:01:01Z'
+                    },
+                    'appleHealthKit': {
+                        'status': 'YES',
+                        'history': [{
+                            'status': 'YES',
+                            'authoredTime': '2021-02-01T12:01:01Z'
+                        }, {
+                            'status': 'NO',
+                            'authoredTime': '2020-06-01T12:01:01Z'
+                        }, {
+                            'status': 'YES',
+                            'authoredTime': '2020-03-01T12:01:01Z'
+                        }],
+                        'authoredTime': '2021-02-01T12:01:01Z'
+                    }
+                }
+            }
+        }]
+        # Used in test_process_digital_health_data_to_df
+        self.stored_digital_health_data = [{
+            'person_id': 123,
+            'wearable': 'fitbit',
+            'status': 'YES',
+            'history': [{
+                'status': 'YES',
+                'authored_time': '2020-01-01T12:01:01Z'
+            }],
+            'authored_time': '2020-01-01T12:01:01Z'
+        }, {
+            'person_id': 234,
+            'wearable': 'fitbit',
+            'status': 'YES',
+            'history': [{
+                'status': 'YES',
+                'authored_time': '2021-01-01T12:01:01Z'
+            }],
+            'authored_time': '2021-01-01T12:01:01Z'
+        }, {
+            'person_id': 234,
+            'wearable': 'appleHealthKit',
+            'status': 'YES',
+            'history': [{
+                'status': 'YES',
+                'authored_time': '2021-02-01T12:01:01Z'
+            }, {
+                'status': 'NO',
+                'authored_time': '2020-06-01T12:01:01Z'
+            }, {
+                'status': 'YES',
+                'authored_time': '2020-03-01T12:01:01Z'
+            }],
+            'authored_time': '2021-02-01T12:01:01Z'
+        }]
 
     @patch('utils.participant_summary_requests.default')
     @patch('utils.participant_summary_requests.auth')
@@ -166,15 +251,62 @@ class ParticipantSummaryRequestsTest(TestCase):
 
         self.assertEqual(mock_auth.delegated_credentials().token, actual_token)
 
-    @patch('utils.participant_summary_requests.requests.get')
-    def test_get_participant_data(self, mock_get):
-        mock_get.return_value.status_code = 200
-        mock_get.return_value.json.return_value = self.json_response_entry
+    @patch('utils.participant_summary_requests.BASE_URL',
+           'www.fake_site.appspot.com')
+    @patch('utils.participant_summary_requests.MAX_TIMEOUT', 1)
+    @patch('utils.participant_summary_requests.MAX_RETRIES', 3)
+    @patch('utils.participant_summary_requests.BACKOFF_FACTOR', 0.2)
+    @patch('utils.participant_summary_requests.get_access_token')
+    @patch.object(Session, 'get')
+    def test_fake_website(self, mock_get, mock_token):
+        mock_token.return_value = self.fake_token
 
-        expected_response = psr.get_participant_data(self.fake_url,
-                                                     self.fake_headers)
+        status_code = 500
+        error_msg = 'Error: API request failed because <Response [{status_code}]>'
+        mock_get.return_value = FakeHTTPResponse(status_code=status_code)
+        with self.assertRaises(RuntimeError) as e:
+            _ = psr.get_participant_data(self.fake_url, self.fake_headers)
+        self.assertEqual(str(e.exception),
+                         error_msg.format(status_code=status_code))
+        self.assertEqual(mock_get.call_count, 1)
 
-        self.assertEqual(expected_response, self.participant_data)
+        status_code = 404
+        mock_get.return_value = FakeHTTPResponse(status_code=status_code)
+        with self.assertRaises(RuntimeError) as e:
+            _ = psr.get_participant_data(self.fake_url, self.fake_headers)
+        self.assertEqual(str(e.exception),
+                         error_msg.format(status_code=status_code))
+        self.assertEqual(mock_get.call_count, 2)
+
+    @patch('utils.participant_summary_requests.get_access_token')
+    @patch('utils.participant_summary_requests.Session')
+    def test_get_participant_data(self, mock_get_session, mock_token):
+        mock_token.return_value = self.fake_token
+        mock_session = MagicMock()
+        mock_get_session.return_value = mock_session
+        mock_session.get.return_value.status_code = 200
+        mock_session.get.return_value.json.return_value = self.json_response_entry
+
+        actual_response = psr.get_participant_data(self.fake_url,
+                                                   self.fake_headers)
+
+        self.assertEqual(actual_response, self.participant_data)
+
+    def test_camel_case_to_snake_case(self):
+        expected = 'participant_id'
+        test = 'participantId'
+        actual = psr.camel_to_snake_case(test)
+        self.assertEqual(expected, actual)
+
+        expected = 'sample_order_status1_p_s08_time'
+        test = 'sampleOrderStatus1PS08Time'
+        actual = psr.camel_to_snake_case(test)
+        self.assertEqual(expected, actual)
+
+        expected = 'street_address2'
+        test = 'streetAddress2'
+        actual = psr.camel_to_snake_case(test)
+        self.assertEqual(expected, actual)
 
     @patch('utils.participant_summary_requests.store_participant_data')
     @patch('utils.participant_summary_requests.get_deactivated_participants')
@@ -232,7 +364,9 @@ class ParticipantSummaryRequestsTest(TestCase):
             self.updated_site_participant_information,
             columns=psr.FIELDS_OF_INTEREST_FOR_VALIDATION)
 
-        expected_dataframe = expected_dataframe.rename(columns=updated_fields)
+        expected_dataframe.fillna(value=np.nan, inplace=True)
+
+        expected_dataframe.rename(columns=updated_fields, inplace=True)
 
         # Tests
         actual_dataframe = psr.get_site_participant_information(
@@ -357,3 +491,12 @@ class ParticipantSummaryRequestsTest(TestCase):
                           self.columns)
         self.assertRaises(RuntimeError, psr.get_deactivated_participants,
                           self.project_id, None)
+
+    def test_process_digital_health_data_to_df(self):
+        column_map = {'participant_id': 'person_id'}
+
+        actual = psr.process_digital_health_data_to_json(
+            self.api_digital_health_data,
+            psr.FIELDS_OF_INTEREST_FOR_DIGITAL_HEALTH, column_map)
+
+        self.assertCountEqual(actual, self.stored_digital_health_data)

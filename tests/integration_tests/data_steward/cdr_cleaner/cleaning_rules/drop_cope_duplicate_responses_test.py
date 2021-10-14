@@ -112,6 +112,7 @@ VALUES
    'phq_9_5', 'COPE_A_161', 444444444),
    (567, 2222222, 3044964, DATE('2020-07-15'), TIMESTAMP('2020-07-15'), 45905771, 1333276,
    'phq_9_4', 'COPE_A_75', 555555555),
+   -- 567 is sandboxed and 678 is retained since it has higher observation_id --
    (678, 2222222, 3044964, DATE('2020-07-15'), TIMESTAMP('2020-07-15'), 45905771, 1333276,
    'phq_9_4', 'COPE_A_75', 555555555),
    (789, 2222222, 3044964, DATE('2020-07-15'), TIMESTAMP('2020-07-15'), 45905771, 1333276,
@@ -142,11 +143,11 @@ VALUES (2222222, 333333333, '4', 'jul' ),
                 '.'.join([self.fq_dataset_name, 'observation']),
             'fq_sandbox_table_name':
                 self.fq_sandbox_table_names[0],
-            'loaded_ids': [123, 234, 345, 456, 567, 678, 789, 980],
-            'sandboxed_ids': [345, 678],
+            'loaded_ids': [123, 234, 345, 456, 567, 678, 789, 890],
+            'sandboxed_ids': [345, 567],
             'fields': ['observation_id', 'questionnaire_response_id'],
             'cleaned_values': [(123, 111111111), (234, 222222222),
-                               (456, 444444444), (567, 555555555),
+                               (456, 444444444), (678, 555555555),
                                (789, 555555555), (890, 666666666)]
         }]
 

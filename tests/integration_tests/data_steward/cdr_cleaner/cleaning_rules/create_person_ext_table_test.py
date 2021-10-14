@@ -95,7 +95,7 @@ class CreatePersonExtTableTest(BaseTest.CleaningRulesTestBase):
               (345, 0, 1981, 0, 0),
               (678, 0, 1982, 0, 0),
               (910, 0, 1983, 0, 0),
-              (1122, 0, 1984, 0, 0)
+              (1112, 0, 1984, 0, 0)
             """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
         # test data for observation table
@@ -150,7 +150,8 @@ class CreatePersonExtTableTest(BaseTest.CleaningRulesTestBase):
               (111, 'PPI/PM'),
               (222, 'PPI/PM'),
               (333, 'PPI/PM'),
-              (444, 'PPI/PM')
+              (444, 'PPI/PM'),
+              (9910, 'PPI/PM')
                     """).render(project_id=self.project_id,
                                 dataset_id=self.dataset_id)
 
@@ -184,8 +185,8 @@ class CreatePersonExtTableTest(BaseTest.CleaningRulesTestBase):
                                 45878463, 1585847, 'SexAtBirth_Female'),
                                (910, 'PPI/PM', 1585266, 'PII State: CA',
                                 45878463, 1585847, 'SexAtBirth_Female'),
-                               (1112, 'PPI/PM', 1585266, 'PII State: CA', 0, 0,
-                                'No matching concept')]
+                               (1112, 'PPI/PM', 1585266, 'PII State: CA',
+                                45878463, 1585848, 'No matching concept')]
         }]
 
         self.default_test(tables_and_counts)

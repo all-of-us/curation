@@ -26,7 +26,7 @@ FIELD_DELIMITER = '\t'
 SELECT_TPL = JINJA_ENV.from_string("""
     SELECT 
     {% for field in fields %}
-        {% if field.field_type == 'date' %}
+        {% if field.field_type.lower() == 'date' %}
             PARSE_DATE('%Y%m%d', {{ field['name'] }})
         {% else %}
             {{ field.name }}
@@ -128,9 +128,9 @@ def safe_schema_for(table: str) -> List[SchemaField]:
     """
     return [
         SchemaField(
-            f.name,
-            'string' if f.field_type in DATE_TIME_TYPES else f.field_type,
-            f.mode, f.description) for f in bq.get_table_schema(table)
+            f.name, 'string' if f.field_type.lower() in DATE_TIME_TYPES else
+            f.field_type, f.mode, f.description)
+        for f in bq.get_table_schema(table)
     ]
 
 

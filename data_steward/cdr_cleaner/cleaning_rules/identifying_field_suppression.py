@@ -103,11 +103,11 @@ class IDFieldSuppression(BaseCleaningRule):
             statements = []
             for item in schema:
                 if item.name in fields:
-                    if item.mode == 'nullable':
+                    if item.mode.lower() == 'nullable':
                         value = 'NULL'
-                    elif item.field_type == 'integer':
+                    elif item.field_type.lower() == 'integer':
                         value = 0
-                    elif item.field_type == 'string':
+                    elif item.field_type.lower() == 'string':
                         value = ''
                     else:
                         raise RuntimeError(

@@ -43,7 +43,7 @@ WHERE
   FROM (
     SELECT
       observation_id,
-      ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY observation_date DESC) AS rn
+      ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY observation_date DESC, observation_id) AS rn
     FROM
       `{{project_id}}.{{dataset_id}}.observation`
     WHERE

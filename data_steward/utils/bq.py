@@ -26,7 +26,7 @@ LOGGER = logging.getLogger(__name__)
 CREATE_OR_REPLACE_TABLE_TPL = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project_id}}.{{dataset_id}}.{{table_id}}` (
 {% for field in schema -%}
-  {{ field.name }} {{ field.field_type }} {% if field.mode == 'required' -%} NOT NULL {%- endif %}
+  {{ field.name }} {{ field.field_type }} {% if field.mode.lower() == 'required' -%} NOT NULL {%- endif %}
   {% if field.description %} OPTIONS (description="{{ field.description }}") {%- endif %}
   {% if loop.nextitem %},{% endif -%}
 {%- endfor %} )
@@ -110,9 +110,8 @@ def get_table_schema(table_name, fields=None):
     for column in fields:
         name = column.get('name')
         field_type = column.get('type')
-        mode = column.get('mode')
-        description = column.get('description')
-        column_def = bigquery.SchemaField(name, field_type, mode, description)
+        column_def = bigquery.SchemaField(name,
+                                          field_type).from_api_repr(column)
 
         schema.append(column_def)
 

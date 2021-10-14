@@ -69,6 +69,13 @@ class BqTest(TestCase):
         self.updated = {'tag': '', 'label': 'new_value', 'new_tag': ''}
         self.dataset_ref = DatasetReference(self.project_id, self.dataset_id)
 
+    def test_get_table_schema(self):
+        actual_fields = bq.get_table_schema('digital_health_sharing_status')
+
+        for field in actual_fields:
+            if field.field_type.upper() == "RECORD":
+                self.assertEqual(len(field.fields), 2)
+
     def test_define_dataset(self):
         # Tests if project_id is given
         self.assertRaises(RuntimeError, bq.define_dataset, None,
@@ -205,9 +212,9 @@ class BqTest(TestCase):
 
     def _mock_client_with(self, table_ids):
         """
-        Get a mock client 
-        :param table_ids: 
-        :return: 
+        Get a mock client
+        :param table_ids:
+        :return:
         """
         full_table_ids = [
             f'{self.project_id}.{self.dataset_id}.{table_id}'

@@ -52,7 +52,7 @@ class UpdateFieldsNumbersAsStringsTest(BaseTest.CleaningRulesTestBase):
             (1234567, 3333, 715723, DATE('2020-01-20'), 45905771, NULL, '10', 'lifestyle_2_xx12_cope_a_152'),
             (12345678, 4444, 1333015, DATE('2017-11-20'), 45905771, 30, 'test', 'basics_xx'),
             (123456789, 5555, 1333118, DATE('2015-10-13'), 45905771, NULL, '40', 'FAKE'),
-            (123456781, 6666, 1333118, DATE('2015-10-13'), 45905771, NULL, 'PMI Skip', 'cdc_covid_19_n_a2')
+            (1234567891, 6666, 1333118, DATE('2015-10-13'), 45905771, NULL, 'PMI Skip', 'cdc_covid_19_n_a2')
             """)
         ]
 
@@ -93,7 +93,7 @@ class UpdateFieldsNumbersAsStringsTest(BaseTest.CleaningRulesTestBase):
 
         super().setUp()
 
-    def test(self):
+    def test_update_fields_numbers_as_strings(self):
         """
         Tests that the specifications for the SANDBOX_QUERY and NUMBERS_AS_STRINGS_QUERY
         perform as designed.

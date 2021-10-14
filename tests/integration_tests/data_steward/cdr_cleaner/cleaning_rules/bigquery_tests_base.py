@@ -212,19 +212,9 @@ class BaseTest:
                        f"Response returned these values {response_list}")
             self.assertEqual(len(expected_values), len(response_list), message)
 
-            # assert matches for lists of tuple data.  e.g. list of returned fields
-            for value_tuple in expected_values:
-                for result in response_list:
-                    if value_tuple[0] == result[0]:
-                        # have to get the response in this format.  else,
-                        # a comparison of a tuple and a Row object fails
-                        result_tuple = result[:]
-                        message = (
-                            f"Assertion for table {fq_table_name} failed.\n"
-                            f"The result tuple {result_tuple} doesn't match the "
-                            f"expected value tuple {value_tuple}\n{response_list}\n"
-                        )
-                        self.assertEqual(value_tuple, result_tuple, message)
+            # assert matches for lists of tuple data regardless of order.  e.g. list of returned fields
+            result_tuples = [result[:] for result in response_list]
+            self.assertCountEqual(expected_values, result_tuples)
 
     class CleaningRulesTestBase(BigQueryTestBase):
         """
