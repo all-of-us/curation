@@ -26,7 +26,7 @@ FIELD_DELIMITER = '\t'
 SELECT_TPL = JINJA_ENV.from_string("""
     SELECT 
     {% for field in fields %}
-        {% if field.field_type == 'date' %}
+        {% if field.field_type.lower() == 'date' %}
             PARSE_DATE('%Y%m%d', {{ field['name'] }})
         {% else %}
             {{ field.name }}
