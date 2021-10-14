@@ -116,9 +116,12 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
         self.client = client
 
         # reinitializing self.affected_tables
-        LOGGER.debug("reinitializing self.affected_tables to actual tables available")
+        LOGGER.debug(
+            "reinitializing self.affected_tables to actual tables available")
         tables_list = self.client.list_tables(self.dataset_id)
-        self.affected_tables = [table_item.table_id for table_item in tables_list]
+        self.affected_tables = [
+            table_item.table_id for table_item in tables_list
+        ]
 
     def get_sandbox_tablenames(self):
         """
