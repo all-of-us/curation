@@ -20,6 +20,8 @@ import json
 import logging
 from typing import List, Dict
 from requests import Session
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 # Third party imports
 import pandas
@@ -50,6 +52,14 @@ to the Curation naming convention in the `get_site_participant_information` func
 FIELDS_OF_INTEREST_FOR_DIGITAL_HEALTH = [
     'participantId', 'digitalHealthSharingStatus'
 ]
+
+BASE_URL = 'https://{api_project_id}.appspot.com/rdr/v1/ParticipantSummary'
+
+# Retry parameters
+STATUS_FORCELIST = [500, 502, 503, 504]
+MAX_RETRIES = 5
+BACKOFF_FACTOR = 0.5
+MAX_TIMEOUT = 62
 
 
 def get_access_token():
@@ -87,7 +97,7 @@ def get_participant_data(api_project_id: str,
     :return: list of data fetched from the ParticipantSummary API
     """
     # Base /ParticipantSummary endpoint to fetch information about the participant
-    url = f'https://{api_project_id}.appspot.com/rdr/v1/ParticipantSummary'
+    url = BASE_URL.format(api_project_id=api_project_id)
 
     done = False
     participant_data = []
@@ -100,11 +110,22 @@ def get_participant_data(api_project_id: str,
     }
 
     session = Session()
+    retries = Retry(total=MAX_RETRIES,
+                    read=MAX_RETRIES,
+                    connect=MAX_RETRIES,
+                    backoff_factor=BACKOFF_FACTOR,
+                    status_forcelist=STATUS_FORCELIST)
+    session.mount('https://', HTTPAdapter(max_retries=retries))
+    session.mount('http://', HTTPAdapter(max_retries=retries))
 
     while not done:
-        resp = session.get(url, headers=headers, params=params)
+        resp = session.get(url,
+                           headers=headers,
+                           params=params,
+                           timeout=MAX_TIMEOUT)
         if not resp or resp.status_code != 200:
-            LOGGER.warning(f'Error: API request failed because {resp}')
+            # Session has a backoff implemented, meaning a failure indicates an error with the API server, so quit
+            raise RuntimeError(f'Error: API request failed because {resp}')
         else:
             LOGGER.info(f'Fetching data from PS API using params:{params}')
             r_json = resp.json()
@@ -368,7 +389,7 @@ def get_digital_health_information(project_id: str):
         'suspensionStatus': 'NOT_SUSPENDED',
         'withdrawalStatus': 'NOT_WITHDRAWN',
         '_sort': 'participantId',
-        '_count': '5000'
+        '_count': '2500'
     }
 
     participant_data = get_participant_data(

@@ -15,6 +15,7 @@ The intent of this module is to check that GCR access token is generated properl
 # Python imports
 from unittest import TestCase
 from unittest.mock import patch, MagicMock
+from requests import Session
 
 # Third Party imports
 import pandas
@@ -24,6 +25,7 @@ import numpy as np
 # Project imports
 import utils.participant_summary_requests as psr
 from common import PS_API_VALUES
+from tests.test_util import FakeHTTPResponse
 
 
 class ParticipantSummaryRequestsTest(TestCase):
@@ -248,6 +250,33 @@ class ParticipantSummaryRequestsTest(TestCase):
         mock_auth.delegated_credentials().refresh.assert_called_once_with(req)
 
         self.assertEqual(mock_auth.delegated_credentials().token, actual_token)
+
+    @patch('utils.participant_summary_requests.BASE_URL',
+           'www.fake_site.appspot.com')
+    @patch('utils.participant_summary_requests.MAX_TIMEOUT', 1)
+    @patch('utils.participant_summary_requests.MAX_RETRIES', 3)
+    @patch('utils.participant_summary_requests.BACKOFF_FACTOR', 0.2)
+    @patch('utils.participant_summary_requests.get_access_token')
+    @patch.object(Session, 'get')
+    def test_fake_website(self, mock_get, mock_token):
+        mock_token.return_value = self.fake_token
+
+        status_code = 500
+        error_msg = 'Error: API request failed because <Response [{status_code}]>'
+        mock_get.return_value = FakeHTTPResponse(status_code=status_code)
+        with self.assertRaises(RuntimeError) as e:
+            _ = psr.get_participant_data(self.fake_url, self.fake_headers)
+        self.assertEqual(str(e.exception),
+                         error_msg.format(status_code=status_code))
+        self.assertEqual(mock_get.call_count, 1)
+
+        status_code = 404
+        mock_get.return_value = FakeHTTPResponse(status_code=status_code)
+        with self.assertRaises(RuntimeError) as e:
+            _ = psr.get_participant_data(self.fake_url, self.fake_headers)
+        self.assertEqual(str(e.exception),
+                         error_msg.format(status_code=status_code))
+        self.assertEqual(mock_get.call_count, 2)
 
     @patch('utils.participant_summary_requests.get_access_token')
     @patch('utils.participant_summary_requests.Session')
