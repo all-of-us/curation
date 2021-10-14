@@ -30,8 +30,8 @@ pd.set_option('display.width', None)
 # -
 
 # to_include = ['DC-1370', 'DC-1377', 'DC-1346', 'DC-1348', 'DC-1355', 'DC-1357', 'DC-1359',
-#             'DC-1362', 'DC-1364', 'DC-1366', 'DC-1368', 'DC-1373',
-#             'DC-1380', 'DC-1382', 'DC-1388', 'DC-1496']
+#             'DC-1362', 'DC-1364', 'DC-1366', 'DC-1368',
+#             'DC-1373', 'DC-1382', 'DC-1388', 'DC-1496']
 to_include = []
 checks = run_qc(project_id,
                 post_deid_dataset,
@@ -50,6 +50,7 @@ display_check_summary_by_rule(checks)
 display_check_detail_of_rule(checks, 'DC-1370')
 
 # # [DC-1377: All Zip Code Values are generalized](https://precisionmedicineinitiative.atlassian.net/browse/DC-1377)
+# [DC-1380: All Zip Code Values are transformed](https://precisionmedicineinitiative.atlassian.net/browse/DC-1380)
 
 display_check_detail_of_rule(checks, 'DC-1377')
 
@@ -92,10 +93,6 @@ display_check_detail_of_rule(checks, 'DC-1368')
 # # [DC-1373: Identifying field suppression works](https://precisionmedicineinitiative.atlassian.net/browse/DC-1373)
 
 display_check_detail_of_rule(checks, 'DC-1373')
-
-# # [DC-1380: Generalized Zip Code Values are Aggregated](https://precisionmedicineinitiative.atlassian.net/browse/DC-1380)
-
-display_check_detail_of_rule(checks, 'DC-1380')
 
 # # [DC-1382: Record Suppression of some cancer condition](https://precisionmedicineinitiative.atlassian.net/browse/DC-1382)
 

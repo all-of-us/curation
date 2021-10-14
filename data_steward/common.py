@@ -224,6 +224,8 @@ COPE_SURVEY_MAP = 'cope_survey_semantic_version_map'
 
 ZIP3_LOOKUP = 'zip3_lookup'
 
+ZIP_CODE_AGGREGATION_MAP = 'zip_code_aggregation_map'
+
 # Participant Summary
 DRC_OPS = 'drc_ops'
 PS_API_VALUES = 'ps_api_values'

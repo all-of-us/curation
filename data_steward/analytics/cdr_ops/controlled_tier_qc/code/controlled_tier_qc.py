@@ -16,7 +16,7 @@ from analytics.cdr_ops.controlled_tier_qc.code.check_field_suppression import (
     check_field_freetext_response_suppression,
     check_field_geolocation_records_suppression)
 from analytics.cdr_ops.controlled_tier_qc.code.check_concept_suppression import check_concept_suppression
-from analytics.cdr_ops.controlled_tier_qc.code.check_mapping import check_mapping, check_site_mapping, check_mapping_zipcode_generalization, check_mapping_zipcode_transformation
+from analytics.cdr_ops.controlled_tier_qc.code.check_mapping import check_mapping, check_site_mapping, check_mapping_zipcode_generalization
 
 # funtions from utils
 from analytics.cdr_ops.controlled_tier_qc.utils.helpers import highlight, load_check_description, load_tables_for_check, filter_data_by_rule, pretty_print
