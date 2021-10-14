@@ -144,13 +144,13 @@ def is_deid_label_or_id(client, project_id, dataset_id):
     :param dataset_id: dataset to identify
     :return: Boolean indicating if a dataset is a deid dataset
     """
-    label = is_labeled_deid(client, project_id, dataset_id)
+    label = _is_labeled_deid(client, project_id, dataset_id)
     if label is None:
         return is_deid_dataset(dataset_id)
     return label
 
 
-def is_labeled_deid(client, project_id, dataset_id):
+def _is_labeled_deid(client, project_id, dataset_id):
     """
     Returns boolean indicating if a dataset is a deid dataset using the label 'de_identified'
 
@@ -159,7 +159,9 @@ def is_labeled_deid(client, project_id, dataset_id):
     :param dataset_id: Identifies the dataset
     :return: Boolean indicating if the dataset is labeled a deid dataset or None if unlabeled
     """
+    # when called by is_deid_label_or_id, return None so name can be checked.
     if not client:
+        LOGGER.debug("Client not available.  Labels can't be checked.")
         return None
 
     dataset = client.get_dataset(f'{project_id}.{dataset_id}')
