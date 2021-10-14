@@ -221,8 +221,8 @@ def infer_rule(clazz, project_id, dataset_id, sandbox_dataset_id, table_namer,
             instance = clazz(project_id, dataset_id, sandbox_dataset_id,
                              table_namer, **kwargs)
         except TypeError as e:
-            LOGGER.exception(f"{clazz.__name__} does not accept the "
-                             f"`table_namer` property yet.")
+            LOGGER.warning(f"{clazz.__name__} does not accept the "
+                           f"`table_namer` property yet.")
             instance = clazz(project_id, dataset_id, sandbox_dataset_id,
                              **kwargs)
         query_function = instance.get_query_specs

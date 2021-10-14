@@ -109,31 +109,27 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
         # To store dataframe in a BQ dataset table named _deactivated_participants
         psr.store_participant_data(df, self.project_id, self.destination_table)
 
-        LOGGER.info(f"Finished stored participant records in: "
+        LOGGER.info(f"Finished storing participant records in: "
                     f"`{self.destination_table}`")
 
         LOGGER.debug("instantiating class client object")
         self.client = client
 
+        # reinitializing self.affected_tables
+        LOGGER.debug("reinitializing self.affected_tables to actual tables available")
+        tables_list = self.client.list_tables(self.dataset_id)
+        self.affected_tables = [table_item.table_id for table_item in tables_list]
+
     def get_sandbox_tablenames(self):
         """
         Return a list table names created to backup deleted data.
         """
-        LOGGER.info("Generating static list of possible sandbox table names")
-
-        if self.client:
-            LOGGER.info(f"Getting live table names from: `{self.dataset_id}`")
-            tables_list = self.client.list_tables(self.dataset_id)
-
-            table_names = [table_item.table_id for table_item in tables_list]
-
-        else:
-            LOGGER.info("Getting table names from self.affected_tables param.")
-            table_names = self.affected_tables
+        LOGGER.info("Generating list of possible sandbox table names "
+                    "from self.affected_tables")
 
         return [
-            rdp.create_and_get_sandbox_table_name(table, self.table_namer)
-            for table in table_names
+            rdp.get_deactivated_sandbox_table_name(table, self.table_namer)
+            for table in self.affected_tables
         ]
 
     def setup_validation(self, client):

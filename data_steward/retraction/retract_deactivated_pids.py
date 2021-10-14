@@ -203,7 +203,7 @@ def generate_queries(client,
     for table in table_dates_info:
         table_ref = gbq.TableReference.from_string(
             f"{project_id}.{dataset_id}.{table}")
-        sandbox_table = create_and_get_sandbox_table_name(table, data_stage_id)
+        sandbox_table = get_deactivated_sandbox_table_name(table, data_stage_id)
         sandbox_ref = gbq.TableReference.from_string(
             f"{project_id}.{sandbox_dataset_id}.{sandbox_table}")
         date_cols = get_date_cols_dict(table_dates_info[table])
@@ -234,7 +234,7 @@ def generate_queries(client,
     return sandbox_queries + clean_queries
 
 
-def create_and_get_sandbox_table_name(table, data_stage=None):
+def get_deactivated_sandbox_table_name(table, data_stage=None):
     """
     Return formatted sandbox table name.
     """

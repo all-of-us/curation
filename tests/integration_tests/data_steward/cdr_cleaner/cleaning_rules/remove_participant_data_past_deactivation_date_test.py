@@ -87,9 +87,13 @@ class RemoveParticipantDataPastDeactivationDateTest(
          observation_type_concept_id, observation_source_concept_id)
         VALUES
         -- Values to exist after running the cleaning rule --
+        -- 801 is before the user deactivates --
+        -- 802, the user doesn't deactivate --
           (801, 1, 1585899, date('2019-05-01'), 45905771, 111111),
           (802, 2, 1585899, date('2019-05-01'), 45905771, 222222),
         -- Values that should be removed by the cleaning rule --
+        -- 804 is after person 1 deactivates --
+        -- 805 is after user 3 deactivates --
           (804, 1, 1585899, date('2020-05-01'), 45905771, null),
           (805, 3, 1585899, date('2020-05-01'), 45905771, 45)
         """)
