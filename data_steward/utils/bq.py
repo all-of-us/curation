@@ -11,7 +11,6 @@ import warnings
 # Third-party imports
 from google.api_core.exceptions import GoogleAPIError, BadRequest
 from google.cloud import bigquery
-from google.cloud.bigquery.schema import _parse_schema_resource
 from google.auth import default
 
 # Project Imports

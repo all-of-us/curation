@@ -2,7 +2,7 @@
   {
     "type": "integer",
     "name": "person_id",
-    "mode": "nullable",
+    "mode": "required",
     "description": "Synonymous with the AoU Participant_ID"
   },
   {

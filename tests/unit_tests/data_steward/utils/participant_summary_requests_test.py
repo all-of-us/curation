@@ -139,6 +139,7 @@ class ParticipantSummaryRequestsTest(TestCase):
                 }
             }]
         }
+        # Used in test_process_digital_health_data_to_df. Mimics data from the RDR PS API.
         self.api_digital_health_data = [{
             'fullUrl':
                 f'https//{self.project_id}.appspot.com/rdr/v1/Participant/P123/Summary',
@@ -186,6 +187,7 @@ class ParticipantSummaryRequestsTest(TestCase):
                 }
             }
         }]
+        # Used in test_process_digital_health_data_to_df
         self.stored_digital_health_data = [{
             'person_id': 123,
             'wearable': 'fitbit',

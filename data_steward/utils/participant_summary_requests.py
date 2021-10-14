@@ -457,10 +457,12 @@ def store_digital_health_status_data(project_id,
                                      destination_table,
                                      schema=None):
     """
-    Stores the fetched digital_health_sharing_status data in a BigQuery dataset. If the
-    table doesn't exist, it will create that table. If the table does
-    exist, it will create a partition in the designated table.
+    Stores the fetched digital_health_sharing_status data in a BigQuery dataset.
 
+    If the table doesn't exist, it will create that table. If the table does exist,
+    it will create a partition in the designated table or append to the same partition.
+    This is necessary for storing data has "RECORD" type fields which do not conform to a dataframe.
+    The data is stored using a JSON file object since it is one of the ways BigQuery expects it.
     :param project_id: identifies the project
     :param json_data: list of json objects retrieved from process_digital_health_data_to_json
     :param destination_table: fully qualified destination table name as 'project.dataset.table'
