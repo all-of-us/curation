@@ -29,7 +29,7 @@ class RetractUtilsTest(TestCase):
         dataset.labels = {"de_identified": "true"}
         self.client.update_dataset(dataset, ["labels"])
         actual = ru._is_labeled_deid(self.client, self.project_id,
-                                    self.dataset_id)
+                                     self.dataset_id)
         self.assertTrue(actual)
 
         dataset = self.client.get_dataset(
@@ -37,7 +37,7 @@ class RetractUtilsTest(TestCase):
         dataset.labels = {"de_identified": "false"}
         self.client.update_dataset(dataset, ["labels"])
         actual = ru._is_labeled_deid(self.client, self.project_id,
-                                    self.dataset_id)
+                                     self.dataset_id)
         self.assertFalse(actual)
 
         dataset = self.client.get_dataset(
@@ -45,5 +45,5 @@ class RetractUtilsTest(TestCase):
         dataset.labels = {"de_identified": None}
         self.client.update_dataset(dataset, ["labels"])
         actual = ru._is_labeled_deid(self.client, self.project_id,
-                                    self.dataset_id)
+                                     self.dataset_id)
         self.assertIsNone(actual)
