@@ -41,8 +41,8 @@ DECLARE tables DEFAULT (
 
 LOOP
   SET i = i + 1;
-  IF i > ARRAY_LENGTH(tables) THEN 
-    LEAVE; 
+  IF i > ARRAY_LENGTH(tables) THEN
+    LEAVE;
   END IF;
   EXECUTE IMMEDIATE '''DROP TABLE ''' || tables[ORDINAL(i)];
 END LOOP
@@ -53,11 +53,11 @@ def get_delete_empty_sandbox_tables_queries(project_id, sandbox_dataset_id,
                                             sandbox_tablenames):
     """
     Generate the query that drop the empty sandbox tables
-    
-    :param project_id: 
-    :param sandbox_dataset_id: 
-    :param sandbox_tablenames: 
-    :return: 
+
+    :param project_id:
+    :param sandbox_dataset_id:
+    :param sandbox_tablenames:
+    :return:
     """
 
     # If there is not sandbox tables associated with the cleaning rule, return an empty list
@@ -482,13 +482,19 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
 
     @abstractmethod
     def get_sandbox_tablenames(self):
+        """
+        Return a list or iterable of sandbox table names.
+
+        This should represent the set of sandbox tables created
+        by the cleaning rule.
+        """
         pass
 
     def sandbox_table_for(self, affected_table):
         """
         A helper function to retrieve the sandbox table name for the affected_table
-        :param affected_table: 
-        :return: 
+        :param affected_table:
+        :return:
         """
         base_name = f'{"_".join(self.issue_numbers).lower()}_{affected_table}'
         return get_sandbox_table_name(self.table_namer, base_name)

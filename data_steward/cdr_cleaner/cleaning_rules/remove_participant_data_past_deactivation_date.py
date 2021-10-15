@@ -10,23 +10,142 @@ who have deactivated from the Program.
 # Python imports
 import logging
 
-# Project imports
-import common
-from utils import bq
-import constants.cdr_cleaner.clean_cdr as cdr_consts
-import utils.participant_summary_requests as psr
-import retraction.retract_deactivated_pids as rdp
-from constants.retraction.retract_deactivated_pids import DEACTIVATED_PARTICIPANTS
-from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
-
 # Third-Party imports
 import google.cloud.bigquery as gbq
+import pandas as pd
+
+# Project imports
+import common
+import constants.bq_utils as bq_consts
+import constants.cdr_cleaner.clean_cdr as cdr_consts
+import constants.retraction.retract_deactivated_pids as consts
+import utils.participant_summary_requests as psr
+import resources
+import retraction.retract_deactivated_pids as rdp
+import retraction.retract_utils as ru
+from constants.retraction.retract_deactivated_pids import DEACTIVATED_PARTICIPANTS
+from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
+from utils import bq
 
 LOGGER = logging.getLogger(__name__)
 
 DEACTIVATED_PARTICIPANTS_COLUMNS = [
     'participantId', 'suspensionStatus', 'suspensionTime'
 ]
+
+ISSUE_NUMBERS = ["DC-686", "DC-1184", "DC-1791", "DC-1896"]
+
+TABLE_INFORMATION_SCHEMA = common.JINJA_ENV.from_string(  # language=JINJA2
+    """
+SELECT * except(is_generated, generation_expression, is_stored, is_hidden,
+is_updatable, is_system_defined, clustering_ordinal_position)
+FROM `{{project}}.{{dataset}}.INFORMATION_SCHEMA.COLUMNS`
+""")
+
+# Queries to create tables in associated sandbox with rows that will be removed per cleaning rule
+SANDBOX_QUERY = common.JINJA_ENV.from_string(  # language=JINJA2
+    """
+CREATE OR REPLACE TABLE `{{sandbox_ref.project}}.{{sandbox_ref.dataset_id}}.{{sandbox_ref.table_id}}` AS (
+SELECT t.*
+FROM `{{table_ref.project}}.{{table_ref.dataset_id}}.{{table_ref.table_id}}` t
+
+{% if is_deid %}
+JOIN `{{pid_rid_table.project}}.{{pid_rid_table.dataset_id}}.{{pid_rid_table.table_id}}` p
+ON t.person_id = p.research_id
+JOIN `{{deact_pids_table.project}}.{{deact_pids_table.dataset_id}}.{{deact_pids_table.table_id}}` d
+ON p.person_id = d.person_id
+{% else %}
+JOIN `{{deact_pids_table.project}}.{{deact_pids_table.dataset_id}}.{{deact_pids_table.table_id}}` d
+USING (person_id)
+{% endif %}
+
+{% if has_start_date %}
+WHERE (COALESCE({{end_date}}, EXTRACT(DATE FROM {{end_datetime}}),
+    {{start_date}}, EXTRACT(DATE FROM {{start_datetime}})) >= d.deactivated_date
+{% if table_ref.table_id == 'drug_exposure' %}
+OR verbatim_end_date >= d.deactivated_date)
+{% else %} )
+{% endif %}
+{% elif table_ref.table_id == 'death' %}
+WHERE COALESCE(death_date, EXTRACT(DATE FROM death_datetime)) >= d.deactivated_date
+{% elif table_ref.table_id in ['activity_summary', 'heart_rate_summary'] %}
+WHERE date >= d.deactivated_date
+{% elif table_ref.table_id in ['heart_rate_minute_level', 'steps_intraday']  %}
+WHERE datetime >= PARSE_DATETIME('%F', CAST(d.deactivated_date as STRING))
+{% elif table_ref.table_id in ['drug_era', 'condition_era', 'dose_era', 'payer_plan_period']  %}
+WHERE COALESCE({{table_ref.table_id + '_end_date'}}, {{table_ref.table_id + '_start_date'}}) >= d.deactivated_date
+{% else %}
+WHERE COALESCE({{date}}, EXTRACT(DATE FROM {{datetime}})) >= d.deactivated_date
+{% endif %})
+""")
+
+# Queries to truncate existing tables to remove deactivated EHR PIDS, two different queries for
+# tables with standard entry dates vs. tables with start and end dates
+CLEAN_QUERY = common.JINJA_ENV.from_string(  # language=JINJA2
+    """
+SELECT *
+FROM `{{table_ref.project}}.{{table_ref.dataset_id}}.{{table_ref.table_id}}`
+EXCEPT DISTINCT
+SELECT *
+FROM `{{sandbox_ref.project}}.{{sandbox_ref.dataset_id}}.{{sandbox_ref.table_id}}`
+""")
+
+
+def get_date_cols_dict(date_cols_list):
+    """
+    Converts list of date/datetime columns into dictionary mappings
+
+    Assumes each date column has a corresponding datetime column due to OMOP specifications
+    If a date column does not have a corresponding datetime column, skips it
+    Used for determining available dates based on order of precedence stated in the SANDBOX_QUERY
+    end_date > end_datetime > start_date > start_datetime. Non-conforming dates are factored into
+    the query separately, e.g. verbatim_end_date in drug_exposure
+    :param date_cols_list: list of date/datetime columns
+    :return: dictionary with mappings for START_DATE, START_DATETIME, END_DATE, END_DATETIME
+        or DATE, DATETIME
+    """
+    date_cols_dict = {}
+    for field in date_cols_list:
+        if field.endswith(consts.START_DATETIME):
+            date_cols_dict[consts.START_DATETIME] = field
+        elif field.endswith(consts.END_DATETIME):
+            date_cols_dict[consts.END_DATETIME] = field
+        elif field.endswith(consts.DATETIME):
+            date_cols_dict[consts.DATETIME] = field
+    for field in date_cols_list:
+        if field.endswith(consts.START_DATE):
+            if date_cols_dict.get(consts.START_DATETIME, '').startswith(field):
+                date_cols_dict[consts.START_DATE] = field
+        elif field.endswith(consts.END_DATE):
+            if date_cols_dict.get(consts.END_DATETIME, '').startswith(field):
+                date_cols_dict[consts.END_DATE] = field
+        elif field.endswith(consts.DATE):
+            if date_cols_dict.get(consts.DATETIME, '').startswith(field):
+                date_cols_dict[consts.DATE] = field
+    return date_cols_dict
+
+
+def get_table_dates_info(table_cols_df):
+    """
+    Returns a dict with tables containing pids and date columns
+
+    :param table_cols_df: dataframe of columns from INFORMATION_SCHEMA
+    :return: dataframe with key table and date columns as values
+    """
+    pids_tables = table_cols_df[table_cols_df['column_name'] ==
+                                'person_id']['table_name']
+    date_tables_df = table_cols_df[table_cols_df['column_name'].str.contains(
+        "date")]
+
+    dates_info = {}
+    for table in pids_tables:
+        date_cols = date_tables_df[date_tables_df['table_name'] ==
+                                   table]['column_name']
+        # exclude person since it does not contain EHR data
+        if date_cols.any() and table != 'person':
+            dates_info[table] = date_cols.to_list()
+
+    return dates_info
 
 
 class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
@@ -55,7 +174,7 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
         if not api_project_id:
             raise TypeError("`api_project_id` cannot be empty")
 
-        super().__init__(issue_numbers=['DC-1791', 'DC-1896'],
+        super().__init__(issue_numbers=ISSUE_NUMBERS,
                          description=desc,
                          affected_datasets=[cdr_consts.COMBINED],
                          project_id=project_id,
@@ -72,6 +191,96 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
         # query live datasets for table information
         self.client = None
 
+    def get_table_cols_df(self):
+        """
+        Returns a df of dataset's INFORMATION_SCHEMA.COLUMNS
+
+        :return: dataframe of columns from INFORMATION_SCHEMA
+        """
+        table_cols_df = pd.DataFrame()
+        if self.client:
+            LOGGER.info(
+                f"Getting column information from live dataset: `{self.dataset_id}`")
+            # if possible, read live table schemas
+            table_cols_query = TABLE_INFORMATION_SCHEMA.render(project=self.project_id,
+                                                               dataset=self.dataset_id)
+            table_cols_df = self.client.query(table_cols_query).to_dataframe()
+        else:
+            # if None is passed to the client, read the table data from JSON schemas
+            # generate a dataframe from schema files
+            LOGGER.info("Getting column information from schema files")
+            table_dict_list = []
+            for table in self.affected_tables:
+                table_fields = resources.fields_for(table)
+                for field in table_fields:
+                    field['table_name'] = table
+                table_dict_list.extend(table_fields)
+
+            table_cols_df = pd.DataFrame(table_dict_list)
+            table_cols_df = table_cols_df.rename(columns={"name": "column_name"})
+
+        return table_cols_df
+
+
+    def generate_queries(self,
+                         deact_pids_table_ref,
+                         pid_rid_table_ref=None,
+                         data_stage_id=None):
+        """
+        Creates queries for sandboxing and deleting records
+
+        :param deact_pids_table_ref: BigQuery table reference to dataset containing deactivated participants
+        :param pid_rid_table_ref: BigQuery table reference to dataset containing pid-rid mappings
+        :param data_stage_id: unique identifier to prepend to sandbox table names
+        :return: List of query dicts
+        :raises:
+            RuntimeError: 1. If retracting from deid dataset, pid_rid table must be specified
+                          2. If mapping or ext table does not exist, EHR data cannot be identified
+        """
+        table_cols_df = self.get_table_cols_df()
+        table_dates_info = get_table_dates_info(table_cols_df)
+        tables = table_cols_df['table_name'].to_list()
+        is_deid = ru.is_deid_label_or_id(self.client, self.project_id, self.dataset_id)
+        if is_deid and pid_rid_table_ref is None:
+            raise RuntimeError(
+                f"PID-RID mapping table must be specified for deid dataset {self.dataset_id}"
+            )
+        sandbox_queries = []
+        clean_queries = []
+        for table in table_dates_info:
+            table_ref = gbq.TableReference.from_string(
+                f"{self.project_id}.{self.dataset_id}.{table}")
+            sandbox_table = self.sandbox_table_for(table)
+            sandbox_ref = gbq.TableReference.from_string(
+                f"{self.project_id}.{self.sandbox_dataset_id}.{sandbox_table}")
+            date_cols = get_date_cols_dict(table_dates_info[table])
+            has_start_date = consts.START_DATE in date_cols
+            sandbox_queries.append({
+                cdr_consts.QUERY:
+                    SANDBOX_QUERY.render(table_ref=table_ref,
+                                         table_id=f'{table}_id',
+                                         sandbox_ref=sandbox_ref,
+                                         pid_rid_table=pid_rid_table_ref,
+                                         deact_pids_table=deact_pids_table_ref,
+                                         is_deid=is_deid,
+                                         has_start_date=has_start_date,
+                                         **date_cols)
+            })
+
+            clean_queries.append({
+                cdr_consts.QUERY:
+                    CLEAN_QUERY.render(table_ref=table_ref,
+                                       sandbox_ref=sandbox_ref),
+                cdr_consts.DESTINATION_TABLE:
+                    table,
+                cdr_consts.DESTINATION_DATASET:
+                    self.dataset_id,
+                cdr_consts.DISPOSITION:
+                    bq_consts.WRITE_TRUNCATE
+            })
+        return sandbox_queries + clean_queries
+
+
     def get_query_specs(self):
         """
         This function generates a list of query dicts.
@@ -85,11 +294,7 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
         # creates sandbox and truncate queries to run for deactivated participant data drops
         # setup_rule must be run before this to ensure the client is properly
         # configured.
-        queries = rdp.generate_queries(self.client,
-                                       self.project_id,
-                                       self.dataset_id,
-                                       self.sandbox_dataset_id,
-                                       deact_table_ref,
+        queries = self.generate_queries(deact_table_ref,
                                        data_stage_id=self.table_namer)
         return queries
 
@@ -131,7 +336,7 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
                     "from self.affected_tables")
 
         return [
-            rdp.get_deactivated_sandbox_table_name(table, self.table_namer)
+            self.sandbox_table_for(table)
             for table in self.affected_tables
         ]
 
