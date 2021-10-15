@@ -374,7 +374,7 @@ class RetractUtilsTest(unittest.TestCase):
         self.assertRaises((ru.argparse.ArgumentError, SystemExit),
                           parser.parse_args, args_list)
 
-    @mock.patch('retraction.retract_utils.is_labeled_deid')
+    @mock.patch('retraction.retract_utils._is_labeled_deid')
     def test_is_deid_label_or_id(self, mock_labeled_deid):
         client = mock.MagicMock()
         mock_labeled_deid.return_value = True

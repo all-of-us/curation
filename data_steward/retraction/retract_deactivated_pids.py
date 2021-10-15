@@ -5,11 +5,13 @@ from concurrent.futures import TimeoutError as TOError
 
 # Third party imports
 import google.cloud.bigquery as gbq
+import pandas as pd
 from google.cloud.exceptions import GoogleCloudError
 
 import constants.retraction.retract_deactivated_pids as consts
+import resources
 import retraction.retract_utils as ru
-from common import JINJA_ENV
+from common import JINJA_ENV, FITBIT_TABLES, CDM_TABLES
 from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 # Project imports
@@ -21,7 +23,8 @@ ISSUE_NUMBERS = ["DC-686", "DC-1184", "DC-1791"]
 
 TABLE_INFORMATION_SCHEMA = JINJA_ENV.from_string(  # language=JINJA2
     """
-SELECT *
+SELECT * except(is_generated, generation_expression, is_stored, is_hidden,
+is_updatable, is_system_defined, clustering_ordinal_position)
 FROM `{{project}}.{{dataset}}.INFORMATION_SCHEMA.COLUMNS`
 """)
 
@@ -117,9 +120,28 @@ def get_table_cols_df(client, project_id, dataset_id):
     :param client: bq client object
     :return: dataframe of columns from INFORMATION_SCHEMA
     """
-    table_cols_query = TABLE_INFORMATION_SCHEMA.render(project=project_id,
-                                                       dataset=dataset_id)
-    table_cols_df = client.query(table_cols_query).to_dataframe()
+    table_cols_df = pd.DataFrame()
+    if client:
+        LOGGER.info(
+            f"Getting column information from live dataset: `{dataset_id}`")
+        # if possible, read live table schemas
+        table_cols_query = TABLE_INFORMATION_SCHEMA.render(project=project_id,
+                                                           dataset=dataset_id)
+        table_cols_df = client.query(table_cols_query).to_dataframe()
+    else:
+        # if None is passed to the client, read the table data from JSON schemas
+        # generate a dataframe from schema files
+        LOGGER.info("Getting column information from schema files")
+        table_dict_list = []
+        for table in FITBIT_TABLES + CDM_TABLES:
+            table_fields = resources.fields_for(table)
+            for field in table_fields:
+                field['table_name'] = table
+            table_dict_list.extend(table_fields)
+
+        table_cols_df = pd.DataFrame(table_dict_list)
+        table_cols_df = table_cols_df.rename(columns={"name": "column_name"})
+
     return table_cols_df
 
 
@@ -151,7 +173,8 @@ def generate_queries(client,
                      dataset_id,
                      sandbox_dataset_id,
                      deact_pids_table_ref,
-                     pid_rid_table_ref=None):
+                     pid_rid_table_ref=None,
+                     data_stage_id=None):
     """
     Creates queries for sandboxing and deleting records
 
@@ -161,6 +184,7 @@ def generate_queries(client,
     :param sandbox_dataset_id: Identifies the dataset to store records to delete
     :param deact_pids_table_ref: BigQuery table reference to dataset containing deactivated participants
     :param pid_rid_table_ref: BigQuery table reference to dataset containing pid-rid mappings
+    :param data_stage_id: unique identifier to prepend to sandbox table names
     :return: List of query dicts
     :raises:
         RuntimeError: 1. If retracting from deid dataset, pid_rid table must be specified
@@ -179,7 +203,7 @@ def generate_queries(client,
     for table in table_dates_info:
         table_ref = gbq.TableReference.from_string(
             f"{project_id}.{dataset_id}.{table}")
-        sandbox_table = f"{'_'.join(ISSUE_NUMBERS).lower().replace('-', '_')}_{table}"
+        sandbox_table = get_deactivated_sandbox_table_name(table, data_stage_id)
         sandbox_ref = gbq.TableReference.from_string(
             f"{project_id}.{sandbox_dataset_id}.{sandbox_table}")
         date_cols = get_date_cols_dict(table_dates_info[table])
@@ -208,6 +232,14 @@ def generate_queries(client,
                 bq_consts.WRITE_TRUNCATE
         })
     return sandbox_queries + clean_queries
+
+
+def get_deactivated_sandbox_table_name(table, data_stage=None):
+    """
+    Return formatted sandbox table name.
+    """
+    base_name = f"{'_'.join(ISSUE_NUMBERS).lower().replace('-', '_')}_{table}"
+    return sb.get_sandbox_table_name(data_stage, base_name)
 
 
 def query_runner(client, query_dict):

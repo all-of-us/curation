@@ -112,7 +112,7 @@ def get_class_info(instance: object, fields_list: list) -> dict:
                 value = getattr(instance, func, 'no data')
             elif field in report_consts.FIELDS_METHODS_MAP:
                 func = report_consts.FIELDS_METHODS_MAP[field]
-                value = callable(getattr(instance, func, 'no data'))
+                value = getattr(instance, func, 'no data')()
             elif field in report_consts.CLASS_ATTRIBUTES_MAP:
                 func = report_consts.CLASS_ATTRIBUTES_MAP[field]
 
