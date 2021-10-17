@@ -11,7 +11,7 @@ import validation.sql_wrangle as sql_wrangle
 
 # This may change if we strip out unused analyses
 ACHILLES_LOOKUP_COUNT = 215
-ACHILLES_RESULTS_COUNT = 2779
+ACHILLES_RESULTS_COUNT = 2773
 
 
 class AchillesTest(unittest.TestCase):
@@ -61,5 +61,6 @@ class AchillesTest(unittest.TestCase):
             'SELECT COUNT(1) FROM %sachilles_results' %
             sql_wrangle.PREFIX_PLACEHOLDER, FAKE_HPO_ID)
         result = bq_utils.query(cmd)
+        import pdb; pdb.set_trace()
         self.assertEqual(int(result['rows'][0]['f'][0]['v']),
                          ACHILLES_RESULTS_COUNT)
