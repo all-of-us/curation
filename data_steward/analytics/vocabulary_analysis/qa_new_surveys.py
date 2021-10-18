@@ -44,10 +44,17 @@ store_csv_path1='./newsurveyqa_reusedcode_differentquestion.csv'
 store_csv_path2='./newsurveyqa_reusedcode_samequestion_differentanswer.csv'
 store_csv_path3='./newsurveyqa_reusedcode_differenctanswer.csv'
 store_csv_path4='./newsurveyqa_reusedcode_sameanswer_differentquestion.csv'
-store_csv_path5='./newsurveyqa_newcode_differentquestion_sameanswer.csv'
-store_csv_path6='./newsurveyqa_newcode_samequestion.csv'
-store_csv_path7='./newsurveyqa_newcode_differenctanswer_samequestion.csv'
-store_csv_path8='./newsurveyqa_newcode_sameanswer.csv'
+store_csv_path5='./newsurveyqa_all_newcodes.csv'
+store_csv_path6='./newsurveyqa_newcode_differentquestion_sameanswer.csv'
+store_csv_path7='./newsurveyqa_newcode_samequestion.csv'
+store_csv_path8='./newsurveyqa_newcode_differenctanswer_samequestion.csv'
+store_csv_path9='./newsurveyqa_newcode_sameanswer.csv'
+store_csv_path10='./newsurveyqa_newcode_reused_qa.csv'
+store_csv_path11='./newsurveyqa_newcode_reused_q.csv'
+store_csv_path12='./newsurveyqa_newcode_reused_a.csv'
+
+
+
 # -
 
 
@@ -134,7 +141,7 @@ print(f"hqm   -reused codes have same question: "+str(len(hqm)))
 hqmam=hqm[(hqm.answer_x==hqm.answer_y)]
 print(f"hqmam -reused codes have same question and same answer: "+str(len(hqmam)))
 
-hqmad=hqm[(hqm.answer_x!=hqm.answer_y)]
+hqmad=hqm[(hqm.answer_x!=hqm.answer_y) & (reused_codes.ans_type_y!='text')]
 print(f"hqmad -reused codes have same question and different answers: "+str(len(hqmad)))
 
 hqd=reused_codes[(reused_codes.question_x!=reused_codes.question_y)]
@@ -151,7 +158,7 @@ print(f"hamqm -reused codes have same answer and same question: "+str(len(hamqm)
 hamqd=ham[(ham.question_x!=ham.question_y)]
 print(f"hamqd -reused codes have same answer and different questions: "+str(len(hamqd)))
 
-had=reused_codes[(reused_codes.answer_x!=reused_codes.answer_y)]
+had=reused_codes[(reused_codes.answer_x!=reused_codes.answer_y) & (reused_codes.ans_type_y!='text')]
 print(f"had   -reused codes have different answers: "+str(len(had)))
 
 # +
@@ -212,17 +219,39 @@ nad=new_codes[(new_codes.answer_x!=new_codes.answer_y)]
 print(f"nad   -new codes have different answers: "+str(len(nad)))
 # -
 
+# # Are the new codes ...old codes?
+# Where the codes are new, do their questions &| answers match questions &| answers from other surveys?
+# This does not answer where the questions &| answers are worded differently. Use the searching tool at the end of the notebook for all new codes.
+
+# Merge the DFs and designate the table where the codes are located(_merge).
+code_qa_check_df=pd.merge(historic,new_survey,how='outer',on=['question','answer'],indicator=True)
+code_q_check_df=pd.merge(historic,new_survey,how='outer',on='question',indicator=True)
+code_a_check_df=pd.merge(historic,new_survey,how='outer',on='answer',indicator=True)
+
+same_qa=code_qa_check_df[(code_qa_check_df._merge=='both') & (code_qa_check_df.code_x!=code_qa_check_df.code_y)]
+same_q=code_q_check_df[(code_q_check_df._merge=='both') & (code_q_check_df.code_x!=code_q_check_df.code_y)]
+same_a=code_a_check_df[(code_a_check_df._merge=='both') & (code_a_check_df.code_x!=code_a_check_df.code_y) & (code_a_check_df.ans_type_x!='text') & (code_a_check_df.ans_type_y!='text') & (code_a_check_df.answer.str.len() > 0)]
+
+print(f"exact matching questions and answer, not matching codes: "+str(len(same_qa)))
+print(f"exact matching questions, not matching codes: "+str(len(same_q)))
+print(f"exact matching answer, not matching codes: "+str(len(same_a)))
+
 # # 5. When ready change back to 'Code' format and run. 
 # # Print to csv.
-# hqm.to_csv(store_csv_path1)
-# hqmam.to_csv(store_csv_path2)
-# ham.to_csv(store_csv_path3)
-# hamqm.to_csv(store_csv_path4)
+# #hqd.to_csv(store_csv_path1)
+# #hqmad.to_csv(store_csv_path2)
+# #had.to_csv(store_csv_path3)
+# #hamqd.to_csv(store_csv_path4)
 #
-# #nqdam.to_csv(store_csv_path5)
-# nqm.to_csv(store_csv_path6)
-# #nad.to_csv(store_csv_path7)
-# #nadqd.to_csv(store_csv_path8)
+# new_codes.to_csv(store_csv_path5)
+# #nqdam.to_csv(store_csv_path6)
+# #nqm.to_csv(store_csv_path7)
+# #nad.to_csv(store_csv_path8)
+# #nadqd.to_csv(store_csv_path9)
+#
+# #same_qa.to_csv(store_csv_path10)
+# #same_q.to_csv(store_csv_path11)
+# #same_a.to_csv(store_csv_path12)
 
 # ## Additional QA tools
 
@@ -236,7 +265,7 @@ dup_question_answer=dup_question_series[dup_question_series >1]
 
 # To search in dfs for a value.
 historic.dropna(inplace=True)
-search=historic[historic['question'].str.contains('pair')]
+search=historic[historic['question'].str.contains('obesity')]
 #search
 
 # Visualize the location of all codes ('left_only'/'right_only'/'both')
