@@ -10,17 +10,15 @@ Please rename so it is formatted as '[DC-###] PR title' or '[EDQ-###] PR title'.
 
 set +e
 
-if [[ -n "${CIRCLE_PULL_REQUEST}" ]];
-  then
-    pr_url="${CIRCLE_PULL_REQUEST}"
-    pr_title=$(curl -s "${pr_url}" | grep \<title\> | sed 's/[[:space:]]*<title>\([^·]*\).*/\1/')
+if [[ -n "${CIRCLE_PULL_REQUEST}" ]]; then
+  pr_url="${CIRCLE_PULL_REQUEST}"
+  pr_title=$(curl -s "${pr_url}" | grep \<title\> | sed 's/[[:space:]]*<title>\([^·]*\).*/\1/')
 
-    if [[ ! $pr_title =~ $TICKET_REGEX ]];
-      then
-        echo "${ERROR_MSG}"
-        echo "${pr_title}"
-        exit 1
-      else
-        echo "Success! PR title contains well formatted Jira tag"
-    fi
+  if [[ ! $pr_title =~ $TICKET_REGEX ]]; then
+    echo "${ERROR_MSG}"
+    echo "${pr_title}"
+    exit 1
+  else
+    echo "Success! PR title contains well formatted Jira tag"
+  fi
 fi
