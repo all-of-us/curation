@@ -34,28 +34,6 @@ class RetractDeactivatedEHRDataBqTest(TestCase):
         self.mock_bq_client = mock_bq_client_patcher.start()
         self.addCleanup(mock_bq_client_patcher.stop)
 
-    def test_get_date_cols_dict(self):
-        date_cols = ["visit_date", "measurement_date", "measurement_datetime"]
-        expected = {
-            consts.DATE: "measurement_date",
-            consts.DATETIME: "measurement_datetime"
-        }
-        actual = rdp.get_date_cols_dict(date_cols)
-        self.assertDictEqual(expected, actual)
-
-        date_cols = [
-            "verbatim_date", "condition_end_date", "condition_end_datetime",
-            "condition_start_datetime", "condition_start_date"
-        ]
-        expected = {
-            consts.START_DATE: "condition_start_date",
-            consts.START_DATETIME: "condition_start_datetime",
-            consts.END_DATE: "condition_end_date",
-            consts.END_DATETIME: "condition_end_datetime"
-        }
-        actual = rdp.get_date_cols_dict(date_cols)
-        self.assertDictEqual(expected, actual)
-
     @mock.patch('utils.sandbox.check_and_create_sandbox_dataset')
     @mock.patch('retraction.retract_deactivated_pids.get_table_dates_info')
     @mock.patch('retraction.retract_deactivated_pids.get_table_cols_df')
@@ -106,39 +84,6 @@ class RetractDeactivatedEHRDataBqTest(TestCase):
 
         # count sandbox and clean queries
         self.assertEqual(len(table_cols_dict) * 2, len(queries))
-
-    def test_get_dates_info(self):
-        # preconditions
-        data = {
-            'table_catalog': ['project'] * 13,
-            'table_schema': ['dataset'] * 13,
-            'table_name': ['observation'] * 5 + ['location'] * 2 +
-                          ['drug_exposure'] * 6,
-            'column_name': [
-                'observation_id', 'person_id', 'observation_concept_id',
-                'observation_date', 'observation_datetime', 'location_id',
-                'city', 'person_id', 'drug_exposure_start_date',
-                'drug_exposure_start_datetime', 'drug_exposure_end_date',
-                'drug_exposure_end_datetime', 'verbatim_date'
-            ],
-        }
-        table_cols_df = pd.DataFrame(data,
-                                     columns=[
-                                         'table_catalog', 'table_schema',
-                                         'table_name', 'column_name'
-                                     ])
-
-        expected_dict = {
-            'observation': ['observation_date', 'observation_datetime'],
-            'drug_exposure': [
-                'drug_exposure_start_date', 'drug_exposure_start_datetime',
-                'drug_exposure_end_date', 'drug_exposure_end_datetime',
-                'verbatim_date'
-            ]
-        }
-        actual_dict = rdp.get_table_dates_info(table_cols_df)
-
-        self.assertDictEqual(actual_dict, expected_dict)
 
     def test_parser(self):
         parser = rdp.get_parser()

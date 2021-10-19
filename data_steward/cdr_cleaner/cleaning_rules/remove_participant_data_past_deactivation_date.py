@@ -8,6 +8,7 @@ who have deactivated from the Program.
 """
 
 # Python imports
+import argparse
 import logging
 
 # Third-Party imports
@@ -190,6 +191,7 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
         # initialized to None so that if setup_rule is skipped, it will not
         # query live datasets for table information
         self.client = None
+        self.retract_dataset_candidates = [] 
 
     def get_table_cols_df(self):
         """
@@ -296,6 +298,7 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
         # configured.
         queries = self.generate_queries(deact_table_ref,
                                        data_stage_id=self.table_namer)
+
         return queries
 
     def setup_rule(self, client):
@@ -327,6 +330,10 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
         self.affected_tables = [
             table_item.table_id for table_item in tables_list
         ]
+
+        # if running setup, can get the list of retraction datasets here
+        LOGGER.debug("getting list of live datasets that can be retracted from.") 
+        self.retract_dataset_candidates = ru.get_datasets_list
 
     def get_sandbox_tablenames(self):
         """
@@ -363,19 +370,79 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
         raise NotImplementedError("Please fix me.")
 
 
-if __name__ == '__main__':
-    import cdr_cleaner.clean_cdr_engine as clean_engine
-    import cdr_cleaner.args_parser as parser
+def fq_table_name_verification(fq_table_name):
+    """
+    Ensures fq_table_name is of the format 'project.dataset.table'
 
-    ext_parser = parser.get_argument_parser()
-    ext_parser.add_argument(
+    :param fq_table_name: fully qualified BQ table name
+    :return: fq_table_name if valid
+    :raises: ArgumentTypeError if invalid
+    """
+    if fq_table_name.count('.') == 2:
+        return fq_table_name
+    message = f"{fq_table_name} should be of the form 'project.dataset.table'"
+    raise argparse.ArgumentTypeError(message)
+
+
+def fq_deactivated_table_verification(fq_table_name):
+    """
+    Ensures fq_table_name is of the format 'project.dataset.table'
+
+    :param fq_table_name: fully qualified BQ table name
+    :return: fq_table_name if valid
+    :raises: ArgumentTypeError if invalid
+    """
+    fq_table_name = fq_table_name_verification(fq_table_name)
+    if fq_table_name.split('.')[-1] == consts.DEACTIVATED_PARTICIPANTS:
+        return fq_table_name
+    message = f"{fq_table_name} should be of the form 'project.dataset.{consts.DEACTIVATED_PARTICIPANTS}'"
+    raise argparse.ArgumentTypeError(message)
+
+
+def get_parser(parser, raw_args=None):
+    parser.add_argument('-d',
+                        '--dataset_ids',
+                        action='store',
+                        nargs='+',
+                        dest='dataset_ids',
+                        help='Identifies datasets to target. Set to '
+                        '"all_datasets" to target all datasets in project '
+                        'or specific datasets as -d dataset_1 dataset_2 etc.',
+                        required=True)
+    parser.add_argument('-a',
+                        '--fq_deact_table',
+                        action='store',
+                        dest='fq_deact_table',
+                        type=fq_table_name_verification,
+                        help='Specify fully qualified deactivated table '
+                        'as "project.dataset.table"',
+                        required=True)
+    parser.add_argument('-r',
+                        '--fq_pid_rid_table',
+                        action='store',
+                        dest='fq_pid_rid_table',
+                        type=fq_table_name_verification,
+                        help='Specify fully qualified pid-rid mapping table '
+                        'as "project.dataset.table"')
+    parser.add_argument(
         '-q',
         '--api_project_id',
         action='store',
         dest='api_project_id',
         help='Identifies the RDR project for participant summary API',
         required=True)
-    ARGS = ext_parser.parse_args()
+    return parser.parse_args(raw_args)
+
+
+if __name__ == '__main__':
+    import cdr_cleaner.clean_cdr_engine as clean_engine
+    import cdr_cleaner.args_parser as parser
+    from utils import pipeline_logging
+
+    pipeline_logging.configure(logging.DEBUG, add_console_handler=True)
+
+    ext_parser = parser.get_argument_parser()
+    ARGS = ext_parser.parse_args(ext_parser)
 
     if ARGS.list_queries:
         clean_engine.add_console_logging()
