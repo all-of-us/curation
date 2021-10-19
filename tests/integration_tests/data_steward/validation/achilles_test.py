@@ -61,6 +61,5 @@ class AchillesTest(unittest.TestCase):
             'SELECT COUNT(1) FROM %sachilles_results' %
             sql_wrangle.PREFIX_PLACEHOLDER, FAKE_HPO_ID)
         result = bq_utils.query(cmd)
-        import pdb; pdb.set_trace()
         self.assertEqual(int(result['rows'][0]['f'][0]['v']),
                          ACHILLES_RESULTS_COUNT)
