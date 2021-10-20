@@ -67,7 +67,7 @@ def convert_type(in_type):
     elif (column_type == "datetime"):
         t = "datetime"
     else:
-        assert False, "Unknown type: %s" % column_type
+        raise AssertionError("Unknown type: %s" % column_type)
     return t
 
 
