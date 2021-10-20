@@ -17,6 +17,9 @@
 
 import pandas as pd
 import Levenshtein
+import re
+from datetime import date
+import xlsxwriter
 pd.set_option('display.max_colwidth',500)
 pd.set_option('display.max_rows',500)
 pd.options.mode.chained_assignment=None #default='warn'
@@ -40,19 +43,7 @@ social_determinants_raw_path=r"{path to file}"
 
 personal_family_raw_path=r"{path to file}"
 
-store_csv_path1='./newsurveyqa_reusedcode_differentquestion.csv'
-store_csv_path2='./newsurveyqa_reusedcode_samequestion_differentanswer.csv'
-store_csv_path3='./newsurveyqa_reusedcode_differenctanswer.csv'
-store_csv_path4='./newsurveyqa_reusedcode_sameanswer_differentquestion.csv'
-store_csv_path5='./newsurveyqa_all_newcodes.csv'
-store_csv_path6='./newsurveyqa_newcode_differentquestion_sameanswer.csv'
-store_csv_path7='./newsurveyqa_newcode_samequestion.csv'
-store_csv_path8='./newsurveyqa_newcode_differenctanswer_samequestion.csv'
-store_csv_path9='./newsurveyqa_newcode_sameanswer.csv'
-store_csv_path10='./newsurveyqa_newcode_reused_qa.csv'
-store_csv_path11='./newsurveyqa_newcode_reused_q.csv'
-store_csv_path12='./newsurveyqa_newcode_reused_a.csv'
-
+data_storage_path='path/to/file/survey_qc '
 
 
 # -
@@ -117,10 +108,8 @@ def run():
     for i in total_in_each:
         sum+=i
         print(sum)
-run()    
-# print(total_in_each)
-print(f"historic_concat: "+str(len(historic)))
-print(f"new_survey: "+str(len(new_survey))) 
+
+
 
 # Merge the DFs and designate the table where the codes are located(_merge).
 compare_codes_df=pd.merge(historic,new_survey,how='outer',on='code',indicator=True)
@@ -130,36 +119,18 @@ compare_codes_df=pd.merge(historic,new_survey,how='outer',on='code',indicator=Tr
 # DF only contains the reused 'new_survey' codes 
 reused_codes=compare_codes_df[(compare_codes_df._merge=='both')]
 
-# +
 # Get DF for every combination of questions or answers matching with the historic questions or answers.See diagram.
 # EX: pqmad = Historic/Questions Match, Answers Don't. (because i said so...)
-print(f"Total number of reused codes: "+str(len(reused_codes)))
-
 hqm=reused_codes[(reused_codes.question_x==reused_codes.question_y)]
-print(f"hqm   -reused codes have same question: "+str(len(hqm)))
-
 hqmam=hqm[(hqm.answer_x==hqm.answer_y)]
-print(f"hqmam -reused codes have same question and same answer: "+str(len(hqmam)))
-
 hqmad=hqm[(hqm.answer_x!=hqm.answer_y) & (reused_codes.ans_type_y!='text')]
-print(f"hqmad -reused codes have same question and different answers: "+str(len(hqmad)))
-
 hqd=reused_codes[(reused_codes.question_x!=reused_codes.question_y)]
-print(f"hqd   -reused codes have different questions: "+str(len(hqd)))
-
-
-
 ham=reused_codes[(reused_codes.answer_x==reused_codes.answer_y)]
-print(f"ham   -reused codes have same answer: "+str(len(ham)))
-
 hamqm=ham[(ham.question_x==ham.question_y)]
-print(f"hamqm -reused codes have same answer and same question: "+str(len(hamqm)))
-
 hamqd=ham[(ham.question_x!=ham.question_y)]
-print(f"hamqd -reused codes have same answer and different questions: "+str(len(hamqd)))
-
 had=reused_codes[(reused_codes.answer_x!=reused_codes.answer_y) & (reused_codes.ans_type_y!='text')]
-print(f"had   -reused codes have different answers: "+str(len(had)))
+
+
 
 # +
 # Calculate the difference between questions and/or answers and sort. Print to csv at notebook end.
@@ -187,37 +158,17 @@ had=had.sort_values(by=['distance'], ascending=True)
 # DF only contains the new 'new_survey' codes 
 new_codes=compare_codes_df[(compare_codes_df._merge=='right_only')]
 
-# +
 # Get DF for every combination of questions or answers for the new codes.See diagram.
 # EX: nqmad = New/Questions Match, Answers Don't. (again...)
-print(f"Total number of new codes: "+str(len(new_codes)))
-
-nqm=new_codes[(new_codes.question_x==new_codes.question_y)]
-print(f"nqm   -new codes have same question: "+str(len(nqm)))
-
-nqmam=nqm[(nqm.answer_x==nqm.answer_y)]
-print(f"nqmam -new codes have same question and same answer: "+str(len(nqmam)))
-
-nqmad=nqm[(nqm.answer_x!=nqm.answer_y)]
-print(f"nqmad -new codes have same question and different answers: "+str(len(nqmad)))
-
 nqd=new_codes[(new_codes.question_x!=new_codes.question_y)]
-print(f"nqd   -new codes have different questions: "+str(len(nqd)))
-
-
-
-nam=new_codes[(new_codes.answer_x==new_codes.answer_y)]
-print(f"nam   -new codes have same answer: "+str(len(nam)))
-
-namqm=nam[(nam.question_x==nam.question_y)]
-print(f"namqm -new codes have same answer and same question: "+str(len(namqm)))
-
-namqd=nam[(nam.question_x!=nam.question_y)]
-print(f"namqd -new codes have same answer and different questions: "+str(len(namqd)))
-
+nqdad=nqd[(nqd.answer_x!=nqd.answer_y)]
+nqdam=nqd[(nqd.answer_x==nqd.answer_y)]
+nqm=new_codes[(new_codes.question_x==new_codes.question_y)]
 nad=new_codes[(new_codes.answer_x!=new_codes.answer_y)]
-print(f"nad   -new codes have different answers: "+str(len(nad)))
-# -
+nadqd=nad[(nad.question_x!=nad.question_y)]
+nadqm=nad[(nad.question_x==nad.question_y)]
+nam=new_codes[(new_codes.answer_x==new_codes.answer_y)]
+
 
 # # Are the new codes ...old codes?
 # Where the codes are new, do their questions &| answers match questions &| answers from other surveys?
@@ -232,26 +183,122 @@ same_qa=code_qa_check_df[(code_qa_check_df._merge=='both') & (code_qa_check_df.c
 same_q=code_q_check_df[(code_q_check_df._merge=='both') & (code_q_check_df.code_x!=code_q_check_df.code_y)]
 same_a=code_a_check_df[(code_a_check_df._merge=='both') & (code_a_check_df.code_x!=code_a_check_df.code_y) & (code_a_check_df.ans_type_x!='text') & (code_a_check_df.ans_type_y!='text') & (code_a_check_df.answer.str.len() > 0)]
 
-print(f"exact matching questions and answer, not matching codes: "+str(len(same_qa)))
-print(f"exact matching questions, not matching codes: "+str(len(same_q)))
-print(f"exact matching answer, not matching codes: "+str(len(same_a)))
+# # Separate answers for analysis. 
 
-# # 5. When ready change back to 'Code' format and run. 
-# # Print to csv.
-# #hqd.to_csv(store_csv_path1)
-# #hqmad.to_csv(store_csv_path2)
-# #had.to_csv(store_csv_path3)
-# #hamqd.to_csv(store_csv_path4)
-#
-# new_codes.to_csv(store_csv_path5)
-# #nqdam.to_csv(store_csv_path6)
-# #nqm.to_csv(store_csv_path7)
-# #nad.to_csv(store_csv_path8)
-# #nadqd.to_csv(store_csv_path9)
-#
-# #same_qa.to_csv(store_csv_path10)
-# #same_q.to_csv(store_csv_path11)
-# #same_a.to_csv(store_csv_path12)
+historic_answers_pre=historic
+# Split answers, stored in a list.
+historic_answers_pre.answer=historic_answers_pre.answer.str.split(r"|")
+historic_answers_pre = historic_answers_pre.dropna()
+# Make a base df to add to later.
+split_df = pd.DataFrame(historic_answers_pre, columns=['code','survey'])
+# Make a df to hold answers split into columns. 
+split_df2 = pd.DataFrame(historic_answers_pre['answer'].tolist(),columns=["answer_1","answer_2","answer_3","answer_4","answer_5",
+                                                                        "answer_6","answer_7","answer_8","answer_9","answer_10",
+                                                                        "answer_11","answer_12","answer_13","answer_14","answer_15",
+                                                                        "answer_16","answer_17","answer_18","answer_19","answer_20",
+                                                                        "answer_21","answer_22","answer_23","answer_24","answer_25",
+                                                                        "answer_26","answer_27","answer_28","answer_29","answer_30",
+                                                                        "answer_31","answer_32","answer_33","answer_34","answer_35",
+                                                                        "answer_36","answer_37","answer_38","answer_39","answer_40",
+                                                                        "answer_41","answer_42","answer_43","answer_44","answer_45",
+                                                                        "answer_46","answer_47","answer_48","answer_49","answer_50",
+                                                                        "answer_51"])
+split_df=split_df.reset_index(drop=True)
+# Combine the 'split' dfs on their index
+split_df3 = pd.concat([split_df,split_df2],axis=1)
+# Melt the answers, reshape the df
+historic_answers = split_df3.melt(id_vars=['code','survey'],value_vars=["answer_1","answer_2","answer_3","answer_4","answer_5",
+                                                                        "answer_6","answer_7","answer_8","answer_9","answer_10",
+                                                                        "answer_11","answer_12","answer_13","answer_14","answer_15",
+                                                                        "answer_16","answer_17","answer_18","answer_19","answer_20",
+                                                                        "answer_21","answer_22","answer_23","answer_24","answer_25",
+                                                                        "answer_26","answer_27","answer_28","answer_29","answer_30",
+                                                                        "answer_31","answer_32","answer_33","answer_34","answer_35",
+                                                                        "answer_36","answer_37","answer_38","answer_39","answer_40",
+                                                                        "answer_41","answer_42","answer_43","answer_44","answer_45",
+                                                                        "answer_46","answer_47","answer_48","answer_49","answer_50",
+                                                                        "answer_51"])
+historic_answers=historic_answers.dropna()   
+
+# # How many codes are retired?
+
+retired_pmh=compare_codes_df[(compare_codes_df._merge=='left_only') & (compare_codes_df.survey_x=='personal_medical_history')]
+retired_fhh=compare_codes_df[(compare_codes_df._merge=='left_only') & (compare_codes_df.survey_x=='family_health_history')]
+retired_other=compare_codes_df[(compare_codes_df._merge=='left_only') & (compare_codes_df.survey_x!='personal_medical_history') & (compare_codes_df.survey_x!='family_health_history')]
+
+# # Collect dfs/analysis and print to Excel
+
+prints={
+    1:f"number of codes in each included survey "+ str(total_in_each),
+    2:f"historic_concat: "+str(len(historic)),
+    3:f"new_survey: "+str(len(new_survey)),
+    4:f"Total number of reused codes: "+str(len(reused_codes)),
+    5:f"hqm   -reused codes have same question: "+str(len(hqm)),
+    6:f"hqmam -reused codes have same question and same answer: "+str(len(hqmam)),
+    7:f"hqmad -reused codes have same question and different answers: "+str(len(hqmad)),
+    8:f"hqd   -reused codes have different questions: "+str(len(hqd)),
+    9:f"ham   -reused codes have same answer: "+str(len(ham)),
+    10:f"hamqm -reused codes have same answer and same question: "+str(len(hamqm)),
+    11:f"hamqd -reused codes have same answer and different questions: "+str(len(hamqd)),
+    12:f"had   -reused codes have different answers: "+str(len(had)),
+    13:f"Total number of new codes: "+str(len(new_codes)),
+    14:f"nqd   -new codes questions match: "+str(len(nqd)),
+    15:f"nqdad -new codes questions match answers match: "+str(len(nqdad)),
+    16:f"nqdam -new codes questions match answers don't: "+str(len(nqdam)),
+    17:f"nqm   -new codes questions don't match: "+str(len(nqm)),
+    18:f"nad   -new codes answers match: "+str(len(nad)),
+    19:f"nadqd -new codes answers mach questions match: "+str(len(nadqd)),
+    20:f"nadqm -new codes answers match questions don't: "+str(len(nadqm)),
+    21:f"nam   -new codes answers don't match: "+str(len(nam)),
+    22:f"exact matching questions and answer, not matching codes: "+str(len(same_qa)),
+    23:f"exact matching questions, not matching codes: "+str(len(same_q)),
+    24:f"exact matching answer, not matching codes: "+str(len(same_a)),
+    25:f"retired codes from pmh: "+str(len(retired_pmh)),
+    26:f"retired codes from fhh: "+str(len(retired_fhh)),
+    27:f"retired codes from elsewhere: "+str(len(retired_other))
+    }
+printss=pd.DataFrame.from_dict(prints, orient='index')
+printss
+
+dfs ={
+    0:printss,
+    1:reused_codes,
+    2:hqm,
+    3:hqmam,
+    4:hqmad,
+    5:hqd,
+    6:ham,
+    7:hamqm,
+    8:hamqd,
+    9:ham,
+    10:new_codes,
+    11:nqd,
+    12:nqdad,
+    13:nqdam,
+    14:nqm,
+    15:nad,
+    16:nadqd,
+    17:nadqm,
+    18:nam,
+    19:same_qa,
+    20:same_q,
+    21:same_a,
+    22:retired_pmh,
+    23:retired_fhh,
+    24:retired_other
+}
+
+# +
+path=data_storage_path+ str(date.today()) + '.xlsx'
+
+writer = pd.ExcelWriter(path, engine='xlsxwriter')
+for i in dfs:
+    dfs[i].to_excel(writer, sheet_name=str(i))
+    
+
+writer.save()
+writer.close()
+# -
 
 # ## Additional QA tools
 
@@ -265,12 +312,18 @@ dup_question_answer=dup_question_series[dup_question_series >1]
 
 # To search in dfs for a value.
 historic.dropna(inplace=True)
-search=historic[historic['question'].str.contains('obesity')]
+search=historic[historic['question'].str.contains('Parkinson')]
 #search
 
+
+new_survey.dropna(inplace=True)
+search2=new_survey[new_survey['code'].str.contains('parkinson')]
+#search2
+
 # Visualize the location of all codes ('left_only'/'right_only'/'both')
-table="right_only"
-loc_of_codes=compare_codes_df[(compare_codes_df._merge==table)]
+table="both"
+loc_of_codes=compare_codes_df[(compare_codes_df._merge==table) & compare_codes_df['question_x'].str.contains('Parkinson')]
 loc_of_codes=loc_of_codes.sort_values(by=['_merge','code'])
 loc_of_codes=loc_of_codes.reset_index(drop=True)
 print(f"codes exist in the "+ table +" table: "+str(len(loc_of_codes[(loc_of_codes._merge== table)])))
+#loc_of_codes
