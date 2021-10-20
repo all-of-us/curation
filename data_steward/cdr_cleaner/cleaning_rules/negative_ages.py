@@ -55,7 +55,7 @@ WHERE
   ON
     t.person_id = p.person_id
   WHERE
-    t.{{table_date}} < DATE(p.birth_datetime)
+    DATE(t.{{table_date}}) < DATE(p.birth_datetime)
   UNION DISTINCT
   SELECT
   t.{{table}}_id
@@ -112,7 +112,7 @@ WHERE
   ON
     t.person_id = p.person_id
   WHERE
-    t.{{table_date}} < DATE(p.birth_datetime))
+    DATE(t.{{table_date}}) < DATE(p.birth_datetime))
 """)
 
 # age > MAX_AGE (=150) at recorded time in table
