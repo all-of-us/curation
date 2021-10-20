@@ -6,6 +6,33 @@ from bq_utils import create_dataset, list_all_table_ids, query, wait_on_jobs, Bi
     create_standard_table
 from utils import bq
 
+BIGQUERY_DATA_TYPES = {
+    'integer': 'INT64',
+    'float': 'FLOAT64',
+    'string': 'STRING',
+    'date': 'DATE',
+    'timestamp': 'TIMESTAMP'
+}
+
+MODIFIED_FIELD_NAMES = {
+    'modifier_source_value': {
+        'old_name': 'qualifier_source_value',
+        'new_name': 'modifier_source_value'
+    },
+    'npi': {
+        'old_name': 'NPI',
+        'new_name': 'npi'
+    },
+    'dea': {
+        'old_name': 'DEA',
+        'new_name': 'dea'
+    },
+    'revenue_code_source_value': {
+        'old_name': 'reveue_code_source_value',
+        'new_name': 'revenue_code_source_value'
+    }
+}
+
 
 def create_empty_dataset(project_id, dataset_id, snapshot_dataset_id):
     """
@@ -46,29 +73,25 @@ def get_field_cast_expr(dest_field, source_fields):
     :param source_fields: list of field names in source table
     :return:  col string
     """
-    bigquery_data_types = {
-        'integer': 'INT64',
-        'float': 'FLOAT64',
-        'string': 'STRING',
-        'date': 'DATE',
-        'timestamp': 'TIMESTAMP'
-    }
 
     dest_field_name = dest_field['name']
     dest_field_mode = dest_field['mode']
     dest_field_type = dest_field['type']
     if dest_field_name not in source_fields:
-        if dest_field_mode == 'required':
+        if dest_field_name in MODIFIED_FIELD_NAMES.keys():
+            col = f'CAST({MODIFIED_FIELD_NAMES[dest_field_name]["old_name"]} AS {BIGQUERY_DATA_TYPES[dest_field_type.lower()]}) AS {dest_field_name}'
+
+        elif dest_field_mode == 'required':
             raise RuntimeError(
                 f'Unable to load the field "{dest_field_name}" which is required in the destination table \
                 and missing from the source table')
         elif dest_field_mode == 'nullable':
-            col = f'CAST(NULL as {bigquery_data_types[dest_field_type.lower()]}) AS {dest_field_name}'
+            col = f'CAST(NULL AS {BIGQUERY_DATA_TYPES[dest_field_type.lower()]}) AS {dest_field_name}'
         else:
             raise RuntimeError(
                 f'Unable to determine the mode for "{dest_field_name}".')
     else:
-        col = f'CAST({dest_field_name} AS {bigquery_data_types[dest_field_type.lower()]}) AS {dest_field_name}'
+        col = f'CAST({dest_field_name} AS {BIGQUERY_DATA_TYPES[dest_field_type.lower()]}) AS {dest_field_name}'
     return col
 
 
