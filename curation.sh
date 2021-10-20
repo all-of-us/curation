@@ -38,15 +38,15 @@ echo Running as user "${whoiis}" \("${uid}:${gid}"\)...
 dkr_run_args=(
   "run"
   "-v"
-  "$(pwd)/.git:/home/curation/project/curation/.git"
+  "$(pwd)/.git:/home/curation/project/curation/.git:z"
   "-v"
-  "$(pwd)/data_steward:/home/curation/project/curation/data_steward"
+  "$(pwd)/data_steward:/home/curation/project/curation/data_steward:z"
   "-v"
-  "$(pwd)/tests:/home/curation/project/curation/tests"
+  "$(pwd)/tests:/home/curation/project/curation/tests:z"
   "-v"
-  "$(pwd)/tools:/home/curation/project/curation/tools"
+  "$(pwd)/tools:/home/curation/project/curation/tools:z"
   "-v"
-  "$(pwd)/.circleci:/home/curation/project/curation/.circleci"
+  "$(pwd)/.circleci:/home/curation/project/curation/.circleci:z"
 )
 
 # when run on a developer's machine, we need to do some extra things like:
