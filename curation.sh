@@ -67,13 +67,19 @@ if ! in_ci; then
 
   echo Ensuring image is up to date...
 
+  build_args=(
+    "build"
+    "--build-arg"
+    "UID=${uid}"
+    "--build-arg"
+    "GID=${gid}"
+    "--quiet"
+    "develop"
+  )
+
   # execute develop image build
   set +e
-  build_res=$(docker compose build \
-    --build-arg UID="${uid}" \
-    --build-arg GID="${gid}" \
-    --quiet \
-    develop 2>&1)
+  build_res=$(${COMPOSE_EXEC} "${build_args[@]}" 2>&1)
   set -e
 
   # verify build succeeded before proceeding
