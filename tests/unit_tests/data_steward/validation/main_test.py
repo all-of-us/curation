@@ -1,19 +1,19 @@
 """
 Unit test components of data_steward.validation.main
 """
+# Python imports
 import datetime
 import re
+import os
 from unittest import TestCase, mock
 
-import googleapiclient.errors
-
+# Project imports
 import common
 import resources
 from constants.validation import hpo_report as report_consts
 from constants.validation import main as main_consts
 from constants.validation.participants import identity_match as id_match_consts
 from validation import main
-import test_util
 
 
 class ValidationMainTest(TestCase):
@@ -50,6 +50,14 @@ class ValidationMainTest(TestCase):
                 })
 
         return bucket_items
+
+    def test_unset_bucket(self):
+        bucket_env_var = f'BUCKET_NAME_{self.hpo_id.upper()}'
+        # run without setting env var (unset env_var)
+        main.process_hpo(self.hpo_id)
+        # run after setting env var to empty string
+        os.environ[bucket_env_var] = ""
+        main.process_hpo(self.hpo_id)
 
     def test_retention_checks_list_submitted_bucket_items(self):
         #Define times to use

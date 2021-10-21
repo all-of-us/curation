@@ -8,6 +8,8 @@ from io import BytesIO
 
 import googleapiclient.discovery
 
+from validation.app_errors import BucketDoesNotExistError
+
 MIMETYPES = {
     'json': 'application/json',
     'woff': 'application/font-woff',
@@ -25,6 +27,8 @@ def get_drc_bucket():
 def get_hpo_bucket(hpo_id):
     """
     Get the name of an HPO site's private bucket
+
+    Empty/unset bucket indicates that the bucket is intentionally left blank and can be ignored
     :param hpo_id: id of the HPO site
     :return: name of the bucket
     """
@@ -32,10 +36,12 @@ def get_hpo_bucket(hpo_id):
     bucket_env = 'BUCKET_NAME_' + hpo_id.upper()
     hpo_bucket_name = os.getenv(bucket_env)
 
-    if hpo_bucket_name is None:
+    if not hpo_bucket_name:
         # should not use hpo_id in message if sent to end user.  For now,
         # only sent to alert messages slack channel.
-        raise OSError('No bucket name defined for hpo_id: {}'.format(hpo_id))
+        raise BucketDoesNotExistError(
+            f"Failed to fetch bucket '{hpo_bucket_name}' for hpo_id '{hpo_id}'",
+            hpo_bucket_name)
 
     return hpo_bucket_name
 

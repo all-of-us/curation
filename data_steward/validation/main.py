@@ -526,9 +526,14 @@ def process_hpo(hpo_id, force_run=False):
                               folder_prefix)
     except BucketDoesNotExistError as bucket_error:
         bucket = bucket_error.bucket
-        logging.warning(
-            f"Bucket '{bucket}' configured for hpo_id '{hpo_id}' does not exist"
-        )
+        if bucket:
+            logging.warning(
+                f"Bucket '{bucket}' configured for hpo_id '{hpo_id}' does not exist"
+            )
+        else:
+            logging.info(
+                f"Bucket '{bucket}' configured for hpo_id '{hpo_id}' is empty/unset"
+            )
     except HttpError as http_error:
         message = (f"Failed to process hpo_id '{hpo_id}' due to the following "
                    f"HTTP error: {http_error.content.decode()}")
