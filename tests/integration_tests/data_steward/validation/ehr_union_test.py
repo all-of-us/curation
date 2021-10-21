@@ -439,6 +439,8 @@ class EhrUnionTest(unittest.TestCase):
         subquery = re.sub(
             r",\s+ROW_NUMBER\(\) OVER \(PARTITION BY nm\..+?_id\) AS row_num",
             " ", subquery)
+        if 'offset,' in subquery:
+            subquery = subquery.replace('offset,', '"offset",')
         stmt = moz_sql_parser.parse(subquery)
 
         # Sanity check it is a select statement
