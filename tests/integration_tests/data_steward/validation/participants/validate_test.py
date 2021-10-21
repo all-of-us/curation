@@ -277,7 +277,7 @@ class ValidateTest(TestCase):
             'person_id': 5,
             'email': 'match',
             'phone_number': 'match',
-            'sex': 'no_match',
+            'sex': 'missing_rdr',
             'algorithm': 'yes'
         }, {
             'person_id': 6,

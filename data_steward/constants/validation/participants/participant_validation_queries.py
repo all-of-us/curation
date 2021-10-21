@@ -11,197 +11,88 @@ GENDER_MATCH = [{
     MATCH_STATUS:
         MATCH,
     MATCH_STATUS_PAIRS: [{
-        RDR_SEX: "SexAtBirth_Male",
-        EHR_SEX: "MALE"
+        RDR_SEX: ["SexAtBirth_Male"],
+        EHR_SEX: ["MALE"]
     }, {
-        RDR_SEX: "SexAtBirth_Female",
-        EHR_SEX: "FEMALE"
+        RDR_SEX: ["SexAtBirth_Female"],
+        EHR_SEX: ["FEMALE"]
     }, {
-        RDR_SEX: "SexAtBirth_SexAtBirthNoneOfThese",
-        EHR_SEX: "UNKNOWN"
-    }, {
-        RDR_SEX: "SexAtBirth_SexAtBirthNoneOfThese",
-        EHR_SEX: "OTHER"
-    }, {
-        RDR_SEX: "SexAtBirth_SexAtBirthNoneOfThese",
-        EHR_SEX: "AMBIGUOUS"
+        RDR_SEX: ["SexAtBirth_SexAtBirthNoneOfThese"],
+        EHR_SEX: ["UNKNOWN", "OTHER", "AMBIGUOUS"]
     }]
 }, {
     MATCH_STATUS:
         NO_MATCH,
     MATCH_STATUS_PAIRS: [{
-        RDR_SEX: "PMI_Skip",
-        EHR_SEX: "AMBIGUOUS"
+        RDR_SEX: ["SexAtBirth_Male"],
+        EHR_SEX: [
+            "UNKNOWN", "Gender unknown", "AMBIGUOUS", "Gender unspecified",
+            "OTHER", "FEMALE"
+        ]
     }, {
-        RDR_SEX: "SexAtBirth_Male",
-        EHR_SEX: "UNKNOWN"
+        RDR_SEX: ["SexAtBirth_Female"],
+        EHR_SEX: [
+            "UNKNOWN", "Gender unknown", "AMBIGUOUS", "Gender unspecified",
+            "OTHER", "MALE"
+        ]
     }, {
-        RDR_SEX: "SexAtBirth_Male",
-        EHR_SEX: "AMBIGUOUS"
+        RDR_SEX: ["SexAtBirth_Intersex"],
+        EHR_SEX: [
+            "AMBIGUOUS", "Gender unknown", "Gender unspecified", "FEMALE",
+            "MALE", "UNKNOWN", "OTHER"
+        ]
     }, {
-        RDR_SEX: "SexAtBirth_Male",
-        EHR_SEX: "Gender unknown"
-    }, {
-        RDR_SEX: "SexAtBirth_Male",
-        EHR_SEX: "Gender unspecified"
-    }, {
-        RDR_SEX: "SexAtBirth_Male",
-        EHR_SEX: "FEMALE"
-    }, {
-        RDR_SEX: "SexAtBirth_Male",
-        EHR_SEX: "OTHER"
-    }, {
-        RDR_SEX: "SexAtBirth_Female",
-        EHR_SEX: "UNKNOWN"
-    }, {
-        RDR_SEX: "SexAtBirth_Female",
-        EHR_SEX: "Gender unknown"
-    }, {
-        RDR_SEX: "SexAtBirth_Female",
-        EHR_SEX: "AMBIGUOUS"
-    }, {
-        RDR_SEX: "SexAtBirth_Female",
-        EHR_SEX: "Gender unspecified"
-    }, {
-        RDR_SEX: "SexAtBirth_Female",
-        EHR_SEX: "OTHER"
-    }, {
-        RDR_SEX: "SexAtBirth_Female",
-        EHR_SEX: "MALE"
-    }, {
-        RDR_SEX: "SexAtBirth_Intersex",
-        EHR_SEX: "AMBIGUOUS"
-    }, {
-        RDR_SEX: "SexAtBirth_Intersex",
-        EHR_SEX: "Gender unknown"
-    }, {
-        RDR_SEX: "SexAtBirth_Intersex",
-        EHR_SEX: "Gender unspecified"
-    }, {
-        RDR_SEX: "SexAtBirth_Intersex",
-        EHR_SEX: "FEMALE"
-    }, {
-        RDR_SEX: "SexAtBirth_Intersex",
-        EHR_SEX: "MALE"
-    }, {
-        RDR_SEX: "SexAtBirth_Intersex",
-        EHR_SEX: "UNKNOWN"
-    }, {
-        RDR_SEX: "SexAtBirth_Intersex",
-        EHR_SEX: "OTHER"
-    }, {
-        RDR_SEX: "SexAtBirth_SexAtBirthNoneOfThese",
-        EHR_SEX: "Gender unknown"
-    }, {
-        RDR_SEX: "SexAtBirth_SexAtBirthNoneOfThese",
-        EHR_SEX: "Gender unspecified"
-    }, {
-        RDR_SEX: "SexAtBirth_SexAtBirthNoneOfThese",
-        EHR_SEX: "MALE"
-    }, {
-        RDR_SEX: "SexAtBirth_SexAtBirthNoneOfThese",
-        EHR_SEX: "FEMALE"
+        RDR_SEX: ["SexAtBirth_SexAtBirthNoneOfThese"],
+        EHR_SEX: ["FEMALE", "MALE", "Gender unspecified", "Gender unknown"]
     }]
 }, {
     MATCH_STATUS:
         MISSING_EHR,
     MATCH_STATUS_PAIRS: [{
-        RDR_SEX: "SexAtBirth_Male",
-        EHR_SEX: "No matching concept"
-    }, {
-        RDR_SEX: "SexAtBirth_Female",
-        EHR_SEX: "No matching concept"
-    }, {
-        RDR_SEX: "SexAtBirth_Intersex",
-        EHR_SEX: "No matching concept"
-    }, {
-        RDR_SEX: "SexAtBirth_SexAtBirthNoneOfThese",
-        EHR_SEX: "No matching concept"
+        RDR_SEX: [
+            "SexAtBirth_Male", "SexAtBirth_Female", "SexAtBirth_Intersex",
+            "SexAtBirth_SexAtBirthNoneOfThese"
+        ],
+        EHR_SEX: ["No matching concept"]
     }]
 }, {
     MATCH_STATUS:
         MISSING_RDR,
     MATCH_STATUS_PAIRS: [{
-        RDR_SEX: "UNSET",
-        EHR_SEX: "Gender unspecified"
+        RDR_SEX: ["UNSET"],
+        EHR_SEX: [
+            "MALE", "OTHER", "Gender unspecified", "AMBIGUOUS", "FEMALE",
+            "UNKNOWN", "Gender unknown", "No matching concept"
+        ]
     }, {
-        RDR_SEX: "UNSET",
-        EHR_SEX: "AMBIGUOUS"
+        RDR_SEX: ["PMI_Skip"],
+        EHR_SEX: [
+            "MALE", "OTHER", "Gender unspecified", "FEMALE", "UNKNOWN",
+            "Gender unknown", "No matching concept", "AMBIGUOUS"
+        ]
     }, {
-        RDR_SEX: "UNSET",
-        EHR_SEX: "FEMALE"
-    }, {
-        RDR_SEX: "UNSET",
-        EHR_SEX: "Gender unknown"
-    }, {
-        RDR_SEX: "UNSET",
-        EHR_SEX: "UNKNOWN"
-    }, {
-        RDR_SEX: "UNSET",
-        EHR_SEX: "No matching concept"
-    }, {
-        RDR_SEX: "UNSET",
-        EHR_SEX: "OTHER"
-    }, {
-        RDR_SEX: "UNSET",
-        EHR_SEX: "MALE"
-    }, {
-        RDR_SEX: "PMI_Skip",
-        EHR_SEX: "No matching concept"
-    }, {
-        RDR_SEX: "PMI_Skip",
-        EHR_SEX: "FEMALE"
-    }, {
-        RDR_SEX: "PMI_Skip",
-        EHR_SEX: "Gender unknown"
-    }, {
-        RDR_SEX: "PMI_Skip",
-        EHR_SEX: "Gender unspecified"
-    }, {
-        RDR_SEX: "PMI_Skip",
-        EHR_SEX: "OTHER"
-    }, {
-        RDR_SEX: "PMI_Skip",
-        EHR_SEX: "UNKNOWN"
-    }, {
-        RDR_SEX: "PMI_Skip",
-        EHR_SEX: "MALE"
-    }, {
-        RDR_SEX: "PMI_PreferNotToAnswer",
-        EHR_SEX: "No matching concept"
-    }, {
-        RDR_SEX: "PMI_PreferNotToAnswer",
-        EHR_SEX: "MALE"
-    }, {
-        RDR_SEX: "PMI_PreferNotToAnswer",
-        EHR_SEX: "UNKNOWN"
-    }, {
-        RDR_SEX: "PMI_PreferNotToAnswer",
-        EHR_SEX: "OTHER"
-    }, {
-        RDR_SEX: "PMI_PreferNotToAnswer",
-        EHR_SEX: "Gender unspecified"
-    }, {
-        RDR_SEX: "PMI_PreferNotToAnswer",
-        EHR_SEX: "Gender unknown"
-    }, {
-        RDR_SEX: "PMI_PreferNotToAnswer",
-        EHR_SEX: "AMBIGUOUS"
-    }, {
-        RDR_SEX: "PMI_PreferNotToAnswer",
-        EHR_SEX: "FEMALE"
+        RDR_SEX: ["PMI_PreferNotToAnswer"],
+        EHR_SEX: [
+            "MALE", "OTHER", "Gender unspecified", "AMBIGUOUS", "FEMALE",
+            "UNKNOWN", "Gender unknown", "No matching concept"
+        ]
     }]
 }]
 
 
-def get_gender_comparision_case_statement():
+def get_gender_comparison_case_statement():
     conditions = []
     for match in GENDER_MATCH:
         and_conditions = []
-        for dict in match[MATCH_STATUS_PAIRS]:
+        for dict_ in match[MATCH_STATUS_PAIRS]:
             and_conditions.append(
-                f'(rdr_sex = \'{dict[RDR_SEX]}\' AND ehr_sex = \'{dict[EHR_SEX]}\')'
+                f"(rdr_sex in {[pair.lower() for pair in dict_[RDR_SEX]]} AND ehr_sex in {[pair.lower() for pair in dict_[EHR_SEX]]})"
             )
         all_matches = ' OR '.join(and_conditions)
+        all_matches = all_matches.replace('[', '(').replace(']', ')')
         conditions.append(f'WHEN {all_matches} THEN \'{match[MATCH_STATUS]}\'')
-    return '\n'.join(conditions)
+    return ' \n'.join(conditions)
+
+
+if __name__ == '__main__':
+    print(get_gender_comparison_case_statement())
