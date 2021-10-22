@@ -1,6 +1,27 @@
 # Project imports
 from common import JINJA_ENV
 
+CREATE_SEX_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
+CREATE FUNCTION IF NOT EXISTS
+  `{{project_id}}.{{drc_dataset_id}}.CompareSexAtBirth`(rdr_sex string,
+    ehr_sex string)
+  RETURNS string AS ((
+        WITH normalized_rdr_sex AS (
+            SELECT LOWER(TRIM(rdr_sex)) AS rdr_sex
+        )
+        , normalized_ehr_sex AS (
+            SELECT LOWER(TRIM(ehr_sex)) AS ehr_sex
+        )
+    SELECT
+      CASE
+        {{gender_case_when_conditions}}
+      ELSE
+      '{{missing_ehr}}'
+    END
+      AS sex
+       FROM normalized_rdr_sex, normalized_ehr_sex));
+""")
+
 CREATE_EMAIL_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
     CREATE FUNCTION IF NOT EXISTS `{{project_id}}.{{drc_dataset_id}}.CompareEmail`(rdr_email string, ehr_email string)
     RETURNS string
@@ -58,4 +79,7 @@ CREATE_COMPARISON_FUNCTION_QUERIES = [{
 }, {
     'name': 'ComparePhoneNumber',
     'query': CREATE_PHONE_NUMBER_COMPARISON_FUNCTION
+}, {
+    'name': 'CompareSexAtBirth',
+    'query': CREATE_SEX_COMPARISON_FUNCTION
 }]
