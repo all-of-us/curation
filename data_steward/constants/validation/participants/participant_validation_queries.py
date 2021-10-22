@@ -59,19 +59,7 @@ GENDER_MATCH = [{
     MATCH_STATUS:
         MISSING_RDR,
     MATCH_STATUS_PAIRS: [{
-        RDR_SEX: ["UNSET"],
-        EHR_SEX: [
-            "MALE", "OTHER", "Gender unspecified", "AMBIGUOUS", "FEMALE",
-            "UNKNOWN", "Gender unknown", "No matching concept"
-        ]
-    }, {
-        RDR_SEX: ["PMI_Skip"],
-        EHR_SEX: [
-            "MALE", "OTHER", "Gender unspecified", "FEMALE", "UNKNOWN",
-            "Gender unknown", "No matching concept", "AMBIGUOUS"
-        ]
-    }, {
-        RDR_SEX: ["PMI_PreferNotToAnswer"],
+        RDR_SEX: ["UNSET", "PMI_Skip", "PMI_PreferNotToAnswer"],
         EHR_SEX: [
             "MALE", "OTHER", "Gender unspecified", "AMBIGUOUS", "FEMALE",
             "UNKNOWN", "Gender unknown", "No matching concept"
@@ -92,7 +80,3 @@ def get_gender_comparison_case_statement():
         all_matches = all_matches.replace('[', '(').replace(']', ')')
         conditions.append(f'WHEN {all_matches} THEN \'{match[MATCH_STATUS]}\'')
     return ' \n'.join(conditions)
-
-
-if __name__ == '__main__':
-    print(get_gender_comparison_case_statement())
