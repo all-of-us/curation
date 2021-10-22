@@ -60,8 +60,8 @@ class EhrUnionTest(unittest.TestCase):
             mapped_fields.append(field)
         self.mapped_fields = mapped_fields
         self.implemented_foreign_keys = [
-            eu_constants.VISIT_OCCURRENCE_ID, eu_constants.CARE_SITE_ID,
-            eu_constants.LOCATION_ID
+            eu_constants.VISIT_OCCURRENCE_ID, eu_constants.VISIT_DETAIL_ID,
+            eu_constants.CARE_SITE_ID, eu_constants.LOCATION_ID
         ]
 
     def _empty_hpo_buckets(self):
