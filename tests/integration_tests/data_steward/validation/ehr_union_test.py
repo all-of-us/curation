@@ -487,9 +487,11 @@ class EhrUnionTest(unittest.TestCase):
                     key_ind += 1
                     expr = 'left join on foreign key'
                     if table == 'visit_detail' and key_ind == 2:
-                        stmt['from'][2], stmt['from'][3] = stmt['from'][3], stmt['from'][2]
+                        stmt['from'][2], stmt['from'][3] = stmt['from'][
+                            3], stmt['from'][2]
                     actual_join = first_or_none(
-                        dpath.util.values(stmt,'from/%s/left join/value' % key_ind))
+                        dpath.util.values(stmt,
+                                          'from/%s/left join/value' % key_ind))
                     joined_table = field['name'].replace('_id', '')
                     expected_join = dataset_out + '.' + ehr_union.mapping_table_for(
                         joined_table)
