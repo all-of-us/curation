@@ -16,20 +16,10 @@ def auth_required_cron(func):
     return wrapped
 
 
-def get_oauth_id():
-    """Returns user email ID if OAUTH token present, or None."""
-    try:
-        user_email = oauth.get_current_user(SCOPE).email()
-    except oauth.Error as e:
-        user_email = None
-        logging.error(f'OAuth failure: {e}')
-    return user_email
-
-
 def check_cron():
     """Raises Forbidden if the current user is not a cron job."""
     if request.headers.get('X-Appengine-Cron'):
         logging.info('Appengine-Cron ALLOWED for cron endpoint.')
         return
-    logging.info(f'User {get_oauth_id()} NOT ALLOWED for cron endpoint')
+    logging.info(f'User NOT ALLOWED for cron endpoint')
     raise Forbidden()
