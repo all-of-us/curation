@@ -1,7 +1,7 @@
 """
 Integration test for the validate module for emails, phone_numbers and sex
 
-Ensures that emails, phone numbers and sex are correctly identified as matches and non-matches
+Ensures that emails, phone numbers, date_of_birth and sex are correctly identified as matches and non-matches
 between EHR and RDR.
 """
 
@@ -24,6 +24,7 @@ import resources
 person_schema = [
     SchemaField("person_id", "INTEGER", mode="REQUIRED"),
     SchemaField("gender_concept_id", "INTEGER", mode="REQUIRED"),
+    SchemaField("birth_datetime", "TIMESTAMP", mode="REQUIRED"),
 ]
 
 concept_schema = [
@@ -33,17 +34,17 @@ concept_schema = [
 
 POPULATE_PS_VALUES = JINJA_ENV.from_string("""
 INSERT INTO `{{project_id}}.{{drc_dataset_id}}.{{ps_values_table_id}}` 
-(person_id, email, phone_number, sex)
+(person_id, email, phone_number, date_of_birth, sex)
 VALUES 
-    (1, 'john@gmail.com', '(123)456-7890', 'SexAtBirth_Female'),
-    (2, 'rebecca@gmail.com', '1234567890', 'SexAtBirth_Male'),
-    (3, 'samwjeo', '123456-7890', 'SexAtBirth_SexAtBirthNoneOfThese'),
-    (4,'chris@gmail.com', '1234567890', 'SexAtBirth_Intersex'),
-    (5, '  johndoe@gmail.com  ', '', 'PMI_Skip'),
-    (6, 'rebeccamayers@gmail.co', '814321-0987', 'PMI_PreferNotToAnswer'),
-    (7, 'leo@yahoo.com', '0987654321', 'UNSET'),
-    (8, '', '1-800-800-0911', 'SexAtBirth_SexAtBirthNoneOfThese'),
-    (9, 'jd@gmail.com', '555-555-1234', 'SexAtBirth_Female')
+    (1, 'john@gmail.com', '(123)456-7890', date('1978-10-01'), 'SexAtBirth_Female'),
+    (2, 'rebecca@gmail.com', '1234567890', date('1984-10-23'), 'SexAtBirth_Male'),
+    (3, 'samwjeo', '123456-7890', date('2003-01-05'), 'SexAtBirth_SexAtBirthNoneOfThese'),
+    (4,'chris@gmail.com', '1234567890', date('2003-05-1'), 'SexAtBirth_Intersex'),
+    (5, '  johndoe@gmail.com  ', '', date('1993-11-01'), 'PMI_Skip'),
+    (6, 'rebeccamayers@gmail.co', '814321-0987', NULL, 'PMI_PreferNotToAnswer'),
+    (7, 'leo@yahoo.com', '0987654321', date('1981-10-01'), 'UNSET'),
+    (8, '', '1-800-800-0911', date('1999-12-01'), 'SexAtBirth_SexAtBirthNoneOfThese'),
+    (9, 'jd@gmail.com', '555-555-1234', date('2002-03-14'), 'SexAtBirth_Female')
 """)
 
 POPULATE_ID_MATCH = JINJA_ENV.from_string("""
@@ -163,8 +164,7 @@ class ValidateTest(TestCase):
             (5, 'johndoe@gmail.com'),
             (6, 'rebeccamayers@gmail.com'),
             (7, 'leo@gmail.com'),
-            (8, 'claire@gmail.com'),
-            (9, 'jd @gmail.com')
+            (8, 'claire@gmail.com')
         """)
 
         POPULATE_PII_PHONE_NUMBER = JINJA_ENV.from_string("""
@@ -177,23 +177,21 @@ class ValidateTest(TestCase):
                     (5, ''),
                     (6, '8143210987'),
                     (7, '987654321'),
-                    (8, '800-8000911'),
-                    (9, '555-1234')
+                    (8, '800-8000911')
                 """)
 
         POUPLATE_PERSON_TABLE = JINJA_ENV.from_string("""
                 INSERT INTO `{{project_id}}.{{drc_dataset_id}}.{{person_table_id}}` 
-                (person_id, gender_concept_id)
+                (person_id, gender_concept_id, birth_datetime)
                 VALUES
-                    (1, 8532),
-                    (2, 8507),
-                    (3, 8551),
-                    (4, 8521),
-                    (5, 8570),
-                    (6, 0),
-                    (7, 4215271),
-                    (8, 4214687),
-                    (9, 8507)
+                    (1, 8532, timestamp ('1978-10-01')),
+                    (2, 8507, timestamp('1984-10-23')),
+                    (3, 8551, timestamp ('2004-10-01')),
+                    (4, 8521, timestamp ('2003-05-01')),
+                    (5, 8570, timestamp ('2000-11-01')),
+                    (6, 0, timestamp ('1900-01-01')),
+                    (7, 4215271, timestamp ('1981-01-10')),
+                    (8, 4214687, timestamp ('1999-12-1'))
                 """)
 
         # Create and populate concept table
@@ -246,62 +244,72 @@ class ValidateTest(TestCase):
 
         # Subset of id match fields to test
         subset_fields = [
-            'person_id', 'email', 'phone_number', 'sex', 'algorithm'
+            'person_id', 'email', 'phone_number', 'sex', 'birth_date',
+            'algorithm'
         ]
 
         expected = [{
             'person_id': 1,
             'email': 'no_match',
             'phone_number': 'no_match',
+            'birth_date': 'match',
             'sex': 'match',
             'algorithm': 'yes'
         }, {
             'person_id': 2,
             'email': 'match',
             'phone_number': 'match',
+            'birth_date': 'match',
             'sex': 'match',
             'algorithm': 'yes'
         }, {
             'person_id': 3,
             'email': 'missing_ehr',
             'phone_number': 'missing_ehr',
+            'birth_date': 'no_match',
             'sex': 'match',
             'algorithm': 'yes'
         }, {
             'person_id': 4,
             'email': 'match',
             'phone_number': 'match',
+            'birth_date': 'match',
             'sex': 'no_match',
             'algorithm': 'yes'
         }, {
             'person_id': 5,
             'email': 'match',
             'phone_number': 'match',
+            'birth_date': 'no_match',
             'sex': 'missing_rdr',
             'algorithm': 'yes'
         }, {
             'person_id': 6,
             'email': 'no_match',
             'phone_number': 'match',
+            'birth_date': 'missing_rdr',
             'sex': 'missing_rdr',
             'algorithm': 'yes'
         }, {
             'person_id': 7,
             'email': 'no_match',
             'phone_number': 'no_match',
+            'birth_date': 'no_match',
             'sex': 'missing_rdr',
             'algorithm': 'yes'
         }, {
             'person_id': 8,
             'email': 'no_match',
             'phone_number': 'no_match',
+            'birth_date': 'match',
             'sex': 'no_match',
             'algorithm': 'yes'
         }, {
             'person_id': 9,
-            'email': 'no_match',
-            'phone_number': 'no_match',
-            'sex': 'no_match',
+            'email': 'missing_ehr',
+            'phone_number': 'missing_ehr',
+            'birth_date': 'missing_ehr',
+            'sex': 'missing_ehr',
             'algorithm': 'yes'
         }]
 

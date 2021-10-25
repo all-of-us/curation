@@ -36,6 +36,7 @@ MATCH_FIELDS_QUERY = JINJA_ENV.from_string("""
     UPDATE `{{project_id}}.{{drc_dataset_id}}.{{id_match_table_id}}` upd
     SET upd.email = `{{project_id}}.{{drc_dataset_id}}.CompareEmail`(ps.email, ehr_email.email),
         upd.phone_number = `{{project_id}}.{{drc_dataset_id}}.ComparePhoneNumber`(ps.phone_number, ehr_phone.phone_number),
+        upd.birth_date = `{{project_id}}.{{drc_dataset_id}}.CompareDateOfBirth`(ps.date_of_birth, ehr_dob.date_of_birth),
         upd.sex = `{{project_id}}.{{drc_dataset_id}}.CompareSexAtBirth`(ps.sex, ehr_sex.sex),
         upd.algorithm = 'yes'
     FROM `{{project_id}}.{{drc_dataset_id}}.{{ps_api_table_id}}` ps
@@ -43,10 +44,13 @@ MATCH_FIELDS_QUERY = JINJA_ENV.from_string("""
         ON ehr_email.person_id = ps.person_id
     LEFT JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_phone_number_table_id}}` ehr_phone
         ON ehr_phone.person_id = ps.person_id
+    LEFT JOIN ( SELECT person_id, DATE(birth_datetime) AS date_of_birth
+               FROM `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_person_table_id}}` ) AS ehr_dob
+        ON ehr_dob.person_id = ps.person_id
     LEFT JOIN ( SELECT person_id, cc.concept_name as sex
-    FROM `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_person_table_id}}`
-    JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.concept` cc
-    ON gender_concept_id = concept_id ) AS ehr_sex
+                FROM `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_person_table_id}}`
+                JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.concept` cc
+                    ON gender_concept_id = concept_id ) AS ehr_sex
         ON ehr_sex.person_id = ps.person_id
     WHERE upd.person_id = ps.person_id
         AND upd._PARTITIONTIME = ps._PARTITIONTIME
