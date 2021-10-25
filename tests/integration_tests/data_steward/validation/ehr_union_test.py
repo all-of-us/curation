@@ -490,8 +490,9 @@ class EhrUnionTest(unittest.TestCase):
                     expr = 'left join on foreign key'
                     # Visit_detail table has 'visit_occurrence' column after 'care_site', which is different from
                     # other cdm tables, where 'visit_occurrence' comes before other foreign_keys.
-                    # The test expects the same order as other cmd tables, but the actual query has
-                    # 'visit_occurrence' before 'care_site'. The following reorder is required to match the sequence.
+                    # The test expects the same order as other cmd tables, so the expected-query has
+                    # 'visit_occurrence' before 'care_site'. The following reorder is required to match the sequence
+                    # to the actual-query.
                     if table == 'visit_detail' and key_ind == 2:
                         stmt['from'][2], stmt['from'][3] = stmt['from'][
                             3], stmt['from'][2]
