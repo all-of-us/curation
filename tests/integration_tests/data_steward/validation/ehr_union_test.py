@@ -438,6 +438,9 @@ class EhrUnionTest(unittest.TestCase):
         subquery = re.sub(
             r",\s+ROW_NUMBER\(\) OVER \(PARTITION BY nm\..+?_id\) AS row_num",
             " ", subquery)
+        # offset is being used as a column-name in note_nlp table.
+        # Although, BigQuery does not throw any errors for this, moz_sql_parser indentifies as a SQL Keyword.
+        # So, change required only in Test Script as a workaround.
         if 'offset,' in subquery:
             subquery = subquery.replace('offset,', '"offset",')
         stmt = moz_sql_parser.parse(subquery)
@@ -485,6 +488,10 @@ class EhrUnionTest(unittest.TestCase):
                     # Foreign key, mapping table associated with the referenced table should be LEFT joined
                     key_ind += 1
                     expr = 'left join on foreign key'
+                    # Visit_detail table has 'visit_occurrence' column after 'care_site', which is different from
+                    # other cdm tables, where 'visit_occurrence' comes before other foreign_keys.
+                    # The test expects the same order as other cmd tables, but the actual query has
+                    # 'visit_occurrence' before 'care_site'. The following reorder is required to match the sequence.
                     if table == 'visit_detail' and key_ind == 2:
                         stmt['from'][2], stmt['from'][3] = stmt['from'][
                             3], stmt['from'][2]
