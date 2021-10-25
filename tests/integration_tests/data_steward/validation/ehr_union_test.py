@@ -16,7 +16,6 @@ import gcs_utils
 import resources
 import tests.test_util as test_util
 from validation import ehr_union
-from io import open
 
 PITT_HPO_ID = 'pitt'
 NYC_HPO_ID = 'nyc'
@@ -305,7 +304,7 @@ class EhrUnionTest(unittest.TestCase):
 
     @mock.patch('resources.CDM_TABLES', [
         common.PERSON, common.OBSERVATION, common.LOCATION, common.CARE_SITE,
-        common.VISIT_OCCURRENCE
+        common.VISIT_OCCURRENCE, common.VISIT_DETAIL
     ])
     @mock.patch('cdm.tables_to_map')
     def test_ehr_person_to_observation(self, mock_tables_map):
@@ -313,7 +312,7 @@ class EhrUnionTest(unittest.TestCase):
         self._load_datasets()
         mock_tables_map.return_value = [
             common.OBSERVATION, common.LOCATION, common.CARE_SITE,
-            common.VISIT_OCCURRENCE
+            common.VISIT_OCCURRENCE, common.VISIT_DETAIL
         ]
 
         # perform ehr union
@@ -370,14 +369,14 @@ class EhrUnionTest(unittest.TestCase):
 
     @mock.patch('resources.CDM_TABLES', [
         common.PERSON, common.OBSERVATION, common.LOCATION, common.CARE_SITE,
-        common.VISIT_OCCURRENCE
+        common.VISIT_OCCURRENCE, common.VISIT_DETAIL
     ])
     @mock.patch('cdm.tables_to_map')
     def test_ehr_person_to_observation_counts(self, mock_tables_map):
         self._load_datasets()
         mock_tables_map.return_value = [
             common.OBSERVATION, common.LOCATION, common.CARE_SITE,
-            common.VISIT_OCCURRENCE
+            common.VISIT_OCCURRENCE, common.VISIT_DETAIL
         ]
 
         # perform ehr union
