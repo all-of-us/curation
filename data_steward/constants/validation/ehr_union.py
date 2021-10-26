@@ -1,6 +1,7 @@
 import common
 # This File consists of all the constants and sql queries from validation/ehr_union
 VISIT_OCCURRENCE_ID = 'visit_occurrence_id'
+VISIT_DETAIL_ID = 'visit_detail_id'
 CARE_SITE_ID = 'care_site_id'
 PERSON_ID = 'person_id'
 LOCATION_ID = 'location_id'
