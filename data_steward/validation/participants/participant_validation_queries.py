@@ -1,6 +1,27 @@
 # Project imports
 from common import JINJA_ENV
 
+CREATE_SEX_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
+CREATE FUNCTION IF NOT EXISTS
+  `{{project_id}}.{{drc_dataset_id}}.CompareSexAtBirth`(rdr_sex string,
+    ehr_sex string)
+  RETURNS string AS ((
+        WITH normalized_rdr_sex AS (
+            SELECT LOWER(TRIM(rdr_sex)) AS rdr_sex
+        )
+        , normalized_ehr_sex AS (
+            SELECT LOWER(TRIM(ehr_sex)) AS ehr_sex
+        )
+    SELECT
+      CASE
+        {{gender_case_when_conditions}}
+      ELSE
+      '{{missing_ehr}}'
+    END
+      AS sex
+       FROM normalized_rdr_sex, normalized_ehr_sex));
+""")
+
 CREATE_EMAIL_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
     CREATE FUNCTION IF NOT EXISTS `{{project_id}}.{{drc_dataset_id}}.CompareEmail`(rdr_email string, ehr_email string)
     RETURNS string
@@ -51,6 +72,21 @@ CREATE FUNCTION IF NOT EXISTS
       normalized_ehr_phone_number ));
 """)
 
+CREATE_DOB_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
+ CREATE FUNCTION IF NOT EXISTS 
+ `{{project_id}}.{{drc_dataset_id}}.CompareDateOfBirth`(rdr_birth_date date, ehr_birth_date date)
+    RETURNS string AS
+    (( 
+        SELECT
+        CASE 
+            WHEN rdr_birth_date = ehr_birth_date THEN 'match'
+            WHEN rdr_birth_date IS NOT NULL AND ehr_birth_date IS NOT NULL THEN 'no_match'
+            WHEN rdr_birth_date IS NULL THEN 'missing_rdr'
+            ELSE 'missing_ehr'
+        END AS birth_date
+    ));
+""")
+
 # Contains list of create function queries to execute
 CREATE_COMPARISON_FUNCTION_QUERIES = [{
     'name': 'CompareEmail',
@@ -58,4 +94,10 @@ CREATE_COMPARISON_FUNCTION_QUERIES = [{
 }, {
     'name': 'ComparePhoneNumber',
     'query': CREATE_PHONE_NUMBER_COMPARISON_FUNCTION
+}, {
+    'name': 'CompareSexAtBirth',
+    'query': CREATE_SEX_COMPARISON_FUNCTION
+}, {
+    'name': 'CompareDateOfBirth',
+    'query': CREATE_DOB_COMPARISON_FUNCTION
 }]

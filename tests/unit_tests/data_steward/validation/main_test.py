@@ -1,19 +1,20 @@
 """
 Unit test components of data_steward.validation.main
 """
+# Python imports
 import datetime
 import re
+import os
 from unittest import TestCase, mock
 
-import googleapiclient.errors
-
+# Project imports
 import common
 import resources
 from constants.validation import hpo_report as report_consts
 from constants.validation import main as main_consts
 from constants.validation.participants import identity_match as id_match_consts
 from validation import main
-import test_util
+from tests.test_util import mock_google_http_error
 
 
 class ValidationMainTest(TestCase):
@@ -50,6 +51,14 @@ class ValidationMainTest(TestCase):
                 })
 
         return bucket_items
+
+    def test_unset_bucket(self):
+        bucket_env_var = f'BUCKET_NAME_{self.hpo_id.upper()}'
+        # run without setting env var (unset env_var)
+        main.process_hpo(self.hpo_id)
+        # run after setting env var to empty string
+        os.environ[bucket_env_var] = ""
+        main.process_hpo(self.hpo_id)
 
     def test_retention_checks_list_submitted_bucket_items(self):
         #Define times to use
@@ -289,7 +298,7 @@ class ValidationMainTest(TestCase):
                                          mock_hpo_bucket):
         http_error_string = 'fake http error'
         mock_hpo_csv.return_value = [{'hpo_id': self.hpo_id}]
-        mock_list_bucket.side_effect = test_util.mock_google_http_error(
+        mock_list_bucket.side_effect = mock_google_http_error(
             content=http_error_string.encode())
         with main.app.test_client() as c:
             c.get(main_consts.PREFIX + 'ValidateAllHpoFiles')
@@ -554,9 +563,9 @@ class ValidationMainTest(TestCase):
             return []
 
         def query_rows_error(q):
-            raise test_util.mock_google_http_error(status_code=500,
-                                                   reason='baz',
-                                                   content=b'bar')
+            raise mock_google_http_error(status_code=500,
+                                         reason='baz',
+                                         content=b'bar')
 
         def upload_string_to_gcs(bucket, filename, content):
             return True
