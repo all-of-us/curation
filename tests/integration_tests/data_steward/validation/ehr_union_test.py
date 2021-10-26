@@ -16,7 +16,6 @@ import gcs_utils
 import resources
 import tests.test_util as test_util
 from validation import ehr_union
-from io import open
 
 PITT_HPO_ID = 'pitt'
 NYC_HPO_ID = 'nyc'
@@ -60,8 +59,8 @@ class EhrUnionTest(unittest.TestCase):
             mapped_fields.append(field)
         self.mapped_fields = mapped_fields
         self.implemented_foreign_keys = [
-            eu_constants.VISIT_OCCURRENCE_ID, eu_constants.CARE_SITE_ID,
-            eu_constants.LOCATION_ID
+            eu_constants.VISIT_OCCURRENCE_ID, eu_constants.VISIT_DETAIL_ID,
+            eu_constants.CARE_SITE_ID, eu_constants.LOCATION_ID
         ]
 
     def _empty_hpo_buckets(self):
@@ -305,7 +304,7 @@ class EhrUnionTest(unittest.TestCase):
 
     @mock.patch('resources.CDM_TABLES', [
         common.PERSON, common.OBSERVATION, common.LOCATION, common.CARE_SITE,
-        common.VISIT_OCCURRENCE
+        common.VISIT_OCCURRENCE, common.VISIT_DETAIL
     ])
     @mock.patch('cdm.tables_to_map')
     def test_ehr_person_to_observation(self, mock_tables_map):
@@ -313,7 +312,7 @@ class EhrUnionTest(unittest.TestCase):
         self._load_datasets()
         mock_tables_map.return_value = [
             common.OBSERVATION, common.LOCATION, common.CARE_SITE,
-            common.VISIT_OCCURRENCE
+            common.VISIT_OCCURRENCE, common.VISIT_DETAIL
         ]
 
         # perform ehr union
@@ -370,14 +369,14 @@ class EhrUnionTest(unittest.TestCase):
 
     @mock.patch('resources.CDM_TABLES', [
         common.PERSON, common.OBSERVATION, common.LOCATION, common.CARE_SITE,
-        common.VISIT_OCCURRENCE
+        common.VISIT_OCCURRENCE, common.VISIT_DETAIL
     ])
     @mock.patch('cdm.tables_to_map')
     def test_ehr_person_to_observation_counts(self, mock_tables_map):
         self._load_datasets()
         mock_tables_map.return_value = [
             common.OBSERVATION, common.LOCATION, common.CARE_SITE,
-            common.VISIT_OCCURRENCE
+            common.VISIT_OCCURRENCE, common.VISIT_DETAIL
         ]
 
         # perform ehr union
@@ -439,6 +438,11 @@ class EhrUnionTest(unittest.TestCase):
         subquery = re.sub(
             r",\s+ROW_NUMBER\(\) OVER \(PARTITION BY nm\..+?_id\) AS row_num",
             " ", subquery)
+        # offset is being used as a column-name in note_nlp table.
+        # Although, BigQuery does not throw any errors for this, moz_sql_parser indentifies as a SQL Keyword.
+        # So, change required only in Test Script as a workaround.
+        if 'offset,' in subquery:
+            subquery = subquery.replace('offset,', '"offset",')
         stmt = moz_sql_parser.parse(subquery)
 
         # Sanity check it is a select statement
@@ -484,6 +488,14 @@ class EhrUnionTest(unittest.TestCase):
                     # Foreign key, mapping table associated with the referenced table should be LEFT joined
                     key_ind += 1
                     expr = 'left join on foreign key'
+                    # Visit_detail table has 'visit_occurrence' column after 'care_site', which is different from
+                    # other cdm tables, where 'visit_occurrence' comes before other foreign_keys.
+                    # The test expects the same order as other cmd tables, so the expected-query has
+                    # 'visit_occurrence' before 'care_site'. The following reorder is required to match the sequence
+                    # to the actual-query.
+                    if table == 'visit_detail' and key_ind == 2:
+                        stmt['from'][2], stmt['from'][3] = stmt['from'][
+                            3], stmt['from'][2]
                     actual_join = first_or_none(
                         dpath.util.values(stmt,
                                           'from/%s/left join/value' % key_ind))
