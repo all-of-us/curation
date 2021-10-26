@@ -328,6 +328,7 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
         # NOTE: Assumes that besides person_id foreign keys exist only for visit_occurrence, location, care_site
         mapping_table = mapping_table_for(table_name) if is_id_mapped else None
         has_visit_occurrence_id = False
+        has_visit_detail_id = False
         has_care_site_id = False
         has_location_id = False
         id_col = f'{table_name}_id'
@@ -344,10 +345,16 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
                     col_expr = f'm.{field_name}'
             elif field_name == eu_constants.VISIT_OCCURRENCE_ID:
                 # Replace with mapped visit_occurrence_id
-                # mv is an alias that should resolve to the mapping visit table
+                # mvo is an alias that should resolve to the mapping visit_occurrence table
                 # Note: This is only reached when table_name != visit_occurrence
-                col_expr = 'mv.' + eu_constants.VISIT_OCCURRENCE_ID
+                col_expr = 'mvo.' + eu_constants.VISIT_OCCURRENCE_ID
                 has_visit_occurrence_id = True
+            elif field_name == eu_constants.VISIT_DETAIL_ID:
+                # Replace with mapped visit_detail_id
+                # mvd is an alias that should resolve to the mapping visit_detail table
+                # Note: This is only reached when table_name != visit_detail
+                col_expr = 'mvd.' + eu_constants.VISIT_DETAIL_ID
+                has_visit_detail_id = True
             elif field_name == eu_constants.CARE_SITE_ID:
                 # Replace with mapped care_site_id
                 # cs is an alias that should resolve to the mapping care_site table
@@ -365,20 +372,33 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
             col_exprs.append(col_expr)
         cols = ',\n        '.join(col_exprs)
 
-        visit_join_expr = ''
+        visit_occurrence_join_expr = ''
+        visit_detail_join_expr = ''
         location_join_expr = ''
         care_site_join_expr = ''
 
         if has_visit_occurrence_id:
-            # Include a join to mapping visit table
+            # Include a join to mapping visit occurrence table
             # Note: Using left join in order to keep records that aren't mapped to visits
-            mv = mapping_table_for(common.VISIT_OCCURRENCE)
-            src_visit_table_id = bq_utils.get_table_id(hpo_id,
-                                                       common.VISIT_OCCURRENCE)
-            visit_join_expr = f'''
-            LEFT JOIN `{output_dataset_id}.{mv}` mv 
-              ON t.visit_occurrence_id = mv.src_visit_occurrence_id 
-             AND mv.src_table_id = '{src_visit_table_id}'
+            mvo = mapping_table_for(common.VISIT_OCCURRENCE)
+            src_visit_occurrence_table_id = bq_utils.get_table_id(
+                hpo_id, common.VISIT_OCCURRENCE)
+            visit_occurrence_join_expr = f'''
+            LEFT JOIN `{output_dataset_id}.{mvo}` mvo 
+              ON t.visit_occurrence_id = mvo.src_visit_occurrence_id 
+             AND mvo.src_table_id = '{src_visit_occurrence_table_id}'
+            '''
+
+        if has_visit_detail_id:
+            # Include a join to mapping visit detail table
+            # Note: Using left join in order to keep records that aren't mapped to visits
+            mvd = mapping_table_for(common.VISIT_DETAIL)
+            src_visit_detail_table_id = bq_utils.get_table_id(
+                hpo_id, common.VISIT_DETAIL)
+            visit_detail_join_expr = f'''
+            LEFT JOIN `{output_dataset_id}.{mvd}` mvd 
+              ON t.visit_detail_id = mvd.src_visit_detail_id 
+             AND mvd.src_table_id = '{src_visit_detail_table_id}'
             '''
 
         if has_care_site_id:
@@ -427,7 +447,8 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
         ON
             t.{table_name}_id = m.src_{table_name}_id
         AND m.src_table_id = '{table_id}'
-        {visit_join_expr}
+        {visit_occurrence_join_expr}
+        {visit_detail_join_expr}
         {care_site_join_expr}
         {location_join_expr}
         WHERE
