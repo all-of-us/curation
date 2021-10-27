@@ -903,32 +903,46 @@ def copy_files(hpo_id):
     :hpo_id: hpo from which to copy
     :return: json string indicating the job has finished
     """
-    hpo_bucket = gcs_utils.get_hpo_bucket(hpo_id)
-    drc_private_bucket = gcs_utils.get_drc_bucket()
+    try:
+        hpo_bucket = gcs_utils.get_hpo_bucket(hpo_id)
+        drc_private_bucket = gcs_utils.get_drc_bucket()
+        bucket_items = list_bucket(hpo_bucket)
 
-    bucket_items = list_bucket(hpo_bucket)
+        ignored_items = 0
+        filtered_bucket_items = []
+        for item in bucket_items:
+            item_root = item['name'].split('/')[0] + '/'
+            if item_root.lower() in common.IGNORE_DIRECTORIES:
+                ignored_items += 1
+            else:
+                filtered_bucket_items.append(item)
 
-    ignored_items = 0
-    filtered_bucket_items = []
-    for item in bucket_items:
-        item_root = item['name'].split('/')[0] + '/'
-        if item_root.lower() in common.IGNORE_DIRECTORIES:
-            ignored_items += 1
+        logging.info(f"Ignoring {ignored_items} items in {hpo_bucket}")
+
+        prefix = hpo_id + '/' + hpo_bucket + '/'
+
+        for item in filtered_bucket_items:
+            item_name = item['name']
+            gcs_utils.copy_object(source_bucket=hpo_bucket,
+                                  source_object_id=item_name,
+                                  destination_bucket=drc_private_bucket,
+                                  destination_object_id=prefix + item_name)
+        return '{"copy-status": "done"}'
+    except BucketDoesNotExistError as bucket_error:
+        bucket = bucket_error.bucket
+        if bucket:
+            logging.warning(
+                f"Bucket '{bucket}' configured for hpo_id '{hpo_id}' does not exist"
+            )
         else:
-            filtered_bucket_items.append(item)
-
-    logging.info(f"Ignoring {ignored_items} items in {hpo_bucket}")
-
-    prefix = hpo_id + '/' + hpo_bucket + '/'
-
-    for item in filtered_bucket_items:
-        item_name = item['name']
-        gcs_utils.copy_object(source_bucket=hpo_bucket,
-                              source_object_id=item_name,
-                              destination_bucket=drc_private_bucket,
-                              destination_object_id=prefix + item_name)
-
-    return '{"copy-status": "done"}'
+            logging.info(
+                f"Bucket '{bucket}' configured for hpo_id '{hpo_id}' is empty/unset"
+            )
+    except HttpError as http_error:
+        message = (
+            f"Failed to copy files for hpo_id '{hpo_id}' due to the following "
+            f"HTTP error: {http_error.content.decode()}")
+        logging.exception(message)
 
 
 def upload_string_to_gcs(bucket, name, string):
