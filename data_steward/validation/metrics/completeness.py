@@ -51,6 +51,10 @@ def create_completeness_query(dataset_id, columns):
             **column)
         subqueries.append(subquery)
     union_all_subqueries = consts.UNION_ALL.join(subqueries)
+
+    if not union_all_subqueries:
+        return None
+
     result = consts.COMPLETENESS_QUERY_FMT.format(
         union_all_subqueries=union_all_subqueries)
     return result
@@ -108,9 +112,12 @@ def column_completeness(dataset_id, columns):
     :return:
     """
     query = create_completeness_query(dataset_id, columns)
-    query_response = bq_utils.query(query)
-    results = bq_utils.response2rows(query_response)
-    return results
+    if query:
+        query_response = bq_utils.query(query)
+        results = bq_utils.response2rows(query_response)
+        return results
+    else:
+        return None
 
 
 def get_hpo_completeness_query(hpo_id, dataset_id=None):
