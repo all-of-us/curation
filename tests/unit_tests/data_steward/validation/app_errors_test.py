@@ -1,6 +1,7 @@
 """
 A unit test class for the curation/data_steward/validation/app_errors module.
 """
+import os
 from unittest import TestCase, mock
 
 from googleapiclient.errors import HttpError
@@ -79,18 +80,23 @@ class AppErrorHandlersTest(TestCase):
             self.assertEqual(view, app_errors.DEFAULT_VIEW_MESSAGE)
             self.assertTrue(code, app_errors.DEFAULT_ERROR_STATUS)
 
+    @mock.patch('gcs_utils.list_bucket')
     @mock.patch('validation.app_errors.post_message')
     @mock.patch('api_util.check_cron')
-    def test_handlers_fire(self, mock_check_cron, mock_alert_message):
+    def test_handlers_fire(self, mock_check_cron, mock_alert_message,
+                           mock_list_bucket):
         """
         Test the os handler method fires as expected when an OSError is raised.
         """
+        mock_list_bucket.side_effect = HttpError(mock.Mock(status=404),
+                                                 'not found'.encode())
+        hpo_id = 'no_bucket_exists'
         with main.app.test_client() as tc:
-            copy_files_url = main_consts.PREFIX + 'CopyFiles/no_bucket_exists'
+            os.environ.pop(f"BUCKET_NAME_{hpo_id.upper()}", None)
+            copy_files_url = main_consts.PREFIX + f'CopyFiles/{hpo_id}'
             response = tc.get(copy_files_url)
 
-            mock_check_cron.assert_called_once()
-            # asserts the handler was called, based on it's contents
-            mock_alert_message.assert_called_once()
-            self.assertEqual(response.status_code,
-                             app_errors.DEFAULT_ERROR_STATUS)
+            os.environ[f"BUCKET_NAME_{hpo_id.upper()}"] = "bucket_var_set"
+            response = tc.get(copy_files_url)
+
+            self.assertEqual(mock_check_cron.call_count, 2)

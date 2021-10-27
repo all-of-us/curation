@@ -895,13 +895,10 @@ def _is_string_excluded_file(gcs_file_name):
         for prefix in common.IGNORE_STRING_LIST)
 
 
-@api_util.auth_required_cron
-@log_traceback
-def copy_files(hpo_id):
+def process_hpo_copy(hpo_id):
     """copies over files from hpo bucket to drc bucket
 
     :hpo_id: hpo from which to copy
-    :return: json string indicating the job has finished
     """
     try:
         hpo_bucket = gcs_utils.get_hpo_bucket(hpo_id)
@@ -927,7 +924,6 @@ def copy_files(hpo_id):
                                   source_object_id=item_name,
                                   destination_bucket=drc_private_bucket,
                                   destination_object_id=prefix + item_name)
-        return '{"copy-status": "done"}'
     except BucketDoesNotExistError as bucket_error:
         bucket = bucket_error.bucket
         if bucket:
@@ -943,6 +939,18 @@ def copy_files(hpo_id):
             f"Failed to copy files for hpo_id '{hpo_id}' due to the following "
             f"HTTP error: {http_error.content.decode()}")
         logging.exception(message)
+
+
+@api_util.auth_required_cron
+@log_traceback
+def copy_files(hpo_id):
+    """endpoint to copy files for hpo_id
+
+    :hpo_id: hpo from which to copy
+    :return: json string indicating the job has finished
+    """
+    process_hpo_copy(hpo_id)
+    return '{"copy-status": "done"}'
 
 
 def upload_string_to_gcs(bucket, name, string):
