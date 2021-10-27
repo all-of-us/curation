@@ -64,9 +64,9 @@ SELECT observation_id FROM `{{project_id}}.{{sandbox_dataset_id}}.{{whitespace_s
 
 UPDATE_INVALID_ZIP_CODES = JINJA_ENV.from_string("""
 UPDATE `{{project_id}}.{{dataset_id}}.{{obs_table}}` SET
-value_as_string = 'Response removed due to invalid value',
+value_as_string = '00000',
 value_source_value = 'Response removed due to invalid value',
-value_as_number = 0,
+value_as_number = NULL,
 value_source_concept_id = 2000000010
 WHERE observation_id IN (
 SELECT observation_id FROM `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table}}`)
