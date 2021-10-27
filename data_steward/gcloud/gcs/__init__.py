@@ -12,7 +12,7 @@ from google.cloud.storage.client import Client
 
 class StorageClient(Client):
     """
-    An (extended) client for interfacing with GCS
+    A client that extends GCS functionality
     See https://googleapis.dev/python/storage/latest/client.html
     """
 
