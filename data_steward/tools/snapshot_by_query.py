@@ -14,25 +14,6 @@ BIGQUERY_DATA_TYPES = {
     'timestamp': 'TIMESTAMP'
 }
 
-MODIFIED_FIELD_NAMES = {
-    'modifier_source_value': {
-        'old_name': 'qualifier_source_value',
-        'new_name': 'modifier_source_value'
-    },
-    'npi': {
-        'old_name': 'NPI',
-        'new_name': 'npi'
-    },
-    'dea': {
-        'old_name': 'DEA',
-        'new_name': 'dea'
-    },
-    'revenue_code_source_value': {
-        'old_name': 'reveue_code_source_value',
-        'new_name': 'revenue_code_source_value'
-    }
-}
-
 
 def create_empty_dataset(project_id, dataset_id, snapshot_dataset_id):
     """
@@ -78,10 +59,7 @@ def get_field_cast_expr(dest_field, source_fields):
     dest_field_mode = dest_field['mode']
     dest_field_type = dest_field['type']
     if dest_field_name not in source_fields:
-        if dest_field_name in MODIFIED_FIELD_NAMES.keys():
-            col = f'CAST({MODIFIED_FIELD_NAMES[dest_field_name]["old_name"]} AS {BIGQUERY_DATA_TYPES[dest_field_type.lower()]}) AS {dest_field_name}'
-
-        elif dest_field_mode == 'required':
+        if dest_field_mode == 'required':
             raise RuntimeError(
                 f'Unable to load the field "{dest_field_name}" which is required in the destination table \
                 and missing from the source table')
