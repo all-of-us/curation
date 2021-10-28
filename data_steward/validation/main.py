@@ -352,6 +352,7 @@ def generate_metrics(hpo_id, bucket, folder_prefix, summary):
             report_data[report_consts.COMPLETENESS_REPORT_KEY] = query_rows(
                 completeness_query)
         else:
+            report_data[report_consts.COMPLETENESS_REPORT_KEY] = []
             logging.error("Completeness query not evaluated for site")
 
         # lab concept metrics
