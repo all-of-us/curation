@@ -112,12 +112,9 @@ def column_completeness(dataset_id, columns):
     :return:
     """
     query = create_completeness_query(dataset_id, columns)
-    if query:
-        query_response = bq_utils.query(query)
-        results = bq_utils.response2rows(query_response)
-        return results
-    else:
-        return None
+    query_response = bq_utils.query(query)
+    results = bq_utils.response2rows(query_response)
+    return results
 
 
 def get_hpo_completeness_query(hpo_id, dataset_id=None):
