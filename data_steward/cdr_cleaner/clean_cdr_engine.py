@@ -9,6 +9,7 @@ from google.cloud.exceptions import GoogleCloudError
 
 # Project imports
 from utils import bq
+from utils.pipeline_logging import configure
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as cdr_consts
@@ -24,19 +25,7 @@ def add_console_logging(add_handler=True):
     until later.  Useful for debugging.
 
     """
-    logging.basicConfig(
-        level=logging.INFO,
-        filename=ce_consts.FILENAME,
-        filemode='a',
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-
-    if add_handler:
-        handler = logging.StreamHandler()
-        handler.setLevel(logging.INFO)
-        formatter = logging.Formatter(
-            '%(asctime)s - %(levelname)s - %(name)s - %(message)s')
-        handler.setFormatter(formatter)
-        logging.getLogger('').addHandler(handler)
+    configure(add_console_handler=add_handler)
 
 
 def clean_dataset(project_id,
