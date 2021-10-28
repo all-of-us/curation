@@ -16,7 +16,7 @@ class StorageClient(Client):
     See https://googleapis.dev/python/storage/latest/client.html
     """
 
-    def list_sub_prefixes(self, bucket: str, prefix: str) -> list[str]:
+    def list_sub_prefixes(self, bucket: str, prefix: str):
         """
         List sub folders in folder specified by prefix
 
