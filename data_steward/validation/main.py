@@ -526,7 +526,7 @@ def process_hpo(hpo_id, force_run=False):
                               folder_prefix)
     except BucketDoesNotExistError as bucket_error:
         bucket = bucket_error.bucket
-        if bucket:
+        if bucket and bucket.lower() != 'none':
             logging.warning(
                 f"Bucket '{bucket}' configured for hpo_id '{hpo_id}' does not exist"
             )
@@ -926,7 +926,8 @@ def process_hpo_copy(hpo_id):
                                   destination_object_id=prefix + item_name)
     except BucketDoesNotExistError as bucket_error:
         bucket = bucket_error.bucket
-        if bucket:
+        # App engine converts an env var set but left empty to be the string 'None'
+        if bucket and bucket.lower() != 'none':
             logging.warning(
                 f"Bucket '{bucket}' configured for hpo_id '{hpo_id}' does not exist"
             )
