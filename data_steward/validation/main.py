@@ -526,6 +526,7 @@ def process_hpo(hpo_id, force_run=False):
                               folder_prefix)
     except BucketDoesNotExistError as bucket_error:
         bucket = bucket_error.bucket
+        # App engine converts an env var set but left empty to be the string 'None'
         if bucket and bucket.lower() != 'none':
             logging.warning(
                 f"Bucket '{bucket}' configured for hpo_id '{hpo_id}' does not exist"
