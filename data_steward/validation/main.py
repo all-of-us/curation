@@ -526,7 +526,8 @@ def process_hpo(hpo_id, force_run=False):
                               folder_prefix)
     except BucketDoesNotExistError as bucket_error:
         bucket = bucket_error.bucket
-        if bucket:
+        # App engine converts an env var set but left empty to be the string 'None'
+        if bucket and bucket.lower() != 'none':
             logging.warning(
                 f"Bucket '{bucket}' configured for hpo_id '{hpo_id}' does not exist"
             )
@@ -895,39 +896,62 @@ def _is_string_excluded_file(gcs_file_name):
         for prefix in common.IGNORE_STRING_LIST)
 
 
+def process_hpo_copy(hpo_id):
+    """copies over files from hpo bucket to drc bucket
+
+    :hpo_id: hpo from which to copy
+    """
+    try:
+        hpo_bucket = gcs_utils.get_hpo_bucket(hpo_id)
+        drc_private_bucket = gcs_utils.get_drc_bucket()
+        bucket_items = list_bucket(hpo_bucket)
+
+        ignored_items = 0
+        filtered_bucket_items = []
+        for item in bucket_items:
+            item_root = item['name'].split('/')[0] + '/'
+            if item_root.lower() in common.IGNORE_DIRECTORIES:
+                ignored_items += 1
+            else:
+                filtered_bucket_items.append(item)
+
+        logging.info(f"Ignoring {ignored_items} items in {hpo_bucket}")
+
+        prefix = hpo_id + '/' + hpo_bucket + '/'
+
+        for item in filtered_bucket_items:
+            item_name = item['name']
+            gcs_utils.copy_object(source_bucket=hpo_bucket,
+                                  source_object_id=item_name,
+                                  destination_bucket=drc_private_bucket,
+                                  destination_object_id=prefix + item_name)
+    except BucketDoesNotExistError as bucket_error:
+        bucket = bucket_error.bucket
+        # App engine converts an env var set but left empty to be the string 'None'
+        if bucket and bucket.lower() != 'none':
+            logging.warning(
+                f"Bucket '{bucket}' configured for hpo_id '{hpo_id}' does not exist"
+            )
+        else:
+            logging.info(
+                f"Bucket '{bucket}' configured for hpo_id '{hpo_id}' is empty/unset"
+            )
+    except HttpError as http_error:
+        message = (
+            f"Failed to copy files for hpo_id '{hpo_id}' due to the following "
+            f"HTTP error: {http_error.content.decode()}")
+        logging.exception(message)
+
+
 @api_util.auth_required_cron
 @log_traceback
 def copy_files(hpo_id):
-    """copies over files from hpo bucket to drc bucket
+    """endpoint to copy files for hpo_id
 
     :hpo_id: hpo from which to copy
     :return: json string indicating the job has finished
     """
-    hpo_bucket = gcs_utils.get_hpo_bucket(hpo_id)
-    drc_private_bucket = gcs_utils.get_drc_bucket()
-
-    bucket_items = list_bucket(hpo_bucket)
-
-    ignored_items = 0
-    filtered_bucket_items = []
-    for item in bucket_items:
-        item_root = item['name'].split('/')[0] + '/'
-        if item_root.lower() in common.IGNORE_DIRECTORIES:
-            ignored_items += 1
-        else:
-            filtered_bucket_items.append(item)
-
-    logging.info(f"Ignoring {ignored_items} items in {hpo_bucket}")
-
-    prefix = hpo_id + '/' + hpo_bucket + '/'
-
-    for item in filtered_bucket_items:
-        item_name = item['name']
-        gcs_utils.copy_object(source_bucket=hpo_bucket,
-                              source_object_id=item_name,
-                              destination_bucket=drc_private_bucket,
-                              destination_object_id=prefix + item_name)
-
+    process_hpo_copy(hpo_id)
     return '{"copy-status": "done"}'
 
 
