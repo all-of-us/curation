@@ -140,6 +140,14 @@ RDR_CLEANING_CLASSES = [
     (StoreNewPidRidMappings,),
     (TruncateRdrData,),
     (RemoveParticipantsUnder18Years,),
+    # execute map_questions_answers_to_omop before PpiBranching gets executed
+    # since PpiBranching relies on fully mapped concepts
+    # trying to load a table while creating query strings,
+    # won't work with mocked strings.  should use base class
+    # setup_query_execution function to load dependencies before query execution
+    (
+        map_questions_answers_to_omop.
+        get_update_questions_answers_not_mapped_to_omop,),
     (PpiBranching,),
     # execute FixUnmappedSurveyAnswers before the dropping responses rules get executed
     # (e.g. DropPpiDuplicateResponses and DropDuplicatePpiQuestionsAndAnswers)
@@ -164,12 +172,6 @@ RDR_CLEANING_CLASSES = [
     # setup_query_execution function to load dependencies before query execution
     (
         operational_pii_fields.get_remove_operational_pii_fields_query,),
-    # trying to load a table while creating query strings,
-    # won't work with mocked strings.  should use base class
-    # setup_query_execution function to load dependencies before query execution
-    (
-        map_questions_answers_to_omop.
-        get_update_questions_answers_not_mapped_to_omop,),
     (RoundPpiValuesToNearestInteger,),
     (UpdateFamilyHistoryCodes,),
     (NullConceptIDForNumericPPI,),
