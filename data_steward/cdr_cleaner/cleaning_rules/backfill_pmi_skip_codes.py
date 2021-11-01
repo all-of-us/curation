@@ -31,6 +31,7 @@ PMI_SKIP_FIX_QUERY = """
          0) AS unit_concept_id,
        provider_id,
        visit_occurrence_id,
+       visit_detail_id,
        coalesce(obs.observation_source_value,
          ques.observation_source_value) AS observation_source_value,
        coalesce(obs.observation_source_concept_id,
