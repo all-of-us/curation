@@ -20,10 +20,7 @@ LOGGER = logging.getLogger(__name__)
 
 def add_console_logging(add_handler=True):
     """
-
-    This config should be done in a separate module, but that can wait
-    until later.  Useful for debugging.
-
+    Using pipeline_logging's configure for logging purposes.
     """
     configure(add_console_handler=add_handler)
 
