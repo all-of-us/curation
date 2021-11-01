@@ -772,6 +772,11 @@ def list_submitted_bucket_items(folder_bucketitems):
     ]
 
     if not _has_all_required_files(folder_bucketitems_basenames):
+        logging.info(
+            f"Delaying processing for hpo_id by 3 hrs (to next cron run) "
+            f"since all required files not present. "
+            f"Missing {set(AOU_REQUIRED_FILES) - set(folder_bucketitems_basenames)}"
+        )
         return []
 
     # Validate submission times
@@ -794,6 +799,11 @@ def list_submitted_bucket_items(folder_bucketitems):
                 lower_age_threshold = updated_date + lag_time
 
                 if lower_age_threshold > today:
+                    logging.info(
+                        f"Delaying processing for hpo_id by 3 hrs (to next cron run) "
+                        f"since files are still being uploaded. "
+                        f"Latest file was uploaded less than {object_process_lag_minutes} minutes ago."
+                    )
                     return []
     return files_list
 
