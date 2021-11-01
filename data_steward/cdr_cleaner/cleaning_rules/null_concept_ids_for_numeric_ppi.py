@@ -61,6 +61,7 @@ CREATE OR REPLACE TABLE `{{project}}.{{dataset}}.observation` AS (
         unit_concept_id,
         provider_id,
         visit_occurrence_id,
+        visit_detail_id,
         observation_source_value,
         observation_source_concept_id,
         unit_source_value,
