@@ -1,4 +1,5 @@
 # Python imports
+import mock
 from io import BytesIO
 from unittest import TestCase
 from unittest.mock import patch, MagicMock
@@ -28,10 +29,15 @@ class GCSTest(TestCase):
         self.file_name = 'fake_file.csv'
         self.fake_file_obj = BytesIO()
 
+    @patch('google.auth.default')
     @patch('gcloud.gcs.page_iterator')
     @patch('gcloud.gcs.Client')
-    def test_list_sub_prefixes(self, mock_client, mock_iterator):
+    def test_list_sub_prefixes(self, mock_client, mock_iterator,
+                               mock_default_auth):
+
         mock_iterator.HTTPIterator = MagicMock()
+        mock_default_auth.return_value = (mock.sentinel.credentials,
+                                          mock.sentinel.project)
         fake_request = 'fake_api_request'
         self.client._connection.api_request = fake_request
         path = f"/b/{self.bucket}/o"
