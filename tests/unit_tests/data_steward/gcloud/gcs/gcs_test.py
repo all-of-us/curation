@@ -22,7 +22,7 @@ class GCSTest(TestCase):
 
     def setUp(self):
         # Input parameters expected by the class
-        self.client = StorageClient()
+        self.client = StorageClient('<none>', None)
         self.bucket = 'foo_bucket'
         # self.bucket_obj = MagicMock(return_value=self.bucket)
         # self.client.bucket.return_value = self.bucket_obj
@@ -32,10 +32,9 @@ class GCSTest(TestCase):
 
     @patch('google.auth.default', autospec=True)
     @patch('gcloud.gcs.page_iterator')
-    @mock.patch.dict(os.environ,
-                     {'GOOGLE_APPLICATION_CREDENTIALS': 'fake creds'},
-                     clear=True)
-    def test_list_sub_prefixes(self, mock_iterator, mock_default_auth):
+    @patch('gcloud.gcs.Client')
+    def test_list_sub_prefixes(self, mock_client, mock_iterator,
+                               mock_default_auth):
 
         mock_iterator.HTTPIterator = MagicMock()
         mock_default_auth.return_value = (mock.sentinel.credentials,
