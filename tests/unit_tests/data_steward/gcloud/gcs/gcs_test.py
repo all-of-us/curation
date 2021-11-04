@@ -21,6 +21,9 @@ class GCSTest(TestCase):
         print('**************************************************************')
 
     def setUp(self):
+
+        os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'fake creds'
+
         # Input parameters expected by the class
         self.client = StorageClient()
         self.bucket = 'foo_bucket'
@@ -29,7 +32,6 @@ class GCSTest(TestCase):
         self.folder_prefix = 'folder/'
         self.file_name = 'fake_file.csv'
         self.fake_file_obj = BytesIO()
-        os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'fake creds'
 
     @patch('google.auth.default', autospec=True)
     @patch('gcloud.gcs.page_iterator')
