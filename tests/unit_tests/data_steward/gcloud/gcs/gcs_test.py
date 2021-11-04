@@ -1,4 +1,5 @@
 # Python imports
+import os
 import mock
 from io import BytesIO
 from unittest import TestCase
@@ -31,6 +32,9 @@ class GCSTest(TestCase):
 
     @patch('google.auth.default', autospec=True)
     @patch('gcloud.gcs.page_iterator')
+    @mock.patch.dict(os.environ,
+                     {'GOOGLE_APPLICATION_CREDENTIALS': 'fake creds'},
+                     clear=True)
     def test_list_sub_prefixes(self, mock_iterator, mock_default_auth):
 
         mock_iterator.HTTPIterator = MagicMock()
