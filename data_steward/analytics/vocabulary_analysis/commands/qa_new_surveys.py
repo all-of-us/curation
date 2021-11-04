@@ -342,6 +342,10 @@ dfs ={
     'new_codes':all_new_codes,
 }
 
+# Things to add:
+#     Where codes > 47 char (designate which are over 49 char, but also see any previously truncated codes).
+#     Run a ~spell check on new codes.
+
 # path=data_storage_path+ str(date.today()) + '.xlsx'
 #
 # writer = pd.ExcelWriter(path, engine='xlsxwriter')
