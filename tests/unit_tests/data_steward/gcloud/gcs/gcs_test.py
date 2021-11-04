@@ -22,13 +22,14 @@ class GCSTest(TestCase):
 
     def setUp(self):
         # Input parameters expected by the class
-        self.client = StorageClient('<none>', None)
+        self.client = StorageClient()
         self.bucket = 'foo_bucket'
         # self.bucket_obj = MagicMock(return_value=self.bucket)
         # self.client.bucket.return_value = self.bucket_obj
         self.folder_prefix = 'folder/'
         self.file_name = 'fake_file.csv'
         self.fake_file_obj = BytesIO()
+        os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'fake creds'
 
     @patch('google.auth.default', autospec=True)
     @patch('gcloud.gcs.page_iterator')
