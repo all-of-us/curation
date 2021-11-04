@@ -22,10 +22,8 @@ class GCSTest(TestCase):
 
     def setUp(self):
 
-        os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'fake creds'
-
         # Input parameters expected by the class
-        self.client = StorageClient()
+        self.client = StorageClient(project='<none>', credentials=None)
         self.bucket = 'foo_bucket'
         # self.bucket_obj = MagicMock(return_value=self.bucket)
         # self.client.bucket.return_value = self.bucket_obj
