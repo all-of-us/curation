@@ -73,12 +73,11 @@ import pandas
 from google.cloud import bigquery
 
 # Project imports
+from utils import bq
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
-from common import OBSERVATION
+from common import OBSERVATION, JINJA_ENV
 from resources import PPI_BRANCHING_RULE_PATHS
-from utils import bq
-from common import JINJA_ENV
 
 LOGGER = logging.getLogger(__name__)
 
@@ -255,6 +254,7 @@ class PpiBranching(BaseCleaningRule):
             'Store observation rows that violate the rules in a sandbox table. '
             'Stage the cleaned rows in a sandbox table. '
             'Drop and create the observation table with rows from stage.')
+        # TODO add depends_on after base classing manual_cleaning_rules.update_questiona_answers_not_mapped_to_omop
         super().__init__(issue_numbers=ISSUE_NUMBERS,
                          description=desc,
                          affected_datasets=[cdr_consts.RDR],
