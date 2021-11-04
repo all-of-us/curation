@@ -29,7 +29,7 @@ class GCSTest(TestCase):
         self.file_name = 'fake_file.csv'
         self.fake_file_obj = BytesIO()
 
-    @patch('google.auth.default')
+    @patch('google.auth.default', autospec=True)
     @patch('gcloud.gcs.page_iterator')
     @patch('gcloud.gcs.Client')
     def test_list_sub_prefixes(self, mock_client, mock_iterator,
