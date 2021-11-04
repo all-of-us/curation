@@ -31,9 +31,7 @@ class GCSTest(TestCase):
 
     @patch('google.auth.default', autospec=True)
     @patch('gcloud.gcs.page_iterator')
-    @patch('gcloud.gcs.Client')
-    def test_list_sub_prefixes(self, mock_client, mock_iterator,
-                               mock_default_auth):
+    def test_list_sub_prefixes(self, mock_iterator, mock_default_auth):
 
         mock_iterator.HTTPIterator = MagicMock()
         mock_default_auth.return_value = (mock.sentinel.credentials,
