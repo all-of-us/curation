@@ -1,5 +1,4 @@
 # Python imports
-import mock
 from io import BytesIO
 from unittest import TestCase
 from unittest.mock import patch, MagicMock
@@ -20,24 +19,14 @@ class GCSTest(TestCase):
         print('**************************************************************')
 
     def setUp(self):
-
-        # Input parameters expected by the class
         self.client = StorageClient.create_anonymous_client()
         self.bucket = 'foo_bucket'
-        # self.bucket_obj = MagicMock(return_value=self.bucket)
-        # self.client.bucket.return_value = self.bucket_obj
         self.folder_prefix = 'folder/'
         self.file_name = 'fake_file.csv'
         self.fake_file_obj = BytesIO()
 
-    @patch('google.auth.default', autospec=True)
     @patch('gcloud.gcs.page_iterator')
-    @patch('gcloud.gcs.Client')
-    def test_list_sub_prefixes(self, mock_client, mock_iterator,
-                               mock_default_auth):
-
-        mock_default_auth.return_value = (mock.sentinel.credentials,
-                                          mock.sentinel.project)
+    def test_list_sub_prefixes(self, mock_iterator):
 
         mock_iterator.HTTPIterator = MagicMock()
 
