@@ -56,7 +56,8 @@ def get_field_cast_expr_with_schema_change(dest_field, source_fields):
                 and missing from the source table')
         else:
             raise RuntimeError(
-                f'Mode for "{dest_field_name}" is set to unexpected value "{dest_field_mode}".')
+                f'Mode for "{dest_field_name}" is set to unexpected value "{dest_field_mode}".'
+            )
     return col
 
 
