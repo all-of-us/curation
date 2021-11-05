@@ -1,5 +1,4 @@
 # Python imports
-import os
 import mock
 from io import BytesIO
 from unittest import TestCase
