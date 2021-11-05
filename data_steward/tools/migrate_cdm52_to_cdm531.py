@@ -41,7 +41,7 @@ def get_field_cast_expr_with_schema_change(dest_field, source_fields):
     dest_field_type = dest_field['type']
     if dest_field_name in source_fields:
         col = f'CAST({dest_field_name} AS {snapshot_by_query.BIGQUERY_DATA_TYPES[dest_field_type.lower()]}) AS {dest_field_name}'
-        # data type difference?
+        # TODO handle possible data type difference?
     else:
         if dest_field_mode == 'nullable':
             col = f'CAST(NULL AS {snapshot_by_query.BIGQUERY_DATA_TYPES[dest_field_type.lower()]}) AS {dest_field_name}'
