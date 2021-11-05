@@ -31,6 +31,33 @@ class SnapshotByQueryTest(unittest.TestCase):
                 field_names.append(field['name'])
         return field_names
 
+    def test_get_field_cast_expr_with_schema_change(self):
+
+        expected = 'CAST(DEA AS STRING) AS dea'
+        actual = migrate_cdm52_to_cdm531.get_field_cast_expr_with_schema_change(
+            dict(name='dea', mode='nullable', type='STRING'), source_fields=['DEA', 'procedure_occurrence_id']
+        )
+        self.assertEqual(expected, actual)
+
+        expected = 'CAST(dea AS STRING) AS dea'
+        actual = migrate_cdm52_to_cdm531.get_field_cast_expr_with_schema_change(
+            dict(name='dea', mode='nullable', type='STRING'), source_fields=['dea', 'procedure_occurrence_id']
+        )
+        self.assertEqual(expected, actual)
+
+        # optional dest field missing from source should result in NULL
+        expected = 'CAST(NULL AS STRING) AS dea'
+        actual = migrate_cdm52_to_cdm531.get_field_cast_expr_with_schema_change(
+            dict(name='dea', mode='nullable', type='STRING'), source_fields=['procedure_occurrence_id']
+        )
+        self.assertEqual(expected, actual)
+
+        # required dest field missing from source should result in error
+        with self.assertRaises(RuntimeError) as e:
+            migrate_cdm52_to_cdm531.get_field_cast_expr_with_schema_change(
+                dict(name='procedure_occurrence_id', mode='required', type='INT64'), source_fields=['something']
+            )
+
     @mock.patch('tools.snapshot_by_query.get_source_fields')
     def test_get_copy_table_query(self, mock_get_source_fields):
         mock_get_source_fields.return_value = self.get_mock_fields('provider')
