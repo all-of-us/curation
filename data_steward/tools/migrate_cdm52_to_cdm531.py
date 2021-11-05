@@ -24,6 +24,7 @@ MODIFIED_FIELD_NAMES = {
         'new_name': 'revenue_code_source_value'
     }
 }
+"""Modified field names from 5.2 to 5.3.1"""
 
 
 def get_field_cast_expr_with_schema_change(dest_field, source_fields):
@@ -38,21 +39,24 @@ def get_field_cast_expr_with_schema_change(dest_field, source_fields):
     dest_field_name = dest_field['name']
     dest_field_mode = dest_field['mode']
     dest_field_type = dest_field['type']
-    if dest_field_name not in source_fields:
-        if dest_field_name in MODIFIED_FIELD_NAMES.keys():
-            # Case when the field is one of the modified fields from 5.2 to 5.3
-            col = f'CAST({MODIFIED_FIELD_NAMES[dest_field_name]["old_name"]} AS {snapshot_by_query.BIGQUERY_DATA_TYPES[dest_field_type.lower()]}) AS {dest_field_name}'
+    if dest_field_name in source_fields:
+        col = f'CAST({dest_field_name} AS {snapshot_by_query.BIGQUERY_DATA_TYPES[dest_field_type.lower()]}) AS {dest_field_name}'
+        # data type difference?
+    else:
+        if dest_field_mode == 'nullable':
+            col = f'CAST(NULL AS {snapshot_by_query.BIGQUERY_DATA_TYPES[dest_field_type.lower()]}) AS {dest_field_name}'
+            if dest_field_name in MODIFIED_FIELD_NAMES.keys():
+                old_name = MODIFIED_FIELD_NAMES[dest_field_name]["old_name"]
+                if old_name in source_fields:
+                    # Case when the field is one of the modified fields from 5.2 to 5.3
+                    col = f'CAST({old_name} AS {snapshot_by_query.BIGQUERY_DATA_TYPES[dest_field_type.lower()]}) AS {dest_field_name}'
         elif dest_field_mode == 'required':
             raise RuntimeError(
                 f'Unable to load the field "{dest_field_name}" which is required in the destination table \
                 and missing from the source table')
-        elif dest_field_mode == 'nullable':
-            col = f'CAST(NULL AS {snapshot_by_query.BIGQUERY_DATA_TYPES[dest_field_type.lower()]}) AS {dest_field_name}'
         else:
             raise RuntimeError(
-                f'Unable to determine the mode for "{dest_field_name}".')
-    else:
-        col = f'CAST({dest_field_name} AS {snapshot_by_query.BIGQUERY_DATA_TYPES[dest_field_type.lower()]}) AS {dest_field_name}'
+                f'Mode for "{dest_field_name}" is set to unexpected value "{dest_field_mode}".')
     return col
 
 
