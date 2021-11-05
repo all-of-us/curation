@@ -47,7 +47,7 @@ AOU_REQUIRED = [
 # Standardized clinical data tables in OMOP. All should contain a person_id column. See
 # https://github.com/OHDSI/CommonDataModel/wiki/Standardized-Clinical-Data-Tables
 
-# Clinical tables which do not have a corresponding mapping table.
+# Clinical tables which have a corresponding mapping table.
 MAPPED_CLINICAL_DATA_TABLES = [
     VISIT_OCCURRENCE, CONDITION_OCCURRENCE, DRUG_EXPOSURE, MEASUREMENT,
     PROCEDURE_OCCURRENCE, OBSERVATION, DEVICE_EXPOSURE, SPECIMEN, VISIT_DETAIL
