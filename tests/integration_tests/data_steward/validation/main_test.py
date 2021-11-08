@@ -271,17 +271,14 @@ class ValidationMainTest(unittest.TestCase):
     @mock.patch('validation.main.updated_datetime_object')
     @mock.patch('validation.main._has_all_required_files')
     @mock.patch('validation.main.all_required_files_loaded')
-    @mock.patch('validation.main.extract_date_from_rdr_dataset_id')
     @mock.patch('validation.main.is_first_validation_run')
     @mock.patch('api_util.check_cron')
     def test_html_report_five_person(self, mock_check_cron, mock_first_run,
-                                     mock_rdr_date, mock_required_files_loaded,
+                                     mock_required_files_loaded,
                                      mock_has_all_required_files,
                                      mock_updated_datetime_object):
         mock_required_files_loaded.return_value = False
         mock_first_run.return_value = False
-        rdr_date = '2020-01-01'
-        mock_rdr_date.return_value = rdr_date
         mock_has_all_required_files.return_value = True
         mock_updated_datetime_object.return_value = datetime.datetime.today(
         ) - datetime.timedelta(minutes=7)

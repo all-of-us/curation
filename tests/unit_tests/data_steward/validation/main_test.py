@@ -323,13 +323,12 @@ class ValidationMainTest(TestCase):
     @mock.patch('validation.main.get_folder_items')
     @mock.patch('validation.main._has_all_required_files')
     @mock.patch('validation.main.is_first_validation_run')
-    @mock.patch('validation.main.extract_date_from_rdr_dataset_id')
     @mock.patch('validation.main.is_valid_rdr')
     @mock.patch('gcs_utils.list_bucket')
     @mock.patch('gcs_utils.get_hpo_bucket')
     def test_process_hpo_ignore_dirs(
         self, mock_hpo_bucket, mock_bucket_list, mock_valid_rdr,
-        mock_extract_rdr_date, mock_first_validation,
+        mock_first_validation,
         mock_has_all_required_files, mock_folder_items, mock_validation,
         mock_get_hpo_name, mock_upload_string_to_gcs,
         mock_get_duplicate_counts_query, mock_query_rows,
@@ -365,7 +364,6 @@ class ValidationMainTest(TestCase):
         mock_get_duplicate_counts_query.return_value = ''
         mock_get_hpo_name.return_value = 'noob'
         mock_upload_string_to_gcs.return_value = ''
-        mock_extract_rdr_date.return_value = '2020-01-01'
         mock_valid_rdr.return_value = True
         mock_first_validation.return_value = False
         yesterday = datetime.datetime.now() - datetime.timedelta(hours=24)
@@ -565,9 +563,6 @@ class ValidationMainTest(TestCase):
         def get_duplicate_counts_query(hpo_id):
             return ''
 
-        def extract_date_from_rdr_dataset_id(rdr_dataset_id):
-            return '2020-01-01'
-
         def is_valid_rdr(rdr_dataset_id):
             return True
 
@@ -577,8 +572,6 @@ class ValidationMainTest(TestCase):
                 query_rows=query_rows,
                 get_duplicate_counts_query=get_duplicate_counts_query,
                 upload_string_to_gcs=upload_string_to_gcs,
-                extract_date_from_rdr_dataset_id=
-                extract_date_from_rdr_dataset_id,
                 is_valid_rdr=is_valid_rdr):
             result = main.generate_metrics(self.hpo_id, self.hpo_bucket,
                                            self.folder_prefix, summary)
