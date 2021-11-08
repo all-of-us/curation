@@ -1,4 +1,5 @@
 # Python imports
+import mock
 import os
 import unittest
 
@@ -144,7 +145,9 @@ class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
                                     job_config)
             job.result()
 
-    def test_queries_to_retract_from_fake_dataset(self):
+    @mock.patch('retraction.retract_utils.is_deid_label_or_id')
+    def test_queries_to_retract_from_fake_dataset(self, mock_deid):
+        mock_deid.return_value = False
         rdp.run_deactivation(self.client, self.project_id, [self.dataset_id],
                              self.deact_table)
         person_cols = [

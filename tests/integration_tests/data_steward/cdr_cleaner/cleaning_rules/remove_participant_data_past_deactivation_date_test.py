@@ -109,7 +109,8 @@ class RemoveParticipantDataPastDeactivationDateTest(
 
     @mock.patch(
         'utils.participant_summary_requests.get_deactivated_participants')
-    def test_removing_data_past_deactivated_date(self, mock_func):
+    @mock.patch('retraction.retract_utils.is_deid_label_or_id')
+    def test_removing_data_past_deactivated_date(self, mock_deid, mock_func):
         """
         Validate deactivated participant records are dropped via cleaning rule.
 
@@ -126,6 +127,7 @@ class RemoveParticipantDataPastDeactivationDateTest(
         deactivated_df = pd.DataFrame(values, columns=columns)
 
         mock_func.return_value = deactivated_df
+        mock_deid.return_value = False
         self.load_test_data(self.load_statements)
 
         # Using the 0 position because there is only one sandbox table and
