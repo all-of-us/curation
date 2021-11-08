@@ -15,6 +15,10 @@
 
 # # Check codes, questions, and answers of a new survey against the historic surveys.
 
+ Things to update:
+        Branching logic
+        Truncation Possible?
+
 import pandas as pd
 import Levenshtein
 import re
@@ -27,24 +31,28 @@ pd.options.mode.chained_assignment=None #default='warn'
 # ## 1. Insert the paths to all historic surveys, the new survey,and the data storage. 
 
 # +
-# Point to the paths of all survey data.
-COPE202012_raw_path=r"{path to file}"
-COPE202007_raw_path=r"{path to file}"
-COPE202006_raw_path=r"{path to file}"
-COPE202005_raw_path=r"{path to file}"
-COPE202011_raw_path=r"{path to file}"
-COPE202102_raw_path=r"{path to file}"
-personal_raw_path=r"{path to file}"
-family_raw_path=r"{path to file}"
-basics_raw_path=r"{path to file}"
-fall_min_covid_raw_path=r"{path to file}"
-healthcare_aau_raw_path=r"{path to file}"
-lifestyle_raw_path=r"{path to file}"
-overall_health_raw_path=r"{path to file}"
-social_determinants_raw_path=r"{path to file}"
-personal_family_raw_path=r"{path to file}"
+COPE202012_raw_path=r"..\..\..\..\..\AoU-REDCap-DataDictionaries\COPE\COPE 2020 December\December 2020 COPE.csv"
+COPE202007_raw_path=r"..\..\..\..\..\AoU-REDCap-DataDictionaries\COPE\COPE 2020 July\July 2020 COPE.csv"
+COPE202006_raw_path=r"..\..\..\..\..\AoU-REDCap-DataDictionaries\COPE\COPE 2020 June\June 2020 COPE.csv"
+COPE202005_raw_path=r"..\..\..\..\..\AoU-REDCap-DataDictionaries\COPE\COPE 2020 May\May 2020 COPE.csv"
+COPE202011_raw_path=r"..\..\..\..\..\AoU-REDCap-DataDictionaries\COPE\COPE 2020 November\November 2020 COPE.csv"
+COPE202102_raw_path=r"..\..\..\..\..\AoU-REDCap-DataDictionaries\COPE\COPE 2021 February\February 2021 COPE.csv"
+personal_raw_path=r"..\..\..\..\..\AoU-REDCap-DataDictionaries\Personal Medical History\Personal Medical History.csv"
+family_raw_path=r"..\..\..\..\..\AoU-REDCap-DataDictionaries\Family Health History\Family Health History.csv"
+basics_raw_path=r"..\..\..\..\..\AoU-REDCap-DataDictionaries\Basics\Basics.csv"
+fall_min_covid_raw_path=r"..\..\..\..\..\AoU-REDCap-DataDictionaries\Fall Minute Survey on COVID-19 Vaccines\ENGLISHFallMinuteSurveyOnCOVID_DataDictionary_2021-08-19.csv"
+healthcare_aau_raw_path=r"..\..\..\..\..\AoU-REDCap-DataDictionaries\Healthcare Access and Utilization\Healthcare Access and Utilization.csv"
+lifestyle_raw_path=r"..\..\..\..\..\AoU-REDCap-DataDictionaries\Lifestyle\Lifestyle.csv"
+overall_health_raw_path=r"..\..\..\..\..\AoU-REDCap-DataDictionaries\Overall Health\Overall health.csv"
+social_determinants_raw_path=r"..\..\..\..\..\AoU-REDCap-DataDictionaries\Social Determinants of health\SocialDeterminantsOfHealthDataDictionary.csv"
+personal_family_raw_path=r"..\..\..\..\..\AoU-REDCap-DataDictionaries\Personal and Family Health History\Personal and Family Health History.csv"
 
-data_storage_path='./path/to/file/'+str('lifestyle_qc')
+data_storage_path='../../../../../data_storage/'+str('lifestyle_qc')
+
+
+
+
+
 
 # -
 
@@ -346,14 +354,16 @@ dfs ={
 #     Where codes > 47 char (designate which are over 49 char, but also see any previously truncated codes).
 #     Run a ~spell check on new codes.
 
-# path=data_storage_path+ str(date.today()) + '.xlsx'
-#
-# writer = pd.ExcelWriter(path, engine='xlsxwriter')
-# for i in dfs:
-#     dfs[i].to_excel(writer, sheet_name=str(i))
-#     
-# writer.save()
-# writer.close()
+# +
+path=data_storage_path+ str(date.today()) + '.xlsx'
+
+writer = pd.ExcelWriter(path, engine='xlsxwriter')
+for i in dfs:
+    dfs[i].to_excel(writer, sheet_name=str(i))
+    
+writer.save()
+writer.close()
+# -
 
 # ## Additional QA tools
 

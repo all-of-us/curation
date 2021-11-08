@@ -12,8 +12,11 @@
 #     name: python3
 # ---
 
+#     To update
+#         Are all codes in the dd accounted for in the concept code doc?
+#         Check for truncation issues
+
 import pandas as pd
-import Levenshtein
 import re
 import numpy as np
 from datetime import date
@@ -21,13 +24,16 @@ import xlsxwriter
 pd.set_option('display.max_colwidth',1000)
 pd.set_option('display.max_rows',500)
 pd.options.mode.chained_assignment=None #default='warn'
-# ## 1. Insert the paths to all historic surveys, the new survey,and the data storage. 
+
+# +
+## Insert the paths to all historic surveys, the new survey,and the data storage. 
 
 # +
 dd_raw_path=r"{path to file}"
 concept_raw_path=r"{path to file}"
 relationship_raw_path=r"{path to file}"
-#athena_raw_path=r"{path to file}"
+
+data_storage_path='./path/to/file/'+str('sdoh_mapping')
 
 
 # -
@@ -46,21 +52,19 @@ concept_clean=concept_raw.copy()
 concept_clean_for_mapping=concept_raw.drop(columns=['concept_class_id','concept_name'])
 relationship_clean=relationship_raw.copy()
 
-no_answers=dd_clean[dd_clean.answer.isnull()]
-no_answers=no_answers.rename(columns={'answer':'concept_class_id'})
-no_answers=no_answers.drop(columns=['branch'])
-oddities = pd.merge(no_answers, dd_all,how='inner', left_on=['concept_code'] , right_on=['Variable / Field Name'])
-no_answers
-#For later. maybe make a no_questions... as well/instead.
+# +
+not_questions=dd_clean[dd_clean.answer.isnull()]
 
-
+not_questions=not_questions.rename(columns={'answer':'concept_class_id'})
+not_questions=not_questions.drop(columns=['branch'])
+oddities = pd.merge(not_questions, dd_all,how='inner', left_on=['concept_code'] , right_on=['Variable / Field Name'])
 # Connect Module 
-#Where in concept module = concept code - pull that
-cc_of_module=concept_clean.loc[concept_clean.concept_class_id=='Module','concept_id'].values[0]
-# add relationship to dd
-dd_clean.concept_class_id=dd_clean[dd_clean.concept_code==cc_of_module]
-dd_clean
-
+ccode_of_module=concept_clean.loc[concept_clean.concept_class_id=='Module','concept_code'].values[0]
+# Add relationship to dd
+not_questions.loc[not_questions['concept_code']==ccode_of_module, 'concept_class_id'] = 'Module'
+# Module id for later
+cid_of_module=concept_clean.loc[concept_clean.concept_class_id=='Module','concept_id'].values[0]
+# -
 
 # # Clean the DD
 # Start with all answers with their display associated with a question on a row.
@@ -89,7 +93,6 @@ primary_answers_clean=explode_display[explode_display.level_2==0]
 primary_answers_clean['concept_code_2']=primary_answers_clean.concept_code_2.str.strip()
 primary_clean=primary_answers_clean.drop(columns=['level_2','ans_num']).reset_index(drop=True)
 # End with each answer concept code associated with its question.
-primary_clean.head(3)
 
 # +
 # The following code block will separate the branching logic from eachother, and keep their association to their concept code.
@@ -131,7 +134,6 @@ secondary_clean=clean_branch.drop(columns=['_merge','q'])
 secondary_clean_mapping=secondary_clean.rename(columns={'q2':'concept_code_2','a1':'concept_code'})
 secondary_concept=secondary_clean.copy()
 secondary_clean_concept=secondary_concept.rename(columns={'q2':'concept_code','a1':'concept_code_2'})
-secondary_clean_mapping.head(2)
 
 # -
 
@@ -159,9 +161,6 @@ tertiary_clean_concept=tertiary_clean.rename(columns={'a2':'concept_code_2','q3'
 tertiary_mapping=tertiary_clean.copy()
 tertiary_clean_mapping=tertiary_mapping.rename(columns={'a2':'concept_code','q3':'concept_code_2'})
 
-
-# +
-#add relationship to the module
 
 # +
 #Get all codes in a column associated with their class_id, join to the given relationship table to look for problems.
@@ -192,11 +191,9 @@ answers_only=pd.DataFrame(unique_onlya,columns=['concept_code_2'])
 answers_only=answers_only.rename(columns={'concept_code_2':'concept_code'})
 answers_only['concept_class_id']='Answer'
 
-
-
 # Combine the n/a, questions and answers, into tidy data.
 df_list=[questions_only,answers_only]
-tidy_codes=no_answers.append(df_list, ignore_index=True,sort=True)
+tidy_codes=not_questions.append(df_list, ignore_index=True,sort=True)
 
 
 # Where code class in the dd does not match the concept_survey table. Code level.
@@ -206,8 +203,6 @@ class_check_against_concept=class_check_merge[class_check_merge._merge!='both']
 # Where code class in the dd does not match the relationship table. Every issue.
 class_check_merge = pd.merge(tidy_codes, relationship_clean,how='outer',on=['concept_code','concept_class_id'],indicator=True)
 class_check_against_relationship=class_check_merge[class_check_merge._merge!='both']
-
-# #For later. Are all codes in the dd accounted for in the concept code doc?
 
 # # Relationship mapping
 
@@ -230,22 +225,15 @@ base_aaq=base_qqa.rename(columns={'concept_id':'concept_id_2','concept_id_1':'co
 # Join concept codes to concept ids. With the fourth relationship possibility. a-q-a
 base_aqa=base_qqa.rename(columns={'concept_id':'concept_id_1','concept_id_1':'concept_id_bonus','concept_id_2':'concept_id','concept_id_bonus':'concept_id_2'})
 
-base_aqa.head(2)
-
-# +
+# Collect all parent codes
 q_list=[base_qqa,base_qaq]
 qbase_covered=pd.concat(q_list, sort=False)
-
+# Collect all child codes
 a_list=[base_aaq,base_aqa]
 abase_covered=pd.concat(a_list, sort=False)
 
-abase_search=abase_covered[abase_covered.concept_code_2=='SDOH_50']
-qbase_search=qbase_covered[qbase_covered.concept_code_2=='SDOH_50']
-
-qbase_search
-
 # +
-# Covers all relationships made by questions being parents of answers
+# Covers all relationships made by parents of child codes
 base_parent_of=qbase_covered.copy()
 base_parent_of=base_parent_of[base_parent_of.concept_id!=base_parent_of.concept_id_2]
 base_parent_of['relationship_id']='PPI parent code of'
@@ -268,40 +256,9 @@ basea_has_answer=basea_has_answer[basea_has_answer.concept_id!=basea_has_answer.
 basea_has_answer['relationship_id']='Has answer (PPI)'
 b4=basea_has_answer[basea_has_answer.concept_code =='SDOH_41']
 
-# Covers all relationships made by questions being parents of answers
-#baseq_parent_of=qbase_covered.copy()
-#baseq_parent_of=baseq_parent_of[baseq_parent_of.concept_id!=baseq_parent_of.concept_id_2]
-#baseq_parent_of['relationship_id']='PPI parent code of'
-#b1=baseq_parent_of[baseq_parent_of.concept_code =='ahc_2']
-
-#baseq_has_answer=qbase_covered.copy()
-#baseq_has_answer=baseq_has_answer[baseq_has_answer.concept_id!=baseq_has_answer.concept_id_2]
-#baseq_has_answer['relationship_id']='Has answer (PPI)'
-#b2=baseq_has_answer[baseq_has_answer.concept_code =='ahc_2']
-
-
-len(b1)
-# -
-
-# base_parent_of,base_has_answer
-# basea_parent_of,basea_has_answer
-#     
-# baseq_has_parent,baseq_answer
-# base_has_parent,base_answer
-# basea_has_parent,basea_answer
-#
-# base_parent_of,base_has_answer,
-# basea_parent_of,basea_has_answer
-#
-# baseq_has_parent,baseq_answer,
-# base_has_parent,base_answer,
-# basea_has_parent,basea_answer
-#
-#
-#
 
 # +
-# Covers all relationships made by answers being children of questions
+# Covers all relationships made by children of parent codes
 baseq_has_parent=qbase_covered.copy()
 baseq_has_parent=baseq_has_parent[baseq_has_parent.concept_id!=baseq_has_parent.concept_id_1]
 baseq_has_parent['relationship_id']='Has PPI parent code'
@@ -334,49 +291,69 @@ basea_answer=basea_answer[basea_answer.concept_id!=basea_answer.concept_id_2]
 basea_answer['relationship_id']='Answer of (PPI)'
 b6=basea_answer[basea_answer.concept_code_2 =='SDOH_41']
 
-
-len(b4)
-b3
 # -
 
-base_rel_list=[base_parent_of,base_has_answer,
+# Combine all relationships
+base_rel_list=[
+               base_parent_of,base_has_answer,
                basea_parent_of,basea_has_answer,
                baseq_has_parent,baseq_answer,
-               #base_has_parent,base_answer,
                basea_has_parent,basea_answer
               ]
 base_maps=pd.concat(base_rel_list, sort=False)
 base_maps=base_maps.reset_index(drop=True)
 base_maps=base_maps.sort_values('concept_code')
-print(len(base_maps))
-base_maps
 
 # # Find discrepancies
 #
 
-# +
+# Join to given relationship table to find discrepancies. 
+# Mapped from/Maps to are no longer relevant. 
 discrepancies = pd.merge(relationship_raw, base_maps,how='outer',on=['concept_code','concept_id','concept_id_1','concept_id_2','relationship_id'],indicator=True)
-discrepancies=discrepancies[(discrepancies.relationship_id != 'Mapped from')&(discrepancies.relationship_id != 'Maps to')]
-
+discrepancies=discrepancies[(discrepancies.relationship_id != 'Mapped from')&
+                            (discrepancies.relationship_id != 'Maps to')&
+                            (discrepancies.concept_id != cid_of_module)&
+                            (discrepancies.concept_id_1 != cid_of_module)&
+                            (discrepancies.concept_id_2 != cid_of_module)]
+# All instances where a mapping is missing, or not expected. Not without error. QC visually.
 discrepancies_actual=(discrepancies[discrepancies._merge!='both'])
-print(len(discrepancies_actual))
-discrepancies_actual
-# -
 
-look=discrepancies_actual[discrepancies_actual.concept_code=='hvs_1']
-look
-
+# Individual code pairs where a mapping is missing, or not expected. Not without error. QC visually.
 individual_code_issues=pd.DataFrame(discrepancies_actual,columns=['concept_code','concept_code_2'])
 individual_code_issues=individual_code_issues.drop_duplicates()
-individual_code_issues
 
-print(f'These have no answers associated with them '+str(len(oddities)))
-print(f'List of all concept_ids and their class '+str(len(tidy_codes)))
-print(f'Where the dd class does not match the relationship class '+str(len(class_check)))
-#class_check_against_concept -short list with individual issues
-#class_check_against_relationship - every instance the concept is an issue.
-#view branching_drop for possible missed branching logic
+#Print explainations for the excel workbook.
+prints={
+    1:f'These have no answers associated with them '+str(len(oddities)),
+    2:f'List of all concept_ids and their class '+str(len(tidy_codes)),
+    3:f'Where the dd class does not match the concept class '+str(len(class_check_against_concept)),
+    4:f'Where the dd class does not match the relationship class '+str(len(class_check_against_relationship)),
+    5:f'Visualize branching logic '+str(len(dd_branching_drop)),
+    6:f'All missing mapping '+str(len(discrepancies_actual)),
+    7:f'Individual codes that are missing mapping '+str(len(individual_code_issues)),
+}
+printss=pd.DataFrame.from_dict(prints, orient='index')
 
 
+# Dictionary holds sheet names and their data.
+dfs ={
+    'overview':printss,
+    'oddities':oddities,
+    'tidy_codes':tidy_codes,
+    'class_against_concept':class_check_against_concept,
+    'class_against_relationship':class_check_against_relationship,
+    'dd_branching_drop':dd_branching_drop,
+    'discrepancies_actual':discrepancies_actual,
+    'individual_code_issues':individual_code_issues,
+}
 
 
+# # Prints to path variable set above.
+# path=data_storage_path+ str(date.today()) + '.xlsx'
+#
+# writer = pd.ExcelWriter(path, engine='xlsxwriter')
+# for i in dfs:
+#     dfs[i].to_excel(writer, sheet_name=str(i))
+#     
+# writer.save()
+# writer.close()
