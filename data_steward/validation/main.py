@@ -616,24 +616,6 @@ def is_valid_rdr(rdr_dataset_id):
     return re.match(rdr_regex, rdr_dataset_id)
 
 
-def extract_date_from_rdr_dataset_id(rdr_dataset_id):
-    """
-    Uses the rdr dataset id (string, rdrYYYYMMDD) to extract the date (string, YYYY-MM-DD format)
-
-    :param rdr_dataset_id: identifies the rdr dataset
-    :return: date formatted in string as YYYY-MM-DD
-    :raises: ValueError if the rdr_dataset_id does not conform to rdrYYYYMMDD
-    """
-    # verify input is of the format rdrYYYYMMDD
-    if is_valid_rdr(rdr_dataset_id):
-        # remove 'rdr' prefix
-        rdr_date = rdr_dataset_id[3:]
-        # TODO remove dependence on date string in RDR dataset id
-        rdr_date = rdr_date[:4] + '-' + rdr_date[4:6] + '-' + rdr_date[6:]
-        return rdr_date
-    raise ValueError(f"{rdr_dataset_id} is not a valid rdr_dataset_id")
-
-
 def get_hpo_missing_pii_query(hpo_id):
     """
     Query to retrieve counts of drug classes in an HPO site's drug_exposure table
@@ -646,17 +628,10 @@ def get_hpo_missing_pii_query(hpo_id):
     pii_wildcard = bq_utils.get_table_id(hpo_id, common.PII_WILDCARD)
     participant_match_table_id = bq_utils.get_table_id(hpo_id,
                                                        common.PARTICIPANT_MATCH)
-    rdr_dataset_id = bq_utils.get_rdr_dataset_id()
-    rdr_date = extract_date_from_rdr_dataset_id(rdr_dataset_id)
-    ehr_no_rdr_with_date = consts.EHR_NO_RDR.format(date=rdr_date)
-    rdr_person_table_id = common.PERSON
     return render_query(
         consts.MISSING_PII_QUERY,
         person_table_id=person_table_id,
-        rdr_dataset_id=rdr_dataset_id,
-        rdr_person_table_id=rdr_person_table_id,
         ehr_no_pii=consts.EHR_NO_PII,
-        ehr_no_rdr=ehr_no_rdr_with_date,
         pii_no_ehr=consts.PII_NO_EHR,
         ehr_no_participant_match=consts.EHR_NO_PARTICIPANT_MATCH,
         pii_name_table_id=pii_name_table_id,

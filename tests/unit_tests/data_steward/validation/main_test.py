@@ -308,15 +308,6 @@ class ValidationMainTest(TestCase):
                 f"HTTP error: {http_error_string}")
             self.assertIn(expected_call, mock_logging_error.mock_calls)
 
-    def test_extract_date_from_rdr(self):
-        rdr_dataset_id = 'rdr20200201'
-        bad_rdr_dataset_id = 'ehr2019-02-01'
-        expected_date = '2020-02-01'
-        rdr_date = main.extract_date_from_rdr_dataset_id(rdr_dataset_id)
-        self.assertEqual(rdr_date, expected_date)
-        self.assertRaises(ValueError, main.extract_date_from_rdr_dataset_id,
-                          bad_rdr_dataset_id)
-
     @mock.patch('bq_utils.table_exists', mock.MagicMock())
     @mock.patch('bq_utils.query')
     @mock.patch('validation.main.is_valid_folder_prefix_name')
