@@ -324,7 +324,10 @@ class ValidationMainTest(unittest.TestCase):
         ]
         self.assertIn(main_consts.EHR_NO_PII, missing_record_types)
         self.assertIn(main_consts.PII_NO_EHR, missing_record_types)
+
         # the missing from RDR component is obsolete (see DC-1932)
+        # this is to confirm it was removed successfully from the report
+        rdr_date = '2020-01-01'
         self.assertNotIn(main_consts.EHR_NO_RDR.format(date=rdr_date),
                          missing_record_types)
         self.assertIn(main_consts.EHR_NO_PARTICIPANT_MATCH,
