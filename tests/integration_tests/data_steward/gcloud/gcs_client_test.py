@@ -33,7 +33,6 @@ class GcsClientTest(unittest.TestCase):
         self._stage_bucket()
 
         items = self.client.list_sub_prefixes(self.bucket_name, self.prefix)
-        print(items)
 
         self.assertEqual(len(self.sub_prefixes), len(items))
         for item in items:
