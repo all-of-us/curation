@@ -51,8 +51,13 @@ def create_completeness_query(dataset_id, columns):
             **column)
         subqueries.append(subquery)
     union_all_subqueries = consts.UNION_ALL.join(subqueries)
-    result = consts.COMPLETENESS_QUERY_FMT.format(
-        union_all_subqueries=union_all_subqueries)
+
+    if not union_all_subqueries:
+        result = consts.EMPTY_COMPLETENESS_QUERY
+    else:
+        result = consts.COMPLETENESS_QUERY_FMT.format(
+            union_all_subqueries=union_all_subqueries)
+
     return result
 
 

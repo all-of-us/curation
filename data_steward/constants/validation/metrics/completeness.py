@@ -38,3 +38,10 @@ FROM (
 CONCEPT_ZERO_CLAUSE = 'SUM(CASE WHEN {column_name}=0 THEN 1 ELSE 0 END)'
 UNION_ALL = '\nUNION ALL\n'
 COMPLETENESS_QUERY_FMT = '{union_all_subqueries} ORDER BY omop_table_name'
+
+COMPLETENESS_HEADERS = [
+    'table_name', 'omop_table_name', 'table_row_count', 'column_name',
+    'null_count', 'concept_zero_count'
+]
+
+EMPTY_COMPLETENESS_QUERY = f"""SELECT {",".join(["' ' "+header for header in COMPLETENESS_HEADERS])} LIMIT 0"""
