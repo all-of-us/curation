@@ -55,6 +55,7 @@ class ValidationMainTest(TestCase):
     def test_unset_bucket(self):
         bucket_env_var = f'BUCKET_NAME_{self.hpo_id.upper()}'
         # run without setting env var (unset env_var)
+        os.environ.pop(f"BUCKET_NAME_{self.hpo_id.upper()}", None)
         main.process_hpo(self.hpo_id)
         # run after setting env var to empty string
         os.environ[bucket_env_var] = ""

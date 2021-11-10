@@ -82,7 +82,9 @@ class UpdateInvalidZipCodesTest(BaseTest.CleaningRulesTestBase):
         self.fq_dataset_name = '.'.join(fq_dataset_name[:-1])
 
         self.date = parser.parse('2019-03-03').date()
-        self.invalid_zip_response = 'Response removed due to invalid value'
+        self.invalid_zip_value_source_value = 'Response removed due to invalid value'
+        self.invalid_zip_value_as_string = '00000'
+        self.invalid_zip_value_as_number = None
         self.invalid_zip_concept = 2000000010
 
         super().setUp()
@@ -157,34 +159,49 @@ class UpdateInvalidZipCodesTest(BaseTest.CleaningRulesTestBase):
                 (1, 1, 0, self.date, 0, 1585250, None, '12345', None, None),
                 (2, 2, 0, self.date, 0, 1585250, None, '23456-1234', None,
                  None),
-                (3, 3, 0, self.date, 0, 1585250, 0.0, self.invalid_zip_response,
-                 self.invalid_zip_concept, self.invalid_zip_response),
-                (4, 4, 0, self.date, 0, 1585250, 0.0, self.invalid_zip_response,
-                 self.invalid_zip_concept, self.invalid_zip_response),
-                (5, 5, 0, self.date, 0, 1585250, 0.0, self.invalid_zip_response,
-                 self.invalid_zip_concept, self.invalid_zip_response),
-                (6, 6, 0, self.date, 0, 1585250, 0.0, self.invalid_zip_response,
-                 self.invalid_zip_concept, self.invalid_zip_response),
+                (3, 3, 0, self.date, 0, 1585250,
+                 self.invalid_zip_value_as_number,
+                 self.invalid_zip_value_as_string, self.invalid_zip_concept,
+                 self.invalid_zip_value_source_value),
+                (4, 4, 0, self.date, 0, 1585250,
+                 self.invalid_zip_value_as_number,
+                 self.invalid_zip_value_as_string, self.invalid_zip_concept,
+                 self.invalid_zip_value_source_value),
+                (5, 5, 0, self.date, 0, 1585250,
+                 self.invalid_zip_value_as_number,
+                 self.invalid_zip_value_as_string, self.invalid_zip_concept,
+                 self.invalid_zip_value_source_value),
+                (6, 6, 0, self.date, 0, 1585250,
+                 self.invalid_zip_value_as_number,
+                 self.invalid_zip_value_as_string, self.invalid_zip_concept,
+                 self.invalid_zip_value_source_value),
                 (7, 7, 0, self.date, 0, 1111111, None, '111', None, None),
                 (8, 8, 0, self.date, 0, 2222222, None, '222', None, None),
-                (9, 9, 0, self.date, 0, 1585250, 0.0, self.invalid_zip_response,
-                 self.invalid_zip_concept, self.invalid_zip_response),
-                (10, 10, 0, self.date, 0, 1585250, 0.0,
-                 self.invalid_zip_response, self.invalid_zip_concept,
-                 self.invalid_zip_response),
-                (11, 11, 0, self.date, 0, 1585250, 0.0,
-                 self.invalid_zip_response, self.invalid_zip_concept,
-                 self.invalid_zip_response),
-                (12, 12, 0, self.date, 0, 1585250, 0.0,
-                 self.invalid_zip_response, self.invalid_zip_concept,
-                 self.invalid_zip_response),
-                (13, 13, 0, self.date, 0, 1585250, 0.0,
-                 self.invalid_zip_response, self.invalid_zip_concept,
-                 self.invalid_zip_response),
+                (9, 9, 0, self.date, 0, 1585250,
+                 self.invalid_zip_value_as_number,
+                 self.invalid_zip_value_as_string, self.invalid_zip_concept,
+                 self.invalid_zip_value_source_value),
+                (10, 10, 0, self.date, 0, 1585250,
+                 self.invalid_zip_value_as_number,
+                 self.invalid_zip_value_as_string, self.invalid_zip_concept,
+                 self.invalid_zip_value_source_value),
+                (11, 11, 0, self.date, 0, 1585250,
+                 self.invalid_zip_value_as_number,
+                 self.invalid_zip_value_as_string, self.invalid_zip_concept,
+                 self.invalid_zip_value_source_value),
+                (12, 12, 0, self.date, 0, 1585250,
+                 self.invalid_zip_value_as_number,
+                 self.invalid_zip_value_as_string, self.invalid_zip_concept,
+                 self.invalid_zip_value_source_value),
+                (13, 13, 0, self.date, 0, 1585250,
+                 self.invalid_zip_value_as_number,
+                 self.invalid_zip_value_as_string, self.invalid_zip_concept,
+                 self.invalid_zip_value_source_value),
                 (14, 14, 0, self.date, 0, 1585250, None, '34567', None, None),
-                (15, 15, 0, self.date, 0, 1585250, 0.0,
-                 self.invalid_zip_response, self.invalid_zip_concept,
-                 self.invalid_zip_response)
+                (15, 15, 0, self.date, 0, 1585250,
+                 self.invalid_zip_value_as_number,
+                 self.invalid_zip_value_as_string, self.invalid_zip_concept,
+                 self.invalid_zip_value_source_value)
             ]
         }]
 

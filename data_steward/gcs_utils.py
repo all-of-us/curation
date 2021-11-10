@@ -36,7 +36,8 @@ def get_hpo_bucket(hpo_id):
     bucket_env = 'BUCKET_NAME_' + hpo_id.upper()
     hpo_bucket_name = os.getenv(bucket_env)
 
-    if not hpo_bucket_name:
+    # App engine converts an env var set but left empty to be the string 'None'
+    if not hpo_bucket_name or hpo_bucket_name.lower() == 'none':
         # should not use hpo_id in message if sent to end user.  For now,
         # only sent to alert messages slack channel.
         raise BucketDoesNotExistError(
