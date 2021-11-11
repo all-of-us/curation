@@ -1,9 +1,14 @@
 # Python import
 
 # Third party imports
+from deprecated.classic import deprecated
 from google.api_core import page_iterator
 
 
+@deprecated(
+    reason=
+    'Use gcloud.gcs.StorageClient.list_sub_prefixes(bucket: str, prefix: str) instead'
+)
 def list_sub_prefixes(client, bucket, prefix):
     """
     List sub folders in folder specified by prefix

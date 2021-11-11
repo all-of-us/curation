@@ -5,8 +5,10 @@ Wraps Google Cloud Storage JSON API (adapted from https://goo.gl/dRKiYz)
 import mimetypes
 import os
 from io import BytesIO
+import re
 
 import googleapiclient.discovery
+from deprecated import deprecated
 
 from validation.app_errors import BucketDoesNotExistError
 
@@ -57,10 +59,16 @@ def hpo_gcs_path(hpo_id):
     return '/%s/' % bucket_name
 
 
+@deprecated(
+    reason='Discovery client is being replaced by gcloud.gcs.StorageClient()')
 def create_service():
     return googleapiclient.discovery.build('storage', 'v1', cache={})
 
 
+@deprecated(reason=(
+    'see: https://googleapis.dev/python/storage/latest/client.html#google.cloud.storage.client.Client.list_blobs '
+    'and https://googleapis.dev/python/storage/latest/blobs.html#google.cloud.storage.blob.Blob.metadata'
+))
 def list_bucket_dir(gcs_path):
     """
     Get metadata for each object within the given GCS path
@@ -86,6 +94,10 @@ def list_bucket_dir(gcs_path):
     return all_objects
 
 
+@deprecated(
+    reason=
+    'See https://googleapis.dev/python/storage/latest/blobs.html#google.cloud.storage.blob.Blob.metadata'
+)
 def get_metadata(bucket, name, default=None):
     """
     Get the metadata for an object with the given name if it exists, return None otherwise
@@ -101,6 +113,9 @@ def get_metadata(bucket, name, default=None):
     return default
 
 
+@deprecated(reason=(
+    'See https://googleapis.dev/python/storage/latest/client.html#google.cloud.storage.client.Client.list_blobs '
+    'and use gcloud.gcs.StorageClient() instead'))
 def list_bucket(bucket):
     """
     Get metadata for each object within a bucket
@@ -117,6 +132,10 @@ def list_bucket(bucket):
     return all_objects
 
 
+@deprecated(
+    reason=
+    'Use gcloud.gcs.StorageClient.list_sub_prefixes(bucket: str, prefix: str) instead'
+)
 def list_bucket_prefixes(gcs_path):
     """
     Get metadata for each object within the given GCS path
@@ -139,6 +158,9 @@ def list_bucket_prefixes(gcs_path):
     return all_objects
 
 
+@deprecated(reason=(
+    'See https://googleapis.dev/python/storage/latest/buckets.html#google.cloud.storage.bucket.Bucket.get_blob '
+    'and use gcloud.gcs.StorageClient() instead'))
 def get_object(bucket, name, as_text=True):
     """
     Download object from a bucket
@@ -161,6 +183,9 @@ def get_object(bucket, name, as_text=True):
     return result_bytes
 
 
+@deprecated(reason=(
+    'See https://googleapis.dev/python/storage/latest/blobs.html#google.cloud.storage.blob.Blob.upload_from_string '
+    'and use gcloud.gcs.StorageClient() instead'))
 def upload_object(bucket, name, fp):
     """
     Upload file to a GCS bucket
@@ -183,6 +208,9 @@ def upload_object(bucket, name, fp):
     return req.execute(num_retries=GCS_DEFAULT_RETRY_COUNT)
 
 
+@deprecated(reason=(
+    'See https://googleapis.dev/python/storage/latest/blobs.html#google.cloud.storage.blob.Blob.delete '
+    'and use gcloud.gcs.StorageClient() instead'))
 def delete_object(bucket, name):
     """
     Delete an object from a bucket
@@ -197,11 +225,15 @@ def delete_object(bucket, name):
     return resp
 
 
+@deprecated(
+    reason=
+    'See https://googleapis.dev/python/storage/latest/buckets.html?highlight=copy#google.cloud.storage.bucket.Bucket.copy_blob'
+)
 def copy_object(source_bucket, source_object_id, destination_bucket,
                 destination_object_id):
-    """copies files from one place to another
+    """
+    copies files from one place to another
     :returns: response of request
-
     """
     service = create_service()
     req = service.objects().copy(sourceBucket=source_bucket,
