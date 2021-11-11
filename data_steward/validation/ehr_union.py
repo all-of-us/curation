@@ -719,7 +719,7 @@ def map_ehr_person_to_observation(output_dataset_id):
     query(q, dst_table_id, dst_dataset_id, write_disposition='WRITE_APPEND')
 
 
-def main(input_dataset_id, output_dataset_id, project_id, hpo_ids=None):
+def main(input_dataset_id, output_dataset_id, project_id, hpo_ids_ex=None):
     """
     Create a new CDM which is the union of all EHR datasets submitted by HPOs
 
@@ -732,8 +732,10 @@ def main(input_dataset_id, output_dataset_id, project_id, hpo_ids=None):
     client = bq.Client()
 
     logging.info('EHR union started')
-    if hpo_ids is None:
-        hpo_ids = [item['hpo_id'] for item in bq_utils.get_hpo_info()]
+    # Get all hpo_ids.
+    hpo_ids = [item['hpo_id'] for item in bq_utils.get_hpo_info()]
+    if hpo_ids_ex:
+        hpo_ids = hpo_ids - hpo_ids_ex
 
     # Create empty output tables to ensure proper schema, clustering, etc.
     for table in resources.CDM_TABLES:
@@ -789,9 +791,10 @@ if __name__ == '__main__':
     parser.add_argument('--output_dataset_id',
                         dest='output_dataset_id',
                         help='Dataset where the results should be stored')
-    parser.add_argument('--hpo_id',
-                        nargs='+',
-                        help='HPOs to process (all by default)')
+    parser.add_argument('--hpo_id_ex',
+                        nargs='*',
+                        help='HPOs to exclude from processing (none by default)')
+    # HPOs to exclude. If nothing given, exclude nothing.
     args = parser.parse_args()
     if args.input_dataset_id:
         main(args.input_dataset_id, args.output_dataset_id, args.project_id)
