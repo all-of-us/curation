@@ -5,7 +5,6 @@ Wraps Google Cloud Storage JSON API (adapted from https://goo.gl/dRKiYz)
 import mimetypes
 import os
 from io import BytesIO
-import re
 
 import googleapiclient.discovery
 from deprecated import deprecated
