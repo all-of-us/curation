@@ -321,6 +321,8 @@ REGISTERED_TIER_DEID_CLEANING_CLASSES = [
     (StringFieldsSuppression,),
     (SectionParticipationConceptSuppression,),
     (RegisteredCopeSurveyQuestionsSuppression,),
+    (CancerConceptSuppression,),
+    (OrganTransplantConceptSuppression,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 

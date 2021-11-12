@@ -49,7 +49,9 @@ class CancerConceptSuppression(AbstractBqLookupTableConceptSuppression):
         super().__init__(
             issue_numbers=['DC1381'],
             description=desc,
-            affected_datasets=[cdr_consts.CONTROLLED_TIER_DEID],
+            affected_datasets=[
+                cdr_consts.REGISTERED_TIER_DEID, cdr_consts.CONTROLLED_TIER_DEID
+            ],
             affected_tables=[OBSERVATION],
             project_id=project_id,
             dataset_id=dataset_id,
