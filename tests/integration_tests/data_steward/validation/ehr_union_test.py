@@ -45,7 +45,6 @@ class EhrUnionTest(unittest.TestCase):
 
         self.project_id = bq_utils.app_identity.get_application_id()
         self.hpo_ids = [NYC_HPO_ID, PITT_HPO_ID]
-        # [NYC_HPO_ID, PITT_HPO_ID]
         self.input_dataset_id = bq_utils.get_dataset_id()
         self.output_dataset_id = bq_utils.get_unioned_dataset_id()
         # Done in tearDown().  this is redundant.
