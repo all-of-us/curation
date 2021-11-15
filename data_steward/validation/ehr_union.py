@@ -86,6 +86,7 @@ import cdm
 import common
 import resources
 from constants.validation import ehr_union as eu_constants
+from utils.bq import get_client
 
 UNION_ALL = '''
 
@@ -726,10 +727,10 @@ def main(input_dataset_id, output_dataset_id, project_id, hpo_ids_ex=None):
     :param input_dataset_id identifies a dataset containing multiple CDMs, one for each HPO submission
     :param output_dataset_id identifies the dataset to store the new CDM in
     :param project_id: project containing the datasets
-    :param hpo_ids: (optional) identifies HPOs to process, by default process all
+    :param hpo_ids_ex: (optional) list that identifies HPOs not to process, by default process all
     :returns: list of tables generated successfully
     """
-    client = bq.Client()
+    client = get_client(project_id)
 
     logging.info('EHR union started')
     # Get all hpo_ids.
@@ -793,7 +794,7 @@ if __name__ == '__main__':
                         help='Dataset where the results should be stored')
     parser.add_argument('--hpo_id_ex',
                         nargs='*',
-                        help='HPOs to exclude from processing (none by default)')
+                        help='List of HPOs to exclude from processing (none by default)')
     # HPOs to exclude. If nothing given, exclude nothing.
     args = parser.parse_args()
     if args.input_dataset_id:

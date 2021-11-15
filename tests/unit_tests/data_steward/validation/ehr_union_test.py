@@ -1,5 +1,6 @@
 import unittest
 from unittest import mock
+from unittest.mock import ANY
 
 import bq_utils
 from validation import ehr_union as eu
@@ -80,7 +81,8 @@ class EhrUnionTest(unittest.TestCase):
         self.hpo_ids = [self.FAKE_SITE_1, self.FAKE_SITE_2]
 
     @mock.patch('bq_utils.list_all_table_ids')
-    def test_mapping_subqueries(self, mock_list_all_table_ids):
+    @mock.patch('bq_utils.get_hpo_info')
+    def test_mapping_subqueries(self, mock_hpo_info, mock_list_all_table_ids):
         """
         Verify the query for loading mapping tables. A constant value should be added to
         destination key fields in all tables except for person where the values in 
@@ -89,10 +91,11 @@ class EhrUnionTest(unittest.TestCase):
         :param mock_list_all_table_ids: simulate tables being returned
         """
         # patch list_all_table_ids so that
-        # for FAKE_SITE_1 and FAKE_SITE_2
+        # for FAKE_SITE_1 and FAKE_SITE_1
         #   it returns both of their person, visit_occurrence and pii_name tables
         # for FAKE_SITE_1 only
         #   it returns the condition_occurrence table
+        mock_hpo_info.return_value = [{'hpo_id':hpo_id} for hpo_id in self.hpo_ids]
         tables = ['person', 'visit_occurrence', 'pii_name']
         fake_table_ids = [
             bq_utils.get_table_id(hpo_id, table)
@@ -149,8 +152,10 @@ class EhrUnionTest(unittest.TestCase):
             f'condition_occurrence_id + {hpo_offset} AS condition_occurrence_id',
             subquery)
 
+    @mock.patch('bq_utils.get_hpo_info')
     @mock.patch('bq_utils.list_all_table_ids')
-    def test_mapping_query(self, mock_list_all_table_ids):
+    def test_mapping_query(self, mock_list_all_table_ids, mock_hpo_info):
+        mock_hpo_info.return_value = [{'hpo_id': hpo_id} for hpo_id in self.hpo_ids]
         mock_list_all_table_ids.return_value = [
             f'{self.FAKE_SITE_1}_measurement', f'{self.FAKE_SITE_2}_measurement'
         ]
@@ -189,15 +194,17 @@ class EhrUnionTest(unittest.TestCase):
             expected_query.strip(), query.strip(),
             "Mapping query for \n {q} \n to is not as expected".format(q=query))
 
+    @mock.patch('bq_utils.get_hpo_info')
     @mock.patch('validation.ehr_union.output_table_for')
     @mock.patch('validation.ehr_union.get_person_to_observation_query')
     @mock.patch('validation.ehr_union.query')
     def test_move_ehr_person_to_observation(
         self, mock_query, mock_get_person_to_observation_query,
-        mock_output_table_for):
+        mock_output_table_for, mock_hpo_info):
         dataset_id = 'fake_dataset'
         output_table = 'fake_table'
 
+        mock_hpo_info.return_value = [{'hpo_id': hpo_id} for hpo_id in self.hpo_ids]
         mock_get_person_to_observation_query.return_value = "SELECT COLUMN FROM TABLE"
         mock_output_table_for.return_value = output_table
 
@@ -222,15 +229,16 @@ class EhrUnionTest(unittest.TestCase):
                                       dataset_id,
                                       write_disposition='WRITE_APPEND')
 
+    @mock.patch('bq_utils.get_hpo_info')
     @mock.patch('validation.ehr_union.mapping_table_for')
     @mock.patch('validation.ehr_union.get_person_to_observation_query')
     @mock.patch('validation.ehr_union.query')
     def test_map_ehr_person_to_observation(self, mock_query,
                                            mock_get_person_to_observation_query,
-                                           mock_mapping_table_for):
+                                           mock_mapping_table_for, mock_hpo_info):
         dataset_id = 'fake_dataset'
         mapping_table = 'fake_table'
-
+        mock_hpo_info.return_value = [{'hpo_id': hpo_id} for hpo_id in self.hpo_ids]
         mock_get_person_to_observation_query.return_value = "SELECT COLUMN FROM TABLE"
         mock_mapping_table_for.return_value = mapping_table
 
@@ -254,6 +262,21 @@ class EhrUnionTest(unittest.TestCase):
                                       mapping_table,
                                       dataset_id,
                                       write_disposition='WRITE_APPEND')
+
+    @mock.patch('validation.ehr_union.move_ehr_person_to_observation')
+    @mock.patch('validation.ehr_union.map_ehr_person_to_observation')
+    @mock.patch('validation.ehr_union.get_client')
+    @mock.patch('validation.ehr_union.load')
+    @mock.patch('validation.ehr_union.mapping')
+    @mock.patch('bq_utils.create_standard_table')
+    @mock.patch('bq_utils.get_hpo_info')
+    def test_excluded_hpo_ids(self, mock_hpo_info, mock_create_std_tbl, mock_mapping, mock_load, mock_client,
+                              mock_map_person, mock_move_person):
+        mock_hpo_info.return_value = [{'hpo_id': hpo_id} for hpo_id in self.hpo_ids]
+        mock_client.return_value = 'client'
+        eu.main("input_dataset_id", "output_dataset_id", "project_id", hpo_ids_ex=[self.FAKE_SITE_2])
+        mock_mapping.assert_called_with(ANY, [self.FAKE_SITE_1], "input_dataset_id", "output_dataset_id", "project_id",
+                                        'client')
 
     def tearDown(self):
         pass
