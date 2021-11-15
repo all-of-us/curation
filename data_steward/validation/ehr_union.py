@@ -792,9 +792,10 @@ if __name__ == '__main__':
     parser.add_argument('--output_dataset_id',
                         dest='output_dataset_id',
                         help='Dataset where the results should be stored')
-    parser.add_argument('--hpo_id_ex',
-                        nargs='*',
-                        help='List of HPOs to exclude from processing (none by default)')
+    parser.add_argument(
+        '--hpo_id_ex',
+        nargs='*',
+        help='List of HPOs to exclude from processing (none by default)')
     # HPOs to exclude. If nothing given, exclude nothing.
     args = parser.parse_args()
     if args.input_dataset_id:
