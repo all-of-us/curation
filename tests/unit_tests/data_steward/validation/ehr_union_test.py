@@ -91,7 +91,7 @@ class EhrUnionTest(unittest.TestCase):
         :param mock_list_all_table_ids: simulate tables being returned
         """
         # patch list_all_table_ids so that
-        # for FAKE_SITE_1 and FAKE_SITE_1
+        # for FAKE_SITE_1 and FAKE_SITE_2
         #   it returns both of their person, visit_occurrence and pii_name tables
         # for FAKE_SITE_1 only
         #   it returns the condition_occurrence table
