@@ -141,7 +141,14 @@ class EhrUnionTest(unittest.TestCase):
         tables = bq_utils.list_tables(dataset_id)
         return [table['tableReference']['tableId'] for table in tables]
 
-    def test_union_ehr(self):
+    @mock.patch('bq_utils.get_hpo_info')
+    def test_ehr_main_exclude_hpo_id(self, mock_hpo_info):
+        mock_hpo_info.return_value = [{
+            'hpo_id': hpo_id
+        } for hpo_id in self.hpo_ids]
+
+    @mock.patch('bq_utils.get_hpo_info')
+    def test_union_ehr(self, mock_hpo_info):
         self._load_datasets()
         input_tables_before = set(self._dataset_tables(self.input_dataset_id))
 
@@ -157,9 +164,13 @@ class EhrUnionTest(unittest.TestCase):
         expected_output = set(output_tables_before + mapping_tables +
                               output_cdm_tables)
 
+        mock_hpo_info.return_value = [{
+            'hpo_id': hpo_id
+        } for hpo_id in self.hpo_ids]
+
         # perform ehr union
         ehr_union.main(self.input_dataset_id, self.output_dataset_id,
-                       self.project_id, self.hpo_ids)
+                       self.project_id)
 
         # input dataset should be unchanged
         input_tables_after = set(self._dataset_tables(self.input_dataset_id))
@@ -303,12 +314,13 @@ class EhrUnionTest(unittest.TestCase):
         obs_rows.extend([dob_row, gender_row, race_row, ethnicity_row])
         return obs_rows
 
+    @mock.patch('bq_utils.get_hpo_info')
     @mock.patch('resources.CDM_TABLES', [
         common.PERSON, common.OBSERVATION, common.LOCATION, common.CARE_SITE,
         common.VISIT_OCCURRENCE
     ])
     @mock.patch('cdm.tables_to_map')
-    def test_ehr_person_to_observation(self, mock_tables_map):
+    def test_ehr_person_to_observation(self, mock_tables_map, mock_hpo_info):
         # ehr person table converts to observation records
         self._load_datasets()
         mock_tables_map.return_value = [
@@ -316,9 +328,13 @@ class EhrUnionTest(unittest.TestCase):
             common.VISIT_OCCURRENCE
         ]
 
+        mock_hpo_info.return_value = [{
+            'hpo_id': hpo_id
+        } for hpo_id in self.hpo_ids]
+
         # perform ehr union
         ehr_union.main(self.input_dataset_id, self.output_dataset_id,
-                       self.project_id, self.hpo_ids)
+                       self.project_id)
 
         person_query = '''
             SELECT
@@ -368,21 +384,27 @@ class EhrUnionTest(unittest.TestCase):
 
         self.assertCountEqual(expected, actual)
 
+    @mock.patch('bq_utils.get_hpo_info')
     @mock.patch('resources.CDM_TABLES', [
         common.PERSON, common.OBSERVATION, common.LOCATION, common.CARE_SITE,
         common.VISIT_OCCURRENCE
     ])
     @mock.patch('cdm.tables_to_map')
-    def test_ehr_person_to_observation_counts(self, mock_tables_map):
+    def test_ehr_person_to_observation_counts(self, mock_tables_map,
+                                              mock_hpo_info):
         self._load_datasets()
         mock_tables_map.return_value = [
             common.OBSERVATION, common.LOCATION, common.CARE_SITE,
             common.VISIT_OCCURRENCE
         ]
 
+        mock_hpo_info.return_value = [{
+            'hpo_id': hpo_id
+        } for hpo_id in self.hpo_ids]
+
         # perform ehr union
         ehr_union.main(self.input_dataset_id, self.output_dataset_id,
-                       self.project_id, self.hpo_ids)
+                       self.project_id)
 
         q_person = '''
                     SELECT p.*
