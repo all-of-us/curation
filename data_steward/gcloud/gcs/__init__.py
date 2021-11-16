@@ -16,7 +16,21 @@ class StorageClient(Client):
     See https://googleapis.dev/python/storage/latest/client.html
     """
 
-    def list_sub_prefixes(self, bucket: str, prefix: str):
+    def empty_bucket(self, bucket: str, **kwargs) -> None:
+        """
+        Delete all/partial blobs in a bucket.
+        :param name: A GCS bucket name.
+
+        Some common keyword arguments:
+        :param prefix: (Optional) Prefix used to filter blobs.
+        (i.e gsutil rm -r gs://bucket/prefix)
+        """
+        bucket = self.get_bucket(bucket)
+        blobs = bucket.list_blobs(**kwargs)
+        for blob in blobs:
+            blob.delete()
+
+    def list_sub_prefixes(self, bucket: str, prefix: str) -> None:
         """
         List sub folders in folder specified by prefix
 
