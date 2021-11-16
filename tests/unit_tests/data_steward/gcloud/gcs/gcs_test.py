@@ -28,18 +28,10 @@ class GCSTest(TestCase):
         print('**************************************************************')
 
     def setUp(self):
-
-        # mock_default_auth = patch('google.auth.default')
-        # self.mock_auth = mock_default_auth.start()
-        # self.mock_auth.return_value = (sentinel.credentials, 'test-project')
-        # self.client = StorageClient().create_anonymous_client()
-
         self.client = DummyClient()
         self.bucket = 'foo_bucket'
         self.prefix = 'foo_prefix/'
         self.file_name = 'foo_file.csv'
-
-        # self.addCleanup(mock_default_auth.stop)
 
     @patch.object(DummyClient, 'list_blobs')
     def test_empty_bucket(self, mock_list_blobs):
