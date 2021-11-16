@@ -18,15 +18,15 @@ class StorageClient(Client):
 
     def empty_bucket(self, bucket: str, **kwargs) -> None:
         """
-        Delete all/partial blobs in a bucket.
+        Delete all blobs in a bucket.
         :param name: A GCS bucket name.
 
         Some common keyword arguments:
         :param prefix: (Optional) Prefix used to filter blobs.
-        (i.e gsutil rm -r gs://bucket/prefix)
+        (i.e gsutil rm -r gs://bucket/prefix/)
         """
-        bucket = self.get_bucket(bucket)
-        blobs = bucket.list_blobs(**kwargs)
+
+        blobs = self.list_blobs(bucket, **kwargs)
         for blob in blobs:
             blob.delete()
 
