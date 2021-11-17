@@ -20,6 +20,7 @@ from io import open
 
 PITT_HPO_ID = 'pitt'
 NYC_HPO_ID = 'nyc'
+THIRD_HPO_ID = 'fake'
 SUBQUERY_FAIL_MSG = '''
 Test {expr} in {table} subquery 
  Expected: {expected}
@@ -44,7 +45,7 @@ class EhrUnionTest(unittest.TestCase):
     def setUp(self):
 
         self.project_id = bq_utils.app_identity.get_application_id()
-        self.hpo_ids = [NYC_HPO_ID, PITT_HPO_ID]
+        self.hpo_ids = [NYC_HPO_ID, PITT_HPO_ID, THIRD_HPO_ID]
         self.input_dataset_id = bq_utils.get_dataset_id()
         self.output_dataset_id = bq_utils.get_unioned_dataset_id()
         # Done in tearDown().  this is redundant.
@@ -78,7 +79,7 @@ class EhrUnionTest(unittest.TestCase):
 
     def _load_datasets(self):
         """
-        Load five persons data for each test hpo
+        Load five persons data for nyc and pitt test hpo and rdr data for the Fake_hpo
         # expected_tables is for testing output
         # it maps table name to list of expected records ex: "unioned_ehr_visit_occurrence" -> [{}, {}, ...]
         """
@@ -92,9 +93,15 @@ class EhrUnionTest(unittest.TestCase):
                 if hpo_id == NYC_HPO_ID:
                     cdm_file_name = os.path.join(test_util.FIVE_PERSONS_PATH,
                                                  cdm_table + '.csv')
-                else:
+                elif hpo_id == PITT_HPO_ID:
                     cdm_file_name = os.path.join(
                         test_util.PITT_FIVE_PERSONS_PATH, cdm_table + '.csv')
+                elif hpo_id == THIRD_HPO_ID:
+                    if cdm_file_name in [
+                            'observation', 'person', 'visit_occurrence'
+                    ]:
+                        cdm_file_name = os.path.join(test_util.RDR_PATH,
+                                                     cdm_table + '.csv')
                 bucket = gcs_utils.get_hpo_bucket(hpo_id)
                 if os.path.exists(cdm_file_name):
                     test_util.write_cloud_file(bucket, cdm_file_name)
@@ -107,7 +114,8 @@ class EhrUnionTest(unittest.TestCase):
                 # load table from csv
                 result = bq_utils.load_cdm_csv(hpo_id, cdm_table)
                 running_jobs.append(result['jobReference']['jobId'])
-                expected_tables[output_table] += list(csv_rows)
+                if hpo_id != THIRD_HPO_ID:
+                    expected_tables[output_table] += list(csv_rows)
         # ensure person to observation output is as expected
         output_table_person = ehr_union.output_table_for(common.PERSON)
         output_table_observation = ehr_union.output_table_for(
@@ -170,7 +178,7 @@ class EhrUnionTest(unittest.TestCase):
 
         # perform ehr union
         ehr_union.main(self.input_dataset_id, self.output_dataset_id,
-                       self.project_id)
+                       self.project_id, [THIRD_HPO_ID])
 
         # input dataset should be unchanged
         input_tables_after = set(self._dataset_tables(self.input_dataset_id))
