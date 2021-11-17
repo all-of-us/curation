@@ -191,6 +191,13 @@ jobs:
           when: on_success
       - test_teardown
 
+  delete_stale_test_buckets:
+    <<: *job_defaults
+    steps:
+      - run:
+          name: Delete stale test buckets
+          command: PYTHONPATH=./:$PYTHONPATH python ./tools/delete_stale_test_buckets.py
+
 workflows:
   version: 2
   test:
@@ -212,3 +219,4 @@ workflows:
               only: develop
     jobs:
       - integration_test
+      - delete_stale_test_buckets
