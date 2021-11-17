@@ -26,9 +26,10 @@ class StorageClient(Client):
         (i.e gsutil rm -r gs://bucket/prefix/)
         """
 
-        blobs = self.list_blobs(bucket, **kwargs)
-        for blob in blobs:
-            blob.delete()
+        pages = self.list_blobs(bucket, **kwargs).pages
+        for page in pages:
+            for blob in page:
+                blob.delete()
 
     def list_sub_prefixes(self, bucket: str, prefix: str) -> None:
         """
