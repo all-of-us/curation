@@ -20,7 +20,7 @@ from io import open
 
 PITT_HPO_ID = 'pitt'
 NYC_HPO_ID = 'nyc'
-THIRD_HPO_ID = 'fake'
+EXCLUDED_HPO_ID = 'excluded'
 SUBQUERY_FAIL_MSG = '''
 Test {expr} in {table} subquery 
  Expected: {expected}
