@@ -17,8 +17,8 @@ DOMAIN_SPECIFIC_FIELDS = 'specific_fields'
 DOMAIN_DATE_FIELDS = 'date_fields'
 
 COMMON_DOMAIN_FIELD_SUFFIXES = [
-    'person_id', 'visit_occurrence_id', 'provider_id', '_concept_id',
-    '_type_concept_id', '_source_value', '_source_concept_id'
+    'person_id', 'visit_occurrence_id', 'visit_detail_id', 'provider_id',
+    '_concept_id', '_type_concept_id', '_source_value', '_source_concept_id'
 ]
 
 DATE_FIELD_SUFFIXES = [
