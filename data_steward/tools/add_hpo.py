@@ -16,7 +16,6 @@ import pandas as pd
 import app_identity
 import bq_utils
 import constants.bq_utils as bq_consts
-import gcs_utils
 from gcloud.gcs import StorageClient
 import resources
 from tools import cli_util
