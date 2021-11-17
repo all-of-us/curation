@@ -35,12 +35,16 @@ class GCSTest(TestCase):
 
     @patch.object(DummyClient, 'list_blobs')
     def test_empty_bucket(self, mock_list_blobs):
+        # Mock up blobs
         mock_blob = MagicMock()
         mock_blob.delete.return_value = None
-
-        self.client.list_blobs.return_value = [mock_blob]
+        # Mock up pages
+        mock_pages = MagicMock()
+        mock_pages.pages = [[mock_blob]]
+        # Mock page returning list funciton
+        self.client.list_blobs.return_value = mock_pages
+        # Test
         self.client.empty_bucket(self.bucket)
-
         mock_blob.delete.assert_called_once()
 
     @patch('gcloud.gcs.page_iterator')
