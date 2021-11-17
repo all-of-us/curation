@@ -233,7 +233,7 @@ def add_lookups(hpo_id, hpo_name, org_id, bucket_name, display_order=None):
     add_hpo_bucket(hpo_id, bucket_name)
 
 
-def bucket_access_configured(bucket_name):
+def bucket_access_configured(bucket_name: str) -> bool:
     """
     Determine if the service account has appropriate permissions on the bucket
 
@@ -242,7 +242,7 @@ def bucket_access_configured(bucket_name):
     """
     sc = StorageClient()
     bucket = sc.get_bucket(bucket_name)
-    permissions = bucket.test_iam_permissions("storage.objects.create")
+    permissions: list = bucket.test_iam_permissions("storage.objects.create")
     return len(permissions) >= 1
 
 
