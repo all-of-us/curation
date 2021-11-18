@@ -95,6 +95,7 @@ SELECT
   o.unit_concept_id,
   o.provider_id,
   o.visit_occurrence_id,
+  o.visit_detail_id,
   o.observation_source_value,
   o.observation_source_concept_id,
   o.unit_source_value,

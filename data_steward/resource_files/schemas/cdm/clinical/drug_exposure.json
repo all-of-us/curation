@@ -108,6 +108,12 @@
     "description": "A foreign key to the Visit in the VISIT_OCCURRENCE table during which the Drug Exposure was initiated."
   },
   {
+    "type": "integer",
+    "name": "visit_detail_id",
+    "mode": "nullable",
+    "description": "The VISIT_DETAIL record during which the drug exposure occurred. For example, if the person was in the ICU at the time of the drug administration the VISIT_OCCURRENCE record would reflect the overall hospital stay and the VISIT_DETAIL record would reflect the ICU stay during the hospital visit."
+  },
+  {
     "type": "string",
     "name": "drug_source_value",
     "mode": "nullable",

@@ -18,13 +18,13 @@
     "description": "A foreign key that refers to a standard Condition Concept identifier in the Standardized Vocabularies."
   },
   {
-    "type": "date",
+    "type": "timestamp",
     "name": "condition_era_start_date",
     "mode": "required",
     "description": "The start date for the Condition Era constructed from the individual instances of Condition Occurrences. It is the start date of the very first chronologically recorded instance of the condition."
   },
   {
-    "type": "date",
+    "type": "timestamp",
     "name": "condition_era_end_date",
     "mode": "required",
     "description": "The end date for the Condition Era constructed from the individual instances of Condition Occurrences. It is the end date of the final continuously recorded instance of the Condition."

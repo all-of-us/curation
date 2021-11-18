@@ -72,6 +72,12 @@
     "description": "A foreign key to the Visit in the VISIT_OCCURRENCE table when the Note was taken."
   },
   {
+    "type": "integer",
+    "name": "visit_detail_id",
+    "mode": "nullable",
+    "description": "The Visit Detail during which the note was written."
+  },
+  {
     "type": "string",
     "name": "note_source_value",
     "mode": "nullable",

@@ -1800,8 +1800,8 @@ select  909 as analysis_id, COUNT(de1.person_id) as count_value
 	synpuf_100.drug_era de1
 	left join synpuf_100.observation_period op1
 	on op1.person_id = de1.person_id
-	and de1.drug_era_start_date >= op1.observation_period_start_date
-	and de1.drug_era_start_date <= op1.observation_period_end_date
+	and DATE(de1.drug_era_start_date) >= op1.observation_period_start_date
+	and DATE(de1.drug_era_start_date) <= op1.observation_period_end_date
 where op1.person_id is null
 
 UNION ALL
@@ -1967,8 +1967,8 @@ UNION ALL
 	synpuf_100.condition_era ce1
 	left join synpuf_100.observation_period op1
 	on op1.person_id = ce1.person_id
-	and ce1.condition_era_start_date >= op1.observation_period_start_date
-	and ce1.condition_era_start_date <= op1.observation_period_end_date
+	and DATE(ce1.condition_era_start_date) >= op1.observation_period_start_date
+	and DATE(ce1.condition_era_start_date) <= op1.observation_period_end_date
 where op1.person_id is null)
 
 UNION ALL
