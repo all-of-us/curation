@@ -89,7 +89,7 @@ class ExportTest(unittest.TestCase):
         main._upload_achilles_files(FAKE_HPO_ID, folder_prefix)
         main.run_export(datasource_id=FAKE_HPO_ID, folder_prefix=folder_prefix)
         bucket_objects = self.client.list_blobs(self.hpo_bucket)
-        actual_object_names: list = [obj['name'] for obj in bucket_objects]
+        actual_object_names: list = [obj.name for obj in bucket_objects]
         for report in common.ALL_REPORT_FILES:
             prefix: str = f'{folder_prefix}{common.ACHILLES_EXPORT_PREFIX_STRING}{FAKE_HPO_ID}/'
             expected_object_name: str = f'{prefix}{report}'
@@ -128,7 +128,7 @@ class ExportTest(unittest.TestCase):
                         folder_prefix=folder_prefix,
                         target_bucket=bucket_nyc)
         bucket_objects = self.client.list_blobs(bucket_nyc)
-        actual_object_names: list = [obj['name'] for obj in bucket_objects]
+        actual_object_names: list = [obj.name for obj in bucket_objects]
         for report in common.ALL_REPORT_FILES:
             prefix: str = f'{folder_prefix}{common.ACHILLES_EXPORT_PREFIX_STRING}{FAKE_HPO_ID}/'
             expected_object_name: str = f'{prefix}{report}'
