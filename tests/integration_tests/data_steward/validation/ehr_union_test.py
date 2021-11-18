@@ -45,7 +45,7 @@ class EhrUnionTest(unittest.TestCase):
     def setUp(self):
 
         self.project_id = bq_utils.app_identity.get_application_id()
-        self.hpo_ids = [NYC_HPO_ID, PITT_HPO_ID, EXCLUDED_HPO_ID]
+        self.hpo_ids = [PITT_HPO_ID, NYC_HPO_ID, EXCLUDED_HPO_ID]
         self.input_dataset_id = bq_utils.get_dataset_id()
         self.output_dataset_id = bq_utils.get_unioned_dataset_id()
         # Done in tearDown().  this is redundant.
@@ -205,6 +205,8 @@ class EhrUnionTest(unittest.TestCase):
         result = bq_utils.response2rows(response)
         actual_fact_id_1, actual_fact_id_2 = result[0]["fact_id_1"], result[0][
             "fact_id_2"]
+        import pdb
+        pdb.set_trace()
         self.assertEqual(expected_fact_id_1, actual_fact_id_1)
         self.assertEqual(expected_fact_id_2, actual_fact_id_2)
 
