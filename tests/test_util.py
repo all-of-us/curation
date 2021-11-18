@@ -223,22 +223,6 @@ def read_cloud_file(bucket, name):
     return gcs_utils.get_object(bucket, name)
 
 
-def write_cloud_str(bucket, name, contents_str):
-    from io import StringIO
-    fp = StringIO(contents_str)
-    return write_cloud_fp(bucket, name, fp)
-
-
-def write_cloud_file(bucket, f, prefix=""):
-    name = os.path.basename(f)
-    with open(f, 'rb') as fp:
-        return write_cloud_fp(bucket, prefix + name, fp)
-
-
-def write_cloud_fp(bucket, name, fp):
-    return gcs_utils.upload_object(bucket, name, fp)
-
-
 def populate_achilles(hpo_id=FAKE_HPO_ID, include_heel=True):
     from validation import achilles, achilles_heel
     import app_identity

@@ -91,7 +91,7 @@ class TopHeelErrorsTest(TestCase):
                                            test_file_name)
 
         target_bucket = self.client.get_bucket(self.bucket)
-        test_blob = storage.Blob(test_file_name, target_bucket)
+        test_blob = target_bucket.blob(test_file_name)
         test_blob.upload_from_filename(test_file_path)
 
         gcs_path: str = f'gs://{self.bucket}/{test_file_name}'

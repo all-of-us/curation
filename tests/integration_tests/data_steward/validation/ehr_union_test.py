@@ -107,17 +107,14 @@ class EhrUnionTest(unittest.TestCase):
                 # bucket = gcs_utils.get_hpo_bucket(hpo_id)
                 bucket = self.storage_client.get_bucket(
                     gcs_utils.get_hpo_bucket(hpo_id))
-                cdm_blob = storage.Blob(cdm_filename, bucket)
+                cdm_blob = bucket.blob(cdm_filename)
 
                 if os.path.exists(cdm_filepath):
                     cdm_blob.upload_from_filename(cdm_filepath)
-                    # test_util.write_cloud_file(bucket, cdm_filepath)
                     csv_rows: list = resources.csv_to_list(cdm_filepath)
                 else:
                     # results in empty table
                     cdm_blob.upload_from_string('dummy\n')
-                    # test_util.write_cloud_str(bucket, cdm_table + '.csv',
-                    #                           'dummy\n')
                     csv_rows: list = []
                 # load table from csv
                 result = bq_utils.load_cdm_csv(hpo_id, cdm_table)

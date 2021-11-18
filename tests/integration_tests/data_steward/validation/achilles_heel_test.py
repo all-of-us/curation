@@ -51,14 +51,12 @@ class AchillesHeelTest(unittest.TestCase):
                                              cdm_filename)
 
             bucket = self.storage_client.get_bucket(self.hpo_bucket)
-            cdm_blob = storage.Blob(cdm_filename, bucket)
+            cdm_blob = bucket.blob(cdm_filename)
             if os.path.exists(cdm_filepath):
                 cdm_blob.upload_from_filename(cdm_filepath)
-                # test_util.write_cloud_file(self.hpo_bucket, cdm_filepath)
             else:
                 cdm_blob.upload_from_string('dummy\n')
-                # test_util.write_cloud_str(self.hpo_bucket, cdm_table + '.csv',
-                #                           'dummy\n')
+
             bq_utils.load_cdm_csv(hpo_id, cdm_table)
 
         # ensure concept table exists

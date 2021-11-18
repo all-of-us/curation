@@ -77,7 +77,7 @@ class CombineEhrRdrTest(unittest.TestCase):
         except OSError as exc:
             storage_client = StorageClient()
             target_bucket = storage_client.get_bucket(bucket)
-            blob = storage.Blob(filename, target_bucket)
+            blob = target_bucket.blob(filename)
             blob.upload_from_string('\n')
 
         gcs_path: str = 'gs://{bucket}/{filename}'.format(bucket=bucket,
