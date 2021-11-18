@@ -3,14 +3,13 @@ Unit test components of data_steward.validation.main
 """
 from __future__ import print_function
 import datetime
-import json
 import os
 import unittest
-from io import open
 from time import sleep
 
 import mock
 from bs4 import BeautifulSoup as bs
+from google.cloud import storage
 
 import bq_utils
 import app_identity
@@ -18,6 +17,7 @@ import common
 from constants import bq_utils as bq_consts
 from constants.validation import main as main_consts
 import gcs_utils
+from gcloud.gcs import StorageClient
 import resources
 from tests import test_util
 from validation import main
@@ -33,6 +33,8 @@ class ValidationMainTest(unittest.TestCase):
         print('**************************************************************')
 
     def setUp(self):
+        self.client = StorageClient()
+
         self.hpo_id = test_util.FAKE_HPO_ID
         self.hpo_bucket = gcs_utils.get_hpo_bucket(self.hpo_id)
         self.project_id = app_identity.get_application_id()
@@ -105,9 +107,13 @@ class ValidationMainTest(unittest.TestCase):
 
     def test_all_files_unparseable_output(self):
         # TODO possible bug: if no pre-existing table, results in bq table not found error
+        bucket = self.client.get_bucket(self.hpo_bucket)
+
         for cdm_table in common.SUBMISSION_FILES:
-            test_util.write_cloud_str(self.hpo_bucket,
-                                      self.folder_prefix + cdm_table, ".\n .")
+            cdm_blob = storage.Blob(f'{self.folder_prefix}{cdm_table}', bucket)
+            cdm_blob.upload_from_string('.\n .')
+            # test_util.write_cloud_str(self.hpo_bucket,
+            #                           self.folder_prefix + cdm_table, ".\n .")
         bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
         folder_items = main.get_folder_items(bucket_items, self.folder_prefix)
         expected_results = [(f, 1, 0, 0) for f in common.SUBMISSION_FILES]
