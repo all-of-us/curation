@@ -85,25 +85,25 @@ class ExportTest(unittest.TestCase):
     def test_run_export(self, mock_is_hpo_id):
         # validation/main.py INTEGRATION TEST
         mock_is_hpo_id.return_value = True
-        folder_prefix = 'dummy-prefix-2018-03-24/'
+        folder_prefix: str = 'dummy-prefix-2018-03-24/'
         main._upload_achilles_files(FAKE_HPO_ID, folder_prefix)
         main.run_export(datasource_id=FAKE_HPO_ID, folder_prefix=folder_prefix)
         bucket_objects = self.client.list_blobs(self.hpo_bucket)
-        actual_object_names = [obj['name'] for obj in bucket_objects]
+        actual_object_names: list = [obj['name'] for obj in bucket_objects]
         for report in common.ALL_REPORT_FILES:
-            prefix = folder_prefix + common.ACHILLES_EXPORT_PREFIX_STRING + FAKE_HPO_ID + '/'
-            expected_object_name = prefix + report
+            prefix: str = f'{folder_prefix}{common.ACHILLES_EXPORT_PREFIX_STRING}{FAKE_HPO_ID}/'
+            expected_object_name: str = f'{prefix}{report}'
             self.assertIn(expected_object_name, actual_object_names)
 
-        datasources_json_path = folder_prefix + common.ACHILLES_EXPORT_DATASOURCES_JSON
+        datasources_json_path: str = folder_prefix + common.ACHILLES_EXPORT_DATASOURCES_JSON
         self.assertIn(datasources_json_path, actual_object_names)
         # datasources_json = gcs_utils.get_object(self.hpo_bucket,
         #                                         datasources_json_path)
         datasources_blob = storage.Blob(datasources_json_path, self.hpo_bucket)
-        datasources_json = datasources_blob.download_as_bytes(
+        datasources_json: str = datasources_blob.download_as_bytes(
             self.client).decode()
-        datasources_actual = json.loads(datasources_json)
-        datasources_expected = {
+        datasources_actual: dict = json.loads(datasources_json)
+        datasources_expected: dict = {
             'datasources': [{
                 'name': FAKE_HPO_ID,
                 'folder': FAKE_HPO_ID,
@@ -122,18 +122,18 @@ class ExportTest(unittest.TestCase):
         self, mock_is_hpo_id):
         # validation/main.py INTEGRATION TEST
         mock_is_hpo_id.return_value = True
-        folder_prefix = 'dummy-prefix-2018-03-24/'
-        bucket_nyc = gcs_utils.get_hpo_bucket('nyc')
+        folder_prefix: str = 'dummy-prefix-2018-03-24/'
+        bucket_nyc: str = gcs_utils.get_hpo_bucket('nyc')
         main.run_export(datasource_id=FAKE_HPO_ID,
                         folder_prefix=folder_prefix,
                         target_bucket=bucket_nyc)
         bucket_objects = self.client.list_blobs(bucket_nyc)
-        actual_object_names = [obj['name'] for obj in bucket_objects]
+        actual_object_names: list = [obj['name'] for obj in bucket_objects]
         for report in common.ALL_REPORT_FILES:
-            prefix = folder_prefix + common.ACHILLES_EXPORT_PREFIX_STRING + FAKE_HPO_ID + '/'
-            expected_object_name = prefix + report
+            prefix: str = f'{folder_prefix}{common.ACHILLES_EXPORT_PREFIX_STRING}{FAKE_HPO_ID}/'
+            expected_object_name: str = f'{prefix}{report}'
             self.assertIn(expected_object_name, actual_object_names)
-        datasources_json_path = folder_prefix + common.ACHILLES_EXPORT_DATASOURCES_JSON
+        datasources_json_path: str = f'{folder_prefix}{common.ACHILLES_EXPORT_DATASOURCES_JSON}'
         self.assertIn(datasources_json_path, actual_object_names)
         # datasources_json = gcs_utils.get_object(bucket_nyc,
         #                                         datasources_json_path)
