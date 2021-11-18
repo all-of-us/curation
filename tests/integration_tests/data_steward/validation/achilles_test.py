@@ -28,7 +28,7 @@ class AchillesTest(unittest.TestCase):
 
     def setUp(self):
         self.hpo_bucket = gcs_utils.get_hpo_bucket(test_util.FAKE_HPO_ID)
-        self.client = StorageClient()
+        self.storage_client = StorageClient()
 
         test_util.empty_bucket(self.hpo_bucket)
         test_util.delete_all_tables(bq_utils.get_dataset_id())
@@ -43,8 +43,8 @@ class AchillesTest(unittest.TestCase):
             cdm_filepath: str = os.path.join(test_util.FIVE_PERSONS_PATH,
                                              cdm_filename)
 
-            target_bucket = self.client.get_bucket(self.hpo_bucket)
-            cdm_blob = storage.Blob(cdm_filename, target_bucket)
+            bucket = self.storage_client.get_bucket(self.hpo_bucket)
+            cdm_blob = storage.Blob(cdm_filename, bucket)
             if os.path.exists(cdm_filepath):
                 cdm_blob.upload_from_filename(cdm_filepath)
                 # test_util.write_cloud_file(self.hpo_bucket, cdm_filepath)

@@ -52,7 +52,7 @@ class EhrUnionTest(unittest.TestCase):
         self.input_dataset_id = bq_utils.get_dataset_id()
         self.output_dataset_id = bq_utils.get_unioned_dataset_id()
 
-        self.client = StorageClient()
+        self.storage_client = StorageClient()
 
         # Done in tearDown().  this is redundant.
         self._empty_hpo_buckets()
@@ -105,7 +105,7 @@ class EhrUnionTest(unittest.TestCase):
                         test_util.PITT_FIVE_PERSONS_PATH, cdm_filename)
 
                 # bucket = gcs_utils.get_hpo_bucket(hpo_id)
-                bucket = self.client.get_bucket(
+                bucket = self.storage_client.get_bucket(
                     gcs_utils.get_hpo_bucket(hpo_id))
                 cdm_blob = storage.Blob(cdm_filename, bucket)
 
