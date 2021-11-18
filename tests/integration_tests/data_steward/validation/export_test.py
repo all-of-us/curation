@@ -86,9 +86,12 @@ class ExportTest(unittest.TestCase):
         # validation/main.py INTEGRATION TEST
         mock_is_hpo_id.return_value = True
         folder_prefix: str = 'dummy-prefix-2018-03-24/'
+
         main._upload_achilles_files(FAKE_HPO_ID, folder_prefix)
         main.run_export(datasource_id=FAKE_HPO_ID, folder_prefix=folder_prefix)
-        bucket_objects = self.storage_client.list_blobs(self.hpo_bucket)
+
+        storage_bucket = self.storage_client.get_bucket(self.hpo_bucket)
+        bucket_objects = storage_bucket.list_blobs()
         actual_object_names: list = [obj.name for obj in bucket_objects]
         for report in common.ALL_REPORT_FILES:
             prefix: str = f'{folder_prefix}{common.ACHILLES_EXPORT_PREFIX_STRING}{FAKE_HPO_ID}/'
@@ -98,9 +101,8 @@ class ExportTest(unittest.TestCase):
         datasources_json_path: str = folder_prefix + common.ACHILLES_EXPORT_DATASOURCES_JSON
         self.assertIn(datasources_json_path, actual_object_names)
 
-        datasources_blob = storage.Blob(datasources_json_path, self.hpo_bucket)
-        datasources_json: str = datasources_blob.download_as_bytes(
-            self.storage_client).decode()
+        datasources_blob = storage_bucket.blob(datasources_json_path)
+        datasources_json: str = datasources_blob.download_as_bytes().decode()
         datasources_actual: dict = json.loads(datasources_json)
         datasources_expected: dict = {
             'datasources': [{
@@ -126,7 +128,8 @@ class ExportTest(unittest.TestCase):
         main.run_export(datasource_id=FAKE_HPO_ID,
                         folder_prefix=folder_prefix,
                         target_bucket=bucket_nyc)
-        bucket_objects = self.storage_client.list_blobs(bucket_nyc)
+        storage_bucket = self.storage_client.get_bucket(bucket_nyc)
+        bucket_objects = storage_bucket.list_blobs()
         actual_object_names: list = [obj.name for obj in bucket_objects]
         for report in common.ALL_REPORT_FILES:
             prefix: str = f'{folder_prefix}{common.ACHILLES_EXPORT_PREFIX_STRING}{FAKE_HPO_ID}/'
@@ -135,9 +138,8 @@ class ExportTest(unittest.TestCase):
         datasources_json_path: str = f'{folder_prefix}{common.ACHILLES_EXPORT_DATASOURCES_JSON}'
         self.assertIn(datasources_json_path, actual_object_names)
 
-        datasources_blob = storage.Blob(datasources_json_path, bucket_nyc)
-        datasources_json: str = datasources_blob.download_as_bytes(
-            self.storage_client).decode()
+        datasources_blob = storage_bucket.blob(datasources_json_path)
+        datasources_json: str = datasources_blob.download_as_bytes().decode()
         datasources_actual: dict = json.loads(datasources_json)
         datasources_expected: dict = {
             'datasources': [{
