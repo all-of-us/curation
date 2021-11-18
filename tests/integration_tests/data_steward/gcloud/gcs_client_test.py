@@ -28,8 +28,19 @@ class GcsClientTest(unittest.TestCase):
         self.sub_prefixes: tuple = (f'{self.prefix}/a', f'{self.prefix}/b',
                                     f'{self.prefix}/c', f'{self.prefix}/d')
 
+    def test_empty_bucket(self):
+
+        self.client.empty_bucket(self.bucket_name)
+        self._stage_bucket()
+        self.client.empty_bucket(self.bucket_name)
+
+        actual = self.client.list_blobs(self.bucket_name)
+        expected: list = []
+
+        self.assertCountEqual(actual, expected)
+
     def test_list_sub_prefixes(self):
-        self._empty_bucket()
+        self.client.empty_bucket(self.bucket_name)
         self._stage_bucket()
 
         items = self.client.list_sub_prefixes(self.bucket_name, self.prefix)
@@ -38,13 +49,7 @@ class GcsClientTest(unittest.TestCase):
         for item in items:
             self.assertIn(item[:-1], self.sub_prefixes)
 
-        self._empty_bucket()
-
-    def _empty_bucket(self):
-        bucket = self.client.get_bucket(self.bucket_name)
-        blobs = bucket.list_blobs(prefix=self.prefix)
-        for blob in blobs:
-            blob.delete()
+        self.client.empty_bucket(self.bucket_name)
 
     def _stage_bucket(self):
         bucket = self.client.bucket(self.bucket_name)
@@ -52,4 +57,4 @@ class GcsClientTest(unittest.TestCase):
             bucket.blob(f'{sub_prefix}/obj.txt').upload_from_string(self.data)
 
     def tearDown(self):
-        self._empty_bucket()
+        self.client.empty_bucket(self.bucket_name)
