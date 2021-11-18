@@ -7,9 +7,6 @@ import dpath
 import mock
 import moz_sql_parser
 
-# Third-party imports
-from google.cloud import storage
-
 import bq_utils
 import cdm
 import common

@@ -4,9 +4,6 @@ import unittest
 from random import randint
 from unittest import mock
 
-# Third party imports
-from google.cloud import storage
-
 # Project imports
 import bq_utils
 import common

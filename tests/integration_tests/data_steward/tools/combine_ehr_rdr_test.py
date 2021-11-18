@@ -3,8 +3,6 @@ import os
 import unittest
 from io import open
 
-from google.cloud import storage
-
 # Project imports
 import bq_utils
 import gcs_utils

@@ -2,9 +2,6 @@
 import os
 from unittest import mock, TestCase
 
-# Third-party imports
-from google.cloud import storage
-
 # Project imports
 import app_identity
 import bq_utils

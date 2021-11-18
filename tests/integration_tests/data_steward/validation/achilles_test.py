@@ -1,9 +1,6 @@
 import os
 import unittest
 
-# Third-party imports
-from google.cloud import storage
-
 import bq_utils
 from gcloud.gcs import StorageClient
 import gcs_utils

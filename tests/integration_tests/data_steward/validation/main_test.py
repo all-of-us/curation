@@ -9,7 +9,6 @@ from time import sleep
 
 import mock
 from bs4 import BeautifulSoup as bs
-from google.cloud import storage
 
 import bq_utils
 import app_identity
