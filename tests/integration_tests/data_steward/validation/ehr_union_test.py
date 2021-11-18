@@ -205,8 +205,6 @@ class EhrUnionTest(unittest.TestCase):
         result = bq_utils.response2rows(response)
         actual_fact_id_1, actual_fact_id_2 = result[0]["fact_id_1"], result[0][
             "fact_id_2"]
-        import pdb
-        pdb.set_trace()
         self.assertEqual(expected_fact_id_1, actual_fact_id_1)
         self.assertEqual(expected_fact_id_2, actual_fact_id_2)
 
