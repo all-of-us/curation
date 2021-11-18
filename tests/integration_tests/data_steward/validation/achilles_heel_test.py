@@ -46,15 +46,15 @@ class AchillesHeelTest(unittest.TestCase):
     def _load_dataset(self, hpo_id):
         for cdm_table in resources.CDM_TABLES:
 
-            cdm_file_name: str = f'{cdm_table}.csv'
-            cdm_file_path: str = os.path.join(test_util.FIVE_PERSONS_PATH,
-                                              cdm_file_name)
+            cdm_filename: str = f'{cdm_table}.csv'
+            cdm_filepath: str = os.path.join(test_util.FIVE_PERSONS_PATH,
+                                             cdm_filename)
 
             target_bucket = self.client.get_bucket(self.hpo_bucket)
-            cdm_blob = storage.Blob(cdm_file_name, target_bucket)
-            if os.path.exists(cdm_file_path):
-                cdm_blob.upload_from_filename(cdm_file_path)
-                #test_util.write_cloud_file(self.hpo_bucket, cdm_file_name)
+            cdm_blob = storage.Blob(cdm_filename, target_bucket)
+            if os.path.exists(cdm_filepath):
+                cdm_blob.upload_from_filename(cdm_filepath)
+                # test_util.write_cloud_file(self.hpo_bucket, cdm_filepath)
             else:
                 cdm_blob.upload_from_string('dummy\n')
                 # test_util.write_cloud_str(self.hpo_bucket, cdm_table + '.csv',
