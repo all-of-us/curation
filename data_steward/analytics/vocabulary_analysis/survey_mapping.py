@@ -21,6 +21,8 @@ import re
 import numpy as np
 from datetime import date
 import xlsxwriter
+import os
+import glob
 pd.set_option('display.max_colwidth',1000)
 pd.set_option('display.max_rows',500)
 pd.options.mode.chained_assignment=None #default='warn'
@@ -29,25 +31,38 @@ pd.options.mode.chained_assignment=None #default='warn'
 ## Insert the paths to all historic surveys, the new survey,and the data storage. 
 
 # +
-dd_raw_path=r"{path to file}"
-concept_raw_path=r"{path to file}"
-relationship_raw_path=r"{path to file}"
+dd_raw_path=r"mapping_docs\ENGLISHSocialDeterminantsOfHea_DataDictionary_2021-10-25.csv"
+dd_all = pd.read_csv(dd_raw_path)
+dd_raw = pd.read_csv(dd_raw_path,usecols=['Variable / Field Name',
+                                          'Choices, Calculations, OR Slider Labels',
+                                          'Branching Logic (Show field only if...)'])
 
-data_storage_path='./path/to/file/'+str('sdoh_mapping')
+concept_raw_path=r"mapping_docs\concept_sdoh.csv"
+concept_raw = pd.read_csv(concept_raw_path,usecols=['concept_code',
+                                                    'concept_name',
+                                                    'concept_id',
+                                                    'concept_class_id'])
+
+relationship_raw_path=r"mapping_docs\concept_relationship_sdoh.csv"
+relationship_raw = pd.read_csv(relationship_raw_path,usecols=['concept_code',
+                                                              'concept_id_1',
+                                                              'concept_id_2',
+                                                              'relationship_id',
+                                                              'concept_id',
+                                                              'concept_class_id'])
+
+data_storage_path='data_storage/'+str('sdoh_mapping')
+
+
 
 
 # -
 
 
-dd_all = pd.read_csv(dd_raw_path)
-dd_raw = pd.read_csv(dd_raw_path,usecols=['Variable / Field Name','Choices, Calculations, OR Slider Labels',"Branching Logic (Show field only if...)"])
-concept_raw = pd.read_csv(concept_raw_path,usecols=['concept_code','concept_name','concept_id','concept_class_id'])
-relationship_raw = pd.read_csv(relationship_raw_path,usecols=['concept_code','concept_id_1','concept_id_2','relationship_id','concept_id','concept_class_id'])
-
-
 # rename for understanding
 # class can be a question, answer, topic, module, etc
-dd_clean=dd_raw.rename(columns={'Variable / Field Name':'concept_code','Choices, Calculations, OR Slider Labels':'answer',"Branching Logic (Show field only if...)":"branch"})
+dd_raw=dd_raw.rename(columns={'Variable / Field Name':'concept_code','Choices, Calculations, OR Slider Labels':'answer',"Branching Logic (Show field only if...)":"branch"})
+dd_clean=dd_raw[(dd_raw['concept_code'] != 'record_id')&(dd_raw.concept_code.str.contains('_intro')==False)&(dd_raw.concept_code.str.contains('_outro')==False)]
 concept_clean=concept_raw.copy()
 concept_clean_for_mapping=concept_raw.drop(columns=['concept_class_id','concept_name'])
 relationship_clean=relationship_raw.copy()
@@ -93,6 +108,10 @@ primary_answers_clean=explode_display[explode_display.level_2==0]
 primary_answers_clean['concept_code_2']=primary_answers_clean.concept_code_2.str.strip()
 primary_clean=primary_answers_clean.drop(columns=['level_2','ans_num']).reset_index(drop=True)
 # End with each answer concept code associated with its question.
+primary_clean
+# -
+
+dd_clean
 
 # +
 # The following code block will separate the branching logic from eachother, and keep their association to their concept code.
@@ -102,7 +121,7 @@ primary_clean=primary_answers_clean.drop(columns=['level_2','ans_num']).reset_in
 dd_branching=dd_clean.drop(columns=['answer'])
 dd_branching_drop=dd_branching[dd_branching['branch'].notna()]
 # Split branches, stored in a list.
-dd_branching_drop.branch=dd_branching_drop.branch.str.split(r"or")
+dd_branching_drop.branch=dd_branching_drop.branch.str.split(r" or ")
 explode_branch = dd_branching_drop.set_index(['concept_code'])['branch'].apply(pd.Series).stack()
 explode_branch = explode_branch.reset_index()
 explode_branch.columns=['concept_code','ans_num','ans_code_display']
@@ -134,8 +153,10 @@ secondary_clean=clean_branch.drop(columns=['_merge','q'])
 secondary_clean_mapping=secondary_clean.rename(columns={'q2':'concept_code_2','a1':'concept_code'})
 secondary_concept=secondary_clean.copy()
 secondary_clean_concept=secondary_concept.rename(columns={'q2':'concept_code','a1':'concept_code_2'})
-
+secondary_clean
 # -
+
+tertiary
 
 # holds tertiary question branching logic 
 # Add a check for the case that a1 does not contain either 1 or 0. Cross your fingers.
@@ -160,6 +181,7 @@ tertiary_clean=tertiary_clean.drop(columns=['answer_a2?_bool','q2'])
 tertiary_clean_concept=tertiary_clean.rename(columns={'a2':'concept_code_2','q3':'concept_code'})
 tertiary_mapping=tertiary_clean.copy()
 tertiary_clean_mapping=tertiary_mapping.rename(columns={'a2':'concept_code','q3':'concept_code_2'})
+tertiary_clean_mapping
 
 
 # +
@@ -169,10 +191,12 @@ tertiary_clean_mapping=tertiary_mapping.rename(columns={'a2':'concept_code','q3'
 # connect all codes to all concept_ids for concept class
 association_list=[secondary_clean_concept,tertiary_clean_concept]
 code_association_concept=primary_clean.append(association_list, ignore_index=True,sort=True)
+code_association_concept
 
 # connect all codes to all concept_ids for mapping
 association_list=[secondary_clean_mapping,tertiary_clean_mapping]
 code_association_mapping=primary_clean.append(association_list, ignore_index=True,sort=True)
+code_association_mapping
 
 # # Do the classes match?
 
@@ -199,6 +223,7 @@ tidy_codes=not_questions.append(df_list, ignore_index=True,sort=True)
 # Where code class in the dd does not match the concept_survey table. Code level.
 class_check_merge = pd.merge(tidy_codes, concept_clean,how='outer',on=['concept_code','concept_class_id'],indicator=True)
 class_check_against_concept=class_check_merge[class_check_merge._merge!='both']
+class_check_against_concept
 
 # Where code class in the dd does not match the relationship table. Every issue.
 class_check_merge = pd.merge(tidy_codes, relationship_clean,how='outer',on=['concept_code','concept_class_id'],indicator=True)
@@ -325,11 +350,9 @@ individual_code_issues=individual_code_issues.drop_duplicates()
 #Print explainations for the excel workbook.
 prints={
     1:f'These have no answers associated with them '+str(len(oddities)),
-    2:f'List of all concept_ids and their class '+str(len(tidy_codes)),
     3:f'Where the dd class does not match the concept class '+str(len(class_check_against_concept)),
     4:f'Where the dd class does not match the relationship class '+str(len(class_check_against_relationship)),
     5:f'Visualize branching logic '+str(len(dd_branching_drop)),
-    6:f'All missing mapping '+str(len(discrepancies_actual)),
     7:f'Individual codes that are missing mapping '+str(len(individual_code_issues)),
 }
 printss=pd.DataFrame.from_dict(prints, orient='index')
@@ -339,11 +362,9 @@ printss=pd.DataFrame.from_dict(prints, orient='index')
 dfs ={
     'overview':printss,
     'oddities':oddities,
-    'tidy_codes':tidy_codes,
-    'class_against_concept':class_check_against_concept,
-    'class_against_relationship':class_check_against_relationship,
-    'dd_branching_drop':dd_branching_drop,
-    'discrepancies_actual':discrepancies_actual,
+    'class check concept doc':class_check_against_concept,
+    'class check relationship doc':class_check_against_relationship,
+    'branching visual':dd_branching_drop,
     'individual_code_issues':individual_code_issues,
 }
 
@@ -357,3 +378,9 @@ dfs ={
 #     
 # writer.save()
 # writer.close()
+
+# Search for an individual mapping in the relationship table
+search=relationship_raw[(relationship_raw.concept_id_1=="40192394")&(relationship_raw.concept_id_2=="40192381")]
+search
+
+
