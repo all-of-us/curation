@@ -64,7 +64,7 @@ class TopHeelErrorsTest(TestCase):
         self.app_id = app_identity.get_application_id()
         self.dataset_id = bq_utils.get_dataset_id()
         self.bucket: str = gcs_utils.get_drc_bucket()
-        self.client = StorageClient()
+        self.storage_client = StorageClient()
 
         test_util.empty_bucket(self.bucket)
         test_util.delete_all_tables(self.dataset_id)
@@ -87,7 +87,7 @@ class TopHeelErrorsTest(TestCase):
         test_file_path: str = os.path.join(test_util.TEST_DATA_PATH,
                                            test_file_name)
 
-        target_bucket = self.client.get_bucket(self.bucket)
+        target_bucket = self.storage_client.get_bucket(self.bucket)
         test_blob = target_bucket.blob(test_file_name)
         test_blob.upload_from_filename(test_file_path)
 
