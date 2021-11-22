@@ -67,6 +67,17 @@ def exist_participant_match(ehr_dataset_id, hpo_id):
         bq_utils.get_table_id(hpo_id, PARTICIPANT_MATCH), ehr_dataset_id)
 
 
+def exist_identity_match(table_id, dataset_id):
+    """
+    This function checks if the hpo has valid the identity_match table
+
+    :param table_id:
+    :param dataset_id:
+    :return:
+    """
+    return bq_utils.table_exists(table_id, dataset_id)
+
+
 def get_missing_criterion(field_names):
     """
     This function generates a bigquery column expression for missing criteria
@@ -93,33 +104,37 @@ def get_list_non_match_participants(project_id, validation_dataset_id, hpo_id):
 
     # get the the hpo specific <hpo_id>_identity_match
     identity_match_table = bq_utils.get_table_id(hpo_id, IDENTITY_MATCH)
+    result = []
+    if exist_identity_match(identity_match_table, validation_dataset_id):
+        non_match_participants_query = get_non_match_participant_query(
+            project_id, validation_dataset_id, identity_match_table)
 
-    non_match_participants_query = get_non_match_participant_query(
-        project_id, validation_dataset_id, identity_match_table)
+        try:
+            LOGGER.info(
+                'Identifying non-match participants in {dataset_id}.{identity_match_table}'
+                .format(dataset_id=validation_dataset_id,
+                        identity_match_table=identity_match_table))
 
-    try:
-        LOGGER.info(
-            'Identifying non-match participants in {dataset_id}.{identity_match_table}'
-            .format(dataset_id=validation_dataset_id,
-                    identity_match_table=identity_match_table))
+            results = bq_utils.query(q=non_match_participants_query)
 
-        results = bq_utils.query(q=non_match_participants_query)
+        except (oauth2client.client.HttpAccessTokenRefreshError,
+                googleapiclient.errors.HttpError) as exp:
 
-    except (oauth2client.client.HttpAccessTokenRefreshError,
-            googleapiclient.errors.HttpError) as exp:
+            LOGGER.exception('Could not execute the query \n{query}'.format(
+                query=non_match_participants_query))
+            raise exp
 
-        LOGGER.exception('Could not execute the query \n{query}'.format(
-            query=non_match_participants_query))
-        raise exp
+        # wait for job to finish
+        query_job_id = results['jobReference']['jobId']
+        incomplete_jobs = bq_utils.wait_on_jobs([query_job_id])
+        if incomplete_jobs:
+            raise bq_utils.BigQueryJobWaitError(incomplete_jobs)
 
-    # wait for job to finish
-    query_job_id = results['jobReference']['jobId']
-    incomplete_jobs = bq_utils.wait_on_jobs([query_job_id])
-    if incomplete_jobs:
-        raise bq_utils.BigQueryJobWaitError(incomplete_jobs)
-
-    # return the person_ids only
-    return [row[PERSON_ID_FIELD] for row in bq_utils.response2rows(results)]
+        # return the person_ids only
+        result = [
+            row[PERSON_ID_FIELD] for row in bq_utils.response2rows(results)
+        ]
+    return result
 
 
 def get_non_match_participant_query(project_id, validation_dataset_id,
