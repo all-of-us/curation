@@ -150,12 +150,6 @@ class EhrUnionTest(unittest.TestCase):
         return [table['tableReference']['tableId'] for table in tables]
 
     @mock.patch('bq_utils.get_hpo_info')
-    def test_ehr_main_exclude_hpo_id(self, mock_hpo_info):
-        mock_hpo_info.return_value = [{
-            'hpo_id': hpo_id
-        } for hpo_id in self.hpo_ids]
-
-    @mock.patch('bq_utils.get_hpo_info')
     def test_union_ehr(self, mock_hpo_info):
         self._load_datasets()
         input_tables_before = set(self._dataset_tables(self.input_dataset_id))
