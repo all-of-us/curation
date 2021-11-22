@@ -11,6 +11,7 @@ from gcloud.gcs import StorageClient
 LOGGER = logging.getLogger(__name__)
 CLIENT = StorageClient()
 
+
 def _filter_stale_buckets(buckets: list, first_n: int = None):
     """
     Given a list of buckets, get the first n buckets that meet all of the following criteria:
@@ -30,13 +31,17 @@ def _filter_stale_buckets(buckets: list, first_n: int = None):
         if first_n and n >= first_n:
             break
 
-        if (now - bucket.time_created).days > 90 and len(
-                list(CLIENT.list_blobs(bucket.name))) == 0:
-            stale_buckets.append(bucket.name)
-            LOGGER.info(
-                f"{n}: stale_bucket={bucket.name}, time_created={bucket.time_created}."
-            )
-            n += 1
+        if (now - bucket.time_created).days <= 90:
+            continue
+
+        if next(CLIENT.list_blobs(bucket.name), None):
+            continue
+
+        stale_buckets.append(bucket.name)
+        LOGGER.info(
+            f"{n}: stale_bucket={bucket.name}, time_created={bucket.time_created}."
+        )
+        n += 1
 
     return stale_buckets
 
