@@ -1,16 +1,15 @@
 """
 Delete stale buckets in test environment. 
 """
-from google.cloud import storage
 from datetime import datetime, timezone
 import logging
 
 # Project imports
 from utils import pipeline_logging
+from gcloud.gcs import StorageClient
 
 LOGGER = logging.getLogger(__name__)
-CLIENT = storage.Client(project='aou-res-curation-test')
-
+CLIENT = StorageClient()
 
 def _filter_stale_buckets(buckets: list, first_n: int = None):
     """
