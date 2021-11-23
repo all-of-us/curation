@@ -74,16 +74,21 @@ class WritersTest(unittest.TestCase):
                 self.site + consts.VALIDATION_TABLE_SUFFIX,
                 write_disposition=consts.WRITE_TRUNCATE), None)
 
+    @patch('validation.participants.writers.StorageClient')
     @patch('validation.participants.writers.gcs_utils.get_drc_bucket')
-    @patch('validation.participants.writers.gcs_utils.upload_object')
     @patch('validation.participants.writers.bq_utils.load_csv')
-    def test_write_to_result_table_error(self, mock_load_csv, mock_upload,
-                                         mock_bucket):
+    def test_write_to_result_table_error(self, mock_load_csv, mock_bucket,
+                                         mock_storage_client):
         # pre-conditions
         bucket_name = 'mock_bucket'
         mock_bucket.return_value = bucket_name
         mock_load_csv.side_effect = oauth2client.client.HttpAccessTokenRefreshError(
         )
+        mock_client_bucket = MagicMock()
+        mock_client_blob = MagicMock()
+        mock_storage_client.return_value = mock_storage_client
+        mock_storage_client.get_bucket.return_value = mock_client_bucket
+        mock_client_bucket.blob.return_value = mock_client_blob
 
         match = {}
         for field in consts.VALIDATION_FIELDS:
@@ -98,12 +103,19 @@ class WritersTest(unittest.TestCase):
 
         # post conditions
         self.assertEqual(mock_load_csv.call_count, 1)
-        self.assertEqual(mock_upload.call_count, 1)
         self.assertEqual(mock_bucket.call_count, 1)
+        self.assertEqual(mock_storage_client.get_bucket.call_count, 1)
+        self.assertEqual(mock_client_bucket.blob.call_count, 1)
+        self.assertEqual(mock_client_blob.upload_from_file.call_count, 1)
 
         upload_path = self.dataset + '/intermediate_results/' + self.site + '.csv'
         self.assertEqual(
-            mock_upload.assert_called_with(bucket_name, upload_path, ANY), None)
+            mock_storage_client.get_bucket.assert_called_with(bucket_name),
+            None)
+        self.assertEqual(
+            mock_client_bucket.blob.assert_called_with(upload_path), None)
+        self.assertEqual(
+            mock_client_blob.upload_from_file.assert_called_with(ANY), None)
 
         self.assertEqual(
             mock_load_csv.assert_called_with(
