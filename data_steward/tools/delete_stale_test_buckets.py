@@ -9,7 +9,6 @@ from utils import pipeline_logging
 from gcloud.gcs import StorageClient
 
 LOGGER = logging.getLogger(__name__)
-CLIENT = StorageClient()
 
 
 def _filter_stale_buckets(buckets: list, first_n: int = None):
@@ -49,6 +48,8 @@ def _filter_stale_buckets(buckets: list, first_n: int = None):
 def main():
 
     pipeline_logging.configure(logging.INFO, add_console_handler=True)
+
+    CLIENT = StorageClient()
 
     stale_buckets = _filter_stale_buckets(buckets=CLIENT.list_buckets(),
                                           first_n=200)
