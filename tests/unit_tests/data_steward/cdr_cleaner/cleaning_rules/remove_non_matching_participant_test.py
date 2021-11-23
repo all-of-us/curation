@@ -152,10 +152,15 @@ class RemoveNonMatchingParticipantTest(unittest.TestCase):
     @mock.patch(
         'cdr_cleaner.cleaning_rules.remove_non_matching_participant.get_non_match_participant_query'
     )
+    @mock.patch(
+        'cdr_cleaner.cleaning_rules.remove_non_matching_participant.exist_identity_match'
+    )
     @mock.patch('bq_utils.get_table_id')
     def test_get_list_non_match_participants(
-        self, mock_get_table_id, mock_get_non_match_participant_query,
-        mock_query, mock_wait_on_jobs, mock_response2rows):
+            self, mock_get_table_id, mock_exist_identity_match,
+            mock_get_non_match_participant_query, mock_query, mock_wait_on_jobs,
+            mock_response2rows):
+        mock_exist_identity_match.return_value = True
         mock_get_table_id.return_value = self.identity_match_table
         mock_get_non_match_participant_query.return_value = self.non_match_participant_query
         mock_query.return_value = self.query_results
@@ -195,9 +200,9 @@ class RemoveNonMatchingParticipantTest(unittest.TestCase):
     )
     @mock.patch('validation.participants.readers.get_hpo_site_names')
     def test_delete_records_for_non_matching_participants(
-        self, mock_get_hpo_site_names, mock_exist_participant_match,
-        mock_get_list_non_match_participants, mock_get_sandbox_queries,
-        mock_get_remove_pids_queries):
+            self, mock_get_hpo_site_names, mock_exist_participant_match,
+            mock_get_list_non_match_participants, mock_get_sandbox_queries,
+            mock_get_remove_pids_queries):
 
         mock_get_hpo_site_names.return_value = [self.hpo_id_1, self.hpo_id_2]
         mock_exist_participant_match.side_effect = [True, False]
