@@ -10,7 +10,6 @@ from datetime import datetime, timedelta, timezone
 # Third party imports
 
 # Project imports
-from tools import delete_stale_test_buckets
 from gcloud.gcs import StorageClient
 
 
@@ -29,6 +28,7 @@ class DeleteStaleTestBucketsTest(TestCase):
     @patch('tools.delete_stale_test_buckets.StorageClient')
     @patch('gcloud.gcs.StorageClient.list_blobs')
     def test_filter_stale_buckets(self, list_blobs_mock, client_mock):
+        from tools import delete_stale_test_buckets
 
         old_bucket_mock_1 = Mock()
         old_bucket_mock_1.name = 'all_of_us_dummy_old_bucket_1'
