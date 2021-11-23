@@ -26,11 +26,9 @@ class DummyClient(StorageClient):
 
 class DeleteStaleTestBucketsTest(TestCase):
 
-    @patch('gcloud.gcs.StorageClient')
+    @patch('tools.delete_stale_test_buckets.StorageClient')
     @patch('gcloud.gcs.StorageClient.list_blobs')
     def test_filter_stale_buckets(self, list_blobs_mock, client_mock):
-
-        StorageClient = DummyClient()
 
         old_bucket_mock_1 = Mock()
         old_bucket_mock_1.name = 'all_of_us_dummy_old_bucket_1'
