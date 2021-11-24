@@ -757,7 +757,9 @@ def main(input_dataset_id, output_dataset_id, project_id, hpo_ids_ex=None):
     # Get all hpo_ids.
     hpo_ids = [item['hpo_id'] for item in bq_utils.get_hpo_info()]
     if hpo_ids_ex:
-        hpo_ids = list(set(hpo_ids) - set(hpo_ids_ex))
+        for ex_id in hpo_ids_ex:
+            if ex_id in hpo_ids:
+                hpo_ids.remove(ex_id)
 
     # Create empty output tables to ensure proper schema, clustering, etc.
     for table in resources.CDM_TABLES:
