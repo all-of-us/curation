@@ -203,7 +203,6 @@ class RemoveNonMatchingParticipantTest(unittest.TestCase):
             self, mock_get_hpo_site_names, mock_exist_participant_match,
             mock_get_list_non_match_participants, mock_get_sandbox_queries,
             mock_get_remove_pids_queries):
-
         mock_get_hpo_site_names.return_value = [self.hpo_id_1, self.hpo_id_2]
         mock_exist_participant_match.side_effect = [True, False]
         mock_get_list_non_match_participants.return_value = self.person_ids
