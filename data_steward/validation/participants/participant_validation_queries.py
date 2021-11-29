@@ -1,6 +1,28 @@
 # Project imports
 from common import JINJA_ENV
 
+CREATE_NAME_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
+    CREATE FUNCTION IF NOT EXISTS `{{project_id}}.{{drc_dataset_id}}.CompareName`(rdr_name string, ehr_name string)
+    RETURNS string
+    AS ((
+        WITH normalized_rdr_name AS (
+            SELECT REGEXP_REPLACE(LOWER(TRIM(rdr_name)), '[^A-Za-z]', '') AS rdr_name
+        )
+        , normalized_ehr_name AS (
+            SELECT REGEXP_REPLACE(LOWER(TRIM(ehr_name)), '[^A-Za-z]', '') AS ehr_name
+        )
+        SELECT
+            CASE 
+                WHEN normalized_rdr_name.rdr_name = normalized_ehr_name.ehr_name THEN '{{match}}'
+                WHEN normalized_rdr_name.rdr_name IS NOT NULL AND normalized_ehr_name.ehr_name IS NOT NULL THEN '{{no_match}}'
+                WHEN normalized_rdr_name.rdr_name IS NULL THEN '{{missing_rdr}}'
+                ELSE '{{missing_ehr}}'
+            END AS name
+        FROM normalized_rdr_name, normalized_ehr_name 
+
+    ));
+""")
+
 CREATE_SEX_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
 CREATE FUNCTION IF NOT EXISTS
   `{{project_id}}.{{drc_dataset_id}}.CompareSexAtBirth`(rdr_sex string,
@@ -89,6 +111,9 @@ CREATE_DOB_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
 
 # Contains list of create function queries to execute
 CREATE_COMPARISON_FUNCTION_QUERIES = [{
+    'name': 'CompareName',
+    'query': CREATE_NAME_COMPARISON_FUNCTION
+}, {
     'name': 'CompareEmail',
     'query': CREATE_EMAIL_COMPARISON_FUNCTION
 }, {

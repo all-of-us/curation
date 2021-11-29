@@ -34,7 +34,10 @@ EHR_OPS = 'ehr_ops'
 
 MATCH_FIELDS_QUERY = JINJA_ENV.from_string("""
     UPDATE `{{project_id}}.{{drc_dataset_id}}.{{id_match_table_id}}` upd
-    SET upd.email = `{{project_id}}.{{drc_dataset_id}}.CompareEmail`(ps.email, ehr_email.email),
+    SET upd.first_name = `{{project_id}}.{{drc_dataset_id}}.CompareName`(ps.first_name, ehr_name.first_name),
+        upd.middle_name = `{{project_id}}.{{drc_dataset_id}}.CompareName`(ps.middle_name, ehr_name.middle_name),
+        upd.last_name = `{{project_id}}.{{drc_dataset_id}}.CompareName`(ps.last_name, ehr_name.last_name),
+        upd.email = `{{project_id}}.{{drc_dataset_id}}.CompareEmail`(ps.email, ehr_email.email),
         upd.phone_number = `{{project_id}}.{{drc_dataset_id}}.ComparePhoneNumber`(ps.phone_number, ehr_phone.phone_number),
         upd.birth_date = `{{project_id}}.{{drc_dataset_id}}.CompareDateOfBirth`(ps.date_of_birth, ehr_dob.date_of_birth),
         upd.sex = `{{project_id}}.{{drc_dataset_id}}.CompareSexAtBirth`(ps.sex, ehr_sex.sex),
@@ -52,6 +55,8 @@ MATCH_FIELDS_QUERY = JINJA_ENV.from_string("""
                 JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.concept` cc
                     ON gender_concept_id = concept_id ) AS ehr_sex
         ON ehr_sex.person_id = ps.person_id
+    LEFT JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_name_table_id}}` ehr_name
+        ON ehr_name.person_id = ps.person_id
     WHERE upd.person_id = ps.person_id
         AND upd._PARTITIONTIME = ps._PARTITIONTIME
 """)
@@ -66,6 +71,7 @@ def identify_rdr_ehr_match(client,
     id_match_table_id = f'{IDENTITY_MATCH_TABLE}_{hpo_id}'
     hpo_pii_email_table_id = f'{hpo_id}_pii_email'
     hpo_pii_phone_number_table_id = f'{hpo_id}_pii_phone_number'
+    hpo_pii_name_table_id = f'{hpo_id}_pii_name'
     ps_api_table_id = f'{PS_API_VALUES}_{hpo_id}'
     hpo_person_table_id = f'{hpo_id}_person'
 
@@ -85,6 +91,7 @@ def identify_rdr_ehr_match(client,
     match_query = MATCH_FIELDS_QUERY.render(
         project_id=project_id,
         id_match_table_id=id_match_table_id,
+        hpo_pii_name_table_id=hpo_pii_name_table_id,
         hpo_pii_email_table_id=hpo_pii_email_table_id,
         hpo_pii_phone_number_table_id=hpo_pii_phone_number_table_id,
         hpo_person_table_id=hpo_person_table_id,
