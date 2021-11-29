@@ -11,13 +11,31 @@ from gcloud.gcs import StorageClient
 LOGGER = logging.getLogger(__name__)
 
 
+def _check_project(storage_client):
+    """
+    Check if the project is set to test.
+
+    :param storageclient: StorageClient
+    :return: None if the project is set properly
+    :raise: ValueError if project is not 'aou-res-curation-test'
+    """
+    test_project = 'aou-res-curation-test'
+
+    if storage_client.project != test_project:
+        raise ValueError(
+            f'Wrong project: {storage_client.project}. This script runs only for {test_project}'
+        )
+
+    return None
+
+
 def _filter_stale_buckets(storage_client, first_n: int = None):
     """
     Get the first n buckets that meet all of the following criteria:
     1. Buckets older than 90 days
     2. Empty buckets
 
-    :param client: StorageClient
+    :param storageclient: StorageClient
     :param first_n: number of buckets to return. If not specified, return all.
     :return: list of bucket names that are stale
     """
@@ -50,16 +68,17 @@ def _filter_stale_buckets(storage_client, first_n: int = None):
 
 def main():
 
+    pipeline_logging.configure(logging.INFO, add_console_handler=True)
+
     sc = StorageClient()
 
-    pipeline_logging.configure(logging.INFO, add_console_handler=True)
+    _check_project(sc)
 
     stale_buckets = _filter_stale_buckets(storage_client=sc, first_n=200)
 
     for stale_bucket in stale_buckets:
         LOGGER.info(f"Running - sc.get_bucket({stale_bucket}).delete()")
-        # Uncomment the following before release:
-        # sc.get_bucket(stale_bucket).delete()
+        sc.get_bucket(stale_bucket).delete()
 
 
 if __name__ == "__main__":

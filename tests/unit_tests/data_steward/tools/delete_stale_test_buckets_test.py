@@ -15,58 +15,102 @@ from tools import delete_stale_test_buckets
 
 class DeleteStaleTestBucketsTest(TestCase):
 
-    @patch('tools.delete_stale_test_buckets.StorageClient')
-    def test_filter_stale_buckets(self, mock_storage_client):
+    @classmethod
+    def setUpClass(cls):
+        print('**************************************************************')
+        print(cls.__name__)
+        print('**************************************************************')
 
-        old_bucket_mock_1 = Mock()
-        old_bucket_mock_1.name = 'all_of_us_dummy_old_bucket_1'
-        old_bucket_mock_1.time_created = datetime.now(
+    def setUp(self):
+        self.mock_old_bucket_1 = Mock()
+        self.mock_old_bucket_1.name = 'all_of_us_dummy_old_bucket_1'
+        self.mock_old_bucket_1.time_created = datetime.now(
             timezone.utc) - timedelta(days=365)
 
-        old_bucket_mock_2 = Mock()
-        old_bucket_mock_2.name = 'all_of_us_dummy_old_bucket_2'
-        old_bucket_mock_2.time_created = datetime.now(
+        self.mock_old_bucket_2 = Mock()
+        self.mock_old_bucket_2.name = 'all_of_us_dummy_old_bucket_2'
+        self.mock_old_bucket_2.time_created = datetime.now(
             timezone.utc) - timedelta(days=180)
 
-        new_bucket_mock = Mock()
-        new_bucket_mock.name = 'all_of_us_dummy_new_bucket'
-        new_bucket_mock.time_created = datetime.now(
+        self.mock_new_bucket = Mock()
+        self.mock_new_bucket.name = 'all_of_us_dummy_new_bucket'
+        self.mock_new_bucket.time_created = datetime.now(
             timezone.utc) - timedelta(days=1)
 
-        buckets = [old_bucket_mock_1, old_bucket_mock_2, new_bucket_mock]
+        self.buckets = [
+            self.mock_old_bucket_1, self.mock_old_bucket_2, self.mock_new_bucket
+        ]
 
+        self.mock_blob = Mock()
+        self.mock_blob.name = 'dummy.csv'
+
+    @patch('tools.delete_stale_test_buckets.StorageClient')
+    def test_check_project(self, mock_storage_client):
         mock_storage_client.return_value = mock_storage_client
-        mock_storage_client.list_buckets.return_value = buckets
+        mock_storage_client.project = 'aou-res-curation-test'
 
-        # Test case 1 ... All buckets are not empty.
-        blob_mock = Mock()
-        blob_mock.name = 'dummy.csv'
+        self.assertIsNone(
+            delete_stale_test_buckets._check_project(mock_storage_client))
+
+    @patch('tools.delete_stale_test_buckets.StorageClient')
+    def test_check_project_error(self, mock_storage_client):
+        mock_storage_client.return_value = mock_storage_client
+        mock_storage_client.project = 'aou-res-curation-test-wrong-name'
+
+        with self.assertRaises(ValueError):
+            delete_stale_test_buckets._check_project(mock_storage_client)
+
+    @patch('tools.delete_stale_test_buckets.StorageClient')
+    def test_filter_stale_buckets_all_not_empty(self, mock_storage_client):
+        """Test case: All buckets are NOT empty.
+        """
+        mock_storage_client.return_value = mock_storage_client
+        mock_storage_client.list_buckets.return_value = self.buckets
         mock_storage_client.list_blobs.return_value = iter(
-            [blob_mock for _ in range(0, 3)])
+            [self.mock_blob for _ in range(0, 3)])
 
         result = delete_stale_test_buckets._filter_stale_buckets(
             mock_storage_client, 100)
 
         self.assertEqual(result, [])
 
-        # Test case 2 ... All buckets are empty.
+    @patch('tools.delete_stale_test_buckets.StorageClient')
+    def test_filter_stale_buckets_all_empty(self, mock_storage_client):
+        """Test case: All buckets are empty.
+        """
+        mock_storage_client.return_value = mock_storage_client
+        mock_storage_client.list_buckets.return_value = self.buckets
         mock_storage_client.list_blobs.return_value = iter(())
 
         result = delete_stale_test_buckets._filter_stale_buckets(
             mock_storage_client, 100)
 
-        self.assertEqual(result,
-                         [old_bucket_mock_1.name, old_bucket_mock_2.name])
+        self.assertEqual(
+            result, [self.mock_old_bucket_1.name, self.mock_old_bucket_2.name])
 
-        # Test case 3 ... All buckets are empty. first_n not given.
+    @patch('tools.delete_stale_test_buckets.StorageClient')
+    def test_filter_stale_buckets_first_n_not_given(self, mock_storage_client):
+        """Test case: All buckets are empty. first_n not given.
+        """
+        mock_storage_client.return_value = mock_storage_client
+        mock_storage_client.list_buckets.return_value = self.buckets
+        mock_storage_client.list_blobs.return_value = iter(())
+
         result = delete_stale_test_buckets._filter_stale_buckets(
             mock_storage_client)
 
-        self.assertEqual(result,
-                         [old_bucket_mock_1.name, old_bucket_mock_2.name])
+        self.assertEqual(
+            result, [self.mock_old_bucket_1.name, self.mock_old_bucket_2.name])
 
-        # Test case 4 ... All buckets are empty. first_n < # of stale buckets
+    @patch('tools.delete_stale_test_buckets.StorageClient')
+    def test_filter_stale_buckets_first_n_given(self, mock_storage_client):
+        """Test case: All buckets are empty. first_n not given. first_n < # of stale buckets.
+        """
+        mock_storage_client.return_value = mock_storage_client
+        mock_storage_client.list_buckets.return_value = self.buckets
+        mock_storage_client.list_blobs.return_value = iter(())
+
         result = delete_stale_test_buckets._filter_stale_buckets(
             mock_storage_client, 1)
 
-        self.assertEqual(result, [old_bucket_mock_1.name])
+        self.assertEqual(result, [self.mock_old_bucket_1.name])
