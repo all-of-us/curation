@@ -10,25 +10,13 @@ from datetime import datetime, timedelta, timezone
 # Third party imports
 
 # Project imports
-from gcloud.gcs import StorageClient
-
-
-class DummyClient(StorageClient):
-    """
-    A class which inherits all of StorageClient but doesn't authenticate
-    """
-
-    # pylint: disable=super-init-not-called
-    def __init__(self):
-        pass
+from tools import delete_stale_test_buckets
 
 
 class DeleteStaleTestBucketsTest(TestCase):
 
     @patch('tools.delete_stale_test_buckets.StorageClient')
-    @patch('gcloud.gcs.StorageClient.list_blobs')
-    def test_filter_stale_buckets(self, list_blobs_mock, client_mock):
-        from tools import delete_stale_test_buckets
+    def test_filter_stale_buckets(self, mock_storage_client):
 
         old_bucket_mock_1 = Mock()
         old_bucket_mock_1.name = 'all_of_us_dummy_old_bucket_1'
@@ -47,30 +35,38 @@ class DeleteStaleTestBucketsTest(TestCase):
 
         buckets = [old_bucket_mock_1, old_bucket_mock_2, new_bucket_mock]
 
+        mock_storage_client.return_value = mock_storage_client
+        mock_storage_client.list_buckets.return_value = buckets
+
         # Test case 1 ... All buckets are not empty.
         blob_mock = Mock()
         blob_mock.name = 'dummy.csv'
-        list_blobs_mock.return_value = iter([blob_mock for _ in range(0, 3)])
+        mock_storage_client.list_blobs.return_value = iter(
+            [blob_mock for _ in range(0, 3)])
 
-        result = delete_stale_test_buckets._filter_stale_buckets(buckets, 100)
+        result = delete_stale_test_buckets._filter_stale_buckets(
+            mock_storage_client, 100)
 
         self.assertEqual(result, [])
 
         # Test case 2 ... All buckets are empty.
-        list_blobs_mock.return_value = iter(())
+        mock_storage_client.list_blobs.return_value = iter(())
 
-        result = delete_stale_test_buckets._filter_stale_buckets(buckets, 100)
+        result = delete_stale_test_buckets._filter_stale_buckets(
+            mock_storage_client, 100)
 
         self.assertEqual(result,
                          [old_bucket_mock_1.name, old_bucket_mock_2.name])
 
         # Test case 3 ... All buckets are empty. first_n not given.
-        result = delete_stale_test_buckets._filter_stale_buckets(buckets)
+        result = delete_stale_test_buckets._filter_stale_buckets(
+            mock_storage_client)
 
         self.assertEqual(result,
                          [old_bucket_mock_1.name, old_bucket_mock_2.name])
 
         # Test case 4 ... All buckets are empty. first_n < # of stale buckets
-        result = delete_stale_test_buckets._filter_stale_buckets(buckets, 1)
+        result = delete_stale_test_buckets._filter_stale_buckets(
+            mock_storage_client, 1)
 
         self.assertEqual(result, [old_bucket_mock_1.name])
