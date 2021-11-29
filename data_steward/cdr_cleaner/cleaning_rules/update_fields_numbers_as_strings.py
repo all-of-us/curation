@@ -38,8 +38,15 @@ OBSERVATION_SOURCE_VALUES = "('basics_xx', 'basics_xx20', 'ipaq_1_cope_a_24', 'i
 # Query to sandbox original observation table before CR
 SANDBOX_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` as(
-SELECT * FROM
-`{{project}}.{{dataset}}.observation`
+    SELECT
+        *
+    FROM
+        `{{project}}.{{dataset}}.observation`
+    WHERE
+        observation_source_value IN {{observation_source_values}}
+        AND value_as_number IS NULL
+        AND value_as_string != 'PMI Skip'
+        AND REGEXP_CONTAINS(value_as_string, r'^\d+$')
 )
 """)
 
@@ -119,7 +126,8 @@ class UpdateFieldsNumbersAsStrings(BaseCleaningRule):
                         project=self.project_id,
                         sandbox_dataset=self.sandbox_dataset_id,
                         sandbox_table=self.get_sandbox_tablenames()[i],
-                        dataset=self.dataset_id),
+                        dataset=self.dataset_id,
+                        observation_source_values=OBSERVATION_SOURCE_VALUES),
             })
             query_list.append({
                 cdr_consts.QUERY:
