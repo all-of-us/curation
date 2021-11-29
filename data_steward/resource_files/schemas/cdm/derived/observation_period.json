@@ -28,15 +28,5 @@
     "name": "period_type_concept_id",
     "mode": "required",
     "description": "A foreign key identifier to the predefined concept in the Standardized Vocabularies reflecting the source of the observation period information"
-  },
-  {
-    "type": "timestamp",
-    "name": "observation_period_start_datetime",
-    "mode": "nullable"
-  },
-  {
-    "type": "timestamp",
-    "name": "observation_period_end_datetime",
-    "mode": "nullable"
   }
 ]

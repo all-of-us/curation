@@ -140,9 +140,9 @@ def get_participant_data(api_project_id: str,
             ]
             if 'link' in r_json:
                 link_obj = r_json.get('link')
-                link_url = link_obj[0].get('url')
-                params['_token'] = link_url[link_url.find('_token') +
-                                            len('_token') + 1:]
+                # Use the next paged url directly (with paged '_token' included) and reset params
+                url = link_obj[0].get('url')
+                params = dict()
             else:
                 done = True
 

@@ -1,5 +1,4 @@
 # Python imports
-from io import BytesIO
 from unittest import TestCase
 from unittest.mock import patch, MagicMock
 from typing import Callable
@@ -8,6 +7,16 @@ from typing import Callable
 
 # Project imports
 from gcloud.gcs import StorageClient
+
+
+class DummyClient(StorageClient):
+    """
+    A class which inherits all of StorageClient but doesn't authenticate
+    """
+
+    # pylint: disable=super-init-not-called
+    def __init__(self):
+        pass
 
 
 class GCSTest(TestCase):
@@ -19,31 +28,46 @@ class GCSTest(TestCase):
         print('**************************************************************')
 
     def setUp(self):
-        self.client = StorageClient.create_anonymous_client()
+        self.client = DummyClient()
         self.bucket = 'foo_bucket'
-        self.folder_prefix = 'folder/'
-        self.file_name = 'fake_file.csv'
-        self.fake_file_obj = BytesIO()
+        self.prefix = 'foo_prefix/'
+        self.file_name = 'foo_file.csv'
+
+    @patch.object(DummyClient, 'list_blobs')
+    def test_empty_bucket(self, mock_list_blobs):
+        # Mock up blobs
+        mock_blob = MagicMock()
+        mock_blob.delete.return_value = None
+        # Mock up pages
+        mock_pages = MagicMock()
+        mock_pages.pages = [[mock_blob]]
+        # Mock page returning list funciton
+        self.client.list_blobs.return_value = mock_pages
+        # Test
+        self.client.empty_bucket(self.bucket)
+        mock_blob.delete.assert_called_once()
 
     @patch('gcloud.gcs.page_iterator')
-    def test_list_sub_prefixes(self, mock_iterator):
+    @patch.object(DummyClient, '_connection')
+    def test_list_sub_prefixes(self, mock_connection, mock_iterator):
 
-        mock_iterator.HTTPIterator = MagicMock()
-
-        fake_request = 'fake_api_request'
-        self.client._connection.api_request = fake_request
-        path = f"/b/{self.bucket}/o"
-        extra_params = {
+        foo_request: str = 'fake_api_request'
+        path: str = f"/b/{self.bucket}/o"
+        extra_params: dict = {
             "projection": "noAcl",
-            "prefix": self.folder_prefix,
+            "prefix": self.prefix,
             "delimiter": '/'
         }
 
-        self.client.list_sub_prefixes(self.bucket, self.folder_prefix)
+        mock_iterator.HTTPIterator = MagicMock()
+        self.client._connection.return_value = MagicMock()
+        self.client._connection.api_request = foo_request
+
+        self.client.list_sub_prefixes(self.bucket, self.prefix)
         self.assertEqual(mock_iterator.HTTPIterator.call_count, 1)
         args = mock_iterator.HTTPIterator.call_args[1]
         self.assertEqual(args['client'], self.client)
-        self.assertEqual(args['api_request'], fake_request)
+        self.assertEqual(args['api_request'], foo_request)
         self.assertEqual(args['path'], path)
         self.assertEqual(args['items_key'], 'prefixes')
         self.assertIsInstance(args['item_to_value'], Callable)

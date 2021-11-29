@@ -16,7 +16,7 @@ import pandas as pd
 import app_identity
 import bq_utils
 import constants.bq_utils as bq_consts
-import gcs_utils
+from gcloud.gcs import StorageClient
 import resources
 from tools import cli_util
 from utils import bq
@@ -232,19 +232,17 @@ def add_lookups(hpo_id, hpo_name, org_id, bucket_name, display_order=None):
     add_hpo_bucket(hpo_id, bucket_name)
 
 
-def bucket_access_configured(bucket_name):
+def bucket_access_configured(bucket_name: str) -> bool:
     """
     Determine if the service account has appropriate permissions on the bucket
 
     :param bucket_name: identifies the GCS bucket
     :return: True if the service account has appropriate permissions, False otherwise
-    :raises HttpError if accessing bucket fails
     """
-    try:
-        gcs_utils.list_bucket(bucket_name)
-        return True
-    except HttpError:
-        raise
+    sc = StorageClient()
+    bucket = sc.get_bucket(bucket_name)
+    permissions: list = bucket.test_iam_permissions("storage.objects.create")
+    return len(permissions) >= 1
 
 
 def update_site_masking_table():
