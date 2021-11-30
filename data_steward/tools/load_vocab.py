@@ -2,22 +2,24 @@
  Load an Athena vocabulary bundle located in a GCS bucket into a BQ dataset
 
 """
+# Python imports
 import argparse
 import datetime
 import hashlib
-import json
 import logging
 from pathlib import Path
-from typing import List, Dict
+from typing import List
 
+# Third party imports
 from google.cloud import storage
 from google.cloud.exceptions import NotFound
-from google.cloud.bigquery import Client, Dataset, SchemaField, LoadJob, LoadJobConfig
-from google.cloud.bigquery import QueryJobConfig, Table, AccessEntry
+from google.cloud.bigquery import Client, Dataset, SchemaField, LoadJob, LoadJobConfig, \
+    QueryJobConfig, Table
 
+# Project imports
+from utils import bq, pipeline_logging
 from common import VOCABULARY_TABLES, JINJA_ENV, CONCEPT, VOCABULARY, VOCABULARY_UPDATES
 from resources import AOU_VOCAB_PATH
-from utils import bq, pipeline_logging
 
 LOGGER = logging.getLogger(__name__)
 DATE_TIME_TYPES = ['date', 'timestamp', 'datetime']
@@ -188,49 +190,21 @@ def load_stage(dst_dataset: Dataset, bq_client: Client, bucket_name: str,
     return load_jobs
 
 
-# TODO Move this to another module (auth, admin?). It can be reused
-#  if/when setting standard properties on other datasets
-def dataset_properties_from_file(json_path: str) -> Dict[str, object]:
+def load(project_id, bq_client, src_dataset_id, dst_dataset_id):
     """
-    Read and validate a JSON file containing dataset properties to update
-    (structure described at https://tinyurl.com/269xprpe)
+    Transform safely loaded tables and store results in target dataset.
 
-    :param json_path: path to a JSON file that defines dataset access
-      (follows API resource structure described at https://tinyurl.com/269xprpe)
-
-    :return: a dict which maps (dataset field name => value)
-    """
-    with open(json_path, 'r', encoding='utf-8') as json_fp:
-        resource_properties = json.load(json_fp)
-    if 'access' not in resource_properties:
-        raise RuntimeError(f'Missing "access" field in {json_path}')
-    if not isinstance(resource_properties['access'], list):
-        raise TypeError(f'Field "access" in {json_path} must refer to a list')
-    dataset_properties = dict()
-    dataset_properties['access_entries'] = [
-        AccessEntry.from_api_repr(access_entry)
-        for access_entry in resource_properties['access']
-    ]
-    return dataset_properties
-
-
-def load(project_id, bq_client, src_dataset_id, dst_dataset_id,
-         dataset_properties):
-    """
-    Transform safely loaded tables and store
     :param project_id: Identifies the BQ project
     :param bq_client: a BigQuery client object
     :param src_dataset_id: reference to source dataset object
-    :param dst_dataset_id: reference to destination dataset object results in target dataset.
-    :param dataset_properties: a dict specifying target dataset properties to
-      set (i.e. access_entries)
+    :param dst_dataset_id: reference to destination dataset object
     :return: List of BQ job_ids
     """
     dst_dataset = Dataset(f'{bq_client.project}.{dst_dataset_id}')
     dst_dataset.description = f'Vocabulary cleaned and loaded from {src_dataset_id}'
     dst_dataset.labels = {'type': 'vocabulary'}
     dst_dataset.location = "US"
-    dst_dataset = bq_client.create_dataset(dst_dataset, exists_ok=True)
+    bq_client.create_dataset(dst_dataset, exists_ok=True)
     src_tables = list(bq_client.list_tables(dataset=src_dataset_id))
 
     job_config = QueryJobConfig()
@@ -249,17 +223,11 @@ def load(project_id, bq_client, src_dataset_id, dst_dataset_id,
         LOGGER.info(f'table:{destination} job_id:{query_job.job_id}')
         query_jobs.append(query_job)
         query_job.result()
-
-    # to prevent sharing a dataset that fails to load
-    # only set dataset access policy at the end
-    dst_dataset.access_entries = dataset_properties['access_entries']
-    bq_client.update_dataset(dst_dataset, ['access_entries'])
-
     return query_jobs
 
 
 def main(project_id: str, bucket_name: str, vocab_folder_path: str,
-         dst_dataset_id: str, dataset_json_path: str):
+         dst_dataset_id: str):
     """
     Load and transform vocabulary files in GCS to a BigQuery dataset
 
@@ -267,11 +235,7 @@ def main(project_id: str, bucket_name: str, vocab_folder_path: str,
     :param bucket_name: refers to the bucket containing vocabulary files
     :param vocab_folder_path: points to the directory containing files downloaded from athena with CPT4 applied
     :param dst_dataset_id: final destination to load the vocabulary in BigQuery
-    :param dataset_json_path: path to a JSON file that defines dataset access
-      (must follow API resource structure described at https://tinyurl.com/269xprpe)
     """
-    # reading file first to ensure early failure on bad input
-    dataset_props = dataset_properties_from_file(dataset_json_path)
     bq_client = bq.get_client(project_id)
     gcs_client = storage.Client(project_id)
     vocab_folder_path = Path(vocab_folder_path)
@@ -280,8 +244,7 @@ def main(project_id: str, bucket_name: str, vocab_folder_path: str,
     staging_dataset = check_and_create_staging_dataset(dst_dataset_id,
                                                        bucket_name, bq_client)
     load_stage(staging_dataset, bq_client, bucket_name, gcs_client)
-    load(project_id, bq_client, staging_dataset.dataset_id, dst_dataset_id,
-         dataset_props)
+    load(project_id, bq_client, staging_dataset.dataset_id, dst_dataset_id)
     return
 
 
@@ -331,13 +294,6 @@ def get_arg_parser() -> argparse.ArgumentParser:
         help=
         'Identifies the target dataset where the vocabulary is to be loaded',
         required=False)
-    # this file should be in curation-devops
-    argument_parser.add_argument(
-        '--dataset_access_json_path',
-        dest='dataset_access_json_path',
-        action='store',
-        help='Path to a JSON file that defines dataset access',
-        required=True)
     return argument_parser
 
 
@@ -365,4 +321,4 @@ if __name__ == '__main__':
         RELEASE_TAG)
     pipeline_logging.configure(add_console_handler=True)
     main(ARGS.project_id, ARGS.bucket_name, ARGS.vocab_folder_path,
-         TARGET_DATASET_ID, ARGS.dataset_access_json_path)
+         TARGET_DATASET_ID)
