@@ -117,9 +117,7 @@ class UpdateFieldsNumbersAsStringsTest(BaseTest.CleaningRulesTestBase):
             'loaded_ids': [
                 12345, 123456, 1234567, 12345678, 123456789, 1234567891
             ],
-            'sandboxed_ids': [
-                12345, 123456, 1234567, 12345678, 123456789, 1234567891
-            ],
+            'sandboxed_ids': [12345, 123456, 1234567],
             'fields': ['observation_id', 'value_as_number', 'value_as_string'],
             'cleaned_values': [(12345, 29, None), (123456, 1, None),
                                (1234567, 10, None), (12345678, 30, 'test'),
