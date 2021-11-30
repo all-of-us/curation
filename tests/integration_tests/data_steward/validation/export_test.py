@@ -6,6 +6,7 @@ import mock
 
 import bq_utils
 import common
+from gcloud.gcs import StorageClient
 import gcs_utils
 from tests import test_util
 from tests.test_util import FAKE_HPO_ID
@@ -28,11 +29,7 @@ class ExportTest(unittest.TestCase):
 
     def setUp(self):
         self.hpo_bucket = gcs_utils.get_hpo_bucket(FAKE_HPO_ID)
-
-    def _empty_bucket(self):
-        bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
-        for bucket_item in bucket_items:
-            gcs_utils.delete_object(self.hpo_bucket, bucket_item['name'])
+        self.storage_client = StorageClient()
 
     def _test_report_export(self, report):
         data_density_path = os.path.join(export.EXPORT_PATH, report)
@@ -86,22 +83,26 @@ class ExportTest(unittest.TestCase):
     def test_run_export(self, mock_is_hpo_id):
         # validation/main.py INTEGRATION TEST
         mock_is_hpo_id.return_value = True
-        folder_prefix = 'dummy-prefix-2018-03-24/'
+        folder_prefix: str = 'dummy-prefix-2018-03-24/'
+
         main._upload_achilles_files(FAKE_HPO_ID, folder_prefix)
         main.run_export(datasource_id=FAKE_HPO_ID, folder_prefix=folder_prefix)
-        bucket_objects = gcs_utils.list_bucket(self.hpo_bucket)
-        actual_object_names = [obj['name'] for obj in bucket_objects]
+
+        storage_bucket = self.storage_client.get_bucket(self.hpo_bucket)
+        bucket_objects = storage_bucket.list_blobs()
+        actual_object_names: list = [obj.name for obj in bucket_objects]
         for report in common.ALL_REPORT_FILES:
-            prefix = folder_prefix + common.ACHILLES_EXPORT_PREFIX_STRING + FAKE_HPO_ID + '/'
-            expected_object_name = prefix + report
+            prefix: str = f'{folder_prefix}{common.ACHILLES_EXPORT_PREFIX_STRING}{FAKE_HPO_ID}/'
+            expected_object_name: str = f'{prefix}{report}'
             self.assertIn(expected_object_name, actual_object_names)
 
-        datasources_json_path = folder_prefix + common.ACHILLES_EXPORT_DATASOURCES_JSON
+        datasources_json_path: str = folder_prefix + common.ACHILLES_EXPORT_DATASOURCES_JSON
         self.assertIn(datasources_json_path, actual_object_names)
-        datasources_json = gcs_utils.get_object(self.hpo_bucket,
-                                                datasources_json_path)
-        datasources_actual = json.loads(datasources_json)
-        datasources_expected = {
+
+        datasources_blob = storage_bucket.blob(datasources_json_path)
+        datasources_json: str = datasources_blob.download_as_bytes().decode()
+        datasources_actual: dict = json.loads(datasources_json)
+        datasources_expected: dict = {
             'datasources': [{
                 'name': FAKE_HPO_ID,
                 'folder': FAKE_HPO_ID,
@@ -120,23 +121,25 @@ class ExportTest(unittest.TestCase):
         self, mock_is_hpo_id):
         # validation/main.py INTEGRATION TEST
         mock_is_hpo_id.return_value = True
-        folder_prefix = 'dummy-prefix-2018-03-24/'
-        bucket_nyc = gcs_utils.get_hpo_bucket('nyc')
+        folder_prefix: str = 'dummy-prefix-2018-03-24/'
+        bucket_nyc: str = gcs_utils.get_hpo_bucket('nyc')
         main.run_export(datasource_id=FAKE_HPO_ID,
                         folder_prefix=folder_prefix,
                         target_bucket=bucket_nyc)
-        bucket_objects = gcs_utils.list_bucket(bucket_nyc)
-        actual_object_names = [obj['name'] for obj in bucket_objects]
+        storage_bucket = self.storage_client.get_bucket(bucket_nyc)
+        bucket_objects = storage_bucket.list_blobs()
+        actual_object_names: list = [obj.name for obj in bucket_objects]
         for report in common.ALL_REPORT_FILES:
-            prefix = folder_prefix + common.ACHILLES_EXPORT_PREFIX_STRING + FAKE_HPO_ID + '/'
-            expected_object_name = prefix + report
+            prefix: str = f'{folder_prefix}{common.ACHILLES_EXPORT_PREFIX_STRING}{FAKE_HPO_ID}/'
+            expected_object_name: str = f'{prefix}{report}'
             self.assertIn(expected_object_name, actual_object_names)
-        datasources_json_path = folder_prefix + common.ACHILLES_EXPORT_DATASOURCES_JSON
+        datasources_json_path: str = f'{folder_prefix}{common.ACHILLES_EXPORT_DATASOURCES_JSON}'
         self.assertIn(datasources_json_path, actual_object_names)
-        datasources_json = gcs_utils.get_object(bucket_nyc,
-                                                datasources_json_path)
-        datasources_actual = json.loads(datasources_json)
-        datasources_expected = {
+
+        datasources_blob = storage_bucket.blob(datasources_json_path)
+        datasources_json: str = datasources_blob.download_as_bytes().decode()
+        datasources_actual: dict = json.loads(datasources_json)
+        datasources_expected: dict = {
             'datasources': [{
                 'name': FAKE_HPO_ID,
                 'folder': FAKE_HPO_ID,
@@ -146,9 +149,9 @@ class ExportTest(unittest.TestCase):
         self.assertDictEqual(datasources_expected, datasources_actual)
 
     def tearDown(self):
-        self._empty_bucket()
-        bucket_nyc = gcs_utils.get_hpo_bucket('nyc')
-        test_util.empty_bucket(bucket_nyc)
+        self.storage_client.empty_bucket(self.hpo_bucket)
+        bucket_nyc: str = gcs_utils.get_hpo_bucket('nyc')
+        self.storage_client.empty_bucket(bucket_nyc)
 
     @classmethod
     def tearDownClass(cls):
