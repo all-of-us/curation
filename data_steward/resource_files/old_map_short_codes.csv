@@ -94,3 +94,5 @@ type,pmi_code,short_code
 "Answer","HowOldWereYouOtherMentalHealthSubstanceUse_OlderAdult","MentalHealthCondition_OtherOlderAdult"
 "Answer","HowOldWereYouOtherMentalHealthSubstanceUse_Elderly","MentalHealthCondition_OtherElderly"
 "Question","MentalHealth_RxMedsforOtherMentalHealthSubstanceUse","MentalHealth_RxMedsOtherCondition"
+"Answer","secondcontactstate_ak","secondcontactstate_alaska"
+"Answer","secondcontactstate_az","secondcontactstate_arizona"
