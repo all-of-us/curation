@@ -4,8 +4,6 @@ import unittest
 
 import mock
 
-from google.cloud import storage
-
 import bq_utils
 import common
 from gcloud.gcs import StorageClient
