@@ -18,13 +18,13 @@
     "description": "A foreign key that refers to a Standard Concept identifier in the Standardized Vocabularies for the Ingredient Concept."
   },
   {
-    "type": "date",
+    "type": "timestamp",
     "name": "drug_era_start_date",
     "mode": "required",
     "description": "The start date for the Drug Era constructed from the individual instances of Drug Exposures. It is the start date of the very first chronologically recorded instance of conutilization of a Drug."
   },
   {
-    "type": "date",
+    "type": "timestamp",
     "name": "drug_era_end_date",
     "mode": "required",
     "description": "The end date for the drug era constructed from the individual instance of drug exposures. It is the end date of the final continuously recorded instance of utilization of a drug."

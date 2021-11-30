@@ -30,13 +30,13 @@
     "description": "The numeric value of the dose."
   },
   {
-    "type": "date",
+    "type": "timestamp",
     "name": "dose_era_start_date",
     "mode": "required",
     "description": "The start date for the drug era constructed from the individual instances of drug exposures. It is the start date of the very first chronologically recorded instance of utilization of a drug."
   },
   {
-    "type": "date",
+    "type": "timestamp",
     "name": "dose_era_end_date",
     "mode": "required",
     "description": "The end date for the drug era constructed from the individual instance of drug exposures. It is the end date of the final continuously recorded instance of utilization of a drug."

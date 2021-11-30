@@ -37,19 +37,20 @@ PROCEDURE_OCCURRENCE = 'procedure_occurrence'
 PROVIDER = 'provider'
 SPECIMEN = 'specimen'
 VISIT_OCCURRENCE = 'visit_occurrence'
+VISIT_DETAIL = 'visit_detail'
 AOU_REQUIRED = [
     CARE_SITE, CONDITION_OCCURRENCE, DEATH, DEVICE_EXPOSURE, DRUG_EXPOSURE,
     FACT_RELATIONSHIP, LOCATION, MEASUREMENT, NOTE, OBSERVATION, PERSON,
-    PROCEDURE_OCCURRENCE, PROVIDER, SPECIMEN, VISIT_OCCURRENCE
+    PROCEDURE_OCCURRENCE, PROVIDER, SPECIMEN, VISIT_OCCURRENCE, VISIT_DETAIL
 ]
 
 # Standardized clinical data tables in OMOP. All should contain a person_id column. See
 # https://github.com/OHDSI/CommonDataModel/wiki/Standardized-Clinical-Data-Tables
 
-# Clinical tables which do not have a corresponding mapping table.
+# Clinical tables which have a corresponding mapping table.
 MAPPED_CLINICAL_DATA_TABLES = [
     VISIT_OCCURRENCE, CONDITION_OCCURRENCE, DRUG_EXPOSURE, MEASUREMENT,
-    PROCEDURE_OCCURRENCE, OBSERVATION, DEVICE_EXPOSURE, SPECIMEN
+    PROCEDURE_OCCURRENCE, OBSERVATION, DEVICE_EXPOSURE, SPECIMEN, VISIT_DETAIL
 ]
 # Clinical tables which do not have a corresponding mapping table.
 UNMAPPED_CLINICAL_DATA_TABLES = [DEATH]
@@ -62,18 +63,25 @@ COHORT_DEFINITION = 'cohort_definition'
 CONDITION_ERA = 'condition_era'
 DRUG_ERA = 'drug_era'
 DOSE_ERA = 'dose_era'
+COST = 'cost'
 DRUG_COST = 'drug_cost'
 VISIT_COST = 'visit_cost'
 DEVICE_COST = 'device_cost'
 PROCEDURE_COST = 'procedure_cost'
-OBSERVATION_PERIOD = 'observation_period'
 PAYER_PLAN_PERIOD = 'payer_plan_period'
+METADATA = 'metadata'
+
+# Other Clinical tables
+OBSERVATION_PERIOD = 'observation_period'
+NOTE_NLP = 'note_nlp'
+
+OTHER_CLINICAL_TABLES = [OBSERVATION_PERIOD, NOTE_NLP]
 
 OTHER_CDM_TABLES = [
     ATTRIBUTE_DEFINITION, COHORT_DEFINITION, CONDITION_ERA, DRUG_ERA, DOSE_ERA,
-    DRUG_COST, VISIT_COST, DEVICE_COST, PROCEDURE_COST, OBSERVATION_PERIOD,
-    PAYER_PLAN_PERIOD
-]
+    DRUG_COST, VISIT_COST, DEVICE_COST, PROCEDURE_COST, PAYER_PLAN_PERIOD, COST,
+    METADATA
+] + OTHER_CLINICAL_TABLES
 
 CDM_TABLES = AOU_REQUIRED + OTHER_CDM_TABLES
 

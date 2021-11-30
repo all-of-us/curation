@@ -16,10 +16,10 @@ import gcs_utils
 import resources
 import tests.test_util as test_util
 from validation import ehr_union
-from io import open
 
 PITT_HPO_ID = 'pitt'
 NYC_HPO_ID = 'nyc'
+EXCLUDED_HPO_ID = 'fake'
 SUBQUERY_FAIL_MSG = '''
 Test {expr} in {table} subquery 
  Expected: {expected}
@@ -44,7 +44,7 @@ class EhrUnionTest(unittest.TestCase):
     def setUp(self):
 
         self.project_id = bq_utils.app_identity.get_application_id()
-        self.hpo_ids = [NYC_HPO_ID, PITT_HPO_ID]
+        self.hpo_ids = [PITT_HPO_ID, NYC_HPO_ID, EXCLUDED_HPO_ID]
         self.input_dataset_id = bq_utils.get_dataset_id()
         self.output_dataset_id = bq_utils.get_unioned_dataset_id()
         # Done in tearDown().  this is redundant.
@@ -60,8 +60,8 @@ class EhrUnionTest(unittest.TestCase):
             mapped_fields.append(field)
         self.mapped_fields = mapped_fields
         self.implemented_foreign_keys = [
-            eu_constants.VISIT_OCCURRENCE_ID, eu_constants.CARE_SITE_ID,
-            eu_constants.LOCATION_ID
+            eu_constants.VISIT_OCCURRENCE_ID, eu_constants.VISIT_DETAIL_ID,
+            eu_constants.CARE_SITE_ID, eu_constants.LOCATION_ID
         ]
 
     def _empty_hpo_buckets(self):
@@ -78,7 +78,7 @@ class EhrUnionTest(unittest.TestCase):
 
     def _load_datasets(self):
         """
-        Load five persons data for each test hpo
+        Load five persons data for nyc and pitt test hpo and rdr data for the excluded_hpo
         # expected_tables is for testing output
         # it maps table name to list of expected records ex: "unioned_ehr_visit_occurrence" -> [{}, {}, ...]
         """
@@ -92,9 +92,15 @@ class EhrUnionTest(unittest.TestCase):
                 if hpo_id == NYC_HPO_ID:
                     cdm_file_name = os.path.join(test_util.FIVE_PERSONS_PATH,
                                                  cdm_table + '.csv')
-                else:
+                elif hpo_id == PITT_HPO_ID:
                     cdm_file_name = os.path.join(
                         test_util.PITT_FIVE_PERSONS_PATH, cdm_table + '.csv')
+                elif hpo_id == EXCLUDED_HPO_ID:
+                    if cdm_file_name in [
+                            'observation', 'person', 'visit_occurrence'
+                    ]:
+                        cdm_file_name = os.path.join(test_util.RDR_PATH,
+                                                     cdm_table + '.csv')
                 bucket = gcs_utils.get_hpo_bucket(hpo_id)
                 if os.path.exists(cdm_file_name):
                     test_util.write_cloud_file(bucket, cdm_file_name)
@@ -107,7 +113,8 @@ class EhrUnionTest(unittest.TestCase):
                 # load table from csv
                 result = bq_utils.load_cdm_csv(hpo_id, cdm_table)
                 running_jobs.append(result['jobReference']['jobId'])
-                expected_tables[output_table] += list(csv_rows)
+                if hpo_id != EXCLUDED_HPO_ID:
+                    expected_tables[output_table] += list(csv_rows)
         # ensure person to observation output is as expected
         output_table_person = ehr_union.output_table_for(common.PERSON)
         output_table_observation = ehr_union.output_table_for(
@@ -141,7 +148,8 @@ class EhrUnionTest(unittest.TestCase):
         tables = bq_utils.list_tables(dataset_id)
         return [table['tableReference']['tableId'] for table in tables]
 
-    def test_union_ehr(self):
+    @mock.patch('bq_utils.get_hpo_info')
+    def test_union_ehr(self, mock_hpo_info):
         self._load_datasets()
         input_tables_before = set(self._dataset_tables(self.input_dataset_id))
 
@@ -157,9 +165,13 @@ class EhrUnionTest(unittest.TestCase):
         expected_output = set(output_tables_before + mapping_tables +
                               output_cdm_tables)
 
+        mock_hpo_info.return_value = [{
+            'hpo_id': hpo_id
+        } for hpo_id in self.hpo_ids]
+
         # perform ehr union
         ehr_union.main(self.input_dataset_id, self.output_dataset_id,
-                       self.project_id, self.hpo_ids)
+                       self.project_id, [EXCLUDED_HPO_ID])
 
         # input dataset should be unchanged
         input_tables_after = set(self._dataset_tables(self.input_dataset_id))
@@ -303,22 +315,27 @@ class EhrUnionTest(unittest.TestCase):
         obs_rows.extend([dob_row, gender_row, race_row, ethnicity_row])
         return obs_rows
 
+    @mock.patch('bq_utils.get_hpo_info')
     @mock.patch('resources.CDM_TABLES', [
         common.PERSON, common.OBSERVATION, common.LOCATION, common.CARE_SITE,
-        common.VISIT_OCCURRENCE
+        common.VISIT_OCCURRENCE, common.VISIT_DETAIL
     ])
     @mock.patch('cdm.tables_to_map')
-    def test_ehr_person_to_observation(self, mock_tables_map):
+    def test_ehr_person_to_observation(self, mock_tables_map, mock_hpo_info):
         # ehr person table converts to observation records
         self._load_datasets()
         mock_tables_map.return_value = [
             common.OBSERVATION, common.LOCATION, common.CARE_SITE,
-            common.VISIT_OCCURRENCE
+            common.VISIT_OCCURRENCE, common.VISIT_DETAIL
         ]
+
+        mock_hpo_info.return_value = [{
+            'hpo_id': hpo_id
+        } for hpo_id in self.hpo_ids]
 
         # perform ehr union
         ehr_union.main(self.input_dataset_id, self.output_dataset_id,
-                       self.project_id, self.hpo_ids)
+                       self.project_id)
 
         person_query = '''
             SELECT
@@ -368,21 +385,27 @@ class EhrUnionTest(unittest.TestCase):
 
         self.assertCountEqual(expected, actual)
 
+    @mock.patch('bq_utils.get_hpo_info')
     @mock.patch('resources.CDM_TABLES', [
         common.PERSON, common.OBSERVATION, common.LOCATION, common.CARE_SITE,
-        common.VISIT_OCCURRENCE
+        common.VISIT_OCCURRENCE, common.VISIT_DETAIL
     ])
     @mock.patch('cdm.tables_to_map')
-    def test_ehr_person_to_observation_counts(self, mock_tables_map):
+    def test_ehr_person_to_observation_counts(self, mock_tables_map,
+                                              mock_hpo_info):
         self._load_datasets()
         mock_tables_map.return_value = [
             common.OBSERVATION, common.LOCATION, common.CARE_SITE,
-            common.VISIT_OCCURRENCE
+            common.VISIT_OCCURRENCE, common.VISIT_DETAIL
         ]
+
+        mock_hpo_info.return_value = [{
+            'hpo_id': hpo_id
+        } for hpo_id in self.hpo_ids]
 
         # perform ehr union
         ehr_union.main(self.input_dataset_id, self.output_dataset_id,
-                       self.project_id, self.hpo_ids)
+                       self.project_id)
 
         q_person = '''
                     SELECT p.*
@@ -439,6 +462,11 @@ class EhrUnionTest(unittest.TestCase):
         subquery = re.sub(
             r",\s+ROW_NUMBER\(\) OVER \(PARTITION BY nm\..+?_id\) AS row_num",
             " ", subquery)
+        # offset is being used as a column-name in note_nlp table.
+        # Although, BigQuery does not throw any errors for this, moz_sql_parser indentifies as a SQL Keyword.
+        # So, change required only in Test Script as a workaround.
+        if 'offset,' in subquery:
+            subquery = subquery.replace('offset,', '"offset",')
         stmt = moz_sql_parser.parse(subquery)
 
         # Sanity check it is a select statement
@@ -484,6 +512,14 @@ class EhrUnionTest(unittest.TestCase):
                     # Foreign key, mapping table associated with the referenced table should be LEFT joined
                     key_ind += 1
                     expr = 'left join on foreign key'
+                    # Visit_detail table has 'visit_occurrence' column after 'care_site', which is different from
+                    # other cdm tables, where 'visit_occurrence' comes before other foreign_keys.
+                    # The test expects the same order as other cmd tables, so the expected-query has
+                    # 'visit_occurrence' before 'care_site'. The following reorder is required to match the sequence
+                    # to the actual-query.
+                    if table == 'visit_detail' and key_ind == 2:
+                        stmt['from'][2], stmt['from'][3] = stmt['from'][
+                            3], stmt['from'][2]
                     actual_join = first_or_none(
                         dpath.util.values(stmt,
                                           'from/%s/left join/value' % key_ind))
