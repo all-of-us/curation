@@ -31,6 +31,7 @@ class RemoveNonMatchingParticipantTest(unittest.TestCase):
         self.non_match_participant_query = 'query'
         self.biqquery_job_id = 'job-id-1'
         self.query_results = {'jobReference': {'jobId': self.biqquery_job_id}}
+        self.client = mock.MagicMock()
         self.query_results_rows = [{
             PERSON_ID_FIELD: 1
         }, {
@@ -168,7 +169,8 @@ class RemoveNonMatchingParticipantTest(unittest.TestCase):
         mock_response2rows.return_value = self.query_results_rows
 
         actual = remove_non_matching_participant.get_list_non_match_participants(
-            self.project_id, self.validation_dataset_id, self.hpo_id_1)
+            self.client, self.project_id, self.validation_dataset_id,
+            self.hpo_id_1)
 
         self.assertListEqual(self.person_ids, actual)
 
@@ -184,7 +186,8 @@ class RemoveNonMatchingParticipantTest(unittest.TestCase):
 
         with self.assertRaises(bq_utils.BigQueryJobWaitError):
             remove_non_matching_participant.get_list_non_match_participants(
-                self.project_id, self.validation_dataset_id, self.hpo_id_1)
+                self.client, self.project_id, self.validation_dataset_id,
+                self.hpo_id_1)
 
     @mock.patch(
         'cdr_cleaner.cleaning_rules.sandbox_and_remove_pids.get_remove_pids_queries'
@@ -199,10 +202,14 @@ class RemoveNonMatchingParticipantTest(unittest.TestCase):
         'cdr_cleaner.cleaning_rules.remove_non_matching_participant.exist_participant_match'
     )
     @mock.patch('validation.participants.readers.get_hpo_site_names')
+    @mock.patch(
+        'cdr_cleaner.cleaning_rules.remove_non_matching_participant.bq.get_client'
+    )
     def test_delete_records_for_non_matching_participants(
-            self, mock_get_hpo_site_names, mock_exist_participant_match,
-            mock_get_list_non_match_participants, mock_get_sandbox_queries,
-            mock_get_remove_pids_queries):
+            self, mock_get_client, mock_get_hpo_site_names,
+            mock_exist_participant_match, mock_get_list_non_match_participants,
+            mock_get_sandbox_queries, mock_get_remove_pids_queries):
+        mock_get_client.return_value = self.client
         mock_get_hpo_site_names.return_value = [self.hpo_id_1, self.hpo_id_2]
         mock_exist_participant_match.side_effect = [True, False]
         mock_get_list_non_match_participants.return_value = self.person_ids
@@ -226,7 +233,8 @@ class RemoveNonMatchingParticipantTest(unittest.TestCase):
                                                         self.hpo_id_2)
 
         mock_get_list_non_match_participants.assert_called_with(
-            self.project_id, self.validation_dataset_id, self.hpo_id_2)
+            self.client, self.project_id, self.validation_dataset_id,
+            self.hpo_id_2)
 
         mock_get_sandbox_queries.assert_called_with(
             self.project_id, self.combined_dataset_id, self.person_ids,
