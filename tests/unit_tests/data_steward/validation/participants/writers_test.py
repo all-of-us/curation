@@ -35,8 +35,9 @@ class WritersTest(unittest.TestCase):
         mock_bucket.return_value = bucket_name
         mock_client_bucket = MagicMock()
         mock_client_blob = MagicMock()
-        mock_storage_client.return_value = mock_storage_client
-        mock_storage_client.get_bucket.return_value = mock_client_bucket
+        mock_client = MagicMock()
+        mock_storage_client.return_value = mock_client
+        mock_client.get_bucket.return_value = mock_client_bucket
         mock_client_bucket.blob.return_value = mock_client_blob
 
         match = {}
@@ -52,27 +53,22 @@ class WritersTest(unittest.TestCase):
         # post conditions
         self.assertEqual(mock_load_csv.call_count, 1)
         self.assertEqual(mock_wait.call_count, 1)
-        self.assertEqual(mock_storage_client.get_bucket.call_count, 1)
+        self.assertEqual(mock_client.get_bucket.call_count, 1)
         self.assertEqual(mock_client_bucket.blob.call_count, 1)
         self.assertEqual(mock_client_blob.upload_from_file.call_count, 1)
 
-        upload_path = self.dataset + '/intermediate_results/' + self.site + '.csv'
-        self.assertEqual(
-            mock_storage_client.get_bucket.assert_called_with(bucket_name),
-            None)
-        self.assertEqual(
-            mock_client_bucket.blob.assert_called_with(upload_path), None)
-        self.assertEqual(
-            mock_client_blob.upload_from_file.assert_called_with(ANY), None)
+        upload_path = f'{self.dataset}/intermediate_results/{self.site}.csv'
+        mock_client.get_bucket.assert_called_with(bucket_name)
+        mock_client_bucket.blob.assert_called_with(upload_path)
+        mock_client_blob.upload_from_file.assert_called_with(ANY)
 
-        self.assertEqual(
-            mock_load_csv.assert_called_with(
-                ANY,
-                'gs://' + bucket_name + '/' + upload_path,
-                self.project,
-                self.dataset,
-                self.site + consts.VALIDATION_TABLE_SUFFIX,
-                write_disposition=consts.WRITE_TRUNCATE), None)
+        mock_load_csv.assert_called_with(
+            ANY,
+            'gs://' + bucket_name + '/' + upload_path,
+            self.project,
+            self.dataset,
+            self.site + consts.VALIDATION_TABLE_SUFFIX,
+            write_disposition=consts.WRITE_TRUNCATE)
 
     @patch('validation.participants.writers.StorageClient')
     @patch('validation.participants.writers.gcs_utils.get_drc_bucket')
@@ -86,8 +82,9 @@ class WritersTest(unittest.TestCase):
         )
         mock_client_bucket = MagicMock()
         mock_client_blob = MagicMock()
-        mock_storage_client.return_value = mock_storage_client
-        mock_storage_client.get_bucket.return_value = mock_client_bucket
+        mock_client = MagicMock()
+        mock_storage_client.return_value = mock_client
+        mock_client.get_bucket.return_value = mock_client_bucket
         mock_client_bucket.blob.return_value = mock_client_blob
 
         match = {}
@@ -104,27 +101,22 @@ class WritersTest(unittest.TestCase):
         # post conditions
         self.assertEqual(mock_load_csv.call_count, 1)
         self.assertEqual(mock_bucket.call_count, 1)
-        self.assertEqual(mock_storage_client.get_bucket.call_count, 1)
+        self.assertEqual(mock_client.get_bucket.call_count, 1)
         self.assertEqual(mock_client_bucket.blob.call_count, 1)
         self.assertEqual(mock_client_blob.upload_from_file.call_count, 1)
 
-        upload_path = self.dataset + '/intermediate_results/' + self.site + '.csv'
-        self.assertEqual(
-            mock_storage_client.get_bucket.assert_called_with(bucket_name),
-            None)
-        self.assertEqual(
-            mock_client_bucket.blob.assert_called_with(upload_path), None)
-        self.assertEqual(
-            mock_client_blob.upload_from_file.assert_called_with(ANY), None)
+        upload_path = f'{self.dataset}/intermediate_results/{self.site}.csv'
+        mock_client.get_bucket.assert_called_with(bucket_name)
+        mock_client_bucket.blob.assert_called_with(upload_path)
+        mock_client_blob.upload_from_file.assert_called_with(ANY)
 
-        self.assertEqual(
-            mock_load_csv.assert_called_with(
-                ANY,
-                'gs://' + bucket_name + '/' + upload_path,
-                self.project,
-                self.dataset,
-                self.site + consts.VALIDATION_TABLE_SUFFIX,
-                write_disposition=consts.WRITE_TRUNCATE), None)
+        mock_load_csv.assert_called_with(
+            ANY,
+            'gs://' + bucket_name + '/' + upload_path,
+            self.project,
+            self.dataset,
+            self.site + consts.VALIDATION_TABLE_SUFFIX,
+            write_disposition=consts.WRITE_TRUNCATE)
 
     def test_get_address_match(self):
         # pre conditions
