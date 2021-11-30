@@ -113,35 +113,35 @@ def get_list_non_match_participants(client, project_id, validation_dataset_id,
     identity_match_table = bq_utils.get_table_id(hpo_id, IDENTITY_MATCH)
     result = []
     fq_identity_match_table = f'{project_id}.{validation_dataset_id}.{identity_match_table}'
-    if exist_identity_match(client, fq_identity_match_table):
-        non_match_participants_query = get_non_match_participant_query(
-            project_id, validation_dataset_id, identity_match_table)
+    if not exist_identity_match(client, fq_identity_match_table):
+        return result
 
-        try:
-            LOGGER.info(
-                'Identifying non-match participants in {dataset_id}.{identity_match_table}'
-                .format(dataset_id=validation_dataset_id,
-                        identity_match_table=identity_match_table))
+    non_match_participants_query = get_non_match_participant_query(
+        project_id, validation_dataset_id, identity_match_table)
 
-            results = bq_utils.query(q=non_match_participants_query)
+    try:
+        LOGGER.info(
+            'Identifying non-match participants in {dataset_id}.{identity_match_table}'
+            .format(dataset_id=validation_dataset_id,
+                    identity_match_table=identity_match_table))
 
-        except (oauth2client.client.HttpAccessTokenRefreshError,
-                googleapiclient.errors.HttpError) as exp:
+        results = bq_utils.query(q=non_match_participants_query)
 
-            LOGGER.exception('Could not execute the query \n{query}'.format(
-                query=non_match_participants_query))
-            raise exp
+    except (oauth2client.client.HttpAccessTokenRefreshError,
+            googleapiclient.errors.HttpError) as exp:
+
+        LOGGER.exception('Could not execute the query \n{query}'.format(
+            query=non_match_participants_query))
+        raise exp
 
         # wait for job to finish
-        query_job_id = results['jobReference']['jobId']
-        incomplete_jobs = bq_utils.wait_on_jobs([query_job_id])
-        if incomplete_jobs:
-            raise bq_utils.BigQueryJobWaitError(incomplete_jobs)
+    query_job_id = results['jobReference']['jobId']
+    incomplete_jobs = bq_utils.wait_on_jobs([query_job_id])
+    if incomplete_jobs:
+        raise bq_utils.BigQueryJobWaitError(incomplete_jobs)
 
-        # return the person_ids only
-        result = [
-            row[PERSON_ID_FIELD] for row in bq_utils.response2rows(results)
-        ]
+    # return the person_ids only
+    result = [row[PERSON_ID_FIELD] for row in bq_utils.response2rows(results)]
     return result
 
 
