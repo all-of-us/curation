@@ -16,6 +16,7 @@ import oauth2client
 import bq_utils
 import constants.validation.participants.writers as consts
 import gcs_utils
+from gcloud.gcs import StorageClient
 from resources import fields_path
 
 LOGGER = logging.getLogger(__name__)
@@ -68,7 +69,10 @@ def write_to_result_table(project, dataset, site, match_values):
 
     # write results
     results.seek(0)
-    gcs_utils.upload_object(bucket, path, results)
+    sc = StorageClient()
+    sc_bucket = sc.get_bucket(bucket)
+    bucket_blob = sc_bucket.blob(path)
+    bucket_blob.upload_from_file(results)
     results.close()
 
     LOGGER.info(
