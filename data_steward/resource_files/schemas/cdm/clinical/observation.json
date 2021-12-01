@@ -78,6 +78,12 @@
     "description": "A foreign key to the visit in the VISIT_OCCURRENCE table during which the observation was recorded."
   },
   {
+    "type": "integer",
+    "name": "visit_detail_id",
+    "mode": "nullable",
+    "description": "The VISIT_DETAIL record during which the Observation occurred. For example, if the Person was in the ICU at the time the VISIT_OCCURRENCE record would reflect the overall hospital stay and the VISIT_DETAIL record would reflect the ICU stay during the hospital visit."
+  },
+  {
     "type": "string",
     "name": "observation_source_value",
     "mode": "nullable",

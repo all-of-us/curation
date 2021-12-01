@@ -86,6 +86,7 @@ import cdm
 import common
 import resources
 from constants.validation import ehr_union as eu_constants
+from utils.bq import get_client
 
 UNION_ALL = '''
 
@@ -328,6 +329,7 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
         # NOTE: Assumes that besides person_id foreign keys exist only for visit_occurrence, location, care_site
         mapping_table = mapping_table_for(table_name) if is_id_mapped else None
         has_visit_occurrence_id = False
+        has_visit_detail_id = False
         has_care_site_id = False
         has_location_id = False
         id_col = f'{table_name}_id'
@@ -344,10 +346,16 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
                     col_expr = f'm.{field_name}'
             elif field_name == eu_constants.VISIT_OCCURRENCE_ID:
                 # Replace with mapped visit_occurrence_id
-                # mv is an alias that should resolve to the mapping visit table
+                # mvo is an alias that should resolve to the mapping visit_occurrence table
                 # Note: This is only reached when table_name != visit_occurrence
-                col_expr = 'mv.' + eu_constants.VISIT_OCCURRENCE_ID
+                col_expr = 'mvo.' + eu_constants.VISIT_OCCURRENCE_ID
                 has_visit_occurrence_id = True
+            elif field_name == eu_constants.VISIT_DETAIL_ID:
+                # Replace with mapped visit_detail_id
+                # mvd is an alias that should resolve to the mapping visit_detail table
+                # Note: This is only reached when table_name != visit_detail
+                col_expr = 'mvd.' + eu_constants.VISIT_DETAIL_ID
+                has_visit_detail_id = True
             elif field_name == eu_constants.CARE_SITE_ID:
                 # Replace with mapped care_site_id
                 # cs is an alias that should resolve to the mapping care_site table
@@ -365,20 +373,33 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
             col_exprs.append(col_expr)
         cols = ',\n        '.join(col_exprs)
 
-        visit_join_expr = ''
+        visit_occurrence_join_expr = ''
+        visit_detail_join_expr = ''
         location_join_expr = ''
         care_site_join_expr = ''
 
         if has_visit_occurrence_id:
-            # Include a join to mapping visit table
+            # Include a join to mapping visit occurrence table
             # Note: Using left join in order to keep records that aren't mapped to visits
-            mv = mapping_table_for(common.VISIT_OCCURRENCE)
-            src_visit_table_id = bq_utils.get_table_id(hpo_id,
-                                                       common.VISIT_OCCURRENCE)
-            visit_join_expr = f'''
-            LEFT JOIN `{output_dataset_id}.{mv}` mv 
-              ON t.visit_occurrence_id = mv.src_visit_occurrence_id 
-             AND mv.src_table_id = '{src_visit_table_id}'
+            mvo = mapping_table_for(common.VISIT_OCCURRENCE)
+            src_visit_occurrence_table_id = bq_utils.get_table_id(
+                hpo_id, common.VISIT_OCCURRENCE)
+            visit_occurrence_join_expr = f'''
+            LEFT JOIN `{output_dataset_id}.{mvo}` mvo 
+              ON t.visit_occurrence_id = mvo.src_visit_occurrence_id 
+             AND mvo.src_table_id = '{src_visit_occurrence_table_id}'
+            '''
+
+        if has_visit_detail_id:
+            # Include a join to mapping visit detail table
+            # Note: Using left join in order to keep records that aren't mapped to visits
+            mvd = mapping_table_for(common.VISIT_DETAIL)
+            src_visit_detail_table_id = bq_utils.get_table_id(
+                hpo_id, common.VISIT_DETAIL)
+            visit_detail_join_expr = f'''
+            LEFT JOIN `{output_dataset_id}.{mvd}` mvd 
+              ON t.visit_detail_id = mvd.src_visit_detail_id 
+             AND mvd.src_table_id = '{src_visit_detail_table_id}'
             '''
 
         if has_care_site_id:
@@ -427,7 +448,8 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
         ON
             t.{table_name}_id = m.src_{table_name}_id
         AND m.src_table_id = '{table_id}'
-        {visit_join_expr}
+        {visit_occurrence_join_expr}
+        {visit_detail_join_expr}
         {care_site_join_expr}
         {location_join_expr}
         WHERE
@@ -719,21 +741,23 @@ def map_ehr_person_to_observation(output_dataset_id):
     query(q, dst_table_id, dst_dataset_id, write_disposition='WRITE_APPEND')
 
 
-def main(input_dataset_id, output_dataset_id, project_id, hpo_ids=None):
+def main(input_dataset_id, output_dataset_id, project_id, hpo_ids_ex=None):
     """
     Create a new CDM which is the union of all EHR datasets submitted by HPOs
 
     :param input_dataset_id identifies a dataset containing multiple CDMs, one for each HPO submission
     :param output_dataset_id identifies the dataset to store the new CDM in
     :param project_id: project containing the datasets
-    :param hpo_ids: (optional) identifies HPOs to process, by default process all
+    :param hpo_ids_ex: (optional) list that identifies HPOs not to process, by default process all
     :returns: list of tables generated successfully
     """
-    client = bq.Client()
+    client = get_client(project_id)
 
     logging.info('EHR union started')
-    if hpo_ids is None:
-        hpo_ids = [item['hpo_id'] for item in bq_utils.get_hpo_info()]
+    # Get all hpo_ids.
+    hpo_ids = [item['hpo_id'] for item in bq_utils.get_hpo_info()]
+    if hpo_ids_ex:
+        hpo_ids = [hpo_id for hpo_id in hpo_ids if hpo_id not in hpo_ids_ex]
 
     # Create empty output tables to ensure proper schema, clustering, etc.
     for table in resources.CDM_TABLES:
@@ -789,9 +813,11 @@ if __name__ == '__main__':
     parser.add_argument('--output_dataset_id',
                         dest='output_dataset_id',
                         help='Dataset where the results should be stored')
-    parser.add_argument('--hpo_id',
-                        nargs='+',
-                        help='HPOs to process (all by default)')
+    parser.add_argument(
+        '--hpo_id_ex',
+        nargs='*',
+        help='List of HPOs to exclude from processing (none by default)')
+    # HPOs to exclude. If nothing given, exclude nothing.
     args = parser.parse_args()
     if args.input_dataset_id:
         main(args.input_dataset_id, args.output_dataset_id, args.project_id)
