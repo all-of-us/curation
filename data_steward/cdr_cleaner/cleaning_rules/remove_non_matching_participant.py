@@ -134,7 +134,7 @@ def get_list_non_match_participants(client, project_id, validation_dataset_id,
             query=non_match_participants_query))
         raise exp
 
-        # wait for job to finish
+    # wait for job to finish
     query_job_id = results['jobReference']['jobId']
     incomplete_jobs = bq_utils.wait_on_jobs([query_job_id])
     if incomplete_jobs:
