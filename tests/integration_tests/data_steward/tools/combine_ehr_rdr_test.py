@@ -7,6 +7,8 @@ from io import open
 import bq_utils
 import gcs_utils
 import resources
+from gcloud.gcs import StorageClient
+
 from tests import test_util
 from constants.tools.combine_ehr_rdr import EHR_CONSENT_TABLE_ID, RDR_TABLES_TO_COPY, DOMAIN_TABLES
 from tools.combine_ehr_rdr import (copy_rdr_table, ehr_consent, main,
@@ -61,19 +63,23 @@ class CombineEhrRdrTest(unittest.TestCase):
         test_util.empty_bucket(bucket)
 
     @staticmethod
-    def _upload_file_to_bucket(bucket, dataset_id, path, table):
-        app_id = bq_utils.app_identity.get_application_id()
-        filename = table + '.csv'
+    def _upload_file_to_bucket(bucket: str, dataset_id: str, path: str,
+                               table: str):
+        app_id: str = bq_utils.app_identity.get_application_id()
+        filename: str = f'{table}.csv'
+        file_path: str = os.path.join(path, filename)
 
-        file_path = os.path.join(path, filename)
         try:
             with open(file_path, 'rb') as filepath:
                 gcs_utils.upload_object(bucket, filename, filepath)
-        except OSError:
-            test_util.write_cloud_str(bucket, filename, '\n')
+        except OSError as exc:
+            storage_client = StorageClient()
+            target_bucket = storage_client.get_bucket(bucket)
+            blob = target_bucket.blob(filename)
+            blob.upload_from_string('\n')
 
-        gcs_path = 'gs://{bucket}/{filename}'.format(bucket=bucket,
-                                                     filename=filename)
+        gcs_path: str = 'gs://{bucket}/{filename}'.format(bucket=bucket,
+                                                          filename=filename)
         load_results = bq_utils.load_csv(table,
                                          gcs_path,
                                          app_id,

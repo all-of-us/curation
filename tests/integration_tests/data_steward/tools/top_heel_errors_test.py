@@ -6,6 +6,7 @@ from unittest import mock, TestCase
 import app_identity
 import bq_utils
 import common
+from gcloud.gcs import StorageClient
 import gcs_utils
 import resources
 from tests import test_util
@@ -62,12 +63,14 @@ class TopHeelErrorsTest(TestCase):
     def setUp(self):
         self.app_id = app_identity.get_application_id()
         self.dataset_id = bq_utils.get_dataset_id()
-        self.bucket = gcs_utils.get_drc_bucket()
+        self.bucket: str = gcs_utils.get_drc_bucket()
+        self.storage_client = StorageClient()
+
         test_util.empty_bucket(self.bucket)
         test_util.delete_all_tables(self.dataset_id)
         self.load_test_data(hpo_id=HPO_NYC)
 
-    def load_test_data(self, hpo_id=None):
+    def load_test_data(self, hpo_id: str = None):
         """
         Load to bq test achilles heel results data from csv file
 
@@ -75,15 +78,20 @@ class TopHeelErrorsTest(TestCase):
         :return: contents of the file as list of objects
         """
 
-        table_name = common.ACHILLES_HEEL_RESULTS
+        table_name: str = common.ACHILLES_HEEL_RESULTS
         if hpo_id is not None:
-            table_id = bq_utils.get_table_id(hpo_id, table_name)
+            table_id: str = bq_utils.get_table_id(hpo_id, table_name)
         else:
-            table_id = table_name
-        test_file_name = table_id + '.csv'
-        test_file_path = os.path.join(test_util.TEST_DATA_PATH, test_file_name)
-        test_util.write_cloud_file(self.bucket, test_file_path)
-        gcs_path = 'gs://' + self.bucket + '/' + test_file_name
+            table_id: str = table_name
+        test_file_name: str = f'{table_id}.csv'
+        test_file_path: str = os.path.join(test_util.TEST_DATA_PATH,
+                                           test_file_name)
+
+        target_bucket = self.storage_client.get_bucket(self.bucket)
+        test_blob = target_bucket.blob(test_file_name)
+        test_blob.upload_from_filename(test_file_path)
+
+        gcs_path: str = f'gs://{self.bucket}/{test_file_name}'
         load_results = bq_utils.load_csv(table_name, gcs_path, self.app_id,
                                          self.dataset_id, table_id)
         job_id = load_results['jobReference']['jobId']

@@ -3,10 +3,8 @@ Unit test components of data_steward.validation.main
 """
 from __future__ import print_function
 import datetime
-import json
 import os
 import unittest
-from io import open
 from time import sleep
 
 import mock
@@ -18,6 +16,7 @@ import common
 from constants import bq_utils as bq_consts
 from constants.validation import main as main_consts
 import gcs_utils
+from gcloud.gcs import StorageClient
 import resources
 from tests import test_util
 from validation import main
@@ -45,6 +44,10 @@ class ValidationMainTest(unittest.TestCase):
 
         self.bigquery_dataset_id = bq_utils.get_dataset_id()
         self.folder_prefix = '2019-01-01-v1/'
+
+        self.storage_client = StorageClient()
+        self.storage_bucket = self.storage_client.get_bucket(self.hpo_bucket)
+
         self._empty_bucket()
         test_util.delete_all_tables(self.bigquery_dataset_id)
         self._create_drug_class_table(self.bigquery_dataset_id)
@@ -106,8 +109,10 @@ class ValidationMainTest(unittest.TestCase):
     def test_all_files_unparseable_output(self):
         # TODO possible bug: if no pre-existing table, results in bq table not found error
         for cdm_table in common.SUBMISSION_FILES:
-            test_util.write_cloud_str(self.hpo_bucket,
-                                      self.folder_prefix + cdm_table, ".\n .")
+            cdm_blob = self.storage_bucket.blob(
+                f'{self.folder_prefix}{cdm_table}')
+            cdm_blob.upload_from_string('.\n .')
+
         bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
         folder_items = main.get_folder_items(bucket_items, self.folder_prefix)
         expected_results = [(f, 1, 0, 0) for f in common.SUBMISSION_FILES]
@@ -116,17 +121,19 @@ class ValidationMainTest(unittest.TestCase):
         self.assertSetEqual(set(expected_results), set(r['results']))
 
     def test_bad_file_names(self):
-        bad_file_names = [
+        bad_file_names: list = [
             "avisit_occurrence.csv",
             "condition_occurence.csv",  # misspelled
             "person_final.csv",
             "procedure_occurrence.tsv"
         ]  # unsupported file extension
-        expected_warnings = []
+        expected_warnings: list = []
         for file_name in bad_file_names:
-            test_util.write_cloud_str(self.hpo_bucket,
-                                      self.folder_prefix + file_name, ".")
-            expected_item = (file_name, common.UNKNOWN_FILE)
+            bad_blob = self.storage_bucket.blob(
+                f'{self.folder_prefix}{file_name}')
+            bad_blob.upload_from_string('.')
+
+            expected_item: tuple = (file_name, common.UNKNOWN_FILE)
             expected_warnings.append(expected_item)
         bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
         folder_items = main.get_folder_items(bucket_items, self.folder_prefix)
@@ -136,20 +143,22 @@ class ValidationMainTest(unittest.TestCase):
 
     @mock.patch('api_util.check_cron')
     def test_validate_five_persons_success(self, mock_check_cron):
-        expected_results = []
-        test_file_names = [
+        expected_results: list = []
+        test_file_names: list = [
             os.path.basename(f) for f in test_util.FIVE_PERSONS_FILES
         ]
 
-        for cdm_file in common.SUBMISSION_FILES:
-            if cdm_file in test_file_names:
-                expected_result = (cdm_file, 1, 1, 1)
-                test_file = os.path.join(test_util.FIVE_PERSONS_PATH, cdm_file)
-                test_util.write_cloud_file(self.hpo_bucket,
-                                           test_file,
-                                           prefix=self.folder_prefix)
+        for cdm_filename in common.SUBMISSION_FILES:
+            if cdm_filename in test_file_names:
+                expected_result: tuple = (cdm_filename, 1, 1, 1)
+                test_filepath: str = os.path.join(test_util.FIVE_PERSONS_PATH,
+                                                  cdm_filename)
+                test_blob = self.storage_bucket.blob(
+                    f'{self.folder_prefix}{cdm_filename}')
+                test_blob.upload_from_filename(test_filepath)
+
             else:
-                expected_result = (cdm_file, 0, 0, 0)
+                expected_result: tuple = (cdm_filename, 0, 0, 0)
             expected_results.append(expected_result)
         bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
         folder_items = main.get_folder_items(bucket_items, self.folder_prefix)
@@ -173,15 +182,15 @@ class ValidationMainTest(unittest.TestCase):
         ) - datetime.timedelta(minutes=7)
 
         for fname in common.AOU_REQUIRED_FILES:
+            blob_name: str = f'{self.folder_prefix}{fname}'
+            test_blob = self.storage_bucket.blob(blob_name)
+            test_blob.upload_from_string('\n')
 
-            test_util.write_cloud_str(self.hpo_bucket,
-                                      self.folder_prefix + fname, '\n')
-            #brief sleep between writes
             sleep(1)
 
-        test_util.write_cloud_str(self.hpo_bucket,
-                                  self.folder_prefix + common.PROCESSED_TXT,
-                                  '\n')
+        blob_name: str = f'{self.folder_prefix}{common.PROCESSED_TXT}'
+        test_blob = self.storage_bucket.blob(blob_name)
+        test_blob.upload_from_string('\n')
 
         bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
         result = main._get_submission_folder(self.hpo_bucket,
@@ -196,14 +205,16 @@ class ValidationMainTest(unittest.TestCase):
     @mock.patch('api_util.check_cron')
     def test_copy_five_persons(self, mock_check_cron):
         # upload all five_persons files
-        for cdm_file in test_util.FIVE_PERSONS_FILES:
-            test_util.write_cloud_file(self.hpo_bucket,
-                                       cdm_file,
-                                       prefix=self.folder_prefix)
-            test_util.write_cloud_file(self.hpo_bucket,
-                                       cdm_file,
-                                       prefix=self.folder_prefix +
-                                       self.folder_prefix)
+        for cdm_pathfile in test_util.FIVE_PERSONS_FILES:
+            test_filename: str = os.path.basename(cdm_pathfile)
+
+            blob_name: str = f'{self.folder_prefix}{test_filename}'
+            test_blob = self.storage_bucket.blob(blob_name)
+            test_blob.upload_from_filename(cdm_pathfile)
+
+            blob_name: str = f'{self.folder_prefix}{self.folder_prefix}{test_filename}'
+            test_blob = self.storage_bucket.blob(blob_name)
+            test_blob.upload_from_filename(cdm_pathfile)
 
         main.app.testing = True
         with main.app.test_client() as c:
@@ -243,16 +254,18 @@ class ValidationMainTest(unittest.TestCase):
     @mock.patch('api_util.check_cron')
     def test_pii_files_loaded(self, mock_check_cron):
         # tests if pii files are loaded
-        test_file_paths = [
+        test_file_paths: list = [
             test_util.PII_NAME_FILE, test_util.PII_MRN_BAD_PERSON_ID_FILE
         ]
-        test_file_names = [os.path.basename(f) for f in test_file_paths]
-        test_util.write_cloud_file(self.hpo_bucket,
-                                   test_util.PII_NAME_FILE,
-                                   prefix=self.folder_prefix)
-        test_util.write_cloud_file(self.hpo_bucket,
-                                   test_util.PII_MRN_BAD_PERSON_ID_FILE,
-                                   prefix=self.folder_prefix)
+        test_file_names: list = [os.path.basename(f) for f in test_file_paths]
+
+        blob_name: str = f'{self.folder_prefix}{os.path.basename(test_util.PII_NAME_FILE)}'
+        test_blob = self.storage_bucket.blob(blob_name)
+        test_blob.upload_from_filename(test_util.PII_NAME_FILE)
+
+        blob_name: str = f'{self.folder_prefix}{os.path.basename(test_util.PII_MRN_BAD_PERSON_ID_FILE)}'
+        test_blob = self.storage_bucket.blob(blob_name)
+        test_blob.upload_from_filename(test_util.PII_MRN_BAD_PERSON_ID_FILE)
 
         rs = resources.csv_to_list(test_util.PII_FILE_LOAD_RESULT_CSV)
         expected_results = [(r['file_name'], int(r['found']), int(r['parsed']),
@@ -284,9 +297,10 @@ class ValidationMainTest(unittest.TestCase):
         ) - datetime.timedelta(minutes=7)
 
         for cdm_file in test_util.FIVE_PERSONS_FILES:
-            test_util.write_cloud_file(self.hpo_bucket,
-                                       cdm_file,
-                                       prefix=self.folder_prefix)
+            blob_name = f'{self.folder_prefix}{os.path.basename(cdm_file)}'
+            test_blob = self.storage_bucket.blob(blob_name)
+            test_blob.upload_from_filename(cdm_file)
+
         # load person table in RDR
         bq_utils.load_table_from_csv(self.project_id, self.rdr_dataset_id,
                                      common.PERSON,

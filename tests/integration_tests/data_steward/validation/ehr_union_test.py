@@ -12,6 +12,7 @@ import cdm
 import common
 from constants.tools import combine_ehr_rdr
 from constants.validation import ehr_union as eu_constants
+from gcloud.gcs import StorageClient
 import gcs_utils
 import resources
 import tests.test_util as test_util
@@ -21,7 +22,7 @@ PITT_HPO_ID = 'pitt'
 NYC_HPO_ID = 'nyc'
 EXCLUDED_HPO_ID = 'fake'
 SUBQUERY_FAIL_MSG = '''
-Test {expr} in {table} subquery 
+Test {expr} in {table} subquery
  Expected: {expected}
  Actual: {actual}
 
@@ -47,6 +48,9 @@ class EhrUnionTest(unittest.TestCase):
         self.hpo_ids = [PITT_HPO_ID, NYC_HPO_ID, EXCLUDED_HPO_ID]
         self.input_dataset_id = bq_utils.get_dataset_id()
         self.output_dataset_id = bq_utils.get_unioned_dataset_id()
+
+        self.storage_client = StorageClient()
+
         # Done in tearDown().  this is redundant.
         self._empty_hpo_buckets()
         test_util.delete_all_tables(self.input_dataset_id)
@@ -82,49 +86,56 @@ class EhrUnionTest(unittest.TestCase):
         # expected_tables is for testing output
         # it maps table name to list of expected records ex: "unioned_ehr_visit_occurrence" -> [{}, {}, ...]
         """
-        expected_tables = dict()
-        running_jobs = []
+        expected_tables: dict = {}
+        running_jobs: list = []
         for cdm_table in resources.CDM_TABLES:
-            output_table = ehr_union.output_table_for(cdm_table)
+            output_table: str = ehr_union.output_table_for(cdm_table)
             expected_tables[output_table] = []
             for hpo_id in self.hpo_ids:
                 # upload csv into hpo bucket
+                cdm_filename: str = f'{cdm_table}.csv'
                 if hpo_id == NYC_HPO_ID:
-                    cdm_file_name = os.path.join(test_util.FIVE_PERSONS_PATH,
-                                                 cdm_table + '.csv')
+                    cdm_filepath: str = os.path.join(
+                        test_util.FIVE_PERSONS_PATH, cdm_filename)
                 elif hpo_id == PITT_HPO_ID:
-                    cdm_file_name = os.path.join(
-                        test_util.PITT_FIVE_PERSONS_PATH, cdm_table + '.csv')
+                    cdm_filepath: str = os.path.join(
+                        test_util.PITT_FIVE_PERSONS_PATH, cdm_filename)
                 elif hpo_id == EXCLUDED_HPO_ID:
-                    if cdm_file_name in [
+
+                    #TODO use cdm_table ?
+                    if cdm_filepath in [
                             'observation', 'person', 'visit_occurrence'
                     ]:
-                        cdm_file_name = os.path.join(test_util.RDR_PATH,
-                                                     cdm_table + '.csv')
-                bucket = gcs_utils.get_hpo_bucket(hpo_id)
-                if os.path.exists(cdm_file_name):
-                    test_util.write_cloud_file(bucket, cdm_file_name)
-                    csv_rows = resources.csv_to_list(cdm_file_name)
+                        cdm_filepath: str = os.path.join(
+                            test_util.RDR_PATH, cdm_filename)
+                bucket: str = gcs_utils.get_hpo_bucket(hpo_id)
+                gcs_bucket = self.storage_client.get_bucket(bucket)
+                if os.path.exists(cdm_filepath):
+
+                    csv_rows = resources.csv_to_list(cdm_filepath)
+                    cdm_blob = gcs_bucket.blob(cdm_filename)
+                    cdm_blob.upload_from_filename(cdm_filepath)
+
                 else:
                     # results in empty table
-                    test_util.write_cloud_str(bucket, cdm_table + '.csv',
-                                              'dummy\n')
-                    csv_rows = []
+                    cdm_blob = gcs_bucket.blob(cdm_filename)
+                    cdm_blob.upload_from_string('dummy\n')
+                    csv_rows: list = []
                 # load table from csv
                 result = bq_utils.load_cdm_csv(hpo_id, cdm_table)
                 running_jobs.append(result['jobReference']['jobId'])
                 if hpo_id != EXCLUDED_HPO_ID:
                     expected_tables[output_table] += list(csv_rows)
         # ensure person to observation output is as expected
-        output_table_person = ehr_union.output_table_for(common.PERSON)
-        output_table_observation = ehr_union.output_table_for(
+        output_table_person: str = ehr_union.output_table_for(common.PERSON)
+        output_table_observation: str = ehr_union.output_table_for(
             common.OBSERVATION)
         expected_tables[output_table_observation] += 4 * expected_tables[
             output_table_person]
 
-        incomplete_jobs = bq_utils.wait_on_jobs(running_jobs)
+        incomplete_jobs: list = bq_utils.wait_on_jobs(running_jobs)
         if len(incomplete_jobs) > 0:
-            message = "Job id(s) %s failed to complete" % incomplete_jobs
+            message: str = "Job id(s) %s failed to complete" % incomplete_jobs
             raise RuntimeError(message)
         self.expected_tables = expected_tables
 
@@ -180,7 +191,7 @@ class EhrUnionTest(unittest.TestCase):
         # fact_relationship from pitt
         hpo_unique_identifiers = ehr_union.get_hpo_offsets(self.hpo_ids)
         pitt_offset = hpo_unique_identifiers[PITT_HPO_ID]
-        q = '''SELECT fact_id_1, fact_id_2 
+        q = '''SELECT fact_id_1, fact_id_2
                FROM `{input_dataset}.{hpo_id}_fact_relationship`
                where domain_concept_id_1 = 21 and domain_concept_id_2 = 21'''.format(
             input_dataset=self.input_dataset_id, hpo_id=PITT_HPO_ID)
@@ -265,8 +276,8 @@ class EhrUnionTest(unittest.TestCase):
         response = bq_utils.query(q)
         expected_rows = bq_utils.response2rows(response)
         person_table_id = ehr_union.output_table_for('person')
-        q = '''SELECT DISTINCT person_id 
-               FROM {dataset_id}.{table_id} 
+        q = '''SELECT DISTINCT person_id
+               FROM {dataset_id}.{table_id}
                ORDER BY person_id ASC'''.format(
             dataset_id=self.output_dataset_id, table_id=person_table_id)
         response = bq_utils.query(q)
