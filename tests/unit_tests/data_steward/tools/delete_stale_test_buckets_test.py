@@ -99,7 +99,7 @@ class DeleteStaleTestBucketsTest(TestCase):
 
     @patch('tools.delete_stale_test_buckets.StorageClient')
     def test_filter_stale_buckets_first_n_given(self, mock_storage_client):
-        """Test case: All buckets are empty. first_n not given. first_n < # of stale buckets.
+        """Test case: All buckets are empty. first_n given. first_n < # of stale buckets.
         """
         mock_storage_client.list_buckets.return_value = self.buckets
         mock_storage_client.list_blobs.return_value = iter(())
