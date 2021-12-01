@@ -46,7 +46,6 @@ class DeleteStaleTestBucketsTest(TestCase):
 
     @patch('tools.delete_stale_test_buckets.StorageClient')
     def test_check_project(self, mock_storage_client):
-        mock_storage_client.return_value = mock_storage_client
         mock_storage_client.project = 'aou-res-curation-test'
 
         self.assertIsNone(
@@ -54,7 +53,6 @@ class DeleteStaleTestBucketsTest(TestCase):
 
     @patch('tools.delete_stale_test_buckets.StorageClient')
     def test_check_project_error(self, mock_storage_client):
-        mock_storage_client.return_value = mock_storage_client
         mock_storage_client.project = 'aou-res-curation-test-wrong-name'
 
         with self.assertRaises(ValueError):
@@ -64,7 +62,6 @@ class DeleteStaleTestBucketsTest(TestCase):
     def test_filter_stale_buckets_all_not_empty(self, mock_storage_client):
         """Test case: All buckets are NOT empty.
         """
-        mock_storage_client.return_value = mock_storage_client
         mock_storage_client.list_buckets.return_value = self.buckets
         mock_storage_client.list_blobs.return_value = iter(
             [self.mock_blob for _ in range(0, 3)])
@@ -78,7 +75,6 @@ class DeleteStaleTestBucketsTest(TestCase):
     def test_filter_stale_buckets_all_empty(self, mock_storage_client):
         """Test case: All buckets are empty.
         """
-        mock_storage_client.return_value = mock_storage_client
         mock_storage_client.list_buckets.return_value = self.buckets
         mock_storage_client.list_blobs.return_value = iter(())
 
@@ -92,7 +88,6 @@ class DeleteStaleTestBucketsTest(TestCase):
     def test_filter_stale_buckets_first_n_not_given(self, mock_storage_client):
         """Test case: All buckets are empty. first_n not given.
         """
-        mock_storage_client.return_value = mock_storage_client
         mock_storage_client.list_buckets.return_value = self.buckets
         mock_storage_client.list_blobs.return_value = iter(())
 
@@ -106,7 +101,6 @@ class DeleteStaleTestBucketsTest(TestCase):
     def test_filter_stale_buckets_first_n_given(self, mock_storage_client):
         """Test case: All buckets are empty. first_n not given. first_n < # of stale buckets.
         """
-        mock_storage_client.return_value = mock_storage_client
         mock_storage_client.list_buckets.return_value = self.buckets
         mock_storage_client.list_blobs.return_value = iter(())
 
