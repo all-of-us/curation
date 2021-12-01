@@ -1,6 +1,18 @@
 # Project imports
 from common import JINJA_ENV
+"""
+Compares rdr and ehr name fields (first_name, middle_name, last_name) and returns one of
+'match', 'no_match', 'missing_rdr', or 'missing_ehr'.
 
+Before comparison, the following string normalizations are performed on the input strings:
+  1. Strip leading and trailing whitespace
+  2. Remove any character that is not an alphabetic character
+  3. Lower case all characters
+
+A current limitation of this function is its inability to consider special characters with accents
+and tildes as matches. Additionally, there is currently no capability for fuzzy matching or matching
+phonetically similar strings.
+"""
 CREATE_NAME_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
     CREATE FUNCTION IF NOT EXISTS `{{project_id}}.{{drc_dataset_id}}.CompareName`(rdr_name string, ehr_name string)
     RETURNS string
