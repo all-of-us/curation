@@ -64,7 +64,7 @@ class WritersTest(unittest.TestCase):
 
         mock_load_csv.assert_called_with(
             ANY,
-            'gs://' + bucket_name + '/' + upload_path,
+            f'gs://{bucket_name}/{upload_path}',
             self.project,
             self.dataset,
             self.site + consts.VALIDATION_TABLE_SUFFIX,
@@ -112,7 +112,7 @@ class WritersTest(unittest.TestCase):
 
         mock_load_csv.assert_called_with(
             ANY,
-            'gs://' + bucket_name + '/' + upload_path,
+            f'gs://{bucket_name}/{upload_path}',
             self.project,
             self.dataset,
             self.site + consts.VALIDATION_TABLE_SUFFIX,
