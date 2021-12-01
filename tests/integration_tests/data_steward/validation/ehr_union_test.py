@@ -95,23 +95,30 @@ class EhrUnionTest(unittest.TestCase):
                 # upload csv into hpo bucket
                 cdm_filename: str = f'{cdm_table}.csv'
                 if hpo_id == NYC_HPO_ID:
-                    cdm_file_name = os.path.join(test_util.FIVE_PERSONS_PATH,
-                                                 cdm_table + '.csv')
+                    cdm_filepath: str = os.path.join(
+                        test_util.FIVE_PERSONS_PATH, cdm_filename)
                 elif hpo_id == PITT_HPO_ID:
-                    cdm_file_name = os.path.join(
-                        test_util.PITT_FIVE_PERSONS_PATH, cdm_table + '.csv')
+                    cdm_filepath: str = os.path.join(
+                        test_util.PITT_FIVE_PERSONS_PATH, cdm_filename)
                 elif hpo_id == EXCLUDED_HPO_ID:
-                    if cdm_file_name in [
+
+                    #TODO use cdm_table ?
+                    if cdm_filepath in [
                             'observation', 'person', 'visit_occurrence'
                     ]:
-                        cdm_file_name = os.path.join(test_util.RDR_PATH,
-                                                     cdm_table + '.csv')
-                bucket = gcs_utils.get_hpo_bucket(hpo_id)
-                if os.path.exists(cdm_file_name):
-                    test_util.write_cloud_file(bucket, cdm_file_name)
-                    csv_rows = resources.csv_to_list(cdm_file_name)
+                        cdm_filepath: str = os.path.join(
+                            test_util.RDR_PATH, cdm_filename)
+                bucket: str = gcs_utils.get_hpo_bucket(hpo_id)
+                gcs_bucket = self.storage_client.get_bucket(bucket)
+                if os.path.exists(cdm_filepath):
+
+                    csv_rows = resources.csv_to_list(cdm_filepath)
+                    cdm_blob = gcs_bucket.blob(cdm_filename)
+                    cdm_blob.upload_from_filename(cdm_filepath)
+
                 else:
                     # results in empty table
+                    cdm_blob = gcs_bucket.blob(cdm_filename)
                     cdm_blob.upload_from_string('dummy\n')
                     csv_rows: list = []
                 # load table from csv
@@ -120,15 +127,15 @@ class EhrUnionTest(unittest.TestCase):
                 if hpo_id != EXCLUDED_HPO_ID:
                     expected_tables[output_table] += list(csv_rows)
         # ensure person to observation output is as expected
-        output_table_person = ehr_union.output_table_for(common.PERSON)
-        output_table_observation = ehr_union.output_table_for(
+        output_table_person: str = ehr_union.output_table_for(common.PERSON)
+        output_table_observation: str = ehr_union.output_table_for(
             common.OBSERVATION)
         expected_tables[output_table_observation] += 4 * expected_tables[
             output_table_person]
 
-        incomplete_jobs = bq_utils.wait_on_jobs(running_jobs)
+        incomplete_jobs: list = bq_utils.wait_on_jobs(running_jobs)
         if len(incomplete_jobs) > 0:
-            message = "Job id(s) %s failed to complete" % incomplete_jobs
+            message: str = "Job id(s) %s failed to complete" % incomplete_jobs
             raise RuntimeError(message)
         self.expected_tables = expected_tables
 
