@@ -4,13 +4,11 @@ from io import open
 from unittest import TestCase
 from unittest.mock import patch
 
-# Third party imports
-from google.cloud import storage
-
 # Project imports
 import app_identity
 from tests import test_util
 from retraction import retract_data_gcs as rd
+from gcloud.gcs import StorageClient
 
 
 class RetractDataGcsTest(TestCase):
@@ -22,26 +20,21 @@ class RetractDataGcsTest(TestCase):
         print('**************************************************************')
 
     def setUp(self):
-        self.project_id = app_identity.get_application_id()
         self.hpo_id = test_util.FAKE_HPO_ID
         self.bucket = os.environ.get(f'BUCKET_NAME_FAKE')
         self.site_bucket = 'test_bucket'
         self.folder_1 = '2019-01-01-v1/'
         self.folder_2 = '2019-02-02-v2/'
-        self.client = storage.Client(self.project_id)
-        self.folder_prefix_1 = self.hpo_id + '/' + self.site_bucket + '/' + self.folder_1
-        self.folder_prefix_2 = self.hpo_id + '/' + self.site_bucket + '/' + self.folder_2
+        self.client = StorageClient()
+        self.folder_prefix_1 = f'{self.hpo_id}/{self.site_bucket}/{self.folder_1}'
+        self.folder_prefix_2 = f'{self.hpo_id}/{self.site_bucket}/{self.folder_2}'
         self.pids = [17, 20]
         self.skip_pids = [10, 25]
         self.project_id = 'project_id'
         self.sandbox_dataset_id = os.environ.get('UNIONED_DATASET_ID')
         self.pid_table_id = 'pid_table'
         self.gcs_bucket = self.client.bucket(self.bucket)
-        self._empty_bucket()
-
-    def _empty_bucket(self):
-        for blob in self.client.list_blobs(self.bucket):
-            blob.delete()
+        self.client.empty_bucket(self.gcs_bucket)
 
     @patch('retraction.retract_data_gcs.extract_pids_from_table')
     @patch('gcs_utils.get_drc_bucket')
@@ -150,4 +143,4 @@ class RetractDataGcsTest(TestCase):
                                  total_lines_post[key])
 
     def tearDown(self):
-        self._empty_bucket()
+        self.client.empty_bucket(self.gcs_bucket)
