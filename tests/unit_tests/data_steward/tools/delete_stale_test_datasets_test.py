@@ -4,7 +4,7 @@ Unit test for delete_stale_test_buckets module
 
 # Python imports
 from unittest import TestCase
-from unittest.mock import patch, Mock, MagicMock
+from unittest.mock import patch, Mock
 from datetime import datetime, timedelta, timezone
 
 # Third party imports
@@ -117,7 +117,7 @@ class DeleteStaleTestDatasetsTest(TestCase):
 
     @patch('tools.delete_stale_test_datasets.bq')
     def test_filter_stale_datasets_first_n_given(self, mock_bq):
-        """Test case: All buckets are empty. first_n not given.
+        """Test case: All buckets are empty. first_n given. first_n < # of stale buckets.
         """
         mock_bq.get_client.list_datasets.return_value = self.dataset_list_items
         mock_bq.get_client.get_dataset.side_effect = self.datasets

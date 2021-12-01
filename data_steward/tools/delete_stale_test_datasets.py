@@ -3,11 +3,10 @@ Delete stale datasets in test environment.
 """
 from datetime import datetime, timezone
 import logging
+import os
 
 # Project imports
-from tools.clean_project_datasets import run_deletion
-from utils import pipeline_logging
-from utils import bq
+from utils import bq, pipeline_logging
 
 LOGGER = logging.getLogger(__name__)
 
@@ -74,17 +73,15 @@ def main():
 
     pipeline_logging.configure(logging.INFO, add_console_handler=True)
 
-    bq_client = bq.get_client('aou-res-curation-test')
+    bq_client = bq.get_client(os.environ.get('GOOGLE_CLOUD_PROJECT'))
 
     _check_project(bq_client)
 
     stale_datasets = _filter_stale_datasets(bq_client, first_n=100)
 
     for stale_dataset in stale_datasets:
-        LOGGER.info(
-            f"Running - run_deletion('aou-res-curation-test', {stale_dataset})")
-        #Uncomment the following before release
-        #run_deletion('aou-res-curation-test', {stale_dataset})
+        LOGGER.info(f"Running - bq_client.delete_dataset({stale_dataset})")
+        bq_client.delete_dataset({stale_dataset})
 
 
 if __name__ == "__main__":
