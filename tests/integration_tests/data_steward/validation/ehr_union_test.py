@@ -96,7 +96,7 @@ class EhrUnionTest(unittest.TestCase):
                     cdm_file_name = os.path.join(
                         test_util.PITT_FIVE_PERSONS_PATH, cdm_table + '.csv')
                 elif hpo_id == EXCLUDED_HPO_ID:
-                    if cdm_file_name in [
+                    if cdm_table in [
                             'observation', 'person', 'visit_occurrence'
                     ]:
                         cdm_file_name = os.path.join(test_util.RDR_PATH,
