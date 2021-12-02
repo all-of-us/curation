@@ -134,7 +134,6 @@ class BqUtilsTest(unittest.TestCase):
             bucket_blob.upload_from_file(fp)
         result = bq_utils.load_cdm_csv(FAKE_HPO_ID, common.PERSON)
         self.assertEqual(result['status']['state'], 'RUNNING')
-
         load_job_id = result['jobReference']['jobId']
         table_id = result['configuration']['load']['destinationTable'][
             'tableId']
@@ -152,12 +151,10 @@ class BqUtilsTest(unittest.TestCase):
             bucket_blob = sc_bucket.blob('person.csv')
             bucket_blob.upload_from_file(fp)
         result = bq_utils.load_cdm_csv(FAKE_HPO_ID, common.PERSON)
-
         load_job_id = result['jobReference']['jobId']
         incomplete_jobs = bq_utils.wait_on_jobs([load_job_id])
         self.assertEqual(len(incomplete_jobs), 0,
                          'loading table {} timed out'.format(common.PERSON))
-
         table_id = bq_utils.get_table_id(FAKE_HPO_ID, common.PERSON)
         q = 'SELECT person_id FROM %s' % table_id
         result = bq_utils.query(q)
@@ -203,7 +200,7 @@ class BqUtilsTest(unittest.TestCase):
     def test_create_standard_table(self):
         standard_tables = list(resources.CDM_TABLES) + ACHILLES_TABLES
         for standard_table in standard_tables:
-            table_id = 'prefix_for_test_' + standard_table
+            table_id = f'prefix_for_test_{standard_table}'
             result = bq_utils.create_standard_table(standard_table, table_id)
             self.assertTrue('kind' in result)
             self.assertEqual(result['kind'], 'bigquery#table')
