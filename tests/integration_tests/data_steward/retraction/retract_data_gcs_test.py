@@ -20,12 +20,13 @@ class RetractDataGcsTest(TestCase):
         print('**************************************************************')
 
     def setUp(self):
+        self.project_id = app_identity.get_application_id()
         self.hpo_id = test_util.FAKE_HPO_ID
         self.bucket = os.environ.get(f'BUCKET_NAME_FAKE')
         self.site_bucket = 'test_bucket'
         self.folder_1 = '2019-01-01-v1/'
         self.folder_2 = '2019-02-02-v2/'
-        self.client = StorageClient()
+        self.client = StorageClient(self.project_id)
         self.folder_prefix_1 = f'{self.hpo_id}/{self.site_bucket}/{self.folder_1}'
         self.folder_prefix_2 = f'{self.hpo_id}/{self.site_bucket}/{self.folder_2}'
         self.pids = [17, 20]
