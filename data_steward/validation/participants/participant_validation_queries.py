@@ -1,5 +1,39 @@
 # Project imports
 from common import JINJA_ENV
+"""
+Compares rdr and ehr name fields (first_name, middle_name, last_name) and returns one of
+'match', 'no_match', 'missing_rdr', or 'missing_ehr'.
+
+Before comparison, the following string normalizations are performed on the input strings:
+  1. Strip leading and trailing whitespace
+  2. Remove any character that is not an alphabetic character
+  3. Lower case all characters
+
+A current limitation of this function is its inability to consider special characters with accents
+and tildes as matches. Additionally, there is currently no capability for fuzzy matching or matching
+phonetically similar strings.
+"""
+CREATE_NAME_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
+    CREATE FUNCTION IF NOT EXISTS `{{project_id}}.{{drc_dataset_id}}.CompareName`(rdr_name string, ehr_name string)
+    RETURNS string
+    AS ((
+        WITH normalized_rdr_name AS (
+            SELECT REGEXP_REPLACE(LOWER(TRIM(rdr_name)), '[^A-Za-z]', '') AS rdr_name
+        )
+        , normalized_ehr_name AS (
+            SELECT REGEXP_REPLACE(LOWER(TRIM(ehr_name)), '[^A-Za-z]', '') AS ehr_name
+        )
+        SELECT
+            CASE 
+                WHEN normalized_rdr_name.rdr_name = normalized_ehr_name.ehr_name THEN '{{match}}'
+                WHEN normalized_rdr_name.rdr_name IS NOT NULL AND normalized_ehr_name.ehr_name IS NOT NULL THEN '{{no_match}}'
+                WHEN normalized_rdr_name.rdr_name IS NULL THEN '{{missing_rdr}}'
+                ELSE '{{missing_ehr}}'
+            END AS name
+        FROM normalized_rdr_name, normalized_ehr_name 
+
+    ));
+""")
 
 CREATE_SEX_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
 CREATE FUNCTION IF NOT EXISTS
@@ -89,6 +123,9 @@ CREATE_DOB_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
 
 # Contains list of create function queries to execute
 CREATE_COMPARISON_FUNCTION_QUERIES = [{
+    'name': 'CompareName',
+    'query': CREATE_NAME_COMPARISON_FUNCTION
+}, {
     'name': 'CompareEmail',
     'query': CREATE_EMAIL_COMPARISON_FUNCTION
 }, {
