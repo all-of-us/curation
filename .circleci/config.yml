@@ -111,7 +111,7 @@ jobs:
       - build
       - run:
           name: Delete stale test datasets
-          command: PYTHONPATH=./:$PYTHONPATH python3 ./data_steward/tools/delete_stale_test_datasets.py
+          command: PYTHONPATH=./data_steward/:$PYTHONPATH python3 ./data_steward/tools/delete_stale_test_datasets.py
 
 workflows:
   version: 2
