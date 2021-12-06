@@ -37,6 +37,11 @@ MATCH_FIELDS_QUERY = JINJA_ENV.from_string("""
     SET upd.first_name = `{{project_id}}.{{drc_dataset_id}}.CompareName`(ps.first_name, ehr_name.first_name),
         upd.middle_name = `{{project_id}}.{{drc_dataset_id}}.CompareName`(ps.middle_name, ehr_name.middle_name),
         upd.last_name = `{{project_id}}.{{drc_dataset_id}}.CompareName`(ps.last_name, ehr_name.last_name),
+        upd.street_address = `{{project_id}}.{{drc_dataset_id}}.CompareStreetAddress`(ps.street_address, ehr_location.street_address),
+        upd.street_address2 = `{{project_id}}.{{drc_dataset_id}}.CompareStreetAddress`(ps.street_address2, ehr_location.street_address),
+        upd.city = `{{project_id}}.{{drc_dataset_id}}.CompareCity`(ps.city, ehr_location.city),
+        upd.state = `{{project_id}}.{{drc_dataset_id}}.CompareState`(ps.state, ehr_location.state),
+        upd.zip_code = `{{project_id}}.{{drc_dataset_id}}.CompareZipCode`(ps.zip_code, ehr_location.zip_code),
         upd.email = `{{project_id}}.{{drc_dataset_id}}.CompareEmail`(ps.email, ehr_email.email),
         upd.phone_number = `{{project_id}}.{{drc_dataset_id}}.ComparePhoneNumber`(ps.phone_number, ehr_phone.phone_number),
         upd.birth_date = `{{project_id}}.{{drc_dataset_id}}.CompareDateOfBirth`(ps.date_of_birth, ehr_dob.date_of_birth),
@@ -57,6 +62,10 @@ MATCH_FIELDS_QUERY = JINJA_ENV.from_string("""
         ON ehr_sex.person_id = ps.person_id
     LEFT JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_name_table_id}}` ehr_name
         ON ehr_name.person_id = ps.person_id
+    LEFT JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_address_table_id}}` ehr_address
+        ON ehr_address.person_id = ps.person_id
+    LEFT JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_location_table_id}}` ehr_location
+        ON ehr_location.location_id = ehr_address.location_id
     WHERE upd.person_id = ps.person_id
         AND upd._PARTITIONTIME = ps._PARTITIONTIME
 """)
@@ -69,10 +78,12 @@ def identify_rdr_ehr_match(client,
                            drc_dataset_id=DRC_OPS):
 
     id_match_table_id = f'{IDENTITY_MATCH_TABLE}_{hpo_id}'
+    hpo_pii_address_table_id = f'{hpo_id}_pii_address'
     hpo_pii_email_table_id = f'{hpo_id}_pii_email'
     hpo_pii_phone_number_table_id = f'{hpo_id}_pii_phone_number'
     hpo_pii_name_table_id = f'{hpo_id}_pii_name'
     ps_api_table_id = f'{PS_API_VALUES}_{hpo_id}'
+    hpo_location_table_id = f'{hpo_id}_location'
     hpo_person_table_id = f'{hpo_id}_person'
 
     for item in CREATE_COMPARISON_FUNCTION_QUERIES:
@@ -91,9 +102,11 @@ def identify_rdr_ehr_match(client,
     match_query = MATCH_FIELDS_QUERY.render(
         project_id=project_id,
         id_match_table_id=id_match_table_id,
+        hpo_pii_address_table_id=hpo_pii_address_table_id,
         hpo_pii_name_table_id=hpo_pii_name_table_id,
         hpo_pii_email_table_id=hpo_pii_email_table_id,
         hpo_pii_phone_number_table_id=hpo_pii_phone_number_table_id,
+        hpo_location_table_id=hpo_location_table_id,
         hpo_person_table_id=hpo_person_table_id,
         ps_api_table_id=ps_api_table_id,
         drc_dataset_id=drc_dataset_id,
