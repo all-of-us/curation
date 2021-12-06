@@ -108,6 +108,7 @@ jobs:
   delete_stale_test_datasets:
     <<: *job_defaults
     steps:
+      - build
       - run:
           name: Delete stale test datasets
           command: python3 /home/circleci/curation/data_steward/tools/delete_stale_test_datasets.py
