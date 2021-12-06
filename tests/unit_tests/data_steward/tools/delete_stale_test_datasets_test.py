@@ -3,6 +3,7 @@ Unit test for delete_stale_test_buckets module
 """
 
 # Python imports
+import os
 from unittest import TestCase
 from unittest.mock import patch, Mock
 from datetime import datetime, timedelta, timezone
@@ -57,14 +58,14 @@ class DeleteStaleTestDatasetsTest(TestCase):
 
     @patch('tools.delete_stale_test_datasets.bq')
     def test_check_project(self, mock_bq):
-        mock_bq.get_client.project = 'aou-res-curation-test'
+        mock_bq.get_client.project = os.environ.get('GOOGLE_CLOUD_PROJECT')
 
         self.assertIsNone(
             delete_stale_test_datasets._check_project(mock_bq.get_client))
 
     @patch('tools.delete_stale_test_datasets.bq')
     def test_check_project_error(self, mock_bq):
-        mock_bq.get_client.project = 'aou-res-curation-test-wrong-name'
+        mock_bq.get_client.project = 'aou-wrong-project-name'
 
         with self.assertRaises(ValueError):
             delete_stale_test_datasets._check_project(mock_bq.get_client)

@@ -19,11 +19,10 @@ def _check_project(bq_client):
     :return: None if the project is set properly
     :raise: ValueError if project is not 'aou-res-curation-test'
     """
-    test_project = 'aou-res-curation-test'
 
-    if bq_client.project != test_project:
+    if 'test' not in bq_client.project:
         raise ValueError(
-            f'Wrong project: {bq_client.project}. This script runs only for {test_project}'
+            f'Wrong project: {bq_client.project}. This script runs only for test environment'
         )
 
     return None
@@ -80,8 +79,11 @@ def main():
     stale_datasets = _filter_stale_datasets(bq_client, first_n=100)
 
     for stale_dataset in stale_datasets:
-        LOGGER.info(f"Running - bq_client.delete_dataset({stale_dataset})")
-        bq_client.delete_dataset({stale_dataset})
+        LOGGER.info(
+            f"Running - bq_client.delete_dataset({stale_dataset})"
+        )  # or LOGGER.critical/warn/error/ (debug) whichever circleci creates output
+        #Uncomment the following before release.
+        #bq_client.delete_dataset({stale_dataset})
 
 
 if __name__ == "__main__":

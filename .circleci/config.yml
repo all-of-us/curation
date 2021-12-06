@@ -110,7 +110,7 @@ jobs:
     steps:
       - run:
           name: Delete stale test datasets
-          command: PYTHONPATH=./:$PYTHONPATH python ./tools/delete_stale_test_datasets.py
+          command: python3 ./data_steward/tools/delete_stale_test_datasets.py
 
 workflows:
   version: 2
@@ -118,12 +118,13 @@ workflows:
     jobs:
       - linting_checks
       - unit_test
-      - integration_test:
-          filters:
-            branches:
-              # This would cause too much noise to run on commit, run nightly
-              # instead per below workflow.
-              ignore: develop
+      #- integration_test:
+      #    filters:
+      #      branches:
+      #        # This would cause too much noise to run on commit, run nightly
+      #        # instead per below workflow.
+      #        ignore: develop
+      - delete_stale_test_datasets
 
   nightly:
     triggers:
