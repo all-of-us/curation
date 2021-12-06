@@ -111,7 +111,16 @@ jobs:
       - build
       - run:
           name: Delete stale test datasets
-          command: PYTHONPATH=./data_steward/:$PYTHONPATH python3 ./data_steward/tools/delete_stale_test_datasets.py
+          command: |
+            ./curation.sh \
+              -e GCLOUD_CREDENTIALS_KEY="${GCLOUD_CREDENTIALS_KEY}" \
+              -e GCLOUD_CREDENTIALS="${GCLOUD_CREDENTIALS}" \
+              -e CI="${CI}" \
+              -e CIRCLECI="${CIRCLECI}" \
+              -e CIRCLE_PULL_REQUEST="${CIRCLE_PULL_REQUEST:-}" \
+              -e CIRCLE_PULL_REQUESTS="${CIRCLE_PULL_REQUESTS:-}" \
+              '--' \
+              delete-stale-test-datasets
 
 workflows:
   version: 2
