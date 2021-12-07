@@ -35,10 +35,85 @@ CREATE_NAME_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
     ));
 """)
 
-CREATE_STREET_ADDRESS_COMPARISON_FUNCTION = None
-CREATE_CITY_COMPARISON_FUNCTION = None
-CREATE_STATE_COMPARISON_FUNCTION = None
-CREATE_ZIP_CODE_COMPARISON_FUNCTION = None
+CREATE_STREET_ADDRESS_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
+CREATE FUNCTION IF NOT EXISTS
+  `{{project_id}}.{{drc_dataset_id}}.CompareStreetAddress`(xyz string, xyz string)
+  RETURNS string AS ((
+        WITH normalized_rdr_xyz AS (
+            SELECT LOWER(TRIM(rdr_xyz)) AS rdr_xyz
+        )
+        , normalized_ehr_xyz AS (
+            SELECT LOWER(TRIM(ehr_xyz)) AS ehr_xyz
+        )
+    SELECT
+      CASE
+        {{xyz_case_when_conditions}}
+      ELSE
+      '{{missing_ehr}}'
+    END
+      AS sex
+       FROM normalized_rdr_xyz, normalized_ehr_xyz));
+""")
+
+CREATE_CITY_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
+CREATE FUNCTION IF NOT EXISTS
+  `{{project_id}}.{{drc_dataset_id}}.CompareCity`(xyz string, xyz string)
+  RETURNS string AS ((
+        WITH normalized_rdr_xyz AS (
+            SELECT LOWER(TRIM(rdr_xyz)) AS rdr_xyz
+        )
+        , normalized_ehr_xyz AS (
+            SELECT LOWER(TRIM(ehr_xyz)) AS ehr_xyz
+        )
+    SELECT
+      CASE
+        {{xyz_case_when_conditions}}
+      ELSE
+      '{{missing_ehr}}'
+    END
+      AS sex
+       FROM normalized_rdr_xyz, normalized_ehr_xyz));
+""")
+
+CREATE_STATE_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
+CREATE FUNCTION IF NOT EXISTS
+  `{{project_id}}.{{drc_dataset_id}}.CompareState`(xyz string, xyz string)
+  RETURNS string AS ((
+        WITH normalized_rdr_xyz AS (
+            SELECT LOWER(TRIM(rdr_xyz)) AS rdr_xyz
+        )
+        , normalized_ehr_xyz AS (
+            SELECT LOWER(TRIM(ehr_xyz)) AS ehr_xyz
+        )
+    SELECT
+      CASE
+        {{xyz_case_when_conditions}}
+      ELSE
+      '{{missing_ehr}}'
+    END
+      AS sex
+       FROM normalized_rdr_xyz, normalized_ehr_xyz));
+""")
+
+CREATE_ZIP_CODE_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
+CREATE FUNCTION IF NOT EXISTS
+  `{{project_id}}.{{drc_dataset_id}}.CompareZipCode`(xyz string, xyz string)
+  RETURNS string AS ((
+        WITH normalized_rdr_xyz AS (
+            SELECT LOWER(TRIM(rdr_xyz)) AS rdr_xyz
+        )
+        , normalized_ehr_xyz AS (
+            SELECT LOWER(TRIM(ehr_xyz)) AS ehr_xyz
+        )
+    SELECT
+      CASE
+        {{xyz_case_when_conditions}}
+      ELSE
+      '{{missing_ehr}}'
+    END
+      AS sex
+       FROM normalized_rdr_xyz, normalized_ehr_xyz));
+""")
 
 CREATE_SEX_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
 CREATE FUNCTION IF NOT EXISTS
