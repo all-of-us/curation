@@ -68,7 +68,7 @@ def _filter_stale_datasets(bq_client, first_n: int = None):
     return stale_datasets
 
 
-def main():
+def main(): # change to run-deletion or something
 
     pipeline_logging.configure(logging.INFO, add_console_handler=True)
 
@@ -85,6 +85,7 @@ def main():
         #Uncomment the following before release.
         #bq_client.delete_dataset({stale_dataset})
 
+def main()
 
 if __name__ == "__main__":
     main()
