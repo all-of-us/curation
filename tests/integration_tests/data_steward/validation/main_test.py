@@ -47,15 +47,10 @@ class ValidationMainTest(unittest.TestCase):
 
         self.storage_client = StorageClient()
         self.storage_bucket = self.storage_client.get_bucket(self.hpo_bucket)
+        self.storage_client.empty_bucket(self.hpo_bucket)
 
-        self._empty_bucket()
         test_util.delete_all_tables(self.bigquery_dataset_id)
         self._create_drug_class_table(self.bigquery_dataset_id)
-
-    def _empty_bucket(self):
-        bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
-        for bucket_item in bucket_items:
-            gcs_utils.delete_object(self.hpo_bucket, bucket_item['name'])
 
     @staticmethod
     def _create_drug_class_table(bigquery_dataset_id):
@@ -238,7 +233,7 @@ class ValidationMainTest(unittest.TestCase):
     def test_target_bucket_upload(self):
         bucket_nyc = gcs_utils.get_hpo_bucket('nyc')
         folder_prefix = 'test-folder-fake/'
-        test_util.empty_bucket(bucket_nyc)
+        self.storage_client.empty_bucket(bucket_nyc)
 
         main._upload_achilles_files(hpo_id=None,
                                     folder_prefix=folder_prefix,
@@ -371,8 +366,8 @@ class ValidationMainTest(unittest.TestCase):
         self.assertTrue(len(missing_labs) > 0)
 
     def tearDown(self):
-        self._empty_bucket()
+        self.storage_client.empty_bucket(self.hpo_bucket)
         bucket_nyc = gcs_utils.get_hpo_bucket('nyc')
-        test_util.empty_bucket(bucket_nyc)
-        test_util.empty_bucket(gcs_utils.get_drc_bucket())
+        self.storage_client.empty_bucket(bucket_nyc)
+        self.storage_client.empty_bucket(gcs_utils.get_drc_bucket())
         test_util.delete_all_tables(self.bigquery_dataset_id)
