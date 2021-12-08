@@ -237,6 +237,13 @@ def main(raw_args=None):
     export_date = args.export_date.replace('-', '')
     new_dataset_name = f'rdr{export_date}'
 
+    # make sure RDR is providing expected fields
+    errors = check_rdr_tables(args.bucket, args.run_as_email)
+
+    if errors:
+        LOGGER.warning("Errors encountered.  Stopping the import.  See import log.")
+        return
+
     # get credentials and create client
     impersonation_creds = auth.get_impersonation_credentials(
         args.run_as_email, SCOPES)
@@ -247,16 +254,9 @@ def main(raw_args=None):
     dataset_object = bq.define_dataset(client.project, new_dataset_name,
                                        description,
                                        {'export_date': args.export_date})
-    client.create_dataset(dataset_object)
-
-    # make sure RDR is providing expected fields
-    errors = check_rdr_tables(args.bucket, args.run_as_email)
-
-    if errors:
-        LOGGER.warning("Errors encountered.  Stopping the import.  See import log.")
-        return
 
     # create and populate tables from RDR export
+    client.create_dataset(dataset_object)
     create_rdr_tables(client, new_dataset_name, args.bucket)
 
     # copy vocabulary tables into raw RDR dataset
