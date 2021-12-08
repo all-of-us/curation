@@ -13,8 +13,6 @@ import subprocess
 from google.cloud import bigquery
 from google.api_core.exceptions import NotFound
 
-from common import AOU_REQUIRED
-from gcloud.gcs import StorageClient
 from utils import auth
 from utils import bq
 from utils import pipeline_logging
