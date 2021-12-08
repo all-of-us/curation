@@ -56,7 +56,18 @@ def _filter_stale_datasets(bq_client, first_n: int = None):
         if (now - dataset_created).days <= 90:
             continue
 
-        if next(bq_client.list_tables(dataset_name), None):
+        LOGGER.critical(
+            f"{dataset_name}, {type(bq_client.list_tables(dataset_name))}")
+        LOGGER.critical(
+            f"{dataset_name}, {dir(bq_client.list_tables(dataset_name))}")
+        LOGGER.critical(
+            f"{dataset_name}, {bq_client.list_tables(dataset_name).pages}")
+        LOGGER.critical(
+            f"{dataset_name}, {dir(bq_client.list_tables(dataset_name).item_to_value)}"
+        )
+        #if next(bq_client.list_tables(dataset_name), None):
+        #    continue
+        if list(bq_client.list_tables(dataset_name)) == 0:
             continue
 
         stale_datasets.append(dataset_name)
