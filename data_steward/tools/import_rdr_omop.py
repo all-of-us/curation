@@ -9,7 +9,6 @@ from datetime import datetime
 import logging
 import subprocess
 
-
 from google.cloud import bigquery
 from google.api_core.exceptions import NotFound
 
@@ -80,7 +79,6 @@ def check_rdr_tables(bucket, run_target):
     schema_dict = resources.cdm_schemas()
     schema_dict.update(resources.rdr_specific_schemas())
 
-
     errors = 0
     for table, schema in schema_dict.items():
         schema_list = bq.get_table_schema(table, schema)
@@ -88,7 +86,8 @@ def check_rdr_tables(bucket, run_target):
         field_list = [item.name for item in schema_list]
         # path to bucketed csv file
         uri = f'gs://{bucket}/{table}.csv'
-        header_line = subprocess.getoutput(f'gsutil -i {run_target} cat -r 0-1000 {uri} | head -1')
+        header_line = subprocess.getoutput(
+            f'gsutil -i {run_target} cat -r 0-1000 {uri} | head -1')
         if 'CommandException' in header_line:
             LOGGER.debug(f'{uri} not found')
         else:
@@ -106,6 +105,7 @@ def check_rdr_tables(bucket, run_target):
                 LOGGER.warning('\n\n')
 
     return errors
+
 
 def create_rdr_tables(client, rdr_dataset, bucket):
     """
@@ -239,7 +239,8 @@ def main(raw_args=None):
     errors = check_rdr_tables(args.bucket, args.run_as_email)
 
     if errors:
-        LOGGER.warning("Errors encountered.  Stopping the import.  See import log.")
+        LOGGER.warning(
+            "Errors encountered.  Stopping the import.  See import log.")
         return
 
     # get credentials and create client
