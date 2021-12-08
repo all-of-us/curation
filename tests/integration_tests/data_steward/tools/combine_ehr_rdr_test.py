@@ -41,12 +41,12 @@ class CombineEhrRdrTest(unittest.TestCase):
         cls.load_dataset_from_files(ehr_dataset_id,
                                     test_util.NYC_FIVE_PERSONS_PATH, True)
         cls.load_dataset_from_files(rdr_dataset_id, test_util.RDR_PATH)
+        cls.storage_client = StorageClient()
 
     @staticmethod
     def load_dataset_from_files(dataset_id, path, mappings=False):
         bucket = gcs_utils.get_hpo_bucket(test_util.FAKE_HPO_ID)
-        storage_client = StorageClient()
-        storage_client.empty_bucket(bucket)
+        CombineEhrRdrTest.storage_client.empty_bucket(bucket)
         job_ids = []
         for table in resources.CDM_TABLES:
             job_ids.append(
@@ -61,7 +61,7 @@ class CombineEhrRdrTest(unittest.TestCase):
         if len(incomplete_jobs) > 0:
             message = "Job id(s) %s failed to complete" % incomplete_jobs
             raise RuntimeError(message)
-        storage_client.empty_bucket(bucket)
+        CombineEhrRdrTest.storage_client.empty_bucket(bucket)
 
     @staticmethod
     def _upload_file_to_bucket(bucket: str, dataset_id: str, path: str,
@@ -69,8 +69,7 @@ class CombineEhrRdrTest(unittest.TestCase):
         app_id: str = bq_utils.app_identity.get_application_id()
         filename: str = f'{table}.csv'
         file_path: str = os.path.join(path, filename)
-        storage_client = StorageClient()
-        target_bucket = storage_client.get_bucket(bucket)
+        target_bucket = CombineEhrRdrTest.storage_client.get_bucket(bucket)
         blob = target_bucket.blob(filename)
         try:
             with open(file_path, 'rb') as filepath:
