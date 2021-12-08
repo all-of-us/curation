@@ -134,7 +134,6 @@ workflows:
               # This would cause too much noise to run on commit, run nightly
               # instead per below workflow.
               ignore: develop
-      - delete_stale_test_datasets
 
   nightly:
     triggers:

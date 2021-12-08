@@ -56,18 +56,7 @@ def _filter_stale_datasets(bq_client, first_n: int = None):
         if (now - dataset_created).days <= 90:
             continue
 
-        LOGGER.critical(
-            f"{dataset_name}, {type(bq_client.list_tables(dataset_name))}")
-        LOGGER.critical(
-            f"{dataset_name}, {dir(bq_client.list_tables(dataset_name))}")
-        LOGGER.critical(
-            f"{dataset_name}, {bq_client.list_tables(dataset_name).pages}")
-        LOGGER.critical(
-            f"{dataset_name}, {dir(bq_client.list_tables(dataset_name).item_to_value)}"
-        )
-        #if next(bq_client.list_tables(dataset_name), None):
-        #    continue
-        if list(bq_client.list_tables(dataset_name)) == 0:
+        if len(list(bq_client.list_tables(dataset_name))) != 0:
             continue
 
         stale_datasets.append(dataset_name)
@@ -79,6 +68,18 @@ def _filter_stale_datasets(bq_client, first_n: int = None):
     return stale_datasets
 
 
+def _run_deletion(bq_client, dataset_name):
+    """
+    Delete the specified dataset.
+
+    :param bq_client: Client
+    :param dataset_name: Name of the dataset to delete.
+    :return: None
+    """
+    LOGGER.info(f"Running - bq_client.delete_dataset({dataset_name})")
+    bq_client.delete_dataset(dataset_name)
+
+
 def main():  # change to run-deletion or something
 
     pipeline_logging.configure(logging.INFO, add_console_handler=True)
@@ -87,17 +88,11 @@ def main():  # change to run-deletion or something
 
     _check_project(bq_client)
 
-    stale_datasets = _filter_stale_datasets(bq_client, first_n=100)
+    stale_datasets = _filter_stale_datasets(bq_client, first_n=1)
 
     for stale_dataset in stale_datasets:
-        LOGGER.info(
-            f"Running - bq_client.delete_dataset({stale_dataset})"
-        )  # or LOGGER.critical/warn/error/ (debug) whichever circleci creates output
-        #Uncomment the following before release.
-        #bq_client.delete_dataset({stale_dataset})
+        _run_deletion(bq_client, stale_dataset)
 
-
-#def main()
 
 if __name__ == "__main__":
     main()
