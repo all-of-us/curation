@@ -26,6 +26,13 @@ commands:
       # this will check out the curation code into the working directory.  in our case, it is defined
       # by job_defaults above
       - checkout
+      # this filters all defined envvars for those prefixed with "CI", then populates the runtime's
+      # $BASH_ENV file with each of them prefixed with "export ".  This file is ultimately mounted into the
+      # container as /circleci.env and sourced during execution.
+      - run:
+          name: "Populate bash env file"
+          command: |
+            printenv | egrep "^CI" | sed -e 's/^.*/export &/g' | tee -a "${BASH_ENV}"
       - run:
           name: "Build container"
           environment:
