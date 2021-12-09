@@ -20,6 +20,7 @@ MIMETYPES = {
 GCS_DEFAULT_RETRY_COUNT = 5
 
 
+@deprecated(reason='use StorageClient().get_drc_bucket() instead')
 def get_drc_bucket():
     result = os.environ.get('DRC_BUCKET_NAME')
     return result

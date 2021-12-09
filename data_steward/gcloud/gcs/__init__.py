@@ -39,6 +39,10 @@ class StorageClient(Client):
                 hpo_bucket_name)
         return hpo_bucket_name
 
+    def get_drc_bucket(self) -> str:
+        result = os.environ.get('DRC_BUCKET_NAME')
+        return result
+
     def empty_bucket(self, bucket: str, **kwargs) -> None:
         """
         Delete all blobs in a bucket.
