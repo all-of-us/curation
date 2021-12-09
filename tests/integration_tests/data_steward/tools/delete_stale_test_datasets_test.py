@@ -75,12 +75,9 @@ class DeleteStaleTestDatasetsTest(TestCase):
 
         num_datasets_before_run = len(list(bq_client.list_datasets()))
 
-        result = delete_stale_test_datasets._run_deletion(
-            bq_client, dummy_dataset)
+        delete_stale_test_datasets._run_deletion(bq_client, dummy_dataset)
 
         num_datasets_after_run = len(list(bq_client.list_datasets()))
-
-        self.assertIsNone(result)
 
         # Assert the dummy dataset is deleted.
         with self.assertRaises(NotFound):
