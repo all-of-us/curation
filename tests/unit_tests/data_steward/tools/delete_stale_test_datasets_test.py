@@ -76,8 +76,9 @@ class DeleteStaleTestDatasetsTest(TestCase):
         """
         mock_bq.get_client.list_datasets.return_value = self.dataset_list_items
         mock_bq.get_client.get_dataset.side_effect = self.datasets
-        mock_bq.get_client.list_tables.return_value = iter(
-            [self.mock_table for _ in range(0, 3)])
+        mock_bq.get_client.list_tables.return_value = [
+            self.mock_table for _ in range(0, 3)
+        ]
 
         result = delete_stale_test_datasets._filter_stale_datasets(
             mock_bq.get_client, 100)
@@ -90,7 +91,7 @@ class DeleteStaleTestDatasetsTest(TestCase):
         """
         mock_bq.get_client.list_datasets.return_value = self.dataset_list_items
         mock_bq.get_client.get_dataset.side_effect = self.datasets
-        mock_bq.get_client.list_tables.return_value = iter(())
+        mock_bq.get_client.list_tables.return_value = []
 
         result = delete_stale_test_datasets._filter_stale_datasets(
             mock_bq.get_client, 100)
@@ -106,7 +107,7 @@ class DeleteStaleTestDatasetsTest(TestCase):
         """
         mock_bq.get_client.list_datasets.return_value = self.dataset_list_items
         mock_bq.get_client.get_dataset.side_effect = self.datasets
-        mock_bq.get_client.list_tables.return_value = iter(())
+        mock_bq.get_client.list_tables.return_value = []
 
         result = delete_stale_test_datasets._filter_stale_datasets(
             mock_bq.get_client)
@@ -122,7 +123,7 @@ class DeleteStaleTestDatasetsTest(TestCase):
         """
         mock_bq.get_client.list_datasets.return_value = self.dataset_list_items
         mock_bq.get_client.get_dataset.side_effect = self.datasets
-        mock_bq.get_client.list_tables.return_value = iter(())
+        mock_bq.get_client.list_tables.return_value = []
 
         result = delete_stale_test_datasets._filter_stale_datasets(
             mock_bq.get_client, 1)
@@ -137,4 +138,4 @@ class DeleteStaleTestDatasetsTest(TestCase):
         result = delete_stale_test_datasets._run_deletion(
             mock_bq.get_client, 'dummy_dataset')
 
-        self.assertisnone(result)
+        self.assertIsNone(result)

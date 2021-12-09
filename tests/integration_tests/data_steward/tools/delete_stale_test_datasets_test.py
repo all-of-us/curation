@@ -42,11 +42,13 @@ class DeleteStaleTestDatasetsTest(TestCase):
         """
         bq_client = bq.get_client(os.environ.get('GOOGLE_CLOUD_PROJECT'))
 
+        first_n = 10
+
         result = delete_stale_test_datasets._filter_stale_datasets(
-            bq_client, 10)
+            bq_client, first_n)
 
         # Assert: Returns at most first_n datasets
-        self.assertLessEqual(len(result), 10)
+        self.assertLessEqual(len(result), first_n)
 
         now = datetime.now(timezone.utc)
         for dataset_name in result:
@@ -56,7 +58,7 @@ class DeleteStaleTestDatasetsTest(TestCase):
             self.assertGreaterEqual((now - dataset_created).days, 90)
 
             # Assert: Returns only stale datasets (2: Empty(=no tables))
-            self.assertIsNone(next(bq_client.list_tables(dataset_name), None))
+            self.assertEqual(len(list(bq_client.list_tables(dataset_name))), 0)
 
     def test_run_deletion(self):
         """Integration test: 

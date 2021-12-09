@@ -56,7 +56,7 @@ def _filter_stale_datasets(bq_client, first_n: int = None):
         if (now - dataset_created).days <= 90:
             continue
 
-        if len(list(bq_client.list_tables(dataset_name))) != 0:
+        if len(list(bq_client.list_tables(dataset_name))) >= 1:
             continue
 
         stale_datasets.append(dataset_name)
@@ -88,7 +88,7 @@ def main():  # change to run-deletion or something
 
     _check_project(bq_client)
 
-    stale_datasets = _filter_stale_datasets(bq_client, first_n=1)
+    stale_datasets = _filter_stale_datasets(bq_client, first_n=100)
 
     for stale_dataset in stale_datasets:
         _run_deletion(bq_client, stale_dataset)
