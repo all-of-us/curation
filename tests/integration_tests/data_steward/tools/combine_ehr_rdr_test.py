@@ -27,6 +27,7 @@ UNCONSENTED_EHR_COUNTS_QUERY = (
 
 
 class CombineEhrRdrTest(unittest.TestCase):
+    storage_client = StorageClient()
 
     @classmethod
     def setUpClass(cls):
@@ -45,7 +46,7 @@ class CombineEhrRdrTest(unittest.TestCase):
     @staticmethod
     def load_dataset_from_files(dataset_id, path, mappings=False):
         bucket = gcs_utils.get_hpo_bucket(test_util.FAKE_HPO_ID)
-        test_util.empty_bucket(bucket)
+        CombineEhrRdrTest.storage_client.empty_bucket(bucket)
         job_ids = []
         for table in resources.CDM_TABLES:
             job_ids.append(
@@ -60,7 +61,7 @@ class CombineEhrRdrTest(unittest.TestCase):
         if len(incomplete_jobs) > 0:
             message = "Job id(s) %s failed to complete" % incomplete_jobs
             raise RuntimeError(message)
-        test_util.empty_bucket(bucket)
+        CombineEhrRdrTest.storage_client.empty_bucket(bucket)
 
     @staticmethod
     def _upload_file_to_bucket(bucket: str, dataset_id: str, path: str,
@@ -68,16 +69,13 @@ class CombineEhrRdrTest(unittest.TestCase):
         app_id: str = bq_utils.app_identity.get_application_id()
         filename: str = f'{table}.csv'
         file_path: str = os.path.join(path, filename)
-
+        target_bucket = CombineEhrRdrTest.storage_client.get_bucket(bucket)
+        blob = target_bucket.blob(filename)
         try:
             with open(file_path, 'rb') as filepath:
-                gcs_utils.upload_object(bucket, filename, filepath)
+                blob.upload_from_file(filepath)
         except OSError as exc:
-            storage_client = StorageClient()
-            target_bucket = storage_client.get_bucket(bucket)
-            blob = target_bucket.blob(filename)
             blob.upload_from_string('\n')
-
         gcs_path: str = 'gs://{bucket}/{filename}'.format(bucket=bucket,
                                                           filename=filename)
         load_results = bq_utils.load_csv(table,
