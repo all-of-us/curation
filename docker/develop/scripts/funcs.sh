@@ -97,6 +97,61 @@ function activate_gcloud() {
   gcloud auth activate-service-account --key-file "${GOOGLE_APPLICATION_CREDENTIALS}"
 }
 
+function capture_execution() {
+  local func_args=("$@")
+  local tfunc_name
+  local tfunc_args
+  local exec_res
+  local exec_res_code
+
+  tfunc_name="${func_args[*]::1}"
+  tfunc_args=()
+  for v in "${func_args[@]:1}"
+  do
+    tfunc_args+=("${v}")
+  done
+
+  echo ""
+
+  if [[ ! $(type -t "${tfunc_name}") == function ]]; then
+    echo "No function named ${tfunc_name} is defined"
+    echo "Provided args: ${func_args[*]}"
+    exit 1
+  fi
+
+  echo "Executing:"
+  echo "  Function: ${tfunc_name}"
+
+  if [[ "${#tfunc_args[@]}" == "0" ]]; then
+    echo "  Args: None"
+  else
+    echo "  Args: ${tfunc_args[*]}"
+  fi
+
+  set +e
+  # define alias from stdout to
+  exec 3>&1
+  exec_res=$("${tfunc_name}" "${tfunc_args[@]}") >&3
+  exec_res_code="$?"
+  exec 3>&-
+  set -e
+
+  echo ""
+
+  echo "Execution results:"
+  echo "  Code: ${exec_res_code}"
+  echo "  Output:"
+  echo "-- output start"
+
+  if [[ -n "${exec_res}" ]]; then
+    echo "${exec_res}"
+  else
+    echo "  Empty / No output"
+  fi
+
+  echo "-- output end"
+}
+
 function require_ok() {
   local func_args=("$@")
   local script_name
@@ -114,7 +169,7 @@ function require_ok() {
   done
 
   if [[ ! -f "${script_file}" ]]; then
-    echo "No script named ${script_name} is available at path ${CURATION_SCRIPTS_DIR}"\
+    echo "No script named ${script_name} is available at path ${CURATION_SCRIPTS_DIR}"
     echo "Provided args: ${func_args[*]}"
     exit 1
   elif [[ ! -x "${script_file}" ]]; then
@@ -123,7 +178,11 @@ function require_ok() {
     exit 1
   fi
 
-  echo "Executing \"${script_file} ${script_args[*]}\"..."
+  if [[ "${#script_args[@]}" == "0" ]]; then
+    echo "Executing \"${script_file}\" with no args..."
+  else
+    echo "Executing \"${script_file} ${script_args[*]}\"..."
+  fi
 
   set +e
   # define alias from stdout to
