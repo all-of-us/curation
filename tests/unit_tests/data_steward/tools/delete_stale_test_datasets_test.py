@@ -132,10 +132,7 @@ class DeleteStaleTestDatasetsTest(TestCase):
 
     @patch('tools.delete_stale_test_datasets.bq')
     def test_run_deletion(self, mock_bq):
-        """Test case: Unit test for _run_deletion. This test is technically not testing anything.
+        """Test case: No unit test for _run_deletion.
         _run_deletion is tested properly in the integration test.
         """
-        result = delete_stale_test_datasets._run_deletion(
-            mock_bq.get_client, 'dummy_dataset')
-
-        self.assertIsNone(result)
+        pass
