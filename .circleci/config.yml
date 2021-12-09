@@ -32,7 +32,9 @@ commands:
       - run:
           name: "Populate bash env file"
           command: |
-            printenv | egrep "^CI" | sed -e 's/^.*/export &/g' | tee -a "${BASH_ENV}"
+            printenv | egrep "^CI" | sed -e 's/^.*/export &/g' | tee "${BASH_ENV}"
+      # this builds the actual container used to execute tests.  the layers from this build are stored using
+      # the `docker_layer_caching` system provided by CircleCI.  It is just a volume mount.
       - run:
           name: "Build container"
           environment:
@@ -78,11 +80,7 @@ jobs:
       - build
       - run:
           name: Run unit tests
-          command:  |
-            ./curation.sh \
-              '--' \
-              run-tests \
-              unit
+          command: ./curation.sh run-tests unit
       - test_teardown
 
   integration_test:
@@ -92,11 +90,7 @@ jobs:
       # Setup GCP access and create cloud resources as needed.
       - run:
           name: Run integration tests
-          command: |
-            ./curation.sh \
-              '--' \
-              run-tests \
-              integration
+          command: ./curation.sh run-tests integration
           no_output_timeout: 3000s
       - test_teardown
 
