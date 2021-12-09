@@ -27,6 +27,7 @@ UNCONSENTED_EHR_COUNTS_QUERY = (
 
 
 class CombineEhrRdrTest(unittest.TestCase):
+    storage_client = StorageClient()
 
     @classmethod
     def setUpClass(cls):
@@ -41,7 +42,6 @@ class CombineEhrRdrTest(unittest.TestCase):
         cls.load_dataset_from_files(ehr_dataset_id,
                                     test_util.NYC_FIVE_PERSONS_PATH, True)
         cls.load_dataset_from_files(rdr_dataset_id, test_util.RDR_PATH)
-        cls.storage_client = StorageClient()
 
     @staticmethod
     def load_dataset_from_files(dataset_id, path, mappings=False):
