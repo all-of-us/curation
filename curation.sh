@@ -103,10 +103,13 @@ script_args=("$@")
 
 # finally, add any / all remaining args provided to this script as args to pass into docker
 
-# if the arg list contains "--", assume this to be the separation point between flags to send to
+# If the arg list contains "--", assume this to be the separation point between flags to send to
 # docker compose, and the container entrypoint command.
 #
-# otherwise, assume entire list is to be sent to container entrypoint
+# Otherwise, assume entire list is to be sent to container entrypoint
+#
+# This is necessary as we need to inject the name of the service defined within docker-compose.yaml that we want to
+# run in-between the flags intended for `docker compose run` and container entrypoint.
 if [[ "${script_args[*]}" =~ ([[:space:]]'--'[[:space:]]) ]]; then
   # this will be flipped to 1 (true) when we reach "--"
   at_command=0

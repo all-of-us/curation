@@ -73,12 +73,7 @@ jobs:
           name: Run unit tests
           command:  |
             ./curation.sh \
-              -e GCLOUD_CREDENTIALS_KEY="${GCLOUD_CREDENTIALS_KEY}" \
-              -e GCLOUD_CREDENTIALS="${GCLOUD_CREDENTIALS}" \
-              -e CI="${CI}" \
-              -e CIRCLECI="${CIRCLECI}" \
-              -e CIRCLE_PULL_REQUEST="${CIRCLE_PULL_REQUEST:-}" \
-              -e CIRCLE_PULL_REQUESTS="${CIRCLE_PULL_REQUESTS:-}" \
+              --env-file "${BASH_ENV}" \
               '--' \
               run-tests \
               unit
@@ -93,12 +88,7 @@ jobs:
           name: Run integration tests
           command: |
             ./curation.sh \
-              -e GCLOUD_CREDENTIALS_KEY="${GCLOUD_CREDENTIALS_KEY}" \
-              -e GCLOUD_CREDENTIALS="${GCLOUD_CREDENTIALS}" \
-              -e CI="${CI}" \
-              -e CIRCLECI="${CIRCLECI}" \
-              -e CIRCLE_PULL_REQUEST="${CIRCLE_PULL_REQUEST:-}" \
-              -e CIRCLE_PULL_REQUESTS="${CIRCLE_PULL_REQUESTS:-}" \
+              --env-file "${BASH_ENV}" \
               '--' \
               run-tests \
               integration
