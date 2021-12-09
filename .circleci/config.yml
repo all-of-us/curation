@@ -73,7 +73,6 @@ jobs:
           name: Run unit tests
           command:  |
             ./curation.sh \
-              --env-file "${BASH_ENV}" \
               '--' \
               run-tests \
               unit
@@ -88,7 +87,6 @@ jobs:
           name: Run integration tests
           command: |
             ./curation.sh \
-              --env-file "${BASH_ENV}" \
               '--' \
               run-tests \
               integration

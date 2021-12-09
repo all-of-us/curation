@@ -54,6 +54,7 @@ dkr_run_args=(
 # 2. ensure they have credentials we can use
 # 3. utilize compose v2 syntax (i.e. "docker compose" vs. "docker-compose")
 #   3a. this can probably be changed with updates to CI env.
+# 4. when in ci, ensure host ${BASH_ENV} file is brought into container and used
 if ! in_ci; then
   echo Running outside CI.
 
@@ -96,6 +97,9 @@ else
   echo Running in CI.
   # when operating in CI, utilize compose v1
   COMPOSE_EXEC="docker-compose"
+
+  echo "Adding CircleCI bash env to image: ${BASH_ENV}"
+  dkr_run_args+=("-v" "${BASH_ENV}:/circleci.env:ro")
 fi
 
 # define script arg array for use below
