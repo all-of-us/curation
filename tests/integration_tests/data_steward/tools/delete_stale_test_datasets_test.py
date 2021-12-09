@@ -27,13 +27,8 @@ class DeleteStaleTestDatasetsTest(TestCase):
 
     def setUp(self):
         pass
-
-    def test_check_project(self):
-        """Integration test: bq.get_client() works and it's in TEST environment.
-        """
-        bq_client = bq.get_client(os.environ.get('GOOGLE_CLOUD_PROJECT'))
-
-        self.assertIsNone(delete_stale_test_datasets._check_project(bq_client))
+        # do get_client here and resuse
+        # define self.project
 
     def test_filter_stale_datasets(self):
         """Integration test: 
@@ -60,6 +55,7 @@ class DeleteStaleTestDatasetsTest(TestCase):
             # Assert: Returns only stale datasets (2: Empty(=no tables))
             self.assertEqual(len(list(bq_client.list_tables(dataset_name))), 0)
 
+    #@patch('filter dataset')
     def test_run_deletion(self):
         """Integration test: 
         _run_deletion is deletes the specified dataset and nothing else.
@@ -85,3 +81,6 @@ class DeleteStaleTestDatasetsTest(TestCase):
 
         # Assert only one dataset is deleted.
         self.assertEqual(num_datasets_before_run - num_datasets_after_run, 1)
+
+    def test_main(self):
+        delete_stale_test_datasets.main()

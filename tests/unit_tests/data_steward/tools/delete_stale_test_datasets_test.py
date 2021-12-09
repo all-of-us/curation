@@ -129,10 +129,3 @@ class DeleteStaleTestDatasetsTest(TestCase):
             mock_bq.get_client, 1)
 
         self.assertEqual(result, [self.mock_old_dataset_list_item_1.dataset_id])
-
-    @patch('tools.delete_stale_test_datasets.bq')
-    def test_run_deletion(self, mock_bq):
-        """Test case: No unit test for _run_deletion.
-        _run_deletion is tested properly in the integration test.
-        """
-        pass

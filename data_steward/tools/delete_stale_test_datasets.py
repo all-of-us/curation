@@ -1,7 +1,12 @@
 """
-Delete stale datasets in test environment. 
+Delete first_n stale datasets in test environment. 
+Stale datasets meet all of the following conditions:
+(1) equal to or older than 90 days old, 
+(2) empty, and 
+(3) in test environment.
 """
 from datetime import datetime, timezone
+import argparse
 import logging
 import os
 
@@ -68,19 +73,20 @@ def _filter_stale_datasets(bq_client, first_n: int = None):
     return stale_datasets
 
 
-def _run_deletion(bq_client, dataset_name):
-    """
-    Delete the specified dataset.
+def get_arg_parser():
+    parser = argparse.ArgumentParser(
+        description="""Delete first_n stale datasets in test environment.""")
+    parser.add_argument('--first_n',
+                        action='store',
+                        type=int,
+                        dest='first_n',
+                        help='First n stale datasets to delete.',
+                        required=True)
 
-    :param bq_client: Client
-    :param dataset_name: Name of the dataset to delete.
-    :return: None
-    """
-    LOGGER.info(f"Running - bq_client.delete_dataset({dataset_name})")
-    bq_client.delete_dataset(dataset_name)
+    return parser
 
 
-def main():  # change to run-deletion or something
+def main(first_n):
 
     pipeline_logging.configure(logging.INFO, add_console_handler=True)
 
@@ -88,11 +94,23 @@ def main():  # change to run-deletion or something
 
     _check_project(bq_client)
 
-    stale_datasets = _filter_stale_datasets(bq_client, first_n=100)
+    datasets_to_delete = _filter_stale_datasets(bq_client, first_n)
 
-    for stale_dataset in stale_datasets:
-        _run_deletion(bq_client, stale_dataset)
+    for stale_dataset in datasets_to_delete:
+        LOGGER.info(f"Running - bq_client.delete_dataset({stale_dataset})")
+
+        #bq_client.delete_dataset(stale_dataset)
+        #start with the following while coding.
+        bq_client.get_dataset(stale_dataset)
+
+        #return deleted datasets or use stale_datasets
+
+    return datasets_to_delete
 
 
 if __name__ == "__main__":
-    main()
+
+    parser = get_arg_parser()
+    args = parser.parse_args()
+
+    main(args.first_n)
