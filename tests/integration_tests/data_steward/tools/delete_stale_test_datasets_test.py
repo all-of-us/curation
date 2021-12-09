@@ -11,6 +11,7 @@ from datetime import datetime, timedelta, timezone
 from google.api_core.exceptions import NotFound
 
 # Third party imports
+from google.cloud import bigquery
 
 # Project imports
 from tools import delete_stale_test_datasets
@@ -26,61 +27,21 @@ class DeleteStaleTestDatasetsTest(TestCase):
         print('**************************************************************')
 
     def setUp(self):
-        pass
-        # do get_client here and resuse
-        # define self.project
+        self.first_n = 3
+        self.bq_client = bq.get_client(os.environ.get('GOOGLE_CLOUD_PROJECT'))
+        self.now = datetime.now(timezone.utc)
 
-    def test_filter_stale_datasets(self):
-        """Integration test: 
-        delete_stale_test_datasets() returns only stale datasets, and
-        delete_stale_test_datasets() returns at most first_n datasets
-        """
-        bq_client = bq.get_client(os.environ.get('GOOGLE_CLOUD_PROJECT'))
+    @patch('google.cloud.bigquery.Client.delete_dataset')
+    def test_main(self, mock_delete_dataset):
 
-        first_n = 10
+        datasets_to_delete = delete_stale_test_datasets.main(self.first_n)
 
-        result = delete_stale_test_datasets._filter_stale_datasets(
-            bq_client, first_n)
+        for dataset_name in datasets_to_delete:
+            dataset_created = self.bq_client.get_dataset(dataset_name).created
 
-        # Assert: Returns at most first_n datasets
-        self.assertLessEqual(len(result), first_n)
+            # Assert: Dataset is stale (1: 90 days or older)
+            self.assertGreaterEqual((self.now - dataset_created).days, 90)
 
-        now = datetime.now(timezone.utc)
-        for dataset_name in result:
-            dataset_created = bq_client.get_dataset(dataset_name).created
-
-            # Assert: Returns only stale datasets (1: 90 days or older)
-            self.assertGreaterEqual((now - dataset_created).days, 90)
-
-            # Assert: Returns only stale datasets (2: Empty(=no tables))
-            self.assertEqual(len(list(bq_client.list_tables(dataset_name))), 0)
-
-    #@patch('filter dataset')
-    def test_run_deletion(self):
-        """Integration test: 
-        _run_deletion is deletes the specified dataset and nothing else.
-        """
-        bq_client = bq.get_client(os.environ.get('GOOGLE_CLOUD_PROJECT'))
-
-        dummy_dataset = 'test_dataset_dc_1901'
-
-        bq_client.create_dataset(dummy_dataset, exists_ok=True)
-
-        # This will throw error if the dummy dataset is not created.
-        bq_client.get_dataset(dummy_dataset)
-
-        num_datasets_before_run = len(list(bq_client.list_datasets()))
-
-        delete_stale_test_datasets._run_deletion(bq_client, dummy_dataset)
-
-        num_datasets_after_run = len(list(bq_client.list_datasets()))
-
-        # Assert the dummy dataset is deleted.
-        with self.assertRaises(NotFound):
-            bq_client.get_dataset(dummy_dataset)
-
-        # Assert only one dataset is deleted.
-        self.assertEqual(num_datasets_before_run - num_datasets_after_run, 1)
-
-    def test_main(self):
-        delete_stale_test_datasets.main()
+            # Assert: Dataset is stale (2: Empty(=no tables))
+            self.assertEqual(
+                len(list(self.bq_client.list_tables(dataset_name))), 0)
