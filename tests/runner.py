@@ -25,6 +25,7 @@ import os
 import sys
 import time
 import unittest
+from pathlib import Path
 
 # Third party imports
 try:
@@ -56,9 +57,29 @@ def print_unsuccessful(function, trace, msg_type):
     )
 
 
-def main(test_path, test_pattern, coverage_filepath):
+def main(start_dir, test_pattern, test_filepaths, coverage_filepath):
+    """
+    Main function to run tests
+
+    :param start_dir:  Directory to start from
+    :param test_pattern: pattern to match
+    :param test_filepaths: List of file test paths
+    :param coverage_filepath: Path to coverage file
+    :return:
+    """
     # Discover and run tests.
-    suite = unittest.TestLoader().discover(test_path, pattern=test_pattern)
+    suite = unittest.TestSuite(tests=())
+    if test_filepaths:
+        for test_filepath in test_filepaths:
+            path_obj = Path(test_filepath)
+            test_file_name = path_obj.name
+            test_file_directory = path_obj.parent
+
+            suite.addTests(unittest.TestLoader().discover(
+                test_file_directory, pattern=test_file_name))
+    else:
+        suite.addTests(unittest.TestLoader().discover(start_dir,
+                                                      pattern=test_pattern))
     all_results = []
 
     cov = coverage.Coverage(config_file=coverage_filepath)
@@ -152,6 +173,13 @@ if __name__ == '__main__':
         help='The file pattern for test modules, defaults to *_test.py.',
         default='*_test.py')
     parser.add_argument(
+        '--test-filepaths',
+        dest='test_filepaths',
+        nargs='+',
+        help=
+        'Individual file paths containing test modules separated by whitespace.'
+    )
+    parser.add_argument(
         '--coverage-file',
         dest='coverage_file',
         required=True,
@@ -162,7 +190,8 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    result_success = main(args.test_path, args.test_pattern, args.coverage_file)
+    result_success = main(args.test_path, args.test_pattern,
+                          args.test_filepaths, args.coverage_file)
 
     if not result_success:
         sys.exit(1)
