@@ -61,10 +61,16 @@ ENV CURATION_SCRIPTS_DIR "${CURATION_HOME}"/container-scripts
 # this is the default location into which all per-purpose container commands should be placed
 ENV CURATION_COMMANDS_DIR "${CURATION_HOME}"/container-commands
 
+# Set CI if in Circle CI
+ENV CI "${CI:-false}"
+
 # we're using the CIRCLE_ envvars to retain backwards compatbility
 ENV CIRCLE_PROJECT_NAME "all-of-us"
 ENV CIRCLE_WORKING_DIRECTORY "${CURATION_HOME}/project/curation"
 ENV CIRCLE_ARTIFACTS "/tmp/circleci-artifacts"
+
+# Enables parallelism in Circle CI
+ENV CIRCLE_NODE_INDEX "${CIRCLE_NODE_INDEX:-0}"
 
 # python venv envvars
 ENV VENV_PATH "${CIRCLE_WORKING_DIRECTORY}/curation_venv"
