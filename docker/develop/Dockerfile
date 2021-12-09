@@ -21,6 +21,7 @@ LABEL org.opencontainers.image.description="Base development container image use
 RUN apt update \
     && apt upgrade -y \
     && apt install -y \
+      curl \
       git \
       python3.7-dev \
       python3.7-venv \
