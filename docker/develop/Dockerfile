@@ -112,8 +112,8 @@ RUN mkdir -p "${CIRCLE_WORKING_DIRECTORY}" \
 
 # EVERYTHING ELSE
 
-# ensure /circleci.env file exists
-RUN touch /circleci.env
+# ensure /ci.env file exists
+RUN touch /ci.env
 
 # move into new home dir
 WORKDIR "${CURATION_HOME}"
@@ -121,8 +121,8 @@ WORKDIR "${CURATION_HOME}"
 # switch to curation user
 USER "${CURATION_USER}"
 
-# add check for circleci.env file
-RUN echo source /circleci.env | tee -a "${CURATION_HOME}"/.bashrc "${CURATION_HOME}"/.profile
+# add check for ci.env file
+RUN echo source /ci.env | tee -a "${CURATION_HOME}"/.bashrc "${CURATION_HOME}"/.profile
 
 # add a few envvars to runtime user's bashrc and profile files
 RUN echo export CIRCLE_WORKING_DIRECTORY="${CIRCLE_WORKING_DIRECTORY}" | \

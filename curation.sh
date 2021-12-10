@@ -98,8 +98,8 @@ else
   # when operating in CI, utilize compose v1
   COMPOSE_EXEC="docker-compose"
 
-  echo "Adding CircleCI bash env to image: ${BASH_ENV}"
-  dkr_run_args+=("-v" "${BASH_ENV}:/circleci.env:ro")
+  echo "Adding CI \$BASH_ENV to image: ${BASH_ENV}"
+  dkr_run_args+=("-v" "${BASH_ENV}:/ci.env:ro")
 fi
 
 # define script arg array for use below
