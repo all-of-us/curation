@@ -10,7 +10,9 @@ class SecretManager(secretmanager.SecretManagerServiceClient):
     """
 
     @staticmethod
-    def build_secret_full_name(secret_name: str, project_id: str = os.getenv('GOOGLE_CLOUD_PROJECT'),
+    def build_secret_full_name(secret_name: str,
+                               project_id: str = os.getenv(
+                                   'GOOGLE_CLOUD_PROJECT'),
                                secret_version: str = 'latest') -> str:
         """
         build_secret_full_name constructs the fqn for a given secret within Google Secrets Engine
