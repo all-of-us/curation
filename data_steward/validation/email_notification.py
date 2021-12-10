@@ -11,6 +11,7 @@ from matplotlib import image as mpimg
 
 # Project imports
 import app_identity
+from gcloud.gsm import SecretManager
 from utils import bq
 from constants.utils import bq as bq_consts
 from constants.validation import email_notification as consts
@@ -31,17 +32,20 @@ class MandrillConfigurationError(RuntimeError):
         self.msg = msg
 
 
-def _get_mandrill_api_key():
+def _get_mandrill_secret():
     """
     Get the token used to interact with the Mandrill API
 
     :raises:
-      MandrillConfigurationError: API key is not configured
+      MandrillConfigurationError: secret is not configured
     :return: configured Mandrill API key as str
     """
-    if consts.MANDRILL_API_KEY not in os.environ.keys():
-        raise MandrillConfigurationError(consts.UNSET_MANDRILL_API_KEY_MSG)
-    return os.environ[consts.MANDRILL_API_KEY]
+    smc = SecretManager()
+    secret = smc.access_secret_version(
+        request={'name': smc.build_secret_full_name(consts.MANDRILL_TOKEN)})
+    if not secret:
+        raise MandrillConfigurationError(consts.UNSET_MANDRILL_SECRET_MSG)
+    return secret.payload.data.decode("UTF-8")
 
 
 def get_hpo_contact_info(project_id):
@@ -206,7 +210,7 @@ def send_email(email_message):
     """
     result = None
     try:
-        api_key = _get_mandrill_api_key()
+        api_key = _get_mandrill_secret()
         mandrill_client = mandrill.Mandrill(api_key)
         result = mandrill_client.messages.send(message=email_message)
     except mandrill.Error as e:
