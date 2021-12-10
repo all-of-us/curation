@@ -57,13 +57,15 @@ def print_unsuccessful(function, trace, msg_type):
     )
 
 
-def main(start_dir, test_pattern, test_filepaths, coverage_filepath):
+def main(test_path, test_pattern, test_filepaths, coverage_filepath):
     """
-    Main function to run tests
+    Main function to run tests under start_dir
 
-    :param start_dir:  Directory to start from
-    :param test_pattern: pattern to match
-    :param test_filepaths: List of file test paths
+    Accepts granular tests via test_filepaths or wildcards using test_pattern
+    If test_filepaths is specified, test_pattern will be ignored.
+    :param test_path: Directory to start from
+    :param test_pattern: pattern to match if using wildcard
+    :param test_filepaths: List of specific test filepaths
     :param coverage_filepath: Path to coverage file
     :return:
     """
@@ -75,10 +77,12 @@ def main(start_dir, test_pattern, test_filepaths, coverage_filepath):
             test_file_name = path_obj.name
             test_file_directory = path_obj.parent
 
-            suite.addTests(unittest.TestLoader().discover(
-                test_file_directory, pattern=test_file_name))
+            # Ensure file paths fall under start dir
+            if any(test_path in part for part in test_file_directory.parts):
+                suite.addTests(unittest.TestLoader().discover(
+                    test_file_directory, pattern=test_file_name))
     else:
-        suite.addTests(unittest.TestLoader().discover(start_dir,
+        suite.addTests(unittest.TestLoader().discover(test_path,
                                                       pattern=test_pattern))
     all_results = []
 
@@ -173,13 +177,6 @@ if __name__ == '__main__':
         help='The file pattern for test modules, defaults to *_test.py.',
         default='*_test.py')
     parser.add_argument(
-        '--test-filepaths',
-        dest='test_filepaths',
-        nargs='+',
-        help=
-        'Individual file paths containing test modules separated by whitespace.'
-    )
-    parser.add_argument(
         '--coverage-file',
         dest='coverage_file',
         required=True,
@@ -187,11 +184,23 @@ if __name__ == '__main__':
         'The path to the coverage file to use.  Defaults to \'curation/.coveragerc\'',
         type=config_file_path,
         default='curation/.coveragerc')
+    parser.add_argument(
+        '--test-paths-filepath',
+        dest='test_paths_filepath',
+        help='Path to file containing test filepaths separated by newline. '
+        'Overrides the test_pattern arg. '
+        'Test filepaths must be under test_path.')
 
     args = parser.parse_args()
 
+    test_filepaths_list = []
+    if args.test_paths_filepath:
+        test_paths_filepath = Path(args.test_paths_filepath)
+        for test_path in test_paths_filepath.open():
+            test_filepaths_list.append(test_path.strip())
+
     result_success = main(args.test_path, args.test_pattern,
-                          args.test_filepaths, args.coverage_file)
+                          test_filepaths_list, args.coverage_file)
 
     if not result_success:
         sys.exit(1)
