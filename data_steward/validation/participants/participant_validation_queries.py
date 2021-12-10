@@ -206,6 +206,18 @@ CREATE_COMPARISON_FUNCTION_QUERIES = [{
     'name': 'CompareName',
     'query': CREATE_NAME_COMPARISON_FUNCTION
 }, {
+    'name': 'CompareStreetAddress',
+    'query': CREATE_STREET_ADDRESS_COMPARISON_FUNCTION
+}, {
+    'name': 'CompareCity',
+    'query': CREATE_CITY_COMPARISON_FUNCTION
+}, {
+    'name': 'CompareState',
+    'query': CREATE_STATE_COMPARISON_FUNCTION
+}, {
+    'name': 'CompareZipCode',
+    'query': CREATE_ZIP_CODE_COMPARISON_FUNCTION
+}, {
     'name': 'CompareEmail',
     'query': CREATE_EMAIL_COMPARISON_FUNCTION
 }, {
