@@ -25,6 +25,22 @@ Declared functions:
 
 ${DEFINED}
 
+Usage:
+
+  ./curation.sh execute underscore_me "not-underscored"
+
+  # the above will result in this output:
+
+Executing:
+  Function: underscore_me
+  Args: not-underscored
+
+Execution results:
+  Code: 0
+  Output:
+-- output start
+not_underscored
+-- output end
 EOT
 )
 
