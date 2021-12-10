@@ -49,6 +49,11 @@ dkr_run_args=(
   "$(pwd)/.circleci:/home/curation/project/curation/.circleci:z"
 )
 
+# If env var is set containing test filepaths, include it and update paths to mount location
+if [[ -n "${CURATION_TESTS_FILEPATH}" ]]; then
+  sed -i 's/.*curation/\./g' "${CURATION_TESTS_FILEPATH}"
+fi
+
 # when run on a developer's machine, we need to do some extra things like:
 # 1. ensure base container image is up to date
 # 2. ensure they have credentials we can use

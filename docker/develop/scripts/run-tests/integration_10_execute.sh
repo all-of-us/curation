@@ -63,6 +63,13 @@ if [[ $run_forced -eq 1 ]] || [[ $in_dev_branch -eq 1 ]] || [[ $is_pr -eq 1 ]] |
     done
   fi
 
+  # determine if env var is set containing test filepaths
+  if [[ -n "${CURATION_TESTS_FILEPATH}" ]]; then
+    run_args+=(
+      "--test-paths-filepath"
+      "${CURATION_TESTS_FILEPATH}")
+  fi
+
   # execute tests
   set +x
   python "${run_args[@]}"
