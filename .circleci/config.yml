@@ -31,8 +31,11 @@ commands:
       # container as /ci.env and sourced during execution.
       - run:
           name: "Populate bash env file"
+          environment:
+            # Set variable to filepath containing tests to run
+            - CURATION_TESTS_FILEPATH: /tmp/tests-to-run
           command: |
-            printenv | egrep "^CI|^GCLOUD|^GOOGLE|^GAE|^SLACK" | sed -e 's/^.*/export &/g' | tee "${BASH_ENV}"
+            printenv | egrep "^CI|^GCLOUD|^GOOGLE|^GAE|^SLACK|^CURATION" | sed -e 's/^.*/export &/g' | tee "${BASH_ENV}"
       # this builds the actual container used to execute tests.  the layers from this build are stored using
       # the `docker_layer_caching` system provided by CircleCI.  It is just a volume mount.
       - run:
@@ -86,8 +89,13 @@ jobs:
       - build
       - printenv
       - run:
+          name: Fetch unit tests
+          command: |
+            circleci tests glob "unit/**/*_test.py" |
+            circleci tests split --split-by=timings > $CURATION_TESTS_FILEPATH
+      - run:
           name: Run unit tests
-          command: ./curation.sh run-tests unit
+          command: ./curation.sh run-tests unit $CURATION_TESTS_FILEPATH
       - test_teardown
 
   integration_test:
@@ -96,8 +104,13 @@ jobs:
       - build
       - printenv
       - run:
+          name: Fetch integration tests
+          command: |
+            circleci tests glob "integration/**/*_test.py" |
+            circleci tests split --split-by=timings > $CURATION_TESTS_FILEPATH
+      - run:
           name: Run integration tests
-          command: ./curation.sh run-tests integration
+          command: ./curation.sh run-tests integration $CURATION_TESTS_FILEPATH
           no_output_timeout: 3000s
       - test_teardown
 
