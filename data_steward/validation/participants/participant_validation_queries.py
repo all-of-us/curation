@@ -97,22 +97,19 @@ CREATE FUNCTION IF NOT EXISTS
 
 CREATE_ZIP_CODE_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
 CREATE FUNCTION IF NOT EXISTS
-  `{{project_id}}.{{drc_dataset_id}}.CompareZipCode`(xyz string, xyz string)
+  `{{project_id}}.{{drc_dataset_id}}.CompareZipCode`(rdr_zip_code string, ehr_zip_code string)
   RETURNS string AS ((
-        WITH normalized_rdr_xyz AS (
-            SELECT LOWER(TRIM(rdr_xyz)) AS rdr_xyz
+        WITH normalized_rdr_zip_code AS (
+            SELECT LOWER(TRIM(rdr_zip_code)) AS rdr_xyz
         )
-        , normalized_ehr_xyz AS (
-            SELECT LOWER(TRIM(ehr_xyz)) AS ehr_xyz
+        , normalized_ehr_zip_code AS (
+            SELECT LOWER(TRIM(ehr_zip_code)) AS ehr_xyz
         )
     SELECT
-      CASE
-        {{xyz_case_when_conditions}}
-      ELSE
-      '{{missing_ehr}}'
-    END
-      AS sex
-       FROM normalized_rdr_xyz, normalized_ehr_xyz));
+      CASE {{xyz_case_when_conditions}}
+      ELSE '{{missing_ehr}}'
+      END AS sex
+    FROM normalized_rdr_zip_code, normalized_ehr_zip_code));
 """)
 
 CREATE_SEX_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
