@@ -69,6 +69,9 @@ ENV CIRCLE_ARTIFACTS "/tmp/circleci-artifacts"
 # Enables parallelism in Circle CI but can be 0 if running locally
 ENV CIRCLE_NODE_INDEX "${CIRCLE_NODE_INDEX:-0}"
 
+# this file contains test files to run
+ENV CURATION_TESTS_FILEPATH "${CIRCLE_WORKING_DIRECTORY}"/tests/tests-to-run
+
 # python venv envvars
 ENV VENV_PATH "${CIRCLE_WORKING_DIRECTORY}/curation_venv"
 ENV VENV_ACTIVATE "${VENV_PATH}/bin/activate"

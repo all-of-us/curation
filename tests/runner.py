@@ -71,14 +71,16 @@ def main(test_path, test_pattern, test_filepaths, coverage_filepath):
     """
     # Discover and run tests.
     suite = unittest.TestSuite(tests=())
+    test_path_obj = Path(test_path).resolve()
     if test_filepaths:
         for test_filepath in test_filepaths:
-            path_obj = Path(test_filepath)
+            # Resolve to verify test_path in full path below
+            path_obj = Path(test_filepath).resolve()
             test_file_name = path_obj.name
             test_file_directory = path_obj.parent
 
             # Ensure file paths fall under start dir
-            if any(test_path in part for part in test_file_directory.parts):
+            if test_path_obj in test_file_directory.parents:
                 suite.addTests(unittest.TestLoader().discover(
                     test_file_directory, pattern=test_file_name))
     else:

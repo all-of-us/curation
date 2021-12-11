@@ -14,6 +14,7 @@ run_args=(
 
 # determine if env var is set containing test filepaths
 if [[ -n "${CURATION_TESTS_FILEPATH}" ]]; then
+  echo "Using test filepath ${CURATION_TESTS_FILEPATH}"
   run_args+=(
     "--test-paths-filepath"
     "${CURATION_TESTS_FILEPATH}")
