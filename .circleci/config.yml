@@ -95,7 +95,7 @@ jobs:
             circleci tests split --split-by=timings --time-default=10s > $CURATION_TESTS_FILEPATH
       - run:
           name: Run unit tests
-          command: ./curation.sh run-tests unit $CURATION_TESTS_FILEPATH
+          command: ./curation.sh run-tests unit
       - test_teardown
 
   integration_test:
@@ -110,7 +110,7 @@ jobs:
             circleci tests split --split-by=timings --time-default=10s > $CURATION_TESTS_FILEPATH
       - run:
           name: Run integration tests
-          command: ./curation.sh run-tests integration $CURATION_TESTS_FILEPATH
+          command: ./curation.sh run-tests integration
           no_output_timeout: 3000s
       - test_teardown
 
