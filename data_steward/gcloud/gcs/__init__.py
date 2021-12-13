@@ -2,8 +2,10 @@
 Interact with Google Cloud Storage (GCS)
 """
 # Python stl imports
+import os
 
 # Project imports
+from validation.app_errors import BucketDoesNotExistError
 
 # Third-party imports
 from google.api_core import page_iterator
@@ -15,6 +17,27 @@ class StorageClient(Client):
     A client that extends GCS functionality
     See https://googleapis.dev/python/storage/latest/client.html
     """
+
+    def get_hpo_bucket(self, hpo_id: str) -> str:
+        """
+        Get the name of an HPO site's private bucket
+
+        Empty/unset bucket indicates that the bucket is intentionally left blank and can be ignored
+        :param hpo_id: id of the HPO site
+        :return: name of the bucket
+        """
+        # TODO reconsider how to map bucket name
+        bucket_env = 'BUCKET_NAME_' + hpo_id.upper()
+        hpo_bucket_name = os.getenv(bucket_env)
+
+        # App engine converts an env var set but left empty to be the string 'None'
+        if not hpo_bucket_name or hpo_bucket_name.lower() == 'none':
+            # should not use hpo_id in message if sent to end user.  For now,
+            # only sent to alert messages slack channel.
+            raise BucketDoesNotExistError(
+                f"Failed to fetch bucket '{hpo_bucket_name}' for hpo_id '{hpo_id}'",
+                hpo_bucket_name)
+        return hpo_bucket_name
 
     def empty_bucket(self, bucket: str, **kwargs) -> None:
         """
