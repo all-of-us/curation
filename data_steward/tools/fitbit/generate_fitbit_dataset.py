@@ -80,7 +80,7 @@ def cast_to_schema_type(field, schema_type):
     if schema_type.lower() not in bq_int_float:
         col = f'SAFE_CAST({field} AS {schema_type.upper()}) AS {field}'
     else:
-        col = f'SAFE_CAST({field} AS {bq_int_float[schema_type]}) AS {field}'
+        col = f'SAFE_CAST({field} AS {bq_int_float[schema_type.lower()]}) AS {field}'
     return col
 
 
