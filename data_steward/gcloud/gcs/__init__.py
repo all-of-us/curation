@@ -18,6 +18,10 @@ class StorageClient(Client):
     See https://googleapis.dev/python/storage/latest/client.html
     """
 
+    def get_drc_bucket(self) -> str:
+        result = os.environ.get('DRC_BUCKET_NAME')
+        return result
+
     def get_hpo_bucket(self, hpo_id: str) -> str:
         """
         Get the name of an HPO site's private bucket
@@ -38,10 +42,6 @@ class StorageClient(Client):
                 f"Failed to fetch bucket '{hpo_bucket_name}' for hpo_id '{hpo_id}'",
                 hpo_bucket_name)
         return hpo_bucket_name
-
-    def get_drc_bucket(self) -> str:
-        result = os.environ.get('DRC_BUCKET_NAME')
-        return result
 
     def empty_bucket(self, bucket: str, **kwargs) -> None:
         """
