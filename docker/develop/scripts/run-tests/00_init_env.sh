@@ -9,6 +9,7 @@ source "${HOME}/.profile"
 # import funcs
 source "${CURATION_SCRIPTS_DIR}"/funcs.sh
 
+echo "PYTHONPATH=${PYTHONPATH}"
 # determine username
 determined_username=$(define_username)
 echo "Username determined=${determined_username}"
