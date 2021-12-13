@@ -14,10 +14,6 @@ run_args=(
 
 # determine if env var is set containing test filepaths
 if [[ -n "${CURATION_TESTS_FILEPATH}" ]]; then
-  echo "Running the following tests in filepath ${CURATION_TESTS_FILEPATH}:"
-  while read -r line; do
-    echo "$line"
-  done < "${CURATION_TESTS_FILEPATH}"
   run_args+=(
     "--test-paths-filepath"
     "${CURATION_TESTS_FILEPATH}")

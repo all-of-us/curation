@@ -131,6 +131,16 @@ fi
 if [ "${run_unit}" -eq 1 ] || [ "${run_integration}" -eq 1 ]; then
   echo "Running test setup script(s)..."
 
+# determine if env var is set containing test filepaths
+if [[ -n "${CURATION_TESTS_FILEPATH}" ]]; then
+  echo "----------------------------------------------------------------------"
+  echo "Running the following tests in filepath ${CURATION_TESTS_FILEPATH}:"
+  while read -r line; do
+    echo "$line"
+  done < "${CURATION_TESTS_FILEPATH}"
+  echo "----------------------------------------------------------------------"
+fi
+
   require_ok "run-tests/10_prep_output_paths.sh"
 fi
 
