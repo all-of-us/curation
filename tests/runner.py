@@ -82,7 +82,7 @@ def main(test_path, test_pattern, test_filepaths, coverage_filepath):
             # Ensure file paths fall under start dir
             if test_path_obj in test_file_directory.parents:
                 suite.addTests(unittest.TestLoader().discover(
-                    test_file_directory, pattern=test_file_name))
+                    test_path, pattern=test_file_name))
     else:
         suite.addTests(unittest.TestLoader().discover(test_path,
                                                       pattern=test_pattern))
