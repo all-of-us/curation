@@ -107,29 +107,21 @@ jobs:
       - build
       - run:
           name: Delete stale test datasets
-          command: |
-            ./curation.sh \
-              -e GCLOUD_CREDENTIALS_KEY="${GCLOUD_CREDENTIALS_KEY}" \
-              -e GCLOUD_CREDENTIALS="${GCLOUD_CREDENTIALS}" \
-              -e CI="${CI}" \
-              -e CIRCLECI="${CIRCLECI}" \
-              -e CIRCLE_PULL_REQUEST="${CIRCLE_PULL_REQUEST:-}" \
-              -e CIRCLE_PULL_REQUESTS="${CIRCLE_PULL_REQUESTS:-}" \
-              '--' \
-              delete-stale-test-datasets
+          command: ./curation.sh delete-stale-test-datasets
 
 workflows:
   version: 2
   test:
     jobs:
-      - linting_checks
-      - unit_test
-      - integration_test:
-          filters:
-            branches:
-              # This would cause too much noise to run on commit, run nightly
-              # instead per below workflow.
-              ignore: develop
+      # - linting_checks
+      # - unit_test
+      # - integration_test:
+      #     filters:
+      #       branches:
+      #         # This would cause too much noise to run on commit, run nightly
+      #         # instead per below workflow.
+      #         ignore: develop
+      - delete_stale_test_datasets
 
   nightly:
     triggers:
