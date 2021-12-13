@@ -7,6 +7,8 @@ from io import open
 import bq_utils
 import gcs_utils
 import resources
+from gcloud.gcs import StorageClient
+
 from tests import test_util
 from constants.tools.combine_ehr_rdr import EHR_CONSENT_TABLE_ID, RDR_TABLES_TO_COPY, DOMAIN_TABLES
 from tools.combine_ehr_rdr import (copy_rdr_table, ehr_consent, main,
@@ -25,6 +27,7 @@ UNCONSENTED_EHR_COUNTS_QUERY = (
 
 
 class CombineEhrRdrTest(unittest.TestCase):
+    storage_client = StorageClient()
 
     @classmethod
     def setUpClass(cls):
@@ -43,7 +46,7 @@ class CombineEhrRdrTest(unittest.TestCase):
     @staticmethod
     def load_dataset_from_files(dataset_id, path, mappings=False):
         bucket = gcs_utils.get_hpo_bucket(test_util.FAKE_HPO_ID)
-        test_util.empty_bucket(bucket)
+        CombineEhrRdrTest.storage_client.empty_bucket(bucket)
         job_ids = []
         for table in resources.CDM_TABLES:
             job_ids.append(
@@ -58,22 +61,23 @@ class CombineEhrRdrTest(unittest.TestCase):
         if len(incomplete_jobs) > 0:
             message = "Job id(s) %s failed to complete" % incomplete_jobs
             raise RuntimeError(message)
-        test_util.empty_bucket(bucket)
+        CombineEhrRdrTest.storage_client.empty_bucket(bucket)
 
     @staticmethod
-    def _upload_file_to_bucket(bucket, dataset_id, path, table):
-        app_id = bq_utils.app_identity.get_application_id()
-        filename = table + '.csv'
-
-        file_path = os.path.join(path, filename)
+    def _upload_file_to_bucket(bucket: str, dataset_id: str, path: str,
+                               table: str):
+        app_id: str = bq_utils.app_identity.get_application_id()
+        filename: str = f'{table}.csv'
+        file_path: str = os.path.join(path, filename)
+        target_bucket = CombineEhrRdrTest.storage_client.get_bucket(bucket)
+        blob = target_bucket.blob(filename)
         try:
             with open(file_path, 'rb') as filepath:
-                gcs_utils.upload_object(bucket, filename, filepath)
-        except OSError:
-            test_util.write_cloud_str(bucket, filename, '\n')
-
-        gcs_path = 'gs://{bucket}/{filename}'.format(bucket=bucket,
-                                                     filename=filename)
+                blob.upload_from_file(filepath)
+        except OSError as exc:
+            blob.upload_from_string('\n')
+        gcs_path: str = 'gs://{bucket}/{filename}'.format(bucket=bucket,
+                                                          filename=filename)
         load_results = bq_utils.load_csv(table,
                                          gcs_path,
                                          app_id,

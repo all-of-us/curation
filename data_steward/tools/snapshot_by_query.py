@@ -11,7 +11,8 @@ BIGQUERY_DATA_TYPES = {
     'float': 'FLOAT64',
     'string': 'STRING',
     'date': 'DATE',
-    'timestamp': 'TIMESTAMP'
+    'timestamp': 'TIMESTAMP',
+    'bool': 'BOOLEAN'
 }
 
 
@@ -58,7 +59,9 @@ def get_field_cast_expr(dest_field, source_fields):
     dest_field_name = dest_field['name']
     dest_field_mode = dest_field['mode']
     dest_field_type = dest_field['type']
-    if dest_field_name not in source_fields:
+    if dest_field_name in source_fields:
+        col = f'CAST({dest_field_name} AS {BIGQUERY_DATA_TYPES[dest_field_type.lower()]}) AS {dest_field_name}'
+    else:
         if dest_field_mode == 'required':
             raise RuntimeError(
                 f'Unable to load the field "{dest_field_name}" which is required in the destination table \
@@ -68,8 +71,6 @@ def get_field_cast_expr(dest_field, source_fields):
         else:
             raise RuntimeError(
                 f'Unable to determine the mode for "{dest_field_name}".')
-    else:
-        col = f'CAST({dest_field_name} AS {BIGQUERY_DATA_TYPES[dest_field_type.lower()]}) AS {dest_field_name}'
     return col
 
 

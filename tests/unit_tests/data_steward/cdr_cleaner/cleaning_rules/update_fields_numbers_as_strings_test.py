@@ -65,11 +65,13 @@ class UpdateFieldsNumbersAsStringsTest(unittest.TestCase):
         for i, table in enumerate(tables):
             expected_query_list.append({
                 clean_consts.QUERY:
-                    SANDBOX_QUERY.render(project=self.project_id,
-                                         sandbox_dataset=self.sandbox_id,
-                                         sandbox_table=self.rule_instance.
-                                         get_sandbox_tablenames()[i],
-                                         dataset=self.dataset_id)
+                    SANDBOX_QUERY.render(
+                        project=self.project_id,
+                        sandbox_dataset=self.sandbox_id,
+                        sandbox_table=self.rule_instance.get_sandbox_tablenames(
+                        )[i],
+                        dataset=self.dataset_id,
+                        observation_source_values=OBSERVATION_SOURCE_VALUES)
             })
             expected_query_list.append({
                 clean_consts.QUERY:

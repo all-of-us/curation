@@ -26,6 +26,15 @@ commands:
       # this will check out the curation code into the working directory.  in our case, it is defined
       # by job_defaults above
       - checkout
+      # this filters all defined envvars for those prefixed with CI, GCLOUD, GOOGLE, GAE, or SLACK, then populates the
+      # runtime's $BASH_ENV file with each of them prefixed with "export ".  This file is ultimately mounted into the
+      # container as /ci.env and sourced during execution.
+      - run:
+          name: "Populate bash env file"
+          command: |
+            printenv | egrep "^CI|^GCLOUD|^GOOGLE|^GAE|^SLACK" | sed -e 's/^.*/export &/g' | tee "${BASH_ENV}"
+      # this builds the actual container used to execute tests.  the layers from this build are stored using
+      # the `docker_layer_caching` system provided by CircleCI.  It is just a volume mount.
       - run:
           name: "Build container"
           environment:
@@ -37,6 +46,11 @@ commands:
               --build-arg GID=$(id -g) \
               --progress plain \
               develop
+  printenv:
+    steps:
+      - run:
+          name: "Print in-container environment variables"
+          command: ./curation.sh printenv
   test_teardown:
     steps:
       # Save test results
@@ -60,6 +74,7 @@ jobs:
     <<: *job_defaults
     steps:
       - build
+      - printenv
       - run:
           name: Run lint checks
           command: ./curation.sh run-tests lint
@@ -69,39 +84,20 @@ jobs:
     <<: *job_defaults
     steps:
       - build
+      - printenv
       - run:
           name: Run unit tests
-          command:  |
-            ./curation.sh \
-              -e GCLOUD_CREDENTIALS_KEY="${GCLOUD_CREDENTIALS_KEY}" \
-              -e GCLOUD_CREDENTIALS="${GCLOUD_CREDENTIALS}" \
-              -e CI="${CI}" \
-              -e CIRCLECI="${CIRCLECI}" \
-              -e CIRCLE_PULL_REQUEST="${CIRCLE_PULL_REQUEST:-}" \
-              -e CIRCLE_PULL_REQUESTS="${CIRCLE_PULL_REQUESTS:-}" \
-              '--' \
-              run-tests \
-              unit
+          command: ./curation.sh run-tests unit
       - test_teardown
 
   integration_test:
     <<: *job_defaults
     steps:
       - build
-      # Setup GCP access and create cloud resources as needed.
+      - printenv
       - run:
           name: Run integration tests
-          command: |
-            ./curation.sh \
-              -e GCLOUD_CREDENTIALS_KEY="${GCLOUD_CREDENTIALS_KEY}" \
-              -e GCLOUD_CREDENTIALS="${GCLOUD_CREDENTIALS}" \
-              -e CI="${CI}" \
-              -e CIRCLECI="${CIRCLECI}" \
-              -e CIRCLE_PULL_REQUEST="${CIRCLE_PULL_REQUEST:-}" \
-              -e CIRCLE_PULL_REQUESTS="${CIRCLE_PULL_REQUESTS:-}" \
-              '--' \
-              run-tests \
-              integration
+          command: ./curation.sh run-tests integration
           no_output_timeout: 3000s
       - test_teardown
 
