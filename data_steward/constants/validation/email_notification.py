@@ -1,5 +1,5 @@
-MANDRILL_TOKEN = 'mandrill_token'
-UNSET_MANDRILL_SECRET_MSG = f"Mandrill secret: `{MANDRILL_TOKEN}` is not set in secret manager"
+MANDRILL_SECRET_ID = 'mandrill_token'
+UNSET_MANDRILL_SECRET_MSG = f"Mandrill secret: `{MANDRILL_SECRET_ID}` is not set in secret manager"
 
 CONTACT_LIST_QUERY = """
 SELECT *

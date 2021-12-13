@@ -42,7 +42,7 @@ def _get_mandrill_secret():
     """
     smc = SecretManager()
     secret = smc.access_secret_version(
-        request={'name': smc.build_secret_full_name(consts.MANDRILL_TOKEN)})
+        request={'name': smc.build_secret_full_name(consts.MANDRILL_SECRET_ID)})
     if not secret:
         raise MandrillConfigurationError(consts.UNSET_MANDRILL_SECRET_MSG)
     return secret.payload.data.decode("UTF-8")
