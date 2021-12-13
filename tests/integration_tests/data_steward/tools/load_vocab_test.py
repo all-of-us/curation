@@ -56,6 +56,10 @@ class LoadVocabTest(unittest.TestCase):
                                         not_found_ok=True)
             self.bq_client.delete_table(f'{self.staging_dataset_id}.{vocab}',
                                         not_found_ok=True)
+            self.bq_client.delete_dataset(
+                dataset=f'{self.project_id}.{self.staging_dataset_id}',
+                delete_contents=True,
+                not_found_ok=True)
             vocab_path = self.test_vocab_folder_path / lv._table_name_to_filename(
                 vocab)
             with vocab_path.open('w') as f:
