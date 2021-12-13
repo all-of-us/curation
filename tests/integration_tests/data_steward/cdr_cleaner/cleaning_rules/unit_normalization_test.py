@@ -98,6 +98,8 @@ class UnitNormalizationTest(BaseTest.CleaningRulesTestBase):
 
     def setUp(self):
         # Set the test project identifier
+        self.client.delete_table(
+            f'{self.project_id}.{self.sandbox_id}.{UNIT_MAPPING_TABLE}')
         super().setUp()
         raw_units_load_query = INSERT_UNITS_RAW_DATA.render(
             project_id=self.project_id, dataset_id=self.dataset_id)
