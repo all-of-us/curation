@@ -9,7 +9,7 @@ source "${HOME}/.profile"
 # import funcs
 source "${CURATION_SCRIPTS_DIR}"/funcs.sh
 
-echo "PYTHONPATH=${PYTHONPATH}"
+set_env "PYTHONPATH" ":${CIRCLE_WORKING_DIRECTORY}:${CIRCLE_WORKING_DIRECTORY}/data_steward:${CIRCLE_WORKING_DIRECTORY}/tests:"
 # determine username
 determined_username=$(define_username)
 echo "Username determined=${determined_username}"
