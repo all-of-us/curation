@@ -105,6 +105,7 @@ jobs:
     <<: *job_defaults
     steps:
       - build
+      - printenv
       - run:
           name: Delete stale test datasets
           command: ./curation.sh delete-stale-test-datasets
