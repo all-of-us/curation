@@ -50,7 +50,7 @@ dkr_run_args=(
 )
 
 # If running specific tests
-if [[ -n "${CURATION_TESTS_FILEPATH}" ]]; then
+if [[ -n "${CURATION_TESTS_FILEPATH}" && -s "${CURATION_TESTS_FILEPATH}" ]]; then
   # If env var is set containing test filepaths, include it and update paths to relative paths
   # -i.bak allows running on both BSD/mac and GNU
   sed -i.bak 's/.*curation/\./g' "${CURATION_TESTS_FILEPATH}"
