@@ -37,62 +37,62 @@ CREATE_NAME_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
 
 CREATE_STREET_ADDRESS_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
 CREATE FUNCTION IF NOT EXISTS
-  `{{project_id}}.{{drc_dataset_id}}.CompareStreetAddress`(xyz string, xyz string)
+  `{{project_id}}.{{drc_dataset_id}}.CompareCity`(rdr_street_address string, ehr_street_address string)
   RETURNS string AS ((
-        WITH normalized_rdr_xyz AS (
-            SELECT LOWER(TRIM(rdr_xyz)) AS rdr_xyz
+        WITH normalized_rdr_street_address AS (
+            SELECT LOWER(TRIM(rdr_xyz)) AS rdr_street_address
         )
-        , normalized_ehr_xyz AS (
-            SELECT LOWER(TRIM(ehr_xyz)) AS ehr_xyz
+        , normalized_ehr_street_address AS (
+            SELECT LOWER(TRIM(ehr_xyz)) AS ehr_street_address
         )
     SELECT
       CASE
-        {{xyz_case_when_conditions}}
-      ELSE
-      '{{missing_ehr}}'
-    END
-      AS sex
-       FROM normalized_rdr_xyz, normalized_ehr_xyz));
+        WHEN normalized_rdr_street_address.rdr_street_address = normalized_ehr_street_address.ehr_street_address THEN '{{match}}'
+        WHEN normalized_rdr_street_address.rdr_street_address IS NOT NULL AND normalized_ehr_street_address.ehr_street_address IS NOT NULL THEN '{{no_match}}'
+        WHEN normalized_rdr_street_address.rdr_street_address IS NULL THEN '{{missing_rdr}}'
+        ELSE '{{missing_ehr}}'
+      END AS street_address
+    FROM normalized_rdr_street_address, normalized_ehr_street_address));
 """)
 
 CREATE_CITY_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
 CREATE FUNCTION IF NOT EXISTS
-  `{{project_id}}.{{drc_dataset_id}}.CompareCity`(xyz string, xyz string)
+  `{{project_id}}.{{drc_dataset_id}}.CompareCity`(rdr_city string, ehr_city string)
   RETURNS string AS ((
-        WITH normalized_rdr_xyz AS (
-            SELECT LOWER(TRIM(rdr_xyz)) AS rdr_xyz
+        WITH normalized_rdr_city AS (
+            SELECT LOWER(TRIM(rdr_xyz)) AS rdr_city
         )
-        , normalized_ehr_xyz AS (
-            SELECT LOWER(TRIM(ehr_xyz)) AS ehr_xyz
+        , normalized_ehr_city AS (
+            SELECT LOWER(TRIM(ehr_xyz)) AS ehr_city
         )
     SELECT
       CASE
-        {{xyz_case_when_conditions}}
-      ELSE
-      '{{missing_ehr}}'
-    END
-      AS sex
-       FROM normalized_rdr_xyz, normalized_ehr_xyz));
+        WHEN normalized_rdr_city.rdr_city = normalized_ehr_city.ehr_city THEN '{{match}}'
+        WHEN normalized_rdr_city.rdr_city IS NOT NULL AND normalized_ehr_city.ehr_city IS NOT NULL THEN '{{no_match}}'
+        WHEN normalized_rdr_city.rdr_city IS NULL THEN '{{missing_rdr}}'
+        ELSE '{{missing_ehr}}'
+      END AS city
+    FROM normalized_rdr_city, normalized_ehr_city));
 """)
 
 CREATE_STATE_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
 CREATE FUNCTION IF NOT EXISTS
-  `{{project_id}}.{{drc_dataset_id}}.CompareState`(xyz string, xyz string)
+  `{{project_id}}.{{drc_dataset_id}}.CompareState`(rdr_state string, ehr_state string)
   RETURNS string AS ((
-        WITH normalized_rdr_xyz AS (
-            SELECT LOWER(TRIM(rdr_xyz)) AS rdr_xyz
+        WITH normalized_rdr_state AS (
+            SELECT LOWER(TRIM(rdr_xyz)) AS rdr_state
         )
-        , normalized_ehr_xyz AS (
-            SELECT LOWER(TRIM(ehr_xyz)) AS ehr_xyz
+        , normalized_ehr_state AS (
+            SELECT LOWER(TRIM(ehr_xyz)) AS ehr_state
         )
     SELECT
       CASE
-        {{xyz_case_when_conditions}}
-      ELSE
-      '{{missing_ehr}}'
-    END
-      AS sex
-       FROM normalized_rdr_xyz, normalized_ehr_xyz));
+        WHEN normalized_rdr_state.rdr_state = normalized_ehr_state.ehr_state THEN '{{match}}'
+        WHEN normalized_rdr_state.rdr_state IS NOT NULL AND normalized_ehr_state.ehr_state IS NOT NULL THEN '{{no_match}}'
+        WHEN normalized_rdr_state.rdr_state IS NULL THEN '{{missing_rdr}}'
+        ELSE '{{missing_ehr}}'
+      END AS state
+    FROM normalized_rdr_state, normalized_ehr_state));
 """)
 
 CREATE_ZIP_CODE_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
@@ -100,15 +100,18 @@ CREATE FUNCTION IF NOT EXISTS
   `{{project_id}}.{{drc_dataset_id}}.CompareZipCode`(rdr_zip_code string, ehr_zip_code string)
   RETURNS string AS ((
         WITH normalized_rdr_zip_code AS (
-            SELECT LOWER(TRIM(rdr_zip_code)) AS rdr_xyz
+            SELECT LPAD(SPLIT(SPLIT(rdr_zip_code, '-')[OFFSET(0)], ' ')[OFFSET(0)], 5, '0') AS rdr_zip_code
         )
         , normalized_ehr_zip_code AS (
-            SELECT LOWER(TRIM(ehr_zip_code)) AS ehr_xyz
+            SELECT LPAD(SPLIT(SPLIT(ehr_zip_code, '-')[OFFSET(0)], ' ')[OFFSET(0)], 5, '0') AS ehr_zip_code
         )
     SELECT
-      CASE {{xyz_case_when_conditions}}
-      ELSE '{{missing_ehr}}'
-      END AS sex
+      CASE
+        WHEN normalized_rdr_zip_code.rdr_zip_code = normalized_ehr_zip_code.ehr_zip_code THEN '{{match}}'
+        WHEN normalized_rdr_zip_code.rdr_zip_code IS NOT NULL AND normalized_ehr_zip_code.ehr_zip_code IS NOT NULL THEN '{{no_match}}'
+        WHEN normalized_rdr_zip_code.rdr_zip_code IS NULL THEN '{{missing_rdr}}'
+        ELSE '{{missing_ehr}}'
+      END AS zip_code
     FROM normalized_rdr_zip_code, normalized_ehr_zip_code));
 """)
 
