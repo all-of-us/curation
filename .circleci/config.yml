@@ -9,7 +9,7 @@ job_defaults: &job_defaults
     machine:
       image: ubuntu-2004:202107-02
       docker_layer_caching: true
-    parallelism: 4
+    parallelism: 1
     # CircleCI 2.0 does not support environment variables that refer to each other the same way as 1.0 did.
     # If any of these refer to each other, rewrite them so that they don't or see https://circleci.com/docs/2.0/env-vars/#interpolating-environment-variables-to-set-other-environment-variables .
     environment:
@@ -31,9 +31,6 @@ commands:
       # container as /ci.env and sourced during execution.
       - run:
           name: "Populate bash env file"
-          environment:
-            # Set variable to filepath containing tests to run
-            - CURATION_TESTS_FILEPATH: ./tests/tests-to-run
           command: |
             printenv | egrep "^CI|^GCLOUD|^GOOGLE|^GAE|^SLACK|^CURATION" | sed -e 's/^.*/export &/g' | tee "${BASH_ENV}"
       # this builds the actual container used to execute tests.  the layers from this build are stored using
@@ -89,17 +86,16 @@ jobs:
       - build
       - printenv
       - run:
-          name: Fetch unit tests
-          command: |
-            circleci tests glob "**/unit_tests/**/*_test.py" |
-            circleci tests split --split-by=timings --time-default=10s > $CURATION_TESTS_FILEPATH
-      - run:
           name: Run unit tests
           command: ./curation.sh run-tests unit
       - test_teardown
 
   integration_test:
     <<: *job_defaults
+    parallelism: 4
+    environment:
+      # Set variable to filepath containing tests to run
+      - CURATION_TESTS_FILEPATH: ./tests/tests-to-run
     steps:
       - build
       - printenv
