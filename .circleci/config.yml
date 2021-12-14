@@ -103,7 +103,7 @@ jobs:
           name: Fetch integration tests
           command: |
             circleci tests glob "**/integration_tests/**/*_test.py" |
-            circleci tests split --split-by=timings --time-default=10s > $CURATION_TESTS_FILEPATH
+            circleci tests split --split-by=timings --time-default=10s | tee -a $CURATION_TESTS_FILEPATH
       - run:
           name: Run integration tests
           command: ./curation.sh run-tests integration
