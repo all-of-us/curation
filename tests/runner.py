@@ -21,7 +21,6 @@ Example invocation:
 # Python imports
 import argparse
 import configparser
-import io
 import os
 import sys
 import time
