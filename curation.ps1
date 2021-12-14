@@ -40,7 +40,7 @@ $dkr_run_args = @(
 )
 
 # If running specific tests
-if ((-not (Test-Path "env:CURATION_TESTS_FILEPATH")) -or ($env:CURATION_TESTS_FILEPATH -eq ""))
+if ((Test-Path "env:CURATION_TESTS_FILEPATH") -and (-not ($env:CURATION_TESTS_FILEPATH -eq "") ))
 {
   # If env var is set containing test filepaths, include it and update paths to relative paths
   (Get-Content "env:CURATION_TESTS_FILEPATH").replace('.*curation', '.') | Set-Content "env:CURATION_TESTS_FILEPATH"
