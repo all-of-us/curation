@@ -108,6 +108,8 @@ def main(test_path, test_pattern, test_filepaths, coverage_filepath):
             out_soup = bs(in_file, features="xml")
             test_file_path = out_soup.testsuite.testcase["file"]
             out_soup.testsuite["file"] = test_file_path
+            test_name = out_soup.testsuite["name"]
+            out_soup.testsuite["name"] = '-'.join(test_name.split('-')[:-1])
         with Path(file_path).open('w+') as out_file:
             out_file.write(str(out_soup))
 
