@@ -21,6 +21,7 @@ Example invocation:
 # Python imports
 import argparse
 import configparser
+import io
 import os
 import sys
 import time
@@ -28,6 +29,7 @@ import unittest
 from pathlib import Path
 
 # Third party imports
+from bs4 import BeautifulSoup as bs
 try:
     import coverage
 except ImportError:
@@ -101,6 +103,14 @@ def main(test_path, test_pattern, test_filepaths, coverage_filepath):
                                              verbosity=2)
             result = runner.run(mod_tests)
             all_results.append(result)
+
+    for file_path in Path(output_file).glob('*.xml'):
+        with Path(file_path).open() as in_file:
+            out_soup = bs(in_file, features="xml")
+            test_file_path = out_soup.testsuite.testcase["file"]
+            out_soup.testsuite["file"] = test_file_path
+        with Path(file_path).open('w+') as out_file:
+            out_file.write(str(out_soup))
 
     end_time = time.time()
     cov.stop()
