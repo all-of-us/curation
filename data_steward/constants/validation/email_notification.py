@@ -1,5 +1,5 @@
-MANDRILL_API_KEY = 'MANDRILL_API_KEY'
-UNSET_MANDRILL_API_KEY_MSG = f"Mandrill API key not set in environment variable {MANDRILL_API_KEY}"
+MANDRILL_TOKEN_SECRET_ID = 'mandrill_token'
+UNSET_MANDRILL_SECRET_MSG = f"Mandrill secret: `{MANDRILL_TOKEN_SECRET_ID}` is not set in secret manager"
 
 CONTACT_LIST_QUERY = """
 SELECT *
