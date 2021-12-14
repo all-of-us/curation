@@ -25,8 +25,8 @@ from common import JINJA_ENV, PS_API_VALUES, DRC_OPS
 from .participant_validation_queries import CREATE_COMPARISON_FUNCTION_QUERIES
 from constants.validation.participants.identity_match import IDENTITY_MATCH_TABLE
 from constants.validation.participants.participant_validation_queries import (
-    get_gender_comparison_case_statement, MATCH, NO_MATCH, MISSING_EHR,
-    MISSING_RDR)
+    get_gender_comparison_case_statement, get_state_abbreviations, MATCH,
+    NO_MATCH, MISSING_EHR, MISSING_RDR)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -95,7 +95,8 @@ def identify_rdr_ehr_match(client,
             no_match=NO_MATCH,
             missing_rdr=MISSING_RDR,
             missing_ehr=MISSING_EHR,
-            gender_case_when_conditions=get_gender_comparison_case_statement())
+            gender_case_when_conditions=get_gender_comparison_case_statement(),
+            state_abbreviations=get_state_abbreviations())
         job = client.query(query)
         job.result()
 

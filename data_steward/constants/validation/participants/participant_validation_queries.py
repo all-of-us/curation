@@ -217,3 +217,10 @@ def get_gender_comparison_case_statement():
         all_matches = all_matches.replace('[', '(').replace(']', ')')
         conditions.append(f'WHEN {all_matches} THEN \'{match[MATCH_STATUS]}\'')
     return ' \n'.join(conditions)
+
+
+def get_state_abbreviations():
+    """ Returns lowercase state abbreviations separated by comma.
+    e.g. 'al','ak','az',...
+    """
+    return ','.join(f"'{state}'" for state in STATE_ABBREVIATIONS)

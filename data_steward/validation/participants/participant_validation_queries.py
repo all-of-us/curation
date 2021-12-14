@@ -37,7 +37,7 @@ CREATE_NAME_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
 
 CREATE_STREET_ADDRESS_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
 CREATE FUNCTION IF NOT EXISTS
-  `{{project_id}}.{{drc_dataset_id}}.CompareCity`(rdr_street_address string, ehr_street_address string)
+  `{{project_id}}.{{drc_dataset_id}}.CompareStreetAddress`(rdr_street_address string, ehr_street_address string)
   RETURNS string AS ((
         WITH normalized_rdr_street_address AS (
             SELECT LOWER(TRIM(rdr_xyz)) AS rdr_street_address
@@ -60,10 +60,10 @@ CREATE FUNCTION IF NOT EXISTS
   `{{project_id}}.{{drc_dataset_id}}.CompareCity`(rdr_city string, ehr_city string)
   RETURNS string AS ((
         WITH normalized_rdr_city AS (
-            SELECT LOWER(TRIM(rdr_xyz)) AS rdr_city
+            SELECT REGEXP_REPLACE(LOWER(TRIM(rdr_city)), '[^A-Za-z]', '') AS rdr_city
         )
         , normalized_ehr_city AS (
-            SELECT LOWER(TRIM(ehr_xyz)) AS ehr_city
+            SELECT REGEXP_REPLACE(LOWER(TRIM(rdr_city)), '[^A-Za-z]', '') AS rdr_city
         )
     SELECT
       CASE
@@ -80,10 +80,20 @@ CREATE FUNCTION IF NOT EXISTS
   `{{project_id}}.{{drc_dataset_id}}.CompareState`(rdr_state string, ehr_state string)
   RETURNS string AS ((
         WITH normalized_rdr_state AS (
-            SELECT LOWER(TRIM(rdr_xyz)) AS rdr_state
+            SELECT 
+              CASE
+                WHEN REPLACE(LOWER(TRIM(rdr_state)), 'piistate_', '') IN ({{state_abbreviations}})
+                THEN REPLACE(LOWER(TRIM(rdr_state)), 'piistate_', '')
+                ELSE '' 
+              END AS rdr_state
         )
         , normalized_ehr_state AS (
-            SELECT LOWER(TRIM(ehr_xyz)) AS ehr_state
+            SELECT
+              CASE
+                WEHN LOWER(TRIM(ehr_state)) IN ({{state_abbreviations}})
+                THEN LOWER(TRIM(ehr_state))
+                ELSE ''
+              END AS ehr_state
         )
     SELECT
       CASE
@@ -100,10 +110,10 @@ CREATE FUNCTION IF NOT EXISTS
   `{{project_id}}.{{drc_dataset_id}}.CompareZipCode`(rdr_zip_code string, ehr_zip_code string)
   RETURNS string AS ((
         WITH normalized_rdr_zip_code AS (
-            SELECT LPAD(SPLIT(SPLIT(rdr_zip_code, '-')[OFFSET(0)], ' ')[OFFSET(0)], 5, '0') AS rdr_zip_code
+            SELECT LPAD(SPLIT(SPLIT(TRIM(rdr_zip_code), '-')[OFFSET(0)], ' ')[OFFSET(0)], 5, '0') AS rdr_zip_code
         )
         , normalized_ehr_zip_code AS (
-            SELECT LPAD(SPLIT(SPLIT(ehr_zip_code, '-')[OFFSET(0)], ' ')[OFFSET(0)], 5, '0') AS ehr_zip_code
+            SELECT LPAD(SPLIT(SPLIT(TRIM(ehr_zip_code), '-')[OFFSET(0)], ' ')[OFFSET(0)], 5, '0') AS ehr_zip_code
         )
     SELECT
       CASE
