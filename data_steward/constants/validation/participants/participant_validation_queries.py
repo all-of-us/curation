@@ -224,3 +224,11 @@ def get_state_abbreviations():
     e.g. 'al','ak','az',...
     """
     return ','.join(f"'{state}'" for state in STATE_ABBREVIATIONS)
+
+def get_abbreviation_replace_statement(abbreviations):
+    """[summary]
+
+    Args:
+        abbreviations ([type]): [description]
+    """
+    pass

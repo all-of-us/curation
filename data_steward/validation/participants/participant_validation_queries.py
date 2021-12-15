@@ -84,7 +84,7 @@ CREATE FUNCTION IF NOT EXISTS
               CASE
                 WHEN REPLACE(LOWER(TRIM(rdr_state)), 'piistate_', '') IN ({{state_abbreviations}})
                 THEN REPLACE(LOWER(TRIM(rdr_state)), 'piistate_', '')
-                ELSE '' 
+                ELSE NULL
               END AS rdr_state
         )
         , normalized_ehr_state AS (
@@ -92,7 +92,7 @@ CREATE FUNCTION IF NOT EXISTS
               CASE
                 WEHN LOWER(TRIM(ehr_state)) IN ({{state_abbreviations}})
                 THEN LOWER(TRIM(ehr_state))
-                ELSE ''
+                ELSE NULL
               END AS ehr_state
         )
     SELECT
