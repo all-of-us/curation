@@ -2,6 +2,7 @@ import os
 import unittest
 
 import bq_utils
+from gcloud.gcs import StorageClient
 import gcs_utils
 import resources
 import tests.test_util as test_util
@@ -24,6 +25,8 @@ class AchillesTest(unittest.TestCase):
 
     def setUp(self):
         self.hpo_bucket = gcs_utils.get_hpo_bucket(test_util.FAKE_HPO_ID)
+        self.storage_client = StorageClient()
+
         test_util.empty_bucket(self.hpo_bucket)
         test_util.delete_all_tables(bq_utils.get_dataset_id())
 
@@ -33,13 +36,17 @@ class AchillesTest(unittest.TestCase):
 
     def _load_dataset(self):
         for cdm_table in resources.CDM_TABLES:
-            cdm_file_name = os.path.join(test_util.FIVE_PERSONS_PATH,
-                                         cdm_table + '.csv')
-            if os.path.exists(cdm_file_name):
-                test_util.write_cloud_file(self.hpo_bucket, cdm_file_name)
+            cdm_filename: str = f'{cdm_table}.csv'
+            cdm_filepath: str = os.path.join(test_util.FIVE_PERSONS_PATH,
+                                             cdm_filename)
+
+            bucket = self.storage_client.get_bucket(self.hpo_bucket)
+            cdm_blob = bucket.blob(cdm_filename)
+            if os.path.exists(cdm_filepath):
+                cdm_blob.upload_from_filename(cdm_filepath)
             else:
-                test_util.write_cloud_str(self.hpo_bucket, cdm_table + '.csv',
-                                          'dummy\n')
+                cdm_blob.upload_from_string('dummy\n')
+
             bq_utils.load_cdm_csv(FAKE_HPO_ID, cdm_table)
 
     def test_load_analyses(self):

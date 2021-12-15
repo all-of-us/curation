@@ -25,6 +25,7 @@ def get_drc_bucket():
     return result
 
 
+@deprecated(reason='use StorageClient().get_hpo_bucket(str) instead')
 def get_hpo_bucket(hpo_id):
     """
     Get the name of an HPO site's private bucket

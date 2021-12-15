@@ -1,7 +1,7 @@
 """
 Integration test for the validate module for emails, phone_numbers and sex
 
-Ensures that emails, phone numbers, date_of_birth and sex are correctly identified as matches and non-matches
+Ensures that names, emails, phone numbers, date_of_birth and sex are correctly identified as matches and non-matches
 between EHR and RDR.
 """
 
@@ -16,7 +16,7 @@ from google.cloud.bigquery import DatasetReference, Table, TimePartitioning, Tim
 from utils import bq
 from tests import test_util
 from app_identity import PROJECT_ID
-from common import JINJA_ENV, PS_API_VALUES, PII_EMAIL, PII_PHONE_NUMBER
+from common import JINJA_ENV, PS_API_VALUES, PII_EMAIL, PII_PHONE_NUMBER, PII_NAME
 from validation.participants.validate import identify_rdr_ehr_match
 from constants.validation.participants.identity_match import IDENTITY_MATCH_TABLE
 import resources
@@ -34,32 +34,32 @@ concept_schema = [
 
 POPULATE_PS_VALUES = JINJA_ENV.from_string("""
 INSERT INTO `{{project_id}}.{{drc_dataset_id}}.{{ps_values_table_id}}` 
-(person_id, email, phone_number, date_of_birth, sex)
+(person_id, first_name, middle_name, last_name, email, phone_number, date_of_birth, sex)
 VALUES 
-    (1, 'john@gmail.com', '(123)456-7890', date('1978-10-01'), 'SexAtBirth_Female'),
-    (2, 'rebecca@gmail.com', '1234567890', date('1984-10-23'), 'SexAtBirth_Male'),
-    (3, 'samwjeo', '123456-7890', date('2003-01-05'), 'SexAtBirth_SexAtBirthNoneOfThese'),
-    (4,'chris@gmail.com', '1234567890', date('2003-05-1'), 'SexAtBirth_Intersex'),
-    (5, '  johndoe@gmail.com  ', '', date('1993-11-01'), 'PMI_Skip'),
-    (6, 'rebeccamayers@gmail.co', '814321-0987', NULL, 'PMI_PreferNotToAnswer'),
-    (7, 'leo@yahoo.com', '0987654321', date('1981-10-01'), 'UNSET'),
-    (8, '', '1-800-800-0911', date('1999-12-01'), 'SexAtBirth_SexAtBirthNoneOfThese'),
-    (9, 'jd@gmail.com', '555-555-1234', date('2002-03-14'), 'SexAtBirth_Female')
+    (1, 'John', 'Jacob', 'Smith', 'john@gmail.com', '(123)456-7890', date('1978-10-01'), 'SexAtBirth_Female'),
+    (2, 'Rebecca', 'Howard', 'Glass', 'rebecca@gmail.com', '1234567890', date('1984-10-23'), 'SexAtBirth_Male'),
+    (3, 'Sam', 'Felix Rose', 'Smith', 'samwjeo', '123456-7890', date('2003-01-05'), 'SexAtBirth_SexAtBirthNoneOfThese'),
+    (4, 'Chris', 'Arthur', 'Smith', 'chris@gmail.com', '1234567890', date('2003-05-1'), 'SexAtBirth_Intersex'),
+    (5, 'John', NULL, 'Doe', '  johndoe@gmail.com  ', '', date('1993-11-01'), 'PMI_Skip'),
+    (6, 'Rebecca', '', 'Mayers-James', 'rebeccamayers@gmail.co', '814321-0987', NULL, 'PMI_PreferNotToAnswer'),
+    (7, 'Leo', '', "O’Keefe", 'leo@yahoo.com', '0987654321', date('1981-10-01'), 'UNSET'),
+    (8, '1ois', 'Frankl1n', 'Rhodes', '', '1-800-800-0911', date('1999-12-01'), 'SexAtBirth_SexAtBirthNoneOfThese'),
+    (9, 'Jack', 'Isaac', 'Dean', 'jd@gmail.com', '555-555-1234', date('2002-03-14'), 'SexAtBirth_Female')
 """)
 
 POPULATE_ID_MATCH = JINJA_ENV.from_string("""
 INSERT INTO `{{project_id}}.{{drc_dataset_id}}.{{id_match_table_id}}` 
-(person_id, email, phone_number, sex, algorithm)
+(person_id, first_name, middle_name, last_name, email, phone_number, sex, algorithm)
 VALUES 
-    (1, 'missing_ehr', 'missing_ehr', 'missing_ehr', 'no'),
-    (2, 'missing_ehr', 'missing_ehr', 'missing_ehr', 'no'),
-    (3, 'missing_ehr', 'missing_ehr', 'missing_ehr', 'no'),
-    (4, 'missing_ehr', 'missing_ehr', 'missing_ehr', 'no'),
-    (5, 'missing_ehr', 'missing_ehr', 'missing_ehr', 'no'),
-    (6, 'missing_ehr', 'missing_ehr', 'missing_ehr', 'no'),
-    (7, 'missing_ehr', 'missing_ehr', 'missing_ehr', 'no'),
-    (8, 'missing_ehr', 'missing_ehr', 'missing_ehr', 'no'),
-    (9, 'missing_ehr', 'missing_ehr', 'missing_ehr', 'no')
+    (1, 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'no'),
+    (2, 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'no'),
+    (3, 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'no'),
+    (4, 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'no'),
+    (5, 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'no'),
+    (6, 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'no'),
+    (7, 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'no'),
+    (8, 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'no'),
+    (9, 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'no')
 """)
 
 ID_MATCH_CONTENT_QUERY = JINJA_ENV.from_string("""
@@ -78,6 +78,7 @@ class ValidateTest(TestCase):
         print('**************************************************************')
 
     def setUp(self):
+        self.maxDiff = None
         self.project_id = os.environ.get(PROJECT_ID)
         self.dataset_id = os.environ.get('COMBINED_DATASET_ID')
         self.dataset_ref = DatasetReference(self.project_id, self.dataset_id)
@@ -88,6 +89,7 @@ class ValidateTest(TestCase):
         self.ps_values_table_id = f'{PS_API_VALUES}_{self.hpo_id}'
         self.pii_email_table_id = f'{self.hpo_id}_pii_email'
         self.pii_phone_number_table_id = f'{self.hpo_id}_pii_phone_number'
+        self.pii_name_table_id = f'{self.hpo_id}_pii_name'
         self.person_table_id = f'{self.hpo_id}_person'
         self.fq_concept_table = f'{self.project_id}.{self.dataset_id}.concept'
 
@@ -125,7 +127,15 @@ class ValidateTest(TestCase):
         job = self.client.query(populate_query)
         job.result()
 
-        # Create and populate pii_email and pii_phone_number table
+        # Create and populate pii_name, pii_email, and pii_phone_number table
+
+        schema = resources.fields_for(f'{PII_NAME}')
+        table = Table(
+            f'{self.project_id}.{self.dataset_id}.{self.pii_name_table_id}',
+            schema=schema)
+        table.time_partitioning = TimePartitioning(
+            type_=TimePartitioningType.HOUR)
+        table = self.client.create_table(table, exists_ok=True)
 
         schema = resources.fields_for(f'{PII_EMAIL}')
         table = Table(
@@ -180,6 +190,21 @@ class ValidateTest(TestCase):
                     (8, '800-8000911')
                 """)
 
+        POPULATE_PII_NAME = JINJA_ENV.from_string("""
+            INSERT INTO `{{project_id}}.{{drc_dataset_id}}.{{pii_name_table_id}}`
+            (person_id, first_name, middle_name, last_name)
+            VALUES
+                (1, 'john', 'jacob', 'smith'),
+                (2, 'rebecca', 'howard', 'glass'),
+                (3, 'Sam', 'Felix-rose', 'Smith'), -- hyphentated middle name, still matches --
+                (4, 'Kris', 'Arthur', 'Smith'), -- nonmatched first name --
+                (5, 'John', 'Christian', 'Doe'), -- missing middle name in rdr --
+                (6, 'Rebecca', '', 'MayersJames'),
+                (7, 'Leo', '', "o'keefe"),
+                (8, 'lois', 'Franklin', 'Rhodes'), -- nonmatched first and middle name --
+                (9, 'John', 'Moses', 'Dexter') -- all three names do not match --
+
+        """)
         POUPLATE_PERSON_TABLE = JINJA_ENV.from_string("""
                 INSERT INTO `{{project_id}}.{{drc_dataset_id}}.{{person_table_id}}` 
                 (person_id, gender_concept_id, birth_datetime)
@@ -223,6 +248,13 @@ class ValidateTest(TestCase):
         job = self.client.query(phone_number_populate_query)
         job.result()
 
+        name_populate_query = POPULATE_PII_NAME.render(
+            project_id=self.project_id,
+            drc_dataset_id=self.dataset_id,
+            pii_name_table_id=self.pii_name_table_id)
+        job = self.client.query(name_populate_query)
+        job.result()
+
         populate_person_query = POUPLATE_PERSON_TABLE.render(
             project_id=self.project_id,
             drc_dataset_id=self.dataset_id,
@@ -244,12 +276,15 @@ class ValidateTest(TestCase):
 
         # Subset of id match fields to test
         subset_fields = [
-            'person_id', 'email', 'phone_number', 'sex', 'birth_date',
-            'algorithm'
+            'person_id', 'first_name', 'middle_name', 'last_name', 'email',
+            'phone_number', 'sex', 'birth_date', 'algorithm'
         ]
 
         expected = [{
             'person_id': 1,
+            'first_name': 'match',
+            'middle_name': 'match',
+            'last_name': 'match',
             'email': 'no_match',
             'phone_number': 'no_match',
             'birth_date': 'match',
@@ -257,6 +292,9 @@ class ValidateTest(TestCase):
             'algorithm': 'yes'
         }, {
             'person_id': 2,
+            'first_name': 'match',
+            'middle_name': 'match',
+            'last_name': 'match',
             'email': 'match',
             'phone_number': 'match',
             'birth_date': 'match',
@@ -264,6 +302,9 @@ class ValidateTest(TestCase):
             'algorithm': 'yes'
         }, {
             'person_id': 3,
+            'first_name': 'match',
+            'middle_name': 'match',
+            'last_name': 'match',
             'email': 'missing_ehr',
             'phone_number': 'missing_ehr',
             'birth_date': 'no_match',
@@ -271,6 +312,9 @@ class ValidateTest(TestCase):
             'algorithm': 'yes'
         }, {
             'person_id': 4,
+            'first_name': 'no_match',
+            'middle_name': 'match',
+            'last_name': 'match',
             'email': 'match',
             'phone_number': 'match',
             'birth_date': 'match',
@@ -278,6 +322,9 @@ class ValidateTest(TestCase):
             'algorithm': 'yes'
         }, {
             'person_id': 5,
+            'first_name': 'match',
+            'middle_name': 'missing_rdr',
+            'last_name': 'match',
             'email': 'match',
             'phone_number': 'match',
             'birth_date': 'no_match',
@@ -285,6 +332,9 @@ class ValidateTest(TestCase):
             'algorithm': 'yes'
         }, {
             'person_id': 6,
+            'first_name': 'match',
+            'middle_name': 'match',
+            'last_name': 'match',
             'email': 'no_match',
             'phone_number': 'match',
             'birth_date': 'missing_rdr',
@@ -292,6 +342,9 @@ class ValidateTest(TestCase):
             'algorithm': 'yes'
         }, {
             'person_id': 7,
+            'first_name': 'match',
+            'middle_name': 'match',
+            'last_name': 'match',
             'email': 'no_match',
             'phone_number': 'no_match',
             'birth_date': 'no_match',
@@ -299,6 +352,9 @@ class ValidateTest(TestCase):
             'algorithm': 'yes'
         }, {
             'person_id': 8,
+            'first_name': 'no_match',
+            'middle_name': 'no_match',
+            'last_name': 'match',
             'email': 'no_match',
             'phone_number': 'no_match',
             'birth_date': 'match',
@@ -306,6 +362,9 @@ class ValidateTest(TestCase):
             'algorithm': 'yes'
         }, {
             'person_id': 9,
+            'first_name': 'no_match',
+            'middle_name': 'no_match',
+            'last_name': 'no_match',
             'email': 'missing_ehr',
             'phone_number': 'missing_ehr',
             'birth_date': 'missing_ehr',

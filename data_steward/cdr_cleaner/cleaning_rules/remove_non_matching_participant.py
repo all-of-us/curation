@@ -11,6 +11,7 @@ import bq_utils
 import resources
 import oauth2client
 import googleapiclient
+from google.cloud.exceptions import NotFound
 from utils import bq
 from validation.participants import readers
 from cdr_cleaner.cleaning_rules import sandbox_and_remove_pids as remove_pids
@@ -67,6 +68,21 @@ def exist_participant_match(ehr_dataset_id, hpo_id):
         bq_utils.get_table_id(hpo_id, PARTICIPANT_MATCH), ehr_dataset_id)
 
 
+def exist_identity_match(client, table_id):
+    """
+    This function checks if the hpo has valid the identity_match table
+
+    :param client:
+    :param table_id:
+    :return:
+    """
+    try:
+        client.get_table(table_id)
+        return True
+    except NotFound:
+        return False
+
+
 def get_missing_criterion(field_names):
     """
     This function generates a bigquery column expression for missing criteria
@@ -81,10 +97,12 @@ def get_missing_criterion(field_names):
     return joined_column_expr
 
 
-def get_list_non_match_participants(project_id, validation_dataset_id, hpo_id):
+def get_list_non_match_participants(client, project_id, validation_dataset_id,
+                                    hpo_id):
     """
     This function retrieves a list of non-match participants
-    
+
+    :param client:
     :param project_id: 
     :param validation_dataset_id:
     :param hpo_id: 
@@ -93,6 +111,10 @@ def get_list_non_match_participants(project_id, validation_dataset_id, hpo_id):
 
     # get the the hpo specific <hpo_id>_identity_match
     identity_match_table = bq_utils.get_table_id(hpo_id, IDENTITY_MATCH)
+    result = []
+    fq_identity_match_table = f'{project_id}.{validation_dataset_id}.{identity_match_table}'
+    if not exist_identity_match(client, fq_identity_match_table):
+        return result
 
     non_match_participants_query = get_non_match_participant_query(
         project_id, validation_dataset_id, identity_match_table)
@@ -119,7 +141,8 @@ def get_list_non_match_participants(project_id, validation_dataset_id, hpo_id):
         raise bq_utils.BigQueryJobWaitError(incomplete_jobs)
 
     # return the person_ids only
-    return [row[PERSON_ID_FIELD] for row in bq_utils.response2rows(results)]
+    result = [row[PERSON_ID_FIELD] for row in bq_utils.response2rows(results)]
+    return result
 
 
 def get_non_match_participant_query(project_id, validation_dataset_id,
@@ -176,6 +199,8 @@ def delete_records_for_non_matching_participants(project_id, dataset_id,
     :return: 
     """
 
+    client = bq.get_client(project_id)
+
     if ehr_dataset_id is None:
         raise RuntimeError(
             'Required parameter ehr_dataset_id not'
@@ -196,7 +221,7 @@ def delete_records_for_non_matching_participants(project_id, dataset_id,
                 format(hpo_id=hpo_id))
 
             non_matching_person_ids.extend(
-                get_list_non_match_participants(project_id,
+                get_list_non_match_participants(client, project_id,
                                                 validation_dataset_id, hpo_id))
         else:
             LOGGER.info(
