@@ -26,8 +26,9 @@ from .participant_validation_queries import CREATE_COMPARISON_FUNCTION_QUERIES
 from constants.validation.participants.identity_match import IDENTITY_MATCH_TABLE
 from constants.validation.participants.participant_validation_queries import (
     get_gender_comparison_case_statement, get_state_abbreviations,
-    get_abbreviation_replace_statement, ADDRESS_ABBREVIATIONS,
-    CITY_ABBREVIATIONS, MATCH, NO_MATCH, MISSING_EHR, MISSING_RDR)
+    get_city_abbreviation_replace_statement, get_abbreviation_replace_statement,
+    ADDRESS_ABBREVIATIONS, CITY_ABBREVIATIONS, MATCH, NO_MATCH, MISSING_EHR,
+    MISSING_RDR)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -97,11 +98,13 @@ def identify_rdr_ehr_match(client,
             missing_rdr=MISSING_RDR,
             missing_ehr=MISSING_EHR,
             gender_case_when_conditions=get_gender_comparison_case_statement(),
-            state_abbreviations=get_state_abbreviations(),
-            address_replace_statement=get_abbreviation_replace_statement(
-                ADDRESS_ABBREVIATIONS),
-            city_replace_statement=get_abbreviation_replace_statement(
-                CITY_ABBREVIATIONS))
+            state_abbreviations=get_state_abbreviations(
+            ),  # TODO talk with Jason & Krishna on design
+            # address_replace_statement=get_abbreviation_replace_statement(
+            #     ADDRESS_ABBREVIATIONS
+            # ),  # TODO talk with Jason & Krishna on design
+            city_with_statement=get_city_abbreviation_replace_statement()
+        )  # TODO talk with Jason & Krishna on design
         job = client.query(query)
         job.result()
 

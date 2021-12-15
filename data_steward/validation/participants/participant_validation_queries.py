@@ -59,12 +59,7 @@ CREATE_CITY_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
 CREATE FUNCTION IF NOT EXISTS
   `{{project_id}}.{{drc_dataset_id}}.CompareCity`(rdr_city string, ehr_city string)
   RETURNS string AS ((
-        WITH normalized_rdr_city AS (
-            SELECT REGEXP_REPLACE(LOWER(TRIM(rdr_city)), '[^A-Za-z]', '') AS rdr_city
-        )
-        , normalized_ehr_city AS (
-            SELECT REGEXP_REPLACE(LOWER(TRIM(rdr_city)), '[^A-Za-z]', '') AS rdr_city
-        )
+    {{city_with_statement}}
     SELECT
       CASE
         WHEN normalized_rdr_city.rdr_city = normalized_ehr_city.ehr_city THEN '{{match}}'

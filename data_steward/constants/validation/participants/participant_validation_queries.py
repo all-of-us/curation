@@ -1,3 +1,4 @@
+from collections import deque
 import re
 
 RDR_SEX = 'rdr_sex'
@@ -225,10 +226,53 @@ def get_state_abbreviations():
     """
     return ','.join(f"'{state}'" for state in STATE_ABBREVIATIONS)
 
-def get_abbreviation_replace_statement(abbreviations):
+
+# def get_abbreviation_replace_statement(abbreviations):
+#     """[summary]
+
+#     Args:
+#         abbreviations ([type]): [description]
+#     """
+#     pass
+
+
+def get_city_abbreviation_replace_statement():
     """[summary]
+
+        WITH normalized_rdr_city AS (
+            SELECT REGEXP_REPLACE(LOWER(TRIM(rdr_city)), '[^A-Za-z]', '') AS rdr_city
+        )
+        , normalized_ehr_city AS (
+            SELECT REGEXP_REPLACE(LOWER(TRIM(ehr_city)), '[^A-Za-z]', '') AS ehr_city
+        )
 
     Args:
         abbreviations ([type]): [description]
     """
-    pass
+    statement_1 = deque(
+        ["REGEXP_REPLACE(LOWER(TRIM(rdr_city)), '[^A-Za-z]', '')"])
+
+    for key in CITY_ABBREVIATIONS:
+        statement_1.appendleft("REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(")
+        statement_1.append(f",'^{key} ','{CITY_ABBREVIATIONS[key]} ')")
+        statement_1.append(f",' {key}$',' {CITY_ABBREVIATIONS[key]}')")
+        statement_1.append(f",' {key} ',' {CITY_ABBREVIATIONS[key]} ')")
+
+    statement_1.appendleft("WITH normalized_rdr_city AS (SELECT ")
+    statement_1.append(f" AS rdr_city),")
+
+    statement_2 = deque(
+        ["REGEXP_REPLACE(LOWER(TRIM(ehr_city)), '[^A-Za-z]', '')"])
+
+    for key in CITY_ABBREVIATIONS:
+        statement_2.appendleft("REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(")
+        statement_2.append(f",'^{key} ','{CITY_ABBREVIATIONS[key]} ')")
+        statement_2.append(f",' {key}$',' {CITY_ABBREVIATIONS[key]}')")
+        statement_2.append(f",' {key} ',' {CITY_ABBREVIATIONS[key]} ')")
+
+    statement_2.appendleft("normalized_ehr_city AS (SELECT ")
+    statement_2.append(f" AS ehr_city),")
+    
+    statement = statement_1 + statement_2
+    
+    return ''.join(statement)
