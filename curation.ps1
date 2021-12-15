@@ -39,12 +39,10 @@ $dkr_run_args = @(
   "-v", """${pwd}/.circleci:/home/curation/project/curation/.circleci"""
 )
 
-# If running specific tests
+# If running specific tests using env var
 if ((Test-Path "env:CURATION_TESTS_FILEPATH") -and (-not ($env:CURATION_TESTS_FILEPATH -eq "") ))
 {
-  # If env var is set containing test filepaths, include it and update paths to relative paths
-  (Get-Content "env:CURATION_TESTS_FILEPATH").replace('.*curation', '.') | Set-Content "env:CURATION_TESTS_FILEPATH"
-  $tests_path = (Resolve-Path "env:CURATION_TESTS_FILEPATH")
+  $tests_path = (Resolve-Path $env:CURATION_TESTS_FILEPATH)
   $dkr_run_args += "-v"
   $dkr_run_args += """${tests_path}:/home/curation/project/curation/tests/tests-to-run"""
   $dkr_run_args += "-e"

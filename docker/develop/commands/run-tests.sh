@@ -130,18 +130,23 @@ fi
 
 if [ "${run_unit}" -eq 1 ] || [ "${run_integration}" -eq 1 ]; then
   echo "Running test setup script(s)..."
-
-# determine if env var is set containing test filepaths
-if [[ -n "${CURATION_TESTS_FILEPATH}" ]]; then
-  echo "----------------------------------------------------------------------"
-  echo "Running the following tests in filepath ${CURATION_TESTS_FILEPATH}:"
-  while read -r line; do
-    echo "$line"
-  done < "${CURATION_TESTS_FILEPATH}"
-  echo "----------------------------------------------------------------------"
-fi
-
   require_ok "run-tests/10_prep_output_paths.sh"
+
+  # determine if env var is set containing test filepaths
+  if [[ -n "${CURATION_TESTS_FILEPATH}" ]]; then
+    # Make a copy of the original file to modify and use
+    cp "${CURATION_TESTS_FILEPATH}" "${CURATION_TESTS_FILEPATH}-modified"
+    export CURATION_TESTS_FILEPATH="${CURATION_TESTS_FILEPATH}-modified"
+    # Update paths in file to relative paths since it is mounted
+    sed -i 's/.*curation/\./g' "${CURATION_TESTS_FILEPATH}"
+    # If paths are Windows-like, set to unix-like
+    sed -i 's/\\/\//g' "${CURATION_TESTS_FILEPATH}"
+
+    echo "Running the following tests in filepath ${CURATION_TESTS_FILEPATH}:"
+    while read -r line; do
+      echo "$line"
+    done < "${CURATION_TESTS_FILEPATH}"
+  fi
 fi
 
 if [ "${run_unit}" -eq 1 ]; then

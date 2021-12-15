@@ -49,13 +49,10 @@ dkr_run_args=(
   "$(pwd)/.circleci:/home/curation/project/curation/.circleci:z"
 )
 
-# If running specific tests
+# If running specific tests using env var
 if [[ -n "${CURATION_TESTS_FILEPATH}" && -s "${CURATION_TESTS_FILEPATH}" ]]; then
-  # If env var is set containing test filepaths, include it and update paths to relative paths
-  # -i.bak allows running on both BSD/mac and GNU
-  sed -i.bak 's/.*curation/\./g' "${CURATION_TESTS_FILEPATH}"
   dkr_run_args+=("-v")
-  dkr_run_args+=("$(realpath "${CURATION_TESTS_FILEPATH}"):/home/curation/project/curation/tests/tests-to-run")
+  dkr_run_args+=("$(realpath "${CURATION_TESTS_FILEPATH}"):/home/curation/project/curation/tests/tests-to-run:z")
   dkr_run_args+=("-e")
   dkr_run_args+=("CURATION_TESTS_FILEPATH=/home/curation/project/curation/tests/tests-to-run")
 fi
