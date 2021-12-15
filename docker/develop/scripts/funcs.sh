@@ -270,6 +270,21 @@ function activate_gcloud() {
   gcloud auth activate-service-account --key-file "${GOOGLE_APPLICATION_CREDENTIALS}"
 }
 
+# Public: Execute function, capturing output
+#
+# Allows for "testing" of any funcs defined in the runtime this is called within
+#
+# $1 - Name of function to execute, cannot be self
+# ${2...} - (Optional) Set of arguments to pass to $1
+#
+# Examples:
+#
+#   // execute without args
+#   capture_execution printenv
+#
+#   // execute with args
+#   capture_execution ensure_only_alphanumeric "what*is)love"
+#
 function capture_execution() {
   local func_args=("$@")
   local tfunc_name
@@ -278,13 +293,16 @@ function capture_execution() {
   local exec_res_code
 
   tfunc_name="${func_args[*]::1}"
+  if [[ "${tfunc_name}" == "capture_execution" ]]; then
+    echo "Cannot execute myself"
+    exit 1
+  fi
+
   tfunc_args=()
   for v in "${func_args[@]:1}"
   do
     tfunc_args+=("${v}")
   done
-
-  echo ""
 
   if [[ ! $(type -t "${tfunc_name}") == function ]]; then
     echo "No function named ${tfunc_name} is defined"
@@ -327,6 +345,20 @@ function capture_execution() {
 
 # Public: Execute a function, erroring if it exited non-zero
 #
+# Executes a provided script with args in a new subshell, capturing
+# the output and exit codes.  If a non-zero exit code is seen, prints output
+# and returns non-zero.
+#
+# $1 - Path of script to execute, must be under directory defined by $CURATION_SCRIPTS_DIR
+# ${2..} - (Optional) Set of args to pass to $1
+#
+# Examples:
+#
+#   // execute without args
+#   require_ok "run-tests/lint_00_validate_commit_message.sh"
+#
+#   // execute with args
+#  require_ok "run-tests/integration_10_execute.sh" "${integration_args[@]}"
 #
 function require_ok() {
   local func_args=("$@")
