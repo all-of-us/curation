@@ -57,13 +57,6 @@ class DeleteStaleTestDatasetsTest(TestCase):
         self.mock_table = Mock()
 
     @patch('tools.delete_stale_test_datasets.bq')
-    def test_check_project(self, mock_bq):
-        mock_bq.get_client.project = os.environ.get('GOOGLE_CLOUD_PROJECT')
-
-        self.assertIsNone(
-            delete_stale_test_datasets._check_project(mock_bq.get_client))
-
-    @patch('tools.delete_stale_test_datasets.bq')
     def test_check_project_error(self, mock_bq):
         mock_bq.get_client.project = 'aou-wrong-project-name'
 
