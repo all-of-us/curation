@@ -263,7 +263,7 @@ function activate_gcloud() {
         -out "${GOOGLE_APPLICATION_CREDENTIALS}"
   fi
 
-  # DC-2048: ensure project is set for the runtime config (defaults to "default")
+  # DC-2043: ensure project is set for the runtime config (defaults to "default")
   gcloud config set project "${GOOGLE_CLOUD_PROJECT}"
 
   # activate service account
