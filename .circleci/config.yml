@@ -110,6 +110,15 @@ jobs:
           name: Delete stale test datasets
           command: ./curation.sh delete-stale-test-datasets
 
+  delete_stale_test_buckets:
+    <<: *job_defaults
+    steps:
+      - build
+      - printenv
+      - run:
+          name: Delete stale test buckets
+          command: ./curation.sh delete-stale-test-buckets
+
 workflows:
   version: 2
   test:
@@ -133,3 +142,4 @@ workflows:
     jobs:
       - integration_test
       - delete_stale_test_datasets
+      - delete_stale_test_buckets

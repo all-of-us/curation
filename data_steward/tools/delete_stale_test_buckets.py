@@ -1,7 +1,12 @@
 """
-Delete stale buckets in test environment. 
+Delete first_n stale buckets in test environment. 
+Stale buckets meet all of the following conditions:
+(1) equal to or older than 90 days old, 
+(2) empty, and 
+(3) in test environment.
 """
 from datetime import datetime, timezone
+import argparse
 import logging
 
 # Project imports
@@ -19,11 +24,10 @@ def _check_project(storage_client):
     :return: None if the project is set properly
     :raise: ValueError if project is not 'aou-res-curation-test'
     """
-    test_project = 'aou-res-curation-test'
 
-    if storage_client.project != test_project:
+    if 'test' not in storage_client.project:
         raise ValueError(
-            f'Wrong project: {storage_client.project}. This script runs only for {test_project}'
+            f'Wrong project: {storage_client.project}. This script runs only for test environment.'
         )
 
     return None
@@ -66,6 +70,19 @@ def _filter_stale_buckets(storage_client, first_n: int = None):
     return stale_buckets
 
 
+def get_arg_parser():
+    parser = argparse.ArgumentParser(
+        description="""Delete first_n stale buckets in test environment.""")
+    parser.add_argument('--first_n',
+                        action='store',
+                        type=int,
+                        dest='first_n',
+                        help='First n stale buckets to delete.',
+                        required=True)
+
+    return parser
+
+
 def main():
 
     pipeline_logging.configure(logging.INFO, add_console_handler=True)
@@ -82,4 +99,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    parser = get_arg_parser()
+    args = parser.parse_args()
+
+    main(args.first_n)

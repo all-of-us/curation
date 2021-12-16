@@ -45,15 +45,8 @@ class DeleteStaleTestBucketsTest(TestCase):
         self.mock_blob.name = 'dummy.csv'
 
     @patch('tools.delete_stale_test_buckets.StorageClient')
-    def test_check_project(self, mock_storage_client):
-        mock_storage_client.project = 'aou-res-curation-test'
-
-        self.assertIsNone(
-            delete_stale_test_buckets._check_project(mock_storage_client))
-
-    @patch('tools.delete_stale_test_buckets.StorageClient')
     def test_check_project_error(self, mock_storage_client):
-        mock_storage_client.project = 'aou-res-curation-test-wrong-name'
+        mock_storage_client.project = 'aou-wrong-project-name'
 
         with self.assertRaises(ValueError):
             delete_stale_test_buckets._check_project(mock_storage_client)
