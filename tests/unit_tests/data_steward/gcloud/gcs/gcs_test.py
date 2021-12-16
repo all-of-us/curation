@@ -36,9 +36,6 @@ class GCSTest(TestCase):
         self.prefix = 'foo_prefix/'
         self.file_name = 'foo_file.csv'
 
-    def side_effect(self, init_arg):
-        return init_arg
-
     @patch('google.auth.default')
     @patch('gcloud.gcs.AuthorizedSession')
     def test_get_items_metadata(self, mock_authed_session, mock_auth_default):
