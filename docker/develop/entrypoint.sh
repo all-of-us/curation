@@ -3,7 +3,7 @@
 # load functions
 source "${CURATION_SCRIPTS_DIR}"/funcs.sh
 
-# DC-2048: Always load common envvars
+# DC-2043: Always load common envvars
 define_common_envvars > /dev/null
 
 HELP_TEXT=$(
