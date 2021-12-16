@@ -201,9 +201,12 @@ function define_common_envvars() {
   set_env "GOOGLE_CLOUD_PROJECT_ID" "${APPLICATION_ID}"
   set_env "PROJECT_PREFIX" "${APPLICATION_ID//-/_}"
 
+  # Parallelism env var
+  set_env "CIRCLE_NODE_INDEX" "${CIRCLE_NODE_INDEX}" 0
+
   ## dataset envvars
 
-  set_env "DATASET_PREFIX" "${PROJECT_USERNAME}_${USERNAME_PREFIX}_${CURRENT_BRANCH}"
+  set_env "DATASET_PREFIX" "${PROJECT_USERNAME}_${USERNAME_PREFIX}_${CURRENT_BRANCH}_${CIRCLE_NODE_INDEX}"
 
   set_env "BIGQUERY_DATASET_ID" "${DATASET_PREFIX}"_ehr
   set_env "RDR_DATASET_ID" "${DATASET_PREFIX}"_rdr
@@ -216,7 +219,7 @@ function define_common_envvars() {
 
   ## bucket envvars
 
-  set_env "BUCKET_PREFIX" "${PROJECT_USERNAME}"_"${USERNAME_PREFIX}"_"${CURRENT_BRANCH}"
+  set_env "BUCKET_PREFIX" "${PROJECT_USERNAME}"_"${USERNAME_PREFIX}"_"${CURRENT_BRANCH}_${CIRCLE_NODE_INDEX}"
 
   set_env "DRC_BUCKET_NAME" "${BUCKET_PREFIX}"_drc
   set_env "BUCKET_NAME_FAKE" "${BUCKET_PREFIX}"_fake
@@ -224,7 +227,6 @@ function define_common_envvars() {
   set_env "BUCKET_NAME_PITT" "${BUCKET_PREFIX}"_pitt
   set_env "BUCKET_NAME_CHS" "${BUCKET_PREFIX}"_chs
   set_env "BUCKET_NAME_UNIONED_EHR" "${BUCKET_PREFIX}"_unioned_ehr
-  set_env "BUCKET_NAME_${BUCKET_PREFIX}_FAKE" "${BUCKET_NAME_FAKE}"
 }
 
 # Public: Activate Google sdk's
