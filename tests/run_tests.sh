@@ -11,7 +11,7 @@ subset="all"
 
 function usage() {
   echo "Usage: run_test.sh " \
-      "[-s all|unit|integration]" \
+      "[-s unit|integration]" \
       "[-r <file name match glob, e.g. 'extraction_*'>]" >& 2
   exit 1
 }
@@ -42,21 +42,27 @@ fi
 if [[ "$subset" == "unit" ]]
 then
   path="tests/unit_tests/"
-  coverage_file=".coveragerc_unit"
+  coverage_arg="--coverage-file .coveragerc_unit"
 elif [[ "$subset" == "integration" ]]
 then
   path="tests/integration_tests/"
-  coverage_file=".coveragerc_integration"
+  coverage_arg="--coverage-file .coveragerc_integration"
 else
-  path="tests/"
-  coverage_file=".coveragerc"
+  echo "Please specify unit or integration tests"
+  exit 1
+fi
+
+if [[ -n "${CURATION_TESTS_FILEPATH}" && -s "${CURATION_TESTS_FILEPATH}" ]]; then
+  test_arg="--test-paths-filepath ${CURATION_TESTS_FILEPATH}"
+else
+  test_arg=""
 fi
 
 if [[ -z ${substring} ]]
 then
-  cmd="tests/runner.py --test-path ${path} ${sdk_dir} --coverage-file ${coverage_file}"
+  cmd="tests/runner.py --test-dir ${path}  ${coverage_arg} ${test_arg}"
 else
-  cmd="tests/runner.py --test-path ${path} ${sdk_dir} --test-pattern $substring --coverage-file ${coverage_file}"
+  cmd="tests/runner.py --test-dir ${path} --test-pattern $substring ${coverage_arg} ${test_arg}"
 fi
 
 (cd "${BASE_DIR}"; PYTHONPATH=./:./data_steward:${PYTHONPATH} python ${cmd})

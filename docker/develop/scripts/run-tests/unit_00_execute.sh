@@ -6,7 +6,7 @@ set +x
 # build test run arg list
 run_args=(
   "${CIRCLE_WORKING_DIRECTORY}/tests/runner.py"
-  "--test-path"
+  "--test-dir"
   "${CIRCLE_WORKING_DIRECTORY}/tests/unit_tests"
   "--coverage-file"
   "${CIRCLE_WORKING_DIRECTORY}/.coveragerc_unit"

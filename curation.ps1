@@ -44,9 +44,9 @@ if ((Test-Path "env:CURATION_TESTS_FILEPATH") -and (-not ($env:CURATION_TESTS_FI
 {
   $tests_path = (Resolve-Path $env:CURATION_TESTS_FILEPATH)
   $dkr_run_args += "-v"
-  $dkr_run_args += """${tests_path}:/home/curation/project/curation/tests/tests-to-run"""
+  $dkr_run_args += """${tests_path}:/tests-to-run.txt"""
   $dkr_run_args += "-e"
-  $dkr_run_args += """CURATION_TESTS_FILEPATH=/home/curation/project/curation/tests/tests-to-run"""
+  $dkr_run_args += """CURATION_TESTS_FILEPATH=/tests-to-run.txt"""
 }
 
 if (-not (in_ci))

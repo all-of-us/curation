@@ -47,7 +47,7 @@ if [[ $run_forced -eq 1 ]] || [[ $in_dev_branch -eq 1 ]] || [[ $is_pr -eq 1 ]] |
   # build test run arg list
   run_args=(
     "${CIRCLE_WORKING_DIRECTORY}/tests/runner.py"
-    "--test-path"
+    "--test-dir"
     "${CIRCLE_WORKING_DIRECTORY}/tests/integration_tests"
     "--coverage-file"
     "${CIRCLE_WORKING_DIRECTORY}/.coveragerc_integration"
