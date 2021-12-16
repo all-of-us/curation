@@ -1,11 +1,8 @@
 # Python imports
 import json
 from unittest import TestCase
-from unittest import mock
 from unittest.mock import patch, MagicMock, PropertyMock
 from typing import Callable
-
-from google.auth import credentials
 
 # Third party imports
 # Project imports
