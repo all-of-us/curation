@@ -22,7 +22,7 @@ class StorageClient(Client):
     See https://googleapis.dev/python/storage/latest/client.html
     """
 
-    def get_items_metadata(self, bucket: Bucket) -> list[dict]:
+    def get_items_metadata(self, bucket: Bucket) -> list:
         """
         Get metadata for each object within a bucket
         :param bucket: Bucket to inspect

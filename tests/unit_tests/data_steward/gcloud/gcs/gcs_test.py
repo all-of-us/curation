@@ -1,10 +1,13 @@
 # Python imports
+import json
 from unittest import TestCase
-from unittest.mock import patch, MagicMock
+from unittest import mock
+from unittest.mock import patch, MagicMock, PropertyMock
 from typing import Callable
 
-# Third party imports
+from google.auth import credentials
 
+# Third party imports
 # Project imports
 from gcloud.gcs import StorageClient
 
@@ -32,6 +35,33 @@ class GCSTest(TestCase):
         self.bucket = 'foo_bucket'
         self.prefix = 'foo_prefix/'
         self.file_name = 'foo_file.csv'
+
+    def side_effect(self, init_arg):
+        return init_arg
+
+    @patch('google.auth.default')
+    @patch('gcloud.gcs.AuthorizedSession')
+    def test_get_items_metadata(self, mock_authed_session, mock_auth_default):
+
+        mock_bucket = MagicMock()
+        mock_bucket.name = 'mock_bucket_name'
+
+        mock_credentials, _ = 'mock_credentials', None
+        mock_auth_default.return_value = (mock_credentials, None)
+
+        expected: dict = {'items': [{'metakey': 'metavalue'}]}
+        return_value: str = json.dumps(expected)
+
+        mock_response = MagicMock()
+        type(mock_response).content = PropertyMock(return_value=return_value)
+
+        mocked_session = mock_authed_session(mock_credentials)
+        mocked_session.request.return_value = mock_response
+
+        actual = self.client.get_items_metadata(mock_bucket)
+
+        mock_authed_session.assert_called_with(mock_credentials)
+        self.assertEqual(actual, expected['items'])
 
     @patch.object(DummyClient, 'list_blobs')
     def test_empty_bucket(self, mock_list_blobs):
