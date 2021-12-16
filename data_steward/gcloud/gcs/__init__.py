@@ -3,13 +3,17 @@ Interact with Google Cloud Storage (GCS)
 """
 # Python stl imports
 import os
+import json
 
 # Project imports
 from validation.app_errors import BucketDoesNotExistError
 
 # Third-party imports
-from google.api_core import page_iterator
+import google.auth
 from google.cloud.storage.client import Client
+from google.cloud.storage.bucket import Bucket
+from google.auth.transport.requests import AuthorizedSession
+from google.api_core import page_iterator
 
 
 class StorageClient(Client):
@@ -17,6 +21,23 @@ class StorageClient(Client):
     A client that extends GCS functionality
     See https://googleapis.dev/python/storage/latest/client.html
     """
+
+    def get_items_metadata(self, bucket: Bucket):
+        """
+        Get metadata for each object within a bucket
+        :param bucket: Bucket to inspect
+        :return: list of metadata objects
+        """
+
+        bucket_name = bucket.name
+        scopes = ['https://www.googleapis.com/auth/devstorage.read_only']
+        url = f'https://storage.googleapis.com/storage/v1/b/{bucket_name}/o'
+
+        credentials, _ = google.auth.default(scopes=scopes)
+        authed_session = AuthorizedSession(credentials)
+        response = authed_session.request('GET', url)
+        result = json.loads(response.content)
+        return result['items']
 
     def get_drc_bucket(self) -> str:
         result = os.environ.get('DRC_BUCKET_NAME')
