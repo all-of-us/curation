@@ -29,14 +29,14 @@ class StorageClient(Client):
         :return: list of dicts with storage objects' metadata
         """
 
-        bucket_name = bucket.name
-        scopes = ['https://www.googleapis.com/auth/devstorage.read_only']
-        url = f'https://storage.googleapis.com/storage/v1/b/{bucket_name}/o'
+        bucket_name: str = bucket.name
+        scopes: list = ['https://www.googleapis.com/auth/devstorage.read_only']
+        url: str = f'https://storage.googleapis.com/storage/v1/b/{bucket_name}/o'
 
         credentials, _ = google.auth.default(scopes=scopes)
         authed_session = AuthorizedSession(credentials)
         response = authed_session.request('GET', url)
-        result = json.loads(response.content)
+        result: dict = json.loads(response.content)
         return result['items']
 
     def get_drc_bucket(self) -> str:
