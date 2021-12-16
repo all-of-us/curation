@@ -16,7 +16,7 @@ from google.cloud.bigquery import DatasetReference, Table, TimePartitioning, Tim
 from utils import bq
 from tests import test_util
 from app_identity import PROJECT_ID
-from common import JINJA_ENV, PS_API_VALUES, PII_EMAIL, PII_PHONE_NUMBER, PII_NAME
+from common import JINJA_ENV, PS_API_VALUES, PII_EMAIL, PII_PHONE_NUMBER, PII_NAME, PII_ADDRESS
 from validation.participants.validate import identify_rdr_ehr_match
 from constants.validation.participants.identity_match import IDENTITY_MATCH_TABLE
 import resources
@@ -25,6 +25,15 @@ person_schema = [
     SchemaField("person_id", "INTEGER", mode="REQUIRED"),
     SchemaField("gender_concept_id", "INTEGER", mode="REQUIRED"),
     SchemaField("birth_datetime", "TIMESTAMP", mode="REQUIRED"),
+]
+
+location_schema = [
+    SchemaField("location_id", "INTEGER", mode="REQUIRED"),
+    SchemaField("address_1", "STRING", mode="REQUIRED"),
+    SchemaField("address_2", "STRING", mode="REQUIRED"),
+    SchemaField("city", "STRING", mode="REQUIRED"),
+    SchemaField("state", "STRING", mode="REQUIRED"),
+    SchemaField("zip", "STRING", mode="REQUIRED"),
 ]
 
 concept_schema = [
@@ -87,10 +96,12 @@ class ValidateTest(TestCase):
         self.hpo_id = 'fake_site'
         self.id_match_table_id = f'{IDENTITY_MATCH_TABLE}_{self.hpo_id}'
         self.ps_values_table_id = f'{PS_API_VALUES}_{self.hpo_id}'
+        self.pii_address_table_id = f'{self.hpo_id}_pii_address'
         self.pii_email_table_id = f'{self.hpo_id}_pii_email'
         self.pii_phone_number_table_id = f'{self.hpo_id}_pii_phone_number'
         self.pii_name_table_id = f'{self.hpo_id}_pii_name'
         self.person_table_id = f'{self.hpo_id}_person'
+        self.location_table_id = f'{self.hpo_id}_location'
         self.fq_concept_table = f'{self.project_id}.{self.dataset_id}.concept'
 
         # Create and populate the ps_values site table
@@ -127,7 +138,7 @@ class ValidateTest(TestCase):
         job = self.client.query(populate_query)
         job.result()
 
-        # Create and populate pii_name, pii_email, and pii_phone_number table
+        # Create and populate pii_name, pii_email, pii_phone_number, and pii_address table
 
         schema = resources.fields_for(f'{PII_NAME}')
         table = Table(
@@ -153,10 +164,28 @@ class ValidateTest(TestCase):
             type_=TimePartitioningType.HOUR)
         table = self.client.create_table(table, exists_ok=True)
 
+        schema = resources.fields_for(f'{PII_ADDRESS}')
+        table = Table(
+            f'{self.project_id}.{self.dataset_id}.{self.pii_address_table_id}',
+            schema=schema)
+        table.time_partitioning = TimePartitioning(
+            type_=TimePartitioningType.HOUR)
+        table = self.client.create_table(table, exists_ok=True)
+
         person_table = Table(
             f'{self.project_id}.{self.dataset_id}.{self.person_table_id}',
             schema=person_schema)
         person_table = self.client.create_table(person_table, exists_ok=True)
+
+        concept_table = Table(f'{self.project_id}.{self.dataset_id}.concept',
+                              schema=concept_schema)
+        concept_table = self.client.create_table(concept_table, exists_ok=True)
+
+        location_table = Table(
+            f'{self.project_id}.{self.dataset_id}.{self.location_table_id}',
+            schema=location_schema)
+        location_table = self.client.create_table(location_table,
+                                                  exists_ok=True)
 
         concept_table = Table(f'{self.project_id}.{self.dataset_id}.concept',
                               schema=concept_schema)

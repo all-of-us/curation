@@ -35,24 +35,19 @@ CREATE_NAME_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
     ));
 """)
 
-CREATE_STREET_ADDRESS_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
+CREATE_STREET_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
 CREATE FUNCTION IF NOT EXISTS
-  `{{project_id}}.{{drc_dataset_id}}.CompareStreetAddress`(rdr_street_address string, ehr_street_address string)
+  `{{project_id}}.{{drc_dataset_id}}.CompareStreetAddress`(rdr_street string, ehr_street string)
   RETURNS string AS ((
-        WITH normalized_rdr_street_address AS (
-            SELECT LOWER(TRIM(rdr_xyz)) AS rdr_street_address
-        )
-        , normalized_ehr_street_address AS (
-            SELECT LOWER(TRIM(ehr_xyz)) AS ehr_street_address
-        )
+    {{street_with_statement}}
     SELECT
       CASE
-        WHEN normalized_rdr_street_address.rdr_street_address = normalized_ehr_street_address.ehr_street_address THEN '{{match}}'
-        WHEN normalized_rdr_street_address.rdr_street_address IS NOT NULL AND normalized_ehr_street_address.ehr_street_address IS NOT NULL THEN '{{no_match}}'
-        WHEN normalized_rdr_street_address.rdr_street_address IS NULL THEN '{{missing_rdr}}'
+        WHEN normalized_rdr_street.rdr_street = normalized_ehr_street.ehr_street THEN '{{match}}'
+        WHEN normalized_rdr_street.rdr_street IS NOT NULL AND normalized_ehr_street.ehr_street IS NOT NULL THEN '{{no_match}}'
+        WHEN normalized_rdr_street.rdr_street IS NULL THEN '{{missing_rdr}}'
         ELSE '{{missing_ehr}}'
-      END AS street_address
-    FROM normalized_rdr_street_address, normalized_ehr_street_address));
+      END AS street
+    FROM normalized_rdr_street, normalized_ehr_street));
 """)
 
 CREATE_CITY_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
@@ -85,7 +80,7 @@ CREATE FUNCTION IF NOT EXISTS
         , normalized_ehr_state AS (
             SELECT
               CASE
-                WEHN LOWER(TRIM(ehr_state)) IN ({{state_abbreviations}})
+                WHEN LOWER(TRIM(ehr_state)) IN ({{state_abbreviations}})
                 THEN LOWER(TRIM(ehr_state))
                 ELSE NULL
               END AS ehr_state
@@ -212,7 +207,7 @@ CREATE_COMPARISON_FUNCTION_QUERIES = [{
     'query': CREATE_NAME_COMPARISON_FUNCTION
 }, {
     'name': 'CompareStreetAddress',
-    'query': CREATE_STREET_ADDRESS_COMPARISON_FUNCTION
+    'query': CREATE_STREET_COMPARISON_FUNCTION
 }, {
     'name': 'CompareCity',
     'query': CREATE_CITY_COMPARISON_FUNCTION

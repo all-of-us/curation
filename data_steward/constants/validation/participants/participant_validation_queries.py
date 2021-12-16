@@ -252,7 +252,7 @@ def get_city_abbreviation_replace_statement():
         statement_2.append(f",' {key} ',' {CITY_ABBREVIATIONS[key]} ')")
 
     statement_2.appendleft("normalized_ehr_city AS (SELECT ")
-    statement_2.append(f" AS ehr_city),")
+    statement_2.append(f" AS ehr_city)")
 
     statement = statement_1 + statement_2
 
@@ -262,10 +262,10 @@ def get_city_abbreviation_replace_statement():
 def get_street_abbreviation_replace_statement():
     """[summary]
 
-        WITH normalized_rdr_city AS (
+        WITH normalized_rdr_street AS (
             SELECT REGEXP_REPLACE(LOWER(TRIM(rdr_city)), '[^A-Za-z]', '') AS rdr_city
         )
-        , normalized_ehr_city AS (
+        , normalized_ehr_street AS (
             SELECT REGEXP_REPLACE(LOWER(TRIM(ehr_city)), '[^A-Za-z]', '') AS ehr_city
         )
 
@@ -273,7 +273,7 @@ def get_street_abbreviation_replace_statement():
         abbreviations ([type]): [description]
     """
     statement_1 = deque([
-        "REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(LOWER(TRIM(rdr_street)), '[^0-9A-Za-z]', ''), '([0-9])st|nd|rd|th', '\\1'), '([0-9])([a-z])', '\\1 \\2')"
+        "REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(LOWER(TRIM(rdr_street)), '[^0-9A-Za-z]', ''), '([0-9])st|nd|rd|th', r'\1'), '([0-9])([a-z])', r'\1 \2')"
     ])
 
     for key in ADDRESS_ABBREVIATIONS:
@@ -282,11 +282,11 @@ def get_street_abbreviation_replace_statement():
         statement_1.append(f",' {key}$',' {ADDRESS_ABBREVIATIONS[key]}')")
         statement_1.append(f",' {key} ',' {ADDRESS_ABBREVIATIONS[key]} ')")
 
-    statement_1.appendleft("WITH normalized_rdr_city AS (SELECT ")
-    statement_1.append(f" AS rdr_city),")
+    statement_1.appendleft("WITH normalized_rdr_street AS (SELECT ")
+    statement_1.append(f" AS rdr_street),")
 
     statement_2 = deque([
-        "REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(LOWER(TRIM(ehr_street)), '[^0-9A-Za-z]', ''), '([0-9])st|nd|rd|th', '\\1'), '([0-9])([a-z])', '\\1 \\2')"
+        "REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(LOWER(TRIM(ehr_street)), '[^0-9A-Za-z]', ''), '([0-9])st|nd|rd|th', r'\1'), '([0-9])([a-z])', r'\1 \2')"
     ])
 
     for key in ADDRESS_ABBREVIATIONS:
@@ -295,8 +295,8 @@ def get_street_abbreviation_replace_statement():
         statement_2.append(f",' {key}$',' {ADDRESS_ABBREVIATIONS[key]}')")
         statement_2.append(f",' {key} ',' {ADDRESS_ABBREVIATIONS[key]} ')")
 
-    statement_2.appendleft("normalized_ehr_city AS (SELECT ")
-    statement_2.append(f" AS ehr_city),")
+    statement_2.appendleft("normalized_ehr_street AS (SELECT ")
+    statement_2.append(f" AS ehr_street)")
 
     statement = statement_1 + statement_2
 
