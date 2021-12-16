@@ -26,7 +26,7 @@ class StorageClient(Client):
         """
         Get metadata for each object within a bucket
         :param bucket: Bucket to inspect
-        :return: list of metadata objects
+        :return: list of dicts with storage objects' metadata
         """
 
         bucket_name = bucket.name
