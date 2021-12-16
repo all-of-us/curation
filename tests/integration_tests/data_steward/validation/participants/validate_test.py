@@ -43,32 +43,32 @@ concept_schema = [
 
 POPULATE_PS_VALUES = JINJA_ENV.from_string("""
 INSERT INTO `{{project_id}}.{{drc_dataset_id}}.{{ps_values_table_id}}` 
-(person_id, first_name, middle_name, last_name, email, phone_number, date_of_birth, sex)
+(person_id, first_name, middle_name, last_name, street_address, street_address2, city, state, zip_code, email, phone_number, date_of_birth, sex)
 VALUES 
-    (1, 'John', 'Jacob', 'Smith', 'john@gmail.com', '(123)456-7890', date('1978-10-01'), 'SexAtBirth_Female'),
-    (2, 'Rebecca', 'Howard', 'Glass', 'rebecca@gmail.com', '1234567890', date('1984-10-23'), 'SexAtBirth_Male'),
-    (3, 'Sam', 'Felix Rose', 'Smith', 'samwjeo', '123456-7890', date('2003-01-05'), 'SexAtBirth_SexAtBirthNoneOfThese'),
-    (4, 'Chris', 'Arthur', 'Smith', 'chris@gmail.com', '1234567890', date('2003-05-1'), 'SexAtBirth_Intersex'),
-    (5, 'John', NULL, 'Doe', '  johndoe@gmail.com  ', '', date('1993-11-01'), 'PMI_Skip'),
-    (6, 'Rebecca', '', 'Mayers-James', 'rebeccamayers@gmail.co', '814321-0987', NULL, 'PMI_PreferNotToAnswer'),
-    (7, 'Leo', '', "O’Keefe", 'leo@yahoo.com', '0987654321', date('1981-10-01'), 'UNSET'),
-    (8, '1ois', 'Frankl1n', 'Rhodes', '', '1-800-800-0911', date('1999-12-01'), 'SexAtBirth_SexAtBirthNoneOfThese'),
-    (9, 'Jack', 'Isaac', 'Dean', 'jd@gmail.com', '555-555-1234', date('2002-03-14'), 'SexAtBirth_Female')
+    (1, 'John', 'Jacob', 'Smith', '1 Government Dr', '', 'St. Louis', 'MO', '63110', 'john@gmail.com', '(123)456-7890', date('1978-10-01'), 'SexAtBirth_Female'),
+    (2, 'Rebecca', 'Howard', 'Glass', '476 5th Ave', '', 'New York', 'NY', '10018', 'rebecca@gmail.com', '1234567890', date('1984-10-23'), 'SexAtBirth_Male'),
+    (3, 'Sam', 'Felix Rose', 'Smith', 'University Dr', '', 'Mangilao', 'Gu', '96923', 'samwjeo', '123456-7890', date('2003-01-05'), 'SexAtBirth_SexAtBirthNoneOfThese'),
+    (4, 'Chris', 'Arthur', 'Smith', '915 PR-17', '', 'San Juan', 'PR', '00921', 'chris@gmail.com', '1234567890', date('2003-05-1'), 'SexAtBirth_Intersex'),
+    (5, 'John', NULL, 'Doe', '50 Riverview Plaza', '', 'Trenton', 'NJ', '08611', '  johndoe@gmail.com  ', '', date('1993-11-01'), 'PMI_Skip'),
+    (6, 'Rebecca', '', 'Mayers-James', '1501 Riverplace Blvd', '', 'Jacksonville', 'FL', '32207', 'rebeccamayers@gmail.co', '814321-0987', NULL, 'PMI_PreferNotToAnswer'),
+    (7, 'Leo', '', "O’Keefe", '1241 Elm St', '', 'Cincinnati', 'OH', '45202', 'leo@yahoo.com', '0987654321', date('1981-10-01'), 'UNSET'),
+    (8, '1ois', 'Frankl1n', 'Rhodes', '42 Nason St', '', 'Maynard', 'MA', '01754', '', '1-800-800-0911', date('1999-12-01'), 'SexAtBirth_SexAtBirthNoneOfThese'),
+    (9, 'Jack', 'Isaac', 'Dean', '777 NE Martin Luther King Jr Blvd', '', 'Portland', 'OR', '97232', 'jd@gmail.com', '555-555-1234', date('2002-03-14'), 'SexAtBirth_Female')
 """)
 
 POPULATE_ID_MATCH = JINJA_ENV.from_string("""
 INSERT INTO `{{project_id}}.{{drc_dataset_id}}.{{id_match_table_id}}` 
-(person_id, first_name, middle_name, last_name, email, phone_number, sex, algorithm)
+(person_id, first_name, middle_name, last_name, address_1, address_2, city, state, zip, email, phone_number, sex, algorithm)
 VALUES 
-    (1, 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'no'),
-    (2, 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'no'),
-    (3, 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'no'),
-    (4, 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'no'),
-    (5, 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'no'),
-    (6, 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'no'),
-    (7, 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'no'),
-    (8, 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'no'),
-    (9, 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'no')
+    (1, 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'no'),
+    (2, 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'no'),
+    (3, 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'no'),
+    (4, 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'no'),
+    (5, 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'no'),
+    (6, 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'no'),
+    (7, 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'no'),
+    (8, 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'no'),
+    (9, 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'no')
 """)
 
 ID_MATCH_CONTENT_QUERY = JINJA_ENV.from_string("""
@@ -177,10 +177,6 @@ class ValidateTest(TestCase):
             schema=person_schema)
         person_table = self.client.create_table(person_table, exists_ok=True)
 
-        concept_table = Table(f'{self.project_id}.{self.dataset_id}.concept',
-                              schema=concept_schema)
-        concept_table = self.client.create_table(concept_table, exists_ok=True)
-
         location_table = Table(
             f'{self.project_id}.{self.dataset_id}.{self.location_table_id}',
             schema=location_schema)
@@ -234,6 +230,22 @@ class ValidateTest(TestCase):
                 (9, 'John', 'Moses', 'Dexter') -- all three names do not match --
 
         """)
+
+        POPULATE_PII_ADDRESS = JINJA_ENV.from_string("""
+            INSERT INTO `{{project_id}}.{{drc_dataset_id}}.{{pii_address_table_id}}`
+            (person_id, location_id)
+            VALUES
+                (1, 11),
+                (2, 12),
+                (3, 13),
+                (4, 14),
+                (5, 15),
+                (6, 16),
+                (7, 17),
+                (8, 18),
+                (9, 19)
+        """)
+
         POUPLATE_PERSON_TABLE = JINJA_ENV.from_string("""
                 INSERT INTO `{{project_id}}.{{drc_dataset_id}}.{{person_table_id}}` 
                 (person_id, gender_concept_id, birth_datetime)
@@ -247,6 +259,21 @@ class ValidateTest(TestCase):
                     (7, 4215271, timestamp ('1981-01-10')),
                     (8, 4214687, timestamp ('1999-12-1'))
                 """)
+
+        POPULATE_LOCATION_TABLE = JINJA_ENV.from_string("""
+        INSERT INTO `{{project_id}}.{{drc_dataset_id}}.{{location_table_id}}` 
+        (location_id, address_1, address_2, city, state, zip)
+        VALUES
+            (11, '1 Government Dr', '', 'St. Louis', 'MO', '63110'),
+            (12, '476 5th Ave', '', 'New York', 'NY', '10018'),
+            (13, 'University Dr', '', 'Mangilao', 'Gu', '96923'),
+            (14, '915 PR-17', '', 'San Juan', 'pr', '00921'),
+            (15, '50 Riverview Plaza', '', 'Trenton', 'NJ', '08611'),
+            (16, '1501 Riverplace Blvd', '', 'Jacksonville', 'FL', '32207'),
+            (17, '1241 Elm St', '', 'Cincinnati', 'OH', '45202'),
+            (18, '42 Nason St', '', 'Maynard', 'MA', '01754'),
+            (19, '777 NE Martin Luther King Jr Blvd', '', 'Portland', 'OR', '97232')
+        """)
 
         # Create and populate concept table
         CONCEPT_TABLE_QUERY = JINJA_ENV.from_string("""
@@ -284,11 +311,25 @@ class ValidateTest(TestCase):
         job = self.client.query(name_populate_query)
         job.result()
 
+        address_populate_query = POPULATE_PII_ADDRESS.render(
+            project_id=self.project_id,
+            drc_dataset_id=self.dataset_id,
+            pii_address_table_id=self.pii_address_table_id)
+        job = self.client.query(address_populate_query)
+        job.result()
+
         populate_person_query = POUPLATE_PERSON_TABLE.render(
             project_id=self.project_id,
             drc_dataset_id=self.dataset_id,
             person_table_id=self.person_table_id)
         job = self.client.query(populate_person_query)
+        job.result()
+
+        populate_location_query = POPULATE_LOCATION_TABLE.render(
+            project_id=self.project_id,
+            drc_dataset_id=self.dataset_id,
+            location_table_id=self.location_table_id)
+        job = self.client.query(populate_location_query)
         job.result()
 
         populate_concept_query = CONCEPT_TABLE_QUERY.render(
@@ -305,8 +346,9 @@ class ValidateTest(TestCase):
 
         # Subset of id match fields to test
         subset_fields = [
-            'person_id', 'first_name', 'middle_name', 'last_name', 'email',
-            'phone_number', 'sex', 'birth_date', 'algorithm'
+            'person_id', 'first_name', 'middle_name', 'last_name', 'address_1',
+            'address_2', 'city', 'state', 'zip', 'email', 'phone_number', 'sex',
+            'birth_date', 'algorithm'
         ]
 
         expected = [{
@@ -314,6 +356,11 @@ class ValidateTest(TestCase):
             'first_name': 'match',
             'middle_name': 'match',
             'last_name': 'match',
+            'address_1': 'match',
+            'address_2': 'match',
+            'city': 'match',
+            'state': 'match',
+            'zip': 'match',
             'email': 'no_match',
             'phone_number': 'no_match',
             'birth_date': 'match',
@@ -324,6 +371,11 @@ class ValidateTest(TestCase):
             'first_name': 'match',
             'middle_name': 'match',
             'last_name': 'match',
+            'address_1': 'match',
+            'address_2': 'match',
+            'city': 'match',
+            'state': 'match',
+            'zip': 'match',
             'email': 'match',
             'phone_number': 'match',
             'birth_date': 'match',
@@ -334,6 +386,11 @@ class ValidateTest(TestCase):
             'first_name': 'match',
             'middle_name': 'match',
             'last_name': 'match',
+            'address_1': 'match',
+            'address_2': 'match',
+            'city': 'match',
+            'state': 'match',
+            'zip': 'match',
             'email': 'missing_ehr',
             'phone_number': 'missing_ehr',
             'birth_date': 'no_match',
@@ -344,6 +401,11 @@ class ValidateTest(TestCase):
             'first_name': 'no_match',
             'middle_name': 'match',
             'last_name': 'match',
+            'address_1': 'match',
+            'address_2': 'match',
+            'city': 'match',
+            'state': 'match',
+            'zip': 'match',
             'email': 'match',
             'phone_number': 'match',
             'birth_date': 'match',
@@ -354,6 +416,11 @@ class ValidateTest(TestCase):
             'first_name': 'match',
             'middle_name': 'missing_rdr',
             'last_name': 'match',
+            'address_1': 'match',
+            'address_2': 'match',
+            'city': 'match',
+            'state': 'match',
+            'zip': 'match',
             'email': 'match',
             'phone_number': 'match',
             'birth_date': 'no_match',
@@ -364,6 +431,11 @@ class ValidateTest(TestCase):
             'first_name': 'match',
             'middle_name': 'match',
             'last_name': 'match',
+            'address_1': 'match',
+            'address_2': 'match',
+            'city': 'match',
+            'state': 'match',
+            'zip': 'match',
             'email': 'no_match',
             'phone_number': 'match',
             'birth_date': 'missing_rdr',
@@ -374,6 +446,11 @@ class ValidateTest(TestCase):
             'first_name': 'match',
             'middle_name': 'match',
             'last_name': 'match',
+            'address_1': 'match',
+            'address_2': 'match',
+            'city': 'match',
+            'state': 'match',
+            'zip': 'match',
             'email': 'no_match',
             'phone_number': 'no_match',
             'birth_date': 'no_match',
@@ -384,6 +461,11 @@ class ValidateTest(TestCase):
             'first_name': 'no_match',
             'middle_name': 'no_match',
             'last_name': 'match',
+            'address_1': 'match',
+            'address_2': 'match',
+            'city': 'match',
+            'state': 'match',
+            'zip': 'match',
             'email': 'no_match',
             'phone_number': 'no_match',
             'birth_date': 'match',
@@ -394,6 +476,11 @@ class ValidateTest(TestCase):
             'first_name': 'no_match',
             'middle_name': 'no_match',
             'last_name': 'no_match',
+            'address_1': 'match',
+            'address_2': 'match',
+            'city': 'match',
+            'state': 'match',
+            'zip': 'match',
             'email': 'missing_ehr',
             'phone_number': 'missing_ehr',
             'birth_date': 'missing_ehr',
