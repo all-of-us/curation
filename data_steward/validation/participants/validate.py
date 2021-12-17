@@ -26,9 +26,7 @@ from .participant_validation_queries import CREATE_COMPARISON_FUNCTION_QUERIES
 from constants.validation.participants.identity_match import IDENTITY_MATCH_TABLE
 from constants.validation.participants.participant_validation_queries import (
     get_gender_comparison_case_statement, get_state_abbreviations,
-    get_city_abbreviation_replace_statement,
-    get_street_abbreviation_replace_statement, ADDRESS_ABBREVIATIONS,
-    CITY_ABBREVIATIONS, MATCH, NO_MATCH, MISSING_EHR, MISSING_RDR)
+    get_with_clause, MATCH, NO_MATCH, MISSING_EHR, MISSING_RDR)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -90,6 +88,7 @@ def identify_rdr_ehr_match(client,
 
     for item in CREATE_COMPARISON_FUNCTION_QUERIES:
         LOGGER.info(f"Creating `{item['name']}` function if doesn't exist.")
+
         query = item['query'].render(
             project_id=project_id,
             drc_dataset_id=drc_dataset_id,
@@ -98,11 +97,12 @@ def identify_rdr_ehr_match(client,
             missing_rdr=MISSING_RDR,
             missing_ehr=MISSING_EHR,
             gender_case_when_conditions=get_gender_comparison_case_statement(),
-            state_abbreviations=get_state_abbreviations(
-            ),  # TODO talk with Jason & Krishna on design
-            street_with_statement=get_street_abbreviation_replace_statement(),
-            city_with_statement=get_city_abbreviation_replace_statement()
-        )  # TODO talk with Jason & Krishna on design
+            state_abbreviations=get_state_abbreviations(),
+            street_with_clause=get_with_clause('street'),
+            city_with_clause=get_with_clause('city'))
+
+        LOGGER.info(f"Running the following create statement: {query}.")
+
         job = client.query(query)
         job.result()
 
@@ -124,6 +124,8 @@ def identify_rdr_ehr_match(client,
         missing_ehr=MISSING_EHR)
 
     LOGGER.info(f"Matching fields for {hpo_id}.")
+    LOGGER.info(f"Running the following update statement: {match_query}.")
+
     job = client.query(match_query)
     job.result()
 

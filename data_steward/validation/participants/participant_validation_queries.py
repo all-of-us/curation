@@ -39,7 +39,7 @@ CREATE_STREET_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
 CREATE FUNCTION IF NOT EXISTS
   `{{project_id}}.{{drc_dataset_id}}.CompareStreetAddress`(rdr_street string, ehr_street string)
   RETURNS string AS ((
-    {{street_with_statement}}
+    {{street_with_clause}}
     SELECT
       CASE
         WHEN normalized_rdr_street.rdr_street = normalized_ehr_street.ehr_street THEN '{{match}}'
@@ -54,7 +54,7 @@ CREATE_CITY_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
 CREATE FUNCTION IF NOT EXISTS
   `{{project_id}}.{{drc_dataset_id}}.CompareCity`(rdr_city string, ehr_city string)
   RETURNS string AS ((
-    {{city_with_statement}}
+    {{city_with_clause}}
     SELECT
       CASE
         WHEN normalized_rdr_city.rdr_city = normalized_ehr_city.ehr_city THEN '{{match}}'

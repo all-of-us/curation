@@ -1,5 +1,11 @@
 from collections import deque
-import re
+import logging
+
+# Project imports
+from utils import pipeline_logging
+
+LOGGER = logging.getLogger(__name__)
+pipeline_logging.configure(logging.INFO, add_console_handler=True)
 
 RDR_SEX = 'rdr_sex'
 EHR_SEX = 'ehr_sex'
@@ -217,87 +223,63 @@ def get_state_abbreviations():
     return ','.join(f"'{state}'" for state in STATE_ABBREVIATIONS)
 
 
-def get_city_abbreviation_replace_statement():
+def _get_replace_statement(base_statement, rdr_ehr, field, dict_abbreviation):
     """[summary]
-
-        WITH normalized_rdr_city AS (
-            SELECT REGEXP_REPLACE(LOWER(TRIM(rdr_city)), '[^A-Za-z]', '') AS rdr_city
-        )
-        , normalized_ehr_city AS (
-            SELECT REGEXP_REPLACE(LOWER(TRIM(ehr_city)), '[^A-Za-z]', '') AS ehr_city
-        )
-
-    Args:
-        abbreviations ([type]): [description]
     """
-    statement_1 = deque(
-        ["REGEXP_REPLACE(LOWER(TRIM(rdr_city)), '[^A-Za-z]', '')"])
+    statement_parts = deque([base_statement(rdr_ehr, field)])
 
-    for key in CITY_ABBREVIATIONS:
-        statement_1.appendleft("REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(")
-        statement_1.append(f",'^{key} ','{CITY_ABBREVIATIONS[key]} ')")
-        statement_1.append(f",' {key}$',' {CITY_ABBREVIATIONS[key]}')")
-        statement_1.append(f",' {key} ',' {CITY_ABBREVIATIONS[key]} ')")
+    for key in dict_abbreviation:
+        statement_parts.appendleft(
+            "REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(")
+        statement_parts.append(f",'(?:^{key} )','{dict_abbreviation[key]} ')")
+        statement_parts.append(f",'(?: {key}$)',' {dict_abbreviation[key]}')")
+        statement_parts.append(f",'(?: {key} )',' {dict_abbreviation[key]} ')")
+        # statement_parts.append(f",'^{key} ','{dict_abbreviation[key]} ')")
+        # statement_parts.append(f",' {key}$',' {dict_abbreviation[key]}')")
+        # statement_parts.append(f",' {key} ',' {dict_abbreviation[key]} ')")
 
-    statement_1.appendleft("WITH normalized_rdr_city AS (SELECT ")
-    statement_1.append(f" AS rdr_city),")
+    statement_parts.appendleft(f"normalized_{rdr_ehr}_{field} AS (SELECT ")
 
-    statement_2 = deque(
-        ["REGEXP_REPLACE(LOWER(TRIM(ehr_city)), '[^A-Za-z]', '')"])
+    statement_parts.append(f" AS {rdr_ehr}_{field})")
 
-    for key in CITY_ABBREVIATIONS:
-        statement_2.appendleft("REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(")
-        statement_2.append(f",'^{key} ','{CITY_ABBREVIATIONS[key]} ')")
-        statement_2.append(f",' {key}$',' {CITY_ABBREVIATIONS[key]}')")
-        statement_2.append(f",' {key} ',' {CITY_ABBREVIATIONS[key]} ')")
-
-    statement_2.appendleft("normalized_ehr_city AS (SELECT ")
-    statement_2.append(f" AS ehr_city)")
-
-    statement = statement_1 + statement_2
-
-    return ''.join(statement)
+    return ''.join(statement_parts)
 
 
-def get_street_abbreviation_replace_statement():
+def get_with_clause(field):
     """[summary]
-
-        WITH normalized_rdr_street AS (
-            SELECT REGEXP_REPLACE(LOWER(TRIM(rdr_city)), '[^A-Za-z]', '') AS rdr_city
-        )
-        , normalized_ehr_street AS (
-            SELECT REGEXP_REPLACE(LOWER(TRIM(ehr_city)), '[^A-Za-z]', '') AS ehr_city
-        )
-
-    Args:
-        abbreviations ([type]): [description]
     """
-    statement_1 = deque([
-        "REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(LOWER(TRIM(rdr_street)), '[^0-9A-Za-z]', ''), '([0-9])st|nd|rd|th', r'\1'), '([0-9])([a-z])', r'\1 \2')"
-    ])
+    valid_fields = {'city', 'street'}
 
-    for key in ADDRESS_ABBREVIATIONS:
-        statement_1.appendleft("REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(")
-        statement_1.append(f",'^{key} ','{ADDRESS_ABBREVIATIONS[key]} ')")
-        statement_1.append(f",' {key}$',' {ADDRESS_ABBREVIATIONS[key]}')")
-        statement_1.append(f",' {key} ',' {ADDRESS_ABBREVIATIONS[key]} ')")
+    if field not in valid_fields:
+        raise ValueError(
+            f"Invalid field name: {field}. Valid field names: {valid_fields}")
 
-    statement_1.appendleft("WITH normalized_rdr_street AS (SELECT ")
-    statement_1.append(f" AS rdr_street),")
+    base_statement = {
+        'city':
+            lambda rdr_ehr, field:
+            f"REGEXP_REPLACE(LOWER(TRIM({rdr_ehr}_{field})),'[^A-Za-z ]','')",
+        'street':
+            lambda rdr_ehr, field:
+            (f"REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(LOWER(TRIM({rdr_ehr}_{field})),"
+             f"'[^0-9A-Za-z ]', ''),'([0-9])(?:st|nd|rd|th)', r'\\1'),'([0-9])([a-z])',r'\\1 \\2')"
+            ),
+    }
 
-    statement_2 = deque([
-        "REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(LOWER(TRIM(ehr_street)), '[^0-9A-Za-z]', ''), '([0-9])st|nd|rd|th', r'\1'), '([0-9])([a-z])', r'\1 \2')"
-    ])
+    abbreviations = {
+        'city': CITY_ABBREVIATIONS,
+        'street': ADDRESS_ABBREVIATIONS,
+    }
 
-    for key in ADDRESS_ABBREVIATIONS:
-        statement_2.appendleft("REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(")
-        statement_2.append(f",'^{key} ','{ADDRESS_ABBREVIATIONS[key]} ')")
-        statement_2.append(f",' {key}$',' {ADDRESS_ABBREVIATIONS[key]}')")
-        statement_2.append(f",' {key} ',' {ADDRESS_ABBREVIATIONS[key]} ')")
+    statement_parts = ["WITH "]
+    statement_parts.append(
+        _get_replace_statement(base_statement[field], 'rdr', field,
+                               abbreviations[field]))
+    statement_parts.append(",")
+    statement_parts.append(
+        _get_replace_statement(base_statement[field], 'ehr', field,
+                               abbreviations[field]))
 
-    statement_2.appendleft("normalized_ehr_street AS (SELECT ")
-    statement_2.append(f" AS ehr_street)")
+    statement = ''.join(statement_parts)
+    LOGGER.info(f"Created WITH clause: {statement}")
 
-    statement = statement_1 + statement_2
-
-    return ''.join(statement)
+    return statement
