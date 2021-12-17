@@ -1,5 +1,5 @@
 """
-Integration test for delete_stale_test_buckets module
+Integration test for delete_stale_test_buckets module.
 """
 
 # Python imports
