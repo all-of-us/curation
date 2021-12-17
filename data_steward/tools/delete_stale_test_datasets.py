@@ -98,8 +98,7 @@ def main(first_n):
 
     for stale_dataset in datasets_to_delete:
         LOGGER.info(f"Running - bq_client.delete_dataset({stale_dataset})")
-        #Uncomment this before release
-        #bq_client.delete_dataset(stale_dataset)
+        bq_client.delete_dataset(stale_dataset)
 
     return datasets_to_delete
 
