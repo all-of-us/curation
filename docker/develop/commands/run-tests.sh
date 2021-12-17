@@ -114,9 +114,6 @@ if [ "${run_lint}" -ne 1 ] && [ "${run_unit}" -ne 1 ] && [ "${run_integration}" 
   exit 0
 fi
 
-echo "Initializing envvars..."
-require_ok "run-tests/00_init_env.sh"
-
 if [ "${run_lint}" -eq 1 ]; then
   echo "Running linting checks..."
 

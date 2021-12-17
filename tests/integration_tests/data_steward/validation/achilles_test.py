@@ -26,13 +26,12 @@ class AchillesTest(unittest.TestCase):
     def setUp(self):
         self.hpo_bucket = gcs_utils.get_hpo_bucket(test_util.FAKE_HPO_ID)
         self.storage_client = StorageClient()
-
-        test_util.empty_bucket(self.hpo_bucket)
+        self.storage_client.empty_bucket(self.hpo_bucket)
         test_util.delete_all_tables(bq_utils.get_dataset_id())
 
     def tearDown(self):
         test_util.delete_all_tables(bq_utils.get_dataset_id())
-        test_util.empty_bucket(self.hpo_bucket)
+        self.storage_client.empty_bucket(self.hpo_bucket)
 
     def _load_dataset(self):
         for cdm_table in resources.CDM_TABLES:
