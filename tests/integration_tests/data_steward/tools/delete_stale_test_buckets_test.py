@@ -1,5 +1,5 @@
 """
-Unit test for delete_stale_test_buckets module
+Integration test for delete_stale_test_buckets module
 """
 
 # Python imports
@@ -11,11 +11,10 @@ from datetime import datetime, timedelta, timezone
 from google.api_core.exceptions import NotFound
 
 # Third party imports
-from google.cloud import bigquery
 
 # Project imports
-from tools import delete_stale_test_datasets
-from utils import bq
+from tools import delete_stale_test_buckets
+from gcloud.gcs import StorageClient
 
 
 class DeleteStaleTestBucketsTest(TestCase):
@@ -27,21 +26,20 @@ class DeleteStaleTestBucketsTest(TestCase):
         print('**************************************************************')
 
     def setUp(self):
+        self.sc = StorageClient()
         self.first_n = 3
-        self.bq_client = bq.get_client(os.environ.get('GOOGLE_CLOUD_PROJECT'))
         self.now = datetime.now(timezone.utc)
 
-    @patch('google.cloud.bigquery.Client.delete_dataset')
-    def test_main(self, mock_delete_dataset):
+    @patch('google.cloud.storage.bucket.Bucket.delete')
+    def test_main(self, mock_delete_bucket):
 
-        datasets_to_delete = delete_stale_test_datasets.main(self.first_n)
+        buckets_to_delete = delete_stale_test_buckets.main(self.first_n)
 
-        for dataset_name in datasets_to_delete:
-            dataset_created = self.bq_client.get_dataset(dataset_name).created
+        for bucket_name in buckets_to_delete:
+            bucket_created = self.sc.get_bucket(bucket_name).time_created
 
-            # Assert: Dataset is stale (1: 90 days or older)
-            self.assertGreaterEqual((self.now - dataset_created).days, 90)
+            # Assert: Bucket is stale (1: 90 days or older)
+            self.assertGreaterEqual((self.now - bucket_created).days, 90)
 
-            # Assert: Dataset is stale (2: Empty(=no tables))
-            self.assertEqual(
-                len(list(self.bq_client.list_tables(dataset_name))), 0)
+            # Assert: Bucket is stale (2: Empty(=no blobs))
+            self.assertEqual(len(list(self.sc.list_blobs(bucket_name))), 0)

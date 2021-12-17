@@ -123,14 +123,15 @@ workflows:
   version: 2
   test:
     jobs:
-      - linting_checks
-      - unit_test
-      - integration_test:
-          filters:
-            branches:
-              # This would cause too much noise to run on commit, run nightly
-              # instead per below workflow.
-              ignore: develop
+      # - linting_checks
+      # - unit_test
+      # - integration_test:
+      #     filters:
+      #       branches:
+      #         # This would cause too much noise to run on commit, run nightly
+      #         # instead per below workflow.
+      #         ignore: develop
+      - delete_stale_test_buckets
 
   nightly:
     triggers:

@@ -58,7 +58,7 @@ def _filter_stale_buckets(storage_client, first_n: int = None):
         if (now - bucket.time_created).days <= 90:
             continue
 
-        if next(storage_client.list_blobs(bucket.name), None):
+        if len(list(storage_client.list_blobs(bucket.name))) >= 1:
             continue
 
         stale_buckets.append(bucket.name)
@@ -83,7 +83,7 @@ def get_arg_parser():
     return parser
 
 
-def main():
+def main(first_n):
 
     pipeline_logging.configure(logging.INFO, add_console_handler=True)
 
@@ -91,14 +91,18 @@ def main():
 
     _check_project(sc)
 
-    stale_buckets = _filter_stale_buckets(storage_client=sc, first_n=200)
+    buckets_to_delete = _filter_stale_buckets(sc, first_n)
 
-    for stale_bucket in stale_buckets:
+    for stale_bucket in buckets_to_delete:
         LOGGER.info(f"Running - sc.get_bucket({stale_bucket}).delete()")
-        sc.get_bucket(stale_bucket).delete()
+        # Uncomment before release.
+        #sc.get_bucket(stale_bucket).delete()
+
+    return buckets_to_delete
 
 
 if __name__ == "__main__":
+
     parser = get_arg_parser()
     args = parser.parse_args()
 
