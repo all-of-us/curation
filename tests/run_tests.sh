@@ -24,8 +24,6 @@ run_integration=0
 current_cmd=""
 
 run_args=("${@}")
-unit_args=()
-integration_args=()
 
 echo "${run_args[@]}"
 
