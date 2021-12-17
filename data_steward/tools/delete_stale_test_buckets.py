@@ -95,8 +95,7 @@ def main(first_n):
 
     for stale_bucket in buckets_to_delete:
         LOGGER.info(f"Running - sc.get_bucket({stale_bucket}).delete()")
-        # Uncomment before release.
-        #sc.get_bucket(stale_bucket).delete()
+        sc.get_bucket(stale_bucket).delete()
 
     return buckets_to_delete
 

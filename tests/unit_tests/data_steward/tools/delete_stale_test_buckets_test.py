@@ -56,8 +56,9 @@ class DeleteStaleTestBucketsTest(TestCase):
         """Test case: All buckets are NOT empty.
         """
         mock_storage_client.list_buckets.return_value = self.buckets
-        mock_storage_client.list_blobs.return_value = iter(
-            [self.mock_blob for _ in range(0, 3)])
+        mock_storage_client.list_blobs.return_value = [
+            self.mock_blob for _ in range(0, 3)
+        ]
 
         result = delete_stale_test_buckets._filter_stale_buckets(
             mock_storage_client, 100)
@@ -69,7 +70,7 @@ class DeleteStaleTestBucketsTest(TestCase):
         """Test case: All buckets are empty.
         """
         mock_storage_client.list_buckets.return_value = self.buckets
-        mock_storage_client.list_blobs.return_value = iter(())
+        mock_storage_client.list_blobs.return_value = []
 
         result = delete_stale_test_buckets._filter_stale_buckets(
             mock_storage_client, 100)
@@ -82,7 +83,7 @@ class DeleteStaleTestBucketsTest(TestCase):
         """Test case: All buckets are empty. first_n not given.
         """
         mock_storage_client.list_buckets.return_value = self.buckets
-        mock_storage_client.list_blobs.return_value = iter(())
+        mock_storage_client.list_blobs.return_value = []
 
         result = delete_stale_test_buckets._filter_stale_buckets(
             mock_storage_client)
@@ -95,7 +96,7 @@ class DeleteStaleTestBucketsTest(TestCase):
         """Test case: All buckets are empty. first_n given. first_n < # of stale buckets.
         """
         mock_storage_client.list_buckets.return_value = self.buckets
-        mock_storage_client.list_blobs.return_value = iter(())
+        mock_storage_client.list_blobs.return_value = []
 
         result = delete_stale_test_buckets._filter_stale_buckets(
             mock_storage_client, 1)
