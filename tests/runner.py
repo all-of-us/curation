@@ -22,11 +22,14 @@ Example invocation:
 import argparse
 import configparser
 import os
+import re
 import sys
 import time
 import unittest
+from pathlib import Path
 
 # Third party imports
+from bs4 import BeautifulSoup as bs
 try:
     import coverage
 except ImportError:
@@ -56,9 +59,52 @@ def print_unsuccessful(function, trace, msg_type):
     )
 
 
-def main(test_path, test_pattern, coverage_filepath):
+def validate_test_path(test_filepath):
+    """
+    Ensure test filepath is valid and return its filename
+
+    :param top_dir: Directory to start searching from
+    :param: test_filepath: Path to specific test filepath to run
+    :return: test_filepath_obj: Path object of the test_filepath
+    """
+    test_filepath_obj = Path(test_filepath)
+
+    # Check if cross platform absolute path or contains main directory
+    if test_filepath_obj.is_absolute() or re.match(r'.*[\\\/]curation[\\\/].*',
+                                                   test_filepath):
+        raise RuntimeError(
+            f'{test_filepath} is absolute. '
+            f'Please specify relative path to test file from root (curation directory).'
+        )
+    return test_filepath_obj
+
+
+def main(test_dir, test_pattern, test_filepaths, coverage_filepath):
+    """
+    Main function to run tests under test_dir
+
+    Accepts granular tests via test_filepaths or wildcards using test_pattern
+    If test_filepaths is specified, test_pattern will be ignored.
+    :param test_dir: Directory to start searching from
+    :param test_pattern: pattern to match if using wildcard
+    :param test_filepaths: List of specific test filepaths
+    :param coverage_filepath: Path to coverage file
+    :return:
+    """
+    # Set up test suite
+    suite = unittest.TestSuite(tests=())
+
     # Discover and run tests.
-    suite = unittest.TestLoader().discover(test_path, pattern=test_pattern)
+    if test_filepaths:
+        for test_filepath in test_filepaths:
+            test_filepath_obj = validate_test_path(test_filepath)
+            suite.addTests(unittest.TestLoader().discover(
+                start_dir=str(test_filepath_obj.parent),
+                pattern=test_filepath_obj.name,
+                top_level_dir=Path('tests') / test_dir))
+    else:
+        suite.addTests(unittest.TestLoader().discover(test_dir,
+                                                      pattern=test_pattern))
     all_results = []
 
     cov = coverage.Coverage(config_file=coverage_filepath)
@@ -74,6 +120,18 @@ def main(test_path, test_pattern, coverage_filepath):
                                              verbosity=2)
             result = runner.run(mod_tests)
             all_results.append(result)
+
+    # Ensure Circle CI can read timings for test files and class names
+    for file_path in Path(output_file).glob('*.xml'):
+        with Path(file_path).open() as in_file:
+            out_soup = bs(in_file, features="xml")
+            if out_soup.testsuite:
+                test_file_path = out_soup.testsuite.testcase["file"]
+                out_soup.testsuite["file"] = test_file_path
+                test_name = out_soup.testsuite["name"]
+                out_soup.testsuite["name"] = '-'.join(test_name.split('-')[:-1])
+        with Path(file_path).open('w+') as out_file:
+            out_file.write(str(out_soup))
 
     end_time = time.time()
     cov.stop()
@@ -142,9 +200,10 @@ if __name__ == '__main__':
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument(
-        '--test-path',
-        dest='test_path',
-        help='The path to look for tests, defaults to the current directory.',
+        '--test-dir',
+        dest='test_dir',
+        help=
+        'The directory to look for tests, defaults to the current directory.',
         default=os.getcwd())
     parser.add_argument(
         '--test-pattern',
@@ -159,10 +218,24 @@ if __name__ == '__main__':
         'The path to the coverage file to use.  Defaults to \'curation/.coveragerc\'',
         type=config_file_path,
         default='curation/.coveragerc')
+    parser.add_argument(
+        '--test-paths-filepath',
+        dest='test_paths_filepath',
+        help=
+        'Relative path from curation dir to file containing test filepaths separated by newline. '
+        'Overrides the test_pattern arg. Test filepaths must be under test_dir.'
+    )
 
     args = parser.parse_args()
 
-    result_success = main(args.test_path, args.test_pattern, args.coverage_file)
+    test_filepaths_list = []
+    if args.test_paths_filepath:
+        test_paths_filepath = Path(args.test_paths_filepath)
+        for test_path in test_paths_filepath.open():
+            test_filepaths_list.append(test_path.strip())
+
+    result_success = main(args.test_dir, args.test_pattern, test_filepaths_list,
+                          args.coverage_file)
 
     if not result_success:
         sys.exit(1)

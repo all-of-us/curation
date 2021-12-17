@@ -44,6 +44,9 @@ class NegativeAgesTest(BaseTest.CleaningRulesTestBase):
         for table in cls.rule_instance.affected_tables + ['person']:
             cls.fq_table_names.append(
                 f'{cls.project_id}.{cls.dataset_id}.{table}')
+            cls.fq_sandbox_table_names.append(
+                f'{cls.project_id}.{cls.sandbox_id}.{cls.rule_instance.sandbox_table_for(table)}'
+            )
 
         # call super to set up the client, create datasets, and create
         # empty test tables

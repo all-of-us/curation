@@ -378,6 +378,8 @@ class BaseTest:
 
             table = bigquery.Table(self.fq_questionnaire_tablename,
                                    schema=schema)
+            self.client.create_dataset(
+                self.fq_questionnaire_tablename.split('.')[1], exists_ok=True)
             table = self.client.create_table(table)  # Make an API request.
 
         def tearDown(self):

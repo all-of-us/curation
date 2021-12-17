@@ -63,11 +63,14 @@ class RemoveNonExistingPidsTest(BaseTest.CleaningRulesTestBase):
             reference_dataset_id=cls.reference_dataset_id)
 
         # Generates list of fully qualified table names and their corresponding sandbox table names
-        cls.fq_table_names.extend([
-            f'{cls.project_id}.{cls.dataset_id}.{ACTIVITY_SUMMARY}',
-            f'{cls.project_id}.{cls.dataset_id}.{STEPS_INTRADAY}',
-            f'{cls.project_id}.{cls.reference_dataset_id}.{PERSON}',
-        ])
+        for table in [STEPS_INTRADAY, ACTIVITY_SUMMARY]:
+            cls.fq_table_names.append(
+                f'{cls.project_id}.{cls.dataset_id}.{table}')
+            cls.fq_sandbox_table_names.append(
+                f'{cls.project_id}.{cls.sandbox_id}.{cls.rule_instance.sandbox_table_for(table)}'
+            )
+        cls.fq_table_names.append(
+            f'{cls.project_id}.{cls.reference_dataset_id}.{PERSON}')
 
         # call super to set up the client, create datasets
         cls.up_class = super().setUpClass()
@@ -99,19 +102,17 @@ class RemoveNonExistingPidsTest(BaseTest.CleaningRulesTestBase):
 
         # Expected results list
         tables_and_counts = [{
-            'fq_table_name':
-                f'{self.project_id}.{self.dataset_id}.{STEPS_INTRADAY}',
-            'fq_sandbox_table_name':
-                f'{self.project_id}.{self.sandbox_id}.{self.rule_instance.sandbox_table_for(STEPS_INTRADAY)}',
+            'fq_table_name': self.fq_table_names[0],
+            'fq_sandbox_table_name': self.fq_sandbox_table_names[0],
             'loaded_ids': [1, 2, 3, 4],
             'sandboxed_ids': [3],
             'fields': ['person_id', 'datetime', 'steps'],
             'cleaned_values': [(1, None, 10), (2, None, 20), (4, None, 40)]
         }, {
             'fq_table_name':
-                f'{self.project_id}.{self.dataset_id}.{ACTIVITY_SUMMARY}',
+                self.fq_table_names[1],
             'fq_sandbox_table_name':
-                f'{self.project_id}.{self.sandbox_id}.{self.rule_instance.sandbox_table_for(ACTIVITY_SUMMARY)}',
+                self.fq_sandbox_table_names[1],
             'loaded_ids': [1, 2, 3, 4],
             'sandboxed_ids': [3],
             'fields': ['person_id', 'date', 'activity_calories'],

@@ -23,6 +23,9 @@ class SandboxTest(unittest.TestCase):
         self.fq_sandbox_id = f'{self.project_id}.{self.sandbox_id}'
         # Removing any existing datasets that might interfere with the test
         self.client = get_client(self.project_id)
+        self.client.delete_dataset(self.fq_sandbox_id,
+                                   delete_contents=True,
+                                   not_found_ok=True)
 
     def test_create_sandbox_dataset(self):
         # pre-conditions

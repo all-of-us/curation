@@ -1,65 +1,82 @@
 #!/bin/bash -e
 
-# print executed commands
-set -x
+set -e
+
+UNIT_NAME="unit"
+INTEGRATION_NAME="integration"
 
 BASE_DIR="$(git rev-parse --show-toplevel)"
-. "${BASE_DIR}/data_steward/tools/set_path.sh"
 
-subset="all"
-
+export PYTHONPATH=:"${BASE_DIR}":"${BASE_DIR}/data_steward":"${BASE_DIR}/tests":${PYTHONPATH}
 
 function usage() {
   echo "Usage: run_test.sh " \
-      "[-s all|unit|integration]" \
-      "[-r <file name match glob, e.g. 'extraction_*'>]" >& 2
+    "[unit|integration]" \
+    "[Set env CURATION_TESTS_FILEPATH for specific tests, usage in runner.py]" >&2
   exit 1
 }
 
-while true; do
-  case "$1" in
-    -s)
-      subset=$2
-      shift 2
-      ;;
-    -r)
-      substring=$2
-      shift 2
-      ;;
-    --)
-      shift
-      break
-      ;;
-    *) break ;;
+# these will be flipped to 1 when that command's name is seen
+run_unit=0
+run_integration=0
+
+# this is used to track which command we're currently building flags for
+current_cmd=""
+
+run_args=("${@}")
+
+echo "${run_args[@]}"
+
+for i in "${run_args[@]}"; do
+  case $i in
+  help)
+    usage
+    exit 0
+    ;;
+  unit)
+    if [ $run_unit -eq 1 ]; then
+      echo "\"${UNIT_NAME}\" already specified once"
+      exit 1
+    fi
+    run_unit=1
+    current_cmd="${UNIT_NAME}"
+    shift
+    ;;
+  integration)
+    if [ $run_integration -eq 1 ]; then
+      echo "\"${INTEGRATION_NAME}\" already specified once"
+      exit 1
+    fi
+    run_integration=1
+    current_cmd="${INTEGRATION_NAME}"
+    shift
+    ;;
+  *)
+    usage
+    echo "Unknown option ${i}"
+    echo "run_args=${run_args[*]}"
+    exit 1
   esac
 done
 
-if [[ ${substring} ]];
-then
-   echo Executing tests that match glob ${substring}
+if [ "${run_unit}" -ne 1 ] && [ "${run_integration}" -ne 1 ]; then
+  usage
+  exit 0
 fi
 
-if [[ "$subset" == "unit" ]]
-then
-  path="tests/unit_tests/"
-  coverage_file=".coveragerc_unit"
-elif [[ "$subset" == "integration" ]]
-then
-  path="tests/integration_tests/"
-  coverage_file=".coveragerc_integration"
-else
-  path="tests/"
-  coverage_file=".coveragerc"
+if [[ "${current_cmd}" == "${UNIT_NAME}" ]] || [[ "${current_cmd}" == "${INTEGRATION_NAME}" ]]; then
+  script_args=("${BASE_DIR}/tests/runner.py"
+    "--test-dir"
+    "${BASE_DIR}/tests/${current_cmd}_tests"
+    "--coverage-file"
+    "${BASE_DIR}/.coveragerc_${current_cmd}")
 fi
 
-if [[ -z ${substring} ]]
-then
-  cmd="tests/runner.py --test-path ${path} ${sdk_dir} --coverage-file ${coverage_file}"
-else
-  cmd="tests/runner.py --test-path ${path} ${sdk_dir} --test-pattern $substring --coverage-file ${coverage_file}"
+# determine if env var is set containing test filepaths
+if [[ -n "${CURATION_TESTS_FILEPATH}" ]]; then
+  script_args+=(
+    "--test-paths-filepath"
+    "${CURATION_TESTS_FILEPATH}")
 fi
 
-(cd "${BASE_DIR}"; PYTHONPATH=./:./data_steward:${PYTHONPATH} python ${cmd})
-
-# stop printing executed commands
-set +x
+python "${script_args[@]}"
