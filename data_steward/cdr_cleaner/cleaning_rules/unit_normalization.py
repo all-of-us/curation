@@ -132,7 +132,11 @@ class UnitNormalization(BaseCleaningRule):
     Units for labs/measurements will be normalized..
     """
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id):
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 table_namer=None):
         """
         Initialize the class with proper information.
 
@@ -152,7 +156,8 @@ class UnitNormalization(BaseCleaningRule):
             project_id=project_id,
             dataset_id=dataset_id,
             sandbox_dataset_id=sandbox_dataset_id,
-            depends_on=[MeasurementRecordsSuppression, CleanHeightAndWeight])
+            depends_on=[MeasurementRecordsSuppression, CleanHeightAndWeight],
+            table_namer=table_namer)
 
     def setup_rule(self, client=None):
         """
@@ -228,7 +233,7 @@ class UnitNormalization(BaseCleaningRule):
         pass
 
     def get_sandbox_table_name(self):
-        return f'{self._issue_numbers[0].lower()}_measurement'
+        return self.sandbox_table_for('measurement')
 
     def get_sandbox_tablenames(self):
         return [self.get_sandbox_table_name()]

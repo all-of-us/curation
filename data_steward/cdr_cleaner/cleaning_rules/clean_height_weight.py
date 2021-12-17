@@ -599,7 +599,11 @@ class CleanHeightAndWeight(BaseCleaningRule):
     and removes invalid/implausible data points (rows)
     """
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id):
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 table_namer=None):
         """
         Initializes the class with the proper information.
 
@@ -619,7 +623,8 @@ class CleanHeightAndWeight(BaseCleaningRule):
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
                          affected_tables=[MEASUREMENT],
-                         depends_on=[MeasurementRecordsSuppression])
+                         depends_on=[MeasurementRecordsSuppression],
+                         table_namer=table_namer)
 
     def get_query_specs(self):
         """
@@ -637,7 +642,7 @@ class CleanHeightAndWeight(BaseCleaningRule):
                     project_id=self.project_id,
                     dataset_id=self.dataset_id,
                     sandbox_dataset_id=self.sandbox_dataset_id,
-                    height_table=HEIGHT_TABLE),
+                    height_table=self.sandbox_table_for(HEIGHT_TABLE)),
         }
 
         save_new_height_rows_query = {
@@ -646,8 +651,8 @@ class CleanHeightAndWeight(BaseCleaningRule):
                     project_id=self.project_id,
                     dataset_id=self.dataset_id,
                     sandbox_dataset_id=self.sandbox_dataset_id,
-                    new_height_rows=NEW_HEIGHT_ROWS,
-                    height_table=HEIGHT_TABLE),
+                    new_height_rows=self.sandbox_table_for(NEW_HEIGHT_ROWS),
+                    height_table=self.sandbox_table_for(HEIGHT_TABLE)),
         }
 
         drop_height_rows_query = {
@@ -667,7 +672,7 @@ class CleanHeightAndWeight(BaseCleaningRule):
                 INSERT_NEW_ROWS_QUERY.render(
                     project_id=self.project_id,
                     sandbox_dataset_id=self.sandbox_dataset_id,
-                    new_rows=NEW_HEIGHT_ROWS),
+                    new_rows=self.sandbox_table_for(NEW_HEIGHT_ROWS)),
             cdr_consts.DESTINATION_TABLE:
                 MEASUREMENT,
             cdr_consts.DESTINATION_DATASET:
@@ -682,7 +687,7 @@ class CleanHeightAndWeight(BaseCleaningRule):
                 CREATE_WEIGHT_SANDBOX_QUERY.render(
                     project_id=self.project_id,
                     sandbox_dataset_id=self.sandbox_dataset_id,
-                    weight_table=WEIGHT_TABLE,
+                    weight_table=self.sandbox_table_for(WEIGHT_TABLE),
                     dataset_id=self.dataset_id),
         }
 
@@ -691,8 +696,8 @@ class CleanHeightAndWeight(BaseCleaningRule):
                 NEW_WEIGHT_ROWS_QUERY.render(
                     project_id=self.project_id,
                     sandbox_dataset_id=self.sandbox_dataset_id,
-                    new_weight_rows=NEW_WEIGHT_ROWS,
-                    weight_table=WEIGHT_TABLE,
+                    new_weight_rows=self.sandbox_table_for(NEW_WEIGHT_ROWS),
+                    weight_table=self.sandbox_table_for(WEIGHT_TABLE),
                     dataset_id=self.dataset_id),
         }
 
@@ -713,7 +718,7 @@ class CleanHeightAndWeight(BaseCleaningRule):
                 INSERT_NEW_ROWS_QUERY.render(
                     project_id=self.project_id,
                     sandbox_dataset_id=self.sandbox_dataset_id,
-                    new_rows=NEW_WEIGHT_ROWS),
+                    new_rows=self.sandbox_table_for(NEW_WEIGHT_ROWS)),
             cdr_consts.DESTINATION_TABLE:
                 MEASUREMENT,
             cdr_consts.DESTINATION_DATASET:
@@ -749,7 +754,10 @@ class CleanHeightAndWeight(BaseCleaningRule):
         raise NotImplementedError("Please fix me.")
 
     def get_sandbox_tablenames(self):
-        return [HEIGHT_TABLE, WEIGHT_TABLE, NEW_HEIGHT_ROWS, NEW_WEIGHT_ROWS]
+        return [
+            self.sandbox_table_for(table) for table in
+            [HEIGHT_TABLE, WEIGHT_TABLE, NEW_HEIGHT_ROWS, NEW_WEIGHT_ROWS]
+        ]
 
 
 if __name__ == '__main__':
