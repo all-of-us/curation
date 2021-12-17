@@ -52,7 +52,7 @@ dkr_run_args=(
 # If running specific tests using env var
 if [[ -n "${CURATION_TESTS_FILEPATH}" && -s "${CURATION_TESTS_FILEPATH}" ]]; then
   dkr_run_args+=("-v")
-  dkr_run_args+=("$(realpath "${CURATION_TESTS_FILEPATH}"):/tests-to-run.txt:z")
+  dkr_run_args+=("$(realpath "${CURATION_TESTS_FILEPATH}"):/tests-to-run.txt:ro")
   dkr_run_args+=("-e")
   dkr_run_args+=("CURATION_TESTS_FILEPATH=/tests-to-run.txt")
 fi

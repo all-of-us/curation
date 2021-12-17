@@ -202,7 +202,7 @@ function define_common_envvars() {
   set_env "PROJECT_PREFIX" "${APPLICATION_ID//-/_}"
 
   # Parallelism env var
-  set_env "CIRCLE_NODE_INDEX" "${CIRCLE_NODE_INDEX}" 0
+  set_env "CIRCLE_NODE_INDEX" "local"
 
   ## dataset envvars
 

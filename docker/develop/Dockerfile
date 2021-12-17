@@ -66,9 +66,6 @@ ENV CIRCLE_PROJECT_NAME "all-of-us"
 ENV CIRCLE_WORKING_DIRECTORY "${CURATION_HOME}/project/curation"
 ENV CIRCLE_ARTIFACTS "/tmp/circleci-artifacts"
 
-# Enables parallelism in Circle CI but can be 0 if running locally
-ENV CIRCLE_NODE_INDEX "${CIRCLE_NODE_INDEX:-0}"
-
 # python venv envvars
 ENV VENV_PATH "${CIRCLE_WORKING_DIRECTORY}/curation_venv"
 ENV VENV_ACTIVATE "${VENV_PATH}/bin/activate"
