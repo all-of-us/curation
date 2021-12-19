@@ -231,12 +231,9 @@ def _get_replace_statement(base_statement, rdr_ehr, field, dict_abbreviation):
     for key in dict_abbreviation:
         statement_parts.appendleft(
             "REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(")
-        statement_parts.append(f",'(?:^{key} )','{dict_abbreviation[key]} ')")
-        statement_parts.append(f",'(?: {key}$)',' {dict_abbreviation[key]}')")
-        statement_parts.append(f",'(?: {key} )',' {dict_abbreviation[key]} ')")
-        # statement_parts.append(f",'^{key} ','{dict_abbreviation[key]} ')")
-        # statement_parts.append(f",' {key}$',' {dict_abbreviation[key]}')")
-        # statement_parts.append(f",' {key} ',' {dict_abbreviation[key]} ')")
+        statement_parts.append(f",'^{key} ','{dict_abbreviation[key]} ')")
+        statement_parts.append(f",' {key}$',' {dict_abbreviation[key]}')")
+        statement_parts.append(f",' {key} ',' {dict_abbreviation[key]} ')")
 
     statement_parts.appendleft(f"normalized_{rdr_ehr}_{field} AS (SELECT ")
 

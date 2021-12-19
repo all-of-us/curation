@@ -29,11 +29,11 @@ person_schema = [
 
 location_schema = [
     SchemaField("location_id", "INTEGER", mode="REQUIRED"),
-    SchemaField("address_1", "STRING", mode="REQUIRED"),
-    SchemaField("address_2", "STRING", mode="REQUIRED"),
-    SchemaField("city", "STRING", mode="REQUIRED"),
-    SchemaField("state", "STRING", mode="REQUIRED"),
-    SchemaField("zip", "STRING", mode="REQUIRED"),
+    SchemaField("address_1", "STRING"),
+    SchemaField("address_2", "STRING"),
+    SchemaField("city", "STRING"),
+    SchemaField("state", "STRING"),
+    SchemaField("zip", "STRING"),
 ]
 
 concept_schema = [
@@ -47,11 +47,11 @@ INSERT INTO `{{project_id}}.{{drc_dataset_id}}.{{ps_values_table_id}}`
 VALUES 
     (1, 'John', 'Jacob', 'Smith', '1 Government Dr', '', 'St. Louis', 'MO', '63110', 'john@gmail.com', '(123)456-7890', date('1978-10-01'), 'SexAtBirth_Female'),
     (2, 'Rebecca', 'Howard', 'Glass', '476 5th Ave', '', 'New York', 'NY', '10018', 'rebecca@gmail.com', '1234567890', date('1984-10-23'), 'SexAtBirth_Male'),
-    (3, 'Sam', 'Felix Rose', 'Smith', 'University St', '', 'Andersen AFB 1', 'Gu', '96923', 'samwjeo', '123456-7890', date('2003-01-05'), 'SexAtBirth_SexAtBirthNoneOfThese'),
-    (4, 'Chris', 'Arthur', 'Smith', '915 PR-17', 'Apt 7D', 'San Juan', 'PR', '00921', 'chris@gmail.com', '1234567890', date('2003-05-1'), 'SexAtBirth_Intersex'),
-    (5, 'John', NULL, 'Doe', '50 Riverview Plaza', '', 'Trenton', 'NJ', '08611', '  johndoe@gmail.com  ', '', date('1993-11-01'), 'PMI_Skip'),
+    (3, 'Sam', 'Felix Rose', 'Smith', 'University St', 'APT 7D', 'Andersen AFB', 'Gu', '96923', 'samwjeo', '123456-7890', date('2003-01-05'), 'SexAtBirth_SexAtBirthNoneOfThese'),
+    (4, 'Chris', 'Arthur', 'Smith', '915 PR-17', 'Apt 7D', NULL, 'PR', '00921', 'chris@gmail.com', '1234567890', date('2003-05-1'), 'SexAtBirth_Intersex'),
+    (5, 'John', NULL, 'Doe', NULL, '', 'Trenton', 'NJ', '08611', '  johndoe@gmail.com  ', '', date('1993-11-01'), 'PMI_Skip'),
     (6, 'Rebecca', '', 'Mayers-James', '1501 Riverplace Blvd', '', 'Jacksonville', 'FL', '32207', 'rebeccamayers@gmail.co', '814321-0987', NULL, 'PMI_PreferNotToAnswer'),
-    (7, 'Leo', '', "O’Keefe", '1241 Elm St', '', 'Cincinnati', 'OH', '45202', 'leo@yahoo.com', '0987654321', date('1981-10-01'), 'UNSET'),
+    (7, 'Leo', '', "O’Keefe", '1 2nd 3 4th St', '', 'Cincinnati', 'OH', '45202', 'leo@yahoo.com', '0987654321', date('1981-10-01'), 'UNSET'),
     (8, '1ois', 'Frankl1n', 'Rhodes', '42 Nason St', '', 'Maynard', 'MA', '01754', '', '1-800-800-0911', date('1999-12-01'), 'SexAtBirth_SexAtBirthNoneOfThese'),
     (9, 'Jack', 'Isaac', 'Dean', '777 NE Martin Luther King Jr Blvd', '', 'Portland', 'OR', '97232', 'jd@gmail.com', '555-555-1234', date('2002-03-14'), 'SexAtBirth_Female')
 """)
@@ -264,37 +264,47 @@ class ValidateTest(TestCase):
         INSERT INTO `{{project_id}}.{{drc_dataset_id}}.{{location_table_id}}` 
         (location_id, address_1, address_2, city, state, zip)
         VALUES
-            (11, ' 1 government drive ', '', 'saint louis ', 'mo', '63110'),
+            (11, ' 1 government drive ', '', 'Saint Louis ', 'mo', '63110'),
             (12, 'Wrong street', 'Wrong apartment', 'Wrong city', 'NJ', '12345'),
-            (13, 'University Street', '', 'Andersen Air Force Base 1', 'Gu', '96923'),
+            (13, 'University Street', 'Apartment 7 D', 'Andersen Air Force Base', 'Gu', '  96923  '),
             (14, '915 pr-17', 'Apt 7D', ' San Juan ', 'pr', '921'),
-            (15, '50 Riverview Plaza', '', 'Trenton', 'NJ', '08611'),
-            (16, '1501 Riverplace Blvd', '', 'Jacksonville', 'FL', '32207'),
-            (17, '1241 Elm St', '', 'Cincinnati', 'OH', '45202'),
+            (15, '50 Riverview Plaza', '', NULL, 'NJ', '08611-1234'),
+            (16, NULL, '', 'Jacksonville', 'FL', '32207  5678'),
+            (17, '1st 2 3rd 4 Street', '', 'Cincinnati', 'OH', '45202'),
             (18, '42 Nason St', '', 'Maynard', 'MA', '01754'),
             (19, '777 NE Martin Luther King Jr Blvd', '', 'Portland', 'OR', '97232')
         """)
-        """
-        -- 11: street_1 - match (dr vs drive, whitespace padding, uppercase vs lowercase)
-        -- 11: street_2 - match (both blank)
-        -- 11: city - match (St. vs saint, whitespace padding, uppercase vs lowercase)
-        -- 11: state - match (uppercase vs lowercase)
-        -- 11: zip - match (identical)
-        -- 12: street_1 - no_match (different address)
-        -- 12: street_2 - no_match (blank vs non-blank)
-        -- 12: city - no_match (different city)
-        -- 12: state - no_match (different state)
-        -- 12: zip - no_match (different zip)
-        -- 13: street_1 - match (St vs Street)
-        -- 13: street_2 - match (both blank)
-        -- 13: city - match (AFB vs Air Force Base)
-        -- 13: state - match (identical)
-        -- 13: zip - match (identical)
-        -- 14: street_1 - match (uppercase vs lowercase)
-        -- 14: street_2 - match (identical)
-        -- 14: city - match (whitespace padding)
-        -- 14: state - match (identical)
-        -- 14: zip - match (zero padding)
+        """        
+        11: street_1 - match (dr vs drive, whitespace padding, uppercase vs lowercase)
+        12: street_1 - no_match (different address)
+        13: street_1 - match (St vs Street)
+        14: street_1 - match (uppercase vs lowercase)
+        15: street_1 - missing_rdr
+        16: street_1 - missing_ehr
+        17: street_1 - match (1st vs 1, 2nd vs 2, 3rd vs 3, 4th vs 4)
+        TODO! 18: street_1 - match (multiple white spaces)
+
+        11: street_2 - match (both blank)
+        12: street_2 - no_match (blank vs non-blank)
+        13: street_2 - match (APT 7D vs Apartment 7 D)
+
+        11: city - match (St. vs saint, whitespace padding, uppercase vs lowercase)
+        12: city - no_match (different city)
+        13: city - match (AFB vs Air Force Base)
+        14: city - missing_rdr
+        15: city - missing_ehr
+
+        11: state - match (uppercase vs lowercase)
+        12: state - no_match (different state)
+        TODO! 13: Non-existent state
+        TODO! 14: PIISTATE_
+
+        11: zip - match (identical)
+        12: zip - no_match (different zip)
+        13: zip - match (whitespace padding)
+        14: zip - match (00921 vs 921)
+        15: zip - match (08611 vs 08611-1234)
+        16: zip - match (32207 vs 32207  5678)
         """
 
         # Create and populate concept table
@@ -425,7 +435,7 @@ class ValidateTest(TestCase):
             'last_name': 'match',
             'address_1': 'match',
             'address_2': 'match',
-            'city': 'match',
+            'city': 'missing_rdr',
             'state': 'match',
             'zip': 'match',
             'email': 'match',
@@ -438,9 +448,9 @@ class ValidateTest(TestCase):
             'first_name': 'match',
             'middle_name': 'missing_rdr',
             'last_name': 'match',
-            'address_1': 'match',
+            'address_1': 'missing_rdr',
             'address_2': 'match',
-            'city': 'match',
+            'city': 'missing_ehr',
             'state': 'match',
             'zip': 'match',
             'email': 'match',
@@ -453,7 +463,7 @@ class ValidateTest(TestCase):
             'first_name': 'match',
             'middle_name': 'match',
             'last_name': 'match',
-            'address_1': 'match',
+            'address_1': 'missing_ehr',
             'address_2': 'match',
             'city': 'match',
             'state': 'match',
