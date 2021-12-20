@@ -652,11 +652,5 @@ class ValidationMainTest(TestCase):
                                                         application_id)
             mock_run_achilles.assert_called_once_with('unioned_ehr')
 
-            # assertions on the decorator log_event_factory
-            self.assertEqual(mock_post_message.call_count, 2)
-            mock_post_message.assert_any_call('The ehr union job has started.')
-            mock_post_message.assert_any_call(
-                'The ehr union job has completed successfully.')
-
             self.assertEqual(mock_run_export.call_count, 1)
             self.assertEqual(mock_upload_achilles_files.call_count, 1)

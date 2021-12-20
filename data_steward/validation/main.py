@@ -26,7 +26,6 @@ import cdm
 import common
 import gcs_utils
 import resources
-from utils.slack_alerts import log_event_factory
 from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON, AOU_REQUIRED_FILES
 from constants.validation import hpo_report as report_consts
 from constants.validation import main as consts
@@ -958,7 +957,6 @@ def upload_string_to_gcs(bucket, name, string):
 
 @api_util.auth_required_cron
 @log_traceback
-@log_event_factory(job_name='ehr union')
 def union_ehr():
     hpo_id = 'unioned_ehr'
     app_id = bq_utils.app_identity.get_application_id()
