@@ -327,12 +327,12 @@ class ValidationMainTest(TestCase):
     @mock.patch('gcs_utils.list_bucket')
     @mock.patch('gcs_utils.get_hpo_bucket')
     def test_process_hpo_ignore_dirs(
-        self, mock_hpo_bucket, mock_bucket_list, mock_valid_rdr,
-        mock_first_validation, mock_has_all_required_files, mock_folder_items,
-        mock_validation, mock_get_hpo_name, mock_upload_string_to_gcs,
-        mock_get_duplicate_counts_query, mock_query_rows,
-        mock_all_required_files_loaded, mock_upload, mock_run_achilles,
-        mock_export, mock_valid_folder_name, mock_query):
+            self, mock_hpo_bucket, mock_bucket_list, mock_valid_rdr,
+            mock_first_validation, mock_has_all_required_files,
+            mock_folder_items, mock_validation, mock_get_hpo_name,
+            mock_upload_string_to_gcs, mock_get_duplicate_counts_query,
+            mock_query_rows, mock_all_required_files_loaded, mock_upload,
+            mock_run_achilles, mock_export, mock_valid_folder_name, mock_query):
         """
         Test process_hpo with directories we want to ignore.
 
@@ -651,12 +651,6 @@ class ValidationMainTest(TestCase):
                                                         output_dataset,
                                                         application_id)
             mock_run_achilles.assert_called_once_with('unioned_ehr')
-
-            # assertions on the decorator log_event_factory
-            self.assertEqual(mock_post_message.call_count, 2)
-            mock_post_message.assert_any_call('The ehr union job has started.')
-            mock_post_message.assert_any_call(
-                'The ehr union job has completed successfully.')
 
             self.assertEqual(mock_run_export.call_count, 1)
             self.assertEqual(mock_upload_achilles_files.call_count, 1)
