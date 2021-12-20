@@ -39,8 +39,7 @@ class AppErrorHandlersTest(TestCase):
             app_errors.handle_internal_validation_error
         ]
 
-    @mock.patch('validation.app_errors.post_message')
-    def test_log_traceback(self, mock_post):
+    def test_log_traceback(self):
         message = f"This is a test Exception"
         exception = ValueError(message)
         alert_msg = app_errors.format_alert_message(
@@ -51,10 +50,8 @@ class AppErrorHandlersTest(TestCase):
             raise exception
 
         self.assertRaises(ValueError, fake_function)
-        mock_post.assert_called_once_with(alert_msg)
 
-    @mock.patch('validation.app_errors.post_message')
-    def test_handler_functions(self, mock_alert_message):
+    def test_handler_functions(self):
         """
         Test that all the handlers behave as expected.
         """
@@ -81,10 +78,8 @@ class AppErrorHandlersTest(TestCase):
             self.assertTrue(code, app_errors.DEFAULT_ERROR_STATUS)
 
     @mock.patch('gcs_utils.list_bucket')
-    @mock.patch('validation.app_errors.post_message')
     @mock.patch('api_util.check_cron')
-    def test_handlers_fire(self, mock_check_cron, mock_alert_message,
-                           mock_list_bucket):
+    def test_handlers_fire(self, mock_check_cron, mock_list_bucket):
         """
         Test the os handler method fires as expected when an OSError is raised.
         """

@@ -13,7 +13,6 @@ import flask
 from googleapiclient.errors import HttpError
 
 # Project imports
-from utils.slack_alerts import post_message, SlackConfigurationError
 
 errors_blueprint = flask.Blueprint('app_errors', __name__)
 
@@ -41,12 +40,6 @@ def log_traceback(func):
         except Exception as e:
             alert_message = format_alert_message(e.__class__.__name__, str(e))
             logging.exception(alert_message, exc_info=True, stack_info=True)
-            try:
-                post_message(alert_message)
-            except SlackConfigurationError:
-                logging.exception(
-                    'Slack is not configured for posting messages, refer to playbook.'
-                )
             raise e
 
     return wrapper
