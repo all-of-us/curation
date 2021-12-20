@@ -47,8 +47,8 @@ INSERT INTO `{{project_id}}.{{drc_dataset_id}}.{{ps_values_table_id}}`
 VALUES 
     (1, 'John', 'Jacob', 'Smith', '1 Government Dr', '', 'St. Louis', 'MO', '63110', 'john@gmail.com', '(123)456-7890', date('1978-10-01'), 'SexAtBirth_Female'),
     (2, 'Rebecca', 'Howard', 'Glass', '476 5th Ave', '', 'New York', 'NY', '10018', 'rebecca@gmail.com', '1234567890', date('1984-10-23'), 'SexAtBirth_Male'),
-    (3, 'Sam', 'Felix Rose', 'Smith', 'University St', 'APT 7D', 'Andersen AFB', 'Gu', '96923', 'samwjeo', '123456-7890', date('2003-01-05'), 'SexAtBirth_SexAtBirthNoneOfThese'),
-    (4, 'Chris', 'Arthur', 'Smith', '915 PR-17', 'Apt 7D', NULL, 'PR', '00921', 'chris@gmail.com', '1234567890', date('2003-05-1'), 'SexAtBirth_Intersex'),
+    (3, 'Sam', 'Felix Rose', 'Smith', 'University St', 'APT 7D', 'Andersen AFB', 'ABCD', '96923', 'samwjeo', '123456-7890', date('2003-01-05'), 'SexAtBirth_SexAtBirthNoneOfThese'),
+    (4, 'Chris', 'Arthur', 'Smith', '915 PR-17', 'Apt 7D', NULL, 'PIIState_PR', '00921', 'chris@gmail.com', '1234567890', date('2003-05-1'), 'SexAtBirth_Intersex'),
     (5, 'John', NULL, 'Doe', NULL, '', 'Trenton', 'NJ', '08611', '  johndoe@gmail.com  ', '', date('1993-11-01'), 'PMI_Skip'),
     (6, 'Rebecca', '', 'Mayers-James', '1501 Riverplace Blvd', '', 'Jacksonville', 'FL', '32207', 'rebeccamayers@gmail.co', '814321-0987', NULL, 'PMI_PreferNotToAnswer'),
     (7, 'Leo', '', "O’Keefe", '1 2nd 3 4th St', '', 'Cincinnati', 'OH', '45202', 'leo@yahoo.com', '0987654321', date('1981-10-01'), 'UNSET'),
@@ -271,7 +271,7 @@ class ValidateTest(TestCase):
             (15, '50 Riverview Plaza', '', NULL, 'NJ', '08611-1234'),
             (16, NULL, '', 'Jacksonville', 'FL', '32207  5678'),
             (17, '1st 2 3rd 4 Street', '', 'Cincinnati', 'OH', '45202'),
-            (18, '42  Nason   St', '', 'Maynard', 'MA', '01754'),
+            (18, '42  Nason   St', '', 'Maynard', 'MA', '01754')
         """)
         """ 
         TODO: say something here:       
@@ -297,8 +297,8 @@ class ValidateTest(TestCase):
 
         11: state - match (uppercase vs lowercase)
         12: state - no_match (different state)
-        TODO! 13: Non-existent state
-        TODO! 14: PIISTATE_
+        13: Non-existent state
+        14: PIISTATE_
 
         11: zip - match (identical)
         12: zip - no_match (different zip)
