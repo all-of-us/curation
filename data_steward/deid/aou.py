@@ -96,6 +96,7 @@ from resources import DEID_PATH
 from tools.concept_ids_suppression import get_all_concept_ids
 
 LOGGER = logging.getLogger(__name__)
+MEASUREMENT_TIME = 'measurement_time'
 
 
 def milliseconds_since_epoch():
@@ -354,7 +355,7 @@ class AOU(Press):
         date_columns = []
         for name in columns:
             for temporal in ['date', 'time', 'datetime']:
-                if temporal in name.split('_'):
+                if temporal in name.split('_') and name != MEASUREMENT_TIME:
                     date_columns.append(name)
         #
         # shifting date attributes can be automatically done for relational fields
