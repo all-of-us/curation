@@ -4,6 +4,8 @@ Interact with Google Cloud Storage (GCS)
 # Python stl imports
 import os
 
+from google.cloud.storage.bucket import Bucket, Blob
+
 # Project imports
 from validation.app_errors import BucketDoesNotExistError
 
@@ -17,6 +19,40 @@ class StorageClient(Client):
     A client that extends GCS functionality
     See https://googleapis.dev/python/storage/latest/client.html
     """
+
+    def get_bucket_items_metadata(self, bucket: Bucket) -> list:
+        """
+        Given a bucket, iterate through it's contents and pull out each objects
+        metadata
+        :param bucket: Bucket to iterate through
+        :return: a list of dicts containing metadata
+        """
+
+        blobs: list = list(self.list_blobs(bucket))
+        metadata: list = [self.get_blob_metadata(blob) for blob in blobs]
+        return metadata
+
+    def get_blob_metadata(self, blob: Blob) -> dict:
+        """
+        Gather and ship a blob's metadata in dictionary form.
+        Note: Date and times are in the python stl formate.  They are datetime objects.
+        """
+        metadata: dict = {
+            'id': blob.id,
+            'name': blob.name,
+            'bucket': blob.bucket.name,
+            'generation': blob.generation,
+            'metageneration': blob.metageneration,
+            'contentType': blob.content_type,
+            'storageClass': blob.storage_class,
+            'size': blob.size,
+            'md5Hash': blob.md5_hash,
+            'crc32c': blob.crc32c,
+            'etag': blob.etag,
+            'updated': blob.updated,
+            'timeCreated': blob.time_created
+        }
+        return metadata
 
     def get_drc_bucket(self) -> str:
         result = os.environ.get('DRC_BUCKET_NAME')
