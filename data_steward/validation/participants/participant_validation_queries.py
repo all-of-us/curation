@@ -35,6 +35,88 @@ CREATE_NAME_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
     ));
 """)
 
+CREATE_STREET_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
+CREATE FUNCTION IF NOT EXISTS
+  `{{project_id}}.{{drc_dataset_id}}.CompareStreetAddress`(rdr_street string, ehr_street string)
+  RETURNS string AS ((
+    {{street_with_clause}}
+    SELECT
+      CASE
+        WHEN normalized_rdr_street.rdr_street = normalized_ehr_street.ehr_street THEN '{{match}}'
+        WHEN normalized_rdr_street.rdr_street IS NOT NULL AND normalized_ehr_street.ehr_street IS NOT NULL THEN '{{no_match}}'
+        WHEN normalized_rdr_street.rdr_street IS NULL THEN '{{missing_rdr}}'
+        ELSE '{{missing_ehr}}'
+      END AS street
+    FROM normalized_rdr_street, normalized_ehr_street));
+""")
+
+CREATE_CITY_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
+CREATE FUNCTION IF NOT EXISTS
+  `{{project_id}}.{{drc_dataset_id}}.CompareCity`(rdr_city string, ehr_city string)
+  RETURNS string AS ((
+    {{city_with_clause}}
+    SELECT
+      CASE
+        WHEN normalized_rdr_city.rdr_city = normalized_ehr_city.ehr_city THEN '{{match}}'
+        WHEN normalized_rdr_city.rdr_city IS NOT NULL AND normalized_ehr_city.ehr_city IS NOT NULL THEN '{{no_match}}'
+        WHEN normalized_rdr_city.rdr_city IS NULL THEN '{{missing_rdr}}'
+        ELSE '{{missing_ehr}}'
+      END AS city
+    FROM normalized_rdr_city, normalized_ehr_city));
+""")
+
+CREATE_STATE_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
+CREATE FUNCTION IF NOT EXISTS
+  `{{project_id}}.{{drc_dataset_id}}.CompareState`(rdr_state string, ehr_state string)
+  RETURNS string AS ((
+        WITH normalized_rdr_state AS (
+            SELECT 
+              CASE
+                WHEN REPLACE(LOWER(TRIM(rdr_state)), 'piistate_', '') IN ({{state_abbreviations}})
+                THEN REPLACE(LOWER(TRIM(rdr_state)), 'piistate_', '')
+                WHEN rdr_state IS NULL THEN NULL
+                ELSE ''
+              END AS rdr_state
+        )
+        , normalized_ehr_state AS (
+            SELECT
+              CASE
+                WHEN LOWER(TRIM(ehr_state)) IN ({{state_abbreviations}})
+                THEN LOWER(TRIM(ehr_state))
+                WHEN ehr_state IS NULL THEN NULL
+                ELSE ''
+              END AS ehr_state
+        )
+    SELECT
+      CASE
+        WHEN normalized_rdr_state.rdr_state = normalized_ehr_state.ehr_state THEN '{{match}}'
+        WHEN normalized_rdr_state.rdr_state IS NOT NULL AND normalized_ehr_state.ehr_state IS NOT NULL THEN '{{no_match}}'
+        WHEN normalized_rdr_state.rdr_state IS NULL THEN '{{missing_rdr}}'
+        ELSE '{{missing_ehr}}'
+      END AS state
+    FROM normalized_rdr_state, normalized_ehr_state));
+""")
+
+CREATE_ZIP_CODE_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
+CREATE FUNCTION IF NOT EXISTS
+  `{{project_id}}.{{drc_dataset_id}}.CompareZipCode`(rdr_zip_code string, ehr_zip_code string)
+  RETURNS string AS ((
+        WITH normalized_rdr_zip_code AS (
+            SELECT LPAD(SPLIT(SPLIT(TRIM(rdr_zip_code), '-')[OFFSET(0)], ' ')[OFFSET(0)], 5, '0') AS rdr_zip_code
+        )
+        , normalized_ehr_zip_code AS (
+            SELECT LPAD(SPLIT(SPLIT(TRIM(ehr_zip_code), '-')[OFFSET(0)], ' ')[OFFSET(0)], 5, '0') AS ehr_zip_code
+        )
+    SELECT
+      CASE
+        WHEN normalized_rdr_zip_code.rdr_zip_code = normalized_ehr_zip_code.ehr_zip_code THEN '{{match}}'
+        WHEN normalized_rdr_zip_code.rdr_zip_code IS NOT NULL AND normalized_ehr_zip_code.ehr_zip_code IS NOT NULL THEN '{{no_match}}'
+        WHEN normalized_rdr_zip_code.rdr_zip_code IS NULL THEN '{{missing_rdr}}'
+        ELSE '{{missing_ehr}}'
+      END AS zip_code
+    FROM normalized_rdr_zip_code, normalized_ehr_zip_code));
+""")
+
 CREATE_SEX_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
 CREATE FUNCTION IF NOT EXISTS
   `{{project_id}}.{{drc_dataset_id}}.CompareSexAtBirth`(rdr_sex string,
@@ -125,6 +207,18 @@ CREATE_DOB_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
 CREATE_COMPARISON_FUNCTION_QUERIES = [{
     'name': 'CompareName',
     'query': CREATE_NAME_COMPARISON_FUNCTION
+}, {
+    'name': 'CompareStreetAddress',
+    'query': CREATE_STREET_COMPARISON_FUNCTION
+}, {
+    'name': 'CompareCity',
+    'query': CREATE_CITY_COMPARISON_FUNCTION
+}, {
+    'name': 'CompareState',
+    'query': CREATE_STATE_COMPARISON_FUNCTION
+}, {
+    'name': 'CompareZipCode',
+    'query': CREATE_ZIP_CODE_COMPARISON_FUNCTION
 }, {
     'name': 'CompareEmail',
     'query': CREATE_EMAIL_COMPARISON_FUNCTION
