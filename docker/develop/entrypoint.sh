@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 
+# load functions
 source "${CURATION_SCRIPTS_DIR}"/funcs.sh
+
+# DC-2043: Always load common envvars
+define_common_envvars > /dev/null
 
 HELP_TEXT=$(
   cat <<EOT

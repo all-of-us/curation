@@ -39,6 +39,16 @@ $dkr_run_args = @(
   "-v", """${pwd}/.circleci:/home/curation/project/curation/.circleci"""
 )
 
+# If running specific tests using env var
+if ((Test-Path "env:CURATION_TESTS_FILEPATH") -and (-not ($env:CURATION_TESTS_FILEPATH -eq "") ))
+{
+  $tests_path = (Resolve-Path $env:CURATION_TESTS_FILEPATH)
+  $dkr_run_args += "-v"
+  $dkr_run_args += """${tests_path}:/tests-to-run.txt"""
+  $dkr_run_args += "-e"
+  $dkr_run_args += """CURATION_TESTS_FILEPATH=/tests-to-run.txt"""
+}
+
 if (-not (in_ci))
 {
   write-host "Running outside of CI"

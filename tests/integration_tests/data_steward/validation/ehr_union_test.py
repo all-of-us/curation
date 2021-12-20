@@ -43,18 +43,12 @@ class EhrUnionTest(unittest.TestCase):
         print('**************************************************************')
 
     def setUp(self):
-
         self.project_id = bq_utils.app_identity.get_application_id()
         self.hpo_ids = [PITT_HPO_ID, NYC_HPO_ID, EXCLUDED_HPO_ID]
         self.input_dataset_id = bq_utils.get_dataset_id()
         self.output_dataset_id = bq_utils.get_unioned_dataset_id()
-
         self.storage_client = StorageClient()
-
-        # Done in tearDown().  this is redundant.
-        self._empty_hpo_buckets()
-        test_util.delete_all_tables(self.input_dataset_id)
-        test_util.delete_all_tables(self.output_dataset_id)
+        self.tearDown()
 
         # TODO Generalize to work for all foreign key references
         # Collect all primary key fields in CDM tables
@@ -71,7 +65,7 @@ class EhrUnionTest(unittest.TestCase):
     def _empty_hpo_buckets(self):
         for hpo_id in self.hpo_ids:
             bucket = gcs_utils.get_hpo_bucket(hpo_id)
-            test_util.empty_bucket(bucket)
+            self.storage_client.empty_bucket(bucket)
 
     def _create_hpo_table(self, hpo_id, table, dataset_id):
         table_id = bq_utils.get_table_id(hpo_id, table)

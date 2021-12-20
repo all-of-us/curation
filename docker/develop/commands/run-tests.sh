@@ -114,9 +114,6 @@ if [ "${run_lint}" -ne 1 ] && [ "${run_unit}" -ne 1 ] && [ "${run_integration}" 
   exit 0
 fi
 
-echo "Initializing envvars..."
-require_ok "run-tests/00_init_env.sh"
-
 if [ "${run_lint}" -eq 1 ]; then
   echo "Running linting checks..."
 
@@ -133,8 +130,16 @@ fi
 
 if [ "${run_unit}" -eq 1 ] || [ "${run_integration}" -eq 1 ]; then
   echo "Running test setup script(s)..."
-
   require_ok "run-tests/10_prep_output_paths.sh"
+
+  # determine if env var is set containing test filepaths
+  if [[ -n "${CURATION_TESTS_FILEPATH}" ]]; then
+    echo "Running the following tests in filepath ${CURATION_TESTS_FILEPATH}:"
+    while read -r line; do
+      echo "$line"
+    done < "${CURATION_TESTS_FILEPATH}"
+  fi
+
 fi
 
 if [ "${run_unit}" -eq 1 ]; then

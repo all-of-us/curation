@@ -115,6 +115,7 @@ class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
             )
         self.dataset_id = os.environ.get('UNIONED_DATASET_ID')
         self.deact_dataset_id = os.environ.get('COMBINED_DATASET_ID')
+        self.deact_table = f'{self.project_id}.{self.deact_dataset_id}._deactivated_participants'
         self.client = bq.get_client(self.project_id)
         self.bq_sandbox_dataset_id = sb.get_sandbox_dataset_id(self.dataset_id)
         self.tables = {**TABLE_ROWS, **MAPPING_TABLE_ROWS, **EXT_TABLE_ROWS}
@@ -123,7 +124,6 @@ class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
     def setup_data(self):
         self.tearDown()
         # setup deactivated participants table
-        self.deact_table = f'{self.project_id}.{self.deact_dataset_id}._deactivated_participants'
         deact_table_ref = gbq.TableReference.from_string(self.deact_table)
         bq.create_tables(self.client,
                          self.project_id, [self.deact_table],
@@ -218,6 +218,7 @@ class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
             fq_table = f'{self.project_id}.{self.dataset_id}.{table}'
             table_ref = gbq.TableReference.from_string(fq_table)
             self.client.delete_table(table_ref, not_found_ok=True)
+        self.client.delete_table(self.deact_table, not_found_ok=True)
         self.client.delete_dataset(self.bq_sandbox_dataset_id,
                                    delete_contents=True,
                                    not_found_ok=True)

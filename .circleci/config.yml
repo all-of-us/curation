@@ -32,7 +32,7 @@ commands:
       - run:
           name: "Populate bash env file"
           command: |
-            printenv | egrep "^CI|^GCLOUD|^GOOGLE|^GAE|^SLACK" | sed -e 's/^.*/export &/g' | tee "${BASH_ENV}"
+            printenv | egrep "^CI|^GCLOUD|^GOOGLE|^GAE|^SLACK|^CURATION" | sed -e 's/^.*/export &/g' | tee "${BASH_ENV}"
       # this builds the actual container used to execute tests.  the layers from this build are stored using
       # the `docker_layer_caching` system provided by CircleCI.  It is just a volume mount.
       - run:
@@ -92,9 +92,18 @@ jobs:
 
   integration_test:
     <<: *job_defaults
+    parallelism: 4
+    environment:
+      # Set variable to filepath containing tests to run
+      - CURATION_TESTS_FILEPATH: ./tests/tests-to-run
     steps:
       - build
       - printenv
+      - run:
+          name: Fetch integration tests
+          command: |
+            circleci tests glob "**/integration_tests/**/*_test.py" |
+            circleci tests split --split-by=timings --time-default=10s | tee -a $CURATION_TESTS_FILEPATH
       - run:
           name: Run integration tests
           command: ./curation.sh run-tests integration
@@ -109,6 +118,15 @@ jobs:
       - run:
           name: Delete stale test datasets
           command: ./curation.sh delete-stale-test-datasets
+
+  delete_stale_test_buckets:
+    <<: *job_defaults
+    steps:
+      - build
+      - printenv
+      - run:
+          name: Delete stale test buckets
+          command: ./curation.sh delete-stale-test-buckets
 
 workflows:
   version: 2
@@ -133,3 +151,4 @@ workflows:
     jobs:
       - integration_test
       - delete_stale_test_datasets
+      - delete_stale_test_buckets

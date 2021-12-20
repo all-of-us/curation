@@ -6,11 +6,18 @@ set +x
 # build test run arg list
 run_args=(
   "${CIRCLE_WORKING_DIRECTORY}/tests/runner.py"
-  "--test-path"
+  "--test-dir"
   "${CIRCLE_WORKING_DIRECTORY}/tests/unit_tests"
   "--coverage-file"
   "${CIRCLE_WORKING_DIRECTORY}/.coveragerc_unit"
 )
+
+# determine if env var is set containing test filepaths
+if [[ -n "${CURATION_TESTS_FILEPATH}" ]]; then
+  run_args+=(
+    "--test-paths-filepath"
+    "${CURATION_TESTS_FILEPATH}")
+fi
 
 script_args=("$@")
 

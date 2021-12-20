@@ -49,6 +49,14 @@ dkr_run_args=(
   "$(pwd)/.circleci:/home/curation/project/curation/.circleci:z"
 )
 
+# If running specific tests using env var
+if [[ -n "${CURATION_TESTS_FILEPATH}" && -s "${CURATION_TESTS_FILEPATH}" ]]; then
+  dkr_run_args+=("-v")
+  dkr_run_args+=("$(realpath "${CURATION_TESTS_FILEPATH}"):/tests-to-run.txt:ro")
+  dkr_run_args+=("-e")
+  dkr_run_args+=("CURATION_TESTS_FILEPATH=/tests-to-run.txt")
+fi
+
 # when run on a developer's machine, we need to do some extra things like:
 # 1. ensure base container image is up to date
 # 2. ensure they have credentials we can use
@@ -117,8 +125,7 @@ script_args=("$@")
 if [[ "${script_args[*]}" =~ ([[:space:]]'--'[[:space:]]) ]]; then
   # this will be flipped to 1 (true) when we reach "--"
   at_command=0
-  for v in "${script_args[@]}"
-  do
+  for v in "${script_args[@]}"; do
     if [[ "${v}" == "--" ]] && [[ "${at_command}" -eq 0 ]]; then
       at_command=1
       dkr_run_args+=("develop")
@@ -128,8 +135,7 @@ if [[ "${script_args[*]}" =~ ([[:space:]]'--'[[:space:]]) ]]; then
   done
 else
   dkr_run_args+=("develop")
-  for v in "${script_args[@]}"
-  do
+  for v in "${script_args[@]}"; do
     dkr_run_args+=("${v}")
   done
 fi

@@ -267,7 +267,7 @@ class NegativeAges(BaseCleaningRule):
         raise NotImplementedError("Please fix me.")
 
     def get_sandbox_tablenames(self):
-        pass
+        return [self.sandbox_table_for(table) for table in self.affected_tables]
 
 
 if __name__ == '__main__':
