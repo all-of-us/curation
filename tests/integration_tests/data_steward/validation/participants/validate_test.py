@@ -1,5 +1,5 @@
 """
-Integration test for the validate module for emails, phone_numbers, sex, and addresses
+Integration test for the validate module for emails, phone_numbers, sex, and addresses.
 
 Ensures that names, emails, phone numbers, date_of_birth, sex, and addresses are correctly identified
 as matches and non-matches between EHR and RDR.
