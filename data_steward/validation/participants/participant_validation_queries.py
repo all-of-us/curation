@@ -74,6 +74,7 @@ CREATE FUNCTION IF NOT EXISTS
               CASE
                 WHEN REPLACE(LOWER(TRIM(rdr_state)), 'piistate_', '') IN ({{state_abbreviations}})
                 THEN REPLACE(LOWER(TRIM(rdr_state)), 'piistate_', '')
+                WHEN rdr_state IS NULL THEN NULL
                 ELSE ''
               END AS rdr_state
         )
@@ -82,6 +83,7 @@ CREATE FUNCTION IF NOT EXISTS
               CASE
                 WHEN LOWER(TRIM(ehr_state)) IN ({{state_abbreviations}})
                 THEN LOWER(TRIM(ehr_state))
+                WHEN ehr_state IS NULL THEN NULL
                 ELSE ''
               END AS ehr_state
         )

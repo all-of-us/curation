@@ -1,8 +1,8 @@
 """
-Integration test for the validate module for emails, phone_numbers and sex
+Integration test for the validate module for emails, phone_numbers, sex, and addresses
 
-Ensures that names, emails, phone numbers, date_of_birth and sex are correctly identified as matches and non-matches
-between EHR and RDR.
+Ensures that names, emails, phone numbers, date_of_birth, sex, and addresses are correctly identified
+as matches and non-matches between EHR and RDR.
 """
 
 # Python imports
@@ -274,38 +274,42 @@ class ValidateTest(TestCase):
             (18, '42  Nason   St', '', 'Maynard', 'MA', '01754')
         """)
         """ 
-        TODO: say something here:       
-        11: street_1 - match (dr vs drive, whitespace padding, uppercase vs lowercase)
-        12: street_1 - no_match (different address)
-        13: street_1 - match (St vs Street)
-        14: street_1 - match (uppercase vs lowercase)
-        15: street_1 - missing_rdr
-        16: street_1 - missing_ehr
-        17: street_1 - match (1st vs 1, 2nd vs 2, 3rd vs 3, 4th vs 4)
-        18: street_1 - match (multiple white spaces)
-        19: No record for 19
+        Note: Each test entry is testing for the following test cases:
+            11: street_1 - match (dr vs drive, whitespace padding, uppercase vs lowercase)
+            12: street_1 - no_match (different address)
+            13: street_1 - match (St vs Street)
+            14: street_1 - match (uppercase vs lowercase)
+            15: street_1 - missing_rdr
+            16: street_1 - missing_ehr
+            17: street_1 - match (1st vs 1, 2nd vs 2, 3rd vs 3, 4th vs 4)
+            18: street_1 - match (multiple white spaces)
+            19: No record for 19
 
-        11: street_2 - match (both blank)
-        12: street_2 - no_match (blank vs non-blank)
-        13: street_2 - match (APT 7D vs Apartment 7 D)
+            11: street_2 - match (both blank)
+            12: street_2 - no_match (blank vs non-blank)
+            13: street_2 - match (APT 7D vs Apartment 7 D)
+            19: No record for 19
 
-        11: city - match (St. vs saint, whitespace padding, uppercase vs lowercase)
-        12: city - no_match (different city)
-        13: city - match (AFB vs Air Force Base)
-        14: city - missing_rdr
-        15: city - missing_ehr
+            11: city - match (St. vs saint, whitespace padding, uppercase vs lowercase)
+            12: city - no_match (different city)
+            13: city - match (AFB vs Air Force Base)
+            14: city - missing_rdr
+            15: city - missing_ehr
+            19: No record for 19
 
-        11: state - match (uppercase vs lowercase)
-        12: state - no_match (different state)
-        13: Non-existent state
-        14: PIISTATE_
+            11: state - match (uppercase vs lowercase)
+            12: state - no_match (different state)
+            13: state - no_match (Non-existent state (ABCD) vs Gu)
+            14: state - match (PIISTATE_)
+            19: No record for 19
 
-        11: zip - match (identical)
-        12: zip - no_match (different zip)
-        13: zip - match (whitespace padding)
-        14: zip - match (00921 vs 921)
-        15: zip - match (08611 vs 08611-1234)
-        16: zip - match (32207 vs 32207  5678)
+            11: zip - match (identical)
+            12: zip - no_match (different zip)
+            13: zip - match (whitespace padding)
+            14: zip - match (00921 vs 921)
+            15: zip - match (08611 vs 08611-1234)
+            16: zip - match (32207 vs 32207  5678)
+            19: No record for 19
         """
 
         # Create and populate concept table
@@ -422,7 +426,7 @@ class ValidateTest(TestCase):
             'address_1': 'match',
             'address_2': 'match',
             'city': 'match',
-            'state': 'match',
+            'state': 'no_match',
             'zip': 'match',
             'email': 'missing_ehr',
             'phone_number': 'missing_ehr',

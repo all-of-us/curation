@@ -76,7 +76,7 @@ GENDER_MATCH = [{
     }]
 }]
 
-# State abbreviations. Used to validate state abbreviations
+# State abbreviations. Used to validate state abbreviations.
 STATE_ABBREVIATIONS = [
     'al',
     'ak',
@@ -217,14 +217,20 @@ def get_gender_comparison_case_statement():
 
 
 def get_state_abbreviations():
-    """ Returns lowercase state abbreviations separated by comma.
+    """ Returns lowercase state abbreviations separated by comma as string.
     e.g. 'al','ak','az',...
     """
     return ','.join(f"'{state}'" for state in STATE_ABBREVIATIONS)
 
 
 def _get_replace_statement(base_statement, rdr_ehr, field, dict_abbreviation):
-    """[summary]
+    """
+    Create a nested REGEXP_REPLACE() statement for specified field and rdr/ehr.
+    :param: base_statement - Function that returns the base statement to use REGEXP_REPLACE() for
+    :param: rdr_ehr - string 'rdr' or 'ehr'
+    :param: field - string 'city' or 'street'
+    :param: dict_abbreviation - dictionary that has abbreviations
+    :return: Nested REGEXP_REPLACE statement as string
     """
     statement_parts = deque([base_statement(rdr_ehr, field)])
 
@@ -243,7 +249,10 @@ def _get_replace_statement(base_statement, rdr_ehr, field, dict_abbreviation):
 
 
 def get_with_clause(field):
-    """[summary]
+    """
+    Create WITH statement for CREATE_{field}_COMPARISON_FUNCTION.
+    :param: field - string 'city' or 'street'
+    :return: WITH statement as string
     """
     valid_fields = {'city', 'street'}
 
@@ -254,11 +263,11 @@ def get_with_clause(field):
     base_statement = {
         'city':
             lambda rdr_ehr, field:
-            f"REPLACE(REGEXP_REPLACE(LOWER(TRIM({rdr_ehr}_{field})),'[^A-Za-z ]',''),'  ',' ')",
-        'street': # TODO Replace REPLACE with REGEXP_REPLACE for multiple whitespace deletion.
+            f"REGEXP_REPLACE(REGEXP_REPLACE(LOWER(TRIM({rdr_ehr}_{field})),'[^A-Za-z ]',''),' +',' ')",
+        'street':
             lambda rdr_ehr, field:
-            (f"REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(LOWER(TRIM({rdr_ehr}_{field})),"
-             f"'[^0-9A-Za-z ]', ''),'([0-9])(?:st|nd|rd|th)', r'\\1'),'([0-9])([a-z])',r'\\1 \\2'),'  ',' ')"
+            (f"REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(LOWER(TRIM({rdr_ehr}_{field})),"
+             f"'[^0-9A-Za-z ]', ''),'([0-9])(?:st|nd|rd|th)', r'\\1'),'([0-9])([a-z])',r'\\1 \\2'),' +',' ')"
             ),
     }
 
