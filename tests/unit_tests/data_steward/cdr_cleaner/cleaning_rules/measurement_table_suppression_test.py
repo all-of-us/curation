@@ -50,9 +50,11 @@ class MeasurementTableSuppressionTest(unittest.TestCase):
 
         # post conditions
         expected = [
-            mts.SAVE_BAD_SITE_DATA, mts.SAVE_NULL_VALUE_RECORDS,
-            mts.INVALID_VALUES_RECORDS, mts.SITES_WITH_ONLY_BAD_DATA,
-            mts.SAVE_DUPLICATE_RECORDS
+            self.rule_instance.sandbox_table_for(table) for table in [
+                mts.SAVE_BAD_SITE_DATA, mts.SAVE_NULL_VALUE_RECORDS,
+                mts.INVALID_VALUES_RECORDS, mts.SITES_WITH_ONLY_BAD_DATA,
+                mts.SAVE_DUPLICATE_RECORDS
+            ]
         ]
 
         # assert both lists contain same elements regardless of order
@@ -74,7 +76,8 @@ class MeasurementTableSuppressionTest(unittest.TestCase):
                     project=self.project_id,
                     dataset=self.dataset_id,
                     sandbox=self.sandbox_id,
-                    save_table=mts.INVALID_VALUES_RECORDS)
+                    save_table=self.rule_instance.sandbox_table_for(
+                        mts.INVALID_VALUES_RECORDS))
         }, {
             clean_consts.QUERY:
                 mts.NULL_VALUES_UPDATE_QUERY.render(project=self.project_id,
@@ -91,29 +94,34 @@ class MeasurementTableSuppressionTest(unittest.TestCase):
                     project=self.project_id,
                     dataset=self.dataset_id,
                     sandbox=self.sandbox_id,
-                    save_table=mts.SITES_WITH_ONLY_BAD_DATA)
+                    save_table=self.rule_instance.sandbox_table_for(
+                        mts.SITES_WITH_ONLY_BAD_DATA))
         }, {
             clean_consts.QUERY:
                 mts.NULL_AND_ZERO_VALUES_SAVE_QUERY.render(
                     project=self.project_id,
                     dataset=self.dataset_id,
                     sandbox=self.sandbox_id,
-                    save_table=mts.SAVE_BAD_SITE_DATA,
-                    id_table=mts.SITES_WITH_ONLY_BAD_DATA),
+                    save_table=self.rule_instance.sandbox_table_for(
+                        mts.SAVE_BAD_SITE_DATA),
+                    id_table=self.rule_instance.sandbox_table_for(
+                        mts.SITES_WITH_ONLY_BAD_DATA)),
         }, {
             clean_consts.QUERY:
                 mts.SET_NULL_WHEN_ONLY_ZEROS_SUBMITTED.render(
                     project=self.project_id,
                     dataset=self.dataset_id,
                     sandbox=self.sandbox_id,
-                    id_table=mts.SITES_WITH_ONLY_BAD_DATA),
+                    id_table=self.rule_instance.sandbox_table_for(
+                        mts.SITES_WITH_ONLY_BAD_DATA)),
         }, {
             clean_consts.QUERY:
                 mts.SAVE_NULL_DROP_RECORDS.render(
                     project=self.project_id,
                     dataset=self.dataset_id,
                     sandbox=self.sandbox_id,
-                    save_table=mts.SAVE_NULL_VALUE_RECORDS),
+                    save_table=self.rule_instance.sandbox_table_for(
+                        mts.SAVE_NULL_VALUE_RECORDS)),
         }, {
             clean_consts.QUERY:
                 mts.SELECT_RECORDS_WITH_VALID_DATA.render(
@@ -130,14 +138,16 @@ class MeasurementTableSuppressionTest(unittest.TestCase):
                     project=self.project_id,
                     dataset=self.dataset_id,
                     sandbox=self.sandbox_id,
-                    save_table=mts.SAVE_DUPLICATE_RECORDS),
+                    save_table=self.rule_instance.sandbox_table_for(
+                        mts.SAVE_DUPLICATE_RECORDS)),
         }, {
             clean_consts.QUERY:
                 mts.REMOVE_DUPLICATES.render(
                     project=self.project_id,
                     dataset=self.dataset_id,
                     sandbox=self.sandbox_id,
-                    id_table=mts.SAVE_DUPLICATE_RECORDS),
+                    id_table=self.rule_instance.sandbox_table_for(
+                        mts.SAVE_DUPLICATE_RECORDS)),
             clean_consts.DESTINATION_TABLE:
                 MEASUREMENT,
             clean_consts.DESTINATION_DATASET:
