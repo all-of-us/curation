@@ -271,10 +271,10 @@ class ValidateTest(TestCase):
             (15, '50 Riverview Plaza', '', NULL, 'NJ', '08611-1234'),
             (16, NULL, '', 'Jacksonville', 'FL', '32207  5678'),
             (17, '1st 2 3rd 4 Street', '', 'Cincinnati', 'OH', '45202'),
-            (18, '42 Nason St', '', 'Maynard', 'MA', '01754'),
-            (19, '777 NE Martin Luther King Jr Blvd', '', 'Portland', 'OR', '97232')
+            (18, '42  Nason   St', '', 'Maynard', 'MA', '01754'),
         """)
-        """        
+        """ 
+        TODO: say something here:       
         11: street_1 - match (dr vs drive, whitespace padding, uppercase vs lowercase)
         12: street_1 - no_match (different address)
         13: street_1 - match (St vs Street)
@@ -282,7 +282,8 @@ class ValidateTest(TestCase):
         15: street_1 - missing_rdr
         16: street_1 - missing_ehr
         17: street_1 - match (1st vs 1, 2nd vs 2, 3rd vs 3, 4th vs 4)
-        TODO! 18: street_1 - match (multiple white spaces)
+        18: street_1 - match (multiple white spaces)
+        19: No record for 19
 
         11: street_2 - match (both blank)
         12: street_2 - no_match (blank vs non-blank)
@@ -508,11 +509,11 @@ class ValidateTest(TestCase):
             'first_name': 'no_match',
             'middle_name': 'no_match',
             'last_name': 'no_match',
-            'address_1': 'match',
-            'address_2': 'match',
-            'city': 'match',
-            'state': 'match',
-            'zip': 'match',
+            'address_1': 'missing_ehr',
+            'address_2': 'missing_ehr',
+            'city': 'missing_ehr',
+            'state': 'missing_ehr',
+            'zip': 'missing_ehr',
             'email': 'missing_ehr',
             'phone_number': 'missing_ehr',
             'birth_date': 'missing_ehr',
