@@ -35,7 +35,7 @@ class StorageClient(Client):
     def get_blob_metadata(self, blob: Blob) -> dict:
         """
         Gather and ship a blob's metadata in dictionary form.
-        Note: Date and times are in the python stl formate.  They are datetime objects.
+        Note: Date and times are in the python stl format.  They are datetime objects.
         """
         metadata: dict = {
             'id': blob.id,
