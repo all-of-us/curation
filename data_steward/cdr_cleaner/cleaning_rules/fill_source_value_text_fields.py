@@ -200,7 +200,11 @@ def get_full_join_expression(dataset_id, project_id, fields_to_replace):
 
 class FillSourceValueTextFields(BaseCleaningRule):
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id):
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 table_namer=None):
         """
         Populates each free text value field with the concept_code from the concept table that
         matches the concept_id field
@@ -220,7 +224,8 @@ class FillSourceValueTextFields(BaseCleaningRule):
                          affected_tables=get_affected_tables(),
                          project_id=project_id,
                          dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id)
+                         sandbox_dataset_id=sandbox_dataset_id,
+                         table_namer=table_namer)
 
     def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
         queries_list = []
@@ -260,7 +265,7 @@ class FillSourceValueTextFields(BaseCleaningRule):
         pass
 
     def get_sandbox_tablenames(self):
-        pass
+        return [self.sandbox_table_for(table) for table in self.affected_tables]
 
 
 if __name__ == '__main__':
