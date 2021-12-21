@@ -222,8 +222,11 @@ def create_site_validation_report(project, dataset, hpo_list, bucket, filename):
 
     # reset the stream and write to the bucket
     report_file.seek(0)
-    report_result = gcs_utils.upload_object(bucket, filename, report_file)
+    storage_client = StorageClient()
+    sc_bucket = storage_client.get_bucket(bucket)
+    bucket_blob = sc_bucket.blob(filename)
+    bucket_blob.upload_from_file(report_file)
     report_file.close()
 
     LOGGER.info(f"Wrote validation report csv: {bucket}{filename}")
-    return report_result, read_errors
+    return read_errors
