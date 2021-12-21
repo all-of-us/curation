@@ -156,6 +156,7 @@ def _upload_achilles_files(hpo_id=None, folder_prefix='', target_bucket=None):
     :hpo_id: which hpo bucket do these files go into
     :returns:
     """
+    results = []
     if target_bucket is not None:
         bucket = target_bucket
     else:
@@ -165,15 +166,15 @@ def _upload_achilles_files(hpo_id=None, folder_prefix='', target_bucket=None):
         bucket = gcs_utils.get_hpo_bucket(hpo_id)
     logging.info(
         f"Uploading achilles index files to 'gs://{bucket}/{folder_prefix}'")
-    storage_client = StorageClient()
-    sc_bucket = storage_client.get_bucket(bucket)
     for filename in resources.ACHILLES_INDEX_FILES:
         logging.info(f"Uploading achilles file '{filename}' to bucket {bucket}")
         bucket_file_name = filename.split(resources.resource_files_path +
                                           os.sep)[1].strip().replace('\\', '/')
         with open(filename, 'rb') as fp:
-            bucket_blob = sc_bucket.blob(f'{folder_prefix}{bucket_file_name}')
-            bucket_blob.upload_from_file(fp)
+            upload_result = gcs_utils.upload_object(
+                bucket, folder_prefix + bucket_file_name, fp)
+            results.append(upload_result)
+    return results
 
 
 @api_util.auth_required_cron
