@@ -237,7 +237,7 @@ class IdentityMatchTest(unittest.TestCase):
             'validation.participants.identity_match.writers.create_site_validation_report'
         )
         self.mock_validation_report = mock_validation_report_patcher.start()
-        self.mock_validation_report.return_value = ({}, 0)
+        self.mock_validation_report.return_value = 0
         self.addCleanup(mock_validation_report_patcher.stop)
 
         mock_drc_bucket_patcher = patch(
@@ -476,7 +476,7 @@ class IdentityMatchTest(unittest.TestCase):
 
     def test_write_results_to_site_buckets_simulate_errors(self):
         # pre conditions
-        self.mock_validation_report.return_value = ({}, 2)
+        self.mock_validation_report.return_value = 2
 
         # test
         id_match.write_results_to_site_buckets(self.project, self.dest_dataset)
@@ -528,7 +528,7 @@ class IdentityMatchTest(unittest.TestCase):
 
     def test_write_results_to_drc_bucket_simulate_error(self):
         # pre conditions
-        self.mock_validation_report.return_value = ({}, 2)
+        self.mock_validation_report.return_value = 2
 
         # test
         id_match.write_results_to_drc_bucket(self.project, self.dest_dataset)
