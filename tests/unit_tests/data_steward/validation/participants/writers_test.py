@@ -169,13 +169,20 @@ class WritersTest(unittest.TestCase):
         expected = consts.MISMATCH
         self.assertEqual(actual, expected)
 
-    @patch('validation.participants.writers.gcs_utils.upload_object')
+    @patch('validation.participants.writers.StorageClient')
     @patch('validation.participants.writers.bq_utils.large_response_to_rowlist')
     @patch('validation.participants.writers.bq_utils.query')
     @patch('validation.participants.writers.StringIO')
     def test_create_site_validation_report(self, mock_report_file, mock_query,
-                                           mock_response, mock_upload):
+                                           mock_response, mock_storage_client):
         # preconditions
+        mock_client_bucket = MagicMock()
+        mock_client_blob = MagicMock()
+        mock_client = MagicMock()
+        mock_storage_client.return_value = mock_client
+        mock_client.get_bucket.return_value = mock_client_bucket
+        mock_client_bucket.blob.return_value = mock_client_blob
+
         bucket = 'abc'
         filename = 'output.csv'
         mock_response.return_value = [
@@ -221,7 +228,10 @@ class WritersTest(unittest.TestCase):
         self.assertEqual(mock_report_file.call_count, 1)
         self.assertEqual(mock_query.call_count, len([self.site]))
         self.assertEqual(mock_response.call_count, len([self.site]))
-        self.assertEqual(mock_upload.call_count, 1)
+
+        self.assertEqual(mock_client.get_bucket.call_count, 1)
+        self.assertEqual(mock_client_bucket.blob.call_count, 1)
+        self.assertEqual(mock_client_blob.upload_from_file.call_count, 1)
 
         expected_query = consts.VALIDATION_RESULTS_VALUES.format(
             project=self.project,
@@ -231,8 +241,9 @@ class WritersTest(unittest.TestCase):
         self.assertEqual(
             mock_query.assert_called_with(expected_query, batch=True), None)
 
-        self.assertEqual(mock_upload.assert_called_with(bucket, filename, ANY),
-                         None)
+        mock_client.get_bucket.assert_called_with(bucket)
+        mock_client_bucket.blob.assert_called_with(filename)
+        mock_client_blob.upload_from_file.assert_called_with(ANY)
 
         expected_report_calls = [
             call(),
@@ -247,17 +258,25 @@ class WritersTest(unittest.TestCase):
         ]
         self.assertEqual(mock_report_file.mock_calls, expected_report_calls)
 
-    @patch('validation.participants.writers.gcs_utils.upload_object')
+    @patch('validation.participants.writers.StorageClient')
     @patch('validation.participants.writers.bq_utils.query')
     @patch('validation.participants.writers.StringIO')
     def test_create_site_validation_report_with_errors(self, mock_report_file,
-                                                       mock_query, mock_upload):
+                                                       mock_query,
+                                                       mock_storage_client):
         # preconditions
         mock_query.side_effect = oauth2client.client.HttpAccessTokenRefreshError(
         )
 
         bucket = 'abc'
         filename = 'output.csv'
+
+        mock_client_bucket = MagicMock()
+        mock_client_blob = MagicMock()
+        mock_client = MagicMock()
+        mock_storage_client.return_value = mock_client
+        mock_client.get_bucket.return_value = mock_client_bucket
+        mock_client_bucket.blob.return_value = mock_client_blob
 
         # test
         writer.create_site_validation_report(self.project, self.dataset,
@@ -266,7 +285,10 @@ class WritersTest(unittest.TestCase):
         # post conditions
         self.assertEqual(mock_report_file.call_count, 1)
         self.assertEqual(mock_query.call_count, len([self.site]))
-        self.assertEqual(mock_upload.call_count, 1)
+
+        self.assertEqual(mock_client.get_bucket.call_count, 1)
+        self.assertEqual(mock_client_bucket.blob.call_count, 1)
+        self.assertEqual(mock_client_blob.upload_from_file.call_count, 1)
 
         expected_query = consts.VALIDATION_RESULTS_VALUES.format(
             project=self.project,
@@ -276,8 +298,9 @@ class WritersTest(unittest.TestCase):
         self.assertEqual(
             mock_query.assert_called_with(expected_query, batch=True), None)
 
-        self.assertEqual(mock_upload.assert_called_with(bucket, filename, ANY),
-                         None)
+        mock_client.get_bucket.assert_called_with(bucket)
+        mock_client_bucket.blob.assert_called_with(filename)
+        mock_client_blob.upload_from_file.assert_called_with(ANY)
 
         expected_report_calls = [
             call(),
