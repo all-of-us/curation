@@ -29,10 +29,11 @@ class GcsClientTest(unittest.TestCase):
         self.sub_prefixes: tuple = (f'{self.prefix}/a', f'{self.prefix}/b',
                                     f'{self.prefix}/c', f'{self.prefix}/d')
         self.client.empty_bucket(self.bucket_name)
+        self._stage_bucket()
 
     def test_get_bucket_items_metadata(self):
 
-        self._stage_bucket()
+        # get metadata for each item
         items_metadata: list = self.client.get_bucket_items_metadata(
             self.bucket_name)
 
@@ -48,16 +49,11 @@ class GcsClientTest(unittest.TestCase):
 
     def test_get_blob_metadata(self):
 
-        self._stage_bucket()
         bucket = self.client.get_bucket(self.bucket_name)
-
         blob_name: str = f'{self.sub_prefixes[0]}/obj.txt'
-        blob = bucket.blob(blob_name)
-        blob.upload_from_string(self.data)
 
         # Bucket.get_blob makes an HTTP request
         # Bucket.blob does not
-        blob = None
         blob = bucket.get_blob(blob_name)
         metadata: dict = self.client.get_blob_metadata(blob)
 
@@ -66,25 +62,27 @@ class GcsClientTest(unittest.TestCase):
 
     def test_empty_bucket(self):
 
-        self._stage_bucket()
         self.client.empty_bucket(self.bucket_name)
+        items: list = self.client.list_blobs(self.bucket_name)
 
-        actual = self.client.list_blobs(self.bucket_name)
-        expected: list = []
-
-        self.assertCountEqual(actual, expected)
+        # check that bucket is empty
+        self.assertCountEqual(items, [])
 
     def test_list_sub_prefixes(self):
 
-        self._stage_bucket()
+        items: list = self.client.list_sub_prefixes(self.bucket_name,
+                                                    self.prefix)
+        sorted_items: list = sorted(items)
 
-        items = self.client.list_sub_prefixes(self.bucket_name, self.prefix)
+        # Check same number of elements
+        self.assertEqual(len(self.sub_prefixes), len(sorted_items))
 
-        self.assertEqual(len(self.sub_prefixes), len(items))
-        for item in items:
-            self.assertIn(item[:-1], self.sub_prefixes)
+        # Check same prefix
+        for index, item in enumerate(sorted_items):
+            self.assertEqual(item[:-1], self.sub_prefixes[index])
 
     def _stage_bucket(self):
+
         bucket = self.client.bucket(self.bucket_name)
         for sub_prefix in self.sub_prefixes:
             blob = bucket.blob(f'{sub_prefix}/obj.txt')
