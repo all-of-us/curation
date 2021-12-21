@@ -105,7 +105,11 @@ class DropZeroConceptIDs(BaseCleaningRule):
     Both columns need to be one or the other to drop.
     """
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id):
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 table_namer=None):
         """
         Initialize the class with proper information.
 
@@ -125,7 +129,8 @@ class DropZeroConceptIDs(BaseCleaningRule):
                          affected_tables=tables,
                          project_id=project_id,
                          dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id)
+                         sandbox_dataset_id=sandbox_dataset_id,
+                         table_namer=table_namer)
 
     def get_query_specs(self):
         """
@@ -182,11 +187,7 @@ class DropZeroConceptIDs(BaseCleaningRule):
         raise NotImplementedError("Please fix me.")
 
     def get_sandbox_tablenames(self):
-        sandbox_table_names = list()
-        for i in range(0, len(self._affected_tables)):
-            sandbox_table_names.append(self._issue_numbers[0].lower() + '_' +
-                                       self._affected_tables[i])
-        return sandbox_table_names
+        return [self.sandbox_table_for(table) for table in self.affected_tables]
 
 
 if __name__ == '__main__':

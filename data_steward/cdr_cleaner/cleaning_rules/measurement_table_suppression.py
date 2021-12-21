@@ -181,7 +181,11 @@ class MeasurementRecordsSuppression(BaseCleaningRule):
         and value_as_concept_id.
     """
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id):
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 table_namer=None):
         """
         Initialize the class with proper info.
 
@@ -200,7 +204,8 @@ class MeasurementRecordsSuppression(BaseCleaningRule):
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
-                         affected_tables=[MEASUREMENT])
+                         affected_tables=[MEASUREMENT],
+                         table_namer=table_namer)
 
     def get_query_specs(self):
         """
@@ -216,7 +221,7 @@ class MeasurementRecordsSuppression(BaseCleaningRule):
                     project=self.project_id,
                     dataset=self.dataset_id,
                     sandbox=self.sandbox_dataset_id,
-                    save_table=INVALID_VALUES_RECORDS),
+                    save_table=self.sandbox_table_for(INVALID_VALUES_RECORDS)),
         }
 
         update_to_null_values = {
@@ -237,7 +242,7 @@ class MeasurementRecordsSuppression(BaseCleaningRule):
                     project=self.project_id,
                     dataset=self.dataset_id,
                     sandbox=self.sandbox_dataset_id,
-                    save_table=SITES_WITH_ONLY_BAD_DATA)
+                    save_table=self.sandbox_table_for(SITES_WITH_ONLY_BAD_DATA))
         }
 
         save_data_from_bad_sites = {
@@ -246,8 +251,8 @@ class MeasurementRecordsSuppression(BaseCleaningRule):
                     project=self.project_id,
                     dataset=self.dataset_id,
                     sandbox=self.sandbox_dataset_id,
-                    save_table=SAVE_BAD_SITE_DATA,
-                    id_table=SITES_WITH_ONLY_BAD_DATA)
+                    save_table=self.sandbox_table_for(SAVE_BAD_SITE_DATA),
+                    id_table=self.sandbox_table_for(SITES_WITH_ONLY_BAD_DATA))
         }
 
         set_null_for_zero_from_bad_sites = {
@@ -256,7 +261,7 @@ class MeasurementRecordsSuppression(BaseCleaningRule):
                     project=self.project_id,
                     dataset=self.dataset_id,
                     sandbox=self.sandbox_dataset_id,
-                    id_table=SITES_WITH_ONLY_BAD_DATA)
+                    id_table=self.sandbox_table_for(SITES_WITH_ONLY_BAD_DATA))
         }
 
         save_null_records_before_dropping = {
@@ -265,7 +270,7 @@ class MeasurementRecordsSuppression(BaseCleaningRule):
                     project=self.project_id,
                     dataset=self.dataset_id,
                     sandbox=self.sandbox_dataset_id,
-                    save_table=SAVE_NULL_VALUE_RECORDS)
+                    save_table=self.sandbox_table_for(SAVE_NULL_VALUE_RECORDS))
         }
 
         keep_records_with_good_data = {
@@ -282,17 +287,19 @@ class MeasurementRecordsSuppression(BaseCleaningRule):
 
         sandbox_duplicates = {
             cdr_consts.QUERY:
-                SANDBOX_DUPLICATES.render(project=self.project_id,
-                                          dataset=self.dataset_id,
-                                          sandbox=self.sandbox_dataset_id,
-                                          save_table=SAVE_DUPLICATE_RECORDS)
+                SANDBOX_DUPLICATES.render(
+                    project=self.project_id,
+                    dataset=self.dataset_id,
+                    sandbox=self.sandbox_dataset_id,
+                    save_table=self.sandbox_table_for(SAVE_DUPLICATE_RECORDS))
         }
         remove_duplicates = {
             cdr_consts.QUERY:
-                REMOVE_DUPLICATES.render(project=self.project_id,
-                                         dataset=self.dataset_id,
-                                         sandbox=self.sandbox_dataset_id,
-                                         id_table=SAVE_DUPLICATE_RECORDS),
+                REMOVE_DUPLICATES.render(
+                    project=self.project_id,
+                    dataset=self.dataset_id,
+                    sandbox=self.sandbox_dataset_id,
+                    id_table=self.sandbox_table_for(SAVE_DUPLICATE_RECORDS)),
             cdr_consts.DESTINATION_TABLE:
                 MEASUREMENT,
             cdr_consts.DESTINATION_DATASET:
@@ -338,8 +345,11 @@ class MeasurementRecordsSuppression(BaseCleaningRule):
 
     def get_sandbox_tablenames(self):
         return [
-            INVALID_VALUES_RECORDS, SITES_WITH_ONLY_BAD_DATA,
-            SAVE_BAD_SITE_DATA, SAVE_NULL_VALUE_RECORDS, SAVE_DUPLICATE_RECORDS
+            self.sandbox_table_for(table) for table in [
+                INVALID_VALUES_RECORDS, SITES_WITH_ONLY_BAD_DATA,
+                SAVE_BAD_SITE_DATA, SAVE_NULL_VALUE_RECORDS,
+                SAVE_DUPLICATE_RECORDS
+            ]
         ]
 
 
