@@ -642,8 +642,9 @@ def write_results_to_site_buckets(project, validation_dataset=None):
         filename = os.path.join(
             consts.REPORT_DIRECTORY.format(date=date_string),
             consts.REPORT_TITLE)
-        _, errors = writers.create_site_validation_report(
-            project, validation_dataset, [site], bucket, filename)
+        errors = writers.create_site_validation_report(project,
+                                                       validation_dataset,
+                                                       [site], bucket, filename)
 
         if errors > 0:
             LOGGER.error(
@@ -674,10 +675,8 @@ def write_results_to_drc_bucket(project, validation_dataset=None):
     filename = os.path.join(validation_dataset,
                             consts.REPORT_DIRECTORY.format(date=date_string),
                             consts.REPORT_TITLE)
-    _, errors = writers.create_site_validation_report(project,
-                                                      validation_dataset,
-                                                      hpo_sites, bucket,
-                                                      filename)
+    errors = writers.create_site_validation_report(project, validation_dataset,
+                                                   hpo_sites, bucket, filename)
 
     if errors > 0:
         LOGGER.error(
