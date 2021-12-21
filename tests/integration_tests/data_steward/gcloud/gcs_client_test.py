@@ -43,9 +43,9 @@ class GcsClientTest(unittest.TestCase):
         # metadata name matches an expected name
         sorted_metadata = sorted(items_metadata, key=lambda item: item['name'])
         for index, prefix in enumerate(self.sub_prefixes):
-            expect: str = f'{self.bucket_name}/{prefix}/obj.txt'
+            expected: str = f'{self.bucket_name}/{prefix}/obj.txt'
             actual: str = f'{self.bucket_name}/{sorted_metadata[index]["name"]}'
-            self.assertEqual(actual, expect)
+            self.assertEqual(actual, expected)
 
     def test_get_blob_metadata(self):
 
