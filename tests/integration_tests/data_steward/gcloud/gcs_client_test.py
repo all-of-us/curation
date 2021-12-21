@@ -22,7 +22,6 @@ class GcsClientTest(unittest.TestCase):
     def setUp(self):
         self.client = StorageClient()
         self.bucket_name: str = os.environ.get('BUCKET_NAME_FAKE')
-        self.blob_name: str = 'blob_name'
         self.prefix: str = 'prefix'
         self.data: bytes = b'bytes'
 
@@ -40,7 +39,7 @@ class GcsClientTest(unittest.TestCase):
         # same number of elements
         self.assertEqual(len(items_metadata), len(self.sub_prefixes))
 
-        # metadata name matches as expected
+        # metadata name matches an expected name
         sorted_metadata = sorted(items_metadata, key=lambda item: item['name'])
         for index, prefix in enumerate(self.sub_prefixes):
             expect: str = f'{self.bucket_name}/{prefix}/obj.txt'
@@ -49,13 +48,20 @@ class GcsClientTest(unittest.TestCase):
 
     def test_get_blob_metadata(self):
 
+        self._stage_bucket()
         bucket = self.client.get_bucket(self.bucket_name)
 
-        blob = bucket.blob(self.blob_name)
+        blob_name: str = f'{self.sub_prefixes[0]}/obj.txt'
+        blob = bucket.blob(blob_name)
         blob.upload_from_string(self.data)
-        metadata = self.client.get_blob_metadata(blob)
 
-        self.assertEqual(metadata['name'], self.blob_name)
+        # Bucket.get_blob makes an HTTP request
+        # Bucket.blob does not
+        blob = None
+        blob = bucket.get_blob(blob_name)
+        metadata: dict = self.client.get_blob_metadata(blob)
+
+        self.assertEqual(metadata['name'], blob_name)
         self.assertEqual(metadata['size'], len(self.data))
 
     def test_empty_bucket(self):
