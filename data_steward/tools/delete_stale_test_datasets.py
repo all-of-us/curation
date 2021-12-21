@@ -10,6 +10,9 @@ import argparse
 import logging
 import os
 
+# Third party imports
+from google.api_core import exceptions
+
 # Project imports
 from utils import bq, pipeline_logging
 
@@ -97,8 +100,14 @@ def main(first_n):
     datasets_to_delete = _filter_stale_datasets(bq_client, first_n)
 
     for stale_dataset in datasets_to_delete:
+
         LOGGER.info(f"Running - bq_client.delete_dataset({stale_dataset})")
-        bq_client.delete_dataset(stale_dataset)
+
+        try:
+            bq_client.delete_dataset(stale_dataset)
+        except exceptions.BadRequest as e:
+            LOGGER.warning(
+                f"Failed to delete {stale_dataset}. Message: {e.message}")
 
     return datasets_to_delete
 
