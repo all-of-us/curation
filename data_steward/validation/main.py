@@ -80,10 +80,11 @@ def save_datasources_json(datasource_id=None,
     datasource = dict(name=datasource_id, folder=datasource_id, cdmVersion=5)
     datasources = dict(datasources=[datasource])
     datasources_fp = StringIO(json.dumps(datasources))
-    result = gcs_utils.upload_object(
-        target_bucket, folder_prefix + ACHILLES_EXPORT_DATASOURCES_JSON,
-        datasources_fp)
-    return result
+    storage_client = StorageClient()
+    sc_bucket = storage_client.get_bucket(target_bucket)
+    bucket_blob = sc_bucket.blob(
+        f'{folder_prefix}{ACHILLES_EXPORT_DATASOURCES_JSON}')
+    bucket_blob.upload_from_file(datasources_fp)
 
 
 def run_export(datasource_id=None, folder_prefix="", target_bucket=None):
@@ -108,6 +109,8 @@ def run_export(datasource_id=None, folder_prefix="", target_bucket=None):
     logging.info(
         f"Exporting {datasource_name} report to bucket {target_bucket}")
 
+    storage_client = StorageClient()
+    sc_bucket = storage_client.get_bucket(target_bucket)
     # Run export queries and store json payloads in specified folder in the target bucket
     reports_prefix = folder_prefix + ACHILLES_EXPORT_PREFIX_STRING + datasource_name + '/'
     for export_name in common.ALL_REPORTS:
@@ -115,15 +118,11 @@ def run_export(datasource_id=None, folder_prefix="", target_bucket=None):
         result = export.export_from_path(sql_path, datasource_id)
         content = json.dumps(result)
         fp = StringIO(content)
-        result = gcs_utils.upload_object(target_bucket,
-                                         reports_prefix + export_name + '.json',
-                                         fp)
-        results.append(result)
-    result = save_datasources_json(datasource_id=datasource_id,
-                                   folder_prefix=folder_prefix,
-                                   target_bucket=target_bucket)
-    results.append(result)
-    return results
+        bucket_blob = sc_bucket.blob(f'{reports_prefix}{export_name}.json')
+        bucket_blob.upload_from_file(fp)
+    save_datasources_json(datasource_id=datasource_id,
+                          folder_prefix=folder_prefix,
+                          target_bucket=target_bucket)
 
 
 def run_achilles(hpo_id=None):
@@ -157,7 +156,6 @@ def _upload_achilles_files(hpo_id=None, folder_prefix='', target_bucket=None):
     :hpo_id: which hpo bucket do these files go into
     :returns:
     """
-    results = []
     if target_bucket is not None:
         bucket = target_bucket
     else:
@@ -167,15 +165,15 @@ def _upload_achilles_files(hpo_id=None, folder_prefix='', target_bucket=None):
         bucket = gcs_utils.get_hpo_bucket(hpo_id)
     logging.info(
         f"Uploading achilles index files to 'gs://{bucket}/{folder_prefix}'")
+    storage_client = StorageClient()
+    sc_bucket = storage_client.get_bucket(bucket)
     for filename in resources.ACHILLES_INDEX_FILES:
         logging.info(f"Uploading achilles file '{filename}' to bucket {bucket}")
         bucket_file_name = filename.split(resources.resource_files_path +
                                           os.sep)[1].strip().replace('\\', '/')
         with open(filename, 'rb') as fp:
-            upload_result = gcs_utils.upload_object(
-                bucket, folder_prefix + bucket_file_name, fp)
-            results.append(upload_result)
-    return results
+            bucket_blob = sc_bucket.blob(f'{folder_prefix}{bucket_file_name}')
+            bucket_blob.upload_from_file(fp)
 
 
 @api_util.auth_required_cron
@@ -954,9 +952,11 @@ def upload_string_to_gcs(bucket, name, string):
     f = StringIO()
     f.write(string)
     f.seek(0)
-    result = gcs_utils.upload_object(bucket, name, f)
+    storage_client = StorageClient()
+    sc_bucket = storage_client.get_bucket(bucket)
+    bucket_blob = sc_bucket.blob(name)
+    bucket_blob.upload_from_file(f)
     f.close()
-    return result
 
 
 @api_util.auth_required_cron
