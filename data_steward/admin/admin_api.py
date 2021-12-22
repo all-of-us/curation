@@ -13,13 +13,12 @@ from flask import Flask
 import api_util
 import app_identity
 from admin import key_rotation
-from utils.slack_alerts import post_message
 
 PREFIX = '/admin/v1/'
-REMOVE_EXPIRED_KEYS_RULE = PREFIX + 'RemoveExpiredServiceAccountKeys'
-
+REMOVE_EXPIRED_KEYS_RULE = f'{PREFIX}RemoveExpiredServiceAccountKeys'
+"""Used as part of GCP monitoring and alerting.  String is part of the metric."""
 BODY_HEADER_EXPIRED_KEY_TEMPLATE = '# Expired keys deleted\n'
-
+"""Used as part of GCP monitoring and alerting.  String is part of the metric."""
 BODY_HEADER_EXPIRING_KEY_TEMPLATE = '\n# Keys expiring soon\n'
 
 BODY_TEMPLATE = ('service_account_email={service_account_email}\n'
@@ -61,22 +60,23 @@ def text_body(expired_keys, expiring_keys):
 def remove_expired_keys():
     project_id = app_identity.get_application_id()
 
-    logging.info('Started removal of expired service account keys for %s' %
-                 project_id)
+    logging.info(
+        f'Started removal of expired service account keys for {project_id}')
 
     expired_keys = key_rotation.delete_expired_keys(project_id)
-    logging.info('Completed removal of expired service account keys for %s' %
-                 project_id)
+    logging.info(
+        f'Completed removal of expired service account keys for {project_id}')
 
-    logging.info('Started listing expiring service account keys for %s' %
-                 project_id)
+    logging.info(
+        f'Started listing expiring service account keys for {project_id}')
     expiring_keys = key_rotation.get_expiring_keys(project_id)
-    logging.info('Completed listing expiring service account keys for %s' %
-                 project_id)
+    logging.info(
+        f'Completed listing expiring service account keys for {project_id}')
 
     if len(expiring_keys) != 0 or len(expired_keys) != 0:
         text = text_body(expired_keys, expiring_keys)
-        post_message(text)
+        # message text will trigger a GCP metric and alert
+        logging.info(text)
     return 'remove-expired-keys-complete'
 
 

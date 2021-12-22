@@ -12,7 +12,8 @@ export PYTHONPATH=:"${BASE_DIR}":"${BASE_DIR}/data_steward":"${BASE_DIR}/tests":
 function usage() {
   echo "Usage: run_test.sh " \
     "[unit|integration]" \
-    "[Set env CURATION_TESTS_FILEPATH for specific tests, usage in runner.py]" >&2
+    "[Set env CURATION_TESTS_FILEPATH for specific tests, usage in runner.py]" \
+    "[Set env TEST_PATTERN to run tests whose file names match the pattern, usage in runner.py]" >&2
   exit 1
 }
 
@@ -56,6 +57,7 @@ for i in "${run_args[@]}"; do
     echo "Unknown option ${i}"
     echo "run_args=${run_args[*]}"
     exit 1
+    ;;
   esac
 done
 
@@ -77,6 +79,13 @@ if [[ -n "${CURATION_TESTS_FILEPATH}" ]]; then
   script_args+=(
     "--test-paths-filepath"
     "${CURATION_TESTS_FILEPATH}")
+fi
+
+if [[ -n "${TEST_PATTERN}" ]]; then
+  script_args+=(
+    "--test-pattern"
+    "${TEST_PATTERN}"
+  )
 fi
 
 python "${script_args[@]}"

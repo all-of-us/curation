@@ -25,7 +25,7 @@ def list_service_accounts(project_id):
     """
 
     service_accounts_per_project_id = get_iam_service().projects(
-    ).serviceAccounts().list(name='projects/' + project_id).execute()
+    ).serviceAccounts().list(name=f'projects/{project_id}').execute()
 
     return service_accounts_per_project_id['accounts']
 
@@ -38,8 +38,8 @@ def list_keys_for_service_account(service_account_email):
     """
 
     service_keys_per_account = get_iam_service().projects().serviceAccounts(
-    ).keys().list(name='projects/-/serviceAccounts/' +
-                  service_account_email).execute()
+    ).keys().list(
+        name=f'projects/-/serviceAccounts/{service_account_email}').execute()
 
     return service_keys_per_account['keys']
 
