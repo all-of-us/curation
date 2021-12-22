@@ -195,12 +195,6 @@ def _export_query_responses():
         _export_query_response_by_path(p, FAKE_HPO_ID)
 
 
-def empty_bucket(bucket):
-    bucket_items = gcs_utils.list_bucket(bucket)
-    for bucket_item in bucket_items:
-        gcs_utils.delete_object(bucket, bucket_item['name'])
-
-
 def delete_all_tables(dataset_id):
     """
     Remove all non-vocabulary tables from a dataset
