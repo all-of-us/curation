@@ -10,7 +10,6 @@ import os
 from google.cloud import bigquery
 
 # Project Imports
-import tests.test_util as test_util
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.unit_normalization import UnitNormalization, UNIT_MAPPING_TABLE
 from common import JINJA_ENV, MEASUREMENT
