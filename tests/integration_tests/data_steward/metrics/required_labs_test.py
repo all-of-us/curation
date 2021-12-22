@@ -9,6 +9,7 @@ import mock
 import app_identity
 import bq_utils
 import common
+from gcloud.gcs import StorageClient
 import gcs_utils
 import resources
 import validation.sql_wrangle as sql_wrangle
@@ -35,7 +36,9 @@ class RequiredLabsTest(unittest.TestCase):
         self.rdr_dataset_id = bq_utils.get_rdr_dataset_id()
         self.folder_prefix = '2019-01-01/'
         test_util.delete_all_tables(self.dataset_id)
-        test_util.empty_bucket(self.hpo_bucket)
+
+        self.storage_client = StorageClient()
+        self.storage_client.empty_bucket(self.hpo_bucket)
 
         self.client = bq.get_client(self.project_id)
 
@@ -49,7 +52,7 @@ class RequiredLabsTest(unittest.TestCase):
 
     def tearDown(self):
         test_util.delete_all_tables(bq_utils.get_dataset_id())
-        test_util.empty_bucket(self.hpo_bucket)
+        self.storage_client.empty_bucket(self.hpo_bucket)
 
     def _load_data(self):
 

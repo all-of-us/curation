@@ -66,7 +66,7 @@ class TopHeelErrorsTest(TestCase):
         self.bucket: str = gcs_utils.get_drc_bucket()
         self.storage_client = StorageClient()
 
-        test_util.empty_bucket(self.bucket)
+        self.storage_client.empty_bucket(self.bucket)
         test_util.delete_all_tables(self.dataset_id)
         self.load_test_data(hpo_id=HPO_NYC)
 
@@ -126,5 +126,5 @@ class TopHeelErrorsTest(TestCase):
         self.assertCountEqual(actual_results, expected_results)
 
     def tearDown(self):
-        test_util.empty_bucket(self.bucket)
+        self.storage_client.empty_bucket(self.bucket)
         test_util.delete_all_tables(self.dataset_id)

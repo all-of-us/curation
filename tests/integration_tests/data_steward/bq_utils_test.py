@@ -77,12 +77,8 @@ class BqUtilsTest(unittest.TestCase):
             }
         ]
         self.DT_FORMAT = '%Y-%m-%d %H:%M:%S'
-        self._empty_bucket()
-
-    def _empty_bucket(self):
-        bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
-        for bucket_item in bucket_items:
-            gcs_utils.delete_object(self.hpo_bucket, bucket_item['name'])
+        self.client = StorageClient()
+        self.client.empty_bucket(self.hpo_bucket)
 
     def _drop_tables(self):
         tables = bq_utils.list_tables()
@@ -107,8 +103,7 @@ class BqUtilsTest(unittest.TestCase):
         csv_file_name = table_name + '.csv'
         local_csv_path = os.path.join(test_util.TEST_DATA_EXPORT_PATH,
                                       csv_file_name)
-        sc = StorageClient()
-        sc_bucket = sc.get_bucket(self.hpo_bucket)
+        sc_bucket = self.client.get_bucket(self.hpo_bucket)
         bucket_blob = sc_bucket.blob(csv_file_name)
         with open(local_csv_path, 'rb') as fp:
             bucket_blob.upload_from_file(fp)
@@ -127,8 +122,7 @@ class BqUtilsTest(unittest.TestCase):
         self.assertEqual(query_response['kind'], 'bigquery#queryResponse')
 
     def test_load_cdm_csv(self):
-        sc = StorageClient()
-        sc_bucket = sc.get_bucket(self.hpo_bucket)
+        sc_bucket = self.client.get_bucket(self.hpo_bucket)
         bucket_blob = sc_bucket.blob('person.csv')
         with open(FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
             bucket_blob.upload_from_file(fp)
@@ -145,8 +139,7 @@ class BqUtilsTest(unittest.TestCase):
         self.assertEqual(num_rows, '5')
 
     def test_query_result(self):
-        sc = StorageClient()
-        sc_bucket = sc.get_bucket(self.hpo_bucket)
+        sc_bucket = self.client.get_bucket(self.hpo_bucket)
         bucket_blob = sc_bucket.blob('person.csv')
         with open(FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
             bucket_blob.upload_from_file(fp)
@@ -217,8 +210,7 @@ class BqUtilsTest(unittest.TestCase):
             int(row['observation_id'])
             for row in resources.csv_to_list(PITT_FIVE_PERSONS_OBSERVATION_CSV)
         ]
-        sc = StorageClient()
-        sc_bucket = sc.get_bucket(gcs_utils.get_hpo_bucket(hpo_id))
+        sc_bucket = self.client.get_bucket(gcs_utils.get_hpo_bucket(hpo_id))
         bucket_blob = sc_bucket.blob('observation.csv')
         with open(PITT_FIVE_PERSONS_OBSERVATION_CSV, 'rb') as fp:
             bucket_blob.upload_from_file(fp)
@@ -378,4 +370,4 @@ class BqUtilsTest(unittest.TestCase):
 
     def tearDown(self):
         test_util.delete_all_tables(self.dataset_id)
-        self._empty_bucket()
+        self.client.empty_bucket(self.hpo_bucket)
