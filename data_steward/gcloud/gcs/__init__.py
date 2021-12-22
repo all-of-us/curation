@@ -37,6 +37,11 @@ class StorageClient(Client):
         Gather and ship a blob's metadata in dictionary form.
         Note: Date and times are in the python stl format.  They are datetime objects.
         """
+
+        if blob.id is None:
+            # Bucket.get_blob() makes an HTTP request, thus we check if we need to
+            blob = self.get_bucket(blob.bucket.name).get_blob(blob.name)
+
         metadata: dict = {
             'id': blob.id,
             'name': blob.name,
