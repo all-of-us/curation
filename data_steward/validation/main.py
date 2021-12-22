@@ -696,8 +696,10 @@ def perform_validation_on_file(file_name, found_file_names, hpo_id,
 
 
 def _validation_done(bucket, folder):
-    if gcs_utils.get_metadata(bucket=bucket,
-                              name=folder + common.PROCESSED_TXT) is not None:
+    storage_client = StorageClient()
+    sc_bucket = storage_client.get_bucket(bucket)
+    bucket_blob = sc_bucket.blob(f'{folder}{common.PROCESSED_TXT}')
+    if storage_client.get_blob_metadata(bucket_blob):
         return True
     return False
 
