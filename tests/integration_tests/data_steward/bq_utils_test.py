@@ -77,12 +77,8 @@ class BqUtilsTest(unittest.TestCase):
             }
         ]
         self.DT_FORMAT = '%Y-%m-%d %H:%M:%S'
-        self._empty_bucket()
-
-    def _empty_bucket(self):
-        bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
-        for bucket_item in bucket_items:
-            gcs_utils.delete_object(self.hpo_bucket, bucket_item['name'])
+        self.client = StorageClient()
+        self.client.empty_bucket(self.hpo_bucket)
 
     def _drop_tables(self):
         tables = bq_utils.list_tables()
@@ -378,4 +374,4 @@ class BqUtilsTest(unittest.TestCase):
 
     def tearDown(self):
         test_util.delete_all_tables(self.dataset_id)
-        self._empty_bucket()
+        self.client.empty_bucket(self.hpo_bucket)
