@@ -81,13 +81,12 @@ class GcsClientTest(unittest.TestCase):
 
         items: list = self.client.list_sub_prefixes(self.bucket_name,
                                                     self.prefix)
-        sorted_items: list = sorted(items)
 
         # Check same number of elements
-        self.assertEqual(len(self.sub_prefixes), len(sorted_items))
+        self.assertEqual(len(self.sub_prefixes), len(items))
 
         # Check same prefix
-        for index, item in enumerate(sorted_items):
+        for index, item in enumerate(items):
             self.assertEqual(item[:-1], self.sub_prefixes[index])
 
     def _stage_bucket(self):
