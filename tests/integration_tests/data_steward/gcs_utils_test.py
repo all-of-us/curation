@@ -2,6 +2,7 @@ import unittest
 from io import open
 
 from googleapiclient.errors import HttpError
+from gcloud.gcs import StorageClient
 
 import gcs_utils
 from tests.test_util import FIVE_PERSONS_PERSON_CSV, FAKE_HPO_ID
@@ -18,12 +19,8 @@ class GcsUtilsTest(unittest.TestCase):
     def setUp(self):
         self.hpo_bucket = gcs_utils.get_hpo_bucket(FAKE_HPO_ID)
         self.gcs_path = '/'.join([self.hpo_bucket, 'dummy'])
-        self._empty_bucket()
-
-    def _empty_bucket(self):
-        bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
-        for bucket_item in bucket_items:
-            gcs_utils.delete_object(self.hpo_bucket, bucket_item['name'])
+        self.storage_client = StorageClient()
+        self.storage_client.empty_bucket(self.hpo_bucket)
 
     def test_upload_object(self):
         bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
@@ -63,4 +60,4 @@ class GcsUtilsTest(unittest.TestCase):
         self.assertEqual(cm.exception.resp.status, 404)
 
     def tearDown(self):
-        self._empty_bucket()
+        self.storage_client.empty_bucket(self.hpo_bucket)
