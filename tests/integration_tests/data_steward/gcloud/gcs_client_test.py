@@ -33,29 +33,38 @@ class GcsClientTest(unittest.TestCase):
 
     def test_get_bucket_items_metadata(self):
 
-        # get metadata for each item
         items_metadata: list = self.client.get_bucket_items_metadata(
             self.bucket_name)
 
-        # same number of elements
-        self.assertEqual(len(items_metadata), len(self.sub_prefixes))
+        actual_metadata: list = [item['name'] for item in items_metadata]
+        expected_metadata: list = [
+            f'{prefix}/obj.txt' for prefix in self.sub_prefixes
+        ]
 
-        # metadata name matches an expected name
-        sorted_metadata = sorted(items_metadata, key=lambda item: item['name'])
-        for index, prefix in enumerate(self.sub_prefixes):
-            expected: str = f'{self.bucket_name}/{prefix}/obj.txt'
-            actual: str = f'{self.bucket_name}/{sorted_metadata[index]["name"]}'
-            self.assertEqual(actual, expected)
+        self.assertCountEqual(actual_metadata, expected_metadata)
+        self.assertIsNotNone(items_metadata[0]['id'])
 
     def test_get_blob_metadata(self):
 
         bucket = self.client.get_bucket(self.bucket_name)
         blob_name: str = f'{self.sub_prefixes[0]}/obj.txt'
 
-        # Bucket.get_blob makes an HTTP request
-        # Bucket.blob does not
-        blob = bucket.get_blob(blob_name)
+        blob = bucket.blob(blob_name)
         metadata: dict = self.client.get_blob_metadata(blob)
+
+        self.assertIsNotNone(metadata['id'])
+        self.assertIsNotNone(metadata['name'])
+        self.assertIsNotNone(metadata['bucket'])
+        self.assertIsNotNone(metadata['generation'])
+        self.assertIsNotNone(metadata['metageneration'])
+        self.assertIsNotNone(metadata['contentType'])
+        self.assertIsNotNone(metadata['storageClass'])
+        self.assertIsNotNone(metadata['size'])
+        self.assertIsNotNone(metadata['md5Hash'])
+        self.assertIsNotNone(metadata['crc32c'])
+        self.assertIsNotNone(metadata['etag'])
+        self.assertIsNotNone(metadata['updated'])
+        self.assertIsNotNone(metadata['timeCreated'])
 
         self.assertEqual(metadata['name'], blob_name)
         self.assertEqual(metadata['size'], len(self.data))
