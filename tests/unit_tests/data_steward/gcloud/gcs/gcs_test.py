@@ -29,9 +29,38 @@ class GCSTest(TestCase):
 
     def setUp(self):
         self.client = DummyClient()
-        self.bucket = 'foo_bucket'
-        self.prefix = 'foo_prefix/'
-        self.file_name = 'foo_file.csv'
+        self.bucket: str = 'foo_bucket'
+        self.prefix: str = 'foo_prefix/'
+        self.file_name: str = 'foo_file.csv'
+
+    @patch('google.cloud.storage.bucket.Bucket')
+    @patch.object(DummyClient, 'list_blobs')
+    def test_get_bucket_items_metadata(self, mock_list_blobs, mock_bucket):
+
+        mock_blob = MagicMock()
+        mock_blob.name = 'foo_name'
+        mock_blob.bucket.name = self.bucket
+
+        expected_items: list = [mock_blob]
+        mock_list_blobs.return_value = expected_items
+        actual_items: list = self.client.get_bucket_items_metadata(mock_bucket)
+        actual_metadata: dict = actual_items[0]
+
+        self.assertEqual(len(expected_items), len(actual_items))
+        self.assertEqual(actual_metadata['name'], mock_blob.name)
+        self.assertEqual(actual_metadata['bucket'], mock_blob.bucket.name)
+
+    @patch('google.cloud.storage.bucket.Blob')
+    def test_get_blob_metadata(self, mock_blob):
+        mock_blob.name = 'foo_name'
+        mock_blob.bucket.name = self.bucket
+
+        metadata = self.client.get_blob_metadata(mock_blob)
+
+        self.assertIn('name', metadata)
+        self.assertEqual(mock_blob.name, metadata['name'])
+        self.assertIn('bucket', metadata)
+        self.assertEqual(mock_blob.bucket.name, metadata['bucket'])
 
     @patch.object(DummyClient, 'list_blobs')
     def test_empty_bucket(self, mock_list_blobs):
