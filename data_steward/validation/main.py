@@ -28,6 +28,7 @@ import common
 import gcs_utils
 from gcloud.gcs import StorageClient
 import resources
+from gcloud.gcs import StorageClient
 from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON, AOU_REQUIRED_FILES
 from constants.validation import hpo_report as report_consts
 from constants.validation import main as consts
@@ -891,6 +892,10 @@ def process_hpo_copy(hpo_id):
         drc_private_bucket = gcs_utils.get_drc_bucket()
         bucket_items = list_bucket(hpo_bucket)
 
+        storage_client = StorageClient()
+        source_bucket = storage_client.get_bucket(hpo_bucket)
+        destination_bucket = storage_client.get_bucket(drc_private_bucket)
+
         ignored_items = 0
         filtered_bucket_items = []
         for item in bucket_items:
@@ -906,10 +911,10 @@ def process_hpo_copy(hpo_id):
 
         for item in filtered_bucket_items:
             item_name = item['name']
-            gcs_utils.copy_object(source_bucket=hpo_bucket,
-                                  source_object_id=item_name,
-                                  destination_bucket=drc_private_bucket,
-                                  destination_object_id=prefix + item_name)
+            source_blob = source_bucket.blob(item_name)
+            destination_blob_name = f'{prefix}{item_name}'
+            source_bucket.copy_blob(source_blob, destination_bucket,
+                                    destination_blob_name)
     except BucketDoesNotExistError as bucket_error:
         bucket = bucket_error.bucket
         # App engine converts an env var set but left empty to be the string 'None'
