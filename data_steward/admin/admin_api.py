@@ -16,10 +16,8 @@ from admin import key_rotation
 
 PREFIX = '/admin/v1/'
 REMOVE_EXPIRED_KEYS_RULE = f'{PREFIX}RemoveExpiredServiceAccountKeys'
-
 """Used as part of GCP monitoring and alerting.  String is part of the metric."""
 BODY_HEADER_EXPIRED_KEY_TEMPLATE = '# Expired keys deleted\n'
-
 """Used as part of GCP monitoring and alerting.  String is part of the metric."""
 BODY_HEADER_EXPIRING_KEY_TEMPLATE = '\n# Keys expiring soon\n'
 
