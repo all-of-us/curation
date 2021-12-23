@@ -624,12 +624,10 @@ class ValidationMainTest(TestCase):
     @mock.patch('bq_utils.get_unioned_dataset_id')
     @mock.patch('bq_utils.get_dataset_id')
     @mock.patch('bq_utils.app_identity.get_application_id')
-    @mock.patch('utils.slack_alerts.post_message')
     @mock.patch('api_util.check_cron')
-    def test_union_ehr(self, mock_check_cron, mock_post_message,
-                       mock_get_application_id, mock_get_dataset_id,
-                       mock_get_unioned_dataset_id, mock_ehr_union_main,
-                       mock_run_achilles, mock_run_export,
+    def test_union_ehr(self, mock_check_cron, mock_get_application_id,
+                       mock_get_dataset_id, mock_get_unioned_dataset_id,
+                       mock_ehr_union_main, mock_run_achilles, mock_run_export,
                        mock_upload_achilles_files):
 
         current_datetime = datetime.datetime.now()

@@ -77,8 +77,9 @@ class StorageClient(Client):
 
         # App engine converts an env var set but left empty to be the string 'None'
         if not hpo_bucket_name or hpo_bucket_name.lower() == 'none':
-            # should not use hpo_id in message if sent to end user.  For now,
-            # only sent to alert messages slack channel.
+            # should not use hpo_id in message if sent to end user.  If the
+            # error is logged as a WARNING or higher, this will trigger a
+            # GCP alert.
             raise BucketDoesNotExistError(
                 f"Failed to fetch bucket '{hpo_bucket_name}' for hpo_id '{hpo_id}'",
                 hpo_bucket_name)

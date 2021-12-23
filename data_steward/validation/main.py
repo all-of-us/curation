@@ -31,7 +31,6 @@ from constants.validation import hpo_report as report_consts
 from constants.validation import main as consts
 from curation_logging.curation_gae_handler import begin_request_logging, end_request_logging, \
     initialize_logging
-from curation_logging.slack_logging_handler import initialize_slack_logging
 from retraction import retract_data_bq, retract_data_gcs
 from validation import achilles, achilles_heel, ehr_union, export, hpo_report
 from validation import email_notification as en
@@ -1032,7 +1031,6 @@ def validate_pii():
 @app.before_first_request
 def set_up_logging():
     initialize_logging()
-    initialize_slack_logging()
 
 
 app.add_url_rule(consts.PREFIX + 'ValidateAllHpoFiles',
