@@ -17,6 +17,7 @@ from io import StringIO, open
 import dateutil
 from flask import Flask
 from googleapiclient.errors import HttpError
+from google.cloud.storage import Blob
 
 # Project imports
 import api_util
@@ -698,11 +699,9 @@ def perform_validation_on_file(file_name, found_file_names, hpo_id,
 
 def _validation_done(bucket, folder):
     storage_client = StorageClient()
-    sc_bucket = storage_client.get_bucket(bucket)
-    bucket_blob = sc_bucket.blob(f'{folder}{common.PROCESSED_TXT}')
-    if storage_client.get_blob_metadata(bucket_blob):
-        return True
-    return False
+    bucket = storage_client.get_bucket(bucket)
+    return Blob(bucket=bucket,
+                name=f'{folder}{common.PROCESSED_TXT}').exists(storage_client)
 
 
 def basename(gcs_object_metadata):
