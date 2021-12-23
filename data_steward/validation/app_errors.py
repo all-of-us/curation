@@ -62,7 +62,7 @@ class BucketDoesNotExistError(RuntimeError):
 
 def _handle_error(alert_message, view_message=None, response_code=None):
     """
-    Helper function to send slack alerts and return generic error views.
+    Helper function to return generic error views.
 
     The alert message may contain sensitive information and should NEVER be used
     as part of the view message or view return value.
