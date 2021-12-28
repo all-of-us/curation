@@ -911,10 +911,11 @@ def process_hpo_copy(hpo_id):
 
         for item in filtered_bucket_items:
             item_name = item['name']
-            source_blob = source_bucket.blob(item_name)
-            destination_blob_name = f'{prefix}{item_name}'
-            source_bucket.copy_blob(source_blob, destination_bucket,
-                                    destination_blob_name)
+            source_blob = source_bucket.get_blob(item_name)
+            if source_blob:
+                destination_blob_name = f'{prefix}{item_name}'
+                source_bucket.copy_blob(source_blob, destination_bucket,
+                                        destination_blob_name)
     except BucketDoesNotExistError as bucket_error:
         bucket = bucket_error.bucket
         # App engine converts an env var set but left empty to be the string 'None'
