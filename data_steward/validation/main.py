@@ -888,13 +888,12 @@ def process_hpo_copy(hpo_id):
     :hpo_id: hpo from which to copy
     """
     try:
-        hpo_bucket = gcs_utils.get_hpo_bucket(hpo_id)
-        drc_private_bucket = gcs_utils.get_drc_bucket()
-        bucket_items = list_bucket(hpo_bucket)
-
         storage_client = StorageClient()
+        hpo_bucket = storage_client.get_hpo_bucket(hpo_id)
+        drc_private_bucket = storage_client.get_drc_bucket()
         source_bucket = storage_client.get_bucket(hpo_bucket)
         destination_bucket = storage_client.get_bucket(drc_private_bucket)
+        bucket_items = list_bucket(hpo_bucket)
 
         ignored_items = 0
         filtered_bucket_items = []
@@ -912,10 +911,9 @@ def process_hpo_copy(hpo_id):
         for item in filtered_bucket_items:
             item_name = item['name']
             source_blob = source_bucket.get_blob(item_name)
-            if source_blob:
-                destination_blob_name = f'{prefix}{item_name}'
-                source_bucket.copy_blob(source_blob, destination_bucket,
-                                        destination_blob_name)
+            destination_blob_name = f'{prefix}{item_name}'
+            source_bucket.copy_blob(source_blob, destination_bucket,
+                                    destination_blob_name)
     except BucketDoesNotExistError as bucket_error:
         bucket = bucket_error.bucket
         # App engine converts an env var set but left empty to be the string 'None'
