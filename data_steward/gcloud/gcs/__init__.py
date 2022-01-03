@@ -6,6 +6,8 @@ import os
 
 # Project imports
 from validation.app_errors import BucketDoesNotExistError
+from constants.utils.bq import GET_BUCKET_QUERY, LOOKUP_TABLES_DATASET_ID, HPO_ID_BUCKET_NAME_TABLE_ID
+from utils.bq import get_client
 
 # Third-party imports
 from google.api_core import page_iterator
@@ -30,18 +32,30 @@ class StorageClient(Client):
         :param hpo_id: id of the HPO site
         :return: name of the bucket
         """
-        # TODO reconsider how to map bucket name
-        bucket_env = 'BUCKET_NAME_' + hpo_id.upper()
-        hpo_bucket_name = os.getenv(bucket_env)
+        project_id = os.environ.get('GOOGLE_CLOUD_PROJECT')
 
-        # App engine converts an env var set but left empty to be the string 'None'
-        if not hpo_bucket_name or hpo_bucket_name.lower() == 'none':
-            # should not use hpo_id in message if sent to end user.  For now,
-            # only sent to alert messages slack channel.
+        bq_client = get_client(project_id)
+
+        hpo_bucket_query = GET_BUCKET_QUERY.format(
+            project_id=project_id,
+            dataset_id=LOOKUP_TABLES_DATASET_ID,
+            table_id=HPO_ID_BUCKET_NAME_TABLE_ID,
+            hpo_id=hpo_id)
+
+        query_result = bq_client.query(hpo_bucket_query)
+
+        if len(query_result) >= 2:
+            raise ValueError(
+                f'{len(query_result)} buckets are returned for {hpo_id} '
+                f'in {project_id}.{LOOKUP_TABLES_DATASET_ID}.{HPO_ID_BUCKET_NAME_TABLE_ID}.'
+            )
+        elif len(query_result) == 0:
             raise BucketDoesNotExistError(
-                f"Failed to fetch bucket '{hpo_bucket_name}' for hpo_id '{hpo_id}'",
-                hpo_bucket_name)
-        return hpo_bucket_name
+                f'No buckets found for {hpo_id} '
+                f'in {project_id}.{LOOKUP_TABLES_DATASET_ID}.{HPO_ID_BUCKET_NAME_TABLE_ID}'
+            )
+
+        return query_result[0].bucket_name
 
     def empty_bucket(self, bucket: str, **kwargs) -> None:
         """
