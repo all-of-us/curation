@@ -265,7 +265,11 @@ FROM `{{project}}.{{dataset}}.person` AS p
 
 class RepopulatePersonControlledTier(AbstractRepopulatePerson):
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id):
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 table_namer=None):
         """
         Initialize the class with proper information.
 
@@ -284,7 +288,8 @@ class RepopulatePersonControlledTier(AbstractRepopulatePerson):
             project_id=project_id,
             dataset_id=dataset_id,
             sandbox_dataset_id=sandbox_dataset_id,
-            affected_tables=[PERSON])
+            affected_tables=[PERSON],
+            table_namer=table_namer)
 
     def setup_rule(self, client, *args, **keyword_args):
         pass

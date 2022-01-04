@@ -85,7 +85,7 @@ class CreatePersonExtTable(BaseCleaningRule):
                  project_id,
                  dataset_id,
                  sandbox_dataset_id,
-                 table_namer=''):
+                 table_namer=None):
         """
         Initialize the class with proper information.
 
@@ -142,7 +142,7 @@ class CreatePersonExtTable(BaseCleaningRule):
 
     def get_sandbox_tablenames(self):
 
-        return []
+        return [self.sandbox_table_for(table) for table in self.affected_tables]
 
 
 if __name__ == '__main__':
