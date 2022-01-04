@@ -28,7 +28,6 @@ import common
 import gcs_utils
 from gcloud.gcs import StorageClient
 import resources
-from gcloud.gcs import StorageClient
 from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON, AOU_REQUIRED_FILES
 from constants.validation import hpo_report as report_consts
 from constants.validation import main as consts
@@ -906,7 +905,7 @@ def process_hpo_copy(hpo_id):
 
         logging.info(f"Ignoring {ignored_items} items in {hpo_bucket}")
 
-        prefix = hpo_id + '/' + hpo_bucket + '/'
+        prefix = f'{hpo_id}/{hpo_bucket}/'
 
         for item in filtered_bucket_items:
             item_name = item['name']
