@@ -472,18 +472,18 @@ class ValidationMainTest(TestCase):
         }]
 
         mock_client = mock.MagicMock()
-        mock_client_hpo_bucket = mock.MagicMock()
-        mock_client_drc_bucket = mock.MagicMock()
-        mock_client_blob = mock.MagicMock()
+        mock_source_bucket = mock.MagicMock()
+        mock_destination_bucket = mock.MagicMock()
+        mock_source_blob = mock.MagicMock()
 
         mock_storage_client.return_value = mock_client
         mock_client.get_hpo_bucket.return_value = mock_hpo_bucket
         mock_client.get_drc_bucket.return_value = mock_drc_bucket
         mock_client.get_bucket.side_effect = lambda bucket_name: {
-            mock_hpo_bucket: mock_client_hpo_bucket,
-            mock_drc_bucket: mock_client_drc_bucket
+            mock_hpo_bucket: mock_source_bucket,
+            mock_drc_bucket: mock_destination_bucket
         }[bucket_name]
-        mock_client_hpo_bucket.get_blob.return_value = mock_client_blob
+        mock_source_bucket.get_blob.return_value = mock_source_blob
 
         # test
         result = main.copy_files('noob')
@@ -499,30 +499,30 @@ class ValidationMainTest(TestCase):
 
         # make sure copy is called for only the non-participant directories
         expected_calls = [
-            mock.call(mock_client_blob, mock_client_drc_bucket,
+            mock.call(mock_source_blob, mock_destination_bucket,
                       'noob/noob/submission/person.csv'),
-            mock.call(mock_client_blob, mock_client_drc_bucket,
+            mock.call(mock_source_blob, mock_destination_bucket,
                       'noob/noob/SUBMISSION/measurement.csv')
         ]
         self.assertEqual(mock_client.get_bucket.call_count, 2)
-        self.assertEqual(mock_client_hpo_bucket.get_blob.call_count, 2)
-        self.assertEqual(mock_client_hpo_bucket.copy_blob.call_count, 2)
-        mock_client_hpo_bucket.copy_blob.assert_has_calls(expected_calls,
-                                                          any_order=False)
+        self.assertEqual(mock_source_bucket.get_blob.call_count, 2)
+        self.assertEqual(mock_source_bucket.copy_blob.call_count, 2)
+        mock_source_bucket.copy_blob.assert_has_calls(expected_calls,
+                                                      any_order=False)
 
         unexpected_calls = [
-            mock.call(mock_client_blob, mock_client_drc_bucket,
+            mock.call(mock_source_blob, mock_destination_bucket,
                       'noob/noob/participant/no-site/foo.pdf'),
-            mock.call(mock_client_blob, mock_client_drc_bucket,
+            mock.call(mock_source_blob, mock_destination_bucket,
                       'noob/noob/PARTICIPANT/siteone/foo.pdf'),
-            mock.call(mock_client_blob, mock_client_drc_bucket,
+            mock.call(mock_source_blob, mock_destination_bucket,
                       'noob/noob/Participant/sitetwo/foo.pdf')
         ]
 
         for call in unexpected_calls:
             try:
-                mock_client_hpo_bucket.copy_blob.assert_has_calls(
-                    [call], any_order=False)
+                mock_source_bucket.copy_blob.assert_has_calls([call],
+                                                              any_order=False)
             except AssertionError:
                 pass
             else:
