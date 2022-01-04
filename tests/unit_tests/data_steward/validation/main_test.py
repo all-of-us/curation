@@ -508,7 +508,7 @@ class ValidationMainTest(TestCase):
         self.assertEqual(mock_source_bucket.get_blob.call_count, 2)
         self.assertEqual(mock_source_bucket.copy_blob.call_count, 2)
         mock_source_bucket.copy_blob.assert_has_calls(expected_calls,
-                                                      any_order=False)
+                                                      any_order=True)
 
         unexpected_calls = [
             mock.call(mock_source_blob, mock_destination_bucket,
@@ -519,15 +519,10 @@ class ValidationMainTest(TestCase):
                       'noob/noob/Participant/sitetwo/foo.pdf')
         ]
 
-        for call in unexpected_calls:
-            try:
-                mock_source_bucket.copy_blob.assert_has_calls([call],
-                                                              any_order=False)
-            except AssertionError:
-                pass
-            else:
-                raise AssertionError(
-                    "Unexpected call in mock_copy calls:  {}".format(call))
+        self.assertRaises(AssertionError,
+                          mock_source_bucket.copy_blob.assert_has_calls,
+                          unexpected_calls,
+                          any_order=True)
 
     @mock.patch('bq_utils.table_exists', mock.MagicMock())
     @mock.patch('bq_utils.query', mock.MagicMock())
