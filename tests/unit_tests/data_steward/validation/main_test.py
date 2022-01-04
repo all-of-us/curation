@@ -437,14 +437,11 @@ class ValidationMainTest(TestCase):
             self.assertEqual('noob', bucket)
             self.assertTrue(filepath.startswith('SUBMISSION/'))
 
-    @mock.patch('gcs_utils.copy_object')
+    @mock.patch('validation.main.StorageClient')
     @mock.patch('gcs_utils.list_bucket')
-    @mock.patch('gcs_utils.get_drc_bucket')
-    @mock.patch('gcs_utils.get_hpo_bucket')
     @mock.patch('api_util.check_cron')
-    def test_copy_files_ignore_dir(self, mock_check_cron, mock_hpo_bucket,
-                                   mock_drc_bucket, mock_bucket_list,
-                                   mock_copy):
+    def test_copy_files_ignore_dir(self, mock_check_cron, mock_bucket_list,
+                                   mock_storage_client):
         """
         Test copying files to the drc internal bucket.
 
@@ -456,14 +453,12 @@ class ValidationMainTest(TestCase):
         environment.
 
         :param mock_check_cron: mocks the cron decorator.
-        :param mock_hpo_bucket: mock the hpo bucket name.
-        :param mock_drc_bucket: mocks the internal drc bucket name.
         :param mock_bucket_list: mocks the list of items in the hpo bucket.
-        :param mock_copy: mocks the utility call to actually perform the copy.
+        :param mock_storage_client: mocks the StorageClient which has bucket and blob functionality.
         """
         # pre-conditions
-        mock_hpo_bucket.return_value = 'noob'
-        mock_drc_bucket.return_value = 'unit_test_drc_internal'
+        mock_hpo_bucket = 'noob'
+        mock_drc_bucket = 'unit_test_drc_internal'
         mock_bucket_list.return_value = [{
             'name': 'participant/no-site/foo.pdf',
         }, {
@@ -476,60 +471,58 @@ class ValidationMainTest(TestCase):
             'name': 'SUBMISSION/measurement.csv',
         }]
 
+        mock_client = mock.MagicMock()
+        mock_source_bucket = mock.MagicMock()
+        mock_destination_bucket = mock.MagicMock()
+        mock_source_blob = mock.MagicMock()
+
+        mock_storage_client.return_value = mock_client
+        mock_client.get_hpo_bucket.return_value = mock_hpo_bucket
+        mock_client.get_drc_bucket.return_value = mock_drc_bucket
+        mock_client.get_bucket.side_effect = lambda bucket_name: {
+            mock_hpo_bucket: mock_source_bucket,
+            mock_drc_bucket: mock_destination_bucket
+        }[bucket_name]
+        mock_source_bucket.get_blob.return_value = mock_source_blob
+
         # test
         result = main.copy_files('noob')
 
         # post conditions
         expected = '{"copy-status": "done"}'
         self.assertEqual(result, expected)
-        self.assertTrue(mock_check_cron.called)
-        self.assertTrue(mock_hpo_bucket.called)
-        self.assertTrue(mock_drc_bucket.called)
-        self.assertTrue(mock_bucket_list.called)
+        mock_check_cron.assert_called()
+        mock_bucket_list.assert_called()
+
+        mock_client.get_hpo_bucket.assert_called()
+        mock_client.get_drc_bucket.assert_called()
+
         # make sure copy is called for only the non-participant directories
         expected_calls = [
-            mock.call(source_bucket='noob',
-                      source_object_id='submission/person.csv',
-                      destination_bucket='unit_test_drc_internal',
-                      destination_object_id='noob/noob/submission/person.csv'),
-            mock.call(
-                source_bucket='noob',
-                source_object_id='SUBMISSION/measurement.csv',
-                destination_bucket='unit_test_drc_internal',
-                destination_object_id='noob/noob/SUBMISSION/measurement.csv')
+            mock.call(mock_source_blob, mock_destination_bucket,
+                      'noob/noob/submission/person.csv'),
+            mock.call(mock_source_blob, mock_destination_bucket,
+                      'noob/noob/SUBMISSION/measurement.csv')
         ]
-        self.assertTrue(mock_copy.called)
-        self.assertEqual(mock_copy.call_count, 2)
-        self.assertEqual(
-            mock_copy.assert_has_calls(expected_calls, any_order=True), None)
+        self.assertEqual(mock_client.get_bucket.call_count, 2)
+        self.assertEqual(mock_source_bucket.get_blob.call_count, 2)
+        self.assertEqual(mock_source_bucket.copy_blob.call_count, 2)
+        mock_source_bucket.copy_blob.assert_has_calls(expected_calls,
+                                                      any_order=True)
 
         unexpected_calls = [
-            mock.call(
-                source_bucket='noob',
-                source_object_id='participant/no-site/foo.pdf',
-                destination_bucket='unit_test_drc_internal',
-                destination_object_id='noob/noob/participant/no-site/foo.pdf'),
-            mock.call(
-                source_bucket='noob',
-                source_object_id='PARTICIPANT/siteone/foo.pdf',
-                destination_bucket='unit_test_drc_internal',
-                destination_object_id='noob/noob/PARTICIPANT/siteone/foo.pdf'),
-            mock.call(
-                source_bucket='noob',
-                source_object_id='Participant/sitetwo/foo.pdf',
-                destination_bucket='unit_test_drc_internal',
-                destination_object_id='noob/noob/Participant/sitetwo/foo.pdf')
+            mock.call(mock_source_blob, mock_destination_bucket,
+                      'noob/noob/participant/no-site/foo.pdf'),
+            mock.call(mock_source_blob, mock_destination_bucket,
+                      'noob/noob/PARTICIPANT/siteone/foo.pdf'),
+            mock.call(mock_source_blob, mock_destination_bucket,
+                      'noob/noob/Participant/sitetwo/foo.pdf')
         ]
-        # can't easily use assertRaises here.  3.5 has mock.assert_not_called
-        # that should be used when we upgrade instead of this
-        for call in unexpected_calls:
-            try:
-                mock_copy.assert_has_calls([call], any_order=True)
-            except AssertionError:
-                pass
-            else:
-                raise AssertionError(
-                    "Unexpected call in mock_copy calls:  {}".format(call))
+
+        self.assertRaises(AssertionError,
+                          mock_source_bucket.copy_blob.assert_has_calls,
+                          unexpected_calls,
+                          any_order=True)
 
     @mock.patch('bq_utils.table_exists', mock.MagicMock())
     @mock.patch('bq_utils.query', mock.MagicMock())
