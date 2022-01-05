@@ -226,7 +226,8 @@ def create_site_validation_report(project, dataset, hpo_list, bucket, filename):
     sc_bucket = storage_client.get_bucket(bucket)
     bucket_blob = sc_bucket.blob(filename)
     bucket_blob.upload_from_file(report_file)
+    report_result = storage_client.get_blob_metadata(bucket_blob)
     report_file.close()
 
     LOGGER.info(f"Wrote validation report csv: {bucket}{filename}")
-    return read_errors
+    return report_result, read_errors
