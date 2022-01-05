@@ -80,11 +80,14 @@ def save_datasources_json(datasource_id=None,
     datasource = dict(name=datasource_id, folder=datasource_id, cdmVersion=5)
     datasources = dict(datasources=[datasource])
     datasources_fp = StringIO(json.dumps(datasources))
+
     storage_client = StorageClient()
     sc_bucket = storage_client.get_bucket(target_bucket)
     bucket_blob = sc_bucket.blob(
         f'{folder_prefix}{ACHILLES_EXPORT_DATASOURCES_JSON}')
     bucket_blob.upload_from_file(datasources_fp)
+    result = storage_client.get_blob_metadata(bucket_blob)
+    return result
 
 
 def run_export(datasource_id=None, folder_prefix="", target_bucket=None):
@@ -111,6 +114,7 @@ def run_export(datasource_id=None, folder_prefix="", target_bucket=None):
 
     storage_client = StorageClient()
     sc_bucket = storage_client.get_bucket(target_bucket)
+
     # Run export queries and store json payloads in specified folder in the target bucket
     reports_prefix = folder_prefix + ACHILLES_EXPORT_PREFIX_STRING + datasource_name + '/'
     for export_name in common.ALL_REPORTS:
@@ -120,9 +124,13 @@ def run_export(datasource_id=None, folder_prefix="", target_bucket=None):
         fp = StringIO(content)
         bucket_blob = sc_bucket.blob(f'{reports_prefix}{export_name}.json')
         bucket_blob.upload_from_file(fp)
-    save_datasources_json(datasource_id=datasource_id,
-                          folder_prefix=folder_prefix,
-                          target_bucket=target_bucket)
+        result = storage_client.get_blob_metadata(bucket_blob)
+        results.append(result)
+    result = save_datasources_json(datasource_id=datasource_id,
+                                   folder_prefix=folder_prefix,
+                                   target_bucket=target_bucket)
+    results.append(result)
+    return results
 
 
 def run_achilles(hpo_id=None):
@@ -957,7 +965,9 @@ def upload_string_to_gcs(bucket, name, string):
     sc_bucket = storage_client.get_bucket(bucket)
     bucket_blob = sc_bucket.blob(name)
     bucket_blob.upload_from_file(f)
+    result = storage_client.get_blob_metadata(bucket_blob)
     f.close()
+    return result
 
 
 @api_util.auth_required_cron
