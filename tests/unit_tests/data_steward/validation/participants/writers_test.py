@@ -232,6 +232,7 @@ class WritersTest(unittest.TestCase):
         self.assertEqual(mock_client.get_bucket.call_count, 1)
         self.assertEqual(mock_client_bucket.blob.call_count, 1)
         self.assertEqual(mock_client_blob.upload_from_file.call_count, 1)
+        self.assertEqual(mock_client.get_blob_metadata.call_count, 1)
 
         expected_query = consts.VALIDATION_RESULTS_VALUES.format(
             project=self.project,
@@ -244,6 +245,7 @@ class WritersTest(unittest.TestCase):
         mock_client.get_bucket.assert_called_with(bucket)
         mock_client_bucket.blob.assert_called_with(filename)
         mock_client_blob.upload_from_file.assert_called_with(ANY)
+        mock_client.get_blob_metadata.assert_called_with(mock_client_blob)
 
         expected_report_calls = [
             call(),
@@ -289,6 +291,7 @@ class WritersTest(unittest.TestCase):
         self.assertEqual(mock_client.get_bucket.call_count, 1)
         self.assertEqual(mock_client_bucket.blob.call_count, 1)
         self.assertEqual(mock_client_blob.upload_from_file.call_count, 1)
+        self.assertEqual(mock_client.get_blob_metadata.call_count, 1)
 
         expected_query = consts.VALIDATION_RESULTS_VALUES.format(
             project=self.project,
@@ -301,6 +304,7 @@ class WritersTest(unittest.TestCase):
         mock_client.get_bucket.assert_called_with(bucket)
         mock_client_bucket.blob.assert_called_with(filename)
         mock_client_blob.upload_from_file.assert_called_with(ANY)
+        mock_client.get_blob_metadata.assert_called_with(mock_client_blob)
 
         expected_report_calls = [
             call(),
