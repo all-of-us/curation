@@ -7,7 +7,6 @@ A module to write participant identity matching table data.
 import logging
 from io import StringIO
 from google.cloud.storage.blob import Blob
-from google.cloud.storage.bucket import Bucket
 from google.cloud.exceptions import GoogleCloudError
 
 # Third party imports
@@ -17,7 +16,6 @@ import oauth2client
 # Project imports
 import bq_utils
 import constants.validation.participants.writers as consts
-import gcs_utils
 from gcloud.gcs import StorageClient
 
 LOGGER = logging.getLogger(__name__)
@@ -42,11 +40,10 @@ def write_to_result_table(project, dataset, site, match_values):
         LOGGER.info(f"No values to insert for site: {site}")
         return None
 
-    result_table = site + consts.VALIDATION_TABLE_SUFFIX
-    bucket = gcs_utils.get_drc_bucket()
-    path = dataset + '/intermediate_results/' + site + '.csv'
+    result_table: str = f'{site}{consts.VALIDATION_TABLE_SUFFIX}'
+    path: str = f'{dataset}/intermediate_results/{site}.csv'
 
-    field_list = [consts.PERSON_ID_FIELD]
+    field_list: list = [consts.PERSON_ID_FIELD]
     field_list.extend(consts.VALIDATION_FIELDS)
     field_list.append(consts.ALGORITHM_FIELD)
 
@@ -70,10 +67,10 @@ def write_to_result_table(project, dataset, site, match_values):
 
     # write results
     results.seek(0)
-    sc = StorageClient(project)
-    sc_bucket = sc.bucket(bucket)
-    bucket_blob = sc_bucket.blob(path)
-    bucket_blob.upload_from_file(results)
+    storage_client = StorageClient()
+    bucket = storage_client.get_drc_bucket()
+    blob = bucket.blob(path)
+    blob.upload_from_file(results)
     results.close()
 
     LOGGER.info(
@@ -89,7 +86,7 @@ def write_to_result_table(project, dataset, site, match_values):
     try:
         # load csv file into bigquery
         results = bq_utils.load_csv(table_name,
-                                    'gs://' + bucket + '/' + path,
+                                    f'gs://{bucket.name}/{path}',
                                     project,
                                     dataset,
                                     result_table,
