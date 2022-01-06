@@ -1,9 +1,10 @@
 import argparse
 
+from google.cloud.bigquery import QueryJobConfig
+
 import resources
-from bq_utils import list_all_table_ids, query, wait_on_jobs, BigQueryJobWaitError
 from utils import bq
-from tools import snapshot_by_query
+from tools import snapshot_by_query as sq
 
 MODIFIED_FIELD_NAMES = {
     # Modified field names from 5.2 to 5.3.1
@@ -40,16 +41,16 @@ def get_field_cast_expr_with_schema_change(dest_field, source_fields):
     dest_field_mode = dest_field['mode']
     dest_field_type = dest_field['type']
     if dest_field_name in source_fields:
-        col = f'CAST({dest_field_name} AS {snapshot_by_query.BIGQUERY_DATA_TYPES[dest_field_type.lower()]}) AS {dest_field_name}'
+        col = f'CAST({dest_field_name} AS {sq.BIGQUERY_DATA_TYPES[dest_field_type.lower()]}) AS {dest_field_name}'
         # TODO handle possible data type difference?
     else:
         if dest_field_mode == 'nullable':
-            col = f'CAST(NULL AS {snapshot_by_query.BIGQUERY_DATA_TYPES[dest_field_type.lower()]}) AS {dest_field_name}'
+            col = f'CAST(NULL AS {sq.BIGQUERY_DATA_TYPES[dest_field_type.lower()]}) AS {dest_field_name}'
             if dest_field_name in MODIFIED_FIELD_NAMES.keys():
                 old_name = MODIFIED_FIELD_NAMES[dest_field_name]["old_name"]
                 if old_name in source_fields:
                     # Case when the field is one of the modified fields from 5.2 to 5.3
-                    col = f'CAST({old_name} AS {snapshot_by_query.BIGQUERY_DATA_TYPES[dest_field_type.lower()]}) AS {dest_field_name}'
+                    col = f'CAST({old_name} AS {sq.BIGQUERY_DATA_TYPES[dest_field_type.lower()]}) AS {dest_field_name}'
         elif dest_field_mode == 'required':
             raise RuntimeError(
                 f'Unable to load the field "{dest_field_name}" which is required in the destination table \
@@ -61,12 +62,11 @@ def get_field_cast_expr_with_schema_change(dest_field, source_fields):
     return col
 
 
-def get_copy_table_query(project_id, dataset_id, table_id, client):
+def get_copy_table_query(client, dataset_id, table_id):
 
     try:
-        source_table = f'{project_id}.{dataset_id}.{table_id}'
-        source_fields = snapshot_by_query.get_source_fields(
-            client, source_table)
+        source_table = f'{client.project}.{dataset_id}.{table_id}'
+        source_fields = sq.get_source_fields(client, source_table)
         dst_fields = resources.fields_for(table_id)
         col_cast_exprs = [
             get_field_cast_expr_with_schema_change(field, source_fields)
@@ -78,7 +78,7 @@ def get_copy_table_query(project_id, dataset_id, table_id, client):
         col_expr = '*'
     select_all_query = 'SELECT {col_expr} FROM `{project_id}.{dataset_id}.{table_id}`'
     return select_all_query.format(col_expr=col_expr,
-                                   project_id=project_id,
+                                   project_id=client.project,
                                    dataset_id=dataset_id,
                                    table_id=table_id)
 
@@ -86,33 +86,37 @@ def get_copy_table_query(project_id, dataset_id, table_id, client):
 def schema_upgrade_cdm52_to_cdm531(project_id,
                                    dataset_id,
                                    snapshot_dataset_id,
-                                   overwrite_existing=True):
+                                   hpo_id=None):
     """
-       :param project_id:
-       :param dataset_id:
-       :param snapshot_dataset_id:
-       :param overwrite_existing: Default is True, False if a dataset is already created.
-       :return:
-       """
-    if overwrite_existing:
-        snapshot_by_query.create_empty_dataset(project_id, dataset_id,
-                                               snapshot_dataset_id)
+   :param project_id:
+   :param dataset_id: Dataset to convert
+   :param snapshot_dataset_id: Dataset with converted tables. Overwritten if tables already exist
+   :param hpo_id: Identifies the hpo_id of the site
+   :return:
+    """
+    # Create dataset if not exists
+    client = bq.get_client(project_id)
+    client.create_dataset(snapshot_dataset_id, exists_ok=True)
 
-    snapshot_by_query.create_empty_cdm_tables(snapshot_dataset_id)
+    sq.create_empty_cdm_tables(snapshot_dataset_id, hpo_id)
 
     copy_table_job_ids = []
-    client = bq.get_client(project_id)
-    for table_id in list_all_table_ids(dataset_id):
-        q = get_copy_table_query(project_id, dataset_id, table_id, client)
-        results = query(q,
-                        use_legacy_sql=False,
-                        destination_table_id=table_id,
-                        destination_dataset_id=snapshot_dataset_id,
-                        batch=True)
-        copy_table_job_ids.append(results['jobReference']['jobId'])
-    incomplete_jobs = wait_on_jobs(copy_table_job_ids)
-    if len(incomplete_jobs) > 0:
-        raise BigQueryJobWaitError(incomplete_jobs)
+    tables = client.list_tables(dataset_id)
+    if hpo_id:
+        hpo_tables = [
+            sq.get_hpo_table_id(hpo_id, table) for table in resources.CDM_TABLES
+        ]
+        # Filter tables that do not exist
+        tables = [table for table in hpo_tables if table in tables]
+    for table_id in tables:
+        q = get_copy_table_query(client, dataset_id, table_id)
+        job_config = QueryJobConfig()
+        job_config.destination = f'{client.project}.{snapshot_dataset_id}.{table_id}'
+        job_config.use_legacy_sql = False
+        job = client.query(q, job_config)
+        copy_table_job_ids.append(job.job_id)
+        job.result()
+    return copy_table_job_ids
 
 
 if __name__ == '__main__':
@@ -130,14 +134,21 @@ if __name__ == '__main__':
                         '--dataset_id',
                         action='store',
                         dest='dataset_id',
-                        help='Dataset where cleaning rules are to be applied',
+                        help='Dataset where CDM conversion is to be applied',
                         required=True)
-    parser.add_argument('-n',
-                        '--snapshot_dataset_id',
+    parser.add_argument(
+        '-n',
+        '--snapshot_dataset_id',
+        action='store',
+        dest='snapshot_dataset_id',
+        help='Name of the dataset to store v531 converted tables',
+        required=True)
+    parser.add_argument('-s',
+                        '--hpo_id',
                         action='store',
-                        dest='snapshot_dataset_id',
-                        help='Name of the new dataset that needs to be created',
-                        required=True)
+                        dest='hpo_id',
+                        help="Specify hpo_id if running on a site's submission",
+                        required=False)
     args = parser.parse_args()
 
     schema_upgrade_cdm52_to_cdm531(args.project_id, args.dataset_id,
