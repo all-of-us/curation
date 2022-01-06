@@ -890,10 +890,9 @@ def process_hpo_copy(hpo_id):
     try:
         project_id = app_identity.get_application_id()
         storage_client = StorageClient(project_id)
-        hpo_bucket = storage_client.get_hpo_bucket(hpo_id)
-        drc_private_bucket = storage_client.get_drc_bucket()
-        source_bucket = storage_client.bucket(hpo_bucket)
-        destination_bucket = storage_client.bucket(drc_private_bucket)
+        source_bucket = storage_client.get_hpo_bucket(hpo_id)
+        destination_bucket = storage_client.get_drc_bucket()
+        
         bucket_items = list_bucket(hpo_bucket)
 
         ignored_items = 0
