@@ -9,7 +9,7 @@ WHITESPACE = '[\t\n\\s]+'
 SPACE = ' '
 
 
-class SnapshotByQueryTest(unittest.TestCase):
+class MigrateByQueryTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -17,7 +17,9 @@ class SnapshotByQueryTest(unittest.TestCase):
         print(cls.__name__)
         print('**************************************************************')
 
-        cls.mock_client = ''
+    def setUp(self) -> None:
+        self.mock_client = mock.MagicMock()
+        self.mock_client.project = 'test-project'
 
     def get_mock_fields(self, table_name):
         field_names = []
@@ -61,11 +63,11 @@ class SnapshotByQueryTest(unittest.TestCase):
                 source_fields=['something'])
 
     @mock.patch('tools.snapshot_by_query.get_source_fields')
-    def test_get_copy_table_query(self, mock_get_source_fields):
+    def test_get_upgrade_table_query(self, mock_get_source_fields):
         mock_get_source_fields.return_value = self.get_mock_fields('provider')
 
-        actual_query = migrate_cdm52_to_cdm531.get_copy_table_query(
-            'test-project', 'test-dataset', 'provider', self.mock_client)
+        actual_query = migrate_cdm52_to_cdm531.get_upgrade_table_query(
+            self.mock_client, 'test-dataset', 'provider')
         expected_query = """SELECT
   CAST(provider_id AS INT64) AS provider_id,
   CAST(provider_name AS STRING) AS provider_name,
@@ -88,9 +90,8 @@ FROM
 
         mock_get_source_fields.return_value = self.get_mock_fields(
             'procedure_occurrence')
-        actual_query = migrate_cdm52_to_cdm531.get_copy_table_query(
-            'test-project', 'test-dataset', 'procedure_occurrence',
-            self.mock_client)
+        actual_query = migrate_cdm52_to_cdm531.get_upgrade_table_query(
+            self.mock_client, 'test-dataset', 'procedure_occurrence')
         expected_query = """SELECT
   CAST(procedure_occurrence_id AS INT64) AS procedure_occurrence_id,
   CAST(person_id AS INT64) AS person_id,
@@ -112,7 +113,7 @@ FROM
         self.assertEqual(re.sub(WHITESPACE, SPACE, actual_query),
                          re.sub(WHITESPACE, SPACE, expected_query))
 
-        actual_query = migrate_cdm52_to_cdm531.get_copy_table_query(
-            'test-project', 'test-dataset', 'non_cdm_table', self.mock_client)
+        actual_query = migrate_cdm52_to_cdm531.get_upgrade_table_query(
+            self.mock_client, 'test-dataset', 'non_cdm_table')
         expected_query = '''SELECT * FROM `test-project.test-dataset.non_cdm_table`'''
         self.assertEqual(actual_query, expected_query)

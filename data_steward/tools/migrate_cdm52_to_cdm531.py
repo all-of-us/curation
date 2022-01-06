@@ -62,7 +62,7 @@ def get_field_cast_expr_with_schema_change(dest_field, source_fields):
     return col
 
 
-def get_copy_table_query(client, dataset_id, table_id):
+def get_upgrade_table_query(client, dataset_id, table_id):
 
     try:
         source_table = f'{client.project}.{dataset_id}.{table_id}'
@@ -109,7 +109,7 @@ def schema_upgrade_cdm52_to_cdm531(project_id,
         # Filter tables that do not exist
         tables = [table for table in hpo_tables if table in tables]
     for table_id in tables:
-        q = get_copy_table_query(client, dataset_id, table_id)
+        q = get_upgrade_table_query(client, dataset_id, table_id)
         job_config = QueryJobConfig()
         job_config.destination = f'{client.project}.{snapshot_dataset_id}.{table_id}'
         job_config.use_legacy_sql = False
