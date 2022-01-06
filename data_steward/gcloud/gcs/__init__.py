@@ -70,7 +70,7 @@ class StorageClient(Client):
         :param hpo_id: id of the HPO site
         :return: name of the bucket
         """
-
+        # TODO reconsider how to map bucket name
         bucket_name: str = self._get_hpo_bucket_id(hpo_site)
 
         # App engine converts an env var set but left empty to be the string 'None'
