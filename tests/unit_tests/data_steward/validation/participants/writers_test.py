@@ -1,4 +1,5 @@
 # Python imports
+import os
 import unittest
 
 # Third party imports
@@ -19,32 +20,34 @@ class WritersTest(unittest.TestCase):
         print('**************************************************************')
 
     def setUp(self):
-        self.project = 'foo'
-        self.dataset = 'bar'
-        self.site = 'rho'
+        self.filename: str = 'fake_filename'
+        self.project: str = 'fake_project'
+        self.dataset: str = 'fake_dataset'
+        self.site: str = 'fake_site'
+        self.bucket_name: str = os.environ.get(f'BUCKET_NAME_FAKE')
 
     @patch('validation.participants.writers.StorageClient')
-    @patch('validation.participants.writers.gcs_utils.get_drc_bucket')
     @patch('validation.participants.writers.bq_utils.wait_on_jobs')
     @patch('validation.participants.writers.bq_utils.load_csv')
-    def test_write_to_result_table(self, mock_load_csv, mock_wait, mock_bucket,
+    def test_write_to_result_table(self, mock_load_csv, mock_wait,
                                    mock_storage_client):
         # pre-conditions
-        bucket_name = 'mock_bucket'
         mock_wait.return_value = []
-        mock_bucket.return_value = bucket_name
-        mock_client_bucket = MagicMock()
-        mock_client_blob = MagicMock()
         mock_client = MagicMock()
-        mock_storage_client.return_value = mock_client
-        mock_client.get_bucket.return_value = mock_client_bucket
-        mock_client_bucket.blob.return_value = mock_client_blob
+        mock_bucket = MagicMock()
+        mock_blob = MagicMock()
 
-        match = {}
+        mock_bucket.name.return_value = self.bucket_name
+        mock_bucket.blob.return_value = mock_blob
+
+        mock_storage_client.return_value = mock_client
+        mock_client.get_drc_bucket.return_value = mock_bucket
+
+        match: dict = {}
         for field in consts.VALIDATION_FIELDS:
             match[field] = consts.MATCH
 
-        matches = {1: match}
+        matches: dict = {1: match}
 
         # test
         writer.write_to_result_table(self.project, self.dataset, self.site,
@@ -53,45 +56,42 @@ class WritersTest(unittest.TestCase):
         # post conditions
         self.assertEqual(mock_load_csv.call_count, 1)
         self.assertEqual(mock_wait.call_count, 1)
-        self.assertEqual(mock_client.get_bucket.call_count, 1)
-        self.assertEqual(mock_client_bucket.blob.call_count, 1)
-        self.assertEqual(mock_client_blob.upload_from_file.call_count, 1)
+        self.assertEqual(mock_client.get_drc_bucket.call_count, 1)
+        self.assertEqual(mock_bucket.blob.call_count, 1)
+        self.assertEqual(mock_blob.upload_from_file.call_count, 1)
 
         upload_path = f'{self.dataset}/intermediate_results/{self.site}.csv'
-        mock_client.get_bucket.assert_called_with(bucket_name)
-        mock_client_bucket.blob.assert_called_with(upload_path)
-        mock_client_blob.upload_from_file.assert_called_with(ANY)
+        mock_bucket.blob.assert_called_with(upload_path)
+        mock_blob.upload_from_file.assert_called_with(ANY)
 
         mock_load_csv.assert_called_with(
             ANY,
-            f'gs://{bucket_name}/{upload_path}',
+            f'gs://{mock_bucket.name}/{upload_path}',
             self.project,
             self.dataset,
             self.site + consts.VALIDATION_TABLE_SUFFIX,
             write_disposition=consts.WRITE_TRUNCATE)
 
     @patch('validation.participants.writers.StorageClient')
-    @patch('validation.participants.writers.gcs_utils.get_drc_bucket')
+    @patch('validation.participants.writers.StorageClient.get_drc_bucket')
     @patch('validation.participants.writers.bq_utils.load_csv')
     def test_write_to_result_table_error(self, mock_load_csv, mock_bucket,
                                          mock_storage_client):
         # pre-conditions
-        bucket_name = 'mock_bucket'
-        mock_bucket.return_value = bucket_name
+        mock_client = MagicMock()
+        mock_blob = MagicMock()
+        mock_bucket.name.return_value = self.bucket_name
+        mock_bucket.blob.return_value = mock_blob
         mock_load_csv.side_effect = oauth2client.client.HttpAccessTokenRefreshError(
         )
-        mock_client_bucket = MagicMock()
-        mock_client_blob = MagicMock()
-        mock_client = MagicMock()
-        mock_storage_client.return_value = mock_client
-        mock_client.get_bucket.return_value = mock_client_bucket
-        mock_client_bucket.blob.return_value = mock_client_blob
 
-        match = {}
+        mock_storage_client.return_value = mock_client
+        mock_client.get_drc_bucket.return_value = mock_bucket
+
+        match: dict = {}
         for field in consts.VALIDATION_FIELDS:
             match[field] = consts.MATCH
-
-        matches = {1: match}
+        matches: dict = {1: match}
 
         # test
         self.assertRaises(oauth2client.client.HttpAccessTokenRefreshError,
@@ -100,27 +100,25 @@ class WritersTest(unittest.TestCase):
 
         # post conditions
         self.assertEqual(mock_load_csv.call_count, 1)
-        self.assertEqual(mock_bucket.call_count, 1)
-        self.assertEqual(mock_client.get_bucket.call_count, 1)
-        self.assertEqual(mock_client_bucket.blob.call_count, 1)
-        self.assertEqual(mock_client_blob.upload_from_file.call_count, 1)
+        self.assertEqual(mock_client.get_drc_bucket.call_count, 1)
+        self.assertEqual(mock_bucket.blob.call_count, 1)
+        self.assertEqual(mock_blob.upload_from_file.call_count, 1)
 
         upload_path = f'{self.dataset}/intermediate_results/{self.site}.csv'
-        mock_client.get_bucket.assert_called_with(bucket_name)
-        mock_client_bucket.blob.assert_called_with(upload_path)
-        mock_client_blob.upload_from_file.assert_called_with(ANY)
+        mock_bucket.blob.assert_called_with(upload_path)
+        mock_blob.upload_from_file.assert_called_with(ANY)
 
         mock_load_csv.assert_called_with(
             ANY,
-            f'gs://{bucket_name}/{upload_path}',
+            f'gs://{mock_bucket.name}/{upload_path}',
             self.project,
             self.dataset,
-            self.site + consts.VALIDATION_TABLE_SUFFIX,
+            f'{self.site}{consts.VALIDATION_TABLE_SUFFIX}',
             write_disposition=consts.WRITE_TRUNCATE)
 
     def test_get_address_match(self):
         # pre conditions
-        values = [
+        values: list = [
             consts.MATCH, consts.MATCH, consts.MATCH, consts.MATCH, consts.MATCH
         ]
         # test
@@ -132,7 +130,7 @@ class WritersTest(unittest.TestCase):
 
     def test_get_address_match_and_mismatch(self):
         # pre conditions
-        values = [
+        values: list = [
             consts.MATCH, consts.MATCH, consts.MATCH, consts.MATCH,
             consts.MISMATCH
         ]
@@ -145,7 +143,7 @@ class WritersTest(unittest.TestCase):
 
     def test_get_address_match_and_missing(self):
         # pre conditions
-        values = [
+        values: list = [
             consts.MATCH, consts.MATCH, consts.MATCH, consts.MATCH,
             consts.MISSING
         ]
@@ -158,7 +156,7 @@ class WritersTest(unittest.TestCase):
 
     def test_get_address_match_mismatch_and_missing(self):
         # pre conditions
-        values = [
+        values: list = [
             consts.MATCH, consts.MATCH, consts.MATCH, consts.MISMATCH,
             consts.MISSING
         ]
@@ -169,15 +167,14 @@ class WritersTest(unittest.TestCase):
         expected = consts.MISMATCH
         self.assertEqual(actual, expected)
 
-    @patch('validation.participants.writers.gcs_utils.upload_object')
+    @patch('validation.participants.writers.Blob')
     @patch('validation.participants.writers.bq_utils.large_response_to_rowlist')
     @patch('validation.participants.writers.bq_utils.query')
     @patch('validation.participants.writers.StringIO')
-    def test_create_site_validation_report(self, mock_report_file, mock_query,
-                                           mock_response, mock_upload):
+    def test_create_site_validation_report(self, mock_string_io, mock_query,
+                                           mock_response, mock_blob):
+
         # preconditions
-        bucket = 'abc'
-        filename = 'output.csv'
         mock_response.return_value = [
             {
                 consts.ADDRESS_ONE_FIELD: consts.MATCH,
@@ -213,28 +210,34 @@ class WritersTest(unittest.TestCase):
             },
         ]
 
+        mock_client = MagicMock()
+        mock_client.project = self.project
+
+        mock_string_io.return_value = MagicMock()
+
+        mock_blob.name = self.filename
+        mock_blob.bucket = self.bucket_name
+
         # test
-        writer.create_site_validation_report(self.project, self.dataset,
-                                             [self.site], bucket, filename)
+        writer.create_site_validation_report(mock_client, self.dataset,
+                                             [self.site], mock_blob)
 
         # post conditions
-        self.assertEqual(mock_report_file.call_count, 1)
+        self.assertEqual(mock_blob.upload_from_file.call_count, 1)
+        self.assertEqual(mock_blob.upload_from_file.call_args,
+                         call(mock_string_io.return_value))
         self.assertEqual(mock_query.call_count, len([self.site]))
         self.assertEqual(mock_response.call_count, len([self.site]))
-        self.assertEqual(mock_upload.call_count, 1)
 
-        expected_query = consts.VALIDATION_RESULTS_VALUES.format(
+        expected_query: str = consts.VALIDATION_RESULTS_VALUES.format(
             project=self.project,
             dataset=self.dataset,
-            table=self.site + consts.VALIDATION_TABLE_SUFFIX,
+            table=f'{self.site}{consts.VALIDATION_TABLE_SUFFIX}',
         )
         self.assertEqual(
             mock_query.assert_called_with(expected_query, batch=True), None)
 
-        self.assertEqual(mock_upload.assert_called_with(bucket, filename, ANY),
-                         None)
-
-        expected_report_calls = [
+        expected_string_io_calls: list = [
             call(),
             call().write(
                 'person_id,first_name,last_name,birth_date,sex,address,phone_number,email,algorithm\n'
@@ -245,41 +248,43 @@ class WritersTest(unittest.TestCase):
             call().seek(0),
             call().close()
         ]
-        self.assertEqual(mock_report_file.mock_calls, expected_report_calls)
+        self.assertEqual(mock_string_io.mock_calls, expected_string_io_calls)
 
-    @patch('validation.participants.writers.gcs_utils.upload_object')
+    @patch('validation.participants.writers.Blob')
     @patch('validation.participants.writers.bq_utils.query')
     @patch('validation.participants.writers.StringIO')
-    def test_create_site_validation_report_with_errors(self, mock_report_file,
-                                                       mock_query, mock_upload):
+    def test_create_site_validation_report_with_errors(self, mock_string_io,
+                                                       mock_query, mock_blob):
         # preconditions
+
+        mock_client = MagicMock()
+        mock_client.project = self.project
+
+        mock_string_io.return_value = MagicMock()
+
         mock_query.side_effect = oauth2client.client.HttpAccessTokenRefreshError(
         )
 
-        bucket = 'abc'
-        filename = 'output.csv'
-
         # test
-        writer.create_site_validation_report(self.project, self.dataset,
-                                             [self.site], bucket, filename)
+        writer.create_site_validation_report(mock_client, self.dataset,
+                                             [self.site], mock_blob)
 
         # post conditions
-        self.assertEqual(mock_report_file.call_count, 1)
+        self.assertEqual(mock_string_io.call_count, 1)
         self.assertEqual(mock_query.call_count, len([self.site]))
-        self.assertEqual(mock_upload.call_count, 1)
 
         expected_query = consts.VALIDATION_RESULTS_VALUES.format(
             project=self.project,
             dataset=self.dataset,
-            table=self.site + consts.VALIDATION_TABLE_SUFFIX,
+            table=f'{self.site}{consts.VALIDATION_TABLE_SUFFIX}',
         )
         self.assertEqual(
             mock_query.assert_called_with(expected_query, batch=True), None)
 
-        self.assertEqual(mock_upload.assert_called_with(bucket, filename, ANY),
-                         None)
+        self.assertEqual(mock_blob.upload_from_file.call_args,
+                         call(mock_string_io.return_value))
 
-        expected_report_calls = [
+        expected_string_io_calls: list = [
             call(),
             call().write(
                 'person_id,first_name,last_name,birth_date,sex,address,phone_number,email,algorithm\n'
@@ -290,4 +295,4 @@ class WritersTest(unittest.TestCase):
             call().seek(0),
             call().close()
         ]
-        self.assertEqual(mock_report_file.mock_calls, expected_report_calls)
+        self.assertEqual(mock_string_io.mock_calls, expected_string_io_calls)
