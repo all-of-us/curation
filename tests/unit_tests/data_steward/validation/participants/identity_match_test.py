@@ -26,28 +26,30 @@ class IdentityMatchTest(unittest.TestCase):
 
     def setUp(self):
 
-        self.date_string = 20190503
-        self.project = 'foo'
-        self.dest_dataset = 'baz{}'.format(self.date_string)
-        self.pii_dataset = 'foo{}'.format(self.date_string)
-        self.rdr_dataset = 'bar{}'.format(self.date_string)
-        self.site_list = ['bogus-site', 'awesome-site', 'awesome-2']
-        self.bucket_ids = ['aou-bogus', 'aou-awesome', 'aou-awe2']
-        self.dataset_contents = [
-            'awesome-2' + consts.PII_NAME_TABLE,
-            'awesome-2' + consts.PII_EMAIL_TABLE,
-            'awesome-2' + consts.PII_PHONE_TABLE,
-            'awesome-2' + consts.PII_ADDRESS_TABLE,
-            'awesome-2' + consts.EHR_PERSON_TABLE_SUFFIX,
-            'awesome-site' + consts.PII_NAME_TABLE,
-            'awesome-site' + consts.PII_EMAIL_TABLE,
-            'awesome-site' + consts.PII_PHONE_TABLE,
-            'awesome-site' + consts.PII_ADDRESS_TABLE,
-            'awesome-site' + consts.EHR_PERSON_TABLE_SUFFIX,
+        self.date_string: int = 20190503
+        self.project: str = 'fake_project'
+        self.dest_dataset: str = f'dest {self.date_string}'
+        self.pii_dataset: str = f'pii {self.date_string}'
+        self.rdr_dataset: str = f'rdr {self.date_string}'
+        self.sites: list = ['fake_site_1', 'fake_site_2', 'fake_site_3']
+        self.bucket_ids: list = [
+            'fake_bucket_1', 'fake_bucket_2', 'fake_bucket_3'
         ]
-        self.internal_bucket_id = 'fantastic-internal'
-        self.pid = 8888
-        self.participant_info = {
+        self.dataset_contents: list = [
+            f'fake_site_1{consts.PII_NAME_TABLE}',
+            f'fake_site_1{consts.PII_EMAIL_TABLE}',
+            f'fake_site_1{consts.PII_PHONE_TABLE}',
+            f'fake_site_1{consts.PII_ADDRESS_TABLE}',
+            f'fake_site_1{consts.EHR_PERSON_TABLE_SUFFIX}',
+            f'fake_site_2{consts.PII_NAME_TABLE}',
+            f'fake_site_2{consts.PII_EMAIL_TABLE}',
+            f'fake_site_2{consts.PII_PHONE_TABLE}',
+            f'fake_site_2{consts.PII_ADDRESS_TABLE}',
+            f'fake_site_2{consts.EHR_PERSON_TABLE_SUFFIX}',
+        ]
+        self.internal_bucket_id: str = 'internal_bucket_id'
+        self.pid: int = 8888
+        self.participant_info: dict = {
             'person_id': self.pid,
             'first': 'Fancy-Nancy',
             'middle': 'K',
@@ -90,7 +92,7 @@ class IdentityMatchTest(unittest.TestCase):
         mock_site_names_patcher = patch(
             'validation.participants.identity_match.readers.get_hpo_site_names')
         self.mock_site_names = mock_site_names_patcher.start()
-        self.mock_site_names.return_value = self.site_list
+        self.mock_site_names.return_value = self.sites
         self.addCleanup(mock_site_names_patcher.stop)
 
         mock_pii_match_tables_patcher = patch(
@@ -230,13 +232,6 @@ class IdentityMatchTest(unittest.TestCase):
         ]
         self.addCleanup(mock_location_pii_patcher.stop)
 
-        mock_hpo_bucket_patcher = patch(
-            'validation.participants.identity_match.StorageClient.get_hpo_bucket'
-        )
-        self.mock_hpo_bucket = mock_hpo_bucket_patcher.start()
-        self.mock_hpo_bucket.side_effect = self.bucket_ids
-        self.addCleanup(mock_hpo_bucket_patcher.stop)
-
         mock_validation_report_patcher = patch(
             'validation.participants.identity_match.writers.create_site_validation_report'
         )
@@ -244,19 +239,21 @@ class IdentityMatchTest(unittest.TestCase):
         self.mock_validation_report.return_value = 0
         self.addCleanup(mock_validation_report_patcher.stop)
 
-        #! Orignal from Lauren's commit:
-        #* mock_drc_bucket_patcher = patch(
-        #*     'validation.participants.identity_match.gcs_utils.get_drc_bucket')
-        #* self.mock_drc_bucket = mock_drc_bucket_patcher.start()
-        #*self.mock_drc_bucket.return_value = self.internal_bucket_id
-        #* self.addCleanup(mock_drc_bucket_patcher.stop)
+        self.mock_hpo_blobs: list = [MagicMock() for _ in range(3)]
+        self.mock_drc_blob = MagicMock()
+        self.mock_hpo_bucket = MagicMock()
+        self.hpo_iterator = MagicMock()
+        self.mock_drc_bucket = MagicMock()
 
-        mock_drc_bucket_patcher = patch(
-            'validation.participants.identity_match.StorageClient.get_drc_bucket'
-        )
-        self.mock_drc_bucket = mock_drc_bucket_patcher.start()
-        self.mock_drc_bucket.return_value = None  #? probably not right
-        self.addCleanup(mock_drc_bucket_patcher.stop)
+        mock_client_patcher = patch(
+            'validation.participants.identity_match.StorageClient')
+        self.mock_client = mock_client_patcher.start()
+        self.mock_client.get_drc_bucket.return_value = self.mock_drc_bucket
+        self.mock_client.get_hpo_bucket.return_value = self.mock_hpo_bucket
+        self.mock_drc_bucket.blob = self.mock_drc_blob
+        self.mock_hpo_bucket.blob.side_effect = self.mock_hpo_blobs
+        self.hpo_iterator.blob.side_effect = self.mock_hpo_blobs
+        self.addCleanup(mock_client_patcher.stop)
 
     def test_match_participants_same_participant(self):
         # pre conditions
@@ -285,7 +282,7 @@ class IdentityMatchTest(unittest.TestCase):
         self.assertEqual(self.mock_site_names.call_count, 1)
         self.assertEqual(self.mock_site_names.assert_called_once_with(), None)
 
-        num_sites = len(self.site_list)
+        num_sites: int = len(self.sites)
         self.assertEqual(self.mock_pii_match_tables.call_count, num_sites)
 
         self.assertEqual(self.mock_ehr_person.call_count, (num_sites - 1) * 2)
@@ -300,7 +297,7 @@ class IdentityMatchTest(unittest.TestCase):
     def test_match_participants_same_participant_simulate_ehr_read_errors(self):
         # pre conditions
         self.mock_ehr_person.side_effect = test_util.mock_google_http_error(
-            status_code=500, content=b'bar', reason='baz')
+            status_code=500, content=b'content', reason='reason')
 
         # test
         id_match.match_participants(self.project, self.rdr_dataset,
@@ -326,7 +323,7 @@ class IdentityMatchTest(unittest.TestCase):
         self.assertEqual(self.mock_site_names.call_count, 1)
         self.assertEqual(self.mock_site_names.assert_called_once_with(), None)
 
-        num_sites = len(self.site_list)
+        num_sites: int = len(self.sites)
         self.assertEqual(self.mock_pii_match_tables.call_count, num_sites)
 
         self.assertEqual(self.mock_ehr_person.call_count, (num_sites - 1) * 2)
@@ -341,7 +338,7 @@ class IdentityMatchTest(unittest.TestCase):
     def test_match_participants_same_participant_simulate_write_errors(self):
         # pre conditions
         self.mock_table_write.side_effect = test_util.mock_google_http_error(
-            status_code=500, content=b'baz', reason='bar')
+            status_code=500, content=b'content', reason='reason')
 
         # test
         id_match.match_participants(self.project, self.rdr_dataset,
@@ -367,7 +364,7 @@ class IdentityMatchTest(unittest.TestCase):
         self.assertEqual(self.mock_site_names.call_count, 1)
         self.assertEqual(self.mock_site_names.assert_called_once_with(), None)
 
-        num_sites = len(self.site_list)
+        num_sites: int = len(self.sites)
         self.assertEqual(self.mock_pii_match_tables.call_count, num_sites)
 
         self.assertEqual(self.mock_ehr_person.call_count, (num_sites - 1) * 2)
@@ -383,7 +380,7 @@ class IdentityMatchTest(unittest.TestCase):
         self):
         # pre conditions
         self.mock_location_pii.side_effect = test_util.mock_google_http_error(
-            status_code=500, content=b'baz', reason='bar')
+            status_code=500, content=b'content', reason='reason')
 
         # test
         id_match.match_participants(self.project, self.rdr_dataset,
@@ -409,7 +406,7 @@ class IdentityMatchTest(unittest.TestCase):
         self.assertEqual(self.mock_site_names.call_count, 1)
         self.assertEqual(self.mock_site_names.assert_called_once_with(), None)
 
-        num_sites = len(self.site_list)
+        num_sites: int = len(self.sites)
         self.assertEqual(self.mock_pii_match_tables.call_count, num_sites)
 
         self.assertEqual(self.mock_ehr_person.call_count, (num_sites - 1) * 2)
@@ -424,7 +421,7 @@ class IdentityMatchTest(unittest.TestCase):
     def test_match_participants_same_participant_simulate_pii_read_errors(self):
         # pre conditions
         self.mock_pii_values.side_effect = test_util.mock_google_http_error(
-            status_code=500, content=b'baz', reason='bar')
+            status_code=500, content=b'content', reason='reason')
 
         # test
         id_match.match_participants(self.project, self.rdr_dataset,
@@ -450,7 +447,7 @@ class IdentityMatchTest(unittest.TestCase):
         self.assertEqual(self.mock_site_names.call_count, 1)
         self.assertEqual(self.mock_site_names.assert_called_once_with(), None)
 
-        num_sites = len(self.site_list)
+        num_sites: int = len(self.sites)
         self.assertEqual(self.mock_pii_match_tables.call_count, num_sites)
 
         self.assertEqual(self.mock_ehr_person.call_count, (num_sites - 1) * 2)
@@ -462,123 +459,97 @@ class IdentityMatchTest(unittest.TestCase):
         self.assertEqual(self.mock_drc_bucket.call_count, 0)
         self.assertEqual(self.mock_validation_report.call_count, 0)
 
-    # def test_write_results_to_site_buckets(self):
+    def test_write_results_to_site_buckets(self):
 
-    #     # pre conditions
-    #     mock_client = MagicMock()
-    #     mock_client.project = self.project
-    #     mock_client.bucket.side_effect = [
-    #         self.bucket_ids[0], self.bucket_ids[1], self.bucket_ids[2]
-    #     ]
+        # test
+        id_match.write_results_to_site_buckets(self.mock_client,
+                                               self.dest_dataset)
 
-    #     # test
-    #     id_match.write_results_to_site_buckets(mock_client, self.dest_dataset)
+        # post conditions
+        num_sites: int = len(self.sites)
+        self.assertEqual(self.mock_client.get_hpo_bucket.call_count, num_sites)
 
-    #     # post conditions
-    #     num_sites = len(self.site_list)
-    #     self.assertEqual(self.mock_hpo_bucket.call_count, num_sites)
+        expected_report_calls = [
+            call(self.mock_client, self.dest_dataset, [self.sites[0]],
+                 self.hpo_iterator.blob()),
+            call(self.mock_client, self.dest_dataset, [self.sites[1]],
+                 self.hpo_iterator.blob()),
+            call(self.mock_client, self.dest_dataset, [self.sites[2]],
+                 self.hpo_iterator.blob())
+        ]
 
-    #     site_filename = os.path.join(
-    #         consts.REPORT_DIRECTORY.format(date=self.date_string),
-    #         consts.REPORT_TITLE)
-
-    #     expected_report_calls = [
-    #         call(mock_client, self.dest_dataset, [self.site_list[0]],
-    #              self.bucket_ids[0], site_filename),
-    #         call(mock_client, self.dest_dataset, [self.site_list[1]],
-    #              self.bucket_ids[1], site_filename),
-    #         call(mock_client, self.dest_dataset, [self.site_list[2]],
-    #              self.bucket_ids[2], site_filename),
-    #     ]
-    #     self.assertEqual(self.mock_validation_report.mock_calls,
-    #                      expected_report_calls)
+        self.assertEqual(self.mock_validation_report.mock_calls,
+                         expected_report_calls)
 
     def test_write_results_to_site_buckets_simulate_errors(self):
         # pre conditions
-        self.mock_validation_report.return_value = ({}, 2)
+        self.mock_validation_report.return_value = 1
 
         # test
-        id_match.write_results_to_site_buckets(self.project, self.dest_dataset)
+        id_match.write_results_to_site_buckets(self.mock_client,
+                                               self.dest_dataset)
 
         # post conditions
-        num_sites = len(self.site_list)
-        self.assertEqual(self.mock_hpo_bucket.call_count, num_sites)
+        num_sites: int = len(self.sites)
+        self.assertEqual(self.mock_client.get_hpo_bucket.call_count, num_sites)
 
-        site_filename = os.path.join(
-            consts.REPORT_DIRECTORY.format(date=self.date_string),
-            consts.REPORT_TITLE)
         expected_report_calls = [
-            call(self.project, self.dest_dataset, [self.site_list[0]],
-                 self.bucket_ids[0], site_filename),
-            call(self.project, self.dest_dataset, [self.site_list[1]],
-                 self.bucket_ids[1], site_filename),
-            call(self.project, self.dest_dataset, [self.site_list[2]],
-                 self.bucket_ids[2], site_filename),
+            call(self.mock_client, self.dest_dataset, [self.sites[0]],
+                 self.hpo_iterator.blob()),
+            call(self.mock_client, self.dest_dataset, [self.sites[1]],
+                 self.hpo_iterator.blob()),
+            call(self.mock_client, self.dest_dataset, [self.sites[2]],
+                 self.hpo_iterator.blob()),
         ]
         self.assertEqual(self.mock_validation_report.mock_calls,
                          expected_report_calls)
 
     def test_write_results_to_site_buckets_None_dataset(self):
-        # pre conditions
-
         # test
         self.assertRaises(RuntimeError, id_match.write_results_to_site_buckets,
                           self.project, None)
 
     def test_write_results_to_drc_bucket(self):
-        # pre conditions
-        mock_client = MagicMock()
-        mock_client.get_drc_bucket = MagicMock()
-        mock_client.project = self.project
-        mock_client.bucket = MagicMock()
-
-        mock_blob = MagicMock()
-
-        mock_bucket = MagicMock()
-        mock_bucket.blob = mock_blob
-
         # test
-        id_match.write_results_to_drc_bucket(mock_client, self.dest_dataset)
+        id_match.write_results_to_drc_bucket(self.mock_client,
+                                             self.dest_dataset)
 
         # post conditions
-        self.assertEqual(mock_client.get_drc_bucket.call_count, 1)
+        self.assertEqual(self.mock_client.get_drc_bucket.call_count, 1)
 
-        drc_filename = os.path.join(
+        drc_filename: str = os.path.join(
             self.dest_dataset,
             consts.REPORT_DIRECTORY.format(date=self.date_string),
             consts.REPORT_TITLE)
 
-        mock_blob.name = drc_filename
-        expected_report_calls = [
-            call(mock_client, self.dest_dataset, self.site_list, mock_blob)
+        self.mock_drc_blob.name = drc_filename
+        expected_report_calls: list = [
+            call(self.mock_client, self.dest_dataset, self.sites,
+                 self.mock_client.get_drc_bucket().blob())
         ]
+
         self.assertEqual(self.mock_validation_report.mock_calls,
                          expected_report_calls)
 
     def test_write_results_to_drc_bucket_simulate_error(self):
         # pre conditions
-        self.mock_validation_report.return_value = ({}, 2)
+        self.mock_validation_report.return_value = 2  # error count
 
         # test
-        id_match.write_results_to_drc_bucket(self.project, self.dest_dataset)
+        id_match.write_results_to_drc_bucket(self.mock_client,
+                                             self.dest_dataset)
 
         # post conditions
-        self.assertEqual(self.mock_drc_bucket.call_count, 1)
+        self.assertEqual(self.mock_client.get_drc_bucket.call_count, 1)
 
-        drc_filename = os.path.join(
-            self.dest_dataset,
-            consts.REPORT_DIRECTORY.format(date=self.date_string),
-            consts.REPORT_TITLE)
-        expected_report_calls = [
-            call(self.project, self.dest_dataset, self.site_list,
-                 self.internal_bucket_id, drc_filename)
+        expected_report_calls: list = [
+            call(self.mock_client, self.dest_dataset, self.sites,
+                 self.mock_client.get_drc_bucket().blob())
         ]
         self.assertEqual(self.mock_validation_report.mock_calls,
                          expected_report_calls)
 
     def test_write_results_to_drc_bucket_None_dataset(self):
-        # pre conditions
-
         # test
         self.assertRaises(RuntimeError, id_match.write_results_to_drc_bucket,
                           self.project, None)
