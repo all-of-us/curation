@@ -191,7 +191,8 @@ class GenerateExtTablesTest(unittest.TestCase):
                     mapping_dataset_id=self.mapping_dataset_id,
                     mapping_table_id=gen_ext.MAPPING_PREFIX + cdm_table,
                     shared_sandbox_id=self.sandbox_dataset_id,
-                    site_maskings_table_id=gen_ext.SITE_TABLE_ID)
+                    site_maskings_table_id=self.rule_instance.sandbox_table_for(
+                        gen_ext.SITE_TABLE_ID))
                 expected.append(query)
 
         # Test

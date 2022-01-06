@@ -19,7 +19,7 @@ import common
 from constants.bq_utils import WRITE_TRUNCATE
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.deid.questionnaire_response_id_map import QRIDtoRID, QRID_RID_MAPPING_QUERY, \
-    LOOKUP_TABLE_CREATION_QUERY
+    LOOKUP_TABLE_CREATION_QUERY, DEID_QUESTIONNAIRE_RESPONSE_MAP
 
 
 class QRIDtoRIDTest(unittest.TestCase):
@@ -63,13 +63,17 @@ class QRIDtoRIDTest(unittest.TestCase):
                 LOOKUP_TABLE_CREATION_QUERY.render(
                     project_id=self.project_id,
                     shared_sandbox_id=self.sandbox_dataset_id,
-                    dataset_id=self.dataset_id)
+                    dataset_id=self.dataset_id,
+                    deid_questionnaire_response_map=self.rule_instance.
+                    sandbox_table_for(DEID_QUESTIONNAIRE_RESPONSE_MAP))
         }, {
             cdr_consts.QUERY:
                 QRID_RID_MAPPING_QUERY.render(
                     project_id=self.project_id,
                     dataset_id=self.dataset_id,
-                    shared_sandbox_id=self.sandbox_dataset_id),
+                    shared_sandbox_id=self.sandbox_dataset_id,
+                    deid_questionnaire_response_map=self.rule_instance.
+                    sandbox_table_for(DEID_QUESTIONNAIRE_RESPONSE_MAP)),
             cdr_consts.DESTINATION_TABLE:
                 common.OBSERVATION,
             cdr_consts.DESTINATION_DATASET:
