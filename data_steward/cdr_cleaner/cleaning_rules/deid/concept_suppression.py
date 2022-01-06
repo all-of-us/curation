@@ -173,7 +173,8 @@ class AbstractBqLookupTableConceptSuppression(AbstractConceptSuppression):
                          affected_tables=affected_tables,
                          table_namer=table_namer)
 
-        self._concept_suppression_lookup_table = concept_suppression_lookup_table
+        self._concept_suppression_lookup_table = self.sandbox_table_for(
+            concept_suppression_lookup_table)
 
     @property
     def concept_suppression_lookup_table(self):
@@ -220,6 +221,15 @@ class AbstractBqLookupTableConceptSuppression(AbstractConceptSuppression):
             cdr_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE,
             cdr_consts.DESTINATION_DATASET: self.sandbox_dataset_id
         }
+
+    def get_sandbox_tablenames(self):
+        """
+        Returns concept_suppression_lookup_table in addition to super class's
+        sandbox tablenames
+        """
+        return super().get_sandbox_tablenames() + [
+            self.concept_suppression_lookup_table
+        ]
 
 
 class AbstractInMemoryLookupTableConceptSuppression(AbstractConceptSuppression):
