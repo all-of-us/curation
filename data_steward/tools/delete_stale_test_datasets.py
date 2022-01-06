@@ -60,7 +60,6 @@ def _filter_stale_datasets(bq_client, first_n: int = None):
             break
 
         try:
-
             dataset_created = bq_client.get_dataset(dataset_name).created
 
             if (now - dataset_created).days <= 90:
@@ -76,7 +75,6 @@ def _filter_stale_datasets(bq_client, first_n: int = None):
             n += 1
 
         except exceptions.NotFound as e:
-
             LOGGER.info(
                 f"{dataset_name} not found. This dataset is likely to be "
                 f"a temporary dataset that was created and deleted by other job or test. "
