@@ -70,7 +70,6 @@ class StorageClient(Client):
         :param hpo_id: id of the HPO site
         :return: name of the bucket
         """
-        # TODO reconsider how to map bucket name
         bucket_name: str = self._get_hpo_bucket_id(hpo_site)
 
         # App engine converts an env var set but left empty to be the string 'None'
@@ -129,4 +128,5 @@ class StorageClient(Client):
         return list(pg_iterator)
 
     def _get_hpo_bucket_id(self, hpo_id: str) -> str:
+        # TODO reconsider how to map bucket name
         return os.environ.get(f'BUCKET_NAME_{hpo_id.upper()}')
