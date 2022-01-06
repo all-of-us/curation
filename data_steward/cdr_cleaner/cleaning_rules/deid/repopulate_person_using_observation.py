@@ -100,8 +100,8 @@ class AbstractRepopulatePerson(BaseCleaningRule):
     ETHNICITY = 'ethnicity'
 
     def __init__(self, project_id, dataset_id, sandbox_dataset_id,
-                 issue_numbers, description, affected_datasets,
-                 affected_tables):
+                 issue_numbers, description, affected_datasets, affected_tables,
+                 table_namer):
         """
         Initialize the class with proper information.
 
@@ -116,7 +116,8 @@ class AbstractRepopulatePerson(BaseCleaningRule):
                          affected_tables=affected_tables,
                          project_id=project_id,
                          dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id)
+                         sandbox_dataset_id=sandbox_dataset_id,
+                         table_namer=table_namer)
 
     @abstractmethod
     def get_gender_query(self, gender_sandbox_table) -> dict:

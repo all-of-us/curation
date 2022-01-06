@@ -101,7 +101,11 @@ class DateShiftCopeResponses(BaseCleaningRule):
     Reverse Date Shift for COPE Responses...
     """
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id):
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 table_namer=None):
         """
         Initialize the class with proper information.
 
@@ -116,7 +120,8 @@ class DateShiftCopeResponses(BaseCleaningRule):
                          affected_tables=[OBSERVATION],
                          project_id=project_id,
                          dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id)
+                         sandbox_dataset_id=sandbox_dataset_id,
+                         table_namer=table_namer)
 
     def get_combined_dataset_from_deid_dataset(self, dataset_name):
         """
@@ -180,11 +185,8 @@ class DateShiftCopeResponses(BaseCleaningRule):
         """
         pass
 
-    def get_sandbox_table_name(self):
-        return f'{self._issue_numbers[0].lower()}_{OBSERVATION}'
-
     def get_sandbox_tablenames(self):
-        return [self.get_sandbox_table_name()]
+        return [self.sandbox_table_for(table) for table in self.affected_tables]
 
 
 if __name__ == '__main__':
