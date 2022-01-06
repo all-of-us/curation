@@ -59,19 +59,26 @@ def _filter_stale_datasets(bq_client, first_n: int = None):
         if first_n and n >= first_n:
             break
 
-        dataset_created = bq_client.get_dataset(dataset_name).created
+        try:
+            dataset_created = bq_client.get_dataset(dataset_name).created
 
-        if (now - dataset_created).days <= 90:
-            continue
+            if (now - dataset_created).days <= 90:
+                continue
 
-        if len(list(bq_client.list_tables(dataset_name))) >= 1:
-            continue
+            if len(list(bq_client.list_tables(dataset_name))) >= 1:
+                continue
 
-        stale_datasets.append(dataset_name)
-        LOGGER.info(
-            f"{n}: stale_dataset={dataset_name}, time_created={dataset_created}."
-        )
-        n += 1
+            stale_datasets.append(dataset_name)
+            LOGGER.info(
+                f"{n}: stale_dataset={dataset_name}, time_created={dataset_created}."
+            )
+            n += 1
+
+        except exceptions.NotFound as e:
+            LOGGER.info(
+                f"{dataset_name} not found. This dataset is likely to be "
+                f"a temporary dataset that was created and deleted by other job or test. "
+                f"Message: {e.message}")
 
     return stale_datasets
 
