@@ -76,6 +76,7 @@ def _filter_stale_datasets(bq_client, first_n: int = None):
             n += 1
 
         except exceptions.NotFound as e:
+
             LOGGER.info(
                 f"{dataset_name} not found. This dataset is likely to be "
                 f"a temporary dataset that was created and deleted by other job or test. "
