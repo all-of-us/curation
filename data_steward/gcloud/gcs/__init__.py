@@ -76,37 +76,32 @@ class StorageClient(Client):
         }
         return metadata
 
-    def get_drc_bucket(self) -> str:
-        result = os.environ.get('DRC_BUCKET_NAME')
-        return result
+    def get_drc_bucket(self) -> Bucket:
+        return self.get_bucket(os.environ.get('DRC_BUCKET_NAME'))
 
-    def get_hpo_bucket(self, hpo_id: str) -> str:
+    def get_hpo_bucket(self, hpo_site: str) -> Bucket:
         """
         Get the name of an HPO site's private bucket
-
         Empty/unset bucket indicates that the bucket is intentionally left blank and can be ignored
         :param hpo_id: id of the HPO site
         :return: name of the bucket
         """
-        # TODO reconsider how to map bucket name
-        bucket_env = 'BUCKET_NAME_' + hpo_id.upper()
-        hpo_bucket_name = os.getenv(bucket_env)
+        bucket_name: str = self._get_hpo_bucket_id(hpo_site)
 
         # App engine converts an env var set but left empty to be the string 'None'
-        if not hpo_bucket_name or hpo_bucket_name.lower() == 'none':
+        if not bucket_name or bucket_name.lower() == 'none':
             # should not use hpo_id in message if sent to end user.  If the
             # error is logged as a WARNING or higher, this will trigger a
             # GCP alert.
             raise BucketDoesNotExistError(
-                f"Failed to fetch bucket '{hpo_bucket_name}' for hpo_id '{hpo_id}'",
-                hpo_bucket_name)
-        return hpo_bucket_name
+                f"Failed to fetch bucket '{bucket_name}' for hpo '{hpo_site}'",
+                bucket_name)
+        return self.get_bucket(bucket_name)
 
     def empty_bucket(self, bucket: str, **kwargs) -> None:
         """
         Delete all blobs in a bucket.
         :param name: A GCS bucket name.
-
         Some common keyword arguments:
         :param prefix: (Optional) Prefix used to filter blobs.
         (i.e gsutil rm -r gs://bucket/prefix/)
@@ -117,10 +112,9 @@ class StorageClient(Client):
             for blob in page:
                 blob.delete()
 
-    def list_sub_prefixes(self, bucket: str, prefix: str) -> None:
+    def list_sub_prefixes(self, bucket_name: str, prefix: str) -> list:
         """
         List sub folders in folder specified by prefix
-
         SO link: https://stackoverflow.com/a/59008580
         :param bucket: GCS bucket name as string
         :param prefix: path to directory to look into e.g. a/b/c/
@@ -135,7 +129,7 @@ class StorageClient(Client):
             'delimiter': '/'
         }
 
-        path: str = f'/b/{bucket}/o'
+        path: str = f'/b/{bucket_name}/o'
 
         pg_iterator = page_iterator.HTTPIterator(
             client=self,
@@ -146,3 +140,7 @@ class StorageClient(Client):
             extra_params=extra_params,
         )
         return list(pg_iterator)
+
+    def _get_hpo_bucket_id(self, hpo_id: str) -> str:
+        # TODO reconsider how to map bucket name
+        return os.environ.get(f'BUCKET_NAME_{hpo_id.upper()}')
