@@ -99,7 +99,7 @@ class GeneralizeCopeInsuranceAnswersTest(BaseTest.CleaningRulesTestBase):
             'fq_sandbox_table_name':
                 self.fq_sandbox_table_names[0],
             'loaded_ids': [1, 2, 3, 4, 5, 6, 7],
-            'sandboxed_ids': [3, 4],
+            'sandboxed_ids': [1, 2, 3],
             'fields': [
                 'observation_id', 'person_id', 'observation_concept_id',
                 'observation_date', 'observation_source_concept_id',
