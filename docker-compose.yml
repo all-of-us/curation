@@ -4,6 +4,7 @@ services:
   # base image upon which all other containers are derived
   develop:
     image: "curation:develop-18.04"
+    platform: 'linux/x86_64'
     build:
       context: .
       dockerfile: docker/develop/Dockerfile
