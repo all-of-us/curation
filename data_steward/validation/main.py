@@ -883,51 +883,41 @@ def _is_string_excluded_file(gcs_file_name):
 
 
 def process_hpo_copy(hpo_id):
-    """copies over files from hpo bucket to drc bucket
-    :hpo_id: hpo from which to copy
+    """
+    NOTE: Function used in test only.
 
+    copies over files from hpo bucket to drc bucket
+    :hpo_id: hpo from which to copy
     """
     try:
         project_id = app_identity.get_application_id()
         storage_client = StorageClient(project_id)
+    # Attempt to acquire hpo bucket, raises google.cloud.exceptions.NotFound
+    try:
         hpo_bucket = storage_client.get_hpo_bucket(hpo_id)
         drc_bucket = storage_client.get_drc_bucket()
+        bucket_items: list = list_bucket(hpo_id)
 
-        bucket_items = list_bucket(hpo_bucket)
+    # Filter
+    ignored_count: int = 0
+    allowed_items: list = []
+    for item in bucket_items:
+        item_root: str = item['name'].split('/')[0] + '/'
+        if item_root.lower() in common.IGNORE_DIRECTORIES:
+            ignored_count += 1
+        else:
+            allowed_items.append(item)
 
-        ignored_count: int = 0
-        allowed_items: list = []
-        for item in bucket_items:
-            item_root: str = item['name'].split('/')[0] + '/'
-            if item_root.lower() in common.IGNORE_DIRECTORIES:
-                ignored_count += 1
-            else:
-                allowed_items.append(item)
+    logging.info(f"Ignoring {ignored_count} items in {hpo_bucket.name}")
+    prefix: str = f'{hpo_id}/{hpo_bucket.name}/'
 
-        logging.info(f"Ignoring {ignored_count} items in {hpo_bucket.name}")
-
-        prefix: str = f'{hpo_id}/{hpo_bucket.name}/'
-        for item in allowed_items:
-            name: str = item['name']
-            hpo_blob = hpo_bucket.get_blob(name)
+    # Copy
+    for item in allowed_items:
+        name = item['name']
+        hpo_blob = hpo_bucket.get_blob(name)
+        if hpo_blob is not None:
             full_name: str = f'{prefix}{name}'
             hpo_bucket.copy_blob(hpo_blob, drc_bucket, full_name)
-    except BucketDoesNotExistError as bucket_error:
-        bucket_name: str = bucket_error.bucket
-        # App engine converts an env var set but left empty to be the string 'None'
-        if bucket_name and bucket_name.lower() != 'none':
-            logging.warning(
-                f"Bucket '{bucket_name}' configured for hpo_id '{hpo_id}' does not exist"
-            )
-        else:
-            logging.info(
-                f"Bucket '{bucket_name}' configured for hpo_id '{hpo_id}' is empty/unset"
-            )
-    except HttpError as http_error:
-        message: str = (
-            f"Failed to copy files for hpo_id '{hpo_id}' due to the following "
-            f"HTTP error: {http_error.content.decode()}")
-        logging.exception(message)
 
 
 @api_util.auth_required_cron
