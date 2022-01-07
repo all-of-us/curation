@@ -6,6 +6,7 @@ import app_identity
 import bq_utils
 import common
 import gcs_utils
+from gcloud.gcs import StorageClient
 from io import open
 
 LATEST_REPORTS_QUERY = (
