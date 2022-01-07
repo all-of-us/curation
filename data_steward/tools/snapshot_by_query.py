@@ -16,16 +16,6 @@ BIGQUERY_DATA_TYPES = {
 }
 
 
-def get_hpo_table_id(hpo_id, table_name):
-    """
-    Get the bigquery table id associated with a site's CDM table
-    :param hpo_id: ID of the HPO
-    :param table_name: name of the CDM table
-    :return: the table id
-    """
-    return f'{hpo_id}_{table_name}'
-
-
 def create_empty_dataset(project_id, dataset_id, snapshot_dataset_id):
     """
     Create the empty tables in the new snapshot dataset
@@ -49,7 +39,7 @@ def create_empty_cdm_tables(snapshot_dataset_id, hpo_id=None):
     :return:
     """
     for table in resources.CDM_TABLES:
-        table_id = table if not hpo_id else f'{hpo_id}_{table}'
+        table_id = resources.get_table_id(table, hpo_id)
         table_name = table
         create_standard_table(table_name,
                               table_id,

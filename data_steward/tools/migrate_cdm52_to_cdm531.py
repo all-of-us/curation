@@ -2,6 +2,7 @@ import argparse
 
 from google.cloud.bigquery import QueryJobConfig
 
+from common import PII_TABLES
 import resources
 from utils import bq
 from tools import snapshot_by_query as sq
@@ -62,12 +63,21 @@ def get_field_cast_expr_with_schema_change(dest_field, source_fields):
     return col
 
 
-def get_upgrade_table_query(client, dataset_id, table_id):
+def get_upgrade_table_query(client, dataset_id, table_id, hpo_id=None):
+    """
+    Generate query for specified tables
 
+    :param client: BQ Client
+    :param dataset_id: Source dataset
+    :param table_id: Source table
+    :param hpo_id: 
+    :return: 
+    """
     try:
         source_table = f'{client.project}.{dataset_id}.{table_id}'
         source_fields = sq.get_source_fields(client, source_table)
-        dst_fields = resources.fields_for(table_id)
+        dst_fields = resources.fields_for(
+            resources.get_base_table_name(table_id, hpo_id))
         col_cast_exprs = [
             get_field_cast_expr_with_schema_change(field, source_fields)
             for field in dst_fields
@@ -101,15 +111,16 @@ def schema_upgrade_cdm52_to_cdm531(project_id,
     sq.create_empty_cdm_tables(snapshot_dataset_id, hpo_id)
 
     copy_table_job_ids = []
-    tables = client.list_tables(dataset_id)
+    tables = [table.table_id for table in list(client.list_tables(dataset_id))]
     if hpo_id:
         hpo_tables = [
-            sq.get_hpo_table_id(hpo_id, table) for table in resources.CDM_TABLES
+            resources.get_table_id(table, hpo_id)
+            for table in resources.CDM_TABLES + PII_TABLES
         ]
         # Filter tables that do not exist
         tables = [table for table in hpo_tables if table in tables]
     for table_id in tables:
-        q = get_upgrade_table_query(client, dataset_id, table_id)
+        q = get_upgrade_table_query(client, dataset_id, table_id, hpo_id)
         job_config = QueryJobConfig()
         job_config.destination = f'{client.project}.{snapshot_dataset_id}.{table_id}'
         job_config.use_legacy_sql = False
@@ -152,4 +163,4 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     schema_upgrade_cdm52_to_cdm531(args.project_id, args.dataset_id,
-                                   args.snapshot_dataset_id)
+                                   args.snapshot_dataset_id, args.hpo_id)
