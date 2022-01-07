@@ -69,6 +69,7 @@ def save_datasources_json(datasource_id=None,
         bucket assigned to hpo_id.
     :return:
     """
+    storage_client = StorageClient()
     if datasource_id is None:
         if target_bucket is None:
             raise RuntimeError(
@@ -76,13 +77,15 @@ def save_datasources_json(datasource_id=None,
                 f"nor target_bucket are specified.")
     else:
         if target_bucket is None:
-            target_bucket = gcs_utils.get_hpo_bucket(datasource_id)
+            target_bucket: Bucket = storage_client.get_hpo_bucket(datasource_id)
+        else:
+            target_bucket: Bucket = storage_client.get_bucket(target_bucket)
 
     datasource = dict(name=datasource_id, folder=datasource_id, cdmVersion=5)
     datasources = dict(datasources=[datasource])
     datasources_fp = StringIO(json.dumps(datasources))
     result = gcs_utils.upload_object(
-        target_bucket, folder_prefix + ACHILLES_EXPORT_DATASOURCES_JSON,
+        target_bucket.name, folder_prefix + ACHILLES_EXPORT_DATASOURCES_JSON,
         datasources_fp)
     return result
 
@@ -96,7 +99,7 @@ def run_export(datasource_id=None, folder_prefix="", target_bucket=None):
     :param target_bucket: Bucket to save report. If None, use bucket associated with hpo_id.
     """
     results = []
-
+    storage_client = StorageClient()
     # Using separate var rather than hpo_id here because hpo_id None needed in calls below
     if datasource_id is None and target_bucket is None:
         raise RuntimeError(
@@ -104,10 +107,12 @@ def run_export(datasource_id=None, folder_prefix="", target_bucket=None):
     else:
         datasource_name = datasource_id
         if target_bucket is None:
-            target_bucket = gcs_utils.get_hpo_bucket(datasource_id)
+            target_bucket: Bucket = storage_client.get_hpo_bucket(datasource_id)
+        else:
+            target_bucket: Bucket = storage_client.get_bucket(target_bucket)
 
     logging.info(
-        f"Exporting {datasource_name} report to bucket {target_bucket}")
+        f"Exporting {datasource_name} report to bucket {target_bucket.name}")
 
     # Run export queries and store json payloads in specified folder in the target bucket
     reports_prefix = folder_prefix + ACHILLES_EXPORT_PREFIX_STRING + datasource_name + '/'
@@ -116,13 +121,13 @@ def run_export(datasource_id=None, folder_prefix="", target_bucket=None):
         result = export.export_from_path(sql_path, datasource_id)
         content = json.dumps(result)
         fp = StringIO(content)
-        result = gcs_utils.upload_object(target_bucket,
+        result = gcs_utils.upload_object(target_bucket.name,
                                          reports_prefix + export_name + '.json',
                                          fp)
         results.append(result)
     result = save_datasources_json(datasource_id=datasource_id,
                                    folder_prefix=folder_prefix,
-                                   target_bucket=target_bucket)
+                                   target_bucket=target_bucket.name)
     results.append(result)
     return results
 
