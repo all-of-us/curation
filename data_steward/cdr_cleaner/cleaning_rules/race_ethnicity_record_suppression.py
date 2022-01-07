@@ -116,6 +116,7 @@ class RaceEthnicityRecordSuppression(BaseCleaningRule):
         """
         Returns a list of sandbox table names.
         """
+        print('this is test!')
         return [self.sandbox_table_for(OBSERVATION)]
 
     def setup_validation(self, client, *args, **keyword_args):
