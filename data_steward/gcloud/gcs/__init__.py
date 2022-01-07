@@ -121,9 +121,10 @@ class StorageClient(Client):
             for blob in page:
                 blob.delete()
 
-    def list_sub_prefixes(self, bucket_name: str, prefix: str) -> list:
+    def list_sub_prefixes(self, bucket_name: str, prefix: str) -> None:
         """
         List sub folders in folder specified by prefix
+
         SO link: https://stackoverflow.com/a/59008580
         :param bucket: GCS bucket name as string
         :param prefix: path to directory to look into e.g. a/b/c/
