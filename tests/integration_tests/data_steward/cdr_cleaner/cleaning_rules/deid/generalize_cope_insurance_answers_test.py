@@ -45,6 +45,11 @@ class GeneralizeCopeInsuranceAnswersTest(BaseTest.CleaningRulesTestBase):
         cls.rule_instance = GeneralizeCopeInsuranceAnswers(
             project_id, dataset_id, sandbox_id)
 
+        sandbox_table_names = cls.rule_instance.get_sandbox_tablenames()
+        for table in sandbox_table_names:
+            cls.fq_sandbox_table_names.append(
+                f'{cls.project_id}.{cls.sandbox_id}.{table}')
+
         cls.fq_table_names = [
             f'{project_id}.{dataset_id}.{OBSERVATION}',
         ]
@@ -92,9 +97,9 @@ class GeneralizeCopeInsuranceAnswersTest(BaseTest.CleaningRulesTestBase):
             'fq_table_name':
                 '.'.join([self.fq_dataset_name, 'observation']),
             'fq_sandbox_table_name':
-                '',
+                self.fq_sandbox_table_names[0],
             'loaded_ids': [1, 2, 3, 4, 5, 6, 7],
-            'sandboxed_ids': [],
+            'sandboxed_ids': [3, 4],
             'fields': [
                 'observation_id', 'person_id', 'observation_concept_id',
                 'observation_date', 'observation_source_concept_id',
