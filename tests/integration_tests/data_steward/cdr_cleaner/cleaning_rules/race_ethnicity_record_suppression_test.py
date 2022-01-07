@@ -47,10 +47,10 @@ class RaceEthnicityRecordSuppressionTest(BaseTest.CleaningRulesTestBase):
         cls.rule_instance = RaceEthnicityRecordSuppression(
             project_id, dataset_id, sandbox_id)
 
-        sb_table_names = cls.rule_instance.sandbox_table_for(OBSERVATION)
-
-        cls.fq_sandbox_table_names.append(
-            f'{cls.project_id}.{cls.sandbox_id}.{sb_table_names}')
+        sb_table_names = cls.rule_instance.get_sandbox_tablenames()
+        for table_name in sb_table_names:
+            cls.fq_sandbox_table_names.append(
+                f'{project_id}.{sandbox_id}.{table_name}')
 
         cls.fq_table_names = [f'{project_id}.{dataset_id}.observation']
 
