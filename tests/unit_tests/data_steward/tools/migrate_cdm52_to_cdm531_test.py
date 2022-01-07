@@ -131,14 +131,18 @@ FROM
         mock_client = mock.MagicMock()
         mock_client.project = self.project_id
         mock_get_client.return_value = mock_client
-        # Setup mocks
         mocked_fields = []
+        for table in resources.CDM_TABLES + PII_TABLES:
+            fields = self.get_mock_fields(table)
+            mocked_fields.append(fields)
+        # called twice so mock twice (once for call_q below and
+        # once in actual run of schema_upgrade_cdm52_to_cdm531)
+        mocked_fields += mocked_fields
+        mock_source_fields.side_effect = mocked_fields
+        # Setup mocks
         all_tables = []
         mock_query_calls = []
         for table in resources.CDM_TABLES + PII_TABLES:
-            fields = self.get_mock_fields(table)
-            # called twice so mock twice
-            mocked_fields.extend([fields, fields])
             tables = [
                 mock.MagicMock(table_id=table),
                 mock.MagicMock(table_id=f'{hpo_id}_{table}'),
@@ -151,7 +155,6 @@ FROM
                     mock_client, self.dataset_id, f'{hpo_id}_{table}', hpo_id),
                 mock.ANY)
             mock_query_calls.append(call_q)
-        mock_source_fields.side_effect = mocked_fields
         mock_client.list_tables.return_value = all_tables
         mock_job = mock.MagicMock(job_id=None, result=lambda: None)
         mock_client.query.return_value = mock_job
