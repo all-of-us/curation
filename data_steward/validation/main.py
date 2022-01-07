@@ -884,8 +884,6 @@ def _is_string_excluded_file(gcs_file_name):
 
 def process_hpo_copy(hpo_id):
     """
-    NOTE: Function used in test only.
-
     copies over files from hpo bucket to drc bucket
     :hpo_id: hpo from which to copy
     """
