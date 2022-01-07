@@ -60,9 +60,7 @@ def get_most_recent(report_for=None):
     :param report_for: denotes which query to use b/w achilles and results
     :return: list of dict with keys `file_path`, `upload_timestamp`
     """
-    # if app_id is None:
     app_id = app_identity.get_application_id()
-    # if drc_bucket is None:
     storage_client = StorageClient()
     drc_bucket = storage_client.get_drc_bucket()
     if report_for == common.REPORT_FOR_ACHILLES:
