@@ -34,7 +34,11 @@ class FreeTextSurveyResponseSuppression(AbstractBqLookupTableConceptSuppression
     Any record in the observation table with a free text concept should be sandboxed and suppressed
     """
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id):
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 table_namer=None):
         """
         Initialize the class with proper information.
 
@@ -52,7 +56,8 @@ class FreeTextSurveyResponseSuppression(AbstractBqLookupTableConceptSuppression
             project_id=project_id,
             dataset_id=dataset_id,
             sandbox_dataset_id=sandbox_dataset_id,
-            concept_suppression_lookup_table=SUPPRESSION_RULE_CONCEPT_TABLE)
+            concept_suppression_lookup_table=SUPPRESSION_RULE_CONCEPT_TABLE,
+            table_namer=table_namer)
 
     def create_suppression_lookup_table(self, client):
         """

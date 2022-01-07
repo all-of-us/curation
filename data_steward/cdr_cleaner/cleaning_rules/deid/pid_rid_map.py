@@ -52,7 +52,7 @@ class PIDtoRID(BaseCleaningRule):
 
     def __init__(self, project_id, dataset_id, sandbox_dataset_id,
                  mapping_dataset_id, mapping_table_id, affected_tables,
-                 issue_numbers):
+                 issue_numbers, table_namer):
         """
         Initialize the class with proper info.
 
@@ -67,7 +67,8 @@ class PIDtoRID(BaseCleaningRule):
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
-                         affected_tables=affected_tables)
+                         affected_tables=affected_tables,
+                         table_namer=table_namer)
 
         self.pid_tables = [
             gbq.TableReference.from_string(

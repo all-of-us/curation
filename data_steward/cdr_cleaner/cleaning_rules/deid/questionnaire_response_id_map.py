@@ -56,7 +56,11 @@ class QRIDtoRID(BaseCleaningRule):
     observation table to the RID (research_response_id) found in that deid questionnaire response mapping lookup table
     """
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id):
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 table_namer=None):
         """
         Initialize the class with proper info.
 
@@ -76,7 +80,8 @@ class QRIDtoRID(BaseCleaningRule):
                          affected_tables=OBSERVATION,
                          project_id=project_id,
                          dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id)
+                         sandbox_dataset_id=sandbox_dataset_id,
+                         table_namer=table_namer)
 
     def get_query_specs(self, *args, **keyword_args):
         """
@@ -118,7 +123,7 @@ class QRIDtoRID(BaseCleaningRule):
         pass
 
     def get_sandbox_tablenames(self):
-        pass
+        return [self.sandbox_table_for(table) for table in self.affected_tables]
 
     def setup_validation(self, client, *args, **keyword_args):
         """

@@ -66,7 +66,11 @@ REPLACE_STRING = JINJA_ENV.from_string("""
 
 class IDFieldSuppression(BaseCleaningRule):
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id=None):
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id=None,
+                 table_namer=None):
         """
         Initialize the class with proper information.
 
@@ -86,7 +90,8 @@ class IDFieldSuppression(BaseCleaningRule):
             project_id=project_id,
             dataset_id=dataset_id,
             sandbox_dataset_id=sandbox_dataset_id,
-            depends_on=[TableSuppression]
+            depends_on=[TableSuppression],
+            table_namer=table_namer
         )  # table_suppression.py module will handle identifying fields in provider, care_site, location
 
     def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
@@ -149,7 +154,7 @@ class IDFieldSuppression(BaseCleaningRule):
         raise NotImplementedError("Please fix me.")
 
     def get_sandbox_tablenames(self):
-        pass
+        return [self.sandbox_table_for(table) for table in self.affected_tables]
 
 
 if __name__ == '__main__':

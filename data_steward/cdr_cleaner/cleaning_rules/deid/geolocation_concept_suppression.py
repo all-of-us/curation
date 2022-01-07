@@ -65,7 +65,11 @@ CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{lookup_table}}`
 
 class GeoLocationConceptSuppression(AbstractBqLookupTableConceptSuppression):
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id):
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 table_namer=None):
         """
         Initialize the class with proper info.
 
@@ -84,7 +88,8 @@ class GeoLocationConceptSuppression(AbstractBqLookupTableConceptSuppression):
                          sandbox_dataset_id=sandbox_dataset_id,
                          affected_tables=[OBSERVATION],
                          concept_suppression_lookup_table=
-                         GEO_LOCATION_SUPPRESSION_CONCEPT_TABLE)
+                         GEO_LOCATION_SUPPRESSION_CONCEPT_TABLE,
+                         table_namer=table_namer)
 
     def create_suppression_lookup_table(self, client):
         """
