@@ -440,88 +440,86 @@ class ValidationMainTest(TestCase):
     @mock.patch('validation.main.StorageClient')
     @mock.patch('gcs_utils.list_bucket')
     @mock.patch('api_util.check_cron')
-    def test_copy_files_ignore_dir(self, mock_check_cron, mock_bucket_list,
+    def test_copy_files_ignore_dir(self, mock_check_cron, mock_list_bucket,
                                    mock_storage_client):
         """
         Test copying files to the drc internal bucket.
-
         This should copy anything in the site's bucket except for files named
         participant.  Copy_files uses a case insensitive match, so any
         capitalization scheme should be detected and left out of the copy.
         Anything else should be copied.  Mocks are used to determine if the
         test ran as expected and all statements would execute in a producstion
         environment.
-
         :param mock_check_cron: mocks the cron decorator.
         :param mock_bucket_list: mocks the list of items in the hpo bucket.
         :param mock_storage_client: mocks the StorageClient which has bucket and blob functionality.
         """
         # pre-conditions
-        mock_hpo_bucket = 'noob'
-        mock_drc_bucket = 'unit_test_drc_internal'
-        mock_bucket_list.return_value = [{
-            'name': 'participant/no-site/foo.pdf',
+        mock_hpo_bucket = mock.MagicMock()
+        mock_drc_bucket = mock.MagicMock()
+
+        mock_list_bucket.return_value = [{
+            'name': 'participant/site_1/person.csv',
         }, {
-            'name': 'PARTICIPANT/siteone/foo.pdf',
+            'name': 'PARTICIPANT/site_2/measurement.csv',
         }, {
-            'name': 'Participant/sitetwo/foo.pdf',
+            'name': 'Participant/site_3/person.csv',
         }, {
             'name': 'submission/person.csv',
         }, {
             'name': 'SUBMISSION/measurement.csv',
         }]
 
-        mock_client = mock.MagicMock()
-        mock_source_bucket = mock.MagicMock()
-        mock_destination_bucket = mock.MagicMock()
         mock_source_blob = mock.MagicMock()
+        mock_hpo_bucket = mock.MagicMock()
+        mock_drc_bucket = mock.MagicMock()
+        type(mock_hpo_bucket).name = mock.PropertyMock(
+            return_value='fake_prefix')
+        mock_hpo_bucket.get_blob.return_value = mock_source_blob
+        mock_hpo_bucket.copy_blob.return_value = mock_source_blob
 
-        mock_storage_client.return_value = mock_client
+        mock_client = mock.MagicMock()
         mock_client.get_hpo_bucket.return_value = mock_hpo_bucket
         mock_client.get_drc_bucket.return_value = mock_drc_bucket
-        mock_client.bucket.side_effect = lambda bucket_name: {
-            mock_hpo_bucket: mock_source_bucket,
-            mock_drc_bucket: mock_destination_bucket
-        }[bucket_name]
-        mock_source_bucket.get_blob.return_value = mock_source_blob
+
+        mock_storage_client.return_value = mock_client
 
         # test
-        result = main.copy_files('noob')
+        result = main.copy_files('fake_hpo_id')
 
         # post conditions
         expected = '{"copy-status": "done"}'
         self.assertEqual(result, expected)
         mock_check_cron.assert_called()
-        mock_bucket_list.assert_called()
+        mock_list_bucket.assert_called()
 
         mock_client.get_hpo_bucket.assert_called()
         mock_client.get_drc_bucket.assert_called()
 
         # make sure copy is called for only the non-participant directories
-        expected_calls = [
-            mock.call(mock_source_blob, mock_destination_bucket,
-                      'noob/noob/submission/person.csv'),
-            mock.call(mock_source_blob, mock_destination_bucket,
-                      'noob/noob/SUBMISSION/measurement.csv')
+        expected_allowed: list = [
+            mock.call(mock_source_blob, mock_drc_bucket,
+                      'fake_hpo_id/fake_prefix/submission/person.csv'),
+            mock.call(mock_source_blob, mock_drc_bucket,
+                      'fake_hpo_id/fake_prefix/SUBMISSION/measurement.csv')
         ]
-        self.assertEqual(mock_client.bucket.call_count, 2)
-        self.assertEqual(mock_source_bucket.get_blob.call_count, 2)
-        self.assertEqual(mock_source_bucket.copy_blob.call_count, 2)
-        mock_source_bucket.copy_blob.assert_has_calls(expected_calls,
-                                                      any_order=True)
+        self.assertEqual(mock_hpo_bucket.get_blob.call_count, 2)
+        self.assertEqual(mock_hpo_bucket.copy_blob.call_count, 2)
+        mock_hpo_bucket.copy_blob.assert_has_calls(expected_allowed,
+                                                   any_order=True)
 
-        unexpected_calls = [
-            mock.call(mock_source_blob, mock_destination_bucket,
-                      'noob/noob/participant/no-site/foo.pdf'),
-            mock.call(mock_source_blob, mock_destination_bucket,
-                      'noob/noob/PARTICIPANT/siteone/foo.pdf'),
-            mock.call(mock_source_blob, mock_destination_bucket,
-                      'noob/noob/Participant/sitetwo/foo.pdf')
+        expected_denied: list = [
+            mock.call(mock_source_blob, mock_drc_bucket,
+                      'fake_hpo_id/fake_prefix/participant/foo.pdf'),
+            mock.call(mock_source_blob, mock_drc_bucket,
+                      'fake_hpo_id/fake_prefix/PARTICIPANT/foo.pdf'),
+            mock.call(mock_source_blob, mock_drc_bucket,
+                      'fake_hpo_id/fake_prefix/Participant/site_3/foo.pdf')
         ]
 
         self.assertRaises(AssertionError,
-                          mock_source_bucket.copy_blob.assert_has_calls,
-                          unexpected_calls,
+                          mock_hpo_bucket.copy_blob.assert_has_calls,
+                          expected_denied,
                           any_order=True)
 
     @mock.patch('bq_utils.table_exists', mock.MagicMock())
