@@ -55,8 +55,7 @@ class SectionParticipationConceptSuppressionTest(BaseTest.CleaningRulesTestBase
         ]
 
         cls.fq_sandbox_table_names = [
-            f'{project_id}.{sandbox_id}.{table}'
-            for table in cls.rule_instance.get_sandbox_tablenames()
+            f'{project_id}.{sandbox_id}.{cls.rule_instance.sandbox_table_for(OBSERVATION)}',
         ]
 
         # call super to set up the client, create datasets, and create
