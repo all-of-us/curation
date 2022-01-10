@@ -428,7 +428,7 @@ SELECT
 FROM `{{project_id}}.{{new_rdr}}.observation`
 WHERE
   -- check for smoking answers --
-  ((observation_source_concept_id IN (1585864, 1585870,1585873, 1586159,1586162)
+  ((observation_source_concept_id IN (1585864, 1585870,1585873, 1586159, 1586162)
     AND value_as_number IS NOT NULL)
     -- check for sexuality answers --
   OR (observation_source_concept_id in (1585357)))
