@@ -193,7 +193,7 @@ class AggregateZipCodes(BaseCleaningRule):
         return [sandbox_query, modify_zip_codes_and_states_query]
 
     def get_sandbox_tablenames(self):
-        raise NotImplementedError("Please fix me.")
+        return [self.sandbox_table_for(table) for table in self.affected_tables]
 
     def validate_rule(self, client, *args, **keyword_args):
         """
