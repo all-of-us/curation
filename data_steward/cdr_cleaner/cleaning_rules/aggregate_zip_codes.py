@@ -189,7 +189,7 @@ class AggregateZipCodes(BaseCleaningRule):
 
     def get_sandbox_tablenames(self):
         """
-        Returns a list of sandbox table names.
+        Returns a list of sandbox table names. 
         """
         return [self.sandbox_table_for(OBSERVATION)]
 
