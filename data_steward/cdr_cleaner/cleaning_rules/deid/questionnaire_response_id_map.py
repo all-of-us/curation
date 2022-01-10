@@ -14,7 +14,7 @@ import logging
 
 # Project imports
 from utils import pipeline_logging
-from common import DEID, OBSERVATION, JINJA_ENV
+from common import OBSERVATION, JINJA_ENV
 from constants.bq_utils import WRITE_TRUNCATE
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
@@ -23,12 +23,10 @@ LOGGER = logging.getLogger(__name__)
 
 ISSUE_NUMBERS = ['DC1347', 'DC518']
 
-DEID_QUESTIONNAIRE_RESPONSE_MAP = '_deid_questionnaire_response_map'
-
 # Creates _deid_questionnaire_response_map lookup table and populates with the questionnaire_response_id's
 # from the observation table as well as randomly generates values for hte research_response_id column
 LOOKUP_TABLE_CREATION_QUERY = JINJA_ENV.from_string("""
-CREATE TABLE IF NOT EXISTS `{{project_id}}.{{shared_sandbox_id}}.{{deid_questionnaire_response_map}}` 
+CREATE TABLE IF NOT EXISTS `{{project_id}}.{{shared_sandbox_id}}._deid_questionnaire_response_map` 
 (questionnaire_response_id INT64, research_response_id INT64)
 OPTIONS (description='lookup table for questionnaire response ids') AS
 -- 1000000 used to start the research_response_id generation at 1mil --
@@ -47,7 +45,7 @@ SELECT
     d.research_response_id as questionnaire_response_id,
 FROM
     `{{project_id}}.{{dataset_id}}.observation` t
-LEFT JOIN `{{project_id}}.{{shared_sandbox_id}}.{{deid_questionnaire_response_map}}` d
+LEFT JOIN `{{project_id}}.{{shared_sandbox_id}}._deid_questionnaire_response_map` d
 ON t.questionnaire_response_id = d.questionnaire_response_id
 """)
 
@@ -58,11 +56,7 @@ class QRIDtoRID(BaseCleaningRule):
     observation table to the RID (research_response_id) found in that deid questionnaire response mapping lookup table
     """
 
-    def __init__(self,
-                 project_id,
-                 dataset_id,
-                 sandbox_dataset_id,
-                 table_namer=None):
+    def __init__(self, project_id, dataset_id, sandbox_dataset_id):
         """
         Initialize the class with proper info.
 
@@ -82,8 +76,7 @@ class QRIDtoRID(BaseCleaningRule):
                          affected_tables=OBSERVATION,
                          project_id=project_id,
                          dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id,
-                         table_namer=table_namer)
+                         sandbox_dataset_id=sandbox_dataset_id)
 
     def get_query_specs(self, *args, **keyword_args):
         """
@@ -99,9 +92,7 @@ class QRIDtoRID(BaseCleaningRule):
                 LOOKUP_TABLE_CREATION_QUERY.render(
                     project_id=self.project_id,
                     shared_sandbox_id=self.sandbox_dataset_id,
-                    dataset_id=self.dataset_id,
-                    deid_questionnaire_response_map=self.sandbox_table_for(
-                        DEID_QUESTIONNAIRE_RESPONSE_MAP))
+                    dataset_id=self.dataset_id)
         }
 
         mapping_query = {
@@ -109,9 +100,7 @@ class QRIDtoRID(BaseCleaningRule):
                 QRID_RID_MAPPING_QUERY.render(
                     project_id=self.project_id,
                     dataset_id=self.dataset_id,
-                    shared_sandbox_id=self.sandbox_dataset_id,
-                    deid_questionnaire_response_map=self.sandbox_table_for(
-                        DEID_QUESTIONNAIRE_RESPONSE_MAP)),
+                    shared_sandbox_id=self.sandbox_dataset_id),
             cdr_consts.DESTINATION_TABLE:
                 OBSERVATION,
             cdr_consts.DESTINATION_DATASET:
@@ -129,10 +118,7 @@ class QRIDtoRID(BaseCleaningRule):
         pass
 
     def get_sandbox_tablenames(self):
-        return [
-            self.sandbox_table_for(table)
-            for table in [DEID_QUESTIONNAIRE_RESPONSE_MAP]
-        ]
+        pass
 
     def setup_validation(self, client, *args, **keyword_args):
         """

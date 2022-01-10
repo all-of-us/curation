@@ -32,11 +32,7 @@ WHERE c.concept_id IN (903632)
 class SectionParticipationConceptSuppression(
         AbstractBqLookupTableConceptSuppression):
 
-    def __init__(self,
-                 project_id,
-                 dataset_id,
-                 sandbox_dataset_id,
-                 table_namer=None):
+    def __init__(self, project_id, dataset_id, sandbox_dataset_id):
         """
         Initialize the class with proper information.
 
@@ -55,8 +51,7 @@ class SectionParticipationConceptSuppression(
             project_id=project_id,
             dataset_id=dataset_id,
             sandbox_dataset_id=sandbox_dataset_id,
-            concept_suppression_lookup_table=SUPPRESSION_RULE_CONCEPT_TABLE,
-            table_namer=table_namer)
+            concept_suppression_lookup_table=SUPPRESSION_RULE_CONCEPT_TABLE)
 
     def create_suppression_lookup_table(self, client):
         """

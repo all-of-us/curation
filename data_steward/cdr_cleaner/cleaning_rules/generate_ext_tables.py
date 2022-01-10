@@ -65,12 +65,8 @@ class GenerateExtTables(BaseCleaningRule):
     Generates extension tables and populates with the site maskings stored in the site_maskings table
     """
 
-    def __init__(self,
-                 project_id,
-                 dataset_id,
-                 sandbox_dataset_id,
-                 mapping_dataset_id,
-                 table_namer=None):
+    def __init__(self, project_id, dataset_id, sandbox_dataset_id,
+                 mapping_dataset_id):
         """
         Initialize the class with proper information.
 
@@ -96,8 +92,7 @@ class GenerateExtTables(BaseCleaningRule):
                          affected_tables=[],
                          project_id=project_id,
                          dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id,
-                         table_namer=table_namer)
+                         sandbox_dataset_id=sandbox_dataset_id)
 
         self._mapping_dataset_id = mapping_dataset_id
         self.mapping_table_ids = []
@@ -188,7 +183,7 @@ class GenerateExtTables(BaseCleaningRule):
                 mapping_dataset_id=self._mapping_dataset_id,
                 mapping_table_id=mapping_table_id,
                 shared_sandbox_id=self.sandbox_dataset_id,
-                site_maskings_table_id=self.sandbox_table_for(SITE_TABLE_ID))
+                site_maskings_table_id=SITE_TABLE_ID)
             queries.append(query)
 
         return queries
@@ -199,18 +194,14 @@ class GenerateExtTables(BaseCleaningRule):
         """
         try:
             client.get_table(
-                f'{self.project_id}.{self.sandbox_dataset_id}.{self.sandbox_table_for(SITE_TABLE_ID)}'
-            )
+                f'{self.project_id}.{self.sandbox_dataset_id}.{SITE_TABLE_ID}')
         except NotFound:
             job = client.copy_table(
                 f'{self.project_id}.{PIPELINE_TABLES}.{SITE_MASKING_TABLE_ID}',
-                f'{self.project_id}.{self.sandbox_dataset_id}.{self.sandbox_table_for(SITE_TABLE_ID)}'
-            )
+                f'{self.project_id}.{self.sandbox_dataset_id}.{SITE_TABLE_ID}')
             job.result()
-            LOGGER.info(
-                f'Copied {PIPELINE_TABLES}.{SITE_MASKING_TABLE_ID} to '
-                f'{self.sandbox_dataset_id}.{self.sandbox_table_for(SITE_TABLE_ID)}'
-            )
+            LOGGER.info(f'Copied {PIPELINE_TABLES}.{SITE_MASKING_TABLE_ID} to '
+                        f'{self.sandbox_dataset_id}.{SITE_TABLE_ID}')
 
         self.mapping_table_ids = self.get_mapping_table_ids(client)
 
@@ -218,7 +209,7 @@ class GenerateExtTables(BaseCleaningRule):
         """
         Get the sandbox table ids for this class instance
         """
-        return [self.sandbox_table_for(table) for table in [SITE_TABLE_ID]]
+        return [SITE_TABLE_ID]
 
     def setup_validation(self, client, *args, **keyword_args):
         """
