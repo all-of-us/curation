@@ -19,10 +19,17 @@ import logging
 import argparse
 
 # Project imports
+from app_identity import get_application_id
+from bq_utils import get_rdr_project_id
+from resources import get_table_id
 from utils import bq, pipeline_logging, auth
 from tools.create_tier import SCOPES
-from common import JINJA_ENV, PS_API_VALUES, DRC_OPS
+from common import PS_API_VALUES, DRC_OPS, EHR_OPS
+from .store_participant_summary_results import fetch_and_store_ps_hpo_data
+from .create_update_drc_id_match_table import create_and_populate_drc_validation_table
 from .participant_validation_queries import CREATE_COMPARISON_FUNCTION_QUERIES
+from constants.validation.participants.validate import MATCH_FIELDS_QUERY, SUMMARY_QUERY
+from common import PII_ADDRESS, PII_EMAIL, PII_PHONE_NUMBER, PII_NAME, LOCATION, PERSON
 from constants.validation.participants.identity_match import IDENTITY_MATCH_TABLE
 from constants.validation.participants.participant_validation_queries import (
     get_gender_comparison_case_statement, get_state_abbreviations,
@@ -30,61 +37,30 @@ from constants.validation.participants.participant_validation_queries import (
 
 LOGGER = logging.getLogger(__name__)
 
-EHR_OPS = 'ehr_ops'
-
-MATCH_FIELDS_QUERY = JINJA_ENV.from_string("""
-    UPDATE `{{project_id}}.{{drc_dataset_id}}.{{id_match_table_id}}` upd
-    SET upd.first_name = `{{project_id}}.{{drc_dataset_id}}.CompareName`(ps.first_name, ehr_name.first_name),
-        upd.middle_name = `{{project_id}}.{{drc_dataset_id}}.CompareName`(ps.middle_name, ehr_name.middle_name),
-        upd.last_name = `{{project_id}}.{{drc_dataset_id}}.CompareName`(ps.last_name, ehr_name.last_name),
-        upd.address_1 = `{{project_id}}.{{drc_dataset_id}}.CompareStreetAddress`(ps.street_address, ehr_location.address_1),
-        upd.address_2 = `{{project_id}}.{{drc_dataset_id}}.CompareStreetAddress`(ps.street_address2, ehr_location.address_2),
-        upd.city = `{{project_id}}.{{drc_dataset_id}}.CompareCity`(ps.city, ehr_location.city),
-        upd.state = `{{project_id}}.{{drc_dataset_id}}.CompareState`(ps.state, ehr_location.state),
-        upd.zip = `{{project_id}}.{{drc_dataset_id}}.CompareZipCode`(ps.zip_code, ehr_location.zip),
-        upd.email = `{{project_id}}.{{drc_dataset_id}}.CompareEmail`(ps.email, ehr_email.email),
-        upd.phone_number = `{{project_id}}.{{drc_dataset_id}}.ComparePhoneNumber`(ps.phone_number, ehr_phone.phone_number),
-        upd.birth_date = `{{project_id}}.{{drc_dataset_id}}.CompareDateOfBirth`(ps.date_of_birth, ehr_dob.date_of_birth),
-        upd.sex = `{{project_id}}.{{drc_dataset_id}}.CompareSexAtBirth`(ps.sex, ehr_sex.sex),
-        upd.algorithm = 'yes'
-    FROM `{{project_id}}.{{drc_dataset_id}}.{{ps_api_table_id}}` ps
-    LEFT JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_email_table_id}}` ehr_email
-        ON ehr_email.person_id = ps.person_id
-    LEFT JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_phone_number_table_id}}` ehr_phone
-        ON ehr_phone.person_id = ps.person_id
-    LEFT JOIN ( SELECT person_id, DATE(birth_datetime) AS date_of_birth
-               FROM `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_person_table_id}}` ) AS ehr_dob
-        ON ehr_dob.person_id = ps.person_id
-    LEFT JOIN ( SELECT person_id, cc.concept_name as sex
-                FROM `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_person_table_id}}`
-                JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.concept` cc
-                    ON gender_concept_id = concept_id ) AS ehr_sex
-        ON ehr_sex.person_id = ps.person_id
-    LEFT JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_name_table_id}}` ehr_name
-        ON ehr_name.person_id = ps.person_id
-    LEFT JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_address_table_id}}` ehr_address
-        ON ehr_address.person_id = ps.person_id
-    LEFT JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_location_table_id}}` ehr_location
-        ON ehr_location.location_id = ehr_address.location_id
-    WHERE upd.person_id = ps.person_id
-        AND upd._PARTITIONTIME = ps._PARTITIONTIME
-""")
-
 
 def identify_rdr_ehr_match(client,
                            project_id,
                            hpo_id,
                            ehr_ops_dataset_id,
                            drc_dataset_id=DRC_OPS):
+    """
+    
+    :param client: BQ client
+    :param project_id: BQ project
+    :param hpo_id: Identifies the HPO site
+    :param ehr_ops_dataset_id: Dataset containing HPO pii* tables
+    :param drc_dataset_id: Dataset containing identity_match tables
+    :return: 
+    """
 
     id_match_table_id = f'{IDENTITY_MATCH_TABLE}_{hpo_id}'
-    hpo_pii_address_table_id = f'{hpo_id}_pii_address'
-    hpo_pii_email_table_id = f'{hpo_id}_pii_email'
-    hpo_pii_phone_number_table_id = f'{hpo_id}_pii_phone_number'
-    hpo_pii_name_table_id = f'{hpo_id}_pii_name'
+    hpo_pii_address_table_id = get_table_id(hpo_id, PII_ADDRESS)
+    hpo_pii_email_table_id = get_table_id(hpo_id, PII_EMAIL)
+    hpo_pii_phone_number_table_id = get_table_id(hpo_id, PII_PHONE_NUMBER)
+    hpo_pii_name_table_id = get_table_id(hpo_id, PII_NAME)
     ps_api_table_id = f'{PS_API_VALUES}_{hpo_id}'
-    hpo_location_table_id = f'{hpo_id}_location'
-    hpo_person_table_id = f'{hpo_id}_person'
+    hpo_location_table_id = get_table_id(hpo_id, LOCATION)
+    hpo_person_table_id = get_table_id(hpo_id, PERSON)
 
     for item in CREATE_COMPARISON_FUNCTION_QUERIES:
         LOGGER.info(f"Creating `{item['name']}` function if doesn't exist.")
@@ -153,6 +129,35 @@ def get_arg_parser():
                         required=True)
 
     return parser
+
+
+def setup_and_validate_participants(hpo_id):
+    """
+    Set up tables, fetch PS data and run validation
+    :param hpo_id: Identifies the HPO
+    :return: 
+    """
+    project_id = get_application_id()
+    client = bq.get_client(project_id)
+
+    create_and_populate_drc_validation_table(client, hpo_id)
+
+    rdr_project_id = get_rdr_project_id()
+    fetch_and_store_ps_hpo_data(client, client.project, rdr_project_id, hpo_id)
+
+    identify_rdr_ehr_match(client, client.project, hpo_id, EHR_OPS)
+
+
+def get_participant_validation_summary_query(hpo_id):
+    """
+    Setup tables, run validation and generate query for reporting
+    :param hpo_id: 
+    :return: 
+    """
+    return SUMMARY_QUERY.render(
+        project_id=get_application_id(),
+        dataset_id=DRC_OPS,
+        id_match_table=f'{IDENTITY_MATCH_TABLE}_{hpo_id}')
 
 
 def main():

@@ -239,6 +239,7 @@ DIGITAL_HEALTH_SHARING_STATUS = 'digital_health_sharing_status'
 ZIP_CODE_AGGREGATION_MAP = 'zip_code_aggregation_map'
 
 # Participant Summary
+EHR_OPS = 'ehr_ops'
 DRC_OPS = 'drc_ops'
 PS_API_VALUES = 'ps_api_values'
 

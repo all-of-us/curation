@@ -18,7 +18,7 @@ from common import JINJA_ENV, PS_API_VALUES
 from google.cloud import bigquery
 
 # Project imports
-from tools.store_participant_summary_results import get_hpo_info, main
+from validation.participants.store_participant_summary_results import get_hpo_info, main
 from utils.bq import get_client
 
 from app_identity import PROJECT_ID

@@ -24,8 +24,8 @@ import bq_utils
 from utils import bq
 from tests import test_util
 from app_identity import PROJECT_ID
-from common import JINJA_ENV, DRC_OPS, PS_API_VALUES
-from tools import create_update_drc_id_match_table as id_validation
+from common import JINJA_ENV, PS_API_VALUES
+from validation.participants import create_update_drc_id_match_table as id_validation
 from constants.validation.participants.identity_match import IDENTITY_MATCH_TABLE
 
 POPULATE_PS_VALUES = JINJA_ENV.from_string("""

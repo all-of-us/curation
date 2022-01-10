@@ -170,6 +170,24 @@ def get_arg_parser():
     return parser
 
 
+def create_and_populate_drc_validation_table(client, hpo_id):
+    """
+    Create and populate drc validation table
+    :param client: BQ client
+    :param hpo_id: Identifies the HPO
+    :return: 
+    """
+
+    table_id = f'{IDENTITY_MATCH_TABLE}_{hpo_id}'
+
+    # Creates hpo_site identity match table if it does not exist
+    if not table_exists(table_id, DRC_OPS):
+        create_drc_validation_table(client, client.project, table_id)
+
+    # Populates the validation table for the site
+    populate_validation_table(client, client.project, table_id, hpo_id)
+
+
 def main():
     parser = get_arg_parser()
     args = parser.parse_args()
@@ -180,14 +198,7 @@ def main():
 
     client = bq.get_client(args.project_id, credentials=impersonation_creds)
 
-    table_id = f'{IDENTITY_MATCH_TABLE}_{args.hpo_id}'
-
-    # Creates hpo_site identity match table if it does not exist
-    if not table_exists(table_id, DRC_OPS):
-        create_drc_validation_table(client, args.project_id, table_id)
-
-    # Populates the validation table for the site
-    populate_validation_table(client, args.project_id, table_id, args.hpo_id)
+    create_and_populate_drc_validation_table(client, args.hpo_id)
 
 
 if __name__ == '__main__':

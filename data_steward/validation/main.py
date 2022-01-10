@@ -41,7 +41,7 @@ from validation.app_errors import (BucketNotSet, log_traceback,
                                    errors_blueprint, InternalValidationError,
                                    BucketDoesNotExistError)
 from validation.metrics import completeness, required_labs
-from validation.participants import identity_match as matching
+from validation.participants import identity_match as matching, validate
 
 app = Flask(__name__)
 
@@ -349,6 +349,13 @@ def generate_metrics(hpo_id, bucket, folder_prefix, summary):
         completeness_query = completeness.get_hpo_completeness_query(hpo_id)
         report_data[report_consts.COMPLETENESS_REPORT_KEY] = query_rows(
             completeness_query)
+
+        # participant validation metrics
+        logging.info(f"Running participant validation for {hpo_id}")
+        validate.setup_and_validate_participants(hpo_id)
+        participant_validation_query = validate.get_participant_validation_summary_query(
+            hpo_id)
+        # TODO add to report_data based on requirements from EHR_OPS
 
         # lab concept metrics
         logging.info(f"Getting lab concepts for {hpo_id}")
