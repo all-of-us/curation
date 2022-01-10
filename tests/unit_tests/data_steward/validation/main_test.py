@@ -528,7 +528,7 @@ class ValidationMainTest(TestCase):
         mock_storage_client.return_value = mock_client
 
         # test
-        result = main.copy_files('noob')
+        result = main.copy_files('fake_hpo_id')
 
         # post conditions
         expected = '{"copy-status": "done"}'
