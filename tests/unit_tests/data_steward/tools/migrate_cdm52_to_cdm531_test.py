@@ -3,13 +3,14 @@ import unittest
 import mock
 
 import resources
+from common import PII_TABLES
 from tools import migrate_cdm52_to_cdm531
 
 WHITESPACE = '[\t\n\\s]+'
 SPACE = ' '
 
 
-class SnapshotByQueryTest(unittest.TestCase):
+class MigrateByQueryTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -17,7 +18,12 @@ class SnapshotByQueryTest(unittest.TestCase):
         print(cls.__name__)
         print('**************************************************************')
 
-        cls.mock_client = ''
+    def setUp(self) -> None:
+        self.project_id = 'test-project'
+        self.mock_client = mock.MagicMock()
+        self.mock_client.project = self.project_id
+        self.dataset_id = 'test-dataset'
+        self.snapshot_dataset_id = 'test-snapshot-dataset'
 
     def get_mock_fields(self, table_name):
         field_names = []
@@ -61,11 +67,11 @@ class SnapshotByQueryTest(unittest.TestCase):
                 source_fields=['something'])
 
     @mock.patch('tools.snapshot_by_query.get_source_fields')
-    def test_get_copy_table_query(self, mock_get_source_fields):
+    def test_get_upgrade_table_query(self, mock_get_source_fields):
         mock_get_source_fields.return_value = self.get_mock_fields('provider')
 
-        actual_query = migrate_cdm52_to_cdm531.get_copy_table_query(
-            'test-project', 'test-dataset', 'provider', self.mock_client)
+        actual_query = migrate_cdm52_to_cdm531.get_upgrade_table_query(
+            self.mock_client, self.dataset_id, 'provider')
         expected_query = """SELECT
   CAST(provider_id AS INT64) AS provider_id,
   CAST(provider_name AS STRING) AS provider_name,
@@ -88,9 +94,8 @@ FROM
 
         mock_get_source_fields.return_value = self.get_mock_fields(
             'procedure_occurrence')
-        actual_query = migrate_cdm52_to_cdm531.get_copy_table_query(
-            'test-project', 'test-dataset', 'procedure_occurrence',
-            self.mock_client)
+        actual_query = migrate_cdm52_to_cdm531.get_upgrade_table_query(
+            self.mock_client, self.dataset_id, 'procedure_occurrence')
         expected_query = """SELECT
   CAST(procedure_occurrence_id AS INT64) AS procedure_occurrence_id,
   CAST(person_id AS INT64) AS person_id,
@@ -112,7 +117,47 @@ FROM
         self.assertEqual(re.sub(WHITESPACE, SPACE, actual_query),
                          re.sub(WHITESPACE, SPACE, expected_query))
 
-        actual_query = migrate_cdm52_to_cdm531.get_copy_table_query(
-            'test-project', 'test-dataset', 'non_cdm_table', self.mock_client)
+        actual_query = migrate_cdm52_to_cdm531.get_upgrade_table_query(
+            self.mock_client, self.dataset_id, 'non_cdm_table')
         expected_query = '''SELECT * FROM `test-project.test-dataset.non_cdm_table`'''
         self.assertEqual(actual_query, expected_query)
+
+    @mock.patch('utils.bq.get_client')
+    @mock.patch('tools.snapshot_by_query.create_empty_cdm_tables')
+    @mock.patch('tools.snapshot_by_query.get_source_fields')
+    def test_get_upgrade_hpo_table_query(self, mock_source_fields,
+                                         mock_create_tables, mock_get_client):
+        hpo_id = 'fake'
+        mock_client = mock.MagicMock()
+        mock_client.project = self.project_id
+        mock_get_client.return_value = mock_client
+        mocked_fields = []
+        for table in resources.CDM_TABLES + PII_TABLES:
+            fields = self.get_mock_fields(table)
+            mocked_fields.append(fields)
+        # called twice so mock twice (once for call_q below and
+        # once in actual run of schema_upgrade_cdm52_to_cdm531)
+        mocked_fields += mocked_fields
+        mock_source_fields.side_effect = mocked_fields
+        # Setup mocks
+        all_tables = []
+        mock_query_calls = []
+        for table in resources.CDM_TABLES + PII_TABLES:
+            tables = [
+                mock.MagicMock(table_id=table),
+                mock.MagicMock(table_id=f'{hpo_id}_{table}'),
+                mock.MagicMock(table_id=f'unioned_{table}'),
+                mock.MagicMock(table_id=f'_mapping_{table}')
+            ]
+            all_tables.extend(tables)
+            call_q = mock.call(
+                migrate_cdm52_to_cdm531.get_upgrade_table_query(
+                    mock_client, self.dataset_id, f'{hpo_id}_{table}', hpo_id),
+                mock.ANY)
+            mock_query_calls.append(call_q)
+        mock_client.list_tables.return_value = all_tables
+        mock_job = mock.MagicMock(job_id=None, result=lambda: None)
+        mock_client.query.return_value = mock_job
+        migrate_cdm52_to_cdm531.schema_upgrade_cdm52_to_cdm531(
+            self.project_id, self.dataset_id, self.snapshot_dataset_id, hpo_id)
+        mock_client.query.assert_has_calls(mock_query_calls)

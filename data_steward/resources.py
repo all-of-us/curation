@@ -422,3 +422,27 @@ def get_field_type(table_name, field_name):
         return None
     else:
         return field_type[0]
+
+
+def get_table_id(table_name, hpo_id=None):
+    """
+    Get the bigquery table id associated with a site's CDM table if specified
+    :param table_name: name of the CDM table
+    :param hpo_id: Identifies the HPO site
+    :return: table_id for HPO if specified
+    """
+    if hpo_id:
+        return f'{hpo_id}_{table_name}'
+    return table_name
+
+
+def get_base_table_name(table_id, hpo_id=None):
+    """
+    Get the standard table name without hpo prefix
+    :param table_id: identifies the bigquery table
+    :param hpo_id: Identifies the HPO site
+    :return: table_id for HPO if specified
+    """
+    if hpo_id:
+        return table_id.replace(f'{hpo_id}_', '')
+    return table_id
