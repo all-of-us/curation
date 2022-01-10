@@ -164,8 +164,8 @@ class AggregateZipCodes(BaseCleaningRule):
             pii_state_vocab=PII_STATE_VOCAB,
             zip_code_aggregation_map=ZIP_CODE_AGGREGATION_MAP,
             pipeline_tables_dataset=PIPELINE_TABLES)
-        sandbox_query[cdr_consts.DESTINATION_TABLE] = self.sandbox_table_for(
-            OBSERVATION)
+        sandbox_query[
+            cdr_consts.DESTINATION_TABLE] = self.get_sandbox_tablenames()[0]
         sandbox_query[cdr_consts.DESTINATION_DATASET] = self.sandbox_dataset_id
         sandbox_query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
 
@@ -188,7 +188,10 @@ class AggregateZipCodes(BaseCleaningRule):
         return [sandbox_query, modify_zip_codes_and_states_query]
 
     def get_sandbox_tablenames(self):
-        raise NotImplementedError("Please fix me.")
+        """
+        Returns a list of sandbox table names.
+        """
+        return [self.sandbox_table_for(OBSERVATION)]
 
     def validate_rule(self, client, *args, **keyword_args):
         """
