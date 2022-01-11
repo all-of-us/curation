@@ -19,7 +19,7 @@ import argparse
 import resources
 from utils import bq
 from utils import auth
-from bq_utils import table_exists
+import bq_utils
 from tools.create_tier import SCOPES
 from common import JINJA_ENV, PS_API_VALUES, DRC_OPS
 from constants.validation.participants.identity_match import IDENTITY_MATCH_TABLE
@@ -181,7 +181,7 @@ def create_and_populate_drc_validation_table(client, hpo_id):
     table_id = f'{IDENTITY_MATCH_TABLE}_{hpo_id}'
 
     # Creates hpo_site identity match table if it does not exist
-    if not table_exists(table_id, DRC_OPS):
+    if not bq_utils.table_exists(table_id, DRC_OPS):
         create_drc_validation_table(client, client.project, table_id)
 
     # Populates the validation table for the site
