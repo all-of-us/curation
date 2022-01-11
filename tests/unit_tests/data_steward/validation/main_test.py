@@ -455,8 +455,10 @@ class ValidationMainTest(TestCase):
         :param mock_storage_client: mocks the StorageClient which has bucket and blob functionality.
         """
         # pre-conditions
+        mock_client = mock.MagicMock()
         mock_hpo_bucket = mock.MagicMock()
         mock_drc_bucket = mock.MagicMock()
+        mock_source_blob = mock.MagicMock()
 
         mock_list_bucket.return_value = [{
             'name': 'participant/site_1/person.csv',
@@ -470,18 +472,13 @@ class ValidationMainTest(TestCase):
             'name': 'SUBMISSION/measurement.csv',
         }]
 
-        mock_source_blob = mock.MagicMock()
-        mock_hpo_bucket = mock.MagicMock()
-        mock_drc_bucket = mock.MagicMock()
         type(mock_hpo_bucket).name = mock.PropertyMock(
             return_value='fake_prefix')
         mock_hpo_bucket.get_blob.return_value = mock_source_blob
         mock_hpo_bucket.copy_blob.return_value = mock_source_blob
 
-        mock_client = mock.MagicMock()
         mock_client.get_hpo_bucket.return_value = mock_hpo_bucket
         mock_client.get_drc_bucket.return_value = mock_drc_bucket
-
         mock_storage_client.return_value = mock_client
 
         # test
