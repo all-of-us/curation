@@ -23,7 +23,11 @@ LOGGER = logging.getLogger(__name__)
 class OrganTransplantConceptSuppression(
         AbstractInMemoryLookupTableConceptSuppression):
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id):
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 table_namer=None):
         """
         Initialize the class with proper info.
 
@@ -42,7 +46,8 @@ class OrganTransplantConceptSuppression(
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
-                         affected_tables=AOU_REQUIRED)
+                         affected_tables=AOU_REQUIRED,
+                         table_namer=None)
 
     def get_suppressed_concept_ids(self):
         # OrganTransplantDescription_OtherOrgan - 1585807 -> https://athena.ohdsi.org/search-terms/terms/1585807

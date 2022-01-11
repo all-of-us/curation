@@ -31,20 +31,22 @@ def create_empty_dataset(project_id, dataset_id, snapshot_dataset_id):
         overwrite_existing=True)
 
 
-def create_empty_cdm_tables(snapshot_dataset_id):
+def create_empty_cdm_tables(snapshot_dataset_id, hpo_id=None):
     """
     Copy the table content from the current dataset to the snapshot dataset
     :param snapshot_dataset_id:
+    :param hpo_id: Identifies the hpo_id of the site table
     :return:
     """
     for table in resources.CDM_TABLES:
-        table_id = table
+        table_id = resources.get_table_id(table, hpo_id)
         table_name = table
         create_standard_table(table_name,
                               table_id,
                               drop_existing=True,
                               dataset_id=snapshot_dataset_id)
-    cdm.create_vocabulary_tables(snapshot_dataset_id)
+    if not hpo_id:
+        cdm.create_vocabulary_tables(snapshot_dataset_id)
 
 
 def get_field_cast_expr(dest_field, source_fields):

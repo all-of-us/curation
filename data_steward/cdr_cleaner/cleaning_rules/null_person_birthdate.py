@@ -31,7 +31,11 @@ WHERE TRUE
 
 class NullPersonBirthdate(BaseCleaningRule):
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id):
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 table_namer=None):
         """
         Initialize the class with proper information.
 
@@ -46,7 +50,8 @@ class NullPersonBirthdate(BaseCleaningRule):
                          affected_tables=PERSON,
                          project_id=project_id,
                          dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id)
+                         sandbox_dataset_id=sandbox_dataset_id,
+                         table_namer=table_namer)
 
     def setup_rule(self, client, *args, **keyword_args):
         """

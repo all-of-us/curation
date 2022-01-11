@@ -96,7 +96,11 @@ class ExplicitIdentifierSuppression(BaseCleaningRule):
     suppress all records associated with a PPI vocabulary explicit identifier associated PPI vocabulary
     """
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id):
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 table_namer=None):
         """
         Initialize the class with proper info.
 
@@ -114,7 +118,8 @@ class ExplicitIdentifierSuppression(BaseCleaningRule):
                          affected_tables=OBSERVATION,
                          project_id=project_id,
                          dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id)
+                         sandbox_dataset_id=sandbox_dataset_id,
+                         table_namer=table_namer)
 
     def get_query_specs(self, *args, **keyword_args):
         """

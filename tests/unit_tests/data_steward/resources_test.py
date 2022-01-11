@@ -125,3 +125,21 @@ class ResourcesTest(unittest.TestCase):
         ]
         actual = resources.CDM_TABLES
         self.assertCountEqual(actual, expected)
+
+    def test_get_table_id(self):
+        table_name = 'procedure_occurrence'
+        hpo_id = 'fake'
+        expected = 'fake_procedure_occurrence'
+        actual = resources.get_table_id(table_name, hpo_id)
+        self.assertEqual(actual, expected)
+        actual = resources.get_table_id(table_name)
+        self.assertEqual(actual, table_name)
+
+    def test_get_base_table_name(self):
+        table_id = 'fake_procedure_occurrence'
+        hpo_id = 'fake'
+        expected = 'procedure_occurrence'
+        actual = resources.get_base_table_name(table_id, hpo_id)
+        self.assertEqual(actual, expected)
+        actual = resources.get_base_table_name(table_id)
+        self.assertEqual(actual, table_id)

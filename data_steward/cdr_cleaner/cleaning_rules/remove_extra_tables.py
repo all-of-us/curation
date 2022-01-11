@@ -111,7 +111,11 @@ DROP TABLE IF EXISTS `{{project_id}}.{{dataset_id}}.{{extra_table}}`;
 class RemoveExtraTables(BaseCleaningRule):
     extra_tables = []
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id):
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 table_namer=None):
         """
         Initialize the class with proper information.
 
@@ -126,7 +130,8 @@ class RemoveExtraTables(BaseCleaningRule):
                          affected_tables=[],
                          project_id=project_id,
                          dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id)
+                         sandbox_dataset_id=sandbox_dataset_id,
+                         table_namer=table_namer)
 
     def get_query_specs(self, *args, **keyword_args):
         """

@@ -29,7 +29,11 @@ class CtPIDtoRID(PIDtoRID):
     Use RID instead of PID for OMOP tables
     """
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id):
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 table_namer=None):
         """
         Initialize the class with proper info.
 
@@ -43,7 +47,8 @@ class CtPIDtoRID(PIDtoRID):
                          mapping_dataset_id=sandbox_dataset_id,
                          mapping_table_id=DEID_MAP,
                          affected_tables=CDM_TABLES,
-                         issue_numbers=ISSUE_NUMBERS)
+                         issue_numbers=ISSUE_NUMBERS,
+                         table_namer=table_namer)
 
     def get_pid_tables(self, client):
         pid_tables_query = GET_PID_TABLES.render(project_id=self.project_id,

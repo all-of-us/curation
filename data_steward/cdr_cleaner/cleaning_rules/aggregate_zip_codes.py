@@ -126,7 +126,11 @@ LEFT JOIN `{{project_id}}.{{pipeline_tables_dataset}}.{{pii_state_vocab}}` state
 
 class AggregateZipCodes(BaseCleaningRule):
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id):
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 table_namer=None):
         """
         Initialize the class with proper information.
 
@@ -143,7 +147,8 @@ class AggregateZipCodes(BaseCleaningRule):
             project_id=project_id,
             dataset_id=dataset_id,
             sandbox_dataset_id=sandbox_dataset_id,
-            depends_on=[GeneralizeZipCodes, StringFieldsSuppression])
+            depends_on=[GeneralizeZipCodes, StringFieldsSuppression],
+            table_namer=table_namer)
         # Identifiable information may exist if StringFieldsSuppression rule fails
 
     def get_query_specs(self, *args, **keyword_args):
@@ -188,7 +193,7 @@ class AggregateZipCodes(BaseCleaningRule):
         return [sandbox_query, modify_zip_codes_and_states_query]
 
     def get_sandbox_tablenames(self):
-        raise NotImplementedError("Please fix me.")
+        return [self.sandbox_table_for(table) for table in self.affected_tables]
 
     def validate_rule(self, client, *args, **keyword_args):
         """
