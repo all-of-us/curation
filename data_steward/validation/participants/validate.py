@@ -54,13 +54,13 @@ def identify_rdr_ehr_match(client,
     """
 
     id_match_table_id = f'{IDENTITY_MATCH_TABLE}_{hpo_id}'
-    hpo_pii_address_table_id = get_table_id(hpo_id, PII_ADDRESS)
-    hpo_pii_email_table_id = get_table_id(hpo_id, PII_EMAIL)
-    hpo_pii_phone_number_table_id = get_table_id(hpo_id, PII_PHONE_NUMBER)
-    hpo_pii_name_table_id = get_table_id(hpo_id, PII_NAME)
+    hpo_pii_address_table_id = get_table_id(PII_ADDRESS, hpo_id)
+    hpo_pii_email_table_id = get_table_id(PII_EMAIL, hpo_id)
+    hpo_pii_phone_number_table_id = get_table_id(PII_PHONE_NUMBER, hpo_id)
+    hpo_pii_name_table_id = get_table_id(PII_NAME, hpo_id)
     ps_api_table_id = f'{PS_API_VALUES}_{hpo_id}'
-    hpo_location_table_id = get_table_id(hpo_id, LOCATION)
-    hpo_person_table_id = get_table_id(hpo_id, PERSON)
+    hpo_location_table_id = get_table_id(LOCATION, hpo_id)
+    hpo_person_table_id = get_table_id(PERSON, hpo_id)
 
     for item in CREATE_COMPARISON_FUNCTION_QUERIES:
         LOGGER.info(f"Creating `{item['name']}` function if doesn't exist.")
