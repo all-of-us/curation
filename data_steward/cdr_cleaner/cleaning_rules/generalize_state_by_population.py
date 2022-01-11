@@ -36,7 +36,11 @@ STATE_GENERALIZATION_QUERY = JINJA_ENV.from_string("""
 
 class GeneralizeStateByPopulation(BaseCleaningRule):
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id):
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 table_namer=None):
         """
         Initialize the class with proper information.
 
@@ -51,10 +55,11 @@ class GeneralizeStateByPopulation(BaseCleaningRule):
                          affected_tables=[OBSERVATION],
                          project_id=project_id,
                          dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id)
+                         sandbox_dataset_id=sandbox_dataset_id,
+                         table_namer=table_namer)
 
     def get_sandbox_tablenames(self):
-        raise NotImplementedError("Please fix me.")
+        return []
 
     def get_query_specs(self, *args, **keyword_args):
         """

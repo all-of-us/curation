@@ -65,8 +65,12 @@ class GenerateExtTables(BaseCleaningRule):
     Generates extension tables and populates with the site maskings stored in the site_maskings table
     """
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id,
-                 mapping_dataset_id):
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 mapping_dataset_id,
+                 table_namer=None):
         """
         Initialize the class with proper information.
 
@@ -92,7 +96,8 @@ class GenerateExtTables(BaseCleaningRule):
                          affected_tables=[],
                          project_id=project_id,
                          dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id)
+                         sandbox_dataset_id=sandbox_dataset_id,
+                         table_namer=table_namer)
 
         self._mapping_dataset_id = mapping_dataset_id
         self.mapping_table_ids = []

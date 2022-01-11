@@ -37,7 +37,11 @@ WHERE
 
 class TableSuppression(BaseCleaningRule):
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id=None):
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id=None,
+                 table_namer=None):
         """
         Initialize the class with proper information.
 
@@ -55,7 +59,8 @@ class TableSuppression(BaseCleaningRule):
                          affected_tables=tables,
                          project_id=project_id,
                          dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id)
+                         sandbox_dataset_id=sandbox_dataset_id,
+                         table_namer=table_namer)
 
     def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
         """
@@ -94,7 +99,7 @@ class TableSuppression(BaseCleaningRule):
         raise NotImplementedError("Please fix me.")
 
     def get_sandbox_tablenames(self):
-        pass
+        return [self.sandbox_table_for(table) for table in self.affected_tables]
 
 
 if __name__ == '__main__':
