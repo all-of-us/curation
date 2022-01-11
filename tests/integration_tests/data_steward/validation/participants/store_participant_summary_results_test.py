@@ -14,13 +14,12 @@ from unittest import mock, TestCase
 
 # Third party imports
 from pandas import DataFrame
-from common import JINJA_ENV, PS_API_VALUES
 from google.cloud import bigquery
 
 # Project imports
-from validation.participants.store_participant_summary_results import get_hpo_info, main
+from validation.participants.store_participant_summary_results import get_hpo_info
 from utils.bq import get_client
-
+from common import JINJA_ENV, PS_API_VALUES
 from app_identity import PROJECT_ID
 from constants import bq_utils as bq_consts
 
