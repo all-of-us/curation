@@ -64,8 +64,8 @@ def get_org_id(project_id, hpo_id):
 
     org_id = None
     for hpo_dict in hpo_list:
-        if hpo_id == hpo_dict[bq_consts.HPO_ID]:
-            org_id = hpo_dict[bq_consts.ORG_ID]
+        if hpo_id == hpo_dict['hpo_id']:
+            org_id = hpo_dict['org_id']
             return org_id
 
     if not org_id:
