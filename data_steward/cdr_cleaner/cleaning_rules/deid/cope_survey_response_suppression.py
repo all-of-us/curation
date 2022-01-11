@@ -42,7 +42,11 @@ LOGGER = logging.getLogger(__name__)
 class CopeSurveyResponseSuppression(
         AbstractInMemoryLookupTableConceptSuppression):
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id):
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 table_namer=None):
         """
         Initialize the class with proper info.
 
@@ -59,7 +63,8 @@ class CopeSurveyResponseSuppression(
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
-                         affected_tables=[OBSERVATION])
+                         affected_tables=[OBSERVATION],
+                         table_namer=table_namer)
 
     def get_suppressed_concept_ids(self):
         # https://athena.ohdsi.org/search-terms/terms/1333234

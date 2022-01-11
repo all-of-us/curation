@@ -18,8 +18,13 @@ class FitbitPIDtoRID(PIDtoRID):
     Use RID instead of PID for Fitbit tables
     """
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id,
-                 mapping_dataset_id, mapping_table_id):
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 mapping_dataset_id,
+                 mapping_table_id,
+                 table_namer=None):
         """
         Initialize the class with proper info.
 
@@ -33,7 +38,8 @@ class FitbitPIDtoRID(PIDtoRID):
                          mapping_dataset_id=mapping_dataset_id,
                          mapping_table_id=mapping_table_id,
                          affected_tables=FITBIT_TABLES,
-                         issue_numbers=ISSUE_NUMBERS)
+                         issue_numbers=ISSUE_NUMBERS,
+                         table_namer=table_namer)
 
 
 if __name__ == '__main__':

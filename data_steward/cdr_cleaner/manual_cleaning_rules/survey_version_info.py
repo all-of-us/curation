@@ -62,8 +62,13 @@ class COPESurveyVersionTask(BaseCleaningRule):
     team, assign a custom COPE month concept id for COPE survey information.
     """
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id,
-                 cope_lookup_dataset_id, cope_table_name):
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 cope_lookup_dataset_id,
+                 cope_table_name,
+                 table_namer=None):
         """
         Initialize the class with proper info.
 
@@ -84,7 +89,8 @@ class COPESurveyVersionTask(BaseCleaningRule):
             dataset_id=dataset_id,
             sandbox_dataset_id=sandbox_dataset_id,
             affected_tables=[OBSERVATION + '_ext'],
-            depends_on=[GenerateExtTables])
+            depends_on=[GenerateExtTables],
+            table_namer=table_namer)
 
         self.qrid_map_dataset_id = sandbox_dataset_id
         self.cope_lookup_dataset_id = cope_lookup_dataset_id
@@ -169,7 +175,7 @@ class COPESurveyVersionTask(BaseCleaningRule):
         """
         Does not remove any records.  Adds info to records.
         """
-        return []
+        return [self.sandbox_table_for(table) for table in self.affected_tables]
 
 
 def add_console_logging(add_handler):

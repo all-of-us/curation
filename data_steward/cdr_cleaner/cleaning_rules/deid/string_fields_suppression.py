@@ -100,7 +100,11 @@ def get_string_fields(domain_table):
 
 class StringFieldsSuppression(BaseCleaningRule):
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id):
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 table_namer=None):
         """
         Initialize the class with proper info.
 
@@ -119,7 +123,8 @@ class StringFieldsSuppression(BaseCleaningRule):
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
-                         affected_tables=CDM_TABLES)
+                         affected_tables=CDM_TABLES,
+                         table_namer=table_namer)
 
     def setup_rule(self, client, *args, **keyword_args):
         """
