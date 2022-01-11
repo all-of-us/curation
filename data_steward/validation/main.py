@@ -912,10 +912,9 @@ def process_hpo_copy(hpo_id):
     # Copy
     for item in allowed_items:
         name = item['name']
+        full_name: str = f'{prefix}{name}'
         hpo_blob = hpo_bucket.get_blob(name)
-        if hpo_blob is not None:
-            full_name: str = f'{prefix}{name}'
-            hpo_bucket.copy_blob(hpo_blob, drc_bucket, full_name)
+        hpo_bucket.copy_blob(hpo_blob, drc_bucket, full_name)
 
 
 @api_util.auth_required_cron
