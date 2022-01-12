@@ -4,7 +4,7 @@ Unit test for delete_stale_test_buckets module
 
 # Python imports
 from unittest import TestCase
-from unittest.mock import patch, Mock, MagicMock
+from unittest.mock import patch, Mock
 from datetime import datetime, timedelta, timezone
 
 # Third party imports
@@ -44,14 +44,14 @@ class DeleteStaleTestBucketsTest(TestCase):
         self.mock_blob = Mock()
         self.mock_blob.name = 'dummy.csv'
 
-    @patch('tools.delete_stale_test_buckets.StorageClient')
+    @patch('tools.delete_stale_test_buckets.get_storage_client')
     def test_check_project_error(self, mock_storage_client):
         mock_storage_client.project = 'aou-wrong-project-name'
 
         with self.assertRaises(ValueError):
             delete_stale_test_buckets._check_project(mock_storage_client)
 
-    @patch('tools.delete_stale_test_buckets.StorageClient')
+    @patch('tools.delete_stale_test_buckets.get_storage_client')
     def test_filter_stale_buckets_all_not_empty(self, mock_storage_client):
         """Test case: All buckets are NOT empty.
         """
@@ -65,7 +65,7 @@ class DeleteStaleTestBucketsTest(TestCase):
 
         self.assertEqual(result, [])
 
-    @patch('tools.delete_stale_test_buckets.StorageClient')
+    @patch('tools.delete_stale_test_buckets.get_storage_client')
     def test_filter_stale_buckets_all_empty(self, mock_storage_client):
         """Test case: All buckets are empty.
         """
@@ -78,7 +78,7 @@ class DeleteStaleTestBucketsTest(TestCase):
         self.assertEqual(
             result, [self.mock_old_bucket_1.name, self.mock_old_bucket_2.name])
 
-    @patch('tools.delete_stale_test_buckets.StorageClient')
+    @patch('tools.delete_stale_test_buckets.get_storage_client')
     def test_filter_stale_buckets_first_n_not_given(self, mock_storage_client):
         """Test case: All buckets are empty. first_n not given.
         """
@@ -91,7 +91,7 @@ class DeleteStaleTestBucketsTest(TestCase):
         self.assertEqual(
             result, [self.mock_old_bucket_1.name, self.mock_old_bucket_2.name])
 
-    @patch('tools.delete_stale_test_buckets.StorageClient')
+    @patch('tools.delete_stale_test_buckets.get_storage_client')
     def test_filter_stale_buckets_first_n_given(self, mock_storage_client):
         """Test case: All buckets are empty. first_n given. first_n < # of stale buckets.
         """

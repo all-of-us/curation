@@ -4,14 +4,32 @@ Interact with Google Cloud Storage (GCS)
 # Python stl imports
 import os
 
-from google.cloud.storage.bucket import Bucket, Blob
-
-# Project imports
-from validation.app_errors import BucketDoesNotExistError
-
 # Third-party imports
 from google.api_core import page_iterator
+from google.auth import default
+from google.cloud.storage.bucket import Bucket, Blob
 from google.cloud.storage.client import Client
+
+# Project imports
+from utils import auth
+from validation.app_errors import BucketDoesNotExistError
+
+
+def get_storage_client(project_id, scopes=None, credentials=None):
+    """
+    Get a storage client for a specified project.
+
+    :param project_id:  Name of the project to create a cloud storage client for
+    :param scopes: List of Google scopes as strings
+    :param credentials: Google credentials object (ignored if scopes is defined,
+        uses delegated credentials instead)
+
+    :return:  A StorageClient instance
+    """
+    if scopes:
+        credentials, project_id = default()
+        credentials = auth.delegated_credentials(credentials, scopes=scopes)
+    return StorageClient(project=project_id, credentials=credentials)
 
 
 class StorageClient(Client):

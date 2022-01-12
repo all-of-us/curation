@@ -23,7 +23,7 @@ class WritersTest(unittest.TestCase):
         self.dataset = 'bar'
         self.site = 'rho'
 
-    @patch('validation.participants.writers.StorageClient')
+    @patch('validation.participants.writers.get_storage_client')
     @patch('validation.participants.writers.gcs_utils.get_drc_bucket')
     @patch('validation.participants.writers.bq_utils.wait_on_jobs')
     @patch('validation.participants.writers.bq_utils.load_csv')
@@ -70,7 +70,7 @@ class WritersTest(unittest.TestCase):
             self.site + consts.VALIDATION_TABLE_SUFFIX,
             write_disposition=consts.WRITE_TRUNCATE)
 
-    @patch('validation.participants.writers.StorageClient')
+    @patch('validation.participants.writers.get_storage_client')
     @patch('validation.participants.writers.gcs_utils.get_drc_bucket')
     @patch('validation.participants.writers.bq_utils.load_csv')
     def test_write_to_result_table_error(self, mock_load_csv, mock_bucket,

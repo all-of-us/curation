@@ -1,12 +1,12 @@
 import os
 import unittest
 
+import app_identity
 import bq_utils
-from gcloud.gcs import StorageClient
+from gcloud.gcs import get_storage_client
 import gcs_utils
 import resources
-import tests.test_util as test_util
-from tests.test_util import FAKE_HPO_ID
+from tests import test_util
 from validation import achilles
 import validation.sql_wrangle as sql_wrangle
 
@@ -25,7 +25,8 @@ class AchillesTest(unittest.TestCase):
 
     def setUp(self):
         self.hpo_bucket = gcs_utils.get_hpo_bucket(test_util.FAKE_HPO_ID)
-        self.storage_client = StorageClient()
+        self.project_id = app_identity.get_application_id()
+        self.storage_client = get_storage_client(self.project_id)
         self.storage_client.empty_bucket(self.hpo_bucket)
         test_util.delete_all_tables(bq_utils.get_dataset_id())
 
@@ -46,26 +47,26 @@ class AchillesTest(unittest.TestCase):
             else:
                 cdm_blob.upload_from_string('dummy\n')
 
-            bq_utils.load_cdm_csv(FAKE_HPO_ID, cdm_table)
+            bq_utils.load_cdm_csv(test_util.FAKE_HPO_ID, cdm_table)
 
     def test_load_analyses(self):
-        achilles.create_tables(FAKE_HPO_ID, True)
-        achilles.load_analyses(FAKE_HPO_ID)
+        achilles.create_tables(test_util.FAKE_HPO_ID, True)
+        achilles.load_analyses(test_util.FAKE_HPO_ID)
         cmd = sql_wrangle.qualify_tables(
             'SELECT DISTINCT(analysis_id) FROM %sachilles_analysis' %
-            sql_wrangle.PREFIX_PLACEHOLDER, FAKE_HPO_ID)
+            sql_wrangle.PREFIX_PLACEHOLDER, test_util.FAKE_HPO_ID)
         result = bq_utils.query(cmd)
         self.assertEqual(ACHILLES_LOOKUP_COUNT, int(result['totalRows']))
 
     def test_run_analyses(self):
         # Long-running test
         self._load_dataset()
-        achilles.create_tables(FAKE_HPO_ID, True)
-        achilles.load_analyses(FAKE_HPO_ID)
-        achilles.run_analyses(hpo_id=FAKE_HPO_ID)
+        achilles.create_tables(test_util.FAKE_HPO_ID, True)
+        achilles.load_analyses(test_util.FAKE_HPO_ID)
+        achilles.run_analyses(hpo_id=test_util.FAKE_HPO_ID)
         cmd = sql_wrangle.qualify_tables(
             'SELECT COUNT(1) FROM %sachilles_results' %
-            sql_wrangle.PREFIX_PLACEHOLDER, FAKE_HPO_ID)
+            sql_wrangle.PREFIX_PLACEHOLDER, test_util.FAKE_HPO_ID)
         result = bq_utils.query(cmd)
         self.assertEqual(int(result['rows'][0]['f'][0]['v']),
                          ACHILLES_RESULTS_COUNT)

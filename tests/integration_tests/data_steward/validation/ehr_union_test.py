@@ -1,4 +1,3 @@
-import json
 import os
 import re
 import unittest
@@ -12,7 +11,7 @@ import cdm
 import common
 from constants.tools import combine_ehr_rdr
 from constants.validation import ehr_union as eu_constants
-from gcloud.gcs import StorageClient
+from gcloud.gcs import get_storage_client
 import gcs_utils
 import resources
 import tests.test_util as test_util
@@ -47,7 +46,7 @@ class EhrUnionTest(unittest.TestCase):
         self.hpo_ids = [PITT_HPO_ID, NYC_HPO_ID, EXCLUDED_HPO_ID]
         self.input_dataset_id = bq_utils.get_dataset_id()
         self.output_dataset_id = bq_utils.get_unioned_dataset_id()
-        self.storage_client = StorageClient()
+        self.storage_client = get_storage_client(self.project_id)
         self.tearDown()
 
         # TODO Generalize to work for all foreign key references

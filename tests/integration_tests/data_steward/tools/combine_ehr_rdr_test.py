@@ -4,11 +4,11 @@ import unittest
 from io import open
 
 # Project imports
+import app_identity
 import bq_utils
 import gcs_utils
 import resources
-from gcloud.gcs import StorageClient
-
+from gcloud.gcs import get_storage_client
 from tests import test_util
 from constants.tools.combine_ehr_rdr import EHR_CONSENT_TABLE_ID, RDR_TABLES_TO_COPY, DOMAIN_TABLES
 from tools.combine_ehr_rdr import (copy_rdr_table, ehr_consent, main,
@@ -27,7 +27,8 @@ UNCONSENTED_EHR_COUNTS_QUERY = (
 
 
 class CombineEhrRdrTest(unittest.TestCase):
-    storage_client = StorageClient()
+    project_id = app_identity.get_application_id()
+    storage_client = get_storage_client(project_id)
 
     @classmethod
     def setUpClass(cls):
@@ -43,33 +44,32 @@ class CombineEhrRdrTest(unittest.TestCase):
                                     test_util.NYC_FIVE_PERSONS_PATH, True)
         cls.load_dataset_from_files(rdr_dataset_id, test_util.RDR_PATH)
 
-    @staticmethod
-    def load_dataset_from_files(dataset_id, path, mappings=False):
+    @classmethod
+    def load_dataset_from_files(cls, dataset_id, path, mappings=False):
         bucket = gcs_utils.get_hpo_bucket(test_util.FAKE_HPO_ID)
-        CombineEhrRdrTest.storage_client.empty_bucket(bucket)
+        cls.storage_client.empty_bucket(bucket)
         job_ids = []
         for table in resources.CDM_TABLES:
             job_ids.append(
-                CombineEhrRdrTest._upload_file_to_bucket(
-                    bucket, dataset_id, path, table))
+                cls._upload_file_to_bucket(bucket, dataset_id, path, table))
             if mappings and table in DOMAIN_TABLES:
                 mapping_table = '_mapping_{table}'.format(table=table)
                 job_ids.append(
-                    CombineEhrRdrTest._upload_file_to_bucket(
-                        bucket, dataset_id, path, mapping_table))
+                    cls._upload_file_to_bucket(bucket, dataset_id, path,
+                                               mapping_table))
         incomplete_jobs = bq_utils.wait_on_jobs(job_ids)
         if len(incomplete_jobs) > 0:
             message = "Job id(s) %s failed to complete" % incomplete_jobs
             raise RuntimeError(message)
-        CombineEhrRdrTest.storage_client.empty_bucket(bucket)
+        cls.storage_client.empty_bucket(bucket)
 
-    @staticmethod
-    def _upload_file_to_bucket(bucket: str, dataset_id: str, path: str,
+    @classmethod
+    def _upload_file_to_bucket(cls, bucket: str, dataset_id: str, path: str,
                                table: str):
         app_id: str = bq_utils.app_identity.get_application_id()
         filename: str = f'{table}.csv'
         file_path: str = os.path.join(path, filename)
-        target_bucket = CombineEhrRdrTest.storage_client.get_bucket(bucket)
+        target_bucket = cls.storage_client.get_bucket(bucket)
         blob = target_bucket.blob(filename)
         try:
             with open(file_path, 'rb') as filepath:

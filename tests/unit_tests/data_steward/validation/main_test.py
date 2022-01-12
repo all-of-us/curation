@@ -437,7 +437,7 @@ class ValidationMainTest(TestCase):
             self.assertEqual('noob', bucket)
             self.assertTrue(filepath.startswith('SUBMISSION/'))
 
-    @mock.patch('validation.main.StorageClient')
+    @mock.patch('validation.main.get_storage_client')
     @mock.patch('gcs_utils.list_bucket')
     @mock.patch('api_util.check_cron')
     def test_copy_files_ignore_dir(self, mock_check_cron, mock_bucket_list,

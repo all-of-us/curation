@@ -3,18 +3,16 @@ Integration test for delete_stale_test_buckets module.
 """
 
 # Python imports
-import os
 from unittest import TestCase
-from unittest.mock import patch, Mock
-from datetime import datetime, timedelta, timezone
-
-from google.api_core.exceptions import NotFound
+from unittest.mock import patch
+from datetime import datetime, timezone
 
 # Third party imports
 
 # Project imports
+import app_identity
 from tools import delete_stale_test_buckets
-from gcloud.gcs import StorageClient
+from gcloud.gcs import get_storage_client
 
 
 class DeleteStaleTestBucketsTest(TestCase):
@@ -26,7 +24,8 @@ class DeleteStaleTestBucketsTest(TestCase):
         print('**************************************************************')
 
     def setUp(self):
-        self.sc = StorageClient()
+        self.project_id = app_identity.get_application_id()
+        self.sc = get_storage_client(self.project_id)
         self.first_n = 3
         self.now = datetime.now(timezone.utc)
 

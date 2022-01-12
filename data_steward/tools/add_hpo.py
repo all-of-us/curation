@@ -9,14 +9,13 @@ import logging
 import csv
 
 # Third party imports
-from googleapiclient.errors import HttpError
 import pandas as pd
 
 # Project imports
 import app_identity
 import bq_utils
 import constants.bq_utils as bq_consts
-from gcloud.gcs import StorageClient
+from gcloud.gcs import get_storage_client
 import resources
 from tools import cli_util
 from utils import bq
@@ -239,7 +238,8 @@ def bucket_access_configured(bucket_name: str) -> bool:
     :param bucket_name: identifies the GCS bucket
     :return: True if the service account has appropriate permissions, False otherwise
     """
-    sc = StorageClient()
+    project_id = app_identity.get_application_id()
+    sc = get_storage_client(project_id)
     bucket = sc.get_bucket(bucket_name)
     permissions: list = bucket.test_iam_permissions("storage.objects.create")
     return len(permissions) >= 1
