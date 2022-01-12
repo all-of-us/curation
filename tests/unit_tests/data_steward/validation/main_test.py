@@ -438,10 +438,8 @@ class ValidationMainTest(TestCase):
             self.assertTrue(filepath.startswith('SUBMISSION/'))
 
     @mock.patch('validation.main.StorageClient')
-    @mock.patch('gcs_utils.list_bucket')
     @mock.patch('api_util.check_cron')
-    def test_copy_files_ignore_dir(self, mock_check_cron, mock_list_bucket,
-                                   mock_storage_client):
+    def test_copy_files_ignore_dir(self, mock_check_cron, mock_storage_client):
         """
         Test copying files to the drc internal bucket.
         This should copy anything in the site's bucket except for files named
@@ -460,7 +458,14 @@ class ValidationMainTest(TestCase):
         mock_drc_bucket = mock.MagicMock()
         mock_source_blob = mock.MagicMock()
 
-        mock_list_bucket.return_value = [{
+        type(mock_hpo_bucket).name = mock.PropertyMock(
+            return_value='fake_prefix')
+        mock_hpo_bucket.get_blob.return_value = mock_source_blob
+        mock_hpo_bucket.copy_blob.return_value = mock_source_blob
+
+        mock_client.get_hpo_bucket.return_value = mock_hpo_bucket
+        mock_client.get_drc_bucket.return_value = mock_drc_bucket
+        mock_client.get_bucket_items_metadata.return_value = [{
             'name': 'participant/site_1/person.csv',
         }, {
             'name': 'PARTICIPANT/site_2/measurement.csv',
@@ -471,14 +476,6 @@ class ValidationMainTest(TestCase):
         }, {
             'name': 'SUBMISSION/measurement.csv',
         }]
-
-        type(mock_hpo_bucket).name = mock.PropertyMock(
-            return_value='fake_prefix')
-        mock_hpo_bucket.get_blob.return_value = mock_source_blob
-        mock_hpo_bucket.copy_blob.return_value = mock_source_blob
-
-        mock_client.get_hpo_bucket.return_value = mock_hpo_bucket
-        mock_client.get_drc_bucket.return_value = mock_drc_bucket
         mock_storage_client.return_value = mock_client
 
         # test
@@ -488,7 +485,7 @@ class ValidationMainTest(TestCase):
         expected = '{"copy-status": "done"}'
         self.assertEqual(result, expected)
         mock_check_cron.assert_called()
-        mock_list_bucket.assert_called()
+        mock_client.get_bucket_items_metadata.assert_called()
 
         mock_client.get_hpo_bucket.assert_called()
         mock_client.get_drc_bucket.assert_called()
