@@ -89,6 +89,10 @@ class GcsClientTest(unittest.TestCase):
         for index, item in enumerate(items):
             self.assertEqual(item[:-1], self.sub_prefixes[index])
 
+    def test_google_not_found_bucket(self):
+        print(self.project_id)
+        self.storage_client.get_bucket('mike_schmidt_not_fake')
+
     def _stage_bucket(self):
 
         bucket = self.storage_client.bucket(self.bucket_name)
