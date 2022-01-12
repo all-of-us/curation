@@ -9,8 +9,6 @@ import unittest
 import app_identity
 from gcloud.gcs import StorageClient
 
-# Third-party imports
-
 
 class GcsClientTest(unittest.TestCase):
 
@@ -22,7 +20,7 @@ class GcsClientTest(unittest.TestCase):
 
     def setUp(self):
         self.project_id = app_identity.get_application_id()
-        self.client = StorageClient(self.project_id)
+        self.storage_client = StorageClient(self.project_id)
         self.bucket_name: str = os.environ.get('BUCKET_NAME_FAKE')
         self.prefix: str = 'prefix'
         self.data: bytes = b'bytes'
@@ -30,12 +28,12 @@ class GcsClientTest(unittest.TestCase):
         # NOTE: this needs to be in sorted order
         self.sub_prefixes: tuple = (f'{self.prefix}/a', f'{self.prefix}/b',
                                     f'{self.prefix}/c', f'{self.prefix}/d')
-        self.client.empty_bucket(self.bucket_name)
+        self.storage_client.empty_bucket(self.bucket_name)
         self._stage_bucket()
 
     def test_get_bucket_items_metadata(self):
 
-        items_metadata: list = self.client.get_bucket_items_metadata(
+        items_metadata: list = self.storage_client.get_bucket_items_metadata(
             self.bucket_name)
 
         actual_metadata: list = [item['name'] for item in items_metadata]
@@ -48,11 +46,11 @@ class GcsClientTest(unittest.TestCase):
 
     def test_get_blob_metadata(self):
 
-        bucket = self.client.get_bucket(self.bucket_name)
+        bucket = self.storage_client.get_bucket(self.bucket_name)
         blob_name: str = f'{self.sub_prefixes[0]}/obj.txt'
 
         blob = bucket.blob(blob_name)
-        metadata: dict = self.client.get_blob_metadata(blob)
+        metadata: dict = self.storage_client.get_blob_metadata(blob)
 
         self.assertIsNotNone(metadata['id'])
         self.assertIsNotNone(metadata['name'])
@@ -73,16 +71,16 @@ class GcsClientTest(unittest.TestCase):
 
     def test_empty_bucket(self):
 
-        self.client.empty_bucket(self.bucket_name)
-        items: list = self.client.list_blobs(self.bucket_name)
+        self.storage_client.empty_bucket(self.bucket_name)
+        items: list = self.storage_client.list_blobs(self.bucket_name)
 
         # check that bucket is empty
         self.assertCountEqual(items, [])
 
     def test_list_sub_prefixes(self):
 
-        items: list = self.client.list_sub_prefixes(self.bucket_name,
-                                                    self.prefix)
+        items: list = self.storage_client.list_sub_prefixes(
+            self.bucket_name, self.prefix)
 
         # Check same number of elements
         self.assertEqual(len(self.sub_prefixes), len(items))
@@ -91,12 +89,16 @@ class GcsClientTest(unittest.TestCase):
         for index, item in enumerate(items):
             self.assertEqual(item[:-1], self.sub_prefixes[index])
 
+    def test_google_not_found_bucket(self):
+        print(self.project_id)
+        self.storage_client.get_bucket('mike_schmidt_not_fake')
+
     def _stage_bucket(self):
 
-        bucket = self.client.bucket(self.bucket_name)
+        bucket = self.storage_client.bucket(self.bucket_name)
         for sub_prefix in self.sub_prefixes:
             blob = bucket.blob(f'{sub_prefix}/obj.txt')
             blob.upload_from_string(self.data)
 
     def tearDown(self):
-        self.client.empty_bucket(self.bucket_name)
+        self.storage_client.empty_bucket(self.bucket_name)
