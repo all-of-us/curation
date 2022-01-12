@@ -36,8 +36,8 @@ from curation_logging.curation_gae_handler import begin_request_logging, end_req
 from retraction import retract_data_bq, retract_data_gcs
 from validation import achilles, achilles_heel, ehr_union, export, hpo_report
 from validation import email_notification as en
-from validation.app_errors import (log_traceback, errors_blueprint,
-                                   InternalValidationError,
+from validation.app_errors import (BucketNotSet, log_traceback,
+                                   errors_blueprint, InternalValidationError,
                                    BucketDoesNotExistError)
 from validation.metrics import completeness, required_labs
 from validation.participants import identity_match as matching
@@ -887,14 +887,20 @@ def process_hpo_copy(hpo_id):
     copies over files from hpo bucket to drc bucket
     :hpo_id: hpo from which to copy
     """
-    try:
-        project_id = app_identity.get_application_id()
-        storage_client = StorageClient(project_id)
-    # Attempt to acquire hpo bucket, raises google.cloud.exceptions.NotFound
+
+    project_id = app_identity.get_application_id()
+    storage_client = StorageClient(project_id)
+
+    bucket_items: list = []
     try:
         hpo_bucket = storage_client.get_hpo_bucket(hpo_id)
         drc_bucket = storage_client.get_drc_bucket()
-        bucket_items: list = list_bucket(hpo_id)
+        bucket_items: list = storage_client.get_bucket_items_metadata(
+            hpo_bucket)
+    except BucketNotSet:
+        logging.info(f"Bucket for hpo_id '{hpo_id}' is empty/unset")
+    except BucketDoesNotExistError:  #TODO phase out BDNE error?  maybe?
+        logging.warning(f"Bucket '{hpo_id}' configured.")
 
     # Filter
     ignored_count: int = 0
@@ -906,7 +912,11 @@ def process_hpo_copy(hpo_id):
         else:
             allowed_items.append(item)
 
-    logging.info(f"Ignoring {ignored_count} items in {hpo_bucket.name}")
+    if ignored_count:
+        logging.info(
+            f"Ignoring {ignored_count} items in {storage_client._get_hpo_bucket_id(hpo_id)}"
+        )
+
     prefix: str = f'{hpo_id}/{hpo_bucket.name}/'
 
     # Copy
