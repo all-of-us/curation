@@ -121,7 +121,7 @@ class StorageClient(Client):
             for blob in page:
                 blob.delete()
 
-    def list_sub_prefixes(self, bucket_name: str, prefix: str) -> None:
+    def list_sub_prefixes(self, bucket_name: str, prefix: str) -> list:
         """
         List sub folders in folder specified by prefix
 
