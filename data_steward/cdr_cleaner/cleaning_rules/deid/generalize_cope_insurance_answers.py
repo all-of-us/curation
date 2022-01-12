@@ -19,6 +19,15 @@ from utils import pipeline_logging
 
 LOGGER = logging.getLogger(__name__)
 
+SANDBOX_RECORDS_QUERY = JINJA_ENV.from_string("""
+CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_id}}.{{sandbox_table}}` AS (
+SELECT * FROM `{{project_id}}.{{dataset_id}}.observation`
+WHERE
+  observation_source_concept_id = 1332737
+  AND value_source_concept_id IN (1332904, 1333140)
+)
+""")
+
 ANSWER_GENERALIZATION_QUERY = JINJA_ENV.from_string("""
 UPDATE
   `{{project_id}}.{{dataset_id}}.observation`
@@ -81,7 +90,10 @@ class GeneralizeCopeInsuranceAnswers(BaseCleaningRule):
                          table_namer=table_namer)
 
     def get_sandbox_tablenames(self):
-        return []
+        """
+        Returns a list of sandbox table names.
+        """
+        return [self.sandbox_table_for(OBSERVATION)]
 
     def get_query_specs(self, *args, **keyword_args):
         """
@@ -92,6 +104,14 @@ class GeneralizeCopeInsuranceAnswers(BaseCleaningRule):
             stored in list order and returned in list order to maintain
             an ordering.
         """
+
+        sandbox_records_query = dict()
+        sandbox_records_query[cdr_consts.QUERY] = SANDBOX_RECORDS_QUERY.render(
+            project_id=self.project_id,
+            sandbox_id=self.sandbox_dataset_id,
+            sandbox_table=self.sandbox_table_for(OBSERVATION),
+            dataset_id=self.dataset_id)
+
         insurance_answers_generalization_query = dict()
         insurance_answers_generalization_query[
             cdr_consts.QUERY] = ANSWER_GENERALIZATION_QUERY.render(
@@ -103,7 +123,7 @@ class GeneralizeCopeInsuranceAnswers(BaseCleaningRule):
                 project_id=self.project_id, dataset_id=self.dataset_id)
 
         return [
-            insurance_answers_generalization_query,
+            sandbox_records_query, insurance_answers_generalization_query,
             generalized_answers_deduplication_query
         ]
 
