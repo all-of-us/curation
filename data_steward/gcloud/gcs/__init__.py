@@ -21,7 +21,17 @@ class StorageClient(Client):
     See https://googleapis.dev/python/storage/latest/client.html
     """
 
-    def __init__(self, project_id, scopes=None, credentials=None):
+    def __init__(self, project_id: str, scopes=None, credentials=None):
+        """
+        Get a storage client for a specified project.
+
+        :param project_id: Identifies the project to create a cloud storage client for
+        :param scopes: List of Google scopes as strings
+        :param credentials: Google credentials object (ignored if scopes is defined,
+            uses delegated credentials instead)
+
+        :return:  A StorageClient instance
+        """
         if scopes:
             credentials, project_id = default()
             credentials = auth.delegated_credentials(credentials, scopes=scopes)
