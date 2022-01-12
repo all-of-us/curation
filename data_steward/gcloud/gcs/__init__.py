@@ -6,6 +6,7 @@ import os
 
 # Third-party imports
 from google.api_core import page_iterator
+from google.cloud.exceptions import NotFound
 from google.auth import default
 from google.cloud.storage.bucket import Bucket, Blob
 from google.cloud.storage.client import Client
@@ -93,10 +94,16 @@ class StorageClient(Client):
             # should not use hpo_id in message if sent to end user.  If the
             # error is logged as a WARNING or higher, this will trigger a
             # GCP alert.
-            raise BucketDoesNotExistError(
-                f"Failed to fetch bucket '{bucket_name}' for hpo '{hpo_site}'",
-                bucket_name)
-        return self.get_bucket(bucket_name)
+            raise BucketNotSet(
+                f"Failed to fetch bucket '{bucket_name}' for hpo '{hpo_site}'")
+
+        try:
+            bucket = self.get_bucket(bucket_name)
+        except NotFound:
+            raise BucketDoesNotExistError('Failed to acquire bucket',
+                                          bucket_name)
+
+        return bucket
 
     def empty_bucket(self, bucket: str, **kwargs) -> None:
         """
