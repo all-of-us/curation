@@ -8,7 +8,7 @@ import app_identity
 import bq_utils
 import gcs_utils
 import resources
-from gcloud.gcs import get_storage_client
+from gcloud.gcs import StorageClient
 from tests import test_util
 from constants.tools.combine_ehr_rdr import EHR_CONSENT_TABLE_ID, RDR_TABLES_TO_COPY, DOMAIN_TABLES
 from tools.combine_ehr_rdr import (copy_rdr_table, ehr_consent, main,
@@ -28,7 +28,7 @@ UNCONSENTED_EHR_COUNTS_QUERY = (
 
 class CombineEhrRdrTest(unittest.TestCase):
     project_id = app_identity.get_application_id()
-    storage_client = get_storage_client(project_id)
+    storage_client = StorageClient(project_id)
 
     @classmethod
     def setUpClass(cls):

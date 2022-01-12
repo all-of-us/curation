@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 
 # Project imports
 import app_identity
-from gcloud.gcs import get_storage_client
+from gcloud.gcs import StorageClient
 from utils import pipeline_logging
 
 LOGGER = logging.getLogger(__name__)
@@ -89,7 +89,7 @@ def main(first_n):
     pipeline_logging.configure(logging.INFO, add_console_handler=True)
 
     project_id = app_identity.get_application_id()
-    sc = get_storage_client(project_id)
+    sc = StorageClient(project_id)
 
     _check_project(sc)
 

@@ -15,28 +15,17 @@ from utils import auth
 from validation.app_errors import BucketDoesNotExistError
 
 
-def get_storage_client(project_id, scopes=None, credentials=None):
-    """
-    Get a storage client for a specified project.
-
-    :param project_id:  Name of the project to create a cloud storage client for
-    :param scopes: List of Google scopes as strings
-    :param credentials: Google credentials object (ignored if scopes is defined,
-        uses delegated credentials instead)
-
-    :return:  A StorageClient instance
-    """
-    if scopes:
-        credentials, project_id = default()
-        credentials = auth.delegated_credentials(credentials, scopes=scopes)
-    return StorageClient(project=project_id, credentials=credentials)
-
-
 class StorageClient(Client):
     """
     A client that extends GCS functionality
     See https://googleapis.dev/python/storage/latest/client.html
     """
+
+    def __init__(self, project_id, scopes=None, credentials=None):
+        if scopes:
+            credentials, project_id = default()
+            credentials = auth.delegated_credentials(credentials, scopes=scopes)
+        super().__init__(project=project_id, credentials=credentials)
 
     def get_bucket_items_metadata(self, bucket: Bucket) -> list:
         """

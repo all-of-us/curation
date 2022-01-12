@@ -26,7 +26,7 @@ import bq_utils
 import cdm
 import common
 import gcs_utils
-from gcloud.gcs import get_storage_client
+from gcloud.gcs import StorageClient
 import resources
 from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON, AOU_REQUIRED_FILES
 from constants.validation import hpo_report as report_consts
@@ -698,7 +698,7 @@ def perform_validation_on_file(file_name, found_file_names, hpo_id,
 
 def _validation_done(bucket, folder):
     project_id = app_identity.get_application_id()
-    storage_client = get_storage_client(project_id)
+    storage_client = StorageClient(project_id)
     bucket = storage_client.get_bucket(bucket)
     return Blob(bucket=bucket,
                 name=f'{folder}{common.PROCESSED_TXT}').exists(storage_client)
@@ -889,7 +889,7 @@ def process_hpo_copy(hpo_id):
     """
     try:
         project_id = app_identity.get_application_id()
-        storage_client = get_storage_client(project_id)
+        storage_client = StorageClient(project_id)
         hpo_bucket = storage_client.get_hpo_bucket(hpo_id)
         drc_private_bucket = storage_client.get_drc_bucket()
         source_bucket = storage_client.get_bucket(hpo_bucket)

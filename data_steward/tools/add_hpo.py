@@ -15,7 +15,7 @@ import pandas as pd
 import app_identity
 import bq_utils
 import constants.bq_utils as bq_consts
-from gcloud.gcs import get_storage_client
+from gcloud.gcs import StorageClient
 import resources
 from tools import cli_util
 from utils import bq
@@ -239,7 +239,7 @@ def bucket_access_configured(bucket_name: str) -> bool:
     :return: True if the service account has appropriate permissions, False otherwise
     """
     project_id = app_identity.get_application_id()
-    sc = get_storage_client(project_id)
+    sc = StorageClient(project_id)
     bucket = sc.get_bucket(bucket_name)
     permissions: list = bucket.test_iam_permissions("storage.objects.create")
     return len(permissions) >= 1

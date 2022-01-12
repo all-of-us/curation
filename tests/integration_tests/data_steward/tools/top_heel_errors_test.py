@@ -6,7 +6,7 @@ from unittest import mock, TestCase
 import app_identity
 import bq_utils
 import common
-from gcloud.gcs import get_storage_client
+from gcloud.gcs import StorageClient
 import gcs_utils
 import resources
 from tests import test_util
@@ -64,7 +64,7 @@ class TopHeelErrorsTest(TestCase):
         self.app_id = app_identity.get_application_id()
         self.dataset_id = bq_utils.get_dataset_id()
         self.bucket: str = gcs_utils.get_drc_bucket()
-        self.storage_client = get_storage_client(self.app_id)
+        self.storage_client = StorageClient(self.app_id)
 
         self.storage_client.empty_bucket(self.bucket)
         test_util.delete_all_tables(self.dataset_id)

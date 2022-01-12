@@ -9,7 +9,7 @@ import bq_utils
 import common
 import app_identity
 import gcs_utils
-from gcloud.gcs import get_storage_client
+from gcloud.gcs import StorageClient
 import resources
 from tests import test_util
 from tests.test_util import (FAKE_HPO_ID, FIVE_PERSONS_PERSON_CSV,
@@ -77,7 +77,7 @@ class BqUtilsTest(unittest.TestCase):
             }
         ]
         self.DT_FORMAT = '%Y-%m-%d %H:%M:%S'
-        self.client = get_storage_client(self.project_id)
+        self.client = StorageClient(self.project_id)
         self.client.empty_bucket(self.hpo_bucket)
 
     def _drop_tables(self):

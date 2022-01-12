@@ -8,7 +8,7 @@ from unittest.mock import patch
 import app_identity
 from tests import test_util
 from retraction import retract_data_gcs as rd
-from gcloud.gcs import get_storage_client
+from gcloud.gcs import StorageClient
 
 
 class RetractDataGcsTest(TestCase):
@@ -26,7 +26,7 @@ class RetractDataGcsTest(TestCase):
         self.site_bucket = 'test_bucket'
         self.folder_1 = '2019-01-01-v1/'
         self.folder_2 = '2019-02-02-v2/'
-        self.client = get_storage_client(self.project_id)
+        self.client = StorageClient(self.project_id)
         self.folder_prefix_1 = f'{self.hpo_id}/{self.site_bucket}/{self.folder_1}'
         self.folder_prefix_2 = f'{self.hpo_id}/{self.site_bucket}/{self.folder_2}'
         self.pids = [17, 20]

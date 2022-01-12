@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 # Project imports
 import app_identity
 from tools import delete_stale_test_buckets
-from gcloud.gcs import get_storage_client
+from gcloud.gcs import StorageClient
 
 
 class DeleteStaleTestBucketsTest(TestCase):
@@ -25,7 +25,7 @@ class DeleteStaleTestBucketsTest(TestCase):
 
     def setUp(self):
         self.project_id = app_identity.get_application_id()
-        self.sc = get_storage_client(self.project_id)
+        self.sc = StorageClient(self.project_id)
         self.first_n = 3
         self.now = datetime.now(timezone.utc)
 

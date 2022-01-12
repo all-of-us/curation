@@ -3,7 +3,7 @@ import unittest
 
 import app_identity
 import bq_utils
-from gcloud.gcs import get_storage_client
+from gcloud.gcs import StorageClient
 import gcs_utils
 import resources
 from tests import test_util
@@ -26,7 +26,7 @@ class AchillesTest(unittest.TestCase):
     def setUp(self):
         self.hpo_bucket = gcs_utils.get_hpo_bucket(test_util.FAKE_HPO_ID)
         self.project_id = app_identity.get_application_id()
-        self.storage_client = get_storage_client(self.project_id)
+        self.storage_client = StorageClient(self.project_id)
         self.storage_client.empty_bucket(self.hpo_bucket)
         test_util.delete_all_tables(bq_utils.get_dataset_id())
 
