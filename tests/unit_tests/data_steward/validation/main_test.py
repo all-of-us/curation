@@ -439,17 +439,16 @@ class ValidationMainTest(TestCase):
 
     @mock.patch('validation.main.StorageClient')
     @mock.patch('api_util.check_cron')
-    def test_copy_files_ignore_dir(self, mock_check_cron, mock_storage_client):
+    def test_copy_files_ignore_all(self, mock_check_cron, mock_storage_client):
         """
         Test copying files to the drc internal bucket.
         This should copy anything in the site's bucket except for files named
         participant.  Copy_files uses a case insensitive match, so any
         capitalization scheme should be detected and left out of the copy.
-        Anything else should be copied.  Mocks are used to determine if the
-        test ran as expected and all statements would execute in a producstion
-        environment.
+        Nothing should be copied.  Mocks are used to determine if the
+        test ran as expected and the get and copy blobs methods were never called.
+
         :param mock_check_cron: mocks the cron decorator.
-        :param mock_bucket_list: mocks the list of items in the hpo bucket.
         :param mock_storage_client: mocks the StorageClient which has bucket and blob functionality.
         """
         # pre-conditions
@@ -471,11 +470,8 @@ class ValidationMainTest(TestCase):
             'name': 'PARTICIPANT/site_2/measurement.csv',
         }, {
             'name': 'Participant/site_3/person.csv',
-        }, {
-            'name': 'submission/person.csv',
-        }, {
-            'name': 'SUBMISSION/measurement.csv',
         }]
+
         mock_storage_client.return_value = mock_client
 
         # test
@@ -485,36 +481,74 @@ class ValidationMainTest(TestCase):
         expected = '{"copy-status": "done"}'
         self.assertEqual(result, expected)
         mock_check_cron.assert_called()
-        mock_client.get_bucket_items_metadata.assert_called()
 
+        # make sure we were given the data
         mock_client.get_hpo_bucket.assert_called()
         mock_client.get_drc_bucket.assert_called()
+        mock_client.get_bucket_items_metadata.assert_called()
 
-        # make sure copy is called for only the non-participant directories
-        expected_allowed: list = [
+        # make sure get/copy was never called for participant directories
+        mock_hpo_bucket.get_blob.assert_not_called()
+        mock_hpo_bucket.copy_blob.assert_not_called()
+
+    @mock.patch('validation.main.StorageClient')
+    @mock.patch('api_util.check_cron')
+    def test_copy_files_accept_all(self, mock_check_cron, mock_storage_client):
+        """
+        Test copying files to the drc internal bucket.
+        This should copy anything in the site's bucket except for files named
+        participant.  Copy_files uses a case insensitive match, so any
+        capitalization scheme should be detected and left out of the copy.
+        Everything should be copied.  Mocks are used to determine if the
+        test ran as expected and all statements would execute in a production
+        environment.
+
+        :param mock_check_cron: mocks the cron decorator.
+        :param mock_storage_client: mocks the StorageClient which has bucket and blob functionality.
+        """
+        # pre-conditions
+        mock_client = mock.MagicMock()
+        mock_hpo_bucket = mock.MagicMock()
+        mock_drc_bucket = mock.MagicMock()
+        mock_source_blob = mock.MagicMock()
+
+        type(mock_hpo_bucket).name = mock.PropertyMock(
+            return_value='fake_prefix')
+        mock_hpo_bucket.get_blob.return_value = mock_source_blob
+        mock_hpo_bucket.copy_blob.return_value = mock_source_blob
+
+        mock_client.get_hpo_bucket.return_value = mock_hpo_bucket
+        mock_client.get_drc_bucket.return_value = mock_drc_bucket
+        mock_client.get_bucket_items_metadata.return_value = [{
+            'name': 'submission/person.csv',
+        }, {
+            'name': 'SUBMISSION/measurement.csv',
+        }]
+
+        mock_storage_client.return_value = mock_client
+
+        # test
+        result = main.copy_files('fake_hpo_id')
+
+        # post conditions
+        expected = '{"copy-status": "done"}'
+        self.assertEqual(result, expected)
+        mock_check_cron.assert_called()
+        # make sure we were given the data
+        mock_client.get_hpo_bucket.assert_called()
+        mock_client.get_drc_bucket.assert_called()
+        mock_client.get_bucket_items_metadata.assert_called()
+
+        expected: list = [
             mock.call(mock_source_blob, mock_drc_bucket,
                       'fake_hpo_id/fake_prefix/submission/person.csv'),
             mock.call(mock_source_blob, mock_drc_bucket,
                       'fake_hpo_id/fake_prefix/SUBMISSION/measurement.csv')
         ]
+        # make sure copy is called for submission directories
         self.assertEqual(mock_hpo_bucket.get_blob.call_count, 2)
         self.assertEqual(mock_hpo_bucket.copy_blob.call_count, 2)
-        mock_hpo_bucket.copy_blob.assert_has_calls(expected_allowed,
-                                                   any_order=True)
-
-        expected_denied: list = [
-            mock.call(mock_source_blob, mock_drc_bucket,
-                      'fake_hpo_id/fake_prefix/participant/foo.pdf'),
-            mock.call(mock_source_blob, mock_drc_bucket,
-                      'fake_hpo_id/fake_prefix/PARTICIPANT/foo.pdf'),
-            mock.call(mock_source_blob, mock_drc_bucket,
-                      'fake_hpo_id/fake_prefix/Participant/site_3/foo.pdf')
-        ]
-
-        self.assertRaises(AssertionError,
-                          mock_hpo_bucket.copy_blob.assert_has_calls,
-                          expected_denied,
-                          any_order=True)
+        mock_hpo_bucket.copy_blob.assert_has_calls(expected, any_order=True)
 
     @mock.patch('bq_utils.table_exists', mock.MagicMock())
     @mock.patch('bq_utils.query', mock.MagicMock())
