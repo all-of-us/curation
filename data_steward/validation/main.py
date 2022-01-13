@@ -897,8 +897,8 @@ def process_hpo_copy(hpo_id):
         drc_bucket = storage_client.get_drc_bucket()
         bucket_items: list = storage_client.get_bucket_items_metadata(
             hpo_bucket)
-    except BucketNotSet:
-        logging.info(f"Bucket for hpo_id '{hpo_id}' is empty/unset")
+    except BucketNotSet as e:
+        logging.info(e.message)
     except BucketDoesNotExistError:  #TODO phase out BDNE error?  maybe?
         logging.warning(f"Bucket '{hpo_id}' configured.")
 
