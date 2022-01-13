@@ -897,34 +897,27 @@ def process_hpo_copy(hpo_id):
         drc_bucket = storage_client.get_drc_bucket()
         bucket_items: list = storage_client.get_bucket_items_metadata(
             hpo_bucket)
-    except BucketNotSet as e:
-        logging.info(e.message)
-    except BucketDoesNotExistError:  #TODO phase out BDNE error?  maybe?
+    except BucketNotSet as exc:
+        logging.info(f"Bucket for hpo_id '{hpo_id}' is empty/unset")
+        # logging.info(exc.message) # exc has no attribute message
+    except BucketDoesNotExistError:
         logging.warning(f"Bucket '{hpo_id}' configured.")
 
-    # Filter
     ignored_count: int = 0
-    allowed_items: list = []
     for item in bucket_items:
         item_root: str = item['name'].split('/')[0] + '/'
         if item_root.lower() in common.IGNORE_DIRECTORIES:
             ignored_count += 1
         else:
-            allowed_items.append(item)
+            name: str = item['name']
+            full_name: str = f'{hpo_id}/{hpo_bucket.name}/{name}'
+            hpo_blob = hpo_bucket.get_blob(name)
+            hpo_bucket.copy_blob(hpo_blob, drc_bucket, full_name)
 
     if ignored_count:
         logging.info(
             f"Ignoring {ignored_count} items in {storage_client._get_hpo_bucket_id(hpo_id)}"
         )
-
-    prefix: str = f'{hpo_id}/{hpo_bucket.name}/'
-
-    # Copy
-    for item in allowed_items:
-        name = item['name']
-        full_name: str = f'{prefix}{name}'
-        hpo_blob = hpo_bucket.get_blob(name)
-        hpo_bucket.copy_blob(hpo_blob, drc_bucket, full_name)
 
 
 @api_util.auth_required_cron
