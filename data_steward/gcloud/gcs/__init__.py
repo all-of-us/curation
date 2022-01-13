@@ -96,7 +96,7 @@ class StorageClient(Client):
             # error is logged as a WARNING or higher, this will trigger a
             # GCP alert.
             raise BucketNotSet(
-                f"Failed to fetch bucket '{bucket_name}' for hpo '{hpo_site}'")
+                f"Bucket '{bucket_name}' for hpo '{hpo_site}' is unset/empty")
 
         try:
             bucket = self.get_bucket(bucket_name)
