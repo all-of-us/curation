@@ -25,9 +25,9 @@ from resources import get_table_id
 from utils import bq, pipeline_logging, auth
 from tools.create_tier import SCOPES
 from common import PS_API_VALUES, DRC_OPS, EHR_OPS
-from .store_participant_summary_results import fetch_and_store_ps_hpo_data
-from .create_update_drc_id_match_table import create_and_populate_drc_validation_table
-from .participant_validation_queries import CREATE_COMPARISON_FUNCTION_QUERIES
+from validation.participants.store_participant_summary_results import fetch_and_store_ps_hpo_data
+from validation.participants.create_update_drc_id_match_table import create_and_populate_drc_validation_table
+from validation.participants.participant_validation_queries import CREATE_COMPARISON_FUNCTION_QUERIES
 from constants.validation.participants.validate import MATCH_FIELDS_QUERY, SUMMARY_QUERY
 from common import PII_ADDRESS, PII_EMAIL, PII_PHONE_NUMBER, PII_NAME, LOCATION, PERSON
 from constants.validation.participants.identity_match import IDENTITY_MATCH_TABLE
@@ -140,11 +140,14 @@ def setup_and_validate_participants(hpo_id):
     project_id = get_application_id()
     client = bq.get_client(project_id)
 
-    create_and_populate_drc_validation_table(client, hpo_id)
-
+    # Fetch Participant summary data
     rdr_project_id = get_rdr_project_id()
     fetch_and_store_ps_hpo_data(client, client.project, rdr_project_id, hpo_id)
 
+    # Populate identity match table based on PS data
+    create_and_populate_drc_validation_table(client, hpo_id)
+
+    # Match values
     identify_rdr_ehr_match(client, client.project, hpo_id, EHR_OPS)
 
 
