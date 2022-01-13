@@ -84,9 +84,10 @@ def save_datasources_json(datasource_id=None,
     datasource = dict(name=datasource_id, folder=datasource_id, cdmVersion=5)
     datasources = dict(datasources=[datasource])
     datasources_fp = StringIO(json.dumps(datasources))
-    result = gcs_utils.upload_object(
-        target_bucket.name, folder_prefix + ACHILLES_EXPORT_DATASOURCES_JSON,
-        datasources_fp)
+    blob = target_bucket.blob(
+        f'{folder_prefix}{ACHILLES_EXPORT_DATASOURCES_JSON}')
+    blob.upload_from_file(datasources_fp)
+    result = storage_client.get_blob_metadata(blob)
     return result
 
 
@@ -120,9 +121,9 @@ def run_export(datasource_id=None, folder_prefix="", target_bucket=None):
         result = export.export_from_path(sql_path, datasource_id)
         content = json.dumps(result)
         fp = StringIO(content)
-        result = gcs_utils.upload_object(target_bucket.name,
-                                         reports_prefix + export_name + '.json',
-                                         fp)
+        blob = target_bucket.blob(f'{reports_prefix}{export_name}.json')
+        blob.upload_from_file(fp)
+        result = storage_client.get_blob_metadata(blob)
         results.append(result)
     result = save_datasources_json(datasource_id=datasource_id,
                                    folder_prefix=folder_prefix,
