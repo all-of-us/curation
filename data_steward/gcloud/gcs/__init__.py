@@ -57,7 +57,7 @@ class StorageClient(Client):
 
         if blob.id is None:
             # Bucket.get_blob() makes an HTTP request, thus we check if we need to
-            blob = self.get_bucket(blob.bucket.name).get_blob(blob.name)
+            blob = self.bucket(blob.bucket.name).get_blob(blob.name)
 
         metadata: dict = {
             'id': blob.id,

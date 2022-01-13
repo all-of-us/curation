@@ -68,7 +68,7 @@ def write_to_result_table(project, dataset, site, match_values):
     # write results
     results.seek(0)
     sc = StorageClient(project)
-    sc_bucket = sc.get_bucket(bucket)
+    sc_bucket = sc.bucket(bucket)
     bucket_blob = sc_bucket.blob(path)
     bucket_blob.upload_from_file(results)
     results.close()
