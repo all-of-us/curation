@@ -183,7 +183,7 @@ class CleanMappingExtTables(BaseCleaningRule):
                     table_id=table_id)
                 sandbox_query[
                     cdr_consts.DESTINATION_DATASET] = self.sandbox_dataset_id
-                sandbox_query[cdr_consts.DESTINATION_TABLE] = table
+                sandbox_query[cdr_consts.DESTINATION_TABLE] = self.sandbox_table_for(table)
                 sandbox_query[cdr_consts.DISPOSITION] = bq_consts.WRITE_APPEND
                 queries.append(sandbox_query)
 
