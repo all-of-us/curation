@@ -68,7 +68,11 @@ class CleanMappingExtTables(BaseCleaningRule):
     that exist after the dataset has been fully cleaned.
     """
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id):
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 table_namer=None):
         """
         Initialize the class with proper info.
 
@@ -89,7 +93,8 @@ class CleanMappingExtTables(BaseCleaningRule):
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
-                         affected_tables=get_mapping_tables())
+                         affected_tables=get_mapping_tables(),
+                         table_namer=table_namer)
         # setting default values for these variables based on table schema
         # definition files and table naming conventions.  These values will be
         # reset when setup_rule is executed.
@@ -178,7 +183,8 @@ class CleanMappingExtTables(BaseCleaningRule):
                     table_id=table_id)
                 sandbox_query[
                     cdr_consts.DESTINATION_DATASET] = self.sandbox_dataset_id
-                sandbox_query[cdr_consts.DESTINATION_TABLE] = table
+                sandbox_query[cdr_consts.
+                              DESTINATION_TABLE] = self.sandbox_table_for(table)
                 sandbox_query[cdr_consts.DISPOSITION] = bq_consts.WRITE_APPEND
                 queries.append(sandbox_query)
 
@@ -217,14 +223,9 @@ class CleanMappingExtTables(BaseCleaningRule):
 
     def get_sandbox_tablenames(self):
         """
-        Returns a list of sandbox table names.
-
-        This abstract method was added to the base class after this rule was
-        authored.  This rule needs to implement returning a list of sandbox
-        table names.  Until done, it is raising an error.  No issue exists for
-        this yet.
+        Returns a list of sandbox table names. 
         """
-        raise NotImplementedError("Please fix me")
+        return [self.sandbox_table_for(table) for table in self.affected_tables]
 
     def setup_validation(self, client):
         """
