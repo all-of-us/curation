@@ -289,14 +289,14 @@ class ValidationMainTest(TestCase):
         self.assertCountEqual(expected_errors, actual_result.get('errors'))
         self.assertCountEqual(expected_warnings, actual_result.get('warnings'))
 
-    @mock.patch('validation.main.gcs_utils.get_hpo_bucket')
+    @mock.patch('validation.main.StorageClient')
     @mock.patch('bq_utils.get_hpo_info')
     @mock.patch('validation.main.list_bucket')
     @mock.patch('logging.exception')
     @mock.patch('api_util.check_cron')
     def test_validate_all_hpos_exception(self, check_cron, mock_logging_error,
                                          mock_list_bucket, mock_hpo_csv,
-                                         mock_hpo_bucket):
+                                         mock_storage_client):
         http_error_string = 'fake http error'
         mock_hpo_csv.return_value = [{'hpo_id': self.hpo_id}]
         mock_list_bucket.side_effect = mock_google_http_error(
@@ -325,9 +325,9 @@ class ValidationMainTest(TestCase):
     @mock.patch('validation.main.is_first_validation_run')
     @mock.patch('validation.main.is_valid_rdr')
     @mock.patch('gcs_utils.list_bucket')
-    @mock.patch('gcs_utils.get_hpo_bucket')
+    @mock.patch('validation.main.StorageClient')
     def test_process_hpo_ignore_dirs(
-        self, mock_hpo_bucket, mock_bucket_list, mock_valid_rdr,
+        self, mock_storage_client, mock_bucket_list, mock_valid_rdr,
         mock_first_validation, mock_has_all_required_files, mock_folder_items,
         mock_validation, mock_get_hpo_name, mock_upload_string_to_gcs,
         mock_get_duplicate_counts_query, mock_query_rows,
@@ -355,7 +355,11 @@ class ValidationMainTest(TestCase):
         """
         # pre-conditions
         mock_valid_folder_name.return_value = True
-        mock_hpo_bucket.return_value = 'noob'
+        mock_client = mock.MagicMock()
+        mock_hpo_bucket = mock.MagicMock()
+        mock_storage_client.return_value = mock_client
+        mock_client.get_hpo_bucket.return_value = mock_hpo_bucket
+        type(mock_hpo_bucket).name = mock.PropertyMock(return_value='noob')
         mock_all_required_files_loaded.return_value = True
         mock_has_all_required_files.return_value = True
         mock_query.return_value = {}
