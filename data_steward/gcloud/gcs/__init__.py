@@ -3,6 +3,7 @@ Interact with Google Cloud Storage (GCS)
 """
 # Python stl imports
 import os
+from typing import Union
 
 # Third-party imports
 from google.api_core import page_iterator
@@ -105,10 +106,10 @@ class StorageClient(Client):
 
         return bucket
 
-    def empty_bucket(self, bucket: str, **kwargs) -> None:
+    def empty_bucket(self, bucket: Union[Bucket, str], **kwargs) -> None:
         """
         Delete all blobs in a bucket.
-        :param name: A GCS bucket name.
+        :param bucket: A GCS bucket, as a Bucket object or a string.
         Some common keyword arguments:
         :param prefix: (Optional) Prefix used to filter blobs.
         (i.e gsutil rm -r gs://bucket/prefix/)
