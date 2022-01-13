@@ -479,7 +479,7 @@ class ValidationMainTest(TestCase):
         mock_storage_client.return_value = mock_client
         mock_client.get_hpo_bucket.return_value = mock_hpo_bucket
         mock_client.get_drc_bucket.return_value = mock_drc_bucket
-        mock_client.get_bucket.side_effect = lambda bucket_name: {
+        mock_client.bucket.side_effect = lambda bucket_name: {
             mock_hpo_bucket: mock_source_bucket,
             mock_drc_bucket: mock_destination_bucket
         }[bucket_name]
@@ -504,7 +504,7 @@ class ValidationMainTest(TestCase):
             mock.call(mock_source_blob, mock_destination_bucket,
                       'noob/noob/SUBMISSION/measurement.csv')
         ]
-        self.assertEqual(mock_client.get_bucket.call_count, 2)
+        self.assertEqual(mock_client.bucket.call_count, 2)
         self.assertEqual(mock_source_bucket.get_blob.call_count, 2)
         self.assertEqual(mock_source_bucket.copy_blob.call_count, 2)
         mock_source_bucket.copy_blob.assert_has_calls(expected_calls,
