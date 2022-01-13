@@ -105,17 +105,16 @@ def run_export(datasource_id=None, folder_prefix="", target_bucket=None):
         raise RuntimeError(
             f"Cannot export if neither hpo_id nor target_bucket is specified.")
     else:
-        datasource_name = datasource_id
         if target_bucket is None:
             target_bucket: Bucket = storage_client.get_hpo_bucket(datasource_id)
         else:
             target_bucket: Bucket = storage_client.get_bucket(target_bucket)
 
     logging.info(
-        f"Exporting {datasource_name} report to bucket {target_bucket.name}")
+        f"Exporting {datasource_id} report to bucket {target_bucket.name}")
 
     # Run export queries and store json payloads in specified folder in the target bucket
-    reports_prefix = folder_prefix + ACHILLES_EXPORT_PREFIX_STRING + datasource_name + '/'
+    reports_prefix = f'{folder_prefix}{ACHILLES_EXPORT_PREFIX_STRING}{datasource_id}/'
     for export_name in common.ALL_REPORTS:
         sql_path = os.path.join(export.EXPORT_PATH, export_name)
         result = export.export_from_path(sql_path, datasource_id)
