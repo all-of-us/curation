@@ -37,7 +37,7 @@ class WritersTest(unittest.TestCase):
         mock_client_blob = MagicMock()
         mock_client = MagicMock()
         mock_storage_client.return_value = mock_client
-        mock_client.get_bucket.return_value = mock_client_bucket
+        mock_client.bucket.return_value = mock_client_bucket
         mock_client_bucket.blob.return_value = mock_client_blob
 
         match = {}
@@ -53,12 +53,12 @@ class WritersTest(unittest.TestCase):
         # post conditions
         self.assertEqual(mock_load_csv.call_count, 1)
         self.assertEqual(mock_wait.call_count, 1)
-        self.assertEqual(mock_client.get_bucket.call_count, 1)
+        self.assertEqual(mock_client.bucket.call_count, 1)
         self.assertEqual(mock_client_bucket.blob.call_count, 1)
         self.assertEqual(mock_client_blob.upload_from_file.call_count, 1)
 
         upload_path = f'{self.dataset}/intermediate_results/{self.site}.csv'
-        mock_client.get_bucket.assert_called_with(bucket_name)
+        mock_client.bucket.assert_called_with(bucket_name)
         mock_client_bucket.blob.assert_called_with(upload_path)
         mock_client_blob.upload_from_file.assert_called_with(ANY)
 
@@ -84,7 +84,7 @@ class WritersTest(unittest.TestCase):
         mock_client_blob = MagicMock()
         mock_client = MagicMock()
         mock_storage_client.return_value = mock_client
-        mock_client.get_bucket.return_value = mock_client_bucket
+        mock_client.bucket.return_value = mock_client_bucket
         mock_client_bucket.blob.return_value = mock_client_blob
 
         match = {}
@@ -101,12 +101,12 @@ class WritersTest(unittest.TestCase):
         # post conditions
         self.assertEqual(mock_load_csv.call_count, 1)
         self.assertEqual(mock_bucket.call_count, 1)
-        self.assertEqual(mock_client.get_bucket.call_count, 1)
+        self.assertEqual(mock_client.bucket.call_count, 1)
         self.assertEqual(mock_client_bucket.blob.call_count, 1)
         self.assertEqual(mock_client_blob.upload_from_file.call_count, 1)
 
         upload_path = f'{self.dataset}/intermediate_results/{self.site}.csv'
-        mock_client.get_bucket.assert_called_with(bucket_name)
+        mock_client.bucket.assert_called_with(bucket_name)
         mock_client_bucket.blob.assert_called_with(upload_path)
         mock_client_blob.upload_from_file.assert_called_with(ANY)
 

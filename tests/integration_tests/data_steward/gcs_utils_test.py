@@ -1,10 +1,14 @@
+# Pyton imports
 import unittest
 from io import open
 
+# Third party imports
 from googleapiclient.errors import HttpError
-from gcloud.gcs import StorageClient
 
+# Project imports
+import app_identity
 import gcs_utils
+from gcloud.gcs import StorageClient
 from tests.test_util import FIVE_PERSONS_PERSON_CSV, FAKE_HPO_ID
 
 
@@ -19,7 +23,8 @@ class GcsUtilsTest(unittest.TestCase):
     def setUp(self):
         self.hpo_bucket = gcs_utils.get_hpo_bucket(FAKE_HPO_ID)
         self.gcs_path = '/'.join([self.hpo_bucket, 'dummy'])
-        self.storage_client = StorageClient()
+        self.project_id = app_identity.get_application_id()
+        self.storage_client = StorageClient(self.project_id)
         self.storage_client.empty_bucket(self.hpo_bucket)
 
     def test_upload_object(self):

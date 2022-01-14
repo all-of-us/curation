@@ -77,7 +77,7 @@ class BqUtilsTest(unittest.TestCase):
             }
         ]
         self.DT_FORMAT = '%Y-%m-%d %H:%M:%S'
-        self.client = StorageClient()
+        self.client = StorageClient(self.project_id)
         self.client.empty_bucket(self.hpo_bucket)
 
     def _drop_tables(self):

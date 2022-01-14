@@ -5,13 +5,14 @@ Stale buckets meet all of the following conditions:
 (2) empty, and 
 (3) in test environment.
 """
-from datetime import datetime, timezone
 import argparse
 import logging
+from datetime import datetime, timezone
 
 # Project imports
-from utils import pipeline_logging
+import app_identity
 from gcloud.gcs import StorageClient
+from utils import pipeline_logging
 
 LOGGER = logging.getLogger(__name__)
 
@@ -87,7 +88,8 @@ def main(first_n):
 
     pipeline_logging.configure(logging.INFO, add_console_handler=True)
 
-    sc = StorageClient()
+    project_id = app_identity.get_application_id()
+    sc = StorageClient(project_id)
 
     _check_project(sc)
 

@@ -697,8 +697,9 @@ def perform_validation_on_file(file_name, found_file_names, hpo_id,
 
 
 def _validation_done(bucket, folder):
-    storage_client = StorageClient()
-    bucket = storage_client.get_bucket(bucket)
+    project_id = app_identity.get_application_id()
+    storage_client = StorageClient(project_id)
+    bucket = storage_client.bucket(bucket)
     return Blob(bucket=bucket,
                 name=f'{folder}{common.PROCESSED_TXT}').exists(storage_client)
 
@@ -887,11 +888,12 @@ def process_hpo_copy(hpo_id):
     :hpo_id: hpo from which to copy
     """
     try:
-        storage_client = StorageClient()
+        project_id = app_identity.get_application_id()
+        storage_client = StorageClient(project_id)
         hpo_bucket = storage_client.get_hpo_bucket(hpo_id)
         drc_private_bucket = storage_client.get_drc_bucket()
-        source_bucket = storage_client.get_bucket(hpo_bucket)
-        destination_bucket = storage_client.get_bucket(drc_private_bucket)
+        source_bucket = storage_client.bucket(hpo_bucket)
+        destination_bucket = storage_client.bucket(drc_private_bucket)
         bucket_items = list_bucket(hpo_bucket)
 
         ignored_items = 0

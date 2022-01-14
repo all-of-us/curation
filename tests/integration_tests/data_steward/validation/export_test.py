@@ -4,6 +4,7 @@ import unittest
 
 import mock
 
+import app_identity
 import bq_utils
 import common
 from gcloud.gcs import StorageClient
@@ -29,7 +30,8 @@ class ExportTest(unittest.TestCase):
 
     def setUp(self):
         self.hpo_bucket = gcs_utils.get_hpo_bucket(FAKE_HPO_ID)
-        self.storage_client = StorageClient()
+        self.project_id = app_identity.get_application_id()
+        self.storage_client = StorageClient(self.project_id)
 
     def _test_report_export(self, report):
         data_density_path = os.path.join(export.EXPORT_PATH, report)

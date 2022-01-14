@@ -5,12 +5,12 @@ from random import randint
 from unittest import mock
 
 # Project imports
+import app_identity
 import bq_utils
 import common
 import gcs_utils
 import resources
 from gcloud.gcs import StorageClient
-
 import tests.test_util as test_util
 from tests.test_util import FAKE_HPO_ID
 from validation import achilles_heel
@@ -31,7 +31,8 @@ class AchillesHeelTest(unittest.TestCase):
     def setUp(self):
         self.hpo_bucket = gcs_utils.get_hpo_bucket(FAKE_HPO_ID)
         self.dataset = bq_utils.get_dataset_id()
-        self.storage_client = StorageClient()
+        self.project_id = app_identity.get_application_id()
+        self.storage_client = StorageClient(self.project_id)
         self.storage_client.empty_bucket(self.hpo_bucket)
         test_util.delete_all_tables(self.dataset)
 

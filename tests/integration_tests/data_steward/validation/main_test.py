@@ -45,7 +45,7 @@ class ValidationMainTest(unittest.TestCase):
         self.bigquery_dataset_id = bq_utils.get_dataset_id()
         self.folder_prefix = '2019-01-01-v1/'
 
-        self.storage_client = StorageClient()
+        self.storage_client = StorageClient(self.project_id)
         self.storage_bucket = self.storage_client.get_bucket(self.hpo_bucket)
         self.storage_client.empty_bucket(self.hpo_bucket)
 

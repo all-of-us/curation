@@ -9,7 +9,6 @@ import logging
 import csv
 
 # Third party imports
-from googleapiclient.errors import HttpError
 import pandas as pd
 
 # Project imports
@@ -239,7 +238,8 @@ def bucket_access_configured(bucket_name: str) -> bool:
     :param bucket_name: identifies the GCS bucket
     :return: True if the service account has appropriate permissions, False otherwise
     """
-    sc = StorageClient()
+    project_id = app_identity.get_application_id()
+    sc = StorageClient(project_id)
     bucket = sc.get_bucket(bucket_name)
     permissions: list = bucket.test_iam_permissions("storage.objects.create")
     return len(permissions) >= 1

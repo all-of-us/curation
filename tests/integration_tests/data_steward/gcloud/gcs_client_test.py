@@ -6,6 +6,7 @@ import os
 import unittest
 
 # Project imports
+import app_identity
 from gcloud.gcs import StorageClient
 
 # Third-party imports
@@ -20,7 +21,8 @@ class GcsClientTest(unittest.TestCase):
         print('**************************************************************')
 
     def setUp(self):
-        self.client = StorageClient()
+        self.project_id = app_identity.get_application_id()
+        self.client = StorageClient(self.project_id)
         self.bucket_name: str = os.environ.get('BUCKET_NAME_FAKE')
         self.prefix: str = 'prefix'
         self.data: bytes = b'bytes'

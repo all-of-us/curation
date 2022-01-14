@@ -37,7 +37,7 @@ class RequiredLabsTest(unittest.TestCase):
         self.folder_prefix = '2019-01-01/'
         test_util.delete_all_tables(self.dataset_id)
 
-        self.storage_client = StorageClient()
+        self.storage_client = StorageClient(self.project_id)
         self.storage_client.empty_bucket(self.hpo_bucket)
 
         self.client = bq.get_client(self.project_id)

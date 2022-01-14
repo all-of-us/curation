@@ -4,7 +4,7 @@ Unit test for delete_stale_test_buckets module
 
 # Python imports
 from unittest import TestCase
-from unittest.mock import patch, Mock, MagicMock
+from unittest.mock import patch, Mock
 from datetime import datetime, timedelta, timezone
 
 # Third party imports

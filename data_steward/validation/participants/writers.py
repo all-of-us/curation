@@ -5,7 +5,6 @@ A module to write participant identity matching table data.
 """
 # Python imports
 import logging
-import os
 from io import StringIO
 
 # Third party imports
@@ -17,7 +16,6 @@ import bq_utils
 import constants.validation.participants.writers as consts
 import gcs_utils
 from gcloud.gcs import StorageClient
-from resources import fields_path
 
 LOGGER = logging.getLogger(__name__)
 
@@ -69,8 +67,8 @@ def write_to_result_table(project, dataset, site, match_values):
 
     # write results
     results.seek(0)
-    sc = StorageClient()
-    sc_bucket = sc.get_bucket(bucket)
+    sc = StorageClient(project)
+    sc_bucket = sc.bucket(bucket)
     bucket_blob = sc_bucket.blob(path)
     bucket_blob.upload_from_file(results)
     results.close()
