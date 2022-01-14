@@ -61,10 +61,10 @@ class TopHeelErrorsTest(TestCase):
         print('**************************************************************')
 
     def setUp(self):
-        self.app_id = app_identity.get_application_id()
+        self.project_id = app_identity.get_application_id()
         self.dataset_id = bq_utils.get_dataset_id()
         self.bucket: str = gcs_utils.get_drc_bucket()
-        self.storage_client = StorageClient(self.app_id)
+        self.storage_client = StorageClient(self.project_id)
 
         self.storage_client.empty_bucket(self.bucket)
         test_util.delete_all_tables(self.dataset_id)
@@ -92,7 +92,7 @@ class TopHeelErrorsTest(TestCase):
         test_blob.upload_from_filename(test_file_path)
 
         gcs_path: str = f'gs://{self.bucket}/{test_file_name}'
-        load_results = bq_utils.load_csv(table_name, gcs_path, self.app_id,
+        load_results = bq_utils.load_csv(table_name, gcs_path, self.project_id,
                                          self.dataset_id, table_id)
         job_id = load_results['jobReference']['jobId']
         bq_utils.wait_on_jobs([job_id])
@@ -104,7 +104,7 @@ class TopHeelErrorsTest(TestCase):
             row[FIELD_DATASET_NAME] = self.dataset_id
         errors = top_n_errors(rows)
         expected_results = comparison_view(errors)
-        dataset_errors = top_heel_errors(self.app_id, self.dataset_id)
+        dataset_errors = top_heel_errors(self.project_id, self.dataset_id)
         actual_results = comparison_view(dataset_errors)
         self.assertCountEqual(actual_results, expected_results)
 
@@ -119,7 +119,7 @@ class TopHeelErrorsTest(TestCase):
                 row[FIELD_DATASET_NAME] = hpo_id
             errors = top_n_errors(rows)
             expected_results += comparison_view(errors)
-        dataset_errors = top_heel_errors(self.app_id,
+        dataset_errors = top_heel_errors(self.project_id,
                                          self.dataset_id,
                                          all_hpo=True)
         actual_results = comparison_view(dataset_errors)
