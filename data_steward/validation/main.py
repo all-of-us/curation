@@ -899,9 +899,8 @@ def process_hpo_copy(hpo_id):
             hpo_bucket)
     except BucketNotSet:
         logging.info(f"Bucket for hpo_id '{hpo_id}' is empty/unset")
-        # logging.info(exc.message) # exc has no attribute message
-    except BucketDoesNotExistError:
-        logging.warning(f"Bucket '{hpo_id}' configured.")
+    except BucketDoesNotExistError as exc:
+        logging.warning(f"{exc} using hpo_id '{hpo_id}'")
 
     ignored_count: int = 0
     for item in bucket_items:
