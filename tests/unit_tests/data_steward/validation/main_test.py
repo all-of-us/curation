@@ -313,7 +313,6 @@ class ValidationMainTest(TestCase):
     @mock.patch('validation.main.is_valid_folder_prefix_name')
     @mock.patch('validation.main.run_export')
     @mock.patch('validation.main.run_achilles')
-    @mock.patch('gcs_utils.upload_object')
     @mock.patch('validation.main.all_required_files_loaded')
     @mock.patch('validation.main.query_rows')
     @mock.patch('validation.main.get_duplicate_counts_query')
@@ -331,8 +330,8 @@ class ValidationMainTest(TestCase):
         mock_first_validation, mock_has_all_required_files, mock_folder_items,
         mock_validation, mock_get_hpo_name, mock_upload_string_to_gcs,
         mock_get_duplicate_counts_query, mock_query_rows,
-        mock_all_required_files_loaded, mock_upload, mock_run_achilles,
-        mock_export, mock_valid_folder_name, mock_query):
+        mock_all_required_files_loaded, mock_run_achilles, mock_export,
+        mock_valid_folder_name, mock_query):
         """
         Test process_hpo with directories we want to ignore.
 
@@ -356,10 +355,12 @@ class ValidationMainTest(TestCase):
         # pre-conditions
         mock_valid_folder_name.return_value = True
         mock_client = mock.MagicMock()
-        mock_hpo_bucket = mock.MagicMock()
+        mock_bucket = mock.MagicMock()
+        mock_blob = mock.MagicMock()
         mock_storage_client.return_value = mock_client
-        mock_client.get_hpo_bucket.return_value = mock_hpo_bucket
-        type(mock_hpo_bucket).name = mock.PropertyMock(return_value='noob')
+        mock_client.get_hpo_bucket.return_value = mock_bucket
+        type(mock_bucket).name = mock.PropertyMock(return_value='noob')
+        mock_bucket.blob.return_value = mock_blob
         mock_all_required_files_loaded.return_value = True
         mock_has_all_required_files.return_value = True
         mock_query.return_value = {}
@@ -416,30 +417,26 @@ class ValidationMainTest(TestCase):
         main.process_hpo('noob', force_run=True)
 
         # post conditions
-        self.assertTrue(mock_folder_items.called)
-        self.assertEqual(
-            mock_folder_items.assert_called_once_with(
-                mock_bucket_list.return_value, 'SUBMISSION/'), None)
-        self.assertTrue(mock_validation.called)
-        self.assertEqual(
-            mock_validation.assert_called_once_with(
-                'noob', 'noob', mock_folder_items.return_value, 'SUBMISSION/'),
-            None)
-        self.assertTrue(mock_run_achilles.called)
-        self.assertTrue(mock_export.called)
-        self.assertEqual(
-            mock_export.assert_called_once_with(datasource_id='noob',
-                                                folder_prefix='SUBMISSION/'),
-            None)
+        mock_folder_items.assert_called()
+        mock_folder_items.assert_called_once_with(mock_bucket_list.return_value,
+                                                  'SUBMISSION/')
+        mock_validation.assert_called()
+        mock_validation.assert_called_once_with('noob', 'noob',
+                                                mock_folder_items.return_value,
+                                                'SUBMISSION/')
+        mock_run_achilles.assert_called()
+        mock_export.assert_called()
+        mock_export.assert_called_once_with(datasource_id='noob',
+                                            folder_prefix='SUBMISSION/')
         # make sure upload is called for only the most recent
         # non-participant directory
-        self.assertTrue(mock_upload.called)
-        for call in mock_upload.call_args_list:
-            args, _ = call
-            bucket = args[0]
-            filepath = args[1]
-            self.assertEqual('noob', bucket)
+        mock_client.get_hpo_bucket.assert_called()
+        mock_bucket.blob.assert_called()
+        mock_blob.upload_from_file.assert_called()
+        for filepath in mock_bucket.blob.call_args_list:
+            self.assertEqual('noob', type(mock_bucket).name)
             self.assertTrue(filepath.startswith('SUBMISSION/'))
+        mock_client.get_blob_metadata.assert_called()
 
     @mock.patch('validation.main.StorageClient')
     @mock.patch('api_util.check_cron')
