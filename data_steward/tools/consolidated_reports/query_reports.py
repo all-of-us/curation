@@ -61,7 +61,7 @@ def get_most_recent(report_for=None):
     :return: list of dict with keys `file_path`, `upload_timestamp`
     """
     app_id = app_identity.get_application_id()
-    storage_client = StorageClient()
+    storage_client = StorageClient(app_id)
     drc_bucket = storage_client.get_drc_bucket()
     if report_for == common.REPORT_FOR_ACHILLES:
         if not os.path.exists(common.LATEST_REPORTS_JSON):

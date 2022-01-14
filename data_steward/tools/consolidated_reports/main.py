@@ -3,10 +3,12 @@ import os
 
 import gcs_utils
 from gcloud.gcs import StorageClient
+import app_identity
 from tools.consolidated_reports import query_reports
 from io import open
 
-storage_client = StorageClient()
+project_id = app_identity.get_application_id()
+storage_client = StorageClient(project_id)
 drc_bucket = storage_client.get_drc_bucket()
 DRC_BUCKET_PATH = f'gs://{drc_bucket.name}/'
 DATASOURCES_PATH = 'curation_report/data/datasources.json'
