@@ -159,9 +159,10 @@ def _upload_achilles_files(hpo_id=None, folder_prefix='', target_bucket=None):
     :returns:
     """
     results = []
-    storage_client = StorageClient()
+    project_id = app_identity.get_application_id()
+    storage_client = StorageClient(project_id)
     if target_bucket is not None:
-        bucket: Bucket = storage_client.get_bucket(target_bucket)
+        bucket: Bucket = storage_client.bucket(target_bucket)
     else:
         if hpo_id is None:
             raise RuntimeError(
@@ -508,7 +509,8 @@ def process_hpo(hpo_id, force_run=False):
     """
     try:
         logging.info(f"Processing hpo_id {hpo_id}")
-        storage_client = StorageClient()
+        project_id = app_identity.get_application_id()
+        storage_client = StorageClient(project_id)
         bucket: Bucket = storage_client.get_hpo_bucket(hpo_id)
         bucket_items = list_bucket(bucket.name)
         folder_prefix = _get_submission_folder(bucket.name, bucket_items,
