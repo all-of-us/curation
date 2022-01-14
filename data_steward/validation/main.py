@@ -177,8 +177,9 @@ def _upload_achilles_files(hpo_id=None, folder_prefix='', target_bucket=None):
         bucket_file_name = filename.split(resources.resource_files_path +
                                           os.sep)[1].strip().replace('\\', '/')
         with open(filename, 'rb') as fp:
-            upload_result = gcs_utils.upload_object(
-                bucket.name, folder_prefix + bucket_file_name, fp)
+            blob = bucket.blob(f'{folder_prefix}{bucket_file_name}')
+            blob.upload_from_file(fp)
+            upload_result = storage_client.get_blob_metadata(blob)
             results.append(upload_result)
     return results
 
