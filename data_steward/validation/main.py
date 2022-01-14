@@ -897,7 +897,7 @@ def process_hpo_copy(hpo_id):
         drc_bucket = storage_client.get_drc_bucket()
         bucket_items: list = storage_client.get_bucket_items_metadata(
             hpo_bucket)
-    except BucketNotSet as exc:
+    except BucketNotSet:
         logging.info(f"Bucket for hpo_id '{hpo_id}' is empty/unset")
         # logging.info(exc.message) # exc has no attribute message
     except BucketDoesNotExistError:
@@ -914,10 +914,8 @@ def process_hpo_copy(hpo_id):
             hpo_blob = hpo_bucket.get_blob(name)
             hpo_bucket.copy_blob(hpo_blob, drc_bucket, full_name)
 
-    if ignored_count:
-        logging.info(
-            f"Ignoring {ignored_count} items in {storage_client._get_hpo_bucket_id(hpo_id)}"
-        )
+    logging.info(f"Ignoring {ignored_count} of {len(bucket_items)} "
+                 f"items in {storage_client._get_hpo_bucket_id(hpo_id)}")
 
 
 @api_util.auth_required_cron
