@@ -213,10 +213,6 @@ def delete_all_tables(dataset_id):
     return deleted
 
 
-def read_cloud_file(bucket, name):
-    return gcs_utils.get_object(bucket, name)
-
-
 def populate_achilles(hpo_id=FAKE_HPO_ID, include_heel=True):
     from validation import achilles, achilles_heel
     import app_identity
