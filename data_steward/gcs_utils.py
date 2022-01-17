@@ -161,31 +161,6 @@ def list_bucket_prefixes(gcs_path):
 
 
 @deprecated(reason=(
-    'See https://googleapis.dev/python/storage/latest/buckets.html#google.cloud.storage.bucket.Bucket.get_blob '
-    'and use gcloud.gcs.StorageClient() instead'))
-def get_object(bucket, name, as_text=True):
-    """
-    Download object from a bucket
-    :param bucket: the bucket containing the file
-    :param name: name of the file to download
-    :param as_text: True if result should be decoded as text (default) otherwise bytes are returned
-    :return: file contents
-    """
-    service = create_service()
-    req = service.objects().get_media(bucket=bucket, object=name)
-    out_file = BytesIO()
-    downloader = googleapiclient.http.MediaIoBaseDownload(out_file, req)
-    done = False
-    while not done:
-        status, done = downloader.next_chunk()
-    result_bytes = out_file.getvalue()
-    out_file.close()
-    if as_text:
-        return result_bytes.decode()
-    return result_bytes
-
-
-@deprecated(reason=(
     'See https://googleapis.dev/python/storage/latest/blobs.html#google.cloud.storage.blob.Blob.upload_from_string '
     'and use gcloud.gcs.StorageClient() instead'))
 def upload_object(bucket, name, fp):
