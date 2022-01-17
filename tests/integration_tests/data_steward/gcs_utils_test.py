@@ -37,14 +37,6 @@ class GcsUtilsTest(unittest.TestCase):
         bucket_item = bucket_items[0]
         self.assertEqual(bucket_item['name'], 'person.csv')
 
-    def test_get_object(self):
-        with open(FIVE_PERSONS_PERSON_CSV, 'r') as fp:
-            expected = fp.read()
-        with open(FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
-            gcs_utils.upload_object(self.hpo_bucket, 'person.csv', fp)
-        result = gcs_utils.get_object(self.hpo_bucket, 'person.csv')
-        self.assertEqual(expected, result)
-
     def test_get_metadata_on_existing_file(self):
         expected_file_name = 'person.csv'
         with open(FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
