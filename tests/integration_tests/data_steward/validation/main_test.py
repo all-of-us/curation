@@ -311,8 +311,9 @@ class ValidationMainTest(unittest.TestCase):
         main.app.testing = True
         with main.app.test_client() as c:
             c.get(test_util.VALIDATE_HPO_FILES_URL)
-            actual_result = test_util.read_cloud_file(
-                self.hpo_bucket, self.folder_prefix + common.RESULTS_HTML)
+            actual_result = self.storage_bucket.get_blob(
+                f'{self.folder_prefix}{common.RESULTS_HTML}').download_as_text(
+                )
 
         # ensure emails are not sent
         bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
