@@ -654,9 +654,14 @@ def write_results_to_site_buckets(storage_client, validation_dataset):
             LOGGER.exception(f"Encountered {str(exc)}")
             raise exc
 
-        _ = writers.create_site_validation_report(storage_client,
-                                                  validation_dataset, [site],
-                                                  blob)
+        errors = writers.create_site_validation_report(storage_client,
+                                                       validation_dataset,
+                                                       [site], blob)
+
+        if errors > 0:
+            LOGGER.error(
+                f"Encountered {errors} read errors when writing {site} site report"
+            )
 
 
 def write_results_to_drc_bucket(storage_client, validation_dataset=None):
