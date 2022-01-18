@@ -19,6 +19,7 @@ import oauth2client
 
 # Project imports
 import bq_utils
+import app_identity
 from gcloud.gcs import StorageClient
 from constants import bq_utils as bq_consts
 from constants.validation.participants import identity_match as consts
@@ -1022,7 +1023,8 @@ def match_participants(project, rdr_dataset, ehr_dataset, dest_dataset_id):
 
 
 def generate_reports(dest_dataset):
-    storage_client = StorageClient()
+    project_id: str = app_identity.get_application_id()
+    storage_client = StorageClient(project_id)
     write_results_to_drc_bucket(storage_client, dest_dataset)
 
 
