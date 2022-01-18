@@ -10,7 +10,6 @@ import bq_utils
 import common
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.validation import main
-import gcs_utils
 import resources
 
 RESOURCES_BUCKET_FMT = '{project_id}-resources'
@@ -211,10 +210,6 @@ def delete_all_tables(dataset_id):
             bq_utils.delete_table(table_id, dataset_id)
             deleted.append(table_id)
     return deleted
-
-
-def read_cloud_file(bucket, name):
-    return gcs_utils.get_object(bucket, name)
 
 
 def populate_achilles(hpo_id=FAKE_HPO_ID, include_heel=True):

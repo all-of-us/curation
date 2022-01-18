@@ -214,13 +214,13 @@ class ValidationMainTest(unittest.TestCase):
         main.app.testing = True
         with main.app.test_client() as c:
             c.get(test_util.COPY_HPO_FILES_URL)
-            prefix = test_util.FAKE_HPO_ID + '/' + self.hpo_bucket + '/' + self.folder_prefix
+            prefix: str = f'{test_util.FAKE_HPO_ID}/{self.hpo_bucket}/{self.folder_prefix}'
             expected_bucket_items = [
-                prefix + item.split(os.sep)[-1]
+                f'{prefix}{item.split(os.sep)[-1]}'
                 for item in test_util.FIVE_PERSONS_FILES
             ]
             expected_bucket_items.extend([
-                prefix + self.folder_prefix + item.split(os.sep)[-1]
+                f'{prefix}{self.folder_prefix}{item.split(os.sep)[-1]}'
                 for item in test_util.FIVE_PERSONS_FILES
             ])
 
@@ -241,7 +241,7 @@ class ValidationMainTest(unittest.TestCase):
         actual_bucket_files = set(
             [item['name'] for item in gcs_utils.list_bucket(bucket_nyc)])
         expected_bucket_files = set([
-            'test-folder-fake/' + item
+            f'test-folder-fake/{item}'
             for item in resources.ALL_ACHILLES_INDEX_FILES
         ])
         self.assertSetEqual(expected_bucket_files, actual_bucket_files)
@@ -311,8 +311,9 @@ class ValidationMainTest(unittest.TestCase):
         main.app.testing = True
         with main.app.test_client() as c:
             c.get(test_util.VALIDATE_HPO_FILES_URL)
-            actual_result = test_util.read_cloud_file(
-                self.hpo_bucket, self.folder_prefix + common.RESULTS_HTML)
+            actual_result = self.storage_bucket.get_blob(
+                f'{self.folder_prefix}{common.RESULTS_HTML}').download_as_text(
+                )
 
         # ensure emails are not sent
         bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
