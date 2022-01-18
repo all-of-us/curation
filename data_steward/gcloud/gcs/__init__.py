@@ -14,7 +14,7 @@ from google.cloud.storage.client import Client
 
 # Project imports
 from utils import auth
-from validation.app_errors import BucketDoesNotExistError
+from validation.app_errors import BucketDoesNotExistError, BucketNotSet
 
 
 class StorageClient(Client):
@@ -81,14 +81,14 @@ class StorageClient(Client):
     def get_drc_bucket(self) -> Bucket:
         return self.get_bucket(os.environ.get('DRC_BUCKET_NAME'))
 
-    def get_hpo_bucket(self, hpo_site: str) -> Bucket:
+    def get_hpo_bucket(self, hpo_id: str) -> Bucket:
         """
         Get the name of an HPO site's private bucket
         Empty/unset bucket indicates that the bucket is intentionally left blank and can be ignored
         :param hpo_id: id of the HPO site
         :return: name of the bucket
         """
-        bucket_name: str = self._get_hpo_bucket_id(hpo_site)
+        bucket_name: str = self._get_hpo_bucket_id(hpo_id)
 
         # App engine converts an env var set but left empty to be the string 'None'
         if not bucket_name or bucket_name.lower() == 'none':
@@ -96,13 +96,14 @@ class StorageClient(Client):
             # error is logged as a WARNING or higher, this will trigger a
             # GCP alert.
             raise BucketNotSet(
-                f"Bucket '{bucket_name}' for hpo '{hpo_site}' is unset/empty")
+                f"Bucket '{bucket_name}' for hpo '{hpo_id}' is unset/empty")
 
         try:
             bucket = self.get_bucket(bucket_name)
         except NotFound:
-            raise BucketDoesNotExistError('Failed to acquire bucket',
-                                          bucket_name)
+            raise BucketDoesNotExistError(
+                f"Failed to acquire bucket '{bucket_name}' for hpo '{hpo_id}'",
+                bucket_name)
 
         return bucket
 

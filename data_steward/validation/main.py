@@ -897,10 +897,10 @@ def process_hpo_copy(hpo_id):
         drc_bucket = storage_client.get_drc_bucket()
         bucket_items: list = storage_client.get_bucket_items_metadata(
             hpo_bucket)
-    except BucketNotSet:
-        logging.info(f"Bucket for hpo_id '{hpo_id}' is empty/unset")
+    except BucketNotSet as exc:
+        logging.info(f'{exc}')
     except BucketDoesNotExistError as exc:
-        logging.warning(f"{exc} using hpo_id '{hpo_id}'")
+        logging.warning(f'{exc}')
 
     ignored_count: int = 0
     for item in bucket_items:
@@ -915,7 +915,7 @@ def process_hpo_copy(hpo_id):
 
     logging.info(
         f"Ignoring {ignored_count} of {len(bucket_items)} items in bucket "
-        f"{storage_client._get_hpo_bucket_id(hpo_id)} for hpo_id {hpo_id}")
+        f"{storage_client._get_hpo_bucket_id(hpo_id)} for hpo {hpo_id}")
 
 
 @api_util.auth_required_cron
