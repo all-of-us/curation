@@ -16,7 +16,6 @@ from io import StringIO, open
 # Third party imports
 import dateutil
 from flask import Flask
-from google.cloud.exceptions import NotFound
 from googleapiclient.errors import HttpError
 from google.cloud.storage import Blob
 
@@ -204,9 +203,6 @@ def validate_all_hpos():
 def list_bucket(bucket):
     try:
         return gcs_utils.list_bucket(bucket)
-    except NotFound:
-        raise BucketDoesNotExistError(
-            f"Failed to list objects in bucket {bucket}", bucket)
     except Exception as e:
         msg = getattr(e, 'message', repr(e))
         logging.exception(f"Unknown error {msg}")
