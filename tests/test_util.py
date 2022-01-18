@@ -10,7 +10,6 @@ import bq_utils
 import common
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.validation import main
-import gcs_utils
 import resources
 
 RESOURCES_BUCKET_FMT = '{project_id}-resources'
