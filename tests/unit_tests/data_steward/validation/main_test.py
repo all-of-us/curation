@@ -10,10 +10,10 @@ from unittest import TestCase, mock
 # Project imports
 import common
 import resources
-from validation import main
 from constants.validation import hpo_report as report_consts
 from constants.validation import main as main_consts
 from constants.validation.participants import identity_match as id_match_consts
+from validation import main
 from tests.test_util import mock_google_http_error
 
 
