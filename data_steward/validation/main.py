@@ -203,6 +203,11 @@ def validate_all_hpos():
 def list_bucket(bucket):
     try:
         return gcs_utils.list_bucket(bucket)
+    except HttpError as err:
+        if err.resp.status == 404:
+            raise BucketDoesNotExistError(
+                f"Failed to list objects in bucket {bucket}", bucket)
+        raise
     except Exception as e:
         msg = getattr(e, 'message', repr(e))
         logging.exception(f"Unknown error {msg}")
