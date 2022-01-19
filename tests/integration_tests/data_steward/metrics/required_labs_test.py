@@ -10,7 +10,6 @@ import app_identity
 import bq_utils
 import common
 from gcloud.gcs import StorageClient
-import gcs_utils
 import resources
 import validation.sql_wrangle as sql_wrangle
 from utils import bq
@@ -30,20 +29,20 @@ class RequiredLabsTest(unittest.TestCase):
         print('**************************************************************')
 
     def setUp(self):
-        self.hpo_bucket = gcs_utils.get_hpo_bucket(FAKE_HPO_ID)
+
         self.project_id = app_identity.get_application_id()
+        self.storage_client = StorageClient(self.project_id)
+        self.hpo_bucket = self.storage_client.get_hpo_bucket(FAKE_HPO_ID)
+        self.storage_client.empty_bucket(self.hpo_bucket)
+
         self.dataset_id = bq_utils.get_dataset_id()
         self.rdr_dataset_id = bq_utils.get_rdr_dataset_id()
         self.folder_prefix = '2019-01-01/'
         test_util.delete_all_tables(self.dataset_id)
 
-        self.storage_client = StorageClient(self.project_id)
-        self.storage_client.empty_bucket(self.hpo_bucket)
-
         self.client = bq.get_client(self.project_id)
 
         mock_get_hpo_name = mock.patch('validation.main.get_hpo_name')
-
         self.mock_get_hpo_name = mock_get_hpo_name.start()
         self.mock_get_hpo_name.return_value = 'Fake HPO'
         self.addCleanup(mock_get_hpo_name.stop)
