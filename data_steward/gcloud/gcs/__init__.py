@@ -124,7 +124,6 @@ class StorageClient(Client):
     def list_sub_prefixes(self, bucket_name: str, prefix: str) -> list:
         """
         List sub folders in folder specified by prefix
-
         SO link: https://stackoverflow.com/a/59008580
         :param bucket: GCS bucket name as string
         :param prefix: path to directory to look into e.g. a/b/c/
