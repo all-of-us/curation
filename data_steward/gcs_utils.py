@@ -50,15 +50,10 @@ def get_hpo_bucket(hpo_id):
 
     query_result = bq_client.query(hpo_bucket_query)
 
-    if len(query_result) >= 2:
+    if len(query_result) != 2:
         raise ValueError(
             f'{len(query_result)} buckets are returned for {hpo_id} '
             f'in {project_id}.{LOOKUP_TABLES_DATASET_ID}.{HPO_ID_BUCKET_NAME_TABLE_ID}.'
-        )
-    elif len(query_result) == 0:
-        raise BucketDoesNotExistError(
-            f'No buckets found for {hpo_id} '
-            f'in {project_id}.{LOOKUP_TABLES_DATASET_ID}.{HPO_ID_BUCKET_NAME_TABLE_ID}'
         )
 
     return query_result[0].bucket_name
