@@ -631,35 +631,28 @@ def write_results_to_site_buckets(storage_client, validation_dataset):
     :return: None
     :raises:  RuntimeError if validation_dataset is not defined.
     """
-
     LOGGER.info('Writing to site buckets')
-    if validation_dataset is None:
+    if not validation_dataset:
         LOGGER.error('Validation_dataset name is not defined.')
         raise RuntimeError('validation_dataset name cannot be None.')
 
-    date_string = _get_date_string(validation_dataset)
-    hpo_sites = readers.get_hpo_site_names()
+    date: str = _get_date_string(validation_dataset)
+    hpo_sites: list = readers.get_hpo_site_names()
     # generate hpo site reports
     for site in hpo_sites:
-        filename: str = os.path.join(
-            consts.REPORT_DIRECTORY.format(date=date_string),
-            consts.REPORT_TITLE)
+        filename: str = os.path.join(consts.REPORT_DIRECTORY.format(date=date),
+                                     consts.REPORT_TITLE)
         try:
             bucket = storage_client.get_hpo_bucket(site)
             blob = bucket.blob(filename)
         except GoogleCloudError as exc:
             LOGGER.exception(
-                f"Encountered {str(exc.message)} error when writing site report"
-            )
-        except Exception as exc:
-            LOGGER.exception(f"Encountered {str(exc)}")
-            raise exc
+                f"Encountered {exc.message} error when uploading site report")
 
-        errors = writers.create_site_validation_report(storage_client,
-                                                       validation_dataset,
-                                                       [site], blob)
+        errors: int = writers.create_site_validation_report(
+            storage_client, validation_dataset, [site], blob)
 
-        if errors > 0:
+        if errors:
             LOGGER.error(
                 f"Encountered {errors} read errors when writing {site} site report"
             )
@@ -677,30 +670,27 @@ def write_results_to_drc_bucket(storage_client, validation_dataset=None):
     :raises:  RuntimeError if validation_dataset is not defined.
     """
     LOGGER.info('Writing to the DRC bucket')
-    if validation_dataset is None:
+    if not validation_dataset:
         LOGGER.error('Validation_dataset name is not defined.')
         raise RuntimeError('validation_dataset name cannot be None.')
 
-    date_string = _get_date_string(validation_dataset)
-    hpo_sites = readers.get_hpo_site_names()
-    filename: str = os.path.join(
-        validation_dataset, consts.REPORT_DIRECTORY.format(date=date_string),
-        consts.REPORT_TITLE)
+    date: str = _get_date_string(validation_dataset)
+    hpo_sites: list = readers.get_hpo_site_names()
+    filename: str = os.path.join(validation_dataset,
+                                 consts.REPORT_DIRECTORY.format(date=date),
+                                 consts.REPORT_TITLE)
     try:
         bucket = storage_client.get_drc_bucket()
         blob = bucket.blob(filename)
     except GoogleCloudError as exc:
         LOGGER.exception(
             f"Encountered {str(exc.message)} error when writing site report")
-    except Exception as exc:
-        LOGGER.exception(f"Encountered {str(exc)}")
-        raise exc
 
-    errors = writers.create_site_validation_report(storage_client,
-                                                   validation_dataset,
-                                                   hpo_sites, blob)
+    errors: int = writers.create_site_validation_report(storage_client,
+                                                        validation_dataset,
+                                                        hpo_sites, blob)
 
-    if errors > 0:
+    if errors:
         LOGGER.error(
             f"Encountered {errors} read errors when writing drc report")
 
