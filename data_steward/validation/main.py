@@ -117,7 +117,7 @@ def run_export(datasource_id=None, folder_prefix="", target_bucket=None):
         f"Exporting {datasource_id} report to bucket {target_bucket.name}")
 
     # Run export queries and store json payloads in specified folder in the target bucket
-    reports_prefix = f'{folder_prefix}{ACHILLES_EXPORT_PREFIX_STRING}{datasource_id}/'
+    reports_prefix: str = f'{folder_prefix}{ACHILLES_EXPORT_PREFIX_STRING}{datasource_id}/'
     for export_name in common.ALL_REPORTS:
         sql_path = os.path.join(export.EXPORT_PATH, export_name)
         result = export.export_from_path(sql_path, datasource_id)
