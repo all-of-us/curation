@@ -10,9 +10,7 @@ from mock.mock import MagicMock
 # Project imports
 from constants import bq_utils as bq_consts
 from constants.validation.participants import identity_match as consts
-
 from validation.participants import identity_match as id_match
-
 import test_util
 
 
@@ -460,7 +458,6 @@ class IdentityMatchTest(unittest.TestCase):
         self.assertEqual(self.mock_validation_report.call_count, 0)
 
     def test_write_results_to_site_buckets(self):
-
         # test
         id_match.write_results_to_site_buckets(self.mock_client,
                                                self.dest_dataset)
@@ -469,7 +466,7 @@ class IdentityMatchTest(unittest.TestCase):
         num_sites: int = len(self.sites)
         self.assertEqual(self.mock_client.get_hpo_bucket.call_count, num_sites)
 
-        expected_report_calls = [
+        expected_report_calls: list = [
             call(self.mock_client, self.dest_dataset, [self.sites[0]],
                  self.hpo_iterator.blob()),
             call(self.mock_client, self.dest_dataset, [self.sites[1]],
@@ -483,7 +480,7 @@ class IdentityMatchTest(unittest.TestCase):
 
     def test_write_results_to_site_buckets_simulate_errors(self):
         # pre conditions
-        self.mock_validation_report.return_value = 1
+        self.mock_validation_report.return_value = 2  # error count
 
         # test
         id_match.write_results_to_site_buckets(self.mock_client,
@@ -493,7 +490,7 @@ class IdentityMatchTest(unittest.TestCase):
         num_sites: int = len(self.sites)
         self.assertEqual(self.mock_client.get_hpo_bucket.call_count, num_sites)
 
-        expected_report_calls = [
+        expected_report_calls: list = [
             call(self.mock_client, self.dest_dataset, [self.sites[0]],
                  self.hpo_iterator.blob()),
             call(self.mock_client, self.dest_dataset, [self.sites[1]],
