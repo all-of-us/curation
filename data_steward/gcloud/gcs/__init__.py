@@ -9,9 +9,8 @@ from typing import Union
 from google.api_core import page_iterator
 from google.cloud.exceptions import NotFound
 from google.auth import default
+from google.cloud.storage.bucket import Bucket, Blob
 from google.cloud.storage.client import Client
-from google.cloud.storage.bucket import Bucket
-from google.cloud.storage.blob import Blob
 
 # Project imports
 from utils import auth
