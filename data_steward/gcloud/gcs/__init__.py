@@ -13,7 +13,9 @@ from google.cloud.storage.bucket import Bucket, Blob
 from google.cloud.storage.client import Client
 
 # Project imports
+from constants.utils.bq import GET_BUCKET_QUERY, LOOKUP_TABLES_DATASET_ID, HPO_ID_BUCKET_NAME_TABLE_ID
 from utils import auth
+from utils.bq import get_client
 from validation.app_errors import BucketDoesNotExistError, BucketNotSet
 
 
@@ -151,5 +153,40 @@ class StorageClient(Client):
         return list(pg_iterator)
 
     def _get_hpo_bucket_id(self, hpo_id: str) -> str:
-        # TODO reconsider how to map bucket name
-        return os.environ.get(f'BUCKET_NAME_{hpo_id.upper()}')
+        """[summary]
+
+        Args:
+            hpo_id (str): [description]
+
+        Raises:
+            ValueError: [description]
+            BucketDoesNotExistError: [description]
+
+        Returns:
+            str: [description]
+        """
+
+        project_id = os.environ.get('GOOGLE_CLOUD_PROJECT')
+
+        bq_client = get_client(project_id)
+
+        hpo_bucket_query = GET_BUCKET_QUERY.format(
+            project_id=project_id,
+            dataset_id=LOOKUP_TABLES_DATASET_ID,
+            table_id=HPO_ID_BUCKET_NAME_TABLE_ID,
+            hpo_id=hpo_id)
+
+        query_result = bq_client.query(hpo_bucket_query)
+
+        if len(query_result) >= 2:
+            raise ValueError(
+                f'{len(query_result)} buckets are returned for {hpo_id} '
+                f'in {project_id}.{LOOKUP_TABLES_DATASET_ID}.{HPO_ID_BUCKET_NAME_TABLE_ID}.'
+            )
+        elif len(query_result) == 0:
+            raise BucketDoesNotExistError(
+                f'No buckets found for {hpo_id} '
+                f'in {project_id}.{LOOKUP_TABLES_DATASET_ID}.{HPO_ID_BUCKET_NAME_TABLE_ID}'
+            )
+
+        return query_result[0].bucket_name
