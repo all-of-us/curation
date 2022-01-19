@@ -633,8 +633,8 @@ def write_results_to_site_buckets(storage_client, validation_dataset):
     """
     LOGGER.info('Writing to site buckets')
     if not validation_dataset:
-        LOGGER.error('Validation_dataset name is not defined.')
-        raise RuntimeError('validation_dataset name cannot be None.')
+        LOGGER.error('Validation dataset name is not defined.')
+        raise RuntimeError(f"Validation_dataset is '{validation_dataset}'")
 
     date: str = _get_date_string(validation_dataset)
     hpo_sites: list = readers.get_hpo_site_names()
@@ -647,14 +647,14 @@ def write_results_to_site_buckets(storage_client, validation_dataset):
             blob = bucket.blob(filename)
         except GoogleCloudError as exc:
             LOGGER.exception(
-                f"Encountered {exc.message} error when uploading site report")
+                f'Encountered {exc.message} error when uploading site report')
 
         errors: int = writers.create_site_validation_report(
             storage_client, validation_dataset, [site], blob)
 
         if errors:
             LOGGER.error(
-                f"Encountered {errors} read errors when writing {site} site report"
+                f'Encountered {errors} read errors when writing {site} site report'
             )
 
 
@@ -671,8 +671,8 @@ def write_results_to_drc_bucket(storage_client, validation_dataset=None):
     """
     LOGGER.info('Writing to the DRC bucket')
     if not validation_dataset:
-        LOGGER.error('Validation_dataset name is not defined.')
-        raise RuntimeError('validation_dataset name cannot be None.')
+        LOGGER.error('Validation dataset name is not defined.')
+        raise RuntimeError(f"Validation_dataset is '{validation_dataset}'")
 
     date: str = _get_date_string(validation_dataset)
     hpo_sites: list = readers.get_hpo_site_names()
@@ -684,15 +684,14 @@ def write_results_to_drc_bucket(storage_client, validation_dataset=None):
         blob = bucket.blob(filename)
     except GoogleCloudError as exc:
         LOGGER.exception(
-            f"Encountered {str(exc.message)} error when writing site report")
+            f'Encountered {exc.message} error when writing site report')
 
     errors: int = writers.create_site_validation_report(storage_client,
                                                         validation_dataset,
                                                         hpo_sites, blob)
-
     if errors:
         LOGGER.error(
-            f"Encountered {errors} read errors when writing drc report")
+            f'Encountered {errors} read errors when writing drc report')
 
 
 def _add_matches_to_results(results, matches, field):
