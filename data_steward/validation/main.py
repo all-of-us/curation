@@ -177,9 +177,9 @@ def _upload_achilles_files(hpo_id=None, folder_prefix='', target_bucket=None):
         bucket_file_name = filename.split(resources.resource_files_path +
                                           os.sep)[1].strip().replace('\\', '/')
         with open(filename, 'rb') as fp:
-            blob = bucket.blob(f'{folder_prefix}{bucket_file_name}')
+            blob: Blob = bucket.blob(f'{folder_prefix}{bucket_file_name}')
             blob.upload_from_file(fp)
-            upload_result = storage_client.get_blob_metadata(blob)
+            upload_result: dict = storage_client.get_blob_metadata(blob)
             results.append(upload_result)
     return results
 
@@ -533,17 +533,10 @@ def process_hpo(hpo_id, force_run=False):
                 report_data = generate_empty_report(hpo_id, folder_prefix)
             perform_reporting(hpo_id, report_data, folder_items, bucket.name,
                               folder_prefix)
-    except BucketDoesNotExistError as bucket_error:
-        bucket = bucket_error.bucket
-        # App engine converts an env var set but left empty to be the string 'None'
-        if bucket and bucket.lower() != 'none':
-            logging.warning(
-                f"Bucket '{bucket}' configured for hpo_id '{hpo_id}' does not exist"
-            )
-        else:
-            logging.info(
-                f"Bucket '{bucket}' configured for hpo_id '{hpo_id}' is empty/unset"
-            )
+    except BucketNotSet as exc:
+        logging.info(f'{exc}')
+    except BucketDoesNotExistError as exc:
+        logging.warning(f'{exc}')
     except HttpError as http_error:
         message = (f"Failed to process hpo_id '{hpo_id}' due to the following "
                    f"HTTP error: {http_error.content.decode()}")
