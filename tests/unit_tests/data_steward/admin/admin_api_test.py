@@ -1,6 +1,4 @@
-import logging
 import mock
-import os
 import unittest
 
 from admin import admin_api
