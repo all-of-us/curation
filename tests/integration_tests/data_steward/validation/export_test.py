@@ -9,7 +9,6 @@ import app_identity
 import bq_utils
 import common
 from gcloud.gcs import StorageClient
-import gcs_utils
 from tests import test_util
 from tests.test_util import FAKE_HPO_ID
 from validation import export, main
@@ -142,8 +141,8 @@ class ExportTest(unittest.TestCase):
         self.assertIn(export_path, actual_names)
 
         actual_data = target_bucket.blob(export_path)
-        datasources_json: str = actual_data.download_as_bytes().decode()
-        actual_datasources: dict = json.loads(datasources_json)
+        actual_data_json: str = actual_data.download_as_bytes().decode()
+        actual_datasources: dict = json.loads(actual_data_json)
         expected_datasources: dict = {
             'datasources': [{
                 'name': FAKE_HPO_ID,
