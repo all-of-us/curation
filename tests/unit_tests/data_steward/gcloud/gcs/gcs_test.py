@@ -45,13 +45,11 @@ class GCSTest(TestCase):
         with self.assertRaises(BucketNotSet) as e:
             self.client.get_hpo_bucket(self.hpo_id)
         self.assertEqual(e.exception.message, expected_message(None))
-
         # run after setting env var to empty string
         os.environ[bucket_env_var] = ""
         with self.assertRaises(BucketNotSet) as e:
             self.client.get_hpo_bucket(self.hpo_id)
         self.assertEqual(e.exception.message, expected_message(""))
-
         # run after setting env var to 'None'
         os.environ[bucket_env_var] = "None"
         with self.assertRaises(BucketNotSet) as e:
