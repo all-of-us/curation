@@ -12,7 +12,7 @@ HPO_ID_CONTACT_LIST_TABLE_ID = 'hpo_id_contact_list'
 # Query to select all from a specified table
 GET_BUCKET_QUERY = """
 SELECT bucket_name FROM `{{project_id}}.{{dataset_id}}.{{table_id}}`
-WHERE hpo_id = `{{hpo_id}}`
+WHERE hpo_id = '{{hpo_id}}'
 """
 
 # Validation dataset prefix
