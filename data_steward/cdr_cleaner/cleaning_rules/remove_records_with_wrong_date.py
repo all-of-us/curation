@@ -11,7 +11,8 @@ OBSERVATION_TABLE = 'observation'
 
 DOMAIN_TABLES_EXCEPT_OBSERVATION = [
     'condition_occurrence', 'visit_occurrence', 'drug_exposure', 'measurement',
-    'procedure_occurrence', 'observation_period', 'device_exposure', 'specimen'
+    'procedure_occurrence', 'observation_period', 'device_exposure', 'specimen',
+    'visit_detail'
 ]
 
 OBSERVATION_DEFAULT_YEAR_THRESHOLD = 1900
