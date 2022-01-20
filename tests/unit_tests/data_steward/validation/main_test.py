@@ -52,26 +52,6 @@ class ValidationMainTest(TestCase):
 
         return bucket_items
 
-    @mock.patch('validation.main.StorageClient')
-    def test_unset_bucket(self, mock_storage_client):
-        mock_client = mock.MagicMock()
-        mock_storage_client.return_value = mock_client
-
-        bucket_env_var = f'BUCKET_NAME_{self.hpo_id.upper()}'
-        # run without setting env var (unset env_var)
-        os.environ.pop(f"BUCKET_NAME_{self.hpo_id.upper()}", None)
-        main.process_hpo(self.hpo_id)
-        # post conditions
-        mock_storage_client.assert_called()
-        mock_client.get_hpo_bucket.assert_called()
-
-        # run after setting env var to empty string
-        os.environ[bucket_env_var] = ""
-        main.process_hpo(self.hpo_id)
-        # post conditions
-        mock_storage_client.assert_called()
-        mock_client.get_hpo_bucket.assert_called()
-
     def test_retention_checks_list_submitted_bucket_items(self):
         #Define times to use
         within_retention = datetime.datetime.today() - datetime.timedelta(
