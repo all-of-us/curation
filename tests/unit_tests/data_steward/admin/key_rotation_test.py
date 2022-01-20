@@ -26,13 +26,22 @@ class KeyRotationTest(unittest.TestCase):
                                                'v1',
                                                credentials='test_credentials')
 
+    @mock.patch('admin.key_rotation.LIST_IGNORE_SERVICE_ACCOUNT_EMAILS',
+                ['test-2-email@test.com'])
     @mock.patch('admin.key_rotation.get_iam_service')
     def test_list_service_accounts(self, mock_iam_service):
+        return_accounts = {
+            'accounts': [{
+                'email': 'test-email@test.com'
+            }, {
+                'email': 'test-2-email@test.com'
+            }]
+        }
         expected_accounts = {'accounts': [{'email': 'test-email@test.com'}]}
 
         mock_service_account_list = mock_iam_service.return_value.projects.return_value. \
             serviceAccounts.return_value.list
-        mock_service_account_list.return_value.execute.return_value = expected_accounts
+        mock_service_account_list.return_value.execute.return_value = return_accounts
 
         actual_accounts = key_rotation.list_service_accounts(self.project_id)
 
