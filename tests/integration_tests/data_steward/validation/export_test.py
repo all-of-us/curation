@@ -1,5 +1,6 @@
 import json
 import os
+from typing import Iterable
 import unittest
 
 import mock
@@ -29,9 +30,10 @@ class ExportTest(unittest.TestCase):
         test_util.populate_achilles()
 
     def setUp(self):
-        self.hpo_bucket = gcs_utils.get_hpo_bucket(FAKE_HPO_ID)
         self.project_id = app_identity.get_application_id()
         self.storage_client = StorageClient(self.project_id)
+
+        self.hpo_bucket = self.storage_client.get_hpo_bucket(FAKE_HPO_ID)
 
     def _test_report_export(self, report):
         data_density_path = os.path.join(export.EXPORT_PATH, report)
@@ -124,36 +126,37 @@ class ExportTest(unittest.TestCase):
         # validation/main.py INTEGRATION TEST
         mock_is_hpo_id.return_value = True
         folder_prefix: str = 'dummy-prefix-2018-03-24/'
-        bucket_nyc: str = gcs_utils.get_hpo_bucket('nyc')
+
+        target_bucket = self.storage_client.get_hpo_bucket('nyc')
+        objects: Iterable = target_bucket.list_blobs()
         main.run_export(datasource_id=FAKE_HPO_ID,
                         folder_prefix=folder_prefix,
-                        target_bucket=bucket_nyc)
-        storage_bucket = self.storage_client.get_bucket(bucket_nyc)
-        bucket_objects = storage_bucket.list_blobs()
-        actual_object_names: list = [obj.name for obj in bucket_objects]
+                        target_bucket=target_bucket.name)
+
+        actual_names: list = [obj.name for obj in objects]
         for report in common.ALL_REPORT_FILES:
             prefix: str = f'{folder_prefix}{common.ACHILLES_EXPORT_PREFIX_STRING}{FAKE_HPO_ID}/'
-            expected_object_name: str = f'{prefix}{report}'
-            self.assertIn(expected_object_name, actual_object_names)
-        datasources_json_path: str = f'{folder_prefix}{common.ACHILLES_EXPORT_DATASOURCES_JSON}'
-        self.assertIn(datasources_json_path, actual_object_names)
+            expected_name: str = f'{prefix}{report}'
+            self.assertIn(expected_name, actual_names)
+        export_path: str = f'{folder_prefix}{common.ACHILLES_EXPORT_DATASOURCES_JSON}'
+        self.assertIn(export_path, actual_names)
 
-        datasources_blob = storage_bucket.blob(datasources_json_path)
-        datasources_json: str = datasources_blob.download_as_bytes().decode()
-        datasources_actual: dict = json.loads(datasources_json)
-        datasources_expected: dict = {
+        actual_data = target_bucket.blob(export_path)
+        datasources_json: str = actual_data.download_as_bytes().decode()
+        actual_datasources: dict = json.loads(datasources_json)
+        expected_datasources: dict = {
             'datasources': [{
                 'name': FAKE_HPO_ID,
                 'folder': FAKE_HPO_ID,
                 'cdmVersion': 5
             }]
         }
-        self.assertDictEqual(datasources_expected, datasources_actual)
+        self.assertDictEqual(expected_datasources, actual_datasources)
 
     def tearDown(self):
-        self.storage_client.empty_bucket(self.hpo_bucket)
-        bucket_nyc: str = gcs_utils.get_hpo_bucket('nyc')
+        bucket_nyc = self.storage_client.get_hpo_bucket('nyc')
         self.storage_client.empty_bucket(bucket_nyc)
+        self.storage_client.empty_bucket(self.hpo_bucket)
 
     @classmethod
     def tearDownClass(cls):
