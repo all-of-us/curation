@@ -13,12 +13,14 @@ import re
 
 # Third party imports
 from dateutil.parser import parse
+from google.cloud.exceptions import GoogleCloudError
 import googleapiclient
 import oauth2client
 
 # Project imports
 import bq_utils
-import gcs_utils
+import app_identity
+from gcloud.gcs import StorageClient
 from constants import bq_utils as bq_consts
 from constants.validation.participants import identity_match as consts
 import resources
@@ -618,11 +620,11 @@ def _get_date_string(dataset):
     return datetime.now().strftime(consts.DRC_DATE_FORMAT)
 
 
-def write_results_to_site_buckets(project, validation_dataset=None):
+def write_results_to_site_buckets(storage_client, validation_dataset):
     """
     Write the results of participant matching to each site's bucket.
 
-    :param project: a string representing the project name
+    :param storage_client: a client to generate a bucket for a blob
     :param validation_dataset:  the identifier for the match values
         destination dataset
 
@@ -630,32 +632,37 @@ def write_results_to_site_buckets(project, validation_dataset=None):
     :raises:  RuntimeError if validation_dataset is not defined.
     """
     LOGGER.info('Writing to site buckets')
-    if validation_dataset is None:
-        LOGGER.error('Validation_dataset name is not defined.')
-        raise RuntimeError('validation_dataset name cannot be None.')
+    if not validation_dataset:
+        LOGGER.error('Validation dataset name is not defined.')
+        raise RuntimeError(f"Validation_dataset is '{validation_dataset}'")
 
-    date_string = _get_date_string(validation_dataset)
-    hpo_sites = readers.get_hpo_site_names()
+    date: str = _get_date_string(validation_dataset)
+    hpo_sites: list = readers.get_hpo_site_names()
     # generate hpo site reports
     for site in hpo_sites:
-        bucket = gcs_utils.get_hpo_bucket(site)
-        filename = os.path.join(
-            consts.REPORT_DIRECTORY.format(date=date_string),
-            consts.REPORT_TITLE)
-        _, errors = writers.create_site_validation_report(
-            project, validation_dataset, [site], bucket, filename)
+        filename: str = os.path.join(consts.REPORT_DIRECTORY.format(date=date),
+                                     consts.REPORT_TITLE)
+        try:
+            bucket = storage_client.get_hpo_bucket(site)
+            blob = bucket.blob(filename)
+        except GoogleCloudError as exc:
+            LOGGER.exception(
+                f'Encountered {exc.message} error when uploading site report')
 
-        if errors > 0:
+        errors: int = writers.create_site_validation_report(
+            storage_client, validation_dataset, [site], blob)
+
+        if errors:
             LOGGER.error(
-                f"Encountered {errors} read errors when writing {site} site report"
+                f'Encountered {errors} read errors when writing {site} site report'
             )
 
 
-def write_results_to_drc_bucket(project, validation_dataset=None):
+def write_results_to_drc_bucket(storage_client, validation_dataset=None):
     """
     Write the results of participant matching to the drc bucket.
 
-    :param project: a string representing the project name
+    :param storage_client: a client to generate a bucket for a blob
     :param validation_dataset:  the identifier for the match values
         destination dataset
 
@@ -663,25 +670,28 @@ def write_results_to_drc_bucket(project, validation_dataset=None):
     :raises:  RuntimeError if validation_dataset is not defined.
     """
     LOGGER.info('Writing to the DRC bucket')
-    if validation_dataset is None:
-        LOGGER.error('Validation_dataset name is not defined.')
-        raise RuntimeError('validation_dataset name cannot be None.')
+    if not validation_dataset:
+        LOGGER.error('Validation dataset name is not defined.')
+        raise RuntimeError(f"Validation_dataset is '{validation_dataset}'")
 
-    date_string = _get_date_string(validation_dataset)
-    hpo_sites = readers.get_hpo_site_names()
-    # generate aggregate site report
-    bucket = gcs_utils.get_drc_bucket()
-    filename = os.path.join(validation_dataset,
-                            consts.REPORT_DIRECTORY.format(date=date_string),
-                            consts.REPORT_TITLE)
-    _, errors = writers.create_site_validation_report(project,
-                                                      validation_dataset,
-                                                      hpo_sites, bucket,
-                                                      filename)
+    date: str = _get_date_string(validation_dataset)
+    hpo_sites: list = readers.get_hpo_site_names()
+    filename: str = os.path.join(validation_dataset,
+                                 consts.REPORT_DIRECTORY.format(date=date),
+                                 consts.REPORT_TITLE)
+    try:
+        bucket = storage_client.get_drc_bucket()
+        blob = bucket.blob(filename)
+    except GoogleCloudError as exc:
+        LOGGER.exception(
+            f'Encountered {exc.message} error when writing site report')
 
-    if errors > 0:
+    errors: int = writers.create_site_validation_report(storage_client,
+                                                        validation_dataset,
+                                                        hpo_sites, blob)
+    if errors:
         LOGGER.error(
-            f"Encountered {errors} read errors when writing drc report")
+            f'Encountered {errors} read errors when writing drc report')
 
 
 def _add_matches_to_results(results, matches, field):
@@ -999,6 +1009,13 @@ def match_participants(project, rdr_dataset, ehr_dataset, dest_dataset_id):
         )
 
     return read_errors + write_errors
+
+
+def generate_reports(dest_dataset):
+    project_id: str = app_identity.get_application_id()
+    storage_client = StorageClient(project_id)
+    write_results_to_drc_bucket(storage_client, dest_dataset)
+
 
 if __name__ == '__main__':
     RDR_DATASET = ''  # the combined dataset

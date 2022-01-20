@@ -79,7 +79,7 @@ class StorageClient(Client):
         return metadata
 
     def get_drc_bucket(self) -> Bucket:
-        return self.get_bucket(os.environ.get('DRC_BUCKET_NAME'))
+        return self.bucket(os.environ.get('DRC_BUCKET_NAME'))
 
     def get_hpo_bucket(self, hpo_id: str) -> Bucket:
         """
@@ -99,7 +99,7 @@ class StorageClient(Client):
                 f"Bucket '{bucket_name}' for hpo '{hpo_id}' is unset/empty")
 
         try:
-            bucket = self.get_bucket(bucket_name)
+            bucket = self.bucket(bucket_name)
         except NotFound:
             raise BucketDoesNotExistError(
                 f"Failed to acquire bucket '{bucket_name}' for hpo '{hpo_id}'",
