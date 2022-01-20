@@ -59,7 +59,7 @@ class ValidationMainTest(TestCase):
         mock_result.bucket_name = "aou_test_fake"
 
         mock_query = mock.MagicMock()
-        mock_query.result = mock.MagicMock(return_value=[mock_result])
+        mock_query.result = [mock_result]
 
         mock_client = mock.MagicMock()
         mock_client.query = mock_query
