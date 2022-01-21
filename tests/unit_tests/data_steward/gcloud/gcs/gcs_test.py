@@ -36,7 +36,7 @@ class GCSTest(TestCase):
         self.file_name: str = 'foo_file.csv'
         self.hpo_id = 'fake_hpo_id'
 
-    def test_unset_bucket(self):
+    def test_get_hpo_bucket_not_set(self):
         bucket_env_var = f'BUCKET_NAME_{self.hpo_id.upper()}'
         expected_message = lambda bucket: f"Bucket '{bucket}' for hpo '{self.hpo_id}' is unset/empty"
 
