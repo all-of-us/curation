@@ -70,6 +70,9 @@ def save_datasources_json(datasource_id=None,
         bucket assigned to hpo_id.
     :return:
     """
+    if storage_client is None:
+        project_id = app_identity.get_application_id()
+        storage_client = StorageClient(project_id)
     if datasource_id is None:
         if target_bucket is None:
             raise RuntimeError(
