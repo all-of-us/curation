@@ -81,6 +81,7 @@ SELECT
   ob.unit_concept_id,
   ob.provider_id,
   ob.visit_occurrence_id,
+  ob.visit_detail_id,
   ob.observation_source_value,
   ob.observation_source_concept_id,
   ob.unit_source_value,
