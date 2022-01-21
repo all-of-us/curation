@@ -59,7 +59,8 @@ def all_required_files_loaded(result_items):
 
 def save_datasources_json(datasource_id=None,
                           folder_prefix="",
-                          target_bucket=None):
+                          target_bucket=None,
+                          storage_client=None):
     """
     Generate and save datasources.json (from curation report) in a GCS bucket
 
@@ -69,8 +70,6 @@ def save_datasources_json(datasource_id=None,
         bucket assigned to hpo_id.
     :return:
     """
-    project_id = app_identity.get_application_id()
-    storage_client = StorageClient(project_id)
     if datasource_id is None:
         if target_bucket is None:
             raise RuntimeError(
@@ -129,7 +128,8 @@ def run_export(datasource_id=None, folder_prefix="", target_bucket=None):
         results.append(result)
     result = save_datasources_json(datasource_id=datasource_id,
                                    folder_prefix=folder_prefix,
-                                   target_bucket=target_bucket.name)
+                                   target_bucket=target_bucket.name,
+                                   storage_client=storage_client)
     results.append(result)
     return results
 
