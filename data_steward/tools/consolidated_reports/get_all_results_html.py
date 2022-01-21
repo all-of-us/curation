@@ -3,7 +3,6 @@ from __future__ import print_function
 import json
 import os
 
-import gcs_utils
 from gcloud.gcs import StorageClient
 import app_identity
 from tools.consolidated_reports import query_reports
