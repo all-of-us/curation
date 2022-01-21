@@ -350,14 +350,15 @@ class ValidationMainTest(TestCase):
         mock_blob = mock.MagicMock()
         mock_storage_client.return_value = mock_client
         mock_client.get_hpo_bucket.return_value = mock_bucket
-        type(mock_bucket).name = mock.PropertyMock(return_value='noob')
+        type(mock_bucket).name = mock.PropertyMock(
+            return_value='fake_bucket_name')
         mock_bucket.blob.return_value = mock_blob
         mock_all_required_files_loaded.return_value = True
         mock_has_all_required_files.return_value = True
         mock_query.return_value = {}
         mock_query_rows.return_value = []
         mock_get_duplicate_counts_query.return_value = ''
-        mock_get_hpo_name.return_value = 'noob'
+        mock_get_hpo_name.return_value = 'fake_hpo_name'
         mock_upload_string_to_gcs.return_value = ''
         mock_valid_rdr.return_value = True
         mock_first_validation.return_value = False
@@ -405,19 +406,20 @@ class ValidationMainTest(TestCase):
         mock_folder_items.return_value = ['measurement.csv']
 
         # test
-        main.process_hpo('noob', force_run=True)
+        main.process_hpo('fake_hpo_id', force_run=True)
 
         # post conditions
         mock_folder_items.assert_called()
         mock_folder_items.assert_called_once_with(mock_bucket_list.return_value,
                                                   'SUBMISSION/')
         mock_validation.assert_called()
-        mock_validation.assert_called_once_with('noob', 'noob',
+        mock_validation.assert_called_once_with('fake_hpo_id',
+                                                'fake_bucket_name',
                                                 mock_folder_items.return_value,
                                                 'SUBMISSION/')
         mock_run_achilles.assert_called()
         mock_export.assert_called()
-        mock_export.assert_called_once_with(datasource_id='noob',
+        mock_export.assert_called_once_with(datasource_id='fake_hpo_id',
                                             folder_prefix='SUBMISSION/')
         # make sure upload is called for only the most recent
         # non-participant directory
@@ -425,7 +427,7 @@ class ValidationMainTest(TestCase):
         mock_bucket.blob.assert_called()
         mock_blob.upload_from_file.assert_called()
         for filepath in mock_bucket.blob.call_args_list:
-            self.assertEqual('noob', type(mock_bucket).name)
+            self.assertEqual('fake_bucket_name', mock_bucket.name)
             self.assertTrue(filepath.startswith('SUBMISSION/'))
         mock_client.get_blob_metadata.assert_called()
 
