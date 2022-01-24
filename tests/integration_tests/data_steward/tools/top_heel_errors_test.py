@@ -7,7 +7,6 @@ import app_identity
 import bq_utils
 import common
 from gcloud.gcs import StorageClient
-import gcs_utils
 import resources
 from tests import test_util
 from tools.top_heel_errors import top_heel_errors, RESULT_LIMIT, FIELD_ANALYSIS_ID, FIELD_RECORD_COUNT, \
@@ -63,10 +62,10 @@ class TopHeelErrorsTest(TestCase):
     def setUp(self):
         self.project_id = app_identity.get_application_id()
         self.dataset_id = bq_utils.get_dataset_id()
-        self.bucket: str = gcs_utils.get_drc_bucket()
         self.storage_client = StorageClient(self.project_id)
+        self.drc_bucket = self.storage_client.get_drc_bucket()
 
-        self.storage_client.empty_bucket(self.bucket)
+        self.storage_client.empty_bucket(self.drc_bucket)
         test_util.delete_all_tables(self.dataset_id)
         self.load_test_data(hpo_id=HPO_NYC)
 
@@ -87,11 +86,10 @@ class TopHeelErrorsTest(TestCase):
         test_file_path: str = os.path.join(test_util.TEST_DATA_PATH,
                                            test_file_name)
 
-        target_bucket = self.storage_client.get_bucket(self.bucket)
-        test_blob = target_bucket.blob(test_file_name)
+        test_blob = self.drc_bucket.blob(test_file_name)
         test_blob.upload_from_filename(test_file_path)
 
-        gcs_path: str = f'gs://{self.bucket}/{test_file_name}'
+        gcs_path: str = f'gs://{self.drc_bucket.name}/{test_file_name}'
         load_results = bq_utils.load_csv(table_name, gcs_path, self.project_id,
                                          self.dataset_id, table_id)
         job_id = load_results['jobReference']['jobId']
@@ -126,5 +124,5 @@ class TopHeelErrorsTest(TestCase):
         self.assertCountEqual(actual_results, expected_results)
 
     def tearDown(self):
-        self.storage_client.empty_bucket(self.bucket)
+        self.storage_client.empty_bucket(self.drc_bucket)
         test_util.delete_all_tables(self.dataset_id)
