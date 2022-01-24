@@ -45,24 +45,21 @@ class GCSTest(TestCase):
         expected_message = lambda bucket: f"Bucket '{bucket}' for hpo '{self.hpo_id}' is unset/empty"
 
         # run without setting env var (unset env_var)
+        mock_get_hpo_bucket_id.return_value = None
         with self.assertRaises(BucketNotSet) as e:
             self.client.get_hpo_bucket(self.hpo_id)
-
-        mock_get_hpo_bucket_id.return_value = None
         self.assertEqual(e.exception.message, expected_message(None))
 
         # run after setting env var to empty string
+        mock_get_hpo_bucket_id.return_value = ''
         with self.assertRaises(BucketNotSet) as e:
             self.client.get_hpo_bucket(self.hpo_id)
-
-        mock_get_hpo_bucket_id.return_value = ''
         self.assertEqual(e.exception.message, expected_message(''))
 
         # run after setting env var to 'None'
+        mock_get_hpo_bucket_id.return_value = 'None'
         with self.assertRaises(BucketNotSet) as e:
             self.client.get_hpo_bucket(self.hpo_id)
-
-        mock_get_hpo_bucket_id.return_value = 'None'
         self.assertEqual(e.exception.message, expected_message('None'))
 
     @patch('google.cloud.storage.bucket.Bucket')
