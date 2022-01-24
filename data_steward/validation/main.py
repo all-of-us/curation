@@ -18,6 +18,7 @@ import dateutil
 from flask import Flask
 from googleapiclient.errors import HttpError
 from google.cloud.storage import Blob
+from google.cloud.storage.bucket import Bucket
 
 # Project imports
 import api_util
@@ -158,22 +159,27 @@ def _upload_achilles_files(hpo_id=None, folder_prefix='', target_bucket=None):
     :returns:
     """
     results = []
+    project_id = app_identity.get_application_id()
+    storage_client = StorageClient(project_id)
     if target_bucket is not None:
-        bucket = target_bucket
+        bucket: Bucket = storage_client.bucket(target_bucket)
     else:
         if hpo_id is None:
             raise RuntimeError(
                 f"Either hpo_id or target_bucket must be specified")
-        bucket = gcs_utils.get_hpo_bucket(hpo_id)
+        bucket: Bucket = storage_client.get_hpo_bucket(hpo_id)
     logging.info(
-        f"Uploading achilles index files to 'gs://{bucket}/{folder_prefix}'")
+        f"Uploading achilles index files to 'gs://{bucket.name}/{folder_prefix}'"
+    )
     for filename in resources.ACHILLES_INDEX_FILES:
-        logging.info(f"Uploading achilles file '{filename}' to bucket {bucket}")
+        logging.info(
+            f"Uploading achilles file '{filename}' to bucket {bucket.name}")
         bucket_file_name = filename.split(resources.resource_files_path +
                                           os.sep)[1].strip().replace('\\', '/')
         with open(filename, 'rb') as fp:
-            upload_result = gcs_utils.upload_object(
-                bucket, folder_prefix + bucket_file_name, fp)
+            blob: Blob = bucket.blob(f'{folder_prefix}{bucket_file_name}')
+            blob.upload_from_file(fp)
+            upload_result: dict = storage_client.get_blob_metadata(blob)
             results.append(upload_result)
     return results
 
@@ -504,37 +510,33 @@ def process_hpo(hpo_id, force_run=False):
     """
     try:
         logging.info(f"Processing hpo_id {hpo_id}")
-        bucket = gcs_utils.get_hpo_bucket(hpo_id)
-        bucket_items = list_bucket(bucket)
-        folder_prefix = _get_submission_folder(bucket, bucket_items, force_run)
+        project_id = app_identity.get_application_id()
+        storage_client = StorageClient(project_id)
+        bucket: Bucket = storage_client.get_hpo_bucket(hpo_id)
+        bucket_items = list_bucket(bucket.name)
+        folder_prefix = _get_submission_folder(bucket.name, bucket_items,
+                                               force_run)
         if folder_prefix is None:
             logging.info(
-                f"No submissions to process in {hpo_id} bucket {bucket}")
+                f"No submissions to process in {hpo_id} bucket {bucket.name}")
         else:
             folder_items = []
             if is_valid_folder_prefix_name(folder_prefix):
                 # perform validation
                 folder_items = get_folder_items(bucket_items, folder_prefix)
-                summary = validate_submission(hpo_id, bucket, folder_items,
+                summary = validate_submission(hpo_id, bucket.name, folder_items,
                                               folder_prefix)
-                report_data = generate_metrics(hpo_id, bucket, folder_prefix,
-                                               summary)
+                report_data = generate_metrics(hpo_id, bucket.name,
+                                               folder_prefix, summary)
             else:
                 # do not perform validation
                 report_data = generate_empty_report(hpo_id, folder_prefix)
-            perform_reporting(hpo_id, report_data, folder_items, bucket,
+            perform_reporting(hpo_id, report_data, folder_items, bucket.name,
                               folder_prefix)
-    except BucketDoesNotExistError as bucket_error:
-        bucket = bucket_error.bucket
-        # App engine converts an env var set but left empty to be the string 'None'
-        if bucket and bucket.lower() != 'none':
-            logging.warning(
-                f"Bucket '{bucket}' configured for hpo_id '{hpo_id}' does not exist"
-            )
-        else:
-            logging.info(
-                f"Bucket '{bucket}' configured for hpo_id '{hpo_id}' is empty/unset"
-            )
+    except BucketNotSet as exc:
+        logging.info(f'{exc}')
+    except BucketDoesNotExistError as exc:
+        logging.warning(f'{exc}')
     except HttpError as http_error:
         message = (f"Failed to process hpo_id '{hpo_id}' due to the following "
                    f"HTTP error: {http_error.content.decode()}")

@@ -1,4 +1,5 @@
 # Python imports
+import os
 from unittest import TestCase
 from unittest.mock import patch, MagicMock
 from typing import Callable
@@ -7,6 +8,7 @@ from typing import Callable
 
 # Project imports
 from gcloud.gcs import StorageClient
+from validation.app_errors import BucketNotSet
 
 
 class DummyClient(StorageClient):
@@ -32,6 +34,27 @@ class GCSTest(TestCase):
         self.bucket: str = 'foo_bucket'
         self.prefix: str = 'foo_prefix/'
         self.file_name: str = 'foo_file.csv'
+        self.hpo_id = 'fake_hpo_id'
+
+    @patch('gcloud.gcs.os.environ.get')
+    def test_get_hpo_bucket_not_set(self, mock_environ_get):
+        mock_environ_get.side_effect = [None, '', 'None']
+        expected_message = lambda bucket: f"Bucket '{bucket}' for hpo '{self.hpo_id}' is unset/empty"
+
+        # run without setting env var (unset env_var)
+        with self.assertRaises(BucketNotSet) as e:
+            self.client.get_hpo_bucket(self.hpo_id)
+        self.assertEqual(e.exception.message, expected_message(None))
+
+        # run after setting env var to empty string
+        with self.assertRaises(BucketNotSet) as e:
+            self.client.get_hpo_bucket(self.hpo_id)
+        self.assertEqual(e.exception.message, expected_message(''))
+
+        # run after setting env var to 'None'
+        with self.assertRaises(BucketNotSet) as e:
+            self.client.get_hpo_bucket(self.hpo_id)
+        self.assertEqual(e.exception.message, expected_message('None'))
 
     @patch('google.cloud.storage.bucket.Bucket')
     @patch.object(DummyClient, 'list_blobs')
