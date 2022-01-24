@@ -36,7 +36,7 @@ class GCSTest(TestCase):
         self.file_name: str = 'foo_file.csv'
         self.hpo_id = 'fake_hpo_id'
 
-    @patch('gcloud.gcs._get_hpo_bucket_id')
+    @patch('gcloud.gcs.StorageClient._get_hpo_bucket_id')
     @patch('gcloud.gcs.os.environ.get')
     def test_get_hpo_bucket_not_set(self, mock_environ_get,
                                     mock_get_hpo_bucket_id):
