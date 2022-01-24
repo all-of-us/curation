@@ -6,6 +6,8 @@ A module to write participant identity matching table data.
 # Python imports
 import logging
 from io import StringIO
+from google.cloud.storage.blob import Blob
+from google.cloud.exceptions import GoogleCloudError
 
 # Third party imports
 import googleapiclient
@@ -14,7 +16,6 @@ import oauth2client
 # Project imports
 import bq_utils
 import constants.validation.participants.writers as consts
-import gcs_utils
 from gcloud.gcs import StorageClient
 
 LOGGER = logging.getLogger(__name__)
@@ -39,11 +40,10 @@ def write_to_result_table(project, dataset, site, match_values):
         LOGGER.info(f"No values to insert for site: {site}")
         return None
 
-    result_table = site + consts.VALIDATION_TABLE_SUFFIX
-    bucket = gcs_utils.get_drc_bucket()
-    path = dataset + '/intermediate_results/' + site + '.csv'
+    result_table: str = f'{site}{consts.VALIDATION_TABLE_SUFFIX}'
+    path: str = f'{dataset}/intermediate_results/{site}.csv'
 
-    field_list = [consts.PERSON_ID_FIELD]
+    field_list: list = [consts.PERSON_ID_FIELD]
     field_list.extend(consts.VALIDATION_FIELDS)
     field_list.append(consts.ALGORITHM_FIELD)
 
@@ -67,10 +67,10 @@ def write_to_result_table(project, dataset, site, match_values):
 
     # write results
     results.seek(0)
-    sc = StorageClient(project)
-    sc_bucket = sc.bucket(bucket)
-    bucket_blob = sc_bucket.blob(path)
-    bucket_blob.upload_from_file(results)
+    storage_client = StorageClient(project)
+    bucket = storage_client.get_drc_bucket()
+    blob = bucket.blob(path)
+    blob.upload_from_file(results)
     results.close()
 
     LOGGER.info(
@@ -86,7 +86,7 @@ def write_to_result_table(project, dataset, site, match_values):
     try:
         # load csv file into bigquery
         results = bq_utils.load_csv(table_name,
-                                    'gs://' + bucket + '/' + path,
+                                    f'gs://{bucket.name}/{path}',
                                     project,
                                     dataset,
                                     result_table,
@@ -152,7 +152,8 @@ def get_address_match(address_values):
     return _get_match_rank([streets_match, areas_match])
 
 
-def create_site_validation_report(project, dataset, hpo_list, bucket, filename):
+def create_site_validation_report(client: StorageClient, dataset: str,
+                                  hpo_list: str, blob: Blob) -> int:
     """
     Write the validation csv from the site validation table.
 
@@ -162,27 +163,28 @@ def create_site_validation_report(project, dataset, hpo_list, bucket, filename):
     :param bucket:  The bucket to write the csv to.
     :param filename:  The file name to give the csv report.
     """
+
     if not isinstance(hpo_list, list):
         hpo_list = [hpo_list]
 
-    fields = [
+    fields: list = [
         consts.PERSON_ID_FIELD, consts.FIRST_NAME_FIELD, consts.LAST_NAME_FIELD,
         consts.BIRTH_DATE_FIELD, consts.SEX_FIELD, consts.ADDRESS_MATCH_FIELD,
         consts.PHONE_NUMBER_FIELD, consts.EMAIL_FIELD, consts.ALGORITHM_FIELD
     ]
 
-    fields_str = ','.join(fields) + '\n'
+    serialized_fields: str = ','.join(fields) + '\n'
 
     # sets up a file stream to write to the bucket
     report_file = StringIO()
-    report_file.write(fields_str)
+    report_file.write(serialized_fields)
 
     # write to the report file
-    read_errors = 0
+    read_errors: int = 0
     for site in hpo_list:
         result_table = site + consts.VALIDATION_TABLE_SUFFIX
         query_string = consts.VALIDATION_RESULTS_VALUES.format(
-            project=project, dataset=dataset, table=result_table)
+            project=client.project, dataset=dataset, table=result_table)
 
         try:
             results = bq_utils.query(query_string, batch=True)
@@ -190,21 +192,21 @@ def create_site_validation_report(project, dataset, hpo_list, bucket, filename):
                 googleapiclient.errors.HttpError):
             LOGGER.exception(
                 "Encountered an exception when selecting site records")
-            report_file.write("Unable to report id validation match records "
-                              "for site:\t{}.\n".format(site))
+            report_file.write(f'Unable to report id validation match records '
+                              f'for site:\t{site}.\n')
             read_errors += 1
             continue
 
         row_results = bq_utils.large_response_to_rowlist(results)
         for item in row_results:
-            address_values = [
+            address_values: list = [
                 item.get(consts.ADDRESS_ONE_FIELD),
                 item.get(consts.ADDRESS_TWO_FIELD),
                 item.get(consts.CITY_FIELD),
                 item.get(consts.STATE_FIELD),
                 item.get(consts.ZIP_CODE_FIELD)
             ]
-            values = [
+            values: list = [
                 str(item.get(consts.PERSON_ID_FIELD)),
                 item.get(consts.FIRST_NAME_FIELD),
                 item.get(consts.LAST_NAME_FIELD),
@@ -220,8 +222,15 @@ def create_site_validation_report(project, dataset, hpo_list, bucket, filename):
 
     # reset the stream and write to the bucket
     report_file.seek(0)
-    report_result = gcs_utils.upload_object(bucket, filename, report_file)
-    report_file.close()
+    try:
+        blob.upload_from_file(report_file)
+    except GoogleCloudError as exc:
+        LOGGER.exception(
+            f"Encountered {str(exc.message)} error when writing site report")
+    except Exception as exc:
+        LOGGER.exception(f"Encountered {str(exc)}")
+        raise exc
 
-    LOGGER.info(f"Wrote validation report csv: {bucket}{filename}")
-    return report_result, read_errors
+    report_file.close()
+    LOGGER.info(f"Wrote validation report csv: {blob.bucket}/{blob.name}")
+    return read_errors

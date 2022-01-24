@@ -56,6 +56,7 @@ class BucketNotSet(RuntimeError):
 
     def __init__(self, msg):
         super(BucketNotSet, self).__init__(self, msg)
+        self.message = msg
 
 
 #TODO: refactor code that has BDNE error to NotFound -- all of it w/ticket

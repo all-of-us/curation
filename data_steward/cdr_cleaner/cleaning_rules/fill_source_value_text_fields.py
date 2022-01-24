@@ -130,19 +130,7 @@ def get_fields_dict(table_name, fields):
                 'prefix':
                     field[:3] + '_{counter}'.format(counter=prefix_counter)
             }
-        # if the table is procedure_occurrence check if the field is qualifier_Source_value if so.
-        # it doesn't have qualifier_concept_id field or qualifier_source_concept_id field in this vocabulary version
-        # it is fixed in the later versions. In the mean time we will be using modifier_concept_id
-        # as the corresponding id_field
-        elif table_name == cdr_consts.PROCEDURE_OCCURRENCE and field == cdr_consts.QUALIFIER_SOURCE_VALUE:
-            fields_to_replace[field] = {
-                'name':
-                    field,
-                'join_field':
-                    'modifier_concept_id',
-                'prefix':
-                    field[:3] + '_{counter}'.format(counter=prefix_counter)
-            }
+
     return fields_to_replace
 
 
