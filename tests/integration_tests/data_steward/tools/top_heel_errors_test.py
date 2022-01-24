@@ -78,7 +78,7 @@ class TopHeelErrorsTest(TestCase):
         """
 
         heel_results: str = common.ACHILLES_HEEL_RESULTS
-        if hpo_id is not None:
+        if hpo_id:
             table_id: str = bq_utils.get_table_id(hpo_id, heel_results)
         else:
             table_id: str = heel_results
