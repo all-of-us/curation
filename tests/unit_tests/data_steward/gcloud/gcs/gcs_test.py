@@ -36,8 +36,13 @@ class GCSTest(TestCase):
         self.file_name: str = 'foo_file.csv'
         self.hpo_id = 'fake_hpo_id'
 
+    @patch('gcloud.gcs._get_hpo_bucket_id')
     @patch('gcloud.gcs.os.environ.get')
-    def test_get_hpo_bucket_not_set(self, mock_environ_get):
+    def test_get_hpo_bucket_not_set(self, mock_environ_get,
+                                    mock_get_hpo_bucket_id):
+
+        mock_get_hpo_bucket_id.return_value = None
+
         mock_environ_get.side_effect = [None, '', 'None']
         expected_message = lambda bucket: f"Bucket '{bucket}' for hpo '{self.hpo_id}' is unset/empty"
 
