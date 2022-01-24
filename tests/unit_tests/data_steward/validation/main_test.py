@@ -313,14 +313,14 @@ class ValidationMainTest(TestCase):
     @mock.patch('validation.main._has_all_required_files')
     @mock.patch('validation.main.is_first_validation_run')
     @mock.patch('validation.main.is_valid_rdr')
-    @mock.patch('gcs_utils.list_bucket')
     @mock.patch('validation.main.StorageClient')
     def test_process_hpo_ignore_dirs(
-        self, mock_storage_client, mock_bucket_list, mock_valid_rdr,
-        mock_first_validation, mock_has_all_required_files, mock_folder_items,
-        mock_validation, mock_get_hpo_name, mock_get_duplicate_counts_query,
-        mock_query_rows, mock_all_required_files_loaded, mock_run_achilles,
-        mock_export, mock_valid_folder_name, mock_query):
+        self, mock_storage_client, mock_valid_rdr, mock_first_validation,
+        mock_has_all_required_files, mock_folder_items, mock_validation,
+        mock_get_hpo_name, mock_upload_string_to_gcs,
+        mock_get_duplicate_counts_query, mock_query_rows,
+        mock_all_required_files_loaded, mock_run_achilles, mock_export,
+        mock_valid_folder_name, mock_query):
         """
         Test process_hpo with directories we want to ignore.
 
@@ -370,7 +370,8 @@ class ValidationMainTest(TestCase):
             minutes=7)
         after_lag_time_str = after_lag_time.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
 
-        mock_bucket_list.return_value = [{
+        # mock_bucket_list.return_value = [{
+        mock_client.get_bucket_items_metadata.return_value = [{
             'name': 'unknown.pdf',
             'timeCreated': now,
             'updated': after_lag_time_str
@@ -409,6 +410,8 @@ class ValidationMainTest(TestCase):
 
         # post conditions
         mock_folder_items.assert_called()
+        mock_folder_items.assert_called_once_with(
+            mock_client.get_bucket_items_metadata.return_value, 'SUBMISSION/')
         mock_folder_items.assert_called_once_with(mock_bucket_list.return_value,
                                                   submission_path)
         mock_validation.assert_called()
