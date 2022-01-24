@@ -17,6 +17,7 @@ Original Issue: DC-1127
 # Python imports
 import logging
 import argparse
+from collections import deque
 
 # Project imports
 from app_identity import get_application_id
@@ -27,15 +28,100 @@ from tools.create_tier import SCOPES
 from common import PS_API_VALUES, DRC_OPS, EHR_OPS
 from validation.participants.store_participant_summary_results import fetch_and_store_ps_hpo_data
 from validation.participants.create_update_drc_id_match_table import create_and_populate_drc_validation_table
-from validation.participants.participant_validation_queries import CREATE_COMPARISON_FUNCTION_QUERIES
-from constants.validation.participants.validate import MATCH_FIELDS_QUERY, SUMMARY_QUERY
 from common import PII_ADDRESS, PII_EMAIL, PII_PHONE_NUMBER, PII_NAME, LOCATION, PERSON
 from constants.validation.participants.identity_match import IDENTITY_MATCH_TABLE
-from constants.validation.participants.participant_validation_queries import (
-    get_gender_comparison_case_statement, get_state_abbreviations,
-    get_with_clause, MATCH, NO_MATCH, MISSING_EHR, MISSING_RDR)
+from constants.validation.participants import validate as consts
 
 LOGGER = logging.getLogger(__name__)
+
+
+def get_gender_comparison_case_statement():
+    conditions = []
+    for match in consts.GENDER_MATCH:
+        and_conditions = []
+        for dict_ in match[consts.MATCH_STATUS_PAIRS]:
+            and_conditions.append(
+                f"(rdr_sex in {[pair.lower() for pair in dict_[consts.RDR_SEX]]} "
+                f"AND ehr_sex in {[pair.lower() for pair in dict_[consts.EHR_SEX]]})"
+            )
+        all_matches = ' OR '.join(and_conditions)
+        all_matches = all_matches.replace('[', '(').replace(']', ')')
+        conditions.append(
+            f'WHEN {all_matches} THEN \'{match[consts.MATCH_STATUS]}\'')
+    return ' \n'.join(conditions)
+
+
+def get_state_abbreviations():
+    """ Returns lowercase state abbreviations separated by comma as string.
+    e.g. 'al','ak','az',...
+    """
+    return ','.join(f"'{state}'" for state in consts.STATE_ABBREVIATIONS)
+
+
+def _get_replace_statement(base_statement, rdr_ehr, field, dict_abbreviation):
+    """
+    Create a nested REGEXP_REPLACE() statement for specified field and rdr/ehr.
+    :param: base_statement - Function that returns the base statement to use REGEXP_REPLACE() for
+    :param: rdr_ehr - string 'rdr' or 'ehr'
+    :param: field - string 'city' or 'street'
+    :param: dict_abbreviation - dictionary that has abbreviations
+    :return: Nested REGEXP_REPLACE statement as string
+    """
+    statement_parts = deque([base_statement(rdr_ehr, field)])
+
+    for key in dict_abbreviation:
+        statement_parts.appendleft(
+            "REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(")
+        statement_parts.append(f",'^{key} ','{dict_abbreviation[key]} ')")
+        statement_parts.append(f",' {key}$',' {dict_abbreviation[key]}')")
+        statement_parts.append(f",' {key} ',' {dict_abbreviation[key]} ')")
+
+    statement_parts.appendleft(f"normalized_{rdr_ehr}_{field} AS (SELECT ")
+
+    statement_parts.append(f" AS {rdr_ehr}_{field})")
+
+    return ''.join(statement_parts)
+
+
+def get_with_clause(field):
+    """
+    Create WITH statement for CREATE_{field}_COMPARISON_FUNCTION.
+    :param: field - string 'city' or 'street'
+    :return: WITH statement as string
+    """
+    valid_fields = {'city', 'street'}
+
+    if field not in valid_fields:
+        raise ValueError(
+            f"Invalid field name: {field}. Valid field names: {valid_fields}")
+
+    base_statement = {
+        'city':
+            lambda rdr_ehr, field:
+            f"REGEXP_REPLACE(REGEXP_REPLACE(LOWER(TRIM({rdr_ehr}_{field})),'[^A-Za-z ]',''),' +',' ')",
+        'street':
+            lambda rdr_ehr, field:
+            (f"REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(LOWER(TRIM({rdr_ehr}_{field})),"
+             f"'[^0-9A-Za-z ]', ''),'([0-9])(?:st|nd|rd|th)', r'\\1'),'([0-9])([a-z])',r'\\1 \\2'),' +',' ')"
+            ),
+    }
+
+    abbreviations = {
+        'city': consts.CITY_ABBREVIATIONS,
+        'street': consts.ADDRESS_ABBREVIATIONS,
+    }
+
+    statement_parts = [
+        "WITH ",
+        _get_replace_statement(base_statement[field], 'rdr', field,
+                               abbreviations[field]), ",",
+        _get_replace_statement(base_statement[field], 'ehr', field,
+                               abbreviations[field])
+    ]
+
+    statement = ''.join(statement_parts)
+
+    return statement
 
 
 def identify_rdr_ehr_match(client,
@@ -62,27 +148,25 @@ def identify_rdr_ehr_match(client,
     hpo_location_table_id = get_table_id(LOCATION, hpo_id)
     hpo_person_table_id = get_table_id(PERSON, hpo_id)
 
-    for item in CREATE_COMPARISON_FUNCTION_QUERIES:
+    for item in consts.CREATE_COMPARISON_FUNCTION_QUERIES:
         LOGGER.info(f"Creating `{item['name']}` function if doesn't exist.")
 
         query = item['query'].render(
             project_id=project_id,
             drc_dataset_id=drc_dataset_id,
-            match=MATCH,
-            no_match=NO_MATCH,
-            missing_rdr=MISSING_RDR,
-            missing_ehr=MISSING_EHR,
+            match=consts.MATCH,
+            no_match=consts.NO_MATCH,
+            missing_rdr=consts.MISSING_RDR,
+            missing_ehr=consts.MISSING_EHR,
             gender_case_when_conditions=get_gender_comparison_case_statement(),
             state_abbreviations=get_state_abbreviations(),
             street_with_clause=get_with_clause('street'),
             city_with_clause=get_with_clause('city'))
 
-        LOGGER.info(f"Running the following create statement: {query}.")
-
         job = client.query(query)
         job.result()
 
-    match_query = MATCH_FIELDS_QUERY.render(
+    match_query = consts.MATCH_FIELDS_QUERY.render(
         project_id=project_id,
         id_match_table_id=id_match_table_id,
         hpo_pii_address_table_id=hpo_pii_address_table_id,
@@ -94,16 +178,48 @@ def identify_rdr_ehr_match(client,
         ps_api_table_id=ps_api_table_id,
         drc_dataset_id=drc_dataset_id,
         ehr_ops_dataset_id=ehr_ops_dataset_id,
-        match=MATCH,
-        no_match=NO_MATCH,
-        missing_rdr=MISSING_RDR,
-        missing_ehr=MISSING_EHR)
+        match=consts.MATCH,
+        no_match=consts.NO_MATCH,
+        missing_rdr=consts.MISSING_RDR,
+        missing_ehr=consts.MISSING_EHR)
 
     LOGGER.info(f"Matching fields for {hpo_id}.")
     LOGGER.info(f"Running the following update statement: {match_query}.")
 
     job = client.query(match_query)
     job.result()
+
+
+def setup_and_validate_participants(hpo_id):
+    """
+    Fetch PS data, set up tables and run validation
+    :param hpo_id: Identifies the HPO
+    :return: 
+    """
+    project_id = get_application_id()
+    client = bq.get_client(project_id)
+
+    # Fetch Participant summary data
+    rdr_project_id = get_rdr_project_id()
+    fetch_and_store_ps_hpo_data(client, client.project, rdr_project_id, hpo_id)
+
+    # Populate identity match table based on PS data
+    create_and_populate_drc_validation_table(client, hpo_id)
+
+    # Match values
+    identify_rdr_ehr_match(client, client.project, hpo_id, EHR_OPS)
+
+
+def get_participant_validation_summary_query(hpo_id):
+    """
+    Setup tables, run validation and generate query for reporting
+    :param hpo_id: 
+    :return: 
+    """
+    return consts.SUMMARY_QUERY.render(
+        project_id=get_application_id(),
+        dataset_id=DRC_OPS,
+        id_match_table=f'{IDENTITY_MATCH_TABLE}_{hpo_id}')
 
 
 def get_arg_parser():
@@ -129,38 +245,6 @@ def get_arg_parser():
                         required=True)
 
     return parser
-
-
-def setup_and_validate_participants(hpo_id):
-    """
-    Set up tables, fetch PS data and run validation
-    :param hpo_id: Identifies the HPO
-    :return: 
-    """
-    project_id = get_application_id()
-    client = bq.get_client(project_id)
-
-    # Fetch Participant summary data
-    rdr_project_id = get_rdr_project_id()
-    fetch_and_store_ps_hpo_data(client, client.project, rdr_project_id, hpo_id)
-
-    # Populate identity match table based on PS data
-    create_and_populate_drc_validation_table(client, hpo_id)
-
-    # Match values
-    identify_rdr_ehr_match(client, client.project, hpo_id, EHR_OPS)
-
-
-def get_participant_validation_summary_query(hpo_id):
-    """
-    Setup tables, run validation and generate query for reporting
-    :param hpo_id: 
-    :return: 
-    """
-    return SUMMARY_QUERY.render(
-        project_id=get_application_id(),
-        dataset_id=DRC_OPS,
-        id_match_table=f'{IDENTITY_MATCH_TABLE}_{hpo_id}')
 
 
 def main():
