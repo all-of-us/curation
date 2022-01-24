@@ -92,7 +92,8 @@ def fetch_and_store_ps_hpo_data(client,
     org_id = get_org_id(project_id, hpo_id)
 
     # Get participant summary data
-    LOGGER.info(f'Getting participant summary data for {org_id}...')
+    LOGGER.info(
+        f'Getting participant summary data for HPO/ORG {hpo_id}/{org_id}')
     participant_info = get_org_participant_information(rdr_project_id, org_id)
 
     # Load schema and create ingestion time-partitioned table
@@ -104,7 +105,9 @@ def fetch_and_store_ps_hpo_data(client,
     try:
         table = client.get_table(f'{project_id}.{dataset_id}.{table_name}')
     except NotFound:
-        LOGGER.info(f'Creating table {project_id}.{dataset_id}.{table_name}...')
+        LOGGER.info(
+            f'Creating HOUR partitioned table {project_id}.{dataset_id}.{table_name}'
+        )
 
         table = bigquery.Table(f'{project_id}.{dataset_id}.{table_name}',
                                schema=schema)
@@ -114,12 +117,13 @@ def fetch_and_store_ps_hpo_data(client,
 
     # Insert summary data into table
     LOGGER.info(
-        f'Storing participant data for {org_id} in table {project_id}.{dataset_id}.{table.table_id}...'
+        f'Storing participant data for {hpo_id} in table {project_id}.{dataset_id}.{table.table_id}'
     )
     store_participant_data(participant_info,
                            project_id,
                            f'{dataset_id}.{table_name}',
-                           schema=schema)
+                           schema=schema,
+                           to_hour_partition=True)
 
     LOGGER.info(f'Done.')
 

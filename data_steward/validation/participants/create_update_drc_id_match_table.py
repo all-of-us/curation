@@ -81,7 +81,7 @@ def create_drc_validation_table(client,
     job = client.query(create_table)
     job.result()
 
-    LOGGER.info(f'Created {table_id}.')
+    LOGGER.info(f'Created HOUR partitioned table {drc_dataset_id}.{table_id}')
 
     return table_id
 
@@ -143,7 +143,8 @@ def populate_validation_table(client,
     job = client.query(populate_query)
     job.result()
 
-    LOGGER.info(f'Populated values in `{id_match_table_id}`')
+    LOGGER.info(
+        f'Populated default values in {drc_dataset_id}.{id_match_table_id}')
 
 
 def get_arg_parser():

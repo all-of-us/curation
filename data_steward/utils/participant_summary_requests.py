@@ -127,7 +127,8 @@ def get_participant_data(api_project_id: str,
             # Session has a backoff implemented, meaning a failure indicates an error with the API server, so quit
             raise RuntimeError(f'Error: API request failed because {resp}')
         else:
-            LOGGER.info(f'Fetching data from PS API using params:{params}')
+            LOGGER.info(
+                f'Fetching data from PS API using params/url:{params}/{url}')
             r_json = resp.json()
             participant_data += r_json.get(
                 'entry', {}
@@ -438,7 +439,11 @@ def set_dataframe_date_fields(df: pandas.DataFrame,
     return df
 
 
-def store_participant_data(df, project_id, destination_table, schema=None):
+def store_participant_data(df,
+                           project_id,
+                           destination_table,
+                           schema=None,
+                           to_hour_partition=None):
     """
     Stores the fetched participant data in a BigQuery dataset. If the
     table doesn't exist, it will create that table. If the table does
@@ -448,6 +453,7 @@ def store_participant_data(df, project_id, destination_table, schema=None):
     :param project_id: identifies the project
     :param destination_table: name of the table to be written in the form of dataset.tablename
     :param schema: a list of SchemaField objects corresponding to the destination table
+    :param to_hour_partition: Boolean to indicate store to current hour partition or no partition
 
     :return: returns the bq job_id for the loading of participant data
     """
@@ -464,7 +470,19 @@ def store_participant_data(df, project_id, destination_table, schema=None):
     # Dataframe data fields must be of type datetime
     df = set_dataframe_date_fields(df, schema)
 
-    load_job_config = LoadJobConfig(schema=schema)
+    if to_hour_partition:
+        # Clear partition for current hour to prevent duplication (overwrite existing data for the hour)
+        LOGGER.info(f"Clearing current hour partition for {destination_table}")
+        clear_partition_query = f"DELETE FROM {destination_table} WHERE _PARTITIONTIME = CURRENT_TIMESTAMP"
+        clear_job = client.query(clear_partition_query)
+        clear_job.result()
+        load_job_config = LoadJobConfig(
+            schema=schema,
+            time_partitioning=TimePartitioning(type_=TimePartitioningType.HOUR))
+    else:
+        load_job_config = LoadJobConfig(schema=schema)
+
+    # Run load job with specified config
     job = client.load_table_from_dataframe(df,
                                            destination_table,
                                            job_config=load_job_config)
