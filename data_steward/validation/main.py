@@ -522,7 +522,7 @@ def process_hpo(hpo_id, force_run=False):
         project_id = app_identity.get_application_id()
         storage_client = StorageClient(project_id)
         bucket: Bucket = storage_client.get_hpo_bucket(hpo_id)
-        bucket_items = list_bucket(bucket.name)
+        bucket_items: list = storage_client.get_bucket_items_metadata(bucket)
         folder_prefix = _get_submission_folder(bucket.name, bucket_items,
                                                force_run)
         if folder_prefix is None:
