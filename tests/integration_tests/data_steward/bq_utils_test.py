@@ -8,8 +8,8 @@ from io import open
 import bq_utils
 import common
 import app_identity
-import gcs_utils
 from gcloud.gcs import StorageClient
+from google.cloud.storage.bucket import Bucket, Blob
 import resources
 from tests import test_util
 from tests.test_util import (FAKE_HPO_ID, FIVE_PERSONS_PERSON_CSV,
@@ -26,7 +26,6 @@ class BqUtilsTest(unittest.TestCase):
         print('**************************************************************')
 
     def setUp(self):
-        self.hpo_bucket = gcs_utils.get_hpo_bucket(FAKE_HPO_ID)
         self.person_table_id = bq_utils.get_table_id(FAKE_HPO_ID, common.PERSON)
         self.dataset_id = bq_utils.get_dataset_id()
         test_util.delete_all_tables(self.dataset_id)
@@ -78,6 +77,7 @@ class BqUtilsTest(unittest.TestCase):
         ]
         self.DT_FORMAT = '%Y-%m-%d %H:%M:%S'
         self.client = StorageClient(self.project_id)
+        self.hpo_bucket: Bucket = self.client.get_hpo_bucket(FAKE_HPO_ID)
         self.client.empty_bucket(self.hpo_bucket)
 
     def _drop_tables(self):
@@ -98,20 +98,16 @@ class BqUtilsTest(unittest.TestCase):
         self.assertEqual(tpe, 'DAY')
 
     def test_load_csv(self):
-        app_id = app_identity.get_application_id()
         table_name = 'achilles_analysis'
-        csv_file_name = table_name + '.csv'
+        blob: Blob = self.hpo_bucket.blob(f'{table_name}.csv')
         local_csv_path = os.path.join(test_util.TEST_DATA_EXPORT_PATH,
-                                      csv_file_name)
-        sc_bucket = self.client.get_bucket(self.hpo_bucket)
-        bucket_blob = sc_bucket.blob(csv_file_name)
+                                      blob.name)
         with open(local_csv_path, 'rb') as fp:
-            bucket_blob.upload_from_file(fp)
-        hpo_bucket = self.hpo_bucket
-        gcs_object_path = 'gs://%(hpo_bucket)s/%(csv_file_name)s' % locals()
-        dataset_id = self.dataset_id
-        load_results = bq_utils.load_csv(table_name, gcs_object_path, app_id,
-                                         dataset_id, table_name)
+            blob.upload_from_file(fp)
+        gcs_object_path = f'gs://{self.hpo_bucket.name}/{blob.name}'
+        load_results = bq_utils.load_csv(table_name, gcs_object_path,
+                                         self.project_id, self.dataset_id,
+                                         table_name)
 
         load_job_id = load_results['jobReference']['jobId']
         incomplete_jobs = bq_utils.wait_on_jobs([load_job_id])
@@ -122,10 +118,9 @@ class BqUtilsTest(unittest.TestCase):
         self.assertEqual(query_response['kind'], 'bigquery#queryResponse')
 
     def test_load_cdm_csv(self):
-        sc_bucket = self.client.get_bucket(self.hpo_bucket)
-        bucket_blob = sc_bucket.blob('person.csv')
+        blob: Blob = self.hpo_bucket.blob('person.csv')
         with open(FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
-            bucket_blob.upload_from_file(fp)
+            blob.upload_from_file(fp)
         result = bq_utils.load_cdm_csv(FAKE_HPO_ID, common.PERSON)
         self.assertEqual(result['status']['state'], 'RUNNING')
         load_job_id = result['jobReference']['jobId']
@@ -139,10 +134,9 @@ class BqUtilsTest(unittest.TestCase):
         self.assertEqual(num_rows, '5')
 
     def test_query_result(self):
-        sc_bucket = self.client.get_bucket(self.hpo_bucket)
-        bucket_blob = sc_bucket.blob('person.csv')
+        blob: Blob = self.hpo_bucket.blob('person.csv')
         with open(FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
-            bucket_blob.upload_from_file(fp)
+            blob.upload_from_file(fp)
         result = bq_utils.load_cdm_csv(FAKE_HPO_ID, common.PERSON)
         load_job_id = result['jobReference']['jobId']
         incomplete_jobs = bq_utils.wait_on_jobs([load_job_id])
@@ -210,10 +204,10 @@ class BqUtilsTest(unittest.TestCase):
             int(row['observation_id'])
             for row in resources.csv_to_list(PITT_FIVE_PERSONS_OBSERVATION_CSV)
         ]
-        sc_bucket = self.client.get_bucket(gcs_utils.get_hpo_bucket(hpo_id))
-        bucket_blob = sc_bucket.blob('observation.csv')
+        bucket: Bucket = self.client.get_hpo_bucket(hpo_id)
+        blob: Blob = bucket.blob('observation.csv')
         with open(PITT_FIVE_PERSONS_OBSERVATION_CSV, 'rb') as fp:
-            bucket_blob.upload_from_file(fp)
+            blob.upload_from_file(fp)
         result = bq_utils.load_cdm_csv(hpo_id, 'observation')
         job_id = result['jobReference']['jobId']
         incomplete_jobs = bq_utils.wait_on_jobs([job_id])
