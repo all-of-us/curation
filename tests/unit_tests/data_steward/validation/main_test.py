@@ -52,19 +52,14 @@ class ValidationMainTest(TestCase):
 
         return bucket_items
 
-    @mock.patch('gcs_utils.get_client')
-    def test_unset_bucket(self, mock_get_client):
+    @mock.patch('gcs_utils.query')
+    def test_unset_bucket(self, mock_query):
 
         mock_result = mock.MagicMock()
         mock_result.bucket_name = "aou_test_fake"
 
         mock_query = mock.MagicMock()
         mock_query.result = [mock_result]
-
-        mock_client = mock.MagicMock()
-        mock_client.query = mock_query
-
-        mock_get_client.return_value = mock_client
 
         bucket_env_var = f'BUCKET_NAME_{self.hpo_id.upper()}'
 

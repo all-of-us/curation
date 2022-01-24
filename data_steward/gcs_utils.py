@@ -12,7 +12,7 @@ from deprecated import deprecated
 # Project imports
 from common import JINJA_ENV
 from constants.utils.bq import GET_BUCKET_QUERY, LOOKUP_TABLES_DATASET_ID, HPO_ID_BUCKET_NAME_TABLE_ID
-from utils.bq import get_client
+from utils.bq import query
 from validation.app_errors import BucketDoesNotExistError
 
 MIMETYPES = {
@@ -41,15 +41,13 @@ def get_hpo_bucket(hpo_id):
     """
     project_id = os.environ.get('GOOGLE_CLOUD_PROJECT')
 
-    bq_client = get_client(project_id)
-
     hpo_bucket_query = JINJA_ENV.from_string(GET_BUCKET_QUERY).render(
         project_id=project_id,
         dataset_id=LOOKUP_TABLES_DATASET_ID,
         table_id=HPO_ID_BUCKET_NAME_TABLE_ID,
         hpo_id=hpo_id)
 
-    query_result = list(bq_client.query(hpo_bucket_query).result())
+    query_result = list(query(hpo_bucket_query).result())
 
     if len(query_result) != 1:
         raise ValueError(
