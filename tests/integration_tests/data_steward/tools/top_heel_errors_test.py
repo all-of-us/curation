@@ -77,19 +77,20 @@ class TopHeelErrorsTest(TestCase):
         :return: contents of the file as list of objects
         """
 
-        table_name: str = common.ACHILLES_HEEL_RESULTS
+        heel_results: str = common.ACHILLES_HEEL_RESULTS
         if hpo_id is not None:
-            table_id: str = bq_utils.get_table_id(hpo_id, table_name)
+            table_id: str = bq_utils.get_table_id(hpo_id, heel_results)
         else:
-            table_id: str = table_name
+            table_id: str = heel_results
         table = self.drc_bucket.blob(f'{table_id}.csv')
         table_path: str = os.path.join(test_util.TEST_DATA_PATH, table.name)
 
         table.upload_from_filename(table_path)
 
         gcs_path: str = f'gs://{self.drc_bucket.name}/{table.name}'
-        load_results = bq_utils.load_csv(table_name, gcs_path, self.project_id,
-                                         self.dataset_id, table_id)
+        load_results = bq_utils.load_csv(heel_results, gcs_path,
+                                         self.project_id, self.dataset_id,
+                                         table_id)
         job_id = load_results['jobReference']['jobId']
         bq_utils.wait_on_jobs([job_id])
         return resources.csv_to_list(table_path)
