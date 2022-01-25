@@ -6,15 +6,12 @@ from io import open
 # Project imports
 import app_identity
 import bq_utils
-import gcs_utils
 import resources
 from gcloud.gcs import StorageClient
 from tests import test_util
 from constants.tools.combine_ehr_rdr import EHR_CONSENT_TABLE_ID, RDR_TABLES_TO_COPY, DOMAIN_TABLES
 from tools.combine_ehr_rdr import (copy_rdr_table, ehr_consent, main,
                                    mapping_table_for, create_cdm_tables)
-
-from google.cloud.storage import Bucket
 
 UNCONSENTED_EHR_COUNTS_QUERY = (
     '  select \'{domain_table}\' as table_id, count(1) as n from (SELECT DISTINCT'
@@ -48,8 +45,7 @@ class CombineEhrRdrTest(unittest.TestCase):
 
     @classmethod
     def load_dataset_from_files(cls, dataset_id, path, mappings=False):
-        hpo_bucket: Bucket = cls.storage_client.get_hpo_bucket(
-            test_util.FAKE_HPO_ID)
+        hpo_bucket = cls.storage_client.get_hpo_bucket(test_util.FAKE_HPO_ID)
         cls.storage_client.empty_bucket(hpo_bucket)
         job_ids: list = []
         for table in resources.CDM_TABLES:
@@ -61,13 +57,13 @@ class CombineEhrRdrTest(unittest.TestCase):
                     cls._upload_file_to_bucket(hpo_bucket, dataset_id, path,
                                                mapping_table))
         incomplete_jobs = bq_utils.wait_on_jobs(job_ids)
-        if len(incomplete_jobs) > 0:
-            message = "Job id(s) %s failed to complete" % incomplete_jobs
+        if incomplete_jobs:
+            message = f'Job id(s) {incomplete_jobs} failed to complete'
             raise RuntimeError(message)
         cls.storage_client.empty_bucket(hpo_bucket)
 
     @classmethod
-    def _upload_file_to_bucket(cls, bucket: Bucket, dataset_id: str, path: str,
+    def _upload_file_to_bucket(cls, bucket, dataset_id: str, path: str,
                                table: str) -> str:
 
         filename: str = f'{table}.csv'
@@ -84,8 +80,8 @@ class CombineEhrRdrTest(unittest.TestCase):
                                                dataset_id,
                                                table,
                                                allow_jagged_rows=True)
-        load_job_id: str = load_results['jobReference']['jobId']
-        return load_job_id
+        job_id: str = load_results['jobReference']['jobId']
+        return job_id
 
     def setUp(self):
         self.ehr_dataset_id = bq_utils.get_dataset_id()
