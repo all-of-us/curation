@@ -591,7 +591,16 @@ def get_duplicate_counts_query(hpo_id):
         if table_id in all_table_ids:
             sub_query = render_query(consts.DUPLICATE_IDS_SUBQUERY,
                                      table_name=table_name,
-                                     table_id=table_id)
+                                     table_id=table_id,
+                                     primary_key=f'{table_name}_id')
+            sub_queries.append(sub_query)
+    for table_name in common.PII_TABLES + [common.DEATH]:
+        table_id = bq_utils.get_table_id(hpo_id, table_name)
+        if table_id in all_table_ids:
+            sub_query = render_query(consts.DUPLICATE_IDS_SUBQUERY,
+                                     table_name=table_name,
+                                     table_id=table_id,
+                                     primary_key='person_id')
             sub_queries.append(sub_query)
     unioned_query = consts.UNION_ALL.join(sub_queries)
     return consts.DUPLICATE_IDS_WRAPPER.format(

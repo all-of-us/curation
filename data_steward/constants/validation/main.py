@@ -129,13 +129,13 @@ DUPLICATE_IDS_SUBQUERY = '''
         SUM(Individual_Duplicate_ID_Count-1) as count
     FROM
     (SELECT
-        COUNT({table_name}_id) AS Individual_Duplicate_ID_Count
+        COUNT({primary_key}) AS Individual_Duplicate_ID_Count
     FROM
         `{project_id}.{dataset_id}.{table_id}`
     GROUP BY
-        {table_name}_id
+        {primary_key}
     HAVING
-        COUNT({table_name}_id) > 1)
+        COUNT({primary_key}) > 1)
     '''
 
 EHR_NO_PII = 'EHR person record exists but no PII Name record'
