@@ -51,7 +51,7 @@ POPULATE_VALIDATION_TABLE = JINJA_ENV.from_string("""
 INSERT INTO `{{project_id}}.{{drc_dataset_id}}.{{id_match_table_id}}` (_PARTITIONTIME, {{fields}}) 
 SELECT
     _PARTITIONTIME, 
-    person_id, {{case_statements}}, 'no' algorithm
+    person_id, {{case_statements}}, '' algorithm
 FROM `{{project_id}}.{{drc_dataset_id}}.{{ps_values_table_id}}`
 WHERE ABS(TIMESTAMP_DIFF(TIMESTAMP_TRUNC(CURRENT_TIMESTAMP, HOUR), _PARTITIONTIME, HOUR)) < 2
 """)
