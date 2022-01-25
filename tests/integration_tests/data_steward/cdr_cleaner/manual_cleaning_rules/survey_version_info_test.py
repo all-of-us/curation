@@ -40,7 +40,7 @@ class COPESurveyVersionTaskTest(BaseTest.DeidRulesTestBase):
         cls.cope_dataset_id = cls.mapping_dataset_id
         cls.cope_tablename = 'cope_survey_test_data'
 
-        dataset_id = os.environ.get('COMBINED_DEID_DATASET_ID')
+        dataset_id = os.environ.get('COMBINED_DATASET_ID')
         sandbox_id = dataset_id + '_sandbox'
 
         cls.kwargs.update({
@@ -85,6 +85,9 @@ class COPESurveyVersionTaskTest(BaseTest.DeidRulesTestBase):
           -- represents COPE survey records --
           (801, 337361, 1585899, date('2016-05-01'), 45905771, 100),
           (804, 337361, 1585899, date('2020-11-01'), 45905771, 150),
+          -- represents Minute survey records --
+          (805, 337361, 1585899, date('2021-06-10'), 45905771, 250),
+          (806, 337361, 1585899, date('2021-06-10'), 45905771, 300),
           -- represents other survey record --
           (802, 337361, 1585899, date('2019-01-01'), 45905771, 200),
           -- represents an EHR observation record --
@@ -98,7 +101,9 @@ class COPESurveyVersionTaskTest(BaseTest.DeidRulesTestBase):
           (801, 'PPI/PM', null),
           (802, 'PPI/PM', null),
           (803, 'EHR site 222', null),
-          (804, 'PPI/PM', null)
+          (804, 'PPI/PM', null),
+          (805, 'PPI/PM', null),
+          (806, 'PPI/PM', null)
         """),
             self.jinja_env.from_string("""
         -- set up questionnaire response mapping table, a post-deid table --
@@ -107,7 +112,9 @@ class COPESurveyVersionTaskTest(BaseTest.DeidRulesTestBase):
         VALUES
           (10, 100),
           (20, 200),
-          (30, 150)
+          (30, 150),
+          (40, 250),
+          (50, 300)
         """),
             self.jinja_env.from_string("""
         CREATE OR REPLACE TABLE `{{project}}.{{cope_dataset}}.{{cope_table_name}}` AS (
@@ -125,7 +132,19 @@ class COPESurveyVersionTaskTest(BaseTest.DeidRulesTestBase):
         700 AS participant_id,
         30 AS questionnaire_response_id,
         'V2020.11.06' AS semantic_version,
-        'nov' AS cope_month)
+        'nov' AS cope_month
+        UNION ALL
+        SELECT
+        700 AS participant_id,
+        40 AS questionnaire_response_id,
+        'V2021.06.10' AS semantic_version,
+        'vaccine1' AS cope_month
+        UNION ALL
+        SELECT
+        700 AS participant_id,
+        50 AS questionnaire_response_id,
+        'V2021.10.28' AS semantic_version,
+        'vaccine3' AS cope_month)
         """)
         ]
 
@@ -152,11 +171,13 @@ class COPESurveyVersionTaskTest(BaseTest.DeidRulesTestBase):
             'fq_table_name':
                 self.fq_table_names[1],
             'fields': ['observation_id', 'src_id', 'survey_version_concept_id'],
-            'loaded_ids': [801, 802, 803, 804],
+            'loaded_ids': [801, 802, 803, 804, 805, 806],
             'cleaned_values': [(801, 'PPI/PM', 2100000002),
                                (802, 'PPI/PM', None),
                                (803, 'EHR site 222', None),
-                               (804, 'PPI/PM', 2100000005)]
+                               (804, 'PPI/PM', 2100000005),
+                               (805, 'PPI/PM', 2100000008),
+                               (806, 'PPI/PM', 2100000010)]
         }]
 
         self.default_test(tables_and_counts)
