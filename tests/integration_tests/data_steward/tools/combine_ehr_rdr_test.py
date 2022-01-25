@@ -14,6 +14,8 @@ from constants.tools.combine_ehr_rdr import EHR_CONSENT_TABLE_ID, RDR_TABLES_TO_
 from tools.combine_ehr_rdr import (copy_rdr_table, ehr_consent, main,
                                    mapping_table_for, create_cdm_tables)
 
+from google.cloud.storage import Bucket
+
 UNCONSENTED_EHR_COUNTS_QUERY = (
     '  select \'{domain_table}\' as table_id, count(1) as n from (SELECT DISTINCT'
     '  v.src_hpo_id AS src_hpo_id,'
@@ -46,52 +48,49 @@ class CombineEhrRdrTest(unittest.TestCase):
 
     @classmethod
     def load_dataset_from_files(cls, dataset_id, path, mappings=False):
-        bucket = gcs_utils.get_hpo_bucket(test_util.FAKE_HPO_ID)
-        cls.storage_client.empty_bucket(bucket)
-        job_ids = []
+        hpo_bucket: Bucket = cls.storage_client.get_hpo_bucket(
+            test_util.FAKE_HPO_ID)
+        cls.storage_client.empty_bucket(hpo_bucket)
+        job_ids: list = []
         for table in resources.CDM_TABLES:
             job_ids.append(
-                cls._upload_file_to_bucket(bucket, dataset_id, path, table))
+                cls._upload_file_to_bucket(hpo_bucket, dataset_id, path, table))
             if mappings and table in DOMAIN_TABLES:
                 mapping_table = '_mapping_{table}'.format(table=table)
                 job_ids.append(
-                    cls._upload_file_to_bucket(bucket, dataset_id, path,
+                    cls._upload_file_to_bucket(hpo_bucket, dataset_id, path,
                                                mapping_table))
         incomplete_jobs = bq_utils.wait_on_jobs(job_ids)
         if len(incomplete_jobs) > 0:
             message = "Job id(s) %s failed to complete" % incomplete_jobs
             raise RuntimeError(message)
-        cls.storage_client.empty_bucket(bucket)
+        cls.storage_client.empty_bucket(hpo_bucket)
 
     @classmethod
-    def _upload_file_to_bucket(cls, bucket: str, dataset_id: str, path: str,
-                               table: str):
-        app_id: str = bq_utils.app_identity.get_application_id()
+    def _upload_file_to_bucket(cls, bucket: Bucket, dataset_id: str, path: str,
+                               table: str) -> str:
+
         filename: str = f'{table}.csv'
-        file_path: str = os.path.join(path, filename)
-        target_bucket = cls.storage_client.get_bucket(bucket)
-        blob = target_bucket.blob(filename)
+        filepath: str = os.path.join(path, filename)
+        blob = bucket.blob(filename)
         try:
-            with open(file_path, 'rb') as filepath:
-                blob.upload_from_file(filepath)
-        except OSError as exc:
+            blob.upload_from_filename(filepath)
+        except FileNotFoundError:
             blob.upload_from_string('\n')
-        gcs_path: str = 'gs://{bucket}/{filename}'.format(bucket=bucket,
-                                                          filename=filename)
-        load_results = bq_utils.load_csv(table,
-                                         gcs_path,
-                                         app_id,
-                                         dataset_id,
-                                         table,
-                                         allow_jagged_rows=True)
-        load_job_id = load_results['jobReference']['jobId']
+        gcs_path: str = f'gs://{bucket.name}/{filename}'
+        load_results: dict = bq_utils.load_csv(table,
+                                               gcs_path,
+                                               cls.project_id,
+                                               dataset_id,
+                                               table,
+                                               allow_jagged_rows=True)
+        load_job_id: str = load_results['jobReference']['jobId']
         return load_job_id
 
     def setUp(self):
         self.ehr_dataset_id = bq_utils.get_dataset_id()
         self.rdr_dataset_id = bq_utils.get_rdr_dataset_id()
         self.combined_dataset_id = bq_utils.get_combined_dataset_id()
-        self.drc_bucket = gcs_utils.get_drc_bucket()
         test_util.delete_all_tables(self.combined_dataset_id)
 
     def test_consented_person_id(self):
