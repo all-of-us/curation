@@ -21,3 +21,6 @@ concept_id	concept_name	domain_id	vocabulary_id	concept_class_id	standard_concep
 2100000005	COPE Survey November 2020	Metadata	AoU_Custom	Module		AoUDRC_SurveyVersion_CopeNovember2020	20201027	20991231	
 2100000006	COPE Survey December 2020	Metadata	AoU_Custom	Module		AoUDRC_SurveyVersion_CopeDecember2020	20201208	20991231	
 2100000007	COPE Survey February 2021	Metadata	AoU_Custom	Module		AoUDRC_SurveyVersion_CopeFebruary2021	20210209	20991231	
+2100000008	Minute Survey Summer - Vaccine 1 2021	Metadata	AoU_Custom	Module		AoUDRC_SurveyVersion_SummerMinute_Vaccine1_2021	20210610	20991231	
+2100000009	Minute Survey Fall - Vaccine 2 2021	Metadata	AoU_Custom	Module		AoUDRC_SurveyVersion_FallMinute_Vaccine2_2021	20210819	20991231	
+2100000010	Minute Survey Winter - Vaccine 3 2021	Metadata	AoU_Custom	Module		AoUDRC_SurveyVersion_WinterMinute_Vaccine3_2021	20211028	20991231	
