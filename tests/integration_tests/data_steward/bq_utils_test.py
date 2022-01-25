@@ -216,9 +216,9 @@ class BqUtilsTest(unittest.TestCase):
         load_job_result = bq_utils.get_job_details(job_id)
         load_job_result_status = load_job_result['status']
         load_job_errors = load_job_result_status.get('errors')
-        self.assertIsNone(load_job_errors,
-                          msg='pitt_observation load job failed: ' +
-                          str(load_job_errors))
+        self.assertIsNone(
+            load_job_errors,
+            msg=f'pitt_observation load job failed: {str(load_job_errors)}')
         query_results_response = bq_utils.query(q)
         query_job_errors = query_results_response.get('errors')
         self.assertIsNone(query_job_errors)
