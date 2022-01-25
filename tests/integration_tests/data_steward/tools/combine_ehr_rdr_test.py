@@ -52,13 +52,13 @@ class CombineEhrRdrTest(unittest.TestCase):
             job_ids.append(
                 cls._upload_file_to_bucket(hpo_bucket, dataset_id, path, table))
             if mappings and table in DOMAIN_TABLES:
-                mapping_table = '_mapping_{table}'.format(table=table)
+                mapping_table = f'_mapping_{table}'
                 job_ids.append(
                     cls._upload_file_to_bucket(hpo_bucket, dataset_id, path,
                                                mapping_table))
-        incomplete_jobs = bq_utils.wait_on_jobs(job_ids)
+        incomplete_jobs: list = bq_utils.wait_on_jobs(job_ids)
         if incomplete_jobs:
-            message = f'Job id(s) {incomplete_jobs} failed to complete'
+            message: str = f'Job id(s) {incomplete_jobs} failed to complete'
             raise RuntimeError(message)
         cls.storage_client.empty_bucket(hpo_bucket)
 
