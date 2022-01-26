@@ -27,6 +27,7 @@ class AchillesHeelTest(unittest.TestCase):
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
+        test_util.insert_hpo_id_bucket_name()
 
     def setUp(self):
         self.hpo_bucket = gcs_utils.get_hpo_bucket(FAKE_HPO_ID)
@@ -148,3 +149,7 @@ class AchillesHeelTest(unittest.TestCase):
         for analysis_id in actual_result:
             self.assertIn(analysis_id, notifications)
         # self.assertEqual(ACHILLES_HEEL_RESULTS_NOTIFICATION_COUNT, int(result['rows'][0]['f'][0]['v']))
+
+    @classmethod
+    def tearDownClass(cls):
+        test_util.delete_hpo_id_bucket_name()

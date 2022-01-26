@@ -10,7 +10,7 @@ import bq_utils
 import common
 from gcloud.gcs import StorageClient
 from tests import test_util
-from tests.test_util import FAKE_HPO_ID
+from tests.test_util import FAKE_HPO_ID, NYC_HPO_ID
 from validation import export, main
 
 BQ_TIMEOUT_RETRIES = 3
@@ -27,6 +27,7 @@ class ExportTest(unittest.TestCase):
         dataset_id = bq_utils.get_dataset_id()
         test_util.delete_all_tables(dataset_id)
         test_util.populate_achilles()
+        test_util.insert_hpo_id_bucket_name()
 
     def setUp(self):
         self.project_id = app_identity.get_application_id()
@@ -121,12 +122,12 @@ class ExportTest(unittest.TestCase):
 
     @mock.patch('validation.export.is_hpo_id')
     def test_run_export_with_target_bucket_and_datasource_id(
-        self, mock_is_hpo_id):
+            self, mock_is_hpo_id):
         # validation/main.py INTEGRATION TEST
         mock_is_hpo_id.return_value = True
         folder_prefix: str = 'dummy-prefix-2018-03-24/'
 
-        target_bucket = self.storage_client.get_hpo_bucket('nyc')
+        target_bucket = self.storage_client.get_hpo_bucket(NYC_HPO_ID)
         objects: Iterable = target_bucket.list_blobs()
         main.run_export(datasource_id=FAKE_HPO_ID,
                         folder_prefix=folder_prefix,
@@ -153,7 +154,7 @@ class ExportTest(unittest.TestCase):
         self.assertDictEqual(expected_datasources, actual_datasources)
 
     def tearDown(self):
-        bucket_nyc = self.storage_client.get_hpo_bucket('nyc')
+        bucket_nyc = self.storage_client.get_hpo_bucket(NYC_HPO_ID)
         self.storage_client.empty_bucket(bucket_nyc)
         self.storage_client.empty_bucket(self.hpo_bucket)
 
@@ -161,3 +162,4 @@ class ExportTest(unittest.TestCase):
     def tearDownClass(cls):
         dataset_id = bq_utils.get_dataset_id()
         test_util.delete_all_tables(dataset_id)
+        test_util.delete_hpo_id_bucket_name()

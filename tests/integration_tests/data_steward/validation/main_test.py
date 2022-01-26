@@ -19,6 +19,7 @@ import gcs_utils
 from gcloud.gcs import StorageClient
 import resources
 from tests import test_util
+from tests.test_util import NYC_HPO_ID
 from validation import main
 from validation.metrics import required_labs
 
@@ -30,6 +31,7 @@ class ValidationMainTest(unittest.TestCase):
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
+        test_util.insert_hpo_id_bucket_name()
 
     def setUp(self):
         self.hpo_id = test_util.FAKE_HPO_ID
@@ -231,7 +233,7 @@ class ValidationMainTest(unittest.TestCase):
                                 set(actual_bucket_items))
 
     def test_target_bucket_upload(self):
-        bucket_nyc = gcs_utils.get_hpo_bucket('nyc')
+        bucket_nyc = gcs_utils.get_hpo_bucket(NYC_HPO_ID)
         folder_prefix = 'test-folder-fake/'
         self.storage_client.empty_bucket(bucket_nyc)
 
@@ -368,7 +370,10 @@ class ValidationMainTest(unittest.TestCase):
 
     def tearDown(self):
         self.storage_client.empty_bucket(self.hpo_bucket)
-        bucket_nyc = gcs_utils.get_hpo_bucket('nyc')
+        bucket_nyc = gcs_utils.get_hpo_bucket(NYC_HPO_ID)
         self.storage_client.empty_bucket(bucket_nyc)
         self.storage_client.empty_bucket(gcs_utils.get_drc_bucket())
         test_util.delete_all_tables(self.bigquery_dataset_id)
+
+    def tearDownClass(cls):
+        test_util.delete_hpo_id_bucket_name()

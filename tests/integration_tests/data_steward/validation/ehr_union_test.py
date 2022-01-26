@@ -15,11 +15,10 @@ from gcloud.gcs import StorageClient
 import gcs_utils
 import resources
 import tests.test_util as test_util
+from tests.test_util import FAKE_HPO_ID, NYC_HPO_ID, PITT_HPO_ID
 from validation import ehr_union
 
-PITT_HPO_ID = 'pitt'
-NYC_HPO_ID = 'nyc'
-EXCLUDED_HPO_ID = 'fake'
+EXCLUDED_HPO_ID = FAKE_HPO_ID
 SUBQUERY_FAIL_MSG = '''
 Test {expr} in {table} subquery
  Expected: {expected}
@@ -40,6 +39,7 @@ class EhrUnionTest(unittest.TestCase):
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
+        test_util.insert_hpo_id_bucket_name()
 
     def setUp(self):
         self.project_id = bq_utils.app_identity.get_application_id()
@@ -556,3 +556,7 @@ class EhrUnionTest(unittest.TestCase):
         self._empty_hpo_buckets()
         test_util.delete_all_tables(self.input_dataset_id)
         test_util.delete_all_tables(self.output_dataset_id)
+
+    @classmethod
+    def tearDownClass(cls):
+        test_util.delete_hpo_id_bucket_name()

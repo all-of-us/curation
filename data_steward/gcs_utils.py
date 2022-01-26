@@ -47,7 +47,7 @@ def get_hpo_bucket(hpo_id):
         table_id=HPO_ID_BUCKET_NAME_TABLE_ID,
         hpo_id=hpo_id)
 
-    query_result = list(query(hpo_bucket_query).result())
+    query_result = query(hpo_bucket_query).values.tolist()
 
     if len(query_result) != 1:
         raise ValueError(
@@ -55,7 +55,7 @@ def get_hpo_bucket(hpo_id):
             f'in {project_id}.{LOOKUP_TABLES_DATASET_ID}.{HPO_ID_BUCKET_NAME_TABLE_ID}.'
         )
 
-    return query_result[0].bucket_name
+    return query_result[0][0]
 
 
 def hpo_gcs_path(hpo_id):

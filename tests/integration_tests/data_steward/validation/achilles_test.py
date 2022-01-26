@@ -22,6 +22,7 @@ class AchillesTest(unittest.TestCase):
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
+        test_util.insert_hpo_id_bucket_name()
 
     def setUp(self):
         self.hpo_bucket = gcs_utils.get_hpo_bucket(test_util.FAKE_HPO_ID)
@@ -70,3 +71,7 @@ class AchillesTest(unittest.TestCase):
         result = bq_utils.query(cmd)
         self.assertEqual(int(result['rows'][0]['f'][0]['v']),
                          ACHILLES_RESULTS_COUNT)
+
+    @classmethod
+    def tearDownClass(cls):
+        test_util.delete_hpo_id_bucket_name()

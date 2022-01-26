@@ -6,14 +6,25 @@ from typing import Optional
 import googleapiclient.errors
 import requests
 
+import app_identity
 import bq_utils
 import common
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
+from constants.utils.bq import LOOKUP_TABLES_DATASET_ID, HPO_ID_BUCKET_NAME_TABLE_ID
 from constants.validation import main
 import resources
+from utils import bq
 
 RESOURCES_BUCKET_FMT = '{project_id}-resources'
-FAKE_HPO_ID = 'fake'
+
+HPO_ID_SUFFIX = f"_{os.environ.get('USERNAME_PREFIX')}_{os.environ.get('CURRENT_BRANCH')}"
+FAKE_HPO_ID = f"fake_{HPO_ID_SUFFIX}"
+PITT_HPO_ID = f"pitt_{HPO_ID_SUFFIX}"
+NYC_HPO_ID = f"nyc_{HPO_ID_SUFFIX}"
+FAKE_BUCKET_NAME = os.environ.get('BUCKET_NAME_FAKE')
+PITT_BUCKET_NAME = os.environ.get('BUCKET_NAME_PITT')
+NYC_BUCKET_NAME = os.environ.get('BUCKET_NAME_NYC')
+
 VALIDATE_HPO_FILES_URL = main.PREFIX + 'ValidateHpoFiles/' + FAKE_HPO_ID
 COPY_HPO_FILES_URL = main.PREFIX + 'CopyFiles/' + FAKE_HPO_ID
 BASE_TESTS_PATH = os.path.dirname(
@@ -444,3 +455,59 @@ def mock_google_http_error(status_code: int = 418,
         status_code=status_code, content=content, uri=uri, **resp_kwargs),
                                             content=content,
                                             uri=uri)
+
+
+def insert_hpo_id_bucket_name():
+    """[summary]
+    """
+    project_id = app_identity.get_application_id()
+
+    bq_client = bq.get_client(project_id)
+
+    INSERT_HPO_ID_BUCKET_NAME = common.JINJA_ENV.from_string("""
+        INSERT INTO `{{project_id}}.{{lookup_dataset_id}}.{{hpo_id_bucket_table_id}}` 
+        (hpo_id, bucket_name) VALUES 
+        ('{{hpo_id_nyc}}', '{{bucket_name_nyc}}'),
+        ('{{hpo_id_pitt}}', '{{bucket_name_pitt}}'),
+        ('{{hpo_id_fake}}', '{{bucket_name_fake}}')
+        """)
+
+    insert_hpo_id_bucket_name = INSERT_HPO_ID_BUCKET_NAME.render(
+        project_id=project_id,
+        lookup_dataset_id=LOOKUP_TABLES_DATASET_ID,
+        hpo_id_bucket_table_id=HPO_ID_BUCKET_NAME_TABLE_ID,
+        hpo_id_nyc=NYC_HPO_ID,
+        bucket_name_nyc=NYC_BUCKET_NAME,
+        hpo_id_pitt=PITT_HPO_ID,
+        bucket_name_pitt=PITT_BUCKET_NAME,
+        hpo_id_fake=FAKE_HPO_ID,
+        bucket_name_fake=FAKE_BUCKET_NAME)
+
+    job = bq_client.query(insert_hpo_id_bucket_name)
+    job.result()
+
+
+def delete_hpo_id_bucket_name():
+    """[summary]
+    """
+    project_id = app_identity.get_application_id()
+    bq_client = bq.get_client(project_id)
+
+    DELETE_HPO_ID_BUCKET_NAME = common.JINJA_ENV.from_string("""
+        DELETE FROM `{{project_id}}.{{lookup_dataset_id}}.{{hpo_id_bucket_table_id}}` 
+        WHERE hpo_id IN ('{{hpo_id_nyc}}', '{{hpo_id_pitt}}', '{{hpo_id_fake}}')
+        """)
+
+    delete_id_bucket_name = DELETE_HPO_ID_BUCKET_NAME.render(
+        project_id=project_id,
+        lookup_dataset_id=LOOKUP_TABLES_DATASET_ID,
+        hpo_id_bucket_table_id=HPO_ID_BUCKET_NAME_TABLE_ID,
+        hpo_id_nyc=NYC_HPO_ID,
+        bucket_name_nyc=NYC_BUCKET_NAME,
+        hpo_id_pitt=PITT_HPO_ID,
+        bucket_name_pitt=PITT_BUCKET_NAME,
+        hpo_id_fake=FAKE_HPO_ID,
+        bucket_name_fake=FAKE_BUCKET_NAME)
+
+    job = bq_client.query(delete_id_bucket_name)
+    job.result()
