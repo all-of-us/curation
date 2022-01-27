@@ -49,3 +49,5 @@ LOINC	Logical Observation Identifiers Names and Codes (Regenstrief Institute)	ht
 ISBT	Information Standard for Blood and Transplant 128 Product (ICCBBA)	http://www.iccbba.org/tech-library/iccbba-documents/databases-and-reference-tables/product-description-codes-database2	7.23.0	581441
 NDC	National Drug Code (FDA and manufacturers)	http://www.nlm.nih.gov/research/umls/rxnorm/docs/rxnormfiles.html, http://www.fda.gov/downloads/Drugs/DevelopmentApprovalProcess/UCM070838.zip	NDC 20190317	44819105
 SPL	Structured Product Labeling (FDA)	http://www.fda.gov/Drugs/InformationOnDrugs/ucm142438.htm	NDC 20190317	44819140
+AoU_General	AoU_General	https://docs.google.com/document/d/10Gji9VW5-RTysM-yAbRa77rXqVfDfO2li2U4LxUQH9g	1febf8a82feb1ce34fda1f79aee87990f89b48e2586a63c1254731276e504698	2000000000
+AoU_Custom	AoU_Custom	https://precisionmedicineinitiative.atlassian.net/browse/DC-618	1febf8a82feb1ce34fda1f79aee87990f89b48e2586a63c1254731276e504698	2100000000
