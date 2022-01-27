@@ -31,7 +31,7 @@ class ValidationMainTest(unittest.TestCase):
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
-        test_util.insert_hpo_id_bucket_name(cls.__name__)
+        test_util.insert_hpo_id_bucket_name()
 
     def setUp(self):
         self.hpo_id = test_util.FAKE_HPO_ID
@@ -375,5 +375,6 @@ class ValidationMainTest(unittest.TestCase):
         self.storage_client.empty_bucket(gcs_utils.get_drc_bucket())
         test_util.delete_all_tables(self.bigquery_dataset_id)
 
+    @classmethod
     def tearDownClass(cls):
-        test_util.delete_hpo_id_bucket_name(cls.__name__)
+        test_util.delete_hpo_id_bucket_name()

@@ -28,7 +28,7 @@ class RequiredLabsTest(unittest.TestCase):
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
-        test_util.insert_hpo_id_bucket_name(cls.__name__)
+        test_util.insert_hpo_id_bucket_name()
 
     def setUp(self):
         self.hpo_bucket = gcs_utils.get_hpo_bucket(FAKE_HPO_ID)
@@ -202,4 +202,4 @@ class RequiredLabsTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        test_util.delete_hpo_id_bucket_name(cls.__name__)
+        test_util.delete_hpo_id_bucket_name()

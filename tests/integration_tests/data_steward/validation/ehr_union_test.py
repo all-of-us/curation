@@ -39,7 +39,7 @@ class EhrUnionTest(unittest.TestCase):
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
-        test_util.insert_hpo_id_bucket_name(cls.__name__)
+        test_util.insert_hpo_id_bucket_name()
 
     def setUp(self):
         self.project_id = bq_utils.app_identity.get_application_id()
@@ -559,4 +559,4 @@ class EhrUnionTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        test_util.delete_hpo_id_bucket_name(cls.__name__)
+        test_util.delete_hpo_id_bucket_name()

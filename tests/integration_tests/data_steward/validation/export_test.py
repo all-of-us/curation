@@ -27,7 +27,7 @@ class ExportTest(unittest.TestCase):
         dataset_id = bq_utils.get_dataset_id()
         test_util.delete_all_tables(dataset_id)
         test_util.populate_achilles()
-        test_util.insert_hpo_id_bucket_name(cls.__name__)
+        test_util.insert_hpo_id_bucket_name()
 
     def setUp(self):
         self.project_id = app_identity.get_application_id()
@@ -162,4 +162,4 @@ class ExportTest(unittest.TestCase):
     def tearDownClass(cls):
         dataset_id = bq_utils.get_dataset_id()
         test_util.delete_all_tables(dataset_id)
-        test_util.delete_hpo_id_bucket_name(cls.__name__)
+        test_util.delete_hpo_id_bucket_name()
