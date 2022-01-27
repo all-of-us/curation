@@ -67,7 +67,7 @@ class AchillesHeelTest(unittest.TestCase):
 
     @staticmethod
     def get_mock_hpo_bucket():
-        bucket_env = 'BUCKET_NAME_' + FAKE_HPO_ID.upper()
+        bucket_env = 'BUCKET_NAME_FAKE'
         hpo_bucket_name = os.getenv(bucket_env)
         if hpo_bucket_name is None:
             raise EnvironmentError()

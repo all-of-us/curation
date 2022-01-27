@@ -12,7 +12,7 @@ import gcs_utils
 from gcloud.gcs import StorageClient
 import resources
 from tests import test_util
-from tests.test_util import (FAKE_HPO_ID, FIVE_PERSONS_PERSON_CSV,
+from tests.test_util import (FAKE_HPO_ID, FIVE_PERSONS_PERSON_CSV, PITT_HPO_ID,
                              PITT_FIVE_PERSONS_OBSERVATION_CSV)
 from validation.achilles import ACHILLES_TABLES
 
@@ -202,7 +202,7 @@ class BqUtilsTest(unittest.TestCase):
             self.assertTrue(bq_utils.table_exists(table_id))
 
     def test_load_ehr_observation(self):
-        hpo_id = 'pitt'
+        hpo_id = PITT_HPO_ID
         dataset_id = self.dataset_id
         table_id = bq_utils.get_table_id(hpo_id, table_name='observation')
         q = 'SELECT observation_id FROM {dataset_id}.{table_id} ORDER BY observation_id'.format(
