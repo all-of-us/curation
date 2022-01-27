@@ -9,7 +9,6 @@ import app_identity
 import bq_utils
 import common
 from gcloud.gcs import StorageClient
-from google.cloud.storage.bucket import Bucket
 from tests import test_util
 from tests.test_util import FAKE_HPO_ID
 from validation import export, main
@@ -125,7 +124,7 @@ class ExportTest(unittest.TestCase):
         # validation/main.py INTEGRATION TEST
         mock_is_hpo_id.return_value = True
         folder_prefix: str = 'dummy-prefix-2018-03-24/'
-        target_bucket: Bucket = self.storage_client.get_hpo_bucket('nyc')
+        target_bucket = self.storage_client.get_hpo_bucket('nyc')
         objects: Iterable = target_bucket.list_blobs()
         main.run_export(datasource_id=FAKE_HPO_ID,
                         folder_prefix=folder_prefix,
@@ -137,7 +136,6 @@ class ExportTest(unittest.TestCase):
             self.assertIn(expected_name, actual_names)
         export_path: str = f'{folder_prefix}{common.ACHILLES_EXPORT_DATASOURCES_JSON}'
         self.assertIn(export_path, actual_names)
-
         actual_data = target_bucket.blob(export_path)
         actual_json_data: str = actual_data.download_as_bytes().decode()
         actual_datasources: dict = json.loads(actual_json_data)
