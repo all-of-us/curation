@@ -619,3 +619,27 @@ HAVING count(1) > 0
 """)
 query = tpl.render(new_rdr=new_rdr, project_id=project_id)
 execute(client, query)
+
+# # Check if Responses for question [46234786](https://athena.ohdsi.org/search-terms/terms/46234786)
+# # are updated to 2000000010 - AoUDRC_ResponseRemoval from dates ranging 11/1/2021 – 11/9/2021
+
+# According to [this ticket](https://precisionmedicineinitiative.atlassian.net/browse/DC-2118),
+# the RDR export should not contain any responses other than 2000000010 - AoUDRC_ResponseRemoval for
+# question - [46234786](https://athena.ohdsi.org/search-terms/terms/46234786) ranging from dates 11/1/2021 – 11/9/2021
+# this check will give count of responses that does not meet this condition. Having ) count means this check is passed.
+
+tpl = JINJA_ENV.from_string("""
+SELECT
+    value_source_concept_id, value_as_concept_id, count(*) as n_row_violation
+FROM
+ `{{project_id}}.{{new_rdr}}.observation`
+WHERE
+  observation_source_concept_id = 46234786
+  AND (observation_date >= DATE('2021-11-01')
+    AND observation_date <= DATE('2021-11-09'))
+  AND (value_as_concept_id <> 2000000010
+    OR value_source_concept_id <> 2000000010)
+group by value_source_concept_id, value_as_concept_id
+""")
+query = tpl.render(new_rdr=new_rdr, project_id=project_id)
+execute(client, query)
