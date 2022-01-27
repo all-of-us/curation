@@ -142,22 +142,22 @@ class CreateUpdateDrcIdMatchTableTest(TestCase):
             'person_id': 1,
             'first_name': 'missing_ehr',
             'last_name': 'missing_ehr',
-            'algorithm': 'no'
+            'algorithm': ''
         }, {
             'person_id': 2,
             'first_name': 'missing_rdr',
             'last_name': 'missing_ehr',
-            'algorithm': 'no'
+            'algorithm': ''
         }, {
             'person_id': 3,
             'first_name': 'missing_ehr',
             'last_name': 'missing_rdr',
-            'algorithm': 'no'
+            'algorithm': ''
         }, {
             'person_id': 4,
             'first_name': 'missing_rdr',
             'last_name': 'missing_rdr',
-            'algorithm': 'no'
+            'algorithm': ''
         }]
 
         # Creates validation table if it does not already exist
