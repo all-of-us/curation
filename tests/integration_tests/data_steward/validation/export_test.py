@@ -27,7 +27,7 @@ class ExportTest(unittest.TestCase):
         dataset_id = bq_utils.get_dataset_id()
         test_util.delete_all_tables(dataset_id)
         test_util.populate_achilles()
-        test_util.insert_hpo_id_bucket_name()
+        test_util.insert_hpo_id_bucket_name(cls.__name__)
 
     def setUp(self):
         self.project_id = app_identity.get_application_id()
@@ -122,7 +122,7 @@ class ExportTest(unittest.TestCase):
 
     @mock.patch('validation.export.is_hpo_id')
     def test_run_export_with_target_bucket_and_datasource_id(
-            self, mock_is_hpo_id):
+        self, mock_is_hpo_id):
         # validation/main.py INTEGRATION TEST
         mock_is_hpo_id.return_value = True
         folder_prefix: str = 'dummy-prefix-2018-03-24/'
@@ -162,4 +162,4 @@ class ExportTest(unittest.TestCase):
     def tearDownClass(cls):
         dataset_id = bq_utils.get_dataset_id()
         test_util.delete_all_tables(dataset_id)
-        test_util.delete_hpo_id_bucket_name()
+        test_util.delete_hpo_id_bucket_name(cls.__name__)

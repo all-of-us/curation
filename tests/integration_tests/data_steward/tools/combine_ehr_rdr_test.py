@@ -43,7 +43,7 @@ class CombineEhrRdrTest(unittest.TestCase):
         cls.load_dataset_from_files(ehr_dataset_id,
                                     test_util.NYC_FIVE_PERSONS_PATH, True)
         cls.load_dataset_from_files(rdr_dataset_id, test_util.RDR_PATH)
-        test_util.insert_hpo_id_bucket_name()
+        test_util.insert_hpo_id_bucket_name(cls.__name__)
 
     @classmethod
     def load_dataset_from_files(cls, dataset_id, path, mappings=False):
@@ -333,4 +333,4 @@ class CombineEhrRdrTest(unittest.TestCase):
         rdr_dataset_id = bq_utils.get_rdr_dataset_id()
         test_util.delete_all_tables(ehr_dataset_id)
         test_util.delete_all_tables(rdr_dataset_id)
-        test_util.delete_hpo_id_bucket_name()
+        test_util.delete_hpo_id_bucket_name(cls.__name__)

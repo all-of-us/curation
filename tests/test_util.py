@@ -18,9 +18,9 @@ from utils import bq
 RESOURCES_BUCKET_FMT = '{project_id}-resources'
 
 HPO_ID_SUFFIX = f"_{os.environ.get('USERNAME_PREFIX')}_{os.environ.get('CURRENT_BRANCH')}"
-FAKE_HPO_ID = f"fake_{HPO_ID_SUFFIX}"
-PITT_HPO_ID = f"pitt_{HPO_ID_SUFFIX}"
-NYC_HPO_ID = f"nyc_{HPO_ID_SUFFIX}"
+FAKE_HPO_ID = f"fake{HPO_ID_SUFFIX}"
+PITT_HPO_ID = f"pitt{HPO_ID_SUFFIX}"
+NYC_HPO_ID = f"nyc{HPO_ID_SUFFIX}"
 FAKE_BUCKET_NAME = os.environ.get('BUCKET_NAME_FAKE')
 PITT_BUCKET_NAME = os.environ.get('BUCKET_NAME_PITT')
 NYC_BUCKET_NAME = os.environ.get('BUCKET_NAME_NYC')
@@ -457,7 +457,7 @@ def mock_google_http_error(status_code: int = 418,
                                             uri=uri)
 
 
-def insert_hpo_id_bucket_name():
+def insert_hpo_id_bucket_name(cls_name):
     """[summary]
     """
     project_id = app_identity.get_application_id()
@@ -476,18 +476,18 @@ def insert_hpo_id_bucket_name():
         project_id=project_id,
         lookup_dataset_id=LOOKUP_TABLES_DATASET_ID,
         hpo_id_bucket_table_id=HPO_ID_BUCKET_NAME_TABLE_ID,
-        hpo_id_nyc=NYC_HPO_ID,
+        hpo_id_nyc=f"{NYC_HPO_ID}_{cls_name}",
         bucket_name_nyc=NYC_BUCKET_NAME,
-        hpo_id_pitt=PITT_HPO_ID,
+        hpo_id_pitt=f"{PITT_HPO_ID}_{cls_name}",
         bucket_name_pitt=PITT_BUCKET_NAME,
-        hpo_id_fake=FAKE_HPO_ID,
+        hpo_id_fake=f"{FAKE_HPO_ID}_{cls_name}",
         bucket_name_fake=FAKE_BUCKET_NAME)
 
     job = bq_client.query(insert_hpo_id_bucket_name)
     job.result()
 
 
-def delete_hpo_id_bucket_name():
+def delete_hpo_id_bucket_name(cls_name):
     """[summary]
     """
     project_id = app_identity.get_application_id()
@@ -502,11 +502,11 @@ def delete_hpo_id_bucket_name():
         project_id=project_id,
         lookup_dataset_id=LOOKUP_TABLES_DATASET_ID,
         hpo_id_bucket_table_id=HPO_ID_BUCKET_NAME_TABLE_ID,
-        hpo_id_nyc=NYC_HPO_ID,
+        hpo_id_nyc=f"{NYC_HPO_ID}_{cls_name}",
         bucket_name_nyc=NYC_BUCKET_NAME,
-        hpo_id_pitt=PITT_HPO_ID,
+        hpo_id_pitt=f"{PITT_HPO_ID}_{cls_name}",
         bucket_name_pitt=PITT_BUCKET_NAME,
-        hpo_id_fake=FAKE_HPO_ID,
+        hpo_id_fake=f"{FAKE_HPO_ID}_{cls_name}",
         bucket_name_fake=FAKE_BUCKET_NAME)
 
     job = bq_client.query(delete_id_bucket_name)
