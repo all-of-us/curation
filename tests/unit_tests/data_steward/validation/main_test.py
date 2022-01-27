@@ -307,7 +307,6 @@ class ValidationMainTest(TestCase):
     @mock.patch('validation.main.all_required_files_loaded')
     @mock.patch('validation.main.query_rows')
     @mock.patch('validation.main.get_duplicate_counts_query')
-    @mock.patch('validation.main.upload_string_to_gcs')
     @mock.patch('validation.main.get_hpo_name')
     @mock.patch('validation.main.validate_submission')
     @mock.patch('validation.main.get_folder_items')
@@ -319,10 +318,9 @@ class ValidationMainTest(TestCase):
     def test_process_hpo_ignore_dirs(
         self, mock_storage_client, mock_bucket_list, mock_valid_rdr,
         mock_first_validation, mock_has_all_required_files, mock_folder_items,
-        mock_validation, mock_get_hpo_name, mock_upload_string_to_gcs,
-        mock_get_duplicate_counts_query, mock_query_rows,
-        mock_all_required_files_loaded, mock_run_achilles, mock_export,
-        mock_valid_folder_name, mock_query):
+        mock_validation, mock_get_hpo_name, mock_get_duplicate_counts_query,
+        mock_query_rows, mock_all_required_files_loaded, mock_run_achilles,
+        mock_export, mock_valid_folder_name, mock_query):
         """
         Test process_hpo with directories we want to ignore.
 
@@ -359,7 +357,6 @@ class ValidationMainTest(TestCase):
         mock_query_rows.return_value = []
         mock_get_duplicate_counts_query.return_value = ''
         mock_get_hpo_name.return_value = 'fake_hpo_name'
-        mock_upload_string_to_gcs.return_value = ''
         mock_valid_rdr.return_value = True
         mock_first_validation.return_value = False
         yesterday = datetime.datetime.now() - datetime.timedelta(hours=24)
@@ -425,6 +422,7 @@ class ValidationMainTest(TestCase):
         # non-participant directory
         mock_client.get_hpo_bucket.assert_called()
         mock_bucket.blob.assert_called()
+        self.assertEqual(mock_blob.upload_from_string.call_count, 2)
         mock_blob.upload_from_file.assert_called()
         for filepath in mock_bucket.blob.call_args_list:
             self.assertEqual('fake_bucket_name', mock_bucket.name)
@@ -569,9 +567,6 @@ class ValidationMainTest(TestCase):
                                          reason='baz',
                                          content=b'bar')
 
-        def upload_string_to_gcs(bucket, filename, content):
-            return True
-
         def get_duplicate_counts_query(hpo_id):
             return ''
 
@@ -583,7 +578,6 @@ class ValidationMainTest(TestCase):
                 all_required_files_loaded=all_required_files_loaded,
                 query_rows=query_rows,
                 get_duplicate_counts_query=get_duplicate_counts_query,
-                upload_string_to_gcs=upload_string_to_gcs,
                 is_valid_rdr=is_valid_rdr):
             result = main.generate_metrics(self.hpo_id, self.hpo_bucket,
                                            self.folder_prefix, summary)
@@ -602,7 +596,6 @@ class ValidationMainTest(TestCase):
                 all_required_files_loaded=all_required_files_loaded,
                 query_rows=query_rows_error,
                 get_duplicate_counts_query=get_duplicate_counts_query,
-                upload_string_to_gcs=upload_string_to_gcs,
                 is_valid_rdr=is_valid_rdr):
             result = main.generate_metrics(self.hpo_id, self.hpo_bucket,
                                            self.folder_prefix, summary)
@@ -610,9 +603,7 @@ class ValidationMainTest(TestCase):
             self.assertEqual(error_occurred, True)
 
     @mock.patch('bq_utils.get_hpo_info')
-    @mock.patch('validation.main.upload_string_to_gcs')
-    def test_html_incorrect_folder_name(self, mock_string_to_file,
-                                        mock_hpo_csv):
+    def test_html_incorrect_folder_name(self, mock_hpo_csv):
         mock_hpo_csv.return_value = [{'hpo_id': self.hpo_id}]
 
         # validate folder name

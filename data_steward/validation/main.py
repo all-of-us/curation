@@ -447,15 +447,17 @@ def perform_reporting(hpo_id, report_data, folder_items, bucket, folder_prefix):
 
     results_html_path = folder_prefix + common.RESULTS_HTML
     logging.info(f"Saving file {common.RESULTS_HTML} to "
-                 f"gs://{bucket}/{results_html_path}.")
-    upload_string_to_gcs(bucket, results_html_path, results_html)
+                 f"gs://{bucket.name}/{results_html_path}.")
+    results_html_blob: Blob = bucket.blob(results_html_path)
+    results_html_blob.upload_from_string(results_html)
 
     processed_txt_path = folder_prefix + common.PROCESSED_TXT
     logging.info(f"Saving timestamp {processed_time_str} to "
-                 f"gs://{bucket}/{processed_txt_path}.")
-    upload_string_to_gcs(bucket, processed_txt_path, processed_time_str)
+                 f"gs://{bucket.name}/{processed_txt_path}.")
+    processed_txt_blob: Blob = bucket.blob(processed_txt_path)
+    processed_txt_blob.upload_from_string(processed_time_str)
 
-    folder_uri = f"gs://{bucket}/{folder_prefix}"
+    folder_uri = f"gs://{bucket.name}/{folder_prefix}"
     if folder_items and is_first_validation_run(folder_items):
         logging.info(f"Attempting to send report via email for {hpo_id}")
         email_msg = en.generate_email_message(hpo_id, results_html, folder_uri,
@@ -531,7 +533,7 @@ def process_hpo(hpo_id, force_run=False):
             else:
                 # do not perform validation
                 report_data = generate_empty_report(hpo_id, folder_prefix)
-            perform_reporting(hpo_id, report_data, folder_items, bucket.name,
+            perform_reporting(hpo_id, report_data, folder_items, bucket,
                               folder_prefix)
     except BucketNotSet as exc:
         logging.info(f'{exc}')
@@ -930,22 +932,6 @@ def copy_files(hpo_id):
     """
     process_hpo_copy(hpo_id)
     return '{"copy-status": "done"}'
-
-
-def upload_string_to_gcs(bucket, name, string):
-    """
-    Save the validation results in GCS
-    :param bucket: bucket to save to
-    :param name: name of the file (object) to save to in GCS
-    :param string: string to write
-    :return:
-    """
-    f = StringIO()
-    f.write(string)
-    f.seek(0)
-    result = gcs_utils.upload_object(bucket, name, f)
-    f.close()
-    return result
 
 
 @api_util.auth_required_cron
