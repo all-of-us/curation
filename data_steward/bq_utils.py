@@ -15,6 +15,7 @@ from googleapiclient.errors import HttpError
 # Project imports
 import app_identity
 import common
+from gcloud.gcs import StorageClient
 import gcs_utils
 import resources
 from constants import bq_utils as bq_consts
@@ -221,18 +222,21 @@ def load_cdm_csv(hpo_id,
     :param cdm_table_name: name of the CDM table
     :return: an object describing the associated bigquery job
     """
+    app_id: str = app_identity.get_application_id()
+    storage_client = StorageClient(app_id)
+    hpo_bucket = storage_client.get_hpo_bucket(hpo_id)
+
     if cdm_table_name not in resources.CDM_TABLES:
         raise ValueError(
             '{} is not a valid table to load'.format(cdm_table_name))
 
-    app_id = app_identity.get_application_id()
-    if dataset_id is None:
-        dataset_id = get_dataset_id()
-    bucket = gcs_utils.get_hpo_bucket(hpo_id)
-    gcs_object_path = 'gs://%s/%s%s.csv' % (bucket, source_folder_prefix,
-                                            cdm_table_name)
+    if not dataset_id:
+        dataset_id: str = get_dataset_id()
+
+    gcs_object_path: str = 'gs://%s/%s%s.csv' % (
+        hpo_bucket.name, source_folder_prefix, cdm_table_name)
     table_id = get_table_id(hpo_id, cdm_table_name)
-    allow_jagged_rows = cdm_table_name == 'observation'
+    allow_jagged_rows: bool = cdm_table_name == 'observation'
     return load_csv(cdm_table_name,
                     gcs_object_path,
                     app_id,
@@ -319,7 +323,7 @@ def table_exists(table_id, dataset_id=None):
 def job_status_done(job_id):
     """
     Check if the job is complete
-    
+
     :param job_id: the job id
     :return: a bool indicating whether the job is done
     """
