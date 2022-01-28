@@ -447,26 +447,16 @@ SET upd.first_name = `{{project_id}}.{{drc_dataset_id}}.CompareName`(ps.first_na
     upd.sex = `{{project_id}}.{{drc_dataset_id}}.CompareSexAtBirth`(ps.sex, ehr_sex.sex),
     upd.algorithm = 'yes'
 FROM `{{project_id}}.{{drc_dataset_id}}.{{ps_api_table_id}}` ps
-LEFT JOIN ( WITH dedup AS ( SELECT *, row_number() OVER(PARTITION BY person_id) AS row_num
-                            FROM `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_name_table_id}}` )
-            SELECT * EXCEPT (row_num) FROM dedup WHERE row_num = 1 ) ehr_name
+LEFT JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_name_table_id}}` ehr_name
     ON ehr_name.person_id = ps.person_id
 LEFT JOIN ( SELECT person_id, address_1, address_2, city, state, zip
-            FROM ( WITH dedup AS ( SELECT *, row_number() OVER(PARTITION BY person_id) AS row_num
-                                    FROM `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_address_table_id}}` )
-                    SELECT * EXCEPT (row_num) FROM dedup WHERE row_num = 1 )
-            LEFT JOIN ( WITH dedup AS ( SELECT *, row_number() OVER(PARTITION BY location_id) AS row_num
-                                        FROM `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_location_table_id}}` )
-                        SELECT * EXCEPT (row_num) FROM dedup WHERE row_num = 1 )
+            FROM `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_address_table_id}}`
+            LEFT JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_location_table_id}}`
                 USING (location_id) ) ehr_address
     ON ehr_address.person_id = ps.person_id
-LEFT JOIN ( WITH dedup AS ( SELECT *, row_number() OVER(PARTITION BY person_id) AS row_num
-                            FROM `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_email_table_id}}` )
-            SELECT * EXCEPT (row_num) FROM dedup WHERE row_num = 1 ) ehr_email
+LEFT JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_email_table_id}}` ehr_email
     ON ehr_email.person_id = ps.person_id
-LEFT JOIN ( WITH dedup AS ( SELECT *, row_number() OVER(PARTITION BY person_id) AS row_num
-                            FROM `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_phone_number_table_id}}` )
-            SELECT * EXCEPT (row_num) FROM dedup WHERE row_num = 1 ) ehr_phone
+LEFT JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_phone_number_table_id}}` ehr_phone
     ON ehr_phone.person_id = ps.person_id
 LEFT JOIN ( SELECT person_id, DATE(birth_datetime) AS date_of_birth
            FROM `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_person_table_id}}` ) AS ehr_dob
