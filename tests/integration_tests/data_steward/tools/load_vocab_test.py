@@ -39,7 +39,7 @@ class LoadVocabTest(unittest.TestCase):
     def test_upload_stage(self):
         lv.main(self.project_id, self.bucket, self.test_vocab_folder_path,
                 self.dataset_id)
-        expected_row_count = {CONCEPT: 129, VOCABULARY: 54}
+        expected_row_count = {CONCEPT: 101, VOCABULARY: 52}
         for dataset in [self.staging_dataset_id, self.dataset_id]:
             for vocab in self.test_vocabs:
                 content_query = f'SELECT * FROM `{self.project_id}.{dataset}.{vocab}`'

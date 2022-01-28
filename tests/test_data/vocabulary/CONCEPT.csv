@@ -78,28 +78,3 @@ concept_id	concept_name	domain_id	vocabulary_id	concept_class_id	standard_concep
 953388	Telehealth services for diagnosis, evaluation, or treatment, of symptoms of an acute stroke	Observation	HCPCS	HCPCS Modifier	S	G0	20190101	20991231	
 953389	Prescribed amounts of stationary oxygen for daytime use while at rest and nighttime use differ and the average of the two amounts exceeds 4 liters per minute (lpm) and portable oxygen is prescribed	Observation	HCPCS	HCPCS Modifier	S	QB	20180401	20991231	
 953390	Remote in-home visit for the evaluation and management of an established patient for use only in a medicare-approved bundled payments for care improvement advanced (bpci advanced) model episode of care, which requires at least 2 of the following 3 key com	Procedure	HCPCS	HCPCS	S	G9984	20181001	20991231	
-2000000000	AoU_General	Metadata	Vocabulary	Vocabulary		AOU generated	20170517	20991231	
-2000000001	Another single population	Observation	AoU_General	Answer	S	WhatRaceEthnicity_GeneralizedPopulation	20170517	20991231	
-2000000002	Not man only, not woman only, prefer not to answer, or skipped	Observation	AoU_General	Answer	S	GenderIdentity_GeneralizedDiffGender	20170517	20991231	
-2000000003	Non-straight orientation, prefer not to answer, or skipped	Observation	AoU_General	Answer	S	SexualOrientation_GeneralizedNotStraight	20170517	20991231	
-2000000004	Employed for wages or self-employed	Observation	AoU_General	Answer	S	EmploymentStatus_GeneralizedEmployed	20170517	20991231	
-2000000005	Not currently employed for wages	Observation	AoU_General	Answer	S	EmploymentStatus_GeneralizedNotEmployed	20170517	20991231	
-2000000006	College graduate or advanced degree	Observation	AoU_General	Answer	S	HighestGrade_GeneralizedCollegeAndAbove	20170517	20991231	
-2000000007	Less than a high school degree or equivalent	Observation	AoU_General	Answer	S	HighestGrade_GeneralizedNoHighSchoolDegree	20170517	20991231	
-2000000008	More than one population	Observation	AoU_General	Answer	S	WhatRaceEthnicity_GeneralizedMultPopulations	20170517	20991231	
-2000000009	Not male, not female, prefer not to answer, or skipped	Observation	AoU_General	Answer	S	SexAtBirth_GeneralizedDiffSex	20170517	20991231	
-2000000010	Response removed due to invalid value	Observation	AoU_General	Answer	S	AoUDRC_ResponseRemoval	20170517	20991231	
-2000000011	State Information Suppressed for Privacy	Observation	AoU_General	Answer	S	AoUDRC_GeneralizedState	20170517	20991231	
-2000000012	6 or more household members under the age of 18	Observation	AoU_General	Answer	S	HouseSize_Under18_6+	20170517	20991231	
-2000000013	11 or more household members	Observation	AoU_General	Answer	S	HouseSize_11+	20170517	20991231	
-2100000000	AoU_Custom	Metadata	Vocabulary	Vocabulary		AOU generated	20200101	20991231	
-2100000001	None Indicated	Observation	AoU_Custom	Answer	S	AoUDRC_NoneIndicated	20170517	20991231	
-2100000002	COPE Survey May 2020	Metadata	AoU_Custom	Module		AoUDRC_SurveyVersion_CopeMay2020	20200501	20991231	
-2100000003	COPE Survey June 2020	Metadata	AoU_Custom	Module		AoUDRC_SurveyVersion_CopeJune2020	20200601	20991231	
-2100000004	COPE Survey July 2020	Metadata	AoU_Custom	Module		AoUDRC_SurveyVersion_CopeJuly2020	20200701	20991231	
-2100000005	COPE Survey November 2020	Metadata	AoU_Custom	Module		AoUDRC_SurveyVersion_CopeNovember2020	20201027	20991231	
-2100000006	COPE Survey December 2020	Metadata	AoU_Custom	Module		AoUDRC_SurveyVersion_CopeDecember2020	20201208	20991231	
-2100000007	COPE Survey February 2021	Metadata	AoU_Custom	Module		AoUDRC_SurveyVersion_CopeFebruary2021	20210209	20991231	
-2100000008	Minute Survey Summer - Vaccine 1 2021	Metadata	AoU_Custom	Module		AoUDRC_SurveyVersion_SummerMinute_Vaccine1_2021	20210610	20991231	
-2100000009	Minute Survey Fall - Vaccine 2 2021	Metadata	AoU_Custom	Module		AoUDRC_SurveyVersion_FallMinute_Vaccine2_2021	20210819	20991231	
-2100000010	Minute Survey Winter - Vaccine 3 2021	Metadata	AoU_Custom	Module		AoUDRC_SurveyVersion_WinterMinute_Vaccine3_2021	20211028	20991231	
