@@ -281,6 +281,24 @@ def validate_submission(hpo_id, bucket, folder_items, folder_prefix):
     return dict(results=results, errors=errors, warnings=warnings)
 
 
+def get_duplicate_participant_validation_tables(hpo_id, report_data):
+    """
+    Check if any tables used in participant validation has duplicates
+    :param hpo_id: 
+    :param report_data: 
+    :return: List
+    """
+    participant_val_tables = [
+        bq_utils.get_table_id(hpo_id, table_name)
+        for table_name in common.PII_TABLES + [common.PERSON, common.LOCATION]
+    ]
+    duplicate_tables = [
+        row_dict["table_name"] for row_dict in report_data[
+            report_consts.NONUNIQUE_KEY_METRICS_REPORT_KEY]
+    ]
+    return list(set(participant_val_tables) & set(duplicate_tables))
+
+
 def is_first_validation_run(folder_items):
     return common.RESULTS_HTML not in folder_items and common.PROCESSED_TXT not in folder_items
 
@@ -351,10 +369,18 @@ def generate_metrics(hpo_id, bucket, folder_prefix, summary):
             completeness_query)
 
         # participant validation metrics
-        logging.info(f"Running participant validation for {hpo_id}")
-        validate.setup_and_validate_participants(hpo_id)
-        participant_validation_query = validate.get_participant_validation_summary_query(
-            hpo_id)
+        duplicate_participant_val_tables = get_duplicate_participant_validation_tables(
+            hpo_id, report_data)
+        if duplicate_participant_val_tables:
+            logging.info(
+                f"Unable to run participant validation for {hpo_id} due to duplicates"
+                f" in {duplicate_participant_val_tables}")
+            # TODO Report validation failed if duplicates exist
+        else:
+            logging.info(f"Running participant validation for {hpo_id}")
+            validate.setup_and_validate_participants(hpo_id)
+            participant_validation_query = validate.get_participant_validation_summary_query(
+                hpo_id)
         # TODO add to report_data based on requirements from EHR_OPS
 
         # lab concept metrics
