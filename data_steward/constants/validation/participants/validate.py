@@ -482,5 +482,5 @@ WHERE upd.person_id = ps.person_id
 
 SUMMARY_QUERY = JINJA_ENV.from_string("""
 SELECT COUNT(*) AS row_count
-FROM `{{project_id}}.{{drc_dataset_id}}.{{hpo_id}}`
+FROM `{{project_id}}.{{dataset_id}}.{{id_match_table}}`
 """)
