@@ -26,7 +26,7 @@ SCOPES = [
 ]
 
 
-def get_hpo_info(project_id: str) -> List[Dict]:
+def get_hpo_org_info(project_id: str) -> List[Dict]:
     """ Returns a list of HPOs
 
     :param project_id
@@ -59,8 +59,7 @@ def get_org_id(project_id, hpo_id):
     :param hpo_id: 
     :return: 
     """
-
-    hpo_list = get_hpo_info(project_id)
+    hpo_list = get_hpo_org_info(project_id)
 
     org_id = None
     for hpo_dict in hpo_list:

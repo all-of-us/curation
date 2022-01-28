@@ -17,7 +17,7 @@ from pandas import DataFrame
 from google.cloud import bigquery
 
 # Project imports
-from validation.participants.store_participant_summary_results import get_hpo_info, fetch_and_store_ps_hpo_data
+from validation.participants.store_participant_summary_results import get_hpo_org_info, fetch_and_store_ps_hpo_data
 from utils.bq import get_client
 from common import JINJA_ENV, PS_API_VALUES
 from app_identity import PROJECT_ID
@@ -65,7 +65,7 @@ class StoreParticipantSummaryResultsTest(TestCase):
         job = self.client.query(query)
         df = job.result().to_dataframe()
         expected = df.to_dict(orient='records')
-        actual = get_hpo_info(self.project_id)
+        actual = get_hpo_org_info(self.project_id)
 
         self.assertCountEqual(actual, expected)
 
