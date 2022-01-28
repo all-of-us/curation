@@ -41,7 +41,8 @@ from validation.app_errors import (BucketNotSet, log_traceback,
                                    errors_blueprint, InternalValidationError,
                                    BucketDoesNotExistError)
 from validation.metrics import completeness, required_labs
-from validation.participants import identity_match as matching, validate
+from validation.participants import identity_match as matching
+from validation.participants.validate import setup_and_validate_participants, get_participant_validation_summary_query
 
 app = Flask(__name__)
 
@@ -281,9 +282,9 @@ def validate_submission(hpo_id, bucket, folder_items, folder_prefix):
     return dict(results=results, errors=errors, warnings=warnings)
 
 
-def get_duplicate_participant_validation_tables(hpo_id, report_data):
+def check_duplicates_and_validate(hpo_id, report_data):
     """
-    Check if any tables used in participant validation has duplicates
+    Check if any tables used in participant validation has duplicates and runs it if not
     :param hpo_id: 
     :param report_data: 
     :return: List
@@ -296,7 +297,15 @@ def get_duplicate_participant_validation_tables(hpo_id, report_data):
         row_dict["table_name"] for row_dict in report_data[
             report_consts.NONUNIQUE_KEY_METRICS_REPORT_KEY]
     ]
-    return list(set(participant_val_tables) & set(duplicate_tables))
+    duplicate_tables = list(set(participant_val_tables) & set(duplicate_tables))
+    if duplicate_tables:
+        logging.info(
+            f"Unable to run participant validation for {hpo_id} due to duplicates"
+            f" in {duplicate_tables}")
+        return duplicate_tables
+    logging.info(f"Running participant validation for {hpo_id}")
+    setup_and_validate_participants(hpo_id)
+    return
 
 
 def is_first_validation_run(folder_items):
@@ -369,17 +378,10 @@ def generate_metrics(hpo_id, bucket, folder_prefix, summary):
             completeness_query)
 
         # participant validation metrics
-        duplicate_participant_val_tables = get_duplicate_participant_validation_tables(
-            hpo_id, report_data)
-        if duplicate_participant_val_tables:
-            logging.info(
-                f"Unable to run participant validation for {hpo_id} due to duplicates"
-                f" in {duplicate_participant_val_tables}")
-            # TODO Report validation failed if duplicates exist
-        else:
-            logging.info(f"Running participant validation for {hpo_id}")
-            validate.setup_and_validate_participants(hpo_id)
-            participant_validation_query = validate.get_participant_validation_summary_query(
+        logging.info(f"Ensuring participant validation can be run for {hpo_id}")
+        duplicate_tables = check_duplicates_and_validate(hpo_id, report_data)
+        if not duplicate_tables:
+            participant_validation_query = get_participant_validation_summary_query(
                 hpo_id)
         # TODO add to report_data based on requirements from EHR_OPS
 

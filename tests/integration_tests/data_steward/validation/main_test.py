@@ -261,6 +261,36 @@ class ValidationMainTest(unittest.TestCase):
     @mock.patch("gcs_utils.LOOKUP_TABLES_DATASET_ID", dataset_id)
     @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     @mock.patch('api_util.check_cron')
+    def test_participant_validation_duplicate_check(self, mock_check_cron):
+        # tests if pii files are loaded
+        test_file_paths: list = [
+            test_util.PII_NAME_FILE, test_util.PII_MRN_BAD_PERSON_ID_FILE
+        ]
+        test_file_names: list = [os.path.basename(f) for f in test_file_paths]
+
+        blob_name: str = f'{self.folder_prefix}{os.path.basename(test_util.PII_NAME_FILE)}'
+        test_blob = self.storage_bucket.blob(blob_name)
+        test_blob.upload_from_filename(test_util.PII_NAME_FILE)
+
+        blob_name: str = f'{self.folder_prefix}{os.path.basename(test_util.PII_MRN_BAD_PERSON_ID_FILE)}'
+        test_blob = self.storage_bucket.blob(blob_name)
+        test_blob.upload_from_filename(test_util.PII_MRN_BAD_PERSON_ID_FILE)
+
+        rs = resources.csv_to_list(test_util.PII_FILE_LOAD_RESULT_CSV)
+        expected_results = [(r['file_name'], int(r['found']), int(r['parsed']),
+                             int(r['loaded'])) for r in rs]
+        for f in common.SUBMISSION_FILES:
+            if f not in test_file_names:
+                expected_result = (f, 0, 0, 0)
+                expected_results.append(expected_result)
+
+        bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
+        folder_items = main.get_folder_items(bucket_items, self.folder_prefix)
+        r = main.validate_submission(self.hpo_id, self.hpo_bucket, folder_items,
+                                     self.folder_prefix)
+        self.assertSetEqual(set(expected_results), set(r['results']))
+
+    @mock.patch('api_util.check_cron')
     def test_pii_files_loaded(self, mock_check_cron):
         # tests if pii files are loaded
         test_file_paths: list = [
