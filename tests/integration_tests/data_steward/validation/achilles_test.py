@@ -4,7 +4,6 @@ import unittest
 import app_identity
 import bq_utils
 from gcloud.gcs import StorageClient
-import gcs_utils
 import resources
 from tests import test_util
 from validation import achilles
@@ -24,9 +23,11 @@ class AchillesTest(unittest.TestCase):
         print('**************************************************************')
 
     def setUp(self):
-        self.hpo_bucket = gcs_utils.get_hpo_bucket(test_util.FAKE_HPO_ID)
         self.project_id = app_identity.get_application_id()
         self.storage_client = StorageClient(self.project_id)
+        self.hpo_bucket = self.storage_client.get_hpo_bucket(
+            test_util.FAKE_HPO_ID)
+
         self.storage_client.empty_bucket(self.hpo_bucket)
         test_util.delete_all_tables(bq_utils.get_dataset_id())
 
@@ -40,8 +41,7 @@ class AchillesTest(unittest.TestCase):
             cdm_filepath: str = os.path.join(test_util.FIVE_PERSONS_PATH,
                                              cdm_filename)
 
-            bucket = self.storage_client.get_bucket(self.hpo_bucket)
-            cdm_blob = bucket.blob(cdm_filename)
+            cdm_blob = self.hpo_bucket.blob(cdm_filename)
             if os.path.exists(cdm_filepath):
                 cdm_blob.upload_from_filename(cdm_filepath)
             else:
