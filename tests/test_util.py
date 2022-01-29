@@ -4,6 +4,7 @@ import os
 from typing import Optional
 
 import googleapiclient.errors
+from google.cloud.exceptions import GoogleCloudError
 import requests
 
 import bq_utils
@@ -444,3 +445,7 @@ def mock_google_http_error(status_code: int = 418,
         status_code=status_code, content=content, uri=uri, **resp_kwargs),
                                             content=content,
                                             uri=uri)
+
+
+def mock_google_cloud_error(content: bytes = b'418: I\'m a teapot'):
+    return GoogleCloudError(message=content.decode())
