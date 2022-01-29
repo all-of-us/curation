@@ -14,7 +14,7 @@ from constants.validation import hpo_report as report_consts
 from constants.validation import main as main_consts
 from constants.validation.participants import identity_match as id_match_consts
 from validation import main
-from tests.test_util import mock_google_http_error
+from tests.test_util import mock_google_http_error, mock_google_cloud_error
 
 
 class ValidationMainTest(TestCase):
@@ -282,15 +282,16 @@ class ValidationMainTest(TestCase):
 
     @mock.patch('validation.main.StorageClient')
     @mock.patch('bq_utils.get_hpo_info')
-    @mock.patch('validation.main.list_bucket')
     @mock.patch('logging.exception')
     @mock.patch('api_util.check_cron')
     def test_validate_all_hpos_exception(self, check_cron, mock_logging_error,
-                                         mock_list_bucket, mock_hpo_csv,
-                                         mock_storage_client):
+                                         mock_hpo_csv, mock_storage_client):
+
         http_error_string = 'fake http error'
         mock_hpo_csv.return_value = [{'hpo_id': self.hpo_id}]
-        mock_list_bucket.side_effect = mock_google_http_error(
+        mock_client = mock.MagicMock()
+        mock_storage_client.return_value = mock_client
+        mock_client.get_bucket_items_metadata.side_effect = mock_google_cloud_error(
             content=http_error_string.encode())
         with main.app.test_client() as c:
             c.get(main_consts.PREFIX + 'ValidateAllHpoFiles')
