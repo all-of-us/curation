@@ -16,7 +16,9 @@ from io import StringIO, open
 # Third party imports
 import dateutil
 from flask import Flask
+from google.cloud.exceptions import GoogleCloudError
 from googleapiclient.errors import HttpError
+
 from google.cloud.storage import Blob
 from google.cloud.storage.bucket import Bucket
 
@@ -211,20 +213,6 @@ def validate_all_hpos():
         hpo_id = item['hpo_id']
         process_hpo(hpo_id)
     return 'validation done!'
-
-
-def list_bucket(bucket):
-    try:
-        return gcs_utils.list_bucket(bucket)
-    except HttpError as err:
-        if err.resp.status == 404:
-            raise BucketDoesNotExistError(
-                f"Failed to list objects in bucket {bucket}", bucket)
-        raise
-    except Exception as e:
-        msg = getattr(e, 'message', repr(e))
-        logging.exception(f"Unknown error {msg}")
-        raise
 
 
 def categorize_folder_items(folder_items):
@@ -546,9 +534,9 @@ def process_hpo(hpo_id, force_run=False):
         logging.info(f'{exc}')
     except BucketDoesNotExistError as exc:
         logging.warning(f'{exc}')
-    except HttpError as http_error:
+    except GoogleCloudError as http_error:
         message = (f"Failed to process hpo_id '{hpo_id}' due to the following "
-                   f"HTTP error: {http_error.content.decode()}")
+                   f"HTTP error: {http_error.message}")
         logging.exception(message)
 
 
