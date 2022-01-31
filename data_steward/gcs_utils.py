@@ -14,6 +14,7 @@ import app_identity
 from common import JINJA_ENV
 from constants.utils.bq import SELECT_ALL_QUERY, LOOKUP_TABLES_DATASET_ID, HPO_ID_BUCKET_NAME_TABLE_ID
 from utils.bq import query
+from validation.app_errors import BucketNotSet
 
 MIMETYPES = {
     'json': 'application/json',
@@ -54,7 +55,7 @@ def get_hpo_bucket(hpo_id):
     result_filtered = result_df.where(condition_hpo_id & condition_service)
 
     if len(result_filtered) != 1:
-        raise ValueError(
+        raise BucketNotSet(
             f'{len(result_filtered)} buckets are returned for {hpo_id} '
             f'in {project_id}.{LOOKUP_TABLES_DATASET_ID}.{HPO_ID_BUCKET_NAME_TABLE_ID}.'
         )

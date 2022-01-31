@@ -177,7 +177,7 @@ class StorageClient(Client):
         result_filtered = result_df.where(condition_hpo_id & condition_service)
 
         if len(result_filtered) != 1:
-            raise ValueError(
+            raise BucketNotSet(
                 f'{len(result_filtered)} buckets are returned for {hpo_id} '
                 f'in {self.project_id}.{LOOKUP_TABLES_DATASET_ID}.{HPO_ID_BUCKET_NAME_TABLE_ID}.'
             )

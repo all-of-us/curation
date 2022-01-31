@@ -18,7 +18,7 @@ from utils import bq
 
 RESOURCES_BUCKET_FMT = '{project_id}-resources'
 
-HPO_ID_SUFFIX = f"_{os.environ.get('USERNAME_PREFIX')}_{os.environ.get('CURRENT_BRANCH')}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+HPO_ID_SUFFIX = f"_{os.environ.get('USERNAME_PREFIX')}_{os.environ.get('CURRENT_BRANCH')}_{datetime.now().strftime('%Y%m%d%H%M%S%f')}"
 FAKE_HPO_ID = f"fake{HPO_ID_SUFFIX}"
 PITT_HPO_ID = f"pitt{HPO_ID_SUFFIX}"
 NYC_HPO_ID = f"nyc{HPO_ID_SUFFIX}"
