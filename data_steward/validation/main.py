@@ -169,23 +169,24 @@ def _upload_achilles_files(hpo_id=None, folder_prefix='', target_bucket=None):
     results = []
     project_id = app_identity.get_application_id()
     storage_client = StorageClient(project_id)
-    if target_bucket is not None:
-        bucket = storage_client.bucket(target_bucket)
-    else:
-        if hpo_id is None:
+
+    if not target_bucket:
+        if not hpo_id:
             raise RuntimeError(
                 f"Either hpo_id or target_bucket must be specified")
-        bucket = storage_client.get_hpo_bucket(hpo_id)
+        target_bucket = storage_client.get_hpo_bucket(hpo_id)
     logging.info(
-        f"Uploading achilles index files to 'gs://{bucket.name}/{folder_prefix}'"
+        f"Uploading achilles index files to 'gs://{target_bucket.name}/{folder_prefix}'"
     )
     for filename in resources.ACHILLES_INDEX_FILES:
         logging.info(
-            f"Uploading achilles file '{filename}' to bucket {bucket.name}")
+            f"Uploading achilles file '{filename}' to bucket {target_bucket.name}"
+        )
         bucket_file_name = filename.split(resources.resource_files_path +
                                           os.sep)[1].strip().replace('\\', '/')
         with open(filename, 'rb') as fp:
-            blob = bucket.blob(f'{folder_prefix}{bucket_file_name}')
+            blob = target_bucket.blob(
+                f'{folder_prefix}{bucket_file_name}')
             blob.upload_from_file(fp)
             upload_result: dict = storage_client.get_blob_metadata(blob)
             results.append(upload_result)
@@ -248,7 +249,7 @@ def validate_submission(hpo_id, bucket, folder_items, folder_prefix):
       errors and warnings are both lists of tuples (file_name, message)
     """
     logging.info(
-        f"Validating {hpo_id} submission in gs://{bucket}/{folder_prefix}")
+        f"Validating {hpo_id} submission in gs://{bucket.name}/{folder_prefix}")
     # separate cdm from the unknown (unexpected) files
     found_cdm_files, found_pii_files, unknown_files = categorize_folder_items(
         folder_items)
@@ -713,7 +714,7 @@ def perform_validation_on_file(file_name, found_file_names, hpo_id,
                 issues = [item['message'] for item in job_status['errors']]
                 errors.append((file_name, ' || '.join(issues)))
                 logging.info(
-                    f"Issues found in gs://{bucket}/{folder_prefix}/{file_name}"
+                    f"Issues found in gs://{bucket.name}/{folder_prefix}/{file_name}"
                 )
                 for issue in issues:
                     logging.info(issue)
@@ -726,7 +727,7 @@ def perform_validation_on_file(file_name, found_file_names, hpo_id,
             message = (
                 f"Loading hpo_id '{hpo_id}' table '{table_name}' failed because "
                 f"job id '{load_job_id}' did not complete.\n")
-            message += f"Aborting processing 'gs://{bucket}/{folder_prefix}'."
+            message += f"Aborting processing 'gs://{bucket.name}/{folder_prefix}'."
             logging.error(message)
             raise InternalValidationError(message)
 
@@ -798,10 +799,11 @@ def list_submitted_bucket_items(folder_bucketitems):
     for file_name in folder_bucketitems:
         if basename(file_name) not in resources.IGNORE_LIST:
             # in common.CDM_FILES or is_pii(basename(file_name)):
-            created_date = initial_date_time_object(file_name)
+            created_date = file_name['timeCreated']
             retention_time = datetime.timedelta(days=object_retention_days)
             retention_start_time = datetime.timedelta(days=1)
             upper_age_threshold = created_date + retention_time - retention_start_time
+            upper_age_threshold = upper_age_threshold.replace(tzinfo=None)
 
             if upper_age_threshold > today:
                 files_list.append(file_name)
@@ -821,14 +823,6 @@ def list_submitted_bucket_items(folder_bucketitems):
                     )
                     return []
     return files_list
-
-
-def initial_date_time_object(gcs_object_metadata):
-    """
-    :param gcs_object_metadata: metadata as returned by list bucket
-    :return: datetime object
-    """
-    return gcs_object_metadata['timeCreated'].replace(tzinfo=None)
 
 
 def _get_submission_folder(bucket, bucket_items, force_process=False):
@@ -882,7 +876,7 @@ def _get_submission_folder(bucket, bucket_items, force_process=False):
         submitted_bucket_items = list_submitted_bucket_items(
             folder_bucket_items)
 
-        if submitted_bucket_items and submitted_bucket_items != []:
+        if submitted_bucket_items:
             folders_with_submitted_files.append(folder_name)
             latest_datetime = max([
                 updated_datetime_object(item) for item in submitted_bucket_items
