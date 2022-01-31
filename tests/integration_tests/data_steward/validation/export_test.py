@@ -125,7 +125,7 @@ class ExportTest(unittest.TestCase):
 
     @mock.patch('validation.export.is_hpo_id')
     def test_run_export_with_target_bucket_and_datasource_id(
-            self, mock_is_hpo_id):
+        self, mock_is_hpo_id):
         # validation/main.py INTEGRATION TEST
         mock_is_hpo_id.return_value = True
         folder_prefix: str = 'dummy-prefix-2018-03-24/'
