@@ -31,6 +31,7 @@ class ExportTest(unittest.TestCase):
     def setUp(self):
         self.project_id = app_identity.get_application_id()
         self.storage_client = StorageClient(self.project_id)
+
         self.hpo_bucket = self.storage_client.get_hpo_bucket(FAKE_HPO_ID)
 
     def _test_report_export(self, report):
@@ -124,11 +125,13 @@ class ExportTest(unittest.TestCase):
         # validation/main.py INTEGRATION TEST
         mock_is_hpo_id.return_value = True
         folder_prefix: str = 'dummy-prefix-2018-03-24/'
+
         target_bucket = self.storage_client.get_hpo_bucket('nyc')
         objects: Iterable = target_bucket.list_blobs()
         main.run_export(datasource_id=FAKE_HPO_ID,
                         folder_prefix=folder_prefix,
                         target_bucket=target_bucket.name)
+
         actual_names: list = [obj.name for obj in objects]
         for report in common.ALL_REPORT_FILES:
             prefix: str = f'{folder_prefix}{common.ACHILLES_EXPORT_PREFIX_STRING}{FAKE_HPO_ID}/'
@@ -136,6 +139,7 @@ class ExportTest(unittest.TestCase):
             self.assertIn(expected_name, actual_names)
         export_path: str = f'{folder_prefix}{common.ACHILLES_EXPORT_DATASOURCES_JSON}'
         self.assertIn(export_path, actual_names)
+
         actual_data = target_bucket.blob(export_path)
         actual_json_data: str = actual_data.download_as_bytes().decode()
         actual_datasources: dict = json.loads(actual_json_data)
