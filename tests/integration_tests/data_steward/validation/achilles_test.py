@@ -6,7 +6,7 @@ import bq_utils
 from gcloud.gcs import StorageClient
 import resources
 from tests import test_util
-from tests.test_util import FAKE_HPO_ID, NYC_HPO_ID, PITT_HPO_ID
+from tests.test_util import FAKE_HPO_ID, FAKE_HPO_ID_TEST_KEY, NYC_HPO_ID, NYC_HPO_ID_TEST_KEY, PITT_HPO_ID, PITT_HPO_ID_TEST_KEY
 from validation import achilles
 import validation.sql_wrangle as sql_wrangle
 
@@ -22,14 +22,15 @@ class AchillesTest(unittest.TestCase):
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
-        test_util.insert_hpo_id_bucket_name(NYC_HPO_ID, PITT_HPO_ID,
-                                            FAKE_HPO_ID)
+        test_util.insert_hpo_id_bucket_name(NYC_HPO_ID_TEST_KEY,
+                                            PITT_HPO_ID_TEST_KEY,
+                                            FAKE_HPO_ID_TEST_KEY)
 
     def setUp(self):
         self.project_id = app_identity.get_application_id()
         self.storage_client = StorageClient(self.project_id)
         self.hpo_bucket = self.storage_client.get_hpo_bucket(
-            test_util.FAKE_HPO_ID)
+            FAKE_HPO_ID_TEST_KEY)
 
         self.storage_client.empty_bucket(self.hpo_bucket)
         test_util.delete_all_tables(bq_utils.get_dataset_id())
@@ -76,5 +77,6 @@ class AchillesTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        test_util.delete_hpo_id_bucket_name(NYC_HPO_ID, PITT_HPO_ID,
-                                            FAKE_HPO_ID)
+        test_util.delete_hpo_id_bucket_name(NYC_HPO_ID_TEST_KEY,
+                                            PITT_HPO_ID_TEST_KEY,
+                                            FAKE_HPO_ID_TEST_KEY)

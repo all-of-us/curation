@@ -15,7 +15,7 @@ from gcloud.gcs import StorageClient
 import gcs_utils
 import resources
 import tests.test_util as test_util
-from tests.test_util import FAKE_HPO_ID, NYC_HPO_ID, PITT_HPO_ID
+from tests.test_util import FAKE_HPO_ID, FAKE_HPO_ID_TEST_KEY, NYC_HPO_ID, NYC_HPO_ID_TEST_KEY, PITT_HPO_ID, PITT_HPO_ID_TEST_KEY
 from validation import ehr_union
 
 EXCLUDED_HPO_ID = FAKE_HPO_ID
@@ -39,12 +39,16 @@ class EhrUnionTest(unittest.TestCase):
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
-        test_util.insert_hpo_id_bucket_name(NYC_HPO_ID, PITT_HPO_ID,
-                                            FAKE_HPO_ID)
+        test_util.insert_hpo_id_bucket_name(NYC_HPO_ID_TEST_KEY,
+                                            PITT_HPO_ID_TEST_KEY,
+                                            FAKE_HPO_ID_TEST_KEY)
 
     def setUp(self):
         self.project_id = bq_utils.app_identity.get_application_id()
         self.hpo_ids = [PITT_HPO_ID, NYC_HPO_ID, EXCLUDED_HPO_ID]
+        self.hpo_id_test_keys = [
+            PITT_HPO_ID_TEST_KEY, NYC_HPO_ID_TEST_KEY, FAKE_HPO_ID_TEST_KEY
+        ]
         self.input_dataset_id = bq_utils.get_dataset_id()
         self.output_dataset_id = bq_utils.get_unioned_dataset_id()
         self.storage_client = StorageClient(self.project_id)
@@ -63,8 +67,8 @@ class EhrUnionTest(unittest.TestCase):
         ]
 
     def _empty_hpo_buckets(self):
-        for hpo_id in self.hpo_ids:
-            bucket = gcs_utils.get_hpo_bucket(hpo_id)
+        for hpo_id_test_key in self.hpo_id_test_keys:
+            bucket = gcs_utils.get_hpo_bucket(hpo_id_test_key)
             self.storage_client.empty_bucket(bucket)
 
     def _create_hpo_table(self, hpo_id, table, dataset_id):
@@ -85,7 +89,8 @@ class EhrUnionTest(unittest.TestCase):
         for cdm_table in resources.CDM_TABLES:
             output_table: str = ehr_union.output_table_for(cdm_table)
             expected_tables[output_table] = []
-            for hpo_id in self.hpo_ids:
+            for hpo_id, hpo_id_test_key in zip(self.hpo_ids,
+                                               self.hpo_id_test_keys):
                 # upload csv into hpo bucket
                 cdm_filename: str = f'{cdm_table}.csv'
                 if hpo_id == NYC_HPO_ID:
@@ -100,7 +105,7 @@ class EhrUnionTest(unittest.TestCase):
                     ]:
                         cdm_filepath: str = os.path.join(
                             test_util.RDR_PATH, cdm_filename)
-                bucket: str = gcs_utils.get_hpo_bucket(hpo_id)
+                bucket: str = gcs_utils.get_hpo_bucket(hpo_id_test_key)
                 gcs_bucket = self.storage_client.get_bucket(bucket)
                 if os.path.exists(cdm_filepath):
 
@@ -560,5 +565,6 @@ class EhrUnionTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        test_util.delete_hpo_id_bucket_name(NYC_HPO_ID, PITT_HPO_ID,
-                                            FAKE_HPO_ID)
+        test_util.delete_hpo_id_bucket_name(NYC_HPO_ID_TEST_KEY,
+                                            PITT_HPO_ID_TEST_KEY,
+                                            FAKE_HPO_ID_TEST_KEY)

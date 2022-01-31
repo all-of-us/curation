@@ -12,8 +12,11 @@ from gcloud.gcs import StorageClient
 from google.cloud.storage.bucket import Bucket, Blob
 import resources
 from tests import test_util
-from tests.test_util import (FAKE_HPO_ID, FIVE_PERSONS_PERSON_CSV, NYC_HPO_ID,
-                             PITT_HPO_ID, PITT_FIVE_PERSONS_OBSERVATION_CSV)
+from tests.test_util import (FAKE_HPO_ID, FAKE_HPO_ID_TEST_KEY,
+                             FIVE_PERSONS_PERSON_CSV, NYC_HPO_ID,
+                             NYC_HPO_ID_TEST_KEY, PITT_HPO_ID,
+                             PITT_HPO_ID_TEST_KEY,
+                             PITT_FIVE_PERSONS_OBSERVATION_CSV)
 from validation.achilles import ACHILLES_TABLES
 
 
@@ -24,8 +27,9 @@ class BqUtilsTest(unittest.TestCase):
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
-        test_util.insert_hpo_id_bucket_name(NYC_HPO_ID, PITT_HPO_ID,
-                                            FAKE_HPO_ID)
+        test_util.insert_hpo_id_bucket_name(NYC_HPO_ID_TEST_KEY,
+                                            PITT_HPO_ID_TEST_KEY,
+                                            FAKE_HPO_ID_TEST_KEY)
 
     def setUp(self):
         self.person_table_id = bq_utils.get_table_id(FAKE_HPO_ID, common.PERSON)
@@ -79,7 +83,8 @@ class BqUtilsTest(unittest.TestCase):
         ]
         self.DT_FORMAT = '%Y-%m-%d %H:%M:%S'
         self.client = StorageClient(self.project_id)
-        self.hpo_bucket: Bucket = self.client.get_hpo_bucket(FAKE_HPO_ID)
+        self.hpo_bucket: Bucket = self.client.get_hpo_bucket(
+            FAKE_HPO_ID_TEST_KEY)
         self.client.empty_bucket(self.hpo_bucket)
 
     def _drop_tables(self):
@@ -206,7 +211,7 @@ class BqUtilsTest(unittest.TestCase):
             int(row['observation_id'])
             for row in resources.csv_to_list(PITT_FIVE_PERSONS_OBSERVATION_CSV)
         ]
-        bucket: Bucket = self.client.get_hpo_bucket(hpo_id)
+        bucket: Bucket = self.client.get_hpo_bucket(PITT_HPO_ID_TEST_KEY)
         table_blob: Blob = bucket.blob('observation.csv')
         with open(PITT_FIVE_PERSONS_OBSERVATION_CSV, 'rb') as fp:
             table_blob.upload_from_file(fp)
@@ -370,5 +375,6 @@ class BqUtilsTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        test_util.delete_hpo_id_bucket_name(NYC_HPO_ID, PITT_HPO_ID,
-                                            FAKE_HPO_ID)
+        test_util.delete_hpo_id_bucket_name(NYC_HPO_ID_TEST_KEY,
+                                            PITT_HPO_ID_TEST_KEY,
+                                            FAKE_HPO_ID_TEST_KEY)

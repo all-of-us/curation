@@ -18,10 +18,13 @@ from utils import bq
 
 RESOURCES_BUCKET_FMT = '{project_id}-resources'
 
-HPO_ID_SUFFIX = f"_{os.environ.get('USERNAME_PREFIX')}_{os.environ.get('CURRENT_BRANCH')}_{datetime.now().strftime('%Y%m%d%H%M%S-%f')}"
-FAKE_HPO_ID = f"fake{HPO_ID_SUFFIX}"
-PITT_HPO_ID = f"pitt{HPO_ID_SUFFIX}"
-NYC_HPO_ID = f"nyc{HPO_ID_SUFFIX}"
+HPO_ID_SUFFIX = f"_{os.environ.get('USERNAME_PREFIX')}_{os.environ.get('CURRENT_BRANCH')}_{datetime.now().strftime('%Y_%m_%d_%H_%M_%S_%f')}"
+FAKE_HPO_ID = 'fake'
+PITT_HPO_ID = 'pitt'
+NYC_HPO_ID = 'nyc'
+FAKE_HPO_ID_TEST_KEY = f"{FAKE_HPO_ID}{HPO_ID_SUFFIX}"
+PITT_HPO_ID_TEST_KEY = f"{PITT_HPO_ID}{HPO_ID_SUFFIX}"
+NYC_HPO_ID_TEST_KEY = f"{NYC_HPO_ID}{HPO_ID_SUFFIX}"
 FAKE_BUCKET_NAME = os.environ.get('BUCKET_NAME_FAKE')
 PITT_BUCKET_NAME = os.environ.get('BUCKET_NAME_PITT')
 NYC_BUCKET_NAME = os.environ.get('BUCKET_NAME_NYC')
