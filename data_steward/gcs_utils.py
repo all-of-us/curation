@@ -52,7 +52,7 @@ def get_hpo_bucket(hpo_id):
     result_df: DataFrame = query(hpo_bucket_query)
     condition_hpo_id = (result_df['hpo_id'] == hpo_id)
     condition_service = (result_df['service'] == service)
-    result_filtered = result_df.where(condition_hpo_id & condition_service)
+    result_filtered = result_df[condition_hpo_id & condition_service]
 
     if result_filtered['bucket_name'].count() != 1:
         raise BucketNotSet(
@@ -60,7 +60,7 @@ def get_hpo_bucket(hpo_id):
             f'in {project_id}.{LOOKUP_TABLES_DATASET_ID}.{HPO_ID_BUCKET_NAME_TABLE_ID}.'
         )
 
-    return result_filtered['bucket_name'][0]
+    return result_filtered['bucket_name'].iloc[0]
 
 
 def hpo_gcs_path(hpo_id):

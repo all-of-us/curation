@@ -12,8 +12,8 @@ from gcloud.gcs import StorageClient
 from google.cloud.storage.bucket import Bucket, Blob
 import resources
 from tests import test_util
-from tests.test_util import (FAKE_HPO_ID, FIVE_PERSONS_PERSON_CSV, PITT_HPO_ID,
-                             PITT_FIVE_PERSONS_OBSERVATION_CSV)
+from tests.test_util import (FAKE_HPO_ID, FIVE_PERSONS_PERSON_CSV, NYC_HPO_ID,
+                             PITT_HPO_ID, PITT_FIVE_PERSONS_OBSERVATION_CSV)
 from validation.achilles import ACHILLES_TABLES
 
 
@@ -24,7 +24,8 @@ class BqUtilsTest(unittest.TestCase):
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
-        test_util.insert_hpo_id_bucket_name()
+        test_util.insert_hpo_id_bucket_name(NYC_HPO_ID, PITT_HPO_ID,
+                                            FAKE_HPO_ID)
 
     def setUp(self):
         self.person_table_id = bq_utils.get_table_id(FAKE_HPO_ID, common.PERSON)
@@ -369,4 +370,5 @@ class BqUtilsTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        test_util.delete_hpo_id_bucket_name()
+        test_util.delete_hpo_id_bucket_name(NYC_HPO_ID, PITT_HPO_ID,
+                                            FAKE_HPO_ID)

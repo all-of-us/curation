@@ -15,7 +15,7 @@ import resources
 import validation.sql_wrangle as sql_wrangle
 from utils import bq
 from tests import test_util
-from tests.test_util import (FAKE_HPO_ID)
+from tests.test_util import (FAKE_HPO_ID, NYC_HPO_ID, PITT_HPO_ID)
 from validation.metrics import required_labs as required_labs
 from validation.metrics.required_labs import (
     MEASUREMENT_CONCEPT_SETS_TABLE, MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE)
@@ -28,7 +28,8 @@ class RequiredLabsTest(unittest.TestCase):
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
-        test_util.insert_hpo_id_bucket_name()
+        test_util.insert_hpo_id_bucket_name(FAKE_HPO_ID, NYC_HPO_ID,
+                                            PITT_HPO_ID)
 
     def setUp(self):
         self.hpo_bucket = gcs_utils.get_hpo_bucket(FAKE_HPO_ID)
@@ -202,4 +203,5 @@ class RequiredLabsTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        test_util.delete_hpo_id_bucket_name()
+        test_util.delete_hpo_id_bucket_name(FAKE_HPO_ID, NYC_HPO_ID,
+                                            PITT_HPO_ID)

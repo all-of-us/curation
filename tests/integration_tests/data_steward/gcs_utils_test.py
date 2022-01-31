@@ -10,7 +10,7 @@ import app_identity
 import gcs_utils
 from gcloud.gcs import StorageClient
 from tests import test_util
-from tests.test_util import FIVE_PERSONS_PERSON_CSV, FAKE_HPO_ID
+from tests.test_util import FAKE_HPO_ID, FIVE_PERSONS_PERSON_CSV, NYC_HPO_ID, PITT_HPO_ID
 
 
 class GcsUtilsTest(unittest.TestCase):
@@ -20,7 +20,8 @@ class GcsUtilsTest(unittest.TestCase):
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
-        test_util.insert_hpo_id_bucket_name()
+        test_util.insert_hpo_id_bucket_name(NYC_HPO_ID, PITT_HPO_ID,
+                                            FAKE_HPO_ID)
 
     def setUp(self):
         self.hpo_bucket = gcs_utils.get_hpo_bucket(FAKE_HPO_ID)
@@ -63,4 +64,5 @@ class GcsUtilsTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        test_util.delete_hpo_id_bucket_name()
+        test_util.delete_hpo_id_bucket_name(NYC_HPO_ID, PITT_HPO_ID,
+                                            FAKE_HPO_ID)

@@ -19,7 +19,7 @@ import gcs_utils
 from gcloud.gcs import StorageClient
 import resources
 from tests import test_util
-from tests.test_util import NYC_HPO_ID
+from tests.test_util import FAKE_HPO_ID, NYC_HPO_ID, PITT_HPO_ID
 from validation import main
 from validation.metrics import required_labs
 
@@ -31,7 +31,8 @@ class ValidationMainTest(unittest.TestCase):
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
-        test_util.insert_hpo_id_bucket_name()
+        test_util.insert_hpo_id_bucket_name(NYC_HPO_ID, PITT_HPO_ID,
+                                            FAKE_HPO_ID)
 
     def setUp(self):
         self.hpo_id = test_util.FAKE_HPO_ID
@@ -377,4 +378,5 @@ class ValidationMainTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        test_util.delete_hpo_id_bucket_name()
+        test_util.delete_hpo_id_bucket_name(NYC_HPO_ID, PITT_HPO_ID,
+                                            FAKE_HPO_ID)

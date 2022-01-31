@@ -10,6 +10,7 @@ import gcs_utils
 import resources
 from gcloud.gcs import StorageClient
 from tests import test_util
+from tests.test_util import FAKE_HPO_ID, NYC_HPO_ID, PITT_HPO_ID
 from constants.tools.combine_ehr_rdr import EHR_CONSENT_TABLE_ID, RDR_TABLES_TO_COPY, DOMAIN_TABLES
 from tools.combine_ehr_rdr import (copy_rdr_table, ehr_consent, main,
                                    mapping_table_for, create_cdm_tables)
@@ -43,7 +44,8 @@ class CombineEhrRdrTest(unittest.TestCase):
         cls.load_dataset_from_files(ehr_dataset_id,
                                     test_util.NYC_FIVE_PERSONS_PATH, True)
         cls.load_dataset_from_files(rdr_dataset_id, test_util.RDR_PATH)
-        test_util.insert_hpo_id_bucket_name()
+        test_util.insert_hpo_id_bucket_name(FAKE_HPO_ID, NYC_HPO_ID,
+                                            PITT_HPO_ID)
 
     @classmethod
     def load_dataset_from_files(cls, dataset_id, path, mappings=False):
@@ -333,4 +335,5 @@ class CombineEhrRdrTest(unittest.TestCase):
         rdr_dataset_id = bq_utils.get_rdr_dataset_id()
         test_util.delete_all_tables(ehr_dataset_id)
         test_util.delete_all_tables(rdr_dataset_id)
-        test_util.delete_hpo_id_bucket_name()
+        test_util.delete_hpo_id_bucket_name(FAKE_HPO_ID, NYC_HPO_ID,
+                                            PITT_HPO_ID)

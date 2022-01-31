@@ -12,7 +12,7 @@ import gcs_utils
 import resources
 from gcloud.gcs import StorageClient
 import tests.test_util as test_util
-from tests.test_util import FAKE_HPO_ID
+from tests.test_util import FAKE_HPO_ID, NYC_HPO_ID, PITT_HPO_ID
 from validation import achilles_heel
 import validation.sql_wrangle as sql_wrangle
 
@@ -27,7 +27,8 @@ class AchillesHeelTest(unittest.TestCase):
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
-        test_util.insert_hpo_id_bucket_name()
+        test_util.insert_hpo_id_bucket_name(NYC_HPO_ID, PITT_HPO_ID,
+                                            FAKE_HPO_ID)
 
     def setUp(self):
         self.hpo_bucket = gcs_utils.get_hpo_bucket(FAKE_HPO_ID)
@@ -152,4 +153,5 @@ class AchillesHeelTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        test_util.delete_hpo_id_bucket_name()
+        test_util.delete_hpo_id_bucket_name(NYC_HPO_ID, PITT_HPO_ID,
+                                            FAKE_HPO_ID)
