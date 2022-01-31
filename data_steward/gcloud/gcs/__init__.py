@@ -164,7 +164,7 @@ class StorageClient(Client):
         :param hpo_id: id of the HPO site
         :return: name of the bucket
         """
-        service = os.environ.get('GAE_SERVICE')
+        service = os.environ.get('GAE_SERVICE', 'default')
 
         hpo_bucket_query = JINJA_ENV.from_string(SELECT_ALL_QUERY).render(
             project_id=self.project_id,
@@ -176,7 +176,7 @@ class StorageClient(Client):
         condition_service = (result_df['service'] == service)
         result_filtered = result_df.where(condition_hpo_id & condition_service)
 
-        if len(result_filtered) != 1:
+        if result_filtered['bucket_name'].count() != 1:
             raise BucketNotSet(
                 f'{len(result_filtered)} buckets are returned for {hpo_id} '
                 f'in {self.project_id}.{LOOKUP_TABLES_DATASET_ID}.{HPO_ID_BUCKET_NAME_TABLE_ID}.'

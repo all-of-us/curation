@@ -42,7 +42,7 @@ def get_hpo_bucket(hpo_id):
     """
     project_id = app_identity.get_application_id()
 
-    service = os.environ.get('GAE_SERVICE')
+    service = os.environ.get('GAE_SERVICE', 'default')
 
     hpo_bucket_query = JINJA_ENV.from_string(SELECT_ALL_QUERY).render(
         project_id=project_id,
@@ -54,7 +54,7 @@ def get_hpo_bucket(hpo_id):
     condition_service = (result_df['service'] == service)
     result_filtered = result_df.where(condition_hpo_id & condition_service)
 
-    if len(result_filtered) != 1:
+    if result_filtered['bucket_name'].count() != 1:
         raise BucketNotSet(
             f'{len(result_filtered)} buckets are returned for {hpo_id} '
             f'in {project_id}.{LOOKUP_TABLES_DATASET_ID}.{HPO_ID_BUCKET_NAME_TABLE_ID}.'
