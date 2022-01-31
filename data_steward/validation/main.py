@@ -57,7 +57,8 @@ def all_required_files_loaded(result_items):
     return True
 
 
-def save_datasources_json(datasource_id=None,
+def save_datasources_json(storage_client,
+                          datasource_id=None,
                           folder_prefix="",
                           target_bucket=None):
     """
@@ -76,14 +77,17 @@ def save_datasources_json(datasource_id=None,
                 f"nor target_bucket are specified.")
     else:
         if target_bucket is None:
-            target_bucket = gcs_utils.get_hpo_bucket(datasource_id)
+            target_bucket: Bucket = storage_client.get_hpo_bucket(datasource_id)
+        else:
+            target_bucket: Bucket = storage_client.bucket(target_bucket)
 
     datasource = dict(name=datasource_id, folder=datasource_id, cdmVersion=5)
     datasources = dict(datasources=[datasource])
     datasources_fp = StringIO(json.dumps(datasources))
-    result = gcs_utils.upload_object(
-        target_bucket, folder_prefix + ACHILLES_EXPORT_DATASOURCES_JSON,
-        datasources_fp)
+    blob: Blob = target_bucket.blob(
+        f'{folder_prefix}{ACHILLES_EXPORT_DATASOURCES_JSON}')
+    blob.upload_from_file(datasources_fp)
+    result: dict = storage_client.get_blob_metadata(blob)
     return result
 
 
@@ -96,33 +100,36 @@ def run_export(datasource_id=None, folder_prefix="", target_bucket=None):
     :param target_bucket: Bucket to save report. If None, use bucket associated with hpo_id.
     """
     results = []
-
+    project_id = app_identity.get_application_id()
+    storage_client = StorageClient(project_id)
     # Using separate var rather than hpo_id here because hpo_id None needed in calls below
     if datasource_id is None and target_bucket is None:
         raise RuntimeError(
             f"Cannot export if neither hpo_id nor target_bucket is specified.")
     else:
-        datasource_name = datasource_id
         if target_bucket is None:
-            target_bucket = gcs_utils.get_hpo_bucket(datasource_id)
+            target_bucket: Bucket = storage_client.get_hpo_bucket(datasource_id)
+        else:
+            target_bucket: Bucket = storage_client.bucket(target_bucket)
 
     logging.info(
-        f"Exporting {datasource_name} report to bucket {target_bucket}")
+        f"Exporting {datasource_id} report to bucket {target_bucket.name}")
 
     # Run export queries and store json payloads in specified folder in the target bucket
-    reports_prefix = folder_prefix + ACHILLES_EXPORT_PREFIX_STRING + datasource_name + '/'
+    reports_prefix: str = f'{folder_prefix}{ACHILLES_EXPORT_PREFIX_STRING}{datasource_id}/'
     for export_name in common.ALL_REPORTS:
         sql_path = os.path.join(export.EXPORT_PATH, export_name)
         result = export.export_from_path(sql_path, datasource_id)
         content = json.dumps(result)
         fp = StringIO(content)
-        result = gcs_utils.upload_object(target_bucket,
-                                         reports_prefix + export_name + '.json',
-                                         fp)
+        blob: Blob = target_bucket.blob(f'{reports_prefix}{export_name}.json')
+        blob.upload_from_file(fp)
+        result: dict = storage_client.get_blob_metadata(blob)
         results.append(result)
-    result = save_datasources_json(datasource_id=datasource_id,
+    result = save_datasources_json(storage_client=storage_client,
+                                   datasource_id=datasource_id,
                                    folder_prefix=folder_prefix,
-                                   target_bucket=target_bucket)
+                                   target_bucket=target_bucket.name)
     results.append(result)
     return results
 
@@ -447,15 +454,17 @@ def perform_reporting(hpo_id, report_data, folder_items, bucket, folder_prefix):
 
     results_html_path = folder_prefix + common.RESULTS_HTML
     logging.info(f"Saving file {common.RESULTS_HTML} to "
-                 f"gs://{bucket}/{results_html_path}.")
-    upload_string_to_gcs(bucket, results_html_path, results_html)
+                 f"gs://{bucket.name}/{results_html_path}.")
+    results_html_blob: Blob = bucket.blob(results_html_path)
+    results_html_blob.upload_from_string(results_html)
 
     processed_txt_path = folder_prefix + common.PROCESSED_TXT
     logging.info(f"Saving timestamp {processed_time_str} to "
-                 f"gs://{bucket}/{processed_txt_path}.")
-    upload_string_to_gcs(bucket, processed_txt_path, processed_time_str)
+                 f"gs://{bucket.name}/{processed_txt_path}.")
+    processed_txt_blob: Blob = bucket.blob(processed_txt_path)
+    processed_txt_blob.upload_from_string(processed_time_str)
 
-    folder_uri = f"gs://{bucket}/{folder_prefix}"
+    folder_uri = f"gs://{bucket.name}/{folder_prefix}"
     if folder_items and is_first_validation_run(folder_items):
         logging.info(f"Attempting to send report via email for {hpo_id}")
         email_msg = en.generate_email_message(hpo_id, results_html, folder_uri,
@@ -531,7 +540,7 @@ def process_hpo(hpo_id, force_run=False):
             else:
                 # do not perform validation
                 report_data = generate_empty_report(hpo_id, folder_prefix)
-            perform_reporting(hpo_id, report_data, folder_items, bucket.name,
+            perform_reporting(hpo_id, report_data, folder_items, bucket,
                               folder_prefix)
     except BucketNotSet as exc:
         logging.info(f'{exc}')
@@ -930,22 +939,6 @@ def copy_files(hpo_id):
     """
     process_hpo_copy(hpo_id)
     return '{"copy-status": "done"}'
-
-
-def upload_string_to_gcs(bucket, name, string):
-    """
-    Save the validation results in GCS
-    :param bucket: bucket to save to
-    :param name: name of the file (object) to save to in GCS
-    :param string: string to write
-    :return:
-    """
-    f = StringIO()
-    f.write(string)
-    f.seek(0)
-    result = gcs_utils.upload_object(bucket, name, f)
-    f.close()
-    return result
 
 
 @api_util.auth_required_cron

@@ -2,13 +2,35 @@ import unittest
 import os
 from pathlib import Path
 import mock
+import csv
 
 from google.cloud import storage, bigquery
 
 import app_identity
 from tests.test_util import TEST_VOCABULARY_PATH
+from resources import AOU_VOCAB_CONCEPT_CSV_PATH
 from common import CONCEPT, VOCABULARY
 from tools import load_vocab as lv
+
+
+def get_custom_concept_and_vocabulary_counts():
+    with open(
+            AOU_VOCAB_CONCEPT_CSV_PATH,
+            newline='\n',
+    ) as f:
+        reader = csv.reader(f, delimiter='\t')
+        data = list(reader)
+    custom_concept_counter = len(data) - 1
+    custom_vocabulary_counter = 0
+    for row in data:
+        # Checks if a concept is custom vocabulary concept by verifying if
+        # vocabulary_id and concept_class_id both are "Vocabulary"
+        if row[3] == 'Vocabulary' and row[4] == 'Vocabulary':
+            custom_vocabulary_counter += 1
+    return {
+        CONCEPT: custom_concept_counter,
+        VOCABULARY: custom_vocabulary_counter
+    }
 
 
 class LoadVocabTest(unittest.TestCase):
@@ -39,13 +61,19 @@ class LoadVocabTest(unittest.TestCase):
     def test_upload_stage(self):
         lv.main(self.project_id, self.bucket, self.test_vocab_folder_path,
                 self.dataset_id)
-        expected_row_count = {CONCEPT: 101, VOCABULARY: 52}
+        expected_row_count = get_custom_concept_and_vocabulary_counts()
         for dataset in [self.staging_dataset_id, self.dataset_id]:
-            for vocab in self.test_vocabs:
-                content_query = f'SELECT * FROM `{self.project_id}.{dataset}.{vocab}`'
-                content_job = self.bq_client.query(content_query)
-                rows = content_job.result()
-                self.assertEqual(len(list(rows)), expected_row_count[vocab])
+            # Custom concept counts check
+            content_query = f'SELECT * FROM `{self.project_id}.{dataset}.{CONCEPT}` WHERE concept_id >= 2000000000'
+            content_job = self.bq_client.query(content_query)
+            rows = content_job.result()
+            self.assertEqual(len(list(rows)), expected_row_count[CONCEPT])
+            # Custom Vocabulary counts check
+            content_query = f'SELECT * FROM `{self.project_id}.{dataset}.{VOCABULARY}` WHERE vocabulary_concept_id >= 2000000000'
+
+            content_job = self.bq_client.query(content_query)
+            rows = content_job.result()
+            self.assertEqual(len(list(rows)), expected_row_count[VOCABULARY])
 
     def tearDown(self) -> None:
         for vocab in self.test_vocabs:

@@ -5,7 +5,7 @@ import app_identity
 
 import bq_utils
 import common
-import gcs_utils
+from gcloud.gcs import StorageClient
 from io import open
 
 LATEST_REPORTS_QUERY = (
@@ -62,11 +62,12 @@ def get_most_recent(app_id=None, drc_bucket=None, report_for=None):
     if app_id is None:
         app_id = app_identity.get_application_id()
     if drc_bucket is None:
-        drc_bucket = gcs_utils.get_drc_bucket()
+        storage_client = StorageClient(app_id)
+        drc_bucket = storage_client.get_drc_bucket()
         if report_for == common.REPORT_FOR_ACHILLES:
             if not os.path.exists(common.LATEST_REPORTS_JSON):
                 query = LATEST_REPORTS_QUERY.format(app_id=app_id,
-                                                    drc_bucket=drc_bucket,
+                                                    drc_bucket=drc_bucket.name,
                                                     year=common.LOG_YEAR)
                 query_job = bq_utils.query(query)
                 result = bq_utils.response2rows(query_job)
@@ -77,7 +78,7 @@ def get_most_recent(app_id=None, drc_bucket=None, report_for=None):
         elif report_for == common.REPORT_FOR_RESULTS:
             if not os.path.exists(common.LATEST_RESULTS_JSON):
                 query = LATEST_RESULTS_QUERY.format(app_id=app_id,
-                                                    drc_bucket=drc_bucket,
+                                                    drc_bucket=drc_bucket.name,
                                                     year=common.LOG_YEAR)
                 query_job = bq_utils.query(query)
                 result = bq_utils.response2rows(query_job)
@@ -85,3 +86,10 @@ def get_most_recent(app_id=None, drc_bucket=None, report_for=None):
                     json.dump(result, fp, sort_keys=True, indent=4)
             with open(common.LATEST_RESULTS_JSON, 'r') as fp:
                 return json.load(fp)
+
+
+def get_drc_bucket_path():
+    project_id = app_identity.get_application_id()
+    storage_client = StorageClient(project_id)
+    drc_bucket = storage_client.get_drc_bucket()
+    return f'gs://{drc_bucket.name}/'
