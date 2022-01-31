@@ -17,6 +17,7 @@ from constants import bq_utils as bq_consts
 from constants.validation import main as main_consts
 import gcs_utils
 from gcloud.gcs import StorageClient
+from utils.bq import get_client
 import resources
 from tests import test_util
 from validation import main
@@ -48,6 +49,8 @@ class ValidationMainTest(unittest.TestCase):
         self.addCleanup(mock_get_hpo_name.stop)
 
         self.folder_prefix = '2019-01-01-v1/'
+
+        self.bq_client = get_client(self.project_id)
 
         self.storage_client = StorageClient(self.project_id)
         self.storage_bucket = self.storage_client.get_bucket(self.hpo_bucket)
@@ -260,35 +263,39 @@ class ValidationMainTest(unittest.TestCase):
 
     @mock.patch("gcs_utils.LOOKUP_TABLES_DATASET_ID", dataset_id)
     @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
+    @mock.patch('validation.main.setup_and_validate_participants')
     @mock.patch('api_util.check_cron')
-    def test_participant_validation_duplicate_check(self, mock_check_cron):
-        # tests if pii files are loaded
-        test_file_paths: list = [
-            test_util.PII_NAME_FILE, test_util.PII_MRN_BAD_PERSON_ID_FILE
-        ]
-        test_file_names: list = [os.path.basename(f) for f in test_file_paths]
+    def test_participant_validation_duplicate_check(self, mock_check_cron,
+                                                    mock_setup_validate):
+        # tests if pii file is loaded
+        test_file_path = os.path.basename(test_util.PII_NAME_FILE)
 
-        blob_name: str = f'{self.folder_prefix}{os.path.basename(test_util.PII_NAME_FILE)}'
+        blob_name: str = f'{self.folder_prefix}{test_file_path}'
         test_blob = self.storage_bucket.blob(blob_name)
         test_blob.upload_from_filename(test_util.PII_NAME_FILE)
-
-        blob_name: str = f'{self.folder_prefix}{os.path.basename(test_util.PII_MRN_BAD_PERSON_ID_FILE)}'
-        test_blob = self.storage_bucket.blob(blob_name)
-        test_blob.upload_from_filename(test_util.PII_MRN_BAD_PERSON_ID_FILE)
-
-        rs = resources.csv_to_list(test_util.PII_FILE_LOAD_RESULT_CSV)
-        expected_results = [(r['file_name'], int(r['found']), int(r['parsed']),
-                             int(r['loaded'])) for r in rs]
-        for f in common.SUBMISSION_FILES:
-            if f not in test_file_names:
-                expected_result = (f, 0, 0, 0)
-                expected_results.append(expected_result)
-
-        bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
+        bucket_items = self.storage_client.get_bucket_items_metadata(
+            self.hpo_bucket)
         folder_items = main.get_folder_items(bucket_items, self.folder_prefix)
+        # Load the table
         r = main.validate_submission(self.hpo_id, self.hpo_bucket, folder_items,
                                      self.folder_prefix)
-        self.assertSetEqual(set(expected_results), set(r['results']))
+        # Create duplicates
+        job = self.bq_client.query(
+            f'INSERT INTO {self.project_id}.{self.bigquery_dataset_id}.{self.hpo_id}_{common.PII_NAME} '
+            f'(person_id, first_name, middle_name, last_name, suffix, prefix) '
+            f'SELECT * FROM {self.project_id}.{self.bigquery_dataset_id}.{self.hpo_id}_{common.PII_NAME}'
+        )
+        job.result()
+
+        result_data = {}
+        duplicates_query = main.get_duplicate_counts_query(self.hpo_id)
+        result_data[main.report_consts.
+                    NONUNIQUE_KEY_METRICS_REPORT_KEY] = main.query_rows(
+                        duplicates_query)
+        expected_duplicate_tables = ["pii_name"]
+        actual_duplicate_tables = main.check_duplicates_and_validate(
+            self.hpo_id, result_data)
+        self.assertListEqual(expected_duplicate_tables, actual_duplicate_tables)
 
     @mock.patch('api_util.check_cron')
     def test_pii_files_loaded(self, mock_check_cron):

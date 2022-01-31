@@ -284,14 +284,13 @@ def validate_submission(hpo_id, bucket, folder_items, folder_prefix):
 
 def check_duplicates_and_validate(hpo_id, report_data):
     """
-    Check if any tables used in participant validation has duplicates and runs it if not
+    Check if any tables used in participant validation has duplicates and runs them
     :param hpo_id: 
     :param report_data: 
     :return: List
     """
-    participant_val_tables = [
-        bq_utils.get_table_id(hpo_id, table_name)
-        for table_name in common.PII_TABLES + [common.PERSON, common.LOCATION]
+    participant_val_tables = common.PII_TABLES + [
+        common.PERSON, common.LOCATION
     ]
     duplicate_tables = [
         row_dict["table_name"] for row_dict in report_data[
@@ -305,7 +304,7 @@ def check_duplicates_and_validate(hpo_id, report_data):
         return duplicate_tables
     logging.info(f"Running participant validation for {hpo_id}")
     setup_and_validate_participants(hpo_id)
-    return
+    return duplicate_tables
 
 
 def is_first_validation_run(folder_items):
