@@ -459,7 +459,9 @@ def mock_google_http_error(status_code: int = 418,
 
 
 def insert_hpo_id_bucket_name():
-    """[summary]
+    """
+    Insert test data to hpo_id_bucket_name table.
+    The test data is used to link hpo id and bucket name.
     """
     project_id = app_identity.get_application_id()
 
@@ -467,10 +469,10 @@ def insert_hpo_id_bucket_name():
 
     INSERT_HPO_ID_BUCKET_NAME = common.JINJA_ENV.from_string("""
         INSERT INTO `{{project_id}}.{{lookup_dataset_id}}.{{hpo_id_bucket_table_id}}` 
-        (hpo_id, bucket_name) VALUES 
-        ('{{hpo_id_nyc}}', '{{bucket_name_nyc}}'),
-        ('{{hpo_id_pitt}}', '{{bucket_name_pitt}}'),
-        ('{{hpo_id_fake}}', '{{bucket_name_fake}}')
+        (hpo_id, bucket_name, service) VALUES 
+        ('{{hpo_id_nyc}}', '{{bucket_name_nyc}}', 'default'),
+        ('{{hpo_id_pitt}}', '{{bucket_name_pitt}}', 'default'),
+        ('{{hpo_id_fake}}', '{{bucket_name_fake}}', 'default')
         """)
 
     insert_hpo_id_bucket_name = INSERT_HPO_ID_BUCKET_NAME.render(
@@ -489,7 +491,9 @@ def insert_hpo_id_bucket_name():
 
 
 def delete_hpo_id_bucket_name():
-    """[summary]
+    """
+    Delete test data from hpo_id_bucket_name table that is added by
+    insert_hpo_id_bucket_name().
     """
     project_id = app_identity.get_application_id()
     bq_client = bq.get_client(project_id)

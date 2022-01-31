@@ -11,10 +11,11 @@ from google.cloud.exceptions import NotFound
 from google.auth import default
 from google.cloud.storage.bucket import Bucket, Blob
 from google.cloud.storage.client import Client
+from pandas.core.frame import DataFrame
 
 # Project imports
 from common import JINJA_ENV
-from constants.utils.bq import GET_BUCKET_QUERY, LOOKUP_TABLES_DATASET_ID, HPO_ID_BUCKET_NAME_TABLE_ID
+from constants.utils.bq import SELECT_ALL_QUERY, LOOKUP_TABLES_DATASET_ID, HPO_ID_BUCKET_NAME_TABLE_ID
 from utils import auth
 from utils.bq import query
 from validation.app_errors import BucketDoesNotExistError, BucketNotSet
@@ -40,6 +41,9 @@ class StorageClient(Client):
         if scopes:
             credentials, project_id = default()
             credentials = auth.delegated_credentials(credentials, scopes=scopes)
+
+        self.project_id = project_id
+
         super().__init__(project=project_id, credentials=credentials)
 
     def get_bucket_items_metadata(self, bucket: Bucket) -> list:
@@ -89,7 +93,7 @@ class StorageClient(Client):
         Get the name of an HPO site's private bucket
         Empty/unset bucket indicates that the bucket is intentionally left blank and can be ignored
         :param hpo_id: id of the HPO site
-        :return: name of the bucket
+        :return: bucket
         """
         bucket_name: str = self._get_hpo_bucket_id(hpo_id)
 
@@ -154,33 +158,28 @@ class StorageClient(Client):
         return list(pg_iterator)
 
     def _get_hpo_bucket_id(self, hpo_id: str) -> str:
-        """[summary]
-
-        Args:
-            hpo_id (str): [description]
-
-        Raises:
-            ValueError: [description]
-            BucketDoesNotExistError: [description]
-
-        Returns:
-            str: [description]
         """
+        Get the name of an HPO site's private bucket
+        Empty/unset bucket indicates that the bucket is intentionally left blank and can be ignored
+        :param hpo_id: id of the HPO site
+        :return: name of the bucket
+        """
+        service = os.environ.get('GAE_SERVICE')
 
-        project_id = os.environ.get('GOOGLE_CLOUD_PROJECT')
-
-        hpo_bucket_query = JINJA_ENV.from_string(GET_BUCKET_QUERY).render(
-            project_id=project_id,
+        hpo_bucket_query = JINJA_ENV.from_string(SELECT_ALL_QUERY).render(
+            project_id=self.project_id,
             dataset_id=LOOKUP_TABLES_DATASET_ID,
-            table_id=HPO_ID_BUCKET_NAME_TABLE_ID,
-            hpo_id=hpo_id)
+            table_id=HPO_ID_BUCKET_NAME_TABLE_ID)
 
-        query_result = query(hpo_bucket_query).values.tolist()
+        result_df: DataFrame = query(hpo_bucket_query)
+        condition_hpo_id = (result_df['hpo_id'] == hpo_id)
+        condition_service = (result_df['service'] == service)
+        result_filtered = result_df.where(condition_hpo_id & condition_service)
 
-        if len(query_result) != 1:
+        if len(result_filtered) != 1:
             raise ValueError(
-                f'{len(query_result)} buckets are returned for {hpo_id} '
-                f'in {project_id}.{LOOKUP_TABLES_DATASET_ID}.{HPO_ID_BUCKET_NAME_TABLE_ID}.'
+                f'{len(result_filtered)} buckets are returned for {hpo_id} '
+                f'in {self.project_id}.{LOOKUP_TABLES_DATASET_ID}.{HPO_ID_BUCKET_NAME_TABLE_ID}.'
             )
 
-        return query_result[0][0]
+        return result_filtered['bucket_name'][0]

@@ -4,16 +4,16 @@ Wraps Google Cloud Storage JSON API (adapted from https://goo.gl/dRKiYz)
 
 import mimetypes
 import os
-from io import BytesIO
 
 import googleapiclient.discovery
 from deprecated import deprecated
+from pandas.core.frame import DataFrame
 
 # Project imports
+import app_identity
 from common import JINJA_ENV
-from constants.utils.bq import GET_BUCKET_QUERY, LOOKUP_TABLES_DATASET_ID, HPO_ID_BUCKET_NAME_TABLE_ID
+from constants.utils.bq import SELECT_ALL_QUERY, LOOKUP_TABLES_DATASET_ID, HPO_ID_BUCKET_NAME_TABLE_ID
 from utils.bq import query
-from validation.app_errors import BucketDoesNotExistError
 
 MIMETYPES = {
     'json': 'application/json',
@@ -39,23 +39,27 @@ def get_hpo_bucket(hpo_id):
     :param hpo_id: id of the HPO site
     :return: name of the bucket
     """
-    project_id = os.environ.get('GOOGLE_CLOUD_PROJECT')
+    project_id = app_identity.get_application_id()
 
-    hpo_bucket_query = JINJA_ENV.from_string(GET_BUCKET_QUERY).render(
+    service = os.environ.get('GAE_SERVICE')
+
+    hpo_bucket_query = JINJA_ENV.from_string(SELECT_ALL_QUERY).render(
         project_id=project_id,
         dataset_id=LOOKUP_TABLES_DATASET_ID,
-        table_id=HPO_ID_BUCKET_NAME_TABLE_ID,
-        hpo_id=hpo_id)
+        table_id=HPO_ID_BUCKET_NAME_TABLE_ID)
 
-    query_result = query(hpo_bucket_query).values.tolist()
+    result_df: DataFrame = query(hpo_bucket_query)
+    condition_hpo_id = (result_df['hpo_id'] == hpo_id)
+    condition_service = (result_df['service'] == service)
+    result_filtered = result_df.where(condition_hpo_id & condition_service)
 
-    if len(query_result) != 1:
+    if len(result_filtered) != 1:
         raise ValueError(
-            f'{len(query_result)} buckets are returned for {hpo_id} '
+            f'{len(result_filtered)} buckets are returned for {hpo_id} '
             f'in {project_id}.{LOOKUP_TABLES_DATASET_ID}.{HPO_ID_BUCKET_NAME_TABLE_ID}.'
         )
 
-    return query_result[0][0]
+    return result_filtered['bucket_name'][0]
 
 
 def hpo_gcs_path(hpo_id):
