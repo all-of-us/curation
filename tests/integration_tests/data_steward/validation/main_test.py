@@ -329,8 +329,8 @@ class ValidationMainTest(unittest.TestCase):
 
     @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     @mock.patch("gcs_utils.LOOKUP_TABLES_DATASET_ID", dataset_id)
-    @mock.patch(
-        'validation.participants.validate.setup_and_validate_participants')
+    @mock.patch('validation.main.get_participant_validation_summary_query')
+    @mock.patch('validation.main.setup_and_validate_participants')
     @mock.patch('validation.main.updated_datetime_object')
     @mock.patch('validation.main._has_all_required_files')
     @mock.patch('validation.main.all_required_files_loaded')
@@ -340,7 +340,8 @@ class ValidationMainTest(unittest.TestCase):
                                      mock_required_files_loaded,
                                      mock_has_all_required_files,
                                      mock_updated_datetime_object,
-                                     mock_setup_validate_participants):
+                                     mock_setup_validate_participants,
+                                     mock_part_val_summary_query):
         mock_required_files_loaded.return_value = False
         mock_first_run.return_value = False
         mock_has_all_required_files.return_value = True
