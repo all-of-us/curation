@@ -534,9 +534,9 @@ def process_hpo(hpo_id, force_run=False):
         logging.info(f'{exc}')
     except BucketDoesNotExistError as exc:
         logging.warning(f'{exc}')
-    except GoogleCloudError as http_error:
+    except GoogleCloudError as google_cloud_error:
         message = (f"Failed to process hpo_id '{hpo_id}' due to the following "
-                   f"HTTP error: {http_error.message}")
+                   f"HTTP error: {google_cloud_error.message}")
         logging.exception(message)
 
 
