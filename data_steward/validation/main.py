@@ -740,7 +740,6 @@ def perform_validation_on_file(file_name, found_file_names, hpo_id,
 def _validation_done(bucket, folder):
     project_id = app_identity.get_application_id()
     storage_client = StorageClient(project_id)
-    bucket = storage_client.bucket(bucket)
     return Blob(bucket=bucket,
                 name=f'{folder}{common.PROCESSED_TXT}').exists(storage_client)
 
@@ -756,16 +755,6 @@ def basename(gcs_object_metadata):
     if len(name.split('/')) > 1:
         return '/'.join(name.split('/')[1:])
     return ''
-
-
-def updated_datetime_object(gcs_object_metadata):
-    """returns update datetime
-
-    :gcs_object_metadata: metadata as returned by list bucket
-    :returns: datetime object
-
-    """
-    return gcs_object_metadata['updated'].replace(tzinfo=None)
 
 
 def _has_all_required_files(folder_bucketitems_basenames):
@@ -796,24 +785,23 @@ def list_submitted_bucket_items(folder_bucketitems):
         return []
 
     # Validate submission times
-    for file_name in folder_bucketitems:
-        if basename(file_name) not in resources.IGNORE_LIST:
+    for item in folder_bucketitems:
+        if basename(item) not in resources.IGNORE_LIST:
             # in common.CDM_FILES or is_pii(basename(file_name)):
-            created_date = file_name['timeCreated']
+            created_date = item['timeCreated']
             retention_time = datetime.timedelta(days=object_retention_days)
             retention_start_time = datetime.timedelta(days=1)
             upper_age_threshold = created_date + retention_time - retention_start_time
             upper_age_threshold = upper_age_threshold.replace(tzinfo=None)
 
             if upper_age_threshold > today:
-                files_list.append(file_name)
+                files_list.append(item)
 
-            if basename(file_name) in AOU_REQUIRED_FILES:
+            if basename(item) in AOU_REQUIRED_FILES:
                 # restrict processing time for 5 minutes after all required files
-                updated_date = updated_datetime_object(file_name)
                 lag_time = datetime.timedelta(
                     minutes=object_process_lag_minutes)
-                lower_age_threshold = updated_date + lag_time
+                lower_age_threshold = item['updated'] + lag_time
 
                 if lower_age_threshold > today:
                     logging.info(
@@ -878,9 +866,8 @@ def _get_submission_folder(bucket, bucket_items, force_process=False):
 
         if submitted_bucket_items:
             folders_with_submitted_files.append(folder_name)
-            latest_datetime = max([
-                updated_datetime_object(item) for item in submitted_bucket_items
-            ])
+            latest_datetime = max(
+                [item['updated'] for item in submitted_bucket_items])
             folder_datetime_list.append(latest_datetime)
 
     if folder_datetime_list and folder_datetime_list != []:
