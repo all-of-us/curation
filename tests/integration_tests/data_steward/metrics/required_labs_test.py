@@ -10,7 +10,6 @@ import app_identity
 import bq_utils
 import common
 from gcloud.gcs import StorageClient
-import gcs_utils
 import resources
 import validation.sql_wrangle as sql_wrangle
 from utils import bq
@@ -30,29 +29,29 @@ class RequiredLabsTest(unittest.TestCase):
         print('**************************************************************')
 
     def setUp(self):
-        self.hpo_bucket = gcs_utils.get_hpo_bucket(FAKE_HPO_ID)
+        # Ids
         self.project_id = app_identity.get_application_id()
         self.dataset_id = bq_utils.get_dataset_id()
-        self.rdr_dataset_id = bq_utils.get_rdr_dataset_id()
         self.folder_prefix = '2019-01-01/'
+        # Clients
+        self.storage_client = StorageClient(self.project_id)
+        self.hpo_bucket = self.storage_client.get_hpo_bucket(FAKE_HPO_ID)
+        self.bq_client = bq.get_client(self.project_id)
+        self.rdr_dataset_id = bq_utils.get_rdr_dataset_id()
+        # Cleanup
+        self.storage_client.empty_bucket(self.hpo_bucket)
         test_util.delete_all_tables(self.dataset_id)
 
-        self.storage_client = StorageClient(self.project_id)
-        self.storage_client.empty_bucket(self.hpo_bucket)
-
-        self.client = bq.get_client(self.project_id)
-
         mock_get_hpo_name = mock.patch('validation.main.get_hpo_name')
-
         self.mock_get_hpo_name = mock_get_hpo_name.start()
         self.mock_get_hpo_name.return_value = 'Fake HPO'
         self.addCleanup(mock_get_hpo_name.stop)
-
+        # Data load
         self._load_data()
 
     def tearDown(self):
-        test_util.delete_all_tables(bq_utils.get_dataset_id())
         self.storage_client.empty_bucket(self.hpo_bucket)
+        test_util.delete_all_tables(bq_utils.get_dataset_id())
 
     def _load_data(self):
 
@@ -82,11 +81,12 @@ class RequiredLabsTest(unittest.TestCase):
         concept_table_name = f'{self.project_id}.{self.dataset_id}.{common.CONCEPT}'
         concept_ancestor_table_name = f'{self.project_id}.{self.dataset_id}.{common.CONCEPT_ANCESTOR}'
 
-        actual_descendants_table = self.client.get_table(descendants_table_name)
-        actual_concept_sets_table = self.client.get_table(
+        actual_descendants_table = self.bq_client.get_table(
+            descendants_table_name)
+        actual_concept_sets_table = self.bq_client.get_table(
             concept_sets_table_name)
-        actual_concept_table = self.client.get_table(concept_table_name)
-        actual_concept_ancestor_table = self.client.get_table(
+        actual_concept_table = self.bq_client.get_table(concept_table_name)
+        actual_concept_ancestor_table = self.bq_client.get_table(
             concept_ancestor_table_name)
 
         # Test
