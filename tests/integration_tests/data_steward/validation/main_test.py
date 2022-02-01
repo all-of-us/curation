@@ -187,7 +187,8 @@ class ValidationMainTest(unittest.TestCase):
         test_blob = self.storage_bucket.blob(blob_name)
         test_blob.upload_from_string('\n')
 
-        bucket_items = gcs_utils.list_bucket(self.hpo_bucket)
+        bucket_items = self.storage_client.get_bucket_items_metadata(
+            self.storage_bucket)
         result = main._get_submission_folder(self.hpo_bucket,
                                              bucket_items,
                                              force_process=False)
