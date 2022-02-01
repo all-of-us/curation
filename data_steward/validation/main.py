@@ -723,8 +723,7 @@ def updated_datetime_object(gcs_object_metadata):
     :returns: datetime object
 
     """
-    return datetime.datetime.strptime(gcs_object_metadata['updated'],
-                                      '%Y-%m-%dT%H:%M:%S.%fZ')
+    return gcs_object_metadata['updated'].replace(tzinfo=None)
 
 
 def _has_all_required_files(folder_bucketitems_basenames):
@@ -788,9 +787,7 @@ def initial_date_time_object(gcs_object_metadata):
     :param gcs_object_metadata: metadata as returned by list bucket
     :return: datetime object
     """
-    date_created = datetime.datetime.strptime(
-        gcs_object_metadata['timeCreated'], '%Y-%m-%dT%H:%M:%S.%fZ')
-    return date_created
+    return gcs_object_metadata['timeCreated'].replace(tzinfo=None)
 
 
 def _get_submission_folder(bucket, bucket_items, force_process=False):
