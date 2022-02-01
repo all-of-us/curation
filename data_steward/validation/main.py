@@ -159,7 +159,9 @@ def upload_achilles_files(hpo_id):
     return json.dumps(result, sort_keys=True, indent=4, separators=(',', ': '))
 
 
-def _upload_achilles_files(hpo_id=None, folder_prefix='', target_bucket=None):
+def _upload_achilles_files(hpo_id: str = None,
+                           folder_prefix: str = '',
+                           target_bucket: Bucket = None):
     """
     uploads achilles web files to the corresponding hpo bucket
 
@@ -236,7 +238,8 @@ def categorize_folder_items(folder_items):
     return found_cdm_files, found_pii_files, unknown_files
 
 
-def validate_submission(hpo_id, bucket, folder_items, folder_prefix):
+def validate_submission(hpo_id: str, bucket: Bucket, folder_items: list,
+                        folder_prefix: str):
     """
     Load submission in BigQuery and summarize outcome
 
@@ -680,8 +683,8 @@ def get_hpo_missing_pii_query(hpo_id):
         participant_match_table_id=participant_match_table_id)
 
 
-def perform_validation_on_file(file_name, found_file_names, hpo_id,
-                               folder_prefix, bucket):
+def perform_validation_on_file(file_name: str, found_file_names: list,
+                               hpo_id: str, folder_prefix, bucket: Bucket):
     """
     Attempts to load a csv file into BigQuery
 
