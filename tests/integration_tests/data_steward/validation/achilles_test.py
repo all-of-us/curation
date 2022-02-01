@@ -7,7 +7,6 @@ from gcloud.gcs import StorageClient
 import mock
 import resources
 from tests import test_util
-from tests.test_util import FAKE_HPO_ID, NYC_HPO_ID, PITT_HPO_ID
 from validation import achilles
 import validation.sql_wrangle as sql_wrangle
 
@@ -32,7 +31,8 @@ class AchillesTest(unittest.TestCase):
     def setUp(self):
         self.project_id = app_identity.get_application_id()
         self.storage_client = StorageClient(self.project_id)
-        self.hpo_bucket = self.storage_client.get_hpo_bucket(FAKE_HPO_ID)
+        self.hpo_bucket = self.storage_client.get_hpo_bucket(
+            test_util.FAKE_HPO_ID)
 
         self.storage_client.empty_bucket(self.hpo_bucket)
         test_util.delete_all_tables(bq_utils.get_dataset_id())

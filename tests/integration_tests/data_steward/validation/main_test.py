@@ -19,7 +19,6 @@ import gcs_utils
 from gcloud.gcs import StorageClient
 import resources
 from tests import test_util
-from tests.test_util import FAKE_HPO_ID, NYC_HPO_ID, PITT_HPO_ID
 from validation import main
 from validation.metrics import required_labs
 
@@ -35,11 +34,15 @@ class ValidationMainTest(unittest.TestCase):
             os.environ,
             {"GAE_SERVICE": test_util.get_unique_service_name(cls.__name__)})
         cls.env_patcher.start()
+
+        # Run delete before insert in case old entries are not successfully
+        # deleted in hpo_id_bucket_name from previous test runs
+        test_util.delete_hpo_id_bucket_name(os.environ.get("GAE_SERVICE"))
         test_util.insert_hpo_id_bucket_name(os.environ.get("GAE_SERVICE"))
 
     def setUp(self):
         self.hpo_id = test_util.FAKE_HPO_ID
-        self.hpo_bucket = gcs_utils.get_hpo_bucket(FAKE_HPO_ID)
+        self.hpo_bucket = gcs_utils.get_hpo_bucket(self.hpo_id)
         self.project_id = app_identity.get_application_id()
         self.rdr_dataset_id = bq_utils.get_rdr_dataset_id()
         mock_get_hpo_name = mock.patch('validation.main.get_hpo_name')
@@ -237,7 +240,7 @@ class ValidationMainTest(unittest.TestCase):
                                 set(actual_bucket_items))
 
     def test_target_bucket_upload(self):
-        bucket_nyc = gcs_utils.get_hpo_bucket(NYC_HPO_ID)
+        bucket_nyc = gcs_utils.get_hpo_bucket(test_util.NYC_HPO_ID)
         folder_prefix = 'test-folder-fake/'
         self.storage_client.empty_bucket(bucket_nyc)
 
@@ -374,7 +377,7 @@ class ValidationMainTest(unittest.TestCase):
 
     def tearDown(self):
         self.storage_client.empty_bucket(self.hpo_bucket)
-        bucket_nyc = gcs_utils.get_hpo_bucket(NYC_HPO_ID)
+        bucket_nyc = gcs_utils.get_hpo_bucket(test_util.NYC_HPO_ID)
         self.storage_client.empty_bucket(bucket_nyc)
         self.storage_client.empty_bucket(gcs_utils.get_drc_bucket())
         test_util.delete_all_tables(self.bigquery_dataset_id)

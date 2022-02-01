@@ -515,7 +515,7 @@ def delete_hpo_id_bucket_name(service_name):
 
 def get_unique_service_name(class_name):
     """
-    Args:
-        class_name ([type]): [description]
+    Return service name that is unique to the test you are running (e.g. default_hiro_1_ValidationMainTest)
+    The service name is used in insert_hpo_id_bucket_name() and delete_hpo_id_bucket_name().
     """
     return f"default_{os.environ.get('USERNAME_PREFIX')}_{os.environ.get('CURRENT_BRANCH')}_{class_name}"

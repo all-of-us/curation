@@ -28,11 +28,14 @@ class ExportTest(unittest.TestCase):
             os.environ,
             {"GAE_SERVICE": test_util.get_unique_service_name(cls.__name__)})
         cls.env_patcher.start()
+        # Run delete before insert in case old entries are not successfully
+        # deleted in hpo_id_bucket_name from previous test runs
+        test_util.delete_hpo_id_bucket_name(os.environ.get("GAE_SERVICE"))
+        test_util.insert_hpo_id_bucket_name(os.environ.get("GAE_SERVICE"))
+
         dataset_id = bq_utils.get_dataset_id()
         test_util.delete_all_tables(dataset_id)
         test_util.populate_achilles()
-        test_util.insert_hpo_id_bucket_name()
-        test_util.insert_hpo_id_bucket_name(os.environ.get("GAE_SERVICE"))
 
     def setUp(self):
         self.project_id = app_identity.get_application_id()
@@ -167,6 +170,5 @@ class ExportTest(unittest.TestCase):
     def tearDownClass(cls):
         dataset_id = bq_utils.get_dataset_id()
         test_util.delete_all_tables(dataset_id)
-        test_util.delete_hpo_id_bucket_name()
         test_util.delete_hpo_id_bucket_name(os.environ.get("GAE_SERVICE"))
         cls.env_patcher.stop()

@@ -43,6 +43,10 @@ class EhrUnionTest(unittest.TestCase):
             os.environ,
             {"GAE_SERVICE": test_util.get_unique_service_name(cls.__name__)})
         cls.env_patcher.start()
+
+        # Run delete before insert in case old entries are not successfully
+        # deleted in hpo_id_bucket_name from previous test runs
+        test_util.delete_hpo_id_bucket_name(os.environ.get("GAE_SERVICE"))
         test_util.insert_hpo_id_bucket_name(os.environ.get("GAE_SERVICE"))
 
     def setUp(self):
