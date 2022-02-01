@@ -1,12 +1,10 @@
 # Python imports
-import json
 import logging
 import os
 import socket
 import time
 import warnings
 from datetime import datetime
-from io import open
 
 # Third party imports
 from googleapiclient.discovery import build
@@ -16,7 +14,6 @@ from googleapiclient.errors import HttpError
 import app_identity
 import common
 from gcloud.gcs import StorageClient
-import gcs_utils
 import resources
 from constants import bq_utils as bq_consts
 
@@ -258,9 +255,11 @@ def load_pii_csv(hpo_id, pii_table_name, source_folder_prefix=""):
 
     app_id = app_identity.get_application_id()
     dataset_id = get_dataset_id()
-    bucket = gcs_utils.get_hpo_bucket(hpo_id)
-    gcs_object_path = 'gs://%s/%s%s.csv' % (bucket, source_folder_prefix,
-                                            pii_table_name)
+
+    storage_client = StorageClient(app_id)
+    hpo_bucket = storage_client.get_hpo_bucket(hpo_id)
+    gcs_object_path = 'gs://%s/%s%s.csv' % (
+        hpo_bucket.name, source_folder_prefix, pii_table_name)
     table_id = get_table_id(hpo_id, pii_table_name)
     return load_csv(pii_table_name, gcs_object_path, app_id, dataset_id,
                     table_id)
