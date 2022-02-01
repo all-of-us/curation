@@ -1,19 +1,18 @@
 # Pyton imports
+import os
 import unittest
 from io import open
 
 # Third party imports
 from googleapiclient.errors import HttpError
+import mock
 
 # Project imports
 import app_identity
 import gcs_utils
 from gcloud.gcs import StorageClient
 from tests import test_util
-from tests.test_util import (FAKE_HPO_ID, FAKE_HPO_ID_TEST_KEY,
-                             FIVE_PERSONS_PERSON_CSV, NYC_HPO_ID,
-                             NYC_HPO_ID_TEST_KEY, PITT_HPO_ID,
-                             PITT_HPO_ID_TEST_KEY)
+from tests.test_util import FIVE_PERSONS_PERSON_CSV, FAKE_HPO_ID
 
 
 class GcsUtilsTest(unittest.TestCase):
@@ -23,12 +22,14 @@ class GcsUtilsTest(unittest.TestCase):
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
-        test_util.insert_hpo_id_bucket_name(NYC_HPO_ID_TEST_KEY,
-                                            PITT_HPO_ID_TEST_KEY,
-                                            FAKE_HPO_ID_TEST_KEY)
+        cls.env_patcher = mock.patch.dict(
+            os.environ,
+            {"GAE_SERVICE": test_util.get_unique_service_name(cls.__name__)})
+        cls.env_patcher.start()
+        test_util.insert_hpo_id_bucket_name(os.environ.get("GAE_SERVICE"))
 
     def setUp(self):
-        self.hpo_bucket = gcs_utils.get_hpo_bucket(FAKE_HPO_ID_TEST_KEY)
+        self.hpo_bucket = gcs_utils.get_hpo_bucket(FAKE_HPO_ID)
         self.gcs_path = '/'.join([self.hpo_bucket, 'dummy'])
         self.project_id = app_identity.get_application_id()
         self.storage_client = StorageClient(self.project_id)
@@ -68,6 +69,5 @@ class GcsUtilsTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        test_util.delete_hpo_id_bucket_name(NYC_HPO_ID_TEST_KEY,
-                                            PITT_HPO_ID_TEST_KEY,
-                                            FAKE_HPO_ID_TEST_KEY)
+        test_util.delete_hpo_id_bucket_name(os.environ.get("GAE_SERVICE"))
+        cls.env_patcher.stop()

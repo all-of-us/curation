@@ -12,9 +12,7 @@ import gcs_utils
 import resources
 from gcloud.gcs import StorageClient
 import tests.test_util as test_util
-from tests.test_util import (FAKE_HPO_ID, FAKE_HPO_ID_TEST_KEY, NYC_HPO_ID,
-                             NYC_HPO_ID_TEST_KEY, PITT_HPO_ID,
-                             PITT_HPO_ID_TEST_KEY)
+from tests.test_util import FAKE_HPO_ID
 from validation import achilles_heel
 import validation.sql_wrangle as sql_wrangle
 
@@ -29,12 +27,14 @@ class AchillesHeelTest(unittest.TestCase):
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
-        test_util.insert_hpo_id_bucket_name(NYC_HPO_ID_TEST_KEY,
-                                            PITT_HPO_ID_TEST_KEY,
-                                            FAKE_HPO_ID_TEST_KEY)
+        cls.env_patcher = mock.patch.dict(
+            os.environ,
+            {"GAE_SERVICE": test_util.get_unique_service_name(cls.__name__)})
+        cls.env_patcher.start()
+        test_util.insert_hpo_id_bucket_name(os.environ.get("GAE_SERVICE"))
 
     def setUp(self):
-        self.hpo_bucket = gcs_utils.get_hpo_bucket(FAKE_HPO_ID_TEST_KEY)
+        self.hpo_bucket = gcs_utils.get_hpo_bucket(FAKE_HPO_ID)
         self.dataset = bq_utils.get_dataset_id()
         self.project_id = app_identity.get_application_id()
         self.storage_client = StorageClient(self.project_id)
@@ -156,6 +156,5 @@ class AchillesHeelTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        test_util.delete_hpo_id_bucket_name(NYC_HPO_ID_TEST_KEY,
-                                            PITT_HPO_ID_TEST_KEY,
-                                            FAKE_HPO_ID_TEST_KEY)
+        test_util.delete_hpo_id_bucket_name(os.environ.get("GAE_SERVICE"))
+        cls.env_patcher.stop()

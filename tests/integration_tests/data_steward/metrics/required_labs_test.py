@@ -15,9 +15,7 @@ import resources
 import validation.sql_wrangle as sql_wrangle
 from utils import bq
 from tests import test_util
-from tests.test_util import (FAKE_HPO_ID, FAKE_HPO_ID_TEST_KEY, NYC_HPO_ID,
-                             NYC_HPO_ID_TEST_KEY, PITT_HPO_ID,
-                             PITT_HPO_ID_TEST_KEY)
+from tests.test_util import FAKE_HPO_ID
 from validation.metrics import required_labs as required_labs
 from validation.metrics.required_labs import (
     MEASUREMENT_CONCEPT_SETS_TABLE, MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE)
@@ -30,12 +28,14 @@ class RequiredLabsTest(unittest.TestCase):
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
-        test_util.insert_hpo_id_bucket_name(FAKE_HPO_ID_TEST_KEY,
-                                            NYC_HPO_ID_TEST_KEY,
-                                            PITT_HPO_ID_TEST_KEY)
+        cls.env_patcher = mock.patch.dict(
+            os.environ,
+            {"GAE_SERVICE": test_util.get_unique_service_name(cls.__name__)})
+        cls.env_patcher.start()
+        test_util.insert_hpo_id_bucket_name(os.environ.get("GAE_SERVICE"))
 
     def setUp(self):
-        self.hpo_bucket = gcs_utils.get_hpo_bucket(FAKE_HPO_ID_TEST_KEY)
+        self.hpo_bucket = gcs_utils.get_hpo_bucket(FAKE_HPO_ID)
         self.project_id = app_identity.get_application_id()
         self.dataset_id = bq_utils.get_dataset_id()
         self.rdr_dataset_id = bq_utils.get_rdr_dataset_id()
@@ -206,6 +206,5 @@ class RequiredLabsTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        test_util.delete_hpo_id_bucket_name(FAKE_HPO_ID_TEST_KEY,
-                                            NYC_HPO_ID_TEST_KEY,
-                                            PITT_HPO_ID_TEST_KEY)
+        test_util.delete_hpo_id_bucket_name(os.environ.get("GAE_SERVICE"))
+        cls.env_patcher.stop()

@@ -5,6 +5,8 @@ import time
 import unittest
 from io import open
 
+import mock
+
 import bq_utils
 import common
 import app_identity
@@ -12,10 +14,7 @@ from gcloud.gcs import StorageClient
 from google.cloud.storage.bucket import Bucket, Blob
 import resources
 from tests import test_util
-from tests.test_util import (FAKE_HPO_ID, FAKE_HPO_ID_TEST_KEY,
-                             FIVE_PERSONS_PERSON_CSV, NYC_HPO_ID,
-                             NYC_HPO_ID_TEST_KEY, PITT_HPO_ID,
-                             PITT_HPO_ID_TEST_KEY,
+from tests.test_util import (FAKE_HPO_ID, FIVE_PERSONS_PERSON_CSV, PITT_HPO_ID,
                              PITT_FIVE_PERSONS_OBSERVATION_CSV)
 from validation.achilles import ACHILLES_TABLES
 
@@ -27,9 +26,11 @@ class BqUtilsTest(unittest.TestCase):
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
-        test_util.insert_hpo_id_bucket_name(NYC_HPO_ID_TEST_KEY,
-                                            PITT_HPO_ID_TEST_KEY,
-                                            FAKE_HPO_ID_TEST_KEY)
+        cls.env_patcher = mock.patch.dict(
+            os.environ,
+            {"GAE_SERVICE": test_util.get_unique_service_name(cls.__name__)})
+        cls.env_patcher.start()
+        test_util.insert_hpo_id_bucket_name(os.environ.get("GAE_SERVICE"))
 
     def setUp(self):
         self.person_table_id = bq_utils.get_table_id(FAKE_HPO_ID, common.PERSON)
@@ -83,8 +84,7 @@ class BqUtilsTest(unittest.TestCase):
         ]
         self.DT_FORMAT = '%Y-%m-%d %H:%M:%S'
         self.client = StorageClient(self.project_id)
-        self.hpo_bucket: Bucket = self.client.get_hpo_bucket(
-            FAKE_HPO_ID_TEST_KEY)
+        self.hpo_bucket: Bucket = self.client.get_hpo_bucket(FAKE_HPO_ID)
         self.client.empty_bucket(self.hpo_bucket)
 
     def _drop_tables(self):
@@ -211,7 +211,7 @@ class BqUtilsTest(unittest.TestCase):
             int(row['observation_id'])
             for row in resources.csv_to_list(PITT_FIVE_PERSONS_OBSERVATION_CSV)
         ]
-        bucket: Bucket = self.client.get_hpo_bucket(PITT_HPO_ID_TEST_KEY)
+        bucket: Bucket = self.client.get_hpo_bucket(hpo_id)
         table_blob: Blob = bucket.blob('observation.csv')
         with open(PITT_FIVE_PERSONS_OBSERVATION_CSV, 'rb') as fp:
             table_blob.upload_from_file(fp)
@@ -375,6 +375,5 @@ class BqUtilsTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        test_util.delete_hpo_id_bucket_name(NYC_HPO_ID_TEST_KEY,
-                                            PITT_HPO_ID_TEST_KEY,
-                                            FAKE_HPO_ID_TEST_KEY)
+        test_util.delete_hpo_id_bucket_name(os.environ.get("GAE_SERVICE"))
+        cls.env_patcher.stop()

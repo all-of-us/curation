@@ -18,13 +18,9 @@ from utils import bq
 
 RESOURCES_BUCKET_FMT = '{project_id}-resources'
 
-HPO_ID_SUFFIX = f"_{os.environ.get('USERNAME_PREFIX')}_{os.environ.get('CURRENT_BRANCH')}_{datetime.now().strftime('%Y_%m_%d_%H_%M_%S_%f')}"
 FAKE_HPO_ID = 'fake'
 PITT_HPO_ID = 'pitt'
 NYC_HPO_ID = 'nyc'
-FAKE_HPO_ID_TEST_KEY = f"{FAKE_HPO_ID}{HPO_ID_SUFFIX}"
-PITT_HPO_ID_TEST_KEY = f"{PITT_HPO_ID}{HPO_ID_SUFFIX}"
-NYC_HPO_ID_TEST_KEY = f"{NYC_HPO_ID}{HPO_ID_SUFFIX}"
 FAKE_BUCKET_NAME = os.environ.get('BUCKET_NAME_FAKE')
 PITT_BUCKET_NAME = os.environ.get('BUCKET_NAME_PITT')
 NYC_BUCKET_NAME = os.environ.get('BUCKET_NAME_NYC')
@@ -461,7 +457,7 @@ def mock_google_http_error(status_code: int = 418,
                                             uri=uri)
 
 
-def insert_hpo_id_bucket_name(hpo_id_nyc, hpo_id_pitt, hpo_id_fake):
+def insert_hpo_id_bucket_name(service_name):
     """
     Insert test data to hpo_id_bucket_name table.
     The test data is used to link hpo id and bucket name.
@@ -473,27 +469,28 @@ def insert_hpo_id_bucket_name(hpo_id_nyc, hpo_id_pitt, hpo_id_fake):
     INSERT_HPO_ID_BUCKET_NAME = common.JINJA_ENV.from_string("""
         INSERT INTO `{{project_id}}.{{lookup_dataset_id}}.{{hpo_id_bucket_table_id}}` 
         (hpo_id, bucket_name, service) VALUES 
-        ('{{hpo_id_nyc}}', '{{bucket_name_nyc}}', 'default'),
-        ('{{hpo_id_pitt}}', '{{bucket_name_pitt}}', 'default'),
-        ('{{hpo_id_fake}}', '{{bucket_name_fake}}', 'default')
+        ('{{hpo_id_nyc}}', '{{bucket_name_nyc}}', '{{service_name}}'),
+        ('{{hpo_id_pitt}}', '{{bucket_name_pitt}}', '{{service_name}}'),
+        ('{{hpo_id_fake}}', '{{bucket_name_fake}}', '{{service_name}}')
         """)
 
     insert_hpo_id_bucket_name = INSERT_HPO_ID_BUCKET_NAME.render(
         project_id=project_id,
         lookup_dataset_id=LOOKUP_TABLES_DATASET_ID,
         hpo_id_bucket_table_id=HPO_ID_BUCKET_NAME_TABLE_ID,
-        hpo_id_nyc=hpo_id_nyc,
+        hpo_id_nyc=NYC_HPO_ID,
         bucket_name_nyc=NYC_BUCKET_NAME,
-        hpo_id_pitt=hpo_id_pitt,
+        hpo_id_pitt=PITT_HPO_ID,
         bucket_name_pitt=PITT_BUCKET_NAME,
-        hpo_id_fake=hpo_id_fake,
-        bucket_name_fake=FAKE_BUCKET_NAME)
+        hpo_id_fake=FAKE_HPO_ID,
+        bucket_name_fake=FAKE_BUCKET_NAME,
+        service_name=service_name)
 
     job = bq_client.query(insert_hpo_id_bucket_name)
     job.result()
 
 
-def delete_hpo_id_bucket_name(hpo_id_nyc, hpo_id_pitt, hpo_id_fake):
+def delete_hpo_id_bucket_name(service_name):
     """
     Delete test data from hpo_id_bucket_name table that is added by
     insert_hpo_id_bucket_name().
@@ -503,19 +500,22 @@ def delete_hpo_id_bucket_name(hpo_id_nyc, hpo_id_pitt, hpo_id_fake):
 
     DELETE_HPO_ID_BUCKET_NAME = common.JINJA_ENV.from_string("""
         DELETE FROM `{{project_id}}.{{lookup_dataset_id}}.{{hpo_id_bucket_table_id}}` 
-        WHERE hpo_id IN ('{{hpo_id_nyc}}', '{{hpo_id_pitt}}', '{{hpo_id_fake}}')
+        WHERE service = '{{service_name}}'
         """)
 
     delete_id_bucket_name = DELETE_HPO_ID_BUCKET_NAME.render(
         project_id=project_id,
         lookup_dataset_id=LOOKUP_TABLES_DATASET_ID,
         hpo_id_bucket_table_id=HPO_ID_BUCKET_NAME_TABLE_ID,
-        hpo_id_nyc=hpo_id_nyc,
-        bucket_name_nyc=NYC_BUCKET_NAME,
-        hpo_id_pitt=hpo_id_pitt,
-        bucket_name_pitt=PITT_BUCKET_NAME,
-        hpo_id_fake=hpo_id_fake,
-        bucket_name_fake=FAKE_BUCKET_NAME)
+        service_name=service_name)
 
     job = bq_client.query(delete_id_bucket_name)
     job.result()
+
+
+def get_unique_service_name(class_name):
+    """
+    Args:
+        class_name ([type]): [description]
+    """
+    return f"default_{os.environ.get('USERNAME_PREFIX')}_{os.environ.get('CURRENT_BRANCH')}_{class_name}"

@@ -3,6 +3,8 @@ import os
 import unittest
 from io import open
 
+import mock
+
 # Project imports
 import app_identity
 import bq_utils
@@ -10,9 +12,7 @@ import gcs_utils
 import resources
 from gcloud.gcs import StorageClient
 from tests import test_util
-from tests.test_util import (FAKE_HPO_ID, FAKE_HPO_ID_TEST_KEY, NYC_HPO_ID,
-                             NYC_HPO_ID_TEST_KEY, PITT_HPO_ID,
-                             PITT_HPO_ID_TEST_KEY)
+from tests.test_util import FAKE_HPO_ID
 from constants.tools.combine_ehr_rdr import EHR_CONSENT_TABLE_ID, RDR_TABLES_TO_COPY, DOMAIN_TABLES
 from tools.combine_ehr_rdr import (copy_rdr_table, ehr_consent, main,
                                    mapping_table_for, create_cdm_tables)
@@ -38,6 +38,10 @@ class CombineEhrRdrTest(unittest.TestCase):
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
+        cls.env_patcher = mock.patch.dict(
+            os.environ,
+            {"GAE_SERVICE": test_util.get_unique_service_name(cls.__name__)})
+        cls.env_patcher.start()
         # TODO base class this
         ehr_dataset_id = bq_utils.get_dataset_id()
         rdr_dataset_id = bq_utils.get_rdr_dataset_id()
@@ -46,13 +50,11 @@ class CombineEhrRdrTest(unittest.TestCase):
         cls.load_dataset_from_files(ehr_dataset_id,
                                     test_util.NYC_FIVE_PERSONS_PATH, True)
         cls.load_dataset_from_files(rdr_dataset_id, test_util.RDR_PATH)
-        test_util.insert_hpo_id_bucket_name(FAKE_HPO_ID_TEST_KEY,
-                                            NYC_HPO_ID_TEST_KEY,
-                                            PITT_HPO_ID_TEST_KEY)
+        test_util.insert_hpo_id_bucket_name(os.environ.get("GAE_SERVICE"))
 
     @classmethod
     def load_dataset_from_files(cls, dataset_id, path, mappings=False):
-        bucket = gcs_utils.get_hpo_bucket(FAKE_HPO_ID_TEST_KEY)
+        bucket = gcs_utils.get_hpo_bucket(FAKE_HPO_ID)
         cls.storage_client.empty_bucket(bucket)
         job_ids = []
         for table in resources.CDM_TABLES:
@@ -338,6 +340,5 @@ class CombineEhrRdrTest(unittest.TestCase):
         rdr_dataset_id = bq_utils.get_rdr_dataset_id()
         test_util.delete_all_tables(ehr_dataset_id)
         test_util.delete_all_tables(rdr_dataset_id)
-        test_util.delete_hpo_id_bucket_name(FAKE_HPO_ID_TEST_KEY,
-                                            NYC_HPO_ID_TEST_KEY,
-                                            PITT_HPO_ID_TEST_KEY)
+        test_util.delete_hpo_id_bucket_name(os.environ.get("GAE_SERVICE"))
+        cls.env_patcher.stop()

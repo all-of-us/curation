@@ -10,7 +10,7 @@ import bq_utils
 import common
 from gcloud.gcs import StorageClient
 from tests import test_util
-from tests.test_util import FAKE_HPO_ID, FAKE_HPO_ID_TEST_KEY, NYC_HPO_ID, NYC_HPO_ID_TEST_KEY, PITT_HPO_ID, PITT_HPO_ID_TEST_KEY
+from tests.test_util import FAKE_HPO_ID, NYC_HPO_ID
 from validation import export, main
 
 BQ_TIMEOUT_RETRIES = 3
@@ -24,19 +24,21 @@ class ExportTest(unittest.TestCase):
             '\n**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
+        cls.env_patcher = mock.patch.dict(
+            os.environ,
+            {"GAE_SERVICE": test_util.get_unique_service_name(cls.__name__)})
+        cls.env_patcher.start()
         dataset_id = bq_utils.get_dataset_id()
         test_util.delete_all_tables(dataset_id)
         test_util.populate_achilles()
-        test_util.insert_hpo_id_bucket_name(NYC_HPO_ID_TEST_KEY,
-                                            PITT_HPO_ID_TEST_KEY,
-                                            FAKE_HPO_ID_TEST_KEY)
+        test_util.insert_hpo_id_bucket_name()
+        test_util.insert_hpo_id_bucket_name(os.environ.get("GAE_SERVICE"))
 
     def setUp(self):
         self.project_id = app_identity.get_application_id()
         self.storage_client = StorageClient(self.project_id)
 
-        self.hpo_bucket = self.storage_client.get_hpo_bucket(
-            FAKE_HPO_ID_TEST_KEY)
+        self.hpo_bucket = self.storage_client.get_hpo_bucket(FAKE_HPO_ID)
 
     def _test_report_export(self, report):
         data_density_path = os.path.join(export.EXPORT_PATH, report)
@@ -130,7 +132,7 @@ class ExportTest(unittest.TestCase):
         mock_is_hpo_id.return_value = True
         folder_prefix: str = 'dummy-prefix-2018-03-24/'
 
-        target_bucket = self.storage_client.get_hpo_bucket(NYC_HPO_ID_TEST_KEY)
+        target_bucket = self.storage_client.get_hpo_bucket(NYC_HPO_ID)
         objects: Iterable = target_bucket.list_blobs()
         main.run_export(datasource_id=FAKE_HPO_ID,
                         folder_prefix=folder_prefix,
@@ -157,7 +159,7 @@ class ExportTest(unittest.TestCase):
         self.assertDictEqual(expected_datasources, actual_datasources)
 
     def tearDown(self):
-        bucket_nyc = self.storage_client.get_hpo_bucket(NYC_HPO_ID_TEST_KEY)
+        bucket_nyc = self.storage_client.get_hpo_bucket(NYC_HPO_ID)
         self.storage_client.empty_bucket(bucket_nyc)
         self.storage_client.empty_bucket(self.hpo_bucket)
 
@@ -165,6 +167,6 @@ class ExportTest(unittest.TestCase):
     def tearDownClass(cls):
         dataset_id = bq_utils.get_dataset_id()
         test_util.delete_all_tables(dataset_id)
-        test_util.delete_hpo_id_bucket_name(NYC_HPO_ID_TEST_KEY,
-                                            PITT_HPO_ID_TEST_KEY,
-                                            FAKE_HPO_ID_TEST_KEY)
+        test_util.delete_hpo_id_bucket_name()
+        test_util.delete_hpo_id_bucket_name(os.environ.get("GAE_SERVICE"))
+        cls.env_patcher.stop()
