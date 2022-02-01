@@ -70,7 +70,7 @@
                 "year_of_birth","month_of_birth","day_of_birth",
                 "race_concept_id","ethnicity_concept_id","location_id",
                 "provider_id","care_site_id","person_source_value",
-                "gender_source_value","gender_source_concept_id","race_source_value",
+                "gender_source_value", "gender_concept_id", "gender_source_concept_id","race_source_value",
                 "race_source_concept_id","ethnicity_source_value","ethnicity_source_concept_id",
                 "cause_concept_id","cause_source_value","cause_source_concept_id",
                 "visit_detail_id","value_source_value","value_as_string"
