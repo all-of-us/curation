@@ -4,7 +4,6 @@ Unit test components of data_steward.validation.main
 # Python imports
 import datetime
 import re
-import os
 from unittest import TestCase, mock
 
 # Project imports
@@ -60,7 +59,6 @@ class ValidationMainTest(TestCase):
             days=29)
         before_lag_time = datetime.datetime.today() - datetime.timedelta(
             minutes=3)
-
         after_lag_time = datetime.datetime.today() - datetime.timedelta(
             minutes=7)
 
@@ -259,7 +257,10 @@ class ValidationMainTest(TestCase):
 
         mock_perform_validation_on_file.side_effect = perform_validation_on_file
 
-        actual_result = main.validate_submission(self.hpo_id, self.hpo_bucket,
+        mock_bucket = mock.MagicMock()
+        type(mock_bucket).name = mock.PropertyMock(return_value=self.hpo_bucket)
+
+        actual_result = main.validate_submission(self.hpo_id, mock_bucket,
                                                  folder_items, folder_prefix)
         self.assertCountEqual(expected_results, actual_result.get('results'))
         self.assertCountEqual(expected_errors, actual_result.get('errors'))
