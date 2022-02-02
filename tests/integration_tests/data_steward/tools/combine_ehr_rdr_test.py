@@ -30,21 +30,13 @@ UNCONSENTED_EHR_COUNTS_QUERY = (
 class CombineEhrRdrTest(unittest.TestCase):
     project_id = app_identity.get_application_id()
     storage_client = StorageClient(project_id)
+    dataset_id = bq_utils.get_dataset_id()
 
     @classmethod
     def setUpClass(cls):
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
-        cls.env_patcher = mock.patch.dict(
-            os.environ,
-            {"GAE_SERVICE": test_util.get_unique_service_name(cls.__name__)})
-        cls.env_patcher.start()
-        # Run delete before insert in case old entries are not successfully
-        # deleted in hpo_id_bucket_name from previous test runs
-        test_util.delete_hpo_id_bucket_name(os.environ.get("GAE_SERVICE"))
-        test_util.insert_hpo_id_bucket_name(os.environ.get("GAE_SERVICE"))
-
         # TODO base class this
         ehr_dataset_id = bq_utils.get_dataset_id()
         rdr_dataset_id = bq_utils.get_rdr_dataset_id()
@@ -54,9 +46,12 @@ class CombineEhrRdrTest(unittest.TestCase):
                                     test_util.NYC_FIVE_PERSONS_PATH, True)
         cls.load_dataset_from_files(rdr_dataset_id, test_util.RDR_PATH)
 
+    @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     @classmethod
     def load_dataset_from_files(cls, dataset_id, path, mappings=False):
+        test_util.setup_hpo_id_bucket_name_table(dataset_id)
         hpo_bucket = cls.storage_client.get_hpo_bucket(test_util.FAKE_HPO_ID)
+        test_util.drop_hpo_id_bucket_name_table(dataset_id)
         cls.storage_client.empty_bucket(hpo_bucket)
         job_ids: list = []
         for table in resources.CDM_TABLES:

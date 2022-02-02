@@ -11,7 +11,7 @@ import app_identity
 import bq_utils
 import common
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
-from constants.utils.bq import LOOKUP_TABLES_DATASET_ID, HPO_ID_BUCKET_NAME_TABLE_ID
+from constants.utils.bq import HPO_ID_BUCKET_NAME_TABLE_ID
 from constants.validation import main
 import resources
 from utils import bq
@@ -24,6 +24,7 @@ NYC_HPO_ID = 'nyc'
 FAKE_BUCKET_NAME = os.environ.get('BUCKET_NAME_FAKE')
 PITT_BUCKET_NAME = os.environ.get('BUCKET_NAME_PITT')
 NYC_BUCKET_NAME = os.environ.get('BUCKET_NAME_NYC')
+GAE_SERVICE = os.environ.get('GAE_SERVICE', 'default')
 
 VALIDATE_HPO_FILES_URL = main.PREFIX + 'ValidateHpoFiles/' + FAKE_HPO_ID
 COPY_HPO_FILES_URL = main.PREFIX + 'CopyFiles/' + FAKE_HPO_ID
@@ -457,16 +458,31 @@ def mock_google_http_error(status_code: int = 418,
                                             uri=uri)
 
 
-def insert_hpo_id_bucket_name(service_name):
+def setup_hpo_id_bucket_name_table(dataset_id):
     """
-    Insert test data to hpo_id_bucket_name table.
-    The test data is used to link hpo id and bucket name.
+    Sets up `hpo_id_bucket_name` table that `get_hpo_bucket()` looks up.
+    Drops the table if exist first, and create it with test lookup data.
+    :param dataset_id: dataset id where the lookup table is created
     """
     project_id = app_identity.get_application_id()
-
     bq_client = bq.get_client(project_id)
 
-    INSERT_HPO_ID_BUCKET_NAME = common.JINJA_ENV.from_string("""
+    drop_hpo_id_bucket_name_table(dataset_id)
+
+    CREATE_LOOKUP_TABLE = common.JINJA_ENV.from_string("""
+        CREATE TABLE `{{project_id}}.{{lookup_dataset_id}}.{{hpo_id_bucket_table_id}}`
+        (hpo_id STRING, bucket_name STRING, service STRING)
+        """)
+
+    create_lookup_table = CREATE_LOOKUP_TABLE.render(
+        project_id=project_id,
+        lookup_dataset_id=dataset_id,
+        hpo_id_bucket_table_id=HPO_ID_BUCKET_NAME_TABLE_ID)
+
+    job = bq_client.query(create_lookup_table)
+    job.result()
+
+    INSERT_LOOKUP_TABLE = common.JINJA_ENV.from_string("""
         INSERT INTO `{{project_id}}.{{lookup_dataset_id}}.{{hpo_id_bucket_table_id}}` 
         (hpo_id, bucket_name, service) VALUES 
         ('{{hpo_id_nyc}}', '{{bucket_name_nyc}}', '{{service_name}}'),
@@ -474,9 +490,9 @@ def insert_hpo_id_bucket_name(service_name):
         ('{{hpo_id_fake}}', '{{bucket_name_fake}}', '{{service_name}}')
         """)
 
-    insert_hpo_id_bucket_name = INSERT_HPO_ID_BUCKET_NAME.render(
+    insert_lookup_table = INSERT_LOOKUP_TABLE.render(
         project_id=project_id,
-        lookup_dataset_id=LOOKUP_TABLES_DATASET_ID,
+        lookup_dataset_id=dataset_id,
         hpo_id_bucket_table_id=HPO_ID_BUCKET_NAME_TABLE_ID,
         hpo_id_nyc=NYC_HPO_ID,
         bucket_name_nyc=NYC_BUCKET_NAME,
@@ -484,38 +500,28 @@ def insert_hpo_id_bucket_name(service_name):
         bucket_name_pitt=PITT_BUCKET_NAME,
         hpo_id_fake=FAKE_HPO_ID,
         bucket_name_fake=FAKE_BUCKET_NAME,
-        service_name=service_name)
+        service_name=GAE_SERVICE)
 
-    job = bq_client.query(insert_hpo_id_bucket_name)
+    job = bq_client.query(insert_lookup_table)
     job.result()
 
 
-def delete_hpo_id_bucket_name(service_name):
+def drop_hpo_id_bucket_name_table(dataset_id):
     """
-    Delete test data from hpo_id_bucket_name table that is added by
-    insert_hpo_id_bucket_name().
+    Drops `hpo_id_bucket_name` table that `get_hpo_bucket()` looks up.
+    :param dataset_id: dataset id where the lookup table is located
     """
     project_id = app_identity.get_application_id()
     bq_client = bq.get_client(project_id)
 
-    DELETE_HPO_ID_BUCKET_NAME = common.JINJA_ENV.from_string("""
-        DELETE FROM `{{project_id}}.{{lookup_dataset_id}}.{{hpo_id_bucket_table_id}}` 
-        WHERE service = '{{service_name}}'
+    DROP_LOOKUP_TABLE = common.JINJA_ENV.from_string("""
+        DROP TABLE IF EXISTS `{{project_id}}.{{lookup_dataset_id}}.{{hpo_id_bucket_table_id}}` 
         """)
 
-    delete_id_bucket_name = DELETE_HPO_ID_BUCKET_NAME.render(
+    drop_lookup_table = DROP_LOOKUP_TABLE.render(
         project_id=project_id,
-        lookup_dataset_id=LOOKUP_TABLES_DATASET_ID,
-        hpo_id_bucket_table_id=HPO_ID_BUCKET_NAME_TABLE_ID,
-        service_name=service_name)
+        lookup_dataset_id=dataset_id,
+        hpo_id_bucket_table_id=HPO_ID_BUCKET_NAME_TABLE_ID)
 
-    job = bq_client.query(delete_id_bucket_name)
+    job = bq_client.query(drop_lookup_table)
     job.result()
-
-
-def get_unique_service_name(class_name):
-    """
-    Return service name that is unique to the test you are running (e.g. default_hiro_1_ValidationMainTest)
-    The service name is used in insert_hpo_id_bucket_name() and delete_hpo_id_bucket_name().
-    """
-    return f"default_{os.environ.get('USERNAME_PREFIX')}_{os.environ.get('CURRENT_BRANCH')}_{class_name}"

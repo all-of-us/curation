@@ -25,23 +25,18 @@ from validation.metrics import required_labs
 
 class ValidationMainTest(unittest.TestCase):
 
+    dataset_id = bq_utils.get_dataset_id()
+
     @classmethod
     def setUpClass(cls):
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
-        cls.env_patcher = mock.patch.dict(
-            os.environ,
-            {"GAE_SERVICE": test_util.get_unique_service_name(cls.__name__)})
-        cls.env_patcher.start()
 
-        # Run delete before insert in case old entries are not successfully
-        # deleted in hpo_id_bucket_name from previous test runs
-        test_util.delete_hpo_id_bucket_name(os.environ.get("GAE_SERVICE"))
-        test_util.insert_hpo_id_bucket_name(os.environ.get("GAE_SERVICE"))
-
+    @mock.patch("gcs_utils.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def setUp(self):
         self.hpo_id = test_util.FAKE_HPO_ID
+        test_util.setup_hpo_id_bucket_name_table(self.dataset_id)
         self.hpo_bucket = gcs_utils.get_hpo_bucket(self.hpo_id)
         self.project_id = app_identity.get_application_id()
         self.rdr_dataset_id = bq_utils.get_rdr_dataset_id()
@@ -51,15 +46,14 @@ class ValidationMainTest(unittest.TestCase):
         self.mock_get_hpo_name.return_value = 'Fake HPO'
         self.addCleanup(mock_get_hpo_name.stop)
 
-        self.bigquery_dataset_id = bq_utils.get_dataset_id()
         self.folder_prefix = '2019-01-01-v1/'
 
         self.storage_client = StorageClient(self.project_id)
         self.storage_bucket = self.storage_client.get_bucket(self.hpo_bucket)
         self.storage_client.empty_bucket(self.hpo_bucket)
 
-        test_util.delete_all_tables(self.bigquery_dataset_id)
-        self._create_drug_class_table(self.bigquery_dataset_id)
+        test_util.delete_all_tables(self.dataset_id)
+        self._create_drug_class_table(self.dataset_id)
 
     @staticmethod
     def _create_drug_class_table(bigquery_dataset_id):
@@ -239,6 +233,7 @@ class ValidationMainTest(unittest.TestCase):
             self.assertSetEqual(set(expected_bucket_items),
                                 set(actual_bucket_items))
 
+    @mock.patch("gcs_utils.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def test_target_bucket_upload(self):
         bucket_nyc = gcs_utils.get_hpo_bucket(test_util.NYC_HPO_ID)
         folder_prefix = 'test-folder-fake/'
@@ -312,10 +307,10 @@ class ValidationMainTest(unittest.TestCase):
 
         # Load measurement_concept_sets
         required_labs.load_measurement_concept_sets_table(
-            project_id=self.project_id, dataset_id=self.bigquery_dataset_id)
+            project_id=self.project_id, dataset_id=self.dataset_id)
         # Load measurement_concept_sets_descendants
         required_labs.load_measurement_concept_sets_descendants_table(
-            project_id=self.project_id, dataset_id=self.bigquery_dataset_id)
+            project_id=self.project_id, dataset_id=self.dataset_id)
 
         main.app.testing = True
         with main.app.test_client() as c:
@@ -375,14 +370,10 @@ class ValidationMainTest(unittest.TestCase):
         self.assertTrue(len(submitted_labs) > 0)
         self.assertTrue(len(missing_labs) > 0)
 
+    @mock.patch("gcs_utils.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def tearDown(self):
         self.storage_client.empty_bucket(self.hpo_bucket)
         bucket_nyc = gcs_utils.get_hpo_bucket(test_util.NYC_HPO_ID)
         self.storage_client.empty_bucket(bucket_nyc)
         self.storage_client.empty_bucket(gcs_utils.get_drc_bucket())
-        test_util.delete_all_tables(self.bigquery_dataset_id)
-
-    @classmethod
-    def tearDownClass(cls):
-        test_util.delete_hpo_id_bucket_name(os.environ.get("GAE_SERVICE"))
-        cls.env_patcher.stop()
+        test_util.delete_all_tables(self.dataset_id)

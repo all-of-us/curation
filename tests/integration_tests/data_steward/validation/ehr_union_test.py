@@ -34,20 +34,13 @@ def first_or_none(l):
 
 class EhrUnionTest(unittest.TestCase):
 
+    dataset_id = bq_utils.get_dataset_id()
+
     @classmethod
     def setUpClass(cls):
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
-        cls.env_patcher = mock.patch.dict(
-            os.environ,
-            {"GAE_SERVICE": test_util.get_unique_service_name(cls.__name__)})
-        cls.env_patcher.start()
-
-        # Run delete before insert in case old entries are not successfully
-        # deleted in hpo_id_bucket_name from previous test runs
-        test_util.delete_hpo_id_bucket_name(os.environ.get("GAE_SERVICE"))
-        test_util.insert_hpo_id_bucket_name(os.environ.get("GAE_SERVICE"))
 
     def setUp(self):
         self.project_id = bq_utils.app_identity.get_application_id()
@@ -69,10 +62,15 @@ class EhrUnionTest(unittest.TestCase):
             eu_constants.CARE_SITE_ID, eu_constants.LOCATION_ID
         ]
 
+    @mock.patch("gcs_utils.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def _empty_hpo_buckets(self):
+        test_util.setup_hpo_id_bucket_name_table(self.dataset_id)
+
         for hpo_id in self.hpo_ids:
             bucket = gcs_utils.get_hpo_bucket(hpo_id)
             self.storage_client.empty_bucket(bucket)
+
+        test_util.drop_hpo_id_bucket_name_table(self.dataset_id)
 
     def _create_hpo_table(self, hpo_id, table, dataset_id):
         table_id = bq_utils.get_table_id(hpo_id, table)
@@ -81,12 +79,15 @@ class EhrUnionTest(unittest.TestCase):
                               dataset_id=dataset_id)
         return table_id
 
+    @mock.patch("gcs_utils.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def _load_datasets(self):
         """
         Load five persons data for nyc and pitt test hpo and rdr data for the excluded_hpo
         # expected_tables is for testing output
         # it maps table name to list of expected records ex: "unioned_ehr_visit_occurrence" -> [{}, {}, ...]
         """
+        test_util.setup_hpo_id_bucket_name_table(self.dataset_id)
+
         expected_tables: dict = {}
         running_jobs: list = []
         for cdm_table in resources.CDM_TABLES:
@@ -125,6 +126,9 @@ class EhrUnionTest(unittest.TestCase):
                 running_jobs.append(result['jobReference']['jobId'])
                 if hpo_id != EXCLUDED_HPO_ID:
                     expected_tables[output_table] += list(csv_rows)
+
+        test_util.drop_hpo_id_bucket_name_table(self.dataset_id)
+
         # ensure person to observation output is as expected
         output_table_person: str = ehr_union.output_table_for(common.PERSON)
         output_table_observation: str = ehr_union.output_table_for(
@@ -564,8 +568,3 @@ class EhrUnionTest(unittest.TestCase):
         self._empty_hpo_buckets()
         test_util.delete_all_tables(self.input_dataset_id)
         test_util.delete_all_tables(self.output_dataset_id)
-
-    @classmethod
-    def tearDownClass(cls):
-        test_util.delete_hpo_id_bucket_name(os.environ.get("GAE_SERVICE"))
-        cls.env_patcher.stop()

@@ -21,23 +21,17 @@ from validation.achilles import ACHILLES_TABLES
 
 class BqUtilsTest(unittest.TestCase):
 
+    dataset_id = bq_utils.get_dataset_id()
+
     @classmethod
     def setUpClass(cls):
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
-        cls.env_patcher = mock.patch.dict(
-            os.environ,
-            {"GAE_SERVICE": test_util.get_unique_service_name(cls.__name__)})
-        cls.env_patcher.start()
-        # Run delete before insert in case old entries are not successfully
-        # deleted in hpo_id_bucket_name from previous test runs
-        test_util.delete_hpo_id_bucket_name(os.environ.get("GAE_SERVICE"))
-        test_util.insert_hpo_id_bucket_name(os.environ.get("GAE_SERVICE"))
 
+    @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def setUp(self):
         self.person_table_id = bq_utils.get_table_id(FAKE_HPO_ID, common.PERSON)
-        self.dataset_id = bq_utils.get_dataset_id()
         test_util.delete_all_tables(self.dataset_id)
         self.project_id = app_identity.get_application_id()
         self.TEST_FIELDS = [
@@ -87,6 +81,7 @@ class BqUtilsTest(unittest.TestCase):
         ]
         self.DT_FORMAT = '%Y-%m-%d %H:%M:%S'
         self.client = StorageClient(self.project_id)
+        test_util.setup_hpo_id_bucket_name_table(self.dataset_id)
         self.hpo_bucket: Bucket = self.client.get_hpo_bucket(FAKE_HPO_ID)
         self.client.empty_bucket(self.hpo_bucket)
 
@@ -204,6 +199,7 @@ class BqUtilsTest(unittest.TestCase):
             # sanity check
             self.assertTrue(bq_utils.table_exists(table_id))
 
+    @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def test_load_ehr_observation(self):
         hpo_id = PITT_HPO_ID
         dataset_id = self.dataset_id
@@ -375,8 +371,3 @@ class BqUtilsTest(unittest.TestCase):
     def tearDown(self):
         test_util.delete_all_tables(self.dataset_id)
         self.client.empty_bucket(self.hpo_bucket)
-
-    @classmethod
-    def tearDownClass(cls):
-        test_util.delete_hpo_id_bucket_name(os.environ.get("GAE_SERVICE"))
-        cls.env_patcher.stop()

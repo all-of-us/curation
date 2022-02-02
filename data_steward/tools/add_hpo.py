@@ -42,6 +42,7 @@ ADD_HPO_SITE_ID_MAPPING = """
 SELECT '{org_id}' AS Org_ID, '{hpo_id}' AS HPO_ID, '{hpo_name}' AS Site_Name, {display_order} AS Display_Order
 """
 
+# TODO add service name to the query
 ADD_HPO_ID_BUCKET_NAME = """
 SELECT '{hpo_id}' AS hpo_id, '{bucket_name}' AS bucket_name
 """

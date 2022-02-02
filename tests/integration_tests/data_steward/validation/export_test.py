@@ -18,29 +18,24 @@ BQ_TIMEOUT_RETRIES = 3
 
 class ExportTest(unittest.TestCase):
 
+    dataset_id = bq_utils.get_dataset_id()
+
     @classmethod
     def setUpClass(cls):
         print(
             '\n**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
-        cls.env_patcher = mock.patch.dict(
-            os.environ,
-            {"GAE_SERVICE": test_util.get_unique_service_name(cls.__name__)})
-        cls.env_patcher.start()
-        # Run delete before insert in case old entries are not successfully
-        # deleted in hpo_id_bucket_name from previous test runs
-        test_util.delete_hpo_id_bucket_name(os.environ.get("GAE_SERVICE"))
-        test_util.insert_hpo_id_bucket_name(os.environ.get("GAE_SERVICE"))
 
-        dataset_id = bq_utils.get_dataset_id()
-        test_util.delete_all_tables(dataset_id)
+        test_util.delete_all_tables(cls.dataset_id)
         test_util.populate_achilles()
 
+    @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def setUp(self):
         self.project_id = app_identity.get_application_id()
         self.storage_client = StorageClient(self.project_id)
 
+        test_util.setup_hpo_id_bucket_name_table(self.dataset_id)
         self.hpo_bucket = self.storage_client.get_hpo_bucket(FAKE_HPO_ID)
 
     def _test_report_export(self, report):
@@ -128,9 +123,10 @@ class ExportTest(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             main.run_export(datasource_id=None, target_bucket=None)
 
+    @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     @mock.patch('validation.export.is_hpo_id')
     def test_run_export_with_target_bucket_and_datasource_id(
-        self, mock_is_hpo_id):
+            self, mock_is_hpo_id):
         # validation/main.py INTEGRATION TEST
         mock_is_hpo_id.return_value = True
         folder_prefix: str = 'dummy-prefix-2018-03-24/'
@@ -161,6 +157,7 @@ class ExportTest(unittest.TestCase):
         }
         self.assertDictEqual(expected_datasources, actual_datasources)
 
+    @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def tearDown(self):
         bucket_nyc = self.storage_client.get_hpo_bucket(NYC_HPO_ID)
         self.storage_client.empty_bucket(bucket_nyc)
@@ -168,7 +165,4 @@ class ExportTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        dataset_id = bq_utils.get_dataset_id()
-        test_util.delete_all_tables(dataset_id)
-        test_util.delete_hpo_id_bucket_name(os.environ.get("GAE_SERVICE"))
-        cls.env_patcher.stop()
+        test_util.delete_all_tables(cls.dataset_id)

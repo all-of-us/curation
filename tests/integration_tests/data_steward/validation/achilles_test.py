@@ -17,31 +17,27 @@ ACHILLES_RESULTS_COUNT = 2773
 
 class AchillesTest(unittest.TestCase):
 
+    dataset_id = bq_utils.get_dataset_id()
+
     @classmethod
     def setUpClass(cls):
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
-        cls.env_patcher = mock.patch.dict(
-            os.environ,
-            {"GAE_SERVICE": test_util.get_unique_service_name(cls.__name__)})
-        cls.env_patcher.start()
-        # Run delete before insert in case old entries are not successfully
-        # deleted in hpo_id_bucket_name from previous test runs
-        test_util.delete_hpo_id_bucket_name(os.environ.get("GAE_SERVICE"))
-        test_util.insert_hpo_id_bucket_name(os.environ.get("GAE_SERVICE"))
 
+    @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def setUp(self):
         self.project_id = app_identity.get_application_id()
         self.storage_client = StorageClient(self.project_id)
+        test_util.setup_hpo_id_bucket_name_table(self.dataset_id)
         self.hpo_bucket = self.storage_client.get_hpo_bucket(
             test_util.FAKE_HPO_ID)
 
         self.storage_client.empty_bucket(self.hpo_bucket)
-        test_util.delete_all_tables(bq_utils.get_dataset_id())
+        test_util.delete_all_tables(self.dataset_id)
 
     def tearDown(self):
-        test_util.delete_all_tables(bq_utils.get_dataset_id())
+        test_util.delete_all_tables(self.dataset_id)
         self.storage_client.empty_bucket(self.hpo_bucket)
 
     def _load_dataset(self):
@@ -79,8 +75,3 @@ class AchillesTest(unittest.TestCase):
         result = bq_utils.query(cmd)
         self.assertEqual(int(result['rows'][0]['f'][0]['v']),
                          ACHILLES_RESULTS_COUNT)
-
-    @classmethod
-    def tearDownClass(cls):
-        test_util.delete_hpo_id_bucket_name(os.environ.get("GAE_SERVICE"))
-        cls.env_patcher.stop()

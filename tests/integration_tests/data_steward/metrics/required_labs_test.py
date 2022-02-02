@@ -22,6 +22,8 @@ from validation.metrics.required_labs import (
 
 class RequiredLabsTest(unittest.TestCase):
 
+    dataset_id = bq_utils.get_dataset_id()
+
     @classmethod
     def setUpClass(cls):
         print('**************************************************************')
@@ -37,13 +39,14 @@ class RequiredLabsTest(unittest.TestCase):
         test_util.delete_hpo_id_bucket_name(os.environ.get("GAE_SERVICE"))
         test_util.insert_hpo_id_bucket_name(os.environ.get("GAE_SERVICE"))
 
+    @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def setUp(self):
         # Ids
         self.project_id = app_identity.get_application_id()
-        self.dataset_id = bq_utils.get_dataset_id()
         self.folder_prefix = '2019-01-01/'
         # Clients
         self.storage_client = StorageClient(self.project_id)
+        test_util.setup_hpo_id_bucket_name_table(self.dataset_id)
         self.hpo_bucket = self.storage_client.get_hpo_bucket(FAKE_HPO_ID)
         self.bq_client = bq.get_client(self.project_id)
         self.rdr_dataset_id = bq_utils.get_rdr_dataset_id()
@@ -207,8 +210,3 @@ class RequiredLabsTest(unittest.TestCase):
                          msg='Compare the number '
                          'of labs submitted '
                          'in the measurement')
-
-    @classmethod
-    def tearDownClass(cls):
-        test_util.delete_hpo_id_bucket_name(os.environ.get("GAE_SERVICE"))
-        cls.env_patcher.stop()
