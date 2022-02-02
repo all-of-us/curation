@@ -61,6 +61,8 @@ class EhrUnionTest(unittest.TestCase):
             eu_constants.CARE_SITE_ID, eu_constants.LOCATION_ID
         ]
 
+        self.ehr_cutoff_date = '2022-01-05'
+
     def _empty_hpo_buckets(self):
         for hpo_id in self.hpo_ids:
             bucket = gcs_utils.get_hpo_bucket(hpo_id)
@@ -287,7 +289,7 @@ class EhrUnionTest(unittest.TestCase):
             'observation_source_value': None,
             'value_as_string': person_row['birth_datetime'],
             'person_id': person_row['person_id'],
-            'observation_date': person_row['birth_date'],
+            'observation_date': self.ehr_cutoff_date,
             'value_as_concept_id': None
         }
         gender_row = {
@@ -295,7 +297,7 @@ class EhrUnionTest(unittest.TestCase):
             'observation_source_value': person_row['gender_source_value'],
             'value_as_string': None,
             'person_id': person_row['person_id'],
-            'observation_date': person_row['birth_date'],
+            'observation_date': self.ehr_cutoff_date,
             'value_as_concept_id': person_row['gender_concept_id']
         }
         race_row = {
@@ -303,7 +305,7 @@ class EhrUnionTest(unittest.TestCase):
             'observation_source_value': person_row['race_source_value'],
             'value_as_string': None,
             'person_id': person_row['person_id'],
-            'observation_date': person_row['birth_date'],
+            'observation_date': self.ehr_cutoff_date,
             'value_as_concept_id': person_row['race_concept_id']
         }
         ethnicity_row = {
@@ -311,7 +313,7 @@ class EhrUnionTest(unittest.TestCase):
             'observation_source_value': person_row['ethnicity_source_value'],
             'value_as_string': None,
             'person_id': person_row['person_id'],
-            'observation_date': person_row['birth_date'],
+            'observation_date': self.ehr_cutoff_date,
             'value_as_concept_id': person_row['ethnicity_concept_id']
         }
         obs_rows.extend([dob_row, gender_row, race_row, ethnicity_row])
@@ -336,8 +338,10 @@ class EhrUnionTest(unittest.TestCase):
         } for hpo_id in self.hpo_ids]
 
         # perform ehr union
-        ehr_union.main(self.input_dataset_id, self.output_dataset_id,
-                       self.project_id)
+        ehr_union.main(self.input_dataset_id,
+                       self.output_dataset_id,
+                       self.project_id,
+                       ehr_cutoff_date=self.ehr_cutoff_date)
 
         person_query = '''
             SELECT
