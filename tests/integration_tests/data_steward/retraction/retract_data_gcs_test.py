@@ -22,7 +22,6 @@ class RetractDataGcsTest(TestCase):
     def setUp(self):
         self.project_id = app_identity.get_application_id()
         self.hpo_id = test_util.FAKE_HPO_ID
-        self.bucket = os.environ.get(f'BUCKET_NAME_FAKE')
         self.site_bucket = 'test_bucket'
         self.folder_1 = '2019-01-01-v1/'
         self.folder_2 = '2019-02-02-v2/'
@@ -34,16 +33,12 @@ class RetractDataGcsTest(TestCase):
         self.project_id = 'project_id'
         self.sandbox_dataset_id = os.environ.get('UNIONED_DATASET_ID')
         self.pid_table_id = 'pid_table'
-        self.gcs_bucket = self.client.bucket(self.bucket)
+        self.gcs_bucket = self.client.get_hpo_bucket(self.hpo_id)
         self.client.empty_bucket(self.gcs_bucket)
 
     @patch('retraction.retract_data_gcs.extract_pids_from_table')
-    @patch('gcs_utils.get_drc_bucket')
-    @patch('gcs_utils.get_hpo_bucket')
     def test_integration_five_person_data_retraction_skip(
-        self, mock_hpo_bucket, mock_bucket, mock_extract_pids):
-        mock_hpo_bucket.return_value = self.site_bucket
-        mock_bucket.return_value = self.bucket
+        self, mock_extract_pids):
         mock_extract_pids.return_value = self.skip_pids
         lines_to_remove = {}
         expected_lines_post = {}
@@ -72,7 +67,7 @@ class RetractDataGcsTest(TestCase):
                               self.hpo_id,
                               folder='all_folders',
                               force_flag=True,
-                              bucket=self.bucket,
+                              bucket=self.gcs_bucket.name,
                               site_bucket=self.site_bucket)
 
         total_lines_post = {}
@@ -89,13 +84,7 @@ class RetractDataGcsTest(TestCase):
                                  total_lines_post[key])
 
     @patch('retraction.retract_data_gcs.extract_pids_from_table')
-    @patch('gcs_utils.get_drc_bucket')
-    @patch('gcs_utils.get_hpo_bucket')
-    def test_integration_five_person_data_retraction(self, mock_hpo_bucket,
-                                                     mock_bucket,
-                                                     mock_extract_pids):
-        mock_hpo_bucket.return_value = self.site_bucket
-        mock_bucket.return_value = self.bucket
+    def test_integration_five_person_data_retraction(self, mock_extract_pids):
         mock_extract_pids.return_value = self.pids
         expected_lines_post = {}
         for file_path in test_util.FIVE_PERSONS_FILES:
@@ -128,7 +117,7 @@ class RetractDataGcsTest(TestCase):
                               self.hpo_id,
                               folder='all_folders',
                               force_flag=True,
-                              bucket=self.bucket,
+                              bucket=self.gcs_bucket.name,
                               site_bucket=self.site_bucket)
 
         total_lines_post = {}
