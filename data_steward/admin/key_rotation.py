@@ -18,6 +18,8 @@ IGNORE_SERVICE_ACCOUNT_EMAILS = "IGNORE_SERVICE_ACCOUNT_EMAILS"
 def get_ignore_service_account_emails():
     """
     Gathers list of emails of service account keys that needs to be ignored in key rotation
+
+    TODO: Update this functions to get the keys from  a bq_table or secrets manager if more keys are added to the list.
     """
     try:
         ignored_email_list = json.loads(
