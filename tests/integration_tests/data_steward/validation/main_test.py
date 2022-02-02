@@ -208,7 +208,7 @@ class ValidationMainTest(unittest.TestCase):
         items_metadata: list = self.storage_client.get_bucket_items_metadata(
             self.hpo_bucket)
 
-        #! to use a bucket!
+        # TODO use a bucket!
         result = main._get_submission_folder(self.hpo_bucket.name,
                                              items_metadata,
                                              force_process=False)
