@@ -46,8 +46,7 @@ class AchillesHeelTest(unittest.TestCase):
             cdm_filepath: str = os.path.join(test_util.FIVE_PERSONS_PATH,
                                              cdm_filename)
 
-            bucket = self.storage_client.get_hpo_bucket(self.hpo_bucket)
-            cdm_blob = bucket.blob(cdm_filename)
+            cdm_blob = self.hpo_bucket.blob(cdm_filename)
             if os.path.exists(cdm_filepath):
                 cdm_blob.upload_from_filename(cdm_filepath)
             else:
@@ -63,12 +62,15 @@ class AchillesHeelTest(unittest.TestCase):
                 dataset=self.dataset, vocab=common.VOCABULARY_DATASET)
             bq_utils.query(q)
 
-    def get_mock_hpo_bucket(self):
-        bucket_env = 'BUCKET_NAME_' + FAKE_HPO_ID.upper()
-        hpo_bucket_name = os.getenv(bucket_env)
+    def get_mock_hpo_bucket_id(self):
+        """
+        :returns: `string` the string of a hpo bucket's name
+        """
+        hpo_bucket_name: str = self.storage_client._get_hpo_bucket_id(
+            FAKE_HPO_ID)
         if not hpo_bucket_name:
             raise EnvironmentError()
-        return self.storage_client.get_hpo_bucket(hpo_bucket_name)
+        return hpo_bucket_name
 
     @mock.patch.object(StorageClient, 'get_hpo_bucket')
     def test_heel_analyses(self, mock_hpo_bucket):
@@ -76,8 +78,8 @@ class AchillesHeelTest(unittest.TestCase):
         mock_bucket = mock.MagicMock()
         mock_hpo_bucket.return_value = mock_bucket
 
-        mock_hpo_site: str = self.get_mock_hpo_bucket()
-        type(mock_bucket).name = mock.PropertyMock(return_value=mock_hpo_site)
+        mock_bucket_name: str = self.get_mock_hpo_bucket_id()
+        mock_bucket.name = mock_bucket_name
 
         # create randomized tables to bypass BQ rate limits
         random_string = str(randint(10000, 99999))
