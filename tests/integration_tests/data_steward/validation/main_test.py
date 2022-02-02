@@ -208,6 +208,9 @@ class ValidationMainTest(unittest.TestCase):
         items_metadata: list = self.storage_client.get_bucket_items_metadata(
             self.hpo_bucket)
 
+        #! may need to adjust timedata here
+        #! See above timedate changeq
+
         # TODO use a bucket!
         result = main._get_submission_folder(self.hpo_bucket.name,
                                              items_metadata,
@@ -391,6 +394,8 @@ class ValidationMainTest(unittest.TestCase):
         # ensure emails are not sent
         items_metadata: list = self.storage_client.get_bucket_items_metadata(
             self.hpo_bucket)
+
+        #! May need to adjust time here
         folder_items: list = main.get_folder_items(items_metadata,
                                                    self.folder_prefix)
         self.assertFalse(main.is_first_validation_run(folder_items))
