@@ -3,12 +3,34 @@ from oauth2client.client import GoogleCredentials
 from googleapiclient.errors import HttpError
 import googleapiclient.discovery as discovery
 import logging
+import json
+import os
 
 LOGGER = logging.getLogger(__name__)
 
 KEY_EXPIRE_DAYS = 180
 KEY_EXPIRE_ALERT_DAYS = 7
 GCP_DTM_FMT = '%Y-%m-%dT%H:%M:%SZ'
+
+IGNORE_SERVICE_ACCOUNT_EMAILS = "IGNORE_SERVICE_ACCOUNT_EMAILS"
+
+
+def get_ignore_service_account_emails():
+    """
+    Gathers list of emails of service account keys that needs to be ignored in key rotation
+
+    TODO: Update this functions to get the keys from  a bq_table or secrets manager if more keys are added to the list.
+    """
+    try:
+        ignored_email_list = json.loads(
+            os.environ[IGNORE_SERVICE_ACCOUNT_EMAILS])
+    except (json.decoder.JSONDecodeError, KeyError):
+        LOGGER.info(f'List of keys to ignore from deletion are not provided')
+        ignored_email_list = []
+    return ignored_email_list
+
+
+LIST_IGNORE_SERVICE_ACCOUNT_EMAILS = get_ignore_service_account_emails()
 
 
 def get_iam_service():
@@ -24,10 +46,15 @@ def list_service_accounts(project_id):
     :return: a list of service account objects
     """
 
+    service_accounts = []
     service_accounts_per_project_id = get_iam_service().projects(
     ).serviceAccounts().list(name=f'projects/{project_id}').execute()
 
-    return service_accounts_per_project_id['accounts']
+    for service_account in service_accounts_per_project_id['accounts']:
+        if service_account['email'] not in LIST_IGNORE_SERVICE_ACCOUNT_EMAILS:
+            service_accounts.append(service_account)
+
+    return service_accounts
 
 
 def list_keys_for_service_account(service_account_email):
