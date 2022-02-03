@@ -16,9 +16,9 @@ from io import StringIO, open
 # Third party imports
 import dateutil
 from flask import Flask
+from google.cloud.exceptions import GoogleCloudError
 from googleapiclient.errors import HttpError
-from google.cloud.storage import Blob
-from google.cloud.storage.bucket import Bucket
+from google.cloud.storage.bucket import Blob
 
 # Project imports
 import api_util
@@ -77,14 +77,14 @@ def save_datasources_json(storage_client,
                 f"nor target_bucket are specified.")
     else:
         if target_bucket is None:
-            target_bucket: Bucket = storage_client.get_hpo_bucket(datasource_id)
+            target_bucket = storage_client.get_hpo_bucket(datasource_id)
         else:
-            target_bucket: Bucket = storage_client.bucket(target_bucket)
+            target_bucket = storage_client.bucket(target_bucket)
 
     datasource = dict(name=datasource_id, folder=datasource_id, cdmVersion=5)
     datasources = dict(datasources=[datasource])
     datasources_fp = StringIO(json.dumps(datasources))
-    blob: Blob = target_bucket.blob(
+    blob = target_bucket.blob(
         f'{folder_prefix}{ACHILLES_EXPORT_DATASOURCES_JSON}')
     blob.upload_from_file(datasources_fp)
     result: dict = storage_client.get_blob_metadata(blob)
@@ -108,9 +108,9 @@ def run_export(datasource_id=None, folder_prefix="", target_bucket=None):
             f"Cannot export if neither hpo_id nor target_bucket is specified.")
     else:
         if target_bucket is None:
-            target_bucket: Bucket = storage_client.get_hpo_bucket(datasource_id)
+            target_bucket = storage_client.get_hpo_bucket(datasource_id)
         else:
-            target_bucket: Bucket = storage_client.bucket(target_bucket)
+            target_bucket = storage_client.bucket(target_bucket)
 
     logging.info(
         f"Exporting {datasource_id} report to bucket {target_bucket.name}")
@@ -122,7 +122,7 @@ def run_export(datasource_id=None, folder_prefix="", target_bucket=None):
         result = export.export_from_path(sql_path, datasource_id)
         content = json.dumps(result)
         fp = StringIO(content)
-        blob: Blob = target_bucket.blob(f'{reports_prefix}{export_name}.json')
+        blob = target_bucket.blob(f'{reports_prefix}{export_name}.json')
         blob.upload_from_file(fp)
         result: dict = storage_client.get_blob_metadata(blob)
         results.append(result)
@@ -169,12 +169,12 @@ def _upload_achilles_files(hpo_id=None, folder_prefix='', target_bucket=None):
     project_id = app_identity.get_application_id()
     storage_client = StorageClient(project_id)
     if target_bucket is not None:
-        bucket: Bucket = storage_client.bucket(target_bucket)
+        bucket = storage_client.bucket(target_bucket)
     else:
         if hpo_id is None:
             raise RuntimeError(
                 f"Either hpo_id or target_bucket must be specified")
-        bucket: Bucket = storage_client.get_hpo_bucket(hpo_id)
+        bucket = storage_client.get_hpo_bucket(hpo_id)
     logging.info(
         f"Uploading achilles index files to 'gs://{bucket.name}/{folder_prefix}'"
     )
@@ -184,7 +184,7 @@ def _upload_achilles_files(hpo_id=None, folder_prefix='', target_bucket=None):
         bucket_file_name = filename.split(resources.resource_files_path +
                                           os.sep)[1].strip().replace('\\', '/')
         with open(filename, 'rb') as fp:
-            blob: Blob = bucket.blob(f'{folder_prefix}{bucket_file_name}')
+            blob = bucket.blob(f'{folder_prefix}{bucket_file_name}')
             blob.upload_from_file(fp)
             upload_result: dict = storage_client.get_blob_metadata(blob)
             results.append(upload_result)
@@ -211,20 +211,6 @@ def validate_all_hpos():
         hpo_id = item['hpo_id']
         process_hpo(hpo_id)
     return 'validation done!'
-
-
-def list_bucket(bucket):
-    try:
-        return gcs_utils.list_bucket(bucket)
-    except HttpError as err:
-        if err.resp.status == 404:
-            raise BucketDoesNotExistError(
-                f"Failed to list objects in bucket {bucket}", bucket)
-        raise
-    except Exception as e:
-        msg = getattr(e, 'message', repr(e))
-        logging.exception(f"Unknown error {msg}")
-        raise
 
 
 def categorize_folder_items(folder_items):
@@ -455,13 +441,13 @@ def perform_reporting(hpo_id, report_data, folder_items, bucket, folder_prefix):
     results_html_path = folder_prefix + common.RESULTS_HTML
     logging.info(f"Saving file {common.RESULTS_HTML} to "
                  f"gs://{bucket.name}/{results_html_path}.")
-    results_html_blob: Blob = bucket.blob(results_html_path)
+    results_html_blob = bucket.blob(results_html_path)
     results_html_blob.upload_from_string(results_html)
 
     processed_txt_path = folder_prefix + common.PROCESSED_TXT
     logging.info(f"Saving timestamp {processed_time_str} to "
                  f"gs://{bucket.name}/{processed_txt_path}.")
-    processed_txt_blob: Blob = bucket.blob(processed_txt_path)
+    processed_txt_blob = bucket.blob(processed_txt_path)
     processed_txt_blob.upload_from_string(processed_time_str)
 
     folder_uri = f"gs://{bucket.name}/{folder_prefix}"
@@ -521,8 +507,8 @@ def process_hpo(hpo_id, force_run=False):
         logging.info(f"Processing hpo_id {hpo_id}")
         project_id = app_identity.get_application_id()
         storage_client = StorageClient(project_id)
-        bucket: Bucket = storage_client.get_hpo_bucket(hpo_id)
-        bucket_items = list_bucket(bucket.name)
+        bucket = storage_client.get_hpo_bucket(hpo_id)
+        bucket_items: list = storage_client.get_bucket_items_metadata(bucket)
         folder_prefix = _get_submission_folder(bucket.name, bucket_items,
                                                force_run)
         if folder_prefix is None:
@@ -546,9 +532,9 @@ def process_hpo(hpo_id, force_run=False):
         logging.info(f'{exc}')
     except BucketDoesNotExistError as exc:
         logging.warning(f'{exc}')
-    except HttpError as http_error:
+    except GoogleCloudError as google_cloud_error:
         message = (f"Failed to process hpo_id '{hpo_id}' due to the following "
-                   f"HTTP error: {http_error.content.decode()}")
+                   f"HTTP error: {google_cloud_error.message}")
         logging.exception(message)
 
 
@@ -735,8 +721,7 @@ def updated_datetime_object(gcs_object_metadata):
     :returns: datetime object
 
     """
-    return datetime.datetime.strptime(gcs_object_metadata['updated'],
-                                      '%Y-%m-%dT%H:%M:%S.%fZ')
+    return gcs_object_metadata['updated'].replace(tzinfo=None)
 
 
 def _has_all_required_files(folder_bucketitems_basenames):
@@ -800,9 +785,7 @@ def initial_date_time_object(gcs_object_metadata):
     :param gcs_object_metadata: metadata as returned by list bucket
     :return: datetime object
     """
-    date_created = datetime.datetime.strptime(
-        gcs_object_metadata['timeCreated'], '%Y-%m-%dT%H:%M:%S.%fZ')
-    return date_created
+    return gcs_object_metadata['timeCreated'].replace(tzinfo=None)
 
 
 def _get_submission_folder(bucket, bucket_items, force_process=False):
