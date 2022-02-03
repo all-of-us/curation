@@ -8,7 +8,6 @@ from unittest import mock
 import app_identity
 import bq_utils
 import common
-import gcs_utils
 import resources
 from gcloud.gcs import StorageClient
 import tests.test_util as test_util
@@ -31,12 +30,12 @@ class AchillesHeelTest(unittest.TestCase):
         print('**************************************************************')
         test_util.setup_hpo_id_bucket_name_table(cls.dataset_id)
 
-    @mock.patch("gcs_utils.LOOKUP_TABLES_DATASET_ID", dataset_id)
+    @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def setUp(self):
-        self.hpo_bucket = gcs_utils.get_hpo_bucket(FAKE_HPO_ID)
-        self.dataset = bq_utils.get_dataset_id()
         self.project_id = app_identity.get_application_id()
         self.storage_client = StorageClient(self.project_id)
+        self.hpo_bucket = self.storage_client.get_hpo_bucket(FAKE_HPO_ID)
+        self.dataset = bq_utils.get_dataset_id()
         self.storage_client.empty_bucket(self.hpo_bucket)
         test_util.delete_all_tables(self.dataset)
 
@@ -48,7 +47,7 @@ class AchillesHeelTest(unittest.TestCase):
     def tearDownClass(cls):
         test_util.drop_hpo_id_bucket_name_table(cls.dataset_id)
 
-    @mock.patch('gcs_utils.get_hpo_bucket')
+    @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def _load_dataset(self, hpo_id):
         for cdm_table in resources.CDM_TABLES:
 
@@ -56,8 +55,7 @@ class AchillesHeelTest(unittest.TestCase):
             cdm_filepath: str = os.path.join(test_util.FIVE_PERSONS_PATH,
                                              cdm_filename)
 
-            bucket = self.storage_client.get_bucket(self.hpo_bucket)
-            cdm_blob = bucket.blob(cdm_filename)
+            cdm_blob = self.hpo_bucket.blob(cdm_filename)
             if os.path.exists(cdm_filepath):
                 cdm_blob.upload_from_filename(cdm_filepath)
             else:
@@ -73,18 +71,25 @@ class AchillesHeelTest(unittest.TestCase):
                 dataset=self.dataset, vocab=common.VOCABULARY_DATASET)
             bq_utils.query(q)
 
-    @staticmethod
-    def get_mock_hpo_bucket():
-        bucket_env = 'BUCKET_NAME_FAKE'
-        hpo_bucket_name = os.getenv(bucket_env)
-        if hpo_bucket_name is None:
+    @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
+    def get_mock_hpo_bucket_id(self):
+        """
+        :returns: `string` the string of a hpo bucket's name
+        """
+        hpo_bucket_name: str = self.storage_client._get_hpo_bucket_id(
+            FAKE_HPO_ID)
+        if not hpo_bucket_name:
             raise EnvironmentError()
         return hpo_bucket_name
 
-    @mock.patch('gcs_utils.get_hpo_bucket')
+    @mock.patch.object(StorageClient, 'get_hpo_bucket')
     def test_heel_analyses(self, mock_hpo_bucket):
         # Long-running test
-        mock_hpo_bucket.return_value = self.get_mock_hpo_bucket()
+        mock_bucket = mock.MagicMock()
+        mock_hpo_bucket.return_value = mock_bucket
+
+        mock_bucket_name: str = self.get_mock_hpo_bucket_id()
+        mock_bucket.name = mock_bucket_name
 
         # create randomized tables to bypass BQ rate limits
         random_string = str(randint(10000, 99999))

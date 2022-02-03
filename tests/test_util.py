@@ -5,6 +5,7 @@ import os
 from typing import Optional
 
 import googleapiclient.errors
+from google.cloud.exceptions import GoogleCloudError
 import requests
 
 import app_identity
@@ -527,3 +528,7 @@ def drop_hpo_id_bucket_name_table(dataset_id):
 
     job = bq_client.query(drop_lookup_table)
     job.result()
+
+
+def mock_google_cloud_error(content: bytes = b'418: I\'m a teapot'):
+    return GoogleCloudError(message=content.decode())
