@@ -180,7 +180,7 @@ class ValidationMainTest(unittest.TestCase):
         self.assertSetEqual(set(actual['results']), set(expected_results))
 
         # check tables exist and are clustered as expected
-        for table in f'{resources.CDM_TABLES}{common.PII_TABLES}':
+        for table in resources.CDM_TABLES + common.PII_TABLES:
             table_id: str = bq_utils.get_table_id(test_util.FAKE_HPO_ID, table)
             table_info = bq_utils.get_table_info(table_id)
             fields = resources.fields_for(table)
