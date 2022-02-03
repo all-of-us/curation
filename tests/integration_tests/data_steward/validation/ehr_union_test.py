@@ -565,4 +565,4 @@ class EhrUnionTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        test_util.drop_hpo_id_bucket_name_table(self.dataset_id)
+        test_util.drop_hpo_id_bucket_name_table(cls.dataset_id)

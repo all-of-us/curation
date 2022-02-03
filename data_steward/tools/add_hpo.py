@@ -42,9 +42,8 @@ ADD_HPO_SITE_ID_MAPPING = """
 SELECT '{org_id}' AS Org_ID, '{hpo_id}' AS HPO_ID, '{hpo_name}' AS Site_Name, {display_order} AS Display_Order
 """
 
-# TODO add service name to the query
 ADD_HPO_ID_BUCKET_NAME = """
-SELECT '{hpo_id}' AS hpo_id, '{bucket_name}' AS bucket_name
+SELECT '{hpo_id}' AS hpo_id, '{bucket_name}' AS bucket_name, '{service}' AS service
 """
 
 UPDATE_SITE_MASKING_QUERY = JINJA_ENV.from_string("""
@@ -197,14 +196,16 @@ def add_hpo_mapping(hpo_id, hpo_name, org_id, display_order):
     return query_response
 
 
-def add_hpo_bucket(hpo_id, bucket_name):
+def add_hpo_bucket(hpo_id, bucket_name, service):
     """
     adds hpo bucket name in hpo_bucket_name table.
     :param hpo_id: hpo identifier
     :param bucket_name: bucket name assigned to hpo
     :return:
     """
-    q = ADD_HPO_ID_BUCKET_NAME.format(hpo_id=hpo_id, bucket_name=bucket_name)
+    q = ADD_HPO_ID_BUCKET_NAME.format(hpo_id=hpo_id,
+                                      bucket_name=bucket_name,
+                                      service=service)
     LOGGER.info(f'Adding bucket lookup with the following query:\n {q}\n')
     query_response = bq_utils.query(
         q,
