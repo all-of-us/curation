@@ -104,6 +104,7 @@ class ValidationMainTest(unittest.TestCase):
         tpe = time_partitioning.get('type')
         self.assertEqual(tpe, 'DAY')
 
+    @mock.patch("gcs_utils.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def test_all_files_unparseable_output(self):
         # TODO possible bug: if no pre-existing table, results in bq table not found error
         for cdm_table in common.SUBMISSION_FILES:
@@ -139,6 +140,7 @@ class ValidationMainTest(unittest.TestCase):
                                      self.folder_prefix)
         self.assertCountEqual(expected_warnings, r['warnings'])
 
+    @mock.patch("gcs_utils.LOOKUP_TABLES_DATASET_ID", dataset_id)
     @mock.patch('api_util.check_cron')
     def test_validate_five_persons_success(self, mock_check_cron):
         expected_results: list = []
@@ -200,6 +202,7 @@ class ValidationMainTest(unittest.TestCase):
                                              force_process=True)
         self.assertEqual(result, self.folder_prefix)
 
+    @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     @mock.patch('api_util.check_cron')
     def test_copy_five_persons(self, mock_check_cron):
         # upload all five_persons files
@@ -251,6 +254,7 @@ class ValidationMainTest(unittest.TestCase):
         ])
         self.assertSetEqual(expected_bucket_files, actual_bucket_files)
 
+    @mock.patch("gcs_utils.LOOKUP_TABLES_DATASET_ID", dataset_id)
     @mock.patch('api_util.check_cron')
     def test_pii_files_loaded(self, mock_check_cron):
         # tests if pii files are loaded

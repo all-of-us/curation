@@ -48,6 +48,7 @@ class AchillesHeelTest(unittest.TestCase):
     def tearDownClass(cls):
         test_util.drop_hpo_id_bucket_name_table(cls.dataset_id)
 
+    @mock.patch('gcs_utils.get_hpo_bucket')
     def _load_dataset(self, hpo_id):
         for cdm_table in resources.CDM_TABLES:
 

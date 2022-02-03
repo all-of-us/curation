@@ -201,6 +201,7 @@ class BqUtilsTest(unittest.TestCase):
             # sanity check
             self.assertTrue(bq_utils.table_exists(table_id))
 
+    @mock.patch("gcs_utils.LOOKUP_TABLES_DATASET_ID", dataset_id)
     @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def test_load_ehr_observation(self):
         hpo_id = PITT_HPO_ID
