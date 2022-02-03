@@ -372,5 +372,6 @@ class BqUtilsTest(unittest.TestCase):
         test_util.delete_all_tables(self.dataset_id)
         self.client.empty_bucket(self.hpo_bucket)
 
+    @classmethod
     def tearDownClass(cls):
         test_util.drop_hpo_id_bucket_name_table(cls.dataset_id)

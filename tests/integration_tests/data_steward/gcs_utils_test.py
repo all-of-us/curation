@@ -67,5 +67,6 @@ class GcsUtilsTest(unittest.TestCase):
     def tearDown(self):
         self.storage_client.empty_bucket(self.hpo_bucket)
 
+    @classmethod
     def tearDownClass(cls):
         test_util.drop_hpo_id_bucket_name_table(cls.dataset_id)
