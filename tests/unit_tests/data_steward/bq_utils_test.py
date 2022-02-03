@@ -20,11 +20,11 @@ class BqUtilsTest(unittest.TestCase):
         self.hpo_id: str = 'fake-hpo'
 
     @mock.patch.object(StorageClient, '__init__')
-    @mock.patch.object(StorageClient, 'bucket')
-    def test_load_cdm_csv_error_on_bad_table_name(self, mock_bucket,
+    @mock.patch.object(StorageClient, 'get_hpo_bucket')
+    def test_load_cdm_csv_error_on_bad_table_name(self, mock_get_hpo_bucket,
                                                   mock_storage_init):
         mock_storage_init.return_value = None
-        mock_bucket.return_value = None
+        mock_get_hpo_bucket.return_value = None
         self.assertRaises(ValueError, bq_utils.load_cdm_csv, self.hpo_id,
                           'not_a_cdm_table')
 
