@@ -1,12 +1,10 @@
 # Python imports
-import json
 import logging
 import os
 import socket
 import time
 import warnings
 from datetime import datetime
-from io import open
 
 # Third party imports
 from googleapiclient.discovery import build
@@ -15,7 +13,7 @@ from googleapiclient.errors import HttpError
 # Project imports
 import app_identity
 import common
-import gcs_utils
+from gcloud.gcs import StorageClient
 import resources
 from constants import bq_utils as bq_consts
 
@@ -221,18 +219,22 @@ def load_cdm_csv(hpo_id,
     :param cdm_table_name: name of the CDM table
     :return: an object describing the associated bigquery job
     """
+    app_id: str = app_identity.get_application_id()
+    storage_client = StorageClient(app_id)
+    hpo_bucket = storage_client.get_hpo_bucket(hpo_id)
+
     if cdm_table_name not in resources.CDM_TABLES:
         raise ValueError(
             '{} is not a valid table to load'.format(cdm_table_name))
 
-    app_id = app_identity.get_application_id()
-    if dataset_id is None:
-        dataset_id = get_dataset_id()
-    bucket = gcs_utils.get_hpo_bucket(hpo_id)
-    gcs_object_path = 'gs://%s/%s%s.csv' % (bucket, source_folder_prefix,
-                                            cdm_table_name)
+    if not dataset_id:
+        dataset_id: str = get_dataset_id()
+
+    gcs_object_path: str = (f'gs://{hpo_bucket.name}/'
+                            f'{source_folder_prefix}'
+                            f'{cdm_table_name}.csv')
     table_id = get_table_id(hpo_id, cdm_table_name)
-    allow_jagged_rows = cdm_table_name == 'observation'
+    allow_jagged_rows: bool = cdm_table_name == 'observation'
     return load_csv(cdm_table_name,
                     gcs_object_path,
                     app_id,
@@ -254,9 +256,12 @@ def load_pii_csv(hpo_id, pii_table_name, source_folder_prefix=""):
 
     app_id = app_identity.get_application_id()
     dataset_id = get_dataset_id()
-    bucket = gcs_utils.get_hpo_bucket(hpo_id)
-    gcs_object_path = 'gs://%s/%s%s.csv' % (bucket, source_folder_prefix,
-                                            pii_table_name)
+
+    storage_client = StorageClient(app_id)
+    hpo_bucket = storage_client.get_hpo_bucket(hpo_id)
+    gcs_object_path = (f'gs://{hpo_bucket.name}/'
+                       f'{source_folder_prefix}'
+                       f'{pii_table_name}.csv')
     table_id = get_table_id(hpo_id, pii_table_name)
     return load_csv(pii_table_name, gcs_object_path, app_id, dataset_id,
                     table_id)
@@ -319,7 +324,7 @@ def table_exists(table_id, dataset_id=None):
 def job_status_done(job_id):
     """
     Check if the job is complete
-    
+
     :param job_id: the job id
     :return: a bool indicating whether the job is done
     """
@@ -471,7 +476,7 @@ def create_table(table_id, fields, drop_existing=False, dataset_id=None):
             delete_table(table_id, dataset_id)
         else:
             raise InvalidOperationError(
-                'Attempt to create an existing table with id `%s`.' % table_id)
+                f'Attempt to create an existing table with id `{table_id}`.')
     bq_service = create_service()
     app_id = app_identity.get_application_id()
     insert_body = {
@@ -916,11 +921,10 @@ def create_snapshot_dataset(project_id, dataset_id, snapshot_dataset_id):
     :param snapshot_dataset_id:
     :return:
     """
-    dataset_result = create_dataset(
-        project_id=project_id,
-        dataset_id=snapshot_dataset_id,
-        description='Snapshot of {dataset_id}'.format(dataset_id=dataset_id),
-        overwrite_existing=True)
+    dataset_result = create_dataset(project_id=project_id,
+                                    dataset_id=snapshot_dataset_id,
+                                    description=f'Snapshot of {dataset_id}',
+                                    overwrite_existing=True)
     validation_dataset = dataset_result.get(bq_consts.DATASET_REF, {})
     snapshot_dataset_id = validation_dataset.get(bq_consts.DATASET_ID, '')
     # Create the empty tables in the new snapshot dataset
