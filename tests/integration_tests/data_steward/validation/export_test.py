@@ -26,7 +26,7 @@ class ExportTest(unittest.TestCase):
             '\n**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
-
+        test_util.setup_hpo_id_bucket_name_table(cls.dataset_id)
         test_util.delete_all_tables(cls.dataset_id)
         test_util.populate_achilles()
 
@@ -34,8 +34,6 @@ class ExportTest(unittest.TestCase):
     def setUp(self):
         self.project_id = app_identity.get_application_id()
         self.storage_client = StorageClient(self.project_id)
-
-        test_util.setup_hpo_id_bucket_name_table(self.dataset_id)
         self.hpo_bucket = self.storage_client.get_hpo_bucket(FAKE_HPO_ID)
 
     def _test_report_export(self, report):
@@ -127,7 +125,7 @@ class ExportTest(unittest.TestCase):
     @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     @mock.patch('validation.export.is_hpo_id')
     def test_run_export_with_target_bucket_and_datasource_id(
-            self, mock_is_hpo_id):
+        self, mock_is_hpo_id):
         # validation/main.py INTEGRATION TEST
         mock_is_hpo_id.return_value = True
         folder_prefix: str = 'dummy-prefix-2018-03-24/'
@@ -167,3 +165,4 @@ class ExportTest(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         test_util.delete_all_tables(cls.dataset_id)
+        test_util.drop_hpo_id_bucket_name_table(cls.dataset_id)

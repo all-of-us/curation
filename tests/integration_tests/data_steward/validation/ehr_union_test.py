@@ -41,6 +41,7 @@ class EhrUnionTest(unittest.TestCase):
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
+        test_util.setup_hpo_id_bucket_name_table(cls.dataset_id)
 
     def setUp(self):
         self.project_id = bq_utils.app_identity.get_application_id()
@@ -64,13 +65,10 @@ class EhrUnionTest(unittest.TestCase):
 
     @mock.patch("gcs_utils.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def _empty_hpo_buckets(self):
-        test_util.setup_hpo_id_bucket_name_table(self.dataset_id)
 
         for hpo_id in self.hpo_ids:
             bucket = gcs_utils.get_hpo_bucket(hpo_id)
             self.storage_client.empty_bucket(bucket)
-
-        test_util.drop_hpo_id_bucket_name_table(self.dataset_id)
 
     def _create_hpo_table(self, hpo_id, table, dataset_id):
         table_id = bq_utils.get_table_id(hpo_id, table)
@@ -86,8 +84,6 @@ class EhrUnionTest(unittest.TestCase):
         # expected_tables is for testing output
         # it maps table name to list of expected records ex: "unioned_ehr_visit_occurrence" -> [{}, {}, ...]
         """
-        test_util.setup_hpo_id_bucket_name_table(self.dataset_id)
-
         expected_tables: dict = {}
         running_jobs: list = []
         for cdm_table in resources.CDM_TABLES:
@@ -126,8 +122,6 @@ class EhrUnionTest(unittest.TestCase):
                 running_jobs.append(result['jobReference']['jobId'])
                 if hpo_id != EXCLUDED_HPO_ID:
                     expected_tables[output_table] += list(csv_rows)
-
-        test_util.drop_hpo_id_bucket_name_table(self.dataset_id)
 
         # ensure person to observation output is as expected
         output_table_person: str = ehr_union.output_table_for(common.PERSON)
@@ -568,3 +562,7 @@ class EhrUnionTest(unittest.TestCase):
         self._empty_hpo_buckets()
         test_util.delete_all_tables(self.input_dataset_id)
         test_util.delete_all_tables(self.output_dataset_id)
+
+    @classmethod
+    def tearDownClass(cls):
+        test_util.drop_hpo_id_bucket_name_table(self.dataset_id)

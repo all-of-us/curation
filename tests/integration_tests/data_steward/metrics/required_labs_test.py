@@ -29,6 +29,7 @@ class RequiredLabsTest(unittest.TestCase):
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
+        test_util.setup_hpo_id_bucket_name_table(cls.dataset_id)
 
     @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def setUp(self):
@@ -37,7 +38,6 @@ class RequiredLabsTest(unittest.TestCase):
         self.folder_prefix = '2019-01-01/'
         # Clients
         self.storage_client = StorageClient(self.project_id)
-        test_util.setup_hpo_id_bucket_name_table(self.dataset_id)
         self.hpo_bucket = self.storage_client.get_hpo_bucket(FAKE_HPO_ID)
         self.bq_client = bq.get_client(self.project_id)
         self.rdr_dataset_id = bq_utils.get_rdr_dataset_id()
@@ -55,6 +55,10 @@ class RequiredLabsTest(unittest.TestCase):
     def tearDown(self):
         self.storage_client.empty_bucket(self.hpo_bucket)
         test_util.delete_all_tables(bq_utils.get_dataset_id())
+
+    @classmethod
+    def tearDownClass(cls):
+        test_util.drop_hpo_id_bucket_name_table(cls.dataset_id)
 
     def _load_data(self):
 

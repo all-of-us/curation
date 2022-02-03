@@ -25,10 +25,10 @@ class GcsUtilsTest(unittest.TestCase):
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
+        test_util.setup_hpo_id_bucket_name_table(cls.dataset_id)
 
     @mock.patch("gcs_utils.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def setUp(self):
-        test_util.setup_hpo_id_bucket_name_table(self.dataset_id)
         self.hpo_bucket = gcs_utils.get_hpo_bucket(FAKE_HPO_ID)
         self.gcs_path = '/'.join([self.hpo_bucket, 'dummy'])
         self.project_id = app_identity.get_application_id()
@@ -66,4 +66,6 @@ class GcsUtilsTest(unittest.TestCase):
 
     def tearDown(self):
         self.storage_client.empty_bucket(self.hpo_bucket)
-        test_util.drop_hpo_id_bucket_name_table(self.dataset_id)
+
+    def tearDownClass(cls):
+        test_util.drop_hpo_id_bucket_name_table(cls.dataset_id)

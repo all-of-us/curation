@@ -29,10 +29,10 @@ class AchillesHeelTest(unittest.TestCase):
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
+        test_util.setup_hpo_id_bucket_name_table(cls.dataset_id)
 
     @mock.patch("gcs_utils.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def setUp(self):
-        test_util.setup_hpo_id_bucket_name_table(self.dataset_id)
         self.hpo_bucket = gcs_utils.get_hpo_bucket(FAKE_HPO_ID)
         self.dataset = bq_utils.get_dataset_id()
         self.project_id = app_identity.get_application_id()
@@ -43,6 +43,10 @@ class AchillesHeelTest(unittest.TestCase):
     def tearDown(self):
         test_util.delete_all_tables(self.dataset_id)
         self.storage_client.empty_bucket(self.hpo_bucket)
+
+    @classmethod
+    def tearDownClass(cls):
+        test_util.drop_hpo_id_bucket_name_table(cls.dataset_id)
 
     def _load_dataset(self, hpo_id):
         for cdm_table in resources.CDM_TABLES:

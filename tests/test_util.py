@@ -26,6 +26,8 @@ PITT_BUCKET_NAME = os.environ.get('BUCKET_NAME_PITT')
 NYC_BUCKET_NAME = os.environ.get('BUCKET_NAME_NYC')
 GAE_SERVICE = os.environ.get('GAE_SERVICE', 'default')
 
+LOOKUP_TABLES = [HPO_ID_BUCKET_NAME_TABLE_ID]
+
 VALIDATE_HPO_FILES_URL = main.PREFIX + 'ValidateHpoFiles/' + FAKE_HPO_ID
 COPY_HPO_FILES_URL = main.PREFIX + 'CopyFiles/' + FAKE_HPO_ID
 BASE_TESTS_PATH = os.path.dirname(
@@ -208,7 +210,7 @@ def _export_query_responses():
 
 def delete_all_tables(dataset_id):
     """
-    Remove all non-vocabulary tables from a dataset
+    Remove all non-vocabulary and non-lookup tables from a dataset
 
     :param dataset_id: ID of the dataset with the tables to delete
     :return: list of deleted tables
@@ -218,7 +220,7 @@ def delete_all_tables(dataset_id):
     table_infos = bq_utils.list_tables(dataset_id)
     table_ids = [table['tableReference']['tableId'] for table in table_infos]
     for table_id in table_ids:
-        if table_id not in common.VOCABULARY_TABLES:
+        if table_id not in common.VOCABULARY_TABLES + LOOKUP_TABLES:
             bq_utils.delete_table(table_id, dataset_id)
             deleted.append(table_id)
     return deleted
