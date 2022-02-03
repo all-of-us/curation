@@ -100,16 +100,16 @@ class EhrUnionTest(unittest.TestCase):
                     ]:
                         cdm_filepath: str = os.path.join(
                             test_util.RDR_PATH, cdm_filename)
-                gcs_bucket = self.storage_client.get_hpo_bucket(hpo_id)
+                hpo_bucket = self.storage_client.get_hpo_bucket(hpo_id)
                 if os.path.exists(cdm_filepath):
 
                     csv_rows = resources.csv_to_list(cdm_filepath)
-                    cdm_blob = gcs_bucket.blob(cdm_filename)
+                    cdm_blob = hpo_bucket.blob(cdm_filename)
                     cdm_blob.upload_from_filename(cdm_filepath)
 
                 else:
                     # results in empty table
-                    cdm_blob = gcs_bucket.blob(cdm_filename)
+                    cdm_blob = hpo_bucket.blob(cdm_filename)
                     cdm_blob.upload_from_string('dummy\n')
                     csv_rows: list = []
                 # load table from csv
