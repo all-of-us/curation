@@ -233,6 +233,7 @@ class ValidationMainTest(unittest.TestCase):
             self.assertSetEqual(set(expected_bucket_items),
                                 set(actual_bucket_items))
 
+    @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     @mock.patch("gcs_utils.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def test_target_bucket_upload(self):
         bucket_nyc = gcs_utils.get_hpo_bucket(test_util.NYC_HPO_ID)

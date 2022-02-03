@@ -196,7 +196,7 @@ def add_hpo_mapping(hpo_id, hpo_name, org_id, display_order):
     return query_response
 
 
-def add_hpo_bucket(hpo_id, bucket_name, service):
+def add_hpo_bucket(hpo_id, bucket_name, service='default'):
     """
     adds hpo bucket name in hpo_bucket_name table.
     :param hpo_id: hpo identifier
@@ -214,7 +214,12 @@ def add_hpo_bucket(hpo_id, bucket_name, service):
     return query_response
 
 
-def add_lookups(hpo_id, hpo_name, org_id, bucket_name, display_order=None):
+def add_lookups(hpo_id,
+                hpo_name,
+                org_id,
+                bucket_name,
+                display_order=None,
+                service='default'):
     """
     Add hpo to hpo_site_id_mappings and hpo_id_bucket_name
 
@@ -230,7 +235,7 @@ def add_lookups(hpo_id, hpo_name, org_id, bucket_name, display_order=None):
     else:
         shift_display_orders(display_order)
     add_hpo_mapping(hpo_id, hpo_name, org_id, display_order)
-    add_hpo_bucket(hpo_id, bucket_name)
+    add_hpo_bucket(hpo_id, bucket_name, service)
 
 
 def bucket_access_configured(bucket_name: str) -> bool:

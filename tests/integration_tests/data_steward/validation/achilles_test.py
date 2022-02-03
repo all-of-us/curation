@@ -44,6 +44,7 @@ class AchillesTest(unittest.TestCase):
     def tearDownClass(cls):
         test_util.drop_hpo_id_bucket_name_table(cls.dataset_id)
 
+    @mock.patch("gcs_utils.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def _load_dataset(self):
         for cdm_table in resources.CDM_TABLES:
             cdm_filename: str = f'{cdm_table}.csv'
