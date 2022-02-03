@@ -35,6 +35,7 @@ class ValidationMainTest(unittest.TestCase):
         test_util.setup_hpo_id_bucket_name_table(cls.dataset_id)
 
     @mock.patch("gcs_utils.LOOKUP_TABLES_DATASET_ID", dataset_id)
+    @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def setUp(self):
         self.hpo_id = test_util.FAKE_HPO_ID
         self.hpo_bucket = gcs_utils.get_hpo_bucket(self.hpo_id)
@@ -105,6 +106,7 @@ class ValidationMainTest(unittest.TestCase):
         self.assertEqual(tpe, 'DAY')
 
     @mock.patch("gcs_utils.LOOKUP_TABLES_DATASET_ID", dataset_id)
+    @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def test_all_files_unparseable_output(self):
         # TODO possible bug: if no pre-existing table, results in bq table not found error
         for cdm_table in common.SUBMISSION_FILES:
@@ -141,6 +143,7 @@ class ValidationMainTest(unittest.TestCase):
         self.assertCountEqual(expected_warnings, r['warnings'])
 
     @mock.patch("gcs_utils.LOOKUP_TABLES_DATASET_ID", dataset_id)
+    @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     @mock.patch('api_util.check_cron')
     def test_validate_five_persons_success(self, mock_check_cron):
         expected_results: list = []
@@ -256,6 +259,7 @@ class ValidationMainTest(unittest.TestCase):
         self.assertSetEqual(expected_bucket_files, actual_bucket_files)
 
     @mock.patch("gcs_utils.LOOKUP_TABLES_DATASET_ID", dataset_id)
+    @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     @mock.patch('api_util.check_cron')
     def test_pii_files_loaded(self, mock_check_cron):
         # tests if pii files are loaded
@@ -377,6 +381,7 @@ class ValidationMainTest(unittest.TestCase):
         self.assertTrue(len(missing_labs) > 0)
 
     @mock.patch("gcs_utils.LOOKUP_TABLES_DATASET_ID", dataset_id)
+    @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def tearDown(self):
         self.storage_client.empty_bucket(self.hpo_bucket)
         bucket_nyc = gcs_utils.get_hpo_bucket(test_util.NYC_HPO_ID)

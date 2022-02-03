@@ -123,6 +123,7 @@ class BqUtilsTest(unittest.TestCase):
         self.assertEqual(query_response['kind'], 'bigquery#queryResponse')
 
     @mock.patch("gcs_utils.LOOKUP_TABLES_DATASET_ID", dataset_id)
+    @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def test_load_cdm_csv(self):
         table_blob: Blob = self.hpo_bucket.blob('person.csv')
         with open(FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
@@ -140,6 +141,7 @@ class BqUtilsTest(unittest.TestCase):
         self.assertEqual(num_rows, '5')
 
     @mock.patch("gcs_utils.LOOKUP_TABLES_DATASET_ID", dataset_id)
+    @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def test_query_result(self):
         table_blob: Blob = self.hpo_bucket.blob('person.csv')
         with open(FIVE_PERSONS_PERSON_CSV, 'rb') as fp:

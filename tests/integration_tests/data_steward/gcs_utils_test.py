@@ -28,6 +28,7 @@ class GcsUtilsTest(unittest.TestCase):
         test_util.setup_hpo_id_bucket_name_table(cls.dataset_id)
 
     @mock.patch("gcs_utils.LOOKUP_TABLES_DATASET_ID", dataset_id)
+    @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def setUp(self):
         self.hpo_bucket = gcs_utils.get_hpo_bucket(FAKE_HPO_ID)
         self.gcs_path = '/'.join([self.hpo_bucket, 'dummy'])
