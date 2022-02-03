@@ -290,6 +290,8 @@ class ValidationMainTest(unittest.TestCase):
                                      self.folder_prefix)
         self.assertSetEqual(set(expected_results), set(r['results']))
 
+    @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
+    @mock.patch("gcs_utils.LOOKUP_TABLES_DATASET_ID", dataset_id)
     @mock.patch('validation.main.updated_datetime_object')
     @mock.patch('validation.main._has_all_required_files')
     @mock.patch('validation.main.all_required_files_loaded')
