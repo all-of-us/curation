@@ -86,6 +86,7 @@ class ExportTest(unittest.TestCase):
         self.assertTrue('MESSAGES' in export_result)
         self.assertEqual(len(export_result['MESSAGES']['ATTRIBUTENAME']), 14)
 
+    @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     @mock.patch('validation.export.is_hpo_id')
     def test_run_export(self, mock_is_hpo_id):
         # validation/main.py INTEGRATION TEST

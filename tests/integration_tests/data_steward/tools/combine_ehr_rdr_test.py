@@ -46,8 +46,8 @@ class CombineEhrRdrTest(unittest.TestCase):
                                     test_util.NYC_FIVE_PERSONS_PATH, True)
         cls.load_dataset_from_files(rdr_dataset_id, test_util.RDR_PATH)
 
-    @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     @classmethod
+    @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def load_dataset_from_files(cls, dataset_id, path, mappings=False):
         test_util.setup_hpo_id_bucket_name_table(dataset_id)
         hpo_bucket = cls.storage_client.get_hpo_bucket(test_util.FAKE_HPO_ID)

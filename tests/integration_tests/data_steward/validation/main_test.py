@@ -36,8 +36,6 @@ class ValidationMainTest(unittest.TestCase):
     @mock.patch("gcs_utils.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def setUp(self):
         self.hpo_id = test_util.FAKE_HPO_ID
-        test_util.setup_hpo_id_bucket_name_table(self.dataset_id)
-        self.hpo_bucket = gcs_utils.get_hpo_bucket(self.hpo_id)
         self.project_id = app_identity.get_application_id()
         self.rdr_dataset_id = bq_utils.get_rdr_dataset_id()
         mock_get_hpo_name = mock.patch('validation.main.get_hpo_name')
@@ -48,12 +46,15 @@ class ValidationMainTest(unittest.TestCase):
 
         self.folder_prefix = '2019-01-01-v1/'
 
+        test_util.delete_all_tables(self.dataset_id)
+        self._create_drug_class_table(self.dataset_id)
+
+        test_util.setup_hpo_id_bucket_name_table(self.dataset_id)
+        self.hpo_bucket = gcs_utils.get_hpo_bucket(self.hpo_id)
+
         self.storage_client = StorageClient(self.project_id)
         self.storage_bucket = self.storage_client.get_bucket(self.hpo_bucket)
         self.storage_client.empty_bucket(self.hpo_bucket)
-
-        test_util.delete_all_tables(self.dataset_id)
-        self._create_drug_class_table(self.dataset_id)
 
     @staticmethod
     def _create_drug_class_table(bigquery_dataset_id):

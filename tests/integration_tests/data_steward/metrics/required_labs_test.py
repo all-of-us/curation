@@ -29,15 +29,6 @@ class RequiredLabsTest(unittest.TestCase):
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
-        cls.env_patcher = mock.patch.dict(
-            os.environ,
-            {"GAE_SERVICE": test_util.get_unique_service_name(cls.__name__)})
-        cls.env_patcher.start()
-
-        # Run delete before insert in case old entries are not successfully
-        # deleted in hpo_id_bucket_name from previous test runs
-        test_util.delete_hpo_id_bucket_name(os.environ.get("GAE_SERVICE"))
-        test_util.insert_hpo_id_bucket_name(os.environ.get("GAE_SERVICE"))
 
     @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def setUp(self):
