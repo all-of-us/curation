@@ -746,14 +746,14 @@ def _validation_done(bucket, folder: str):
                 name=f'{folder}{common.PROCESSED_TXT}').exists(storage_client)
 
 
-def basename(gcs_object_metadata):
+def basename(item_metadata):
     """returns name of file inside folder
 
-    :gcs_object_metadata: metadata as returned by list bucket
+    :item_metadata: metadata as returned by list bucket
     :returns: name without folder name
 
     """
-    name = gcs_object_metadata['name']
+    name = item_metadata['name']
     if len(name.split('/')) > 1:
         return '/'.join(name.split('/')[1:])
     return ''
@@ -804,6 +804,7 @@ def list_submitted_bucket_items(folder_bucketitems):
                 lag_time = datetime.timedelta(
                     minutes=object_process_lag_minutes)
                 lower_age_threshold = item['updated'] + lag_time
+                lower_age_threshold = lower_age_threshold.replace(tzinfo=None)
 
                 if lower_age_threshold > today:
                     logging.info(
@@ -822,7 +823,7 @@ def _get_submission_folder(bucket, bucket_items, force_process=False):
     Skips directories listed in IGNORE_DIRECTORIES with a case insensitive
     match.
 
-    :param bucket: string bucket name to look into
+    :param bucket: Bucket Object to validate on
     :param bucket_items: list of unicode string items in the bucket
     :param force_process: if True return most recently updated directory, even
         if it has already been processed.
