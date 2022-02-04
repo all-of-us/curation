@@ -37,27 +37,22 @@ class GCSTest(TestCase):
         self.hpo_id = 'fake_hpo_id'
 
     @patch('gcloud.gcs.StorageClient._get_hpo_bucket_id')
-    @patch('gcloud.gcs.os.environ.get')
-    def test_get_hpo_bucket_not_set(self, mock_environ_get,
-                                    mock_get_hpo_bucket_id):
+    def test_get_hpo_bucket_not_set(self, mock_get_hpo_bucket_id):
 
-        mock_environ_get.side_effect = [None, '', 'None']
+        mock_get_hpo_bucket_id.side_effect = [None, '', 'None']
         expected_message = lambda bucket: f"Bucket '{bucket}' for hpo '{self.hpo_id}' is unset/empty"
 
         # run without setting env var (unset env_var)
-        mock_get_hpo_bucket_id.return_value = None
         with self.assertRaises(BucketNotSet) as e:
             self.client.get_hpo_bucket(self.hpo_id)
         self.assertEqual(e.exception.message, expected_message(None))
 
         # run after setting env var to empty string
-        mock_get_hpo_bucket_id.return_value = ''
         with self.assertRaises(BucketNotSet) as e:
             self.client.get_hpo_bucket(self.hpo_id)
         self.assertEqual(e.exception.message, expected_message(''))
 
         # run after setting env var to 'None'
-        mock_get_hpo_bucket_id.return_value = 'None'
         with self.assertRaises(BucketNotSet) as e:
             self.client.get_hpo_bucket(self.hpo_id)
         self.assertEqual(e.exception.message, expected_message('None'))

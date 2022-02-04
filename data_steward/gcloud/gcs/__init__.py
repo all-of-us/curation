@@ -42,8 +42,6 @@ class StorageClient(Client):
             credentials, project_id = default()
             credentials = auth.delegated_credentials(credentials, scopes=scopes)
 
-        self.project_id = project_id
-
         super().__init__(project=project_id, credentials=credentials)
 
     def get_bucket_items_metadata(self, bucket: Bucket) -> list:
@@ -167,7 +165,7 @@ class StorageClient(Client):
         service = os.environ.get('GAE_SERVICE', 'default')
 
         hpo_bucket_query = JINJA_ENV.from_string(SELECT_ALL_QUERY).render(
-            project_id=self.project_id,
+            project_id=self.project,
             dataset_id=LOOKUP_TABLES_DATASET_ID,
             table_id=HPO_ID_BUCKET_NAME_TABLE_ID)
 
@@ -179,7 +177,7 @@ class StorageClient(Client):
         if result_filtered['bucket_name'].count() != 1:
             raise BucketNotSet(
                 f'{len(result_filtered)} buckets are returned for {hpo_id} '
-                f'in {self.project_id}.{LOOKUP_TABLES_DATASET_ID}.{HPO_ID_BUCKET_NAME_TABLE_ID}.'
+                f'in {self.project}.{LOOKUP_TABLES_DATASET_ID}.{HPO_ID_BUCKET_NAME_TABLE_ID}.'
             )
 
         return result_filtered['bucket_name'].iloc[0]
