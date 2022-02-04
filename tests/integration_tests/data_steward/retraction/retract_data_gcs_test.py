@@ -33,6 +33,7 @@ class RetractDataGcsTest(TestCase):
         self.project_id = 'project_id'
         self.sandbox_dataset_id = os.environ.get('UNIONED_DATASET_ID')
         self.pid_table_id = 'pid_table'
+        self.context_type = 'text/csv'
         self.gcs_bucket = self.client.get_hpo_bucket(self.hpo_id)
         self.client.empty_bucket(self.gcs_bucket)
 
@@ -58,10 +59,14 @@ class RetractDataGcsTest(TestCase):
                 # write file to cloud for testing
                 blob = self.gcs_bucket.blob(
                     f'{self.folder_prefix_1}{file_name}')
-                blob.upload_from_file(f, rewind=True, content_type='text/csv')
+                blob.upload_from_file(f,
+                                      rewind=True,
+                                      content_type=self.context_type)
                 blob = self.gcs_bucket.blob(
                     f'{self.folder_prefix_2}{file_name}')
-                blob.upload_from_file(f, rewind=True, content_type='text/csv')
+                blob.upload_from_file(f,
+                                      rewind=True,
+                                      content_type=self.context_type)
 
         rd.run_gcs_retraction(self.project_id,
                               self.sandbox_dataset_id,
@@ -110,10 +115,14 @@ class RetractDataGcsTest(TestCase):
                 # write file to cloud for testing
                 blob = self.gcs_bucket.blob(
                     f'{self.folder_prefix_1}{file_name}')
-                blob.upload_from_file(f, rewind=True, content_type='text/csv')
+                blob.upload_from_file(f,
+                                      rewind=True,
+                                      content_type=self.context_type)
                 blob = self.gcs_bucket.blob(
                     f'{self.folder_prefix_2}{file_name}')
-                blob.upload_from_file(f, rewind=True, content_type='text/csv')
+                blob.upload_from_file(f,
+                                      rewind=True,
+                                      content_type=self.context_type)
 
         rd.run_gcs_retraction(self.project_id,
                               self.sandbox_dataset_id,
