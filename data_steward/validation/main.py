@@ -159,29 +159,24 @@ def upload_achilles_files(hpo_id):
     return json.dumps(result, sort_keys=True, indent=4, separators=(',', ': '))
 
 
-def _upload_achilles_files(hpo_id: str = None,
-                           folder_prefix: str = '',
-                           target_bucket=None):
+def _upload_achilles_files(hpo_id=None, folder_prefix='', target_bucket=None):
     """
     uploads achilles web files to the corresponding hpo bucket
-
     :hpo_id: which hpo bucket do these files go into
     :returns:
     """
     results = []
     project_id = app_identity.get_application_id()
     storage_client = StorageClient(project_id)
-
     if target_bucket:
-        pass
-        # would create a bucket from string above
+        bucket = storage_client.bucket(target_bucket)
     else:
         if not hpo_id:
             raise RuntimeError(
                 f"Either hpo_id or target_bucket must be specified")
-        target_bucket = storage_client.get_hpo_bucket(hpo_id)
+        bucket = storage_client.get_hpo_bucket(hpo_id)
     logging.info(
-        f"Uploading achilles index files to 'gs://{target_bucket.name}/{folder_prefix}'"
+        f"Uploading achilles index files to 'gs://{bucket.name}/{folder_prefix}'"
     )
     for filename in resources.ACHILLES_INDEX_FILES:
         logging.info(
