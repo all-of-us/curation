@@ -546,8 +546,7 @@ def process_hpo(hpo_id, force_run=False):
         storage_client = StorageClient(project_id)
         bucket = storage_client.get_hpo_bucket(hpo_id)
         bucket_items: list = storage_client.get_bucket_items_metadata(bucket)
-        folder_prefix = _get_submission_folder(bucket.name, bucket_items,
-                                               force_run)
+        folder_prefix = _get_submission_folder(bucket, bucket_items, force_run)
         if folder_prefix is None:
             logging.info(
                 f"No submissions to process in {hpo_id} bucket {bucket.name}")
@@ -873,7 +872,7 @@ def _get_submission_folder(bucket, bucket_items, force_process=False):
                 [item['updated'] for item in submitted_bucket_items])
             folder_datetime_list.append(latest_datetime)
 
-    if folder_datetime_list and folder_datetime_list != []:
+    if folder_datetime_list:
         latest_datetime_index = folder_datetime_list.index(
             max(folder_datetime_list))
         to_process_folder = folders_with_submitted_files[latest_datetime_index]
