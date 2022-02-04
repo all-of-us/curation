@@ -251,10 +251,10 @@ def _get_replace_statement(base_statement, rdr_ehr, field, dict_abbreviation):
 def get_with_clause(field):
     """
     Create WITH statement for CREATE_{field}_COMPARISON_FUNCTION.
-    :param: field - string 'city' or 'street'
+    :param: field - string 'city'
     :return: WITH statement as string
     """
-    valid_fields = {'city', 'street'}
+    valid_fields = {'city'}
 
     if field not in valid_fields:
         raise ValueError(
@@ -263,18 +263,10 @@ def get_with_clause(field):
     base_statement = {
         'city':
             lambda rdr_ehr, field:
-            f"REGEXP_REPLACE(REGEXP_REPLACE(LOWER(TRIM({rdr_ehr}_{field})),'[^A-Za-z ]',''),' +',' ')",
-        'street':
-            lambda rdr_ehr, field:
-            (f"REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(LOWER(TRIM({rdr_ehr}_{field})),"
-             f"'[^0-9A-Za-z ]', ''),'([0-9])(?:st|nd|rd|th)', r'\\1'),'([0-9])([a-z])',r'\\1 \\2'),' +',' ')"
-            ),
+            f"REGEXP_REPLACE(REGEXP_REPLACE(LOWER(TRIM({rdr_ehr}_{field})),'[^A-Za-z ]',''),' +',' ')"
     }
 
-    abbreviations = {
-        'city': CITY_ABBREVIATIONS,
-        'street': ADDRESS_ABBREVIATIONS,
-    }
+    abbreviations = {'city': CITY_ABBREVIATIONS}
 
     statement_parts = ["WITH "]
     statement_parts.append(

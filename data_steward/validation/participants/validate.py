@@ -32,6 +32,8 @@ LOGGER = logging.getLogger(__name__)
 
 EHR_OPS = 'ehr_ops'
 
+# It is better to divide the SQL into two -- one for address and the other for the rest
+# That will simplify the maintenance
 MATCH_FIELDS_QUERY = JINJA_ENV.from_string("""
     UPDATE `{{project_id}}.{{drc_dataset_id}}.{{id_match_table_id}}` upd
     SET upd.first_name = `{{project_id}}.{{drc_dataset_id}}.CompareName`(ps.first_name, ehr_name.first_name),
@@ -98,7 +100,6 @@ def identify_rdr_ehr_match(client,
             missing_ehr=MISSING_EHR,
             gender_case_when_conditions=get_gender_comparison_case_statement(),
             state_abbreviations=get_state_abbreviations(),
-            street_with_clause=get_with_clause('street'),
             city_with_clause=get_with_clause('city'))
 
         LOGGER.info(f"Running the following create statement: {query}.")
