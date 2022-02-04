@@ -14,17 +14,13 @@ from utils import bq
 from utils import pipeline_logging
 from tools import add_cdr_metadata
 from tools.snapshot_by_query import create_schemaed_snapshot_dataset
+from common import CDR_SCOPES
 from constants.cdr_cleaner import clean_cdr as consts
 
 LOGGER = logging.getLogger(__name__)
 
 TIER_LIST = ['controlled', 'registered']
 DEID_STAGE_LIST = ['deid', 'deid_base', 'deid_clean']
-
-SCOPES = [
-    'https://www.googleapis.com/auth/bigquery',
-    'https://www.googleapis.com/auth/devstorage.read_write',
-]
 
 
 def validate_tier_param(tier):
@@ -203,7 +199,7 @@ def create_tier(credentials_filepath, project_id, tier, input_dataset,
 
     # get credentials and create client
     impersonation_creds = auth.get_impersonation_credentials(
-        run_as, SCOPES, credentials_filepath)
+        run_as, CDR_SCOPES, credentials_filepath)
 
     client = bq.get_client(project_id, credentials=impersonation_creds)
 
@@ -315,8 +311,7 @@ def main(raw_args=None):
     # Parses the required arguments and keyword arguments required by cleaning rules
     args, kwargs = parse_deid_args(raw_args)
     # Sets logging level
-    pipeline_logging.configure(level=logging.DEBUG,
-                               add_console_handler=args.console_log)
+    pipeline_logging.configure(add_console_handler=args.console_log)
     # Identify the cleaning classes being run for specified data_stage
     # and validate if all the required arguments are supplied
     cleaning_classes = clean_cdr.DATA_STAGE_RULES_MAPPING[

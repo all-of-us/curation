@@ -256,3 +256,9 @@ JINJA_ENV = jinja2.Environment(
     # in jinja2 autoescape is for html; jinjasql supports autoescape for sql
     # TODO Look into jinjasql for sql templating
     autoescape=False)
+
+# Google scopes for running CDR pipeline stages
+CDR_SCOPES = [
+    'https://www.googleapis.com/auth/bigquery',
+    'https://www.googleapis.com/auth/devstorage.read_write',
+]
