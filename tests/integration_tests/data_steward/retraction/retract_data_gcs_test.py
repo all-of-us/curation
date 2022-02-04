@@ -74,7 +74,7 @@ class RetractDataGcsTest(TestCase):
                               self.hpo_id,
                               folder='all_folders',
                               force_flag=True,
-                              bucket=self.gcs_bucket.name,
+                              bucket=self.gcs_bucket,
                               site_bucket=self.site_bucket)
 
         total_lines_post = {}
@@ -130,7 +130,7 @@ class RetractDataGcsTest(TestCase):
                               self.hpo_id,
                               folder='all_folders',
                               force_flag=True,
-                              bucket=self.gcs_bucket.name,
+                              bucket=self.gcs_bucket,
                               site_bucket=self.site_bucket)
 
         total_lines_post = {}
