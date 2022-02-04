@@ -374,6 +374,12 @@ def get_parser():
         type=DataStage,
         choices=list([s for s in DataStage if s is not DataStage.UNSPECIFIED]),
         help='Specify the dataset')
+    engine_parser.add_argument(
+        '--run_as',
+        required=True,
+        dest='run_as',
+        action='store',
+        help='Service account email address to impersonate')
     return engine_parser
 
 
@@ -501,6 +507,7 @@ def main(args=None):
                                    sandbox_dataset_id=args.sandbox_dataset_id,
                                    rules=rules,
                                    table_namer=args.data_stage.value,
+                                   run_as=args.run_as,
                                    **kwargs)
 
 

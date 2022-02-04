@@ -172,6 +172,7 @@ def create_datasets(client, name, input_dataset, tier, release_tag):
             dataset.labels = new_labels
             dataset.description = f'{phase} {description}'
             client.update_dataset(dataset, ["labels", "description"])
+        LOGGER.info(f'Updated dataset {dataset} with labels {new_labels}')
 
     return datasets
 
@@ -214,7 +215,8 @@ def create_tier(credentials_filepath, project_id, tier, input_dataset,
     # Run cleaning rules
     cleaning_args = [
         '-p', project_id, '-d', datasets[consts.STAGING], '-b',
-        datasets[consts.SANDBOX], '--data_stage', f'{tier}_tier_{deid_stage}'
+        datasets[consts.SANDBOX], '--data_stage', f'{tier}_tier_{deid_stage}',
+        '--run_as', run_as, '--console_log'
     ]
 
     # Will update the qa_handoff_date to current date

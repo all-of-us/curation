@@ -9,11 +9,13 @@ from google.cloud.exceptions import GoogleCloudError
 
 # Project imports
 from utils import bq
+from utils.auth import get_impersonation_credentials
 from utils.pipeline_logging import configure
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from constants.cdr_cleaner import clean_cdr_engine as ce_consts
+from common import CDR_SCOPES
 
 LOGGER = logging.getLogger(__name__)
 
@@ -30,6 +32,7 @@ def clean_dataset(project_id,
                   sandbox_dataset_id,
                   rules,
                   table_namer='',
+                  run_as=None,
                   **kwargs):
     """
     Run the assigned cleaning rules and return list of BQ job objects
@@ -39,11 +42,18 @@ def clean_dataset(project_id,
     :param sandbox_dataset_id: identifies the sandbox dataset to store backup rows
     :param rules: a list of cleaning rule objects/functions as tuples
     :param table_namer: source differentiator value expected to be the same for all rules run on the same dataset
+    :param run_as: email address of the service account to impersonate
     :param kwargs: keyword arguments a cleaning rule may require
     :return all_jobs: List of BigQuery job objects
     """
     # Set up client
-    client = bq.get_client(project_id=project_id)
+    impersonation_creds = None
+    if run_as:
+        # get credentials and create client
+        impersonation_creds = get_impersonation_credentials(
+            run_as, target_scopes=CDR_SCOPES)
+    client = bq.get_client(project_id=project_id,
+                           credentials=impersonation_creds)
 
     all_jobs = []
     for rule_index, rule in enumerate(rules):
