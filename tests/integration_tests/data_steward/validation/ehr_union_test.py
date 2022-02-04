@@ -12,7 +12,6 @@ import common
 from constants.tools import combine_ehr_rdr
 from constants.validation import ehr_union as eu_constants
 from gcloud.gcs import StorageClient
-import gcs_utils
 import resources
 import tests.test_util as test_util
 from validation import ehr_union
@@ -53,7 +52,7 @@ class EhrUnionTest(unittest.TestCase):
         # Collect all primary key fields in CDM tables
         mapped_fields = []
         for table in cdm.tables_to_map():
-            field = table + '_id'
+            field = f'{table}_id'
             mapped_fields.append(field)
         self.mapped_fields = mapped_fields
         self.implemented_foreign_keys = [
@@ -65,7 +64,7 @@ class EhrUnionTest(unittest.TestCase):
 
     def _empty_hpo_buckets(self):
         for hpo_id in self.hpo_ids:
-            bucket = gcs_utils.get_hpo_bucket(hpo_id)
+            bucket = self.storage_client.get_hpo_bucket(hpo_id)
             self.storage_client.empty_bucket(bucket)
 
     def _create_hpo_table(self, hpo_id, table, dataset_id):
@@ -101,17 +100,16 @@ class EhrUnionTest(unittest.TestCase):
                     ]:
                         cdm_filepath: str = os.path.join(
                             test_util.RDR_PATH, cdm_filename)
-                bucket: str = gcs_utils.get_hpo_bucket(hpo_id)
-                gcs_bucket = self.storage_client.get_bucket(bucket)
+                hpo_bucket = self.storage_client.get_hpo_bucket(hpo_id)
                 if os.path.exists(cdm_filepath):
 
                     csv_rows = resources.csv_to_list(cdm_filepath)
-                    cdm_blob = gcs_bucket.blob(cdm_filename)
+                    cdm_blob = hpo_bucket.blob(cdm_filename)
                     cdm_blob.upload_from_filename(cdm_filepath)
 
                 else:
                     # results in empty table
-                    cdm_blob = gcs_bucket.blob(cdm_filename)
+                    cdm_blob = hpo_bucket.blob(cdm_filename)
                     cdm_blob.upload_from_string('dummy\n')
                     csv_rows: list = []
                 # load table from csv
