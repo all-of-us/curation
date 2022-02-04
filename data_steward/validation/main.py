@@ -285,8 +285,8 @@ def validate_submission(hpo_id: str, bucket, folder_items: list,
 def check_duplicates_and_validate(hpo_id, report_data):
     """
     Check if any tables used in participant validation has duplicates and runs them
-    :param hpo_id: 
-    :param report_data: 
+    :param hpo_id:
+    :param report_data:
     :return: List
     """
     participant_val_tables = common.PII_TABLES + [
@@ -735,11 +735,8 @@ def perform_validation_on_file(file_name: str, found_file_names: list,
     return results, errors
 
 
-def _validation_done(bucket, folder: str):
-    application_id: str = app_identity.get_application_id()
-    storage_client = StorageClient(application_id)
-    return Blob(bucket=bucket,
-                name=f'{folder}{common.PROCESSED_TXT}').exists(storage_client)
+def _validation_done(bucket, folder):
+    return Blob(bucket=bucket, name=f'{folder}{common.PROCESSED_TXT}').exists()
 
 
 def basename(item_metadata):
