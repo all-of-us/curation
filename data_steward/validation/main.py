@@ -172,7 +172,10 @@ def _upload_achilles_files(hpo_id: str = None,
     project_id = app_identity.get_application_id()
     storage_client = StorageClient(project_id)
 
-    if not target_bucket:
+    if target_bucket:
+        pass
+        # would create a bucket from string above
+    else:
         if not hpo_id:
             raise RuntimeError(
                 f"Either hpo_id or target_bucket must be specified")
@@ -547,7 +550,7 @@ def process_hpo(hpo_id, force_run=False):
         bucket = storage_client.get_hpo_bucket(hpo_id)
         bucket_items: list = storage_client.get_bucket_items_metadata(bucket)
         folder_prefix = _get_submission_folder(bucket, bucket_items, force_run)
-        if folder_prefix is None:
+        if not folder_prefix:
             logging.info(
                 f"No submissions to process in {hpo_id} bucket {bucket.name}")
         else:

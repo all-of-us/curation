@@ -41,13 +41,13 @@ class ValidationMainTest(unittest.TestCase):
         self.hpo_id: str = test_util.FAKE_HPO_ID
         self.project_id: str = app_identity.get_application_id()
         self.rdr_dataset_id: str = bq_utils.get_rdr_dataset_id()
-        self.bigquery_dataset_id: str = bq_utils.get_dataset_id()
 
         mock_get_hpo_name = mock.patch('validation.main.get_hpo_name')
         self.mock_get_hpo_name = mock_get_hpo_name.start()
         self.mock_get_hpo_name.return_value = 'Fake HPO'
         self.addCleanup(mock_get_hpo_name.stop)
 
+        self.bigquery_dataset_id: str = bq_utils.get_dataset_id()
         self.folder_prefix: str = '2019-01-01-v1/'
 
         self.bq_client = get_client(self.project_id)
