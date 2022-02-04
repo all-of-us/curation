@@ -188,11 +188,7 @@ class ValidationMainTest(unittest.TestCase):
             if 'person_id' in field_names:
                 self.table_has_clustering(table_info)
 
-    @mock.patch('validation.main.updated_datetime_object')
-    def test_check_processed(self, mock_updated_datetime_object):
-
-        mock_updated_datetime_object.return_value = datetime.datetime.today(
-        ) - datetime.timedelta(minutes=7)
+    def test_check_processed(self):
 
         for fname in common.AOU_REQUIRED_FILES:
             blob_name: str = f'{self.folder_prefix}{fname}'
@@ -208,15 +204,17 @@ class ValidationMainTest(unittest.TestCase):
         items_metadata: list = self.storage_client.get_bucket_items_metadata(
             self.hpo_bucket)
 
-        #! may need to adjust timedata here
-        #! See above timedate changeq
+        for item in items_metadata:
+            item['updated'].replace(tzinfo=None)
+            item['updated'] = datetime.datetime.today() - datetime.timedelta(
+                minutes=7)
 
         # TODO use a bucket!
-        result = main._get_submission_folder(self.hpo_bucket.name,
+        result = main._get_submission_folder(self.hpo_bucket,
                                              items_metadata,
                                              force_process=False)
         self.assertIsNone(result)
-        result = main._get_submission_folder(self.hpo_bucket.name,
+        result = main._get_submission_folder(self.hpo_bucket,
                                              items_metadata,
                                              force_process=True)
         self.assertEqual(result, self.folder_prefix)
@@ -276,7 +274,6 @@ class ValidationMainTest(unittest.TestCase):
         ])
         self.assertSetEqual(expected_bucket_files, actual_bucket_files)
 
-    @mock.patch("gcs_utils.LOOKUP_TABLES_DATASET_ID", dataset_id)
     @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     @mock.patch('validation.main.setup_and_validate_participants')
     @mock.patch('api_util.check_cron')
@@ -347,25 +344,18 @@ class ValidationMainTest(unittest.TestCase):
         self.assertSetEqual(set(expected_results), set(actual['results']))
 
     @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
-    @mock.patch("gcs_utils.LOOKUP_TABLES_DATASET_ID", dataset_id)
     @mock.patch('validation.main.get_participant_validation_summary_query')
     @mock.patch('validation.main.setup_and_validate_participants')
-    @mock.patch('validation.main.updated_datetime_object')
     @mock.patch('validation.main._has_all_required_files')
     @mock.patch('validation.main.all_required_files_loaded')
     @mock.patch('validation.main.is_first_validation_run')
     @mock.patch('api_util.check_cron')
     def test_html_report_five_person(self, mock_check_cron, mock_first_run,
                                      mock_required_files_loaded,
-                                     mock_has_all_required_files,
-                                     mock_updated_datetime_object,
-                                     mock_setup_validate_participants,
-                                     mock_part_val_summary_query):
+                                     mock_has_all_required_files):
         mock_required_files_loaded.return_value = False
         mock_first_run.return_value = False
         mock_has_all_required_files.return_value = True
-        mock_updated_datetime_object.return_value = datetime.datetime.today(
-        ) - datetime.timedelta(minutes=7)
 
         for cdm_file in test_util.FIVE_PERSONS_FILES:
             blob_name: str = f'{self.folder_prefix}{os.path.basename(cdm_file)}'
@@ -395,7 +385,10 @@ class ValidationMainTest(unittest.TestCase):
         items_metadata: list = self.storage_client.get_bucket_items_metadata(
             self.hpo_bucket)
 
-        #! May need to adjust time here
+        for item in items_metadata:
+            item['updated'].replace(tzinfo=None)
+            item['updated'] = datetime.datetime.today() - datetime.timedelta(
+                minutes=7)
         folder_items: list = main.get_folder_items(items_metadata,
                                                    self.folder_prefix)
         self.assertFalse(main.is_first_validation_run(folder_items))
@@ -452,11 +445,8 @@ class ValidationMainTest(unittest.TestCase):
     def tearDown(self):
         nyc_bucket = self.storage_client.get_hpo_bucket('nyc')
         self.storage_client.empty_bucket(nyc_bucket)
-
-        self.storage_client.empty_bucket(self.drc_bucket)
-        self.drc_bucket = self.storage_client.get_drc_bucket()
-
         self.storage_client.empty_bucket(self.hpo_bucket)
+        self.storage_client.empty_bucket(self.drc_bucket)
 
         test_util.delete_all_tables(self.dataset_id)
 
