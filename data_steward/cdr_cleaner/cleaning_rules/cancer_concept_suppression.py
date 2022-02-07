@@ -23,7 +23,7 @@ from google.cloud.exceptions import GoogleCloudError
 
 LOGGER = logging.getLogger(__name__)
 
-SUPPRESSION_RULE_CONCEPT_TABLE = 'cancer_condition_concepts'
+SUPPRESSION_RULE_CONCEPT_TABLE = 'cancer_condition_concepts_without_other_cancer'
 
 CANCER_CONCEPT_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_id}}.{{concept_suppression_lookup_table}}` AS
