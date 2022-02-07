@@ -343,6 +343,7 @@ class ValidationMainTest(unittest.TestCase):
                                                 self.folder_prefix)
         self.assertSetEqual(set(expected_results), set(actual['results']))
 
+    @mock.patch('constants.validation.main.SUBMISSION_LAG_TIME_MINUTES', 0)
     @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     @mock.patch('validation.main.get_participant_validation_summary_query')
     @mock.patch('validation.main.setup_and_validate_participants')
