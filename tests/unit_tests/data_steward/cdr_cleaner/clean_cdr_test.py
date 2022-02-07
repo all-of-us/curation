@@ -261,10 +261,13 @@ class CleanCDRTest(unittest.TestCase):
 
         from argparse import Namespace
 
+        # For run_as
+        cdr_sa = 'cdr_email@prod_env.com'
+
         # Test clean_dataset() function call
         args = [
             '-p', self.project_id, '-d', self.dataset_id, '-b',
-            self.sandbox_dataset_id, '--data_stage', 'ehr'
+            self.sandbox_dataset_id, '--data_stage', 'ehr', '--run_as', cdr_sa
         ]
         # creates argparse namespace return value
         expected_args = Namespace(
@@ -274,7 +277,8 @@ class CleanCDRTest(unittest.TestCase):
                 'sandbox_dataset_id': self.sandbox_dataset_id,
                 'data_stage': DataStage.EHR,
                 'console_log': False,
-                'list_queries': False
+                'list_queries': False,
+                'run_as': cdr_sa
             })
 
         expected_kargs = {}
@@ -291,7 +295,8 @@ class CleanCDRTest(unittest.TestCase):
             dataset_id=self.dataset_id,
             sandbox_dataset_id=self.sandbox_dataset_id,
             rules=rules,
-            table_namer=DataStage.EHR.value)
+            table_namer=DataStage.EHR.value,
+            run_as=cdr_sa)
 
         # Test get_queries() function call
         args = [
