@@ -87,7 +87,7 @@ class CleanCDRTest(unittest.TestCase):
 
         test_args = [
             '-p', self.project_id, '-d', self.dataset_id, '-b',
-            self.sandbox_dataset_id, '--data_stage', 'ehr'
+            self.sandbox_dataset_id, '--data_stage', 'ehr', '--run_as', None
         ]
         expected_args = {
             'project_id': self.project_id,
@@ -95,7 +95,8 @@ class CleanCDRTest(unittest.TestCase):
             'sandbox_dataset_id': self.sandbox_dataset_id,
             'data_stage': DataStage.EHR,
             'console_log': False,
-            'list_queries': False
+            'list_queries': False,
+            'run_as': None
         }
         parser = cc.get_parser()
         actual_args, actual_kwargs = cc.fetch_args_kwargs(
