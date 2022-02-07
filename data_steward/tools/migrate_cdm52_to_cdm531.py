@@ -1,11 +1,15 @@
 import argparse
+import logging
 
 from google.cloud.bigquery import QueryJobConfig
 
 from common import PII_TABLES
 import resources
 from utils import bq
+from utils.pipeline_logging import configure
 from tools import snapshot_by_query as sq
+
+LOGGER = logging.getLogger(__name__)
 
 MODIFIED_FIELD_NAMES = {
     # Modified field names from 5.2 to 5.3.1
@@ -76,13 +80,16 @@ def get_upgrade_table_query(client, dataset_id, table_id, hpo_id=None):
     try:
         source_table = f'{client.project}.{dataset_id}.{table_id}'
         source_fields = sq.get_source_fields(client, source_table)
-        dst_fields = resources.fields_for(
-            resources.get_base_table_name(table_id, hpo_id))
-        col_cast_exprs = [
-            get_field_cast_expr_with_schema_change(field, source_fields)
-            for field in dst_fields
-        ]
-        col_expr = ', '.join(col_cast_exprs)
+        base_table_name = resources.get_base_table_name(table_id, hpo_id)
+        dst_fields = resources.fields_for(base_table_name)
+        if base_table_name in resources.CDM_TABLES:
+            col_cast_exprs = [
+                get_field_cast_expr_with_schema_change(field, source_fields)
+                for field in dst_fields
+            ]
+            col_expr = ', '.join(col_cast_exprs)
+        else:
+            col_expr = '*'
     except (OSError, IOError, RuntimeError):
         # default to select *
         col_expr = '*'
@@ -120,6 +127,7 @@ def schema_upgrade_cdm52_to_cdm531(project_id,
         # Filter tables that do not exist
         tables = [table for table in hpo_tables if table in tables]
     for table_id in tables:
+        LOGGER.info(f"Running conversion on table {table_id}")
         q = get_upgrade_table_query(client, dataset_id, table_id, hpo_id)
         job_config = QueryJobConfig()
         job_config.destination = f'{client.project}.{snapshot_dataset_id}.{table_id}'
@@ -131,6 +139,7 @@ def schema_upgrade_cdm52_to_cdm531(project_id,
 
 
 if __name__ == '__main__':
+    configure(add_console_handler=True)
     parser = argparse.ArgumentParser(
         description='Parse project_id and dataset_id',
         formatter_class=argparse.RawDescriptionHelpFormatter)
