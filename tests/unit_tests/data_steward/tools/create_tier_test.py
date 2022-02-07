@@ -371,7 +371,8 @@ class CreateTierTest(unittest.TestCase):
         controlled_tier_cleaning_args = [
             '-p', self.project_id, '-d', datasets[consts.STAGING], '-b',
             datasets[consts.SANDBOX], '--data_stage',
-            f'{self.tier}_tier_{self.deid_stage}'
+            f'{self.tier}_tier_{self.deid_stage}', '--run_as', self.run_as,
+            '--console_log'
         ]
         mock_dataset_name.return_value = final_dataset_name
         mock_create_datasets.return_value = datasets
