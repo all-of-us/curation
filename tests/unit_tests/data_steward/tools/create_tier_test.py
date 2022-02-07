@@ -14,7 +14,8 @@ from datetime import datetime
 from constants.cdr_cleaner import clean_cdr as consts
 from tools.add_cdr_metadata import INSERT
 from tools.create_tier import parse_deid_args, validate_deid_stage_param, validate_tier_param, \
-    validate_release_tag_param, create_datasets, get_dataset_name, create_tier, SCOPES, add_kwargs_to_args
+    validate_release_tag_param, create_datasets, get_dataset_name, create_tier, add_kwargs_to_args
+from common import CDR_SCOPES
 
 
 class CreateTierTest(unittest.TestCase):
@@ -386,7 +387,7 @@ class CreateTierTest(unittest.TestCase):
                                               self.release_tag)
 
         mock_impersonate_credentials.assert_called_with(
-            self.run_as, SCOPES, self.credentials_filepath)
+            self.run_as, CDR_SCOPES, self.credentials_filepath)
 
         mock_get_client.assert_called_with(
             self.project_id, credentials=mock_impersonate_credentials())
