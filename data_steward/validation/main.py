@@ -168,23 +168,22 @@ def _upload_achilles_files(hpo_id=None, folder_prefix='', target_bucket=None):
     results = []
     project_id = app_identity.get_application_id()
     storage_client = StorageClient(project_id)
-    if target_bucket is not None:
-        bucket = storage_client.bucket(target_bucket)
-    else:
+    if not target_bucket:
         if hpo_id is None:
             raise RuntimeError(
                 f"Either hpo_id or target_bucket must be specified")
-        bucket = storage_client.get_hpo_bucket(hpo_id)
+        target_bucket = storage_client.get_hpo_bucket(hpo_id)
     logging.info(
-        f"Uploading achilles index files to 'gs://{bucket.name}/{folder_prefix}'"
+        f"Uploading achilles index files to 'gs://{target_bucket.name}/{folder_prefix}'"
     )
     for filename in resources.ACHILLES_INDEX_FILES:
         logging.info(
-            f"Uploading achilles file '{filename}' to bucket {bucket.name}")
+            f"Uploading achilles file '{filename}' to bucket {target_bucket.name}"
+        )
         bucket_file_name = filename.split(resources.resource_files_path +
                                           os.sep)[1].strip().replace('\\', '/')
         with open(filename, 'rb') as fp:
-            blob = bucket.blob(f'{folder_prefix}{bucket_file_name}')
+            blob = target_bucket.blob(f'{folder_prefix}{bucket_file_name}')
             blob.upload_from_file(fp)
             upload_result: dict = storage_client.get_blob_metadata(blob)
             results.append(upload_result)
@@ -552,10 +551,10 @@ def process_hpo(hpo_id, force_run=False):
             if is_valid_folder_prefix_name(folder_prefix):
                 # perform validation
                 folder_items = get_folder_items(bucket_items, folder_prefix)
-                summary = validate_submission(hpo_id, bucket.name, folder_items,
+                summary = validate_submission(hpo_id, bucket, folder_items,
                                               folder_prefix)
-                report_data = generate_metrics(hpo_id, bucket.name,
-                                               folder_prefix, summary)
+                report_data = generate_metrics(hpo_id, bucket, folder_prefix,
+                                               summary)
             else:
                 # do not perform validation
                 report_data = generate_empty_report(hpo_id, folder_prefix)
@@ -766,8 +765,8 @@ def list_submitted_bucket_items(folder_bucketitems):
     """
     files_list = []
     object_retention_days = 30
-    object_process_lag_minutes = 5
-    today = datetime.datetime.today()
+    object_process_lag_minutes = consts.SUBMISSION_LAG_TIME_MINUTES
+    today = datetime.datetime.utcnow()
 
     # If any required file missing, stop submission
     folder_bucketitems_basenames = [
