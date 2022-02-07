@@ -194,7 +194,6 @@ class ValidationMainTest(unittest.TestCase):
             blob_name: str = f'{self.folder_prefix}{fname}'
             test_blob = self.hpo_bucket.blob(blob_name)
             test_blob.upload_from_string('\n')
-
             sleep(1)
 
         blob_name: str = f'{self.folder_prefix}{common.PROCESSED_TXT}'
