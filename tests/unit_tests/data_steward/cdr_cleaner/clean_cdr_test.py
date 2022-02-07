@@ -31,7 +31,7 @@ class CleanCDRTest(unittest.TestCase):
     def test_parser(self):
         test_args = [
             '-p', self.project_id, '-d', self.dataset_id, '-b',
-            self.sandbox_dataset_id, '--data_stage', 'ehr'
+            self.sandbox_dataset_id, '--data_stage', 'ehr', '--run_as', None
         ]
         parser = cc.get_parser()
         args = parser.parse_args(test_args)
@@ -39,14 +39,15 @@ class CleanCDRTest(unittest.TestCase):
 
         test_args = [
             '-p', self.project_id, '-d', self.dataset_id, '-b',
-            self.sandbox_dataset_id, '--data_stage', 'unspecified'
+            self.sandbox_dataset_id, '--data_stage', 'unspecified', '--run_as',
+            None
         ]
         parser = cc.get_parser()
         self.assertRaises(SystemExit, parser.parse_args, test_args)
 
         test_args = [
             '-p', self.project_id, '-d', self.dataset_id, '-b',
-            self.sandbox_dataset_id, '--data_stage', 'unknown'
+            self.sandbox_dataset_id, '--data_stage', 'unknown', '--run_as', None
         ]
         parser = cc.get_parser()
         self.assertRaises(SystemExit, parser.parse_args, test_args)
