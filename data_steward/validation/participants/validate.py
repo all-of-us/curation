@@ -24,11 +24,11 @@ from app_identity import get_application_id
 from bq_utils import get_rdr_project_id
 from resources import get_table_id
 from utils import bq, pipeline_logging, auth
-from tools.create_tier import SCOPES
-from common import PS_API_VALUES, DRC_OPS, EHR_OPS
+from common import (JINJA_ENV, PS_API_VALUES, DRC_OPS, EHR_OPS, CDR_SCOPES,
+                    PII_ADDRESS, PII_EMAIL, PII_PHONE_NUMBER, PII_NAME,
+                    LOCATION, PERSON)
 from validation.participants.store_participant_summary_results import fetch_and_store_ps_hpo_data
 from validation.participants.create_update_drc_id_match_table import create_and_populate_drc_validation_table
-from common import PII_ADDRESS, PII_EMAIL, PII_PHONE_NUMBER, PII_NAME, LOCATION, PERSON
 from constants.validation.participants.identity_match import IDENTITY_MATCH_TABLE
 from constants.validation.participants import validate as consts
 
@@ -256,7 +256,7 @@ def main():
 
     # get credentials and create client
     impersonation_creds = auth.get_impersonation_credentials(
-        args.run_as_email, SCOPES)
+        args.run_as_email, CDR_SCOPES)
 
     client = bq.get_client(args.project_id, credentials=impersonation_creds)
 

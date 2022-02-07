@@ -20,7 +20,7 @@ import resources
 from utils import bq
 from utils import auth
 import bq_utils
-from tools.create_tier import SCOPES
+from common import CDR_SCOPES
 from common import JINJA_ENV, PS_API_VALUES, DRC_OPS
 from constants.validation.participants.identity_match import IDENTITY_MATCH_TABLE
 
@@ -195,7 +195,7 @@ def main():
 
     # get credentials and create client
     impersonation_creds = auth.get_impersonation_credentials(
-        args.run_as_email, SCOPES)
+        args.run_as_email, CDR_SCOPES)
 
     client = bq.get_client(args.project_id, credentials=impersonation_creds)
 
