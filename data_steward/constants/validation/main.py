@@ -18,6 +18,9 @@ RESULT_PASS_COLOR = 'green'
 # datetime format
 DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S %Z'
 
+# lag before submission is processed
+SUBMISSION_LAG_TIME_MINUTES = 5
+
 # Table Headers
 RESULT_FILE_HEADERS = ["File Name", "Found", "Parsed", "Loaded"]
 ERROR_FILE_HEADERS = ["File Name", "Message"]
@@ -30,15 +33,15 @@ DUPLICATE_IDS_HEADERS = ['Table Name', 'Duplicate ID Count']
 
 # Used in get_heel_errors_in_results_html()
 HEEL_ERROR_QUERY_VALIDATION = '''
-    SELECT 
+    SELECT
         analysis_id AS analysis_id,
         achilles_heel_warning AS heel_error,
         rule_id AS rule_id,
         record_count AS record_count
     FROM `{project_id}.{dataset_id}.{table_id}`
     WHERE achilles_heel_warning LIKE 'ERROR:%'
-    ORDER BY 
-        record_count DESC, 
+    ORDER BY
+        record_count DESC,
         analysis_id
     '''
 HEEL_ERROR_FAIL_ROWS = [(NULL_MESSAGE, HEEL_ERROR_FAIL_MESSAGE, NULL_MESSAGE,
@@ -111,11 +114,11 @@ DRUG_CLASS_QUERY = '''
             21600744,
             21604303,
             21601278,
-            21601783) 
+            21601783)
     '''
 
 DUPLICATE_IDS_WRAPPER = '''
-    SELECT 
+    SELECT
         table_name,
         count
     FROM
@@ -124,7 +127,7 @@ DUPLICATE_IDS_WRAPPER = '''
     '''
 
 DUPLICATE_IDS_SUBQUERY = '''
-    SELECT 
+    SELECT
         '{table_name}' AS table_name,
         SUM(Individual_Duplicate_ID_Count-1) as count
     FROM
