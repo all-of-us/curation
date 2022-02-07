@@ -286,7 +286,17 @@ class CreateTierTest(unittest.TestCase):
                             mock_update_labels_tags):
         # Preconditions
         client = mock_client.return_value = self.mock_bq_client
-        client.side_effects = create_datasets
+        mocked_labels = [{
+            'de-identified': 'true',
+            'phase': consts.CLEAN
+        }, {
+            'de-identified': 'true',
+            'phase': consts.STAGING
+        }, {
+            'de-identified': 'false',
+            'phase': consts.SANDBOX
+        }]
+        mock_update_labels_tags.side_effect = mocked_labels
 
         datasets = {
             consts.CLEAN: self.dataset_name,
@@ -334,18 +344,12 @@ class CreateTierTest(unittest.TestCase):
         self.assertEqual(mock_update_labels_tags.call_count, 3)
 
         mock_update_labels_tags.assert_has_calls([
-            mock.call(datasets[consts.CLEAN], self.labels_and_tags, {
-                'de-identified': 'true',
-                'phase': consts.CLEAN
-            }),
-            mock.call(datasets[consts.STAGING], self.labels_and_tags, {
-                'de-identified': 'true',
-                'phase': consts.STAGING
-            }),
-            mock.call(datasets[consts.SANDBOX], self.labels_and_tags, {
-                'de-identified': 'false',
-                'phase': consts.SANDBOX
-            }),
+            mock.call(datasets[consts.CLEAN], self.labels_and_tags,
+                      mocked_labels[0]),
+            mock.call(datasets[consts.STAGING], self.labels_and_tags,
+                      mocked_labels[1]),
+            mock.call(datasets[consts.SANDBOX], self.labels_and_tags,
+                      mocked_labels[2]),
         ])
 
     @mock.patch('tools.create_tier.create_schemaed_snapshot_dataset')
