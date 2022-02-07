@@ -2,7 +2,7 @@
 Integration test for cancer_concept_suppression module
 
 This rule sandboxes and suppresses reccords whose concept_codes end in 
-'History_WhichConditions', 'Condition_OtherCancer', ‘History_AdditionalDiagnosis’,
+'History_WhichConditions', 'History_AdditionalDiagnosis',
 and 'OutsideTravel6MonthsWhere'.
 
 Runs on the controlled tier.
@@ -126,12 +126,14 @@ class CancerConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
             'fq_sandbox_table_name':
                 self.fq_sandbox_table_names[0],
             'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-            'sandboxed_ids': [1, 2, 3, 4, 5, 6, 7],
+            'sandboxed_ids': [1, 2, 3, 6, 7],
             'fields': [
                 'observation_id', 'person_id', 'observation_concept_id',
                 'observation_date', 'observation_type_concept_id'
             ],
-            'cleaned_values': [(8, 8, 10821410, self.date, 8),
+            'cleaned_values': [(4, 4, 43529627, self.date, 4),
+                               (5, 5, 43529625, self.date, 5),
+                               (8, 8, 10821410, self.date, 8),
                                (9, 9, 42181902, self.date, 9),
                                (10, 10, 24182910, self.date, 10)]
         }]

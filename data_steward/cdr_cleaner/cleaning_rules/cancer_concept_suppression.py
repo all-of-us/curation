@@ -1,6 +1,6 @@
 """
-This rule sandboxes and suppresses reccords whose concept_codes end in 
-'History_WhichConditions', 'Condition_OtherCancer', ‘History_AdditionalDiagnosis’,
+This rule sandboxes and suppresses records whose concept_codes end in 
+'History_WhichConditions', 'History_AdditionalDiagnosis',
 and 'OutsideTravel6MonthsWhere'.
 
 Runs on the controlled tier.
@@ -30,7 +30,7 @@ CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_id}}.{{concept_suppression_loo
 SELECT  c.*
 FROM `{{project_id}}.{{dataset_id}}.concept` c
 WHERE REGEXP_CONTAINS(c.concept_code, 
-    r'(History_WhichConditions)|(Condition_OtherCancer)|(History_AdditionalDiagnosis)|(OutsideTravel6MonthWhere)'
+    r'(History_WhichConditions)|(History_AdditionalDiagnosis)|(OutsideTravel6MonthWhere)'
 )
 """)
 
