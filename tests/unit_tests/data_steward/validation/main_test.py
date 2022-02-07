@@ -400,9 +400,11 @@ class ValidationMainTest(TestCase):
         mock_folder_items.assert_called_once_with(
             mock_client.get_bucket_items_metadata.return_value, submission_path)
         mock_validation.assert_called()
-        mock_validation.assert_called_once_with(fake_hpo, 'fake_bucket_name',
-                                                mock_folder_items.return_value,
-                                                submission_path)
+        mock_validation.assert_called_once_with(
+            fake_hpo,
+            mock_bucket,  #'fake_bucket_name',
+            mock_folder_items.return_value,
+            submission_path)
         mock_run_achilles.assert_called()
         mock_export.assert_called()
         mock_export.assert_called_once_with(datasource_id=fake_hpo,
