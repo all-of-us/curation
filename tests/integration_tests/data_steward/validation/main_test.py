@@ -281,9 +281,9 @@ class ValidationMainTest(unittest.TestCase):
                                      self.folder_prefix)
         # Create duplicates
         job = self.bq_client.query(
-            f'INSERT INTO {self.project_id}.{self.bigquery_dataset_id}.{self.hpo_id}_{common.PII_NAME} '
+            f'INSERT INTO {self.project_id}.{self.dataset_id}.{self.hpo_id}_{common.PII_NAME} '
             f'(person_id, first_name, middle_name, last_name, suffix, prefix) '
-            f'SELECT * FROM {self.project_id}.{self.bigquery_dataset_id}.{self.hpo_id}_{common.PII_NAME}'
+            f'SELECT * FROM {self.project_id}.{self.dataset_id}.{self.hpo_id}_{common.PII_NAME}'
         )
         job.result()
 
@@ -297,6 +297,7 @@ class ValidationMainTest(unittest.TestCase):
             self.hpo_id, result_data)
         self.assertListEqual(expected_duplicate_tables, actual_duplicate_tables)
 
+    @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     @mock.patch('api_util.check_cron')
     def test_pii_files_loaded(self, mock_check_cron):
         # tests if pii files are loaded
