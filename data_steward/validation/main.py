@@ -168,12 +168,16 @@ def _upload_achilles_files(hpo_id=None, folder_prefix='', target_bucket=None):
     results = []
     project_id = app_identity.get_application_id()
     storage_client = StorageClient(project_id)
-    if not target_bucket and not hpo_id: # might be ~not~ hpo_id
-        raise RuntimeError(f"Either hpo_id or target_bucket must be specified")
 
+    if not target_bucket:
+        if not hpo_id:
+            raise RuntimeError(
+                f"Either hpo_id or target_bucket must be specified")
+        target_bucket = storage_client.get_hpo_bucket(hpo_id)
     logging.info(
         f"Uploading achilles index files to 'gs://{target_bucket.name}/{folder_prefix}'"
     )
+
     for filename in resources.ACHILLES_INDEX_FILES:
         logging.info(
             f"Uploading achilles file '{filename}' to bucket {target_bucket.name}"
