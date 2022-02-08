@@ -106,6 +106,7 @@ class StorageClient(Client):
 
         try:
             bucket = self.bucket(bucket_name)
+            self.get_bucket_items_metadata(bucket)
         except NotFound:
             raise BucketDoesNotExistError(
                 f"Failed to acquire bucket '{bucket_name}' for hpo '{hpo_id}'",
