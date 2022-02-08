@@ -101,9 +101,8 @@ class StorageClient(Client):
             # error is logged as a WARNING or higher, this will trigger a
             # GCP alert.
             raise BucketNotSet(
-                f"Bucket '{bucket_name}' for hpo '{hpo_id}' is unset/empty, or '{hpo_id}' has multiple records "
-                f'in {self.project}.{LOOKUP_TABLES_DATASET_ID}.{HPO_ID_BUCKET_NAME_TABLE_ID}.'
-            )
+                f"Bucket '{bucket_name}' for hpo '{hpo_id}' is unset/empty, "
+                f"or it has multiple records in the lookup table")
 
         try:
             bucket = self.bucket(bucket_name)

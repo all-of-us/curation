@@ -39,7 +39,9 @@ class GCSTest(TestCase):
     @patch('gcloud.gcs.StorageClient._get_hpo_bucket_id')
     def test_get_hpo_bucket_not_set(self, mock_get_hpo_bucket_id):
         mock_get_hpo_bucket_id.side_effect = [None, '', 'None']
-        expected_message = lambda bucket: f"Bucket '{bucket}' for hpo '{self.hpo_id}' is unset/empty"
+        expected_message = lambda bucket: (
+            f"Bucket '{bucket}' for hpo '{self.hpo_id}' is unset/empty, "
+            f"or it has multiple records in the lookup table")
 
         # Test case 1 ... _get_hpo_bucket() returns None
         with self.assertRaises(BucketNotSet) as e:
