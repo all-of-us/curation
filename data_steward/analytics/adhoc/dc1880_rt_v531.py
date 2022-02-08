@@ -77,17 +77,7 @@ execute(q)
 # ## Verify schema
 # The output dataset must have (at minimum) all the cdm tables.
 # For each, all fields must have the expected name, type, mode.
-
-# +
-
-COLUMNS_QUERY_TPL = JINJA_ENV.from_string('''
-SELECT 
- *
-FROM `{{ project_id }}.{{ dataset_id }}.INFORMATION_SCHEMA.COLUMNS`
-WHERE 1=1
- AND is_system_defined = 'NO'
-ORDER BY table_name ASC, ordinal_position ASC
-''')
+# -
 
 COLUMNS_QUERY_TPL = JINJA_ENV.from_string('''
 SELECT 
@@ -103,21 +93,20 @@ ORDER BY table_name ASC, ordinal_position ASC
 q = COLUMNS_QUERY_TPL.render(project_id=project_id, dataset_id=dataset_id)
 df = execute(q)
 g = df.groupby(['table_name'])
-# -
 
 for root, dirs, files in os.walk(resources.cdm_fields_path):
     for filename in files:
         table_name, _ = filename.split('.')
-        print(f'Verifing {table_name}...')
+        print(f'Verifing {table_name} schema...')
         cols_df = g.get_group(table_name)
-        expect_fields = resources.fields_for(table_name)
+        rsrc_fields = resources.fields_for(table_name)
         actual_fields = list(cols_df.to_dict('records'))
-        if table_name in ['source_to_concept_map']:
-            print('  skipped')
-            continue
-        for i in range(1, len(expect_fields)):
-            expect, actual = expect_fields[i], actual_fields[i]
-            expect['type'] = BIGQUERY_DATA_TYPES.get(expect['type'])
-            assert(expect['name'] == actual['column_name'])
-            assert(expect['mode'] == actual['mode'])
-            assert(expect['type'] == actual['type'])
+        expect = dict(table_name=table_name)
+        for i in range(0, len(rsrc_fields)):
+            rsrc, actual = rsrc_fields[i], actual_fields[i]
+            expect['mode'] = rsrc['mode']
+            expect['type'] = BIGQUERY_DATA_TYPES.get(rsrc['type'])
+            expect['column_name'] = rsrc['name']
+            
+            if expect != actual:
+                print(f'Expected {expect} but actual was {actual}')
