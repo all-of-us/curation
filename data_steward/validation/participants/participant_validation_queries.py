@@ -207,7 +207,7 @@ CREATE_COMPARISON_FUNCTION_QUERIES = [{
     'name': 'CompareName',
     'query': CREATE_NAME_COMPARISON_FUNCTION
 }, {
-    'name': 'CompareStreetAddress',
+    'name': 'CompareStreet',
     'query': CREATE_STREET_COMPARISON_FUNCTION
 }, {
     'name': 'CompareCity',
