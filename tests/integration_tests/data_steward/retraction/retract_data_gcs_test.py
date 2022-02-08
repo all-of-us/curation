@@ -44,7 +44,7 @@ class RetractDataGcsTest(TestCase):
 
     @patch('retraction.retract_data_gcs.extract_pids_from_table')
     def test_integration_five_person_data_retraction_skip(
-            self, mock_extract_pids):
+        self, mock_extract_pids):
         mock_extract_pids.return_value = self.skip_pids
         lines_to_remove = {}
         expected_lines_post = {}
