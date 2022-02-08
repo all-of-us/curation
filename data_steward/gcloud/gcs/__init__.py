@@ -101,7 +101,9 @@ class StorageClient(Client):
             # error is logged as a WARNING or higher, this will trigger a
             # GCP alert.
             raise BucketNotSet(
-                f"Bucket '{bucket_name}' for hpo '{hpo_id}' is unset/empty")
+                f"Bucket '{bucket_name}' for hpo '{hpo_id}' is unset/empty, or '{hpo_id}' has multiple records "
+                f'in {self.project}.{LOOKUP_TABLES_DATASET_ID}.{HPO_ID_BUCKET_NAME_TABLE_ID}.'
+            )
 
         try:
             bucket = self.bucket(bucket_name)
@@ -157,10 +159,10 @@ class StorageClient(Client):
 
     def _get_hpo_bucket_id(self, hpo_id: str) -> str:
         """
-        Get the name of an HPO site's private bucket
-        Empty/unset bucket indicates that the bucket is intentionally left blank and can be ignored
+        Get the name of an HPO site's private bucket.
         :param hpo_id: id of the HPO site
-        :return: name of the bucket
+        :return: name of the bucket, or str 'None' if (1) no matching record is found
+        or (2) multiple records are found in the lookup table.
         """
         service = os.environ.get('GAE_SERVICE', 'default')
 
@@ -175,9 +177,6 @@ class StorageClient(Client):
         result_filtered = result_df[condition_hpo_id & condition_service]
 
         if result_filtered['bucket_name'].count() != 1:
-            raise BucketNotSet(
-                f'{len(result_filtered)} buckets are returned for {hpo_id} '
-                f'in {self.project}.{LOOKUP_TABLES_DATASET_ID}.{HPO_ID_BUCKET_NAME_TABLE_ID}.'
-            )
+            return 'None'
 
         return result_filtered['bucket_name'].iloc[0]

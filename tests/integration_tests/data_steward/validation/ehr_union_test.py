@@ -64,7 +64,6 @@ class EhrUnionTest(unittest.TestCase):
 
         self.ehr_cutoff_date = '2022-01-05'
 
-    @mock.patch("gcs_utils.LOOKUP_TABLES_DATASET_ID", dataset_id)
     @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def _empty_hpo_buckets(self):
 
@@ -79,7 +78,6 @@ class EhrUnionTest(unittest.TestCase):
                               dataset_id=dataset_id)
         return table_id
 
-    @mock.patch("gcs_utils.LOOKUP_TABLES_DATASET_ID", dataset_id)
     @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def _load_datasets(self):
         """
