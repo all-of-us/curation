@@ -54,6 +54,9 @@ class ValidationMainTest(unittest.TestCase):
 
         self.storage_client = StorageClient(self.project_id)
         self.hpo_bucket = self.storage_client.get_hpo_bucket(self.hpo_id)
+        self.drc_bucket = self.storage_client.get_drc_bucket()
+
+        self.storage_client.empty_bucket(self.drc_bucket)
         self.storage_client.empty_bucket(self.hpo_bucket)
 
         test_util.delete_all_tables(self.dataset_id)
@@ -234,8 +237,6 @@ class ValidationMainTest(unittest.TestCase):
             test_blob = self.hpo_bucket.blob(blob_name)
             test_blob.upload_from_filename(cdm_pathfile)
 
-        drc_bucket = self.storage_client.get_drc_bucket()
-
         main.app.testing = True
         with main.app.test_client() as c:
             c.get(test_util.COPY_HPO_FILES_URL)
@@ -250,7 +251,7 @@ class ValidationMainTest(unittest.TestCase):
             ])
 
             raw_metadata: list = self.storage_client.get_bucket_items_metadata(
-                drc_bucket)
+                self.drc_bucket)
             actual_metadata: list = [item['name'] for item in raw_metadata]
             self.assertSetEqual(set(expected_metadata), set(actual_metadata))
 
