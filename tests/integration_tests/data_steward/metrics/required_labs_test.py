@@ -14,7 +14,7 @@ import resources
 import validation.sql_wrangle as sql_wrangle
 from utils import bq
 from tests import test_util
-from tests.test_util import (FAKE_HPO_ID)
+from tests.test_util import FAKE_HPO_ID
 from validation.metrics import required_labs as required_labs
 from validation.metrics.required_labs import (
     MEASUREMENT_CONCEPT_SETS_TABLE, MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE)
@@ -22,16 +22,19 @@ from validation.metrics.required_labs import (
 
 class RequiredLabsTest(unittest.TestCase):
 
+    dataset_id = bq_utils.get_dataset_id()
+
     @classmethod
     def setUpClass(cls):
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
+        test_util.setup_hpo_id_bucket_name_table(cls.dataset_id)
 
+    @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def setUp(self):
         # Ids
         self.project_id = app_identity.get_application_id()
-        self.dataset_id = bq_utils.get_dataset_id()
         self.folder_prefix = '2019-01-01/'
         # Clients
         self.storage_client = StorageClient(self.project_id)
@@ -52,6 +55,10 @@ class RequiredLabsTest(unittest.TestCase):
     def tearDown(self):
         self.storage_client.empty_bucket(self.hpo_bucket)
         test_util.delete_all_tables(bq_utils.get_dataset_id())
+
+    @classmethod
+    def tearDownClass(cls):
+        test_util.drop_hpo_id_bucket_name_table(cls.dataset_id)
 
     def _load_data(self):
 

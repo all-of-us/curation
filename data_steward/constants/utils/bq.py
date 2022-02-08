@@ -9,6 +9,11 @@ HPO_SITE_ID_MAPPINGS_TABLE_ID = 'hpo_site_id_mappings'
 HPO_ID_BUCKET_NAME_TABLE_ID = 'hpo_id_bucket_name'
 HPO_ID_CONTACT_LIST_TABLE_ID = 'hpo_id_contact_list'
 
+# Query to select all from a specified table
+SELECT_ALL_QUERY = """
+SELECT * FROM `{{project_id}}.{{dataset_id}}.{{table_id}}`
+"""
+
 # Validation dataset prefix
 VALIDATION_PREFIX = 'validation'
 VALIDATION_DATASET_FORMAT = 'validation_{}'

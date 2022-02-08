@@ -4,6 +4,7 @@ import unittest
 import app_identity
 import bq_utils
 from gcloud.gcs import StorageClient
+import mock
 import resources
 from tests import test_util
 from validation import achilles
@@ -16,12 +17,16 @@ ACHILLES_RESULTS_COUNT = 2773
 
 class AchillesTest(unittest.TestCase):
 
+    dataset_id = bq_utils.get_dataset_id()
+
     @classmethod
     def setUpClass(cls):
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
+        test_util.setup_hpo_id_bucket_name_table(cls.dataset_id)
 
+    @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def setUp(self):
         self.project_id = app_identity.get_application_id()
         self.storage_client = StorageClient(self.project_id)
@@ -29,12 +34,18 @@ class AchillesTest(unittest.TestCase):
             test_util.FAKE_HPO_ID)
 
         self.storage_client.empty_bucket(self.hpo_bucket)
-        test_util.delete_all_tables(bq_utils.get_dataset_id())
+        test_util.delete_all_tables(self.dataset_id)
 
     def tearDown(self):
-        test_util.delete_all_tables(bq_utils.get_dataset_id())
+        test_util.delete_all_tables(self.dataset_id)
         self.storage_client.empty_bucket(self.hpo_bucket)
 
+    @classmethod
+    def tearDownClass(cls):
+        test_util.drop_hpo_id_bucket_name_table(cls.dataset_id)
+
+    @mock.patch("gcs_utils.LOOKUP_TABLES_DATASET_ID", dataset_id)
+    @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def _load_dataset(self):
         for cdm_table in resources.CDM_TABLES:
             cdm_filename: str = f'{cdm_table}.csv'

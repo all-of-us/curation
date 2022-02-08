@@ -25,12 +25,17 @@ from validation.metrics import required_labs
 
 class ValidationMainTest(unittest.TestCase):
 
+    dataset_id = bq_utils.get_dataset_id()
+
     @classmethod
     def setUpClass(cls):
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
+        test_util.setup_hpo_id_bucket_name_table(cls.dataset_id)
 
+    @mock.patch("gcs_utils.LOOKUP_TABLES_DATASET_ID", dataset_id)
+    @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def setUp(self):
         self.hpo_id = test_util.FAKE_HPO_ID
         self.hpo_bucket = gcs_utils.get_hpo_bucket(self.hpo_id)
@@ -42,15 +47,14 @@ class ValidationMainTest(unittest.TestCase):
         self.mock_get_hpo_name.return_value = 'Fake HPO'
         self.addCleanup(mock_get_hpo_name.stop)
 
-        self.bigquery_dataset_id = bq_utils.get_dataset_id()
         self.folder_prefix = '2019-01-01-v1/'
 
         self.storage_client = StorageClient(self.project_id)
         self.storage_bucket = self.storage_client.get_bucket(self.hpo_bucket)
         self.storage_client.empty_bucket(self.hpo_bucket)
 
-        test_util.delete_all_tables(self.bigquery_dataset_id)
-        self._create_drug_class_table(self.bigquery_dataset_id)
+        test_util.delete_all_tables(self.dataset_id)
+        self._create_drug_class_table(self.dataset_id)
 
     @staticmethod
     def _create_drug_class_table(bigquery_dataset_id):
@@ -101,6 +105,8 @@ class ValidationMainTest(unittest.TestCase):
         tpe = time_partitioning.get('type')
         self.assertEqual(tpe, 'DAY')
 
+    @mock.patch("gcs_utils.LOOKUP_TABLES_DATASET_ID", dataset_id)
+    @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def test_all_files_unparseable_output(self):
         # TODO possible bug: if no pre-existing table, results in bq table not found error
         for cdm_table in common.SUBMISSION_FILES:
@@ -136,6 +142,8 @@ class ValidationMainTest(unittest.TestCase):
                                      self.folder_prefix)
         self.assertCountEqual(expected_warnings, r['warnings'])
 
+    @mock.patch("gcs_utils.LOOKUP_TABLES_DATASET_ID", dataset_id)
+    @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     @mock.patch('api_util.check_cron')
     def test_validate_five_persons_success(self, mock_check_cron):
         expected_results: list = []
@@ -198,6 +206,7 @@ class ValidationMainTest(unittest.TestCase):
                                              force_process=True)
         self.assertEqual(result, self.folder_prefix)
 
+    @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     @mock.patch('api_util.check_cron')
     def test_copy_five_persons(self, mock_check_cron):
         # upload all five_persons files
@@ -231,8 +240,10 @@ class ValidationMainTest(unittest.TestCase):
             self.assertSetEqual(set(expected_bucket_items),
                                 set(actual_bucket_items))
 
+    @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
+    @mock.patch("gcs_utils.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def test_target_bucket_upload(self):
-        bucket_nyc = gcs_utils.get_hpo_bucket('nyc')
+        bucket_nyc = gcs_utils.get_hpo_bucket(test_util.NYC_HPO_ID)
         folder_prefix = 'test-folder-fake/'
         self.storage_client.empty_bucket(bucket_nyc)
 
@@ -247,6 +258,8 @@ class ValidationMainTest(unittest.TestCase):
         ])
         self.assertSetEqual(expected_bucket_files, actual_bucket_files)
 
+    @mock.patch("gcs_utils.LOOKUP_TABLES_DATASET_ID", dataset_id)
+    @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     @mock.patch('api_util.check_cron')
     def test_pii_files_loaded(self, mock_check_cron):
         # tests if pii files are loaded
@@ -277,6 +290,8 @@ class ValidationMainTest(unittest.TestCase):
                                      self.folder_prefix)
         self.assertSetEqual(set(expected_results), set(r['results']))
 
+    @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
+    @mock.patch("gcs_utils.LOOKUP_TABLES_DATASET_ID", dataset_id)
     @mock.patch('validation.main.updated_datetime_object')
     @mock.patch('validation.main._has_all_required_files')
     @mock.patch('validation.main.all_required_files_loaded')
@@ -304,10 +319,10 @@ class ValidationMainTest(unittest.TestCase):
 
         # Load measurement_concept_sets
         required_labs.load_measurement_concept_sets_table(
-            project_id=self.project_id, dataset_id=self.bigquery_dataset_id)
+            project_id=self.project_id, dataset_id=self.dataset_id)
         # Load measurement_concept_sets_descendants
         required_labs.load_measurement_concept_sets_descendants_table(
-            project_id=self.project_id, dataset_id=self.bigquery_dataset_id)
+            project_id=self.project_id, dataset_id=self.dataset_id)
 
         main.app.testing = True
         with main.app.test_client() as c:
@@ -367,9 +382,15 @@ class ValidationMainTest(unittest.TestCase):
         self.assertTrue(len(submitted_labs) > 0)
         self.assertTrue(len(missing_labs) > 0)
 
+    @mock.patch("gcs_utils.LOOKUP_TABLES_DATASET_ID", dataset_id)
+    @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def tearDown(self):
         self.storage_client.empty_bucket(self.hpo_bucket)
-        bucket_nyc = gcs_utils.get_hpo_bucket('nyc')
+        bucket_nyc = gcs_utils.get_hpo_bucket(test_util.NYC_HPO_ID)
         self.storage_client.empty_bucket(bucket_nyc)
         self.storage_client.empty_bucket(gcs_utils.get_drc_bucket())
-        test_util.delete_all_tables(self.bigquery_dataset_id)
+        test_util.delete_all_tables(self.dataset_id)
+
+    @classmethod
+    def tearDownClass(cls):
+        test_util.drop_hpo_id_bucket_name_table(cls.dataset_id)

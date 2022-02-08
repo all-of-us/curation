@@ -12,14 +12,12 @@ import common
 from constants.tools import combine_ehr_rdr
 from constants.validation import ehr_union as eu_constants
 from gcloud.gcs import StorageClient
-import gcs_utils
 import resources
 import tests.test_util as test_util
+from tests.test_util import FAKE_HPO_ID, NYC_HPO_ID, PITT_HPO_ID
 from validation import ehr_union
 
-PITT_HPO_ID = 'pitt'
-NYC_HPO_ID = 'nyc'
-EXCLUDED_HPO_ID = 'fake'
+EXCLUDED_HPO_ID = FAKE_HPO_ID
 SUBQUERY_FAIL_MSG = '''
 Test {expr} in {table} subquery
  Expected: {expected}
@@ -35,11 +33,14 @@ def first_or_none(l):
 
 class EhrUnionTest(unittest.TestCase):
 
+    dataset_id = bq_utils.get_dataset_id()
+
     @classmethod
     def setUpClass(cls):
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
+        test_util.setup_hpo_id_bucket_name_table(cls.dataset_id)
 
     def setUp(self):
         self.project_id = bq_utils.app_identity.get_application_id()
@@ -53,7 +54,7 @@ class EhrUnionTest(unittest.TestCase):
         # Collect all primary key fields in CDM tables
         mapped_fields = []
         for table in cdm.tables_to_map():
-            field = table + '_id'
+            field = f'{table}_id'
             mapped_fields.append(field)
         self.mapped_fields = mapped_fields
         self.implemented_foreign_keys = [
@@ -63,9 +64,11 @@ class EhrUnionTest(unittest.TestCase):
 
         self.ehr_cutoff_date = '2022-01-05'
 
+    @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def _empty_hpo_buckets(self):
+
         for hpo_id in self.hpo_ids:
-            bucket = gcs_utils.get_hpo_bucket(hpo_id)
+            bucket = self.storage_client.get_hpo_bucket(hpo_id)
             self.storage_client.empty_bucket(bucket)
 
     def _create_hpo_table(self, hpo_id, table, dataset_id):
@@ -75,6 +78,7 @@ class EhrUnionTest(unittest.TestCase):
                               dataset_id=dataset_id)
         return table_id
 
+    @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def _load_datasets(self):
         """
         Load five persons data for nyc and pitt test hpo and rdr data for the excluded_hpo
@@ -101,17 +105,16 @@ class EhrUnionTest(unittest.TestCase):
                     ]:
                         cdm_filepath: str = os.path.join(
                             test_util.RDR_PATH, cdm_filename)
-                bucket: str = gcs_utils.get_hpo_bucket(hpo_id)
-                gcs_bucket = self.storage_client.get_bucket(bucket)
+                hpo_bucket = self.storage_client.get_hpo_bucket(hpo_id)
                 if os.path.exists(cdm_filepath):
 
                     csv_rows = resources.csv_to_list(cdm_filepath)
-                    cdm_blob = gcs_bucket.blob(cdm_filename)
+                    cdm_blob = hpo_bucket.blob(cdm_filename)
                     cdm_blob.upload_from_filename(cdm_filepath)
 
                 else:
                     # results in empty table
-                    cdm_blob = gcs_bucket.blob(cdm_filename)
+                    cdm_blob = hpo_bucket.blob(cdm_filename)
                     cdm_blob.upload_from_string('dummy\n')
                     csv_rows: list = []
                 # load table from csv
@@ -119,6 +122,7 @@ class EhrUnionTest(unittest.TestCase):
                 running_jobs.append(result['jobReference']['jobId'])
                 if hpo_id != EXCLUDED_HPO_ID:
                     expected_tables[output_table] += list(csv_rows)
+
         # ensure person to observation output is as expected
         output_table_person: str = ehr_union.output_table_for(common.PERSON)
         output_table_observation: str = ehr_union.output_table_for(
@@ -560,3 +564,7 @@ class EhrUnionTest(unittest.TestCase):
         self._empty_hpo_buckets()
         test_util.delete_all_tables(self.input_dataset_id)
         test_util.delete_all_tables(self.output_dataset_id)
+
+    @classmethod
+    def tearDownClass(cls):
+        test_util.drop_hpo_id_bucket_name_table(cls.dataset_id)

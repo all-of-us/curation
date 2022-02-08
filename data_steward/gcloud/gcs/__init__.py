@@ -11,9 +11,13 @@ from google.cloud.exceptions import NotFound
 from google.auth import default
 from google.cloud.storage.bucket import Bucket, Blob
 from google.cloud.storage.client import Client
+from pandas.core.frame import DataFrame
 
 # Project imports
+from common import JINJA_ENV
+from constants.utils.bq import SELECT_ALL_QUERY, LOOKUP_TABLES_DATASET_ID, HPO_ID_BUCKET_NAME_TABLE_ID
 from utils import auth
+from utils.bq import query
 from validation.app_errors import BucketDoesNotExistError, BucketNotSet
 
 
@@ -37,6 +41,7 @@ class StorageClient(Client):
         if scopes:
             credentials, project_id = default()
             credentials = auth.delegated_credentials(credentials, scopes=scopes)
+
         super().__init__(project=project_id, credentials=credentials)
 
     def get_bucket_items_metadata(self, bucket: Bucket) -> list:
@@ -86,7 +91,7 @@ class StorageClient(Client):
         Get the name of an HPO site's private bucket
         Empty/unset bucket indicates that the bucket is intentionally left blank and can be ignored
         :param hpo_id: id of the HPO site
-        :return: name of the bucket
+        :return: bucket
         """
         bucket_name: str = self._get_hpo_bucket_id(hpo_id)
 
@@ -96,7 +101,8 @@ class StorageClient(Client):
             # error is logged as a WARNING or higher, this will trigger a
             # GCP alert.
             raise BucketNotSet(
-                f"Bucket '{bucket_name}' for hpo '{hpo_id}' is unset/empty")
+                f"Bucket '{bucket_name}' for hpo '{hpo_id}' is unset/empty, "
+                f"or it has multiple records in the lookup table")
 
         try:
             bucket = self.bucket(bucket_name)
@@ -151,5 +157,25 @@ class StorageClient(Client):
         return list(pg_iterator)
 
     def _get_hpo_bucket_id(self, hpo_id: str) -> str:
-        # TODO reconsider how to map bucket name
-        return os.environ.get(f'BUCKET_NAME_{hpo_id.upper()}')
+        """
+        Get the name of an HPO site's private bucket.
+        :param hpo_id: id of the HPO site
+        :return: name of the bucket, or str 'None' if (1) no matching record is found
+        or (2) multiple records are found in the lookup table.
+        """
+        service = os.environ.get('GAE_SERVICE', 'default')
+
+        hpo_bucket_query = JINJA_ENV.from_string(SELECT_ALL_QUERY).render(
+            project_id=self.project,
+            dataset_id=LOOKUP_TABLES_DATASET_ID,
+            table_id=HPO_ID_BUCKET_NAME_TABLE_ID)
+
+        result_df: DataFrame = query(hpo_bucket_query)
+        condition_hpo_id = (result_df['hpo_id'] == hpo_id)
+        condition_service = (result_df['service'] == service)
+        result_filtered = result_df[condition_hpo_id & condition_service]
+
+        if result_filtered['bucket_name'].count() != 1:
+            return 'None'
+
+        return result_filtered['bucket_name'].iloc[0]

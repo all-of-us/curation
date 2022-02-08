@@ -5,6 +5,8 @@ import time
 import unittest
 from io import open
 
+import mock
+
 import bq_utils
 import common
 import app_identity
@@ -12,22 +14,25 @@ from gcloud.gcs import StorageClient
 from google.cloud.storage.bucket import Bucket, Blob
 import resources
 from tests import test_util
-from tests.test_util import (FAKE_HPO_ID, FIVE_PERSONS_PERSON_CSV,
+from tests.test_util import (FAKE_HPO_ID, FIVE_PERSONS_PERSON_CSV, PITT_HPO_ID,
                              PITT_FIVE_PERSONS_OBSERVATION_CSV)
 from validation.achilles import ACHILLES_TABLES
 
 
 class BqUtilsTest(unittest.TestCase):
 
+    dataset_id = bq_utils.get_dataset_id()
+
     @classmethod
     def setUpClass(cls):
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
+        test_util.setup_hpo_id_bucket_name_table(cls.dataset_id)
 
+    @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def setUp(self):
         self.person_table_id = bq_utils.get_table_id(FAKE_HPO_ID, common.PERSON)
-        self.dataset_id = bq_utils.get_dataset_id()
         test_util.delete_all_tables(self.dataset_id)
         self.project_id = app_identity.get_application_id()
         self.TEST_FIELDS = [
@@ -117,6 +122,8 @@ class BqUtilsTest(unittest.TestCase):
                                         locals())
         self.assertEqual(query_response['kind'], 'bigquery#queryResponse')
 
+    @mock.patch("gcs_utils.LOOKUP_TABLES_DATASET_ID", dataset_id)
+    @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def test_load_cdm_csv(self):
         table_blob: Blob = self.hpo_bucket.blob('person.csv')
         with open(FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
@@ -133,6 +140,8 @@ class BqUtilsTest(unittest.TestCase):
         num_rows = table_info.get('numRows')
         self.assertEqual(num_rows, '5')
 
+    @mock.patch("gcs_utils.LOOKUP_TABLES_DATASET_ID", dataset_id)
+    @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def test_query_result(self):
         table_blob: Blob = self.hpo_bucket.blob('person.csv')
         with open(FIVE_PERSONS_PERSON_CSV, 'rb') as fp:
@@ -194,8 +203,10 @@ class BqUtilsTest(unittest.TestCase):
             # sanity check
             self.assertTrue(bq_utils.table_exists(table_id))
 
+    @mock.patch("gcs_utils.LOOKUP_TABLES_DATASET_ID", dataset_id)
+    @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def test_load_ehr_observation(self):
-        hpo_id = 'pitt'
+        hpo_id = PITT_HPO_ID
         dataset_id = self.dataset_id
         table_id = bq_utils.get_table_id(hpo_id, table_name='observation')
         q = 'SELECT observation_id FROM {dataset_id}.{table_id} ORDER BY observation_id'.format(
@@ -365,3 +376,7 @@ class BqUtilsTest(unittest.TestCase):
     def tearDown(self):
         test_util.delete_all_tables(self.dataset_id)
         self.client.empty_bucket(self.hpo_bucket)
+
+    @classmethod
+    def tearDownClass(cls):
+        test_util.drop_hpo_id_bucket_name_table(cls.dataset_id)
