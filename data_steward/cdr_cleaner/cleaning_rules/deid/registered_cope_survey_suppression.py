@@ -58,10 +58,53 @@ from cdr_cleaner.cleaning_rules.deid.concept_suppression import \
 LOGGER = logging.getLogger(__name__)
 
 REGISTERED_COPE_SURVEY_SUPPRESS_CONCEPT_LIST = [
-    1310058, 1310065, 1333012, 1333234, 702686, 1333327, 1333118, 1310054,
-    1333326, 1310066, 596884, 596885, 596886, 596887, 596888, 596889, 1310137,
-    1310146, 1333016, 715714, 1310147, 715724, 715725, 715726, 1332742, 1333324,
-    1333014, 715711, 1310148, 1310145, 1310144
+    596884,
+    596885,
+    596886,
+    596887,
+    596888,
+    596889,
+    702686,
+    715711,
+    715714,
+    715724,
+    715725,
+    715726,
+    1310054,
+    1310058,
+    1310065,
+    1310066,
+    1310137,
+    1310144,
+    1310145,
+    1310146,
+    1310147,
+    1310148,
+    1332742,
+    1333012,
+    1333014,
+    1333016,
+    1333118,
+    1333234,
+    1333324,
+    1333326,
+    1333327,
+    # DC-2109
+    765938,
+    765939,
+    765940,
+    765941,
+    765942,
+    765943,
+    765944,
+    765945,
+    765946,
+    765947,
+    765948,
+    765949,
+    765950,
+    765951,
+    765952
 ]
 
 
@@ -83,7 +126,7 @@ class RegisteredCopeSurveyQuestionsSuppression(
         desc = f'Any record with an observation_source_concept_id equal to any concept_id in ' \
                f'{REGISTERED_COPE_SURVEY_SUPPRESS_CONCEPT_LIST} will be sandboxed and dropped from observation table.'
         super().__init__(issue_numbers=[
-            'DC1666', 'DC1740', 'DC1745', 'DC1747', 'DC1750', 'DC1783'
+            'DC1666', 'DC1740', 'DC1745', 'DC1747', 'DC1750', 'DC1783', 'DC2109'
         ],
                          description=desc,
                          affected_datasets=[cdr_consts.REGISTERED_TIER_DEID],
