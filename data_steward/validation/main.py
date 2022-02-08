@@ -742,7 +742,7 @@ def _validation_done(bucket, folder: str):
 def basename(item_metadata):
     """returns name of file inside folder
 
-    :item_metadata: metadata as returned by list bucket
+    :item_metadata: metadata as returned by get bucket times metadata
     :returns: name without folder name
 
     """
