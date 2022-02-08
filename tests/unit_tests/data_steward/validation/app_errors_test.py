@@ -77,7 +77,6 @@ class AppErrorHandlersTest(TestCase):
             self.assertEqual(view, app_errors.DEFAULT_VIEW_MESSAGE)
             self.assertTrue(code, app_errors.DEFAULT_ERROR_STATUS)
 
-    @mock.patch('gcs_utils.list_bucket')
     @mock.patch('api_util.check_cron')
     def test_handlers_fire(self, mock_check_cron, mock_list_bucket):
         """

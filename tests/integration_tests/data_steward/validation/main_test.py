@@ -35,7 +35,6 @@ class ValidationMainTest(unittest.TestCase):
         print('**************************************************************')
         test_util.setup_hpo_id_bucket_name_table(cls.dataset_id)
 
-    @mock.patch("gcs_utils.LOOKUP_TABLES_DATASET_ID", dataset_id)
     @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def setUp(self):
         self.hpo_id: str = test_util.FAKE_HPO_ID
@@ -111,7 +110,6 @@ class ValidationMainTest(unittest.TestCase):
         tpe = time_partitioning.get('type')
         self.assertEqual(tpe, 'DAY')
 
-    @mock.patch("gcs_utils.LOOKUP_TABLES_DATASET_ID", dataset_id)
     @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def test_all_files_unparseable_output(self):
         # TODO possible bug: if no pre-existing table, results in bq table not found error
@@ -152,7 +150,6 @@ class ValidationMainTest(unittest.TestCase):
                                                 self.folder_prefix)
         self.assertCountEqual(expected_warnings, actual['warnings'])
 
-    @mock.patch("gcs_utils.LOOKUP_TABLES_DATASET_ID", dataset_id)
     @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     @mock.patch('api_util.check_cron')
     def test_validate_five_persons_success(self, mock_check_cron):
@@ -256,7 +253,6 @@ class ValidationMainTest(unittest.TestCase):
             self.assertSetEqual(set(expected_metadata), set(actual_metadata))
 
     @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
-    @mock.patch("gcs_utils.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def test_target_bucket_upload(self):
         bucket_nyc = self.storage_client.get_hpo_bucket('nyc')
         folder_prefix: str = 'test-folder-fake/'
@@ -442,7 +438,6 @@ class ValidationMainTest(unittest.TestCase):
         self.assertGreater(len(submitted_labs), 0)
         self.assertGreater(len(missing_labs), 0)
 
-    @mock.patch("gcs_utils.LOOKUP_TABLES_DATASET_ID", dataset_id)
     @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def tearDown(self):
         nyc_bucket = self.storage_client.get_hpo_bucket('nyc')
