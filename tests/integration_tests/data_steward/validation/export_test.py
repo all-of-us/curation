@@ -10,7 +10,7 @@ import bq_utils
 import common
 from gcloud.gcs import StorageClient
 from tests import test_util
-from tests.test_util import FAKE_HPO_ID
+from tests.test_util import FAKE_HPO_ID, NYC_HPO_ID
 from validation import export, main
 
 BQ_TIMEOUT_RETRIES = 3
@@ -18,20 +18,22 @@ BQ_TIMEOUT_RETRIES = 3
 
 class ExportTest(unittest.TestCase):
 
+    dataset_id = bq_utils.get_dataset_id()
+
     @classmethod
     def setUpClass(cls):
         print(
             '\n**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
-        dataset_id = bq_utils.get_dataset_id()
-        test_util.delete_all_tables(dataset_id)
+        test_util.setup_hpo_id_bucket_name_table(cls.dataset_id)
+        test_util.delete_all_tables(cls.dataset_id)
         test_util.populate_achilles()
 
+    @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def setUp(self):
         self.project_id = app_identity.get_application_id()
         self.storage_client = StorageClient(self.project_id)
-
         self.hpo_bucket = self.storage_client.get_hpo_bucket(FAKE_HPO_ID)
 
     def _test_report_export(self, report):
@@ -82,6 +84,7 @@ class ExportTest(unittest.TestCase):
         self.assertTrue('MESSAGES' in export_result)
         self.assertEqual(len(export_result['MESSAGES']['ATTRIBUTENAME']), 14)
 
+    @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     @mock.patch('validation.export.is_hpo_id')
     def test_run_export(self, mock_is_hpo_id):
         # validation/main.py INTEGRATION TEST
@@ -119,6 +122,7 @@ class ExportTest(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             main.run_export(datasource_id=None, target_bucket=None)
 
+    @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     @mock.patch('validation.export.is_hpo_id')
     def test_run_export_with_target_bucket_and_datasource_id(
         self, mock_is_hpo_id):
@@ -126,7 +130,7 @@ class ExportTest(unittest.TestCase):
         mock_is_hpo_id.return_value = True
         folder_prefix: str = 'dummy-prefix-2018-03-24/'
 
-        target_bucket = self.storage_client.get_hpo_bucket('nyc')
+        target_bucket = self.storage_client.get_hpo_bucket(NYC_HPO_ID)
         objects: Iterable = target_bucket.list_blobs()
         main.run_export(datasource_id=FAKE_HPO_ID,
                         folder_prefix=folder_prefix,
@@ -152,12 +156,13 @@ class ExportTest(unittest.TestCase):
         }
         self.assertDictEqual(expected_datasources, actual_datasources)
 
+    @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def tearDown(self):
-        bucket_nyc = self.storage_client.get_hpo_bucket('nyc')
+        bucket_nyc = self.storage_client.get_hpo_bucket(NYC_HPO_ID)
         self.storage_client.empty_bucket(bucket_nyc)
         self.storage_client.empty_bucket(self.hpo_bucket)
 
     @classmethod
     def tearDownClass(cls):
-        dataset_id = bq_utils.get_dataset_id()
-        test_util.delete_all_tables(dataset_id)
+        test_util.delete_all_tables(cls.dataset_id)
+        test_util.drop_hpo_id_bucket_name_table(cls.dataset_id)

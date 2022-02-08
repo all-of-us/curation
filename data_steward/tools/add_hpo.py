@@ -43,7 +43,7 @@ SELECT '{org_id}' AS Org_ID, '{hpo_id}' AS HPO_ID, '{hpo_name}' AS Site_Name, {d
 """
 
 ADD_HPO_ID_BUCKET_NAME = """
-SELECT '{hpo_id}' AS hpo_id, '{bucket_name}' AS bucket_name
+SELECT '{hpo_id}' AS hpo_id, '{bucket_name}' AS bucket_name, '{service}' AS service
 """
 
 UPDATE_SITE_MASKING_QUERY = JINJA_ENV.from_string("""
@@ -196,14 +196,16 @@ def add_hpo_mapping(hpo_id, hpo_name, org_id, display_order):
     return query_response
 
 
-def add_hpo_bucket(hpo_id, bucket_name):
+def add_hpo_bucket(hpo_id, bucket_name, service='default'):
     """
     adds hpo bucket name in hpo_bucket_name table.
     :param hpo_id: hpo identifier
     :param bucket_name: bucket name assigned to hpo
     :return:
     """
-    q = ADD_HPO_ID_BUCKET_NAME.format(hpo_id=hpo_id, bucket_name=bucket_name)
+    q = ADD_HPO_ID_BUCKET_NAME.format(hpo_id=hpo_id,
+                                      bucket_name=bucket_name,
+                                      service=service)
     LOGGER.info(f'Adding bucket lookup with the following query:\n {q}\n')
     query_response = bq_utils.query(
         q,
@@ -212,7 +214,12 @@ def add_hpo_bucket(hpo_id, bucket_name):
     return query_response
 
 
-def add_lookups(hpo_id, hpo_name, org_id, bucket_name, display_order=None):
+def add_lookups(hpo_id,
+                hpo_name,
+                org_id,
+                bucket_name,
+                display_order=None,
+                service='default'):
     """
     Add hpo to hpo_site_id_mappings and hpo_id_bucket_name
 
@@ -228,7 +235,7 @@ def add_lookups(hpo_id, hpo_name, org_id, bucket_name, display_order=None):
     else:
         shift_display_orders(display_order)
     add_hpo_mapping(hpo_id, hpo_name, org_id, display_order)
-    add_hpo_bucket(hpo_id, bucket_name)
+    add_hpo_bucket(hpo_id, bucket_name, service)
 
 
 def bucket_access_configured(bucket_name: str) -> bool:

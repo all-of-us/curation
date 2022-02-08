@@ -4,12 +4,17 @@ Wraps Google Cloud Storage JSON API (adapted from https://goo.gl/dRKiYz)
 
 import mimetypes
 import os
-from io import BytesIO
 
 import googleapiclient.discovery
 from deprecated import deprecated
+from pandas.core.frame import DataFrame
 
-from validation.app_errors import BucketDoesNotExistError
+# Project imports
+import app_identity
+from common import JINJA_ENV
+from constants.utils.bq import SELECT_ALL_QUERY, LOOKUP_TABLES_DATASET_ID, HPO_ID_BUCKET_NAME_TABLE_ID
+from utils.bq import query
+from validation.app_errors import BucketNotSet
 
 MIMETYPES = {
     'json': 'application/json',
@@ -35,20 +40,27 @@ def get_hpo_bucket(hpo_id):
     :param hpo_id: id of the HPO site
     :return: name of the bucket
     """
-    # TODO reconsider how to map bucket name
-    bucket_env = 'BUCKET_NAME_' + hpo_id.upper()
-    hpo_bucket_name = os.getenv(bucket_env)
+    project_id = app_identity.get_application_id()
 
-    # App engine converts an env var set but left empty to be the string 'None'
-    if not hpo_bucket_name or hpo_bucket_name.lower() == 'none':
-        # should not use hpo_id in message if sent to end user.  If the
-        # error is logged as a WARNING or higher, this will trigger a
-        # GCP alert.
-        raise BucketDoesNotExistError(
-            f"Failed to fetch bucket '{hpo_bucket_name}' for hpo_id '{hpo_id}'",
-            hpo_bucket_name)
+    service = os.environ.get('GAE_SERVICE', 'default')
 
-    return hpo_bucket_name
+    hpo_bucket_query = JINJA_ENV.from_string(SELECT_ALL_QUERY).render(
+        project_id=project_id,
+        dataset_id=LOOKUP_TABLES_DATASET_ID,
+        table_id=HPO_ID_BUCKET_NAME_TABLE_ID)
+
+    result_df: DataFrame = query(hpo_bucket_query)
+    condition_hpo_id = (result_df['hpo_id'] == hpo_id)
+    condition_service = (result_df['service'] == service)
+    result_filtered = result_df[condition_hpo_id & condition_service]
+
+    if result_filtered['bucket_name'].count() != 1:
+        raise BucketNotSet(
+            f'{len(result_filtered)} buckets are returned for {hpo_id} '
+            f'in {project_id}.{LOOKUP_TABLES_DATASET_ID}.{HPO_ID_BUCKET_NAME_TABLE_ID}.'
+        )
+
+    return result_filtered['bucket_name'].iloc[0]
 
 
 def hpo_gcs_path(hpo_id):

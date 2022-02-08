@@ -6,6 +6,7 @@ from unittest.mock import patch
 
 # Project imports
 import app_identity
+import bq_utils
 from tests import test_util
 from retraction import retract_data_gcs as rd
 from gcloud.gcs import StorageClient
@@ -13,12 +14,16 @@ from gcloud.gcs import StorageClient
 
 class RetractDataGcsTest(TestCase):
 
+    dataset_id = bq_utils.get_dataset_id()
+
     @classmethod
     def setUpClass(cls):
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
+        test_util.setup_hpo_id_bucket_name_table(cls.dataset_id)
 
+    @patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def setUp(self):
         self.project_id = app_identity.get_application_id()
         self.hpo_id = test_util.FAKE_HPO_ID
@@ -147,3 +152,7 @@ class RetractDataGcsTest(TestCase):
 
     def tearDown(self):
         self.client.empty_bucket(self.gcs_bucket)
+
+    @classmethod
+    def tearDownClass(cls):
+        test_util.drop_hpo_id_bucket_name_table(cls.dataset_id)
