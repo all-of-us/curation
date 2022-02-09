@@ -280,7 +280,7 @@ class ValidationMainTest(unittest.TestCase):
         test_file_path = os.path.basename(test_util.PII_NAME_FILE)
 
         blob_name: str = f'{self.folder_prefix}{test_file_path}'
-        test_blob = self.storage_bucket.blob(blob_name)
+        test_blob = self.hpo_bucket.blob(blob_name)
         test_blob.upload_from_filename(test_util.PII_NAME_FILE)
         bucket_items = self.storage_client.get_bucket_items_metadata(
             self.hpo_bucket)
