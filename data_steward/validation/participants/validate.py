@@ -315,6 +315,10 @@ def identify_rdr_ehr_match(client,
     hpo_location_table_id = get_table_id(LOCATION, hpo_id)
     hpo_person_table_id = get_table_id(PERSON, hpo_id)
 
+    # add new step to create lookup/reference tables.
+    # store the abbreviations from CSV files in resource_files/validation/participant folder (new folder)
+    # Use csv reader or something to populate using unnest or something like that.
+
     for item in consts.CREATE_COMPARISON_FUNCTION_QUERIES:
         LOGGER.info(f"Creating `{item['name']}` function if doesn't exist.")
 
