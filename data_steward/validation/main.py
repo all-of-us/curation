@@ -42,6 +42,7 @@ from validation.app_errors import (BucketNotSet, log_traceback,
                                    BucketDoesNotExistError)
 from validation.metrics import completeness, required_labs
 from validation.participants import identity_match as matching
+from validation.participants.validate import setup_and_validate_participants, get_participant_validation_summary_query
 
 app = Flask(__name__)
 
@@ -281,6 +282,31 @@ def validate_submission(hpo_id, bucket, folder_items, folder_prefix):
     return dict(results=results, errors=errors, warnings=warnings)
 
 
+def check_duplicates_and_validate(hpo_id, report_data):
+    """
+    Check if any tables used in participant validation has duplicates and runs them
+    :param hpo_id: 
+    :param report_data: 
+    :return: List
+    """
+    participant_val_tables = common.PII_TABLES + [
+        common.PERSON, common.LOCATION
+    ]
+    duplicate_tables = [
+        row_dict["table_name"] for row_dict in report_data[
+            report_consts.NONUNIQUE_KEY_METRICS_REPORT_KEY]
+    ]
+    duplicate_tables = list(set(participant_val_tables) & set(duplicate_tables))
+    if duplicate_tables:
+        logging.info(
+            f"Unable to run participant validation for {hpo_id} due to duplicates"
+            f" in {duplicate_tables}")
+        return duplicate_tables
+    logging.info(f"Running participant validation for {hpo_id}")
+    setup_and_validate_participants(hpo_id)
+    return duplicate_tables
+
+
 def is_first_validation_run(folder_items):
     return common.RESULTS_HTML not in folder_items and common.PROCESSED_TXT not in folder_items
 
@@ -349,6 +375,14 @@ def generate_metrics(hpo_id, bucket, folder_prefix, summary):
         completeness_query = completeness.get_hpo_completeness_query(hpo_id)
         report_data[report_consts.COMPLETENESS_REPORT_KEY] = query_rows(
             completeness_query)
+
+        # participant validation metrics
+        logging.info(f"Ensuring participant validation can be run for {hpo_id}")
+        duplicate_tables = check_duplicates_and_validate(hpo_id, report_data)
+        if not duplicate_tables:
+            participant_validation_query = get_participant_validation_summary_query(
+                hpo_id)
+        # TODO add to report_data based on requirements from EHR_OPS
 
         # lab concept metrics
         logging.info(f"Getting lab concepts for {hpo_id}")
@@ -584,7 +618,16 @@ def get_duplicate_counts_query(hpo_id):
         if table_id in all_table_ids:
             sub_query = render_query(consts.DUPLICATE_IDS_SUBQUERY,
                                      table_name=table_name,
-                                     table_id=table_id)
+                                     table_id=table_id,
+                                     primary_key=f'{table_name}_id')
+            sub_queries.append(sub_query)
+    for table_name in common.PII_TABLES + [common.DEATH]:
+        table_id = bq_utils.get_table_id(hpo_id, table_name)
+        if table_id in all_table_ids:
+            sub_query = render_query(consts.DUPLICATE_IDS_SUBQUERY,
+                                     table_name=table_name,
+                                     table_id=table_id,
+                                     primary_key='person_id')
             sub_queries.append(sub_query)
     unioned_query = consts.UNION_ALL.join(sub_queries)
     return consts.DUPLICATE_IDS_WRAPPER.format(

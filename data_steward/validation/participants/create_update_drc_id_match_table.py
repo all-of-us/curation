@@ -19,7 +19,7 @@ import argparse
 import resources
 from utils import bq
 from utils import auth
-from bq_utils import table_exists
+import bq_utils
 from tools.create_tier import SCOPES
 from common import JINJA_ENV, PS_API_VALUES, DRC_OPS
 from constants.validation.participants.identity_match import IDENTITY_MATCH_TABLE
@@ -51,7 +51,7 @@ POPULATE_VALIDATION_TABLE = JINJA_ENV.from_string("""
 INSERT INTO `{{project_id}}.{{drc_dataset_id}}.{{id_match_table_id}}` (_PARTITIONTIME, {{fields}}) 
 SELECT
     _PARTITIONTIME, 
-    person_id, {{case_statements}}, 'no' algorithm
+    person_id, {{case_statements}}, '' algorithm
 FROM `{{project_id}}.{{drc_dataset_id}}.{{ps_values_table_id}}`
 WHERE ABS(TIMESTAMP_DIFF(TIMESTAMP_TRUNC(CURRENT_TIMESTAMP, HOUR), _PARTITIONTIME, HOUR)) < 2
 """)
@@ -81,7 +81,7 @@ def create_drc_validation_table(client,
     job = client.query(create_table)
     job.result()
 
-    LOGGER.info(f'Created {table_id}.')
+    LOGGER.info(f'Created HOUR partitioned table {drc_dataset_id}.{table_id}')
 
     return table_id
 
@@ -143,7 +143,8 @@ def populate_validation_table(client,
     job = client.query(populate_query)
     job.result()
 
-    LOGGER.info(f'Populated values in `{id_match_table_id}`')
+    LOGGER.info(
+        f'Populated default values in {drc_dataset_id}.{id_match_table_id}')
 
 
 def get_arg_parser():
@@ -170,6 +171,24 @@ def get_arg_parser():
     return parser
 
 
+def create_and_populate_drc_validation_table(client, hpo_id):
+    """
+    Create and populate drc validation table
+    :param client: BQ client
+    :param hpo_id: Identifies the HPO
+    :return: 
+    """
+
+    table_id = f'{IDENTITY_MATCH_TABLE}_{hpo_id}'
+
+    # Creates hpo_site identity match table if it does not exist
+    if not bq_utils.table_exists(table_id, DRC_OPS):
+        create_drc_validation_table(client, client.project, table_id)
+
+    # Populates the validation table for the site
+    populate_validation_table(client, client.project, table_id, hpo_id)
+
+
 def main():
     parser = get_arg_parser()
     args = parser.parse_args()
@@ -180,14 +199,7 @@ def main():
 
     client = bq.get_client(args.project_id, credentials=impersonation_creds)
 
-    table_id = f'{IDENTITY_MATCH_TABLE}_{args.hpo_id}'
-
-    # Creates hpo_site identity match table if it does not exist
-    if not table_exists(table_id, DRC_OPS):
-        create_drc_validation_table(client, args.project_id, table_id)
-
-    # Populates the validation table for the site
-    populate_validation_table(client, args.project_id, table_id, args.hpo_id)
+    create_and_populate_drc_validation_table(client, args.hpo_id)
 
 
 if __name__ == '__main__':

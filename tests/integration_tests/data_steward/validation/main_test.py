@@ -17,6 +17,7 @@ from constants import bq_utils as bq_consts
 from constants.validation import main as main_consts
 import gcs_utils
 from gcloud.gcs import StorageClient
+from utils.bq import get_client
 import resources
 from tests import test_util
 from validation import main
@@ -48,6 +49,8 @@ class ValidationMainTest(unittest.TestCase):
         self.addCleanup(mock_get_hpo_name.stop)
 
         self.folder_prefix = '2019-01-01-v1/'
+
+        self.bq_client = get_client(self.project_id)
 
         self.storage_client = StorageClient(self.project_id)
         self.storage_bucket = self.storage_client.get_bucket(self.hpo_bucket)
@@ -260,6 +263,41 @@ class ValidationMainTest(unittest.TestCase):
 
     @mock.patch("gcs_utils.LOOKUP_TABLES_DATASET_ID", dataset_id)
     @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
+    @mock.patch('validation.main.setup_and_validate_participants')
+    @mock.patch('api_util.check_cron')
+    def test_participant_validation_duplicate_check(self, mock_check_cron,
+                                                    mock_setup_validate):
+        # tests if pii file is loaded
+        test_file_path = os.path.basename(test_util.PII_NAME_FILE)
+
+        blob_name: str = f'{self.folder_prefix}{test_file_path}'
+        test_blob = self.storage_bucket.blob(blob_name)
+        test_blob.upload_from_filename(test_util.PII_NAME_FILE)
+        bucket_items = self.storage_client.get_bucket_items_metadata(
+            self.hpo_bucket)
+        folder_items = main.get_folder_items(bucket_items, self.folder_prefix)
+        # Load the table
+        r = main.validate_submission(self.hpo_id, self.hpo_bucket, folder_items,
+                                     self.folder_prefix)
+        # Create duplicates
+        job = self.bq_client.query(
+            f'INSERT INTO {self.project_id}.{self.dataset_id}.{self.hpo_id}_{common.PII_NAME} '
+            f'(person_id, first_name, middle_name, last_name, suffix, prefix) '
+            f'SELECT * FROM {self.project_id}.{self.dataset_id}.{self.hpo_id}_{common.PII_NAME}'
+        )
+        job.result()
+
+        result_data = {}
+        duplicates_query = main.get_duplicate_counts_query(self.hpo_id)
+        result_data[main.report_consts.
+                    NONUNIQUE_KEY_METRICS_REPORT_KEY] = main.query_rows(
+                        duplicates_query)
+        expected_duplicate_tables = ["pii_name"]
+        actual_duplicate_tables = main.check_duplicates_and_validate(
+            self.hpo_id, result_data)
+        self.assertListEqual(expected_duplicate_tables, actual_duplicate_tables)
+
+    @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     @mock.patch('api_util.check_cron')
     def test_pii_files_loaded(self, mock_check_cron):
         # tests if pii files are loaded
@@ -292,6 +330,8 @@ class ValidationMainTest(unittest.TestCase):
 
     @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     @mock.patch("gcs_utils.LOOKUP_TABLES_DATASET_ID", dataset_id)
+    @mock.patch('validation.main.get_participant_validation_summary_query')
+    @mock.patch('validation.main.setup_and_validate_participants')
     @mock.patch('validation.main.updated_datetime_object')
     @mock.patch('validation.main._has_all_required_files')
     @mock.patch('validation.main.all_required_files_loaded')
@@ -300,7 +340,9 @@ class ValidationMainTest(unittest.TestCase):
     def test_html_report_five_person(self, mock_check_cron, mock_first_run,
                                      mock_required_files_loaded,
                                      mock_has_all_required_files,
-                                     mock_updated_datetime_object):
+                                     mock_updated_datetime_object,
+                                     mock_setup_validate_participants,
+                                     mock_part_val_summary_query):
         mock_required_files_loaded.return_value = False
         mock_first_run.return_value = False
         mock_has_all_required_files.return_value = True
