@@ -65,7 +65,7 @@ class GCSTest(TestCase):
         fake_bucket_name = 'FAKE_BUCKET_NAME'
         mock_get_bucket_id.return_value = fake_bucket_name
         expected_message = f"Failed to acquire bucket '{fake_bucket_name}' for hpo '{self.hpo_id}'"
-        mock_get_items_metadata.side_effect = NotFound(message='')
+        mock_get_items_metadata.side_effect = NotFound('')
 
         with self.assertRaises(BucketDoesNotExistError) as e:
             self.client.get_hpo_bucket(self.hpo_id)
