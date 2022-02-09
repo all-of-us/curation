@@ -209,7 +209,6 @@ class ValidationMainTest(unittest.TestCase):
             item['updated'] = datetime.datetime.today() - datetime.timedelta(
                 minutes=7)
 
-        # TODO use a bucket!
         result = main._get_submission_folder(self.hpo_bucket,
                                              items_metadata,
                                              force_process=False)
