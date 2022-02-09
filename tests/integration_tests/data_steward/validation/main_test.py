@@ -349,7 +349,9 @@ class ValidationMainTest(unittest.TestCase):
     @mock.patch('api_util.check_cron')
     def test_html_report_five_person(self, mock_check_cron, mock_first_run,
                                      mock_required_files_loaded,
-                                     mock_has_all_required_files):
+                                     mock_has_all_required_files,
+                                     mock_setup_validate_participants,
+                                     mock_part_val_summary_query):
         mock_required_files_loaded.return_value = False
         mock_first_run.return_value = False
         mock_has_all_required_files.return_value = True
