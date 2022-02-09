@@ -168,17 +168,20 @@ CREATE_STANDARDIZED_STREET_TABLE_QUERY = JINJA_ENV.from_string("""
     GROUP BY {{_PARTITIONTIME}} {{id}}
 """)
 
+# I will have to think out of the box and update this update statement + function structure altogether.
+# If RDR does not have the record, that person_id is not updated (=CompareStreet does not run for that ID.)
+# Is it OK to remove AND upd._PARTITIONTIME = ps._PARTITIONTIME ? Why we need _PARTITIONTIME?
+# Not both of the JOINs have to be FULL OUTER JOIN. I think the second one can be LEFT OUTER?
 MATCH_FIELDS_STREET_ADDRESS_QUERY = JINJA_ENV.from_string("""
     UPDATE `{{project_id}}.{{drc_dataset_id}}.{{id_match_table_id}}` upd
     SET upd.address_1 = `{{project_id}}.{{drc_dataset_id}}.CompareStreet`(ps.address, ehr_location.address),
         upd.algorithm = 'yes'
     FROM `{{project_id}}.{{drc_dataset_id}}.{{drc_standardized_street_table_id}}` ps
-    LEFT JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_address_table_id}}` ehr_address
+    FULL OUTER JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_address_table_id}}` ehr_address
         ON ehr_address.person_id = ps.person_id
-    LEFT JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{ehr_standardized_street_table_id}}` ehr_location
+    FULL OUTER JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{ehr_standardized_street_table_id}}` ehr_location
         ON ehr_location.location_id = ehr_address.location_id
-    WHERE upd.person_id = ps.person_id
-    AND upd._PARTITIONTIME = ps.{{_PARTITIONTIME}}
+    WHERE upd.person_id = ps.person_id OR upd.person_id = ehr_address.person_id
 """)
 
 MATCH_FIELDS_STREET_ADDRESS_QUERY_2 = JINJA_ENV.from_string("""
@@ -186,12 +189,11 @@ MATCH_FIELDS_STREET_ADDRESS_QUERY_2 = JINJA_ENV.from_string("""
     SET upd.address_2 = `{{project_id}}.{{drc_dataset_id}}.CompareStreet`(ps.address, ehr_location.address),
         upd.algorithm = 'yes'
     FROM `{{project_id}}.{{drc_dataset_id}}.{{drc_standardized_street_table_id}}` ps
-    LEFT JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_address_table_id}}` ehr_address
+    FULL OUTER JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_address_table_id}}` ehr_address
         ON ehr_address.person_id = ps.person_id
-    LEFT JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{ehr_standardized_street_table_id}}` ehr_location
+    FULL OUTER JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{ehr_standardized_street_table_id}}` ehr_location
         ON ehr_location.location_id = ehr_address.location_id
-    WHERE upd.person_id = ps.person_id
-    AND upd._PARTITIONTIME = ps.{{_PARTITIONTIME}}
+    WHERE upd.person_id = ps.person_id OR upd.person_id = ehr_address.person_id
 """)
 
 
@@ -277,14 +279,13 @@ def identify_rdr_ehr_match(client,
     job.result()
 
     job = client.query(
-        f"select * from {drc_dataset_id}.{hpo_location_table_id}_ehr_standardized_street"
+        f"select * from {drc_dataset_id}.{hpo_location_table_id}_ehr_standardized_street order by location_id"
     )
     result = job.result()
     actual = [dict(row.items()) for row in result]
     actual = [{key: value for key, value in row.items()} for row in actual]
-    LOGGER.info(
-        f"RESULT - {'|'.join([val for val in [actual_val.values() for actual_val in actual]])}."
-    )
+    for row in actual:
+        LOGGER.info(f"RESULT - {row}.")
 
     drop_rdr_standardized_table_query = DROP_STANDARDIZED_STREET_TABLE_QUERY.render(
         project_id=project_id,
@@ -311,14 +312,13 @@ def identify_rdr_ehr_match(client,
     job.result()
 
     job = client.query(
-        f"select * from {drc_dataset_id}.{ps_api_table_id}_rdr_standardized_street"
+        f"select * from {drc_dataset_id}.{ps_api_table_id}_rdr_standardized_street order by person_id"
     )
     result = job.result()
     actual = [dict(row.items()) for row in result]
     actual = [{key: value for key, value in row.items()} for row in actual]
-    LOGGER.info(
-        f"RESULT - {'|'.join([val for val in [actual_val.values() for actual_val in actual]])}."
-    )
+    for row in actual:
+        LOGGER.info(f"RESULT - {row}.")
 
     match_query = MATCH_FIELDS_STREET_ADDRESS_QUERY.render(
         project_id=project_id,
@@ -337,10 +337,21 @@ def identify_rdr_ehr_match(client,
         missing_rdr=MISSING_RDR,
         missing_ehr=MISSING_EHR)
 
+    LOGGER.info(f"Running the following update statement: {match_query}.")
+
     job = client.query(match_query)
     job.result()
 
-    ##
+    job = client.query(
+        f"select person_id, address_1, address_2 from {drc_dataset_id}.{id_match_table_id} order by person_id"
+    )
+    result = job.result()
+    actual = [dict(row.items()) for row in result]
+    actual = [{key: value for key, value in row.items()} for row in actual]
+    for row in actual:
+        LOGGER.info(f"RESULT - {row}.")
+
+    ## Address two from here
 
     drop_ehr_standardized_table_query = DROP_STANDARDIZED_STREET_TABLE_QUERY.render(
         project_id=project_id,
@@ -367,14 +378,13 @@ def identify_rdr_ehr_match(client,
     job.result()
 
     job = client.query(
-        f"select * from {drc_dataset_id}.{hpo_location_table_id}_ehr_standardized_street"
+        f"select * from {drc_dataset_id}.{hpo_location_table_id}_ehr_standardized_street order by location_id"
     )
     result = job.result()
     actual = [dict(row.items()) for row in result]
     actual = [{key: value for key, value in row.items()} for row in actual]
-    LOGGER.info(
-        f"RESULT - {'|'.join([val for val in [actual_val.values() for actual_val in actual]])}."
-    )
+    for row in actual:
+        LOGGER.info(f"RESULT - {row}.")
 
     drop_rdr_standardized_table_query = DROP_STANDARDIZED_STREET_TABLE_QUERY.render(
         project_id=project_id,
@@ -401,14 +411,13 @@ def identify_rdr_ehr_match(client,
     job.result()
 
     job = client.query(
-        f"select * from {drc_dataset_id}.{ps_api_table_id}_rdr_standardized_street"
+        f"select * from {drc_dataset_id}.{ps_api_table_id}_rdr_standardized_street order by person_id"
     )
     result = job.result()
     actual = [dict(row.items()) for row in result]
     actual = [{key: value for key, value in row.items()} for row in actual]
-    LOGGER.info(
-        f"RESULT - {'|'.join([val for val in [actual_val.values() for actual_val in actual]])}."
-    )
+    for row in actual:
+        LOGGER.info(f"RESULT - {row}.")
 
     match_query = MATCH_FIELDS_STREET_ADDRESS_QUERY_2.render(
         project_id=project_id,
@@ -427,8 +436,19 @@ def identify_rdr_ehr_match(client,
         missing_rdr=MISSING_RDR,
         missing_ehr=MISSING_EHR)
 
+    LOGGER.info(f"Running the following update statement: {match_query}.")
+
     job = client.query(match_query)
     job.result()
+
+    job = client.query(
+        f"select person_id, address_1, address_2 from {drc_dataset_id}.{id_match_table_id} order by person_id"
+    )
+    result = job.result()
+    actual = [dict(row.items()) for row in result]
+    actual = [{key: value for key, value in row.items()} for row in actual]
+    for row in actual:
+        LOGGER.info(f"RESULT - {row}.")
 
 
 def get_arg_parser():
