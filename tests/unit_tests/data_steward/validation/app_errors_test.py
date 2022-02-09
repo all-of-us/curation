@@ -82,8 +82,6 @@ class AppErrorHandlersTest(TestCase):
         """
         Test the os handler method fires as expected when an OSError is raised.
         """
-        # mock_list_bucket.side_effect = HttpError(mock.Mock(status=404),
-        #                                          'not found'.encode())
         hpo_id = 'no_bucket_exists'
         with main.app.test_client() as tc:
             os.environ.pop(f"BUCKET_NAME_{hpo_id.upper()}", None)
