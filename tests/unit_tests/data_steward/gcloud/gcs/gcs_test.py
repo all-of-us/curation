@@ -60,12 +60,12 @@ class GCSTest(TestCase):
 
     @patch.object(DummyClient, 'get_bucket_items_metadata')
     @patch.object(DummyClient, '_get_hpo_bucket_id')
-    def test_get_hpo_bucket_not_found(self, mock_get_hpo_id,
-                                      mock_items_metadata):
+    def test_get_hpo_bucket_not_found(self, mock_get_bucket_id,
+                                      mock_get_items_metadata):
         fake_bucket_name = 'FAKE_BUCKET_NAME'
-        mock_get_hpo_id.return_value = fake_bucket_name
+        mock_get_bucket_id.return_value = fake_bucket_name
         expected_message = f"Failed to acquire bucket '{fake_bucket_name}' for hpo '{self.hpo_id}'"
-        mock_items_metadata.side_effect = NotFound(message='')
+        mock_get_items_metadata.side_effect = NotFound(message='')
 
         with self.assertRaises(BucketDoesNotExistError) as e:
             self.client.get_hpo_bucket(self.hpo_id)
