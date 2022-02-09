@@ -52,6 +52,9 @@ table_mappings_path = os.path.join(domain_mappings_path, 'table_mappings.csv')
 field_mappings_path = os.path.join(domain_mappings_path, 'field_mappings.csv')
 value_mappings_path = os.path.join(domain_mappings_path, 'value_mappings.csv')
 CDR_CLEANER_PATH = os.path.join(resource_files_path, 'cdr_cleaner')
+COPE_SUPPRESSION_PATH = os.path.join(CDR_CLEANER_PATH, 'cope_suppression')
+COPE_SUPPRESSION_CONCEPTS_CSV_PATH = os.path.join(
+    COPE_SUPPRESSION_PATH, 'cope_suppression_concepts.csv')
 DC732_CONCEPT_LOOKUP_CSV_PATH = os.path.join(CDR_CLEANER_PATH,
                                              'dc732_concept_lookup.csv')
 PPI_BRANCHING_PATH = os.path.join(CDR_CLEANER_PATH, 'ppi_branching')
