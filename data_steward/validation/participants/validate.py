@@ -162,6 +162,102 @@ MATCH_FIELDS_QUERY = JINJA_ENV.from_string("""
         AND upd._PARTITIONTIME = ps._PARTITIONTIME
 """)
 
+DROP_STANDARDIZED_STREET_TABLE_QUERY = JINJA_ENV.from_string("""
+    DROP TABLE IF EXISTS `{{project_id}}.{{dataset_id}}.{{standardized_street_table_id}}` 
+""")
+
+CREATE_STANDARDIZED_STREET_TABLE_QUERY = JINJA_ENV.from_string("""
+    CREATE TABLE `{{project_id}}.{{dataset_id}}.{{standardized_street_table_id}}` 
+    AS
+    WITH address_abbreviations AS (
+        SELECT *
+        FROM UNNEST(ARRAY<STRUCT<abbreviation STRING, expansion STRING>>[
+                ('aly', 'alley'),
+                ('anx', 'annex'),
+                ('apt', 'apartment'),
+                ('ave', 'avenue'),
+                ('bch', 'beach'),
+                ('bldg', 'building'),
+                ('blvd', 'boulevard'),
+                ('bnd', 'bend'),
+                ('btm', 'bottom'),
+                ('cir', 'circle'),
+                ('ct', 'court'),
+                ('co', 'county'),
+                ('ctr', 'center'),
+                ('dr', 'drive'),
+                ('e', 'east'),
+                ('expy', 'expressway'),
+                ('hts', 'heights'),
+                ('hwy', 'highway'),
+                ('is', 'island'),
+                ('jct', 'junction'),
+                ('lk', 'lake'),
+                ('ln', 'lane'),
+                ('mtn', 'mountain'),
+                ('n', 'north'),
+                ('ne', 'northeast'),
+                ('num', 'number'),
+                ('nw', 'northwest'),
+                ('pkwy', 'parkway'),
+                ('pl', 'place'),
+                ('plz', 'plaza'),
+                ('po', 'post office'),
+                ('rd', 'road'),
+                ('rdg', 'ridge'),
+                ('rr', 'rural route'),
+                ('rm', 'room'),
+                ('s', 'south'),
+                ('se', 'southeast'),
+                ('sq', 'square'),
+                ('st', 'street'),
+                ('str', 'street'),
+                ('sta', 'station'),
+                ('ste', 'suite'),
+                ('sw', 'southwest'),
+                ('ter', 'terrace'),
+                ('tpke', 'turnpike'),
+                ('trl', 'trail'),
+                ('vly', 'valley'),
+                ('w', 'west'),
+                ('way', 'way')])
+    ),
+    removed_commas_and_periods AS (
+        SELECT location_id, REGEXP_REPLACE(address_1, '[,.]', '') as address_1
+        FROM {{project_id}}.{{dataset_id}}.{{source_table_id}}
+    ),
+    lowercased AS (
+        SELECT location_id, LOWER(address_1) as address_1
+        FROM removed_commas_and_periods
+    ),
+    standardized_street_number AS (
+        SELECT location_id, REGEXP_REPLACE(address_1,'([0-9])(?:st|nd|rd|th)', r'\1') as address_1
+        FROM lowercased
+    ),
+    standardized_apartment_number AS (
+        SELECT location_id, REGEXP_REPLACE(address_1,'([0-9])([a-z])',r'\1 \2') as address_1
+        FROM standardized_street_number
+    ),
+    parts AS (
+        SELECT location_id, part_address
+        FROM drc_standardized_apartment_number,
+            UNNEST(SPLIT(LOWER(address_1), ' ')) as part_address
+    ),
+    expanded AS (
+        SELECT 
+            location_id, 
+            COALESCE(expansion, part_address) as expanded_part_address
+        FROM parts p
+        LEFT JOIN address_abbreviations aa
+        ON aa.abbreviation = p.part_address
+    )
+    SELECT 
+        location_id, 
+        ARRAY_TO_STRING(ARRAY_AGG(expanded_part_address), ' ') as address
+    FROM expanded
+    GROUP BY location_id
+""")
+
 MATCH_FIELDS_STREET_ADDRESS_QUERY = JINJA_ENV.from_string("""
     WITH address_abbreviations AS (
         SELECT *
