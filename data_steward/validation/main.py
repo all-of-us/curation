@@ -767,7 +767,7 @@ def list_submitted_bucket_items(folder_bucketitems):
     files_list = []
     object_retention_days = 30
     object_process_lag_minutes = consts.SUBMISSION_LAG_TIME_MINUTES
-    today = datetime.datetime.utcnow()
+    today = datetime.datetime.now(tz=None)
 
     # If any required file missing, stop submission
     folder_bucketitems_basenames = [

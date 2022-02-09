@@ -53,13 +53,13 @@ class ValidationMainTest(TestCase):
 
     def test_retention_checks_list_submitted_bucket_items(self):
         #Define times to use
-        within_retention = datetime.datetime.utcnow() - datetime.timedelta(
+        within_retention = datetime.datetime.now(tz=None) - datetime.timedelta(
             days=25)
-        outside_retention = datetime.datetime.utcnow() - datetime.timedelta(
+        outside_retention = datetime.datetime.now(tz=None) - datetime.timedelta(
             days=29)
-        before_lag_time = datetime.datetime.utcnow() - datetime.timedelta(
+        before_lag_time = datetime.datetime.now(tz=None) - datetime.timedelta(
             minutes=3)
-        after_lag_time = datetime.datetime.utcnow() - datetime.timedelta(
+        after_lag_time = datetime.datetime.now(tz=None) - datetime.timedelta(
             minutes=7)
 
         # If any required files are missing, nothing should be returned
