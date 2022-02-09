@@ -26,7 +26,6 @@ import app_identity
 import bq_utils
 import cdm
 import common
-import gcs_utils
 from gcloud.gcs import StorageClient
 import resources
 from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON, AOU_REQUIRED_FILES
