@@ -233,16 +233,99 @@ CREATE_NAME_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
     ));
 """)
 
+# TODO add 1st -> 1 type of transformation
 CREATE_STREET_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
 CREATE FUNCTION IF NOT EXISTS
   `{{project_id}}.{{drc_dataset_id}}.CompareStreetAddress`(rdr_street string, ehr_street string)
   RETURNS string AS ((
-    {{street_with_clause}}
+    WITH address_abbreviations AS (
+        SELECT *
+        FROM UNNEST(ARRAY<STRUCT<abbreviation STRING, expansion STRING>>[
+            ('aly', 'alley'),
+            ('anx', 'annex'),
+            ('apt', 'apartment'),
+            ('ave', 'avenue'),
+            ('bch', 'beach'),
+            ('bldg', 'building'),
+            ('blvd', 'boulevard'),
+            ('bnd', 'bend'),
+            ('btm', 'bottom'),
+            ('cir', 'circle'),
+            ('ct', 'court'),
+            ('co', 'county'),
+            ('ctr', 'center'),
+            ('dr', 'drive'),
+            ('e', 'east'),
+            ('expy', 'expressway'),
+            ('hts', 'heights'),
+            ('hwy', 'highway'),
+            ('is', 'island'),
+            ('jct', 'junction'),
+            ('lk', 'lake'),
+            ('ln', 'lane'),
+            ('mtn', 'mountain'),
+            ('n', 'north'),
+            ('ne', 'northeast'),
+            ('num', 'number'),
+            ('nw', 'northwest'),
+            ('pkwy', 'parkway'),
+            ('pl', 'place'),
+            ('plz', 'plaza'),
+            ('po', 'post office'),
+            ('rd', 'road'),
+            ('rdg', 'ridge'),
+            ('rr', 'rural route'),
+            ('rm', 'room'),
+            ('s', 'south'),
+            ('se', 'southeast'),
+            ('sq', 'square'),
+            ('st', 'street'),
+            ('str', 'street'),
+            ('sta', 'station'),
+            ('ste', 'suite'),
+            ('sw', 'southwest'),
+            ('ter', 'terrace'),
+            ('tpke', 'turnpike'),
+            ('trl', 'trail'),
+            ('vly', 'valley'),
+            ('w', 'west'),
+            ('way', 'way')])
+    ),
+    ehr AS (SELECT ehr_street street),
+    rdr AS (SELECT rdr_street street),
+    parts_ehr AS (
+        SELECT part
+        FROM ehr, UNNEST(SPLIT(street, ' ')) as part
+    ),
+    parts_rdr AS (
+        SELECT part
+        FROM rdr, UNNEST(SPLIT(rdr_street, ' ')) as part
+    ),
+    expanded_ehr AS (
+      SELECT COALESCE(expansion, part) as expanded_part,
+      FROM parts_ehr p
+      LEFT JOIN address_abbreviations aa
+      ON aa.abbreviation = p.part
+    ),
+    expanded_rdr AS (
+      SELECT COALESCE(expansion, part) as expanded_part,
+      FROM parts_rdr p
+      LEFT JOIN address_abbreviations aa
+      ON aa.abbreviation = p.part
+    ),
+    normalized_ehr_street AS (
+      SELECT expanded_part
+      FROM expanded_ehr
+    ),
+    normalized_rdr_street AS (
+      SELECT expanded_part
+      FROM expanded_rdr
+    )
     SELECT
       CASE
-        WHEN normalized_rdr_street.rdr_street = normalized_ehr_street.ehr_street THEN '{{match}}'
-        WHEN normalized_rdr_street.rdr_street IS NOT NULL AND normalized_ehr_street.ehr_street IS NOT NULL THEN '{{no_match}}'
-        WHEN normalized_rdr_street.rdr_street IS NULL THEN '{{missing_rdr}}'
+        WHEN normalized_rdr_street.expanded_part = normalized_ehr_street.expanded_part THEN '{{match}}'
+        WHEN normalized_rdr_street.expanded_part IS NOT NULL AND normalized_ehr_street.expanded_part IS NOT NULL THEN '{{no_match}}'
+        WHEN normalized_rdr_street.expanded_part IS NULL THEN '{{missing_rdr}}'
         ELSE '{{missing_ehr}}'
       END AS street
     FROM normalized_rdr_street, normalized_ehr_street));
