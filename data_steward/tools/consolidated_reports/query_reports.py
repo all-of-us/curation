@@ -86,10 +86,3 @@ def get_most_recent(app_id=None, drc_bucket=None, report_for=None):
                     json.dump(result, fp, sort_keys=True, indent=4)
             with open(common.LATEST_RESULTS_JSON, 'r') as fp:
                 return json.load(fp)
-
-
-def get_drc_bucket_path():
-    project_id = app_identity.get_application_id()
-    storage_client = StorageClient(project_id)
-    drc_bucket = storage_client.get_drc_bucket()
-    return f'gs://{drc_bucket.name}/'
