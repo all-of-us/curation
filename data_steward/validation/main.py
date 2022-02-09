@@ -767,7 +767,7 @@ def list_submitted_bucket_items(folder_bucketitems):
     files_list = []
     object_retention_days = 30
     object_process_lag_minutes = consts.SUBMISSION_LAG_TIME_MINUTES
-    today = datetime.datetime.now(tz=None)
+    utc_today = datetime.datetime.now(tz=None)
 
     # If any required file missing, stop submission
     folder_bucketitems_basenames = [
@@ -792,7 +792,7 @@ def list_submitted_bucket_items(folder_bucketitems):
             upper_age_threshold = created_date + retention_time - retention_start_time
             upper_age_threshold = upper_age_threshold.replace(tzinfo=None)
 
-            if upper_age_threshold > today:
+            if upper_age_threshold > utc_today:
                 files_list.append(item)
 
             if basename(item) in AOU_REQUIRED_FILES:
@@ -802,7 +802,7 @@ def list_submitted_bucket_items(folder_bucketitems):
                 lower_age_threshold = item['updated'] + lag_time
                 lower_age_threshold = lower_age_threshold.replace(tzinfo=None)
 
-                if lower_age_threshold > today:
+                if lower_age_threshold > utc_today:
                     logging.info(
                         f"Delaying processing for hpo_id by 3 hrs (to next cron run) "
                         f"since files are still being uploaded. "
