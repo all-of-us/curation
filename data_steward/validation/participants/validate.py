@@ -19,6 +19,9 @@ import logging
 import argparse
 from collections import deque
 
+# Third party imports
+import pandas
+
 # Project imports
 from app_identity import get_application_id
 from bq_utils import get_rdr_project_id
@@ -86,10 +89,10 @@ def _get_replace_statement(base_statement, rdr_ehr, field, dict_abbreviation):
 def get_with_clause(field):
     """
     Create WITH statement for CREATE_{field}_COMPARISON_FUNCTION.
-    :param: field - string 'city' or 'street'
+    :param: field - string 'city'
     :return: WITH statement as string
     """
-    valid_fields = {'city', 'street'}
+    valid_fields = {'city'}
 
     if field not in valid_fields:
         raise ValueError(
@@ -98,18 +101,10 @@ def get_with_clause(field):
     base_statement = {
         'city':
             lambda rdr_ehr, field:
-            f"REGEXP_REPLACE(REGEXP_REPLACE(LOWER(TRIM({rdr_ehr}_{field})),'[^A-Za-z ]',''),' +',' ')",
-        'street':
-            lambda rdr_ehr, field:
-            (f"REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(LOWER(TRIM({rdr_ehr}_{field})),"
-             f"'[^0-9A-Za-z ]', ''),'([0-9])(?:st|nd|rd|th)', r'\\1'),'([0-9])([a-z])',r'\\1 \\2'),' +',' ')"
-            ),
+            f"REGEXP_REPLACE(REGEXP_REPLACE(LOWER(TRIM({rdr_ehr}_{field})),'[^A-Za-z ]',''),' +',' ')"
     }
 
-    abbreviations = {
-        'city': consts.CITY_ABBREVIATIONS,
-        'street': consts.ADDRESS_ABBREVIATIONS,
-    }
+    abbreviations = {'city': consts.CITY_ABBREVIATIONS}
 
     statement_parts = [
         "WITH ",
@@ -122,173 +117,6 @@ def get_with_clause(field):
     statement = ''.join(statement_parts)
 
     return statement
-
-
-EHR_OPS = 'ehr_ops'
-
-MATCH_FIELDS_QUERY = JINJA_ENV.from_string("""
-    UPDATE `{{project_id}}.{{drc_dataset_id}}.{{id_match_table_id}}` upd
-    SET upd.first_name = `{{project_id}}.{{drc_dataset_id}}.CompareName`(ps.first_name, ehr_name.first_name),
-        upd.middle_name = `{{project_id}}.{{drc_dataset_id}}.CompareName`(ps.middle_name, ehr_name.middle_name),
-        upd.last_name = `{{project_id}}.{{drc_dataset_id}}.CompareName`(ps.last_name, ehr_name.last_name),
-        upd.city = `{{project_id}}.{{drc_dataset_id}}.CompareCity`(ps.city, ehr_location.city),
-        upd.state = `{{project_id}}.{{drc_dataset_id}}.CompareState`(ps.state, ehr_location.state),
-        upd.zip = `{{project_id}}.{{drc_dataset_id}}.CompareZipCode`(ps.zip_code, ehr_location.zip),
-        upd.email = `{{project_id}}.{{drc_dataset_id}}.CompareEmail`(ps.email, ehr_email.email),
-        upd.phone_number = `{{project_id}}.{{drc_dataset_id}}.ComparePhoneNumber`(ps.phone_number, ehr_phone.phone_number),
-        upd.birth_date = `{{project_id}}.{{drc_dataset_id}}.CompareDateOfBirth`(ps.date_of_birth, ehr_dob.date_of_birth),
-        upd.sex = `{{project_id}}.{{drc_dataset_id}}.CompareSexAtBirth`(ps.sex, ehr_sex.sex),
-        upd.algorithm = 'yes'
-    FROM `{{project_id}}.{{drc_dataset_id}}.{{ps_api_table_id}}` ps
-    LEFT JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_email_table_id}}` ehr_email
-        ON ehr_email.person_id = ps.person_id
-    LEFT JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_phone_number_table_id}}` ehr_phone
-        ON ehr_phone.person_id = ps.person_id
-    LEFT JOIN ( SELECT person_id, DATE(birth_datetime) AS date_of_birth
-               FROM `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_person_table_id}}` ) AS ehr_dob
-        ON ehr_dob.person_id = ps.person_id
-    LEFT JOIN ( SELECT person_id, cc.concept_name as sex
-                FROM `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_person_table_id}}`
-                JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.concept` cc
-                    ON gender_concept_id = concept_id ) AS ehr_sex
-        ON ehr_sex.person_id = ps.person_id
-    LEFT JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_name_table_id}}` ehr_name
-        ON ehr_name.person_id = ps.person_id
-    LEFT JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_address_table_id}}` ehr_address
-        ON ehr_address.person_id = ps.person_id
-    LEFT JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_location_table_id}}` ehr_location
-        ON ehr_location.location_id = ehr_address.location_id
-    WHERE upd.person_id = ps.person_id
-        AND upd._PARTITIONTIME = ps._PARTITIONTIME
-""")
-
-DROP_STANDARDIZED_STREET_TABLE_QUERY = JINJA_ENV.from_string("""
-    DROP TABLE IF EXISTS `{{project_id}}.{{dataset_id}}.{{standardized_street_table_id}}` 
-""")
-
-CREATE_STANDARDIZED_STREET_TABLE_QUERY = JINJA_ENV.from_string("""
-    CREATE TABLE `{{project_id}}.{{dataset_id}}.{{standardized_street_table_id}}` 
-    AS
-    WITH address_abbreviations AS (
-        SELECT *
-        FROM UNNEST(ARRAY<STRUCT<abbreviation STRING, expansion STRING>>[
-                ('aly', 'alley'),
-                ('anx', 'annex'),
-                ('apt', 'apartment'),
-                ('ave', 'avenue'),
-                ('bch', 'beach'),
-                ('bldg', 'building'),
-                ('blvd', 'boulevard'),
-                ('bnd', 'bend'),
-                ('btm', 'bottom'),
-                ('cir', 'circle'),
-                ('ct', 'court'),
-                ('co', 'county'),
-                ('ctr', 'center'),
-                ('dr', 'drive'),
-                ('e', 'east'),
-                ('expy', 'expressway'),
-                ('hts', 'heights'),
-                ('hwy', 'highway'),
-                ('is', 'island'),
-                ('jct', 'junction'),
-                ('lk', 'lake'),
-                ('ln', 'lane'),
-                ('mtn', 'mountain'),
-                ('n', 'north'),
-                ('ne', 'northeast'),
-                ('num', 'number'),
-                ('nw', 'northwest'),
-                ('pkwy', 'parkway'),
-                ('pl', 'place'),
-                ('plz', 'plaza'),
-                ('po', 'post office'),
-                ('rd', 'road'),
-                ('rdg', 'ridge'),
-                ('rr', 'rural route'),
-                ('rm', 'room'),
-                ('s', 'south'),
-                ('se', 'southeast'),
-                ('sq', 'square'),
-                ('st', 'street'),
-                ('str', 'street'),
-                ('sta', 'station'),
-                ('ste', 'suite'),
-                ('sw', 'southwest'),
-                ('ter', 'terrace'),
-                ('tpke', 'turnpike'),
-                ('trl', 'trail'),
-                ('vly', 'valley'),
-                ('w', 'west'),
-                ('way', 'way')])
-    ),
-    removed_commas_and_periods AS (
-        SELECT {{id}}, {{_PARTITIONTIME_as}} REGEXP_REPLACE({{street_column}}, '[,.]', '') as address,
-        FROM {{project_id}}.{{source_dataset_id}}.{{source_table_id}}
-    ),
-    remove_extra_whitespaces AS (
-        SELECT {{id}}, {{_PARTITIONTIME}} REGEXP_REPLACE(TRIM(address), ' +', ' ') as address,
-        FROM removed_commas_and_periods
-    ),
-    lowercased AS (
-        SELECT {{id}}, {{_PARTITIONTIME}} LOWER(address) as address,
-        FROM remove_extra_whitespaces
-    ),
-    standardized_street_number AS (
-        SELECT {{id}}, {{_PARTITIONTIME}} REGEXP_REPLACE(address,'([0-9])(?:st|nd|rd|th)', r'\\1') as address,
-        FROM lowercased
-    ),
-    standardized_apartment_number AS (
-        SELECT {{id}}, {{_PARTITIONTIME}} REGEXP_REPLACE(address,'([0-9])([a-z])',r'\\1 \\2') as address
-        FROM standardized_street_number
-    ),
-    parts AS (
-        SELECT {{id}}, {{_PARTITIONTIME}} part_address,
-        FROM standardized_apartment_number,
-            UNNEST(SPLIT(address, ' ')) as part_address
-    ),
-    expanded AS (
-        SELECT 
-            {{id}}, {{_PARTITIONTIME}}
-            COALESCE(expansion, part_address) as expanded_part_address,
-        FROM parts p
-        LEFT JOIN address_abbreviations aa
-        ON aa.abbreviation = p.part_address
-    )
-    SELECT 
-        {{id}}, {{_PARTITIONTIME}}
-        ARRAY_TO_STRING(ARRAY_AGG(expanded_part_address), ' ') as address,
-    FROM expanded
-    GROUP BY {{_PARTITIONTIME}} {{id}}
-""")
-
-# I will have to think out of the box and update this update statement + function structure altogether.
-# If RDR does not have the record, that person_id is not updated (=CompareStreet does not run for that ID.)
-# Is it OK to remove AND upd._PARTITIONTIME = ps._PARTITIONTIME ? Why we need _PARTITIONTIME?
-# Not both of the JOINs have to be FULL OUTER JOIN. I think the second one can be LEFT OUTER?
-MATCH_FIELDS_STREET_ADDRESS_QUERY = JINJA_ENV.from_string("""
-    UPDATE `{{project_id}}.{{drc_dataset_id}}.{{id_match_table_id}}` upd
-    SET upd.address_1 = `{{project_id}}.{{drc_dataset_id}}.CompareStreet`(ps.address, ehr_location.address),
-        upd.algorithm = 'yes'
-    FROM `{{project_id}}.{{drc_dataset_id}}.{{drc_standardized_street_table_id}}` ps
-    FULL OUTER JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_address_table_id}}` ehr_address
-        ON ehr_address.person_id = ps.person_id
-    FULL OUTER JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{ehr_standardized_street_table_id}}` ehr_location
-        ON ehr_location.location_id = ehr_address.location_id
-    WHERE upd.person_id = ps.person_id OR upd.person_id = ehr_address.person_id
-""")
-
-MATCH_FIELDS_STREET_ADDRESS_QUERY_2 = JINJA_ENV.from_string("""
-    UPDATE `{{project_id}}.{{drc_dataset_id}}.{{id_match_table_id}}` upd
-    SET upd.address_2 = `{{project_id}}.{{drc_dataset_id}}.CompareStreet`(ps.address, ehr_location.address),
-        upd.algorithm = 'yes'
-    FROM `{{project_id}}.{{drc_dataset_id}}.{{drc_standardized_street_table_id}}` ps
-    FULL OUTER JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_address_table_id}}` ehr_address
-        ON ehr_address.person_id = ps.person_id
-    FULL OUTER JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{ehr_standardized_street_table_id}}` ehr_location
-        ON ehr_location.location_id = ehr_address.location_id
-    WHERE upd.person_id = ps.person_id OR upd.person_id = ehr_address.person_id
-""")
 
 
 def identify_rdr_ehr_match(client,
@@ -314,10 +142,6 @@ def identify_rdr_ehr_match(client,
     ps_api_table_id = f'{PS_API_VALUES}_{hpo_id}'
     hpo_location_table_id = get_table_id(LOCATION, hpo_id)
     hpo_person_table_id = get_table_id(PERSON, hpo_id)
-
-    # add new step to create lookup/reference tables.
-    # store the abbreviations from CSV files in resource_files/validation/participant folder (new folder)
-    # Use csv reader or something to populate using unnest or something like that.
 
     for item in consts.CREATE_COMPARISON_FUNCTION_QUERIES:
         LOGGER.info(f"Creating `{item['name']}` function if doesn't exist.")
@@ -359,7 +183,7 @@ def identify_rdr_ehr_match(client,
     job = client.query(match_query)
     job.result()
 
-    drop_ehr_standardized_table_query = DROP_STANDARDIZED_STREET_TABLE_QUERY.render(
+    drop_ehr_standardized_table_query = consts.DROP_STANDARDIZED_STREET_TABLE_QUERY.render(
         project_id=project_id,
         dataset_id=drc_dataset_id,
         standardized_street_table_id=
@@ -368,7 +192,20 @@ def identify_rdr_ehr_match(client,
     job = client.query(drop_ehr_standardized_table_query)
     job.result()
 
-    create_ehr_standardized_table_query = CREATE_STANDARDIZED_STREET_TABLE_QUERY.render(
+    LOGGER.info(
+        f"Running the following drop statement: {drop_ehr_standardized_table_query}."
+    )
+
+    abb_st = pandas.read_csv(
+        '/Users/hm2920/Documents/GitHub/curation/data_steward/resource_files/validation/participants/abbreviation_street.csv',
+        header=0)
+
+    abb_string = ",".join([
+        f"('{abbreviated}','{unabbreviated}')" for abbreviated, unabbreviated in
+        zip(abb_st['abbreviated'], abb_st['unabbreviated'])
+    ])
+
+    create_ehr_standardized_table_query = consts.CREATE_STANDARDIZED_STREET_TABLE_QUERY.render(
         project_id=project_id,
         dataset_id=drc_dataset_id,
         standardized_street_table_id=
@@ -377,11 +214,16 @@ def identify_rdr_ehr_match(client,
         source_table_id=hpo_location_table_id,
         id='location_id',
         street_column='address_1',
+        abbreviation_street_tuples=abb_string,
         _PARTITIONTIME_as='',
         _PARTITIONTIME='')
 
     job = client.query(create_ehr_standardized_table_query)
     job.result()
+
+    LOGGER.info(
+        f"Running the following create statement: {create_ehr_standardized_table_query}."
+    )
 
     job = client.query(
         f"select * from {drc_dataset_id}.{hpo_location_table_id}_ehr_standardized_street order by location_id"
@@ -392,7 +234,7 @@ def identify_rdr_ehr_match(client,
     for row in actual:
         LOGGER.info(f"RESULT - {row}.")
 
-    drop_rdr_standardized_table_query = DROP_STANDARDIZED_STREET_TABLE_QUERY.render(
+    drop_rdr_standardized_table_query = consts.DROP_STANDARDIZED_STREET_TABLE_QUERY.render(
         project_id=project_id,
         dataset_id=drc_dataset_id,
         standardized_street_table_id=f'{ps_api_table_id}_rdr_standardized_street'
@@ -401,7 +243,11 @@ def identify_rdr_ehr_match(client,
     job = client.query(drop_rdr_standardized_table_query)
     job.result()
 
-    create_rdr_standardized_table_query = CREATE_STANDARDIZED_STREET_TABLE_QUERY.render(
+    LOGGER.info(
+        f"Running the following drop statement: {drop_rdr_standardized_table_query}."
+    )
+
+    create_rdr_standardized_table_query = consts.CREATE_STANDARDIZED_STREET_TABLE_QUERY.render(
         project_id=project_id,
         dataset_id=drc_dataset_id,
         standardized_street_table_id=
@@ -410,22 +256,27 @@ def identify_rdr_ehr_match(client,
         source_table_id=ps_api_table_id,
         id='person_id',
         street_column='street_address',
+        abbreviation_street_tuples=abb_string,
         _PARTITIONTIME_as='_PARTITIONTIME as partitiontime,',
         _PARTITIONTIME='partitiontime,')
 
     job = client.query(create_rdr_standardized_table_query)
     job.result()
 
+    LOGGER.info(
+        f"Running the following create statement: {create_rdr_standardized_table_query}."
+    )
+
     job = client.query(
         f"select * from {drc_dataset_id}.{ps_api_table_id}_rdr_standardized_street order by person_id"
     )
-    result = job.result()
-    actual = [dict(row.items()) for row in result]
-    actual = [{key: value for key, value in row.items()} for row in actual]
+    actual = [{key: value
+               for key, value in row.items()}
+              for row in [dict(row.items()) for row in job.result()]]
     for row in actual:
         LOGGER.info(f"RESULT - {row}.")
 
-    match_query = MATCH_FIELDS_STREET_ADDRESS_QUERY.render(
+    match_query = consts.MATCH_FIELDS_STREET_ADDRESS_QUERY.render(
         project_id=project_id,
         id_match_table_id=id_match_table_id,
         hpo_pii_address_table_id=hpo_pii_address_table_id,
@@ -437,10 +288,10 @@ def identify_rdr_ehr_match(client,
         drc_dataset_id=drc_dataset_id,
         ehr_ops_dataset_id=ehr_ops_dataset_id,
         _PARTITIONTIME='partitiontime',
-        match=MATCH,
-        no_match=NO_MATCH,
-        missing_rdr=MISSING_RDR,
-        missing_ehr=MISSING_EHR)
+        match=consts.MATCH,
+        no_match=consts.NO_MATCH,
+        missing_rdr=consts.MISSING_RDR,
+        missing_ehr=consts.MISSING_EHR)
 
     LOGGER.info(f"Running the following update statement: {match_query}.")
 
@@ -450,15 +301,15 @@ def identify_rdr_ehr_match(client,
     job = client.query(
         f"select person_id, address_1, address_2 from {drc_dataset_id}.{id_match_table_id} order by person_id"
     )
-    result = job.result()
-    actual = [dict(row.items()) for row in result]
-    actual = [{key: value for key, value in row.items()} for row in actual]
+    actual = [{key: value
+               for key, value in row.items()}
+              for row in [dict(row.items()) for row in job.result()]]
     for row in actual:
         LOGGER.info(f"RESULT - {row}.")
 
     ## Address two from here
 
-    drop_ehr_standardized_table_query = DROP_STANDARDIZED_STREET_TABLE_QUERY.render(
+    drop_ehr_standardized_table_query = consts.DROP_STANDARDIZED_STREET_TABLE_QUERY.render(
         project_id=project_id,
         dataset_id=drc_dataset_id,
         standardized_street_table_id=
@@ -467,7 +318,7 @@ def identify_rdr_ehr_match(client,
     job = client.query(drop_ehr_standardized_table_query)
     job.result()
 
-    create_ehr_standardized_table_query = CREATE_STANDARDIZED_STREET_TABLE_QUERY.render(
+    create_ehr_standardized_table_query = consts.CREATE_STANDARDIZED_STREET_TABLE_QUERY.render(
         project_id=project_id,
         dataset_id=drc_dataset_id,
         standardized_street_table_id=
@@ -476,6 +327,7 @@ def identify_rdr_ehr_match(client,
         source_table_id=hpo_location_table_id,
         id='location_id',
         street_column='address_2',
+        abbreviation_street_tuples=abb_string,
         _PARTITIONTIME_as='',
         _PARTITIONTIME='')
 
@@ -485,13 +337,13 @@ def identify_rdr_ehr_match(client,
     job = client.query(
         f"select * from {drc_dataset_id}.{hpo_location_table_id}_ehr_standardized_street order by location_id"
     )
-    result = job.result()
-    actual = [dict(row.items()) for row in result]
-    actual = [{key: value for key, value in row.items()} for row in actual]
+    actual = [{key: value
+               for key, value in row.items()}
+              for row in [dict(row.items()) for row in job.result()]]
     for row in actual:
         LOGGER.info(f"RESULT - {row}.")
 
-    drop_rdr_standardized_table_query = DROP_STANDARDIZED_STREET_TABLE_QUERY.render(
+    drop_rdr_standardized_table_query = consts.DROP_STANDARDIZED_STREET_TABLE_QUERY.render(
         project_id=project_id,
         dataset_id=drc_dataset_id,
         standardized_street_table_id=f'{ps_api_table_id}_rdr_standardized_street'
@@ -500,7 +352,7 @@ def identify_rdr_ehr_match(client,
     job = client.query(drop_rdr_standardized_table_query)
     job.result()
 
-    create_rdr_standardized_table_query = CREATE_STANDARDIZED_STREET_TABLE_QUERY.render(
+    create_rdr_standardized_table_query = consts.CREATE_STANDARDIZED_STREET_TABLE_QUERY.render(
         project_id=project_id,
         dataset_id=drc_dataset_id,
         standardized_street_table_id=
@@ -509,6 +361,7 @@ def identify_rdr_ehr_match(client,
         source_table_id=ps_api_table_id,
         id='person_id',
         street_column='street_address2',
+        abbreviation_street_tuples=abb_string,
         _PARTITIONTIME_as='_PARTITIONTIME as partitiontime,',
         _PARTITIONTIME='partitiontime,')
 
@@ -518,13 +371,13 @@ def identify_rdr_ehr_match(client,
     job = client.query(
         f"select * from {drc_dataset_id}.{ps_api_table_id}_rdr_standardized_street order by person_id"
     )
-    result = job.result()
-    actual = [dict(row.items()) for row in result]
-    actual = [{key: value for key, value in row.items()} for row in actual]
+    actual = [{key: value
+               for key, value in row.items()}
+              for row in [dict(row.items()) for row in job.result()]]
     for row in actual:
         LOGGER.info(f"RESULT - {row}.")
 
-    match_query = MATCH_FIELDS_STREET_ADDRESS_QUERY_2.render(
+    match_query = consts.MATCH_FIELDS_STREET_ADDRESS_QUERY_2.render(
         project_id=project_id,
         id_match_table_id=id_match_table_id,
         hpo_pii_address_table_id=hpo_pii_address_table_id,
@@ -536,10 +389,10 @@ def identify_rdr_ehr_match(client,
         drc_dataset_id=drc_dataset_id,
         ehr_ops_dataset_id=ehr_ops_dataset_id,
         _PARTITIONTIME='partitiontime',
-        match=MATCH,
-        no_match=NO_MATCH,
-        missing_rdr=MISSING_RDR,
-        missing_ehr=MISSING_EHR)
+        match=consts.MATCH,
+        no_match=consts.NO_MATCH,
+        missing_rdr=consts.MISSING_RDR,
+        missing_ehr=consts.MISSING_EHR)
 
     LOGGER.info(f"Running the following update statement: {match_query}.")
 
@@ -549,9 +402,9 @@ def identify_rdr_ehr_match(client,
     job = client.query(
         f"select person_id, address_1, address_2 from {drc_dataset_id}.{id_match_table_id} order by person_id"
     )
-    result = job.result()
-    actual = [dict(row.items()) for row in result]
-    actual = [{key: value for key, value in row.items()} for row in actual]
+    actual = [{key: value
+               for key, value in row.items()}
+              for row in [dict(row.items()) for row in job.result()]]
     for row in actual:
         LOGGER.info(f"RESULT - {row}.")
 
