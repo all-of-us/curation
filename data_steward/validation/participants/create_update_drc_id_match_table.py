@@ -17,11 +17,9 @@ import argparse
 
 # Project imports
 import resources
-from utils import bq
-from utils import auth
+from utils import bq, auth
 import bq_utils
-from common import CDR_SCOPES
-from common import JINJA_ENV, PS_API_VALUES, DRC_OPS
+from common import JINJA_ENV, PS_API_VALUES, DRC_OPS, CDR_SCOPES
 from constants.validation.participants.identity_match import IDENTITY_MATCH_TABLE
 
 LOGGER = logging.getLogger(__name__)
