@@ -4,7 +4,7 @@ import os
 from tools.consolidated_reports import query_reports
 from io import open
 
-DRC_BUCKET_PATH = 'gs://%s/' % os.environ.get('DRC_BUCKET_NAME')
+DRC_BUCKET_PATH = query_reports.get_drc_bucket_path()
 DATASOURCES_PATH = 'curation_report/data/datasources.json'
 
 
