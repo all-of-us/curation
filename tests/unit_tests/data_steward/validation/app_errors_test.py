@@ -77,14 +77,11 @@ class AppErrorHandlersTest(TestCase):
             self.assertEqual(view, app_errors.DEFAULT_VIEW_MESSAGE)
             self.assertTrue(code, app_errors.DEFAULT_ERROR_STATUS)
 
-    @mock.patch('gcs_utils.list_bucket')
     @mock.patch('api_util.check_cron')
-    def test_handlers_fire(self, mock_check_cron, mock_list_bucket):
+    def test_handlers_fire(self, mock_check_cron):
         """
         Test the os handler method fires as expected when an OSError is raised.
         """
-        mock_list_bucket.side_effect = HttpError(mock.Mock(status=404),
-                                                 'not found'.encode())
         hpo_id = 'no_bucket_exists'
         with main.app.test_client() as tc:
             os.environ.pop(f"BUCKET_NAME_{hpo_id.upper()}", None)

@@ -4,7 +4,6 @@ Unit test components of data_steward.validation.main
 # Python imports
 import datetime
 import re
-import os
 from unittest import TestCase, mock
 
 # Project imports
@@ -54,14 +53,13 @@ class ValidationMainTest(TestCase):
 
     def test_retention_checks_list_submitted_bucket_items(self):
         #Define times to use
-        within_retention = datetime.datetime.today() - datetime.timedelta(
+        within_retention = datetime.datetime.now(tz=None) - datetime.timedelta(
             days=25)
-        outside_retention = datetime.datetime.today() - datetime.timedelta(
+        outside_retention = datetime.datetime.now(tz=None) - datetime.timedelta(
             days=29)
-        before_lag_time = datetime.datetime.today() - datetime.timedelta(
+        before_lag_time = datetime.datetime.now(tz=None) - datetime.timedelta(
             minutes=3)
-
-        after_lag_time = datetime.datetime.today() - datetime.timedelta(
+        after_lag_time = datetime.datetime.now(tz=None) - datetime.timedelta(
             minutes=7)
 
         # If any required files are missing, nothing should be returned
@@ -259,7 +257,10 @@ class ValidationMainTest(TestCase):
 
         mock_perform_validation_on_file.side_effect = perform_validation_on_file
 
-        actual_result = main.validate_submission(self.hpo_id, self.hpo_bucket,
+        mock_bucket = mock.MagicMock()
+        type(mock_bucket).name = mock.PropertyMock(return_value=self.hpo_bucket)
+
+        actual_result = main.validate_submission(self.hpo_id, mock_bucket,
                                                  folder_items, folder_prefix)
         self.assertCountEqual(expected_results, actual_result.get('results'))
         self.assertCountEqual(expected_errors, actual_result.get('errors'))
@@ -399,7 +400,7 @@ class ValidationMainTest(TestCase):
         mock_folder_items.assert_called_once_with(
             mock_client.get_bucket_items_metadata.return_value, submission_path)
         mock_validation.assert_called()
-        mock_validation.assert_called_once_with(fake_hpo, 'fake_bucket_name',
+        mock_validation.assert_called_once_with(fake_hpo, mock_bucket,
                                                 mock_folder_items.return_value,
                                                 submission_path)
         mock_run_achilles.assert_called()

@@ -858,12 +858,12 @@ def load_table_from_csv(project_id,
                    the fields are stored in a json file in resource_files/fields named table_name.json
     :return: BQ response for the load query
     """
-    if csv_path is None:
+    if not csv_path:
         csv_path = os.path.join(resources.resource_files_path,
                                 table_name + ".csv")
     table_list = resources.csv_to_list(csv_path)
 
-    if fields is None:
+    if not fields:
         fields = resources.fields_for(table_name)
     field_names = ', '.join([field['name'] for field in fields])
     row_exprs = [csv_line_to_sql_row_expr(t, fields) for t in table_list]
