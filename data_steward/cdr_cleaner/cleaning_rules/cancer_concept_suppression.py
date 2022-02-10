@@ -31,7 +31,7 @@ SELECT  c.*
 FROM `{{project_id}}.{{dataset_id}}.concept` c
 WHERE REGEXP_CONTAINS(c.concept_code, 
     r'(History_WhichConditions)|(History_AdditionalDiagnosis)|(OutsideTravel6MonthWhere)'
-)
+) AND vocabulary_id = 'PPI'
 """)
 
 
