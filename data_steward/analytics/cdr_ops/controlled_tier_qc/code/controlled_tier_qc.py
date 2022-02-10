@@ -64,11 +64,12 @@ def display_check_summary_by_rule(checks_df):
     if not by_rule.empty:
         rules_not_run = set(check_description['rule']) - set(by_rule['rule'])
         by_rule = by_rule.merge(check_description, how='outer', on='rule')
-        by_rule.loc[by_rule['rule'].isin(rules_not_run), 'note'] = 'NOT RUN'
+        by_rule.loc[by_rule['rule'].isin(rules_not_run),
+                    'note'] = 'Nothing to Report'
     else:
         by_rule = check_description.copy()
         by_rule['n_row_violation'] = 0
-        by_rule['note'] = 'NOT RUN'
+        by_rule['note'] = 'Not Run'
     by_rule['n_row_violation'] = by_rule['n_row_violation'].fillna(0).astype(
         int)
     col_order = [col for col in check_description] + ['n_row_violation', 'note']
@@ -76,7 +77,8 @@ def display_check_summary_by_rule(checks_df):
     return by_rule.style.apply(highlight, axis=1)
 
 
-def display_check_detail_of_rule(checks_df, rule):
+def display_check_detail_of_rule(checks_df, rule, to_include):
+
     col_orders = [
         'table_name', 'column_name', 'concept_id', 'concept_code',
         'n_row_violation', 'query'
@@ -87,4 +89,7 @@ def display_check_detail_of_rule(checks_df, rule):
         columns = [col for col in col_orders if col in to_print_df]
         return pretty_print(to_print_df[columns])
     else:
-        return 'Nothing to report or not run'
+        if to_include and rule not in to_include:
+            return 'Not Run'
+        else:
+            return 'Nothing to Report'
