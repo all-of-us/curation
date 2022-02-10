@@ -100,6 +100,7 @@ from cdr_cleaner.cleaning_rules.identifying_field_suppression import IDFieldSupp
 from cdr_cleaner.cleaning_rules.aggregate_zip_codes import AggregateZipCodes
 from cdr_cleaner.cleaning_rules.remove_extra_tables import RemoveExtraTables
 from cdr_cleaner.cleaning_rules.store_pid_rid_mappings import StoreNewPidRidMappings
+from cdr_cleaner.cleaning_rules.suppress_combined_pfmh_survey import CombinedPersonalFamilyHealthSurveySuppression
 from cdr_cleaner.cleaning_rules.update_invalid_zip_codes import UpdateInvalidZipCodes
 from cdr_cleaner.manual_cleaning_rules.survey_version_info import COPESurveyVersionTask
 from cdr_cleaner.cleaning_rules.deid.string_fields_suppression import StringFieldsSuppression
@@ -140,6 +141,7 @@ RDR_CLEANING_CLASSES = [
     (StoreNewPidRidMappings,),
     (TruncateRdrData,),
     (RemoveParticipantsUnder18Years,),
+    (CombinedPersonalFamilyHealthSurveySuppression,),
     # execute map_questions_answers_to_omop before PpiBranching gets executed
     # since PpiBranching relies on fully mapped concepts
     # trying to load a table while creating query strings,
