@@ -85,16 +85,16 @@ class CancerConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
             INSERT INTO `{{fq_dataset_name}}.concept`
                 (concept_id, concept_name, domain_id, vocabulary_id, concept_class_id, concept_code, valid_start_date, valid_end_date)
             VALUES
-                (43529626, "some text", "some text", "some text", "some text", "OutsideTravel6Month_OutsideTravel6MonthWhereTravel", date('2020-05-05'), date('2020-05-05')),
-                (43529099, "some text", "some text", "some text", "some text", "OutsideTravel6Month_OutsideTravel6MonthWhere", date('2020-05-05'), date('2020-05-05')),
-                (43529102, "some text", "some text", "some text", "some text", "MotherDiagnosisHistory_WhichConditions", date('2020-05-05'), date('2020-05-05')),
-                (43529627, "some text", "some text", "some text", "some text", "CancerCondition_OtherCancer", date('2020-05-05'), date('2020-05-05')),
-                (43529625, "some text", "some text", "some text", "some text", "FatherCancerCondition_OtherCancers", date('2020-05-05'), date('2020-05-05')),
-                (43529100, "some text", "some text", "some text", "some text", "SonCancerCondition_History_AdditionalDiagnosis", date('2020-05-05'), date('2020-05-05')),
-                (10821410, "some text", "some text", "some text", "some text", "Sister_History_AdditionalDiagnoses", date('2020-05-05'), date('2020-05-05')),
-                (42181902, "some text", "some text", "some text", "some text", "Cancer", date('2020-05-05'), date('2020-05-05')),
-                (24182910, "some text", "some text", "some text", "some text", "", date('2020-05-05'), date('2020-05-05')),
-                (43529098, "some text", "some text", "some text", "some text", "FatherDiagnosisHistory_WhichConditions", date('2020-05-05'), date('2020-05-05'))
+                (43529626, "some text", "some text", "PPI", "some text", "OutsideTravel6Month_OutsideTravel6MonthWhereTravel", date('2020-05-05'), date('2020-05-05')),
+                (43529099, "some text", "some text", "PPI", "some text", "OutsideTravel6Month_OutsideTravel6MonthWhere", date('2020-05-05'), date('2020-05-05')),
+                (43529102, "some text", "some text", "PPI", "some text", "MotherDiagnosisHistory_WhichConditions", date('2020-05-05'), date('2020-05-05')),
+                (43529627, "some text", "some text", "PPI", "some text", "CancerCondition_OtherCancer", date('2020-05-05'), date('2020-05-05')),
+                (43529625, "some text", "some text", "PPI", "some text", "FatherCancerCondition_OtherCancers", date('2020-05-05'), date('2020-05-05')),
+                (43529100, "some text", "some text", "PPI", "some text", "SonCancerCondition_History_AdditionalDiagnosis", date('2020-05-05'), date('2020-05-05')),
+                (10821410, "some text", "some text", "PPI", "some text", "Sister_History_AdditionalDiagnoses", date('2020-05-05'), date('2020-05-05')),
+                (42181902, "some text", "some text", "PPI", "some text", "Cancer", date('2020-05-05'), date('2020-05-05')),
+                (24182910, "some text", "some text", "PPI", "some text", "", date('2020-05-05'), date('2020-05-05')),
+                (43529098, "some text", "some text", "PPI", "some text", "FatherDiagnosisHistory_WhichConditions", date('2020-05-05'), date('2020-05-05'))
         """).render(fq_dataset_name=self.fq_dataset_name)
 
         drop_records_query_tmpl = self.jinja_env.from_string("""
