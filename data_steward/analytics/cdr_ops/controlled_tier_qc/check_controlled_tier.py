@@ -43,7 +43,7 @@ checks = run_qc(project_id,
 
 # # Summary
 
-display_check_summary_by_rule(checks)
+display_check_summary_by_rule(checks, to_include)
 
 # # [DC-1370: String type field suppression](https://precisionmedicineinitiative.atlassian.net/browse/DC-1370)
 
