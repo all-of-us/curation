@@ -143,6 +143,15 @@ def identify_rdr_ehr_match(client,
     hpo_location_table_id = get_table_id(LOCATION, hpo_id)
     hpo_person_table_id = get_table_id(PERSON, hpo_id)
 
+    abb_st = pandas.read_csv(
+        '/Users/hm2920/Documents/GitHub/curation/data_steward/resource_files/validation/participants/abbreviation_street.csv',
+        header=0)
+
+    abb_string = ",\n".join([
+        f"('{abbreviated}','{unabbreviated}')" for abbreviated, unabbreviated in
+        zip(abb_st['abbreviated'], abb_st['unabbreviated'])
+    ])
+
     for item in consts.CREATE_COMPARISON_FUNCTION_QUERIES:
         LOGGER.info(f"Creating `{item['name']}` function if doesn't exist.")
 
@@ -153,6 +162,7 @@ def identify_rdr_ehr_match(client,
             no_match=consts.NO_MATCH,
             missing_rdr=consts.MISSING_RDR,
             missing_ehr=consts.MISSING_EHR,
+            abbreviation_street_tuples=abb_string,
             gender_case_when_conditions=get_gender_comparison_case_statement(),
             state_abbreviations=get_state_abbreviations(),
             city_with_clause=get_with_clause('city'))
@@ -183,111 +193,14 @@ def identify_rdr_ehr_match(client,
     job = client.query(match_query)
     job.result()
 
-    drop_ehr_standardized_table_query = consts.DROP_STANDARDIZED_STREET_TABLE_QUERY.render(
-        project_id=project_id,
-        dataset_id=drc_dataset_id,
-        standardized_street_table_id=
-        f'{hpo_location_table_id}_ehr_standardized_street')
-
-    job = client.query(drop_ehr_standardized_table_query)
-    job.result()
-
-    LOGGER.info(
-        f"Running the following drop statement: {drop_ehr_standardized_table_query}."
-    )
-
-    abb_st = pandas.read_csv(
-        '/Users/hm2920/Documents/GitHub/curation/data_steward/resource_files/validation/participants/abbreviation_street.csv',
-        header=0)
-
-    abb_string = ",".join([
-        f"('{abbreviated}','{unabbreviated}')" for abbreviated, unabbreviated in
-        zip(abb_st['abbreviated'], abb_st['unabbreviated'])
-    ])
-
-    create_ehr_standardized_table_query = consts.CREATE_STANDARDIZED_STREET_TABLE_QUERY.render(
-        project_id=project_id,
-        dataset_id=drc_dataset_id,
-        standardized_street_table_id=
-        f'{hpo_location_table_id}_ehr_standardized_street',
-        source_dataset_id=ehr_ops_dataset_id,
-        source_table_id=hpo_location_table_id,
-        id='location_id',
-        street_column='address_1',
-        abbreviation_street_tuples=abb_string,
-        _PARTITIONTIME_as='',
-        _PARTITIONTIME='')
-
-    job = client.query(create_ehr_standardized_table_query)
-    job.result()
-
-    LOGGER.info(
-        f"Running the following create statement: {create_ehr_standardized_table_query}."
-    )
-
-    job = client.query(
-        f"select * from {drc_dataset_id}.{hpo_location_table_id}_ehr_standardized_street order by location_id"
-    )
-    result = job.result()
-    actual = [dict(row.items()) for row in result]
-    actual = [{key: value for key, value in row.items()} for row in actual]
-    for row in actual:
-        LOGGER.info(f"RESULT - {row}.")
-
-    drop_rdr_standardized_table_query = consts.DROP_STANDARDIZED_STREET_TABLE_QUERY.render(
-        project_id=project_id,
-        dataset_id=drc_dataset_id,
-        standardized_street_table_id=f'{ps_api_table_id}_rdr_standardized_street'
-    )
-
-    job = client.query(drop_rdr_standardized_table_query)
-    job.result()
-
-    LOGGER.info(
-        f"Running the following drop statement: {drop_rdr_standardized_table_query}."
-    )
-
-    create_rdr_standardized_table_query = consts.CREATE_STANDARDIZED_STREET_TABLE_QUERY.render(
-        project_id=project_id,
-        dataset_id=drc_dataset_id,
-        standardized_street_table_id=
-        f'{ps_api_table_id}_rdr_standardized_street',
-        source_dataset_id=drc_dataset_id,
-        source_table_id=ps_api_table_id,
-        id='person_id',
-        street_column='street_address',
-        abbreviation_street_tuples=abb_string,
-        _PARTITIONTIME_as='_PARTITIONTIME as partitiontime,',
-        _PARTITIONTIME='partitiontime,')
-
-    job = client.query(create_rdr_standardized_table_query)
-    job.result()
-
-    LOGGER.info(
-        f"Running the following create statement: {create_rdr_standardized_table_query}."
-    )
-
-    job = client.query(
-        f"select * from {drc_dataset_id}.{ps_api_table_id}_rdr_standardized_street order by person_id"
-    )
-    actual = [{key: value
-               for key, value in row.items()}
-              for row in [dict(row.items()) for row in job.result()]]
-    for row in actual:
-        LOGGER.info(f"RESULT - {row}.")
-
     match_query = consts.MATCH_FIELDS_STREET_ADDRESS_QUERY.render(
         project_id=project_id,
         id_match_table_id=id_match_table_id,
         hpo_pii_address_table_id=hpo_pii_address_table_id,
-        drc_standardized_street_table_id=
-        f'{ps_api_table_id}_rdr_standardized_street',
-        ehr_standardized_street_table_id=
-        f'{hpo_location_table_id}_ehr_standardized_street',
+        hpo_location_table_id=hpo_location_table_id,
         ps_api_table_id=ps_api_table_id,
         drc_dataset_id=drc_dataset_id,
         ehr_ops_dataset_id=ehr_ops_dataset_id,
-        _PARTITIONTIME='partitiontime',
         match=consts.MATCH,
         no_match=consts.NO_MATCH,
         missing_rdr=consts.MISSING_RDR,
@@ -297,116 +210,6 @@ def identify_rdr_ehr_match(client,
 
     job = client.query(match_query)
     job.result()
-
-    job = client.query(
-        f"select person_id, address_1, address_2 from {drc_dataset_id}.{id_match_table_id} order by person_id"
-    )
-    actual = [{key: value
-               for key, value in row.items()}
-              for row in [dict(row.items()) for row in job.result()]]
-    for row in actual:
-        LOGGER.info(f"RESULT - {row}.")
-
-    ## Address two from here
-
-    drop_ehr_standardized_table_query = consts.DROP_STANDARDIZED_STREET_TABLE_QUERY.render(
-        project_id=project_id,
-        dataset_id=drc_dataset_id,
-        standardized_street_table_id=
-        f'{hpo_location_table_id}_ehr_standardized_street')
-
-    job = client.query(drop_ehr_standardized_table_query)
-    job.result()
-
-    create_ehr_standardized_table_query = consts.CREATE_STANDARDIZED_STREET_TABLE_QUERY.render(
-        project_id=project_id,
-        dataset_id=drc_dataset_id,
-        standardized_street_table_id=
-        f'{hpo_location_table_id}_ehr_standardized_street',
-        source_dataset_id=ehr_ops_dataset_id,
-        source_table_id=hpo_location_table_id,
-        id='location_id',
-        street_column='address_2',
-        abbreviation_street_tuples=abb_string,
-        _PARTITIONTIME_as='',
-        _PARTITIONTIME='')
-
-    job = client.query(create_ehr_standardized_table_query)
-    job.result()
-
-    job = client.query(
-        f"select * from {drc_dataset_id}.{hpo_location_table_id}_ehr_standardized_street order by location_id"
-    )
-    actual = [{key: value
-               for key, value in row.items()}
-              for row in [dict(row.items()) for row in job.result()]]
-    for row in actual:
-        LOGGER.info(f"RESULT - {row}.")
-
-    drop_rdr_standardized_table_query = consts.DROP_STANDARDIZED_STREET_TABLE_QUERY.render(
-        project_id=project_id,
-        dataset_id=drc_dataset_id,
-        standardized_street_table_id=f'{ps_api_table_id}_rdr_standardized_street'
-    )
-
-    job = client.query(drop_rdr_standardized_table_query)
-    job.result()
-
-    create_rdr_standardized_table_query = consts.CREATE_STANDARDIZED_STREET_TABLE_QUERY.render(
-        project_id=project_id,
-        dataset_id=drc_dataset_id,
-        standardized_street_table_id=
-        f'{ps_api_table_id}_rdr_standardized_street',
-        source_dataset_id=drc_dataset_id,
-        source_table_id=ps_api_table_id,
-        id='person_id',
-        street_column='street_address2',
-        abbreviation_street_tuples=abb_string,
-        _PARTITIONTIME_as='_PARTITIONTIME as partitiontime,',
-        _PARTITIONTIME='partitiontime,')
-
-    job = client.query(create_rdr_standardized_table_query)
-    job.result()
-
-    job = client.query(
-        f"select * from {drc_dataset_id}.{ps_api_table_id}_rdr_standardized_street order by person_id"
-    )
-    actual = [{key: value
-               for key, value in row.items()}
-              for row in [dict(row.items()) for row in job.result()]]
-    for row in actual:
-        LOGGER.info(f"RESULT - {row}.")
-
-    match_query = consts.MATCH_FIELDS_STREET_ADDRESS_QUERY_2.render(
-        project_id=project_id,
-        id_match_table_id=id_match_table_id,
-        hpo_pii_address_table_id=hpo_pii_address_table_id,
-        drc_standardized_street_table_id=
-        f'{ps_api_table_id}_rdr_standardized_street',
-        ehr_standardized_street_table_id=
-        f'{hpo_location_table_id}_ehr_standardized_street',
-        ps_api_table_id=ps_api_table_id,
-        drc_dataset_id=drc_dataset_id,
-        ehr_ops_dataset_id=ehr_ops_dataset_id,
-        _PARTITIONTIME='partitiontime',
-        match=consts.MATCH,
-        no_match=consts.NO_MATCH,
-        missing_rdr=consts.MISSING_RDR,
-        missing_ehr=consts.MISSING_EHR)
-
-    LOGGER.info(f"Running the following update statement: {match_query}.")
-
-    job = client.query(match_query)
-    job.result()
-
-    job = client.query(
-        f"select person_id, address_1, address_2 from {drc_dataset_id}.{id_match_table_id} order by person_id"
-    )
-    actual = [{key: value
-               for key, value in row.items()}
-              for row in [dict(row.items()) for row in job.result()]]
-    for row in actual:
-        LOGGER.info(f"RESULT - {row}.")
 
 
 def setup_and_validate_participants(hpo_id):

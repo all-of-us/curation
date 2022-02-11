@@ -21,6 +21,12 @@ from validation.participants.validate import identify_rdr_ehr_match
 from constants.validation.participants.identity_match import IDENTITY_MATCH_TABLE
 import resources
 
+import logging
+from utils import pipeline_logging
+
+LOGGER = logging.getLogger(__name__)
+pipeline_logging.configure(logging.INFO, add_console_handler=True)
+
 person_schema = [
     SchemaField("person_id", "INTEGER", mode="REQUIRED"),
     SchemaField("gender_concept_id", "INTEGER", mode="REQUIRED"),
@@ -246,7 +252,7 @@ class ValidateTest(TestCase):
                 (9, 19)
         """)
 
-        POUPLATE_PERSON_TABLE = JINJA_ENV.from_string("""
+        POPULATE_PERSON_TABLE = JINJA_ENV.from_string("""
                 INSERT INTO `{{project_id}}.{{drc_dataset_id}}.{{person_table_id}}` 
                 (person_id, gender_concept_id, birth_datetime)
                 VALUES
@@ -355,7 +361,7 @@ class ValidateTest(TestCase):
         job = self.client.query(address_populate_query)
         job.result()
 
-        populate_person_query = POUPLATE_PERSON_TABLE.render(
+        populate_person_query = POPULATE_PERSON_TABLE.render(
             project_id=self.project_id,
             drc_dataset_id=self.dataset_id,
             person_table_id=self.person_table_id)
