@@ -187,102 +187,17 @@ CREATE FUNCTION IF NOT EXISTS
   `{{project_id}}.{{drc_dataset_id}}.CompareStreet`(rdr_street string, ehr_street string)
   RETURNS string 
   AS ((
-    WITH normalized_rdr_street AS (
-        WITH address_abbreviations AS (
-            SELECT *
-            FROM UNNEST(ARRAY<STRUCT<abbreviation STRING, expansion STRING>>[
-                {{abbreviation_street_tuples}}
-            ])
-        ),
-        removed_commas_and_periods AS (
-            SELECT 'dummy_id' as id, REGEXP_REPLACE(coalesce(rdr_street, ''), '[,.]', '') as address
-        ),
-        remove_extra_whitespaces AS (
-            SELECT id, REGEXP_REPLACE(TRIM(address), ' +', ' ') as address
-            FROM removed_commas_and_periods
-        ),
-        lowercased AS (
-            SELECT id, LOWER(address) as address
-            FROM remove_extra_whitespaces
-        ),
-        standardized_street_number AS (
-            SELECT id, REGEXP_REPLACE(address,'([0-9])(?:st|nd|rd|th)', r'\\1') as address
-            FROM lowercased
-        ),
-        standardized_apartment_number AS (
-            SELECT id, REGEXP_REPLACE(address,'([0-9])([a-z])',r'\\1 \\2') as address
-            FROM standardized_street_number
-        ),
-        parts AS (
-            SELECT id, part_address
-            FROM standardized_apartment_number,
-                UNNEST(SPLIT(address, ' ')) as part_address
-        ),
-        expanded AS (
-            SELECT 
-                id,
-                COALESCE(expansion, part_address) as expanded_part_address,
-            FROM parts p
-            LEFT JOIN address_abbreviations aa
-            ON aa.abbreviation = p.part_address
-        )
-        SELECT 
-            ARRAY_TO_STRING(ARRAY_AGG(expanded_part_address), ' ') as street,
-        FROM expanded
-        GROUP BY id
-    )
-    , normalized_ehr_street AS (
-        WITH address_abbreviations AS (
-            SELECT *
-            FROM UNNEST(ARRAY<STRUCT<abbreviation STRING, expansion STRING>>[
-                {{abbreviation_street_tuples}}
-            ])
-        ),
-        removed_commas_and_periods AS (
-            SELECT 'dummy_id' as id, REGEXP_REPLACE(coalesce(ehr_street, ''), '[,.]', '') as address
-        ),
-        remove_extra_whitespaces AS (
-            SELECT id, REGEXP_REPLACE(TRIM(address), ' +', ' ') as address
-            FROM removed_commas_and_periods
-        ),
-        lowercased AS (
-            SELECT id, LOWER(address) as address
-            FROM remove_extra_whitespaces
-        ),
-        standardized_street_number AS (
-            SELECT id, REGEXP_REPLACE(address,'([0-9])(?:st|nd|rd|th)', r'\\1') as address
-            FROM lowercased
-        ),
-        standardized_apartment_number AS (
-            SELECT id, REGEXP_REPLACE(address,'([0-9])([a-z])',r'\\1 \\2') as address
-            FROM standardized_street_number
-        ),
-        parts AS (
-            SELECT id, part_address
-            FROM standardized_apartment_number,
-                UNNEST(SPLIT(address, ' ')) as part_address
-        ),
-        expanded AS (
-            SELECT 
-                id,
-                COALESCE(expansion, part_address) as expanded_part_address,
-            FROM parts p
-            LEFT JOIN address_abbreviations aa
-            ON aa.abbreviation = p.part_address
-        )
-        SELECT 
-            ARRAY_TO_STRING(ARRAY_AGG(expanded_part_address), ' ') as street,
-        FROM expanded
-        GROUP BY id
-    )
+    WITH 
+      normalized_rdr AS ({{normalized_rdr_street}}),
+      normalized_ehr AS ({{normalized_ehr_street}})
     SELECT
       CASE
         WHEN rdr_street IS NULL THEN '{{missing_rdr}}'
         WHEN ehr_street IS NULL THEN '{{missing_ehr}}'
-        WHEN normalized_rdr_street.street = normalized_ehr_street.street THEN '{{match}}'
+        WHEN normalized_rdr.street = normalized_ehr.street THEN '{{match}}'
         ELSE '{{no_match}}'
       END AS street
-    FROM normalized_rdr_street, normalized_ehr_street
+    FROM normalized_rdr, normalized_ehr
   ));
 """)
 
@@ -290,15 +205,95 @@ CREATE_CITY_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
 CREATE FUNCTION IF NOT EXISTS
   `{{project_id}}.{{drc_dataset_id}}.CompareCity`(rdr_city string, ehr_city string)
   RETURNS string AS ((
-    {{city_with_clause}}
+    WITH 
+      normalized_rdr AS ({{normalized_rdr_city}}),
+      normalized_ehr AS ({{normalized_ehr_city}})    
     SELECT
       CASE
-        WHEN normalized_rdr_city.rdr_city = normalized_ehr_city.ehr_city THEN '{{match}}'
-        WHEN normalized_rdr_city.rdr_city IS NOT NULL AND normalized_ehr_city.ehr_city IS NOT NULL THEN '{{no_match}}'
-        WHEN normalized_rdr_city.rdr_city IS NULL THEN '{{missing_rdr}}'
-        ELSE '{{missing_ehr}}'
+        WHEN rdr_city IS NULL THEN '{{missing_rdr}}'
+        WHEN ehr_city IS NULL THEN '{{missing_ehr}}'
+        WHEN normalized_rdr.city = normalized_ehr.city THEN '{{match}}'
+        ELSE '{{no_match}}'
       END AS city
-    FROM normalized_rdr_city, normalized_ehr_city));
+    FROM normalized_rdr, normalized_ehr));
+""")
+
+NORMALIZED_STREET = JINJA_ENV.from_string("""
+    WITH address_abbreviations AS (
+        SELECT *
+        FROM UNNEST(ARRAY<STRUCT<abbreviation STRING, expansion STRING>>[
+            {{abbreviation_street_tuples}}
+        ])
+    ),
+    remove_commas_and_periods AS (
+        SELECT 'dummy_id' as id, REGEXP_REPLACE(coalesce({{street}}, ''), '[,.]', '') as address
+    ),
+    remove_extra_whitespaces AS (
+        SELECT id, REGEXP_REPLACE(TRIM(address), ' +', ' ') as address
+        FROM remove_commas_and_periods
+    ),
+    lowercased AS (
+        SELECT id, LOWER(address) as address
+        FROM remove_extra_whitespaces
+    ),
+    standardized_street_number AS (
+        SELECT id, REGEXP_REPLACE(address,'([0-9])(?:st|nd|rd|th)', r'\\1') as address
+        FROM lowercased
+    ),
+    standardized_apartment_number AS (
+        SELECT id, REGEXP_REPLACE(address,'([0-9])([a-z])',r'\\1 \\2') as address
+        FROM standardized_street_number
+    ),
+    parts AS (
+        SELECT id, part_address
+        FROM standardized_apartment_number, UNNEST(SPLIT(address, ' ')) as part_address
+    ),
+    expanded AS (
+        SELECT 
+            id, COALESCE(expansion, part_address) as expanded_part_address,
+        FROM parts p
+        LEFT JOIN address_abbreviations aa
+        ON aa.abbreviation = p.part_address
+    )
+    SELECT 
+        ARRAY_TO_STRING(ARRAY_AGG(expanded_part_address), ' ') as street,
+    FROM expanded
+    GROUP BY id
+""")
+
+NORMALIZED_CITY = JINJA_ENV.from_string("""
+    WITH address_abbreviations AS (
+        SELECT *
+        FROM UNNEST(ARRAY<STRUCT<abbreviation STRING, expansion STRING>>[
+            {{abbreviation_city_tuples}}
+        ])
+    ),
+    remove_commas_and_periods AS (
+        SELECT 'dummy_id' as id, REGEXP_REPLACE(coalesce({{city}}, ''), '[,.]', '') as address
+    ),
+    remove_extra_whitespaces AS (
+        SELECT id, REGEXP_REPLACE(TRIM(address), ' +', ' ') as address
+        FROM remove_commas_and_periods
+    ),
+    lowercased AS (
+        SELECT id, LOWER(address) as address
+        FROM remove_extra_whitespaces
+    ),
+    parts AS (
+        SELECT id, part_address
+        FROM lowercased, UNNEST(SPLIT(address, ' ')) as part_address
+    ),
+    expanded AS (
+        SELECT 
+            id, COALESCE(expansion, part_address) as expanded_part_address,
+        FROM parts p
+        LEFT JOIN address_abbreviations aa
+        ON aa.abbreviation = p.part_address
+    )
+    SELECT 
+        ARRAY_TO_STRING(ARRAY_AGG(expanded_part_address), ' ') as city,
+    FROM expanded
+    GROUP BY id
 """)
 
 CREATE_STATE_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
@@ -473,6 +468,8 @@ UPDATE `{{project_id}}.{{drc_dataset_id}}.{{id_match_table_id}}` upd
 SET upd.first_name = `{{project_id}}.{{drc_dataset_id}}.CompareName`(ps.first_name, ehr_name.first_name),
     upd.middle_name = `{{project_id}}.{{drc_dataset_id}}.CompareName`(ps.middle_name, ehr_name.middle_name),
     upd.last_name = `{{project_id}}.{{drc_dataset_id}}.CompareName`(ps.last_name, ehr_name.last_name),
+    upd.address_1 = `{{project_id}}.{{drc_dataset_id}}.CompareStreet`(ps.street_address, ehr_address.address_1),
+    upd.address_2 = `{{project_id}}.{{drc_dataset_id}}.CompareStreet`(ps.street_address2, ehr_address.address_2),
     upd.city = `{{project_id}}.{{drc_dataset_id}}.CompareCity`(ps.city, ehr_address.city),
     upd.state = `{{project_id}}.{{drc_dataset_id}}.CompareState`(ps.state, ehr_address.state),
     upd.zip = `{{project_id}}.{{drc_dataset_id}}.CompareZipCode`(ps.zip_code, ehr_address.zip),
@@ -508,22 +505,4 @@ WHERE upd.person_id = ps.person_id
 SUMMARY_QUERY = JINJA_ENV.from_string("""
 SELECT COUNT(*) AS row_count
 FROM `{{project_id}}.{{dataset_id}}.{{id_match_table}}`
-""")
-
-MATCH_FIELDS_STREET_ADDRESS_QUERY = JINJA_ENV.from_string("""
-    UPDATE `{{project_id}}.{{drc_dataset_id}}.{{id_match_table_id}}` upd
-    SET
-        upd.address_1 = `{{project_id}}.{{drc_dataset_id}}.CompareStreet`(ps.street_address, ehr_address.address_1),
-        upd.address_2 = `{{project_id}}.{{drc_dataset_id}}.CompareStreet`(ps.street_address2, ehr_address.address_2),
-        upd.algorithm = 'yes'
-    FROM `{{project_id}}.{{drc_dataset_id}}.{{ps_api_table_id}}` ps
-    FULL OUTER JOIN (
-        SELECT person_id, address_1, address_2, city, state, zip
-        FROM `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_address_table_id}}`
-        LEFT JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_location_table_id}}`
-        USING (location_id)
-        ) ehr_address
-    ON ehr_address.person_id = ps.person_id
-    WHERE (upd.person_id = ps.person_id AND upd._PARTITIONTIME = ps._PARTITIONTIME)
-    OR upd.person_id = ehr_address.person_id
 """)
