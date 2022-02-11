@@ -4,10 +4,12 @@ Test the Google Cloud Storage Client and associated helper functions
 # Python stl imports
 import os
 import unittest
+from unittest.mock import patch
 
 # Project imports
 import app_identity
 from gcloud.gcs import StorageClient
+from validation.app_errors import BucketDoesNotExistError
 
 
 class GcsClientTest(unittest.TestCase):
@@ -30,6 +32,17 @@ class GcsClientTest(unittest.TestCase):
                                     f'{self.prefix}/c', f'{self.prefix}/d')
         self.storage_client.empty_bucket(self.bucket_name)
         self._stage_bucket()
+
+    @patch.object(StorageClient, '_get_hpo_bucket_id')
+    def test_get_hpo_bucket_not_found(self, mock_get_bucket_id):
+        fake_hpo_id = 'fake_hpo_id'
+        fake_bucket_name = 'fake_bucket_name'
+        mock_get_bucket_id.return_value = fake_bucket_name
+        expected_message = f"Failed to acquire bucket '{fake_bucket_name}' for hpo '{fake_hpo_id}'"
+
+        with self.assertRaises(BucketDoesNotExistError) as e:
+            self.storage_client.get_hpo_bucket(fake_hpo_id)
+        self.assertEqual(e.exception.message, expected_message)
 
     def test_get_bucket_items_metadata(self):
 
