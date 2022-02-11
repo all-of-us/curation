@@ -443,7 +443,7 @@ class CombinedPersonalFamilyHealthSurveySuppression(BaseCleaningRule):
                     project=self.project_id,
                     dataset=self.dataset_id,
                     sandbox=self.sandbox_dataset_id,
-                    drop_table=self.get_sandbox_tablenames()[0]),
+                    drop_table=self.sandbox_table_for(OBSERVATION)),
         }
 
         drop_rows_query = {
@@ -452,7 +452,7 @@ class CombinedPersonalFamilyHealthSurveySuppression(BaseCleaningRule):
                     project=self.project_id,
                     dataset=self.dataset_id,
                     sandbox=self.sandbox_dataset_id,
-                    drop_table=self.get_sandbox_tablenames()[0]),
+                    drop_table=self.sandbox_table_for(OBSERVATION)),
         }
 
         return [save_dropped_rows, drop_rows_query]
@@ -513,7 +513,7 @@ class CombinedPersonalFamilyHealthSurveySuppression(BaseCleaningRule):
                                                 OBSERVATION)
         sandbox_obs_count = self.get_table_counts(
             self.client, self.sandbox_dataset_id,
-            self.get_sandbox_tablenames()[0])
+            self.sandbox_table_for(OBSERVATION))
 
         msg = (
             f'The sum of the cleaned observation table count, {clean_obs_count}, '
@@ -524,12 +524,11 @@ class CombinedPersonalFamilyHealthSurveySuppression(BaseCleaningRule):
                                           sandbox_obs_count), msg
 
     def get_sandbox_tablenames(self):
-        issue_numbers = self.issue_numbers
-        primary_issue = issue_numbers[0].replace(
-            '-', '_').lower() if issue_numbers else 'UNKNOWN_ISSUE'
+        sandbox_tables = []
+        for table in self.affected_tables:
+            sandbox_tables.append(self.sandbox_table_for(table))
 
-        sandbox_table_name = f"{primary_issue}_{OBSERVATION}"
-        return [sandbox_table_name]
+        return sandbox_tables
 
 
 if __name__ == '__main__':
