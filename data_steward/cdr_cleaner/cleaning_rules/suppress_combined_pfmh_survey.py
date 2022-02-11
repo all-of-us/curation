@@ -520,8 +520,10 @@ class CombinedPersonalFamilyHealthSurveySuppression(BaseCleaningRule):
             f'and the sandboxed tablecount, {sandbox_obs_count}, is not '
             f'equal to the initial observation table count, {self.initial_obs_count}.'
         )
-        assert self.initial_obs_count == (clean_obs_count +
-                                          sandbox_obs_count), msg
+
+        # ideal for an assert statement, but this is causing codacy alerts
+        if (self.initial_obs_count != (clean_obs_count + sandbox_obs_count)):
+            raise RuntimeError(msg)
 
     def get_sandbox_tablenames(self):
         sandbox_tables = []
