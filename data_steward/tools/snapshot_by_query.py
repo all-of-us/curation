@@ -17,7 +17,9 @@ BIGQUERY_DATA_TYPES = {
     'date': 'DATE',
     'timestamp': 'TIMESTAMP',
     'bool': 'BOOLEAN',
-    'datetime': 'DATETIME'
+    'datetime': 'DATETIME',
+    'record': 'RECORD',
+    'numeric': 'NUMERIC'
 }
 
 
@@ -46,6 +48,7 @@ def create_empty_cdm_tables(snapshot_dataset_id, hpo_id=None):
     for table in resources.CDM_TABLES:
         table_id = resources.get_table_id(table, hpo_id)
         table_name = table
+        LOGGER.info(f'Creating table {snapshot_dataset_id}.{table}...')
         create_standard_table(table_name,
                               table_id,
                               drop_existing=True,
@@ -99,7 +102,7 @@ def get_copy_table_query(project_id, dataset_id, table_id, client):
         source_table = f'{project_id}.{dataset_id}.{table_id}'
         source_fields = get_source_fields(client, source_table)
         dst_fields = resources.fields_for(table_id)
-        if table_id in resources.CDM_TABLES:
+        if dst_fields:
             col_cast_exprs = [
                 get_field_cast_expr(field, source_fields)
                 for field in dst_fields
@@ -127,10 +130,20 @@ def copy_tables_to_new_dataset(project_id, dataset_id, snapshot_dataset_id):
     """
     copy_table_job_ids = []
     client = bq.get_client(project_id)
+    destination_tables = list_all_table_ids(snapshot_dataset_id)
     for table_id in list_all_table_ids(dataset_id):
         LOGGER.info(
             f" Copying {dataset_id}.{table_id} to {snapshot_dataset_id}.{table_id}"
         )
+        if table_id not in destination_tables:
+            try:
+                fields = resources.fields_for(table_id)
+                bq.create_tables(
+                    client, project_id,
+                    [f'{project_id}.{snapshot_dataset_id}.{table_id}'], False,
+                    [fields])
+            except RuntimeError:
+                LOGGER.info(f'Unable to find schema for {table_id}')
         q = get_copy_table_query(project_id, dataset_id, table_id, client)
         results = query(q,
                         use_legacy_sql=False,
