@@ -66,12 +66,14 @@ def display_check_summary_by_rule(checks_df, to_include):
         items=needed_description_columns))
     if not by_rule.empty:
         rules_not_run = set(check_description['rule']) - set(to_include)
-        nothing_to_report = set(to_include) - set(by_rule['rule'].values)
+        nothing_to_report = set(to_include) - set(by_rule['rule'])
 
         by_rule = by_rule.merge(check_description, how='outer', on='rule')
         by_rule.loc[by_rule['rule'].isin(rules_not_run), 'note'] = 'NOT RUN'
         by_rule.loc[by_rule['rule'].isin(nothing_to_report),
                     'note'] = 'NOTHING TO REPORT'
+        by_rule['n_row_violation'] = by_rule['n_row_violation'].fillna(
+            0).astype(int)
     else:
         by_rule = check_description.copy()
         by_rule['n_row_violation'] = 0
