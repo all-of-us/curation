@@ -117,10 +117,10 @@ def main(test_dir, test_pattern, test_filepaths, coverage_filepath):
     try:
         shutil.rmtree(output_file)
     except FileNotFoundError:
-        print(f"{output_file" does not exist so cannot be deleted")
+        print(f"{output_file} does not exist so cannot be deleted")
     else:
         print(f"deleted {output_file} directory")
-        
+
     start_time = time.time()
     for mod_tests in suite:
         if mod_tests.countTestCases():
