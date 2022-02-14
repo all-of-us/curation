@@ -89,78 +89,6 @@ GENDER_MATCH = [{
     }]
 }]
 
-STATE_ABBREVIATIONS = [
-    'al',
-    'ak',
-    'az',
-    'ar',
-    'ca',
-    'co',
-    'ct',
-    'de',
-    'fl',
-    'ga',
-    'hi',
-    'id',
-    'il',
-    'in',
-    'ia',
-    'ks',
-    'ky',
-    'la',
-    'me',
-    'md',
-    'ma',
-    'mi',
-    'mn',
-    'ms',
-    'mo',
-    'mt',
-    'ne',
-    'nv',
-    'nh',
-    'nj',
-    'nm',
-    'ny',
-    'nc',
-    'nd',
-    'oh',
-    'ok',
-    'or',
-    'pa',
-    'ri',
-    'sc',
-    'sd',
-    'tn',
-    'tx',
-    'ut',
-    'vt',
-    'va',
-    'wa',
-    'wv',
-    'wi',
-    'wy',
-    # Commonwealth/Territory:
-    'as',
-    'dc',
-    'fm',
-    'gu',
-    'mh',
-    'mp',
-    'pw',
-    'pr',
-    'vi',
-    # Military "State":
-    'aa',
-    'ae',
-    'ap',
-]
-
-CITY_ABBREVIATIONS = {
-    'st': 'saint',
-    'afb': 'air force base',
-}
-
 CREATE_NAME_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
     CREATE FUNCTION IF NOT EXISTS `{{project_id}}.{{drc_dataset_id}}.CompareName`(rdr_name string, ehr_name string)
     RETURNS string
@@ -188,8 +116,8 @@ CREATE FUNCTION IF NOT EXISTS
   RETURNS string 
   AS ((
     WITH 
-      normalized_rdr AS ({{normalized_rdr_street}}),
-      normalized_ehr AS ({{normalized_ehr_street}})
+      normalized_rdr AS ({{rdr_street}}),
+      normalized_ehr AS ({{ehr_street}})
     SELECT
       CASE
         WHEN rdr_street IS NULL THEN '{{missing_rdr}}'
@@ -206,8 +134,8 @@ CREATE FUNCTION IF NOT EXISTS
   `{{project_id}}.{{drc_dataset_id}}.CompareCity`(rdr_city string, ehr_city string)
   RETURNS string AS ((
     WITH 
-      normalized_rdr AS ({{normalized_rdr_city}}),
-      normalized_ehr AS ({{normalized_ehr_city}})    
+      normalized_rdr AS ({{rdr_city}}),
+      normalized_ehr AS ({{ehr_city}})    
     SELECT
       CASE
         WHEN rdr_city IS NULL THEN '{{missing_rdr}}'
@@ -222,42 +150,42 @@ NORMALIZED_STREET = JINJA_ENV.from_string("""
     WITH address_abbreviations AS (
         SELECT *
         FROM UNNEST(ARRAY<STRUCT<abbreviation STRING, expansion STRING>>[
-            {{abbreviation_street_tuples}}
+            {{abbreviation_tuples}}
         ])
     ),
     remove_commas_and_periods AS (
         SELECT 'dummy_id' as id, REGEXP_REPLACE(coalesce({{street}}, ''), '[,.]', '') as address
     ),
-    remove_extra_whitespaces AS (
+    remove_redundant_whitespaces AS (
         SELECT id, REGEXP_REPLACE(TRIM(address), ' +', ' ') as address
         FROM remove_commas_and_periods
     ),
-    lowercased AS (
+    lowercase AS (
         SELECT id, LOWER(address) as address
-        FROM remove_extra_whitespaces
+        FROM remove_redundant_whitespaces
     ),
-    standardized_street_number AS (
+    standardize_ordinal_number AS (
         SELECT id, REGEXP_REPLACE(address,'([0-9])(?:st|nd|rd|th)', r'\\1') as address
-        FROM lowercased
+        FROM lowercase
     ),
-    standardized_apartment_number AS (
+    standardize_apartment_number AS (
         SELECT id, REGEXP_REPLACE(address,'([0-9])([a-z])',r'\\1 \\2') as address
-        FROM standardized_street_number
+        FROM standardize_ordinal_number
     ),
-    parts AS (
+    split_address_into_parts AS (
         SELECT id, part_address
-        FROM standardized_apartment_number, UNNEST(SPLIT(address, ' ')) as part_address
+        FROM standardize_apartment_number, UNNEST(SPLIT(address, ' ')) as part_address
     ),
-    expanded AS (
+    unabbreviate AS (
         SELECT 
-            id, COALESCE(expansion, part_address) as expanded_part_address,
-        FROM parts p
+            id, COALESCE(expansion, part_address) as normalized_part_address,
+        FROM split_address_into_parts p
         LEFT JOIN address_abbreviations aa
         ON aa.abbreviation = p.part_address
     )
     SELECT 
-        ARRAY_TO_STRING(ARRAY_AGG(expanded_part_address), ' ') as street,
-    FROM expanded
+        ARRAY_TO_STRING(ARRAY_AGG(normalized_part_address), ' ') as street,
+    FROM unabbreviate
     GROUP BY id
 """)
 
@@ -265,34 +193,34 @@ NORMALIZED_CITY = JINJA_ENV.from_string("""
     WITH address_abbreviations AS (
         SELECT *
         FROM UNNEST(ARRAY<STRUCT<abbreviation STRING, expansion STRING>>[
-            {{abbreviation_city_tuples}}
+            {{abbreviation_tuples}}
         ])
     ),
     remove_commas_and_periods AS (
         SELECT 'dummy_id' as id, REGEXP_REPLACE(coalesce({{city}}, ''), '[,.]', '') as address
     ),
-    remove_extra_whitespaces AS (
+    remove_redundant_whitespaces AS (
         SELECT id, REGEXP_REPLACE(TRIM(address), ' +', ' ') as address
         FROM remove_commas_and_periods
     ),
-    lowercased AS (
+    lowercase AS (
         SELECT id, LOWER(address) as address
-        FROM remove_extra_whitespaces
+        FROM remove_redundant_whitespaces
     ),
-    parts AS (
+    split_address_into_parts AS (
         SELECT id, part_address
-        FROM lowercased, UNNEST(SPLIT(address, ' ')) as part_address
+        FROM lowercase, UNNEST(SPLIT(address, ' ')) as part_address
     ),
-    expanded AS (
+    unabbreviate AS (
         SELECT 
-            id, COALESCE(expansion, part_address) as expanded_part_address,
-        FROM parts p
+            id, COALESCE(expansion, part_address) as normalized_part_address,
+        FROM split_address_into_parts p
         LEFT JOIN address_abbreviations aa
         ON aa.abbreviation = p.part_address
     )
     SELECT 
-        ARRAY_TO_STRING(ARRAY_AGG(expanded_part_address), ' ') as city,
-    FROM expanded
+        ARRAY_TO_STRING(ARRAY_AGG(normalized_part_address), ' ') as city,
+    FROM unabbreviate
     GROUP BY id
 """)
 
@@ -300,24 +228,24 @@ CREATE_STATE_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
 CREATE FUNCTION IF NOT EXISTS
   `{{project_id}}.{{drc_dataset_id}}.CompareState`(rdr_state string, ehr_state string)
   RETURNS string AS ((
-        WITH normalized_rdr_state AS (
-            SELECT 
-              CASE
-                WHEN REPLACE(LOWER(TRIM(rdr_state)), 'piistate_', '') IN ({{state_abbreviations}})
-                THEN REPLACE(LOWER(TRIM(rdr_state)), 'piistate_', '')
-                WHEN rdr_state IS NULL THEN NULL
-                ELSE ''
-              END AS rdr_state
-        )
-        , normalized_ehr_state AS (
-            SELECT
-              CASE
-                WHEN LOWER(TRIM(ehr_state)) IN ({{state_abbreviations}})
-                THEN LOWER(TRIM(ehr_state))
-                WHEN ehr_state IS NULL THEN NULL
-                ELSE ''
-              END AS ehr_state
-        )
+    WITH normalized_rdr_state AS (
+        SELECT 
+            CASE
+            WHEN REPLACE(LOWER(TRIM(rdr_state)), 'piistate_', '') IN ({{state_abbreviations}})
+            THEN REPLACE(LOWER(TRIM(rdr_state)), 'piistate_', '')
+            WHEN rdr_state IS NULL THEN NULL
+            ELSE ''
+            END AS rdr_state
+    )
+    , normalized_ehr_state AS (
+        SELECT
+            CASE
+            WHEN LOWER(TRIM(ehr_state)) IN ({{state_abbreviations}})
+            THEN LOWER(TRIM(ehr_state))
+            WHEN ehr_state IS NULL THEN NULL
+            ELSE ''
+            END AS ehr_state
+    )
     SELECT
       CASE
         WHEN normalized_rdr_state.rdr_state = normalized_ehr_state.ehr_state THEN '{{match}}'

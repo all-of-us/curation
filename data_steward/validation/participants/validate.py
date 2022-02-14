@@ -17,7 +17,6 @@ Original Issue: DC-1127
 # Python imports
 import logging
 import argparse
-from collections import deque
 
 # Third party imports
 import pandas
@@ -25,7 +24,7 @@ import pandas
 # Project imports
 from app_identity import get_application_id
 from bq_utils import get_rdr_project_id
-from resources import get_table_id
+from resources import get_table_id, VALIDATION_STREET_CSV, VALIDATION_CITY_CSV, VALIDATION_STATE_CSV
 from utils import bq, pipeline_logging, auth
 from tools.create_tier import SCOPES
 from common import PS_API_VALUES, DRC_OPS, EHR_OPS
@@ -54,13 +53,6 @@ def get_gender_comparison_case_statement():
     return ' \n'.join(conditions)
 
 
-def get_state_abbreviations():
-    """ Returns lowercase state abbreviations separated by comma as string.
-    e.g. 'al','ak','az',...
-    """
-    return ','.join(f"'{state}'" for state in consts.STATE_ABBREVIATIONS)
-
-
 def identify_rdr_ehr_match(client,
                            project_id,
                            hpo_id,
@@ -85,24 +77,22 @@ def identify_rdr_ehr_match(client,
     hpo_location_table_id = get_table_id(LOCATION, hpo_id)
     hpo_person_table_id = get_table_id(PERSON, hpo_id)
 
-    # Update this path.
-    abb_st = pandas.read_csv(
-        '/Users/hm2920/Documents/GitHub/curation/data_steward/resource_files/validation/participants/abbreviation_street.csv',
-        header=0)
+    street_df = pandas.read_csv(VALIDATION_STREET_CSV, header=0)
+    city_df = pandas.read_csv(VALIDATION_CITY_CSV, header=0)
+    state_df = pandas.read_csv(VALIDATION_STATE_CSV, header=0)
 
-    abb_st_string = ",\n".join([
+    street_tuples_str: str = ",\n".join([
         f"('{abbreviated}','{unabbreviated}')" for abbreviated, unabbreviated in
-        zip(abb_st['abbreviated'], abb_st['unabbreviated'])
+        zip(street_df['abbreviated'], street_df['unabbreviated'])
     ])
 
-    abb_city = pandas.read_csv(
-        '/Users/hm2920/Documents/GitHub/curation/data_steward/resource_files/validation/participants/abbreviation_city.csv',
-        header=0)
-
-    abb_city_string = ",\n".join([
+    city_tuples_str: str = ",\n".join([
         f"('{abbreviated}','{unabbreviated}')" for abbreviated, unabbreviated in
-        zip(abb_city['abbreviated'], abb_city['unabbreviated'])
+        zip(city_df['abbreviated'], city_df['unabbreviated'])
     ])
+
+    states_str: str = ",\n".join(
+        [f"'{state}'" for state in state_df['abbreviated']])
 
     for item in consts.CREATE_COMPARISON_FUNCTION_QUERIES:
         LOGGER.info(f"Creating `{item['name']}` function if doesn't exist.")
@@ -114,16 +104,16 @@ def identify_rdr_ehr_match(client,
             no_match=consts.NO_MATCH,
             missing_rdr=consts.MISSING_RDR,
             missing_ehr=consts.MISSING_EHR,
-            normalized_rdr_street=consts.NORMALIZED_STREET.render(
-                abbreviation_tuples=abb_st_string, street='rdr_street'),
-            normalized_ehr_street=consts.NORMALIZED_STREET.render(
-                abbreviation_tuples=abb_st_string, street='ehr_street'),
-            normalized_rdr_city=consts.NORMALIZED_CITY.render(
-                abbreviation_city_tuples=abb_city_string, city='rdr_city'),
-            normalized_ehr_city=consts.NORMALIZED_CITY.render(
-                abbreviation_city_tuples=abb_city_string, city='ehr_city'),
+            rdr_street=consts.NORMALIZED_STREET.render(
+                abbreviation_tuples=street_tuples_str, street='rdr_street'),
+            ehr_street=consts.NORMALIZED_STREET.render(
+                abbreviation_tuples=street_tuples_str, street='ehr_street'),
+            rdr_city=consts.NORMALIZED_CITY.render(
+                abbreviation_tuples=city_tuples_str, city='rdr_city'),
+            ehr_city=consts.NORMALIZED_CITY.render(
+                abbreviation_tuples=city_tuples_str, city='ehr_city'),
             gender_case_when_conditions=get_gender_comparison_case_statement(),
-            state_abbreviations=get_state_abbreviations())
+            state_abbreviations=states_str)
 
         job = client.query(query)
         job.result()
