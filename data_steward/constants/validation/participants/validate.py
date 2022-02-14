@@ -155,57 +155,7 @@ STATE_ABBREVIATIONS = [
     'ae',
     'ap',
 ]
-ADDRESS_ABBREVIATIONS = {
-    'aly': 'alley',
-    'anx': 'annex',
-    'apt': 'apartment',
-    'ave': 'avenue',
-    'bch': 'beach',
-    'bldg': 'building',
-    'blvd': 'boulevard',
-    'bnd': 'bend',
-    'btm': 'bottom',
-    'cir': 'circle',
-    'ct': 'court',
-    'co': 'county',
-    'ctr': 'center',
-    'dr': 'drive',
-    'e': 'east',
-    'expy': 'expressway',
-    'hts': 'heights',
-    'hwy': 'highway',
-    'is': 'island',
-    'jct': 'junction',
-    'lk': 'lake',
-    'ln': 'lane',
-    'mtn': 'mountain',
-    'n': 'north',
-    'ne': 'northeast',
-    'num': 'number',
-    'nw': 'northwest',
-    'pkwy': 'parkway',
-    'pl': 'place',
-    'plz': 'plaza',
-    'po': 'post office',
-    'rd': 'road',
-    'rdg': 'ridge',
-    'rr': 'rural route',
-    'rm': 'room',
-    's': 'south',
-    'se': 'southeast',
-    'sq': 'square',
-    'st': 'street',
-    'str': 'street',
-    'sta': 'station',
-    'ste': 'suite',
-    'sw': 'southwest',
-    'ter': 'terrace',
-    'tpke': 'turnpike',
-    'trl': 'trail',
-    'vly': 'valley',
-    'w': 'west',
-    'way': 'way',
-}
+
 CITY_ABBREVIATIONS = {
     'st': 'saint',
     'afb': 'air force base',
@@ -435,8 +385,6 @@ UPDATE `{{project_id}}.{{drc_dataset_id}}.{{id_match_table_id}}` upd
 SET upd.first_name = `{{project_id}}.{{drc_dataset_id}}.CompareName`(ps.first_name, ehr_name.first_name),
     upd.middle_name = `{{project_id}}.{{drc_dataset_id}}.CompareName`(ps.middle_name, ehr_name.middle_name),
     upd.last_name = `{{project_id}}.{{drc_dataset_id}}.CompareName`(ps.last_name, ehr_name.last_name),
-    upd.address_1 = `{{project_id}}.{{drc_dataset_id}}.CompareStreetAddress`(ps.street_address, ehr_address.address_1),
-    upd.address_2 = `{{project_id}}.{{drc_dataset_id}}.CompareStreetAddress`(ps.street_address2, ehr_address.address_2),
     upd.city = `{{project_id}}.{{drc_dataset_id}}.CompareCity`(ps.city, ehr_address.city),
     upd.state = `{{project_id}}.{{drc_dataset_id}}.CompareState`(ps.state, ehr_address.state),
     upd.zip = `{{project_id}}.{{drc_dataset_id}}.CompareZipCode`(ps.zip_code, ehr_address.zip),
@@ -472,4 +420,85 @@ WHERE upd.person_id = ps.person_id
 SUMMARY_QUERY = JINJA_ENV.from_string("""
 SELECT COUNT(*) AS row_count
 FROM `{{project_id}}.{{dataset_id}}.{{id_match_table}}`
+""")
+
+# I will have to think out of the box and update this update statement + function structure altogether.
+# If RDR does not have the record, that person_id is not updated (=CompareStreet does not run for that ID.)
+# Is it OK to remove AND upd._PARTITIONTIME = ps._PARTITIONTIME ? Why we need _PARTITIONTIME?
+# Not both of the JOINs have to be FULL OUTER JOIN. I think the second one can be LEFT OUTER?
+MATCH_FIELDS_STREET_ADDRESS_QUERY = JINJA_ENV.from_string("""
+    UPDATE `{{project_id}}.{{drc_dataset_id}}.{{id_match_table_id}}` upd
+    SET upd.address_1 = `{{project_id}}.{{drc_dataset_id}}.CompareStreet`(ps.address, ehr_location.address),
+        upd.algorithm = 'yes'
+    FROM `{{project_id}}.{{drc_dataset_id}}.{{drc_standardized_street_table_id}}` ps
+    FULL OUTER JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_address_table_id}}` ehr_address
+        ON ehr_address.person_id = ps.person_id
+    FULL OUTER JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{ehr_standardized_street_table_id}}` ehr_location
+        ON ehr_location.location_id = ehr_address.location_id
+    WHERE upd.person_id = ps.person_id OR upd.person_id = ehr_address.person_id
+""")
+
+MATCH_FIELDS_STREET_ADDRESS_QUERY_2 = JINJA_ENV.from_string("""
+    UPDATE `{{project_id}}.{{drc_dataset_id}}.{{id_match_table_id}}` upd
+    SET upd.address_2 = `{{project_id}}.{{drc_dataset_id}}.CompareStreet`(ps.address, ehr_location.address),
+        upd.algorithm = 'yes'
+    FROM `{{project_id}}.{{drc_dataset_id}}.{{drc_standardized_street_table_id}}` ps
+    FULL OUTER JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_address_table_id}}` ehr_address
+        ON ehr_address.person_id = ps.person_id
+    FULL OUTER JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{ehr_standardized_street_table_id}}` ehr_location
+        ON ehr_location.location_id = ehr_address.location_id
+    WHERE upd.person_id = ps.person_id OR upd.person_id = ehr_address.person_id
+""")
+
+DROP_STANDARDIZED_STREET_TABLE_QUERY = JINJA_ENV.from_string("""
+    DROP TABLE IF EXISTS `{{project_id}}.{{dataset_id}}.{{standardized_street_table_id}}` 
+""")
+
+CREATE_STANDARDIZED_STREET_TABLE_QUERY = JINJA_ENV.from_string("""
+    CREATE TABLE `{{project_id}}.{{dataset_id}}.{{standardized_street_table_id}}` 
+    AS
+    WITH address_abbreviations AS (
+        SELECT *
+        FROM UNNEST(ARRAY<STRUCT<abbreviation STRING, expansion STRING>>[
+            {{abbreviation_street_tuples}}
+        ])
+    ),
+    removed_commas_and_periods AS (
+        SELECT {{id}}, {{_PARTITIONTIME_as}} REGEXP_REPLACE({{street_column}}, '[,.]', '') as address,
+        FROM {{project_id}}.{{source_dataset_id}}.{{source_table_id}}
+    ),
+    remove_extra_whitespaces AS (
+        SELECT {{id}}, {{_PARTITIONTIME}} REGEXP_REPLACE(TRIM(address), ' +', ' ') as address,
+        FROM removed_commas_and_periods
+    ),
+    lowercased AS (
+        SELECT {{id}}, {{_PARTITIONTIME}} LOWER(address) as address,
+        FROM remove_extra_whitespaces
+    ),
+    standardized_street_number AS (
+        SELECT {{id}}, {{_PARTITIONTIME}} REGEXP_REPLACE(address,'([0-9])(?:st|nd|rd|th)', r'\\1') as address,
+        FROM lowercased
+    ),
+    standardized_apartment_number AS (
+        SELECT {{id}}, {{_PARTITIONTIME}} REGEXP_REPLACE(address,'([0-9])([a-z])',r'\\1 \\2') as address
+        FROM standardized_street_number
+    ),
+    parts AS (
+        SELECT {{id}}, {{_PARTITIONTIME}} part_address,
+        FROM standardized_apartment_number,
+            UNNEST(SPLIT(address, ' ')) as part_address
+    ),
+    expanded AS (
+        SELECT 
+            {{id}}, {{_PARTITIONTIME}}
+            COALESCE(expansion, part_address) as expanded_part_address,
+        FROM parts p
+        LEFT JOIN address_abbreviations aa
+        ON aa.abbreviation = p.part_address
+    )
+    SELECT 
+        {{id}}, {{_PARTITIONTIME}}
+        ARRAY_TO_STRING(ARRAY_AGG(expanded_part_address), ' ') as address,
+    FROM expanded
+    GROUP BY {{_PARTITIONTIME}} {{id}}
 """)
