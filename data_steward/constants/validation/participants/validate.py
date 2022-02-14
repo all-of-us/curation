@@ -89,128 +89,6 @@ GENDER_MATCH = [{
     }]
 }]
 
-STATE_ABBREVIATIONS = [
-    'al',
-    'ak',
-    'az',
-    'ar',
-    'ca',
-    'co',
-    'ct',
-    'de',
-    'fl',
-    'ga',
-    'hi',
-    'id',
-    'il',
-    'in',
-    'ia',
-    'ks',
-    'ky',
-    'la',
-    'me',
-    'md',
-    'ma',
-    'mi',
-    'mn',
-    'ms',
-    'mo',
-    'mt',
-    'ne',
-    'nv',
-    'nh',
-    'nj',
-    'nm',
-    'ny',
-    'nc',
-    'nd',
-    'oh',
-    'ok',
-    'or',
-    'pa',
-    'ri',
-    'sc',
-    'sd',
-    'tn',
-    'tx',
-    'ut',
-    'vt',
-    'va',
-    'wa',
-    'wv',
-    'wi',
-    'wy',
-    # Commonwealth/Territory:
-    'as',
-    'dc',
-    'fm',
-    'gu',
-    'mh',
-    'mp',
-    'pw',
-    'pr',
-    'vi',
-    # Military "State":
-    'aa',
-    'ae',
-    'ap',
-]
-ADDRESS_ABBREVIATIONS = {
-    'aly': 'alley',
-    'anx': 'annex',
-    'apt': 'apartment',
-    'ave': 'avenue',
-    'bch': 'beach',
-    'bldg': 'building',
-    'blvd': 'boulevard',
-    'bnd': 'bend',
-    'btm': 'bottom',
-    'cir': 'circle',
-    'ct': 'court',
-    'co': 'county',
-    'ctr': 'center',
-    'dr': 'drive',
-    'e': 'east',
-    'expy': 'expressway',
-    'hts': 'heights',
-    'hwy': 'highway',
-    'is': 'island',
-    'jct': 'junction',
-    'lk': 'lake',
-    'ln': 'lane',
-    'mtn': 'mountain',
-    'n': 'north',
-    'ne': 'northeast',
-    'num': 'number',
-    'nw': 'northwest',
-    'pkwy': 'parkway',
-    'pl': 'place',
-    'plz': 'plaza',
-    'po': 'post office',
-    'rd': 'road',
-    'rdg': 'ridge',
-    'rr': 'rural route',
-    'rm': 'room',
-    's': 'south',
-    'se': 'southeast',
-    'sq': 'square',
-    'st': 'street',
-    'str': 'street',
-    'sta': 'station',
-    'ste': 'suite',
-    'sw': 'southwest',
-    'ter': 'terrace',
-    'tpke': 'turnpike',
-    'trl': 'trail',
-    'vly': 'valley',
-    'w': 'west',
-    'way': 'way',
-}
-CITY_ABBREVIATIONS = {
-    'st': 'saint',
-    'afb': 'air force base',
-}
-
 CREATE_NAME_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
     CREATE FUNCTION IF NOT EXISTS `{{project_id}}.{{drc_dataset_id}}.CompareName`(rdr_name string, ehr_name string)
     RETURNS string
@@ -229,62 +107,145 @@ CREATE_NAME_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
                 ELSE '{{missing_ehr}}'
             END AS name
         FROM normalized_rdr_name, normalized_ehr_name 
-
     ));
 """)
 
 CREATE_STREET_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
 CREATE FUNCTION IF NOT EXISTS
-  `{{project_id}}.{{drc_dataset_id}}.CompareStreetAddress`(rdr_street string, ehr_street string)
-  RETURNS string AS ((
-    {{street_with_clause}}
+  `{{project_id}}.{{drc_dataset_id}}.CompareStreet`(rdr_street string, ehr_street string)
+  RETURNS string 
+  AS ((
+    WITH 
+      normalized_rdr AS ({{rdr_street}}),
+      normalized_ehr AS ({{ehr_street}})
     SELECT
       CASE
-        WHEN normalized_rdr_street.rdr_street = normalized_ehr_street.ehr_street THEN '{{match}}'
-        WHEN normalized_rdr_street.rdr_street IS NOT NULL AND normalized_ehr_street.ehr_street IS NOT NULL THEN '{{no_match}}'
-        WHEN normalized_rdr_street.rdr_street IS NULL THEN '{{missing_rdr}}'
-        ELSE '{{missing_ehr}}'
+        WHEN rdr_street IS NULL THEN '{{missing_rdr}}'
+        WHEN ehr_street IS NULL THEN '{{missing_ehr}}'
+        WHEN normalized_rdr.street = normalized_ehr.street THEN '{{match}}'
+        ELSE '{{no_match}}'
       END AS street
-    FROM normalized_rdr_street, normalized_ehr_street));
+    FROM normalized_rdr, normalized_ehr
+  ));
 """)
 
 CREATE_CITY_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
 CREATE FUNCTION IF NOT EXISTS
   `{{project_id}}.{{drc_dataset_id}}.CompareCity`(rdr_city string, ehr_city string)
   RETURNS string AS ((
-    {{city_with_clause}}
+    WITH 
+      normalized_rdr AS ({{rdr_city}}),
+      normalized_ehr AS ({{ehr_city}})    
     SELECT
       CASE
-        WHEN normalized_rdr_city.rdr_city = normalized_ehr_city.ehr_city THEN '{{match}}'
-        WHEN normalized_rdr_city.rdr_city IS NOT NULL AND normalized_ehr_city.ehr_city IS NOT NULL THEN '{{no_match}}'
-        WHEN normalized_rdr_city.rdr_city IS NULL THEN '{{missing_rdr}}'
-        ELSE '{{missing_ehr}}'
+        WHEN rdr_city IS NULL THEN '{{missing_rdr}}'
+        WHEN ehr_city IS NULL THEN '{{missing_ehr}}'
+        WHEN normalized_rdr.city = normalized_ehr.city THEN '{{match}}'
+        ELSE '{{no_match}}'
       END AS city
-    FROM normalized_rdr_city, normalized_ehr_city));
+    FROM normalized_rdr, normalized_ehr));
+""")
+
+NORMALIZED_STREET = JINJA_ENV.from_string("""
+    WITH address_abbreviations AS (
+        SELECT *
+        FROM UNNEST(ARRAY<STRUCT<abbreviation STRING, expansion STRING>>[
+            {{abbreviation_tuples}}
+        ])
+    ),
+    remove_commas_and_periods AS (
+        SELECT 'dummy_id' as id, REGEXP_REPLACE(coalesce({{street}}, ''), '[,.]', '') as address
+    ),
+    remove_redundant_whitespaces AS (
+        SELECT id, REGEXP_REPLACE(TRIM(address), ' +', ' ') as address
+        FROM remove_commas_and_periods
+    ),
+    lowercase AS (
+        SELECT id, LOWER(address) as address
+        FROM remove_redundant_whitespaces
+    ),
+    standardize_ordinal_number AS (
+        SELECT id, REGEXP_REPLACE(address,'([0-9])(?:st|nd|rd|th)', r'\\1') as address
+        FROM lowercase
+    ),
+    standardize_apartment_number AS (
+        SELECT id, REGEXP_REPLACE(address,'([0-9])([a-z])',r'\\1 \\2') as address
+        FROM standardize_ordinal_number
+    ),
+    split_address_into_parts AS (
+        SELECT id, part_address
+        FROM standardize_apartment_number, UNNEST(SPLIT(address, ' ')) as part_address
+    ),
+    unabbreviate AS (
+        SELECT 
+            id, COALESCE(expansion, part_address) as normalized_part_address,
+        FROM split_address_into_parts p
+        LEFT JOIN address_abbreviations aa
+        ON aa.abbreviation = p.part_address
+    )
+    SELECT 
+        ARRAY_TO_STRING(ARRAY_AGG(normalized_part_address), ' ') as street,
+    FROM unabbreviate
+    GROUP BY id
+""")
+
+NORMALIZED_CITY = JINJA_ENV.from_string("""
+    WITH address_abbreviations AS (
+        SELECT *
+        FROM UNNEST(ARRAY<STRUCT<abbreviation STRING, expansion STRING>>[
+            {{abbreviation_tuples}}
+        ])
+    ),
+    remove_commas_and_periods AS (
+        SELECT 'dummy_id' as id, REGEXP_REPLACE(coalesce({{city}}, ''), '[,.]', '') as address
+    ),
+    remove_redundant_whitespaces AS (
+        SELECT id, REGEXP_REPLACE(TRIM(address), ' +', ' ') as address
+        FROM remove_commas_and_periods
+    ),
+    lowercase AS (
+        SELECT id, LOWER(address) as address
+        FROM remove_redundant_whitespaces
+    ),
+    split_address_into_parts AS (
+        SELECT id, part_address
+        FROM lowercase, UNNEST(SPLIT(address, ' ')) as part_address
+    ),
+    unabbreviate AS (
+        SELECT 
+            id, COALESCE(expansion, part_address) as normalized_part_address,
+        FROM split_address_into_parts p
+        LEFT JOIN address_abbreviations aa
+        ON aa.abbreviation = p.part_address
+    )
+    SELECT 
+        ARRAY_TO_STRING(ARRAY_AGG(normalized_part_address), ' ') as city,
+    FROM unabbreviate
+    GROUP BY id
 """)
 
 CREATE_STATE_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
 CREATE FUNCTION IF NOT EXISTS
   `{{project_id}}.{{drc_dataset_id}}.CompareState`(rdr_state string, ehr_state string)
   RETURNS string AS ((
-        WITH normalized_rdr_state AS (
-            SELECT 
-              CASE
-                WHEN REPLACE(LOWER(TRIM(rdr_state)), 'piistate_', '') IN ({{state_abbreviations}})
-                THEN REPLACE(LOWER(TRIM(rdr_state)), 'piistate_', '')
-                WHEN rdr_state IS NULL THEN NULL
-                ELSE ''
-              END AS rdr_state
-        )
-        , normalized_ehr_state AS (
-            SELECT
-              CASE
-                WHEN LOWER(TRIM(ehr_state)) IN ({{state_abbreviations}})
-                THEN LOWER(TRIM(ehr_state))
-                WHEN ehr_state IS NULL THEN NULL
-                ELSE ''
-              END AS ehr_state
-        )
+    WITH normalized_rdr_state AS (
+        SELECT 
+            CASE
+            WHEN REPLACE(LOWER(TRIM(rdr_state)), 'piistate_', '') IN ({{state_abbreviations}})
+            THEN REPLACE(LOWER(TRIM(rdr_state)), 'piistate_', '')
+            WHEN rdr_state IS NULL THEN NULL
+            ELSE ''
+            END AS rdr_state
+    )
+    , normalized_ehr_state AS (
+        SELECT
+            CASE
+            WHEN LOWER(TRIM(ehr_state)) IN ({{state_abbreviations}})
+            THEN LOWER(TRIM(ehr_state))
+            WHEN ehr_state IS NULL THEN NULL
+            ELSE ''
+            END AS ehr_state
+    )
     SELECT
       CASE
         WHEN normalized_rdr_state.rdr_state = normalized_ehr_state.ehr_state THEN '{{match}}'
@@ -355,7 +316,6 @@ CREATE_EMAIL_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
                 ELSE '{{missing_ehr}}'
             END AS email
         FROM normalized_rdr_email, normalized_ehr_email 
-
     ));
 """)
 
@@ -406,7 +366,7 @@ CREATE_COMPARISON_FUNCTION_QUERIES = [{
     'name': 'CompareName',
     'query': CREATE_NAME_COMPARISON_FUNCTION
 }, {
-    'name': 'CompareStreetAddress',
+    'name': 'CompareStreet',
     'query': CREATE_STREET_COMPARISON_FUNCTION
 }, {
     'name': 'CompareCity',
@@ -436,8 +396,8 @@ UPDATE `{{project_id}}.{{drc_dataset_id}}.{{id_match_table_id}}` upd
 SET upd.first_name = `{{project_id}}.{{drc_dataset_id}}.CompareName`(ps.first_name, ehr_name.first_name),
     upd.middle_name = `{{project_id}}.{{drc_dataset_id}}.CompareName`(ps.middle_name, ehr_name.middle_name),
     upd.last_name = `{{project_id}}.{{drc_dataset_id}}.CompareName`(ps.last_name, ehr_name.last_name),
-    upd.address_1 = `{{project_id}}.{{drc_dataset_id}}.CompareStreetAddress`(ps.street_address, ehr_address.address_1),
-    upd.address_2 = `{{project_id}}.{{drc_dataset_id}}.CompareStreetAddress`(ps.street_address2, ehr_address.address_2),
+    upd.address_1 = `{{project_id}}.{{drc_dataset_id}}.CompareStreet`(ps.street_address, ehr_address.address_1),
+    upd.address_2 = `{{project_id}}.{{drc_dataset_id}}.CompareStreet`(ps.street_address2, ehr_address.address_2),
     upd.city = `{{project_id}}.{{drc_dataset_id}}.CompareCity`(ps.city, ehr_address.city),
     upd.state = `{{project_id}}.{{drc_dataset_id}}.CompareState`(ps.state, ehr_address.state),
     upd.zip = `{{project_id}}.{{drc_dataset_id}}.CompareZipCode`(ps.zip_code, ehr_address.zip),

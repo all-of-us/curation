@@ -17,18 +17,20 @@ Original Issue: DC-1127
 # Python imports
 import logging
 import argparse
-from collections import deque
+
+# Third party imports
+import pandas
 
 # Project imports
 from app_identity import get_application_id
 from bq_utils import get_rdr_project_id
-from resources import get_table_id
+from resources import get_table_id, VALIDATION_STREET_CSV, VALIDATION_CITY_CSV, VALIDATION_STATE_CSV
 from utils import bq, pipeline_logging, auth
 from tools.create_tier import SCOPES
 from common import PS_API_VALUES, DRC_OPS, EHR_OPS
 from validation.participants.store_participant_summary_results import fetch_and_store_ps_hpo_data
 from validation.participants.create_update_drc_id_match_table import create_and_populate_drc_validation_table
-from common import PII_ADDRESS, PII_EMAIL, PII_PHONE_NUMBER, PII_NAME, LOCATION, PERSON
+from common import PII_ADDRESS, PII_EMAIL, PII_PHONE_NUMBER, PII_NAME, LOCATION, PERSON, JINJA_ENV
 from constants.validation.participants.identity_match import IDENTITY_MATCH_TABLE
 from constants.validation.participants import validate as consts
 
@@ -49,79 +51,6 @@ def get_gender_comparison_case_statement():
         conditions.append(
             f'WHEN {all_matches} THEN \'{match[consts.MATCH_STATUS]}\'')
     return ' \n'.join(conditions)
-
-
-def get_state_abbreviations():
-    """ Returns lowercase state abbreviations separated by comma as string.
-    e.g. 'al','ak','az',...
-    """
-    return ','.join(f"'{state}'" for state in consts.STATE_ABBREVIATIONS)
-
-
-def _get_replace_statement(base_statement, rdr_ehr, field, dict_abbreviation):
-    """
-    Create a nested REGEXP_REPLACE() statement for specified field and rdr/ehr.
-    :param: base_statement - Function that returns the base statement to use REGEXP_REPLACE() for
-    :param: rdr_ehr - string 'rdr' or 'ehr'
-    :param: field - string 'city' or 'street'
-    :param: dict_abbreviation - dictionary that has abbreviations
-    :return: Nested REGEXP_REPLACE statement as string
-    """
-    statement_parts = deque([base_statement(rdr_ehr, field)])
-
-    for key in dict_abbreviation:
-        statement_parts.appendleft(
-            "REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(")
-        statement_parts.append(f",'^{key} ','{dict_abbreviation[key]} ')")
-        statement_parts.append(f",' {key}$',' {dict_abbreviation[key]}')")
-        statement_parts.append(f",' {key} ',' {dict_abbreviation[key]} ')")
-
-    statement_parts.appendleft(f"normalized_{rdr_ehr}_{field} AS (SELECT ")
-
-    statement_parts.append(f" AS {rdr_ehr}_{field})")
-
-    return ''.join(statement_parts)
-
-
-def get_with_clause(field):
-    """
-    Create WITH statement for CREATE_{field}_COMPARISON_FUNCTION.
-    :param: field - string 'city' or 'street'
-    :return: WITH statement as string
-    """
-    valid_fields = {'city', 'street'}
-
-    if field not in valid_fields:
-        raise ValueError(
-            f"Invalid field name: {field}. Valid field names: {valid_fields}")
-
-    base_statement = {
-        'city':
-            lambda rdr_ehr, field:
-            f"REGEXP_REPLACE(REGEXP_REPLACE(LOWER(TRIM({rdr_ehr}_{field})),'[^A-Za-z ]',''),' +',' ')",
-        'street':
-            lambda rdr_ehr, field:
-            (f"REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(LOWER(TRIM({rdr_ehr}_{field})),"
-             f"'[^0-9A-Za-z ]', ''),'([0-9])(?:st|nd|rd|th)', r'\\1'),'([0-9])([a-z])',r'\\1 \\2'),' +',' ')"
-            ),
-    }
-
-    abbreviations = {
-        'city': consts.CITY_ABBREVIATIONS,
-        'street': consts.ADDRESS_ABBREVIATIONS,
-    }
-
-    statement_parts = [
-        "WITH ",
-        _get_replace_statement(base_statement[field], 'rdr', field,
-                               abbreviations[field]), ",",
-        _get_replace_statement(base_statement[field], 'ehr', field,
-                               abbreviations[field])
-    ]
-
-    statement = ''.join(statement_parts)
-
-    return statement
 
 
 def identify_rdr_ehr_match(client,
@@ -148,6 +77,23 @@ def identify_rdr_ehr_match(client,
     hpo_location_table_id = get_table_id(LOCATION, hpo_id)
     hpo_person_table_id = get_table_id(PERSON, hpo_id)
 
+    street_df = pandas.read_csv(VALIDATION_STREET_CSV, header=0)
+    city_df = pandas.read_csv(VALIDATION_CITY_CSV, header=0)
+    state_df = pandas.read_csv(VALIDATION_STATE_CSV, header=0)
+
+    street_tuples_str: str = ",\n".join([
+        f"('{abbreviated}','{unabbreviated}')" for abbreviated, unabbreviated in
+        zip(street_df['abbreviated'], street_df['unabbreviated'])
+    ])
+
+    city_tuples_str: str = ",\n".join([
+        f"('{abbreviated}','{unabbreviated}')" for abbreviated, unabbreviated in
+        zip(city_df['abbreviated'], city_df['unabbreviated'])
+    ])
+
+    states_str: str = ",\n".join(
+        [f"'{state}'" for state in state_df['abbreviated']])
+
     for item in consts.CREATE_COMPARISON_FUNCTION_QUERIES:
         LOGGER.info(f"Creating `{item['name']}` function if doesn't exist.")
 
@@ -158,10 +104,16 @@ def identify_rdr_ehr_match(client,
             no_match=consts.NO_MATCH,
             missing_rdr=consts.MISSING_RDR,
             missing_ehr=consts.MISSING_EHR,
+            rdr_street=consts.NORMALIZED_STREET.render(
+                abbreviation_tuples=street_tuples_str, street='rdr_street'),
+            ehr_street=consts.NORMALIZED_STREET.render(
+                abbreviation_tuples=street_tuples_str, street='ehr_street'),
+            rdr_city=consts.NORMALIZED_CITY.render(
+                abbreviation_tuples=city_tuples_str, city='rdr_city'),
+            ehr_city=consts.NORMALIZED_CITY.render(
+                abbreviation_tuples=city_tuples_str, city='ehr_city'),
             gender_case_when_conditions=get_gender_comparison_case_statement(),
-            state_abbreviations=get_state_abbreviations(),
-            street_with_clause=get_with_clause('street'),
-            city_with_clause=get_with_clause('city'))
+            state_abbreviations=states_str)
 
         job = client.query(query)
         job.result()

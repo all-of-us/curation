@@ -246,7 +246,7 @@ class ValidateTest(TestCase):
                 (9, 19)
         """)
 
-        POUPLATE_PERSON_TABLE = JINJA_ENV.from_string("""
+        POPULATE_PERSON_TABLE = JINJA_ENV.from_string("""
                 INSERT INTO `{{project_id}}.{{drc_dataset_id}}.{{person_table_id}}` 
                 (person_id, gender_concept_id, birth_datetime)
                 VALUES
@@ -355,7 +355,7 @@ class ValidateTest(TestCase):
         job = self.client.query(address_populate_query)
         job.result()
 
-        populate_person_query = POUPLATE_PERSON_TABLE.render(
+        populate_person_query = POPULATE_PERSON_TABLE.render(
             project_id=self.project_id,
             drc_dataset_id=self.dataset_id,
             person_table_id=self.person_table_id)
