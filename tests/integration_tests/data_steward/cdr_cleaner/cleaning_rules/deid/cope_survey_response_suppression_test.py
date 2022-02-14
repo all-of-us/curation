@@ -101,7 +101,9 @@ class CopeSurveyResponseSuppressionTest(BaseTest.CleaningRulesTestBase):
               (12, 112, 0, 0, 0, 1310065, 0, 0, 0, '2020-01-01'),
               -- not concepts to be suppressed --
               (13, 113, 0, 0, 0, 1111111, 0, 0, 0, '2020-01-01'),
-              (14, 114, 0, 0, 0, 2222222, 0, 0, 0, '2020-01-01')
+              (14, 114, 0, 0, 0, 2222222, 0, 0, 0, '2020-01-01'),
+              (15, 115, 0, 0, 0, 715724, 0, 0, 0, '2022-01-01'),
+              (16, 116, 0, 0, 0, 1310147, 0, 0, 0, '2022-01-01')
             """)
 
         insert_observation_query = observation_data_template.render(
@@ -118,8 +120,10 @@ class CopeSurveyResponseSuppressionTest(BaseTest.CleaningRulesTestBase):
             'fq_sandbox_table_name':
                 f'{self.project_id}.{self.sandbox_id}.'
                 f'{self.rule_instance.sandbox_table_for("observation")}',
-            'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
-            'sandboxed_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+            'loaded_ids': [
+                1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16
+            ],
+            'sandboxed_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 15, 16],
             'fields': [
                 'observation_id', 'person_id', 'observation_concept_id',
                 'observation_type_concept_id', 'value_as_concept_id',
