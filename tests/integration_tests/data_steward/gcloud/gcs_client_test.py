@@ -35,6 +35,7 @@ class GcsClientTest(unittest.TestCase):
 
     @patch.object(StorageClient, '_get_hpo_bucket_id')
     def test_get_hpo_bucket_not_found(self, mock_get_bucket_id):
+        # assumes the bucket 'fake_bucket_name' does not exist.
         fake_hpo_id = 'fake_hpo_id'
         fake_bucket_name = 'fake_bucket_name'
         mock_get_bucket_id.return_value = fake_bucket_name
