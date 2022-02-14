@@ -247,7 +247,7 @@ def bucket_access_configured(bucket_name: str) -> bool:
     """
     project_id = app_identity.get_application_id()
     sc = StorageClient(project_id)
-    bucket = sc.get_bucket(bucket_name)
+    bucket = sc.bucket(bucket_name)
     permissions: list = bucket.test_iam_permissions("storage.objects.create")
     return len(permissions) >= 1
 
