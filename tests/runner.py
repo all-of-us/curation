@@ -37,6 +37,7 @@ except ImportError:
         'coverage package not found.  Run `pip install -r dev_requirements.txt`'
     )
 
+import shutil
 try:
     import xmlrunner
 except ImportError:
@@ -112,6 +113,14 @@ def main(test_dir, test_pattern, test_filepaths, coverage_filepath):
 
     test_type = coverage_filepath.split('_')[1]
     output_file = os.path.join('tests', 'results', 'junit', test_type)
+    # drop prior test results
+    try:
+        shutil.rmtree(output_file)
+    except FileNotFoundError:
+        print(f"{output_file" does not exist so cannot be deleted")
+    else:
+        print(f"deleted {output_file} directory")
+        
     start_time = time.time()
     for mod_tests in suite:
         if mod_tests.countTestCases():

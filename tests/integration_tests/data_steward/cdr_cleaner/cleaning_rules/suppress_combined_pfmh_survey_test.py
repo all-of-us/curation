@@ -78,7 +78,7 @@ class CombinedPersonalFamilyHealthSurveySuppressionTest(
 
         super().setUp()
 
-    def test(self):
+    def test_suppressing_pfmhh_responses(self):
         """
         Use the default drop rows test function.
 

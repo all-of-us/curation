@@ -21,18 +21,8 @@ LOGGER = logging.getLogger(__name__)
 
 ISSUE_NUMBERS = ['DC2146']
 
-# Save rows that will be dropped to a sandboxed dataset.
-DROP_SELECTION_QUERY_TMPL = Template("""
-CREATE OR REPLACE TABLE `{{project}}.{{sandbox}}.{{drop_table}}` AS
-SELECT
-  *
-FROM
-  `{{project}}.{{dataset}}.observation`
-WHERE
-  -- separated surveys were removed from participant portal on 2021-11-01 --
-  -- combined survey was launced on 2021-11-01 --
-  observation_date > '2021-10-31'
-  AND LOWER(observation_source_value) IN ('record_id',
+# personal family medical health history concepts
+DROP_PFMHH_CONCEPTS = ("""'record_id',
     'personalfamilyhistory', 'familyhistory_familymedicalhistoryaware',
     'diagnosedhealthcondition_cancercondition', 'cancercondition_bladdercancer_yes',
     'cancer_bladdercancercurrently', 'cancer_howoldwereyoubladdercancer',
@@ -386,7 +376,20 @@ WHERE
     'otherinfectiousdisease_freetextbox', 'infectiousdiseases_otherinfectiousdiseasecurrently',
     'infectiousdiseases_howoldwereyouotherinfectiousdisease', 'infectiousdiseases_rxmedsforotherinfectiousdisease',
     'outro_text', 'pfhh_codetracking',
-    'pfhh_tracked_changes' )
+    'pfhh_tracked_changes'""")
+
+# Save rows that will be dropped to a sandboxed dataset.
+DROP_SELECTION_QUERY_TMPL = Template("""
+CREATE OR REPLACE TABLE `{{project}}.{{sandbox}}.{{drop_table}}` AS
+SELECT
+  *
+FROM
+  `{{project}}.{{dataset}}.observation`
+WHERE
+  -- separated surveys were removed from participant portal on 2021-11-01 --
+  -- combined survey was launced on 2021-11-01 --
+  observation_date > '2021-10-31'
+  AND LOWER(observation_source_value) IN ({{combined_pfmhh_concepts}} )
 ORDER BY observation_source_value, observation_date
 """)
 
@@ -443,7 +446,8 @@ class CombinedPersonalFamilyHealthSurveySuppression(BaseCleaningRule):
                     project=self.project_id,
                     dataset=self.dataset_id,
                     sandbox=self.sandbox_dataset_id,
-                    drop_table=self.sandbox_table_for(OBSERVATION)),
+                    drop_table=self.sandbox_table_for(OBSERVATION),
+                    combined_pfmhh_concepts=DROP_PFMHH_CONCEPTS),
         }
 
         drop_rows_query = {
