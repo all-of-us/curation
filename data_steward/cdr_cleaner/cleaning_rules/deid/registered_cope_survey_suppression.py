@@ -51,7 +51,7 @@ The intent of this cleaning rule is to sandbox and suppress all records with obs
 import logging
 
 # Third party imports
-import pandas as pd
+from pandas import read_csv
 
 # Project imports
 from common import OBSERVATION
@@ -98,7 +98,7 @@ class RegisteredCopeSurveyQuestionsSuppression(
         returns a list of all concepts_ids that will need to be suppressed
         """
         with open(COPE_SUPPRESSION_CONCEPTS_CSV_PATH) as f:
-            concept_ids_df = pd.read_csv(f, delimiter=',')
+            concept_ids_df = read_csv(f, delimiter=',')
             # Skip header row and return list as an int
             concept_ids = concept_ids_df['concept_id'].to_list()
         return concept_ids
