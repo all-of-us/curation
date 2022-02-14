@@ -21,6 +21,12 @@ from validation.participants.validate import identify_rdr_ehr_match
 from constants.validation.participants.identity_match import IDENTITY_MATCH_TABLE
 import resources
 
+import logging
+from utils import pipeline_logging
+
+LOGGER = logging.getLogger(__name__)
+pipeline_logging.configure(logging.INFO, add_console_handler=True)
+
 person_schema = [
     SchemaField("person_id", "INTEGER", mode="REQUIRED"),
     SchemaField("gender_concept_id", "INTEGER", mode="REQUIRED"),

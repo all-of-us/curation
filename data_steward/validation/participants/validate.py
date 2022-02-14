@@ -21,6 +21,9 @@ import argparse
 # Third party imports
 import pandas
 
+# Third party imports
+import pandas
+
 # Project imports
 from app_identity import get_application_id
 from bq_utils import get_rdr_project_id
