@@ -29,14 +29,19 @@ The intent of this cleaning rule is to sandbox and suppress all records with obs
 # Python imports
 import logging
 
+# Third party imports
+from pandas import read_csv
+
 # Project imports
 from common import OBSERVATION
+from resources import COPE_SUPPRESSION_RESPONSES_CSV_PATH
 from utils import pipeline_logging
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.deid.concept_suppression import \
     AbstractInMemoryLookupTableConceptSuppression
 
 LOGGER = logging.getLogger(__name__)
+ISSUE_NUMBERS = ['DC1492', 'DC2111']
 
 
 class CopeSurveyResponseSuppression(
@@ -54,10 +59,9 @@ class CopeSurveyResponseSuppression(
         tickets may affect this SQL, append them to the list of Jira Issues.
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
-        desc = 'Any record with an observation_source_concept_id equal to any of these values (1333234, 1310066, ' \
-               '715725, 1310147, 702686, 1310054, 715726, 715724, 715714, 1310146, 1310058) will be ' \
-               'sandboxed and dropped from the observation table'
-        super().__init__(issue_numbers=['DC1492'],
+        desc = f'Any record with an observation_source_concept_id equal to any of the values in ' \
+               f'{ISSUE_NUMBERS} will be sandboxed and dropped from the observation table'
+        super().__init__(issue_numbers=ISSUE_NUMBERS,
                          description=desc,
                          affected_datasets=[cdr_consts.CONTROLLED_TIER_DEID],
                          project_id=project_id,
@@ -67,22 +71,10 @@ class CopeSurveyResponseSuppression(
                          table_namer=table_namer)
 
     def get_suppressed_concept_ids(self):
-        # https://athena.ohdsi.org/search-terms/terms/1333234
-        # https://athena.ohdsi.org/search-terms/terms/1310066
-        # https://athena.ohdsi.org/search-terms/terms/715725
-        # https://athena.ohdsi.org/search-terms/terms/1310147
-        # https://athena.ohdsi.org/search-terms/terms/702686
-        # https://athena.ohdsi.org/search-terms/terms/1310054
-        # https://athena.ohdsi.org/search-terms/terms/715726
-        # https://athena.ohdsi.org/search-terms/terms/715724
-        # https://athena.ohdsi.org/search-terms/terms/715714
-        # https://athena.ohdsi.org/search-terms/terms/1310146
-        # https://athena.ohdsi.org/search-terms/terms/1310058
-        # https://athena.ohdsi.org/search-terms/terms/1310065
-        return [
-            1333234, 1310066, 715725, 1310147, 702686, 1310054, 715726, 715724,
-            715714, 1310146, 1310058, 1310065
-        ]
+        with open(COPE_SUPPRESSION_RESPONSES_CSV_PATH) as f:
+            concept_ids_df = read_csv(f, delimiter=',')
+            concept_ids = concept_ids_df['concept_id'].to_list()
+        return concept_ids
 
     def setup_validation(self, client, *args, **keyword_args):
         pass
