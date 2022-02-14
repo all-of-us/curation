@@ -99,7 +99,6 @@ class RegisteredCopeSurveyQuestionsSuppression(
         """
         with open(COPE_SUPPRESSION_CONCEPTS_CSV_PATH) as f:
             concept_ids_df = read_csv(f, delimiter=',')
-            # Skip header row and return list as an int
             concept_ids = concept_ids_df['concept_id'].to_list()
         return concept_ids
 
