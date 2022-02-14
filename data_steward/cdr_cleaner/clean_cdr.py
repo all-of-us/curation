@@ -95,7 +95,6 @@ from cdr_cleaner.cleaning_rules.deid.questionnaire_response_id_map import QRIDto
 from cdr_cleaner.cleaning_rules.generalize_zip_codes import GeneralizeZipCodes
 from cdr_cleaner.cleaning_rules.free_text_survey_response_suppression import FreeTextSurveyResponseSuppression
 from cdr_cleaner.cleaning_rules.cancer_concept_suppression import CancerConceptSuppression
-from cdr_cleaner.cleaning_rules.deid.organ_transplant_concept_suppression import OrganTransplantConceptSuppression
 from cdr_cleaner.cleaning_rules.identifying_field_suppression import IDFieldSuppression
 from cdr_cleaner.cleaning_rules.aggregate_zip_codes import AggregateZipCodes
 from cdr_cleaner.cleaning_rules.remove_extra_tables import RemoveExtraTables
@@ -269,7 +268,6 @@ CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     (MotorVehicleAccidentSuppression,),
     (ExplicitIdentifierSuppression,),
     (GeoLocationConceptSuppression,),
-    (OrganTransplantConceptSuppression,),
     (BirthInformationSuppression,),
     (StringFieldsSuppression,),
     (CopeSurveyResponseSuppression,),
@@ -322,7 +320,6 @@ REGISTERED_TIER_DEID_CLEANING_CLASSES = [
     (SectionParticipationConceptSuppression,),
     (RegisteredCopeSurveyQuestionsSuppression,),
     (CancerConceptSuppression,),
-    (OrganTransplantConceptSuppression,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
