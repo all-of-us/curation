@@ -28,7 +28,7 @@ from tools.create_tier import SCOPES
 from common import PS_API_VALUES, DRC_OPS, EHR_OPS
 from validation.participants.store_participant_summary_results import fetch_and_store_ps_hpo_data
 from validation.participants.create_update_drc_id_match_table import create_and_populate_drc_validation_table
-from common import PII_ADDRESS, PII_EMAIL, PII_PHONE_NUMBER, PII_NAME, LOCATION, PERSON
+from common import PII_ADDRESS, PII_EMAIL, PII_PHONE_NUMBER, PII_NAME, LOCATION, PERSON, JINJA_ENV
 from constants.validation.participants.identity_match import IDENTITY_MATCH_TABLE
 from constants.validation.participants import validate as consts
 
@@ -124,6 +124,49 @@ def get_with_clause(field):
     return statement
 
 
+EHR_OPS = 'ehr_ops'
+
+# It is better to divide the SQL into two -- one for address and the other for the rest
+# That will simplify the maintenance
+MATCH_FIELDS_QUERY = JINJA_ENV.from_string("""
+    UPDATE `{{project_id}}.{{drc_dataset_id}}.{{id_match_table_id}}` upd
+    SET upd.first_name = `{{project_id}}.{{drc_dataset_id}}.CompareName`(ps.first_name, ehr_name.first_name),
+        upd.middle_name = `{{project_id}}.{{drc_dataset_id}}.CompareName`(ps.middle_name, ehr_name.middle_name),
+        upd.last_name = `{{project_id}}.{{drc_dataset_id}}.CompareName`(ps.last_name, ehr_name.last_name),
+        upd.address_1 = `{{project_id}}.{{drc_dataset_id}}.CompareStreetAddress`(ps.street_address, ehr_location.address_1),
+        upd.address_2 = `{{project_id}}.{{drc_dataset_id}}.CompareStreetAddress`(ps.street_address2, ehr_location.address_2),
+        upd.city = `{{project_id}}.{{drc_dataset_id}}.CompareCity`(ps.city, ehr_location.city),
+        upd.state = `{{project_id}}.{{drc_dataset_id}}.CompareState`(ps.state, ehr_location.state),
+        upd.zip = `{{project_id}}.{{drc_dataset_id}}.CompareZipCode`(ps.zip_code, ehr_location.zip),
+        upd.email = `{{project_id}}.{{drc_dataset_id}}.CompareEmail`(ps.email, ehr_email.email),
+        upd.phone_number = `{{project_id}}.{{drc_dataset_id}}.ComparePhoneNumber`(ps.phone_number, ehr_phone.phone_number),
+        upd.birth_date = `{{project_id}}.{{drc_dataset_id}}.CompareDateOfBirth`(ps.date_of_birth, ehr_dob.date_of_birth),
+        upd.sex = `{{project_id}}.{{drc_dataset_id}}.CompareSexAtBirth`(ps.sex, ehr_sex.sex),
+        upd.algorithm = 'yes'
+    FROM `{{project_id}}.{{drc_dataset_id}}.{{ps_api_table_id}}` ps
+    LEFT JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_email_table_id}}` ehr_email
+        ON ehr_email.person_id = ps.person_id
+    LEFT JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_phone_number_table_id}}` ehr_phone
+        ON ehr_phone.person_id = ps.person_id
+    LEFT JOIN ( SELECT person_id, DATE(birth_datetime) AS date_of_birth
+               FROM `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_person_table_id}}` ) AS ehr_dob
+        ON ehr_dob.person_id = ps.person_id
+    LEFT JOIN ( SELECT person_id, cc.concept_name as sex
+                FROM `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_person_table_id}}`
+                JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.concept` cc
+                    ON gender_concept_id = concept_id ) AS ehr_sex
+        ON ehr_sex.person_id = ps.person_id
+    LEFT JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_name_table_id}}` ehr_name
+        ON ehr_name.person_id = ps.person_id
+    LEFT JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_address_table_id}}` ehr_address
+        ON ehr_address.person_id = ps.person_id
+    LEFT JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_location_table_id}}` ehr_location
+        ON ehr_location.location_id = ehr_address.location_id
+    WHERE upd.person_id = ps.person_id
+        AND upd._PARTITIONTIME = ps._PARTITIONTIME
+""")
+
+
 def identify_rdr_ehr_match(client,
                            project_id,
                            hpo_id,
@@ -160,7 +203,6 @@ def identify_rdr_ehr_match(client,
             missing_ehr=consts.MISSING_EHR,
             gender_case_when_conditions=get_gender_comparison_case_statement(),
             state_abbreviations=get_state_abbreviations(),
-            street_with_clause=get_with_clause('street'),
             city_with_clause=get_with_clause('city'))
 
         job = client.query(query)
