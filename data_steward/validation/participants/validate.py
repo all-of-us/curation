@@ -223,177 +223,69 @@ CREATE_STANDARDIZED_STREET_TABLE_QUERY = JINJA_ENV.from_string("""
                 ('way', 'way')])
     ),
     removed_commas_and_periods AS (
-        SELECT location_id, REGEXP_REPLACE(address_1, '[,.]', '') as address_1
-        FROM {{project_id}}.{{dataset_id}}.{{source_table_id}}
+        SELECT {{id}}, {{_PARTITIONTIME_as}} REGEXP_REPLACE({{street_column}}, '[,.]', '') as address,
+        FROM {{project_id}}.{{source_dataset_id}}.{{source_table_id}}
     ),
-    lowercased AS (
-        SELECT location_id, LOWER(address_1) as address_1
+    remove_extra_whitespaces AS (
+        SELECT {{id}}, {{_PARTITIONTIME}} REGEXP_REPLACE(TRIM(address), ' +', ' ') as address,
         FROM removed_commas_and_periods
     ),
+    lowercased AS (
+        SELECT {{id}}, {{_PARTITIONTIME}} LOWER(address) as address,
+        FROM remove_extra_whitespaces
+    ),
     standardized_street_number AS (
-        SELECT location_id, REGEXP_REPLACE(address_1,'([0-9])(?:st|nd|rd|th)', r'\1') as address_1
+        SELECT {{id}}, {{_PARTITIONTIME}} REGEXP_REPLACE(address,'([0-9])(?:st|nd|rd|th)', r'\\1') as address,
         FROM lowercased
     ),
     standardized_apartment_number AS (
-        SELECT location_id, REGEXP_REPLACE(address_1,'([0-9])([a-z])',r'\1 \2') as address_1
+        SELECT {{id}}, {{_PARTITIONTIME}} REGEXP_REPLACE(address,'([0-9])([a-z])',r'\\1 \\2') as address
         FROM standardized_street_number
     ),
     parts AS (
-        SELECT location_id, part_address
-        FROM drc_standardized_apartment_number,
-            UNNEST(SPLIT(LOWER(address_1), ' ')) as part_address
+        SELECT {{id}}, {{_PARTITIONTIME}} part_address,
+        FROM standardized_apartment_number,
+            UNNEST(SPLIT(address, ' ')) as part_address
     ),
     expanded AS (
         SELECT 
-            location_id, 
-            COALESCE(expansion, part_address) as expanded_part_address
+            {{id}}, {{_PARTITIONTIME}}
+            COALESCE(expansion, part_address) as expanded_part_address,
         FROM parts p
         LEFT JOIN address_abbreviations aa
         ON aa.abbreviation = p.part_address
     )
     SELECT 
-        location_id, 
-        ARRAY_TO_STRING(ARRAY_AGG(expanded_part_address), ' ') as address
+        {{id}}, {{_PARTITIONTIME}}
+        ARRAY_TO_STRING(ARRAY_AGG(expanded_part_address), ' ') as address,
     FROM expanded
-    GROUP BY location_id
+    GROUP BY {{_PARTITIONTIME}} {{id}}
 """)
 
 MATCH_FIELDS_STREET_ADDRESS_QUERY = JINJA_ENV.from_string("""
-    WITH address_abbreviations AS (
-        SELECT *
-        FROM UNNEST(ARRAY<STRUCT<abbreviation STRING, expansion STRING>>[
-                ('aly', 'alley'),
-                ('anx', 'annex'),
-                ('apt', 'apartment'),
-                ('ave', 'avenue'),
-                ('bch', 'beach'),
-                ('bldg', 'building'),
-                ('blvd', 'boulevard'),
-                ('bnd', 'bend'),
-                ('btm', 'bottom'),
-                ('cir', 'circle'),
-                ('ct', 'court'),
-                ('co', 'county'),
-                ('ctr', 'center'),
-                ('dr', 'drive'),
-                ('e', 'east'),
-                ('expy', 'expressway'),
-                ('hts', 'heights'),
-                ('hwy', 'highway'),
-                ('is', 'island'),
-                ('jct', 'junction'),
-                ('lk', 'lake'),
-                ('ln', 'lane'),
-                ('mtn', 'mountain'),
-                ('n', 'north'),
-                ('ne', 'northeast'),
-                ('num', 'number'),
-                ('nw', 'northwest'),
-                ('pkwy', 'parkway'),
-                ('pl', 'place'),
-                ('plz', 'plaza'),
-                ('po', 'post office'),
-                ('rd', 'road'),
-                ('rdg', 'ridge'),
-                ('rr', 'rural route'),
-                ('rm', 'room'),
-                ('s', 'south'),
-                ('se', 'southeast'),
-                ('sq', 'square'),
-                ('st', 'street'),
-                ('str', 'street'),
-                ('sta', 'station'),
-                ('ste', 'suite'),
-                ('sw', 'southwest'),
-                ('ter', 'terrace'),
-                ('tpke', 'turnpike'),
-                ('trl', 'trail'),
-                ('vly', 'valley'),
-                ('w', 'west'),
-                ('way', 'way')])
-    ),
-    drc_removed_commas_and_periods AS (
-        SELECT location_id, REGEXP_REPLACE(address_1, '[,.]', '') as address_1
-        FROM {{project_id}}.{{drc_dataset_id}}.{{ps_api_table_id}}
-    ),
-    drc_lowercased AS (
-        SELECT location_id, LOWER(address_1) as address_1
-        FROM drc_removed_commas_and_periods
-    ),
-    drc_standardized_street_number AS (
-        SELECT location_id, REGEXP_REPLACE(address_1,'([0-9])(?:st|nd|rd|th)', r'\1') as address_1
-        FROM drc_lowercased
-    ),
-    drc_standardized_apartment_number AS (
-        SELECT location_id, REGEXP_REPLACE(address_1,'([0-9])([a-z])',r'\1 \2') as address_1
-        FROM drc_standardized_street_number
-    ),
-    drc_parts AS (
-        SELECT location_id, part_address
-        FROM drc_standardized_apartment_number,
-            UNNEST(SPLIT(LOWER(address_1), ' ')) as part_address
-    ),
-    drc_expanded AS (
-        SELECT 
-            location_id, 
-            COALESCE(expansion, part_address) as expanded_part_address
-        FROM drc_parts p
-        LEFT JOIN address_abbreviations aa
-        ON aa.abbreviation = p.part_address
-    ),
-    drc_standardized AS (
-        SELECT 
-            location_id, 
-            ARRAY_TO_STRING(ARRAY_AGG(expanded_part_address), ' ') as address
-        FROM drc_expanded
-        GROUP BY location_id
-    ),
-    ehr_removed_commas_and_periods AS (
-        SELECT location_id, REGEXP_REPLACE(address_1, '[,.]', '') as address_1
-        FROM {{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_location_table_id}}
-    ),
-    ehr_lowercased AS (
-        SELECT location_id, LOWER(address_1) as address_1
-        FROM ehr_removed_commas_and_periods
-    ),
-    ehr_standardized_street_number AS (
-        SELECT location_id, REGEXP_REPLACE(address_1,'([0-9])(?:st|nd|rd|th)', r'\1') as address_1
-        FROM ehr_lowercased
-    ),
-    ehr_standardized_apartment_number AS (
-        SELECT location_id, REGEXP_REPLACE(address_1,'([0-9])([a-z])',r'\1 \2') as address_1
-        FROM ehr_standardized_street_number
-    ),
-    ehr_parts AS (
-        SELECT location_id, part_address
-        FROM ehr_standardized_apartment_number,
-            UNNEST(SPLIT(LOWER(address_1), ' ')) as part_address
-    ),
-    ehr_expanded AS (
-        SELECT 
-            location_id, 
-            COALESCE(expansion, part_address) as expanded_part_address
-        FROM ehr_parts p
-        LEFT JOIN address_abbreviations aa
-        ON aa.abbreviation = p.part_address
-    ),
-    ehr_standardized AS (
-        SELECT 
-            location_id, 
-            ARRAY_TO_STRING(ARRAY_AGG(expanded_part_address), ' ') as address
-        FROM ehr_expanded
-        GROUP BY location_id
-    )
     UPDATE `{{project_id}}.{{drc_dataset_id}}.{{id_match_table_id}}` upd
-    SET upd.address_1 = `{{project_id}}.{{drc_dataset_id}}.CompareStreetAddress`(ps.street_address, ehr_location.address_1),
+    SET upd.address_1 = `{{project_id}}.{{drc_dataset_id}}.CompareStreet`(ps.address, ehr_location.address),
         upd.algorithm = 'yes'
-    FROM drc_standardized ps
+    FROM `{{project_id}}.{{drc_dataset_id}}.{{drc_standardized_street_table_id}}` ps
     LEFT JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_address_table_id}}` ehr_address
         ON ehr_address.person_id = ps.person_id
-    LEFT JOIN ehr_standardized ehr_location
+    LEFT JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{ehr_standardized_street_table_id}}` ehr_location
         ON ehr_location.location_id = ehr_address.location_id
     WHERE upd.person_id = ps.person_id
-    AND upd._PARTITIONTIME = ps._PARTITIONTIME
+    AND upd._PARTITIONTIME = ps.{{_PARTITIONTIME}}
+""")
+
+MATCH_FIELDS_STREET_ADDRESS_QUERY_2 = JINJA_ENV.from_string("""
+    UPDATE `{{project_id}}.{{drc_dataset_id}}.{{id_match_table_id}}` upd
+    SET upd.address_2 = `{{project_id}}.{{drc_dataset_id}}.CompareStreet`(ps.address, ehr_location.address),
+        upd.algorithm = 'yes'
+    FROM `{{project_id}}.{{drc_dataset_id}}.{{drc_standardized_street_table_id}}` ps
+    LEFT JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_address_table_id}}` ehr_address
+        ON ehr_address.person_id = ps.person_id
+    LEFT JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{ehr_standardized_street_table_id}}` ehr_location
+        ON ehr_location.location_id = ehr_address.location_id
+    WHERE upd.person_id = ps.person_id
+    AND upd._PARTITIONTIME = ps.{{_PARTITIONTIME}}
 """)
 
 
@@ -461,21 +353,180 @@ def identify_rdr_ehr_match(client,
     job = client.query(match_query)
     job.result()
 
+    drop_ehr_standardized_table_query = DROP_STANDARDIZED_STREET_TABLE_QUERY.render(
+        project_id=project_id,
+        dataset_id=drc_dataset_id,
+        standardized_street_table_id=
+        f'{hpo_location_table_id}_ehr_standardized_street')
+
+    job = client.query(drop_ehr_standardized_table_query)
+    job.result()
+
+    create_ehr_standardized_table_query = CREATE_STANDARDIZED_STREET_TABLE_QUERY.render(
+        project_id=project_id,
+        dataset_id=drc_dataset_id,
+        standardized_street_table_id=
+        f'{hpo_location_table_id}_ehr_standardized_street',
+        source_dataset_id=ehr_ops_dataset_id,
+        source_table_id=hpo_location_table_id,
+        id='location_id',
+        street_column='address_1',
+        _PARTITIONTIME_as='',
+        _PARTITIONTIME='')
+
+    job = client.query(create_ehr_standardized_table_query)
+    job.result()
+
+    job = client.query(
+        f"select * from {drc_dataset_id}.{hpo_location_table_id}_ehr_standardized_street"
+    )
+    result = job.result()
+    actual = [dict(row.items()) for row in result]
+    actual = [{key: value for key, value in row.items()} for row in actual]
+    LOGGER.info(
+        f"RESULT - {'|'.join([val for val in [actual_val.values() for actual_val in actual]])}."
+    )
+
+    drop_rdr_standardized_table_query = DROP_STANDARDIZED_STREET_TABLE_QUERY.render(
+        project_id=project_id,
+        dataset_id=drc_dataset_id,
+        standardized_street_table_id=f'{ps_api_table_id}_rdr_standardized_street'
+    )
+
+    job = client.query(drop_rdr_standardized_table_query)
+    job.result()
+
+    create_rdr_standardized_table_query = CREATE_STANDARDIZED_STREET_TABLE_QUERY.render(
+        project_id=project_id,
+        dataset_id=drc_dataset_id,
+        standardized_street_table_id=
+        f'{ps_api_table_id}_rdr_standardized_street',
+        source_dataset_id=drc_dataset_id,
+        source_table_id=ps_api_table_id,
+        id='person_id',
+        street_column='street_address',
+        _PARTITIONTIME_as='_PARTITIONTIME as partitiontime,',
+        _PARTITIONTIME='partitiontime,')
+
+    job = client.query(create_rdr_standardized_table_query)
+    job.result()
+
+    job = client.query(
+        f"select * from {drc_dataset_id}.{ps_api_table_id}_rdr_standardized_street"
+    )
+    result = job.result()
+    actual = [dict(row.items()) for row in result]
+    actual = [{key: value for key, value in row.items()} for row in actual]
+    LOGGER.info(
+        f"RESULT - {'|'.join([val for val in [actual_val.values() for actual_val in actual]])}."
+    )
+
     match_query = MATCH_FIELDS_STREET_ADDRESS_QUERY.render(
         project_id=project_id,
         id_match_table_id=id_match_table_id,
         hpo_pii_address_table_id=hpo_pii_address_table_id,
-        hpo_location_table_id=hpo_location_table_id,
+        drc_standardized_street_table_id=
+        f'{ps_api_table_id}_rdr_standardized_street',
+        ehr_standardized_street_table_id=
+        f'{hpo_location_table_id}_ehr_standardized_street',
         ps_api_table_id=ps_api_table_id,
         drc_dataset_id=drc_dataset_id,
         ehr_ops_dataset_id=ehr_ops_dataset_id,
+        _PARTITIONTIME='partitiontime',
         match=MATCH,
         no_match=NO_MATCH,
         missing_rdr=MISSING_RDR,
         missing_ehr=MISSING_EHR)
 
-    LOGGER.info(f"Matching fields for {hpo_id}.")
-    LOGGER.info(f"Running the following update statement: {match_query}.")
+    job = client.query(match_query)
+    job.result()
+
+    ##
+
+    drop_ehr_standardized_table_query = DROP_STANDARDIZED_STREET_TABLE_QUERY.render(
+        project_id=project_id,
+        dataset_id=drc_dataset_id,
+        standardized_street_table_id=
+        f'{hpo_location_table_id}_ehr_standardized_street')
+
+    job = client.query(drop_ehr_standardized_table_query)
+    job.result()
+
+    create_ehr_standardized_table_query = CREATE_STANDARDIZED_STREET_TABLE_QUERY.render(
+        project_id=project_id,
+        dataset_id=drc_dataset_id,
+        standardized_street_table_id=
+        f'{hpo_location_table_id}_ehr_standardized_street',
+        source_dataset_id=ehr_ops_dataset_id,
+        source_table_id=hpo_location_table_id,
+        id='location_id',
+        street_column='address_2',
+        _PARTITIONTIME_as='',
+        _PARTITIONTIME='')
+
+    job = client.query(create_ehr_standardized_table_query)
+    job.result()
+
+    job = client.query(
+        f"select * from {drc_dataset_id}.{hpo_location_table_id}_ehr_standardized_street"
+    )
+    result = job.result()
+    actual = [dict(row.items()) for row in result]
+    actual = [{key: value for key, value in row.items()} for row in actual]
+    LOGGER.info(
+        f"RESULT - {'|'.join([val for val in [actual_val.values() for actual_val in actual]])}."
+    )
+
+    drop_rdr_standardized_table_query = DROP_STANDARDIZED_STREET_TABLE_QUERY.render(
+        project_id=project_id,
+        dataset_id=drc_dataset_id,
+        standardized_street_table_id=f'{ps_api_table_id}_rdr_standardized_street'
+    )
+
+    job = client.query(drop_rdr_standardized_table_query)
+    job.result()
+
+    create_rdr_standardized_table_query = CREATE_STANDARDIZED_STREET_TABLE_QUERY.render(
+        project_id=project_id,
+        dataset_id=drc_dataset_id,
+        standardized_street_table_id=
+        f'{ps_api_table_id}_rdr_standardized_street',
+        source_dataset_id=drc_dataset_id,
+        source_table_id=ps_api_table_id,
+        id='person_id',
+        street_column='street_address2',
+        _PARTITIONTIME_as='_PARTITIONTIME as partitiontime,',
+        _PARTITIONTIME='partitiontime,')
+
+    job = client.query(create_rdr_standardized_table_query)
+    job.result()
+
+    job = client.query(
+        f"select * from {drc_dataset_id}.{ps_api_table_id}_rdr_standardized_street"
+    )
+    result = job.result()
+    actual = [dict(row.items()) for row in result]
+    actual = [{key: value for key, value in row.items()} for row in actual]
+    LOGGER.info(
+        f"RESULT - {'|'.join([val for val in [actual_val.values() for actual_val in actual]])}."
+    )
+
+    match_query = MATCH_FIELDS_STREET_ADDRESS_QUERY_2.render(
+        project_id=project_id,
+        id_match_table_id=id_match_table_id,
+        hpo_pii_address_table_id=hpo_pii_address_table_id,
+        drc_standardized_street_table_id=
+        f'{ps_api_table_id}_rdr_standardized_street',
+        ehr_standardized_street_table_id=
+        f'{hpo_location_table_id}_ehr_standardized_street',
+        ps_api_table_id=ps_api_table_id,
+        drc_dataset_id=drc_dataset_id,
+        ehr_ops_dataset_id=ehr_ops_dataset_id,
+        _PARTITIONTIME='partitiontime',
+        match=MATCH,
+        no_match=NO_MATCH,
+        missing_rdr=MISSING_RDR,
+        missing_ehr=MISSING_EHR)
 
     job = client.query(match_query)
     job.result()
