@@ -17,11 +17,9 @@ import argparse
 
 # Project imports
 import resources
-from utils import bq
-from utils import auth
+from utils import bq, auth
 import bq_utils
-from tools.create_tier import SCOPES
-from common import JINJA_ENV, PS_API_VALUES, DRC_OPS
+from common import JINJA_ENV, PS_API_VALUES, DRC_OPS, CDR_SCOPES
 from constants.validation.participants.identity_match import IDENTITY_MATCH_TABLE
 
 LOGGER = logging.getLogger(__name__)
@@ -195,7 +193,7 @@ def main():
 
     # get credentials and create client
     impersonation_creds = auth.get_impersonation_credentials(
-        args.run_as_email, SCOPES)
+        args.run_as_email, CDR_SCOPES)
 
     client = bq.get_client(args.project_id, credentials=impersonation_creds)
 

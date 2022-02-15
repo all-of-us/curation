@@ -14,7 +14,8 @@ from datetime import datetime
 from constants.cdr_cleaner import clean_cdr as consts
 from tools.add_cdr_metadata import INSERT
 from tools.create_tier import parse_deid_args, validate_deid_stage_param, validate_tier_param, \
-    validate_release_tag_param, create_datasets, get_dataset_name, create_tier, SCOPES, add_kwargs_to_args
+    validate_release_tag_param, create_datasets, get_dataset_name, create_tier, add_kwargs_to_args
+from common import CDR_SCOPES
 
 
 class CreateTierTest(unittest.TestCase):
@@ -285,7 +286,17 @@ class CreateTierTest(unittest.TestCase):
                             mock_update_labels_tags):
         # Preconditions
         client = mock_client.return_value = self.mock_bq_client
-        client.side_effects = create_datasets
+        mocked_labels = [{
+            'de-identified': 'true',
+            'phase': consts.CLEAN
+        }, {
+            'de-identified': 'true',
+            'phase': consts.STAGING
+        }, {
+            'de-identified': 'false',
+            'phase': consts.SANDBOX
+        }]
+        mock_update_labels_tags.side_effect = mocked_labels
 
         datasets = {
             consts.CLEAN: self.dataset_name,
@@ -333,18 +344,12 @@ class CreateTierTest(unittest.TestCase):
         self.assertEqual(mock_update_labels_tags.call_count, 3)
 
         mock_update_labels_tags.assert_has_calls([
-            mock.call(datasets[consts.CLEAN], self.labels_and_tags, {
-                'de-identified': 'true',
-                'phase': consts.CLEAN
-            }),
-            mock.call(datasets[consts.STAGING], self.labels_and_tags, {
-                'de-identified': 'true',
-                'phase': consts.STAGING
-            }),
-            mock.call(datasets[consts.SANDBOX], self.labels_and_tags, {
-                'de-identified': 'false',
-                'phase': consts.SANDBOX
-            }),
+            mock.call(datasets[consts.CLEAN], self.labels_and_tags,
+                      mocked_labels[0]),
+            mock.call(datasets[consts.STAGING], self.labels_and_tags,
+                      mocked_labels[1]),
+            mock.call(datasets[consts.SANDBOX], self.labels_and_tags,
+                      mocked_labels[2]),
         ])
 
     @mock.patch('tools.create_tier.create_schemaed_snapshot_dataset')
@@ -370,7 +375,8 @@ class CreateTierTest(unittest.TestCase):
         controlled_tier_cleaning_args = [
             '-p', self.project_id, '-d', datasets[consts.STAGING], '-b',
             datasets[consts.SANDBOX], '--data_stage',
-            f'{self.tier}_tier_{self.deid_stage}'
+            f'{self.tier}_tier_{self.deid_stage}', '--run_as', self.run_as,
+            '--console_log'
         ]
         mock_dataset_name.return_value = final_dataset_name
         mock_create_datasets.return_value = datasets
@@ -386,7 +392,7 @@ class CreateTierTest(unittest.TestCase):
                                               self.release_tag)
 
         mock_impersonate_credentials.assert_called_with(
-            self.run_as, SCOPES, self.credentials_filepath)
+            self.run_as, CDR_SCOPES, self.credentials_filepath)
 
         mock_get_client.assert_called_with(
             self.project_id, credentials=mock_impersonate_credentials())
