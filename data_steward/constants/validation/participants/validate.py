@@ -147,21 +147,25 @@ CREATE FUNCTION IF NOT EXISTS
 """)
 
 NORMALIZED_STREET = JINJA_ENV.from_string("""
-    WITH 
-    remove_commas_and_periods AS (
-        SELECT 'dummy_id' as id, REGEXP_REPLACE(coalesce({{street}}, ''), '[,.]', '') as address
+    WITH address_abbreviations AS (
+        SELECT *
+        FROM UNNEST(ARRAY<STRUCT<abbreviated STRING, expanded STRING>>[
+            {{abbreviation_tuples}}
+        ])
     ),
-    remove_redundant_whitespaces AS (
-        SELECT id, REGEXP_REPLACE(TRIM(address), ' +', ' ') as address
-        FROM remove_commas_and_periods
-    ),
-    lowercase AS (
-        SELECT id, LOWER(address) as address
-        FROM remove_redundant_whitespaces
+    normalize AS (
+        SELECT
+          'dummy_id' as id, 
+          REGEXP_REPLACE(
+            REGEXP_REPLACE(
+              coalesce(TRIM(LOWER({{street}})), '')
+              , '[,.]', ''
+            ), ' +', ' '
+          ) as address
     ),
     standardize_ordinal_number AS (
         SELECT id, REGEXP_REPLACE(address,'([0-9])(?:st|nd|rd|th)', r'\\1') as address
-        FROM lowercase
+        FROM normalize
     ),
     standardize_apartment_number AS (
         SELECT id, REGEXP_REPLACE(address,'([0-9])([a-z])',r'\\1 \\2') as address
@@ -175,7 +179,8 @@ NORMALIZED_STREET = JINJA_ENV.from_string("""
         SELECT 
             id, COALESCE(expanded, part_address) as normalized_part_address,
         FROM split_address_into_parts p
-        LEFT JOIN {{drc_dataset_id}}._abbreviation_street aa
+        LEFT JOIN address_abbreviations aa
+        -- LEFT JOIN {{drc_dataset_id}}._abbreviation_street aa --
         ON aa.abbreviated = p.part_address
     )
     SELECT 
@@ -185,27 +190,32 @@ NORMALIZED_STREET = JINJA_ENV.from_string("""
 """)
 
 NORMALIZED_CITY = JINJA_ENV.from_string("""
-    WITH 
-    remove_commas_and_periods AS (
-        SELECT 'dummy_id' as id, REGEXP_REPLACE(coalesce({{city}}, ''), '[,.]', '') as address
+    WITH address_abbreviations AS (
+        SELECT *
+        FROM UNNEST(ARRAY<STRUCT<abbreviated STRING, expanded STRING>>[
+            {{abbreviation_tuples}}
+        ])
     ),
-    remove_redundant_whitespaces AS (
-        SELECT id, REGEXP_REPLACE(TRIM(address), ' +', ' ') as address
-        FROM remove_commas_and_periods
-    ),
-    lowercase AS (
-        SELECT id, LOWER(address) as address
-        FROM remove_redundant_whitespaces
+    normalize AS (
+        SELECT
+          'dummy_id' as id, 
+          REGEXP_REPLACE(
+            REGEXP_REPLACE(
+              coalesce(TRIM(LOWER({{city}})), '')
+              , '[,.]', ''
+            ), ' +', ' '
+          ) as address
     ),
     split_address_into_parts AS (
         SELECT id, part_address
-        FROM lowercase, UNNEST(SPLIT(address, ' ')) as part_address
+        FROM normalize, UNNEST(SPLIT(address, ' ')) as part_address
     ),
     expand AS (
         SELECT 
             id, COALESCE(expanded, part_address) as normalized_part_address,
         FROM split_address_into_parts p
-        LEFT JOIN {{drc_dataset_id}}._abbreviation_city aa
+        LEFT JOIN address_abbreviations aa
+        -- LEFT JOIN {{drc_dataset_id}}._abbreviation_street aa --
         ON aa.abbreviated = p.part_address
     )
     SELECT 
