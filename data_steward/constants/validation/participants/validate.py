@@ -147,12 +147,7 @@ CREATE FUNCTION IF NOT EXISTS
 """)
 
 NORMALIZED_STREET = JINJA_ENV.from_string("""
-    WITH address_abbreviations AS (
-        SELECT *
-        FROM UNNEST(ARRAY<STRUCT<abbreviation STRING, expansion STRING>>[
-            {{abbreviation_tuples}}
-        ])
-    ),
+    WITH 
     remove_commas_and_periods AS (
         SELECT 'dummy_id' as id, REGEXP_REPLACE(coalesce({{street}}, ''), '[,.]', '') as address
     ),
@@ -176,26 +171,21 @@ NORMALIZED_STREET = JINJA_ENV.from_string("""
         SELECT id, part_address
         FROM standardize_apartment_number, UNNEST(SPLIT(address, ' ')) as part_address
     ),
-    unabbreviate AS (
+    expand AS (
         SELECT 
-            id, COALESCE(expansion, part_address) as normalized_part_address,
+            id, COALESCE(expanded, part_address) as normalized_part_address,
         FROM split_address_into_parts p
-        LEFT JOIN address_abbreviations aa
-        ON aa.abbreviation = p.part_address
+        LEFT JOIN {{drc_dataset_id}}._abbreviation_street aa
+        ON aa.abbreviated = p.part_address
     )
     SELECT 
         ARRAY_TO_STRING(ARRAY_AGG(normalized_part_address), ' ') as street,
-    FROM unabbreviate
+    FROM expand
     GROUP BY id
 """)
 
 NORMALIZED_CITY = JINJA_ENV.from_string("""
-    WITH address_abbreviations AS (
-        SELECT *
-        FROM UNNEST(ARRAY<STRUCT<abbreviation STRING, expansion STRING>>[
-            {{abbreviation_tuples}}
-        ])
-    ),
+    WITH 
     remove_commas_and_periods AS (
         SELECT 'dummy_id' as id, REGEXP_REPLACE(coalesce({{city}}, ''), '[,.]', '') as address
     ),
@@ -211,16 +201,16 @@ NORMALIZED_CITY = JINJA_ENV.from_string("""
         SELECT id, part_address
         FROM lowercase, UNNEST(SPLIT(address, ' ')) as part_address
     ),
-    unabbreviate AS (
+    expand AS (
         SELECT 
-            id, COALESCE(expansion, part_address) as normalized_part_address,
+            id, COALESCE(expanded, part_address) as normalized_part_address,
         FROM split_address_into_parts p
-        LEFT JOIN address_abbreviations aa
-        ON aa.abbreviation = p.part_address
+        LEFT JOIN {{drc_dataset_id}}._abbreviation_city aa
+        ON aa.abbreviated = p.part_address
     )
     SELECT 
         ARRAY_TO_STRING(ARRAY_AGG(normalized_part_address), ' ') as city,
-    FROM unabbreviate
+    FROM expand
     GROUP BY id
 """)
 

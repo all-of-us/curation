@@ -20,6 +20,7 @@ import argparse
 
 # Third party imports
 import pandas
+from google.cloud.bigquery import LoadJobConfig, WriteDisposition
 
 # Project imports
 from app_identity import get_application_id
@@ -81,15 +82,29 @@ def identify_rdr_ehr_match(client,
     city_df = pandas.read_csv(VALIDATION_CITY_CSV, header=0)
     state_df = pandas.read_csv(VALIDATION_STATE_CSV, header=0)
 
-    street_tuples_str: str = ",\n".join([
-        f"('{abbreviated}','{unabbreviated}')" for abbreviated, unabbreviated in
-        zip(street_df['abbreviated'], street_df['unabbreviated'])
-    ])
+    job_config = LoadJobConfig()
+    job_config.write_disposition = WriteDisposition.WRITE_TRUNCATE
+    job = client.load_table_from_dataframe(
+        street_df,
+        destination=f'{drc_dataset_id}._abbreviation_street',
+        job_config=job_config)
+    job.result()
 
-    city_tuples_str: str = ",\n".join([
-        f"('{abbreviated}','{unabbreviated}')" for abbreviated, unabbreviated in
-        zip(city_df['abbreviated'], city_df['unabbreviated'])
-    ])
+    job_config = LoadJobConfig()
+    job_config.write_disposition = WriteDisposition.WRITE_TRUNCATE
+    job = client.load_table_from_dataframe(
+        city_df,
+        destination=f'{drc_dataset_id}._abbreviation_city',
+        job_config=job_config)
+    job.result()
+
+    job_config = LoadJobConfig()
+    job_config.write_disposition = WriteDisposition.WRITE_TRUNCATE
+    job = client.load_table_from_dataframe(
+        state_df,
+        destination=f'{drc_dataset_id}._abbreviation_state',
+        job_config=job_config)
+    job.result()
 
     states_str: str = ",\n".join(
         [f"'{state}'" for state in state_df['abbreviated']])
@@ -105,13 +120,13 @@ def identify_rdr_ehr_match(client,
             missing_rdr=consts.MISSING_RDR,
             missing_ehr=consts.MISSING_EHR,
             rdr_street=consts.NORMALIZED_STREET.render(
-                abbreviation_tuples=street_tuples_str, street='rdr_street'),
+                drc_dataset_id=drc_dataset_id, street='rdr_street'),
             ehr_street=consts.NORMALIZED_STREET.render(
-                abbreviation_tuples=street_tuples_str, street='ehr_street'),
+                drc_dataset_id=drc_dataset_id, street='ehr_street'),
             rdr_city=consts.NORMALIZED_CITY.render(
-                abbreviation_tuples=city_tuples_str, city='rdr_city'),
+                drc_dataset_id=drc_dataset_id, city='rdr_city'),
             ehr_city=consts.NORMALIZED_CITY.render(
-                abbreviation_tuples=city_tuples_str, city='ehr_city'),
+                drc_dataset_id=drc_dataset_id, city='ehr_city'),
             gender_case_when_conditions=get_gender_comparison_case_statement(),
             state_abbreviations=states_str)
 
