@@ -74,6 +74,8 @@ VALIDATION_STREET_CSV = os.path.join(resource_files_path, 'validation',
                                      'participants', 'abbreviation_street.csv')
 VALIDATION_CITY_CSV = os.path.join(resource_files_path, 'validation',
                                    'participants', 'abbreviation_city.csv')
+
+# The source: https://pe.usps.com/text/pub28/28apb.htm
 VALIDATION_STATE_CSV = os.path.join(resource_files_path, 'validation',
                                     'participants', 'abbreviation_state.csv')
 
