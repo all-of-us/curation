@@ -20,7 +20,7 @@ SITE_POINT_OF_CONTACT = 'site_point_of_contact'
 # Mandrill API constants
 MAIL_TO = 'mail_to'
 
-EHR_OPS_SITE_URL = 'https://sites.google.com/view/ehrupload'
+EHR_OPS_SITE_URL = 'https://aou-ehr-ops.zendesk.com/hc'
 
 # Email content
 EMAIL_BODY = """
