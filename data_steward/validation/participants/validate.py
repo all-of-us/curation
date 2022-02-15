@@ -20,7 +20,6 @@ import argparse
 
 # Third party imports
 import pandas
-from google.cloud.bigquery import LoadJobConfig, WriteDisposition
 
 # Project imports
 from app_identity import get_application_id
@@ -54,6 +53,19 @@ def get_gender_comparison_case_statement():
     return ' \n'.join(conditions)
 
 
+def _get_lookup_tuples(csv_file) -> str:
+    """ Helper function that generates a part of WITH statement for loading abbreviations. 
+    :param csv_file: path of the CSV file that has abbreviations
+    :return: string to be passed as a part of WITH statement
+    """
+    csv_df = pandas.read_csv(csv_file, header=0)
+
+    return ",\n".join([
+        f"('{abbreviated}','{expanded}')" for abbreviated, expanded in zip(
+            csv_df['abbreviated'], csv_df['expanded'])
+    ])
+
+
 def identify_rdr_ehr_match(client,
                            project_id,
                            hpo_id,
@@ -78,46 +90,7 @@ def identify_rdr_ehr_match(client,
     hpo_location_table_id = get_table_id(LOCATION, hpo_id)
     hpo_person_table_id = get_table_id(PERSON, hpo_id)
 
-    street_df = pandas.read_csv(VALIDATION_STREET_CSV, header=0)
-    city_df = pandas.read_csv(VALIDATION_CITY_CSV, header=0)
     state_df = pandas.read_csv(VALIDATION_STATE_CSV, header=0)
-
-    street_tuples_str: str = ",\n".join([
-        f"('{abbreviated}','{unabbreviated}')" for abbreviated, unabbreviated in
-        zip(street_df['abbreviated'], street_df['expanded'])
-    ])
-
-    city_tuples_str: str = ",\n".join([
-        f"('{abbreviated}','{unabbreviated}')" for abbreviated, unabbreviated in
-        zip(city_df['abbreviated'], city_df['expanded'])
-    ])
-
-    states_str: str = ",\n".join(
-        [f"'{state}'" for state in state_df['abbreviated']])
-    job_config = LoadJobConfig()
-    job_config.write_disposition = WriteDisposition.WRITE_TRUNCATE
-    job = client.load_table_from_dataframe(
-        street_df,
-        destination=f'{drc_dataset_id}._abbreviation_street',
-        job_config=job_config)
-    job.result()
-
-    job_config = LoadJobConfig()
-    job_config.write_disposition = WriteDisposition.WRITE_TRUNCATE
-    job = client.load_table_from_dataframe(
-        city_df,
-        destination=f'{drc_dataset_id}._abbreviation_city',
-        job_config=job_config)
-    job.result()
-
-    job_config = LoadJobConfig()
-    job_config.write_disposition = WriteDisposition.WRITE_TRUNCATE
-    job = client.load_table_from_dataframe(
-        state_df,
-        destination=f'{drc_dataset_id}._abbreviation_state',
-        job_config=job_config)
-    job.result()
-
     states_str: str = ",\n".join(
         [f"'{state}'" for state in state_df['abbreviated']])
 
@@ -131,23 +104,19 @@ def identify_rdr_ehr_match(client,
             no_match=consts.NO_MATCH,
             missing_rdr=consts.MISSING_RDR,
             missing_ehr=consts.MISSING_EHR,
-            rdr_street=consts.NORMALIZED_STREET.render(
-                abbreviation_tuples=street_tuples_str, street='rdr_street'),
-            ehr_street=consts.NORMALIZED_STREET.render(
-                abbreviation_tuples=street_tuples_str, street='ehr_street'),
-            rdr_city=consts.NORMALIZED_CITY.render(
-                abbreviation_tuples=city_tuples_str, city='rdr_city'),
-            ehr_city=consts.NORMALIZED_CITY.render(
-                abbreviation_tuples=city_tuples_str, city='ehr_city'),
-            #rdr_street=consts.NORMALIZED_STREET.render(
-            #    drc_dataset_id=drc_dataset_id, street='rdr_street'),
-            #ehr_street=consts.NORMALIZED_STREET.render(
-            #    drc_dataset_id=drc_dataset_id, street='ehr_street'),
-            #rdr_city=consts.NORMALIZED_CITY.render(
-            #    drc_dataset_id=drc_dataset_id, city='rdr_city'),
-            #ehr_city=consts.NORMALIZED_CITY.render(
-            #    drc_dataset_id=drc_dataset_id, city='ehr_city'),
             gender_case_when_conditions=get_gender_comparison_case_statement(),
+            normalized_street_rdr=consts.NORMALIZED_STREET.render(
+                lookup_tuples=_get_lookup_tuples(VALIDATION_STREET_CSV),
+                street='rdr_street'),
+            normalized_street_ehr=consts.NORMALIZED_STREET.render(
+                lookup_tuples=_get_lookup_tuples(VALIDATION_STREET_CSV),
+                street='ehr_street'),
+            normalized_city_rdr=consts.NORMALIZED_CITY.render(
+                lookup_tuples=_get_lookup_tuples(VALIDATION_CITY_CSV),
+                city='rdr_city'),
+            normalized_city_ehr=consts.NORMALIZED_CITY.render(
+                lookup_tuples=_get_lookup_tuples(VALIDATION_CITY_CSV),
+                city='ehr_city'),
             state_abbreviations=states_str)
 
         job = client.query(query)

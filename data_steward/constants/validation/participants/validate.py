@@ -116,8 +116,8 @@ CREATE FUNCTION IF NOT EXISTS
   RETURNS string 
   AS ((
     WITH 
-      normalized_rdr AS ({{rdr_street}}),
-      normalized_ehr AS ({{ehr_street}})
+      normalized_rdr AS ({{normalized_street_rdr}}),
+      normalized_ehr AS ({{normalized_street_ehr}})
     SELECT
       CASE
         WHEN rdr_street IS NULL THEN '{{missing_rdr}}'
@@ -134,8 +134,8 @@ CREATE FUNCTION IF NOT EXISTS
   `{{project_id}}.{{drc_dataset_id}}.CompareCity`(rdr_city string, ehr_city string)
   RETURNS string AS ((
     WITH 
-      normalized_rdr AS ({{rdr_city}}),
-      normalized_ehr AS ({{ehr_city}})    
+      normalized_rdr AS ({{normalized_city_rdr}}),
+      normalized_ehr AS ({{normalized_city_ehr}})    
     SELECT
       CASE
         WHEN rdr_city IS NULL THEN '{{missing_rdr}}'
@@ -149,19 +149,12 @@ CREATE FUNCTION IF NOT EXISTS
 NORMALIZED_STREET = JINJA_ENV.from_string("""
     WITH address_abbreviations AS (
         SELECT *
-        FROM UNNEST(ARRAY<STRUCT<abbreviated STRING, expanded STRING>>[
-            {{abbreviation_tuples}}
-        ])
+        FROM UNNEST(ARRAY<STRUCT<abbreviated STRING, expanded STRING>>[{{lookup_tuples}}])
     ),
     normalize AS (
         SELECT
           'dummy_id' as id, 
-          REGEXP_REPLACE(
-            REGEXP_REPLACE(
-              coalesce(TRIM(LOWER({{street}})), '')
-              , '[,.]', ''
-            ), ' +', ' '
-          ) as address
+          REGEXP_REPLACE(REGEXP_REPLACE(COALESCE(TRIM(LOWER({{street}})), ''), '[,.]', ' '), ' +', ' ') as address
     ),
     standardize_ordinal_number AS (
         SELECT id, REGEXP_REPLACE(address,'([0-9])(?:st|nd|rd|th)', r'\\1') as address
@@ -176,15 +169,12 @@ NORMALIZED_STREET = JINJA_ENV.from_string("""
         FROM standardize_apartment_number, UNNEST(SPLIT(address, ' ')) as part_address
     ),
     expand AS (
-        SELECT 
-            id, COALESCE(expanded, part_address) as normalized_part_address,
+        SELECT id, COALESCE(expanded, part_address) as normalized_part_address,
         FROM split_address_into_parts p
         LEFT JOIN address_abbreviations aa
-        -- LEFT JOIN {{drc_dataset_id}}._abbreviation_street aa --
         ON aa.abbreviated = p.part_address
     )
-    SELECT 
-        ARRAY_TO_STRING(ARRAY_AGG(normalized_part_address), ' ') as street,
+    SELECT ARRAY_TO_STRING(ARRAY_AGG(normalized_part_address), ' ') as street,
     FROM expand
     GROUP BY id
 """)
@@ -192,34 +182,24 @@ NORMALIZED_STREET = JINJA_ENV.from_string("""
 NORMALIZED_CITY = JINJA_ENV.from_string("""
     WITH address_abbreviations AS (
         SELECT *
-        FROM UNNEST(ARRAY<STRUCT<abbreviated STRING, expanded STRING>>[
-            {{abbreviation_tuples}}
-        ])
+        FROM UNNEST(ARRAY<STRUCT<abbreviated STRING, expanded STRING>>[{{lookup_tuples}}])
     ),
     normalize AS (
         SELECT
           'dummy_id' as id, 
-          REGEXP_REPLACE(
-            REGEXP_REPLACE(
-              coalesce(TRIM(LOWER({{city}})), '')
-              , '[,.]', ''
-            ), ' +', ' '
-          ) as address
+          REGEXP_REPLACE(REGEXP_REPLACE(COALESCE(TRIM(LOWER({{city}})), ''), '[,.]', ' '), ' +', ' ') as address
     ),
     split_address_into_parts AS (
         SELECT id, part_address
         FROM normalize, UNNEST(SPLIT(address, ' ')) as part_address
     ),
     expand AS (
-        SELECT 
-            id, COALESCE(expanded, part_address) as normalized_part_address,
+        SELECT id, COALESCE(expanded, part_address) as normalized_part_address,
         FROM split_address_into_parts p
         LEFT JOIN address_abbreviations aa
-        -- LEFT JOIN {{drc_dataset_id}}._abbreviation_street aa --
         ON aa.abbreviated = p.part_address
     )
-    SELECT 
-        ARRAY_TO_STRING(ARRAY_AGG(normalized_part_address), ' ') as city,
+    SELECT ARRAY_TO_STRING(ARRAY_AGG(normalized_part_address), ' ') as city,
     FROM expand
     GROUP BY id
 """)
