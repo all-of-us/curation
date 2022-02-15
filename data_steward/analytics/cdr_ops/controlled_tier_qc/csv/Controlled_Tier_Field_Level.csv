@@ -27,7 +27,7 @@ person,gender_source_value,STRING,YES,YES,DC-1370
 person,person_source_value,STRING,YES,YES,DC-1370
 person,race_source_value,STRING,YES,YES,DC-1370
 procedure_occurrence,procedure_source_value,STRING,YES,YES,DC-1370
-procedure_occurrence,qualifier_source_value,STRING,YES,YES,DC-1370
+procedure_occurrence,modifier_source_value,STRING,YES,YES,DC-1370
 specimen,anatomic_site_source_value,STRING,YES,YES,DC-1370
 specimen,disease_status_source_value,STRING,YES,YES,DC-1370
 specimen,specimen_source_id,STRING,YES,YES,DC-1370
