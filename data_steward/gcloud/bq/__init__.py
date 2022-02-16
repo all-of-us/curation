@@ -5,6 +5,7 @@ Interact with Google Cloud BigQuery
 import os
 
 # Third-party imports
+from google.cloud import bigquery
 from google.cloud.bigquery import Client
 from google.auth import default
 
