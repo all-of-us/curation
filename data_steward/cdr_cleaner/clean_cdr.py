@@ -107,6 +107,7 @@ from cdr_cleaner.cleaning_rules.generalize_state_by_population import Generalize
 from cdr_cleaner.cleaning_rules.section_participation_concept_suppression import SectionParticipationConceptSuppression
 from cdr_cleaner.cleaning_rules.covid_ehr_vaccine_concept_suppression import CovidEHRVaccineConceptSuppression
 from cdr_cleaner.cleaning_rules.missing_concept_record_suppression import MissingConceptRecordSuppression
+from cdr_cleaner.cleaning_rules.create_deid_questionnaire_response_map import CreateDeidQuestionnaireResponseMap
 from constants.cdr_cleaner import clean_cdr_engine as ce_consts
 from constants.cdr_cleaner.clean_cdr import DataStage
 
@@ -138,6 +139,7 @@ UNIONED_EHR_CLEANING_CLASSES = [
 
 RDR_CLEANING_CLASSES = [
     (StoreNewPidRidMappings,),
+    (CreateDeidQuestionnaireResponseMap,),
     (TruncateRdrData,),
     (RemoveParticipantsUnder18Years,),
     # execute map_questions_answers_to_omop before PpiBranching gets executed

@@ -1,7 +1,7 @@
 """
 The purpose of this cleaning rule is to create (if it does not already exist) the questionnaire mapping lookup table.
 
-Original Issues: DC2065
+Original Issues: DC-1347, DC-518, DC-2065
 """
 
 # Python imports
@@ -47,7 +47,7 @@ class CreateDeidQuestionnaireResponseMap(BaseCleaningRule):
         """
         desc = "The purpose of this cleaning rule is to create (if it does not already exist) the questionnaire " \
                 "mapping lookup table."
-        super().__init__(issue_numbers=['DC2065'],
+        super().__init__(issue_numbers=['DC1347', 'DC518', 'DC2065'],
                          description=desc,
                          affected_datasets=[cdr_consts.RDR],
                          affected_tables=[],

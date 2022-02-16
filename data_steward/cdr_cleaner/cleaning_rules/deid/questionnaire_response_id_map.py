@@ -2,7 +2,7 @@
 Maps questionnaire_response_ids from the observation table to the research_response_id in the
 _deid_questionnaire_response_map lookup table.
 
-Original Issue: DC-1347, DC-518
+Original Issue: DC-1347, DC-518, DC-2065
 
 The purpose of this cleaning rule is to use the questionnaire mapping lookup table to remap the questionnaire_response_id 
 in the observation table to the randomly generated research_response_id in the _deid_questionnaire_response_map table.
@@ -20,7 +20,7 @@ from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 
 LOGGER = logging.getLogger(__name__)
 
-ISSUE_NUMBERS = ['DC1347', 'DC518']
+ISSUE_NUMBERS = ['DC1347', 'DC518', 'DC-2065']
 
 # Map the research_response_id from _deid_questionnaire_response_map lookup table to the questionnaire_response_id in
 # the observation table
