@@ -16,7 +16,7 @@ import os
 # Project Imports
 from common import OBSERVATION
 from app_identity import PROJECT_ID
-from cdr_cleaner.cleaning_rules.deid.cope_survey_response_suppression import ControlledCopeSurveySuppression
+from cdr_cleaner.cleaning_rules.deid.controlled_cope_survey_suppression import ControlledCopeSurveySuppression
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
 
