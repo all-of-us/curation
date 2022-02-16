@@ -267,7 +267,7 @@ class ValidateTest(TestCase):
             (11, ' 1 government drive ', '', 'Saint Louis ', 'mo', '63110'),
             (12, 'Wrong street', 'Wrong apartment', 'Wrong city', 'NJ', '12345'),
             (13, 'University Street', 'Apartment 7 D', 'Andersen Air Force Base', 'Gu', '  96923  '),
-            (14, '915 pr-17', 'Apt 7D', ' San Juan ', 'pr', '921'),
+            (14, '915 pr-17', 'Apt 7-D', ' San Juan ', 'pr', '921'),
             (15, '50 Riverview Plaza', '', NULL, 'NJ', '08611-1234'),
             (16, NULL, '', 'Jacksonville', 'FL', '32207  5678'),
             (17, '1st 2 3rd 4 Street', '', 'Cincinnati', 'OH', '45202'),
@@ -288,6 +288,7 @@ class ValidateTest(TestCase):
             11: street_2 - match (both blank)
             12: street_2 - no_match (blank vs non-blank)
             13: street_2 - match (APT 7D vs Apartment 7 D)
+            14: street_2 - match (APT 7D vs Apt 7-D)
             19: No record for 19
 
             11: city - match (St. vs saint, whitespace padding, uppercase vs lowercase)

@@ -154,7 +154,7 @@ NORMALIZED_STREET = JINJA_ENV.from_string("""
     normalize AS (
         SELECT
           'dummy_id' as id, 
-          REGEXP_REPLACE(REGEXP_REPLACE(COALESCE(TRIM(LOWER({{street}})), ''), '[,.]', ' '), ' +', ' ') as address
+          REGEXP_REPLACE(REGEXP_REPLACE(COALESCE(TRIM(LOWER({{street}})), ''), '[^a-zA-Z0-9 ]', ' '), ' +', ' ') as address
     ),
     standardize_ordinal_number AS (
         SELECT id, REGEXP_REPLACE(address,'([0-9])(?:st|nd|rd|th)', r'\\1') as address
@@ -187,7 +187,7 @@ NORMALIZED_CITY = JINJA_ENV.from_string("""
     normalize AS (
         SELECT
           'dummy_id' as id, 
-          REGEXP_REPLACE(REGEXP_REPLACE(COALESCE(TRIM(LOWER({{city}})), ''), '[,.]', ' '), ' +', ' ') as address
+          REGEXP_REPLACE(REGEXP_REPLACE(COALESCE(TRIM(LOWER({{city}})), ''), '[^a-zA-Z0-9 ]', ' '), ' +', ' ') as address
     ),
     split_address_into_parts AS (
         SELECT id, part_address
