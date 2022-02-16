@@ -34,7 +34,7 @@ from pandas import read_csv
 
 # Project imports
 from common import OBSERVATION
-from resources import COPE_SUPPRESSION_RESPONSES_CSV_PATH
+from resources import RT_CT_COPE_SUPPRESSION_CSV_PATH
 from utils import pipeline_logging
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.deid.concept_suppression import \
@@ -71,7 +71,7 @@ class ControlledCopeSurveySuppression(
                          table_namer=table_namer)
 
     def get_suppressed_concept_ids(self):
-        with open(COPE_SUPPRESSION_RESPONSES_CSV_PATH) as f:
+        with open(RT_CT_COPE_SUPPRESSION_CSV_PATH) as f:
             concept_ids_df = read_csv(f, delimiter=',')
             concept_ids = concept_ids_df['concept_id'].to_list()
         return concept_ids
