@@ -59,7 +59,7 @@ from utils import pipeline_logging
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.deid.concept_suppression import \
     AbstractInMemoryLookupTableConceptSuppression
-from resources import COPE_SUPPRESSION_CONCEPTS_CSV_PATH
+from resources import RT_COPE_SUPPRESSION_CSV_PATH
 
 LOGGER = logging.getLogger(__name__)
 
@@ -97,7 +97,7 @@ class RegisteredCopeSurveyQuestionsSuppression(
         """
         returns a list of all concepts_ids that will need to be suppressed
         """
-        with open(COPE_SUPPRESSION_CONCEPTS_CSV_PATH) as f:
+        with open(RT_COPE_SUPPRESSION_CSV_PATH) as f:
             concept_ids_df = read_csv(f, delimiter=',')
             concept_ids = concept_ids_df['concept_id'].to_list()
         return concept_ids
