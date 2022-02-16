@@ -1,9 +1,7 @@
 """
-Integration test to ensure records are properly sandboxed and dropped in the registered_cope_survey_suppression.py module.
+Integration test to ensure records are properly sandboxed and dropped in registered_cope_survey_suppression.py module.
 
-Removes any records that have an observation_source_concept_id as any of these values: 1310058, 1310065, 1333012,
- 1333234, 702686, 1333327, 1333118, 1310054, 1333326, 1310066, 596884, 596885, 596886, 596887, 596888, 596889, 1310137,
- 1310146, 1333016, 715714, 1310147, 715724, 715725, 715726.
+Removes any records that have an observation_source_concept_id as any values in resources.RT_COPE_SUPPRESSION_CSV_PATH
 
 Original Issue: DC-1666, DC-1740
 
