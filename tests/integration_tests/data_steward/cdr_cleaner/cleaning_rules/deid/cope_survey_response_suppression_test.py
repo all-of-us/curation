@@ -16,7 +16,7 @@ import os
 # Project Imports
 from common import OBSERVATION
 from app_identity import PROJECT_ID
-from cdr_cleaner.cleaning_rules.deid.cope_survey_response_suppression import CopeSurveyResponseSuppression
+from cdr_cleaner.cleaning_rules.deid.cope_survey_response_suppression import ControlledCopeSurveySuppression
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
 
@@ -37,7 +37,7 @@ class CopeSurveyResponseSuppressionTest(BaseTest.CleaningRulesTestBase):
         cls.dataset_id = os.environ.get('COMBINED_DATASET_ID')
         cls.sandbox_id = cls.dataset_id + '_sandbox'
 
-        cls.rule_instance = CopeSurveyResponseSuppression(
+        cls.rule_instance = ControlledCopeSurveySuppression(
             cls.project_id, cls.dataset_id, cls.sandbox_id)
 
         # Generates list of fully qualified table names
