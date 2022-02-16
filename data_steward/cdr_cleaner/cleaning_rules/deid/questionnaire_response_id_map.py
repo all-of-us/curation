@@ -4,9 +4,8 @@ _deid_questionnaire_response_map lookup table.
 
 Original Issue: DC-1347, DC-518
 
-The purpose of this cleaning rule is to create (if it does not already exist) the questionnaire mapping lookup table
-and use that lookup table to remap the questionnaire_response_id in the observation table to the randomly
-generated research_response_id in the _deid_questionnaire_response_map table.
+The purpose of this cleaning rule is to use the questionnaire mapping lookup table to remap the questionnaire_response_id 
+in the observation table to the randomly generated research_response_id in the _deid_questionnaire_response_map table.
 """
 
 # Python imports
@@ -38,7 +37,7 @@ ON t.questionnaire_response_id = d.questionnaire_response_id
 
 class QRIDtoRID(BaseCleaningRule):
     """
-    Create a deid questionnaire response mapping lookup table and remap the QID (questionnaire_response_id) from the
+    Remap the QID (questionnaire_response_id) from the
     observation table to the RID (research_response_id) found in that deid questionnaire response mapping lookup table
     """
 
@@ -55,8 +54,8 @@ class QRIDtoRID(BaseCleaningRule):
         tickets may affect this SQL, append them to the list of Jira Issues.
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
-        desc = f'Create a deid questionnaire response mapping lookup table and remap the QID ' \
-               f'(questionnaire_response_id) from the observation table to the RID (research_response_id) found in ' \
+        desc = f'Remap the QID (questionnaire_response_id) from the observation table to the ' \
+               f'RID (research_response_id) found in ' \
                f'the deid questionnaire response mapping lookup table.'
 
         if not deid_questionnaire_response_map_dataset:
