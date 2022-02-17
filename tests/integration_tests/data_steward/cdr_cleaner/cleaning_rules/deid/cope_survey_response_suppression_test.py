@@ -20,7 +20,7 @@ from cdr_cleaner.cleaning_rules.deid.controlled_cope_survey_suppression import C
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
 
-class CopeSurveyResponseSuppressionTest(BaseTest.CleaningRulesTestBase):
+class ControlledCopeSurveySuppressionTest(BaseTest.CleaningRulesTestBase):
 
     @classmethod
     def setUpClass(cls):
