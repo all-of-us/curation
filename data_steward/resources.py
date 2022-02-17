@@ -70,6 +70,15 @@ PPI_BRANCHING_RULE_PATHS = [
     PERSONAL_MEDICAL_HISTORY_CSV_PATH
 ]
 
+VALIDATION_STREET_CSV = os.path.join(resource_files_path, 'validation',
+                                     'participants', 'abbreviation_street.csv')
+VALIDATION_CITY_CSV = os.path.join(resource_files_path, 'validation',
+                                   'participants', 'abbreviation_city.csv')
+
+# The source: https://pe.usps.com/text/pub28/28apb.htm
+VALIDATION_STATE_CSV = os.path.join(resource_files_path, 'validation',
+                                    'participants', 'abbreviation_state.csv')
+
 
 @cachetools.cached(cache={})
 def csv_to_list(csv_path):

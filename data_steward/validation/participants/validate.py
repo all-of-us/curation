@@ -17,12 +17,14 @@ Original Issue: DC-1127
 # Python imports
 import logging
 import argparse
-from collections import deque
+
+# Third party imports
+import pandas
 
 # Project imports
 from app_identity import get_application_id
 from bq_utils import get_rdr_project_id
-from resources import get_table_id
+from resources import get_table_id, VALIDATION_STREET_CSV, VALIDATION_CITY_CSV, VALIDATION_STATE_CSV
 from utils import bq, pipeline_logging, auth
 from common import (JINJA_ENV, PS_API_VALUES, DRC_OPS, EHR_OPS, CDR_SCOPES,
                     PII_ADDRESS, PII_EMAIL, PII_PHONE_NUMBER, PII_NAME,
@@ -51,77 +53,17 @@ def get_gender_comparison_case_statement():
     return ' \n'.join(conditions)
 
 
-def get_state_abbreviations():
-    """ Returns lowercase state abbreviations separated by comma as string.
-    e.g. 'al','ak','az',...
+def _get_lookup_tuples(csv_file) -> str:
+    """ Helper function that generates a part of WITH statement for loading abbreviations. 
+    :param csv_file: path of the CSV file that has abbreviations
+    :return: string to be passed as a part of WITH statement
     """
-    return ','.join(f"'{state}'" for state in consts.STATE_ABBREVIATIONS)
+    csv_df = pandas.read_csv(csv_file, header=0)
 
-
-def _get_replace_statement(base_statement, rdr_ehr, field, dict_abbreviation):
-    """
-    Create a nested REGEXP_REPLACE() statement for specified field and rdr/ehr.
-    :param: base_statement - Function that returns the base statement to use REGEXP_REPLACE() for
-    :param: rdr_ehr - string 'rdr' or 'ehr'
-    :param: field - string 'city' or 'street'
-    :param: dict_abbreviation - dictionary that has abbreviations
-    :return: Nested REGEXP_REPLACE statement as string
-    """
-    statement_parts = deque([base_statement(rdr_ehr, field)])
-
-    for key in dict_abbreviation:
-        statement_parts.appendleft(
-            "REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(")
-        statement_parts.append(f",'^{key} ','{dict_abbreviation[key]} ')")
-        statement_parts.append(f",' {key}$',' {dict_abbreviation[key]}')")
-        statement_parts.append(f",' {key} ',' {dict_abbreviation[key]} ')")
-
-    statement_parts.appendleft(f"normalized_{rdr_ehr}_{field} AS (SELECT ")
-
-    statement_parts.append(f" AS {rdr_ehr}_{field})")
-
-    return ''.join(statement_parts)
-
-
-def get_with_clause(field):
-    """
-    Create WITH statement for CREATE_{field}_COMPARISON_FUNCTION.
-    :param: field - string 'city' or 'street'
-    :return: WITH statement as string
-    """
-    valid_fields = {'city', 'street'}
-
-    if field not in valid_fields:
-        raise ValueError(
-            f"Invalid field name: {field}. Valid field names: {valid_fields}")
-
-    base_statement = {
-        'city':
-            lambda rdr_ehr, field:
-            f"REGEXP_REPLACE(REGEXP_REPLACE(LOWER(TRIM({rdr_ehr}_{field})),'[^A-Za-z ]',''),' +',' ')",
-        'street':
-            lambda rdr_ehr, field:
-            (f"REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(LOWER(TRIM({rdr_ehr}_{field})),"
-             f"'[^0-9A-Za-z ]', ''),'([0-9])(?:st|nd|rd|th)', r'\\1'),'([0-9])([a-z])',r'\\1 \\2'),' +',' ')"
-            ),
-    }
-
-    abbreviations = {
-        'city': consts.CITY_ABBREVIATIONS,
-        'street': consts.ADDRESS_ABBREVIATIONS,
-    }
-
-    statement_parts = [
-        "WITH ",
-        _get_replace_statement(base_statement[field], 'rdr', field,
-                               abbreviations[field]), ",",
-        _get_replace_statement(base_statement[field], 'ehr', field,
-                               abbreviations[field])
-    ]
-
-    statement = ''.join(statement_parts)
-
-    return statement
+    return ",\n".join([
+        f"('{abbreviated}','{expanded}')" for abbreviated, expanded in zip(
+            csv_df['abbreviated'], csv_df['expanded'])
+    ])
 
 
 def identify_rdr_ehr_match(client,
@@ -148,6 +90,10 @@ def identify_rdr_ehr_match(client,
     hpo_location_table_id = get_table_id(LOCATION, hpo_id)
     hpo_person_table_id = get_table_id(PERSON, hpo_id)
 
+    state_df = pandas.read_csv(VALIDATION_STATE_CSV, header=0)
+    states_str: str = ",\n".join(
+        [f"'{state}'" for state in state_df['abbreviated']])
+
     for item in consts.CREATE_COMPARISON_FUNCTION_QUERIES:
         LOGGER.info(f"Creating `{item['name']}` function if doesn't exist.")
 
@@ -159,9 +105,19 @@ def identify_rdr_ehr_match(client,
             missing_rdr=consts.MISSING_RDR,
             missing_ehr=consts.MISSING_EHR,
             gender_case_when_conditions=get_gender_comparison_case_statement(),
-            state_abbreviations=get_state_abbreviations(),
-            street_with_clause=get_with_clause('street'),
-            city_with_clause=get_with_clause('city'))
+            normalized_street_rdr=consts.NORMALIZED_STREET.render(
+                lookup_tuples=_get_lookup_tuples(VALIDATION_STREET_CSV),
+                street='rdr_street'),
+            normalized_street_ehr=consts.NORMALIZED_STREET.render(
+                lookup_tuples=_get_lookup_tuples(VALIDATION_STREET_CSV),
+                street='ehr_street'),
+            normalized_city_rdr=consts.NORMALIZED_CITY.render(
+                lookup_tuples=_get_lookup_tuples(VALIDATION_CITY_CSV),
+                city='rdr_city'),
+            normalized_city_ehr=consts.NORMALIZED_CITY.render(
+                lookup_tuples=_get_lookup_tuples(VALIDATION_CITY_CSV),
+                city='ehr_city'),
+            state_abbreviations=states_str)
 
         job = client.query(query)
         job.result()
