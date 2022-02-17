@@ -55,8 +55,8 @@ CDR_CLEANER_PATH = os.path.join(resource_files_path, 'cdr_cleaner')
 COPE_SUPPRESSION_PATH = os.path.join(CDR_CLEANER_PATH, 'cope_suppression')
 RT_CT_COPE_SUPPRESSION_CSV_PATH = os.path.join(COPE_SUPPRESSION_PATH,
                                                'rt_ct_cope_suppression.csv')
-COPE_SUPPRESSION_RESPONSES_CSV_PATH = os.path.join(
-    COPE_SUPPRESSION_PATH, 'cope_suppression_responses.csv')
+RT_COPE_SUPPRESSION_CSV_PATH = os.path.join(COPE_SUPPRESSION_PATH,
+                                            'rt_cope_suppression.csv')
 DC732_CONCEPT_LOOKUP_CSV_PATH = os.path.join(CDR_CLEANER_PATH,
                                              'dc732_concept_lookup.csv')
 PPI_BRANCHING_PATH = os.path.join(CDR_CLEANER_PATH, 'ppi_branching')
