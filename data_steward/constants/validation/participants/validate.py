@@ -376,8 +376,6 @@ UPDATE `{{project_id}}.{{drc_dataset_id}}.{{id_match_table_id}}` upd
 SET upd.first_name = `{{project_id}}.{{drc_dataset_id}}.CompareName`(ps.first_name, ehr_name.first_name),
     upd.middle_name = `{{project_id}}.{{drc_dataset_id}}.CompareName`(ps.middle_name, ehr_name.middle_name),
     upd.last_name = `{{project_id}}.{{drc_dataset_id}}.CompareName`(ps.last_name, ehr_name.last_name),
-    upd.address_1 = `{{project_id}}.{{drc_dataset_id}}.CompareStreet`(ps.street_address, ehr_address.address_1),
-    upd.address_2 = `{{project_id}}.{{drc_dataset_id}}.CompareStreet`(ps.street_address2, ehr_address.address_2),
     upd.city = `{{project_id}}.{{drc_dataset_id}}.CompareCity`(ps.city, ehr_address.city),
     upd.state = `{{project_id}}.{{drc_dataset_id}}.CompareState`(ps.state, ehr_address.state),
     upd.zip = `{{project_id}}.{{drc_dataset_id}}.CompareZipCode`(ps.zip_code, ehr_address.zip),
@@ -408,6 +406,42 @@ LEFT JOIN ( SELECT person_id, cc.concept_name as sex
     ON ehr_sex.person_id = ps.person_id
 WHERE upd.person_id = ps.person_id
     AND upd._PARTITIONTIME = ps._PARTITIONTIME
+""")
+
+MATCH_STREET_1_2_COMBINED_QUERY = JINJA_ENV.from_string("""
+UPDATE `{{project_id}}.{{drc_dataset_id}}.{{id_match_table_id}}` upd
+SET upd.address_1 = `{{project_id}}.{{drc_dataset_id}}.CompareStreet`(
+        CONCAT(COALESCE(ps.street_address, ''), ' ', COALESCE(ps.street_address2, '')), 
+        CONCAT(COALESCE(ehr_address.address_1, ''), ' ', COALESCE(ehr_address.address_2, ''))),
+    upd.address_2 = `{{project_id}}.{{drc_dataset_id}}.CompareStreet`(
+        CONCAT(COALESCE(ps.street_address, ''), ' ', COALESCE(ps.street_address2, '')), 
+        CONCAT(COALESCE(ehr_address.address_1, ''), ' ', COALESCE(ehr_address.address_2, ''))),
+    upd.algorithm = 'yes'
+FROM `{{project_id}}.{{drc_dataset_id}}.{{ps_api_table_id}}` ps
+LEFT JOIN ( SELECT person_id, address_1, address_2, city, state, zip
+            FROM `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_address_table_id}}`
+            LEFT JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_location_table_id}}`
+                USING (location_id) ) ehr_address
+    ON ehr_address.person_id = ps.person_id
+WHERE upd.person_id = ps.person_id
+    AND upd._PARTITIONTIME = ps._PARTITIONTIME
+""")
+
+MATCH_STREET_QUERY = JINJA_ENV.from_string("""
+UPDATE `{{project_id}}.{{drc_dataset_id}}.{{id_match_table_id}}` upd
+SET upd.address_1 = `{{project_id}}.{{drc_dataset_id}}.CompareStreet`(ps.street_address, ehr_address.address_1),
+    upd.address_2 = `{{project_id}}.{{drc_dataset_id}}.CompareStreet`(ps.street_address2, ehr_address.address_2),
+    upd.algorithm = 'yes'
+FROM `{{project_id}}.{{drc_dataset_id}}.{{ps_api_table_id}}` ps
+LEFT JOIN ( SELECT person_id, address_1, address_2, city, state, zip
+            FROM `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_address_table_id}}`
+            LEFT JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_location_table_id}}`
+                USING (location_id) ) ehr_address
+    ON ehr_address.person_id = ps.person_id
+WHERE upd.person_id = ps.person_id
+    AND upd._PARTITIONTIME = ps._PARTITIONTIME
+    AND upd.address_1 != '{{match}}'
+    AND upd.address_2 != '{{match}}'    
 """)
 
 SUMMARY_QUERY = JINJA_ENV.from_string("""

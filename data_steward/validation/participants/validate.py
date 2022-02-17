@@ -133,11 +133,38 @@ def identify_rdr_ehr_match(client,
         hpo_person_table_id=hpo_person_table_id,
         ps_api_table_id=ps_api_table_id,
         drc_dataset_id=drc_dataset_id,
+        ehr_ops_dataset_id=ehr_ops_dataset_id)
+
+    LOGGER.info(f"Matching fields for {hpo_id}.")
+    LOGGER.info(f"Running the following update statement: {match_query}.")
+
+    job = client.query(match_query)
+    job.result()
+
+    match_query = consts.MATCH_STREET_1_2_COMBINED_QUERY.render(
+        project_id=project_id,
+        id_match_table_id=id_match_table_id,
+        hpo_pii_address_table_id=hpo_pii_address_table_id,
+        hpo_location_table_id=hpo_location_table_id,
+        ps_api_table_id=ps_api_table_id,
+        drc_dataset_id=drc_dataset_id,
+        ehr_ops_dataset_id=ehr_ops_dataset_id)
+
+    LOGGER.info(f"Matching fields for {hpo_id}.")
+    LOGGER.info(f"Running the following update statement: {match_query}.")
+
+    job = client.query(match_query)
+    job.result()
+
+    match_query = consts.MATCH_STREET_QUERY.render(
+        project_id=project_id,
+        id_match_table_id=id_match_table_id,
+        hpo_pii_address_table_id=hpo_pii_address_table_id,
+        hpo_location_table_id=hpo_location_table_id,
+        ps_api_table_id=ps_api_table_id,
+        drc_dataset_id=drc_dataset_id,
         ehr_ops_dataset_id=ehr_ops_dataset_id,
-        match=consts.MATCH,
-        no_match=consts.NO_MATCH,
-        missing_rdr=consts.MISSING_RDR,
-        missing_ehr=consts.MISSING_EHR)
+        match=consts.MATCH)
 
     LOGGER.info(f"Matching fields for {hpo_id}.")
     LOGGER.info(f"Running the following update statement: {match_query}.")
