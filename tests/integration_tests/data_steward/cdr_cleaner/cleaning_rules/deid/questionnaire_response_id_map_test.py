@@ -16,7 +16,7 @@ from dateutil import parser
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.deid.questionnaire_response_id_map import QRIDtoRID
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
-from common import DEID_QUESTIONNAIRE_RESPONSE_MAP, OBSERVATION, PIPELINE_TABLES
+from common import DEID_QUESTIONNAIRE_RESPONSE_MAP, OBSERVATION
 
 
 class QRIDtoRIDTest(BaseTest.CleaningRulesTestBase):

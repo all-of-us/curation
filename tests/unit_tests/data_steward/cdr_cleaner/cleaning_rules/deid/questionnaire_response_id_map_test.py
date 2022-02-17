@@ -20,7 +20,7 @@ from constants.bq_utils import WRITE_TRUNCATE
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.deid.questionnaire_response_id_map import QRIDtoRID, QRID_RID_MAPPING_QUERY
 
-PIPELINE_TABLES = 'pipeline_tables'
+RDR_DATASET = 'RDR_DSET'
 
 
 class QRIDtoRIDTest(unittest.TestCase):
@@ -41,7 +41,7 @@ class QRIDtoRIDTest(unittest.TestCase):
             self.project_id,
             self.dataset_id,
             self.sandbox_dataset_id,
-            deid_questionnaire_response_map_dataset=PIPELINE_TABLES)
+            deid_questionnaire_response_map_dataset=RDR_DATASET)
 
         self.assertEqual(self.rule_instance.project_id, self.project_id)
         self.assertEqual(self.rule_instance.dataset_id, self.dataset_id)
@@ -69,7 +69,7 @@ class QRIDtoRIDTest(unittest.TestCase):
                     dataset_id=self.dataset_id,
                     deid_questionnaire_response_map=common.
                     DEID_QUESTIONNAIRE_RESPONSE_MAP,
-                    deid_questionnaire_response_map_dataset_id=PIPELINE_TABLES),
+                    deid_questionnaire_response_map_dataset_id=RDR_DATASET),
             cdr_consts.DESTINATION_TABLE:
                 common.OBSERVATION,
             cdr_consts.DESTINATION_DATASET:

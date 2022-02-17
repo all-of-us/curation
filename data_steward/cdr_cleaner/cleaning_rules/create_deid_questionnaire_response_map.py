@@ -11,7 +11,7 @@ import logging
 import constants.bq_utils as bq_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.cdr_cleaner import clean_cdr as cdr_consts
-from common import JINJA_ENV, PIPELINE_TABLES, DEID_QUESTIONNAIRE_RESPONSE_MAP
+from common import JINJA_ENV, DEID_QUESTIONNAIRE_RESPONSE_MAP
 from utils import pipeline_logging
 
 LOGGER = logging.getLogger(__name__)
@@ -19,7 +19,7 @@ LOGGER = logging.getLogger(__name__)
 # Creates _deid_questionnaire_response_map lookup table and populates with the questionnaire_response_id's
 # from the observation table as well as randomly generates values for the research_response_id column
 LOOKUP_TABLE_CREATION_QUERY = JINJA_ENV.from_string("""
-CREATE TABLE IF NOT EXISTS `{{project_id}}.{{output_dataset_id}}.{{deid_questionnaire_response_map}}` 
+CREATE TABLE IF NOT EXISTS `{{project_id}}.{{dataset_id}}.{{deid_questionnaire_response_map}}` 
 (questionnaire_response_id INT64, research_response_id INT64)
 OPTIONS (description='lookup table for questionnaire response ids') AS
 -- 1000000 used to start the research_response_id generation at 1mil --
@@ -70,7 +70,6 @@ class CreateDeidQuestionnaireResponseMap(BaseCleaningRule):
             cdr_consts.QUERY:
                 LOOKUP_TABLE_CREATION_QUERY.render(
                     project_id=self.project_id,
-                    output_dataset_id=PIPELINE_TABLES,
                     dataset_id=self.dataset_id,
                     deid_questionnaire_response_map=
                     DEID_QUESTIONNAIRE_RESPONSE_MAP)
