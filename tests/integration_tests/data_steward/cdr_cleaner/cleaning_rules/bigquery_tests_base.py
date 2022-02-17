@@ -208,13 +208,15 @@ class BaseTest:
             # start the job and wait for it to complete
             response_list = list(response.result())
 
-            message = (f"Assertion for table {fq_table_name} failed.\n"
-                       f"Response returned these values {response_list}")
-            self.assertEqual(len(expected_values), len(response_list), message)
+            message = (
+                f"Assertion for table {fq_table_name} failed.\n"
+                f"Response returned these values {sorted([row[0] for row in response_list])}\n"
+                f"Expected to return these values {sorted([row[0] for row in expected_values])}\n"
+            )
 
             # assert matches for lists of tuple data regardless of order.  e.g. list of returned fields
             result_tuples = [result[:] for result in response_list]
-            self.assertCountEqual(expected_values, result_tuples)
+            self.assertCountEqual(result_tuples, expected_values, message)
 
     class CleaningRulesTestBase(BigQueryTestBase):
         """
