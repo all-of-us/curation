@@ -7,11 +7,11 @@
 from argparse import ArgumentParser
 from datetime import datetime
 import logging
+import subprocess
 
 from google.cloud import bigquery
 from google.api_core.exceptions import NotFound
 
-from common import AOU_REQUIRED
 from utils import auth
 from utils import bq
 from utils import pipeline_logging
@@ -61,6 +61,46 @@ def parse_rdr_args(raw_args=None):
                         help='Log to the console as well as to a file.')
 
     return parser.parse_args(raw_args)
+
+
+def check_rdr_tables(bucket, run_target):
+    """
+    Use gsutil to get the header line of each csv file in the RDR export bucket.
+
+    If any inconsistencies are found, they are logged or warned.
+
+    :param bucket: the gcs bucket containing the file data.
+    :param run_target: run gsutil as this service account
+    """
+    schema_dict = resources.cdm_schemas()
+    schema_dict.update(resources.rdr_specific_schemas())
+
+    errors = 0
+    for table, schema in schema_dict.items():
+        schema_list = bq.get_table_schema(table, schema)
+
+        field_list = [item.name for item in schema_list]
+        # path to bucketed csv file
+        uri = f'gs://{bucket}/{table}.csv'
+        header_line = subprocess.getoutput(
+            f'gsutil -i {run_target} cat -r 0-1000 {uri} | head -1')
+        if 'CommandException' in header_line:
+            LOGGER.debug(f'{uri} not found')
+        else:
+            header2 = header_line.replace('"', '')
+            header2 = header2.split('\n')
+            header2 = header2[1]
+            header2 = header2.split(',')
+            if header2 != field_list:
+                errors += 1
+                LOGGER.warning('===================================')
+                LOGGER.warning(table)
+                LOGGER.warning(f'curation defined field list:\n{field_list}')
+                LOGGER.warning('\n')
+                LOGGER.warning(f'rdr defined field list:\n{header2}')
+                LOGGER.warning('\n\n')
+
+    return errors
 
 
 def create_rdr_tables(client, rdr_dataset, bucket):
@@ -191,6 +231,14 @@ def main(raw_args=None):
     export_date = args.export_date.replace('-', '')
     new_dataset_name = f'rdr{export_date}'
 
+    # make sure RDR is providing expected fields
+    errors = check_rdr_tables(args.bucket, args.run_as_email)
+
+    if errors:
+        LOGGER.warning(
+            "Errors encountered.  Stopping the import.  See import log.")
+        return
+
     # get credentials and create client
     impersonation_creds = auth.get_impersonation_credentials(
         args.run_as_email, CDR_SCOPES)
@@ -201,9 +249,12 @@ def main(raw_args=None):
     dataset_object = bq.define_dataset(client.project, new_dataset_name,
                                        description,
                                        {'export_date': args.export_date})
-    client.create_dataset(dataset_object)
 
+    # create and populate tables from RDR export
+    client.create_dataset(dataset_object)
     create_rdr_tables(client, new_dataset_name, args.bucket)
+
+    # copy vocabulary tables into raw RDR dataset
     copy_vocab_tables(client, new_dataset_name, args.vocabulary)
 
 
