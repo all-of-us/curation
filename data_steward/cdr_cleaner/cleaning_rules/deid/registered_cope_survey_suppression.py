@@ -47,7 +47,8 @@ class RegisteredCopeSurveyQuestionsSuppression(
         desc = f'Any record with an observation_source_concept_id equal to any concept_id in ' \
                f'resources.RT_COPE_SUPPRESSION_CSV_PATH will be sandboxed and dropped from observation table.'
         super().__init__(issue_numbers=[
-            'DC1666', 'DC1740', 'DC1745', 'DC1747', 'DC1750', 'DC1783', 'DC2109'
+            'DC1666', 'DC1740', 'DC1745', 'DC1747', 'DC1750', 'DC1783',
+            'DC2109', 'DC2111'
         ],
                          description=desc,
                          affected_datasets=[cdr_consts.REGISTERED_TIER_DEID],
@@ -64,10 +65,11 @@ class RegisteredCopeSurveyQuestionsSuppression(
         with open(RT_COPE_SUPPRESSION_CSV_PATH) as f:
             concept_ids_df = read_csv(f, delimiter=',')
             rt_concept_ids = concept_ids_df['concept_id'].to_list()
+        # From DC-2111
         with open(RT_CT_COPE_SUPPRESSION_CSV_PATH) as f:
             concept_ids_df = read_csv(f, delimiter=',')
             rt_ct_concept_ids = concept_ids_df['concept_id'].to_list()
-        return rt_concept_ids + rt_ct_concept_ids
+        return list(set(rt_concept_ids) | set(rt_ct_concept_ids))
 
     def setup_validation(self, client, *args, **keyword_args):
         pass
