@@ -24,7 +24,7 @@ from utils import pipeline_logging
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.deid.concept_suppression import \
     AbstractInMemoryLookupTableConceptSuppression
-from resources import RT_COPE_SUPPRESSION_CSV_PATH
+from resources import RT_COPE_SUPPRESSION_CSV_PATH, RT_CT_COPE_SUPPRESSION_CSV_PATH
 
 LOGGER = logging.getLogger(__name__)
 
@@ -63,8 +63,11 @@ class RegisteredCopeSurveyQuestionsSuppression(
         """
         with open(RT_COPE_SUPPRESSION_CSV_PATH) as f:
             concept_ids_df = read_csv(f, delimiter=',')
-            concept_ids = concept_ids_df['concept_id'].to_list()
-        return concept_ids
+            rt_concept_ids = concept_ids_df['concept_id'].to_list()
+        with open(RT_CT_COPE_SUPPRESSION_CSV_PATH) as f:
+            concept_ids_df = read_csv(f, delimiter=',')
+            rt_ct_concept_ids = concept_ids_df['concept_id'].to_list()
+        return rt_concept_ids + rt_ct_concept_ids
 
     def setup_validation(self, client, *args, **keyword_args):
         pass
