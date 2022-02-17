@@ -66,6 +66,7 @@ class BucketDoesNotExistError(RuntimeError):
     def __init__(self, msg, bucket):
         super(BucketDoesNotExistError, self).__init__(msg)
         self.bucket = bucket
+        self.message = msg
 
 
 def _handle_error(alert_message, view_message=None, response_code=None):

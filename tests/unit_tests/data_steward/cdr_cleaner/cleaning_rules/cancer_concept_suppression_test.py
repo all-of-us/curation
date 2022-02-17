@@ -2,7 +2,7 @@
 Unit test for cancer_concept_suppression module
 
 This rule sandboxes and suppresses reccords whose concept_codes end in 
-'History_WhichConditions', 'Condition_OtherCancer', ‘History_AdditionalDiagnosis’,
+'History_WhichConditions', 'History_AdditionalDiagnosis',
 and 'OutsideTravel6MonthsWhere'.
 
 Runs on the controlled tier.

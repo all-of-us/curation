@@ -121,7 +121,8 @@ SOURCE_TO_CONCEPT_MAP = 'source_to_concept_map'
 VOCABULARY = 'vocabulary'
 VOCABULARY_TABLES = [
     CONCEPT, CONCEPT_ANCESTOR, CONCEPT_CLASS, CONCEPT_RELATIONSHIP,
-    CONCEPT_SYNONYM, DOMAIN, DRUG_STRENGTH, RELATIONSHIP, VOCABULARY
+    CONCEPT_SYNONYM, DOMAIN, DRUG_STRENGTH, RELATIONSHIP, SOURCE_TO_CONCEPT_MAP,
+    VOCABULARY
 ]
 # Achilles
 ACHILLES_ANALYSIS = 'achilles_analysis'
@@ -256,3 +257,9 @@ JINJA_ENV = jinja2.Environment(
     # in jinja2 autoescape is for html; jinjasql supports autoescape for sql
     # TODO Look into jinjasql for sql templating
     autoescape=False)
+
+# Google scopes for running CDR pipeline stages
+CDR_SCOPES = [
+    'https://www.googleapis.com/auth/bigquery',
+    'https://www.googleapis.com/auth/devstorage.read_write',
+]

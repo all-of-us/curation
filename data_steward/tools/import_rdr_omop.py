@@ -15,14 +15,10 @@ from common import AOU_REQUIRED
 from utils import auth
 from utils import bq
 from utils import pipeline_logging
+from common import CDR_SCOPES
 import resources
 
 LOGGER = logging.getLogger(__name__)
-
-SCOPES = [
-    'https://www.googleapis.com/auth/bigquery',
-    'https://www.googleapis.com/auth/devstorage.read_write',
-]
 
 
 def parse_rdr_args(raw_args=None):
@@ -197,7 +193,7 @@ def main(raw_args=None):
 
     # get credentials and create client
     impersonation_creds = auth.get_impersonation_credentials(
-        args.run_as_email, SCOPES)
+        args.run_as_email, CDR_SCOPES)
 
     client = bq.get_client(args.curation_project_id,
                            credentials=impersonation_creds)

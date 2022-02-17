@@ -43,69 +43,69 @@ checks = run_qc(project_id,
 
 # # Summary
 
-display_check_summary_by_rule(checks)
+display_check_summary_by_rule(checks, to_include)
 
 # # [DC-1370: String type field suppression](https://precisionmedicineinitiative.atlassian.net/browse/DC-1370)
 
-display_check_detail_of_rule(checks, 'DC-1370')
+display_check_detail_of_rule(checks, 'DC-1370', to_include)
 
 # # [DC-1377: All Zip Code Values are generalized](https://precisionmedicineinitiative.atlassian.net/browse/DC-1377)
 # [DC-1380: All Zip Code Values are transformed](https://precisionmedicineinitiative.atlassian.net/browse/DC-1380)
 
-display_check_detail_of_rule(checks, 'DC-1377')
+display_check_detail_of_rule(checks, 'DC-1377', to_include)
 
 # # [DC-1346: PID to RID worked](https://precisionmedicineinitiative.atlassian.net/browse/DC-1346)
 
-display_check_detail_of_rule(checks, 'DC-1346')
+display_check_detail_of_rule(checks, 'DC-1346', to_include)
 
 # # [DC-1348: Questionnaire_response_id Mapped](https://precisionmedicineinitiative.atlassian.net/browse/DC-1348)
 
-display_check_detail_of_rule(checks, 'DC-1348')
+display_check_detail_of_rule(checks, 'DC-1348', to_include)
 
 # # [DC-1355: Site id mappings ran on the controlled tier](https://precisionmedicineinitiative.atlassian.net/browse/DC-1355)
 
-display_check_detail_of_rule(checks, 'DC-1355')
+display_check_detail_of_rule(checks, 'DC-1355', to_include)
 
 # # [DC-1357: Person table does not have month or day of birth](https://precisionmedicineinitiative.atlassian.net/browse/DC-1357)
 
-display_check_detail_of_rule(checks, 'DC-1357')
+display_check_detail_of_rule(checks, 'DC-1357', to_include)
 
 # # [DC-1359: Observation does not have birth information](https://precisionmedicineinitiative.atlassian.net/browse/DC-1359)
 
-display_check_detail_of_rule(checks, 'DC-1359')
+display_check_detail_of_rule(checks, 'DC-1359', to_include)
 
 # # [DC-1362: Table suppression](https://precisionmedicineinitiative.atlassian.net/browse/DC-1362)
 
-display_check_detail_of_rule(checks, 'DC-1362')
+display_check_detail_of_rule(checks, 'DC-1362', to_include)
 
 # # [DC-1364: Explicit identifier record suppression](https://precisionmedicineinitiative.atlassian.net/browse/DC-1364)
 
-display_check_detail_of_rule(checks, 'DC-1364')
+display_check_detail_of_rule(checks, 'DC-1364', to_include)
 
 # # [DC-1366: Race/Ethnicity record suppression](https://precisionmedicineinitiative.atlassian.net/browse/DC-1366)
 
-display_check_detail_of_rule(checks, 'DC-1366')
+display_check_detail_of_rule(checks, 'DC-1366', to_include)
 
 # # [DC-1368: Motor Vehicle Accident record suppression](https://precisionmedicineinitiative.atlassian.net/browse/DC-1368)
 
-display_check_detail_of_rule(checks, 'DC-1368')
+display_check_detail_of_rule(checks, 'DC-1368', to_include)
 
 # # [DC-1373: Identifying field suppression works](https://precisionmedicineinitiative.atlassian.net/browse/DC-1373)
 
-display_check_detail_of_rule(checks, 'DC-1373')
+display_check_detail_of_rule(checks, 'DC-1373', to_include)
 
 # # [DC-1382: Record Suppression of some cancer condition](https://precisionmedicineinitiative.atlassian.net/browse/DC-1382)
 
-display_check_detail_of_rule(checks, 'DC-1382')
+display_check_detail_of_rule(checks, 'DC-1382', to_include)
 
 # # [DC-1388: Free Text survey response are suppressed](https://precisionmedicineinitiative.atlassian.net/browse/DC-1388)
 
-display_check_detail_of_rule(checks, 'DC-1388')
+display_check_detail_of_rule(checks, 'DC-1388', to_include)
 
 # # [DC-1527: Suppression of organ transplant rows](https://precisionmedicineinitiative.atlassian.net/browse/DC-1527)
 
-display_check_detail_of_rule(checks, 'DC-1527')
+display_check_detail_of_rule(checks, 'DC-1527', to_include)
 
 # # [DC-1535: Suppression of geolocation records](https://precisionmedicineinitiative.atlassian.net/browse/DC-1535)
 
-display_check_detail_of_rule(checks, 'DC-1535')
+display_check_detail_of_rule(checks, 'DC-1535', to_include)
