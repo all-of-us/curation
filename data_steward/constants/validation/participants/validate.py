@@ -341,6 +341,15 @@ CREATE_DOB_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
     ));
 """)
 
+CREATE_COMBINE_STREETS_FUNCTION = JINJA_ENV.from_string("""
+CREATE FUNCTION IF NOT EXISTS
+  `{{project_id}}.{{drc_dataset_id}}.CombineStreets`(street_1 string, street_2 string)
+  RETURNS string AS
+  ((
+      SELECT CONCAT(COALESCE(street_1, ''), ' ', COALESCE(street_2, ''))
+  ));
+""")
+
 # Contains list of create function queries to execute
 CREATE_COMPARISON_FUNCTION_QUERIES = [{
     'name': 'CompareName',
@@ -369,6 +378,9 @@ CREATE_COMPARISON_FUNCTION_QUERIES = [{
 }, {
     'name': 'CompareDateOfBirth',
     'query': CREATE_DOB_COMPARISON_FUNCTION
+}, {
+    'name': 'CombineStreets',
+    'query': CREATE_COMBINE_STREETS_FUNCTION
 }]
 
 MATCH_FIELDS_QUERY = JINJA_ENV.from_string("""
@@ -408,14 +420,16 @@ WHERE upd.person_id = ps.person_id
     AND upd._PARTITIONTIME = ps._PARTITIONTIME
 """)
 
-MATCH_STREET_1_2_COMBINED_QUERY = JINJA_ENV.from_string("""
+MATCH_STREET_COMBINED_QUERY = JINJA_ENV.from_string("""
 UPDATE `{{project_id}}.{{drc_dataset_id}}.{{id_match_table_id}}` upd
 SET upd.address_1 = `{{project_id}}.{{drc_dataset_id}}.CompareStreet`(
-        CONCAT(COALESCE(ps.street_address, ''), ' ', COALESCE(ps.street_address2, '')), 
-        CONCAT(COALESCE(ehr_address.address_1, ''), ' ', COALESCE(ehr_address.address_2, ''))),
+        `{{project_id}}.{{drc_dataset_id}}.CombineStreets`(ps.street_address, ps.street_address2),
+        `{{project_id}}.{{drc_dataset_id}}.CombineStreets`(ehr_address.address_1, ehr_address.address_2)
+        ),
     upd.address_2 = `{{project_id}}.{{drc_dataset_id}}.CompareStreet`(
-        CONCAT(COALESCE(ps.street_address, ''), ' ', COALESCE(ps.street_address2, '')), 
-        CONCAT(COALESCE(ehr_address.address_1, ''), ' ', COALESCE(ehr_address.address_2, ''))),
+        `{{project_id}}.{{drc_dataset_id}}.CombineStreets`(ps.street_address, ps.street_address2),
+        `{{project_id}}.{{drc_dataset_id}}.CombineStreets`(ehr_address.address_1, ehr_address.address_2)
+        ),
     upd.algorithm = 'yes'
 FROM `{{project_id}}.{{drc_dataset_id}}.{{ps_api_table_id}}` ps
 LEFT JOIN ( SELECT person_id, address_1, address_2, city, state, zip
@@ -425,6 +439,9 @@ LEFT JOIN ( SELECT person_id, address_1, address_2, city, state, zip
     ON ehr_address.person_id = ps.person_id
 WHERE upd.person_id = ps.person_id
     AND upd._PARTITIONTIME = ps._PARTITIONTIME
+    -- the records that have (street_1, street2) = (NULL or '', NULL or '') are excluded from this UPDATE --
+    AND NOT(`{{project_id}}.{{drc_dataset_id}}.CombineStreets`(ps.street_address, ps.street_address2) = ' ')
+    AND NOT(`{{project_id}}.{{drc_dataset_id}}.CombineStreets`(ehr_address.address_1, ehr_address.address_2) = ' ')
 """)
 
 MATCH_STREET_QUERY = JINJA_ENV.from_string("""
@@ -440,8 +457,8 @@ LEFT JOIN ( SELECT person_id, address_1, address_2, city, state, zip
     ON ehr_address.person_id = ps.person_id
 WHERE upd.person_id = ps.person_id
     AND upd._PARTITIONTIME = ps._PARTITIONTIME
-    AND upd.address_1 != '{{match}}'
-    AND upd.address_2 != '{{match}}'    
+    -- the records that already matched in the street 1 & 2 combined comparison are excluded from this UPDATE --
+    AND NOT(upd.address_1 = '{{match}}' AND upd.address_2 = '{{match}}')
 """)
 
 SUMMARY_QUERY = JINJA_ENV.from_string("""
