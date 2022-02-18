@@ -12,76 +12,60 @@
 #     name: python3
 # ---
 
+# + tags=["parameters"]
+project_id = ''
+old_vocabulary = ''
+new_vocabulary = ''
+# -
+
 # # QC of a new vocabulary downloaded from Athena and imported into BigQuery, via the vocabulary playbook.
 #
 
 # # + Import packages
-import pandas as pd
-import numpy as np
-from datetime import date
-from google.cloud import bigquery
+from common import JINJA_ENV
+from utils.bq import get_client
+from analytics.cdr_ops.notebook_utils import execute
 # -
 
-# # + tags=["parameters"]
-project_id=''
-old_vocabulary=''
-new_vocabulary=''
-# -
+vocabulary_dataset_old = f'{project_id}.{old_vocabulary}'
+vocabulary_dataset_new = f'{project_id}.{new_vocabulary}'
 
-vocabulary_dataset_new = f'{project_id}.{old_vocabulary}'
-vocabulary_dataset_old = f'{project_id}.{new_vocabulary}'
-
-
-# +
-# Allow sql queries from bq
-
-CLIENT = bigquery.Client(project=project_id)
-
-def execute(query, print_query=True, **kwargs):
-    """
-    Execute a bigquery command and return the results in a dataframe
-    
-    :param query: the query to execute
-    """
-    if print_query:
-        df = CLIENT.query(query, **kwargs).to_dataframe()
-        df_fmt = dict((col, athena_link) for col in df.columns.to_list() if col.endswith('concept_id'))
-    return df
-
-
-# -
+client = get_client(project_id)
 
 # # New PPI. Where ppi concepts are not present in the old vocabulary.
 
-execute(f'''
+tpl = JINJA_ENV.from_string('''
 SELECT
 c.concept_code 
-FROM `{vocabulary_dataset_new}.concept` c
+FROM `{{vocabulary_dataset_new}}.concept` c
 WHERE c.concept_code NOT IN (SELECT concept_code 
-                            FROM `{vocabulary_dataset_old}.concept` sq 
+                            FROM `{{vocabulary_dataset_old}}.concept` sq 
                             WHERE sq.vocabulary_id LIKE "PPI" )
 AND c.vocabulary_id LIKE "PPI"
 ORDER BY c.concept_code
 ''')
-
+query = tpl.render(vocabulary_dataset_old=vocabulary_dataset_old,
+                   vocabulary_dataset_new=vocabulary_dataset_new)
+execute(client, query)
 
 # # Removed PPI. Where ppi concepts are not present in the new vocabulary
 
-execute(f'''
+tpl = JINJA_ENV.from_string('''
 SELECT
 c.concept_code 
-FROM `{vocabulary_dataset_old}.concept` c
+FROM `{{vocabulary_dataset_old}}.concept` c
 WHERE c.concept_code NOT IN (SELECT concept_code 
-                            FROM `{vocabulary_dataset_new}.concept` sq 
+                            FROM `{{vocabulary_dataset_new}}.concept` sq 
                             WHERE sq.vocabulary_id LIKE "PPI" )
  AND c.vocabulary_id LIKE "PPI"
  ORDER BY c.concept_code
 ''')
-
+query = tpl.render(vocabulary_dataset_old=vocabulary_dataset_old,
+                   vocabulary_dataset_new=vocabulary_dataset_new)
+execute(client, query)
 
 # +
 # How has relationship changed?
-
 
 # changed_ppi_relationships=execute(f'''
 # SELECT SUM(CASE WHEN r1.is_hierarchical  != r2.is_hierarchical THEN 1 ELSE 0 END) change_hierarchy,
@@ -97,37 +81,40 @@ WHERE c.concept_code NOT IN (SELECT concept_code
 
 # # The difference between the number of rows in each table of the dataset. All 'changes' should increase. https://github.com/OHDSI/Vocabulary-v5.0/releases
 
-execute(f'''
+tpl = JINJA_ENV.from_string('''
 WITH new_table_info AS (
    SELECT dataset_id, table_id, row_count
-   FROM `{vocabulary_dataset_new}.__TABLES__`
+   FROM `{{vocabulary_dataset_new}}.__TABLES__`
 ),
 old_table_info AS (
    SELECT dataset_id, table_id, row_count
-   FROM `{vocabulary_dataset_old}.__TABLES__`
+   FROM `{{vocabulary_dataset_old}}.__TABLES__`
 )
 SELECT
 n.table_id,
-n.row_count AS new_count,
 o.row_count AS old_count,
+n.row_count AS new_count,
 (n.row_count - o.row_count) AS changes
 FROM new_table_info AS n
 LEFT join old_table_info AS o
 USING (table_id)
 ORDER BY table_id
 ''')
+query = tpl.render(vocabulary_dataset_old=vocabulary_dataset_old,
+                   vocabulary_dataset_new=vocabulary_dataset_new)
+execute(client, query)
 
 # # The vocabularies that exist, in each vocab version. Check that none are lost, or any are added. Use the release notes if there is a change.
 
-vocab_exists = execute(f'''
+tpl = JINJA_ENV.from_string('''
 WITH new_table_info AS (
    SELECT vocabulary_id , count(vocabulary_id) AS c
-   FROM `{vocabulary_dataset_new}.vocabulary`
+   FROM `{{vocabulary_dataset_new}}.vocabulary`
    GROUP BY vocabulary_id
 ),
 old_table_info AS (
    SELECT vocabulary_id, count(vocabulary_id) AS c
-   FROM `{vocabulary_dataset_old}.vocabulary`
+   FROM `{{vocabulary_dataset_old}}.vocabulary`
    GROUP BY vocabulary_id
 )
 
@@ -138,20 +125,21 @@ FULL OUTER JOIN old_table_info AS o
 USING (vocabulary_id)
 ORDER BY n.vocabulary_id
 ''')
+query = tpl.render(vocabulary_dataset_old=vocabulary_dataset_old,
+                   vocabulary_dataset_new=vocabulary_dataset_new)
+execute(client, query)
 
-# +
 # Shows the number of individual concepts added to each vocab type.The 'diff' should always increase.
-# -
 
-vocab_counts = execute(f'''
+tpl = JINJA_ENV.from_string('''
 WITH new_table_info AS (
    SELECT COUNT(vocabulary_id) AS new_concept_count, vocabulary_id
-   FROM `{vocabulary_dataset_new}.concept`
+   FROM `{{vocabulary_dataset_new}}.concept`
    GROUP BY vocabulary_id
 ),
 old_table_info AS (
    SELECT COUNT(vocabulary_id) AS old_concept_count, vocabulary_id
-   FROM `{vocabulary_dataset_old}.concept`
+   FROM `{{vocabulary_dataset_old}}.concept`
    GROUP BY vocabulary_id
 )
 SELECT vocabulary_id,old_concept_count,new_concept_count, new_concept_count - old_concept_count AS diff
@@ -160,4 +148,6 @@ FULL OUTER JOIN old_table_info
 USING (vocabulary_id)
 ORDER BY vocabulary_id
 ''')
-
+query = tpl.render(vocabulary_dataset_old=vocabulary_dataset_old,
+                   vocabulary_dataset_new=vocabulary_dataset_new)
+execute(client, query)
