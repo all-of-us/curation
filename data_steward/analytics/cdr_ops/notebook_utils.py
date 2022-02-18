@@ -16,5 +16,9 @@ def execute(client, query):
     :param query: the query to execute
     :return pandas dataframe object
     """
+    import pandas as pd
     print(query)
-    return client.query(query).to_dataframe()
+
+    res = client.query(query).to_dataframe()
+    pd.set_option('display.max_rows', res.shape[0] + 1)
+    return res
