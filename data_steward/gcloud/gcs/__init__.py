@@ -173,7 +173,7 @@ class StorageClient(Client):
             table_id=HPO_ID_BUCKET_NAME_TABLE_ID)
 
         result_df: DataFrame = query(hpo_bucket_query)
-        condition_hpo_id = (result_df['hpo_id'] == hpo_id)
+        condition_hpo_id = ((result_df['hpo_id'].lower()) == hpo_id.lower())
         condition_service = (result_df['service'] == service)
         result_filtered = result_df[condition_hpo_id & condition_service]
 
