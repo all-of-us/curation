@@ -142,23 +142,12 @@ def identify_rdr_ehr_match(client,
         hpo_location_table_id=hpo_location_table_id,
         ps_api_table_id=ps_api_table_id,
         drc_dataset_id=drc_dataset_id,
-        ehr_ops_dataset_id=ehr_ops_dataset_id)
-
-    street_match_query = consts.MATCH_STREET_QUERY.render(
-        project_id=project_id,
-        id_match_table_id=id_match_table_id,
-        hpo_pii_address_table_id=hpo_pii_address_table_id,
-        hpo_location_table_id=hpo_location_table_id,
-        ps_api_table_id=ps_api_table_id,
-        drc_dataset_id=drc_dataset_id,
         ehr_ops_dataset_id=ehr_ops_dataset_id,
         match=consts.MATCH)
 
     LOGGER.info(f"Matching fields for {hpo_id}.")
 
-    for query in [
-            fields_match_query, street_combined_match_query, street_match_query
-    ]:
+    for query in [fields_match_query, street_combined_match_query]:
         LOGGER.info(f"Running the following update statement: {query}.")
         job = client.query(query)
         job.result()
