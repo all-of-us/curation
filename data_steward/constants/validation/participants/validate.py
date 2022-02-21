@@ -90,7 +90,7 @@ GENDER_MATCH = [{
 }]
 
 CREATE_NAME_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
-    CREATE FUNCTION IF NOT EXISTS `{{project_id}}.{{drc_dataset_id}}.CompareName`(rdr_name string, ehr_name string)
+    CREATE OR REPLACE FUNCTION `{{project_id}}.{{drc_dataset_id}}.CompareName`(rdr_name string, ehr_name string)
     RETURNS string
     AS ((
         WITH normalized_rdr_name AS (
@@ -111,7 +111,7 @@ CREATE_NAME_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
 """)
 
 CREATE_STREET_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
-CREATE FUNCTION IF NOT EXISTS
+CREATE OR REPLACE FUNCTION
   `{{project_id}}.{{drc_dataset_id}}.CompareStreet`(rdr_street string, ehr_street string)
   RETURNS string 
   AS ((
@@ -120,8 +120,8 @@ CREATE FUNCTION IF NOT EXISTS
       normalized_ehr AS ({{normalized_street_ehr}})
     SELECT
       CASE
-        WHEN rdr_street IS NULL THEN '{{missing_rdr}}'
-        WHEN ehr_street IS NULL THEN '{{missing_ehr}}'
+        WHEN normalized_rdr.street = '' THEN '{{missing_rdr}}'
+        WHEN normalized_ehr.street = '' THEN '{{missing_ehr}}'
         WHEN normalized_rdr.street = normalized_ehr.street THEN '{{match}}'
         ELSE '{{no_match}}'
       END AS street
@@ -130,7 +130,7 @@ CREATE FUNCTION IF NOT EXISTS
 """)
 
 CREATE_CITY_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
-CREATE FUNCTION IF NOT EXISTS
+CREATE OR REPLACE FUNCTION
   `{{project_id}}.{{drc_dataset_id}}.CompareCity`(rdr_city string, ehr_city string)
   RETURNS string AS ((
     WITH 
@@ -138,8 +138,8 @@ CREATE FUNCTION IF NOT EXISTS
       normalized_ehr AS ({{normalized_city_ehr}})    
     SELECT
       CASE
-        WHEN rdr_city IS NULL THEN '{{missing_rdr}}'
-        WHEN ehr_city IS NULL THEN '{{missing_ehr}}'
+        WHEN normalized_rdr.city = '' THEN '{{missing_rdr}}'
+        WHEN normalized_ehr.city = '' THEN '{{missing_ehr}}'
         WHEN normalized_rdr.city = normalized_ehr.city THEN '{{match}}'
         ELSE '{{no_match}}'
       END AS city
@@ -205,7 +205,7 @@ NORMALIZED_CITY = JINJA_ENV.from_string("""
 """)
 
 CREATE_STATE_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
-CREATE FUNCTION IF NOT EXISTS
+CREATE OR REPLACE FUNCTION
   `{{project_id}}.{{drc_dataset_id}}.CompareState`(rdr_state string, ehr_state string)
   RETURNS string AS ((
     WITH normalized_rdr_state AS (
@@ -237,7 +237,7 @@ CREATE FUNCTION IF NOT EXISTS
 """)
 
 CREATE_ZIP_CODE_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
-CREATE FUNCTION IF NOT EXISTS
+CREATE OR REPLACE FUNCTION
   `{{project_id}}.{{drc_dataset_id}}.CompareZipCode`(rdr_zip_code string, ehr_zip_code string)
   RETURNS string AS ((
         WITH normalized_rdr_zip_code AS (
@@ -257,7 +257,7 @@ CREATE FUNCTION IF NOT EXISTS
 """)
 
 CREATE_SEX_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
-CREATE FUNCTION IF NOT EXISTS
+CREATE OR REPLACE FUNCTION
   `{{project_id}}.{{drc_dataset_id}}.CompareSexAtBirth`(rdr_sex string,
     ehr_sex string)
   RETURNS string AS ((
@@ -278,7 +278,7 @@ CREATE FUNCTION IF NOT EXISTS
 """)
 
 CREATE_EMAIL_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
-    CREATE FUNCTION IF NOT EXISTS `{{project_id}}.{{drc_dataset_id}}.CompareEmail`(rdr_email string, ehr_email string)
+    CREATE OR REPLACE FUNCTION `{{project_id}}.{{drc_dataset_id}}.CompareEmail`(rdr_email string, ehr_email string)
     RETURNS string
     AS ((
         WITH normalized_rdr_email AS (
@@ -300,7 +300,7 @@ CREATE_EMAIL_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
 """)
 
 CREATE_PHONE_NUMBER_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
-CREATE FUNCTION IF NOT EXISTS
+CREATE OR REPLACE FUNCTION
   `{{project_id}}.{{drc_dataset_id}}.ComparePhoneNumber`(rdr_phone_number string,
     ehr_phone_number string)
   RETURNS string AS ((
@@ -327,7 +327,7 @@ CREATE FUNCTION IF NOT EXISTS
 """)
 
 CREATE_DOB_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
- CREATE FUNCTION IF NOT EXISTS 
+ CREATE OR REPLACE FUNCTION
  `{{project_id}}.{{drc_dataset_id}}.CompareDateOfBirth`(rdr_birth_date date, ehr_birth_date date)
     RETURNS string AS
     (( 
@@ -339,6 +339,15 @@ CREATE_DOB_COMPARISON_FUNCTION = JINJA_ENV.from_string("""
             ELSE 'missing_ehr'
         END AS birth_date
     ));
+""")
+
+CREATE_COMBINE_STREETS_FUNCTION = JINJA_ENV.from_string("""
+CREATE OR REPLACE FUNCTION
+  `{{project_id}}.{{drc_dataset_id}}.CombineStreets`(street_1 string, street_2 string)
+  RETURNS string AS
+  ((
+      SELECT CONCAT(COALESCE(street_1, ''), ' ', COALESCE(street_2, ''))
+  ));
 """)
 
 # Contains list of create function queries to execute
@@ -369,6 +378,9 @@ CREATE_COMPARISON_FUNCTION_QUERIES = [{
 }, {
     'name': 'CompareDateOfBirth',
     'query': CREATE_DOB_COMPARISON_FUNCTION
+}, {
+    'name': 'CombineStreets',
+    'query': CREATE_COMBINE_STREETS_FUNCTION
 }]
 
 MATCH_FIELDS_QUERY = JINJA_ENV.from_string("""
@@ -408,6 +420,34 @@ LEFT JOIN ( SELECT person_id, cc.concept_name as sex
     ON ehr_sex.person_id = ps.person_id
 WHERE upd.person_id = ps.person_id
     AND upd._PARTITIONTIME = ps._PARTITIONTIME
+    AND ps._PARTITIONTIME = (
+        SELECT MAX(_PARTITIONTIME) FROM `{{project_id}}.{{drc_dataset_id}}.{{ps_api_table_id}}`
+        )
+""")
+
+MATCH_STREET_COMBINED_QUERY = JINJA_ENV.from_string("""
+UPDATE `{{project_id}}.{{drc_dataset_id}}.{{id_match_table_id}}` upd
+SET upd.address_1 = '{{match}}',
+    upd.address_2 = '{{match}}',
+    upd.algorithm = 'yes'
+FROM `{{project_id}}.{{drc_dataset_id}}.{{ps_api_table_id}}` ps
+LEFT JOIN ( SELECT person_id, address_1, address_2, city, state, zip
+            FROM `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_address_table_id}}`
+            LEFT JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_location_table_id}}`
+                USING (location_id) ) ehr_address
+    ON ehr_address.person_id = ps.person_id
+WHERE upd.person_id = ps.person_id
+    AND upd._PARTITIONTIME = ps._PARTITIONTIME
+    AND ps._PARTITIONTIME = (
+        SELECT MAX(_PARTITIONTIME) FROM `{{project_id}}.{{drc_dataset_id}}.{{ps_api_table_id}}`
+        )
+    -- This update skips the records whose address_1 or address_2 is already "match" --
+    AND NOT(upd.address_1 = '{{match}}' OR upd.address_2 = '{{match}}')
+    -- This update only updates the records whose street_1+street_2 comparison return "match" --
+    AND `{{project_id}}.{{drc_dataset_id}}.CompareStreet`(
+            `{{project_id}}.{{drc_dataset_id}}.CombineStreets`(ps.street_address, ps.street_address2),
+            `{{project_id}}.{{drc_dataset_id}}.CombineStreets`(ehr_address.address_1, ehr_address.address_2)
+        ) = '{{match}}'
 """)
 
 SUMMARY_QUERY = JINJA_ENV.from_string("""

@@ -122,7 +122,7 @@ def identify_rdr_ehr_match(client,
         job = client.query(query)
         job.result()
 
-    match_query = consts.MATCH_FIELDS_QUERY.render(
+    fields_match_query = consts.MATCH_FIELDS_QUERY.render(
         project_id=project_id,
         id_match_table_id=id_match_table_id,
         hpo_pii_address_table_id=hpo_pii_address_table_id,
@@ -133,17 +133,24 @@ def identify_rdr_ehr_match(client,
         hpo_person_table_id=hpo_person_table_id,
         ps_api_table_id=ps_api_table_id,
         drc_dataset_id=drc_dataset_id,
+        ehr_ops_dataset_id=ehr_ops_dataset_id)
+
+    street_combined_match_query = consts.MATCH_STREET_COMBINED_QUERY.render(
+        project_id=project_id,
+        id_match_table_id=id_match_table_id,
+        hpo_pii_address_table_id=hpo_pii_address_table_id,
+        hpo_location_table_id=hpo_location_table_id,
+        ps_api_table_id=ps_api_table_id,
+        drc_dataset_id=drc_dataset_id,
         ehr_ops_dataset_id=ehr_ops_dataset_id,
-        match=consts.MATCH,
-        no_match=consts.NO_MATCH,
-        missing_rdr=consts.MISSING_RDR,
-        missing_ehr=consts.MISSING_EHR)
+        match=consts.MATCH)
 
     LOGGER.info(f"Matching fields for {hpo_id}.")
-    LOGGER.info(f"Running the following update statement: {match_query}.")
 
-    job = client.query(match_query)
-    job.result()
+    for query in [fields_match_query, street_combined_match_query]:
+        LOGGER.info(f"Running the following update statement: {query}.")
+        job = client.query(query)
+        job.result()
 
 
 def setup_and_validate_participants(hpo_id):
