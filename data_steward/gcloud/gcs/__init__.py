@@ -2,6 +2,7 @@
 Interact with Google Cloud Storage (GCS)
 """
 # Python stl imports
+import logging
 import os
 from typing import Union
 
@@ -16,9 +17,12 @@ from pandas.core.frame import DataFrame
 # Project imports
 from common import JINJA_ENV
 from constants.utils.bq import SELECT_ALL_QUERY, LOOKUP_TABLES_DATASET_ID, HPO_ID_BUCKET_NAME_TABLE_ID
-from utils import auth
+from utils import auth, pipeline_logging
 from utils.bq import query
 from validation.app_errors import BucketDoesNotExistError, BucketNotSet
+
+LOGGER = logging.getLogger(__name__)
+pipeline_logging.configure(logging.INFO, add_console_handler=True)
 
 
 class StorageClient(Client):
@@ -166,11 +170,14 @@ class StorageClient(Client):
         or (2) multiple records are found in the lookup table.
         """
         service = os.environ.get('GAE_SERVICE', 'default')
+        LOGGER.info(f"GAE_SERVICE: {service}")
 
         hpo_bucket_query = JINJA_ENV.from_string(SELECT_ALL_QUERY).render(
             project_id=self.project,
             dataset_id=LOOKUP_TABLES_DATASET_ID,
             table_id=HPO_ID_BUCKET_NAME_TABLE_ID)
+
+        LOGGER.info(f"Running: {hpo_bucket_query}")
 
         result_df: DataFrame = query(hpo_bucket_query)
         condition_hpo_id = ((result_df['hpo_id'].str.lower()) == hpo_id.lower())
