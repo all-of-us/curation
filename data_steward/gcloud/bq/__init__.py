@@ -8,6 +8,10 @@ import os
 from google.cloud import bigquery
 from google.cloud.bigquery import Client
 from google.auth import default
+from opentelemetry import trace
+from opentelemetry.exporter.cloud_trace import CloudTraceSpanExporter
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
 # Project imports
 from utils import auth
@@ -28,7 +32,15 @@ class BigQueryClient(Client):
 
         :return:  A BigQueryClient instance
         """
-        if scopes:
-            credentials, project_id = default()
-            credentials = auth.delegated_credentials(credentials, scopes=scopes)
-        super().__init__(project=project_id, credentials=credentials)
+        tracer_provider = TracerProvider()
+        cloud_trace_exporter = CloudTraceSpanExporter(project_id=project_id)
+        tracer_provider.add_span_processor(
+            BatchSpanProcessor(cloud_trace_exporter))
+        trace.set_tracer_provider(tracer_provider)
+        tracer = trace.get_tracer(__name__)
+        with tracer.start_as_current_span(project_id):
+            if scopes:
+                credentials, project_id = default()
+                credentials = auth.delegated_credentials(credentials,
+                                                         scopes=scopes)
+            super().__init__(project=project_id, credentials=credentials)
