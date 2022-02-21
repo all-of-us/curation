@@ -10,6 +10,11 @@ HPO_ID_BUCKET_NAME_TABLE_ID = 'hpo_id_bucket_name'
 HPO_ID_CONTACT_LIST_TABLE_ID = 'hpo_id_contact_list'
 
 # Query to select all from a specified table
+SELECT_ALL_QUERY = """
+SELECT * FROM `{{project_id}}.{{dataset_id}}.{{table_id}}`
+"""
+
+# Query to select bucket name
 SELECT_BUCKET_NAME_QUERY = """
 SELECT
   bucket_name

@@ -181,10 +181,12 @@ class StorageClient(Client):
                 service=service)
 
         LOGGER.info(f"Running: {hpo_bucket_query}")
-
         result_df: DataFrame = query(hpo_bucket_query)
 
-        LOGGER.info(f"hpo_")
         if result_df['bucket_name'].count() != 1:
             return 'None'
+
+        LOGGER.info(
+            f'Bucket name for {hpo_id}: {result_df["bucket_name"].iloc[0]}')
+
         return result_df['bucket_name'].iloc[0]
