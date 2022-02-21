@@ -129,10 +129,10 @@ class GeneralizeZipCodesTest(BaseTest.CleaningRulesTestBase):
                 (1006, 1006, 0, datetime.strptime('2020-08-30',
                                                   '%Y-%m-%d').date(), 1006,
                  'StreetAddress_PIIZIP', 1585250, '235**'),
-                # 1007: Invalid zip code. This cleaning rule runs after
-                # `UpdateInvalidZipCodes`. So, this type of value is already
-                # replaced with `Response removed due to invalid value`
-                # before this cleaning rule runs.
+                # 1007: `UpdateInvalidZipCodes` replaces this type of value
+                # with `Response removed due to invalid value` before
+                # `GeneralizeZipCodes` runs. So, '23512-4' here does not
+                # appear in the real world.
                 (1007, 1007, 0, datetime.strptime('2020-08-30',
                                                   '%Y-%m-%d').date(), 1007,
                  'StreetAddress_PIIZIP', 1585250, '23512-4'),
