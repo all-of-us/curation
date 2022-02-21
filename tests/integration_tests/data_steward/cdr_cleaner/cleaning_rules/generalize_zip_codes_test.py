@@ -82,7 +82,7 @@ class GeneralizeZipCodesTest(BaseTest.CleaningRulesTestBase):
                 (1004, 1004, 0, '2020-08-30', 1004, 'StreetAddress_PIIZIP', 1585250, '93431'),
                 (1005, 1005, 0, '2020-08-30', 1005, 'StreetAddress_PIIZIP', 1585250, '00589'),
                 (1006, 1006, 0, '2020-08-30', 1006, 'StreetAddress_PIIZIP', 1585250, '23591'),
-                (1007, 1007, 0, '2020-08-30', 1007, 'StreetAddress_PIIZIP', 1585250, '23512-4'),
+                (1007, 1007, 0, '2020-08-30', 1007, 'StreetAddress_PIIZIP', 1585250, '23512-1234'),
                 (1008, 1008, 0, '2020-08-30', 1008, 'StreetAddress_PIICity', 1585248, 'New York'),
                 (1009, 1009, 0, '2020-08-30', 1009, 'StreetAddress_PIIState', 1585249, 'NY'),
                 (1010, 1010, 0, '2020-08-30', 1010, 'StreetAddress_PIIZIP', 1585250, '72321'),
