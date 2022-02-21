@@ -86,7 +86,9 @@ class GeneralizeZipCodesTest(BaseTest.CleaningRulesTestBase):
                 (1008, 1008, 0, '2020-08-30', 1008, 'StreetAddress_PIICity', 1585248, 'New York'),
                 (1009, 1009, 0, '2020-08-30', 1009, 'StreetAddress_PIIState', 1585249, 'NY'),
                 (1010, 1010, 0, '2020-08-30', 1010, 'StreetAddress_PIIZIP', 1585250, '72321'),
-                (1011, 1011, 0, '2020-08-30', 1011, 'StreetAddress_PIIZIP', 1585247, '37218')
+                (1011, 1011, 0, '2020-08-30', 1011, 'StreetAddress_PIIZIP', 1585247, '37218'),
+                (1012, 1012, 0, '2020-08-30', 1012, 'StreetAddress_PIIZIP', 1585250, '12345-6789'),
+                (1013, 1013, 0, '2020-08-30', 1013, 'StreetAddress_PIIZIP', 1585250, 'Response removed due to invalid value')
         """).render(fq_dataset_name=self.fq_dataset_name)
         queries.append(zipcodes_tmpl)
 
@@ -98,7 +100,8 @@ class GeneralizeZipCodesTest(BaseTest.CleaningRulesTestBase):
             'fq_sandbox_table_name':
                 '',
             'loaded_ids': [
-                1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009, 1010, 1011
+                1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009, 1010,
+                1011, 1012, 1013
             ],
             'sandboxed_ids': [],
             'fields': [
@@ -126,9 +129,13 @@ class GeneralizeZipCodesTest(BaseTest.CleaningRulesTestBase):
                 (1006, 1006, 0, datetime.strptime('2020-08-30',
                                                   '%Y-%m-%d').date(), 1006,
                  'StreetAddress_PIIZIP', 1585250, '235**'),
+                # 1007: Invalid zip code. This cleaning rule runs after
+                # `UpdateInvalidZipCodes`. So, this type of value is already
+                # replaced with `Response removed due to invalid value`
+                # before this cleaning rule runs.
                 (1007, 1007, 0, datetime.strptime('2020-08-30',
                                                   '%Y-%m-%d').date(), 1007,
-                 'StreetAddress_PIIZIP', 1585250, '235****'),
+                 'StreetAddress_PIIZIP', 1585250, '23512-4'),
                 (1008, 1008, 0, datetime.strptime('2020-08-30',
                                                   '%Y-%m-%d').date(), 1008,
                  'StreetAddress_PIICity', 1585248, 'New York'),
@@ -140,7 +147,14 @@ class GeneralizeZipCodesTest(BaseTest.CleaningRulesTestBase):
                  'StreetAddress_PIIZIP', 1585250, '723**'),
                 (1011, 1011, 0, datetime.strptime('2020-08-30',
                                                   '%Y-%m-%d').date(), 1011,
-                 'StreetAddress_PIIZIP', 1585247, '37218')
+                 'StreetAddress_PIIZIP', 1585247, '37218'),
+                (1012, 1012, 0, datetime.strptime('2020-08-30',
+                                                  '%Y-%m-%d').date(), 1012,
+                 'StreetAddress_PIIZIP', 1585250, '123*******'),
+                (1013, 1013, 0, datetime.strptime('2020-08-30',
+                                                  '%Y-%m-%d').date(), 1013,
+                 'StreetAddress_PIIZIP', 1585250,
+                 'Response removed due to invalid value')
             ]
         }]
 
