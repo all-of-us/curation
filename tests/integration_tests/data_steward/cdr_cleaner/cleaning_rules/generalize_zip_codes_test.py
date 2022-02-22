@@ -150,7 +150,7 @@ class GeneralizeZipCodesTest(BaseTest.CleaningRulesTestBase):
                  'StreetAddress_PIIZIP', 1585247, '37218'),
                 (1012, 1012, 0, datetime.strptime('2020-08-30',
                                                   '%Y-%m-%d').date(), 1012,
-                 'StreetAddress_PIIZIP', 1585250, '123*******'),
+                 'StreetAddress_PIIZIP', 1585250, '123**'),
                 (1013, 1013, 0, datetime.strptime('2020-08-30',
                                                   '%Y-%m-%d').date(), 1013,
                  'StreetAddress_PIIZIP', 1585250,

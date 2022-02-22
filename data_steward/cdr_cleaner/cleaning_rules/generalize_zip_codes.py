@@ -28,11 +28,7 @@ SELECT
                 REGEXP_CONTAINS(value_as_string,'^([0-9]{5})$') OR
                 REGEXP_CONTAINS(value_as_string,'^([0-9]{5}-[0-9]{4})$')
             ),
-            RPAD(
-                SUBSTR(value_as_string, 1, 3),
-                LENGTH(value_as_string),
-                '*'
-            ),
+            CONCAT(SUBSTR(value_as_string, 1, 3), '**'),
             value_as_string
         )  AS value_as_string       
     )
