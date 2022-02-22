@@ -41,7 +41,7 @@ def create_bucket(config, bucket_name):
                                 config.get('GOOGLE_APPLICATION_CREDENTIALS'))
 
     # Creates the new bucket
-    bucket = storage_client.bucket(name=bucket_name)
+    bucket = storage_client.bucket(bucket_name)
     # set lifecycle
     bucket.add_lifecycle_delete_rule(age=30)
     bucket.location = "US"
