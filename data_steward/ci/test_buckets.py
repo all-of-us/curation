@@ -18,7 +18,7 @@ def get_client(project_id, app_creds):
     Ensure only one client is created and reused
 
     :param project_id:  project to get a client for
-    :returns: a big query client object
+    :returns: a StorageClient object
     """
     global CLIENT
     if not CLIENT:

@@ -152,7 +152,7 @@ def load_stage(dst_dataset: Dataset, bq_client: Client, bucket_name: str,
     :param dst_dataset: reference to destination dataset object
     :param bq_client: a BigQuery client object
     :param bucket_name: the location in GCS containing the vocabulary files
-    :param gcs_client: a Cloud Storage client object
+    :param gcs_client: a StorageClient object
     :return: list of completed load jobs
     """
     blobs = list(gcs_client.list_blobs(bucket_name))
