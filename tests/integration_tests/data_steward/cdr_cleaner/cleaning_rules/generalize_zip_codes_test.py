@@ -135,7 +135,7 @@ class GeneralizeZipCodesTest(BaseTest.CleaningRulesTestBase):
                 # appear in the real world.
                 (1007, 1007, 0, datetime.strptime('2020-08-30',
                                                   '%Y-%m-%d').date(), 1007,
-                 'StreetAddress_PIIZIP', 1585250, '23512-4'),
+                 'StreetAddress_PIIZIP', 1585250, '235**'),
                 (1008, 1008, 0, datetime.strptime('2020-08-30',
                                                   '%Y-%m-%d').date(), 1008,
                  'StreetAddress_PIICity', 1585248, 'New York'),

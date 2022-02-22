@@ -23,11 +23,7 @@ GENERALIZE_ZIP_CODES_QUERY = JINJA_ENV.from_string("""
 SELECT
     * REPLACE(
         IF (
-            observation_source_concept_id IN (1585250)
-            AND (
-                REGEXP_CONTAINS(value_as_string,'^([0-9]{5})$') OR
-                REGEXP_CONTAINS(value_as_string,'^([0-9]{5}-[0-9]{4})$')
-            ),
+            observation_source_concept_id IN (1585250) AND REGEXP_CONTAINS(value_as_string,'^([0-9]{5})'),
             CONCAT(SUBSTR(value_as_string, 1, 3), '**'),
             value_as_string
         )  AS value_as_string       
