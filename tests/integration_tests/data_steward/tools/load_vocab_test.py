@@ -4,8 +4,9 @@ from pathlib import Path
 import mock
 import csv
 
-from google.cloud import storage, bigquery
+from google.cloud import bigquery
 
+from gcloud.gcs import StorageClient
 import app_identity
 from tests.test_util import TEST_VOCABULARY_PATH
 from resources import AOU_VOCAB_CONCEPT_CSV_PATH
@@ -47,7 +48,7 @@ class LoadVocabTest(unittest.TestCase):
         self.staging_dataset_id = f'{self.dataset_id}_staging'
         self.bucket = os.environ.get('BUCKET_NAME_FAKE')
         self.bq_client = bigquery.Client(project=self.project_id)
-        self.gcs_client = storage.Client(project=self.project_id)
+        self.gcs_client = StorageClient(project_id=self.project_id)
         self.test_vocab_folder_path = Path(TEST_VOCABULARY_PATH)
         self.test_vocabs = [CONCEPT, VOCABULARY]
         self.contents = {}
