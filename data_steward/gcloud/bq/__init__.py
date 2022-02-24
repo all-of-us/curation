@@ -3,6 +3,7 @@ Interact with Google Cloud BigQuery
 """
 # Python stl imports
 import os
+import typing
 
 # Third-party imports
 from google.cloud import bigquery
@@ -16,6 +17,44 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 # Project imports
 from utils import auth
 from resources import fields_for
+from constants.utils import bq as consts
+from common import JINJA_ENV
+
+CREATE_OR_REPLACE_TABLE_TPL = JINJA_ENV.from_string("""
+CREATE OR REPLACE TABLE `{{project_id}}.{{dataset_id}}.{{table_id}}` (
+{% for field in schema -%}
+  {{ field.name }} {{ field.field_type }} {% if field.mode.lower() == 'required' -%} NOT NULL {%- endif %}
+  {% if field.description %} OPTIONS (description="{{ field.description }}") {%- endif %}
+  {% if loop.nextitem %},{% endif -%}
+{%- endfor %} )
+{% if opts -%}
+OPTIONS (
+    {% for opt_name, opt_val in opts.items() -%}
+    {{opt_name}}=
+        {% if opt_val is string %}
+        "{{opt_val}}"
+        {% elif opt_val is mapping %}
+        [
+            {% for opt_val_key, opt_val_val in opt_val.items() %}
+                ("{{opt_val_key}}", "{{opt_val_val}}"){% if loop.nextitem is defined %},{% endif %}
+            {% endfor %}
+        ]
+        {% endif %}
+        {% if loop.nextitem is defined %},{% endif %}
+    {%- endfor %} )
+{%- endif %}
+{% if cluster_by_cols -%}
+CLUSTER BY
+{% for col in cluster_by_cols -%}
+    {{col}}{% if loop.nextitem is defined %},{% endif %}
+{%- endfor %}
+{%- endif -%}
+-- Note clustering/partitioning in conjunction with AS query_expression is --
+-- currently unsupported (see https://bit.ly/2VeMs7e) --
+{% if query -%} AS {{ query }} {%- endif %}
+""")
+
+DATASET_COLUMNS_TPL = JINJA_ENV.from_string(consts.DATASET_COLUMNS_QUERY)
 
 
 class BigQueryClient(Client):
@@ -102,3 +141,83 @@ class BigQueryClient(Client):
         return bigquery.SchemaField(
             field.name, self._to_standard_sql_type(field.field_type),
             field.mode, field.description, field.fields)
+
+    def get_create_or_replace_table_ddl(
+            self,
+            dataset_id: str,
+            table_id: str,
+            schema: typing.List[bigquery.SchemaField] = None,
+            cluster_by_cols: typing.List[str] = None,
+            as_query: str = None,
+            **table_options) -> str:
+        """
+        Generate CREATE OR REPLACE TABLE DDL statement
+
+        Note: Reference https://bit.ly/3fgkCPg for supported syntax
+
+        :param dataset_id: identifies the dataset containing the table
+        :param table_id: identifies the table to be created or replaced
+        :param schema: list of schema fields (optional). if not provided, attempts to
+                    use a schema associated with the table_id.
+        :param cluster_by_cols: columns defining the table clustering (optional)
+        :param as_query: query used to populate the table (optional)
+        :param table_options: options e.g. description and labels (optional)
+        :return: DDL statement as string
+        """
+        _schema = self.get_table_schema(table_id) if schema is None else schema
+        _schema = [self._to_sql_field(field) for field in _schema]
+        return CREATE_OR_REPLACE_TABLE_TPL.render(
+            project_id=self.project,
+            dataset_id=dataset_id,
+            table_id=table_id,
+            schema=_schema,
+            cluster_by_cols=cluster_by_cols,
+            query=as_query,
+            opts=table_options)
+
+    def dataset_columns_query(self, dataset_id: str) -> str:
+        """
+        Get INFORMATION_SCHEMA.COLUMNS query for a specified dataset
+
+        :param dataset_id: identifies the dataset whose metadata is queried
+        :return the query as a string
+        """
+        return DATASET_COLUMNS_TPL.render(project_id=self.project,
+                                          dataset_id=dataset_id)
+
+    def define_dataset(self, dataset_id: str, description: str,
+                       label_or_tag: dict) -> bigquery.Dataset:
+        """
+        Define the dataset reference.
+
+        :param dataset_id:  string name of the dataset id to return a reference of
+        :param description:  description for the dataset
+        :param label_or_tag:  labels for the dataset = Dict[str, str]
+                            tags for the dataset = Dict[str, '']
+
+        :return: a dataset reference object.
+
+        :raises: google.api_core.exceptions.Conflict if the dataset already exists
+        """
+        if not description or description.isspace():
+            raise RuntimeError("Provide a description to create a dataset.")
+
+        if not self.project:
+            raise RuntimeError(
+                "Specify the project_id for the project containing the dataset")
+
+        if not dataset_id:
+            raise RuntimeError("Provide a dataset_id")
+
+        if not label_or_tag:
+            raise RuntimeError("Please provide a label or tag")
+
+        dataset_id = f"{self.project}.{dataset_id}"
+
+        # Construct a full Dataset object to send to the API.
+        dataset = bigquery.Dataset(dataset_id)
+        dataset.description = description
+        dataset.labels = label_or_tag
+        dataset.location = "US"
+
+        return dataset
