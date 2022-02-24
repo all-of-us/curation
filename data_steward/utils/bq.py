@@ -194,6 +194,17 @@ def _to_sql_field(field: bigquery.SchemaField) -> bigquery.SchemaField:
                                 field.mode, field.description, field.fields)
 
 
+@deprecated(reason="""
+    Use gcloud.gcs.BigQueryClient.get_create_or_replace_table_ddl(self,
+                                                                  dataset_id: str,
+                                                                  table_id: str,
+                                                                  schema: typing.List[
+                                                                  bigquery.SchemaField] = None,
+                                                                  cluster_by_cols: typing.List[str] = None,
+                                                                  as_query: str = None,
+                                                                  **table_options) 
+                                                                instead
+    """)
 def get_create_or_replace_table_ddl(project_id: str,
                                     dataset_id: str,
                                     table_id: str,
@@ -318,6 +329,10 @@ def query(q, project_id=None, use_cache=False):
     return client.query(q, job_config=query_job_config).to_dataframe()
 
 
+@deprecated(
+    reason=
+    'Use gcloud.gcs.BigQueryClient.dataset_columns_query(self, dataset_id: str) instead'
+)
 def dataset_columns_query(project_id: str, dataset_id: str) -> str:
     """
     Get INFORMATION_SCHEMA.COLUMNS query for a specified dataset
@@ -330,6 +345,10 @@ def dataset_columns_query(project_id: str, dataset_id: str) -> str:
                                       dataset_id=dataset_id)
 
 
+@deprecated(
+    reason=
+    'Use gcloud.gcs.BigQueryClient.define_dataset(self, dataset_id: str, description: str, label_or_tag: dict) instead'
+)
 def define_dataset(project_id, dataset_id, description, label_or_tag):
     """
     Define the dataset reference.
