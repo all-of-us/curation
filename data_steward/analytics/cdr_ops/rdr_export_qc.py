@@ -646,6 +646,7 @@ query = tpl.render(new_rdr=new_rdr, project_id=project_id)
 execute(client, query)
 
 # # Verify that no joint Personal Family Medical History survey information exists in the Dataset.
+# [DC-2146](https://precisionmedicineinitiative.atlassian.net/browse/DC-2146)
 # The survey launched on 2021/11/01.  This date has been used to help identify this data.
 # Checking PFMH concept_codes in conjunction with the survey date.
 
@@ -657,7 +658,7 @@ FROM
   `{{project_id}}.{{dataset}}.observation`
 WHERE
   -- separated surveys were removed from participant portal on 2021-11-01 --
-  -- combined survey was launced on 2021-11-01 --
+  -- combined survey was launched on 2021-11-01 --
   observation_date > '2021-10-31'
   AND LOWER(observation_source_value) IN ({{combined_pfmhh_concepts}})
 GROUP BY
