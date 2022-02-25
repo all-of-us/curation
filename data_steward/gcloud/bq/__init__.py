@@ -202,10 +202,6 @@ class BigQueryClient(Client):
         if not description or description.isspace():
             raise RuntimeError("Provide a description to create a dataset.")
 
-        if not self.project:
-            raise RuntimeError(
-                "Specify the project_id for the project containing the dataset")
-
         if not dataset_id:
             raise RuntimeError("Provide a dataset_id")
 
