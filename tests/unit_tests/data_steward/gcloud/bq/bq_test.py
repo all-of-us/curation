@@ -12,7 +12,7 @@ import resources
 
 class DummyClient(BigQueryClient):
     """
-    A class which inherits all of StorageClient but doesn't authenticate
+    A class which inherits all of BigQueryClient but doesn't authenticate
     """
 
     # pylint: disable=super-init-not-called
