@@ -12,7 +12,8 @@ from common import PIPELINE_TABLES, ZIP_CODE_AGGREGATION_MAP
 
 def load_check_description(rule_code=None) -> pd.DataFrame:
     """Extract the csv file containing the descriptions of checks
-    :param rule_code: str or list. Contains all the codes to be checked
+    :param rule_code: str or list. Contains all the rule codes to be checked.
+                      If None, all the rule codes in CHECK_LIST_CSV_FILE are checked.
     :returns: dataframe that has the data from CHECK_LIST_CSV_FILE. 
               If rule_code is valid, this data frame is filtered to have 
               only the rows that are related to the rule.
@@ -37,7 +38,7 @@ def make_header(message) -> bool:
 
 def is_rule_valid(check_df, code) -> bool:
     """Check if the rule is in the CSV file.
-    :param check_df: dataframe that has the data from CHECK_LIST_CSV_FILE
+    :param check_df: dataframe that has the data from CHECK_LIST_CSV_FILE. 
     :param code: str. Rule code.
     :returns: True or False
     """
@@ -46,21 +47,21 @@ def is_rule_valid(check_df, code) -> bool:
 
 def extract_valid_codes_to_run(check_df, rule_code) -> list:
     """Out of the given rule_code, only return the ones that are defined in the CSV file.
-    :param check_df: dataframe that has the data from CHECK_LIST_CSV_FILE
-    :param rule_code: str or list. Contains all the codes to be checked
+    :param check_df: dataframe that has the data from CHECK_LIST_CSV_FILE. 
+    :param rule_code: str or list. The rule code(s) to be checked.
     :returns: list of the valid rule codes
     """
-    # valid_rule_code = []
     if not isinstance(rule_code, list):
         rule_code = [rule_code]
     return [code for code in rule_code if is_rule_valid(check_df, code)]
 
 
 def filter_data_by_rule(check_df, rule_code) -> pd.DataFrame:
-    """Filter specific check rules by using code
-    :param check_df: dataframe that has the data from CHECK_LIST_CSV_FILE
-    :param rule_code: str or list. Contains all the codes to be checked
-    :returns: Filtered dataframe that only has only the rows that are related to the rule.. 
+    """Filter specific check rules by using the rule code
+    :param check_df: dataframe that has the data from either 
+                     CONCEPT_CSV_FILE, FIELD_CSV_FILE, TABLE_CSV_FILE, or MAPPING_CSV_FILE
+    :param rule_code: str or list. The rule code(s) to be checked.
+    :returns: Filtered dataframe. It has only the rows that are related to the rule.
     """
     if not isinstance(rule_code, list):
         rule_code = [rule_code]
@@ -69,10 +70,9 @@ def filter_data_by_rule(check_df, rule_code) -> pd.DataFrame:
 
 def load_tables_for_check():
     """Load all the csv files for check
-    
-    Returns
-    -------
-    dict
+    :returns: dict. Its keys and values are the following:
+              Key - Table/Field/Concept/Mapping
+              Value - dataframe from the corresponding CSV file
     """
     check_dict = defaultdict()
     list_of_files = [
@@ -90,30 +90,25 @@ def form_field_param_from_row(row, field):
 
 
 def get_list_of_common_columns_for_merge(check_df, results_df):
-    """Extract common columns from two dataframes
-    
-    Parameters
-    ----------
-    check_df  :   pd.DataFrame
-    results_df:   pd.DataFrame
-
-    Returns
-    -------
-    list
+    """Extract common columns from the two dataframes
+    :param check_df: dataframe that has the data from either 
+                     CONCEPT_CSV_FILE, FIELD_CSV_FILE, TABLE_CSV_FILE, or MAPPING_CSV_FILE
+    :param results_df: dataframe that has the result of SQL run
+    :returns: list of columns that exist both in check_df and result_df
     """
     return [col for col in check_df if col in results_df]
 
 
 def format_cols_to_string(df):
-    """Format all columns (except for some) to string
-    
-    Parameters
-    ----------
-    df: pd.DataFrame
+    """Format all columns to string except the following:
+    1) the column 'n_row_violation'
+    2) the columns with data type 'float' are casted to 'int'
 
-    Returns
-    -------
-    pd.DataFrame
+    :param df: dataframe that needs this reformatting
+    :returns: dataframe with reformatted columns. 
+    
+    This reformatting is necessary for the result of run_check_by_row()
+    to look pretty.
     """
     df = df.copy()
     for col in df:
@@ -133,26 +128,16 @@ def run_check_by_row(df,
                      pre_deid_dataset=None,
                      mapping_issue_description=None,
                      mapping_dataset=None):
-    """Run all checks in a dataframe row by row
-
-    Parameters
-    ----------
-    df: pd.DataFrame
-        contains all the checks to be run
-    template_query: str
-        query template that changes according to the check
-    project_id: str
-        Google Bigquery project
-    post_deid_dataset: str
-        Bigquery dataset name after de-id was run
-    pre_deid_dataset: str
-        Bigqery dataset name before de-id was run
-    mapping_issue_description: str
-        Describes what the issue is
-
-    Returns
-    -------
-    pd.DataFrame
+    """Run all the checks from the QC rules dataframe one by one
+    :param check_df: dataframe that has the data from either 
+                     CONCEPT_CSV_FILE, FIELD_CSV_FILE, TABLE_CSV_FILE, or MAPPING_CSV_FILE
+    :param template_query: query template for the QC
+    :param project_id: Project ID of the dataset.
+    :param post_deid_dataset: ID of the dataset after DEID.
+    :param pre_deid_dataset: ID of the dataset before DEID.
+    :param mapping_issue_description: Description of the issue
+    :param mapping_dataset: ID of the dataset for mapping.
+    :returns: dataframe that has the results of this QC.
     """
     if df.empty:
         return pd.DataFrame(
