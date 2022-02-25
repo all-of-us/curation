@@ -6,6 +6,7 @@ import logging
 
 # Project imports
 import common
+from gcloud.bq import BigQueryClient
 from utils import bq
 from constants.retraction import retract_utils as consts
 from constants.utils import bq as bq_consts
@@ -88,20 +89,19 @@ def get_src_id(mapping_type):
     return src_id
 
 
-def get_datasets_list(project_id, dataset_ids_list):
+def get_datasets_list(client, dataset_ids_list):
     """
     Returns list of dataset_ids on which to perform retraction
 
     Returns list of rdr, ehr, unioned, combined and deid dataset_ids and excludes sandbox and staging datasets
-    :param project_id: identifies the project containing datasets to retract from
+    :param client: BigQueryClient object which has project containing datasets to retract from
     :param dataset_ids_list: string of datasets to retract from separated by a space. If set to 'all_datasets',
         retracts from all datasets. If set to 'none', skips retraction from BigQuery datasets
     :return: List of dataset_ids
     :raises: AttributeError if dataset_ids_str does not allow .split()
     """
-    client = bq.get_client(project_id)
     all_dataset_ids = [
-        dataset.dataset_id for dataset in list(client.list_datasets(project_id))
+        dataset.dataset_id for dataset in list(client.list_datasets())
     ]
 
     if not dataset_ids_list or dataset_ids_list == [consts.NONE]:
@@ -112,7 +112,7 @@ def get_datasets_list(project_id, dataset_ids_list):
     elif dataset_ids_list == [consts.ALL_DATASETS]:
         dataset_ids = all_dataset_ids
         LOGGER.info(
-            f"All datasets are specified. Setting dataset_ids to all datasets in project: {project_id}"
+            f"All datasets are specified. Setting dataset_ids to all datasets in project: {client.project}"
         )
     else:
         # only consider datasets that exist in the project
@@ -121,7 +121,7 @@ def get_datasets_list(project_id, dataset_ids_list):
             if dataset_id in all_dataset_ids
         ]
         LOGGER.info(
-            f"Datasets specified and existing in project {project_id}: {dataset_ids}"
+            f"Datasets specified and existing in project {client.project}: {dataset_ids}"
         )
 
     # consider datasets containing PPI/EHR data, excluding sandbox/staging datasets
@@ -328,8 +328,8 @@ def get_dataset_ids_to_target(project_id, dataset_ids=None):
     :param dataset_ids: list identifying datasets or None for all datasets
     :return: List of dataset_ids in the project to target
     """
-    client = bq.get_client(project_id)
-    all_datasets = list(client.list_datasets(project_id))
+    client = BigQueryClient(project_id)
+    all_datasets = list(client.list_datasets())
     all_dataset_ids = [dataset.dataset_id for dataset in all_datasets]
     result_dataset_ids = []
     if dataset_ids is None:

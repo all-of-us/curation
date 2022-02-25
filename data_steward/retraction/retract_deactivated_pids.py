@@ -14,8 +14,10 @@ import retraction.retract_utils as ru
 from common import JINJA_ENV, FITBIT_TABLES, CDM_TABLES
 from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as cdr_consts
+
 # Project imports
 from utils import bq, pipeline_logging, sandbox as sb
+from gcloud.bq import BigQueryClient
 
 LOGGER = logging.getLogger(__name__)
 
@@ -368,7 +370,7 @@ def run_deactivation(client,
     """
     Runs the deactivation retraction pipeline for a dataset
 
-    :param client: BigQuery client
+    :param client: BigQueryClient object
     :param project_id: Identifies the BigQuery project
     :param dataset_ids: Identifies the datasets to retract deactivated participants from
     :param fq_deact_table: Fully qualified table containing deactivated participants
@@ -404,8 +406,8 @@ def main(args=None):
     pipeline_logging.configure(logging.DEBUG, add_console_handler=True)
     parser = get_parser()
     args = parser.parse_args(args)
-    client = bq.get_client(args.project_id)
-    dataset_ids = ru.get_datasets_list(args.project_id, args.dataset_ids)
+    client = BigQueryClient(args.project_id)
+    dataset_ids = ru.get_datasets_list(client, args.dataset_ids)
     LOGGER.info(
         f"Datasets to retract deactivated participants from: {dataset_ids}")
     run_deactivation(client, args.project_id, dataset_ids, args.fq_deact_table,
