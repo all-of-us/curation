@@ -38,7 +38,17 @@ def run_qc(project_id,
            post_deid_dataset,
            pre_deid_dataset,
            mapping_dataset=None,
-           rule_code=None):
+           rule_code=None) -> pd.DataFrame:
+    """
+    Run quality check under the specified condition.
+
+    :param project_id: Project ID of the dataset.
+    :param post_deid_dataset: ID of the dataset after DEID.
+    :param pre_deid_dataset: ID of the dataset before DEID.
+    :param mapping_dataset: ID of the dataset for mapping.
+    :param rule_code: ???
+    :returns: DataFrame that is ???
+    """
     list_checks = load_check_description(rule_code)
     list_checks = list_checks[list_checks['level'].notnull()].copy()
 

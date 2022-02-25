@@ -10,18 +10,12 @@ from analytics.cdr_ops.controlled_tier_qc.code.config import (
 from common import PIPELINE_TABLES, ZIP_CODE_AGGREGATION_MAP
 
 
-def load_check_description(rule_code=None):
+def load_check_description(rule_code=None) -> pd.DataFrame:
     """Extract the csv file containing the descriptions of checks
-
-    Parameters
-    ----------
-    rule_code: str or list
-        contains all the codes to be checked
-    
-    Returns
-    -------
-    pd.DataFrame
-
+    :param rule_code: str or list. Contains all the codes to be checked
+    :returns: dataframe that has the data from CHECK_LIST_CSV_FILE. 
+              If rule_code is valid, this data frame is filtered to have 
+              only the rows that are related to the rule.
     """
     check_df = pd.read_csv(CSV_FOLDER / CHECK_LIST_CSV_FILE, dtype='object')
     if rule_code:
@@ -34,38 +28,39 @@ def load_check_description(rule_code=None):
     return check_df
 
 
-def make_header(message):
+def make_header(message) -> bool:
     print("#####################################################")
     print(message)
     print("#####################################################\n")
     return True
 
 
-def is_rule_valid(check_df, code):
+def is_rule_valid(check_df, code) -> bool:
+    """Check if the rule is in the CSV file.
+    :param check_df: dataframe that has the data from CHECK_LIST_CSV_FILE
+    :param code: str. Rule code.
+    :returns: True or False
+    """
     return code in check_df['rule'].values
 
 
-def extract_valid_codes_to_run(check_df, rule_code):
+def extract_valid_codes_to_run(check_df, rule_code) -> list:
+    """Out of the given rule_code, only return the ones that are defined in the CSV file.
+    :param check_df: dataframe that has the data from CHECK_LIST_CSV_FILE
+    :param rule_code: str or list. Contains all the codes to be checked
+    :returns: list of the valid rule codes
+    """
     # valid_rule_code = []
     if not isinstance(rule_code, list):
         rule_code = [rule_code]
     return [code for code in rule_code if is_rule_valid(check_df, code)]
 
 
-def filter_data_by_rule(check_df, rule_code):
+def filter_data_by_rule(check_df, rule_code) -> pd.DataFrame:
     """Filter specific check rules by using code
-    
-    Parameters
-    ----------
-    check_df: pd.DataFrame
-        contains all the checks
-    rule_code: str or list
-        contains the codes to be checked
-    
-    Returns
-    -------
-    pd.DataFrame
-
+    :param check_df: dataframe that has the data from CHECK_LIST_CSV_FILE
+    :param rule_code: str or list. Contains all the codes to be checked
+    :returns: Filtered dataframe that only has only the rows that are related to the rule.. 
     """
     if not isinstance(rule_code, list):
         rule_code = [rule_code]
