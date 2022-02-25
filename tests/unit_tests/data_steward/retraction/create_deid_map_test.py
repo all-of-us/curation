@@ -31,9 +31,12 @@ class CreateDeidMapTest(unittest.TestCase):
         self.combined_datasets = [
             'R2021q1r1_combined', 'R2021q1r2_combined', '2021q1r3_combined'
         ]
+        self.bq_client_patcher = mock.patch(
+            'retraction.create_deid_map.BigQueryClient')
+        self.mock_bq_client = self.bq_client_patcher.start()
+        self.addCleanup(self.bq_client_patcher.stop)
 
-    @mock.patch('retraction.create_deid_map.bq.get_client')
-    def test_get_combined_datasets_for_deid_map(self, mock_get_client):
+    def test_get_combined_datasets_for_deid_map(self):
         result_all_datasets = self.all_datasets
         result_deid_datasets = []
         result_release_datasets = [
@@ -46,9 +49,7 @@ class CreateDeidMapTest(unittest.TestCase):
         result_deid_and_combined_df = create_deid_map.get_corresponding_combined_dataset(
             result_all_datasets, result_deid_datasets)
 
-        mock_client = mock.MagicMock()
-        mock_get_client.return_value = mock_client
-        expected_all_datasets = mock_client.list_datasets.return_value = self.all_datasets
+        expected_all_datasets = self.mock_bq_client.list_datasets.return_value = self.all_datasets
         expected_deid_datasets = self.deid_datasets
         expected_combined_datasets_df = create_deid_map.get_corresponding_combined_dataset(
             expected_all_datasets, expected_deid_datasets)
@@ -93,19 +94,17 @@ class CreateDeidMapTest(unittest.TestCase):
         ]
 
         result = create_deid_map.check_if_deid_map_exists(
-            self.project_id, self.dataset_id)
+            self.mock_bq_client, self.dataset_id)
         self.assertEquals(result, consts.CREATE)
         result = create_deid_map.check_if_deid_map_exists(
-            self.project_id, self.dataset_id)
+            self.mock_bq_client, self.dataset_id)
         self.assertEquals(result, consts.SKIP)
         result = create_deid_map.check_if_deid_map_exists(
-            self.project_id, self.dataset_id)
+            self.mock_bq_client, self.dataset_id)
         self.assertEquals(result, consts.RENAME)
 
-    @mock.patch('retraction.create_deid_map.bq.get_client')
     @mock.patch('retraction.create_deid_map.get_table_info_for_dataset')
-    def test_create_deid_map_table_queries(self, mock_table_info,
-                                           mock_get_client):
+    def test_create_deid_map_table_queries(self, mock_table_info):
 
         result = [
             consts.CREATE_DEID_MAP_TABLE_QUERY.format(
@@ -114,9 +113,7 @@ class CreateDeidMapTest(unittest.TestCase):
                 project=self.project_id, dataset='2021q1r3_combined')
         ]
 
-        mock_client = mock.MagicMock()
-        mock_get_client.return_value = mock_client
-        mock_client.list_datasets.return_value = self.all_datasets
+        self.mock_bq_client.list_datasets.return_value = self.all_datasets
         dataframe_1 = pd.DataFrame(data={
             'table_name': ['_ehr_consent', common.PERSON, common.OBSERVATION]
         })
@@ -133,7 +130,7 @@ class CreateDeidMapTest(unittest.TestCase):
 
         for dataset in combined_datasets:
             check = create_deid_map.check_if_deid_map_exists(
-                self.project_id, dataset)
+                self.mock_bq_client, dataset)
             if check == 'skip':
                 continue
             if check == 'rename':
