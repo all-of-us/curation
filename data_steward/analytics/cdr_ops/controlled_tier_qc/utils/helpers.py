@@ -131,15 +131,16 @@ def run_check_by_row(df,
     """Run all the checks from the QC rules dataframe one by one
     :param check_df: dataframe that has the data from either 
                      CONCEPT_CSV_FILE, FIELD_CSV_FILE, TABLE_CSV_FILE, or MAPPING_CSV_FILE
-    :param template_query: query template for the QC
+    :param template_query: query template for the QC.
     :param project_id: Project ID of the dataset.
     :param post_deid_dataset: ID of the dataset after DEID.
     :param pre_deid_dataset: ID of the dataset before DEID.
-    :param mapping_issue_description: Description of the issue
+    :param mapping_issue_description: Description of the issue.
     :param mapping_dataset: ID of the dataset for mapping.
     :returns: dataframe that has the results of this QC.
     """
     if df.empty:
+        # Return check result dataframe empty with specified columns
         return pd.DataFrame(
             columns=[col for col in df if col in COLUMNS_IN_CHECK_RESULT])
 
