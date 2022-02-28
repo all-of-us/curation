@@ -195,7 +195,7 @@ def _to_sql_field(field: bigquery.SchemaField) -> bigquery.SchemaField:
 
 
 @deprecated(reason="""
-    Use gcloud.gcs.BigQueryClient.get_create_or_replace_table_ddl(self,
+    Use gcloud.bq.BigQueryClient.get_create_or_replace_table_ddl(self,
                                                                   dataset_id: str,
                                                                   table_id: str,
                                                                   schema: typing.List[
@@ -331,7 +331,7 @@ def query(q, project_id=None, use_cache=False):
 
 @deprecated(
     reason=
-    'Use gcloud.gcs.BigQueryClient.dataset_columns_query(self, dataset_id: str) instead'
+    'Use gcloud.bq.BigQueryClient.dataset_columns_query(self, dataset_id: str) instead'
 )
 def dataset_columns_query(project_id: str, dataset_id: str) -> str:
     """
@@ -347,7 +347,7 @@ def dataset_columns_query(project_id: str, dataset_id: str) -> str:
 
 @deprecated(
     reason=
-    'Use gcloud.gcs.BigQueryClient.define_dataset(self, dataset_id: str, description: str, label_or_tag: dict) instead'
+    'Use gcloud.bq.BigQueryClient.define_dataset(self, dataset_id: str, description: str, label_or_tag: dict) instead'
 )
 def define_dataset(project_id, dataset_id, description, label_or_tag):
     """
