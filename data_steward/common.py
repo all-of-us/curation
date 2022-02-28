@@ -238,6 +238,7 @@ ZIP3_LOOKUP = 'zip3_lookup'
 DIGITAL_HEALTH_SHARING_STATUS = 'digital_health_sharing_status'
 
 ZIP_CODE_AGGREGATION_MAP = 'zip_code_aggregation_map'
+DEID_QUESTIONNAIRE_RESPONSE_MAP = '_deid_questionnaire_response_map'
 
 # Participant Summary
 EHR_OPS = 'ehr_ops'
