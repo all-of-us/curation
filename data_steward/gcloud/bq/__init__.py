@@ -196,7 +196,6 @@ class BigQueryClient(Client):
                             tags for the dataset = Dict[str, '']
 
         :return: a dataset reference object.
-
         :raises: google.api_core.exceptions.Conflict if the dataset already exists
         """
         if not description or description.isspace():
