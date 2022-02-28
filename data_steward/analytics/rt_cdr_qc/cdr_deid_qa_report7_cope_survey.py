@@ -28,12 +28,12 @@ pd.options.display.max_rows = 120
 project_id = ""
 com_cdr = ""
 deid_cdr = ""
-deid_sandbox=""
+deid_sandbox = ""
 # deid_base_cdr=""
 # -
 
 # df will have a summary in the end
-df = pd.DataFrame(columns = ['query', 'result']) 
+df = pd.DataFrame(columns=['query', 'result'])
 
 # + [markdown] papermill={"duration": 0.02327, "end_time": "2021-02-02T22:30:32.708257", "exception": false, "start_time": "2021-02-02T22:30:32.684987", "status": "completed"} tags=[]
 # # 1 Verify that the COPE Survey Data identified to be suppressed as de-identification action in OBSERVATION table have been removed from the de-id dataset.
@@ -43,11 +43,11 @@ df = pd.DataFrame(columns = ['query', 'result'])
 # https://docs.google.com/spreadsheets/d/1UuUVcRdlp2HkBaVdROFsM4ZX_bfffg6ZoEbqj94MlXU/edit#gid=0
 #
 #  Related tickets [DC-892] [DC-1752]
-#  
-#  [DC-1752] Refactor analysis 1 so that it provides the observation_source_concept_id, concept_code, concept_name, vocabulary_id, row count per cope survey concept (example query below). Reword the title text to read: Verify that the COPE Survey concepts identified to be suppressed as de-identification action have been removed. 
+#
+#  [DC-1752] Refactor analysis 1 so that it provides the observation_source_concept_id, concept_code, concept_name, vocabulary_id, row count per cope survey concept (example query below). Reword the title text to read: Verify that the COPE Survey concepts identified to be suppressed as de-identification action have been removed.
 #
 #  [DC-1784] 1310144, 1310145, 1310148, 715725, 715724
-#  
+#
 # The following concepts should be suppressed
 #
 # 715711, 1333327, 1333326, 1333014, 1333118, 1332742,1333324 ,1333012 ,1333234,
@@ -55,6 +55,8 @@ df = pd.DataFrame(columns = ['query', 'result'])
 # 903632,702686,715714, 715724, 715725, 715726, 1310054, 1310058, 1310066, 1310146, 1310147, 1333234, 1310065,
 #
 # 596884, 596885, 596886, 596887, 596888, 596889, 1310137,1333016,1310148,1310145,1310144
+# From DC-2109
+# 765938,765939, 765940, 765941, 765942, 765943, 765944, 765945, 765946, 765947, 765948, 765949, 765950, 765951, 765952
 
 # +
 query = f'''
@@ -65,24 +67,34 @@ JOIN `{project_id}.{deid_cdr}.concept` c
 ON ob.observation_source_concept_id=c.concept_id
 WHERE observation_source_concept_id IN
 (715711, 1333327, 1333326, 1333014, 1333118, 1332742,1333324 ,1333012 ,1333234, 
-903632,702686,715714, 715724, 715725, 715726, 1310054, 1310058, 1310066, 1310146, 1310147, 1333234, 1310065, 
-596884, 596885, 596886, 596887, 596888, 596889, 1310137,1333016,1310148,1310145,1310144)
+903632,702686,715714, 715724, 715725, 715726, 1310054, 1310058, 1310066, 1310146, 1310147, 1310065, 
+596884, 596885, 596886, 596887, 596888, 596889, 1310137,1333016,1310148,1310145,1310144,
+765938,765939, 765940, 765941, 765942, 765943, 765944, 765945, 765946, 765947, 765948, 765949, 765950, 765951, 765952)
 OR observation_concept_id IN
 (715711, 1333327, 1333326, 1333014, 1333118, 1332742,1333324 ,1333012 ,1333234, 
-903632,702686,715714, 715724, 715725, 715726, 1310054, 1310058, 1310066, 1310146, 1310147, 1333234, 1310065, 
-596884, 596885, 596886, 596887, 596888, 596889, 1310137,1333016,1310148,1310145,1310144)
+903632,702686,715714, 715724, 715725, 715726, 1310054, 1310058, 1310066, 1310146, 1310147, 1310065, 
+596884, 596885, 596886, 596887, 596888, 596889, 1310137,1333016,1310148,1310145,1310144,
+765938, 765939, 765940, 765941, 765942, 765943, 765944, 765945, 765946, 765947, 765948, 765949, 765950, 765951, 765952)
 GROUP BY 1,2,3,4,5
 ORDER BY n_row_not_pass DESC
 
 '''
-df1=pd.read_gbq(query, dialect='standard')
+df1 = pd.read_gbq(query, dialect='standard')
 
-if df1['n_row_not_pass'].sum()==0:
- df = df.append({'query' : 'Query1 No COPE in deid_observation table', 'result' : 'PASS'},  
-                ignore_index = True) 
+if df1['n_row_not_pass'].sum() == 0:
+    df = df.append(
+        {
+            'query': 'Query1 No COPE in deid_observation table',
+            'result': 'PASS'
+        },
+        ignore_index=True)
 else:
- df = df.append({'query' : 'Query1 No COPE in deid_observation table' , 'result' : ''},  
-                ignore_index = True) 
+    df = df.append(
+        {
+            'query': 'Query1 No COPE in deid_observation table',
+            'result': ''
+        },
+        ignore_index=True)
 df1
 
 # + [markdown] papermill={"duration": 0.023633, "end_time": "2021-02-02T22:30:36.860798", "exception": false, "start_time": "2021-02-02T22:30:36.837165", "status": "completed"} tags=[]
@@ -90,7 +102,7 @@ df1
 #
 # [DC-1040]
 #
-# expected results: all the person_id and the questionnaire_response_id has a survey_version_concept_id 
+# expected results: all the person_id and the questionnaire_response_id has a survey_version_concept_id
 # original sql missed something.
 #
 # these should be generalized 2100000002,2100000003,2100000004
@@ -111,13 +123,19 @@ WHERE
 SELECT COUNT (*) AS n_row_not_pass FROM df1
 WHERE survey_version_concept_id=0 or survey_version_concept_id IS NULL
 '''
-df1=pd.read_gbq(query, dialect='standard')
-if df1.loc[0].sum()==0:
- df = df.append({'query' : 'Query2 survey version provided', 'result' : 'PASS'},  
-                ignore_index = True) 
+df1 = pd.read_gbq(query, dialect='standard')
+if df1.loc[0].sum() == 0:
+    df = df.append({
+        'query': 'Query2 survey version provided',
+        'result': 'PASS'
+    },
+                   ignore_index=True)
 else:
- df = df.append({'query' : 'Query2 survey version provided', 'result' : ''},  
-                ignore_index = True) 
+    df = df.append({
+        'query': 'Query2 survey version provided',
+        'result': ''
+    },
+                   ignore_index=True)
 df1
 
 # +
@@ -130,13 +148,13 @@ JOIN  `{project_id}.{deid_cdr}.observation_ext` e
 ON  e.observation_id = d.observation_id
 
 '''
-df1=pd.read_gbq(query, dialect='standard')
+df1 = pd.read_gbq(query, dialect='standard')
 
 df1.style.format("{:.0f}")
 
 # + [markdown] papermill={"duration": 0.023649, "end_time": "2021-02-02T22:30:39.115495", "exception": false, "start_time": "2021-02-02T22:30:39.091846", "status": "completed"} tags=[]
 # # 3 Verify that all structured concepts related  to COVID are NOT suppressed in EHR tables
-#   
+#
 #   DC-891
 #
 # 756055,4100065,37311061,439676,37311060,45763724
@@ -155,19 +173,27 @@ GROUP BY 1,2,3,4
 ORDER BY n_row_not_pass DESC
 
 '''
-df1=pd.read_gbq(query, dialect='standard')
+df1 = pd.read_gbq(query, dialect='standard')
 
-if df1['n_row_not_pass'].sum()==0:
- df = df.append({'query' : 'Query3 No COPE in deid_measurement table', 'result' : ''},  
-                ignore_index = True) 
+if df1['n_row_not_pass'].sum() == 0:
+    df = df.append(
+        {
+            'query': 'Query3 No COPE in deid_measurement table',
+            'result': ''
+        },
+        ignore_index=True)
 else:
- df = df.append({'query' : 'Query3 No COPE in deid_measurement table' , 'result' : 'PASS'},  
-                ignore_index = True) 
+    df = df.append(
+        {
+            'query': 'Query3 No COPE in deid_measurement table',
+            'result': 'PASS'
+        },
+        ignore_index=True)
 df1
 
 # + [markdown] papermill={"duration": 0.023649, "end_time": "2021-02-02T22:30:39.115495", "exception": false, "start_time": "2021-02-02T22:30:39.091846", "status": "completed"} tags=[]
 # # 4 Verify that all structured concepts related  to COVID are NOT suppressed in EHR condition_occurrence
-#   
+#
 #   DC-891
 #
 # 756055,4100065,37311061,439676,37311060,45763724
@@ -186,19 +212,31 @@ GROUP BY 1,2,3,4
 ORDER BY n_row_not_pass DESC
 
 '''
-df1=pd.read_gbq(query, dialect='standard')
+df1 = pd.read_gbq(query, dialect='standard')
 
-if df1['n_row_not_pass'].sum()==0:
- df = df.append({'query' : 'Query4 COVID concepts suppression in deid_observation table', 'result' : ''},  
-                ignore_index = True) 
+if df1['n_row_not_pass'].sum() == 0:
+    df = df.append(
+        {
+            'query':
+                'Query4 COVID concepts suppression in deid_observation table',
+            'result':
+                ''
+        },
+        ignore_index=True)
 else:
- df = df.append({'query' : 'Query4 COVID concepts suppression in deid_observation table' , 'result' : 'PASS'},  
-                ignore_index = True) 
+    df = df.append(
+        {
+            'query':
+                'Query4 COVID concepts suppression in deid_observation table',
+            'result':
+                'PASS'
+        },
+        ignore_index=True)
 df1
 
 # + [markdown] papermill={"duration": 0.023649, "end_time": "2021-02-02T22:30:39.115495", "exception": false, "start_time": "2021-02-02T22:30:39.091846", "status": "completed"} tags=[]
 # # 5 Verify that all structured concepts related  to COVID are NOT suppressed in EHR observation
-#   
+#
 #   DC-891
 #
 # 756055,4100065,37311061,439676,37311060,45763724
@@ -217,29 +255,37 @@ GROUP BY 1,2,3,4,5
 ORDER BY n_row_not_pass DESC
 
 '''
-df1=pd.read_gbq(query, dialect='standard')
+df1 = pd.read_gbq(query, dialect='standard')
 
-if df1['n_row_not_pass'].sum()==0:
- df = df.append({'query' : 'Query5 COVID concepts suppression in observation table', 'result' : ''},  
-                ignore_index = True) 
+if df1['n_row_not_pass'].sum() == 0:
+    df = df.append(
+        {
+            'query': 'Query5 COVID concepts suppression in observation table',
+            'result': ''
+        },
+        ignore_index=True)
 else:
- df = df.append({'query' : 'Query5 COVID concepts suppression in observation table' , 'result' : 'PASS'},  
-                ignore_index = True) 
+    df = df.append(
+        {
+            'query': 'Query5 COVID concepts suppression in observation table',
+            'result': 'PASS'
+        },
+        ignore_index=True)
 df1
 # -
 
 # # 6 Verify these concepts are NOT suppressed in EHR observation
-#   
+#
 # [DC-1747]
 # these concepts 1333015, 	1333023	are not longer suppressed
 #
-# 1332737, [DC-1665] 
+# 1332737, [DC-1665]
 #
 # 1333291
 #
 # 1332904,1333140 should be generalized to 1332737
 #
-# 1332843 should be generalized. 
+# 1332843 should be generalized.
 
 # +
 query = f'''
@@ -253,18 +299,30 @@ GROUP BY 1,2,3,4,5
 ORDER BY n_row_not_pass DESC
 
 '''
-df1=pd.read_gbq(query, dialect='standard')
+df1 = pd.read_gbq(query, dialect='standard')
 
-if df1['n_row_not_pass'].sum()==0:
- df = df.append({'query' : 'Query6 The concepts are not suppressed in observation table', 'result' : ''},  
-                ignore_index = True) 
+if df1['n_row_not_pass'].sum() == 0:
+    df = df.append(
+        {
+            'query':
+                'Query6 The concepts are not suppressed in observation table',
+            'result':
+                ''
+        },
+        ignore_index=True)
 else:
- df = df.append({'query' : 'Query6 The concepts are not suppressed in observation table' , 'result' : 'PASS'},  
-                ignore_index = True) 
+    df = df.append(
+        {
+            'query':
+                'Query6 The concepts are not suppressed in observation table',
+            'result':
+                'PASS'
+        },
+        ignore_index=True)
 df1
 # -
 
-# # 7 Vaccine-related concepts as these EHR-submitted COVID concepts are disallowed from RT 
+# # 7 Vaccine-related concepts as these EHR-submitted COVID concepts are disallowed from RT
 #
 # DC-1752
 #
@@ -340,18 +398,31 @@ USING (concept_id)
 ORDER BY row_count DESC
 
 '''
-df1=pd.read_gbq(query, dialect='standard') 
-if df1['row_count'].sum()==0:
- df = df.append({'query' : 'Query7 COVID Vaccine-related concepts suppression in EHR tables', 'result' : 'PASS'},  
-                ignore_index = True) 
+df1 = pd.read_gbq(query, dialect='standard')
+if df1['row_count'].sum() == 0:
+    df = df.append(
+        {
+            'query':
+                'Query7 COVID Vaccine-related concepts suppression in EHR tables',
+            'result':
+                'PASS'
+        },
+        ignore_index=True)
 else:
- df = df.append({'query' : 'Query7 COVID Vaccine-related concepts suppression in EHR tables' , 'result' : ''},  
-                ignore_index = True) 
+    df = df.append(
+        {
+            'query':
+                'Query7 COVID Vaccine-related concepts suppression in EHR tables',
+            'result':
+                ''
+        },
+        ignore_index=True)
 df1
 # -
 
 # # Summary_deid_COPE_survey
 
 # if not pass, will be highlighted in red
-df = df.mask(df.isin(['Null','']))
-df.style.highlight_null(null_color='red').set_properties(**{'text-align': 'left'})
+df = df.mask(df.isin(['Null', '']))
+df.style.highlight_null(null_color='red').set_properties(
+    **{'text-align': 'left'})
