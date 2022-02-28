@@ -91,7 +91,7 @@ def get_client(project_id, scopes=None, credentials=None):
 
 @deprecated(
     reason=
-    'Use gcloud.gcs.BigQueryClient.get_table_schema(self, table_name: str, fields=None) instead'
+    'Use gcloud.bq.BigQueryClient.get_table_schema(self, table_name: str, fields=None) instead'
 )
 def get_table_schema(table_name, fields=None):
     """
@@ -160,7 +160,7 @@ def upload_csv_data_to_bq_table(client, dataset_id, table_name, fq_file_path,
 
 @deprecated(
     reason=
-    'Use gcloud.gcs.BigQueryClient._to_standard_sql_type(self, field_type: str) instead'
+    'Use gcloud.bq.BigQueryClient._to_standard_sql_type(self, field_type: str) instead'
 )
 def _to_standard_sql_type(field_type: str) -> str:
     """
@@ -180,7 +180,7 @@ def _to_standard_sql_type(field_type: str) -> str:
 
 @deprecated(
     reason=
-    'Use gcloud.gcs.BigQueryClient._to_sql_field(self,field: bigquery.SchemaField) instead'
+    'Use gcloud.bq.BigQueryClient._to_sql_field(self,field: bigquery.SchemaField) instead'
 )
 def _to_sql_field(field: bigquery.SchemaField) -> bigquery.SchemaField:
     """
