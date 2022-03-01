@@ -23,21 +23,3 @@ def check_concept_suppression(check_df,
                                      project_id, post_dataset_id)
 
     return concept_check.reset_index(drop=True)
-
-
-def check_concept_non_suppression(check_df,
-                                  project_id,
-                                  post_dataset_id,
-                                  pre_deid_dataset=None,
-                                  mapping_dataset=None):
-    """Run quality check to see if the specified concept is NOT suppressed as expected.
-    :param check_df: dataframe that has the data from either 
-                     CONCEPT_CSV_FILE, FIELD_CSV_FILE, TABLE_CSV_FILE, or MAPPING_CSV_FILE
-    :param project_id: Project ID of the dataset.
-    :param post_deid_dataset: ID of the dataset after DEID.
-    :param pre_deid_dataset: ID of the dataset before DEID.
-    :param mapping_dataset: ID of the dataset for mapping.
-    :returns: dataframe that has the results of this check.
-    """
-
-    return None

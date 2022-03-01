@@ -33,7 +33,7 @@ pd.set_option('display.width', None)
 # If you want to run specific QC rule(s): Add those rules to to_include
 # to_include = ['DC-1370', 'DC-1377', 'DC-1346', 'DC-1348', 'DC-1355', 'DC-1357', 'DC-1359',
 #             'DC-1362', 'DC-1364', 'DC-1366', 'DC-1368', 'DC-1373', 'DC-1382', 'DC-1388',
-#             'DC-1496', 'DC-1527', 'DC-1535', 'DC-2119']
+#             'DC-1496', 'DC-1527', 'DC-1535']
 to_include = []
 checks = run_qc(project_id,
                 post_deid_dataset,
@@ -115,7 +115,3 @@ display_check_detail_of_rule(checks, 'DC-1527', to_include)
 # # [DC-1535: Suppression of geolocation records](https://precisionmedicineinitiative.atlassian.net/browse/DC-1535)
 
 display_check_detail_of_rule(checks, 'DC-1535', to_include)
-
-# # [DC-2119: Verifying the covid drug concepts are not suppressed in the May 2022 CDR](https://precisionmedicineinitiative.atlassian.net/browse/DC-2119)
-
-display_check_detail_of_rule(checks, 'DC-2119', to_include)

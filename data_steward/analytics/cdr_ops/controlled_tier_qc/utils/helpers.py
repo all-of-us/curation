@@ -188,6 +188,7 @@ def run_check_by_row(df,
 
     if not final_result.empty and mapping_issue_description:
         final_result['mapping_issue'] = mapping_issue_description
+
     return final_result if not final_result.empty else pd.DataFrame(
         columns=result_columns)
 

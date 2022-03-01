@@ -15,8 +15,7 @@ from analytics.cdr_ops.controlled_tier_qc.code.check_field_suppression import (
     check_field_cancer_concept_suppression,
     check_field_freetext_response_suppression,
     check_field_geolocation_records_suppression)
-from analytics.cdr_ops.controlled_tier_qc.code.check_concept_suppression import (
-    check_concept_suppression, check_concept_non_suppression)
+from analytics.cdr_ops.controlled_tier_qc.code.check_concept_suppression import check_concept_suppression
 from analytics.cdr_ops.controlled_tier_qc.code.check_mapping import (
     check_mapping, check_site_mapping, check_mapping_zipcode_generalization)
 
