@@ -20,42 +20,6 @@ from resources import fields_for
 from constants.utils import bq as consts
 from common import JINJA_ENV
 
-CREATE_OR_REPLACE_TABLE_TPL = JINJA_ENV.from_string("""
-CREATE OR REPLACE TABLE `{{project_id}}.{{dataset_id}}.{{table_id}}` (
-{% for field in schema -%}
-  {{ field.name }} {{ field.field_type }} {% if field.mode.lower() == 'required' -%} NOT NULL {%- endif %}
-  {% if field.description %} OPTIONS (description="{{ field.description }}") {%- endif %}
-  {% if loop.nextitem %},{% endif -%}
-{%- endfor %} )
-{% if opts -%}
-OPTIONS (
-    {% for opt_name, opt_val in opts.items() -%}
-    {{opt_name}}=
-        {% if opt_val is string %}
-        "{{opt_val}}"
-        {% elif opt_val is mapping %}
-        [
-            {% for opt_val_key, opt_val_val in opt_val.items() %}
-                ("{{opt_val_key}}", "{{opt_val_val}}"){% if loop.nextitem is defined %},{% endif %}
-            {% endfor %}
-        ]
-        {% endif %}
-        {% if loop.nextitem is defined %},{% endif %}
-    {%- endfor %} )
-{%- endif %}
-{% if cluster_by_cols -%}
-CLUSTER BY
-{% for col in cluster_by_cols -%}
-    {{col}}{% if loop.nextitem is defined %},{% endif %}
-{%- endfor %}
-{%- endif -%}
--- Note clustering/partitioning in conjunction with AS query_expression is --
--- currently unsupported (see https://bit.ly/2VeMs7e) --
-{% if query -%} AS {{ query }} {%- endif %}
-""")
-
-DATASET_COLUMNS_TPL = JINJA_ENV.from_string(consts.DATASET_COLUMNS_QUERY)
-
 
 class BigQueryClient(Client):
     """
@@ -164,6 +128,8 @@ class BigQueryClient(Client):
         :param table_options: options e.g. description and labels (optional)
         :return: DDL statement as string
         """
+        CREATE_OR_REPLACE_TABLE_TPL = JINJA_ENV.from_string(
+            consts.CREATE_OR_REPLACE_TABLE_QUERY)
         _schema = self.get_table_schema(table_id) if schema is None else schema
         _schema = [self._to_sql_field(field) for field in _schema]
         return CREATE_OR_REPLACE_TABLE_TPL.render(
@@ -182,6 +148,8 @@ class BigQueryClient(Client):
         :param dataset_id: identifies the dataset whose metadata is queried
         :return the query as a string
         """
+        DATASET_COLUMNS_TPL = JINJA_ENV.from_string(
+            consts.DATASET_COLUMNS_QUERY)
         return DATASET_COLUMNS_TPL.render(project_id=self.project,
                                           dataset_id=dataset_id)
 
