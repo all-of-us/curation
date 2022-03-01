@@ -18,7 +18,7 @@ class DummyClient(BigQueryClient):
 
     # pylint: disable=super-init-not-called
     def __init__(self):
-        pass
+        self.project: str = 'bar_project'
 
     def _get_all_field_types(self,) -> typing.FrozenSet[str]:
         """
@@ -39,16 +39,6 @@ class DummyClient(BigQueryClient):
                         for field in fields:
                             all_field_types.add(field.get('type'))
         return frozenset(all_field_types)
-
-
-class DummyClient(BigQueryClient):
-    """
-    A class which inherits all of BigQueryClient but doesn't authenticate
-    """
-
-    # pylint: disable=super-init-not-called
-    def __init__(self):
-        self.project: str = 'bar_project'
 
 
 class BQCTest(TestCase):
@@ -121,8 +111,6 @@ class BQCTest(TestCase):
         # Post conditions
         self.assertIsInstance(results, bigquery.Dataset)
         self.assertEqual(results.labels, self.existing_labels_or_tags)
-    def setUp(self):
-        self.client = DummyClient()
 
     def test_get_table_schema(self):
         actual_fields = self.client.get_table_schema(
