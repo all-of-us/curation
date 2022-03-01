@@ -12,6 +12,7 @@ import warnings
 from google.api_core.exceptions import GoogleAPIError, BadRequest
 from google.cloud import bigquery
 from google.auth import default
+from deprecated import deprecated
 
 # Project Imports
 from utils import auth
@@ -88,6 +89,10 @@ def get_client(project_id, scopes=None, credentials=None):
     return bigquery.Client(project=project_id, credentials=credentials)
 
 
+@deprecated(
+    reason=
+    'Use gcloud.bq.BigQueryClient.get_table_schema(self, table_name: str, fields=None) instead'
+)
 def get_table_schema(table_name, fields=None):
     """
     A helper function to create big query SchemaFields for dictionary definitions.
@@ -153,6 +158,10 @@ def upload_csv_data_to_bq_table(client, dataset_id, table_name, fq_file_path,
     return result
 
 
+@deprecated(
+    reason=
+    'Use gcloud.bq.BigQueryClient._to_standard_sql_type(self, field_type: str) instead'
+)
 def _to_standard_sql_type(field_type: str) -> str:
     """
     Get standard SQL type corresponding to a SchemaField type
@@ -169,6 +178,10 @@ def _to_standard_sql_type(field_type: str) -> str:
     return standard_sql_type.name
 
 
+@deprecated(
+    reason=
+    'Use gcloud.bq.BigQueryClient._to_sql_field(self,field: bigquery.SchemaField) instead'
+)
 def _to_sql_field(field: bigquery.SchemaField) -> bigquery.SchemaField:
     """
     Convert all types in a schema field object to standard SQL types (not legacy)
