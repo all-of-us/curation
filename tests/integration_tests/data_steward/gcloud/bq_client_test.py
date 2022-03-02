@@ -3,7 +3,6 @@ Test the Google Cloud Big Query Client and associated helper functions
 """
 # Python stl imports
 from unittest import TestCase
-from unittest.mock import patch
 import os
 
 # Project imports
