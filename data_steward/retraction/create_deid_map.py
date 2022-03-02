@@ -32,7 +32,7 @@ def get_combined_datasets_for_deid_map(client):
     """
     List all datasets in given BigQueryClient which contains the project id, filter out datasets that contain a deid dataset and collect 
     the corresponding combined dataset
-    :param client: a BigQueryClient object
+    :param client: a BigQueryClient
     :return: list of combined_datasets that should contain a _deid_map table
     """
     all_datasets_obj = list(client.list_datasets())
@@ -94,7 +94,7 @@ def get_table_info_for_dataset(client, dataset):
 def check_if_deid_map_exists(client, dataset):
     """
     Checks if _deid_map table exists in the given dataset.
-    :param project_id: a BigQueryClient
+    :param client: a BigQueryClient
     :param dataset: bq name of dataset
     :return: returns True, False or 'rename required' which had 'deid_map' table instead of '_deid_map'
     """
@@ -111,7 +111,7 @@ def check_if_deid_map_exists(client, dataset):
 def create_deid_map_table_queries(client):
     """
     Creates a query list to run to create or rename _deid_map tables in each combined dataset that has a deid dataset
-    :param project: a BigQueryClient
+    :param client: a BigQueryClient
     :return: list of queries to run
     """
     deid_and_combined_df = get_combined_datasets_for_deid_map(client)

@@ -123,7 +123,7 @@ def queries_to_retract_from_ehr_dataset(client, dataset_id, hpo_id,
     """
     Get list of queries to remove all records in all tables associated with supplied ids
 
-    :param client: BigQueryClient object
+    :param client: a BigQueryClient
     :param dataset_id: identifies associated dataset
     :param hpo_id: identifies the HPO site
     :param person_id_query: query to select person_ids to retract

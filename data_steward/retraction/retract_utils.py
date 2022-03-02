@@ -94,7 +94,7 @@ def get_datasets_list(client, dataset_ids_list):
     Returns list of dataset_ids on which to perform retraction
 
     Returns list of rdr, ehr, unioned, combined and deid dataset_ids and excludes sandbox and staging datasets
-    :param client: BigQueryClient object which has project containing datasets to retract from
+    :param client: a BigQueryClient which has project containing datasets to retract from
     :param dataset_ids_list: string of datasets to retract from separated by a space. If set to 'all_datasets',
         retracts from all datasets. If set to 'none', skips retraction from BigQuery datasets
     :return: List of dataset_ids
