@@ -14,7 +14,7 @@ This notebook is for [DC-2119](https://precisionmedicineinitiative.atlassian.net
 - DC-2119 checks for the COVID concept to be NOT suppressed. `check_controlled_tier.py` is optimized for checking suppression, and adding checking NO suppression to it would make the script unnecessarily complex.
   
   
-# How to run the quality checks
+## How to run the quality checks
 1. check_controlled_tier.py
 ```
 PYTHONPATH=./:$PYTHONPATH python analytics/cdr_ops/report_runner.py \
