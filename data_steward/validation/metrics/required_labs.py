@@ -11,6 +11,7 @@ import bq_utils
 import common
 from constants import bq_utils as bq_consts
 from utils import bq
+from gcloud.bq import BigQueryClient
 from validation.metrics.required_labs_sql import (IDENTIFY_LABS_QUERY,
                                                   CHECK_REQUIRED_LAB_QUERY)
 

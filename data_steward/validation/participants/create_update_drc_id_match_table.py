@@ -18,6 +18,7 @@ import argparse
 # Project imports
 import resources
 from utils import bq, auth
+from gcloud.bq import BigQueryClient
 import bq_utils
 from common import JINJA_ENV, PS_API_VALUES, DRC_OPS, CDR_SCOPES
 from constants.validation.participants.identity_match import IDENTITY_MATCH_TABLE

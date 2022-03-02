@@ -16,6 +16,7 @@ from google.cloud.exceptions import NotFound
 from utils.participant_summary_requests import get_org_participant_information, store_participant_data
 from common import PS_API_VALUES, DRC_OPS
 from utils import bq, pipeline_logging
+from gcloud.bq import BigQueryClient
 from constants import bq_utils as bq_consts
 
 LOGGER = logging.getLogger(__name__)
