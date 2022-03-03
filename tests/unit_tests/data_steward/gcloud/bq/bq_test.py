@@ -4,6 +4,7 @@ import os
 import typing
 
 # Third party imports
+from google.cloud import bigquery
 
 # Project imports
 from gcloud.bq import BigQueryClient
@@ -17,7 +18,7 @@ class DummyClient(BigQueryClient):
 
     # pylint: disable=super-init-not-called
     def __init__(self):
-        pass
+        self.project: str = 'bar_project'
 
     def _get_all_field_types(self,) -> typing.FrozenSet[str]:
         """
@@ -50,6 +51,66 @@ class BQCTest(TestCase):
 
     def setUp(self):
         self.client = DummyClient()
+        self.dataset_id: str = 'fake_dataset'
+        self.description = 'fake_description'
+        self.existing_labels_or_tags = {'label': 'value', 'tag': ''}
+
+    def test_get_table_ddl(self):
+        # Schema is determined by table name
+        ddl = self.client.get_create_or_replace_table_ddl(
+            self.dataset_id, 'observation').strip()
+        self.assertTrue(
+            ddl.startswith(
+                f'CREATE OR REPLACE TABLE `{self.client.project}.{self.dataset_id}.observation`'
+            ))
+        self.assertTrue(ddl.endswith(')'))
+
+        # Explicitly provided table name and schema are rendered
+        observation_schema = self.client.get_table_schema('observation')
+        ddl = self.client.get_create_or_replace_table_ddl(
+            self.dataset_id,
+            table_id='custom_observation',
+            schema=observation_schema).strip()
+        self.assertTrue(
+            ddl.startswith(
+                f'CREATE OR REPLACE TABLE `{self.client.project}.{self.dataset_id}.custom_observation`'
+            ))
+        # Sanity check that observation schema is rendered
+        self.assertTrue(
+            all(field.description in ddl for field in observation_schema))
+        self.assertTrue(ddl.endswith(')'))
+
+        # Parameter as_query is rendered
+        fake_as_query = "SELECT 1 FROM fake"
+        ddl = self.client.get_create_or_replace_table_ddl(
+            self.dataset_id, 'observation', as_query=fake_as_query).strip()
+        self.assertTrue(
+            ddl.startswith(
+                f'CREATE OR REPLACE TABLE `{self.client.project}.{self.dataset_id}.observation`'
+            ))
+        self.assertTrue(ddl.endswith(fake_as_query))
+
+    def test_define_dataset(self):
+        # Tests if dataset_id is given
+        self.assertRaises(RuntimeError, self.client.define_dataset, None,
+                          self.description, self.existing_labels_or_tags)
+
+        # Tests if description is given
+        self.assertRaises(RuntimeError, self.client.define_dataset,
+                          self.dataset_id, (None or ''),
+                          self.existing_labels_or_tags)
+
+        # Tests if no label or tag is given
+        self.assertRaises(RuntimeError, self.client.define_dataset,
+                          self.dataset_id, self.description, None)
+
+        # Pre-conditions
+        results = self.client.define_dataset(self.dataset_id, self.description,
+                                             self.existing_labels_or_tags)
+
+        # Post conditions
+        self.assertIsInstance(results, bigquery.Dataset)
+        self.assertEqual(results.labels, self.existing_labels_or_tags)
 
     def test_get_table_schema(self):
         actual_fields = self.client.get_table_schema(
