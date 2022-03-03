@@ -14,6 +14,7 @@ from common import JINJA_ENV, OBSERVATION
 from cdr_cleaner.cleaning_rules.domain_mapping import EMPTY_STRING, METADATA_DOMAIN
 from tools.combine_ehr_rdr import mapping_table_for
 from utils import bq
+from gcloud.bq import BigQueryClient
 
 LOGGER = logging.getLogger(__name__)
 

@@ -9,6 +9,7 @@ from google.cloud.exceptions import GoogleCloudError
 
 # Project imports
 from utils import bq
+from gcloud.bq import BigQueryClient
 from utils.auth import get_impersonation_credentials
 from utils.pipeline_logging import configure
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule

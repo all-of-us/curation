@@ -17,6 +17,7 @@ from google.cloud import bigquery
 
 from resources import DC732_CONCEPT_LOOKUP_CSV_PATH
 from utils import bq
+from gcloud.bq import BigQueryClient
 
 ISSUE_NUMBER = 'DC-732'
 ISSUE_PREFIX = 'dc732_'
