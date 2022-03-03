@@ -165,7 +165,7 @@ def setup_and_validate_participants(hpo_id):
 
     # Fetch Participant summary data
     rdr_project_id = get_rdr_project_id()
-    fetch_and_store_ps_hpo_data(client, client.project, rdr_project_id, hpo_id)
+    fetch_and_store_ps_hpo_data(client, rdr_project_id, hpo_id)
 
     # Populate identity match table based on PS data
     create_and_populate_drc_validation_table(client, hpo_id)
