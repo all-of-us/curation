@@ -65,7 +65,7 @@ class StoreParticipantSummaryResultsTest(TestCase):
         job = self.client.query(query)
         df = job.result().to_dataframe()
         expected = df.to_dict(orient='records')
-        actual = get_hpo_org_info(self.project_id)
+        actual = get_hpo_org_info(self.client)
 
         self.assertCountEqual(actual, expected)
 
@@ -94,7 +94,6 @@ class StoreParticipantSummaryResultsTest(TestCase):
             bigquery.SchemaField('last_name', 'string')
         ]
         fetch_and_store_ps_hpo_data(self.client,
-                                    self.project_id,
                                     'rdr_project',
                                     self.hpo_id,
                                     dataset_id=self.dataset_id)
