@@ -120,10 +120,7 @@ class CreateUpdateDrcIdMatchTableTest(TestCase):
 
         # Test
         expected = id_validation.create_drc_validation_table(
-            self.client,
-            self.project_id,
-            self.id_match_table_id,
-            drc_dataset_id=self.dataset_id)
+            self.client, self.id_match_table_id, drc_dataset_id=self.dataset_id)
 
         all_tables_obj = self.client.list_tables(self.dataset_id)
         all_tables = [t.table_id for t in all_tables_obj]
@@ -165,13 +162,11 @@ class CreateUpdateDrcIdMatchTableTest(TestCase):
         if not bq_utils.table_exists(self.id_match_table_id, self.dataset_id):
             id_validation.create_drc_validation_table(
                 self.client,
-                self.project_id,
                 self.id_match_table_id,
                 drc_dataset_id=self.dataset_id)
 
         # Test validation table population
         id_validation.populate_validation_table(self.client,
-                                                self.project_id,
                                                 self.id_match_table_id,
                                                 self.hpo_id,
                                                 drc_dataset_id=self.dataset_id)
