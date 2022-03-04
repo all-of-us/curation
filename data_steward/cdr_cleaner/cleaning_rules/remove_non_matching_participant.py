@@ -98,13 +98,11 @@ def get_missing_criterion(field_names):
     return joined_column_expr
 
 
-def get_list_non_match_participants(client, project_id, validation_dataset_id,
-                                    hpo_id):
+def get_list_non_match_participants(client, validation_dataset_id, hpo_id):
     """
     This function retrieves a list of non-match participants
 
     :param client:
-    :param project_id: 
     :param validation_dataset_id:
     :param hpo_id: 
     :return: 
@@ -113,12 +111,12 @@ def get_list_non_match_participants(client, project_id, validation_dataset_id,
     # get the the hpo specific <hpo_id>_identity_match
     identity_match_table = bq_utils.get_table_id(hpo_id, IDENTITY_MATCH)
     result = []
-    fq_identity_match_table = f'{project_id}.{validation_dataset_id}.{identity_match_table}'
+    fq_identity_match_table = f'{client.project}.{validation_dataset_id}.{identity_match_table}'
     if not exist_identity_match(client, fq_identity_match_table):
         return result
 
     non_match_participants_query = get_non_match_participant_query(
-        project_id, validation_dataset_id, identity_match_table)
+        client.project, validation_dataset_id, identity_match_table)
 
     try:
         LOGGER.info(
@@ -200,7 +198,7 @@ def delete_records_for_non_matching_participants(project_id, dataset_id,
     :return: 
     """
 
-    client = bq.get_client(project_id)
+    bq_client = BigQueryClient(project_id)
 
     if ehr_dataset_id is None:
         raise RuntimeError(
@@ -222,7 +220,7 @@ def delete_records_for_non_matching_participants(project_id, dataset_id,
                 format(hpo_id=hpo_id))
 
             non_matching_person_ids.extend(
-                get_list_non_match_participants(client, project_id,
+                get_list_non_match_participants(bq_client,
                                                 validation_dataset_id, hpo_id))
         else:
             LOGGER.info(
