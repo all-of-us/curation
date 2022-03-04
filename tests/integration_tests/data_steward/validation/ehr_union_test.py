@@ -11,6 +11,7 @@ import cdm
 import common
 from constants.tools import combine_ehr_rdr
 from constants.validation import ehr_union as eu_constants
+from utils import bq
 from gcloud.gcs import StorageClient
 import resources
 import tests.test_util as test_util
@@ -48,6 +49,7 @@ class EhrUnionTest(unittest.TestCase):
         self.input_dataset_id = bq_utils.get_dataset_id()
         self.output_dataset_id = bq_utils.get_unioned_dataset_id()
         self.storage_client = StorageClient(self.project_id)
+        self.client = bq.get_client(self.project_id)
         self.tearDown()
 
         # TODO Generalize to work for all foreign key references
@@ -280,6 +282,29 @@ class EhrUnionTest(unittest.TestCase):
         response = bq_utils.query(q)
         actual_rows = bq_utils.response2rows(response)
         self.assertCountEqual(expected_rows, actual_rows)
+
+        # Test case to make sure unioned visit detail table has data even when
+        # some visit_detail data has invalid visit_occurence_id.
+        expected = [{'visit_detail_id': 101}, {'visit_detail_id': 103}]
+
+        UNIONED_EHR_VISIT_DETAIL_QUERY = common.JINJA_ENV.from_string("""
+            SELECT
+                visit_detail_id
+            FROM `{{project_id}}.{{dataset_id}}.{{unioned_ehr_visit_detail_id}}`
+        """)
+
+        content_query = UNIONED_EHR_VISIT_DETAIL_QUERY.render(
+            project_id=self.project_id,
+            dataset_id=self.dataset_id,
+            unioned_ehr_visit_detail_id=ehr_union.output_table_for(
+                common.VISIT_DETAIL))
+
+        content_job = self.client.query(content_query)
+        contents = list(content_job.result())
+        actual = [dict(row.items()) for row in contents]
+        actual = [{key: value for key, value in row.items()} for row in actual]
+
+        self.assertCountEqual(actual, expected)
 
     # TODO Figure out a good way to test query structure
     # One option may be for each query under test to generate an abstract syntax tree
