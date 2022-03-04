@@ -93,13 +93,13 @@ class CovidEHRVaccineConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
             VALUES
                 -- Suppressed concepts via name, vocab, and code --
                 (1, 101, 724904, 0, date('2020-05-05'), 1),
-                (2, 102, 0, 759434, date('2020-05-05'), 2),
+                (2, 102, 759434, 0, date('2020-05-05'), 2),
                 (3, 103, 42796198, 0, date('2020-05-05'), 3),
 
                 -- Suppressed concepts via relationship --
                 (4, 116, 766241, 0, date('2020-05-05'), 2),
                 (5, 109, 3548105, 0, date('2020-05-05'), 3),
-                (6, 110, 0, 702673, date('2020-05-05'), 3),
+                (6, 110, 702673, 0, date('2020-05-05'), 3),
 
                 -- Suppressed concepts via ancestor --
                 (7, 104, 37003432, 0, date('2020-05-05'), 3),
