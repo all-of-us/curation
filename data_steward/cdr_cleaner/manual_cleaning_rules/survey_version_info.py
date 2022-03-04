@@ -248,13 +248,14 @@ if __name__ == '__main__':
     if ARGS.list_queries:
         version_task.log_queries()
     else:
-        client_obj = bq.get_client(ARGS.project_id)
-        version_task.setup_rule(client_obj)
+        bq_client = BigQueryClient(ARGS.project_id)
+
+        version_task.setup_rule(bq_client)
         # clean_engine.clean_dataset(ARGS.project_id, query_list)
         for query in query_list:
             q = query.get(cdr_consts.QUERY)
             if q:
-                query_job = client_obj.query(q)
+                query_job = bq_client.query(q)
                 query_job.result()
                 if query_job.exception():
                     LOGGER.error(
