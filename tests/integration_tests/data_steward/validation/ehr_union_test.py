@@ -283,8 +283,7 @@ class EhrUnionTest(unittest.TestCase):
         actual_rows = bq_utils.response2rows(response)
         self.assertCountEqual(expected_rows, actual_rows)
 
-        # Test case to make sure unioned visit detail table has data even when
-        # some visit_detail data has invalid visit_occurence_id.
+        # Check unioned visit detail table ignores records with invalid visit_occurence_id
         expected = [{'visit_detail_id': 101}, {'visit_detail_id': 103}]
 
         UNIONED_EHR_VISIT_DETAIL_QUERY = common.JINJA_ENV.from_string("""
@@ -295,7 +294,7 @@ class EhrUnionTest(unittest.TestCase):
 
         content_query = UNIONED_EHR_VISIT_DETAIL_QUERY.render(
             project_id=self.project_id,
-            dataset_id=self.dataset_id,
+            dataset_id=bq_utils.get_unioned_dataset_id(),
             unioned_ehr_visit_detail_id=ehr_union.output_table_for(
                 common.VISIT_DETAIL))
 
