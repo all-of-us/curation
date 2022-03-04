@@ -7,7 +7,7 @@ as matches and non-matches between EHR and RDR.
 
 # Python imports
 import os
-from unittest import TestCase
+from unittest import TestCase, mock
 
 # Third party imports
 from google.cloud.bigquery import DatasetReference, Table, TimePartitioning, TimePartitioningType, SchemaField
@@ -371,7 +371,6 @@ class ValidateTest(TestCase):
 
         # Execute email, phone_number and sex match
         identify_rdr_ehr_match(self.client,
-                               self.project_id,
                                self.hpo_id,
                                self.dataset_id,
                                drc_dataset_id=self.dataset_id)
