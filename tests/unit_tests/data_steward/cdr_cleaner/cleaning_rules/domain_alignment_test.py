@@ -327,7 +327,7 @@ class DomainAlignmentTest(unittest.TestCase):
     @patch(
         'cdr_cleaner.cleaning_rules.domain_alignment.parse_domain_mapping_query_cross_domain'
     )
-    @patch('cdr_cleaner.cleaning_rules.domain_alignment.bq.get_client')
+    @patch('cdr_cleaner.cleaning_rules.domain_alignment.BigQueryClient')
     @patch('cdr_cleaner.cleaning_rules.domain_alignment.bq.create_tables')
     def test_get_domain_mapping_queries(
         self, mock_create_tables, mock_bq_client,
