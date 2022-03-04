@@ -12,7 +12,7 @@ fi
 export GOOGLE_APPLICATION_CREDENTIALS=${HOME}/gcloud-credentials-key.json
 export APPLICATION_ID=aou-res-curation-test
 export GOOGLE_CLOUD_PROJECT=aou-res-curation-test
-export VOCABULARY_DATASET=vocabulary20220201
+export VOCABULARY_DATASET=vocabulary_dataset
 
 # Require username in GH_USERNAME or CIRCLE_USERNAME
 export USERNAME=$(echo "${GH_USERNAME:-${CIRCLE_USERNAME:-}}" | tr '[:upper:]' '[:lower:]')
