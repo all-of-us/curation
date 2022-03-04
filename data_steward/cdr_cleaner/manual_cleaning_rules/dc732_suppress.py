@@ -594,7 +594,7 @@ def parse_args(args=None):
 if __name__ == '__main__':
 
     ARGS = parse_args()
-    CLIENT = bq.get_client(ARGS.project_id)
+    CLIENT = BigQueryClient(ARGS.project_id)
 
     if ARGS.cmd == 'setup':
         setup(ARGS.concept_lookup_dest_table)
