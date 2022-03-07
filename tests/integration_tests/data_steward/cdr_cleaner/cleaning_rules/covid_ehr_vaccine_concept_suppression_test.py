@@ -9,7 +9,7 @@ Original Issue: DC1692
 # Python Imports
 import os
 
-#Project imports
+# Project imports
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.covid_ehr_vaccine_concept_suppression import CovidEHRVaccineConceptSuppression
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
@@ -40,6 +40,9 @@ class CovidEHRVaccineConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
         cls.sandbox_id = sandbox_id
         cls.vocabulary_id = os.environ.get('VOCABULARY_DATASET')
 
+        cutoff_date = "2022-01-01"
+        cls.kwargs.update({'cutoff_date': cutoff_date})
+
         cls.rule_instance = CovidEHRVaccineConceptSuppression(
             project_id, dataset_id, sandbox_id)
 
@@ -67,7 +70,7 @@ class CovidEHRVaccineConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
 
         self.date = parse('2020-05-05').date()
 
-        #Copy all needed vocab tables to the dataset
+        # Copy all needed vocab tables to the dataset
         for table in self.vocab_tables:
             self.client.copy_table(
                 f'{self.project_id}.{self.vocabulary_id}.{table}',
@@ -90,13 +93,13 @@ class CovidEHRVaccineConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
             VALUES
                 -- Suppressed concepts via name, vocab, and code --
                 (1, 101, 724904, 0, date('2020-05-05'), 1),
-                (2, 102, 0, 724904, date('2020-05-05'), 2),
+                (2, 102, 0, 759434, date('2020-05-05'), 2),
                 (3, 103, 42796198, 0, date('2020-05-05'), 3),
 
                 -- Suppressed concepts via relationship --
                 (4, 116, 766241, 0, date('2020-05-05'), 2),
                 (5, 109, 3548105, 0, date('2020-05-05'), 3),
-                (6, 110, 0, 42796343, date('2020-05-05'), 3),
+                (6, 110, 0, 702673, date('2020-05-05'), 3),
 
                 -- Suppressed concepts via ancestor --
                 (7, 104, 37003432, 0, date('2020-05-05'), 3),
@@ -117,13 +120,17 @@ class CovidEHRVaccineConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
             'fq_sandbox_table_name':
                 self.fq_sandbox_table_names[0],
             'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-            'sandboxed_ids': [1, 2, 3, 4, 5, 6, 7, 8],
+            'sandboxed_ids': [2, 6, 7, 8],
             'fields': [
                 'observation_id', 'person_id', 'observation_concept_id',
                 'observation_source_concept_id', 'observation_date',
                 'observation_type_concept_id'
             ],
-            'cleaned_values': [(9, 115, 55, 0, self.date, 2),
+            'cleaned_values': [(1, 101, 724904, 0, self.date, 1),
+                               (3, 103, 42796198, 0, self.date, 3),
+                               (4, 116, 766241, 0, self.date, 2),
+                               (5, 109, 3548105, 0, self.date, 3),
+                               (9, 115, 55, 0, self.date, 2),
                                (10, 116, 0, 98, self.date, 1)]
         }]
 

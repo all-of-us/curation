@@ -6,11 +6,13 @@ Original Issues: DC-1692
 
 # Python imports
 import logging
+from datetime import datetime
 
 # Project imports
 from cdr_cleaner.cleaning_rules.deid.concept_suppression import AbstractBqLookupTableConceptSuppression
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from common import JINJA_ENV, CDM_TABLES
+from utils.bq import validate_bq_date_string
 from utils import pipeline_logging
 
 # Third party imports
@@ -58,23 +60,42 @@ concepts_via_ca as (
     left join `{{project_id}}.{{dataset_id}}.concept_ancestor` as ca
     on c.concept_id = ca.descendant_concept_id
     where ca.ancestor_concept_id in (select concept_id from covid_vacc)  
-)
-select distinct * from covid_vacc 
-union distinct
-select distinct * from concepts_via_ca 
-union distinct 
-select distinct * from concepts_via_cr
+),
+  unioned_result AS (
+  SELECT
+    DISTINCT *
+  FROM
+    covid_vacc
+  UNION DISTINCT
+  SELECT
+    DISTINCT *
+  FROM
+    concepts_via_ca
+  UNION DISTINCT
+  SELECT
+    DISTINCT *
+  FROM
+    concepts_via_cr)
+SELECT
+  *
+FROM
+  unioned_result
+WHERE
+  valid_start_date > DATE_SUB(DATE('{{cutoff_date}}'), INTERVAL 1 YEAR)
 """)
 
 
 class CovidEHRVaccineConceptSuppression(AbstractBqLookupTableConceptSuppression
                                        ):
 
-    def __init__(self,
-                 project_id,
-                 dataset_id,
-                 sandbox_dataset_id,
-                 table_namer=None):
+    def __init__(
+        self,
+        project_id,
+        dataset_id,
+        sandbox_dataset_id,
+        cutoff_date=None,
+        table_namer=None,
+    ):
         """
         Initialize the class with proper information.
 
@@ -83,6 +104,14 @@ class CovidEHRVaccineConceptSuppression(AbstractBqLookupTableConceptSuppression
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
         desc = "Suppress COVID EHR vaccine concepts."
+
+        try:
+            # set to provided date string if the date string is valid
+            self.cutoff_date = validate_bq_date_string(cutoff_date)
+        except (TypeError, ValueError):
+            # otherwise, default to using today's date as the date string
+            self.cutoff_date = str(datetime.now().date())
+
         super().__init__(
             issue_numbers=['DC1692'],
             description=desc,
@@ -100,7 +129,8 @@ class CovidEHRVaccineConceptSuppression(AbstractBqLookupTableConceptSuppression
             dataset_id=self.dataset_id,
             sandbox_id=self.sandbox_dataset_id,
             concept_suppression_lookup_table=self.
-            concept_suppression_lookup_table)
+            concept_suppression_lookup_table,
+            cutoff_date=self.cutoff_date)
         query_job = client.query(concept_suppression_lookup_query)
         result = query_job.result()
 
@@ -154,13 +184,17 @@ if __name__ == '__main__':
     if ARGS.list_queries:
         clean_engine.add_console_logging()
         query_list = clean_engine.get_query_list(
-            ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id,
-            [(CovidEHRVaccineConceptSuppression,)])
+            ARGS.project_id,
+            ARGS.dataset_id,
+            ARGS.sandbox_dataset_id, [(CovidEHRVaccineConceptSuppression,)],
+            cutoff_date=ARGS.cutoff_date)
 
         for query in query_list:
             LOGGER.info(query)
     else:
         clean_engine.add_console_logging(ARGS.console_log)
-        clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
+        clean_engine.clean_dataset(ARGS.project_id,
+                                   ARGS.dataset_id,
                                    ARGS.sandbox_dataset_id,
-                                   [(CovidEHRVaccineConceptSuppression,)])
+                                   [(CovidEHRVaccineConceptSuppression,)],
+                                   cutoff_date=ARGS.cutoff_date)
