@@ -22,20 +22,20 @@ import pandas as pd
 
 # Project imports
 from utils import bq
+from gcloud.bq import BigQueryClient
 import bq_utils
 from retraction.retract_utils import DEID_REGEX
 from constants.retraction import create_deid_map as consts
 
 
-def get_combined_datasets_for_deid_map(project_id):
+def get_combined_datasets_for_deid_map(client):
     """
-    List all datasets in given project_id, filter out datasets that contain a deid dataset and collect the corresponding
-    combined dataset
-    :param project_id: bq name of project_id
+    List all datasets in given BigQueryClient which contains the project id, filter out datasets that contain a deid dataset and collect 
+    the corresponding combined dataset
+    :param client: a BigQueryClient
     :return: list of combined_datasets that should contain a _deid_map table
     """
-    client = bq.get_client(project_id)
-    all_datasets_obj = list(client.list_datasets(project_id))
+    all_datasets_obj = list(client.list_datasets())
     all_datasets = [d.dataset_id for d in all_datasets_obj]
     deid_datasets = []
 
@@ -85,21 +85,20 @@ def get_corresponding_combined_dataset(all_datasets, deid_datasets):
     return deid_and_combined_datasets_df
 
 
-def get_table_info_for_dataset(project_id, dataset):
-    bq_client = bq.get_client(project_id)
-    cols_query = bq.dataset_columns_query(project_id, dataset)
+def get_table_info_for_dataset(client, dataset):
+    cols_query = bq.dataset_columns_query(client.project, dataset)
     table_info_df = bq_client.query(cols_query).to_dataframe()
     return table_info_df
 
 
-def check_if_deid_map_exists(project_id, dataset):
+def check_if_deid_map_exists(client, dataset):
     """
     Checks if _deid_map table exists in the given dataset.
-    :param project_id: bq name of project_id
+    :param client: a BigQueryClient
     :param dataset: bq name of dataset
     :return: returns True, False or 'rename required' which had 'deid_map' table instead of '_deid_map'
     """
-    table_info_df = get_table_info_for_dataset(project_id, dataset)
+    table_info_df = get_table_info_for_dataset(client, dataset)
     column_list = table_info_df['table_name'].tolist()
 
     if '_deid_map' in column_list:
@@ -109,29 +108,29 @@ def check_if_deid_map_exists(project_id, dataset):
     return consts.CREATE
 
 
-def create_deid_map_table_queries(project):
+def create_deid_map_table_queries(client):
     """
     Creates a query list to run to create or rename _deid_map tables in each combined dataset that has a deid dataset
-    :param project: bq name of project_id
+    :param client: a BigQueryClient
     :return: list of queries to run
     """
-    deid_and_combined_df = get_combined_datasets_for_deid_map(project)
+    deid_and_combined_df = get_combined_datasets_for_deid_map(client)
     combined_datasets_list = deid_and_combined_df['combined_dataset'].to_list()
     # remove duplicate combined datasets in list
     combined_datasets_list = list(set(combined_datasets_list))
     queries = []
     for dataset in combined_datasets_list:
-        check = check_if_deid_map_exists(project, dataset)
+        check = check_if_deid_map_exists(client, dataset)
         if check == 'skip':
             continue
         if check == 'rename':
             queries.append(
-                consts.RENAME_DEID_MAP_TABLE_QUERY.format(project=project,
-                                                          dataset=dataset))
+                consts.RENAME_DEID_MAP_TABLE_QUERY.format(
+                    project=client.project, dataset=dataset))
         if check == 'create':
             queries.append(
-                consts.CREATE_DEID_MAP_TABLE_QUERY.format(project=project,
-                                                          dataset=dataset))
+                consts.CREATE_DEID_MAP_TABLE_QUERY.format(
+                    project=client.project, dataset=dataset))
     return queries
 
 
@@ -172,6 +171,7 @@ if __name__ == '__main__':
                         help='Identifies the project to retract data from',
                         required=True)
     args = parser.parse_args()
-    query_list = create_deid_map_table_queries(args.project_id)
+    bq_client = BigQueryClient(args.project_id)
+    query_list = create_deid_map_table_queries(bq_client)
     run_queries(query_list)
     logging.info('Creation of _deid_maps complete')

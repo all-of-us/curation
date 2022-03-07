@@ -1,4 +1,4 @@
-from unittest import TestCase
+from unittest import TestCase, mock
 from unittest.mock import MagicMock
 import re
 
@@ -26,6 +26,8 @@ class RetractDataBqTest(TestCase):
         self.sandbox_dataset_id = 'sandbox_dataset'
         self.client = MagicMock()
         self.client.list_tables = MagicMock()
+        type(self.client).project = mock.PropertyMock(
+            return_value=self.project_id)
         self.pid_table_id = 'pid_table'
         self.retraction_type_1 = 'rdr_and_ehr'
         self.retraction_type_2 = 'only_ehr'
@@ -82,7 +84,6 @@ class RetractDataBqTest(TestCase):
             sandbox_dataset_id=self.sandbox_dataset_id,
             pid_table_id=self.pid_table_id)
         qs = rbq.queries_to_retract_from_ehr_dataset(self.client,
-                                                     self.project_id,
                                                      self.ehr_dataset_id,
                                                      self.hpo_id,
                                                      person_id_query)
@@ -109,7 +110,7 @@ class RetractDataBqTest(TestCase):
             pid_table_id=self.pid_table_id)
 
         # Test type 1 retraction (rdr and ehr)
-        qs = rbq.queries_to_retract_from_dataset(self.client, self.project_id,
+        qs = rbq.queries_to_retract_from_dataset(self.client,
                                                  self.combined_dataset_id,
                                                  person_id_query,
                                                  self.retraction_type_1)
@@ -128,7 +129,7 @@ class RetractDataBqTest(TestCase):
         self.assertSetEqual(expected_tables, actual_tables)
 
         # Test type 2 retraction (only ehr)
-        qs = rbq.queries_to_retract_from_dataset(self.client, self.project_id,
+        qs = rbq.queries_to_retract_from_dataset(self.client,
                                                  self.deid_dataset_id,
                                                  person_id_query,
                                                  self.retraction_type_2)
@@ -161,7 +162,7 @@ class RetractDataBqTest(TestCase):
                 pid_table_id=self.pid_table_id)
 
         # Test type 1 retraction (rdr and ehr)
-        qs = rbq.queries_to_retract_from_dataset(self.client, self.project_id,
+        qs = rbq.queries_to_retract_from_dataset(self.client,
                                                  self.deid_dataset_id,
                                                  research_id_query,
                                                  self.retraction_type_1)
@@ -180,7 +181,7 @@ class RetractDataBqTest(TestCase):
         self.assertSetEqual(expected_tables, actual_tables)
 
         # Test type 2 retraction (only ehr)
-        qs = rbq.queries_to_retract_from_dataset(self.client, self.project_id,
+        qs = rbq.queries_to_retract_from_dataset(self.client,
                                                  self.deid_dataset_id,
                                                  research_id_query,
                                                  self.retraction_type_2)
@@ -211,7 +212,7 @@ class RetractDataBqTest(TestCase):
             pid_project=self.project_id,
             sandbox_dataset_id=self.sandbox_dataset_id,
             pid_table_id=self.pid_table_id)
-        qs = rbq.queries_to_retract_from_dataset(self.client, self.project_id,
+        qs = rbq.queries_to_retract_from_dataset(self.client,
                                                  self.unioned_dataset_id,
                                                  person_id_query,
                                                  self.retraction_type_2)

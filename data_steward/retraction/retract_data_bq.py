@@ -13,6 +13,7 @@ import logging
 
 # Project imports
 from utils import pipeline_logging, bq
+from gcloud.bq import BigQueryClient
 import common
 from common import JINJA_ENV, ID_CONSTANT_FACTOR
 from retraction import retract_utils as ru
@@ -117,22 +118,21 @@ def get_table_id(table):
     return f'{common.PERSON}_id' if table == common.DEATH else f'{table}_id'
 
 
-def queries_to_retract_from_ehr_dataset(client, project_id, dataset_id, hpo_id,
+def queries_to_retract_from_ehr_dataset(client, dataset_id, hpo_id,
                                         person_id_query):
     """
     Get list of queries to remove all records in all tables associated with supplied ids
 
-    :param client: bigquery client
-    :param project_id: identifies associated project
+    :param client: a BigQueryClient
     :param dataset_id: identifies associated dataset
     :param hpo_id: identifies the HPO site
     :param person_id_query: query to select person_ids to retract
     :return: list of queries to run
     """
-    LOGGER.info(f'Checking existing tables for {project_id}.{dataset_id}')
+    LOGGER.info(f'Checking existing tables for {client.project}.{dataset_id}')
     existing_tables = [
         table.table_id
-        for table in client.list_tables(f'{project_id}.{dataset_id}')
+        for table in client.list_tables(f'{client.project}.{dataset_id}')
     ]
     queries = {SITE: [], UNIONED: []}
     tables_to_retract = TABLES_FOR_RETRACTION | set(NON_EHR_TABLES)
@@ -144,7 +144,7 @@ def queries_to_retract_from_ehr_dataset(client, project_id, dataset_id, hpo_id,
         for table_type in [SITE, UNIONED]:
             if table_names[table_type] in existing_tables:
                 q_site = JINJA_ENV.from_string(RETRACT_DATA_TABLE_QUERY).render(
-                    project=project_id,
+                    project=client.project,
                     dataset=dataset_id,
                     table=table_names[table_type],
                     person_id_query=person_id_query)
@@ -159,7 +159,7 @@ def queries_to_retract_from_ehr_dataset(client, project_id, dataset_id, hpo_id,
         if fact_rel_table_names[table_type] in existing_tables:
             q_site_fact_relationship = JINJA_ENV.from_string(
                 RETRACT_DATA_FACT_RELATIONSHIP).render(
-                    project=project_id,
+                    project=client.project,
                     dataset=dataset_id,
                     table=fact_rel_table_names[table_type],
                     PERSON_DOMAIN=PERSON_DOMAIN,
@@ -170,25 +170,23 @@ def queries_to_retract_from_ehr_dataset(client, project_id, dataset_id, hpo_id,
 
 
 def queries_to_retract_from_dataset(client,
-                                    project_id,
                                     dataset_id,
                                     person_id_query,
                                     retraction_type=None):
     """
     Get list of queries to remove all records in all tables associated with supplied ids
 
-    :param client: bigquery client
-    :param project_id: identifies associated project
+    :param client: BigQueryClient object
     :param dataset_id: identifies associated dataset
     :param person_id_query: query to select person_ids to retract
     :param retraction_type: string indicating whether all data needs to be removed, including RDR,
         or if RDR data needs to be kept intact. Can take the values 'rdr_and_ehr' or 'only_ehr'
     :return: list of dict with keys query, dataset, table
     """
-    LOGGER.info(f'Checking existing tables for {project_id}.{dataset_id}')
+    LOGGER.info(f'Checking existing tables for {client.project}.{dataset_id}')
     existing_tables = [
         table.table_id
-        for table in client.list_tables(f'{project_id}.{dataset_id}')
+        for table in client.list_tables(f'{client.project}.{dataset_id}')
     ]
     queries = {TABLES: []}
     tables_to_retract = set(list(TABLES_FOR_RETRACTION))
@@ -205,7 +203,7 @@ def queries_to_retract_from_dataset(client,
             if table in [common.DEATH, common.PERSON]:
                 q_dataset = JINJA_ENV.from_string(
                     RETRACT_DATA_TABLE_QUERY).render(
-                        project=project_id,
+                        project=client.project,
                         dataset=dataset_id,
                         table=table,
                         person_id_query=person_id_query)
@@ -213,7 +211,7 @@ def queries_to_retract_from_dataset(client,
             else:
                 q_dataset = JINJA_ENV.from_string(
                     RETRACT_DATA_TABLE_QUERY).render(
-                        project=project_id,
+                        project=client.project,
                         dataset=dataset_id,
                         table=table,
                         table_id=get_table_id(table),
@@ -225,7 +223,7 @@ def queries_to_retract_from_dataset(client,
     if table in existing_tables:
         q_fact_relationship = JINJA_ENV.from_string(
             RETRACT_DATA_FACT_RELATIONSHIP).render(
-                project=project_id,
+                project=client.project,
                 dataset=dataset_id,
                 table=table,
                 PERSON_DOMAIN=PERSON_DOMAIN,
@@ -263,8 +261,8 @@ def run_bq_retraction(project_id, sandbox_dataset_id, pid_project_id,
         or if RDR data needs to be kept intact. Can take the values 'rdr_and_ehr' or 'only_ehr'
     :return:
     """
-    client = bq.get_client(project_id)
-    dataset_ids = ru.get_datasets_list(project_id, dataset_ids_list)
+    client = BigQueryClient(project_id)
+    dataset_ids = ru.get_datasets_list(client, dataset_ids_list)
 
     queries = []
     for dataset in dataset_ids:
@@ -275,8 +273,7 @@ def run_bq_retraction(project_id, sandbox_dataset_id, pid_project_id,
                 pid_project=pid_project_id,
                 sandbox_dataset_id=sandbox_dataset_id,
                 pid_table_id=pid_table_id)
-            queries = queries_to_retract_from_dataset(client, project_id,
-                                                      dataset,
+            queries = queries_to_retract_from_dataset(client, dataset,
                                                       research_id_query,
                                                       retraction_type)
         else:
@@ -288,11 +285,11 @@ def run_bq_retraction(project_id, sandbox_dataset_id, pid_project_id,
             if ru.is_combined_dataset(dataset):
                 LOGGER.info(f"Retracting from Combined dataset {dataset}")
                 queries = queries_to_retract_from_dataset(
-                    client, project_id, dataset, person_id_query)
+                    client, dataset, person_id_query)
             elif ru.is_unioned_dataset(dataset):
                 LOGGER.info(f"Retracting from Unioned dataset {dataset}")
                 queries = queries_to_retract_from_dataset(
-                    client, project_id, dataset, person_id_query)
+                    client, dataset, person_id_query)
             elif ru.is_ehr_dataset(dataset):
                 if hpo_id == NONE_STR:
                     LOGGER.info(
@@ -301,7 +298,7 @@ def run_bq_retraction(project_id, sandbox_dataset_id, pid_project_id,
                 else:
                     LOGGER.info(f"Retracting from EHR dataset {dataset}")
                     queries = queries_to_retract_from_ehr_dataset(
-                        client, project_id, dataset, hpo_id, person_id_query)
+                        client, dataset, hpo_id, person_id_query)
         retraction_query_runner(client, queries)
     LOGGER.info('Retraction complete')
     return

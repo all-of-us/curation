@@ -30,7 +30,7 @@ class RetractDeactivatedEHRDataBqTest(TestCase):
         self.deactivated_pids_table = 'fake_deactivated_table'
 
         mock_bq_client_patcher = mock.patch(
-            'retraction.retract_deactivated_pids.bq.get_client')
+            'retraction.retract_deactivated_pids.BigQueryClient')
         self.mock_bq_client = mock_bq_client_patcher.start()
         self.addCleanup(mock_bq_client_patcher.stop)
 

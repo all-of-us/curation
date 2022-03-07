@@ -173,8 +173,8 @@ class RetractUtilsTest(unittest.TestCase):
             ru.get_mapping_tables(common.EXT,
                                   self.mapping_tables + self.other_tables), [])
 
-    @mock.patch('utils.bq.get_client')
-    def test_get_datasets_list(self, mock_get_client):
+    @mock.patch('retraction.retract_utils.BigQueryClient')
+    def test_get_datasets_list(self, mock_bq_client):
         #pre-conditions
         removed_datasets = [
             data_ref('foo', 'vocabulary20201010'),
@@ -187,30 +187,31 @@ class RetractUtilsTest(unittest.TestCase):
             data_ref('foo', '2018q4r1_rdr')
         ]
         expected_list = [dataset.dataset_id for dataset in expected_datasets]
-        mock_client = mock.MagicMock()
-        mock_get_client.return_value = mock_client
-        mock_client.list_datasets.return_value = removed_datasets + expected_datasets
+
+        mock_bq_client.list_datasets.return_value = removed_datasets + expected_datasets
+        type(mock_bq_client).project = mock.PropertyMock(
+            return_value='fake_project_id')
 
         # test all_datasets flag
-        ds_list = ru.get_datasets_list('foo', ['all_datasets'])
+        ds_list = ru.get_datasets_list(mock_bq_client, ['all_datasets'])
 
         # post conditions
         self.assertCountEqual(expected_list, ds_list)
 
         # test specific dataset
-        ds_list = ru.get_datasets_list('foo', ['C2020q1r1_deid'])
+        ds_list = ru.get_datasets_list(mock_bq_client, ['C2020q1r1_deid'])
 
         # post conditions
         self.assertEqual(['C2020q1r1_deid'], ds_list)
 
         # test None dataset
-        ds_list = ru.get_datasets_list('foo', None)
+        ds_list = ru.get_datasets_list(mock_bq_client, None)
 
         # post conditions
         self.assertEqual([], ds_list)
 
         # test empty list dataset
-        ds_list = ru.get_datasets_list('foo', [])
+        ds_list = ru.get_datasets_list(mock_bq_client, [])
 
         # post conditions
         self.assertEqual([], ds_list)
@@ -295,14 +296,14 @@ class RetractUtilsTest(unittest.TestCase):
         self.assertNotEqual(ru.get_dataset_type('ehr_43269'), common.COMBINED)
         self.assertNotEqual(ru.get_dataset_type('ehr_43269'), common.OTHER)
 
-    @mock.patch('retraction.retract_utils.bq.get_client')
-    def test_get_dataset_ids_to_target(self, mock_get_client):
+    @mock.patch('retraction.retract_utils.BigQueryClient')
+    def test_get_dataset_ids_to_target(self, mock_bq_client):
         dataset_id_1 = 'dataset_id_1'
         dataset_id_2 = 'dataset_id_2'
         dataset_1 = mock.Mock(spec=['dataset_1'], dataset_id=dataset_id_1)
         dataset_2 = mock.Mock(spec=['dataset_2'], dataset_id=dataset_id_2)
         mock_client = mock.MagicMock()
-        mock_get_client.return_value = mock_client
+        mock_bq_client.return_value = mock_client
         mock_client.list_datasets.return_value = [dataset_1, dataset_2]
         expected = [dataset_id_1, dataset_id_2]
         actual = ru.get_dataset_ids_to_target(self.project_id)
