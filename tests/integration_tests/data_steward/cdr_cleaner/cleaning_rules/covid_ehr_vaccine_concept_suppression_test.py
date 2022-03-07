@@ -91,17 +91,22 @@ class CovidEHRVaccineConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
                 (observation_id, person_id, observation_concept_id, observation_source_concept_id, observation_date, 
                 observation_type_concept_id)
             VALUES
-                -- Suppressed concepts via name, vocab, and code --
+                -- Concepts via name, vocab, and code --
+                -- Not suppressed: valid_start_date < cutoff_date - 1 year --                
                 (1, 101, 724904, 0, date('2020-05-05'), 1),
+                -- Suppressed: valid_start_date >= cutoff_date - 1 year --
                 (2, 102, 0, 759434, date('2020-05-05'), 2),
                 (3, 103, 42796198, 0, date('2020-05-05'), 3),
 
-                -- Suppressed concepts via relationship --
+                -- Concepts via relationship --
+                -- Not suppressed: valid_start_date < cutoff_date - 1 year --                
                 (4, 116, 766241, 0, date('2020-05-05'), 2),
                 (5, 109, 3548105, 0, date('2020-05-05'), 3),
+                -- Suppressed: valid_start_date >= cutoff_date - 1 year --
                 (6, 110, 0, 702673, date('2020-05-05'), 3),
 
-                -- Suppressed concepts via ancestor --
+                -- Concepts via ancestor --
+                -- Suppressed: valid_start_date >= cutoff_date - 1 year --
                 (7, 104, 37003432, 0, date('2020-05-05'), 3),
                 (8, 104, 0, 37301121, date('2020-05-05'), 3),
 
@@ -109,8 +114,8 @@ class CovidEHRVaccineConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
                 (9, 115, 55, 0, date('2020-05-05'), 2),
                 (10, 116, 0, 98, date('2020-05-05'), 1),
                 
-                -- Suppressed (DC-2140) -- 
-                -- Concepts' valid_start_date > cutoff_date - 1 year --
+                -- Additional test for suppression (DC-2140) -- 
+                -- Suppressed: valid_start_date >= cutoff_date - 1 year --
                 (11, 117, 702866, 0, date('2020-05-05'), 1),
                 (12, 118, 0, 822172, date('2020-05-05'), 2),
                 (13, 119, 1219271, 0, date('2020-05-05'), 3),
@@ -133,14 +138,13 @@ class CovidEHRVaccineConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
             'loaded_ids': [
                 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18
             ],
-            'sandboxed_ids': [2, 6, 7, 8, 11, 12, 13, 14, 15, 16, 17, 18],
+            'sandboxed_ids': [2, 3, 6, 7, 8, 11, 12, 13, 14, 15, 16, 17, 18],
             'fields': [
                 'observation_id', 'person_id', 'observation_concept_id',
                 'observation_source_concept_id', 'observation_date',
                 'observation_type_concept_id'
             ],
             'cleaned_values': [(1, 101, 724904, 0, self.date, 1),
-                               (3, 103, 42796198, 0, self.date, 3),
                                (4, 116, 766241, 0, self.date, 2),
                                (5, 109, 3548105, 0, self.date, 3),
                                (9, 115, 55, 0, self.date, 2),
