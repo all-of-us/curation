@@ -25,9 +25,9 @@ CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_id}}.{{concept_suppression_loo
 SELECT
 c.*
 FROM
-  `{{project_id}}.{{sandbox_id}}..concept` c
+  `{{project_id}}.{{dataset_id}}..concept` c
 JOIN
-  `{{project_id}}.{{sandbox_id}}.concept_ancestor`
+  `{{project_id}}.{{dataset_id}}.concept_ancestor`
 ON
   (c.concept_id=descendant_concept_id)
 WHERE
@@ -37,9 +37,9 @@ UNION DISTINCT
 SELECT
 c.*
 FROM
-  `{{project_id}}.{{sandbox_id}}.concept` c
+  `{{project_id}}.{{dataset_id}}.concept` c
 JOIN
-  `{{project_id}}.{{sandbox_id}}.concept_relationship` cr
+  `{{project_id}}.{{dataset_id}}.concept_relationship` cr
 ON
   c.concept_id = cr.concept_id_1
 WHERE
