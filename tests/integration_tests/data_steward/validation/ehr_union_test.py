@@ -113,17 +113,18 @@ class EhrUnionTest(unittest.TestCase):
                 # load table from csv
                 result = bq_utils.load_cdm_csv(hpo_id, cdm_table)
                 running_jobs.append(result['jobReference']['jobId'])
+
                 if hpo_id != EXCLUDED_HPO_ID and cdm_table != common.VISIT_DETAIL:
                     expected_tables[output_table] += list(csv_rows)
                 elif hpo_id != EXCLUDED_HPO_ID and cdm_table == common.VISIT_DETAIL:
+                    # All rows are included in the mapping table for visit_detail,
+                    # but the rows with invalid visit_occurrence_id are excluded
+                    # from the unioned visit_detail table
                     mapping_table: str = ehr_union.mapping_table_for(cdm_table)
                     if mapping_table not in expected_tables:
                         expected_tables[mapping_table] = []
 
                     expected_tables[mapping_table] += list(csv_rows)
-                    # Rows with invalid visit_occurrence_id are included in
-                    # the mapping table for visit_detail, but those are excluded
-                    # from the unioned visit_detail table
                     visit_occurrence_ids = self._get_valid_visit_occurrence_ids(
                         hpo_id)
                     csv_rows = [
