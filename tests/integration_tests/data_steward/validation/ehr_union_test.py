@@ -147,6 +147,7 @@ class EhrUnionTest(unittest.TestCase):
         :return: str. Path of the data file, including the file name.
         """
         cdm_filename: str = f'{cdm_table}.csv'
+        cdm_filepath: str = ''
 
         if hpo_id == NYC_HPO_ID:
             cdm_filepath = os.path.join(test_util.FIVE_PERSONS_PATH,
