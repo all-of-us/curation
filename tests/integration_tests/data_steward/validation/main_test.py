@@ -16,7 +16,7 @@ import common
 from constants import bq_utils as bq_consts
 from constants.validation import main as main_consts
 from gcloud.gcs import StorageClient
-from utils.bq import get_client
+from gcloud.bq import BigQueryClient
 import resources
 from tests import test_util
 from validation import main
@@ -49,7 +49,7 @@ class ValidationMainTest(unittest.TestCase):
         self.bigquery_dataset_id: str = bq_utils.get_dataset_id()
         self.folder_prefix: str = '2019-01-01-v1/'
 
-        self.bq_client = get_client(self.project_id)
+        self.bq_client = BigQueryClient(self.project_id)
 
         self.storage_client = StorageClient(self.project_id)
         self.hpo_bucket = self.storage_client.get_hpo_bucket(self.hpo_id)

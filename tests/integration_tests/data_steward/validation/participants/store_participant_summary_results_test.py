@@ -18,7 +18,7 @@ from google.cloud import bigquery
 
 # Project imports
 from validation.participants.store_participant_summary_results import get_hpo_org_info, fetch_and_store_ps_hpo_data
-from utils.bq import get_client
+from gcloud.bq import BigQueryClient
 from common import JINJA_ENV, PS_API_VALUES
 from app_identity import PROJECT_ID
 from constants import bq_utils as bq_consts
@@ -40,7 +40,7 @@ class StoreParticipantSummaryResultsTest(TestCase):
 
         cls.project_id = os.environ.get(PROJECT_ID)
         cls.dataset_id = os.environ.get('COMBINED_DATASET_ID')
-        cls.client = get_client(cls.project_id)
+        cls.client = BigQueryClient(cls.project_id)
 
         cls.hpo_id = 'fake'
         cls.org_id = 'FAKE ORG'
