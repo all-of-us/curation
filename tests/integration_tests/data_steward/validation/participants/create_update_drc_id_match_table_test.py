@@ -22,6 +22,7 @@ from google.cloud.bigquery import DatasetReference, SchemaField, Table, TimePart
 # Project imports
 import bq_utils
 from utils import bq
+from gcloud.bq import BigQueryClient
 from tests import test_util
 from app_identity import PROJECT_ID
 from common import JINJA_ENV, PS_API_VALUES
@@ -56,7 +57,7 @@ class CreateUpdateDrcIdMatchTableTest(TestCase):
         self.project_id = os.environ.get(PROJECT_ID)
         self.dataset_id = os.environ.get('COMBINED_DATASET_ID')
         self.dataset_ref = DatasetReference(self.project_id, self.dataset_id)
-        self.client = bq.get_client(self.project_id)
+        self.bq_client = BigQueryClient(self.project_id)
 
         self.schema = [
             SchemaField("person_id", "INT64"),
@@ -91,13 +92,13 @@ class CreateUpdateDrcIdMatchTableTest(TestCase):
                       schema=schema)
         table.time_partitioning = TimePartitioning(
             type_=TimePartitioningType.HOUR)
-        table = self.client.create_table(table)
+        table = self.bq_client.create_table(table)
 
         populate_query = POPULATE_PS_VALUES.render(
             project_id=self.project_id,
             drc_dataset_id=self.dataset_id,
             ps_values_table_id=self.ps_values_table_id)
-        job = self.client.query(populate_query)
+        job = self.bq_client.query(populate_query)
         job.result()
 
     @mock.patch('utils.bq.get_table_schema')
@@ -120,9 +121,11 @@ class CreateUpdateDrcIdMatchTableTest(TestCase):
 
         # Test
         expected = id_validation.create_drc_validation_table(
-            self.client, self.id_match_table_id, drc_dataset_id=self.dataset_id)
+            self.bq_client,
+            self.id_match_table_id,
+            drc_dataset_id=self.dataset_id)
 
-        all_tables_obj = self.client.list_tables(self.dataset_id)
+        all_tables_obj = self.bq_client.list_tables(self.dataset_id)
         all_tables = [t.table_id for t in all_tables_obj]
 
         self.assertTrue(expected in all_tables)
@@ -161,12 +164,12 @@ class CreateUpdateDrcIdMatchTableTest(TestCase):
         # Will need to be created if this test is ran individually
         if not bq_utils.table_exists(self.id_match_table_id, self.dataset_id):
             id_validation.create_drc_validation_table(
-                self.client,
+                self.bq_client,
                 self.id_match_table_id,
                 drc_dataset_id=self.dataset_id)
 
         # Test validation table population
-        id_validation.populate_validation_table(self.client,
+        id_validation.populate_validation_table(self.bq_client,
                                                 self.id_match_table_id,
                                                 self.hpo_id,
                                                 drc_dataset_id=self.dataset_id)
@@ -176,7 +179,7 @@ class CreateUpdateDrcIdMatchTableTest(TestCase):
             drc_dataset_id=self.dataset_id,
             id_match_table_id=self.id_match_table_id)
 
-        content_job = self.client.query(query_contents)
+        content_job = self.bq_client.query(query_contents)
         contents = list(content_job.result())
         actual = [dict(row.items()) for row in contents]
 
