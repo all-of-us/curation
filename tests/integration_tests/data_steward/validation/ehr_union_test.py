@@ -93,6 +93,7 @@ class EhrUnionTest(unittest.TestCase):
             output_table: str = ehr_union.output_table_for(cdm_table)
             mapping_table: str = ehr_union.mapping_table_for(cdm_table)
             expected_tables[output_table] = []
+            expected_tables[mapping_table] = []
             for hpo_id in self.hpo_ids:
                 # upload csv into hpo bucket
                 cdm_filename: str = f'{cdm_table}.csv'
@@ -119,7 +120,9 @@ class EhrUnionTest(unittest.TestCase):
                     expected_tables[output_table] += list(csv_rows)
                 elif hpo_id != EXCLUDED_HPO_ID and cdm_table == common.VISIT_DETAIL:
                     expected_tables[mapping_table] += list(csv_rows)
-                    # Rows with invalid visit_occurrence_id are excluded from the unioned table
+                    # Rows with invalid visit_occurrence_id are included in
+                    # the mapping table for visit_detail, but those are excluded
+                    # from the unioned visit_detail table
                     visit_occurrence_ids = self._get_valid_visit_occurrence_ids(
                         hpo_id)
                     csv_rows = [
@@ -269,8 +272,7 @@ class EhrUnionTest(unittest.TestCase):
             message = 'Table %s has fields %s when %s expected' % (
                 mapping_table, actual_fields, expected_fields)
             self.assertSetEqual(expected_fields, actual_fields, message)
-            result_table = ehr_union.output_table_for(table_to_map)
-            expected_num_rows = len(self.expected_tables[result_table])
+            expected_num_rows = len(self.expected_tables[mapping_table])
             actual_num_rows = int(mapping_table_info.get('numRows', -1))
             message = 'Table %s has %s rows when %s expected' % (
                 mapping_table, actual_num_rows, expected_num_rows)
