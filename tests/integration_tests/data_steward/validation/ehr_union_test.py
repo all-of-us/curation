@@ -95,18 +95,8 @@ class EhrUnionTest(unittest.TestCase):
             for hpo_id in self.hpo_ids:
                 # upload csv into hpo bucket
                 cdm_filename: str = f'{cdm_table}.csv'
-                if hpo_id == NYC_HPO_ID:
-                    cdm_filepath: str = os.path.join(
-                        test_util.FIVE_PERSONS_PATH, cdm_filename)
-                elif hpo_id == PITT_HPO_ID:
-                    cdm_filepath: str = os.path.join(
-                        test_util.PITT_FIVE_PERSONS_PATH, cdm_filename)
-                elif hpo_id == EXCLUDED_HPO_ID:
-                    if cdm_table in [
-                            'observation', 'person', 'visit_occurrence'
-                    ]:
-                        cdm_filepath: str = os.path.join(
-                            test_util.RDR_PATH, cdm_filename)
+                cdm_filepath = self._get_cdm_filepath(cdm_table, hpo_id)
+
                 hpo_bucket = self.storage_client.get_hpo_bucket(hpo_id)
                 if os.path.exists(cdm_filepath):
 
@@ -119,6 +109,16 @@ class EhrUnionTest(unittest.TestCase):
                     cdm_blob = hpo_bucket.blob(cdm_filename)
                     cdm_blob.upload_from_string('dummy\n')
                     csv_rows: list = []
+
+                if cdm_table == common.VISIT_DETAIL:
+                    visit_occurrence_ids = self._get_valid_visit_occurrence_ids(
+                        hpo_id)
+
+                    csv_rows = [
+                        row for row in csv_rows
+                        if row['visit_occurrence_id'] in visit_occurrence_ids
+                    ]
+
                 # load table from csv
                 result = bq_utils.load_cdm_csv(hpo_id, cdm_table)
                 running_jobs.append(result['jobReference']['jobId'])
@@ -136,7 +136,44 @@ class EhrUnionTest(unittest.TestCase):
         if len(incomplete_jobs) > 0:
             message: str = "Job id(s) %s failed to complete" % incomplete_jobs
             raise RuntimeError(message)
+
         self.expected_tables = expected_tables
+
+    def _get_cdm_filepath(self, cdm_table, hpo_id) -> str:
+        """
+        Get the path of the specified CDM table's data file for the HPO.
+        :param cdm_table: name of the CDM table (e.g. 'person', 'visit_occurrence', 'death')
+        :param hpo_ids: identifies which HPOs to include in union
+        :return: str. Path of the data file, including the file name.
+        """
+        cdm_filename: str = f'{cdm_table}.csv'
+
+        if hpo_id == NYC_HPO_ID:
+            cdm_filepath = os.path.join(test_util.FIVE_PERSONS_PATH,
+                                        cdm_filename)
+        elif hpo_id == PITT_HPO_ID:
+            cdm_filepath = os.path.join(test_util.PITT_FIVE_PERSONS_PATH,
+                                        cdm_filename)
+        elif hpo_id == EXCLUDED_HPO_ID and cdm_table in [
+                'observation', 'person', 'visit_occurrence'
+        ]:
+            cdm_filepath = os.path.join(test_util.RDR_PATH, cdm_filename)
+
+        return cdm_filepath
+
+    def _get_valid_visit_occurrence_ids(self, hpo_id) -> list:
+        """
+        Get the list of the valid visit_occurrence_ids for the HPO.
+        :param hpo_ids: identifies which HPOs to include in union
+        :return: list of valid occurrence IDs.
+        """
+        cdm_filepath = self._get_cdm_filepath(common.VISIT_OCCURRENCE, hpo_id)
+
+        if not os.path.exists(cdm_filepath):
+            return []
+
+        csv_rows = resources.csv_to_list(cdm_filepath)
+        return [row['visit_occurrence_id'] for row in csv_rows]
 
     def _table_has_clustering(self, table_info):
         clustering = table_info.get('clustering')
