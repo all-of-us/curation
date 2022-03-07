@@ -73,7 +73,7 @@ def exist_identity_match(client, table_id):
     """
     This function checks if the hpo has valid the identity_match table
 
-    :param client:
+    :param client: a BigQueryClient
     :param table_id:
     :return:
     """
@@ -102,7 +102,7 @@ def get_list_non_match_participants(client, validation_dataset_id, hpo_id):
     """
     This function retrieves a list of non-match participants
 
-    :param client:
+    :param client: a BigQueryClient
     :param validation_dataset_id:
     :param hpo_id: 
     :return: 
