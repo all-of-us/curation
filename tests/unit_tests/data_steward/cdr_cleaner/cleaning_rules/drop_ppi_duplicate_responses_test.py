@@ -1,7 +1,7 @@
 import unittest
 
 from cdr_cleaner.cleaning_rules.drop_ppi_duplicate_responses import (
-    DropPpiDuplicateResponses, PIPELINE_DATASET, COPE_CONCEPTS_TABLE)
+    DropPpiDuplicateResponses, get_select_statement, get_delete_statement)
 from constants.cdr_cleaner import clean_cdr as clean_consts
 
 
@@ -36,17 +36,13 @@ class DropPpiDuplicateResponsesTest(unittest.TestCase):
         results_list = self.rule_instance.get_query_specs()
         # Post conditions
         sandbox_query = dict()
-        sandbox_query[
-            clean_consts.QUERY] = self.rule_instance.get_select_statement(
-                self.project_id, self.dataset_id, self.sandbox_id,
-                self.rule_instance.get_sandbox_tablenames()[0],
-                PIPELINE_DATASET, COPE_CONCEPTS_TABLE)
+        sandbox_query[clean_consts.QUERY] = get_select_statement(
+            self.project_id, self.dataset_id, self.sandbox_id,
+            self.rule_instance.get_sandbox_tablenames()[0])
 
         update_query = dict()
-        update_query[
-            clean_consts.QUERY] = self.rule_instance.get_delete_statement(
-                self.project_id, self.dataset_id, PIPELINE_DATASET,
-                COPE_CONCEPTS_TABLE)
+        update_query[clean_consts.QUERY] = get_delete_statement(
+            self.project_id, self.dataset_id)
 
         expected_list = [sandbox_query, update_query]
 
@@ -58,14 +54,12 @@ class DropPpiDuplicateResponsesTest(unittest.TestCase):
         self.assertEqual(self.rule_instance.affected_datasets,
                          [clean_consts.RDR])
 
-        store_duplicate_rows = self.rule_instance.get_select_statement(
+        store_duplicate_rows = get_select_statement(
             self.project_id, self.dataset_id, self.sandbox_id,
-            self.rule_instance.get_sandbox_tablenames()[0], PIPELINE_DATASET,
-            COPE_CONCEPTS_TABLE)
+            self.rule_instance.get_sandbox_tablenames()[0])
 
-        delete_duplicate_rows = self.rule_instance.get_delete_statement(
-            self.project_id, self.dataset_id, PIPELINE_DATASET,
-            COPE_CONCEPTS_TABLE)
+        delete_duplicate_rows = get_delete_statement(self.project_id,
+                                                     self.dataset_id)
 
         # Test
         with self.assertLogs(level='INFO') as cm:
