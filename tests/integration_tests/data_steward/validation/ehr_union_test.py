@@ -91,9 +91,7 @@ class EhrUnionTest(unittest.TestCase):
         running_jobs: list = []
         for cdm_table in resources.CDM_TABLES:
             output_table: str = ehr_union.output_table_for(cdm_table)
-            mapping_table: str = ehr_union.mapping_table_for(cdm_table)
             expected_tables[output_table] = []
-            expected_tables[mapping_table] = []
             for hpo_id in self.hpo_ids:
                 # upload csv into hpo bucket
                 cdm_filename: str = f'{cdm_table}.csv'
@@ -116,9 +114,9 @@ class EhrUnionTest(unittest.TestCase):
                 result = bq_utils.load_cdm_csv(hpo_id, cdm_table)
                 running_jobs.append(result['jobReference']['jobId'])
                 if hpo_id != EXCLUDED_HPO_ID and cdm_table != common.VISIT_DETAIL:
-                    expected_tables[mapping_table] += list(csv_rows)
                     expected_tables[output_table] += list(csv_rows)
                 elif hpo_id != EXCLUDED_HPO_ID and cdm_table == common.VISIT_DETAIL:
+                    mapping_table: str = ehr_union.mapping_table_for(cdm_table)
                     expected_tables[mapping_table] += list(csv_rows)
                     # Rows with invalid visit_occurrence_id are included in
                     # the mapping table for visit_detail, but those are excluded
@@ -272,7 +270,13 @@ class EhrUnionTest(unittest.TestCase):
             message = 'Table %s has fields %s when %s expected' % (
                 mapping_table, actual_fields, expected_fields)
             self.assertSetEqual(expected_fields, actual_fields, message)
-            expected_num_rows = len(self.expected_tables[mapping_table])
+
+            if table_to_map == common.VISIT_DETAIL:
+                expected_num_rows = len(self.expected_tables[mapping_table])
+            else:
+                result_table = ehr_union.output_table_for(table_to_map)
+                expected_num_rows = len(self.expected_tables[result_table])
+
             actual_num_rows = int(mapping_table_info.get('numRows', -1))
             message = 'Table %s has %s rows when %s expected' % (
                 mapping_table, actual_num_rows, expected_num_rows)
@@ -325,28 +329,6 @@ class EhrUnionTest(unittest.TestCase):
         response = bq_utils.query(q)
         actual_rows = bq_utils.response2rows(response)
         self.assertCountEqual(expected_rows, actual_rows)
-
-        # Check unioned visit detail table ignores records with invalid visit_occurence_id
-        expected = [{'visit_detail_id': 101}, {'visit_detail_id': 103}]
-
-        UNIONED_EHR_VISIT_DETAIL_QUERY = common.JINJA_ENV.from_string("""
-            SELECT
-                visit_detail_id
-            FROM `{{project_id}}.{{dataset_id}}.{{unioned_ehr_visit_detail_id}}`
-        """)
-
-        content_query = UNIONED_EHR_VISIT_DETAIL_QUERY.render(
-            project_id=self.project_id,
-            dataset_id=bq_utils.get_unioned_dataset_id(),
-            unioned_ehr_visit_detail_id=ehr_union.output_table_for(
-                common.VISIT_DETAIL))
-
-        content_job = self.client.query(content_query)
-        contents = list(content_job.result())
-        actual = [dict(row.items()) for row in contents]
-        actual = [{key: value for key, value in row.items()} for row in actual]
-
-        self.assertCountEqual(actual, expected)
 
     # TODO Figure out a good way to test query structure
     # One option may be for each query under test to generate an abstract syntax tree
