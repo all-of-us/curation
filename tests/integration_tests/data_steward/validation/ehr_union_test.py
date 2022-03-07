@@ -91,6 +91,7 @@ class EhrUnionTest(unittest.TestCase):
         running_jobs: list = []
         for cdm_table in resources.CDM_TABLES:
             output_table: str = ehr_union.output_table_for(cdm_table)
+            mapping_table: str = ehr_union.mapping_table_for(cdm_table)
             expected_tables[output_table] = []
             for hpo_id in self.hpo_ids:
                 # upload csv into hpo bucket
@@ -110,19 +111,21 @@ class EhrUnionTest(unittest.TestCase):
                     cdm_blob.upload_from_string('dummy\n')
                     csv_rows: list = []
 
-                if cdm_table == common.VISIT_DETAIL:
+                # load table from csv
+                result = bq_utils.load_cdm_csv(hpo_id, cdm_table)
+                running_jobs.append(result['jobReference']['jobId'])
+                if hpo_id != EXCLUDED_HPO_ID and cdm_table != common.VISIT_DETAIL:
+                    expected_tables[mapping_table] += list(csv_rows)
+                    expected_tables[output_table] += list(csv_rows)
+                elif hpo_id != EXCLUDED_HPO_ID and cdm_table == common.VISIT_DETAIL:
+                    expected_tables[mapping_table] += list(csv_rows)
+                    # Rows with invalid visit_occurrence_id are excluded from the unioned table
                     visit_occurrence_ids = self._get_valid_visit_occurrence_ids(
                         hpo_id)
-
                     csv_rows = [
                         row for row in csv_rows
                         if row['visit_occurrence_id'] in visit_occurrence_ids
                     ]
-
-                # load table from csv
-                result = bq_utils.load_cdm_csv(hpo_id, cdm_table)
-                running_jobs.append(result['jobReference']['jobId'])
-                if hpo_id != EXCLUDED_HPO_ID:
                     expected_tables[output_table] += list(csv_rows)
 
         # ensure person to observation output is as expected
