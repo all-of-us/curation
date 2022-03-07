@@ -12,7 +12,6 @@ Original Issue: DC-1894
 import logging
 
 # Project imports
-import constants.bq_utils as bq_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from common import JINJA_ENV, OBSERVATION
