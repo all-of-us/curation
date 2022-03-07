@@ -159,7 +159,7 @@ RDR_CLEANING_CLASSES = [
         FixUnmappedSurveyAnswers,),
     (ObservationSourceConceptIDRowSuppression,),
     (UpdateFieldsNumbersAsStrings,),
-    (UpdateCopeFluQuestionConcept),
+    (UpdateCopeFluQuestionConcept,),
     (maps_to_value_vocab_update.get_maps_to_value_ppi_vocab_update_queries,),
     (back_fill_pmi_skip.get_run_pmi_fix_queries,),
     (CleanPPINumericFieldsUsingParameters,),
