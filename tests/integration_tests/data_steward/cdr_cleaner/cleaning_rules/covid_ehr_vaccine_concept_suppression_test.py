@@ -107,7 +107,18 @@ class CovidEHRVaccineConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
 
                 -- Not suppressed --
                 (9, 115, 55, 0, date('2020-05-05'), 2),
-                (10, 116, 0, 98, date('2020-05-05'), 1)                
+                (10, 116, 0, 98, date('2020-05-05'), 1),
+                
+                -- Suppressed (DC-2140) -- 
+                -- Concepts' valid_start_date > cutoff_date - 1 year --
+                (11, 117, 702866, 0, date('2020-05-05'), 1),
+                (12, 118, 0, 822172, date('2020-05-05'), 2),
+                (13, 119, 1219271, 0, date('2020-05-05'), 3),
+                (14, 120, 0, 37003431, date('2020-05-05'), 1),
+                (15, 121, 42794278, 0, date('2020-05-05'), 2),
+                (16, 122, 0, 829421, date('2020-05-05'), 3),
+                (17, 123, 37003431, 0, date('2020-05-05'), 1),
+                (18, 124, 0, 947817, date('2020-05-05'), 2)
         """).render(fq_dataset_name=self.fq_dataset_name)
 
         queries = [INSERT_OBSERVATIONS_QUERY]
@@ -119,8 +130,10 @@ class CovidEHRVaccineConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
                 '.'.join([self.fq_dataset_name, OBSERVATION]),
             'fq_sandbox_table_name':
                 self.fq_sandbox_table_names[0],
-            'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-            'sandboxed_ids': [2, 6, 7, 8],
+            'loaded_ids': [
+                1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18
+            ],
+            'sandboxed_ids': [2, 6, 7, 8, 11, 12, 13, 14, 15, 16, 17, 18],
             'fields': [
                 'observation_id', 'person_id', 'observation_concept_id',
                 'observation_source_concept_id', 'observation_date',
