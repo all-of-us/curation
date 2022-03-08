@@ -81,7 +81,7 @@ SELECT
 FROM
   unioned_result
 WHERE
-  valid_start_date > DATE_SUB(DATE('{{cutoff_date}}'), INTERVAL 1 YEAR)
+  valid_start_date >= DATE_SUB(DATE('{{cutoff_date}}'), INTERVAL 1 YEAR)
 """)
 
 
