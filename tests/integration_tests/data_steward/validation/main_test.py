@@ -20,7 +20,6 @@ from gcloud.bq import BigQueryClient
 import resources
 from tests import test_util
 from validation import main
-from validation.app_errors import BucketDoesNotExistError
 from validation.metrics import required_labs
 
 

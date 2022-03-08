@@ -4,7 +4,6 @@ from unittest.mock import ANY
 
 import bq_utils
 from validation import ehr_union as eu
-from constants.validation import ehr_union as eu_constants
 
 MOVE_PER_OBS_QRY = '''
         SELECT

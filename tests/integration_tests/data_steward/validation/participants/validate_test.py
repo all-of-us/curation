@@ -7,7 +7,7 @@ as matches and non-matches between EHR and RDR.
 
 # Python imports
 import os
-from unittest import TestCase, mock
+from unittest import TestCase
 
 # Third party imports
 from google.cloud.bigquery import DatasetReference, Table, TimePartitioning, TimePartitioningType, SchemaField

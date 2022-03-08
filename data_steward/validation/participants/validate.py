@@ -25,7 +25,7 @@ import pandas
 from app_identity import get_application_id
 from bq_utils import get_rdr_project_id
 from resources import get_table_id, VALIDATION_STREET_CSV, VALIDATION_CITY_CSV, VALIDATION_STATE_CSV
-from utils import bq, pipeline_logging, auth
+from utils import pipeline_logging, auth
 from gcloud.bq import BigQueryClient
 from common import (JINJA_ENV, PS_API_VALUES, DRC_OPS, EHR_OPS, CDR_SCOPES,
                     PII_ADDRESS, PII_EMAIL, PII_PHONE_NUMBER, PII_NAME,
