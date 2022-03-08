@@ -52,8 +52,8 @@ def clean_dataset(project_id,
         # get credentials and create client
         impersonation_creds = get_impersonation_credentials(
             run_as, target_scopes=CDR_SCOPES)
-        client = BigQueryClient(project_id=project_id,
-                                credentials=impersonation_creds)
+    client = BigQueryClient(project_id=project_id,
+                            credentials=impersonation_creds)
 
     all_jobs = []
     for rule_index, rule in enumerate(rules):
