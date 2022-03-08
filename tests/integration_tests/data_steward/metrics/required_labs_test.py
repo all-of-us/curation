@@ -10,9 +10,9 @@ import app_identity
 import bq_utils
 import common
 from gcloud.gcs import StorageClient
+from gcloud.bq import BigQueryClient
 import resources
 import validation.sql_wrangle as sql_wrangle
-from utils import bq
 from tests import test_util
 from tests.test_util import FAKE_HPO_ID
 from validation.metrics import required_labs as required_labs
@@ -39,7 +39,7 @@ class RequiredLabsTest(unittest.TestCase):
         # Clients
         self.storage_client = StorageClient(self.project_id)
         self.hpo_bucket = self.storage_client.get_hpo_bucket(FAKE_HPO_ID)
-        self.bq_client = bq.get_client(self.project_id)
+        self.bq_client = BigQueryClient(self.project_id)
         self.rdr_dataset_id = bq_utils.get_rdr_dataset_id()
         # Cleanup
         self.storage_client.empty_bucket(self.hpo_bucket)
