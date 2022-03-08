@@ -40,6 +40,7 @@ class CovidEHRVaccineConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
         cls.sandbox_id = sandbox_id
         cls.vocabulary_id = os.environ.get('VOCABULARY_DATASET')
 
+        # Update cutoff_date if necessary. "2022-01-01" is for May 2022 CDR.
         cutoff_date = "2022-01-01"
         cls.kwargs.update({'cutoff_date': cutoff_date})
 
