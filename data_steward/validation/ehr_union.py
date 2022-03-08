@@ -378,6 +378,7 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
         visit_detail_join_expr = ''
         location_join_expr = ''
         care_site_join_expr = ''
+        visit_detail_filter_expr = ''
 
         if has_visit_occurrence_id:
             # Include a join to mapping visit occurrence table
@@ -435,6 +436,11 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
                        {care_site_join_expr} 
                     '''
 
+        if table_name == common.VISIT_DETAIL:
+            visit_detail_filter_expr = f'''
+            AND mvo.{eu_constants.VISIT_OCCURRENCE_ID} IS NOT NULL
+            '''
+
         return f'''
         SELECT
             {cols}
@@ -455,6 +461,7 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
         {location_join_expr}
         WHERE
             row_num = 1
+        {visit_detail_filter_expr}
             '''
 
 
