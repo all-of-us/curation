@@ -209,7 +209,6 @@ if __name__ == '__main__':
     import cdr_cleaner.args_parser as ap
     # import cdr_cleaner.clean_cdr_engine as clean_engine
     from constants.cdr_cleaner.clean_cdr_engine import FILENAME
-    from utils import bq
     from gcloud.bq import BigQueryClient
 
     parser = ap.get_argument_parser()
