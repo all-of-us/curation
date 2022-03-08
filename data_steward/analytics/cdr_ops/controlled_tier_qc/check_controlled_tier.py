@@ -29,9 +29,11 @@ pd.set_option('display.max_colwidth', -1)
 pd.set_option('display.width', None)
 # -
 
+# If you want to run all the QC rules: to_include = []
+# If you want to run specific QC rule(s): Add those rules to to_include
 # to_include = ['DC-1370', 'DC-1377', 'DC-1346', 'DC-1348', 'DC-1355', 'DC-1357', 'DC-1359',
-#             'DC-1362', 'DC-1364', 'DC-1366', 'DC-1368',
-#             'DC-1373', 'DC-1382', 'DC-1388', 'DC-1496']
+#             'DC-1362', 'DC-1364', 'DC-1366', 'DC-1368', 'DC-1373', 'DC-1382', 'DC-1388',
+#             'DC-1496', 'DC-1527', 'DC-1535']
 to_include = []
 checks = run_qc(project_id,
                 post_deid_dataset,
@@ -101,6 +103,10 @@ display_check_detail_of_rule(checks, 'DC-1382', to_include)
 # # [DC-1388: Free Text survey response are suppressed](https://precisionmedicineinitiative.atlassian.net/browse/DC-1388)
 
 display_check_detail_of_rule(checks, 'DC-1388', to_include)
+
+# # [DC-1496: Verifying row suppression of identifiable COPE survey questions](https://precisionmedicineinitiative.atlassian.net/browse/DC-1496)
+
+display_check_detail_of_rule(checks, 'DC-1496', to_include)
 
 # # [DC-1527: Suppression of organ transplant rows](https://precisionmedicineinitiative.atlassian.net/browse/DC-1527)
 

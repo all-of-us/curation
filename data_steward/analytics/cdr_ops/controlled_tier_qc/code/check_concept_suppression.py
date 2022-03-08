@@ -9,23 +9,15 @@ def check_concept_suppression(check_df,
                               project_id,
                               post_dataset_id,
                               pre_deid_dataset=None,
-                              mapping_dataset=None):
-    """Run concept suppression check
-    
-    Parameters
-    ----------
-    check_df: pd.DataFrame
-        Dataframe containing the checks that need to be done
-    project_id: str
-        Google Bigquery project_id
-    post_dataset_id: str
-        Bigquery dataset after de-id rules were run
-    pre_deid_dataset: str
-        Bigquery dataset before de-id rules were run
-
-    Returns
-    -------
-    pd.DataFrame
+                              mapping_dataset=None) -> pd.DataFrame:
+    """Run quality check to see if the specified concept is suppressed as expected.
+    :param check_df: dataframe that has the data from either 
+                     CONCEPT_CSV_FILE, FIELD_CSV_FILE, TABLE_CSV_FILE, or MAPPING_CSV_FILE
+    :param project_id: Project ID of the dataset.
+    :param post_deid_dataset: ID of the dataset after DEID.
+    :param pre_deid_dataset: ID of the dataset before DEID.
+    :param mapping_dataset: ID of the dataset for mapping.
+    :returns: dataframe that has the results of this check.
     """
     concept_check = run_check_by_row(check_df, QUERY_SUPPRESSED_CONCEPT,
                                      project_id, post_dataset_id)

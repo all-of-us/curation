@@ -38,7 +38,18 @@ def run_qc(project_id,
            post_deid_dataset,
            pre_deid_dataset,
            mapping_dataset=None,
-           rule_code=None):
+           rule_code=None) -> pd.DataFrame:
+    """
+    Run quality check under the specified condition.
+
+    :param project_id: Project ID of the dataset.
+    :param post_deid_dataset: ID of the dataset after DEID.
+    :param pre_deid_dataset: ID of the dataset before DEID.
+    :param mapping_dataset: ID of the dataset for mapping.
+    :param rule_code: str or list. The rule code(s) to be checked.
+                      If None, all the rule codes in CHECK_LIST_CSV_FILE are checked.
+    :returns: dataframe that has the results of the quality checks.
+    """
     list_checks = load_check_description(rule_code)
     list_checks = list_checks[list_checks['level'].notnull()].copy()
 
@@ -60,6 +71,14 @@ def run_qc(project_id,
 
 
 def display_check_summary_by_rule(checks_df, to_include):
+    """
+    Display the summary of all the quality checks.
+
+    :param checks_df: dataframe that has the results of the quality checks.
+    :param to_include: str or list. The rule code(s) to be checked.
+                       If None, all the rule codes in CHECK_LIST_CSV_FILE are checked.
+    :returns: Styler, just for display purposes.
+    """
     by_rule = checks_df.groupby('rule')['n_row_violation'].sum().reset_index()
     needed_description_columns = ['rule', 'description']
     check_description = (load_check_description().filter(
@@ -90,6 +109,15 @@ def display_check_summary_by_rule(checks_df, to_include):
 
 
 def display_check_detail_of_rule(checks_df, rule, to_include):
+    """
+    Display the details of the specified quality check.
+
+    :param checks_df: dataframe that has the results of the quality checks.
+    :param rule: The rule that you want to show the detailed result for.
+    :param to_include: str or list. The rule code(s) to be checked.
+                       If None, all the rule codes in CHECK_LIST_CSV_FILE are checked.
+    :returns: pretty printed HTML or string, just for display purposes.
+    """
     col_orders = [
         'table_name', 'column_name', 'concept_id', 'concept_code',
         'n_row_violation', 'query'
