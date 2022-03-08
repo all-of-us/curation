@@ -40,9 +40,9 @@ CREATE OR REPLACE TABLE `{{project_id}}.{{out_dataset_id}}.observation_ext` AS (
       WHEN cssf.cope_month = 'nov' THEN 2100000005
       WHEN cssf.cope_month = 'dec' THEN 2100000006
       WHEN cssf.cope_month = 'feb' THEN 2100000007
-      WHEN cssf.cope_month = 'vaccine1' THEN 2100000008
-      WHEN cssf.cope_month = 'vaccine2' THEN 2100000009
-      WHEN cssf.cope_month = 'vaccine3' THEN 2100000010
+      WHEN cssf.cope_month = 'vaccine1' THEN 905047
+      WHEN cssf.cope_month = 'vaccine2' THEN 905055
+      WHEN cssf.cope_month = 'vaccine3' THEN 765936
       ELSE survey_version_concept_id
     END AS survey_version_concept_id
     FROM `{{project_id}}.{{out_dataset_id}}.observation_ext` AS oe
