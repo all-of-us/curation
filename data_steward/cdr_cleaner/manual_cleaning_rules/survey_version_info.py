@@ -209,7 +209,7 @@ if __name__ == '__main__':
     import cdr_cleaner.args_parser as ap
     # import cdr_cleaner.clean_cdr_engine as clean_engine
     from constants.cdr_cleaner.clean_cdr_engine import FILENAME
-    from utils import bq
+    from gcloud.bq import BigQueryClient
 
     parser = ap.get_argument_parser()
     parser.add_argument(
@@ -247,13 +247,14 @@ if __name__ == '__main__':
     if ARGS.list_queries:
         version_task.log_queries()
     else:
-        client_obj = bq.get_client(ARGS.project_id)
-        version_task.setup_rule(client_obj)
+        bq_client = BigQueryClient(ARGS.project_id)
+
+        version_task.setup_rule(bq_client)
         # clean_engine.clean_dataset(ARGS.project_id, query_list)
         for query in query_list:
             q = query.get(cdr_consts.QUERY)
             if q:
-                query_job = client_obj.query(q)
+                query_job = bq_client.query(q)
                 query_job.result()
                 if query_job.exception():
                     LOGGER.error(

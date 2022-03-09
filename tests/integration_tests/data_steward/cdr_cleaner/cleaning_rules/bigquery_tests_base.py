@@ -10,7 +10,7 @@ detailed implementation is needed, the developer can still extend the base class
 only and implement their own tests.
 """
 # Python imports
-from unittest import TestCase, mock
+from unittest import TestCase
 
 # Third party imports
 import google.cloud.exceptions as gc_exc
