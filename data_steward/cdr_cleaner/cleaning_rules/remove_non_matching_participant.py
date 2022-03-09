@@ -12,7 +12,6 @@ import resources
 import oauth2client
 import googleapiclient
 from google.cloud.exceptions import NotFound
-from utils import bq
 from gcloud.bq import BigQueryClient
 from validation.participants import readers
 from cdr_cleaner.cleaning_rules import sandbox_and_remove_pids as remove_pids
