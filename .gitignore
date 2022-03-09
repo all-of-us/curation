@@ -143,3 +143,6 @@ data_steward/analytics/table_metrics/metrics_over_time/metric_overtime.Rmd
 # Logs
 data_steward/logs
 logs
+
+# History
+.history
