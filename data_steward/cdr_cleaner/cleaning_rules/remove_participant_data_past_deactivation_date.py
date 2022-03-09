@@ -34,12 +34,15 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
     Ensures there is no data past the deactivation date for deactivated participants.
     """
 
-    def __init__(self,
-                 project_id,
-                 dataset_id,
-                 sandbox_dataset_id,
-                 table_namer=None,
-                 api_project_id=None):
+    def __init__(
+        self,
+        project_id,
+        dataset_id,
+        sandbox_dataset_id,
+        table_namer=None,
+        api_project_id=None,
+        key_path=None,
+    ):
         """
         Initialize the class with proper information.
 
@@ -64,6 +67,7 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
                          affected_tables=common.CDM_TABLES +
                          common.FITBIT_TABLES,
                          table_namer=table_namer)
+        self.key_path = key_path
         self.api_project_id = api_project_id
         self.destination_table = (f'{self.project_id}.{self.sandbox_dataset_id}'
                                   f'.{DEACTIVATED_PARTICIPANTS}')
@@ -100,6 +104,8 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
         :param client: client object passed to store the data
         """
         LOGGER.info("Querying RDR API for deactivated participant data")
+        import os
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = self.key_path
         # gets the deactivated participant dataset to ensure it's up-to-date
         df = psr.get_deactivated_participants(self.api_project_id,
                                               DEACTIVATED_PARTICIPANTS_COLUMNS)
@@ -111,7 +117,7 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
 
         LOGGER.info(f"Finished storing participant records in: "
                     f"`{self.destination_table}`")
-
+        del os.environ["GOOGLE_APPLICATION_CREDENTIALS"]
         LOGGER.debug("instantiating class client object")
         self.client = client
 
@@ -170,6 +176,13 @@ if __name__ == '__main__':
         dest='api_project_id',
         help='Identifies the RDR project for participant summary API',
         required=True)
+
+    ext_parser.add_argument('-kp',
+                            '--key_path',
+                            action='store',
+                            dest='key_path',
+                            help='Path to service account key file',
+                            required=True)
     ARGS = ext_parser.parse_args()
 
     if ARGS.list_queries:
@@ -180,6 +193,7 @@ if __name__ == '__main__':
             ARGS.sandbox_dataset_id,
             [(RemoveParticipantDataPastDeactivationDate,)],
             api_project_id=ARGS.api_project_id,
+            key_path=ARGS.key_path,
             table_namer='manual')
         for query in query_list:
             LOGGER.info(query)
@@ -191,4 +205,5 @@ if __name__ == '__main__':
             ARGS.sandbox_dataset_id,
             [(RemoveParticipantDataPastDeactivationDate,)],
             api_project_id=ARGS.api_project_id,
+            key_path=ARGS.key_path,
             table_namer='manual')
