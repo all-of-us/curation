@@ -108,6 +108,7 @@ from cdr_cleaner.cleaning_rules.section_participation_concept_suppression import
 from cdr_cleaner.cleaning_rules.covid_ehr_vaccine_concept_suppression import CovidEHRVaccineConceptSuppression
 from cdr_cleaner.cleaning_rules.missing_concept_record_suppression import MissingConceptRecordSuppression
 from cdr_cleaner.cleaning_rules.create_deid_questionnaire_response_map import CreateDeidQuestionnaireResponseMap
+from cdr_cleaner.cleaning_rules.vehicular_accident_concept_suppression import VehicularAccidentConceptSuppression
 from constants.cdr_cleaner import clean_cdr_engine as ce_consts
 from constants.cdr_cleaner.clean_cdr import DataStage
 
@@ -270,6 +271,7 @@ CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     (FreeTextSurveyResponseSuppression,
     ),  # Should run after any data remapping rules
     (MotorVehicleAccidentSuppression,),
+    (VehicularAccidentConceptSuppression,),
     (ExplicitIdentifierSuppression,),
     (GeoLocationConceptSuppression,),
     (BirthInformationSuppression,),
@@ -321,6 +323,7 @@ REGISTERED_TIER_DEID_CLEANING_CLASSES = [
     (
         CovidEHRVaccineConceptSuppression,),  # should run after QRIDtoRID
     (StringFieldsSuppression,),
+    (VehicularAccidentConceptSuppression,),
     (SectionParticipationConceptSuppression,),
     (RegisteredCopeSurveyQuestionsSuppression,),
     (CancerConceptSuppression,),
