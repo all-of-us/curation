@@ -99,7 +99,7 @@ rt_concepts_dict = {
 }
 
 rt_concepts_list = []
-for ticket, concepts in rt_concepts_dict.items():
+for concepts in rt_concepts_dict.values():
     rt_concepts_list.extend(concepts)
 
 # Remove duplicates
@@ -430,7 +430,8 @@ vaccine_concept AS
         and vocabulary_id = 'CVX'
     ) OR (
         -- done by code and vocab --
-        REGEXP_CONTAINS(concept_code, r'(91300)|(91301)|(91302)|(91303)|(0031A)|(0021A)|(0022A)|(0002A)|(0001A)|(0012A)|(0011A)')   --no 91304--
+        REGEXP_CONTAINS(concept_code, r'(91300)|(91301)|(91302)|(91303)|(0031A)|(0021A)|(0022A)|(0002A)|(0001A)|(0012A)|(0011A)')
+        --no 91304--
         and vocabulary_id = 'CPT4'
      )
 )
