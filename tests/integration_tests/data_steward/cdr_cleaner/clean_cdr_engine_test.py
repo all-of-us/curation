@@ -10,7 +10,8 @@ import constants.cdr_cleaner.clean_cdr as cdr_consts
 from app_identity import get_application_id
 # Project imports
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
-from utils import bq, sandbox
+from utils import sandbox
+from gcloud.bq import BigQueryClient
 
 
 class CleanCDREngineTest(TestCase):
@@ -26,7 +27,7 @@ class CleanCDREngineTest(TestCase):
         self.dataset_id = os.environ.get('UNIONED_DATASET_ID')
         self.sandbox_dataset_id = sandbox.check_and_create_sandbox_dataset(
             self.project_id, self.dataset_id)
-        self.client = bq.get_client(self.project_id)
+        self.client = BigQueryClient(self.project_id)
         self.delete_sandbox()
 
     def test_clean_dataset(self):
