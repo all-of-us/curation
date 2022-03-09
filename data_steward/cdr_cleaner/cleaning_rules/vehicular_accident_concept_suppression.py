@@ -25,7 +25,7 @@ CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_id}}.{{concept_suppression_loo
 SELECT
 c.*
 FROM
-  `{{project_id}}.{{dataset_id}}..concept` c
+  `{{project_id}}.{{dataset_id}}.concept` c
 JOIN
   `{{project_id}}.{{dataset_id}}.concept_ancestor`
 ON
@@ -71,7 +71,9 @@ class VehicularAccidentConceptSuppression(
         super().__init__(
             issue_numbers=['DC1959', 'DC2212'],
             description=desc,
-            affected_datasets=[cdr_consts.REGISTERED_TIER_DEID],
+            affected_datasets=[
+                cdr_consts.REGISTERED_TIER_DEID, cdr_consts.CONTROLLED_TIER_DEID
+            ],
             affected_tables=[CONDITION_OCCURRENCE],
             project_id=project_id,
             dataset_id=dataset_id,

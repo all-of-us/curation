@@ -86,7 +86,8 @@ class VehicularAccidentConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
                        (101, 2, 4054924, date('2020-01-01'), timestamp('2020-01-01'), 0, 0),
                        (102, 3, 0, date('2020-01-01'), timestamp('2020-01-01'), 4055777, 0),
                        (103, 4, 0, date('2020-01-01'), timestamp('2020-01-01'), 0, 44837728),
-                       (104, 5, 44783245, date('2020-01-01'), timestamp('2020-01-01'), 42894222, 0)
+                       (104, 5, 44783245, date('2020-01-01'), timestamp('2020-01-01'), 42894222, 0),
+                       (105, 6, 44822621, date('2020-01-01'), timestamp('2020-01-01'), 44822621, 0)
                        """).render(fq_dataset_name=self.fq_dataset_name)
 
         queries = [condition_insert_template]
@@ -98,8 +99,8 @@ class VehicularAccidentConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
                 '.'.join([self.fq_dataset_name, CONDITION_OCCURRENCE]),
             'fq_sandbox_table_name':
                 self.fq_sandbox_table_names[0],
-            'loaded_ids': [100, 101, 102, 103, 104],
-            'sandboxed_ids': [101, 102, 103],
+            'loaded_ids': [100, 101, 102, 103, 104, 105],
+            'sandboxed_ids': [101, 102, 103, 105],
             'fields': [
                 'condition_occurrence_id', 'person_id', 'condition_concept_id',
                 'condition_type_concept_id', 'condition_source_concept_id'
