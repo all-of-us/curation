@@ -3,6 +3,7 @@ Generate and clean fitbit dataset
 """
 import logging
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
+from datetime import datetime
 
 from google.cloud.bigquery import Table
 
@@ -51,18 +52,18 @@ def create_fitbit_datasets(client, release_tag):
              f'cleaning rules applied to {fitbit_datasets[consts.STAGING]}'),
     }
 
-    for phase in fitbit_datasets:
-        labels = {
-            "phase": phase,
-            "release_tag": release_tag,
-            "de_identified": "false"
-        }
-        dataset_object = bq.define_dataset(client.project,
-                                           fitbit_datasets[phase],
-                                           fitbit_desc[phase], labels)
-        client.create_dataset(dataset_object)
-        LOGGER.info(
-            f'Created dataset `{client.project}.{fitbit_datasets[phase]}`')
+    # for phase in fitbit_datasets:
+    #     labels = {
+    #         "phase": phase,
+    #         "release_tag": release_tag,
+    #         "de_identified": "false"
+    #     }
+    #     dataset_object = bq.define_dataset(client.project,
+    #                                        fitbit_datasets[phase],
+    #                                        fitbit_desc[phase], labels)
+    #     # client.create_dataset(dataset_object)
+    #     LOGGER.info(
+    #         f'Created dataset `{client.project}.{fitbit_datasets[phase]}`')
 
     return fitbit_datasets
 
@@ -120,6 +121,23 @@ def copy_fitbit_tables_from_views(client, from_dataset, to_dataset,
     LOGGER.info(f'Copied fitbit tables from `{from_dataset}` to `{to_dataset}`')
 
 
+def validate_date_string(date_string):
+    """
+    Validates the date string is a valid date in the YYYY-MM-DD format.
+
+    If the string is valid, it returns the string.  Otherwise, it raises either
+    a ValueError or TypeError.
+
+    :param date_string: The string to validate
+
+    :return:  a valid date string
+    :raises:  A ValueError if the date string is not a valid date or
+        doesn't conform to the specified format.
+    """
+    datetime.strptime(date_string, '%Y-%m-%d')
+    return date_string
+
+
 def get_fitbit_parser():
     parser = ArgumentParser(description=__doc__,
                             formatter_class=RawDescriptionHelpFormatter)
@@ -155,6 +173,23 @@ def get_fitbit_parser():
         help='Release tag for naming and labeling the cleaned dataset with.',
         required=True)
 
+    parser.add_argument(
+        '-q',
+        '--api_project_id',
+        action='store',
+        dest='api_project_id',
+        help='Identifies the RDR project for participant summary API',
+        required=True)
+
+    parser.add_argument(
+        '--truncation_date',
+        dest='truncation_date',
+        action='store',
+        help=('Cutoff date for data based on <table_name>_date fields.  '
+              'Should be in the form YYYY-MM-DD.'),
+        required=True,
+        type=validate_date_string)
+
     return parser
 
 
@@ -177,24 +212,26 @@ def main(raw_args=None):
     clean_cdr.validate_custom_params(cleaning_classes, **kwargs)
 
     # get credentials and create client
-    impersonation_creds = auth.get_impersonation_credentials(
-        args.run_as_email, SCOPES)
+    # impersonation_creds = auth.get_impersonation_credentials(
+    #     args.run_as_email, SCOPES)
 
-    client = bq.get_client(args.project_id, credentials=impersonation_creds)
+    # client = bq.get_client(args.project_id, credentials=impersonation_creds)
 
-    # create staging, sandbox, backup and clean datasets with descriptions and labels
-    fitbit_datasets = create_fitbit_datasets(client, args.release_tag)
+    # # create staging, sandbox, backup and clean datasets with descriptions and labels
+    fitbit_datasets = create_fitbit_datasets(None, args.release_tag)
 
-    copy_fitbit_tables_from_views(client,
-                                  args.fitbit_dataset,
-                                  fitbit_datasets[consts.BACKUP],
-                                  table_prefix='v_')
-    bq.copy_datasets(client, fitbit_datasets[consts.BACKUP],
-                     fitbit_datasets[consts.STAGING])
+    # copy_fitbit_tables_from_views(client,
+    #                               args.fitbit_dataset,
+    #                               fitbit_datasets[consts.BACKUP],
+    #                               table_prefix='v_')
+    # bq.copy_datasets(client, fitbit_datasets[consts.BACKUP],
+    #                  fitbit_datasets[consts.STAGING])
 
     common_cleaning_args = [
         '-p', args.project_id, '-d', fitbit_datasets[consts.STAGING], '-b',
-        fitbit_datasets[consts.SANDBOX], '-s', '-a', consts.FITBIT
+        fitbit_datasets[consts.SANDBOX], '-s', '-a', consts.FITBIT, '--run_as',
+        args.run_as_email, '--api_project_id', args.api_project_id,
+        '--truncation_date', args.truncation_date
     ]
     fitbit_cleaning_args = args_parser.add_kwargs_to_args(
         common_cleaning_args, kwargs)
@@ -202,8 +239,8 @@ def main(raw_args=None):
     clean_cdr.main(args=fitbit_cleaning_args)
 
     # Snapshot the staging dataset to final dataset
-    bq.build_and_copy_contents(client, fitbit_datasets[consts.STAGING],
-                               fitbit_datasets[consts.CLEAN])
+    # bq.build_and_copy_contents(client, fitbit_datasets[consts.STAGING],
+    #                            fitbit_datasets[consts.CLEAN])
 
 
 if __name__ == '__main__':
