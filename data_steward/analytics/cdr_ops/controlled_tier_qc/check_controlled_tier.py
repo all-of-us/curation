@@ -109,3 +109,7 @@ display_check_detail_of_rule(checks, 'DC-1527', to_include)
 # # [DC-1535: Suppression of geolocation records](https://precisionmedicineinitiative.atlassian.net/browse/DC-1535)
 
 display_check_detail_of_rule(checks, 'DC-1535', to_include)
+
+# # [DC-2112: Suppression of identifiable COPE survey questions](https://precisionmedicineinitiative.atlassian.net/browse/DC-2112)
+
+display_check_detail_of_rule(checks, 'DC-2112', to_include)
