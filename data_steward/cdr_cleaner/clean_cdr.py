@@ -80,6 +80,7 @@ from cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff import EhrSubmissionD
 from cdr_cleaner.cleaning_rules.repopulate_person_post_deid import RepopulatePersonPostDeid
 from cdr_cleaner.cleaning_rules.truncate_rdr_using_date import TruncateRdrData
 from cdr_cleaner.cleaning_rules.unit_normalization import UnitNormalization
+from cdr_cleaner.cleaning_rules.update_cope_flu_concepts import UpdateCopeFluQuestionConcept
 from cdr_cleaner.cleaning_rules.update_fields_numbers_as_strings import UpdateFieldsNumbersAsStrings
 from cdr_cleaner.cleaning_rules.temporal_consistency import TemporalConsistency
 from cdr_cleaner.cleaning_rules.valid_death_dates import ValidDeathDates
@@ -159,6 +160,7 @@ RDR_CLEANING_CLASSES = [
         FixUnmappedSurveyAnswers,),
     (ObservationSourceConceptIDRowSuppression,),
     (UpdateFieldsNumbersAsStrings,),
+    (UpdateCopeFluQuestionConcept,),
     (maps_to_value_vocab_update.get_maps_to_value_ppi_vocab_update_queries,),
     (back_fill_pmi_skip.get_run_pmi_fix_queries,),
     (CleanPPINumericFieldsUsingParameters,),
