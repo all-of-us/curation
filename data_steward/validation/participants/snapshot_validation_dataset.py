@@ -8,33 +8,15 @@ import argparse
 import logging
 
 from utils import bq, auth, pipeline_logging
-from common import JINJA_ENV, DRC_OPS, CDR_SCOPES, IDENTITY_MATCH
+from common import DRC_OPS, CDR_SCOPES, IDENTITY_MATCH
+from constants.validation.participants.snapshot_validaiton_dataset import (
+    PARTITIONS_QUERY, CREATE_TABLE_QUERY)
 from bq_utils import get_hpo_info, get_table_id
 
 LOGGER = logging.getLogger(__name__)
 
-partitions_query = JINJA_ENV.from_string("""
-SELECT table_name, partition_id
-FROM (SELECT 
-    table_name,
-    partition_id,
-    ROW_NUMBER() OVER(PARTITION BY table_name ORDER BY partition_id DESC) r
-FROM {{project_id}}.{{drc_ops_dataset}}.INFORMATION_SCHEMA.PARTITIONS
-WHERE table_name LIKE '%identity_match%'
-AND partition_id NOT IN ("__NULL__", "__UNPARTITIONED__")
-) WHERE r = 1
-""")
 
-create_table_query = JINJA_ENV.from_string("""
-CREATE TABLE {{project_id}}.{{dest_table}}
-LIKE {{project_id}}.{{source_table}}
-AS SELECT *
-FROM {{project_id}}.{{source_table}}
-WHERE FORMAT_TIMESTAMP("%Y%m%d%H", _PARTITIONTIME) = "{{partition_date}}"
-""")
-
-
-def get_partition_date(df, hpo_id):
+def get_partition_date_df(df, hpo_id):
     """
     Filter dataframe to retrieve row for hpo_id
 
@@ -55,12 +37,14 @@ def create_id_match_tables(client, dataset_id):
 
     :return: None
     """
-    job = client.query(partitions_query)
+    job = client.query(
+        PARTITIONS_QUERY.render(project_id=client.project,
+                                drc_ops_dataset=DRC_OPS))
     partitions_df = job.result().to_dataframe()
     LOGGER.info(f'Fetched latest partitions from {DRC_OPS}')
 
     for hpo_id in get_hpo_info():
-        hpo_partition_df = get_partition_date(partitions_df, hpo_id)
+        hpo_partition_df = get_partition_date_df(partitions_df, hpo_id)
 
         source_table = f'{IDENTITY_MATCH}_{hpo_id}'
         dest_table = get_table_id(hpo_id, IDENTITY_MATCH)
@@ -68,15 +52,15 @@ def create_id_match_tables(client, dataset_id):
         fq_source_table = f'{client.project}.{DRC_OPS}.{source_table}'
         fq_dest_table = f'{client.project}.{dataset_id}.{dest_table}'
 
-        if hpo_partition_df['table_name'].count() != 1:
+        if hpo_partition_df['partition_id'].count() != 1:
             LOGGER.info(
                 f'Skipping {hpo_id} since {fq_source_table} does not exist')
             continue
 
-        partition_date = hpo_partition_df['table_name'].iloc[0]
+        partition_date = hpo_partition_df['partition_id'].iloc[0]
 
         create_table_job = client.query(
-            create_table_query.render(project_id=client.project,
+            CREATE_TABLE_QUERY.render(project_id=client.project,
                                       source_table=fq_source_table,
                                       dest_table=fq_dest_table,
                                       partition_date=partition_date))
