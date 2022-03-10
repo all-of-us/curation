@@ -27,7 +27,7 @@ class CleanCDREngineTest(TestCase):
         self.dataset_id = os.environ.get('UNIONED_DATASET_ID')
         self.sandbox_dataset_id = sandbox.check_and_create_sandbox_dataset(
             self.project_id, self.dataset_id)
-        self.client = BigQueryClient(self.project_id)
+        self.bq_client = BigQueryClient(self.project_id)
         self.delete_sandbox()
 
     def test_clean_dataset(self):
@@ -101,9 +101,9 @@ class CleanCDREngineTest(TestCase):
 
     def delete_sandbox(self):
         sandbox_dataset_id = sandbox.get_sandbox_dataset_id(self.dataset_id)
-        self.client.delete_dataset(sandbox_dataset_id,
-                                   delete_contents=True,
-                                   not_found_ok=True)
+        self.bq_client.delete_dataset(sandbox_dataset_id,
+                                      delete_contents=True,
+                                      not_found_ok=True)
 
     def tearDown(self) -> None:
         self.delete_sandbox()

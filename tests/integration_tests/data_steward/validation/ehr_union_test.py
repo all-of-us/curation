@@ -49,7 +49,7 @@ class EhrUnionTest(unittest.TestCase):
         self.input_dataset_id = bq_utils.get_dataset_id()
         self.output_dataset_id = bq_utils.get_unioned_dataset_id()
         self.storage_client = StorageClient(self.project_id)
-        self.client = BigQueryClient(self.project_id)
+        self.bq_client = BigQueryClient(self.project_id)
         self.tearDown()
 
         # TODO Generalize to work for all foreign key references
