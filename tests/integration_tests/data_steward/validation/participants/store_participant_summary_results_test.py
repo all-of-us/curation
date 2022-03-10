@@ -40,7 +40,7 @@ class StoreParticipantSummaryResultsTest(TestCase):
 
         cls.project_id = os.environ.get(PROJECT_ID)
         cls.dataset_id = os.environ.get('COMBINED_DATASET_ID')
-        cls.client = BigQueryClient(cls.project_id)
+        cls.bq_client = BigQueryClient(cls.project_id)
 
         cls.hpo_id = 'fake'
         cls.org_id = 'FAKE ORG'
@@ -62,10 +62,10 @@ class StoreParticipantSummaryResultsTest(TestCase):
             dataset_id=bq_consts.LOOKUP_TABLES_DATASET_ID,
             tablename=bq_consts.HPO_SITE_ID_MAPPINGS_TABLE_ID)
 
-        job = self.client.query(query)
+        job = self.bq_client.query(query)
         df = job.result().to_dataframe()
         expected = df.to_dict(orient='records')
-        actual = get_hpo_org_info(self.client)
+        actual = get_hpo_org_info(self.bq_client)
 
         self.assertCountEqual(actual, expected)
 
@@ -93,7 +93,7 @@ class StoreParticipantSummaryResultsTest(TestCase):
             bigquery.SchemaField('first_name', 'string'),
             bigquery.SchemaField('last_name', 'string')
         ]
-        fetch_and_store_ps_hpo_data(self.client,
+        fetch_and_store_ps_hpo_data(self.bq_client,
                                     'rdr_project',
                                     self.hpo_id,
                                     dataset_id=self.dataset_id)
@@ -102,7 +102,7 @@ class StoreParticipantSummaryResultsTest(TestCase):
                                              dataset_id=self.dataset_id,
                                              ps_api_table_id=self.ps_api_table)
 
-        job = self.client.query(query)
+        job = self.bq_client.query(query)
         results_df = job.result().to_dataframe()
         actual = results_df.to_dict(orient='records')
         expected = data
@@ -115,4 +115,4 @@ class StoreParticipantSummaryResultsTest(TestCase):
         """
         time.sleep(1)
         for table in self.fq_table_names:
-            self.client.delete_table(table, not_found_ok=True)
+            self.bq_client.delete_table(table, not_found_ok=True)
