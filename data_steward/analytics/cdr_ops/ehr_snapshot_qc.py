@@ -89,3 +89,42 @@ AND NOT REGEXP_CONTAINS(table_id, r'(sets)')
 ORDER BY table_id
 '''
 execute(client, query)
+
+# # Person_to_observation records observation_date and observation_datetime check
+# Check to make sure records added to observation with observation_concept_id in (4013886, 421761, 4135376, 4083587) are
+# not using participant’s birth date, as seen in person.birth_datetime.
+# Check is successful when result is empty
+
+query = f"""
+WITH
+  person_birth_date AS (
+  SELECT
+    birth_datetime,
+    DATE(birth_datetime) AS birth_date
+  FROM
+    `{PROJECT_ID}.{EHR_SNAPSHOT_DATASET_ID}.unioned_ehr_person` )
+SELECT
+  observation_id,
+  person_id,
+  observation_concept_id,
+  observation_date,
+  observation_datetime
+FROM
+  `{PROJECT_ID}.{EHR_SNAPSHOT_DATASET_ID}.unioned_ehr_observation`
+WHERE
+  observation_concept_id IN (4013886,
+    421761,
+    4135376,
+    4083587)
+  AND ((observation_datetime IN (
+      SELECT
+        birth_datetime
+      FROM
+        person_birth_date ))
+    OR (observation_date IN (
+      SELECT
+        birth_date
+      FROM
+        person_birth_date )) )
+"""
+execute(client, query)
