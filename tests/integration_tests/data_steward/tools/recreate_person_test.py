@@ -82,8 +82,7 @@ class RecreatePersonTest(TestCase):
         query_job.result()
 
     def test_update_person(self):
-        recreate_person.update_person(self.bq_client, self.project_id,
-                                      self.dataset_id)
+        recreate_person.update_person(self.bq_client, self.dataset_id)
         new_person_cols = (
             f'SELECT state_of_residence_concept_id, state_of_residence_source_value, '
             f'sex_at_birth_concept_id, sex_at_birth_source_concept_id, sex_at_birth_source_value '
