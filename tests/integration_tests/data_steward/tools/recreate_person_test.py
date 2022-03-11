@@ -11,6 +11,7 @@ import app_identity
 import bq_utils
 from tools import recreate_person
 from utils import bq
+from gcloud.bq import BigQueryClient
 from common import JINJA_ENV
 
 POPULATE_PERSON = JINJA_ENV.from_string("""
@@ -56,7 +57,7 @@ class RecreatePersonTest(TestCase):
         self.person = gbq.Table.from_string(self.fq_person)
         self.person_ext = gbq.Table.from_string(self.fq_person_ext)
 
-        self.client = bq.get_client(self.project_id)
+        self.bq_client = BigQueryClient(self.project_id)
         self.tearDown()
         for fq_table in self.table_ids:
             table_id = fq_table.split('.')[2]
@@ -66,22 +67,22 @@ class RecreatePersonTest(TestCase):
                                                drop_existing=True,
                                                dataset_id=self.dataset_id)
             else:
-                bq.create_tables(self.client,
+                bq.create_tables(self.bq_client,
                                  self.project_id, [fq_table],
                                  exists_ok=True)
 
         self.populate_tables()
 
     def populate_tables(self):
-        query_job = self.client.query(query=POPULATE_PERSON.render(
+        query_job = self.bq_client.query(query=POPULATE_PERSON.render(
             person=self.person))
         query_job.result()
-        query_job = self.client.query(query=POPULATE_PERSON_EXT.render(
+        query_job = self.bq_client.query(query=POPULATE_PERSON_EXT.render(
             person_ext=self.person_ext))
         query_job.result()
 
     def test_update_person(self):
-        recreate_person.update_person(self.client, self.project_id,
+        recreate_person.update_person(self.bq_client, self.project_id,
                                       self.dataset_id)
         new_person_cols = (
             f'SELECT state_of_residence_concept_id, state_of_residence_source_value, '
@@ -91,8 +92,8 @@ class RecreatePersonTest(TestCase):
             f'SELECT state_of_residence_concept_id, state_of_residence_source_value, '
             f'sex_at_birth_concept_id, sex_at_birth_source_concept_id, sex_at_birth_source_value '
             f'FROM {self.project_id}.{self.dataset_id}.person_ext')
-        new_person_vals = self.client.query(new_person_cols).to_dataframe()
-        person_ext_vals = self.client.query(person_ext_cols).to_dataframe()
+        new_person_vals = self.bq_client.query(new_person_cols).to_dataframe()
+        person_ext_vals = self.bq_client.query(person_ext_cols).to_dataframe()
         testing.assert_frame_equal(
             new_person_vals.set_index(
                 ['state_of_residence_concept_id',
@@ -103,4 +104,4 @@ class RecreatePersonTest(TestCase):
 
     def tearDown(self) -> None:
         for table in self.table_ids:
-            self.client.delete_table(table, not_found_ok=True)
+            self.bq_client.delete_table(table, not_found_ok=True)

@@ -20,6 +20,7 @@ from google.cloud import bigquery
 # Project imports
 from cdr_cleaner import clean_cdr_engine as engine
 from utils import bq
+from gcloud.bq import BigQueryClient
 from common import JINJA_ENV
 
 
@@ -73,7 +74,7 @@ class BaseTest:
                     f'Provide a list of fully qualified table names the '
                     f'test will manipulate.')
 
-            cls.client = bq.get_client(cls.project_id)
+            cls.client = BigQueryClient(cls.project_id)
 
             # get or create datasets, cleaning rules can assume the datasets exist
             required_datasets = []

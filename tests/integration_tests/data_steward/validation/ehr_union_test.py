@@ -11,7 +11,7 @@ import cdm
 import common
 from constants.tools import combine_ehr_rdr
 from constants.validation import ehr_union as eu_constants
-from utils import bq
+from gcloud.bq import BigQueryClient
 from gcloud.gcs import StorageClient
 import resources
 import tests.test_util as test_util
@@ -49,7 +49,7 @@ class EhrUnionTest(unittest.TestCase):
         self.input_dataset_id = bq_utils.get_dataset_id()
         self.output_dataset_id = bq_utils.get_unioned_dataset_id()
         self.storage_client = StorageClient(self.project_id)
-        self.client = bq.get_client(self.project_id)
+        self.bq_client = BigQueryClient(self.project_id)
         self.tearDown()
 
         # TODO Generalize to work for all foreign key references

@@ -5,7 +5,7 @@ import unittest
 import app_identity
 # Project Imports
 from utils import sandbox
-from utils.bq import get_client
+from gcloud.bq import BigQueryClient
 
 
 class SandboxTest(unittest.TestCase):
@@ -22,14 +22,15 @@ class SandboxTest(unittest.TestCase):
         self.sandbox_id = sandbox.get_sandbox_dataset_id(self.dataset_id)
         self.fq_sandbox_id = f'{self.project_id}.{self.sandbox_id}'
         # Removing any existing datasets that might interfere with the test
-        self.client = get_client(self.project_id)
-        self.client.delete_dataset(self.fq_sandbox_id,
-                                   delete_contents=True,
-                                   not_found_ok=True)
+        self.bq_client = BigQueryClient(self.project_id)
+        self.bq_client.delete_dataset(self.fq_sandbox_id,
+                                      delete_contents=True,
+                                      not_found_ok=True)
 
     def test_create_sandbox_dataset(self):
         # pre-conditions
-        pre_test_datasets_obj = list(self.client.list_datasets(self.project_id))
+        pre_test_datasets_obj = list(
+            self.bq_client.list_datasets(self.project_id))
         pre_test_datasets = [d.dataset_id for d in pre_test_datasets_obj]
 
         # Create sandbox dataset
@@ -37,8 +38,8 @@ class SandboxTest(unittest.TestCase):
             self.project_id, self.dataset_id)
 
         # Post condition checks
-        post_test_datasets_obj = list(self.client.list_datasets(
-            self.project_id))
+        post_test_datasets_obj = list(
+            self.bq_client.list_datasets(self.project_id))
         post_test_datasets = [d.dataset_id for d in post_test_datasets_obj]
 
         # make sure the dataset didn't already exist
@@ -52,6 +53,6 @@ class SandboxTest(unittest.TestCase):
 
     def tearDown(self):
         # Remove fake dataset created in project
-        self.client.delete_dataset(self.fq_sandbox_id,
-                                   delete_contents=True,
-                                   not_found_ok=True)
+        self.bq_client.delete_dataset(self.fq_sandbox_id,
+                                      delete_contents=True,
+                                      not_found_ok=True)

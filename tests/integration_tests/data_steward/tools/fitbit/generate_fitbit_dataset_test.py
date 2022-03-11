@@ -7,7 +7,7 @@ from datetime import datetime
 import app_identity
 import tools.fitbit.generate_fitbit_dataset as gfd
 from common import JINJA_ENV
-from utils.bq import get_client
+from gcloud.bq import BigQueryClient
 
 table_query = JINJA_ENV.from_string("""
 CREATE TABLE {{project_id}}.{{dataset_id}}.{{table_id}}
@@ -45,7 +45,7 @@ class GenerateFitbitDatasetTest(TestCase):
     def setUp(self):
         self.project_id = app_identity.get_application_id()
         self.dataset = os.environ.get('UNIONED_DATASET_ID')
-        self.client = get_client(self.project_id)
+        self.bq_client = BigQueryClient(self.project_id)
         self.table_id = 'fake'
         self.final_table = 'steps_intraday'
         self.view_id = f'view_{self.final_table}'
@@ -66,26 +66,26 @@ class GenerateFitbitDatasetTest(TestCase):
         create_table = table_query.render(project_id=self.project_id,
                                           dataset_id=self.dataset,
                                           table_id=self.table_id)
-        table_job = self.client.query(create_table)
+        table_job = self.bq_client.query(create_table)
         table_job.result()
         create_view = view_query.render(project_id=self.project_id,
                                         dataset_id=self.dataset,
                                         view_id=self.view_id,
                                         table_id=self.table_id)
-        view_job = self.client.query(create_view)
+        view_job = self.bq_client.query(create_view)
         view_job.result()
-        gfd.copy_fitbit_tables_from_views(self.client, self.dataset,
+        gfd.copy_fitbit_tables_from_views(self.bq_client, self.dataset,
                                           self.dataset, 'view_')
 
         query_contents = content_query.render(project_id=self.project_id,
                                               dataset_id=self.dataset,
                                               table_id=self.final_table)
-        content_job = self.client.query(query_contents)
+        content_job = self.bq_client.query(query_contents)
         contents = list(content_job.result())
         actual = [dict(row.items()) for row in contents]
         self.assertCountEqual(actual, expected)
 
     def tearDown(self):
         for table in self.test_tables:
-            self.client.delete_table(
+            self.bq_client.delete_table(
                 f'{self.project_id}.{self.dataset}.{table}', not_found_ok=True)
