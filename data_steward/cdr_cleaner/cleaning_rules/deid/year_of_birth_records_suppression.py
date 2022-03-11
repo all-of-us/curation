@@ -130,7 +130,7 @@ class YearOfBirthRecordsSuppression(BaseCleaningRule):
             response.result()
         except GoogleCloudError as exc:
             LOGGER.exception(
-                f'Error reading time aware columns in dataset, {__class__.__name__}'
+                f'Error reading time aware columns in dataset, {self.__class__.__name__}'
             )
             raise exc
         else:
@@ -148,7 +148,7 @@ class YearOfBirthRecordsSuppression(BaseCleaningRule):
                                         job_id_prefix='ct_yob_setup_get_')
             except GoogleCloudError as exc:
                 LOGGER.exception(
-                    f'Error setting tables_and_columns variable, {__class__.__name__}'
+                    f'Error setting tables_and_columns variable, {self.__class__.__name__}'
                 )
                 raise exc
             else:
