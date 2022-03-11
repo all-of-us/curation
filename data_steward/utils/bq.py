@@ -72,6 +72,7 @@ FIELDS_TMPL = JINJA_ENV.from_string("""
 """)
 
 
+@deprecated(reason='replaced by gcloud.bq.BigQueryClient()')
 def get_client(project_id, scopes=None, credentials=None):
     """
     Get a client for a specified project.
