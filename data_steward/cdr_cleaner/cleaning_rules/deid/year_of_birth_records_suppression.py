@@ -32,7 +32,11 @@ LOOKUP_TABLE = 'birth_columns_lookup'
 
 class YearOfBirthRecordsSuppression(BaseCleaningRule):
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id, table_namer=''):
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 table_namer=''):
         """
         Initialize the class with proper info.
 
@@ -40,12 +44,14 @@ class YearOfBirthRecordsSuppression(BaseCleaningRule):
         tickets may affect this SQL, append them to the list of Jira Issues.
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
-        desc = (
-            'Sandbox and record suppress all records within one year of a '
-            'participant\'s birth.')
+        desc = ('Sandbox and record suppress all records within one year of a '
+                'participant\'s birth.')
         super().__init__(issue_numbers=ISSUE_NUMBERS,
                          description=desc,
-                         affected_datasets=[cdr_consts.CONTROLLED_TIER_DEID_BASE, cdr_consts.CONTROLLED_TIER_DEID_CLEAN],
+                         affected_datasets=[
+                             cdr_consts.CONTROLLED_TIER_DEID_BASE,
+                             cdr_consts.CONTROLLED_TIER_DEID_CLEAN
+                         ],
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
@@ -58,7 +64,6 @@ class YearOfBirthRecordsSuppression(BaseCleaningRule):
 
     def get_sandbox_tablenames(self):
         return [self.sandbox_table_for(table) for table in AOU_REQUIRED]
-
 
     def setup_rule(self, client):
         self._get_time_columns(client)
@@ -76,9 +81,7 @@ class YearOfBirthRecordsSuppression(BaseCleaningRule):
            and lower(table_name) = 'observation'
         """)
         tables_columns_query = tables_columns_query_template.render(
-            project=self.project_id,
-            dataset=self.dataset_id
-            )
+            project=self.project_id, dataset=self.dataset_id)
 
         try:
             response = client.query(tables_columns_query,
@@ -120,12 +123,10 @@ class YearOfBirthRecordsSuppression(BaseCleaningRule):
             project=self.project_id,
             dataset=self.dataset_id,
             sandbox_dataset=self.sandbox_dataset_id,
-            lookup_table=self.sandbox_table_for(LOOKUP_TABLE)
-            )
+            lookup_table=self.sandbox_table_for(LOOKUP_TABLE))
 
         try:
-            client.query(tables_columns_query,
-                         job_id_prefix='ct_yob_setup_')
+            client.query(tables_columns_query, job_id_prefix='ct_yob_setup_')
         except (GoogleCloudError, TOError) as exc:
             raise exc
         else:
@@ -136,8 +137,7 @@ class YearOfBirthRecordsSuppression(BaseCleaningRule):
             hold_response_query = hold_response_template.render(
                 project=self.project_id,
                 sandbox_dataset=self.sandbox_dataset_id,
-                lookup_table=self.sandbox_table_for(LOOKUP_TABLE)
-            )
+                lookup_table=self.sandbox_table_for(LOOKUP_TABLE))
 
             try:
                 response = client.query(hold_response_query,
@@ -208,9 +208,8 @@ class YearOfBirthRecordsSuppression(BaseCleaningRule):
                 obs_columns=self.observation_concept_id_columns,
                 exceptions=all_concept_ids)
 
-            sandbox_queries.append({
-                cdr_consts.QUERY: suppression_record_sandbox_query
-            })
+            sandbox_queries.append(
+                {cdr_consts.QUERY: suppression_record_sandbox_query})
 
         return sandbox_queries
 
@@ -268,20 +267,20 @@ if __name__ == '__main__':
     pipeline_logging.configure(level=logging.DEBUG, add_console_handler=True)
 
     additional_args = [{
-                        parser.SHORT_ARGUMENT: '-a',
-                        parser.LONG_ARGUMENT: '--data-stage',
-                        parser.DEST: 'data_stage',
-                        parser.ACTION: 'store',
-                        parser.HELP: 'The data stage you will execute on.',
-                        parser.REQUIRED: True}]
+        parser.SHORT_ARGUMENT: '-a',
+        parser.LONG_ARGUMENT: '--data-stage',
+        parser.DEST: 'data_stage',
+        parser.ACTION: 'store',
+        parser.HELP: 'The data stage you will execute on.',
+        parser.REQUIRED: True
+    }]
     ARGS = parser.default_parse_args(additional_args)
 
     if ARGS.list_queries:
         clean_engine.add_console_logging()
         query_list = clean_engine.get_query_list(
             ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id,
-            [(YearOfBirthRecordsSuppression,)],
-            ARGS.data_stage)
+            [(YearOfBirthRecordsSuppression,)], ARGS.data_stage)
         for query in query_list:
             LOGGER.info(query)
     else:

@@ -89,8 +89,7 @@ class SuppressYearOfBirthRecordsTest(BaseTest.CleaningRulesTestBase):
         for table_name in AFFECTED_TABLES:
             cls.fq_table_names.append(
                 f'{cls.project_id}.{cls.dataset_id}.{table_name}')
-            sandbox_table_name = cls.rule_instance.sandbox_table_for(
-                table_name)
+            sandbox_table_name = cls.rule_instance.sandbox_table_for(table_name)
             cls.fq_sandbox_table_names.append(
                 f'{cls.project_id}.{cls.sandbox_id}.{sandbox_table_name}')
 
@@ -134,12 +133,10 @@ class SuppressYearOfBirthRecordsTest(BaseTest.CleaningRulesTestBase):
             'cleaned_values': [
                 (1, 1, datetime.datetime.strptime('2020-01-01',
                                                   '%Y-%m-%d').date(),
-                 datetime.datetime.strptime('2020-01-02',
-                                            '%Y-%m-%d').date()),
+                 datetime.datetime.strptime('2020-01-02', '%Y-%m-%d').date()),
                 (3, 2, datetime.datetime.strptime('2020-01-01',
                                                   '%Y-%m-%d').date(),
-                 datetime.datetime.strptime('2020-03-01',
-                                            '%Y-%m-%d').date())
+                 datetime.datetime.strptime('2020-03-01', '%Y-%m-%d').date())
             ]
         }, {
             'fq_table_name':
