@@ -106,7 +106,7 @@ class CreateDeidQuestionnaireResponseMap(BaseCleaningRule):
         table, that load operation should be defined here.  It SHOULD NOT BE
         defined as part of get_query_specs().
         """
-        raise NotImplementedError("Please fix me.")
+        pass
 
     def setup_validation(self, client, *args, **keyword_args):
         """
@@ -121,7 +121,7 @@ class CreateDeidQuestionnaireResponseMap(BaseCleaningRule):
         the logic to get the row counts of the tables prior to applying cleaning rule
 
         """
-        raise NotImplementedError("Please fix me.")
+        pass
 
     def get_sandbox_tablenames(self):
         return []
