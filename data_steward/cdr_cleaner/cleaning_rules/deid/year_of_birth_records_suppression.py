@@ -10,6 +10,7 @@ and also covers all the mapped standard concepts for non standard concepts that 
 
 # Python Imports
 import logging
+import time
 
 # Third Party Imports
 from google.cloud.exceptions import GoogleCloudError
@@ -131,6 +132,8 @@ class YearOfBirthRecordsSuppression(BaseCleaningRule):
         except GoogleCloudError as exc:
             raise exc
         else:
+            # Add 2 seconds to ensure the lookup table job is finished creating before reading from the table.
+            time.sleep(2)
             hold_response_template = JINJA_ENV.from_string("""
                 SELECT table_name, column_name
                 FROM `{{project}}.{{sandbox_dataset}}.{{lookup_table}}`""")
