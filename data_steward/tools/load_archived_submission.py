@@ -6,12 +6,13 @@ import argparse
 from typing import List
 from concurrent.futures import TimeoutError as TOError
 
-from google.cloud.bigquery import LoadJobConfig, LoadJob, Table, Client as BQClient
+from google.cloud.bigquery import LoadJobConfig, LoadJob, Table
 from gcloud.gcs import StorageClient
+from gcloud.bq import BigQueryClient
 from google.cloud.exceptions import GoogleCloudError
 
 from common import AOU_REQUIRED, JINJA_ENV
-from utils.bq import get_table_schema, get_client
+from utils.bq import get_table_schema
 import constants.bq_utils as bq_consts
 
 LOGGER = logging.getLogger(__name__)
@@ -23,11 +24,11 @@ WHERE hpo_id = '{{hpo_id}}'
 """)
 
 
-def get_bucket(client: BQClient, hpo_id: str) -> str:
+def get_bucket(client: BigQueryClient, hpo_id: str) -> str:
     """
     Retrieves bucket name for site
 
-    :param client: Bigquery Client object
+    :param client: a BigQueryClient
     :param hpo_id: Identifies the HPO site
     :return: bucket name for the HPO site as a string
     :raises GoogleCloudError/TimeoutError
@@ -63,14 +64,14 @@ def _filename_to_table_name(filename: str) -> str:
     return filename.split('/')[-1].replace('.csv', '').lower()
 
 
-def load_folder(dst_dataset: str, bq_client: BQClient, bucket_name: str,
+def load_folder(dst_dataset: str, bq_client: BigQueryClient, bucket_name: str,
                 prefix: str, gcs_client: StorageClient,
                 hpo_id: str) -> List[LoadJob]:
     """
     Stage files from a bucket to a dataset
 
     :param dst_dataset: Identifies the destination dataset
-    :param bq_client: a BigQuery client object
+    :param bq_client: a BigQueryClient
     :param bucket_name: the bucket in GCS containing the archive files
     :param prefix: prefix of the filepath URI
     :param gcs_client: a StorageClient object
@@ -153,7 +154,7 @@ def main(project_id, dataset_id, bucket_name, hpo_id, folder_name):
     :param folder_name: Name of the submission folder to load
     :return:
     """
-    bq_client = get_client(project_id)
+    bq_client = BigQueryClient(project_id)
     gcs_client = StorageClient(project_id)
     site_bucket = get_bucket(bq_client, hpo_id)
     prefix = f'{hpo_id}/{site_bucket}/{folder_name}'

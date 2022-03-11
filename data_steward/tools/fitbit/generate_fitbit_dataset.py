@@ -9,6 +9,7 @@ from google.cloud.bigquery import Table
 from cdr_cleaner import clean_cdr, args_parser
 from common import FITBIT_TABLES, JINJA_ENV
 from utils import auth, bq, pipeline_logging
+from gcloud.bq import BigQueryClient
 from constants.cdr_cleaner import clean_cdr as consts
 
 LOGGER = logging.getLogger(__name__)
@@ -28,7 +29,7 @@ def create_fitbit_datasets(client, release_tag):
     """
     Creates staging, sandbox, backup and clean datasets with descriptions and labels
 
-    :param client: bq client
+    :param client: a BigQueryClient
     :param release_tag: string of the form "YYYYqNrN"
     :return: dict of dataset names with keys 'clean', 'backup', 'staging', 'sandbox'
     """
@@ -89,7 +90,7 @@ def copy_fitbit_tables_from_views(client, from_dataset, to_dataset,
     """
     Copies tables from views with prefix
 
-    :param client: bq client
+    :param client: a BigQueryClient
     :param from_dataset: dataset containing views
     :param to_dataset: dataset to create tables
     :param table_prefix: prefix added to table_ids
@@ -180,16 +181,16 @@ def main(raw_args=None):
     impersonation_creds = auth.get_impersonation_credentials(
         args.run_as_email, SCOPES)
 
-    client = bq.get_client(args.project_id, credentials=impersonation_creds)
+    bq_client = BigQueryClient(args.project_id, credentials=impersonation_creds)
 
     # create staging, sandbox, backup and clean datasets with descriptions and labels
-    fitbit_datasets = create_fitbit_datasets(client, args.release_tag)
+    fitbit_datasets = create_fitbit_datasets(bq_client, args.release_tag)
 
-    copy_fitbit_tables_from_views(client,
+    copy_fitbit_tables_from_views(bq_client,
                                   args.fitbit_dataset,
                                   fitbit_datasets[consts.BACKUP],
                                   table_prefix='v_')
-    bq.copy_datasets(client, fitbit_datasets[consts.BACKUP],
+    bq.copy_datasets(bq_client, fitbit_datasets[consts.BACKUP],
                      fitbit_datasets[consts.STAGING])
 
     common_cleaning_args = [
@@ -202,7 +203,7 @@ def main(raw_args=None):
     clean_cdr.main(args=fitbit_cleaning_args)
 
     # Snapshot the staging dataset to final dataset
-    bq.build_and_copy_contents(client, fitbit_datasets[consts.STAGING],
+    bq.build_and_copy_contents(bq_client, fitbit_datasets[consts.STAGING],
                                fitbit_datasets[consts.CLEAN])
 
 

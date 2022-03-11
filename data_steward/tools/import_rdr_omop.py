@@ -14,6 +14,7 @@ from google.api_core.exceptions import NotFound
 from common import AOU_REQUIRED
 from utils import auth
 from utils import bq
+from gcloud.bq import BigQueryClient
 from utils import pipeline_logging
 from common import CDR_SCOPES
 import resources
@@ -70,7 +71,7 @@ def create_rdr_tables(client, rdr_dataset, bucket):
     Uses the client to load data directly from the bucket into
     a table.
 
-    :param client: a bigquery client object
+    :param client: a BigQueryClient
     :param rdr_dataset: The existing dataset to load file data into
     :param bucket: the gcs bucket containing the file data.
     """
@@ -139,7 +140,7 @@ def copy_vocab_tables(client, rdr_dataset, vocab_dataset):
     client object is built to access.  This is just a copy for now,
     because these tables are not partitioned yet.
 
-    :param client: a bigquery client object.
+    :param client: a BigQueryClient
     :param rdr_dataset:  the rdr dataset that tables will be copied into
     :param vocab_dataset: the vocabulary dataset id the tables will be copied from
     """
@@ -195,16 +196,16 @@ def main(raw_args=None):
     impersonation_creds = auth.get_impersonation_credentials(
         args.run_as_email, CDR_SCOPES)
 
-    client = bq.get_client(args.curation_project_id,
-                           credentials=impersonation_creds)
+    bq_client = BigQueryClient(args.curation_project_id,
+                               credentials=impersonation_creds)
 
-    dataset_object = bq.define_dataset(client.project, new_dataset_name,
+    dataset_object = bq.define_dataset(bq_client.project, new_dataset_name,
                                        description,
                                        {'export_date': args.export_date})
-    client.create_dataset(dataset_object)
+    bq_client.create_dataset(dataset_object)
 
-    create_rdr_tables(client, new_dataset_name, args.bucket)
-    copy_vocab_tables(client, new_dataset_name, args.vocabulary)
+    create_rdr_tables(bq_client, new_dataset_name, args.bucket)
+    copy_vocab_tables(bq_client, new_dataset_name, args.vocabulary)
 
 
 if __name__ == '__main__':
