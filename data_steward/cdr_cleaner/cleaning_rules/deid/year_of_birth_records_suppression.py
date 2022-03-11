@@ -20,6 +20,7 @@ import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 
 LOGGER = logging.getLogger(__name__)
+
 ISSUE_NUMBERS = ['DC1977', 'DC2205']
 BIRTH_DELIVERY_SUPPRESSION_CONCEPT_TABLE = '_birth_concepts'
 
