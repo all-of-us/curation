@@ -10,7 +10,6 @@ and also covers all the mapped standard concepts for non standard concepts that 
 
 # Python Imports
 import logging
-import time
 
 # Third Party Imports
 from google.cloud.exceptions import GoogleCloudError
@@ -50,10 +49,7 @@ class YearOfBirthRecordsSuppression(BaseCleaningRule):
                 'participant\'s birth.')
         super().__init__(issue_numbers=ISSUE_NUMBERS,
                          description=desc,
-                         affected_datasets=[
-                             cdr_consts.CONTROLLED_TIER_DEID_BASE,
-                             cdr_consts.CONTROLLED_TIER_DEID_CLEAN
-                         ],
+                         affected_datasets=[cdr_consts.CONTROLLED_TIER_DEID],
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
@@ -128,12 +124,16 @@ class YearOfBirthRecordsSuppression(BaseCleaningRule):
             lookup_table=self.sandbox_table_for(LOOKUP_TABLE))
 
         try:
-            client.query(tables_columns_query, job_id_prefix='ct_yob_setup_')
+            response = client.query(tables_columns_query,
+                                    job_id_prefix='ct_yob_setup_')
+            # wait on the result before continuing
+            response.result()
         except GoogleCloudError as exc:
+            LOGGER.exception(
+                f'Error reading time aware columns in dataset, {__class__.__name__}'
+            )
             raise exc
         else:
-            # Add 2 seconds to ensure the lookup table job is finished creating before reading from the table.
-            time.sleep(2)
             hold_response_template = JINJA_ENV.from_string("""
                 SELECT table_name, column_name
                 FROM `{{project}}.{{sandbox_dataset}}.{{lookup_table}}`""")
@@ -147,10 +147,12 @@ class YearOfBirthRecordsSuppression(BaseCleaningRule):
                 response = client.query(hold_response_query,
                                         job_id_prefix='ct_yob_setup_get_')
             except GoogleCloudError as exc:
+                LOGGER.exception(
+                    f'Error setting tables_and_columns variable, {__class__.__name__}'
+                )
                 raise exc
             else:
                 response_list = list(response.result())
-                print(response_list)
 
                 # move all the columns to key/value dictionary list for JINJA templating
                 response_dict = {}
@@ -200,7 +202,6 @@ class YearOfBirthRecordsSuppression(BaseCleaningRule):
         """)
 
         sandbox_queries = []
-        print(f"\n--------\n{self.tables_and_columns}\n------\n")
         for table_name, columns_list in self.tables_and_columns.items():
             suppression_record_sandbox_query = bq_lookup_table_sandbox_query_template.render(
                 project=self.project_id,
@@ -249,10 +250,6 @@ class YearOfBirthRecordsSuppression(BaseCleaningRule):
         suppression_queries = self.get_suppression_queries()
 
         all_queries = sandbox_queries + suppression_queries
-        print("\n\n------------------------------------------------\n\n")
-
-        for q in all_queries:
-            print(f'{q.get("query")};\n')
 
         return all_queries
 
