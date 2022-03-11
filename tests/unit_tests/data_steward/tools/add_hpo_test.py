@@ -79,13 +79,13 @@ class AddHPOTest(TestCase):
                           new_site['hpo_id'], new_site['hpo_name'],
                           new_site['org_id'], new_site['display_order'])
 
-    @mock.patch('utils.bq.get_client')
-    def test_update_site_masking_table(self, mock_get_client):
+    @mock.patch('tools.add_hpo.BigQueryClient')
+    def test_update_site_masking_table(self, mock_bq_client):
         # Preconditions
         project_id = app_identity.get_application_id()
         sandbox_id = PIPELINE_TABLES + '_sandbox'
 
-        mock_query = mock_get_client.return_value.query
+        mock_query = mock_bq_client.return_value.query
 
         # Mocks the job return
         query_job_reference_results = mock.MagicMock(
