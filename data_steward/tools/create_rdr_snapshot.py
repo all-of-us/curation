@@ -109,7 +109,8 @@ def main(raw_args=None):
         datasets.get('staging', 'UNSET'), '-b',
         datasets.get('sandbox',
                      'UNSET'), '--data_stage', 'rdr', '--truncation_date',
-        args.truncation_date, '--export_date', args.export_date, '--run_as', args.run_as_email
+        args.truncation_date, '--export_date', args.export_date,
+        '--run_as', args.run_as_email
     ]
 
     all_cleaning_args = add_kwargs_to_args(cleaning_args, kwargs)
