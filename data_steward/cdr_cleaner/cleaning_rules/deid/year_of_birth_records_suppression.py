@@ -86,7 +86,7 @@ class YearOfBirthRecordsSuppression(BaseCleaningRule):
         try:
             response = client.query(tables_columns_query,
                                     job_id_prefix='ct_yob_setup_')
-        except (GoogleCloudError, TOError) as exc:
+        except GoogleCloudError as exc:
             raise exc
         else:
             response_list = list(response.result())
@@ -127,7 +127,7 @@ class YearOfBirthRecordsSuppression(BaseCleaningRule):
 
         try:
             client.query(tables_columns_query, job_id_prefix='ct_yob_setup_')
-        except (GoogleCloudError, TOError) as exc:
+        except GoogleCloudError as exc:
             raise exc
         else:
             hold_response_template = JINJA_ENV.from_string("""
@@ -142,7 +142,7 @@ class YearOfBirthRecordsSuppression(BaseCleaningRule):
             try:
                 response = client.query(hold_response_query,
                                         job_id_prefix='ct_yob_setup_get_')
-            except (GoogleCloudError, TOError) as exc:
+            except GoogleCloudError as exc:
                 raise exc
             else:
                 response_list = list(response.result())
