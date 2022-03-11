@@ -9,6 +9,7 @@ import argparse
 import re
 
 # Project imports
+from gcloud.bq import BigQueryClient
 from utils import bq, auth, pipeline_logging
 from tools.recreate_person import update_person
 
@@ -127,8 +128,8 @@ if __name__ == '__main__':
     impersonation_creds = auth.get_impersonation_credentials(
         args.run_as_email, SCOPES)
 
-    client = bq.get_client(args.output_prod_project_id,
-                           credentials=impersonation_creds)
+    bq_client = BigQueryClient(args.output_prod_project_id,
+                               credentials=impersonation_creds)
 
     #Create dataset with labels
     output_dataset_name = get_dataset_name(args.tier, args.release_tag,
@@ -145,17 +146,17 @@ if __name__ == '__main__':
     )
     dataset_object = bq.define_dataset(args.output_prod_project_id,
                                        output_dataset_name, description, labels)
-    client.create_dataset(dataset_object, exists_ok=False)
+    bq_client.create_dataset(dataset_object, exists_ok=False)
 
     #Copy tables from source to destination
     LOGGER.info(
         f'Copying tables from dataset {args.src_project_id}.{args.src_dataset_id} to {args.output_prod_project_id}.{output_dataset_name}...'
     )
-    bq.copy_datasets(client, f'{args.src_project_id}.{args.src_dataset_id}',
+    bq.copy_datasets(bq_client, f'{args.src_project_id}.{args.src_dataset_id}',
                      f'{args.output_prod_project_id}.{output_dataset_name}')
 
     #Append extra columns to person table
     LOGGER.info(f'Appending extract columns to the person table...')
-    update_person(client, args.output_prod_project_id, output_dataset_name)
+    update_person(bq_client, output_dataset_name)
 
     LOGGER.info(f'Completed successfully.')

@@ -16,9 +16,9 @@ import app_identity
 import bq_utils
 import constants.bq_utils as bq_consts
 from gcloud.gcs import StorageClient
+from gcloud.bq import BigQueryClient
 import resources
 from tools import cli_util
-from utils import bq
 from utils import pipeline_logging
 from common import JINJA_ENV, PIPELINE_TABLES, SITE_MASKING_TABLE_ID
 
@@ -261,7 +261,7 @@ def update_site_masking_table():
     project_id = app_identity.get_application_id()
     sandbox_id = PIPELINE_TABLES + '_sandbox'
 
-    client = bq.get_client(project_id)
+    bq_client = BigQueryClient(project_id)
 
     update_site_maskings_query = UPDATE_SITE_MASKING_QUERY.render(
         project_id=project_id,
@@ -275,7 +275,7 @@ def update_site_masking_table():
         f'Updating site_masking table with new hpo_id and src_id with the following '
         f'query:\n {update_site_maskings_query}\n ')
 
-    query_job = client.query(update_site_maskings_query)
+    query_job = bq_client.query(update_site_maskings_query)
 
     return query_job
 
