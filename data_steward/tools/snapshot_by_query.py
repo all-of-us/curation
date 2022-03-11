@@ -6,6 +6,7 @@ import resources
 from bq_utils import create_dataset, list_all_table_ids, query, wait_on_jobs, BigQueryJobWaitError, \
     create_standard_table
 from utils import bq
+from gcloud.bq import BigQueryClient
 from utils.pipeline_logging import configure
 
 LOGGER = logging.getLogger(__name__)
@@ -96,10 +97,10 @@ def get_source_fields(client, source_table):
     return [f'{field.name}' for field in client.get_table(source_table).schema]
 
 
-def get_copy_table_query(project_id, dataset_id, table_id, client):
+def get_copy_table_query(dataset_id, table_id, client):
 
     try:
-        source_table = f'{project_id}.{dataset_id}.{table_id}'
+        source_table = f'{client.project}.{dataset_id}.{table_id}'
         source_fields = get_source_fields(client, source_table)
         dst_fields = resources.fields_for(table_id)
         if dst_fields:
@@ -115,7 +116,7 @@ def get_copy_table_query(project_id, dataset_id, table_id, client):
         col_expr = '*'
     select_all_query = 'SELECT {col_expr} FROM `{project_id}.{dataset_id}.{table_id}`'
     return select_all_query.format(col_expr=col_expr,
-                                   project_id=project_id,
+                                   project_id=client.project,
                                    dataset_id=dataset_id,
                                    table_id=table_id)
 
@@ -129,7 +130,7 @@ def copy_tables_to_new_dataset(project_id, dataset_id, snapshot_dataset_id):
     :return:
     """
     copy_table_job_ids = []
-    client = bq.get_client(project_id)
+    bq_client = BigQueryClient(project_id)
     destination_tables = list_all_table_ids(snapshot_dataset_id)
     for table_id in list_all_table_ids(dataset_id):
         LOGGER.info(
@@ -139,12 +140,12 @@ def copy_tables_to_new_dataset(project_id, dataset_id, snapshot_dataset_id):
             try:
                 fields = resources.fields_for(table_id)
                 bq.create_tables(
-                    client, project_id,
+                    bq_client, project_id,
                     [f'{project_id}.{snapshot_dataset_id}.{table_id}'], False,
                     [fields])
             except RuntimeError:
                 LOGGER.info(f'Unable to find schema for {table_id}')
-        q = get_copy_table_query(project_id, dataset_id, table_id, client)
+        q = get_copy_table_query(dataset_id, table_id, bq_client)
         results = query(q,
                         use_legacy_sql=False,
                         destination_table_id=table_id,
