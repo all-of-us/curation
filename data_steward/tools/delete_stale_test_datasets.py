@@ -15,6 +15,7 @@ from google.api_core import exceptions
 
 # Project imports
 from utils import bq, pipeline_logging
+from gcloud.bq import BigQueryClient
 
 LOGGER = logging.getLogger(__name__)
 
