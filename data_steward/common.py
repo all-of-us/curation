@@ -21,6 +21,9 @@ PII_TABLES = [
     PARTICIPANT_MATCH
 ]
 
+# DRC identity match
+IDENTITY_MATCH = 'identity_match'
+
 # AOU required CDM tables
 CARE_SITE = 'care_site'
 CONDITION_OCCURRENCE = 'condition_occurrence'
