@@ -11,6 +11,7 @@ from cdr_cleaner import clean_cdr
 from cdr_cleaner.args_parser import add_kwargs_to_args
 from utils import auth
 from utils import bq
+from gcloud.bq import BigQueryClient
 from utils import pipeline_logging
 from tools import add_cdr_metadata
 from tools.snapshot_by_query import create_schemaed_snapshot_dataset
@@ -107,7 +108,7 @@ def create_datasets(client, name, input_dataset, tier, release_tag):
     Creates backup, staging, sandbox, and final datasets with the proper descriptions
     and tag/labels applied
 
-    :param client: an instantiated bigquery client object
+    :param client: a BigQueryClient
     :param name: the base name of the datasets to be created
     :param input_dataset: name of the input dataset
     :param tier: tier parameter passed through from either a list or command line argument
@@ -202,15 +203,16 @@ def create_tier(credentials_filepath, project_id, tier, input_dataset,
     impersonation_creds = auth.get_impersonation_credentials(
         run_as, CDR_SCOPES, credentials_filepath)
 
-    client = bq.get_client(project_id, credentials=impersonation_creds)
+    # client = bq.get_client(project_id, credentials=impersonation_creds)
+    bq_client = BigQueryClient(project_id, credentials=impersonation_creds)
 
     # Get Final Dataset name
     final_dataset_name = get_dataset_name(tier, release_tag, deid_stage)
 
     # Create intermediary datasets and copy tables from input dataset to newly created dataset
-    datasets = create_datasets(client, final_dataset_name, input_dataset, tier,
-                               release_tag)
-    bq.copy_datasets(client, input_dataset, datasets[consts.STAGING])
+    datasets = create_datasets(bq_client, final_dataset_name, input_dataset,
+                               tier, release_tag)
+    bq.copy_datasets(bq_client, input_dataset, datasets[consts.STAGING])
 
     # Run cleaning rules
     cleaning_args = [
