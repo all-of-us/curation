@@ -14,17 +14,17 @@ import os
 from google.api_core import exceptions
 
 # Project imports
-from utils import bq, pipeline_logging
+from utils import pipeline_logging
 from gcloud.bq import BigQueryClient
 
 LOGGER = logging.getLogger(__name__)
 
 
-def _check_project(bq_client):
+def _check_project(bq_client: BigQueryClient):
     """
     Check if the project is set to test.
 
-    :param bq_client: Client
+    :param bq_client: a BigQueryClient
     :return: None if the project is set properly
     :raise: ValueError if project is not 'aou-res-curation-test'
     """
@@ -37,13 +37,13 @@ def _check_project(bq_client):
     return None
 
 
-def _filter_stale_datasets(bq_client, first_n: int = None):
+def _filter_stale_datasets(bq_client: BigQueryClient, first_n: int = None):
     """
     Get the first n datasets that meet all of the following criteria:
     1. Datasets older than 90 days
     2. Empty datasets
 
-    :param bq_client: Client
+    :param bq_client: a BigQueryClient
     :param first_n: number of datasets to return. If not specified, return all.
     :return: list of dataset names that are stale
     """
@@ -101,7 +101,7 @@ def main(first_n):
 
     pipeline_logging.configure(logging.INFO, add_console_handler=True)
 
-    bq_client = bq.get_client(os.environ.get('GOOGLE_CLOUD_PROJECT'))
+    bq_client = BigQueryClient(os.environ.get('GOOGLE_CLOUD_PROJECT'))
 
     _check_project(bq_client)
 
