@@ -27,9 +27,9 @@ BIGQUERY_DATA_TYPES = {
 def create_empty_dataset(project_id, dataset_id, snapshot_dataset_id):
     """
     Create the empty tables in the new snapshot dataset
-    :param project_id:
-    :param dataset_id:
-    :param snapshot_dataset_id:
+    :param project_id: identifies the project
+    :param dataset_id: identifies the source dataset
+    :param snapshot_dataset_id: identifies the new dataset
     :return:
     """
     create_dataset(
@@ -124,9 +124,9 @@ def get_copy_table_query(dataset_id, table_id, client):
 def copy_tables_to_new_dataset(project_id, dataset_id, snapshot_dataset_id):
     """
     lists the tables in the dataset and copies each table to a new dataset.
-    :param dataset_id:
-    :param project_id:
-    :param snapshot_dataset_id:
+    :param dataset_id: identifies the source dataset
+    :param project_id: identifies the project
+    :param snapshot_dataset_id: identifies the destination dataset
     :return:
     """
     copy_table_job_ids = []
@@ -162,9 +162,9 @@ def create_schemaed_snapshot_dataset(project_id,
                                      snapshot_dataset_id,
                                      overwrite_existing=True):
     """
-    :param project_id:
-    :param dataset_id:
-    :param snapshot_dataset_id:
+    :param project_id: identifies the project
+    :param dataset_id: identifies the source dataset
+    :param snapshot_dataset_id: identifies the destination dataset
     :param overwrite_existing: Default is True, False if a dataset is already created.
     :return:
     """
