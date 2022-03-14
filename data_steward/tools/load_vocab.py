@@ -12,7 +12,7 @@ from typing import List
 
 # Third party imports
 from google.cloud.exceptions import NotFound
-from google.cloud.bigquery import Client, Dataset, SchemaField, LoadJob, LoadJobConfig, \
+from google.cloud.bigquery import  Dataset, SchemaField, LoadJob, LoadJobConfig, \
     QueryJobConfig, Table
 
 # Project imports
@@ -101,7 +101,8 @@ def upload_stage(bucket_name: str, vocab_folder_path: Path,
     return
 
 
-def check_and_create_staging_dataset(dst_dataset_id, bucket_name, bq_client):
+def check_and_create_staging_dataset(dst_dataset_id: str, bucket_name: str,
+                                     bq_client: BigQueryClient):
     """
 
     :param dst_dataset_id: final destination to load the vocabulary in BigQuery
@@ -145,8 +146,8 @@ def _table_name_to_filename(table_name: str) -> str:
     return f'{table_name.upper()}.csv'
 
 
-def load_stage(dst_dataset: Dataset, bq_client: Client, bucket_name: str,
-               gcs_client: StorageClient) -> List[LoadJob]:
+def load_stage(dst_dataset: Dataset, bq_client: BigQueryClient,
+               bucket_name: str, gcs_client: StorageClient) -> List[LoadJob]:
     """
     Stage files from a bucket to a dataset
 
@@ -191,7 +192,8 @@ def load_stage(dst_dataset: Dataset, bq_client: Client, bucket_name: str,
     return load_jobs
 
 
-def load(project_id, bq_client, src_dataset_id, dst_dataset_id):
+def load(project_id: str, bq_client: BigQueryClient, src_dataset_id: str,
+         dst_dataset_id: str):
     """
     Transform safely loaded tables and store results in target dataset.
 
