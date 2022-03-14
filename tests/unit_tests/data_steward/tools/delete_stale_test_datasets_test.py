@@ -5,7 +5,7 @@ Unit test for delete_stale_test_buckets module
 # Python imports
 import os
 from unittest import TestCase
-from unittest.mock import patch, Mock
+from unittest.mock import patch, Mock, PropertyMock
 from datetime import datetime, timedelta, timezone
 
 # Third party imports
@@ -56,69 +56,70 @@ class DeleteStaleTestDatasetsTest(TestCase):
 
         self.mock_table = Mock()
 
-    @patch('tools.delete_stale_test_datasets.bq')
-    def test_check_project_error(self, mock_bq):
-        mock_bq.get_client.project = 'aou-wrong-project-name'
+    @patch('tools.delete_stale_test_datasets.BigQueryClient')
+    def test_check_project_error(self, mock_bq_client):
+        type(mock_bq_client).project = PropertyMock(
+            return_value='aou-wrong-project-name')
 
         with self.assertRaises(ValueError):
-            delete_stale_test_datasets._check_project(mock_bq.get_client)
+            delete_stale_test_datasets._check_project(mock_bq_client)
 
-    @patch('tools.delete_stale_test_datasets.bq')
-    def test_filter_stale_datasets_all_not_empty(self, mock_bq):
+    @patch('tools.delete_stale_test_datasets.BigQueryClient')
+    def test_filter_stale_datasets_all_not_empty(self, mock_bq_client):
         """Test case: All datasets are NOT empty.
         """
-        mock_bq.get_client.list_datasets.return_value = self.dataset_list_items
-        mock_bq.get_client.get_dataset.side_effect = self.datasets
-        mock_bq.get_client.list_tables.return_value = [
+        mock_bq_client.list_datasets.return_value = self.dataset_list_items
+        mock_bq_client.get_dataset.side_effect = self.datasets
+        mock_bq_client.list_tables.return_value = [
             self.mock_table for _ in range(0, 3)
         ]
 
         result = delete_stale_test_datasets._filter_stale_datasets(
-            mock_bq.get_client, 100)
+            mock_bq_client, 100)
 
         self.assertEqual(result, [])
 
-    @patch('tools.delete_stale_test_datasets.bq')
-    def test_filter_stale_datasets_all_empty(self, mock_bq):
+    @patch('tools.delete_stale_test_datasets.BigQueryClient')
+    def test_filter_stale_datasets_all_empty(self, mock_bq_client):
         """Test case: All datasets are empty.
         """
-        mock_bq.get_client.list_datasets.return_value = self.dataset_list_items
-        mock_bq.get_client.get_dataset.side_effect = self.datasets
-        mock_bq.get_client.list_tables.return_value = []
+        mock_bq_client.list_datasets.return_value = self.dataset_list_items
+        mock_bq_client.get_dataset.side_effect = self.datasets
+        mock_bq_client.list_tables.return_value = []
 
         result = delete_stale_test_datasets._filter_stale_datasets(
-            mock_bq.get_client, 100)
+            mock_bq_client, 100)
 
         self.assertEqual(result, [
             self.mock_old_dataset_list_item_1.dataset_id,
             self.mock_old_dataset_list_item_2.dataset_id
         ])
 
-    @patch('tools.delete_stale_test_datasets.bq')
-    def test_filter_stale_datasets_first_n_not_given(self, mock_bq):
+    @patch('tools.delete_stale_test_datasets.BigQueryClient')
+    def test_filter_stale_datasets_first_n_not_given(self, mock_bq_client):
         """Test case: All buckets are empty. first_n not given.
         """
-        mock_bq.get_client.list_datasets.return_value = self.dataset_list_items
-        mock_bq.get_client.get_dataset.side_effect = self.datasets
-        mock_bq.get_client.list_tables.return_value = []
+        mock_bq_client.list_datasets.return_value = self.dataset_list_items
+        mock_bq_client.get_dataset.side_effect = self.datasets
+        mock_bq_client.list_tables.return_value = []
 
         result = delete_stale_test_datasets._filter_stale_datasets(
-            mock_bq.get_client)
+            mock_bq_client)
 
         self.assertEqual(result, [
             self.mock_old_dataset_list_item_1.dataset_id,
             self.mock_old_dataset_list_item_2.dataset_id
         ])
 
-    @patch('tools.delete_stale_test_datasets.bq')
-    def test_filter_stale_datasets_first_n_given(self, mock_bq):
+    @patch('tools.delete_stale_test_datasets.BigQueryClient')
+    def test_filter_stale_datasets_first_n_given(self, mock_bq_client):
         """Test case: All buckets are empty. first_n given. first_n < # of stale buckets.
         """
-        mock_bq.get_client.list_datasets.return_value = self.dataset_list_items
-        mock_bq.get_client.get_dataset.side_effect = self.datasets
-        mock_bq.get_client.list_tables.return_value = []
+        mock_bq_client.list_datasets.return_value = self.dataset_list_items
+        mock_bq_client.get_dataset.side_effect = self.datasets
+        mock_bq_client.list_tables.return_value = []
 
         result = delete_stale_test_datasets._filter_stale_datasets(
-            mock_bq.get_client, 1)
+            mock_bq_client, 1)
 
         self.assertEqual(result, [self.mock_old_dataset_list_item_1.dataset_id])
