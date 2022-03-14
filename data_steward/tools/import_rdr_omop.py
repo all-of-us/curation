@@ -78,11 +78,9 @@ def create_rdr_tables(client, rdr_dataset, bucket):
     schema_dict = resources.cdm_schemas()
     schema_dict.update(resources.rdr_specific_schemas())
 
-    project = client.project
-
     for table, schema in schema_dict.items():
         schema_list = bq.get_table_schema(table, schema)
-        table_id = f'{project}.{rdr_dataset}.{table}'
+        table_id = f'{client.project}.{rdr_dataset}.{table}'
         job_config = bigquery.LoadJobConfig(
             schema=schema_list,
             skip_leading_rows=1,
