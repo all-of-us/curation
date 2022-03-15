@@ -227,9 +227,8 @@ COMBINED_CLEANING_CLASSES = [
 ]
 
 FITBIT_CLEANING_CLASSES = [
-    # (TruncateFitbitData,),
-    (
-        RemoveParticipantDataPastDeactivationDate,),
+    (TruncateFitbitData,),
+    (RemoveParticipantDataPastDeactivationDate,),
 ]
 
 FITBIT_DEID_CLEANING_CLASSES = [
