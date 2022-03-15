@@ -72,6 +72,8 @@ from cdr_cleaner.cleaning_rules.deid.motor_vehicle_accident_suppression import \
     MotorVehicleAccidentSuppression
 from cdr_cleaner.cleaning_rules.deid.birth_information_suppression import \
     BirthInformationSuppression
+from cdr_cleaner.cleaning_rules.deid.year_of_birth_records_suppression import \
+    YearOfBirthRecordsSuppression
 from cdr_cleaner.cleaning_rules.replace_standard_id_in_domain_tables import \
     ReplaceWithStandardConceptId
 from cdr_cleaner.cleaning_rules.remove_participant_data_past_deactivation_date import \
@@ -277,6 +279,7 @@ CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     (ExplicitIdentifierSuppression,),
     (GeoLocationConceptSuppression,),
     (BirthInformationSuppression,),
+    (YearOfBirthRecordsSuppression,),
     (StringFieldsSuppression,),
     (ControlledCopeSurveySuppression,),
     (IDFieldSuppression,),  # Should run after any data remapping
