@@ -2,7 +2,7 @@ import argparse
 import logging
 
 import common
-from utils import bq
+from gcloud.bq import BigQueryClient
 from utils import pipeline_logging
 
 LOGGER = logging.getLogger(__name__)
@@ -110,15 +110,14 @@ GROUP BY
 def update_cope_concepts(project_id, pipeline_dataset_id, vocabulary_dataset):
     """
 
-    :param project_id:
+    :param project_id: identifies the project
     :param pipeline_dataset_id:
     :param vocabulary_dataset:
     :return:
     """
-    client = bq.get_client(project_id)
+    bq_client = BigQueryClient(project_id)
 
     queries = []
-    results = []
     # recreate concept_ancestor_cope table
     queries.append(
         COPE_DESCENDANT_QUERY.render(
@@ -138,7 +137,7 @@ def update_cope_concepts(project_id, pipeline_dataset_id, vocabulary_dataset):
 
     for q in queries:
         LOGGER.info(f'Running query -- {q}')
-        query_job = client.query(q)
+        query_job = bq_client.query(q)
         if query_job.errors:
             raise RuntimeError(
                 f"Job {query_job.job_id} failed with error {query_job.errors} for query"
