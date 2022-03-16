@@ -20,7 +20,7 @@ import resources
 from utils import bq, auth
 from gcloud.bq import BigQueryClient
 import bq_utils
-from common import JINJA_ENV, PS_API_VALUES, DRC_OPS, CDR_SCOPES
+from common import JINJA_ENV, DRC_OPS, CDR_SCOPES, EHR_OPS, PERSON
 from constants.validation.participants.identity_match import IDENTITY_MATCH_TABLE
 
 LOGGER = logging.getLogger(__name__)
@@ -49,14 +49,18 @@ PARTITION BY TIMESTAMP_TRUNC(_PARTITIONTIME, HOUR)
 POPULATE_VALIDATION_TABLE = JINJA_ENV.from_string("""
 INSERT INTO `{{project_id}}.{{drc_dataset_id}}.{{id_match_table_id}}` (_PARTITIONTIME, {{fields}}) 
 SELECT
-    _PARTITIONTIME, 
-    person_id, {{case_statements}}, '' algorithm
-FROM `{{project_id}}.{{drc_dataset_id}}.{{ps_values_table_id}}`
-WHERE ABS(TIMESTAMP_DIFF(TIMESTAMP_TRUNC(CURRENT_TIMESTAMP, HOUR), _PARTITIONTIME, HOUR)) < 2
+    TIMESTAMP_TRUNC(CURRENT_TIMESTAMP, HOUR), 
+    person_id,
+    {{case_statements}},
+    '' algorithm
+FROM (SELECT * EXCEPT(r)
+        FROM (SELECT *, ROW_NUMBER() OVER(PARTITION BY person_id) r
+            FROM `{{project_id}}.{{ehr_ops_dataset_id}}.{{ehr_person_table_id}}`)
+        WHERE r = 1)
 """)
 
 CASE_EXPRESSION = JINJA_ENV.from_string("""
-CASE WHEN {{ps_api_field}} IS NULL THEN 'missing_rdr' ELSE 'missing_ehr' END AS {{identity_match_field}}
+'missing_ehr' AS {{identity_match_field}}
 """)
 
 
@@ -118,7 +122,7 @@ def populate_validation_table(client, table_id, hpo_id, drc_dataset_id=DRC_OPS):
 
     schema_list = bq.get_table_schema(IDENTITY_MATCH_TABLE)
     id_match_table_id = table_id
-    ps_values_table_id = f'{PS_API_VALUES}_{hpo_id}'
+    ehr_person_table_id = bq_utils.get_table_id(hpo_id, PERSON)
 
     fields_name_str = ', '.join([item.name for item in schema_list])
 
@@ -128,7 +132,8 @@ def populate_validation_table(client, table_id, hpo_id, drc_dataset_id=DRC_OPS):
         id_match_table_id=id_match_table_id,
         fields=fields_name_str,
         case_statements=get_case_statements(),
-        ps_values_table_id=ps_values_table_id)
+        ehr_ops_dataset_id=EHR_OPS,
+        ehr_person_table_id=ehr_person_table_id)
 
     job = client.query(populate_query)
     job.result()
