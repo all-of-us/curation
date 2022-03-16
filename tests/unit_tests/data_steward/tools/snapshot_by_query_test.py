@@ -18,8 +18,7 @@ class SnapshotByQueryTest(unittest.TestCase):
         print('**************************************************************')
 
         cls.mock_bq_client = mock.MagicMock()
-        type(cls.mock_bq_client).project = mock.PropertyMock(
-            return_value='test-project')
+        cls.mock_bq_client.project = 'test-project'
 
     @mock.patch('tools.snapshot_by_query.get_source_fields')
     def test_get_copy_table_query(self, mock_get_source_fields):
