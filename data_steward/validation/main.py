@@ -282,31 +282,6 @@ def validate_submission(hpo_id: str, bucket, folder_items: list,
     return dict(results=results, errors=errors, warnings=warnings)
 
 
-def check_duplicates_and_validate(hpo_id, report_data):
-    """
-    Check if any tables used in participant validation has duplicates and runs them
-    :param hpo_id:
-    :param report_data:
-    :return: List
-    """
-    participant_val_tables = common.PII_TABLES + [
-        common.PERSON, common.LOCATION
-    ]
-    duplicate_tables = [
-        row_dict["table_name"] for row_dict in report_data[
-            report_consts.NONUNIQUE_KEY_METRICS_REPORT_KEY]
-    ]
-    duplicate_tables = list(set(participant_val_tables) & set(duplicate_tables))
-    if duplicate_tables:
-        logging.info(
-            f"Unable to run participant validation for {hpo_id} due to duplicates"
-            f" in {duplicate_tables}")
-        return duplicate_tables
-    logging.info(f"Running participant validation for {hpo_id}")
-    setup_and_validate_participants(hpo_id)
-    return duplicate_tables
-
-
 def is_first_validation_run(folder_items):
     return common.RESULTS_HTML not in folder_items and common.PROCESSED_TXT not in folder_items
 
@@ -378,10 +353,9 @@ def generate_metrics(hpo_id, bucket, folder_prefix, summary):
 
         # participant validation metrics
         logging.info(f"Ensuring participant validation can be run for {hpo_id}")
-        duplicate_tables = check_duplicates_and_validate(hpo_id, report_data)
-        if not duplicate_tables:
-            participant_validation_query = get_participant_validation_summary_query(
-                hpo_id)
+        setup_and_validate_participants(hpo_id)
+        participant_validation_query = get_participant_validation_summary_query(
+            hpo_id)
         # TODO add to report_data based on requirements from EHR_OPS
 
         # lab concept metrics
