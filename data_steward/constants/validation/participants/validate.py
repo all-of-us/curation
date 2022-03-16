@@ -419,10 +419,8 @@ LEFT JOIN ( SELECT person_id, cc.concept_name as sex
                 ON gender_concept_id = concept_id ) AS ehr_sex
     ON ehr_sex.person_id = ps.person_id
 WHERE upd.person_id = ps.person_id
-    AND upd._PARTITIONTIME = ps._PARTITIONTIME
-    AND ps._PARTITIONTIME = (
-        SELECT MAX(_PARTITIONTIME) FROM `{{project_id}}.{{drc_dataset_id}}.{{ps_api_table_id}}`
-        )
+    AND upd._PARTITIONTIME = ( SELECT MAX(_PARTITIONTIME) pt
+        FROM `{{project_id}}.{{drc_dataset_id}}.{{id_match_table_id}}` )
 """)
 
 MATCH_STREET_COMBINED_QUERY = JINJA_ENV.from_string("""
@@ -437,10 +435,8 @@ LEFT JOIN ( SELECT person_id, address_1, address_2, city, state, zip
                 USING (location_id) ) ehr_address
     ON ehr_address.person_id = ps.person_id
 WHERE upd.person_id = ps.person_id
-    AND upd._PARTITIONTIME = ps._PARTITIONTIME
-    AND ps._PARTITIONTIME = (
-        SELECT MAX(_PARTITIONTIME) FROM `{{project_id}}.{{drc_dataset_id}}.{{ps_api_table_id}}`
-        )
+    AND upd._PARTITIONTIME = ( SELECT MAX(_PARTITIONTIME) pt
+        FROM `{{project_id}}.{{drc_dataset_id}}.{{id_match_table_id}}` )
     -- This update skips the records whose address_1 or address_2 is already "match" --
     AND NOT(upd.address_1 = '{{match}}' OR upd.address_2 = '{{match}}')
     -- This update only updates the records whose street_1+street_2 comparison return "match" --
