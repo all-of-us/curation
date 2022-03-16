@@ -16,6 +16,7 @@ from google.cloud.exceptions import NotFound
 from utils.participant_summary_requests import get_org_participant_information, store_participant_data
 from common import PS_API_VALUES, DRC_OPS
 from utils import bq, pipeline_logging
+from gcloud.bq import BigQueryClient
 from constants import bq_utils as bq_consts
 
 LOGGER = logging.getLogger(__name__)
@@ -26,18 +27,17 @@ SCOPES = [
 ]
 
 
-def get_hpo_org_info(project_id: str) -> List[Dict]:
+def get_hpo_org_info(client: BigQueryClient) -> List[Dict]:
     """ Returns a list of HPOs
 
-    :param project_id
+    :param client: A BigQueryClient
     :type project_id: str
     :return: a list of HPOs
     :rtype: List[Dict]
     """
-    client = bq.get_client(project_id)
     hpo_list = []
     hpo_table_query = bq_consts.GET_HPO_CONTENTS_QUERY.format(
-        project_id=project_id,
+        project_id=client.project,
         LOOKUP_TABLES_DATASET_ID=bq_consts.LOOKUP_TABLES_DATASET_ID,
         HPO_SITE_ID_MAPPINGS_TABLE_ID=bq_consts.HPO_SITE_ID_MAPPINGS_TABLE_ID)
     hpo_job = client.query(hpo_table_query)
@@ -52,14 +52,14 @@ def get_hpo_org_info(project_id: str) -> List[Dict]:
     return hpo_list
 
 
-def get_org_id(project_id, hpo_id):
+def get_org_id(client, hpo_id):
     """
     Fetch org_id for the hpo_id
-    :param project_id: 
+    :param client: A BigQueryClient 
     :param hpo_id: 
     :return: 
     """
-    hpo_list = get_hpo_org_info(project_id)
+    hpo_list = get_hpo_org_info(client)
 
     org_id = None
     for hpo_dict in hpo_list:
@@ -74,21 +74,19 @@ def get_org_id(project_id, hpo_id):
 
 
 def fetch_and_store_ps_hpo_data(client,
-                                project_id,
                                 rdr_project_id,
                                 hpo_id,
                                 dataset_id=DRC_OPS):
     """
     
-    :param client: BQ client
-    :param project_id: 
+    :param client: A BigQueryClient
     :param rdr_project_id: PS API project
     :param dataset_id: contains table to store PS API data
     :param hpo_id: 
     :return: 
     """
 
-    org_id = get_org_id(project_id, hpo_id)
+    org_id = get_org_id(client, hpo_id)
 
     # Get participant summary data
     LOGGER.info(
@@ -102,13 +100,13 @@ def fetch_and_store_ps_hpo_data(client,
     table_name = f'{PS_API_VALUES}_{hpo_id}'
 
     try:
-        table = client.get_table(f'{project_id}.{dataset_id}.{table_name}')
+        table = client.get_table(f'{client.project}.{dataset_id}.{table_name}')
     except NotFound:
         LOGGER.info(
-            f'Creating HOUR partitioned table {project_id}.{dataset_id}.{table_name}'
+            f'Creating HOUR partitioned table {client.project}.{dataset_id}.{table_name}'
         )
 
-        table = bigquery.Table(f'{project_id}.{dataset_id}.{table_name}',
+        table = bigquery.Table(f'{client.project}.{dataset_id}.{table_name}',
                                schema=schema)
         table.time_partitioning = bigquery.TimePartitioning(
             type_=bigquery.TimePartitioningType.HOUR)
@@ -116,10 +114,10 @@ def fetch_and_store_ps_hpo_data(client,
 
     # Insert summary data into table
     LOGGER.info(
-        f'Storing participant data for {hpo_id} in table {project_id}.{dataset_id}.{table.table_id}'
+        f'Storing participant data for {hpo_id} in table {client.project}.{dataset_id}.{table.table_id}'
     )
     store_participant_data(participant_info,
-                           project_id,
+                           client.project,
                            f'{dataset_id}.{table_name}',
                            schema=schema,
                            to_hour_partition=True)
@@ -141,9 +139,8 @@ if __name__ == '__main__':
 
     pipeline_logging.configure(level=logging.DEBUG, add_console_handler=True)
 
-    client = bq.get_client(args.project_id)
+    bq_client = BigQueryClient(args.project_id)
 
-    fetch_and_store_ps_hpo_data(client,
-                                args.project_id,
+    fetch_and_store_ps_hpo_data(bq_client,
                                 args.rdr_project_id,
                                 hpo_id=args.hpo_id)

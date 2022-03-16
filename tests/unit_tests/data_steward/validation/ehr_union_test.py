@@ -4,7 +4,6 @@ from unittest.mock import ANY
 
 import bq_utils
 from validation import ehr_union as eu
-from constants.validation import ehr_union as eu_constants
 
 MOVE_PER_OBS_QRY = '''
         SELECT
@@ -274,18 +273,18 @@ class EhrUnionTest(unittest.TestCase):
 
     @mock.patch('validation.ehr_union.move_ehr_person_to_observation')
     @mock.patch('validation.ehr_union.map_ehr_person_to_observation')
-    @mock.patch('validation.ehr_union.get_client')
+    @mock.patch('validation.ehr_union.BigQueryClient')
     @mock.patch('validation.ehr_union.load')
     @mock.patch('validation.ehr_union.mapping')
     @mock.patch('bq_utils.create_standard_table')
     @mock.patch('bq_utils.get_hpo_info')
     def test_excluded_hpo_ids(self, mock_hpo_info, mock_create_std_tbl,
-                              mock_mapping, mock_load, mock_client,
+                              mock_mapping, mock_load, mock_bq_client,
                               mock_map_person, mock_move_person):
         mock_hpo_info.return_value = [{
             'hpo_id': hpo_id
         } for hpo_id in self.hpo_ids]
-        mock_client.return_value = 'client'
+        mock_bq_client.return_value = 'client'
         eu.main("input_dataset_id",
                 "output_dataset_id",
                 "project_id",

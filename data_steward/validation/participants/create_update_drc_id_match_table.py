@@ -18,6 +18,7 @@ import argparse
 # Project imports
 import resources
 from utils import bq, auth
+from gcloud.bq import BigQueryClient
 import bq_utils
 from common import JINJA_ENV, PS_API_VALUES, DRC_OPS, CDR_SCOPES
 from constants.validation.participants.identity_match import IDENTITY_MATCH_TABLE
@@ -59,20 +60,16 @@ CASE WHEN {{ps_api_field}} IS NULL THEN 'missing_rdr' ELSE 'missing_ehr' END AS 
 """)
 
 
-def create_drc_validation_table(client,
-                                project_id,
-                                table_id,
-                                drc_dataset_id=DRC_OPS):
+def create_drc_validation_table(client, table_id, drc_dataset_id=DRC_OPS):
     """
     Creates the partitioned DRC validation table, partitioned by HOUR.
 
-    :param client: bq client
-    :param project_id: the project containing the dataset
+    :param client: a BigQueryClient
     :param table_id: ID of the table
     """
     fields = resources.fields_for(IDENTITY_MATCH_TABLE)
 
-    create_table = CREATE_TABLE.render(project_id=project_id,
+    create_table = CREATE_TABLE.render(project_id=client.project,
                                        drc_dataset_id=drc_dataset_id,
                                        id_match_table_id=table_id,
                                        fields=bq.get_bq_fields_sql(fields))
@@ -109,17 +106,12 @@ def get_case_statements():
     return ', '.join(case_statements)
 
 
-def populate_validation_table(client,
-                              project_id,
-                              table_id,
-                              hpo_id,
-                              drc_dataset_id=DRC_OPS):
+def populate_validation_table(client, table_id, hpo_id, drc_dataset_id=DRC_OPS):
     """
     Populates validation table with 'missing_rdr' or 'missing_ehr' data. Populated with 'missing_rdr' if data IS NOT
         found in the ps_values table. Populated with 'missing_ehr' as default.
 
-    :param client: bq client
-    :param project_id: the project containing the dataset
+    :param client: A BigQueryClient
     :param table_id: ID for the table
     :param hpo_id: ID for the HPO site
     """
@@ -131,7 +123,7 @@ def populate_validation_table(client,
     fields_name_str = ', '.join([item.name for item in schema_list])
 
     populate_query = POPULATE_VALIDATION_TABLE.render(
-        project_id=project_id,
+        project_id=client.project,
         drc_dataset_id=drc_dataset_id,
         id_match_table_id=id_match_table_id,
         fields=fields_name_str,
@@ -172,7 +164,7 @@ def get_arg_parser():
 def create_and_populate_drc_validation_table(client, hpo_id):
     """
     Create and populate drc validation table
-    :param client: BQ client
+    :param client: a BigQueryClient
     :param hpo_id: Identifies the HPO
     :return: 
     """
@@ -181,10 +173,10 @@ def create_and_populate_drc_validation_table(client, hpo_id):
 
     # Creates hpo_site identity match table if it does not exist
     if not bq_utils.table_exists(table_id, DRC_OPS):
-        create_drc_validation_table(client, client.project, table_id)
+        create_drc_validation_table(client, table_id)
 
     # Populates the validation table for the site
-    populate_validation_table(client, client.project, table_id, hpo_id)
+    populate_validation_table(client, table_id, hpo_id)
 
 
 def main():
@@ -195,9 +187,9 @@ def main():
     impersonation_creds = auth.get_impersonation_credentials(
         args.run_as_email, CDR_SCOPES)
 
-    client = bq.get_client(args.project_id, credentials=impersonation_creds)
+    bq_client = BigQueryClient(args.project_id, credentials=impersonation_creds)
 
-    create_and_populate_drc_validation_table(client, args.hpo_id)
+    create_and_populate_drc_validation_table(bq_client, args.hpo_id)
 
 
 if __name__ == '__main__':

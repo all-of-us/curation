@@ -25,7 +25,8 @@ import pandas
 from app_identity import get_application_id
 from bq_utils import get_rdr_project_id
 from resources import get_table_id, VALIDATION_STREET_CSV, VALIDATION_CITY_CSV, VALIDATION_STATE_CSV
-from utils import bq, pipeline_logging, auth
+from utils import pipeline_logging, auth
+from gcloud.bq import BigQueryClient
 from common import (JINJA_ENV, PS_API_VALUES, DRC_OPS, EHR_OPS, CDR_SCOPES,
                     PII_ADDRESS, PII_EMAIL, PII_PHONE_NUMBER, PII_NAME,
                     LOCATION, PERSON)
@@ -67,14 +68,12 @@ def _get_lookup_tuples(csv_file) -> str:
 
 
 def identify_rdr_ehr_match(client,
-                           project_id,
                            hpo_id,
                            ehr_ops_dataset_id,
                            drc_dataset_id=DRC_OPS):
     """
     
-    :param client: BQ client
-    :param project_id: BQ project
+    :param client: a BigQueryClient
     :param hpo_id: Identifies the HPO site
     :param ehr_ops_dataset_id: Dataset containing HPO pii* tables
     :param drc_dataset_id: Dataset containing identity_match tables
@@ -98,7 +97,7 @@ def identify_rdr_ehr_match(client,
         LOGGER.info(f"Creating `{item['name']}` function if doesn't exist.")
 
         query = item['query'].render(
-            project_id=project_id,
+            project_id=client.project,
             drc_dataset_id=drc_dataset_id,
             match=consts.MATCH,
             no_match=consts.NO_MATCH,
@@ -123,7 +122,7 @@ def identify_rdr_ehr_match(client,
         job.result()
 
     fields_match_query = consts.MATCH_FIELDS_QUERY.render(
-        project_id=project_id,
+        project_id=client.project,
         id_match_table_id=id_match_table_id,
         hpo_pii_address_table_id=hpo_pii_address_table_id,
         hpo_pii_name_table_id=hpo_pii_name_table_id,
@@ -136,7 +135,7 @@ def identify_rdr_ehr_match(client,
         ehr_ops_dataset_id=ehr_ops_dataset_id)
 
     street_combined_match_query = consts.MATCH_STREET_COMBINED_QUERY.render(
-        project_id=project_id,
+        project_id=client.project,
         id_match_table_id=id_match_table_id,
         hpo_pii_address_table_id=hpo_pii_address_table_id,
         hpo_location_table_id=hpo_location_table_id,
@@ -160,17 +159,17 @@ def setup_and_validate_participants(hpo_id):
     :return: 
     """
     project_id = get_application_id()
-    client = bq.get_client(project_id)
+    bq_client = BigQueryClient(project_id)
 
     # Fetch Participant summary data
     rdr_project_id = get_rdr_project_id()
-    fetch_and_store_ps_hpo_data(client, client.project, rdr_project_id, hpo_id)
+    fetch_and_store_ps_hpo_data(bq_client, rdr_project_id, hpo_id)
 
     # Populate identity match table based on PS data
-    create_and_populate_drc_validation_table(client, hpo_id)
+    create_and_populate_drc_validation_table(bq_client, hpo_id)
 
     # Match values
-    identify_rdr_ehr_match(client, client.project, hpo_id, EHR_OPS)
+    identify_rdr_ehr_match(bq_client, hpo_id, EHR_OPS)
 
 
 def get_participant_validation_summary_query(hpo_id):
@@ -221,10 +220,10 @@ def main():
     impersonation_creds = auth.get_impersonation_credentials(
         args.run_as_email, CDR_SCOPES)
 
-    client = bq.get_client(args.project_id, credentials=impersonation_creds)
+    bq_client = BigQueryClient(args.project_id, credentials=impersonation_creds)
 
     # Populates the validation table for the site
-    identify_rdr_ehr_match(client, args.project_id, args.hpo_id, EHR_OPS)
+    identify_rdr_ehr_match(bq_client, args.hpo_id, EHR_OPS)
 
     LOGGER.info('Done.')
 

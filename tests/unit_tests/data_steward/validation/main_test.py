@@ -287,7 +287,7 @@ class ValidationMainTest(TestCase):
             self.assertIn(expected_call, mock_logging_error.mock_calls)
 
     @mock.patch(
-        'utils.bq.get_client',
+        'validation.participants.validate.BigQueryClient',
         mock.MagicMock(query=lambda: mock.MagicMock(result=lambda: None)))
     @mock.patch('validation.participants.validate.fetch_and_store_ps_hpo_data',
                 mock.MagicMock())
@@ -532,7 +532,7 @@ class ValidationMainTest(TestCase):
         mock_hpo_bucket.copy_blob.assert_has_calls(expected, any_order=True)
 
     @mock.patch(
-        'utils.bq.get_client',
+        'validation.participants.validate.BigQueryClient',
         mock.MagicMock(query=lambda: mock.MagicMock(result=lambda: None)))
     @mock.patch('validation.participants.validate.fetch_and_store_ps_hpo_data',
                 mock.MagicMock())
