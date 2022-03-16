@@ -203,7 +203,6 @@ def create_tier(credentials_filepath, project_id, tier, input_dataset,
     impersonation_creds = auth.get_impersonation_credentials(
         run_as, CDR_SCOPES, credentials_filepath)
 
-    # client = bq.get_client(project_id, credentials=impersonation_creds)
     bq_client = BigQueryClient(project_id, credentials=impersonation_creds)
 
     # Get Final Dataset name
