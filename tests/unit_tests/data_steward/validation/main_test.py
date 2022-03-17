@@ -289,7 +289,7 @@ class ValidationMainTest(TestCase):
     @mock.patch(
         'validation.participants.validate.BigQueryClient',
         mock.MagicMock(query=lambda: mock.MagicMock(result=lambda: None)))
-    @mock.patch('validation.participants.validate.fetch_and_store_ps_hpo_data',
+    @mock.patch('validation.main.setup_and_validate_participants',
                 mock.MagicMock())
     @mock.patch('bq_utils.table_exists', mock.MagicMock())
     @mock.patch('bq_utils.query')
@@ -534,7 +534,7 @@ class ValidationMainTest(TestCase):
     @mock.patch(
         'validation.participants.validate.BigQueryClient',
         mock.MagicMock(query=lambda: mock.MagicMock(result=lambda: None)))
-    @mock.patch('validation.participants.validate.fetch_and_store_ps_hpo_data',
+    @mock.patch('validation.main.setup_and_validate_participants',
                 mock.MagicMock())
     @mock.patch('bq_utils.table_exists', mock.MagicMock())
     @mock.patch('bq_utils.query', mock.MagicMock())

@@ -386,9 +386,6 @@ def get_all_participant_information(project_id: str) -> pandas.DataFrame:
     if not isinstance(project_id, str):
         raise RuntimeError(f'Please specify the RDR project')
 
-    # if not isinstance(org_id, str):
-    #     raise RuntimeError(f'Please provide an org_id')
-
     # Make request to get API version. This is the current RDR version for reference see
     # see https://github.com/all-of-us/raw-data-repository/blob/master/opsdataAPI.md for documentation of this API.
     # consentForElectronicHealthRecords=SUBMITTED -- ensures only consenting participants are returned via the API
