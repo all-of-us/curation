@@ -13,8 +13,10 @@ from google.cloud import bigquery
 from google.cloud.exceptions import NotFound
 
 # Project imports
-from utils.participant_summary_requests import get_org_participant_information, store_participant_data
-from common import PS_API_VALUES, DRC_OPS
+from utils.participant_summary_requests import (get_org_participant_information,
+                                                get_all_participant_information,
+                                                store_participant_data)
+from common import PS_API_VALUES, DRC_OPS, UNIONED
 from utils import bq, pipeline_logging
 from gcloud.bq import BigQueryClient
 from constants import bq_utils as bq_consts
@@ -121,6 +123,48 @@ def fetch_and_store_ps_hpo_data(client,
                            f'{dataset_id}.{table_name}',
                            schema=schema,
                            to_hour_partition=True)
+
+    LOGGER.info(f'Done.')
+
+
+def fetch_and_store_full_ps_data(client,
+                                 project_id,
+                                 rdr_project_id,
+                                 dataset_id=DRC_OPS):
+    """
+    Fetches PS API data for all participants and stores in drc_ops.ps_api_unioned table
+
+    :param client: BQ client
+    :param project_id: Identifies the project
+    :param rdr_project_id: PS API project
+    :param dataset_id: contains table to store PS API data
+    :return: 
+    """
+
+    # Get participant summary data
+    LOGGER.info(f'Getting participant summary data')
+    participant_info = get_all_participant_information(rdr_project_id)
+
+    # Load schema
+    schema = bq.get_table_schema(PS_API_VALUES)
+    # TODO use resources.get_table_id after updating it to flip hpo_id, table_name
+    table_name = f'{PS_API_VALUES}_{UNIONED}'
+    fq_table_id = f'{project_id}.{dataset_id}.{table_name}'
+
+    # Clear existing table to refresh data
+    client.delete_table(fq_table_id, not_found_ok=True)
+    LOGGER.info(f'Creating table {fq_table_id}')
+
+    table = bigquery.Table(fq_table_id, schema=schema)
+    table = client.create_table(table)
+
+    # Insert summary data into table
+    LOGGER.info(f'Storing participant data in table {fq_table_id}')
+    store_participant_data(participant_info,
+                           project_id,
+                           f'{dataset_id}.{table_name}',
+                           schema=schema,
+                           to_hour_partition=False)
 
     LOGGER.info(f'Done.')
 
