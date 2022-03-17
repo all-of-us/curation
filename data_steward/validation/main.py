@@ -1032,7 +1032,7 @@ app.add_url_rule(consts.PREFIX + 'UnionEHR',
                  view_func=union_ehr,
                  methods=['GET'])
 
-app.add_url_rule(consts.PREFIX + consts.PARTICIPANT_VALIDATION,
+app.add_url_rule(consts.PREFIX + consts.PARTICIPANT_VALIDATION + 'validate',
                  endpoint='validate_pii',
                  view_func=validate_pii,
                  methods=['GET'])
@@ -1042,7 +1042,8 @@ app.add_url_rule(consts.PREFIX + 'RetractPids',
                  view_func=run_retraction_cron,
                  methods=['GET'])
 
-app.add_url_rule(consts.PREFIX + 'RefreshPSapi',
+app.add_url_rule(consts.PREFIX + consts.PARTICIPANT_VALIDATION +
+                 'FetchPSapiData',
                  endpoint='ps_api_cron',
                  view_func=ps_api_cron,
                  methods=['GET'])
