@@ -100,9 +100,10 @@ WITH
   person_birth_date AS (
   SELECT
     birth_datetime,
-    DATE(birth_datetime) AS birth_date
+    DATE(birth_datetime) AS birth_date,
+    person_id
   FROM
-    `{PROJECT_ID}.{EHR_SNAPSHOT_DATASET_ID}.unioned_ehr_person` )
+     `{PROJECT_ID}.{EHR_SNAPSHOT_DATASET_ID}.unioned_ehr_person` )
 SELECT
   observation_id,
   person_id,
@@ -111,20 +112,16 @@ SELECT
   observation_datetime
 FROM
   `{PROJECT_ID}.{EHR_SNAPSHOT_DATASET_ID}.unioned_ehr_observation`
+JOIN
+  person_birth_date
+USING
+  (person_id)
 WHERE
   observation_concept_id IN (4013886,
-    421761,
+    4271761,
     4135376,
     4083587)
-  AND ((observation_datetime IN (
-      SELECT
-        birth_datetime
-      FROM
-        person_birth_date ))
-    OR (observation_date IN (
-      SELECT
-        birth_date
-      FROM
-        person_birth_date )) )
+  AND ((observation_datetime = birth_datetime)
+    OR (observation_date = birth_date))
 """
 execute(client, query)
