@@ -173,9 +173,11 @@ class ValidateTest(TestCase):
             (4, '   chris@GMAIL.com    '), -- whitespace padding (match) --
             (5, 'johndoe@gmail.com'),
             (6, 'rebeccamayers@gmail.com'),
+            (6, 'rebeccamayers@gmail.com'),
             (7, 'leo@gmail.com'),
             (8, 'claire@gmail.com')
         """)
+        # person_id = 6 is duplicated but should not have any effect
 
         POPULATE_PII_PHONE_NUMBER = JINJA_ENV.from_string("""
                 INSERT INTO `{{project_id}}.{{drc_dataset_id}}.{{pii_phone_number_table_id}}` 
@@ -201,10 +203,12 @@ class ValidateTest(TestCase):
                 (5, 'John', 'Christian', 'Doe'), -- missing middle name in rdr --
                 (6, 'Rebecca', '', 'MayersJames'),
                 (7, 'Leo', '', "o'keefe"),
+                (7, 'Leo', '', "o'keefe"),
                 (8, 'lois', 'Franklin', 'Rhodes'), -- nonmatched first and middle name --
                 (9, 'John', 'Moses', 'Dexter') -- all three names do not match --
 
         """)
+        # person_id = 7 is duplicated but should not have any effect
 
         POPULATE_PII_ADDRESS = JINJA_ENV.from_string("""
             INSERT INTO `{{project_id}}.{{drc_dataset_id}}.{{pii_address_table_id}}`
@@ -232,8 +236,10 @@ class ValidateTest(TestCase):
                     (5, 8570, timestamp ('2000-11-01')),
                     (6, 0, timestamp ('1900-01-01')),
                     (7, 4215271, timestamp ('1981-01-10')),
+                    (8, 4214687, timestamp ('1999-12-1')),
                     (8, 4214687, timestamp ('1999-12-1'))
                 """)
+        # person_id = 8 is duplicated but should not affect anything
         # person_id = 9 is missing from ehr person table so should not validate
 
         POPULATE_LOCATION_TABLE = JINJA_ENV.from_string("""
@@ -245,10 +251,12 @@ class ValidateTest(TestCase):
             (13, '1st 2 3rd 4 Street', 'Apartment 7 D', 'Andersen Air Force Base', 'Gu', '  96923  '),
             (14, '1234 4th Ave, APT 15B', '', ' San Juan ', 'pr', '921'),
             (15, '50 Riverview Plaza', '915 pr-17, Apt 7-D', NULL, 'NJ', '08611-1234'),
+            (15, '50 Riverview Plaza', '915 pr-17, Apt 7-D', NULL, 'NJ', '08611-1234'),
             (16, NULL, '', 'Jacksonville', 'FL', '32207  5678'),
             (17, '', NULL, 'Cincinnati', 'OH', '45202'),
             (18, '42  Nason   St', '', 'Maynard', 'MA', '01754')
         """)
+        # location_id = 15 is duplicated but should not have any effect
         """ 
         Note: Each test entry is testing for the following test cases:
             11: street_1: match,       street_2: missing_rdr ('1 Government Dr', '') vs (' 1 government drive ', '')
