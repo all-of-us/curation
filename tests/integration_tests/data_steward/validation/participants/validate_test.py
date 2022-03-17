@@ -16,7 +16,9 @@ from google.cloud.bigquery import DatasetReference, Table, TimePartitioning, Tim
 from utils import bq
 from tests import test_util
 from app_identity import PROJECT_ID
-from common import JINJA_ENV, PS_API_VALUES, PII_EMAIL, PII_PHONE_NUMBER, PII_NAME, PII_ADDRESS
+from common import JINJA_ENV, PS_API_VALUES, PII_EMAIL, PII_PHONE_NUMBER, PII_NAME, PII_ADDRESS, UNIONED
+from validation.participants.create_update_drc_id_match_table import (
+    create_drc_validation_table, populate_validation_table)
 from validation.participants.validate import identify_rdr_ehr_match
 from constants.validation.participants.identity_match import IDENTITY_MATCH_TABLE
 import resources
@@ -56,21 +58,6 @@ VALUES
     (9, 'Jack', 'Isaac', 'Dean', 'Test address 0000', '', 'Portland', 'OR', '97232', 'jd@gmail.com', '555-555-1234', date('2002-03-14'), 'SexAtBirth_Female')
 """)
 
-POPULATE_ID_MATCH = JINJA_ENV.from_string("""
-INSERT INTO `{{project_id}}.{{drc_dataset_id}}.{{id_match_table_id}}` 
-(person_id, first_name, middle_name, last_name, address_1, address_2, city, state, zip, email, phone_number, sex, algorithm)
-VALUES 
-    (1, 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'no'),
-    (2, 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'no'),
-    (3, 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'no'),
-    (4, 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'no'),
-    (5, 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'no'),
-    (6, 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'no'),
-    (7, 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'no'),
-    (8, 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'no'),
-    (9, 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'missing_ehr', 'no')
-""")
-
 ID_MATCH_CONTENT_QUERY = JINJA_ENV.from_string("""
     SELECT
         *
@@ -95,7 +82,7 @@ class ValidateTest(TestCase):
 
         self.hpo_id = 'fake_site'
         self.id_match_table_id = f'{IDENTITY_MATCH_TABLE}_{self.hpo_id}'
-        self.ps_values_table_id = f'{PS_API_VALUES}_{self.hpo_id}'
+        self.ps_values_table_id = f'{PS_API_VALUES}_{UNIONED}'
         self.pii_address_table_id = f'{self.hpo_id}_pii_address'
         self.pii_email_table_id = f'{self.hpo_id}_pii_email'
         self.pii_phone_number_table_id = f'{self.hpo_id}_pii_phone_number'
@@ -110,31 +97,12 @@ class ValidateTest(TestCase):
         table = Table(
             f'{self.project_id}.{self.dataset_id}.{self.ps_values_table_id}',
             schema=schema)
-        table.time_partitioning = TimePartitioning(
-            type_=TimePartitioningType.HOUR)
         table = self.client.create_table(table, exists_ok=True)
 
         populate_query = POPULATE_PS_VALUES.render(
             project_id=self.project_id,
             drc_dataset_id=self.dataset_id,
             ps_values_table_id=self.ps_values_table_id)
-        job = self.client.query(populate_query)
-        job.result()
-
-        # Create and populate the drc_id_match_table
-
-        schema = resources.fields_for(f'{IDENTITY_MATCH_TABLE}')
-        table = Table(
-            f'{self.project_id}.{self.dataset_id}.{self.id_match_table_id}',
-            schema=schema)
-        table.time_partitioning = TimePartitioning(
-            type_=TimePartitioningType.HOUR)
-        table = self.client.create_table(table, exists_ok=True)
-
-        populate_query = POPULATE_ID_MATCH.render(
-            project_id=self.project_id,
-            drc_dataset_id=self.dataset_id,
-            id_match_table_id=self.id_match_table_id)
         job = self.client.query(populate_query)
         job.result()
 
@@ -186,6 +154,13 @@ class ValidateTest(TestCase):
         concept_table = Table(f'{self.project_id}.{self.dataset_id}.concept',
                               schema=concept_schema)
         concept_table = self.client.create_table(concept_table, exists_ok=True)
+
+        # Creates hpo_site identity match table after deleting existing
+        self.client.delete_table(
+            f'{self.project_id}.{self.dataset_id}.{self.id_match_table_id}',
+            not_found_ok=True)
+        create_drc_validation_table(self.client, self.id_match_table_id,
+                                    self.dataset_id)
 
     def test_identify_rdr_ehr_match(self):
 
@@ -259,6 +234,7 @@ class ValidateTest(TestCase):
                     (7, 4215271, timestamp ('1981-01-10')),
                     (8, 4214687, timestamp ('1999-12-1'))
                 """)
+        # person_id = 9 is missing from ehr person table so should not validate
 
         POPULATE_LOCATION_TABLE = JINJA_ENV.from_string("""
         INSERT INTO `{{project_id}}.{{drc_dataset_id}}.{{location_table_id}}` 
@@ -368,6 +344,10 @@ class ValidateTest(TestCase):
             project_id=self.project_id, drc_dataset_id=self.dataset_id)
         job = self.client.query(populate_concept_query)
         job.result()
+
+        # Populates the validation table for the site after person is populated
+        populate_validation_table(self.client, self.id_match_table_id,
+                                  self.hpo_id, self.dataset_id, self.dataset_id)
 
         # Execute email, phone_number and sex match
         identify_rdr_ehr_match(self.client,
@@ -502,22 +482,8 @@ class ValidateTest(TestCase):
             'birth_date': 'match',
             'sex': 'no_match',
             'algorithm': 'yes'
-        }, {
-            'person_id': 9,
-            'first_name': 'no_match',
-            'middle_name': 'no_match',
-            'last_name': 'no_match',
-            'address_1': 'missing_ehr',
-            'address_2': 'missing_rdr',
-            'city': 'missing_ehr',
-            'state': 'missing_ehr',
-            'zip': 'missing_ehr',
-            'email': 'missing_ehr',
-            'phone_number': 'missing_ehr',
-            'birth_date': 'missing_ehr',
-            'sex': 'missing_ehr',
-            'algorithm': 'yes'
         }]
+        # no record for person_id = 9 since not in ehr person table
 
         content_query = ID_MATCH_CONTENT_QUERY.render(
             project_id=self.project_id,

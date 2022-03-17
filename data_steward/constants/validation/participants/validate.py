@@ -465,7 +465,7 @@ LEFT JOIN ( SELECT person_id, address_1, address_2, city, state, zip
                     FROM `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_address_table_id}}`)
                 WHERE r = 1) per
             LEFT JOIN (SELECT * EXCEPT(r)
-                FROM (SELECT *, ROW_NUMBER() OVER(PARTITION BY person_id) r
+                FROM (SELECT *, ROW_NUMBER() OVER(PARTITION BY location_id) r
                     FROM `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_location_table_id}}`)
                 WHERE r = 1) loc
                 USING (location_id) ) ehr_address
