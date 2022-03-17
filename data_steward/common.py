@@ -216,6 +216,7 @@ VOCABULARY_UPDATES = {
 }
 
 COMBINED = 'combined'
+UNIONED = 'unioned'
 UNIONED_EHR = 'unioned_ehr'
 DEID = 'deid'
 EHR = 'ehr'
