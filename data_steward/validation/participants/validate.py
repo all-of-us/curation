@@ -23,13 +23,11 @@ import pandas
 
 # Project imports
 from app_identity import get_application_id
-from bq_utils import get_rdr_project_id
 from resources import get_table_id, VALIDATION_STREET_CSV, VALIDATION_CITY_CSV, VALIDATION_STATE_CSV
 from utils import bq, pipeline_logging, auth
-from common import (JINJA_ENV, PS_API_VALUES, DRC_OPS, EHR_OPS, CDR_SCOPES,
-                    PII_ADDRESS, PII_EMAIL, PII_PHONE_NUMBER, PII_NAME,
-                    LOCATION, PERSON)
-from validation.participants.store_participant_summary_results import fetch_and_store_ps_hpo_data
+from common import (PS_API_VALUES, DRC_OPS, EHR_OPS, CDR_SCOPES, PII_ADDRESS,
+                    PII_EMAIL, PII_PHONE_NUMBER, PII_NAME, LOCATION, PERSON,
+                    UNIONED)
 from validation.participants.create_update_drc_id_match_table import create_and_populate_drc_validation_table
 from constants.validation.participants.identity_match import IDENTITY_MATCH_TABLE
 from constants.validation.participants import validate as consts
@@ -86,7 +84,7 @@ def identify_rdr_ehr_match(client,
     hpo_pii_email_table_id = get_table_id(PII_EMAIL, hpo_id)
     hpo_pii_phone_number_table_id = get_table_id(PII_PHONE_NUMBER, hpo_id)
     hpo_pii_name_table_id = get_table_id(PII_NAME, hpo_id)
-    ps_api_table_id = f'{PS_API_VALUES}_{hpo_id}'
+    ps_api_table_id = f'{PS_API_VALUES}_{UNIONED}'
     hpo_location_table_id = get_table_id(LOCATION, hpo_id)
     hpo_person_table_id = get_table_id(PERSON, hpo_id)
 
@@ -161,10 +159,6 @@ def setup_and_validate_participants(hpo_id):
     """
     project_id = get_application_id()
     client = bq.get_client(project_id)
-
-    # Fetch Participant summary data
-    rdr_project_id = get_rdr_project_id()
-    fetch_and_store_ps_hpo_data(client, client.project, rdr_project_id, hpo_id)
 
     # Populate identity match table based on PS data
     create_and_populate_drc_validation_table(client, hpo_id)
