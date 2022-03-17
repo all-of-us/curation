@@ -29,7 +29,6 @@ from common import (PS_API_VALUES, DRC_OPS, EHR_OPS, CDR_SCOPES, PII_ADDRESS,
                     PII_EMAIL, PII_PHONE_NUMBER, PII_NAME, LOCATION, PERSON,
                     UNIONED)
 from gcloud.bq import BigQueryClient
-from validation.participants.store_participant_summary_results import fetch_and_store_ps_hpo_data
 from validation.participants.create_update_drc_id_match_table import create_and_populate_drc_validation_table
 from constants.validation.participants.identity_match import IDENTITY_MATCH_TABLE
 from constants.validation.participants import validate as consts
@@ -66,28 +65,14 @@ def _get_lookup_tuples(csv_file) -> str:
     ])
 
 
-def identify_rdr_ehr_match(client,
-                           hpo_id,
-                           ehr_ops_dataset_id,
-                           drc_dataset_id=DRC_OPS):
+def update_comparison_udfs(client, dataset_id):
     """
-    
-    :param client: a BigQueryClient
-    :param hpo_id: Identifies the HPO site
-    :param ehr_ops_dataset_id: Dataset containing HPO pii* tables
-    :param drc_dataset_id: Dataset containing identity_match tables
+    Creates/overwrites user defined functions
+
+    :param client: BigQuery client
+    :param dataset_id: Dataset location for udfs
     :return: 
     """
-
-    id_match_table_id = f'{IDENTITY_MATCH_TABLE}_{hpo_id}'
-    hpo_pii_address_table_id = get_table_id(PII_ADDRESS, hpo_id)
-    hpo_pii_email_table_id = get_table_id(PII_EMAIL, hpo_id)
-    hpo_pii_phone_number_table_id = get_table_id(PII_PHONE_NUMBER, hpo_id)
-    hpo_pii_name_table_id = get_table_id(PII_NAME, hpo_id)
-    ps_api_table_id = f'{PS_API_VALUES}_{UNIONED}'
-    hpo_location_table_id = get_table_id(LOCATION, hpo_id)
-    hpo_person_table_id = get_table_id(PERSON, hpo_id)
-
     state_df = pandas.read_csv(VALIDATION_STATE_CSV, header=0)
     states_str: str = ",\n".join(
         [f"'{state}'" for state in state_df['abbreviated']])
@@ -97,7 +82,7 @@ def identify_rdr_ehr_match(client,
 
         query = item['query'].render(
             project_id=client.project,
-            drc_dataset_id=drc_dataset_id,
+            drc_dataset_id=dataset_id,
             match=consts.MATCH,
             no_match=consts.NO_MATCH,
             missing_rdr=consts.MISSING_RDR,
@@ -120,6 +105,34 @@ def identify_rdr_ehr_match(client,
         job = client.query(query)
         job.result()
 
+
+def identify_rdr_ehr_match(client,
+                           hpo_id,
+                           ehr_dataset_id=EHR_OPS,
+                           drc_dataset_id=DRC_OPS,
+                           update_udf=True):
+    """
+    
+    :param client: a BigQueryClient
+    :param hpo_id: Identifies the HPO site
+    :param ehr_dataset_id: Dataset containing HPO pii* tables
+    :param drc_dataset_id: Dataset containing identity_match tables
+    :param update_udf: Boolean to update udfs, true by default
+    :return: 
+    """
+
+    id_match_table_id = f'{IDENTITY_MATCH_TABLE}_{hpo_id}'
+    hpo_pii_address_table_id = get_table_id(PII_ADDRESS, hpo_id)
+    hpo_pii_email_table_id = get_table_id(PII_EMAIL, hpo_id)
+    hpo_pii_phone_number_table_id = get_table_id(PII_PHONE_NUMBER, hpo_id)
+    hpo_pii_name_table_id = get_table_id(PII_NAME, hpo_id)
+    ps_api_table_id = f'{PS_API_VALUES}_{UNIONED}'
+    hpo_location_table_id = get_table_id(LOCATION, hpo_id)
+    hpo_person_table_id = get_table_id(PERSON, hpo_id)
+
+    if update_udf:
+        update_comparison_udfs(client, DRC_OPS)
+
     fields_match_query = consts.MATCH_FIELDS_QUERY.render(
         project_id=client.project,
         id_match_table_id=id_match_table_id,
@@ -131,7 +144,7 @@ def identify_rdr_ehr_match(client,
         hpo_person_table_id=hpo_person_table_id,
         ps_api_table_id=ps_api_table_id,
         drc_dataset_id=drc_dataset_id,
-        ehr_ops_dataset_id=ehr_ops_dataset_id)
+        ehr_dataset_id=ehr_dataset_id)
 
     street_combined_match_query = consts.MATCH_STREET_COMBINED_QUERY.render(
         project_id=client.project,
@@ -141,7 +154,7 @@ def identify_rdr_ehr_match(client,
         hpo_location_table_id=hpo_location_table_id,
         ps_api_table_id=ps_api_table_id,
         drc_dataset_id=drc_dataset_id,
-        ehr_ops_dataset_id=ehr_ops_dataset_id,
+        ehr_dataset_id=ehr_dataset_id,
         match=consts.MATCH)
 
     LOGGER.info(f"Matching fields for {hpo_id}.")
@@ -152,10 +165,11 @@ def identify_rdr_ehr_match(client,
         job.result()
 
 
-def setup_and_validate_participants(hpo_id):
+def setup_and_validate_participants(hpo_id, update_udf=True):
     """
     Fetch PS data, set up tables and run validation
     :param hpo_id: Identifies the HPO
+    :param update_udf: Boolean to update comparison udfs, true by default
     :return: 
     """
     project_id = get_application_id()
@@ -165,7 +179,7 @@ def setup_and_validate_participants(hpo_id):
     create_and_populate_drc_validation_table(bq_client, hpo_id)
 
     # Match values
-    identify_rdr_ehr_match(bq_client, hpo_id, EHR_OPS)
+    identify_rdr_ehr_match(bq_client, hpo_id, update_udf=update_udf)
 
 
 def get_participant_validation_summary_query(hpo_id):
@@ -209,7 +223,7 @@ def main():
     parser = get_arg_parser()
     args = parser.parse_args()
 
-    #Set up pipeline logging
+    # Set up pipeline logging
     pipeline_logging.configure(level=logging.DEBUG, add_console_handler=True)
 
     # get credentials and create client
@@ -219,7 +233,7 @@ def main():
     bq_client = BigQueryClient(args.project_id, credentials=impersonation_creds)
 
     # Populates the validation table for the site
-    identify_rdr_ehr_match(bq_client, args.hpo_id, EHR_OPS)
+    identify_rdr_ehr_match(bq_client, args.hpo_id)
 
     LOGGER.info('Done.')
 

@@ -983,7 +983,8 @@ def validate_pii():
     logging.info(f"Calling match_participants")
     for item in bq_utils.get_hpo_info():
         hpo_id = item['hpo_id']
-        setup_and_validate_participants(hpo_id)
+        # Prevent updating udfs for all hpo_sites
+        setup_and_validate_participants(hpo_id, update_udf=False)
 
     return consts.VALIDATION_SUCCESS
 

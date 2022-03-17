@@ -400,47 +400,47 @@ SET upd.first_name = `{{project_id}}.{{drc_dataset_id}}.CompareName`(ps.first_na
     upd.algorithm = 'yes'
 FROM (SELECT * EXCEPT(r)
         FROM (SELECT *, ROW_NUMBER() OVER(PARTITION BY person_id) r
-            FROM `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_person_table_id}}`)
+            FROM `{{project_id}}.{{ehr_dataset_id}}.{{hpo_person_table_id}}`)
         WHERE r = 1) p
 LEFT JOIN `{{project_id}}.{{drc_dataset_id}}.{{ps_api_table_id}}` ps
     ON p.person_id = ps.person_id
 LEFT JOIN (SELECT * EXCEPT(r)
         FROM (SELECT *, ROW_NUMBER() OVER(PARTITION BY person_id) r
-            FROM `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_name_table_id}}`)
+            FROM `{{project_id}}.{{ehr_dataset_id}}.{{hpo_pii_name_table_id}}`)
         WHERE r = 1) ehr_name
     ON ehr_name.person_id = p.person_id
 LEFT JOIN ( SELECT person_id, address_1, address_2, city, state, zip
         FROM (SELECT * EXCEPT(r)
             FROM (SELECT *, ROW_NUMBER() OVER(PARTITION BY person_id) r
-                FROM `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_address_table_id}}`)
+                FROM `{{project_id}}.{{ehr_dataset_id}}.{{hpo_pii_address_table_id}}`)
             WHERE r = 1) per
         LEFT JOIN (SELECT * EXCEPT(r)
             FROM (SELECT *, ROW_NUMBER() OVER(PARTITION BY location_id) r
-                FROM `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_location_table_id}}`)
+                FROM `{{project_id}}.{{ehr_dataset_id}}.{{hpo_location_table_id}}`)
             WHERE r = 1) loc
             USING (location_id) ) ehr_address
     ON ehr_address.person_id = p.person_id
 LEFT JOIN (SELECT * EXCEPT(r)
                 FROM (SELECT *, ROW_NUMBER() OVER(PARTITION BY person_id) r
-                    FROM `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_email_table_id}}`)
+                    FROM `{{project_id}}.{{ehr_dataset_id}}.{{hpo_pii_email_table_id}}`)
             WHERE r = 1) ehr_email
     ON ehr_email.person_id = p.person_id
 LEFT JOIN (SELECT * EXCEPT(r)
                 FROM (SELECT *, ROW_NUMBER() OVER(PARTITION BY person_id) r
-                    FROM `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_phone_number_table_id}}`)
+                    FROM `{{project_id}}.{{ehr_dataset_id}}.{{hpo_pii_phone_number_table_id}}`)
             WHERE r = 1) ehr_phone
     ON ehr_phone.person_id = p.person_id
 LEFT JOIN (SELECT person_id, DATE(birth_datetime) AS date_of_birth
             FROM (SELECT *, ROW_NUMBER() OVER(PARTITION BY person_id) r
-                FROM `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_person_table_id}}`)
+                FROM `{{project_id}}.{{ehr_dataset_id}}.{{hpo_person_table_id}}`)
             WHERE r = 1) AS ehr_dob
     ON ehr_dob.person_id = p.person_id
 LEFT JOIN ( SELECT person_id, cc.concept_name as sex
             FROM (SELECT * EXCEPT(r)
                 FROM (SELECT *, ROW_NUMBER() OVER(PARTITION BY person_id) r
-                    FROM `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_person_table_id}}`)
+                    FROM `{{project_id}}.{{ehr_dataset_id}}.{{hpo_person_table_id}}`)
                 WHERE r = 1 )
-            JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.concept` cc
+            JOIN `{{project_id}}.{{ehr_dataset_id}}.concept` cc
                 ON gender_concept_id = concept_id ) AS ehr_sex
     ON ehr_sex.person_id = p.person_id
 WHERE upd.person_id = p.person_id
@@ -455,18 +455,18 @@ SET upd.address_1 = '{{match}}',
     upd.algorithm = 'yes'
 FROM (SELECT * EXCEPT(r)
         FROM (SELECT *, ROW_NUMBER() OVER(PARTITION BY person_id) r
-            FROM `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_person_table_id}}`)
+            FROM `{{project_id}}.{{ehr_dataset_id}}.{{hpo_person_table_id}}`)
         WHERE r = 1) p
 LEFT JOIN `{{project_id}}.{{drc_dataset_id}}.{{ps_api_table_id}}` ps
     ON p.person_id = ps.person_id
 LEFT JOIN ( SELECT person_id, address_1, address_2, city, state, zip
             FROM (SELECT * EXCEPT(r)
                 FROM (SELECT *, ROW_NUMBER() OVER(PARTITION BY person_id) r
-                    FROM `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_address_table_id}}`)
+                    FROM `{{project_id}}.{{ehr_dataset_id}}.{{hpo_pii_address_table_id}}`)
                 WHERE r = 1) per
             LEFT JOIN (SELECT * EXCEPT(r)
                 FROM (SELECT *, ROW_NUMBER() OVER(PARTITION BY location_id) r
-                    FROM `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_location_table_id}}`)
+                    FROM `{{project_id}}.{{ehr_dataset_id}}.{{hpo_location_table_id}}`)
                 WHERE r = 1) loc
                 USING (location_id) ) ehr_address
     ON ehr_address.person_id = p.person_id

@@ -360,7 +360,7 @@ class ValidateTest(TestCase):
         # Execute email, phone_number and sex match
         identify_rdr_ehr_match(self.client,
                                self.hpo_id,
-                               self.dataset_id,
+                               ehr_dataset_id=self.dataset_id,
                                drc_dataset_id=self.dataset_id)
 
         # Subset of id match fields to test
