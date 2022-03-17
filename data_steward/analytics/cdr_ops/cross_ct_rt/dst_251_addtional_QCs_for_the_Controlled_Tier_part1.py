@@ -23,33 +23,35 @@
 #
 # The checks are:
 #
-# 1 No dates earlier than birth dates
+# 1.all the birthdates are set to 15th June of the birth year in person table
 #
-# 2 No dates earlier than 1980 in any table, except for the observation
+# 2 No dates earlier than birth dates
 #
-# 3 No dates after death:done
+# 3 No dates earlier than 1980 in any table, except for the observation
 #
-# 4 No WITHdrawn participants: need pdr access
+# 4 No dates after death:done
 #
-# 5 No data after participant's suspension: need pdr access
+# 5 No WITHdrawn participants: need pdr access 
 #
-# 6 All participants have basics
+# 6 No data after participant's suspension: need pdr access
 #
-# 7 All participants WITH EHR data have said yes to EHR consents
+# 7 All participants have basics
 #
-# 8 All participants WITH Fitbit have said yes to primary consents
+# 8 All participants WITH EHR data have said yes to EHR consents
 #
-# 9 All primary keys are in _ext
+# 9 All participants WITH Fitbit have said yes to primary consents: need PDR access
 #
-# 10 No duplicated primary keys
+# 10 All primary keys are in _ext
 #
-# 11 OMOP tables should have standard concept ids
+# 11 No duplicated primary keys
 #
-# 12 observation concept ids (4013886, 4135376, 4271761) that have dates equal to birth dates should be set to CDR cutoff date
+# 12 OMOP tables should have standard concept ids
 #
-# 13 all other observation concept ids WITH dates similar to birth dates other than the 3 above should be removed
+# 13 observation concept ids (4013886, 4135376, 4271761) that have dates equal to birth dates should be set to CDR cutoff date
 #
-# 14 All the descendants of ancestor_concept_id IN (4054924, 141771) -- motor vehicle accidents should be dropped in condition_occurrence table
+# 14 all other observation concept ids WITH dates similar to birth dates other than the 3 above should be removed
+#
+# 15 All the descendants of ancestor_concept_id IN (4054924, 141771) -- motor vehicle accidents should be dropped in condition_occurrence table
 
 # + tags=["parameters"]
 # Parameters
@@ -74,7 +76,37 @@ pd.options.display.max_rows = 120
 # summary will have a summary in the end
 df = pd.DataFrame(columns = ['query', 'result']) 
 
-# # Query1: No dates before birth_date
+# # Query1: all the birthdates are set to 15th June of the birth year in person table
+#
+
+# +
+# step1 , to get the tables AND columns that have person_id, size >1 AND DATE columns AND save to a data frame
+query = JINJA_ENV.from_string("""
+
+SELECT  
+'person' as table_name,
+'birth_datetime' as column_name,
+count (*) as row_counts_failures
+    FROM {{project_id}}.{{ct_dataset}}.person
+    where EXTRACT(MONTH FROM DATE (birth_datetime))!=6
+    or EXTRACT(DAY FROM DATE (birth_datetime)) !=15
+""")
+
+q = query.render(project_id=project_id, ct_dataset=ct_dataset)
+res=execute(client, q)
+res.shape
+# -
+
+res
+
+if res.iloc[:,2].sum()==0:
+ df = df.append({'query' : 'Query1: all the birthdates are set to 06-15 in person table', 'result' : 'PASS'},  
+                ignore_index = True) 
+else:
+ df = df.append({'query' : 'Query1: all the birthdates are set to 06-15 in person table', 'result' : 'Failure'},  
+                ignore_index = True) 
+
+# # Query2: No dates before birth_date
 #
 
 # +
@@ -116,11 +148,12 @@ WITH
         DISTINCT table_name
       FROM
         table1))
-    AND c.data_type IN ('DATE')
+    AND c.data_type IN ('DATE','TIMESTAMP') 
     AND NOT REGEXP_CONTAINS(column_name, r'(?i)(_PAR)') 
+    AND NOT REGEXP_CONTAINS(column_name, r'(?i)(birth)')
 """)
 
-q = query.render(project_id=project_id, rt_dataset=rt_dataset, ct_dataset=ct_dataset)
+q = query.render(project_id=project_id, ct_dataset=ct_dataset)
 target_tables=execute(client, q)
 target_tables.shape
 # -
@@ -155,7 +188,7 @@ END
  
 FROM `{{project_id}}.{{ct_dataset}}.{{table_name}}` c
 JOIN rt_map r USING (person_id)
-WHERE  c.{{column_name}} < r.birth_date
+WHERE  DATE(c.{{column_name}})< r.birth_date
 """)
     q = query.render(project_id=project_id, rt_dataset=rt_dataset, ct_dataset=ct_dataset,table_name=table_name,column_name=column_name)
     df11=execute(client, q)
@@ -179,14 +212,14 @@ res2
 # -
 
 if res2.iloc[:,3].sum()==0:
- df = df.append({'query' : 'Query1: No dates before birth_date', 'result' : 'PASS'},  
+ df = df.append({'query' : 'Query2: No dates before birth_date', 'result' : 'PASS'},  
                 ignore_index = True) 
 else:
- df = df.append({'query' : 'Query1: No dates before birth_date', 'result' : 'Failure'},  
+ df = df.append({'query' : 'Query2: No dates before birth_date', 'result' : 'Failure'},  
                 ignore_index = True) 
 
 
-# # Query2: No dates after 30_days_after_death
+# # Query3: No dates after 30_days_after_death
 
 # need to do obs table seperatly
 df1=target_tables
@@ -207,7 +240,7 @@ DATE_ADD(d.death_date, INTERVAL 30 DAY) AS after_death_30_days
  
 FROM `{{project_id}}.{{ct_dataset}}.{{table_name}}` c
 FULL JOIN `{{project_id}}.{{ct_dataset}}.death` d USING (person_id) 
-WHERE  c.{{column_name}} > d.death_date
+WHERE  DATE(c.{{column_name}}) > d.death_date
 AND c.{{table_name}}_concept_id NOT IN (4013886, 4135376, 4271761)
 )
 
@@ -222,10 +255,10 @@ END
  AS Failure_after_death_30_days
 
 FROM df1
-WHERE  {{column_name}} > after_death_30_days
+WHERE  DATE({{column_name}}) > after_death_30_days
 
 """)
-    q = query.render(project_id=project_id, rt_dataset=rt_dataset, ct_dataset=ct_dataset,table_name=table_name, column_name=column_name)
+    q = query.render(project_id=project_id, ct_dataset=ct_dataset,table_name=table_name, column_name=column_name)
     df11=execute(client, q)
     return df11
 
@@ -262,7 +295,7 @@ c.{{column_name}},
 DATE_ADD(d.death_date, INTERVAL 30 DAY) AS after_death_30_days
  FROM `{{project_id}}.{{ct_dataset}}.{{table_name}}` c
  JOIN `{{project_id}}.{{ct_dataset}}.death` d USING (person_id) 
-WHERE  c.{{column_name}} > d.death_date
+WHERE  DATE(c.{{column_name}}) > d.death_date
 )
 
 SELECT
@@ -275,9 +308,9 @@ CASE WHEN
 END
  AS Failure_after_death_30_days
 FROM death_30_days
-WHERE  {{column_name}} > after_death_30_days
+WHERE  DATE({{column_name}}) > after_death_30_days
 """)
-    q = query.render(project_id=project_id, rt_dataset=rt_dataset, ct_dataset=ct_dataset,table_name=table_name, column_name=column_name)
+    q = query.render(project_id=project_id, ct_dataset=ct_dataset,table_name=table_name, column_name=column_name)
     df11=execute(client, q)
     return df11
 
@@ -302,13 +335,13 @@ res2=res2.append(res21, ignore_index=True)
 res2
 
 if res2.iloc[:,3].sum()==0:
- df = df.append({'query' : 'Query 2: No dates after death', 'result' : 'PASS'},  
+ df = df.append({'query' : 'Query3: No dates after death', 'result' : 'PASS'},  
                 ignore_index = True) 
 else:
- df = df.append({'query' : 'Query 2: No dates after death', 'result' : 'Failure'},  
+ df = df.append({'query' : 'Query3: No dates after death', 'result' : 'Failure'},  
                 ignore_index = True) 
 
-# # Query3: No dates earlier than 1980 in any table, except for the observation
+# # Query4: No dates earlier than 1980 in any table, except for the observation
 
 # get target tables WITHout observation
 df1=target_tables
@@ -331,9 +364,9 @@ CASE WHEN
 END
  AS Failure_cutoff_date
 FROM `{{project_id}}.{{ct_dataset}}.{{table_name}}` c
-WHERE  c.{{column_name}} < '{{earliest_ehr_date}}'
+WHERE  DATE(c.{{column_name}}) < '{{earliest_ehr_date}}'
 """)
-    q = query.render(project_id=project_id, rt_dataset=rt_dataset, ct_dataset=ct_dataset,table_name=table_name, column_name=column_name,earliest_ehr_date=earliest_ehr_date)
+    q = query.render(project_id=project_id, ct_dataset=ct_dataset,table_name=table_name, column_name=column_name,earliest_ehr_date=earliest_ehr_date)
     df11=execute(client, q)
     return df11
 
@@ -352,14 +385,14 @@ res2
 # -
 
 if res2.iloc[:,3].sum()==0:
- df = df.append({'query' : 'Query 3: No dates earlier than 1980 in any table, except for the observation', 'result' : 'PASS'},  
+ df = df.append({'query' : 'Query4: No dates earlier than 1980 in any table, except for the observation', 'result' : 'PASS'},  
                 ignore_index = True) 
 else:
- df = df.append({'query' : 'Query 3: No dates earlier than 1980 in any table, except for the observation', 'result' : 'Failure'},  
+ df = df.append({'query' : 'Query4: No dates earlier than 1980 in any table, except for the observation', 'result' : 'Failure'},  
                 ignore_index = True) 
 
 
-# # query 6  All participants have basics,done
+# # query 7  All participants have basics,done
 
 # +
 query = JINJA_ENV.from_string("""
@@ -393,7 +426,7 @@ FROM person_all
 WHERE person_id NOT IN (SELECT person_id FROM person_basics)
 """)
 
-q = query.render(project_id=project_id, rt_dataset=rt_dataset, ct_dataset=ct_dataset)
+q = query.render(project_id=project_id, ct_dataset=ct_dataset)
 df1=execute(client, q)
 df1.shape
 # -
@@ -401,13 +434,13 @@ df1.shape
 df1
 
 if df1.iloc[:,3].sum()==0:
- df = df.append({'query' : 'Query 6: All participants have basics', 'result' : 'PASS'},  
+ df = df.append({'query' : 'Query7: All participants have basics', 'result' : 'PASS'},  
                 ignore_index = True) 
 else:
- df = df.append({'query' : 'Query 6: All participants have basics', 'result' : 'Failure'},  
+ df = df.append({'query' : 'Query7: All participants have basics', 'result' : 'Failure'},  
                 ignore_index = True) 
 
-# # query 7 All participants WITH EHR data have said yes to EHR consents
+# # query 8 All participants WITH EHR data have said yes to EHR consents
 #
 # yes to 1586099 EHR Consent PII: Consent Permission
 
@@ -470,20 +503,20 @@ FROM person_ehr
 WHERE  person_id NOT IN (SELECT person_id FROM person_yes)
 """)
 
-q = query.render(project_id=project_id, rt_dataset=rt_dataset, ct_dataset=ct_dataset)
+q = query.render(project_id=project_id, ct_dataset=ct_dataset)
 df1=execute(client, q)
 df1.shape
 df1
 # -
 
 if df1.iloc[:,3].sum()==0:
- df = df.append({'query' : 'Query 7: All participants WITH EHR data have said yes to EHR consents', 'result' : 'PASS'},  
+ df = df.append({'query' : 'Query8: All participants WITH EHR data have said yes to EHR consents', 'result' : 'PASS'},  
                 ignore_index = True) 
 else:
- df = df.append({'query' : 'Query 7: All participants WITH EHR data have said yes to EHR consents', 'result' : 'Failure'},  
+ df = df.append({'query' : 'Query8: All participants WITH EHR data have said yes to EHR consents', 'result' : 'Failure'},  
                 ignore_index = True) 
 
-# # Query 9 All primary keys are in _ext
+# # Query 10 All primary keys are in _ext
 
 # +
 query = JINJA_ENV.from_string("""
@@ -558,7 +591,7 @@ WITH
      )
    """)
 
-q = query.render(project_id=project_id, rt_dataset=rt_dataset, ct_dataset=ct_dataset)
+q = query.render(project_id=project_id, ct_dataset=ct_dataset)
 target_tables=execute(client, q)
 target_tables.shape
 # -
@@ -584,7 +617,7 @@ FROM `{{project_id}}.{{ct_dataset}}.{{table_name}}` c
 JOIN `{{project_id}}.{{ct_dataset}}.{{table_name}}_ext` ext USING ({{column_name}})
 WHERE  c.{{column_name}} !=ext.{{column_name}}
 """)
-    q = query.render(project_id=project_id, rt_dataset=rt_dataset, ct_dataset=ct_dataset,table_name=table_name, column_name=column_name)
+    q = query.render(project_id=project_id, ct_dataset=ct_dataset,table_name=table_name, column_name=column_name)
     df11=execute(client, q)
     return df11
 
@@ -604,14 +637,14 @@ res2
 # -
 
 if res2.iloc[:,3].sum()==0:
- df = df.append({'query' : 'Query 9: All primary keys are in _ext', 'result' : 'PASS'},  
+ df = df.append({'query' : 'Query10: All primary keys are in _ext', 'result' : 'PASS'},  
                 ignore_index = True) 
 else:
- df = df.append({'query' : 'Query 9: All primary keys are in _ext', 'result' : 'Failure'},  
+ df = df.append({'query' : 'Query10: All primary keys are in _ext', 'result' : 'Failure'},  
                 ignore_index = True) 
 
 
-# # query 10 No duplicated primary keys¶
+# # query 11 No duplicated primary keys¶
 
 # +
 query = JINJA_ENV.from_string("""
@@ -685,7 +718,7 @@ WITH
      )
  """)
 
-q = query.render(project_id=project_id, rt_dataset=rt_dataset, ct_dataset=ct_dataset)
+q = query.render(project_id=project_id, ct_dataset=ct_dataset)
 target_tables=execute(client, q)
 target_tables.shape
 # -
@@ -712,7 +745,7 @@ FROM `{{project_id}}.{{ct_dataset}}.{{table_name}}` c
 GROUP BY {{column_name}}
 HAVING COUNT(*) >1
 """)
-    q = query.render(project_id=project_id, rt_dataset=rt_dataset, ct_dataset=ct_dataset,table_name=table_name, column_name=column_name)
+    q = query.render(project_id=project_id, ct_dataset=ct_dataset,table_name=table_name, column_name=column_name)
     df11=execute(client, q)
     return df11
 
@@ -732,14 +765,14 @@ res2
 # -
 
 if res2.empty:
- df = df.append({'query' : 'Query 10 No duplicated primary keys', 'result' : 'PASS'},  
+ df = df.append({'query' : 'Query11 No duplicated primary keys', 'result' : 'PASS'},  
                 ignore_index = True) 
 else:
- df = df.append({'query' : 'Query 10 No duplicated primary keys', 'result' : 'Failure'},  
+ df = df.append({'query' : 'Query11 No duplicated primary keys', 'result' : 'Failure'},  
                 ignore_index = True) 
 
 
-# # query 11 OMOP tables should have standard concept ids, done WITH questions
+# # Query 12 OMOP tables should have standard concept ids, done WITH questions
 
 # +
 query = JINJA_ENV.from_string("""
@@ -784,7 +817,7 @@ WITH
     AND NOT REGEXP_CONTAINS(column_name, r'(?i)(_source)') 
 """)
 
-q = query.render(project_id=project_id, rt_dataset=rt_dataset, ct_dataset=ct_dataset)
+q = query.render(project_id=project_id, ct_dataset=ct_dataset)
 target_tables=execute(client, q)
 target_tables.shape
 # -
@@ -812,7 +845,7 @@ JOIN `{{project_id}}.{{ct_dataset}}.{{table_name}}`  ON (concept_id={{column_nam
 WHERE  standard_concept !='S'
 AND {{column_name}} !=0
 """)
-    q = query.render(project_id=project_id, rt_dataset=rt_dataset, ct_dataset=ct_dataset,table_name=table_name, column_name=column_name)
+    q = query.render(project_id=project_id, ct_dataset=ct_dataset,table_name=table_name, column_name=column_name)
     df11=execute(client, q)
     return df11
 
@@ -832,13 +865,13 @@ res2
 # -
 
 if res2.iloc[:,3].sum()==0:
- df = df.append({'query' : 'Query 11: OMOP tables should have standard concept ids', 'result' : 'PASS'},  
+ df = df.append({'query' : 'Query12: OMOP tables should have standard concept ids', 'result' : 'PASS'},  
                 ignore_index = True) 
 else:
- df = df.append({'query' : 'Query 11: OMOP tables should have standard concept ids', 'result' : 'Failure'},  
+ df = df.append({'query' : 'Query12: OMOP tables should have standard concept ids', 'result' : 'Failure'},  
                 ignore_index = True) 
 
-# # Query 12 observation concept ids (4013886, 4135376, 4271761) that have dates equal to birth dates should be set to CDR cutoff date
+# # Query 13 observation concept ids (4013886, 4135376, 4271761) that have dates equal to birth dates should be set to CDR cutoff date
 
 # +
 
@@ -876,14 +909,14 @@ df1.shape
 df1
 
 if df1.iloc[:,3].sum()==0:
- df = df.append({'query' : 'Query 12: observation concept ids (4013886, 4135376, 4271761) that have dates equal to birth dates should be set to CDR cutoff date', 'result' : 'PASS'},  
+ df = df.append({'query' : 'Query13: observation concept ids (4013886, 4135376, 4271761) that have dates equal to birth dates should be set to CDR cutoff date', 'result' : 'PASS'},  
                 ignore_index = True) 
 else:
- df = df.append({'query' : 'Query 12: observation concept ids (4013886, 4135376, 4271761) that have dates equal to birth dates should be set to CDR cutoff date', 'result' : 'Failure'},  
+ df = df.append({'query' : 'Query13: observation concept ids (4013886, 4135376, 4271761) that have dates equal to birth dates should be set to CDR cutoff date', 'result' : 'Failure'},  
                 ignore_index = True) 
 
 #
-# # Query 13 done all other observation concept ids WITH dates similar to birth dates other than the 3 above should be removed
+# # Query 14 done all other observation concept ids WITH dates similar to birth dates other than the 3 above should be removed
 
 # +
 query = JINJA_ENV.from_string("""
@@ -918,13 +951,13 @@ df1.shape
 df1
 
 if df1.iloc[:,3].sum()==0:
- df = df.append({'query' : 'Query 13: no birth_date in observation table except (4013886, 4135376, 4271761)', 'result' : 'PASS'},  
+ df = df.append({'query' : 'Query14: no birth_date in observation table except (4013886, 4135376, 4271761)', 'result' : 'PASS'},  
                 ignore_index = True) 
 else:
- df = df.append({'query' : 'Query 13: no birth_date in observation table except (4013886, 4135376, 4271761)', 'result' : 'Failure'},  
+ df = df.append({'query' : 'Query14: no birth_date in observation table except (4013886, 4135376, 4271761)', 'result' : 'Failure'},  
                 ignore_index = True) 
 
-# # Query 14:  All the descendants of ancestor_concept_id IN (4054924, 141771) -- motor vehicle accidents should be dropped in condition table¶
+# # Query 15:  All the descendants of ancestor_concept_id IN (4054924, 141771) -- motor vehicle accidents should be dropped in condition table¶
 
 # +
 query = JINJA_ENV.from_string("""
@@ -953,10 +986,10 @@ df1.shape
 df1
 
 if df1.iloc[:,3].sum()==0:
- df = df.append({'query' : 'Query 14: All the descendants of ancestor_concept_id IN (4054924, 141771)  be dropped in condition table', 'result' : 'PASS'},  
+ df = df.append({'query' : 'Query15: All the descendants of ancestor_concept_id IN (4054924, 141771)  be dropped in condition table', 'result' : 'PASS'},  
                 ignore_index = True) 
 else:
- df = df.append({'query' : 'Query 14: All the descendants of ancestor_concept_id IN (4054924, 141771)  be dropped in condition table', 'result' : 'Failure'},  
+ df = df.append({'query' : 'Query15: All the descendants of ancestor_concept_id IN (4054924, 141771)  be dropped in condition table', 'result' : 'Failure'},  
                 ignore_index = True) 
 
 
