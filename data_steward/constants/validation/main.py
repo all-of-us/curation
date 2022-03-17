@@ -185,8 +185,11 @@ PREFIX = '/data_steward/v1/'
 # Cron URLs
 PARTICIPANT_VALIDATION = 'ParticipantValidation/'
 
-# Return Values
+# Return value for participant validation cron
 VALIDATION_SUCCESS = 'participant-validation-done'
+
+# Return value for ps_api cron
+PS_API_SUCCESS = 'ps-api-done'
 
 CONTENT_TYPE = 'content-type'
 APPLICATION_JSON = 'application/json'
