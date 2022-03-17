@@ -26,6 +26,7 @@ import app_identity
 import bq_utils
 import cdm
 import common
+from gcloud.bq import BigQueryClient
 from gcloud.gcs import StorageClient
 import resources
 from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON, AOU_REQUIRED_FILES
@@ -41,6 +42,7 @@ from validation.app_errors import (BucketNotSet, log_traceback,
                                    BucketDoesNotExistError)
 from validation.metrics import completeness, required_labs
 from validation.participants import identity_match as matching
+from validation.participants.store_participant_summary_results import fetch_and_store_full_ps_data
 from validation.participants.validate import setup_and_validate_participants, get_participant_validation_summary_query
 
 app = Flask(__name__)
@@ -978,18 +980,26 @@ def run_retraction_cron():
 @api_util.auth_required_cron
 @log_traceback
 def validate_pii():
-    project = bq_utils.app_identity.get_application_id()
-    combined_dataset = bq_utils.get_combined_dataset_id()
-    ehr_dataset = bq_utils.get_dataset_id()
-    dest_dataset = bq_utils.get_validation_results_dataset_id()
     logging.info(f"Calling match_participants")
-    _, errors = matching.match_participants(project, combined_dataset,
-                                            ehr_dataset, dest_dataset)
-
-    if errors > 0:
-        logging.error(f"Errors encountered in validation process")
+    for item in bq_utils.get_hpo_info():
+        hpo_id = item['hpo_id']
+        setup_and_validate_participants(hpo_id)
 
     return consts.VALIDATION_SUCCESS
+
+
+@api_util.auth_required_cron
+@log_traceback
+def ps_api_cron():
+    project = bq_utils.app_identity.get_application_id()
+    bq_client = BigQueryClient(project)
+    rdr_project_id = bq_utils.get_rdr_project_id()
+    drc_dataset_id = common.DRC_OPS
+    logging.info(f"Calling match_participants")
+    fetch_and_store_full_ps_data(bq_client, project, rdr_project_id,
+                                 drc_dataset_id)
+
+    return consts.PS_API_SUCCESS
 
 
 @app.before_first_request
@@ -1030,6 +1040,11 @@ app.add_url_rule(consts.PREFIX + consts.PARTICIPANT_VALIDATION,
 app.add_url_rule(consts.PREFIX + 'RetractPids',
                  endpoint='run_retraction_cron',
                  view_func=run_retraction_cron,
+                 methods=['GET'])
+
+app.add_url_rule(consts.PREFIX + 'RefreshPSapi',
+                 endpoint='ps_api_cron',
+                 view_func=ps_api_cron,
                  methods=['GET'])
 
 app.before_request(
