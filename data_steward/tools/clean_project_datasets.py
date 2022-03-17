@@ -12,7 +12,7 @@ import logging
 from googleapiclient.errors import HttpError
 
 # Project imports
-from utils import bq
+from gcloud.bq import BigQueryClient
 from utils import pipeline_logging
 
 LOGGER = logging.getLogger(__name__)
@@ -22,7 +22,7 @@ def _delete_datasets(client, datasets_to_delete_list):
     """
     Deletes datasets using their dataset_ids
 
-    :param client: client object associated with project to delete datasets from
+    :param client: a BigQueryClient object associated with project to delete datasets from
     :param datasets_to_delete_list: list of dataset_ids to delete
     :return:
     """
@@ -68,10 +68,10 @@ def run_deletion(project_id, name_substrings):
 
     LOGGER.info('Continuing with dataset deletions...')
 
-    client = bq.get_client(project_id)
+    bq_client = BigQueryClient(project_id)
 
     all_datasets = [
-        dataset.dataset_id for dataset in list(client.list_datasets())
+        dataset.dataset_id for dataset in list(bq_client.list_datasets())
     ]
 
     datasets_with_substrings = [
@@ -92,7 +92,7 @@ def run_deletion(project_id, name_substrings):
     response = input(msg)
 
     if response.lower() == 'y':
-        _delete_datasets(client, datasets_with_substrings)
+        _delete_datasets(bq_client, datasets_with_substrings)
     else:
         LOGGER.info("Proper consent was not given.  Aborting deletion.")
 
