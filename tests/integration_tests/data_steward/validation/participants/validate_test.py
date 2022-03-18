@@ -13,7 +13,7 @@ from unittest import TestCase
 from google.cloud.bigquery import DatasetReference, Table, TimePartitioning, TimePartitioningType, SchemaField
 
 # Project imports
-from utils import bq
+from gcloud.bq import BigQueryClient
 from tests import test_util
 from app_identity import PROJECT_ID
 from common import JINJA_ENV, PS_API_VALUES, PII_EMAIL, PII_PHONE_NUMBER, PII_NAME, PII_ADDRESS
@@ -91,7 +91,7 @@ class ValidateTest(TestCase):
         self.project_id = os.environ.get(PROJECT_ID)
         self.dataset_id = os.environ.get('COMBINED_DATASET_ID')
         self.dataset_ref = DatasetReference(self.project_id, self.dataset_id)
-        self.client = bq.get_client(self.project_id)
+        self.client = BigQueryClient(self.project_id)
 
         self.hpo_id = 'fake_site'
         self.id_match_table_id = f'{IDENTITY_MATCH_TABLE}_{self.hpo_id}'
