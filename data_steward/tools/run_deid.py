@@ -19,7 +19,7 @@ import bq_utils
 import deid.aou as aou
 from deid.parser import odataset_name_verification
 from resources import fields_for, fields_path, DEID_PATH
-from utils import bq
+from gcloud.bq import BigQueryClient
 from common import JINJA_ENV
 
 LOGGER = logging.getLogger(__name__)
@@ -257,7 +257,7 @@ def copy_deid_map_table(deid_map_table, project_id, lookup_dataset_id,
     :param lookup_dataset_id: Name of the dataset where the master _deid_map table is stored
     :param input_dataset_id: Name of the dataset where _deid_map dataset needs to be created.
     :param age_limit: Allowed Max_age of a participant
-    :param client: Bigquery client
+    :param client: a BigQueryClient
     :return: None
     """
     q = COPY_PID_RID_QUERY.render(map_table=deid_map_table,
@@ -277,13 +277,13 @@ def load_deid_map_table(deid_map_dataset_name, age_limit):
 
     # Create _deid_map table in input dataset
     project_id = app_identity.get_application_id()
-    client = bq.get_client(project_id)
+    bq_client = BigQueryClient(project_id)
     deid_map_table = f'{project_id}.{deid_map_dataset_name}._deid_map'
     # Copy master _deid_map table records to _deid_map table
     if bq_utils.table_exists(DEID_MAP_TABLE,
                              dataset_id=PIPELINE_TABLES_DATASET):
         copy_deid_map_table(deid_map_table, project_id, PIPELINE_TABLES_DATASET,
-                            deid_map_dataset_name, age_limit, client)
+                            deid_map_dataset_name, age_limit, bq_client)
         logging.info(
             f"copied participants younger than {age_limit} to the table {deid_map_table}"
         )

@@ -7,7 +7,8 @@ partitions from drc_ops.
 import argparse
 import logging
 
-from utils import bq, auth, pipeline_logging
+from utils import auth, pipeline_logging
+from gcloud.bq import BigQueryClient
 from common import DRC_OPS, CDR_SCOPES, IDENTITY_MATCH
 from constants.validation.participants.snapshot_validaiton_dataset import (
     PARTITIONS_QUERY, CREATE_TABLE_QUERY)
@@ -32,7 +33,7 @@ def create_id_match_tables(client, dataset_id):
     """
     Generate id_match tables in the specified snapshot dataset
 
-    :param client: BigQuery client
+    :param client: a BigQueryClient
     :param dataset_id: Identifies the snapshot dataset
 
     :return: None
@@ -72,7 +73,7 @@ def create_snapshot(client, date_str):
     """
     Generates the snapshot dataset based on date passed
 
-    :param client: BigQuery client
+    :param client: a BigQueryClient
     :param date_str: date string to snapshot on
     :return: 
     """
@@ -116,9 +117,9 @@ def main():
     impersonation_creds = auth.get_impersonation_credentials(
         args.run_as_email, CDR_SCOPES)
 
-    client = bq.get_client(args.project_id, credentials=impersonation_creds)
+    bq_client = BigQueryClient(args.project_id, credentials=impersonation_creds)
 
-    dataset_id = create_snapshot(client, args.snapshot_date)
+    dataset_id = create_snapshot(bq_client, args.snapshot_date)
     create_id_match_tables(client, dataset_id)
 
 

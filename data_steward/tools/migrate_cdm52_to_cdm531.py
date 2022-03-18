@@ -5,7 +5,7 @@ from google.cloud.bigquery import QueryJobConfig
 
 from common import PII_TABLES
 import resources
-from utils import bq
+from gcloud.bq import BigQueryClient
 from utils.pipeline_logging import configure
 from tools import snapshot_by_query as sq
 
@@ -71,7 +71,7 @@ def get_upgrade_table_query(client, dataset_id, table_id, hpo_id=None):
     """
     Generate query for specified tables
 
-    :param client: BQ Client
+    :param client: a BigQueryClient
     :param dataset_id: Source dataset
     :param table_id: Source table
     :param hpo_id: 
@@ -112,13 +112,15 @@ def schema_upgrade_cdm52_to_cdm531(project_id,
    :return:
     """
     # Create dataset if not exists
-    client = bq.get_client(project_id)
-    client.create_dataset(snapshot_dataset_id, exists_ok=True)
+    bq_client = BigQueryClient(project_id)
+    bq_client.create_dataset(snapshot_dataset_id, exists_ok=True)
 
     sq.create_empty_cdm_tables(snapshot_dataset_id, hpo_id)
 
     copy_table_job_ids = []
-    tables = [table.table_id for table in list(client.list_tables(dataset_id))]
+    tables = [
+        table.table_id for table in list(bq_client.list_tables(dataset_id))
+    ]
     if hpo_id:
         hpo_tables = [
             resources.get_table_id(table, hpo_id)
@@ -128,11 +130,11 @@ def schema_upgrade_cdm52_to_cdm531(project_id,
         tables = [table for table in hpo_tables if table in tables]
     for table_id in tables:
         LOGGER.info(f"Running conversion on table {table_id}")
-        q = get_upgrade_table_query(client, dataset_id, table_id, hpo_id)
+        q = get_upgrade_table_query(bq_client, dataset_id, table_id, hpo_id)
         job_config = QueryJobConfig()
-        job_config.destination = f'{client.project}.{snapshot_dataset_id}.{table_id}'
+        job_config.destination = f'{bq_client.project}.{snapshot_dataset_id}.{table_id}'
         job_config.use_legacy_sql = False
-        job = client.query(q, job_config)
+        job = bq_client.query(q, job_config)
         copy_table_job_ids.append(job.job_id)
         job.result()
     return copy_table_job_ids
