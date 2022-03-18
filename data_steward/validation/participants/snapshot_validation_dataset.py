@@ -120,7 +120,7 @@ def main():
     bq_client = BigQueryClient(args.project_id, credentials=impersonation_creds)
 
     dataset_id = create_snapshot(bq_client, args.snapshot_date)
-    create_id_match_tables(client, dataset_id)
+    create_id_match_tables(bq_client, dataset_id)
 
 
 if __name__ == '__main__':

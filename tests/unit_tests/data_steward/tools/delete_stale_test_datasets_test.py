@@ -62,8 +62,7 @@ class DeleteStaleTestDatasetsTest(TestCase):
         self.addCleanup(self.bq_client_patcher.stop)
 
     def test_check_project_error(self):
-        type(self.mock_bq_client).project = PropertyMock(
-            return_value='aou-wrong-project-name')
+        self.mock_bq_client.project = 'aou-wrong-project-name'
 
         with self.assertRaises(ValueError):
             delete_stale_test_datasets._check_project(self.mock_bq_client)
