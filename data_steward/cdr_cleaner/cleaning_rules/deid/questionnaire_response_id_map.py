@@ -14,7 +14,6 @@ import logging
 # Project imports
 from utils import pipeline_logging
 from common import OBSERVATION, DEID_QUESTIONNAIRE_RESPONSE_MAP, JINJA_ENV
-from constants.bq_utils import WRITE_TRUNCATE
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 
@@ -25,13 +24,10 @@ ISSUE_NUMBERS = ['DC1347', 'DC518', 'DC-2065']
 # Map the research_response_id from _deid_questionnaire_response_map lookup table to the questionnaire_response_id in
 # the observation table
 QRID_RID_MAPPING_QUERY = JINJA_ENV.from_string("""
-SELECT
-    t.* EXCEPT (questionnaire_response_id),
-    d.research_response_id as questionnaire_response_id,
-FROM
-    `{{project_id}}.{{dataset_id}}.observation` t
-LEFT JOIN `{{project_id}}.{{deid_questionnaire_response_map_dataset_id}}.{{deid_questionnaire_response_map}}` d
-ON t.questionnaire_response_id = d.questionnaire_response_id
+UPDATE `{{project_id}}.{{dataset_id}}.observation` t
+SET t.questionnaire_response_id = d.research_response_id
+FROM `{{project_id}}.{{deid_questionnaire_response_map_dataset_id}}.{{deid_questionnaire_response_map}}` d
+WHERE t.questionnaire_response_id = d.questionnaire_response_id
 """)
 
 
@@ -93,13 +89,7 @@ class QRIDtoRID(BaseCleaningRule):
                     deid_questionnaire_response_map=
                     DEID_QUESTIONNAIRE_RESPONSE_MAP,
                     deid_questionnaire_response_map_dataset_id=self.
-                    deid_questionnaire_response_map_dataset),
-            cdr_consts.DESTINATION_TABLE:
-                OBSERVATION,
-            cdr_consts.DESTINATION_DATASET:
-                self.dataset_id,
-            cdr_consts.DISPOSITION:
-                WRITE_TRUNCATE
+                    deid_questionnaire_response_map_dataset)
         }
 
         return [mapping_query]

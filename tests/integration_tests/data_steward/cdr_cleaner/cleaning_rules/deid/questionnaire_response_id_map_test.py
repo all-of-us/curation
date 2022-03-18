@@ -78,8 +78,6 @@ class QRIDtoRIDTest(BaseTest.CleaningRulesTestBase):
         statements and the tables_and_counts variable.        
         """
 
-        # Create mapping table
-
         create_observations_query = self.jinja_env.from_string("""
             INSERT INTO `{{fq_dataset_name}}.observation`
                 (observation_id, person_id, observation_concept_id, observation_date, 
@@ -91,8 +89,6 @@ class QRIDtoRIDTest(BaseTest.CleaningRulesTestBase):
                 (4, 4, 43529627, date('2020-05-05'), 4, 2),
                 (5, 5, 43529625, date('2020-05-05'), 5, 3)
             """).render(fq_dataset_name=self.fq_dataset_name)
-
-        # Create observations
 
         create_mappings_query = self.jinja_env.from_string("""
             INSERT INTO `{{fq_dataset_name}}.{{deid_questionnaire_response_map}}`
@@ -108,8 +104,6 @@ class QRIDtoRIDTest(BaseTest.CleaningRulesTestBase):
         queries = [create_observations_query, create_mappings_query]
 
         self.load_test_data(queries)
-
-        #Uncomment below and fill
 
         tables_and_counts = [{
             'fq_table_name':
