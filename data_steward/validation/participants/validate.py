@@ -131,7 +131,7 @@ def identify_rdr_ehr_match(client,
     hpo_person_table_id = get_table_id(PERSON, hpo_id)
 
     if update_udf:
-        update_comparison_udfs(client, DRC_OPS)
+        update_comparison_udfs(client, drc_dataset_id)
 
     fields_match_query = consts.MATCH_FIELDS_QUERY.render(
         project_id=client.project,

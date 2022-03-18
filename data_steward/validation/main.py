@@ -41,7 +41,6 @@ from validation.app_errors import (BucketNotSet, log_traceback,
                                    errors_blueprint, InternalValidationError,
                                    BucketDoesNotExistError)
 from validation.metrics import completeness, required_labs
-from validation.participants import identity_match as matching
 from validation.participants.store_participant_summary_results import fetch_and_store_full_ps_data
 from validation.participants.validate import setup_and_validate_participants, get_participant_validation_summary_query
 
