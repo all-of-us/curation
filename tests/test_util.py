@@ -15,7 +15,7 @@ from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.utils.bq import HPO_ID_BUCKET_NAME_TABLE_ID
 from constants.validation import main
 import resources
-from utils import bq
+from gcloud.bq import BigQueryClient
 
 RESOURCES_BUCKET_FMT = '{project_id}-resources'
 
@@ -468,7 +468,7 @@ def setup_hpo_id_bucket_name_table(dataset_id):
     :param dataset_id: dataset id where the lookup table is created
     """
     project_id = app_identity.get_application_id()
-    bq_client = bq.get_client(project_id)
+    bq_client = BigQueryClient(project_id)
 
     drop_hpo_id_bucket_name_table(dataset_id)
 
@@ -515,7 +515,7 @@ def drop_hpo_id_bucket_name_table(dataset_id):
     :param dataset_id: dataset id where the lookup table is located
     """
     project_id = app_identity.get_application_id()
-    bq_client = bq.get_client(project_id)
+    bq_client = BigQueryClient(project_id)
 
     DROP_LOOKUP_TABLE = common.JINJA_ENV.from_string("""
         DROP TABLE IF EXISTS `{{project_id}}.{{lookup_dataset_id}}.{{hpo_id_bucket_table_id}}` 
