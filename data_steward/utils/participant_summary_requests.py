@@ -557,13 +557,11 @@ def store_digital_health_status_data(project_id,
     if not schema:
         schema = get_table_schema(DIGITAL_HEALTH_SHARING_STATUS)
 
-    try:
-        table = client.get_table(destination_table)
-    except NotFound:
-        table = Table(destination_table, schema=schema)
-        table.time_partitioning = TimePartitioning(
-            type_=TimePartitioningType.DAY)
-        table = client.create_table(table)
+    client.delete_table(destination_table, not_found_ok=True)
+    LOGGER.info(f'Creating table {destination_table}')
+
+    table = Table(destination_table, schema=schema)
+    table = client.create_table(table)
 
     file_obj = StringIO()
     for json_obj in json_data:

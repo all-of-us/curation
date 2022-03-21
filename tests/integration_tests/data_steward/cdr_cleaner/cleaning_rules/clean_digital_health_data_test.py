@@ -101,10 +101,12 @@ class CleanDigitalHealthDataTest(BaseTest.CleaningRulesTestBase):
             f'{project_id}.{sandbox_id}.{table}' for table in sandbox_tables
         ]
 
+        cls.fq_digital_health_table = f'{cls.project_id}.{cls.dataset_id}.{clean_dhd.DIGITAL_HEALTH_SHARING_STATUS}'
+
         cls.fq_table_names = [
             f'{project_id}.{dataset_id}.{table_id}'
             for table_id in FITBIT_TABLES
-        ]
+        ] + [cls.fq_digital_health_table]
 
         # call super to set up the client, create datasets, and create
         # empty test tables

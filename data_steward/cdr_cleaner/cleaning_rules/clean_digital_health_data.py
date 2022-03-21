@@ -25,10 +25,6 @@ WHERE person_id NOT IN (
   FROM `{{fq_digital_health_status_table}}`
   WHERE wearable = 'fitbit'
   AND status = 'YES'
-  AND _PARTITIONDATE = (
-    SELECT MAX(_PARTITIONDATE)
-    FROM `{{fq_digital_health_status_table}}`
-  )
 )
 """)
 
@@ -79,6 +75,11 @@ class CleanDigitalHealthStatus(BaseCleaningRule):
         store_digital_health_status_data(
             self.project_id, digital_health_json_list,
             f'{self.project_id}.{PIPELINE_TABLES}.{DIGITAL_HEALTH_SHARING_STATUS}'
+        )
+        # Snapshot DIGITAL_HEALTH_SHARING_STATUS table for current CDR
+        client.copy_table(
+            f'{self.project_id}.{PIPELINE_TABLES}.{DIGITAL_HEALTH_SHARING_STATUS}',
+            f'{self.project_id}.{self.sandbox_dataset_id}.{DIGITAL_HEALTH_SHARING_STATUS}'
         )
 
     def get_query_specs(self, *args, **keyword_args):
