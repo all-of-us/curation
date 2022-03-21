@@ -113,6 +113,13 @@ def get_arg_parser() -> argparse.ArgumentParser:
                                  required=True,
                                  choices=DEID_STAGE_LIST)
 
+    argument_parser.add_argument('-f',
+                                 '--fitbit_dataset',
+                                 action='store',
+                                 dest='fitbit_dataset_id',
+                                 help='fitbit dataset to copy',
+                                 required=True)
+
     return argument_parser
 
 
@@ -148,7 +155,16 @@ if __name__ == '__main__':
                                        output_dataset_name, description, labels)
     bq_client.create_dataset(dataset_object, exists_ok=False)
 
-    #Copy tables from source to destination
+    #Copy fitbit tables to source dataset
+    LOGGER.info(
+        f'Copying fitbit tables from dataset {args.src_project_id}.{args.fitbit_dataset_id} to {args.src_project_id}.{args.src_dataset_id}...'
+    )
+
+    bq.copy_datasets(bq_client,
+                     f'{args.src_project_id}.{args.fitbit_dataset_id}',
+                     f'{args.src_project_id}.{args.src_dataset_id}')
+
+    #Copy tables from source to output-prod
     LOGGER.info(
         f'Copying tables from dataset {args.src_project_id}.{args.src_dataset_id} to {args.output_prod_project_id}.{output_dataset_name}...'
     )
