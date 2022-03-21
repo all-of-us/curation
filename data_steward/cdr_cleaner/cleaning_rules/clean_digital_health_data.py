@@ -95,7 +95,7 @@ class CleanDigitalHealthStatus(BaseCleaningRule):
         for table in self.affected_tables:
             fq_fitbit_table = f'{self.project_id}.{self.dataset_id}.{table}'
             fq_digital_health_status_table = f'{self.project_id}.{PIPELINE_TABLES}.{DIGITAL_HEALTH_SHARING_STATUS}'
-            fq_sandbox_table = f'{self.project_id}.{self.dataset_id}.{self.sandbox_table_for(table)}'
+            fq_sandbox_table = f'{self.project_id}.{self.sandbox_dataset_id}.{self.sandbox_table_for(table)}'
 
             sandbox_query = dict()
             sandbox_template = SANDBOX_QUERY.render(
