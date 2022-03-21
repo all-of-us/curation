@@ -20,11 +20,16 @@ LOGGER = logging.getLogger(__name__)
 CLEAN_QUERY = JINJA_ENV.from_string("""
 {{query_type}}
 FROM `{{fq_fitbit_table}}`
-WHERE person_id NOT IN 
-(SELECT person_id
-FROM `{{fq_digital_health_status_table}}`
-WHERE wearable = 'fitbit'
-AND status = 'YES')
+WHERE person_id NOT IN (
+  SELECT person_id
+  FROM `{{fq_digital_health_status_table}}`
+  WHERE wearable = 'fitbit'
+  AND status = 'YES'
+  AND _PARTITIONDATE = (
+    SELECT MAX(_PARTITIONDATE)
+    FROM `{{fq_digital_health_status_table}}`
+  )
+)
 """)
 
 SANDBOX_QUERY = JINJA_ENV.from_string("""
