@@ -979,7 +979,7 @@ def run_retraction_cron():
 @api_util.auth_required_cron
 @log_traceback
 def validate_pii():
-    logging.info(f"Calling match_participants")
+    logging.info(f"Running participant validation on all sites")
     for item in bq_utils.get_hpo_info():
         hpo_id = item['hpo_id']
         # Prevent updating udfs for all hpo_sites
@@ -995,7 +995,7 @@ def ps_api_cron():
     bq_client = BigQueryClient(project)
     rdr_project_id = bq_utils.get_rdr_project_id()
     drc_dataset_id = common.DRC_OPS
-    logging.info(f"Calling match_participants")
+    logging.info(f"Fetching Participant Summary API data")
     fetch_and_store_full_ps_data(bq_client, project, rdr_project_id,
                                  drc_dataset_id)
 
@@ -1032,7 +1032,8 @@ app.add_url_rule(consts.PREFIX + 'UnionEHR',
                  view_func=union_ehr,
                  methods=['GET'])
 
-app.add_url_rule(consts.PREFIX + consts.PARTICIPANT_VALIDATION + 'validate',
+app.add_url_rule(consts.PREFIX + consts.PARTICIPANT_VALIDATION +
+                 consts.VALIDATE,
                  endpoint='validate_pii',
                  view_func=validate_pii,
                  methods=['GET'])
@@ -1043,7 +1044,7 @@ app.add_url_rule(consts.PREFIX + 'RetractPids',
                  methods=['GET'])
 
 app.add_url_rule(consts.PREFIX + consts.PARTICIPANT_VALIDATION +
-                 'FetchPSapiData',
+                 consts.FETCH_PS_DATA,
                  endpoint='ps_api_cron',
                  view_func=ps_api_cron,
                  methods=['GET'])

@@ -148,7 +148,7 @@ def fetch_and_store_full_ps_data(client,
     # Load schema
     schema = bq.get_table_schema(PS_API_VALUES)
     # TODO use resources.get_table_id after updating it to flip hpo_id, table_name
-    table_name = f'{PS_API_VALUES}_{UNIONED}'
+    table_name = f'{PS_API_VALUES}'
     fq_table_id = f'{project_id}.{dataset_id}.{table_name}'
 
     # Clear existing table to refresh data

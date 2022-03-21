@@ -82,7 +82,7 @@ class ValidateTest(TestCase):
 
         self.hpo_id = 'fake_site'
         self.id_match_table_id = f'{IDENTITY_MATCH_TABLE}_{self.hpo_id}'
-        self.ps_values_table_id = f'{PS_API_VALUES}_{UNIONED}'
+        self.ps_values_table_id = f'{PS_API_VALUES}'
         self.pii_address_table_id = f'{self.hpo_id}_pii_address'
         self.pii_email_table_id = f'{self.hpo_id}_pii_email'
         self.pii_phone_number_table_id = f'{self.hpo_id}_pii_phone_number'

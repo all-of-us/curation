@@ -78,7 +78,7 @@ def update_comparison_udfs(client, dataset_id):
         [f"'{state}'" for state in state_df['abbreviated']])
 
     for item in consts.CREATE_COMPARISON_FUNCTION_QUERIES:
-        LOGGER.info(f"Creating `{item['name']}` function if doesn't exist.")
+        LOGGER.info(f"Creating `{item['name']}` function.")
 
         query = item['query'].render(
             project_id=client.project,
@@ -126,7 +126,7 @@ def identify_rdr_ehr_match(client,
     hpo_pii_email_table_id = get_table_id(PII_EMAIL, hpo_id)
     hpo_pii_phone_number_table_id = get_table_id(PII_PHONE_NUMBER, hpo_id)
     hpo_pii_name_table_id = get_table_id(PII_NAME, hpo_id)
-    ps_api_table_id = f'{PS_API_VALUES}_{UNIONED}'
+    ps_api_table_id = f'{PS_API_VALUES}'
     hpo_location_table_id = get_table_id(LOCATION, hpo_id)
     hpo_person_table_id = get_table_id(PERSON, hpo_id)
 
