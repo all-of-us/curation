@@ -185,8 +185,11 @@ PREFIX = '/data_steward/v1/'
 # Cron URLs
 PARTICIPANT_VALIDATION = 'ParticipantValidation/'
 
-# Return Values
+# Return value for participant validation cron
 VALIDATION_SUCCESS = 'participant-validation-done'
+
+# Return value for ps_api cron
+PS_API_SUCCESS = 'ps-api-done'
 
 CONTENT_TYPE = 'content-type'
 APPLICATION_JSON = 'application/json'
@@ -196,3 +199,6 @@ REASON = 'reason'
 
 FOLDER_NAME_REGEX = r'\d{4}-\d{2}-\d{2}-v\d+'
 FOLDER_NAMING_CONVENTION = 'YYYY-MM-DD-vN/'
+
+VALIDATE = 'validate'
+FETCH_PS_DATA = 'FetchPSData'

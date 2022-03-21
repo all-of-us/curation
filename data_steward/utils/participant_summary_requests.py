@@ -372,6 +372,44 @@ def get_org_participant_information(project_id: str,
     return df
 
 
+def get_all_participant_information(project_id: str) -> pandas.DataFrame:
+    """
+    Fetches the necessary participant information.
+
+    :param project_id: The RDR project hosting the API
+
+    :return: a dataframe of participant information
+    :raises: RuntimeError if the project_id and hpo_id are not strings
+    :raises: TimeoutError if response takes longer than 10 minutes
+    """
+    # Parameter checks
+    if not isinstance(project_id, str):
+        raise RuntimeError(f'Please specify the RDR project')
+
+    # Make request to get API version. This is the current RDR version for reference see
+    # see https://github.com/all-of-us/raw-data-repository/blob/master/opsdataAPI.md for documentation of this API.
+    # consentForElectronicHealthRecords=SUBMITTED -- ensures only consenting participants are returned via the API
+    #   regardless if there is EHR data uploaded for that participant
+    # suspensionStatus=NOT_SUSPENDED and withdrawalStatus=NOT_WITHDRAWN -- ensures only active participants returned
+    #   via the API
+    params = {
+        'suspensionStatus': 'NOT_SUSPENDED',
+        'consentForElectronicHealthRecords': 'SUBMITTED',
+        'withdrawalStatus': 'NOT_WITHDRAWN',
+        '_sort': 'participantId',
+        '_count': '10000'
+    }
+
+    participant_data = get_participant_data(project_id, params=params)
+
+    column_map = {'participant_id': 'person_id'}
+
+    df = process_api_data_to_df(participant_data,
+                                FIELDS_OF_INTEREST_FOR_VALIDATION, column_map)
+
+    return df
+
+
 def get_digital_health_information(project_id: str):
     """
     Fetches the necessary participant information for a particular site.

@@ -398,31 +398,54 @@ SET upd.first_name = `{{project_id}}.{{drc_dataset_id}}.CompareName`(ps.first_na
     upd.birth_date = `{{project_id}}.{{drc_dataset_id}}.CompareDateOfBirth`(ps.date_of_birth, ehr_dob.date_of_birth),
     upd.sex = `{{project_id}}.{{drc_dataset_id}}.CompareSexAtBirth`(ps.sex, ehr_sex.sex),
     upd.algorithm = 'yes'
-FROM `{{project_id}}.{{drc_dataset_id}}.{{ps_api_table_id}}` ps
-LEFT JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_name_table_id}}` ehr_name
-    ON ehr_name.person_id = ps.person_id
+FROM (SELECT * EXCEPT(r)
+        FROM (SELECT *, ROW_NUMBER() OVER(PARTITION BY person_id) r
+            FROM `{{project_id}}.{{ehr_dataset_id}}.{{hpo_person_table_id}}`)
+        WHERE r = 1) p
+LEFT JOIN `{{project_id}}.{{drc_dataset_id}}.{{ps_api_table_id}}` ps
+    ON p.person_id = ps.person_id
+LEFT JOIN (SELECT * EXCEPT(r)
+        FROM (SELECT *, ROW_NUMBER() OVER(PARTITION BY person_id) r
+            FROM `{{project_id}}.{{ehr_dataset_id}}.{{hpo_pii_name_table_id}}`)
+        WHERE r = 1) ehr_name
+    ON ehr_name.person_id = p.person_id
 LEFT JOIN ( SELECT person_id, address_1, address_2, city, state, zip
-            FROM `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_address_table_id}}`
-            LEFT JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_location_table_id}}`
-                USING (location_id) ) ehr_address
-    ON ehr_address.person_id = ps.person_id
-LEFT JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_email_table_id}}` ehr_email
-    ON ehr_email.person_id = ps.person_id
-LEFT JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_phone_number_table_id}}` ehr_phone
-    ON ehr_phone.person_id = ps.person_id
-LEFT JOIN ( SELECT person_id, DATE(birth_datetime) AS date_of_birth
-           FROM `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_person_table_id}}` ) AS ehr_dob
-    ON ehr_dob.person_id = ps.person_id
+        FROM (SELECT * EXCEPT(r)
+            FROM (SELECT *, ROW_NUMBER() OVER(PARTITION BY person_id) r
+                FROM `{{project_id}}.{{ehr_dataset_id}}.{{hpo_pii_address_table_id}}`)
+            WHERE r = 1) per
+        LEFT JOIN (SELECT * EXCEPT(r)
+            FROM (SELECT *, ROW_NUMBER() OVER(PARTITION BY location_id) r
+                FROM `{{project_id}}.{{ehr_dataset_id}}.{{hpo_location_table_id}}`)
+            WHERE r = 1) loc
+            USING (location_id) ) ehr_address
+    ON ehr_address.person_id = p.person_id
+LEFT JOIN (SELECT * EXCEPT(r)
+                FROM (SELECT *, ROW_NUMBER() OVER(PARTITION BY person_id) r
+                    FROM `{{project_id}}.{{ehr_dataset_id}}.{{hpo_pii_email_table_id}}`)
+            WHERE r = 1) ehr_email
+    ON ehr_email.person_id = p.person_id
+LEFT JOIN (SELECT * EXCEPT(r)
+                FROM (SELECT *, ROW_NUMBER() OVER(PARTITION BY person_id) r
+                    FROM `{{project_id}}.{{ehr_dataset_id}}.{{hpo_pii_phone_number_table_id}}`)
+            WHERE r = 1) ehr_phone
+    ON ehr_phone.person_id = p.person_id
+LEFT JOIN (SELECT person_id, DATE(birth_datetime) AS date_of_birth
+            FROM (SELECT *, ROW_NUMBER() OVER(PARTITION BY person_id) r
+                FROM `{{project_id}}.{{ehr_dataset_id}}.{{hpo_person_table_id}}`)
+            WHERE r = 1) AS ehr_dob
+    ON ehr_dob.person_id = p.person_id
 LEFT JOIN ( SELECT person_id, cc.concept_name as sex
-            FROM `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_person_table_id}}`
-            JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.concept` cc
+            FROM (SELECT * EXCEPT(r)
+                FROM (SELECT *, ROW_NUMBER() OVER(PARTITION BY person_id) r
+                    FROM `{{project_id}}.{{ehr_dataset_id}}.{{hpo_person_table_id}}`)
+                WHERE r = 1 )
+            JOIN `{{project_id}}.{{ehr_dataset_id}}.concept` cc
                 ON gender_concept_id = concept_id ) AS ehr_sex
-    ON ehr_sex.person_id = ps.person_id
-WHERE upd.person_id = ps.person_id
-    AND upd._PARTITIONTIME = ps._PARTITIONTIME
-    AND ps._PARTITIONTIME = (
-        SELECT MAX(_PARTITIONTIME) FROM `{{project_id}}.{{drc_dataset_id}}.{{ps_api_table_id}}`
-        )
+    ON ehr_sex.person_id = p.person_id
+WHERE upd.person_id = p.person_id
+    AND upd._PARTITIONTIME = ( SELECT MAX(_PARTITIONTIME) pt
+        FROM `{{project_id}}.{{drc_dataset_id}}.{{id_match_table_id}}` )
 """)
 
 MATCH_STREET_COMBINED_QUERY = JINJA_ENV.from_string("""
@@ -430,17 +453,26 @@ UPDATE `{{project_id}}.{{drc_dataset_id}}.{{id_match_table_id}}` upd
 SET upd.address_1 = '{{match}}',
     upd.address_2 = '{{match}}',
     upd.algorithm = 'yes'
-FROM `{{project_id}}.{{drc_dataset_id}}.{{ps_api_table_id}}` ps
+FROM (SELECT * EXCEPT(r)
+        FROM (SELECT *, ROW_NUMBER() OVER(PARTITION BY person_id) r
+            FROM `{{project_id}}.{{ehr_dataset_id}}.{{hpo_person_table_id}}`)
+        WHERE r = 1) p
+LEFT JOIN `{{project_id}}.{{drc_dataset_id}}.{{ps_api_table_id}}` ps
+    ON p.person_id = ps.person_id
 LEFT JOIN ( SELECT person_id, address_1, address_2, city, state, zip
-            FROM `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_pii_address_table_id}}`
-            LEFT JOIN `{{project_id}}.{{ehr_ops_dataset_id}}.{{hpo_location_table_id}}`
+            FROM (SELECT * EXCEPT(r)
+                FROM (SELECT *, ROW_NUMBER() OVER(PARTITION BY person_id) r
+                    FROM `{{project_id}}.{{ehr_dataset_id}}.{{hpo_pii_address_table_id}}`)
+                WHERE r = 1) per
+            LEFT JOIN (SELECT * EXCEPT(r)
+                FROM (SELECT *, ROW_NUMBER() OVER(PARTITION BY location_id) r
+                    FROM `{{project_id}}.{{ehr_dataset_id}}.{{hpo_location_table_id}}`)
+                WHERE r = 1) loc
                 USING (location_id) ) ehr_address
-    ON ehr_address.person_id = ps.person_id
-WHERE upd.person_id = ps.person_id
-    AND upd._PARTITIONTIME = ps._PARTITIONTIME
-    AND ps._PARTITIONTIME = (
-        SELECT MAX(_PARTITIONTIME) FROM `{{project_id}}.{{drc_dataset_id}}.{{ps_api_table_id}}`
-        )
+    ON ehr_address.person_id = p.person_id
+WHERE upd.person_id = p.person_id
+    AND upd._PARTITIONTIME = ( SELECT MAX(_PARTITIONTIME) pt
+        FROM `{{project_id}}.{{drc_dataset_id}}.{{id_match_table_id}}` )
     -- This update skips the records whose address_1 or address_2 is already "match" --
     AND NOT(upd.address_1 = '{{match}}' OR upd.address_2 = '{{match}}')
     -- This update only updates the records whose street_1+street_2 comparison return "match" --

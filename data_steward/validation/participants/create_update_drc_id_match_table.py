@@ -1,14 +1,14 @@
 """
 Utility to create or update a site's DRC identity match table.
 
-There should be a record for each participant and the record should be filled with default values of `missing_rdr` or
+There should be a record for each participant and the record should be filled with default values of 
     `missing_ehr`. Each record should contain data for the fields: person_id, first_name, middle_name, last_name,
     phone_number, email, address_1, address_2, city, state, zip, birth_date, sex, and algorithm.
 
-The record for each of the above fields should default to `missing_rdr` if the joined record in the
-    ps_api_values_<hpo_id> table does not contain any information otherwise, it should default to `missing_ehr`
+The record for each of the above fields should default to `missing_ehr`
 
 Original Issue: DC-1216
+Updates in DC-2270
 """
 
 # Python imports
@@ -20,7 +20,7 @@ import resources
 from utils import bq, auth
 from gcloud.bq import BigQueryClient
 import bq_utils
-from common import JINJA_ENV, PS_API_VALUES, DRC_OPS, CDR_SCOPES
+from common import JINJA_ENV, DRC_OPS, CDR_SCOPES, EHR_OPS, PERSON
 from constants.validation.participants.identity_match import IDENTITY_MATCH_TABLE
 
 LOGGER = logging.getLogger(__name__)
@@ -49,14 +49,18 @@ PARTITION BY TIMESTAMP_TRUNC(_PARTITIONTIME, HOUR)
 POPULATE_VALIDATION_TABLE = JINJA_ENV.from_string("""
 INSERT INTO `{{project_id}}.{{drc_dataset_id}}.{{id_match_table_id}}` (_PARTITIONTIME, {{fields}}) 
 SELECT
-    _PARTITIONTIME, 
-    person_id, {{case_statements}}, '' algorithm
-FROM `{{project_id}}.{{drc_dataset_id}}.{{ps_values_table_id}}`
-WHERE ABS(TIMESTAMP_DIFF(TIMESTAMP_TRUNC(CURRENT_TIMESTAMP, HOUR), _PARTITIONTIME, HOUR)) < 2
+    TIMESTAMP_TRUNC(CURRENT_TIMESTAMP, HOUR), 
+    person_id,
+    {{case_statements}},
+    '' algorithm
+FROM (SELECT * EXCEPT(r)
+        FROM (SELECT *, ROW_NUMBER() OVER(PARTITION BY person_id) r
+            FROM `{{project_id}}.{{ehr_ops_dataset_id}}.{{ehr_person_table_id}}`)
+        WHERE r = 1)
 """)
 
 CASE_EXPRESSION = JINJA_ENV.from_string("""
-CASE WHEN {{ps_api_field}} IS NULL THEN 'missing_rdr' ELSE 'missing_ehr' END AS {{identity_match_field}}
+'missing_ehr' AS {{identity_match_field}}
 """)
 
 
@@ -98,18 +102,19 @@ def get_case_statements():
     field_list.remove('algorithm')
 
     for item in field_list:
-        ps_api_item = IDENTITY_MATCH_PS_API_FIELD_MAP[item]
         case_statements.append(
-            CASE_EXPRESSION.render(identity_match_field=item,
-                                   ps_api_field=ps_api_item))
+            CASE_EXPRESSION.render(identity_match_field=item))
 
     return ', '.join(case_statements)
 
 
-def populate_validation_table(client, table_id, hpo_id, drc_dataset_id=DRC_OPS):
+def populate_validation_table(client,
+                              table_id,
+                              hpo_id,
+                              ehr_dataset_id=EHR_OPS,
+                              drc_dataset_id=DRC_OPS):
     """
-    Populates validation table with 'missing_rdr' or 'missing_ehr' data. Populated with 'missing_rdr' if data IS NOT
-        found in the ps_values table. Populated with 'missing_ehr' as default.
+    Populates validation table with 'missing_ehr' data.
 
     :param client: A BigQueryClient
     :param table_id: ID for the table
@@ -118,7 +123,7 @@ def populate_validation_table(client, table_id, hpo_id, drc_dataset_id=DRC_OPS):
 
     schema_list = bq.get_table_schema(IDENTITY_MATCH_TABLE)
     id_match_table_id = table_id
-    ps_values_table_id = f'{PS_API_VALUES}_{hpo_id}'
+    ehr_person_table_id = bq_utils.get_table_id(hpo_id, PERSON)
 
     fields_name_str = ', '.join([item.name for item in schema_list])
 
@@ -128,7 +133,8 @@ def populate_validation_table(client, table_id, hpo_id, drc_dataset_id=DRC_OPS):
         id_match_table_id=id_match_table_id,
         fields=fields_name_str,
         case_statements=get_case_statements(),
-        ps_values_table_id=ps_values_table_id)
+        ehr_ops_dataset_id=ehr_dataset_id,
+        ehr_person_table_id=ehr_person_table_id)
 
     job = client.query(populate_query)
     job.result()
