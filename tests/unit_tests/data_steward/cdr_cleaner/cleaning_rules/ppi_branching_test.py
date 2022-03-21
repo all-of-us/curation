@@ -51,7 +51,6 @@ class PpiBranchingTest(unittest.TestCase):
         self.dataset_id = 'fake_dataset'
         self.sandbox_dataset_id = 'fake_sandbox'
         self.observation_schema = _get_table_schema('observation')
-
         self.mock_bq_client_patcher = mock.patch(
             'cdr_cleaner.cleaning_rules.ppi_branching.BigQueryClient')
         self.mock_bq_client = self.mock_bq_client_patcher.start()
@@ -59,7 +58,6 @@ class PpiBranchingTest(unittest.TestCase):
         self.mock_client = mock.MagicMock()
         self.mock_bq_client.return_value = self.mock_client
         self.mock_client.get_table_schema.return_value = self.observation_schema
-
         self.cleaning_rule = PpiBranching(self.project_id, self.dataset_id,
                                           self.sandbox_dataset_id)
 
