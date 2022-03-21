@@ -35,6 +35,7 @@ import os
 from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from common import JINJA_ENV, CDM_TABLES
+from gcloud.bq import BigQueryClient
 from utils import pipeline_logging, bq
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
 from cdr_cleaner.cleaning_rules.table_suppression import TableSuppression
@@ -104,7 +105,8 @@ class IDFieldSuppression(BaseCleaningRule):
         """
         queries = []
         for table in self.affected_tables:
-            schema = bq.get_table_schema(table)
+            bq_client = BigQueryClient(self.project_id)
+            schema = bq_client.get_table_schema(table)
             statements = []
             for item in schema:
                 if item.name in fields:

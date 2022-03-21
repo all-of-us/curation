@@ -74,6 +74,7 @@ from google.cloud import bigquery
 
 # Project imports
 from utils import bq
+from gcloud.bq import BigQueryClient
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
 from common import OBSERVATION, JINJA_ENV
@@ -277,6 +278,7 @@ class PpiBranching(BaseCleaningRule):
             sandbox_dataset_ref, OBSERVATION_BACKUP_TABLE_ID)
         self.stage_table = bigquery.TableReference(sandbox_dataset_ref,
                                                    OBSERVATION_STAGE_TABLE_ID)
+        self.bq_client = BigQueryClient(project_id)
 
     def create_rules_dataframe(self) -> pandas.DataFrame:
         """
@@ -313,7 +315,7 @@ class PpiBranching(BaseCleaningRule):
 
         :return: the DDL statement
         """
-        observation_schema = bq.get_table_schema(OBSERVATION)
+        observation_schema = self.bq_client.get_table_schema(OBSERVATION)
         query = BACKUP_ROWS_QUERY.render(lookup_table=self.lookup_table,
                                          src_table=self.observation_table)
         return bq.get_create_or_replace_table_ddl(
@@ -332,7 +334,7 @@ class PpiBranching(BaseCleaningRule):
 
         :return: the DDL statement
         """
-        observation_schema = bq.get_table_schema(OBSERVATION)
+        observation_schema = self.bq_client.get_table_schema(OBSERVATION)
         query = CLEANED_ROWS_QUERY.render(src=self.observation_table,
                                           backup=self.backup_table)
         return bq.get_create_or_replace_table_ddl(
@@ -358,7 +360,7 @@ class PpiBranching(BaseCleaningRule):
 
         :return: the DDL statement
         """
-        observation_schema = bq.get_table_schema(OBSERVATION)
+        observation_schema = self.bq_client.get_table_schema(OBSERVATION)
         stage = self.stage_table
         query = f'''SELECT * FROM `{stage.project}.{stage.dataset_id}.{stage.table_id}`'''
         return bq.get_create_or_replace_table_ddl(
