@@ -122,15 +122,13 @@ FROM
         expected_query = '''SELECT * FROM `test-project.test-dataset.non_cdm_table`'''
         self.assertEqual(actual_query, expected_query)
 
-    @mock.patch('utils.bq.get_client')
+    @mock.patch('tools.migrate_cdm52_to_cdm531.BigQueryClient')
     @mock.patch('tools.snapshot_by_query.create_empty_cdm_tables')
     @mock.patch('tools.snapshot_by_query.get_source_fields')
     def test_get_upgrade_hpo_table_query(self, mock_source_fields,
-                                         mock_create_tables, mock_get_client):
+                                         mock_create_tables, mock_bq_client):
         hpo_id = 'fake'
-        mock_client = mock.MagicMock()
-        mock_client.project = self.project_id
-        mock_get_client.return_value = mock_client
+        mock_bq_client.return_value = self.mock_client
         mocked_fields = []
         for table in resources.CDM_TABLES + PII_TABLES:
             fields = self.get_mock_fields(table)
@@ -152,12 +150,12 @@ FROM
             all_tables.extend(tables)
             call_q = mock.call(
                 migrate_cdm52_to_cdm531.get_upgrade_table_query(
-                    mock_client, self.dataset_id, f'{hpo_id}_{table}', hpo_id),
-                mock.ANY)
+                    self.mock_client, self.dataset_id, f'{hpo_id}_{table}',
+                    hpo_id), mock.ANY)
             mock_query_calls.append(call_q)
-        mock_client.list_tables.return_value = all_tables
+        self.mock_client.list_tables.return_value = all_tables
         mock_job = mock.MagicMock(job_id=None, result=lambda: None)
-        mock_client.query.return_value = mock_job
+        self.mock_client.query.return_value = mock_job
         migrate_cdm52_to_cdm531.schema_upgrade_cdm52_to_cdm531(
             self.project_id, self.dataset_id, self.snapshot_dataset_id, hpo_id)
-        mock_client.query.assert_has_calls(mock_query_calls)
+        self.mock_client.query.assert_has_calls(mock_query_calls)
