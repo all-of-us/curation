@@ -49,7 +49,7 @@ UPDATE_QUESTIONS_MAP_QUERY = """
         FIRST_VALUE(standard_c.concept_id) OVER (PARTITION BY source_c.concept_id ORDER BY c_r.relationship_id DESC ) AS new_observation_concept_id
         FROM (
             SELECT
-            SUBSTR(pmi_code,1,50) AS short_pmi_code,
+            pmi_code AS short_pmi_code,
             short_code
             FROM
                 `{project}.{sandbox}.{old_map}`
