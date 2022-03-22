@@ -13110,3 +13110,1703 @@ ICD10CM,T65.893A,"Toxic effect of other specified substances, assault, initial e
 ICD9CM,E982.0,"Poisoning by motor vehicle exhaust gas, undetermined whether accidentally or purposely inflicted",44834199,Condition,06apr20 NIH List
 ICD10CM,T50.903D,"Poisoning by unspecified drugs, medicaments and biological substances, assault, subsequent encounter",45565684,Condition,06apr20 NIH List
 ICD9CM,763.0,Breech delivery and extraction affecting fetus or newborn,44826952,Condition,06apr20 NIH List
+CIEL,798,SALBUTAMOL INHALER,45935798,Drug,DC-2277
+CIEL,799,HALOFANTRINE,45906142,Drug,DC-2277
+CIEL,800,EFV,45951994,Drug,DC-2277
+CPT4,0021A,AstraZeneca Covid-19 Vaccine Administration - First Dose,766236,Drug,DC-2277
+CPT4,0022A,AstraZeneca Covid-19 Vaccine Administration - Second Dose,766237,Drug,DC-2277
+CPT4,0031A,Janssen Covid-19 Vaccine Administration,766235,Drug,DC-2277
+CPT4,0041A,Novavax Covid-19 Vaccine Administration - First Dose,759428,Drug,DC-2277
+CPT4,0042A,Novavax Covid-19 Vaccine Administration - Second Dose,759429,Drug,DC-2277
+CPT4,0051A,Pfizer-BioNTech Covid-19 Vaccine (Ready to Use) Administration - First dose,759430,Drug,DC-2277
+CPT4,0052A,Pfizer-BioNTech Covid-19 Vaccine (Ready to Use) Administration - Second dose,759431,Drug,DC-2277
+CPT4,0053A,Pfizer-BioNTech Covid-19 Vaccine (Ready to Use) Administration - Third dose,759725,Drug,DC-2277
+CPT4,0054A,Pfizer-BioNTech Covid-19 Vaccine (Ready to Use) Administration - Booster,759726,Drug,DC-2277
+CPT4,0064A,Moderna Covid-19 Vaccine (Low Dose) Administration - Booster,759727,Drug,DC-2277
+CPT4,0071A,Pfizer-BioNTech Covid-19 Pediatric Vaccine - Administration - First dose,759728,Drug,DC-2277
+CPT4,0072A,Pfizer-BioNTech Covid-19 Pediatric Vaccine - Administration - Second dose,759729,Drug,DC-2277
+CPT4,91302,AstraZeneca Covid-19 Vaccine,766240,Drug,DC-2277
+CPT4,91303,Janssen Covid-19 Vaccine,766241,Drug,DC-2277
+CPT4,91304,Novavax Covid-19 Vaccine,759735,Drug,DC-2277
+CPT4,91305,Pfizer-BioNTech Covid-19 Vaccine (Ready to Use),759736,Drug,DC-2277
+CPT4,91306,Moderna Covid-19 Vaccine (Low Dose),759737,Drug,DC-2277
+CPT4,91307,Pfizer-BioNTech Covid-19 Pediatric Vaccine,759738,Drug,DC-2277
+DRG,799,Splenectomy w MCC,38001507,Observation,DC-2277
+DRG,800,Splenectomy w CC,38001508,Observation,DC-2277
+ICD10CM,F64.0,Transsexualism,37200330,Condition,DC-2277
+ICD10CM,F64.1,Dual role transvestism,35207225,Condition,DC-2277
+ICD10CM,F64.2,Gender identity disorder of childhood,35207226,Condition,DC-2277
+ICD10CM,F64.8,Other gender identity disorders,35207227,Condition,DC-2277
+ICD10CM,F64.9,"Gender identity disorder, unspecified",35207228,Condition,DC-2277
+ICD10CM,F65.1,Transvestic fetishism,35207230,Condition,DC-2277
+ICD10CM,P00,Newborn affected by maternal conditions that may be unrelated to present pregnancy,1571961,Condition,DC-2277
+ICD10CM,P00.0,Newborn affected by maternal hypertensive disorders,35210395,Condition,DC-2277
+ICD10CM,P00.1,Newborn affected by maternal renal and urinary tract diseases,35210396,Condition,DC-2277
+ICD10CM,P00.2,Newborn affected by maternal infectious and parasitic diseases,35210397,Condition,DC-2277
+ICD10CM,P00.3,Newborn affected by other maternal circulatory and respiratory diseases,35210398,Condition,DC-2277
+ICD10CM,P00.4,Newborn affected by maternal nutritional disorders,35210399,Condition,DC-2277
+ICD10CM,P00.5,Newborn affected by maternal injury,35210400,Condition,DC-2277
+ICD10CM,P00.6,Newborn affected by surgical procedure on mother,35210401,Condition,DC-2277
+ICD10CM,P00.7,"Newborn affected by other medical procedures on mother, not elsewhere classified",35210402,Condition,DC-2277
+ICD10CM,P00.8,Newborn affected by other maternal conditions,1571962,Condition,DC-2277
+ICD10CM,P00.81,Newborn affected by periodontal disease in mother,45597059,Condition,DC-2277
+ICD10CM,P00.89,Newborn affected by other maternal conditions,45558354,Condition,DC-2277
+ICD10CM,P00.9,Newborn affected by unspecified maternal condition,35210403,Condition,DC-2277
+ICD10CM,P01,Newborn affected by maternal complications of pregnancy,1571963,Condition,DC-2277
+ICD10CM,P01.0,Newborn affected by incompetent cervix,35210404,Condition,DC-2277
+ICD10CM,P01.1,Newborn affected by premature rupture of membranes,35210405,Condition,DC-2277
+ICD10CM,P01.2,Newborn affected by oligohydramnios,35210406,Condition,DC-2277
+ICD10CM,P01.3,Newborn affected by polyhydramnios,35210407,Condition,DC-2277
+ICD10CM,P01.4,Newborn affected by ectopic pregnancy,35210408,Condition,DC-2277
+ICD10CM,P01.5,Newborn affected by multiple pregnancy,35210409,Condition,DC-2277
+ICD10CM,P01.6,Newborn affected by maternal death,35210410,Condition,DC-2277
+ICD10CM,P01.7,Newborn affected by malpresentation before labor,35210411,Condition,DC-2277
+ICD10CM,P01.8,Newborn affected by other maternal complications of pregnancy,35210412,Condition,DC-2277
+ICD10CM,P01.9,"Newborn affected by maternal complication of pregnancy, unspecified",35210413,Condition,DC-2277
+ICD10CM,P02,"Newborn affected by complications of placenta, cord and membranes",1571964,Condition,DC-2277
+ICD10CM,P02.0,Newborn affected by placenta previa,35210414,Condition,DC-2277
+ICD10CM,P02.1,Newborn affected by other forms of placental separation and hemorrhage,35210415,Condition,DC-2277
+ICD10CM,P02.2,Newborn affected by other and unspecified morphological and functional abnormalities of placenta,1571965,Condition,DC-2277
+ICD10CM,P02.20,Newborn affected by unspecified morphological and functional abnormalities of placenta,45587407,Condition,DC-2277
+ICD10CM,P02.29,Newborn affected by other morphological and functional abnormalities of placenta,45548857,Condition,DC-2277
+ICD10CM,P02.78,Newborn affected by other conditions from chorioamnionitis,1595659,Condition,DC-2277
+ICD10CM,P02.8,Newborn affected by other abnormalities of membranes,35210420,Condition,DC-2277
+ICD10CM,P02.9,"Newborn affected by abnormality of membranes, unspecified",35210421,Condition,DC-2277
+ICD10CM,P03,Newborn affected by other complications of labor and delivery,1571967,Condition,DC-2277
+ICD10CM,P03.0,Newborn affected by breech delivery and extraction,35210422,Condition,DC-2277
+ICD10CM,P03.1,"Newborn affected by other malpresentation, malposition and disproportion during labor and delivery",35210423,Condition,DC-2277
+ICD10CM,P03.2,Newborn affected by forceps delivery,35210424,Condition,DC-2277
+ICD10CM,P03.3,Newborn affected by delivery by vacuum extractor [ventouse],35210425,Condition,DC-2277
+ICD10CM,P03.4,Newborn affected by Cesarean delivery,35210426,Condition,DC-2277
+ICD10CM,P03.6,Newborn affected by abnormal uterine contractions,35210428,Condition,DC-2277
+ICD10CM,P03.8,Newborn affected by other specified complications of labor and delivery,1571968,Condition,DC-2277
+ICD10CM,P03.810,Newborn affected by abnormality in fetal (intrauterine) heart rate or rhythm before the onset of labor,45577684,Condition,DC-2277
+ICD10CM,P03.811,Newborn affected by abnormality in fetal (intrauterine) heart rate or rhythm during labor,45572923,Condition,DC-2277
+ICD10CM,P03.819,"Newborn affected by abnormality in fetal (intrauterine) heart rate or rhythm, unspecified as to time of onset",45539230,Condition,DC-2277
+ICD10CM,P03.82,Meconium passage during delivery,45592323,Condition,DC-2277
+ICD10CM,P03.89,Newborn affected by other specified complications of labor and delivery,45539231,Condition,DC-2277
+ICD10CM,P03.9,"Newborn affected by complication of labor and delivery, unspecified",35210429,Condition,DC-2277
+ICD10CM,P04.0,"Newborn affected by maternal anesthesia and analgesia in pregnancy, labor and delivery",35210430,Condition,DC-2277
+ICD10CM,P04.1,Newborn affected by other maternal medication,35210431,Condition,DC-2277
+ICD10CM,P04.11,Newborn affected by maternal antineoplastic chemotherapy,1595660,Condition,DC-2277
+ICD10CM,P04.12,Newborn affected by maternal cytotoxic drugs,1595661,Condition,DC-2277
+ICD10CM,P04.13,Newborn affected by maternal use of anticonvulsants,1595662,Condition,DC-2277
+ICD10CM,P04.15,Newborn affected by maternal use of antidepressants,1595664,Condition,DC-2277
+ICD10CM,P04.16,Newborn affected by maternal use of amphetamines,1595665,Condition,DC-2277
+ICD10CM,P04.17,Newborn affected by maternal use of sedative-hypnotics,1595666,Condition,DC-2277
+ICD10CM,P04.19,Newborn affected by maternal use of unspecified medication,1595669,Condition,DC-2277
+ICD10CM,P04.1A,Newborn affected by maternal use of anxiolytics,1595667,Condition,DC-2277
+ICD10CM,P04.2,Newborn affected by maternal use of tobacco,35210432,Condition,DC-2277
+ICD10CM,P04.3,Newborn affected by maternal use of alcohol,35210433,Condition,DC-2277
+ICD10CM,P04.40,Newborn affected by maternal use of unspecified drugs of addiction,1595670,Condition,DC-2277
+ICD10CM,P04.41,Newborn affected by maternal use of cocaine,45553629,Condition,DC-2277
+ICD10CM,P04.49,Newborn affected by maternal use of other drugs of addiction,45548859,Condition,DC-2277
+ICD10CM,P04.5,Newborn affected by maternal use of nutritional chemical substances,35210434,Condition,DC-2277
+ICD10CM,P04.6,Newborn affected by maternal exposure to environmental chemical substances,35210435,Condition,DC-2277
+ICD10CM,P04.89,Newborn affected by other maternal noxious substances,1595673,Condition,DC-2277
+ICD10CM,P04.9,"Newborn affected by maternal noxious substance, unspecified",35210437,Condition,DC-2277
+ICD10CM,P05,Disorders of newborn related to slow fetal growth and fetal malnutrition,1571972,Condition,DC-2277
+ICD10CM,P05.0,Newborn light for gestational age,1571973,Condition,DC-2277
+ICD10CM,P05.01,"Newborn light for gestational age, less than 500 grams",45568016,Condition,DC-2277
+ICD10CM,P05.02,"Newborn light for gestational age, 500-749 grams",45577687,Condition,DC-2277
+ICD10CM,P05.03,"Newborn light for gestational age, 750-999 grams",45606685,Condition,DC-2277
+ICD10CM,P05.04,"Newborn light for gestational age, 1000-1249 grams",45563206,Condition,DC-2277
+ICD10CM,P05.05,"Newborn light for gestational age, 1250-1499 grams",45558358,Condition,DC-2277
+ICD10CM,P05.06,"Newborn light for gestational age, 1500-1749 grams",45539232,Condition,DC-2277
+ICD10CM,P05.07,"Newborn light for gestational age, 1750-1999 grams",45534330,Condition,DC-2277
+ICD10CM,P05.08,"Newborn light for gestational age, 2000-2499 grams",45592324,Condition,DC-2277
+ICD10CM,P05.1,Newborn small for gestational age,1571974,Condition,DC-2277
+ICD10CM,P05.10,"Newborn small for gestational age, unspecified weight",45534331,Condition,DC-2277
+ICD10CM,P05.11,"Newborn small for gestational age, less than 500 grams",45563207,Condition,DC-2277
+ICD10CM,P05.12,"Newborn small for gestational age, 500-749 grams",45563208,Condition,DC-2277
+ICD10CM,P05.13,"Newborn small for gestational age, 750-999 grams",45601918,Condition,DC-2277
+ICD10CM,P05.15,"Newborn small for gestational age, 1250-1499 grams",45597063,Condition,DC-2277
+ICD10CM,P05.16,"Newborn small for gestational age, 1500-1749 grams",45544050,Condition,DC-2277
+ICD10CM,P05.17,"Newborn small for gestational age, 1750-1999 grams",45572925,Condition,DC-2277
+ICD10CM,P05.18,"Newborn small for gestational age, 2000-2499 grams",45587409,Condition,DC-2277
+ICD10CM,P05.19,"Newborn small for gestational age, other",37201015,Condition,DC-2277
+ICD10CM,P05.9,"Newborn affected by slow intrauterine growth, unspecified",35210439,Condition,DC-2277
+ICD10CM,P07,"Disorders of newborn related to short gestation and low birth weight, not elsewhere classified",1571975,Condition,DC-2277
+ICD10CM,P07.0,Extremely low birth weight newborn,1571976,Condition,DC-2277
+ICD10CM,P07.00,"Extremely low birth weight newborn, unspecified weight",45568018,Condition,DC-2277
+ICD10CM,P07.01,"Extremely low birth weight newborn, less than 500 grams",45534332,Condition,DC-2277
+ICD10CM,P07.02,"Extremely low birth weight newborn, 500-749 grams",45563209,Condition,DC-2277
+ICD10CM,P07.03,"Extremely low birth weight newborn, 750-999 grams",45572926,Condition,DC-2277
+ICD10CM,P07.1,Other low birth weight newborn,1571977,Condition,DC-2277
+ICD10CM,P07.10,"Other low birth weight newborn, unspecified weight",45534333,Condition,DC-2277
+ICD10CM,P07.14,"Other low birth weight newborn, 1000-1249 grams",45601919,Condition,DC-2277
+ICD10CM,P07.15,"Other low birth weight newborn, 1250-1499 grams",45563210,Condition,DC-2277
+ICD10CM,P07.16,"Other low birth weight newborn, 1500-1749 grams",45577688,Condition,DC-2277
+ICD10CM,P07.17,"Other low birth weight newborn, 1750-1999 grams",45544051,Condition,DC-2277
+ICD10CM,P07.18,"Other low birth weight newborn, 2000-2499 grams",45606687,Condition,DC-2277
+ICD10CM,P07.2,Extreme immaturity of newborn,1571978,Condition,DC-2277
+ICD10CM,P07.21,"Extreme immaturity of newborn, gestational age less than 23 completed weeks",45597066,Condition,DC-2277
+ICD10CM,P07.22,"Extreme immaturity of newborn, gestational age 23 completed weeks",45601920,Condition,DC-2277
+ICD10CM,P07.23,"Extreme immaturity of newborn, gestational age 24 completed weeks",45548860,Condition,DC-2277
+ICD10CM,P07.24,"Extreme immaturity of newborn, gestational age 25 completed weeks",45548861,Condition,DC-2277
+ICD10CM,P07.26,"Extreme immaturity of newborn, gestational age 27 completed weeks",45539233,Condition,DC-2277
+ICD10CM,P07.3,Preterm [premature] newborn [other],1571979,Condition,DC-2277
+ICD10CM,P07.30,"Preterm newborn, unspecified weeks of gestation",45568019,Condition,DC-2277
+ICD10CM,P07.31,"Preterm newborn, gestational age 28 completed weeks",45601922,Condition,DC-2277
+ICD10CM,P07.32,"Preterm newborn, gestational age 29 completed weeks",45606688,Condition,DC-2277
+ICD10CM,P07.33,"Preterm newborn, gestational age 30 completed weeks",45582610,Condition,DC-2277
+ICD10CM,P07.34,"Preterm newborn, gestational age 31 completed weeks",45587411,Condition,DC-2277
+ICD10CM,P07.35,"Preterm newborn, gestational age 32 completed weeks",45577690,Condition,DC-2277
+ICD10CM,P07.36,"Preterm newborn, gestational age 33 completed weeks",45587412,Condition,DC-2277
+ICD10CM,P07.37,"Preterm newborn, gestational age 34 completed weeks",45572927,Condition,DC-2277
+ICD10CM,P07.38,"Preterm newborn, gestational age 35 completed weeks",45572928,Condition,DC-2277
+ICD10CM,P07.39,"Preterm newborn, gestational age 36 completed weeks",45553630,Condition,DC-2277
+ICD10CM,P08,Disorders of newborn related to long gestation and high birth weight,1571980,Condition,DC-2277
+ICD10CM,P08.1,Other heavy for gestational age newborn,35210441,Condition,DC-2277
+ICD10CM,P08.2,"Late newborn, not heavy for gestational age",1571981,Condition,DC-2277
+ICD10CM,P08.21,Post-term newborn,45553631,Condition,DC-2277
+ICD10CM,P08.22,Prolonged gestation of newborn,45577691,Condition,DC-2277
+ICD10CM,P09,Abnormal findings on neonatal screening,45597067,Condition,DC-2277
+ICD10CM,P10,Intracranial laceration and hemorrhage due to birth injury,1571982,Condition,DC-2277
+ICD10CM,P10.1,Cerebral hemorrhage due to birth injury,35210443,Condition,DC-2277
+ICD10CM,P10.2,Intraventricular hemorrhage due to birth injury,35210444,Condition,DC-2277
+ICD10CM,P10.3,Subarachnoid hemorrhage due to birth injury,35210445,Condition,DC-2277
+ICD10CM,P10.4,Tentorial tear due to birth injury,35210446,Condition,DC-2277
+ICD10CM,P10.8,Other intracranial lacerations and hemorrhages due to birth injury,35210447,Condition,DC-2277
+ICD10CM,P10.9,Unspecified intracranial laceration and hemorrhage due to birth injury,35210448,Condition,DC-2277
+ICD10CM,P11,Other birth injuries to central nervous system,1571983,Condition,DC-2277
+ICD10CM,P11.0,Cerebral edema due to birth injury,35210449,Condition,DC-2277
+ICD10CM,P11.1,Other specified brain damage due to birth injury,35210450,Condition,DC-2277
+ICD10CM,P11.2,Unspecified brain damage due to birth injury,35210451,Condition,DC-2277
+ICD10CM,P11.4,Birth injury to other cranial nerves,35210453,Condition,DC-2277
+ICD10CM,P11.5,Birth injury to spine and spinal cord,35210454,Condition,DC-2277
+ICD10CM,P11.9,"Birth injury to central nervous system, unspecified",35210455,Condition,DC-2277
+ICD10CM,P12,Birth injury to scalp,1571984,Condition,DC-2277
+ICD10CM,P12.0,Cephalhematoma due to birth injury,35210456,Condition,DC-2277
+ICD10CM,P12.1,Chignon (from vacuum extraction) due to birth injury,35210457,Condition,DC-2277
+ICD10CM,P12.2,Epicranial subaponeurotic hemorrhage due to birth injury,35210458,Condition,DC-2277
+ICD10CM,P12.3,Bruising of scalp due to birth injury,35210459,Condition,DC-2277
+ICD10CM,P12.4,Injury of scalp of newborn due to monitoring equipment,35210460,Condition,DC-2277
+ICD10CM,P12.8,Other birth injuries to scalp,1571985,Condition,DC-2277
+ICD10CM,P12.81,Caput succedaneum,45601923,Condition,DC-2277
+ICD10CM,P12.89,Other birth injuries to scalp,45548863,Condition,DC-2277
+ICD10CM,P12.9,"Birth injury to scalp, unspecified",35210461,Condition,DC-2277
+ICD10CM,P13,Birth injury to skeleton,1571986,Condition,DC-2277
+ICD10CM,P13.0,Fracture of skull due to birth injury,35210462,Condition,DC-2277
+ICD10CM,P13.1,Other birth injuries to skull,35210463,Condition,DC-2277
+ICD10CM,P13.2,Birth injury to femur,35210464,Condition,DC-2277
+ICD10CM,P13.3,Birth injury to other long bones,35210465,Condition,DC-2277
+ICD10CM,P13.4,Fracture of clavicle due to birth injury,35210466,Condition,DC-2277
+ICD10CM,P13.8,Birth injuries to other parts of skeleton,35210467,Condition,DC-2277
+ICD10CM,P13.9,"Birth injury to skeleton, unspecified",35210468,Condition,DC-2277
+ICD10CM,P14,Birth injury to peripheral nervous system,1571987,Condition,DC-2277
+ICD10CM,P14.0,Erb's paralysis due to birth injury,35210469,Condition,DC-2277
+ICD10CM,P14.1,Klumpke's paralysis due to birth injury,35210470,Condition,DC-2277
+ICD10CM,P14.2,Phrenic nerve paralysis due to birth injury,35210471,Condition,DC-2277
+ICD10CM,P14.3,Other brachial plexus birth injuries,35210472,Condition,DC-2277
+ICD10CM,P14.8,Birth injuries to other parts of peripheral nervous system,35210473,Condition,DC-2277
+ICD10CM,P15,Other birth injuries,1571988,Condition,DC-2277
+ICD10CM,P15.0,Birth injury to liver,35210475,Condition,DC-2277
+ICD10CM,P15.1,Birth injury to spleen,35210476,Condition,DC-2277
+ICD10CM,P15.2,Sternomastoid injury due to birth injury,35210477,Condition,DC-2277
+ICD10CM,P15.8,Other specified birth injuries,35210482,Condition,DC-2277
+ICD10CM,P15.9,"Birth injury, unspecified",35210483,Condition,DC-2277
+ICD10CM,P19,Metabolic acidemia in newborn,1571989,Condition,DC-2277
+ICD10CM,P19.0,Metabolic acidemia in newborn first noted before onset of labor,45568022,Condition,DC-2277
+ICD10CM,P19.1,Metabolic acidemia in newborn first noted during labor,45601928,Condition,DC-2277
+ICD10CM,P19.2,Metabolic acidemia noted at birth,45534338,Condition,DC-2277
+ICD10CM,P19.9,"Metabolic acidemia, unspecified",45553637,Condition,DC-2277
+ICD10CM,P22,Respiratory distress of newborn,1571990,Condition,DC-2277
+ICD10CM,P22.0,Respiratory distress syndrome of newborn,35210484,Condition,DC-2277
+ICD10CM,P22.1,Transient tachypnea of newborn,35210485,Condition,DC-2277
+ICD10CM,P22.8,Other respiratory distress of newborn,35210486,Condition,DC-2277
+ICD10CM,P22.9,"Respiratory distress of newborn, unspecified",35210487,Condition,DC-2277
+ICD10CM,P23,Congenital pneumonia,1571991,Condition,DC-2277
+ICD10CM,P23.0,Congenital pneumonia due to viral agent,35210488,Condition,DC-2277
+ICD10CM,P23.1,Congenital pneumonia due to Chlamydia,35210489,Condition,DC-2277
+ICD10CM,P23.2,Congenital pneumonia due to staphylococcus,35210490,Condition,DC-2277
+ICD10CM,P23.3,"Congenital pneumonia due to streptococcus, group B",35210491,Condition,DC-2277
+ICD10CM,P23.4,Congenital pneumonia due to Escherichia coli,35210492,Condition,DC-2277
+ICD10CM,P23.5,Congenital pneumonia due to Pseudomonas,35210493,Condition,DC-2277
+ICD10CM,P23.6,Congenital pneumonia due to other bacterial agents,35210494,Condition,DC-2277
+ICD10CM,P23.8,Congenital pneumonia due to other organisms,35210495,Condition,DC-2277
+ICD10CM,P23.9,"Congenital pneumonia, unspecified",35210496,Condition,DC-2277
+ICD10CM,P24,Neonatal aspiration,1571992,Condition,DC-2277
+ICD10CM,P24.0,Meconium aspiration,1571993,Condition,DC-2277
+ICD10CM,P24.00,Meconium aspiration without respiratory symptoms,45597071,Condition,DC-2277
+ICD10CM,P24.01,Meconium aspiration with respiratory symptoms,45577697,Condition,DC-2277
+ICD10CM,P24.1,Neonatal aspiration of (clear) amniotic fluid and mucus,1571994,Condition,DC-2277
+ICD10CM,P24.10,Neonatal aspiration of (clear) amniotic fluid and mucus without respiratory symptoms,45539238,Condition,DC-2277
+ICD10CM,P24.11,Neonatal aspiration of (clear) amniotic fluid and mucus with respiratory symptoms,45592329,Condition,DC-2277
+ICD10CM,P24.2,Neonatal aspiration of blood,1571995,Condition,DC-2277
+ICD10CM,P24.20,Neonatal aspiration of blood without respiratory symptoms,45534340,Condition,DC-2277
+ICD10CM,P24.21,Neonatal aspiration of blood with respiratory symptoms,45601929,Condition,DC-2277
+ICD10CM,P24.3,Neonatal aspiration of milk and regurgitated food,1571996,Condition,DC-2277
+ICD10CM,P24.30,Neonatal aspiration of milk and regurgitated food without respiratory symptoms,45534341,Condition,DC-2277
+ICD10CM,P24.31,Neonatal aspiration of milk and regurgitated food with respiratory symptoms,45534342,Condition,DC-2277
+ICD10CM,P24.8,Other neonatal aspiration,1571997,Condition,DC-2277
+ICD10CM,P24.80,Other neonatal aspiration without respiratory symptoms,45572932,Condition,DC-2277
+ICD10CM,P24.81,Other neonatal aspiration with respiratory symptoms,45606699,Condition,DC-2277
+ICD10CM,P24.9,"Neonatal aspiration, unspecified",35210497,Condition,DC-2277
+ICD10CM,P25,Interstitial emphysema and related conditions originating in the perinatal period,1571998,Condition,DC-2277
+ICD10CM,Q56.2,"Female pseudohermaphroditism, not elsewhere classified",35211009,Condition,DC-2277
+ICD10CM,Q56.3,"Pseudohermaphroditism, unspecified",35211010,Condition,DC-2277
+ICD10CM,Q56.4,"Indeterminate sex, unspecified",35211011,Condition,DC-2277
+ICD10CM,Q98.0,"Klinefelter syndrome karyotype 47, XXY",35211247,Condition,DC-2277
+ICD10CM,Q99.1,"46, XX true hermaphrodite",35211257,Condition,DC-2277
+ICD10CM,Q99.8,Other specified chromosome abnormalities,35211259,Condition,DC-2277
+ICD10CM,Q99.9,"Chromosomal abnormality, unspecified",35211260,Condition,DC-2277
+ICD10CM,R99,Ill-defined and unknown cause of mortality,35211528,Observation,DC-2277
+ICD10CM,W65,Accidental drowning and submersion while in bath-tub,21235,Observation,DC-2277
+ICD10CM,W65.XXXA,"Accidental drowning and submersion while in bath-tub, initial encounter",45556645,Observation,DC-2277
+ICD10CM,W65.XXXD,"Accidental drowning and submersion while in bath-tub, subsequent encounter",45604922,Observation,DC-2277
+ICD10CM,W65.XXXS,"Accidental drowning and submersion while in bath-tub, sequela",45571152,Condition,DC-2277
+ICD10CM,W66,deactivated. See W16.,35223461,Condition,DC-2277
+ICD10CM,W67,Accidental drowning and submersion while in swimming-pool,21236,Observation,DC-2277
+ICD10CM,W67.XXXA,"Accidental drowning and submersion while in swimming-pool, initial encounter",45580839,Observation,DC-2277
+ICD10CM,W67.XXXD,"Accidental drowning and submersion while in swimming-pool, subsequent encounter",45571153,Observation,DC-2277
+ICD10CM,W67.XXXS,"Accidental drowning and submersion while in swimming-pool, sequela",45600175,Condition,DC-2277
+ICD10CM,W68,deactivated. See W16.,35223465,Condition,DC-2277
+ICD10CM,W69,Accidental drowning and submersion while in natural water,21237,Observation,DC-2277
+ICD10CM,W69.XXXA,"Accidental drowning and submersion while in natural water, initial encounter",45537447,Observation,DC-2277
+ICD10CM,W69.XXXD,"Accidental drowning and submersion while in natural water, subsequent encounter",45547123,Observation,DC-2277
+ICD10CM,W69.XXXS,"Accidental drowning and submersion while in natural water, sequela",45585638,Condition,DC-2277
+ICD10CM,W70,deactivated. See W16.,35223469,Condition,DC-2277
+ICD10CM,W73,Other specified cause of accidental non-transport drowning and submersion,21238,Observation,DC-2277
+ICD10CM,W73.XXXA,"Other specified cause of accidental non-transport drowning and submersion, initial encounter",45590505,Observation,DC-2277
+ICD10CM,W73.XXXD,"Other specified cause of accidental non-transport drowning and submersion, subsequent encounter",45585639,Observation,DC-2277
+ICD10CM,W73.XXXS,"Other specified cause of accidental non-transport drowning and submersion, sequela",45580840,Condition,DC-2277
+ICD10CM,W74,Unspecified cause of accidental drowning and submersion,21239,Observation,DC-2277
+ICD10CM,W74.XXXA,"Unspecified cause of accidental drowning and submersion, initial encounter",45609758,Observation,DC-2277
+ICD10CM,W74.XXXD,"Unspecified cause of accidental drowning and submersion, subsequent encounter",45604923,Observation,DC-2277
+ICD10CM,W74.XXXS,"Unspecified cause of accidental drowning and submersion, sequela",45590506,Condition,DC-2277
+ICD10CM,X52,Prolonged stay in weightless environment,21298,Observation,DC-2277
+ICD10CM,X52.XXXA,"Prolonged stay in weightless environment, initial encounter",45580864,Observation,DC-2277
+ICD10CM,X52.XXXD,"Prolonged stay in weightless environment, subsequent encounter",45537468,Observation,DC-2277
+ICD10CM,X52.XXXS,"Prolonged stay in weightless environment, sequela",45609785,Condition,DC-2277
+ICD10CM,X92,Assault by drowning and submersion,1575713,Observation,DC-2277
+ICD10CM,X92.0,Assault by drowning and submersion while in bathtub,45604962,Observation,DC-2277
+ICD10CM,X92.0XXA,"Assault by drowning and submersion while in bathtub, initial encounter",45600209,Observation,DC-2277
+ICD10CM,X92.0XXD,"Assault by drowning and submersion while in bathtub, subsequent encounter",45556681,Observation,DC-2277
+ICD10CM,X92.0XXS,"Assault by drowning and submersion while in bathtub, sequela",45561476,Condition,DC-2277
+ICD10CM,X92.1,Assault by drowning and submersion while in swimming pool,45566277,Observation,DC-2277
+ICD10CM,X92.1XXA,"Assault by drowning and submersion while in swimming pool, initial encounter",45566278,Observation,DC-2277
+ICD10CM,X92.1XXD,"Assault by drowning and submersion while in swimming pool, subsequent encounter",45585674,Observation,DC-2277
+ICD10CM,X92.1XXS,"Assault by drowning and submersion while in swimming pool, sequela",45580874,Condition,DC-2277
+ICD10CM,X92.2,Assault by drowning and submersion after push into swimming pool,45609793,Observation,DC-2277
+ICD10CM,X92.2XXA,"Assault by drowning and submersion after push into swimming pool, initial encounter",45580875,Observation,DC-2277
+ICD10CM,X92.2XXD,"Assault by drowning and submersion after push into swimming pool, subsequent encounter",45604963,Observation,DC-2277
+ICD10CM,X92.2XXS,"Assault by drowning and submersion after push into swimming pool, sequela",45566279,Condition,DC-2277
+ICD10CM,X92.3,Assault by drowning and submersion in natural water,21314,Observation,DC-2277
+ICD10CM,X92.3XXA,"Assault by drowning and submersion in natural water, initial encounter",45537482,Observation,DC-2277
+ICD10CM,X92.3XXD,"Assault by drowning and submersion in natural water, subsequent encounter",45556682,Observation,DC-2277
+ICD10CM,X92.3XXS,"Assault by drowning and submersion in natural water, sequela",45600210,Condition,DC-2277
+ICD10CM,X92.8,Other assault by drowning and submersion,45595343,Observation,DC-2277
+ICD10CM,X92.8XXA,"Other assault by drowning and submersion, initial encounter",45595344,Observation,DC-2277
+ICD10CM,X92.8XXD,"Other assault by drowning and submersion, subsequent encounter",45571194,Observation,DC-2277
+ICD10CM,X92.8XXS,"Other assault by drowning and submersion, sequela",45585675,Condition,DC-2277
+ICD10CM,X92.9,"Assault by drowning and submersion, unspecified",45542266,Observation,DC-2277
+ICD10CM,X92.9XXA,"Assault by drowning and submersion, unspecified, initial encounter",45576006,Observation,DC-2277
+ICD10CM,X92.9XXD,"Assault by drowning and submersion, unspecified, subsequent encounter",45585676,Observation,DC-2277
+ICD10CM,X92.9XXS,"Assault by drowning and submersion, unspecified, sequela",45576007,Condition,DC-2277
+ICD10CM,X93,Assault by handgun discharge,21315,Observation,DC-2277
+ICD10CM,X93.XXXA,"Assault by handgun discharge, initial encounter",45576008,Observation,DC-2277
+ICD10CM,X93.XXXD,"Assault by handgun discharge, subsequent encounter",45585677,Observation,DC-2277
+ICD10CM,X93.XXXS,"Assault by handgun discharge, sequela",45561477,Condition,DC-2277
+ICD10CM,X94,"Assault by rifle, shotgun and larger firearm discharge",1575714,Observation,DC-2277
+ICD10CM,X94.0,Assault by shotgun,45585678,Observation,DC-2277
+ICD10CM,X94.0XXA,"Assault by shotgun, initial encounter",45576009,Observation,DC-2277
+ICD10CM,X94.0XXD,"Assault by shotgun, subsequent encounter",45600211,Observation,DC-2277
+ICD10CM,X94.0XXS,"Assault by shotgun, sequela",45604964,Condition,DC-2277
+ICD10CM,X94.1,Assault by hunting rifle,45585679,Observation,DC-2277
+ICD10CM,X94.1XXA,"Assault by hunting rifle, initial encounter",45590556,Observation,DC-2277
+ICD10CM,X94.1XXD,"Assault by hunting rifle, subsequent encounter",45547158,Observation,DC-2277
+ICD10CM,X94.1XXS,"Assault by hunting rifle, sequela",45561478,Condition,DC-2277
+ICD10CM,X94.2,Assault by machine gun,45542267,Observation,DC-2277
+ICD10CM,X94.2XXA,"Assault by machine gun, initial encounter",45561479,Observation,DC-2277
+ICD10CM,X94.2XXD,"Assault by machine gun, subsequent encounter",45604965,Observation,DC-2277
+ICD10CM,X94.2XXS,"Assault by machine gun, sequela",45547159,Condition,DC-2277
+ICD10CM,X94.8,Assault by other larger firearm discharge,45576010,Observation,DC-2277
+ICD10CM,X94.8XXA,"Assault by other larger firearm discharge, initial encounter",45604966,Observation,DC-2277
+ICD10CM,X94.8XXD,"Assault by other larger firearm discharge, subsequent encounter",45590557,Observation,DC-2277
+ICD10CM,X94.8XXS,"Assault by other larger firearm discharge, sequela",45590558,Condition,DC-2277
+ICD10CM,X94.9,Assault by unspecified larger firearm discharge,45604967,Observation,DC-2277
+ICD10CM,X94.9XXA,"Assault by unspecified larger firearm discharge, initial encounter",45590559,Observation,DC-2277
+ICD10CM,X94.9XXD,"Assault by unspecified larger firearm discharge, subsequent encounter",45571195,Observation,DC-2277
+ICD10CM,X94.9XXS,"Assault by unspecified larger firearm discharge, sequela",45609794,Condition,DC-2277
+ICD10CM,X95,Assault by other and unspecified firearm and gun discharge,1575715,Observation,DC-2277
+ICD10CM,X95.0,"Assault by gas, air or spring-operated guns",45542268,Observation,DC-2277
+ICD10CM,X95.01,Assault by airgun discharge,21316,Observation,DC-2277
+ICD10CM,X95.01XA,"Assault by airgun discharge, initial encounter",45609795,Observation,DC-2277
+ICD10CM,X96.3XXS,"Assault by fertilizer bomb, sequela",45590562,Condition,DC-2277
+ICD10CM,X96.4,Assault by pipe bomb,45590563,Observation,DC-2277
+ICD10CM,X98.3XXD,"Assault by hot household appliances, subsequent encounter",45590569,Observation,DC-2277
+ICD10CM,X98.3XXS,"Assault by hot household appliances, sequela",45542269,Condition,DC-2277
+ICD10CM,X99,Assault by sharp object,1575718,Observation,DC-2277
+ICD10CM,Y37.193D,"Military operations involving destruction of other aircraft, civilian injured due to enemy fire, subsequent encounter",35224478,Condition,DC-2277
+ICD10CM,Y37.193S,"Military operations involving destruction of other aircraft, civilian injured due to enemy fire, sequela",35224479,Condition,DC-2277
+ICD10CM,Y37.194A,"Military operations involving destruction of other aircraft, civilian injured due to friendly fire, initial encounter",35224480,Condition,DC-2277
+ICD10CM,Y37.194D,"Military operations involving destruction of other aircraft, civilian injured due to friendly fire, subsequent encounter",35224481,Condition,DC-2277
+ICD10CM,Y37.194S,"Military operations involving destruction of other aircraft, civilian injured due to friendly fire, sequela",35224482,Condition,DC-2277
+ICD10CM,Y37.2,Military operations involving other explosions and fragments,1575842,Condition,DC-2277
+ICD10CM,Y37.20,Military operations involving unspecified explosion and fragments,1575843,Condition,DC-2277
+ICD10CM,Y37.200,"Military operations involving unspecified explosion and fragments, military personnel",21533,Condition,DC-2277
+ICD10CM,Y37.200A,"Military operations involving unspecified explosion and fragments, military personnel, initial encounter",45556745,Condition,DC-2277
+ICD10CM,Y37.200D,"Military operations involving unspecified explosion and fragments, military personnel, subsequent encounter",45585729,Condition,DC-2277
+ICD10CM,Y37.200S,"Military operations involving unspecified explosion and fragments, military personnel, sequela",45605017,Condition,DC-2277
+ICD10CM,Y37.201,"Military operations involving unspecified explosion and fragments, civilian",21534,Condition,DC-2277
+ICD10CM,Y37.201A,"Military operations involving unspecified explosion and fragments, civilian, initial encounter",45556746,Condition,DC-2277
+ICD10CM,Y37.201D,"Military operations involving unspecified explosion and fragments, civilian, subsequent encounter",45576065,Condition,DC-2277
+ICD10CM,Y37.201S,"Military operations involving unspecified explosion and fragments, civilian, sequela",45552000,Condition,DC-2277
+ICD10CM,Y37.21,Military operations involving explosion of aerial bomb,1575844,Observation,DC-2277
+ICD10CM,Y37.210,"Military operations involving explosion of aerial bomb, military personnel",21535,Observation,DC-2277
+ICD10CM,Y37.210A,"Military operations involving explosion of aerial bomb, military personnel, initial encounter",45571249,Observation,DC-2277
+ICD10CM,Y37.210D,"Military operations involving explosion of aerial bomb, military personnel, subsequent encounter",45585730,Observation,DC-2277
+ICD10CM,Y37.210S,"Military operations involving explosion of aerial bomb, military personnel, sequela",45556747,Condition,DC-2277
+ICD10CM,Y37.211,"Military operations involving explosion of aerial bomb, civilian",21536,Observation,DC-2277
+ICD10CM,Y37.211A,"Military operations involving explosion of aerial bomb, civilian, initial encounter",45561544,Observation,DC-2277
+ICD10CM,Y37.211D,"Military operations involving explosion of aerial bomb, civilian, subsequent encounter",45537546,Observation,DC-2277
+ICD10CM,Y37.211S,"Military operations involving explosion of aerial bomb, civilian, sequela",45609848,Condition,DC-2277
+ICD10CM,Y37.22,Military operations involving explosion of guided missile,1575845,Condition,DC-2277
+ICD10CM,Y37.220,"Military operations involving explosion of guided missile, military personnel",21537,Condition,DC-2277
+ICD10CM,Y37.220A,"Military operations involving explosion of guided missile, military personnel, initial encounter",45590627,Condition,DC-2277
+ICD10CM,Y37.220D,"Military operations involving explosion of guided missile, military personnel, subsequent encounter",45605018,Condition,DC-2277
+ICD10CM,Y37.220S,"Military operations involving explosion of guided missile, military personnel, sequela",45537547,Condition,DC-2277
+ICD10CM,Y37.221,"Military operations involving explosion of guided missile, civilian",21538,Condition,DC-2277
+ICD10CM,Y37.221A,"Military operations involving explosion of guided missile, civilian, initial encounter",45605019,Condition,DC-2277
+ICD10CM,Y37.221D,"Military operations involving explosion of guided missile, civilian, subsequent encounter",45547218,Condition,DC-2277
+ICD10CM,Y37.221S,"Military operations involving explosion of guided missile, civilian, sequela",45576066,Condition,DC-2277
+ICD10CM,Y37.23,Military operations involving explosion of improvised explosive device [IED],1575846,Condition,DC-2277
+ICD10CM,Y37.230,"Military operations involving explosion of improvised explosive device [IED], military personnel",21539,Condition,DC-2277
+ICD10CM,Y37.230A,"Military operations involving explosion of improvised explosive device [IED], military personnel, initial encounter",45552001,Condition,DC-2277
+ICD10CM,Y37.230D,"Military operations involving explosion of improvised explosive device [IED], military personnel, subsequent encounter",45600263,Condition,DC-2277
+ICD10CM,Y37.230S,"Military operations involving explosion of improvised explosive device [IED], military personnel, sequela",45595405,Condition,DC-2277
+ICD10CM,Y37.231,"Military operations involving explosion of improvised explosive device [IED], civilian",21540,Condition,DC-2277
+ICD10CM,Y37.231A,"Military operations involving explosion of improvised explosive device [IED], civilian, initial encounter",45566335,Condition,DC-2277
+ICD10CM,Y37.231D,"Military operations involving explosion of improvised explosive device [IED], civilian, subsequent encounter",45561545,Condition,DC-2277
+ICD10CM,Y37.231S,"Military operations involving explosion of improvised explosive device [IED], civilian, sequela",45609849,Condition,DC-2277
+ICD10CM,Y37.24,Military operations involving explosion due to accidental detonation and discharge of own munitions or munitions launch device,1575847,Condition,DC-2277
+ICD10CM,Y37.240,"Military operations involving explosion due to accidental detonation and discharge of own munitions or munitions launch device, military personnel",21541,Condition,DC-2277
+ICD10CM,Y37.240A,"Military operations involving explosion due to accidental detonation and discharge of own munitions or munitions launch device, military personnel, initial encounter",45556748,Condition,DC-2277
+ICD10CM,Y37.240D,"Military operations involving explosion due to accidental detonation and discharge of own munitions or munitions launch device, military personnel, subsequent encounter",45609850,Condition,DC-2277
+ICD10CM,Y37.240S,"Military operations involving explosion due to accidental detonation and discharge of own munitions or munitions launch device, military personnel, sequela",45561546,Condition,DC-2277
+ICD10CM,Y37.241,"Military operations involving explosion due to accidental detonation and discharge of own munitions or munitions launch device, civilian",21542,Condition,DC-2277
+ICD10CM,Y37.241A,"Military operations involving explosion due to accidental detonation and discharge of own munitions or munitions launch device, civilian, initial encounter",45566336,Condition,DC-2277
+ICD10CM,Y37.241D,"Military operations involving explosion due to accidental detonation and discharge of own munitions or munitions launch device, civilian, subsequent encounter",45576067,Condition,DC-2277
+ICD10CM,Y37.241S,"Military operations involving explosion due to accidental detonation and discharge of own munitions or munitions launch device, civilian, sequela",45537548,Condition,DC-2277
+ICD10CM,Y37.25,Military operations involving fragments from munitions,1575848,Condition,DC-2277
+ICD10CM,Y37.250,"Military operations involving fragments from munitions, military personnel",21543,Condition,DC-2277
+ICD10CM,Y37.250A,"Military operations involving fragments from munitions, military personnel, initial encounter",45561547,Condition,DC-2277
+ICD10CM,Y37.250D,"Military operations involving fragments from munitions, military personnel, subsequent encounter",45595406,Condition,DC-2277
+ICD10CM,Y37.250S,"Military operations involving fragments from munitions, military personnel, sequela",45537549,Condition,DC-2277
+ICD10CM,Y37.251,"Military operations involving fragments from munitions, civilian",21544,Condition,DC-2277
+ICD10CM,Y37.251A,"Military operations involving fragments from munitions, civilian, initial encounter",45595407,Condition,DC-2277
+ICD10CM,Y37.251D,"Military operations involving fragments from munitions, civilian, subsequent encounter",45576068,Condition,DC-2277
+ICD10CM,Y37.251S,"Military operations involving fragments from munitions, civilian, sequela",45609851,Condition,DC-2277
+ICD10CM,Y37.26,Military operations involving fragments of improvised explosive device [IED],1575849,Condition,DC-2277
+ICD10CM,Y37.260,"Military operations involving fragments of improvised explosive device [IED], military personnel",21545,Condition,DC-2277
+ICD10CM,Y37.260A,"Military operations involving fragments of improvised explosive device [IED], military personnel, initial encounter",45537550,Condition,DC-2277
+ICD10CM,Y37.260D,"Military operations involving fragments of improvised explosive device [IED], military personnel, subsequent encounter",45576069,Condition,DC-2277
+ICD10CM,Y37.260S,"Military operations involving fragments of improvised explosive device [IED], military personnel, sequela",45576070,Condition,DC-2277
+ICD10CM,Y37.261,"Military operations involving fragments of improvised explosive device [IED], civilian",21546,Condition,DC-2277
+ICD10CM,Y37.261A,"Military operations involving fragments of improvised explosive device [IED], civilian, initial encounter",45590628,Condition,DC-2277
+ICD10CM,Y37.261D,"Military operations involving fragments of improvised explosive device [IED], civilian, subsequent encounter",45556749,Condition,DC-2277
+ICD10CM,Y37.261S,"Military operations involving fragments of improvised explosive device [IED], civilian, sequela",45537551,Condition,DC-2277
+ICD10CM,Y37.27,Military operations involving fragments from weapons,1575850,Condition,DC-2277
+ICD10CM,Y37.270,"Military operations involving fragments from weapons, military personnel",21547,Condition,DC-2277
+ICD10CM,Y37.270A,"Military operations involving fragments from weapons, military personnel, initial encounter",45590629,Condition,DC-2277
+ICD10CM,Y37.270D,"Military operations involving fragments from weapons, military personnel, subsequent encounter",45537552,Condition,DC-2277
+ICD10CM,Y37.270S,"Military operations involving fragments from weapons, military personnel, sequela",45590630,Condition,DC-2277
+ICD10CM,Y37.271,"Military operations involving fragments from weapons, civilian",21548,Condition,DC-2277
+ICD10CM,Y37.271A,"Military operations involving fragments from weapons, civilian, initial encounter",45547219,Condition,DC-2277
+ICD10CM,Y37.271D,"Military operations involving fragments from weapons, civilian, subsequent encounter",45571250,Condition,DC-2277
+ICD10CM,Y37.271S,"Military operations involving fragments from weapons, civilian, sequela",45590631,Condition,DC-2277
+ICD10CM,Y37.29,Military operations involving other explosions and fragments,1575851,Condition,DC-2277
+ICD10CM,Y37.290,"Military operations involving other explosions and fragments, military personnel",21549,Condition,DC-2277
+ICD10CM,Y37.290A,"Military operations involving other explosions and fragments, military personnel, initial encounter",45566337,Condition,DC-2277
+ICD10CM,Y37.290D,"Military operations involving other explosions and fragments, military personnel, subsequent encounter",45609852,Condition,DC-2277
+ICD10CM,Y37.290S,"Military operations involving other explosions and fragments, military personnel, sequela",45600264,Condition,DC-2277
+ICD10CM,Y37.291,"Military operations involving other explosions and fragments, civilian",21550,Condition,DC-2277
+ICD10CM,Y37.291A,"Military operations involving other explosions and fragments, civilian, initial encounter",45542330,Condition,DC-2277
+ICD10CM,Y37.291D,"Military operations involving other explosions and fragments, civilian, subsequent encounter",45547220,Condition,DC-2277
+ICD10CM,Y37.291S,"Military operations involving other explosions and fragments, civilian, sequela",45571251,Condition,DC-2277
+ICD10CM,Y37.2X1A,"Military operations involving other explosions and fragments, military personnel injured due to enemy fire, initial encounter",35224483,Condition,DC-2277
+ICD10CM,Y37.2X1D,"Military operations involving other explosions and fragments, military personnel injured due to enemy fire, subsequent encounter",35224484,Condition,DC-2277
+ICD10CM,Y37.2X1S,"Military operations involving other explosions and fragments, military personnel injured due to enemy fire, sequela",35224485,Condition,DC-2277
+ICD10CM,Y37.2X2A,"Military operations involving other explosions and fragments, military personnel injured due to friendly fire, initial encounter",35224486,Condition,DC-2277
+ICD10CM,Y37.2X2D,"Military operations involving other explosions and fragments, military personnel injured due to friendly fire, subsequent encounter",35224487,Condition,DC-2277
+ICD10CM,Y37.2X2S,"Military operations involving other explosions and fragments, military personnel injured due to friendly fire, sequela",35224488,Condition,DC-2277
+ICD10CM,Y37.2X3A,"Military operations involving other explosions and fragments, civilian injured due to enemy fire, initial encounter",35224489,Condition,DC-2277
+ICD10CM,Y37.2X3D,"Military operations involving other explosions and fragments, civilian injured due to enemy fire, subsequent encounter",35224490,Condition,DC-2277
+ICD10CM,Y37.2X3S,"Military operations involving other explosions and fragments, civilian injured due to enemy fire, sequela",35224491,Condition,DC-2277
+ICD10CM,Y37.2X4A,"Military operations involving other explosions and fragments, civilian injured due to friendly fire, initial encounter",35224492,Condition,DC-2277
+ICD10CM,Y37.2X4D,"Military operations involving other explosions and fragments, civilian injured due to friendly fire, subsequent encounter",35224493,Condition,DC-2277
+ICD10CM,Y37.2X4S,"Military operations involving other explosions and fragments, civilian injured due to friendly fire, sequela",35224494,Condition,DC-2277
+ICD10CM,Y37.3,"Military operations involving fires, conflagrations and hot substances",1575852,Condition,DC-2277
+ICD10CM,Y37.30,"Military operations involving unspecified fire, conflagration and hot substance",1575853,Condition,DC-2277
+ICD10CM,Y37.300,"Military operations involving unspecified fire, conflagration and hot substance, military personnel",21551,Condition,DC-2277
+ICD10CM,Y37.300A,"Military operations involving unspecified fire, conflagration and hot substance, military personnel, initial encounter",45537553,Condition,DC-2277
+ICD10CM,Y37.300D,"Military operations involving unspecified fire, conflagration and hot substance, military personnel, subsequent encounter",45576071,Condition,DC-2277
+ICD10CM,Y37.300S,"Military operations involving unspecified fire, conflagration and hot substance, military personnel, sequela",45561548,Condition,DC-2277
+ICD10CM,Y37.301,"Military operations involving unspecified fire, conflagration and hot substance, civilian",21552,Condition,DC-2277
+ICD10CM,Y37.301A,"Military operations involving unspecified fire, conflagration and hot substance, civilian, initial encounter",45605020,Condition,DC-2277
+ICD10CM,Y37.301D,"Military operations involving unspecified fire, conflagration and hot substance, civilian, subsequent encounter",45542331,Condition,DC-2277
+ICD10CM,Y37.301S,"Military operations involving unspecified fire, conflagration and hot substance, civilian, sequela",45556750,Condition,DC-2277
+ICD10CM,Y37.31,Military operations involving gasoline bomb,1575854,Condition,DC-2277
+ICD10CM,Y37.310,"Military operations involving gasoline bomb, military personnel",21553,Condition,DC-2277
+ICD10CM,Y37.310A,"Military operations involving gasoline bomb, military personnel, initial encounter",45605021,Condition,DC-2277
+ICD10CM,Y37.310D,"Military operations involving gasoline bomb, military personnel, subsequent encounter",45547221,Condition,DC-2277
+ICD10CM,Y37.310S,"Military operations involving gasoline bomb, military personnel, sequela",45580945,Condition,DC-2277
+ICD10CM,Y37.311,"Military operations involving gasoline bomb, civilian",21554,Condition,DC-2277
+ICD10CM,Y37.311A,"Military operations involving gasoline bomb, civilian, initial encounter",45580946,Condition,DC-2277
+ICD10CM,Y37.311D,"Military operations involving gasoline bomb, civilian, subsequent encounter",45576072,Condition,DC-2277
+ICD10CM,Y37.311S,"Military operations involving gasoline bomb, civilian, sequela",45547222,Condition,DC-2277
+ICD10CM,Y37.312A,"Fire due to conventional weapon during military operations, military personnel injured due to friendly fire, initial encounter",35224495,Condition,DC-2277
+ICD10CM,Y37.312D,"Fire due to conventional weapon during military operations, military personnel injured due to friendly fire, subsequent encounter",35224496,Condition,DC-2277
+ICD10CM,Y37.312S,"Fire due to conventional weapon during military operations, military personnel injured due to friendly fire, sequela",35224497,Condition,DC-2277
+ICD10CM,Y37.313A,"Fire due to conventional weapon during military operations, civilian injured due to enemy fire, initial encounter",35224498,Condition,DC-2277
+ICD10CM,Y37.313D,"Fire due to conventional weapon during military operations, civilian injured due to enemy fire, subsequent encounter",35224499,Condition,DC-2277
+ICD10CM,Y37.313S,"Fire due to conventional weapon during military operations, civilian injured due to enemy fire, sequela",35224500,Condition,DC-2277
+ICD10CM,Y37.314A,"Fire due to conventional weapon during military operations, civilian injured due to friendly fire, initial encounter",35224501,Condition,DC-2277
+ICD10CM,Y37.314D,"Fire due to conventional weapon during military operations, civilian injured due to friendly fire, subsequent encounter",35224502,Condition,DC-2277
+ICD10CM,Y37.314S,"Fire due to conventional weapon during military operations, civilian injured due to friendly fire, sequela",35224503,Condition,DC-2277
+ICD10CM,Y37.32,Military operations involving incendiary bullet,1575855,Condition,DC-2277
+ICD10CM,Y37.320,"Military operations involving incendiary bullet, military personnel",21555,Condition,DC-2277
+ICD10CM,Y37.320A,"Military operations involving incendiary bullet, military personnel, initial encounter",45537554,Condition,DC-2277
+ICD10CM,Y37.320D,"Military operations involving incendiary bullet, military personnel, subsequent encounter",45576073,Condition,DC-2277
+ICD10CM,Y37.320S,"Military operations involving incendiary bullet, military personnel, sequela",45547223,Condition,DC-2277
+ICD10CM,Y37.321,"Military operations involving incendiary bullet, civilian",21556,Condition,DC-2277
+ICD10CM,Y37.321A,"Military operations involving incendiary bullet, civilian, initial encounter",45576074,Condition,DC-2277
+ICD10CM,Y37.321D,"Military operations involving incendiary bullet, civilian, subsequent encounter",45537555,Condition,DC-2277
+ICD10CM,Y37.321S,"Military operations involving incendiary bullet, civilian, sequela",45590632,Condition,DC-2277
+ICD10CM,Y37.322A,"Fire due to fire-producing device during military operations, military personnel injured due to friendly fire, initial encounter",35224504,Condition,DC-2277
+ICD10CM,Y37.322D,"Fire due to fire-producing device during military operations, military personnel injured due to friendly fire, subsequent encounter",35224505,Condition,DC-2277
+ICD10CM,Y37.322S,"Fire due to fire-producing device during military operations, military personnel injured due to friendly fire, sequela",35224506,Condition,DC-2277
+ICD10CM,Y37.323A,"Fire due to fire-producing device during military operations, civilian injured due to enemy fire, initial encounter",35224507,Condition,DC-2277
+ICD10CM,Y37.323D,"Fire due to fire-producing device during military operations, civilian injured due to enemy fire, subsequent encounter",35224508,Condition,DC-2277
+ICD10CM,Y37.323S,"Fire due to fire-producing device during military operations, civilian injured due to enemy fire, sequela",35224509,Condition,DC-2277
+ICD10CM,Y37.324A,"Fire due to fire-producing device during military operations, civilian injured due to friendly fire, initial encounter",35224510,Condition,DC-2277
+ICD10CM,Y37.324D,"Fire due to fire-producing device during military operations, civilian injured due to friendly fire, subsequent encounter",35224511,Condition,DC-2277
+ICD10CM,Y37.324S,"Fire due to fire-producing device during military operations, civilian injured due to friendly fire, sequela",35224512,Condition,DC-2277
+ICD10CM,Y37.33,Military operations involving flamethrower,1575856,Condition,DC-2277
+ICD10CM,Y37.330,"Military operations involving flamethrower, military personnel",21557,Condition,DC-2277
+ICD10CM,Y37.330A,"Military operations involving flamethrower, military personnel, initial encounter",45585731,Condition,DC-2277
+ICD10CM,Y37.330D,"Military operations involving flamethrower, military personnel, subsequent encounter",45537556,Condition,DC-2277
+ICD10CM,Y37.330S,"Military operations involving flamethrower, military personnel, sequela",45561549,Condition,DC-2277
+ICD10CM,Y37.331,"Military operations involving flamethrower, civilian",21558,Condition,DC-2277
+ICD10CM,Y37.331A,"Military operations involving flamethrower, civilian, initial encounter",45547224,Condition,DC-2277
+ICD10CM,Y37.331D,"Military operations involving flamethrower, civilian, subsequent encounter",45571252,Condition,DC-2277
+ICD10CM,Y37.331S,"Military operations involving flamethrower, civilian, sequela",45605022,Condition,DC-2277
+ICD10CM,Y37.332A,"Heat due to conventional weapon during military operations, military personnel injured due to friendly fire, initial encounter",35224513,Condition,DC-2277
+ICD10CM,Y37.332D,"Heat due to conventional weapon during military operations, military personnel injured due to friendly fire, subsequent encounter",35224514,Condition,DC-2277
+ICD10CM,Y37.332S,"Heat due to conventional weapon during military operations, military personnel injured due to friendly fire, sequela",35224515,Condition,DC-2277
+ICD10CM,Y37.333A,"Heat due to conventional weapon during military operations, civilian injured due to enemy fire, initial encounter",35224516,Condition,DC-2277
+ICD10CM,Y37.333D,"Heat due to conventional weapon during military operations, civilian injured due to enemy fire, subsequent encounter",35224517,Condition,DC-2277
+ICD10CM,Y37.333S,"Heat due to conventional weapon during military operations, civilian injured due to enemy fire, sequela",35224518,Condition,DC-2277
+ICD10CM,Y37.334A,"Heat due to conventional weapon during military operations, civilian injured due to friendly fire, initial encounter",35224519,Condition,DC-2277
+ICD10CM,Y37.334D,"Heat due to conventional weapon during military operations, civilian injured due to friendly fire, subsequent encounter",35224520,Condition,DC-2277
+ICD10CM,Y37.334S,"Heat due to conventional weapon during military operations, civilian injured due to friendly fire, sequela",35224521,Condition,DC-2277
+ICD10CM,Y37.341A,"Heat due to fire-producing device during military operations, military personnel injured due to enemy fire, initial encounter",35224522,Condition,DC-2277
+ICD10CM,Y37.341D,"Heat due to fire-producing device during military operations, military personnel injured due to enemy fire, subsequent encounter",35224523,Condition,DC-2277
+ICD10CM,Y37.341S,"Heat due to fire-producing device during military operations, military personnel injured due to enemy fire, sequela",35224524,Condition,DC-2277
+ICD10CM,Y37.342A,"Heat due to fire-producing device during military operations, military personnel injured due to friendly fire, initial encounter",35224525,Condition,DC-2277
+ICD10CM,Y37.342D,"Heat due to fire-producing device during military operations, military personnel injured due to friendly fire, subsequent encounter",35224526,Condition,DC-2277
+ICD10CM,Y37.342S,"Heat due to fire-producing device during military operations, military personnel injured due to friendly fire, sequela",35224527,Condition,DC-2277
+ICD10CM,Y37.343A,"Heat due to fire-producing device during military operations, civilian injured due to enemy fire, initial encounter",35224528,Condition,DC-2277
+ICD10CM,Y37.343D,"Heat due to fire-producing device during military operations, civilian injured due to enemy fire, subsequent encounter",35224529,Condition,DC-2277
+ICD10CM,Y37.343S,"Heat due to fire-producing device during military operations, civilian injured due to enemy fire, sequela",35224530,Condition,DC-2277
+ICD10CM,Y37.344A,"Heat due to fire-producing device during military operations, civilian injured due to friendly fire, initial encounter",35224531,Condition,DC-2277
+ICD10CM,Y37.344D,"Heat due to fire-producing device during military operations, civilian injured due to friendly fire, subsequent encounter",35224532,Condition,DC-2277
+ICD10CM,Y37.344S,"Heat due to fire-producing device during military operations, civilian injured due to friendly fire, sequela",35224533,Condition,DC-2277
+ICD10CM,Y37.351A,"Other cause of injury due to fire, conflagrations and hot substances during military operations, military personnel injured due to enemy fire, initial encounter",35224534,Condition,DC-2277
+ICD10CM,Y37.351D,"Other cause of injury due to fire, conflagrations and hot substances during military operations, military personnel injured due to enemy fire, subsequent encounter",35224535,Condition,DC-2277
+ICD10CM,Y37.351S,"Other cause of injury due to fire, conflagrations and hot substances during military operations, military personnel injured due to enemy fire, sequela",35224536,Condition,DC-2277
+ICD10CM,Y37.352A,"Other cause of injury due to fire, conflagrations and hot substances during military operations, military personnel injured due to friendly fire, initial encounter",35224537,Condition,DC-2277
+ICD10CM,Y37.352D,"Other cause of injury due to fire, conflagrations and hot substances during military operations, military personnel injured due to friendly fire, subsequent encounter",35224538,Condition,DC-2277
+ICD10CM,Y37.352S,"Other cause of injury due to fire, conflagrations and hot substances during military operations, military personnel injured due to friendly fire, sequela",35224539,Condition,DC-2277
+ICD10CM,Y37.353A,"Other cause of injury due to fire, conflagrations and hot substances during military operations, civilian injured due to enemy fire, initial encounter",35224540,Condition,DC-2277
+ICD10CM,Y37.353D,"Other cause of injury due to fire, conflagrations and hot substances during military operations, civilian injured due to enemy fire, subsequent encounter",35224541,Condition,DC-2277
+ICD10CM,Y37.353S,"Other cause of injury due to fire, conflagrations and hot substances during military operations, civilian injured due to enemy fire, sequela",35224542,Condition,DC-2277
+ICD10CM,Y37.354A,"Other cause of injury due to fire, conflagrations and hot substances during military operations, civilian injured due to friendly fire, initial encounter",35224543,Condition,DC-2277
+ICD10CM,Y37.354D,"Other cause of injury due to fire, conflagrations and hot substances during military operations, civilian injured due to friendly fire, subsequent encounter",35224544,Condition,DC-2277
+ICD10CM,Y37.354S,"Other cause of injury due to fire, conflagrations and hot substances during military operations, civilian injured due to friendly fire, sequela",35224545,Condition,DC-2277
+ICD10CM,Y37.39,"Military operations involving other fires, conflagrations and hot substances",1575857,Condition,DC-2277
+ICD10CM,Y37.390,"Military operations involving other fires, conflagrations and hot substances, military personnel",21559,Condition,DC-2277
+ICD10CM,Y37.390A,"Military operations involving other fires, conflagrations and hot substances, military personnel, initial encounter",45542332,Condition,DC-2277
+ICD10CM,Y37.390D,"Military operations involving other fires, conflagrations and hot substances, military personnel, subsequent encounter",45537557,Condition,DC-2277
+ICD10CM,Y37.390S,"Military operations involving other fires, conflagrations and hot substances, military personnel, sequela",45580947,Condition,DC-2277
+ICD10CM,Y37.391,"Military operations involving other fires, conflagrations and hot substances, civilian",21560,Condition,DC-2277
+ICD10CM,Y37.391A,"Military operations involving other fires, conflagrations and hot substances, civilian, initial encounter",45580948,Condition,DC-2277
+ICD10CM,Y37.391D,"Military operations involving other fires, conflagrations and hot substances, civilian, subsequent encounter",45542333,Condition,DC-2277
+ICD10CM,Y37.391S,"Military operations involving other fires, conflagrations and hot substances, civilian, sequela",45585732,Condition,DC-2277
+ICD10CM,Y37.4,Military operations involving firearm discharge and other forms of conventional warfare,1575858,Condition,DC-2277
+ICD10CM,Y37.41,Military operations involving rubber bullets,1575859,Condition,DC-2277
+ICD10CM,Y37.410,"Military operations involving rubber bullets, military personnel",21561,Condition,DC-2277
+ICD10CM,Y37.410A,"Military operations involving rubber bullets, military personnel, initial encounter",45561550,Condition,DC-2277
+ICD10CM,Y37.410D,"Military operations involving rubber bullets, military personnel, subsequent encounter",45561551,Condition,DC-2277
+ICD10CM,Y37.410S,"Military operations involving rubber bullets, military personnel, sequela",45609853,Condition,DC-2277
+ICD10CM,Y37.411,"Military operations involving rubber bullets, civilian",21562,Condition,DC-2277
+ICD10CM,Y37.411A,"Military operations involving rubber bullets, civilian, initial encounter",45585733,Condition,DC-2277
+ICD10CM,Y37.411D,"Military operations involving rubber bullets, civilian, subsequent encounter",45576075,Condition,DC-2277
+ICD10CM,Y37.411S,"Military operations involving rubber bullets, civilian, sequela",45605023,Condition,DC-2277
+ICD10CM,Y37.412A,"Military operations involving firearm discharge, military personnel injured due to friendly fire, initial encounter",35224546,Condition,DC-2277
+ICD10CM,Y37.412D,"Military operations involving firearm discharge, military personnel injured due to friendly fire, subsequent encounter",35224547,Condition,DC-2277
+ICD10CM,Y37.412S,"Military operations involving firearm discharge, military personnel injured due to friendly fire, sequela",35224548,Condition,DC-2277
+ICD10CM,Y37.413A,"Military operations involving firearm discharge, civilian injured due to enemy fire, initial encounter",35224549,Condition,DC-2277
+ICD10CM,Y37.413D,"Military operations involving firearm discharge, civilian injured due to enemy fire, subsequent encounter",35224550,Condition,DC-2277
+ICD10CM,Y37.413S,"Military operations involving firearm discharge, civilian injured due to enemy fire, sequela",35224551,Condition,DC-2277
+ICD10CM,Y37.414A,"Military operations involving firearm discharge, civilian injured due to friendly fire, initial encounter",35224552,Condition,DC-2277
+ICD10CM,Y37.414D,"Military operations involving firearm discharge, civilian injured due to friendly fire, subsequent encounter",35224553,Condition,DC-2277
+ICD10CM,Y37.414S,"Military operations involving firearm discharge, civilian injured due to friendly fire, sequela",35224554,Condition,DC-2277
+ICD10CM,Y37.42,Military operations involving firearms pellets,1575860,Condition,DC-2277
+ICD10CM,Y37.420,"Military operations involving firearms pellets, military personnel",21563,Condition,DC-2277
+ICD10CM,Y37.420A,"Military operations involving firearms pellets, military personnel, initial encounter",45566338,Condition,DC-2277
+ICD10CM,Y37.420D,"Military operations involving firearms pellets, military personnel, subsequent encounter",45566339,Condition,DC-2277
+ICD10CM,Y37.420S,"Military operations involving firearms pellets, military personnel, sequela",45561552,Condition,DC-2277
+ICD10CM,Y37.421,"Military operations involving firearms pellets, civilian",21564,Condition,DC-2277
+ICD10CM,Y37.421A,"Military operations involving firearms pellets, civilian, initial encounter",45585734,Condition,DC-2277
+ICD10CM,Y37.421D,"Military operations involving firearms pellets, civilian, subsequent encounter",45609854,Condition,DC-2277
+ICD10CM,Y37.421S,"Military operations involving firearms pellets, civilian, sequela",45590633,Condition,DC-2277
+ICD10CM,Y37.43,Military operations involving other firearms discharge,1575861,Observation,DC-2277
+ICD10CM,Y37.430,"Military operations involving other firearms discharge, military personnel",21565,Observation,DC-2277
+ICD10CM,Y37.430A,"Military operations involving other firearms discharge, military personnel, initial encounter",45595408,Observation,DC-2277
+ICD10CM,Y37.430D,"Military operations involving other firearms discharge, military personnel, subsequent encounter",45571253,Observation,DC-2277
+ICD10CM,Y37.430S,"Military operations involving other firearms discharge, military personnel, sequela",45542334,Condition,DC-2277
+ICD10CM,Y37.431,"Military operations involving other firearms discharge, civilian",21566,Observation,DC-2277
+ICD10CM,Y37.431A,"Military operations involving other firearms discharge, civilian, initial encounter",45609855,Observation,DC-2277
+ICD10CM,Y37.431D,"Military operations involving other firearms discharge, civilian, subsequent encounter",45552002,Observation,DC-2277
+ICD10CM,Y37.431S,"Military operations involving other firearms discharge, civilian, sequela",45566340,Condition,DC-2277
+ICD10CM,Y37.44,Military operations involving unarmed hand to hand combat,1575862,Condition,DC-2277
+ICD10CM,Y37.440,"Military operations involving unarmed hand to hand combat, military personnel",21567,Condition,DC-2277
+ICD10CM,Y37.440A,"Military operations involving unarmed hand to hand combat, military personnel, initial encounter",45556751,Condition,DC-2277
+ICD10CM,Y37.440S,"Military operations involving unarmed hand to hand combat, military personnel, sequela",45566341,Condition,DC-2277
+ICD10CM,Y37.441,"Military operations involving unarmed hand to hand combat, civilian",21568,Condition,DC-2277
+ICD10CM,Y37.441A,"Military operations involving unarmed hand to hand combat, civilian, initial encounter",45537558,Condition,DC-2277
+ICD10CM,Y37.441D,"Military operations involving unarmed hand to hand combat, civilian, subsequent encounter",45576076,Condition,DC-2277
+ICD10CM,Y37.441S,"Military operations involving unarmed hand to hand combat, civilian, sequela",45552003,Condition,DC-2277
+ICD10CM,Y37.45,Military operations involving combat using blunt or piercing object,1575863,Condition,DC-2277
+ICD10CM,Y37.450,"Military operations involving combat using blunt or piercing object, military personnel",21569,Condition,DC-2277
+ICD10CM,Y37.450A,"Military operations involving combat using blunt or piercing object, military personnel, initial encounter",45590634,Condition,DC-2277
+ICD10CM,Y37.450D,"Military operations involving combat using blunt or piercing object, military personnel, subsequent encounter",45547225,Condition,DC-2277
+ICD10CM,Y37.450S,"Military operations involving combat using blunt or piercing object, military personnel, sequela",45556752,Condition,DC-2277
+ICD10CM,Y37.451,"Military operations involving combat using blunt or piercing object, civilian",21570,Condition,DC-2277
+ICD10CM,Y37.451A,"Military operations involving combat using blunt or piercing object, civilian, initial encounter",45552004,Condition,DC-2277
+ICD10CM,Y37.451D,"Military operations involving combat using blunt or piercing object, civilian, subsequent encounter",45585735,Condition,DC-2277
+ICD10CM,Y37.451S,"Military operations involving combat using blunt or piercing object, civilian, sequela",45561553,Condition,DC-2277
+ICD10CM,Y37.46,Military operations involving intentional restriction of air and airway,1575864,Condition,DC-2277
+ICD10CM,Y37.460,"Military operations involving intentional restriction of air and airway, military personnel",21571,Condition,DC-2277
+ICD10CM,Y37.460A,"Military operations involving intentional restriction of air and airway, military personnel, initial encounter",45566342,Condition,DC-2277
+ICD10CM,Y37.460D,"Military operations involving intentional restriction of air and airway, military personnel, subsequent encounter",45585736,Condition,DC-2277
+ICD10CM,Y37.460S,"Military operations involving intentional restriction of air and airway, military personnel, sequela",45585737,Condition,DC-2277
+ICD10CM,Y37.461,"Military operations involving intentional restriction of air and airway, civilian",21572,Condition,DC-2277
+ICD10CM,Y37.461A,"Military operations involving intentional restriction of air and airway, civilian, initial encounter",45556753,Condition,DC-2277
+ICD10CM,Y37.461D,"Military operations involving intentional restriction of air and airway, civilian, subsequent encounter",45576077,Condition,DC-2277
+ICD10CM,Y37.461S,"Military operations involving intentional restriction of air and airway, civilian, sequela",45542335,Condition,DC-2277
+ICD10CM,Y37.47,Military operations involving unintentional restriction of air and airway,1575865,Condition,DC-2277
+ICD10CM,Y37.470,"Military operations involving unintentional restriction of air and airway, military personnel",21573,Condition,DC-2277
+ICD10CM,Y37.470A,"Military operations involving unintentional restriction of air and airway, military personnel, initial encounter",45561554,Condition,DC-2277
+ICD10CM,Y37.470D,"Military operations involving unintentional restriction of air and airway, military personnel, subsequent encounter",45585738,Condition,DC-2277
+ICD10CM,Y37.470S,"Military operations involving unintentional restriction of air and airway, military personnel, sequela",45561555,Condition,DC-2277
+ICD10CM,Y37.471,"Military operations involving unintentional restriction of air and airway, civilian",21574,Condition,DC-2277
+ICD10CM,Y37.471A,"Military operations involving unintentional restriction of air and airway, civilian, initial encounter",45556754,Condition,DC-2277
+ICD10CM,Y37.471D,"Military operations involving unintentional restriction of air and airway, civilian, subsequent encounter",45547226,Condition,DC-2277
+ICD10CM,Y37.471S,"Military operations involving unintentional restriction of air and airway, civilian, sequela",45595410,Condition,DC-2277
+ICD10CM,Y37.49,Military operations involving other forms of conventional warfare,1575866,Condition,DC-2277
+ICD10CM,Y37.490,"Military operations involving other forms of conventional warfare, military personnel",21575,Condition,DC-2277
+ICD10CM,Y37.490A,"Military operations involving other forms of conventional warfare, military personnel, initial encounter",45537559,Condition,DC-2277
+ICD10CM,Y37.490D,"Military operations involving other forms of conventional warfare, military personnel, subsequent encounter",45566343,Condition,DC-2277
+ICD10CM,Y37.490S,"Military operations involving other forms of conventional warfare, military personnel, sequela",45595411,Condition,DC-2277
+ICD10CM,Y37.491,"Military operations involving other forms of conventional warfare, civilian",21576,Condition,DC-2277
+ICD10CM,Y37.491A,"Military operations involving other forms of conventional warfare, civilian, initial encounter",45566344,Condition,DC-2277
+ICD10CM,Y37.491D,"Military operations involving other forms of conventional warfare, civilian, subsequent encounter",45571254,Condition,DC-2277
+ICD10CM,Y37.491S,"Military operations involving other forms of conventional warfare, civilian, sequela",45542336,Condition,DC-2277
+ICD10CM,Y37.492A,"Military operations involving other forms of conventional warfare, military personnel injured due to friendly fire, initial encounter",35224555,Condition,DC-2277
+ICD10CM,Y37.492D,"Military operations involving other forms of conventional warfare, military personnel injured due to friendly fire, subsequent encounter",35224556,Condition,DC-2277
+ICD10CM,Y37.492S,"Military operations involving other forms of conventional warfare, military personnel injured due to friendly fire, sequela",35224557,Condition,DC-2277
+ICD10CM,Y37.493A,"Military operations involving other forms of conventional warfare, civilian injured due to enemy fire, initial encounter",35224558,Condition,DC-2277
+ICD10CM,Y37.493D,"Military operations involving other forms of conventional warfare, civilian injured due to enemy fire, subsequent encounter",35224559,Condition,DC-2277
+ICD10CM,Y37.493S,"Military operations involving other forms of conventional warfare, civilian injured due to enemy fire, sequela",35224560,Condition,DC-2277
+ICD10CM,Y37.494A,"Military operations involving other forms of conventional warfare, civilian injured due to friendly fire, initial encounter",35224561,Condition,DC-2277
+ICD10CM,Y37.494D,"Military operations involving other forms of conventional warfare, civilian injured due to friendly fire, subsequent encounter",35224562,Condition,DC-2277
+ICD10CM,Y37.494S,"Military operations involving other forms of conventional warfare, civilian injured due to friendly fire, sequela",35224563,Condition,DC-2277
+ICD10CM,Y37.5,Military operations involving nuclear weapons,1575867,Condition,DC-2277
+ICD10CM,Y37.50,Military operations involving unspecified effect of nuclear weapon,1575868,Condition,DC-2277
+ICD10CM,Y37.500,"Military operations involving unspecified effect of nuclear weapon, military personnel",21577,Condition,DC-2277
+ICD10CM,Y37.500A,"Military operations involving unspecified effect of nuclear weapon, military personnel, initial encounter",45609856,Condition,DC-2277
+ICD10CM,Y37.500D,"Military operations involving unspecified effect of nuclear weapon, military personnel, subsequent encounter",45561556,Condition,DC-2277
+ICD10CM,Y37.500S,"Military operations involving unspecified effect of nuclear weapon, military personnel, sequela",45576078,Condition,DC-2277
+ICD10CM,Y37.501,"Military operations involving unspecified effect of nuclear weapon, civilian",21578,Condition,DC-2277
+ICD10CM,Y37.501A,"Military operations involving unspecified effect of nuclear weapon, civilian, initial encounter",45600265,Condition,DC-2277
+ICD10CM,Y37.501D,"Military operations involving unspecified effect of nuclear weapon, civilian, subsequent encounter",45585739,Condition,DC-2277
+ICD10CM,Y37.501S,"Military operations involving unspecified effect of nuclear weapon, civilian, sequela",45605024,Condition,DC-2277
+ICD10CM,Y37.51,Military operations involving direct blast effect of nuclear weapon,1575869,Condition,DC-2277
+ICD10CM,Y37.510,"Military operations involving direct blast effect of nuclear weapon, military personnel",21579,Condition,DC-2277
+ICD10CM,Y37.510A,"Military operations involving direct blast effect of nuclear weapon, military personnel, initial encounter",45609857,Condition,DC-2277
+ICD10CM,Y37.510D,"Military operations involving direct blast effect of nuclear weapon, military personnel, subsequent encounter",45605025,Condition,DC-2277
+ICD10CM,Y37.510S,"Military operations involving direct blast effect of nuclear weapon, military personnel, sequela",45580949,Condition,DC-2277
+ICD10CM,Y37.511,"Military operations involving direct blast effect of nuclear weapon, civilian",21580,Condition,DC-2277
+ICD10CM,Y37.511A,"Military operations involving direct blast effect of nuclear weapon, civilian, initial encounter",45537560,Condition,DC-2277
+ICD10CM,Y37.511D,"Military operations involving direct blast effect of nuclear weapon, civilian, subsequent encounter",45595412,Condition,DC-2277
+ICD10CM,Y37.511S,"Military operations involving direct blast effect of nuclear weapon, civilian, sequela",45547227,Condition,DC-2277
+ICD10CM,Y37.512A,"Direct effects of nuclear weapons during military operations, military personnel injured due to friendly fire, initial encounter",35224564,Condition,DC-2277
+ICD10CM,Y37.512D,"Direct effects of nuclear weapons during military operations, military personnel injured due to friendly fire, subsequent encounter",35224565,Condition,DC-2277
+ICD10CM,Y37.512S,"Direct effects of nuclear weapons during military operations, military personnel injured due to friendly fire, sequela",35224566,Condition,DC-2277
+ICD10CM,Y37.513A,"Direct effects of nuclear weapons during military operations, civilian injured due to enemy fire, initial encounter",35224567,Condition,DC-2277
+ICD10CM,Y37.513D,"Direct effects of nuclear weapons during military operations, civilian injured due to enemy fire, subsequent encounter",35224568,Condition,DC-2277
+ICD10CM,Y37.513S,"Direct effects of nuclear weapons during military operations, civilian injured due to enemy fire, sequela",35224569,Condition,DC-2277
+ICD10CM,Y37.514A,"Direct effects of nuclear weapons during military operations, civilian injured due to friendly fire, initial encounter",35224570,Condition,DC-2277
+ICD10CM,Y37.514D,"Direct effects of nuclear weapons during military operations, civilian injured due to friendly fire, subsequent encounter",35224571,Condition,DC-2277
+ICD10CM,Y37.514S,"Direct effects of nuclear weapons during military operations, civilian injured due to friendly fire, sequela",35224572,Condition,DC-2277
+ICD10CM,Y37.52,Military operations involving indirect blast effect of nuclear weapon,1575870,Condition,DC-2277
+ICD10CM,Y37.520,"Military operations involving indirect blast effect of nuclear weapon, military personnel",21581,Condition,DC-2277
+ICD10CM,Y37.520A,"Military operations involving indirect blast effect of nuclear weapon, military personnel, initial encounter",45561557,Condition,DC-2277
+ICD10CM,Y37.520D,"Military operations involving indirect blast effect of nuclear weapon, military personnel, subsequent encounter",45556755,Condition,DC-2277
+ICD10CM,Y37.520S,"Military operations involving indirect blast effect of nuclear weapon, military personnel, sequela",45556756,Condition,DC-2277
+ICD10CM,Y37.521,"Military operations involving indirect blast effect of nuclear weapon, civilian",21582,Condition,DC-2277
+ICD10CM,Y37.521A,"Military operations involving indirect blast effect of nuclear weapon, civilian, initial encounter",45595413,Condition,DC-2277
+ICD10CM,Y37.521D,"Military operations involving indirect blast effect of nuclear weapon, civilian, subsequent encounter",45609858,Condition,DC-2277
+ICD10CM,Y37.521S,"Military operations involving indirect blast effect of nuclear weapon, civilian, sequela",45561558,Condition,DC-2277
+ICD10CM,Y37.522A,"Secondary effects of nuclear weapons during military operations, military personnel injured due to friendly fire, initial encounter",35224573,Condition,DC-2277
+ICD10CM,Y37.522D,"Secondary effects of nuclear weapons during military operations, military personnel injured due to friendly fire, subsequent encounter",35224574,Condition,DC-2277
+ICD10CM,Y37.522S,"Secondary effects of nuclear weapons during military operations, military personnel injured due to friendly fire, sequela",35224575,Condition,DC-2277
+ICD10CM,Y37.523A,"Secondary effects of nuclear weapons during military operations, civilian injured due to enemy fire, initial encounter",35224576,Condition,DC-2277
+ICD10CM,Y37.523D,"Secondary effects of nuclear weapons during military operations, civilian injured due to enemy fire, subsequent encounter",35224577,Condition,DC-2277
+ICD10CM,Y37.523S,"Secondary effects of nuclear weapons during military operations, civilian injured due to enemy fire, sequela",35224578,Condition,DC-2277
+ICD10CM,Y37.524A,"Secondary effects of nuclear weapons during military operations, civilian injured due to friendly fire, initial encounter",35224579,Condition,DC-2277
+ICD10CM,Y37.524D,"Secondary effects of nuclear weapons during military operations, civilian injured due to friendly fire, subsequent encounter",35224580,Condition,DC-2277
+ICD10CM,Y37.524S,"Secondary effects of nuclear weapons during military operations, civilian injured due to friendly fire, sequela",35224581,Condition,DC-2277
+ICD10CM,Y37.53,Military operations involving thermal radiation effect of nuclear weapon,1575871,Condition,DC-2277
+ICD10CM,Y37.530,"Military operations involving thermal radiation effect of nuclear weapon, military personnel",21583,Condition,DC-2277
+ICD10CM,Y37.530A,"Military operations involving thermal radiation effect of nuclear weapon, military personnel, initial encounter",45580950,Condition,DC-2277
+ICD10CM,Y37.530D,"Military operations involving thermal radiation effect of nuclear weapon, military personnel, subsequent encounter",45580951,Condition,DC-2277
+ICD10CM,Y37.530S,"Military operations involving thermal radiation effect of nuclear weapon, military personnel, sequela",45542337,Condition,DC-2277
+ICD10CM,Y37.531,"Military operations involving thermal radiation effect of nuclear weapon, civilian",21584,Condition,DC-2277
+ICD10CM,Y37.531A,"Military operations involving thermal radiation effect of nuclear weapon, civilian, initial encounter",45547228,Condition,DC-2277
+ICD10CM,Y37.531D,"Military operations involving thermal radiation effect of nuclear weapon, civilian, subsequent encounter",45547229,Condition,DC-2277
+ICD10CM,Y37.531S,"Military operations involving thermal radiation effect of nuclear weapon, civilian, sequela",45566345,Condition,DC-2277
+ICD10CM,Y37.532A,"Sequela of nuclear weapons (during) (following) military operations, military personnel injured due to friendly fire, initial encounter",35224582,Condition,DC-2277
+ICD10CM,Y37.532D,"Sequela of nuclear weapons (during) (following) military operations, military personnel injured due to friendly fire, subsequent encounter",35224583,Condition,DC-2277
+ICD10CM,Y37.532S,"Sequela of nuclear weapons (during) (following) military operations, military personnel injured due to friendly fire, sequela",35224584,Condition,DC-2277
+ICD10CM,Y37.533A,"Sequela of nuclear weapons (during) (following) military operations, civilian injured due to enemy fire, initial encounter",35224585,Condition,DC-2277
+ICD10CM,Y37.533D,"Sequela of nuclear weapons (during) (following) military operations, civilian injured due to enemy fire, subsequent encounter",35224586,Condition,DC-2277
+ICD10CM,Y37.533S,"Sequela of nuclear weapons (during) (following) military operations, civilian injured due to enemy fire, sequela",35224587,Condition,DC-2277
+ICD10CM,Y37.534A,"Sequela of nuclear weapons (during) (following) military operations, civilian injured due to friendly fire, initial encounter",35224588,Condition,DC-2277
+ICD10CM,Y37.534D,"Sequela of nuclear weapons (during) (following) military operations, civilian injured due to friendly fire, subsequent encounter",35224589,Condition,DC-2277
+ICD10CM,Y37.534S,"Sequela of nuclear weapons (during) (following) military operations, civilian injured due to friendly fire, sequela",35224590,Condition,DC-2277
+ICD10CM,Y37.54,Military operation involving nuclear radiation effects of nuclear weapon,1575872,Condition,DC-2277
+ICD10CM,Y37.540,"Military operation involving nuclear radiation effects of nuclear weapon, military personnel",21585,Condition,DC-2277
+ICD10CM,Y37.540A,"Military operation involving nuclear radiation effects of nuclear weapon, military personnel, initial encounter",45542338,Condition,DC-2277
+ICD10CM,Y37.540D,"Military operation involving nuclear radiation effects of nuclear weapon, military personnel, subsequent encounter",45580952,Condition,DC-2277
+ICD10CM,Y37.540S,"Military operation involving nuclear radiation effects of nuclear weapon, military personnel, sequela",45566346,Condition,DC-2277
+ICD10CM,Y37.541,"Military operation involving nuclear radiation effects of nuclear weapon, civilian",21586,Condition,DC-2277
+ICD10CM,Y37.541A,"Military operation involving nuclear radiation effects of nuclear weapon, civilian, initial encounter",45576079,Condition,DC-2277
+ICD10CM,Y37.541D,"Military operation involving nuclear radiation effects of nuclear weapon, civilian, subsequent encounter",45537561,Condition,DC-2277
+ICD10CM,Y37.541S,"Military operation involving nuclear radiation effects of nuclear weapon, civilian, sequela",45537562,Condition,DC-2277
+ICD10CM,Y37.59,Military operation involving other effects of nuclear weapons,1575873,Condition,DC-2277
+ICD10CM,Y37.590,"Military operation involving other effects of nuclear weapons, military personnel",21587,Condition,DC-2277
+ICD10CM,Y37.590A,"Military operation involving other effects of nuclear weapons, military personnel, initial encounter",45556757,Condition,DC-2277
+ICD10CM,Y37.590D,"Military operation involving other effects of nuclear weapons, military personnel, subsequent encounter",45552005,Condition,DC-2277
+ICD10CM,Y37.590S,"Military operation involving other effects of nuclear weapons, military personnel, sequela",45595414,Condition,DC-2277
+ICD10CM,Y37.591,"Military operation involving other effects of nuclear weapons, civilian",21588,Condition,DC-2277
+ICD10CM,Y37.591A,"Military operation involving other effects of nuclear weapons, civilian, initial encounter",45605026,Condition,DC-2277
+ICD10CM,Y37.591D,"Military operation involving other effects of nuclear weapons, civilian, subsequent encounter",45556758,Condition,DC-2277
+ICD10CM,Y37.591S,"Military operation involving other effects of nuclear weapons, civilian, sequela",45609859,Condition,DC-2277
+ICD10CM,Y37.6,Military operations involving biological weapons,1575874,Condition,DC-2277
+ICD10CM,Y37.6X,Military operations involving biological weapons,1575875,Condition,DC-2277
+ICD10CM,Y37.6X0,"Military operations involving biological weapons, military personnel",21589,Condition,DC-2277
+ICD10CM,Y37.6X0A,"Military operations involving biological weapons, military personnel, initial encounter",45605027,Condition,DC-2277
+ICD10CM,Y37.6X0D,"Military operations involving biological weapons, military personnel, subsequent encounter",45571255,Condition,DC-2277
+ICD10CM,Y37.6X0S,"Military operations involving biological weapons, military personnel, sequela",45576080,Condition,DC-2277
+ICD10CM,Y37.6X1,"Military operations involving biological weapons, civilian",21590,Condition,DC-2277
+ICD10CM,Y37.6X1A,"Military operations involving biological weapons, civilian, initial encounter",45576081,Condition,DC-2277
+ICD10CM,Y37.6X1D,"Military operations involving biological weapons, civilian, subsequent encounter",45552006,Condition,DC-2277
+ICD10CM,Y37.6X1S,"Military operations involving biological weapons, civilian, sequela",45576082,Condition,DC-2277
+ICD10CM,Y37.6X2A,"Military operations involving biological weapons, military personnel injured due to friendly fire, initial encounter",35224594,Condition,DC-2277
+ICD10CM,Y37.6X2D,"Military operations involving biological weapons, military personnel injured due to friendly fire, subsequent encounter",35224595,Condition,DC-2277
+ICD10CM,Y37.6X2S,"Military operations involving biological weapons, military personnel injured due to friendly fire, sequela",35224596,Condition,DC-2277
+ICD10CM,Y37.6X3A,"Military operations involving biological weapons, civilian injured due to enemy fire, initial encounter",35224597,Condition,DC-2277
+ICD10CM,Y37.6X3D,"Military operations involving biological weapons, civilian injured due to enemy fire, subsequent encounter",35224598,Condition,DC-2277
+ICD10CM,Y37.6X3S,"Military operations involving biological weapons, civilian injured due to enemy fire, sequela",35224599,Condition,DC-2277
+ICD10CM,Y37.6X4A,"Military operations involving biological weapons, civilian injured due to friendly fire, initial encounter",35224600,Condition,DC-2277
+ICD10CM,Y37.6X4D,"Military operations involving biological weapons, civilian injured due to friendly fire, subsequent encounter",35224601,Condition,DC-2277
+ICD10CM,Y37.6X4S,"Military operations involving biological weapons, civilian injured due to friendly fire, sequela",35224602,Condition,DC-2277
+ICD10CM,Y37.7,Military operations involving chemical weapons and other forms of unconventional warfare,1575876,Condition,DC-2277
+ICD10CM,Y37.711A,"Military operations involving chemical weapons, military personnel injured due to enemy fire, initial encounter",35224603,Condition,DC-2277
+ICD10CM,Y37.711D,"Military operations involving chemical weapons, military personnel injured due to enemy fire, subsequent encounter",35224604,Condition,DC-2277
+ICD10CM,Y37.711S,"Military operations involving chemical weapons, military personnel injured due to enemy fire, sequela",35224605,Condition,DC-2277
+ICD10CM,Y37.712A,"Military operations involving chemical weapons, military personnel injured due to friendly fire, initial encounter",35224606,Condition,DC-2277
+ICD10CM,Y37.712D,"Military operations involving chemical weapons, military personnel injured due to friendly fire, subsequent encounter",35224607,Condition,DC-2277
+ICD10CM,Y37.712S,"Military operations involving chemical weapons, military personnel injured due to friendly fire, sequela",35224608,Condition,DC-2277
+ICD10CM,Y37.713A,"Military operations involving chemical weapons, civilian injured due to enemy fire, initial encounter",35224609,Condition,DC-2277
+ICD10CM,Y37.713D,"Military operations involving chemical weapons, civilian injured due to enemy fire, subsequent encounter",35224610,Condition,DC-2277
+ICD10CM,Y37.713S,"Military operations involving chemical weapons, civilian injured due to enemy fire, sequela",35224611,Condition,DC-2277
+ICD10CM,Y37.714A,"Military operations involving chemical weapons, civilian injured due to friendly fire, initial encounter",35224612,Condition,DC-2277
+ICD10CM,Y37.714D,"Military operations involving chemical weapons, civilian injured due to friendly fire, subsequent encounter",35224613,Condition,DC-2277
+ICD10CM,Y37.714S,"Military operations involving chemical weapons, civilian injured due to friendly fire, sequela",35224614,Condition,DC-2277
+ICD10CM,Y37.791A,"Military operations involving other forms of unconventional warfare, military personnel injured due to enemy fire, initial encounter",35224615,Condition,DC-2277
+ICD10CM,Y37.791D,"Military operations involving other forms of unconventional warfare, military personnel injured due to enemy fire, subsequent encounter",35224616,Condition,DC-2277
+ICD10CM,Y37.791S,"Military operations involving other forms of unconventional warfare, military personnel injured due to enemy fire, sequela",35224617,Condition,DC-2277
+ICD10CM,Y37.792A,"Military operations involving other forms of unconventional warfare, military personnel injured due to friendly fire, initial encounter",35224618,Condition,DC-2277
+ICD10CM,Y37.792D,"Military operations involving other forms of unconventional warfare, military personnel injured due to friendly fire, subsequent encounter",35224619,Condition,DC-2277
+ICD10CM,Y37.792S,"Military operations involving other forms of unconventional warfare, military personnel injured due to friendly fire, sequela",35224620,Condition,DC-2277
+ICD10CM,Y37.793A,"Military operations involving other forms of unconventional warfare, civilian injured due to enemy fire, initial encounter",35224621,Condition,DC-2277
+ICD10CM,Y37.793D,"Military operations involving other forms of unconventional warfare, civilian injured due to enemy fire, subsequent encounter",35224622,Condition,DC-2277
+ICD10CM,Y37.793S,"Military operations involving other forms of unconventional warfare, civilian injured due to enemy fire, sequela",35224623,Condition,DC-2277
+ICD10CM,Y37.794A,"Military operations involving other forms of unconventional warfare, civilian injured due to friendly fire, initial encounter",35224624,Condition,DC-2277
+ICD10CM,Y37.794D,"Military operations involving other forms of unconventional warfare, civilian injured due to friendly fire, subsequent encounter",35224625,Condition,DC-2277
+ICD10CM,Y37.794S,"Military operations involving other forms of unconventional warfare, civilian injured due to friendly fire, sequela",35224626,Condition,DC-2277
+ICD10CM,Y37.7X,Military operations involving chemical weapons and other forms of unconventional warfare,1575877,Condition,DC-2277
+ICD10CM,Y37.7X0,"Military operations involving chemical weapons and other forms of unconventional warfare, military personnel",21591,Condition,DC-2277
+ICD10CM,Y37.7X0A,"Military operations involving chemical weapons and other forms of unconventional warfare, military personnel, initial encounter",45585740,Condition,DC-2277
+ICD10CM,Y37.7X0D,"Military operations involving chemical weapons and other forms of unconventional warfare, military personnel, subsequent encounter",45537563,Condition,DC-2277
+ICD10CM,Y37.7X0S,"Military operations involving chemical weapons and other forms of unconventional warfare, military personnel, sequela",45595415,Condition,DC-2277
+ICD10CM,Y37.7X1,"Military operations involving chemical weapons and other forms of unconventional warfare, civilian",21592,Condition,DC-2277
+ICD10CM,Y37.7X1A,"Military operations involving chemical weapons and other forms of unconventional warfare, civilian, initial encounter",45585741,Condition,DC-2277
+ICD10CM,Y37.7X1D,"Military operations involving chemical weapons and other forms of unconventional warfare, civilian, subsequent encounter",45547230,Condition,DC-2277
+ICD10CM,Y37.7X1S,"Military operations involving chemical weapons and other forms of unconventional warfare, civilian, sequela",45561559,Condition,DC-2277
+ICD10CM,Y37.9,Other and unspecified military operations,1575878,Condition,DC-2277
+ICD10CM,Y37.90,"Military operations, unspecified",21593,Condition,DC-2277
+ICD10CM,Y37.90XA,"Military operations, unspecified, initial encounter",45547231,Condition,DC-2277
+ICD10CM,Y37.90XD,"Military operations, unspecified, subsequent encounter",45595416,Condition,DC-2277
+ICD10CM,Y37.90XS,"Military operations, unspecified, sequela",45556759,Condition,DC-2277
+ICD10CM,Y37.91,Military operations involving unspecified weapon of mass destruction [WMD],21594,Condition,DC-2277
+ICD10CM,Y37.91XA,"Military operations involving unspecified weapon of mass destruction [WMD], initial encounter",45552007,Condition,DC-2277
+ICD10CM,Y37.91XD,"Military operations involving unspecified weapon of mass destruction [WMD], subsequent encounter",45537564,Condition,DC-2277
+ICD10CM,Y37.91XS,"Military operations involving unspecified weapon of mass destruction [WMD], sequela",45609860,Condition,DC-2277
+ICD10CM,Y37.92,Military operations involving friendly fire,21595,Condition,DC-2277
+ICD10CM,Y37.92XA,"Military operations involving friendly fire, initial encounter",45595417,Condition,DC-2277
+ICD10CM,Y37.92XD,"Military operations involving friendly fire, subsequent encounter",45542339,Condition,DC-2277
+ICD10CM,Y37.92XS,"Military operations involving friendly fire, sequela",45580953,Condition,DC-2277
+ICD10CM,Y37.9XXA,"Military operations, unspecified, initial encounter",35224627,Condition,DC-2277
+ICD10CM,Y37.9XXD,"Military operations, unspecified, subsequent encounter",35224628,Condition,DC-2277
+ICD10CM,Y37.9XXS,"Military operations, unspecified, sequela",35224629,Condition,DC-2277
+ICD10CM,Y38,Terrorism,45552008,Condition,DC-2277
+ICD10CM,Y38.0,Terrorism involving explosion of marine weapons,1575879,Condition,DC-2277
+ICD10CM,Y38.0X,Terrorism involving explosion of marine weapons,1575880,Condition,DC-2277
+ICD10CM,Y38.0X1,"Terrorism involving explosion of marine weapons, public safety official injured",21596,Condition,DC-2277
+ICD10CM,Y38.0X1A,"Terrorism involving explosion of marine weapons, public safety official injured, initial encounter",45590635,Condition,DC-2277
+ICD10CM,Y38.0X1D,"Terrorism involving explosion of marine weapons, public safety official injured, subsequent encounter",45566347,Condition,DC-2277
+ICD10CM,Y38.0X1S,"Terrorism involving explosion of marine weapons, public safety official injured, sequela",45609861,Condition,DC-2277
+ICD10CM,Y38.0X2,"Terrorism involving explosion of marine weapons, civilian injured",21597,Condition,DC-2277
+ICD10CM,Y38.0X2A,"Terrorism involving explosion of marine weapons, civilian injured, initial encounter",45580954,Condition,DC-2277
+ICD10CM,Y38.0X2D,"Terrorism involving explosion of marine weapons, civilian injured, subsequent encounter",45595418,Condition,DC-2277
+ICD10CM,Y38.0X2S,"Terrorism involving explosion of marine weapons, civilian injured, sequela",45605028,Condition,DC-2277
+ICD10CM,Y38.0X3,"Terrorism involving explosion of marine weapons, terrorist injured",21598,Condition,DC-2277
+ICD10CM,Y38.0X3A,"Terrorism involving explosion of marine weapons, terrorist injured, initial encounter",45595419,Condition,DC-2277
+ICD10CM,Y38.0X3D,"Terrorism involving explosion of marine weapons, terrorist injured, subsequent encounter",45571256,Condition,DC-2277
+ICD10CM,Y38.0X3S,"Terrorism involving explosion of marine weapons, terrorist injured, sequela",45590636,Condition,DC-2277
+ICD10CM,Y38.1,Terrorism involving destruction of aircraft,1575881,Condition,DC-2277
+ICD10CM,Y38.1X,Terrorism involving destruction of aircraft,1575882,Condition,DC-2277
+ICD10CM,Y38.1X1,"Terrorism involving destruction of aircraft, public safety official injured",21599,Condition,DC-2277
+ICD10CM,Y38.1X1A,"Terrorism involving destruction of aircraft, public safety official injured, initial encounter",45580955,Condition,DC-2277
+ICD10CM,Y38.1X1D,"Terrorism involving destruction of aircraft, public safety official injured, subsequent encounter",45552009,Condition,DC-2277
+ICD10CM,Y38.1X1S,"Terrorism involving destruction of aircraft, public safety official injured, sequela",45542340,Condition,DC-2277
+ICD10CM,Y38.1X2,"Terrorism involving destruction of aircraft, civilian injured",21600,Condition,DC-2277
+ICD10CM,Y38.1X2A,"Terrorism involving destruction of aircraft, civilian injured, initial encounter",45542341,Condition,DC-2277
+ICD10CM,Y38.1X2D,"Terrorism involving destruction of aircraft, civilian injured, subsequent encounter",45590637,Condition,DC-2277
+ICD10CM,Y38.1X2S,"Terrorism involving destruction of aircraft, civilian injured, sequela",45547232,Condition,DC-2277
+ICD10CM,Y38.1X3,"Terrorism involving destruction of aircraft, terrorist injured",21601,Condition,DC-2277
+ICD10CM,Y38.1X3A,"Terrorism involving destruction of aircraft, terrorist injured, initial encounter",45590638,Condition,DC-2277
+ICD10CM,Y38.1X3D,"Terrorism involving destruction of aircraft, terrorist injured, subsequent encounter",45571257,Condition,DC-2277
+ICD10CM,Y38.1X3S,"Terrorism involving destruction of aircraft, terrorist injured, sequela",45590639,Condition,DC-2277
+ICD9CM,773.3,Hydrops fetalis due to isoimmunization,44836282,Condition,DC-2277
+ICD9CM,773.4,Kernicterus of fetus or newborn due to isoimmunization,44825789,Condition,DC-2277
+ICD9CM,773.5,Late anemia of fetus or newborn due to isoimmunization,44831576,Condition,DC-2277
+ICD9CM,774,Other perinatal jaundice,44824604,Condition,DC-2277
+ICD9CM,774.0,Perinatal jaundice from hereditary hemolytic anemias,44837419,Condition,DC-2277
+ICD9CM,774.1,Perinatal jaundice from other excessive hemolysis,44824605,Condition,DC-2277
+ICD9CM,774.2,Neonatal jaundice associated with preterm delivery,44831577,Condition,DC-2277
+ICD9CM,774.3,Neonatal jaundice due to delayed conjugation from other causes,44836283,Condition,DC-2277
+ICD9CM,774.30,"Neonatal jaundice due to delayed conjugation, cause unspecified",44823437,Condition,DC-2277
+ICD9CM,774.31,Neonatal jaundice due to delayed conjugation in diseases classified elsewhere,44830430,Condition,DC-2277
+ICD9CM,774.39,Other neonatal jaundice due to delayed conjugation from other causes,44825790,Condition,DC-2277
+ICD9CM,774.4,Perinatal jaundice due to hepatocellular damage,44824606,Condition,DC-2277
+ICD9CM,774.5,Perinatal jaundice from other causes,44822285,Condition,DC-2277
+ICD9CM,774.6,Unspecified fetal and neonatal jaundice,44830431,Condition,DC-2277
+ICD9CM,775,Endocrine and metabolic disturbances specific to the fetus and newborn,44824607,Condition,DC-2277
+ICD9CM,775.0,"Syndrome of ""infant of a diabetic mother""",44826965,Condition,DC-2277
+ICD9CM,775.1,Neonatal diabetes mellitus,44820047,Condition,DC-2277
+ICD9CM,775.2,Neonatal myasthenia gravis,44833907,Condition,DC-2277
+ICD9CM,775.3,Neonatal thyrotoxicosis,44830432,Condition,DC-2277
+ICD9CM,775.4,Hypocalcemia and hypomagnesemia of newborn,44824608,Condition,DC-2277
+ICD9CM,775.5,Other transitory neonatal electrolyte disturbances,44825791,Condition,DC-2277
+ICD9CM,775.6,Neonatal hypoglycemia,44822286,Condition,DC-2277
+ICD9CM,775.7,Late metabolic acidosis of newborn,44821231,Condition,DC-2277
+ICD9CM,775.8,Other neonatal endocrine and metabolic disturbances,44835077,Condition,DC-2277
+ICD9CM,775.81,Other acidosis of newborn,44829289,Condition,DC-2277
+ICD9CM,775.89,Other neonatal endocrine and metabolic disturbances,44830433,Condition,DC-2277
+ICD9CM,775.9,Unspecified endocrine and metabolic disturbances specific to the fetus and newborn,44824609,Condition,DC-2277
+ICD9CM,776,Hematological disorders of newborn,44824610,Condition,DC-2277
+ICD9CM,776.0,Hemorrhagic disease of newborn,44824611,Condition,DC-2277
+ICD9CM,776.1,Transient neonatal thrombocytopenia,44837420,Condition,DC-2277
+ICD9CM,776.2,Disseminated intravascular coagulation in newborn,44829290,Condition,DC-2277
+ICD9CM,776.3,Other transient neonatal disorders of coagulation,44825792,Condition,DC-2277
+ICD9CM,776.4,Polycythemia neonatorum,44821232,Condition,DC-2277
+ICD9CM,776.5,Congenital anemia,44820048,Condition,DC-2277
+ICD9CM,776.6,Anemia of prematurity,44824612,Condition,DC-2277
+ICD9CM,776.8,Other specified transient hematological disorders of fetus or newborn,44825793,Condition,DC-2277
+ICD9CM,776.9,Unspecified hematological disorder specific to newborn,44831578,Condition,DC-2277
+ICD9CM,777,Perinatal disorders of digestive system,44826966,Condition,DC-2277
+ICD9CM,777.1,Meconium obstruction in fetus or newborn,44820049,Condition,DC-2277
+ICD9CM,777.2,Intestinal obstruction in newborn due to inspissated milk,44822287,Condition,DC-2277
+ICD9CM,777.3,Hematemesis and melena of newborn due to swallowed maternal blood,44837421,Condition,DC-2277
+ICD9CM,777.4,Transitory ileus of newborn,44821233,Condition,DC-2277
+ICD9CM,777.5,Necrotizing enterocolitis in newborn,44824613,Condition,DC-2277
+ICD9CM,777.50,"Necrotizing enterocolitis in newborn, unspecified",44821234,Condition,DC-2277
+ICD9CM,777.51,Stage I necrotizing enterocolitis in newborn,44833909,Condition,DC-2277
+ICD9CM,777.52,Stage II necrotizing enterocolitis in newborn,44835078,Condition,DC-2277
+ICD9CM,777.53,Stage III necrotizing enterocolitis in newborn,44820050,Condition,DC-2277
+ICD9CM,777.6,Perinatal intestinal perforation,44830434,Condition,DC-2277
+ICD9CM,777.8,Other specified perinatal disorders of digestive system,44833910,Condition,DC-2277
+ICD9CM,777.9,Unspecified perinatal disorder of digestive system,44831579,Condition,DC-2277
+ICD9CM,778,Conditions involving the integument and temperature regulation of fetus and newborn,44829291,Condition,DC-2277
+ICD9CM,778.0,Hydrops fetalis not due to isoimmunization,44831580,Condition,DC-2277
+ICD9CM,778.1,Sclerema neonatorum,44820051,Condition,DC-2277
+ICD9CM,778.2,Cold injury syndrome of newborn,44830435,Condition,DC-2277
+ICD9CM,778.3,Other hypothermia of newborn,44823438,Condition,DC-2277
+ICD9CM,778.4,Other disturbances of temperature regulation of newborn,44824614,Condition,DC-2277
+ICD9CM,778.5,Other and unspecified edema of newborn,44825794,Condition,DC-2277
+ICD9CM,778.6,Congenital hydrocele,44823439,Condition,DC-2277
+ICD9CM,778.7,Breast engorgement in newborn,44828141,Condition,DC-2277
+ICD9CM,778.8,Other specified conditions involving the integument of fetus and newborn,44835079,Condition,DC-2277
+ICD9CM,778.9,Unspecified condition involving the integument and temperature regulation of fetus and newborn,44821235,Condition,DC-2277
+ICD9CM,779,Other and ill-defined conditions originating in the perinatal period,44826967,Condition,DC-2277
+ICD9CM,779.0,Convulsions in newborn,44830436,Condition,DC-2277
+ICD9CM,779.1,Other and unspecified cerebral irritability in newborn,44836284,Condition,DC-2277
+ICD9CM,779.2,"Cerebral depression, coma, and other abnormal cerebral signs in fetus or newborn",44832706,Condition,DC-2277
+ICD9CM,779.3,Disorder of stomach function and feeding problems in newborn,44830437,Observation,DC-2277
+ICD9CM,779.31,Feeding problems in newborn,44832707,Observation,DC-2277
+ICD9CM,779.33,Other vomiting in newborn,44824615,Condition,DC-2277
+ICD9CM,779.34,Failure to thrive in newborn,44823440,Condition,DC-2277
+ICD9CM,779.4,Drug reactions and intoxications specific to newborn,44833911,Condition,DC-2277
+ICD9CM,779.5,Drug withdrawal syndrome in newborn,44822288,Condition,DC-2277
+ICD9CM,779.6,Termination of pregnancy (fetus),44825795,Condition,DC-2277
+ICD9CM,779.7,Periventricular leukomalacia,44836285,Condition,DC-2277
+ICD9CM,779.8,Other specified conditions originating in the perinatal period,44831581,Condition,DC-2277
+ICD9CM,779.81,Neonatal bradycardia,44836286,Condition,DC-2277
+ICD9CM,779.82,Neonatal tachycardia,44831582,Condition,DC-2277
+ICD9CM,779.83,Delayed separation of umbilical cord,44828142,Condition,DC-2277
+ICD9CM,779.84,Meconium staining,44837422,Condition,DC-2277
+ICD9CM,779.85,Cardiac arrest of newborn,44830438,Condition,DC-2277
+ICD9CM,779.89,Other specified conditions originating in the perinatal period,44828143,Condition,DC-2277
+ICD9CM,779.9,Unspecified condition originating in the perinatal period,44835080,Condition,DC-2277
+ICD9CM,798,"Sudden death, cause unknown",44831614,Observation,DC-2277
+ICD9CM,799,Other ill-defined and unknown causes of morbidity and mortality,44823472,Observation,DC-2277
+ICD9CM,799.9,Other unknown and unspecified cause of morbidity and mortality,44829315,Observation,DC-2277
+ICD9CM,800,Fracture of vault of skull,44826991,Condition,DC-2277
+ICD9CM,E800.1,Railway accident involving collision with rolling stock and injuring passenger on railway,44832942,Observation,DC-2277
+ICD9CM,E800.2,Railway accident involving collision with rolling stock and injuring pedestrian,44837647,Condition,DC-2277
+ICD9CM,E800.3,Railway accident involving collision with rolling stock and injuring pedal cyclist,44832943,Condition,DC-2277
+ICD9CM,E800.8,Railway accident involving collision with rolling stock and injuring other specified person,44830649,Condition,DC-2277
+ICD9CM,E800.9,Railway accident involving collision with rolling stock and injuring unspecified person,44823671,Condition,DC-2277
+ICD9CM,E801,Railway accident involving collision with other object,44820273,Observation,DC-2277
+ICD9CM,E801.0,Railway accident involving collision with other object and injuring railway employee,44832944,Observation,DC-2277
+ICD9CM,E801.1,Railway accident involving collision with other object and injuring passenger on railway,44823672,Observation,DC-2277
+ICD9CM,E801.2,Railway accident involving collision with other object and injuring pedestrian,44832945,Condition,DC-2277
+ICD9CM,E801.3,Railway accident involving collision with other object and injuring pedal cyclist,44830650,Condition,DC-2277
+ICD9CM,E801.8,Railway accident involving collision with other object and injuring other specified person,44832946,Observation,DC-2277
+ICD9CM,E801.9,Railway accident involving collision with other object and injuring unspecified person,44831816,Observation,DC-2277
+ICD9CM,E802,Railway accident involving derailment without antecedent collision,44823673,Observation,DC-2277
+ICD9CM,E802.0,Railway accident involving derailment without antecedent collision injuring railway employee,44830651,Observation,DC-2277
+ICD9CM,E802.1,Railway accident involving derailment without antecedent collision injuring passenger on railway,44836502,Observation,DC-2277
+ICD9CM,E802.2,Railway accident involving derailment without antecedent collision injuring pedestrian,44823674,Condition,DC-2277
+ICD9CM,E802.3,Railway accident involving derailment without antecedent collision injuring pedal cyclist,44822537,Condition,DC-2277
+ICD9CM,E802.8,Railway accident involving derailment without antecedent collision injuring other specified person,44822538,Condition,DC-2277
+ICD9CM,E802.9,Railway accident involving derailment without antecedent collision injuring unspecified person,44834135,Observation,DC-2277
+ICD9CM,E803,"Railway accident involving explosion, fire, or burning",44836503,Observation,DC-2277
+ICD9CM,E803.0,"Railway accident involving explosion, fire, or burning injuring railway employee",44823675,Observation,DC-2277
+ICD9CM,E803.1,"Railway accident involving explosion, fire, or burning injuring passenger on railway",44835309,Observation,DC-2277
+ICD9CM,E803.2,"Railway accident involving explosion, fire, or burning injuring pedestrian",44824862,Condition,DC-2277
+ICD9CM,E803.3,"Railway accident involving explosion, fire, or burning injuring pedal cyclist",44837648,Condition,DC-2277
+ICD9CM,E803.8,"Railway accident involving explosion, fire, or burning injuring other specified person",44828373,Condition,DC-2277
+ICD9CM,E803.9,"Railway accident involving explosion, fire, or burning injuring unspecified person",44821419,Condition,DC-2277
+ICD9CM,E804,"Fall in, on, or from railway train",44836504,Observation,DC-2277
+ICD9CM,E804.0,"Fall in, on, or from railway train injuring railway employee",44836505,Condition,DC-2277
+ICD9CM,E804.1,"Fall in, on, or from railway train injuring passenger on railway",44829496,Condition,DC-2277
+ICD9CM,E804.2,"Fall in, on, or from railway train injuring pedestrian",44828374,Condition,DC-2277
+ICD9CM,E804.3,"Fall in, on, or from railway train injuring pedal cyclist",44824863,Condition,DC-2277
+ICD9CM,E804.8,"Fall in, on, or from railway train injuring other specified person",44836506,Condition,DC-2277
+ICD9CM,E804.9,"Fall in, on, or from railway train injuring unspecified person",44837649,Condition,DC-2277
+ICD9CM,E805,Hit by rolling stock,44824864,Observation,DC-2277
+ICD9CM,E805.0,Railway employee hit by rolling stock,44830652,Condition,DC-2277
+ICD9CM,E805.1,Passenger on railway hit by rolling stock,44832947,Condition,DC-2277
+ICD9CM,E805.2,Pedestrian hit by rolling stock,44821420,Condition,DC-2277
+ICD9CM,E805.3,Pedal cyclist hit by rolling stock,44826052,Condition,DC-2277
+ICD9CM,E805.8,Other specified person hit by rolling stock,44835310,Condition,DC-2277
+ICD9CM,E805.9,Unspecified person hit by rolling stock,44822539,Condition,DC-2277
+ICD9CM,E806,Other specified railway accident,44830653,Observation,DC-2277
+ICD9CM,E806.0,Other specified railway accident injuring railway employee,44822540,Condition,DC-2277
+ICD9CM,E806.1,Other specified railway accident injuring passenger on railway,44826053,Condition,DC-2277
+ICD9CM,E806.2,Other specified railway accident injuring pedestrian,44829497,Condition,DC-2277
+ICD9CM,E806.3,Other specified railway accident injuring pedal cyclist,44826054,Condition,DC-2277
+ICD9CM,E806.8,Other specified railway accident injuring other specified person,44832948,Condition,DC-2277
+ICD9CM,E806.9,Other specified railway accident injuring unspecified person,44824865,Condition,DC-2277
+ICD9CM,E807,Railway accident of unspecified nature,44820274,Observation,DC-2277
+ICD9CM,E807.0,Railway accident of unspecified nature injuring railway employee,44834136,Condition,DC-2277
+ICD9CM,E807.1,Railway accident of unspecified nature injuring passenger on railway,44835311,Condition,DC-2277
+ICD9CM,E807.2,Railway accident of unspecified nature injuring pedestrian,44822541,Condition,DC-2277
+ICD9CM,E807.3,Railway accident of unspecified nature injuring pedal cyclist,44826055,Condition,DC-2277
+ICD9CM,E807.8,Railway accident of unspecified nature injuring other specified person,44826056,Condition,DC-2277
+ICD9CM,E807.9,Railway accident of unspecified nature injuring unspecified person,44834137,Condition,DC-2277
+ICD9CM,E810,Motor vehicle traffic accident involving collision with train,44834138,Observation,DC-2277
+ICD9CM,E810.0,Motor vehicle traffic accident involving collision with train injuring driver of motor vehicle other than motorcycle,44826057,Condition,DC-2277
+ICD9CM,E810.1,Motor vehicle traffic accident involving collision with train injuring passenger in motor vehicle other than motorcycle,44832949,Condition,DC-2277
+ICD9CM,E810.2,Motor vehicle traffic accident involving collision with train injuring motorcyclist,44824866,Condition,DC-2277
+ICD9CM,E810.3,Motor vehicle traffic accident involving collision with train injuring passenger on motorcycle,44826058,Condition,DC-2277
+ICD9CM,E810.4,Motor vehicle traffic accident involving collision with train injuring occupant of streetcar,44829498,Condition,DC-2277
+ICD9CM,E810.5,Motor vehicle traffic accident involving collision with train injuring rider of animal; occupant of animal-drawn vehicle,44823676,Condition,DC-2277
+ICD9CM,E810.6,Motor vehicle traffic accident involving collision with train injuring pedal cyclist,44834139,Condition,DC-2277
+ICD9CM,E810.7,Motor vehicle traffic accident involving collision with train injuring pedestrian,44824867,Condition,DC-2277
+ICD9CM,E810.8,Motor vehicle traffic accident involving collision with train injuring other specified person,44823677,Condition,DC-2277
+ICD9CM,E810.9,Motor vehicle traffic accident involving collision with train injuring unspecified person,44829499,Condition,DC-2277
+ICD9CM,E811,Motor vehicle traffic accident involving re-entrant collision with another motor vehicle,44832950,Observation,DC-2277
+ICD9CM,E811.0,Motor vehicle traffic accident involving re-entrant collision with another motor vehicle injuring driver of motor vehicle other than motorcycle,44834140,Condition,DC-2277
+ICD9CM,E811.1,Motor vehicle traffic accident involving re-entrant collision with another motor vehicle injuring passenger in motor vehicle other than motorcycle,44821421,Condition,DC-2277
+ICD9CM,E811.2,Motor vehicle traffic accident involving re-entrant collision with another motor vehicle injuring motorcyclist,44820275,Condition,DC-2277
+ICD9CM,E811.3,Motor vehicle traffic accident involving re-entrant collision with another motor vehicle injuring passenger on motorcycle,44820276,Condition,DC-2277
+ICD9CM,E811.4,Motor vehicle traffic accident involving re-entrant collision with another motor vehicle injuring occupant of streetcar,44832951,Condition,DC-2277
+ICD9CM,E811.5,Motor vehicle traffic accident involving re-entrant collision with another motor vehicle injuring rider of animal; occupant of animal-drawn vehicle,44828375,Condition,DC-2277
+ICD9CM,E811.7,Motor vehicle traffic accident involving re-entrant collision with another motor vehicle injuring pedestrian,44820278,Condition,DC-2277
+ICD9CM,E811.8,Motor vehicle traffic accident involving re-entrant collision with another motor vehicle injuring other specified person,44820279,Condition,DC-2277
+ICD9CM,E811.9,Motor vehicle traffic accident involving re-entrant collision with another motor vehicle injuring unspecified person,44834141,Condition,DC-2277
+ICD9CM,E812,Other motor vehicle traffic accident involving collision with motor vehicle,44834142,Observation,DC-2277
+ICD9CM,E812.0,Other motor vehicle traffic accident involving collision with motor vehicle injuring driver of motor vehicle other than motorcycle,44834143,Condition,DC-2277
+ICD9CM,E812.1,Other motor vehicle traffic accident involving collision with motor vehicle injuring passenger in motor vehicle other than motorcycle,44835312,Condition,DC-2277
+ICD9CM,E812.2,Other motor vehicle traffic accident involving collision with motor vehicle injuring motorcyclist,44832952,Condition,DC-2277
+ICD9CM,E812.3,Other motor vehicle traffic accident involving collision with motor vehicle injuring passenger on motorcycle,44820280,Condition,DC-2277
+ICD9CM,E812.4,Other motor vehicle traffic accident involving collision with motor vehicle injuring occupant of streetcar,44831817,Condition,DC-2277
+ICD9CM,E812.5,Other motor vehicle traffic accident involving collision with motor vehicle injuring rider of animal; occupant of animal-drawn vehicle,44831818,Condition,DC-2277
+ICD9CM,E812.6,Other motor vehicle traffic accident involving collision with motor vehicle injuring pedal cyclist,44831819,Condition,DC-2277
+ICD9CM,E812.7,Other motor vehicle traffic accident involving collision with motor vehicle injuring pedestrian,44820281,Condition,DC-2277
+ICD9CM,E812.8,Other motor vehicle traffic accident involving collision with motor vehicle injuring other specified person,44826059,Condition,DC-2277
+ICD9CM,E812.9,Other motor vehicle traffic accident involving collision with motor vehicle injuring unspecified person,44827198,Condition,DC-2277
+ICD9CM,E813,Motor vehicle traffic accident involving collision with other vehicle,44820282,Observation,DC-2277
+ICD9CM,E813.0,Motor vehicle traffic accident involving collision with other vehicle injuring driver of motor vehicle other than motorcycle,44827199,Condition,DC-2277
+ICD9CM,E813.1,Motor vehicle traffic accident involving collision with other vehicle injuring passenger in motor vehicle other than motorcycle,44831820,Condition,DC-2277
+ICD9CM,E813.2,Motor vehicle traffic accident involving collision with other vehicle injuring motorcyclist,44835313,Condition,DC-2277
+ICD9CM,E813.3,Motor vehicle traffic accident involving collision with other vehicle injuring passenger on motorcycle,44828376,Condition,DC-2277
+ICD9CM,E813.4,Motor vehicle traffic accident involving collision with other vehicle injuring occupant of streetcar,44824868,Condition,DC-2277
+ICD9CM,E813.5,Motor vehicle traffic accident involving collision with other vehicle injuring rider of animal; occupant of animal-drawn vehicle,44835314,Condition,DC-2277
+ICD9CM,E813.6,Motor vehicle traffic accident involving collision with other vehicle injuring pedal cyclist,44831821,Condition,DC-2277
+ICD9CM,E813.7,Motor vehicle traffic accident involving collision with other vehicle injuring pedestrian,44836507,Condition,DC-2277
+ICD9CM,E813.8,Motor vehicle traffic accident involving collision with other vehicle injuring other specified person,44831822,Condition,DC-2277
+ICD9CM,E813.9,Motor vehicle traffic accident involving collision with other vehicle injuring unspecified person,44820283,Condition,DC-2277
+ICD9CM,E814,Motor vehicle traffic accident involving collision with pedestrian,44828377,Observation,DC-2277
+ICD9CM,E814.0,Motor vehicle traffic accident involving collision with pedestrian injuring driver of motor vehicle other than motorcycle,44831823,Condition,DC-2277
+ICD9CM,E814.1,Motor vehicle traffic accident involving collision with pedestrian injuring passenger in motor vehicle other than motorcycle,44826060,Observation,DC-2277
+ICD9CM,E814.2,Motor vehicle traffic accident involving collision with pedestrian injuring motorcyclist,44828378,Observation,DC-2277
+ICD9CM,E814.3,Motor vehicle traffic accident involving collision with pedestrian injuring passenger on motorcycle,44837650,Observation,DC-2277
+ICD9CM,E814.4,Motor vehicle traffic accident involving collision with pedestrian injuring occupant of streetcar,44827200,Condition,DC-2277
+ICD9CM,E814.5,Motor vehicle traffic accident involving collision with pedestrian injuring rider of animal; occupant of animal drawn vehicle,44832953,Condition,DC-2277
+ICD9CM,E814.6,Motor vehicle traffic accident involving collision with pedestrian injuring pedal cyclist,44832954,Condition,DC-2277
+ICD9CM,E814.7,Motor vehicle traffic accident involving collision with pedestrian injuring pedestrian,44823678,Observation,DC-2277
+ICD9CM,E814.8,Motor vehicle traffic accident involving collision with pedestrian injuring other specified person,44834144,Condition,DC-2277
+ICD9CM,E814.9,Motor vehicle traffic accident involving collision with pedestrian injuring unspecified person,44824869,Condition,DC-2277
+ICD9CM,E815,Other motor vehicle traffic accident involving collision on the highway,44835315,Observation,DC-2277
+ICD9CM,E815.0,Other motor vehicle traffic accident involving collision on the highway injuring driver of motor vehicle other than motorcycle,44830654,Observation,DC-2277
+ICD9CM,E815.1,Other motor vehicle traffic accident involving collision on the highway injuring passenger in motor vehicle other than motorcycle,44823679,Observation,DC-2277
+ICD9CM,E815.2,Other motor vehicle traffic accident involving collision on the highway injuring motorcyclist,44823680,Observation,DC-2277
+ICD9CM,E815.3,Other motor vehicle traffic accident involving collision on the highway injuring passenger on motorcycle,44826061,Observation,DC-2277
+ICD9CM,E815.4,Other motor vehicle traffic accident involving collision on the highway injuring occupant of streetcar,44827201,Condition,DC-2277
+ICD9CM,E815.5,Other motor vehicle traffic accident involving collision on the highway injuring rider of animal; occupant of animal-drawn vehicle,44824870,Condition,DC-2277
+ICD9CM,E815.6,Other motor vehicle traffic accident involving collision on the highway injuring pedal cyclist,44821422,Condition,DC-2277
+ICD9CM,E815.7,Other motor vehicle traffic accident involving collision on the highway injuring pedestrian,44829500,Condition,DC-2277
+ICD9CM,E815.8,Other motor vehicle traffic accident involving collision on the highway injuring other specified person,44827202,Condition,DC-2277
+ICD9CM,E815.9,Other motor vehicle traffic accident involving collision on the highway injuring unspecified person,44835316,Condition,DC-2277
+ICD9CM,E816,"Motor vehicle traffic accident due to loss of control, without collision on the highway",44835317,Observation,DC-2277
+ICD9CM,E816.0,"Motor vehicle traffic accident due to loss of control, without collision on the highway, injuring driver of motor vehicle other than motorcycle",44823681,Condition,DC-2277
+ICD9CM,E816.1,"Motor vehicle traffic accident due to loss of control, without collision on the highway, injuring passenger in motor vehicle other than motorcycle",44820284,Observation,DC-2277
+ICD9CM,E816.2,"Motor vehicle traffic accident due to loss of control, without collision on the highway, injuring motorcyclist",44829501,Observation,DC-2277
+ICD9CM,E816.3,"Motor vehicle traffic accident due to loss of control, without collision on the highway, injuring passenger on motorcycle",44820285,Observation,DC-2277
+ICD9CM,E816.4,"Motor vehicle traffic accident due to loss of control, without collision on the highway, injuring occupant of streetcar",44837651,Condition,DC-2277
+ICD9CM,E816.5,"Motor vehicle traffic accident due to loss of control, without collision on the highway, injuring rider of animal; occupant of animal-drawn vehicle",44830655,Condition,DC-2277
+ICD9CM,E816.6,"Motor vehicle traffic accident due to loss of control, without collision on the highway, injuring pedal cyclist",44837652,Condition,DC-2277
+ICD9CM,E816.7,"Motor vehicle traffic accident due to loss of control, without collision on the highway, injuring pedestrian",44830656,Condition,DC-2277
+ICD9CM,E816.8,"Motor vehicle traffic accident due to loss of control, without collision on the highway, injuring other specified person",44830657,Condition,DC-2277
+ICD9CM,E816.9,"Motor vehicle traffic accident due to loss of control, without collision on the highway, injuring unspecified person",44822542,Condition,DC-2277
+ICD9CM,E817,Noncollision motor vehicle traffic accident while boarding or alighting,44834145,Observation,DC-2277
+ICD9CM,E817.0,Noncollision motor vehicle traffic accident while boarding or alighting injuring driver of motor vehicle other than motorcycle,44823682,Condition,DC-2277
+ICD9CM,E817.1,Noncollision motor vehicle traffic accident while boarding or alighting injuring passenger in motor vehicle other than motorcycle,44832955,Condition,DC-2277
+ICD9CM,E817.2,Noncollision motor vehicle traffic accident while boarding or alighting injuring motorcyclist,44822543,Condition,DC-2277
+ICD9CM,E817.3,Noncollision motor vehicle traffic accident while boarding or alighting injuring passenger on motorcycle,44821423,Condition,DC-2277
+ICD9CM,E817.4,Noncollision motor vehicle traffic accident while boarding or alighting injuring occupant of streetcar,44822544,Condition,DC-2277
+ICD9CM,E817.5,Noncollision motor vehicle traffic accident while boarding or alighting injuring rider of animal; occupant of animal-drawn vehicle,44821424,Condition,DC-2277
+ICD9CM,E817.6,Noncollision motor vehicle traffic accident while boarding or alighting injuring pedal cyclist,44821425,Condition,DC-2277
+ICD9CM,E817.7,Noncollision motor vehicle traffic accident while boarding or alighting injuring pedestrian,44824871,Condition,DC-2277
+ICD9CM,E817.8,Noncollision motor vehicle traffic accident while boarding or alighting injuring other specified person,44821426,Condition,DC-2277
+ICD9CM,E817.9,Noncollision motor vehicle traffic accident while boarding or alighting injuring unspecified person,44834146,Condition,DC-2277
+ICD9CM,E818,Other noncollision motor vehicle traffic accident,44835318,Observation,DC-2277
+ICD9CM,E818.0,Other noncollision motor vehicle traffic accident injuring driver of motor vehicle other than motorcycle,44836508,Condition,DC-2277
+ICD9CM,E818.1,Other noncollision motor vehicle traffic accident injuring passenger in motor vehicle other than motorcycle,44829502,Condition,DC-2277
+ICD9CM,E818.2,Other noncollision motor vehicle traffic accident injuring motorcyclist,44828379,Condition,DC-2277
+ICD9CM,E818.3,Other noncollision motor vehicle traffic accident injuring passenger on motorcycle,44827203,Condition,DC-2277
+ICD9CM,E818.4,Other noncollision motor vehicle traffic accident injuring occupant of streetcar,44826062,Condition,DC-2277
+ICD9CM,E818.5,Other noncollision motor vehicle traffic accident injuring rider of animal; occupant of animal-drawn vehicle,44820286,Condition,DC-2277
+ICD9CM,E818.6,Other noncollision motor vehicle traffic accident injuring pedal cyclist,44832956,Condition,DC-2277
+ICD9CM,E818.7,Other noncollision motor vehicle traffic accident injuring pedestrian,44826063,Condition,DC-2277
+ICD9CM,E818.8,Other noncollision motor vehicle traffic accident injuring other specified person,44822545,Condition,DC-2277
+ICD9CM,E818.9,Other noncollision motor vehicle traffic accident injuring unspecified person,44832957,Condition,DC-2277
+ICD9CM,E819,Motor vehicle traffic accident of unspecified nature,44835319,Observation,DC-2277
+ICD9CM,E819.0,Motor vehicle traffic accident of unspecified nature injuring driver of motor vehicle other than motorcycle,44832958,Condition,DC-2277
+ICD9CM,E819.1,Motor vehicle traffic accident of unspecified nature injuring passenger in motor vehicle other than motorcycle,44823683,Condition,DC-2277
+ICD9CM,E819.2,Motor vehicle traffic accident of unspecified nature injuring motorcyclist,44835320,Condition,DC-2277
+ICD9CM,E819.3,Motor vehicle traffic accident of unspecified nature injuring passenger on motorcycle,44821427,Condition,DC-2277
+ICD9CM,E819.4,Motor vehicle traffic accident of unspecified nature injuring occupant of streetcar,44823684,Condition,DC-2277
+ICD9CM,E819.5,Motor vehicle traffic accident of unspecified nature injuring rider of animal; occupant of animal-drawn vehicle,44823685,Condition,DC-2277
+ICD9CM,E819.6,Motor vehicle traffic accident of unspecified nature injuring pedal cyclist,44832959,Condition,DC-2277
+ICD9CM,E819.7,Motor vehicle traffic accident of unspecified nature injuring pedestrian,44829503,Condition,DC-2277
+ICD9CM,E819.8,Motor vehicle traffic accident of unspecified nature injuring other specified person,44837653,Condition,DC-2277
+ICD9CM,E819.9,Motor vehicle traffic accident of unspecified nature injuring unspecified person,44829504,Condition,DC-2277
+ICD9CM,E820,Nontraffic accident involving motor-driven snow vehicle,44823686,Observation,DC-2277
+ICD9CM,E820.0,Nontraffic accident involving motor-driven snow vehicle injuring driver of motor vehicle other than motorcycle,44828380,Observation,DC-2277
+ICD9CM,E820.1,Nontraffic accident involving motor-driven snow vehicle injuring passenger in motor vehicle other than motorcycle,44823687,Observation,DC-2277
+ICD9CM,E820.2,Nontraffic accident involving motor-driven snow vehicle injuring motorcyclist,44836509,Observation,DC-2277
+ICD9CM,E820.3,Nontraffic accident involving motor-driven snow vehicle injuring passenger on motorcycle,44830658,Observation,DC-2277
+ICD9CM,E820.4,Nontraffic accident involving motor-driven snow vehicle injuring occupant of streetcar,44829505,Observation,DC-2277
+ICD9CM,E820.5,Nontraffic accident involving motor-driven snow vehicle injuring rider of animal; occupant of animal-drawn vehicle,44821428,Observation,DC-2277
+ICD9CM,E820.6,Nontraffic accident involving motor-driven snow vehicle injuring pedal cyclist,44837654,Observation,DC-2277
+ICD9CM,E820.7,Nontraffic accident involving motor-driven snow vehicle injuring pedestrian,44822546,Observation,DC-2277
+ICD9CM,E820.8,Nontraffic accident involving motor-driven snow vehicle injuring other specified person,44822547,Condition,DC-2277
+ICD9CM,E820.9,Nontraffic accident involving motor-driven snow vehicle injuring unspecified person,44823688,Condition,DC-2277
+ICD9CM,E821,Nontraffic accident involving other off-road motor vehicle,44836510,Observation,DC-2277
+ICD9CM,E821.0,Nontraffic accident involving other off-road motor vehicle injuring driver of motor vehicle other than motorcycle,44828381,Condition,DC-2277
+ICD9CM,E821.1,Nontraffic accident involving other off-road motor vehicle injuring passenger in motor vehicle other than motorcycle,44828382,Condition,DC-2277
+ICD9CM,E821.2,Nontraffic accident involving other off-road motor vehicle injuring motorcyclist,44826064,Condition,DC-2277
+ICD9CM,E821.3,Nontraffic accident involving other off-road motor vehicle injuring passenger on motorcycle,44821429,Condition,DC-2277
+ICD9CM,E821.4,Nontraffic accident involving other off-road motor vehicle injuring occupant of streetcar,44830659,Condition,DC-2277
+ICD9CM,E821.5,Nontraffic accident involving other off-road motor vehicle injuring rider of animal; occupant of animal-drawn vehicle,44828383,Condition,DC-2277
+ICD9CM,E821.6,Nontraffic accident involving other off-road motor vehicle injuring pedal cyclist,44830660,Condition,DC-2277
+ICD9CM,E821.7,Nontraffic accident involving other off-road motor vehicle injuring pedestrian,44824872,Condition,DC-2277
+ICD9CM,E821.8,Nontraffic accident involving other off-road motor vehicle injuring other specified person,44835321,Condition,DC-2277
+ICD9CM,E821.9,Nontraffic accident involving other off-road motor vehicle injuring unspecified person,44827204,Condition,DC-2277
+ICD9CM,E822,Other motor vehicle nontraffic accident involving collision with moving object,44820287,Observation,DC-2277
+ICD9CM,E822.0,Other motor vehicle nontraffic accident involving collision with moving object injuring driver of motor vehicle other than motorcycle,44823689,Condition,DC-2277
+ICD9CM,E822.1,Other motor vehicle nontraffic accident involving collision with moving object injuring passenger in motor vehicle other than motorcycle,44830661,Condition,DC-2277
+ICD9CM,E822.2,Other motor vehicle nontraffic accident involving collision with moving object injuring motorcyclist,44826065,Condition,DC-2277
+ICD9CM,E823.0,Other motor vehicle nontraffic accident involving collision with stationary object injuring driver of motor vehicle other than motorcycle,44824873,Condition,DC-2277
+ICD9CM,E824.2,Other motor vehicle nontraffic accident while boarding and alighting injuring motorcyclist,44824875,Condition,DC-2277
+ICD9CM,E824.7,Other motor vehicle nontraffic accident while boarding and alighting injuring pedestrian,44835322,Condition,DC-2277
+ICD9CM,E825.1,Other motor vehicle nontraffic accident of other and unspecified nature injuring passenger in motor vehicle other than motorcycle,44822551,Condition,DC-2277
+ICD9CM,E827.0,Animal-drawn vehicle accident injuring pedestrian,44827207,Observation,DC-2277
+ICD9CM,E827.2,Animal-drawn vehicle accident injuring rider of animal,44835323,Observation,DC-2277
+ICD9CM,E827.3,Animal-drawn vehicle accident injuring occupant of animal drawn vehicle,44829511,Condition,DC-2277
+ICD9CM,E827.8,Animal-drawn vehicle accident injuring other specified person,44832961,Condition,DC-2277
+ICD9CM,E827.9,Animal-drawn vehicle accident injuring unspecified person,44829512,Condition,DC-2277
+ICD9CM,E828.2,Accident involving animal being ridden injuring rider of animal,44832962,Condition,DC-2277
+ICD9CM,E829.9,Other road vehicle accidents injuring unspecified person,44835324,Condition,DC-2277
+ICD9CM,E830,Accident to watercraft causing submersion,44820292,Observation,DC-2277
+ICD9CM,E830.2,Accident to watercraft causing submersion injuring occupant of other watercraft -- crew,44837659,Condition,DC-2277
+ICD9CM,E830.3,Accident to watercraft causing submersion injuring occupant of other watercraft -- other than crew,44823694,Condition,DC-2277
+ICD9CM,E830.7,"Accident to watercraft causing submersion, occupant of military watercraft, any type",44822553,Condition,DC-2277
+ICD9CM,E830.8,Accident to watercraft causing submersion injuring other specified person,44837661,Condition,DC-2277
+ICD9CM,E830.9,Accident to watercraft causing submersion injuring unspecified person,44822554,Condition,DC-2277
+ICD9CM,E831,Accident to watercraft causing other injury,44828393,Observation,DC-2277
+ICD9CM,E831.0,"Accident to watercraft causing other injury to occupant of small boat, unpowered",44832963,Condition,DC-2277
+ICD9CM,E831.1,"Accident to watercraft causing other injury to occupant of small boat, powered",44826070,Condition,DC-2277
+ICD9CM,E831.2,Accident to watercraft causing other injury to occupant of other watercraft -- crew,44826071,Condition,DC-2277
+ICD9CM,E831.3,Accident to watercraft causing other injury to occupant of other watercraft -- other than crew,44831826,Condition,DC-2277
+ICD9CM,E831.4,Accident to watercraft causing other injury to water skier,44823695,Condition,DC-2277
+ICD9CM,E831.8,Accident to watercraft causing other injury to other specified person,44824878,Condition,DC-2277
+ICD9CM,E831.9,Accident to watercraft causing other injury to unspecified person,44829514,Condition,DC-2277
+ICD9CM,E832.2,Other accidental submersion or drowning in water transport accident injuring occupant of other watercraft -- crew,44824879,Condition,DC-2277
+ICD9CM,E833,Fall on stairs or ladders in water transport,44827211,Observation,DC-2277
+ICD9CM,E833.0,"Fall on stairs or ladders in water transport injuring occupant of small boat, unpowered",44827212,Condition,DC-2277
+ICD9CM,E833.2,Fall on stairs or ladders in water transport injuring occupant of other watercraft -- crew,44823696,Condition,DC-2277
+ICD9CM,E833.3,Fall on stairs or ladders in water transport injuring occupant of other watercraft -- other than crew,44827213,Condition,DC-2277
+ICD9CM,E833.4,Fall on stairs or ladders in water transport injuring water skier,44832964,Condition,DC-2277
+ICD9CM,E833.6,"Fall on stairs or ladders in water transport injuring dockers, stevedores",44822556,Condition,DC-2277
+ICD9CM,E833.9,Fall on stairs or ladders in water transport injuring unspecified person,44826073,Condition,DC-2277
+ICD9CM,E834,Other fall from one level to another in water transport,44837664,Observation,DC-2277
+ICD9CM,E834.0,"Other fall from one level to another in water transport injuring occupant of small boat, unpowered",44832965,Condition,DC-2277
+ICD9CM,E834.1,"Other fall from one level to another in water transport injuring occupant of small boat, powered",44831829,Condition,DC-2277
+ICD9CM,E834.2,Other fall from one level to another in water transport injuring occupant of other watercraft -- crew,44834148,Condition,DC-2277
+ICD9CM,E834.3,Other fall from one level to another in water transport injuring occupant of other watercraft -- other than crew,44826074,Condition,DC-2277
+ICD9CM,E834.4,Other fall from one level to another in water transport injuring water skier,44832966,Condition,DC-2277
+ICD9CM,E834.5,Other fall from one level to another in water transport injuring swimmer,44822558,Condition,DC-2277
+ICD9CM,E834.6,"Other fall from one level to another in water transport injuring dockers, stevedores",44823697,Condition,DC-2277
+ICD9CM,E834.7,"Other fall from one level to another in water transport, occupant of military watercraft, any type",44826075,Condition,DC-2277
+ICD9CM,E834.8,Other fall from one level to another in water transport injuring other specified person,44821435,Condition,DC-2277
+ICD9CM,E834.9,Other fall from one level to another in water transport injuring unspecified person,44823698,Condition,DC-2277
+ICD9CM,E835,Other and unspecified fall in water transport,44834149,Observation,DC-2277
+ICD9CM,E835.0,"Other and unspecified fall in water transport injuring occupant of small boat, unpowered",44823699,Condition,DC-2277
+ICD9CM,E835.1,"Other and unspecified fall in water transport injuring occupant of small boat, powered",44836517,Condition,DC-2277
+ICD9CM,E835.2,Other and unspecified fall in water transport injuring occupant of other watercraft -- crew,44830666,Condition,DC-2277
+ICD9CM,E835.3,Other and unspecified fall in water transport injuring occupant of other watercraft -- other than crew,44820296,Condition,DC-2277
+ICD9CM,E835.4,Other and unspecified fall in water transport injuring water skier,44824881,Condition,DC-2277
+ICD9CM,E835.5,Other and unspecified fall in water transport injuring swimmer,44830667,Condition,DC-2277
+ICD9CM,E835.6,"Other and unspecified fall in water transport injuring dockers, stevedores",44827215,Condition,DC-2277
+ICD9CM,E835.7,"Other and unspecified fall in water transport, occupant of military watercraft, any type",44826076,Condition,DC-2277
+ICD9CM,E835.8,Other and unspecified fall in water transport injuring other specified person,44826077,Condition,DC-2277
+ICD9CM,E835.9,Other and unspecified fall in water transport injuring unspecified person,44820297,Condition,DC-2277
+ICD9CM,E836,Machinery accident in water transport,44823700,Observation,DC-2277
+ICD9CM,E836.0,"Machinery accident in water transport injuring occupant of small boat, unpowered",44821436,Condition,DC-2277
+ICD9CM,E836.1,"Machinery accident in water transport injuring occupant of small boat, powered",44829515,Condition,DC-2277
+ICD9CM,E836.2,Machinery accident in water transport injuring occupant of other watercraft -- crew,44830668,Condition,DC-2277
+ICD9CM,E836.3,Machinery accident in water transport injuring occupant of other watercraft -- other than crew,44829516,Condition,DC-2277
+ICD9CM,E836.4,Machinery accident in water transport injuring water skier,44828395,Condition,DC-2277
+ICD9CM,E836.5,Machinery accident in water transport injuring swimmer,44834150,Condition,DC-2277
+ICD9CM,E836.6,"Machinery accident in water transport injuring dockers, stevedores",44834151,Condition,DC-2277
+ICD9CM,E836.7,"Machinery accident in water transport, occupant of military watercraft, any type",44834152,Condition,DC-2277
+ICD9CM,E836.8,Machinery accident in water transport injuring other specified person,44820298,Condition,DC-2277
+ICD9CM,E836.9,Machinery accident in water transport injuring unspecified person,44830669,Condition,DC-2277
+ICD9CM,E837,"Explosion, fire, or burning in watercraft",44829517,Observation,DC-2277
+ICD9CM,E837.0,"Explosion, fire, or burning in watercraft injuring occupant of small boat, unpowered",44830670,Condition,DC-2277
+ICD9CM,E837.1,"Explosion, fire, or burning in watercraft injuring occupant of small boat, powered",44835326,Condition,DC-2277
+ICD9CM,E837.2,"Explosion, fire, or burning in watercraft injuring occupant of other watercraft -- crew",44822559,Condition,DC-2277
+ICD9CM,E837.3,"Explosion, fire, or burning in watercraft injuring occupant of other watercraft -- other than crew",44831830,Condition,DC-2277
+ICD9CM,E837.4,"Explosion, fire, or burning in watercraft injuring water skier",44832967,Condition,DC-2277
+ICD9CM,E837.5,"Explosion, fire, or burning in watercraft injuring swimmer",44832968,Condition,DC-2277
+ICD9CM,E837.6,"Explosion, fire, or burning in watercraft injuring dockers, stevedores",44821437,Condition,DC-2277
+ICD9CM,E837.7,"Explosion, fire, or burning in watercraft, occupant of military watercraft, any type",44822560,Condition,DC-2277
+ICD9CM,E837.8,"Explosion, fire, or burning in watercraft injuring other specified person",44836518,Condition,DC-2277
+ICD9CM,E837.9,"Explosion, fire, or burning in watercraft injuring unspecified person",44820299,Condition,DC-2277
+ICD9CM,E838,Other and unspecified water transport accident,44837665,Observation,DC-2277
+ICD9CM,E838.0,"Other and unspecified water transport accident injuring occupant of small boat, unpowered",44826078,Condition,DC-2277
+ICD9CM,E838.1,"Other and unspecified water transport accident injuring occupant of small boat, powered",44831831,Condition,DC-2277
+ICD9CM,E838.2,Other and unspecified water transport accident injuring occupant of other watercraft -- crew,44824882,Condition,DC-2277
+ICD9CM,E838.3,Other and unspecified water transport accident injuring occupant of other watercraft -- other than crew,44822561,Condition,DC-2277
+ICD9CM,E838.4,Other and unspecified water transport accident injuring water skier,44832969,Condition,DC-2277
+ICD9CM,E838.5,Other and unspecified water transport accident injuring swimmer,44820300,Condition,DC-2277
+ICD9CM,E838.6,"Other and unspecified water transport accident injuring dockers, stevedores",44824883,Condition,DC-2277
+ICD9CM,E838.7,"Other and unspecified water transport accident, occupant of military watercraft, any type",44820301,Condition,DC-2277
+ICD9CM,E838.8,Other and unspecified water transport accident injuring other specified person,44824884,Condition,DC-2277
+ICD9CM,E838.9,Other and unspecified water transport accident injuring unspecified person,44837666,Condition,DC-2277
+ICD9CM,E840,Accident to powered aircraft at takeoff or landing,44826079,Observation,DC-2277
+ICD9CM,E840.0,Accident to powered aircraft at takeoff or landing injuring occupant of spacecraft,44835327,Condition,DC-2277
+ICD9CM,E840.1,"Accident to powered aircraft at takeoff or landing injuring occupant of military aircraft, any",44830671,Condition,DC-2277
+ICD9CM,E840.2,Accident to powered aircraft at takeoff or landing injuring crew of commercial aircraft (powered) in surface to surface transport,44831832,Condition,DC-2277
+ICD9CM,E840.3,Accident to powered aircraft at takeoff or landing injuring other occupant of commercial aircraft (powered) in surface to surface transport,44824885,Condition,DC-2277
+ICD9CM,E840.4,Accident to powered aircraft at takeoff or landing injuring occupant of commercial aircraft (powered) in surface to air transport,44830672,Condition,DC-2277
+ICD9CM,E840.5,Accident to powered aircraft at takeoff or landing injuring occupant of other powered aircraft,44828396,Condition,DC-2277
+ICD9CM,E840.6,"Accident to powered aircraft at takeoff or landing injuring occupant of unpowered aircraft, except parachutist",44824886,Condition,DC-2277
+ICD9CM,E840.7,Accident to powered aircraft at takeoff or landing injuring parachutist (military) (other),44832970,Condition,DC-2277
+ICD9CM,E840.8,"Accident to powered aircraft at takeoff or landing injuring ground crew, airline employee",44835328,Condition,DC-2277
+ICD9CM,E840.9,Accident to powered aircraft at takeoff or landing injuring other person,44834153,Condition,DC-2277
+ICD9CM,E841,"Accident to powered aircraft, other and unspecified",44831833,Observation,DC-2277
+ICD9CM,E841.0,"Accident to powered aircraft, other and unspecified, injuring occupant of spacecraft",44820302,Condition,DC-2277
+ICD9CM,E841.1,"Accident to powered aircraft, other and unspecified, injuring occupant of military aircraft, any",44835329,Condition,DC-2277
+ICD9CM,E841.2,"Accident to powered aircraft, other and unspecified, injuring crew of commercial aircraft (powered) in surface to surface transport",44832971,Condition,DC-2277
+ICD9CM,E841.3,"Accident to powered aircraft, other and unspecified, injuring other occupant of commercial aircraft (powered) in surface to surface transport",44823701,Condition,DC-2277
+ICD9CM,E841.4,"Accident to powered aircraft, other and unspecified, injuring occupant of commercial aircraft (powered) in surface to air transport",44834154,Condition,DC-2277
+ICD9CM,E841.5,"Accident to powered aircraft, other and unspecified, injuring occupant of other powered aircraft",44821438,Condition,DC-2277
+ICD9CM,E841.6,"Accident to powered aircraft, other and unspecified, injuring occupant of unpowered aircraft, except parachutist",44835330,Condition,DC-2277
+ICD9CM,E841.7,"Accident to powered aircraft, other and unspecified, injuring parachutist (military) (other)",44822562,Condition,DC-2277
+ICD9CM,E841.8,"Accident to powered aircraft, other and unspecified, injuring ground crew, airline employee",44824887,Condition,DC-2277
+ICD9CM,E841.9,"Accident to powered aircraft, other and unspecified, injuring other person",44828397,Condition,DC-2277
+ICD9CM,E842,Accident to unpowered aircraft,44826080,Observation,DC-2277
+ICD9CM,E842.6,"Accident to unpowered aircraft injuring occupant of unpowered aircraft, except parachutist",44834155,Condition,DC-2277
+ICD9CM,E842.7,Accident to unpowered aircraft injuring parachutist (military) (other),44830673,Condition,DC-2277
+ICD9CM,E842.8,"Accident to unpowered aircraft injuring ground crew, airline employee",44837667,Condition,DC-2277
+ICD9CM,E842.9,Accident to unpowered aircraft injuring other person,44820303,Condition,DC-2277
+ICD9CM,E843,"Fall in, on, or from aircraft",44836519,Observation,DC-2277
+ICD9CM,E843.0,"Fall in, on, or from aircraft injuring occupant of spacecraft",44828398,Condition,DC-2277
+ICD9CM,E843.1,"Fall in, on, or from aircraft injuring occupant of military aircraft, any",44827216,Condition,DC-2277
+ICD9CM,E843.2,"Fall in, on, or from aircraft injuring crew of commercial aircraft (powered) in surface to surface transport",44822563,Condition,DC-2277
+ICD9CM,E843.3,"Fall in, on, or from aircraft injuring other occupant of commercial aircraft (powered) in surface to surface transport",44827217,Condition,DC-2277
+ICD9CM,E843.4,"Fall in, on, or from aircraft injuring occupant of commercial aircraft (powered) in surface to air transport",44823702,Condition,DC-2277
+ICD9CM,E843.5,"Fall in, on, or from aircraft injuring occupant of other powered aircraft",44830674,Condition,DC-2277
+ICD9CM,E843.6,"Fall in, on, or from aircraft injuring occupant of unpowered aircraft, except parachutist",44834156,Condition,DC-2277
+ICD9CM,E843.7,"Fall in, on, or from aircraft injuring parachutist (military) (other)",44831834,Condition,DC-2277
+ICD9CM,E843.8,"Fall in, on, or from aircraft injuring ground crew, airline employee",44822564,Condition,DC-2277
+ICD9CM,E843.9,"Fall in, on, or from aircraft injuring other person",44836520,Condition,DC-2277
+ICD9CM,E844,Other specified air transport accidents,44836521,Observation,DC-2277
+ICD9CM,E844.0,Other specified air transport accidents injuring occupant of spacecraft,44822565,Condition,DC-2277
+ICD9CM,E844.1,"Other specified air transport accidents injuring occupant of military aircraft, any",44837668,Condition,DC-2277
+ICD9CM,E844.2,Other specified air transport accidents injuring crew of commercial aircraft (powered) in surface to surface transport,44822566,Condition,DC-2277
+ICD9CM,E844.3,Other specified air transport accidents injuring other occupant of commercial aircraft (powered) in surface to surface transport,44820304,Condition,DC-2277
+ICD9CM,E844.4,Other specified air transport accidents injuring occupant of commercial aircraft (powered) in surface to air transport,44828399,Condition,DC-2277
+ICD9CM,E844.5,Other specified air transport accidents injuring occupant of other powered aircraft,44831835,Condition,DC-2277
+ICD9CM,E844.6,"Other specified air transport accidents injuring occupant of unpowered aircraft, except parachutist",44826081,Condition,DC-2277
+ICD9CM,E844.7,Other specified air transport accidents injuring parachutist (military) (other),44834157,Condition,DC-2277
+ICD9CM,E844.8,"Other specified air transport accidents injuring ground crew, airline employee",44822567,Condition,DC-2277
+ICD9CM,E844.9,Other specified air transport accidents injuring other person,44820305,Condition,DC-2277
+ICD9CM,E845,Accident involving spacecraft,44823703,Observation,DC-2277
+ICD9CM,E845.0,Accident involving spacecraft injuring occupant of spacecraft,44835331,Condition,DC-2277
+ICD9CM,E845.8,"Accident involving spacecraft injuring ground crew, airline employee",44832972,Condition,DC-2277
+ICD9CM,E845.9,Accident involving spacecraft injuring other person,44822568,Condition,DC-2277
+ICD9CM,E846,Accidents involving powered vehicles used solely within the buildings and premises of industrial or commercial establishment,44826082,Observation,DC-2277
+ICD9CM,E847,Accidents involving cable cars not running on rails,44823704,Observation,DC-2277
+ICD9CM,E848,"Accidents involving other vehicles, not elsewhere classifiable",44824888,Observation,DC-2277
+ICD9CM,E849.0,Home accidents,44832973,Observation,DC-2277
+ICD9CM,E849.1,Farm accidents,44837669,Observation,DC-2277
+ICD9CM,E849.2,Mine and quarry accidents,44824889,Observation,DC-2277
+ICD9CM,E849.3,Accidents occurring in industrial places and premises,44827218,Observation,DC-2277
+ICD9CM,E849.4,Accidents occurring in place for recreation and sport,44836522,Observation,DC-2277
+ICD9CM,E849.5,Street and highway accidents,44820306,Observation,DC-2277
+ICD9CM,E849.6,Accidents occurring in public building,44837670,Observation,DC-2277
+ICD9CM,E849.7,Accidents occurring in residential institution,44836523,Observation,DC-2277
+ICD9CM,E849.8,Accidents occurring in other specified places,44824890,Observation,DC-2277
+ICD9CM,E849.9,Accidents occurring in unspecified place,44823705,Observation,DC-2277
+ICD9CM,E910,Accidental drowning and submersion,44830690,Observation,DC-2277
+ICD9CM,E910.0,Accidental drowning and submersion while water-skiing,44830691,Observation,DC-2277
+ICD9CM,E910.1,Accidental drowning and submersion while engaged in other sport or recreational activity with diving equipment,44834180,Observation,DC-2277
+ICD9CM,E910.2,Accidental drowning and submersion while engaged in other sport or recreational activity without diving equipment,44835361,Observation,DC-2277
+ICD9CM,E910.3,Accidental drowning and submersion while swimming or diving for purposes other than recreation or sport,44834181,Observation,DC-2277
+ICD9CM,E910.4,Accidental drowning and submersion in bathtub,44826100,Observation,DC-2277
+ICD9CM,E910.8,Other accidental drowning or submersion,44832996,Observation,DC-2277
+ICD9CM,E910.9,Unspecified accidental drowning or submersion,44822595,Observation,DC-2277
+ICD9CM,E913,Accidental mechanical suffocation,44822596,Observation,DC-2277
+ICD9CM,E913.0,Accidental mechanical suffocation in bed or cradle,44827243,Observation,DC-2277
+ICD9CM,E913.1,Accidental mechanical suffocation by plastic bag,44821453,Observation,DC-2277
+ICD9CM,E913.2,Accidental mechanical suffocation due to lack of air (in closed place),44831858,Observation,DC-2277
+ICD9CM,E913.3,Accidental mechanical suffocation by falling earth or other substance,44823731,Observation,DC-2277
+ICD9CM,E913.8,Accidental mechanical suffocation by other specified means,44829543,Observation,DC-2277
+ICD9CM,E913.9,Accidental mechanical suffocation by unspecified means,44824907,Observation,DC-2277
+ICD9CM,E928.0,Prolonged stay in weightless environment,44836558,Observation,DC-2277
+ICD9CM,E950,Suicide and self-inflicted poisoning by solid or liquid substances,44834194,Condition,DC-2277
+ICD9CM,E950.0,"Suicide and self-inflicted poisoning by analgesics, antipyretics, and antirheumatics",44823755,Condition,DC-2277
+ICD9CM,E950.1,Suicide and self-inflicted poisoning by barbiturates,44827266,Condition,DC-2277
+ICD9CM,E950.2,Suicide and self-inflicted poisoning by other sedatives and hypnotics,44834195,Condition,DC-2277
+ICD9CM,E950.3,Suicide and self-inflicted poisoning by tranquilizers and other psychotropic agents,44830707,Condition,DC-2277
+ICD9CM,E950.4,Suicide and self-inflicted poisoning by other specified drugs and medicinal substances,44822618,Condition,DC-2277
+ICD9CM,E950.5,Suicide and self-inflicted poisoning by unspecified drug or medicinal substance,44827267,Condition,DC-2277
+ICD9CM,E950.6,Suicide and self-inflicted poisoning by agricultural and horticultural chemical and pharmaceutical preparations other than plant foods and fertilizers,44837719,Condition,DC-2277
+ICD9CM,E950.7,Suicide and self-inflicted poisoning by corrosive and caustic substances,44826117,Condition,DC-2277
+ICD9CM,E950.8,Suicide and self-inflicted poisoning by arsenic and its compounds,44823756,Condition,DC-2277
+ICD9CM,E950.9,Suicide and self-inflicted poisoning by other and unspecified solid and liquid substances,44827268,Condition,DC-2277
+ICD9CM,E951,Suicide and self-inflicted poisoning by gases in domestic use,44828447,Condition,DC-2277
+ICD9CM,E951.0,Suicide and self-inflicted poisoning by gas distributed by pipeline,44821472,Condition,DC-2277
+ICD9CM,E951.1,Suicide and self-inflicted poisoning by liquefied petroleum gas distributed in mobile containers,44820346,Condition,DC-2277
+ICD9CM,E951.8,Suicide and self-inflicted poisoning by other utility gas,44834196,Condition,DC-2277
+ICD9CM,E952,Suicide and self-inflicted poisoning by other gases and vapors,44820347,Condition,DC-2277
+ICD9CM,E952.0,Suicide and self-inflicted poisoning by motor vehicle exhaust gas,44826118,Condition,DC-2277
+ICD9CM,E952.1,Suicide and self-inflicted poisoning by other carbon monoxide,44830708,Condition,DC-2277
+ICD9CM,E952.8,Suicide and self-inflicted poisoning by other specified gases and vapors,44826119,Condition,DC-2277
+ICD9CM,E952.9,Suicide and self-inflicted poisoning by unspecified gases and vapors,44833012,Condition,DC-2277
+ICD9CM,E953,"Suicide and self-inflicted injury by hanging, strangulation, and suffocation",44826120,Condition,DC-2277
+ICD9CM,E953.0,Suicide and self-inflicted injury by hanging,44823757,Condition,DC-2277
+ICD9CM,E953.1,Suicide and self-inflicted injury by suffocation by plastic bag,44823758,Condition,DC-2277
+ICD9CM,E953.8,Suicide and self-inflicted injury by other specified means,44830709,Condition,DC-2277
+ICD9CM,E953.9,Suicide and self-inflicted injury by unspecified means,44831875,Condition,DC-2277
+ICD9CM,E954,Suicide and self-inflicted injury by submersion [drowning],44820348,Condition,DC-2277
+ICD9CM,E955,"Suicide and self-inflicted injury by firearms, air guns, and explosives",44837720,Condition,DC-2277
+ICD9CM,E955.0,Suicide and self-inflicted injury by handgun,44823759,Condition,DC-2277
+ICD9CM,E955.1,Suicide and self-inflicted injury by shotgun,44826121,Condition,DC-2277
+ICD9CM,E955.2,Suicide and self-inflicted injury by hunting rifle,44829556,Condition,DC-2277
+ICD9CM,E955.3,Suicide and self-inflicted injury by military firearms,44826122,Condition,DC-2277
+ICD9CM,E955.4,Suicide and self-inflicted injury by other and unspecified firearm,44828448,Condition,DC-2277
+ICD9CM,E955.5,Suicide and self-inflicted injury by explosives,44833013,Condition,DC-2277
+ICD9CM,E955.6,Suicide and self-inflicted injury by air gun,44822619,Condition,DC-2277
+ICD9CM,E955.7,Suicide and self-inflicted injury by paintball gun,44828449,Condition,DC-2277
+ICD9CM,E955.9,"Suicide and self-inflicted injury by firearms and explosives, unspecified",44835383,Condition,DC-2277
+ICD9CM,E956,Suicide and self-inflicted injury by cutting and piercing instrument,44829557,Condition,DC-2277
+ICD9CM,E957,Suicide and self-inflicted injuries by jumping from high place,44835384,Condition,DC-2277
+ICD9CM,E957.0,Suicide and self-inflicted injuries by jumping from residential premises,44829558,Condition,DC-2277
+ICD9CM,E957.1,Suicide and self-inflicted injuries by jumping from other man-made structures,44824923,Condition,DC-2277
+ICD9CM,E957.2,Suicide and self-inflicted injuries by jumping from natural sites,44821473,Condition,DC-2277
+ICD9CM,E957.9,Suicide and self-inflicted injuries by jumping from unspecified site,44833014,Condition,DC-2277
+ICD9CM,E958,Suicide and self-inflicted injury by other and unspecified means,44826123,Condition,DC-2277
+ICD9CM,E958.0,Suicide and self-inflicted injury by jumping or lying before moving object,44830710,Condition,DC-2277
+ICD9CM,E958.1,"Suicide and self-inflicted injury by burns, fire",44822620,Condition,DC-2277
+ICD9CM,E958.2,Suicide and self-inflicted injury by scald,44828450,Condition,DC-2277
+ICD9CM,E958.3,Suicide and self-inflicted injury by extremes of cold,44834197,Condition,DC-2277
+ICD9CM,E958.4,Suicide and self-inflicted injury by electrocution,44821474,Condition,DC-2277
+ICD9CM,E958.5,Suicide and self-inflicted injury by crashing of motor vehicle,44822621,Condition,DC-2277
+ICD9CM,E958.6,Suicide and self-inflicted injury by crashing of aircraft,44830711,Condition,DC-2277
+ICD9CM,E958.7,"Suicide and self-inflicted injury by caustic substances, except poisoning",44827269,Condition,DC-2277
+ICD9CM,E958.8,Suicide and self-inflicted injury by other specified means,44836573,Condition,DC-2277
+ICD9CM,E958.9,Suicide and self-inflicted injury by unspecified means,44837721,Condition,DC-2277
+ICD9CM,E959,Late effects of self-inflicted injury,44827270,Condition,DC-2277
+ICD9CM,E960,"Fight, brawl, rape",44829559,Observation,DC-2277
+ICD9CM,E960.0,Unarmed fight or brawl,44822622,Observation,DC-2277
+ICD9CM,E960.1,Rape,44823760,Observation,DC-2277
+ICD9CM,E961,"Assault by corrosive or caustic substance, except poisoning",44831876,Observation,DC-2277
+ICD9CM,E962,Assault by poisoning,44827271,Observation,DC-2277
+ICD9CM,E962.0,Assault by drugs and medicinal substances,44837722,Observation,DC-2277
+ICD9CM,E962.1,Assault by other solid and liquid substances,44831877,Observation,DC-2277
+ICD9CM,E962.2,Assault by other gases and vapors,44836574,Observation,DC-2277
+ICD9CM,E962.9,Assault by unspecified poisoning,44827272,Observation,DC-2277
+ICD9CM,E963,Assault by hanging and strangulation,44837723,Observation,DC-2277
+ICD9CM,E964,Assault by submersion [drowning],44830712,Observation,DC-2277
+ICD9CM,E965,Assault by firearms and explosives,44835385,Observation,DC-2277
+ICD9CM,E965.0,Assault by handgun,44821475,Observation,DC-2277
+ICD9CM,E965.1,Assault by shotgun,44827273,Observation,DC-2277
+ICD9CM,E965.2,Assault by hunting rifle,44833015,Observation,DC-2277
+ICD9CM,E965.3,Assault by military firearms,44822623,Observation,DC-2277
+ICD9CM,E965.4,Assault by other and unspecified firearm,44827274,Observation,DC-2277
+ICD9CM,E965.5,Assault by antipersonnel bomb,44828451,Observation,DC-2277
+ICD9CM,E965.6,Assault by gasoline bomb,44835386,Observation,DC-2277
+ICD9CM,E965.7,Assault by letter bomb,44820349,Observation,DC-2277
+ICD9CM,E965.8,Assault by other specified explosive,44837724,Observation,DC-2277
+ICD9CM,E965.9,Assault by unspecified explosive,44820350,Observation,DC-2277
+ICD9CM,E966,Assault by cutting and piercing instrument,44828452,Observation,DC-2277
+ICD9CM,E967,Perpetrator of child and adult abuse,44820351,Condition,DC-2277
+ICD9CM,E967.0,"Perpetrator of child and adult abuse, by father, stepfather, or boyfriend",44829560,Condition,DC-2277
+ICD9CM,E967.1,"Perpetrator of child and adult abuse, by other specified person",44823761,Condition,DC-2277
+ICD9CM,E967.2,"Perpetrator of child and adult abuse, by mother, stepmother, or girlfriend",44834198,Condition,DC-2277
+ICD9CM,E967.3,"Perpetrator of child and adult abuse, by spouse or partner",44829561,Condition,DC-2277
+ICD9CM,E967.4,"Perpetrator of child and adult abuse, by child",44824924,Condition,DC-2277
+ICD9CM,E967.5,"Perpetrator of child and adult abuse, by sibling",44821476,Condition,DC-2277
+ICD9CM,E967.6,"Perpetrator of child and adult abuse, by grandparent",44820352,Condition,DC-2277
+ICD9CM,E967.7,"Perpetrator of child and adult abuse, by other relative",44826124,Condition,DC-2277
+ICD9CM,E967.8,"Perpetrator of child and adult abuse, by non-related caregiver",44831878,Condition,DC-2277
+ICD9CM,E967.9,"Perpetrator of child and adult abuse, by unspecified person",44828453,Condition,DC-2277
+ICD9CM,E968,Assault by other and unspecified means,44830713,Observation,DC-2277
+ICD9CM,E968.0,Assault by fire,44827275,Observation,DC-2277
+ICD9CM,E968.1,Assault by pushing from a high place,44837725,Observation,DC-2277
+ICD9CM,E968.2,Assault by striking by blunt or thrown object,44829562,Observation,DC-2277
+ICD9CM,E968.3,Assault by hot liquid,44826125,Observation,DC-2277
+ICD9CM,E968.4,Assault by criminal neglect,44824925,Observation,DC-2277
+ICD9CM,E968.5,Assault by transport vehicle,44837726,Observation,DC-2277
+ICD9CM,E968.6,Assault by air gun,44821477,Observation,DC-2277
+ICD9CM,E968.7,Assault by human bite,44824926,Observation,DC-2277
+ICD9CM,E968.8,Assault by other specified means,44820353,Observation,DC-2277
+ICD9CM,E968.9,Assault by unspecified means,44822624,Observation,DC-2277
+ICD9CM,E969,Late effects of injury purposely inflicted by other person,44826126,Condition,DC-2277
+ICD9CM,E970,Injury due to legal intervention by firearms,44835387,Condition,DC-2277
+ICD9CM,E971,Injury due to legal intervention by explosives,44822625,Condition,DC-2277
+ICD9CM,E972,Injury due to legal intervention by gas,44830714,Condition,DC-2277
+ICD9CM,E973,Injury due to legal intervention by blunt object,44826127,Condition,DC-2277
+ICD9CM,E974,Injury due to legal intervention by cutting and piercing instrument,44830715,Condition,DC-2277
+ICD9CM,E975,Injury due to legal intervention by other specified means,44831879,Condition,DC-2277
+ICD9CM,E976,Injury due to legal intervention by unspecified means,44823762,Condition,DC-2277
+ICD9CM,E977,Late effects of injuries due to legal intervention,44823763,Condition,DC-2277
+ICD9CM,E978,Legal execution,44831880,Observation,DC-2277
+ICD9CM,E979,Terrorism,44821478,Observation,DC-2277
+ICD9CM,E979.0,Terrorism involving explosion of marine weapons,44830716,Condition,DC-2277
+ICD9CM,E979.1,Terrorism involving destruction of aircraft,44822626,Condition,DC-2277
+ICD9CM,E979.2,Terrorism involving other explosions and fragments,44836575,Condition,DC-2277
+ICD9CM,E979.3,Terrorism involving fires,44830717,Condition,DC-2277
+ICD9CM,E979.4,Terrorism involving firearms,44828454,Condition,DC-2277
+ICD9CM,E979.5,Terrorism involving nuclear weapons,44820354,Condition,DC-2277
+ICD9CM,E979.6,Terrorism involving biological weapons,44833016,Condition,DC-2277
+ICD9CM,E979.7,Terrorism involving chemical weapons,44828455,Condition,DC-2277
+ICD9CM,E979.8,Terrorism involving other means,44830718,Condition,DC-2277
+ICD9CM,E979.9,Terrorism secondary effects,44830719,Condition,DC-2277
+ICD9CM,E990,Injury due to war operations by fires and conflagrations,44828459,Condition,DC-2277
+ICD9CM,E990.0,Injury due to war operations from gasoline bomb,44824930,Condition,DC-2277
+ICD9CM,E990.1,Injury due to war operations from flamethrower,44823767,Condition,DC-2277
+ICD9CM,E990.2,Injury due to war operations from incendiary bullet,44833018,Condition,DC-2277
+ICD9CM,E990.3,Injury due to war operations from fire caused indirectly from conventional weapon,44824931,Condition,DC-2277
+ICD9CM,E990.9,Injury due to war operations from other and unspecified source,44835396,Condition,DC-2277
+ICD9CM,E991,Injury due to war operations by bullets and fragments,44827276,Condition,DC-2277
+ICD9CM,E991.0,Injury due to war operations from rubber bullets (rifle),44822631,Condition,DC-2277
+ICD9CM,E991.1,Injury due to war operations from pellets (rifle),44822632,Condition,DC-2277
+ICD9CM,E991.2,Injury due to war operations from other bullets,44821483,Condition,DC-2277
+ICD9CM,E991.3,Injury due to war operations from antipersonnel bomb (fragments),44831886,Condition,DC-2277
+ICD9CM,E991.4,Injury due to war operations by fragments from munitions,44827277,Condition,DC-2277
+ICD9CM,E991.5,Injury due to war operations by fragments from person-borne improvised explosive device [IED],44823768,Condition,DC-2277
+ICD9CM,E991.6,Injury due to war operations by fragments from vehicle-borne improvised explosive device [IED],44822633,Condition,DC-2277
+ICD9CM,E991.7,Injury due to war operations by fragments from other improvised explosive device [IED],44834202,Condition,DC-2277
+ICD9CM,E991.8,Injury due to war operations by fragments from weapons,44822634,Condition,DC-2277
+ICD9CM,E991.9,Injury due to war operations from other and unspecified fragments,44836579,Condition,DC-2277
+ICD9CM,E992,Injury due to war operations by explosion of marine weapons,44823769,Condition,DC-2277
+ICD9CM,E992.0,Injury due to torpedo,44834203,Condition,DC-2277
+ICD9CM,E992.1,Injury due to depth charge,44830721,Condition,DC-2277
+ICD9CM,E992.2,Injury due to marine mines,44835397,Condition,DC-2277
+ICD9CM,E992.3,Injury due to sea-based artillery shell,44833019,Condition,DC-2277
+ICD9CM,E992.8,Injury due to war operations by other marine weapons,44827278,Condition,DC-2277
+ICD9CM,E992.9,Injury due to war operations by unspecified marine weapon,44827279,Condition,DC-2277
+ICD9CM,E993,Injury due to war operations by other explosion,44834204,Condition,DC-2277
+ICD9CM,E993.0,Injury due to war operations by aerial bomb,44820360,Condition,DC-2277
+ICD9CM,E993.1,Injury due to war operations by guided missile,44833020,Condition,DC-2277
+ICD9CM,E993.2,Injury due to war operations by mortar,44831887,Condition,DC-2277
+ICD9CM,E993.3,Injury due to war operations by person-borne improvised explosive device [IED],44836580,Condition,DC-2277
+ICD9CM,E993.4,Injury due to war operations by vehicle-borne improvised explosive device [IED],44830722,Condition,DC-2277
+ICD9CM,E993.5,Injury due to war operations by other improvised explosive device [IED],44822635,Condition,DC-2277
+ICD9CM,E993.6,Injury due to war operations by unintentional detonation of own munitions,44828460,Condition,DC-2277
+ICD9CM,E993.7,Injury due to war operations by unintentional discharge of own munitions launch device,44827280,Condition,DC-2277
+ICD9CM,E993.8,Injury due to war operations by other specified explosion,44836581,Condition,DC-2277
+ICD9CM,E993.9,Injury due to war operations by unspecified explosion,44822636,Condition,DC-2277
+ICD9CM,E994,Injury due to war operations by destruction of aircraft,44821484,Condition,DC-2277
+ICD9CM,E994.0,Injury due to war operations by destruction of aircraft due to enemy fire or explosives,44821485,Condition,DC-2277
+ICD9CM,E994.1,Injury due to war operations by unintentional destruction of aircraft due to own onboard explosives,44826131,Condition,DC-2277
+ICD9CM,E994.2,Injury due to war operations by destruction of aircraft due to collision with other aircraft,44823770,Condition,DC-2277
+ICD9CM,E994.3,Injury due to war operations by destruction of aircraft due to onboard fire,44824932,Condition,DC-2277
+ICD9CM,E994.8,Injury due to war operations by other destruction of aircraft,44822637,Condition,DC-2277
+ICD9CM,E994.9,Injury due to war operations by unspecified destruction of aircraft,44831888,Condition,DC-2277
+ICD9CM,E995,Injury due to war operations by other and unspecified forms of conventional warfare,44830723,Condition,DC-2277
+ICD9CM,E995.0,Injury due to war operations by unarmed hand-to-hand combat,44821486,Condition,DC-2277
+ICD9CM,E995.1,"Injury due to war operations, struck by blunt object",44835398,Condition,DC-2277
+ICD9CM,E995.2,Injury due to war operations by piercing object,44826132,Condition,DC-2277
+ICD9CM,E995.3,Injury due to war operations by intentional restriction of air and airway,44833021,Condition,DC-2277
+ICD9CM,E995.4,Injury due to war operations by unintentional drowning due to inability to surface or obtain air,44831889,Condition,DC-2277
+ICD9CM,E995.8,Injury due to war operations by other forms of conventional warfare,44828461,Condition,DC-2277
+ICD9CM,E995.9,Injury due to war operations by unspecified form of conventional warfare,44834205,Condition,DC-2277
+ICD9CM,E996,Injury due to war operations by nuclear weapons,44827281,Condition,DC-2277
+ICD9CM,E996.0,Injury due to war operations by direct blast effect of nuclear weapon,44833022,Condition,DC-2277
+ICD9CM,E996.1,Injury due to war operations by indirect blast effect of nuclear weapon,44828462,Condition,DC-2277
+ICD9CM,E996.2,Injury due to war operations by thermal radiation effect of nuclear weapon,44824933,Condition,DC-2277
+ICD9CM,E996.3,Injury due to war operations by nuclear radiation effects,44823771,Condition,DC-2277
+ICD9CM,E996.8,Injury due to war operations by other effects of nuclear weapons,44828463,Condition,DC-2277
+ICD9CM,E996.9,Injury due to war operations by unspecified effect of nuclear weapon,44829566,Condition,DC-2277
+ICD9CM,E997,Injury due to war operations by other forms of unconventional warfare,44828464,Condition,DC-2277
+ICD9CM,E997.0,Injury due to war operations by lasers,44837731,Condition,DC-2277
+ICD9CM,E997.1,Injury due to war operations by biological warfare,44822638,Condition,DC-2277
+ICD9CM,E997.2,"Injury due to war operations by gases, fumes, and chemicals",44837732,Condition,DC-2277
+ICD9CM,E997.3,"Injury due to war operations by weapon of mass destruction [WMD], unspecified",44835399,Condition,DC-2277
+ICD9CM,E997.8,Injury due to other specified forms of unconventional warfare,44836582,Condition,DC-2277
+ICD9CM,E997.9,Injury due to unspecified form of unconventional warfare,44837733,Condition,DC-2277
+ICD9CM,E998,Injury due to war operations but occurring after cessation of hostilities,44829567,Condition,DC-2277
+ICD9CM,E998.0,Injury due to war operations but occurring after cessation of hostilities by explosion of mines,44835400,Condition,DC-2277
+ICD9CM,E998.1,Injury due to war operations but occurring after cessation of hostilities by explosion of bombs,44828465,Condition,DC-2277
+ICD9CM,E998.8,Injury due to other war operations but occurring after cessation of hostilities,44829568,Condition,DC-2277
+ICD9CM,E998.9,Injury due to unspecified war operations but occurring after cessation of hostilities,44830724,Condition,DC-2277
+ICD9CM,E999,Late effect of injury due to war operations and terrorism,44830725,Condition,DC-2277
+ICD9CM,E999.0,Late effect of injury due to war operations,44830726,Condition,DC-2277
+ICD9CM,E999.1,Late effect of injury due to terrorism,44830727,Condition,DC-2277
+ICD9CM,V30,Single liveborn,44833088,Condition,DC-2277
+ICD9CM,V30.0,"Single liveborn, born in hospital",44835459,Observation,DC-2277
+ICD9CM,V30.00,"Single liveborn, born in hospital, delivered without mention of cesarean section",44833089,Observation,DC-2277
+ICD9CM,V30.01,"Single liveborn, born in hospital, delivered by cesarean section",44826183,Observation,DC-2277
+ICD9CM,V30.1,"Single liveborn, born before admission to hospital",44837806,Condition,DC-2277
+ICD9CM,V30.2,"Single liveborn, born outside hospital and not hospitalized",44824998,Observation,DC-2277
+ICD9CM,V31,"Twin birth, mate liveborn",44827346,Condition,DC-2277
+ICD9CM,V31.0,"Twin, mate liveborn, born in hospital",44824999,Condition,DC-2277
+ICD9CM,V31.00,"Twin birth, mate liveborn, born in hospital, delivered without mention of cesarean section",44828529,Condition,DC-2277
+ICD9CM,V31.01,"Twin birth, mate liveborn, born in hospital, delivered by cesarean section",44827347,Condition,DC-2277
+ICD9CM,V31.1,"Twin birth, mate liveborn, born before admission to hospital",44821536,Condition,DC-2277
+ICD9CM,V31.2,"Twin birth, mate liveborn, born outside hospital and not hospitalized",44823817,Condition,DC-2277
+ICD9CM,V32,"Twin birth, mate stillborn",44826184,Condition,DC-2277
+ICD9CM,V32.0,"Twin, mate stillborn, born in hospital",44837808,Condition,DC-2277
+ICD9CM,V32.00,"Twin birth, mate stillborn, born in hospital, delivered without mention of cesarean section",44823818,Condition,DC-2277
+ICD9CM,V32.01,"Twin birth, mate stillborn, born in hospital, delivered by cesarean section",44830777,Condition,DC-2277
+ICD9CM,V32.1,"Twin birth, mate stillborn, born before admission to hospital",44830778,Condition,DC-2277
+ICD9CM,V32.2,"Twin birth, mate stillborn, born outside hospital and not hospitalized",44820415,Condition,DC-2277
+ICD9CM,V33,"Twin birth, unspecified whether mate liveborn or stillborn",44828531,Condition,DC-2277
+ICD9CM,V33.0,"Twin, unspecified, born in hospital",44831935,Condition,DC-2277
+ICD9CM,V33.00,"Twin birth, unspecified whether mate liveborn or stillborn, born in hospital, delivered without mention of cesarean section",44825000,Condition,DC-2277
+ICD9CM,V33.01,"Twin birth, unspecified whether mate liveborn or stillborn, born in hospital, delivered by cesarean section",44826185,Observation,DC-2277
+ICD9CM,V33.1,"Twin birth, unspecified whether mate liveborn or stillborn, born before admission to hospital",44820416,Condition,DC-2277
+ICD9CM,V33.2,"Twin birth, unspecified whether mate liveborn or stillborn, born outside hospital and not hospitalized",44823819,Condition,DC-2277
+ICD9CM,V34,"Other multiple birth (three or more), mates all liveborn",44831936,Condition,DC-2277
+ICD9CM,V34.0,"Other multiple, mates all liveborn, born in hospital",44833091,Condition,DC-2277
+ICD9CM,V34.00,"Other multiple birth (three or more), mates all liveborn, born in hospital, delivered without mention of cesarean section",44823820,Condition,DC-2277
+ICD9CM,V34.01,"Other multiple birth (three or more), mates all liveborn, born in hospital, delivered by cesarean section",44822689,Condition,DC-2277
+ICD9CM,V34.1,"Other multiple birth (three or more), mates all liveborn, born before admission to hospital",44830780,Condition,DC-2277
+ICD9CM,V34.2,"Other multiple birth (three or more), mates all liveborn, born outside hospital and not hospitalized",44820417,Condition,DC-2277
+ICD9CM,V35,"Other multiple birth (three or more), mates all stillborn",44835463,Condition,DC-2277
+ICD9CM,V35.0,"Other multiple, mates all stillborn, born in hospital",44834265,Condition,DC-2277
+ICD9CM,V35.00,"Other multiple birth (three or more), mates all still born, born in hospital, delivered without mention of cesarean section",44834266,Condition,DC-2277
+ICD9CM,V35.01,"Other multiple birth (three or more), mates all still born, born in hospital, delivered by cesarean section",44821537,Condition,DC-2277
+ICD9CM,V35.1,"Other multiple birth (three or more), mates all stillborn, born before admission to hospital",44820418,Condition,DC-2277
+ICD9CM,V35.2,"Other multiple birth (three or more), mates all stillborn, born outside of hospital and not hospitalized",44822691,Condition,DC-2277
+ICD9CM,V36,"Other multiple birth (three or more), mates liveborn and stillborn",44833092,Condition,DC-2277
+ICD9CM,V36.0,"Other multiple, mates liveborn and stillborn, born in hospital",44833093,Condition,DC-2277
+ICD9CM,V36.00,"Other multiple birth (three or more), mates liveborn and stillborn, born in hospital, delivered without mention of cesarean section",44821538,Condition,DC-2277
+ICD9CM,V36.01,"Other multiple birth (three or more), mates liveborn and stillborn, born in hospital, delivered without mention of cesarean section",44828532,Condition,DC-2277
+ICD9CM,V36.1,"Other multiple birth (three or more), mates liveborn and stillborn, born before admission to hospital",44828533,Condition,DC-2277
+ICD9CM,V36.2,"Other multiple birth (three or more), mates liveborn and stillborn, born outside hospital and not hospitalized",44830782,Condition,DC-2277
+ICD9CM,V37,"Other multiple birth (three or more), unspecified whether mates liveborn or stillborn",44826187,Condition,DC-2277
+ICD9CM,V37.0,"Other multiple, unspecified, born in hospital",44821539,Condition,DC-2277
+ICD9CM,V37.00,"Other multiple birth (three or more), unspecified whether mates liveborn or stillborn, born in hospital, delivered without mention of cesarean section",44825001,Observation,DC-2277
+ICD9CM,V37.01,"Other multiple birth (three or more), unspecified whether mates liveborn or stillborn, born in hospital, delivered by cesarean section",44834267,Condition,DC-2277
+ICD9CM,V37.1,"Other multiple birth (three or more), unspecified whether mates liveborn or stillborn, born before admission to hospital",44827350,Condition,DC-2277
+ICD9CM,V37.2,"Other multiple birth (three or more), unspecified whether mates liveborn or stillborn, born outside of hospital",44828535,Condition,DC-2277
+ICD9CM,V39,"Liveborn, unspecified whether single, twin, or multiple",44823824,Condition,DC-2277
+ICD9CM,V39.0,"Other liveborn, unspecified, born in hospital",44831938,Observation,DC-2277
+ICD9CM,V39.00,"Liveborn, unspecified whether single, twin or multiple, born in hospital, delivered without mention of cesarean section",44829629,Observation,DC-2277
+ICD9CM,V39.01,"Liveborn, unspecified whether single, twin or multiple, born in hospital, delivered by cesarean section",44821540,Observation,DC-2277
+ICD9CM,V39.1,"Liveborn, unspecified whether single, twin or multiple, born before admission to hospital",44829630,Condition,DC-2277
+ICD9CM,V39.2,"Liveborn, unspecified whether single, twin or multiple, born outside hospital and not hospitalized",44837810,Condition,DC-2277
+ICD9CM,V45.77,"Acquired absence of organ, genital organs",44837823,Condition,DC-2277
+Multum,798,chlorpheniramine/methscopolamine/PE 2 mg-1.25 mg-10 mg/5 mL oral syrup,45417059,Drug,DC-2277
+Multum,799,"Cefaclor, 500 mg oral capsule",45412177,Drug,DC-2277
+Multum,800,"Bethanechol Chloride, 5 mg oral tablet",45410955,Drug,DC-2277
+PPI,ActiveDuty_AvtiveDutyServeStatus,Active Duty: Active Duty Serve Status,1585852,Observation,DC-2277
+PPI,ArizonaSitePairing_AZSitepairingLocation,The All of Us Research Program is enrolling participants at the following healthcare sites. At which location do you wish to schedule your visit?,1585470,Observation,DC-2277
+PPI,Asian_AsianSpecific,Asian: Asian Specific,1586151,Observation,DC-2277
+PPI,BlackNoneOfTheseDescribeMe_BlackFreeText,Black None Of These Describe Me: Black Free Text,1585628,Observation,DC-2277
+PPI,Black_BlackSpecific,Black: Black Specific,1586152,Observation,DC-2277
+PPI,CHCSitePairing_CHCCareatLocation,Please indicate where you have received care at one of the following locations: CHC Inc Middletown CHC Inc Meriden,1585593,Observation,DC-2277
+PPI,CaliforniaSitePairing_CaliforniaUniversityCare,Have you ever received care at any of the following health centers? University of California Irvine Health University of Southern California University of California San Diego,1585576,Observation,DC-2277
+PPI,ColumbiaSitePairing_ColumbiaCare,Have you ever received care at any of the following?,1585580,Observation,DC-2277
+PPI,ConsentPII_EmailAddress,Consent PII: Email Address,1585260,Observation,DC-2277
+PPI,ConsentPII_HelpWithConsentSignature,Consent PII: Help With Consent Signature,43529713,Observation,DC-2277
+PPI,ConsentPII_VerifiedPrimaryPhoneNumber,Consent PII: Verified Primary Phone Number,1384421,Observation,DC-2277
+PPI,DaughterDiagnosisHistory_WhichConditions,Daughter Diagnosis History: Which Conditions,43529097,Observation,DC-2277
+PPI,EHRConsentPII_ILHIPPAWitnessSignature,EHR Consent PII: IL HIPPA Witness Signature,43529107,Observation,DC-2277
+PPI,EHRConsentPII_Signature,EHR Consent PII: Signature,1586102,Observation,DC-2277
+PPI,EHRConsentPII_TodaysDate,EHR Consent PII: Todays Date,1586103,Observation,DC-2277
+PPI,EHRConsentPII_TodaysDateILHIPPAWitness,EHR Consent PII: Todays Date IL HIPPA Witness,43529104,Observation,DC-2277
+PPI,EastSoutheastMichigan_CareAtHenryFord,"Have you ever received care at a Henry Ford Health System facility or are you currently affiliated with the institution? This many include receiving care in a HFHS hospital, urgent care, emergency department, outpatient clinic or thru HFHS employee hea...",1585568,Observation,DC-2277
+PPI,EmploymentWorkAddress_AddressLineOne,Employment Work Address: Address Line One,1585962,Observation,DC-2277
+PPI,EmploymentWorkAddress_AddressLineTwo,Employment Work Address: Address Line Two,1585963,Observation,DC-2277
+PPI,EmploymentWorkAddress_City,Employment Work Address: City,1585964,Observation,DC-2277
+PPI,EmploymentWorkAddress_Country,Employment Work Address: Country,1585967,Observation,DC-2277
+PPI,EmploymentWorkAddress_ZipCode,Employment Work Address: Zip Code,1585966,Observation,DC-2277
+PPI,Employment_EmploymentWorkAddress,Employment: Employment Work Address,1585961,Observation,DC-2277
+PPI,ExtraConsent_CABoRSignature,Extra Consent: CA Bo R Signature,1585490,Observation,DC-2277
+PPI,ExtraConsent_EverReceivedUPMCCare,Have you ever received care at a UPMC healthcare provider?,1585553,Observation,DC-2277
+PPI,ExtraConsent_ScheduledWithPACares,Have you already scheduled an appointment with your local PA Cares for Us team for physical measurements and biosample collection?,1585556,Observation,DC-2277
+PPI,ExtraConsent_Signature,Extra Consent: Signature,1585486,Observation,DC-2277
+PPI,ExtraConsent__CABoRTodaysDate,Extra Consent: : CA Bo R Todays Date,1585487,Observation,DC-2277
+PPI,FatherDiagnosisHistory_WhichConditions,Father Diagnosis History: Which Conditions,43529098,Observation,DC-2277
+PPI,GenderIdentity_SexualityCloserDescription,Gender Identity: Sexuality Closer Description,1585357,Observation,DC-2277
+PPI,Gender_CloserGenderDescription,Gender: Closer Gender Description,1585348,Observation,DC-2277
+PPI,GrandparentDiagnosisHistory_WhichConditions,Grandparent Diagnosis History: Which Conditions,43529101,Observation,DC-2277
+PPI,HispanicNoneOfTheseDescribeMe_HispanicFreeText,Hispanic None Of These Describe Me: Hispanic Free Text,1585835,Observation,DC-2277
+PPI,Hispanic_HispanicSpecific,Hispanic: Hispanic Specific,1586156,Observation,DC-2277
+PPI,HowOldPeripheralVascularDisease_FreeTextBox,How old text box,43528945,Meas Value,DC-2277
+PPI,HowOldWereYouADHD_FreeTextBox,How old text box,43528949,Meas Value,DC-2277
+PPI,HowOldWereYouAcidReflux_FreeTextBox,How old text box,43528946,Meas Value,DC-2277
+PPI,HowOldWereYouAcne_FreeTextBox,How old text box,43528947,Meas Value,DC-2277
+PPI,HowOldWereYouAcuteKidneyNoDialysis_FreeTextBox,How old text box,43528948,Meas Value,DC-2277
+PPI,HowOldWereYouAlcoholOrDrug_FreeTextBox,How old text box,43528950,Meas Value,DC-2277
+PPI,HowOldWereYouAllergies_FreeTextBox,How old text box,43528951,Meas Value,DC-2277
+PPI,HowOldWereYouAmytrophicLateral_FreeTextBox,How old text box,43528952,Meas Value,DC-2277
+PPI,HowOldWereYouAnemia_FreeTextBox,How old text box,43528953,Meas Value,DC-2277
+PPI,HowOldWereYouAnxiety_FreeTextBox,How old text box,43528954,Meas Value,DC-2277
+PPI,HowOldWereYouArthritis_FreeTextBox,How old text box,43528955,Meas Value,DC-2277
+PPI,HowOldWereYouAsthma_FreeTextBox,How old text box,43528956,Meas Value,DC-2277
+PPI,HowOldWereYouAtrialFibrillation_FreeTextBox,How old text box,43528957,Meas Value,DC-2277
+PPI,HowOldWereYouBipolar_FreeTextBox,How old text box,43528958,Meas Value,DC-2277
+PPI,HowOldWereYouBladderCancer_FreeTextBox,How old text box,43528959,Meas Value,DC-2277
+PPI,HowOldWereYouBleedingDisorder_FreeTextBox,How old text box,43528960,Meas Value,DC-2277
+PPI,HowOldWereYouBlindness_FreeTextBox,How old text box,43528961,Meas Value,DC-2277
+PPI,HowOldWereYouBloodCancer_FreeTextBox,How old text box,43528962,Meas Value,DC-2277
+PPI,HowOldWereYouBoneCancer_FreeTextBox,How old text box,43528963,Meas Value,DC-2277
+PPI,HowOldWereYouBowelObstruction_FreeTextBox,How old text box,43528964,Meas Value,DC-2277
+PPI,HowOldWereYouBrainCancer_FreeTextBox,How old text box,43528965,Meas Value,DC-2277
+PPI,HowOldWereYouBreastCancer_FreeTextBox,How old text box,43528966,Meas Value,DC-2277
+PPI,HowOldWereYouCarpalTunnel_FreeTextBox,How old text box,43528967,Meas Value,DC-2277
+PPI,HowOldWereYouCataracts_FreeTextBox,How old text box,43528968,Meas Value,DC-2277
+PPI,HowOldWereYouCervicalCancer_FreeTextBox,How old text box,43528969,Meas Value,DC-2277
+PPI,HowOldWereYouChronicFatigue_FreeTextBox,How old text box,43528970,Meas Value,DC-2277
+PPI,HowOldWereYouChronicLung_FreeTextBox,How old text box,43528971,Meas Value,DC-2277
+PPI,HowOldWereYouChronicSinus_FreeTextBox,How old text box,43528972,Meas Value,DC-2277
+PPI,HowOldWereYouColonPolyps_FreeTextBox,How old text box,43528973,Meas Value,DC-2277
+PPI,HowOldWereYouColonRectalCancer_FreeTextBox,How old text box,43528974,Meas Value,DC-2277
+PPI,HowOldWereYouConcussion_FreeTextBox,How old text box,43528975,Meas Value,DC-2277
+PPI,HowOldWereYouCongestiveHeartFailure_FreeTextBox,How old text box,43528976,Meas Value,DC-2277
+PPI,HowOldWereYouCoronaryArtery_FreeTextBox,How old text box,43528977,Meas Value,DC-2277
+PPI,HowOldWereYouCrohnsDisease_FreeTextBox,How old text box,43528978,Meas Value,DC-2277
+PPI,HowOldWereYouDementia_FreeTextBox,How old text box,43528979,Meas Value,DC-2277
+PPI,HowOldWereYouDepression_FreeTextBox,How old text box,43528980,Meas Value,DC-2277
+PPI,HowOldWereYouDiverticulosis_FreeTextBox,How old text box,43528981,Meas Value,DC-2277
+PPI,HowOldWereYouDryEyes_FreeTextBox,How old text box,43528982,Meas Value,DC-2277
+PPI,HowOldWereYouEatingDisorder_FreeTextBox,How old text box,43528983,Meas Value,DC-2277
+PPI,HowOldWereYouEndocrineCancer_FreeTextBox,How old text box,43528984,Meas Value,DC-2277
+PPI,HowOldWereYouEndometrialCancer_FreeTextBox,How old text box,43528985,Meas Value,DC-2277
+PPI,HowOldWereYouEnlargedProstate_FreeTextBox,How old text box,43528986,Meas Value,DC-2277
+PPI,HowOldWereYouEpilepsy_FreeTextBox,How old text box,43528987,Meas Value,DC-2277
+PPI,HowOldWereYouEsophagealCancer_FreeTextBox,How old text box,43528988,Meas Value,DC-2277
+PPI,HowOldWereYouEyeCancer_FreeTextBox,How old text box,43528989,Meas Value,DC-2277
+PPI,HowOldWereYouFarSightedness_FreeTextBox,How old text box,43528990,Meas Value,DC-2277
+PPI,HowOldWereYouFibromyalgia_FreeTextBox,How old text box,43528991,Meas Value,DC-2277
+PPI,HowOldWereYouFracturedBrokenBone_FreeTextBox,How old text box,43528992,Meas Value,DC-2277
+PPI,HowOldWereYouGallStones_FreeTextBox,How old text box,43528993,Meas Value,DC-2277
+PPI,HowOldWereYouGlaucoma_FreeTextBox,How old text box,43528994,Meas Value,DC-2277
+PPI,HowOldWereYouGout_FreeTextBox,How old text box,43528995,Meas Value,DC-2277
+PPI,HowOldWereYouHIVAIDS_FreeTextBox,How old text box,43529004,Meas Value,DC-2277
+PPI,HowOldWereYouHeadNeckCancer_FreeTextBox,How old text box,43528996,Meas Value,DC-2277
+PPI,HowOldWereYouHearingLoss_FreeTextBox,How old text box,43528997,Meas Value,DC-2277
+PPI,HowOldWereYouHeartAttack_FreeTextBox,How old text box,43528998,Meas Value,DC-2277
+PPI,HowOldWereYouHeartValveDisease_FreeTextBox,How old text box,43528999,Meas Value,DC-2277
+PPI,HowOldWereYouHemorrhoids_FreeTextBox,How old text box,43529000,Meas Value,DC-2277
+PPI,HowOldWereYouHepatitisC_FreeTextBox,How old text box,43529001,Meas Value,DC-2277
+PPI,HowOldWereYouHernia_FreeTextBox,How old text box,43529002,Meas Value,DC-2277
+PPI,HowOldWereYouHighCholesterol_FreeTextBox,How old text box,43529003,Meas Value,DC-2277
+PPI,HowOldWereYouHypertension_FreeTextBox,How old text box,43529005,Meas Value,DC-2277
+PPI,HowOldWereYouHyperthyroidism_FreeTextBox,How old text box,43529006,Meas Value,DC-2277
+PPI,HowOldWereYouHypothyroidism_FreeTextBox,How old text box,43529007,Meas Value,DC-2277
+PPI,HowOldWereYouInsomnia_FreeTextBox,How old text box,43529008,Meas Value,DC-2277
+PPI,HowOldWereYouIrritableBowel_FreeTextBox,How old text box,43529009,Meas Value,DC-2277
+PPI,HowOldWereYouKidneyCancer_FreeTextBox,How old text box,43529010,Meas Value,DC-2277
+PPI,HowOldWereYouKidneyStones_FreeTextBox,How old text box,43529011,Meas Value,DC-2277
+PPI,HowOldWereYouKidneyWithDialysis_FreeTextBox,How old text box,43529012,Meas Value,DC-2277
+PPI,HowOldWereYouKidneyWithoutDialysis_FreeTextBox,How old text box,43529013,Meas Value,DC-2277
+PPI,HowOldWereYouLiverCondition_FreeTextBox,How old text box,43529014,Meas Value,DC-2277
+PPI,HowOldWereYouLungCancer_FreeTextBox,How old text box,43529015,Meas Value,DC-2277
+PPI,HowOldWereYouLupus_FreeTextBox,How old text box,43529016,Meas Value,DC-2277
+PPI,HowOldWereYouMacularDegeneration_FreeTextBox,How old text box,43529017,Meas Value,DC-2277
+PPI,HowOldWereYouMemoryLoss_FreeTextBox,How old text box,43529018,Meas Value,DC-2277
+PPI,HowOldWereYouMigraine_FreeTextBox,How old text box,43529019,Meas Value,DC-2277
+PPI,HowOldWereYouMultipleSclerosis_FreeTextBox,How old text box,43529020,Meas Value,DC-2277
+PPI,HowOldWereYouMuscularDystrophy_FreeTextBox,How old text box,43529021,Meas Value,DC-2277
+PPI,HowOldWereYouNarcolepsy_FreeTextBox,How old text box,43529022,Meas Value,DC-2277
+PPI,HowOldWereYouNearSightedness_FreeTextBox,How old text box,43529023,Meas Value,DC-2277
+PPI,HowOldWereYouNeuropathy_FreeTextBox,How old text box,43529024,Meas Value,DC-2277
+PPI,HowOldWereYouObesity_FreeTextBox,How old text box,43529025,Meas Value,DC-2277
+PPI,HowOldWereYouOsteoporosis_FreeTextBox,How old text box,43529026,Meas Value,DC-2277
+PPI,HowOldWereYouOtherCancer_FreeTextBox,How old text box,43529027,Meas Value,DC-2277
+PPI,HowOldWereYouOtherDiabetes_FreeTextBox,How old text box,43529028,Meas Value,DC-2277
+PPI,HowOldWereYouOtherHeadaches_FreeTextBox,How old text box,43529029,Meas Value,DC-2277
+PPI,HowOldWereYouOtherThyroid_FreeTextBox,How old text box,43529030,Meas Value,DC-2277
+PPI,HowOldWereYouPTSD_FreeTextBox,How old text box,43529038,Meas Value,DC-2277
+PPI,HowOldWereYouPancreaticCancer_FreeTextBox,How old text box,43529031,Meas Value,DC-2277
+PPI,HowOldWereYouPancreatitis_FreeTextBox,How old text box,43529032,Meas Value,DC-2277
+PPI,HowOldWereYouParkinsonsDisease_FreeTextBox,How old text box,43529033,Meas Value,DC-2277
+PPI,HowOldWereYouPepticUlcers_FreeTextBox,How old text box,43529034,Meas Value,DC-2277
+PPI,HowOldWereYouPersonalityDisorder_FreeTextBox,How old text box,43529035,Meas Value,DC-2277
+PPI,HowOldWereYouPreDiabetes_FreeTextBox,How old text box,43529036,Meas Value,DC-2277
+PPI,HowOldWereYouProstateCancer_FreeTextBox,How old text box,43529037,Meas Value,DC-2277
+PPI,HowOldWereYouPulmonaryEmbolism_FreeTextBox,How old text box,43529039,Meas Value,DC-2277
+PPI,HowOldWereYouRestlessLeg_FreeTextBox,How old text box,43529040,Meas Value,DC-2277
+PPI,HowOldWereYouSchizophrenia_FreeTextBox,How old text box,43529041,Meas Value,DC-2277
+PPI,HowOldWereYouSickleCellDisease_FreeTextBox,How old text box,43529042,Meas Value,DC-2277
+PPI,HowOldWereYouSkinCancer_FreeTextBox,How old text box,43529043,Meas Value,DC-2277
+PPI,HowOldWereYouSkinCondition_FreeTextBox,How old text box,43529044,Meas Value,DC-2277
+PPI,HowOldWereYouSleepApnea_FreeTextBox,How old text box,43529045,Meas Value,DC-2277
+PPI,HowOldWereYouSocialPhobia_FreeTextBox,How old text box,43529046,Meas Value,DC-2277
+PPI,HowOldWereYouSpinalCordInjury_FreeTextBox,How old text box,43529047,Meas Value,DC-2277
+PPI,HowOldWereYouSpineMuscleBone_FreeTextBox,How old text box,43529048,Meas Value,DC-2277
+PPI,HowOldWereYouStomachCancer_FreeTextBox,How old text box,43529049,Meas Value,DC-2277
+PPI,HowOldWereYouStroke_FreeTextBox,How old text box,43529050,Meas Value,DC-2277
+PPI,HowOldWereYouThyroidCancer_FreeTextBox,How old text box,43529051,Meas Value,DC-2277
+PPI,HowOldWereYouTinnitus_FreeTextBox,How old text box,43529052,Meas Value,DC-2277
+PPI,HowOldWereYouTransientIschemicAttack_FreeTextBox,How old text box,43529053,Meas Value,DC-2277
+PPI,HowOldWereYouTraumaBrainInjury_FreeTextBox,How old text box,43529054,Meas Value,DC-2277
+PPI,HowOldWereYouTuberculosis_FreeTextBox,How old text box,43529055,Meas Value,DC-2277
+PPI,HowOldWereYouType1Diabetes_FreeTextBox,How old text box,43529056,Meas Value,DC-2277
+PPI,HowOldWereYouType2Diabetes_FreeTextBox,How old text box,43529057,Meas Value,DC-2277
+PPI,HowOldWereYouUlcerativeColitis_FreeTextBox,How old text box,43529058,Meas Value,DC-2277
+PPI,HowOldWereYouUrinaryTract_FreeTextBox,How old text box,43529059,Meas Value,DC-2277
+PPI,HowOldWereYouVitaminBDeficiency_FreeTextBox,How old text box,43529060,Meas Value,DC-2277
+PPI,HowOldWereYouVitaminDDeficiency_FreeTextBox,How old text box,43529061,Meas Value,DC-2277
+PPI,IllinoisSitePairing_IllinoisInstitution,The following Healthcare Providers in your area are enrolling participants into the All of Us Research Program. At which institution do you receive care and wish to schedule an enrollment visit with? Please choose 1 institution,1585514,Observation,DC-2277
+PPI,LivingSituation_CurrentLiving,Living Situation: Current Living,1585402,Observation,DC-2277
+PPI,LivingSituation_LivingSituationFreeText,Living Situation: Living Situation Free Text,1585878,Observation,DC-2277
+PPI,MENANoneOfTheseDescribeMe_MENAFreeText,MENA None Of These Describe Me: MENA Free Text,1585320,Observation,DC-2277
+PPI,MENA_MENASpecific,MENA: MENA Specific,1586153,Observation,DC-2277
+PPI,MichiganSitePairing_LiveInFollowingAreas,Do you live in any of the following general areas? (others coming soon!),1585563,Observation,DC-2277
+PPI,MississippiSitePairing_JacksonHinds,Have you ever received care from a health provider at the Jackson-Hinds Comprehensive Health Center's Main Site (James Anderson Clinic) or the Copiah Clinic?,1585532,Observation,DC-2277
+PPI,MississippiSitePairing_JacksonHindsAppointment,Have you already scheduled an All of Us research appointment at the Jackson-Hinds Comprehensive Health Center's Main Site (James Anderson Clinic) or the Copiah Clinic?,1585535,Observation,DC-2277
+PPI,MotherDiagnosisHistory_WhichConditions,Mother Diagnosis History: Which Conditions,43529102,Observation,DC-2277
+PPI,NHPINoneOfTheseDescribeMe_NHPIFreeText,NHPI None Of These Describe Me: NHPI Free Text,1585331,Observation,DC-2277
+PPI,NHPI_NHPISpecific,NHPI: NHPI Specific,1586154,Observation,DC-2277
+PPI,NewEnglandSitePairing_CareReceived,"Have you ever received care at any hospital, health center or clinic affiliated with Boston Medical Center (BMC) or Partners HealthCare (Partners)?",1585527,Observation,DC-2277
+PPI,NewYorkSitePairing_HRHCare,"Have you ever received care at the Peekskill Health Center, or any other HRHCare health center?",1585539,Observation,DC-2277
+PPI,NoneOfTheseDescribeMe_AsianFreeText,None Of These Describe Me: Asian Free Text,1585615,Observation,DC-2277
+PPI,OtherArthritis_FreeTextBox,Other Arthritis: Free Text Box,1384606,Observation,DC-2277
+PPI,OtherBoneJointMuscle_FreeTextBox,Other Bone Joint Muscle: Free Text Box,1384525,Observation,DC-2277
+PPI,OtherBrainNervousSystem_FreeTextBox,Other Brain Nervous System: Free Text Box,1384654,Observation,DC-2277
+PPI,OtherCancer_DaughterFreeTextBox,Other Cancer: Daughter Free Text Box,43528517,Observation,DC-2277
+PPI,OtherCancer_FatherFreeTextBox,Other Cancer: Father Free Text Box,43528518,Observation,DC-2277
+PPI,OtherCancer_FreeTextBox,Other Cancer: Free Text Box,1384502,Observation,DC-2277
+PPI,OtherCancer_GrandparentFreeTextBox,Other Cancer: Grandparent Free Text Box,43528519,Observation,DC-2277
+PPI,OtherCancer_MotherFreeTextBox,Other Cancer: Mother Free Text Box,43528520,Observation,DC-2277
+PPI,OtherCancer_SiblingFreeTextBox,Other Cancer: Sibling Free Text Box,43528521,Observation,DC-2277
+PPI,OtherCancer_SonFreeTextBox,Other Cancer: Son Free Text Box,43528522,Observation,DC-2277
+PPI,OtherCondition_DaughterFreeTextBox,Other Condition: Daughter Free Text Box,43529639,Observation,DC-2277
+PPI,OtherCondition_FatherFreeTextBox,Other Condition: Father Free Text Box,43529640,Observation,DC-2277
+PPI,OtherCondition_GrandparentFreeTextBox,Other Condition: Grandparent Free Text Box,43529641,Observation,DC-2277
+PPI,OtherCondition_MotherFreeTextBox,Other Condition: Mother Free Text Box,43529642,Observation,DC-2277
+PPI,OtherCondition_SiblingFreeTextBox,Other Condition: Sibling Free Text Box,43529643,Observation,DC-2277
+PPI,OtherCondition_SonFreeTextBox,Other Condition: Son Free Text Box,43529644,Observation,DC-2277
+PPI,OtherDelayedMedicalCare_FreeText,Other Delayed Medical Care: Free Text,43528718,Observation,DC-2277
+PPI,OtherDiabetes_FreeTextBox,Other Diabetes: Free Text Box,1384485,Observation,DC-2277
+PPI,OtherDiagnosis_FreeTextBox,Other Diagnosis: Free Text Box,1384473,Observation,DC-2277
+PPI,OtherDigestiveCondition_FreeTextBox,Other Digestive Condition: Free Text Box,1384500,Observation,DC-2277
+PPI,OtherHealthPlan_FreeText,Other Health Plan: Free Text,43529654,Observation,DC-2277
+PPI,OtherHearingEye_FreeTextBox,Other Hearing Eye: Free Text Box,1384536,Observation,DC-2277
+PPI,OtherHeartorBloodCondition_FreeTextBox,Other Heartor Blood Condition: Free Text Box,1384580,Observation,DC-2277
+PPI,OtherHormoneEndocrine_FreeTextBox,Other Hormone Endocrine: Free Text Box,1384571,Observation,DC-2277
+PPI,OtherInfectiousDisease_FreeTextBox,Other Infectious Disease: Free Text Box,1384541,Observation,DC-2277
+PPI,OtherInsuranceType_FreeText,Other Insurance Type: Free Text,1384403,Observation,DC-2277
+PPI,OtherKidneyCondition_FreeTextBox,Other Kidney Condition: Free Text Box,1384562,Observation,DC-2277
+PPI,OtherMentalHealthSubstanceUse_FreeTextBox,Other Mental Health Substance Use: Free Text Box,1384508,Observation,DC-2277
+PPI,OtherRespiratory_FreeTextBox,Other Respiratory: Free Text Box,1384434,Observation,DC-2277
+PPI,OtherSpecify_OtherDrugsTextBox,Other Specify: Other Drugs Text Box,1585647,Observation,DC-2277
+PPI,notes,Additional notes,903137,Observation,DC-2277
+RxNorm Extension,OMOP5043059,COVID-19 convalescent plasma,33000,Drug,DC-2277
+SNOMED,103579009,Race,4013886,Observation,DC-2277
+SNOMED,263495000,Gender,4135376,Observation,DC-2277
+SNOMED,364699009,Ethnic group,4271761,Observation,DC-2277
+SNOMED,81730008,Abnormal sexual state,4305327,Condition,DC-2277
+SNOMED,83240001,Abnormal sexual state and development,4307247,Condition,DC-2277
+SNOMED,85762002,Voice disorder due to transsexualism,4311815,Condition,DC-2277
+SNOMED,861131000000102,"Referral to LGBT (lesbian, gay, bisexual and transgender) service",44808972,Observation,DC-2277
+SNOMED,87991007,Gender identity disorder,4338512,Condition,DC-2277
+SNOMED,93461009,Gender dysphoria,4246663,Condition,DC-2277
+VANDF,4039851,"INV-COVID-19 VACCINE MRNA (MODERNA) (PF) 100MCG/0.5ML INJ,5ML",1615362,Drug,DC-2277
+VANDF,4039857,"INV-COVID-19 VACCINE MRNA (PFIZER) (PF) 30MCG/0.3ML INJ,VIL",1615368,Drug,DC-2277
+VANDF,4039944,"INV-COVID-19 VACCINE VIRAL VECTOR (ASTRAZENECA) (PF) INJ,5ML",1615455,Drug,DC-2277
+VANDF,4040047,"INV-COVID-19 VACCINE AD26 (JANSSEN) (PF) INJ,2.5ML",1615558,Drug,DC-2277
+VANDF,4040411,"INV-COVID-19 VACCINE MRNA (MODERNA) (PF) 100MCG/0.5ML INJ,7ML",1615923,Drug,DC-2277
+VANDF,4040599,"INV-COVID-19 VACCINE ADJ (NOVAVAX) (PF) INJ,5ML",1616111,Drug,DC-2277
