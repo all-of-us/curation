@@ -87,7 +87,8 @@ import cdm
 import common
 import resources
 from constants.validation import ehr_union as eu_constants
-from utils.bq import get_client, validate_bq_date_string
+from utils.bq import validate_bq_date_string
+from gcloud.bq import BigQueryClient
 
 UNION_ALL = '''
 
@@ -378,6 +379,7 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
         visit_detail_join_expr = ''
         location_join_expr = ''
         care_site_join_expr = ''
+        visit_detail_filter_expr = ''
 
         if has_visit_occurrence_id:
             # Include a join to mapping visit occurrence table
@@ -435,6 +437,11 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
                        {care_site_join_expr} 
                     '''
 
+        if table_name == common.VISIT_DETAIL:
+            visit_detail_filter_expr = f'''
+            AND mvo.{eu_constants.VISIT_OCCURRENCE_ID} IS NOT NULL
+            '''
+
         return f'''
         SELECT
             {cols}
@@ -455,6 +462,7 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
         {location_join_expr}
         WHERE
             row_num = 1
+        {visit_detail_filter_expr}
             '''
 
 
@@ -740,7 +748,7 @@ def main(input_dataset_id,
     :param hpo_ids_ex: (optional) list that identifies HPOs not to process, by default process all
     :returns: list of tables generated successfully
     """
-    client = get_client(project_id)
+    bq_client = BigQueryClient(project_id)
 
     logging.info('EHR union started')
     # Get all hpo_ids.
@@ -761,7 +769,7 @@ def main(input_dataset_id,
     for domain_table in cdm.tables_to_map():
         logging.info(f'Mapping {domain_table}...')
         mapping(domain_table, hpo_ids, input_dataset_id, output_dataset_id,
-                project_id, client)
+                project_id, bq_client)
 
     # Load all tables with union of submitted tables
     for table_name in resources.CDM_TABLES:
@@ -774,7 +782,7 @@ def main(input_dataset_id,
     domain_table = common.PERSON
     logging.info(f'Mapping {domain_table}...')
     mapping(domain_table, hpo_ids, input_dataset_id, output_dataset_id,
-            project_id, client)
+            project_id, bq_client)
 
     logging.info('Starting process for Person to Observation')
     # Map and move EHR person records into four rows in observation, one each for race, ethnicity, dob and gender

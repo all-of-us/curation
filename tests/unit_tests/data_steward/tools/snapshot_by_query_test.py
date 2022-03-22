@@ -17,7 +17,8 @@ class SnapshotByQueryTest(unittest.TestCase):
         print(cls.__name__)
         print('**************************************************************')
 
-        cls.mock_client = ''
+        cls.mock_bq_client = mock.MagicMock()
+        cls.mock_bq_client.project = 'test-project'
 
     @mock.patch('tools.snapshot_by_query.get_source_fields')
     def test_get_copy_table_query(self, mock_get_source_fields):
@@ -26,7 +27,7 @@ class SnapshotByQueryTest(unittest.TestCase):
         ]
 
         actual_query = snapshot_by_query.get_copy_table_query(
-            'test-project', 'test-dataset', 'person', self.mock_client)
+            'test-dataset', 'person', self.mock_bq_client)
         expected_query = """SELECT
   CAST(person_id AS INT64) AS person_id,
   CAST(gender_concept_id AS INT64) AS gender_concept_id,
@@ -53,6 +54,6 @@ FROM
                          re.sub(WHITESPACE, SPACE, expected_query))
 
         actual_query = snapshot_by_query.get_copy_table_query(
-            'test-project', 'test-dataset', 'non_cdm_table', self.mock_client)
+            'test-dataset', 'non_cdm_table', self.mock_bq_client)
         expected_query = '''SELECT * FROM `test-project.test-dataset.non_cdm_table`'''
         self.assertEqual(actual_query, expected_query)

@@ -15,7 +15,7 @@ from google.cloud import bigquery
 
 # Project imports
 from tools import delete_stale_test_datasets
-from utils import bq
+from gcloud.bq import BigQueryClient
 
 
 class DeleteStaleTestDatasetsTest(TestCase):
@@ -28,7 +28,7 @@ class DeleteStaleTestDatasetsTest(TestCase):
 
     def setUp(self):
         self.first_n = 3
-        self.bq_client = bq.get_client(os.environ.get('GOOGLE_CLOUD_PROJECT'))
+        self.bq_client = BigQueryClient(os.environ.get('GOOGLE_CLOUD_PROJECT'))
         self.now = datetime.now(timezone.utc)
 
     @patch('google.cloud.bigquery.Client.delete_dataset')

@@ -1,5 +1,4 @@
 # Python imports
-import os
 from unittest import TestCase
 from unittest.mock import patch, MagicMock
 from typing import Callable
@@ -8,7 +7,8 @@ from typing import Callable
 
 # Project imports
 from gcloud.gcs import StorageClient
-from validation.app_errors import BucketNotSet
+from validation.app_errors import BucketNotSet, BucketDoesNotExistError
+from google.cloud.exceptions import NotFound
 
 
 class DummyClient(StorageClient):
@@ -36,25 +36,40 @@ class GCSTest(TestCase):
         self.file_name: str = 'foo_file.csv'
         self.hpo_id = 'fake_hpo_id'
 
-    @patch('gcloud.gcs.os.environ.get')
-    def test_get_hpo_bucket_not_set(self, mock_environ_get):
-        mock_environ_get.side_effect = [None, '', 'None']
-        expected_message = lambda bucket: f"Bucket '{bucket}' for hpo '{self.hpo_id}' is unset/empty"
+    @patch('gcloud.gcs.StorageClient._get_hpo_bucket_id')
+    def test_get_hpo_bucket_not_set(self, mock_get_hpo_bucket_id):
+        mock_get_hpo_bucket_id.side_effect = [None, '', 'None']
+        expected_message = lambda bucket: (
+            f"Bucket '{bucket}' for hpo '{self.hpo_id}' is unset/empty, "
+            f"or it has multiple records in the lookup table")
 
-        # run without setting env var (unset env_var)
+        # Test case 1 ... _get_hpo_bucket() returns None
         with self.assertRaises(BucketNotSet) as e:
             self.client.get_hpo_bucket(self.hpo_id)
         self.assertEqual(e.exception.message, expected_message(None))
 
-        # run after setting env var to empty string
+        # Test case 2 ... _get_hpo_bucket() returns ''
         with self.assertRaises(BucketNotSet) as e:
             self.client.get_hpo_bucket(self.hpo_id)
         self.assertEqual(e.exception.message, expected_message(''))
 
-        # run after setting env var to 'None'
+        # Test case 3 ... _get_hpo_bucket() returns 'None'
         with self.assertRaises(BucketNotSet) as e:
             self.client.get_hpo_bucket(self.hpo_id)
         self.assertEqual(e.exception.message, expected_message('None'))
+
+    @patch.object(DummyClient, 'get_bucket_items_metadata')
+    @patch.object(DummyClient, '_get_hpo_bucket_id')
+    def test_get_hpo_bucket_not_found(self, mock_get_bucket_id,
+                                      mock_get_items_metadata):
+        fake_bucket_name = 'FAKE_BUCKET_NAME'
+        mock_get_bucket_id.return_value = fake_bucket_name
+        expected_message = f"Failed to acquire bucket '{fake_bucket_name}' for hpo '{self.hpo_id}'"
+        mock_get_items_metadata.side_effect = NotFound('')
+
+        with self.assertRaises(BucketDoesNotExistError) as e:
+            self.client.get_hpo_bucket(self.hpo_id)
+        self.assertEqual(e.exception.message, expected_message)
 
     @patch('google.cloud.storage.bucket.Bucket')
     @patch.object(DummyClient, 'list_blobs')

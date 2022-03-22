@@ -21,6 +21,9 @@ PII_TABLES = [
     PARTICIPANT_MATCH
 ]
 
+# DRC identity match
+IDENTITY_MATCH = 'identity_match'
+
 # AOU required CDM tables
 CARE_SITE = 'care_site'
 CONDITION_OCCURRENCE = 'condition_occurrence'
@@ -121,7 +124,8 @@ SOURCE_TO_CONCEPT_MAP = 'source_to_concept_map'
 VOCABULARY = 'vocabulary'
 VOCABULARY_TABLES = [
     CONCEPT, CONCEPT_ANCESTOR, CONCEPT_CLASS, CONCEPT_RELATIONSHIP,
-    CONCEPT_SYNONYM, DOMAIN, DRUG_STRENGTH, RELATIONSHIP, VOCABULARY
+    CONCEPT_SYNONYM, DOMAIN, DRUG_STRENGTH, RELATIONSHIP, SOURCE_TO_CONCEPT_MAP,
+    VOCABULARY
 ]
 # Achilles
 ACHILLES_ANALYSIS = 'achilles_analysis'
@@ -212,6 +216,7 @@ VOCABULARY_UPDATES = {
 }
 
 COMBINED = 'combined'
+UNIONED = 'unioned'
 UNIONED_EHR = 'unioned_ehr'
 DEID = 'deid'
 EHR = 'ehr'
@@ -237,8 +242,10 @@ ZIP3_LOOKUP = 'zip3_lookup'
 DIGITAL_HEALTH_SHARING_STATUS = 'digital_health_sharing_status'
 
 ZIP_CODE_AGGREGATION_MAP = 'zip_code_aggregation_map'
+DEID_QUESTIONNAIRE_RESPONSE_MAP = '_deid_questionnaire_response_map'
 
 # Participant Summary
+EHR_OPS = 'ehr_ops'
 DRC_OPS = 'drc_ops'
 PS_API_VALUES = 'ps_api_values'
 
@@ -255,3 +262,9 @@ JINJA_ENV = jinja2.Environment(
     # in jinja2 autoescape is for html; jinjasql supports autoescape for sql
     # TODO Look into jinjasql for sql templating
     autoescape=False)
+
+# Google scopes for running CDR pipeline stages
+CDR_SCOPES = [
+    'https://www.googleapis.com/auth/bigquery',
+    'https://www.googleapis.com/auth/devstorage.read_write',
+]

@@ -16,9 +16,9 @@ import app_identity
 import bq_utils
 import constants.bq_utils as bq_consts
 from gcloud.gcs import StorageClient
+from gcloud.bq import BigQueryClient
 import resources
 from tools import cli_util
-from utils import bq
 from utils import pipeline_logging
 from common import JINJA_ENV, PIPELINE_TABLES, SITE_MASKING_TABLE_ID
 
@@ -43,7 +43,7 @@ SELECT '{org_id}' AS Org_ID, '{hpo_id}' AS HPO_ID, '{hpo_name}' AS Site_Name, {d
 """
 
 ADD_HPO_ID_BUCKET_NAME = """
-SELECT '{hpo_id}' AS hpo_id, '{bucket_name}' AS bucket_name
+SELECT '{hpo_id}' AS hpo_id, '{bucket_name}' AS bucket_name, '{service}' AS service
 """
 
 UPDATE_SITE_MASKING_QUERY = JINJA_ENV.from_string("""
@@ -196,14 +196,16 @@ def add_hpo_mapping(hpo_id, hpo_name, org_id, display_order):
     return query_response
 
 
-def add_hpo_bucket(hpo_id, bucket_name):
+def add_hpo_bucket(hpo_id, bucket_name, service='default'):
     """
     adds hpo bucket name in hpo_bucket_name table.
     :param hpo_id: hpo identifier
     :param bucket_name: bucket name assigned to hpo
     :return:
     """
-    q = ADD_HPO_ID_BUCKET_NAME.format(hpo_id=hpo_id, bucket_name=bucket_name)
+    q = ADD_HPO_ID_BUCKET_NAME.format(hpo_id=hpo_id,
+                                      bucket_name=bucket_name,
+                                      service=service)
     LOGGER.info(f'Adding bucket lookup with the following query:\n {q}\n')
     query_response = bq_utils.query(
         q,
@@ -212,7 +214,12 @@ def add_hpo_bucket(hpo_id, bucket_name):
     return query_response
 
 
-def add_lookups(hpo_id, hpo_name, org_id, bucket_name, display_order=None):
+def add_lookups(hpo_id,
+                hpo_name,
+                org_id,
+                bucket_name,
+                display_order=None,
+                service='default'):
     """
     Add hpo to hpo_site_id_mappings and hpo_id_bucket_name
 
@@ -228,7 +235,7 @@ def add_lookups(hpo_id, hpo_name, org_id, bucket_name, display_order=None):
     else:
         shift_display_orders(display_order)
     add_hpo_mapping(hpo_id, hpo_name, org_id, display_order)
-    add_hpo_bucket(hpo_id, bucket_name)
+    add_hpo_bucket(hpo_id, bucket_name, service)
 
 
 def bucket_access_configured(bucket_name: str) -> bool:
@@ -240,7 +247,7 @@ def bucket_access_configured(bucket_name: str) -> bool:
     """
     project_id = app_identity.get_application_id()
     sc = StorageClient(project_id)
-    bucket = sc.get_bucket(bucket_name)
+    bucket = sc.bucket(bucket_name)
     permissions: list = bucket.test_iam_permissions("storage.objects.create")
     return len(permissions) >= 1
 
@@ -254,7 +261,7 @@ def update_site_masking_table():
     project_id = app_identity.get_application_id()
     sandbox_id = PIPELINE_TABLES + '_sandbox'
 
-    client = bq.get_client(project_id)
+    bq_client = BigQueryClient(project_id)
 
     update_site_maskings_query = UPDATE_SITE_MASKING_QUERY.render(
         project_id=project_id,
@@ -268,7 +275,7 @@ def update_site_masking_table():
         f'Updating site_masking table with new hpo_id and src_id with the following '
         f'query:\n {update_site_maskings_query}\n ')
 
-    query_job = client.query(update_site_maskings_query)
+    query_job = bq_client.query(update_site_maskings_query)
 
     return query_job
 

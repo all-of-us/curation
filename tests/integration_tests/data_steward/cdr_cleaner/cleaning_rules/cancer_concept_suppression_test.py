@@ -2,7 +2,7 @@
 Integration test for cancer_concept_suppression module
 
 This rule sandboxes and suppresses reccords whose concept_codes end in 
-'History_WhichConditions', 'Condition_OtherCancer', ‘History_AdditionalDiagnosis’,
+'History_WhichConditions', 'History_AdditionalDiagnosis',
 and 'OutsideTravel6MonthsWhere'.
 
 Runs on the controlled tier.
@@ -85,16 +85,16 @@ class CancerConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
             INSERT INTO `{{fq_dataset_name}}.concept`
                 (concept_id, concept_name, domain_id, vocabulary_id, concept_class_id, concept_code, valid_start_date, valid_end_date)
             VALUES
-                (43529626, "some text", "some text", "some text", "some text", "OutsideTravel6Month_OutsideTravel6MonthWhereTravel", date('2020-05-05'), date('2020-05-05')),
-                (43529099, "some text", "some text", "some text", "some text", "OutsideTravel6Month_OutsideTravel6MonthWhere", date('2020-05-05'), date('2020-05-05')),
-                (43529102, "some text", "some text", "some text", "some text", "MotherDiagnosisHistory_WhichConditions", date('2020-05-05'), date('2020-05-05')),
-                (43529627, "some text", "some text", "some text", "some text", "CancerCondition_OtherCancer", date('2020-05-05'), date('2020-05-05')),
-                (43529625, "some text", "some text", "some text", "some text", "FatherCancerCondition_OtherCancers", date('2020-05-05'), date('2020-05-05')),
-                (43529100, "some text", "some text", "some text", "some text", "SonCancerCondition_History_AdditionalDiagnosis", date('2020-05-05'), date('2020-05-05')),
-                (10821410, "some text", "some text", "some text", "some text", "Sister_History_AdditionalDiagnoses", date('2020-05-05'), date('2020-05-05')),
-                (42181902, "some text", "some text", "some text", "some text", "Cancer", date('2020-05-05'), date('2020-05-05')),
-                (24182910, "some text", "some text", "some text", "some text", "", date('2020-05-05'), date('2020-05-05')),
-                (43529098, "some text", "some text", "some text", "some text", "FatherDiagnosisHistory_WhichConditions", date('2020-05-05'), date('2020-05-05'))
+                (43529626, "some text", "some text", "PPI", "some text", "OutsideTravel6Month_OutsideTravel6MonthWhereTravel", date('2020-05-05'), date('2020-05-05')),
+                (43529099, "some text", "some text", "PPI", "some text", "OutsideTravel6Month_OutsideTravel6MonthWhere", date('2020-05-05'), date('2020-05-05')),
+                (43529102, "some text", "some text", "PPI", "some text", "MotherDiagnosisHistory_WhichConditions", date('2020-05-05'), date('2020-05-05')),
+                (43529627, "some text", "some text", "PPI", "some text", "CancerCondition_OtherCancer", date('2020-05-05'), date('2020-05-05')),
+                (43529625, "some text", "some text", "PPI", "some text", "FatherCancerCondition_OtherCancers", date('2020-05-05'), date('2020-05-05')),
+                (43529100, "some text", "some text", "PPI", "some text", "SonCancerCondition_History_AdditionalDiagnosis", date('2020-05-05'), date('2020-05-05')),
+                (10821410, "some text", "some text", "PPI", "some text", "Sister_History_AdditionalDiagnoses", date('2020-05-05'), date('2020-05-05')),
+                (42181902, "some text", "some text", "PPI", "some text", "Cancer", date('2020-05-05'), date('2020-05-05')),
+                (24182910, "some text", "some text", "PPI", "some text", "", date('2020-05-05'), date('2020-05-05')),
+                (43529098, "some text", "some text", "PPI", "some text", "FatherDiagnosisHistory_WhichConditions", date('2020-05-05'), date('2020-05-05'))
         """).render(fq_dataset_name=self.fq_dataset_name)
 
         drop_records_query_tmpl = self.jinja_env.from_string("""
@@ -126,12 +126,14 @@ class CancerConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
             'fq_sandbox_table_name':
                 self.fq_sandbox_table_names[0],
             'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-            'sandboxed_ids': [1, 2, 3, 4, 5, 6, 7],
+            'sandboxed_ids': [1, 2, 3, 6, 7],
             'fields': [
                 'observation_id', 'person_id', 'observation_concept_id',
                 'observation_date', 'observation_type_concept_id'
             ],
-            'cleaned_values': [(8, 8, 10821410, self.date, 8),
+            'cleaned_values': [(4, 4, 43529627, self.date, 4),
+                               (5, 5, 43529625, self.date, 5),
+                               (8, 8, 10821410, self.date, 8),
                                (9, 9, 42181902, self.date, 9),
                                (10, 10, 24182910, self.date, 10)]
         }]

@@ -25,12 +25,15 @@ new_vocabulary = ''
 from common import JINJA_ENV
 from utils.bq import get_client
 from analytics.cdr_ops.notebook_utils import execute
+import pandas as pd
 # -
 
 vocabulary_dataset_old = f'{project_id}.{old_vocabulary}'
 vocabulary_dataset_new = f'{project_id}.{new_vocabulary}'
 
 client = get_client(project_id)
+
+pd.set_option('max_colwidth', None)
 
 # # New PPI. Where ppi concepts are not present in the old vocabulary.
 
@@ -46,7 +49,7 @@ ORDER BY c.concept_code
 ''')
 query = tpl.render(vocabulary_dataset_old=vocabulary_dataset_old,
                    vocabulary_dataset_new=vocabulary_dataset_new)
-execute(client, query)
+execute(client, query, max_rows=True)
 
 # # Removed PPI. Where ppi concepts are not present in the new vocabulary
 
@@ -62,7 +65,7 @@ WHERE c.concept_code NOT IN (SELECT concept_code
 ''')
 query = tpl.render(vocabulary_dataset_old=vocabulary_dataset_old,
                    vocabulary_dataset_new=vocabulary_dataset_new)
-execute(client, query)
+execute(client, query, max_rows=True)
 
 # +
 # How has relationship changed?
@@ -102,7 +105,7 @@ ORDER BY table_id
 ''')
 query = tpl.render(vocabulary_dataset_old=vocabulary_dataset_old,
                    vocabulary_dataset_new=vocabulary_dataset_new)
-execute(client, query)
+execute(client, query, max_rows=True)
 
 # # The vocabularies that exist, in each vocab version. Check that none are lost, or any are added. Use the release notes if there is a change.
 
@@ -127,7 +130,7 @@ ORDER BY n.vocabulary_id
 ''')
 query = tpl.render(vocabulary_dataset_old=vocabulary_dataset_old,
                    vocabulary_dataset_new=vocabulary_dataset_new)
-execute(client, query)
+execute(client, query, max_rows=True)
 
 # Shows the number of individual concepts added to each vocab type.The 'diff' should always increase.
 
@@ -150,4 +153,16 @@ ORDER BY vocabulary_id
 ''')
 query = tpl.render(vocabulary_dataset_old=vocabulary_dataset_old,
                    vocabulary_dataset_new=vocabulary_dataset_new)
+execute(client, query, max_rows=True)
+
+# # Access to the new vocabulary
+# This query shows the users and the roles who have access to the new vocabulary.
+# Confirm that the PDR service account has BigQuery Data Viewer access to it.
+
+tpl = JINJA_ENV.from_string('''
+select * from `{{project_id}}.region-us.INFORMATION_SCHEMA.OBJECT_PRIVILEGES`
+where object_name = '{{new_vocabulary}}'
+order by grantee
+''')
+query = tpl.render(project_id=project_id, new_vocabulary=new_vocabulary)
 execute(client, query)

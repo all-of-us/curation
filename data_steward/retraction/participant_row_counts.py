@@ -22,6 +22,7 @@ from jinja2 import Template
 
 # Project imports
 from utils import bq
+from gcloud.bq import BigQueryClient
 import common
 from retraction import retract_utils as ru
 from constants.retraction import retract_utils as ru_consts
@@ -175,7 +176,7 @@ def count_pid_rows_in_dataset(project_id, dataset_id, hpo_id, pid_source):
         ru_consts.TABLE_ID, consts.ALL_COUNT, consts.ALL_EHR_COUNT,
         consts.MAP_EHR_COUNT
     ])
-    bq_client = bq.get_client(project_id)
+    bq_client = BigQueryClient(project_id)
     cols_query = bq.dataset_columns_query(project_id, dataset_id)
     table_df = bq_client.query(cols_query).to_dataframe()
 

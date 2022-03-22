@@ -215,7 +215,7 @@ function define_common_envvars() {
   set_env "UNIONED_DATASET_ID" "${DATASET_PREFIX}"_unioned
   set_env "COMBINED_DEID_DATASET_ID" "${DATASET_PREFIX}"_deid
   set_env "FITBIT_DATSET_ID" "${DATASET_PREFIX}"_fitbit
-  set_env "VOCABULARY_DATASET" "vocabulary20210601"
+  set_env "VOCABULARY_DATASET" "vocabulary_dataset"
 
   ## bucket envvars
 

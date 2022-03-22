@@ -16,7 +16,7 @@ import pandas as pd
 from google.cloud import bigquery
 
 from resources import DC732_CONCEPT_LOOKUP_CSV_PATH
-from utils import bq
+from gcloud.bq import BigQueryClient
 
 ISSUE_NUMBER = 'DC-732'
 ISSUE_PREFIX = 'dc732_'
@@ -593,7 +593,7 @@ def parse_args(args=None):
 if __name__ == '__main__':
 
     ARGS = parse_args()
-    CLIENT = bq.get_client(ARGS.project_id)
+    CLIENT = BigQueryClient(ARGS.project_id)
 
     if ARGS.cmd == 'setup':
         setup(ARGS.concept_lookup_dest_table)

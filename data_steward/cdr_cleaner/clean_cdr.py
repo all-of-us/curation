@@ -72,6 +72,8 @@ from cdr_cleaner.cleaning_rules.deid.motor_vehicle_accident_suppression import \
     MotorVehicleAccidentSuppression
 from cdr_cleaner.cleaning_rules.deid.birth_information_suppression import \
     BirthInformationSuppression
+from cdr_cleaner.cleaning_rules.deid.year_of_birth_records_suppression import \
+    YearOfBirthRecordsSuppression
 from cdr_cleaner.cleaning_rules.replace_standard_id_in_domain_tables import \
     ReplaceWithStandardConceptId
 from cdr_cleaner.cleaning_rules.remove_participant_data_past_deactivation_date import \
@@ -80,6 +82,7 @@ from cdr_cleaner.cleaning_rules.ehr_submission_data_cutoff import EhrSubmissionD
 from cdr_cleaner.cleaning_rules.repopulate_person_post_deid import RepopulatePersonPostDeid
 from cdr_cleaner.cleaning_rules.truncate_rdr_using_date import TruncateRdrData
 from cdr_cleaner.cleaning_rules.unit_normalization import UnitNormalization
+from cdr_cleaner.cleaning_rules.update_cope_flu_concepts import UpdateCopeFluQuestionConcept
 from cdr_cleaner.cleaning_rules.update_fields_numbers_as_strings import UpdateFieldsNumbersAsStrings
 from cdr_cleaner.cleaning_rules.temporal_consistency import TemporalConsistency
 from cdr_cleaner.cleaning_rules.valid_death_dates import ValidDeathDates
@@ -89,17 +92,17 @@ from cdr_cleaner.cleaning_rules.deid.geolocation_concept_suppression import GeoL
 from cdr_cleaner.cleaning_rules.null_person_birthdate import NullPersonBirthdate
 from cdr_cleaner.cleaning_rules.race_ethnicity_record_suppression import RaceEthnicityRecordSuppression
 from cdr_cleaner.cleaning_rules.table_suppression import TableSuppression
-from cdr_cleaner.cleaning_rules.deid.cope_survey_response_suppression import CopeSurveyResponseSuppression
+from cdr_cleaner.cleaning_rules.deid.controlled_cope_survey_suppression import ControlledCopeSurveySuppression
 from cdr_cleaner.cleaning_rules.deid.registered_cope_survey_suppression import RegisteredCopeSurveyQuestionsSuppression
 from cdr_cleaner.cleaning_rules.deid.questionnaire_response_id_map import QRIDtoRID
 from cdr_cleaner.cleaning_rules.generalize_zip_codes import GeneralizeZipCodes
 from cdr_cleaner.cleaning_rules.free_text_survey_response_suppression import FreeTextSurveyResponseSuppression
 from cdr_cleaner.cleaning_rules.cancer_concept_suppression import CancerConceptSuppression
-from cdr_cleaner.cleaning_rules.deid.organ_transplant_concept_suppression import OrganTransplantConceptSuppression
 from cdr_cleaner.cleaning_rules.identifying_field_suppression import IDFieldSuppression
 from cdr_cleaner.cleaning_rules.aggregate_zip_codes import AggregateZipCodes
 from cdr_cleaner.cleaning_rules.remove_extra_tables import RemoveExtraTables
 from cdr_cleaner.cleaning_rules.store_pid_rid_mappings import StoreNewPidRidMappings
+from cdr_cleaner.cleaning_rules.suppress_combined_pfmh_survey import CombinedPersonalFamilyHealthSurveySuppression
 from cdr_cleaner.cleaning_rules.update_invalid_zip_codes import UpdateInvalidZipCodes
 from cdr_cleaner.manual_cleaning_rules.survey_version_info import COPESurveyVersionTask
 from cdr_cleaner.cleaning_rules.deid.string_fields_suppression import StringFieldsSuppression
@@ -107,6 +110,8 @@ from cdr_cleaner.cleaning_rules.generalize_state_by_population import Generalize
 from cdr_cleaner.cleaning_rules.section_participation_concept_suppression import SectionParticipationConceptSuppression
 from cdr_cleaner.cleaning_rules.covid_ehr_vaccine_concept_suppression import CovidEHRVaccineConceptSuppression
 from cdr_cleaner.cleaning_rules.missing_concept_record_suppression import MissingConceptRecordSuppression
+from cdr_cleaner.cleaning_rules.create_deid_questionnaire_response_map import CreateDeidQuestionnaireResponseMap
+from cdr_cleaner.cleaning_rules.vehicular_accident_concept_suppression import VehicularAccidentConceptSuppression
 from constants.cdr_cleaner import clean_cdr_engine as ce_consts
 from constants.cdr_cleaner.clean_cdr import DataStage
 
@@ -138,8 +143,10 @@ UNIONED_EHR_CLEANING_CLASSES = [
 
 RDR_CLEANING_CLASSES = [
     (StoreNewPidRidMappings,),
+    (CreateDeidQuestionnaireResponseMap,),
     (TruncateRdrData,),
     (RemoveParticipantsUnder18Years,),
+    (CombinedPersonalFamilyHealthSurveySuppression,),
     # execute map_questions_answers_to_omop before PpiBranching gets executed
     # since PpiBranching relies on fully mapped concepts
     # trying to load a table while creating query strings,
@@ -155,6 +162,7 @@ RDR_CLEANING_CLASSES = [
         FixUnmappedSurveyAnswers,),
     (ObservationSourceConceptIDRowSuppression,),
     (UpdateFieldsNumbersAsStrings,),
+    (UpdateCopeFluQuestionConcept,),
     (maps_to_value_vocab_update.get_maps_to_value_ppi_vocab_update_queries,),
     (back_fill_pmi_skip.get_run_pmi_fix_queries,),
     (CleanPPINumericFieldsUsingParameters,),
@@ -267,12 +275,13 @@ CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     (FreeTextSurveyResponseSuppression,
     ),  # Should run after any data remapping rules
     (MotorVehicleAccidentSuppression,),
+    (VehicularAccidentConceptSuppression,),
     (ExplicitIdentifierSuppression,),
     (GeoLocationConceptSuppression,),
-    (OrganTransplantConceptSuppression,),
     (BirthInformationSuppression,),
+    (YearOfBirthRecordsSuppression,),
     (StringFieldsSuppression,),
-    (CopeSurveyResponseSuppression,),
+    (ControlledCopeSurveySuppression,),
     (IDFieldSuppression,),  # Should run after any data remapping
     (GenerateExtTables,),
     (COPESurveyVersionTask,
@@ -319,10 +328,10 @@ REGISTERED_TIER_DEID_CLEANING_CLASSES = [
     (
         CovidEHRVaccineConceptSuppression,),  # should run after QRIDtoRID
     (StringFieldsSuppression,),
+    (VehicularAccidentConceptSuppression,),
     (SectionParticipationConceptSuppression,),
     (RegisteredCopeSurveyQuestionsSuppression,),
     (CancerConceptSuppression,),
-    (OrganTransplantConceptSuppression,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
@@ -374,6 +383,12 @@ def get_parser():
         type=DataStage,
         choices=list([s for s in DataStage if s is not DataStage.UNSPECIFIED]),
         help='Specify the dataset')
+    engine_parser.add_argument(
+        '--run_as',
+        required=True,
+        dest='run_as',
+        action='store',
+        help='Service account email address to impersonate')
     return engine_parser
 
 
@@ -501,6 +516,7 @@ def main(args=None):
                                    sandbox_dataset_id=args.sandbox_dataset_id,
                                    rules=rules,
                                    table_namer=args.data_stage.value,
+                                   run_as=args.run_as,
                                    **kwargs)
 
 

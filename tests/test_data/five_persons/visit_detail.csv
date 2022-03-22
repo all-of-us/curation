@@ -1,0 +1,4 @@
+visit_detail_id,person_id,visit_detail_concept_id,visit_detail_start_date,visit_detail_start_datetime,visit_detail_end_date,visit_detail_end_datetime,visit_detail_type_concept_id,provider_id,care_site_id,visit_detail_source_value,visit_detail_source_concept_id,admitting_source_value,admitting_source_concept_id,discharge_to_source_value,discharge_to_concept_id,preceding_visit_detail_id,visit_detail_parent_id,visit_occurrence_id
+101,17,9203,2010-05-29,2010-05-29 05:00:00.000000 UTC,2010-05-29,2010-05-29 06:00:00.000000 UTC,32817,,,,,,,,32037,,,75
+102,17,9203,2011-05-29,2011-05-29 05:00:00.000000 UTC,2011-05-29,2011-05-29 06:00:00.000000 UTC,32817,,,,,,,,32037,,,9999
+103,20,9203,2012-05-29,2012-05-29 05:00:00.000000 UTC,2012-05-29,2012-05-29 06:00:00.000000 UTC,32817,,,,,,,,32037,,,94

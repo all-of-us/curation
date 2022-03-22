@@ -1,19 +1,34 @@
+from datetime import datetime
 import inspect
 from io import open
 import os
 from typing import Optional
 
 import googleapiclient.errors
+from google.cloud.exceptions import GoogleCloudError
 import requests
 
+import app_identity
 import bq_utils
 import common
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
+from constants.utils.bq import HPO_ID_BUCKET_NAME_TABLE_ID
 from constants.validation import main
 import resources
+from utils import bq
 
 RESOURCES_BUCKET_FMT = '{project_id}-resources'
+
 FAKE_HPO_ID = 'fake'
+PITT_HPO_ID = 'pitt'
+NYC_HPO_ID = 'nyc'
+FAKE_BUCKET_NAME = os.environ.get('BUCKET_NAME_FAKE')
+PITT_BUCKET_NAME = os.environ.get('BUCKET_NAME_PITT')
+NYC_BUCKET_NAME = os.environ.get('BUCKET_NAME_NYC')
+GAE_SERVICE = os.environ.get('GAE_SERVICE', 'default')
+
+LOOKUP_TABLES = [HPO_ID_BUCKET_NAME_TABLE_ID]
+
 VALIDATE_HPO_FILES_URL = main.PREFIX + 'ValidateHpoFiles/' + FAKE_HPO_ID
 COPY_HPO_FILES_URL = main.PREFIX + 'CopyFiles/' + FAKE_HPO_ID
 BASE_TESTS_PATH = os.path.dirname(
@@ -196,7 +211,7 @@ def _export_query_responses():
 
 def delete_all_tables(dataset_id):
     """
-    Remove all non-vocabulary tables from a dataset
+    Remove all non-vocabulary and non-lookup tables from a dataset
 
     :param dataset_id: ID of the dataset with the tables to delete
     :return: list of deleted tables
@@ -206,7 +221,7 @@ def delete_all_tables(dataset_id):
     table_infos = bq_utils.list_tables(dataset_id)
     table_ids = [table['tableReference']['tableId'] for table in table_infos]
     for table_id in table_ids:
-        if table_id not in common.VOCABULARY_TABLES:
+        if table_id not in common.VOCABULARY_TABLES + LOOKUP_TABLES:
             bq_utils.delete_table(table_id, dataset_id)
             deleted.append(table_id)
     return deleted
@@ -444,3 +459,76 @@ def mock_google_http_error(status_code: int = 418,
         status_code=status_code, content=content, uri=uri, **resp_kwargs),
                                             content=content,
                                             uri=uri)
+
+
+def setup_hpo_id_bucket_name_table(dataset_id):
+    """
+    Sets up `hpo_id_bucket_name` table that `get_hpo_bucket()` looks up.
+    Drops the table if exist first, and create it with test lookup data.
+    :param dataset_id: dataset id where the lookup table is created
+    """
+    project_id = app_identity.get_application_id()
+    bq_client = bq.get_client(project_id)
+
+    drop_hpo_id_bucket_name_table(dataset_id)
+
+    CREATE_LOOKUP_TABLE = common.JINJA_ENV.from_string("""
+        CREATE TABLE `{{project_id}}.{{lookup_dataset_id}}.{{hpo_id_bucket_table_id}}`
+        (hpo_id STRING, bucket_name STRING, service STRING)
+        """)
+
+    create_lookup_table = CREATE_LOOKUP_TABLE.render(
+        project_id=project_id,
+        lookup_dataset_id=dataset_id,
+        hpo_id_bucket_table_id=HPO_ID_BUCKET_NAME_TABLE_ID)
+
+    job = bq_client.query(create_lookup_table)
+    job.result()
+
+    INSERT_LOOKUP_TABLE = common.JINJA_ENV.from_string("""
+        INSERT INTO `{{project_id}}.{{lookup_dataset_id}}.{{hpo_id_bucket_table_id}}` 
+        (hpo_id, bucket_name, service) VALUES 
+        ('{{hpo_id_nyc}}', '{{bucket_name_nyc}}', '{{service_name}}'),
+        ('{{hpo_id_pitt}}', '{{bucket_name_pitt}}', '{{service_name}}'),
+        ('{{hpo_id_fake}}', '{{bucket_name_fake}}', '{{service_name}}')
+        """)
+
+    insert_lookup_table = INSERT_LOOKUP_TABLE.render(
+        project_id=project_id,
+        lookup_dataset_id=dataset_id,
+        hpo_id_bucket_table_id=HPO_ID_BUCKET_NAME_TABLE_ID,
+        hpo_id_nyc=NYC_HPO_ID,
+        bucket_name_nyc=NYC_BUCKET_NAME,
+        hpo_id_pitt=PITT_HPO_ID,
+        bucket_name_pitt=PITT_BUCKET_NAME,
+        hpo_id_fake=FAKE_HPO_ID,
+        bucket_name_fake=FAKE_BUCKET_NAME,
+        service_name=GAE_SERVICE)
+
+    job = bq_client.query(insert_lookup_table)
+    job.result()
+
+
+def drop_hpo_id_bucket_name_table(dataset_id):
+    """
+    Drops `hpo_id_bucket_name` table that `get_hpo_bucket()` looks up.
+    :param dataset_id: dataset id where the lookup table is located
+    """
+    project_id = app_identity.get_application_id()
+    bq_client = bq.get_client(project_id)
+
+    DROP_LOOKUP_TABLE = common.JINJA_ENV.from_string("""
+        DROP TABLE IF EXISTS `{{project_id}}.{{lookup_dataset_id}}.{{hpo_id_bucket_table_id}}` 
+        """)
+
+    drop_lookup_table = DROP_LOOKUP_TABLE.render(
+        project_id=project_id,
+        lookup_dataset_id=dataset_id,
+        hpo_id_bucket_table_id=HPO_ID_BUCKET_NAME_TABLE_ID)
+
+    job = bq_client.query(drop_lookup_table)
+    job.result()
+
+
+def mock_google_cloud_error(content: bytes = b'418: I\'m a teapot'):
+    return GoogleCloudError(message=content.decode())

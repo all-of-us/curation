@@ -12,6 +12,7 @@ import warnings
 from google.api_core.exceptions import GoogleAPIError, BadRequest
 from google.cloud import bigquery
 from google.auth import default
+from deprecated import deprecated
 
 # Project Imports
 from utils import auth
@@ -71,6 +72,7 @@ FIELDS_TMPL = JINJA_ENV.from_string("""
 """)
 
 
+@deprecated(reason='replaced by gcloud.bq.BigQueryClient()')
 def get_client(project_id, scopes=None, credentials=None):
     """
     Get a client for a specified project.
@@ -88,6 +90,10 @@ def get_client(project_id, scopes=None, credentials=None):
     return bigquery.Client(project=project_id, credentials=credentials)
 
 
+@deprecated(
+    reason=
+    'Use gcloud.bq.BigQueryClient.get_table_schema(self, table_name: str, fields=None) instead'
+)
 def get_table_schema(table_name, fields=None):
     """
     A helper function to create big query SchemaFields for dictionary definitions.
@@ -153,6 +159,10 @@ def upload_csv_data_to_bq_table(client, dataset_id, table_name, fq_file_path,
     return result
 
 
+@deprecated(
+    reason=
+    'Use gcloud.bq.BigQueryClient._to_standard_sql_type(self, field_type: str) instead'
+)
 def _to_standard_sql_type(field_type: str) -> str:
     """
     Get standard SQL type corresponding to a SchemaField type
@@ -169,6 +179,10 @@ def _to_standard_sql_type(field_type: str) -> str:
     return standard_sql_type.name
 
 
+@deprecated(
+    reason=
+    'Use gcloud.bq.BigQueryClient._to_sql_field(self,field: bigquery.SchemaField) instead'
+)
 def _to_sql_field(field: bigquery.SchemaField) -> bigquery.SchemaField:
     """
     Convert all types in a schema field object to standard SQL types (not legacy)
@@ -181,6 +195,17 @@ def _to_sql_field(field: bigquery.SchemaField) -> bigquery.SchemaField:
                                 field.mode, field.description, field.fields)
 
 
+@deprecated(reason="""
+    Use gcloud.bq.BigQueryClient.get_create_or_replace_table_ddl(self,
+                                                                  dataset_id: str,
+                                                                  table_id: str,
+                                                                  schema: typing.List[
+                                                                  bigquery.SchemaField] = None,
+                                                                  cluster_by_cols: typing.List[str] = None,
+                                                                  as_query: str = None,
+                                                                  **table_options) 
+                                                                instead
+    """)
 def get_create_or_replace_table_ddl(project_id: str,
                                     dataset_id: str,
                                     table_id: str,
@@ -305,6 +330,10 @@ def query(q, project_id=None, use_cache=False):
     return client.query(q, job_config=query_job_config).to_dataframe()
 
 
+@deprecated(
+    reason=
+    'Use gcloud.bq.BigQueryClient.dataset_columns_query(self, dataset_id: str) instead'
+)
 def dataset_columns_query(project_id: str, dataset_id: str) -> str:
     """
     Get INFORMATION_SCHEMA.COLUMNS query for a specified dataset
@@ -317,6 +346,10 @@ def dataset_columns_query(project_id: str, dataset_id: str) -> str:
                                       dataset_id=dataset_id)
 
 
+@deprecated(
+    reason=
+    'Use gcloud.bq.BigQueryClient.define_dataset(self, dataset_id: str, description: str, label_or_tag: dict) instead'
+)
 def define_dataset(project_id, dataset_id, description, label_or_tag):
     """
     Define the dataset reference.

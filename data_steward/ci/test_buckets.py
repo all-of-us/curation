@@ -5,7 +5,7 @@ Creates buckets with a 30 day lifecycle.
 Bucket deletion and modification functions (for testing purposes) should be
 added to this module.
 """
-from google.cloud import storage
+from gcloud.gcs import StorageClient
 from google.cloud.exceptions import Conflict
 from google.oauth2 import service_account
 
@@ -18,13 +18,13 @@ def get_client(project_id, app_creds):
     Ensure only one client is created and reused
 
     :param project_id:  project to get a client for
-    :returns: a big query client object
+    :returns: a StorageClient object
     """
     global CLIENT
     if not CLIENT:
         credentials = service_account.Credentials.from_service_account_file(
             app_creds)
-        CLIENT = storage.Client(project=project_id, credentials=credentials)
+        CLIENT = StorageClient(project_id=project_id, credentials=credentials)
 
     return CLIENT
 
@@ -41,7 +41,7 @@ def create_bucket(config, bucket_name):
                                 config.get('GOOGLE_APPLICATION_CREDENTIALS'))
 
     # Creates the new bucket
-    bucket = storage.bucket.Bucket(storage_client, name=bucket_name)
+    bucket = storage_client.bucket(bucket_name)
     # set lifecycle
     bucket.add_lifecycle_delete_rule(age=30)
     bucket.location = "US"

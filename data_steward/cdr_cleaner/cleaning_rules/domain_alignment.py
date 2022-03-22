@@ -14,6 +14,7 @@ from common import JINJA_ENV, OBSERVATION
 from cdr_cleaner.cleaning_rules.domain_mapping import EMPTY_STRING, METADATA_DOMAIN
 from tools.combine_ehr_rdr import mapping_table_for
 from utils import bq
+from gcloud.bq import BigQueryClient
 
 LOGGER = logging.getLogger(__name__)
 
@@ -320,10 +321,10 @@ def get_domain_mapping_queries(project_id, dataset_id):
     :return: a list of query dicts for creating id mappings in _logging_domain_alignment
     """
     # Create _logging_domain_alignment
-    client = bq.get_client(project_id)
+    bq_client = BigQueryClient(project_id)
     table_id = f'{project_id}.{dataset_id}.{DOMAIN_ALIGNMENT_TABLE_NAME}'
-    client.delete_table(table_id, not_found_ok=True)
-    bq.create_tables(client, project_id, [table_id], exists_ok=False)
+    bq_client.delete_table(table_id, not_found_ok=True)
+    bq.create_tables(bq_client, project_id, [table_id], exists_ok=False)
 
     domain_mapping_queries = []
 

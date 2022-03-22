@@ -16,9 +16,9 @@ from io import StringIO, open
 # Third party imports
 import dateutil
 from flask import Flask
+from google.cloud.exceptions import GoogleCloudError
 from googleapiclient.errors import HttpError
-from google.cloud.storage import Blob
-from google.cloud.storage.bucket import Bucket
+from google.cloud.storage.bucket import Blob
 
 # Project imports
 import api_util
@@ -26,7 +26,7 @@ import app_identity
 import bq_utils
 import cdm
 import common
-import gcs_utils
+from gcloud.bq import BigQueryClient
 from gcloud.gcs import StorageClient
 import resources
 from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON, AOU_REQUIRED_FILES
@@ -41,7 +41,8 @@ from validation.app_errors import (BucketNotSet, log_traceback,
                                    errors_blueprint, InternalValidationError,
                                    BucketDoesNotExistError)
 from validation.metrics import completeness, required_labs
-from validation.participants import identity_match as matching
+from validation.participants.store_participant_summary_results import fetch_and_store_full_ps_data
+from validation.participants.validate import setup_and_validate_participants, get_participant_validation_summary_query
 
 app = Flask(__name__)
 
@@ -77,14 +78,14 @@ def save_datasources_json(storage_client,
                 f"nor target_bucket are specified.")
     else:
         if target_bucket is None:
-            target_bucket: Bucket = storage_client.get_hpo_bucket(datasource_id)
+            target_bucket = storage_client.get_hpo_bucket(datasource_id)
         else:
-            target_bucket: Bucket = storage_client.bucket(target_bucket)
+            target_bucket = storage_client.bucket(target_bucket)
 
     datasource = dict(name=datasource_id, folder=datasource_id, cdmVersion=5)
     datasources = dict(datasources=[datasource])
     datasources_fp = StringIO(json.dumps(datasources))
-    blob: Blob = target_bucket.blob(
+    blob = target_bucket.blob(
         f'{folder_prefix}{ACHILLES_EXPORT_DATASOURCES_JSON}')
     blob.upload_from_file(datasources_fp)
     result: dict = storage_client.get_blob_metadata(blob)
@@ -108,9 +109,9 @@ def run_export(datasource_id=None, folder_prefix="", target_bucket=None):
             f"Cannot export if neither hpo_id nor target_bucket is specified.")
     else:
         if target_bucket is None:
-            target_bucket: Bucket = storage_client.get_hpo_bucket(datasource_id)
+            target_bucket = storage_client.get_hpo_bucket(datasource_id)
         else:
-            target_bucket: Bucket = storage_client.bucket(target_bucket)
+            target_bucket = storage_client.bucket(target_bucket)
 
     logging.info(
         f"Exporting {datasource_id} report to bucket {target_bucket.name}")
@@ -122,7 +123,7 @@ def run_export(datasource_id=None, folder_prefix="", target_bucket=None):
         result = export.export_from_path(sql_path, datasource_id)
         content = json.dumps(result)
         fp = StringIO(content)
-        blob: Blob = target_bucket.blob(f'{reports_prefix}{export_name}.json')
+        blob = target_bucket.blob(f'{reports_prefix}{export_name}.json')
         blob.upload_from_file(fp)
         result: dict = storage_client.get_blob_metadata(blob)
         results.append(result)
@@ -161,30 +162,30 @@ def upload_achilles_files(hpo_id):
 def _upload_achilles_files(hpo_id=None, folder_prefix='', target_bucket=None):
     """
     uploads achilles web files to the corresponding hpo bucket
-
     :hpo_id: which hpo bucket do these files go into
     :returns:
     """
     results = []
     project_id = app_identity.get_application_id()
     storage_client = StorageClient(project_id)
-    if target_bucket is not None:
-        bucket: Bucket = storage_client.bucket(target_bucket)
-    else:
-        if hpo_id is None:
+
+    if not target_bucket:
+        if not hpo_id:
             raise RuntimeError(
                 f"Either hpo_id or target_bucket must be specified")
-        bucket: Bucket = storage_client.get_hpo_bucket(hpo_id)
+        target_bucket = storage_client.get_hpo_bucket(hpo_id)
     logging.info(
-        f"Uploading achilles index files to 'gs://{bucket.name}/{folder_prefix}'"
+        f"Uploading achilles index files to 'gs://{target_bucket.name}/{folder_prefix}'"
     )
+
     for filename in resources.ACHILLES_INDEX_FILES:
         logging.info(
-            f"Uploading achilles file '{filename}' to bucket {bucket.name}")
+            f"Uploading achilles file '{filename}' to bucket {target_bucket.name}"
+        )
         bucket_file_name = filename.split(resources.resource_files_path +
                                           os.sep)[1].strip().replace('\\', '/')
         with open(filename, 'rb') as fp:
-            blob: Blob = bucket.blob(f'{folder_prefix}{bucket_file_name}')
+            blob = target_bucket.blob(f'{folder_prefix}{bucket_file_name}')
             blob.upload_from_file(fp)
             upload_result: dict = storage_client.get_blob_metadata(blob)
             results.append(upload_result)
@@ -213,20 +214,6 @@ def validate_all_hpos():
     return 'validation done!'
 
 
-def list_bucket(bucket):
-    try:
-        return gcs_utils.list_bucket(bucket)
-    except HttpError as err:
-        if err.resp.status == 404:
-            raise BucketDoesNotExistError(
-                f"Failed to list objects in bucket {bucket}", bucket)
-        raise
-    except Exception as e:
-        msg = getattr(e, 'message', repr(e))
-        logging.exception(f"Unknown error {msg}")
-        raise
-
-
 def categorize_folder_items(folder_items):
     """
     Categorize submission items into three lists: CDM, PII, UNKNOWN
@@ -248,7 +235,8 @@ def categorize_folder_items(folder_items):
     return found_cdm_files, found_pii_files, unknown_files
 
 
-def validate_submission(hpo_id, bucket, folder_items, folder_prefix):
+def validate_submission(hpo_id: str, bucket, folder_items: list,
+                        folder_prefix: str):
     """
     Load submission in BigQuery and summarize outcome
 
@@ -261,7 +249,7 @@ def validate_submission(hpo_id, bucket, folder_items, folder_prefix):
       errors and warnings are both lists of tuples (file_name, message)
     """
     logging.info(
-        f"Validating {hpo_id} submission in gs://{bucket}/{folder_prefix}")
+        f"Validating {hpo_id} submission in gs://{bucket.name}/{folder_prefix}")
     # separate cdm from the unknown (unexpected) files
     found_cdm_files, found_pii_files, unknown_files = categorize_folder_items(
         folder_items)
@@ -364,6 +352,13 @@ def generate_metrics(hpo_id, bucket, folder_prefix, summary):
         report_data[report_consts.COMPLETENESS_REPORT_KEY] = query_rows(
             completeness_query)
 
+        # participant validation metrics
+        logging.info(f"Ensuring participant validation can be run for {hpo_id}")
+        setup_and_validate_participants(hpo_id)
+        participant_validation_query = get_participant_validation_summary_query(
+            hpo_id)
+        # TODO add to report_data based on requirements from EHR_OPS
+
         # lab concept metrics
         logging.info(f"Getting lab concepts for {hpo_id}")
         lab_concept_metrics_query = required_labs.get_lab_concept_summary_query(
@@ -455,13 +450,13 @@ def perform_reporting(hpo_id, report_data, folder_items, bucket, folder_prefix):
     results_html_path = folder_prefix + common.RESULTS_HTML
     logging.info(f"Saving file {common.RESULTS_HTML} to "
                  f"gs://{bucket.name}/{results_html_path}.")
-    results_html_blob: Blob = bucket.blob(results_html_path)
+    results_html_blob = bucket.blob(results_html_path)
     results_html_blob.upload_from_string(results_html)
 
     processed_txt_path = folder_prefix + common.PROCESSED_TXT
     logging.info(f"Saving timestamp {processed_time_str} to "
                  f"gs://{bucket.name}/{processed_txt_path}.")
-    processed_txt_blob: Blob = bucket.blob(processed_txt_path)
+    processed_txt_blob = bucket.blob(processed_txt_path)
     processed_txt_blob.upload_from_string(processed_time_str)
 
     folder_uri = f"gs://{bucket.name}/{folder_prefix}"
@@ -521,11 +516,10 @@ def process_hpo(hpo_id, force_run=False):
         logging.info(f"Processing hpo_id {hpo_id}")
         project_id = app_identity.get_application_id()
         storage_client = StorageClient(project_id)
-        bucket: Bucket = storage_client.get_hpo_bucket(hpo_id)
-        bucket_items = list_bucket(bucket.name)
-        folder_prefix = _get_submission_folder(bucket.name, bucket_items,
-                                               force_run)
-        if folder_prefix is None:
+        bucket = storage_client.get_hpo_bucket(hpo_id)
+        bucket_items: list = storage_client.get_bucket_items_metadata(bucket)
+        folder_prefix = _get_submission_folder(bucket, bucket_items, force_run)
+        if not folder_prefix:
             logging.info(
                 f"No submissions to process in {hpo_id} bucket {bucket.name}")
         else:
@@ -533,10 +527,10 @@ def process_hpo(hpo_id, force_run=False):
             if is_valid_folder_prefix_name(folder_prefix):
                 # perform validation
                 folder_items = get_folder_items(bucket_items, folder_prefix)
-                summary = validate_submission(hpo_id, bucket.name, folder_items,
+                summary = validate_submission(hpo_id, bucket, folder_items,
                                               folder_prefix)
-                report_data = generate_metrics(hpo_id, bucket.name,
-                                               folder_prefix, summary)
+                report_data = generate_metrics(hpo_id, bucket, folder_prefix,
+                                               summary)
             else:
                 # do not perform validation
                 report_data = generate_empty_report(hpo_id, folder_prefix)
@@ -546,9 +540,9 @@ def process_hpo(hpo_id, force_run=False):
         logging.info(f'{exc}')
     except BucketDoesNotExistError as exc:
         logging.warning(f'{exc}')
-    except HttpError as http_error:
+    except GoogleCloudError as google_cloud_error:
         message = (f"Failed to process hpo_id '{hpo_id}' due to the following "
-                   f"HTTP error: {http_error.content.decode()}")
+                   f"HTTP error: {google_cloud_error.message}")
         logging.exception(message)
 
 
@@ -598,7 +592,16 @@ def get_duplicate_counts_query(hpo_id):
         if table_id in all_table_ids:
             sub_query = render_query(consts.DUPLICATE_IDS_SUBQUERY,
                                      table_name=table_name,
-                                     table_id=table_id)
+                                     table_id=table_id,
+                                     primary_key=f'{table_name}_id')
+            sub_queries.append(sub_query)
+    for table_name in common.PII_TABLES + [common.PERSON, common.DEATH]:
+        table_id = bq_utils.get_table_id(hpo_id, table_name)
+        if table_id in all_table_ids:
+            sub_query = render_query(consts.DUPLICATE_IDS_SUBQUERY,
+                                     table_name=table_name,
+                                     table_id=table_id,
+                                     primary_key='person_id')
             sub_queries.append(sub_query)
     unioned_query = consts.UNION_ALL.join(sub_queries)
     return consts.DUPLICATE_IDS_WRAPPER.format(
@@ -650,8 +653,8 @@ def get_hpo_missing_pii_query(hpo_id):
         participant_match_table_id=participant_match_table_id)
 
 
-def perform_validation_on_file(file_name, found_file_names, hpo_id,
-                               folder_prefix, bucket):
+def perform_validation_on_file(file_name: str, found_file_names: list,
+                               hpo_id: str, folder_prefix, bucket):
     """
     Attempts to load a csv file into BigQuery
 
@@ -684,7 +687,7 @@ def perform_validation_on_file(file_name, found_file_names, hpo_id,
                 issues = [item['message'] for item in job_status['errors']]
                 errors.append((file_name, ' || '.join(issues)))
                 logging.info(
-                    f"Issues found in gs://{bucket}/{folder_prefix}/{file_name}"
+                    f"Issues found in gs://{bucket.name}/{folder_prefix}/{file_name}"
                 )
                 for issue in issues:
                     logging.info(issue)
@@ -697,7 +700,7 @@ def perform_validation_on_file(file_name, found_file_names, hpo_id,
             message = (
                 f"Loading hpo_id '{hpo_id}' table '{table_name}' failed because "
                 f"job id '{load_job_id}' did not complete.\n")
-            message += f"Aborting processing 'gs://{bucket}/{folder_prefix}'."
+            message += f"Aborting processing 'gs://{bucket.name}/{folder_prefix}'."
             logging.error(message)
             raise InternalValidationError(message)
 
@@ -708,35 +711,20 @@ def perform_validation_on_file(file_name, found_file_names, hpo_id,
 
 
 def _validation_done(bucket, folder):
-    project_id = app_identity.get_application_id()
-    storage_client = StorageClient(project_id)
-    bucket = storage_client.bucket(bucket)
-    return Blob(bucket=bucket,
-                name=f'{folder}{common.PROCESSED_TXT}').exists(storage_client)
+    return Blob(bucket=bucket, name=f'{folder}{common.PROCESSED_TXT}').exists()
 
 
-def basename(gcs_object_metadata):
+def basename(item_metadata):
     """returns name of file inside folder
 
-    :gcs_object_metadata: metadata as returned by list bucket
+    :item_metadata: metadata as returned by get bucket times metadata
     :returns: name without folder name
 
     """
-    name = gcs_object_metadata['name']
+    name = item_metadata['name']
     if len(name.split('/')) > 1:
         return '/'.join(name.split('/')[1:])
     return ''
-
-
-def updated_datetime_object(gcs_object_metadata):
-    """returns update datetime
-
-    :gcs_object_metadata: metadata as returned by list bucket
-    :returns: datetime object
-
-    """
-    return datetime.datetime.strptime(gcs_object_metadata['updated'],
-                                      '%Y-%m-%dT%H:%M:%S.%fZ')
 
 
 def _has_all_required_files(folder_bucketitems_basenames):
@@ -750,8 +738,8 @@ def list_submitted_bucket_items(folder_bucketitems):
     """
     files_list = []
     object_retention_days = 30
-    object_process_lag_minutes = 5
-    today = datetime.datetime.today()
+    object_process_lag_minutes = consts.SUBMISSION_LAG_TIME_MINUTES
+    utc_today = datetime.datetime.now(tz=None)
 
     # If any required file missing, stop submission
     folder_bucketitems_basenames = [
@@ -767,25 +755,26 @@ def list_submitted_bucket_items(folder_bucketitems):
         return []
 
     # Validate submission times
-    for file_name in folder_bucketitems:
-        if basename(file_name) not in resources.IGNORE_LIST:
+    for item in folder_bucketitems:
+        if basename(item) not in resources.IGNORE_LIST:
             # in common.CDM_FILES or is_pii(basename(file_name)):
-            created_date = initial_date_time_object(file_name)
+            created_date = item['timeCreated']
             retention_time = datetime.timedelta(days=object_retention_days)
             retention_start_time = datetime.timedelta(days=1)
             upper_age_threshold = created_date + retention_time - retention_start_time
+            upper_age_threshold = upper_age_threshold.replace(tzinfo=None)
 
-            if upper_age_threshold > today:
-                files_list.append(file_name)
+            if upper_age_threshold > utc_today:
+                files_list.append(item)
 
-            if basename(file_name) in AOU_REQUIRED_FILES:
+            if basename(item) in AOU_REQUIRED_FILES:
                 # restrict processing time for 5 minutes after all required files
-                updated_date = updated_datetime_object(file_name)
                 lag_time = datetime.timedelta(
                     minutes=object_process_lag_minutes)
-                lower_age_threshold = updated_date + lag_time
+                lower_age_threshold = item['updated'] + lag_time
+                lower_age_threshold = lower_age_threshold.replace(tzinfo=None)
 
-                if lower_age_threshold > today:
+                if lower_age_threshold > utc_today:
                     logging.info(
                         f"Delaying processing for hpo_id by 3 hrs (to next cron run) "
                         f"since files are still being uploaded. "
@@ -795,16 +784,6 @@ def list_submitted_bucket_items(folder_bucketitems):
     return files_list
 
 
-def initial_date_time_object(gcs_object_metadata):
-    """
-    :param gcs_object_metadata: metadata as returned by list bucket
-    :return: datetime object
-    """
-    date_created = datetime.datetime.strptime(
-        gcs_object_metadata['timeCreated'], '%Y-%m-%dT%H:%M:%S.%fZ')
-    return date_created
-
-
 def _get_submission_folder(bucket, bucket_items, force_process=False):
     """
     Get the string name of the most recent submission directory for validation
@@ -812,7 +791,7 @@ def _get_submission_folder(bucket, bucket_items, force_process=False):
     Skips directories listed in IGNORE_DIRECTORIES with a case insensitive
     match.
 
-    :param bucket: string bucket name to look into
+    :param bucket: Bucket Object to validate on
     :param bucket_items: list of unicode string items in the bucket
     :param force_process: if True return most recently updated directory, even
         if it has already been processed.
@@ -856,14 +835,13 @@ def _get_submission_folder(bucket, bucket_items, force_process=False):
         submitted_bucket_items = list_submitted_bucket_items(
             folder_bucket_items)
 
-        if submitted_bucket_items and submitted_bucket_items != []:
+        if submitted_bucket_items:
             folders_with_submitted_files.append(folder_name)
-            latest_datetime = max([
-                updated_datetime_object(item) for item in submitted_bucket_items
-            ])
+            latest_datetime = max(
+                [item['updated'] for item in submitted_bucket_items])
             folder_datetime_list.append(latest_datetime)
 
-    if folder_datetime_list and folder_datetime_list != []:
+    if folder_datetime_list:
         latest_datetime_index = folder_datetime_list.index(
             max(folder_datetime_list))
         to_process_folder = folders_with_submitted_files[latest_datetime_index]
@@ -1001,18 +979,27 @@ def run_retraction_cron():
 @api_util.auth_required_cron
 @log_traceback
 def validate_pii():
-    project = bq_utils.app_identity.get_application_id()
-    combined_dataset = bq_utils.get_combined_dataset_id()
-    ehr_dataset = bq_utils.get_dataset_id()
-    dest_dataset = bq_utils.get_validation_results_dataset_id()
-    logging.info(f"Calling match_participants")
-    _, errors = matching.match_participants(project, combined_dataset,
-                                            ehr_dataset, dest_dataset)
-
-    if errors > 0:
-        logging.error(f"Errors encountered in validation process")
+    logging.info(f"Running participant validation on all sites")
+    for item in bq_utils.get_hpo_info():
+        hpo_id = item['hpo_id']
+        # Prevent updating udfs for all hpo_sites
+        setup_and_validate_participants(hpo_id, update_udf=False)
 
     return consts.VALIDATION_SUCCESS
+
+
+@api_util.auth_required_cron
+@log_traceback
+def ps_api_cron():
+    project = bq_utils.app_identity.get_application_id()
+    bq_client = BigQueryClient(project)
+    rdr_project_id = bq_utils.get_rdr_project_id()
+    drc_dataset_id = common.DRC_OPS
+    logging.info(f"Fetching Participant Summary API data")
+    fetch_and_store_full_ps_data(bq_client, project, rdr_project_id,
+                                 drc_dataset_id)
+
+    return consts.PS_API_SUCCESS
 
 
 @app.before_first_request
@@ -1045,7 +1032,8 @@ app.add_url_rule(consts.PREFIX + 'UnionEHR',
                  view_func=union_ehr,
                  methods=['GET'])
 
-app.add_url_rule(consts.PREFIX + consts.PARTICIPANT_VALIDATION,
+app.add_url_rule(consts.PREFIX + consts.PARTICIPANT_VALIDATION +
+                 consts.VALIDATE,
                  endpoint='validate_pii',
                  view_func=validate_pii,
                  methods=['GET'])
@@ -1053,6 +1041,12 @@ app.add_url_rule(consts.PREFIX + consts.PARTICIPANT_VALIDATION,
 app.add_url_rule(consts.PREFIX + 'RetractPids',
                  endpoint='run_retraction_cron',
                  view_func=run_retraction_cron,
+                 methods=['GET'])
+
+app.add_url_rule(consts.PREFIX + consts.PARTICIPANT_VALIDATION +
+                 consts.FETCH_PS_DATA,
+                 endpoint='ps_api_cron',
+                 view_func=ps_api_cron,
                  methods=['GET'])
 
 app.before_request(

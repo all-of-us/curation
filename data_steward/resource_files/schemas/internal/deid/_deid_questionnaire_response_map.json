@@ -1,0 +1,14 @@
+[
+    {
+        "type": "integer",
+        "name": "questionnaire_response_id",
+        "mode": "required",
+        "description": "An ID for a questionnaire response that produced this observation. This is applicable to AllOfUs questionnaire answers only. All answers with the same questionnaire response ID were submitted in the same response."
+    },
+    {
+        "type": "integer",
+        "name": "research_response_id",
+        "mode": "required",
+        "description": "Research response ID to replace the questionnaire_response_id in de-identified datasets"
+    }
+]

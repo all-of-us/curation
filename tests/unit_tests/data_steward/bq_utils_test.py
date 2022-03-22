@@ -5,6 +5,7 @@ import mock
 
 import bq_utils
 from constants import bq_utils as bq_utils_consts
+from gcloud.gcs import StorageClient
 
 
 class BqUtilsTest(unittest.TestCase):
@@ -16,9 +17,14 @@ class BqUtilsTest(unittest.TestCase):
         print('**************************************************************')
 
     def setUp(self):
-        self.hpo_id = 'fake-hpo'
+        self.hpo_id: str = 'fake-hpo'
 
-    def test_load_cdm_csv_error_on_bad_table_name(self):
+    @mock.patch.object(StorageClient, '__init__')
+    @mock.patch.object(StorageClient, 'get_hpo_bucket')
+    def test_load_cdm_csv_error_on_bad_table_name(self, mock_get_hpo_bucket,
+                                                  mock_storage_init):
+        mock_storage_init.return_value = None
+        mock_get_hpo_bucket.return_value = None
         self.assertRaises(ValueError, bq_utils.load_cdm_csv, self.hpo_id,
                           'not_a_cdm_table')
 

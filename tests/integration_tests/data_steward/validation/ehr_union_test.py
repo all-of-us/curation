@@ -11,15 +11,14 @@ import cdm
 import common
 from constants.tools import combine_ehr_rdr
 from constants.validation import ehr_union as eu_constants
+from gcloud.bq import BigQueryClient
 from gcloud.gcs import StorageClient
-import gcs_utils
 import resources
 import tests.test_util as test_util
+from tests.test_util import FAKE_HPO_ID, NYC_HPO_ID, PITT_HPO_ID
 from validation import ehr_union
 
-PITT_HPO_ID = 'pitt'
-NYC_HPO_ID = 'nyc'
-EXCLUDED_HPO_ID = 'fake'
+EXCLUDED_HPO_ID = FAKE_HPO_ID
 SUBQUERY_FAIL_MSG = '''
 Test {expr} in {table} subquery
  Expected: {expected}
@@ -35,11 +34,14 @@ def first_or_none(l):
 
 class EhrUnionTest(unittest.TestCase):
 
+    dataset_id = bq_utils.get_dataset_id()
+
     @classmethod
     def setUpClass(cls):
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
+        test_util.setup_hpo_id_bucket_name_table(cls.dataset_id)
 
     def setUp(self):
         self.project_id = bq_utils.app_identity.get_application_id()
@@ -47,13 +49,14 @@ class EhrUnionTest(unittest.TestCase):
         self.input_dataset_id = bq_utils.get_dataset_id()
         self.output_dataset_id = bq_utils.get_unioned_dataset_id()
         self.storage_client = StorageClient(self.project_id)
+        self.bq_client = BigQueryClient(self.project_id)
         self.tearDown()
 
         # TODO Generalize to work for all foreign key references
         # Collect all primary key fields in CDM tables
         mapped_fields = []
         for table in cdm.tables_to_map():
-            field = table + '_id'
+            field = f'{table}_id'
             mapped_fields.append(field)
         self.mapped_fields = mapped_fields
         self.implemented_foreign_keys = [
@@ -63,9 +66,11 @@ class EhrUnionTest(unittest.TestCase):
 
         self.ehr_cutoff_date = '2022-01-05'
 
+    @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def _empty_hpo_buckets(self):
+
         for hpo_id in self.hpo_ids:
-            bucket = gcs_utils.get_hpo_bucket(hpo_id)
+            bucket = self.storage_client.get_hpo_bucket(hpo_id)
             self.storage_client.empty_bucket(bucket)
 
     def _create_hpo_table(self, hpo_id, table, dataset_id):
@@ -75,6 +80,7 @@ class EhrUnionTest(unittest.TestCase):
                               dataset_id=dataset_id)
         return table_id
 
+    @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def _load_datasets(self):
         """
         Load five persons data for nyc and pitt test hpo and rdr data for the excluded_hpo
@@ -89,36 +95,44 @@ class EhrUnionTest(unittest.TestCase):
             for hpo_id in self.hpo_ids:
                 # upload csv into hpo bucket
                 cdm_filename: str = f'{cdm_table}.csv'
-                if hpo_id == NYC_HPO_ID:
-                    cdm_filepath: str = os.path.join(
-                        test_util.FIVE_PERSONS_PATH, cdm_filename)
-                elif hpo_id == PITT_HPO_ID:
-                    cdm_filepath: str = os.path.join(
-                        test_util.PITT_FIVE_PERSONS_PATH, cdm_filename)
-                elif hpo_id == EXCLUDED_HPO_ID:
-                    if cdm_table in [
-                            'observation', 'person', 'visit_occurrence'
-                    ]:
-                        cdm_filepath: str = os.path.join(
-                            test_util.RDR_PATH, cdm_filename)
-                bucket: str = gcs_utils.get_hpo_bucket(hpo_id)
-                gcs_bucket = self.storage_client.get_bucket(bucket)
+                cdm_filepath = self._get_cdm_filepath(cdm_table, hpo_id)
+
+                hpo_bucket = self.storage_client.get_hpo_bucket(hpo_id)
                 if os.path.exists(cdm_filepath):
 
                     csv_rows = resources.csv_to_list(cdm_filepath)
-                    cdm_blob = gcs_bucket.blob(cdm_filename)
+                    cdm_blob = hpo_bucket.blob(cdm_filename)
                     cdm_blob.upload_from_filename(cdm_filepath)
 
                 else:
                     # results in empty table
-                    cdm_blob = gcs_bucket.blob(cdm_filename)
+                    cdm_blob = hpo_bucket.blob(cdm_filename)
                     cdm_blob.upload_from_string('dummy\n')
                     csv_rows: list = []
+
                 # load table from csv
                 result = bq_utils.load_cdm_csv(hpo_id, cdm_table)
                 running_jobs.append(result['jobReference']['jobId'])
-                if hpo_id != EXCLUDED_HPO_ID:
+
+                if hpo_id != EXCLUDED_HPO_ID and cdm_table != common.VISIT_DETAIL:
                     expected_tables[output_table] += list(csv_rows)
+                elif hpo_id != EXCLUDED_HPO_ID and cdm_table == common.VISIT_DETAIL:
+                    # All rows are included in the mapping table for visit_detail,
+                    # but the rows with invalid visit_occurrence_id are excluded
+                    # from the unioned visit_detail table
+                    mapping_table: str = ehr_union.mapping_table_for(cdm_table)
+                    if mapping_table not in expected_tables:
+                        expected_tables[mapping_table] = []
+
+                    expected_tables[mapping_table] += list(csv_rows)
+                    visit_occurrence_ids = self._get_valid_visit_occurrence_ids(
+                        hpo_id)
+                    csv_rows = [
+                        row for row in csv_rows
+                        if row['visit_occurrence_id'] in visit_occurrence_ids
+                    ]
+                    expected_tables[output_table] += list(csv_rows)
+
         # ensure person to observation output is as expected
         output_table_person: str = ehr_union.output_table_for(common.PERSON)
         output_table_observation: str = ehr_union.output_table_for(
@@ -130,7 +144,45 @@ class EhrUnionTest(unittest.TestCase):
         if len(incomplete_jobs) > 0:
             message: str = "Job id(s) %s failed to complete" % incomplete_jobs
             raise RuntimeError(message)
+
         self.expected_tables = expected_tables
+
+    def _get_cdm_filepath(self, cdm_table, hpo_id) -> str:
+        """
+        Get the path of the specified CDM table's data file for the HPO.
+        :param cdm_table: name of the CDM table (e.g. 'person', 'visit_occurrence', 'death')
+        :param hpo_ids: identifies which HPOs to include in union
+        :return: str. Path of the data file, including the file name.
+        """
+        cdm_filename: str = f'{cdm_table}.csv'
+        cdm_filepath: str = ''
+
+        if hpo_id == NYC_HPO_ID:
+            cdm_filepath = os.path.join(test_util.FIVE_PERSONS_PATH,
+                                        cdm_filename)
+        elif hpo_id == PITT_HPO_ID:
+            cdm_filepath = os.path.join(test_util.PITT_FIVE_PERSONS_PATH,
+                                        cdm_filename)
+        elif hpo_id == EXCLUDED_HPO_ID and cdm_table in [
+                'observation', 'person', 'visit_occurrence'
+        ]:
+            cdm_filepath = os.path.join(test_util.RDR_PATH, cdm_filename)
+
+        return cdm_filepath
+
+    def _get_valid_visit_occurrence_ids(self, hpo_id) -> list:
+        """
+        Get the list of the valid visit_occurrence_ids for the HPO.
+        :param hpo_ids: identifies which HPOs to include in union
+        :return: list of valid occurrence IDs.
+        """
+        cdm_filepath = self._get_cdm_filepath(common.VISIT_OCCURRENCE, hpo_id)
+
+        if not os.path.exists(cdm_filepath):
+            return []
+
+        csv_rows = resources.csv_to_list(cdm_filepath)
+        return [row['visit_occurrence_id'] for row in csv_rows]
 
     def _table_has_clustering(self, table_info):
         clustering = table_info.get('clustering')
@@ -222,8 +274,13 @@ class EhrUnionTest(unittest.TestCase):
             message = 'Table %s has fields %s when %s expected' % (
                 mapping_table, actual_fields, expected_fields)
             self.assertSetEqual(expected_fields, actual_fields, message)
-            result_table = ehr_union.output_table_for(table_to_map)
-            expected_num_rows = len(self.expected_tables[result_table])
+
+            if table_to_map == common.VISIT_DETAIL:
+                expected_num_rows = len(self.expected_tables[mapping_table])
+            else:
+                result_table = ehr_union.output_table_for(table_to_map)
+                expected_num_rows = len(self.expected_tables[result_table])
+
             actual_num_rows = int(mapping_table_info.get('numRows', -1))
             message = 'Table %s has %s rows when %s expected' % (
                 mapping_table, actual_num_rows, expected_num_rows)
@@ -560,3 +617,7 @@ class EhrUnionTest(unittest.TestCase):
         self._empty_hpo_buckets()
         test_util.delete_all_tables(self.input_dataset_id)
         test_util.delete_all_tables(self.output_dataset_id)
+
+    @classmethod
+    def tearDownClass(cls):
+        test_util.drop_hpo_id_bucket_name_table(cls.dataset_id)

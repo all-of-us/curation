@@ -40,9 +40,9 @@ CREATE OR REPLACE TABLE `{{project_id}}.{{out_dataset_id}}.observation_ext` AS (
       WHEN cssf.cope_month = 'nov' THEN 2100000005
       WHEN cssf.cope_month = 'dec' THEN 2100000006
       WHEN cssf.cope_month = 'feb' THEN 2100000007
-      WHEN cssf.cope_month = 'vaccine1' THEN 2100000008
-      WHEN cssf.cope_month = 'vaccine2' THEN 2100000009
-      WHEN cssf.cope_month = 'vaccine3' THEN 2100000010
+      WHEN cssf.cope_month = 'vaccine1' THEN 905047
+      WHEN cssf.cope_month = 'vaccine2' THEN 905055
+      WHEN cssf.cope_month = 'vaccine3' THEN 765936
       ELSE survey_version_concept_id
     END AS survey_version_concept_id
     FROM `{{project_id}}.{{out_dataset_id}}.observation_ext` AS oe
@@ -209,7 +209,7 @@ if __name__ == '__main__':
     import cdr_cleaner.args_parser as ap
     # import cdr_cleaner.clean_cdr_engine as clean_engine
     from constants.cdr_cleaner.clean_cdr_engine import FILENAME
-    from utils import bq
+    from gcloud.bq import BigQueryClient
 
     parser = ap.get_argument_parser()
     parser.add_argument(
@@ -247,13 +247,14 @@ if __name__ == '__main__':
     if ARGS.list_queries:
         version_task.log_queries()
     else:
-        client_obj = bq.get_client(ARGS.project_id)
-        version_task.setup_rule(client_obj)
+        bq_client = BigQueryClient(ARGS.project_id)
+
+        version_task.setup_rule(bq_client)
         # clean_engine.clean_dataset(ARGS.project_id, query_list)
         for query in query_list:
             q = query.get(cdr_consts.QUERY)
             if q:
-                query_job = client_obj.query(q)
+                query_job = bq_client.query(q)
                 query_job.result()
                 if query_job.exception():
                     LOGGER.error(

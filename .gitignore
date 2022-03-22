@@ -36,6 +36,7 @@ pip-log.txt
 pip-delete-this-directory.txt
 
 # Unit test / coverage reports
+tests/results
 htmlcov/
 .tox/
 .coverage
@@ -142,3 +143,6 @@ data_steward/analytics/table_metrics/metrics_over_time/metric_overtime.Rmd
 # Logs
 data_steward/logs
 logs
+
+# History
+.history

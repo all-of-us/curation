@@ -1,12 +1,12 @@
 #!/bin/bash
 # Checks PR title in Circle CI to make sure it contains the Jira tag
-# The Jira tag could be [DC-###] or [EDC-###]
+# The Jira tag could be [DC-###] or [DST-###] or [EDC-###]
 # Since commits on develop are typically generated from the PR title in the Github UI,
 # this check tries to ensure that the Jira tag is formatted correctly in the PR title
 
-TICKET_REGEX="^\[(DC|EDQ)-[[:digit:]]+\][[:space:]]"
+TICKET_REGEX="^\[(DC|DST|EDQ)-[[:digit:]]+\][[:space:]]"
 ERROR_MSG="Jira tag is missing or incorrectly formatted in the PR title below.
-Please rename so it is formatted as '[DC-###] PR title' or '[EDQ-###] PR title'."
+Please rename so it is formatted as '[DC-###] PR title' or '[DST-###] PR title' or '[EDQ-###] PR title'."
 
 set +e
 

@@ -1,25 +1,34 @@
 # Pyton imports
+import os
 import unittest
 from io import open
 
 # Third party imports
 from googleapiclient.errors import HttpError
+import mock
 
 # Project imports
 import app_identity
+import bq_utils
 import gcs_utils
 from gcloud.gcs import StorageClient
+from tests import test_util
 from tests.test_util import FIVE_PERSONS_PERSON_CSV, FAKE_HPO_ID
 
 
 class GcsUtilsTest(unittest.TestCase):
+
+    dataset_id = bq_utils.get_dataset_id()
 
     @classmethod
     def setUpClass(cls):
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
+        test_util.setup_hpo_id_bucket_name_table(cls.dataset_id)
 
+    @mock.patch("gcs_utils.LOOKUP_TABLES_DATASET_ID", dataset_id)
+    @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def setUp(self):
         self.hpo_bucket = gcs_utils.get_hpo_bucket(FAKE_HPO_ID)
         self.gcs_path = '/'.join([self.hpo_bucket, 'dummy'])
@@ -58,3 +67,7 @@ class GcsUtilsTest(unittest.TestCase):
 
     def tearDown(self):
         self.storage_client.empty_bucket(self.hpo_bucket)
+
+    @classmethod
+    def tearDownClass(cls):
+        test_util.drop_hpo_id_bucket_name_table(cls.dataset_id)

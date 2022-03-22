@@ -16,10 +16,13 @@ from analytics.cdr_ops.controlled_tier_qc.code.check_field_suppression import (
     check_field_freetext_response_suppression,
     check_field_geolocation_records_suppression)
 from analytics.cdr_ops.controlled_tier_qc.code.check_concept_suppression import check_concept_suppression
-from analytics.cdr_ops.controlled_tier_qc.code.check_mapping import check_mapping, check_site_mapping, check_mapping_zipcode_generalization
+from analytics.cdr_ops.controlled_tier_qc.code.check_mapping import (
+    check_mapping, check_site_mapping, check_mapping_zipcode_generalization)
 
 # funtions from utils
-from analytics.cdr_ops.controlled_tier_qc.utils.helpers import highlight, load_check_description, load_tables_for_check, filter_data_by_rule, pretty_print
+from analytics.cdr_ops.controlled_tier_qc.utils.helpers import (
+    highlight, load_check_description, load_tables_for_check,
+    filter_data_by_rule, pretty_print)
 
 import logging
 import sys
@@ -35,7 +38,18 @@ def run_qc(project_id,
            post_deid_dataset,
            pre_deid_dataset,
            mapping_dataset=None,
-           rule_code=None):
+           rule_code=None) -> pd.DataFrame:
+    """
+    Run quality check under the specified condition.
+
+    :param project_id: Project ID of the dataset.
+    :param post_deid_dataset: ID of the dataset after DEID.
+    :param pre_deid_dataset: ID of the dataset before DEID.
+    :param mapping_dataset: ID of the dataset for mapping.
+    :param rule_code: str or list. The rule code(s) to be checked.
+                      If None, all the rule codes in CHECK_LIST_CSV_FILE are checked.
+    :returns: dataframe that has the results of the quality checks.
+    """
     list_checks = load_check_description(rule_code)
     list_checks = list_checks[list_checks['level'].notnull()].copy()
 
@@ -56,27 +70,54 @@ def run_qc(project_id,
     return pd.concat(checks, sort=True).reset_index(drop=True)
 
 
-def display_check_summary_by_rule(checks_df):
+def display_check_summary_by_rule(checks_df, to_include):
+    """
+    Display the summary of all the quality checks.
+
+    :param checks_df: dataframe that has the results of the quality checks.
+    :param to_include: str or list. The rule code(s) to be checked.
+                       If None, all the rule codes in CHECK_LIST_CSV_FILE are checked.
+    :returns: Styler, just for display purposes.
+    """
     by_rule = checks_df.groupby('rule')['n_row_violation'].sum().reset_index()
     needed_description_columns = ['rule', 'description']
     check_description = (load_check_description().filter(
         items=needed_description_columns))
     if not by_rule.empty:
-        rules_not_run = set(check_description['rule']) - set(by_rule['rule'])
+        rules_not_run = set(check_description['rule']) - set(to_include)
+        nothing_to_report = set(to_include) - set(by_rule['rule'])
+
         by_rule = by_rule.merge(check_description, how='outer', on='rule')
         by_rule.loc[by_rule['rule'].isin(rules_not_run), 'note'] = 'NOT RUN'
+        by_rule.loc[by_rule['rule'].isin(nothing_to_report),
+                    'note'] = 'NOTHING TO REPORT'
+        by_rule['n_row_violation'] = by_rule['n_row_violation'].fillna(
+            0).astype(int)
     else:
         by_rule = check_description.copy()
         by_rule['n_row_violation'] = 0
         by_rule['note'] = 'NOT RUN'
-    by_rule['n_row_violation'] = by_rule['n_row_violation'].fillna(0).astype(
-        int)
-    col_order = [col for col in check_description] + ['n_row_violation', 'note']
-    by_rule = by_rule[col_order]
+        by_rule.loc[by_rule['rule'].isin(to_include),
+                    'note'] = 'NOTHING TO REPORT'
+
+        by_rule['n_row_violation'] = by_rule['n_row_violation'].fillna(
+            0).astype(int)
+        col_order = [col for col in check_description
+                    ] + ['n_row_violation', 'note']
+        by_rule = by_rule[col_order]
     return by_rule.style.apply(highlight, axis=1)
 
 
-def display_check_detail_of_rule(checks_df, rule):
+def display_check_detail_of_rule(checks_df, rule, to_include):
+    """
+    Display the details of the specified quality check.
+
+    :param checks_df: dataframe that has the results of the quality checks.
+    :param rule: The rule that you want to show the detailed result for.
+    :param to_include: str or list. The rule code(s) to be checked.
+                       If None, all the rule codes in CHECK_LIST_CSV_FILE are checked.
+    :returns: pretty printed HTML or string, just for display purposes.
+    """
     col_orders = [
         'table_name', 'column_name', 'concept_id', 'concept_code',
         'n_row_violation', 'query'
@@ -87,4 +128,7 @@ def display_check_detail_of_rule(checks_df, rule):
         columns = [col for col in col_orders if col in to_print_df]
         return pretty_print(to_print_df[columns])
     else:
-        return 'Nothing to report or not run'
+        if to_include and rule not in to_include:
+            return 'Not Run'
+        else:
+            return 'Nothing to Report'

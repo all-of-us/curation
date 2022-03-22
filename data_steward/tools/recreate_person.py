@@ -2,7 +2,7 @@
 import logging
 
 # Project imports
-from utils import bq
+from gcloud.bq import BigQueryClient
 from common import JINJA_ENV
 from utils import pipeline_logging
 
@@ -44,17 +44,16 @@ def update_schema(client, person):
     LOGGER.info(f'Updated person table schema to {person.schema}')
 
 
-def update_person(client, project_id, dataset_id):
+def update_person(client, dataset_id):
     """
     Populates person table with two additional columns from the ext table
 
-    :param client: bigquery client
-    :param project_id: identifies the project
+    :param client: A BigQueryClient
     :param dataset_id: identifies the dataset
     :return:
     """
-    person_table_id = f'{project_id}.{dataset_id}.person'
-    person_ext_table_id = f'{project_id}.{dataset_id}.person_ext'
+    person_table_id = f'{client.project}.{dataset_id}.person'
+    person_ext_table_id = f'{client.project}.{dataset_id}.person_ext'
     person = client.get_table(person_table_id)
     person_ext = client.get_table(person_ext_table_id)
 
@@ -87,5 +86,5 @@ if __name__ == '__main__':
                         required=True)
 
     ARGS = parser.parse_args()
-    bq_client = bq.get_client(ARGS.project_id)
-    update_person(bq_client, ARGS.project_id, ARGS.dataset_id)
+    bq_client = BigQueryClient(ARGS.project_id)
+    update_person(bq_client, ARGS.dataset_id)

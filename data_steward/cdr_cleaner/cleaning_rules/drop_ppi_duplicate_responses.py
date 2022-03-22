@@ -28,8 +28,7 @@ from constants.cdr_cleaner import clean_cdr as cdr_consts
 
 LOGGER = logging.getLogger(__name__)
 
-PIPELINE_DATASET = 'pipeline_tables'
-COPE_CONCEPTS_TABLE = 'cope_concepts'
+COPE_SURVEY_VERSION_MAP_TABLE = 'cope_survey_semantic_version_map'
 
 SELECT_DUPLICATE_TEMPLATE = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE
@@ -76,13 +75,47 @@ IDENTIFY_DUPLICATE_ID_TEMPLATE = JINJA_ENV.from_string("""
               questionnaire_response_id) AS max_observation_datetime
         FROM `{{project}}.{{dataset}}.observation` 
         WHERE observation_source_concept_id != 1586099  /* exclude EHRConsentPII_ConsentPermission */
-        and observation_source_value not in (select concept_code from
-         `{{project}}.{{pipeline_dataset}}.{{cope_concepts_table}}` /* exclude COPE Survey Responses */
+        AND observation_id NOT IN (
+            SELECT
+                observation_id
+            FROM
+                `{{project}}.{{dataset}}.observation` ob
+            JOIN
+                `{{project}}.{{dataset}}.{{cope_survey_version_table}}` svm
+            ON
+                person_id = participant_id
+            AND ob.questionnaire_response_id = svm.questionnaire_response_id
+            /* exclude COPE & MINUTE Survey Responses */
         )
       ) o
     ) o
     WHERE o.rank_order != 1 )
 """)
+
+
+def get_select_statement(project_id, dataset_id, sandbox_dataset_id,
+                         sandbox_table):
+    duplicate_id_query = IDENTIFY_DUPLICATE_ID_TEMPLATE.render(
+        project=project_id,
+        dataset=dataset_id,
+        cope_survey_version_table=COPE_SURVEY_VERSION_MAP_TABLE)
+
+    select_duplicates_query = SELECT_DUPLICATE_TEMPLATE.render(
+        project=project_id,
+        dataset=dataset_id,
+        sandbox_dataset=sandbox_dataset_id,
+        intermediary_table=sandbox_table)
+    return select_duplicates_query + duplicate_id_query
+
+
+def get_delete_statement(project_id, dataset_id):
+    duplicate_id_query = IDENTIFY_DUPLICATE_ID_TEMPLATE.render(
+        project=project_id,
+        dataset=dataset_id,
+        cope_survey_version_table=COPE_SURVEY_VERSION_MAP_TABLE)
+    delete_duplicates_template = REMOVE_DUPLICATE_TEMPLATE.render(
+        project=project_id, dataset=dataset_id)
+    return delete_duplicates_template + duplicate_id_query
 
 
 class DropPpiDuplicateResponses(BaseCleaningRule):
@@ -107,33 +140,6 @@ class DropPpiDuplicateResponses(BaseCleaningRule):
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id)
 
-    def get_select_statement(self, project_id, dataset_id, sandbox_dataset_id,
-                             sandbox_table, pipeline_dataset_name,
-                             cope_concepts_table):
-        duplicate_id_query = IDENTIFY_DUPLICATE_ID_TEMPLATE.render(
-            project=project_id,
-            dataset=dataset_id,
-            pipeline_dataset=pipeline_dataset_name,
-            cope_concepts_table=cope_concepts_table)
-
-        select_duplicates_query = SELECT_DUPLICATE_TEMPLATE.render(
-            project=project_id,
-            dataset=dataset_id,
-            sandbox_dataset=sandbox_dataset_id,
-            intermediary_table=sandbox_table)
-        return select_duplicates_query + duplicate_id_query
-
-    def get_delete_statement(self, project_id, dataset_id,
-                             pipeline_dataset_name, cope_concepts_table):
-        duplicate_id_query = IDENTIFY_DUPLICATE_ID_TEMPLATE.render(
-            project=project_id,
-            dataset=dataset_id,
-            pipeline_dataset=pipeline_dataset_name,
-            cope_concepts_table=cope_concepts_table)
-        delete_duplicates_template = REMOVE_DUPLICATE_TEMPLATE.render(
-            project=project_id, dataset=dataset_id)
-        return delete_duplicates_template + duplicate_id_query
-
     def get_query_specs(self):
         """
         Return a list of dictionary query specifications.
@@ -145,16 +151,14 @@ class DropPpiDuplicateResponses(BaseCleaningRule):
 
         save_duplicate_rows = {
             cdr_consts.QUERY:
-                self.get_select_statement(self.project_id, self.dataset_id,
-                                          self.sandbox_dataset_id,
-                                          self.get_sandbox_tablenames()[0],
-                                          PIPELINE_DATASET, COPE_CONCEPTS_TABLE)
+                get_select_statement(self.project_id, self.dataset_id,
+                                     self.sandbox_dataset_id,
+                                     self.get_sandbox_tablenames()[0])
         }
 
         delete_duplicate_rows = {
             cdr_consts.QUERY:
-                self.get_delete_statement(self.project_id, self.dataset_id,
-                                          PIPELINE_DATASET, COPE_CONCEPTS_TABLE)
+                get_delete_statement(self.project_id, self.dataset_id)
         }
 
         return [save_duplicate_rows, delete_duplicate_rows]

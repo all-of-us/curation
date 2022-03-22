@@ -11,14 +11,11 @@ from cdr_cleaner import clean_cdr
 from cdr_cleaner.args_parser import add_kwargs_to_args
 from utils import auth
 from utils import bq
+from gcloud.bq import BigQueryClient
 from utils import pipeline_logging
+from common import CDR_SCOPES
 
 LOGGER = logging.getLogger(__name__)
-
-SCOPES = [
-    'https://www.googleapis.com/auth/bigquery',
-    'https://www.googleapis.com/auth/devstorage.read_write',
-]
 
 
 def parse_rdr_args(raw_args=None):
@@ -96,40 +93,40 @@ def main(raw_args=None):
 
     # get credentials and create client
     impersonation_creds = auth.get_impersonation_credentials(
-        args.run_as_email, SCOPES)
+        args.run_as_email, CDR_SCOPES)
 
-    client = bq.get_client(args.curation_project_id,
-                           credentials=impersonation_creds)
+    bq_client = BigQueryClient(args.curation_project_id,
+                               credentials=impersonation_creds)
 
     # create staging, sandbox, and clean datasets with descriptions and labels
-    datasets = create_datasets(client, args.rdr_dataset, args.release_tag)
+    datasets = create_datasets(bq_client, args.rdr_dataset, args.release_tag)
 
     # copy raw data into staging dataset
-    copy_raw_rdr_tables(client, args.rdr_dataset, datasets.get('staging'))
+    copy_raw_rdr_tables(bq_client, args.rdr_dataset, datasets.get('staging'))
 
     # clean the RDR staging dataset
     cleaning_args = [
         '-p', args.curation_project_id, '-d',
         datasets.get('staging', 'UNSET'), '-b',
-        datasets.get('sandbox',
-                     'UNSET'), '--data_stage', 'rdr', '--truncation_date',
-        args.truncation_date, '--export_date', args.export_date
+        datasets.get('sandbox', 'UNSET'), '--data_stage', 'rdr',
+        '--truncation_date', args.truncation_date, '--export_date',
+        args.export_date, '--run_as', args.run_as_email
     ]
 
     all_cleaning_args = add_kwargs_to_args(cleaning_args, kwargs)
     clean_cdr.main(args=all_cleaning_args)
 
-    bq.build_and_copy_contents(client, datasets.get('staging', 'UNSET'),
+    bq.build_and_copy_contents(bq_client, datasets.get('staging', 'UNSET'),
                                datasets.get('clean', 'UNSET'))
 
     # update sandbox description and labels
-    sandbox_dataset = client.get_dataset(datasets.get(
+    sandbox_dataset = bq_client.get_dataset(datasets.get(
         'sandbox', 'UNSET'))  # Make an API request.
     sandbox_dataset.description = (
         f'Sandbox created for storing records affected by the cleaning '
         f'rules applied to {datasets.get("clean")}')
     sandbox_dataset.labels['phase'] = 'sandbox'
-    sandbox_dataset = client.update_dataset(
+    sandbox_dataset = bq_client.update_dataset(
         sandbox_dataset, ["description"])  # Make an API request.
 
     full_dataset_id = f'{sandbox_dataset.project}.{sandbox_dataset.dataset_id}'
@@ -138,7 +135,7 @@ def main(raw_args=None):
     )
 
     LOGGER.info(f'RDR snapshot and cleaning, '
-                f'`{client.project}.{datasets.get("clean")}`, is complete.')
+                f'`{bq_client.project}.{datasets.get("clean")}`, is complete.')
 
 
 def copy_raw_rdr_tables(client, rdr_dataset, rdr_staging):

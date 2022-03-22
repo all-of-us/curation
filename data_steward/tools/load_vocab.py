@@ -11,12 +11,13 @@ from pathlib import Path
 from typing import List
 
 # Third party imports
-from google.cloud import storage
 from google.cloud.exceptions import NotFound
-from google.cloud.bigquery import Client, Dataset, SchemaField, LoadJob, LoadJobConfig, \
+from google.cloud.bigquery import  Dataset, SchemaField, LoadJob, LoadJobConfig, \
     QueryJobConfig, Table
 
 # Project imports
+from gcloud.gcs import StorageClient
+from gcloud.bq import BigQueryClient
 from utils import bq, pipeline_logging
 from common import VOCABULARY_TABLES, JINJA_ENV, CONCEPT, VOCABULARY, VOCABULARY_UPDATES
 from resources import AOU_VOCAB_PATH
@@ -80,7 +81,7 @@ def update_aou_vocabs(vocab_folder_path: Path):
 
 
 def upload_stage(bucket_name: str, vocab_folder_path: Path,
-                 gcs_client: storage.Client):
+                 gcs_client: StorageClient):
     """
     Upload vocabulary tables to cloud storage
 
@@ -100,12 +101,13 @@ def upload_stage(bucket_name: str, vocab_folder_path: Path,
     return
 
 
-def check_and_create_staging_dataset(dst_dataset_id, bucket_name, bq_client):
+def check_and_create_staging_dataset(dst_dataset_id: str, bucket_name: str,
+                                     bq_client: BigQueryClient):
     """
 
     :param dst_dataset_id: final destination to load the vocabulary in BigQuery
     :param bucket_name: the location in GCS containing the vocabulary files
-    :param bq_client: google bigquery client
+    :param bq_client: a BigQueryClient
     :return: staging dataset object
     """
     staging_dataset_id = f'{dst_dataset_id}_staging'
@@ -144,15 +146,15 @@ def _table_name_to_filename(table_name: str) -> str:
     return f'{table_name.upper()}.csv'
 
 
-def load_stage(dst_dataset: Dataset, bq_client: Client, bucket_name: str,
-               gcs_client: storage.Client) -> List[LoadJob]:
+def load_stage(dst_dataset: Dataset, bq_client: BigQueryClient,
+               bucket_name: str, gcs_client: StorageClient) -> List[LoadJob]:
     """
     Stage files from a bucket to a dataset
 
     :param dst_dataset: reference to destination dataset object
-    :param bq_client: a BigQuery client object
+    :param bq_client: a BigQueryClient
     :param bucket_name: the location in GCS containing the vocabulary files
-    :param gcs_client: a Cloud Storage client object
+    :param gcs_client: a StorageClient object
     :return: list of completed load jobs
     """
     blobs = list(gcs_client.list_blobs(bucket_name))
@@ -190,12 +192,13 @@ def load_stage(dst_dataset: Dataset, bq_client: Client, bucket_name: str,
     return load_jobs
 
 
-def load(project_id, bq_client, src_dataset_id, dst_dataset_id):
+def load(project_id: str, bq_client: BigQueryClient, src_dataset_id: str,
+         dst_dataset_id: str):
     """
     Transform safely loaded tables and store results in target dataset.
 
     :param project_id: Identifies the BQ project
-    :param bq_client: a BigQuery client object
+    :param bq_client: a BigQueryClient
     :param src_dataset_id: reference to source dataset object
     :param dst_dataset_id: reference to destination dataset object
     :return: List of BQ job_ids
@@ -236,8 +239,8 @@ def main(project_id: str, bucket_name: str, vocab_folder_path: str,
     :param vocab_folder_path: points to the directory containing files downloaded from athena with CPT4 applied
     :param dst_dataset_id: final destination to load the vocabulary in BigQuery
     """
-    bq_client = bq.get_client(project_id)
-    gcs_client = storage.Client(project_id)
+    bq_client = BigQueryClient(project_id)
+    gcs_client = StorageClient(project_id)
     vocab_folder_path = Path(vocab_folder_path)
     update_aou_vocabs(vocab_folder_path)
     upload_stage(bucket_name, vocab_folder_path, gcs_client)

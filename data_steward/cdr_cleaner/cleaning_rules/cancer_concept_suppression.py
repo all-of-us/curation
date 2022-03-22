@@ -1,6 +1,6 @@
 """
-This rule sandboxes and suppresses reccords whose concept_codes end in 
-'History_WhichConditions', 'Condition_OtherCancer', ‘History_AdditionalDiagnosis’,
+This rule sandboxes and suppresses records whose concept_codes end in 
+'History_WhichConditions', 'History_AdditionalDiagnosis',
 and 'OutsideTravel6MonthsWhere'.
 
 Runs on the controlled tier.
@@ -23,15 +23,15 @@ from google.cloud.exceptions import GoogleCloudError
 
 LOGGER = logging.getLogger(__name__)
 
-SUPPRESSION_RULE_CONCEPT_TABLE = 'cancer_condition_concepts'
+SUPPRESSION_RULE_CONCEPT_TABLE = 'cancer_condition_concepts_without_other_cancer'
 
 CANCER_CONCEPT_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_id}}.{{concept_suppression_lookup_table}}` AS
 SELECT  c.*
 FROM `{{project_id}}.{{dataset_id}}.concept` c
 WHERE REGEXP_CONTAINS(c.concept_code, 
-    r'(History_WhichConditions)|(Condition_OtherCancer)|(History_AdditionalDiagnosis)|(OutsideTravel6MonthWhere)'
-)
+    r'(History_WhichConditions)|(History_AdditionalDiagnosis)|(OutsideTravel6MonthWhere)'
+) AND vocabulary_id = 'PPI'
 """)
 
 

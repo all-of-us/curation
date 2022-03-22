@@ -176,8 +176,7 @@ class COPESurveyVersionTaskTest(BaseTest.DeidRulesTestBase):
                                (802, 'PPI/PM', None),
                                (803, 'EHR site 222', None),
                                (804, 'PPI/PM', 2100000005),
-                               (805, 'PPI/PM', 2100000008),
-                               (806, 'PPI/PM', 2100000010)]
+                               (805, 'PPI/PM', 905047), (806, 'PPI/PM', 765936)]
         }]
 
         self.default_test(tables_and_counts)

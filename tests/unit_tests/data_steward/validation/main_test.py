@@ -4,7 +4,6 @@ Unit test components of data_steward.validation.main
 # Python imports
 import datetime
 import re
-import os
 from unittest import TestCase, mock
 
 # Project imports
@@ -14,7 +13,7 @@ from constants.validation import hpo_report as report_consts
 from constants.validation import main as main_consts
 from constants.validation.participants import identity_match as id_match_consts
 from validation import main
-from tests.test_util import mock_google_http_error
+from tests.test_util import mock_google_http_error, mock_google_cloud_error
 
 
 class ValidationMainTest(TestCase):
@@ -54,26 +53,19 @@ class ValidationMainTest(TestCase):
 
     def test_retention_checks_list_submitted_bucket_items(self):
         #Define times to use
-        within_retention = datetime.datetime.today() - datetime.timedelta(
+        within_retention = datetime.datetime.now(tz=None) - datetime.timedelta(
             days=25)
-        within_retention_str = within_retention.strftime(
-            '%Y-%m-%dT%H:%M:%S.%fZ')
-        outside_retention = datetime.datetime.today() - datetime.timedelta(
+        outside_retention = datetime.datetime.now(tz=None) - datetime.timedelta(
             days=29)
-        outside_retention_str = outside_retention.strftime(
-            '%Y-%m-%dT%H:%M:%S.%fZ')
-        before_lag_time = datetime.datetime.today() - datetime.timedelta(
+        before_lag_time = datetime.datetime.now(tz=None) - datetime.timedelta(
             minutes=3)
-        before_lag_time_str = before_lag_time.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
-
-        after_lag_time = datetime.datetime.today() - datetime.timedelta(
+        after_lag_time = datetime.datetime.now(tz=None) - datetime.timedelta(
             minutes=7)
-        after_lag_time_str = after_lag_time.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
 
         # If any required files are missing, nothing should be returned
         bucket_items = self._create_dummy_bucket_items(
-            within_retention_str,
-            after_lag_time_str,
+            within_retention,
+            after_lag_time,
             file_exclusions=['visit_occurrence.csv'])
         actual_result = main.list_submitted_bucket_items(bucket_items)
         expected_result = []
@@ -81,28 +73,20 @@ class ValidationMainTest(TestCase):
         self.assertCountEqual(expected_result, actual_result)
 
         # If all required files are present and files within retention period, files should be returned
-        bucket_items = self._create_dummy_bucket_items(within_retention_str,
-                                                       after_lag_time_str)
+        bucket_items = self._create_dummy_bucket_items(within_retention,
+                                                       after_lag_time)
         actual_result = main.list_submitted_bucket_items(bucket_items)
         expected_result = bucket_items
         self.assertCountEqual(expected_result, actual_result)
 
-        # bucket_items = [{
-        #     'name': '2018-09-01/person.csv',
-        #     'timeCreated': outside_retention_str,
-        #     'updated': after_lag_time_str
-        # }]
-
         # if a file expires within a day, it should not be returned
         bucket_items = self._create_dummy_bucket_items(
-            within_retention_str,
-            after_lag_time_str,
-            file_exclusions=['person.csv'])
+            within_retention, after_lag_time, file_exclusions=['person.csv'])
         bucket_items_with_modified_person = bucket_items.copy()
         bucket_items_with_modified_person.append({
             'name': '2018-09-01/person.csv',
-            'timeCreated': outside_retention_str,
-            'updated': after_lag_time_str
+            'timeCreated': outside_retention,
+            'updated': after_lag_time
         })
         actual_result = main.list_submitted_bucket_items(
             bucket_items_with_modified_person)
@@ -114,12 +98,12 @@ class ValidationMainTest(TestCase):
         self.assertCountEqual([], actual_result)
 
         #If unknown item and all other conditions met, return the item
-        bucket_items = self._create_dummy_bucket_items(within_retention_str,
-                                                       after_lag_time_str)
+        bucket_items = self._create_dummy_bucket_items(within_retention,
+                                                       after_lag_time)
         unknown_item = {
             'name': '2018-09-01/nyc_cu_person.csv',
-            'timeCreated': within_retention_str,
-            'updated': after_lag_time_str
+            'timeCreated': within_retention,
+            'updated': after_lag_time
         }
         bucket_items.append(unknown_item)
 
@@ -127,12 +111,12 @@ class ValidationMainTest(TestCase):
         self.assertCountEqual(actual_result, bucket_items)
 
         # If ignored item and all other conditions met, only exclude the ignored item
-        bucket_items = self._create_dummy_bucket_items(within_retention_str,
-                                                       after_lag_time_str)
+        bucket_items = self._create_dummy_bucket_items(within_retention,
+                                                       after_lag_time)
         bucket_items_with_ignored_item = bucket_items.copy()
         ignored_item = dict(name='2018-09-01/' + common.RESULTS_HTML,
-                            timeCreated=within_retention_str,
-                            updated=within_retention_str)
+                            timeCreated=within_retention,
+                            updated=within_retention)
         bucket_items_with_ignored_item.append(ignored_item)
         actual_result = main.list_submitted_bucket_items(
             bucket_items_with_ignored_item)
@@ -141,14 +125,14 @@ class ValidationMainTest(TestCase):
 
         # If any AOU_REQUIRED file has been updated less than 5 minutes ago, no files should be returned
         bucket_items = self._create_dummy_bucket_items(
-            within_retention_str,
-            after_lag_time_str,
+            within_retention,
+            after_lag_time,
             file_exclusions=['observation.csv'])
 
         bucket_items.append({
             'name': '2018-09-01/observation.csv',
-            'timeCreated': within_retention_str,
-            'updated': before_lag_time_str
+            'timeCreated': within_retention,
+            'updated': before_lag_time
         })
 
         actual_result = main.list_submitted_bucket_items(bucket_items)
@@ -156,12 +140,11 @@ class ValidationMainTest(TestCase):
         self.assertCountEqual(expected_result, actual_result)
 
     def test_folder_list(self):
-        fmt = '%Y-%m-%dT%H:%M:%S.%fZ'
         now = datetime.datetime.now()
-        t0 = (now - datetime.timedelta(days=3)).strftime(fmt)
-        t1 = (now - datetime.timedelta(days=2)).strftime(fmt)
-        t2 = (now - datetime.timedelta(days=1)).strftime(fmt)
-        t3 = (now - datetime.timedelta(hours=1)).strftime(fmt)
+        t0 = now - datetime.timedelta(days=3)
+        t1 = now - datetime.timedelta(days=2)
+        t2 = now - datetime.timedelta(days=1)
+        t3 = now - datetime.timedelta(hours=1)
         expected = 't2/'
 
         bucket_items = self._create_dummy_bucket_items(
@@ -274,7 +257,10 @@ class ValidationMainTest(TestCase):
 
         mock_perform_validation_on_file.side_effect = perform_validation_on_file
 
-        actual_result = main.validate_submission(self.hpo_id, self.hpo_bucket,
+        mock_bucket = mock.MagicMock()
+        type(mock_bucket).name = mock.PropertyMock(return_value=self.hpo_bucket)
+
+        actual_result = main.validate_submission(self.hpo_id, mock_bucket,
                                                  folder_items, folder_prefix)
         self.assertCountEqual(expected_results, actual_result.get('results'))
         self.assertCountEqual(expected_errors, actual_result.get('errors'))
@@ -282,15 +268,16 @@ class ValidationMainTest(TestCase):
 
     @mock.patch('validation.main.StorageClient')
     @mock.patch('bq_utils.get_hpo_info')
-    @mock.patch('validation.main.list_bucket')
     @mock.patch('logging.exception')
     @mock.patch('api_util.check_cron')
     def test_validate_all_hpos_exception(self, check_cron, mock_logging_error,
-                                         mock_list_bucket, mock_hpo_csv,
-                                         mock_storage_client):
+                                         mock_hpo_csv, mock_storage_client):
+
         http_error_string = 'fake http error'
         mock_hpo_csv.return_value = [{'hpo_id': self.hpo_id}]
-        mock_list_bucket.side_effect = mock_google_http_error(
+        mock_client = mock.MagicMock()
+        mock_storage_client.return_value = mock_client
+        mock_client.get_bucket_items_metadata.side_effect = mock_google_cloud_error(
             content=http_error_string.encode())
         with main.app.test_client() as c:
             c.get(main_consts.PREFIX + 'ValidateAllHpoFiles')
@@ -299,6 +286,11 @@ class ValidationMainTest(TestCase):
                 f"HTTP error: {http_error_string}")
             self.assertIn(expected_call, mock_logging_error.mock_calls)
 
+    @mock.patch(
+        'validation.participants.validate.BigQueryClient',
+        mock.MagicMock(query=lambda: mock.MagicMock(result=lambda: None)))
+    @mock.patch('validation.main.setup_and_validate_participants',
+                mock.MagicMock())
     @mock.patch('bq_utils.table_exists', mock.MagicMock())
     @mock.patch('bq_utils.query')
     @mock.patch('validation.main.is_valid_folder_prefix_name')
@@ -313,14 +305,13 @@ class ValidationMainTest(TestCase):
     @mock.patch('validation.main._has_all_required_files')
     @mock.patch('validation.main.is_first_validation_run')
     @mock.patch('validation.main.is_valid_rdr')
-    @mock.patch('gcs_utils.list_bucket')
     @mock.patch('validation.main.StorageClient')
     def test_process_hpo_ignore_dirs(
-        self, mock_storage_client, mock_bucket_list, mock_valid_rdr,
-        mock_first_validation, mock_has_all_required_files, mock_folder_items,
-        mock_validation, mock_get_hpo_name, mock_get_duplicate_counts_query,
-        mock_query_rows, mock_all_required_files_loaded, mock_run_achilles,
-        mock_export, mock_valid_folder_name, mock_query):
+        self, mock_storage_client, mock_valid_rdr, mock_first_validation,
+        mock_has_all_required_files, mock_folder_items, mock_validation,
+        mock_get_hpo_name, mock_get_duplicate_counts_query, mock_query_rows,
+        mock_all_required_files_loaded, mock_run_achilles, mock_export,
+        mock_valid_folder_name, mock_query):
         """
         Test process_hpo with directories we want to ignore.
 
@@ -362,30 +353,27 @@ class ValidationMainTest(TestCase):
         mock_valid_rdr.return_value = True
         mock_first_validation.return_value = False
         yesterday = datetime.datetime.now() - datetime.timedelta(hours=24)
-        yesterday = yesterday.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
-        moment = datetime.datetime.now()
-        now = moment.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+        now = datetime.datetime.now()
 
         after_lag_time = datetime.datetime.today() - datetime.timedelta(
             minutes=7)
-        after_lag_time_str = after_lag_time.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
 
-        mock_bucket_list.return_value = [{
+        mock_client.get_bucket_items_metadata.return_value = [{
             'name': 'unknown.pdf',
             'timeCreated': now,
-            'updated': after_lag_time_str
+            'updated': after_lag_time
         }, {
             'name': 'participant/no-site/foo.pdf',
             'timeCreated': now,
-            'updated': after_lag_time_str
+            'updated': after_lag_time
         }, {
             'name': 'PARTICIPANT/siteone/foo.pdf',
             'timeCreated': now,
-            'updated': after_lag_time_str
+            'updated': after_lag_time
         }, {
             'name': 'Participant/sitetwo/foo.pdf',
             'timeCreated': now,
-            'updated': after_lag_time_str
+            'updated': after_lag_time
         }, {
             'name': f'{submission_path.lower()}person.csv',
             'timeCreated': yesterday,
@@ -393,7 +381,7 @@ class ValidationMainTest(TestCase):
         }, {
             'name': f'{submission_path}measurement.csv',
             'timeCreated': now,
-            'updated': after_lag_time_str
+            'updated': after_lag_time
         }]
 
         mock_validation.return_value = {
@@ -409,10 +397,10 @@ class ValidationMainTest(TestCase):
 
         # post conditions
         mock_folder_items.assert_called()
-        mock_folder_items.assert_called_once_with(mock_bucket_list.return_value,
-                                                  submission_path)
+        mock_folder_items.assert_called_once_with(
+            mock_client.get_bucket_items_metadata.return_value, submission_path)
         mock_validation.assert_called()
-        mock_validation.assert_called_once_with(fake_hpo, 'fake_bucket_name',
+        mock_validation.assert_called_once_with(fake_hpo, mock_bucket,
                                                 mock_folder_items.return_value,
                                                 submission_path)
         mock_run_achilles.assert_called()
@@ -543,6 +531,11 @@ class ValidationMainTest(TestCase):
         self.assertEqual(mock_hpo_bucket.copy_blob.call_count, 2)
         mock_hpo_bucket.copy_blob.assert_has_calls(expected, any_order=True)
 
+    @mock.patch(
+        'validation.participants.validate.BigQueryClient',
+        mock.MagicMock(query=lambda: mock.MagicMock(result=lambda: None)))
+    @mock.patch('validation.main.setup_and_validate_participants',
+                mock.MagicMock())
     @mock.patch('bq_utils.table_exists', mock.MagicMock())
     @mock.patch('bq_utils.query', mock.MagicMock())
     def test_generate_metrics(self):

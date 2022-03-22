@@ -22,7 +22,8 @@ from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.generalize_state_by_population import GeneralizeStateByPopulation
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 from common import OBSERVATION
-from utils.bq import get_table_schema, get_client
+from utils.bq import get_table_schema
+from gcloud.bq import BigQueryClient
 
 PARTICIPANT_THRESH = 200
 
@@ -94,13 +95,12 @@ class GeneralizeStateByPopulationTest(BaseTest.CleaningRulesTestBase):
         :param dataset_id
         :param table
         """
-        client = get_client(project_id)
+        bq_client = BigQueryClient(project_id)
         schema = get_table_schema(table)
         schema = [field for field in schema if field.name in list(df.columns)]
         load_job_config = LoadJobConfig(schema=schema)
-        load_job = client.load_table_from_dataframe(df,
-                                                    f'{dataset_id}.{table}',
-                                                    job_config=load_job_config)
+        load_job = bq_client.load_table_from_dataframe(
+            df, f'{dataset_id}.{table}', job_config=load_job_config)
         load_job.result()
 
     def test_generalize_state_by_population_cleaning(self):

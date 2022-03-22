@@ -10,7 +10,7 @@ detailed implementation is needed, the developer can still extend the base class
 only and implement their own tests.
 """
 # Python imports
-from unittest import TestCase, mock
+from unittest import TestCase
 
 # Third party imports
 import google.cloud.exceptions as gc_exc
@@ -20,6 +20,7 @@ from google.cloud import bigquery
 # Project imports
 from cdr_cleaner import clean_cdr_engine as engine
 from utils import bq
+from gcloud.bq import BigQueryClient
 from common import JINJA_ENV
 
 
@@ -73,7 +74,7 @@ class BaseTest:
                     f'Provide a list of fully qualified table names the '
                     f'test will manipulate.')
 
-            cls.client = bq.get_client(cls.project_id)
+            cls.client = BigQueryClient(cls.project_id)
 
             # get or create datasets, cleaning rules can assume the datasets exist
             required_datasets = []
@@ -208,13 +209,15 @@ class BaseTest:
             # start the job and wait for it to complete
             response_list = list(response.result())
 
-            message = (f"Assertion for table {fq_table_name} failed.\n"
-                       f"Response returned these values {response_list}")
-            self.assertEqual(len(expected_values), len(response_list), message)
+            message = (
+                f"Assertion for table {fq_table_name} failed.\n"
+                f"Response returned these values {sorted([row[0] for row in response_list])}\n"
+                f"Expected to return these values {sorted([row[0] for row in expected_values])}\n"
+            )
 
             # assert matches for lists of tuple data regardless of order.  e.g. list of returned fields
             result_tuples = [result[:] for result in response_list]
-            self.assertCountEqual(expected_values, result_tuples)
+            self.assertCountEqual(result_tuples, expected_values, message)
 
     class CleaningRulesTestBase(BigQueryTestBase):
         """

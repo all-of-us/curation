@@ -75,7 +75,8 @@ FROM (
     JOIN
       `{{project}}.{{dataset}}.{{cope_survey_version_table}}` cope
     ON
-      obs.questionnaire_response_id = cope.questionnaire_response_id )
+      obs.questionnaire_response_id = cope.questionnaire_response_id 
+      AND obs.person_id = cope.participant_id)
     ) o
 WHERE
   o.rank_order != 1
