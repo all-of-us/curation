@@ -22,7 +22,8 @@ class CopyDatasetToOutputProdTest(unittest.TestCase):
         test_args = [
             "--run_as", "myemail.com", "-s", "mysrcproject", "-o",
             "mydestproject", "-d", "mysrcdataset", "-r", "2021Q2R4", "-t",
-            "controlled", "--deid_stage", "base"
+            "controlled", "--deid_stage", "base", "--fitbit_dataset",
+            "myfitbitdataset"
         ]
 
         args = self.parser.parse_args(test_args)
@@ -32,7 +33,8 @@ class CopyDatasetToOutputProdTest(unittest.TestCase):
         test_args = [
             "--run_as", "myemail.com", "-s", "mysrcproject", "-o",
             "mydestproject", "-d", "mysrcdataset", "-r", "2021q2r4", "-t",
-            "controlled", "--deid_stage", "base"
+            "controlled", "--deid_stage", "base", "--fitbit_dataset",
+            "myfitbitdataset"
         ]
 
         self.assertRaises(SystemExit, self.parser.parse_args, test_args)
@@ -41,7 +43,8 @@ class CopyDatasetToOutputProdTest(unittest.TestCase):
         test_args = [
             "--run_as", "myemail.com", "-s", "mysrcproject", "-o",
             "mydestproject", "-d", "mysrcdataset", "-r", "2021Q2R4", "-t",
-            "controlled", "--deid_stage", "extra_cleaned"
+            "controlled", "--deid_stage", "extra_cleaned", "--fitbit_dataset",
+            "myfitbitdataset"
         ]
 
         self.assertRaises(SystemExit, self.parser.parse_args, test_args)
@@ -50,7 +53,8 @@ class CopyDatasetToOutputProdTest(unittest.TestCase):
         test_args = [
             "--run_as", "myemail.com", "-s", "mysrcproject", "-o",
             "mydestproject", "-d", "mysrcdataset", "-r", "2021Q2R4", "-t",
-            "CONTROLLED", "--deid_stage", "clean"
+            "CONTROLLED", "--deid_stage", "clean", "--fitbit_dataset",
+            "myfitbitdataset"
         ]
 
         self.assertRaises(SystemExit, self.parser.parse_args, test_args)
