@@ -3,15 +3,19 @@ Script to generate the validation dataset in the form validationYYYYMMDD
 containing tables in the form {hpo_id}_identity_match using the latest
 partitions from drc_ops.
 """
-
+# Python imports
 import argparse
 import logging
 
+# Third party imports
+from google.cloud.bigquery import Table
+
+# Project imports
 from utils import auth, pipeline_logging
 from gcloud.bq import BigQueryClient
 from common import DRC_OPS, CDR_SCOPES, IDENTITY_MATCH
 from constants.validation.participants.snapshot_validaiton_dataset import (
-    PARTITIONS_QUERY, CREATE_TABLE_QUERY)
+    PARTITIONS_QUERY, SNAPSHOT_TABLE_QUERY)
 from bq_utils import get_hpo_info, get_table_id
 
 LOGGER = logging.getLogger(__name__)
@@ -44,7 +48,8 @@ def create_id_match_tables(client, dataset_id):
     partitions_df = job.result().to_dataframe()
     LOGGER.info(f'Fetched latest partitions from {DRC_OPS}')
 
-    for hpo_id in get_hpo_info():
+    for hpo_dict in get_hpo_info():
+        hpo_id = hpo_dict["hpo_id"]
         hpo_partition_df = get_partition_date_df(partitions_df, hpo_id)
 
         source_table = f'{IDENTITY_MATCH}_{hpo_id}'
@@ -60,13 +65,20 @@ def create_id_match_tables(client, dataset_id):
 
         partition_date = hpo_partition_df['partition_id'].iloc[0]
 
-        create_table_job = client.query(
-            CREATE_TABLE_QUERY.render(project_id=client.project,
-                                      source_table=fq_source_table,
-                                      dest_table=fq_dest_table,
-                                      partition_date=partition_date))
-        create_table_job.result()
+        schema = client.get_table_schema(IDENTITY_MATCH)
+        dest_table = Table(fq_dest_table, schema=schema)
+        client.create_table(dest_table)
         LOGGER.info(f'Created table {fq_dest_table} for {hpo_id}')
+
+        snapshot_table_job = client.query(
+            SNAPSHOT_TABLE_QUERY.render(project_id=client.project,
+                                        fq_source_table=fq_source_table,
+                                        fq_dest_table=fq_dest_table,
+                                        partition_date=partition_date))
+        snapshot_table_job.result()
+        LOGGER.info(
+            f'Populated table {fq_dest_table} from latest partition in {fq_source_table}'
+        )
 
 
 def create_snapshot(client, date_str):
@@ -77,7 +89,7 @@ def create_snapshot(client, date_str):
     :param date_str: date string to snapshot on
     :return: 
     """
-    dataset_id = f"validation{date_str.replace('-', '')}"
+    dataset_id = f"validation_{date_str.replace('-', '')}"
     dataset = client.create_dataset(dataset_id, exists_ok=True)
     return dataset.dataset_id
 
@@ -111,7 +123,7 @@ def main():
     args = parser.parse_args()
 
     # Set up pipeline logging
-    pipeline_logging.configure(level=logging.DEBUG, add_console_handler=True)
+    pipeline_logging.configure(add_console_handler=True)
 
     # get credentials and create client
     impersonation_creds = auth.get_impersonation_credentials(
