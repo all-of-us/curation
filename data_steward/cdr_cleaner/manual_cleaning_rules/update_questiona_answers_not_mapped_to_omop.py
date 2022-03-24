@@ -44,12 +44,12 @@ UPDATE_QUESTIONS_MAP_QUERY = """
         observation_source_concept_id=new_observation_source_concept_id
     FROM
         (SELECT
-        DISTINCT short_pmi_code AS observation_source_value,
+        DISTINCT pmi_code AS observation_source_value,
         source_c.concept_id AS new_observation_source_concept_id,
         FIRST_VALUE(standard_c.concept_id) OVER (PARTITION BY source_c.concept_id ORDER BY c_r.relationship_id DESC ) AS new_observation_concept_id
         FROM (
             SELECT
-            pmi_code AS short_pmi_code,
+            pmi_code,
             short_code
             FROM
                 `{project}.{sandbox}.{old_map}`
@@ -82,12 +82,12 @@ UPDATE_ANSWERS_MAP_QUERY = """
         value_source_concept_id=new_value_source_concept_id
     FROM (
         SELECT
-        DISTINCT short_pmi_code AS value_source_value,
+        DISTINCT pmi_code AS value_source_value,
         source_c.concept_id AS new_value_source_concept_id,
         FIRST_VALUE(standard_c.concept_id) OVER (PARTITION BY source_c.concept_id ORDER BY c_r.relationship_id DESC ) AS new_value_as_concept_id
         FROM (
             SELECT
-            SUBSTR(pmi_code,1,50) AS short_pmi_code,
+            pmi_code,
             short_code
             FROM
                 `{project}.{sandbox}.{old_map}`
