@@ -28,15 +28,13 @@ Should occur after data remapping rules.
 Should not be applied to mapping tables or other non-OMOP tables.
 """
 import logging
-import json
-import os
 
 # Project imports
 from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from common import JINJA_ENV, CDM_TABLES
 from gcloud.bq import BigQueryClient
-from utils import pipeline_logging, bq
+from utils import pipeline_logging
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
 from cdr_cleaner.cleaning_rules.table_suppression import TableSuppression
 

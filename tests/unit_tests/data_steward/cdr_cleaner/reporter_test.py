@@ -1,8 +1,6 @@
-import csv
 import logging
 import mock
 from google.cloud import bigquery
-import os
 import unittest
 
 from cdr_cleaner import reporter
