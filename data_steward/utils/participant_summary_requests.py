@@ -410,11 +410,11 @@ def get_all_participant_information(project_id: str) -> pandas.DataFrame:
     return df
 
 
-def get_digital_health_information(project_id: str):
+def get_digital_health_information(project_id: str) -> List[Dict]:
     """
     Fetches the necessary participant information for a particular site.
     :param project_id: The RDR project hosting the API
-    :return: a dataframe of participant information
+    :return: a json list of participant information
     :raises: RuntimeError if the project_id is not a string
     :raises: TimeoutError if response takes longer than 10 minutes
     """
@@ -428,7 +428,7 @@ def get_digital_health_information(project_id: str):
         'suspensionStatus': 'NOT_SUSPENDED',
         'withdrawalStatus': 'NOT_WITHDRAWN',
         '_sort': 'participantId',
-        '_count': '2500'
+        '_count': '5000'
     }
 
     participant_data = get_participant_data(
@@ -438,10 +438,10 @@ def get_digital_health_information(project_id: str):
 
     column_map = {'participant_id': 'person_id'}
 
-    df = process_digital_health_data_to_json(
+    json_list = process_digital_health_data_to_json(
         participant_data, FIELDS_OF_INTEREST_FOR_DIGITAL_HEALTH, column_map)
 
-    return df
+    return json_list
 
 
 def participant_id_to_int(participant_id):
@@ -557,13 +557,11 @@ def store_digital_health_status_data(project_id,
     if not schema:
         schema = get_table_schema(DIGITAL_HEALTH_SHARING_STATUS)
 
-    try:
-        table = client.get_table(destination_table)
-    except NotFound:
-        table = Table(destination_table, schema=schema)
-        table.time_partitioning = TimePartitioning(
-            type_=TimePartitioningType.DAY)
-        table = client.create_table(table)
+    client.delete_table(destination_table, not_found_ok=True)
+    LOGGER.info(f'Creating table {destination_table}')
+
+    table = Table(destination_table, schema=schema)
+    table = client.create_table(table)
 
     file_obj = StringIO()
     for json_obj in json_data:
