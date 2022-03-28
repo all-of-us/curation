@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # ---
 # jupyter:
 #   jupytext:
@@ -5,7 +6,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.3.0
+#       jupytext_version: 1.7.1
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -18,6 +19,8 @@
 PROJECT_ID = ""  # identifies the project containing the datasets
 BASELINE_EHR_DATASET_ID = ""  # Identifies the dataset the snapshot was created from
 EHR_SNAPSHOT_DATASET_ID = ""  # Identifies the snapshot dataset
+EXCLUDED_SITES = ""  # List of excluded sites seperated by ","
+# -
 
 # +
 import pandas as pd
@@ -33,6 +36,17 @@ pd.options.display.max_columns = None
 pd.options.display.width = None
 
 # -
+
+release_tag = '2022q2r1'
+stage = 'unioned_ehr'
+for suffix in ['_backup', '_staging', '_sandbox', '']:
+    dataset_id = f'{release_tag}_unioned_ehr{suffix}'
+    dataset = client.get_dataset(dataset_id)
+    print(f'''{dataset.dataset_id}
+  description: {dataset.description}
+  labels: {dataset.labels}
+  
+    ''')
 
 # ## QC for EHR Snapshot
 #
@@ -124,4 +138,26 @@ WHERE
   AND ((observation_datetime = birth_datetime)
     OR (observation_date = birth_date))
 """
+execute(client, query)
+
+# ## Check for Excluded sites
+
+hpo_ids_ex = ('cook_county', 'ut_health_tyler', 'trans_am_health_partners',
+              'vcu', 'wash_u_stl')
+
+from common import MAPPED_CLINICAL_DATA_TABLES
+
+# +
+queries = []
+for cdm_table in MAPPED_CLINICAL_DATA_TABLES:
+    queries.append(f""" SELECT
+  '{cdm_table}' AS table_name, COUNT(*) AS non_compliant_rows
+FROM `{EHR_SNAPSHOT_DATASET_ID}.unioned_ehr_{cdm_table}`
+JOIN `{EHR_SNAPSHOT_DATASET_ID}._mapping_{cdm_table}`
+USING ({cdm_table}_id)
+WHERE src_hpo_id IN {hpo_ids_ex}""")
+
+query = ' \n UNION ALL \n'.join(queries)
+# -
+
 execute(client, query)
