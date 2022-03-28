@@ -7,7 +7,6 @@ The point is to make it explicitly clear what is and is not required.
 import unittest
 
 # Third party imports
-import googleapiclient
 import oauth2client
 import test_util
 from mock import patch
