@@ -584,9 +584,9 @@ execute(client, query)
 
 # Survey data in the RDR export should all have **questionnaire_response_id**
 # except the pmi skip data backfilled by Curation cleaning rule.
-# [DC-1776](https://precisionmedicineinitiative.atlassian.net/browse/DC-1776).
-# [DC-2254](https://precisionmedicineinitiative.atlassian.net/browse/DC-2254)
 # Any violations should be reported to the RDR team.
+# [DC-1776](https://precisionmedicineinitiative.atlassian.net/browse/DC-1776).
+# [DC-2254](https://precisionmedicineinitiative.atlassian.net/browse/DC-2254).
 
 tpl = JINJA_ENV.from_string('''
 SELECT  
