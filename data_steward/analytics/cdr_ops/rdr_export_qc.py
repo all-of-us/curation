@@ -583,7 +583,9 @@ execute(client, query)
 # # Check for missing questionnaire_response_id
 
 # Survey data in the RDR export should all have **questionnaire_response_id**
+# except the pmi skip data backfilled by Curation cleaning rule.
 # [DC-1776](https://precisionmedicineinitiative.atlassian.net/browse/DC-1776).
+# [DC-2254](https://precisionmedicineinitiative.atlassian.net/browse/DC-2254)
 # Any violations should be reported to the RDR team.
 
 tpl = JINJA_ENV.from_string('''
@@ -595,6 +597,7 @@ JOIN `{{project_id}}.{{new_rdr}}.concept_ancestor` ON (concept_id=ancestor_conce
 JOIN `{{project_id}}.{{new_rdr}}.observation` ON (descendant_concept_id=observation_concept_id)
 WHERE concept_class_id='Module'
 AND concept_name IN ('The Basics', 'Lifestyle', 'Overall Health') -- restrict to PPI 1-3 --
+AND NOT (observation_id >= 1000000000000 AND value_as_concept_id = 903096) -- exclude records from backfill pmi skip --
 AND questionnaire_response_id IS NULL
 GROUP BY 1
 ''')
