@@ -5,6 +5,8 @@ set -ex
 USAGE="
 Usage: generate_combined_dataset.sh
   --key_file <path to key file>
+  --run_as <service account email for impersonation>
+  --pmi_email <pmi-ops account email>
   --vocab_dataset <vocab dataset>
   --unioned_ehr_dataset <unioned dataset>
   --api_project_id <Identifies the RDR project for Participant Summary API>
@@ -20,6 +22,14 @@ while true; do
   case "$1" in
   --key_file)
     key_file=$2
+    shift 2
+    ;;
+  --run_as)
+    run_as=$2
+    shift 2
+    ;;
+  --pmi_email)
+    pmi_email=$2
     shift 2
     ;;
   --unioned_ehr_dataset)
@@ -66,9 +76,10 @@ while true; do
   esac
 done
 
-if [[ -z "${key_file}" ]] || [[ -z "${unioned_ehr_dataset}" ]] || [[ -z "${api_project_id}" ]] ||
- [[ -z "${ehr_dataset}" ]] || [[ -z "${vocab_dataset}" ]] || [[ -z "${rdr_dataset}" ]] ||
-  [[ -z "${validation_dataset}" ]] || [[ -z "${dataset_release_tag}" ]] || [[ -z "${ehr_cutoff}" ]] || [[ -z "${rdr_export_date}" ]]; then
+if [[ -z "${key_file}" ]] || [[ -z "${run_as}" ]] || [[ -z "${pmi_email}" ]] ||
+ [[ -z "${unioned_ehr_dataset}" ]] || [[ -z "${api_project_id}" ]] || [[ -z "${ehr_dataset}" ]] ||
+ [[ -z "${vocab_dataset}" ]] || [[ -z "${rdr_dataset}" ]] || [[ -z "${validation_dataset}" ]] ||
+ [[ -z "${dataset_release_tag}" ]] || [[ -z "${ehr_cutoff}" ]] || [[ -z "${rdr_export_date}" ]]; then
   echo "$USAGE"
   exit 1
 fi
@@ -152,8 +163,16 @@ export COMBINED_DATASET_ID="${combined_staging}"
 export BIGQUERY_DATASET_ID="${combined_staging}"
 data_stage='combined'
 
+# clear GOOGLE_APPLICATION_CREDENTIALS environment variable inorder to make impersonation work
+unset GOOGLE_APPLICATION_CREDENTIALS
+gcloud config set account "${pmi_email}"
+
 # run cleaning_rules on combined staging dataset
-python "${CLEANER_DIR}/clean_cdr.py" --project_id "${app_id}" --dataset_id "${combined_staging}" --sandbox_dataset_id "${combined_sandbox}" --data_stage ${data_stage} -s --cutoff_date "${ehr_cutoff}" --validation_dataset_id "${validation_dataset}" --ehr_dataset_id "${ehr_dataset}" --api_project_id "${api_project_id}" 2>&1 | tee combined_cleaning_log_"${combined}".txt
+python "${CLEANER_DIR}/clean_cdr.py" --project_id "${app_id}" --dataset_id "${combined_staging}" --sandbox_dataset_id "${combined_sandbox}" --run_as "${run_as}" --data_stage ${data_stage} -s --cutoff_date "${ehr_cutoff}" --validation_dataset_id "${validation_dataset}" --ehr_dataset_id "${ehr_dataset}" --api_project_id "${api_project_id}" 2>&1 | tee combined_cleaning_log_"${combined}".txt
+
+# Add GOOGLE_APPLICATION_CREDENTIALS environment variable
+export GOOGLE_APPLICATION_CREDENTIALS="${key_file}"
+gcloud auth activate-service-account --key-file=${key_file}
 
 # Create a snapshot dataset with the result
 python "${TOOLS_DIR}/snapshot_by_query.py" --project_id "${app_id}" --dataset_id "${combined_staging}" --snapshot_dataset_id "${combined}"
