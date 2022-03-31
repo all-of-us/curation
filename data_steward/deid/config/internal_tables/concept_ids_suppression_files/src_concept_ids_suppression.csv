@@ -13110,3 +13110,256 @@ ICD10CM,T65.893A,"Toxic effect of other specified substances, assault, initial e
 ICD9CM,E982.0,"Poisoning by motor vehicle exhaust gas, undetermined whether accidentally or purposely inflicted",44834199,Condition,06apr20 NIH List
 ICD10CM,T50.903D,"Poisoning by unspecified drugs, medicaments and biological substances, assault, subsequent encounter",45565684,Condition,06apr20 NIH List
 ICD9CM,763.0,Breech delivery and extraction affecting fetus or newborn,44826952,Condition,06apr20 NIH List
+CIEL,798,SALBUTAMOL INHALER,45935798,Drug,DC-2277
+CIEL,799,HALOFANTRINE,45906142,Drug,DC-2277
+CIEL,800,EFV,45951994,Drug,DC-2277
+CPT4,0021A,AstraZeneca Covid-19 Vaccine Administration - First Dose,766236,Drug,DC-2277
+CPT4,0022A,AstraZeneca Covid-19 Vaccine Administration - Second Dose,766237,Drug,DC-2277
+CPT4,0031A,Janssen Covid-19 Vaccine Administration,766235,Drug,DC-2277
+CPT4,0041A,Novavax Covid-19 Vaccine Administration - First Dose,759428,Drug,DC-2277
+CPT4,0042A,Novavax Covid-19 Vaccine Administration - Second Dose,759429,Drug,DC-2277
+CPT4,0051A,Pfizer-BioNTech Covid-19 Vaccine (Ready to Use) Administration - First dose,759430,Drug,DC-2277
+CPT4,0052A,Pfizer-BioNTech Covid-19 Vaccine (Ready to Use) Administration - Second dose,759431,Drug,DC-2277
+CPT4,0053A,Pfizer-BioNTech Covid-19 Vaccine (Ready to Use) Administration - Third dose,759725,Drug,DC-2277
+CPT4,0054A,Pfizer-BioNTech Covid-19 Vaccine (Ready to Use) Administration - Booster,759726,Drug,DC-2277
+CPT4,0064A,Moderna Covid-19 Vaccine (Low Dose) Administration - Booster,759727,Drug,DC-2277
+CPT4,0071A,Pfizer-BioNTech Covid-19 Pediatric Vaccine - Administration - First dose,759728,Drug,DC-2277
+CPT4,0072A,Pfizer-BioNTech Covid-19 Pediatric Vaccine - Administration - Second dose,759729,Drug,DC-2277
+CPT4,91302,AstraZeneca Covid-19 Vaccine,766240,Drug,DC-2277
+CPT4,91303,Janssen Covid-19 Vaccine,766241,Drug,DC-2277
+CPT4,91304,Novavax Covid-19 Vaccine,759735,Drug,DC-2277
+CPT4,91305,Pfizer-BioNTech Covid-19 Vaccine (Ready to Use),759736,Drug,DC-2277
+CPT4,91306,Moderna Covid-19 Vaccine (Low Dose),759737,Drug,DC-2277
+CPT4,91307,Pfizer-BioNTech Covid-19 Pediatric Vaccine,759738,Drug,DC-2277
+DRG,799,Splenectomy w MCC,38001507,Observation,DC-2277
+DRG,800,Splenectomy w CC,38001508,Observation,DC-2277
+ICD10CM,F64.0,Transsexualism,37200330,Condition,DC-2277
+ICD10CM,F64.1,Dual role transvestism,35207225,Condition,DC-2277
+ICD10CM,F64.2,Gender identity disorder of childhood,35207226,Condition,DC-2277
+ICD10CM,F64.8,Other gender identity disorders,35207227,Condition,DC-2277
+ICD10CM,F64.9,"Gender identity disorder, unspecified",35207228,Condition,DC-2277
+ICD10CM,F65.1,Transvestic fetishism,35207230,Condition,DC-2277
+ICD10CM,Q56.2,"Female pseudohermaphroditism, not elsewhere classified",35211009,Condition,DC-2277
+ICD10CM,Q56.3,"Pseudohermaphroditism, unspecified",35211010,Condition,DC-2277
+ICD10CM,Q56.4,"Indeterminate sex, unspecified",35211011,Condition,DC-2277
+ICD10CM,Q98.0,"Klinefelter syndrome karyotype 47, XXY",35211247,Condition,DC-2277
+ICD10CM,Q99.1,"46, XX true hermaphrodite",35211257,Condition,DC-2277
+ICD10CM,Q99.8,Other specified chromosome abnormalities,35211259,Condition,DC-2277
+ICD10CM,Q99.9,"Chromosomal abnormality, unspecified",35211260,Condition,DC-2277
+ICD9CM,800,Fracture of vault of skull,44826991,Condition,DC-2277
+ICD9CM,V45.77,"Acquired absence of organ, genital organs",44837823,Condition,DC-2277
+Multum,798,chlorpheniramine/methscopolamine/PE 2 mg-1.25 mg-10 mg/5 mL oral syrup,45417059,Drug,DC-2277
+Multum,799,"Cefaclor, 500 mg oral capsule",45412177,Drug,DC-2277
+Multum,800,"Bethanechol Chloride, 5 mg oral tablet",45410955,Drug,DC-2277
+PPI,ActiveDuty_AvtiveDutyServeStatus,Active Duty: Active Duty Serve Status,1585852,Observation,DC-2277
+PPI,ArizonaSitePairing_AZSitepairingLocation,The All of Us Research Program is enrolling participants at the following healthcare sites. At which location do you wish to schedule your visit?,1585470,Observation,DC-2277
+PPI,Asian_AsianSpecific,Asian: Asian Specific,1586151,Observation,DC-2277
+PPI,BlackNoneOfTheseDescribeMe_BlackFreeText,Black None Of These Describe Me: Black Free Text,1585628,Observation,DC-2277
+PPI,Black_BlackSpecific,Black: Black Specific,1586152,Observation,DC-2277
+PPI,CHCSitePairing_CHCCareatLocation,Please indicate where you have received care at one of the following locations: CHC Inc Middletown CHC Inc Meriden,1585593,Observation,DC-2277
+PPI,CaliforniaSitePairing_CaliforniaUniversityCare,Have you ever received care at any of the following health centers? University of California Irvine Health University of Southern California University of California San Diego,1585576,Observation,DC-2277
+PPI,ColumbiaSitePairing_ColumbiaCare,Have you ever received care at any of the following?,1585580,Observation,DC-2277
+PPI,ConsentPII_EmailAddress,Consent PII: Email Address,1585260,Observation,DC-2277
+PPI,ConsentPII_HelpWithConsentSignature,Consent PII: Help With Consent Signature,43529713,Observation,DC-2277
+PPI,ConsentPII_VerifiedPrimaryPhoneNumber,Consent PII: Verified Primary Phone Number,1384421,Observation,DC-2277
+PPI,DaughterDiagnosisHistory_WhichConditions,Daughter Diagnosis History: Which Conditions,43529097,Observation,DC-2277
+PPI,EHRConsentPII_ILHIPPAWitnessSignature,EHR Consent PII: IL HIPPA Witness Signature,43529107,Observation,DC-2277
+PPI,EHRConsentPII_Signature,EHR Consent PII: Signature,1586102,Observation,DC-2277
+PPI,EHRConsentPII_TodaysDate,EHR Consent PII: Todays Date,1586103,Observation,DC-2277
+PPI,EHRConsentPII_TodaysDateILHIPPAWitness,EHR Consent PII: Todays Date IL HIPPA Witness,43529104,Observation,DC-2277
+PPI,EastSoutheastMichigan_CareAtHenryFord,"Have you ever received care at a Henry Ford Health System facility or are you currently affiliated with the institution? This many include receiving care in a HFHS hospital, urgent care, emergency department, outpatient clinic or thru HFHS employee hea...",1585568,Observation,DC-2277
+PPI,EmploymentWorkAddress_AddressLineOne,Employment Work Address: Address Line One,1585962,Observation,DC-2277
+PPI,EmploymentWorkAddress_AddressLineTwo,Employment Work Address: Address Line Two,1585963,Observation,DC-2277
+PPI,EmploymentWorkAddress_City,Employment Work Address: City,1585964,Observation,DC-2277
+PPI,EmploymentWorkAddress_Country,Employment Work Address: Country,1585967,Observation,DC-2277
+PPI,EmploymentWorkAddress_ZipCode,Employment Work Address: Zip Code,1585966,Observation,DC-2277
+PPI,Employment_EmploymentWorkAddress,Employment: Employment Work Address,1585961,Observation,DC-2277
+PPI,ExtraConsent_CABoRSignature,Extra Consent: CA Bo R Signature,1585490,Observation,DC-2277
+PPI,ExtraConsent_EverReceivedUPMCCare,Have you ever received care at a UPMC healthcare provider?,1585553,Observation,DC-2277
+PPI,ExtraConsent_ScheduledWithPACares,Have you already scheduled an appointment with your local PA Cares for Us team for physical measurements and biosample collection?,1585556,Observation,DC-2277
+PPI,ExtraConsent_Signature,Extra Consent: Signature,1585486,Observation,DC-2277
+PPI,ExtraConsent__CABoRTodaysDate,Extra Consent: : CA Bo R Todays Date,1585487,Observation,DC-2277
+PPI,FatherDiagnosisHistory_WhichConditions,Father Diagnosis History: Which Conditions,43529098,Observation,DC-2277
+PPI,GenderIdentity_SexualityCloserDescription,Gender Identity: Sexuality Closer Description,1585357,Observation,DC-2277
+PPI,Gender_CloserGenderDescription,Gender: Closer Gender Description,1585348,Observation,DC-2277
+PPI,GrandparentDiagnosisHistory_WhichConditions,Grandparent Diagnosis History: Which Conditions,43529101,Observation,DC-2277
+PPI,HispanicNoneOfTheseDescribeMe_HispanicFreeText,Hispanic None Of These Describe Me: Hispanic Free Text,1585835,Observation,DC-2277
+PPI,Hispanic_HispanicSpecific,Hispanic: Hispanic Specific,1586156,Observation,DC-2277
+PPI,HowOldPeripheralVascularDisease_FreeTextBox,How old text box,43528945,Meas Value,DC-2277
+PPI,HowOldWereYouADHD_FreeTextBox,How old text box,43528949,Meas Value,DC-2277
+PPI,HowOldWereYouAcidReflux_FreeTextBox,How old text box,43528946,Meas Value,DC-2277
+PPI,HowOldWereYouAcne_FreeTextBox,How old text box,43528947,Meas Value,DC-2277
+PPI,HowOldWereYouAcuteKidneyNoDialysis_FreeTextBox,How old text box,43528948,Meas Value,DC-2277
+PPI,HowOldWereYouAlcoholOrDrug_FreeTextBox,How old text box,43528950,Meas Value,DC-2277
+PPI,HowOldWereYouAllergies_FreeTextBox,How old text box,43528951,Meas Value,DC-2277
+PPI,HowOldWereYouAmytrophicLateral_FreeTextBox,How old text box,43528952,Meas Value,DC-2277
+PPI,HowOldWereYouAnemia_FreeTextBox,How old text box,43528953,Meas Value,DC-2277
+PPI,HowOldWereYouAnxiety_FreeTextBox,How old text box,43528954,Meas Value,DC-2277
+PPI,HowOldWereYouArthritis_FreeTextBox,How old text box,43528955,Meas Value,DC-2277
+PPI,HowOldWereYouAsthma_FreeTextBox,How old text box,43528956,Meas Value,DC-2277
+PPI,HowOldWereYouAtrialFibrillation_FreeTextBox,How old text box,43528957,Meas Value,DC-2277
+PPI,HowOldWereYouBipolar_FreeTextBox,How old text box,43528958,Meas Value,DC-2277
+PPI,HowOldWereYouBladderCancer_FreeTextBox,How old text box,43528959,Meas Value,DC-2277
+PPI,HowOldWereYouBleedingDisorder_FreeTextBox,How old text box,43528960,Meas Value,DC-2277
+PPI,HowOldWereYouBlindness_FreeTextBox,How old text box,43528961,Meas Value,DC-2277
+PPI,HowOldWereYouBloodCancer_FreeTextBox,How old text box,43528962,Meas Value,DC-2277
+PPI,HowOldWereYouBoneCancer_FreeTextBox,How old text box,43528963,Meas Value,DC-2277
+PPI,HowOldWereYouBowelObstruction_FreeTextBox,How old text box,43528964,Meas Value,DC-2277
+PPI,HowOldWereYouBrainCancer_FreeTextBox,How old text box,43528965,Meas Value,DC-2277
+PPI,HowOldWereYouBreastCancer_FreeTextBox,How old text box,43528966,Meas Value,DC-2277
+PPI,HowOldWereYouCarpalTunnel_FreeTextBox,How old text box,43528967,Meas Value,DC-2277
+PPI,HowOldWereYouCataracts_FreeTextBox,How old text box,43528968,Meas Value,DC-2277
+PPI,HowOldWereYouCervicalCancer_FreeTextBox,How old text box,43528969,Meas Value,DC-2277
+PPI,HowOldWereYouChronicFatigue_FreeTextBox,How old text box,43528970,Meas Value,DC-2277
+PPI,HowOldWereYouChronicLung_FreeTextBox,How old text box,43528971,Meas Value,DC-2277
+PPI,HowOldWereYouChronicSinus_FreeTextBox,How old text box,43528972,Meas Value,DC-2277
+PPI,HowOldWereYouColonPolyps_FreeTextBox,How old text box,43528973,Meas Value,DC-2277
+PPI,HowOldWereYouColonRectalCancer_FreeTextBox,How old text box,43528974,Meas Value,DC-2277
+PPI,HowOldWereYouConcussion_FreeTextBox,How old text box,43528975,Meas Value,DC-2277
+PPI,HowOldWereYouCongestiveHeartFailure_FreeTextBox,How old text box,43528976,Meas Value,DC-2277
+PPI,HowOldWereYouCoronaryArtery_FreeTextBox,How old text box,43528977,Meas Value,DC-2277
+PPI,HowOldWereYouCrohnsDisease_FreeTextBox,How old text box,43528978,Meas Value,DC-2277
+PPI,HowOldWereYouDementia_FreeTextBox,How old text box,43528979,Meas Value,DC-2277
+PPI,HowOldWereYouDepression_FreeTextBox,How old text box,43528980,Meas Value,DC-2277
+PPI,HowOldWereYouDiverticulosis_FreeTextBox,How old text box,43528981,Meas Value,DC-2277
+PPI,HowOldWereYouDryEyes_FreeTextBox,How old text box,43528982,Meas Value,DC-2277
+PPI,HowOldWereYouEatingDisorder_FreeTextBox,How old text box,43528983,Meas Value,DC-2277
+PPI,HowOldWereYouEndocrineCancer_FreeTextBox,How old text box,43528984,Meas Value,DC-2277
+PPI,HowOldWereYouEndometrialCancer_FreeTextBox,How old text box,43528985,Meas Value,DC-2277
+PPI,HowOldWereYouEnlargedProstate_FreeTextBox,How old text box,43528986,Meas Value,DC-2277
+PPI,HowOldWereYouEpilepsy_FreeTextBox,How old text box,43528987,Meas Value,DC-2277
+PPI,HowOldWereYouEsophagealCancer_FreeTextBox,How old text box,43528988,Meas Value,DC-2277
+PPI,HowOldWereYouEyeCancer_FreeTextBox,How old text box,43528989,Meas Value,DC-2277
+PPI,HowOldWereYouFarSightedness_FreeTextBox,How old text box,43528990,Meas Value,DC-2277
+PPI,HowOldWereYouFibromyalgia_FreeTextBox,How old text box,43528991,Meas Value,DC-2277
+PPI,HowOldWereYouFracturedBrokenBone_FreeTextBox,How old text box,43528992,Meas Value,DC-2277
+PPI,HowOldWereYouGallStones_FreeTextBox,How old text box,43528993,Meas Value,DC-2277
+PPI,HowOldWereYouGlaucoma_FreeTextBox,How old text box,43528994,Meas Value,DC-2277
+PPI,HowOldWereYouGout_FreeTextBox,How old text box,43528995,Meas Value,DC-2277
+PPI,HowOldWereYouHIVAIDS_FreeTextBox,How old text box,43529004,Meas Value,DC-2277
+PPI,HowOldWereYouHeadNeckCancer_FreeTextBox,How old text box,43528996,Meas Value,DC-2277
+PPI,HowOldWereYouHearingLoss_FreeTextBox,How old text box,43528997,Meas Value,DC-2277
+PPI,HowOldWereYouHeartAttack_FreeTextBox,How old text box,43528998,Meas Value,DC-2277
+PPI,HowOldWereYouHeartValveDisease_FreeTextBox,How old text box,43528999,Meas Value,DC-2277
+PPI,HowOldWereYouHemorrhoids_FreeTextBox,How old text box,43529000,Meas Value,DC-2277
+PPI,HowOldWereYouHepatitisC_FreeTextBox,How old text box,43529001,Meas Value,DC-2277
+PPI,HowOldWereYouHernia_FreeTextBox,How old text box,43529002,Meas Value,DC-2277
+PPI,HowOldWereYouHighCholesterol_FreeTextBox,How old text box,43529003,Meas Value,DC-2277
+PPI,HowOldWereYouHypertension_FreeTextBox,How old text box,43529005,Meas Value,DC-2277
+PPI,HowOldWereYouHyperthyroidism_FreeTextBox,How old text box,43529006,Meas Value,DC-2277
+PPI,HowOldWereYouHypothyroidism_FreeTextBox,How old text box,43529007,Meas Value,DC-2277
+PPI,HowOldWereYouInsomnia_FreeTextBox,How old text box,43529008,Meas Value,DC-2277
+PPI,HowOldWereYouIrritableBowel_FreeTextBox,How old text box,43529009,Meas Value,DC-2277
+PPI,HowOldWereYouKidneyCancer_FreeTextBox,How old text box,43529010,Meas Value,DC-2277
+PPI,HowOldWereYouKidneyStones_FreeTextBox,How old text box,43529011,Meas Value,DC-2277
+PPI,HowOldWereYouKidneyWithDialysis_FreeTextBox,How old text box,43529012,Meas Value,DC-2277
+PPI,HowOldWereYouKidneyWithoutDialysis_FreeTextBox,How old text box,43529013,Meas Value,DC-2277
+PPI,HowOldWereYouLiverCondition_FreeTextBox,How old text box,43529014,Meas Value,DC-2277
+PPI,HowOldWereYouLungCancer_FreeTextBox,How old text box,43529015,Meas Value,DC-2277
+PPI,HowOldWereYouLupus_FreeTextBox,How old text box,43529016,Meas Value,DC-2277
+PPI,HowOldWereYouMacularDegeneration_FreeTextBox,How old text box,43529017,Meas Value,DC-2277
+PPI,HowOldWereYouMemoryLoss_FreeTextBox,How old text box,43529018,Meas Value,DC-2277
+PPI,HowOldWereYouMigraine_FreeTextBox,How old text box,43529019,Meas Value,DC-2277
+PPI,HowOldWereYouMultipleSclerosis_FreeTextBox,How old text box,43529020,Meas Value,DC-2277
+PPI,HowOldWereYouMuscularDystrophy_FreeTextBox,How old text box,43529021,Meas Value,DC-2277
+PPI,HowOldWereYouNarcolepsy_FreeTextBox,How old text box,43529022,Meas Value,DC-2277
+PPI,HowOldWereYouNearSightedness_FreeTextBox,How old text box,43529023,Meas Value,DC-2277
+PPI,HowOldWereYouNeuropathy_FreeTextBox,How old text box,43529024,Meas Value,DC-2277
+PPI,HowOldWereYouObesity_FreeTextBox,How old text box,43529025,Meas Value,DC-2277
+PPI,HowOldWereYouOsteoporosis_FreeTextBox,How old text box,43529026,Meas Value,DC-2277
+PPI,HowOldWereYouOtherCancer_FreeTextBox,How old text box,43529027,Meas Value,DC-2277
+PPI,HowOldWereYouOtherDiabetes_FreeTextBox,How old text box,43529028,Meas Value,DC-2277
+PPI,HowOldWereYouOtherHeadaches_FreeTextBox,How old text box,43529029,Meas Value,DC-2277
+PPI,HowOldWereYouOtherThyroid_FreeTextBox,How old text box,43529030,Meas Value,DC-2277
+PPI,HowOldWereYouPTSD_FreeTextBox,How old text box,43529038,Meas Value,DC-2277
+PPI,HowOldWereYouPancreaticCancer_FreeTextBox,How old text box,43529031,Meas Value,DC-2277
+PPI,HowOldWereYouPancreatitis_FreeTextBox,How old text box,43529032,Meas Value,DC-2277
+PPI,HowOldWereYouParkinsonsDisease_FreeTextBox,How old text box,43529033,Meas Value,DC-2277
+PPI,HowOldWereYouPepticUlcers_FreeTextBox,How old text box,43529034,Meas Value,DC-2277
+PPI,HowOldWereYouPersonalityDisorder_FreeTextBox,How old text box,43529035,Meas Value,DC-2277
+PPI,HowOldWereYouPreDiabetes_FreeTextBox,How old text box,43529036,Meas Value,DC-2277
+PPI,HowOldWereYouProstateCancer_FreeTextBox,How old text box,43529037,Meas Value,DC-2277
+PPI,HowOldWereYouPulmonaryEmbolism_FreeTextBox,How old text box,43529039,Meas Value,DC-2277
+PPI,HowOldWereYouRestlessLeg_FreeTextBox,How old text box,43529040,Meas Value,DC-2277
+PPI,HowOldWereYouSchizophrenia_FreeTextBox,How old text box,43529041,Meas Value,DC-2277
+PPI,HowOldWereYouSickleCellDisease_FreeTextBox,How old text box,43529042,Meas Value,DC-2277
+PPI,HowOldWereYouSkinCancer_FreeTextBox,How old text box,43529043,Meas Value,DC-2277
+PPI,HowOldWereYouSkinCondition_FreeTextBox,How old text box,43529044,Meas Value,DC-2277
+PPI,HowOldWereYouSleepApnea_FreeTextBox,How old text box,43529045,Meas Value,DC-2277
+PPI,HowOldWereYouSocialPhobia_FreeTextBox,How old text box,43529046,Meas Value,DC-2277
+PPI,HowOldWereYouSpinalCordInjury_FreeTextBox,How old text box,43529047,Meas Value,DC-2277
+PPI,HowOldWereYouSpineMuscleBone_FreeTextBox,How old text box,43529048,Meas Value,DC-2277
+PPI,HowOldWereYouStomachCancer_FreeTextBox,How old text box,43529049,Meas Value,DC-2277
+PPI,HowOldWereYouStroke_FreeTextBox,How old text box,43529050,Meas Value,DC-2277
+PPI,HowOldWereYouThyroidCancer_FreeTextBox,How old text box,43529051,Meas Value,DC-2277
+PPI,HowOldWereYouTinnitus_FreeTextBox,How old text box,43529052,Meas Value,DC-2277
+PPI,HowOldWereYouTransientIschemicAttack_FreeTextBox,How old text box,43529053,Meas Value,DC-2277
+PPI,HowOldWereYouTraumaBrainInjury_FreeTextBox,How old text box,43529054,Meas Value,DC-2277
+PPI,HowOldWereYouTuberculosis_FreeTextBox,How old text box,43529055,Meas Value,DC-2277
+PPI,HowOldWereYouType1Diabetes_FreeTextBox,How old text box,43529056,Meas Value,DC-2277
+PPI,HowOldWereYouType2Diabetes_FreeTextBox,How old text box,43529057,Meas Value,DC-2277
+PPI,HowOldWereYouUlcerativeColitis_FreeTextBox,How old text box,43529058,Meas Value,DC-2277
+PPI,HowOldWereYouUrinaryTract_FreeTextBox,How old text box,43529059,Meas Value,DC-2277
+PPI,HowOldWereYouVitaminBDeficiency_FreeTextBox,How old text box,43529060,Meas Value,DC-2277
+PPI,HowOldWereYouVitaminDDeficiency_FreeTextBox,How old text box,43529061,Meas Value,DC-2277
+PPI,IllinoisSitePairing_IllinoisInstitution,The following Healthcare Providers in your area are enrolling participants into the All of Us Research Program. At which institution do you receive care and wish to schedule an enrollment visit with? Please choose 1 institution,1585514,Observation,DC-2277
+PPI,LivingSituation_CurrentLiving,Living Situation: Current Living,1585402,Observation,DC-2277
+PPI,LivingSituation_LivingSituationFreeText,Living Situation: Living Situation Free Text,1585878,Observation,DC-2277
+PPI,MENANoneOfTheseDescribeMe_MENAFreeText,MENA None Of These Describe Me: MENA Free Text,1585320,Observation,DC-2277
+PPI,MENA_MENASpecific,MENA: MENA Specific,1586153,Observation,DC-2277
+PPI,MichiganSitePairing_LiveInFollowingAreas,Do you live in any of the following general areas? (others coming soon!),1585563,Observation,DC-2277
+PPI,MississippiSitePairing_JacksonHinds,Have you ever received care from a health provider at the Jackson-Hinds Comprehensive Health Center's Main Site (James Anderson Clinic) or the Copiah Clinic?,1585532,Observation,DC-2277
+PPI,MississippiSitePairing_JacksonHindsAppointment,Have you already scheduled an All of Us research appointment at the Jackson-Hinds Comprehensive Health Center's Main Site (James Anderson Clinic) or the Copiah Clinic?,1585535,Observation,DC-2277
+PPI,MotherDiagnosisHistory_WhichConditions,Mother Diagnosis History: Which Conditions,43529102,Observation,DC-2277
+PPI,NHPINoneOfTheseDescribeMe_NHPIFreeText,NHPI None Of These Describe Me: NHPI Free Text,1585331,Observation,DC-2277
+PPI,NHPI_NHPISpecific,NHPI: NHPI Specific,1586154,Observation,DC-2277
+PPI,NewEnglandSitePairing_CareReceived,"Have you ever received care at any hospital, health center or clinic affiliated with Boston Medical Center (BMC) or Partners HealthCare (Partners)?",1585527,Observation,DC-2277
+PPI,NewYorkSitePairing_HRHCare,"Have you ever received care at the Peekskill Health Center, or any other HRHCare health center?",1585539,Observation,DC-2277
+PPI,NoneOfTheseDescribeMe_AsianFreeText,None Of These Describe Me: Asian Free Text,1585615,Observation,DC-2277
+PPI,OtherArthritis_FreeTextBox,Other Arthritis: Free Text Box,1384606,Observation,DC-2277
+PPI,OtherBoneJointMuscle_FreeTextBox,Other Bone Joint Muscle: Free Text Box,1384525,Observation,DC-2277
+PPI,OtherBrainNervousSystem_FreeTextBox,Other Brain Nervous System: Free Text Box,1384654,Observation,DC-2277
+PPI,OtherCancer_DaughterFreeTextBox,Other Cancer: Daughter Free Text Box,43528517,Observation,DC-2277
+PPI,OtherCancer_FatherFreeTextBox,Other Cancer: Father Free Text Box,43528518,Observation,DC-2277
+PPI,OtherCancer_FreeTextBox,Other Cancer: Free Text Box,1384502,Observation,DC-2277
+PPI,OtherCancer_GrandparentFreeTextBox,Other Cancer: Grandparent Free Text Box,43528519,Observation,DC-2277
+PPI,OtherCancer_MotherFreeTextBox,Other Cancer: Mother Free Text Box,43528520,Observation,DC-2277
+PPI,OtherCancer_SiblingFreeTextBox,Other Cancer: Sibling Free Text Box,43528521,Observation,DC-2277
+PPI,OtherCancer_SonFreeTextBox,Other Cancer: Son Free Text Box,43528522,Observation,DC-2277
+PPI,OtherCondition_DaughterFreeTextBox,Other Condition: Daughter Free Text Box,43529639,Observation,DC-2277
+PPI,OtherCondition_FatherFreeTextBox,Other Condition: Father Free Text Box,43529640,Observation,DC-2277
+PPI,OtherCondition_GrandparentFreeTextBox,Other Condition: Grandparent Free Text Box,43529641,Observation,DC-2277
+PPI,OtherCondition_MotherFreeTextBox,Other Condition: Mother Free Text Box,43529642,Observation,DC-2277
+PPI,OtherCondition_SiblingFreeTextBox,Other Condition: Sibling Free Text Box,43529643,Observation,DC-2277
+PPI,OtherCondition_SonFreeTextBox,Other Condition: Son Free Text Box,43529644,Observation,DC-2277
+PPI,OtherDelayedMedicalCare_FreeText,Other Delayed Medical Care: Free Text,43528718,Observation,DC-2277
+PPI,OtherDiabetes_FreeTextBox,Other Diabetes: Free Text Box,1384485,Observation,DC-2277
+PPI,OtherDiagnosis_FreeTextBox,Other Diagnosis: Free Text Box,1384473,Observation,DC-2277
+PPI,OtherDigestiveCondition_FreeTextBox,Other Digestive Condition: Free Text Box,1384500,Observation,DC-2277
+PPI,OtherHealthPlan_FreeText,Other Health Plan: Free Text,43529654,Observation,DC-2277
+PPI,OtherHearingEye_FreeTextBox,Other Hearing Eye: Free Text Box,1384536,Observation,DC-2277
+PPI,OtherHeartorBloodCondition_FreeTextBox,Other Heartor Blood Condition: Free Text Box,1384580,Observation,DC-2277
+PPI,OtherHormoneEndocrine_FreeTextBox,Other Hormone Endocrine: Free Text Box,1384571,Observation,DC-2277
+PPI,OtherInfectiousDisease_FreeTextBox,Other Infectious Disease: Free Text Box,1384541,Observation,DC-2277
+PPI,OtherInsuranceType_FreeText,Other Insurance Type: Free Text,1384403,Observation,DC-2277
+PPI,OtherKidneyCondition_FreeTextBox,Other Kidney Condition: Free Text Box,1384562,Observation,DC-2277
+PPI,OtherMentalHealthSubstanceUse_FreeTextBox,Other Mental Health Substance Use: Free Text Box,1384508,Observation,DC-2277
+PPI,OtherRespiratory_FreeTextBox,Other Respiratory: Free Text Box,1384434,Observation,DC-2277
+PPI,OtherSpecify_OtherDrugsTextBox,Other Specify: Other Drugs Text Box,1585647,Observation,DC-2277
+PPI,notes,Additional notes,903137,Observation,DC-2277
+RxNorm Extension,OMOP5043059,COVID-19 convalescent plasma,33000,Drug,DC-2277
+SNOMED,103579009,Race,4013886,Observation,DC-2277
+SNOMED,263495000,Gender,4135376,Observation,DC-2277
+SNOMED,364699009,Ethnic group,4271761,Observation,DC-2277
+SNOMED,81730008,Abnormal sexual state,4305327,Condition,DC-2277
+SNOMED,83240001,Abnormal sexual state and development,4307247,Condition,DC-2277
+SNOMED,85762002,Voice disorder due to transsexualism,4311815,Condition,DC-2277
+SNOMED,861131000000102,"Referral to LGBT (lesbian, gay, bisexual and transgender) service",44808972,Observation,DC-2277
+SNOMED,87991007,Gender identity disorder,4338512,Condition,DC-2277
+SNOMED,93461009,Gender dysphoria,4246663,Condition,DC-2277
+VANDF,4039851,"INV-COVID-19 VACCINE MRNA (MODERNA) (PF) 100MCG/0.5ML INJ,5ML",1615362,Drug,DC-2277
+VANDF,4039857,"INV-COVID-19 VACCINE MRNA (PFIZER) (PF) 30MCG/0.3ML INJ,VIL",1615368,Drug,DC-2277
+VANDF,4039944,"INV-COVID-19 VACCINE VIRAL VECTOR (ASTRAZENECA) (PF) INJ,5ML",1615455,Drug,DC-2277
+VANDF,4040047,"INV-COVID-19 VACCINE AD26 (JANSSEN) (PF) INJ,2.5ML",1615558,Drug,DC-2277
+VANDF,4040411,"INV-COVID-19 VACCINE MRNA (MODERNA) (PF) 100MCG/0.5ML INJ,7ML",1615923,Drug,DC-2277
+VANDF,4040599,"INV-COVID-19 VACCINE ADJ (NOVAVAX) (PF) INJ,5ML",1616111,Drug,DC-2277
