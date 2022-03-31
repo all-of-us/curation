@@ -44,8 +44,7 @@ FROM `{dataset_id}.{table}` AS {prefix}
 )
 WHERE row_num = 1
 ) {prefix}  ON t.{field} = {prefix}.src_{field}
-AND m.src_dataset_id = {prefix}.src_dataset_id
-"""
+AND m.src_dataset_id = {prefix}.src_dataset_id"""
 
 LEFT_JOIN_PERSON = """
 LEFT JOIN
