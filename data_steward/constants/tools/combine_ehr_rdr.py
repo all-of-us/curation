@@ -181,6 +181,8 @@ from `{dataset}.{table}` AS t
 {join_expr}"""
 
 FACT_RELATIONSHIP_QUERY = """
+SELECT *
+FROM (
   SELECT
     fr.domain_concept_id_1 AS domain_concept_id_1,
     CASE
@@ -209,4 +211,7 @@ FACT_RELATIONSHIP_QUERY = """
     
  UNION ALL 
     
- SELECT * from `{ehr_dataset}.fact_relationship`"""
+ SELECT * from `{ehr_dataset}.fact_relationship`)
+WHERE fact_id_1 IS NOT NULL
+AND fact_id_2 IS NOT NULL
+"""
