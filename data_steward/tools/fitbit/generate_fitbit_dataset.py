@@ -167,6 +167,13 @@ def get_fitbit_parser():
                         help='Service account email address to impersonate',
                         required=True)
     parser.add_argument(
+        '-d',
+        '--reference_dataset_id',
+        dest='reference_dataset_id',
+        action='store',
+        help='Combined dataset to use as reference containing valid PIDs',
+        required=True)
+    parser.add_argument(
         '-r',
         '--release_tag',
         action='store',
