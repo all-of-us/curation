@@ -4,6 +4,8 @@ SOURCE_VALUE_EHR_CONSENT = 'EHRConsentPII_ConsentPermission'
 CONCEPT_ID_CONSENT_PERMISSION_YES = 1586100  # ConsentPermission_Yes
 EHR_CONSENT_TABLE_ID = '_ehr_consent'
 PERSON_TABLE = 'person'
+VISIT_DETAIL = 'visit_detail'
+VISIT_OCCURRENCE_ID = 'visit_occurrence_id'
 PERSON_ID = 'person_id'
 OBSERVATION_TABLE = 'observation'
 FOREIGN_KEYS_FIELDS = [
@@ -28,6 +30,22 @@ FROM `{dataset_id}.{table}` AS {prefix}
 WHERE row_num = 1
 ) {prefix}  ON t.{field} = {prefix}.src_{field}
 AND m.src_dataset_id = {prefix}.src_dataset_id"""
+
+JOIN_VISIT = """
+JOIN
+(
+SELECT *
+FROM (
+SELECT
+*,
+row_number() OVER (PARTITION BY {prefix}.{field}, {prefix}.src_hpo_id ) 
+AS row_num
+FROM `{dataset_id}.{table}` AS {prefix}
+)
+WHERE row_num = 1
+) {prefix}  ON t.{field} = {prefix}.src_{field}
+AND m.src_dataset_id = {prefix}.src_dataset_id
+"""
 
 LEFT_JOIN_PERSON = """
 LEFT JOIN
