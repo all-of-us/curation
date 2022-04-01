@@ -24,8 +24,8 @@ from google.cloud.bigquery import Table, TimePartitioning, TimePartitioningType
 
 # Project imports
 import utils.participant_summary_requests as psr
-from utils.bq import get_table_schema
 from app_identity import PROJECT_ID
+from gcloud.bq import BigQueryClient
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 from common import DIGITAL_HEALTH_SHARING_STATUS
 
@@ -194,10 +194,12 @@ class ParticipantSummaryRequests(BaseTest.BigQueryTestBase):
 
     def test_store_digital_health_status_data(self):
         # Pre conditions
+        bq_client = BigQueryClient(self.project_id)
         fq_table = f'{self.project_id}.{self.dataset_id}.{DIGITAL_HEALTH_SHARING_STATUS}'
         self.fq_table_names.append(fq_table)
-        table = Table(fq_table,
-                      schema=get_table_schema(DIGITAL_HEALTH_SHARING_STATUS))
+        table = Table(
+            fq_table,
+            schema=bq_client.get_table_schema(DIGITAL_HEALTH_SHARING_STATUS))
         table.time_partitioning = TimePartitioning(
             type_=TimePartitioningType.DAY)
         _ = self.client.create_table(table, exists_ok=True)
