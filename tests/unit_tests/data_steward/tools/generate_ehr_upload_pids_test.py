@@ -1,6 +1,5 @@
 import unittest
 
-from utils import bq
 from tools import generate_ehr_upload_pids as eup
 
 
