@@ -29,7 +29,8 @@ S_RESULT = 'result'
 SEROLOGY_TABLES = [PERSON, S_TITER, S_ROCHE_ORTHO, S_TEST, S_RESULT]
 
 PERSON_QUERY = JINJA_ENV.from_string("""
-CREATE TABLE `{{project_id}}.{{dest_dataset_id}}.serology_person` AS
+CREATE TABLE `{{project_id}}.{{dest_dataset_id}}.serology_person`
+LIKE `{{project_id}}.{{source_dataset_id}}.person` AS
 SELECT  
   serology_person_id 
   , collection_date
@@ -51,7 +52,8 @@ FROM `{{project_id}}.{{source_dataset_id}}.person`
 WHERE control_status NOT IN ('Negative', 'Non-Control')""")
 
 TITER_QUERY = JINJA_ENV.from_string("""
-CREATE TABLE `{{project_id}}.{{dest_dataset_id}}.titer` AS
+CREATE TABLE `{{project_id}}.{{dest_dataset_id}}.titer` 
+LIKE `{{project_id}}.{{source_dataset_id}}.titer` AS
 SELECT *
 FROM `{{project_id}}.{{source_dataset_id}}.titer`
 WHERE serology_person_id IN ( 
@@ -59,7 +61,8 @@ WHERE serology_person_id IN (
   FROM `{{project_id}}.{{dest_dataset_id}}.serology_person`)""")
 
 ROCHE_ORTHO_QUERY = JINJA_ENV.from_string("""
-CREATE TABLE `{{project_id}}.{{dest_dataset_id}}.roche_ortho` AS
+CREATE TABLE `{{project_id}}.{{dest_dataset_id}}.roche_ortho`
+LIKE `{{project_id}}.{{source_dataset_id}}.roche_ortho` AS
 SELECT  *
 FROM `{{project_id}}.{{source_dataset_id}}.roche_ortho`
 WHERE serology_person_id IN ( 
@@ -67,7 +70,8 @@ WHERE serology_person_id IN (
   FROM `{{project_id}}.{{dest_dataset_id}}.serology_person`)""")
 
 TEST_QUERY = JINJA_ENV.from_string("""
-CREATE TABLE `{{project_id}}.{{dest_dataset_id}}.test` AS
+CREATE TABLE `{{project_id}}.{{dest_dataset_id}}.test`
+LIKE `{{project_id}}.{{source_dataset_id}}.test` AS
 SELECT *
 FROM `{{project_id}}.{{source_dataset_id}}.test`
 WHERE serology_person_id IN ( 
@@ -75,7 +79,8 @@ WHERE serology_person_id IN (
   FROM `{{project_id}}.{{dest_dataset_id}}.serology_person`)""")
 
 RESULT_QUERY = JINJA_ENV.from_string("""
-CREATE TABLE `{{project_id}}.{{dest_dataset_id}}.result` AS
+CREATE TABLE `{{project_id}}.{{dest_dataset_id}}.result`
+LIKE `{{project_id}}.{{source_dataset_id}}.result` AS
 SELECT *
 FROM `{{project_id}}.{{source_dataset_id}}.result`
 WHERE test_id IN ( 
