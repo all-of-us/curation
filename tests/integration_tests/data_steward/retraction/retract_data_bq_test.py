@@ -99,7 +99,7 @@ class RetractDataBqTest(TestCase):
                 job_config.source_format = bigquery.SourceFormat.CSV
                 job_config.skip_leading_rows = 1
                 job_config.write_disposition = 'WRITE_EMPTY'
-                job_config.schema = bq.get_table_schema(cdm_table)
+                job_config.schema = self.bq_client.get_table_schema(cdm_table)
                 load_job = self.bq_client.load_table_from_file(
                     f,
                     f'{self.test_project_id}.{self.bq_dataset_id}.{hpo_table}',

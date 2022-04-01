@@ -110,7 +110,7 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
         # Copy vocab tables over to the test dataset
         vocabulary_dataset = cls.client.get_dataset(vocabulary_id)
         for src_table in bq.list_tables(cls.client, vocabulary_dataset):
-            schema = bq.get_table_schema(src_table.table_id)
+            schema = cls.client.get_table_schema(src_table.table_id)
             destination = f'{cls.project_id}.{cls.dataset_id}.{src_table.table_id}'
             dst_table = cls.client.create_table(Table(destination,
                                                       schema=schema),
