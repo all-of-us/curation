@@ -20,7 +20,6 @@ class SnapshotSerologyDatasetTest(TestCase):
         print('**************************************************************')
 
     def setUp(self):
-        # input parameters expected by the class
         self.dataset_id = 'fake_dataset'
 
     def test_table_order(self):

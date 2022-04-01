@@ -125,7 +125,7 @@ def create_serology_snapshot(client: BigQueryClient, release_tag: str,
     """
     dataset_id = f"C{release_tag}_antibody_quest"
     dataset = Dataset(f'{client.project}.{dataset_id}')
-    dataset.description = f'Source dataset: {src_serology_dataset_id}; JIRA issue number: {ISSUE_NUMBER}'
+    dataset.description = f'Source dataset: {src_serology_dataset_id} *_ct views; JIRA issue number: {ISSUE_NUMBER}'
     dataset.labels = {'release_tag': release_tag, 'data_tier': 'controlled'}
     dataset = client.create_dataset(dataset)
     LOGGER.info(f'Successfully created empty dataset {dataset.dataset_id}')
