@@ -1,7 +1,8 @@
+# coding=utf-8
 """
 Script to generate the serology dataset in the form C{release_tag}_antibody_quest
 containing tables from R2020q4r1_antibody_quest as done in DC-1981.
-These will be used to create [C/R]{release_tag}_serology.
+These will be used to create C{release_tag}_serology in the output project.
 Issue: DC-2263
 """
 # Python imports
@@ -25,7 +26,7 @@ S_ROCHE_ORTHO = 'roche_ortho'
 S_TEST = 'test'
 S_RESULT = 'result'
 
-SEROLOGY_TABLES = [S_TITER, S_ROCHE_ORTHO, S_TEST, S_RESULT]
+SEROLOGY_TABLES = [PERSON, S_TITER, S_ROCHE_ORTHO, S_TEST, S_RESULT]
 
 PERSON_QUERY = JINJA_ENV.from_string("""
 CREATE TABLE `{{project_id}}.{{dest_dataset_id}}.serology_person` AS
@@ -82,16 +83,17 @@ WHERE test_id IN (
   FROM `{{project_id}}.{{dest_dataset_id}}.test`)""")
 
 SEROLOGY_QUERIES = {
-    PERSON: PERSON_QUERY,
+    PERSON: PERSON_QUERY,  # All table creation queries depend on person
     S_TITER: TITER_QUERY,
     S_ROCHE_ORTHO: ROCHE_ORTHO_QUERY,
     S_TEST: TEST_QUERY,
-    S_RESULT: RESULT_QUERY
+    S_RESULT: RESULT_QUERY  # Result table creation query depends on test
 }
 
 
-def create_serology_tables(client, snapshot_dataset_id, src_serology_dataset_id,
-                           ct_dataset_id):
+def create_serology_tables(client: BigQueryClient, snapshot_dataset_id: str,
+                           src_serology_dataset_id: str,
+                           ct_dataset_id: str) -> None:
     """
     Generate id_match tables in the specified snapshot dataset
 
@@ -101,7 +103,7 @@ def create_serology_tables(client, snapshot_dataset_id, src_serology_dataset_id,
     :param ct_dataset_id: Identifies the Controlled tier dataset
     :return: None
     """
-    for table in [PERSON] + SEROLOGY_TABLES:
+    for table in SEROLOGY_TABLES:
         job = client.query(SEROLOGY_QUERIES[table].render(
             project_id=client.project,
             source_dataset_id=src_serology_dataset_id,
@@ -111,14 +113,15 @@ def create_serology_tables(client, snapshot_dataset_id, src_serology_dataset_id,
         LOGGER.info(f'Created table {snapshot_dataset_id}.{table}')
 
 
-def create_serology_snapshot(client, release_tag, src_serology_dataset_id):
+def create_serology_snapshot(client: BigQueryClient, release_tag: str,
+                             src_serology_dataset_id: str) -> str:
     """
     Generates the serology snapshot dataset based on the release tag
 
     :param client: a BigQueryClient
     :param release_tag: Release tag for the CDR run
     :param src_serology_dataset_id: Identifies the source serology dataset
-    :return: 
+    :return: str: Identifies the created snapshot serology dataset
     """
     dataset_id = f"C{release_tag}_antibody_quest"
     dataset = Dataset(f'{client.project}.{dataset_id}')
