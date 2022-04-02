@@ -7,7 +7,7 @@ from google.cloud.bigquery import DatasetReference
 import bq_utils
 from resources import CDM_TABLES
 from tests.bq_test_helpers import list_item_from_table_id
-from tools.exclude_site_submission import exclude_site_submission, _filter_hpo_tables
+from tools.exclude_site_submission import exclude_site_submission
 
 
 class ExcludeSiteSubmissionTest(unittest.TestCase):

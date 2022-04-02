@@ -97,7 +97,7 @@ def copy_fitbit_tables_from_views(client, from_dataset, to_dataset,
     :return:
     """
     for table in FITBIT_TABLES:
-        schema_list = bq.get_table_schema(table)
+        schema_list = client.get_table_schema(table)
         fq_dest_table = f'{client.project}.{to_dataset}.{table}'
         dest_table = Table(fq_dest_table, schema=schema_list)
         dest_table = client.create_table(dest_table)

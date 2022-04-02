@@ -18,7 +18,7 @@ from google.cloud.bigquery import  Dataset, SchemaField, LoadJob, LoadJobConfig,
 # Project imports
 from gcloud.gcs import StorageClient
 from gcloud.bq import BigQueryClient
-from utils import bq, pipeline_logging
+from utils import pipeline_logging
 from common import VOCABULARY_TABLES, JINJA_ENV, CONCEPT, VOCABULARY, VOCABULARY_UPDATES
 from resources import AOU_VOCAB_PATH
 
@@ -123,10 +123,11 @@ def check_and_create_staging_dataset(dst_dataset_id: str, bucket_name: str,
     return staging_dataset
 
 
-def safe_schema_for(table: str) -> List[SchemaField]:
+def safe_schema_for(bq_client: BigQueryClient, table: str) -> List[SchemaField]:
     """
     Get schema fields whose date[time] fields are converted to strings so load will work
 
+    :param bq_client: a BigQueryClient
     :param table: name of the table
     :return: a list of SchemaField objects
     """
@@ -134,7 +135,7 @@ def safe_schema_for(table: str) -> List[SchemaField]:
         SchemaField(
             f.name, 'string' if f.field_type.lower() in DATE_TIME_TYPES else
             f.field_type, f.mode, f.description)
-        for f in bq.get_table_schema(table)
+        for f in bq_client.get_table_schema(table)
     ]
 
 
@@ -174,7 +175,7 @@ def load_stage(dst_dataset: Dataset, bq_client: BigQueryClient,
         if table_name not in VOCABULARY_TABLES:
             continue
         destination = dst_dataset.table(table_name)
-        safe_schema = safe_schema_for(table_name)
+        safe_schema = safe_schema_for(bq_client, table_name)
         job_config = LoadJobConfig()
         job_config.schema = safe_schema
         job_config.skip_leading_rows = 1
@@ -213,7 +214,7 @@ def load(project_id: str, bq_client: BigQueryClient, src_dataset_id: str,
     job_config = QueryJobConfig()
     query_jobs = []
     for src_table in src_tables:
-        schema = bq.get_table_schema(src_table.table_id)
+        schema = bq_client.get_table_schema(src_table.table_id)
         destination = f'{project_id}.{dst_dataset_id}.{src_table.table_id}'
         table = bq_client.create_table(Table(destination, schema=schema),
                                        exists_ok=True)

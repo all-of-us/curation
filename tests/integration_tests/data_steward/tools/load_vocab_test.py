@@ -1,8 +1,8 @@
 import unittest
 import os
 from pathlib import Path
-import mock
 import csv
+import mock
 
 from google.cloud import bigquery
 

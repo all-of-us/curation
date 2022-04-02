@@ -12,7 +12,6 @@ from gcloud.bq import BigQueryClient
 from google.cloud.exceptions import GoogleCloudError
 
 from common import AOU_REQUIRED, JINJA_ENV
-from utils.bq import get_table_schema
 import constants.bq_utils as bq_consts
 
 LOGGER = logging.getLogger(__name__)
@@ -86,7 +85,7 @@ def load_folder(dst_dataset: str, bq_client: BigQueryClient, bucket_name: str,
         if table_name not in AOU_REQUIRED:
             LOGGER.debug(f'Skipping file for {table_name}')
             continue
-        schema = get_table_schema(table_name)
+        schema = bq_client.get_table_schema(table_name)
         hpo_table_name = f'{hpo_id}_{table_name}'
         fq_hpo_table = f'{bq_client.project}.{dst_dataset}.{hpo_table_name}'
         destination = Table(fq_hpo_table, schema=schema)
