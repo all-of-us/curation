@@ -592,11 +592,8 @@ tpl = JINJA_ENV.from_string('''
 SELECT  
     person_id, 
     STRING_AGG(observation_source_value) AS observation_source_value
-FROM `{{project_id}}.{{new_rdr}}.concept` 
-JOIN `{{project_id}}.{{new_rdr}}.concept_ancestor` ON (concept_id=ancestor_concept_id)
-JOIN `{{project_id}}.{{new_rdr}}.observation` ON (descendant_concept_id=observation_concept_id)
-WHERE concept_class_id='Module'
-AND concept_name IN ('The Basics', 'Lifestyle', 'Overall Health') -- restrict to PPI 1-3 --
+FROM `{{project_id}}.{{new_rdr}}.observation`
+WHERE observation_type_concept_id = 45905771 -- is a survey response --
 AND NOT (observation_id >= 1000000000000 AND value_as_concept_id = 903096) -- exclude records from backfill pmi skip --
 AND questionnaire_response_id IS NULL
 GROUP BY 1
