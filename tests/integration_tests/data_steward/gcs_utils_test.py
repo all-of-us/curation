@@ -1,5 +1,4 @@
 # Pyton imports
-import os
 import unittest
 from io import open
 
