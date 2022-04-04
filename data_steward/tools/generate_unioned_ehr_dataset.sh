@@ -149,6 +149,7 @@ gcloud config set account "${pmi_email}"
 python "${CLEANER_DIR}/clean_cdr.py" --project_id "${app_id}" --run_as "${run_as}" --dataset_id "${unioned_ehr_dataset_staging}" --sandbox_dataset_id "${unioned_ehr_dataset_sandbox}" --data_stage "${data_stage}" -s --cutoff_date "${ehr_cutoff_date}" 2>&1 | tee unioned_cleaning_log_"${unioned_ehr_dataset_staging}".txt
 
 export GOOGLE_APPLICATION_CREDENTIALS="${key_file}"
+gcloud auth activate-service-account --key-file=${key_file}
 
 # Create a snapshot dataset with the result
 python "${TOOLS_DIR}/snapshot_by_query.py" --project_id "${app_id}" --dataset_id "${unioned_ehr_dataset_staging}" --snapshot_dataset_id "${unioned_ehr_dataset}"
