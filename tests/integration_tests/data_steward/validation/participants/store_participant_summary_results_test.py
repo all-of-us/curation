@@ -69,9 +69,7 @@ class StoreParticipantSummaryResultsTest(TestCase):
 
         self.assertCountEqual(actual, expected)
 
-    @mock.patch(
-        'validation.participants.store_participant_summary_results.bq.get_table_schema'
-    )
+    @mock.patch.object(BigQueryClient, 'get_table_schema')
     @mock.patch(
         'validation.participants.store_participant_summary_results.get_org_participant_information'
     )
