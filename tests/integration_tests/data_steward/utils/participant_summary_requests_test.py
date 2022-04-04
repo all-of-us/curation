@@ -204,7 +204,7 @@ class ParticipantSummaryRequests(BaseTest.BigQueryTestBase):
         _ = self.client.create_table(table, exists_ok=True)
 
         # Tests
-        _ = psr.store_digital_health_status_data(self.project_id,
+        _ = psr.store_digital_health_status_data(self.client,
                                                  self.digital_health_data,
                                                  fq_table)
 

@@ -97,7 +97,7 @@ def fetch_and_store_ps_hpo_data(client,
 
     # Load schema and create ingestion time-partitioned table
 
-    schema = bq.get_table_schema(PS_API_VALUES)
+    schema = client.get_table_schema(PS_API_VALUES)
     # TODO use resources.get_table_id after updating it to flip hpo_id, table_name
     table_name = f'{PS_API_VALUES}_{hpo_id}'
 
@@ -134,7 +134,7 @@ def fetch_and_store_full_ps_data(client,
     """
     Fetches PS API data for all participants and stores in drc_ops.ps_api_unioned table
 
-    :param client: BQ client
+    :param client: a BigQueryClient
     :param project_id: Identifies the project
     :param rdr_project_id: PS API project
     :param dataset_id: contains table to store PS API data
@@ -146,7 +146,7 @@ def fetch_and_store_full_ps_data(client,
     participant_info = get_all_participant_information(rdr_project_id)
 
     # Load schema
-    schema = bq.get_table_schema(PS_API_VALUES)
+    schema = client.get_table_schema(PS_API_VALUES)
     # TODO use resources.get_table_id after updating it to flip hpo_id, table_name
     table_name = f'{PS_API_VALUES}'
     fq_table_id = f'{project_id}.{dataset_id}.{table_name}'

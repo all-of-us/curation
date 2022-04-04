@@ -36,6 +36,7 @@ from google.cloud.exceptions import NotFound
 from common import DIGITAL_HEALTH_SHARING_STATUS
 from utils import auth
 from utils.bq import get_client, get_table_schema
+from gcloud.bq import BigQueryClient
 
 LOGGER = logging.getLogger(__name__)
 
@@ -529,7 +530,7 @@ def store_participant_data(df,
     return job.job_id
 
 
-def store_digital_health_status_data(project_id,
+def store_digital_health_status_data(client,
                                      json_data,
                                      destination_table,
                                      schema=None):
@@ -540,7 +541,7 @@ def store_digital_health_status_data(project_id,
     it will create a partition in the designated table or append to the same partition.
     This is necessary for storing data has "RECORD" type fields which do not conform to a dataframe.
     The data is stored using a JSON file object since it is one of the ways BigQuery expects it.
-    :param project_id: identifies the project
+    :param client: a BigQueryClient
     :param json_data: list of json objects retrieved from process_digital_health_data_to_json
     :param destination_table: fully qualified destination table name as 'project.dataset.table'
     :param schema: a list of SchemaField objects corresponding to the destination table
@@ -548,12 +549,6 @@ def store_digital_health_status_data(project_id,
     :return: returns the bq job_id for the loading of digital health data
     """
 
-    # Parameter check
-    if not isinstance(project_id, str):
-        raise RuntimeError(
-            f'Please specify the project in which to create the table')
-
-    client = get_client(project_id)
     if not schema:
         schema = get_table_schema(DIGITAL_HEALTH_SHARING_STATUS)
 

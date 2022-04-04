@@ -85,14 +85,16 @@ def create_drc_validation_table(client, table_id, drc_dataset_id=DRC_OPS):
     return table_id
 
 
-def get_case_statements():
+def get_case_statements(client):
     """
     This method generates the CASE_STATEMENT query
+
+    :param client: A BigQueryClient
     """
     case_statements = []
     field_list = []
 
-    schema_list = bq.get_table_schema(IDENTITY_MATCH_TABLE)
+    schema_list = client.get_table_schema(IDENTITY_MATCH_TABLE)
     for item in schema_list:
         field_list.append(item.name)
 
@@ -121,7 +123,7 @@ def populate_validation_table(client,
     :param hpo_id: ID for the HPO site
     """
 
-    schema_list = bq.get_table_schema(IDENTITY_MATCH_TABLE)
+    schema_list = client.get_table_schema(IDENTITY_MATCH_TABLE)
     id_match_table_id = table_id
     ehr_person_table_id = bq_utils.get_table_id(hpo_id, PERSON)
 
@@ -132,7 +134,7 @@ def populate_validation_table(client,
         drc_dataset_id=drc_dataset_id,
         id_match_table_id=id_match_table_id,
         fields=fields_name_str,
-        case_statements=get_case_statements(),
+        case_statements=get_case_statements(client),
         ehr_ops_dataset_id=ehr_dataset_id,
         ehr_person_table_id=ehr_person_table_id)
 
