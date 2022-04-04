@@ -19,7 +19,8 @@
 PROJECT_ID = ""  # identifies the project containing the datasets
 BASELINE_EHR_DATASET_ID = ""  # Identifies the dataset the snapshot was created from
 EHR_SNAPSHOT_DATASET_ID = ""  # Identifies the snapshot dataset
-EXCLUDED_SITES = ""  # List of excluded sites seperated by ","
+RELEASE_TAG = ""  # identifies the release tag for the current CDR release
+EXCLUDED_SITES = "default"  # List of excluded sites passed as string: eg. "'hpo_id1', 'hpo_id_2', 'hpo_id3',..."
 # -
 
 # +
@@ -27,6 +28,7 @@ import pandas as pd
 
 from utils.bq import get_client
 from analytics.cdr_ops.notebook_utils import execute
+from common import MAPPED_CLINICAL_DATA_TABLES
 
 client = get_client(PROJECT_ID)
 
@@ -142,22 +144,21 @@ execute(client, query)
 
 # ## Check for Excluded sites
 
-hpo_ids_ex = ('cook_county', 'ut_health_tyler', 'trans_am_health_partners',
-              'vcu', 'wash_u_stl')
+if EXCLUDED_SITES != "default":
+    queries = []
+    for cdm_table in MAPPED_CLINICAL_DATA_TABLES:
+        queries.append(f""" SELECT
+    '{cdm_table}' AS table_name, COUNT(*) AS non_compliant_rows
+    FROM `{EHR_SNAPSHOT_DATASET_ID}.unioned_ehr_{cdm_table}`
+    JOIN `{EHR_SNAPSHOT_DATASET_ID}._mapping_{cdm_table}`
+    USING ({cdm_table}_id)
+    WHERE src_hpo_id IN ({EXCLUDED_SITES})""")
 
-from common import MAPPED_CLINICAL_DATA_TABLES
+    query = ' \n UNION ALL \n'.join(queries)
 
-# +
-queries = []
-for cdm_table in MAPPED_CLINICAL_DATA_TABLES:
-    queries.append(f""" SELECT
-  '{cdm_table}' AS table_name, COUNT(*) AS non_compliant_rows
-FROM `{EHR_SNAPSHOT_DATASET_ID}.unioned_ehr_{cdm_table}`
-JOIN `{EHR_SNAPSHOT_DATASET_ID}._mapping_{cdm_table}`
-USING ({cdm_table}_id)
-WHERE src_hpo_id IN {hpo_ids_ex}""")
-
-query = ' \n UNION ALL \n'.join(queries)
+    execute(client, query)
+else:
+    print(
+        f'Since list of excluded sites is not provided to the script, check for Excluded Sites is skipped.'
+    )
 # -
-
-execute(client, query)
