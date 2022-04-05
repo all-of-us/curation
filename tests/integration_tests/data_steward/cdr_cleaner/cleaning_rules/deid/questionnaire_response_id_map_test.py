@@ -123,13 +123,7 @@ class QRIDtoRIDTest(BaseTest.CleaningRulesTestBase):
                                (3, 3, 43529102, self.date, 3, 8005),
                                (4, 4, 43529627, self.date, 4, 8005),
                                (5, 5, 43529625, self.date, 5, 9000),
-                               (
-                                   6,
-                                   6,
-                                   43529626,
-                                   self.date,
-                                   1,
-                               )]
+                               (6, 6, 43529626, self.date, 1, None)]
         }]
 
         self.default_test(tables_and_counts)

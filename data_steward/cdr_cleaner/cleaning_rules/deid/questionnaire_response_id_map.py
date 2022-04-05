@@ -29,13 +29,12 @@ SET t.questionnaire_response_id = d.research_response_id
 FROM (
     SELECT
         o.* EXCEPT (questionnaire_response_id),
-        m.questionnaire_response_id, 
         m.research_response_id
     FROM `{{project_id}}.{{dataset_id}}.observation` o
     LEFT JOIN `{{project_id}}.{{deid_questionnaire_response_map_dataset_id}}.{{deid_questionnaire_response_map}}` m
     ON o.questionnaire_response_id = m.questionnaire_response_id
     ) d
-WHERE t.questionnaire_response_id = d.questionnaire_response_id
+WHERE t.observation_id = d.observation_id
 """)
 
 
