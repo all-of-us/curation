@@ -30,13 +30,10 @@ from google.auth import default
 from google.cloud.bigquery.schema import SchemaField
 from google.cloud.bigquery import (LoadJobConfig, Table, TimePartitioning,
                                    TimePartitioningType, SourceFormat)
-from google.cloud.exceptions import NotFound
 
 # Project imports
 from common import DIGITAL_HEALTH_SHARING_STATUS
 from utils import auth
-from utils.bq import get_client, get_table_schema
-from gcloud.bq import BigQueryClient
 
 LOGGER = logging.getLogger(__name__)
 
@@ -498,7 +495,7 @@ def store_participant_data(df,
     """
 
     if not schema:
-        schema = get_table_schema(destination_table.split('.')[-1])
+        schema = client.get_table_schema(destination_table.split('.')[-1])
 
     # Dataframe data fields must be of type datetime
     df = set_dataframe_date_fields(df, schema)
@@ -544,7 +541,7 @@ def store_digital_health_status_data(client,
     """
 
     if not schema:
-        schema = get_table_schema(DIGITAL_HEALTH_SHARING_STATUS)
+        schema = client.get_table_schema(DIGITAL_HEALTH_SHARING_STATUS)
 
     client.delete_table(destination_table, not_found_ok=True)
     LOGGER.info(f'Creating table {destination_table}')
