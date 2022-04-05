@@ -479,7 +479,7 @@ def set_dataframe_date_fields(df: pandas.DataFrame,
 
 
 def store_participant_data(df,
-                           project_id,
+                           client,
                            destination_table,
                            schema=None,
                            to_hour_partition=None):
@@ -489,7 +489,7 @@ def store_participant_data(df,
     exist, it will append the data onto that designated table.
 
     :param df: pandas dataframe created to hold participant data fetched from ParticipantSummary API
-    :param project_id: identifies the project
+    :param project_id: a BigQueryClient
     :param destination_table: name of the table to be written in the form of dataset.tablename
     :param schema: a list of SchemaField objects corresponding to the destination table
     :param to_hour_partition: Boolean to indicate store to current hour partition or no partition
@@ -497,12 +497,6 @@ def store_participant_data(df,
     :return: returns the bq job_id for the loading of participant data
     """
 
-    # Parameter check
-    if not isinstance(project_id, str):
-        raise RuntimeError(
-            f'Please specify the project in which to create the tables')
-
-    client = get_client(project_id)
     if not schema:
         schema = get_table_schema(destination_table.split('.')[-1])
 
