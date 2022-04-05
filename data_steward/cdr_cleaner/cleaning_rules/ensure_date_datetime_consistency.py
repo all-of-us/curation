@@ -59,8 +59,8 @@ TABLE_DATES = {
         'visit_end_datetime': 'visit_end_date'
     },
     common.VISIT_DETAIL: {
-        'visit_detail_start_date': 'visit_detail_start_datetime',
-        'visit_detail_end_date': 'visit_detail_end_datetime'
+        'visit_detail_start_datetime': 'visit_detail_start_date',
+        'visit_detail_end_datetime': 'visit_detail_end_date'
     }
 }
 
