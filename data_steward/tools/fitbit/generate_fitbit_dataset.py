@@ -53,18 +53,18 @@ def create_fitbit_datasets(client, release_tag):
              f'cleaning rules applied to {fitbit_datasets[consts.STAGING]}'),
     }
 
-    for phase in fitbit_datasets:
-        labels = {
-            "phase": phase,
-            "release_tag": release_tag,
-            "de_identified": "false"
-        }
-        dataset_object = bq.define_dataset(client.project,
-                                           fitbit_datasets[phase],
-                                           fitbit_desc[phase], labels)
-        client.create_dataset(dataset_object)
-        LOGGER.info(
-            f'Created dataset `{client.project}.{fitbit_datasets[phase]}`')
+    # for phase in fitbit_datasets:
+    #     labels = {
+    #         "phase": phase,
+    #         "release_tag": release_tag,
+    #         "de_identified": "false"
+    #     }
+    #     dataset_object = bq.define_dataset(client.project,
+    #                                        fitbit_datasets[phase],
+    #                                        fitbit_desc[phase], labels)
+    #     client.create_dataset(dataset_object)
+    #     LOGGER.info(
+    #         f'Created dataset `{client.project}.{fitbit_datasets[phase]}`')
 
     return fitbit_datasets
 
@@ -175,6 +175,14 @@ def get_fitbit_parser():
         required=True)
 
     parser.add_argument(
+        '-c',
+        '--reference_dataset_id',
+        action='store',
+        dest='reference_dataset_id',
+        help='Combined dataset to use as reference containing valid PIDs',
+        required=True)
+
+    parser.add_argument(
         '-q',
         '--api_project_id',
         action='store',
@@ -202,6 +210,7 @@ def main(raw_args=None):
     list.
     """
     parser = get_fitbit_parser()
+    clean_parser = clean_cdr.get_parser()
     args, kwargs = clean_cdr.fetch_args_kwargs(parser, raw_args)
 
     pipeline_logging.configure(level=logging.INFO,
@@ -221,12 +230,12 @@ def main(raw_args=None):
     # create staging, sandbox, backup and clean datasets with descriptions and labels
     fitbit_datasets = create_fitbit_datasets(bq_client, args.release_tag)
 
-    copy_fitbit_tables_from_views(bq_client,
-                                  args.fitbit_dataset,
-                                  fitbit_datasets[consts.BACKUP],
-                                  table_prefix='v_')
-    bq.copy_datasets(bq_client, fitbit_datasets[consts.BACKUP],
-                     fitbit_datasets[consts.STAGING])
+    # copy_fitbit_tables_from_views(bq_client,
+    #                               args.fitbit_dataset,
+    #                               fitbit_datasets[consts.BACKUP],
+    #                               table_prefix='v_')
+    # bq.copy_datasets(bq_client, fitbit_datasets[consts.BACKUP],
+    #                  fitbit_datasets[consts.STAGING])
 
     common_cleaning_args = [
         '-p',
@@ -242,9 +251,17 @@ def main(raw_args=None):
         args.run_as_email,
         '--api_project_id',
         args.api_project_id,
+        '--reference_dataset_id',
+        args.reference_dataset_id,
         '--truncation_date',
         args.truncation_date,
     ]
+
+    # args, kwargs = clean_cdr.fetch_args_kwargs(clean_parser,
+    #                                            common_cleaning_args)
+    # cleaning_classes = clean_cdr.DATA_STAGE_RULES_MAPPING[consts.FITBIT]
+    # clean_cdr.validate_custom_params(cleaning_classes, **kwargs)
+
     fitbit_cleaning_args = args_parser.add_kwargs_to_args(
         common_cleaning_args, kwargs)
 

@@ -33,8 +33,11 @@ FROM `{{project_id}}.{{reference_dataset_id}}.person`)
 
 class RemoveNonExistingPids(BaseCleaningRule):
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id,
-                 reference_dataset_id):
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 reference_dataset_id=None):
         """
         Initialize the class with proper information.
 
@@ -44,6 +47,9 @@ class RemoveNonExistingPids(BaseCleaningRule):
         """
         desc = (
             'Remove records for PIDs not belonging in the corresponding CDR')
+
+        if not reference_dataset_id:
+            raise TypeError("`reference_dataset_id` cannot be empty")
 
         self.reference_dataset_id = reference_dataset_id
 
