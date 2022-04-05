@@ -316,13 +316,14 @@ class ParticipantSummaryRequestsTest(TestCase):
 
         # pre conditions
         mock_get_deactivated_participants.return_value = self.fake_dataframe
+        mock_bq_client = MagicMock()
 
         # tests
         dataframe_response = psr.get_deactivated_participants(
             self.project_id, self.columns)
 
         dataset_response = psr.store_participant_data(dataframe_response,
-                                                      self.project_id,
+                                                      mock_bq_client,
                                                       self.destination_table)
         expected_response = mock_store_participant_data(dataframe_response,
                                                         self.project_id,
@@ -448,25 +449,19 @@ class ParticipantSummaryRequestsTest(TestCase):
         mock_load_job.job_id = fake_job_id
 
         mock_bq_client = MagicMock()
-        mock_bq_get_client.return_value = mock_bq_client
         mock_bq_client.load_table_from_dataframe = MagicMock(
             return_value=mock_load_job)
 
         mock_load_config = MagicMock()
         mock_load_job_config.return_value = mock_load_config
 
-        # parameter check test
-        self.assertRaises(RuntimeError, psr.store_participant_data,
-                          self.fake_dataframe, None, self.destination_table)
-
         # test
         actual_job_id = psr.store_participant_data(
             self.fake_dataframe,
-            self.project_id,
+            mock_bq_client,
             self.destination_table,
             schema=psr.get_table_schema(PS_API_VALUES))
 
-        mock_bq_get_client.assert_called_once_with(self.project_id)
         mod_fake_dataframe = psr.set_dataframe_date_fields(
             self.fake_dataframe, psr.get_table_schema(PS_API_VALUES))
         # mock_bq_client.load_table_from_dataframe.assert_called_once_with(

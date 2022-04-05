@@ -182,7 +182,7 @@ class ParticipantSummaryRequests(BaseTest.BigQueryTestBase):
         self.assertRaises(RuntimeError, psr.store_participant_data,
                           self.fake_dataframe, None, self.destination_table)
 
-        psr.store_participant_data(df, self.project_id,
+        psr.store_participant_data(df, self.client,
                                    f'{self.dataset_id}.{self.tablename}')
 
         # Post conditions

@@ -119,7 +119,7 @@ def fetch_and_store_ps_hpo_data(client,
         f'Storing participant data for {hpo_id} in table {client.project}.{dataset_id}.{table.table_id}'
     )
     store_participant_data(participant_info,
-                           client.project,
+                           client,
                            f'{dataset_id}.{table_name}',
                            schema=schema,
                            to_hour_partition=True)
@@ -161,7 +161,7 @@ def fetch_and_store_full_ps_data(client,
     # Insert summary data into table
     LOGGER.info(f'Storing participant data in table {fq_table_id}')
     store_participant_data(participant_info,
-                           project_id,
+                           client,
                            f'{dataset_id}.{table_name}',
                            schema=schema,
                            to_hour_partition=False)

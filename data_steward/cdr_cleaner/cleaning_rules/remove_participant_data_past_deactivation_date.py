@@ -107,7 +107,7 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
         LOGGER.info(f"Found '{len(df)}' deactivated participants via RDR API")
 
         # To store dataframe in a BQ dataset table named _deactivated_participants
-        psr.store_participant_data(df, self.project_id, self.destination_table)
+        psr.store_participant_data(df, client, self.destination_table)
 
         LOGGER.info(f"Finished storing participant records in: "
                     f"`{self.destination_table}`")
