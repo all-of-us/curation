@@ -438,10 +438,8 @@ class ParticipantSummaryRequestsTest(TestCase):
 
         self.assertEqual(expected, 12345)
 
-    @patch('utils.participant_summary_requests.get_client')
     @patch('utils.participant_summary_requests.LoadJobConfig')
-    def test_store_participant_data(self, mock_load_job_config,
-                                    mock_bq_get_client):
+    def test_store_participant_data(self, mock_load_job_config):
         fake_job_id = 'fake_job_id'
 
         mock_load_job = MagicMock()
