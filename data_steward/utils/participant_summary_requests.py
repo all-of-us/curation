@@ -148,7 +148,7 @@ def get_participant_data(api_project_id: str,
     return participant_data
 
 
-def camel_to_snake_case(in_str):
+def camel_to_snake_case(in_str: str):
     """
     Convert camel case to snake case
 
@@ -442,7 +442,7 @@ def get_digital_health_information(project_id: str) -> List[Dict]:
     return json_list
 
 
-def participant_id_to_int(participant_id):
+def participant_id_to_int(participant_id: str):
     """
     Transforms the participantId received from RDR ParticipantSummary API from an
     alphanumeric string to an integer string.
