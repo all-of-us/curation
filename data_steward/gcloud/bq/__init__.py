@@ -2,7 +2,6 @@
 Interact with Google Cloud BigQuery
 """
 # Python stl imports
-import os
 import typing
 
 # Third-party imports
@@ -184,3 +183,36 @@ class BigQueryClient(Client):
         dataset.location = "US"
 
         return dataset
+
+    def copy_datasets(self, input_dataset: str, output_dataset: str):
+        """
+        Copies tables from source dataset to a destination datasets
+
+        :param input_dataset: name of the input dataset
+        :param output_dataset: name of the output dataset
+        :return:
+        """
+        # Copy input dataset tables to backup and staging datasets
+        tables = super(BigQueryClient, self).list_tables(input_dataset)
+        for table in tables:
+            staging_table = f'{output_dataset}.{table.table_id}'
+            self.copy_table(table, staging_table)
+
+    def list_tables(
+        self, dataset: bigquery.DatasetReference
+    ) -> typing.Iterator[bigquery.table.TableListItem]:
+        """
+        List all tables in a dataset
+
+        NOTE: Ensures all results are retrieved by first getting total
+        table count and setting max_results in list tables API call
+
+        :param dataset: the dataset containing the tables
+        :return: tables contained within the requested dataset
+        """
+        _MAX_RESULTS_PADDING = 100
+        table_count = super(BigQueryClient,
+                            self).list_tables(dataset=dataset).num_results
+        return super(BigQueryClient, self).list_tables(dataset=dataset,
+                                                       max_results=table_count +
+                                                       _MAX_RESULTS_PADDING)
