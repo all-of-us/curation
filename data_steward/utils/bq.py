@@ -203,7 +203,7 @@ def _to_sql_field(field: bigquery.SchemaField) -> bigquery.SchemaField:
                                                                   bigquery.SchemaField] = None,
                                                                   cluster_by_cols: typing.List[str] = None,
                                                                   as_query: str = None,
-                                                                  **table_options) 
+                                                                  **table_options)
                                                                 instead
     """)
 def get_create_or_replace_table_ddl(project_id: str,
@@ -581,7 +581,10 @@ def get_table_count(client: bigquery.Client,
     q = TABLE_COUNT_TPL.render(dataset=dataset)
     return to_scalar(client.query(q))
 
-
+@deprecated(
+    reason=
+    'Use gcloud.bq.BigQueryClient.list_tables(self, dataset: bigquery.DatasetReference) instead'
+)
 def list_tables(
     client: bigquery.Client, dataset: bigquery.DatasetReference
 ) -> typing.Iterator[bigquery.table.TableListItem]:
@@ -599,7 +602,10 @@ def list_tables(
     return client.list_tables(dataset=dataset,
                               max_results=table_count + _MAX_RESULTS_PADDING)
 
-
+@deprecated(
+    reason=
+    'Use gcloud.bq.BigQueryClient.copy_datasets(self, input_dataset, output_dataset) instead'
+)
 def copy_datasets(client: bigquery.Client, input_dataset, output_dataset):
     """
     Copies tables from source dataset to a destination datasets
