@@ -37,6 +37,7 @@ class RemoveNonExistingPids(BaseCleaningRule):
                  project_id,
                  dataset_id,
                  sandbox_dataset_id,
+                 table_namer=None,
                  reference_dataset_id=None):
         """
         Initialize the class with proper information.
