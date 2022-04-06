@@ -2,9 +2,14 @@
 from unittest import TestCase
 import os
 import typing
+from unittest.mock import MagicMock
 
 # Third party imports
 from google.cloud import bigquery
+from mock import patch
+from google.cloud.bigquery import TableReference
+from google.cloud.bigquery.table import TableListItem
+from google.cloud.bigquery import DatasetReference
 
 # Project imports
 from gcloud.bq import BigQueryClient
@@ -40,6 +45,21 @@ class DummyClient(BigQueryClient):
                             all_field_types.add(field.get('type'))
         return frozenset(all_field_types)
 
+    def list_item_from_table_id(self, table_id: str) -> TableListItem:
+        """
+        Get a table list item as returned by :meth:`bigquery.Client.list_tables` 
+        from a table ID
+        
+        :param table_id: A table ID including project ID, dataset ID, and table ID, 
+        each separated by ``.``. 
+        :return: a table list item
+        """
+        resource = {
+            "tableReference":
+                TableReference.from_string(table_id).to_api_repr()
+        }
+        return TableListItem(resource)
+
 
 class BQCTest(TestCase):
 
@@ -52,8 +72,10 @@ class BQCTest(TestCase):
     def setUp(self):
         self.client = DummyClient()
         self.dataset_id: str = 'fake_dataset'
-        self.description = 'fake_description'
-        self.existing_labels_or_tags = {'label': 'value', 'tag': ''}
+        self.description: str = 'fake_description'
+        self.existing_labels_or_tags: dict = {'label': 'value', 'tag': ''}
+        self.dataset_ref = DatasetReference(self.client.project,
+                                            self.dataset_id)
 
     def test_get_table_ddl(self):
         # Schema is determined by table name
@@ -132,3 +154,36 @@ class BQCTest(TestCase):
             self.client._to_standard_sql_type('unknown_type')
             self.assertEqual(str(c.exception),
                              f'unknown_type is not a valid field type')
+
+    @patch.object(BigQueryClient, 'copy_table')
+    @patch('gcloud.bq.Client.list_tables')
+    def test_copy_datasets(self, mock_list_tables, mock_copy_table):
+        full_table_ids = [
+            f'{self.client.project}.{self.dataset_id}.{table_id}'
+            for table_id in resources.CDM_TABLES
+        ]
+        list_tables_results = [
+            self.client.list_item_from_table_id(table_id)
+            for table_id in full_table_ids
+        ]
+        mock_list_tables.return_value = list_tables_results
+
+        self.client.copy_datasets(self.dataset_id,
+                                  f'{self.dataset_id}_snapshot')
+        mock_list_tables.assert_called_once_with(self.dataset_id)
+        self.assertEqual(mock_copy_table.call_count, len(list_tables_results))
+
+    @patch('gcloud.bq.Client.list_tables')
+    def test_list_tables(self, mock_list_tables):
+        #pre conditions
+        table_ids = ['table_1', 'table_2']
+        table_count = len(table_ids)
+        _MAX_RESULTS_PADDING = 100
+        expected_max_results = table_count + _MAX_RESULTS_PADDING
+        mock_list_results = MagicMock()
+        mock_list_tables.side_effect = [mock_list_results, mock_list_tables]
+        mock_list_results.num_results = table_count
+        self.client.list_tables(self.dataset_ref)
+        #post condition
+        mock_list_tables.assert_called_with(dataset=self.dataset_ref,
+                                            max_results=expected_max_results)
