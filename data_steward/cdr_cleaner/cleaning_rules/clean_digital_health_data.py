@@ -67,7 +67,7 @@ class CleanDigitalHealthStatus(BaseCleaningRule):
         rule of a class.  For example, if your class requires loading a static
         table, that load operation should be defined here.  It SHOULD NOT BE
         defined as part of get_query_specs().
-        :param client:
+        :param client: a BigQueryClient
         :return:
         """
         digital_health_json_list = get_digital_health_information(

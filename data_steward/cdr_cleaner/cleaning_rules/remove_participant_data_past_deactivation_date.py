@@ -12,7 +12,6 @@ import logging
 
 # Project imports
 import common
-from utils import bq
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 import utils.participant_summary_requests as psr
 import retraction.retract_deactivated_pids as rdp
@@ -97,7 +96,7 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
         """
         Responsible for grabbing and storing deactivated participant data.
 
-        :param client: client object passed to store the data
+        :param client: a BiQueryClient passed to store the data
         """
         LOGGER.info("Querying RDR API for deactivated participant data")
         # gets the deactivated participant dataset to ensure it's up-to-date
@@ -112,7 +111,7 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
         LOGGER.info(f"Finished storing participant records in: "
                     f"`{self.destination_table}`")
 
-        LOGGER.debug("instantiating class client object")
+        LOGGER.debug("instantiating class BigQueryClient object")
         self.client = client
 
         # reinitializing self.affected_tables

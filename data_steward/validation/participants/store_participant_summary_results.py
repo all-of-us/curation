@@ -17,7 +17,7 @@ from utils.participant_summary_requests import (get_org_participant_information,
                                                 get_all_participant_information,
                                                 store_participant_data)
 from common import PS_API_VALUES, DRC_OPS, UNIONED
-from utils import bq, pipeline_logging
+from utils import pipeline_logging
 from gcloud.bq import BigQueryClient
 from constants import bq_utils as bq_consts
 
@@ -58,7 +58,7 @@ def get_org_id(client, hpo_id):
     """
     Fetch org_id for the hpo_id
     :param client: A BigQueryClient 
-    :param hpo_id: 
+    :param hpo_id: identifies the hpo site
     :return: 
     """
     hpo_list = get_hpo_org_info(client)
@@ -84,7 +84,7 @@ def fetch_and_store_ps_hpo_data(client,
     :param client: A BigQueryClient
     :param rdr_project_id: PS API project
     :param dataset_id: contains table to store PS API data
-    :param hpo_id: 
+    :param hpo_id: identifies the hpo site
     :return: 
     """
 
