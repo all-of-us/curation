@@ -33,6 +33,7 @@ from google.cloud.bigquery import (LoadJobConfig, Table, TimePartitioning,
 
 # Project imports
 from common import DIGITAL_HEALTH_SHARING_STATUS
+from gcloud.bq import BigQueryClient
 from utils import auth
 
 LOGGER = logging.getLogger(__name__)
@@ -475,9 +476,9 @@ def set_dataframe_date_fields(df: pandas.DataFrame,
     return df
 
 
-def store_participant_data(df,
-                           client,
-                           destination_table,
+def store_participant_data(df: pandas.DataFrame,
+                           client: BigQueryClient,
+                           destination_table: str,
                            schema=None,
                            to_hour_partition=None):
     """
@@ -521,9 +522,9 @@ def store_participant_data(df,
     return job.job_id
 
 
-def store_digital_health_status_data(client,
-                                     json_data,
-                                     destination_table,
+def store_digital_health_status_data(client: BigQueryClient,
+                                     json_data: List[Dict],
+                                     destination_table: str,
                                      schema=None):
     """
     Stores the fetched digital_health_sharing_status data in a BigQuery dataset.
