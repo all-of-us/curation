@@ -8,6 +8,8 @@ set -ex
 USAGE="
 Usage: generate_unioned_ehr_dataset.sh
   --key_file <path to key file>
+  --run_as <service account email for impersonation>
+  --pmi_email <pmi-ops account email>
   --vocab_dataset <vocab dataset>
   --ehr_snapshot <EHR dataset>
   --dataset_release_tag <release tag for the CDR>
@@ -19,6 +21,14 @@ while true; do
   case "$1" in
   --key_file)
     key_file=$2
+    shift 2
+    ;;
+  --run_as)
+    run_as=$2
+    shift 2
+    ;;
+  --pmi_email)
+    pmi_email=$2
     shift 2
     ;;
   --vocab_dataset)
@@ -45,7 +55,7 @@ while true; do
   esac
 done
 
-if [[ -z "${key_file}" ]] || [[ -z "${vocab_dataset}" ]] || [[ -z "${ehr_snapshot}" ]] ||
+if [[ -z "${key_file}" ]] || [[ -z "${run_as}" ]] || [[ -z "${pmi_email}" ]] || [[ -z "${vocab_dataset}" ]] || [[ -z "${ehr_snapshot}" ]] ||
   [[ -z "${dataset_release_tag}" ]]  || [[ -z "${ehr_cutoff_date}" ]]; then
   echo "${USAGE}"
   exit 1
@@ -132,8 +142,14 @@ data_stage='unioned'
 # create sandbox dataset
 bq mk --dataset --description "Sandbox created for storing records affected by the cleaning rules applied to ${unioned_ehr_dataset}" --label "phase:sandbox" --label "release_tag:${dataset_release_tag}" --label "de_identified:false" ${app_id}:${unioned_ehr_dataset_sandbox}
 
+unset GOOGLE_APPLICATION_CREDENTIALS
+gcloud config set account "${pmi_email}"
+
 # run cleaning_rules on a dataset
-python "${CLEANER_DIR}/clean_cdr.py" --project_id "${app_id}" --dataset_id "${unioned_ehr_dataset_staging}" --sandbox_dataset_id "${unioned_ehr_dataset_sandbox}" --data_stage "${data_stage}" -s --cutoff_date "${ehr_cutoff_date}" 2>&1 | tee unioned_cleaning_log_"${unioned_ehr_dataset_staging}".txt
+python "${CLEANER_DIR}/clean_cdr.py" --project_id "${app_id}" --run_as "${run_as}" --dataset_id "${unioned_ehr_dataset_staging}" --sandbox_dataset_id "${unioned_ehr_dataset_sandbox}" --data_stage "${data_stage}" -s --cutoff_date "${ehr_cutoff_date}" 2>&1 | tee unioned_cleaning_log_"${unioned_ehr_dataset_staging}".txt
+
+export GOOGLE_APPLICATION_CREDENTIALS="${key_file}"
+gcloud auth activate-service-account --key-file=${key_file}
 
 # Create a snapshot dataset with the result
 python "${TOOLS_DIR}/snapshot_by_query.py" --project_id "${app_id}" --dataset_id "${unioned_ehr_dataset_staging}" --snapshot_dataset_id "${unioned_ehr_dataset}"

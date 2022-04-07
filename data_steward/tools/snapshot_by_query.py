@@ -89,7 +89,7 @@ def get_source_fields(client, source_table):
     """
     Gets column names of a table in bigquery
 
-    :param client: BigQuery client
+    :param client: a BigQueryClient
     :param source_table: fully qualified table name.
 
     returns as a list of column names.

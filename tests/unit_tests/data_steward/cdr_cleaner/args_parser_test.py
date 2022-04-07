@@ -3,9 +3,6 @@ import os
 import unittest
 
 from cdr_cleaner import args_parser as parser
-import cdr_cleaner.clean_cdr as control
-import constants.cdr_cleaner.clean_cdr as cdr_consts
-import constants.cdr_cleaner.reporter as consts
 
 
 class CleanRulesArgsParserTest(unittest.TestCase):

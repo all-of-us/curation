@@ -7,7 +7,6 @@ from pandas import DataFrame
 from cdr_cleaner.cleaning_rules.ppi_branching import OBSERVATION_BACKUP_TABLE_ID
 from cdr_cleaner.cleaning_rules.ppi_branching import PPI_BRANCHING_RULE_PATHS
 from cdr_cleaner.cleaning_rules.ppi_branching import PpiBranching, OBSERVATION
-from utils.bq import get_table_schema
 
 
 def _get_csv_row_count() -> int:
@@ -24,6 +23,21 @@ def _get_csv_row_count() -> int:
     return csv_row_count
 
 
+def _get_table_schema(table_name):
+    from resources import fields_for
+    fields = fields_for(table_name)
+    schema = []
+    for column in fields:
+        name = column.get('name')
+        field_type = column.get('type')
+        column_def = bigquery.SchemaField(name,
+                                          field_type).from_api_repr(column)
+
+        schema.append(column_def)
+
+    return schema
+
+
 class PpiBranchingTest(unittest.TestCase):
 
     @classmethod
@@ -36,7 +50,14 @@ class PpiBranchingTest(unittest.TestCase):
         self.project_id = 'fake_project'
         self.dataset_id = 'fake_dataset'
         self.sandbox_dataset_id = 'fake_sandbox'
-        self.observation_schema = get_table_schema('observation')
+        self.observation_schema = _get_table_schema('observation')
+        self.mock_bq_client_patcher = mock.patch(
+            'cdr_cleaner.cleaning_rules.ppi_branching.BigQueryClient')
+        self.mock_bq_client = self.mock_bq_client_patcher.start()
+        self.addCleanup(self.mock_bq_client_patcher.stop)
+        self.mock_client = mock.MagicMock()
+        self.mock_bq_client.return_value = self.mock_client
+        self.mock_client.get_table_schema.return_value = self.observation_schema
         self.cleaning_rule = PpiBranching(self.project_id, self.dataset_id,
                                           self.sandbox_dataset_id)
 

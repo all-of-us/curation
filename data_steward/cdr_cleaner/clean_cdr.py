@@ -41,6 +41,7 @@ from cdr_cleaner.cleaning_rules.date_shift_cope_responses import DateShiftCopeRe
 from cdr_cleaner.cleaning_rules.remove_ehr_data_without_consent import RemoveEhrDataWithoutConsent
 from cdr_cleaner.cleaning_rules.generate_ext_tables import GenerateExtTables
 from cdr_cleaner.cleaning_rules.truncate_fitbit_data import TruncateFitbitData
+from cdr_cleaner.cleaning_rules.clean_digital_health_data import CleanDigitalHealthStatus
 from cdr_cleaner.cleaning_rules.remove_non_existing_pids import RemoveNonExistingPids
 from cdr_cleaner.cleaning_rules.deid.fitbit_dateshift import FitbitDateShiftRule
 from cdr_cleaner.cleaning_rules.deid.fitbit_pid_rid_map import FitbitPIDtoRID
@@ -234,6 +235,7 @@ COMBINED_CLEANING_CLASSES = [
 FITBIT_CLEANING_CLASSES = [
     (TruncateFitbitData,),
     (RemoveParticipantDataPastDeactivationDate,),
+    (CleanDigitalHealthStatus,),
 ]
 
 FITBIT_DEID_CLEANING_CLASSES = [

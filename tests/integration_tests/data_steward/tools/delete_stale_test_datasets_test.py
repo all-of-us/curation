@@ -5,10 +5,8 @@ Unit test for delete_stale_test_buckets module
 # Python imports
 import os
 from unittest import TestCase
-from unittest.mock import patch, Mock
-from datetime import datetime, timedelta, timezone
-
-from google.api_core.exceptions import NotFound
+from unittest.mock import patch
+from datetime import datetime, timezone
 
 # Third party imports
 from google.cloud import bigquery

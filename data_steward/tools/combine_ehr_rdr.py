@@ -268,6 +268,14 @@ def join_expression_generator(domain_table, combined_dataset_id):
                         prefix=key[:3],
                         field=key,
                         table=table_alias))
+            elif domain_table == combine_consts.VISIT_DETAIL and key == combine_consts.VISIT_OCCURRENCE_ID:
+                table_alias = mapping_table_for('{x}'.format(x=key)[:-3])
+                join_expression.append(
+                    combine_consts.JOIN_VISIT.format(
+                        dataset_id=combined_dataset_id,
+                        prefix=key[:3],
+                        field=key,
+                        table=table_alias))
             else:
                 table_alias = mapping_table_for('{x}'.format(x=key)[:-3])
                 join_expression.append(

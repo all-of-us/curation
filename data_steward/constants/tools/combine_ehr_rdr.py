@@ -4,6 +4,8 @@ SOURCE_VALUE_EHR_CONSENT = 'EHRConsentPII_ConsentPermission'
 CONCEPT_ID_CONSENT_PERMISSION_YES = 1586100  # ConsentPermission_Yes
 EHR_CONSENT_TABLE_ID = '_ehr_consent'
 PERSON_TABLE = 'person'
+VISIT_DETAIL = 'visit_detail'
+VISIT_OCCURRENCE_ID = 'visit_occurrence_id'
 PERSON_ID = 'person_id'
 OBSERVATION_TABLE = 'observation'
 FOREIGN_KEYS_FIELDS = [
@@ -16,6 +18,21 @@ DOMAIN_TABLES = list(
 TABLES_TO_PROCESS = RDR_TABLES_TO_COPY + EHR_TABLES_TO_COPY + DOMAIN_TABLES
 LEFT_JOIN = """
 LEFT JOIN
+(
+SELECT *
+FROM (
+SELECT
+*,
+row_number() OVER (PARTITION BY {prefix}.{field}, {prefix}.src_hpo_id ) 
+AS row_num
+FROM `{dataset_id}.{table}` AS {prefix}
+)
+WHERE row_num = 1
+) {prefix}  ON t.{field} = {prefix}.src_{field}
+AND m.src_dataset_id = {prefix}.src_dataset_id"""
+
+JOIN_VISIT = """
+JOIN
 (
 SELECT *
 FROM (
@@ -163,6 +180,8 @@ from `{dataset}.{table}` AS t
 {join_expr}"""
 
 FACT_RELATIONSHIP_QUERY = """
+SELECT *
+FROM (
   SELECT
     fr.domain_concept_id_1 AS domain_concept_id_1,
     CASE
@@ -191,4 +210,7 @@ FACT_RELATIONSHIP_QUERY = """
     
  UNION ALL 
     
- SELECT * from `{ehr_dataset}.fact_relationship`"""
+ SELECT * from `{ehr_dataset}.fact_relationship`)
+WHERE fact_id_1 IS NOT NULL
+AND fact_id_2 IS NOT NULL
+"""

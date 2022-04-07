@@ -44,9 +44,7 @@ class CreateTierTest(unittest.TestCase):
         }
 
         # Tools for mocking the client
-        mock_bq_client_patcher = mock.patch('utils.bq.get_client')
-        self.mock_bq_client = mock_bq_client_patcher.start()
-        self.addCleanup(mock_bq_client_patcher.stop)
+        self.mock_bq_client = mock.MagicMock()
 
         self.correct_parameter_list = [
             '--credentials_filepath',
@@ -281,11 +279,8 @@ class CreateTierTest(unittest.TestCase):
 
     @mock.patch('utils.bq.update_labels_and_tags')
     @mock.patch('utils.bq.define_dataset')
-    @mock.patch('utils.bq.get_client')
-    def test_create_dataset(self, mock_client, mock_define_dataset,
-                            mock_update_labels_tags):
+    def test_create_dataset(self, mock_define_dataset, mock_update_labels_tags):
         # Preconditions
-        client = mock_client.return_value = self.mock_bq_client
         mocked_labels = [{
             'de-identified': 'true',
             'phase': consts.CLEAN
@@ -308,23 +303,24 @@ class CreateTierTest(unittest.TestCase):
         self.assertRaises(RuntimeError, create_datasets, None,
                           self.dataset_name, self.input_dataset, self.tier,
                           self.release_tag)
-        self.assertRaises(RuntimeError, create_datasets, client, None,
-                          self.input_dataset, self.tier, self.release_tag)
-        self.assertRaises(RuntimeError, create_datasets, client,
+        self.assertRaises(RuntimeError, create_datasets, self.mock_bq_client,
+                          None, self.input_dataset, self.tier, self.release_tag)
+        self.assertRaises(RuntimeError, create_datasets, self.mock_bq_client,
                           self.dataset_name, None, self.tier, self.release_tag)
-        self.assertRaises(RuntimeError, create_datasets, client,
+        self.assertRaises(RuntimeError, create_datasets, self.mock_bq_client,
                           self.dataset_name, self.input_dataset, None,
                           self.release_tag)
-        self.assertRaises(RuntimeError, create_datasets, client,
+        self.assertRaises(RuntimeError, create_datasets, self.mock_bq_client,
                           self.dataset_name, self.input_dataset, self.tier,
                           None)
 
         # Test
-        actual = create_datasets(client, self.dataset_name, self.input_dataset,
-                                 self.tier, self.release_tag)
+        actual = create_datasets(self.mock_bq_client, self.dataset_name,
+                                 self.input_dataset, self.tier,
+                                 self.release_tag)
 
         # Post conditions
-        client.create_dataset.assert_called()
+        self.mock_bq_client.create_dataset.assert_called()
 
         self.assertEqual(actual, datasets)
 
@@ -332,11 +328,11 @@ class CreateTierTest(unittest.TestCase):
         self.assertEqual(mock_define_dataset.call_count, 3)
 
         mock_define_dataset.assert_has_calls([
-            mock.call(client.project, datasets[consts.CLEAN], self.description,
-                      self.labels_and_tags),
-            mock.call(client.project, datasets[consts.STAGING],
+            mock.call(self.mock_bq_client.project, datasets[consts.CLEAN],
                       self.description, self.labels_and_tags),
-            mock.call(client.project, datasets[consts.SANDBOX],
+            mock.call(self.mock_bq_client.project, datasets[consts.STAGING],
+                      self.description, self.labels_and_tags),
+            mock.call(self.mock_bq_client.project, datasets[consts.SANDBOX],
                       self.description, self.labels_and_tags)
         ])
 
@@ -358,13 +354,12 @@ class CreateTierTest(unittest.TestCase):
     @mock.patch('tools.create_tier.bq.copy_datasets')
     @mock.patch('tools.create_tier.create_datasets')
     @mock.patch('tools.create_tier.get_dataset_name')
-    @mock.patch('tools.create_tier.bq.get_client')
+    @mock.patch('tools.create_tier.BigQueryClient')
     @mock.patch('tools.create_tier.auth.get_impersonation_credentials')
     @mock.patch('tools.create_tier.validate_create_tier_args')
     def test_create_tier(self, mock_validate_args, mock_impersonate_credentials,
-                         mock_get_client, mock_dataset_name,
-                         mock_create_datasets, mock_copy_datasets,
-                         mock_add_kwargs, mock_cdr_main,
+                         mock_client, mock_dataset_name, mock_create_datasets,
+                         mock_copy_datasets, mock_add_kwargs, mock_cdr_main,
                          mock_create_schemaed_snapshot):
         final_dataset_name = f"{self.tier[0].upper()}{self.release_tag}_{self.deid_stage}"
         datasets = {
@@ -380,7 +375,7 @@ class CreateTierTest(unittest.TestCase):
         ]
         mock_dataset_name.return_value = final_dataset_name
         mock_create_datasets.return_value = datasets
-        client = mock_get_client.return_value = self.mock_bq_client
+        client = mock_client.return_value = self.mock_bq_client
         cleaning_args = mock_add_kwargs.return_value = controlled_tier_cleaning_args
         kwargs = {}
 
@@ -394,7 +389,7 @@ class CreateTierTest(unittest.TestCase):
         mock_impersonate_credentials.assert_called_with(
             self.run_as, CDR_SCOPES, self.credentials_filepath)
 
-        mock_get_client.assert_called_with(
+        mock_client.assert_called_with(
             self.project_id, credentials=mock_impersonate_credentials())
 
         mock_dataset_name.assert_called_with(self.tier, self.release_tag,
@@ -419,15 +414,15 @@ class CreateTierTest(unittest.TestCase):
     @mock.patch('tools.create_tier.clean_cdr.main')
     @mock.patch('tools.create_tier.add_kwargs_to_args')
     @mock.patch('tools.create_tier.auth.get_impersonation_credentials')
-    @mock.patch('tools.create_tier.bq.get_client')
+    @mock.patch('tools.create_tier.BigQueryClient')
     @mock.patch('tools.add_cdr_metadata.main')
     @mock.patch('tools.create_tier.create_datasets')
     @mock.patch('tools.create_tier.get_dataset_name')
     def test_qa_handoff_date_update(
         self, mock_dataset_name, mock_create_datasets,
-        mock_add_cdr_metadata_main, mock_get_client,
-        mock_impersonate_credentials, mock_add_kwargs, mock_cdr_main,
-        mock_create_schemaed_snapshot, mock_etl_version):
+        mock_add_cdr_metadata_main, mock_client, mock_impersonate_credentials,
+        mock_add_kwargs, mock_cdr_main, mock_create_schemaed_snapshot,
+        mock_etl_version):
         final_dataset_name = f"{self.tier[0].upper()}{self.release_tag}_deid_base"
         datasets = {
             consts.CLEAN: final_dataset_name,
@@ -444,9 +439,8 @@ class CreateTierTest(unittest.TestCase):
             f'{self.tier}_tier_deid_base'
         ]
 
-        mock_get_client.return_value = self.mock_bq_client
+        mock_client.return_value = self.mock_bq_client
         mock_add_kwargs.return_value = controlled_tier_cleaning_args
-        mock_get_client.return_value = self.mock_bq_client
         cleaning_args = mock_add_kwargs.return_value = controlled_tier_cleaning_args
         versions = mock_etl_version.return_value = ['test']
 

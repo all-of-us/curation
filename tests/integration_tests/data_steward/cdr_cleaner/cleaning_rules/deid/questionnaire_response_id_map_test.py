@@ -78,8 +78,6 @@ class QRIDtoRIDTest(BaseTest.CleaningRulesTestBase):
         statements and the tables_and_counts variable.        
         """
 
-        # Create mapping table
-
         create_observations_query = self.jinja_env.from_string("""
             INSERT INTO `{{fq_dataset_name}}.observation`
                 (observation_id, person_id, observation_concept_id, observation_date, 
@@ -89,10 +87,9 @@ class QRIDtoRIDTest(BaseTest.CleaningRulesTestBase):
                 (2, 2, 43529099, date('2020-05-05'), 2, 1),
                 (3, 3, 43529102, date('2020-05-05'), 3, 2),
                 (4, 4, 43529627, date('2020-05-05'), 4, 2),
-                (5, 5, 43529625, date('2020-05-05'), 5, 3)
+                (5, 5, 43529625, date('2020-05-05'), 5, 3),
+                (6, 6, 43529626, date('2020-05-05'), 1, 99999)
             """).render(fq_dataset_name=self.fq_dataset_name)
-
-        # Create observations
 
         create_mappings_query = self.jinja_env.from_string("""
             INSERT INTO `{{fq_dataset_name}}.{{deid_questionnaire_response_map}}`
@@ -109,14 +106,12 @@ class QRIDtoRIDTest(BaseTest.CleaningRulesTestBase):
 
         self.load_test_data(queries)
 
-        #Uncomment below and fill
-
         tables_and_counts = [{
             'fq_table_name':
                 f'{self.fq_dataset_name}.{OBSERVATION}',
             'fq_sandbox_table_name':
                 '',
-            'loaded_ids': [1, 2, 3, 4, 5],
+            'loaded_ids': [1, 2, 3, 4, 5, 6],
             'sandboxed_ids': [],
             'fields': [
                 'observation_id', 'person_id', 'observation_concept_id',
@@ -127,7 +122,8 @@ class QRIDtoRIDTest(BaseTest.CleaningRulesTestBase):
                                (2, 2, 43529099, self.date, 2, 5000),
                                (3, 3, 43529102, self.date, 3, 8005),
                                (4, 4, 43529627, self.date, 4, 8005),
-                               (5, 5, 43529625, self.date, 5, 9000)]
+                               (5, 5, 43529625, self.date, 5, 9000),
+                               (6, 6, 43529626, self.date, 1, None)]
         }]
 
         self.default_test(tables_and_counts)

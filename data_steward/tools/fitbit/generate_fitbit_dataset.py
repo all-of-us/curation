@@ -3,6 +3,7 @@ Generate and clean fitbit dataset
 """
 import logging
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
+from datetime import datetime
 
 from google.cloud.bigquery import Table
 
@@ -97,7 +98,7 @@ def copy_fitbit_tables_from_views(client, from_dataset, to_dataset,
     :return:
     """
     for table in FITBIT_TABLES:
-        schema_list = bq.get_table_schema(table)
+        schema_list = client.get_table_schema(table)
         fq_dest_table = f'{client.project}.{to_dataset}.{table}'
         dest_table = Table(fq_dest_table, schema=schema_list)
         dest_table = client.create_table(dest_table)
@@ -119,6 +120,23 @@ def copy_fitbit_tables_from_views(client, from_dataset, to_dataset,
         job.result()
 
     LOGGER.info(f'Copied fitbit tables from `{from_dataset}` to `{to_dataset}`')
+
+
+def validate_date_string(date_string):
+    """
+    Validates the date string is a valid date in the YYYY-MM-DD format.
+
+    If the string is valid, it returns the string.  Otherwise, it raises either
+    a ValueError or TypeError.
+
+    :param date_string: The string to validate
+
+    :return:  a valid date string
+    :raises:  A ValueError if the date string is not a valid date or
+        doesn't conform to the specified format.
+    """
+    datetime.strptime(date_string, '%Y-%m-%d')
+    return date_string
 
 
 def get_fitbit_parser():
@@ -155,6 +173,23 @@ def get_fitbit_parser():
         dest='release_tag',
         help='Release tag for naming and labeling the cleaned dataset with.',
         required=True)
+
+    parser.add_argument(
+        '-q',
+        '--api_project_id',
+        action='store',
+        dest='api_project_id',
+        help='Identifies the RDR project for participant summary API',
+        required=True)
+
+    parser.add_argument(
+        '--truncation_date',
+        dest='truncation_date',
+        action='store',
+        help=('Cutoff date for data based on <table_name>_date fields.  '
+              'Should be in the form YYYY-MM-DD.'),
+        required=True,
+        type=validate_date_string)
 
     return parser
 
@@ -194,8 +229,21 @@ def main(raw_args=None):
                      fitbit_datasets[consts.STAGING])
 
     common_cleaning_args = [
-        '-p', args.project_id, '-d', fitbit_datasets[consts.STAGING], '-b',
-        fitbit_datasets[consts.SANDBOX], '-s', '-a', consts.FITBIT
+        '-p',
+        args.project_id,
+        '-d',
+        fitbit_datasets[consts.STAGING],
+        '-b',
+        fitbit_datasets[consts.SANDBOX],
+        '-s',
+        '-a',
+        consts.FITBIT,
+        '--run_as',
+        args.run_as_email,
+        '--api_project_id',
+        args.api_project_id,
+        '--truncation_date',
+        args.truncation_date,
     ]
     fitbit_cleaning_args = args_parser.add_kwargs_to_args(
         common_cleaning_args, kwargs)

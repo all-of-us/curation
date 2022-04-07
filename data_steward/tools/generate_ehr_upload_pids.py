@@ -2,7 +2,7 @@ import argparse
 import logging
 import sys
 
-from utils import bq
+from gcloud.bq import BigQueryClient
 
 from constants.utils import bq as bq_consts
 from common import JINJA_ENV
@@ -73,7 +73,7 @@ def generate_ehr_upload_pids_query(project_id,
     :param excluded_hpo_ids: List of sites
     :return: Query string to use in ehr_upload_pids view
     """
-    client = bq.get_client(project_id)
+    bq_client = BigQueryClient(project_id)
     excluded_hpo_ids_str = get_excluded_hpo_ids_str(excluded_hpo_ids)
     query = EHR_UPLOAD_PIDS_BQ_SCRIPT.render(
         project_id=project_id,
@@ -81,7 +81,7 @@ def generate_ehr_upload_pids_query(project_id,
         lookup_dataset_id=bq_consts.LOOKUP_TABLES_DATASET_ID,
         hpo_mappings=bq_consts.HPO_SITE_ID_MAPPINGS_TABLE_ID,
         excluded_sites_str=excluded_hpo_ids_str)
-    query_job = client.query(query)
+    query_job = bq_client.query(query)
     res = query_job.result().to_dataframe()
     full_query = res["q"].to_list()[0]
     return full_query
