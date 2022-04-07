@@ -581,6 +581,7 @@ def get_table_count(client: bigquery.Client,
     q = TABLE_COUNT_TPL.render(dataset=dataset)
     return to_scalar(client.query(q))
 
+
 @deprecated(
     reason=
     'Use gcloud.bq.BigQueryClient.list_tables(self, dataset: bigquery.DatasetReference) instead'
@@ -601,6 +602,7 @@ def list_tables(
     table_count = get_table_count(client, dataset)
     return client.list_tables(dataset=dataset,
                               max_results=table_count + _MAX_RESULTS_PADDING)
+
 
 @deprecated(
     reason=
