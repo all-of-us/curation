@@ -46,17 +46,29 @@ for suffix in ['_backup', '_staging', '_sandbox', '']:
 # ## Compare row counts of current unioned_ehr dataset to previous unioned_ehr_dataset
 
 # +
-query = f'''select * from 
-(SELECT 
- COALESCE(t0.table_id ,t1.table_id) AS table_id
-,t0.row_count AS _{PREVIOUS_UNIONED_EHR_DATASET_ID}
-,t1.row_count AS _{CURRENT_UNIONED_EHR_DATASET_ID}
-,t1.row_count-t0.row_count AS row_diff 
-FROM `{CURRENT_UNIONED_EHR_DATASET_ID}.__TABLES__` t1 
- FULL OUTER JOIN `{PREVIOUS_UNIONED_EHR_DATASET_ID}.__TABLES__` t0 
-  USING (table_id) 
-ORDER BY ABS(t1.row_count-t0.row_count) DESC)
-where _{PREVIOUS_UNIONED_EHR_DATASET_ID} <>0 and _{CURRENT_UNIONED_EHR_DATASET_ID} <>0'''
+query = f'''
+WITH 
+  diffs AS (
+    SELECT 
+      table_id
+     ,o.row_count AS o_row_count
+     ,n.row_count AS n_row_count
+     ,n.row_count - o.row_count AS diff
+     ,SAFE_DIVIDE(ABS(n.row_count - o.row_count), CAST(o.row_count AS FLOAT64)) * 100 AS percentage_change
+    FROM `{PROJECT_ID}.{CURRENT_UNIONED_EHR_DATASET_ID}.__TABLES__` o
+      LEFT JOIN `{PROJECT_ID}.{PREVIOUS_UNIONED_EHR_DATASET_ID}.__TABLES__` n
+        USING (table_id)
+    WHERE 1=1
+      AND NOT (table_id LIKE '%mapping%' OR table_id LIKE '%achilles%' OR table_id LIKE '%note%')
+      AND o.row_count - n.row_count != 0
+  )
+SELECT
+ diffs.*
+,SAFE_DIVIDE(10, percentage_change) AS diff_factor
+FROM diffs
+WHERE 1=1
+  AND percentage_change > 25
+'''
 
 execute(client, query)
 # -
@@ -64,14 +76,15 @@ execute(client, query)
 # ## Participant counts per hpo_site compared to ehr_ops.
 
 # +
-query = f'''WITH
-  subs_count AS (
+query = f'''
+WITH
+  previous_count AS (
   SELECT
     src_hpo_id,
-    COUNT(src_hpo_id) AS submission_ct
+    COUNT(src_hpo_id) AS previous_unioned_ct
   FROM
-    `{PROJECT_ID}.ehr_ops._mapping_person` mp
-  JOIN
+    `{PROJECT_ID}.{PREVIOUS_UNIONED_EHR_DATASET_ID}._mapping_person` mp
+  LEFT JOIN
     `{PROJECT_ID}.lookup_tables.hpo_site_id_mappings` hsm
   ON
     mp.src_hpo_id=LOWER(hsm.HPO_ID)
@@ -80,24 +93,26 @@ query = f'''WITH
     Display_Order
   ORDER BY
     hsm.Display_Order),
-  unioned_count AS (
+  current_count AS (
   SELECT
     src_hpo_id,
-    COUNT(src_hpo_id) AS unioned_ct
+    COUNT(src_hpo_id) AS current_unioned_ct
   FROM
     `{PROJECT_ID}.{CURRENT_UNIONED_EHR_DATASET_ID}._mapping_person`
   GROUP BY
     src_hpo_id)
 SELECT
-  sc.src_hpo_id,
-  submission_ct,
-  CAST(unioned_ct AS INT64)  AS unioned_ct
+  cc.src_hpo_id,
+  coalesce(previous_unioned_ct, 0) as previous_unioned_ct,
+  coalesce(current_unioned_ct, 0)  AS current_unioned_ct,
+  coalesce(cast((current_unioned_ct - previous_unioned_ct)/ current_unioned_ct * 100 as INT64), 100) as percentage_change 
 FROM
-  subs_count AS sc
+  previous_count AS pc
 FULL OUTER JOIN
-  unioned_count AS uc
+  current_count AS cc
 USING(src_hpo_id)
-order by unioned_ct desc'''
+order by percentage_change desc
+'''
 
 execute(client, query)
 # -
