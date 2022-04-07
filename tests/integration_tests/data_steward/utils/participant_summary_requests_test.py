@@ -194,12 +194,11 @@ class ParticipantSummaryRequests(BaseTest.BigQueryTestBase):
 
     def test_store_digital_health_status_data(self):
         # Pre conditions
-        bq_client = BigQueryClient(self.project_id)
         fq_table = f'{self.project_id}.{self.dataset_id}.{DIGITAL_HEALTH_SHARING_STATUS}'
         self.fq_table_names.append(fq_table)
         table = Table(
             fq_table,
-            schema=bq_client.get_table_schema(DIGITAL_HEALTH_SHARING_STATUS))
+            schema=self.client.get_table_schema(DIGITAL_HEALTH_SHARING_STATUS))
         table.time_partitioning = TimePartitioning(
             type_=TimePartitioningType.DAY)
         _ = self.client.create_table(table, exists_ok=True)
