@@ -13363,3 +13363,40 @@ VANDF,4039944,"INV-COVID-19 VACCINE VIRAL VECTOR (ASTRAZENECA) (PF) INJ,5ML",161
 VANDF,4040047,"INV-COVID-19 VACCINE AD26 (JANSSEN) (PF) INJ,2.5ML",1615558,Drug,DC-2277
 VANDF,4040411,"INV-COVID-19 VACCINE MRNA (MODERNA) (PF) 100MCG/0.5ML INJ,7ML",1615923,Drug,DC-2277
 VANDF,4040599,"INV-COVID-19 VACCINE ADJ (NOVAVAX) (PF) INJ,5ML",1616111,Drug,DC-2277
+SNOMED,407375002,Surgically transgendered transsexual,4234363,Gender,DC-2314 replaces
+SNOMED,679221000000108,Suicide and self inflicted injury by other means,3540437,Metadata,DC-2314 replaces
+SNOMED,684281000000100,Suicide and self inflicted injury NOS,3571210,Metadata,DC-2314 replaces
+SNOMED,670501000000107,"Suicide and self inflicted injury by other means of hanging, strangulation and suffocation",3521070,Metadata,DC-2314 replaces
+SNOMED,679201000000104,Suicide and self inflicted injury by jumping from other man-made structure,3540436,Metadata,DC-2314 replaces
+SNOMED,651331000000102,Suicide and self inflicted poisoning by other carbon monoxide,3538568,Metadata,DC-2314 replaces
+SNOMED,681101000000104,Suicide and self inflicted poisoning by other drugs and medicines,3573576,Metadata,DC-2314 replaces
+SNOMED,363743006,Navigational concept,40539927,Metadata,DC-2314 replaces
+SNOMED,687291000000107,Suicide and self inflicted injury by other specified means,3541026,Metadata,DC-2314 replaces
+SNOMED,651301000000108,Suicide and self inflicted poisoning by solid and liquid substances NOS,3538564,Metadata,DC-2314 replaces
+SNOMED,680601000000102,Suicide and self inflicted poisoning by agricultural and horticultural chemical and pharmaceutical preparations other than plant foods and fertilisers,3540543,Metadata,DC-2314 replaces
+SNOMED,118188004,Finding of neonate,439156,Condition,DC-2314 replaces
+SNOMED,56890008,Victim of sexual aggression,4210749,Condition,DC-2314 replaces
+SNOMED,407374003,Transsexual,4231241,Condition,DC-2314 replaces
+SNOMED,676611000000105,Suicide and self inflicted poisoning by gases and vapours NOS,3540253,Condition,DC-2314 replaces
+SNOMED,75164001,Pseudohermaphroditism,4326589,Condition,DC-2314 replaces
+SNOMED,231543005,Speech and language disorder,4338039,Condition,DC-2314 replaces
+SNOMED,206442000,Perinatal jaundice from bruising,4071735,Condition,DC-2314 replaces
+SNOMED,206242003,Liver subcapsular hematoma due to birth trauma,4047863,Condition,DC-2314 replaces
+SNOMED,242839001,Self poisoning by gas,440282,Condition,DC-2314 replaces
+SNOMED,47004009,Difficulty speaking,432730,Condition,DC-2314 replaces
+SNOMED,286378009,Difficulty talking,4114720,Condition,DC-2314 replaces
+SNOMED,472948001,Cross-dressing,43021159,Condition,DC-2314 replaces
+SNOMED,651321000000104,Suicide and self inflicted poisoning by gases in domestic use NOS,3538567,Condition,DC-2314 replaces
+SNOMED,676921000000108,Suicide and self inflicted poisoning by other gases and vapours,3540275,Condition,DC-2314 replaces
+SNOMED,788180009,Lower uterine segment cesarean section,37312440,Procedure,DC-2314 replaces
+SNOMED,199771001,Piper forceps delivery by application to aftercoming head,4064824,Procedure,DC-2314 replaces
+SNOMED,120052007,Uterine cervix manipulation,4001540,Procedure,DC-2314 replaces
+SNOMED,1807002,Forceps delivery failed,4109462,Observation,DC-2314 replaces
+LOINC,76458-9,Patient Email address,46234749,Observation,DC-2314 standard
+LOINC,74548-9,Reporter phone number,44817220,Observation,DC-2314 standard
+LOINC,63500-3,Current city [PhenX],40766228,Observation,DC-2314 standard
+LOINC,45394-4,Patient Last (Family) name,3046810,Observation,DC-2314 standard
+LOINC,45396-9,Social Security number [Identifier],3045837,Observation,DC-2314 standard
+LOINC,45392-8,Patient First (Given) name,3042942,Observation,DC-2314 standard
+LOINC,52461-1,Patient middle name,3042530,Observation,DC-2314 standard
+RxNorm Extension,OMOP5042939,COVID-19 vaccine,35894915,Drug,DC-2314 standard
