@@ -1,12 +1,13 @@
 # Python imports
+import datetime
 from unittest import TestCase
 import os
-import typing
-from unittest.mock import MagicMock
+from typing import FrozenSet, List, Union, Dict, Iterable, Any
+from collections import OrderedDict
 
 # Third party imports
 from google.cloud import bigquery
-from mock import patch
+from mock import patch, MagicMock, Mock
 from google.cloud.bigquery import TableReference
 from google.cloud.bigquery.table import TableListItem
 from google.cloud.bigquery import DatasetReference
@@ -25,7 +26,7 @@ class DummyClient(BigQueryClient):
     def __init__(self):
         self.project: str = 'bar_project'
 
-    def _get_all_field_types(self,) -> typing.FrozenSet[str]:
+    def _get_all_field_types(self,) -> FrozenSet[str]:
         """
         Helper to get all field types referenced in fields (json) files
 
@@ -59,6 +60,94 @@ class DummyClient(BigQueryClient):
                 TableReference.from_string(table_id).to_api_repr()
         }
         return TableListItem(resource)
+
+    def mock_query_result(self,
+                          rows: List[Union[Dict, OrderedDict]],
+                          key_order: Iterable[Any] = None):
+        """
+        Create a mock RowIterator as returned by :meth:`bigquery.QueryJob.result`
+        from rows represented as a list of dictionaries
+
+        :param rows: A list of dictionaries representing result rows
+        :param key_order: If `rows` refers to a list of dict rather than OrderedDict, 
+            specifies how fields are ordered in the result schema. This parameter is 
+            ignored if `rows` refers to a list of OrderedDict.
+        :return: a mock RowIterator
+        """
+        mock_row_iter = MagicMock(spec=bigquery.table.RowIterator)
+        mock_row_iter.total_rows = len(rows)
+        row0 = rows[0]
+        if isinstance(row0, OrderedDict):
+            _rows = rows
+        else:
+            _rows = [self._to_ordered_dict(row, key_order) for row in rows]
+            row0 = _rows[0]
+
+        mock_row_iter.schema = list(self.fields_from_dict(row0))
+        field_to_index = {key: i for i, key in enumerate(row0.keys())}
+        mock_row_iter.__iter__ = Mock(return_value=iter([
+            bigquery.table.Row(list(row.values()), field_to_index)
+            for row in _rows
+        ]))
+        return mock_row_iter
+
+    def _to_ordered_dict(self, d: dict, key_order: Iterable[Any] = None):
+        """
+        Convert a dict to OrderedDict with a specified order
+        :param d: instance to convert
+        :param key_order: specifies how items are ordered in the result
+        :return: the ordered dict
+        """
+        if len(d) == 1:
+            return OrderedDict(d)
+        else:
+            if key_order is None:
+                raise ValueError(
+                    'Parameter key_order is required in order to convert'
+                    ' a dict with multiple items to OrderedDict')
+        return OrderedDict((key, d[key]) for key in key_order)
+
+    def fields_from_dict(self, row):
+        """
+        Get schema fields from a row represented as a dictionary
+
+        :param row: the dictionary to infer schema for
+        :return: list of schema field objects
+        
+        Example:
+            >>> from tests import bq_test_helpers
+            >>> d = {'item': 'book', 'qty': 2, 'price': 1.99}
+            >>> bq_test_helpers.fields_from_dict(d)
+                [SchemaField('item', 'STRING', 'NULLABLE', None, ()),
+                SchemaField('qty', 'INT64', 'NULLABLE', None, ()),
+                SchemaField('price', 'FLOAT64', 'NULLABLE', None, ())]
+        """
+        return [
+            self._field_from_key_value(key, value)
+            for key, value in row.items()
+        ]
+
+    def _field_from_key_value(self, key: str,
+                              value: Any) -> bigquery.SchemaField:
+        """
+        Get a schema field object from a key and value
+        
+        :param key: name of the field
+        :param value: value of the field
+        :return: an appropriate schema field object
+        """
+        _TYPE_TO_FIELD_TYPE = {
+            str(int): 'INT64',
+            str(str): 'STRING',
+            str(float): 'FLOAT64',
+            str(datetime.date): 'DATE',
+            str(datetime.datetime): 'TIMESTAMP'
+        }
+        tpe = str(type(value))
+        field_type = _TYPE_TO_FIELD_TYPE.get(tpe)
+        if not field_type:
+            raise NotImplementedError(f'The type for {value} is not supported')
+        return bigquery.SchemaField(name=key, field_type=field_type)
 
 
 class BQCTest(TestCase):
@@ -173,17 +262,47 @@ class BQCTest(TestCase):
         mock_list_tables.assert_called_once_with(self.dataset_id)
         self.assertEqual(mock_copy_table.call_count, len(list_tables_results))
 
+    @patch.object(BigQueryClient, 'get_table_count')
     @patch('gcloud.bq.Client.list_tables')
-    def test_list_tables(self, mock_list_tables):
+    def test_list_tables(self, mock_list_tables, mock_get_table_count):
         #pre conditions
         table_ids = ['table_1', 'table_2']
         table_count = len(table_ids)
+        mock_get_table_count.return_value = table_count
         _MAX_RESULTS_PADDING = 100
         expected_max_results = table_count + _MAX_RESULTS_PADDING
-        mock_list_results = MagicMock()
-        mock_list_tables.side_effect = [mock_list_results, mock_list_tables]
-        mock_list_results.num_results = table_count
+
         self.client.list_tables(self.dataset_ref)
-        #post condition
+        #post conditions
         mock_list_tables.assert_called_with(dataset=self.dataset_ref,
                                             max_results=expected_max_results)
+
+    def test_to_scalar(self):
+        scalar_int = dict(num=100)
+        mock_iter = self.client.mock_query_result([scalar_int])
+        result = self.client.to_scalar(mock_iter)
+        self.assertEqual(100, result)
+
+        today = datetime.date.today()
+        scalar_date = dict(today=today)
+        mock_iter = self.client.mock_query_result([scalar_date])
+        result = self.client.to_scalar(mock_iter)
+        self.assertEqual(today, result)
+
+        now = datetime.datetime.now()
+        scalar_datetime = dict(now=now)
+        mock_iter = self.client.mock_query_result([scalar_datetime])
+        result = self.client.to_scalar(mock_iter)
+        self.assertEqual(now, result)
+
+        scalar_struct = dict(num_1=100, num_2=200)
+        scalar_struct_iter = self.client.mock_query_result([scalar_struct],
+                                                           ['num_2', 'num_1'])
+        result = self.client.to_scalar(scalar_struct_iter)
+        self.assertDictEqual(scalar_struct, result)
+
+        scalar_int_1 = dict(num=1)
+        scalar_int_2 = dict(num=2)
+        mock_iter = self.client.mock_query_result([scalar_int_1, scalar_int_2])
+        with self.assertRaises(ValueError) as c:
+            self.client.to_scalar(mock_iter)
