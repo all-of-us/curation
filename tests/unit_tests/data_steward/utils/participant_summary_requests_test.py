@@ -455,6 +455,9 @@ class ParticipantSummaryRequestsTest(TestCase):
 
         mock_table_schema = MagicMock()
 
+        # parameter check test
+        self.assertRaises(RuntimeError, psr.store_participant_data,
+                          self.fake_dataframe, None, self.destination_table)
         # test
         actual_job_id = psr.store_participant_data(self.fake_dataframe,
                                                    mock_bq_client,
