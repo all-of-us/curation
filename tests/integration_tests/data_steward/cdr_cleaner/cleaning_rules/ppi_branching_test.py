@@ -7,6 +7,7 @@ from google.cloud import bigquery
 from google.cloud.bigquery import Table, TimePartitioning
 
 import app_identity
+from gcloud.bq import BigQueryClient
 import bq_utils
 from cdr_cleaner.cleaning_rules import ppi_branching
 from cdr_cleaner.cleaning_rules.ppi_branching import PpiBranching
@@ -98,7 +99,9 @@ class Observation(object):
     Helper class to initialize test observation rows
     """
 
-    SCHEMA = bq.get_table_schema('observation')
+    project_id = app_identity.get_application_id()
+    bq_client = BigQueryClient(project_id)
+    SCHEMA = bq_client.get_table_schema('observation')
     """List of schema fields for observation table"""
 
     _FIELD_DEFAULTS = dict(

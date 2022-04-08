@@ -13,7 +13,6 @@ The intent of this module is to check that the drc validation table is created p
 
 # Python imports
 import os
-import mock
 from unittest import TestCase
 
 # Third party imports
