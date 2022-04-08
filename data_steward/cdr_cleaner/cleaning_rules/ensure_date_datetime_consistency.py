@@ -57,6 +57,10 @@ TABLE_DATES = {
     common.VISIT_OCCURRENCE: {
         'visit_start_datetime': 'visit_start_date',
         'visit_end_datetime': 'visit_end_date'
+    },
+    common.VISIT_DETAIL: {
+        'visit_detail_start_datetime': 'visit_detail_start_date',
+        'visit_detail_end_datetime': 'visit_detail_end_date'
     }
 }
 
@@ -109,7 +113,8 @@ class EnsureDateDatetimeConsistency(BaseCleaningRule):
                              common.DEVICE_EXPOSURE, common.MEASUREMENT,
                              common.OBSERVATION, common.PROCEDURE_OCCURRENCE,
                              common.SPECIMEN, common.DEATH, common.NOTE,
-                             common.OBSERVATION_PERIOD, common.VISIT_OCCURRENCE
+                             common.OBSERVATION_PERIOD, common.VISIT_OCCURRENCE,
+                             common.VISIT_DETAIL
                          ],
                          depends_on=[temporal_consistency.TemporalConsistency])
 
