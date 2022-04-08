@@ -536,7 +536,10 @@ def query_sheet_linked_bq_table(project_id, table_content_query,
 
     return result_df
 
-
+@deprecated(
+    reason=
+    'Use gcloud.bq.BigQueryClient.to_scalar(self, result: typing.Union[bigquery.table.RowIterator,bigquery.QueryJob]) instead'
+)
 def to_scalar(
     result: typing.Union[bigquery.table.RowIterator, bigquery.QueryJob]
 ) -> typing.Any:
@@ -563,7 +566,10 @@ def to_scalar(
 
     return dict(row.items())
 
-
+@deprecated(
+    reason=
+    'Use gcloud.bq.BigQueryClient.get_table_count(self, dataset: bigquery.DatasetReference) instead'
+)
 def get_table_count(client: bigquery.Client,
                     dataset: bigquery.DatasetReference) -> int:
     """
