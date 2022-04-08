@@ -494,6 +494,9 @@ def store_participant_data(df: pandas.DataFrame,
 
     :return: returns the bq job_id for the loading of participant data
     """
+    # Parameter check
+    if not isinstance(client, BigQueryClient):
+        raise RuntimeError(f'A bigquery client is needed to create the tables')
 
     if not schema:
         schema = client.get_table_schema(destination_table.split('.')[-1])
@@ -540,6 +543,10 @@ def store_digital_health_status_data(client: BigQueryClient,
 
     :return: returns the bq job_id for the loading of digital health data
     """
+
+    # Parameter check
+    if not isinstance(client, BigQueryClient):
+        raise RuntimeError(f'A bigquery client is needed to create the tables')
 
     if not schema:
         schema = client.get_table_schema(DIGITAL_HEALTH_SHARING_STATUS)
