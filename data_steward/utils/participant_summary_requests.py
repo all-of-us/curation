@@ -546,7 +546,7 @@ def store_digital_health_status_data(client: BigQueryClient,
 
     # Parameter check
     if not client:
-        raise RuntimeError(f'A bigquery client is needed to create the tables')
+        raise RuntimeError(f'A bigquery client is needed to create the table')
 
     if not schema:
         schema = client.get_table_schema(DIGITAL_HEALTH_SHARING_STATUS)
