@@ -13363,40 +13363,339 @@ VANDF,4039944,"INV-COVID-19 VACCINE VIRAL VECTOR (ASTRAZENECA) (PF) INJ,5ML",161
 VANDF,4040047,"INV-COVID-19 VACCINE AD26 (JANSSEN) (PF) INJ,2.5ML",1615558,Drug,DC-2277
 VANDF,4040411,"INV-COVID-19 VACCINE MRNA (MODERNA) (PF) 100MCG/0.5ML INJ,7ML",1615923,Drug,DC-2277
 VANDF,4040599,"INV-COVID-19 VACCINE ADJ (NOVAVAX) (PF) INJ,5ML",1616111,Drug,DC-2277
-SNOMED,407375002,Surgically transgendered transsexual,4234363,Gender,DC-2314 replaces
-SNOMED,679221000000108,Suicide and self inflicted injury by other means,3540437,Metadata,DC-2314 replaces
-SNOMED,684281000000100,Suicide and self inflicted injury NOS,3571210,Metadata,DC-2314 replaces
-SNOMED,670501000000107,"Suicide and self inflicted injury by other means of hanging, strangulation and suffocation",3521070,Metadata,DC-2314 replaces
-SNOMED,679201000000104,Suicide and self inflicted injury by jumping from other man-made structure,3540436,Metadata,DC-2314 replaces
-SNOMED,651331000000102,Suicide and self inflicted poisoning by other carbon monoxide,3538568,Metadata,DC-2314 replaces
-SNOMED,681101000000104,Suicide and self inflicted poisoning by other drugs and medicines,3573576,Metadata,DC-2314 replaces
-SNOMED,363743006,Navigational concept,40539927,Metadata,DC-2314 replaces
-SNOMED,687291000000107,Suicide and self inflicted injury by other specified means,3541026,Metadata,DC-2314 replaces
-SNOMED,651301000000108,Suicide and self inflicted poisoning by solid and liquid substances NOS,3538564,Metadata,DC-2314 replaces
-SNOMED,680601000000102,Suicide and self inflicted poisoning by agricultural and horticultural chemical and pharmaceutical preparations other than plant foods and fertilisers,3540543,Metadata,DC-2314 replaces
-SNOMED,118188004,Finding of neonate,439156,Condition,DC-2314 replaces
-SNOMED,56890008,Victim of sexual aggression,4210749,Condition,DC-2314 replaces
-SNOMED,407374003,Transsexual,4231241,Condition,DC-2314 replaces
-SNOMED,676611000000105,Suicide and self inflicted poisoning by gases and vapours NOS,3540253,Condition,DC-2314 replaces
-SNOMED,75164001,Pseudohermaphroditism,4326589,Condition,DC-2314 replaces
-SNOMED,231543005,Speech and language disorder,4338039,Condition,DC-2314 replaces
-SNOMED,206442000,Perinatal jaundice from bruising,4071735,Condition,DC-2314 replaces
-SNOMED,206242003,Liver subcapsular hematoma due to birth trauma,4047863,Condition,DC-2314 replaces
-SNOMED,242839001,Self poisoning by gas,440282,Condition,DC-2314 replaces
-SNOMED,47004009,Difficulty speaking,432730,Condition,DC-2314 replaces
-SNOMED,286378009,Difficulty talking,4114720,Condition,DC-2314 replaces
-SNOMED,472948001,Cross-dressing,43021159,Condition,DC-2314 replaces
-SNOMED,651321000000104,Suicide and self inflicted poisoning by gases in domestic use NOS,3538567,Condition,DC-2314 replaces
-SNOMED,676921000000108,Suicide and self inflicted poisoning by other gases and vapours,3540275,Condition,DC-2314 replaces
-SNOMED,788180009,Lower uterine segment cesarean section,37312440,Procedure,DC-2314 replaces
-SNOMED,199771001,Piper forceps delivery by application to aftercoming head,4064824,Procedure,DC-2314 replaces
-SNOMED,120052007,Uterine cervix manipulation,4001540,Procedure,DC-2314 replaces
-SNOMED,1807002,Forceps delivery failed,4109462,Observation,DC-2314 replaces
-LOINC,76458-9,Patient Email address,46234749,Observation,DC-2314 standard
-LOINC,74548-9,Reporter phone number,44817220,Observation,DC-2314 standard
-LOINC,63500-3,Current city [PhenX],40766228,Observation,DC-2314 standard
-LOINC,45394-4,Patient Last (Family) name,3046810,Observation,DC-2314 standard
-LOINC,45396-9,Social Security number [Identifier],3045837,Observation,DC-2314 standard
-LOINC,45392-8,Patient First (Given) name,3042942,Observation,DC-2314 standard
-LOINC,52461-1,Patient middle name,3042530,Observation,DC-2314 standard
-RxNorm Extension,OMOP5042939,COVID-19 vaccine,35894915,Drug,DC-2314 standard
+LOINC,68507-3,Did you ever serve on active duty in the armed forces of the U.S. [SAMHSA],40771092,Observation,DC-2314
+SNOMED,161920001,Respiratory symptom,313878,Condition,DC-2314
+SNOMED,429656004,Late effect of traumatic injury to brain,4182419,Condition,DC-2314
+SNOMED,472989003,Dual-role transvestism,43021205,Condition,DC-2314
+SNOMED,14817008,Late effect of injury,435119,Condition,DC-2314
+SNOMED,609496007,Complication occurring during pregnancy,43530950,Condition,DC-2314
+SNOMED,20260003,Poisoning by psychostimulant,433935,Condition,DC-2314
+SNOMED,366323009,Finding of length of gestation,432441,Condition,DC-2314
+SNOMED,418420002,Intentionally harming self,4303690,Observation,DC-2314
+SNOMED,253859003,Congenital malformation of the urinary system,4108905,Condition,DC-2314
+SNOMED,888003,Fetal or neonatal effect of maternal blood loss,4229439,Condition,DC-2314
+SNOMED,225048008,Jumping from height,4076658,Condition,DC-2314
+SNOMED,681101000000104,Suicide and self inflicted poisoning by other drugs and medicines,3573576,Metadata,DC-2314
+SNOMED,78523004,Late effect of radiation,440577,Condition,DC-2314
+SNOMED,9291000,Poisoning by monoamine oxidase inhibitor,4245794,Condition,DC-2314
+SNOMED,78144005,Pulmonary hemorrhage,4301606,Condition,DC-2314
+SNOMED,15887131000119101,Baby premature 27 weeks,37018684,Condition,DC-2314
+SNOMED,123012009,Poisoning by antidote AND/OR chelating agent,436312,Condition,DC-2314
+SNOMED,359007,Kernicterus due to isoimmunization,437681,Condition,DC-2314
+SNOMED,217665000,Poisoning due to venomous spider,439219,Condition,DC-2314
+SNOMED,240302002,Erythroderma neonatorum,4345685,Condition,DC-2314
+SNOMED,212505002,Tetracycline poisoning,4062397,Condition,DC-2314
+SNOMED,192508005,Transsexualism,40388818,Condition,DC-2314
+SNOMED,79995002,"Post-term infant, not heavy-for-dates",441128,Condition,DC-2314
+SNOMED,74450001,Hyperchloremia,4253927,Condition,DC-2314
+SNOMED,427966000,Late effect of epidural hematoma due to trauma,4176310,Condition,DC-2314
+SNOMED,51634001,Congenital malaria,4197823,Condition,DC-2314
+SNOMED,127308007,Intracranial hemorrhage following injury with loss of consciousness,444198,Condition,DC-2314
+SNOMED,419048002,Event of undetermined intent,4168818,Observation,DC-2314
+SNOMED,30227006,Pulmonary aspiration of gastric contents,254163,Condition,DC-2314
+SNOMED,199771001,Piper forceps delivery by application to aftercoming head,4064824,Procedure,DC-2314
+SNOMED,262955000,Subarachnoid hemorrhage due to traumatic injury,4134162,Condition,DC-2314
+SNOMED,699022007,Poisoning by anticoagulant antagonist AND/OR coagulant,44783518,Condition,DC-2314
+SNOMED,788180009,Lower uterine segment cesarean section,37312440,Procedure,DC-2314
+SNOMED,15635411000119106,Baby premature 32 weeks,37018683,Condition,DC-2314
+SNOMED,212718008,Poisoning by histamine H2-receptor antagonists,4020145,Condition,DC-2314
+SNOMED,74264003,Poisoning by opium alkaloid,439223,Condition,DC-2314
+SNOMED,268763002,Sexual deviations: [bestiality] or [exhibitionism] or [masochism] or [pedophilia] or [transvestism] or [other],40357168,Condition,DC-2314
+SNOMED,95872005,Carbon monoxide poisoning from motor vehicle exhaust,4320826,Condition,DC-2314
+SNOMED,41587001,Third trimester pregnancy,4218813,Condition,DC-2314
+SNOMED,248062006,Self-injurious behavior,4092411,Condition,DC-2314
+SNOMED,114961000119106,Delayed separation of umbilical cord,37018896,Condition,DC-2314
+LOINC,45392-8,Patient First (Given) name,3042942,Observation,DC-2314
+SNOMED,419045004,Loss of consciousness,372448,Condition,DC-2314
+SNOMED,74345006,Congenital chromosomal disease,434153,Condition,DC-2314
+SNOMED,26688007,Internal and combined version without extraction,4132433,Procedure,DC-2314
+SNOMED,419347003,Poisoning by antibacterial drug,4303975,Condition,DC-2314
+SNOMED,838523003,Poisoning caused by methylenedioxymethamphetamine,3654781,Condition,DC-2314
+SNOMED,205719003,"46, XX true hermaphrodite",4004776,Condition,DC-2314
+SNOMED,59527008,Congenital cytomegalovirus infection,436532,Condition,DC-2314
+SNOMED,238149007,Systemic inflammatory response syndrome,434821,Condition,DC-2314
+SNOMED,15635291000119101,Baby premature 35 weeks,37016211,Condition,DC-2314
+SNOMED,43424001,Tetanus neonatorum,133024,Condition,DC-2314
+RxNorm,238014,1 ML carboprost 0.25 MG/ML Injection,19057129,Drug,DC-2314
+SNOMED,10984003,Poisoning by skeletal muscle relaxant,440920,Condition,DC-2314
+RxNorm Extension,OMOP5042939,COVID-19 vaccine,35894915,Drug,DC-2314
+SNOMED,15750041000119101,Baby premature 29 weeks,37016217,Condition,DC-2314
+SNOMED,191786005,Transsexualism NOS,4098326,Condition,DC-2314
+SNOMED,762725007,Congenital infection caused by Zika virus,42538865,Condition,DC-2314
+SNOMED,107421000119101,Neonatal acidosis,42534852,Condition,DC-2314
+SNOMED,433145001,Postmaturity of fetus,440833,Condition,DC-2314
+SNOMED,768011006,Late effect due to homicide attempt,35625043,Condition,DC-2314
+SNOMED,301705009,Occupation and employment activity,4199872,Observation,DC-2314
+SNOMED,679221000000108,Suicide and self inflicted injury by other means,3540437,Metadata,DC-2314
+SNOMED,242840004,Self poisoning by carbon monoxide,435433,Condition,DC-2314
+SNOMED,10399008,Hypochloremia,4016089,Condition,DC-2314
+SNOMED,219356008,Injury of unknown intent by burns or fire,432810,Condition,DC-2314
+SNOMED,309535002,Industrial accident,437748,Observation,DC-2314
+SNOMED,118185001,Finding related to pregnancy,444094,Condition,DC-2314
+SNOMED,242781003,Accident caused by aerial bomb,4055520,Observation,DC-2314
+SNOMED,676611000000105,Suicide and self inflicted poisoning by gases and vapours NOS,3540253,Condition,DC-2314
+SNOMED,219352005,"Injury undetermined whether accidentally or purposely inflicted, by jumping or lying before moving object",140297,Condition,DC-2314
+SNOMED,703300001,Hypoxic ischemic encephalopathy,45766189,Condition,DC-2314
+SNOMED,703303004,Severe hypoxic ischemic encephalopathy,45766192,Condition,DC-2314
+LOINC,74548-9,Reporter phone number,44817220,Observation,DC-2314
+SNOMED,242388006,Fall on ice wearing ice-skates,4054086,Observation,DC-2314
+LOINC,45394-4,Patient Last (Family) name,3046810,Observation,DC-2314
+SNOMED,276660001,Congenital viral disease,4173334,Condition,DC-2314
+SNOMED,63565007,Congenital anemia,434156,Condition,DC-2314
+SNOMED,267258002,Small for gestational age fetus,4145947,Condition,DC-2314
+SNOMED,472946002,Previously heterosexual transsexual,43021158,Condition,DC-2314
+SNOMED,269735005,Injury undetermined whether accidentally or purposely inflicted,443272,Condition,DC-2314
+SNOMED,206289001,Congenital chlamydial pneumonia,4070540,Condition,DC-2314
+SNOMED,7456000,Poisoning by wasp sting,442794,Condition,DC-2314
+SNOMED,82351006,Craniotabes,4219613,Condition,DC-2314
+SNOMED,95640005,Disorder of brain stem,4318862,Condition,DC-2314
+SNOMED,72544005,"Gestation period, 25 weeks",435640,Condition,DC-2314
+SNOMED,428213008,Late effect of subdural hematoma due to trauma,4177197,Condition,DC-2314
+SNOMED,127296001,Intracranial injury,437409,Condition,DC-2314
+SNOMED,417662000,History of clinical finding in subject,4214956,Observation,DC-2314
+SNOMED,32835006,Poisoning by autonomous nervous system drug,443915,Condition,DC-2314
+SNOMED,56627002,Psychosexual disorder,436666,Condition,DC-2314
+SNOMED,276853009,Self inflicted injury,439235,Condition,DC-2314
+SNOMED,275359008,Umbilical hemorrhage,4167918,Condition,DC-2314
+SNOMED,651321000000104,Suicide and self inflicted poisoning by gases in domestic use NOS,3538567,Condition,DC-2314
+SNOMED,47004009,Difficulty speaking,432730,Condition,DC-2314
+SNOMED,680601000000102,Suicide and self inflicted poisoning by agricultural and horticultural chemical and pharmaceutical preparations other than plant foods and fertilisers,3540543,Metadata,DC-2314
+SNOMED,66413004,Poisoning by penicillin,438915,Condition,DC-2314
+SNOMED,204821009,Congenital malformation of genital organs,76797,Condition,DC-2314
+SNOMED,288293001,Poisoning by CNS drug,443283,Condition,DC-2314
+SNOMED,419620001,Death,4306655,Observation,DC-2314
+SNOMED,219174008,Late effect of self inflicted injury,435446,Condition,DC-2314
+SNOMED,206001006,Fetal or neonatal effect of maternal problem unrelated to pregnancy,4047878,Condition,DC-2314
+SNOMED,271982007,Intentional self poisoning,4152376,Condition,DC-2314
+SNOMED,407374003,Transsexual,4231241,Condition,DC-2314
+SNOMED,15887011000119107,Baby premature 24 weeks,37016220,Condition,DC-2314
+SNOMED,290428004,Laxative poisoning,436296,Condition,DC-2314
+SNOMED,219361005,"Injury undetermined whether accidentally or purposely inflicted, by crashing of aircraft",136016,Condition,DC-2314
+SNOMED,73893000,Congenital toxoplasmosis,4251491,Condition,DC-2314
+SNOMED,765329008,Carbamoyl-phosphate synthetase 1 deficiency,35623050,Condition,DC-2314
+SNOMED,230763008,Traumatic cerebral edema,4048796,Condition,DC-2314
+SNOMED,249529000,Passage of meconium,195075,Condition,DC-2314
+SNOMED,78395001,"Gestation period, 33 weeks",441678,Condition,DC-2314
+SNOMED,111760006,Poisoning by vitamin,438648,Condition,DC-2314
+SNOMED,235890007,Autoimmune liver disease,4340391,Condition,DC-2314
+SNOMED,276671000,Congenital falciparum malaria,4080880,Condition,DC-2314
+SNOMED,15887051000119108,Baby premature 25 weeks,37016221,Condition,DC-2314
+SNOMED,48466003,Fracture of vault of skull,4168152,Condition,DC-2314
+SNOMED,219362003,"Injury undetermined whether accidentally or purposely inflicted, by caustic substances, excluding poisoning",433672,Condition,DC-2314
+SNOMED,416940007,Past history of procedure,4215685,Observation,DC-2314
+SNOMED,111332007,Male pseudohermaphroditism,4009631,Condition,DC-2314
+RxNorm,857336,bethanechol chloride 5 MG Oral Tablet,40162841,Drug,DC-2314
+SNOMED,450410005,Intracranial hemorrhage following injury,42873157,Condition,DC-2314
+SNOMED,200724002,Umbilical granuloma,4066378,Condition,DC-2314
+SNOMED,44003006,Poisoning by barbiturate,434540,Condition,DC-2314
+SNOMED,112927003,Manual rotation of fetal head,4010271,Procedure,DC-2314
+SNOMED,219359001,Injury of unknown intent by electrocution,436878,Condition,DC-2314
+SNOMED,237821001,Hermaphroditism,4028941,Condition,DC-2314
+SNOMED,85337000,Poisoning by sedative AND/OR hypnotic,440002,Condition,DC-2314
+SNOMED,4296008,Transsexualism,440386,Condition,DC-2314
+LOINC,67190-9,Other cancer diagnosis [PhenX],40769821,Observation,DC-2314
+SNOMED,212899006,Toxic effect of tobacco and nicotine,440612,Condition,DC-2314
+SNOMED,206285007,Congenital group B hemolytic streptococcal pneumonia,4071611,Condition,DC-2314
+SNOMED,217082002,Accidental fall,435991,Observation,DC-2314
+LOINC,76458-9,Patient Email address,46234749,Observation,DC-2314
+SNOMED,291473001,Aminoglycosides poisoning,4162485,Condition,DC-2314
+SNOMED,1857005,Congenital rubella syndrome,433869,Condition,DC-2314
+SNOMED,268637002,Psychosexual dysfunction,440068,Condition,DC-2314
+SNOMED,78895009,Congenital pneumonia,255084,Condition,DC-2314
+SNOMED,218090000,Accident caused by machine gun,4319862,Observation,DC-2314
+SNOMED,61372001,Aggressive behavior,4266361,Condition,DC-2314
+SNOMED,87904007,Poisoning by drug acting on smooth AND/OR skeletal muscle,436861,Condition,DC-2314
+SNOMED,419945001,Traumatic injury due to event,439215,Condition,DC-2314
+SNOMED,206283000,Congenital staphylococcal pneumonia,4071610,Condition,DC-2314
+SNOMED,7895008,Poisoning by drug AND/OR medicinal substance,438028,Condition,DC-2314
+SNOMED,206286008,Congenital Escherichia coli pneumonia,4048148,Condition,DC-2314
+SNOMED,39109007,Fall involving sports equipment,434236,Observation,DC-2314
+SNOMED,206539008,Sclerema neonatorum,136530,Condition,DC-2314
+RxNorm,2470234,"SARS-CoV-2 (COVID-19) vaccine, mRNA-1273 0.2 MG/ML Injectable Suspension",37003518,Drug,DC-2314
+SNOMED,287186005,Attempted suicide - jumping from a high place,436605,Observation,DC-2314
+SNOMED,19943007,Cirrhosis of liver,4064161,Condition,DC-2314
+SNOMED,51577008,Wilson-Mikity syndrome,4201423,Condition,DC-2314
+SNOMED,42894006,Poisoning by chloramphenicol,442319,Condition,DC-2314
+SNOMED,405703008,Injury due to legal restraint by manhandling,4228469,Condition,DC-2314
+SNOMED,15233006,Poisoning by cannabis derivative,4035966,Condition,DC-2314
+LOINC,21112-8,Birth date,3022007,Observation,DC-2314
+SNOMED,310530008,Baby premature 36 weeks,4149451,Condition,DC-2314
+SNOMED,120052007,Uterine cervix manipulation,4001540,Procedure,DC-2314
+SNOMED,371704001,Injury due to chemical exposure,439397,Condition,DC-2314
+SNOMED,55566008,Accident,440279,Observation,DC-2314
+SNOMED,70273001,Poisoning caused by acetaminophen,4322306,Condition,DC-2314
+SNOMED,703301002,Mild hypoxic ischemic encephalopathy,45766190,Condition,DC-2314
+SNOMED,68838007,Replacement of prolapsed umbilical cord,4288630,Procedure,DC-2314
+SNOMED,223176004,Cerebellar disorder,4329160,Condition,DC-2314
+SNOMED,199607009,Intrauterine death - delivered,4060687,Observation,DC-2314
+LOINC,52461-1,Patient middle name,3042530,Observation,DC-2314
+SNOMED,27171005,Urinalysis,4099313,Measurement,DC-2314
+SNOMED,127297005,Intracranial injury with loss of consciousness,437385,Condition,DC-2314
+LOINC,46468-5,Current living arrangement,3051968,Observation,DC-2314
+SNOMED,219334005,Injury of unknown intent by firearms and explosives,435155,Condition,DC-2314
+SNOMED,7998009,Poisoning by bee sting,442149,Condition,DC-2314
+SNOMED,66590003,Alcohol dependence,435243,Condition,DC-2314
+SNOMED,45775001,Poisoning by amphetamine,4164432,Condition,DC-2314
+SNOMED,276622005,Subgaleal hemorrhage,439130,Condition,DC-2314
+SNOMED,397996002,Injury due to explosion,439389,Condition,DC-2314
+SNOMED,472981000,Fetishistic transvestism,43021197,Condition,DC-2314
+SNOMED,43624006,Poisoning by gastrointestinal system drug,433102,Condition,DC-2314
+SNOMED,219336007,Injury of unknown intent by shotgun,440314,Condition,DC-2314
+SNOMED,228524006,Exposed to tobacco smoke at home,4038739,Observation,DC-2314
+SNOMED,22915003,Poisoning by cardiovascular system drug,439206,Condition,DC-2314
+SNOMED,290316006,Diagnostic agent poisoning,4157514,Condition,DC-2314
+SNOMED,11196001,Poisoning by opiate AND/OR related narcotic,433083,Condition,DC-2314
+RxNorm,197449,cefaclor 500 MG Oral Capsule,1768850,Drug,DC-2314
+SNOMED,1807002,Forceps delivery failed,4109462,Observation,DC-2314
+SNOMED,66409006,Poisoning by oxytocic agent,439207,Condition,DC-2314
+SNOMED,219357004,Injury of unknown intent by scald,433118,Condition,DC-2314
+SNOMED,57005003,Poisoning by caffeine,4237906,Condition,DC-2314
+SNOMED,284607007,Finding relating to aggressive behavior,4113020,Condition,DC-2314
+SNOMED,37260006,Congenital tuberculosis,4290195,Condition,DC-2314
+SNOMED,127298000,Traumatic brain injury with loss of consciousness,4132082,Condition,DC-2314
+SNOMED,69434005,Tricyclic antidepressant poisoning,4287251,Condition,DC-2314
+SNOMED,75164001,Pseudohermaphroditism,4326589,Condition,DC-2314
+SNOMED,209987007,Traumatic subdural hemorrhage,4017107,Condition,DC-2314
+SNOMED,242839001,Self poisoning by gas,440282,Condition,DC-2314
+SNOMED,75934005,Metabolic disease,436670,Condition,DC-2314
+SNOMED,191782007,Transsexuality with unspecified sexual history,4102807,Condition,DC-2314
+RxNorm,435,albuterol,1154343,Drug,DC-2314
+SNOMED,431268006,Hemorrhage of skin in neonate,4329097,Condition,DC-2314
+SNOMED,13187008,Poisoning by heroin,433919,Condition,DC-2314
+SNOMED,71677004,Effect of exposure to external cause,440615,Condition,DC-2314
+SNOMED,713346006,Thermal injury,37017129,Condition,DC-2314
+SNOMED,46906003,"Gestation period, 27 weeks",432430,Condition,DC-2314
+SNOMED,703302009,Moderate hypoxic ischemic encephalopathy,45766191,Condition,DC-2314
+SNOMED,128598002,Disorder of integument,4028387,Condition,DC-2314
+SNOMED,407375002,Surgically transgendered transsexual,4234363,Gender,DC-2314
+SNOMED,212599001,Pyrazole derivative poisoning,443507,Condition,DC-2314
+SNOMED,722840003,Baby premature at delivery 23 completed weeks,36716686,Condition,DC-2314
+SNOMED,210038008,Focal brain injury,4016540,Condition,DC-2314
+LOINC,45396-9,Social Security number [Identifier],3045837,Observation,DC-2314
+SNOMED,85975005,Poisoning by psychodysleptic,438306,Condition,DC-2314
+SNOMED,56890008,Victim of sexual aggression,4210749,Condition,DC-2314
+SNOMED,219131005,Self poisoning by motor vehicle exhaust gas,4317245,Condition,DC-2314
+SNOMED,66466001,Asphyxiation,4279614,Observation,DC-2314
+SNOMED,11618000,Intra-amniotic infection of fetus,4023420,Condition,DC-2314
+SNOMED,217959002,Accident caused by lift,4319717,Observation,DC-2314
+SNOMED,219123000,Self poisoning by arsenic or its compounds,439557,Condition,DC-2314
+RxNorm,1250949,chlorpheniramine maleate 0.4 MG/ML / methscopolamine nitrate 0.25 MG/ML / phenylephrine hydrochloride 2 MG/ML Oral Solution,42709051,Drug,DC-2314
+SNOMED,84132007,"Gestation period, 35 weeks",444267,Condition,DC-2314
+SNOMED,218250005,Late effect of accidental fall,437176,Condition,DC-2314
+SNOMED,276692000,Congenital viral pneumonia,4174308,Condition,DC-2314
+SNOMED,676921000000108,Suicide and self inflicted poisoning by other gases and vapours,3540275,Condition,DC-2314
+SNOMED,268229003,Indeterminate sex and pseudohermaphroditism,73584,Condition,DC-2314
+SNOMED,168092006,Amniotic fluid -meconium stain,441959,Condition,DC-2314
+SNOMED,408818004,Induction of labor by artificial rupture of membranes,4248955,Procedure,DC-2314
+SNOMED,8800006,Female pseudohermaphroditism,4338827,Condition,DC-2314
+SNOMED,31208007,Medical induction of labor,4150970,Procedure,DC-2314
+SNOMED,219335006,Injury of unknown intent by handgun,439236,Condition,DC-2314
+SNOMED,64920003,"Gestation period, 31 weeks",433864,Condition,DC-2314
+SNOMED,395507008,Premature infant,4217564,Condition,DC-2314
+SNOMED,217935007,Accident caused by agricultural machine,436874,Observation,DC-2314
+SNOMED,268854008,Congenital renal failure,4149398,Condition,DC-2314
+SNOMED,212641008,Poisoning by central nervous system muscle tone depressant,433647,Condition,DC-2314
+LOINC,45401-7,Postal code [Location],3043579,Observation,DC-2314
+SNOMED,735929009,Acquired absence of genital organ,42539582,Condition,DC-2314
+SNOMED,472945003,Previously asexual transsexual,43021157,Condition,DC-2314
+SNOMED,231543005,Speech and language disorder,4338039,Condition,DC-2314
+SNOMED,219358009,Injury of unknown intent by extremes of cold,436892,Condition,DC-2314
+RxNorm,2468231,"SARS-CoV-2 (COVID-19) vaccine, mRNA spike protein",37003432,Drug,DC-2314
+SNOMED,366344009,Place of birth - finding,4181974,Condition,DC-2314
+SNOMED,1848004,Poisoning by gaseous anesthetic,443711,Condition,DC-2314
+SNOMED,47100003,Anemia of prematurity,432452,Condition,DC-2314
+SNOMED,118213005,Postpartum finding,4041280,Condition,DC-2314
+SNOMED,219365001,Late effect of injury of unknown intent,4074169,Condition,DC-2314
+SNOMED,17461000119103,Sequela of intracranial injury,43530691,Condition,DC-2314
+SNOMED,21420006,Alkalosis,438730,Condition,DC-2314
+SNOMED,134251000119105,Failure to thrive in neonate,36717004,Condition,DC-2314
+SNOMED,206372007,Congenital viral hepatitis,4048592,Condition,DC-2314
+SNOMED,267022002,General symptom,4147183,Condition,DC-2314
+SNOMED,225539008,Transsexual,40426837,Gender,DC-2314
+SNOMED,206287004,Congenital pseudomonal pneumonia,4048149,Condition,DC-2314
+SNOMED,219122005,Self poisoning by corrosive or caustic substance,438669,Condition,DC-2314
+SNOMED,670501000000107,"Suicide and self inflicted injury by other means of hanging, strangulation and suffocation",3521070,Metadata,DC-2314
+SNOMED,15635331000119107,Baby premature 34 weeks,37016212,Condition,DC-2314
+SNOMED,111758009,Poisoning by enzyme,444231,Condition,DC-2314
+SNOMED,58104004,Poisoning by expectorant,315719,Condition,DC-2314
+SNOMED,82999001,Epidural hemorrhage,4306943,Condition,DC-2314
+SNOMED,286378009,Difficulty talking,4114720,Condition,DC-2314
+SNOMED,15635451000119107,Baby premature 31 weeks,37016213,Condition,DC-2314
+SNOMED,15635371000119105,Baby premature 33 weeks,37018889,Condition,DC-2314
+SNOMED,95867001,Heat exposure,4320028,Condition,DC-2314
+SNOMED,33010005,Floppy infant syndrome,4140071,Condition,DC-2314
+SNOMED,57701003,Accident while engaged in sports activity,440288,Observation,DC-2314
+SNOMED,276693005,Congenital bacterial pneumonia,4174309,Condition,DC-2314
+SNOMED,67794001,Poisoning by drug acting on respiratory system,321179,Condition,DC-2314
+CVX,210,"SARS-COV-2 (COVID-19) vaccine, vector non-replicating, recombinant spike protein-ChAdOx1, preservative free, 0.5 mL",724905,Drug,DC-2314
+SNOMED,212778002,Topical dental drug poisoning,435129,Condition,DC-2314
+SNOMED,20957000,Disorder of carbohydrate metabolism,437515,Condition,DC-2314
+SNOMED,62564004,Concussion with loss of consciousness,375671,Condition,DC-2314
+SNOMED,23688003,Hematemesis AND/OR melena due to swallowed maternal blood,201129,Condition,DC-2314
+RxNorm Extension,OMOP5048605,"COVID-19 vaccine, recombinant, full-length nanoparticle spike (S) protein, adjuvanted with Matrix-M Injectable Suspension",36119721,Drug,DC-2314
+SNOMED,684281000000100,Suicide and self inflicted injury NOS,3571210,Metadata,DC-2314
+SNOMED,71841008,Toxic effect of caustic substance,440589,Condition,DC-2314
+SNOMED,15750001000119103,Baby premature 28 weeks,37016216,Condition,DC-2314
+SNOMED,2935001,Poisoning by antiasthmatic,316577,Condition,DC-2314
+SNOMED,217897003,Accidental collision with stationary object,436292,Observation,DC-2314
+SNOMED,935471000000108,Complication of intrauterine procedure,45771350,Condition,DC-2314
+SNOMED,60199004,Poisoning by methadone,440919,Condition,DC-2314
+SNOMED,472947006,Previously homosexual transsexual,43021960,Condition,DC-2314
+SNOMED,212509008,Poisoning by rifampin,4056726,Condition,DC-2314
+SNOMED,241756003,Poisoning by anesthetic agent,432796,Condition,DC-2314
+SNOMED,446159001,Poisoning by macrolide,40486503,Condition,DC-2314
+SNOMED,262693007,Diffuse brain injury,4096616,Condition,DC-2314
+SNOMED,5095008,Gender identity disorder of childhood,436381,Condition,DC-2314
+SNOMED,61438005,Poisoning by psychotropic agent,434223,Condition,DC-2314
+SNOMED,15056007,Poisoning due to arthropod venom,441191,Condition,DC-2314
+SNOMED,106076001,Skin finding,141960,Condition,DC-2314
+SNOMED,17886000,Fall from wheelchair,435443,Observation,DC-2314
+SNOMED,363743006,Navigational concept,40539927,Metadata,DC-2314
+SNOMED,242693000,Accident due to physical impact or mechanical violence,4055396,Observation,DC-2314
+SNOMED,472948001,Cross-dressing,43021159,Condition,DC-2314
+SNOMED,712875004,Abnormal finding on screening procedure,37016762,Condition,DC-2314
+SNOMED,206442000,Perinatal jaundice from bruising,4071735,Condition,DC-2314
+SNOMED,439011002,Self-administered intentional poisoning by analgesic,4233034,Condition,DC-2314
+SNOMED,219337003,Injury of unknown intent by hunting rifle,437200,Condition,DC-2314
+SNOMED,206242003,Liver subcapsular hematoma due to birth trauma,4047863,Condition,DC-2314
+SNOMED,679201000000104,Suicide and self inflicted injury by jumping from other man-made structure,3540436,Metadata,DC-2314
+SNOMED,5578008,Poisoning by fibrinolysis-affecting drug,442258,Condition,DC-2314
+SNOMED,86849004,Suicidal deliberate poisoning,444362,Condition,DC-2314
+SNOMED,651301000000108,Suicide and self inflicted poisoning by solid and liquid substances NOS,3538564,Metadata,DC-2314
+SNOMED,80022006,Forceps application to aftercoming head,40626794,Procedure,DC-2314
+SNOMED,387678005,External obstetrical version,4301344,Procedure,DC-2314
+SNOMED,81914009,Poisoning by benzodiazepine-based tranquilizer,434819,Condition,DC-2314
+SNOMED,405769009,"Klinefelter's syndrome, XXY",4228490,Condition,DC-2314
+SNOMED,82062003,Congenital hydrocele,72434,Condition,DC-2314
+SNOMED,651331000000102,Suicide and self inflicted poisoning by other carbon monoxide,3538568,Metadata,DC-2314
+RxNorm,2468235,"SARS-CoV-2 (COVID-19) vaccine, mRNA-BNT162b2 0.1 MG/ML Injectable Suspension",37003436,Drug,DC-2314
+SNOMED,431307001,Intentional poisoning by drug,4196024,Condition,DC-2314
+SNOMED,21413004,Poisoning by coronary vasodilator,444387,Condition,DC-2314
+SNOMED,9408000,Poisoning by thyroid hormone AND/OR thyroid derivative,437743,Condition,DC-2314
+SNOMED,70731005,Acidemia,4323825,Condition,DC-2314
+SNOMED,274912004,Self poisoning by agricultural chemical,443271,Condition,DC-2314
+SNOMED,59634004,Postmaturity,4245166,Condition,DC-2314
+SNOMED,88817006,Exposure to inanimate mechanical force,4230638,Observation,DC-2314
+SNOMED,687291000000107,Suicide and self inflicted injury by other specified means,3541026,Metadata,DC-2314
+LOINC,63500-3,Current city [PhenX],40766228,Observation,DC-2314
+SNOMED,16207008,Postmature infancy,437369,Condition,DC-2314
+SNOMED,15750081000119106,Baby premature 30 weeks,37016218,Condition,DC-2314
+SNOMED,64646001,Failed forceps delivery,442613,Observation,DC-2314
+RxNorm,2479835,"SARS-COV-2 (COVID-19) vaccine, vector - Ad26 100000000000 UNT/ML Injectable Suspension",739906,Drug,DC-2314
+SNOMED,100581000119102,Sequela of traumatic intracranial hemorrhage,43530606,Condition,DC-2314
+SNOMED,80820004,Injury of internal carotid artery,439190,Condition,DC-2314
+SNOMED,242397005,Fall due to roller skates or skateboard,433374,Observation,DC-2314
+SNOMED,79573009,Accident while engaged in household activity,433942,Observation,DC-2314
+SNOMED,10629009,Tetany,380534,Condition,DC-2314
+SNOMED,39994006,Poisoning by antifungal antibiotic,440296,Condition,DC-2314
+SNOMED,45139008,"Gestation period, 29 weeks",444417,Condition,DC-2314
+SNOMED,32570681000036106,Indeterminate sex,46270485,Condition,DC-2314
+SNOMED,313179009,"Gestation period, 24 weeks",439922,Condition,DC-2314
+SNOMED,118188004,Finding of neonate,439156,Condition,DC-2314
+SNOMED,65435003,Poisoning by antiadrenergic drug,442767,Condition,DC-2314
+SNOMED,242056005,Accidental injury,4053720,Condition,DC-2314
+SNOMED,91576008,Congenital herpes simplex,4239065,Condition,DC-2314
+SNOMED,313178001,Gestation less than 24 weeks,438542,Condition,DC-2314
+SNOMED,441952005,Poisoning due to chemical substance,40481346,Condition,DC-2314
+SNOMED,218246003,Late effect of accidental injury,439620,Condition,DC-2314
+SNOMED,219340003,Injury of unknown intent by explosive,433107,Condition,DC-2314
