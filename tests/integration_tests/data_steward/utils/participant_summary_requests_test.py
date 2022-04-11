@@ -53,9 +53,12 @@ class ParticipantSummaryRequests(BaseTest.BigQueryTestBase):
 
     def setUp(self):
         self.columns = ['participantId', 'suspensionStatus', 'suspensionTime']
-        self.bq_columns = ['person_id', 'suspension_status', 'deactivated_datetime']
-        self.deactivated_participants = [[111, 'NO_CONTACT', '2018-12-7T08:21:14Z'],
-                                         [222, 'NO_CONTACT', '2018-12-7T08:21:14Z']]
+        self.bq_columns = [
+            'person_id', 'suspension_status', 'deactivated_datetime'
+        ]
+        self.deactivated_participants = [[
+            111, 'NO_CONTACT', '2018-12-7T08:21:14Z'
+        ], [222, 'NO_CONTACT', '2018-12-7T08:21:14Z']]
 
         self.fake_dataframe = DataFrame(self.deactivated_participants,
                                         columns=self.bq_columns)
@@ -186,8 +189,10 @@ class ParticipantSummaryRequests(BaseTest.BigQueryTestBase):
                                    f'{self.dataset_id}.{self.tablename}')
 
         # Post conditions
-        values = [(111, 'NO_CONTACT', datetime(2018, 12, 7, 8, 21, 14, tzinfo=timezone.utc)),
-                  (222, 'NO_CONTACT', datetime(2018, 12, 7, 8, 21, 14, tzinfo=timezone.utc))]
+        values = [(111, 'NO_CONTACT',
+                   datetime(2018, 12, 7, 8, 21, 14, tzinfo=timezone.utc)),
+                  (222, 'NO_CONTACT',
+                   datetime(2018, 12, 7, 8, 21, 14, tzinfo=timezone.utc))]
         self.assertTableValuesMatch(
             '.'.join([self.project_id, self.destination_table]),
             self.bq_columns, values)
