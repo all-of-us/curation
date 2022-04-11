@@ -30,10 +30,11 @@ class TruncateFitbitDataTest(unittest.TestCase):
         self.project_id = 'foo_project'
         self.dataset_id = 'bar_dataset'
         self.sandbox_id = 'baz_sandbox'
+        self.table_namer = None
         self.truncation_date = '2020-01-01'
 
         self.rule_instance = truncate_fitbit.TruncateFitbitData(
-            self.project_id, self.dataset_id, self.sandbox_id,
+            self.project_id, self.dataset_id, self.sandbox_id, self.table_namer,
             self.truncation_date)
 
         self.assertEqual(self.rule_instance.project_id, self.project_id)
