@@ -220,7 +220,6 @@ class BigQueryClient(Client):
         """
         Get the number of tables currently in a specified dataset
 
-        :param client: active bigquery client
         :param dataset: the dataset
         :return: number of tables
         :raises:
