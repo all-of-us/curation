@@ -175,6 +175,14 @@ def get_fitbit_parser():
         required=True)
 
     parser.add_argument(
+        '-c',
+        '--reference_dataset_id',
+        action='store',
+        dest='reference_dataset_id',
+        help='Combined dataset to use as reference containing valid PIDs',
+        required=True)
+
+    parser.add_argument(
         '-q',
         '--api_project_id',
         action='store',
@@ -242,9 +250,12 @@ def main(raw_args=None):
         args.run_as_email,
         '--api_project_id',
         args.api_project_id,
+        '--reference_dataset_id',
+        args.reference_dataset_id,
         '--truncation_date',
         args.truncation_date,
     ]
+
     fitbit_cleaning_args = args_parser.add_kwargs_to_args(
         common_cleaning_args, kwargs)
 

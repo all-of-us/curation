@@ -236,6 +236,7 @@ FITBIT_CLEANING_CLASSES = [
     (TruncateFitbitData,),
     (RemoveParticipantDataPastDeactivationDate,),
     (CleanDigitalHealthStatus,),
+    (RemoveNonExistingPids,),  # assumes combined dataset is ready for reference
 ]
 
 FITBIT_DEID_CLEANING_CLASSES = [
