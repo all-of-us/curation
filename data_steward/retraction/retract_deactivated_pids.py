@@ -48,23 +48,23 @@ USING (person_id)
 {% endif %}
 
 {% if has_start_date %}
-WHERE (COALESCE({{end_date}}, EXTRACT(DATE FROM {{end_datetime}}),
-    {{start_date}}, EXTRACT(DATE FROM {{start_datetime}})) >= d.deactivated_date
+WHERE (COALESCE(TIMESTAMP({{end_date}}), {{end_datetime}},
+    TIMESTAMP({{start_date}}), {{start_datetime}}) >= d.deactivated_datetime
 {% if table_ref.table_id == 'drug_exposure' %}
-OR verbatim_end_date >= d.deactivated_date)
+OR TIMESTAMP(verbatim_end_date) >= d.deactivated_datetime)
 {% else %} )
 {% endif %}
 {% elif table_ref.table_id == 'death' %}
-WHERE COALESCE(death_date, EXTRACT(DATE FROM death_datetime)) >= d.deactivated_date
+WHERE COALESCE(TIMESTAMP(death_date), death_datetime) >= d.deactivated_datetime
 {% elif table_ref.table_id in ['activity_summary', 'heart_rate_summary'] %}
-WHERE date >= d.deactivated_date
+WHERE TIMESTAMP(date) >= d.deactivated_datetime
 {% elif table_ref.table_id in ['heart_rate_minute_level', 'steps_intraday']  %}
-WHERE datetime >= PARSE_DATETIME('%F', CAST(d.deactivated_date as STRING))
+WHERE datetime >= PARSE_DATETIME('%F', CAST(d.deactivated_datetime as STRING))
 {% elif table_ref.table_id in ['drug_era', 'condition_era', 'dose_era', 'payer_plan_period', 'observation_period']  %}
-WHERE COALESCE(DATE({{table_ref.table_id + '_end_date'}}),
-DATE({{table_ref.table_id + '_start_date'}})) >= d.deactivated_date
+WHERE COALESCE(TIMESTAMP({{table_ref.table_id + '_end_date'}}),
+TIMESTAMP({{table_ref.table_id + '_start_date'}})) >= d.deactivated_datetime
 {% else %}
-WHERE COALESCE({{date}}, EXTRACT(DATE FROM {{datetime}})) >= d.deactivated_date
+WHERE COALESCE(TIMESTAMP({{date}}), {{datetime}}) >= d.deactivated_datetime
 {% endif %})
 """)
 
