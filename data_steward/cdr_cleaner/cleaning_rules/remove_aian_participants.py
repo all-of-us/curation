@@ -2,6 +2,7 @@
 Background
 
 DC-685 - removing participants who identified as AI/AN in PPI.
+DC-850
 
 There is a requirement from the NIH that participants who identified as AI/AN in PPI cannot have ANY of their data
 included in released datasets for the Data Browser or Workbench/Cohort Builder. These participants have had their data
