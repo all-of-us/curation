@@ -47,11 +47,11 @@ class DummyClient(BigQueryClient):
 
     def list_item_from_table_id(self, fq_table_id: str) -> TableListItem:
         """
-        Get a table list item as returned by :meth:`bigquery.Client.list_tables` 
+        Get a table list item as returned by :meth:`bigquery.Client.list_tables`
         from a fully qualified table ID
-        
-        :param table_id: A fully qualified table ID that includes project ID, dataset ID, and table ID, 
-        each separated by ``.``. 
+
+        :param table_id: A fully qualified table ID that includes project ID, dataset ID, and table ID,
+        each separated by ``.``.
         :return: a table list item
         """
         resource = {
@@ -68,8 +68,8 @@ class DummyClient(BigQueryClient):
         from rows represented as a list of dictionaries
 
         :param rows: A list of dictionaries representing result rows
-        :param key_order: If `rows` refers to a list of dict rather than OrderedDict, 
-            specifies how fields are ordered in the result schema. This parameter is 
+        :param key_order: If `rows` refers to a list of dict rather than OrderedDict,
+            specifies how fields are ordered in the result schema. This parameter is
             ignored if `rows` refers to a list of OrderedDict.
         :return: a mock RowIterator
         """
@@ -106,7 +106,7 @@ class DummyClient(BigQueryClient):
 
         :param row: the dictionary to infer schema for
         :return: list of schema field objects
-        
+
         Example:
             >>> from tests import bq_test_helpers
             >>> d = {'item': 'book', 'qty': 2, 'price': 1.99}
@@ -124,7 +124,7 @@ class DummyClient(BigQueryClient):
                               value: Any) -> bigquery.SchemaField:
         """
         Get a schema field object from a key and value
-        
+
         :param key: name of the field
         :param value: value of the field
         :return: an appropriate schema field object
