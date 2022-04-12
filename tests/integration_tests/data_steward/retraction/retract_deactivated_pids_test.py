@@ -16,13 +16,13 @@ from gcloud.bq import BigQueryClient
 
 DEACTIVATED_PIDS = JINJA_ENV.from_string("""
 INSERT INTO `{{deact_table.project}}.{{deact_table.dataset_id}}.{{deact_table.table_id}}` 
-(person_id, suspension_status, deactivated_date) 
+(person_id, suspension_status, deactivated_datetime) 
 VALUES
-(1,'NO_CONTACT','2009-07-25'),
-(2,'NO_CONTACT','2009-03-14'),
-(3,'NO_CONTACT','2009-11-18'),
-(4,'NO_CONTACT','2009-11-25'),
-(5,'NO_CONTACT','2009-09-20')
+(1,'NO_CONTACT','2009-07-25 01:00:00 UTC'),
+(2,'NO_CONTACT','2009-03-14 01:00:00 UTC'),
+(3,'NO_CONTACT','2009-11-18 01:00:00 UTC'),
+(4,'NO_CONTACT','2009-11-25 01:00:00 UTC'),
+(5,'NO_CONTACT','2009-09-20 01:00:00 UTC')
 """)
 
 TABLE_ROWS = {
