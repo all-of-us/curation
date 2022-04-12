@@ -64,7 +64,7 @@ WHERE datetime >= PARSE_DATETIME('%F', CAST(d.deactivated_datetime as STRING))
 WHERE COALESCE(TIMESTAMP({{table_ref.table_id + '_end_date'}}),
 TIMESTAMP({{table_ref.table_id + '_start_date'}})) >= d.deactivated_datetime
 {% else %}
-WHERE COALESCE(TIMESTAMP({{date}}), {{datetime}}) >= d.deactivated_datetime
+WHERE COALESCE({{datetime}}, TIMESTAMP({{date}})) >= d.deactivated_datetime
 {% endif %})
 """)
 
