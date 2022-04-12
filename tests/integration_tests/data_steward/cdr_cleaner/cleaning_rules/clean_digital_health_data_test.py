@@ -127,7 +127,7 @@ class CleanDigitalHealthDataTest(BaseTest.CleaningRulesTestBase):
         statements and the tables_and_counts variable.
         """
         clean_dhd.store_digital_health_status_data(
-            self.project_id, OLD_DIGITAL_HEALTH_JSON,
+            self.client, OLD_DIGITAL_HEALTH_JSON,
             f'{self.project_id}.{self.dataset_id}.{clean_dhd.DIGITAL_HEALTH_SHARING_STATUS}'
         )
         mock_get_digital_health.return_value = DIGITAL_HEALTH_JSON

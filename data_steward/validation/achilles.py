@@ -1,4 +1,3 @@
-import json
 import logging
 import os
 
@@ -33,10 +32,10 @@ def load_analyses(hpo_id):
     if hpo_id is None:
         table_prefix = ""
     else:
-        table_prefix = hpo_id + '_'
-    table_name = table_prefix + ACHILLES_ANALYSIS
+        table_prefix = f'{hpo_id}_'
+    table_name = f'{table_prefix}{ACHILLES_ANALYSIS}'
     csv_path = os.path.join(resources.resource_files_path,
-                            ACHILLES_ANALYSIS + '.csv')
+                            f'{ACHILLES_ANALYSIS}.csv')
     schema = resources.fields_for(ACHILLES_ANALYSIS)
     bq_utils.load_table_from_csv(project_id, dataset_id, table_name, csv_path,
                                  schema)

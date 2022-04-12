@@ -67,13 +67,13 @@ class CleanDigitalHealthStatus(BaseCleaningRule):
         rule of a class.  For example, if your class requires loading a static
         table, that load operation should be defined here.  It SHOULD NOT BE
         defined as part of get_query_specs().
-        :param client:
+        :param client: a BigQueryClient
         :return:
         """
         digital_health_json_list = get_digital_health_information(
             self.project_id)
         store_digital_health_status_data(
-            self.project_id, digital_health_json_list,
+            client, digital_health_json_list,
             f'{self.project_id}.{PIPELINE_TABLES}.{DIGITAL_HEALTH_SHARING_STATUS}'
         )
         # Snapshot DIGITAL_HEALTH_SHARING_STATUS table for current CDR

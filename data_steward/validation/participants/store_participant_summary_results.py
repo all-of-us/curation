@@ -17,7 +17,7 @@ from utils.participant_summary_requests import (get_org_participant_information,
                                                 get_all_participant_information,
                                                 store_participant_data)
 from common import PS_API_VALUES, DRC_OPS, UNIONED
-from utils import bq, pipeline_logging
+from utils import pipeline_logging
 from gcloud.bq import BigQueryClient
 from constants import bq_utils as bq_consts
 
@@ -58,7 +58,7 @@ def get_org_id(client, hpo_id):
     """
     Fetch org_id for the hpo_id
     :param client: A BigQueryClient 
-    :param hpo_id: 
+    :param hpo_id: identifies the hpo site
     :return: 
     """
     hpo_list = get_hpo_org_info(client)
@@ -84,7 +84,7 @@ def fetch_and_store_ps_hpo_data(client,
     :param client: A BigQueryClient
     :param rdr_project_id: PS API project
     :param dataset_id: contains table to store PS API data
-    :param hpo_id: 
+    :param hpo_id: identifies the hpo site
     :return: 
     """
 
@@ -97,7 +97,7 @@ def fetch_and_store_ps_hpo_data(client,
 
     # Load schema and create ingestion time-partitioned table
 
-    schema = bq.get_table_schema(PS_API_VALUES)
+    schema = client.get_table_schema(PS_API_VALUES)
     # TODO use resources.get_table_id after updating it to flip hpo_id, table_name
     table_name = f'{PS_API_VALUES}_{hpo_id}'
 
@@ -119,7 +119,7 @@ def fetch_and_store_ps_hpo_data(client,
         f'Storing participant data for {hpo_id} in table {client.project}.{dataset_id}.{table.table_id}'
     )
     store_participant_data(participant_info,
-                           client.project,
+                           client,
                            f'{dataset_id}.{table_name}',
                            schema=schema,
                            to_hour_partition=True)
@@ -134,7 +134,7 @@ def fetch_and_store_full_ps_data(client,
     """
     Fetches PS API data for all participants and stores in drc_ops.ps_api_unioned table
 
-    :param client: BQ client
+    :param client: a BigQueryClient
     :param project_id: Identifies the project
     :param rdr_project_id: PS API project
     :param dataset_id: contains table to store PS API data
@@ -146,7 +146,7 @@ def fetch_and_store_full_ps_data(client,
     participant_info = get_all_participant_information(rdr_project_id)
 
     # Load schema
-    schema = bq.get_table_schema(PS_API_VALUES)
+    schema = client.get_table_schema(PS_API_VALUES)
     # TODO use resources.get_table_id after updating it to flip hpo_id, table_name
     table_name = f'{PS_API_VALUES}'
     fq_table_id = f'{project_id}.{dataset_id}.{table_name}'
@@ -161,7 +161,7 @@ def fetch_and_store_full_ps_data(client,
     # Insert summary data into table
     LOGGER.info(f'Storing participant data in table {fq_table_id}')
     store_participant_data(participant_info,
-                           project_id,
+                           client,
                            f'{dataset_id}.{table_name}',
                            schema=schema,
                            to_hour_partition=False)
