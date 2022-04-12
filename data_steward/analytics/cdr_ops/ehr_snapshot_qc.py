@@ -39,10 +39,9 @@ pd.options.display.width = None
 
 # -
 
-release_tag = '2022q2r1'
 stage = 'unioned_ehr'
 for suffix in ['_backup', '_staging', '_sandbox', '']:
-    dataset_id = f'{release_tag}_unioned_ehr{suffix}'
+    dataset_id = f'{RELEASE_TAG}_unioned_ehr{suffix}'
     dataset = client.get_dataset(dataset_id)
     print(f'''{dataset.dataset_id}
   description: {dataset.description}
