@@ -121,8 +121,10 @@ class RemoveParticipantDataPastDeactivationDateTest(
         """
         columns = ['deactivated_datetime', 'person_id', 'suspension_status']
         values = [
-            ['2020-01-01 01:00:00 UTC', 1, 'NO_CONTACT'],  # corresponds with record 804
-            ['2020-01-01 01:00:00 UTC', 3, 'NO_CONTACT']  # corresponds with record 805
+            ['2020-01-01 01:00:00 UTC', 1,
+             'NO_CONTACT'],  # corresponds with record 804
+            ['2020-01-01 01:00:00 UTC', 3,
+             'NO_CONTACT']  # corresponds with record 805
         ]
         deactivated_df = pd.DataFrame(values, columns=columns)
 
