@@ -17,6 +17,8 @@ import logging
 # Project imports
 import utils.bq
 from cdr_cleaner.cleaning_rules import sandbox_and_remove_pids
+from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
+from constants.cdr_cleaner import clean_cdr as cdr_consts
 
 LOGGER = logging.getLogger(__name__)
 
@@ -29,44 +31,66 @@ WHERE observation_source_concept_id IN (1586140) AND value_source_concept_id IN 
 """
 
 
-def get_pids_list(project_id, dataset_id, pids_query):
-    """
-    takes a query based on the cleaning rule and returns a list of person_ids
-    :param project_id: bq name of project_id
-    :param dataset_id: bq name of dataset_id
-    :param pids_query: query that grabs all person_ids based on the cleaning rule
-    :return: list of person_ids
-    """
+class RemoveAianParticipants(BaseCleaningRule):
 
-    pid_list = utils.bq.query(
-        pids_query.format(project=project_id,
-                          dataset=dataset_id))['person_id'].tolist()
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 table_namer=None):
+        """
+        Initialize the class with proper information.
 
-    return pid_list
+        Set the issue numbers, description and affected datasets. As other tickets may affect
+        this SQL, append them to the list of Jira Issues.
+        DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
+        """
+        desc = 'Description to be added here.'
+        super().__init__(issue_numbers=['DC1441'],
+                         description=desc,
+                         affected_datasets=[cdr_consts.CONTROLLED_TIER_DEID],
+                         affected_tables=[],
+                         project_id=project_id,
+                         dataset_id=dataset_id,
+                         sandbox_dataset_id=sandbox_dataset_id,
+                         table_namer=table_namer)
 
+    def get_pids_list(self, project_id, dataset_id, pids_query):
+        """
+        takes a query based on the cleaning rule and returns a list of person_ids
+        :param project_id: bq name of project_id
+        :param dataset_id: bq name of dataset_id
+        :param pids_query: query that grabs all person_ids based on the cleaning rule
+        :return: list of person_ids
+        """
 
-def get_queries(project_id, dataset_id, sandbox_dataset_id):
-    """
-    return a list of queries to remove AIAN participant rows
-    :param project_id: Name of the project
-    :param dataset_id: Name of the dataset where the queries should be run
-    :param sandbox_dataset_id: Identifies the sandbox dataset to store rows
-    :return: A list of string queries that can be executed to delete AIAN participants and
-    all corresponding rows from the dataset with the associated PID.
-    """
+        pid_list = utils.bq.query(
+            pids_query.format(project=project_id,
+                              dataset=dataset_id))['person_id'].tolist()
 
-    queries_list = []
+        return pid_list
 
-    queries_list.extend(
-        sandbox_and_remove_pids.get_sandbox_queries(
-            project_id, dataset_id,
-            get_pids_list(project_id, dataset_id, PIDS_QUERY), TICKET_NUMBER,
-            sandbox_dataset_id))
-    queries_list.extend(
-        sandbox_and_remove_pids.get_remove_pids_queries(
-            project_id, dataset_id,
-            get_pids_list(project_id, dataset_id, PIDS_QUERY)))
-    return queries_list
+    def get_queries(self, project_id, dataset_id, sandbox_dataset_id):
+        """
+        return a list of queries to remove AIAN participant rows
+        :param project_id: Name of the project
+        :param dataset_id: Name of the dataset where the queries should be run
+        :param sandbox_dataset_id: Identifies the sandbox dataset to store rows
+        :return: A list of string queries that can be executed to delete AIAN participants and
+        all corresponding rows from the dataset with the associated PID.
+        """
+        queries_list = []
+
+        queries_list.extend(
+            sandbox_and_remove_pids.get_sandbox_queries(
+                project_id, dataset_id,
+                self.get_pids_list(project_id, dataset_id, PIDS_QUERY),
+                TICKET_NUMBER, sandbox_dataset_id))
+        queries_list.extend(
+            sandbox_and_remove_pids.get_remove_pids_queries(
+                project_id, dataset_id,
+                self.get_pids_list(project_id, dataset_id, PIDS_QUERY)))
+        return queries_list
 
 
 if __name__ == '__main__':
@@ -80,10 +104,11 @@ if __name__ == '__main__':
         query_list = clean_engine.get_query_list(ARGS.project_id,
                                                  ARGS.dataset_id,
                                                  ARGS.sandbox_dataset_id,
-                                                 [(get_queries,)])
+                                                 [(RemoveAianParticipants,)])
         for query in query_list:
             LOGGER.info(query)
     else:
         clean_engine.add_console_logging(ARGS.console_log)
         clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
-                                   ARGS.sandbox_dataset_id, [(get_queries,)])
+                                   ARGS.sandbox_dataset_id,
+                                   [(RemoveAianParticipants,)])
