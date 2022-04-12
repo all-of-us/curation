@@ -12,8 +12,8 @@
         "description": "The status of suspension for a participant. Enumerated values: NOT_SUSPENDED and NO_CONTACT"
     },
     {
-        "type": "DATE",
-        "name": "deactivated_date",
+        "type": "TIMESTAMP",
+        "name": "deactivated_datetime",
         "mode": "required",
         "description": "The date and time a participant's status was set to NO_CONTACT"
     }
