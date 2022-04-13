@@ -19,16 +19,18 @@ import utils.bq
 from cdr_cleaner.cleaning_rules import sandbox_and_remove_pids
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.cdr_cleaner import clean_cdr as cdr_consts
+from common import JINJA_ENV
 
 LOGGER = logging.getLogger(__name__)
 
 TICKET_NUMBER = 'DC685'
 
-PIDS_QUERY = """
+PIDS_QUERY = JINJA_ENV.from_string("""
 SELECT person_id
-FROM `{project}.{dataset}.observation`
-WHERE observation_source_concept_id IN (1586140) AND value_source_concept_id IN (1586141)
-"""
+FROM `{{project_id}}.{{dataset_id}}.observation`
+WHERE observation_source_concept_id IN (1586140) 
+AND value_source_concept_id IN (1586141)
+""")
 
 
 class RemoveAianParticipants(BaseCleaningRule):
@@ -46,7 +48,7 @@ class RemoveAianParticipants(BaseCleaningRule):
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
         desc = 'Description to be added here.'
-        super().__init__(issue_numbers=['DC1441'],
+        super().__init__(issue_numbers=['DC685', 'DC850'],
                          description=desc,
                          affected_datasets=[cdr_consts.CONTROLLED_TIER_DEID],
                          affected_tables=[],
@@ -55,7 +57,7 @@ class RemoveAianParticipants(BaseCleaningRule):
                          sandbox_dataset_id=sandbox_dataset_id,
                          table_namer=table_namer)
 
-    def get_pids_list(self, project_id, dataset_id, pids_query):
+    def get_pids_list(self):
         """
         takes a query based on the cleaning rule and returns a list of person_ids
         :param project_id: bq name of project_id
@@ -65,8 +67,9 @@ class RemoveAianParticipants(BaseCleaningRule):
         """
 
         pid_list = utils.bq.query(
-            pids_query.format(project=project_id,
-                              dataset=dataset_id))['person_id'].tolist()
+            PIDS_QUERY.render(
+                project_id=self.project_id,
+                dataset_id=self.dataset_id))['person_id'].tolist()
 
         return pid_list
 
@@ -82,14 +85,13 @@ class RemoveAianParticipants(BaseCleaningRule):
         queries_list = []
 
         queries_list.extend(
-            sandbox_and_remove_pids.get_sandbox_queries(
-                project_id, dataset_id,
-                self.get_pids_list(project_id, dataset_id, PIDS_QUERY),
-                TICKET_NUMBER, sandbox_dataset_id))
+            sandbox_and_remove_pids.get_sandbox_queries(project_id, dataset_id,
+                                                        self.get_pids_list(),
+                                                        TICKET_NUMBER,
+                                                        sandbox_dataset_id))
         queries_list.extend(
             sandbox_and_remove_pids.get_remove_pids_queries(
-                project_id, dataset_id,
-                self.get_pids_list(project_id, dataset_id, PIDS_QUERY)))
+                project_id, dataset_id, self.get_pids_list()))
         return queries_list
 
 
