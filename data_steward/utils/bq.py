@@ -592,7 +592,7 @@ def get_table_count(client: bigquery.Client,
 
 @deprecated(
     reason=
-    'Use gcloud.bq.BigQueryClient.list_tables(self, dataset: bigquery.DatasetReference) instead'
+    'Use gcloud.bq.BigQueryClient.list_dataset_tables(self, dataset: bigquery.DatasetReference) instead'
 )
 def list_tables(
     client: bigquery.Client, dataset: bigquery.DatasetReference

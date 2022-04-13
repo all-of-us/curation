@@ -198,7 +198,7 @@ class BigQueryClient(Client):
             staging_table = f'{self.project}.{output_dataset}.{table.table_id}'
             self.copy_table(table, staging_table)
 
-    def list_tables(
+    def list_dataset_tables(
         self, dataset: bigquery.DatasetReference
     ) -> typing.Iterator[bigquery.table.TableListItem]:
         """
