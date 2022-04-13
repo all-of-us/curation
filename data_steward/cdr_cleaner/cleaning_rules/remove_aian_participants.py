@@ -72,7 +72,7 @@ class RemoveAianParticipants(BaseCleaningRule):
 
         return pid_list
 
-    def get_queries(self, project_id, dataset_id, sandbox_dataset_id):
+    def get_query_specs(self):
         """
         return a list of queries to remove AIAN participant rows
         :param project_id: Name of the project
@@ -81,45 +81,38 @@ class RemoveAianParticipants(BaseCleaningRule):
         :return: A list of string queries that can be executed to delete AIAN participants and
         all corresponding rows from the dataset with the associated PID.
         """
-        queries_list = []
+        sandbox_queries = sandbox_and_remove_pids.get_sandbox_queries(
+            self.project_id, self.dataset_id, self.get_pids_list(),
+            TICKET_NUMBER, self.sandbox_dataset_id)
 
-        queries_list.extend(
-            sandbox_and_remove_pids.get_sandbox_queries(project_id, dataset_id,
-                                                        self.get_pids_list(),
-                                                        TICKET_NUMBER,
-                                                        sandbox_dataset_id))
-        queries_list.extend(
-            sandbox_and_remove_pids.get_remove_pids_queries(
-                project_id, dataset_id, self.get_pids_list()))
-        return queries_list
+        update_queries = sandbox_and_remove_pids.get_remove_pids_queries(
+            self.project_id, self.dataset_id, self.get_pids_list())
 
-    def get_query_specs(self):
-        """
-        Create queries for updating family history questions and answers
-        :return: list of query dicts
-        """
-        sandbox_query = {
-            cdr_consts.QUERY:
-                SANDBOX_QUERY.render(
-                    project_id=self.project_id,
-                    dataset_id=self.dataset_id,
-                    sandbox_dataset_id=self.sandbox_dataset_id,
-                    sandbox_tablename=self.sandbox_table_for(OBSERVATION))
-        }
-
-        update_query = {
-            cdr_consts.QUERY:
-                UPDATE_FAMILY_HISTORY_QUERY.render(dataset_id=self.dataset_id,
-                                                   project_id=self.project_id)
-        }
-
-        return [sandbox_query, update_query]
+        return sandbox_queries + update_queries
 
     def get_sandbox_tablenames(self):
         """
         Create sandbox table names and return as list.
         """
         return [self.sandbox_table_for(OBSERVATION)]
+
+    def setup_rule(self, client):
+        """
+        Function to run any data upload options before executing a query.
+        """
+        pass
+
+    def setup_validation(self, client):
+        """
+        Run required steps for validation setup
+        """
+        raise NotImplementedError("Please fix me.")
+
+    def validate_rule(self, client):
+        """
+        Validates the cleaning rule which deletes or updates the data from the tables
+        """
+        raise NotImplementedError("Please fix me.")
 
 
 if __name__ == '__main__':

@@ -7,7 +7,8 @@ from mock import patch
 import pandas as pd
 
 # Project imports
-import cdr_cleaner.cleaning_rules.remove_aian_participants as remove_aian
+
+from cdr_cleaner.cleaning_rules.remove_aian_participants import RemoveAianParticipants
 
 
 class RemoveAIANParticipantsTest(unittest.TestCase):
@@ -21,7 +22,7 @@ class RemoveAIANParticipantsTest(unittest.TestCase):
     def setUp(self):
         self.project_id = 'project_id'
         self.dataset_id = 'dataset_id'
-        self.sandbox_id = 'sandbox_id'
+        self.sandbox_dataset_id = 'sandbox_id'
         self.pids_list = [
             324264993, 307753491, 335484227, 338965846, 354812933, 324983298,
             366423185, 352721597, 352775367, 314281264, 319123185, 325306942,
@@ -37,15 +38,17 @@ class RemoveAIANParticipantsTest(unittest.TestCase):
         self.mock_bq_query.return_value = pd.DataFrame()
         self.addCleanup(mock_bq_query_patcher.stop)
 
+        self.rule_instance = RemoveAianParticipants(self.project_id,
+                                                    self.dataset_id,
+                                                    self.sandbox_dataset_id,
+                                                    None)
+
     @mock.patch(
         'cdr_cleaner.cleaning_rules.sandbox_and_remove_pids.utils.bq.query')
     def test_get_pids_list(self, mock_query):
         mock_query.return_value = pd.DataFrame(self.pids_list,
                                                columns=['person_id'])
-        result = remove_aian.get_pids_list(
-            self.project_id, self.dataset_id,
-            remove_aian.PIDS_QUERY.format(project=self.project_id,
-                                          dataset=self.dataset_id))
+        result = self.rule_instance.get_pids_list()
         self.assertListEqual(self.pids_list, result)
 
     @mock.patch(
@@ -60,8 +63,7 @@ class RemoveAIANParticipantsTest(unittest.TestCase):
                               mock_get_pids_list, mock_get_remove_pids_queries):
 
         mock_get_pids_list.return_value = self.pids_list
-        result = remove_aian.get_queries(self.project_id, self.dataset_id,
-                                         self.sandbox_id)
+        result = self.rule_instance.get_query_specs()
 
         expected = list()
         expected.extend(mock_get_remove_pids_queries.return_value)
