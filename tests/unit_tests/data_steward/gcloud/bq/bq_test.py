@@ -45,18 +45,18 @@ class DummyClient(BigQueryClient):
                             all_field_types.add(field.get('type'))
         return frozenset(all_field_types)
 
-    def list_item_from_table_id(self, table_id: str) -> TableListItem:
+    def list_item_from_table_id(self, fq_table_id: str) -> TableListItem:
         """
         Get a table list item as returned by :meth:`bigquery.Client.list_tables` 
-        from a table ID
+        from a fully qualified table ID
         
-        :param table_id: A table ID including project ID, dataset ID, and table ID, 
+        :param table_id: A fully qualified table ID that includes project ID, dataset ID, and table ID, 
         each separated by ``.``. 
         :return: a table list item
         """
         resource = {
             "tableReference":
-                TableReference.from_string(table_id).to_api_repr()
+                TableReference.from_string(fq_table_id).to_api_repr()
         }
         return TableListItem(resource)
 
@@ -79,7 +79,17 @@ class DummyClient(BigQueryClient):
         if isinstance(row0, OrderedDict):
             _rows = rows
         else:
-            _rows = [self._to_ordered_dict(row, key_order) for row in rows]
+            _rows = []
+            for row in rows:
+                if len(row) == 1:
+                    _rows.append(OrderedDict(row))
+                    continue
+                else:
+                    if key_order is None:
+                        raise ValueError(
+                            'Parameter key_order is required in order to convert'
+                            ' a dict with multiple items to OrderedDict')
+                _rows.append(OrderedDict((key, row[key]) for key in key_order))
             row0 = _rows[0]
 
         mock_row_iter.schema = list(self.fields_from_dict(row0))
@@ -89,22 +99,6 @@ class DummyClient(BigQueryClient):
             for row in _rows
         ]))
         return mock_row_iter
-
-    def _to_ordered_dict(self, d: dict, key_order: Iterable[Any] = None):
-        """
-        Convert a dict to OrderedDict with a specified order
-        :param d: instance to convert
-        :param key_order: specifies how items are ordered in the result
-        :return: the ordered dict
-        """
-        if len(d) == 1:
-            return OrderedDict(d)
-        else:
-            if key_order is None:
-                raise ValueError(
-                    'Parameter key_order is required in order to convert'
-                    ' a dict with multiple items to OrderedDict')
-        return OrderedDict((key, d[key]) for key in key_order)
 
     def fields_from_dict(self, row):
         """
@@ -245,7 +239,7 @@ class BQCTest(TestCase):
 
     @patch.object(BigQueryClient, 'copy_table')
     @patch('gcloud.bq.Client.list_tables')
-    def test_copy_datasets(self, mock_list_tables, mock_copy_table):
+    def test_copy_dataset(self, mock_list_tables, mock_copy_table):
         full_table_ids = [
             f'{self.client.project}.{self.dataset_id}.{table_id}'
             for table_id in resources.CDM_TABLES
@@ -256,8 +250,7 @@ class BQCTest(TestCase):
         ]
         mock_list_tables.return_value = list_tables_results
 
-        self.client.copy_datasets(self.dataset_id,
-                                  f'{self.dataset_id}_snapshot')
+        self.client.copy_dataset(self.dataset_id, f'{self.dataset_id}_snapshot')
         mock_list_tables.assert_called_once_with(self.dataset_id)
         self.assertEqual(mock_copy_table.call_count, len(list_tables_results))
 
