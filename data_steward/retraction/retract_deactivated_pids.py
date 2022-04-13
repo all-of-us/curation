@@ -48,12 +48,12 @@ USING (person_id)
 {% endif %}
 
 {% if has_start_date %}
-WHERE ({{end_datetime}} IS NOT NULL AND {{end_datetime}} >= d.deactivated_datetime)
+WHERE (({{end_datetime}} IS NOT NULL AND {{end_datetime}} >= d.deactivated_datetime)
 OR ({{end_datetime}} IS NULL AND {{end_date}} IS NOT NULL AND {{end_date}} >= DATE(d.deactivated_datetime))
 OR ({{end_datetime}} IS NULL AND {{end_date}} IS NULL AND {{start_datetime}} IS NOT NULL AND {{start_datetime}} >= d.deactivated_datetime)
 OR ({{end_datetime}} IS NULL AND {{end_date}} IS NULL AND {{start_datetime}} IS NULL AND {{start_date}} IS NOT NULL AND {{start_date}} >= DATE(d.deactivated_datetime))
 {% if table_ref.table_id == 'drug_exposure' %}
-OR verbatim_end_date >= DATE(d.deactivated_datetime)
+OR verbatim_end_date >= DATE(d.deactivated_datetime))
 {% else %} )
 {% endif %}
 {% elif table_ref.table_id == 'death' %}
