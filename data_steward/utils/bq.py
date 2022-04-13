@@ -614,7 +614,7 @@ def list_tables(
 
 @deprecated(
     reason=
-    'Use gcloud.bq.BigQueryClient.copy_datasets(self, input_dataset, output_dataset) instead'
+    'Use gcloud.bq.BigQueryClient.copy_dataset(self, input_dataset, output_dataset) instead'
 )
 def copy_datasets(client: bigquery.Client, input_dataset, output_dataset):
     """

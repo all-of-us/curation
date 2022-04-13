@@ -184,7 +184,7 @@ class BigQueryClient(Client):
 
         return dataset
 
-    def copy_datasets(self, input_dataset: str, output_dataset: str):
+    def copy_dataset(self, input_dataset: str, output_dataset: str):
         """
         Copies tables from source dataset to a destination datasets
 
@@ -195,7 +195,7 @@ class BigQueryClient(Client):
         # Copy input dataset tables to backup and staging datasets
         tables = super(BigQueryClient, self).list_tables(input_dataset)
         for table in tables:
-            staging_table = f'{output_dataset}.{table.table_id}'
+            staging_table = f'{self.project}.{output_dataset}.{table.table_id}'
             self.copy_table(table, staging_table)
 
     def list_tables(
@@ -205,7 +205,9 @@ class BigQueryClient(Client):
         List all tables in a dataset
 
         NOTE: Ensures all results are retrieved by first getting total
-        table count and setting max_results in list tables API call
+        table count and setting max_results in list tables API call. 
+        Without setting max_results, the API has a bug causing it to 
+        randomly return 0 tables.
 
         :param dataset: the dataset containing the tables
         :return: tables contained within the requested dataset
