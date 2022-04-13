@@ -399,7 +399,7 @@ class CreateTierTest(unittest.TestCase):
                                                 self.input_dataset, self.tier,
                                                 self.release_tag)
 
-        self.mock_bq_client.copy_datasets.assert_called_with(
+        self.mock_bq_client.copy_dataset.assert_called_with(
             self.input_dataset, datasets[consts.STAGING])
 
         mock_add_kwargs.assert_called_with(controlled_tier_cleaning_args,

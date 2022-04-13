@@ -233,8 +233,8 @@ def main(raw_args=None):
                                   args.fitbit_dataset,
                                   fitbit_datasets[consts.BACKUP],
                                   table_prefix='v_')
-    bq_client.copy_datasets(fitbit_datasets[consts.BACKUP],
-                            fitbit_datasets[consts.STAGING])
+    bq_client.copy_dataset(fitbit_datasets[consts.BACKUP],
+                           fitbit_datasets[consts.STAGING])
 
     common_cleaning_args = [
         '-p',
