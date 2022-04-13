@@ -21,7 +21,7 @@ from gcloud.bq import BigQueryClient
 
 LOGGER = logging.getLogger(__name__)
 
-ISSUE_NUMBERS = ["DC-686", "DC-1184", "DC-1791"]
+ISSUE_NUMBERS = ["DC-686", "DC-1184", "DC-1791", "DC-1799"]
 
 TABLE_INFORMATION_SCHEMA = JINJA_ENV.from_string(  # language=JINJA2
     """
