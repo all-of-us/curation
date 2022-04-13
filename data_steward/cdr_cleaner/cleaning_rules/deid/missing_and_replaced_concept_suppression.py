@@ -1,6 +1,5 @@
 """
-Ensures that all the Missing Standard concepts and the replaced concepts in vocabulary are being suppressed
- in Controlled tier datasets
+Ensures that all the replaced concepts in vocabulary are being suppressed in Controlled tier datasets
 
 
 Original Issue: DC-2278
@@ -27,7 +26,7 @@ LOGGER = logging.getLogger(__name__)
 ISSUE_NUMBERS = ['DC2278']
 
 
-class MissingAndReplacedConceptSuppression(
+class ControlledTierReplacedConceptSuppression(
         AbstractInMemoryLookupTableConceptSuppression):
 
     def __init__(self,
@@ -54,15 +53,12 @@ class MissingAndReplacedConceptSuppression(
                          table_namer=table_namer)
 
     def get_suppressed_concept_ids(self):
-        with open(MISSING_PRIVACY_STANDARD_CONCEPTS_PATH) as f:
-            missing_concept_ids_df = read_csv(f, delimiter=',')
-            missing_concept_ids = missing_concept_ids_df['concept_id'].to_list()
         with open(REPLACED_PRIVACY_CONCEPTS_PATH) as f:
             replaced_concept_ids_df = read_csv(f, delimiter=',')
             replaced_concept_ids = replaced_concept_ids_df[
                 'concept_id'].to_list()
 
-        return missing_concept_ids + replaced_concept_ids
+        return replaced_concept_ids
 
     def setup_validation(self, client, *args, **keyword_args):
         pass
@@ -82,11 +78,11 @@ if __name__ == '__main__':
         clean_engine.add_console_logging()
         query_list = clean_engine.get_query_list(
             ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id,
-            [(MissingAndReplacedConceptSuppression,)])
+            [(ControlledTierReplacedConceptSuppression,)])
         for query in query_list:
             LOGGER.info(query)
     else:
         clean_engine.add_console_logging(ARGS.console_log)
-        clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
-                                   ARGS.sandbox_dataset_id,
-                                   [(MissingAndReplacedConceptSuppression,)])
+        clean_engine.clean_dataset(
+            ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id,
+            [(ControlledTierReplacedConceptSuppression,)])
