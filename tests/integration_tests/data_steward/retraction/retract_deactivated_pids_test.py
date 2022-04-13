@@ -22,7 +22,8 @@ VALUES
 (2,'NO_CONTACT','2009-03-14 01:00:00 UTC'),
 (3,'NO_CONTACT','2009-11-18 01:00:00 UTC'),
 (4,'NO_CONTACT','2009-11-25 01:00:00 UTC'),
-(5,'NO_CONTACT','2009-09-20 01:00:00 UTC')
+(5,'NO_CONTACT','2009-09-20 01:00:00 UTC'),
+(6,'NO_CONTACT','2009-10-06 01:00:00 UTC')
 """)
 
 TABLE_ROWS = {
@@ -35,7 +36,8 @@ VALUES
 (2,8507,1975,'1975-03-14 02:00:00 UTC', 8527, 38003564),
 (3,8507,1981,'1981-11-18 05:00:00 UTC', 8527, 38003564),
 (4,8507,1991,'1991-11-25 08:00:00 UTC', 8527, 38003564),
-(5,8507,2001,'2001-09-20 11:00:00 UTC', 8527, 38003564)
+(5,8507,2001,'2001-09-20 11:00:00 UTC', 8527, 38003564),
+(6,8507,1979,'1979-10-06 11:00:00 UTC', 8527, 38003564)
 """),
     'observation':
         JINJA_ENV.from_string("""
@@ -46,7 +48,9 @@ VALUES
 (1005,2,0,'2008-03-14','2008-03-14 02:00:00 UTC',45905771),
 (1002,3,0,'2009-11-18','2009-11-18 05:00:00 UTC',45905771),
 (1004,4,0,'2009-11-25','2009-11-25 08:00:00 UTC',45905771),
-(1003,5,0,'2010-09-20','2010-09-20 11:00:00 UTC',45905771)
+(1003,5,0,'2010-09-20','2010-09-20 11:00:00 UTC',45905771),
+(1006,3,0,'2009-11-18','2009-11-18 00:30:00 UTC',45905771),
+(1007,4,0,'2009-11-25',NULL,45905771)
 """),
     'death':
         JINJA_ENV.from_string("""
@@ -54,19 +58,22 @@ INSERT INTO `{{table.project}}.{{table.dataset_id}}.{{table.table_id}}`
 (person_id, death_date, death_datetime, death_type_concept_id)
 VALUES
 (2,'2008-03-12','2008-03-12 05:00:00 UTC',8),
-(3,'2011-01-18','2011-01-18 05:00:00 UTC',6)
+(3,'2011-01-18','2011-01-18 05:00:00 UTC',6),
+(4,'2009-11-25','2009-11-25 00:30:00 UTC',6),
+(5,'2009-09-20',NULL,6)
 """),
     'drug_exposure':
         JINJA_ENV.from_string("""
 INSERT INTO `{{table.project}}.{{table.dataset_id}}.{{table.table_id}}`
-(drug_exposure_id, person_id, drug_concept_id, drug_exposure_start_date, drug_exposure_start_datetime,
-drug_exposure_end_date, drug_exposure_end_datetime, verbatim_end_date, drug_type_concept_id)
+(drug_exposure_id, person_id, drug_concept_id, drug_exposure_start_date, drug_exposure_start_datetime, verbatim_end_date, drug_type_concept_id)
 VALUES
-(2002,1,50,'2008-06-05','2008-06-05 01:00:00 UTC','2010-07-05','2008-06-05 01:00:00 UTC','2011-04-11',87),
-(2003,2,21,'2008-11-22','2008-11-22 02:00:00 UTC',null,null,'2010-06-18',51),
-(2004,3,5241,'2009-08-03','2009-08-03 05:00:00 UTC',null,null,'2009-10-26',2754),
-(2005,4,76536,'2010-02-17','2010-02-17 08:00:00 UTC',null,null,'2008-03-04',24),
-(2006,5,274,'2009-04-19','2009-04-19 11:00:00 UTC',null,'2010-11-19 01:00:00 UTC','2011-10-22',436)
+(2002,1,50,'2008-06-05','2008-06-05 01:00:00 UTC','2011-04-11',87),
+(2003,2,21,'2008-11-22','2008-11-22 02:00:00 UTC','2010-06-18',51),
+(2005,4,76536,'2010-02-17','2010-02-17 08:00:00 UTC','2008-03-04',24),
+(2006,5,274,'2009-04-19','2009-04-19 11:00:00 UTC','2011-10-22',436),
+(2007,3,50,'2009-11-18','2009-11-18 00:30:00 UTC','2009-11-18',87),
+(2008,4,50,'2009-11-25','2009-11-25 00:30:00 UTC','2009-11-24',87),
+(2009,6,50,'2009-10-06','2009-10-06 01:30:00 UTC','2009-10-05',87)
 """)
 }
 
@@ -160,7 +167,8 @@ class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
             (2, 8507, 1975, '1975-03-14 02:00:00 UTC', 8527, 38003564),
             (3, 8507, 1981, '1981-11-18 05:00:00 UTC', 8527, 38003564),
             (4, 8507, 1991, '1991-11-25 08:00:00 UTC', 8527, 38003564),
-            (5, 8507, 2001, '2001-09-20 11:00:00 UTC', 8527, 38003564)
+            (5, 8507, 2001, '2001-09-20 11:00:00 UTC', 8527, 38003564),
+            (6, 8507, 1979, '1979-10-06 11:00:00 UTC', 8527, 38003564)
         ]
         person_df = pd.DataFrame.from_records(person_data, columns=person_cols)
         observation_cols = [
@@ -171,13 +179,12 @@ class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
         observation_data = [
             (1001, 1, 0, '2008-07-25', '2008-07-25 01:00:00 UTC', 45905771),
             (1005, 2, 0, '2008-03-14', '2008-03-14 02:00:00 UTC', 45905771),
+            (1006, 3, 0, '2009-11-18', '2009-11-18 00:30:00 UTC', 45905771)
         ]
         observation_df = pd.DataFrame.from_records(observation_data,
                                                    columns=observation_cols)
-        drug_exposure_data = [
-            (2004, 3, 5241, '2009-08-03', '2009-08-03 05:00:00 UTC',
-             '2009-10-26', 2754),
-        ]
+        drug_exposure_data = [(2008, 4, 50, '2009-11-25',
+                               '2009-11-25 00:30:00 UTC', '2009-11-24', 87)]
         drug_exposure_cols = [
             'drug_exposure_id', 'person_id', 'drug_concept_id',
             'drug_exposure_start_date', 'drug_exposure_start_datetime',
@@ -185,7 +192,8 @@ class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
         ]
         drug_exposure_df = pd.DataFrame.from_records(drug_exposure_data,
                                                      columns=drug_exposure_cols)
-        death_data = [(2, '2008-03-12', '2008-03-12 05:00:00 UTC', 8)]
+        death_data = [(2, '2008-03-12', '2008-03-12 05:00:00 UTC', 8),
+                      (4, '2009-11-25', '2009-11-25 00:30:00 UTC', 6)]
         death_cols = [
             'person_id', 'death_date', 'death_datetime', 'death_type_concept_id'
         ]
