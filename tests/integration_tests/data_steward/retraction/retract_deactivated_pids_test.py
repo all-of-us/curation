@@ -65,15 +65,18 @@ VALUES
     'drug_exposure':
         JINJA_ENV.from_string("""
 INSERT INTO `{{table.project}}.{{table.dataset_id}}.{{table.table_id}}`
-(drug_exposure_id, person_id, drug_concept_id, drug_exposure_start_date, drug_exposure_start_datetime, verbatim_end_date, drug_type_concept_id)
+(drug_exposure_id, person_id, drug_concept_id, drug_exposure_start_date, drug_exposure_start_datetime, 
+drug_exposure_end_date, drug_exposure_end_datetime, verbatim_end_date, drug_type_concept_id)
 VALUES
-(2002,1,50,'2008-06-05','2008-06-05 01:00:00 UTC','2011-04-11',87),
-(2003,2,21,'2008-11-22','2008-11-22 02:00:00 UTC','2010-06-18',51),
-(2005,4,76536,'2010-02-17','2010-02-17 08:00:00 UTC','2008-03-04',24),
-(2006,5,274,'2009-04-19','2009-04-19 11:00:00 UTC','2011-10-22',436),
-(2007,3,50,'2009-11-18','2009-11-18 00:30:00 UTC','2009-11-18',87),
-(2008,4,50,'2009-11-25','2009-11-25 00:30:00 UTC','2009-11-24',87),
-(2009,6,50,'2009-10-06','2009-10-06 01:30:00 UTC','2009-10-05',87)
+(2002,1,50,'2008-06-05','2008-06-05 01:00:00 UTC','2010-07-05','2008-06-05 01:00:00 UTC','2011-04-11',87),
+(2003,2,21,'2008-11-22','2008-11-22 02:00:00 UTC',NULL,NULL,'2010-06-18',51),
+(2004,3,5241,'2009-08-03','2009-08-03 05:00:00 UTC',NULL,NULL,'2009-11-26',2754),
+(2005,4,76536,'2010-02-17','2010-02-17 08:00:00 UTC',NULL,NULL,'2008-03-04',24),
+(2006,5,274,'2009-04-19','2009-04-19 11:00:00 UTC',NULL,'2010-11-19 01:00:00 UTC','2011-10-22',436),
+(2007,3,50,'2009-11-18','2009-11-18 00:30:00 UTC',NULL,NULL,'2009-11-18',87),
+(2008,4,50,'2009-11-25','2009-11-25 00:30:00 UTC','2009-11-25','2009-11-25 00:45:00 UTC','2009-11-24',87),
+(2009,6,50,'2009-10-06','2009-10-06 01:30:00 UTC',NULL,NULL,'2009-10-05',87),
+(2010,5,274,'2009-09-20','2009-09-20 11:00:00 UTC', '2009-09-20', NULL, NULL, 436)
 """)
 }
 
@@ -183,11 +186,14 @@ class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
         ]
         observation_df = pd.DataFrame.from_records(observation_data,
                                                    columns=observation_cols)
-        drug_exposure_data = [(2008, 4, 50, '2009-11-25',
-                               '2009-11-25 00:30:00 UTC', '2009-11-24', 87)]
+        drug_exposure_data = [
+            (2008, 4, 50, '2009-11-25', '2009-11-25 00:30:00 UTC', '2009-11-25',
+             '2009-11-25 00:45:00 UTC', '2009-11-24', 87)
+        ]
         drug_exposure_cols = [
             'drug_exposure_id', 'person_id', 'drug_concept_id',
             'drug_exposure_start_date', 'drug_exposure_start_datetime',
+            'drug_exposure_end_date', 'drug_exposure_end_datetime',
             'verbatim_end_date', 'drug_type_concept_id'
         ]
         drug_exposure_df = pd.DataFrame.from_records(drug_exposure_data,
