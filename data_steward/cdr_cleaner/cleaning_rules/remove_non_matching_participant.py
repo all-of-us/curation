@@ -64,21 +64,18 @@ class RemoveNonMatchingParticipant(BaseCleaningRule):
     (Description to be added here)
     """
 
-    def __init__(self,
-                 project_id,
-                 dataset_id,
-                 sandbox_dataset_id,
-                 cutoff_date=None):
+    def __init__(self, project_id, dataset_id, sandbox_dataset_id):
         """
         (Description to be added here)
         """
-        pass
 
-    def get_query_specs(self):
-        """
-        (Description to be added here)
-        """
-        pass
+        self.ehr_dataset_id = 'xyz'
+        self.validation_dataset_id = 'xyz'
+
+        super().__init__(issue_numbers=['XYZ'],
+                         project_id=project_id,
+                         dataset_id=dataset_id,
+                         sandbox_dataset_id=sandbox_dataset_id)
 
     def setup_rule(self, client):
         """
@@ -227,11 +224,7 @@ class RemoveNonMatchingParticipant(BaseCleaningRule):
 
         return select_non_match_participants_query
 
-    def delete_records_for_non_matching_participants(self, project_id,
-                                                     dataset_id,
-                                                     sandbox_dataset_id,
-                                                     ehr_dataset_id,
-                                                     validation_dataset_id):
+    def get_query_specs(self):
         """
         This function generates the queries that delete participants and their corresponding data points, for which the
         participant_match data is missing and DRC matching algorithm flags it as a no match
@@ -243,17 +236,17 @@ class RemoveNonMatchingParticipant(BaseCleaningRule):
         #TODO use sandbox_dataset_id for CR
         :param validation_dataset_id:
 
-        :return:
+        :return: list of queries
         """
 
-        bq_client = BigQueryClient(project_id)
+        bq_client = BigQueryClient(self.project_id)
 
-        if ehr_dataset_id is None:
+        if self.ehr_dataset_id is None:
             raise RuntimeError(
                 'Required parameter ehr_dataset_id not'
                 'set in delete_records_for_non_matching_participants')
 
-        if validation_dataset_id is None:
+        if self.validation_dataset_id is None:
             raise RuntimeError(
                 'Required parameter validation_dataset_id not'
                 'set in delete_records_for_non_matching_participants')
@@ -262,14 +255,14 @@ class RemoveNonMatchingParticipant(BaseCleaningRule):
 
         # Retrieving all hpo_ids
         for hpo_id in readers.get_hpo_site_names():
-            if not self.exist_participant_match(ehr_dataset_id, hpo_id):
+            if not self.exist_participant_match(self.ehr_dataset_id, hpo_id):
                 LOGGER.info(
                     'The hpo site {hpo_id} is missing the participant_match data'
                     .format(hpo_id=hpo_id))
 
                 non_matching_person_ids.extend(
                     self.get_list_non_match_participants(
-                        bq_client, validation_dataset_id, hpo_id))
+                        bq_client, self.validation_dataset_id, hpo_id))
             else:
                 LOGGER.info(
                     'The hpo site {hpo_id} submitted the participant_match data'
@@ -281,14 +274,16 @@ class RemoveNonMatchingParticipant(BaseCleaningRule):
             LOGGER.info(
                 'Participants: {person_ids} and their data will be dropped from {combined_dataset_id}'
                 .format(person_ids=non_matching_person_ids,
-                        combined_dataset_id=dataset_id))
+                        combined_dataset_id=self.dataset_id))
 
             queries.extend(
-                remove_pids.get_sandbox_queries(project_id, dataset_id,
+                remove_pids.get_sandbox_queries(self.project_id,
+                                                self.dataset_id,
                                                 non_matching_person_ids,
                                                 TICKET_NUMBER))
             queries.extend(
-                remove_pids.get_remove_pids_queries(project_id, dataset_id,
+                remove_pids.get_remove_pids_queries(self.project_id,
+                                                    self.dataset_id,
                                                     non_matching_person_ids))
 
         return queries
