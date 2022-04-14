@@ -22,6 +22,9 @@ from constants.validation.participants.identity_match import (PERSON_ID_FIELD,
 from constants.validation.participants.writers import ALGORITHM_FIELD
 from common import PARTICIPANT_MATCH
 
+# Project imports
+from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
+
 IDENTITY_MATCH = 'identity_match'
 
 LOGGER = logging.getLogger(__name__)
@@ -56,193 +59,239 @@ WHERE key_fields_criteria IS TRUE OR all_fields_criteria IS TRUE
 """
 
 
-def exist_participant_match(ehr_dataset_id, hpo_id):
+class RemoveNonMatchingParticipant(BaseCleaningRule):
     """
-    This function checks if the hpo has submitted the participant_match data 
-    
-    :param ehr_dataset_id: 
-    :param hpo_id: 
-    :return: 
-    """
-    return bq_utils.table_exists(
-        bq_utils.get_table_id(hpo_id, PARTICIPANT_MATCH), ehr_dataset_id)
-
-
-def exist_identity_match(client, table_id):
-    """
-    This function checks if the hpo has valid the identity_match table
-
-    :param client: a BigQueryClient
-    :param table_id:
-    :return:
-    """
-    try:
-        client.get_table(table_id)
-        return True
-    except NotFound:
-        return False
-
-
-def get_missing_criterion(field_names):
-    """
-    This function generates a bigquery column expression for missing criteria
-    
-    :param field_names: a list of field names for counting `missing`s 
-    :return: 
-    """
-    joined_column_expr = ' + '.join([
-        CAST_MISSING_COLUMN.format(column=field_name)
-        for field_name in field_names
-    ])
-    return joined_column_expr
-
-
-def get_list_non_match_participants(client, validation_dataset_id, hpo_id):
-    """
-    This function retrieves a list of non-match participants
-
-    :param client: a BigQueryClient
-    :param validation_dataset_id:
-    :param hpo_id: 
-    :return: 
+    (Description to be added here)
     """
 
-    # get the the hpo specific <hpo_id>_identity_match
-    identity_match_table = bq_utils.get_table_id(hpo_id, IDENTITY_MATCH)
-    result = []
-    fq_identity_match_table = f'{client.project}.{validation_dataset_id}.{identity_match_table}'
-    if not exist_identity_match(client, fq_identity_match_table):
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 cutoff_date=None):
+        """
+        (Description to be added here)
+        """
+        pass
+
+    def get_query_specs(self):
+        """
+        (Description to be added here)
+        """
+        pass
+
+    def setup_rule(self, client):
+        """
+        (Description to be added here)
+        """
+        pass
+
+    def setup_validation(self, client):
+        """
+        (Description to be added here)
+        """
+        raise NotImplementedError("Please fix me.")
+
+    def validate_rule(self, client):
+        """
+        (Description to be added here)
+        """
+        raise NotImplementedError("Please fix me.")
+
+    def get_sandbox_tablenames(self, table_name):
+        """
+        (Description to be added here)
+        """
+        return f'{self._issue_numbers[0].lower()}_{table_name}'
+
+    ###
+
+    def exist_participant_match(self, ehr_dataset_id, hpo_id):
+        """
+        This function checks if the hpo has submitted the participant_match data
+
+        :param ehr_dataset_id:
+        :param hpo_id:
+        :return:
+        """
+        return bq_utils.table_exists(
+            bq_utils.get_table_id(hpo_id, PARTICIPANT_MATCH), ehr_dataset_id)
+
+    def exist_identity_match(self, client, table_id):
+        """
+        This function checks if the hpo has valid the identity_match table
+
+        :param client: a BigQueryClient
+        :param table_id:
+        :return:
+        """
+        try:
+            client.get_table(table_id)
+            return True
+        except NotFound:
+            return False
+
+    def get_missing_criterion(self, field_names):
+        """
+        This function generates a bigquery column expression for missing criteria
+
+        :param field_names: a list of field names for counting `missing`s
+        :return:
+        """
+        joined_column_expr = ' + '.join([
+            CAST_MISSING_COLUMN.format(column=field_name)
+            for field_name in field_names
+        ])
+        return joined_column_expr
+
+    def get_list_non_match_participants(self, client, validation_dataset_id,
+                                        hpo_id):
+        """
+        This function retrieves a list of non-match participants
+
+        :param client: a BigQueryClient
+        :param validation_dataset_id:
+        :param hpo_id:
+        :return:
+        """
+
+        # get the the hpo specific <hpo_id>_identity_match
+        identity_match_table = bq_utils.get_table_id(hpo_id, IDENTITY_MATCH)
+        result = []
+        fq_identity_match_table = f'{client.project}.{validation_dataset_id}.{identity_match_table}'
+        if not self.exist_identity_match(client, fq_identity_match_table):
+            return result
+
+        non_match_participants_query = self.get_non_match_participant_query(
+            client.project, validation_dataset_id, identity_match_table)
+
+        try:
+            LOGGER.info(
+                'Identifying non-match participants in {dataset_id}.{identity_match_table}'
+                .format(dataset_id=validation_dataset_id,
+                        identity_match_table=identity_match_table))
+
+            results = bq_utils.query(q=non_match_participants_query)
+
+        except (oauth2client.client.HttpAccessTokenRefreshError,
+                googleapiclient.errors.HttpError) as exp:
+
+            LOGGER.exception('Could not execute the query \n{query}'.format(
+                query=non_match_participants_query))
+            raise exp
+
+        # wait for job to finish
+        query_job_id = results['jobReference']['jobId']
+        incomplete_jobs = bq_utils.wait_on_jobs([query_job_id])
+        if incomplete_jobs:
+            raise bq_utils.BigQueryJobWaitError(incomplete_jobs)
+
+        # return the person_ids only
+        result = [
+            row[PERSON_ID_FIELD] for row in bq_utils.response2rows(results)
+        ]
         return result
 
-    non_match_participants_query = get_non_match_participant_query(
-        client.project, validation_dataset_id, identity_match_table)
+    def get_non_match_participant_query(self, project_id, validation_dataset_id,
+                                        identity_match_table):
+        """
+        This function generates the query for identifying non_match participants query flagged by the DRC match algorithm
 
-    try:
-        LOGGER.info(
-            'Identifying non-match participants in {dataset_id}.{identity_match_table}'
-            .format(dataset_id=validation_dataset_id,
-                    identity_match_table=identity_match_table))
+        :param project_id:
+        :param validation_dataset_id:
+        :param identity_match_table:
+        :return:
+        """
 
-        results = bq_utils.query(q=non_match_participants_query)
+        # if any of the two of first_name, last_name and birthday are missing, this is a non-match
+        num_of_missing_key_fields = CRITERION_COLUMN_TEMPLATE.format(
+            column_expr=self.get_missing_criterion(KEY_FIELDS),
+            num_of_missing=NUM_OF_MISSING_KEY_FIELDS)
 
-    except (oauth2client.client.HttpAccessTokenRefreshError,
-            googleapiclient.errors.HttpError) as exp:
+        identity_match_fields = [
+            field['name']
+            for field in resources.fields_for(IDENTITY_MATCH)
+            if field['name'] not in IDENTITY_MATCH_EXCLUDED_FIELD
+        ]
+        # if the total number of missings is equal to and bigger than 4, this is a non-match
+        num_of_missing_all_fields = CRITERION_COLUMN_TEMPLATE.format(
+            column_expr=self.get_missing_criterion(identity_match_fields),
+            num_of_missing=NUM_OF_MISSING_ALL_FIELDS)
+        # instantiate the query for identifying the non-match participants in the validation_dataset
+        select_non_match_participants_query = SELECT_NON_MATCH_PARTICIPANTS_QUERY.format(
+            project_id=project_id,
+            validation_dataset_id=validation_dataset_id,
+            identity_match_table=identity_match_table,
+            key_fields_criteria=num_of_missing_key_fields,
+            all_fields_criteria=num_of_missing_all_fields)
 
-        LOGGER.exception('Could not execute the query \n{query}'.format(
-            query=non_match_participants_query))
-        raise exp
+        return select_non_match_participants_query
 
-    # wait for job to finish
-    query_job_id = results['jobReference']['jobId']
-    incomplete_jobs = bq_utils.wait_on_jobs([query_job_id])
-    if incomplete_jobs:
-        raise bq_utils.BigQueryJobWaitError(incomplete_jobs)
+    def delete_records_for_non_matching_participants(self, project_id,
+                                                     dataset_id,
+                                                     sandbox_dataset_id,
+                                                     ehr_dataset_id,
+                                                     validation_dataset_id):
+        """
+        This function generates the queries that delete participants and their corresponding data points, for which the
+        participant_match data is missing and DRC matching algorithm flags it as a no match
 
-    # return the person_ids only
-    result = [row[PERSON_ID_FIELD] for row in bq_utils.response2rows(results)]
-    return result
+        :param project_id:
+        :param dataset_id:
+        :param ehr_dataset_id:
+        :param sandbox_dataset_id: Identifies the sandbox dataset to store rows
+        #TODO use sandbox_dataset_id for CR
+        :param validation_dataset_id:
 
+        :return:
+        """
 
-def get_non_match_participant_query(project_id, validation_dataset_id,
-                                    identity_match_table):
-    """
-    This function generates the query for identifying non_match participants query flagged by the DRC match algorithm
-    
-    :param project_id: 
-    :param validation_dataset_id: 
-    :param identity_match_table: 
-    :return: 
-    """
+        bq_client = BigQueryClient(project_id)
 
-    # if any of the two of first_name, last_name and birthday are missing, this is a non-match
-    num_of_missing_key_fields = CRITERION_COLUMN_TEMPLATE.format(
-        column_expr=get_missing_criterion(KEY_FIELDS),
-        num_of_missing=NUM_OF_MISSING_KEY_FIELDS)
+        if ehr_dataset_id is None:
+            raise RuntimeError(
+                'Required parameter ehr_dataset_id not'
+                'set in delete_records_for_non_matching_participants')
 
-    identity_match_fields = [
-        field['name']
-        for field in resources.fields_for(IDENTITY_MATCH)
-        if field['name'] not in IDENTITY_MATCH_EXCLUDED_FIELD
-    ]
-    # if the total number of missings is equal to and bigger than 4, this is a non-match
-    num_of_missing_all_fields = CRITERION_COLUMN_TEMPLATE.format(
-        column_expr=get_missing_criterion(identity_match_fields),
-        num_of_missing=NUM_OF_MISSING_ALL_FIELDS)
-    # instantiate the query for identifying the non-match participants in the validation_dataset
-    select_non_match_participants_query = SELECT_NON_MATCH_PARTICIPANTS_QUERY.format(
-        project_id=project_id,
-        validation_dataset_id=validation_dataset_id,
-        identity_match_table=identity_match_table,
-        key_fields_criteria=num_of_missing_key_fields,
-        all_fields_criteria=num_of_missing_all_fields)
+        if validation_dataset_id is None:
+            raise RuntimeError(
+                'Required parameter validation_dataset_id not'
+                'set in delete_records_for_non_matching_participants')
 
-    return select_non_match_participants_query
+        non_matching_person_ids = []
 
+        # Retrieving all hpo_ids
+        for hpo_id in readers.get_hpo_site_names():
+            if not self.exist_participant_match(ehr_dataset_id, hpo_id):
+                LOGGER.info(
+                    'The hpo site {hpo_id} is missing the participant_match data'
+                    .format(hpo_id=hpo_id))
 
-def delete_records_for_non_matching_participants(project_id, dataset_id,
-                                                 sandbox_dataset_id,
-                                                 ehr_dataset_id,
-                                                 validation_dataset_id):
-    """
-    This function generates the queries that delete participants and their corresponding data points, for which the 
-    participant_match data is missing and DRC matching algorithm flags it as a no match 
-    
-    :param project_id: 
-    :param dataset_id: 
-    :param ehr_dataset_id: 
-    :param sandbox_dataset_id: Identifies the sandbox dataset to store rows 
-    #TODO use sandbox_dataset_id for CR
-    :param validation_dataset_id:
+                non_matching_person_ids.extend(
+                    self.get_list_non_match_participants(
+                        bq_client, validation_dataset_id, hpo_id))
+            else:
+                LOGGER.info(
+                    'The hpo site {hpo_id} submitted the participant_match data'
+                    .format(hpo_id=hpo_id))
 
-    :return: 
-    """
+        queries = []
 
-    bq_client = BigQueryClient(project_id)
-
-    if ehr_dataset_id is None:
-        raise RuntimeError(
-            'Required parameter ehr_dataset_id not'
-            'set in delete_records_for_non_matching_participants')
-
-    if validation_dataset_id is None:
-        raise RuntimeError(
-            'Required parameter validation_dataset_id not'
-            'set in delete_records_for_non_matching_participants')
-
-    non_matching_person_ids = []
-
-    # Retrieving all hpo_ids
-    for hpo_id in readers.get_hpo_site_names():
-        if not exist_participant_match(ehr_dataset_id, hpo_id):
+        if non_matching_person_ids:
             LOGGER.info(
-                'The hpo site {hpo_id} is missing the participant_match data'.
-                format(hpo_id=hpo_id))
+                'Participants: {person_ids} and their data will be dropped from {combined_dataset_id}'
+                .format(person_ids=non_matching_person_ids,
+                        combined_dataset_id=dataset_id))
 
-            non_matching_person_ids.extend(
-                get_list_non_match_participants(bq_client,
-                                                validation_dataset_id, hpo_id))
-        else:
-            LOGGER.info(
-                'The hpo site {hpo_id} submitted the participant_match data'.
-                format(hpo_id=hpo_id))
+            queries.extend(
+                remove_pids.get_sandbox_queries(project_id, dataset_id,
+                                                non_matching_person_ids,
+                                                TICKET_NUMBER))
+            queries.extend(
+                remove_pids.get_remove_pids_queries(project_id, dataset_id,
+                                                    non_matching_person_ids))
 
-    queries = []
-
-    if non_matching_person_ids:
-        LOGGER.info(
-            'Participants: {person_ids} and their data will be dropped from {combined_dataset_id}'
-            .format(person_ids=non_matching_person_ids,
-                    combined_dataset_id=dataset_id))
-
-        queries.extend(
-            remove_pids.get_sandbox_queries(project_id, dataset_id,
-                                            non_matching_person_ids,
-                                            TICKET_NUMBER))
-        queries.extend(
-            remove_pids.get_remove_pids_queries(project_id, dataset_id,
-                                                non_matching_person_ids))
-
-    return queries
+        return queries
 
 
 def parse_args():
@@ -281,11 +330,11 @@ if __name__ == '__main__':
         clean_engine.add_console_logging()
         query_list = clean_engine.get_query_list(
             ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id,
-            [(delete_records_for_non_matching_participants,)])
+            [(RemoveNonMatchingParticipant,)])
         for query in query_list:
             LOGGER.info(query)
     else:
         clean_engine.add_console_logging(ARGS.console_log)
-        clean_engine.clean_dataset(
-            ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id,
-            [(delete_records_for_non_matching_participants,)])
+        clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
+                                   ARGS.sandbox_dataset_id,
+                                   [(RemoveNonMatchingParticipant,)])
