@@ -254,17 +254,20 @@ class BQCTest(TestCase):
         mock_list_tables.assert_called_once_with(self.dataset_id)
         self.assertEqual(mock_copy_table.call_count, len(list_tables_results))
 
+    @patch.object(BigQueryClient, 'get_dataset')
     @patch.object(BigQueryClient, 'get_table_count')
     @patch('gcloud.bq.Client.list_tables')
-    def test_list_dataset_tables(self, mock_list_tables, mock_get_table_count):
+    def test_list_tables(self, mock_list_tables, mock_get_table_count,
+                         mock_get_dataset):
         #pre conditions
         table_ids = ['table_1', 'table_2']
         table_count = len(table_ids)
         mock_get_table_count.return_value = table_count
+        mock_get_dataset.return_value = self.dataset_ref
         _MAX_RESULTS_PADDING = 100
         expected_max_results = table_count + _MAX_RESULTS_PADDING
 
-        self.client.list_dataset_tables(self.dataset_ref)
+        self.client.list_tables(self.dataset_ref)
         #post conditions
         mock_list_tables.assert_called_with(dataset=self.dataset_ref,
                                             max_results=expected_max_results)
