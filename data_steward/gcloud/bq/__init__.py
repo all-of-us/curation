@@ -198,8 +198,8 @@ class BigQueryClient(Client):
             staging_table = f'{self.project}.{output_dataset}.{table.table_id}'
             self.copy_table(table, staging_table)
 
-    def list_dataset_tables(
-        self, dataset: bigquery.DatasetReference
+    def list_tables(
+        self, dataset: typing.Union[bigquery.DatasetReference, str]
     ) -> typing.Iterator[bigquery.table.TableListItem]:
         """
         List all tables in a dataset
@@ -213,6 +213,7 @@ class BigQueryClient(Client):
         :return: tables contained within the requested dataset
         """
         _MAX_RESULTS_PADDING = 100
+        dataset = self.get_dataset(dataset)
         table_count = self.get_table_count(dataset)
         return super(BigQueryClient, self).list_tables(dataset=dataset,
                                                        max_results=table_count +
