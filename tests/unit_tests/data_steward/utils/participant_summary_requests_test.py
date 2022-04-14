@@ -5,7 +5,7 @@ Ensures that get_token function fetches the access token properly, get_deactivat
     fetches all deactivated participants information, and store_participant_data properly stores all
     the fetched deactivated participant data
 
-Original Issues: DC-797, DC-971 (sub-task), DC-972 (sub-task), DC-1213
+Original Issues: DC-797, DC-971 (sub-task), DC-972 (sub-task), DC-1213, DC-1795
 
 The intent of this module is to check that GCR access token is generated properly, the list of
     deactivated participants returned contains `participantID`, `suspensionStatus`, and `suspensionTime`,
@@ -54,12 +54,12 @@ class ParticipantSummaryRequestsTest(TestCase):
         self.columns = ['participantId', 'suspensionStatus', 'suspensionTime']
 
         self.deactivated_participants = [[
-            'P111', 'NO_CONTACT', '2018-12-07T08:21:14'
-        ], ['P222', 'NO_CONTACT', '2018-12-07T08:21:14']]
+            'P111', 'NO_CONTACT', '2018-12-07T08:21:14Z'
+        ], ['P222', 'NO_CONTACT', '2018-12-07T08:21:14Z']]
 
         self.updated_deactivated_participants = [[
-            111, 'NO_CONTACT', '2018-12-07T08:21:14'
-        ], [222, 'NO_CONTACT', '2018-12-07T08:21:14']]
+            111, 'NO_CONTACT', '2018-12-07T08:21:14Z'
+        ], [222, 'NO_CONTACT', '2018-12-07T08:21:14Z']]
 
         self.updated_site_participant_information = [[
             333, 'foo_first', 'foo_middle', 'foo_last', 'foo_street_address',
@@ -82,7 +82,7 @@ class ParticipantSummaryRequestsTest(TestCase):
             'resource': {
                 'participantId': 'P111',
                 'suspensionStatus': 'NO_CONTACT',
-                'suspensionTime': '2018-12-07T08:21:14'
+                'suspensionTime': '2018-12-07T08:21:14Z'
             }
         }, {
             'fullUrl':
@@ -90,7 +90,7 @@ class ParticipantSummaryRequestsTest(TestCase):
             'resource': {
                 'participantId': 'P222',
                 'suspensionStatus': 'NO_CONTACT',
-                'suspensionTime': '2018-12-07T08:21:14'
+                'suspensionTime': '2018-12-07T08:21:14Z'
             }
         }]
 
@@ -129,7 +129,7 @@ class ParticipantSummaryRequestsTest(TestCase):
                 'resource': {
                     'participantId': 'P111',
                     'suspensionStatus': 'NO_CONTACT',
-                    'suspensionTime': '2018-12-07T08:21:14'
+                    'suspensionTime': '2018-12-07T08:21:14Z'
                 }
             }, {
                 'fullUrl':
@@ -137,7 +137,7 @@ class ParticipantSummaryRequestsTest(TestCase):
                 'resource': {
                     'participantId': 'P222',
                     'suspensionStatus': 'NO_CONTACT',
-                    'suspensionTime': '2018-12-07T08:21:14'
+                    'suspensionTime': '2018-12-07T08:21:14Z'
                 }
             }]
         }
@@ -417,10 +417,10 @@ class ParticipantSummaryRequestsTest(TestCase):
         # pre conditions
         columns = ['suspensionStatus', 'participantId', 'suspensionTime']
         deactivated_participants = [[
-            'NO_CONTACT', 'P111', '2018-12-07T08:21:14'
+            'NO_CONTACT', 'P111', '2018-12-07T08:21:14Z'
         ]]
         updated_deactivated_participants = [[
-            'NO_CONTACT', 111, '2018-12-07T08:21:14'
+            'NO_CONTACT', 111, '2018-12-07T08:21:14Z'
         ]]
 
         dataframe = pandas.DataFrame(deactivated_participants, columns=columns)

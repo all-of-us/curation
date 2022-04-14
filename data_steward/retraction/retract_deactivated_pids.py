@@ -21,7 +21,7 @@ from gcloud.bq import BigQueryClient
 
 LOGGER = logging.getLogger(__name__)
 
-ISSUE_NUMBERS = ["DC-686", "DC-1184", "DC-1791"]
+ISSUE_NUMBERS = ["DC-686", "DC-1184", "DC-1791", "DC-1799"]
 
 TABLE_INFORMATION_SCHEMA = JINJA_ENV.from_string(  # language=JINJA2
     """
@@ -48,23 +48,30 @@ USING (person_id)
 {% endif %}
 
 {% if has_start_date %}
-WHERE (COALESCE({{end_date}}, EXTRACT(DATE FROM {{end_datetime}}),
-    {{start_date}}, EXTRACT(DATE FROM {{start_datetime}})) >= d.deactivated_date
+WHERE (({{end_datetime}} IS NOT NULL AND {{end_datetime}} >= d.deactivated_datetime)
+OR ({{end_datetime}} IS NULL AND {{end_date}} IS NOT NULL AND {{end_date}} >= DATE(d.deactivated_datetime))
+OR ({{end_datetime}} IS NULL AND {{end_date}} IS NULL AND {{start_datetime}} IS NOT NULL AND {{start_datetime}} >= d.deactivated_datetime)
+OR ({{end_datetime}} IS NULL AND {{end_date}} IS NULL AND {{start_datetime}} IS NULL AND {{start_date}} IS NOT NULL AND {{start_date}} >= DATE(d.deactivated_datetime))
 {% if table_ref.table_id == 'drug_exposure' %}
-OR verbatim_end_date >= d.deactivated_date)
+OR verbatim_end_date >= DATE(d.deactivated_datetime))
 {% else %} )
 {% endif %}
 {% elif table_ref.table_id == 'death' %}
-WHERE COALESCE(death_date, EXTRACT(DATE FROM death_datetime)) >= d.deactivated_date
+WHERE (death_datetime IS NOT NULL AND death_datetime >= d.deactivated_datetime)
+OR (death_datetime IS NULL AND death_date >= DATE(d.deactivated_datetime))
 {% elif table_ref.table_id in ['activity_summary', 'heart_rate_summary'] %}
-WHERE date >= d.deactivated_date
+WHERE date >= DATE(d.deactivated_datetime)
 {% elif table_ref.table_id in ['heart_rate_minute_level', 'steps_intraday']  %}
-WHERE datetime >= PARSE_DATETIME('%F', CAST(d.deactivated_date as STRING))
-{% elif table_ref.table_id in ['drug_era', 'condition_era', 'dose_era', 'payer_plan_period', 'observation_period']  %}
-WHERE COALESCE(DATE({{table_ref.table_id + '_end_date'}}),
-DATE({{table_ref.table_id + '_start_date'}})) >= d.deactivated_date
+WHERE datetime >= PARSE_DATETIME('%F', CAST(d.deactivated_datetime as STRING))
+{% elif table_ref.table_id in ['payer_plan_period', 'observation_period']  %}
+WHERE COALESCE({{table_ref.table_id + '_end_date'}},
+{{table_ref.table_id + '_start_date'}}) >= DATE(d.deactivated_datetime)
+{% elif table_ref.table_id in ['drug_era', 'condition_era', 'dose_era']  %}
+WHERE COALESCE({{table_ref.table_id + '_end_date'}},
+{{table_ref.table_id + '_start_date'}}) >= d.deactivated_datetime
 {% else %}
-WHERE COALESCE({{date}}, EXTRACT(DATE FROM {{datetime}})) >= d.deactivated_date
+WHERE ({{datetime}} IS NOT NULL AND {{datetime}} >= d.deactivated_datetime)
+OR ({{datetime}} IS NULL AND {{date}} >= DATE(d.deactivated_datetime))
 {% endif %})
 """)
 

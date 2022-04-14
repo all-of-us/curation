@@ -1,7 +1,7 @@
 """
 Utility to fetch and store deactivated participants information.
 
-Original Issues: DC-1213, DC-1042, DC-971, DC-972
+Original Issues: DC-1213, DC-1042, DC-971, DC-972, DC-1795
 
 The intent of the get_deactivated_participants function is to call and store deactivated participants information by
     leveraging the RDR Participant Summary API. Deactivated participant information stored is `participantId`,
@@ -278,7 +278,7 @@ def get_deactivated_participants(api_project_id: str,
 
     column_map = {
         'participant_id': 'person_id',
-        'suspension_time': 'deactivated_date'
+        'suspension_time': 'deactivated_datetime'
     }
 
     df = process_api_data_to_df(participant_data, columns, column_map)
