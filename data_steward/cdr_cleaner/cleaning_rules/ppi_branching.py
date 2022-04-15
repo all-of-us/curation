@@ -318,7 +318,7 @@ class PpiBranching(BaseCleaningRule):
         observation_schema = self.bq_client.get_table_schema(OBSERVATION)
         query = BACKUP_ROWS_QUERY.render(lookup_table=self.lookup_table,
                                          src_table=self.observation_table)
-        return bq.get_create_or_replace_table_ddl(
+        return self.bq_client.get_create_or_replace_table_ddl(
             project_id=self.backup_table.project,
             dataset_id=self.backup_table.dataset_id,
             table_id=self.backup_table.table_id,
@@ -363,7 +363,7 @@ class PpiBranching(BaseCleaningRule):
         observation_schema = self.bq_client.get_table_schema(OBSERVATION)
         stage = self.stage_table
         query = f'''SELECT * FROM `{stage.project}.{stage.dataset_id}.{stage.table_id}`'''
-        return bq.get_create_or_replace_table_ddl(
+        return self.bq_client.get_create_or_replace_table_ddl(
             project_id=self.observation_table.project,
             dataset_id=self.observation_table.dataset_id,
             schema=observation_schema,
