@@ -152,9 +152,8 @@ class PpiBranchingTest(unittest.TestCase):
                 for field in self.observation_schema))
 
     def test_get_observation_replace_query(self):
-        OBSERVATION_STAGE_TABLE_ID = '_ppi_branching_observation_stage'
         stage = bigquery.TableReference(self.sandbox_dataset_ref,
-                                        OBSERVATION_STAGE_TABLE_ID)
+                                        '_ppi_branching_observation_stage')
         query = f'''SELECT * FROM `{stage.project}.{stage.dataset_id}.{stage.table_id}`'''
         self.mock_client.get_create_or_replace_table_ddl.return_value = _get_create_or_replace_table_ddl(
             project=self.observation_table.project,
