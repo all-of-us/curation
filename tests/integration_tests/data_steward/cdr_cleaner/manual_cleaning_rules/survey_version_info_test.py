@@ -34,6 +34,8 @@ class COPESurveyVersionTaskTest(BaseTest.DeidRulesTestBase):
         # intended to be run on the deid_base dataset.  The combined dataset
         # environment variable should be guaranteed to exist
         cls.mapping_dataset_id = os.environ.get('COMBINED_DATASET_ID')
+        cls.deid_questionnaire_response_map_dataset = os.environ.get(
+            'RDR_DATASET_ID')
 
         # setting the cope lookup to the same dataset as the qrid map for testing purposes
         # in production, they are likely different datasets
@@ -42,17 +44,17 @@ class COPESurveyVersionTaskTest(BaseTest.DeidRulesTestBase):
 
         dataset_id = os.environ.get('COMBINED_DATASET_ID')
         sandbox_id = dataset_id + '_sandbox'
-
         cls.kwargs.update({
-            'qrid_map_dataset_id': cls.mapping_dataset_id,
-            'cope_lookup_dataset_id': cls.cope_dataset_id,
-            'cope_table_name': cls.cope_tablename
+            'deid_questionnaire_response_map_dataset':
+                cls.deid_questionnaire_response_map_dataset,
+            'cope_lookup_dataset_id':
+                cls.cope_dataset_id,
+            'cope_table_name':
+                cls.cope_tablename
         })
 
         cls.rule_instance = COPESurveyVersionTask(project_id, dataset_id,
-                                                  sandbox_id,
-                                                  cls.cope_dataset_id,
-                                                  cls.cope_tablename)
+                                                  sandbox_id)
 
         cls.fq_table_names = [
             f"{project_id}.{dataset_id}.observation",
@@ -62,7 +64,7 @@ class COPESurveyVersionTaskTest(BaseTest.DeidRulesTestBase):
         cls.dataset_id = dataset_id
         cls.sandbox_id = sandbox_id
 
-        cls.fq_questionnaire_tablename = f'{project_id}.{sandbox_id}._deid_questionnaire_response_map'
+        cls.fq_questionnaire_tablename = f'{project_id}.{cls.deid_questionnaire_response_map_dataset}._deid_questionnaire_response_map'
         # call super to set up the client, create datasets, and create
         # empty test tables
         # NOTE:  does not create empty sandbox tables.
@@ -152,7 +154,8 @@ class COPESurveyVersionTaskTest(BaseTest.DeidRulesTestBase):
         for statement in insert_fake_measurements:
             sql = statement.render(project=self.project_id,
                                    dataset=self.dataset_id,
-                                   qrid_map_dataset_id=self.sandbox_id,
+                                   qrid_map_dataset_id=self.
+                                   deid_questionnaire_response_map_dataset,
                                    cope_dataset=self.cope_dataset_id,
                                    cope_table_name=self.cope_tablename)
             load_statements.append(sql)
@@ -184,4 +187,5 @@ class COPESurveyVersionTaskTest(BaseTest.DeidRulesTestBase):
     def tearDown(self):
         cope_survey_table = f"{self.project_id}.{self.cope_dataset_id}.{self.cope_tablename}"
         self.client.delete_table(cope_survey_table, not_found_ok=True)
+
         super().tearDown()
