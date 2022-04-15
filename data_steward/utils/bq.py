@@ -203,7 +203,7 @@ def _to_sql_field(field: bigquery.SchemaField) -> bigquery.SchemaField:
                                                                   bigquery.SchemaField] = None,
                                                                   cluster_by_cols: typing.List[str] = None,
                                                                   as_query: str = None,
-                                                                  **table_options) 
+                                                                  **table_options)
                                                                 instead
     """)
 def get_create_or_replace_table_ddl(project_id: str,
@@ -537,6 +537,10 @@ def query_sheet_linked_bq_table(project_id, table_content_query,
     return result_df
 
 
+@deprecated(
+    reason=
+    'Use gcloud.bq.BigQueryClient.to_scalar(self, result: typing.Union[bigquery.table.RowIterator,bigquery.QueryJob]) instead'
+)
 def to_scalar(
     result: typing.Union[bigquery.table.RowIterator, bigquery.QueryJob]
 ) -> typing.Any:
@@ -564,6 +568,10 @@ def to_scalar(
     return dict(row.items())
 
 
+@deprecated(
+    reason=
+    'Use gcloud.bq.BigQueryClient.get_table_count(self, dataset: bigquery.DatasetReference) instead'
+)
 def get_table_count(client: bigquery.Client,
                     dataset: bigquery.DatasetReference) -> int:
     """
@@ -582,6 +590,10 @@ def get_table_count(client: bigquery.Client,
     return to_scalar(client.query(q))
 
 
+@deprecated(
+    reason=
+    'Use gcloud.bq.BigQueryClient.list_tables(self, dataset: bigquery.DatasetReference) instead'
+)
 def list_tables(
     client: bigquery.Client, dataset: bigquery.DatasetReference
 ) -> typing.Iterator[bigquery.table.TableListItem]:
@@ -600,6 +612,10 @@ def list_tables(
                               max_results=table_count + _MAX_RESULTS_PADDING)
 
 
+@deprecated(
+    reason=
+    'Use gcloud.bq.BigQueryClient.copy_dataset(self, input_dataset, output_dataset) instead'
+)
 def copy_datasets(client: bigquery.Client, input_dataset, output_dataset):
     """
     Copies tables from source dataset to a destination datasets

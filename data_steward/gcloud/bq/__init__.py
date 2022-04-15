@@ -2,7 +2,6 @@
 Interact with Google Cloud BigQuery
 """
 # Python stl imports
-import os
 import typing
 
 # Third-party imports
@@ -184,3 +183,89 @@ class BigQueryClient(Client):
         dataset.location = "US"
 
         return dataset
+
+    def copy_dataset(self, input_dataset: str, output_dataset: str):
+        """
+        Copies tables from source dataset to a destination datasets
+
+        :param input_dataset: name of the input dataset
+        :param output_dataset: name of the output dataset
+        :return:
+        """
+        # Copy input dataset tables to backup and staging datasets
+        tables = super(BigQueryClient, self).list_tables(input_dataset)
+        for table in tables:
+            staging_table = f'{self.project}.{output_dataset}.{table.table_id}'
+            self.copy_table(table, staging_table)
+
+    def list_tables(
+        self, dataset: typing.Union[bigquery.DatasetReference, str]
+    ) -> typing.Iterator[bigquery.table.TableListItem]:
+        """
+        List all tables in a dataset
+
+        NOTE: Ensures all results are retrieved by first getting total
+        table count and setting max_results in list tables API call. 
+        Without setting max_results, the API has a bug causing it to 
+        randomly return 0 tables.
+
+        :param dataset: the dataset containing the tables
+        :return: tables contained within the requested dataset
+        """
+        _MAX_RESULTS_PADDING = 100
+        dataset = self.get_dataset(dataset)
+        table_count = self.get_table_count(dataset)
+        return super(BigQueryClient, self).list_tables(dataset=dataset,
+                                                       max_results=table_count +
+                                                       _MAX_RESULTS_PADDING)
+
+    def get_table_count(self, dataset: bigquery.DatasetReference) -> int:
+        """
+        Get the number of tables currently in a specified dataset
+
+        :param dataset: the dataset
+        :return: number of tables
+        :raises:
+            google.cloud.exceptions.GoogleCloudError:
+                If the job failed.
+            concurrent.futures.TimeoutError:
+                If the job did not complete in the given timeout.
+        """
+
+        TABLE_COUNT_TPL = JINJA_ENV.from_string(
+            "SELECT COUNT(1) table_count FROM `{{dataset.project}}.{{dataset.dataset_id}}.__TABLES__`"
+        )
+        """Query template to retrieve the number of tables in a dataset.
+        Requires parameter `dataset`: :class:`DatasetReference` and
+        yields a scalar result with column `table_count`: :class:`int`."""
+
+        q = TABLE_COUNT_TPL.render(dataset=dataset)
+        return self.to_scalar(self.query(q))
+
+    def to_scalar(
+        self, result: typing.Union[bigquery.table.RowIterator,
+                                   bigquery.QueryJob]
+    ) -> typing.Any:
+        """
+        Get a scalar query result
+
+        :param result: a query job or a resultant :class:`bigquery.table.RowIterator`
+        :return: the singular result value
+        """
+        row_iter = None
+        if isinstance(result, bigquery.table.RowIterator):
+            row_iter = result
+        elif isinstance(result, bigquery.QueryJob):
+            row_iter = result.result()
+        else:
+            raise ValueError(
+                f'Scalar result requires a RowIterator or QueryJob '
+                f'but `{type(result)}` was supplied.')
+        if row_iter.total_rows != 1:
+            raise ValueError(f'Cannot get scalar result from '
+                             f'row iterator with {row_iter.total_rows} rows.')
+        _, row = next(enumerate(row_iter))
+        if len(row_iter.schema) == 1:
+            return row[0]
+
+        return dict(row.items())
