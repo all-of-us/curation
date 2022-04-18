@@ -236,8 +236,6 @@ if __name__ == '__main__':
         required=True)
 
     ARGS = parser.parse_args()
-    if not ARGS.mapping_dataset_id:
-        parser.error("The deid mapping dataset is required to run this script.")
 
     # clean_engine.add_console_logging(ARGS.console_log)
     add_console_logging(ARGS.console_log)
