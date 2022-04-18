@@ -190,7 +190,7 @@ def main():
     bq_client = BigQueryClient(args.project_id, credentials=impersonation_creds)
 
     # Create serology dataset
-    dataset_id = create_serology_snapshot(bq_client, args.snapshot_date,
+    dataset_id = create_serology_snapshot(bq_client, args.release_tag,
                                           args.src_serology_dataset_id)
 
     # Create serology tables
