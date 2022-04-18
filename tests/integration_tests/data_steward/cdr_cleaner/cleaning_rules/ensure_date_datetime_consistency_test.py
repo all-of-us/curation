@@ -202,7 +202,7 @@ class EnsureDateDatetimeConsistencyTest(BaseTest.CleaningRulesTestBase):
 
     def test_end_datetime_reset(self):
         """
-        Tests possible values of a required date and nullable datetime field pair.
+        Tests that end_datetime fields are assigned a time component of 11:59:59
         """
         self.maxDiff = None
         tmpl = self.jinja_env.from_string("""
@@ -243,7 +243,7 @@ class EnsureDateDatetimeConsistencyTest(BaseTest.CleaningRulesTestBase):
                                (103, 1, 0, parser.parse('2016-05-01').date(),
                                 parser.parse('2016-05-01 00:00:00 UTC'),
                                 parser.parse('2016-09-05').date(),
-                                parser.parse('2016-09-05 11:59:59 UTC'), 0),
+                                parser.parse('2016-09-05 13:12:45 UTC'), 0),
                                (104, 3, 0, parser.parse('2016-05-01').date(),
                                 parser.parse('2016-05-01 00:00:00 UTC'),
                                 parser.parse('2016-09-05').date(),
