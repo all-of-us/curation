@@ -25,9 +25,7 @@
 import pandas as pd
 pd.options.display.max_rows = 120
 
-# + papermill={"duration": 0.023643, "end_time": "2021-02-02T22:30:31.880820", "exception": false,
-# "start_time": "2021-02-02T22:30:31.857177", "status": "completed"} tags=["parameters"]
-# Parameters
+# + tags=["parameters"]
 project_id = ""
 com_cdr = ""
 deid_cdr = ""
