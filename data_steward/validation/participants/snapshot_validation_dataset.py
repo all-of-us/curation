@@ -102,7 +102,8 @@ def create_snapshot(client: BigQueryClient, release_tag: str) -> str:
 
 
 def get_arg_parser():
-    parser = argparse.ArgumentParser(description=""".""")
+    parser = argparse.ArgumentParser(
+        description="""Generate validation snapshot""")
     parser.add_argument(
         '-p',
         '--project_id',
