@@ -21,7 +21,6 @@ import logging
 import pandas as pd
 
 # Project imports
-from utils import bq
 from gcloud.bq import BigQueryClient
 import bq_utils
 from retraction.retract_utils import DEID_REGEX
