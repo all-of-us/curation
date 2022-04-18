@@ -235,10 +235,9 @@ class PPiBranchingTest(BaseTest.CleaningRulesTestBase):
 
         :return: a mapping from dataset_id -> table_ids
         """
-        dataset_cols_query = bq.dataset_columns_query(self.project_id,
-                                                      self.dataset_id)
-        sandbox_cols_query = bq.dataset_columns_query(self.project_id,
-                                                      self.sandbox_dataset_id)
+        dataset_cols_query = self.client.dataset_columns_query(self.dataset_id)
+        sandbox_cols_query = self.client.dataset_columns_query(
+            self.sandbox_dataset_id)
         cols_query = f"""
                 {dataset_cols_query}
                 UNION ALL

@@ -86,8 +86,8 @@ def get_corresponding_combined_dataset(all_datasets, deid_datasets):
 
 
 def get_table_info_for_dataset(client, dataset):
-    cols_query = bq.dataset_columns_query(client.project, dataset)
-    table_info_df = bq_client.query(cols_query).to_dataframe()
+    cols_query = client.dataset_columns_query(dataset)
+    table_info_df = client.query(cols_query).to_dataframe()
     return table_info_df
 
 
