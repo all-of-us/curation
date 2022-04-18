@@ -43,9 +43,16 @@ class DropMissingParticipants(BaseCleaningRule):
     Drops participant data for pids missing from the person table
     """
 
-    def __init__(self, issue_numbers, description, affected_datasets,
-                 affected_tables, project_id, dataset_id, sandbox_dataset_id,
-                 namer):
+    def __init__(self,
+                 issue_numbers,
+                 description,
+                 affected_datasets,
+                 affected_tables,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 namer,
+                 depends_on=None):
         desc = f'Sandbox and remove rows for PIDs missing from the person table.'
 
         super().__init__(
@@ -56,6 +63,7 @@ class DropMissingParticipants(BaseCleaningRule):
             project_id=project_id,
             dataset_id=dataset_id,
             sandbox_dataset_id=sandbox_dataset_id,
+            depends_on=depends_on,
             table_namer=namer)
 
     def get_query_specs(self):
