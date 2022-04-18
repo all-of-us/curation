@@ -165,7 +165,7 @@
                     "gender_source_value","gender_source_concept_id","race_source_value",
                     "race_source_concept_id","ethnicity_source_value","ethnicity_source_concept_id",
                     "cause_concept_id","cause_source_value","cause_source_concept_id",
-                    "visit_detail_id","value_source_value","value_as_string"
+                    "value_source_value","value_as_string"
                 ]
             }
         ],
