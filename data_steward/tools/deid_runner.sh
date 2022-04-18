@@ -9,6 +9,7 @@ Usage: deid_runner.sh
   --cdr_id <combined_dataset name>
   --run_as <service account email for impersonation>
   --pmi_email <pmi-ops account email>
+  --deid_questionnaire_response_map_dataset <deid questionnaire response map dataset name>
   --vocab_dataset <vocabulary dataset name>
   --dataset_release_tag <release tag for the CDR>
   --cope_lookup_dataset_id <dataset where RDR provided cope survey mapping table is loaded>
@@ -32,6 +33,10 @@ while true; do
     ;;
   --pmi_email)
     pmi_email=$2
+    shift 2
+    ;;
+  --deid_questionnaire_response_map_dataset)
+    deid_questionnaire_response_map_dataset=$2
     shift 2
     ;;
   --vocab_dataset)
@@ -62,7 +67,10 @@ while true; do
   esac
 done
 
-if [[ -z "${key_file}" ]] || [[ -z "${cdr_id}" ]] || [[ -z "${run_as}" ]] || [[ -z "${pmi_email}" ]] || [[ -z "${vocab_dataset}" ]] || [[ -z "${dataset_release_tag}" ]] || [[ -z "${cope_lookup_dataset_id}" ]] || [[ -z "${cope_table_name}" ]] || [[ -z "${deid_max_age}" ]]; then
+if [[ -z "${key_file}" ]] || [[ -z "${cdr_id}" ]] || [[ -z "${run_as}" ]] || [[ -z "${pmi_email}" ]] || \
+   [[ -z "${deid_questionnaire_response_map_dataset}" ]] || [[ -z "${vocab_dataset}" ]] || \
+   [[ -z "${dataset_release_tag}" ]] || [[ -z "${cope_lookup_dataset_id}" ]] || \
+   [[ -z "${cope_table_name}" ]] || [[ -z "${deid_max_age}" ]]; then
   echo "${USAGE}"
   exit 1
 fi
@@ -116,7 +124,7 @@ unset GOOGLE_APPLICATION_CREDENTIALS
 gcloud config set account "${pmi_email}"
 
 # apply de-identification rules on registered tier dataset 
-python "${CLEANER_DIR}/clean_cdr.py" --project_id "${APP_ID}" --dataset_id "${registered_cdr_deid}" --run_as "${run_as}" --sandbox_dataset_id "${registered_cdr_deid_sandbox}" --data_stage ${data_stage} --mapping_dataset_id "${cdr_id}"  --cope_lookup_dataset_id "${cope_lookup_dataset_id}" --cope_table_name "${cope_table_name}" --deid_questionnaire_response_map_dataset "2022q2r1_rdr_sandbox" -s 2>&1 | tee registered_tier_cleaning_log.txt
+python "${CLEANER_DIR}/clean_cdr.py" --project_id "${APP_ID}" --dataset_id "${registered_cdr_deid}" --run_as "${run_as}" --sandbox_dataset_id "${registered_cdr_deid_sandbox}" --data_stage ${data_stage} --mapping_dataset_id "${cdr_id}"  --cope_lookup_dataset_id "${cope_lookup_dataset_id}" --cope_table_name "${cope_table_name}" --deid_questionnaire_response_map_dataset "${deid_questionnaire_response_map_dataset}" -s 2>&1 | tee registered_tier_cleaning_log.txt
 
 cdr_deid_base_staging="${registered_cdr_deid}_base_staging"
 cdr_deid_base_sandbox="${dataset_release_tag}_deid_base_sandbox"
