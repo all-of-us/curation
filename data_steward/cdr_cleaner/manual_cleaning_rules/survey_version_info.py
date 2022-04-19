@@ -227,7 +227,6 @@ if __name__ == '__main__':
         required=True,
         help='Name of the table cotaining the cope survey mapping information')
     parser.add_argument(
-        '-q',
         '--deid_questionnaire_response_map_dataset',
         action='store',
         dest='deid_questionnaire_response_map_dataset',
