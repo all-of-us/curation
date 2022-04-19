@@ -222,20 +222,21 @@ class YearOfBirthRecordsSuppression(BaseCleaningRule):
         suppression_record_query_template = JINJA_ENV.from_string("""
         DELETE
         FROM `{{project}}.{{dataset}}.{{domain_table}}` d 
-        WHERE d.{{identifier}}_id in (
+        WHERE d.{{identifier}} in (
             SELECT
-                distinct {{identifier}}_id
+                distinct {{identifier}}
             FROM
                 `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}`)
         """)
 
         suppression_queries = []
         for table_name, _ in self.tables_and_columns.items():
-            identifier = table_name if table_name != DEATH else PERSON
+            identifier = f'{table_name}_id' if table_name != DEATH else f'{PERSON}_id'
             suppression_record_query = suppression_record_query_template.render(
                 project=self.project_id,
                 dataset=self.dataset_id,
                 sandbox_dataset=self.sandbox_dataset_id,
+                domain_table=table_name,
                 identifier=identifier,
                 sandbox_table=self.sandbox_table_for(table_name))
 
