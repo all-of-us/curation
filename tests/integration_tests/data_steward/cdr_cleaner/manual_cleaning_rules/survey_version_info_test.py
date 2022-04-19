@@ -53,8 +53,9 @@ class COPESurveyVersionTaskTest(BaseTest.DeidRulesTestBase):
                 cls.cope_tablename
         })
 
-        cls.rule_instance = COPESurveyVersionTask(project_id, dataset_id,
-                                                  sandbox_id)
+        cls.rule_instance = COPESurveyVersionTask(
+            project_id, dataset_id, sandbox_id, cls.cope_dataset_id,
+            cls.cope_tablename, cls.deid_questionnaire_response_map_dataset)
 
         cls.fq_table_names = [
             f"{project_id}.{dataset_id}.observation",

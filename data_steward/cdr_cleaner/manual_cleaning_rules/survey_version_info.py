@@ -69,10 +69,10 @@ class COPESurveyVersionTask(BaseCleaningRule):
                  project_id,
                  dataset_id,
                  sandbox_dataset_id,
-                 table_namer=None,
-                 cope_lookup_dataset_id=None,
-                 cope_table_name=None,
-                 deid_questionnaire_response_map_dataset=None):
+                 cope_lookup_dataset_id,
+                 cope_table_name,
+                 deid_questionnaire_response_map_dataset,
+                 table_namer=None):
         """
         Initialize the class with proper info.
 
