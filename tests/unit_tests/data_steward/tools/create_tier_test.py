@@ -351,7 +351,6 @@ class CreateTierTest(unittest.TestCase):
     @mock.patch('tools.create_tier.create_schemaed_snapshot_dataset')
     @mock.patch('tools.create_tier.clean_cdr.main')
     @mock.patch('tools.create_tier.add_kwargs_to_args')
-    @mock.patch('tools.create_tier.bq.copy_datasets')
     @mock.patch('tools.create_tier.create_datasets')
     @mock.patch('tools.create_tier.get_dataset_name')
     @mock.patch('tools.create_tier.BigQueryClient')
@@ -359,7 +358,7 @@ class CreateTierTest(unittest.TestCase):
     @mock.patch('tools.create_tier.validate_create_tier_args')
     def test_create_tier(self, mock_validate_args, mock_impersonate_credentials,
                          mock_client, mock_dataset_name, mock_create_datasets,
-                         mock_copy_datasets, mock_add_kwargs, mock_cdr_main,
+                         mock_add_kwargs, mock_cdr_main,
                          mock_create_schemaed_snapshot):
         final_dataset_name = f"{self.tier[0].upper()}{self.release_tag}_{self.deid_stage}"
         datasets = {
@@ -375,7 +374,7 @@ class CreateTierTest(unittest.TestCase):
         ]
         mock_dataset_name.return_value = final_dataset_name
         mock_create_datasets.return_value = datasets
-        client = mock_client.return_value = self.mock_bq_client
+        mock_client.return_value = self.mock_bq_client
         cleaning_args = mock_add_kwargs.return_value = controlled_tier_cleaning_args
         kwargs = {}
 
@@ -395,12 +394,13 @@ class CreateTierTest(unittest.TestCase):
         mock_dataset_name.assert_called_with(self.tier, self.release_tag,
                                              self.deid_stage)
 
-        mock_create_datasets.asserd_called_with(client, final_dataset_name,
+        mock_create_datasets.asserd_called_with(self.mock_bq_client,
+                                                final_dataset_name,
                                                 self.input_dataset, self.tier,
                                                 self.release_tag)
 
-        mock_copy_datasets.assert_called_with(client, self.input_dataset,
-                                              datasets[consts.STAGING])
+        self.mock_bq_client.copy_dataset.assert_called_with(
+            self.input_dataset, datasets[consts.STAGING])
 
         mock_add_kwargs.assert_called_with(controlled_tier_cleaning_args,
                                            kwargs)

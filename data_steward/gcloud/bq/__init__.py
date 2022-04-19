@@ -205,8 +205,8 @@ class BigQueryClient(Client):
         List all tables in a dataset
 
         NOTE: Ensures all results are retrieved by first getting total
-        table count and setting max_results in list tables API call. 
-        Without setting max_results, the API has a bug causing it to 
+        table count and setting max_results in list tables API call.
+        Without setting max_results, the API has a bug causing it to
         randomly return 0 tables.
 
         :param dataset: the dataset containing the tables
