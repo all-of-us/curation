@@ -1,0 +1,24 @@
+{
+    "suppress":[
+        {
+            "comment": "removing rows containing values along the following ICD9CM and ICD10CM parent codes using a lookup table for all concept_ids to be suppressed for visit_detail_concept_id.",
+            "on": " exists (select * from `:idataset.visit_detail` as record2 where visit_detail.visit_detail_id = record2.visit_detail_id and visit_detail_concept_id in (select concept_id from `:idataset._concept_ids_suppression`)) "
+        },
+        {
+            "comment": "removing rows containing values along the following ICD9CM and ICD10CM parent codes using a lookup table for all concept_ids to be suppressed for visit_detail_type_concept_id.",
+            "on": " exists (select * from `:idataset.visit_detail` as record2 where visit_detail.visit_detail_id = record2.visit_detail_id and visit_detail_type_concept_id in (select concept_id from `:idataset._concept_ids_suppression`)) "
+        },
+        {
+            "comment": "removing rows containing values along the following ICD9CM and ICD10CM parent codes using a lookup table for all concept_ids to be suppressed for visit_detail_source_concept_id.",
+            "on": " exists (select * from `:idataset.visit_detail` as record2 where visit_detail.visit_detail_id = record2.visit_detail_id and visit_detail_source_concept_id in (select concept_id from `:idataset._concept_ids_suppression`)) "
+        },
+        {
+            "comment": "removing rows containing values along the following ICD9CM and ICD10CM parent codes using a lookup table for all concept_ids to be suppressed for admitting_source_concept_id.",
+            "on": " exists (select * from `:idataset.visit_detail` as record2 where visit_detail.visit_detail_id = record2.visit_detail_id and admitting_source_concept_id in (select concept_id from `:idataset._concept_ids_suppression`)) "
+        },
+        {
+            "comment": "removing rows containing values along the following ICD9CM and ICD10CM parent codes using a lookup table for all concept_ids to be suppressed for discharge_to_concept_id.",
+            "on": " exists (select * from `:idataset.visit_detail` as record2 where visit_detail.visit_detail_id = record2.visit_detail_id and discharge_to_concept_id in (select concept_id from `:idataset._concept_ids_suppression`)) "
+        }
+    ]
+}
