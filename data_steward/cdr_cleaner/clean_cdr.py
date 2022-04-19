@@ -204,7 +204,6 @@ COMBINED_CLEANING_CLASSES = [
     # setup_query_execution function to load dependencies before query execution
     (
         domain_alignment.domain_alignment,),
-    (DropParticipantsWithoutPPI,),
     (clean_years.get_year_of_birth_queries,),
     (NegativeAges,),
     # Valid Death dates needs to be applied before no data after death as running no data after death is
@@ -231,6 +230,8 @@ COMBINED_CLEANING_CLASSES = [
     (RemoveParticipantDataPastDeactivationDate,),
     (validate_missing_participants.delete_records_for_non_matching_participants,
     ),
+    (DropParticipantsWithoutPPI,
+    ),  # dependent on RemoveParticipantDataPastDeactivationDate
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
@@ -295,6 +296,8 @@ CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     (CancerConceptSuppression,),  # Should run after any data remapping rules
     (AggregateZipCodes,),
     (SectionParticipationConceptSuppression,),
+    (DropParticipantsWithoutPPI,
+    ),  # dependent on RemoveParticipantDataPastDeactivationDate
     (RemoveExtraTables,),  # Should be last cleaning rule to be run
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
@@ -338,6 +341,8 @@ REGISTERED_TIER_DEID_CLEANING_CLASSES = [
     (SectionParticipationConceptSuppression,),
     (RegisteredCopeSurveyQuestionsSuppression,),
     (CancerConceptSuppression,),
+    (DropParticipantsWithoutPPI,
+    ),  # dependent on RemoveParticipantDataPastDeactivationDate
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 

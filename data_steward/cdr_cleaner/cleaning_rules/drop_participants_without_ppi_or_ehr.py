@@ -17,6 +17,8 @@ As part of this effort, the condition for dropping has been modified to particip
 """
 import logging
 
+from cdr_cleaner.cleaning_rules.remove_participant_data_past_deactivation_date import \
+    RemoveParticipantDataPastDeactivationDate
 from common import JINJA_ENV, PERSON
 from cdr_cleaner.cleaning_rules.drop_rows_for_missing_persons import DropMissingParticipants
 from constants.cdr_cleaner import clean_cdr as cdr_consts
@@ -81,7 +83,8 @@ class DropParticipantsWithoutPPI(DropMissingParticipants):
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
-                         namer=namer)
+                         namer=namer,
+                         depends_on=[RemoveParticipantDataPastDeactivationDate])
 
     def get_query_specs(self):
         """
