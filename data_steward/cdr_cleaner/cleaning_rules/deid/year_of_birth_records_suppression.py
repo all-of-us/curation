@@ -21,7 +21,7 @@ from common import (AOU_REQUIRED, JINJA_ENV, CONDITION_ERA,
                     CONDITION_OCCURRENCE, DEVICE_EXPOSURE, DOSE_ERA, DRUG_ERA,
                     DRUG_EXPOSURE, MEASUREMENT, NOTE, OBSERVATION,
                     OBSERVATION_PERIOD, PAYER_PLAN_PERIOD, PROCEDURE_OCCURRENCE,
-                    SPECIMEN, VISIT_OCCURRENCE)
+                    SPECIMEN, VISIT_OCCURRENCE, DEATH, PERSON)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -233,20 +233,21 @@ class YearOfBirthRecordsSuppression(BaseCleaningRule):
         suppression_record_query_template = JINJA_ENV.from_string("""
         DELETE
         FROM `{{project}}.{{dataset}}.{{domain_table}}` d 
-        WHERE d.{{domain_table}}_id in (
+        WHERE d.{{identifier}}_id in (
             SELECT
-                distinct {{domain_table}}_id
+                distinct {{identifier}}_id
             FROM
                 `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}`)
         """)
 
         suppression_queries = []
         for table_name, _ in self.tables_and_columns.items():
+            identifier = table_name if table_name != DEATH else PERSON
             suppression_record_query = suppression_record_query_template.render(
                 project=self.project_id,
                 dataset=self.dataset_id,
                 sandbox_dataset=self.sandbox_dataset_id,
-                domain_table=table_name,
+                identifier=identifier,
                 sandbox_table=self.sandbox_table_for(table_name))
 
             suppression_queries.append({
