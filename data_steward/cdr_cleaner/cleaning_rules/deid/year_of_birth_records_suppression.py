@@ -17,23 +17,12 @@ from google.cloud.exceptions import GoogleCloudError
 # Project Imports
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
-from common import (AOU_REQUIRED, JINJA_ENV, CONDITION_ERA,
-                    CONDITION_OCCURRENCE, DEVICE_EXPOSURE, DOSE_ERA, DRUG_ERA,
-                    DRUG_EXPOSURE, MEASUREMENT, NOTE, OBSERVATION,
-                    OBSERVATION_PERIOD, PAYER_PLAN_PERIOD, PROCEDURE_OCCURRENCE,
-                    SPECIMEN, VISIT_OCCURRENCE, DEATH, PERSON)
+from common import AOU_REQUIRED, JINJA_ENV, DEATH, PERSON
 
 LOGGER = logging.getLogger(__name__)
 
 ISSUE_NUMBERS = ['DC1977', 'DC2205']
 BIRTH_DELIVERY_SUPPRESSION_CONCEPT_TABLE = '_birth_concepts'
-
-# From DC-1977 (Death is excluded from the list)
-AFFECTED_TABLES = [
-    CONDITION_ERA, CONDITION_OCCURRENCE, DEVICE_EXPOSURE, DOSE_ERA, DRUG_ERA,
-    DRUG_EXPOSURE, MEASUREMENT, NOTE, OBSERVATION, OBSERVATION_PERIOD,
-    PAYER_PLAN_PERIOD, PROCEDURE_OCCURRENCE, SPECIMEN, VISIT_OCCURRENCE
-]
 
 EXCLUDED_CONCEPTS = [4013886, 4135376, 4271761]
 all_concept_ids = [str(x) for x in EXCLUDED_CONCEPTS]
@@ -64,7 +53,7 @@ class YearOfBirthRecordsSuppression(BaseCleaningRule):
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
-                         affected_tables=AFFECTED_TABLES,
+                         affected_tables=AOU_REQUIRED,
                          table_namer=table_namer)
 
         # default values
@@ -72,7 +61,7 @@ class YearOfBirthRecordsSuppression(BaseCleaningRule):
         self.observation_concept_id_columns = []
 
     def get_sandbox_tablenames(self):
-        return [self.sandbox_table_for(table) for table in AOU_REQUIRED]
+        return [self.sandbox_table_for(table) for table in self.affected_tables]
 
     def setup_rule(self, client):
         self._get_time_columns(client)
