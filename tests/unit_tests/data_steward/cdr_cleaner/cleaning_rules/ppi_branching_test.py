@@ -8,6 +8,8 @@ from pandas import DataFrame
 from cdr_cleaner.cleaning_rules.ppi_branching import OBSERVATION_BACKUP_TABLE_ID
 from cdr_cleaner.cleaning_rules.ppi_branching import PPI_BRANCHING_RULE_PATHS
 from cdr_cleaner.cleaning_rules.ppi_branching import PpiBranching, OBSERVATION, BACKUP_ROWS_QUERY, RULES_LOOKUP_TABLE_ID
+from common import JINJA_ENV
+from constants.utils import bq as consts
 
 
 def _get_csv_row_count() -> int:
@@ -46,9 +48,6 @@ def _get_create_or_replace_table_ddl(project,
                                      cluster_by_cols=None,
                                      as_query: str = None,
                                      **table_options) -> str:
-
-    from common import JINJA_ENV
-    from constants.utils import bq as consts
 
     def _to_standard_sql_type(field_type) -> str:
         upper_field_type = field_type.upper()
