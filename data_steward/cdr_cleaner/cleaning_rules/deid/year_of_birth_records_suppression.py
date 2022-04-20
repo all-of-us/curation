@@ -15,9 +15,9 @@ import logging
 from google.cloud.exceptions import GoogleCloudError
 
 # Project Imports
-from common import AOU_REQUIRED, JINJA_ENV
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
+from common import AOU_REQUIRED, JINJA_ENV, DEATH, PERSON
 
 LOGGER = logging.getLogger(__name__)
 
@@ -61,7 +61,7 @@ class YearOfBirthRecordsSuppression(BaseCleaningRule):
         self.observation_concept_id_columns = []
 
     def get_sandbox_tablenames(self):
-        return [self.sandbox_table_for(table) for table in AOU_REQUIRED]
+        return [self.sandbox_table_for(table) for table in self.affected_tables]
 
     def setup_rule(self, client):
         self._get_time_columns(client)
@@ -222,20 +222,22 @@ class YearOfBirthRecordsSuppression(BaseCleaningRule):
         suppression_record_query_template = JINJA_ENV.from_string("""
         DELETE
         FROM `{{project}}.{{dataset}}.{{domain_table}}` d 
-        WHERE d.{{domain_table}}_id in (
+        WHERE d.{{identifier}} in (
             SELECT
-                distinct {{domain_table}}_id
+                distinct {{identifier}}
             FROM
                 `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}`)
         """)
 
         suppression_queries = []
         for table_name, _ in self.tables_and_columns.items():
+            identifier = f'{table_name}_id' if table_name != DEATH else f'{PERSON}_id'
             suppression_record_query = suppression_record_query_template.render(
                 project=self.project_id,
                 dataset=self.dataset_id,
                 sandbox_dataset=self.sandbox_dataset_id,
                 domain_table=table_name,
+                identifier=identifier,
                 sandbox_table=self.sandbox_table_for(table_name))
 
             suppression_queries.append({
@@ -261,8 +263,8 @@ class YearOfBirthRecordsSuppression(BaseCleaningRule):
 
 
 if __name__ == '__main__':
-    import cdr_cleaner.args_parser as parser
     from utils import pipeline_logging
+    import cdr_cleaner.args_parser as parser
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
     pipeline_logging.configure(level=logging.DEBUG, add_console_handler=True)
