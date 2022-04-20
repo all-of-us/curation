@@ -278,8 +278,7 @@ class CreateTierTest(unittest.TestCase):
                           incorrect_deid_stage_param)
 
     @mock.patch('utils.bq.update_labels_and_tags')
-    @mock.patch('utils.bq.define_dataset')
-    def test_create_dataset(self, mock_define_dataset, mock_update_labels_tags):
+    def test_create_dataset(self, mock_update_labels_tags):
         # Preconditions
         mocked_labels = [{
             'de-identified': 'true',
@@ -325,15 +324,15 @@ class CreateTierTest(unittest.TestCase):
         self.assertEqual(actual, datasets)
 
         # Ensures datasets are created with the proper name, descriptions, and labels and tags
-        self.assertEqual(mock_define_dataset.call_count, 3)
+        self.assertEqual(self.mock_bq_client.define_dataset.call_count, 3)
 
-        mock_define_dataset.assert_has_calls([
-            mock.call(self.mock_bq_client.project, datasets[consts.CLEAN],
-                      self.description, self.labels_and_tags),
-            mock.call(self.mock_bq_client.project, datasets[consts.STAGING],
-                      self.description, self.labels_and_tags),
-            mock.call(self.mock_bq_client.project, datasets[consts.SANDBOX],
-                      self.description, self.labels_and_tags)
+        self.mock_bq_client.define_dataset.assert_has_calls([
+            mock.call(datasets[consts.CLEAN], self.description,
+                      self.labels_and_tags),
+            mock.call(datasets[consts.STAGING], self.description,
+                      self.labels_and_tags),
+            mock.call(datasets[consts.SANDBOX], self.description,
+                      self.labels_and_tags)
         ])
 
         # Ensures datasets are updated with the proper labels and tags (if dataset is de-identified or not)
