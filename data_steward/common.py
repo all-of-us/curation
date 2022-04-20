@@ -265,6 +265,7 @@ JINJA_ENV = jinja2.Environment(
 
 # Google scopes for running CDR pipeline stages
 CDR_SCOPES = [
+    'https://www.googleapis.com/auth/trace.append'
     'https://www.googleapis.com/auth/bigquery',
     'https://www.googleapis.com/auth/devstorage.read_write',
 ]
