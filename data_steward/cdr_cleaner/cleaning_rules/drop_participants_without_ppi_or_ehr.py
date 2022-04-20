@@ -19,8 +19,8 @@ import logging
 
 from cdr_cleaner.cleaning_rules.remove_participant_data_past_deactivation_date import \
     RemoveParticipantDataPastDeactivationDate
-from common import JINJA_ENV, PERSON
 from cdr_cleaner.cleaning_rules.drop_rows_for_missing_persons import DropMissingParticipants
+from common import JINJA_ENV, PERSON
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 
 LOGGER = logging.getLogger(__name__)
@@ -54,7 +54,7 @@ WHERE person_id NOT IN
     ON (concept_id = ancestor_concept_id)
   JOIN `{{project}}.{{dataset}}.observation`
     ON (descendant_concept_id = observation_concept_id)
-  JOIN `{{project}}.{{dataset}}._mapping_observation`
+  JOIN `{{project}}.{{mapping_dataset}}._mapping_observation`
     USING (observation_id)
   WHERE concept_class_id = 'Module'
     AND concept_name IN ('The Basics')
@@ -72,19 +72,27 @@ class DropParticipantsWithoutPPI(DropMissingParticipants):
                  project_id,
                  dataset_id,
                  sandbox_dataset_id,
+                 mapping_dataset_id,
                  namer='stage_less'):
         desc = (f'Sandbox and remove PIDs with no PPI basics or EHR data.'
                 f'Use drop missing participants CR to remove their records.')
 
-        super().__init__(issue_numbers=ISSUE_NUMBERS,
-                         description=desc,
-                         affected_datasets=[cdr_consts.COMBINED],
-                         affected_tables=[PERSON],
-                         project_id=project_id,
-                         dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id,
-                         namer=namer,
-                         depends_on=[RemoveParticipantDataPastDeactivationDate])
+        self.mapping_dataset_id = mapping_dataset_id
+
+        super().__init__(
+            issue_numbers=ISSUE_NUMBERS,
+            description=desc,
+            # This needs to be reverted to just combined after the CDR run
+            affected_datasets=[
+                cdr_consts.COMBINED, cdr_consts.CONTROLLED_TIER_DEID,
+                cdr_consts.REGISTERED_TIER_DEID
+            ],
+            affected_tables=[PERSON],
+            project_id=project_id,
+            dataset_id=dataset_id,
+            sandbox_dataset_id=sandbox_dataset_id,
+            namer=namer,
+            depends_on=[RemoveParticipantDataPastDeactivationDate])
 
     def get_query_specs(self):
         """
@@ -108,6 +116,7 @@ class DropParticipantsWithoutPPI(DropMissingParticipants):
             query_type=select_stmt,
             project=self.project_id,
             dataset=self.dataset_id,
+            mapping_dataset=self.mapping_dataset_id,
             basics_concept_id=BASICS_MODULE_CONCEPT_ID)
         queries.append({cdr_consts.QUERY: select_query})
 
@@ -115,6 +124,7 @@ class DropParticipantsWithoutPPI(DropMissingParticipants):
             query_type="DELETE",
             project=self.project_id,
             dataset=self.dataset_id,
+            mapping_dataset=self.mapping_dataset_id,
             basics_concept_id=BASICS_MODULE_CONCEPT_ID)
         queries.append({cdr_consts.QUERY: delete_query})
 
@@ -127,17 +137,33 @@ if __name__ == '__main__':
     import cdr_cleaner.args_parser as parser
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
-    ARGS = parser.parse_args()
+    mapping_dataset_arg = {
+        parser.SHORT_ARGUMENT:
+            '-m',
+        parser.LONG_ARGUMENT:
+            '--mapping_dataset_id',
+        parser.ACTION:
+            'store',
+        parser.DEST:
+            'mapping_dataset_id',
+        parser.HELP:
+            'Identifies the dataset containing mapping tables (e.g. combined dataset)',
+        parser.REQUIRED:
+            True
+    }
+
+    ARGS = parser.default_parse_args([mapping_dataset_arg])
 
     if ARGS.list_queries:
         clean_engine.add_console_logging()
         query_list = clean_engine.get_query_list(
             ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id,
-            [(DropParticipantsWithoutPPI,)])
+            ARGS.mapping_dataset_id, [(DropParticipantsWithoutPPI,)])
         for query in query_list:
             LOGGER.info(query)
     else:
         clean_engine.add_console_logging(ARGS.console_log)
         clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
                                    ARGS.sandbox_dataset_id,
+                                   ARGS.mapping_dataset_id,
                                    [(DropParticipantsWithoutPPI,)])

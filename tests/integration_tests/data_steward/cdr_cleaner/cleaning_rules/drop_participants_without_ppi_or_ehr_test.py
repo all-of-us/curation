@@ -33,9 +33,11 @@ class DropParticipantsWithoutPPITest(BaseTest.CleaningRulesTestBase):
         cls.dataset_id = os.environ.get('COMBINED_DATASET_ID')
         cls.sandbox_id = f'{cls.dataset_id}_sandbox'
         cls.vocabulary_id = os.environ.get('VOCABULARY_DATASET')
+        cls.kwargs.update({'mapping_dataset_id': cls.dataset_id})
         cls.rule_instance = DropParticipantsWithoutPPI(cls.project_id,
                                                        cls.dataset_id,
-                                                       cls.sandbox_id)
+                                                       cls.sandbox_id,
+                                                       cls.dataset_id)
 
         cls.affected_tables = [
             common.PERSON, common.OBSERVATION, common.DRUG_EXPOSURE
