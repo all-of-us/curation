@@ -17,7 +17,6 @@ import bq_utils
 import constants.bq_utils as bq_consts
 from gcloud.gcs import StorageClient
 from gcloud.bq import BigQueryClient
-import resources
 from tools import cli_util
 from utils import pipeline_logging
 from common import JINJA_ENV, PIPELINE_TABLES, SITE_MASKING_TABLE_ID
@@ -99,7 +98,8 @@ def verify_hpo_mappings_up_to_date(hpo_file_df, hpo_table_df):
             f'to the latest version from curation-devops repository.')
 
 
-def add_hpo_site_mappings_file_df(hpo_id, hpo_name, org_id, display_order):
+def add_hpo_site_mappings_file_df(hpo_id, hpo_name, org_id,
+                                  hpo_site_mappings_path, display_order):
     """
     Creates dataframe with hpo_id, hpo_name, org_id, display_order
 
@@ -115,7 +115,7 @@ def add_hpo_site_mappings_file_df(hpo_id, hpo_name, org_id, display_order):
         raise ValueError(
             f"{hpo_id}/{hpo_name} already exists in site lookup table")
 
-    hpo_file_df = pd.read_csv(resources.hpo_site_mappings_path)
+    hpo_file_df = pd.read_csv(hpo_site_mappings_path)
     verify_hpo_mappings_up_to_date(hpo_file_df, hpo_table_df)
 
     if display_order is None:
@@ -130,7 +130,11 @@ def add_hpo_site_mappings_file_df(hpo_id, hpo_name, org_id, display_order):
     return hpo_file_df.sort_values(by='Display_Order')
 
 
-def add_hpo_site_mappings_csv(hpo_id, hpo_name, org_id, display_order=None):
+def add_hpo_site_mappings_csv(hpo_id,
+                              hpo_name,
+                              org_id,
+                              hpo_site_mappings_path,
+                              display_order=None):
     """
     Writes df with hpo_id, hpo_name, org_id, display_order to the hpo_site_id_mappings config file
 
@@ -141,8 +145,9 @@ def add_hpo_site_mappings_csv(hpo_id, hpo_name, org_id, display_order=None):
     :return:
     """
     hpo_file_df = add_hpo_site_mappings_file_df(hpo_id, hpo_name, org_id,
+                                                hpo_site_mappings_path,
                                                 display_order)
-    hpo_file_df.to_csv(resources.hpo_site_mappings_path,
+    hpo_file_df.to_csv(hpo_site_mappings_path,
                        quoting=csv.QUOTE_ALL,
                        index=False)
 
@@ -280,7 +285,8 @@ def update_site_masking_table():
     return query_job
 
 
-def main(hpo_id, org_id, hpo_name, bucket_name, display_order, addition_type):
+def main(hpo_id, org_id, hpo_name, bucket_name, display_order, addition_type,
+         hpo_site_mappings_path):
     """
     adds HPO name and details in to hpo_csv and adds HPO to the lookup tables in bigquery
     adds new site masking to pipeline_tables.site_maskings
@@ -292,10 +298,12 @@ def main(hpo_id, org_id, hpo_name, bucket_name, display_order, addition_type):
     :param addition_type: indicates if hpo is added to config file or to lookup tables
         This is necessary because a config update will need to be verified in the curation_devops repo
         before updating the lookup tables. Can take values "update_config" or "update_lookup_tables"
+    :param hpo_site_mappings_path: path to csv file containing hpo site information
     :return:
     """
     if addition_type == "update_config":
-        add_hpo_site_mappings_csv(hpo_id, hpo_name, org_id, display_order)
+        add_hpo_site_mappings_csv(hpo_id, hpo_name, org_id,
+                                  hpo_site_mappings_path, display_order)
     elif addition_type == "update_lookup_tables":
         if bucket_access_configured(bucket_name):
             LOGGER.info(f'Accessing bucket {bucket_name} successful. '
@@ -344,6 +352,12 @@ if __name__ == '__main__':
         'This is necessary because a config update will need to be verified '
         'in the curation_devops repo before updating the lookup tables. '
         'Can take values "update_config" or "update_lookup_tables"')
+
+    parser.add_argument('-f',
+                        '--hpo_site_mappings_path',
+                        required=True,
+                        help='File containing HPO site information')
+
     parser.add_argument(
         '-d',
         '--display_order',
@@ -357,4 +371,4 @@ if __name__ == '__main__':
     cli_util.activate_creds(creds_path)
     cli_util.set_default_dataset_id(bq_consts.LOOKUP_TABLES_DATASET_ID)
     main(args.hpo_id, args.org_id, args.hpo_name, args.bucket_name,
-         args.display_order, args.addition_type)
+         args.display_order, args.addition_type, args.hpo_site_mappings_path)

@@ -24,6 +24,7 @@ class AddHPOTest(TestCase):
         self.dataset_id = 'dataset_id'
         self.sandbox_dataset_id = 'sandbox_dataset_id'
         self.table_id = 'site_maskings'
+        self.hpo_site_mappings_path = 'hpo_site_mappings_path'
 
     def test_verify_hpo_mappings_up_to_date(self):
         df_1 = pd.DataFrame({'HPO_ID': ['FAKE_1', 'FAKE_2']})
@@ -61,7 +62,7 @@ class AddHPOTest(TestCase):
         }
         actual_df = add_hpo.add_hpo_site_mappings_file_df(
             new_site['hpo_id'], new_site['hpo_name'], new_site['org_id'],
-            new_site['display_order'])
+            self.hpo_site_mappings_path, new_site['display_order'])
 
         expected_df = pd.DataFrame({
             'Org_ID': ['fake_org_1', 'fake_org_2', 'fake_org_3', 'fake_org_4'],
@@ -77,7 +78,8 @@ class AddHPOTest(TestCase):
 
         self.assertRaises(ValueError, add_hpo.add_hpo_site_mappings_file_df,
                           new_site['hpo_id'], new_site['hpo_name'],
-                          new_site['org_id'], new_site['display_order'])
+                          new_site['org_id'], self.hpo_site_mappings_path,
+                          new_site['display_order'])
 
     @mock.patch('tools.add_hpo.BigQueryClient')
     def test_update_site_masking_table(self, mock_bq_client):
