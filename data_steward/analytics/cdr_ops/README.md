@@ -154,12 +154,72 @@ To remedy, export the `GOOGLE_APPLICATION_CREDENTIALS` environment variable with
 export GOOGLE_APPLICATION_CREDENTIALS=/path/to/data-analytics.json
 ```
 
-
-
 ### More Info
 
 To get more info on papermill, the package which this module heavily relies on, visit its [documentation](https://papermill.readthedocs.io/en/latest/).
 
+
+### Creating a postgres sql client and accessing tables in PDR Postgres Instance
+
+To create a postgres sql client within your jupyter notebook, do the following:
+
+#### System Requirements
+
+* Python 3.7 or newer installed
+* Python Libraries (See: requirements.txt)
+* Google Cloud SDK installed (see [Google cloud sdk installation instructions](https://cloud.google.com/sdk/docs/install))
+* Google Cloud SQL Proxy SDK component installed (`gcloud components install cloud_sql_proxy`)
+
+#### Authentication Requirements
+* DRC PMI-Ops Account </br>
+
+Step 1: </br>
+login to your PMI ops account using
+```shell
+gcloud auth login
+```
+A window will pop up and ask for your PMI-Ops account and password. Follow the steps on the screen. </br>
+
+Once logged in start a cloud sql proxy using the following command:
+
+```shell
+$ gcloud config set account your@pmi-ops.org
+
+$ cloud_sql_proxy -instances=aou-pdr-data-prod:us-central1:prod-pdr-5deb-lhty=tcp:7005 \
+--token=$(gcloud auth print-access-token \
+--impersonate-service-account=data-analytics@aou-res-curation-prod.iam.gserviceaccount.com)
+```
+>**<em>**Note: Once connected leave Google Cloud SDK Shell open so you can connect to your IDE.</em>**
+
+
+Step 2:
+Make sure your notebook has access to following parameters passed from report_runner.py or have these values hardcoded in your notebook
+1. `project_id`(project where the postgres username and password secrets are stored)
+2. `run_as` (service account email for impersonation).
+
+In your notebook run the following code to create a `cloudsql` client and access tables in PDR postgres instance
+
+``` 
+# + tags=["parameters"]
+project_id = ""
+run_as = ""
+# -
+
+import pandas as pd
+from notebook_utils import pdr_client
+
+pdr_client = pdr_client(project_id, run_as)
+
+# +
+query = '''
+  SELECT COUNT(*)                   
+   FROM {PDR_DATABASE}.{PDR_TABLE}                    
+'''
+
+df = pd.read_sql(query, pdr_client)
+print(df)
+```
+you should see a results from the query in your notebook.
 
 
 

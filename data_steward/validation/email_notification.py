@@ -22,33 +22,6 @@ LOGGER = logging.getLogger(__name__)
 CONTACT_QUERY_TMPL = Template(consts.CONTACT_LIST_QUERY)
 
 
-class MandrillConfigurationError(RuntimeError):
-    """
-    Raised when the required Mandrill API key is not properly configured
-    """
-
-    def __init__(self, msg):
-        super(MandrillConfigurationError, self).__init__()
-        self.msg = msg
-
-
-def _get_mandrill_secret():
-    """
-    Get the token used to interact with the Mandrill API
-
-    :raises:
-      MandrillConfigurationError: secret is not configured
-    :return: configured Mandrill API key as str
-    """
-    smc = SecretManager()
-    secret = smc.access_secret_version(request={
-        'name': smc.build_secret_full_name(consts.MANDRILL_TOKEN_SECRET_ID)
-    })
-    if not secret:
-        raise MandrillConfigurationError(consts.UNSET_MANDRILL_SECRET_MSG)
-    return secret.payload.data.decode("UTF-8")
-
-
 def get_hpo_contact_info(project_id):
     """
     Fetch email of points of contact for hpo sites
@@ -211,7 +184,9 @@ def send_email(email_message):
     """
     result = None
     try:
-        api_key = _get_mandrill_secret()
+        smc = SecretManager()
+        api_key = smc.get_secret_from_secret_manager(
+            consts.MANDRILL_TOKEN_SECRET_ID)
         mandrill_client = mandrill.Mandrill(api_key)
         result = mandrill_client.messages.send(message=email_message)
     except mandrill.Error as e:

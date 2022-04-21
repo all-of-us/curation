@@ -23,7 +23,7 @@ from notebook_utils import pdr_client
 # cloud_sql_proxy -instances=aou-pdr-data-prod:us-central1:prod-pdr-5deb-lhty=tcp:7005 --token=$(gcloud auth print-access-token \
 # --impersonate-service-account=data-analytics@aou-res-curation-prod.iam.gserviceaccount.com)
 
-db_conn = pdr_client(project_id)
+pdr_client = pdr_client(project_id, run_as)
 
 # +
 query = '''
@@ -33,6 +33,6 @@ query = '''
    ORDER BY 1 DESC
 '''
 
-df = pd.read_sql(query, db_conn)
+df = pd.read_sql(query, pdr_client)
 print(df)
 # -

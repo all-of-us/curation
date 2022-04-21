@@ -25,13 +25,14 @@ class SecretManager(secretmanager.SecretManagerServiceClient):
         return f'projects/{project_id}/secrets/{secret_name}/versions/{secret_version}'
 
     @staticmethod
-    def get_secret_from_secret_manager(secret_name, project_id):
+    def get_secret_from_secret_manager(
+        secret_name: str, project_id: str = os.getenv('GOOGLE_CLOUD_PROJECT')):
         """
         Get the token used to interact with the Mandrill API
 
         :raises:
           KeyConfigurationError: secret is not configured
-        :return: configured Mandrill API key as str
+        :return: configured secret as str
         """
         smc = SecretManager()
         secret = smc.access_secret_version(request={
