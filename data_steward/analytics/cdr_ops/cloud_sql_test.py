@@ -14,6 +14,7 @@
 
 # + tags=["parameters"]
 project_id = ""
+run_as = ""
 # -
 import pandas as pd
 from notebook_utils import pdr_client
