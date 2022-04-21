@@ -158,8 +158,6 @@ class EmailNotificationUnitTest(TestCase):
         self.assertTrue(email_msg['auto_html'])
         self.assertEqual(email_msg['from_email'], consts.NO_REPLY_ADDRESS)
         self.assertEqual(email_msg['from_name'], consts.EHR_OPERATIONS)
-        self.assertEqual(email_msg['headers']['Reply-To'],
-                         consts.EHR_OPS_ZENDESK)
         self.assertFalse(email_msg['important'])
         self.assertTrue(email_msg['preserve_recipients'])
         self.assertEqual(email_msg['subject'],

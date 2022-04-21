@@ -184,9 +184,7 @@ def generate_email_message(hpo_id, results_html, folder_uri, report_data):
         'auto_html': True,
         'from_email': consts.NO_REPLY_ADDRESS,
         'from_name': consts.EHR_OPERATIONS,
-        'headers': {
-            'Reply-To': consts.EHR_OPS_ZENDESK
-        },
+        'headers': {},
         'html': html_body,
         'images': [{
             'content': aou_logo_b64,
