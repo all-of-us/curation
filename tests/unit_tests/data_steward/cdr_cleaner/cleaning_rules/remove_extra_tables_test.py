@@ -51,23 +51,21 @@ class RemoveExtraTablesTest(unittest.TestCase):
         results_list = self.rule_instance.get_query_specs()
 
         expected_list = [{
-            clean_consts.QUERY:
-                SANDBOX_TABLES_QUERY.render(
-                    project_id=self.project_id,
-                    dataset_id=self.dataset_id,
-                    sandbox_id=self.sandbox_id,
-                    extra_tables=self.rule_instance.extra_tables,
-                    sandboxed_extra_tables=[
-                        self.rule_instance.sandbox_table_for(table)
-                        for table in self.rule_instance.extra_tables
-                    ])
-        }, {
-            clean_consts.QUERY:
-                DROP_TABLES_QUERY.render(
-                    project_id=self.project_id,
-                    dataset_id=self.dataset_id,
-                    extra_tables=self.rule_instance.extra_tables)
-        }]
+            clean_consts.QUERY: sandbox_query.strip()
+        } for sandbox_query in SANDBOX_TABLES_QUERY.render(
+            project_id=self.project_id,
+            dataset_id=self.dataset_id,
+            sandbox_id=self.sandbox_id,
+            extra_tables=self.rule_instance.extra_tables,
+            sandboxed_extra_tables=[
+                self.rule_instance.sandbox_table_for(table)
+                for table in self.rule_instance.extra_tables
+            ]).split(';')] + [{
+                clean_consts.QUERY: drop_query.strip()
+            } for drop_query in DROP_TABLES_QUERY.render(
+                project_id=self.project_id,
+                dataset_id=self.dataset_id,
+                extra_tables=self.rule_instance.extra_tables).split(';')]
 
         self.assertEqual(results_list, expected_list)
 

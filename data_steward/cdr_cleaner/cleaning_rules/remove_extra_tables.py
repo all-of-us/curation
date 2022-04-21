@@ -143,30 +143,29 @@ class RemoveExtraTables(BaseCleaningRule):
             an ordering.
         """
 
-        queries = []
+        sandbox_queries = []
+        drop_queries = []
 
         if self.extra_tables:
-            sandbox_tables_query = dict()
-            sandbox_tables_query[
-                cdr_consts.QUERY] = SANDBOX_TABLES_QUERY.render(
-                    project_id=self.project_id,
-                    dataset_id=self.dataset_id,
-                    sandbox_id=self.sandbox_dataset_id,
-                    extra_tables=self.extra_tables,
-                    sandboxed_extra_tables=[
-                        self.sandbox_table_for(table)
-                        for table in self.extra_tables
-                    ])
-
-            drop_tables_query = dict()
-            drop_tables_query[cdr_consts.QUERY] = DROP_TABLES_QUERY.render(
+            sandbox_queries = [{
+                cdr_consts.QUERY: sandbox_query.strip()
+            } for sandbox_query in SANDBOX_TABLES_QUERY.render(
                 project_id=self.project_id,
                 dataset_id=self.dataset_id,
-                extra_tables=self.extra_tables)
+                sandbox_id=self.sandbox_dataset_id,
+                extra_tables=self.extra_tables,
+                sandboxed_extra_tables=[
+                    self.sandbox_table_for(table) for table in self.extra_tables
+                ]).split(';')]
 
-            queries = [sandbox_tables_query, drop_tables_query]
+            drop_queries = [{
+                cdr_consts.QUERY: drop_query.strip()
+            } for drop_query in DROP_TABLES_QUERY.render(
+                project_id=self.project_id,
+                dataset_id=self.dataset_id,
+                extra_tables=self.extra_tables).split(';')]
 
-        return queries
+        return sandbox_queries + drop_queries
 
     def get_sandbox_tablenames(self):
         return [self.sandbox_table_for(table) for table in self.extra_tables]
@@ -223,7 +222,7 @@ class RemoveExtraTables(BaseCleaningRule):
         """
 
         dataset_ref = bigquery.DatasetReference(client.project, self.dataset_id)
-        current_tables = list_tables(client, dataset_ref)
+        current_tables = client.list_tables(dataset_ref)
         current_tables = [table.table_id for table in current_tables]
         self.extra_tables = list(set(current_tables) - set(FINAL_TABLES))
 
