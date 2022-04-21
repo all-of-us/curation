@@ -17,79 +17,11 @@ from google.cloud import bigquery
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from common import JINJA_ENV
+from resources import cdm_schemas, has_domain_table_id
 from utils import pipeline_logging
 from utils.bq import list_tables
 
 LOGGER = logging.getLogger(__name__)
-
-FINAL_TABLES = [
-    '_cdr_metadata',
-    'attribute_definition',
-    'attribute_definition_ext',
-    'care_site',
-    'care_site_ext',
-    'cdm_source',
-    'cohort',
-    'cohort_attribute',
-    'cohort_definition',
-    'cohort_definition_ext',
-    'concept',
-    'concept_ancestor',
-    'concept_class',
-    'concept_relationship',
-    'concept_synonym',
-    'condition_era',
-    'condition_era_ext',
-    'condition_occurrence',
-    'condition_occurrence_ext',
-    'cost',
-    'cost_ext',
-    'death',
-    'device_cost',
-    'device_cost_ext',
-    'device_exposure',
-    'device_exposure_ext',
-    'domain',
-    'dose_era',
-    'dose_era_ext',
-    'drug_cost',
-    'drug_cost_ext',
-    'drug_era',
-    'drug_era_ext',
-    'drug_exposure',
-    'drug_exposure_ext',
-    'drug_strength',
-    'fact_relationship',
-    'location',
-    'location_ext',
-    'measurement',
-    'measurement_ext',
-    'note',
-    'note_ext',
-    'observation',
-    'observation_ext',
-    'observation_period',
-    'observation_period_ext',
-    'payer_plan_period',
-    'payer_plan_period_ext',
-    'person',
-    'person_src_hpos_ext',
-    'procedure_cost',
-    'procedure_cost_ext',
-    'procedure_occurrence',
-    'procedure_occurrence_ext',
-    'provider',
-    'provider_ext',
-    'relationship',
-    'source_to_concept_map',
-    'specimen',
-    'specimen_ext',
-    'visit_cost',
-    'visit_cost_ext',
-    'visit_occurrence',
-    'visit_occurrence_ext',
-    'vocabulary',
-]
 
 SANDBOX_TABLES_QUERY = JINJA_ENV.from_string("""
 {% for sandboxed_extra_table in sandboxed_extra_tables %}
@@ -123,11 +55,22 @@ class RemoveExtraTables(BaseCleaningRule):
         this SQL, append them to the list of Jira Issues.
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
-        desc = 'Remove any tables that are not OMOP, OMOP extension, or Vocabulary tables.'
+        desc = 'Remove any tables that are not OMOP, OMOP extension, Vocabulary or AOU custom tables.'
+        # Use custom cdr_metadata instead of metadata
+        cdm_achilles_vocab_tables = list(
+            set(
+                cdm_schemas(include_achilles=True, include_vocabulary=True).
+                keys()) - {'metadata'}) + ['_cdr_metadata']
+        # Use person_src_hpos_ext instead of person_ext
+        extension_tables = list({
+            f'{table}_ext' for table in cdm_schemas().keys()
+            if has_domain_table_id(table)
+        } - {'person_ext'}) + ['person_src_hpos_ext']
+        affected_tables = cdm_achilles_vocab_tables + extension_tables
         super().__init__(issue_numbers=['DC1441'],
                          description=desc,
                          affected_datasets=[cdr_consts.CONTROLLED_TIER_DEID],
-                         affected_tables=[],
+                         affected_tables=affected_tables,
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
@@ -205,7 +148,7 @@ class RemoveExtraTables(BaseCleaningRule):
         dataset_ref = bigquery.DatasetReference(client.project, self.dataset_id)
         current_tables = list_tables(client, dataset_ref)
         current_tables = [table.table_id for table in current_tables]
-        extra_tables = list(set(current_tables) - set(FINAL_TABLES))
+        extra_tables = list(set(current_tables) - set(self.affected_tables))
 
         if extra_tables:
             raise RuntimeError(
@@ -224,7 +167,8 @@ class RemoveExtraTables(BaseCleaningRule):
         dataset_ref = bigquery.DatasetReference(client.project, self.dataset_id)
         current_tables = client.list_tables(dataset_ref)
         current_tables = [table.table_id for table in current_tables]
-        self.extra_tables = list(set(current_tables) - set(FINAL_TABLES))
+        self.extra_tables = list(
+            set(current_tables) - set(self.affected_tables))
 
 
 if __name__ == '__main__':
