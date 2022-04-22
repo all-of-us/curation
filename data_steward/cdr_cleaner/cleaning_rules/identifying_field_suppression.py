@@ -81,6 +81,7 @@ class IDFieldSuppression(BaseCleaningRule):
             'Returns queries to null the data in identifying fields for all OMOP common data model tables.'
         )
 
+        self.schemas = {}
         super().__init__(
             issue_numbers=JIRA_ISSUE_NUMBERS,
             description=desc,
@@ -103,10 +104,8 @@ class IDFieldSuppression(BaseCleaningRule):
         """
         queries = []
         for table in self.affected_tables:
-            bq_client = BigQueryClient(self.project_id)
-            schema = bq_client.get_table_schema(table)
             statements = []
-            for item in schema:
+            for item in self.schemas[table]:
                 if item.name in fields:
                     if item.mode.lower() == 'nullable':
                         value = 'NULL'
@@ -139,7 +138,8 @@ class IDFieldSuppression(BaseCleaningRule):
         return queries
 
     def setup_rule(self, client, *args, **keyword_args):
-        pass
+        for table in self.affected_tables:
+            self.schemas[table] = client.get_table_schema(table)
 
     def setup_validation(self, client):
         """
