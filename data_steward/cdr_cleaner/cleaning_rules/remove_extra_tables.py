@@ -100,14 +100,14 @@ class RemoveExtraTables(BaseCleaningRule):
                 extra_tables=self.extra_tables,
                 sandboxed_extra_tables=[
                     self.sandbox_table_for(table) for table in self.extra_tables
-                ]).split(';')]
+                ]).split(';')[:-1]]
 
             drop_queries = [{
                 cdr_consts.QUERY: drop_query.strip()
             } for drop_query in DROP_TABLES_QUERY.render(
                 project_id=self.project_id,
                 dataset_id=self.dataset_id,
-                extra_tables=self.extra_tables).split(';')]
+                extra_tables=self.extra_tables).split(';')[:-1]]
 
         return sandbox_queries + drop_queries
 
