@@ -9,8 +9,6 @@ all domain tables """
 # Python Imports
 import os
 
-from google.cloud.bigquery import Table
-
 # Project Imports
 from common import CONDITION_OCCURRENCE, OBSERVATION, VOCABULARY_TABLES
 from app_identity import PROJECT_ID
