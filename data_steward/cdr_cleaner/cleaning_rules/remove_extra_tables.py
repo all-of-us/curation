@@ -59,8 +59,9 @@ class RemoveExtraTables(BaseCleaningRule):
         # Use custom cdr_metadata instead of metadata
         cdm_achilles_vocab_tables = list(
             set(
-                cdm_schemas(include_achilles=True, include_vocabulary=True).
-                keys()) - {'metadata'}) + ['_cdr_metadata']
+                cdm_schemas(
+                    include_achilles=True,
+                    include_vocabulary=True).keys())) + ['_cdr_metadata']
         # Use person_src_hpos_ext instead of person_ext
         extension_tables = list({
             f'{table}_ext' for table in cdm_schemas().keys()

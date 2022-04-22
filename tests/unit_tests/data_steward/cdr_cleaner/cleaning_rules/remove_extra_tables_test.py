@@ -54,9 +54,7 @@ class RemoveExtraTablesTest(unittest.TestCase):
         # List of final expected tables
         final_tables = set(
             cdm_schemas(include_achilles=True,
-                        include_vocabulary=True).keys()) - {'metadata'} | {
-                            '_cdr_metadata'
-                        } | {
+                        include_vocabulary=True).keys()) | {'_cdr_metadata'} | {
                             f'{table}_ext' for table in cdm_schemas().keys()
                             if has_domain_table_id(table)
                         } - {'person_ext'} | {'person_src_hpos_ext'}
