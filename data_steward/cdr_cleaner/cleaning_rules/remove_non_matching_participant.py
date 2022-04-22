@@ -4,6 +4,7 @@ Ideally, sites conduct participant matching and only submit data for matched par
 along with a table detailing their matching process. 
 The DRC also performs a matching process on data received to validate matching done at the site level.
 
+TODO: The following description will be inaccurate once we apply the new rule
 Some sites may not provide participant matching tables for the launch dataset.
 In these cases, the DRC matching algorithm should run and any non-matching PIDs identified 
 by the algorithm should be dropped from the launch dataset. 
@@ -77,7 +78,11 @@ class RemoveNonMatchingParticipant(BaseCleaningRule):
                  ehr_dataset_id=None,
                  validation_dataset_id=None):
         """
-        (Description to be added here)
+        Initialize the class with proper information.
+
+        Set the issue numbers, description and affected datasets. As other tickets may affect
+        this SQL, append them to the list of Jira Issues.
+        DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
 
         self.ehr_dataset_id = ehr_dataset_id
@@ -106,11 +111,15 @@ class RemoveNonMatchingParticipant(BaseCleaningRule):
         """
         raise NotImplementedError("Please fix me.")
 
-    def get_sandbox_tablenames(self, table_name):
+    def get_sandbox_tablenames(self):
         """
-        (Description to be added here)
+        Return a list table names created to backup deleted data.
         """
-        return f'{self._issue_numbers[0].lower()}_{table_name}'
+        return [
+            f'{table}_{TICKET_NUMBER}'
+            for table in remove_pids.get_tables_with_person_id(
+                self.project_id, self.dataset_id)
+        ]
 
     ###
 
@@ -165,6 +174,7 @@ class RemoveNonMatchingParticipant(BaseCleaningRule):
 
         # get the the hpo specific <hpo_id>_identity_match
         identity_match_table = bq_utils.get_table_id(hpo_id, IDENTITY_MATCH)
+
         result = []
         fq_identity_match_table = f'{client.project}.{validation_dataset_id}.{identity_match_table}'
         if not self.exist_identity_match(client, fq_identity_match_table):
@@ -266,6 +276,7 @@ class RemoveNonMatchingParticipant(BaseCleaningRule):
 
         # Retrieving all hpo_ids
         for hpo_id in readers.get_hpo_site_names():
+            # TODO this if statement needs to be updated.
             if not self.exist_participant_match(self.ehr_dataset_id, hpo_id):
                 LOGGER.info(
                     'The hpo site {hpo_id} is missing the participant_match data'
