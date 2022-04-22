@@ -59,9 +59,8 @@ def create_fitbit_datasets(client, release_tag):
             "release_tag": release_tag,
             "de_identified": "false"
         }
-        dataset_object = bq.define_dataset(client.project,
-                                           fitbit_datasets[phase],
-                                           fitbit_desc[phase], labels)
+        dataset_object = client.define_dataset(fitbit_datasets[phase],
+                                               fitbit_desc[phase], labels)
         client.create_dataset(dataset_object)
         LOGGER.info(
             f'Created dataset `{client.project}.{fitbit_datasets[phase]}`')

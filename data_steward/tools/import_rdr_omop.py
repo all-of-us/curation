@@ -197,9 +197,8 @@ def main(raw_args=None):
     bq_client = BigQueryClient(args.curation_project_id,
                                credentials=impersonation_creds)
 
-    dataset_object = bq.define_dataset(bq_client.project, new_dataset_name,
-                                       description,
-                                       {'export_date': args.export_date})
+    dataset_object = bq_client.define_dataset(new_dataset_name, description,
+                                              {'export_date': args.export_date})
     bq_client.create_dataset(dataset_object)
 
     create_rdr_tables(bq_client, new_dataset_name, args.bucket)
