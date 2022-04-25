@@ -70,12 +70,12 @@ class RemoveExtraTablesTest(unittest.TestCase):
             sandboxed_extra_tables=[
                 self.rule_instance.sandbox_table_for(table)
                 for table in self.rule_instance.extra_tables
-            ]).split(';')] + [{
+            ]).split(';')[:-1]] + [{
                 clean_consts.QUERY: drop_query.strip()
             } for drop_query in DROP_TABLES_QUERY.render(
                 project_id=self.project_id,
                 dataset_id=self.dataset_id,
-                extra_tables=self.rule_instance.extra_tables).split(';')]
+                extra_tables=self.rule_instance.extra_tables).split(';')[:-1]]
 
         self.assertEqual(results_list, expected_list)
 
