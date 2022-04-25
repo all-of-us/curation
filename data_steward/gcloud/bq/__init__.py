@@ -3,6 +3,7 @@ Interact with Google Cloud BigQuery
 """
 # Python stl imports
 import typing
+import logging
 
 # Third-party imports
 from google.cloud import bigquery
@@ -12,12 +13,15 @@ from opentelemetry import trace
 from opentelemetry.exporter.cloud_trace import CloudTraceSpanExporter
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from google.api_core.exceptions import GoogleAPIError, BadRequest
 
 # Project imports
 from utils import auth
 from resources import fields_for
 from constants.utils import bq as consts
 from common import JINJA_ENV
+
+LOGGER = logging.getLogger(__name__)
 
 
 class BigQueryClient(Client):
@@ -269,3 +273,97 @@ class BigQueryClient(Client):
             return row[0]
 
         return dict(row.items())
+
+    def upload_csv_data_to_bq_table(self, dataset_id, table_name, fq_file_path,
+                                    write_disposition):
+        """
+        Uploads data from local csv file to bigquery table
+
+        :param dataset_id: identifies the dataset
+        :param table_name: identifies the table name where data needs to be uploaded
+        :param fq_file_path: Fully qualified path to the csv file which needs to be uploaded
+        :param write_disposition: Write disposition for job choose b/w write_empty, write_append, write_truncate
+        :return: job result
+        """
+        dataset_ref = bigquery.DatasetReference(self.project, dataset_id)
+        table_ref = bigquery.TableReference(dataset_ref, table_name)
+        job_config = bigquery.LoadJobConfig()
+        job_config.source_format = bigquery.SourceFormat.CSV
+        job_config.skip_leading_rows = 1
+        job_config.autodetect = True
+        job_config.write_disposition = write_disposition
+
+        LOGGER.info(
+            f"Uploading {fq_file_path} data to {dataset_id}.{table_name}")
+        with open(fq_file_path, "rb") as source_file:
+            job = self.load_table_from_file(source_file,
+                                            table_ref,
+                                            job_config=job_config)
+        try:
+            result = job.result()  # Waits for table load to complete.
+        except (BadRequest, OSError, AttributeError, TypeError,
+                ValueError) as exp:
+            message = f"Unable to load data to table {table_name}"
+            LOGGER.exception(message)
+            raise exp
+
+        return result
+
+    def create_tables(self, fq_table_names, exists_ok=False, fields=None):
+        """
+        Create an empty table(s) in a project.
+
+        Relies on a list of fully qualified table names.  This is a list of
+        strings formatted as 'project-id.dataset-id.table-name`.  This will
+        allow the table to be created using the schema defined in a definition
+        file without requiring the user to read the file or submit the filepath.
+
+        :param fq_table_names: A list of fully qualified table names.
+        :param exists_ok: A flag to throw an error if the table already exists.
+            Defaults to raising an error if the table already exists.
+        :param fields: An optional argument to provide a list of a list of JSON objects for the fields/schema
+                ex:[
+                    [{
+                            "type": "integer",
+                            "name": "condition_occurrence_id",
+                            "mode": "nullable",
+                            "description": ""
+                        },
+                        {
+                            "type": "string",
+                            "name": "src_dataset_id",
+                            "mode": "nullable",
+                            "description": ""
+                        }]
+                    ]
+                if not provided resources.get_table_schema will be called to get schema.
+
+        :raises RuntimeError: a runtime error if table creation fails for any
+            table in the list.
+
+        :return: A list of created table objects.
+        """
+
+        if not fq_table_names or not isinstance(fq_table_names, list):
+            raise RuntimeError("Specify a list for fq_table_names to create")
+
+        successes = []
+        failures = []
+        for index, table_name in enumerate(fq_table_names):
+            schema = self.get_table_schema(
+                table_name.split('.')[2], fields[index] if fields else None)
+
+            try:
+                table = bigquery.Table(table_name, schema=schema)
+                table = self.create_table(table, exists_ok)
+            except (GoogleAPIError, OSError, AttributeError, TypeError,
+                    ValueError):
+                LOGGER.exception(f"Unable to create table {table_name}")
+                failures.append(table_name)
+            else:
+                successes.append(table)
+
+        if failures:
+            raise RuntimeError(f"Unable to create tables: {failures}")
+
+        return successes
