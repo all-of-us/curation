@@ -22,7 +22,7 @@ from google.cloud.exceptions import NotFound
 # Project imports
 import bq_utils
 import resources
-from common import JINJA_ENV, PARTICIPANT_MATCH
+from common import JINJA_ENV, IDENTITY_MATCH, PARTICIPANT_MATCH
 from gcloud.bq import BigQueryClient
 from validation.participants import readers
 from cdr_cleaner.cleaning_rules import sandbox_and_remove_pids as remove_pids
@@ -32,8 +32,6 @@ from constants.validation.participants.identity_match import (PERSON_ID_FIELD,
                                                               LAST_NAME_FIELD,
                                                               BIRTH_DATE_FIELD)
 from constants.validation.participants.writers import ALGORITHM_FIELD
-
-IDENTITY_MATCH = 'identity_match'
 
 LOGGER = logging.getLogger(__name__)
 
@@ -120,8 +118,6 @@ class RemoveNonMatchingParticipant(BaseCleaningRule):
             for table in remove_pids.get_tables_with_person_id(
                 self.project_id, self.dataset_id)
         ]
-
-    ###
 
     def exist_participant_match(self, ehr_dataset_id, hpo_id):
         """
@@ -276,7 +272,8 @@ class RemoveNonMatchingParticipant(BaseCleaningRule):
 
         # Retrieving all hpo_ids
         for hpo_id in readers.get_hpo_site_names():
-            # TODO this if statement needs to be updated.
+            # TODO this if statement needs to be updated to include
+            # if participant_match has lower(algorithm_validation) != 'yes' and lower(manual_validation) != 'yes' columns
             if not self.exist_participant_match(self.ehr_dataset_id, hpo_id):
                 LOGGER.info(
                     'The hpo site {hpo_id} is missing the participant_match data'

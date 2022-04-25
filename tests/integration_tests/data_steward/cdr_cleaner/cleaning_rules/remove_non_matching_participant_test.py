@@ -4,11 +4,20 @@
 # Python Imports
 import os
 
+# Third party imports
+from google.cloud.bigquery import Table
+
 # Project Imports
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.remove_non_matching_participant import RemoveNonMatchingParticipant
-from common import JINJA_ENV
+from common import JINJA_ENV, IDENTITY_MATCH, PARTICIPANT_MATCH
+from validation.participants.create_update_drc_id_match_table import (
+    create_drc_validation_table, populate_validation_table)
+from tests import test_util
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
+import resources
+
+HPO_1, HPO_2, HPO_3, HPO_4 = 'nyc', 'pitt', 'chs', 'vcu'
 
 
 class RemoveNonMatchingParticipantTest(BaseTest.CleaningRulesTestBase):
@@ -40,15 +49,26 @@ class RemoveNonMatchingParticipantTest(BaseTest.CleaningRulesTestBase):
             validation_dataset_id)
 
         table_names = [
+            # nyc has both participant_match and identity_match
             'nyc_person',
             'nyc_observation',
             'nyc_location',
+            'nyc_participant_match',
+            'nyc_identity_match',
+            # pitt has both participant_match
             'pitt_person',
             'pitt_observation',
             'pitt_location',
+            'pitt_participant_match',
+            # chs has both identity_match
             'chs_person',
             'chs_observation',
             'chs_location',
+            'chs_identity_match',
+            # vcu has no match tables
+            'vcu_person',
+            'vcu_observation',
+            'vcu_location',
         ]
 
         cls.fq_table_names = [
@@ -66,6 +86,9 @@ class RemoveNonMatchingParticipantTest(BaseTest.CleaningRulesTestBase):
             cls.fq_sandbox_table_names.append(
                 f'{project_id}.{sandbox_id}.{table_name}')
 
+        # call super to set up the client, create datasets, and create
+        # empty test tables
+        # NOTE:  does not create empty sandbox tables.
         super().setUpClass()
 
     def setUp(self):
@@ -78,4 +101,29 @@ class RemoveNonMatchingParticipantTest(BaseTest.CleaningRulesTestBase):
         fq_dataset_name = self.fq_table_names[0].split('.')
         self.fq_dataset_name = '.'.join(fq_dataset_name[:-1])
 
+        self.id_match_table_ids = [
+            f'{hpo_id}_{IDENTITY_MATCH}' for hpo_id in [HPO_1, HPO_2, HPO_3]
+        ]
+
+        for id_match_table_id in self.id_match_table_ids:
+            create_drc_validation_table(self.client, id_match_table_id,
+                                        self.dataset_id)
+
+        self.participant_match_table_ids = [
+            f'{hpo_id}_{PARTICIPANT_MATCH}' for hpo_id in [HPO_1, HPO_2, HPO_4]
+        ]
+
+        schema = resources.fields_for(IDENTITY_MATCH)
+        for participant_match_table_id in self.participant_match_table_ids:
+            table = Table(
+                f'{self.project_id}.{self.dataset_id}.{participant_match_table_id}',
+                schema=schema)
+            table = self.client.create_table(table, exists_ok=True)
+
         super().setUp()
+
+    def test_dummy(self):
+        self.assertEqual(1, 1)
+
+    def tearDown(self):
+        test_util.delete_all_tables(self.dataset_id)
