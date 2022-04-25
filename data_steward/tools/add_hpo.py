@@ -106,6 +106,7 @@ def add_hpo_site_mappings_file_df(hpo_id, hpo_name, org_id,
     :param hpo_id: hpo_ identifier
     :param hpo_name: name of the hpo
     :param org_id: hpo organization identifier
+    :param hpo_site_mappings_path: path to csv file containing hpo site information
     :param display_order: index number in which hpo should be added in table
     :raises ValueError if hpo_id already exists in the lookup table
     """
@@ -141,6 +142,7 @@ def add_hpo_site_mappings_csv(hpo_id,
     :param hpo_id: hpo_ identifier
     :param hpo_name: name of the hpo
     :param org_id: hpo organization identifier
+    :param hpo_site_mappings_path: path to csv file containing hpo site information
     :param display_order: index number in which hpo should be added in table
     :return:
     """
