@@ -21,6 +21,7 @@ from google.cloud.exceptions import NotFound
 
 # Project imports
 import bq_utils
+from constants.cdr_cleaner import clean_cdr as cdr_consts
 import resources
 from common import JINJA_ENV, IDENTITY_MATCH, PARTICIPANT_MATCH
 from gcloud.bq import BigQueryClient
@@ -86,7 +87,10 @@ class RemoveNonMatchingParticipant(BaseCleaningRule):
         self.ehr_dataset_id = ehr_dataset_id
         self.validation_dataset_id = validation_dataset_id
 
+        desc = '<<DESC TO BE ADDED>>'
         super().__init__(issue_numbers=['DC468', 'DC823'],
+                         description=desc,
+                         affected_datasets=[cdr_consts.COMBINED],
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id)
@@ -250,7 +254,6 @@ class RemoveNonMatchingParticipant(BaseCleaningRule):
         :param dataset_id:
         :param ehr_dataset_id:
         :param sandbox_dataset_id: Identifies the sandbox dataset to store rows
-        #TODO use sandbox_dataset_id for CR
         :param validation_dataset_id:
 
         :return: list of queries
