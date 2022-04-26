@@ -11,7 +11,6 @@ import logging
 from google.cloud import bigquery
 from google.api_core.exceptions import NotFound
 
-from common import AOU_REQUIRED
 from utils import auth
 from utils import bq
 from gcloud.bq import BigQueryClient

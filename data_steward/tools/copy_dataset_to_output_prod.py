@@ -10,7 +10,7 @@ import re
 
 # Project imports
 from gcloud.bq import BigQueryClient
-from utils import bq, auth, pipeline_logging
+from utils import auth, pipeline_logging
 from tools.recreate_person import update_person
 
 SCOPES = [
