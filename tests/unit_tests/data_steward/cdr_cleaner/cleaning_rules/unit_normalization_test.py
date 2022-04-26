@@ -36,7 +36,7 @@ class UnitNormalizationTest(unittest.TestCase):
         with self.assertRaises(RuntimeError) as c:
             self.rule_instance.setup_rule(None)
 
-        self.assertEqual(str(c.exception), 'Specify BigQuery client object')
+        self.assertEqual(str(c.exception), 'Specify BigQueryClient object')
 
         # No errors are raised, nothing will happen
 
