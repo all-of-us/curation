@@ -324,7 +324,7 @@ def get_domain_mapping_queries(project_id, dataset_id):
     bq_client = BigQueryClient(project_id)
     table_id = f'{project_id}.{dataset_id}.{DOMAIN_ALIGNMENT_TABLE_NAME}'
     bq_client.delete_table(table_id, not_found_ok=True)
-    bq.create_tables(bq_client, project_id, [table_id], exists_ok=False)
+    bq_client.create_tables([table_id], exists_ok=False)
 
     domain_mapping_queries = []
 
