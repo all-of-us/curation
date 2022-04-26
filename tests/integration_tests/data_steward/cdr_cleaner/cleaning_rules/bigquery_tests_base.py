@@ -90,8 +90,7 @@ class BaseTest:
                 cls.client.create_dataset(dataset, exists_ok=True)
 
         def setUp(self):
-            bq.create_tables(self.client, self.project_id, self.fq_table_names,
-                             True)
+            self.client.create_tables(self.fq_table_names, True)
 
         @classmethod
         def tearDownClass(cls):

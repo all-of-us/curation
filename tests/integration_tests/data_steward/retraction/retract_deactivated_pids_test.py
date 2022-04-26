@@ -136,9 +136,7 @@ class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
         self.tearDown()
         # setup deactivated participants table
         deact_table_ref = gbq.TableReference.from_string(self.deact_table)
-        bq.create_tables(self.bq_client,
-                         self.project_id, [self.deact_table],
-                         exists_ok=True)
+        self.bq_client.create_tables([self.deact_table], exists_ok=True)
         job_config = gbq.QueryJobConfig()
         job = self.bq_client.query(
             DEACTIVATED_PIDS.render(deact_table=deact_table_ref), job_config)
@@ -147,9 +145,7 @@ class RetractDeactivatedEHRDataBqTest(unittest.TestCase):
         # create omop tables and mapping/ext tables
         for table in self.tables:
             fq_table = f'{self.project_id}.{self.dataset_id}.{table}'
-            bq.create_tables(self.bq_client,
-                             self.project_id, [fq_table],
-                             exists_ok=True)
+            self.bq_client.create_tables([fq_table], exists_ok=True)
             table_ref = gbq.TableReference.from_string(fq_table)
             job_config = gbq.QueryJobConfig()
             job = self.bq_client.query(

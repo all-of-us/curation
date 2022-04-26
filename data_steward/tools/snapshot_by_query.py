@@ -139,8 +139,7 @@ def copy_tables_to_new_dataset(project_id, dataset_id, snapshot_dataset_id):
         if table_id not in destination_tables:
             try:
                 fields = resources.fields_for(table_id)
-                bq.create_tables(
-                    bq_client, project_id,
+                bq_client.create_tables(
                     [f'{project_id}.{snapshot_dataset_id}.{table_id}'], False,
                     [fields])
             except RuntimeError:

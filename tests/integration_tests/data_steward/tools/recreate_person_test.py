@@ -67,9 +67,7 @@ class RecreatePersonTest(TestCase):
                                                drop_existing=True,
                                                dataset_id=self.dataset_id)
             else:
-                bq.create_tables(self.bq_client,
-                                 self.project_id, [fq_table],
-                                 exists_ok=True)
+                self.bq_client.create_tables([fq_table], exists_ok=True)
 
         self.populate_tables()
 
