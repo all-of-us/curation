@@ -5,7 +5,6 @@ import cdm
 import resources
 from bq_utils import create_dataset, list_all_table_ids, query, wait_on_jobs, BigQueryJobWaitError, \
     create_standard_table
-from utils import bq
 from gcloud.bq import BigQueryClient
 from utils.pipeline_logging import configure
 
