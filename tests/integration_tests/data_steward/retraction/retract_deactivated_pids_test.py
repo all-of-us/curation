@@ -11,7 +11,7 @@ import pandas as pd
 import app_identity
 from common import JINJA_ENV
 from retraction import retract_deactivated_pids as rdp
-from utils import bq, sandbox as sb
+from utils import sandbox as sb
 from gcloud.bq import BigQueryClient
 
 DEACTIVATED_PIDS = JINJA_ENV.from_string("""

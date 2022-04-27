@@ -10,7 +10,6 @@ import pandas as pd
 
 # Project imports
 import app_identity
-from utils import bq
 from gcloud.bq import BigQueryClient
 from tests import test_util
 from retraction import retract_data_bq as rbq
