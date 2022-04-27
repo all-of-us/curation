@@ -97,7 +97,6 @@ def get_source_fields(client, source_table):
 
 
 def get_copy_table_query(dataset_id, table_id, client):
-
     try:
         source_table = f'{client.project}.{dataset_id}.{table_id}'
         source_fields = get_source_fields(client, source_table)
