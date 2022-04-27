@@ -34,6 +34,7 @@ from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from common import JINJA_ENV, CDM_TABLES
 from gcloud.bq import BigQueryClient
+from resources import get_table_schema
 from utils import pipeline_logging
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
 from cdr_cleaner.cleaning_rules.table_suppression import TableSuppression
@@ -81,7 +82,6 @@ class IDFieldSuppression(BaseCleaningRule):
             'Returns queries to null the data in identifying fields for all OMOP common data model tables.'
         )
 
-        self.schemas = {}
         super().__init__(
             issue_numbers=JIRA_ISSUE_NUMBERS,
             description=desc,
@@ -103,9 +103,12 @@ class IDFieldSuppression(BaseCleaningRule):
             are optional but the query is required.
         """
         queries = []
+        schemas = {}
+        for table in self.affected_tables:
+            schemas[table] = get_table_schema(table)
         for table in self.affected_tables:
             statements = []
-            for item in self.schemas[table]:
+            for item in schemas[table]:
                 if item.name in fields:
                     if item.mode.lower() == 'nullable':
                         value = 'NULL'
@@ -133,13 +136,10 @@ class IDFieldSuppression(BaseCleaningRule):
                 query[cdr_consts.DESTINATION_DATASET] = self.dataset_id
                 queries.append(query)
 
-            else:
-                continue
         return queries
 
     def setup_rule(self, client, *args, **keyword_args):
-        for table in self.affected_tables:
-            self.schemas[table] = client.get_table_schema(table)
+        pass
 
     def setup_validation(self, client):
         """
