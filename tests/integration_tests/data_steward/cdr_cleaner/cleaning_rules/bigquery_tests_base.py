@@ -85,8 +85,8 @@ class BaseTest:
             desc = (f"dataset created by {cls.__name__} to test a "
                     f"cleaning rule.  deletion candidate.")
             for dataset_id in set(required_datasets):
-                dataset = bq.define_dataset(cls.project_id, dataset_id, desc,
-                                            {'test': ''})
+                dataset = cls.client.define_dataset(dataset_id, desc,
+                                                    {'test': ''})
                 cls.client.create_dataset(dataset, exists_ok=True)
 
         def setUp(self):

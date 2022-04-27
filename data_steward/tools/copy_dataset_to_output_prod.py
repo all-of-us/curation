@@ -10,7 +10,7 @@ import re
 
 # Project imports
 from gcloud.bq import BigQueryClient
-from utils import bq, auth, pipeline_logging
+from utils import auth, pipeline_logging
 from tools.recreate_person import update_person
 
 SCOPES = [
@@ -151,8 +151,8 @@ if __name__ == '__main__':
     LOGGER.info(
         f'Creating dataset {output_dataset_name} in {args.output_prod_project_id}...'
     )
-    dataset_object = bq.define_dataset(args.output_prod_project_id,
-                                       output_dataset_name, description, labels)
+    dataset_object = bq_client.define_dataset(output_dataset_name, description,
+                                              labels)
     bq_client.create_dataset(dataset_object, exists_ok=False)
 
     #Copy fitbit tables to source dataset

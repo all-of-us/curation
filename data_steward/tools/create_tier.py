@@ -151,8 +151,8 @@ def create_datasets(client, name, input_dataset, tier, release_tag):
 
     # Creation of dataset objects and dataset label and description updates
     for phase, dataset_id in datasets.items():
-        dataset_object = bq.define_dataset(client.project, dataset_id,
-                                           description, base_labels_and_tags)
+        dataset_object = client.define_dataset(dataset_id, description,
+                                               base_labels_and_tags)
         client.create_dataset(dataset_object, exists_ok=True)
         dataset = client.get_dataset(dataset_id)
         if dataset_id in deid_datasets:

@@ -182,24 +182,23 @@ def create_datasets(client, rdr_dataset, release_tag):
         "release_tag": release_tag,
         "de_identified": "false"
     }
-    staging_dataset_object = bq.define_dataset(client.project, rdr_staging,
-                                               staging_desc, labels)
+    staging_dataset_object = client.define_dataset(rdr_staging, staging_desc,
+                                                   labels)
     client.create_dataset(staging_dataset_object)
     LOGGER.info(f'Created dataset `{client.project}.{rdr_staging}`')
 
     sandbox_desc = (f'Sandbox created for storing records affected by the '
                     f'cleaning rules applied to {rdr_staging}')
     labels["phase"] = "sandbox"
-    sandbox_dataset_object = bq.define_dataset(client.project, rdr_sandbox,
-                                               sandbox_desc, labels)
+    sandbox_dataset_object = client.define_dataset(rdr_sandbox, sandbox_desc,
+                                                   labels)
     client.create_dataset(sandbox_dataset_object)
     LOGGER.info(f'Created dataset `{client.project}.{rdr_sandbox}`')
 
     version = 'implement getting software version'
     clean_desc = (f'{version} clean version of {rdr_dataset}')
     labels["phase"] = "clean"
-    clean_dataset_object = bq.define_dataset(client.project, rdr_clean,
-                                             clean_desc, labels)
+    clean_dataset_object = client.define_dataset(rdr_clean, clean_desc, labels)
     client.create_dataset(clean_dataset_object)
     LOGGER.info(f'Created dataset `{client.project}.{rdr_clean}`')
 
