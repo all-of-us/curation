@@ -3,7 +3,6 @@ Interact with Google Cloud BigQuery
 """
 # Python stl imports
 import typing
-import logging
 
 # Third-party imports
 from google.cloud import bigquery
@@ -20,8 +19,6 @@ from utils import auth
 from resources import fields_for
 from constants.utils import bq as consts
 from common import JINJA_ENV
-
-LOGGER = logging.getLogger(__name__)
 
 
 class BigQueryClient(Client):
@@ -293,8 +290,6 @@ class BigQueryClient(Client):
         job_config.autodetect = True
         job_config.write_disposition = write_disposition
 
-        LOGGER.info(
-            f"Uploading {fq_file_path} data to {dataset_id}.{table_name}")
         with open(fq_file_path, "rb") as source_file:
             job = self.load_table_from_file(source_file,
                                             table_ref,
@@ -303,8 +298,6 @@ class BigQueryClient(Client):
             result = job.result()  # Waits for table load to complete.
         except (BadRequest, OSError, AttributeError, TypeError,
                 ValueError) as exp:
-            message = f"Unable to load data to table {table_name}"
-            LOGGER.exception(message)
             raise exp
 
         return result
@@ -358,7 +351,6 @@ class BigQueryClient(Client):
                 table = self.create_table(table, exists_ok)
             except (GoogleAPIError, OSError, AttributeError, TypeError,
                     ValueError):
-                LOGGER.exception(f"Unable to create table {table_name}")
                 failures.append(table_name)
             else:
                 successes.append(table)
