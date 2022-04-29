@@ -124,6 +124,10 @@ def get_table_schema(table_name, fields=None):
     return schema
 
 
+@deprecated(
+    reason=
+    'Use gcloud.bq.BigQueryClient.upload_csv_data_to_bq_table(self, dataset_id, table_name, fq_file_path, write_disposition) instead'
+)
 def upload_csv_data_to_bq_table(client, dataset_id, table_name, fq_file_path,
                                 write_disposition):
     """
@@ -240,6 +244,10 @@ def get_create_or_replace_table_ddl(project_id: str,
                                               opts=table_options)
 
 
+@deprecated(
+    reason=
+    'Use gcloud.bq.BigQueryClient.create_tables(self, fq_table_names, exists_ok=False, fields=None) instead'
+)
 def create_tables(client,
                   project_id,
                   fq_table_names,
