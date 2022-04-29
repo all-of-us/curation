@@ -396,6 +396,10 @@ def define_dataset(project_id, dataset_id, description, label_or_tag):
     return dataset
 
 
+@deprecated(
+    reason=
+    'Use gcloud.bq.BigQueryClient.update_labels_and_tags(self, dataset_id, existing_labels_or_tags, new_labels_or_tags, overwrite_ok=False) instead'
+)
 def update_labels_and_tags(dataset_id,
                            existing_labels_or_tags,
                            new_labels_or_tags,
