@@ -301,3 +301,34 @@ class BQCTest(TestCase):
         mock_iter = self.client.mock_query_result([scalar_int_1, scalar_int_2])
         with self.assertRaises(ValueError) as c:
             self.client.to_scalar(mock_iter)
+
+    def test_update_labels_and_tags(self):
+        new_labels_or_tags = {'label': 'new_value', 'new_tag': ''}
+        updated_labels_or_tags = {
+            'tag': '',
+            'label': 'new_value',
+            'new_tag': ''
+        }
+
+        # Tests if dataset_id param is provided
+        self.assertRaises(RuntimeError, self.client.update_labels_and_tags,
+                          None, self.existing_labels_or_tags,
+                          new_labels_or_tags)
+
+        # Tests if new_labels_or_tags param is provided
+        self.assertRaises(RuntimeError, self.client.update_labels_and_tags,
+                          self.dataset_id, self.existing_labels_or_tags, None)
+
+        # Pre-conditions
+        results = self.client.update_labels_and_tags(
+            self.dataset_id, self.existing_labels_or_tags, new_labels_or_tags,
+            True)
+
+        # Post conditions
+        self.assertEqual(results, updated_labels_or_tags)
+        with self.assertRaises(RuntimeError):
+            self.client.update_labels_and_tags(
+                self.dataset_id,
+                existing_labels_or_tags={'label': 'existing_label'},
+                new_labels_or_tags={'label': 'new_label'},
+                overwrite_ok=False)
