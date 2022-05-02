@@ -1,6 +1,7 @@
 """
 Utility functions for notebooks
 """
+import subprocess
 
 import sqlalchemy
 
@@ -17,6 +18,33 @@ POSTGRES_PASSWORD = "pdr_psql_password"
 POSTGRES_PORT = 7005
 DATABASE_NAME = "drc"
 HOST = "localhost"
+PDR_INSTANCE_NAME = "pdr_cloud_sql_read_only_instance"
+
+
+def stop_cloud_sql_proxy(process):
+    process.terminate()
+
+
+def start_cloud_sql_proxy(project_id, run_as):
+    """
+    I'd like to consider using secrets to get the instanct information here also.
+    We could get sql proxy for all instances if we wish.  Or the read only replica.
+    """
+
+    credentials = get_impersonation_credentials(
+        target_principal=run_as, target_scopes=IMPERSONATION_SCOPES)
+
+    instance = SecretManager(
+        credentials=credentials).get_secret_from_secret_manager(
+        PDR_INSTANCE_NAME, project_id)
+    command = f'cloud_sql_proxy -instances={instance} --token=$(gcloud auth print-access-token \
+    --impersonate-service-account={run_as})'
+
+    return subprocess.Popen([command],
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE,
+                            universal_newlines=True,
+                            shell=True)
 
 
 def pdr_client(project_id, run_as):
@@ -37,13 +65,15 @@ def pdr_client(project_id, run_as):
             drivername="postgresql+pg8000",
             username=SecretManager(
                 credentials=credentials).get_secret_from_secret_manager(
-                    POSTGRES_USER_NAME, project_id),
+                POSTGRES_USER_NAME, project_id),
             password=SecretManager(
                 credentials=credentials).get_secret_from_secret_manager(
-                    POSTGRES_PASSWORD, project_id),
+                POSTGRES_PASSWORD, project_id),
             host=HOST,
             port=POSTGRES_PORT,
-            database=DATABASE_NAME))
+            database=DATABASE_NAME),
+        pool_recycle=3600,
+        pool_timeout=30)
     pool.dialect.description_encoding = None
     return pool
 

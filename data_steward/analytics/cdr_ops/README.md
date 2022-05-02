@@ -1,6 +1,6 @@
 # CDR Ops
 
-Notebooks for operational evaluation of data. 
+Notebooks for operational evaluation of data.
 
 # Running
 
@@ -8,10 +8,12 @@ Refer to `data_steward/notebooks/README.md`.
 
 # Notebook Execution
 
->**<em>**Note: The `my_project_root/data_steward` directory must first be in the PYTHONPATH for the following to work.</em>**
+> **<em>**Note: The `my_project_root/data_steward` directory must first be in the PYTHONPATH for the following to
+work.</em>**
 
-  
-Jupytext notebooks (.py extension) can be executed with supplied parameters and exported to an HTML document using the utility `report_runner.py`.
+
+Jupytext notebooks (.py extension) can be executed with supplied parameters and exported to an HTML document using the
+utility `report_runner.py`.
 
 ```
 $ python report_runner.py -h
@@ -35,22 +37,25 @@ optional arguments:
 
 ### Preparing Notebook Template
 
-In order for an input notebook to accept parameters, it must be prepared in the special format described in the [papermill](https://papermill.readthedocs.io/en/latest/usage-parameterize.html) package documentation.  
+In order for an input notebook to accept parameters, it must be prepared in the special format described in
+the [papermill](https://papermill.readthedocs.io/en/latest/usage-parameterize.html) package documentation.
 
 Within an opened jupyter notebook, do the following:
-1. Select the `View -> Cell Toolbar -> Tags` menu option to activate the notebook's tag view.
-2. In a single cell, define 1 or more variables that will be your parameters.  
-    1. An optional comment on a variable's line will serve as its description.
-    1. An optional type hint can be provided. 
-3. In your parameter-containing cell, enter the term **parameters** into the textbox adjacent to the <em>Add tag</em> button.
-4. Click the <em>Add tag</em> button to mark the cell with the entered tag.
 
+1. Select the `View -> Cell Toolbar -> Tags` menu option to activate the notebook's tag view.
+2. In a single cell, define 1 or more variables that will be your parameters.
+    1. An optional comment on a variable's line will serve as its description.
+    1. An optional type hint can be provided.
+3. In your parameter-containing cell, enter the term **parameters** into the textbox adjacent to the <em>Add tag</em>
+   button.
+4. Click the <em>Add tag</em> button to mark the cell with the entered tag.
 
 ![Parameterization instructions](./images/parameter_definition.png)
 
 ### Viewing Notebook Parameters
 
-To view the parameters required for a particular notebook, the <em>--help_notebook</em> option can be passed to `report_runner.py`.
+To view the parameters required for a particular notebook, the <em>--help_notebook</em> option can be passed
+to `report_runner.py`.
 
 ```
 $ python report_runner.py "Example Notebook.py" --help_notebook
@@ -76,6 +81,7 @@ $ python report_runner.py "Example Notebook.py"
          -p my_int_parameter 6
 Executing: 100%|█████████████████████████████████████████████████████| 3/3 [00:01<00:00,  2.11cell/s]
 ```
+
 And the outputted html:
 ![Executed HTML](./images/html_image.png)
 
@@ -87,7 +93,8 @@ There are a few sets of errors one may encounter when attempting to execute a no
 
 #### Incomplete Path
 
-To run this script, the `my_project_root/data_steward` directory must first be in the PYTHONPATH. If it is not, an error similar to the following may occur:
+To run this script, the `my_project_root/data_steward` directory must first be in the PYTHONPATH. If it is not, an error
+similar to the following may occur:
 
 ```
 Traceback (most recent call last):
@@ -104,7 +111,8 @@ export PYTHONPATH="/path/to/my_project_root/data_steward"
 
 #### Missing/Unknown Parameters
 
-These errors occur when required parameters or values are not passed in or an unknown parameter is provided. A error message is logged and the notebook is not executed:
+These errors occur when required parameters or values are not passed in or an unknown parameter is provided. A error
+message is logged and the notebook is not executed:
 
 ```
 $ python report_runner.py "Example Notebook.py" 
@@ -123,7 +131,8 @@ Parameters inferred for notebook Example Notebook:
 
 #### Failed Notebook Logic
 
-If an error occurs during the execution of the notebook cells, an error message will be logged <em>and</em> the error will be labeled in the resulting html file.
+If an error occurs during the execution of the notebook cells, an error message will be logged <em>and</em> the error
+will be labeled in the resulting html file.
 
 ```
 $ python report_runner.py "Example Notebook.py" --output_path executed_notebook.html -p my_unknown_parameter "hello" -p my_string_parameter "world" -p my_int_parameter 6
@@ -140,6 +149,7 @@ TypeError                                 Traceback (most recent call last)
 
 TypeError: unsupported operand type(s) for /: 'str' and 'int'
 ```
+
 ![Failed Execution](./images/error_html_image.png)
 
 ##### Failed GCP Authentication
@@ -156,10 +166,10 @@ export GOOGLE_APPLICATION_CREDENTIALS=/path/to/data-analytics.json
 
 ### More Info
 
-To get more info on papermill, the package which this module heavily relies on, visit its [documentation](https://papermill.readthedocs.io/en/latest/).
+To get more info on papermill, the package which this module heavily relies on, visit
+its [documentation](https://papermill.readthedocs.io/en/latest/).
 
-
-### Creating a postgres sql client and accessing tables in PDR Postgres Instance
+## Creating a postgres sql client and accessing tables in PDR Postgres Instance
 
 To create a postgres sql client within your jupyter notebook, do the following:
 
@@ -167,37 +177,36 @@ To create a postgres sql client within your jupyter notebook, do the following:
 
 * Python 3.7 or newer installed
 * Python Libraries (See: requirements.txt)
-* Google Cloud SDK installed (see [Google cloud sdk installation instructions](https://cloud.google.com/sdk/docs/install))
+* Google Cloud SDK installed (
+  see [Google cloud sdk installation instructions](https://cloud.google.com/sdk/docs/install))
 * Google Cloud SQL Proxy SDK component installed (`gcloud components install cloud_sql_proxy`)
 
 #### Authentication Requirements
+
 * DRC PMI-Ops Account </br>
 
 Step 1: </br>
 login to your PMI ops account using
+
 ```shell
 gcloud auth login
 ```
-A window will pop up and ask for your PMI-Ops account and password. Follow the steps on the screen. </br>
 
-Once logged in start a cloud sql proxy using the following command:
+A window will pop up and ask for your PMI-Ops account and password. Follow the steps on the screen. </br>
 
 ```shell
 $ gcloud config set account your@pmi-ops.org
-
-$ cloud_sql_proxy -instances=aou-pdr-data-prod:us-central1:prod-pdr-5deb-lhty=tcp:7005 \
---token=$(gcloud auth print-access-token \
---impersonate-service-account=data-analytics@aou-res-curation-prod.iam.gserviceaccount.com)
 ```
->**<em>**Note: Once connected leave Google Cloud SDK Shell open so you can connect to your IDE.</em>**
-
 
 Step 2:
-Make sure your notebook has access to following parameters passed from report_runner.py or have these values hardcoded in your notebook
+Make sure your notebook has access to following parameters passed from report_runner.py or have these values hardcoded
+in your notebook
+
 1. `project_id`(project where the postgres username and password secrets are stored)
 2. `run_as` (service account email for impersonation).
 
-In your notebook run the following code to create a `cloudsql` client and access tables in PDR postgres instance
+In your notebook run the following code to start `cloud_sql_proxy` and create a `cloud_sql` client and access tables in
+PDR postgres instance
 
 ``` 
 # + tags=["parameters"]
@@ -206,11 +215,13 @@ run_as = ""
 # -
 
 import pandas as pd
-from notebook_utils import pdr_client
+from analytics.cdr_ops.notebook_utils import pdr_client, start_cloud_sql_proxy, stop_cloud_sql_proxy
 
+# Start the cloud sql proxy and create pdr_client
+proc = start_cloud_sql_proxy(project_id, run_as)
 pdr_client = pdr_client(project_id, run_as)
 
-# +
+# Query that queries the data from PDR views
 query = '''
   SELECT COUNT(*)                   
    FROM {PDR_DATABASE}.{PDR_TABLE}                    
@@ -218,8 +229,12 @@ query = '''
 
 df = pd.read_sql(query, pdr_client)
 print(df)
+
+### Close the SQL proxy connection. 
+stop_cloud_sql_proxy(proc)
 ```
-you should see a results from the query in your notebook.
+
+An example notebook [`cdr_ops/cloud_sql_test.py`](cloud_sql_test.py) is available for reference.
 
 
 

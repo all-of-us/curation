@@ -13,26 +13,33 @@
 # ---
 
 # + tags=["parameters"]
-project_id = ""
-run_as = ""
+project_id = "aou-res-curation-prod"
+run_as = "data-analytics@aou-res-curation-prod.iam.gserviceaccount.com"
 # -
+
 import pandas as pd
-from notebook_utils import pdr_client
+from analytics.cdr_ops.notebook_utils import pdr_client, start_cloud_sql_proxy, stop_cloud_sql_proxy
 
-# # cloud_sql_proxy needs to be ran before we can read data from sql server.
-# cloud_sql_proxy -instances=aou-pdr-data-prod:us-central1:prod-pdr-5deb-lhty=tcp:7005 --token=$(gcloud auth print-access-token \
-# --impersonate-service-account=data-analytics@aou-res-curation-prod.iam.gserviceaccount.com)
+# # Example of Cloud SQL proxy and another project authentication
+#
+# ./cloud_sql_proxy must run before we can read data from sql server.
 
+proc = start_cloud_sql_proxy(project_id, run_as)
 pdr_client = pdr_client(project_id, run_as)
 
-# +
+# # Total ordering in descending order
+# Description here
+
 query = '''
-  SELECT COUNT(DISTINCT participant_id) AS Total, enrollment_status                    
-   FROM pdr.mv_participant                    
-   GROUP BY 2                    
+  SELECT COUNT(DISTINCT participant_id) AS Total, enrollment_status
+   FROM pdr.mv_participant
+   GROUP BY 2
    ORDER BY 1 DESC
 '''
 
 df = pd.read_sql(query, pdr_client)
 print(df)
-# -
+
+stop_cloud_sql_proxy(proc)
+
+
