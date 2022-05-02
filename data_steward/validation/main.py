@@ -432,7 +432,8 @@ def get_eastern_time():
         consts.DATETIME_FORMAT)
 
 
-def perform_reporting(hpo_id, report_data, folder_items, bucket, folder_prefix):
+def perform_reporting(hpo_id, report_data, folder_items, bucket, folder_prefix,
+                      failed_submission):
     """
     Generate html report, upload to GCS and send email if possible
 
@@ -441,6 +442,7 @@ def perform_reporting(hpo_id, report_data, folder_items, bucket, folder_prefix):
     :param folder_items: items in the folder without folder prefix
     :param bucket: bucket containing the folder
     :param folder_prefix: submission folder
+    :param failed_submission: Indicates if a submission has failed
     :return:
     """
     processed_time_str = get_eastern_time()
@@ -460,7 +462,8 @@ def perform_reporting(hpo_id, report_data, folder_items, bucket, folder_prefix):
     processed_txt_blob.upload_from_string(processed_time_str)
 
     folder_uri = f"gs://{bucket.name}/{folder_prefix}"
-    if folder_items and is_first_validation_run(folder_items):
+    if (folder_items and
+            is_first_validation_run(folder_items)) or failed_submission:
         logging.info(f"Attempting to send report via email for {hpo_id}")
         email_msg = en.generate_email_message(hpo_id, results_html, folder_uri,
                                               report_data)
@@ -531,11 +534,13 @@ def process_hpo(hpo_id, force_run=False):
                                               folder_prefix)
                 report_data = generate_metrics(hpo_id, bucket, folder_prefix,
                                                summary)
+                failed_submission = False
             else:
                 # do not perform validation
                 report_data = generate_empty_report(hpo_id, folder_prefix)
+                failed_submission = True
             perform_reporting(hpo_id, report_data, folder_items, bucket,
-                              folder_prefix)
+                              folder_prefix, failed_submission)
     except BucketNotSet as exc:
         logging.info(f'{exc}')
     except BucketDoesNotExistError as exc:
