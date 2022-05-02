@@ -385,6 +385,9 @@ class BigQueryClient(Client):
         if not dataset_id:
             raise RuntimeError("Provide a dataset_id")
 
+        if not existing_labels_or_tags:
+            raise RuntimeError("Please provide existing label or tag")
+
         if not new_labels_or_tags:
             raise RuntimeError("Please provide a label or tag")
 
