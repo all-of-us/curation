@@ -315,6 +315,10 @@ class BQCTest(TestCase):
                           None, self.existing_labels_or_tags,
                           new_labels_or_tags)
 
+        # Tests if existing_labels_or_tags param is provided
+        self.assertRaises(RuntimeError, self.client.update_labels_and_tags,
+                          self.dataset_id, None, new_labels_or_tags)
+
         # Tests if new_labels_or_tags param is provided
         self.assertRaises(RuntimeError, self.client.update_labels_and_tags,
                           self.dataset_id, self.existing_labels_or_tags, None)
