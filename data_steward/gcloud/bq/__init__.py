@@ -2,6 +2,7 @@
 Interact with Google Cloud BigQuery
 """
 # Python stl imports
+from datetime import datetime
 import typing
 
 # Third-party imports
@@ -405,3 +406,55 @@ class BigQueryClient(Client):
             return {**existing_labels_or_tags, **updates}
 
         return {**existing_labels_or_tags, **updates}
+
+
+    def build_and_copy_contents(self, src_dataset, dest_dataset):
+        """
+        Uses google client object to copy non-schemaed data to schemaed table.
+
+        :param client: google client object with permissions
+        :param src_dataset: The dataset to copy data from
+        :param des_dataset: The dataset to copy data to.  It's tables are
+            created with valid schemas before inserting data.
+        """
+        # LOGGER.info(f'Beginning copy of data from unschemaed dataset, '
+        #             f'`{src_dataset}`, to schemaed dataset, `{dest_dataset}`.')
+        table_list = self.list_tables(src_dataset)
+
+        for table_item in table_list:
+            # create empty schemaed tablle with client object
+            schema_list = self.get_table_schema(table_item.table_id)
+            dest_table = f'{self.project}.{dest_dataset}.{table_item.table_id}'
+            dest_table = bigquery.Table(dest_table, schema=schema_list)
+            dest_table = self.create_table(dest_table)  # Make an API request.
+            # LOGGER.info(
+            #     f'Created empty table `{dest_table.project}.{dest_table.dataset_id}.{dest_table.table_id}`'
+            # )
+
+            fields_name_str = ',\n'.join([item.name for item in schema_list])
+            # copy contents from non-schemaed source to schemaed dest
+            sql = (
+                f'SELECT {fields_name_str} '
+                f'FROM `{table_item.project}.{table_item.dataset_id}.{table_item.table_id}`'
+            )
+            job_config = bigquery.job.QueryJobConfig(
+                write_disposition=bigquery.job.WriteDisposition.WRITE_EMPTY,
+                priority=bigquery.job.QueryPriority.BATCH,
+                destination=dest_table,
+                labels={
+                    'table_name': table_item.table_id,
+                    'copy_from': table_item.dataset_id,
+                    'copy_to': dest_dataset
+                })
+            job_id = (f'schemaed_copy_{table_item.table_id.lower()}_'
+                      f'{datetime.now().strftime("%Y%m%d_%H%M%S")}')
+            job = self.query(sql, job_config=job_config, job_id=job_id)
+            job.result()  # Wait for the job to complete.
+
+            # LOGGER.info(
+            #     f'Table contents `{table_item.project}.{table_item.dataset_id}.'
+            #     f'{table_item.table_id}` were copied to `{dest_table.project}.'
+            #     f'{dest_table.dataset_id}.{dest_table.table_id}`')
+
+        # LOGGER.info(f'Completed copy of data from unschemaed dataset, '
+        #             f'`{src_dataset}`, to schemaed dataset, `{dest_dataset}`.')
