@@ -743,7 +743,6 @@ def list_submitted_bucket_items(folder_bucketitems):
     """
     files_list = []
     object_retention_days = 30
-    object_process_lag_minutes = consts.SUBMISSION_LAG_TIME_MINUTES
     utc_today = datetime.datetime.now(tz=None)
 
     # If any required file missing, stop submission
@@ -751,41 +750,48 @@ def list_submitted_bucket_items(folder_bucketitems):
         basename(file_name) for file_name in folder_bucketitems
     ]
 
-    if not _has_all_required_files(folder_bucketitems_basenames):
+    to_process_items = [
+        item for item in folder_bucketitems
+        if basename(item) not in resources.IGNORE_LIST
+    ]
+
+    # Process if all required files present
+    if _has_all_required_files(folder_bucketitems_basenames):
+        logging.info(f"All required files found, processing.")
+        return to_process_items
+
+    # Check submission times and validate if > 3 hrs old
+    logging.info(
+        f"Delaying processing for hpo_id by 3 hrs (to next cron run) "
+        f"since all required files not present. "
+        f"Missing {set(AOU_REQUIRED_FILES) - set(folder_bucketitems_basenames)}"
+    )
+
+    upper_age_threshold = min(item['timeCreated'] +
+                              datetime.timedelta(days=object_retention_days) -
+                              datetime.timedelta(days=1)
+                              for item in folder_bucketitems
+                              if basename(item) not in resources.IGNORE_LIST)
+    upper_age_threshold = upper_age_threshold.replace(tzinfo=None)
+
+    lower_age_threshold = min(item['updated'] + datetime.timedelta(hours=3)
+                              for item in folder_bucketitems
+                              if basename(item) not in resources.IGNORE_LIST)
+    lower_age_threshold = lower_age_threshold.replace(tzinfo=None)
+
+    if upper_age_threshold > utc_today:
+        if lower_age_threshold < utc_today:
+            logging.info(
+                f"All required files not found but submission is stale (> 3 hrs), processing."
+            )
+            return to_process_items
+        diff = lower_age_threshold - utc_today
+        hrs = diff.total_seconds() // 3600
         logging.info(
             f"Delaying processing for hpo_id by 3 hrs (to next cron run) "
-            f"since all required files not present. "
-            f"Missing {set(AOU_REQUIRED_FILES) - set(folder_bucketitems_basenames)}"
-        )
-        return []
+            f"since files were recently uploaded. Latest file was uploaded "
+            f"less than {hrs} hours ago.")
 
-    # Validate submission times
-    for item in folder_bucketitems:
-        if basename(item) not in resources.IGNORE_LIST:
-            # in common.CDM_FILES or is_pii(basename(file_name)):
-            created_date = item['timeCreated']
-            retention_time = datetime.timedelta(days=object_retention_days)
-            retention_start_time = datetime.timedelta(days=1)
-            upper_age_threshold = created_date + retention_time - retention_start_time
-            upper_age_threshold = upper_age_threshold.replace(tzinfo=None)
-
-            if upper_age_threshold > utc_today:
-                files_list.append(item)
-
-            if basename(item) in AOU_REQUIRED_FILES:
-                # restrict processing time for 5 minutes after all required files
-                lag_time = datetime.timedelta(
-                    minutes=object_process_lag_minutes)
-                lower_age_threshold = item['updated'] + lag_time
-                lower_age_threshold = lower_age_threshold.replace(tzinfo=None)
-
-                if lower_age_threshold > utc_today:
-                    logging.info(
-                        f"Delaying processing for hpo_id by 3 hrs (to next cron run) "
-                        f"since files are still being uploaded. "
-                        f"Latest file was uploaded less than {object_process_lag_minutes} minutes ago."
-                    )
-                    return []
     return files_list
 
 
