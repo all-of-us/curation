@@ -661,6 +661,10 @@ def validate_bq_date_string(date_string):
     return date_string
 
 
+@deprecated(
+    reason=
+    'Use gcloud.bq.BigQueryClient.build_and_copy_contents(self, src_dataset, dest_dataset) instead'
+)
 def build_and_copy_contents(client, src_dataset, dest_dataset):
     """
     Uses google client object to copy non-schemaed data to schemaed table.
