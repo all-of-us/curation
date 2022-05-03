@@ -19,7 +19,6 @@ from google.cloud import bigquery
 
 # Project imports
 from cdr_cleaner import clean_cdr_engine as engine
-from utils import bq
 from gcloud.bq import BigQueryClient
 from common import JINJA_ENV
 
