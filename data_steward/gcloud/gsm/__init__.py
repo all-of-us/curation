@@ -26,7 +26,7 @@ class SecretManager(secretmanager.SecretManagerServiceClient):
 
     @staticmethod
     def get_secret_from_secret_manager(
-            secret_name: str, project_id: str = os.getenv('GOOGLE_CLOUD_PROJECT')):
+        secret_name: str, project_id: str = os.getenv('GOOGLE_CLOUD_PROJECT')):
         """
         Get the secret value for the given secret name.
 
