@@ -16,9 +16,9 @@ from io import StringIO, open
 # Third party imports
 import dateutil
 from flask import Flask
+from google.cloud.storage.bucket import Blob
 from google.cloud.exceptions import GoogleCloudError
 from googleapiclient.errors import HttpError
-from google.cloud.storage.bucket import Blob
 
 # Project imports
 import api_util
@@ -755,6 +755,9 @@ def list_submitted_bucket_items(folder_bucketitems):
         if basename(item) not in resources.IGNORE_LIST
     ]
 
+    if not to_process_items:
+        return files_list
+
     # Process if all required files present
     if _has_all_required_files(folder_bucketitems_basenames):
         logging.info(f"All required files found, processing.")
@@ -786,7 +789,7 @@ def list_submitted_bucket_items(folder_bucketitems):
             )
             return to_process_items
         diff = lower_age_threshold - utc_today
-        hrs = diff.total_seconds() // 3600
+        hrs = (diff.total_seconds() // 3600) + 1
         logging.info(
             f"Delaying processing for hpo_id by 3 hrs (to next cron run) "
             f"since files were recently uploaded. Latest file was uploaded "

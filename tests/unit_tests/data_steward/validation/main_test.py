@@ -57,10 +57,10 @@ class ValidationMainTest(TestCase):
             days=25)
         outside_retention = datetime.datetime.now(tz=None) - datetime.timedelta(
             days=29)
-        before_lag_time = datetime.datetime.now(tz=None) - datetime.timedelta(
-            minutes=3)
         after_lag_time = datetime.datetime.now(tz=None) - datetime.timedelta(
             minutes=7)
+        stale_lag_time = datetime.datetime.now(tz=None) - datetime.timedelta(
+            minutes=200)
 
         # If any required files are missing, nothing should be returned
         bucket_items = self._create_dummy_bucket_items(
@@ -79,31 +79,43 @@ class ValidationMainTest(TestCase):
         expected_result = bucket_items
         self.assertCountEqual(expected_result, actual_result)
 
-        # if a file expires within a day, it should not be returned
-        bucket_items = self._create_dummy_bucket_items(
-            within_retention, after_lag_time, file_exclusions=['person.csv'])
-        bucket_items_with_modified_person = bucket_items.copy()
-        bucket_items_with_modified_person.append({
-            'name': '2018-09-01/person.csv',
-            'timeCreated': outside_retention,
-            'updated': after_lag_time
-        })
-        actual_result = main.list_submitted_bucket_items(
-            bucket_items_with_modified_person)
-        expected_result = bucket_items
-
-        self.assertCountEqual(expected_result, actual_result)
-
         actual_result = main.list_submitted_bucket_items([])
         self.assertCountEqual([], actual_result)
 
-        #If unknown item and all other conditions met, return the item
+        # If unknown item and all other conditions met, return the folder
         bucket_items = self._create_dummy_bucket_items(within_retention,
                                                        after_lag_time)
         unknown_item = {
             'name': '2018-09-01/nyc_cu_person.csv',
             'timeCreated': within_retention,
             'updated': after_lag_time
+        }
+        bucket_items.append(unknown_item)
+
+        actual_result = main.list_submitted_bucket_items(bucket_items)
+        self.assertCountEqual(actual_result, bucket_items)
+
+        # If unknown item and it replaces a file, return empty folder if fresh
+        bucket_items = self._create_dummy_bucket_items(
+            within_retention, after_lag_time, file_exclusions=['person.csv'])
+        unknown_item = {
+            'name': '2018-09-01/nyc_cu_person.csv',
+            'timeCreated': within_retention,
+            'updated': after_lag_time
+        }
+        bucket_items.append(unknown_item)
+
+        actual_result = main.list_submitted_bucket_items(bucket_items)
+        expected_result = []
+        self.assertCountEqual(actual_result, expected_result)
+
+        # If unknown item and it replaces a file, return the folder only after stale
+        bucket_items = self._create_dummy_bucket_items(
+            within_retention, after_lag_time, file_exclusions=['person.csv'])
+        unknown_item = {
+            'name': '2018-09-01/nyc_cu_person.csv',
+            'timeCreated': within_retention,
+            'updated': stale_lag_time
         }
         bucket_items.append(unknown_item)
 
@@ -123,20 +135,24 @@ class ValidationMainTest(TestCase):
         expected_result = bucket_items
         self.assertCountEqual(expected_result, actual_result)
 
-        # If any AOU_REQUIRED file has been updated less than 5 minutes ago, no files should be returned
+        # If any file is missing but submission is fresh, skip it
         bucket_items = self._create_dummy_bucket_items(
             within_retention,
             after_lag_time,
             file_exclusions=['observation.csv'])
 
-        bucket_items.append({
-            'name': '2018-09-01/observation.csv',
-            'timeCreated': within_retention,
-            'updated': before_lag_time
-        })
-
         actual_result = main.list_submitted_bucket_items(bucket_items)
         expected_result = []
+        self.assertCountEqual(expected_result, actual_result)
+
+        # If any file is missing but submission is stale, process it
+        bucket_items = self._create_dummy_bucket_items(
+            within_retention,
+            stale_lag_time,
+            file_exclusions=['observation.csv'])
+
+        actual_result = main.list_submitted_bucket_items(bucket_items)
+        expected_result = bucket_items
         self.assertCountEqual(expected_result, actual_result)
 
     def test_folder_list(self):
