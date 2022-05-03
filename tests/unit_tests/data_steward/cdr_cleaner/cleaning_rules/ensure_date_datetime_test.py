@@ -58,7 +58,7 @@ class EnsureDateDatetime(unittest.TestCase):
             expected_list = []
             for field in table_fields:
                 if field in TABLE_DATES[table]:
-                    expected = FIX_NULL_OR_INCORRECT_DATETIME_QUERY.format(
+                    expected = FIX_NULL_OR_INCORRECT_DATETIME_QUERY.render(
                         field=field, date_field=TABLE_DATES[table][field])
                 else:
                     expected = field
