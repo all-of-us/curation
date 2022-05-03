@@ -261,8 +261,8 @@ def main(raw_args=None):
     clean_cdr.main(args=fitbit_cleaning_args)
 
     # Snapshot the staging dataset to final dataset
-    bq.build_and_copy_contents(bq_client, fitbit_datasets[consts.STAGING],
-                               fitbit_datasets[consts.CLEAN])
+    bq_client.build_and_copy_contents(fitbit_datasets[consts.STAGING],
+                                      fitbit_datasets[consts.CLEAN])
 
 
 if __name__ == '__main__':
