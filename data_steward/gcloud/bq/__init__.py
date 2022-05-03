@@ -410,9 +410,8 @@ class BigQueryClient(Client):
 
     def build_and_copy_contents(self, src_dataset, dest_dataset):
         """
-        Uses google client object to copy non-schemaed data to schemaed table.
+        Copy non-schemaed data to schemaed table.
 
-        :param client: google client object with permissions
         :param src_dataset: The dataset to copy data from
         :param des_dataset: The dataset to copy data to.  It's tables are
             created with valid schemas before inserting data.
