@@ -199,7 +199,7 @@ class CreateTierTest(unittest.TestCase):
         correct_parameter_dict['console_log'] = True
 
         # Test if correct parameters are given
-        args, kwargs = parse_deid_args(self.correct_parameter_list)
+        args, _ = parse_deid_args(self.correct_parameter_list)
         results_dict = vars(args)
 
         # Post conditions
