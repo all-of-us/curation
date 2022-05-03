@@ -22,13 +22,18 @@ PDR_INSTANCE_NAME = "pdr_cloud_sql_read_only_instance"
 
 
 def stop_cloud_sql_proxy(process):
+    """
+    Kills sub process that was used to start cloud_sql_proxy
+    """
     process.terminate()
 
 
 def start_cloud_sql_proxy(project_id, run_as):
     """
-    I'd like to consider using secrets to get the instanct information here also.
-    We could get sql proxy for all instances if we wish.  Or the read only replica.
+    Gets instance name from Secret manager and starts cloud_sql_proxy in a sub process
+
+    :param project_id: Project name where secretes are stored
+    :param run_as: service account email for impersonation
     """
 
     credentials = get_impersonation_credentials(

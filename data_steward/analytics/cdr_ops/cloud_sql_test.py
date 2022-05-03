@@ -13,8 +13,8 @@
 # ---
 
 # + tags=["parameters"]
-project_id = "aou-res-curation-prod"
-run_as = "data-analytics@aou-res-curation-prod.iam.gserviceaccount.com"
+project_id = ""
+run_as = ""
 # -
 
 import pandas as pd
