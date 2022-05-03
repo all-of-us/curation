@@ -28,15 +28,6 @@ class UnitNormalizationTest(unittest.TestCase):
         self.assertEqual(self.rule_instance.dataset_id, self.dataset_id)
         self.assertEqual(self.rule_instance.sandbox_dataset_id, self.sandbox_id)
 
-    def test_setup_rule(self):
-        # Test
-        with self.assertRaises(RuntimeError) as c:
-            self.rule_instance.setup_rule(client=None)
-
-        self.assertEqual(str(c.exception), 'Specify BigQueryClient object')
-
-        # No errors are raised, nothing will happen
-
     def test_get_query_specs(self):
         # Pre conditions
         self.assertEqual(
