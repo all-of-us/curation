@@ -271,8 +271,8 @@ class BigQueryClient(Client):
 
         return dict(row.items())
 
-    def upload_csv_data_to_bq_table(self, dataset_id, table_name, fq_file_path,
-                                    write_disposition):
+    def upload_csv_data_to_bq_table(self, dataset_id: str, table_name: str,
+                                    fq_file_path: str, write_disposition: str):
         """
         Uploads data from local csv file to bigquery table
 
@@ -302,7 +302,7 @@ class BigQueryClient(Client):
 
         return result
 
-    def create_tables(self, fq_table_names, exists_ok=False, fields=None):
+    def create_tables(self, fq_table_names: list, exists_ok=False, fields=None):
         """
         Create an empty table(s) in a project.
 
@@ -361,9 +361,9 @@ class BigQueryClient(Client):
         return successes
 
     def update_labels_and_tags(self,
-                               dataset_id,
-                               existing_labels_or_tags,
-                               new_labels_or_tags,
+                               dataset_id: str,
+                               existing_labels_or_tags: dict,
+                               new_labels_or_tags: dict,
                                overwrite_ok=False):
         """
         Updates labels or tags in dataset if not set or needing to be updated
