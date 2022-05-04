@@ -14,7 +14,6 @@ import os
 
 # Third party imports
 from dateutil import parser
-from jinja2 import Template
 
 # Project imports
 from app_identity import PROJECT_ID

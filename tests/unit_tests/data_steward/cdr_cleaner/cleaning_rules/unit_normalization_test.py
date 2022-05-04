@@ -7,8 +7,6 @@ from cdr_cleaner.cleaning_rules.unit_normalization import UnitNormalization, \
 from constants.bq_utils import WRITE_TRUNCATE
 from constants.cdr_cleaner import clean_cdr as clean_consts
 
-QUERY = 'query'
-
 
 class UnitNormalizationTest(unittest.TestCase):
 
@@ -22,7 +20,6 @@ class UnitNormalizationTest(unittest.TestCase):
         self.project_id = 'foo_project'
         self.dataset_id = 'foo_dataset'
         self.sandbox_id = 'foo_sandbox'
-        self.client = None
 
         self.rule_instance = UnitNormalization(self.project_id, self.dataset_id,
                                                self.sandbox_id)
@@ -30,15 +27,6 @@ class UnitNormalizationTest(unittest.TestCase):
         self.assertEqual(self.rule_instance.project_id, self.project_id)
         self.assertEqual(self.rule_instance.dataset_id, self.dataset_id)
         self.assertEqual(self.rule_instance.sandbox_dataset_id, self.sandbox_id)
-
-    def test_setup_rule(self):
-        # Test
-        with self.assertRaises(RuntimeError) as c:
-            self.rule_instance.setup_rule(None)
-
-        self.assertEqual(str(c.exception), 'Specify BigQuery client object')
-
-        # No errors are raised, nothing will happen
 
     def test_get_query_specs(self):
         # Pre conditions

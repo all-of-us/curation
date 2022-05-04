@@ -159,7 +159,7 @@ class UnitNormalization(BaseCleaningRule):
             depends_on=[MeasurementRecordsSuppression, CleanHeightAndWeight],
             table_namer=table_namer)
 
-    def setup_rule(self, client=None):
+    def setup_rule(self, client):
         """
         Load required resources prior to executing cleaning rule queries.
 
@@ -167,7 +167,7 @@ class UnitNormalization(BaseCleaningRule):
         rule of a class.  For example, if your class requires loading a static
         table, that load operation should be defined here.  It SHOULD NOT BE
         defined as part of get_query_specs().
-        :param client:
+        :param client: A BigQueryClient
         :return:
 
         :raises:  BadRequest, OSError, AttributeError, TypeError, ValueError if
@@ -179,18 +179,14 @@ class UnitNormalization(BaseCleaningRule):
         unit_mapping_table = (f'{self.project_id}.'
                               f'{self.sandbox_dataset_id}.'
                               f'{UNIT_MAPPING_TABLE}')
-        bq.create_tables(
-            client,
-            self.project_id,
-            [unit_mapping_table],
-        )
+        client.create_tables([unit_mapping_table])
         # Uploading data to _unit_mapping table
         unit_mappings_csv_path = os.path.join(resources.resource_files_path,
                                               UNIT_MAPPING_FILE)
-        result = bq.upload_csv_data_to_bq_table(client, self.sandbox_dataset_id,
-                                                UNIT_MAPPING_TABLE,
-                                                unit_mappings_csv_path,
-                                                UNIT_MAPPING_TABLE_DISPOSITION)
+        _ = bq.upload_csv_data_to_bq_table(client, self.sandbox_dataset_id,
+                                           UNIT_MAPPING_TABLE,
+                                           unit_mappings_csv_path,
+                                           UNIT_MAPPING_TABLE_DISPOSITION)
         LOGGER.info(
             f"Created {self.sandbox_dataset_id}.{UNIT_MAPPING_TABLE} and "
             f"loaded data from {unit_mappings_csv_path}")
