@@ -11,7 +11,7 @@ from google.cloud.bigquery import Table
 # Project Imports
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.remove_non_matching_participant import (
-    RemoveNonMatchingParticipant, KEY_FIELDS)
+    RemoveNonMatchingParticipant, KEY_FIELDS, TICKET_NUMBER)
 from common import JINJA_ENV, IDENTITY_MATCH, OBSERVATION, PARTICIPANT_MATCH, PERSON
 from validation.participants.create_update_drc_id_match_table import create_drc_validation_table
 from tests import test_util
@@ -338,6 +338,8 @@ class RemoveNonMatchingParticipantTest(BaseTest.CleaningRulesTestBase):
                     f'{PERSON}',
                 'fq_table_name':
                     f'{self.project_id}.{self.dataset_id}.{PERSON}',
+                'fq_sandbox_table_name':
+                    f'{self.project_id}.{self.sandbox_id}.{PERSON}_{TICKET_NUMBER}',
                 'fields': [
                     'person_id', 'gender_concept_id', 'year_of_birth',
                     'race_concept_id', 'ethnicity_concept_id'
@@ -346,6 +348,7 @@ class RemoveNonMatchingParticipantTest(BaseTest.CleaningRulesTestBase):
                     101, 102, 103, 104, 201, 202, 203, 204, 301, 302, 303, 304,
                     401, 402, 403, 404
                 ],
+                'sandboxed_ids': [204, 303, 304],
                 'cleaned_values': [
                     (101, 0, 1991, 0, 0),
                     (102, 0, 1992, 0, 0),
@@ -367,6 +370,8 @@ class RemoveNonMatchingParticipantTest(BaseTest.CleaningRulesTestBase):
                     f'{OBSERVATION}',
                 'fq_table_name':
                     f'{self.project_id}.{self.dataset_id}.{OBSERVATION}',
+                'fq_sandbox_table_name':
+                    f'{self.project_id}.{self.sandbox_id}.{OBSERVATION}_{TICKET_NUMBER}',
                 'fields': [
                     'observation_id', 'person_id', 'observation_concept_id',
                     'observation_date', 'observation_type_concept_id'
@@ -375,6 +380,7 @@ class RemoveNonMatchingParticipantTest(BaseTest.CleaningRulesTestBase):
                     1001, 1002, 1003, 1004, 2001, 2002, 2003, 2004, 3001, 3002,
                     3003, 3004, 4001, 4002, 4003, 4004
                 ],
+                'sandboxed_ids': [2004, 3003, 3004],
                 'cleaned_values': [
                     (1001, 101, 0, parse('2022-01-01').date(), 0),
                     (1002, 102, 0, parse('2022-01-02').date(), 0),
