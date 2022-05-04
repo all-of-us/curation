@@ -69,6 +69,12 @@ def _filter_stale_datasets(bq_client: BigQueryClient, first_n: int = None):
             if len(list(bq_client.list_tables(dataset_name))) >= 1:
                 continue
 
+            if len(list(bq_client.list_routines(dataset_name))) >= 1:
+                continue
+
+            if len(list(bq_client.list_models(dataset_name))) >= 1:
+                continue
+
             stale_datasets.append(dataset_name)
             LOGGER.info(
                 f"{n}: stale_dataset={dataset_name}, time_created={dataset_created}."
