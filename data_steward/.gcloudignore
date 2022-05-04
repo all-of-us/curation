@@ -9,6 +9,8 @@
 .gcloudignore
 .git
 .gitignore
+# Unwanted file added when deployed using MacOS.
+*.DS_Store
 
 # Duplicating .gitignore entries below because
 # the gcloudignore include directive does not accept paths (i.e. "../.gitignore")
