@@ -8,7 +8,6 @@ from io import open
 from typing import List
 
 import cachetools
-from google.cloud.bigquery import SchemaField
 
 from common import (VOCABULARY, ACHILLES, PROCESSED_TXT, RESULTS_HTML,
                     FITBIT_TABLES, PID_RID_MAPPING, COPE_SURVEY_MAP)
