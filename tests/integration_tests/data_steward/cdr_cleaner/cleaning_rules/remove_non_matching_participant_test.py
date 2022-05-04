@@ -245,7 +245,7 @@ class RemoveNonMatchingParticipantTest(BaseTest.CleaningRulesTestBase):
     def test_exist_identity_match(self):
         """
         Test for exist_identity_match(). Only HPO_4 should return False
-        as it does not have a identity match table. 
+        as it does not have an identity match table. 
         """
         self.assertTrue(
             self.rule_instance.exist_identity_match(
@@ -318,7 +318,7 @@ class RemoveNonMatchingParticipantTest(BaseTest.CleaningRulesTestBase):
         HPO_1: have both participant_match and identity_match. And all the person_ids are validated by the site.
                -> CR skips all the person_ids from HPO_1.
         HPO_2: have both participant_match and identity_match. But person_id 204 is not validated by the site.
-               -> CR runs again only 204 from HPO_1.
+               -> CR runs against only 204 from HPO_1.
         HPO_3: has identity_match but not participant_match.
                -> CR runs through all the person_ids from HPO_3.
         HPO_4: has participant_match but not identity_match.
