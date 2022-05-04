@@ -33,9 +33,8 @@ import logging
 from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from common import JINJA_ENV, CDM_TABLES
-from gcloud.bq import BigQueryClient
-from resources import get_table_schema
 from utils import pipeline_logging
+from utils.bq import get_table_schema
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
 from cdr_cleaner.cleaning_rules.table_suppression import TableSuppression
 

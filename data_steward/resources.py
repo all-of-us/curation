@@ -175,34 +175,6 @@ def fields_for(table, sub_path=None):
     return fields
 
 
-def get_table_schema(table_name: str, fields=None) -> list:
-    """
-    A helper method to create big query SchemaFields for dictionary definitions.
-
-    Given the table name, reads the schema from the schema definition file
-    and returns a list of SchemaField objects that can be used for table
-    creation.
-
-    :param table_name:  the table name to get BigQuery SchemaField information
-        for.
-    :param fields: An optional argument to provide fields/schema as a list of JSON objects
-    :returns:  a list of SchemaField objects representing the table's schema.
-    """
-    if fields:
-        fields = fields
-    else:
-        fields = fields_for(table_name)
-
-    schema = []
-    for column in fields:
-        name = column.get('name')
-        field_type = column.get('type')
-        column_def = SchemaField(name, field_type).from_api_repr(column)
-        schema.append(column_def)
-
-    return schema
-
-
 def is_internal_table(table_id):
     """
     Return True if specified table is an internal table or mapping table for
