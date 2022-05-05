@@ -34,9 +34,9 @@ from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from common import JINJA_ENV, CDM_TABLES
 from utils import pipeline_logging
-from utils.bq import get_table_schema
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
 from cdr_cleaner.cleaning_rules.table_suppression import TableSuppression
+from resources import fields_for
 
 LOGGER = logging.getLogger(__name__)
 
@@ -104,23 +104,23 @@ class IDFieldSuppression(BaseCleaningRule):
         queries = []
         schemas = {}
         for table in self.affected_tables:
-            schemas[table] = get_table_schema(table)
+            schemas[table] = fields_for(table)
         for table in self.affected_tables:
             statements = []
             for item in schemas[table]:
-                if item.name in fields:
-                    if item.mode.lower() == 'nullable':
+                if item.get('name') in fields:
+                    if item.get('mode').lower() == 'nullable':
                         value = 'NULL'
-                    elif item.field_type.lower() == 'integer':
+                    elif item.get('type').lower() == 'integer':
                         value = 0
-                    elif item.field_type.lower() == 'string':
+                    elif item.get('type').lower() == 'string':
                         value = ''
                     else:
                         raise RuntimeError(
-                            f"Required field {item.name} needs to be integer or string type to be replaced"
+                            f"Required field {item.get('name')} needs to be integer or string type to be replaced"
                         )
                     suppression_statement = REPLACE_STRING.render(
-                        suppression_statement=value, field=item.name)
+                        suppression_statement=value, field=item.get('name'))
                     statements.append(suppression_statement)
             if statements:
                 suppression_statement = ', '.join(statements)
