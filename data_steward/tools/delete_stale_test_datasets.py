@@ -68,7 +68,7 @@ def _filter_stale_datasets(bq_client: BigQueryClient, first_n: int = None):
                 continue
 
             if len(list(bq_client.list_tables(dataset_name))) >= 1:
-                LOGGER.info(f"Skipping {dataset_name} - it has datasets in it.")
+                LOGGER.info(f"Skipping {dataset_name} - it has tables in it.")
                 continue
 
             if len(list(bq_client.list_routines(dataset_name))) >= 1:
