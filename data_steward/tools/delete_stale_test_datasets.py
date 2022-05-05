@@ -2,7 +2,7 @@
 Delete first_n stale datasets in test environment. 
 Stale datasets meet all of the following conditions:
 (1) equal to or older than 90 days old, 
-(2) empty, and 
+(2) empty(=no datasets/routines/models), and 
 (3) in test environment.
 """
 from datetime import datetime, timezone
@@ -64,15 +64,19 @@ def _filter_stale_datasets(bq_client: BigQueryClient, first_n: int = None):
             dataset_created = bq_client.get_dataset(dataset_name).created
 
             if (now - dataset_created).days <= 90:
+                LOGGER.info(f"Skipping {dataset_name} - it is not old enough.")
                 continue
 
             if len(list(bq_client.list_tables(dataset_name))) >= 1:
+                LOGGER.info(f"Skipping {dataset_name} - it has tables in it.")
                 continue
 
             if len(list(bq_client.list_routines(dataset_name))) >= 1:
+                LOGGER.info(f"Skipping {dataset_name} - it has routines in it.")
                 continue
 
             if len(list(bq_client.list_models(dataset_name))) >= 1:
+                LOGGER.info(f"Skipping {dataset_name} - it has models in it.")
                 continue
 
             stale_datasets.append(dataset_name)
