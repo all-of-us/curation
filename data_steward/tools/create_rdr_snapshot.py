@@ -10,7 +10,6 @@ from google.cloud import bigquery
 from cdr_cleaner import clean_cdr
 from cdr_cleaner.args_parser import add_kwargs_to_args
 from utils import auth
-from utils import bq
 from gcloud.bq import BigQueryClient
 from utils import pipeline_logging
 from common import CDR_SCOPES

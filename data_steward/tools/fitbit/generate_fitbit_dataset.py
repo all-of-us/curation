@@ -9,7 +9,7 @@ from google.cloud.bigquery import Table
 
 from cdr_cleaner import clean_cdr, args_parser
 from common import FITBIT_TABLES, JINJA_ENV
-from utils import auth, bq, pipeline_logging
+from utils import auth, pipeline_logging
 from gcloud.bq import BigQueryClient
 from constants.cdr_cleaner import clean_cdr as consts
 
