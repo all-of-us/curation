@@ -171,8 +171,8 @@ class UnitNormalization(BaseCleaningRule):
         :return:
 
         :raises:  BadRequest, OSError, AttributeError, TypeError, ValueError if
-            the load job fails. Error raised from bq.upload_csv_data_to_bq_table
-            helper function.
+            the load job fails. Error raised from client.upload_csv_data_to_bq_table
+            helper method.
         """
 
         # creating _unit_mapping table
