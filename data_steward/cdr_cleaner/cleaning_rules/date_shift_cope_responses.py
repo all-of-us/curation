@@ -118,7 +118,7 @@ class DateShiftCopeResponses(BaseCleaningRule):
         desc = 'Reverse Date Shift for COPE Responses'
         super().__init__(issue_numbers=['DC938', 'DC982', 'DC970', 'DC2438'],
                          description=desc,
-                         affected_datasets=[cdr_consts.DEID_BASE],
+                         affected_datasets=[cdr_consts.REGISTERED_TIER_DEID_BASE],
                          affected_tables=[OBSERVATION],
                          project_id=project_id,
                          dataset_id=dataset_id,
