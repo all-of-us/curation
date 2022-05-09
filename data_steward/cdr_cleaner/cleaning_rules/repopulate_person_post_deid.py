@@ -202,14 +202,15 @@ class RepopulatePersonPostDeid(BaseCleaningRule):
             'Returns a parsed query to repopulate the person table using observation.'
         )
 
-        super().__init__(issue_numbers=JIRA_ISSUE_NUMBERS,
-                         description=desc,
-                         affected_datasets=[cdr_consts.REGISTERED_TIER_DEID_BASE],
-                         affected_tables=[PERSON],
-                         project_id=project_id,
-                         dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id,
-                         table_namer=table_namer)
+        super().__init__(
+            issue_numbers=JIRA_ISSUE_NUMBERS,
+            description=desc,
+            affected_datasets=[cdr_consts.REGISTERED_TIER_DEID_BASE],
+            affected_tables=[PERSON],
+            project_id=project_id,
+            dataset_id=dataset_id,
+            sandbox_dataset_id=sandbox_dataset_id,
+            table_namer=table_namer)
 
     def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
         """
