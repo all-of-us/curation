@@ -554,7 +554,7 @@ def query_sheet_linked_bq_table(project_id, table_content_query,
     'Use gcloud.bq.BigQueryClient.to_scalar(self, result: typing.Union[bigquery.table.RowIterator,bigquery.QueryJob]) instead'
 )
 def to_scalar(
-        result: typing.Union[bigquery.table.RowIterator, bigquery.QueryJob]
+    result: typing.Union[bigquery.table.RowIterator, bigquery.QueryJob]
 ) -> typing.Any:
     """
     Get a scalar query result
@@ -607,7 +607,7 @@ def get_table_count(client: bigquery.Client,
     'Use gcloud.bq.BigQueryClient.list_tables(self, dataset: bigquery.DatasetReference) instead'
 )
 def list_tables(
-        client: bigquery.Client, dataset: bigquery.DatasetReference
+    client: bigquery.Client, dataset: bigquery.DatasetReference
 ) -> typing.Iterator[bigquery.table.TableListItem]:
     """
     List all tables in a dataset
