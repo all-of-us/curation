@@ -554,7 +554,7 @@ def query_sheet_linked_bq_table(project_id, table_content_query,
     'Use gcloud.bq.BigQueryClient.to_scalar(self, result: typing.Union[bigquery.table.RowIterator,bigquery.QueryJob]) instead'
 )
 def to_scalar(
-    result: typing.Union[bigquery.table.RowIterator, bigquery.QueryJob]
+        result: typing.Union[bigquery.table.RowIterator, bigquery.QueryJob]
 ) -> typing.Any:
     """
     Get a scalar query result
@@ -607,7 +607,7 @@ def get_table_count(client: bigquery.Client,
     'Use gcloud.bq.BigQueryClient.list_tables(self, dataset: bigquery.DatasetReference) instead'
 )
 def list_tables(
-    client: bigquery.Client, dataset: bigquery.DatasetReference
+        client: bigquery.Client, dataset: bigquery.DatasetReference
 ) -> typing.Iterator[bigquery.table.TableListItem]:
     """
     List all tables in a dataset
@@ -676,7 +676,10 @@ def build_and_copy_contents(client, src_dataset, dest_dataset):
 
     for table_item in table_list:
         # create empty schemaed tablle with client object
-        schema_list = get_table_schema(table_item.table_id)
+        try:
+            schema_list = get_table_schema(table_item.table_id)
+        except RuntimeError as re:
+            schema_list = None
         dest_table = f'{client.project}.{dest_dataset}.{table_item.table_id}'
         dest_table = bigquery.Table(dest_table, schema=schema_list)
         dest_table = client.create_table(dest_table)  # Make an API request.
@@ -684,20 +687,27 @@ def build_and_copy_contents(client, src_dataset, dest_dataset):
             f'Created empty table `{dest_table.project}.{dest_table.dataset_id}.{dest_table.table_id}`'
         )
 
-        fields_name_str = ',\n'.join([item.name for item in schema_list])
-        # copy contents from non-schemaed source to schemaed dest
-        sql = (
-            f'SELECT {fields_name_str} '
-            f'FROM `{table_item.project}.{table_item.dataset_id}.{table_item.table_id}`'
-        )
+        if schema_list:
+            fields_name_str = ',\n'.join([item.name for item in schema_list])
+
+            # copy contents from non-schemaed source to schemaed dest
+            sql = (
+                f'SELECT {fields_name_str} '
+                f'FROM `{table_item.project}.{table_item.dataset_id}.{table_item.table_id}`'
+            )
+        else:
+            sql = (
+                f'SELECT * '
+                f'FROM `{table_item.project}.{table_item.dataset_id}.{table_item.table_id}`'
+            )
         job_config = bigquery.job.QueryJobConfig(
             write_disposition=bigquery.job.WriteDisposition.WRITE_EMPTY,
             priority=bigquery.job.QueryPriority.BATCH,
             destination=dest_table,
             labels={
-                'table_name': table_item.table_id,
-                'copy_from': table_item.dataset_id,
-                'copy_to': dest_dataset
+                'table_name': table_item.table_id.lower(),
+                'copy_from': table_item.dataset_id.lower(),
+                'copy_to': dest_dataset.lower()
             })
         job_id = (f'schemaed_copy_{table_item.table_id.lower()}_'
                   f'{datetime.now().strftime("%Y%m%d_%H%M%S")}')
