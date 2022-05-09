@@ -64,7 +64,7 @@ class MeasurementTableSuppressionTest(unittest.TestCase):
         # pre-conditions
         self.assertEqual(
             self.rule_instance.affected_datasets,
-            [clean_consts.DEID_BASE, clean_consts.CONTROLLED_TIER_DEID_CLEAN])
+            [clean_consts.REGISTERED_TIER_DEID_CLEAN, clean_consts.CONTROLLED_TIER_DEID_CLEAN])
 
         # test
         result_list = self.rule_instance.get_query_specs()

@@ -32,7 +32,7 @@ class UnitNormalizationTest(unittest.TestCase):
         # Pre conditions
         self.assertEqual(
             self.rule_instance.affected_datasets,
-            [clean_consts.DEID_CLEAN, clean_consts.CONTROLLED_TIER_DEID_CLEAN])
+            [clean_consts.REGISTERED_TIER_DEID_CLEAN, clean_consts.CONTROLLED_TIER_DEID_CLEAN])
 
         # Test
         results_list = self.rule_instance.get_query_specs()
@@ -66,7 +66,7 @@ class UnitNormalizationTest(unittest.TestCase):
         # Pre conditions
         self.assertEqual(
             self.rule_instance.affected_datasets,
-            [clean_consts.DEID_CLEAN, clean_consts.CONTROLLED_TIER_DEID_CLEAN])
+            [clean_consts.REGISTERED_TIER_DEID_CLEAN, clean_consts.CONTROLLED_TIER_DEID_CLEAN])
 
         store_rows_to_be_changed = SANDBOX_UNITS_QUERY.render(
             project_id=self.project_id,
