@@ -9,6 +9,7 @@ from datetime import datetime
 # Third party imports
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
+from deprecated import deprecated
 
 # Project imports
 import app_identity
@@ -135,6 +136,8 @@ def create_service():
     return build('bigquery', 'v2', cache={})
 
 
+@deprecated(reason='Use resources.get_table_id(table_name, hpo_id=None) instead'
+           )
 def get_table_id(hpo_id, table_name):
     """
     Get the bigquery table id associated with an HPOs CDM table
