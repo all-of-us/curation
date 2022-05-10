@@ -2,7 +2,7 @@ import unittest
 from unittest import mock
 from unittest.mock import ANY
 
-import bq_utils
+import resources
 from validation import ehr_union as eu
 
 MOVE_PER_OBS_QRY = '''
@@ -99,12 +99,13 @@ class EhrUnionTest(unittest.TestCase):
         } for hpo_id in self.hpo_ids]
         tables = ['person', 'visit_occurrence', 'pii_name']
         fake_table_ids = [
-            bq_utils.get_table_id(hpo_id, table)
+            resources.get_table_id(table, hpo_id=hpo_id)
             for hpo_id in self.hpo_ids
             for table in tables
         ]
         fake_table_ids.append(
-            bq_utils.get_table_id(self.FAKE_SITE_1, 'condition_occurrence'))
+            resources.get_table_id('condition_occurrence',
+                                   hpo_id=self.FAKE_SITE_1))
         mock_list_all_table_ids.return_value = fake_table_ids
         hpo_count = len(self.hpo_ids)
 
@@ -116,7 +117,8 @@ class EhrUnionTest(unittest.TestCase):
         for i in range(0, hpo_count):
             hpo_id = self.hpo_ids[i]
             subquery = actual[i]
-            hpo_table = bq_utils.get_table_id(hpo_id, 'visit_occurrence')
+            hpo_table = resources.get_table_id('visit_occurrence',
+                                               hpo_id=hpo_id)
             hpo_offset = hpo_unique_identifiers[hpo_id]
             self.assertIn(f"'{hpo_table}' AS src_table_id", subquery)
             self.assertIn('visit_occurrence_id AS src_visit_occurrence_id',
@@ -133,7 +135,7 @@ class EhrUnionTest(unittest.TestCase):
         for i in range(0, hpo_count):
             hpo_id = self.hpo_ids[i]
             subquery = actual[i]
-            hpo_table = bq_utils.get_table_id(hpo_id, 'person')
+            hpo_table = resources.get_table_id('person', hpo_id=hpo_id)
             self.assertIn(f"'{hpo_table}' AS src_table_id", subquery)
             self.assertIn('person_id AS src_person_id', subquery)
             self.assertIn('person_id AS person_id', subquery)
@@ -143,8 +145,8 @@ class EhrUnionTest(unittest.TestCase):
                                         'fake_dataset', 'fake_project')
         self.assertEqual(1, len(actual))
         subquery = actual[0]
-        hpo_table = bq_utils.get_table_id(self.FAKE_SITE_1,
-                                          'condition_occurrence')
+        hpo_table = resources.get_table_id('condition_occurrence',
+                                           hpo_id=self.FAKE_SITE_1)
         hpo_offset = hpo_unique_identifiers[self.FAKE_SITE_1]
         self.assertIn(f"'{hpo_table}' AS src_table_id", subquery)
         self.assertIn('condition_occurrence_id AS src_condition_occurrence_id',
