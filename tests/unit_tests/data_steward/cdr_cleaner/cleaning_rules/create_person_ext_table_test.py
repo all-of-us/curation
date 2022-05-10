@@ -57,9 +57,10 @@ class CreatePersonExtTableTest(unittest.TestCase):
 
     def test_get_query_specs(self):
         # Pre conditions
-        self.assertEqual(
-            self.rule_instance.affected_datasets,
-            [clean_consts.REGISTERED_TIER_DEID_BASE, clean_consts.CONTROLLED_TIER_DEID_BASE])
+        self.assertEqual(self.rule_instance.affected_datasets, [
+            clean_consts.REGISTERED_TIER_DEID_BASE,
+            clean_consts.CONTROLLED_TIER_DEID_BASE
+        ])
 
         # Test
         results_list = self.rule_instance.get_query_specs()
