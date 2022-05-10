@@ -127,7 +127,7 @@ class RequiredLabsTest(unittest.TestCase):
 
         measurement_concept_sets_table_path = os.path.join(
             resources.resource_files_path,
-            MEASUREMENT_CONCEPT_SETS_TABLE + '.csv')
+            f'{MEASUREMENT_CONCEPT_SETS_TABLE}.csv')
         expected_total_rows = len(
             resources.csv_to_list(measurement_concept_sets_table_path))
         self.assertEqual(expected_total_rows, int(response['totalRows']))
