@@ -119,7 +119,7 @@ def output_table_for(table_id):
     :param table_id: name of a CDM table
     :return: name of the table where results of the union will be stored
     """
-    return 'unioned_ehr_' + table_id
+    return f'unioned_ehr_{table_id}'
 
 
 def _mapping_subqueries(table_name, hpo_ids, dataset_id, project_id):
@@ -350,25 +350,25 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
                 # Replace with mapped visit_occurrence_id
                 # mvo is an alias that should resolve to the mapping visit_occurrence table
                 # Note: This is only reached when table_name != visit_occurrence
-                col_expr = 'mvo.' + eu_constants.VISIT_OCCURRENCE_ID
+                col_expr = f'mvo.{eu_constants.VISIT_OCCURRENCE_ID}'
                 has_visit_occurrence_id = True
             elif field_name == eu_constants.VISIT_DETAIL_ID:
                 # Replace with mapped visit_detail_id
                 # mvd is an alias that should resolve to the mapping visit_detail table
                 # Note: This is only reached when table_name != visit_detail
-                col_expr = 'mvd.' + eu_constants.VISIT_DETAIL_ID
+                col_expr = f'mvd.{eu_constants.VISIT_DETAIL_ID}'
                 has_visit_detail_id = True
             elif field_name == eu_constants.CARE_SITE_ID:
                 # Replace with mapped care_site_id
                 # cs is an alias that should resolve to the mapping care_site table
                 # Note: This is only reached when table_name != care_site
-                col_expr = 'mcs.' + eu_constants.CARE_SITE_ID
+                col_expr = f'mcs.{eu_constants.CARE_SITE_ID}'
                 has_care_site_id = True
             elif field_name == eu_constants.LOCATION_ID:
                 # Replace with mapped location_id
                 # lc is an alias that should resolve to the mapping visit table
                 # Note: This is only reached when table_name != location
-                col_expr = 'loc.' + eu_constants.LOCATION_ID
+                col_expr = f'loc.{eu_constants.LOCATION_ID}'
                 has_location_id = True
             else:
                 col_expr = field_name
