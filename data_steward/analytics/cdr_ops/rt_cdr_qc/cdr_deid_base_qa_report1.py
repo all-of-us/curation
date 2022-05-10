@@ -284,7 +284,7 @@ AND (sex_at_birth_source_value !='SexAtBirth_Female' AND gender_source_concept_i
 
 '''
 df1=pd.read_gbq(query, dialect='standard')  
-if df1.eq(0).any().any():
+if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query3 Sex_female/gender_man mismatch in deid_base_cdr.person table', 'result' : 'PASS'},  
                 ignore_index = True) 
 else:
@@ -315,7 +315,7 @@ AND (sex_at_birth_source_value !='SexAtBirth_Male' AND gender_source_concept_id 
 
  '''
 df1=pd.read_gbq(query, dialect='standard')  
-if df1.eq(0).any().any():
+if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query3.2 Sex_male/gender_woman mismatch in deid_base_cdr.person', 'result' : 'PASS'},  
                 ignore_index = True) 
 else:
@@ -352,20 +352,21 @@ JOIN `{project_id}.{deid_base_cdr}.observation` d
 ON i.observation_id = d.observation_id
 JOIN `{project_id}.{deid_base_cdr}.observation_ext` e
 ON e.observation_id = d.observation_id
-WHERE e.survey_version_concept_id IN (2100000004, 2100000003, 2100000002)
+WHERE e.survey_version_concept_id IN (2100000002, 2100000003, 2100000004, 2100000005, 2100000006,
+ 2100000007, 905047, 905055, 765936)
 )
 
-SELECT COUNT (*) AS n_row_pass FROM df1
+SELECT COUNT (*) AS n_row_not_pass FROM df1
 WHERE diff !=0
 
 '''
 df1=pd.read_gbq(query, dialect='standard')
 if df1.loc[0].sum()==0:
- df = df.append({'query' : 'Query4 date not shifited', 'result' : ''},  
-                ignore_index = True) 
+    df = df.append({'query' : 'Query4 date not shifited', 'result' : 'PASS'},
+                ignore_index = True)
 else:
- df = df.append({'query' : 'Query4 date not shifited', 'result' : 'PASS'},  
-                ignore_index = True) 
+    df = df.append({'query': 'Query4 date not shifited', 'result': ''},
+                   ignore_index=True)
 df1
 
 # ##  4.2 [DC-1051] Verify that "PPI Drop Duplicates" Rule is excluded COPE responses
