@@ -13,22 +13,6 @@
 #     name: python3
 # ---
 
-# # Set Up
-
-# parameters
-rt_dataset = ""
-ct_ser_dataset = ""
-new_ct_dataset = ""
-cur_project = ""
-cur_out_project = ""
-
-rt_dataset = 'R2020q4r1_antibody_quest'
-ct_ser_dataset = 'C2021Q3R2_serology'
-new_ct_dataset = 'C2021q3r2_antibody_quest'
-cur_project = 'aou-res-curation-prod'
-cur_out_project = 'aou-res-curation-output-prod'
-
-# +
 import pandas as pd
 import numpy as np
 import warnings
@@ -40,10 +24,6 @@ from utils import auth
 from utils.bq import get_client
 client = get_client(project_id)
 
-
-# -
-
-# # QC
 
 def get_table(table, cols, dataset, project):
     query = JINJA_ENV.from_string("""
@@ -201,8 +181,3 @@ def serology_dataset_qc(new_ct_dataset, rt_dataset, ct_ser_dataset, cur_project,
         #display(vandi_pos_controls)
         print("\033[1;31m"+'   Fail! Vanderbilt positive controls do not have demographics data in '+new_ct_dataset+\
               '.serology_person.'+"\033[0;0m")
-
-serology_dataset_qc(new_ct_dataset = new_ct_dataset, rt_dataset = rt_dataset
-                    , ct_ser_dataset = ct_ser_dataset, dataset_project = dataset_project, project = project)
-
-
