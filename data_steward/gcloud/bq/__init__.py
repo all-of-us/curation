@@ -407,7 +407,7 @@ class BigQueryClient(Client):
 
         return {**existing_labels_or_tags, **updates}
 
-    def build_and_copy_contents(self, src_dataset, dest_dataset):
+    def build_and_copy_contents(self, src_dataset: str, dest_dataset: str):
         """
         Copy non-schemaed data to schemaed table.
 
