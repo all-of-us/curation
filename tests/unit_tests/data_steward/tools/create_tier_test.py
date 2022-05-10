@@ -133,22 +133,22 @@ class CreateTierTest(unittest.TestCase):
             '--run_as',
             self.run_as,
         ],
-            [
-                '--credentials_filepath',
-                self.credentials_filepath,
-                '--project_id',
-                self.project_id,
-                '--tier',
-                self.tier,
-                '--idataset',
-                self.input_dataset,
-                '--release_tag',
-                self.release_tag,
-                '--deid_stage',
-                'clean',
-                '--run_as',
-                self.run_as,
-            ]]
+                                            [
+                                                '--credentials_filepath',
+                                                self.credentials_filepath,
+                                                '--project_id',
+                                                self.project_id,
+                                                '--tier',
+                                                self.tier,
+                                                '--idataset',
+                                                self.input_dataset,
+                                                '--release_tag',
+                                                self.release_tag,
+                                                '--deid_stage',
+                                                'clean',
+                                                '--run_as',
+                                                self.run_as,
+                                            ]]
         for args in incorrect_deid_stage_choice_args:
             self.assertRaises(SystemExit, parse_deid_args, args)
 
@@ -169,22 +169,22 @@ class CreateTierTest(unittest.TestCase):
             '--run_as',
             self.run_as,
         ],
-            [
-                '--credentials_filepath',
-                self.credentials_filepath,
-                '--project_id',
-                self.project_id,
-                '--tier',
-                'registry',
-                '--idataset',
-                self.input_dataset,
-                '--release_tag',
-                self.release_tag,
-                '--deid_stage',
-                self.deid_stage,
-                '--run_as',
-                self.run_as,
-            ]]
+                                      [
+                                          '--credentials_filepath',
+                                          self.credentials_filepath,
+                                          '--project_id',
+                                          self.project_id,
+                                          '--tier',
+                                          'registry',
+                                          '--idataset',
+                                          self.input_dataset,
+                                          '--release_tag',
+                                          self.release_tag,
+                                          '--deid_stage',
+                                          self.deid_stage,
+                                          '--run_as',
+                                          self.run_as,
+                                      ]]
         for args in incorrect_tier_choice_args:
             self.assertRaises(SystemExit, parse_deid_args, args)
 
@@ -417,10 +417,10 @@ class CreateTierTest(unittest.TestCase):
     @mock.patch('tools.create_tier.create_datasets')
     @mock.patch('tools.create_tier.get_dataset_name')
     def test_qa_handoff_date_update(
-            self, mock_dataset_name, mock_create_datasets,
-            mock_add_cdr_metadata_main, mock_client, mock_impersonate_credentials,
-            mock_add_kwargs, mock_cdr_main, mock_build_and_create_contents,
-            mock_etl_version):
+        self, mock_dataset_name, mock_create_datasets,
+        mock_add_cdr_metadata_main, mock_client, mock_impersonate_credentials,
+        mock_add_kwargs, mock_cdr_main, mock_build_and_create_contents,
+        mock_etl_version):
         final_dataset_name = f"{self.tier[0].upper()}{self.release_tag}_deid_base"
         datasets = {
             consts.CLEAN: final_dataset_name,
