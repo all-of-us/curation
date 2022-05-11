@@ -9,7 +9,6 @@ The intent is to remove all ehr data for unconsented participants for EHR.
 
 # Python Imports
 import os
-from dateutil import parser
 
 # Project Imports
 from common import PERSON, VISIT_OCCURRENCE, OBSERVATION
