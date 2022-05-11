@@ -12,8 +12,8 @@ from cdr_cleaner.args_parser import add_kwargs_to_args
 from utils import auth
 from gcloud.bq import BigQueryClient
 from utils import pipeline_logging
+from utils import bq
 from tools import add_cdr_metadata
-from tools.snapshot_by_query import create_schemaed_snapshot_dataset
 from common import CDR_SCOPES
 from constants.cdr_cleaner import clean_cdr as consts
 
@@ -241,8 +241,8 @@ def create_tier(credentials_filepath, project_id, tier, input_dataset,
     clean_cdr.main(args=controlled_tier_cleaning_args)
 
     # Snapshot the staging dataset to final dataset
-    create_schemaed_snapshot_dataset(project_id, datasets[consts.STAGING],
-                                     final_dataset_name, False)
+    bq.build_and_copy_contents(bq_client, datasets[consts.STAGING],
+                               final_dataset_name)
 
     return datasets
 
