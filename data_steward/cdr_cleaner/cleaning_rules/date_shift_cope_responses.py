@@ -28,12 +28,12 @@ import constants.bq_utils as bq_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from common import JINJA_ENV
+from cdr_cleaner.manual_cleaning_rules.survey_version_info import COPESurveyVersionTask
 
 LOGGER = logging.getLogger(__name__)
 
-PIPELINE_DATASET = 'pipeline_tables'
-COPE_CONCEPTS_TABLE = 'cope_concepts'
 OBSERVATION = 'observation'
+OBSERVATION_EXT = 'observation_ext'
 
 SANDBOX_COPE_SURVEY_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE
@@ -42,12 +42,13 @@ SELECT
   *
 FROM
   `{{project_id}}.{{dataset_id}}.{{observation_table}}`
+INNER JOIN
+  `{{project_id}}.{{dataset_id}}.{{observation_ext_table}}`
+USING
+  (observation_id)
 WHERE
-  observation_source_value IN (
-  SELECT
-    concept_code
-  FROM
-    `{{project_id}}.{{pipeline_tables_dataset}}.{{cope_concepts_table}}`)
+  survey_version_concept_id IN (2100000002, 2100000003, 2100000004, 2100000005, 2100000006,
+ 2100000007, 905047, 905055, 765936) 
     """)
 
 DATE_SHIFT_QUERY = JINJA_ENV.from_string("""
@@ -60,11 +61,11 @@ WITH
   FROM
     `{{project_id}}.{{pre_deid_dataset}}.{{observation_table}}`
    WHERE
-    observation_source_value IN (
+    observation_id IN (
     SELECT
-      concept_code
+      observation_id
     FROM
-      `{{project_id}}.{{pipeline_tables_dataset}}.{{cope_concepts_table}}`))
+      `{{project_id}}.{{sandbox_dataset}}.{{intermediary_table}}`))
 SELECT
   ob.observation_id,
   ob.person_id,
@@ -115,13 +116,14 @@ class DateShiftCopeResponses(BaseCleaningRule):
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
         desc = 'Reverse Date Shift for COPE Responses'
-        super().__init__(issue_numbers=['DC938', 'DC982', 'DC970'],
+        super().__init__(issue_numbers=['DC938', 'DC982', 'DC970', 'DC2438'],
                          description=desc,
                          affected_datasets=[cdr_consts.DEID_BASE],
                          affected_tables=[OBSERVATION],
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
+                         depends_on=[COPESurveyVersionTask],
                          table_namer=table_namer)
 
     def get_combined_dataset_from_deid_dataset(self, dataset_name):
@@ -156,9 +158,8 @@ class DateShiftCopeResponses(BaseCleaningRule):
             sandbox_dataset=self.sandbox_dataset_id,
             intermediary_table=self.get_sandbox_tablenames()[0],
             dataset_id=self.dataset_id,
-            pipeline_tables_dataset=PIPELINE_DATASET,
-            cope_concepts_table=COPE_CONCEPTS_TABLE,
-            observation_table=OBSERVATION)
+            observation_table=OBSERVATION,
+            observation_ext_table=OBSERVATION_EXT)
 
         update_query = dict()
         update_query[cdr_consts.QUERY] = DATE_SHIFT_QUERY.render(
@@ -166,8 +167,8 @@ class DateShiftCopeResponses(BaseCleaningRule):
             pre_deid_dataset=self.get_combined_dataset_from_deid_dataset(
                 self.dataset_id),
             dataset_id=self.dataset_id,
-            pipeline_tables_dataset=PIPELINE_DATASET,
-            cope_concepts_table=COPE_CONCEPTS_TABLE,
+            sandbox_dataset=self.sandbox_dataset_id,
+            intermediary_table=self.get_sandbox_tablenames()[0],
             observation_table=OBSERVATION)
         update_query[cdr_consts.DESTINATION_TABLE] = OBSERVATION
         update_query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
