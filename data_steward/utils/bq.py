@@ -680,6 +680,8 @@ def build_and_copy_contents(client, src_dataset, dest_dataset):
             schema_list = get_table_schema(table_item.table_id)
         except RuntimeError as re:
             schema_list = None
+            LOGGER.warning(f"No schema available for {table_item.table_id}."
+                           f"Creating table without specifying schema.")
         dest_table = f'{client.project}.{dest_dataset}.{table_item.table_id}'
         dest_table = bigquery.Table(dest_table, schema=schema_list)
         dest_table = client.create_table(dest_table)  # Make an API request.
