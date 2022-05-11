@@ -88,7 +88,9 @@ class COPESurveyVersionTask(BaseCleaningRule):
             description=desc,
             # first seen in the `deid_base` dataset, although
             # not explicitly part of this set of cleaning rules yet
-            affected_datasets=[cdr_consts.REGISTERED_TIER_DEID],
+            affected_datasets=[
+                cdr_consts.REGISTERED_TIER_DEID, cdr_consts.CONTROLLED_TIER_DEID
+            ],
             project_id=project_id,
             dataset_id=dataset_id,
             sandbox_dataset_id=sandbox_dataset_id,
