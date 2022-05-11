@@ -116,15 +116,16 @@ class DateShiftCopeResponses(BaseCleaningRule):
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
         desc = 'Reverse Date Shift for COPE Responses'
-        super().__init__(issue_numbers=['DC938', 'DC982', 'DC970', 'DC2438'],
-                         description=desc,
-                         affected_datasets=[cdr_consts.REGISTERED_TIER_DEID_BASE],
-                         affected_tables=[OBSERVATION],
-                         project_id=project_id,
-                         dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id,
-                         depends_on=[COPESurveyVersionTask],
-                         table_namer=table_namer)
+        super().__init__(
+            issue_numbers=['DC938', 'DC982', 'DC970', 'DC2438'],
+            description=desc,
+            affected_datasets=[cdr_consts.REGISTERED_TIER_DEID_BASE],
+            affected_tables=[OBSERVATION],
+            project_id=project_id,
+            dataset_id=dataset_id,
+            sandbox_dataset_id=sandbox_dataset_id,
+            depends_on=[COPESurveyVersionTask],
+            table_namer=table_namer)
 
     def get_combined_dataset_from_deid_dataset(self, dataset_name):
         """
