@@ -180,7 +180,8 @@ class ValidationMainTest(unittest.TestCase):
 
         # check tables exist and are clustered as expected
         for table in resources.CDM_TABLES + common.PII_TABLES:
-            table_id: str = bq_utils.get_table_id(test_util.FAKE_HPO_ID, table)
+            table_id: str = resources.get_table_id(table,
+                                                   hpo_id=test_util.FAKE_HPO_ID)
             table_info = bq_utils.get_table_info(table_id)
             fields = resources.fields_for(table)
             field_names: list = [field['name'] for field in fields]
