@@ -28,6 +28,7 @@ import constants.bq_utils as bq_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from common import JINJA_ENV
+from cdr_cleaner.manual_cleaning_rules.survey_version_info import COPESurveyVersionTask
 
 LOGGER = logging.getLogger(__name__)
 
@@ -46,7 +47,8 @@ INNER JOIN
 USING
   (observation_id)
 WHERE
-  survey_version_concept_id IS NOT NULL
+  survey_version_concept_id IN (2100000002, 2100000003, 2100000004, 2100000005, 2100000006,
+ 2100000007, 905047, 905055, 765936) 
     """)
 
 DATE_SHIFT_QUERY = JINJA_ENV.from_string("""
@@ -114,13 +116,14 @@ class DateShiftCopeResponses(BaseCleaningRule):
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
         desc = 'Reverse Date Shift for COPE Responses'
-        super().__init__(issue_numbers=['DC938', 'DC982', 'DC970'],
+        super().__init__(issue_numbers=['DC938', 'DC982', 'DC970', 'DC2438'],
                          description=desc,
                          affected_datasets=[cdr_consts.DEID_BASE],
                          affected_tables=[OBSERVATION],
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
+                         depends_on=[COPESurveyVersionTask],
                          table_namer=table_namer)
 
     def get_combined_dataset_from_deid_dataset(self, dataset_name):
