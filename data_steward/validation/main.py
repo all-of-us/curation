@@ -261,7 +261,7 @@ def validate_submission(hpo_id: str, bucket, folder_items: list,
     # (e.g. ehr_union doesn't have to check if tables exist)
     for file_name in resources.CDM_FILES + common.PII_FILES:
         table_name = file_name.split('.')[0]
-        table_id = bq_utils.get_table_id(hpo_id, table_name)
+        table_id = resources.get_table_id(table_name, hpo_id=hpo_id)
         bq_utils.create_standard_table(table_name, table_id, drop_existing=True)
 
     for cdm_file_name in sorted(resources.CDM_FILES):
@@ -574,7 +574,8 @@ def get_heel_error_query(hpo_id):
     :param hpo_id: identifies the HPO site
     :return: the query
     """
-    table_id = bq_utils.get_table_id(hpo_id, consts.ACHILLES_HEEL_RESULTS_TABLE)
+    table_id = resources.get_table_id(consts.ACHILLES_HEEL_RESULTS_TABLE,
+                                      hpo_id=hpo_id)
     return render_query(consts.HEEL_ERROR_QUERY_VALIDATION, table_id=table_id)
 
 
