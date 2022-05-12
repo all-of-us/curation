@@ -33,7 +33,7 @@ class DateShiftCopeResponsesTest(unittest.TestCase):
     def test_get_query_specs(self):
         # Pre conditions
         self.assertEqual(self.rule_instance.affected_datasets,
-                         [clean_consts.DEID_BASE])
+                         [clean_consts.REGISTERED_TIER_DEID_BASE])
 
         # Test
         results_list = self.rule_instance.get_query_specs()
@@ -73,7 +73,7 @@ class DateShiftCopeResponsesTest(unittest.TestCase):
     def test_log_queries(self):
         # Pre conditions
         self.assertEqual(self.rule_instance.affected_datasets,
-                         [clean_consts.DEID_BASE])
+                         [clean_consts.REGISTERED_TIER_DEID_BASE])
 
         store_rows_to_be_changed = SANDBOX_COPE_SURVEY_QUERY.render(
             project_id=self.project_id,

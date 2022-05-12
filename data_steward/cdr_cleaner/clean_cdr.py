@@ -254,7 +254,7 @@ CONTROLLED_TIER_FITBIT_CLEANING_CLASSES = [
     (RemoveNonExistingPids,),  # assumes CT dataset is ready for reference
 ]
 
-DEID_BASE_CLEANING_CLASSES = [
+REGISTERED_TIER_DEID_BASE_CLEANING_CLASSES = [
     (FillSourceValueTextFields,),
     (RepopulatePersonPostDeid,),
     (DateShiftCopeResponses,),
@@ -262,7 +262,7 @@ DEID_BASE_CLEANING_CLASSES = [
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
-DEID_CLEAN_CLEANING_CLASSES = [
+REGISTERED_TIER_DIED_CLEAN_CLEANING_CLASSES = [
     (MeasurementRecordsSuppression,),
     (CleanHeightAndWeight,),  # dependent on MeasurementRecordsSuppression
     (UnitNormalization,),  # dependent on CleanHeightAndWeight
@@ -355,10 +355,10 @@ DATA_STAGE_RULES_MAPPING = {
         RDR_CLEANING_CLASSES,
     DataStage.COMBINED.value:
         COMBINED_CLEANING_CLASSES,
-    DataStage.DEID_BASE.value:
-        DEID_BASE_CLEANING_CLASSES,
-    DataStage.DEID_CLEAN.value:
-        DEID_CLEAN_CLEANING_CLASSES,
+    DataStage.REGISTERED_TIER_DEID_BASE.value:
+        REGISTERED_TIER_DEID_BASE_CLEANING_CLASSES,
+    DataStage.REGISTERED_TIER_DEID_CLEAN.value:
+        REGISTERED_TIER_DIED_CLEAN_CLEANING_CLASSES,
     DataStage.FITBIT.value:
         FITBIT_CLEANING_CLASSES,
     DataStage.CONTROLLED_TIER_FITBIT.value:
