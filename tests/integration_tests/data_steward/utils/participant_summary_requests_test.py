@@ -15,7 +15,7 @@ The intent of this module is to check that GCR access token is generated properl
 # Python imports
 import os
 import time
-from datetime import date, datetime, timezone
+from datetime import datetime, timezone
 from unittest import mock
 
 # Third party imports
