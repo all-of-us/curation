@@ -26,6 +26,8 @@ from common import JINJA_ENV
 from utils.bq import get_client
 warnings.filterwarnings('ignore')
 client = get_client(cur_project)
+
+
 def get_table(table, cols, dataset, project):
     query = JINJA_ENV.from_string("""
             SELECT {cols} 
@@ -33,6 +35,8 @@ def get_table(table, cols, dataset, project):
             """)
     df = pd.read_gbq(query, project_id=project)
     return df
+
+
 def get_data_input(rt_dataset, ct_ser_dataset, new_ct_dataset, cur_out_project,
                    cur_project):
     ##########
@@ -77,6 +81,8 @@ def get_data_input(rt_dataset, ct_ser_dataset, new_ct_dataset, cur_out_project,
                                 new_ct_dataset=new_ct_dataset)
     schema = execute(client, schema_query)
     return pos_controls_provider, mayo_positive_controls, ct_person_table, new_ct_person_table, schema
+
+
 def serology_dataset_qc(new_ct_dataset, rt_dataset, ct_ser_dataset, cur_project,
                         cur_out_project):
     pos_controls_provider, mayo_positive_controls, ct_person_table, new_ct_person_table, schema = \
@@ -190,5 +196,7 @@ def serology_dataset_qc(new_ct_dataset, rt_dataset, ct_ser_dataset, cur_project,
         print(
             "\033[1;31m" + '   Fail! Vanderbilt positive controls do not have demographics data in ' + new_ct_dataset + \
             '.serology_person.' + "\033[0;0m")
+
+
 serology_dataset_qc(new_ct_dataset, rt_dataset, ct_ser_dataset, cur_project,
                     cur_out_project)
