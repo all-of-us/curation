@@ -125,7 +125,7 @@ def populate_validation_table(client,
 
     schema_list = client.get_table_schema(IDENTITY_MATCH_TABLE)
     id_match_table_id = table_id
-    ehr_person_table_id = bq_utils.get_table_id(hpo_id, PERSON)
+    ehr_person_table_id = resources.get_table_id(PERSON, hpo_id=hpo_id)
 
     fields_name_str = ', '.join([item.name for item in schema_list])
 
