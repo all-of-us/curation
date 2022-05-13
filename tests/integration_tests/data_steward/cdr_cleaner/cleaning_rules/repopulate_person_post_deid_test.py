@@ -24,6 +24,7 @@ Original Issue: DC-516
 """
 
 # Python imports
+from datetime import date
 import os
 
 # Third party imports
