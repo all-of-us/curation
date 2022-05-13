@@ -100,5 +100,5 @@ def create_tables(hpo_id, drop_existing=False):
     :return: None
     """
     for table_name in ACHILLES_TABLES:
-        table_id = bq_utils.get_table_id(hpo_id, table_name)
+        table_id = resources.get_table_id(table_name, hpo_id=hpo_id)
         bq_utils.create_standard_table(table_name, table_id, drop_existing)
