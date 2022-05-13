@@ -447,13 +447,13 @@ def perform_reporting(hpo_id, report_data, folder_items, bucket, folder_prefix):
     report_data[report_consts.TIMESTAMP_REPORT_KEY] = processed_time_str
     results_html = hpo_report.render(report_data)
 
-    results_html_path = folder_prefix + common.RESULTS_HTML
+    results_html_path = f'{folder_prefix}{common.RESULTS_HTML}'
     logging.info(f"Saving file {common.RESULTS_HTML} to "
                  f"gs://{bucket.name}/{results_html_path}.")
     results_html_blob = bucket.blob(results_html_path)
     results_html_blob.upload_from_string(results_html)
 
-    processed_txt_path = folder_prefix + common.PROCESSED_TXT
+    processed_txt_path = f'{folder_prefix}{common.PROCESSED_TXT}'
     logging.info(f"Saving timestamp {processed_time_str} to "
                  f"gs://{bucket.name}/{processed_txt_path}.")
     processed_txt_blob = bucket.blob(processed_txt_path)
@@ -932,7 +932,7 @@ def union_ehr():
 
     run_achilles(hpo_id)
     now_date_string = datetime.datetime.now().strftime('%Y_%m_%d')
-    folder_prefix = 'unioned_ehr_' + now_date_string + '/'
+    folder_prefix = f'unioned_ehr_{now_date_string}/'
     run_export(datasource_id=hpo_id, folder_prefix=folder_prefix)
     logging.info(f"Uploading achilles index files")
     _upload_achilles_files(hpo_id, folder_prefix)

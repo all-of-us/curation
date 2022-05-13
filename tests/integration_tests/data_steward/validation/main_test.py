@@ -137,9 +137,9 @@ class ValidationMainTest(unittest.TestCase):
         for file_name in bad_file_names:
             bad_blob = self.hpo_bucket.blob(f'{self.folder_prefix}{file_name}')
             bad_blob.upload_from_string('.')
-
             expected_item: tuple = (file_name, common.UNKNOWN_FILE)
             expected_warnings.append(expected_item)
+
         items_metadata: list = self.storage_client.get_bucket_items_metadata(
             self.hpo_bucket)
         folder_items: list = main.get_folder_items(items_metadata,
