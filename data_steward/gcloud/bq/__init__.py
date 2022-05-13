@@ -419,17 +419,28 @@ class BigQueryClient(Client):
 
         for table_item in table_list:
             # create empty schemaed tablle with client object
-            schema_list = self.get_table_schema(table_item.table_id)
+            try:
+                schema_list = self.get_table_schema(table_item.table_id)
+            except RuntimeError as re:
+                schema_list = None
             dest_table = f'{self.project}.{dest_dataset}.{table_item.table_id}'
             dest_table = bigquery.Table(dest_table, schema=schema_list)
             dest_table = self.create_table(dest_table)  # Make an API request.
 
-            fields_name_str = ',\n'.join([item.name for item in schema_list])
-            # copy contents from non-schemaed source to schemaed dest
-            sql = (
-                f'SELECT {fields_name_str} '
-                f'FROM `{table_item.project}.{table_item.dataset_id}.{table_item.table_id}`'
-            )
+            if schema_list:
+                fields_name_str = ',\n'.join(
+                    [item.name for item in schema_list])
+
+                # copy contents from non-schemaed source to schemaed dest
+                sql = (
+                    f'SELECT {fields_name_str} '
+                    f'FROM `{table_item.project}.{table_item.dataset_id}.{table_item.table_id}`'
+                )
+            else:
+                sql = (
+                    f'SELECT * '
+                    f'FROM `{table_item.project}.{table_item.dataset_id}.{table_item.table_id}`'
+                )
             job_config = bigquery.job.QueryJobConfig(
                 write_disposition=bigquery.job.WriteDisposition.WRITE_EMPTY,
                 priority=bigquery.job.QueryPriority.BATCH,
