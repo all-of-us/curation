@@ -25,7 +25,6 @@ from google.cloud.bigquery import Table, TimePartitioning, TimePartitioningType
 # Project imports
 import utils.participant_summary_requests as psr
 from app_identity import PROJECT_ID
-from gcloud.bq import BigQueryClient
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 from common import DIGITAL_HEALTH_SHARING_STATUS
 
