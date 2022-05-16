@@ -102,12 +102,10 @@ class IDFieldSuppression(BaseCleaningRule):
             are optional but the query is required.
         """
         queries = []
-        schemas = {}
         for table in self.affected_tables:
-            schemas[table] = fields_for(table)
-        for table in self.affected_tables:
+            schema = fields_for(table)
             statements = []
-            for item in schemas[table]:
+            for item in schema:
                 if item.get('name') in fields:
                     if item.get('mode').lower() == 'nullable':
                         value = 'NULL'
