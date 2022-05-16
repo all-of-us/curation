@@ -241,8 +241,8 @@ def create_tier(credentials_filepath, project_id, tier, input_dataset,
     clean_cdr.main(args=controlled_tier_cleaning_args)
 
     # Snapshot the staging dataset to final dataset
-    bq.build_and_copy_contents(bq_client, datasets[consts.STAGING],
-                               final_dataset_name)
+    bq_client.build_and_copy_contents(datasets[consts.STAGING],
+                                      final_dataset_name)
 
     return datasets
 
