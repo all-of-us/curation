@@ -1,6 +1,5 @@
 import re
 
-import bq_utils
 import resources
 from io import open
 
