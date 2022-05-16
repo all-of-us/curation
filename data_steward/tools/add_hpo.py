@@ -1,6 +1,7 @@
 """
 Add a new HPO site to config file and BigQuery lookup tables and updates the `pipeline_table.site_maskings`
-    table with any missing hpo_sites in `lookup_tables.hpo_site_id_mappings`
+table with any missing hpo_sites in `lookup_tables.hpo_site_id_mappings`.
+Check out All of Us CDR Operations Playbook for when and how to use this script. 
 
 Note: GAE environment must still be set manually
 """
