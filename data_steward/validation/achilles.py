@@ -29,10 +29,7 @@ def load_analyses(hpo_id):
     """
     project_id = app_identity.get_application_id()
     dataset_id = bq_utils.get_dataset_id()
-    if hpo_id is None:
-        table_prefix = ""
-    else:
-        table_prefix = f'{hpo_id}_'
+    table_prefix = resources.get_table_id(table_name="", hpo_id=hpo_id)
     table_name = f'{table_prefix}{ACHILLES_ANALYSIS}'
     csv_path = os.path.join(resources.resource_files_path,
                             f'{ACHILLES_ANALYSIS}.csv')
