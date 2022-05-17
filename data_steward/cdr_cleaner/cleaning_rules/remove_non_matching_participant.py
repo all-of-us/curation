@@ -60,12 +60,13 @@ def exist_participant_match(ehr_dataset_id, hpo_id):
     """
     This function checks if the hpo has submitted the participant_match data 
     
-    :param ehr_dataset_id: 
-    :param hpo_id: 
+    :param ehr_dataset_id: Identifies the database
+    :param hpo_id: Identifies the HPO site
     :return: 
     """
     return bq_utils.table_exists(
-        bq_utils.get_table_id(hpo_id, PARTICIPANT_MATCH), ehr_dataset_id)
+        resources.get_table_id(PARTICIPANT_MATCH, hpo_id=hpo_id),
+        ehr_dataset_id)
 
 
 def exist_identity_match(client, table_id):
@@ -108,7 +109,7 @@ def get_list_non_match_participants(client, validation_dataset_id, hpo_id):
     """
 
     # get the the hpo specific <hpo_id>_identity_match
-    identity_match_table = bq_utils.get_table_id(hpo_id, IDENTITY_MATCH)
+    identity_match_table = resources.get_table_id(IDENTITY_MATCH, hpo_id=hpo_id)
     result = []
     fq_identity_match_table = f'{client.project}.{validation_dataset_id}.{identity_match_table}'
     if not exist_identity_match(client, fq_identity_match_table):
