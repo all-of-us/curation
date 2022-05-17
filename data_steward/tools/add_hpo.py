@@ -276,14 +276,11 @@ def update_site_masking_table():
     """
 
     project_id = app_identity.get_application_id()
-    sandbox_id = PIPELINE_TABLES + '_sandbox'
-
     bq_client = BigQueryClient(project_id)
 
     update_site_maskings_query = UPDATE_SITE_MASKING_QUERY.render(
         project_id=project_id,
         dataset_id=PIPELINE_TABLES,
-        sandbox_id=sandbox_id,
         table_id=SITE_MASKING_TABLE_ID,
         lookup_tables_dataset=bq_consts.LOOKUP_TABLES_DATASET_ID,
         hpo_site_id_mappings_table=bq_consts.HPO_SITE_ID_MAPPINGS_TABLE_ID)
