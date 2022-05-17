@@ -2,7 +2,6 @@ import unittest
 
 from mock import patch
 
-import bq_utils
 from constants.validation.metrics import completeness as consts
 import resources
 from tests import test_util
