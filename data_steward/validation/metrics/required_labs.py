@@ -164,7 +164,7 @@ def load_measurement_concept_sets_descendants_table(project_id, dataset_id):
 def get_lab_concept_summary_query(hpo_id):
     """
     Get the query that checks if the HPO site has submitted the required labs
-    :param hpo_id: 
+    :param hpo_id: Identifies the HPO site
     :return: 
     """
     project_id = app_identity.get_application_id()
