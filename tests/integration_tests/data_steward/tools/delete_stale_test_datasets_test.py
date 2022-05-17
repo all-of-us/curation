@@ -8,6 +8,9 @@ from unittest import TestCase
 from unittest.mock import patch
 from datetime import datetime, timezone
 
+# Third party imports
+from google.cloud import bigquery
+
 # Project imports
 from tools import delete_stale_test_datasets
 from gcloud.bq import BigQueryClient
