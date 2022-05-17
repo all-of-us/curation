@@ -1,8 +1,10 @@
+# Python imports
 import logging
 import os
 import re
 from io import open
 
+# Project imports
 import bq_utils
 import resources
 from validation import sql_wrangle

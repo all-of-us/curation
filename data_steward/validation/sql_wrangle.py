@@ -1,7 +1,9 @@
+# Python imports
 import re
-
-import resources
 from io import open
+
+# Project imports
+import resources
 
 COMMAND_SEP = ';'
 PREFIX_PLACEHOLDER = 'synpuf_100.'

@@ -1,7 +1,9 @@
+# Python imports
 import os
 from glob import glob
 from io import open
 
+# Project imports
 import bq_utils
 import resources
 

@@ -1,6 +1,8 @@
+# Python imports
 import logging
 import os
 
+# Project imports
 import app_identity
 import bq_utils
 import resources
