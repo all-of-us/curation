@@ -74,7 +74,7 @@ hpos_not_in_site_maskings AS (
     SELECT LOWER(hpo_id) FROM `{{project_id}}.{{dataset_id}}.{{table_id}}`
   )
 )
-SELECT h.hpo_id, a.src_id
+SELECT LOWER(h.hpo_id), a.src_id
 FROM available_new_src_ids AS a
 JOIN hpos_not_in_site_maskings AS h
 ON a.temp_key = h.temp_key
