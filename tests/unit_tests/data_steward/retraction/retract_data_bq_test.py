@@ -52,13 +52,13 @@ class RetractDataBqTest(TestCase):
         self.client.list_tables.return_value = mock_table_ids
 
     def test_queries_to_retract_from_ehr_dataset(self):
-        hpo_person = bq_utils.get_table_id(self.hpo_id, common.PERSON)
-        hpo_death = bq_utils.get_table_id(self.hpo_id, common.DEATH)
+        hpo_person = resources.get_table_id(common.PERSON, hpo_id=self.hpo_id)
+        hpo_death = resources.get_table_id(common.DEATH, hpo_id=self.hpo_id)
 
         # hpo tables
         existing_table_ids = [hpo_person, hpo_death]
         for table in self.tables_to_retract_unioned:
-            table_id = bq_utils.get_table_id(self.hpo_id, table)
+            table_id = resources.get_table_id(table, hpo_id=self.hpo_id)
             existing_table_ids.append(table_id)
 
         # unioned tables

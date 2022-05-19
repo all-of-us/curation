@@ -32,7 +32,8 @@ class BqUtilsTest(unittest.TestCase):
 
     @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def setUp(self):
-        self.person_table_id = bq_utils.get_table_id(FAKE_HPO_ID, common.PERSON)
+        self.person_table_id = resources.get_table_id(common.PERSON,
+                                                      hpo_id=FAKE_HPO_ID)
         test_util.delete_all_tables(self.dataset_id)
         self.project_id = app_identity.get_application_id()
         self.TEST_FIELDS = [
@@ -149,7 +150,7 @@ class BqUtilsTest(unittest.TestCase):
         incomplete_jobs = bq_utils.wait_on_jobs([load_job_id])
         self.assertEqual(len(incomplete_jobs), 0,
                          'loading table {} timed out'.format(common.PERSON))
-        table_id = bq_utils.get_table_id(FAKE_HPO_ID, common.PERSON)
+        table_id = resources.get_table_id(common.PERSON, hpo_id=FAKE_HPO_ID)
         q = 'SELECT person_id FROM %s' % table_id
         result = bq_utils.query(q)
         self.assertEqual(5, int(result['totalRows']))
@@ -205,7 +206,8 @@ class BqUtilsTest(unittest.TestCase):
     def test_load_ehr_observation(self):
         hpo_id = PITT_HPO_ID
         dataset_id = self.dataset_id
-        table_id = bq_utils.get_table_id(hpo_id, table_name='observation')
+        table_id = resources.get_table_id(table_name='observation',
+                                          hpo_id=hpo_id)
         q = 'SELECT observation_id FROM {dataset_id}.{table_id} ORDER BY observation_id'.format(
             dataset_id=dataset_id, table_id=table_id)
         expected_observation_ids = [
