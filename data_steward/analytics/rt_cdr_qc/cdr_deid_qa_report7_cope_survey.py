@@ -23,6 +23,9 @@
 # "start_time": "2021-02-02T22:30:31.951734", "status": "completed"} tags=[]
 
 import pandas as pd
+from utils import auth
+from gcloud.bq import BigQueryClient
+from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
 pd.options.display.max_rows = 120
 
 # + tags=["parameters"]
@@ -30,11 +33,18 @@ project_id = ""
 com_cdr = ""
 deid_cdr = ""
 deid_sandbox = ""
+run_as = ""
 # deid_base_cdr=""
 # -
 
 # df will have a summary in the end
 df = pd.DataFrame(columns=['query', 'result'])
+
+# +
+impersonation_creds = auth.get_impersonation_credentials(
+    run_as, target_scopes=IMPERSONATION_SCOPES)
+
+client = BigQueryClient(project_id, credentials=impersonation_creds)
 
 # + [markdown] papermill={"duration": 0.02327, "end_time": "2021-02-02T22:30:32.708257", "exception": false,
 # "start_time": "2021-02-02T22:30:32.684987", "status": "completed"} tags=[]
@@ -61,10 +71,10 @@ df = pd.DataFrame(columns=['query', 'result'])
 # 903632,702686,715714, 715724, 715725, 715726, 1310054, 1310058, 1310066, 1310146, 1310147, 1333234, 1310065,
 #
 # 596884, 596885, 596886, 596887, 596888, 596889, 1310137,1333016,1310148,1310145,1310144
-
+#
 # From DC-2109
 # 765938,765939, 765940, 765941, 765942, 765943, 765944, 765945, 765946, 765947, 765948, 765949, 765950, 765951, 765952
-
+#
 # DC-2113
 # RT suppression
 # +
@@ -117,7 +127,7 @@ GROUP BY 1,2,3,4,5
 ORDER BY n_row_not_pass DESC
 
 '''
-df1 = pd.read_gbq(query, dialect='standard')
+df1 = execute(client, query)
 
 if df1['n_row_not_pass'].sum() == 0:
     df = df.append(
@@ -162,7 +172,7 @@ WHERE
 SELECT COUNT (*) AS n_row_not_pass FROM df1
 WHERE survey_version_concept_id=0 or survey_version_concept_id IS NULL
 '''
-df1 = pd.read_gbq(query, dialect='standard')
+df1 = execute(client, query)
 if df1.loc[0].sum() == 0:
     df = df.append({
         'query': 'Query2 survey version provided',
@@ -187,7 +197,7 @@ JOIN  `{project_id}.{deid_cdr}.observation_ext` e
 ON  e.observation_id = d.observation_id
 
 '''
-df1 = pd.read_gbq(query, dialect='standard')
+df1 = execute(client, query)
 
 df1.style.format("{:.0f}")
 
@@ -213,7 +223,7 @@ GROUP BY 1,2,3,4
 ORDER BY n_row_not_pass DESC
 
 '''
-df1 = pd.read_gbq(query, dialect='standard')
+df1 = execute(client, query)
 
 if df1['n_row_not_pass'].sum() == 0:
     df = df.append(
@@ -253,7 +263,7 @@ GROUP BY 1,2,3,4
 ORDER BY n_row_not_pass DESC
 
 '''
-df1 = pd.read_gbq(query, dialect='standard')
+df1 = execute(client, query)
 
 if df1['n_row_not_pass'].sum() == 0:
     df = df.append(
@@ -297,7 +307,7 @@ GROUP BY 1,2,3,4,5
 ORDER BY n_row_not_pass DESC
 
 '''
-df1 = pd.read_gbq(query, dialect='standard')
+df1 = execute(client, query)
 
 if df1['n_row_not_pass'].sum() == 0:
     df = df.append(
@@ -342,7 +352,7 @@ GROUP BY 1,2,3,4,5
 ORDER BY n_row_not_pass DESC
 
 '''
-df1 = pd.read_gbq(query, dialect='standard')
+df1 = execute(client, query)
 
 if df1['n_row_not_pass'].sum() == 0:
     df = df.append(
@@ -442,7 +452,7 @@ USING (concept_id)
 ORDER BY row_count DESC
 
 '''
-df1 = pd.read_gbq(query, dialect='standard')
+df1 = execute(client, query)
 if df1['row_count'].sum() == 0:
     df = df.append(
         {

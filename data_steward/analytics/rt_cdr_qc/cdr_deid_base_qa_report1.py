@@ -17,6 +17,9 @@
 
 import urllib
 import pandas as pd
+from utils import auth
+from gcloud.bq import BigQueryClient
+from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
 pd.options.display.max_rows = 120
 
 # + tags=["parameters"]
@@ -24,10 +27,18 @@ project_id = ""
 com_cdr = ""
 deid_base_cdr=""
 pipeline=""
+run_as = ""
 # -
 
 # df will have a summary in the end
 df = pd.DataFrame(columns = ['query', 'result']) 
+
+# +
+impersonation_creds = auth.get_impersonation_credentials(
+    run_as, target_scopes=IMPERSONATION_SCOPES)
+
+client = BigQueryClient(project_id, credentials=impersonation_creds)
+# -
 
 # # 1 Verify that if a person has multiple SELECTion(Hispanic + other race) in pre_deid_com_cdr, the output in deid_base_cdr observation table should result in two rows - one for Ethnicity AND one for race. 
 #
@@ -78,7 +89,7 @@ SELECT COUNT (*) AS n_not_two_rows FROM df2
 WHERE person_id IN (SELECT person_id FROM df1) AND countp !=2 
 
     '''
-df1=pd.read_gbq(query, dialect='standard')
+df1=execute(client, query)
 if df1.eq(0).any().any():
  df = df.append({'query' : 'Query 1.2 these person_ids have 2-rows in observation', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -114,7 +125,7 @@ WHERE  observation_source_value = 'Race_WhatRaceEthnicity'
 AND person_id IN (SELECT person_id from df2 where countp !=2 )
 AND person_id IN (SELECT person_id FROM df1) 
 '''
-df1=pd.read_gbq(query, dialect='standard')
+df1=execute(client, query)
 
 df1
 # -
@@ -145,7 +156,7 @@ GROUP BY person_id
 SELECT COUNT (*) AS n_row_not_pass FROM df1
 WHERE person_id NOT IN (SELECT person_id FROM df2 WHERE countp=2)
     '''
-df1=pd.read_gbq(query, dialect='standard')
+df1=execute(client, query)
 if df1.eq(0).any().any():
  df = df.append({'query' : 'Query1.3 these person_ids have 2-rows in observation', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -179,7 +190,7 @@ SELECT COUNT (*) AS n_row_not_pass FROM df2
 WHERE person_id IN (SELECT person_id FROM df1) AND countp <2 
 
     '''
-df1=pd.read_gbq(query, dialect='standard')
+df1=execute(client, query)
 if df1.eq(0).any().any():
  df = df.append({'query' : 'Query1.4 these person_ids have 2 or more rows in observation', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -206,7 +217,7 @@ SELECT COUNT (*) AS n_row_not_pass FROM df1
 WHERE  race_source_concept_id !=0 OR race_source_value !='None Indicated'
 
 '''
-df1=pd.read_gbq(query, dialect='standard')
+df1=execute(client, query)
 if df1.eq(0).any().any():
  df = df.append({'query' : 'Query1.5 Race_source_concept_id suppresion in observation', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -236,7 +247,7 @@ AND p.value_source_concept_id !=2000000002
 
 
  '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1.eq(0).any().any():
  df = df.append({'query' : 'Query2 Gender_value_source_concept_id matched value_as_concept_id in observation', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -283,7 +294,7 @@ WHERE person_id IN (SELECT person_id FROM df1)
 AND (sex_at_birth_source_value !='SexAtBirth_Female' AND gender_source_concept_id !=2000000002)
 
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1.eq(0).any().any():
  df = df.append({'query' : 'Query3 Sex_female/gender_man mismatch in deid_base_cdr.person table', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -314,7 +325,7 @@ WHERE person_id IN (SELECT person_id FROM df1)
 AND (sex_at_birth_source_value !='SexAtBirth_Male' AND gender_source_concept_id !=2000000002) 
 
  '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1.eq(0).any().any():
  df = df.append({'query' : 'Query3.2 Sex_male/gender_woman mismatch in deid_base_cdr.person', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -359,7 +370,7 @@ SELECT COUNT (*) AS n_row_pass FROM df1
 WHERE diff !=0
 
 '''
-df1=pd.read_gbq(query, dialect='standard')
+df1=execute(client, query)
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query4 date not shifited', 'result' : ''},  
                 ignore_index = True) 
@@ -409,7 +420,7 @@ SELECT COUNT (*) AS n_row_not_pass FROM df1
 WHERE countp=0
     
 '''
-df1=pd.read_gbq(query, dialect='standard')
+df1=execute(client, query)
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query4.2 PPI Drop Duplicates rule exclusion', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -454,7 +465,7 @@ FULL JOIN df2 USING (sex_at_birth_value)
 WHERE countp1 !=countp2
 
 '''
-df1=pd.read_gbq(query, dialect='standard')
+df1=execute(client, query)
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query5 equal counts for sex_at_birth columns', 'result' : 'PASS'},  
                 ignore_index = True) 

@@ -16,6 +16,9 @@
 
 import urllib
 import pandas as pd
+from utils import auth
+from gcloud.bq import BigQueryClient
+from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
 pd.options.display.max_rows = 120
 
 # + tags=["parameters"]
@@ -23,10 +26,18 @@ project_id = ""
 deid_cdr=""
 # deid_clean=""
 com_cdr = ""
+run_as = ""
 # -
 
 # df will have a summary in the end
 df = pd.DataFrame(columns = ['query', 'result']) 
+
+# +
+impersonation_creds = auth.get_impersonation_credentials(
+    run_as, target_scopes=IMPERSONATION_SCOPES)
+
+client = BigQueryClient(project_id, credentials=impersonation_creds)
+# -
 
 # # 1 Verify that if the observation_source_concept_id  field in OBSERVATION table populates: 1585890, the value_as_concept_id field in de-id table should populate : 2000000012
 #
@@ -49,7 +60,7 @@ WHERE
   observation_source_concept_id = 1585890
   AND value_as_concept_id NOT IN (2000000012,2000000010,903096)
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query1 observation_source_concept_id 1585890', 'result' : 'PASS'},  
@@ -79,7 +90,7 @@ WHERE
   observation_source_concept_id = 1333023
   AND value_as_concept_id NOT IN (2000000012,2000000010,903096)
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query2 observation_source_concept_id 1333023', 'result' : 'PASS'},  
@@ -98,7 +109,7 @@ WHERE
   observation_source_concept_id = 1333023
   AND value_as_concept_id NOT IN (2000000012,2000000010,903096)
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 df1
 
 # # 3 Verify that if the observation_source_concept_id  field in OBSERVATION table populates: 1585889,  the value_as_concept_id field in de-id table should populate : 2000000013
@@ -120,7 +131,7 @@ WHERE
   observation_source_concept_id = 1585889
   AND value_as_concept_id NOT IN (2000000013,2000000010,903096)
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query3 observation_source_concept_id 1585889', 'result' : 'PASS'},  
@@ -152,7 +163,7 @@ WHERE
   observation_source_concept_id = 1333015
   AND value_as_concept_id NOT IN (2000000013,2000000010,903096)
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query4 observation_source_concept_id 1333015', 'result' : 'PASS'},  
@@ -224,7 +235,7 @@ OR com.value_source_concept_id =        1585275)
 SELECT COUNT (*) AS n_row_not_pass FROM df1
 WHERE value_source_concept_id !=2000000011
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query5_state_generalization', 'result' : 'PASS'},  
