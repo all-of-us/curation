@@ -109,7 +109,7 @@ class ValidationMainTest(TestCase):
 
         # If unknown item and it replaces a file, return the folder only after stale
         bucket_items = self._create_dummy_bucket_items(
-            within_retention, after_lag_time, file_exclusions=['person.csv'])
+            within_retention, stale_lag_time, file_exclusions=['person.csv'])
         unknown_item = {
             'name': '2018-09-01/nyc_cu_person.csv',
             'timeCreated': within_retention,

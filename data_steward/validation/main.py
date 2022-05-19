@@ -763,13 +763,7 @@ def list_submitted_bucket_items(folder_bucketitems):
         logging.info(f"All required files found, processing.")
         return to_process_items
 
-    # Check submission times and validate if > 3 hrs old
-    logging.info(
-        f"Delaying processing for hpo_id by 3 hrs (to next cron run) "
-        f"since all required files not present. "
-        f"Missing {set(AOU_REQUIRED_FILES) - set(folder_bucketitems_basenames)}"
-    )
-
+    # Check submission times and validate if > 3 hrs old and < 29 days old
     upper_age_threshold = min(item['timeCreated'] +
                               datetime.timedelta(days=object_retention_days) -
                               datetime.timedelta(days=1)
