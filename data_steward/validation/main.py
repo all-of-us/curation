@@ -777,7 +777,7 @@ def list_submitted_bucket_items(folder_bucketitems):
                               if basename(item) not in resources.IGNORE_LIST)
     upper_age_threshold = upper_age_threshold.replace(tzinfo=None)
 
-    lower_age_threshold = min(item['updated'] + datetime.timedelta(hours=3)
+    lower_age_threshold = max(item['updated'] + datetime.timedelta(hours=3)
                               for item in folder_bucketitems
                               if basename(item) not in resources.IGNORE_LIST)
     lower_age_threshold = lower_age_threshold.replace(tzinfo=None)
@@ -794,6 +794,9 @@ def list_submitted_bucket_items(folder_bucketitems):
             f"Delaying processing for hpo_id by 3 hrs (to next cron run) "
             f"since files were recently uploaded. Latest file was uploaded "
             f"less than {hrs} hours ago.")
+    else:
+        logging.info(
+            f"Past retention period. Investigate {folder_bucketitems}.")
 
     return files_list
 

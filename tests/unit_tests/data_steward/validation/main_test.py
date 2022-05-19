@@ -52,11 +52,9 @@ class ValidationMainTest(TestCase):
         return bucket_items
 
     def test_retention_checks_list_submitted_bucket_items(self):
-        #Define times to use
+        # Define times to use
         within_retention = datetime.datetime.now(tz=None) - datetime.timedelta(
             days=25)
-        outside_retention = datetime.datetime.now(tz=None) - datetime.timedelta(
-            days=29)
         after_lag_time = datetime.datetime.now(tz=None) - datetime.timedelta(
             minutes=7)
         stale_lag_time = datetime.datetime.now(tz=None) - datetime.timedelta(
