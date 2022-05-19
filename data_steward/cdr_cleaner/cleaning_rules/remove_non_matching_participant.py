@@ -104,7 +104,7 @@ def get_list_non_match_participants(client, validation_dataset_id, hpo_id):
 
     :param client: a BigQueryClient
     :param validation_dataset_id:
-    :param hpo_id: 
+    :param hpo_id: Identifies the HPO site
     :return: 
     """
 
