@@ -2,7 +2,6 @@ from unittest import TestCase, mock
 from unittest.mock import MagicMock
 import re
 
-import bq_utils
 import common
 import resources
 from retraction import retract_data_bq as rbq

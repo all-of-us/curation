@@ -13,7 +13,6 @@ from typing import List
 from google.cloud import bigquery
 
 from utils import bq
-import bq_utils
 import resources
 
 LOGGER = logging.getLogger(__name__)
