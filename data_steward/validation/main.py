@@ -261,7 +261,7 @@ def validate_submission(hpo_id: str, bucket, folder_items: list,
     # (e.g. ehr_union doesn't have to check if tables exist)
     for file_name in resources.CDM_FILES + common.PII_FILES:
         table_name = file_name.split('.')[0]
-        table_id = bq_utils.get_table_id(hpo_id, table_name)
+        table_id = resources.get_table_id(table_name, hpo_id=hpo_id)
         bq_utils.create_standard_table(table_name, table_id, drop_existing=True)
 
     for cdm_file_name in sorted(resources.CDM_FILES):
@@ -447,13 +447,13 @@ def perform_reporting(hpo_id, report_data, folder_items, bucket, folder_prefix):
     report_data[report_consts.TIMESTAMP_REPORT_KEY] = processed_time_str
     results_html = hpo_report.render(report_data)
 
-    results_html_path = folder_prefix + common.RESULTS_HTML
+    results_html_path = f'{folder_prefix}{common.RESULTS_HTML}'
     logging.info(f"Saving file {common.RESULTS_HTML} to "
                  f"gs://{bucket.name}/{results_html_path}.")
     results_html_blob = bucket.blob(results_html_path)
     results_html_blob.upload_from_string(results_html)
 
-    processed_txt_path = folder_prefix + common.PROCESSED_TXT
+    processed_txt_path = f'{folder_prefix}{common.PROCESSED_TXT}'
     logging.info(f"Saving timestamp {processed_time_str} to "
                  f"gs://{bucket.name}/{processed_txt_path}.")
     processed_txt_blob = bucket.blob(processed_txt_path)
@@ -574,7 +574,8 @@ def get_heel_error_query(hpo_id):
     :param hpo_id: identifies the HPO site
     :return: the query
     """
-    table_id = bq_utils.get_table_id(hpo_id, consts.ACHILLES_HEEL_RESULTS_TABLE)
+    table_id = resources.get_table_id(consts.ACHILLES_HEEL_RESULTS_TABLE,
+                                      hpo_id=hpo_id)
     return render_query(consts.HEEL_ERROR_QUERY_VALIDATION, table_id=table_id)
 
 
@@ -588,7 +589,7 @@ def get_duplicate_counts_query(hpo_id):
     sub_queries = []
     all_table_ids = bq_utils.list_all_table_ids()
     for table_name in cdm.tables_to_map():
-        table_id = bq_utils.get_table_id(hpo_id, table_name)
+        table_id = resources.get_table_id(table_name, hpo_id=hpo_id)
         if table_id in all_table_ids:
             sub_query = render_query(consts.DUPLICATE_IDS_SUBQUERY,
                                      table_name=table_name,
@@ -596,7 +597,7 @@ def get_duplicate_counts_query(hpo_id):
                                      primary_key=f'{table_name}_id')
             sub_queries.append(sub_query)
     for table_name in common.PII_TABLES + [common.PERSON, common.DEATH]:
-        table_id = bq_utils.get_table_id(hpo_id, table_name)
+        table_id = resources.get_table_id(table_name, hpo_id=hpo_id)
         if table_id in all_table_ids:
             sub_query = render_query(consts.DUPLICATE_IDS_SUBQUERY,
                                      table_name=table_name,
@@ -615,7 +616,7 @@ def get_drug_class_counts_query(hpo_id):
     :param hpo_id: identifies the HPO site
     :return: the query
     """
-    table_id = bq_utils.get_table_id(hpo_id, consts.DRUG_CHECK_TABLE)
+    table_id = resources.get_table_id(consts.DRUG_CHECK_TABLE, hpo_id=hpo_id)
     return render_query(consts.DRUG_CHECKS_QUERY_VALIDATION, table_id=table_id)
 
 
@@ -637,11 +638,12 @@ def get_hpo_missing_pii_query(hpo_id):
     :param hpo_id: identifies the HPO site
     :return: the query
     """
-    person_table_id = bq_utils.get_table_id(hpo_id, common.PERSON)
-    pii_name_table_id = bq_utils.get_table_id(hpo_id, common.PII_NAME)
-    pii_wildcard = bq_utils.get_table_id(hpo_id, common.PII_WILDCARD)
-    participant_match_table_id = bq_utils.get_table_id(hpo_id,
-                                                       common.PARTICIPANT_MATCH)
+    person_table_id = resources.get_table_id(common.PERSON, hpo_id=hpo_id)
+    pii_name_table_id = resources.get_table_id(common.PII_NAME, hpo_id=hpo_id)
+    pii_wildcard = resources.get_table_id(common.PII_WILDCARD, hpo_id=hpo_id)
+    participant_match_table_id = resources.get_table_id(
+        common.PARTICIPANT_MATCH, hpo_id=hpo_id)
+
     return render_query(
         consts.MISSING_PII_QUERY,
         person_table_id=person_table_id,
@@ -930,7 +932,7 @@ def union_ehr():
 
     run_achilles(hpo_id)
     now_date_string = datetime.datetime.now().strftime('%Y_%m_%d')
-    folder_prefix = 'unioned_ehr_' + now_date_string + '/'
+    folder_prefix = f'unioned_ehr_{now_date_string}/'
     run_export(datasource_id=hpo_id, folder_prefix=folder_prefix)
     logging.info(f"Uploading achilles index files")
     _upload_achilles_files(hpo_id, folder_prefix)
