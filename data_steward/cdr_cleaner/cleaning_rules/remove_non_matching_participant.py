@@ -120,7 +120,7 @@ class RemoveNonMatchingParticipant(BaseCleaningRule):
         Return a list table names created to backup deleted data.
         """
         return [
-            f'{table}_{TICKET_NUMBER}'
+            self.sandbox_table_for(table)
             for table in remove_pids.get_tables_with_person_id(
                 self.project_id, self.dataset_id)
         ]
@@ -261,7 +261,7 @@ class RemoveNonMatchingParticipant(BaseCleaningRule):
     def get_query_specs(self) -> list:
         """
         Return a list of dictionary query specifications.
-        The list contains the queries that delete participants and their corresponding data points, 
+        The list contains the queries that delete participants and their corresponding data points,
         for which the participant_match data is missing and DRC matching algorithm flags it as a no match
 
         :return:  A list of dictionaries. Each dictionary contains a single query
