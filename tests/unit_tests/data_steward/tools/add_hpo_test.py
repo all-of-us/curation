@@ -100,8 +100,8 @@ class AddHPOTest(TestCase):
         # Post conditions
         update_site_masking_query = add_hpo.UPDATE_SITE_MASKING_QUERY.render(
             project_id=project_id,
-            dataset_id=PIPELINE_TABLES,
-            table_id=SITE_MASKING_TABLE_ID,
+            pipeline_tables_dataset=PIPELINE_TABLES,
+            site_maskings_table=SITE_MASKING_TABLE_ID,
             lookup_tables_dataset=bq_consts.LOOKUP_TABLES_DATASET_ID,
             hpo_site_id_mappings_table=bq_consts.HPO_SITE_ID_MAPPINGS_TABLE_ID)
 

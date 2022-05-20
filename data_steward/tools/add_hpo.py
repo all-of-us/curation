@@ -51,7 +51,7 @@ SELECT
 """)
 
 UPDATE_SITE_MASKING_QUERY = JINJA_ENV.from_string("""
-INSERT INTO `{{project_id}}.{{dataset_id}}.{{table_id}}` (hpo_id, src_id)
+INSERT INTO `{{project_id}}.{{pipeline_tables_dataset}}.{{site_maskings_table}}` (hpo_id, src_id)
 WITH available_new_src_ids AS (
   SELECT 
     ROW_NUMBER() OVER(ORDER BY GENERATE_UUID()) AS temp_key,
@@ -59,19 +59,19 @@ WITH available_new_src_ids AS (
   FROM UNNEST(GENERATE_ARRAY(100, 999)) AS new_id
   WHERE new_id NOT IN (
     SELECT CAST(SUBSTR(src_id, -3) AS INT64) 
-    FROM `{{project_id}}.{{dataset_id}}.{{table_id}}`
+    FROM `{{project_id}}.{{pipeline_tables_dataset}}.{{site_maskings_table}}`
     WHERE hpo_id != 'rdr'
   )
 ),
 hpos_not_in_site_maskings AS (
   SELECT
     ROW_NUMBER() OVER() AS temp_key,
-    m.hpo_id
-  FROM `{{project_id}}.{{lookup_tables_dataset}}.{{hpo_site_id_mappings_table}}` AS m
-  WHERE m.HPO_ID IS NOT NULL 
-  AND m.HPO_ID != '' 
-  AND LOWER(m.HPO_ID) NOT IN (
-    SELECT LOWER(hpo_id) FROM `{{project_id}}.{{dataset_id}}.{{table_id}}`
+    hpo_id
+  FROM `{{project_id}}.{{lookup_tables_dataset}}.{{hpo_site_id_mappings_table}}`
+  WHERE hpo_id IS NOT NULL 
+  AND hpo_id != '' 
+  AND LOWER(hpo_id) NOT IN (
+    SELECT LOWER(hpo_id) FROM `{{project_id}}.{{pipeline_tables_dataset}}.{{site_maskings_table}}`
   )
 )
 SELECT LOWER(h.hpo_id), a.src_id
@@ -280,8 +280,8 @@ def update_site_masking_table():
 
     update_site_maskings_query = UPDATE_SITE_MASKING_QUERY.render(
         project_id=project_id,
-        dataset_id=PIPELINE_TABLES,
-        table_id=SITE_MASKING_TABLE_ID,
+        pipeline_tables_dataset=PIPELINE_TABLES,
+        site_maskings_table=SITE_MASKING_TABLE_ID,
         lookup_tables_dataset=bq_consts.LOOKUP_TABLES_DATASET_ID,
         hpo_site_id_mappings_table=bq_consts.HPO_SITE_ID_MAPPINGS_TABLE_ID)
 
