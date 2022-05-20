@@ -174,7 +174,7 @@ class RemoveNonMatchingParticipant(BaseCleaningRule):
         :param hpo_id: HPO site ID.
         :return: list of non-match participants.
         """
-        identity_match_table = bq_utils.get_table_id(hpo_id, IDENTITY_MATCH)
+        identity_match_table = resources.get_table_id(IDENTITY_MATCH, hpo_id)
 
         fq_identity_match_table = f'{self.project_id}.{validation_dataset_id}.{identity_match_table}'
         if not self.exist_identity_match(fq_identity_match_table):
@@ -185,7 +185,7 @@ class RemoveNonMatchingParticipant(BaseCleaningRule):
             validation_dataset_id, identity_match_table, pids=pids)
 
         try:
-            results = bq_utils.query(q=non_match_participants_query)
+            results = self.client.query(non_match_participants_query)
         except (oauth2client.client.HttpAccessTokenRefreshError,
                 googleapiclient.errors.HttpError) as exp:
             LOGGER.exception(
@@ -212,7 +212,7 @@ class RemoveNonMatchingParticipant(BaseCleaningRule):
             project_id=self.project_id,
             ehr_dataset_id=ehr_dataset_id,
             participant_match_table=f'{hpo_id}_{PARTICIPANT_MATCH}')
-        results = bq_utils.query(q=not_validated_participants_query)
+        results = self.client.query(not_validated_participants_query)
         # return the person_ids only
         result = [
             row[PERSON_ID_FIELD] for row in bq_utils.response2rows(results)
