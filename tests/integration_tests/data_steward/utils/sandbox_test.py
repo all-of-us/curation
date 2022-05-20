@@ -2,8 +2,8 @@
 import os
 import unittest
 
-import app_identity
 # Project Imports
+import app_identity
 from utils import sandbox
 from gcloud.bq import BigQueryClient
 
