@@ -69,7 +69,8 @@ class DropMultipleMeasurements(BaseCleaningRule):
                          affected_tables=[MEASUREMENT],
                          project_id=project_id,
                          dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id)
+                         sandbox_dataset_id=sandbox_dataset_id,
+                         table_namer=None)
 
     def get_query_specs(self):
         """
@@ -119,7 +120,7 @@ class DropMultipleMeasurements(BaseCleaningRule):
         raise NotImplementedError("Please fix me.")
 
     def get_sandbox_tablenames(self):
-        sandbox_table = f'{self._issue_numbers[0].lower()}_{self.affected_tables[0]}'
+        sandbox_table = self.sandbox_table_for(self.affected_tables[0])
         return [sandbox_table]
 
 
