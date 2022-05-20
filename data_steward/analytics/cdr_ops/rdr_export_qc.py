@@ -25,10 +25,9 @@ run_as = ""
 # Quality checks performed on a new RDR dataset and comparison with previous RDR dataset.
 
 # +
-import jinja2
 from common import JINJA_ENV
 from utils import auth
-from utils.bq import get_client
+from gcloud.bq import BigQueryClient
 from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
 from cdr_cleaner.cleaning_rules.suppress_combined_pfmh_survey import DROP_PFMHH_CONCEPTS
 
@@ -41,7 +40,7 @@ from cdr_cleaner.cleaning_rules.suppress_combined_pfmh_survey import DROP_PFMHH_
 impersonation_creds = auth.get_impersonation_credentials(
     run_as, target_scopes=IMPERSONATION_SCOPES)
 
-client = get_client(project_id, credentials=impersonation_creds)
+client = BigQueryClient(project_id, credentials=impersonation_creds)
 
 tpl = JINJA_ENV.from_string('''
 SELECT
