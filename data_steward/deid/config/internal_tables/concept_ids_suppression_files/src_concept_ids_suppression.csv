@@ -13131,8 +13131,6 @@ CPT4,91304,Novavax Covid-19 Vaccine,759735,Drug,DC-2277
 CPT4,91305,Pfizer-BioNTech Covid-19 Vaccine (Ready to Use),759736,Drug,DC-2277
 CPT4,91306,Moderna Covid-19 Vaccine (Low Dose),759737,Drug,DC-2277
 CPT4,91307,Pfizer-BioNTech Covid-19 Pediatric Vaccine,759738,Drug,DC-2277
-DRG,799,Splenectomy w MCC,38001507,Observation,DC-2277
-DRG,800,Splenectomy w CC,38001508,Observation,DC-2277
 ICD10CM,F64.0,Transsexualism,37200330,Condition,DC-2277
 ICD10CM,F64.1,Dual role transvestism,35207225,Condition,DC-2277
 ICD10CM,F64.2,Gender identity disorder of childhood,35207226,Condition,DC-2277
