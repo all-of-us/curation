@@ -54,7 +54,11 @@ class DropMultipleMeasurements(BaseCleaningRule):
     Removes all but the most recent of each Physical Measurement for all participants.
     """
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id):
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 table_namer=None):
         """
         Initialize the class with proper information.
 
@@ -70,7 +74,7 @@ class DropMultipleMeasurements(BaseCleaningRule):
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
-                         table_namer=None)
+                         table_namer=table_namer)
 
     def get_query_specs(self):
         """
