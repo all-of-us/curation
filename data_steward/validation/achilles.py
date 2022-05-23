@@ -1,6 +1,8 @@
+# Python imports
 import logging
 import os
 
+# Project imports
 import app_identity
 import bq_utils
 import resources
@@ -29,11 +31,8 @@ def load_analyses(hpo_id):
     """
     project_id = app_identity.get_application_id()
     dataset_id = bq_utils.get_dataset_id()
-    if hpo_id is None:
-        table_prefix = ""
-    else:
-        table_prefix = f'{hpo_id}_'
-    table_name = f'{table_prefix}{ACHILLES_ANALYSIS}'
+    table_name = resources.get_table_id(table_name=ACHILLES_ANALYSIS,
+                                        hpo_id=hpo_id)
     csv_path = os.path.join(resources.resource_files_path,
                             f'{ACHILLES_ANALYSIS}.csv')
     schema = resources.fields_for(ACHILLES_ANALYSIS)
@@ -100,5 +99,5 @@ def create_tables(hpo_id, drop_existing=False):
     :return: None
     """
     for table_name in ACHILLES_TABLES:
-        table_id = bq_utils.get_table_id(hpo_id, table_name)
+        table_id = resources.get_table_id(table_name, hpo_id=hpo_id)
         bq_utils.create_standard_table(table_name, table_id, drop_existing)

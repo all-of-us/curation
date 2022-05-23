@@ -12,7 +12,7 @@ import logging
 # Third party imports
 
 # Project imports
-from utils import pipeline_logging, bq
+from utils import pipeline_logging
 from gcloud.bq import BigQueryClient
 import common
 from common import JINJA_ENV, ID_CONSTANT_FACTOR
