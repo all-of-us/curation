@@ -14,7 +14,7 @@ import cdr_cleaner.cleaning_rules.clean_years as clean_years
 import cdr_cleaner.cleaning_rules.domain_alignment as domain_alignment
 import cdr_cleaner.cleaning_rules.drop_duplicate_states as drop_duplicate_states
 import cdr_cleaner.cleaning_rules.drop_extreme_measurements as extreme_measurements
-import cdr_cleaner.cleaning_rules.drop_multiple_measurements as drop_mult_meas
+from cdr_cleaner.cleaning_rules.drop_multiple_measurements import DropMultipleMeasurements
 from cdr_cleaner.cleaning_rules.drop_participants_without_ppi_or_ehr import DropParticipantsWithoutPPI
 import cdr_cleaner.cleaning_rules.drug_refills_days_supply as drug_refills_supply
 import cdr_cleaner.cleaning_rules.maps_to_value_ppi_vocab_update as maps_to_value_vocab_update
@@ -188,7 +188,7 @@ RDR_CLEANING_CLASSES = [
     (NullConceptIDForNumericPPI,),
     (DropDuplicatePpiQuestionsAndAnswers,),
     (extreme_measurements.get_drop_extreme_measurement_queries,),
-    (drop_mult_meas.get_drop_multiple_measurement_queries,),
+    (DropMultipleMeasurements,),
     (UpdateInvalidZipCodes,),
 ]
 
