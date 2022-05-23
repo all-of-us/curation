@@ -31,8 +31,8 @@ def load_analyses(hpo_id):
     """
     project_id = app_identity.get_application_id()
     dataset_id = bq_utils.get_dataset_id()
-    table_prefix = resources.get_table_id(table_name="", hpo_id=hpo_id)
-    table_name = f'{table_prefix}{ACHILLES_ANALYSIS}'
+    table_name = resources.get_table_id(table_name=ACHILLES_ANALYSIS,
+                                        hpo_id=hpo_id)
     csv_path = os.path.join(resources.resource_files_path,
                             f'{ACHILLES_ANALYSIS}.csv')
     schema = resources.fields_for(ACHILLES_ANALYSIS)
