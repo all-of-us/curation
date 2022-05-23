@@ -60,7 +60,7 @@ def exist_participant_match(ehr_dataset_id, hpo_id):
     """
     This function checks if the hpo has submitted the participant_match data 
     
-    :param ehr_dataset_id: Identifies the database
+    :param ehr_dataset_id: Identifies the dataset
     :param hpo_id: Identifies the HPO site
     :return: 
     """
