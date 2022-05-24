@@ -83,8 +83,13 @@ class RemoveNonMatchingParticipant(BaseCleaningRule):
     Removes records with person_ids that are not validated by sites and non-matching.
     """
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id,
-                 ehr_dataset_id, validation_dataset_id):
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 ehr_dataset_id,
+                 validation_dataset_id,
+                 table_namer=None):
         """
         Initialize the class with proper information.
 
@@ -102,12 +107,19 @@ class RemoveNonMatchingParticipant(BaseCleaningRule):
                          affected_datasets=[cdr_consts.COMBINED],
                          project_id=project_id,
                          dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id)
+                         sandbox_dataset_id=sandbox_dataset_id,
+                         table_namer=table_namer)
 
         self.client = BigQueryClient(self.project_id)
 
     def setup_rule(self, client) -> None:
-        pass
+
+        if self.ehr_dataset_id is None:
+            raise RuntimeError('Required parameter ehr_dataset_id not set.')
+
+        if self.validation_dataset_id is None:
+            raise RuntimeError(
+                'Required parameter validation_dataset_id not set')
 
     def setup_validation(self, client) -> None:
         pass
@@ -185,7 +197,7 @@ class RemoveNonMatchingParticipant(BaseCleaningRule):
             validation_dataset_id, identity_match_table, pids=pids)
 
         try:
-            results = self.client.query(non_match_participants_query)
+            results = bq_utils.query(q=non_match_participants_query)
         except (oauth2client.client.HttpAccessTokenRefreshError,
                 googleapiclient.errors.HttpError) as exp:
             LOGGER.exception(
@@ -212,7 +224,7 @@ class RemoveNonMatchingParticipant(BaseCleaningRule):
             project_id=self.project_id,
             ehr_dataset_id=ehr_dataset_id,
             participant_match_table=f'{hpo_id}_{PARTICIPANT_MATCH}')
-        results = self.client.query(not_validated_participants_query)
+        results = bq_utils.query(q=not_validated_participants_query)
         # return the person_ids only
         result = [
             row[PERSON_ID_FIELD] for row in bq_utils.response2rows(results)
@@ -268,13 +280,6 @@ class RemoveNonMatchingParticipant(BaseCleaningRule):
             and a specification for how to execute that query. The specifications
             are optional but the query is required.
         """
-
-        if self.ehr_dataset_id is None:
-            raise RuntimeError('Required parameter ehr_dataset_id not set.')
-
-        if self.validation_dataset_id is None:
-            raise RuntimeError(
-                'Required parameter validation_dataset_id not set')
 
         non_matching_person_ids = []
 
