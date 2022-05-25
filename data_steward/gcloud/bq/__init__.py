@@ -459,6 +459,10 @@ class BigQueryClient(Client):
 
     def table_exists(self, table_id, dataset_id=None):
         """
+        Determine whether a bigquery table exists
+        :param table_id: id of the table
+        :param dataset_id: id of the dataset
+        :return: `True` if the table exists, `False` otherwise
         """
         if dataset_id is None:
             dataset_id = os.environ.get('BIGQUERY_DATASET_ID')
