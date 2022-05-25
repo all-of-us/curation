@@ -12,7 +12,6 @@ from cdr_cleaner.args_parser import add_kwargs_to_args
 from utils import auth
 from gcloud.bq import BigQueryClient
 from utils import pipeline_logging
-from utils import bq
 from tools import add_cdr_metadata
 from common import CDR_SCOPES
 from constants.cdr_cleaner import clean_cdr as consts

@@ -13,7 +13,6 @@ from typing import List
 from google.cloud import bigquery
 
 from utils import bq
-import bq_utils
 import resources
 
 LOGGER = logging.getLogger(__name__)
@@ -35,7 +34,8 @@ def _filter_hpo_tables(tables: List[bigquery.table.TableListItem],
     :return: list of tables associated with the HPO
     """
     expected_tables = [
-        bq_utils.get_table_id(hpo_id, table) for table in resources.CDM_TABLES
+        resources.get_table_id(table, hpo_id=hpo_id)
+        for table in resources.CDM_TABLES
     ]
     return [table for table in tables if table.table_id in expected_tables]
 

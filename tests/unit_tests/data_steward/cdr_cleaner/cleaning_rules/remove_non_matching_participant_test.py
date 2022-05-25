@@ -62,7 +62,7 @@ class RemoveNonMatchingParticipantTest(unittest.TestCase):
         }]
 
     @mock.patch('bq_utils.table_exists')
-    @mock.patch('bq_utils.get_table_id')
+    @mock.patch('resources.get_table_id')
     def test_exist_participant_match(self, mock_get_table_id,
                                      mock_table_exists):
 
@@ -160,7 +160,7 @@ class RemoveNonMatchingParticipantTest(unittest.TestCase):
     @mock.patch(
         'cdr_cleaner.cleaning_rules.remove_non_matching_participant.exist_identity_match'
     )
-    @mock.patch('bq_utils.get_table_id')
+    @mock.patch('resources.get_table_id')
     def test_get_list_non_match_participants(
         self, mock_get_table_id, mock_exist_identity_match,
         mock_get_non_match_participant_query, mock_query, mock_wait_on_jobs,
@@ -179,7 +179,8 @@ class RemoveNonMatchingParticipantTest(unittest.TestCase):
         self.assertListEqual(self.person_ids, actual)
 
         mock_get_table_id.assert_called_with(
-            self.hpo_id_1, remove_non_matching_participant.IDENTITY_MATCH)
+            remove_non_matching_participant.IDENTITY_MATCH,
+            hpo_id=self.hpo_id_1)
 
         mock_get_non_match_participant_query.assert_called_with(
             self.project_id, self.validation_dataset_id,
