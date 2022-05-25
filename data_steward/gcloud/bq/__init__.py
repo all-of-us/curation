@@ -2,6 +2,7 @@
 Interact with Google Cloud BigQuery
 """
 # Python stl imports
+import os
 from datetime import datetime
 import typing
 
@@ -14,6 +15,7 @@ from opentelemetry.exporter.cloud_trace import CloudTraceSpanExporter
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from google.api_core.exceptions import GoogleAPIError, BadRequest
+from google.cloud.exceptions import NotFound
 
 # Project imports
 from utils import auth
@@ -454,3 +456,15 @@ class BigQueryClient(Client):
                       f'{datetime.now().strftime("%Y%m%d_%H%M%S")}')
             job = self.query(sql, job_config=job_config, job_id=job_id)
             job.result()  # Wait for the job to complete.
+
+    def table_exists(self, table_id, dataset_id=None):
+        """
+        """
+        if dataset_id is None:
+            dataset_id = os.environ.get('BIGQUERY_DATASET_ID')
+        table = f'{self.project}.{dataset_id}.{table_id}'
+        try:
+            self.get_table(table)
+            return True
+        except NotFound:
+            return False
