@@ -156,7 +156,6 @@ class RemoveNonMatchingParticipantTest(BaseTest.CleaningRulesTestBase):
 
         # Set client and create datasets if not exist
         super().setUpClass()
-
         test_util.delete_all_tables(cls.dataset_id)
         test_util.delete_all_tables(cls.ehr_dataset_id)
         test_util.delete_all_tables(cls.validation_dataset_id)
@@ -224,91 +223,48 @@ class RemoveNonMatchingParticipantTest(BaseTest.CleaningRulesTestBase):
         """
         pass
 
-    def test_exist_participant_match(self):
+    def test_exist_table(self):
         """
-        Test for exist_participant_match(). Only HPO_3 should return False
+        Test for exist_table(). Only HPO_3 should return False
         as it does not have a participant match table. 
         """
         self.assertTrue(
-            self.rule_instance.exist_participant_match(self.ehr_dataset_id,
-                                                       HPO_1))
+            self.rule_instance.exist_table(
+                self.client, self.project_id, self.ehr_dataset_id,
+                resources.get_table_id(PARTICIPANT_MATCH, hpo_id=HPO_1)))
         self.assertTrue(
-            self.rule_instance.exist_participant_match(self.ehr_dataset_id,
-                                                       HPO_2))
+            self.rule_instance.exist_table(
+                self.client, self.project_id, self.ehr_dataset_id,
+                resources.get_table_id(PARTICIPANT_MATCH, hpo_id=HPO_2)))
+        self.assertTrue(
+            self.rule_instance.exist_table(
+                self.client, self.project_id, self.ehr_dataset_id,
+                resources.get_table_id(PARTICIPANT_MATCH, hpo_id=HPO_4)))
+
+        # Return False for HPO_3 as it does not have a participant match table.
         self.assertFalse(
-            self.rule_instance.exist_participant_match(self.ehr_dataset_id,
-                                                       HPO_3))
-        self.assertTrue(
-            self.rule_instance.exist_participant_match(self.ehr_dataset_id,
-                                                       HPO_4))
+            self.rule_instance.exist_table(
+                self.client, self.project_id, self.ehr_dataset_id,
+                resources.get_table_id(PARTICIPANT_MATCH, hpo_id=HPO_3)))
 
-    def test_exist_identity_match(self):
-        """
-        Test for exist_identity_match(). Only HPO_4 should return False
-        as it does not have an identity match table. 
-        """
         self.assertTrue(
-            self.rule_instance.exist_identity_match(
-                f'{self.project_id}.{self.validation_dataset_id}.{HPO_1}_{IDENTITY_MATCH}'
-            ))
+            self.rule_instance.exist_table(self.client, self.project_id,
+                                           self.validation_dataset_id,
+                                           f'{HPO_1}_{IDENTITY_MATCH}'))
         self.assertTrue(
-            self.rule_instance.exist_identity_match(
-                f'{self.project_id}.{self.validation_dataset_id}.{HPO_2}_{IDENTITY_MATCH}'
-            ))
+            self.rule_instance.exist_table(self.client, self.project_id,
+                                           self.validation_dataset_id,
+                                           f'{HPO_2}_{IDENTITY_MATCH}'))
         self.assertTrue(
-            self.rule_instance.exist_identity_match(
-                f'{self.project_id}.{self.validation_dataset_id}.{HPO_3}_{IDENTITY_MATCH}'
-            ))
+            self.rule_instance.exist_table(self.client, self.project_id,
+                                           self.validation_dataset_id,
+                                           f'{HPO_3}_{IDENTITY_MATCH}'))
+
+        # Return False for HPO_4 as it does not have a identity match table.
         self.assertFalse(
-            self.rule_instance.exist_identity_match(
-                f'{self.project_id}.{self.validation_dataset_id}.{HPO_4}_{IDENTITY_MATCH}'
-            ))
-
-    def test_get_missing_criterion(self):
-        """Test for get_missing_criterion().
-        """
-        self.assertEqual(
-            self.rule_instance.get_missing_criterion(KEY_FIELDS),
-            "CAST(first_name <> 'match' AS int64) + " +
-            "CAST(last_name <> 'match' AS int64) + " +
-            "CAST(birth_date <> 'match' AS int64)")
-
-    def test_get_not_validated_participants(self):
-        """Test for get_not_validated_participants(). Test for HPO_3 does not exist as 
-        get_not_validated_participants() does not run for HPO sites without a participant match table.
-        """
-        self.assertCountEqual(
-            self.rule_instance.get_not_validated_participants(
-                self.ehr_dataset_id, HPO_1), [])
-        self.assertCountEqual(
-            self.rule_instance.get_not_validated_participants(
-                self.ehr_dataset_id, HPO_2), [204])
-        self.assertCountEqual(
-            self.rule_instance.get_not_validated_participants(
-                self.ehr_dataset_id, HPO_4), [401, 402, 403, 404])
-
-    def test_get_non_match_participants(self):
-        """Test for get_non_match_participants(). Only the participants who are
-        not validated AND non-matching are returned. Test for HPO_1 does not exist as 
-        get_non_match_participants() runs only for the HPO sites that (1) have not validated participants,
-        or (2) does not have a participant match table. HPO_4 returns [] because it does not have
-        an identity match table.
-        """
-        self.assertCountEqual(
-            self.rule_instance.get_non_match_participants(
-                self.validation_dataset_id,
-                HPO_2,
-                pids=self.rule_instance.get_not_validated_participants(
-                    self.ehr_dataset_id, HPO_2)), [204])
-        self.assertCountEqual(
-            self.rule_instance.get_non_match_participants(
-                self.validation_dataset_id, HPO_3), [303, 304])
-        self.assertCountEqual(
-            self.rule_instance.get_non_match_participants(
-                self.validation_dataset_id,
-                HPO_4,
-                pids=self.rule_instance.get_not_validated_participants(
-                    self.ehr_dataset_id, HPO_4)), [])
+            self.rule_instance.exist_table(self.client, self.project_id,
+                                           self.validation_dataset_id,
+                                           f'{HPO_4}_{IDENTITY_MATCH}'))
 
     def test_remove_non_matching_participant(self):
         """
@@ -332,6 +288,7 @@ class RemoveNonMatchingParticipantTest(BaseTest.CleaningRulesTestBase):
         X04: "missing" exceeding NUM_OF_MISSING_ALL_FIELDS -> 204 and 304 should be removed. 104 is validated,
              and 4XX is skipped because of missing identity_match table.
         """
+        self.rule_instance.setup_rule(self.client)
         tables_and_counts = [
             {
                 'name':

@@ -13,11 +13,28 @@ FROM `{project}.{dataset}.{table}`
 WHERE person_id IN({pids}))
 """
 
+SANDBOX_QUERY_WITH_LOOKUP_TABLE = """
+CREATE OR REPLACE TABLE `{project}.{sandbox_dataset}.{intermediary_table}` AS (
+SELECT *
+FROM `{project}.{dataset}.{table}`
+WHERE person_id IN(
+    SELECT person_id FROM `{project}.{sandbox_dataset}.{lookup_table}`
+))
+"""
+
 # Query to truncate existing tables to remove PIDs based on cleaning rule criteria
 CLEAN_QUERY = """
 SELECT *
 FROM `{project}.{dataset}.{table}`
 WHERE person_id NOT IN({pids})
+"""
+
+CLEAN_QUERY_WITH_LOOKUP_TABLE = """
+SELECT *
+FROM `{project}.{dataset}.{table}`
+WHERE person_id NOT IN(
+    SELECT person_id FROM `{project}.{sandbox_dataset}.{lookup_table}`
+)
 """
 
 # Query to list all tables within a dataset that contains person_id in the schema
@@ -83,6 +100,42 @@ def get_sandbox_queries(project_id,
     return queries_list
 
 
+def get_sandbox_queries_with_lookup_table(project_id,
+                                          dataset_id,
+                                          ticket_number,
+                                          sandbox_dataset_id=None,
+                                          lookup_table=None):
+    """
+    Does the same thing as get_sandbox_queries(). Instead of taking pids as parameter, it takes the lookup table 
+    that has pids as parameter.
+
+    :param project_id: bq project_id
+    :param dataset_id: bq dataset_id
+    :param ticket_number: ticket number from jira that will be appended to the end of the sandbox table names
+    :param sandbox_dataset_id: name of the sandbox dataset
+    :param lookup_table: name of the lookup table
+    :return: list of CREATE OR REPLACE queries to create tables in sandbox
+    """
+    if sandbox_dataset_id is None:
+        sandbox_dataset_id = get_sandbox_dataset_id(dataset_id)
+    person_tables_list = get_tables_with_person_id(project_id, dataset_id)
+    queries_list = []
+
+    for table in person_tables_list:
+        sandbox_queries = dict()
+        sandbox_queries[
+            cdr_consts.QUERY] = SANDBOX_QUERY_WITH_LOOKUP_TABLE.format(
+                dataset=dataset_id,
+                project=project_id,
+                table=table,
+                sandbox_dataset=sandbox_dataset_id,
+                intermediary_table=table + '_' + ticket_number,
+                lookup_table=lookup_table)
+        queries_list.append(sandbox_queries)
+
+    return queries_list
+
+
 def get_remove_pids_queries(project_id, dataset_id, pids):
     """
     Returns a list of queries in which the table will be truncated with clean data, ie: all removed PIDs from all
@@ -103,6 +156,39 @@ def get_remove_pids_queries(project_id, dataset_id, pids):
             table=table,
             # need to convert list of pids to string of pids
             pids=','.join([str(i) for i in pids]))
+        queries_list.append({
+            clean_consts.QUERY: delete_queries,
+            clean_consts.DESTINATION_TABLE: table,
+            clean_consts.DESTINATION_DATASET: dataset_id,
+            clean_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE
+        })
+
+    return queries_list
+
+
+def get_remove_pids_queries_with_lookup_table(project_id,
+                                              dataset_id,
+                                              sandbox_dataset_id=None,
+                                              lookup_table=None):
+    """
+    Does the same thing as get_remove_pids_queries(). Instead of taking pids as parameter, it takes the lookup table 
+    that has pids as parameter.
+
+    :param project_id: b1 project_id
+    :param dataset_id: bq dataset_id
+    :param lookup_table: name of the lookup table
+    :return: list of select statements that will truncate the existing tables with clean data
+    """
+    person_tables_list = get_tables_with_person_id(project_id, dataset_id)
+    queries_list = []
+
+    for table in person_tables_list:
+        delete_queries = CLEAN_QUERY_WITH_LOOKUP_TABLE.format(
+            project=project_id,
+            dataset=dataset_id,
+            table=table,
+            sandbox_dataset=sandbox_dataset_id,
+            lookup_table=lookup_table)
         queries_list.append({
             clean_consts.QUERY: delete_queries,
             clean_consts.DESTINATION_TABLE: table,
