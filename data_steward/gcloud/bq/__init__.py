@@ -457,7 +457,7 @@ class BigQueryClient(Client):
             job = self.query(sql, job_config=job_config, job_id=job_id)
             job.result()  # Wait for the job to complete.
 
-    def table_exists(self, table_id, dataset_id=None):
+    def table_exists(self, table_id: str, dataset_id=None) -> bool:
         """
         Determine whether a bigquery table exists
         :param table_id: id of the table
