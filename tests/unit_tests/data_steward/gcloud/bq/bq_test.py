@@ -346,12 +346,13 @@ class BQCTest(TestCase):
         table_name = f'{self.client.project}.{self.dataset_id}.{table_id}'
         mock_environ_get.return_value = self.dataset_id
 
-        # Test case 1 ... dataset_id = None, table exists
+        # Test case 1 ... dataset_id = None
         result = self.client.table_exists(table_id)
         self.assertEqual(result, True)
+        mock_environ_get.assert_called()
         mock_get_table.assert_called_with(table_name)
 
-        # Test case 2 ... table_exists called with dataset_id, table exists
+        # Test case 2 ... table_exists called with dataset_id
         result = self.client.table_exists(table_id, self.dataset_id)
         self.assertEqual(result, True)
         mock_get_table.assert_called_with(table_name)
