@@ -464,6 +464,9 @@ class BigQueryClient(Client):
         :param dataset_id: id of the dataset
         :return: `True` if the table exists, `False` otherwise
         """
+        if not table_id:
+            raise RuntimeError('Please provide table_id')
+
         if dataset_id is None:
             dataset_id = os.environ.get('BIGQUERY_DATASET_ID')
         table = f'{self.project}.{dataset_id}.{table_id}'
