@@ -7,7 +7,6 @@ from collections import OrderedDict
 
 # Third party imports
 from google.cloud import bigquery
-from matplotlib.pyplot import table
 from mock import patch, MagicMock, Mock
 from google.cloud.bigquery import TableReference, DatasetReference
 from google.cloud.bigquery.table import TableListItem
@@ -346,13 +345,29 @@ class BQCTest(TestCase):
         table_name = f'{self.client.project}.{self.dataset_id}.{table_id}'
         mock_environ_get.return_value = self.dataset_id
 
-        # Test case 1 ... dataset_id = None
+        # Test case 1 ... dataset_id not provided
         result = self.client.table_exists(table_id)
         self.assertEqual(result, True)
-        mock_environ_get.assert_called()
+        mock_environ_get.assert_called_once()
         mock_get_table.assert_called_with(table_name)
 
-        # Test case 2 ... table_exists called with dataset_id
+        # Test case 2 ... dataset_id provided
         result = self.client.table_exists(table_id, self.dataset_id)
         self.assertEqual(result, True)
+        mock_get_table.assert_called_with(table_name)
+
+        #Test case 3 ... table_id not provided
+        self.assertRaises(RuntimeError, self.client.table_exists, None)
+
+        # Test case 4 ... NotFound exception, dataset_id provided
+        mock_get_table.side_effect = NotFound('')
+        result = self.client.table_exists(table_id, self.dataset_id)
+        self.assertEqual(result, False)
+        mock_get_table.assert_called_with(table_name)
+
+        #Test case 5 ... NotFound exception, dataset_id not provided
+        mock_environ_get.call_count = 0
+        result = self.client.table_exists(table_id)
+        self.assertEqual(result, False)
+        mock_environ_get.assert_called_once()
         mock_get_table.assert_called_with(table_name)
