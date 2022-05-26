@@ -185,8 +185,7 @@ class CleanRulesReporterTest(TestCase):
         self.assertEqual(actual, expected)
 
     @mock.patch(
-        'cdr_cleaner.cleaning_rules.remove_non_matching_participant.bq_utils.query'
-    )
+        'cdr_cleaner.cleaning_rules.sandbox_and_remove_pids.utils.bq.query')
     @mock.patch(
         'cdr_cleaner.cleaning_rules.remove_non_matching_participant.BigQueryClient'
     )
