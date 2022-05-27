@@ -265,14 +265,14 @@ class RemoveNonMatchingParticipant(BaseCleaningRule):
             are optional but the query is required.
         """
 
-        sandbox_queries = remove_pids.get_sandbox_queries_with_lookup_table(
+        sandbox_queries = remove_pids.get_sandbox_queries(
             self.project_id,
             self.dataset_id,
             TICKET_NUMBER,
             sandbox_dataset_id=self.sandbox_dataset_id,
             lookup_table=self.sandbox_table_for(NOT_MATCH))
 
-        remove_pids_queries = remove_pids.get_remove_pids_queries_with_lookup_table(
+        remove_pids_queries = remove_pids.get_remove_pids_queries(
             self.project_id,
             self.dataset_id,
             sandbox_dataset_id=self.sandbox_dataset_id,

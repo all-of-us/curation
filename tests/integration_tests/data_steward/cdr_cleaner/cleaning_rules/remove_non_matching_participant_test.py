@@ -11,7 +11,7 @@ from google.cloud.bigquery import Table
 # Project Imports
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.remove_non_matching_participant import (
-    RemoveNonMatchingParticipant, KEY_FIELDS, TICKET_NUMBER)
+    RemoveNonMatchingParticipant, TICKET_NUMBER)
 from common import JINJA_ENV, IDENTITY_MATCH, OBSERVATION, PARTICIPANT_MATCH, PERSON
 from validation.participants.create_update_drc_id_match_table import create_drc_validation_table
 from tests import test_util
@@ -156,10 +156,6 @@ class RemoveNonMatchingParticipantTest(BaseTest.CleaningRulesTestBase):
 
         # Set client and create datasets if not exist
         super().setUpClass()
-        test_util.delete_all_tables(cls.dataset_id)
-        test_util.delete_all_tables(cls.ehr_dataset_id)
-        test_util.delete_all_tables(cls.validation_dataset_id)
-        test_util.delete_all_tables(cls.sandbox_id)
 
         for cdm_table in [PERSON, OBSERVATION]:
 
