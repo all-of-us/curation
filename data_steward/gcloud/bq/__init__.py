@@ -466,9 +466,9 @@ class BigQueryClient(Client):
         """
         if not table_id:
             raise RuntimeError('Please provide a table_id')
-
         if not dataset_id:
             dataset_id = os.environ.get('BIGQUERY_DATASET_ID')
+
         table = f'{self.project}.{dataset_id}.{table_id}'
         try:
             self.get_table(table)
