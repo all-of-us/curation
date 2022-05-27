@@ -1,8 +1,11 @@
+# Python imports
 import time
 import unittest
 
+# Third party imports
 import mock
 
+# Project imports
 import app_identity
 import bq_utils
 import common
