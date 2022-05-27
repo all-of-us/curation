@@ -19,7 +19,6 @@ from cdr_cleaner.cleaning_rules.drop_participants_without_ppi_or_ehr import Drop
 import cdr_cleaner.cleaning_rules.drug_refills_days_supply as drug_refills_supply
 import cdr_cleaner.cleaning_rules.maps_to_value_ppi_vocab_update as maps_to_value_vocab_update
 import cdr_cleaner.cleaning_rules.populate_route_ids as populate_routes
-import cdr_cleaner.cleaning_rules.remove_aian_participants as remove_aian_participants
 import \
     cdr_cleaner.cleaning_rules.remove_invalid_procedure_source_records as invalid_procedure_source
 import cdr_cleaner.cleaning_rules.remove_non_matching_participant as validate_missing_participants
@@ -226,7 +225,6 @@ COMBINED_CLEANING_CLASSES = [
     # TODO : Make null_invalid_foreign_keys able to run on de_identified dataset
     (
         NullInvalidForeignKeys,),
-    (remove_aian_participants.get_queries,),
     (RemoveParticipantDataPastDeactivationDate,),
     (validate_missing_participants.delete_records_for_non_matching_participants,
     ),
