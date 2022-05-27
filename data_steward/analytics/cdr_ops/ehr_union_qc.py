@@ -23,13 +23,11 @@ RELEASE_TAG = ""  # Identifies the release tag for current CDR
 EHR_CUTOFF_DATE = ""  # CDR cutoff date
 
 # +
-import pandas as pd
-
-from utils.bq import get_client
+from gcloud.bq import BigQueryClient
 from analytics.cdr_ops.notebook_utils import execute
 # -
 
-client = get_client(PROJECT_ID)
+client = BigQueryClient(PROJECT_ID)
 
 # ## Check Tags and lables added to Unioned_ehr datasets
 
@@ -279,9 +277,3 @@ SELECT * FROM result;
 
 execute(client, query)
 # -
-
-
-
-
-
-

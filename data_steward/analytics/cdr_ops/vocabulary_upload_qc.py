@@ -23,7 +23,7 @@ new_vocabulary = ''
 
 # # + Import packages
 from common import JINJA_ENV
-from utils.bq import get_client
+from gcloud.bq import BigQueryClient
 from analytics.cdr_ops.notebook_utils import execute
 import pandas as pd
 # -
@@ -31,7 +31,7 @@ import pandas as pd
 vocabulary_dataset_old = f'{project_id}.{old_vocabulary}'
 vocabulary_dataset_new = f'{project_id}.{new_vocabulary}'
 
-client = get_client(project_id)
+client = BigQueryClient(project_id)
 
 pd.set_option('max_colwidth', None)
 

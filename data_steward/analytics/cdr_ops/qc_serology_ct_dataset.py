@@ -23,9 +23,10 @@ import pandas as pd
 import warnings
 from analytics.cdr_ops.notebook_utils import execute
 from common import JINJA_ENV
-from utils.bq import get_client
+from gcloud.bq import BigQueryClient
 warnings.filterwarnings('ignore')
-client = get_client(cur_project)
+
+client = BigQueryClient(cur_project)
 
 
 def get_table(table, cols, dataset, project):
