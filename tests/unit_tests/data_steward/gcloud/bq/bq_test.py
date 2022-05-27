@@ -352,8 +352,10 @@ class BQCTest(TestCase):
         mock_get_table.assert_called_with(table_name)
 
         # Test case 2 ... dataset_id provided
+        mock_environ_get.call_count = 0
         result = self.client.table_exists(table_id, self.dataset_id)
         self.assertEqual(result, True)
+        self.assertEqual(mock_environ_get.call_count, 0)
         mock_get_table.assert_called_with(table_name)
 
         #Test case 3 ... table_id not provided
@@ -363,10 +365,10 @@ class BQCTest(TestCase):
         mock_get_table.side_effect = NotFound('')
         result = self.client.table_exists(table_id, self.dataset_id)
         self.assertEqual(result, False)
+        self.assertEqual(mock_environ_get.call_count, 0)
         mock_get_table.assert_called_with(table_name)
 
         #Test case 5 ... NotFound exception, dataset_id not provided
-        mock_environ_get.call_count = 0
         result = self.client.table_exists(table_id)
         self.assertEqual(result, False)
         mock_environ_get.assert_called_once()
