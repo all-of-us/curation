@@ -7,10 +7,10 @@ from collections import OrderedDict
 
 # Third party imports
 from google.cloud import bigquery
-from mock import patch, MagicMock, Mock
 from google.cloud.bigquery import TableReference, DatasetReference
 from google.cloud.bigquery.table import TableListItem
 from google.cloud.exceptions import NotFound
+from mock import patch, MagicMock, Mock
 
 # Project imports
 from gcloud.bq import BigQueryClient

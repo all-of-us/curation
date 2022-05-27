@@ -10,12 +10,12 @@ import typing
 from google.cloud import bigquery
 from google.cloud.bigquery import Client
 from google.auth import default
+from google.api_core.exceptions import GoogleAPIError, BadRequest
+from google.cloud.exceptions import NotFound
 from opentelemetry import trace
 from opentelemetry.exporter.cloud_trace import CloudTraceSpanExporter
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from google.api_core.exceptions import GoogleAPIError, BadRequest
-from google.cloud.exceptions import NotFound
 
 # Project imports
 from utils import auth
@@ -465,7 +465,7 @@ class BigQueryClient(Client):
         :return: `True` if the table exists, `False` otherwise
         """
         if not table_id:
-            raise RuntimeError('Please provide table_id')
+            raise RuntimeError('Please provide a table_id')
 
         if not dataset_id:
             dataset_id = os.environ.get('BIGQUERY_DATASET_ID')
