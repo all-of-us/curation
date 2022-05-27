@@ -73,7 +73,8 @@ class RequiredLabsTest(unittest.TestCase):
         ehr_measurement_result = bq_utils.load_table_from_csv(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
-            table_name=bq_utils.get_table_id(FAKE_HPO_ID, common.MEASUREMENT),
+            table_name=resources.get_table_id(common.MEASUREMENT,
+                                              hpo_id=FAKE_HPO_ID),
             csv_path=test_util.FIVE_PERSONS_MEASUREMENT_CSV,
             fields=resources.fields_for(common.MEASUREMENT))
         bq_utils.wait_on_jobs([ehr_measurement_result['jobReference']['jobId']])
@@ -189,8 +190,8 @@ class RequiredLabsTest(unittest.TestCase):
                            dataset_id=self.dataset_id,
                            measurement_concept_sets_descendants=
                            MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE,
-                           measurement=bq_utils.get_table_id(
-                               FAKE_HPO_ID, common.MEASUREMENT))
+                           measurement=resources.get_table_id(
+                               common.MEASUREMENT, hpo_id=FAKE_HPO_ID))
 
         unique_measurement_concept_id_response = bq_utils.query(
             unique_measurement_concept_id_query)

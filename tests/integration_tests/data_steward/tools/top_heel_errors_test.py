@@ -79,7 +79,7 @@ class TopHeelErrorsTest(TestCase):
 
         heel_results: str = common.ACHILLES_HEEL_RESULTS
         if hpo_id:
-            table_id: str = bq_utils.get_table_id(hpo_id, heel_results)
+            table_id: str = resources.get_table_id(heel_results, hpo_id=hpo_id)
         else:
             table_id: str = heel_results
         table = self.drc_bucket.blob(f'{table_id}.csv')

@@ -5,6 +5,7 @@ from google.cloud.bigquery.table import TableListItem
 from google.cloud.bigquery import DatasetReference
 
 import bq_utils
+import resources
 from resources import CDM_TABLES
 from tests.bq_test_helpers import list_item_from_table_id
 from tools.exclude_site_submission import exclude_site_submission
@@ -43,7 +44,7 @@ class ExcludeSiteSubmissionTest(unittest.TestCase):
         return list_item_from_table_id(full_table_id)
 
     def _table_list_item(self, hpo_id, cdm_table) -> TableListItem:
-        table_id = bq_utils.get_table_id(hpo_id, cdm_table)
+        table_id = resources.get_table_id(cdm_table, hpo_id=hpo_id)
         return self._table_id_to_list_item(table_id)
 
     def test_exclude_site_data(self):
