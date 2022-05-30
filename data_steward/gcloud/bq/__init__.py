@@ -446,9 +446,9 @@ class BigQueryClient(Client):
                 priority=bigquery.job.QueryPriority.BATCH,
                 destination=dest_table,
                 labels={
-                    'table_name': table_item.table_id,
-                    'copy_from': table_item.dataset_id,
-                    'copy_to': dest_dataset
+                    'table_name': table_item.table_id.lower(),
+                    'copy_from': table_item.dataset_id.lower(),
+                    'copy_to': dest_dataset.lower()
                 })
             job_id = (f'schemaed_copy_{table_item.table_id.lower()}_'
                       f'{datetime.now().strftime("%Y%m%d_%H%M%S")}')
