@@ -2,7 +2,7 @@
 All data for any participant less than 18 years old at the time of truncation date for a CDR needs to be dropped from
  all the tables. For RDR exports, they may be cleaned with the current date or a truncation date may be set.
 
-Original Issues: DC-1724
+Original Issues: DC-1724, DC-2260
 """
 
 # Python imports
@@ -26,20 +26,15 @@ UNDER18_PARTICIPANTS_LOOKUP_TABLE = '_under18_participants'
 
 AFFECTED_TABLES = [table for table in get_person_id_tables(common.AOU_REQUIRED)]
 
-PARTICIPANTS_UNDER_18_QUERY = common.JINJA_ENV.from_string("""
-    CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{under18_participant_lookup_table}}` AS (
-  SELECT
-    person_id
-  FROM (
-    SELECT
-      person_id,
-      FLOOR(DATE_DIFF(DATE('{{export_date}}'),EXTRACT(DATE
-            FROM
-              birth_datetime), DAY)/365) AS age
-    FROM
-      `{{project}}.{{dataset}}.person`)
-  WHERE
-    age < 18)
+PARTICIPANTS_UNDER_18_AT_CONSENT_QUERY = common.JINJA_ENV.from_string("""
+  CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{under18_participant_lookup_table}}` AS (
+  SELECT person_id
+  FROM `{{project}}.{{dataset}}.observation`
+  JOIN `{{project}}.{{dataset}}.person` 
+  USING (person_id)
+  WHERE (observation_source_concept_id = 1585482 OR observation_concept_id = 1585482)
+  AND FLOOR(CAST(FORMAT_DATE('%Y.%m%d', observation_date) AS FLOAT64) - CAST(FORMAT_DATE('%Y.%m%d', DATE(birth_datetime)) AS FLOAT64)) < 18
+  )
 """)
 
 SANDBOX_ROWS = common.JINJA_ENV.from_string("""
@@ -73,8 +68,8 @@ WHERE
 
 class RemoveParticipantsUnder18Years(BaseCleaningRule):
     """
-    All EHR data associated with a participant if they are 18 years or younger is to be sandboxed and dropped
-    from the CDR.
+    All EHR data associated with a participant who was younger than 18 years old at consent 
+    is to be sandboxed and dropped from the CDR.
     """
 
     def __init__(self,
@@ -99,11 +94,11 @@ class RemoveParticipantsUnder18Years(BaseCleaningRule):
             # otherwise, default to using today's date as the date string
             self.cutoff_date = str(datetime.now().date())
         desc = (
-            'All EHR data associated with a participant if they are 18 years or younger is to be sandboxed '
-            'and dropped from the CDR.')
+            'All EHR data associated with a participant who was younger than 18 years old at consent '
+            'is to be sandboxed and dropped from the CDR.')
 
         super().__init__(
-            issue_numbers=['DC1724'],
+            issue_numbers=['DC1724', 'DC2260'],
             description=desc,
             affected_datasets=[cdr_consts.RDR],
             affected_tables=AFFECTED_TABLES,
@@ -125,7 +120,7 @@ class RemoveParticipantsUnder18Years(BaseCleaningRule):
         drop_queries = []
         unconsented_lookup_query = {
             cdr_consts.QUERY:
-                PARTICIPANTS_UNDER_18_QUERY.render(
+                PARTICIPANTS_UNDER_18_AT_CONSENT_QUERY.render(
                     project=self.project_id,
                     dataset=self.dataset_id,
                     sandbox_dataset=self.sandbox_dataset_id,
@@ -192,7 +187,7 @@ class RemoveParticipantsUnder18Years(BaseCleaningRule):
         """
         Generates sandbox table name for a given domain table
         """
-        return f'{self._issue_numbers[0].lower()}_{table_name}'
+        return self.sandbox_table_for(table_name)
 
 
 if __name__ == '__main__':
