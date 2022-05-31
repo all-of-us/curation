@@ -291,7 +291,7 @@ def is_first_validation_run(folder_items):
     return common.RESULTS_HTML not in folder_items and common.PROCESSED_TXT not in folder_items
 
 
-def generate_metrics(hpo_id, bucket, folder_prefix, summary):
+def generate_metrics(hpo_id, bucket, folder_prefix, summary, project_id):
     """
     Generate metrics regarding a submission
 
@@ -331,6 +331,8 @@ def generate_metrics(hpo_id, bucket, folder_prefix, summary):
             logging.info(
                 f"Required files are missing in {gcs_path}. Skipping achilles.")
 
+        bq_client = BigQueryClient(project_id)
+
         # non-unique key metrics
         logging.info(f"Getting non-unique key stats for {hpo_id}")
         nonunique_metrics_query = get_duplicate_counts_query(hpo_id)
@@ -358,7 +360,7 @@ def generate_metrics(hpo_id, bucket, folder_prefix, summary):
 
         # participant validation metrics
         logging.info(f"Ensuring participant validation can be run for {hpo_id}")
-        setup_and_validate_participants(hpo_id)
+        setup_and_validate_participants(hpo_id, client=bq_client)
         participant_validation_query = get_participant_validation_summary_query(
             hpo_id)
         # TODO add to report_data based on requirements from EHR_OPS
@@ -366,7 +368,7 @@ def generate_metrics(hpo_id, bucket, folder_prefix, summary):
         # lab concept metrics
         logging.info(f"Getting lab concepts for {hpo_id}")
         lab_concept_metrics_query = required_labs.get_lab_concept_summary_query(
-            hpo_id)
+            bq_client, hpo_id)
         report_data[report_consts.LAB_CONCEPT_METRICS_REPORT_KEY] = query_rows(
             lab_concept_metrics_query)
 
@@ -537,7 +539,7 @@ def process_hpo(hpo_id, force_run=False):
                 summary = validate_submission(hpo_id, bucket, folder_items,
                                               folder_prefix)
                 report_data = generate_metrics(hpo_id, bucket, folder_prefix,
-                                               summary)
+                                               summary, project_id)
                 failed_submission = False
             else:
                 # do not perform validation
