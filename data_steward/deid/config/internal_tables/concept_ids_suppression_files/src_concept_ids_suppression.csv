@@ -13145,7 +13145,7 @@ ICD10CM,Q99.1,"46, XX true hermaphrodite",35211257,Condition,DC-2277
 ICD10CM,Q99.8,Other specified chromosome abnormalities,35211259,Condition,DC-2277
 ICD10CM,Q99.9,"Chromosomal abnormality, unspecified",35211260,Condition,DC-2277
 ICD9CM,800,Fracture of vault of skull,44826991,Condition,DC-2277
-ICD9CM,V45.77,"Acquired absence of organ, genital organs",44837823,Condition,DC-2277
+ICD9CM,V45.77,"Acquired absence of organ, genital organs",44837823,Condition,DC-2277 EHR concepts indicative og gender and sexuality
 Multum,798,chlorpheniramine/methscopolamine/PE 2 mg-1.25 mg-10 mg/5 mL oral syrup,45417059,Drug,DC-2277
 Multum,799,"Cefaclor, 500 mg oral capsule",45412177,Drug,DC-2277
 Multum,800,"Bethanechol Chloride, 5 mg oral tablet",45410955,Drug,DC-2277
@@ -13393,3 +13393,5 @@ SNOMED,651331000000102,Suicide and self inflicted poisoning by other carbon mono
 SNOMED,192508005,Transsexualism,40388818,Condition,DC-2314
 SNOMED,788180009,Lower uterine segment cesarean section,37312440,Procedure,DC-2314
 SNOMED,407374003,Transsexual,4231241,Condition,DC-2314
+ICD10CM,Z87.890,Personal history of sex reassignment,45600367,Observation,EHR concepts indicative og gender and sexuality
+SNOMED,428405009,History of intersex surgery,4323227,Observation,EHR concepts indicative og gender and sexuality
