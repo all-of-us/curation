@@ -24,7 +24,7 @@ VALUES
       /* Participant 1 ... 50 years old at consent*/
       /* Participant 2 ... 18 years 0 day old at consent*/
       /* Participant 3 ... 17 years 364 days old at consent -> To be sandboxed*/
-      /* Participant 4 ... Younger than 18 years 0 day old at consent -> To be sandboxed*/
+      /* Participant 4 ... Younger than 18 years old at consent -> To be sandboxed*/
       /* The data belonging to this participant from all the domain tables should be dropped.*/  
       (1, '1970-01-01 00:00:00 UTC', 0, 1970, 0, 0),
       (2, '2002-01-01 00:00:00 UTC', 0, 2002, 0, 0),
