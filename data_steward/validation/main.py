@@ -291,10 +291,11 @@ def is_first_validation_run(folder_items):
     return common.RESULTS_HTML not in folder_items and common.PROCESSED_TXT not in folder_items
 
 
-def generate_metrics(hpo_id, bucket, folder_prefix, summary, project_id):
+def generate_metrics(project_id, hpo_id, bucket, folder_prefix, summary):
     """
     Generate metrics regarding a submission
 
+    :param project_id: identifies the project
     :param hpo_id: identifies the HPO site
     :param bucket: name of the bucket with the submission
     :param folder_prefix: folder containing the submission
@@ -538,8 +539,8 @@ def process_hpo(hpo_id, force_run=False):
                 folder_items = get_folder_items(bucket_items, folder_prefix)
                 summary = validate_submission(hpo_id, bucket, folder_items,
                                               folder_prefix)
-                report_data = generate_metrics(hpo_id, bucket, folder_prefix,
-                                               summary, project_id)
+                report_data = generate_metrics(project_id, hpo_id, bucket,
+                                               folder_prefix, summary)
                 failed_submission = False
             else:
                 # do not perform validation

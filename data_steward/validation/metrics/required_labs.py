@@ -30,7 +30,7 @@ def check_and_copy_tables(client, dataset_id):
     Will check that all the required tables exist and if not, they will be created
     or copied from another table.
 
-    :param project_id: Project where the dataset resides
+    :param client: a BigQueryClient, contains the project where the dataset resides
     :param dataset_id: Dataset where the required lab table needs to be created
     :return: None
     """
@@ -92,7 +92,7 @@ def load_measurement_concept_sets_table(client, dataset_id):
     Loads the required lab table from resource_files/measurement_concept_sets.csv
     into project_id.ehr_ops
 
-    :param project_id: Project where the dataset resides
+    :param client: a BigQueryClient, contains the project where the dataset resides
     :param dataset_id: Dataset where the required lab table needs to be created
     :return: None
     """
@@ -122,7 +122,7 @@ def load_measurement_concept_sets_descendants_table(client, dataset_id):
     Loads the measurement_concept_sets_descendants table using LOINC group and LOINC hierarchy
     into project_id.ehr_ops
 
-    :param project_id: Project where the dataset resides
+    :param client: a BigQueryClient, contains the project where the dataset resides
     :param dataset_id: Dataset where the required lab table needs to be created
     :return: None
     """
@@ -163,6 +163,7 @@ def load_measurement_concept_sets_descendants_table(client, dataset_id):
 def get_lab_concept_summary_query(client, hpo_id):
     """
     Get the query that checks if the HPO site has submitted the required labs
+    :param client: a BigQueryClient
     :param hpo_id: Identifies the HPO site
     :return: 
     """

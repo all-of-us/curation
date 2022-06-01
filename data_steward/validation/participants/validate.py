@@ -170,6 +170,7 @@ def setup_and_validate_participants(hpo_id, update_udf=True, client=None):
     Fetch PS data, set up tables and run validation
     :param hpo_id: Identifies the HPO
     :param update_udf: Boolean to update comparison udfs, true by default
+    :param client: a BigQueryClient
     :return: 
     """
     if not client:
