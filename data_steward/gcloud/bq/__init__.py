@@ -457,16 +457,17 @@ class BigQueryClient(Client):
             job = self.query(sql, job_config=job_config, job_id=job_id)
             job.result()  # Wait for the job to complete.
 
-    def table_exists(self, table_id: str, dataset_id=None) -> bool:
+    def table_exists(self, table_id: str, dataset_id: str = None) -> bool:
         """
         Determine whether a bigquery table exists
+
         :param table_id: id of the table
         :param dataset_id: id of the dataset
         :return: `True` if the table exists, `False` otherwise
         """
-        if not table_id:
+        if not table_id or table_id.isspace():
             raise RuntimeError('Please provide a table_id')
-        if not dataset_id:
+        if not dataset_id or dataset_id.isspace():
             dataset_id = os.environ.get('BIGQUERY_DATASET_ID')
 
         table = f'{self.project}.{dataset_id}.{table_id}'
