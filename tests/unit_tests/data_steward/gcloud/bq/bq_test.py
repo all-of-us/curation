@@ -351,25 +351,42 @@ class BQCTest(TestCase):
         mock_environ_get.assert_called_once()
         mock_get_table.assert_called_with(table_name)
 
-        # Test case 2 ... dataset_id provided
+        # Test case 2 ... whitespaces for dataset_id
+        mock_environ_get.call_count = 0
+        result = self.client.table_exists(table_id, ' ')
+        self.assertEqual(result, True)
+        mock_environ_get.assert_called_once()
+        mock_get_table.assert_called_with(table_name)
+
+        # Test case 3 ... dataset_id provided
         mock_environ_get.call_count = 0
         result = self.client.table_exists(table_id, self.dataset_id)
         self.assertEqual(result, True)
         self.assertEqual(mock_environ_get.call_count, 0)
         mock_get_table.assert_called_with(table_name)
 
-        #Test case 3 ... table_id not provided
+        #Test case 4 ... table_id not provided
         self.assertRaises(RuntimeError, self.client.table_exists, None)
 
-        # Test case 4 ... NotFound exception, dataset_id provided
+        #Test case 5 ... whitespaces for table_id
+        self.assertRaises(RuntimeError, self.client.table_exists, ' ')
+
+        # Test case 6 ... NotFound exception, dataset_id provided
         mock_get_table.side_effect = NotFound('')
         result = self.client.table_exists(table_id, self.dataset_id)
         self.assertEqual(result, False)
         self.assertEqual(mock_environ_get.call_count, 0)
         mock_get_table.assert_called_with(table_name)
 
-        #Test case 5 ... NotFound exception, dataset_id not provided
+        #Test case 7 ... NotFound exception, dataset_id not provided
         result = self.client.table_exists(table_id)
+        self.assertEqual(result, False)
+        mock_environ_get.assert_called_once()
+        mock_get_table.assert_called_with(table_name)
+
+        #Test case 8 ... NotFound exception, whitespaces for dataset_id
+        mock_environ_get.call_count = 0
+        result = self.client.table_exists(table_id, ' ')
         self.assertEqual(result, False)
         mock_environ_get.assert_called_once()
         mock_get_table.assert_called_with(table_name)
