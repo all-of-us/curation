@@ -10,7 +10,6 @@ from google.cloud import bigquery
 from cdr_cleaner import clean_cdr
 from cdr_cleaner.args_parser import add_kwargs_to_args
 from utils import auth
-from utils import bq
 from gcloud.bq import BigQueryClient
 from utils import pipeline_logging
 from common import CDR_SCOPES
@@ -116,8 +115,8 @@ def main(raw_args=None):
     all_cleaning_args = add_kwargs_to_args(cleaning_args, kwargs)
     clean_cdr.main(args=all_cleaning_args)
 
-    bq.build_and_copy_contents(bq_client, datasets.get('staging', 'UNSET'),
-                               datasets.get('clean', 'UNSET'))
+    bq_client.build_and_copy_contents(datasets.get('staging', 'UNSET'),
+                                      datasets.get('clean', 'UNSET'))
 
     # update sandbox description and labels
     sandbox_dataset = bq_client.get_dataset(datasets.get(

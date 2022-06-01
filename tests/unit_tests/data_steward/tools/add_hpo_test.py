@@ -85,14 +85,13 @@ class AddHPOTest(TestCase):
     def test_update_site_masking_table(self, mock_bq_client):
         # Preconditions
         project_id = app_identity.get_application_id()
-        sandbox_id = PIPELINE_TABLES + '_sandbox'
-
         mock_query = mock_bq_client.return_value.query
 
         # Mocks the job return
         query_job_reference_results = mock.MagicMock(
             name="query_job_reference_results")
         query_job_reference_results.return_value = query_job_reference_results
+        query_job_reference_results.errors = []
         mock_query.side_effect = query_job_reference_results
 
         # Test
@@ -101,9 +100,8 @@ class AddHPOTest(TestCase):
         # Post conditions
         update_site_masking_query = add_hpo.UPDATE_SITE_MASKING_QUERY.render(
             project_id=project_id,
-            dataset_id=PIPELINE_TABLES,
-            sandbox_id=sandbox_id,
-            table_id=SITE_MASKING_TABLE_ID,
+            pipeline_tables_dataset=PIPELINE_TABLES,
+            site_maskings_table=SITE_MASKING_TABLE_ID,
             lookup_tables_dataset=bq_consts.LOOKUP_TABLES_DATASET_ID,
             hpo_site_id_mappings_table=bq_consts.HPO_SITE_ID_MAPPINGS_TABLE_ID)
 

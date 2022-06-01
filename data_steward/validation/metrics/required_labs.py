@@ -8,9 +8,9 @@ import oauth2client
 # Project imports
 import app_identity
 import bq_utils
+import resources
 import common
 from constants import bq_utils as bq_consts
-from utils import bq
 from gcloud.bq import BigQueryClient
 from validation.metrics.required_labs_sql import (IDENTIFY_LABS_QUERY,
                                                   CHECK_REQUIRED_LAB_QUERY)
@@ -78,18 +78,14 @@ def check_and_copy_tables(project_id, dataset_id):
     # do not exist, they will be created
     if MEASUREMENT_CONCEPT_SETS_TABLE not in results_dataframe[
             'table_id'].values:
-        bq.create_tables(client=bq_client,
-                         project_id=project_id,
-                         fq_table_names=[concept_sets_table_name],
-                         exists_ok=True,
-                         fields=None)
+        bq_client.create_tables(fq_table_names=[concept_sets_table_name],
+                                exists_ok=True,
+                                fields=None)
     if MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE not in results_dataframe[
             'table_id'].values:
-        bq.create_tables(client=bq_client,
-                         project_id=project_id,
-                         fq_table_names=[descendants_table_name],
-                         exists_ok=True,
-                         fields=None)
+        bq_client.create_tables(fq_table_names=[descendants_table_name],
+                                exists_ok=True,
+                                fields=None)
 
 
 def load_measurement_concept_sets_table(project_id, dataset_id):
@@ -168,12 +164,13 @@ def load_measurement_concept_sets_descendants_table(project_id, dataset_id):
 def get_lab_concept_summary_query(hpo_id):
     """
     Get the query that checks if the HPO site has submitted the required labs
-    :param hpo_id: 
+    :param hpo_id: Identifies the HPO site
     :return: 
     """
     project_id = app_identity.get_application_id()
     dataset_id = bq_utils.get_dataset_id()
-    hpo_measurement_table = bq_utils.get_table_id(hpo_id, common.MEASUREMENT)
+    hpo_measurement_table = resources.get_table_id(common.MEASUREMENT,
+                                                   hpo_id=hpo_id)
 
     # Create measurement_concept_sets_table if not exist
     if not bq_utils.table_exists(MEASUREMENT_CONCEPT_SETS_TABLE, dataset_id):

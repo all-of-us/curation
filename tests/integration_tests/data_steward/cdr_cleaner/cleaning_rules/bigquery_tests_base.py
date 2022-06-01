@@ -19,7 +19,6 @@ from google.cloud import bigquery
 
 # Project imports
 from cdr_cleaner import clean_cdr_engine as engine
-from utils import bq
 from gcloud.bq import BigQueryClient
 from common import JINJA_ENV
 
@@ -90,8 +89,7 @@ class BaseTest:
                 cls.client.create_dataset(dataset, exists_ok=True)
 
         def setUp(self):
-            bq.create_tables(self.client, self.project_id, self.fq_table_names,
-                             True)
+            self.client.create_tables(self.fq_table_names, exists_ok=True)
 
         @classmethod
         def tearDownClass(cls):

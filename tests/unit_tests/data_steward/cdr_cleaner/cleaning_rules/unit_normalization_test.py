@@ -7,8 +7,6 @@ from cdr_cleaner.cleaning_rules.unit_normalization import UnitNormalization, \
 from constants.bq_utils import WRITE_TRUNCATE
 from constants.cdr_cleaner import clean_cdr as clean_consts
 
-QUERY = 'query'
-
 
 class UnitNormalizationTest(unittest.TestCase):
 
@@ -22,7 +20,6 @@ class UnitNormalizationTest(unittest.TestCase):
         self.project_id = 'foo_project'
         self.dataset_id = 'foo_dataset'
         self.sandbox_id = 'foo_sandbox'
-        self.client = None
 
         self.rule_instance = UnitNormalization(self.project_id, self.dataset_id,
                                                self.sandbox_id)
@@ -31,20 +28,12 @@ class UnitNormalizationTest(unittest.TestCase):
         self.assertEqual(self.rule_instance.dataset_id, self.dataset_id)
         self.assertEqual(self.rule_instance.sandbox_dataset_id, self.sandbox_id)
 
-    def test_setup_rule(self):
-        # Test
-        with self.assertRaises(RuntimeError) as c:
-            self.rule_instance.setup_rule(None)
-
-        self.assertEqual(str(c.exception), 'Specify BigQuery client object')
-
-        # No errors are raised, nothing will happen
-
     def test_get_query_specs(self):
         # Pre conditions
-        self.assertEqual(
-            self.rule_instance.affected_datasets,
-            [clean_consts.DEID_CLEAN, clean_consts.CONTROLLED_TIER_DEID_CLEAN])
+        self.assertEqual(self.rule_instance.affected_datasets, [
+            clean_consts.REGISTERED_TIER_DEID_CLEAN,
+            clean_consts.CONTROLLED_TIER_DEID_CLEAN
+        ])
 
         # Test
         results_list = self.rule_instance.get_query_specs()
@@ -76,9 +65,10 @@ class UnitNormalizationTest(unittest.TestCase):
 
     def test_log_queries(self):
         # Pre conditions
-        self.assertEqual(
-            self.rule_instance.affected_datasets,
-            [clean_consts.DEID_CLEAN, clean_consts.CONTROLLED_TIER_DEID_CLEAN])
+        self.assertEqual(self.rule_instance.affected_datasets, [
+            clean_consts.REGISTERED_TIER_DEID_CLEAN,
+            clean_consts.CONTROLLED_TIER_DEID_CLEAN
+        ])
 
         store_rows_to_be_changed = SANDBOX_UNITS_QUERY.render(
             project_id=self.project_id,

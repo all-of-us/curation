@@ -9,12 +9,10 @@ is provided in the field, the time is maintained.  If the datetime field
 was null, a default value of midnight is used for the time component.
 """
 # Python imports
-from datetime import date
 import os
 
 # Third party imports
 from dateutil import parser
-from jinja2 import Template
 
 # Project imports
 from app_identity import PROJECT_ID

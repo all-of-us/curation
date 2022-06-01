@@ -26,11 +26,11 @@ EXCLUDED_SITES = "default"  # List of excluded sites passed as string: eg. "'hpo
 # +
 import pandas as pd
 
-from utils.bq import get_client
+from gcloud.bq import BigQueryClient
 from analytics.cdr_ops.notebook_utils import execute
 from common import MAPPED_CLINICAL_DATA_TABLES
 
-client = get_client(PROJECT_ID)
+client = BigQueryClient(PROJECT_ID)
 
 pd.options.display.max_rows = 1000
 pd.options.display.max_colwidth = 0

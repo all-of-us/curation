@@ -74,7 +74,7 @@ class EhrUnionTest(unittest.TestCase):
             self.storage_client.empty_bucket(bucket)
 
     def _create_hpo_table(self, hpo_id, table, dataset_id):
-        table_id = bq_utils.get_table_id(hpo_id, table)
+        table_id = resources.get_table_id(table, hpo_id=hpo_id)
         bq_utils.create_table(table_id,
                               resources.fields_for(table),
                               dataset_id=dataset_id)
@@ -313,8 +313,10 @@ class EhrUnionTest(unittest.TestCase):
         self.assertSetEqual(expected_output, actual_output)
 
         # explicit check that output person_ids are same as input
-        nyc_person_table_id = bq_utils.get_table_id(NYC_HPO_ID, 'person')
-        pitt_person_table_id = bq_utils.get_table_id(PITT_HPO_ID, 'person')
+        nyc_person_table_id = resources.get_table_id('person',
+                                                     hpo_id=NYC_HPO_ID)
+        pitt_person_table_id = resources.get_table_id('person',
+                                                      hpo_id=PITT_HPO_ID)
         q = '''SELECT DISTINCT person_id FROM (
            SELECT person_id FROM {dataset_id}.{nyc_person_table_id}
            UNION ALL
@@ -544,8 +546,7 @@ class EhrUnionTest(unittest.TestCase):
         actual_from = first_or_none(
             dpath.util.values(stmt, 'from/0/value/from/value') or
             dpath.util.values(stmt, 'from'))
-        expected_from = dataset_in + '.' + bq_utils.get_table_id(
-            NYC_HPO_ID, table)
+        expected_from = f'{dataset_in}.{resources.get_table_id(table, hpo_id=NYC_HPO_ID)}'
         if expected_from != actual_from:
             return SUBQUERY_FAIL_MSG.format(expr='first object in FROM',
                                             table=table,
@@ -556,7 +557,7 @@ class EhrUnionTest(unittest.TestCase):
         # Ensure all key fields (primary or foreign) yield joins with their associated mapping tables
         # Note: ordering of joins in the subquery is assumed to be consistent with field order in the json file
         fields = resources.fields_for(table)
-        id_field = table + '_id'
+        id_field = f'{table}_id'
         key_ind = 0
         expected_join = None
         actual_join = None
@@ -587,8 +588,7 @@ class EhrUnionTest(unittest.TestCase):
                         dpath.util.values(stmt,
                                           'from/%s/left join/value' % key_ind))
                     joined_table = field['name'].replace('_id', '')
-                    expected_join = dataset_out + '.' + ehr_union.mapping_table_for(
-                        joined_table)
+                    expected_join = f'{dataset_out}.{ehr_union.mapping_table_for(joined_table)}'
                 if expected_join != actual_join:
                     return SUBQUERY_FAIL_MSG.format(expr=expr,
                                                     table=table,

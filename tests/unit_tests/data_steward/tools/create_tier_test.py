@@ -199,7 +199,7 @@ class CreateTierTest(unittest.TestCase):
         correct_parameter_dict['console_log'] = True
 
         # Test if correct parameters are given
-        args, kwargs = parse_deid_args(self.correct_parameter_list)
+        args, _ = parse_deid_args(self.correct_parameter_list)
         results_dict = vars(args)
 
         # Post conditions
@@ -277,8 +277,7 @@ class CreateTierTest(unittest.TestCase):
                           self.tier, self.release_tag,
                           incorrect_deid_stage_param)
 
-    @mock.patch('utils.bq.update_labels_and_tags')
-    def test_create_dataset(self, mock_update_labels_tags):
+    def test_create_dataset(self):
         # Preconditions
         mocked_labels = [{
             'de-identified': 'true',
@@ -290,7 +289,7 @@ class CreateTierTest(unittest.TestCase):
             'de-identified': 'false',
             'phase': consts.SANDBOX
         }]
-        mock_update_labels_tags.side_effect = mocked_labels
+        self.mock_bq_client.update_labels_and_tags.side_effect = mocked_labels
 
         datasets = {
             consts.CLEAN: self.dataset_name,
@@ -336,9 +335,10 @@ class CreateTierTest(unittest.TestCase):
         ])
 
         # Ensures datasets are updated with the proper labels and tags (if dataset is de-identified or not)
-        self.assertEqual(mock_update_labels_tags.call_count, 3)
+        self.assertEqual(self.mock_bq_client.update_labels_and_tags.call_count,
+                         3)
 
-        mock_update_labels_tags.assert_has_calls([
+        self.mock_bq_client.update_labels_and_tags.assert_has_calls([
             mock.call(datasets[consts.CLEAN], self.labels_and_tags,
                       mocked_labels[0]),
             mock.call(datasets[consts.STAGING], self.labels_and_tags,
@@ -347,7 +347,6 @@ class CreateTierTest(unittest.TestCase):
                       mocked_labels[2]),
         ])
 
-    @mock.patch('tools.create_tier.create_schemaed_snapshot_dataset')
     @mock.patch('tools.create_tier.clean_cdr.main')
     @mock.patch('tools.create_tier.add_kwargs_to_args')
     @mock.patch('tools.create_tier.create_datasets')
@@ -357,8 +356,7 @@ class CreateTierTest(unittest.TestCase):
     @mock.patch('tools.create_tier.validate_create_tier_args')
     def test_create_tier(self, mock_validate_args, mock_impersonate_credentials,
                          mock_client, mock_dataset_name, mock_create_datasets,
-                         mock_add_kwargs, mock_cdr_main,
-                         mock_create_schemaed_snapshot):
+                         mock_add_kwargs, mock_cdr_main):
         final_dataset_name = f"{self.tier[0].upper()}{self.release_tag}_{self.deid_stage}"
         datasets = {
             consts.CLEAN: final_dataset_name,
@@ -404,12 +402,10 @@ class CreateTierTest(unittest.TestCase):
         mock_add_kwargs.assert_called_with(controlled_tier_cleaning_args,
                                            kwargs)
         mock_cdr_main.assert_called_with(args=cleaning_args)
-        mock_create_schemaed_snapshot.assert_called_with(
-            self.project_id, datasets[consts.STAGING], final_dataset_name,
-            False)
+        self.mock_bq_client.build_and_copy_contents.assert_called_with(
+            datasets[consts.STAGING], final_dataset_name)
 
     @mock.patch('tools.add_cdr_metadata.get_etl_version')
-    @mock.patch('tools.create_tier.create_schemaed_snapshot_dataset')
     @mock.patch('tools.create_tier.clean_cdr.main')
     @mock.patch('tools.create_tier.add_kwargs_to_args')
     @mock.patch('tools.create_tier.auth.get_impersonation_credentials')
@@ -417,11 +413,12 @@ class CreateTierTest(unittest.TestCase):
     @mock.patch('tools.add_cdr_metadata.main')
     @mock.patch('tools.create_tier.create_datasets')
     @mock.patch('tools.create_tier.get_dataset_name')
-    def test_qa_handoff_date_update(
-        self, mock_dataset_name, mock_create_datasets,
-        mock_add_cdr_metadata_main, mock_client, mock_impersonate_credentials,
-        mock_add_kwargs, mock_cdr_main, mock_create_schemaed_snapshot,
-        mock_etl_version):
+    def test_qa_handoff_date_update(self, mock_dataset_name,
+                                    mock_create_datasets,
+                                    mock_add_cdr_metadata_main, mock_client,
+                                    mock_impersonate_credentials,
+                                    mock_add_kwargs, mock_cdr_main,
+                                    mock_etl_version):
         final_dataset_name = f"{self.tier[0].upper()}{self.release_tag}_deid_base"
         datasets = {
             consts.CLEAN: final_dataset_name,
@@ -460,3 +457,5 @@ class CreateTierTest(unittest.TestCase):
 
         mock_add_cdr_metadata_main.assert_called_with(
             updated_qa_handoff_date_args)
+        self.mock_bq_client.build_and_copy_contents.assert_called_with(
+            datasets[consts.STAGING], final_dataset_name)

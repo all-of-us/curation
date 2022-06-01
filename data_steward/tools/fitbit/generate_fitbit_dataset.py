@@ -9,7 +9,7 @@ from google.cloud.bigquery import Table
 
 from cdr_cleaner import clean_cdr, args_parser
 from common import FITBIT_TABLES, JINJA_ENV
-from utils import auth, bq, pipeline_logging
+from utils import auth, pipeline_logging
 from gcloud.bq import BigQueryClient
 from constants.cdr_cleaner import clean_cdr as consts
 
@@ -261,8 +261,8 @@ def main(raw_args=None):
     clean_cdr.main(args=fitbit_cleaning_args)
 
     # Snapshot the staging dataset to final dataset
-    bq.build_and_copy_contents(bq_client, fitbit_datasets[consts.STAGING],
-                               fitbit_datasets[consts.CLEAN])
+    bq_client.build_and_copy_contents(fitbit_datasets[consts.STAGING],
+                                      fitbit_datasets[consts.CLEAN])
 
 
 if __name__ == '__main__':

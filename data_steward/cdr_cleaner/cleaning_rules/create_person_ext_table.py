@@ -97,7 +97,7 @@ class CreatePersonExtTable(BaseCleaningRule):
         super().__init__(issue_numbers=['DC1012', 'DC1514'],
                          description=desc,
                          affected_datasets=[
-                             cdr_consts.DEID_BASE,
+                             cdr_consts.REGISTERED_TIER_DEID_BASE,
                              cdr_consts.CONTROLLED_TIER_DEID_BASE
                          ],
                          affected_tables=tables,

@@ -13,7 +13,7 @@ from cdr_cleaner.cleaning_rules import ppi_branching
 from cdr_cleaner.cleaning_rules.ppi_branching import PpiBranching
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import \
     BaseTest
-from utils import bq, sandbox
+from utils import sandbox
 
 TEST_DATA_FIELDS = ('observation_id', 'person_id', 'observation_source_value',
                     'value_as_number', 'value_source_value', 'value_as_string',

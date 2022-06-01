@@ -10,7 +10,6 @@ from pandas import testing
 import app_identity
 import bq_utils
 from tools import recreate_person
-from utils import bq
 from gcloud.bq import BigQueryClient
 from common import JINJA_ENV
 
@@ -67,9 +66,7 @@ class RecreatePersonTest(TestCase):
                                                drop_existing=True,
                                                dataset_id=self.dataset_id)
             else:
-                bq.create_tables(self.bq_client,
-                                 self.project_id, [fq_table],
-                                 exists_ok=True)
+                self.bq_client.create_tables([fq_table], exists_ok=True)
 
         self.populate_tables()
 

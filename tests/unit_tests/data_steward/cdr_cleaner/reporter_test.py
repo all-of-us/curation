@@ -1,7 +1,6 @@
 import logging
-import mock
+from unittest import TestCase, mock
 from google.cloud import bigquery
-import unittest
 
 from cdr_cleaner import reporter
 import cdr_cleaner.clean_cdr as control
@@ -31,7 +30,7 @@ def _get_table_schema(table_name):
     return schema
 
 
-class CleanRulesReporterTest(unittest.TestCase):
+class CleanRulesReporterTest(TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -185,18 +184,14 @@ class CleanRulesReporterTest(unittest.TestCase):
 
         self.assertEqual(actual, expected)
 
-    @mock.patch(
-        'cdr_cleaner.cleaning_rules.identifying_field_suppression.BigQueryClient'
-    )
     @mock.patch('cdr_cleaner.cleaning_rules.ppi_branching.BigQueryClient')
-    def test_get_stage_elements(self, mock_branching_client,
-                                mock_supression_client):
+    def test_get_stage_elements(self, mock_branching_client):
         """
         Makes sure the lists are all readable.
         """
         # preconditions
         mock_client = mock.MagicMock()
-        mock_branching_client.return_value = mock_supression_client.return_value = mock_client
+        mock_branching_client.return_value = mock_client
         mock_client.get_table_schema.return_value = _get_table_schema(
             'observation')
         fields_list = ['name', 'module', 'sql', 'jira-issues', 'description']

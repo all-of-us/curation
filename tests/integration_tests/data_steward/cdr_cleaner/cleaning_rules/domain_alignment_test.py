@@ -16,7 +16,6 @@ from common import VOCABULARY_TABLES
 from cdr_cleaner.cleaning_rules.domain_mapping import DOMAIN_TABLE_NAMES
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from tools.combine_ehr_rdr import mapping_table_for
-from utils import bq
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.domain_alignment import domain_alignment, \
     DOMAIN_ALIGNMENT_TABLE_NAME, sandbox_name_for

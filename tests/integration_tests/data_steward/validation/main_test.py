@@ -137,9 +137,9 @@ class ValidationMainTest(unittest.TestCase):
         for file_name in bad_file_names:
             bad_blob = self.hpo_bucket.blob(f'{self.folder_prefix}{file_name}')
             bad_blob.upload_from_string('.')
-
             expected_item: tuple = (file_name, common.UNKNOWN_FILE)
             expected_warnings.append(expected_item)
+
         items_metadata: list = self.storage_client.get_bucket_items_metadata(
             self.hpo_bucket)
         folder_items: list = main.get_folder_items(items_metadata,
@@ -180,7 +180,8 @@ class ValidationMainTest(unittest.TestCase):
 
         # check tables exist and are clustered as expected
         for table in resources.CDM_TABLES + common.PII_TABLES:
-            table_id: str = bq_utils.get_table_id(test_util.FAKE_HPO_ID, table)
+            table_id: str = resources.get_table_id(table,
+                                                   hpo_id=test_util.FAKE_HPO_ID)
             table_info = bq_utils.get_table_info(table_id)
             fields = resources.fields_for(table)
             field_names: list = [field['name'] for field in fields]

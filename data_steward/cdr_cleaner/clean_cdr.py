@@ -14,12 +14,11 @@ import cdr_cleaner.cleaning_rules.clean_years as clean_years
 import cdr_cleaner.cleaning_rules.domain_alignment as domain_alignment
 import cdr_cleaner.cleaning_rules.drop_duplicate_states as drop_duplicate_states
 import cdr_cleaner.cleaning_rules.drop_extreme_measurements as extreme_measurements
-import cdr_cleaner.cleaning_rules.drop_multiple_measurements as drop_mult_meas
+from cdr_cleaner.cleaning_rules.drop_multiple_measurements import DropMultipleMeasurements
 from cdr_cleaner.cleaning_rules.drop_participants_without_ppi_or_ehr import DropParticipantsWithoutPPI
 import cdr_cleaner.cleaning_rules.drug_refills_days_supply as drug_refills_supply
 import cdr_cleaner.cleaning_rules.maps_to_value_ppi_vocab_update as maps_to_value_vocab_update
 import cdr_cleaner.cleaning_rules.populate_route_ids as populate_routes
-import cdr_cleaner.cleaning_rules.remove_aian_participants as remove_aian_participants
 import \
     cdr_cleaner.cleaning_rules.remove_invalid_procedure_source_records as invalid_procedure_source
 import cdr_cleaner.cleaning_rules.remove_non_matching_participant as validate_missing_participants
@@ -188,7 +187,7 @@ RDR_CLEANING_CLASSES = [
     (NullConceptIDForNumericPPI,),
     (DropDuplicatePpiQuestionsAndAnswers,),
     (extreme_measurements.get_drop_extreme_measurement_queries,),
-    (drop_mult_meas.get_drop_multiple_measurement_queries,),
+    (DropMultipleMeasurements,),
     (UpdateInvalidZipCodes,),
 ]
 
@@ -226,7 +225,6 @@ COMBINED_CLEANING_CLASSES = [
     # TODO : Make null_invalid_foreign_keys able to run on de_identified dataset
     (
         NullInvalidForeignKeys,),
-    (remove_aian_participants.get_queries,),
     (RemoveParticipantDataPastDeactivationDate,),
     (validate_missing_participants.delete_records_for_non_matching_participants,
     ),
@@ -254,7 +252,7 @@ CONTROLLED_TIER_FITBIT_CLEANING_CLASSES = [
     (RemoveNonExistingPids,),  # assumes CT dataset is ready for reference
 ]
 
-DEID_BASE_CLEANING_CLASSES = [
+REGISTERED_TIER_DEID_BASE_CLEANING_CLASSES = [
     (FillSourceValueTextFields,),
     (RepopulatePersonPostDeid,),
     (DateShiftCopeResponses,),
@@ -262,7 +260,7 @@ DEID_BASE_CLEANING_CLASSES = [
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
-DEID_CLEAN_CLEANING_CLASSES = [
+REGISTERED_TIER_DEID_CLEAN_CLEANING_CLASSES = [
     (MeasurementRecordsSuppression,),
     (CleanHeightAndWeight,),  # dependent on MeasurementRecordsSuppression
     (UnitNormalization,),  # dependent on CleanHeightAndWeight
@@ -355,10 +353,10 @@ DATA_STAGE_RULES_MAPPING = {
         RDR_CLEANING_CLASSES,
     DataStage.COMBINED.value:
         COMBINED_CLEANING_CLASSES,
-    DataStage.DEID_BASE.value:
-        DEID_BASE_CLEANING_CLASSES,
-    DataStage.DEID_CLEAN.value:
-        DEID_CLEAN_CLEANING_CLASSES,
+    DataStage.REGISTERED_TIER_DEID_BASE.value:
+        REGISTERED_TIER_DEID_BASE_CLEANING_CLASSES,
+    DataStage.REGISTERED_TIER_DEID_CLEAN.value:
+        REGISTERED_TIER_DEID_CLEAN_CLEANING_CLASSES,
     DataStage.FITBIT.value:
         FITBIT_CLEANING_CLASSES,
     DataStage.CONTROLLED_TIER_FITBIT.value:

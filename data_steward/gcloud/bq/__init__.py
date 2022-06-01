@@ -2,6 +2,7 @@
 Interact with Google Cloud BigQuery
 """
 # Python stl imports
+from datetime import datetime
 import typing
 
 # Third-party imports
@@ -271,8 +272,8 @@ class BigQueryClient(Client):
 
         return dict(row.items())
 
-    def upload_csv_data_to_bq_table(self, dataset_id, table_name, fq_file_path,
-                                    write_disposition):
+    def upload_csv_data_to_bq_table(self, dataset_id: str, table_name: str,
+                                    fq_file_path: str, write_disposition: str):
         """
         Uploads data from local csv file to bigquery table
 
@@ -302,7 +303,7 @@ class BigQueryClient(Client):
 
         return result
 
-    def create_tables(self, fq_table_names, exists_ok=False, fields=None):
+    def create_tables(self, fq_table_names: list, exists_ok=False, fields=None):
         """
         Create an empty table(s) in a project.
 
@@ -359,3 +360,97 @@ class BigQueryClient(Client):
             raise RuntimeError(f"Unable to create tables: {failures}")
 
         return successes
+
+    def update_labels_and_tags(self,
+                               dataset_id: str,
+                               existing_labels_or_tags: dict,
+                               new_labels_or_tags: dict,
+                               overwrite_ok=False):
+        """
+        Updates labels or tags in dataset if not set or needing to be updated
+        or overwrites existing labels or tags in the dataset
+
+        :param dataset_id:  string name to identify the dataset
+        :param existing_labels_or_tags:  labels already existing on the dataset = Dict[str, str]
+                                        tags already existing on the dataset = Dict[str, '']
+        :param new_labels_or_tags:  new labels to add to the dataset = Dict[str, str]
+                                    new tags to add to the dataset = Dict[str, '']
+        :param overwrite_ok:  flag to signal if labels or tags are to be either
+                                overwritten (False as default) or updated (True)
+
+        :raises:  RuntimeError if parameters are not specified
+        :raises:  RuntimeError if overwrite_ok is false and new value for label is provided
+
+        :return:  a dictionary of new labels or tags
+        """
+        if not dataset_id:
+            raise RuntimeError("Provide a dataset_id")
+
+        if not existing_labels_or_tags:
+            raise RuntimeError("Please provide existing label or tag")
+
+        if not new_labels_or_tags:
+            raise RuntimeError("Please provide a label or tag")
+
+        # excludes duplicate keys
+        updates = dict(new_labels_or_tags.items() -
+                       existing_labels_or_tags.items())
+
+        overwrite_keys = updates.keys() & existing_labels_or_tags.keys()
+
+        if overwrite_keys:
+            if not overwrite_ok:
+                raise RuntimeError(
+                    f'Cannot update labels on dataset {dataset_id}'
+                    f'without overwriting keys {overwrite_keys}')
+            return {**existing_labels_or_tags, **updates}
+
+        return {**existing_labels_or_tags, **updates}
+
+    def build_and_copy_contents(self, src_dataset: str, dest_dataset: str):
+        """
+        Copy non-schemaed data to schemaed table.
+
+        :param src_dataset: The dataset to copy data from
+        :param des_dataset: The dataset to copy data to.  It's tables are
+            created with valid schemas before inserting data.
+        """
+        table_list = self.list_tables(src_dataset)
+
+        for table_item in table_list:
+            # create empty schemaed tablle with client object
+            try:
+                schema_list = self.get_table_schema(table_item.table_id)
+            except RuntimeError as re:
+                schema_list = None
+            dest_table = f'{self.project}.{dest_dataset}.{table_item.table_id}'
+            dest_table = bigquery.Table(dest_table, schema=schema_list)
+            dest_table = self.create_table(dest_table)  # Make an API request.
+
+            if schema_list:
+                fields_name_str = ',\n'.join(
+                    [item.name for item in schema_list])
+
+                # copy contents from non-schemaed source to schemaed dest
+                sql = (
+                    f'SELECT {fields_name_str} '
+                    f'FROM `{table_item.project}.{table_item.dataset_id}.{table_item.table_id}`'
+                )
+            else:
+                sql = (
+                    f'SELECT * '
+                    f'FROM `{table_item.project}.{table_item.dataset_id}.{table_item.table_id}`'
+                )
+            job_config = bigquery.job.QueryJobConfig(
+                write_disposition=bigquery.job.WriteDisposition.WRITE_EMPTY,
+                priority=bigquery.job.QueryPriority.BATCH,
+                destination=dest_table,
+                labels={
+                    'table_name': table_item.table_id.lower(),
+                    'copy_from': table_item.dataset_id.lower(),
+                    'copy_to': dest_dataset.lower()
+                })
+            job_id = (f'schemaed_copy_{table_item.table_id.lower()}_'
+                      f'{datetime.now().strftime("%Y%m%d_%H%M%S")}')
+            job = self.query(sql, job_config=job_config, job_id=job_id)
+            job.result()  # Wait for the job to complete.
