@@ -32,19 +32,20 @@ UNIT_MAPPING_TABLE_DISPOSITION = bq.bigquery.job.WriteDisposition.WRITE_EMPTY
 
 SANDBOX_UNITS_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE
-    `{{project_id}}.{{sandbox_dataset_id}}.{{intermediary_table}}` AS(
-SELECT
+  `{{project_id}}.{{sandbox_dataset_id}}.{{intermediary_table}}` AS(
+  SELECT
     m.*
-  FROM
-  `{{project_id}}.{{dataset_id}}.{{measurement_table}}` as m
-INNER JOIN
-  `{{project_id}}.{{sandbox_dataset_id}}.{{unit_table_name}}` as um
-USING
-  (measurement_concept_id,
-    unit_concept_id))
-    """)
+  FROM 
+    `{{project_id}}.{{dataset_id}}.{{measurement_table}}` as m
+  INNER JOIN 
+    `{{project_id}}.{{sandbox_dataset_id}}.{{unit_table_name}}` as um
+  USING
+    (measurement_concept_id, unit_concept_id)
+  )
+""")
 
-UNIT_NORMALIZATION_QUERY = JINJA_ENV.from_string("""SELECT
+UNIT_NORMALIZATION_QUERY = JINJA_ENV.from_string("""
+SELECT
   measurement_id,
   person_id,
   measurement_concept_id,
@@ -67,10 +68,8 @@ UNIT_NORMALIZATION_QUERY = JINJA_ENV.from_string("""SELECT
     WHEN "*10^(6)" THEN value_as_number * 1000000
     WHEN "*10^(-6)" THEN value_as_number * 0.000001
     -- when transform_value_as_number is null due to left join --
-  ELSE
-  value_as_number
-END
-  AS value_as_number,
+    ELSE value_as_number
+  END AS value_as_number,
   value_as_concept_id,
   COALESCE(set_unit_concept_id,
     unit_concept_id) AS unit_concept_id,
@@ -89,10 +88,8 @@ END
     WHEN "*10^(6)" THEN range_low * 1000000
     WHEN "*10^(-6)" THEN range_low * 0.000001
     -- when transform_value_as_number is null due to left join --
-  ELSE
-  range_low
-END
-  AS range_low,
+    ELSE range_low
+  END AS range_low,
   CASE transform_value_as_number
     WHEN "(1/x)" THEN 1/range_high
     WHEN "(x-32)*(5/9)" THEN (range_high-32)*(5/9)
@@ -108,10 +105,8 @@ END
     WHEN "*10^(6)" THEN range_high * 1000000
     WHEN "*10^(-6)" THEN range_high * 0.000001
     -- when transform_value_as_number is null due to left join --
-  ELSE
-  range_high
-END
-  AS range_high,
+    ELSE range_high
+  END AS range_high,
   provider_id,
   visit_occurrence_id,
   measurement_source_value,
@@ -123,13 +118,13 @@ FROM
 LEFT JOIN
   `{{project_id}}.{{sandbox_dataset_id}}.{{unit_table_name}}`
 USING
-  (measurement_concept_id,
-    unit_concept_id)""")
+  (measurement_concept_id, unit_concept_id)
+""")
 
 
 class UnitNormalization(BaseCleaningRule):
     """
-    Units for labs/measurements will be normalized..
+    Units for labs/measurements will be normalized.
     """
 
     def __init__(self,
