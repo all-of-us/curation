@@ -17,19 +17,30 @@
 
 import urllib
 import pandas as pd
+from utils import auth
+from gcloud.bq import BigQueryClient
+from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
 pd.options.display.max_rows = 120
 
 # + tags=["parameters"]
 project_id = ""
 com_cdr = ""
-deid_base_cdr = ""
-pipeline = ""
+deid_base_cdr=""
+pipeline=""
+run_as = ""
 # -
 
 # df will have a summary in the end
 df = pd.DataFrame(columns=['query', 'result'])
 
-# # 1 Verify that if a person has multiple SELECTion(Hispanic + other race) in pre_deid_com_cdr, the output in deid_base_cdr observation table should result in two rows - one for Ethnicity AND one for race.
+# +
+impersonation_creds = auth.get_impersonation_credentials(
+    run_as, target_scopes=IMPERSONATION_SCOPES)
+
+client = BigQueryClient(project_id, credentials=impersonation_creds)
+# -
+
+# # 1 Verify that if a person has multiple SELECTion(Hispanic + other race) in pre_deid_com_cdr, the output in deid_base_cdr observation table should result in two rows - one for Ethnicity AND one for race. 
 #
 # test steps:
 #
@@ -78,7 +89,7 @@ SELECT COUNT (*) AS n_not_two_rows FROM df2
 WHERE person_id IN (SELECT person_id FROM df1) AND countp !=2 
 
     '''
-df1 = pd.read_gbq(query, dialect='standard')
+df1 = execute(client, query)
 if df1.loc[0].sum() == 0:
     df = df.append(
         {
@@ -122,7 +133,7 @@ WHERE  observation_source_value = 'Race_WhatRaceEthnicity'
 AND person_id IN (SELECT person_id from df2 where countp !=2 )
 AND person_id IN (SELECT person_id FROM df1) 
 '''
-df1 = pd.read_gbq(query, dialect='standard')
+df1=execute(client, query)
 
 df1
 # -
@@ -153,7 +164,7 @@ GROUP BY person_id
 SELECT COUNT (*) AS n_row_not_pass FROM df1
 WHERE person_id NOT IN (SELECT person_id FROM df2 WHERE countp=2)
     '''
-df1 = pd.read_gbq(query, dialect='standard')
+df1 = execute(client, query)
 if df1.loc[0].sum() == 0:
     df = df.append(
         {
@@ -195,7 +206,7 @@ SELECT COUNT (*) AS n_row_not_pass FROM df2
 WHERE person_id IN (SELECT person_id FROM df1) AND countp <2 
 
     '''
-df1 = pd.read_gbq(query, dialect='standard')
+df1 = execute(client, query)
 if df1.loc[0].sum() == 0:
     df = df.append(
         {
@@ -234,7 +245,7 @@ SELECT COUNT (*) AS n_row_not_pass FROM df1
 WHERE  race_source_concept_id !=0 OR race_source_value !='None Indicated'
 
 '''
-df1 = pd.read_gbq(query, dialect='standard')
+df1 = execute(client, query)
 if df1.loc[0].sum() == 0:
     df = df.append(
         {
@@ -276,7 +287,7 @@ AND p.value_source_concept_id !=2000000002
 
 
  '''
-df1 = pd.read_gbq(query, dialect='standard')
+df1 = execute(client, query)
 if df1.loc[0].sum() == 0:
     df = df.append(
         {
@@ -335,7 +346,7 @@ WHERE person_id IN (SELECT person_id FROM df1)
 AND (sex_at_birth_source_value !='SexAtBirth_Female' AND gender_source_concept_id !=2000000002)
 
 '''
-df1 = pd.read_gbq(query, dialect='standard')
+df1 = execute(client, query)
 if df1.loc[0].sum() == 0:
     df = df.append(
         {
@@ -378,7 +389,7 @@ WHERE person_id IN (SELECT person_id FROM df1)
 AND (sex_at_birth_source_value !='SexAtBirth_Male' AND gender_source_concept_id !=2000000002) 
 
  '''
-df1 = pd.read_gbq(query, dialect='standard')
+df1 = execute(client, query)
 if df1.loc[0].sum() == 0:
     df = df.append(
         {
@@ -436,7 +447,7 @@ SELECT COUNT (*) AS n_row_not_pass FROM df1
 WHERE diff !=0
 
 '''
-df1 = pd.read_gbq(query, dialect='standard')
+df1 = execute(client, query)
 if df1.loc[0].sum() == 0:
     df = df.append({
         'query': 'Query4 date not shifited',
@@ -492,7 +503,7 @@ SELECT COUNT (*) AS n_row_not_pass FROM df1
 WHERE countp=0
     
 '''
-df1 = pd.read_gbq(query, dialect='standard')
+df1 = execute(client, query)
 if df1.loc[0].sum() == 0:
     df = df.append(
         {
@@ -545,7 +556,7 @@ FULL JOIN df2 USING (sex_at_birth_value)
 WHERE countp1 !=countp2
 
 '''
-df1 = pd.read_gbq(query, dialect='standard')
+df1 = execute(client, query)
 if df1.loc[0].sum() == 0:
     df = df.append(
         {

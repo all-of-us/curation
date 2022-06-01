@@ -17,6 +17,9 @@
 
 import urllib
 import pandas as pd
+from utils import auth
+from gcloud.bq import BigQueryClient
+from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
 pd.options.display.max_rows = 120
 
 # + tags=["parameters"]
@@ -25,10 +28,18 @@ com_cdr = ""
 deid_cdr=""
 # deid_base_cdr=""
 pipeline=""
+run_as=""
 # -
 
 # df will have a summary in the end
 df = pd.DataFrame(columns = ['query', 'result']) 
+
+# +
+impersonation_creds = auth.get_impersonation_credentials(
+    run_as, target_scopes=IMPERSONATION_SCOPES)
+
+client = BigQueryClient(project_id, credentials=impersonation_creds)
+# -
 
 # # 1 GR_01 Race Generalization Rule
 #
@@ -55,7 +66,7 @@ SUM(CASE WHEN value_source_value IS NOT NULL THEN 1 ELSE 0 END) AS n_value_sourc
 FROM `{project_id}.{deid_cdr}.observation`
 
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query1 GR01 Race_col_suppressoin in observation', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -115,7 +126,7 @@ WHERE (value_source_concept_id=2000000001 AND value_as_concept_id !=2000000001)
  OR (value_source_concept_id=903096 AND value_as_concept_id !=903096)
  
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1['n_row_not_pass'].sum()==0:
  df = df.append({'query' : 'Query1.2 GR01 Race_value_source_concept_id matched value_as_concept_id in observation', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -169,7 +180,7 @@ WHERE (value_source_concept_id=2000000003 AND value_as_concept_id !=2000000003)
 OR (value_source_concept_id=1585900 AND value_as_concept_id !=4069091)
 
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1['n_row_not_pass'].sum()==0:
  df = df.append({'query' : 'Query2.2 GR02 TheBasics_SexualOrientation matched value_source_concept_id in observation', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -215,7 +226,7 @@ WHERE countp >1
 AND person_id NOT IN (SELECT distinct person_id FROM df2 )
 
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1.eq(0).any().any():
  df = df.append({'query' : 'Query2.3 GR02 multiple_SexualOrientation matched value_source_concept_id in observation', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -276,7 +287,7 @@ OR (value_source_concept_id=1585840 AND value_as_concept_id !=45878463)
 OR (value_source_concept_id=1585839 AND value_as_concept_id !=45880669)
 
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1['n_row_not_pass'].sum()==0:
  df = df.append({'query' : 'Query3 GR03 Gender_value_source_concept_id matched value_as_concept_id in observation', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -322,7 +333,7 @@ OR (value_source_concept_id=1585847 AND value_as_concept_id !=45878463)
 OR (value_source_concept_id=1585846 AND value_as_concept_id !=45880669)
 
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1.eq(0).any().any():
  df = df.append({'query' : 'Query3 Biological Sex Generalization Rule in observation', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -371,7 +382,7 @@ AND observation_source_value LIKE 'Gender_GenderIdentity'
 AND (value_as_concept_id !=2000000002 AND value_source_concept_id !=2000000002)
 
  '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1['n_row_not_pass'].sum()==0:
  df = df.append({'query' : 'Query3.3.2 GR_03_1 Sex_female/gender_man mismatch in deid_cdr.observation', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -401,7 +412,7 @@ WHERE person_id IN (SELECT person_id FROM df1)
 AND observation_source_value LIKE 'Gender_GenderIdentity'
 AND (value_as_concept_id !=2000000002 AND value_source_concept_id !=2000000002)
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1['n_row_not_pass'].sum()==0:
  df = df.append({'query' : 'Query3.3.4 GR_03_1 Sex_male/gender_woman mismatch in deid_cdr.observation', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -451,7 +462,7 @@ OR (value_source_concept_id=903096 AND value_as_concept_id !=903096)
 OR (value_source_concept_id=903079 AND value_as_concept_id !=1177221)
 
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1['n_row_not_pass'].sum()==0:
  df = df.append({'query' : 'Query4 Education Generalization Rule in observation', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -497,7 +508,7 @@ OR (value_source_concept_id=903096 AND value_as_concept_id !=903096)
 
 
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1['n_row_not_pass'].sum()==0:
  df = df.append({'query' : 'Query5 Employment Generalization Rule in observation', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -522,7 +533,7 @@ SUM(CASE WHEN gender_concept_id !=0 THEN 1 ELSE 0 END) AS n_gender_concept_id_no
 SUM(CASE WHEN gender_concept_id IS NULL THEN 1 ELSE 0 END) AS n_gender_concept_id_is_null
 FROM `{project_id}.{deid_cdr}.person`
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query6 Gender_concept_id should be 0 in person table', 'result' : 'PASS'},  
