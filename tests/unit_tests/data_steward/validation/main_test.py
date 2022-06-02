@@ -550,7 +550,7 @@ class ValidationMainTest(TestCase):
         mock.MagicMock(query=lambda: mock.MagicMock(result=lambda: None)))
     @mock.patch('validation.main.setup_and_validate_participants',
                 mock.MagicMock())
-    @mock.patch('bq_utils.table_exists', mock.MagicMock())
+    @mock.patch('validation.main.BigQueryClient', mock.MagicMock())
     @mock.patch('bq_utils.query', mock.MagicMock())
     def test_generate_metrics(self):
         summary = {
@@ -587,8 +587,9 @@ class ValidationMainTest(TestCase):
                 query_rows=query_rows,
                 get_duplicate_counts_query=get_duplicate_counts_query,
                 is_valid_rdr=is_valid_rdr):
-            result = main.generate_metrics(self.hpo_id, self.hpo_bucket,
-                                           self.folder_prefix, summary)
+            result = main.generate_metrics(self.project_id, self.hpo_id,
+                                           self.hpo_bucket, self.folder_prefix,
+                                           summary)
             self.assertIn(report_consts.RESULTS_REPORT_KEY, result)
             self.assertIn(report_consts.WARNINGS_REPORT_KEY, result)
             self.assertIn(report_consts.ERRORS_REPORT_KEY, result)
@@ -605,8 +606,9 @@ class ValidationMainTest(TestCase):
                 query_rows=query_rows_error,
                 get_duplicate_counts_query=get_duplicate_counts_query,
                 is_valid_rdr=is_valid_rdr):
-            result = main.generate_metrics(self.hpo_id, self.hpo_bucket,
-                                           self.folder_prefix, summary)
+            result = main.generate_metrics(self.project_id, self.hpo_id,
+                                           self.hpo_bucket, self.folder_prefix,
+                                           summary)
             error_occurred = result.get(report_consts.ERROR_OCCURRED_REPORT_KEY)
             self.assertEqual(error_occurred, True)
 
