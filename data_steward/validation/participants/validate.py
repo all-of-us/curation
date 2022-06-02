@@ -26,8 +26,7 @@ from app_identity import get_application_id
 from resources import get_table_id, VALIDATION_STREET_CSV, VALIDATION_CITY_CSV, VALIDATION_STATE_CSV
 from utils import pipeline_logging, auth
 from common import (PS_API_VALUES, DRC_OPS, EHR_OPS, CDR_SCOPES, PII_ADDRESS,
-                    PII_EMAIL, PII_PHONE_NUMBER, PII_NAME, LOCATION, PERSON,
-                    UNIONED)
+                    PII_EMAIL, PII_PHONE_NUMBER, PII_NAME, LOCATION, PERSON)
 from gcloud.bq import BigQueryClient
 from validation.participants.create_update_drc_id_match_table import create_and_populate_drc_validation_table
 from constants.validation.participants.identity_match import IDENTITY_MATCH_TABLE
