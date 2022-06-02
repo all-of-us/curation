@@ -361,7 +361,7 @@ def generate_metrics(project_id, hpo_id, bucket, folder_prefix, summary):
 
         # participant validation metrics
         logging.info(f"Ensuring participant validation can be run for {hpo_id}")
-        setup_and_validate_participants(hpo_id, client=bq_client)
+        setup_and_validate_participants(bq_client, hpo_id)
         participant_validation_query = get_participant_validation_summary_query(
             hpo_id)
         # TODO add to report_data based on requirements from EHR_OPS
@@ -1000,10 +1000,12 @@ def run_retraction_cron():
 @log_traceback
 def validate_pii():
     logging.info(f"Running participant validation on all sites")
+    project = bq_utils.app_identity.get_application_id()
+    bq_client = BigQueryClient(project)
     for item in bq_utils.get_hpo_info():
         hpo_id = item['hpo_id']
         # Prevent updating udfs for all hpo_sites
-        setup_and_validate_participants(hpo_id, update_udf=False)
+        setup_and_validate_participants(bq_client, hpo_id, update_udf=False)
 
     return consts.VALIDATION_SUCCESS
 
