@@ -165,23 +165,20 @@ def identify_rdr_ehr_match(client,
         job.result()
 
 
-def setup_and_validate_participants(hpo_id, update_udf=True, client=None):
+def setup_and_validate_participants(client, hpo_id, update_udf=True):
     """
     Fetch PS data, set up tables and run validation
+
+    :param client: a BigQueryClient
     :param hpo_id: Identifies the HPO
     :param update_udf: Boolean to update comparison udfs, true by default
-    :param client: a BigQueryClient
     :return: 
     """
-    if not client:
-        project_id = get_application_id()
-        bq_client = BigQueryClient(project_id)
-
     # Populate identity match table based on PS data
-    create_and_populate_drc_validation_table(bq_client, hpo_id)
+    create_and_populate_drc_validation_table(client, hpo_id)
 
     # Match values
-    identify_rdr_ehr_match(bq_client, hpo_id, update_udf=update_udf)
+    identify_rdr_ehr_match(client, hpo_id, update_udf=update_udf)
 
 
 def get_participant_validation_summary_query(hpo_id):
