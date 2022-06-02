@@ -15,20 +15,20 @@ import os
 # Project Imports
 import constants.bq_utils as bq_consts
 import resources
-import utils.bq as bq
 from common import JINJA_ENV
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from cdr_cleaner.cleaning_rules.clean_height_weight import CleanHeightAndWeight
 from cdr_cleaner.cleaning_rules.measurement_table_suppression import (
     MeasurementRecordsSuppression)
 from constants.cdr_cleaner import clean_cdr as cdr_consts
+from gcloud.bq import BigQueryClient
 
 LOGGER = logging.getLogger(__name__)
 
 UNIT_MAPPING_TABLE = '_unit_mapping'
 UNIT_MAPPING_FILE = '_unit_mapping.csv'
 MEASUREMENT = 'measurement'
-UNIT_MAPPING_TABLE_DISPOSITION = bq.bigquery.job.WriteDisposition.WRITE_EMPTY
+UNIT_MAPPING_TABLE_DISPOSITION = 'WRITE_EMPTY'
 
 SANDBOX_UNITS_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE
@@ -155,7 +155,7 @@ class UnitNormalization(BaseCleaningRule):
             depends_on=[MeasurementRecordsSuppression, CleanHeightAndWeight],
             table_namer=table_namer)
 
-    def setup_rule(self, client):
+    def setup_rule(self, client: BigQueryClient):
         """
         Load required resources prior to executing cleaning rule queries.
 
@@ -179,10 +179,10 @@ class UnitNormalization(BaseCleaningRule):
         # Uploading data to _unit_mapping table
         unit_mappings_csv_path = os.path.join(resources.resource_files_path,
                                               UNIT_MAPPING_FILE)
-        _ = bq.upload_csv_data_to_bq_table(client, self.sandbox_dataset_id,
-                                           UNIT_MAPPING_TABLE,
-                                           unit_mappings_csv_path,
-                                           UNIT_MAPPING_TABLE_DISPOSITION)
+        _ = client.upload_csv_data_to_bq_table(self.sandbox_dataset_id,
+                                               UNIT_MAPPING_TABLE,
+                                               unit_mappings_csv_path,
+                                               UNIT_MAPPING_TABLE_DISPOSITION)
         LOGGER.info(
             f"Created {self.sandbox_dataset_id}.{UNIT_MAPPING_TABLE} and "
             f"loaded data from {unit_mappings_csv_path}")
