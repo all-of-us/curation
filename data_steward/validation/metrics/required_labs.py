@@ -172,12 +172,12 @@ def get_lab_concept_summary_query(client, hpo_id):
                                                    hpo_id=hpo_id)
 
     # Create measurement_concept_sets_table if not exist
-    if not bq_utils.table_exists(MEASUREMENT_CONCEPT_SETS_TABLE, dataset_id):
+    if not client.table_exists(MEASUREMENT_CONCEPT_SETS_TABLE, dataset_id):
         load_measurement_concept_sets_table(client, dataset_id)
 
     # Create measurement_concept_sets_descendants_table if not exist
-    if not bq_utils.table_exists(MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE,
-                                 dataset_id):
+    if not client.table_exists(MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE,
+                               dataset_id):
         load_measurement_concept_sets_descendants_table(client, dataset_id)
 
     return CHECK_REQUIRED_LAB_QUERY.format(

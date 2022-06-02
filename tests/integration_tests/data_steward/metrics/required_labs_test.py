@@ -64,10 +64,10 @@ class RequiredLabsTest(unittest.TestCase):
 
         # Load measurement_concept_sets
         required_labs.load_measurement_concept_sets_table(
-            project_id=self.project_id, dataset_id=self.dataset_id)
+            client=self.bq_client, dataset_id=self.dataset_id)
         # Load measurement_concept_sets_descendants
         required_labs.load_measurement_concept_sets_descendants_table(
-            project_id=self.project_id, dataset_id=self.dataset_id)
+            client=self.bq_client, dataset_id=self.dataset_id)
 
         # we need to load measurement.csv into bigquery_dataset_id in advance for the other integration tests
         ehr_measurement_result = bq_utils.load_table_from_csv(
@@ -98,7 +98,7 @@ class RequiredLabsTest(unittest.TestCase):
             concept_ancestor_table_name)
 
         # Test
-        required_labs.check_and_copy_tables(self.project_id, self.dataset_id)
+        required_labs.check_and_copy_tables(self.bq_client, self.dataset_id)
 
         # Post conditions
         self.assertIsNotNone(actual_descendants_table.created)
@@ -155,7 +155,8 @@ class RequiredLabsTest(unittest.TestCase):
         self.assertListEqual(expected_fields, actual_fields)
 
     def test_get_lab_concept_summary_query(self):
-        summary_query = required_labs.get_lab_concept_summary_query(FAKE_HPO_ID)
+        summary_query = required_labs.get_lab_concept_summary_query(
+            self.bq_client, FAKE_HPO_ID)
         summary_response = bq_utils.query(summary_query)
         summary_rows = bq_utils.response2rows(summary_response)
         submitted_labs = [

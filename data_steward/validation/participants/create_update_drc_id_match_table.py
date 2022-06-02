@@ -180,7 +180,7 @@ def create_and_populate_drc_validation_table(client, hpo_id):
     table_id = f'{IDENTITY_MATCH_TABLE}_{hpo_id}'
 
     # Creates hpo_site identity match table if it does not exist
-    if not bq_utils.table_exists(table_id, DRC_OPS):
+    if not client.table_exists(table_id, DRC_OPS):
         create_drc_validation_table(client, table_id)
 
     # Populates the validation table for the site

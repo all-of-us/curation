@@ -332,10 +332,10 @@ class ValidationMainTest(unittest.TestCase):
 
         # Load measurement_concept_sets
         required_labs.load_measurement_concept_sets_table(
-            project_id=self.project_id, dataset_id=self.dataset_id)
+            client=self.bq_client, dataset_id=self.dataset_id)
         # Load measurement_concept_sets_descendants
         required_labs.load_measurement_concept_sets_descendants_table(
-            project_id=self.project_id, dataset_id=self.dataset_id)
+            client=self.bq_client, dataset_id=self.dataset_id)
 
         main.app.testing = True
         with main.app.test_client() as test_client:
