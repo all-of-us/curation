@@ -14,9 +14,6 @@ This will ensure at least one level of identity validation is occurring.
 # Python imports
 import logging
 
-# Third party imports
-from google.cloud.exceptions import NotFound
-
 # Project imports
 from gcloud.bq import BigQueryClient
 import resources
@@ -33,23 +30,21 @@ from constants.validation.participants.writers import ALGORITHM_FIELD
 
 LOGGER = logging.getLogger(__name__)
 
-TICKET_NUMBER = 'DC-468'
-
 NUM_OF_MISSING_KEY_FIELDS = 2
 NUM_OF_MISSING_ALL_FIELDS = 4
 
-NOT_MATCH = 'not_match_person_id'
+NOT_MATCH_TABLE = '_not_match_person_id'
 
 KEY_FIELDS = [FIRST_NAME_FIELD, LAST_NAME_FIELD, BIRTH_DATE_FIELD]
 IDENTITY_MATCH_EXCLUDED_FIELD = [PERSON_ID_FIELD, ALGORITHM_FIELD]
 
-CREATE_SANDBOX_NOT_MATCH_PERSON_ID = JINJA_ENV.from_string("""
-CREATE TABLE IF NOT EXISTS `{{project_id}}.{{sandbox_dataset_id}}.{{not_match_person_id_table}}`
+CREATE_NOT_MATCH_TABLE = JINJA_ENV.from_string("""
+CREATE TABLE IF NOT EXISTS `{{project_id}}.{{sandbox_dataset_id}}.{{not_match_table}}`
 (source_table STRING, person_id INT64)
 """)
 
 INSERT_NOT_MATCH_PERSON_ID = JINJA_ENV.from_string("""
-INSERT INTO  `{{project_id}}.{{sandbox_dataset_id}}.{{not_match_person_id_table}}`
+INSERT INTO  `{{project_id}}.{{sandbox_dataset_id}}.{{not_match_table}}`
 (source_table, person_id)
 WITH non_match_participants AS
 (
@@ -89,9 +84,9 @@ class RemoveNonMatchingParticipant(BaseCleaningRule):
                  project_id,
                  dataset_id,
                  sandbox_dataset_id,
-                 ehr_dataset_id,
-                 validation_dataset_id,
-                 table_namer=None):
+                 table_namer=None,
+                 ehr_dataset_id=None,
+                 validation_dataset_id=None):
         """
         Initialize the class with proper information.
 
@@ -102,6 +97,13 @@ class RemoveNonMatchingParticipant(BaseCleaningRule):
 
         self.ehr_dataset_id = ehr_dataset_id
         self.validation_dataset_id = validation_dataset_id
+
+        if ehr_dataset_id is None:
+            raise RuntimeError('Required parameter ehr_dataset_id not set.')
+
+        if validation_dataset_id is None:
+            raise RuntimeError(
+                'Required parameter validation_dataset_id not set')
 
         desc = 'Removes non-matching and not validated participant records from the combined dataset.'
         super().__init__(issue_numbers=['DC468', 'DC823'],
@@ -114,44 +116,34 @@ class RemoveNonMatchingParticipant(BaseCleaningRule):
 
     def setup_rule(self, client: BigQueryClient):
         """
-        Create the lookup table self.sandbox_table_for(NOT_MATCH).
+        Create the lookup table NOT_MATCH_TABLE.
         This table has person_ids that need to be deleted from the CDM tables. 
         It also has the source table info for debug purpose.
 
         :param client: A BigQueryClient
         """
-
-        if self.ehr_dataset_id is None:
-            raise RuntimeError('Required parameter ehr_dataset_id not set.')
-
-        if self.validation_dataset_id is None:
-            raise RuntimeError(
-                'Required parameter validation_dataset_id not set')
-
-        create_sandbox_not_match_person_id = CREATE_SANDBOX_NOT_MATCH_PERSON_ID.render(
+        create_not_match_table = CREATE_NOT_MATCH_TABLE.render(
             project_id=self.project_id,
             sandbox_dataset_id=self.sandbox_dataset_id,
-            not_match_person_id_table=self.sandbox_table_for(NOT_MATCH))
-        job = client.query(create_sandbox_not_match_person_id)
+            not_match_table=NOT_MATCH_TABLE)
+        job = client.query(create_not_match_table)
         job.result()
 
         for hpo_id in readers.get_hpo_site_names():
 
             identity_match = resources.get_table_id(IDENTITY_MATCH,
                                                     hpo_id=hpo_id)
-
-            if not self.exist_table(client, self.project_id,
-                                    self.validation_dataset_id, identity_match):
-                LOGGER.info(
-                    f'{hpo_id} is missing the identity_match table. Skipping...'
-                )
-                continue
-
             participant_match = resources.get_table_id(PARTICIPANT_MATCH,
                                                        hpo_id=hpo_id)
 
-            if self.exist_table(client, self.project_id, self.ehr_dataset_id,
-                                participant_match):
+            if not client.table_exists(identity_match,
+                                       self.validation_dataset_id):
+                LOGGER.info(
+                    f'{hpo_id} is missing the identity_match table. Skipping {hpo_id}...'
+                )
+                continue
+
+            if client.table_exists(participant_match, self.ehr_dataset_id):
                 only_not_validated_id_condition = ONLY_NOT_VALIDATED_ID_CONDITION.render(
                     project_id=self.project_id,
                     ehr_dataset_id=self.ehr_dataset_id,
@@ -168,7 +160,7 @@ class RemoveNonMatchingParticipant(BaseCleaningRule):
             not_validated_participants_query = INSERT_NOT_MATCH_PERSON_ID.render(
                 project_id=self.project_id,
                 sandbox_dataset_id=self.sandbox_dataset_id,
-                not_match_person_id_table=self.sandbox_table_for(NOT_MATCH),
+                not_match_table=NOT_MATCH_TABLE,
                 participant_match_table=participant_match,
                 key_fields_criteria=key_fields_criteria,
                 all_fields_criteria=all_fields_criteria,
@@ -188,34 +180,12 @@ class RemoveNonMatchingParticipant(BaseCleaningRule):
     def get_sandbox_tablenames(self) -> list:
         """
         Return a list table names created to backup deleted data.
-
-        NOTE: self.sandbox_table_for(NOT_MATCH) is not included in this list
-        because it is a temporary lookup table, not a backup table.
         """
         return [
             self.sandbox_table_for(table)
             for table in remove_pids.get_tables_with_person_id(
                 self.project_id, self.dataset_id)
         ]
-
-    def exist_table(self, client: BigQueryClient, project_id, dataset_id,
-                    table_id) -> bool:
-        """
-        Checks if the hpo has submitted the participant_match table or not.
-
-        :param client: A BigQueryClient
-        :param project_id: Project ID.
-        :param dataset_id: Dataset ID.
-        :param table_id: Table ID.
-        :return: True if the table exists. Otherwise, False.
-        """
-        fq_table = f'{project_id}.{dataset_id}.{table_id}'
-
-        try:
-            client.get_table(fq_table)
-            return True
-        except NotFound:
-            return False
 
     def get_fields_criteria(self) -> str:
         """
@@ -268,15 +238,15 @@ class RemoveNonMatchingParticipant(BaseCleaningRule):
         sandbox_queries = remove_pids.get_sandbox_queries(
             self.project_id,
             self.dataset_id,
-            TICKET_NUMBER,
+            '_'.join(self.issue_numbers),
             sandbox_dataset_id=self.sandbox_dataset_id,
-            lookup_table=self.sandbox_table_for(NOT_MATCH))
+            lookup_table=NOT_MATCH_TABLE)
 
         remove_pids_queries = remove_pids.get_remove_pids_queries(
             self.project_id,
             self.dataset_id,
             sandbox_dataset_id=self.sandbox_dataset_id,
-            lookup_table=self.sandbox_table_for(NOT_MATCH))
+            lookup_table=NOT_MATCH_TABLE)
 
         return sandbox_queries + remove_pids_queries
 

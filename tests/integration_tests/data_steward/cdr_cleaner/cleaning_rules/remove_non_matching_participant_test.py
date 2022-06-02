@@ -10,8 +10,7 @@ from google.cloud.bigquery import Table
 
 # Project Imports
 from app_identity import PROJECT_ID
-from cdr_cleaner.cleaning_rules.remove_non_matching_participant import (
-    RemoveNonMatchingParticipant, TICKET_NUMBER)
+from cdr_cleaner.cleaning_rules.remove_non_matching_participant import RemoveNonMatchingParticipant
 from common import JINJA_ENV, IDENTITY_MATCH, OBSERVATION, PARTICIPANT_MATCH, PERSON
 from validation.participants.create_update_drc_id_match_table import create_drc_validation_table
 from tests import test_util
@@ -171,8 +170,11 @@ class RemoveNonMatchingParticipantTest(BaseTest.CleaningRulesTestBase):
             job.result()
 
         cls.rule_instance = RemoveNonMatchingParticipant(
-            cls.project_id, cls.dataset_id, cls.sandbox_id, cls.ehr_dataset_id,
-            cls.validation_dataset_id)
+            cls.project_id,
+            cls.dataset_id,
+            cls.sandbox_id,
+            ehr_dataset_id=cls.ehr_dataset_id,
+            validation_dataset_id=cls.validation_dataset_id)
 
         sb_table_names = cls.rule_instance.get_sandbox_tablenames()
         for table_name in sb_table_names:
@@ -219,49 +221,6 @@ class RemoveNonMatchingParticipantTest(BaseTest.CleaningRulesTestBase):
         """
         pass
 
-    def test_exist_table(self):
-        """
-        Test for exist_table(). Only HPO_3 should return False
-        as it does not have a participant match table. 
-        """
-        self.assertTrue(
-            self.rule_instance.exist_table(
-                self.client, self.project_id, self.ehr_dataset_id,
-                resources.get_table_id(PARTICIPANT_MATCH, hpo_id=HPO_1)))
-        self.assertTrue(
-            self.rule_instance.exist_table(
-                self.client, self.project_id, self.ehr_dataset_id,
-                resources.get_table_id(PARTICIPANT_MATCH, hpo_id=HPO_2)))
-        self.assertTrue(
-            self.rule_instance.exist_table(
-                self.client, self.project_id, self.ehr_dataset_id,
-                resources.get_table_id(PARTICIPANT_MATCH, hpo_id=HPO_4)))
-
-        # Return False for HPO_3 as it does not have a participant match table.
-        self.assertFalse(
-            self.rule_instance.exist_table(
-                self.client, self.project_id, self.ehr_dataset_id,
-                resources.get_table_id(PARTICIPANT_MATCH, hpo_id=HPO_3)))
-
-        self.assertTrue(
-            self.rule_instance.exist_table(self.client, self.project_id,
-                                           self.validation_dataset_id,
-                                           f'{HPO_1}_{IDENTITY_MATCH}'))
-        self.assertTrue(
-            self.rule_instance.exist_table(self.client, self.project_id,
-                                           self.validation_dataset_id,
-                                           f'{HPO_2}_{IDENTITY_MATCH}'))
-        self.assertTrue(
-            self.rule_instance.exist_table(self.client, self.project_id,
-                                           self.validation_dataset_id,
-                                           f'{HPO_3}_{IDENTITY_MATCH}'))
-
-        # Return False for HPO_4 as it does not have a identity match table.
-        self.assertFalse(
-            self.rule_instance.exist_table(self.client, self.project_id,
-                                           self.validation_dataset_id,
-                                           f'{HPO_4}_{IDENTITY_MATCH}'))
-
     def test_remove_non_matching_participant(self):
         """
         Validates pre-conditions, test execution and post conditions based on the tables_and_counts variable.
@@ -292,7 +251,7 @@ class RemoveNonMatchingParticipantTest(BaseTest.CleaningRulesTestBase):
                 'fq_table_name':
                     f'{self.project_id}.{self.dataset_id}.{PERSON}',
                 'fq_sandbox_table_name':
-                    f'{self.project_id}.{self.sandbox_id}.{PERSON}_{TICKET_NUMBER}',
+                    f'{self.project_id}.{self.sandbox_id}.{PERSON}_{"_".join(self.rule_instance.issue_numbers)}',
                 'fields': [
                     'person_id', 'gender_concept_id', 'year_of_birth',
                     'race_concept_id', 'ethnicity_concept_id'
@@ -324,7 +283,7 @@ class RemoveNonMatchingParticipantTest(BaseTest.CleaningRulesTestBase):
                 'fq_table_name':
                     f'{self.project_id}.{self.dataset_id}.{OBSERVATION}',
                 'fq_sandbox_table_name':
-                    f'{self.project_id}.{self.sandbox_id}.{OBSERVATION}_{TICKET_NUMBER}',
+                    f'{self.project_id}.{self.sandbox_id}.{OBSERVATION}_{"_".join(self.rule_instance.issue_numbers)}',
                 'fields': [
                     'observation_id', 'person_id', 'observation_concept_id',
                     'observation_date', 'observation_type_concept_id'
