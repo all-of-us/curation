@@ -305,7 +305,7 @@ class ValidationMainTest(TestCase):
         mock.MagicMock(query=lambda: mock.MagicMock(result=lambda: None)))
     @mock.patch('validation.main.setup_and_validate_participants',
                 mock.MagicMock())
-    @mock.patch('bq_utils.table_exists', mock.MagicMock())
+    @mock.patch('validation.main.BigQueryClient', mock.MagicMock())
     @mock.patch('bq_utils.query')
     @mock.patch('validation.main.is_valid_folder_prefix_name')
     @mock.patch('validation.main.run_export')
