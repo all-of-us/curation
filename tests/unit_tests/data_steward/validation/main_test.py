@@ -644,7 +644,6 @@ class ValidationMainTest(TestCase):
                        mock_ehr_union_main, mock_run_achilles, mock_run_export,
                        mock_upload_achilles_files):
 
-        current_datetime = datetime.datetime.now()
         application_id = 'application_id'
         input_dataset = 'input_dataset'
         output_dataset = 'output_dataset'
