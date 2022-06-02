@@ -24,10 +24,10 @@ import pandas as pd
 
 from common import JINJA_ENV
 from cdr_cleaner.cleaning_rules.negative_ages import date_fields
-from utils.bq import get_client
+from gcloud.bq import BigQueryClient
 from analytics.cdr_ops.notebook_utils import execute
 
-client = get_client(PROJECT_ID)
+client = BigQueryClient(PROJECT_ID)
 
 pd.options.display.max_rows = 1000
 pd.options.display.max_colwidth = 0

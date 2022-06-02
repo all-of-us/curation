@@ -3,7 +3,7 @@ import os
 import mock
 
 from app_identity import get_application_id
-from common import (EXT_SUFFIX, MAPPING_PREFIX, OBSERVATION, PIPELINE_TABLES,
+from common import (EXT_SUFFIX, MAPPING_PREFIX, OBSERVATION,
                     PROCEDURE_OCCURRENCE, SITE_MASKING_TABLE_ID)
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 from cdr_cleaner.cleaning_rules.generate_ext_tables import GenerateExtTables

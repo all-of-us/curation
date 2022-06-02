@@ -18,15 +18,26 @@
 
 import urllib
 import pandas as pd
+from utils import auth
+from gcloud.bq import BigQueryClient
+from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
 pd.options.display.max_rows = 120
 
 # + tags=["parameters"]
 project_id = ""
 deid_cdr=""
+run_as = ""
 # -
 
 # df will have a summary in the end
 df = pd.DataFrame(columns = ['query', 'result']) 
+
+# +
+impersonation_creds = auth.get_impersonation_credentials(
+    run_as, target_scopes=IMPERSONATION_SCOPES)
+
+client = BigQueryClient(project_id, credentials=impersonation_creds)
+# -
 
 # # 1 PRC_1 Verify all ICD9(764 -779)/ICD10(P) concept_codes used to specify other conditions originating In the perinatal period (including birth trauma),are not generated/displayed as condition_source_value in the CONDITION_OCCURENCE table
 
@@ -52,7 +63,7 @@ JOIN ICD_suppressions p2
 ON p1.condition_source_concept_id=p2.concept_id
 WHERE condition_source_value IS NOT NULL
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query1 ICD9(764 -779)/ICD10(P) in condition', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -83,7 +94,7 @@ JOIN ICD_suppressions p2
 ON p1.observation_source_concept_id=p2.concept_id
 WHERE observation_source_value IS NOT NULL
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query2 ICD9(764 -779)/ICD10(P)', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -109,7 +120,7 @@ JOIN ICD_suppressions p2
 ON p1.observation_source_concept_id=p2.concept_id
 WHERE observation_source_value IS NOT NULL
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query3 CD9(V3)/ICD10(Z38) in obs', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -136,7 +147,7 @@ JOIN ICD_suppressions p2
 ON p1.condition_source_concept_id=p2.concept_id
 WHERE condition_source_value IS NOT NULL
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query4 CD9(V3)/ICD10(Z38) in condition ', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -164,7 +175,7 @@ ON p1.observation_source_concept_id=p2.concept_id
 WHERE observation_source_value IS NOT NULL
 
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query5 ICD9(798)/ICD10(R99) in obs', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -195,7 +206,7 @@ ON p1.condition_source_concept_id=p2.concept_id
 WHERE condition_source_value IS NOT NULL
 
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query6 ICD9(799)/ICD10(R99) in condition', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -223,7 +234,7 @@ ON p1.condition_source_concept_id=p2.concept_id
 WHERE condition_source_value IS NOT NULL
 
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query7 ICD10(Y36) in condition', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -250,7 +261,7 @@ ON p1.observation_source_concept_id=p2.concept_id
 WHERE observation_source_value IS NOT NULL
 
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query8 ICD10(Y36) in obs', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -274,7 +285,7 @@ JOIN ICD_suppressions p2
 ON p1.observation_source_concept_id=p2.concept_id
 WHERE observation_source_value IS NOT NULL
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query9 ICD10(Y37)  in observation', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -298,7 +309,7 @@ JOIN ICD_suppressions p2
 ON p1.condition_source_concept_id=p2.concept_id
 WHERE condition_source_value IS NOT NULL
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query10 ICD10(Y37) in condition', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -323,7 +334,7 @@ JOIN ICD_suppressions p2
 ON p1.condition_source_concept_id=p2.concept_id
 WHERE condition_source_value IS NOT NULL
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query11 ICD10(Y35) in condition', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -349,7 +360,7 @@ ON p1.observation_source_concept_id=p2.concept_id
 WHERE observation_source_value IS NOT NULL
 
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query12 ICD10(Y38)/ICD9CM(E979) in obs', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -375,7 +386,7 @@ ON p1.condition_source_concept_id=p2.concept_id
 WHERE condition_source_value IS NOT NULL
 
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query13 ICD10(Y38)/ICD9CM(E979) in condition', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -408,7 +419,7 @@ ON p1.condition_source_concept_id=p2.concept_id
 WHERE condition_source_value IS NOT NULL
 
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query14 ICD9(E96)/ICD10(X92-Y09) in condition', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -441,7 +452,7 @@ ON p1.observation_source_concept_id=p2.concept_id
 WHERE observation_source_value IS NOT NULL
 
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query15 ICD9(E96)/ICD10(X92-Y09) in observation', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -465,7 +476,7 @@ JOIN ICD_suppressions p2
 ON p1.observation_source_concept_id=p2.concept_id
 WHERE observation_source_value IS NOT NULL
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query16 ICD9(E95) in observation', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -490,7 +501,7 @@ ON p1.condition_source_concept_id=p2.concept_id
 WHERE condition_source_value IS NOT NULL
 
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query17 ICD9(E95) in condition', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -517,7 +528,7 @@ ON p1.condition_source_concept_id=p2.concept_id
 WHERE condition_source_value IS NOT NULL
 
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query18 ICD9(E928.0)/ICD10(X52)  in condition', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -543,7 +554,7 @@ JOIN ICD_suppressions p2
 ON p1.observation_source_concept_id=p2.concept_id
 WHERE observation_source_value IS NOT NULL
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query19 ICD9(E928.0)/ICD10(X52)  in obs', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -572,7 +583,7 @@ ON p1.observation_source_concept_id=p2.concept_id
 WHERE observation_source_value IS NOT NULL
 
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query20 ICD9(E910)/ICD10(W65-W74) in observation', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -599,7 +610,7 @@ JOIN ICD_suppressions p2
 ON p1.condition_source_concept_id=p2.concept_id
 WHERE condition_source_value IS NOT NULL
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query21 ICD9(E910)/ICD10(W65-W74) in condition', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -625,7 +636,7 @@ ON p1.condition_source_concept_id=p2.concept_id
 WHERE condition_source_value IS NOT NULL
 
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query22 ICD9(E983)/ICD10(T71) in condition', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -651,7 +662,7 @@ JOIN ICD_suppressions p2
 ON p1.observation_source_concept_id=p2.concept_id
 WHERE observation_source_value IS NOT NULL
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query23 ICD9(E913)/ICD10(T71) in observation', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -678,7 +689,7 @@ JOIN ICD_suppressions p2
 ON p1.condition_source_concept_id=p2.concept_id
 WHERE condition_source_value IS NOT NULL
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query24 ICD9(E80-E84)/ICD10(V) in condition', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -706,7 +717,7 @@ JOIN ICD_suppressions p2
 ON p1.observation_source_concept_id=p2.concept_id
 WHERE observation_source_value IS NOT NULL
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query25 ICD9(E80-E84)/ICD10(V) in observation', 'result' : 'PASS'},  
                 ignore_index = True) 

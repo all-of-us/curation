@@ -19,15 +19,26 @@
 
 import urllib
 import pandas as pd
+from utils import auth
+from gcloud.bq import BigQueryClient
+from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
 pd.options.display.max_rows = 120
 
 # + tags=["parameters"]
 project_id = ""
 deid_cdr=""
+run_as = ""
 # -
 
 # df will have a summary in the end
 df = pd.DataFrame(columns = ['query', 'result']) 
+
+# +
+impersonation_creds = auth.get_impersonation_credentials(
+    run_as, target_scopes=IMPERSONATION_SCOPES)
+
+client = BigQueryClient(project_id, credentials=impersonation_creds)
+# -
 
 # # 1 Verify the following columns in the OBSERVATION table have been set to null:
 # value_as_string,
@@ -50,7 +61,7 @@ SUM(CASE WHEN unit_source_value IS NOT NULL THEN 1 ELSE 0 END) AS n_unit_source_
 
 FROM `{project_id}.{deid_cdr}.observation` 
  '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query1 observation', 'result' : 'PASS'},  
@@ -85,7 +96,7 @@ SUM(CASE WHEN ethnicity_source_value IS NOT NULL THEN 1 ELSE 0 END) AS n_ethnici
 SUM(CASE WHEN ethnicity_source_concept_id IS NOT NULL THEN 1 ELSE 0 END) AS n_ethnicity_source_concept_id_not_null
 FROM `{project_id}.{deid_cdr}.person` 
     '''
-df1=pd.read_gbq(query, dialect='standard') 
+df1=execute(client, query) 
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query2 Person', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -105,7 +116,7 @@ SUM(CASE WHEN value_source_value IS NOT NULL THEN 1 ELSE 0 END) AS n_value_sourc
 
 FROM `{project_id}.{deid_cdr}.measurement`
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query3 Measurement', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -124,7 +135,7 @@ SUM(CASE WHEN cause_source_concept_id IS NOT NULL THEN 1 ELSE 0 END) AS n_cause_
 
 FROM `{project_id}.{deid_cdr}.death`
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query4 Death', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -140,7 +151,7 @@ SELECT
 SUM(CASE WHEN provider_id IS NOT NULL THEN 1 ELSE 0 END) AS n_provider_id_not_null
 FROM `{project_id}.{deid_cdr}.condition_occurrence`
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query5 Condition provider_id', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -164,7 +175,7 @@ SUM(CASE WHEN provider_id IS NOT NULL THEN 1 ELSE 0 END) AS n_provider_id_not_nu
 
 FROM `{project_id}.{deid_cdr}.device_exposure`
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query6 provider_id in Device', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -187,7 +198,7 @@ SUM(CASE WHEN provider_id IS NOT NULL THEN 1 ELSE 0 END) AS n_provider_id_not_nu
 --SUM(CASE WHEN visit_detail_id IS NOT NULL THEN 1 ELSE 0 END) AS n_visit_detail_id_not_null
 FROM `{project_id}.{deid_cdr}.drug_exposure`
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query7 provider_id in Drug', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -204,7 +215,7 @@ SUM(CASE WHEN provider_id IS NOT NULL THEN 1 ELSE 0 END) AS n_provider_id_not_nu
 SUM(CASE WHEN care_site_id IS NOT NULL THEN 1 ELSE 0 END) AS n_care_site_id_not_null
 FROM `{project_id}.{deid_cdr}.visit_occurrence`
  '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query8 Visit', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -220,7 +231,7 @@ SELECT
 SUM(CASE WHEN provider_id IS NOT NULL THEN 1 ELSE 0 END) AS n_provider_id_not_null
 FROM `{project_id}.{deid_cdr}.procedure_occurrence`
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query9 Procedure provider_id', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -241,7 +252,7 @@ SUM(CASE WHEN anatomic_site_source_value IS NOT NULL THEN 1 ELSE 0 END) AS n_ana
 
 FROM `{project_id}.{deid_cdr}.specimen`
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query10 Specimen', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -262,7 +273,7 @@ SUM(CASE WHEN place_of_service_source_value IS NOT NULL THEN 1 ELSE 0 END) AS n_
 
 FROM `{project_id}.{deid_cdr}.care_site`
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query11 Care_site', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -277,7 +288,7 @@ query=f'''
 SELECT COUNT (*) AS n_row_not_pass
 FROM `{project_id}.{deid_cdr}.note`
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query12 Note table', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -294,7 +305,7 @@ SELECT COUNT (*) AS n_row_not_pass
 FROM `{project_id}.{deid_cdr}.__TABLES_SUMMARY__`
 WHERE table_id='note_nlp'
 '''
-df1=pd.read_gbq(query, dialect='standard') 
+df1=execute(client, query) 
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query13 Note_NLP table', 'result' : 'PASS'},  
                 ignore_index = True) 

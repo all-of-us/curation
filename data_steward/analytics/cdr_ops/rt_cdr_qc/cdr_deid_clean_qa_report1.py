@@ -18,15 +18,26 @@
 # + papermill={"duration": 0.709639, "end_time": "2021-02-02T22:30:32.661373", "exception": false, "start_time": "2021-02-02T22:30:31.951734", "status": "completed"} tags=[]
 import urllib
 import pandas as pd
+from utils import auth
+from gcloud.bq import BigQueryClient
+from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
 pd.options.display.max_rows = 120
 
 # + papermill={"duration": 0.023643, "end_time": "2021-02-02T22:30:31.880820", "exception": false, "start_time": "2021-02-02T22:30:31.857177", "status": "completed"} tags=["parameters"]
 project_id = ""
 deid_clean = ""
+run_as = ""
 # -
 
 # df will have a summary in the end
 df = pd.DataFrame(columns = ['query', 'result']) 
+
+# +
+impersonation_creds = auth.get_impersonation_credentials(
+    run_as, target_scopes=IMPERSONATION_SCOPES)
+
+client = BigQueryClient(project_id, credentials=impersonation_creds)
+# -
 
 # ## QA queries on new CDR_deid_clean drop rows with 0 OR null
 
@@ -45,7 +56,7 @@ SUM(CASE WHEN observation_source_concept_id IS NULL AND observation_concept_id=0
 
 FROM `{project_id}.{deid_clean}.observation`
 '''
-df1=pd.read_gbq(query, dialect='standard')
+df1=execute(client, query)
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query1 observation', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -71,7 +82,7 @@ FROM `{project_id}.{deid_clean}.condition_occurrence`
 WHERE (condition_source_concept_id = 0 AND  condition_concept_id=0)
 OR ( condition_source_concept_id IS NULL AND condition_concept_id IS NULL)
 '''
-df1=pd.read_gbq(query, dialect='standard')
+df1=execute(client, query)
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query2 condition', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -92,7 +103,7 @@ SUM(CASE WHEN procedure_source_concept_id IS NULL AND procedure_concept_id=0 THE
 
 FROM `{project_id}.{deid_clean}.procedure_occurrence`
 '''
-df1=pd.read_gbq(query, dialect='standard')
+df1=execute(client, query)
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query3 procedure', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -114,7 +125,7 @@ SUM(CASE WHEN visit_source_concept_id = 0 AND visit_concept_id IS NULL THEN 1 EL
 SUM(CASE WHEN visit_source_concept_id IS NULL AND visit_concept_id =0 THEN 1 ELSE 0 END) AS n_visit_source_concept_id_either_null
 FROM `{project_id}.{deid_clean}.visit_occurrence`
 '''
-df1=pd.read_gbq(query, dialect='standard')
+df1=execute(client, query)
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query4 visit', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -137,7 +148,7 @@ SUM(CASE WHEN drug_source_concept_id = 0 AND drug_concept_id IS NULL THEN 1 ELSE
 SUM(CASE WHEN drug_source_concept_id IS NULL AND drug_concept_id =0 THEN 1 ELSE 0 END) AS n_drug_source_concept_id_either_null
 FROM `{project_id}.{deid_clean}.drug_exposure`
 '''
-df1=pd.read_gbq(query, dialect='standard')
+df1=execute(client, query)
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query5 drug_exposure', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -159,7 +170,7 @@ SUM(CASE WHEN device_source_concept_id = 0 AND device_concept_id IS NULL THEN 1 
 SUM(CASE WHEN device_source_concept_id IS NULL AND device_concept_id =0 THEN 1 ELSE 0 END) AS n_device_source_concept_id_either_null
 FROM `{project_id}.{deid_clean}.device_exposure`
 '''
-df1=pd.read_gbq(query, dialect='standard')
+df1=execute(client, query)
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query6 device', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -181,7 +192,7 @@ SUM(CASE WHEN measurement_source_concept_id = 0 AND measurement_concept_id IS NU
 SUM(CASE WHEN measurement_source_concept_id IS NULL AND measurement_concept_id =0 THEN 1 ELSE 0 END) AS n_measurement_source_concept_id_either_null
 FROM`{project_id}.{deid_clean}.measurement`
 '''
-df1=pd.read_gbq(query, dialect='standard')
+df1=execute(client, query)
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query7 measurement', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -208,7 +219,7 @@ SUM(CASE WHEN cause_source_concept_id IS NOT NULL AND cause_concept_id !=0 THEN 
 FROM `{project_id}.{deid_clean}.death`
 
 '''
-df1=pd.read_gbq(query, dialect='standard')
+df1=execute(client, query)
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query8 cause_source_concept_id/cause_concept_id is null in dealth table', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -236,7 +247,7 @@ JOIN `{project_id}.{deid_clean}.person` e
 ON  d.person_id = e.person_id
 WHERE state_of_residence_concept_id IS NOT NULL OR state_of_residence_source_value IS NOT NULL
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query9 State_of_Residence in person_ext', 'result' : ' '},  

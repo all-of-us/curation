@@ -2,6 +2,7 @@
 Interact with Google Cloud BigQuery
 """
 # Python stl imports
+import os
 from datetime import datetime
 import typing
 
@@ -9,11 +10,12 @@ import typing
 from google.cloud import bigquery
 from google.cloud.bigquery import Client
 from google.auth import default
+from google.api_core.exceptions import GoogleAPIError, BadRequest
+from google.cloud.exceptions import NotFound
 from opentelemetry import trace
 from opentelemetry.exporter.cloud_trace import CloudTraceSpanExporter
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from google.api_core.exceptions import GoogleAPIError, BadRequest
 
 # Project imports
 from utils import auth
@@ -446,11 +448,31 @@ class BigQueryClient(Client):
                 priority=bigquery.job.QueryPriority.BATCH,
                 destination=dest_table,
                 labels={
-                    'table_name': table_item.table_id,
-                    'copy_from': table_item.dataset_id,
-                    'copy_to': dest_dataset
+                    'table_name': table_item.table_id.lower(),
+                    'copy_from': table_item.dataset_id.lower(),
+                    'copy_to': dest_dataset.lower()
                 })
             job_id = (f'schemaed_copy_{table_item.table_id.lower()}_'
                       f'{datetime.now().strftime("%Y%m%d_%H%M%S")}')
             job = self.query(sql, job_config=job_config, job_id=job_id)
             job.result()  # Wait for the job to complete.
+
+    def table_exists(self, table_id: str, dataset_id: str = None) -> bool:
+        """
+        Determine whether a bigquery table exists
+
+        :param table_id: id of the table
+        :param dataset_id: id of the dataset
+        :return: `True` if the table exists, `False` otherwise
+        """
+        if not table_id or table_id.isspace():
+            raise RuntimeError('Please provide a table_id')
+        if not dataset_id or dataset_id.isspace():
+            dataset_id = os.environ.get('BIGQUERY_DATASET_ID')
+
+        table = f'{self.project}.{dataset_id}.{table_id}'
+        try:
+            self.get_table(table)
+            return True
+        except NotFound:
+            return False

@@ -17,6 +17,9 @@
 
 import urllib
 import pandas as pd
+from utils import auth
+from gcloud.bq import BigQueryClient
+from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
 pd.options.display.max_rows = 120
 
 # + tags=["parameters"]
@@ -28,10 +31,18 @@ deid_cdr=""
 com_cdr=""
 truncation_date=""
 maximum_age=""
+run_as = ""
 # -
 
 # df will have a summary in the end
 df = pd.DataFrame(columns = ['query', 'result']) 
+
+# +
+impersonation_creds = auth.get_impersonation_credentials(
+    run_as, target_scopes=IMPERSONATION_SCOPES)
+
+client = BigQueryClient(project_id, credentials=impersonation_creds)
+# -
 
 # This notebook was updated per [DC-1786]. 
 #
@@ -78,7 +89,7 @@ JOIN df3 USING (col)
 JOIN df4 USING (col)
 
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 df1=df1.iloc[:,1:5]
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query1 cutoff date in fitbit datasets', 'result' : 'PASS'},  
@@ -136,7 +147,7 @@ JOIN df3 USING (col)
 JOIN df4 USING (col)
 
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 df1=df1.iloc[:,1:5]
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query2 no maximum_age in fitbit datasets', 'result' : 'PASS'},  
@@ -181,7 +192,7 @@ ON m.research_id = d.person_id
 SELECT COUNT (*) n_row_not_pass FROM df2
 WHERE d_newc NOT IN (SELECT i_newc FROM df1)
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1.eq(0).any().any():
  df = df.append({'query' : 'Query3.1 Date shifted in activity_summary', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -212,7 +223,7 @@ ON m.research_id = d.person_id
 SELECT COUNT (*) n_row_not_pass FROM df2
 WHERE d_newc NOT IN (SELECT i_newc FROM df1)
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1.eq(0).any().any():
  df = df.append({'query' : 'Query3.2 Date shifted in heart_rate_summary', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -245,7 +256,7 @@ ON m.research_id = d.person_id
 SELECT COUNT (*) n_row_not_pass FROM df2
 WHERE d_newc NOT IN (SELECT i_newc FROM df1)
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1.eq(0).any().any():
  df = df.append({'query' : 'Query3.3 Date shifted in heart_rate_minute_level', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -278,7 +289,7 @@ ON m.research_id = d.person_id
 SELECT COUNT (*) n_row_not_pass FROM df2
 WHERE d_newc NOT IN (SELECT i_newc FROM df1)
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1.eq(0).any().any():
  df = df.append({'query' : 'Query3.4 Date shifted in steps_intraday', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -311,7 +322,7 @@ SELECT COUNT (*) n_row_not_pass_activity_summary FROM df1
 JOIN df2 USING (research_id)
 WHERE research_id != deid_pid
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1.eq(0).any().any():
  df = df.append({'query' : 'Query4.1 resarch_id=person_id in activity_summary', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -339,7 +350,7 @@ SELECT COUNT (*) n_row_not_pass_heart_rate_summary FROM df1
 JOIN df2 USING (research_id)
 WHERE research_id != deid_pid
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1.eq(0).any().any():
  df = df.append({'query' : 'Query4.2 resarch_id=person_id in heart_rate_summary', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -367,7 +378,7 @@ SELECT COUNT (*) n_row_not_pass_heart_rate_minute_level FROM df1
 JOIN df2 USING (research_id)
 WHERE research_id != deid_pid
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1.eq(0).any().any():
  df = df.append({'query' : 'Query4.3 resarch_id=person_id in heart_rate_minute_level', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -396,7 +407,7 @@ JOIN df2 USING (research_id)
 WHERE research_id != deid_pid
 
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1.eq(0).any().any():
  df = df.append({'query' : 'Query4.4 resarch_id=person_id in steps_intraday', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -438,7 +449,7 @@ JOIN df2 USING (col)
 JOIN df3 USING (col)
 JOIN df4 USING (col)
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 df1=df1.iloc[:,1:5]
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query5 person_ids in fitbit exist in deid.person table', 'result' : 'PASS'},  
