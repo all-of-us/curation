@@ -7,9 +7,10 @@ from collections import OrderedDict
 
 # Third party imports
 from google.cloud import bigquery
-from mock import patch, MagicMock, Mock
 from google.cloud.bigquery import TableReference, DatasetReference
 from google.cloud.bigquery.table import TableListItem
+from google.cloud.exceptions import NotFound
+from mock import patch, MagicMock, Mock
 
 # Project imports
 from gcloud.bq import BigQueryClient
@@ -336,3 +337,56 @@ class BQCTest(TestCase):
                 existing_labels_or_tags={'label': 'existing_label'},
                 new_labels_or_tags={'label': 'new_label'},
                 overwrite_ok=False)
+
+    @patch('os.environ.get')
+    @patch('gcloud.bq.Client.get_table')
+    def test_table_exists(self, mock_get_table, mock_environ_get):
+        table_id = 'fake_table'
+        table_name = f'{self.client.project}.{self.dataset_id}.{table_id}'
+        mock_environ_get.return_value = self.dataset_id
+
+        # Test case 1 ... dataset_id not provided
+        result = self.client.table_exists(table_id)
+        self.assertEqual(result, True)
+        mock_environ_get.assert_called_once()
+        mock_get_table.assert_called_with(table_name)
+
+        # Test case 2 ... whitespaces for dataset_id
+        mock_environ_get.call_count = 0
+        result = self.client.table_exists(table_id, ' ')
+        self.assertEqual(result, True)
+        mock_environ_get.assert_called_once()
+        mock_get_table.assert_called_with(table_name)
+
+        # Test case 3 ... dataset_id provided
+        mock_environ_get.call_count = 0
+        result = self.client.table_exists(table_id, self.dataset_id)
+        self.assertEqual(result, True)
+        self.assertEqual(mock_environ_get.call_count, 0)
+        mock_get_table.assert_called_with(table_name)
+
+        #Test case 4 ... table_id not provided
+        self.assertRaises(RuntimeError, self.client.table_exists, None)
+
+        #Test case 5 ... whitespaces for table_id
+        self.assertRaises(RuntimeError, self.client.table_exists, ' ')
+
+        # Test case 6 ... NotFound exception, dataset_id provided
+        mock_get_table.side_effect = NotFound('')
+        result = self.client.table_exists(table_id, self.dataset_id)
+        self.assertEqual(result, False)
+        self.assertEqual(mock_environ_get.call_count, 0)
+        mock_get_table.assert_called_with(table_name)
+
+        #Test case 7 ... NotFound exception, dataset_id not provided
+        result = self.client.table_exists(table_id)
+        self.assertEqual(result, False)
+        mock_environ_get.assert_called_once()
+        mock_get_table.assert_called_with(table_name)
+
+        #Test case 8 ... NotFound exception, whitespaces for dataset_id
+        mock_environ_get.call_count = 0
+        result = self.client.table_exists(table_id, ' ')
+        self.assertEqual(result, False)
+        mock_environ_get.assert_called_once()
+        mock_get_table.assert_called_with(table_name)

@@ -4,11 +4,11 @@ from unittest.mock import patch, MagicMock
 from typing import Callable
 
 # Third party imports
+from google.cloud.exceptions import NotFound
 
 # Project imports
 from gcloud.gcs import StorageClient
 from validation.app_errors import BucketNotSet, BucketDoesNotExistError
-from google.cloud.exceptions import NotFound
 
 
 class DummyClient(StorageClient):
