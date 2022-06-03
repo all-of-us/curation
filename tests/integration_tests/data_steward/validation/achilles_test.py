@@ -1,10 +1,14 @@
+# Python imports
 import os
 import unittest
 
+# Third party imports
+import mock
+
+# Project imports
 import app_identity
 import bq_utils
 from gcloud.gcs import StorageClient
-import mock
 import resources
 from tests import test_util
 from validation import achilles
