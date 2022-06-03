@@ -241,7 +241,7 @@ class RemoveNonMatchingParticipant(BaseCleaningRule):
         sandbox_queries = remove_pids.get_sandbox_queries(
             self.project_id,
             self.dataset_id,
-            '_'.join(self.issue_numbers),
+            self.issue_numbers,
             sandbox_dataset_id=self.sandbox_dataset_id,
             lookup_table=NOT_MATCH_TABLE)
 

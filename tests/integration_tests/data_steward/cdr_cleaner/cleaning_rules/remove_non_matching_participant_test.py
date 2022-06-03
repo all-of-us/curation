@@ -176,6 +176,9 @@ class RemoveNonMatchingParticipantTest(BaseTest.CleaningRulesTestBase):
             ehr_dataset_id=cls.ehr_dataset_id,
             validation_dataset_id=cls.validation_dataset_id)
 
+        # Overwriting affected_tables, as only PERSON and OBSERVATION are prepared for this test.
+        cls.rule_instance.affected_tables = [PERSON, OBSERVATION]
+
         sb_table_names = cls.rule_instance.get_sandbox_tablenames()
         for table_name in sb_table_names:
             cls.fq_sandbox_table_names.append(
@@ -249,8 +252,10 @@ class RemoveNonMatchingParticipantTest(BaseTest.CleaningRulesTestBase):
                     f'{PERSON}',
                 'fq_table_name':
                     f'{self.project_id}.{self.dataset_id}.{PERSON}',
-                'fq_sandbox_table_name':
-                    f'{self.project_id}.{self.sandbox_id}.{PERSON}_{"_".join(self.rule_instance.issue_numbers)}',
+                'fq_sandbox_table_name': [
+                    table for table in self.fq_sandbox_table_names
+                    if PERSON in table
+                ][0],
                 'fields': [
                     'person_id', 'gender_concept_id', 'year_of_birth',
                     'race_concept_id', 'ethnicity_concept_id'
@@ -281,8 +286,10 @@ class RemoveNonMatchingParticipantTest(BaseTest.CleaningRulesTestBase):
                     f'{OBSERVATION}',
                 'fq_table_name':
                     f'{self.project_id}.{self.dataset_id}.{OBSERVATION}',
-                'fq_sandbox_table_name':
-                    f'{self.project_id}.{self.sandbox_id}.{OBSERVATION}_{"_".join(self.rule_instance.issue_numbers)}',
+                'fq_sandbox_table_name': [
+                    table for table in self.fq_sandbox_table_names
+                    if OBSERVATION in table
+                ][0],
                 'fields': [
                     'observation_id', 'person_id', 'observation_concept_id',
                     'observation_date', 'observation_type_concept_id'

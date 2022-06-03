@@ -51,11 +51,11 @@ def get_tables_with_person_id(project_id, dataset_id):
     return person_table_list
 
 
-def get_sandbox_queries(project_id,
-                        dataset_id,
-                        ticket_number,
-                        sandbox_dataset_id=None,
-                        lookup_table=None):
+def get_sandbox_queries(project_id: str,
+                        dataset_id: str,
+                        ticket_numbers: list,
+                        sandbox_dataset_id: str = None,
+                        lookup_table: str = None) -> list:
     """
     Returns a list of queries of all tables to be added to the datasets sandbox. These tables include all rows from all
     effected tables that include PIDs that will be removed by a specific cleaning rule.
@@ -63,7 +63,7 @@ def get_sandbox_queries(project_id,
     :param project_id: bq project_id
     :param dataset_id: bq dataset_id
     :param pids: list of person_ids from cleaning rule that need to be sandboxed and removed
-    :param ticket_number: ticket number from jira that will be appended to the end of the sandbox table names
+    :param ticket_numbers: list of ticket numbers from jira that will be appended to the end of the sandbox table names
     :param sandbox_dataset_id: name of the sandbox dataset
     :param lookup_table: name of the lookup table
     :return: list of CREATE OR REPLACE queries to create tables in sandbox
@@ -80,7 +80,8 @@ def get_sandbox_queries(project_id,
             project=project_id,
             table=table,
             sandbox_dataset=sandbox_dataset_id,
-            intermediary_table=table + '_' + ticket_number,
+            intermediary_table=
+            f"{'_'.join(ticket.lower() for ticket in ticket_numbers)}_{table}",
             lookup_table=lookup_table)
         queries_list.append(sandbox_queries)
 
