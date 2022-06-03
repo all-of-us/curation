@@ -45,6 +45,8 @@ class BigQueryClient(Client):
             BatchSpanProcessor(cloud_trace_exporter))
         trace.set_tracer_provider(tracer_provider)
         tracer = trace.get_tracer(__name__)
+        # TODO move tracer to global scope until all client instances are refactored
+        # TODO create counter to keep track of multiple client instances
         with tracer.start_as_current_span(project_id):
             if scopes:
                 credentials, project_id = default()
