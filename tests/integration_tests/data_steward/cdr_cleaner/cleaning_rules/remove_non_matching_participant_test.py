@@ -176,8 +176,6 @@ class RemoveNonMatchingParticipantTest(BaseTest.CleaningRulesTestBase):
             ehr_dataset_id=cls.ehr_dataset_id,
             validation_dataset_id=cls.validation_dataset_id)
 
-        cls.rule_instance.setup_rule(cls.client)
-
         sb_table_names = cls.rule_instance.get_sandbox_tablenames()
         for table_name in sb_table_names:
             cls.fq_sandbox_table_names.append(

@@ -98,6 +98,12 @@ class RemoveNonMatchingParticipant(BaseCleaningRule):
         self.ehr_dataset_id = ehr_dataset_id
         self.validation_dataset_id = validation_dataset_id
 
+        affected_tables = [
+            table for table in resources.CDM_TABLES
+            if any(field['name'] == 'person_id'
+                   for field in resources.fields_for(table))
+        ]
+
         if ehr_dataset_id is None:
             raise RuntimeError('Required parameter ehr_dataset_id not set.')
 
@@ -112,6 +118,7 @@ class RemoveNonMatchingParticipant(BaseCleaningRule):
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
+                         affected_tables=affected_tables,
                          table_namer=table_namer)
 
     def setup_rule(self, client: BigQueryClient):
@@ -122,15 +129,6 @@ class RemoveNonMatchingParticipant(BaseCleaningRule):
 
         :param client: A BigQueryClient
         """
-        person_table_query = remove_pids.PERSON_TABLE_QUERY.format(
-            project=self.project_id, dataset=self.dataset_id)
-        person_tables = client.query(person_table_query).to_dataframe()[
-            remove_pids.TABLE_NAME_COLUMN].values.tolist()
-        self.affected_tables = [
-            table_name for table_name in person_tables
-            if '_mapping' not in table_name
-        ]
-
         create_not_match_table = CREATE_NOT_MATCH_TABLE.render(
             project_id=self.project_id,
             sandbox_dataset_id=self.sandbox_dataset_id,
