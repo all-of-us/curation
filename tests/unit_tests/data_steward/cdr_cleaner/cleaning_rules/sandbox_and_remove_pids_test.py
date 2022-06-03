@@ -25,7 +25,7 @@ class SandboxAndRemovePidsTest(unittest.TestCase):
         self.dataset_id = 'dataset_id'
         self.sandbox_dataset = 'sandbox_dataset'
         self.lookup_table = 'lookup_table'
-        self.ticket_number = 'DC_XXX'
+        self.ticket_numbers = ['DC_XXX', 'DC_YYY']
         self.pids = [
             324264993, 307753491, 335484227, 338965846, 354812933, 324983298,
             366423185, 352721597, 352775367, 314281264, 319123185, 325306942,
@@ -73,7 +73,7 @@ class SandboxAndRemovePidsTest(unittest.TestCase):
         result = sandbox_and_remove_pids.get_sandbox_queries(
             self.project_id,
             self.dataset_id,
-            self.ticket_number,
+            self.ticket_numbers,
             sandbox_dataset_id=self.sandbox_dataset,
             lookup_table=self.lookup_table)
         expected = list()
@@ -86,7 +86,8 @@ class SandboxAndRemovePidsTest(unittest.TestCase):
                         project=self.project_id,
                         table=table,
                         sandbox_dataset=self.sandbox_dataset,
-                        intermediary_table=table + '_' + self.ticket_number,
+                        intermediary_table=
+                        f"{'_'.join(ticket.lower() for ticket in self.ticket_numbers)}_{table}",
                         lookup_table=self.lookup_table)
             })
         self.assertEquals(result, expected)
