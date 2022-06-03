@@ -309,7 +309,7 @@ def delete_table(table_id, dataset_id=None):
 
 @deprecated(
     reason=
-    'Use gcloud.bq.BigQueryClient.table_exists(self, table_id: str, dataset_id=None) instead'
+    'Use gcloud.bq.BigQueryClient.table_exists(self, table_id: str, dataset_id: str = None) instead'
 )
 def table_exists(table_id, dataset_id=None):
     """
