@@ -175,14 +175,17 @@ class UnitNormalization(BaseCleaningRule):
         unit_mapping_table = (f'{self.project_id}.'
                               f'{self.sandbox_dataset_id}.'
                               f'{UNIT_MAPPING_TABLE}')
-        client.create_tables([unit_mapping_table])
+        client.create_tables([unit_mapping_table], exists_ok=True)
         # Uploading data to _unit_mapping table
         unit_mappings_csv_path = os.path.join(resources.resource_files_path,
                                               UNIT_MAPPING_FILE)
-        _ = client.upload_csv_data_to_bq_table(self.sandbox_dataset_id,
-                                               UNIT_MAPPING_TABLE,
-                                               unit_mappings_csv_path,
-                                               UNIT_MAPPING_TABLE_DISPOSITION)
+        try:
+            _ = client.upload_csv_data_to_bq_table(
+                self.sandbox_dataset_id, UNIT_MAPPING_TABLE,
+                unit_mappings_csv_path, UNIT_MAPPING_TABLE_DISPOSITION)
+        except:
+            pass
+
         LOGGER.info(
             f"Created {self.sandbox_dataset_id}.{UNIT_MAPPING_TABLE} and "
             f"loaded data from {unit_mappings_csv_path}")
