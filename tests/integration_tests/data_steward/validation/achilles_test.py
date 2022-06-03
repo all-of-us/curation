@@ -8,6 +8,7 @@ import mock
 # Project imports
 import app_identity
 import bq_utils
+from gcloud.bq import BigQueryClient
 from gcloud.gcs import StorageClient
 import resources
 from tests import test_util
@@ -34,6 +35,7 @@ class AchillesTest(unittest.TestCase):
     def setUp(self):
         self.project_id = app_identity.get_application_id()
         self.storage_client = StorageClient(self.project_id)
+        self.bq_client = BigQueryClient(self.project_id)
         self.hpo_bucket = self.storage_client.get_hpo_bucket(
             test_util.FAKE_HPO_ID)
 
@@ -77,7 +79,8 @@ class AchillesTest(unittest.TestCase):
         self._load_dataset()
         achilles.create_tables(test_util.FAKE_HPO_ID, True)
         achilles.load_analyses(test_util.FAKE_HPO_ID)
-        achilles.run_analyses(hpo_id=test_util.FAKE_HPO_ID)
+        achilles.run_analyses(client=self.bq_client,
+                              hpo_id=test_util.FAKE_HPO_ID)
         cmd = sql_wrangle.qualify_tables(
             'SELECT COUNT(1) FROM %sachilles_results' %
             sql_wrangle.PREFIX_PLACEHOLDER, test_util.FAKE_HPO_ID)
