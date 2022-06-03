@@ -631,6 +631,7 @@ class ValidationMainTest(TestCase):
         self.assertIn(incorrect_folder_prefix,
                       report_data[report_consts.SUBMISSION_ERROR_REPORT_KEY])
 
+    @mock.patch('validation.main.BigQueryClient')
     @mock.patch('validation.main._upload_achilles_files')
     @mock.patch('validation.main.run_export')
     @mock.patch('validation.main.run_achilles')
@@ -642,12 +643,14 @@ class ValidationMainTest(TestCase):
     def test_union_ehr(self, mock_check_cron, mock_get_application_id,
                        mock_get_dataset_id, mock_get_unioned_dataset_id,
                        mock_ehr_union_main, mock_run_achilles, mock_run_export,
-                       mock_upload_achilles_files):
+                       mock_upload_achilles_files, mock_bq_client):
 
         application_id = 'application_id'
         input_dataset = 'input_dataset'
         output_dataset = 'output_dataset'
+        mock_client = mock.MagicMock()
 
+        mock_bq_client.return_value = mock_client
         mock_check_cron.return_value = True
         mock_get_application_id.return_value = application_id
         mock_get_dataset_id.return_value = input_dataset
@@ -661,7 +664,8 @@ class ValidationMainTest(TestCase):
             mock_ehr_union_main.assert_called_once_with(input_dataset,
                                                         output_dataset,
                                                         application_id)
-            mock_run_achilles.assert_called_once_with('unioned_ehr')
+            mock_run_achilles.assert_called_once_with(mock_client,
+                                                      'unioned_ehr')
 
             self.assertEqual(mock_run_export.call_count, 1)
             self.assertEqual(mock_upload_achilles_files.call_count, 1)
