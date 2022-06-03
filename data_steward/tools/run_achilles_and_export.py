@@ -11,7 +11,8 @@ Note: Any missing CDM tables will be created and will remain empty
 """
 import argparse
 
-from bq_utils import get_dataset_id
+from bq_utils import get_dataset_id, app_identity
+from gcloud.bq import BigQueryClient
 from validation.main import _upload_achilles_files
 from validation.main import run_achilles as _run_achilles
 from validation.main import run_export as _run_export
@@ -21,7 +22,9 @@ def main(args):
     dataset_id = get_dataset_id()
     target_bucket = args.bucket
     folder_prefix = args.folder + '/'
-    _run_achilles()
+    project = app_identity.get_application_id()
+    bq_client = BigQueryClient(project)
+    _run_achilles(client=bq_client)
     _run_export(datasource_id=dataset_id,
                 folder_prefix=folder_prefix,
                 target_bucket=target_bucket)
