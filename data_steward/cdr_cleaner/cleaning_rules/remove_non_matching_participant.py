@@ -116,12 +116,21 @@ class RemoveNonMatchingParticipant(BaseCleaningRule):
 
     def setup_rule(self, client: BigQueryClient):
         """
-        Create the lookup table NOT_MATCH_TABLE.
+        Define affected_tables and create the lookup table NOT_MATCH_TABLE.
         This table has person_ids that need to be deleted from the CDM tables. 
         It also has the source table info for debug purpose.
 
         :param client: A BigQueryClient
         """
+        person_table_query = remove_pids.PERSON_TABLE_QUERY.format(
+            project=self.project_id, dataset=self.dataset_id)
+        person_tables = client.query(person_table_query).to_dataframe()[
+            remove_pids.TABLE_NAME_COLUMN].values.tolist()
+        self.affected_tables = [
+            table_name for table_name in person_tables
+            if '_mapping' not in table_name
+        ]
+
         create_not_match_table = CREATE_NOT_MATCH_TABLE.render(
             project_id=self.project_id,
             sandbox_dataset_id=self.sandbox_dataset_id,
@@ -181,11 +190,7 @@ class RemoveNonMatchingParticipant(BaseCleaningRule):
         """
         Return a list table names created to backup deleted data.
         """
-        return [
-            self.sandbox_table_for(table)
-            for table in remove_pids.get_tables_with_person_id(
-                self.project_id, self.dataset_id)
-        ]
+        return [self.sandbox_table_for(table) for table in self.affected_tables]
 
     def get_fields_criteria(self) -> str:
         """

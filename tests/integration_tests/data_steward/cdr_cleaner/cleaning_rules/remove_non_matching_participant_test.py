@@ -176,6 +176,8 @@ class RemoveNonMatchingParticipantTest(BaseTest.CleaningRulesTestBase):
             ehr_dataset_id=cls.ehr_dataset_id,
             validation_dataset_id=cls.validation_dataset_id)
 
+        cls.rule_instance.setup_rule(cls.client)
+
         sb_table_names = cls.rule_instance.get_sandbox_tablenames()
         for table_name in sb_table_names:
             cls.fq_sandbox_table_names.append(
@@ -243,7 +245,6 @@ class RemoveNonMatchingParticipantTest(BaseTest.CleaningRulesTestBase):
         X04: "missing" exceeding NUM_OF_MISSING_ALL_FIELDS -> 204 and 304 should be removed. 104 is validated,
              and 4XX is skipped because of missing identity_match table.
         """
-        self.rule_instance.setup_rule(self.client)
         tables_and_counts = [
             {
                 'name':
