@@ -1,13 +1,15 @@
-from datetime import datetime
+# Python imports
 import inspect
 from io import open
 import os
 from typing import Optional
 
+# Third party imports
 import googleapiclient.errors
 from google.cloud.exceptions import GoogleCloudError
 import requests
 
+# Project imports
 import app_identity
 import bq_utils
 import common
@@ -29,8 +31,8 @@ GAE_SERVICE = os.environ.get('GAE_SERVICE', 'default')
 
 LOOKUP_TABLES = [HPO_ID_BUCKET_NAME_TABLE_ID]
 
-VALIDATE_HPO_FILES_URL = main.PREFIX + 'ValidateHpoFiles/' + FAKE_HPO_ID
-COPY_HPO_FILES_URL = main.PREFIX + 'CopyFiles/' + FAKE_HPO_ID
+VALIDATE_HPO_FILES_URL = f'{main.PREFIX}ValidateHpoFiles/{FAKE_HPO_ID}'
+COPY_HPO_FILES_URL = f'{main.PREFIX}CopyFiles/{FAKE_HPO_ID}'
 BASE_TESTS_PATH = os.path.dirname(
     os.path.abspath(inspect.getfile(inspect.currentframe())))
 TEST_DATA_PATH = os.path.join(BASE_TESTS_PATH, 'test_data')
