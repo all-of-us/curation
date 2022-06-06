@@ -30,7 +30,7 @@ class RetractDataGcsTest(TestCase):
         self.site_bucket = 'test_bucket'
         self.folder_1 = '2019-01-01-v1/'
         self.folder_2 = '2019-02-02-v2/'
-        self.client = StorageClient(self.project_id)
+        self.storage_client = StorageClient(self.project_id)
         self.folder_prefix_1 = f'{self.hpo_id}/{self.site_bucket}/{self.folder_1}'
         self.folder_prefix_2 = f'{self.hpo_id}/{self.site_bucket}/{self.folder_2}'
         self.pids = [17, 20]
@@ -39,8 +39,8 @@ class RetractDataGcsTest(TestCase):
         self.sandbox_dataset_id = os.environ.get('UNIONED_DATASET_ID')
         self.pid_table_id = 'pid_table'
         self.content_type = 'text/csv'
-        self.gcs_bucket = self.client.get_hpo_bucket(self.hpo_id)
-        self.client.empty_bucket(self.gcs_bucket)
+        self.gcs_bucket = self.storage_client.get_hpo_bucket(self.hpo_id)
+        self.storage_client.empty_bucket(self.gcs_bucket)
 
     @patch('retraction.retract_data_gcs.extract_pids_from_table')
     def test_integration_five_person_data_retraction_skip(
@@ -151,7 +151,7 @@ class RetractDataGcsTest(TestCase):
                                  total_lines_post[key])
 
     def tearDown(self):
-        self.client.empty_bucket(self.gcs_bucket)
+        self.storage_client.empty_bucket(self.gcs_bucket)
 
     @classmethod
     def tearDownClass(cls):

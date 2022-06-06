@@ -81,9 +81,10 @@ class BqUtilsTest(unittest.TestCase):
             }
         ]
         self.DT_FORMAT = '%Y-%m-%d %H:%M:%S'
-        self.client = StorageClient(self.project_id)
-        self.hpo_bucket: Bucket = self.client.get_hpo_bucket(FAKE_HPO_ID)
-        self.client.empty_bucket(self.hpo_bucket)
+        self.storage_client = StorageClient(self.project_id)
+        self.hpo_bucket: Bucket = self.storage_client.get_hpo_bucket(
+            FAKE_HPO_ID)
+        self.storage_client.empty_bucket(self.hpo_bucket)
 
     def _drop_tables(self):
         tables = bq_utils.list_tables()
@@ -212,7 +213,7 @@ class BqUtilsTest(unittest.TestCase):
             int(row['observation_id'])
             for row in resources.csv_to_list(PITT_FIVE_PERSONS_OBSERVATION_CSV)
         ]
-        bucket: Bucket = self.client.get_hpo_bucket(hpo_id)
+        bucket: Bucket = self.storage_client.get_hpo_bucket(hpo_id)
         table_blob: Blob = bucket.blob('observation.csv')
         with open(PITT_FIVE_PERSONS_OBSERVATION_CSV, 'rb') as fp:
             table_blob.upload_from_file(fp)
@@ -372,7 +373,7 @@ class BqUtilsTest(unittest.TestCase):
 
     def tearDown(self):
         test_util.delete_all_tables(self.dataset_id)
-        self.client.empty_bucket(self.hpo_bucket)
+        self.storage_client.empty_bucket(self.hpo_bucket)
 
     @classmethod
     def tearDownClass(cls):
