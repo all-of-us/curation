@@ -95,7 +95,7 @@ class RemoveFitbitDataIfMaxAgeExceeded(BaseCleaningRule):
                     SAVE_ROWS_TO_BE_DROPPED_QUERY.render(
                         project=self.project_id,
                         sandbox_dataset=self.sandbox_dataset_id,
-                        sandbox_table=self.get_sandbox_tablenames()[i],
+                        sandbox_table=self.sandbox_table_for(table),
                         dataset=self.dataset_id,
                         table=table,
                         combined_dataset=self.person,
@@ -110,7 +110,7 @@ class RemoveFitbitDataIfMaxAgeExceeded(BaseCleaningRule):
                         dataset=self.dataset_id,
                         table=table,
                         sandbox_dataset=self.sandbox_dataset_id,
-                        sandbox_table=self.get_sandbox_tablenames()[i]),
+                        sandbox_table=self.sandbox_table_for(table)),
                 cdr_consts.DESTINATION_TABLE:
                     table,
                 cdr_consts.DESTINATION_DATASET:
@@ -139,6 +139,11 @@ class RemoveFitbitDataIfMaxAgeExceeded(BaseCleaningRule):
         Validates the deid "cleaning rule" which deletes or updates the data from the tables
         """
         raise NotImplementedError("Please fix me.")
+
+    def sandbox_table_for(self, affected_table):
+        issue_numbers_str = '_'.join(
+            [issue_num.lower() for issue_num in self.issue_numbers])
+        return f'{issue_numbers_str}_{affected_table}'
 
     def get_sandbox_tablenames(self):
         return [
