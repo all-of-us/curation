@@ -180,12 +180,12 @@ def _upload_achilles_files(hpo_id: str = None,
     else:
         target_bucket = storage_client.bucket(target_bucket)
     logging.info(
-        f"Uploading achilles index files to 'gs://{target_bucket.name}/{folder_prefix}'"
+        f"Uploading achilles index files to 'gs://{target_bucket}/{folder_prefix}'"
     )
 
     for filename in resources.ACHILLES_INDEX_FILES:
         logging.info(
-            f"Uploading achilles file '{filename}' to bucket {target_bucket.name}"
+            f"Uploading achilles file '{filename}' to bucket {target_bucket}"
         )
         bucket_file_name = filename.split(resources.resource_files_path +
                                           os.sep)[1].strip().replace('\\', '/')
