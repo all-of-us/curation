@@ -180,8 +180,7 @@ def _upload_achilles_files(hpo_id=None, folder_prefix='', target_bucket=None):
 
     for filename in resources.ACHILLES_INDEX_FILES:
         logging.info(
-            f"Uploading achilles file '{filename}' to bucket {target_bucket}"
-        )
+            f"Uploading achilles file '{filename}' to bucket {target_bucket}")
         bucket_file_name = filename.split(resources.resource_files_path +
                                           os.sep)[1].strip().replace('\\', '/')
         with open(filename, 'rb') as fp:
