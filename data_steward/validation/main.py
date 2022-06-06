@@ -159,7 +159,9 @@ def upload_achilles_files(hpo_id):
     return json.dumps(result, sort_keys=True, indent=4, separators=(',', ': '))
 
 
-def _upload_achilles_files(hpo_id: str = None, folder_prefix: str = '', target_bucket: str = None) -> list:
+def _upload_achilles_files(hpo_id: str = None,
+                           folder_prefix: str = '',
+                           target_bucket: str = None) -> list:
     """
     uploads achilles web files to the corresponding hpo bucket
     :hpo_id: which hpo bucket do these files go into
@@ -173,14 +175,16 @@ def _upload_achilles_files(hpo_id: str = None, folder_prefix: str = '', target_b
         if not hpo_id:
             raise RuntimeError(
                 f"Either hpo_id or target_bucket must be specified")
-        target_bucket = storage_client.get_hpo_bucket(hpo_id).name
+        target_bucket = storage_client.get_hpo_bucket(hpo_id)
+    target_bucket = storage_client.bucket(target_bucket)
     logging.info(
-        f"Uploading achilles index files to 'gs://{target_bucket}/{folder_prefix}'"
+        f"Uploading achilles index files to 'gs://{target_bucket.name}/{folder_prefix}'"
     )
 
     for filename in resources.ACHILLES_INDEX_FILES:
         logging.info(
-            f"Uploading achilles file '{filename}' to bucket {target_bucket}")
+            f"Uploading achilles file '{filename}' to bucket {target_bucket.name}"
+        )
         bucket_file_name = filename.split(resources.resource_files_path +
                                           os.sep)[1].strip().replace('\\', '/')
         with open(filename, 'rb') as fp:
