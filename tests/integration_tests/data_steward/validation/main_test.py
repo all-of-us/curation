@@ -26,18 +26,19 @@ from validation.metrics import required_labs
 class ValidationMainTest(unittest.TestCase):
 
     dataset_id = bq_utils.get_dataset_id()
+    project_id = app_identity.get_application_id()
+    bq_client = BigQueryClient(project_id)
 
     @classmethod
     def setUpClass(cls):
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
-        test_util.setup_hpo_id_bucket_name_table(cls.dataset_id)
+        test_util.setup_hpo_id_bucket_name_table(cls.dataset_id, cls.bq_client)
 
     @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def setUp(self):
         self.hpo_id: str = test_util.FAKE_HPO_ID
-        self.project_id: str = app_identity.get_application_id()
         self.rdr_dataset_id: str = bq_utils.get_rdr_dataset_id()
 
         mock_get_hpo_name = mock.patch('validation.main.get_hpo_name')
@@ -47,8 +48,6 @@ class ValidationMainTest(unittest.TestCase):
 
         self.bigquery_dataset_id: str = bq_utils.get_dataset_id()
         self.folder_prefix: str = '2019-01-01-v1/'
-
-        self.bq_client = BigQueryClient(self.project_id)
 
         self.storage_client = StorageClient(self.project_id)
         self.hpo_bucket = self.storage_client.get_hpo_bucket(self.hpo_id)
@@ -414,4 +413,4 @@ class ValidationMainTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        test_util.drop_hpo_id_bucket_name_table(cls.dataset_id)
+        test_util.drop_hpo_id_bucket_name_table(cls.dataset_id, cls.bq_client)
