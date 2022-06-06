@@ -1,11 +1,14 @@
+# Python imports
 import os
 import re
 import unittest
 
+# Third party imports
 import dpath
 import mock
 import moz_sql_parser
 
+# Project imports
 import bq_utils
 import cdm
 import common
