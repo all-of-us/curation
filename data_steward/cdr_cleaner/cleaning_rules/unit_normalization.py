@@ -184,7 +184,9 @@ class UnitNormalization(BaseCleaningRule):
                 self.sandbox_dataset_id, UNIT_MAPPING_TABLE,
                 unit_mappings_csv_path, UNIT_MAPPING_TABLE_DISPOSITION)
         except:
-            pass
+            LOGGER.info(
+                f"{self.sandbox_dataset_id}.{UNIT_MAPPING_TABLE} already exists."
+            )
 
         LOGGER.info(
             f"Created {self.sandbox_dataset_id}.{UNIT_MAPPING_TABLE} and "
