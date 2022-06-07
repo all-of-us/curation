@@ -12,6 +12,9 @@ Original Issue: DC-414
 import logging
 import os
 
+# Third party imports
+from google.api_core.exceptions import Conflict
+
 # Project Imports
 import constants.bq_utils as bq_consts
 import resources
@@ -142,7 +145,7 @@ class UnitNormalization(BaseCleaningRule):
         desc = ('Units for labs/measurements will be normalized using '
                 'unit_mapping lookup table.')
         super().__init__(
-            issue_numbers=['DC414', 'DC700'],
+            issue_numbers=['DC414', 'DC700', 'DC2453'],
             description=desc,
             affected_datasets=[
                 cdr_consts.REGISTERED_TIER_DEID_CLEAN,
@@ -158,15 +161,21 @@ class UnitNormalization(BaseCleaningRule):
     def setup_rule(self, client: BigQueryClient):
         """
         Load required resources prior to executing cleaning rule queries.
+        
+        Here, UNIT_MAPPING_TABLE is created based off of the CSV file 
+        UNIT_MAPPING_FILE. UNIT_MAPPING_TABLE is used in both [CT/RT] deid 
+        clean tiers. If UNIT_MAPPING_TABLE is already there, setup_rule 
+        skips the table preparation and the existing UNIT_MAPPING_TABLE will 
+        be used for cleaning.
 
         Method to run data upload options before executing the first cleaning
         rule of a class.  For example, if your class requires loading a static
         table, that load operation should be defined here.  It SHOULD NOT BE
         defined as part of get_query_specs().
+
         :param client: A BigQueryClient
         :return:
-
-        :raises:  BadRequest, OSError, AttributeError, TypeError, ValueError if
+        :raises: BadRequest, OSError, AttributeError, TypeError, ValueError if
             the load job fails. Error raised from client.upload_csv_data_to_bq_table
             helper method.
         """
@@ -183,14 +192,15 @@ class UnitNormalization(BaseCleaningRule):
             _ = client.upload_csv_data_to_bq_table(
                 self.sandbox_dataset_id, UNIT_MAPPING_TABLE,
                 unit_mappings_csv_path, UNIT_MAPPING_TABLE_DISPOSITION)
-        except:
-            LOGGER.info(
-                f"{self.sandbox_dataset_id}.{UNIT_MAPPING_TABLE} already exists."
-            )
 
-        LOGGER.info(
-            f"Created {self.sandbox_dataset_id}.{UNIT_MAPPING_TABLE} and "
-            f"loaded data from {unit_mappings_csv_path}")
+            LOGGER.info(
+                f"Created {self.sandbox_dataset_id}.{UNIT_MAPPING_TABLE} and "
+                f"loaded data from {unit_mappings_csv_path}")
+
+        except Conflict as c:
+            LOGGER.info(
+                f"{self.sandbox_dataset_id}.{UNIT_MAPPING_TABLE} already exists. "
+                f"{c.errors}")
 
     def get_query_specs(self):
         """
