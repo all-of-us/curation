@@ -38,7 +38,6 @@ class AchillesTest(unittest.TestCase):
     def setUp(self):
         self.project_id = app_identity.get_application_id()
         self.storage_client = StorageClient(self.project_id)
-        self.bq_client = BigQueryClient(self.project_id)
         self.hpo_bucket = self.storage_client.get_hpo_bucket(
             test_util.FAKE_HPO_ID)
 
