@@ -1,10 +1,13 @@
+# Python imports
 import json
 import os
 from typing import Iterable
 import unittest
 
+# Third party imports
 import mock
 
+# Project imports
 import app_identity
 import bq_utils
 import common
