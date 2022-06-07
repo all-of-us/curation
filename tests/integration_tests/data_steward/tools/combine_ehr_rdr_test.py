@@ -2,6 +2,7 @@
 import os
 import unittest
 
+# Third party imports
 import mock
 
 # Project imports
