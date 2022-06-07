@@ -16,7 +16,7 @@ from gcloud.bq import BigQueryClient
 class RetractDataGcsTest(TestCase):
 
     dataset_id = bq_utils.get_dataset_id()
-    project_id = bq_utils.app_identity.get_application_id()
+    project_id = app_identity.get_application_id()
     bq_client = BigQueryClient(project_id)
 
     @classmethod

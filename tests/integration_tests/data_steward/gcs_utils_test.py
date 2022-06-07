@@ -19,7 +19,7 @@ from tests.test_util import FIVE_PERSONS_PERSON_CSV, FAKE_HPO_ID
 class GcsUtilsTest(unittest.TestCase):
 
     dataset_id = bq_utils.get_dataset_id()
-    project_id = bq_utils.app_identity.get_application_id()
+    project_id = app_identity.get_application_id()
     bq_client = BigQueryClient(project_id)
 
     @classmethod

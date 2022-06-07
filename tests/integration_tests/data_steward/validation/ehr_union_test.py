@@ -9,6 +9,7 @@ import mock
 import moz_sql_parser
 
 # Project imports
+import app_identity
 import bq_utils
 import cdm
 import common
@@ -38,7 +39,7 @@ def first_or_none(l):
 class EhrUnionTest(unittest.TestCase):
 
     dataset_id = bq_utils.get_dataset_id()
-    project_id = bq_utils.app_identity.get_application_id()
+    project_id = app_identity.get_application_id()
     bq_client = BigQueryClient(project_id)
 
     @classmethod
