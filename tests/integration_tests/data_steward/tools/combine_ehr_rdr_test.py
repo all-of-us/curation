@@ -8,9 +8,9 @@ import mock
 # Project imports
 import app_identity
 import bq_utils
-from gcloud.bq import BigQueryClient
 import resources
 from gcloud.gcs import StorageClient
+from gcloud.bq import BigQueryClient
 from tests import test_util
 from constants.tools.combine_ehr_rdr import EHR_CONSENT_TABLE_ID, RDR_TABLES_TO_COPY, DOMAIN_TABLES
 from tools.combine_ehr_rdr import (copy_rdr_table, ehr_consent, main,
