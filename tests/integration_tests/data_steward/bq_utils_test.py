@@ -37,7 +37,6 @@ class BqUtilsTest(unittest.TestCase):
     def setUp(self):
         self.person_table_id = bq_utils.get_table_id(FAKE_HPO_ID, common.PERSON)
         test_util.delete_all_tables(self.dataset_id)
-        self.project_id = app_identity.get_application_id()
         self.TEST_FIELDS = [
             {
                 "type": "integer",

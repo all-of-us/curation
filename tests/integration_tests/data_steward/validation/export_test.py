@@ -35,7 +35,6 @@ class ExportTest(unittest.TestCase):
 
     @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def setUp(self):
-        self.project_id = app_identity.get_application_id()
         self.storage_client = StorageClient(self.project_id)
         self.hpo_bucket = self.storage_client.get_hpo_bucket(FAKE_HPO_ID)
 

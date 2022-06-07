@@ -34,7 +34,6 @@ class GcsUtilsTest(unittest.TestCase):
     def setUp(self):
         self.hpo_bucket = gcs_utils.get_hpo_bucket(FAKE_HPO_ID)
         self.gcs_path = '/'.join([self.hpo_bucket, 'dummy'])
-        self.project_id = app_identity.get_application_id()
         self.storage_client = StorageClient(self.project_id)
         self.storage_client.empty_bucket(self.hpo_bucket)
 

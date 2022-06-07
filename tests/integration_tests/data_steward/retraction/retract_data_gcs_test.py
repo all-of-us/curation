@@ -28,7 +28,6 @@ class RetractDataGcsTest(TestCase):
 
     @patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def setUp(self):
-        self.project_id = app_identity.get_application_id()
         self.hpo_id = test_util.FAKE_HPO_ID
         self.site_bucket = 'test_bucket'
         self.folder_1 = '2019-01-01-v1/'
