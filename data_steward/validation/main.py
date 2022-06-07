@@ -176,7 +176,8 @@ def _upload_achilles_files(hpo_id: str = None,
             raise RuntimeError(
                 f"Either hpo_id or target_bucket must be specified")
         target_bucket = storage_client.get_hpo_bucket(hpo_id)
-    target_bucket = storage_client.bucket(target_bucket)
+    else:
+        target_bucket = storage_client.bucket(target_bucket)
     logging.info(
         f"Uploading achilles index files to 'gs://{target_bucket.name}/{folder_prefix}'"
     )
