@@ -46,7 +46,7 @@ class EhrUnionTest(unittest.TestCase):
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
-        test_util.setup_hpo_id_bucket_name_table(cls.dataset_id, cls.bq_client)
+        test_util.setup_hpo_id_bucket_name_table(cls.bq_client, cls.dataset_id)
 
     def setUp(self):
         self.hpo_ids = [PITT_HPO_ID, NYC_HPO_ID, EXCLUDED_HPO_ID]
@@ -623,4 +623,4 @@ class EhrUnionTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        test_util.drop_hpo_id_bucket_name_table(cls.dataset_id, cls.bq_client)
+        test_util.drop_hpo_id_bucket_name_table(cls.bq_client, cls.dataset_id)

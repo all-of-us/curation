@@ -8,6 +8,7 @@ import mock
 # Project imports
 import app_identity
 import bq_utils
+from gcloud.bq import BigQueryClient
 import resources
 from gcloud.gcs import StorageClient
 from tests import test_util
@@ -28,8 +29,10 @@ UNCONSENTED_EHR_COUNTS_QUERY = (
 
 
 class CombineEhrRdrTest(unittest.TestCase):
+
     project_id = app_identity.get_application_id()
     storage_client = StorageClient(project_id)
+    bq_client = BigQueryClient(project_id)
     dataset_id = bq_utils.get_dataset_id()
 
     @classmethod
@@ -42,7 +45,7 @@ class CombineEhrRdrTest(unittest.TestCase):
         rdr_dataset_id = bq_utils.get_rdr_dataset_id()
         test_util.delete_all_tables(ehr_dataset_id)
         test_util.delete_all_tables(rdr_dataset_id)
-        test_util.setup_hpo_id_bucket_name_table(cls.dataset_id)
+        test_util.setup_hpo_id_bucket_name_table(cls.bq_client, cls.dataset_id)
         cls.load_dataset_from_files(ehr_dataset_id,
                                     test_util.NYC_FIVE_PERSONS_PATH, True)
         cls.load_dataset_from_files(rdr_dataset_id, test_util.RDR_PATH)
@@ -332,4 +335,4 @@ class CombineEhrRdrTest(unittest.TestCase):
         rdr_dataset_id = bq_utils.get_rdr_dataset_id()
         test_util.delete_all_tables(ehr_dataset_id)
         test_util.delete_all_tables(rdr_dataset_id)
-        test_util.drop_hpo_id_bucket_name_table(cls.dataset_id)
+        test_util.drop_hpo_id_bucket_name_table(cls.bq_client, cls.dataset_id)

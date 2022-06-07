@@ -9,6 +9,7 @@ import app_identity
 import bq_utils
 import common
 from gcloud.gcs import StorageClient
+from gcloud.bq import BigQueryClient
 from tests import test_util
 from tests.test_util import FAKE_HPO_ID, NYC_HPO_ID
 from validation import export, main
@@ -19,6 +20,8 @@ BQ_TIMEOUT_RETRIES = 3
 class ExportTest(unittest.TestCase):
 
     dataset_id = bq_utils.get_dataset_id()
+    project_id = bq_utils.app_identity.get_application_id()
+    bq_client = BigQueryClient(project_id)
 
     @classmethod
     def setUpClass(cls):
@@ -26,7 +29,7 @@ class ExportTest(unittest.TestCase):
             '\n**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
-        test_util.setup_hpo_id_bucket_name_table(cls.dataset_id)
+        test_util.setup_hpo_id_bucket_name_table(cls.bq_client, cls.dataset_id)
         test_util.delete_all_tables(cls.dataset_id)
         test_util.populate_achilles()
 
@@ -165,4 +168,4 @@ class ExportTest(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         test_util.delete_all_tables(cls.dataset_id)
-        test_util.drop_hpo_id_bucket_name_table(cls.dataset_id)
+        test_util.drop_hpo_id_bucket_name_table(cls.bq_client, cls.dataset_id)

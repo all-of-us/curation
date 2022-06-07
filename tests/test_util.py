@@ -463,18 +463,15 @@ def mock_google_http_error(status_code: int = 418,
                                             uri=uri)
 
 
-def setup_hpo_id_bucket_name_table(dataset_id, client=None):
+def setup_hpo_id_bucket_name_table(client, dataset_id):
     """
     Sets up `hpo_id_bucket_name` table that `get_hpo_bucket()` looks up.
     Drops the table if exist first, and create it with test lookup data.
-    :param dataset_id: dataset id where the lookup table is created
     :param client: a BigQueryClient
+    :param dataset_id: dataset id where the lookup table is created
     """
-    if not client:
-        project_id = app_identity.get_application_id()
-        client = BigQueryClient(project_id)
 
-    drop_hpo_id_bucket_name_table(dataset_id, client)
+    drop_hpo_id_bucket_name_table(client, dataset_id)
 
     CREATE_LOOKUP_TABLE = common.JINJA_ENV.from_string("""
         CREATE TABLE `{{project_id}}.{{lookup_dataset_id}}.{{hpo_id_bucket_table_id}}`
@@ -513,15 +510,12 @@ def setup_hpo_id_bucket_name_table(dataset_id, client=None):
     job.result()
 
 
-def drop_hpo_id_bucket_name_table(dataset_id, client=None):
+def drop_hpo_id_bucket_name_table(client, dataset_id):
     """
     Drops `hpo_id_bucket_name` table that `get_hpo_bucket()` looks up.
-    :param dataset_id: dataset id where the lookup table is located
     :param client: a BigQueryClient
+    :param dataset_id: dataset id where the lookup table is located
     """
-    if not client:
-        project_id = app_identity.get_application_id()
-        client = BigQueryClient(project_id)
 
     DROP_LOOKUP_TABLE = common.JINJA_ENV.from_string("""
         DROP TABLE IF EXISTS `{{project_id}}.{{lookup_dataset_id}}.{{hpo_id_bucket_table_id}}` 

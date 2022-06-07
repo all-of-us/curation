@@ -10,6 +10,7 @@ import bq_utils
 import common
 import resources
 from gcloud.gcs import StorageClient
+from gcloud.bq import BigQueryClient
 import tests.test_util as test_util
 from tests.test_util import FAKE_HPO_ID
 from validation import achilles_heel
@@ -22,13 +23,15 @@ ACHILLES_RESULTS_DERIVED_COUNT = 282
 class AchillesHeelTest(unittest.TestCase):
 
     dataset_id = bq_utils.get_dataset_id()
+    project_id = bq_utils.app_identity.get_application_id()
+    bq_client = BigQueryClient(project_id)
 
     @classmethod
     def setUpClass(cls):
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
-        test_util.setup_hpo_id_bucket_name_table(cls.dataset_id)
+        test_util.setup_hpo_id_bucket_name_table(cls.bq_client, cls.dataset_id)
 
     @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def setUp(self):
@@ -45,7 +48,7 @@ class AchillesHeelTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        test_util.drop_hpo_id_bucket_name_table(cls.dataset_id)
+        test_util.drop_hpo_id_bucket_name_table(cls.bq_client, cls.dataset_id)
 
     @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def _load_dataset(self, hpo_id):
