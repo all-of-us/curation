@@ -105,7 +105,7 @@ class ExportTest(unittest.TestCase):
             expected_object_name: str = f'{prefix}{report}'
             self.assertIn(expected_object_name, actual_object_names)
 
-        datasources_json_path: str = folder_prefix + common.ACHILLES_EXPORT_DATASOURCES_JSON
+        datasources_json_path: str = f'{folder_prefix}{common.ACHILLES_EXPORT_DATASOURCES_JSON}'
         self.assertIn(datasources_json_path, actual_object_names)
 
         datasources_blob = storage_bucket.blob(datasources_json_path)
