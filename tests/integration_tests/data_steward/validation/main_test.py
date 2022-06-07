@@ -258,7 +258,7 @@ class ValidationMainTest(unittest.TestCase):
 
         main._upload_achilles_files(hpo_id=None,
                                     folder_prefix=folder_prefix,
-                                    target_bucket=bucket_nyc)
+                                    target_bucket=bucket_nyc.name)
         actual_bucket_files = set([
             item['name'] for item in
             self.storage_client.get_bucket_items_metadata(bucket_nyc)
