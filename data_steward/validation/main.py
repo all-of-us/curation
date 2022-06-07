@@ -135,9 +135,10 @@ def run_export(datasource_id=None, folder_prefix="", target_bucket=None):
     return results
 
 
-def run_achilles(hpo_id=None):
+def run_achilles(client, hpo_id=None):
     """checks for full results and run achilles/heel
 
+    :client: a BigQueryClient
     :hpo_id: hpo on which to run achilles
     :returns:
     """
@@ -145,7 +146,7 @@ def run_achilles(hpo_id=None):
         logging.info(f"Running achilles for hpo_id '{hpo_id}'")
     achilles.create_tables(hpo_id, True)
     achilles.load_analyses(hpo_id)
-    achilles.run_analyses(hpo_id=hpo_id)
+    achilles.run_analyses(client, hpo_id=hpo_id)
     if hpo_id is not None:
         logging.info(f"Running achilles_heel for hpo_id '{hpo_id}'")
     achilles_heel.create_tables(hpo_id, True)
@@ -291,10 +292,11 @@ def is_first_validation_run(folder_items):
     return common.RESULTS_HTML not in folder_items and common.PROCESSED_TXT not in folder_items
 
 
-def generate_metrics(hpo_id, bucket, folder_prefix, summary):
+def generate_metrics(project_id, hpo_id, bucket, folder_prefix, summary):
     """
     Generate metrics regarding a submission
 
+    :param project_id: identifies the project
     :param hpo_id: identifies the HPO site
     :param bucket: name of the bucket with the submission
     :param folder_prefix: folder containing the submission
@@ -315,9 +317,12 @@ def generate_metrics(hpo_id, bucket, folder_prefix, summary):
     try:
         # TODO modify achilles to run successfully when tables are empty
         # achilles queries will raise exceptions (e.g. division by zero) if files not present
+
+        bq_client = BigQueryClient(project_id)
+
         if all_required_files_loaded(results):
             logging.info(f"Running achilles on {folder_prefix}.")
-            run_achilles(hpo_id)
+            run_achilles(bq_client, hpo_id)
             run_export(datasource_id=hpo_id, folder_prefix=folder_prefix)
             logging.info(f"Uploading achilles index files to '{gcs_path}'.")
             _upload_achilles_files(hpo_id, folder_prefix)
@@ -358,7 +363,7 @@ def generate_metrics(hpo_id, bucket, folder_prefix, summary):
 
         # participant validation metrics
         logging.info(f"Ensuring participant validation can be run for {hpo_id}")
-        setup_and_validate_participants(hpo_id)
+        setup_and_validate_participants(bq_client, hpo_id)
         participant_validation_query = get_participant_validation_summary_query(
             hpo_id)
         # TODO add to report_data based on requirements from EHR_OPS
@@ -366,7 +371,7 @@ def generate_metrics(hpo_id, bucket, folder_prefix, summary):
         # lab concept metrics
         logging.info(f"Getting lab concepts for {hpo_id}")
         lab_concept_metrics_query = required_labs.get_lab_concept_summary_query(
-            hpo_id)
+            bq_client, hpo_id)
         report_data[report_consts.LAB_CONCEPT_METRICS_REPORT_KEY] = query_rows(
             lab_concept_metrics_query)
 
@@ -536,8 +541,8 @@ def process_hpo(hpo_id, force_run=False):
                 folder_items = get_folder_items(bucket_items, folder_prefix)
                 summary = validate_submission(hpo_id, bucket, folder_items,
                                               folder_prefix)
-                report_data = generate_metrics(hpo_id, bucket, folder_prefix,
-                                               summary)
+                report_data = generate_metrics(project_id, hpo_id, bucket,
+                                               folder_prefix, summary)
                 failed_submission = False
             else:
                 # do not perform validation
@@ -943,9 +948,10 @@ def union_ehr():
     app_id = bq_utils.app_identity.get_application_id()
     input_dataset_id = bq_utils.get_dataset_id()
     output_dataset_id = bq_utils.get_unioned_dataset_id()
+    bq_client = BigQueryClient(app_id)
     ehr_union.main(input_dataset_id, output_dataset_id, app_id)
 
-    run_achilles(hpo_id)
+    run_achilles(bq_client, hpo_id)
     now_date_string = datetime.datetime.now().strftime('%Y_%m_%d')
     folder_prefix = f'unioned_ehr_{now_date_string}/'
     run_export(datasource_id=hpo_id, folder_prefix=folder_prefix)
@@ -997,10 +1003,12 @@ def run_retraction_cron():
 @log_traceback
 def validate_pii():
     logging.info(f"Running participant validation on all sites")
+    project = bq_utils.app_identity.get_application_id()
+    bq_client = BigQueryClient(project)
     for item in bq_utils.get_hpo_info():
         hpo_id = item['hpo_id']
         # Prevent updating udfs for all hpo_sites
-        setup_and_validate_participants(hpo_id, update_udf=False)
+        setup_and_validate_participants(bq_client, hpo_id, update_udf=False)
 
     return consts.VALIDATION_SUCCESS
 

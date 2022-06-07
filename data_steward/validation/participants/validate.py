@@ -26,8 +26,7 @@ from app_identity import get_application_id
 from resources import get_table_id, VALIDATION_STREET_CSV, VALIDATION_CITY_CSV, VALIDATION_STATE_CSV
 from utils import pipeline_logging, auth
 from common import (PS_API_VALUES, DRC_OPS, EHR_OPS, CDR_SCOPES, PII_ADDRESS,
-                    PII_EMAIL, PII_PHONE_NUMBER, PII_NAME, LOCATION, PERSON,
-                    UNIONED)
+                    PII_EMAIL, PII_PHONE_NUMBER, PII_NAME, LOCATION, PERSON)
 from gcloud.bq import BigQueryClient
 from validation.participants.create_update_drc_id_match_table import create_and_populate_drc_validation_table
 from constants.validation.participants.identity_match import IDENTITY_MATCH_TABLE
@@ -165,21 +164,20 @@ def identify_rdr_ehr_match(client,
         job.result()
 
 
-def setup_and_validate_participants(hpo_id, update_udf=True):
+def setup_and_validate_participants(client, hpo_id, update_udf=True):
     """
     Fetch PS data, set up tables and run validation
+
+    :param client: a BigQueryClient
     :param hpo_id: Identifies the HPO
     :param update_udf: Boolean to update comparison udfs, true by default
     :return: 
     """
-    project_id = get_application_id()
-    bq_client = BigQueryClient(project_id)
-
     # Populate identity match table based on PS data
-    create_and_populate_drc_validation_table(bq_client, hpo_id)
+    create_and_populate_drc_validation_table(client, hpo_id)
 
     # Match values
-    identify_rdr_ehr_match(bq_client, hpo_id, update_udf=update_udf)
+    identify_rdr_ehr_match(client, hpo_id, update_udf=update_udf)
 
 
 def get_participant_validation_summary_query(hpo_id):
