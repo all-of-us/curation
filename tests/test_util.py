@@ -10,7 +10,6 @@ from google.cloud.exceptions import GoogleCloudError
 import requests
 
 # Project imports
-import app_identity
 import bq_utils
 import common
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
