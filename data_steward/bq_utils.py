@@ -588,6 +588,9 @@ def list_dataset_contents(dataset_id):
     return all_tables
 
 
+@deprecated(reason=(
+    'see: https://googleapis.dev/python/bigquery/latest/generated/google.cloud.bigquery.client.Client.html#google.cloud.bigquery.client.Client.list_datasets '
+))
 def list_datasets(project_id):
     """
     List the datasets in the specified project
