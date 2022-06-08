@@ -6,10 +6,10 @@ from __future__ import print_function
 import datetime
 import os
 import unittest
+import mock
 from time import sleep
 
 # Third party imports
-import mock
 from bs4 import BeautifulSoup as bs
 
 # Project imports

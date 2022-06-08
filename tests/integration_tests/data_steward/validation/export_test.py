@@ -3,8 +3,6 @@ import json
 import os
 from typing import Iterable
 import unittest
-
-# Third party imports
 import mock
 
 # Project imports

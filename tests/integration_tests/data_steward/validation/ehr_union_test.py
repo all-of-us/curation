@@ -2,10 +2,10 @@
 import os
 import re
 import unittest
+import mock
 
 # Third party imports
 import dpath
-import mock
 import moz_sql_parser
 
 # Project imports

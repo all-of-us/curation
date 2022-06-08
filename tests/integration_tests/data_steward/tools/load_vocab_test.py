@@ -3,8 +3,6 @@ import unittest
 import os
 from pathlib import Path
 import csv
-
-# Third party imports
 import mock
 
 # Project imports
