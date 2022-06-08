@@ -86,15 +86,15 @@ class AddCdrMetadataTest(unittest.TestCase):
         self.assertEqual(mock_query.call_count, 3)
 
     @mock.patch('bq_utils.create_table')
-    @mock.patch('bq_utils.table_exists')
-    def test_create_metadata_table(self, mock_table_exists, mock_create_table):
-        mock_table_exists.return_value = True
+    @mock.patch('tools.add_cdr_metadata.BigQueryClient')
+    def test_create_metadata_table(self, mock_bq_client, mock_create_table):
+        mock_bq_client.table_exists.return_value = True
         mock_create_table.return_value = True
-        create_metadata_table(self.dataset_id, self.fields)
+        create_metadata_table(mock_bq_client, self.dataset_id, self.fields)
         self.assertEqual(mock_create_table.call_count, 0)
 
-        mock_table_exists.return_value = False
-        create_metadata_table(self.dataset_id, self.fields)
+        mock_bq_client.table_exists.return_value = False
+        create_metadata_table(mock_bq_client, self.dataset_id, self.fields)
         self.assertEqual(mock_create_table.call_count, 1)
 
     def test_etl_metadata_query(self):
