@@ -1,7 +1,7 @@
 """
 Remove all FitBit data for participants exceeding the maximum age of 89
 
-Original Issue: DC-1001, DC-1037
+Original Issue: DC-1001, DC-1037, DC-2429
 
 The intent is to ensure there is no data for participants over the age of 89 in
 Activity Summary, Heart Rate Minute Level, Heart Rate Summary, and Steps Intraday tables
@@ -51,8 +51,12 @@ class RemoveFitbitDataIfMaxAgeExceeded(BaseCleaningRule):
     Steps Intraday FitBit tables.
     """
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id,
-                 combined_dataset_id):
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 table_namer=None,
+                 combined_dataset_id=None):
         """
         Initialize the class with proper information.
 
@@ -62,13 +66,14 @@ class RemoveFitbitDataIfMaxAgeExceeded(BaseCleaningRule):
         """
         desc = (
             'Drops all FitBit data from participants whose max age exceeds 89')
-        super().__init__(issue_numbers=['DC1001', 'DC1037'],
+        super().__init__(issue_numbers=['DC1001', 'DC1037', 'DC2429'],
                          description=desc,
                          affected_datasets=[cdr_consts.FITBIT],
+                         affected_tables=FITBIT_TABLES,
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
-                         affected_tables=FITBIT_TABLES)
+                         table_namer=table_namer)
 
         self.person = gbq.TableReference.from_string(
             f'{project_id}.{combined_dataset_id}.person')
@@ -90,7 +95,7 @@ class RemoveFitbitDataIfMaxAgeExceeded(BaseCleaningRule):
                     SAVE_ROWS_TO_BE_DROPPED_QUERY.render(
                         project=self.project_id,
                         sandbox_dataset=self.sandbox_dataset_id,
-                        sandbox_table=self.get_sandbox_tablenames()[i],
+                        sandbox_table=self.sandbox_table_for(table),
                         dataset=self.dataset_id,
                         table=table,
                         combined_dataset=self.person,
@@ -105,7 +110,7 @@ class RemoveFitbitDataIfMaxAgeExceeded(BaseCleaningRule):
                         dataset=self.dataset_id,
                         table=table,
                         sandbox_dataset=self.sandbox_dataset_id,
-                        sandbox_table=self.get_sandbox_tablenames()[i]),
+                        sandbox_table=self.sandbox_table_for(table)),
                 cdr_consts.DESTINATION_TABLE:
                     table,
                 cdr_consts.DESTINATION_DATASET:
@@ -136,11 +141,10 @@ class RemoveFitbitDataIfMaxAgeExceeded(BaseCleaningRule):
         raise NotImplementedError("Please fix me.")
 
     def get_sandbox_tablenames(self):
-        sandbox_table_names = list()
-        for i in range(0, len(self._affected_tables)):
-            sandbox_table_names.append(self._issue_numbers[0].lower() + '_' +
-                                       self._affected_tables[i])
-        return sandbox_table_names
+        return [
+            self.sandbox_table_for(affected_table)
+            for affected_table in self.affected_tables
+        ]
 
 
 if __name__ == '__main__':
