@@ -2,7 +2,7 @@
 """
 This module is responsible for validating EHR submissions.
 
-This module focuses on preserving and validating
+This module focuses on preserving and validating EHR
 submission data.
 """
 # Python imports
