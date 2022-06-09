@@ -37,7 +37,9 @@ class RemoveFitbitDataIfMaxAgeExceededTest(unittest.TestCase):
         self.client = None
 
         self.rule_instance = RemoveFitbitDataIfMaxAgeExceeded(
-            self.project_id, self.dataset_id, self.sandbox_id,
+            self.project_id,
+            self.dataset_id,
+            self.sandbox_id,
             combined_dataset_id=self.combined_dataset_id)
 
         self.assertEqual(self.rule_instance.project_id, self.project_id)
