@@ -46,7 +46,7 @@ class RemoveFitbitDataIfMaxAgeExceededTest(BaseTest.CleaningRulesTestBase):
             project_id,
             dataset_id,
             sandbox_id,
-            combined_dataset_id,
+            combined_dataset_id=combined_dataset_id,
         )
 
         # template for data that will be inserted into the FitBit tables
