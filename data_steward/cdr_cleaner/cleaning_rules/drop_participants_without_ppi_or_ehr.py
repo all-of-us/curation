@@ -79,20 +79,15 @@ class DropParticipantsWithoutPPI(DropMissingParticipants):
 
         self.mapping_dataset_id = mapping_dataset_id
 
-        super().__init__(
-            issue_numbers=ISSUE_NUMBERS,
-            description=desc,
-            # This needs to be reverted to just combined after the CDR run
-            affected_datasets=[
-                cdr_consts.COMBINED, cdr_consts.CONTROLLED_TIER_DEID,
-                cdr_consts.REGISTERED_TIER_DEID
-            ],
-            affected_tables=[PERSON],
-            project_id=project_id,
-            dataset_id=dataset_id,
-            sandbox_dataset_id=sandbox_dataset_id,
-            namer=namer,
-            depends_on=[RemoveParticipantDataPastDeactivationDate])
+        super().__init__(issue_numbers=ISSUE_NUMBERS,
+                         description=desc,
+                         affected_datasets=[cdr_consts.COMBINED],
+                         affected_tables=[PERSON],
+                         project_id=project_id,
+                         dataset_id=dataset_id,
+                         sandbox_dataset_id=sandbox_dataset_id,
+                         namer=namer,
+                         depends_on=[RemoveParticipantDataPastDeactivationDate])
 
     def get_query_specs(self):
         """
