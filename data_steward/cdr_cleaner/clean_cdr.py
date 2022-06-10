@@ -294,8 +294,6 @@ CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     (CancerConceptSuppression,),  # Should run after any data remapping rules
     (AggregateZipCodes,),
     (SectionParticipationConceptSuppression,),
-    (DropParticipantsWithoutPPI,
-    ),  # dependent on RemoveParticipantDataPastDeactivationDate
     (RemoveExtraTables,),  # Should be last cleaning rule to be run
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
@@ -339,8 +337,6 @@ REGISTERED_TIER_DEID_CLEANING_CLASSES = [
     (SectionParticipationConceptSuppression,),
     (RegisteredCopeSurveyQuestionsSuppression,),
     (CancerConceptSuppression,),
-    (DropParticipantsWithoutPPI,
-    ),  # dependent on RemoveParticipantDataPastDeactivationDate
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
