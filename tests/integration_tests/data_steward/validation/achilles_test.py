@@ -10,7 +10,6 @@ import app_identity
 import bq_utils
 from gcloud.bq import BigQueryClient
 from gcloud.gcs import StorageClient
-from gcloud.bq import BigQueryClient
 import resources
 from tests import test_util
 from validation import achilles

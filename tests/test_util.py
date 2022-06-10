@@ -16,7 +16,6 @@ from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.utils.bq import HPO_ID_BUCKET_NAME_TABLE_ID
 from constants.validation import main
 import resources
-from gcloud.bq import BigQueryClient
 
 RESOURCES_BUCKET_FMT = '{project_id}-resources'
 
