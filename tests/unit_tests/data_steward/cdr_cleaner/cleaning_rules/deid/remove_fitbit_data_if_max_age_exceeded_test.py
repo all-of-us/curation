@@ -1,7 +1,7 @@
 """
 Unit test for remove_fitbit_data_if_max_age_exceeded module
 
-Original Issue: DC-1001, DC-1037
+Original Issue: DC-1001, DC-1037, DC-2429
 
 Ensures any participant with FitBit data who is over the age of 89 is dropped from
 activity_summary, steps_intraday, heart_rate_summary, and heart_rate_minute_level
@@ -37,8 +37,10 @@ class RemoveFitbitDataIfMaxAgeExceededTest(unittest.TestCase):
         self.client = None
 
         self.rule_instance = RemoveFitbitDataIfMaxAgeExceeded(
-            self.project_id, self.dataset_id, self.sandbox_id,
-            self.combined_dataset_id)
+            self.project_id,
+            self.dataset_id,
+            self.sandbox_id,
+            combined_dataset_id=self.combined_dataset_id)
 
         self.assertEqual(self.rule_instance.project_id, self.project_id)
         self.assertEqual(self.rule_instance.dataset_id, self.dataset_id)
