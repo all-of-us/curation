@@ -46,12 +46,16 @@ OLD_MAP_SHORT_CODES_TABLE_FIELDS = [{
     "type": "string",
     "name": "pmi_code",
     "mode": "required",
-    "description": "Concept code which is available is concept table."
+    "description": "Concept code found in the data table."
 }, {
-    "type": "string",
-    "name": "short_code",
-    "mode": "required",
-    "description": "short codee used by Odysseus"
+    "type":
+        "string",
+    "name":
+        "short_code",
+    "mode":
+        "required",
+    "description":
+        "short codes used by Odysseus.  actual codes that should be implemented."
 }]
 
 UPDATE_QUESTIONS_MAP_QUERY = JINJA_ENV.from_string("""
@@ -180,7 +184,9 @@ class SetConceptIdsForSurveyQuestionsAnswers(BaseCleaningRule):
         Load the lookup table values into the sandbox.  The following queries
         will use the lookup table as part of the execution.
         """
-        schema_list = self.get_bq_fields_sql(OLD_MAP_SHORT_CODES_TABLE_FIELDS)
+        schema_list = client.get_table_schema(
+            OLD_MAP_SHORT_CODES_TABLE, fields=OLD_MAP_SHORT_CODES_TABLE_FIELDS)
+        print(f"\n\n\n{schema_list}\n\n\n")
         table_id = f'{self.project_id}.{self.sandbox_dataset_id}.{OLD_MAP_SHORT_CODES_TABLE}'
         job_config = bigquery.LoadJobConfig(
             schema=schema_list,
@@ -234,7 +240,7 @@ class SetConceptIdsForSurveyQuestionsAnswers(BaseCleaningRule):
         # Update concept_ids to answers using OLD_MAP_SHORT_CODES_TABLE.
         queries_list.append({
             cdr_consts.QUERY:
-                UPDATE_ANSWERS_MAP_QUERY.format(
+                UPDATE_ANSWERS_MAP_QUERY.render(
                     dataset=self.dataset_id,
                     project=self.project_id,
                     old_map=OLD_MAP_SHORT_CODES_TABLE,
