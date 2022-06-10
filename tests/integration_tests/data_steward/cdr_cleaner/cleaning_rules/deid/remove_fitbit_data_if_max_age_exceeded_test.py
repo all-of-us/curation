@@ -1,7 +1,7 @@
 """
 Integration test for remove_fitbit_data_if_max_age_exceeded module
 
-Original Issues: DC-1001, DC-1037
+Original Issues: DC-1001, DC-1037, DC-2429
 
 The intent is to ensure there is no data for participants over the age of 89 in
 Activity Summary, Heart Rate Minute Level, Heart Rate Summary, and Steps Intraday tables
@@ -46,7 +46,7 @@ class RemoveFitbitDataIfMaxAgeExceededTest(BaseTest.CleaningRulesTestBase):
             project_id,
             dataset_id,
             sandbox_id,
-            combined_dataset_id,
+            combined_dataset_id=combined_dataset_id,
         )
 
         # template for data that will be inserted into the FitBit tables
