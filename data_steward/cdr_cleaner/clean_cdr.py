@@ -21,7 +21,7 @@ import cdr_cleaner.cleaning_rules.maps_to_value_ppi_vocab_update as maps_to_valu
 import cdr_cleaner.cleaning_rules.populate_route_ids as populate_routes
 import \
     cdr_cleaner.cleaning_rules.remove_invalid_procedure_source_records as invalid_procedure_source
-import cdr_cleaner.cleaning_rules.remove_non_matching_participant as validate_missing_participants
+from cdr_cleaner.cleaning_rules.remove_non_matching_participant import RemoveNonMatchingParticipant
 import cdr_cleaner.cleaning_rules.remove_records_with_wrong_date as remove_records_with_wrong_date
 from cdr_cleaner.cleaning_rules.remove_participants_under_18years import RemoveParticipantsUnder18Years
 from cdr_cleaner.cleaning_rules.round_ppi_values_to_nearest_integer import RoundPpiValuesToNearestInteger
@@ -226,8 +226,7 @@ COMBINED_CLEANING_CLASSES = [
     (
         NullInvalidForeignKeys,),
     (RemoveParticipantDataPastDeactivationDate,),
-    (validate_missing_participants.delete_records_for_non_matching_participants,
-    ),
+    (RemoveNonMatchingParticipant,),
     (DropParticipantsWithoutPPI,
     ),  # dependent on RemoveParticipantDataPastDeactivationDate
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
