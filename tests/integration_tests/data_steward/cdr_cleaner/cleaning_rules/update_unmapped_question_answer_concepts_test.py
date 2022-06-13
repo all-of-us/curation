@@ -13,7 +13,7 @@ from google.cloud import bigquery
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.update_unmapped_question_answer_concepts import (
     SetConceptIdsForSurveyQuestionsAnswers, OLD_MAP_SHORT_CODES_TABLE)
-from common import JINJA_ENV, OBSERVATION
+from common import JINJA_ENV, OBSERVATION, VOCABULARY_TABLES
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import (
     BaseTest)
 
@@ -59,11 +59,16 @@ class SetConceptIdsForSurveyQuestionsAnswersTest(BaseTest.CleaningRulesTestBase
         # Set the expected test datasets
         cls.dataset_id = os.environ.get('RDR_DATASET_ID')
         cls.sandbox_id = cls.dataset_id + '_sandbox'
+        cls.vocabulary_id = os.environ.get('VOCABULARY_DATASET')
+
         cls.rule_instance = SetConceptIdsForSurveyQuestionsAnswers(
             cls.project_id, cls.dataset_id, cls.sandbox_id)
         # Generates list of fully qualified table names and their corresponding sandbox table names
         cls.fq_table_names.append(
             f'{cls.project_id}.{cls.dataset_id}.{OBSERVATION}')
+        for table in VOCABULARY_TABLES:
+            cls.fq_table_names.append(
+                f'{cls.project_id}.{cls.dataset_id}.{table}')
 
         sandbox_table_names = cls.rule_instance.get_sandbox_tablenames()
         for table in sandbox_table_names:
@@ -80,6 +85,7 @@ class SetConceptIdsForSurveyQuestionsAnswersTest(BaseTest.CleaningRulesTestBase
     def setUp(self):
         # Set the test project identifier
         super().setUp()
+        self.copy_vocab_tables(self.vocabulary_id)
         raw_data_load_query = INSERT_RAW_DATA.render(project_id=self.project_id,
                                                      dataset_id=self.dataset_id)
 
@@ -96,13 +102,6 @@ class SetConceptIdsForSurveyQuestionsAnswersTest(BaseTest.CleaningRulesTestBase
 
         actual_table = self.client.get_table(intermediary_table)
         self.assertIsNotNone(actual_table.created)
-
-        # test if exception is raised if table already exists
-        with self.assertRaises(RuntimeError) as c:
-            self.rule_instance.setup_rule(self.client)
-
-        self.assertEqual(str(c.exception),
-                         f"Unable to create tables: ['{intermediary_table}']")
 
         query = test_query.render(intermediary_table=intermediary_table)
         query_job_config = bigquery.job.QueryJobConfig(use_query_cache=False)
@@ -128,14 +127,15 @@ class SetConceptIdsForSurveyQuestionsAnswersTest(BaseTest.CleaningRulesTestBase
             ],
             'cleaned_values': [
                 (1, 1, 43529214, 43529214,
-                 'DiagnosedHealthCondition_GrandparentMental', 43528359,
-                 43528359, 'GrandparentMentalCondition_Addiction'),
+                 'DiagnosedHealthCondition_GrandparentMentalCondition',
+                 43528359, 43528359, 'GrandparentMentalCondition_Addiction'),
                 (2, 1, 43529812, 43529812,
                  'DiagnosedHealthCondition_GrandparentSkelMusc', 43528709,
                  43528709, 'GrandparentSkeletalMuscularCondition_Fibromyalgia'),
                 (3, 1, 43529634, 43529634,
-                 'DiagnosedHealthCondition_GrandparentOtherHealth', 43529757,
-                 43529757, 'GrandparentOtherHealthCondition_ReactToAnesthesia'),
+                 'DiagnosedHealthCondition_GrandparentOtherHealth', 4171869,
+                 43529757,
+                 'GrandparentOtherHealthCondition_ReactionsToAnesthesia'),
                 (4, 1, 43529634, 43529634,
                  'DiagnosedHealthCondition_GrandparentOtherHealth', 43529827,
                  43529827, 'GrandparentOtherHealthCondition_SkinCondition')
