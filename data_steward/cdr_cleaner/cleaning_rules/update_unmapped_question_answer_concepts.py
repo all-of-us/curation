@@ -58,6 +58,24 @@ OLD_MAP_SHORT_CODES_TABLE_FIELDS = [{
         "short codes used by Odysseus.  actual codes that should be implemented."
 }]
 
+SANDBOX_ALTERED_RECORDS = JINJA_ENV.from_string("""
+  CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` AS (
+      SELECT
+      -- only sandboxing the identifiers, criteria, and updated fields --
+      observation_id
+      ,person_id
+      ,observation_concept_id
+      ,observation_source_concept_id
+      ,observation_source_value
+      ,value_as_concept_id
+      ,value_source_concept_id
+      ,value_source_value
+      FROM `{{project}}.{{dataset}}.observation`
+      WHERE observation_source_value in (SELECT pmi_code FROM `{{project}}.{{sandbox_dataset}}.{{lookup_table}}` WHERE type = "Question")
+      or value_source_value in (SELECT  pmi_code FROM `{{project}}.{{sandbox_dataset}}.{{lookup_table}}` WHERE type = "Answer")
+  )
+""")
+
 UPDATE_QUESTIONS_MAP_QUERY = JINJA_ENV.from_string("""
     UPDATE
         `{{project}}.{{dataset}}.observation` obs
@@ -172,10 +190,7 @@ class SetConceptIdsForSurveyQuestionsAnswers(BaseCleaningRule):
                          table_namer=table_namer)
 
     def get_sandbox_tablenames(self):
-        LOGGER.info(
-            "No sandbox tables are generated here.  Original values can be recovered from the raw import."
-        )
-        return []
+        return [self.sandbox_table_for(OBSERVATION)]
 
     def setup_rule(self, client, *args, **keyword_args):
         """
@@ -227,6 +242,17 @@ class SetConceptIdsForSurveyQuestionsAnswers(BaseCleaningRule):
         :return: a list of queries to execute
         """
         queries_list = []
+
+        # Sandbox records that are expected to be impacted
+        queries_list.append({
+            cdr_consts.QUERY:
+                SANDBOX_ALTERED_RECORDS.render(
+                    project=self.project_id,
+                    dataset=self.dataset_id,
+                    sandbox_dataset=self.sandbox_dataset_id,
+                    sandbox_table=self.sandbox_table_for(OBSERVATION),
+                    lookup_table=OLD_MAP_SHORT_CODES_TABLE)
+        })
 
         # Update concept_ids to questions using OLD_MAP_SHORT_CODES_TABLE.
         queries_list.append({
