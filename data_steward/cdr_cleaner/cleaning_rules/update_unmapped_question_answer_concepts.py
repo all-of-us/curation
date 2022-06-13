@@ -160,7 +160,7 @@ class SetConceptIdsForSurveyQuestionsAnswers(BaseCleaningRule):
         if not table_namer:
             table_namer = f'hotfix_{datetime.now().strftime("%Y%m%d")}'
             LOGGER.info(f"'table_namer' was not set.  "
-                        f"Reverting to default value of {table_namer}.")
+                        f"Using default value of `{table_namer}`.")
 
         super().__init__(issue_numbers=JIRA_ISSUE_NUMBERS,
                          description=desc,
@@ -184,36 +184,37 @@ class SetConceptIdsForSurveyQuestionsAnswers(BaseCleaningRule):
         Load the lookup table values into the sandbox.  The following queries
         will use the lookup table as part of the execution.
         """
-        schema_list = client.get_table_schema(
-            OLD_MAP_SHORT_CODES_TABLE, fields=OLD_MAP_SHORT_CODES_TABLE_FIELDS)
-        print(f"\n\n\n{schema_list}\n\n\n")
-        table_id = f'{self.project_id}.{self.sandbox_dataset_id}.{OLD_MAP_SHORT_CODES_TABLE}'
-        job_config = bigquery.LoadJobConfig(
-            schema=schema_list,
-            skip_leading_rows=1,
-            source_format=bigquery.SourceFormat.CSV,
-            field_delimiter=',',
-            allow_quoted_newlines=True,
-            quote_character='"',
-            write_disposition=bigquery.job.WriteDisposition.WRITE_TRUNCATE)
-
-        # job_id defined to the second precision
-        job_id = f'{self.dataset_id}_{self.__class__.__name__}_{datetime.now().strftime("%Y%m%d_%H%M%S")}'
         table_path = os.path.join(resources.resource_files_path,
                                   f"{OLD_MAP_SHORT_CODES_TABLE}.csv")
-        LOGGER.info(f'Loading `{table_id}`')
-        try:
-            load_job = client.load_table_from_file(
-                table_path, table_id, job_config=job_config,
-                job_id=job_id)  # Make an API request.
+        with open(table_path, 'rb') as csv_file:
+            schema_list = client.get_table_schema(
+                OLD_MAP_SHORT_CODES_TABLE,
+                fields=OLD_MAP_SHORT_CODES_TABLE_FIELDS)
+            table_id = f'{self.project_id}.{self.sandbox_dataset_id}.{OLD_MAP_SHORT_CODES_TABLE}'
+            job_config = bigquery.LoadJobConfig(
+                schema=schema_list,
+                skip_leading_rows=1,
+                source_format=bigquery.SourceFormat.CSV,
+                field_delimiter=',',
+                allow_quoted_newlines=True,
+                quote_character='"',
+                write_disposition=bigquery.job.WriteDisposition.WRITE_TRUNCATE)
 
-            load_job.result()  # Waits for the job to complete.
-        except (ValueError, TypeError) as exc:
-            LOGGER.info(
-                'Something went wrong and the table did not load correctly')
-            raise exc
-        else:
-            LOGGER.info(f'Loading of `{table_id}` completed.')
+            # job_id defined to the second precision
+            job_id = f'{self.dataset_id}_{self.__class__.__name__}_{datetime.now().strftime("%Y%m%d_%H%M%S")}'
+            LOGGER.info(f'Loading `{table_id}`')
+            try:
+                load_job = client.load_table_from_file(
+                    csv_file, table_id, job_config=job_config,
+                    job_id=job_id)  # Make an API request.
+
+                load_job.result()  # Waits for the job to complete.
+            except (ValueError, TypeError) as exc:
+                LOGGER.info(
+                    'Something went wrong and the table did not load correctly')
+                raise exc
+            else:
+                LOGGER.info(f'Loading of `{table_id}` completed.')
 
     def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
         """

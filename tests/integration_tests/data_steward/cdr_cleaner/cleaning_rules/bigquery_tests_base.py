@@ -331,6 +331,22 @@ class BaseTest:
                     fields = [table_info.get('fields', [])[0]]
                     self.assertRowIDsMatch(fq_sandbox_name, fields, values)
 
+        def copy_vocab_tables(self, vocabulary_id):
+            """
+            A function for copying the vocab tables to the test dataset_id
+            :param vocabulary_id:
+            :return:
+            """
+            # Copy vocab tables over to the test dataset
+            vocabulary_dataset = self.client.get_dataset(vocabulary_id)
+            for src_table in self.client.list_tables(vocabulary_dataset):
+                schema = self.client.get_table_schema(src_table.table_id)
+                destination = f'{self.project_id}.{self.dataset_id}.{src_table.table_id}'
+                dst_table = self.client.create_table(bigquery.Table(
+                    destination, schema=schema),
+                                                     exists_ok=True)
+                self.client.copy_table(src_table, dst_table)
+
     class DeidRulesTestBase(CleaningRulesTestBase):
         """
         Class that can be extended and used to test deid cleaning rules.
