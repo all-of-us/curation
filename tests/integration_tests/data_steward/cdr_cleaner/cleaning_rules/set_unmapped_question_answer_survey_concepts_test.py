@@ -11,7 +11,7 @@ from google.cloud import bigquery
 
 # Project Imports
 from app_identity import PROJECT_ID
-from cdr_cleaner.cleaning_rules.update_unmapped_question_answer_concepts import (
+from cdr_cleaner.cleaning_rules.set_unmapped_question_answer_survey_concepts import (
     SetConceptIdsForSurveyQuestionsAnswers, OLD_MAP_SHORT_CODES_TABLE)
 from common import JINJA_ENV, OBSERVATION, VOCABULARY_TABLES
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import (

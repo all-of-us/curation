@@ -1,3 +1,8 @@
+"""
+Depends on the successful execution of SetConceptIdsForSurveyQuestionsAnswers rule.
+This should be added as a dependency once this rule is base classed.
+"""
+
 import logging
 
 import constants.cdr_cleaner.clean_cdr as cdr_consts
