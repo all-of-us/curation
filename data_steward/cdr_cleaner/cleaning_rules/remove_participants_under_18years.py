@@ -1,5 +1,5 @@
 """
-All data for any participant less than 18 years old at the time of truncation date for a CDR needs to be dropped from
+All data for any participant less than 18 years old at the time of consent needs to be dropped from
  all the tables. For RDR exports, they may be cleaned with the current date or a truncation date may be set.
 
 Original Issues: DC-1724, DC-2260
