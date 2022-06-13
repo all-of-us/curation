@@ -1,7 +1,7 @@
 """
 Integration test for remove_participants_under_18years module
 
-Original Issues: DC-1724
+Original Issues: DC-1724, DC-2260
 
 The intent is to remove data for participants under 18 years old  from all the domain tables."""
 
@@ -10,8 +10,7 @@ import os
 import datetime
 
 # Project Imports
-from common import VISIT_OCCURRENCE, OBSERVATION
-from common import JINJA_ENV
+from common import VISIT_OCCURRENCE, OBSERVATION, JINJA_ENV
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.remove_participants_under_18years import (
     RemoveParticipantsUnder18Years, AFFECTED_TABLES)
@@ -22,33 +21,39 @@ PERSON_DATA_TEMPLATE = JINJA_ENV.from_string("""
 INSERT INTO `{{project_id}}.{{dataset_id}}.person`
 (person_id, birth_datetime, gender_concept_id, year_of_birth, race_concept_id, ethnicity_concept_id)
 VALUES
-      /* Adding participans with different ranges of birthdays.*/
-      /* Participant 4's birth_datetime was set to 2021.*/
+      /* Participant 1 ... 50 years old at consent*/
+      /* Participant 2 ... 18 years 0 day old at consent*/
+      /* Participant 3 ... 17 years 364 days old at consent -> To be sandboxed*/
+      /* Participant 4 ... Younger than 18 years old at consent -> To be sandboxed*/
       /* The data belonging to this participant from all the domain tables should be dropped.*/  
       (1, '1970-01-01 00:00:00 UTC', 0, 1970, 0, 0),
       (2, '2002-01-01 00:00:00 UTC', 0, 2002, 0, 0),
-      (3, '2003-01-01 00:00:00 UTC', 0, 2003, 0, 0),
+      (3, '2003-03-01 00:00:00 UTC', 0, 2003, 0, 0),
       (4, '2021-01-01 00:00:00 UTC', 0, 2015, 0, 0)
 """)
+
 VISIT_OCCURRENCE_DATA_TEMPLATE = JINJA_ENV.from_string("""
 INSERT INTO `{{project_id}}.{{dataset_id}}.visit_occurrence`
       (visit_occurrence_id, person_id, visit_start_date, visit_end_date, visit_concept_id, visit_type_concept_id)
 VALUES
       (1, 1, '2020-01-01', '2020-01-02', 0, 0),
-      (2, 3, '2020-01-02', '2020-01-03', 0, 0),
-      (3, 2, '2020-01-01', '2020-03-01', 0, 0),
+      (2, 2, '2020-01-02', '2020-01-03', 0, 0),
+      (3, 3, '2020-01-01', '2020-03-01', 0, 0),
       (4, 4, '2020-01-02', '2022-01-03', 0, 0)
 """)
 
 OBSERVATION_DATA_TEMPLATE = JINJA_ENV.from_string("""
 INSERT INTO `{{project_id}}.{{dataset_id}}.observation`
-(observation_id, person_id, observation_date, observation_concept_id, observation_type_concept_id)
+(observation_id, person_id, observation_date, observation_concept_id, observation_source_concept_id, observation_type_concept_id)
 VALUES
-      (1, 1, '2020-01-01', 0, 0),
-      (2, 2, '2020-01-02', 0, 0),
-      (3, 3, '2020-03-01', 0, 0),
-      (4, 4, '2020-01-05', 0, 0),
-      (5, 3, '2020-05-05', 0, 0)
+      (11, 1, '2020-01-01', 0, 0, 0),
+      (12, 1, '2020-01-01', 1585482, 0, 0),
+      (21, 2, '2020-01-01', 0, 0, 0),
+      (22, 2, '2020-01-01', 0, 1585482, 0),
+      (31, 3, '2020-03-01', 0, 0, 0),
+      (32, 3, '2021-02-28', 1585482, 0, 0),
+      (41, 4, '2022-01-01', 0, 0, 0),
+      (42, 4, '2022-01-01', 0, 1585482, 0)
 """)
 
 
@@ -114,7 +119,7 @@ class RemoveParticipantsUnder18YearsTest(BaseTest.CleaningRulesTestBase):
             'fq_sandbox_table_name':
                 f'{self.project_id}.{self.sandbox_id}.{self.rule_instance.sandbox_table_for(VISIT_OCCURRENCE)}',
             'loaded_ids': [1, 2, 3, 4],
-            'sandboxed_ids': [4],
+            'sandboxed_ids': [3, 4],
             'fields': [
                 'visit_occurrence_id', 'person_id', 'visit_start_date',
                 'visit_end_date'
@@ -123,30 +128,32 @@ class RemoveParticipantsUnder18YearsTest(BaseTest.CleaningRulesTestBase):
                 (1, 1, datetime.datetime.strptime('2020-01-01',
                                                   '%Y-%m-%d').date(),
                  datetime.datetime.strptime('2020-01-02', '%Y-%m-%d').date()),
-                (2, 3, datetime.datetime.strptime('2020-01-02',
+                (2, 2, datetime.datetime.strptime('2020-01-02',
                                                   '%Y-%m-%d').date(),
                  datetime.datetime.strptime('2020-01-03', '%Y-%m-%d').date()),
-                (3, 2, datetime.datetime.strptime('2020-01-01',
-                                                  '%Y-%m-%d').date(),
-                 datetime.datetime.strptime('2020-03-01', '%Y-%m-%d').date())
             ]
         }, {
             'fq_table_name':
                 f'{self.project_id}.{self.dataset_id}.{OBSERVATION}',
             'fq_sandbox_table_name':
                 f'{self.project_id}.{self.sandbox_id}.{self.rule_instance.sandbox_table_for(OBSERVATION)}',
-            'loaded_ids': [1, 2, 3, 4, 5],
-            'sandboxed_ids': [4],
-            'fields': ['observation_id', 'person_id', 'observation_date'],
+            'loaded_ids': [11, 12, 21, 22, 31, 32, 41, 42],
+            'sandboxed_ids': [31, 32, 41, 42],
+            'fields': [
+                'observation_id', 'person_id', 'observation_date',
+                'observation_concept_id', 'observation_source_concept_id'
+            ],
             'cleaned_values': [
-                (1, 1, datetime.datetime.strptime('2020-01-01',
-                                                  '%Y-%m-%d').date()),
-                (2, 2, datetime.datetime.strptime('2020-01-02',
-                                                  '%Y-%m-%d').date()),
-                (3, 3, datetime.datetime.strptime('2020-03-01',
-                                                  '%Y-%m-%d').date()),
-                (5, 3, datetime.datetime.strptime('2020-05-05',
-                                                  '%Y-%m-%d').date())
+                (11, 1, datetime.datetime.strptime('2020-01-01',
+                                                   '%Y-%m-%d').date(), 0, 0),
+                (12, 1, datetime.datetime.strptime('2020-01-01',
+                                                   '%Y-%m-%d').date(), 1585482,
+                 0),
+                (21, 2, datetime.datetime.strptime('2020-01-01',
+                                                   '%Y-%m-%d').date(), 0, 0),
+                (22, 2, datetime.datetime.strptime('2020-01-01',
+                                                   '%Y-%m-%d').date(), 0,
+                 1585482),
             ]
         }]
 
