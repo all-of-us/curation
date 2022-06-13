@@ -76,8 +76,10 @@ class SetConceptIdsForSurveyQuestionsAnswersTest(BaseTest.CleaningRulesTestBase
                 f'{cls.project_id}.{cls.sandbox_id}.{table}')
 
         # Appending OLD_MAP_SHORT_CODES_TABLE table to fq_sandbox_table_names to delete after the test
-        cls.fq_sandbox_table_names.append(
-            f'{cls.project_id}.{cls.sandbox_id}.{OLD_MAP_SHORT_CODES_TABLE}')
+        for table in [OLD_MAP_SHORT_CODES_TABLE
+                     ] + cls.rule_instance.get_sandbox_tablenames():
+            cls.fq_sandbox_table_names.append(
+                f'{cls.project_id}.{cls.sandbox_id}.{table}')
 
         # call super to set up the client, create datasets
         cls.up_class = super().setUpClass()
@@ -118,7 +120,7 @@ class SetConceptIdsForSurveyQuestionsAnswersTest(BaseTest.CleaningRulesTestBase
             'fq_table_name':
                 f'{self.project_id}.{self.dataset_id}.{OBSERVATION}',
             'loaded_ids': [1, 2, 3, 4],
-            'sandboxed_ids': [],
+            'sandboxed_ids': [1, 3],
             'fields': [
                 'observation_id', 'person_id', 'observation_concept_id',
                 'observation_source_concept_id', 'observation_source_value',
