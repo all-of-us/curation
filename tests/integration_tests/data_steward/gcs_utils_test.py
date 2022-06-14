@@ -11,6 +11,7 @@ import app_identity
 import bq_utils
 import gcs_utils
 from gcloud.gcs import StorageClient
+from gcloud.bq import BigQueryClient
 from tests import test_util
 from tests.test_util import FIVE_PERSONS_PERSON_CSV, FAKE_HPO_ID
 
@@ -18,20 +19,21 @@ from tests.test_util import FIVE_PERSONS_PERSON_CSV, FAKE_HPO_ID
 class GcsUtilsTest(unittest.TestCase):
 
     dataset_id = bq_utils.get_dataset_id()
+    project_id = app_identity.get_application_id()
+    bq_client = BigQueryClient(project_id)
 
     @classmethod
     def setUpClass(cls):
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
-        test_util.setup_hpo_id_bucket_name_table(cls.dataset_id)
+        test_util.setup_hpo_id_bucket_name_table(cls.bq_client, cls.dataset_id)
 
     @mock.patch("gcs_utils.LOOKUP_TABLES_DATASET_ID", dataset_id)
     @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def setUp(self):
         self.hpo_bucket = gcs_utils.get_hpo_bucket(FAKE_HPO_ID)
         self.gcs_path = '/'.join([self.hpo_bucket, 'dummy'])
-        self.project_id = app_identity.get_application_id()
         self.storage_client = StorageClient(self.project_id)
         self.storage_client.empty_bucket(self.hpo_bucket)
 
@@ -69,4 +71,4 @@ class GcsUtilsTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        test_util.drop_hpo_id_bucket_name_table(cls.dataset_id)
+        test_util.drop_hpo_id_bucket_name_table(cls.bq_client, cls.dataset_id)

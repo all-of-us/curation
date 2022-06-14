@@ -1,14 +1,16 @@
+# Python imports
 import json
 import os
 from typing import Iterable
 import unittest
-
 import mock
 
+# Project imports
 import app_identity
 import bq_utils
 import common
 from gcloud.gcs import StorageClient
+from gcloud.bq import BigQueryClient
 from tests import test_util
 from tests.test_util import FAKE_HPO_ID, NYC_HPO_ID
 from validation import export, main
@@ -19,6 +21,8 @@ BQ_TIMEOUT_RETRIES = 3
 class ExportTest(unittest.TestCase):
 
     dataset_id = bq_utils.get_dataset_id()
+    project_id = app_identity.get_application_id()
+    bq_client = BigQueryClient(project_id)
 
     @classmethod
     def setUpClass(cls):
@@ -26,13 +30,12 @@ class ExportTest(unittest.TestCase):
             '\n**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
-        test_util.setup_hpo_id_bucket_name_table(cls.dataset_id)
+        test_util.setup_hpo_id_bucket_name_table(cls.bq_client, cls.dataset_id)
         test_util.delete_all_tables(cls.dataset_id)
         test_util.populate_achilles()
 
     @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def setUp(self):
-        self.project_id = app_identity.get_application_id()
         self.storage_client = StorageClient(self.project_id)
         self.hpo_bucket = self.storage_client.get_hpo_bucket(FAKE_HPO_ID)
 
@@ -102,7 +105,7 @@ class ExportTest(unittest.TestCase):
             expected_object_name: str = f'{prefix}{report}'
             self.assertIn(expected_object_name, actual_object_names)
 
-        datasources_json_path: str = folder_prefix + common.ACHILLES_EXPORT_DATASOURCES_JSON
+        datasources_json_path: str = f'{folder_prefix}{common.ACHILLES_EXPORT_DATASOURCES_JSON}'
         self.assertIn(datasources_json_path, actual_object_names)
 
         datasources_blob = storage_bucket.blob(datasources_json_path)
@@ -165,4 +168,4 @@ class ExportTest(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         test_util.delete_all_tables(cls.dataset_id)
-        test_util.drop_hpo_id_bucket_name_table(cls.dataset_id)
+        test_util.drop_hpo_id_bucket_name_table(cls.bq_client, cls.dataset_id)

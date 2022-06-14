@@ -1,21 +1,21 @@
-from datetime import datetime
+# Python imports
 import inspect
 from io import open
 import os
 from typing import Optional
 
+# Third party imports
 import googleapiclient.errors
 from google.cloud.exceptions import GoogleCloudError
 import requests
 
-import app_identity
+# Project imports
 import bq_utils
 import common
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.utils.bq import HPO_ID_BUCKET_NAME_TABLE_ID
 from constants.validation import main
 import resources
-from gcloud.bq import BigQueryClient
 
 RESOURCES_BUCKET_FMT = '{project_id}-resources'
 
@@ -29,8 +29,8 @@ GAE_SERVICE = os.environ.get('GAE_SERVICE', 'default')
 
 LOOKUP_TABLES = [HPO_ID_BUCKET_NAME_TABLE_ID]
 
-VALIDATE_HPO_FILES_URL = main.PREFIX + 'ValidateHpoFiles/' + FAKE_HPO_ID
-COPY_HPO_FILES_URL = main.PREFIX + 'CopyFiles/' + FAKE_HPO_ID
+VALIDATE_HPO_FILES_URL = f'{main.PREFIX}ValidateHpoFiles/{FAKE_HPO_ID}'
+COPY_HPO_FILES_URL = f'{main.PREFIX}CopyFiles/{FAKE_HPO_ID}'
 BASE_TESTS_PATH = os.path.dirname(
     os.path.abspath(inspect.getfile(inspect.currentframe())))
 TEST_DATA_PATH = os.path.join(BASE_TESTS_PATH, 'test_data')
@@ -461,16 +461,15 @@ def mock_google_http_error(status_code: int = 418,
                                             uri=uri)
 
 
-def setup_hpo_id_bucket_name_table(dataset_id):
+def setup_hpo_id_bucket_name_table(client, dataset_id):
     """
     Sets up `hpo_id_bucket_name` table that `get_hpo_bucket()` looks up.
     Drops the table if exist first, and create it with test lookup data.
+    :param client: a BigQueryClient
     :param dataset_id: dataset id where the lookup table is created
     """
-    project_id = app_identity.get_application_id()
-    bq_client = BigQueryClient(project_id)
 
-    drop_hpo_id_bucket_name_table(dataset_id)
+    drop_hpo_id_bucket_name_table(client, dataset_id)
 
     CREATE_LOOKUP_TABLE = common.JINJA_ENV.from_string("""
         CREATE TABLE `{{project_id}}.{{lookup_dataset_id}}.{{hpo_id_bucket_table_id}}`
@@ -478,11 +477,11 @@ def setup_hpo_id_bucket_name_table(dataset_id):
         """)
 
     create_lookup_table = CREATE_LOOKUP_TABLE.render(
-        project_id=project_id,
+        project_id=client.project,
         lookup_dataset_id=dataset_id,
         hpo_id_bucket_table_id=HPO_ID_BUCKET_NAME_TABLE_ID)
 
-    job = bq_client.query(create_lookup_table)
+    job = client.query(create_lookup_table)
     job.result()
 
     INSERT_LOOKUP_TABLE = common.JINJA_ENV.from_string("""
@@ -494,7 +493,7 @@ def setup_hpo_id_bucket_name_table(dataset_id):
         """)
 
     insert_lookup_table = INSERT_LOOKUP_TABLE.render(
-        project_id=project_id,
+        project_id=client.project,
         lookup_dataset_id=dataset_id,
         hpo_id_bucket_table_id=HPO_ID_BUCKET_NAME_TABLE_ID,
         hpo_id_nyc=NYC_HPO_ID,
@@ -505,28 +504,27 @@ def setup_hpo_id_bucket_name_table(dataset_id):
         bucket_name_fake=FAKE_BUCKET_NAME,
         service_name=GAE_SERVICE)
 
-    job = bq_client.query(insert_lookup_table)
+    job = client.query(insert_lookup_table)
     job.result()
 
 
-def drop_hpo_id_bucket_name_table(dataset_id):
+def drop_hpo_id_bucket_name_table(client, dataset_id):
     """
     Drops `hpo_id_bucket_name` table that `get_hpo_bucket()` looks up.
+    :param client: a BigQueryClient
     :param dataset_id: dataset id where the lookup table is located
     """
-    project_id = app_identity.get_application_id()
-    bq_client = BigQueryClient(project_id)
 
     DROP_LOOKUP_TABLE = common.JINJA_ENV.from_string("""
         DROP TABLE IF EXISTS `{{project_id}}.{{lookup_dataset_id}}.{{hpo_id_bucket_table_id}}` 
         """)
 
     drop_lookup_table = DROP_LOOKUP_TABLE.render(
-        project_id=project_id,
+        project_id=client.project,
         lookup_dataset_id=dataset_id,
         hpo_id_bucket_table_id=HPO_ID_BUCKET_NAME_TABLE_ID)
 
-    job = bq_client.query(drop_lookup_table)
+    job = client.query(drop_lookup_table)
     job.result()
 
 

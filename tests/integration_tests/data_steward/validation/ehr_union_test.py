@@ -1,11 +1,15 @@
+# Python imports
 import os
 import re
 import unittest
-
-import dpath
 import mock
+
+# Third party imports
+import dpath
 import moz_sql_parser
 
+# Project imports
+import app_identity
 import bq_utils
 import cdm
 import common
@@ -35,21 +39,21 @@ def first_or_none(l):
 class EhrUnionTest(unittest.TestCase):
 
     dataset_id = bq_utils.get_dataset_id()
+    project_id = app_identity.get_application_id()
+    bq_client = BigQueryClient(project_id)
 
     @classmethod
     def setUpClass(cls):
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
-        test_util.setup_hpo_id_bucket_name_table(cls.dataset_id)
+        test_util.setup_hpo_id_bucket_name_table(cls.bq_client, cls.dataset_id)
 
     def setUp(self):
-        self.project_id = bq_utils.app_identity.get_application_id()
         self.hpo_ids = [PITT_HPO_ID, NYC_HPO_ID, EXCLUDED_HPO_ID]
         self.input_dataset_id = bq_utils.get_dataset_id()
         self.output_dataset_id = bq_utils.get_unioned_dataset_id()
         self.storage_client = StorageClient(self.project_id)
-        self.bq_client = BigQueryClient(self.project_id)
         self.tearDown()
 
         # TODO Generalize to work for all foreign key references
@@ -620,4 +624,4 @@ class EhrUnionTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        test_util.drop_hpo_id_bucket_name_table(cls.dataset_id)
+        test_util.drop_hpo_id_bucket_name_table(cls.bq_client, cls.dataset_id)

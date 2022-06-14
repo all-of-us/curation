@@ -10,27 +10,29 @@ import bq_utils
 from tests import test_util
 from retraction import retract_data_gcs as rd
 from gcloud.gcs import StorageClient
+from gcloud.bq import BigQueryClient
 
 
 class RetractDataGcsTest(TestCase):
 
     dataset_id = bq_utils.get_dataset_id()
+    project_id = app_identity.get_application_id()
+    bq_client = BigQueryClient(project_id)
 
     @classmethod
     def setUpClass(cls):
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
-        test_util.setup_hpo_id_bucket_name_table(cls.dataset_id)
+        test_util.setup_hpo_id_bucket_name_table(cls.bq_client, cls.dataset_id)
 
     @patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def setUp(self):
-        self.project_id = app_identity.get_application_id()
         self.hpo_id = test_util.FAKE_HPO_ID
         self.site_bucket = 'test_bucket'
         self.folder_1 = '2019-01-01-v1/'
         self.folder_2 = '2019-02-02-v2/'
-        self.client = StorageClient(self.project_id)
+        self.storage_client = StorageClient(self.project_id)
         self.folder_prefix_1 = f'{self.hpo_id}/{self.site_bucket}/{self.folder_1}'
         self.folder_prefix_2 = f'{self.hpo_id}/{self.site_bucket}/{self.folder_2}'
         self.pids = [17, 20]
@@ -39,8 +41,8 @@ class RetractDataGcsTest(TestCase):
         self.sandbox_dataset_id = os.environ.get('UNIONED_DATASET_ID')
         self.pid_table_id = 'pid_table'
         self.content_type = 'text/csv'
-        self.gcs_bucket = self.client.get_hpo_bucket(self.hpo_id)
-        self.client.empty_bucket(self.gcs_bucket)
+        self.gcs_bucket = self.storage_client.get_hpo_bucket(self.hpo_id)
+        self.storage_client.empty_bucket(self.gcs_bucket)
 
     @patch('retraction.retract_data_gcs.extract_pids_from_table')
     def test_integration_five_person_data_retraction_skip(
@@ -151,8 +153,8 @@ class RetractDataGcsTest(TestCase):
                                  total_lines_post[key])
 
     def tearDown(self):
-        self.client.empty_bucket(self.gcs_bucket)
+        self.storage_client.empty_bucket(self.gcs_bucket)
 
     @classmethod
     def tearDownClass(cls):
-        test_util.drop_hpo_id_bucket_name_table(cls.dataset_id)
+        test_util.drop_hpo_id_bucket_name_table(cls.bq_client, cls.dataset_id)

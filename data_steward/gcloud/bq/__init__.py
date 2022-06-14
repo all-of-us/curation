@@ -23,6 +23,10 @@ from resources import fields_for
 from constants.utils import bq as consts
 from common import JINJA_ENV
 
+tracer_provider = TracerProvider()
+trace.set_tracer_provider(tracer_provider)
+tracer = trace.get_tracer(__name__)
+
 
 class BigQueryClient(Client):
     """
@@ -39,13 +43,9 @@ class BigQueryClient(Client):
 
         :return:  A BigQueryClient instance
         """
-        tracer_provider = TracerProvider()
         cloud_trace_exporter = CloudTraceSpanExporter(project_id=project_id)
         tracer_provider.add_span_processor(
             BatchSpanProcessor(cloud_trace_exporter))
-        trace.set_tracer_provider(tracer_provider)
-        tracer = trace.get_tracer(__name__)
-        # TODO move tracer to global scope until all client instances are refactored
         # TODO create counter to keep track of multiple client instances
         with tracer.start_as_current_span(project_id):
             if scopes:

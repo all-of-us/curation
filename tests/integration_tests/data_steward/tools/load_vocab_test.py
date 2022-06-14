@@ -1,12 +1,13 @@
+# Python imports
 import unittest
 import os
 from pathlib import Path
 import csv
 import mock
 
-from google.cloud import bigquery
-
+# Project imports
 from gcloud.gcs import StorageClient
+from gcloud.bq import BigQueryClient
 import app_identity
 from tests.test_util import TEST_VOCABULARY_PATH
 from resources import AOU_VOCAB_CONCEPT_CSV_PATH
@@ -47,8 +48,8 @@ class LoadVocabTest(unittest.TestCase):
         self.dataset_id = os.environ.get('UNIONED_DATASET_ID')
         self.staging_dataset_id = f'{self.dataset_id}_staging'
         self.bucket = os.environ.get('BUCKET_NAME_FAKE')
-        self.bq_client = bigquery.Client(project=self.project_id)
-        self.gcs_client = StorageClient(project_id=self.project_id)
+        self.bq_client = BigQueryClient(self.project_id)
+        self.storage_client = StorageClient(project_id=self.project_id)
         self.test_vocab_folder_path = Path(TEST_VOCABULARY_PATH)
         self.test_vocabs = [CONCEPT, VOCABULARY]
         self.contents = {}
@@ -78,7 +79,7 @@ class LoadVocabTest(unittest.TestCase):
 
     def tearDown(self) -> None:
         for vocab in self.test_vocabs:
-            bucket = self.gcs_client.bucket(self.bucket)
+            bucket = self.storage_client.bucket(self.bucket)
             blob = bucket.blob(lv._table_name_to_filename(vocab))
             blob.delete()
             self.bq_client.delete_table(f'{self.dataset_id}.{vocab}',
