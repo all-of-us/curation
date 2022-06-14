@@ -124,7 +124,8 @@ class CreateUpdateDrcIdMatchTableTest(TestCase):
 
         # Creates validation table if it does not already exist
         # Will need to be created if this test is ran individually
-        if not bq_utils.table_exists(self.id_match_table_id, self.dataset_id):
+        if not self.bq_client.table_exists(self.id_match_table_id,
+                                           self.dataset_id):
             id_validation.create_drc_validation_table(
                 self.bq_client,
                 self.id_match_table_id,
