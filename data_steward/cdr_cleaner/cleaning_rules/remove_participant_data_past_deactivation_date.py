@@ -19,7 +19,6 @@ import constants.cdr_cleaner.clean_cdr as cdr_consts
 import utils.participant_summary_requests as psr
 from constants.bq_utils import WRITE_TRUNCATE
 from resources import fields_for
-from constants.retraction.retract_deactivated_pids import DEACTIVATED_PARTICIPANTS
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 
 # Third-Party imports
@@ -31,7 +30,8 @@ DEACTIVATED_PARTICIPANTS_COLUMNS = [
     'participantId', 'suspensionStatus', 'suspensionTime'
 ]
 
-ISSUE_NUMBERS = ["DC-686", "DC-1184", "DC-1791", "DC-1799"]
+DEACTIVATION_ISSUE_NUMBERS = ['DC-686', 'DC-1184', 'DC-1799']
+ISSUE_NUMBERS = ['DC-1791', 'DC-1896']
 
 TABLE_INFORMATION_SCHEMA = JINJA_ENV.from_string(  # language=JINJA2
     """
@@ -97,6 +97,8 @@ DATE = 'date'
 START_DATE = f'start_{DATE}'
 END_DATE = f'end_{DATE}'
 
+DEACTIVATED_PARTICIPANTS = '_deactivated_participants'
+
 
 class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
     """
@@ -124,7 +126,7 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
         if not api_project_id:
             raise TypeError("`api_project_id` cannot be empty")
 
-        super().__init__(issue_numbers=['DC-1791', 'DC-1896'],
+        super().__init__(issue_numbers=ISSUE_NUMBERS,
                          description=desc,
                          affected_datasets=[cdr_consts.COMBINED],
                          project_id=project_id,
@@ -177,7 +179,7 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
     def get_table_cols_df(self, client, project_id, dataset_id):
         """
         Returns a df of dataset's INFORMATION_SCHEMA.COLUMNS
-    
+
         :param project_id: bq name of project_id
         :param dataset_id: ba name of dataset_id
         :param client: bq client object

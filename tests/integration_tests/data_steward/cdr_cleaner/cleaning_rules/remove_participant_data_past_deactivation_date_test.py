@@ -9,8 +9,8 @@ This test will mock calling the PS API and provide a returned value.  Everything
 within the bounds of our team will be tested.
 """
 # Python imports
-import mock
 import os
+from unittest import mock
 
 # Third party imports
 import pandas as pd
@@ -18,8 +18,8 @@ import pandas as pd
 # Project imports
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.remove_participant_data_past_deactivation_date import (
-    RemoveParticipantDataPastDeactivationDate)
-from constants.retraction.retract_deactivated_pids import DEACTIVATED_PARTICIPANTS
+    RemoveParticipantDataPastDeactivationDate, DEACTIVATED_PARTICIPANTS, DATE,
+    DATETIME, START_DATE, START_DATETIME, END_DATE, END_DATETIME)
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
 
@@ -105,6 +105,58 @@ class RemoveParticipantDataPastDeactivationDateTest(
             self.load_statements.append(query)
 
         super().setUp()
+
+    def test_get_dates_info(self):
+        # preconditions
+        data = {
+            'table_catalog': ['project'] * 13,
+            'table_schema': ['dataset'] * 13,
+            'table_name': ['observation'] * 5 + ['location'] * 2 +
+                          ['drug_exposure'] * 6,
+            'column_name': [
+                'observation_id', 'person_id', 'observation_concept_id',
+                'observation_date', 'observation_datetime', 'location_id',
+                'city', 'person_id', 'drug_exposure_start_date',
+                'drug_exposure_start_datetime', 'drug_exposure_end_date',
+                'drug_exposure_end_datetime', 'verbatim_date'
+            ],
+        }
+        table_cols_df = pd.DataFrame(data,
+                                     columns=[
+                                         'table_catalog', 'table_schema',
+                                         'table_name', 'column_name'
+                                     ])
+
+        expected_dict = {
+            'observation': ['observation_date', 'observation_datetime'],
+            'drug_exposure': [
+                'drug_exposure_start_date', 'drug_exposure_start_datetime',
+                'drug_exposure_end_date', 'drug_exposure_end_datetime',
+                'verbatim_date'
+            ]
+        }
+        actual_dict = self.rule_instance.get_table_dates_info(table_cols_df)
+
+        self.assertDictEqual(actual_dict, expected_dict)
+
+    def test_get_date_cols_dict(self):
+        date_cols = ["visit_date", "measurement_date", "measurement_datetime"]
+        expected = {DATE: "measurement_date", DATETIME: "measurement_datetime"}
+        actual = self.rule_instance.get_date_cols_dict(date_cols)
+        self.assertDictEqual(expected, actual)
+
+        date_cols = [
+            "verbatim_date", "condition_end_date", "condition_end_datetime",
+            "condition_start_datetime", "condition_start_date"
+        ]
+        expected = {
+            START_DATE: "condition_start_date",
+            START_DATETIME: "condition_start_datetime",
+            END_DATE: "condition_end_date",
+            END_DATETIME: "condition_end_datetime"
+        }
+        actual = self.rule_instance.get_date_cols_dict(date_cols)
+        self.assertDictEqual(expected, actual)
 
     @mock.patch(
         'utils.participant_summary_requests.get_deactivated_participants')
