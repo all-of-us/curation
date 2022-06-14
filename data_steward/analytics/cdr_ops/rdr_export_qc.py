@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # ---
 # jupyter:
 #   jupytext:
@@ -17,6 +18,7 @@ project_id = ""
 old_rdr = ""
 new_rdr = ""
 raw_rdr = "default"  # do not need to provide this if running on a raw rdr import
+new_rdr_sandbox = ""
 run_as = ""
 # -
 
@@ -24,14 +26,13 @@ run_as = ""
 #
 # Quality checks performed on a new RDR dataset and comparison with previous RDR dataset.
 
-# +
 from common import JINJA_ENV
 from utils import auth
 from gcloud.bq import BigQueryClient
 from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
 from cdr_cleaner.cleaning_rules.suppress_combined_pfmh_survey import DROP_PFMHH_CONCEPTS
+from IPython.display import display, HTML
 
-# -
 
 # # Table comparison
 # The export should generally contain the same tables from month to month.
@@ -669,3 +670,111 @@ query = tpl.render(dataset=new_rdr,
                    project_id=project_id,
                    combined_pfmhh_concepts=DROP_PFMHH_CONCEPTS)
 execute(client, query)
+
+# # Check that the Question and Answer Concepts in the old_map_short_codes tables are not paired with 0-valued concept_identifiers
+
+# According to this [ticket](https://precisionmedicineinitiative.atlassian.net/browse/DC-2488), Question and Answer concepts that are identified in the `old_map_short_codes` table should not be paired with 0-valued concept_identifiers after the RDR dataset is cleaned. These concept identifiers include the `observation_concept_id` and `observation_source_concept_id` fields.
+
+# ### Question Codes
+
+# Check the question codes
+tpl = JINJA_ENV.from_string("""
+WITH question_codes AS (
+  SELECT
+    pmi_code
+  FROM `{{project_id}}.{{sandbox_dataset}}.old_map_short_codes` 
+  WHERE type = 'Question'
+)
+SELECT
+  qc.pmi_code, COUNT(*) invalid_id_count
+FROM `{{project_id}}.{{dataset}}.observation` o
+JOIN question_codes qc
+  ON qc.pmi_code = o.observation_source_value
+WHERE (o.observation_source_concept_id = 0
+  OR o.observation_concept_id = 0)
+GROUP BY qc.pmi_code
+ORDER BY 2 DESC
+""")
+query = tpl.render(project_id=project_id, 
+                   dataset=new_rdr,
+                   sandbox_dataset=new_rdr_sandbox)
+df = execute(client, query)
+
+is_success = len(df) == 0
+status_msg = 'Success' if is_success else 'Failure'
+if is_success:
+    display(HTML(
+        f'''
+            <h2>
+                Check Status: <span style="color: {'red' if not is_success else 'green'}">{status_msg}</span>
+            </h2>
+            <p>
+                No 0-valued concept ids found.
+            </p>
+        ''')
+    )    
+else:
+    display(HTML(
+        f'''
+            <h2>
+                Check Status: <span style="color: {'red' if not is_success else 'green'}">{status_msg}</span>
+            </h2>
+            <p>
+                <b>{len(df)}</b> question codes have 0-valued IDs. Report failure back to curation team.
+                Bug likely due to failure in the <code>update_questions_answers_not_mapped_to_omop</code> cleaning rule.
+            </p>
+        ''')
+    )
+    display(df)
+
+# ### Answer Codes
+
+# Check the answer codes
+tpl = JINJA_ENV.from_string("""
+WITH answer_codes AS (
+  SELECT
+    pmi_code
+  FROM `{{project_id}}.{{sandbox_dataset}}.old_map_short_codes` 
+  WHERE type = 'Answer'
+)
+SELECT
+  ac.pmi_code, COUNT(*) invalid_id_count
+FROM `{{project_id}}.{{dataset}}.observation` o
+JOIN answer_codes ac
+  ON ac.pmi_code = o.value_source_value
+WHERE (o.observation_source_concept_id = 0
+  OR o.observation_concept_id = 0)
+GROUP BY ac.pmi_code
+ORDER BY 2 DESC
+""")
+query = tpl.render(project_id=project_id, 
+                   dataset=new_rdr,
+                   sandbox_dataset=new_rdr_sandbox)
+df = execute(client, query)
+
+is_success = len(df) == 0
+status_msg = 'Success' if is_success else 'Failure'
+if is_success:
+    display(HTML(
+        f'''
+            <h2>
+                Check Status: <span style="color: {'red' if not is_success else 'green'}">{status_msg}</span>
+            </h2>
+            <p>
+                No 0-valued concept ids found.
+            </p>
+        ''')
+    )    
+else:
+    display(HTML(
+        f'''
+            <h2>
+                Check Status: <span style="color: {'red' if not is_success else 'green'}">{status_msg}</span>
+            </h2>
+            <p>
+                <b>{len(df)}</b> answer codes have 0-valued IDs. Report failure back to curation team.
+                Bug likely due to failure in the <code>update_questions_answers_not_mapped_to_omop</code> cleaning rule.
+            </p>
+        ''')
+    )
+    display(df)
