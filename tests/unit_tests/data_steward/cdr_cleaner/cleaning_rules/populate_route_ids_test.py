@@ -5,6 +5,7 @@ import mock
 
 import bq_utils
 import common
+from gcloud.bq import BigQueryClient
 import resources
 from cdr_cleaner.cleaning_rules import populate_route_ids
 from constants.cdr_cleaner import clean_cdr as cdr_consts
@@ -125,12 +126,16 @@ class PopulateRouteIdsTest(unittest.TestCase):
             dataset_id=self.dataset_id)
 
     def _test_integration_create_drug_route_mappings_table(self):
-        if bq_utils.table_exists(populate_route_ids.DRUG_ROUTES_TABLE_ID,
-                                 dataset_id=self.dataset_id):
+        import app_identity
+        project_id = app_identity.get_application_id()
+        bq_client = BigQueryClient(project_id)
+
+        if bq_client.table_exists(populate_route_ids.DRUG_ROUTES_TABLE_ID,
+                                  dataset_id=self.dataset_id):
             bq_utils.delete_table(populate_route_ids.DRUG_ROUTES_TABLE_ID,
                                   dataset_id=self.dataset_id)
 
-        if not bq_utils.table_exists(
+        if not bq_client.table_exists(
                 populate_route_ids.DOSE_FORM_ROUTES_TABLE_ID,
                 dataset_id=self.dataset_id):
             populate_route_ids.create_dose_form_route_mappings_table(
