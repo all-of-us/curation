@@ -1,12 +1,11 @@
 # Python imports
 import time
 import unittest
-
-# Third party imports
 import mock
 
 # Project imports
 import app_identity
+from gcloud.bq import BigQueryClient
 import bq_utils
 import common
 from cdr_cleaner.cleaning_rules import populate_route_ids
@@ -24,6 +23,7 @@ class PopulateRouteIdsTest(unittest.TestCase):
     def setUp(self):
         self.project_id = app_identity.get_application_id()
         self.dataset_id = bq_utils.get_dataset_id()
+        self.bq_client = BigQueryClient(self.project_id)
         self.route_mapping_prefix = "rm"
 
         col_exprs = [
@@ -41,12 +41,12 @@ class PopulateRouteIdsTest(unittest.TestCase):
         self.cols = ', '.join(col_exprs)
 
     def test_integration_create_drug_route_mappings_table(self):
-        if bq_utils.table_exists(populate_route_ids.DRUG_ROUTES_TABLE_ID,
-                                 dataset_id=self.dataset_id):
+        if self.bq_client.table_exists(populate_route_ids.DRUG_ROUTES_TABLE_ID,
+                                       dataset_id=self.dataset_id):
             bq_utils.delete_table(populate_route_ids.DRUG_ROUTES_TABLE_ID,
                                   dataset_id=self.dataset_id)
 
-        if not bq_utils.table_exists(
+        if not self.bq_client.table_exists(
                 populate_route_ids.DOSE_FORM_ROUTES_TABLE_ID,
                 dataset_id=self.dataset_id):
             populate_route_ids.create_dose_form_route_mappings_table(

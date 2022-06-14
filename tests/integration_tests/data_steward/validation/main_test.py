@@ -60,10 +60,10 @@ class ValidationMainTest(unittest.TestCase):
         self.storage_client.empty_bucket(self.hpo_bucket)
 
         test_util.delete_all_tables(self.dataset_id)
-        self._create_drug_class_table(self.dataset_id)
+        self._create_drug_class_table(self.bq_client, self.dataset_id)
 
     @staticmethod
-    def _create_drug_class_table(bigquery_dataset_id):
+    def _create_drug_class_table(client, bigquery_dataset_id):
 
         table_name: str = 'drug_class'
         fields: list = [{
@@ -93,7 +93,7 @@ class ValidationMainTest(unittest.TestCase):
                        destination_dataset_id=bigquery_dataset_id)
 
         # ensure concept ancestor table exists
-        if not bq_utils.table_exists(common.CONCEPT_ANCESTOR):
+        if not client.table_exists(common.CONCEPT_ANCESTOR):
             bq_utils.create_standard_table(common.CONCEPT_ANCESTOR,
                                            common.CONCEPT_ANCESTOR)
             q = """INSERT INTO {dataset}.concept_ancestor
