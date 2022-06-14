@@ -1,7 +1,6 @@
 import os
 import time
 import unittest
-
 import mock
 
 import bq_utils
