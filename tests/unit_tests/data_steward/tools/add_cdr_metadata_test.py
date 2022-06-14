@@ -17,7 +17,7 @@ class AddCdrMetadataTest(unittest.TestCase):
     def setUp(self):
         self.dataset_id = 'dataset_id'
         self.project_id = 'project_id'
-        self.target_dataset = 'foo_dataset'
+        self.target_dataset = 'target_dataset'
         self.component = 'copy'
 
         self.fields = [{
@@ -151,7 +151,7 @@ class AddCdrMetadataTest(unittest.TestCase):
         }
 
         # Test if correct parameters are given
-        args, kwargs = parse_cdr_metadata_args(self.correct_parameter_list)
+        args, _ = parse_cdr_metadata_args(self.correct_parameter_list)
         results_dict = vars(args)
 
         # Post conditions
