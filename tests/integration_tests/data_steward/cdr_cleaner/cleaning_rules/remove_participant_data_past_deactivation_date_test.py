@@ -17,7 +17,6 @@ import pandas as pd
 
 # Project imports
 from app_identity import PROJECT_ID
-from common import OBSERVATION
 from cdr_cleaner.cleaning_rules.remove_participant_data_past_deactivation_date import (
     RemoveParticipantDataPastDeactivationDate)
 from constants.retraction.retract_deactivated_pids import DEACTIVATED_PARTICIPANTS
