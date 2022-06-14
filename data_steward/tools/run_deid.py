@@ -126,16 +126,11 @@ def get_output_tables(input_dataset, known_tables, skip_tables, only_tables):
 
     allowed_tables = []
     for table in tables:
-        if table.startswith('_'):
-            continue
-        if table.startswith('pii'):
-            continue
-        if table in SUPPRESSED_TABLES:
+        if table.startswith('_') or table.startswith(
+                'pii') or table in SUPPRESSED_TABLES:
             continue
         # doing this to eliminate the 'deid_map' table and any other non-OMOP table
-        if table not in known_tables:
-            continue
-        if table in skip_tables:
+        if table not in known_tables or table in skip_tables:
             continue
 
         if (only_tables == [''] or
