@@ -97,8 +97,7 @@ class BaseTest:
             Remove the test dataset table(s).
             """
             for table in cls.fq_table_names + cls.fq_sandbox_table_names:
-                #                cls.client.delete_table(table, not_found_ok=True)
-                pass
+                cls.client.delete_table(table, not_found_ok=True)
 
         def drop_rows(self, fq_table_name):
             """

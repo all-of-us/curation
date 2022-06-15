@@ -30,8 +30,8 @@ DEACTIVATED_PARTICIPANTS_COLUMNS = [
     'participantId', 'suspensionStatus', 'suspensionTime'
 ]
 
-DEACTIVATION_ISSUE_NUMBERS = ['DC-686', 'DC-1184', 'DC-1799']
-ISSUE_NUMBERS = ['DC-1791', 'DC-1896']
+DEACTIVATION_ISSUE_NUMBERS = ['DC686', 'DC1184', 'DC1799']
+ISSUE_NUMBERS = ['DC1791', 'DC1896']
 
 TABLE_INFORMATION_SCHEMA = JINJA_ENV.from_string(  # language=JINJA2
     """
@@ -293,8 +293,6 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
 
         LOGGER.info(f"Finished storing participant records in: "
                     f"`{self.destination_table}`")
-
-        LOGGER.debug("instantiating class BigQueryClient object")
 
         # reinitializing self.affected_tables
         LOGGER.debug("Narrow down to actual tables with dates and pids")
