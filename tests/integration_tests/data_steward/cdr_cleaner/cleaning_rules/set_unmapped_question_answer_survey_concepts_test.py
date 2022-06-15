@@ -1,7 +1,7 @@
 """
-Integration test for unit_normalization cleaning rule.
+Integration test for setting PPI concept_ids for unmapped concept_codes.
 
-Original Issue: DC-414
+Original Issue: DC-499
 """
 # Python imports
 import os
@@ -113,7 +113,7 @@ class SetConceptIdsForSurveyQuestionsAnswersTest(BaseTest.CleaningRulesTestBase
 
     def test_setting_concept_identifiers(self):
         """
-        Tests unit_normalization for the loaded test data
+        Tests concept_identifiers are updated or unchanged for the loaded test data
         """
         # Expected results list
         tables_and_counts = [{
