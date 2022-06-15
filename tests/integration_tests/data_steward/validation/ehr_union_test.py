@@ -604,7 +604,9 @@ class EhrUnionTest(unittest.TestCase):
         # Key fields should be populated using associated mapping tables
         for table in resources.CDM_TABLES:
             # This condition is to exempt person table from table hpo sub query
-            if table != common.PERSON:
+            # TODO: Figure out way to include additional foreign keys in visit_detail and visit_occurrence tables
+            if table not in (common.PERSON, common.VISIT_DETAIL,
+                             common.VISIT_OCCURRENCE):
                 subquery_fail = self.get_table_hpo_subquery_error(
                     table, input_dataset_id, output_dataset_id)
                 if subquery_fail is not None:
