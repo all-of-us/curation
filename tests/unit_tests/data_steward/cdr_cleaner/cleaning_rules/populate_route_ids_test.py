@@ -1,8 +1,10 @@
+# Python imports
 import os
 import time
 import unittest
 import mock
 
+# Project imports
 import bq_utils
 import common
 from gcloud.bq import BigQueryClient

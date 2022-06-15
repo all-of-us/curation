@@ -4,10 +4,10 @@ Unit test components of data_steward.validation.main
 # Python imports
 from __future__ import print_function
 import datetime
+from time import sleep
 import os
 import unittest
 import mock
-from time import sleep
 
 # Third party imports
 from bs4 import BeautifulSoup as bs
