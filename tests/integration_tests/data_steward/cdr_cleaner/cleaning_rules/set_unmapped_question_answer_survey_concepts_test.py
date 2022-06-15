@@ -70,11 +70,6 @@ class SetConceptIdsForSurveyQuestionsAnswersTest(BaseTest.CleaningRulesTestBase
             cls.fq_table_names.append(
                 f'{cls.project_id}.{cls.dataset_id}.{table}')
 
-        sandbox_table_names = cls.rule_instance.get_sandbox_tablenames()
-        for table in sandbox_table_names:
-            cls.fq_sandbox_table_names.append(
-                f'{cls.project_id}.{cls.sandbox_id}.{table}')
-
         # Appending OLD_MAP_SHORT_CODES_TABLE table to fq_sandbox_table_names to delete after the test
         for table in [OLD_MAP_SHORT_CODES_TABLE
                      ] + cls.rule_instance.get_sandbox_tablenames():
