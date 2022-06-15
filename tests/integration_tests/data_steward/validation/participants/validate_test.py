@@ -16,7 +16,7 @@ from google.cloud.bigquery import DatasetReference, Table, TimePartitioning, Tim
 from gcloud.bq import BigQueryClient
 from tests import test_util
 from app_identity import PROJECT_ID
-from common import JINJA_ENV, PS_API_VALUES, PII_EMAIL, PII_PHONE_NUMBER, PII_NAME, PII_ADDRESS, UNIONED
+from common import JINJA_ENV, PS_API_VALUES, PII_EMAIL, PII_PHONE_NUMBER, PII_NAME, PII_ADDRESS
 from validation.participants.create_update_drc_id_match_table import (
     create_drc_validation_table, populate_validation_table)
 from validation.participants.validate import identify_rdr_ehr_match
@@ -78,7 +78,7 @@ class ValidateTest(TestCase):
         self.project_id = os.environ.get(PROJECT_ID)
         self.dataset_id = os.environ.get('COMBINED_DATASET_ID')
         self.dataset_ref = DatasetReference(self.project_id, self.dataset_id)
-        self.client = BigQueryClient(self.project_id)
+        self.bq_client = BigQueryClient(self.project_id)
 
         self.hpo_id = 'fake_site'
         self.id_match_table_id = f'{IDENTITY_MATCH_TABLE}_{self.hpo_id}'
@@ -97,13 +97,13 @@ class ValidateTest(TestCase):
         table = Table(
             f'{self.project_id}.{self.dataset_id}.{self.ps_values_table_id}',
             schema=schema)
-        table = self.client.create_table(table, exists_ok=True)
+        table = self.bq_client.create_table(table, exists_ok=True)
 
         populate_query = POPULATE_PS_VALUES.render(
             project_id=self.project_id,
             drc_dataset_id=self.dataset_id,
             ps_values_table_id=self.ps_values_table_id)
-        job = self.client.query(populate_query)
+        job = self.bq_client.query(populate_query)
         job.result()
 
         # Create and populate pii_name, pii_email, pii_phone_number, and pii_address table
@@ -114,7 +114,7 @@ class ValidateTest(TestCase):
             schema=schema)
         table.time_partitioning = TimePartitioning(
             type_=TimePartitioningType.HOUR)
-        table = self.client.create_table(table, exists_ok=True)
+        table = self.bq_client.create_table(table, exists_ok=True)
 
         schema = resources.fields_for(f'{PII_EMAIL}')
         table = Table(
@@ -122,7 +122,7 @@ class ValidateTest(TestCase):
             schema=schema)
         table.time_partitioning = TimePartitioning(
             type_=TimePartitioningType.HOUR)
-        table = self.client.create_table(table, exists_ok=True)
+        table = self.bq_client.create_table(table, exists_ok=True)
 
         schema = resources.fields_for(f'{PII_PHONE_NUMBER}')
         table = Table(
@@ -130,7 +130,7 @@ class ValidateTest(TestCase):
             schema=schema)
         table.time_partitioning = TimePartitioning(
             type_=TimePartitioningType.HOUR)
-        table = self.client.create_table(table, exists_ok=True)
+        table = self.bq_client.create_table(table, exists_ok=True)
 
         schema = resources.fields_for(f'{PII_ADDRESS}')
         table = Table(
@@ -138,28 +138,29 @@ class ValidateTest(TestCase):
             schema=schema)
         table.time_partitioning = TimePartitioning(
             type_=TimePartitioningType.HOUR)
-        table = self.client.create_table(table, exists_ok=True)
+        table = self.bq_client.create_table(table, exists_ok=True)
 
         person_table = Table(
             f'{self.project_id}.{self.dataset_id}.{self.person_table_id}',
             schema=person_schema)
-        person_table = self.client.create_table(person_table, exists_ok=True)
+        person_table = self.bq_client.create_table(person_table, exists_ok=True)
 
         location_table = Table(
             f'{self.project_id}.{self.dataset_id}.{self.location_table_id}',
             schema=location_schema)
-        location_table = self.client.create_table(location_table,
-                                                  exists_ok=True)
+        location_table = self.bq_client.create_table(location_table,
+                                                     exists_ok=True)
 
         concept_table = Table(f'{self.project_id}.{self.dataset_id}.concept',
                               schema=concept_schema)
-        concept_table = self.client.create_table(concept_table, exists_ok=True)
+        concept_table = self.bq_client.create_table(concept_table,
+                                                    exists_ok=True)
 
         # Creates hpo_site identity match table after deleting existing
-        self.client.delete_table(
+        self.bq_client.delete_table(
             f'{self.project_id}.{self.dataset_id}.{self.id_match_table_id}',
             not_found_ok=True)
-        create_drc_validation_table(self.client, self.id_match_table_id,
+        create_drc_validation_table(self.bq_client, self.id_match_table_id,
                                     self.dataset_id)
 
     def test_identify_rdr_ehr_match(self):
@@ -310,55 +311,55 @@ class ValidateTest(TestCase):
             project_id=self.project_id,
             drc_dataset_id=self.dataset_id,
             pii_email_table_id=self.pii_email_table_id)
-        job = self.client.query(email_populate_query)
+        job = self.bq_client.query(email_populate_query)
         job.result()
 
         phone_number_populate_query = POPULATE_PII_PHONE_NUMBER.render(
             project_id=self.project_id,
             drc_dataset_id=self.dataset_id,
             pii_phone_number_table_id=self.pii_phone_number_table_id)
-        job = self.client.query(phone_number_populate_query)
+        job = self.bq_client.query(phone_number_populate_query)
         job.result()
 
         name_populate_query = POPULATE_PII_NAME.render(
             project_id=self.project_id,
             drc_dataset_id=self.dataset_id,
             pii_name_table_id=self.pii_name_table_id)
-        job = self.client.query(name_populate_query)
+        job = self.bq_client.query(name_populate_query)
         job.result()
 
         address_populate_query = POPULATE_PII_ADDRESS.render(
             project_id=self.project_id,
             drc_dataset_id=self.dataset_id,
             pii_address_table_id=self.pii_address_table_id)
-        job = self.client.query(address_populate_query)
+        job = self.bq_client.query(address_populate_query)
         job.result()
 
         populate_person_query = POPULATE_PERSON_TABLE.render(
             project_id=self.project_id,
             drc_dataset_id=self.dataset_id,
             person_table_id=self.person_table_id)
-        job = self.client.query(populate_person_query)
+        job = self.bq_client.query(populate_person_query)
         job.result()
 
         populate_location_query = POPULATE_LOCATION_TABLE.render(
             project_id=self.project_id,
             drc_dataset_id=self.dataset_id,
             location_table_id=self.location_table_id)
-        job = self.client.query(populate_location_query)
+        job = self.bq_client.query(populate_location_query)
         job.result()
 
         populate_concept_query = CONCEPT_TABLE_QUERY.render(
             project_id=self.project_id, drc_dataset_id=self.dataset_id)
-        job = self.client.query(populate_concept_query)
+        job = self.bq_client.query(populate_concept_query)
         job.result()
 
         # Populates the validation table for the site after person is populated
-        populate_validation_table(self.client, self.id_match_table_id,
+        populate_validation_table(self.bq_client, self.id_match_table_id,
                                   self.hpo_id, self.dataset_id, self.dataset_id)
 
         # Execute email, phone_number and sex match
-        identify_rdr_ehr_match(self.client,
+        identify_rdr_ehr_match(self.bq_client,
                                self.hpo_id,
                                ehr_dataset_id=self.dataset_id,
                                drc_dataset_id=self.dataset_id)
@@ -498,7 +499,7 @@ class ValidateTest(TestCase):
             drc_dataset_id=self.dataset_id,
             id_match_table_id=self.id_match_table_id)
 
-        content_job = self.client.query(content_query)
+        content_job = self.bq_client.query(content_query)
         contents = list(content_job.result())
         actual = [dict(row.items()) for row in contents]
         actual = [{
@@ -509,4 +510,4 @@ class ValidateTest(TestCase):
 
     def tearDown(self):
         test_util.delete_all_tables(self.dataset_id)
-        self.client.delete_table(self.fq_concept_table)
+        self.bq_client.delete_table(self.fq_concept_table)
