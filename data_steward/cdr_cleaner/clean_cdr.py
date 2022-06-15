@@ -113,6 +113,7 @@ from cdr_cleaner.cleaning_rules.set_unmapped_question_answer_survey_concepts imp
 from cdr_cleaner.cleaning_rules.vehicular_accident_concept_suppression import VehicularAccidentConceptSuppression
 from cdr_cleaner.cleaning_rules.deid.ct_replaced_concept_suppression import \
     ControlledTierReplacedConceptSuppression
+from cdr_cleaner.cleaning_rules.drop_orphaned_pids import DropOrphanedPIDS
 from constants.cdr_cleaner import clean_cdr_engine as ce_consts
 from constants.cdr_cleaner.clean_cdr import DataStage
 
@@ -223,6 +224,7 @@ COMBINED_CLEANING_CLASSES = [
     (RemoveNonMatchingParticipant,),
     (DropParticipantsWithoutPPI,
     ),  # dependent on RemoveParticipantDataPastDeactivationDate
+    (DropOrphanedPIDS,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
@@ -287,6 +289,7 @@ CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     (CancerConceptSuppression,),  # Should run after any data remapping rules
     (AggregateZipCodes,),
     (SectionParticipationConceptSuppression,),
+    (DropOrphanedPIDS,),
     (RemoveExtraTables,),  # Should be last cleaning rule to be run
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
@@ -330,6 +333,7 @@ REGISTERED_TIER_DEID_CLEANING_CLASSES = [
     (SectionParticipationConceptSuppression,),
     (RegisteredCopeSurveyQuestionsSuppression,),
     (CancerConceptSuppression,),
+    (DropOrphanedPIDS,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
