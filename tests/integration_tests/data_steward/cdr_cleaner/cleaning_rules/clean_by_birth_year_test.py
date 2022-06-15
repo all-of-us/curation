@@ -10,7 +10,7 @@ from google.cloud import bigquery
 
 # Project Imports
 from app_identity import PROJECT_ID
-from cdr_cleaner.cleaning_rules.clean_birth_years import (CleanByBirthYear)
+from cdr_cleaner.cleaning_rules.clean_by_birth_year import (CleanByBirthYear)
 from common import JINJA_ENV, AOU_REQUIRED, OBSERVATION, PERSON
 from resources import get_person_id_tables
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import (
@@ -90,7 +90,7 @@ class CleanByBirthYearTest(BaseTest.CleaningRulesTestBase):
         # Load test data
         self.load_test_data([f'{raw_data_load_query}'])
 
-    def ttest_setup_rule(self):
+    def test_setup_rule(self):
 
         has_person_id = get_person_id_tables(AOU_REQUIRED)
         self.assertEqual(set(has_person_id),
