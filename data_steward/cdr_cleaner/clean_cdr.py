@@ -129,7 +129,7 @@ UNIONED_EHR_CLEANING_CLASSES = [
     (EhrSubmissionDataCutoff,
     ),  # should run before EnsureDateDatetimeConsistency
     (DeduplicateIdColumn,),
-    (clean_years.get_year_of_birth_queries,),
+    (CleanByBirthYear,),
     (drug_refills_supply.get_days_supply_refills_queries,),
     # trying to load a table while creating query strings,
     # won't work with mocked strings.  should use base class
