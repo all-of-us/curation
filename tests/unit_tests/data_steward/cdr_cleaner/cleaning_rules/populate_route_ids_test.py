@@ -1,13 +1,10 @@
 # Python imports
 import os
-import time
 import unittest
 import mock
 
 # Project imports
-import bq_utils
 import common
-from gcloud.bq import BigQueryClient
 import resources
 from cdr_cleaner.cleaning_rules import populate_route_ids
 from constants.cdr_cleaner import clean_cdr as cdr_consts
