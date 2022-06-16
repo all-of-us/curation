@@ -60,10 +60,9 @@ class ValidationMainTest(unittest.TestCase):
         self.storage_client.empty_bucket(self.hpo_bucket)
 
         test_util.delete_all_tables(self.dataset_id)
-        self._create_drug_class_table(self.bq_client, self.dataset_id)
+        self.create_drug_class_table()
 
-    @staticmethod
-    def _create_drug_class_table(client, bigquery_dataset_id):
+    def create_drug_class_table(self):
 
         table_name: str = 'drug_class'
         fields: list = [{
@@ -82,23 +81,23 @@ class ValidationMainTest(unittest.TestCase):
         bq_utils.create_table(table_id=table_name,
                               fields=fields,
                               drop_existing=True,
-                              dataset_id=bigquery_dataset_id)
+                              dataset_id=self.dataset_id)
 
-        bq_utils.query(q=main_consts.DRUG_CLASS_QUERY.format(
-            dataset_id=bigquery_dataset_id),
-                       use_legacy_sql=False,
-                       destination_table_id='drug_class',
-                       retry_count=bq_consts.BQ_DEFAULT_RETRY_COUNT,
-                       write_disposition='WRITE_TRUNCATE',
-                       destination_dataset_id=bigquery_dataset_id)
+        bq_utils.query(
+            q=main_consts.DRUG_CLASS_QUERY.format(dataset_id=self.dataset_id),
+            use_legacy_sql=False,
+            destination_table_id='drug_class',
+            retry_count=bq_consts.BQ_DEFAULT_RETRY_COUNT,
+            write_disposition='WRITE_TRUNCATE',
+            destination_dataset_id=self.dataset_id)
 
         # ensure concept ancestor table exists
-        if not client.table_exists(common.CONCEPT_ANCESTOR):
+        if not self.bq_client.table_exists(common.CONCEPT_ANCESTOR):
             bq_utils.create_standard_table(common.CONCEPT_ANCESTOR,
                                            common.CONCEPT_ANCESTOR)
             q = """INSERT INTO {dataset}.concept_ancestor
             SELECT * FROM {vocab}.concept_ancestor""".format(
-                dataset=bigquery_dataset_id, vocab=common.VOCABULARY_DATASET)
+                dataset=self.dataset_id, vocab=common.VOCABULARY_DATASET)
             bq_utils.query(q)
 
     def table_has_clustering(self, table_info):
