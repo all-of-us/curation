@@ -111,16 +111,16 @@ class CombineEhrRdrTest(unittest.TestCase):
         # sanity check
         # pre-conditions
         self.assertFalse(
-            bq_utils.table_exists(EHR_CONSENT_TABLE_ID,
-                                  self.combined_dataset_id))
+            self.bq_client.table_exists(EHR_CONSENT_TABLE_ID,
+                                        self.combined_dataset_id))
 
         # test
         ehr_consent()
 
         # post conditions
         self.assertTrue(
-            bq_utils.table_exists(EHR_CONSENT_TABLE_ID,
-                                  self.combined_dataset_id),
+            self.bq_client.table_exists(EHR_CONSENT_TABLE_ID,
+                                        self.combined_dataset_id),
             'Table {dataset}.{table} created by consented_person'.format(
                 dataset=self.combined_dataset_id, table=EHR_CONSENT_TABLE_ID))
         response = bq_utils.query('SELECT * FROM {dataset}.{table}'.format(
@@ -135,10 +135,11 @@ class CombineEhrRdrTest(unittest.TestCase):
     def test_copy_rdr_tables(self):
         for table in RDR_TABLES_TO_COPY:
             self.assertFalse(
-                bq_utils.table_exists(table,
-                                      self.combined_dataset_id))  # sanity check
+                self.bq_client.table_exists(
+                    table, self.combined_dataset_id))  # sanity check
             copy_rdr_table(table)
-            actual = bq_utils.table_exists(table, self.combined_dataset_id)
+            actual = self.bq_client.table_exists(table,
+                                                 self.combined_dataset_id)
             self.assertTrue(
                 actual,
                 msg='RDR table {table} should be copied'.format(table=table))

@@ -3,12 +3,10 @@ Unit Test for create tier module
 """
 
 # Python imports
+from datetime import datetime
 import unittest
 import argparse
 import mock
-from datetime import datetime
-
-# Third party imports
 
 # Project imports
 from constants.cdr_cleaner import clean_cdr as consts

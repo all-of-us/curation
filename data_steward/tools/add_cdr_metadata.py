@@ -13,6 +13,7 @@ import argparse
 import bq_utils
 import resources
 from utils import bq
+from gcloud.bq import BigQueryClient
 from common import JINJA_ENV
 from cdr_cleaner import clean_cdr
 
@@ -47,33 +48,34 @@ select * from `{{project}}.{{dataset}}.{{metadata_table}}`
 """)
 
 
-def create_metadata_table(dataset_id, fields_list):
+def create_metadata_table(client, dataset_id, fields_list):
     """
     Creates a metadata table in a given dataset.
 
+    :param client: a BigQuerClient
     :param dataset_id: name of the dataset
     :param fields_list: name of the dataset
     :return: None
     """
-    if not bq_utils.table_exists(METADATA_TABLE, dataset_id):
+    if not client.table_exists(METADATA_TABLE, dataset_id):
         bq_utils.create_table(table_id=METADATA_TABLE,
                               fields=fields_list,
                               dataset_id=dataset_id)
 
 
-def copy_metadata_table(project_id, source_dataset_id, target_dataset_id,
+def copy_metadata_table(client, source_dataset_id, target_dataset_id,
                         table_fields):
     """
     Copies the metadata table
-
-    :param project_id: identifies the project
+    
+    :param client: a BigQuerClient
     :param source_dataset_id: name of the source dataset
     :param target_dataset_id: name of the target dataset
     :param table_fields: field list of the table
     :return: None
     """
-    create_metadata_table(target_dataset_id, table_fields)
-    query = COPY_QUERY.render(project=project_id,
+    create_metadata_table(client, target_dataset_id, table_fields)
+    query = COPY_QUERY.render(project=client.project,
                               dataset=source_dataset_id,
                               metadata_table=METADATA_TABLE)
     bq_utils.query(query,
@@ -196,11 +198,13 @@ def main(raw_args=None):
 
     fields = resources.fields_for(METADATA_TABLE)
 
+    bq_client = BigQueryClient(args.project_id)
+
     if args.component == CREATE:
-        create_metadata_table(args.target_dataset, fields)
+        create_metadata_table(bq_client, args.target_dataset, fields)
     if args.component == COPY:
-        copy_metadata_table(args.project_id, args.source_dataset,
-                            args.target_dataset, fields)
+        copy_metadata_table(bq_client, args.source_dataset, args.target_dataset,
+                            fields)
 
     if args.component == INSERT:
         field_values_dict = dict(

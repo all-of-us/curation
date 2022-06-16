@@ -1,10 +1,12 @@
+# Python imports
 import unittest
 from unittest import mock
 
+# Third party imports
 from google.cloud.bigquery.table import TableListItem
 from google.cloud.bigquery import DatasetReference
 
-import bq_utils
+# Project imports
 import resources
 from resources import CDM_TABLES
 from tests.bq_test_helpers import list_item_from_table_id
