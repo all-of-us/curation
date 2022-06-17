@@ -368,7 +368,7 @@ class EhrUnionTest(unittest.TestCase):
             ORDER BY v.visit_detail_id
             '''.format(dataset_id=self.input_dataset_id,
                        nyc_visit_detail=nyc_visit_detail,
-                       hpo_id=NYC_HPO_ID,
+                       hpo_id='nyc_cu',
                        nyc_visit_detail_mapping=ehr_union.mapping_table_for(
                            'visit_detail'))
         response = bq_utils.query(q)
@@ -407,7 +407,7 @@ class EhrUnionTest(unittest.TestCase):
             ORDER BY v.visit_occurrence_id
             '''.format(dataset_id=self.input_dataset_id,
                        nyc_visit_occurrence=nyc_visit_occurrence,
-                       hpo_id=NYC_HPO_ID,
+                       hpo_id='nyc_cu',
                        nyc_visit_detail_mapping=ehr_union.mapping_table_for(
                            'visit_occurrence'))
         response = bq_utils.query(q)
