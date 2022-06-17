@@ -10,7 +10,7 @@ import logging
 # Project imports
 import cdr_cleaner.clean_cdr_engine as clean_engine
 import cdr_cleaner.cleaning_rules.backfill_pmi_skip_codes as back_fill_pmi_skip
-import cdr_cleaner.cleaning_rules.clean_years as clean_years
+from cdr_cleaner.cleaning_rules.clean_by_birth_year import CleanByBirthYear
 import cdr_cleaner.cleaning_rules.domain_alignment as domain_alignment
 import cdr_cleaner.cleaning_rules.drop_duplicate_states as drop_duplicate_states
 import cdr_cleaner.cleaning_rules.drop_extreme_measurements as extreme_measurements
@@ -129,7 +129,7 @@ UNIONED_EHR_CLEANING_CLASSES = [
     (EhrSubmissionDataCutoff,
     ),  # should run before EnsureDateDatetimeConsistency
     (DeduplicateIdColumn,),
-    (clean_years.get_year_of_birth_queries,),
+    (CleanByBirthYear,),
     (drug_refills_supply.get_days_supply_refills_queries,),
     # trying to load a table while creating query strings,
     # won't work with mocked strings.  should use base class
@@ -188,6 +188,7 @@ RDR_CLEANING_CLASSES = [
     (DropDuplicatePpiQuestionsAndAnswers,),
     (extreme_measurements.get_drop_extreme_measurement_queries,),
     (DropMultipleMeasurements,),
+    (CleanByBirthYear,),
     (UpdateInvalidZipCodes,),
 ]
 
@@ -203,7 +204,6 @@ COMBINED_CLEANING_CLASSES = [
     # setup_query_execution function to load dependencies before query execution
     (
         domain_alignment.domain_alignment,),
-    (clean_years.get_year_of_birth_queries,),
     (NegativeAges,),
     # Valid Death dates needs to be applied before no data after death as running no data after death is
     # wiping out the needed consent related data for cleaning.
