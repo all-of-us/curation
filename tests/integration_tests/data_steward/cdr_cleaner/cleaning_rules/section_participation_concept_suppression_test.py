@@ -14,7 +14,7 @@ import os
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.section_participation_concept_suppression import SectionParticipationConceptSuppression
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
-from common import OBSERVATION
+from common import OBSERVATION, VOCABULARY_TABLES
 
 # Third party imports
 from dateutil import parser
@@ -45,7 +45,7 @@ class SectionParticipationConceptSuppressionTest(BaseTest.CleaningRulesTestBase
         cls.rule_instance = SectionParticipationConceptSuppression(
             project_id, dataset_id, sandbox_id)
 
-        cls.vocab_tables = ['concept']
+        cls.vocab_tables = VOCABULARY_TABLES
 
         cls.fq_table_names = [
             f'{project_id}.{dataset_id}.{OBSERVATION}',
@@ -71,12 +71,6 @@ class SectionParticipationConceptSuppressionTest(BaseTest.CleaningRulesTestBase
 
         super().setUp()
         self.copy_vocab_tables()
-
-    def copy_vocab_tables(self):
-        for table in self.vocab_tables:
-            self.client.copy_table(
-                f'{self.project_id}.{self.vocabulary_id}.{table}',
-                f'{self.project_id}.{self.dataset_id}.{table}')
 
     def test_section_participation_concept_suppression_cleaning(self):
         """

@@ -99,23 +99,6 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
         # Copy vocab tables over to the test dataset
         cls.copy_vocab_tables(cls.vocabulary_id)
 
-    @classmethod
-    def copy_vocab_tables(cls, vocabulary_id):
-        """
-        A function for copying the vocab tables to the test dataset_id
-        :param vocabulary_id: 
-        :return: 
-        """
-        # Copy vocab tables over to the test dataset
-        vocabulary_dataset = cls.client.get_dataset(vocabulary_id)
-        for src_table in cls.client.list_tables(vocabulary_dataset):
-            schema = cls.client.get_table_schema(src_table.table_id)
-            destination = f'{cls.project_id}.{cls.dataset_id}.{src_table.table_id}'
-            dst_table = cls.client.create_table(Table(destination,
-                                                      schema=schema),
-                                                exists_ok=True)
-            cls.client.copy_table(src_table, dst_table)
-
     def setUp(self):
         """
         Create empty tables for the rule to run on

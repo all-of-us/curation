@@ -41,7 +41,7 @@ class DropParticipantsWithoutPPITest(BaseTest.CleaningRulesTestBase):
             common.PERSON, common.OBSERVATION, common.DRUG_EXPOSURE
         ]
         supporting_tables = ['_mapping_observation']
-        cls.vocab_tables = ['concept', 'concept_ancestor']
+        cls.vocab_tables = common.VOCABULARY_TABLES
         # Generates list of fully qualified table names and their corresponding sandbox table names
         cls.fq_table_names = [
             f"{cls.project_id}.{cls.dataset_id}.{table}"
@@ -128,12 +128,6 @@ class DropParticipantsWithoutPPITest(BaseTest.CleaningRulesTestBase):
             drug_query, observation_query, mapping_observation_query,
             person_query
         ])
-
-    def copy_vocab_tables(self):
-        for table in self.vocab_tables:
-            self.client.copy_table(
-                f'{self.project_id}.{self.vocabulary_id}.{table}',
-                f'{self.project_id}.{self.dataset_id}.{table}')
 
     @patch(
         'cdr_cleaner.cleaning_rules.drop_rows_for_missing_persons.TABLES_TO_DELETE_FROM',
