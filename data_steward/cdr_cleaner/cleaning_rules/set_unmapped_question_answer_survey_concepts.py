@@ -21,6 +21,7 @@ Odyseus provided the short codes, as well as a brief review of other outstanding
 from datetime import datetime
 import logging
 import os
+import re
 
 # Third party imports
 from google.cloud import bigquery
@@ -155,7 +156,7 @@ class SetConceptIdsForSurveyQuestionsAnswers(BaseCleaningRule):
             'depend on the original/"bad" concept_code to function properly.')
 
         if not table_namer:
-            table_namer = f'hotfix_{datetime.now().strftime("%Y%m%d")}'
+            table_namer = re.sub('\d\d\d\dq\dr\d', '', dataset_id)
             LOGGER.info(f"'table_namer' was not set.  "
                         f"Using default value of `{table_namer}`.")
 
