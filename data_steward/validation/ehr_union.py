@@ -328,7 +328,8 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
         # Ensure that we
         #  1) populate primary key from the mapping table and
         #  2) populate any foreign key fields from the mapping visit table
-        # NOTE: Assumes that besides person_id foreign keys exist only for visit_occurrence, location, care_site
+        # NOTE: Assumes that besides person_id foreign keys exist only for visit_occurrence, location, care_site, visit_detail
+        # NOTE: visit_occurrence and visit_detail have self-reference foreign keys (DC-2398)
         mapping_table = mapping_table_for(table_name) if is_id_mapped else None
         has_visit_occurrence_id = False
         has_preceding_visit_occurrence_id = False
@@ -368,12 +369,12 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
                 has_visit_detail_id = True
             elif field_name == eu_constants.PRECEDING_VISIT_DETAIL_ID:
                 # Replace with mapped visit_detail_id
-                # pvo is an alias that should resolve to the mapping visit_detail table
+                # pvd is an alias that should resolve to the mapping visit_detail table
                 col_expr = f'pvd.{eu_constants.VISIT_DETAIL_ID} {eu_constants.PRECEDING_VISIT_DETAIL_ID}'
                 has_preceding_visit_detail_id = True
             elif field_name == eu_constants.VISIT_DETAIL_PARENT_ID:
                 # Replace with mapped visit_detail_id
-                # pvo is an alias that should resolve to the mapping visit_detail table
+                # ppvd is an alias that should resolve to the mapping visit_detail table
                 col_expr = f'ppvd.{eu_constants.VISIT_DETAIL_ID} {eu_constants.VISIT_DETAIL_PARENT_ID}'
                 has_visit_detail_parent_id = True
             elif field_name == eu_constants.CARE_SITE_ID:
