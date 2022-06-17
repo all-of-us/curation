@@ -4,7 +4,6 @@ the participant is less than 18 years old.
 Using rule 18, 19 in Achilles Heel for reference.
 """
 import logging
-import re
 
 # Project imports
 import constants.cdr_cleaner.clean_cdr as cdr_consts
@@ -70,11 +69,6 @@ class CleanByBirthYear(BaseCleaningRule):
             'Sandbox and remove records when the participant\'s year of birth '
             'indicates he/she was born before 1800, in the last 17 years, or in '
             'the future.')
-
-        if not table_namer:
-            table_namer = re.sub('\d\d\d\dq\dr\d', '', dataset_id)
-            LOGGER.info(f"'table_namer' was not set.  "
-                        f"Using default value of `{table_namer}`.")
 
         person_id_tables = resources.get_person_id_tables(AOU_REQUIRED)
 
