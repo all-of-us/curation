@@ -80,7 +80,7 @@ class CleanByBirthYear(BaseCleaningRule):
 
         super().__init__(issue_numbers=ISSUE_NUMBERS,
                          description=desc,
-                         affected_datasets=[cdr_consts.RDR],
+                         affected_datasets=[cdr_consts.RDR, cdr_consts.UNIONED],
                          affected_tables=person_id_tables,
                          project_id=project_id,
                          dataset_id=dataset_id,
