@@ -96,15 +96,15 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
         # call super to set up the client, create datasets
         cls.up_class = super().setUpClass()
 
-        # Copy vocab tables over to the test dataset
-        cls.copy_vocab_tables(cls.vocabulary_id)
-
     def setUp(self):
         """
         Create empty tables for the rule to run on
         """
         # Create domain tables required for the test
         super().setUp()
+
+        # Copy vocab tables over to the test dataset
+        self.copy_vocab_tables(self.vocabulary_id)
 
         # Load the test data
         condition_occurrence_data_template = self.jinja_env.from_string(
