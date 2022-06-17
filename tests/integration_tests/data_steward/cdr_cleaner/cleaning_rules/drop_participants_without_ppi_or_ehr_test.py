@@ -61,7 +61,7 @@ class DropParticipantsWithoutPPITest(BaseTest.CleaningRulesTestBase):
         # create tables
         super().setUp()
 
-        self.copy_vocab_tables()
+        self.copy_vocab_tables(self.vocabulary_id)
 
         # Participant 1: no data (to be removed)
         # Participant 2: has the basics only

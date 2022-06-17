@@ -70,7 +70,7 @@ class SectionParticipationConceptSuppressionTest(BaseTest.CleaningRulesTestBase
         self.date = parser.parse('2020-05-05').date()
 
         super().setUp()
-        self.copy_vocab_tables()
+        self.copy_vocab_tables(self.vocabulary_id)
 
     def test_section_participation_concept_suppression_cleaning(self):
         """
