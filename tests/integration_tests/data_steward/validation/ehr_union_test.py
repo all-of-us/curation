@@ -364,7 +364,7 @@ class EhrUnionTest(unittest.TestCase):
             AND mp.src_hpo_id = 'nyc_cu'
             LEFT JOIN {output_dataset_id}.{mapping_visit_detail} mv
             ON v.visit_detail_parent_id = mp.src_visit_detail_id
-            AND mv.src_hpo_id = {hpo_id}
+            AND mv.src_hpo_id = 'nyc_cu'
             ORDER BY v.visit_detail_id
             '''.format(
             dataset_id=self.input_dataset_id,
