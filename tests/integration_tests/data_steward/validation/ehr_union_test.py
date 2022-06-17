@@ -359,18 +359,19 @@ class EhrUnionTest(unittest.TestCase):
               mp.visit_detail_id preceding_visit_detail_id, 
               mv.visit_detail_id visit_detail_parent_id 
             FROM {dataset_id}.{nyc_visit_detail} v
-            LEFT JOIN {dataset_id}.{nyc_visit_detail_mapping} mp
+            LEFT JOIN {output_dataset_id}.{mapping_visit_detail} mp
             ON v.preceding_visit_detail_id = mp.src_visit_detail_id
             AND mp.src_hpo_id = {hpo_id}
-            LEFT JOIN {dataset_id}.{nyc_visit_detail_mapping} mv
+            LEFT JOIN {output_dataset_id}.{mapping_visit_detail} mv
             ON v.visit_detail_parent_id = mp.src_visit_detail_id
             AND mv.src_hpo_id = {hpo_id}
             ORDER BY v.visit_detail_id
-            '''.format(dataset_id=self.input_dataset_id,
-                       nyc_visit_detail=nyc_visit_detail,
-                       hpo_id='nyc_cu',
-                       nyc_visit_detail_mapping=ehr_union.mapping_table_for(
-                           'visit_detail'))
+            '''.format(
+            dataset_id=self.input_dataset_id,
+            output_dataset_id=self.output_dataset_id,
+            nyc_visit_detail=nyc_visit_detail,
+            hpo_id='nyc_cu',
+            mapping_visit_detail=ehr_union.mapping_table_for('visit_detail'))
         response = bq_utils.query(q)
         expected_rows = bq_utils.response2rows(response)
         q = '''
@@ -401,14 +402,15 @@ class EhrUnionTest(unittest.TestCase):
               v.person_id, 
               mp.visit_occurrence_id preceding_visit_occurrence_id
             FROM {dataset_id}.{nyc_visit_occurrence} p
-            LEFT JOIN {dataset_id}.{nyc_visit_occurrence_mapping} mp
+            LEFT JOIN {output_dataset_id}.{mapping_visit_occurrence} mp
             ON v.preceding_visit_occurrence_id = mp.src_visit_occurrence_id
             AND mp.src_hpo_id = {hpo_id}
             ORDER BY v.visit_occurrence_id
             '''.format(dataset_id=self.input_dataset_id,
+                       output_dataset_id=self.output_dataset_id,
                        nyc_visit_occurrence=nyc_visit_occurrence,
                        hpo_id='nyc_cu',
-                       nyc_visit_detail_mapping=ehr_union.mapping_table_for(
+                       mapping_visit_occurrence=ehr_union.mapping_table_for(
                            'visit_occurrence'))
         response = bq_utils.query(q)
         expected_rows = bq_utils.response2rows(response)

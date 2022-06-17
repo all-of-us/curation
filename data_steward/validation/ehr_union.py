@@ -403,6 +403,18 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
         care_site_join_expr = ''
         visit_detail_filter_expr = ''
 
+        if has_preceding_visit_occurrence_id:
+            # Include a join to mapping visit occurrence table for preceding visit occurrence
+            # Note: Using left join in order to keep records that aren't mapped to visits
+            pvo = mapping_table_for(common.VISIT_OCCURRENCE)
+            src_visit_occurrence_table_id = resources.get_table_id(
+                common.VISIT_OCCURRENCE, hpo_id=hpo_id)
+            preceding_visit_occurrence_join_expr = f'''
+            LEFT JOIN `{output_dataset_id}.{pvo}` pvo 
+              ON t.preceding_visit_occurrence_id = pvo.src_visit_occurrence_id 
+             AND pvo.src_table_id = '{src_visit_occurrence_table_id}'
+            '''
+
         if has_visit_occurrence_id:
             # Include a join to mapping visit occurrence table
             # Note: Using left join in order to keep records that aren't mapped to visits
@@ -425,30 +437,6 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
             LEFT JOIN `{output_dataset_id}.{mvd}` mvd 
               ON t.visit_detail_id = mvd.src_visit_detail_id 
              AND mvd.src_table_id = '{src_visit_detail_table_id}'
-            '''
-
-        if has_care_site_id:
-            # Include a join to mapping visit table
-            # Note: Using left join in order to keep records that aren't mapped to visits
-            cs = mapping_table_for(common.CARE_SITE)
-            src_care_site_table_id = resources.get_table_id(common.CARE_SITE,
-                                                            hpo_id=hpo_id)
-            care_site_join_expr = f'''
-                        LEFT JOIN `{output_dataset_id}.{cs}` mcs 
-                          ON t.care_site_id = mcs.src_care_site_id 
-                         AND mcs.src_table_id = '{src_care_site_table_id}'
-                        '''
-
-        if has_preceding_visit_occurrence_id:
-            # Include a join to mapping visit occurrence table for preceding visit occurrence
-            # Note: Using left join in order to keep records that aren't mapped to visits
-            pvo = mapping_table_for(common.VISIT_OCCURRENCE)
-            src_visit_occurrence_table_id = resources.get_table_id(
-                common.VISIT_OCCURRENCE, hpo_id=hpo_id)
-            preceding_visit_occurrence_join_expr = f'''
-            LEFT JOIN `{output_dataset_id}.{pvo}` pvo 
-              ON t.preceding_visit_occurrence_id = pvo.src_visit_occurrence_id 
-             AND pvo.src_table_id = '{src_visit_occurrence_table_id}'
             '''
 
         if has_preceding_visit_detail_id:
@@ -475,6 +463,18 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
              AND ppvd.src_table_id = '{src_visit_detail_table_id}'
             '''
 
+        if has_care_site_id:
+            # Include a join to mapping visit table
+            # Note: Using left join in order to keep records that aren't mapped to visits
+            cs = mapping_table_for(common.CARE_SITE)
+            src_care_site_table_id = resources.get_table_id(common.CARE_SITE,
+                                                            hpo_id=hpo_id)
+            care_site_join_expr = f'''
+            LEFT JOIN `{output_dataset_id}.{cs}` mcs 
+                ON t.care_site_id = mcs.src_care_site_id 
+                AND mcs.src_table_id = '{src_care_site_table_id}'
+            '''
+
         if has_location_id:
             # Include a join to mapping visit table
             # Note: Using left join in order to keep records that aren't mapped to visits
@@ -482,10 +482,10 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
             src_location_table_id = resources.get_table_id(common.LOCATION,
                                                            hpo_id=hpo_id)
             location_join_expr = f'''
-                        LEFT JOIN `{output_dataset_id}.{lc}` loc 
-                          ON t.location_id = loc.src_location_id 
-                         AND loc.src_table_id = '{src_location_table_id}'
-                        '''
+            LEFT JOIN `{output_dataset_id}.{lc}` loc 
+                ON t.location_id = loc.src_location_id 
+                AND loc.src_table_id = '{src_location_table_id}'
+            '''
 
         if table_name == common.PERSON:
             return f'''
@@ -500,6 +500,9 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
             AND mvo.{eu_constants.VISIT_OCCURRENCE_ID} IS NOT NULL
             '''
 
+        # NOTE The order of xyz_join_expr should align with the order of the columns in SELECT clause.
+        # Otherwise, integration test needs some adjustment. (visit_detail falls into that)
+        # TODO Optimize the process and the tests.
         return f'''
         SELECT
             {cols}
@@ -524,7 +527,7 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
         WHERE
             row_num = 1
         {visit_detail_filter_expr}
-            '''
+        '''
 
 
 def _union_subqueries(table_name, hpo_ids, input_dataset_id, output_dataset_id):
