@@ -414,18 +414,6 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
              AND mvo.src_table_id = '{src_visit_occurrence_table_id}'
             '''
 
-        if has_preceding_visit_occurrence_id:
-            # Include a join to mapping visit occurrence table for preceding visit occurrence
-            # Note: Using left join in order to keep records that aren't mapped to visits
-            pvo = mapping_table_for(common.VISIT_OCCURRENCE)
-            src_visit_occurrence_table_id = resources.get_table_id(
-                common.VISIT_OCCURRENCE, hpo_id=hpo_id)
-            preceding_visit_occurrence_join_expr = f'''
-            LEFT JOIN `{output_dataset_id}.{pvo}` pvo 
-              ON t.preceding_visit_occurrence_id = pvo.src_visit_occurrence_id 
-             AND pvo.src_table_id = '{src_visit_occurrence_table_id}'
-            '''
-
         if has_visit_detail_id:
             # Include a join to mapping visit detail table
             # Note: Using left join in order to keep records that aren't mapped to visits
@@ -436,6 +424,30 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
             LEFT JOIN `{output_dataset_id}.{mvd}` mvd 
               ON t.visit_detail_id = mvd.src_visit_detail_id 
              AND mvd.src_table_id = '{src_visit_detail_table_id}'
+            '''
+
+        if has_care_site_id:
+            # Include a join to mapping visit table
+            # Note: Using left join in order to keep records that aren't mapped to visits
+            cs = mapping_table_for(common.CARE_SITE)
+            src_care_site_table_id = resources.get_table_id(common.CARE_SITE,
+                                                            hpo_id=hpo_id)
+            care_site_join_expr = f'''
+                        LEFT JOIN `{output_dataset_id}.{cs}` mcs 
+                          ON t.care_site_id = mcs.src_care_site_id 
+                         AND mcs.src_table_id = '{src_care_site_table_id}'
+                        '''
+
+        if has_preceding_visit_occurrence_id:
+            # Include a join to mapping visit occurrence table for preceding visit occurrence
+            # Note: Using left join in order to keep records that aren't mapped to visits
+            pvo = mapping_table_for(common.VISIT_OCCURRENCE)
+            src_visit_occurrence_table_id = resources.get_table_id(
+                common.VISIT_OCCURRENCE, hpo_id=hpo_id)
+            preceding_visit_occurrence_join_expr = f'''
+            LEFT JOIN `{output_dataset_id}.{pvo}` pvo 
+              ON t.preceding_visit_occurrence_id = pvo.src_visit_occurrence_id 
+             AND pvo.src_table_id = '{src_visit_occurrence_table_id}'
             '''
 
         if has_preceding_visit_detail_id:
@@ -461,18 +473,6 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
               ON t.visit_detail_parent_id = ppvd.src_visit_detail_id
              AND ppvd.src_table_id = '{src_visit_detail_table_id}'
             '''
-
-        if has_care_site_id:
-            # Include a join to mapping visit table
-            # Note: Using left join in order to keep records that aren't mapped to visits
-            cs = mapping_table_for(common.CARE_SITE)
-            src_care_site_table_id = resources.get_table_id(common.CARE_SITE,
-                                                            hpo_id=hpo_id)
-            care_site_join_expr = f'''
-                        LEFT JOIN `{output_dataset_id}.{cs}` mcs 
-                          ON t.care_site_id = mcs.src_care_site_id 
-                         AND mcs.src_table_id = '{src_care_site_table_id}'
-                        '''
 
         if has_location_id:
             # Include a join to mapping visit table
@@ -514,11 +514,11 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
             t.{table_name}_id = m.src_{table_name}_id
         AND m.src_table_id = '{table_id}'
         {visit_occurrence_join_expr}
-        {preceding_visit_occurrence_join_expr}
         {visit_detail_join_expr}
+        {care_site_join_expr}
+        {preceding_visit_occurrence_join_expr}
         {preceding_visit_detail_join_expr}
         {visit_detail_parent_join_expr}
-        {care_site_join_expr}
         {location_join_expr}
         WHERE
             row_num = 1
