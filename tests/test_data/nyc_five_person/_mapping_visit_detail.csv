@@ -1,4 +1,2 @@
 visit_detail_id,src_dataset_id,src_visit_detail_id,src_hpo_id
-101001,nyc_cu_visit_detail,101,nyc_cu
-101002,nyc_cu_visit_detail,102,nyc_cu
-101003,nyc_cu_visit_detail,103,nyc_cu
+101,nyc_cu_visit_detail,101,nyc_cu
