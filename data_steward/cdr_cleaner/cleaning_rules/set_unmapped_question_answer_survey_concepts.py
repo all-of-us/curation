@@ -21,7 +21,6 @@ Odyseus provided the short codes, as well as a brief review of other outstanding
 from datetime import datetime
 import logging
 import os
-import re
 
 # Third party imports
 from google.cloud import bigquery
@@ -154,11 +153,6 @@ class SetConceptIdsForSurveyQuestionsAnswers(BaseCleaningRule):
             'value_as_concept_id and value_source_concept_id for "Answer" codes.  '
             'The original string value will not be changed here.  Several rules '
             'depend on the original/"bad" concept_code to function properly.')
-
-        if not table_namer:
-            table_namer = re.sub('\d\d\d\dq\dr\d', '', dataset_id)
-            LOGGER.info(f"'table_namer' was not set.  "
-                        f"Using default value of `{table_namer}`.")
 
         super().__init__(issue_numbers=JIRA_ISSUE_NUMBERS,
                          description=desc,

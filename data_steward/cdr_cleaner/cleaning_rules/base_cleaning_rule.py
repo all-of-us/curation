@@ -11,6 +11,7 @@ features.
 """
 # Python imports
 import logging
+import re
 from abc import ABC, abstractmethod
 from typing import List, NewType
 
@@ -428,8 +429,9 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
         Set the table_namer for this class instance. If no value is provided, it is set to a default value.
         """
         if not table_namer:
-            for key, value in kwargs.items():
-                self._table_namer = kwargs.get(value)
+            self._table_namer = re.sub('\d\d\d\dq\dr\d', '', self.dataset_id)
+            LOGGER.info(f"'table_namer' was not set.  "
+                        f"Using default value of `{table_namer}`.")
         else:
             self._table_namer = table_namer
 
