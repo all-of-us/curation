@@ -282,13 +282,13 @@ CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     (YearOfBirthRecordsSuppression,),
     (StringFieldsSuppression,),
     (ControlledCopeSurveySuppression,),
-    (IDFieldSuppression,),  # Should run after any data remapping
     (GenerateExtTables,),
     (COPESurveyVersionTask,
     ),  # Should run after GenerateExtTables and before CleanMappingExtTables
     (CancerConceptSuppression,),  # Should run after any data remapping rules
     (AggregateZipCodes,),
     (SectionParticipationConceptSuppression,),
+    (IDFieldSuppression,),  # Should run after any data remapping
     (DropOrphanedPIDS,),
     (RemoveExtraTables,),  # Should be last cleaning rule to be run
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
