@@ -37,27 +37,6 @@ JIRA_ISSUE_NUMBERS = ['DC499', 'DC830']
 
 OLD_MAP_SHORT_CODES_TABLE = 'old_map_short_codes'
 
-OLD_MAP_SHORT_CODES_TABLE_FIELDS = [{
-    "type": "string",
-    "name": "type",
-    "mode": "required",
-    "description": "determines if it is a question or an answer"
-}, {
-    "type": "string",
-    "name": "pmi_code",
-    "mode": "required",
-    "description": "Concept code found in the data table."
-}, {
-    "type":
-        "string",
-    "name":
-        "short_code",
-    "mode":
-        "required",
-    "description":
-        "short codes used by Odysseus.  actual codes that should be implemented."
-}]
-
 SANDBOX_ALTERED_RECORDS = JINJA_ENV.from_string("""
   CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` AS (
       SELECT
@@ -199,12 +178,10 @@ class SetConceptIdsForSurveyQuestionsAnswers(BaseCleaningRule):
         Load the lookup table values into the sandbox.  The following queries
         will use the lookup table as part of the execution.
         """
-        table_path = os.path.join(resources.resource_files_path,
-                                  f"{OLD_MAP_SHORT_CODES_TABLE}.csv")
-        with open(table_path, 'rb') as csv_file:
-            schema_list = client.get_table_schema(
-                OLD_MAP_SHORT_CODES_TABLE,
-                fields=OLD_MAP_SHORT_CODES_TABLE_FIELDS)
+        table_data_path = os.path.join(resources.resource_files_path,
+                                       f"{OLD_MAP_SHORT_CODES_TABLE}.csv")
+        with open(table_data_path, 'rb') as csv_file:
+            schema_list = client.get_table_schema(OLD_MAP_SHORT_CODES_TABLE)
             table_id = f'{self.project_id}.{self.sandbox_dataset_id}.{OLD_MAP_SHORT_CODES_TABLE}'
             job_config = bigquery.LoadJobConfig(
                 schema=schema_list,

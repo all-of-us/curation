@@ -1,6 +1,8 @@
 """
 Depends on the successful execution of SetConceptIdsForSurveyQuestionsAnswers rule.
-This should be added as a dependency once this rule is base classed.
+TODO:  SetConceptIdsForSurveyQuestionsAnswers should be added as a dependency once
+       this rule is base classed.
+       `depends_on=[SetConceptIdsForSurveyQuestionsAnswers, <anything else that needs to be added>]`
 """
 
 import logging
