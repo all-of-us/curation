@@ -403,18 +403,6 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
         care_site_join_expr = ''
         visit_detail_filter_expr = ''
 
-        if has_preceding_visit_occurrence_id:
-            # Include a join to mapping visit occurrence table for preceding visit occurrence
-            # Note: Using left join in order to keep records that aren't mapped to visits
-            pvo = mapping_table_for(common.VISIT_OCCURRENCE)
-            src_visit_occurrence_table_id = resources.get_table_id(
-                common.VISIT_OCCURRENCE, hpo_id=hpo_id)
-            preceding_visit_occurrence_join_expr = f'''
-            LEFT JOIN `{output_dataset_id}.{pvo}` pvo 
-              ON t.preceding_visit_occurrence_id = pvo.src_visit_occurrence_id 
-             AND pvo.src_table_id = '{src_visit_occurrence_table_id}'
-            '''
-
         if has_visit_occurrence_id:
             # Include a join to mapping visit occurrence table
             # Note: Using left join in order to keep records that aren't mapped to visits
@@ -425,6 +413,18 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
             LEFT JOIN `{output_dataset_id}.{mvo}` mvo 
               ON t.visit_occurrence_id = mvo.src_visit_occurrence_id 
              AND mvo.src_table_id = '{src_visit_occurrence_table_id}'
+            '''
+
+        if has_preceding_visit_occurrence_id:
+            # Include a join to mapping visit occurrence table for preceding visit occurrence
+            # Note: Using left join in order to keep records that aren't mapped to visits
+            pvo = mapping_table_for(common.VISIT_OCCURRENCE)
+            src_visit_occurrence_table_id = resources.get_table_id(
+                common.VISIT_OCCURRENCE, hpo_id=hpo_id)
+            preceding_visit_occurrence_join_expr = f'''
+            LEFT JOIN `{output_dataset_id}.{pvo}` pvo 
+              ON t.preceding_visit_occurrence_id = pvo.src_visit_occurrence_id 
+             AND pvo.src_table_id = '{src_visit_occurrence_table_id}'
             '''
 
         if has_visit_detail_id:
