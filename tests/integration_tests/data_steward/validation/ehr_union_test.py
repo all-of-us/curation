@@ -358,7 +358,7 @@ class EhrUnionTest(unittest.TestCase):
               v.person_id, 
               mp.visit_detail_id preceding_visit_detail_id, 
               mv.visit_detail_id visit_detail_parent_id 
-            FROM {dataset_id}.{nyc_visit_detail} v
+            FROM {input_dataset_id}.{nyc_visit_detail} v
             LEFT JOIN {output_dataset_id}.{mapping_visit_detail} mp
             ON v.preceding_visit_detail_id = mp.src_visit_detail_id
             AND mp.src_hpo_id = 'nyc_cu'
@@ -367,7 +367,7 @@ class EhrUnionTest(unittest.TestCase):
             AND mv.src_hpo_id = 'nyc_cu'
             ORDER BY v.visit_detail_id
             '''.format(
-            dataset_id=self.input_dataset_id,
+            input_dataset_id=self.input_dataset_id,
             output_dataset_id=self.output_dataset_id,
             nyc_visit_detail=nyc_visit_detail,
             mapping_visit_detail=ehr_union.mapping_table_for('visit_detail'))
@@ -379,12 +379,13 @@ class EhrUnionTest(unittest.TestCase):
               person_id, 
               preceding_visit_detail_id, 
               visit_detail_parent_id
-            FROM {dataset_id}.{table_id}
+            FROM {output_dataset_id}.{table_id}
             WHERE person_id IN (
-                SELECT person_id FROM {dataset_id}.{nyc_visit_detail}
+                SELECT person_id FROM {input_dataset_id}.{nyc_visit_detail}
             )
             ORDER BY visit_detail_id ASC'''.format(
-            dataset_id=self.output_dataset_id,
+            input_dataset_id=self.input_dataset_id,
+            output_dataset_id=self.output_dataset_id,
             table_id=visit_detail,
             nyc_visit_detail=nyc_visit_detail)
         response = bq_utils.query(q)
@@ -400,12 +401,12 @@ class EhrUnionTest(unittest.TestCase):
               v.visit_occurrence_id, 
               v.person_id, 
               mp.visit_occurrence_id preceding_visit_occurrence_id
-            FROM {dataset_id}.{nyc_visit_occurrence} p
+            FROM {input_dataset_id}.{nyc_visit_occurrence} p
             LEFT JOIN {output_dataset_id}.{mapping_visit_occurrence} mp
             ON v.preceding_visit_occurrence_id = mp.src_visit_occurrence_id
             AND mp.src_hpo_id = 'nyc_cu'
             ORDER BY v.visit_occurrence_id
-            '''.format(dataset_id=self.input_dataset_id,
+            '''.format(input_dataset_id=self.input_dataset_id,
                        output_dataset_id=self.output_dataset_id,
                        nyc_visit_occurrence=nyc_visit_occurrence,
                        mapping_visit_occurrence=ehr_union.mapping_table_for(
@@ -417,12 +418,13 @@ class EhrUnionTest(unittest.TestCase):
               visit_occurrence_id,
               person_id, 
               preceding_visit_occurrence_id
-            FROM {dataset_id}.{table_id}
+            FROM {output_dataset_id}.{table_id}
             WHERE person_id IN (
-                SELECT person_id FROM {dataset_id}.{nyc_visit_occurrence}
+                SELECT person_id FROM {input_dataset_id}.{nyc_visit_occurrence}
             )
             ORDER BY visit_occurrence_id ASC'''.format(
-            dataset_id=self.output_dataset_id,
+            input_dataset_id=self.input_dataset_id,
+            output_dataset_id=self.output_dataset_id,
             table_id=visit_occurrence,
             nyc_visit_occurrence=nyc_visit_occurrence)
         response = bq_utils.query(q)
