@@ -23,14 +23,13 @@ class FixUnmappedSurveyAnswersTest(unittest.TestCase):
         self.project_id = 'test_project'
         self.dataset_id = 'test_dataset'
         self.sandbox_id = 'test_sandbox'
+        self.sandbox_table_name = '_'.join(
+            JIRA_ISSUE_NUMBERS).lower() + '_' + OBSERVATION
+        self.client = None
 
         self.rule_instance = FixUnmappedSurveyAnswers(self.project_id,
                                                       self.dataset_id,
                                                       self.sandbox_id)
-
-        self.sandbox_table_name = self.rule_instance.sandbox_table_for(
-            OBSERVATION)
-        self.client = None
 
         self.assertEqual(self.rule_instance.project_id, self.project_id)
         self.assertEqual(self.rule_instance.dataset_id, self.dataset_id)

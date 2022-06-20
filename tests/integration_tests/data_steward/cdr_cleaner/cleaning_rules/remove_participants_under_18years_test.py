@@ -82,10 +82,10 @@ class RemoveParticipantsUnder18YearsTest(BaseTest.CleaningRulesTestBase):
         for table_name in AFFECTED_TABLES:
             cls.fq_table_names.append(
                 f'{cls.project_id}.{cls.dataset_id}.{table_name}')
-
-        for table_name in cls.rule_instance.get_sandbox_tablenames():
+            sandbox_table_name = cls.rule_instance.get_sandbox_tablenames(
+                table_name)
             cls.fq_sandbox_table_names.append(
-                f'{cls.project_id}.{cls.sandbox_id}.{table_name}')
+                f'{cls.project_id}.{cls.sandbox_id}.{sandbox_table_name}')
 
         # call super to set up the client, create datasets
         cls.up_class = super().setUpClass()

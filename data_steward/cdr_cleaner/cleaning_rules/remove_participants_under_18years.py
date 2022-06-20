@@ -138,7 +138,7 @@ class RemoveParticipantsUnder18Years(BaseCleaningRule):
                         project=self.project_id,
                         dataset=self.dataset_id,
                         sandbox_dataset=self.sandbox_dataset_id,
-                        sandbox_table=self.sandbox_table_for(table),
+                        sandbox_table=self.get_sandbox_tablenames(table),
                         domain_table=table,
                         under18_participant_lookup_table=
                         UNDER18_PARTICIPANTS_LOOKUP_TABLE)
@@ -183,11 +183,11 @@ class RemoveParticipantsUnder18Years(BaseCleaningRule):
         """
         raise NotImplementedError("Please fix me.")
 
-    def get_sandbox_tablenames(self):
+    def get_sandbox_tablenames(self, table_name):
         """
-        Returns an iterable of sandbox table names
+        Generates sandbox table name for a given domain table
         """
-        return [self.sandbox_table_for(table) for table in self.affected_tables]
+        return self.sandbox_table_for(table_name)
 
 
 if __name__ == '__main__':

@@ -23,13 +23,12 @@ class DropMultipleMeasurementsTest(unittest.TestCase):
         self.project_id = 'foo_project'
         self.dataset_id = 'foo_dataset'
         self.sandbox_id = 'foo_sandbox'
+        self.client = None
+        self.sandbox_table = f'{ISSUE_NUMBERS[0].lower()}_{MEASUREMENT}'
 
         self.rule_instance = DropMultipleMeasurements(self.project_id,
                                                       self.dataset_id,
                                                       self.sandbox_id)
-
-        self.client = None
-        self.sandbox_table = self.rule_instance.sandbox_table_for(MEASUREMENT)
 
         self.assertEqual(self.rule_instance.project_id, self.project_id)
         self.assertEqual(self.rule_instance.dataset_id, self.dataset_id)
