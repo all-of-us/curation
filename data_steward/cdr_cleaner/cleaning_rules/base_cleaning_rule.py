@@ -225,7 +225,7 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
         self._issue_urls = issue_urls if issue_urls else []
         self._depends_on_classes = depends_on if depends_on else []
         self._affected_tables = affected_tables
-        self._table_namer = -self.table_namer = table_namer
+        self._table_namer = self.table_namer = table_namer
         self._table_tag = table_tag
 
         # fields jinja template
