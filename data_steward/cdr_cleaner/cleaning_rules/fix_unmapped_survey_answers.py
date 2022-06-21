@@ -51,6 +51,8 @@ import logging
 # Project imports
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
+from cdr_cleaner.cleaning_rules.set_unmapped_question_answer_survey_concepts import (
+    SetConceptIdsForSurveyQuestionsAnswers)
 from constants.bq_utils import WRITE_TRUNCATE
 from common import OBSERVATION, JINJA_ENV
 
@@ -129,7 +131,8 @@ class FixUnmappedSurveyAnswers(BaseCleaningRule):
                          affected_tables=[OBSERVATION],
                          project_id=project_id,
                          dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id)
+                         sandbox_dataset_id=sandbox_dataset_id,
+                         depends_on=[SetConceptIdsForSurveyQuestionsAnswers])
 
     def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
         """
