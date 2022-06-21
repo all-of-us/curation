@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # ---
 # jupyter:
 #   jupytext:
@@ -17,6 +18,7 @@ project_id = ""
 old_rdr = ""
 new_rdr = ""
 raw_rdr = "default"  # do not need to provide this if running on a raw rdr import
+new_rdr_sandbox = ""
 run_as = ""
 # -
 
@@ -24,14 +26,13 @@ run_as = ""
 #
 # Quality checks performed on a new RDR dataset and comparison with previous RDR dataset.
 
-# +
 from common import JINJA_ENV
 from utils import auth
 from gcloud.bq import BigQueryClient
 from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
 from cdr_cleaner.cleaning_rules.suppress_combined_pfmh_survey import DROP_PFMHH_CONCEPTS
+from IPython.display import display, HTML
 
-# -
 
 # # Table comparison
 # The export should generally contain the same tables from month to month.
@@ -643,3 +644,178 @@ group by value_source_concept_id, value_as_concept_id
 """)
 query = tpl.render(new_rdr=new_rdr, project_id=project_id)
 execute(client, query)
+
+# # Verify that no joint Personal Family Medical History survey information exists in the Dataset.
+# [DC-2146](https://precisionmedicineinitiative.atlassian.net/browse/DC-2146)
+# The survey launched on 2021/11/01.  This date has been used to help identify this data.
+# Checking PFMH concept_codes in conjunction with the survey date.
+
+tpl = JINJA_ENV.from_string("""
+SELECT
+  observation_source_value,
+  COUNT(*) AS n_rows_violation
+FROM
+  `{{project_id}}.{{dataset}}.observation`
+WHERE
+  -- separated surveys were removed from participant portal on 2021-11-01 --
+  -- combined survey was launched on 2021-11-01 --
+  observation_date > '2021-10-31'
+  AND LOWER(observation_source_value) IN ({{combined_pfmhh_concepts}})
+GROUP BY
+  observation_source_value
+ORDER BY
+  n_rows_violation DESC
+""")
+query = tpl.render(dataset=new_rdr,
+                   project_id=project_id,
+                   combined_pfmhh_concepts=DROP_PFMHH_CONCEPTS)
+execute(client, query)
+
+
+# # Check that the Question and Answer Concepts in the old_map_short_codes tables are not paired with 0-valued concept_identifiers
+
+# According to this [ticket](https://precisionmedicineinitiative.atlassian.net/browse/DC-2488), Question and Answer concepts that are identified in the `old_map_short_codes` table should not be paired with 0-valued concept_identifiers after the RDR dataset is cleaned. These concept identifiers include the `observation_concept_id` and `observation_source_concept_id` fields.
+
+def render_message(results_df, success_msg=None, failure_msg=None, success_msg_args={}, failure_msg_args={}):
+    """
+    Renders a conditional success or failure message for a DQ check.
+    
+    results_df: Dataframe containing the results of the check.
+    success_msg: A templated string to describe success.
+    failure_msg: A templated string to describe failure.
+    success_msg_args: A dictionary of args to pass to success_msg template.
+    failure_msg_args: A dictionary of args to pass to failiure_msg template.
+    
+    """
+    is_success = len(results_df) == 0
+    status_msg = 'Success' if is_success else 'Failure'
+    if is_success:
+        display(HTML(
+            f'''
+                <h3>
+                    Check Status: <span style="color: {'red' if not is_success else 'green'}">{status_msg}</span>
+                </h3>
+                <p>
+                    {success_msg.format(**success_msg_args)}
+                </p>
+            ''')
+        )    
+    else:
+        display(HTML(
+            f'''
+                <h3>
+                    Check Status: <span style="color: {'red' if not is_success else 'green'}">{status_msg}</span>
+                </h3>
+                <p>
+                    {failure_msg.format(**failure_msg_args)}
+                </p>
+            ''')
+        )
+        display(df)   
+
+
+# ## Question Codes
+
+# Check the question codes
+tpl = JINJA_ENV.from_string("""
+WITH question_codes AS (
+  SELECT
+    pmi_code
+  FROM `{{project_id}}.{{sandbox_dataset}}.old_map_short_codes` 
+  WHERE type = 'Question'
+)
+SELECT
+  qc.pmi_code, o.observation_source_value, o.observation_concept_id, o.observation_source_concept_id, COUNT(*) invalid_id_count
+FROM `{{project_id}}.{{dataset}}.observation` o
+JOIN question_codes qc
+  ON qc.pmi_code = o.observation_source_value
+WHERE (o.observation_source_concept_id = 0
+  OR o.observation_concept_id = 0)
+GROUP BY qc.pmi_code, o.observation_source_value, o.observation_concept_id, o.observation_source_concept_id
+ORDER BY invalid_id_count DESC
+""")
+query = tpl.render(project_id=project_id, 
+                   dataset=new_rdr,
+                   sandbox_dataset=new_rdr_sandbox)
+df = execute(client, query)
+
+# +
+success_msg = 'No 0-valued concept ids found.'
+failure_msg = '''
+    <b>{code_count}</b> question codes have 0-valued IDs. Report failure back to curation team.
+    Bug likely due to failure in the <code>update_questions_answers_not_mapped_to_omop</code> cleaning rule.
+'''
+
+render_message(df, success_msg, failure_msg, failure_msg_args={'code_count': len(df)})
+# -
+
+# ## Answer Codes
+
+# Check the answer codes
+tpl = JINJA_ENV.from_string("""
+WITH answer_codes AS (
+  SELECT
+    pmi_code
+  FROM `{{project_id}}.{{sandbox_dataset}}.old_map_short_codes` 
+  WHERE type = 'Answer'
+)
+SELECT
+  ac.pmi_code, o.value_source_value, o.value_source_concept_id, o.value_as_concept_id, COUNT(*) invalid_id_count
+FROM `{{project_id}}.{{dataset}}.observation` o
+JOIN answer_codes ac
+  ON ac.pmi_code = o.value_source_value
+WHERE (o.value_source_concept_id = 0
+  OR o.value_as_concept_id = 0)
+GROUP BY ac.pmi_code, o.value_source_value, o.value_source_concept_id, o.value_as_concept_id
+ORDER BY invalid_id_count DESC
+""")
+query = tpl.render(project_id=project_id, 
+                   dataset=new_rdr,
+                   sandbox_dataset=new_rdr_sandbox)
+df = execute(client, query)
+
+# +
+success_msg = 'No 0-valued concept ids found.'
+failure_msg = '''
+    <b>{code_count}</b> answer codes have 0-valued IDs. Report failure back to curation team.
+    Bug likely due to failure in the <code>update_questions_answers_not_mapped_to_omop</code> cleaning rule.
+'''
+
+render_message(df, success_msg, failure_msg, failure_msg_args={'code_count': len(df)})
+# -
+
+# ### Question-Answer Codes Combo
+
+# Check that mapped answer codes are paired with correctly mapped question codes.  If the question codes are zero valued, the question and answer pair will be dropped from the clean version of the CDR.
+tpl = JINJA_ENV.from_string("""
+WITH answer_codes AS (
+  SELECT
+    pmi_code
+  FROM `{{project_id}}.{{sandbox_dataset}}.old_map_short_codes` 
+  WHERE type = 'Answer'
+)
+SELECT
+  ac.pmi_code, o.value_source_value, o.value_source_concept_id, o.value_as_concept_id,
+  o.observation_source_value, o.observation_concept_id, o.observation_source_concept_id, COUNT(*) invalid_id_count
+FROM `{{project_id}}.{{dataset}}.observation` o
+JOIN answer_codes ac
+  ON ac.pmi_code = o.value_source_value
+WHERE (o.observation_source_concept_id = 0
+  OR o.observation_concept_id = 0)
+GROUP BY ac.pmi_code, o.value_source_value, o.value_source_concept_id, o.value_as_concept_id,
+  o.observation_source_value, o.observation_concept_id, o.observation_source_concept_id
+ORDER BY invalid_id_count DESC
+""")
+query = tpl.render(project_id=project_id, 
+                   dataset=new_rdr,
+                   sandbox_dataset=new_rdr_sandbox)
+df = execute(client, query)
+
+# +
+success_msg = 'No 0-valued concept ids found.'
+failure_msg = '''
+    <b>{code_count}</b> question codes have 0-valued IDs (<em>answer codes visible</em>). Report failure back to curation team.
+    Bug likely due to failure in the <code>update_questions_answers_not_mapped_to_omop</code> cleaning rule.
+'''
+
+render_message(df, success_msg, failure_msg, failure_msg_args={'code_count': len(df)})
