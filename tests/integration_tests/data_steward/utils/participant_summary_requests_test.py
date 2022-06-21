@@ -15,7 +15,7 @@ The intent of this module is to check that GCR access token is generated properl
 # Python imports
 import os
 import time
-from datetime import date, datetime, timezone
+from datetime import datetime, timezone
 from unittest import mock
 
 # Third party imports
@@ -24,7 +24,6 @@ from google.cloud.bigquery import Table, TimePartitioning, TimePartitioningType
 
 # Project imports
 import utils.participant_summary_requests as psr
-from utils.bq import get_table_schema
 from app_identity import PROJECT_ID
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 from common import DIGITAL_HEALTH_SHARING_STATUS
@@ -53,9 +52,12 @@ class ParticipantSummaryRequests(BaseTest.BigQueryTestBase):
 
     def setUp(self):
         self.columns = ['participantId', 'suspensionStatus', 'suspensionTime']
-        self.bq_columns = ['person_id', 'suspension_status', 'deactivated_date']
-        self.deactivated_participants = [[111, 'NO_CONTACT', '2018-12-7'],
-                                         [222, 'NO_CONTACT', '2018-12-7']]
+        self.bq_columns = [
+            'person_id', 'suspension_status', 'deactivated_datetime'
+        ]
+        self.deactivated_participants = [[
+            111, 'NO_CONTACT', '2018-12-7T08:21:14Z'
+        ], [222, 'NO_CONTACT', '2018-12-7T08:21:14Z']]
 
         self.fake_dataframe = DataFrame(self.deactivated_participants,
                                         columns=self.bq_columns)
@@ -73,7 +75,7 @@ class ParticipantSummaryRequests(BaseTest.BigQueryTestBase):
             'resource': {
                 'participantId': 'P111',
                 'suspensionStatus': 'NO_CONTACT',
-                'suspensionTime': '2018-12-07T08:21:14'
+                'suspensionTime': '2018-12-07T08:21:14Z'
             }
         }, {
             'fullUrl':
@@ -81,7 +83,7 @@ class ParticipantSummaryRequests(BaseTest.BigQueryTestBase):
             'resource': {
                 'participantId': 'P222',
                 'suspensionStatus': 'NO_CONTACT',
-                'suspensionTime': '2018-12-07T08:21:14'
+                'suspensionTime': '2018-12-07T08:21:14Z'
             }
         }]
 
@@ -92,7 +94,7 @@ class ParticipantSummaryRequests(BaseTest.BigQueryTestBase):
                 'resource': {
                     'participantId': 'P111',
                     'suspensionStatus': 'NO_CONTACT',
-                    'suspensionTime': '2018-12-07T08:21:14'
+                    'suspensionTime': '2018-12-07T08:21:14Z'
                 }
             }, {
                 'fullUrl':
@@ -100,7 +102,7 @@ class ParticipantSummaryRequests(BaseTest.BigQueryTestBase):
                 'resource': {
                     'participantId': 'P222',
                     'suspensionStatus': 'NO_CONTACT',
-                    'suspensionTime': '2018-12-07T08:21:14'
+                    'suspensionTime': '2018-12-07T08:21:14Z'
                 }
             }]
         }
@@ -182,12 +184,14 @@ class ParticipantSummaryRequests(BaseTest.BigQueryTestBase):
         self.assertRaises(RuntimeError, psr.store_participant_data,
                           self.fake_dataframe, None, self.destination_table)
 
-        psr.store_participant_data(df, self.project_id,
+        psr.store_participant_data(df, self.client,
                                    f'{self.dataset_id}.{self.tablename}')
 
         # Post conditions
-        values = [(111, 'NO_CONTACT', date(2018, 12, 7)),
-                  (222, 'NO_CONTACT', date(2018, 12, 7))]
+        values = [(111, 'NO_CONTACT',
+                   datetime(2018, 12, 7, 8, 21, 14, tzinfo=timezone.utc)),
+                  (222, 'NO_CONTACT',
+                   datetime(2018, 12, 7, 8, 21, 14, tzinfo=timezone.utc))]
         self.assertTableValuesMatch(
             '.'.join([self.project_id, self.destination_table]),
             self.bq_columns, values)
@@ -196,14 +200,15 @@ class ParticipantSummaryRequests(BaseTest.BigQueryTestBase):
         # Pre conditions
         fq_table = f'{self.project_id}.{self.dataset_id}.{DIGITAL_HEALTH_SHARING_STATUS}'
         self.fq_table_names.append(fq_table)
-        table = Table(fq_table,
-                      schema=get_table_schema(DIGITAL_HEALTH_SHARING_STATUS))
+        table = Table(
+            fq_table,
+            schema=self.client.get_table_schema(DIGITAL_HEALTH_SHARING_STATUS))
         table.time_partitioning = TimePartitioning(
             type_=TimePartitioningType.DAY)
         _ = self.client.create_table(table, exists_ok=True)
 
         # Tests
-        _ = psr.store_digital_health_status_data(self.project_id,
+        _ = psr.store_digital_health_status_data(self.client,
                                                  self.digital_health_data,
                                                  fq_table)
 

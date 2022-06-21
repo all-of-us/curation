@@ -1,6 +1,7 @@
 """
 Add a new HPO site to config file and BigQuery lookup tables and updates the `pipeline_table.site_maskings`
-    table with any missing hpo_sites in `lookup_tables.hpo_site_id_mappings`
+table with any missing hpo_sites in `lookup_tables.hpo_site_id_mappings`.
+Check out All of Us CDR Operations Playbook for when and how to use this script.
 
 Note: GAE environment must still be set manually
 """
@@ -17,68 +18,66 @@ import bq_utils
 import constants.bq_utils as bq_consts
 from gcloud.gcs import StorageClient
 from gcloud.bq import BigQueryClient
-import resources
 from tools import cli_util
 from utils import pipeline_logging
 from common import JINJA_ENV, PIPELINE_TABLES, SITE_MASKING_TABLE_ID
 
 LOGGER = logging.getLogger(__name__)
 
-EHR_SITE_PREFIX = 'EHR site '
-RDR = 'rdr'
-PPI_PM = 'PPI/PM'
+DEFAULT_DISPLAY_ORDER = JINJA_ENV.from_string("""
+SELECT MAX(Display_Order) + 1 AS display_order 
+FROM `{{project_id}}.{{lookup_tables_dataset}}.{{hpo_site_id_mappings_table}}`
+""")
 
-DEFAULT_DISPLAY_ORDER = """
-SELECT MAX(Display_Order) + 1 AS display_order FROM {hpo_site_id_mappings_table_id}
-"""
-
-SHIFT_HPO_SITE_DISPLAY_ORDER = """
-UPDATE {hpo_site_id_mappings_table_id}
+SHIFT_HPO_SITE_DISPLAY_ORDER = JINJA_ENV.from_string("""
+UPDATE `{{project_id}}.{{lookup_tables_dataset}}.{{hpo_site_id_mappings_table}}`
 SET Display_Order = Display_Order + 1
-WHERE Display_Order >= {display_order}
-"""
+WHERE Display_Order >= {{display_order}}
+""")
 
-ADD_HPO_SITE_ID_MAPPING = """
-SELECT '{org_id}' AS Org_ID, '{hpo_id}' AS HPO_ID, '{hpo_name}' AS Site_Name, {display_order} AS Display_Order
-"""
+ADD_HPO_SITE_ID_MAPPING = JINJA_ENV.from_string("""
+SELECT
+  '{{org_id}}' AS Org_ID, 
+  '{{hpo_id}}' AS HPO_ID, 
+  '{{hpo_name}}' AS Site_Name, 
+  {{display_order}} AS Display_Order
+""")
 
-ADD_HPO_ID_BUCKET_NAME = """
-SELECT '{hpo_id}' AS hpo_id, '{bucket_name}' AS bucket_name, '{service}' AS service
-"""
+ADD_HPO_ID_BUCKET_NAME = JINJA_ENV.from_string("""
+SELECT
+  '{{hpo_id}}' AS hpo_id, 
+  '{{bucket_name}}' AS bucket_name, 
+  '{{service}}' AS service
+""")
 
 UPDATE_SITE_MASKING_QUERY = JINJA_ENV.from_string("""
-INSERT INTO
-   `{{project_id}}.{{dataset_id}}.{{table_id}}` (hpo_id, src_id)
-     WITH random_ids AS
- (
- -- Generates the random EHR site id for the new hpo_site --
+INSERT INTO `{{project_id}}.{{pipeline_tables_dataset}}.{{site_maskings_table}}` (hpo_id, src_id)
+WITH available_new_src_ids AS (
+  SELECT 
+    ROW_NUMBER() OVER(ORDER BY GENERATE_UUID()) AS temp_key,
+    CONCAT('EHR site ', new_id) AS src_id
+  FROM UNNEST(GENERATE_ARRAY(100, 999)) AS new_id
+  WHERE new_id NOT IN (
+    SELECT CAST(SUBSTR(src_id, -3) AS INT64) 
+    FROM `{{project_id}}.{{pipeline_tables_dataset}}.{{site_maskings_table}}`
+    WHERE hpo_id != 'rdr'
+  )
+),
+hpos_not_in_site_maskings AS (
   SELECT
-    CONCAT('EHR site ', new_id) AS hpo_id,
-    ROW_NUMBER() OVER(ORDER BY GENERATE_UUID()) AS row_id
-  FROM
-    UNNEST(GENERATE_ARRAY(100, 999)) AS new_id
+    ROW_NUMBER() OVER() AS temp_key,
+    hpo_id
+  FROM `{{project_id}}.{{lookup_tables_dataset}}.{{hpo_site_id_mappings_table}}`
+  WHERE hpo_id IS NOT NULL 
+  AND hpo_id != '' 
+  AND LOWER(hpo_id) NOT IN (
+    SELECT LOWER(hpo_id) FROM `{{project_id}}.{{pipeline_tables_dataset}}.{{site_maskings_table}}`
+  )
 )
-SELECT
-    LOWER(m.hpo_id) as hpo_id,
-    r.hpo_id as src_id
-  FROM
-(
-  -- Selects the hpo_sites that are located in the hpo_site_id_mappings table but not the --
-  -- sandboxed site masking table --
-   SELECT
-     m.*,
-     ROW_NUMBER() OVER(ORDER BY GENERATE_UUID()) AS row_id
-   FROM `{{project_id}}.{{lookup_tables_dataset}}.{{hpo_site_id_mappings_table}}` AS m
-   WHERE m.HPO_ID IS NOT NULL AND m.HPO_ID != '' AND m.HPO_ID NOT IN (
-   SELECT hpo_id FROM `{{project_id}}.{{sandbox_id}}.{{table_id}}`)
- ) AS m
- JOIN random_ids AS r
-USING (row_id)
-UNION ALL
--- Adds rdr record if one does not already exist in the sandboxed site_maskings table --
-SELECT 'rdr' AS hpo_id, 'PPI/PM' AS src_id FROM `{{project_id}}.{{dataset_id}}.{{table_id}}` WHERE
- 'rdr' NOT IN (
-SELECT hpo_id FROM `{{project_id}}.{{sandbox_id}}.{{table_id}}`)
+SELECT LOWER(h.hpo_id), a.src_id
+FROM available_new_src_ids AS a
+JOIN hpos_not_in_site_maskings AS h
+ON a.temp_key = h.temp_key
 """)
 
 
@@ -99,13 +98,15 @@ def verify_hpo_mappings_up_to_date(hpo_file_df, hpo_table_df):
             f'to the latest version from curation-devops repository.')
 
 
-def add_hpo_site_mappings_file_df(hpo_id, hpo_name, org_id, display_order):
+def add_hpo_site_mappings_file_df(hpo_id, hpo_name, org_id,
+                                  hpo_site_mappings_path, display_order):
     """
     Creates dataframe with hpo_id, hpo_name, org_id, display_order
 
     :param hpo_id: hpo_ identifier
     :param hpo_name: name of the hpo
     :param org_id: hpo organization identifier
+    :param hpo_site_mappings_path: path to csv file containing hpo site information
     :param display_order: index number in which hpo should be added in table
     :raises ValueError if hpo_id already exists in the lookup table
     """
@@ -115,7 +116,7 @@ def add_hpo_site_mappings_file_df(hpo_id, hpo_name, org_id, display_order):
         raise ValueError(
             f"{hpo_id}/{hpo_name} already exists in site lookup table")
 
-    hpo_file_df = pd.read_csv(resources.hpo_site_mappings_path)
+    hpo_file_df = pd.read_csv(hpo_site_mappings_path)
     verify_hpo_mappings_up_to_date(hpo_file_df, hpo_table_df)
 
     if display_order is None:
@@ -130,19 +131,25 @@ def add_hpo_site_mappings_file_df(hpo_id, hpo_name, org_id, display_order):
     return hpo_file_df.sort_values(by='Display_Order')
 
 
-def add_hpo_site_mappings_csv(hpo_id, hpo_name, org_id, display_order=None):
+def add_hpo_site_mappings_csv(hpo_id,
+                              hpo_name,
+                              org_id,
+                              hpo_site_mappings_path,
+                              display_order=None):
     """
     Writes df with hpo_id, hpo_name, org_id, display_order to the hpo_site_id_mappings config file
 
     :param hpo_id: hpo_ identifier
     :param hpo_name: name of the hpo
     :param org_id: hpo organization identifier
+    :param hpo_site_mappings_path: path to csv file containing hpo site information
     :param display_order: index number in which hpo should be added in table
     :return:
     """
     hpo_file_df = add_hpo_site_mappings_file_df(hpo_id, hpo_name, org_id,
+                                                hpo_site_mappings_path,
                                                 display_order)
-    hpo_file_df.to_csv(resources.hpo_site_mappings_path,
+    hpo_file_df.to_csv(hpo_site_mappings_path,
                        quoting=csv.QUOTE_ALL,
                        index=False)
 
@@ -152,8 +159,13 @@ def get_last_display_order():
     gets the display order from hpo_site_id_mappings table
     :return:
     """
-    q = DEFAULT_DISPLAY_ORDER.format(
-        hpo_site_id_mappings_table_id=bq_consts.HPO_SITE_ID_MAPPINGS_TABLE_ID)
+    project_id = app_identity.get_application_id()
+
+    q = DEFAULT_DISPLAY_ORDER.render(
+        project_id=project_id,
+        lookup_tables_dataset=bq_consts.LOOKUP_TABLES_DATASET_ID,
+        hpo_site_id_mappings_table=bq_consts.HPO_SITE_ID_MAPPINGS_TABLE_ID)
+
     query_response = bq_utils.query(q)
     rows = bq_utils.response2rows(query_response)
     row = rows[0]
@@ -167,9 +179,14 @@ def shift_display_orders(at_display_order):
     :param at_display_order: index where the display order
     :return:
     """
-    q = SHIFT_HPO_SITE_DISPLAY_ORDER.format(
-        display_order=at_display_order,
-        hpo_site_id_mappings_table_id=bq_consts.HPO_SITE_ID_MAPPINGS_TABLE_ID)
+    project_id = app_identity.get_application_id()
+
+    q = SHIFT_HPO_SITE_DISPLAY_ORDER.render(
+        project_id=project_id,
+        lookup_tables_dataset=bq_consts.LOOKUP_TABLES_DATASET_ID,
+        hpo_site_id_mappings_table=bq_consts.HPO_SITE_ID_MAPPINGS_TABLE_ID,
+        display_order=at_display_order)
+
     LOGGER.info(f'Shifting lookup with the following query:\n {q}\n')
     query_response = bq_utils.query(q)
     return query_response
@@ -184,7 +201,7 @@ def add_hpo_mapping(hpo_id, hpo_name, org_id, display_order):
     :param display_order: index number in which hpo should be added in table
     :return:
     """
-    q = ADD_HPO_SITE_ID_MAPPING.format(hpo_id=hpo_id,
+    q = ADD_HPO_SITE_ID_MAPPING.render(hpo_id=hpo_id,
                                        hpo_name=hpo_name,
                                        org_id=org_id,
                                        display_order=display_order)
@@ -203,7 +220,7 @@ def add_hpo_bucket(hpo_id, bucket_name, service='default'):
     :param bucket_name: bucket name assigned to hpo
     :return:
     """
-    q = ADD_HPO_ID_BUCKET_NAME.format(hpo_id=hpo_id,
+    q = ADD_HPO_ID_BUCKET_NAME.render(hpo_id=hpo_id,
                                       bucket_name=bucket_name,
                                       service=service)
     LOGGER.info(f'Adding bucket lookup with the following query:\n {q}\n')
@@ -259,15 +276,12 @@ def update_site_masking_table():
     """
 
     project_id = app_identity.get_application_id()
-    sandbox_id = PIPELINE_TABLES + '_sandbox'
-
     bq_client = BigQueryClient(project_id)
 
     update_site_maskings_query = UPDATE_SITE_MASKING_QUERY.render(
         project_id=project_id,
-        dataset_id=PIPELINE_TABLES,
-        sandbox_id=sandbox_id,
-        table_id=SITE_MASKING_TABLE_ID,
+        pipeline_tables_dataset=PIPELINE_TABLES,
+        site_maskings_table=SITE_MASKING_TABLE_ID,
         lookup_tables_dataset=bq_consts.LOOKUP_TABLES_DATASET_ID,
         hpo_site_id_mappings_table=bq_consts.HPO_SITE_ID_MAPPINGS_TABLE_ID)
 
@@ -277,10 +291,16 @@ def update_site_masking_table():
 
     query_job = bq_client.query(update_site_maskings_query)
 
+    if query_job.errors:
+        raise RuntimeError(
+            f"Failed to update site_masking table. Error message: {query_job.errors}"
+        )
+
     return query_job
 
 
-def main(hpo_id, org_id, hpo_name, bucket_name, display_order, addition_type):
+def main(hpo_id, org_id, hpo_name, bucket_name, display_order, addition_type,
+         hpo_site_mappings_path):
     """
     adds HPO name and details in to hpo_csv and adds HPO to the lookup tables in bigquery
     adds new site masking to pipeline_tables.site_maskings
@@ -292,10 +312,12 @@ def main(hpo_id, org_id, hpo_name, bucket_name, display_order, addition_type):
     :param addition_type: indicates if hpo is added to config file or to lookup tables
         This is necessary because a config update will need to be verified in the curation_devops repo
         before updating the lookup tables. Can take values "update_config" or "update_lookup_tables"
+    :param hpo_site_mappings_path: path to csv file containing hpo site information
     :return:
     """
     if addition_type == "update_config":
-        add_hpo_site_mappings_csv(hpo_id, hpo_name, org_id, display_order)
+        add_hpo_site_mappings_csv(hpo_id, hpo_name, org_id,
+                                  hpo_site_mappings_path, display_order)
     elif addition_type == "update_lookup_tables":
         if bucket_access_configured(bucket_name):
             LOGGER.info(f'Accessing bucket {bucket_name} successful. '
@@ -306,6 +328,11 @@ def main(hpo_id, org_id, hpo_name, bucket_name, display_order, addition_type):
                 f'hpo_site_id_mappings table successfully updated. Updating `{bq_consts.HPO_SITE_ID_MAPPINGS_TABLE_ID}` '
                 f'table')
             update_site_masking_table()
+
+        else:
+            raise RuntimeError(
+                f'{addition_type} was skipped because the bucket {bucket_name} is inaccessible.'
+            )
 
 
 if __name__ == '__main__':
@@ -344,6 +371,12 @@ if __name__ == '__main__':
         'This is necessary because a config update will need to be verified '
         'in the curation_devops repo before updating the lookup tables. '
         'Can take values "update_config" or "update_lookup_tables"')
+
+    parser.add_argument('-f',
+                        '--hpo_site_mappings_path',
+                        required=True,
+                        help='File containing HPO site information')
+
     parser.add_argument(
         '-d',
         '--display_order',
@@ -357,4 +390,4 @@ if __name__ == '__main__':
     cli_util.activate_creds(creds_path)
     cli_util.set_default_dataset_id(bq_consts.LOOKUP_TABLES_DATASET_ID)
     main(args.hpo_id, args.org_id, args.hpo_name, args.bucket_name,
-         args.display_order, args.addition_type)
+         args.display_order, args.addition_type, args.hpo_site_mappings_path)

@@ -13,7 +13,6 @@ The intent of this module is to check that the drc validation table is created p
 
 # Python imports
 import os
-import mock
 from unittest import TestCase
 
 # Third party imports
@@ -70,7 +69,7 @@ class CreateUpdateDrcIdMatchTableTest(TestCase):
 
     def test_get_case_statements(self):
         expected = EXPECTED_CASE_STATEMENTS
-        actual = id_validation.get_case_statements()
+        actual = id_validation.get_case_statements(self.bq_client)
 
         self.assertEqual(actual, expected)
 

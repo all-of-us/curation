@@ -1,7 +1,7 @@
 """
 Utility to fetch and store deactivated participants information.
 
-Original Issues: DC-1213, DC-1042, DC-971, DC-972
+Original Issues: DC-1213, DC-1042, DC-971, DC-972, DC-1795
 
 The intent of the get_deactivated_participants function is to call and store deactivated participants information by
     leveraging the RDR Participant Summary API. Deactivated participant information stored is `participantId`,
@@ -30,12 +30,11 @@ from google.auth import default
 from google.cloud.bigquery.schema import SchemaField
 from google.cloud.bigquery import (LoadJobConfig, Table, TimePartitioning,
                                    TimePartitioningType, SourceFormat)
-from google.cloud.exceptions import NotFound
 
 # Project imports
 from common import DIGITAL_HEALTH_SHARING_STATUS
+from gcloud.bq import BigQueryClient
 from utils import auth
-from utils.bq import get_client, get_table_schema
 
 LOGGER = logging.getLogger(__name__)
 
@@ -150,7 +149,7 @@ def get_participant_data(api_project_id: str,
     return participant_data
 
 
-def camel_to_snake_case(in_str):
+def camel_to_snake_case(in_str: str):
     """
     Convert camel case to snake case
 
@@ -279,7 +278,7 @@ def get_deactivated_participants(api_project_id: str,
 
     column_map = {
         'participant_id': 'person_id',
-        'suspension_time': 'deactivated_date'
+        'suspension_time': 'deactivated_datetime'
     }
 
     df = process_api_data_to_df(participant_data, columns, column_map)
@@ -444,7 +443,7 @@ def get_digital_health_information(project_id: str) -> List[Dict]:
     return json_list
 
 
-def participant_id_to_int(participant_id):
+def participant_id_to_int(participant_id: str):
     """
     Transforms the participantId received from RDR ParticipantSummary API from an
     alphanumeric string to an integer string.
@@ -477,9 +476,9 @@ def set_dataframe_date_fields(df: pandas.DataFrame,
     return df
 
 
-def store_participant_data(df,
-                           project_id,
-                           destination_table,
+def store_participant_data(df: pandas.DataFrame,
+                           client: BigQueryClient,
+                           destination_table: str,
                            schema=None,
                            to_hour_partition=None):
     """
@@ -488,22 +487,19 @@ def store_participant_data(df,
     exist, it will append the data onto that designated table.
 
     :param df: pandas dataframe created to hold participant data fetched from ParticipantSummary API
-    :param project_id: identifies the project
+    :param project_id: a BigQueryClient
     :param destination_table: name of the table to be written in the form of dataset.tablename
     :param schema: a list of SchemaField objects corresponding to the destination table
     :param to_hour_partition: Boolean to indicate store to current hour partition or no partition
 
     :return: returns the bq job_id for the loading of participant data
     """
-
     # Parameter check
-    if not isinstance(project_id, str):
-        raise RuntimeError(
-            f'Please specify the project in which to create the tables')
+    if not client:
+        raise RuntimeError(f'A bigquery client is needed to create the tables')
 
-    client = get_client(project_id)
     if not schema:
-        schema = get_table_schema(destination_table.split('.')[-1])
+        schema = client.get_table_schema(destination_table.split('.')[-1])
 
     # Dataframe data fields must be of type datetime
     df = set_dataframe_date_fields(df, schema)
@@ -529,9 +525,9 @@ def store_participant_data(df,
     return job.job_id
 
 
-def store_digital_health_status_data(project_id,
-                                     json_data,
-                                     destination_table,
+def store_digital_health_status_data(client: BigQueryClient,
+                                     json_data: List[Dict],
+                                     destination_table: str,
                                      schema=None):
     """
     Stores the fetched digital_health_sharing_status data in a BigQuery dataset.
@@ -540,7 +536,7 @@ def store_digital_health_status_data(project_id,
     it will create a partition in the designated table or append to the same partition.
     This is necessary for storing data has "RECORD" type fields which do not conform to a dataframe.
     The data is stored using a JSON file object since it is one of the ways BigQuery expects it.
-    :param project_id: identifies the project
+    :param client: a BigQueryClient
     :param json_data: list of json objects retrieved from process_digital_health_data_to_json
     :param destination_table: fully qualified destination table name as 'project.dataset.table'
     :param schema: a list of SchemaField objects corresponding to the destination table
@@ -549,13 +545,11 @@ def store_digital_health_status_data(project_id,
     """
 
     # Parameter check
-    if not isinstance(project_id, str):
-        raise RuntimeError(
-            f'Please specify the project in which to create the table')
+    if not client:
+        raise RuntimeError(f'A bigquery client is needed to create the table')
 
-    client = get_client(project_id)
     if not schema:
-        schema = get_table_schema(DIGITAL_HEALTH_SHARING_STATUS)
+        schema = client.get_table_schema(DIGITAL_HEALTH_SHARING_STATUS)
 
     client.delete_table(destination_table, not_found_ok=True)
     LOGGER.info(f'Creating table {destination_table}')

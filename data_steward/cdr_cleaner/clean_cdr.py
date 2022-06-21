@@ -10,19 +10,18 @@ import logging
 # Project imports
 import cdr_cleaner.clean_cdr_engine as clean_engine
 import cdr_cleaner.cleaning_rules.backfill_pmi_skip_codes as back_fill_pmi_skip
-import cdr_cleaner.cleaning_rules.clean_years as clean_years
+from cdr_cleaner.cleaning_rules.clean_by_birth_year import CleanByBirthYear
 import cdr_cleaner.cleaning_rules.domain_alignment as domain_alignment
 import cdr_cleaner.cleaning_rules.drop_duplicate_states as drop_duplicate_states
 import cdr_cleaner.cleaning_rules.drop_extreme_measurements as extreme_measurements
-import cdr_cleaner.cleaning_rules.drop_multiple_measurements as drop_mult_meas
+from cdr_cleaner.cleaning_rules.drop_multiple_measurements import DropMultipleMeasurements
 from cdr_cleaner.cleaning_rules.drop_participants_without_ppi_or_ehr import DropParticipantsWithoutPPI
 import cdr_cleaner.cleaning_rules.drug_refills_days_supply as drug_refills_supply
 import cdr_cleaner.cleaning_rules.maps_to_value_ppi_vocab_update as maps_to_value_vocab_update
 import cdr_cleaner.cleaning_rules.populate_route_ids as populate_routes
-import cdr_cleaner.cleaning_rules.remove_aian_participants as remove_aian_participants
 import \
     cdr_cleaner.cleaning_rules.remove_invalid_procedure_source_records as invalid_procedure_source
-import cdr_cleaner.cleaning_rules.remove_non_matching_participant as validate_missing_participants
+from cdr_cleaner.cleaning_rules.remove_non_matching_participant import RemoveNonMatchingParticipant
 import cdr_cleaner.cleaning_rules.remove_records_with_wrong_date as remove_records_with_wrong_date
 from cdr_cleaner.cleaning_rules.remove_participants_under_18years import RemoveParticipantsUnder18Years
 from cdr_cleaner.cleaning_rules.round_ppi_values_to_nearest_integer import RoundPpiValuesToNearestInteger
@@ -113,6 +112,8 @@ from cdr_cleaner.cleaning_rules.covid_ehr_vaccine_concept_suppression import Cov
 from cdr_cleaner.cleaning_rules.missing_concept_record_suppression import MissingConceptRecordSuppression
 from cdr_cleaner.cleaning_rules.create_deid_questionnaire_response_map import CreateDeidQuestionnaireResponseMap
 from cdr_cleaner.cleaning_rules.vehicular_accident_concept_suppression import VehicularAccidentConceptSuppression
+from cdr_cleaner.cleaning_rules.deid.ct_replaced_concept_suppression import \
+    ControlledTierReplacedConceptSuppression
 from constants.cdr_cleaner import clean_cdr_engine as ce_consts
 from constants.cdr_cleaner.clean_cdr import DataStage
 
@@ -128,7 +129,7 @@ UNIONED_EHR_CLEANING_CLASSES = [
     (EhrSubmissionDataCutoff,
     ),  # should run before EnsureDateDatetimeConsistency
     (DeduplicateIdColumn,),
-    (clean_years.get_year_of_birth_queries,),
+    (CleanByBirthYear,),
     (drug_refills_supply.get_days_supply_refills_queries,),
     # trying to load a table while creating query strings,
     # won't work with mocked strings.  should use base class
@@ -186,7 +187,8 @@ RDR_CLEANING_CLASSES = [
     (NullConceptIDForNumericPPI,),
     (DropDuplicatePpiQuestionsAndAnswers,),
     (extreme_measurements.get_drop_extreme_measurement_queries,),
-    (drop_mult_meas.get_drop_multiple_measurement_queries,),
+    (DropMultipleMeasurements,),
+    (CleanByBirthYear,),
     (UpdateInvalidZipCodes,),
 ]
 
@@ -202,8 +204,6 @@ COMBINED_CLEANING_CLASSES = [
     # setup_query_execution function to load dependencies before query execution
     (
         domain_alignment.domain_alignment,),
-    (DropParticipantsWithoutPPI,),
-    (clean_years.get_year_of_birth_queries,),
     (NegativeAges,),
     # Valid Death dates needs to be applied before no data after death as running no data after death is
     # wiping out the needed consent related data for cleaning.
@@ -225,10 +225,10 @@ COMBINED_CLEANING_CLASSES = [
     # TODO : Make null_invalid_foreign_keys able to run on de_identified dataset
     (
         NullInvalidForeignKeys,),
-    (remove_aian_participants.get_queries,),
     (RemoveParticipantDataPastDeactivationDate,),
-    (validate_missing_participants.delete_records_for_non_matching_participants,
-    ),
+    (RemoveNonMatchingParticipant,),
+    (DropParticipantsWithoutPPI,
+    ),  # dependent on RemoveParticipantDataPastDeactivationDate
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
@@ -236,6 +236,7 @@ FITBIT_CLEANING_CLASSES = [
     (TruncateFitbitData,),
     (RemoveParticipantDataPastDeactivationDate,),
     (CleanDigitalHealthStatus,),
+    (RemoveNonExistingPids,),  # assumes combined dataset is ready for reference
 ]
 
 FITBIT_DEID_CLEANING_CLASSES = [
@@ -250,7 +251,7 @@ CONTROLLED_TIER_FITBIT_CLEANING_CLASSES = [
     (RemoveNonExistingPids,),  # assumes CT dataset is ready for reference
 ]
 
-DEID_BASE_CLEANING_CLASSES = [
+REGISTERED_TIER_DEID_BASE_CLEANING_CLASSES = [
     (FillSourceValueTextFields,),
     (RepopulatePersonPostDeid,),
     (DateShiftCopeResponses,),
@@ -258,7 +259,7 @@ DEID_BASE_CLEANING_CLASSES = [
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
-DEID_CLEAN_CLEANING_CLASSES = [
+REGISTERED_TIER_DEID_CLEAN_CLEANING_CLASSES = [
     (MeasurementRecordsSuppression,),
     (CleanHeightAndWeight,),  # dependent on MeasurementRecordsSuppression
     (UnitNormalization,),  # dependent on CleanHeightAndWeight
@@ -271,6 +272,7 @@ CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     (QRIDtoRID,),  # Should run before any row suppression rules
     (NullPersonBirthdate,),
     (TableSuppression,),
+    (ControlledTierReplacedConceptSuppression,),
     (GeneralizeZipCodes,),  # Should run after any data remapping rules
     (RaceEthnicityRecordSuppression,
     ),  # Should run after any data remapping rules
@@ -346,10 +348,10 @@ DATA_STAGE_RULES_MAPPING = {
         RDR_CLEANING_CLASSES,
     DataStage.COMBINED.value:
         COMBINED_CLEANING_CLASSES,
-    DataStage.DEID_BASE.value:
-        DEID_BASE_CLEANING_CLASSES,
-    DataStage.DEID_CLEAN.value:
-        DEID_CLEAN_CLEANING_CLASSES,
+    DataStage.REGISTERED_TIER_DEID_BASE.value:
+        REGISTERED_TIER_DEID_BASE_CLEANING_CLASSES,
+    DataStage.REGISTERED_TIER_DEID_CLEAN.value:
+        REGISTERED_TIER_DEID_CLEAN_CLEANING_CLASSES,
     DataStage.FITBIT.value:
         FITBIT_CLEANING_CLASSES,
     DataStage.CONTROLLED_TIER_FITBIT.value:

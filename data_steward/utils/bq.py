@@ -124,6 +124,10 @@ def get_table_schema(table_name, fields=None):
     return schema
 
 
+@deprecated(
+    reason=
+    'Use gcloud.bq.BigQueryClient.upload_csv_data_to_bq_table(self, dataset_id, table_name, fq_file_path, write_disposition) instead'
+)
 def upload_csv_data_to_bq_table(client, dataset_id, table_name, fq_file_path,
                                 write_disposition):
     """
@@ -203,7 +207,7 @@ def _to_sql_field(field: bigquery.SchemaField) -> bigquery.SchemaField:
                                                                   bigquery.SchemaField] = None,
                                                                   cluster_by_cols: typing.List[str] = None,
                                                                   as_query: str = None,
-                                                                  **table_options) 
+                                                                  **table_options)
                                                                 instead
     """)
 def get_create_or_replace_table_ddl(project_id: str,
@@ -240,6 +244,10 @@ def get_create_or_replace_table_ddl(project_id: str,
                                               opts=table_options)
 
 
+@deprecated(
+    reason=
+    'Use gcloud.bq.BigQueryClient.create_tables(self, fq_table_names, exists_ok=False, fields=None) instead'
+)
 def create_tables(client,
                   project_id,
                   fq_table_names,
@@ -388,6 +396,10 @@ def define_dataset(project_id, dataset_id, description, label_or_tag):
     return dataset
 
 
+@deprecated(
+    reason=
+    'Use gcloud.bq.BigQueryClient.update_labels_and_tags(self, dataset_id, existing_labels_or_tags, new_labels_or_tags, overwrite_ok=False) instead'
+)
 def update_labels_and_tags(dataset_id,
                            existing_labels_or_tags,
                            new_labels_or_tags,
@@ -537,6 +549,10 @@ def query_sheet_linked_bq_table(project_id, table_content_query,
     return result_df
 
 
+@deprecated(
+    reason=
+    'Use gcloud.bq.BigQueryClient.to_scalar(self, result: typing.Union[bigquery.table.RowIterator,bigquery.QueryJob]) instead'
+)
 def to_scalar(
     result: typing.Union[bigquery.table.RowIterator, bigquery.QueryJob]
 ) -> typing.Any:
@@ -564,6 +580,10 @@ def to_scalar(
     return dict(row.items())
 
 
+@deprecated(
+    reason=
+    'Use gcloud.bq.BigQueryClient.get_table_count(self, dataset: bigquery.DatasetReference) instead'
+)
 def get_table_count(client: bigquery.Client,
                     dataset: bigquery.DatasetReference) -> int:
     """
@@ -582,6 +602,10 @@ def get_table_count(client: bigquery.Client,
     return to_scalar(client.query(q))
 
 
+@deprecated(
+    reason=
+    'Use gcloud.bq.BigQueryClient.list_tables(self, dataset: bigquery.DatasetReference) instead'
+)
 def list_tables(
     client: bigquery.Client, dataset: bigquery.DatasetReference
 ) -> typing.Iterator[bigquery.table.TableListItem]:
@@ -600,6 +624,10 @@ def list_tables(
                               max_results=table_count + _MAX_RESULTS_PADDING)
 
 
+@deprecated(
+    reason=
+    'Use gcloud.bq.BigQueryClient.copy_dataset(self, input_dataset, output_dataset) instead'
+)
 def copy_datasets(client: bigquery.Client, input_dataset, output_dataset):
     """
     Copies tables from source dataset to a destination datasets
@@ -633,6 +661,10 @@ def validate_bq_date_string(date_string):
     return date_string
 
 
+@deprecated(
+    reason=
+    'Use gcloud.bq.BigQueryClient.build_and_copy_contents(self, src_dataset, dest_dataset) instead'
+)
 def build_and_copy_contents(client, src_dataset, dest_dataset):
     """
     Uses google client object to copy non-schemaed data to schemaed table.
@@ -648,7 +680,12 @@ def build_and_copy_contents(client, src_dataset, dest_dataset):
 
     for table_item in table_list:
         # create empty schemaed tablle with client object
-        schema_list = get_table_schema(table_item.table_id)
+        try:
+            schema_list = get_table_schema(table_item.table_id)
+        except RuntimeError as re:
+            schema_list = None
+            LOGGER.warning(f"No schema available for {table_item.table_id}."
+                           f"Creating table without specifying schema.")
         dest_table = f'{client.project}.{dest_dataset}.{table_item.table_id}'
         dest_table = bigquery.Table(dest_table, schema=schema_list)
         dest_table = client.create_table(dest_table)  # Make an API request.
@@ -656,20 +693,27 @@ def build_and_copy_contents(client, src_dataset, dest_dataset):
             f'Created empty table `{dest_table.project}.{dest_table.dataset_id}.{dest_table.table_id}`'
         )
 
-        fields_name_str = ',\n'.join([item.name for item in schema_list])
-        # copy contents from non-schemaed source to schemaed dest
-        sql = (
-            f'SELECT {fields_name_str} '
-            f'FROM `{table_item.project}.{table_item.dataset_id}.{table_item.table_id}`'
-        )
+        if schema_list:
+            fields_name_str = ',\n'.join([item.name for item in schema_list])
+
+            # copy contents from non-schemaed source to schemaed dest
+            sql = (
+                f'SELECT {fields_name_str} '
+                f'FROM `{table_item.project}.{table_item.dataset_id}.{table_item.table_id}`'
+            )
+        else:
+            sql = (
+                f'SELECT * '
+                f'FROM `{table_item.project}.{table_item.dataset_id}.{table_item.table_id}`'
+            )
         job_config = bigquery.job.QueryJobConfig(
             write_disposition=bigquery.job.WriteDisposition.WRITE_EMPTY,
             priority=bigquery.job.QueryPriority.BATCH,
             destination=dest_table,
             labels={
-                'table_name': table_item.table_id,
-                'copy_from': table_item.dataset_id,
-                'copy_to': dest_dataset
+                'table_name': table_item.table_id.lower(),
+                'copy_from': table_item.dataset_id.lower(),
+                'copy_to': dest_dataset.lower()
             })
         job_id = (f'schemaed_copy_{table_item.table_id.lower()}_'
                   f'{datetime.now().strftime("%Y%m%d_%H%M%S")}')

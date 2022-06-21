@@ -71,6 +71,7 @@ class COPESurveyVersionTask(BaseCleaningRule):
                  sandbox_dataset_id,
                  cope_lookup_dataset_id,
                  cope_table_name,
+                 deid_questionnaire_response_map_dataset,
                  table_namer=None):
         """
         Initialize the class with proper info.
@@ -87,7 +88,9 @@ class COPESurveyVersionTask(BaseCleaningRule):
             description=desc,
             # first seen in the `deid_base` dataset, although
             # not explicitly part of this set of cleaning rules yet
-            affected_datasets=[cdr_consts.DEID_BASE],
+            affected_datasets=[
+                cdr_consts.REGISTERED_TIER_DEID, cdr_consts.CONTROLLED_TIER_DEID
+            ],
             project_id=project_id,
             dataset_id=dataset_id,
             sandbox_dataset_id=sandbox_dataset_id,
@@ -95,7 +98,7 @@ class COPESurveyVersionTask(BaseCleaningRule):
             depends_on=[GenerateExtTables],
             table_namer=table_namer)
 
-        self.qrid_map_dataset_id = sandbox_dataset_id
+        self.qrid_map_dataset_id = deid_questionnaire_response_map_dataset
         self.cope_lookup_dataset_id = cope_lookup_dataset_id
         self.cope_survey_table = cope_table_name
 
@@ -226,22 +229,21 @@ if __name__ == '__main__':
         required=True,
         help='Name of the table cotaining the cope survey mapping information')
     parser.add_argument(
-        '--mapping_dataset',
-        dest='mapping_dataset_id',
+        '--deid_questionnaire_response_map_dataset',
         action='store',
-        help=('Dataset name for the dataset containing deid mapping tables.  '
-              'For example, _deid_map and _deid_questionnaire_response_id.'))
+        dest='deid_questionnaire_response_map_dataset',
+        help=
+        'Identifies the dataset containing the _deid_questionnaire_response_map lookup table',
+        required=True)
 
     ARGS = parser.parse_args()
-    if not ARGS.mapping_dataset_id:
-        parser.error("The deid mapping dataset is required to run this script.")
 
     # clean_engine.add_console_logging(ARGS.console_log)
     add_console_logging(ARGS.console_log)
-    version_task = COPESurveyVersionTask(ARGS.project_id, ARGS.dataset_id,
-                                         ARGS.sandbox_dataset_id,
-                                         ARGS.cope_survey_dataset_id,
-                                         ARGS.cope_survey_table)
+    version_task = COPESurveyVersionTask(
+        ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id,
+        ARGS.cope_survey_dataset_id, ARGS.cope_survey_table,
+        ARGS.deid_questionnaire_response_map_dataset)
     query_list = version_task.get_query_specs()
 
     if ARGS.list_queries:

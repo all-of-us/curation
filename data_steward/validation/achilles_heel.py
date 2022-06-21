@@ -1,8 +1,10 @@
+# Python imports
 import logging
 import os
 import re
 from io import open
 
+# Project imports
 import bq_utils
 import resources
 from validation import sql_wrangle
@@ -124,5 +126,5 @@ def create_tables(hpo_id, drop_existing=False):
     :return:
     """
     for table_name in ACHILLES_HEEL_TABLES:
-        table_id = bq_utils.get_table_id(hpo_id, table_name)
+        table_id = resources.get_table_id(table_name, hpo_id=hpo_id)
         bq_utils.create_standard_table(table_name, table_id, drop_existing)

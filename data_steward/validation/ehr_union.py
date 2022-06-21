@@ -119,7 +119,7 @@ def output_table_for(table_id):
     :param table_id: name of a CDM table
     :return: name of the table where results of the union will be stored
     """
-    return 'unioned_ehr_' + table_id
+    return f'unioned_ehr_{table_id}'
 
 
 def _mapping_subqueries(table_name, hpo_ids, dataset_id, project_id):
@@ -149,7 +149,7 @@ def _mapping_subqueries(table_name, hpo_ids, dataset_id, project_id):
     # Exclude subqueries that reference tables that are missing from source dataset
     all_table_ids = bq_utils.list_all_table_ids(dataset_id)
     for hpo_id in hpo_ids:
-        table_id = bq_utils.get_table_id(hpo_id, table_name)
+        table_id = resources.get_table_id(table_name, hpo_id=hpo_id)
         hpo_offset = hpo_unique_identifiers[hpo_id]
         if table_id in all_table_ids:
             add_hpo_offset = table_name != common.PERSON
@@ -268,7 +268,7 @@ def fact_relationship_hpo_subquery(hpo_id, input_dataset_id, output_dataset_id):
     :param output_dataset_id: identifies dataset where output is saved
     :return: the query
     """
-    table_id = bq_utils.get_table_id(hpo_id, common.FACT_RELATIONSHIP)
+    table_id = resources.get_table_id(common.FACT_RELATIONSHIP, hpo_id=hpo_id)
     fact_query = f'''SELECT F.domain_concept_id_1,
         CASE
             WHEN F.domain_concept_id_1= {common.MEASUREMENT_DOMAIN_CONCEPT_ID} THEN M1.measurement_id
@@ -314,7 +314,7 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
 
     is_id_mapped = table_name in tables_to_ref
     fields = resources.fields_for(table_name)
-    table_id = bq_utils.get_table_id(hpo_id, table_name)
+    table_id = resources.get_table_id(table_name, hpo_id=hpo_id)
 
     # Generate column expressions for select
     if not is_id_mapped:
@@ -350,25 +350,25 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
                 # Replace with mapped visit_occurrence_id
                 # mvo is an alias that should resolve to the mapping visit_occurrence table
                 # Note: This is only reached when table_name != visit_occurrence
-                col_expr = 'mvo.' + eu_constants.VISIT_OCCURRENCE_ID
+                col_expr = f'mvo.{eu_constants.VISIT_OCCURRENCE_ID}'
                 has_visit_occurrence_id = True
             elif field_name == eu_constants.VISIT_DETAIL_ID:
                 # Replace with mapped visit_detail_id
                 # mvd is an alias that should resolve to the mapping visit_detail table
                 # Note: This is only reached when table_name != visit_detail
-                col_expr = 'mvd.' + eu_constants.VISIT_DETAIL_ID
+                col_expr = f'mvd.{eu_constants.VISIT_DETAIL_ID}'
                 has_visit_detail_id = True
             elif field_name == eu_constants.CARE_SITE_ID:
                 # Replace with mapped care_site_id
                 # cs is an alias that should resolve to the mapping care_site table
                 # Note: This is only reached when table_name != care_site
-                col_expr = 'mcs.' + eu_constants.CARE_SITE_ID
+                col_expr = f'mcs.{eu_constants.CARE_SITE_ID}'
                 has_care_site_id = True
             elif field_name == eu_constants.LOCATION_ID:
                 # Replace with mapped location_id
                 # lc is an alias that should resolve to the mapping visit table
                 # Note: This is only reached when table_name != location
-                col_expr = 'loc.' + eu_constants.LOCATION_ID
+                col_expr = f'loc.{eu_constants.LOCATION_ID}'
                 has_location_id = True
             else:
                 col_expr = field_name
@@ -385,8 +385,8 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
             # Include a join to mapping visit occurrence table
             # Note: Using left join in order to keep records that aren't mapped to visits
             mvo = mapping_table_for(common.VISIT_OCCURRENCE)
-            src_visit_occurrence_table_id = bq_utils.get_table_id(
-                hpo_id, common.VISIT_OCCURRENCE)
+            src_visit_occurrence_table_id = resources.get_table_id(
+                common.VISIT_OCCURRENCE, hpo_id=hpo_id)
             visit_occurrence_join_expr = f'''
             LEFT JOIN `{output_dataset_id}.{mvo}` mvo 
               ON t.visit_occurrence_id = mvo.src_visit_occurrence_id 
@@ -397,8 +397,8 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
             # Include a join to mapping visit detail table
             # Note: Using left join in order to keep records that aren't mapped to visits
             mvd = mapping_table_for(common.VISIT_DETAIL)
-            src_visit_detail_table_id = bq_utils.get_table_id(
-                hpo_id, common.VISIT_DETAIL)
+            src_visit_detail_table_id = resources.get_table_id(
+                common.VISIT_DETAIL, hpo_id=hpo_id)
             visit_detail_join_expr = f'''
             LEFT JOIN `{output_dataset_id}.{mvd}` mvd 
               ON t.visit_detail_id = mvd.src_visit_detail_id 
@@ -409,8 +409,8 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
             # Include a join to mapping visit table
             # Note: Using left join in order to keep records that aren't mapped to visits
             cs = mapping_table_for(common.CARE_SITE)
-            src_care_site_table_id = bq_utils.get_table_id(
-                hpo_id, common.CARE_SITE)
+            src_care_site_table_id = resources.get_table_id(common.CARE_SITE,
+                                                            hpo_id=hpo_id)
             care_site_join_expr = f'''
                         LEFT JOIN `{output_dataset_id}.{cs}` mcs 
                           ON t.care_site_id = mcs.src_care_site_id 
@@ -421,8 +421,8 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
             # Include a join to mapping visit table
             # Note: Using left join in order to keep records that aren't mapped to visits
             lc = mapping_table_for(common.LOCATION)
-            src_location_table_id = bq_utils.get_table_id(
-                hpo_id, common.LOCATION)
+            src_location_table_id = resources.get_table_id(common.LOCATION,
+                                                           hpo_id=hpo_id)
             location_join_expr = f'''
                         LEFT JOIN `{output_dataset_id}.{lc}` loc 
                           ON t.location_id = loc.src_location_id 
@@ -480,7 +480,7 @@ def _union_subqueries(table_name, hpo_ids, input_dataset_id, output_dataset_id):
     # Exclude subqueries that reference tables that are missing from source dataset
     all_table_ids = bq_utils.list_all_table_ids(input_dataset_id)
     for hpo_id in hpo_ids:
-        table_id = bq_utils.get_table_id(hpo_id, table_name)
+        table_id = resources.get_table_id(table_name, hpo_id=hpo_id)
         if table_id in all_table_ids:
             if table_name == common.FACT_RELATIONSHIP:
                 subquery = fact_relationship_hpo_subquery(

@@ -17,7 +17,7 @@
 #
 # We want to mirror the QCs in here   to add more checks to the Controlled Tier (CT).
 #
-# The privacy checks against the CT are done. But we need more QCs that check against the OMOP rules AND against the Program constraints. 
+# The privacy checks against the CT are done. But we need more QCs that check against the OMOP rules AND against the Program constraints.
 #
 # Create a notebook for the following checks AND commit them here. If you are just starting working WITH curation, follow the instructions here  .
 #
@@ -31,7 +31,7 @@
 #
 # 4 No dates after death:done
 #
-# 5 No WITHdrawn participants: need pdr access 
+# 5 No WITHdrawn participants: need pdr access
 #
 # 6 No data after participant's suspension: need pdr access
 #
@@ -58,23 +58,22 @@
 project_id = ""
 rt_dataset = ""
 ct_dataset = ""
-earliest_ehr_date=""
-cut_off_date=""
+earliest_ehr_date = ""
+cut_off_date = ""
 
 # +
 import pandas as pd
 from analytics.cdr_ops.notebook_utils import execute
 from common import JINJA_ENV
-from utils import auth
-from utils.bq import get_client
+from gcloud.bq import BigQueryClient
 
-client = get_client(project_id)
+client = BigQueryClient(project_id)
 
 pd.options.display.max_rows = 120
 # -
 
 # summary will have a summary in the end
-df = pd.DataFrame(columns = ['query', 'result']) 
+df = pd.DataFrame(columns=['query', 'result'])
 
 # # Query1: all the birthdates are set to 15th June of the birth year in person table
 #
@@ -93,18 +92,30 @@ count (*) as row_counts_failures
 """)
 
 q = query.render(project_id=project_id, ct_dataset=ct_dataset)
-res=execute(client, q)
+res = execute(client, q)
 res.shape
 # -
 
 res
 
-if res.iloc[:,2].sum()==0:
- df = df.append({'query' : 'Query1: all the birthdates are set to 06-15 in person table', 'result' : 'PASS'},  
-                ignore_index = True) 
+if res.iloc[:, 2].sum() == 0:
+    df = df.append(
+        {
+            'query':
+                'Query1: all the birthdates are set to 06-15 in person table',
+            'result':
+                'PASS'
+        },
+        ignore_index=True)
 else:
- df = df.append({'query' : 'Query1: all the birthdates are set to 06-15 in person table', 'result' : 'Failure'},  
-                ignore_index = True) 
+    df = df.append(
+        {
+            'query':
+                'Query1: all the birthdates are set to 06-15 in person table',
+            'result':
+                'Failure'
+        },
+        ignore_index=True)
 
 # # Query2: No dates before birth_date
 #
@@ -154,15 +165,15 @@ WITH
 """)
 
 q = query.render(project_id=project_id, ct_dataset=ct_dataset)
-target_tables=execute(client, q)
+target_tables = execute(client, q)
 target_tables.shape
 # -
 
 target_tables
 
 
-def my_sql(table_name,column_name):
-    
+def my_sql(table_name, column_name):
+
     query = JINJA_ENV.from_string("""
     WITH rt_map as (
      SELECT
@@ -190,47 +201,61 @@ FROM `{{project_id}}.{{ct_dataset}}.{{table_name}}` c
 JOIN rt_map r USING (person_id)
 WHERE  DATE(c.{{column_name}})< r.birth_date
 """)
-    q = query.render(project_id=project_id, rt_dataset=rt_dataset, ct_dataset=ct_dataset,table_name=table_name,column_name=column_name)
-    df11=execute(client, q)
+    q = query.render(project_id=project_id,
+                     rt_dataset=rt_dataset,
+                     ct_dataset=ct_dataset,
+                     table_name=table_name,
+                     column_name=column_name)
+    df11 = execute(client, q)
     return df11
 
 
 # use a loop to get table name AND column name AND run sql function
-result = [my_sql (table_name, column_name) for table_name, column_name in zip(target_tables['table_name'], target_tables['column_name'])]
+result = [
+    my_sql(table_name, column_name) for table_name, column_name in zip(
+        target_tables['table_name'], target_tables['column_name'])
+]
 result
 
 # +
 # AND then get the result back FROM loop result list
-n=len(target_tables.index)
+n = len(target_tables.index)
 res2 = pd.DataFrame(result[0])
 
-for x in range(1,n):    
-  res2=res2.append(result[x])
-    
-res2=res2.sort_values(by='row_counts_failure', ascending=False)
+for x in range(1, n):
+    res2 = res2.append(result[x])
+
+res2 = res2.sort_values(by='row_counts_failure', ascending=False)
 res2
 # -
 
-if res2.iloc[:,3].sum()==0:
- df = df.append({'query' : 'Query2: No dates before birth_date', 'result' : 'PASS'},  
-                ignore_index = True) 
+if res2.iloc[:, 3].sum() == 0:
+    df = df.append(
+        {
+            'query': 'Query2: No dates before birth_date',
+            'result': 'PASS'
+        },
+        ignore_index=True)
 else:
- df = df.append({'query' : 'Query2: No dates before birth_date', 'result' : 'Failure'},  
-                ignore_index = True) 
-
+    df = df.append(
+        {
+            'query': 'Query2: No dates before birth_date',
+            'result': 'Failure'
+        },
+        ignore_index=True)
 
 # # Query3: No dates after 30_days_after_death
 
 # need to do obs table seperatly
-df1=target_tables
-df1=df1[df1.table_name.str.contains("obs")]
-df1=df1[~df1.table_name.str.contains("period")]
-target_tables2=df1
+df1 = target_tables
+df1 = df1[df1.table_name.str.contains("obs")]
+df1 = df1[~df1.table_name.str.contains("period")]
+target_tables2 = df1
 target_tables2
 
 
-def my_sql(table_name,column_name):
-    
+def my_sql(table_name, column_name):
+
     query = JINJA_ENV.from_string("""
     
     WITH df1 as (
@@ -258,35 +283,41 @@ FROM df1
 WHERE  DATE({{column_name}}) > after_death_30_days
 
 """)
-    q = query.render(project_id=project_id, ct_dataset=ct_dataset,table_name=table_name, column_name=column_name)
-    df11=execute(client, q)
+    q = query.render(project_id=project_id,
+                     ct_dataset=ct_dataset,
+                     table_name=table_name,
+                     column_name=column_name)
+    df11 = execute(client, q)
     return df11
 
 
 # +
-result = [my_sql (table_name,column_name) for table_name, column_name in zip(target_tables2['table_name'], target_tables2['column_name'])]
+result = [
+    my_sql(table_name, column_name) for table_name, column_name in zip(
+        target_tables2['table_name'], target_tables2['column_name'])
+]
 result
 
 # AND then get the result back FROM loop result list
-n=len(target_tables2.index)
+n = len(target_tables2.index)
 res2 = pd.DataFrame(result[0])
 
-for x in range(1,n):    
-  res2=res2.append(result[x])
-    
-res2=res2.sort_values(by='row_counts_failure', ascending=False)
+for x in range(1, n):
+    res2 = res2.append(result[x])
+
+res2 = res2.sort_values(by='row_counts_failure', ascending=False)
 res2
 # -
 
 # then do the rest of tables
-df1=target_tables
-df1=df1[~df1.table_name.str.contains("obs")]
-target_tables2=df1
+df1 = target_tables
+df1 = df1[~df1.table_name.str.contains("obs")]
+target_tables2 = df1
 target_tables2
 
 
-def my_sql(table_name,column_name):
-    
+def my_sql(table_name, column_name):
+
     query = JINJA_ENV.from_string("""
     
     WITH death_30_days as (
@@ -310,48 +341,61 @@ END
 FROM death_30_days
 WHERE  DATE({{column_name}}) > after_death_30_days
 """)
-    q = query.render(project_id=project_id, ct_dataset=ct_dataset,table_name=table_name, column_name=column_name)
-    df11=execute(client, q)
+    q = query.render(project_id=project_id,
+                     ct_dataset=ct_dataset,
+                     table_name=table_name,
+                     column_name=column_name)
+    df11 = execute(client, q)
     return df11
 
 
 # +
-result = [my_sql (table_name,column_name) for table_name, column_name in zip(target_tables2['table_name'], target_tables2['column_name'])]
+result = [
+    my_sql(table_name, column_name) for table_name, column_name in zip(
+        target_tables2['table_name'], target_tables2['column_name'])
+]
 result
 
 # AND then get the result back FROM loop result list
-n=len(target_tables2.index)
+n = len(target_tables2.index)
 res21 = pd.DataFrame(result[0])
 
-for x in range(1,n):    
-  res21=res21.append(result[x])
-    
-res21=res21.sort_values(by='row_counts_failure', ascending=False)
+for x in range(1, n):
+    res21 = res21.append(result[x])
+
+res21 = res21.sort_values(by='row_counts_failure', ascending=False)
 res21
 # -
 
 # combine both results
-res2=res2.append(res21, ignore_index=True)
+res2 = res2.append(res21, ignore_index=True)
 res2
 
-if res2.iloc[:,3].sum()==0:
- df = df.append({'query' : 'Query3: No dates after death', 'result' : 'PASS'},  
-                ignore_index = True) 
+if res2.iloc[:, 3].sum() == 0:
+    df = df.append({
+        'query': 'Query3: No dates after death',
+        'result': 'PASS'
+    },
+                   ignore_index=True)
 else:
- df = df.append({'query' : 'Query3: No dates after death', 'result' : 'Failure'},  
-                ignore_index = True) 
+    df = df.append(
+        {
+            'query': 'Query3: No dates after death',
+            'result': 'Failure'
+        },
+        ignore_index=True)
 
 # # Query4: No dates earlier than 1980 in any table, except for the observation
 
 # get target tables WITHout observation
-df1=target_tables
-df1=df1[~df1.table_name.str.contains("obs")]
-target_tables2=df1
+df1 = target_tables
+df1 = df1[~df1.table_name.str.contains("obs")]
+target_tables2 = df1
 target_tables2
 
 
-def my_sql(table_name,column_name):
-    
+def my_sql(table_name, column_name):
+
     query = JINJA_ENV.from_string("""
     
 SELECT 
@@ -366,31 +410,49 @@ END
 FROM `{{project_id}}.{{ct_dataset}}.{{table_name}}` c
 WHERE  DATE(c.{{column_name}}) < '{{earliest_ehr_date}}'
 """)
-    q = query.render(project_id=project_id, ct_dataset=ct_dataset,table_name=table_name, column_name=column_name,earliest_ehr_date=earliest_ehr_date)
-    df11=execute(client, q)
+    q = query.render(project_id=project_id,
+                     ct_dataset=ct_dataset,
+                     table_name=table_name,
+                     column_name=column_name,
+                     earliest_ehr_date=earliest_ehr_date)
+    df11 = execute(client, q)
     return df11
 
 
-result = [my_sql (table_name,column_name) for table_name, column_name in zip(target_tables2['table_name'], target_tables2['column_name'])]
+result = [
+    my_sql(table_name, column_name) for table_name, column_name in zip(
+        target_tables2['table_name'], target_tables2['column_name'])
+]
 
 # +
-n=len(target_tables2.index)
+n = len(target_tables2.index)
 res2 = pd.DataFrame(result[0])
 
-for x in range(1,n):    
-  res2=res2.append(result[x])
-    
-res2=res2.sort_values(by='row_counts_failure', ascending=False)
+for x in range(1, n):
+    res2 = res2.append(result[x])
+
+res2 = res2.sort_values(by='row_counts_failure', ascending=False)
 res2
 # -
 
-if res2.iloc[:,3].sum()==0:
- df = df.append({'query' : 'Query4: No dates earlier than 1980 in any table, except for the observation', 'result' : 'PASS'},  
-                ignore_index = True) 
+if res2.iloc[:, 3].sum() == 0:
+    df = df.append(
+        {
+            'query':
+                'Query4: No dates earlier than 1980 in any table, except for the observation',
+            'result':
+                'PASS'
+        },
+        ignore_index=True)
 else:
- df = df.append({'query' : 'Query4: No dates earlier than 1980 in any table, except for the observation', 'result' : 'Failure'},  
-                ignore_index = True) 
-
+    df = df.append(
+        {
+            'query':
+                'Query4: No dates earlier than 1980 in any table, except for the observation',
+            'result':
+                'Failure'
+        },
+        ignore_index=True)
 
 # # query 7  All participants have basics,done
 
@@ -427,18 +489,26 @@ WHERE person_id NOT IN (SELECT person_id FROM person_basics)
 """)
 
 q = query.render(project_id=project_id, ct_dataset=ct_dataset)
-df1=execute(client, q)
+df1 = execute(client, q)
 df1.shape
 # -
 
 df1
 
-if df1.iloc[:,3].sum()==0:
- df = df.append({'query' : 'Query7: All participants have basics', 'result' : 'PASS'},  
-                ignore_index = True) 
+if df1.iloc[:, 3].sum() == 0:
+    df = df.append(
+        {
+            'query': 'Query7: All participants have basics',
+            'result': 'PASS'
+        },
+        ignore_index=True)
 else:
- df = df.append({'query' : 'Query7: All participants have basics', 'result' : 'Failure'},  
-                ignore_index = True) 
+    df = df.append(
+        {
+            'query': 'Query7: All participants have basics',
+            'result': 'Failure'
+        },
+        ignore_index=True)
 
 # # query 8 All participants WITH EHR data have said yes to EHR consents
 #
@@ -504,17 +574,29 @@ WHERE  person_id NOT IN (SELECT person_id FROM person_yes)
 """)
 
 q = query.render(project_id=project_id, ct_dataset=ct_dataset)
-df1=execute(client, q)
+df1 = execute(client, q)
 df1.shape
 df1
 # -
 
-if df1.iloc[:,3].sum()==0:
- df = df.append({'query' : 'Query8: All participants WITH EHR data have said yes to EHR consents', 'result' : 'PASS'},  
-                ignore_index = True) 
+if df1.iloc[:, 3].sum() == 0:
+    df = df.append(
+        {
+            'query':
+                'Query8: All participants WITH EHR data have said yes to EHR consents',
+            'result':
+                'PASS'
+        },
+        ignore_index=True)
 else:
- df = df.append({'query' : 'Query8: All participants WITH EHR data have said yes to EHR consents', 'result' : 'Failure'},  
-                ignore_index = True) 
+    df = df.append(
+        {
+            'query':
+                'Query8: All participants WITH EHR data have said yes to EHR consents',
+            'result':
+                'Failure'
+        },
+        ignore_index=True)
 
 # # Query 10 All primary keys are in _ext
 
@@ -592,15 +674,15 @@ WITH
    """)
 
 q = query.render(project_id=project_id, ct_dataset=ct_dataset)
-target_tables=execute(client, q)
+target_tables = execute(client, q)
 target_tables.shape
 # -
 
 target_tables
 
 
-def my_sql(table_name,column_name):
-    
+def my_sql(table_name, column_name):
+
     query = JINJA_ENV.from_string("""
     SELECT 
 '{{table_name}}' AS table_name,
@@ -617,32 +699,45 @@ FROM `{{project_id}}.{{ct_dataset}}.{{table_name}}` c
 JOIN `{{project_id}}.{{ct_dataset}}.{{table_name}}_ext` ext USING ({{column_name}})
 WHERE  c.{{column_name}} !=ext.{{column_name}}
 """)
-    q = query.render(project_id=project_id, ct_dataset=ct_dataset,table_name=table_name, column_name=column_name)
-    df11=execute(client, q)
+    q = query.render(project_id=project_id,
+                     ct_dataset=ct_dataset,
+                     table_name=table_name,
+                     column_name=column_name)
+    df11 = execute(client, q)
     return df11
 
 
-result = [my_sql (table_name,column_name) for table_name, column_name in zip(target_tables['table_name'], target_tables['column_name'])]
+result = [
+    my_sql(table_name, column_name) for table_name, column_name in zip(
+        target_tables['table_name'], target_tables['column_name'])
+]
 result
 
 # +
-n=len(target_tables.index)
+n = len(target_tables.index)
 res2 = pd.DataFrame(result[0])
 
-for x in range(1,n):    
-  res2=res2.append(result[x])
-    
-res2=res2.sort_values(by='row_counts_failure', ascending=False)
+for x in range(1, n):
+    res2 = res2.append(result[x])
+
+res2 = res2.sort_values(by='row_counts_failure', ascending=False)
 res2
 # -
 
-if res2.iloc[:,3].sum()==0:
- df = df.append({'query' : 'Query10: All primary keys are in _ext', 'result' : 'PASS'},  
-                ignore_index = True) 
+if res2.iloc[:, 3].sum() == 0:
+    df = df.append(
+        {
+            'query': 'Query10: All primary keys are in _ext',
+            'result': 'PASS'
+        },
+        ignore_index=True)
 else:
- df = df.append({'query' : 'Query10: All primary keys are in _ext', 'result' : 'Failure'},  
-                ignore_index = True) 
-
+    df = df.append(
+        {
+            'query': 'Query10: All primary keys are in _ext',
+            'result': 'Failure'
+        },
+        ignore_index=True)
 
 # # query 11 No duplicated primary keys¶
 
@@ -719,15 +814,15 @@ WITH
  """)
 
 q = query.render(project_id=project_id, ct_dataset=ct_dataset)
-target_tables=execute(client, q)
+target_tables = execute(client, q)
 target_tables.shape
 # -
 
 target_tables
 
 
-def my_sql(table_name,column_name):
-    
+def my_sql(table_name, column_name):
+
     query = JINJA_ENV.from_string("""
     
 SELECT 
@@ -745,32 +840,45 @@ FROM `{{project_id}}.{{ct_dataset}}.{{table_name}}` c
 GROUP BY {{column_name}}
 HAVING COUNT(*) >1
 """)
-    q = query.render(project_id=project_id, ct_dataset=ct_dataset,table_name=table_name, column_name=column_name)
-    df11=execute(client, q)
+    q = query.render(project_id=project_id,
+                     ct_dataset=ct_dataset,
+                     table_name=table_name,
+                     column_name=column_name)
+    df11 = execute(client, q)
     return df11
 
 
-result = [my_sql (table_name,column_name) for table_name, column_name in zip(target_tables['table_name'], target_tables['column_name'])]
+result = [
+    my_sql(table_name, column_name) for table_name, column_name in zip(
+        target_tables['table_name'], target_tables['column_name'])
+]
 result
 
 # +
-n=len(target_tables.index)
+n = len(target_tables.index)
 res2 = pd.DataFrame(result[0])
 
-for x in range(1,n):    
-  res2=res2.append(result[x])
-    
-res2=res2.sort_values(by='row_counts_failure', ascending=False)
+for x in range(1, n):
+    res2 = res2.append(result[x])
+
+res2 = res2.sort_values(by='row_counts_failure', ascending=False)
 res2
 # -
 
 if res2.empty:
- df = df.append({'query' : 'Query11 No duplicated primary keys', 'result' : 'PASS'},  
-                ignore_index = True) 
+    df = df.append(
+        {
+            'query': 'Query11 No duplicated primary keys',
+            'result': 'PASS'
+        },
+        ignore_index=True)
 else:
- df = df.append({'query' : 'Query11 No duplicated primary keys', 'result' : 'Failure'},  
-                ignore_index = True) 
-
+    df = df.append(
+        {
+            'query': 'Query11 No duplicated primary keys',
+            'result': 'Failure'
+        },
+        ignore_index=True)
 
 # # Query 12 OMOP tables should have standard concept ids, done WITH questions
 
@@ -818,15 +926,15 @@ WITH
 """)
 
 q = query.render(project_id=project_id, ct_dataset=ct_dataset)
-target_tables=execute(client, q)
+target_tables = execute(client, q)
 target_tables.shape
 # -
 
 target_tables
 
 
-def my_sql(table_name,column_name):
-    
+def my_sql(table_name, column_name):
+
     query = JINJA_ENV.from_string("""
     
 SELECT 
@@ -845,31 +953,45 @@ JOIN `{{project_id}}.{{ct_dataset}}.{{table_name}}`  ON (concept_id={{column_nam
 WHERE  standard_concept !='S'
 AND {{column_name}} !=0
 """)
-    q = query.render(project_id=project_id, ct_dataset=ct_dataset,table_name=table_name, column_name=column_name)
-    df11=execute(client, q)
+    q = query.render(project_id=project_id,
+                     ct_dataset=ct_dataset,
+                     table_name=table_name,
+                     column_name=column_name)
+    df11 = execute(client, q)
     return df11
 
 
-result = [my_sql (table_name,column_name) for table_name, column_name in zip(target_tables['table_name'], target_tables['column_name'])]
+result = [
+    my_sql(table_name, column_name) for table_name, column_name in zip(
+        target_tables['table_name'], target_tables['column_name'])
+]
 result
 
 # +
-n=len(target_tables.index)
+n = len(target_tables.index)
 res2 = pd.DataFrame(result[0])
 
-for x in range(1,n):    
-  res2=res2.append(result[x])
-    
-res2=res2.sort_values(by='row_counts_failure', ascending=False)
+for x in range(1, n):
+    res2 = res2.append(result[x])
+
+res2 = res2.sort_values(by='row_counts_failure', ascending=False)
 res2
 # -
 
-if res2.iloc[:,3].sum()==0:
- df = df.append({'query' : 'Query12: OMOP tables should have standard concept ids', 'result' : 'PASS'},  
-                ignore_index = True) 
+if res2.iloc[:, 3].sum() == 0:
+    df = df.append(
+        {
+            'query': 'Query12: OMOP tables should have standard concept ids',
+            'result': 'PASS'
+        },
+        ignore_index=True)
 else:
- df = df.append({'query' : 'Query12: OMOP tables should have standard concept ids', 'result' : 'Failure'},  
-                ignore_index = True) 
+    df = df.append(
+        {
+            'query': 'Query12: OMOP tables should have standard concept ids',
+            'result': 'Failure'
+        },
+        ignore_index=True)
 
 # # Query 13 observation concept ids (4013886, 4135376, 4271761) that have dates equal to birth dates should be set to CDR cutoff date
 
@@ -901,19 +1023,34 @@ WHERE observation_id IN (SELECT observation_id FROM rows_having_brith_date)
 AND observation_date != '{{cut_off_date}}'
  """)
 
-q = query.render(project_id=project_id, rt_dataset=rt_dataset, ct_dataset=ct_dataset,cut_off_date=cut_off_date)
-df1=execute(client, q)
+q = query.render(project_id=project_id,
+                 rt_dataset=rt_dataset,
+                 ct_dataset=ct_dataset,
+                 cut_off_date=cut_off_date)
+df1 = execute(client, q)
 df1.shape
 # -
 
 df1
 
-if df1.iloc[:,3].sum()==0:
- df = df.append({'query' : 'Query13: observation concept ids (4013886, 4135376, 4271761) that have dates equal to birth dates should be set to CDR cutoff date', 'result' : 'PASS'},  
-                ignore_index = True) 
+if df1.iloc[:, 3].sum() == 0:
+    df = df.append(
+        {
+            'query':
+                'Query13: observation concept ids (4013886, 4135376, 4271761) that have dates equal to birth dates should be set to CDR cutoff date',
+            'result':
+                'PASS'
+        },
+        ignore_index=True)
 else:
- df = df.append({'query' : 'Query13: observation concept ids (4013886, 4135376, 4271761) that have dates equal to birth dates should be set to CDR cutoff date', 'result' : 'Failure'},  
-                ignore_index = True) 
+    df = df.append(
+        {
+            'query':
+                'Query13: observation concept ids (4013886, 4135376, 4271761) that have dates equal to birth dates should be set to CDR cutoff date',
+            'result':
+                'Failure'
+        },
+        ignore_index=True)
 
 #
 # # Query 14 done all other observation concept ids WITH dates similar to birth dates other than the 3 above should be removed
@@ -943,19 +1080,33 @@ FROM `{{project_id}}.{{ct_dataset}}.observation` ob
 WHERE  observation_id IN (SELECT observation_id FROM rows_having_brith_date)
 """)
 
-q = query.render(project_id=project_id, rt_dataset=rt_dataset, ct_dataset=ct_dataset)
-df1=execute(client, q)
+q = query.render(project_id=project_id,
+                 rt_dataset=rt_dataset,
+                 ct_dataset=ct_dataset)
+df1 = execute(client, q)
 df1.shape
 # -
 
 df1
 
-if df1.iloc[:,3].sum()==0:
- df = df.append({'query' : 'Query14: no birth_date in observation table except (4013886, 4135376, 4271761)', 'result' : 'PASS'},  
-                ignore_index = True) 
+if df1.iloc[:, 3].sum() == 0:
+    df = df.append(
+        {
+            'query':
+                'Query14: no birth_date in observation table except (4013886, 4135376, 4271761)',
+            'result':
+                'PASS'
+        },
+        ignore_index=True)
 else:
- df = df.append({'query' : 'Query14: no birth_date in observation table except (4013886, 4135376, 4271761)', 'result' : 'Failure'},  
-                ignore_index = True) 
+    df = df.append(
+        {
+            'query':
+                'Query14: no birth_date in observation table except (4013886, 4135376, 4271761)',
+            'result':
+                'Failure'
+        },
+        ignore_index=True)
 
 # # Query 15:  All the descendants of ancestor_concept_id IN (4054924, 141771) -- motor vehicle accidents should be dropped in condition table¶
 
@@ -977,27 +1128,42 @@ JOIN `{{project_id}}.{{ct_dataset}}.concept_ancestor` ON (c.concept_id=descendan
 WHERE ancestor_concept_id IN (4054924, 141771)
 """)
 
-q = query.render(project_id=project_id, rt_dataset=rt_dataset, ct_dataset=ct_dataset)
+q = query.render(project_id=project_id,
+                 rt_dataset=rt_dataset,
+                 ct_dataset=ct_dataset)
 
-df1=execute(client, q)
+df1 = execute(client, q)
 df1.shape
 # -
 
 df1
 
-if df1.iloc[:,3].sum()==0:
- df = df.append({'query' : 'Query15: All the descendants of ancestor_concept_id IN (4054924, 141771)  be dropped in condition table', 'result' : 'PASS'},  
-                ignore_index = True) 
+if df1.iloc[:, 3].sum() == 0:
+    df = df.append(
+        {
+            'query':
+                'Query15: All the descendants of ancestor_concept_id IN (4054924, 141771)  be dropped in condition table',
+            'result':
+                'PASS'
+        },
+        ignore_index=True)
 else:
- df = df.append({'query' : 'Query15: All the descendants of ancestor_concept_id IN (4054924, 141771)  be dropped in condition table', 'result' : 'Failure'},  
-                ignore_index = True) 
-
+    df = df.append(
+        {
+            'query':
+                'Query15: All the descendants of ancestor_concept_id IN (4054924, 141771)  be dropped in condition table',
+            'result':
+                'Failure'
+        },
+        ignore_index=True)
 
 # # final summary result
+
 
 # +
 def highlight_cells(val):
     color = 'red' if 'Failure' in val else 'white'
-    return f'background-color: {color}' 
+    return f'background-color: {color}'
+
 
 df.style.applymap(highlight_cells).set_properties(**{'text-align': 'left'})

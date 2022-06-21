@@ -7,12 +7,13 @@ from google.cloud import bigquery
 from google.cloud.bigquery import Table, TimePartitioning
 
 import app_identity
+from gcloud.bq import BigQueryClient
 import bq_utils
 from cdr_cleaner.cleaning_rules import ppi_branching
 from cdr_cleaner.cleaning_rules.ppi_branching import PpiBranching
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import \
     BaseTest
-from utils import bq, sandbox
+from utils import sandbox
 
 TEST_DATA_FIELDS = ('observation_id', 'person_id', 'observation_source_value',
                     'value_as_number', 'value_source_value', 'value_as_string',
@@ -98,7 +99,9 @@ class Observation(object):
     Helper class to initialize test observation rows
     """
 
-    SCHEMA = bq.get_table_schema('observation')
+    project_id = app_identity.get_application_id()
+    bq_client = BigQueryClient(project_id)
+    SCHEMA = bq_client.get_table_schema('observation')
     """List of schema fields for observation table"""
 
     _FIELD_DEFAULTS = dict(
@@ -232,10 +235,9 @@ class PPiBranchingTest(BaseTest.CleaningRulesTestBase):
 
         :return: a mapping from dataset_id -> table_ids
         """
-        dataset_cols_query = bq.dataset_columns_query(self.project_id,
-                                                      self.dataset_id)
-        sandbox_cols_query = bq.dataset_columns_query(self.project_id,
-                                                      self.sandbox_dataset_id)
+        dataset_cols_query = self.client.dataset_columns_query(self.dataset_id)
+        sandbox_cols_query = self.client.dataset_columns_query(
+            self.sandbox_dataset_id)
         cols_query = f"""
                 {dataset_cols_query}
                 UNION ALL

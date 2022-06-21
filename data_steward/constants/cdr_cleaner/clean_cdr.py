@@ -4,8 +4,8 @@ EHR = 'ehr'
 UNIONED = 'unioned'
 RDR = 'rdr'
 COMBINED = 'combined'
-DEID_BASE = 'deid_base'
-DEID_CLEAN = 'deid_clean'
+REGISTERED_TIER_DEID_BASE = 'registered_tier_deid_base'
+REGISTERED_TIER_DEID_CLEAN = 'registered_tier_deid_clean'
 FITBIT = 'fitbit'
 FITBIT_DEID = 'fitbit_deid'
 
@@ -54,8 +54,8 @@ class DataStage(Enum):
     RDR = RDR
     UNIONED = UNIONED
     COMBINED = COMBINED
-    DEID_BASE = DEID_BASE
-    DEID_CLEAN = DEID_CLEAN
+    REGISTERED_TIER_DEID_BASE = REGISTERED_TIER_DEID_BASE
+    REGISTERED_TIER_DEID_CLEAN = REGISTERED_TIER_DEID_CLEAN
     FITBIT = FITBIT
     CONTROLLED_TIER_FITBIT = CONTROLLED_TIER_FITBIT
     FITBIT_DEID = FITBIT_DEID

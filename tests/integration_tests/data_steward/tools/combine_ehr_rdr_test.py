@@ -2,6 +2,7 @@
 import os
 import unittest
 
+# Third party imports
 import mock
 
 # Project imports
@@ -9,6 +10,7 @@ import app_identity
 import bq_utils
 import resources
 from gcloud.gcs import StorageClient
+from gcloud.bq import BigQueryClient
 from tests import test_util
 from constants.tools.combine_ehr_rdr import EHR_CONSENT_TABLE_ID, RDR_TABLES_TO_COPY, DOMAIN_TABLES
 from tools.combine_ehr_rdr import (copy_rdr_table, ehr_consent, main,
@@ -27,8 +29,10 @@ UNCONSENTED_EHR_COUNTS_QUERY = (
 
 
 class CombineEhrRdrTest(unittest.TestCase):
+
     project_id = app_identity.get_application_id()
     storage_client = StorageClient(project_id)
+    bq_client = BigQueryClient(project_id)
     dataset_id = bq_utils.get_dataset_id()
 
     @classmethod
@@ -41,7 +45,7 @@ class CombineEhrRdrTest(unittest.TestCase):
         rdr_dataset_id = bq_utils.get_rdr_dataset_id()
         test_util.delete_all_tables(ehr_dataset_id)
         test_util.delete_all_tables(rdr_dataset_id)
-        test_util.setup_hpo_id_bucket_name_table(cls.dataset_id)
+        test_util.setup_hpo_id_bucket_name_table(cls.bq_client, cls.dataset_id)
         cls.load_dataset_from_files(ehr_dataset_id,
                                     test_util.NYC_FIVE_PERSONS_PATH, True)
         cls.load_dataset_from_files(rdr_dataset_id, test_util.RDR_PATH)
@@ -107,16 +111,16 @@ class CombineEhrRdrTest(unittest.TestCase):
         # sanity check
         # pre-conditions
         self.assertFalse(
-            bq_utils.table_exists(EHR_CONSENT_TABLE_ID,
-                                  self.combined_dataset_id))
+            self.bq_client.table_exists(EHR_CONSENT_TABLE_ID,
+                                        self.combined_dataset_id))
 
         # test
         ehr_consent()
 
         # post conditions
         self.assertTrue(
-            bq_utils.table_exists(EHR_CONSENT_TABLE_ID,
-                                  self.combined_dataset_id),
+            self.bq_client.table_exists(EHR_CONSENT_TABLE_ID,
+                                        self.combined_dataset_id),
             'Table {dataset}.{table} created by consented_person'.format(
                 dataset=self.combined_dataset_id, table=EHR_CONSENT_TABLE_ID))
         response = bq_utils.query('SELECT * FROM {dataset}.{table}'.format(
@@ -131,10 +135,11 @@ class CombineEhrRdrTest(unittest.TestCase):
     def test_copy_rdr_tables(self):
         for table in RDR_TABLES_TO_COPY:
             self.assertFalse(
-                bq_utils.table_exists(table,
-                                      self.combined_dataset_id))  # sanity check
+                self.bq_client.table_exists(
+                    table, self.combined_dataset_id))  # sanity check
             copy_rdr_table(table)
-            actual = bq_utils.table_exists(table, self.combined_dataset_id)
+            actual = self.bq_client.table_exists(table,
+                                                 self.combined_dataset_id)
             self.assertTrue(
                 actual,
                 msg='RDR table {table} should be copied'.format(table=table))
@@ -331,4 +336,4 @@ class CombineEhrRdrTest(unittest.TestCase):
         rdr_dataset_id = bq_utils.get_rdr_dataset_id()
         test_util.delete_all_tables(ehr_dataset_id)
         test_util.delete_all_tables(rdr_dataset_id)
-        test_util.drop_hpo_id_bucket_name_table(cls.dataset_id)
+        test_util.drop_hpo_id_bucket_name_table(cls.bq_client, cls.dataset_id)

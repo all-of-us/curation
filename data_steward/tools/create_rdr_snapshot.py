@@ -10,7 +10,6 @@ from google.cloud import bigquery
 from cdr_cleaner import clean_cdr
 from cdr_cleaner.args_parser import add_kwargs_to_args
 from utils import auth
-from utils import bq
 from gcloud.bq import BigQueryClient
 from utils import pipeline_logging
 from common import CDR_SCOPES
@@ -116,8 +115,8 @@ def main(raw_args=None):
     all_cleaning_args = add_kwargs_to_args(cleaning_args, kwargs)
     clean_cdr.main(args=all_cleaning_args)
 
-    bq.build_and_copy_contents(bq_client, datasets.get('staging', 'UNSET'),
-                               datasets.get('clean', 'UNSET'))
+    bq_client.build_and_copy_contents(datasets.get('staging', 'UNSET'),
+                                      datasets.get('clean', 'UNSET'))
 
     # update sandbox description and labels
     sandbox_dataset = bq_client.get_dataset(datasets.get(
@@ -182,24 +181,23 @@ def create_datasets(client, rdr_dataset, release_tag):
         "release_tag": release_tag,
         "de_identified": "false"
     }
-    staging_dataset_object = bq.define_dataset(client.project, rdr_staging,
-                                               staging_desc, labels)
+    staging_dataset_object = client.define_dataset(rdr_staging, staging_desc,
+                                                   labels)
     client.create_dataset(staging_dataset_object)
     LOGGER.info(f'Created dataset `{client.project}.{rdr_staging}`')
 
     sandbox_desc = (f'Sandbox created for storing records affected by the '
                     f'cleaning rules applied to {rdr_staging}')
     labels["phase"] = "sandbox"
-    sandbox_dataset_object = bq.define_dataset(client.project, rdr_sandbox,
-                                               sandbox_desc, labels)
+    sandbox_dataset_object = client.define_dataset(rdr_sandbox, sandbox_desc,
+                                                   labels)
     client.create_dataset(sandbox_dataset_object)
     LOGGER.info(f'Created dataset `{client.project}.{rdr_sandbox}`')
 
     version = 'implement getting software version'
     clean_desc = (f'{version} clean version of {rdr_dataset}')
     labels["phase"] = "clean"
-    clean_dataset_object = bq.define_dataset(client.project, rdr_clean,
-                                             clean_desc, labels)
+    clean_dataset_object = client.define_dataset(rdr_clean, clean_desc, labels)
     client.create_dataset(clean_dataset_object)
     LOGGER.info(f'Created dataset `{client.project}.{rdr_clean}`')
 

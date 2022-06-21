@@ -19,7 +19,6 @@ import argparse
 import resources
 from utils import bq, auth
 from gcloud.bq import BigQueryClient
-import bq_utils
 from common import JINJA_ENV, DRC_OPS, CDR_SCOPES, EHR_OPS, PERSON
 from constants.validation.participants.identity_match import IDENTITY_MATCH_TABLE
 
@@ -85,14 +84,16 @@ def create_drc_validation_table(client, table_id, drc_dataset_id=DRC_OPS):
     return table_id
 
 
-def get_case_statements():
+def get_case_statements(client):
     """
     This method generates the CASE_STATEMENT query
+
+    :param client: A BigQueryClient
     """
     case_statements = []
     field_list = []
 
-    schema_list = bq.get_table_schema(IDENTITY_MATCH_TABLE)
+    schema_list = client.get_table_schema(IDENTITY_MATCH_TABLE)
     for item in schema_list:
         field_list.append(item.name)
 
@@ -121,9 +122,9 @@ def populate_validation_table(client,
     :param hpo_id: ID for the HPO site
     """
 
-    schema_list = bq.get_table_schema(IDENTITY_MATCH_TABLE)
+    schema_list = client.get_table_schema(IDENTITY_MATCH_TABLE)
     id_match_table_id = table_id
-    ehr_person_table_id = bq_utils.get_table_id(hpo_id, PERSON)
+    ehr_person_table_id = resources.get_table_id(PERSON, hpo_id=hpo_id)
 
     fields_name_str = ', '.join([item.name for item in schema_list])
 
@@ -132,7 +133,7 @@ def populate_validation_table(client,
         drc_dataset_id=drc_dataset_id,
         id_match_table_id=id_match_table_id,
         fields=fields_name_str,
-        case_statements=get_case_statements(),
+        case_statements=get_case_statements(client),
         ehr_ops_dataset_id=ehr_dataset_id,
         ehr_person_table_id=ehr_person_table_id)
 
@@ -178,7 +179,7 @@ def create_and_populate_drc_validation_table(client, hpo_id):
     table_id = f'{IDENTITY_MATCH_TABLE}_{hpo_id}'
 
     # Creates hpo_site identity match table if it does not exist
-    if not bq_utils.table_exists(table_id, DRC_OPS):
+    if not client.table_exists(table_id, DRC_OPS):
         create_drc_validation_table(client, table_id)
 
     # Populates the validation table for the site

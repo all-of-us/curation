@@ -1,7 +1,9 @@
+# Python imports
 import os
 from glob import glob
 from io import open
 
+# Project imports
 import bq_utils
 import resources
 
@@ -18,10 +20,10 @@ def list_files(base_path):
 
 
 def render(sql, hpo_id, results_schema, vocab_schema=''):
-    table_id = bq_utils.get_table_id(hpo_id, '')
-    vocab_replacement = vocab_schema + '.' if vocab_schema else ''
+    table_id = resources.get_table_id(table_name='', hpo_id=hpo_id)
+    vocab_replacement = f'{vocab_schema}.' if vocab_schema else ''
     sql = sql.replace(RESULTS_SCHEMA_PLACEHOLDER,
-                      results_schema + '.' + table_id)
+                      f'{results_schema}.{table_id}')
     sql = sql.replace(VOCAB_SCHEMA_PLACEHOLDER, vocab_replacement)
     return sql
 

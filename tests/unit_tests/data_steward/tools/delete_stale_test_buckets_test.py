@@ -7,8 +7,6 @@ from unittest import TestCase
 from unittest.mock import patch, Mock
 from datetime import datetime, timedelta, timezone
 
-# Third party imports
-
 # Project imports
 from tools import delete_stale_test_buckets
 

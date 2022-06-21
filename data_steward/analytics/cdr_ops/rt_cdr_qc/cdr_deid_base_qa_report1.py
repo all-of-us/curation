@@ -17,6 +17,9 @@
 
 import urllib
 import pandas as pd
+from utils import auth
+from gcloud.bq import BigQueryClient
+from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
 pd.options.display.max_rows = 120
 
 # + tags=["parameters"]
@@ -24,10 +27,18 @@ project_id = ""
 com_cdr = ""
 deid_base_cdr=""
 pipeline=""
+run_as = ""
 # -
 
 # df will have a summary in the end
-df = pd.DataFrame(columns = ['query', 'result']) 
+df = pd.DataFrame(columns=['query', 'result'])
+
+# +
+impersonation_creds = auth.get_impersonation_credentials(
+    run_as, target_scopes=IMPERSONATION_SCOPES)
+
+client = BigQueryClient(project_id, credentials=impersonation_creds)
+# -
 
 # # 1 Verify that if a person has multiple SELECTion(Hispanic + other race) in pre_deid_com_cdr, the output in deid_base_cdr observation table should result in two rows - one for Ethnicity AND one for race. 
 #
@@ -56,7 +67,7 @@ df = pd.DataFrame(columns = ['query', 'result'])
 #   step 3
 # Verify that the 2-rows have 2-different value_source_concept_id values in the deid_base_cdr Observation table.
 
-query=f''' 
+query = f''' 
 
 WITH df1 AS (
 SELECT m.research_id AS person_id
@@ -78,19 +89,27 @@ SELECT COUNT (*) AS n_not_two_rows FROM df2
 WHERE person_id IN (SELECT person_id FROM df1) AND countp !=2 
 
     '''
-df1=pd.read_gbq(query, dialect='standard')
-if df1.eq(0).any().any():
- df = df.append({'query' : 'Query 1.2 these person_ids have 2-rows in observation', 'result' : 'PASS'},  
-                ignore_index = True) 
+df1 = execute(client, query)
+if df1.loc[0].sum() == 0:
+    df = df.append(
+        {
+            'query': 'Query 1.2 these person_ids have 2-rows in observation',
+            'result': 'PASS'
+        },
+        ignore_index=True)
 else:
- df = df.append({'query' : 'Query1.2 these person_ids have 2-rows in observation', 'result' : ''},  
-                ignore_index = True) 
+    df = df.append(
+        {
+            'query': 'Query1.2 these person_ids have 2-rows in observation',
+            'result': ''
+        },
+        ignore_index=True)
 df1
 
 # ## one error in new cdr. this person_id fails to meet the rule.
 
 # +
-query=f''' 
+query = f''' 
 
 WITH df1 AS (
 SELECT m.research_id AS person_id
@@ -114,7 +133,7 @@ WHERE  observation_source_value = 'Race_WhatRaceEthnicity'
 AND person_id IN (SELECT person_id from df2 where countp !=2 )
 AND person_id IN (SELECT person_id FROM df1) 
 '''
-df1=pd.read_gbq(query, dialect='standard')
+df1=execute(client, query)
 
 df1
 # -
@@ -123,7 +142,7 @@ df1
 
 # +
 
-query=f''' 
+query = f''' 
 
 WITH df1 AS (
 SELECT distinct m.research_id AS person_id
@@ -145,13 +164,21 @@ GROUP BY person_id
 SELECT COUNT (*) AS n_row_not_pass FROM df1
 WHERE person_id NOT IN (SELECT person_id FROM df2 WHERE countp=2)
     '''
-df1=pd.read_gbq(query, dialect='standard')
-if df1.eq(0).any().any():
- df = df.append({'query' : 'Query1.3 these person_ids have 2-rows in observation', 'result' : 'PASS'},  
-                ignore_index = True) 
+df1 = execute(client, query)
+if df1.loc[0].sum() == 0:
+    df = df.append(
+        {
+            'query': 'Query1.3 these person_ids have 2-rows in observation',
+            'result': 'PASS'
+        },
+        ignore_index=True)
 else:
- df = df.append({'query' : 'Query1.3 these person_ids have 2-rows in observation', 'result' : ''},  
-                ignore_index = True) 
+    df = df.append(
+        {
+            'query': 'Query1.3 these person_ids have 2-rows in observation',
+            'result': ''
+        },
+        ignore_index=True)
 df1
 # -
 
@@ -159,7 +186,7 @@ df1
 #
 # observation_source_value = 'Race_WhatRaceEthnicity' AND value_source_concept_id
 
-query=f''' 
+query = f''' 
 
 WITH df1 AS (
 SELECT distinct person_id
@@ -179,13 +206,25 @@ SELECT COUNT (*) AS n_row_not_pass FROM df2
 WHERE person_id IN (SELECT person_id FROM df1) AND countp <2 
 
     '''
-df1=pd.read_gbq(query, dialect='standard')
-if df1.eq(0).any().any():
- df = df.append({'query' : 'Query1.4 these person_ids have 2 or more rows in observation', 'result' : 'PASS'},  
-                ignore_index = True) 
+df1 = execute(client, query)
+if df1.loc[0].sum() == 0:
+    df = df.append(
+        {
+            'query':
+                'Query1.4 these person_ids have 2 or more rows in observation',
+            'result':
+                'PASS'
+        },
+        ignore_index=True)
 else:
- df = df.append({'query' : 'Query1.4 these person_ids have 2 or more rows in observation', 'result' : ''},  
-                ignore_index = True) 
+    df = df.append(
+        {
+            'query':
+                'Query1.4 these person_ids have 2 or more rows in observation',
+            'result':
+                ''
+        },
+        ignore_index=True)
 df1
 
 # # 1.5  GR_01_2	"Race Ethnicity:  Race non-responses DC-618
@@ -195,7 +234,7 @@ df1
 # this test case can be verified only after the PERSON table is repopulated.
 
 # has to be deid_base
-query=f''' 
+query = f''' 
 
 WITH df1 AS (
 SELECT distinct race_source_value,race_source_concept_id ,race_concept_id
@@ -206,13 +245,25 @@ SELECT COUNT (*) AS n_row_not_pass FROM df1
 WHERE  race_source_concept_id !=0 OR race_source_value !='None Indicated'
 
 '''
-df1=pd.read_gbq(query, dialect='standard')
-if df1.eq(0).any().any():
- df = df.append({'query' : 'Query1.5 Race_source_concept_id suppresion in observation', 'result' : 'PASS'},  
-                ignore_index = True) 
+df1 = execute(client, query)
+if df1.loc[0].sum() == 0:
+    df = df.append(
+        {
+            'query':
+                'Query1.5 Race_source_concept_id suppresion in observation',
+            'result':
+                'PASS'
+        },
+        ignore_index=True)
 else:
- df = df.append({'query' : 'Query1.5 Race_source_concept_id suppresion in observation', 'result' : ''},  
-                ignore_index = True) 
+    df = df.append(
+        {
+            'query':
+                'Query1.5 Race_source_concept_id suppresion in observation',
+            'result':
+                ''
+        },
+        ignore_index=True)
 df1
 
 # ## 2 Gender Generalization Rule
@@ -221,7 +272,7 @@ df1
 # The new concept ID in the gender question, “CloserGenderDescription_TwoSpirit” (value_source_concept_id=701374) needs to be generalized to value_source_concept_id = 2000000002 (GenderIdentity_GeneralizedDiffGender)
 
 # has to be deid_base
-query=f''' 
+query = f''' 
 
 
 SELECT COUNT (distinct p.person_id) AS n_PERSON_ID_not_pass
@@ -236,13 +287,25 @@ AND p.value_source_concept_id !=2000000002
 
 
  '''
-df1=pd.read_gbq(query, dialect='standard')  
-if df1.eq(0).any().any():
- df = df.append({'query' : 'Query2 Gender_value_source_concept_id matched value_as_concept_id in observation', 'result' : 'PASS'},  
-                ignore_index = True) 
+df1 = execute(client, query)
+if df1.loc[0].sum() == 0:
+    df = df.append(
+        {
+            'query':
+                'Query2 Gender_value_source_concept_id matched value_as_concept_id in observation',
+            'result':
+                'PASS'
+        },
+        ignore_index=True)
 else:
- df = df.append({'query' : 'Query2 Gender_value_source_concept_id matched value_as_concept_id in observation', 'result' : ''},  
-                ignore_index = True) 
+    df = df.append(
+        {
+            'query':
+                'Query2 Gender_value_source_concept_id matched value_as_concept_id in observation',
+            'result':
+                ''
+        },
+        ignore_index=True)
 df1
 
 # # 3 Sex/gender mismatch
@@ -259,12 +322,12 @@ df1
 # 1. look up for the pids with sexatBirth = female/male AND gender_male or female in pre_deid_com_cdr
 #
 #
-# 2. lookup for the mismatch PIDs in deid_base_cdr.PERSON table, whether these people keep sex_birth AND gender wAS generalized to gender_source_concept_id = 2000000002 
+# 2. lookup for the mismatch PIDs in deid_base_cdr.PERSON table, whether these people keep sex_birth AND gender wAS generalized to gender_source_concept_id = 2000000002
 #
-# 3. Lookup for the same pids in observation table AND Verify that if the value_source_concept_id field in OBSERVATION table populates: 2000000002  AND the value_as_concept_id field in deid_cdr table should populate  2000000002 
+# 3. Lookup for the same pids in observation table AND Verify that if the value_source_concept_id field in OBSERVATION table populates: 2000000002  AND the value_as_concept_id field in deid_cdr table should populate  2000000002
 
 # check in deid_base_cdr.person
-query=f''' 
+query = f''' 
 
 WITH df1 AS (
 SELECT m.research_id AS person_id
@@ -283,19 +346,31 @@ WHERE person_id IN (SELECT person_id FROM df1)
 AND (sex_at_birth_source_value !='SexAtBirth_Female' AND gender_source_concept_id !=2000000002)
 
 '''
-df1=pd.read_gbq(query, dialect='standard')  
-if df1.eq(0).any().any():
- df = df.append({'query' : 'Query3 Sex_female/gender_man mismatch in deid_base_cdr.person table', 'result' : 'PASS'},  
-                ignore_index = True) 
+df1 = execute(client, query)
+if df1.loc[0].sum() == 0:
+    df = df.append(
+        {
+            'query':
+                'Query3 Sex_female/gender_man mismatch in deid_base_cdr.person table',
+            'result':
+                'PASS'
+        },
+        ignore_index=True)
 else:
- df = df.append({'query' : 'Query3 Sex_female/gender_man mismatch in deid_base_cdr.person table', 'result' : ''},  
-                ignore_index = True) 
+    df = df.append(
+        {
+            'query':
+                'Query3 Sex_female/gender_man mismatch in deid_base_cdr.person table',
+            'result':
+                ''
+        },
+        ignore_index=True)
 df1
 
 # +
-# check mismatched sex_male/gender_woman in deid_base_cdr.person 
+# check mismatched sex_male/gender_woman in deid_base_cdr.person
 
-query=f''' 
+query = f''' 
 
 WITH df1 AS (
 
@@ -314,13 +389,25 @@ WHERE person_id IN (SELECT person_id FROM df1)
 AND (sex_at_birth_source_value !='SexAtBirth_Male' AND gender_source_concept_id !=2000000002) 
 
  '''
-df1=pd.read_gbq(query, dialect='standard')  
-if df1.eq(0).any().any():
- df = df.append({'query' : 'Query3.2 Sex_male/gender_woman mismatch in deid_base_cdr.person', 'result' : 'PASS'},  
-                ignore_index = True) 
+df1 = execute(client, query)
+if df1.loc[0].sum() == 0:
+    df = df.append(
+        {
+            'query':
+                'Query3.2 Sex_male/gender_woman mismatch in deid_base_cdr.person',
+            'result':
+                'PASS'
+        },
+        ignore_index=True)
 else:
- df = df.append({'query' : 'Query3.2 Sex_male/gender_woman mismatch in deid_base_cdr.person', 'result' : ''},  
-                ignore_index = True) 
+    df = df.append(
+        {
+            'query':
+                'Query3.2 Sex_male/gender_woman mismatch in deid_base_cdr.person',
+            'result':
+                ''
+        },
+        ignore_index=True)
 df1
 # -
 
@@ -332,7 +419,7 @@ df1
 # observation_concept_id = 1333342, which is just the concept_id for COPE, nothing to do with detailed topics/questions
 # This test case will run with the De-id base cleaning rules
 #
-# expected result: no dateshift is applied 
+# expected result: no dateshift is applied
 #
 # result: pass if not shifted.
 #
@@ -352,28 +439,35 @@ JOIN `{project_id}.{deid_base_cdr}.observation` d
 ON i.observation_id = d.observation_id
 JOIN `{project_id}.{deid_base_cdr}.observation_ext` e
 ON e.observation_id = d.observation_id
-WHERE e.survey_version_concept_id IN (2100000004, 2100000003, 2100000002)
+WHERE e.survey_version_concept_id IN (2100000002, 2100000003, 2100000004, 2100000005, 2100000006,
+ 2100000007, 905047, 905055, 765936)
 )
 
-SELECT COUNT (*) AS n_row_pass FROM df1
+SELECT COUNT (*) AS n_row_not_pass FROM df1
 WHERE diff !=0
 
 '''
-df1=pd.read_gbq(query, dialect='standard')
-if df1.loc[0].sum()==0:
- df = df.append({'query' : 'Query4 date not shifited', 'result' : ''},  
-                ignore_index = True) 
+df1 = execute(client, query)
+if df1.loc[0].sum() == 0:
+    df = df.append({
+        'query': 'Query4 date not shifited',
+        'result': 'PASS'
+    },
+                   ignore_index=True)
 else:
- df = df.append({'query' : 'Query4 date not shifited', 'result' : 'PASS'},  
-                ignore_index = True) 
+    df = df.append({
+        'query': 'Query4 date not shifited',
+        'result': ''
+    },
+                   ignore_index=True)
 df1
 
 # ##  4.2 [DC-1051] Verify that "PPI Drop Duplicates" Rule is excluded COPE responses
 #
 # steps:
 #
-# 1. look up for person_id that have completed all the versions of COPE survey by joining observation and _ext table. (query1: col I) 
-# 2. In Observation table of the person_id, look up for the COPE survey questions.  (query2: col J) 
+# 1. look up for person_id that have completed all the versions of COPE survey by joining observation and _ext table. (query1: col I)
+# 2. In Observation table of the person_id, look up for the COPE survey questions.  (query2: col J)
 #  (Observation_source value  =
 # 'overallhealth_14b'
 # 'basics_12'
@@ -381,13 +475,13 @@ df1
 # 'cu_covid'
 # 'copect_58'
 #
-# 3. validate that the duplicate responses of those survey questions are retained for all the survey version 
+# 3. validate that the duplicate responses of those survey questions are retained for all the survey version
 #
 #
-# results: Found duplicate rows for survey QR. 
+# results: Found duplicate rows for survey QR.
 #
-# <font color='red'> 
-#     
+# <font color='red'>
+#
 # this part has to be done in deid_base_cdr, can not use deid, which has no results.
 #
 # in new cdr, need to fix survey_version_concept_id first.
@@ -409,20 +503,28 @@ SELECT COUNT (*) AS n_row_not_pass FROM df1
 WHERE countp=0
     
 '''
-df1=pd.read_gbq(query, dialect='standard')
-if df1.loc[0].sum()==0:
- df = df.append({'query' : 'Query4.2 PPI Drop Duplicates rule exclusion', 'result' : 'PASS'},  
-                ignore_index = True) 
+df1 = execute(client, query)
+if df1.loc[0].sum() == 0:
+    df = df.append(
+        {
+            'query': 'Query4.2 PPI Drop Duplicates rule exclusion',
+            'result': 'PASS'
+        },
+        ignore_index=True)
 else:
- df = df.append({'query' : 'Query4.2 PPI Drop Duplicates rule exclusion', 'result' : ''},  
-                ignore_index = True) 
+    df = df.append(
+        {
+            'query': 'Query4.2 PPI Drop Duplicates rule exclusion',
+            'result': ''
+        },
+        ignore_index=True)
 df1
 
 # ## extra
 #
 # https://precisionmedicineinitiative.atlassian.net/browse/DC-1404
 #
-# ## 5  RT CDR Base generation 
+# ## 5  RT CDR Base generation
 # https://precisionmedicineinitiative.atlassian.net/browse/DC-1402
 #
 # to ensure that there are equal counts FROM both the observation and person_ext tables for the sex_at_birth_* columns that can be added to the RT validation notebook:
@@ -454,18 +556,27 @@ FULL JOIN df2 USING (sex_at_birth_value)
 WHERE countp1 !=countp2
 
 '''
-df1=pd.read_gbq(query, dialect='standard')
-if df1.loc[0].sum()==0:
- df = df.append({'query' : 'Query5 equal counts for sex_at_birth columns', 'result' : 'PASS'},  
-                ignore_index = True) 
+df1 = execute(client, query)
+if df1.loc[0].sum() == 0:
+    df = df.append(
+        {
+            'query': 'Query5 equal counts for sex_at_birth columns',
+            'result': 'PASS'
+        },
+        ignore_index=True)
 else:
- df = df.append({'query' : 'Query5 equal counts for sex_at_birth columns', 'result' : ''},  
-                ignore_index = True) 
+    df = df.append(
+        {
+            'query': 'Query5 equal counts for sex_at_birth columns',
+            'result': ''
+        },
+        ignore_index=True)
 df1
 # -
 
 # # Summary_deid_base_validation
 
 # if not pass, will be highlighted in red
-df = df.mask(df.isin(['Null','']))
-df.style.highlight_null(null_color='red').set_properties(**{'text-align': 'left'})
+df = df.mask(df.isin(['Null', '']))
+df.style.highlight_null(null_color='red').set_properties(
+    **{'text-align': 'left'})

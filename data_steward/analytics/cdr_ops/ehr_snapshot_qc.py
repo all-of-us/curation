@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # ---
 # jupyter:
 #   jupytext:
@@ -5,7 +6,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.3.0
+#       jupytext_version: 1.7.1
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -18,14 +19,18 @@
 PROJECT_ID = ""  # identifies the project containing the datasets
 BASELINE_EHR_DATASET_ID = ""  # Identifies the dataset the snapshot was created from
 EHR_SNAPSHOT_DATASET_ID = ""  # Identifies the snapshot dataset
+RELEASE_TAG = ""  # identifies the release tag for the current CDR release
+EXCLUDED_SITES = "default"  # List of excluded sites passed as string: eg. "'hpo_id1', 'hpo_id_2', 'hpo_id3',..."
+# -
 
 # +
 import pandas as pd
 
-from utils.bq import get_client
+from gcloud.bq import BigQueryClient
 from analytics.cdr_ops.notebook_utils import execute
+from common import MAPPED_CLINICAL_DATA_TABLES
 
-client = get_client(PROJECT_ID)
+client = BigQueryClient(PROJECT_ID)
 
 pd.options.display.max_rows = 1000
 pd.options.display.max_colwidth = 0
@@ -33,6 +38,16 @@ pd.options.display.max_columns = None
 pd.options.display.width = None
 
 # -
+
+stage = 'unioned_ehr'
+for suffix in ['_backup', '_staging', '_sandbox', '']:
+    dataset_id = f'{RELEASE_TAG}_unioned_ehr{suffix}'
+    dataset = client.get_dataset(dataset_id)
+    print(f'''{dataset.dataset_id}
+  description: {dataset.description}
+  labels: {dataset.labels}
+  
+    ''')
 
 # ## QC for EHR Snapshot
 #
@@ -125,3 +140,24 @@ WHERE
     OR (observation_date = birth_date))
 """
 execute(client, query)
+
+# ## Check for Excluded sites
+
+if EXCLUDED_SITES != "default":
+    queries = []
+    for cdm_table in MAPPED_CLINICAL_DATA_TABLES:
+        queries.append(f""" SELECT
+    '{cdm_table}' AS table_name, COUNT(*) AS non_compliant_rows
+    FROM `{EHR_SNAPSHOT_DATASET_ID}.unioned_ehr_{cdm_table}`
+    JOIN `{EHR_SNAPSHOT_DATASET_ID}._mapping_{cdm_table}`
+    USING ({cdm_table}_id)
+    WHERE src_hpo_id IN ({EXCLUDED_SITES})""")
+
+    query = ' \n UNION ALL \n'.join(queries)
+
+    execute(client, query)
+else:
+    print(
+        f'Since list of excluded sites is not provided to the script, check for Excluded Sites is skipped.'
+    )
+# -

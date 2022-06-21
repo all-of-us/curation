@@ -177,7 +177,7 @@ def count_pid_rows_in_dataset(project_id, dataset_id, hpo_id, pid_source):
         consts.MAP_EHR_COUNT
     ])
     bq_client = BigQueryClient(project_id)
-    cols_query = bq.dataset_columns_query(project_id, dataset_id)
+    cols_query = bq_client.dataset_columns_query(dataset_id)
     table_df = bq_client.query(cols_query).to_dataframe()
 
     if dataset_type == common.COMBINED:

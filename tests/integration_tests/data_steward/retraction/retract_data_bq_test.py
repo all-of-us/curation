@@ -10,7 +10,6 @@ import pandas as pd
 
 # Project imports
 import app_identity
-from utils import bq
 from gcloud.bq import BigQueryClient
 from tests import test_util
 from retraction import retract_data_bq as rbq
@@ -63,13 +62,11 @@ class RetractDataBqTest(TestCase):
         mock_is_ehr_dataset.return_value = True
 
         # create and load person_ids to pid table
-        bq.create_tables(
-            self.bq_client,
-            self.test_project_id, [
-                f'{self.test_project_id}.{self.bq_dataset_id}.{self.pid_table_id}'
-            ],
-            exists_ok=False,
-            fields=[rbq.PID_TABLE_FIELDS])
+        self.bq_client.create_tables([
+            f'{self.test_project_id}.{self.bq_dataset_id}.{self.pid_table_id}'
+        ],
+                                     exists_ok=False,
+                                     fields=[rbq.PID_TABLE_FIELDS])
         bq_formatted_insert_values = ', '.join([
             f'({person_id}, {research_id})'
             for (person_id, research_id) in self.person_research_ids
@@ -99,7 +96,7 @@ class RetractDataBqTest(TestCase):
                 job_config.source_format = bigquery.SourceFormat.CSV
                 job_config.skip_leading_rows = 1
                 job_config.write_disposition = 'WRITE_EMPTY'
-                job_config.schema = bq.get_table_schema(cdm_table)
+                job_config.schema = self.bq_client.get_table_schema(cdm_table)
                 load_job = self.bq_client.load_table_from_file(
                     f,
                     f'{self.test_project_id}.{self.bq_dataset_id}.{hpo_table}',

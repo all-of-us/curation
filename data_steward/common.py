@@ -267,4 +267,5 @@ JINJA_ENV = jinja2.Environment(
 CDR_SCOPES = [
     'https://www.googleapis.com/auth/bigquery',
     'https://www.googleapis.com/auth/devstorage.read_write',
+    'https://www.googleapis.com/auth/trace.append'
 ]

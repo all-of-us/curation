@@ -24,7 +24,8 @@ class SandboxAndRemovePidsTest(unittest.TestCase):
         self.project_id = 'project_id'
         self.dataset_id = 'dataset_id'
         self.sandbox_dataset = 'sandbox_dataset'
-        self.ticket_number = 'DC_XXX'
+        self.lookup_table = 'lookup_table'
+        self.ticket_numbers = ['DC_XXX', 'DC_YYY']
         self.pids = [
             324264993, 307753491, 335484227, 338965846, 354812933, 324983298,
             366423185, 352721597, 352775367, 314281264, 319123185, 325306942,
@@ -70,7 +71,11 @@ class SandboxAndRemovePidsTest(unittest.TestCase):
         mock_get_sandbox_dataset_id.return_value = self.sandbox_dataset
 
         result = sandbox_and_remove_pids.get_sandbox_queries(
-            self.project_id, self.dataset_id, self.pids, self.ticket_number)
+            self.project_id,
+            self.dataset_id,
+            self.ticket_numbers,
+            sandbox_dataset_id=self.sandbox_dataset,
+            lookup_table=self.lookup_table)
         expected = list()
 
         for table in self.person_table_list:
@@ -81,8 +86,9 @@ class SandboxAndRemovePidsTest(unittest.TestCase):
                         project=self.project_id,
                         table=table,
                         sandbox_dataset=self.sandbox_dataset,
-                        intermediary_table=table + '_' + self.ticket_number,
-                        pids=','.join([str(i) for i in self.pids]))
+                        intermediary_table=
+                        f"{'_'.join(ticket.lower() for ticket in self.ticket_numbers)}_{table}",
+                        lookup_table=self.lookup_table)
             })
         self.assertEquals(result, expected)
 
@@ -94,7 +100,10 @@ class SandboxAndRemovePidsTest(unittest.TestCase):
         mock_get_tables_with_person_id.return_value = self.person_table_list
 
         result = sandbox_and_remove_pids.get_remove_pids_queries(
-            self.project_id, self.dataset_id, self.pids)
+            self.project_id,
+            self.dataset_id,
+            sandbox_dataset_id=self.sandbox_dataset,
+            lookup_table=self.lookup_table)
         expected = list()
 
         for table in self.person_table_list:
@@ -104,7 +113,8 @@ class SandboxAndRemovePidsTest(unittest.TestCase):
                         project=self.project_id,
                         dataset=self.dataset_id,
                         table=table,
-                        pids=','.join([str(i) for i in self.pids])),
+                        sandbox_dataset=self.sandbox_dataset,
+                        lookup_table=self.lookup_table),
                 clean_consts.DESTINATION_TABLE:
                     table,
                 clean_consts.DESTINATION_DATASET:

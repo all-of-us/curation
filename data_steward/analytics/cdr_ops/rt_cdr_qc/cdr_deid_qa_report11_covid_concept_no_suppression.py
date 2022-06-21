@@ -7,9 +7,9 @@
 #       format_version: '1.5'
 #       jupytext_version: 1.7.1
 #   kernelspec:
-#     display_name: 'Python 3.7.12 64-bit (''.venv'': venv)'
+#     display_name: Python 3
 #     language: python
-#     name: python3712jvsc74a57bd0bd48e0bf57cdd6803c27e3ca6c55ba8b4bab4d98ca7d312da29d41465508be2c
+#     name: python3
 # ---
 
 # # Verify the covid drug concepts are not suppressed in the May 2022 CDR
@@ -20,15 +20,26 @@
 # #### 1. Preparation
 
 import pandas as pd
+from utils import auth
+from gcloud.bq import BigQueryClient
+from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
 pd.set_option("max_colwidth", None)
 
 # + tags=["parameters"]
 project_id: str = ""  # identifies the project where datasets are located
 post_deid_dataset: str = ""  # the deid dataset
+run_as = ""
 # -
 
 # df will have a summary in the end
 df = pd.DataFrame(columns=['QC category', 'Result'])
+
+# +
+impersonation_creds = auth.get_impersonation_credentials(
+    run_as, target_scopes=IMPERSONATION_SCOPES)
+
+client = BigQueryClient(project_id, credentials=impersonation_creds)
+# -
 
 # #### 2. Executing the quality check SQL query
 # The concept IDs in the following query used to be suppressed until the Fall 2021 CDR. This query checks how many records exist for each of the concept IDs in the specified dataset.
@@ -44,7 +55,7 @@ where drug_concept_id in (
 group by 1
 '''
 
-df_query = pd.read_gbq(query, dialect='standard')
+df_query = execute(client, query)
 
 # #### 3. Result
 # If the following dataframe shows no data, these concept IDs are highly likely to remain suppressed. Reach out to Curation developers for troubleshooting.

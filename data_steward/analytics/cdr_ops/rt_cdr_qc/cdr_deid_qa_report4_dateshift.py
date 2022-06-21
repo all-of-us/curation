@@ -20,6 +20,9 @@
 # + papermill={"duration": 0.709639, "end_time": "2021-02-02T22:30:32.661373", "exception": false, "start_time": "2021-02-02T22:30:31.951734", "status": "completed"} tags=[]
 import urllib
 import pandas as pd
+from utils import auth
+from gcloud.bq import BigQueryClient
+from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
 pd.options.display.max_rows = 120
 
 # + tags=["parameters"]
@@ -27,10 +30,17 @@ project_id = ""
 com_cdr = ""
 deid_cdr = ""
 pipeline=""
+run_as = ""
 # -
 
 # df will have a summary in the end
 df = pd.DataFrame(columns = ['query', 'result']) 
+
+# +
+impersonation_creds = auth.get_impersonation_credentials(
+    run_as, target_scopes=IMPERSONATION_SCOPES)
+
+client = BigQueryClient(project_id, credentials=impersonation_creds)
 
 # + [markdown] papermill={"duration": 0.02327, "end_time": "2021-02-02T22:30:32.708257", "exception": false, "start_time": "2021-02-02T22:30:32.684987", "status": "completed"} tags=[]
 # # 1 DS_1 Verify that the field identified to follow the date shift rule as de-identification action in OBSERVATION table have been randomly date shifted.
@@ -51,7 +61,7 @@ SELECT COUNT(*) AS n_row_not_pass FROM df1
 WHERE diff !=0
 
 '''
-df1=pd.read_gbq(query, dialect='standard')
+df1=execute(client, query)
 if df1.eq(0).any().any():
  df = df.append({'query' : 'Query1 OBSERVATION', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -78,7 +88,7 @@ SELECT COUNT(*) AS n_row_not_pass FROM df1
 WHERE diff !=0
 
 '''
-df1=pd.read_gbq(query, dialect='standard')
+df1=execute(client, query)
 if df1.eq(0).any().any():
  df = df.append({'query' : 'Query3 OBSERVATION_PERIOD', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -105,7 +115,7 @@ ON d.person_id = m.research_id
 SELECT COUNT(*) AS n_row_not_pass FROM df1
 WHERE diff !=0
 '''
-df1=pd.read_gbq(query, dialect='standard')
+df1=execute(client, query)
 if df1.eq(0).any().any():
  df = df.append({'query' : 'Query4 Person table', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -133,7 +143,7 @@ SELECT COUNT(*) AS n_row_not_pass FROM df1
 WHERE diff !=0
   
 '''
-df1=pd.read_gbq(query, dialect='standard')
+df1=execute(client, query)
 if df1.eq(0).any().any():
  df = df.append({'query' : 'Query5 SPECIMEN', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -161,7 +171,7 @@ SELECT COUNT (*) AS n_row_not_pass FROM df1
 WHERE diff !=0
   
 '''
-df1=pd.read_gbq(query, dialect='standard')
+df1=execute(client, query)
 if df1.eq(0).any().any():
  df = df.append({'query' : 'Query6 Death', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -188,7 +198,7 @@ SELECT COUNT (*) AS n_row_not_pass FROM df1
 WHERE diff !=0
   
 '''
-df1=pd.read_gbq(query, dialect='standard')
+df1=execute(client, query)
 if df1.eq(0).any().any():
  df = df.append({'query' : 'Query7 Visit', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -214,7 +224,7 @@ SELECT COUNT(*) AS n_row_not_pass FROM df1
 WHERE diff !=0
   
 '''
-df1=pd.read_gbq(query, dialect='standard')
+df1=execute(client, query)
 if df1.eq(0).any().any():
  df = df.append({'query' : 'Query8 PROCEDURE', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -238,7 +248,7 @@ ON i.drug_exposure_id = d.drug_exposure_id
 SELECT COUNT(*) AS n_row_not_pass FROM df1
 WHERE diff !=0
 '''
-df9=pd.read_gbq(query, dialect='standard')
+df9=execute(client, query)
 if df1.eq(0).any().any():
  df = df.append({'query' : 'Query9 Drug table', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -263,7 +273,7 @@ ON i.device_exposure_id = d.device_exposure_id
 SELECT COUNT(*) AS n_row_not_pass FROM df1
 WHERE diff !=0
   '''
-df1=pd.read_gbq(query, dialect='standard')
+df1=execute(client, query)
 if df1.eq(0).any().any():
  df = df.append({'query' : 'Query10 Device', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -288,7 +298,7 @@ SELECT COUNT(*) AS n_row_not_pass FROM df1
 WHERE diff !=0
   
 '''
-df1=pd.read_gbq(query, dialect='standard')
+df1=execute(client, query)
 if df1.eq(0).any().any():
  df = df.append({'query' : 'Query11 Condition table', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -314,7 +324,7 @@ SELECT COUNT(*) AS n_row_not_pass FROM df1
 WHERE diff !=0
   
 '''
-df1=pd.read_gbq(query, dialect='standard')
+df1=execute(client, query)
 
 if df1.eq(0).any().any():
  df = df.append({'query' : 'Query12 Measurement', 'result' : 'PASS'},  
@@ -333,7 +343,7 @@ FROM  `{project_id}.{pipeline}.pid_rid_mapping`
 WHERE shift <=0
 
 '''
-df1=pd.read_gbq(query, dialect='standard')
+df1=execute(client, query)
 if df1.eq(0).any().any():
  df = df.append({'query' : 'Query13 date shifted in non_deid', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -433,7 +443,7 @@ JOIN df8 USING(n_row_not_pass)
 
 
 '''
-df1=pd.read_gbq(query, dialect='standard')
+df1=execute(client, query)
 if df1.eq(0).any().any():
  df = df.append({'query' : 'Query14.3 person_id replaed by research_id in other 8 tables', 'result' : 'PASS'},  
                 ignore_index = True) 

@@ -16,7 +16,6 @@ from common import VOCABULARY_TABLES
 from cdr_cleaner.cleaning_rules.domain_mapping import DOMAIN_TABLE_NAMES
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from tools.combine_ehr_rdr import mapping_table_for
-from utils import bq
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.domain_alignment import domain_alignment, \
     DOMAIN_ALIGNMENT_TABLE_NAME, sandbox_name_for
@@ -109,8 +108,8 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
         """
         # Copy vocab tables over to the test dataset
         vocabulary_dataset = cls.client.get_dataset(vocabulary_id)
-        for src_table in bq.list_tables(cls.client, vocabulary_dataset):
-            schema = bq.get_table_schema(src_table.table_id)
+        for src_table in cls.client.list_tables(vocabulary_dataset):
+            schema = cls.client.get_table_schema(src_table.table_id)
             destination = f'{cls.project_id}.{cls.dataset_id}.{src_table.table_id}'
             dst_table = cls.client.create_table(Table(destination,
                                                       schema=schema),

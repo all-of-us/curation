@@ -4,13 +4,14 @@ Fetch the most prevalent achilles heel errors in a dataset
 import csv
 import json
 import os
+from io import open
 from functools import partial
 
 import app_identity
 
 import bq_utils
 import common
-from io import open
+import resources
 
 JSON = 'json'
 CSV = 'csv'
@@ -94,7 +95,8 @@ def save_json(l, file_name):
 def get_hpo_subqueries(app_id, dataset_id, all_table_ids):
     result = []
     for hpo_id in get_hpo_ids():
-        table_id = bq_utils.get_table_id(hpo_id, common.ACHILLES_HEEL_RESULTS)
+        table_id = resources.get_table_id(common.ACHILLES_HEEL_RESULTS,
+                                          hpo_id=hpo_id)
         if table_id in all_table_ids:
             subquery = QUERY_FORMAT(dataset_name=hpo_id,
                                     app_id=app_id,

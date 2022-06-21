@@ -24,6 +24,7 @@ class AddHPOTest(TestCase):
         self.dataset_id = 'dataset_id'
         self.sandbox_dataset_id = 'sandbox_dataset_id'
         self.table_id = 'site_maskings'
+        self.hpo_site_mappings_path = 'hpo_site_mappings_path'
 
     def test_verify_hpo_mappings_up_to_date(self):
         df_1 = pd.DataFrame({'HPO_ID': ['FAKE_1', 'FAKE_2']})
@@ -61,7 +62,7 @@ class AddHPOTest(TestCase):
         }
         actual_df = add_hpo.add_hpo_site_mappings_file_df(
             new_site['hpo_id'], new_site['hpo_name'], new_site['org_id'],
-            new_site['display_order'])
+            self.hpo_site_mappings_path, new_site['display_order'])
 
         expected_df = pd.DataFrame({
             'Org_ID': ['fake_org_1', 'fake_org_2', 'fake_org_3', 'fake_org_4'],
@@ -77,20 +78,20 @@ class AddHPOTest(TestCase):
 
         self.assertRaises(ValueError, add_hpo.add_hpo_site_mappings_file_df,
                           new_site['hpo_id'], new_site['hpo_name'],
-                          new_site['org_id'], new_site['display_order'])
+                          new_site['org_id'], self.hpo_site_mappings_path,
+                          new_site['display_order'])
 
     @mock.patch('tools.add_hpo.BigQueryClient')
     def test_update_site_masking_table(self, mock_bq_client):
         # Preconditions
         project_id = app_identity.get_application_id()
-        sandbox_id = PIPELINE_TABLES + '_sandbox'
-
         mock_query = mock_bq_client.return_value.query
 
         # Mocks the job return
         query_job_reference_results = mock.MagicMock(
             name="query_job_reference_results")
         query_job_reference_results.return_value = query_job_reference_results
+        query_job_reference_results.errors = []
         mock_query.side_effect = query_job_reference_results
 
         # Test
@@ -99,9 +100,8 @@ class AddHPOTest(TestCase):
         # Post conditions
         update_site_masking_query = add_hpo.UPDATE_SITE_MASKING_QUERY.render(
             project_id=project_id,
-            dataset_id=PIPELINE_TABLES,
-            sandbox_id=sandbox_id,
-            table_id=SITE_MASKING_TABLE_ID,
+            pipeline_tables_dataset=PIPELINE_TABLES,
+            site_maskings_table=SITE_MASKING_TABLE_ID,
             lookup_tables_dataset=bq_consts.LOOKUP_TABLES_DATASET_ID,
             hpo_site_id_mappings_table=bq_consts.HPO_SITE_ID_MAPPINGS_TABLE_ID)
 

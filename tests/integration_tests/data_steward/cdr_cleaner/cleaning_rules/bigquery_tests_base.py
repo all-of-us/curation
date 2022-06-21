@@ -19,7 +19,6 @@ from google.cloud import bigquery
 
 # Project imports
 from cdr_cleaner import clean_cdr_engine as engine
-from utils import bq
 from gcloud.bq import BigQueryClient
 from common import JINJA_ENV
 
@@ -85,13 +84,12 @@ class BaseTest:
             desc = (f"dataset created by {cls.__name__} to test a "
                     f"cleaning rule.  deletion candidate.")
             for dataset_id in set(required_datasets):
-                dataset = bq.define_dataset(cls.project_id, dataset_id, desc,
-                                            {'test': ''})
+                dataset = cls.client.define_dataset(dataset_id, desc,
+                                                    {'test': ''})
                 cls.client.create_dataset(dataset, exists_ok=True)
 
         def setUp(self):
-            bq.create_tables(self.client, self.project_id, self.fq_table_names,
-                             True)
+            self.client.create_tables(self.fq_table_names, exists_ok=True)
 
         @classmethod
         def tearDownClass(cls):

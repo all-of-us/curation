@@ -9,6 +9,7 @@ from datetime import datetime
 # Third party imports
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
+from deprecated import deprecated
 
 # Project imports
 import app_identity
@@ -135,6 +136,8 @@ def create_service():
     return build('bigquery', 'v2', cache={})
 
 
+@deprecated(reason='Use resources.get_table_id(table_name, hpo_id=None) instead'
+           )
 def get_table_id(hpo_id, table_name):
     """
     Get the bigquery table id associated with an HPOs CDM table
@@ -304,6 +307,10 @@ def delete_table(table_id, dataset_id=None):
     return delete_job.execute(num_retries=bq_consts.BQ_DEFAULT_RETRY_COUNT)
 
 
+@deprecated(
+    reason=
+    'Use gcloud.bq.BigQueryClient.table_exists(self, table_id: str, dataset_id: str = None) instead'
+)
 def table_exists(table_id, dataset_id=None):
     """
     Determine whether a bigquery table exists
@@ -581,6 +588,9 @@ def list_dataset_contents(dataset_id):
     return all_tables
 
 
+@deprecated(reason=(
+    'see: https://googleapis.dev/python/bigquery/latest/generated/google.cloud.bigquery.client.Client.html#google.cloud.bigquery.client.Client.list_datasets '
+))
 def list_datasets(project_id):
     """
     List the datasets in the specified project

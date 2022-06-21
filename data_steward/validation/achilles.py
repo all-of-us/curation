@@ -1,7 +1,8 @@
-import json
+# Python imports
 import logging
 import os
 
+# Project imports
 import app_identity
 import bq_utils
 import resources
@@ -30,22 +31,20 @@ def load_analyses(hpo_id):
     """
     project_id = app_identity.get_application_id()
     dataset_id = bq_utils.get_dataset_id()
-    if hpo_id is None:
-        table_prefix = ""
-    else:
-        table_prefix = hpo_id + '_'
-    table_name = table_prefix + ACHILLES_ANALYSIS
+    table_name = resources.get_table_id(table_name=ACHILLES_ANALYSIS,
+                                        hpo_id=hpo_id)
     csv_path = os.path.join(resources.resource_files_path,
-                            ACHILLES_ANALYSIS + '.csv')
+                            f'{ACHILLES_ANALYSIS}.csv')
     schema = resources.fields_for(ACHILLES_ANALYSIS)
     bq_utils.load_table_from_csv(project_id, dataset_id, table_name, csv_path,
                                  schema)
 
 
-def drop_or_truncate_table(command):
+def drop_or_truncate_table(client, command):
     """
     Deletes or truncates table
     Previously, deletion was used for both truncate and drop, and this function retains the behavior
+    :param client: a BigQueryClient
     :param command: query to run
     :return: None
     """
@@ -53,7 +52,7 @@ def drop_or_truncate_table(command):
         table_id = sql_wrangle.get_truncate_table_name(command)
     else:
         table_id = sql_wrangle.get_drop_table_name(command)
-    if bq_utils.table_exists(table_id):
+    if client.table_exists(table_id):
         bq_utils.delete_table(table_id)
 
 
@@ -79,16 +78,17 @@ def run_analysis_job(command):
         raise RuntimeError('Job id %s taking too long' % job_id)
 
 
-def run_analyses(hpo_id):
+def run_analyses(client, hpo_id):
     """
     Run the achilles analyses
+    :param client: a BigQueryClient
     :param hpo_id: hpo_id of the site to run on
     :return: None
     """
     commands = _get_run_analysis_commands(hpo_id)
     for command in commands:
         if sql_wrangle.is_truncate(command) or sql_wrangle.is_drop(command):
-            drop_or_truncate_table(command)
+            drop_or_truncate_table(client, command)
         else:
             run_analysis_job(command)
 
@@ -101,5 +101,5 @@ def create_tables(hpo_id, drop_existing=False):
     :return: None
     """
     for table_name in ACHILLES_TABLES:
-        table_id = bq_utils.get_table_id(hpo_id, table_name)
+        table_id = resources.get_table_id(table_name, hpo_id=hpo_id)
         bq_utils.create_standard_table(table_name, table_id, drop_existing)

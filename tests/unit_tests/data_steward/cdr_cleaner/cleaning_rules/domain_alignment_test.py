@@ -328,10 +328,8 @@ class DomainAlignmentTest(unittest.TestCase):
         'cdr_cleaner.cleaning_rules.domain_alignment.parse_domain_mapping_query_cross_domain'
     )
     @patch('cdr_cleaner.cleaning_rules.domain_alignment.BigQueryClient')
-    @patch('cdr_cleaner.cleaning_rules.domain_alignment.bq.create_tables')
     def test_get_domain_mapping_queries(
-        self, mock_create_tables, mock_bq_client,
-        mock_parse_domain_mapping_query_cross_domain,
+        self, mock_bq_client, mock_parse_domain_mapping_query_cross_domain,
         mock_parse_domain_mapping_query_for_same_domains,
         mock_parse_domain_mapping_query_for_excluded_records):
         bq_client = MagicMock()
@@ -384,10 +382,8 @@ class DomainAlignmentTest(unittest.TestCase):
         fake_table = f'{self.project_id}.{self.dataset_id}.{DOMAIN_ALIGNMENT_TABLE_NAME}'
         bq_client.delete_table.assert_called_once_with(fake_table,
                                                        not_found_ok=True)
-        mock_create_tables.assert_called_once_with(bq_client,
-                                                   self.project_id,
-                                                   [fake_table],
-                                                   exists_ok=False)
+        bq_client.create_tables.assert_called_once_with([fake_table],
+                                                        exists_ok=False)
 
         # Test the function calls with the corresponding arguments
         mock_parse_domain_mapping_query_cross_domain.assert_any_call(

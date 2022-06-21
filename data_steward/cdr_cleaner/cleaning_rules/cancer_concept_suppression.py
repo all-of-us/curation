@@ -12,7 +12,6 @@ Original Issues: DC-1381
 import logging
 
 # Project imports
-import constants.bq_utils as bq_consts
 from cdr_cleaner.cleaning_rules.deid.concept_suppression import AbstractBqLookupTableConceptSuppression
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from common import JINJA_ENV, OBSERVATION

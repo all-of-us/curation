@@ -5,7 +5,7 @@ Ensures that get_token function fetches the access token properly, get_deactivat
     fetches all deactivated participants information, and store_participant_data properly stores all
     the fetched deactivated participant data
 
-Original Issues: DC-797, DC-971 (sub-task), DC-972 (sub-task), DC-1213
+Original Issues: DC-797, DC-971 (sub-task), DC-972 (sub-task), DC-1213, DC-1795
 
 The intent of this module is to check that GCR access token is generated properly, the list of
     deactivated participants returned contains `participantID`, `suspensionStatus`, and `suspensionTime`,
@@ -54,12 +54,12 @@ class ParticipantSummaryRequestsTest(TestCase):
         self.columns = ['participantId', 'suspensionStatus', 'suspensionTime']
 
         self.deactivated_participants = [[
-            'P111', 'NO_CONTACT', '2018-12-07T08:21:14'
-        ], ['P222', 'NO_CONTACT', '2018-12-07T08:21:14']]
+            'P111', 'NO_CONTACT', '2018-12-07T08:21:14Z'
+        ], ['P222', 'NO_CONTACT', '2018-12-07T08:21:14Z']]
 
         self.updated_deactivated_participants = [[
-            111, 'NO_CONTACT', '2018-12-07T08:21:14'
-        ], [222, 'NO_CONTACT', '2018-12-07T08:21:14']]
+            111, 'NO_CONTACT', '2018-12-07T08:21:14Z'
+        ], [222, 'NO_CONTACT', '2018-12-07T08:21:14Z']]
 
         self.updated_site_participant_information = [[
             333, 'foo_first', 'foo_middle', 'foo_last', 'foo_street_address',
@@ -82,7 +82,7 @@ class ParticipantSummaryRequestsTest(TestCase):
             'resource': {
                 'participantId': 'P111',
                 'suspensionStatus': 'NO_CONTACT',
-                'suspensionTime': '2018-12-07T08:21:14'
+                'suspensionTime': '2018-12-07T08:21:14Z'
             }
         }, {
             'fullUrl':
@@ -90,7 +90,7 @@ class ParticipantSummaryRequestsTest(TestCase):
             'resource': {
                 'participantId': 'P222',
                 'suspensionStatus': 'NO_CONTACT',
-                'suspensionTime': '2018-12-07T08:21:14'
+                'suspensionTime': '2018-12-07T08:21:14Z'
             }
         }]
 
@@ -129,7 +129,7 @@ class ParticipantSummaryRequestsTest(TestCase):
                 'resource': {
                     'participantId': 'P111',
                     'suspensionStatus': 'NO_CONTACT',
-                    'suspensionTime': '2018-12-07T08:21:14'
+                    'suspensionTime': '2018-12-07T08:21:14Z'
                 }
             }, {
                 'fullUrl':
@@ -137,7 +137,7 @@ class ParticipantSummaryRequestsTest(TestCase):
                 'resource': {
                     'participantId': 'P222',
                     'suspensionStatus': 'NO_CONTACT',
-                    'suspensionTime': '2018-12-07T08:21:14'
+                    'suspensionTime': '2018-12-07T08:21:14Z'
                 }
             }]
         }
@@ -316,13 +316,14 @@ class ParticipantSummaryRequestsTest(TestCase):
 
         # pre conditions
         mock_get_deactivated_participants.return_value = self.fake_dataframe
+        mock_bq_client = MagicMock()
 
         # tests
         dataframe_response = psr.get_deactivated_participants(
             self.project_id, self.columns)
 
         dataset_response = psr.store_participant_data(dataframe_response,
-                                                      self.project_id,
+                                                      mock_bq_client,
                                                       self.destination_table)
         expected_response = mock_store_participant_data(dataframe_response,
                                                         self.project_id,
@@ -416,10 +417,10 @@ class ParticipantSummaryRequestsTest(TestCase):
         # pre conditions
         columns = ['suspensionStatus', 'participantId', 'suspensionTime']
         deactivated_participants = [[
-            'NO_CONTACT', 'P111', '2018-12-07T08:21:14'
+            'NO_CONTACT', 'P111', '2018-12-07T08:21:14Z'
         ]]
         updated_deactivated_participants = [[
-            'NO_CONTACT', 111, '2018-12-07T08:21:14'
+            'NO_CONTACT', 111, '2018-12-07T08:21:14Z'
         ]]
 
         dataframe = pandas.DataFrame(deactivated_participants, columns=columns)
@@ -437,10 +438,8 @@ class ParticipantSummaryRequestsTest(TestCase):
 
         self.assertEqual(expected, 12345)
 
-    @patch('utils.participant_summary_requests.get_client')
     @patch('utils.participant_summary_requests.LoadJobConfig')
-    def test_store_participant_data(self, mock_load_job_config,
-                                    mock_bq_get_client):
+    def test_store_participant_data(self, mock_load_job_config):
         fake_job_id = 'fake_job_id'
 
         mock_load_job = MagicMock()
@@ -448,34 +447,29 @@ class ParticipantSummaryRequestsTest(TestCase):
         mock_load_job.job_id = fake_job_id
 
         mock_bq_client = MagicMock()
-        mock_bq_get_client.return_value = mock_bq_client
         mock_bq_client.load_table_from_dataframe = MagicMock(
             return_value=mock_load_job)
 
         mock_load_config = MagicMock()
         mock_load_job_config.return_value = mock_load_config
 
+        mock_table_schema = MagicMock()
+
         # parameter check test
         self.assertRaises(RuntimeError, psr.store_participant_data,
                           self.fake_dataframe, None, self.destination_table)
-
         # test
-        actual_job_id = psr.store_participant_data(
-            self.fake_dataframe,
-            self.project_id,
-            self.destination_table,
-            schema=psr.get_table_schema(PS_API_VALUES))
+        actual_job_id = psr.store_participant_data(self.fake_dataframe,
+                                                   mock_bq_client,
+                                                   self.destination_table,
+                                                   schema=mock_table_schema)
 
-        mock_bq_get_client.assert_called_once_with(self.project_id)
         mod_fake_dataframe = psr.set_dataframe_date_fields(
-            self.fake_dataframe, psr.get_table_schema(PS_API_VALUES))
-        # mock_bq_client.load_table_from_dataframe.assert_called_once_with(
-        #     mod_fake_dataframe, self.destination_table, job_config=mock_load_config)
+            self.fake_dataframe, mock_table_schema)
         pandas.testing.assert_frame_equal(
             mock_bq_client.load_table_from_dataframe.call_args[0][0],
             mod_fake_dataframe)
-        mock_load_job_config.assert_called_once_with(
-            schema=psr.get_table_schema(PS_API_VALUES))
+        mock_load_job_config.assert_called_once_with(schema=mock_table_schema)
         mock_load_job.result.assert_called_once_with()
         self.assertEqual(actual_job_id, fake_job_id)
 

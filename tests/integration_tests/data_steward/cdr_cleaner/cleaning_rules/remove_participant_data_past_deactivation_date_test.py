@@ -1,7 +1,7 @@
 """
 Ensures there is no data past the deactivation date for deactivated participants.
 
-Original Issue: DC-686
+Original Issue: DC-686, DC-1795
 
 The intent is to sandbox and drop records dated after the date of deactivation for participants
 who have deactivated from the Program
@@ -119,10 +119,12 @@ class RemoveParticipantDataPastDeactivationDateTest(
         return a staged data frame object for this test instead of calling
         the PS API.
         """
-        columns = ['deactivated_date', 'person_id', 'suspension_status']
+        columns = ['deactivated_datetime', 'person_id', 'suspension_status']
         values = [
-            ['2020-01-01', 1, 'NO_CONTACT'],  # corresponds with record 804
-            ['2020-01-01', 3, 'NO_CONTACT']  # corresponds with record 805
+            ['2020-01-01 01:00:00 UTC', 1,
+             'NO_CONTACT'],  # corresponds with record 804
+            ['2020-01-01 01:00:00 UTC', 3,
+             'NO_CONTACT']  # corresponds with record 805
         ]
         deactivated_df = pd.DataFrame(values, columns=columns)
 

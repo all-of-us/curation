@@ -1,7 +1,9 @@
+# Python imports
 import re
-
-import bq_utils
 from io import open
+
+# Project imports
+import resources
 
 COMMAND_SEP = ';'
 PREFIX_PLACEHOLDER = 'synpuf_100.'
@@ -74,13 +76,9 @@ def qualify_tables(command, hpo_id=None):
 
     def temp_repl(m):
         table_name = m.group(1).replace('.', '_')
-        return bq_utils.get_table_id(hpo_id, table_name)
+        return resources.get_table_id(table_name, hpo_id=hpo_id)
 
-    # TODO ensure this remains consistent with bq_utils.get_table_id
-    if hpo_id is None:
-        table_prefix = ""
-    else:
-        table_prefix = hpo_id + '_'
+    table_prefix = resources.get_table_id(table_name="", hpo_id=hpo_id)
     command = command.replace(PREFIX_PLACEHOLDER, table_prefix)
     command = re.sub('(temp\.[^\s])', temp_repl, command)
     return command

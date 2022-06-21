@@ -10,7 +10,7 @@ import re
 
 # Project imports
 from gcloud.bq import BigQueryClient
-from utils import bq, auth, pipeline_logging
+from utils import auth, pipeline_logging
 from tools.recreate_person import update_person
 
 SCOPES = [
@@ -151,8 +151,8 @@ if __name__ == '__main__':
     LOGGER.info(
         f'Creating dataset {output_dataset_name} in {args.output_prod_project_id}...'
     )
-    dataset_object = bq.define_dataset(args.output_prod_project_id,
-                                       output_dataset_name, description, labels)
+    dataset_object = bq_client.define_dataset(output_dataset_name, description,
+                                              labels)
     bq_client.create_dataset(dataset_object, exists_ok=False)
 
     #Copy fitbit tables to source dataset
@@ -160,16 +160,16 @@ if __name__ == '__main__':
         f'Copying fitbit tables from dataset {args.src_project_id}.{args.fitbit_dataset_id} to {args.src_project_id}.{args.src_dataset_id}...'
     )
 
-    bq.copy_datasets(bq_client,
-                     f'{args.src_project_id}.{args.fitbit_dataset_id}',
-                     f'{args.src_project_id}.{args.src_dataset_id}')
+    bq_client.copy_dataset(f'{args.src_project_id}.{args.fitbit_dataset_id}',
+                           f'{args.src_project_id}.{args.src_dataset_id}')
 
     #Copy tables from source to output-prod
     LOGGER.info(
         f'Copying tables from dataset {args.src_project_id}.{args.src_dataset_id} to {args.output_prod_project_id}.{output_dataset_name}...'
     )
-    bq.copy_datasets(bq_client, f'{args.src_project_id}.{args.src_dataset_id}',
-                     f'{args.output_prod_project_id}.{output_dataset_name}')
+    bq_client.copy_dataset(
+        f'{args.src_project_id}.{args.src_dataset_id}',
+        f'{args.output_prod_project_id}.{output_dataset_name}')
 
     #Append extra columns to person table
     LOGGER.info(f'Appending extract columns to the person table...')

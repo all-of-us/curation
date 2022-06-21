@@ -20,17 +20,28 @@
 
 import urllib
 import pandas as pd
+from utils import auth
+from gcloud.bq import BigQueryClient
+from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
 pd.options.display.max_rows = 120
 
 # + tags=["parameters"]
 # Parameters
 project_id = ""
 deid_cdr = ""
-com_cdr ="" 
+com_cdr =""
+run_as = ""
 # -
 
 # df will have a summary in the end
 df = pd.DataFrame(columns = ['query', 'result']) 
+
+# +
+impersonation_creds = auth.get_impersonation_credentials(
+    run_as, target_scopes=IMPERSONATION_SCOPES)
+
+client = BigQueryClient(project_id, credentials=impersonation_creds)
+# -
 
 # # 1 Verify all fields identified for suppression in the OBSERVATION table have been removed from the table in the deid dataset.
 
@@ -54,7 +65,7 @@ AND ((observation_source_value IS NOT NULL)
 OR (value_source_value IS NOT NULL)
 OR (value_as_string IS NOT NULL))
  '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query1 three colmns suppression in observation table', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -92,7 +103,7 @@ AND ((observation_source_value IS NOT NULL)
 OR (value_source_value IS NOT NULL)
 OR (value_as_string IS NOT NULL))
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query2 observation', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -123,7 +134,7 @@ AND ((observation_source_value IS NOT NULL)
 OR (value_source_value IS NOT NULL) 
 OR (value_as_string IS NOT NULL)) 
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 
 df1
 # -
@@ -150,7 +161,7 @@ AND ((observation_source_value IS NOT NULL)
 OR (value_source_value IS NOT NULL)
 OR (value_as_string IS NOT NULL))
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query3 observation', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -176,7 +187,7 @@ AND ((observation_source_value IS NOT NULL)
 OR (value_source_value IS NOT NULL)
 OR (value_as_string IS NOT NULL))
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 
 df1
 # -
@@ -204,7 +215,7 @@ AND ((observation_source_value IS NOT NULL)
 OR (value_source_value IS NOT NULL)
 OR (value_as_string IS NOT NULL))
 '''
-df1=pd.read_gbq(query, dialect='standard')  
+df1=execute(client, query)  
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query4 observation', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -235,7 +246,7 @@ AND ((observation_source_value IS NOT NULL)
 OR (value_source_value IS NOT NULL)
 OR (value_as_string IS NOT NULL))
 '''
-df1=pd.read_gbq(query, dialect='standard') 
+df1=execute(client, query) 
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query5 Observation', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -260,7 +271,7 @@ AND ((observation_source_value IS NOT NULL)
 OR (value_source_value IS NOT NULL)  
 OR (value_as_string IS NOT NULL))  
 '''
-df1=pd.read_gbq(query, dialect='standard') 
+df1=execute(client, query) 
 
 df1
 # -
@@ -285,7 +296,7 @@ AND ((observation_source_value IS NOT NULL)
 OR (value_source_value IS NOT NULL)
 OR (value_as_string IS NOT NULL))
 '''
-df1=pd.read_gbq(query, dialect='standard') 
+df1=execute(client, query) 
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query6 Observation', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -312,7 +323,7 @@ AND ((observation_source_value IS NOT NULL)
 OR (value_source_value IS NOT NULL)
 OR (value_as_string IS NOT NULL))
  '''
-df1=pd.read_gbq(query, dialect='standard') 
+df1=execute(client, query) 
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query7 observation', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -342,7 +353,7 @@ AND ((observation_source_value IS NOT NULL)
 OR (value_source_value IS NOT NULL)
 OR (value_as_string IS NOT NULL))
 '''
-df1=pd.read_gbq(query, dialect='standard') 
+df1=execute(client, query) 
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query8 observation', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -370,7 +381,7 @@ AND ((observation_source_value IS NOT NULL)
 OR (value_source_value IS NOT NULL)
 OR (value_as_string IS NOT NULL))
 '''
-df1=pd.read_gbq(query, dialect='standard') 
+df1=execute(client, query) 
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query9 observation', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -399,7 +410,7 @@ OR (value_source_value IS NOT NULL)
 OR (value_as_string IS NOT NULL))
 
 '''
-df1=pd.read_gbq(query, dialect='standard') 
+df1=execute(client, query) 
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query10 observation', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -429,7 +440,7 @@ OR (value_as_string IS NOT NULL))
 
 
     '''
-df1=pd.read_gbq(query, dialect='standard') 
+df1=execute(client, query) 
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query11 observation', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -463,7 +474,7 @@ AND ((observation_source_value IS NOT NULL)
 OR (value_source_value IS NOT NULL) 
 OR (value_as_string IS NOT NULL))  
  '''
-df1=pd.read_gbq(query, dialect='standard') 
+df1=execute(client, query) 
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query12 observation', 'result' : 'PASS'},  
                 ignore_index = True) 
@@ -491,7 +502,7 @@ AND ((observation_source_value IS NOT NULL)
 OR (value_source_value IS NOT NULL)
 OR (value_as_string IS NOT NULL))
  '''
-df1=pd.read_gbq(query, dialect='standard') 
+df1=execute(client, query) 
 
 df1
 # -
@@ -506,7 +517,7 @@ FROM `{project_id}.{deid_cdr}.observation`
 WHERE    observation_concept_id IN (4013886,4271761,4135376,1585559,43529714,1585917,1585913,43529731,43529729,
 43529730,1585933,1585929,1585965)
 '''
-df1=pd.read_gbq(query, dialect='standard') 
+df1=execute(client, query) 
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query13 observation_concept_id suppression in observation', 'result' : 'PASS'},  
                 ignore_index = True) 

@@ -5,7 +5,6 @@ import cdm
 import resources
 from bq_utils import create_dataset, list_all_table_ids, query, wait_on_jobs, BigQueryJobWaitError, \
     create_standard_table
-from utils import bq
 from gcloud.bq import BigQueryClient
 from utils.pipeline_logging import configure
 
@@ -98,7 +97,6 @@ def get_source_fields(client, source_table):
 
 
 def get_copy_table_query(dataset_id, table_id, client):
-
     try:
         source_table = f'{client.project}.{dataset_id}.{table_id}'
         source_fields = get_source_fields(client, source_table)
@@ -139,8 +137,7 @@ def copy_tables_to_new_dataset(project_id, dataset_id, snapshot_dataset_id):
         if table_id not in destination_tables:
             try:
                 fields = resources.fields_for(table_id)
-                bq.create_tables(
-                    bq_client, project_id,
+                bq_client.create_tables(
                     [f'{project_id}.{snapshot_dataset_id}.{table_id}'], False,
                     [fields])
             except RuntimeError:

@@ -1,3 +1,4 @@
+from cgitb import lookup
 import unittest
 
 import mock
@@ -6,7 +7,9 @@ from pandas import DataFrame
 
 from cdr_cleaner.cleaning_rules.ppi_branching import OBSERVATION_BACKUP_TABLE_ID
 from cdr_cleaner.cleaning_rules.ppi_branching import PPI_BRANCHING_RULE_PATHS
-from cdr_cleaner.cleaning_rules.ppi_branching import PpiBranching, OBSERVATION
+from cdr_cleaner.cleaning_rules.ppi_branching import PpiBranching, OBSERVATION, BACKUP_ROWS_QUERY, RULES_LOOKUP_TABLE_ID
+from common import JINJA_ENV
+from constants.utils import bq as consts
 
 
 def _get_csv_row_count() -> int:
@@ -38,6 +41,42 @@ def _get_table_schema(table_name):
     return schema
 
 
+def _get_create_or_replace_table_ddl(project,
+                                     dataset_id,
+                                     table_id,
+                                     schema=None,
+                                     cluster_by_cols=None,
+                                     as_query: str = None,
+                                     **table_options) -> str:
+
+    def _to_standard_sql_type(field_type) -> str:
+        upper_field_type = field_type.upper()
+        standard_sql_type_code = bigquery.schema.LEGACY_TO_STANDARD_TYPES.get(
+            upper_field_type)
+        if not standard_sql_type_code:
+            raise ValueError(f'{field_type} is not a valid field type')
+        standard_sql_type = bigquery.StandardSqlDataTypes(
+            standard_sql_type_code)
+        return standard_sql_type.name
+
+    def _to_sql_field(field):
+        return bigquery.SchemaField(field.name,
+                                    _to_standard_sql_type(field.field_type),
+                                    field.mode, field.description, field.fields)
+
+    CREATE_OR_REPLACE_TABLE_TPL = JINJA_ENV.from_string(
+        consts.CREATE_OR_REPLACE_TABLE_QUERY)
+    _schema = _get_table_schema(table_id) if schema is None else schema
+    _schema = [_to_sql_field(field) for field in _schema]
+    return CREATE_OR_REPLACE_TABLE_TPL.render(project_id=project,
+                                              dataset_id=dataset_id,
+                                              table_id=table_id,
+                                              schema=_schema,
+                                              cluster_by_cols=cluster_by_cols,
+                                              query=as_query,
+                                              opts=table_options)
+
+
 class PpiBranchingTest(unittest.TestCase):
 
     @classmethod
@@ -50,7 +89,7 @@ class PpiBranchingTest(unittest.TestCase):
         self.project_id = 'fake_project'
         self.dataset_id = 'fake_dataset'
         self.sandbox_dataset_id = 'fake_sandbox'
-        self.observation_schema = _get_table_schema('observation')
+        self.observation_schema = _get_table_schema(OBSERVATION)
         self.mock_bq_client_patcher = mock.patch(
             'cdr_cleaner.cleaning_rules.ppi_branching.BigQueryClient')
         self.mock_bq_client = self.mock_bq_client_patcher.start()
@@ -60,6 +99,12 @@ class PpiBranchingTest(unittest.TestCase):
         self.mock_client.get_table_schema.return_value = self.observation_schema
         self.cleaning_rule = PpiBranching(self.project_id, self.dataset_id,
                                           self.sandbox_dataset_id)
+        self.dataset_ref = bigquery.DatasetReference(self.project_id,
+                                                     self.dataset_id)
+        self.sandbox_dataset_ref = bigquery.DatasetReference(
+            self.project_id, self.sandbox_dataset_id)
+        self.observation_table = bigquery.Table(
+            bigquery.TableReference(self.dataset_ref, OBSERVATION))
 
     def test_load_rules_lookup(self):
 
@@ -83,23 +128,54 @@ class PpiBranchingTest(unittest.TestCase):
             instance.load_table_from_dataframe = check_load_table_from_dataframe
             self.cleaning_rule.load_rules_lookup(instance)
 
-    def test_get_backup_rows_query(self):
-        # check that DDL table location is correct and contains all field descriptions
-        result = self.cleaning_rule.backup_rows_to_drop_ddl().strip()
+    @mock.patch('cdr_cleaner.cleaning_rules.ppi_branching.BACKUP_ROWS_QUERY')
+    def test_get_backup_rows_query(self, mock_backup_query):
+        lookup_table = bigquery.TableReference(self.sandbox_dataset_ref,
+                                               RULES_LOOKUP_TABLE_ID)
+        query = BACKUP_ROWS_QUERY.render(lookup_table=lookup_table,
+                                         src_table=self.observation_table)
+        mock_backup_query.render.return_value = query
+        self.mock_client.get_create_or_replace_table_ddl.return_value = _get_create_or_replace_table_ddl(
+            project=self.project_id,
+            dataset_id=self.sandbox_dataset_id,
+            table_id='_ppi_branching_observation_drop',
+            schema=self.observation_schema,
+            as_query=query)
         expected_sql = (
             f'CREATE OR REPLACE TABLE `{self.project_id}.{self.sandbox_dataset_id}.'
             f'{OBSERVATION_BACKUP_TABLE_ID}`')
+
+        # check that DDL table location is correct and contains all field descriptions
+        result = self.cleaning_rule.backup_rows_to_drop_ddl().strip()
+        self.assertEqual(mock_backup_query.render.return_value, query)
+        self.assertEqual(self.mock_client.get_table_schema.return_value,
+                         self.observation_schema)
         self.assertTrue(result.startswith(expected_sql))
         self.assertTrue(
             all(field.description in result
                 for field in self.observation_schema))
 
-    def test_get_observation_replace_query(self):
-        # check that DDL table location is correct and contains all field descriptions
-        result = self.cleaning_rule.stage_to_target_ddl().strip()
+    @mock.patch('cdr_cleaner.cleaning_rules.ppi_branching.BACKUP_ROWS_QUERY')
+    def test_get_observation_replace_query(self, mock_backup_query):
+        stage = bigquery.TableReference(self.sandbox_dataset_ref,
+                                        '_ppi_branching_observation_stage')
+        query = f'''SELECT * FROM `{stage.project}.{stage.dataset_id}.{stage.table_id}`'''
+        mock_backup_query.render.return_value = query
+        self.mock_client.get_create_or_replace_table_ddl.return_value = _get_create_or_replace_table_ddl(
+            project=self.observation_table.project,
+            dataset_id=self.observation_table.dataset_id,
+            table_id=self.observation_table.table_id,
+            schema=self.observation_schema,
+            as_query=query)
         expected_sql = (
             f'CREATE OR REPLACE TABLE `{self.project_id}.{self.dataset_id}'
             f'.{OBSERVATION}`')
+
+        # check that DDL table location is correct and contains all field descriptions
+        result = self.cleaning_rule.stage_to_target_ddl().strip()
+        self.assertEqual(mock_backup_query.render.return_value, query)
+        self.assertEqual(self.mock_client.get_table_schema.return_value,
+                         self.observation_schema)
         self.assertTrue(result.startswith(expected_sql))
         self.assertTrue(
             all(field.description in result

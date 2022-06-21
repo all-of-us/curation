@@ -52,15 +52,13 @@ class ValidationMainTest(TestCase):
         return bucket_items
 
     def test_retention_checks_list_submitted_bucket_items(self):
-        #Define times to use
+        # Define times to use
         within_retention = datetime.datetime.now(tz=None) - datetime.timedelta(
             days=25)
-        outside_retention = datetime.datetime.now(tz=None) - datetime.timedelta(
-            days=29)
-        before_lag_time = datetime.datetime.now(tz=None) - datetime.timedelta(
-            minutes=3)
         after_lag_time = datetime.datetime.now(tz=None) - datetime.timedelta(
             minutes=7)
+        stale_lag_time = datetime.datetime.now(tz=None) - datetime.timedelta(
+            minutes=200)
 
         # If any required files are missing, nothing should be returned
         bucket_items = self._create_dummy_bucket_items(
@@ -79,31 +77,43 @@ class ValidationMainTest(TestCase):
         expected_result = bucket_items
         self.assertCountEqual(expected_result, actual_result)
 
-        # if a file expires within a day, it should not be returned
-        bucket_items = self._create_dummy_bucket_items(
-            within_retention, after_lag_time, file_exclusions=['person.csv'])
-        bucket_items_with_modified_person = bucket_items.copy()
-        bucket_items_with_modified_person.append({
-            'name': '2018-09-01/person.csv',
-            'timeCreated': outside_retention,
-            'updated': after_lag_time
-        })
-        actual_result = main.list_submitted_bucket_items(
-            bucket_items_with_modified_person)
-        expected_result = bucket_items
-
-        self.assertCountEqual(expected_result, actual_result)
-
         actual_result = main.list_submitted_bucket_items([])
         self.assertCountEqual([], actual_result)
 
-        #If unknown item and all other conditions met, return the item
+        # If unknown item and all other conditions met, return the folder
         bucket_items = self._create_dummy_bucket_items(within_retention,
                                                        after_lag_time)
         unknown_item = {
             'name': '2018-09-01/nyc_cu_person.csv',
             'timeCreated': within_retention,
             'updated': after_lag_time
+        }
+        bucket_items.append(unknown_item)
+
+        actual_result = main.list_submitted_bucket_items(bucket_items)
+        self.assertCountEqual(actual_result, bucket_items)
+
+        # If unknown item and it replaces a file, return empty folder if fresh
+        bucket_items = self._create_dummy_bucket_items(
+            within_retention, after_lag_time, file_exclusions=['person.csv'])
+        unknown_item = {
+            'name': '2018-09-01/nyc_cu_person.csv',
+            'timeCreated': within_retention,
+            'updated': after_lag_time
+        }
+        bucket_items.append(unknown_item)
+
+        actual_result = main.list_submitted_bucket_items(bucket_items)
+        expected_result = []
+        self.assertCountEqual(actual_result, expected_result)
+
+        # If unknown item and it replaces a file, return the folder only after stale
+        bucket_items = self._create_dummy_bucket_items(
+            within_retention, stale_lag_time, file_exclusions=['person.csv'])
+        unknown_item = {
+            'name': '2018-09-01/nyc_cu_person.csv',
+            'timeCreated': within_retention,
+            'updated': stale_lag_time
         }
         bucket_items.append(unknown_item)
 
@@ -123,20 +133,24 @@ class ValidationMainTest(TestCase):
         expected_result = bucket_items
         self.assertCountEqual(expected_result, actual_result)
 
-        # If any AOU_REQUIRED file has been updated less than 5 minutes ago, no files should be returned
+        # If any file is missing but submission is fresh, skip it
         bucket_items = self._create_dummy_bucket_items(
             within_retention,
             after_lag_time,
             file_exclusions=['observation.csv'])
 
-        bucket_items.append({
-            'name': '2018-09-01/observation.csv',
-            'timeCreated': within_retention,
-            'updated': before_lag_time
-        })
-
         actual_result = main.list_submitted_bucket_items(bucket_items)
         expected_result = []
+        self.assertCountEqual(expected_result, actual_result)
+
+        # If any file is missing but submission is stale, process it
+        bucket_items = self._create_dummy_bucket_items(
+            within_retention,
+            stale_lag_time,
+            file_exclusions=['observation.csv'])
+
+        actual_result = main.list_submitted_bucket_items(bucket_items)
+        expected_result = bucket_items
         self.assertCountEqual(expected_result, actual_result)
 
     def test_folder_list(self):
@@ -291,7 +305,7 @@ class ValidationMainTest(TestCase):
         mock.MagicMock(query=lambda: mock.MagicMock(result=lambda: None)))
     @mock.patch('validation.main.setup_and_validate_participants',
                 mock.MagicMock())
-    @mock.patch('bq_utils.table_exists', mock.MagicMock())
+    @mock.patch('validation.main.BigQueryClient', mock.MagicMock())
     @mock.patch('bq_utils.query')
     @mock.patch('validation.main.is_valid_folder_prefix_name')
     @mock.patch('validation.main.run_export')
@@ -536,7 +550,7 @@ class ValidationMainTest(TestCase):
         mock.MagicMock(query=lambda: mock.MagicMock(result=lambda: None)))
     @mock.patch('validation.main.setup_and_validate_participants',
                 mock.MagicMock())
-    @mock.patch('bq_utils.table_exists', mock.MagicMock())
+    @mock.patch('validation.main.BigQueryClient', mock.MagicMock())
     @mock.patch('bq_utils.query', mock.MagicMock())
     def test_generate_metrics(self):
         summary = {
@@ -573,8 +587,9 @@ class ValidationMainTest(TestCase):
                 query_rows=query_rows,
                 get_duplicate_counts_query=get_duplicate_counts_query,
                 is_valid_rdr=is_valid_rdr):
-            result = main.generate_metrics(self.hpo_id, self.hpo_bucket,
-                                           self.folder_prefix, summary)
+            result = main.generate_metrics(self.project_id, self.hpo_id,
+                                           self.hpo_bucket, self.folder_prefix,
+                                           summary)
             self.assertIn(report_consts.RESULTS_REPORT_KEY, result)
             self.assertIn(report_consts.WARNINGS_REPORT_KEY, result)
             self.assertIn(report_consts.ERRORS_REPORT_KEY, result)
@@ -591,8 +606,9 @@ class ValidationMainTest(TestCase):
                 query_rows=query_rows_error,
                 get_duplicate_counts_query=get_duplicate_counts_query,
                 is_valid_rdr=is_valid_rdr):
-            result = main.generate_metrics(self.hpo_id, self.hpo_bucket,
-                                           self.folder_prefix, summary)
+            result = main.generate_metrics(self.project_id, self.hpo_id,
+                                           self.hpo_bucket, self.folder_prefix,
+                                           summary)
             error_occurred = result.get(report_consts.ERROR_OCCURRED_REPORT_KEY)
             self.assertEqual(error_occurred, True)
 
@@ -615,6 +631,7 @@ class ValidationMainTest(TestCase):
         self.assertIn(incorrect_folder_prefix,
                       report_data[report_consts.SUBMISSION_ERROR_REPORT_KEY])
 
+    @mock.patch('validation.main.BigQueryClient')
     @mock.patch('validation.main._upload_achilles_files')
     @mock.patch('validation.main.run_export')
     @mock.patch('validation.main.run_achilles')
@@ -626,13 +643,14 @@ class ValidationMainTest(TestCase):
     def test_union_ehr(self, mock_check_cron, mock_get_application_id,
                        mock_get_dataset_id, mock_get_unioned_dataset_id,
                        mock_ehr_union_main, mock_run_achilles, mock_run_export,
-                       mock_upload_achilles_files):
+                       mock_upload_achilles_files, mock_bq_client):
 
-        current_datetime = datetime.datetime.now()
         application_id = 'application_id'
         input_dataset = 'input_dataset'
         output_dataset = 'output_dataset'
+        mock_client = mock.MagicMock()
 
+        mock_bq_client.return_value = mock_client
         mock_check_cron.return_value = True
         mock_get_application_id.return_value = application_id
         mock_get_dataset_id.return_value = input_dataset
@@ -646,7 +664,8 @@ class ValidationMainTest(TestCase):
             mock_ehr_union_main.assert_called_once_with(input_dataset,
                                                         output_dataset,
                                                         application_id)
-            mock_run_achilles.assert_called_once_with('unioned_ehr')
+            mock_run_achilles.assert_called_once_with(mock_client,
+                                                      'unioned_ehr')
 
             self.assertEqual(mock_run_export.call_count, 1)
             self.assertEqual(mock_upload_achilles_files.call_count, 1)

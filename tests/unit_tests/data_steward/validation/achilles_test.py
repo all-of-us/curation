@@ -1,5 +1,4 @@
 # Python imports
-import os
 import unittest
 
 # Third party imports

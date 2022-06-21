@@ -8,7 +8,7 @@ import argparse
 import logging
 
 # Third party imports
-from google.cloud.bigquery import Table
+from google.cloud.bigquery import Table, Dataset
 
 # Project imports
 from utils import auth, pipeline_logging
@@ -33,7 +33,7 @@ def get_partition_date_df(df, hpo_id):
     return df[(df['table_name'] == f'{IDENTITY_MATCH}_{hpo_id}')]
 
 
-def create_id_match_tables(client, dataset_id):
+def create_id_match_tables(client: BigQueryClient, dataset_id: str) -> None:
     """
     Generate id_match tables in the specified snapshot dataset
 
@@ -81,21 +81,29 @@ def create_id_match_tables(client, dataset_id):
         )
 
 
-def create_snapshot(client, date_str):
+def create_snapshot(client: BigQueryClient, release_tag: str) -> str:
     """
-    Generates the snapshot dataset based on date passed
+    Generates the snapshot dataset based on the CDR run release tag
 
     :param client: a BigQueryClient
-    :param date_str: date string to snapshot on
-    :return: 
+    :param release_tag: Release tag for the CDR run
+    :return: dataset_id: Identifies the snapshot dataset
     """
-    dataset_id = f"validation_{date_str.replace('-', '')}"
+    dataset_id = f"{release_tag}_validation"
+    dataset = Dataset(f'{client.project}.{dataset_id}')
+    dataset.description = f'{DRC_OPS} + {release_tag}_ehr'
+    dataset.labels = {
+        'release_tag': release_tag,
+        'de-identified': 'false',
+        'phase': 'clean'
+    }
     dataset = client.create_dataset(dataset_id, exists_ok=True)
     return dataset.dataset_id
 
 
 def get_arg_parser():
-    parser = argparse.ArgumentParser(description=""".""")
+    parser = argparse.ArgumentParser(
+        description="""Generate validation snapshot""")
     parser.add_argument(
         '-p',
         '--project_id',
@@ -103,11 +111,11 @@ def get_arg_parser():
         dest='project_id',
         help='Project associated with drc_ops and output dataset',
         required=True)
-    parser.add_argument('-s',
-                        '--snapshot_date',
+    parser.add_argument('-t',
+                        '--release_tag',
                         action='store',
-                        dest='snapshot_date',
-                        help='Date to use for the snapshot as YYYY-MM-DD',
+                        dest='release_tag',
+                        help='Release tag for the CDR run',
                         required=True)
     parser.add_argument('-r',
                         '--run_as_email',
@@ -131,7 +139,7 @@ def main():
 
     bq_client = BigQueryClient(args.project_id, credentials=impersonation_creds)
 
-    dataset_id = create_snapshot(bq_client, args.snapshot_date)
+    dataset_id = create_snapshot(bq_client, args.release_tag)
     create_id_match_tables(bq_client, dataset_id)
 
 

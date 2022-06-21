@@ -24,12 +24,11 @@ run_as = ""
 # Quality checks performed on a new RT clean dataset.
 
 # +
-import urllib
 import pandas as pd
 
 from analytics.cdr_ops.notebook_utils import execute
 from utils import auth
-from utils.bq import get_client
+from gcloud.bq import BigQueryClient
 from common import JINJA_ENV
 
 pd.options.display.max_rows = 120
@@ -41,7 +40,7 @@ SCOPES = [
 ]
 impersonation_creds = auth.get_impersonation_credentials(run_as, SCOPES)
 
-client = get_client(project_id, credentials=impersonation_creds)
+client = BigQueryClient(project_id, credentials=impersonation_creds)
 
 # # Verify measurement records are dropped
 # Set all value_as_number = 9999999 to NULL.  If not null, an error happened.

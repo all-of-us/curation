@@ -57,6 +57,10 @@ TABLE_DATES = {
     common.VISIT_OCCURRENCE: {
         'visit_start_datetime': 'visit_start_date',
         'visit_end_datetime': 'visit_end_date'
+    },
+    common.VISIT_DETAIL: {
+        'visit_detail_start_datetime': 'visit_detail_start_date',
+        'visit_detail_end_datetime': 'visit_detail_end_date'
     }
 }
 
@@ -65,15 +69,19 @@ SELECT {cols}
 FROM `{project_id}.{dataset_id}.{table_id}`
 """
 
-FIX_NULL_OR_INCORRECT_DATETIME_QUERY = """
+FIX_NULL_OR_INCORRECT_DATETIME_QUERY = common.JINJA_ENV.from_string("""
 CASE
-WHEN {field} IS NULL
-THEN CAST(DATETIME({date_field}, TIME(00,00,00)) AS TIMESTAMP)
-WHEN EXTRACT(DATE FROM {field}) = {date_field}
-THEN {field}
-ELSE CAST(DATETIME({date_field}, EXTRACT(TIME FROM {field})) AS TIMESTAMP)
-END AS {field}
-"""
+WHEN {{field}} IS NULL
+{% if field.endswith('end_datetime') %}
+THEN CAST(DATETIME({{date_field}}, TIME(11,59,59)) AS TIMESTAMP)
+{% else %}
+THEN CAST(DATETIME({{date_field}}, TIME(00,00,00)) AS TIMESTAMP)
+{% endif %}
+WHEN EXTRACT(DATE FROM {{field}}) = {{date_field}}
+THEN {{field}}
+ELSE CAST(DATETIME({{date_field}}, EXTRACT(TIME FROM {{field}})) AS TIMESTAMP)
+END AS {{field}}
+""")
 
 
 class EnsureDateDatetimeConsistency(BaseCleaningRule):
@@ -109,7 +117,8 @@ class EnsureDateDatetimeConsistency(BaseCleaningRule):
                              common.DEVICE_EXPOSURE, common.MEASUREMENT,
                              common.OBSERVATION, common.PROCEDURE_OCCURRENCE,
                              common.SPECIMEN, common.DEATH, common.NOTE,
-                             common.OBSERVATION_PERIOD, common.VISIT_OCCURRENCE
+                             common.OBSERVATION_PERIOD, common.VISIT_OCCURRENCE,
+                             common.VISIT_DETAIL
                          ],
                          depends_on=[temporal_consistency.TemporalConsistency])
 
@@ -126,7 +135,7 @@ class EnsureDateDatetimeConsistency(BaseCleaningRule):
         col_exprs = []
         for field in table_fields:
             if field in TABLE_DATES[table]:
-                col_expr = FIX_NULL_OR_INCORRECT_DATETIME_QUERY.format(
+                col_expr = FIX_NULL_OR_INCORRECT_DATETIME_QUERY.render(
                     field=field, date_field=TABLE_DATES[table][field])
             else:
                 col_expr = field

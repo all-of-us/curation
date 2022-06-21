@@ -8,7 +8,7 @@ from cdr_cleaner.cleaning_rules.remove_non_existing_pids import RemoveNonExistin
 
 STEPS_TEMPLATE = JINJA_ENV.from_string("""
 INSERT INTO `{{project_id}}.{{dataset_id}}.{{table_id}}`
- (person_id, datetime, steps)
+(person_id, datetime, steps)
 VALUES
 (1, NULL, 10),
 (2, NULL, 20),
@@ -18,7 +18,7 @@ VALUES
 
 SUMMARY_TEMPLATE = JINJA_ENV.from_string("""
 INSERT INTO `{{project_id}}.{{dataset_id}}.{{table_id}}`
- (person_id, date, activity_calories)
+(person_id, date, activity_calories)
 VALUES
 (1, '2021-02-01', 100),
 (2, '2021-03-01', 200),
@@ -28,7 +28,7 @@ VALUES
 
 PERSON_TEMPLATE = JINJA_ENV.from_string("""
 INSERT INTO `{{project_id}}.{{dataset_id}}.{{table_id}}`
- (person_id, gender_concept_id, year_of_birth, race_concept_id, ethnicity_concept_id)
+(person_id, gender_concept_id, year_of_birth, race_concept_id, ethnicity_concept_id)
 VALUES
 (1, 10, 1970, 5, 2),
 (2, 20, 1980, 6, 3),

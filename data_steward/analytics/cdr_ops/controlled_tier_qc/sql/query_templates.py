@@ -192,9 +192,9 @@ WHERE {{ column_name }} IN (
 QUERY_ZIP_CODE_GENERALIZATION = """
 WITH zips AS (
   SELECT
-    CONCAT(LEFT(pre_deid.{{ column_name }}, 3), REPEAT('*',
-        LENGTH(pre_deid.{{ column_name }}) - 3)) AS expected_zip,
-    LENGTH(pre_deid.{{ column_name }}) AS n_expected_zip,
+    LEFT(CONCAT(LEFT(pre_deid.{{ column_name }}, 3), REPEAT('*',
+        LENGTH(pre_deid.{{ column_name }}) - 3)), 5) AS expected_zip,
+    LENGTH(pre_deid.{{ column_name }}) AS n_actual_zip,
     post_deid.{{ column_name }} AS output_zip
   FROM `{{ project_id }}.{{ post_deid_dataset }}.{{ table_name }}` post_deid
   LEFT JOIN `{{ project_id }}.{{ pre_deid_dataset }}.{{ table_name }}` pre_deid USING({{ primary_key }})
@@ -206,7 +206,7 @@ WITH zips AS (
       ELSE expected_zip
       END
       AS expected_zip,
-    n_expected_zip,
+    n_actual_zip,
     output_zip
   FROM zips
   LEFT JOIN `{{ project_id }}.{{ pipeline_dataset }}.{{ zip_table_name }}` zip_agg ON (zips.expected_zip=zip_agg.zip_code_3)

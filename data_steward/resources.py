@@ -52,6 +52,8 @@ table_mappings_path = os.path.join(domain_mappings_path, 'table_mappings.csv')
 field_mappings_path = os.path.join(domain_mappings_path, 'field_mappings.csv')
 value_mappings_path = os.path.join(domain_mappings_path, 'value_mappings.csv')
 CDR_CLEANER_PATH = os.path.join(resource_files_path, 'cdr_cleaner')
+REPLACED_PRIVACY_CONCEPTS_PATH = os.path.join(
+    CDR_CLEANER_PATH, 'controlled_tier_replaced_privacy_concepts.csv')
 COPE_SUPPRESSION_PATH = os.path.join(CDR_CLEANER_PATH, 'cope_suppression')
 RT_CT_COPE_SUPPRESSION_CSV_PATH = os.path.join(COPE_SUPPRESSION_PATH,
                                                'rt_ct_cope_suppression.csv')
@@ -146,7 +148,7 @@ def fields_for(table, sub_path=None):
     path = os.path.join(fields_path, sub_path if sub_path else '')
 
     # default setting
-    json_path = os.path.join(path, table + '.json')
+    json_path = os.path.join(path, f'{table}.json')
 
     unique_count = 0
     for dirpath, _, files in os.walk(path):
@@ -351,7 +353,7 @@ def hash_dir(in_dir):
 CDM_TABLES = list(cdm_schemas().keys())
 MAPPING_TABLES = list(mapping_schemas().keys())
 ACHILLES_INDEX_FILES = achilles_index_files()
-CDM_FILES = [table + '.csv' for table in CDM_TABLES]
+CDM_FILES = [f'{table}.csv' for table in CDM_TABLES]
 ALL_ACHILLES_INDEX_FILES = [
     name.split(resource_files_path + os.sep)[1].strip()
     for name in ACHILLES_INDEX_FILES
@@ -365,7 +367,7 @@ def get_domain_id_field(domain_table):
     :param domain_table: the cdm domain table
     :return: the id field
     """
-    return domain_table + '_id'
+    return f'{domain_table}_id'
 
 
 def get_domain_concept_id(domain_table):

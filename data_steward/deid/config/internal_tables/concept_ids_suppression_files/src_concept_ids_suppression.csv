@@ -13131,8 +13131,6 @@ CPT4,91304,Novavax Covid-19 Vaccine,759735,Drug,DC-2277
 CPT4,91305,Pfizer-BioNTech Covid-19 Vaccine (Ready to Use),759736,Drug,DC-2277
 CPT4,91306,Moderna Covid-19 Vaccine (Low Dose),759737,Drug,DC-2277
 CPT4,91307,Pfizer-BioNTech Covid-19 Pediatric Vaccine,759738,Drug,DC-2277
-DRG,799,Splenectomy w MCC,38001507,Observation,DC-2277
-DRG,800,Splenectomy w CC,38001508,Observation,DC-2277
 ICD10CM,F64.0,Transsexualism,37200330,Condition,DC-2277
 ICD10CM,F64.1,Dual role transvestism,35207225,Condition,DC-2277
 ICD10CM,F64.2,Gender identity disorder of childhood,35207226,Condition,DC-2277
@@ -13147,7 +13145,7 @@ ICD10CM,Q99.1,"46, XX true hermaphrodite",35211257,Condition,DC-2277
 ICD10CM,Q99.8,Other specified chromosome abnormalities,35211259,Condition,DC-2277
 ICD10CM,Q99.9,"Chromosomal abnormality, unspecified",35211260,Condition,DC-2277
 ICD9CM,800,Fracture of vault of skull,44826991,Condition,DC-2277
-ICD9CM,V45.77,"Acquired absence of organ, genital organs",44837823,Condition,DC-2277
+ICD9CM,V45.77,"Acquired absence of organ, genital organs",44837823,Condition,DC-2277 EHR concepts indicative og gender and sexuality
 Multum,798,chlorpheniramine/methscopolamine/PE 2 mg-1.25 mg-10 mg/5 mL oral syrup,45417059,Drug,DC-2277
 Multum,799,"Cefaclor, 500 mg oral capsule",45412177,Drug,DC-2277
 Multum,800,"Bethanechol Chloride, 5 mg oral tablet",45410955,Drug,DC-2277
@@ -13395,3 +13393,5 @@ SNOMED,651331000000102,Suicide and self inflicted poisoning by other carbon mono
 SNOMED,192508005,Transsexualism,40388818,Condition,DC-2314
 SNOMED,788180009,Lower uterine segment cesarean section,37312440,Procedure,DC-2314
 SNOMED,407374003,Transsexual,4231241,Condition,DC-2314
+ICD10CM,Z87.890,Personal history of sex reassignment,45600367,Observation,EHR concepts indicative og gender and sexuality
+SNOMED,428405009,History of intersex surgery,4323227,Observation,EHR concepts indicative og gender and sexuality

@@ -23,23 +23,23 @@ from validation.metrics.required_labs import (
 class RequiredLabsTest(unittest.TestCase):
 
     dataset_id = bq_utils.get_dataset_id()
+    project_id = app_identity.get_application_id()
+    bq_client = BigQueryClient(project_id)
 
     @classmethod
     def setUpClass(cls):
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
-        test_util.setup_hpo_id_bucket_name_table(cls.dataset_id)
+        test_util.setup_hpo_id_bucket_name_table(cls.bq_client, cls.dataset_id)
 
     @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def setUp(self):
         # Ids
-        self.project_id = app_identity.get_application_id()
         self.folder_prefix = '2019-01-01/'
         # Clients
         self.storage_client = StorageClient(self.project_id)
         self.hpo_bucket = self.storage_client.get_hpo_bucket(FAKE_HPO_ID)
-        self.bq_client = BigQueryClient(self.project_id)
         self.rdr_dataset_id = bq_utils.get_rdr_dataset_id()
         # Cleanup
         self.storage_client.empty_bucket(self.hpo_bucket)
@@ -58,22 +58,23 @@ class RequiredLabsTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        test_util.drop_hpo_id_bucket_name_table(cls.dataset_id)
+        test_util.drop_hpo_id_bucket_name_table(cls.bq_client, cls.dataset_id)
 
     def _load_data(self):
 
         # Load measurement_concept_sets
         required_labs.load_measurement_concept_sets_table(
-            project_id=self.project_id, dataset_id=self.dataset_id)
+            client=self.bq_client, dataset_id=self.dataset_id)
         # Load measurement_concept_sets_descendants
         required_labs.load_measurement_concept_sets_descendants_table(
-            project_id=self.project_id, dataset_id=self.dataset_id)
+            client=self.bq_client, dataset_id=self.dataset_id)
 
         # we need to load measurement.csv into bigquery_dataset_id in advance for the other integration tests
         ehr_measurement_result = bq_utils.load_table_from_csv(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
-            table_name=bq_utils.get_table_id(FAKE_HPO_ID, common.MEASUREMENT),
+            table_name=resources.get_table_id(common.MEASUREMENT,
+                                              hpo_id=FAKE_HPO_ID),
             csv_path=test_util.FIVE_PERSONS_MEASUREMENT_CSV,
             fields=resources.fields_for(common.MEASUREMENT))
         bq_utils.wait_on_jobs([ehr_measurement_result['jobReference']['jobId']])
@@ -97,7 +98,7 @@ class RequiredLabsTest(unittest.TestCase):
             concept_ancestor_table_name)
 
         # Test
-        required_labs.check_and_copy_tables(self.project_id, self.dataset_id)
+        required_labs.check_and_copy_tables(self.bq_client, self.dataset_id)
 
         # Post conditions
         self.assertIsNotNone(actual_descendants_table.created)
@@ -127,7 +128,7 @@ class RequiredLabsTest(unittest.TestCase):
 
         measurement_concept_sets_table_path = os.path.join(
             resources.resource_files_path,
-            MEASUREMENT_CONCEPT_SETS_TABLE + '.csv')
+            f'{MEASUREMENT_CONCEPT_SETS_TABLE}.csv')
         expected_total_rows = len(
             resources.csv_to_list(measurement_concept_sets_table_path))
         self.assertEqual(expected_total_rows, int(response['totalRows']))
@@ -154,7 +155,8 @@ class RequiredLabsTest(unittest.TestCase):
         self.assertListEqual(expected_fields, actual_fields)
 
     def test_get_lab_concept_summary_query(self):
-        summary_query = required_labs.get_lab_concept_summary_query(FAKE_HPO_ID)
+        summary_query = required_labs.get_lab_concept_summary_query(
+            self.bq_client, FAKE_HPO_ID)
         summary_response = bq_utils.query(summary_query)
         summary_rows = bq_utils.response2rows(summary_response)
         submitted_labs = [
@@ -189,8 +191,8 @@ class RequiredLabsTest(unittest.TestCase):
                            dataset_id=self.dataset_id,
                            measurement_concept_sets_descendants=
                            MEASUREMENT_CONCEPT_SETS_DESCENDANTS_TABLE,
-                           measurement=bq_utils.get_table_id(
-                               FAKE_HPO_ID, common.MEASUREMENT))
+                           measurement=resources.get_table_id(
+                               common.MEASUREMENT, hpo_id=FAKE_HPO_ID))
 
         unique_measurement_concept_id_response = bq_utils.query(
             unique_measurement_concept_id_query)

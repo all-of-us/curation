@@ -1,10 +1,17 @@
+"""
+Unit tests for drop_multiple_measurements module
+
+Removes all but the most recent of each Physical Measurement for all participants.
+"""
 import unittest
 
-import cdr_cleaner.cleaning_rules.drop_multiple_measurements as drop_mult_meas
-import constants.cdr_cleaner.clean_cdr as cdr_consts
+from cdr_cleaner.cleaning_rules.drop_multiple_measurements import (
+    DropMultipleMeasurements, ISSUE_NUMBERS, MEASUREMENT,
+    SANDBOX_INVALID_MULT_MEASUREMENTS, REMOVE_INVALID_MULT_MEASUREMENTS)
+from constants.cdr_cleaner import clean_cdr as clean_consts
 
 
-class RemoveMultipleMeasurementsTest(unittest.TestCase):
+class DropMultipleMeasurementsTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -13,28 +20,76 @@ class RemoveMultipleMeasurementsTest(unittest.TestCase):
         print('**************************************************************')
 
     def setUp(self):
-        self.project_id = 'project_id'
-        self.dataset_id = 'dataset_id'
-        self.sandbox_dataset = 'sandbox_dataset'
+        self.project_id = 'foo_project'
+        self.dataset_id = 'foo_dataset'
+        self.sandbox_id = 'foo_sandbox'
+        self.client = None
+        self.sandbox_table = f'{ISSUE_NUMBERS[0].lower()}_{MEASUREMENT}'
 
-    def test_query_generation(self):
-        result = drop_mult_meas.get_drop_multiple_measurement_queries(
-            self.project_id, self.dataset_id, self.sandbox_dataset)
-        expected = list()
-        expected.append({
-            cdr_consts.QUERY:
-                drop_mult_meas.INVALID_MULT_MEASUREMENTS.format(
-                    project=self.project_id,
-                    dataset=self.dataset_id,
-                    sandbox_dataset=self.sandbox_dataset,
-                    intermediary_table=drop_mult_meas.INTERMEDIARY_TABLE)
-        })
-        expected.append({
-            cdr_consts.QUERY:
-                drop_mult_meas.VALID_MEASUREMENTS.format(
-                    project=self.project_id,
-                    dataset=self.dataset_id,
-                    sandbox_dataset=self.sandbox_dataset,
-                    intermediary_table=drop_mult_meas.INTERMEDIARY_TABLE)
-        })
-        self.assertEquals(result, expected)
+        self.rule_instance = DropMultipleMeasurements(self.project_id,
+                                                      self.dataset_id,
+                                                      self.sandbox_id)
+
+        self.assertEqual(self.rule_instance.project_id, self.project_id)
+        self.assertEqual(self.rule_instance.dataset_id, self.dataset_id)
+        self.assertEqual(self.rule_instance.sandbox_dataset_id, self.sandbox_id)
+
+    def test_get_query_specs(self):
+        # Pre conditions
+        self.assertEqual(self.rule_instance.affected_datasets,
+                         [clean_consts.RDR])
+
+        # Test
+        results_list = self.rule_instance.get_query_specs()
+        # Post conditions
+        sandbox_query = dict()
+        sandbox_query[
+            clean_consts.QUERY] = SANDBOX_INVALID_MULT_MEASUREMENTS.render(
+                project=self.project_id,
+                dataset=self.dataset_id,
+                sandbox_dataset=self.sandbox_id,
+                intermediary_table=self.sandbox_table)
+
+        update_query = dict()
+        update_query[
+            clean_consts.QUERY] = REMOVE_INVALID_MULT_MEASUREMENTS.render(
+                project=self.project_id,
+                dataset=self.dataset_id,
+                sandbox_dataset=self.sandbox_id,
+                intermediary_table=self.sandbox_table)
+
+        expected_list = [sandbox_query, update_query]
+
+        for ex_dict, rs_dict in zip(expected_list, results_list):
+            self.assertDictEqual(ex_dict, rs_dict)
+
+    def test_log_queries(self):
+        # Pre conditions
+        self.assertEqual(self.rule_instance.affected_datasets,
+                         [clean_consts.RDR])
+
+        store_duplicate_rows = SANDBOX_INVALID_MULT_MEASUREMENTS.render(
+            project=self.project_id,
+            dataset=self.dataset_id,
+            sandbox_dataset=self.sandbox_id,
+            intermediary_table=self.sandbox_table)
+
+        delete_duplicate_rows = REMOVE_INVALID_MULT_MEASUREMENTS.render(
+            project=self.project_id,
+            dataset=self.dataset_id,
+            sandbox_dataset=self.sandbox_id,
+            intermediary_table=self.sandbox_table)
+
+        # Test
+        with self.assertLogs(level='INFO') as cm:
+            self.rule_instance.log_queries()
+
+            expected = [
+                'INFO:cdr_cleaner.cleaning_rules.base_cleaning_rule:Generated SQL Query:\n'
+                + store_duplicate_rows,
+                'INFO:cdr_cleaner.cleaning_rules.base_cleaning_rule:Generated SQL Query:\n'
+                + delete_duplicate_rows
+            ]
+
+            # Post condition
+            self.assertEqual(cm.output, expected)

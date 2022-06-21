@@ -23,16 +23,10 @@ from google.cloud import bigquery
 client = bigquery.Client()
 # %load_ext google.cloud.bigquery
 
-import bq_utils
-import utils.bq
 from notebooks import parameters
 # %matplotlib inline
 import matplotlib.pyplot as plt
-import numpy as np
-import six
-import scipy.stats
 import pandas as pd
-import math
 from operator import add
 import os
 
@@ -72,8 +66,8 @@ alternate_ancestor_concept = 0
 alternate_race_name = 'Not Specified'
 person_column_name = 'person_id'
 
-
 # # Functions
+
 
 def create_pie_chart(dataframe, title, img_name):
     """
@@ -121,9 +115,9 @@ def create_pie_chart(dataframe, title, img_name):
     plt.show()
 
 
-def find_people_w_no_race_concept(
-        total_persons_df, race_specified_df, alternate_ancestor_concept,
-        alternate_race_name):
+def find_people_w_no_race_concept(total_persons_df, race_specified_df,
+                                  alternate_ancestor_concept,
+                                  alternate_race_name):
     """
     Function is used to determine the number of persons whose racial category has
     not been categorized under the canonical ancestor_concept_ids. 
@@ -156,26 +150,28 @@ def find_people_w_no_race_concept(
         contains a column to show the proportion of people from the total group that
         belong to each racial group.
     """
-    
-    persons_w_race = race_specified_df['number_persons_in_racial_category'].sum()
-    
+
+    persons_w_race = race_specified_df['number_persons_in_racial_category'].sum(
+    )
+
     total_persons = int(total_persons_df['num_persons'])
-    
+
     person_wo_race = total_persons - persons_w_race
-    
+
     # may happen when investigating ethnicity; someone may belong to > 1 group
     if person_wo_race > 0:
         idx = len(general_racial_distributions)
 
         race_specified_df.loc[idx] = [
-            alternate_ancestor_concept, alternate_race_name, person_wo_race]
-    
+            alternate_ancestor_concept, alternate_race_name, person_wo_race
+        ]
+
     race_specified_df['percentage_of_total'] = \
         round(race_specified_df['number_persons_in_racial_category'] / total_persons * 100, 2)
-    
-    race_specified_df = race_specified_df.sort_values(
-        'concept_name', ascending=False)
-    
+
+    race_specified_df = race_specified_df.sort_values('concept_name',
+                                                      ascending=False)
+
     return race_specified_df
 
 
@@ -197,9 +193,9 @@ def df_column_to_strings(person_df, column_name):
     column_string (str): the string that contains all of the values previously
         contained within the dataframe's columns
     """
-    
+
     column_results = person_df[column_name].tolist()
-    
+
     column_string = "("
 
     column_length = len(column_results)
@@ -211,7 +207,7 @@ def df_column_to_strings(person_df, column_name):
             column_string += ", "
         else:
             column_string += ")"
-            
+
     return column_string
 
 
@@ -288,18 +284,18 @@ from
 `{DATASET}.unioned_ehr_person` p
 """
 
-get_total_person_count = pd.io.gbq.read_gbq(
-    get_total_person_count, dialect='standard')
+get_total_person_count = pd.io.gbq.read_gbq(get_total_person_count,
+                                            dialect='standard')
 
 general_racial_distributions = find_people_w_no_race_concept(
-    total_persons_df=get_total_person_count, race_specified_df=general_racial_distributions,
+    total_persons_df=get_total_person_count,
+    race_specified_df=general_racial_distributions,
     alternate_ancestor_concept=alternate_ancestor_concept,
     alternate_race_name=alternate_race_name)
 
-create_pie_chart(
-    dataframe = general_racial_distributions, 
-    title = 'Racial Distributions - All Participants',
-    img_name = 'racial_distributions_all_participants.jpg')
+create_pie_chart(dataframe=general_racial_distributions,
+                 title='Racial Distributions - All Participants',
+                 img_name='racial_distributions_all_participants.jpg')
 
 # ## Now let's look at the number of persons who have been TESTED for COVID based on the measurement table
 
@@ -351,11 +347,11 @@ GROUP BY
 ORDER BY status ASC
 """
 
-persons_w_covid_tests = pd.io.gbq.read_gbq(
-    persons_w_covid_tests_query, dialect='standard')
+persons_w_covid_tests = pd.io.gbq.read_gbq(persons_w_covid_tests_query,
+                                           dialect='standard')
 
 persons_w_covid_tests_string = df_column_to_strings(
-    person_df = persons_w_covid_tests, column_name = person_column_name)
+    person_df=persons_w_covid_tests, column_name=person_column_name)
 
 tested_racial_distributions_query = f"""
 SELECT
@@ -392,20 +388,19 @@ FROM
 ) a
 """
 
-persons_tested = pd.io.gbq.read_gbq(
-    get_total_tested_count, dialect='standard')
+persons_tested = pd.io.gbq.read_gbq(get_total_tested_count, dialect='standard')
 
 persons_tested
 
 tested_racial_distributions = find_people_w_no_race_concept(
-    total_persons_df=persons_tested, race_specified_df=tested_racial_distributions,
+    total_persons_df=persons_tested,
+    race_specified_df=tested_racial_distributions,
     alternate_ancestor_concept=alternate_ancestor_concept,
     alternate_race_name=alternate_race_name)
 
-create_pie_chart(
-    dataframe = tested_racial_distributions, 
-    title = 'Racial Distributions - Tested Participants',
-    img_name = 'racial_distributions_tested_participants.jpg')
+create_pie_chart(dataframe=tested_racial_distributions,
+                 title='Racial Distributions - Tested Participants',
+                 img_name='racial_distributions_tested_participants.jpg')
 
 # ## Now let's look at the number of persons who have been diagnosed with COVID based on the measurement table
 
@@ -459,11 +454,11 @@ GROUP BY
 ORDER BY status ASC
 """
 
-persons_w_covid_positives = pd.io.gbq.read_gbq(
-    persons_w_covid_positives_query, dialect='standard')
+persons_w_covid_positives = pd.io.gbq.read_gbq(persons_w_covid_positives_query,
+                                               dialect='standard')
 
 persons_w_covid_positives_string = df_column_to_strings(
-    person_df = persons_w_covid_positives, column_name = person_column_name)
+    person_df=persons_w_covid_positives, column_name=person_column_name)
 
 positive_racial_distributions_query = f"""
 SELECT
@@ -500,18 +495,18 @@ FROM
 ) a
 """
 
-persons_positive = pd.io.gbq.read_gbq(
-    get_total_positive_count, dialect='standard')
+persons_positive = pd.io.gbq.read_gbq(get_total_positive_count,
+                                      dialect='standard')
 
 positive_racial_distributions = find_people_w_no_race_concept(
-    total_persons_df=persons_positive, race_specified_df=positive_racial_distributions,
+    total_persons_df=persons_positive,
+    race_specified_df=positive_racial_distributions,
     alternate_ancestor_concept=alternate_ancestor_concept,
     alternate_race_name=alternate_race_name)
 
-create_pie_chart(
-    dataframe = positive_racial_distributions, 
-    title = 'Racial Distributions - COVID Positive Participants',
-    img_name = 'racial_distributions_positive_participants.jpg')
+create_pie_chart(dataframe=positive_racial_distributions,
+                 title='Racial Distributions - COVID Positive Participants',
+                 img_name='racial_distributions_positive_participants.jpg')
 
 # # Now lets explore ethnicity in the RDR and COVID testing manual - this should further differentiate amongst those who are Hispanic (compared to the 'race' queries above)
 
@@ -564,8 +559,7 @@ FROM (
     num_persons DESC) a
 """
 
-total_persons = pd.io.gbq.read_gbq(
-    total_persons_query, dialect='standard')
+total_persons = pd.io.gbq.read_gbq(total_persons_query, dialect='standard')
 
 total_persons
 
@@ -575,10 +569,9 @@ total_persons_ethnic_distributions = find_people_w_no_race_concept(
     alternate_ancestor_concept=alternate_ancestor_concept,
     alternate_race_name=alternate_race_name)
 
-create_pie_chart(
-    dataframe = total_persons_ethnic_distributions, 
-    title = 'Ethnic Distributions - All Participants',
-    img_name = 'ethnic_distributions_total_participants.jpg')
+create_pie_chart(dataframe=total_persons_ethnic_distributions,
+                 title='Ethnic Distributions - All Participants',
+                 img_name='ethnic_distributions_total_participants.jpg')
 
 ethnic_COVID_tested_distribution_query = f"""
 SELECT
@@ -677,10 +670,9 @@ tested_ethnic_distributions_tested = find_people_w_no_race_concept(
 
 tested_ethnic_distributions_tested
 
-create_pie_chart(
-    dataframe = tested_ethnic_distributions_tested, 
-    title = 'Ethnic Distributions - COVID Tested Participants',
-    img_name = 'ethnic_distributions_tested_participants.jpg')
+create_pie_chart(dataframe=tested_ethnic_distributions_tested,
+                 title='Ethnic Distributions - COVID Tested Participants',
+                 img_name='ethnic_distributions_tested_participants.jpg')
 
 ethnic_COVID_positive_status_distribution_query = f"""
 SELECT
@@ -783,10 +775,9 @@ tested_ethnic_distributions_positive = find_people_w_no_race_concept(
 
 tested_ethnic_distributions_positive
 
-create_pie_chart(
-    dataframe = tested_ethnic_distributions_positive, 
-    title = 'Ethnic Distributions - COVID Positive Participants',
-    img_name = 'ethnic_distributions_positive_participants.jpg')
+create_pie_chart(dataframe=tested_ethnic_distributions_positive,
+                 title='Ethnic Distributions - COVID Positive Participants',
+                 img_name='ethnic_distributions_positive_participants.jpg')
 
 # # Alternate means of calculating total counts
 
@@ -901,7 +892,6 @@ ORDER BY
 measurement_and_condition_covid_counts = pd.io.gbq.read_gbq(
     measurement_and_condition_covid_counts_query, dialect='standard')
 
-measurement_and_condition_covid_counts = measurement_and_condition_covid_counts.fillna(0)
+measurement_and_condition_covid_counts = measurement_and_condition_covid_counts.fillna(
+    0)
 measurement_and_condition_covid_counts
-
-

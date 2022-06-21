@@ -9,7 +9,7 @@ from google.cloud.bigquery import Table
 
 from cdr_cleaner import clean_cdr, args_parser
 from common import FITBIT_TABLES, JINJA_ENV
-from utils import auth, bq, pipeline_logging
+from utils import auth, pipeline_logging
 from gcloud.bq import BigQueryClient
 from constants.cdr_cleaner import clean_cdr as consts
 
@@ -59,9 +59,8 @@ def create_fitbit_datasets(client, release_tag):
             "release_tag": release_tag,
             "de_identified": "false"
         }
-        dataset_object = bq.define_dataset(client.project,
-                                           fitbit_datasets[phase],
-                                           fitbit_desc[phase], labels)
+        dataset_object = client.define_dataset(fitbit_datasets[phase],
+                                               fitbit_desc[phase], labels)
         client.create_dataset(dataset_object)
         LOGGER.info(
             f'Created dataset `{client.project}.{fitbit_datasets[phase]}`')
@@ -175,6 +174,14 @@ def get_fitbit_parser():
         required=True)
 
     parser.add_argument(
+        '-c',
+        '--reference_dataset_id',
+        action='store',
+        dest='reference_dataset_id',
+        help='Combined dataset to use as reference containing valid PIDs',
+        required=True)
+
+    parser.add_argument(
         '-q',
         '--api_project_id',
         action='store',
@@ -225,8 +232,8 @@ def main(raw_args=None):
                                   args.fitbit_dataset,
                                   fitbit_datasets[consts.BACKUP],
                                   table_prefix='v_')
-    bq.copy_datasets(bq_client, fitbit_datasets[consts.BACKUP],
-                     fitbit_datasets[consts.STAGING])
+    bq_client.copy_dataset(fitbit_datasets[consts.BACKUP],
+                           fitbit_datasets[consts.STAGING])
 
     common_cleaning_args = [
         '-p',
@@ -242,17 +249,20 @@ def main(raw_args=None):
         args.run_as_email,
         '--api_project_id',
         args.api_project_id,
+        '--reference_dataset_id',
+        args.reference_dataset_id,
         '--truncation_date',
         args.truncation_date,
     ]
+
     fitbit_cleaning_args = args_parser.add_kwargs_to_args(
         common_cleaning_args, kwargs)
 
     clean_cdr.main(args=fitbit_cleaning_args)
 
     # Snapshot the staging dataset to final dataset
-    bq.build_and_copy_contents(bq_client, fitbit_datasets[consts.STAGING],
-                               fitbit_datasets[consts.CLEAN])
+    bq_client.build_and_copy_contents(fitbit_datasets[consts.STAGING],
+                                      fitbit_datasets[consts.CLEAN])
 
 
 if __name__ == '__main__':

@@ -10,11 +10,9 @@ from datetime import datetime
 from cdr_cleaner import clean_cdr
 from cdr_cleaner.args_parser import add_kwargs_to_args
 from utils import auth
-from utils import bq
 from gcloud.bq import BigQueryClient
 from utils import pipeline_logging
 from tools import add_cdr_metadata
-from tools.snapshot_by_query import create_schemaed_snapshot_dataset
 from common import CDR_SCOPES
 from constants.cdr_cleaner import clean_cdr as consts
 
@@ -109,7 +107,7 @@ def create_datasets(client, name, input_dataset, tier, release_tag):
     and tag/labels applied
 
     :param client: a BigQueryClient
-    :param name: the base name of the datasets to be created
+    :param name: the base name of the dataset to be created
     :param input_dataset: name of the input dataset
     :param tier: tier parameter passed through from either a list or command line argument
     :param release_tag: release tag parameter passed through either the command line arguments
@@ -117,7 +115,7 @@ def create_datasets(client, name, input_dataset, tier, release_tag):
     """
 
     if not client:
-        raise RuntimeError("Please specify BigQuery client object")
+        raise RuntimeError("Please specify a BigQueryClient object")
     if not name:
         raise RuntimeError(
             "Please specify the base name of the datasets to be created")
@@ -151,25 +149,25 @@ def create_datasets(client, name, input_dataset, tier, release_tag):
 
     # Creation of dataset objects and dataset label and description updates
     for phase, dataset_id in datasets.items():
-        dataset_object = bq.define_dataset(client.project, dataset_id,
-                                           description, base_labels_and_tags)
+        dataset_object = client.define_dataset(dataset_id, description,
+                                               base_labels_and_tags)
         client.create_dataset(dataset_object, exists_ok=True)
         dataset = client.get_dataset(dataset_id)
         if dataset_id in deid_datasets:
-            new_labels = bq.update_labels_and_tags(dataset_id,
-                                                   base_labels_and_tags, {
-                                                       'phase': phase,
-                                                       'de-identified': 'true'
-                                                   })
+            new_labels = client.update_labels_and_tags(
+                dataset_id, base_labels_and_tags, {
+                    'phase': phase,
+                    'de-identified': 'true'
+                })
             dataset.labels = new_labels
             dataset.description = f'{phase} {description}'
             client.update_dataset(dataset, ["labels", "description"])
         else:
-            new_labels = bq.update_labels_and_tags(dataset_id,
-                                                   base_labels_and_tags, {
-                                                       'phase': phase,
-                                                       'de-identified': 'false'
-                                                   })
+            new_labels = client.update_labels_and_tags(
+                dataset_id, base_labels_and_tags, {
+                    'phase': phase,
+                    'de-identified': 'false'
+                })
             dataset.labels = new_labels
             dataset.description = f'{phase} {description}'
             client.update_dataset(dataset, ["labels", "description"])
@@ -211,7 +209,7 @@ def create_tier(credentials_filepath, project_id, tier, input_dataset,
     # Create intermediary datasets and copy tables from input dataset to newly created dataset
     datasets = create_datasets(bq_client, final_dataset_name, input_dataset,
                                tier, release_tag)
-    bq.copy_datasets(bq_client, input_dataset, datasets[consts.STAGING])
+    bq_client.copy_dataset(input_dataset, datasets[consts.STAGING])
 
     # Run cleaning rules
     cleaning_args = [
@@ -242,8 +240,8 @@ def create_tier(credentials_filepath, project_id, tier, input_dataset,
     clean_cdr.main(args=controlled_tier_cleaning_args)
 
     # Snapshot the staging dataset to final dataset
-    create_schemaed_snapshot_dataset(project_id, datasets[consts.STAGING],
-                                     final_dataset_name, False)
+    bq_client.build_and_copy_contents(datasets[consts.STAGING],
+                                      final_dataset_name)
 
     return datasets
 

@@ -1,10 +1,15 @@
+# Python imports
 import os
 import unittest
 
+# Third party imports
+import mock
+
+# Project imports
 import app_identity
 import bq_utils
+from gcloud.bq import BigQueryClient
 from gcloud.gcs import StorageClient
-import mock
 import resources
 from tests import test_util
 from validation import achilles
@@ -18,17 +23,18 @@ ACHILLES_RESULTS_COUNT = 2773
 class AchillesTest(unittest.TestCase):
 
     dataset_id = bq_utils.get_dataset_id()
+    project_id = app_identity.get_application_id()
+    bq_client = BigQueryClient(project_id)
 
     @classmethod
     def setUpClass(cls):
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
-        test_util.setup_hpo_id_bucket_name_table(cls.dataset_id)
+        test_util.setup_hpo_id_bucket_name_table(cls.bq_client, cls.dataset_id)
 
     @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def setUp(self):
-        self.project_id = app_identity.get_application_id()
         self.storage_client = StorageClient(self.project_id)
         self.hpo_bucket = self.storage_client.get_hpo_bucket(
             test_util.FAKE_HPO_ID)
@@ -42,7 +48,7 @@ class AchillesTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        test_util.drop_hpo_id_bucket_name_table(cls.dataset_id)
+        test_util.drop_hpo_id_bucket_name_table(cls.bq_client, cls.dataset_id)
 
     @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def _load_dataset(self):
@@ -73,7 +79,8 @@ class AchillesTest(unittest.TestCase):
         self._load_dataset()
         achilles.create_tables(test_util.FAKE_HPO_ID, True)
         achilles.load_analyses(test_util.FAKE_HPO_ID)
-        achilles.run_analyses(hpo_id=test_util.FAKE_HPO_ID)
+        achilles.run_analyses(client=self.bq_client,
+                              hpo_id=test_util.FAKE_HPO_ID)
         cmd = sql_wrangle.qualify_tables(
             'SELECT COUNT(1) FROM %sachilles_results' %
             sql_wrangle.PREFIX_PLACEHOLDER, test_util.FAKE_HPO_ID)

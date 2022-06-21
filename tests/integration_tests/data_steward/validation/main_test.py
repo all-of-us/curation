@@ -1,15 +1,18 @@
 """
 Unit test components of data_steward.validation.main
 """
+# Python imports
 from __future__ import print_function
 import datetime
 import os
 import unittest
+import mock
 from time import sleep
 
-import mock
+# Third party imports
 from bs4 import BeautifulSoup as bs
 
+# Project imports
 import bq_utils
 import app_identity
 import common
@@ -26,18 +29,19 @@ from validation.metrics import required_labs
 class ValidationMainTest(unittest.TestCase):
 
     dataset_id = bq_utils.get_dataset_id()
+    project_id = app_identity.get_application_id()
+    bq_client = BigQueryClient(project_id)
 
     @classmethod
     def setUpClass(cls):
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
-        test_util.setup_hpo_id_bucket_name_table(cls.dataset_id)
+        test_util.setup_hpo_id_bucket_name_table(cls.bq_client, cls.dataset_id)
 
     @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def setUp(self):
         self.hpo_id: str = test_util.FAKE_HPO_ID
-        self.project_id: str = app_identity.get_application_id()
         self.rdr_dataset_id: str = bq_utils.get_rdr_dataset_id()
 
         mock_get_hpo_name = mock.patch('validation.main.get_hpo_name')
@@ -47,8 +51,6 @@ class ValidationMainTest(unittest.TestCase):
 
         self.bigquery_dataset_id: str = bq_utils.get_dataset_id()
         self.folder_prefix: str = '2019-01-01-v1/'
-
-        self.bq_client = BigQueryClient(self.project_id)
 
         self.storage_client = StorageClient(self.project_id)
         self.hpo_bucket = self.storage_client.get_hpo_bucket(self.hpo_id)
@@ -137,9 +139,9 @@ class ValidationMainTest(unittest.TestCase):
         for file_name in bad_file_names:
             bad_blob = self.hpo_bucket.blob(f'{self.folder_prefix}{file_name}')
             bad_blob.upload_from_string('.')
-
             expected_item: tuple = (file_name, common.UNKNOWN_FILE)
             expected_warnings.append(expected_item)
+
         items_metadata: list = self.storage_client.get_bucket_items_metadata(
             self.hpo_bucket)
         folder_items: list = main.get_folder_items(items_metadata,
@@ -180,7 +182,8 @@ class ValidationMainTest(unittest.TestCase):
 
         # check tables exist and are clustered as expected
         for table in resources.CDM_TABLES + common.PII_TABLES:
-            table_id: str = bq_utils.get_table_id(test_util.FAKE_HPO_ID, table)
+            table_id: str = resources.get_table_id(table,
+                                                   hpo_id=test_util.FAKE_HPO_ID)
             table_info = bq_utils.get_table_info(table_id)
             fields = resources.fields_for(table)
             field_names: list = [field['name'] for field in fields]
@@ -257,7 +260,7 @@ class ValidationMainTest(unittest.TestCase):
 
         main._upload_achilles_files(hpo_id=None,
                                     folder_prefix=folder_prefix,
-                                    target_bucket=bucket_nyc)
+                                    target_bucket=bucket_nyc.name)
         actual_bucket_files = set([
             item['name'] for item in
             self.storage_client.get_bucket_items_metadata(bucket_nyc)
@@ -331,10 +334,10 @@ class ValidationMainTest(unittest.TestCase):
 
         # Load measurement_concept_sets
         required_labs.load_measurement_concept_sets_table(
-            project_id=self.project_id, dataset_id=self.dataset_id)
+            client=self.bq_client, dataset_id=self.dataset_id)
         # Load measurement_concept_sets_descendants
         required_labs.load_measurement_concept_sets_descendants_table(
-            project_id=self.project_id, dataset_id=self.dataset_id)
+            client=self.bq_client, dataset_id=self.dataset_id)
 
         main.app.testing = True
         with main.app.test_client() as test_client:
@@ -413,4 +416,4 @@ class ValidationMainTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        test_util.drop_hpo_id_bucket_name_table(cls.dataset_id)
+        test_util.drop_hpo_id_bucket_name_table(cls.bq_client, cls.dataset_id)

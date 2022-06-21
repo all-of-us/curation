@@ -18,9 +18,6 @@ The concept_ids to suppress can be determined from the vocabulary with the follo
 # Python Imports
 import os
 
-# Third Party Imports
-from google.cloud.bigquery import Table
-
 # Project Imports
 from common import OBSERVATION, VOCABULARY_TABLES
 from app_identity import PROJECT_ID

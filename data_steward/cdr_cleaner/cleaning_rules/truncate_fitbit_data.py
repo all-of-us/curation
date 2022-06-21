@@ -56,6 +56,7 @@ class TruncateFitbitData(BaseCleaningRule):
                  project_id,
                  dataset_id,
                  sandbox_dataset_id,
+                 table_namer=None,
                  truncation_date=None):
         """
         Initialize the class with proper information.
