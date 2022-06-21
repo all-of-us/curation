@@ -347,9 +347,9 @@ class BigQueryClient(Client):
 
         successes = []
         failures = []
-        for index, table_name in enumerate(fq_table_names):
+        for table_name in fq_table_names:
             schema = self.get_table_schema(
-                table_name.split('.')[2], fields[index] if fields else None)
+                table_name.split('.')[2], fields if fields else None)
 
             try:
                 table = bigquery.Table(table_name, schema=schema)

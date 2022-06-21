@@ -75,17 +75,22 @@ TODO: Refactor query generation logic in mapping_query and table_union_query
       A) a single jinja template or 
       B) dynamic SQL (i.e. EXECUTE IMMEDIATE)
 """
+# Python imports
 import argparse
 import logging
 from datetime import datetime
 
+# Third party imports
 import google.cloud.bigquery as bq
 
+# Project imports
 import app_identity
 import bq_utils
 import cdm
 import common
 import resources
+from cdr_cleaner import clean_cdr
+from constants.cdr_cleaner import clean_cdr as consts
 from constants.validation import ehr_union as eu_constants
 from utils.bq import validate_bq_date_string
 from gcloud.bq import BigQueryClient
@@ -783,6 +788,15 @@ def main(input_dataset_id,
     logging.info(f'Mapping {domain_table}...')
     mapping(domain_table, hpo_ids, input_dataset_id, output_dataset_id,
             project_id, bq_client)
+
+    logging.info('Dropping race/ethnicity/gender records from Observation')
+    common_cleaning_args = [
+        '-p', project_id, '-d', output_dataset_id, '-b', output_dataset_id,
+        '-s', '-a', consts.EHR
+    ]
+    clean_cdr.main(args=common_cleaning_args)
+    logging.info(
+        'Completed dropping race/ethnicity/gender records from Observation')
 
     logging.info('Starting process for Person to Observation')
     # Map and move EHR person records into four rows in observation, one each for race, ethnicity, dob and gender

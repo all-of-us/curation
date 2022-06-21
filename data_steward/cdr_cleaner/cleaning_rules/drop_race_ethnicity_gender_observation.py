@@ -3,18 +3,13 @@
 """
 # Python imports
 import logging
-from datetime import datetime
 
 # Third party imports
-from google.cloud import bigquery
 
 # Project imports
 import constants.cdr_cleaner.clean_cdr as cdr_consts
-from common import (JINJA_ENV, MAX_DEID_DATE_SHIFT, PID_RID_MAPPING,
-                    PIPELINE_TABLES, PRIMARY_PID_RID_MAPPING)
+from common import JINJA_ENV, OBSERVATION, UNIONED_EHR
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
-from resources import fields_for
-from utils.bq import validate_bq_date_string
 
 LOGGER = logging.getLogger(__name__)
 
@@ -26,7 +21,7 @@ CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` AS (
 )
 """)
 
-DROP_RACE_GENDER_ETHNICITY_QUERY = JINJA_ENV.from_string("""
+DROP_RACE_ETHNICITY_GENDER_QUERY = JINJA_ENV.from_string("""
 DELETE FROM `{{project}}.{{dataset}}.{{table}}`
 WHERE observation_id IN (
   SELECT observation_id
@@ -47,7 +42,8 @@ class DropRaceEthnicityGenderObservation(BaseCleaningRule):
         desc = ('')
         super().__init__(issue_numbers=['DC2340'],
                          description=desc,
-                         affected_datasets=[cdr_consts.RDR],
+                         affected_datasets=[cdr_consts.EHR],
+                         affected_tables=[f'{UNIONED_EHR}_{OBSERVATION}'],
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
@@ -62,16 +58,16 @@ class DropRaceEthnicityGenderObservation(BaseCleaningRule):
         sandbox_query = CREATE_SANDBOX_OBSERVATION.render(
             project=self.project_id,
             sandbox_dataset=self.sandbox_dataset_id,
-            sandbox_table='',
+            sandbox_table=self.sandbox_table_for(self.affected_tables[0]),
             dataset=self.dataset_id,
-            table='')
+            table=self.affected_tables[0])
 
-        drop_query = DROP_RACE_GENDER_ETHNICITY_QUERY.render(
+        drop_query = DROP_RACE_ETHNICITY_GENDER_QUERY.render(
             project=self.project_id,
             sandbox_dataset=self.sandbox_dataset_id,
-            sandbox_table='',
+            sandbox_table=self.sandbox_table_for(self.affected_tables[0]),
             dataset=self.dataset_id,
-            table='')
+            table=self.affected_tables[0])
 
         sandbox_query_dict = {cdr_consts.QUERY: sandbox_query}
         insert_query_dict = {cdr_consts.QUERY: drop_query}
@@ -79,7 +75,7 @@ class DropRaceEthnicityGenderObservation(BaseCleaningRule):
         return [sandbox_query_dict, insert_query_dict]
 
     def get_sandbox_tablenames(self):
-        return 'xyz'
+        return [self.sandbox_table_for(table) for table in self.affected_tables]
 
     def setup_rule(self, client):
         pass
@@ -92,8 +88,6 @@ class DropRaceEthnicityGenderObservation(BaseCleaningRule):
 
 
 if __name__ == '__main__':
-    from utils import pipeline_logging
-
     import cdr_cleaner.args_parser as parser
     import cdr_cleaner.clean_cdr_engine as clean_engine
 

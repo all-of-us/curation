@@ -14,6 +14,7 @@ import cdr_cleaner.cleaning_rules.clean_years as clean_years
 import cdr_cleaner.cleaning_rules.domain_alignment as domain_alignment
 import cdr_cleaner.cleaning_rules.drop_duplicate_states as drop_duplicate_states
 import cdr_cleaner.cleaning_rules.drop_extreme_measurements as extreme_measurements
+from cdr_cleaner.cleaning_rules.drop_race_ethnicity_gender_observation import DropRaceEthnicityGenderObservation
 from cdr_cleaner.cleaning_rules.drop_multiple_measurements import DropMultipleMeasurements
 from cdr_cleaner.cleaning_rules.drop_participants_without_ppi_or_ehr import DropParticipantsWithoutPPI
 import cdr_cleaner.cleaning_rules.drug_refills_days_supply as drug_refills_supply
@@ -122,6 +123,7 @@ from constants.cdr_cleaner.clean_cdr import DataStage
 LOGGER = logging.getLogger(__name__)
 
 EHR_CLEANING_CLASSES = [
+    (DropRaceEthnicityGenderObservation,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
