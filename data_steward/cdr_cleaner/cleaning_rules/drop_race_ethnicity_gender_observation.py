@@ -22,7 +22,7 @@ CREATE_SANDBOX_OBSERVATION = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` AS (
   SELECT *
   FROM `{{project}}.{{dataset}}.{{table}}`
-  WHERE observation_concept_id in (4013886, 4135376, 4271761
+  WHERE observation_concept_id in (4013886, 4135376, 4271761)
 )
 """)
 
