@@ -109,21 +109,25 @@ class UnitNormalizationTest(BaseTest.CleaningRulesTestBase):
 
     def test_setup_rule(self):
 
-        # test if intermediary table exists before running the cleaning rule
         intermediary_table = f'{self.project_id}.{self.sandbox_id}.{UNIT_MAPPING_TABLE}'
 
         # run setup_rule and see if the table is created
-        self.rule_instance.setup_rule(self.client)
+        with self.assertLogs() as cm:
+            self.rule_instance.setup_rule(self.client)
+
+        self.assertTrue(
+            f"Created {self.sandbox_id}.{UNIT_MAPPING_TABLE}" in cm.output[0])
 
         actual_table = self.client.get_table(intermediary_table)
         self.assertIsNotNone(actual_table.created)
 
-        # test if exception is raised if table already exists
-        with self.assertRaises(RuntimeError) as c:
+        # test if table creation is skipped if the table already exists
+        with self.assertLogs() as cm:
             self.rule_instance.setup_rule(self.client)
 
-        self.assertEqual(str(c.exception),
-                         f"Unable to create tables: ['{intermediary_table}']")
+        self.assertTrue(
+            f"{self.sandbox_id}.{UNIT_MAPPING_TABLE} already exists." in
+            cm.output[0])
 
         query = test_query.render(intermediary_table=intermediary_table)
         query_job_config = bigquery.job.QueryJobConfig(use_query_cache=False)

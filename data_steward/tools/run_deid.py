@@ -12,9 +12,9 @@ from argparse import ArgumentParser
 
 # Third party imports
 import google
-import app_identity
 
 # Project imports
+import app_identity
 import bq_utils
 import deid.aou as aou
 from deid.parser import odataset_name_verification
@@ -126,16 +126,11 @@ def get_output_tables(input_dataset, known_tables, skip_tables, only_tables):
 
     allowed_tables = []
     for table in tables:
-        if table.startswith('_'):
-            continue
-        if table.startswith('pii'):
-            continue
-        if table in SUPPRESSED_TABLES:
+        if table.startswith('_') or table.startswith(
+                'pii') or table in SUPPRESSED_TABLES:
             continue
         # doing this to eliminate the 'deid_map' table and any other non-OMOP table
-        if table not in known_tables:
-            continue
-        if table in skip_tables:
+        if table not in known_tables or table in skip_tables:
             continue
 
         if (only_tables == [''] or
@@ -163,8 +158,10 @@ def copy_suppressed_table_schemas(known_tables, dest_dataset):
 
 
 def copy_vocabulary_tables(input_dataset, dest_dataset):
+    project_id = app_identity.get_application_id()
+    bq_client = BigQueryClient(project_id)
     for table in VOCABULARY_TABLES:
-        if bq_utils.table_exists(table, dataset_id=input_dataset):
+        if bq_client.table_exists(table, dataset_id=input_dataset):
             pass
 
 
@@ -246,22 +243,21 @@ def parse_args(raw_args=None):
     return parser.parse_args(raw_args)
 
 
-def copy_deid_map_table(deid_map_table, project_id, lookup_dataset_id,
-                        input_dataset_id, age_limit, client):
+def copy_deid_map_table(client, deid_map_table, lookup_dataset_id,
+                        input_dataset_id, age_limit):
     """
     Copies research_ids for participants whose age is below max_age limit from pipeline_tables._deid_map table
      to input_dataset._deid_map table.
 
+    :param client: a BigQueryClient
     :param deid_map_table: Fully Qualified(fq) _deid_map table name to create
-    :param project_id: Project identifier 
     :param lookup_dataset_id: Name of the dataset where the master _deid_map table is stored
     :param input_dataset_id: Name of the dataset where _deid_map dataset needs to be created.
     :param age_limit: Allowed Max_age of a participant
-    :param client: a BigQueryClient
     :return: None
     """
     q = COPY_PID_RID_QUERY.render(map_table=deid_map_table,
-                                  project=project_id,
+                                  project=client.project,
                                   lookup_dataset=lookup_dataset_id,
                                   input_dataset=input_dataset_id,
                                   max_age=age_limit,
@@ -279,11 +275,12 @@ def load_deid_map_table(deid_map_dataset_name, age_limit):
     project_id = app_identity.get_application_id()
     bq_client = BigQueryClient(project_id)
     deid_map_table = f'{project_id}.{deid_map_dataset_name}._deid_map'
+
     # Copy master _deid_map table records to _deid_map table
-    if bq_utils.table_exists(DEID_MAP_TABLE,
-                             dataset_id=PIPELINE_TABLES_DATASET):
-        copy_deid_map_table(deid_map_table, project_id, PIPELINE_TABLES_DATASET,
-                            deid_map_dataset_name, age_limit, bq_client)
+    if bq_client.table_exists(DEID_MAP_TABLE,
+                              dataset_id=PIPELINE_TABLES_DATASET):
+        copy_deid_map_table(bq_client, deid_map_table, PIPELINE_TABLES_DATASET,
+                            deid_map_dataset_name, age_limit)
         logging.info(
             f"copied participants younger than {age_limit} to the table {deid_map_table}"
         )
