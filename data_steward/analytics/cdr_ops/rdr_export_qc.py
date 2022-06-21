@@ -786,7 +786,7 @@ render_message(df, success_msg, failure_msg, failure_msg_args={'code_count': len
 
 # ### Question-Answer Codes Combo
 
-# Check the answer codes
+# Check that mapped answer codes are paired with correctly mapped question codes.  If the question codes are zero valued, the question and answer pair will be dropped from the clean version of the CDR.
 tpl = JINJA_ENV.from_string("""
 WITH answer_codes AS (
   SELECT
