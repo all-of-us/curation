@@ -45,6 +45,7 @@ class LoadVocabTest(unittest.TestCase):
 
     def setUp(self):
         self.project_id = app_identity.get_application_id()
+        self.run_as = None
         self.dataset_id = os.environ.get('UNIONED_DATASET_ID')
         self.staging_dataset_id = f'{self.dataset_id}_staging'
         self.bucket = os.environ.get('BUCKET_NAME_FAKE')
@@ -61,7 +62,7 @@ class LoadVocabTest(unittest.TestCase):
 
     @mock.patch('tools.load_vocab.VOCABULARY_TABLES', [CONCEPT, VOCABULARY])
     def test_upload_stage(self):
-        lv.main(self.project_id, self.bucket, self.test_vocab_folder_path,
+        lv.main(self.project_id, self.run_as, self.bucket, self.test_vocab_folder_path,
                 self.dataset_id)
         expected_row_count = get_custom_concept_and_vocabulary_counts()
         for dataset in [self.staging_dataset_id, self.dataset_id]:
