@@ -87,10 +87,10 @@ import google.cloud.bigquery as bq
 import app_identity
 import bq_utils
 import cdm
+import cdr_cleaner.clean_cdr_engine as clean_engine
 import common
 import resources
-from cdr_cleaner import clean_cdr
-from constants.cdr_cleaner import clean_cdr as consts
+from cdr_cleaner.cleaning_rules.drop_race_ethnicity_gender_observation import DropRaceEthnicityGenderObservation
 from constants.validation import ehr_union as eu_constants
 from utils.bq import validate_bq_date_string
 from gcloud.bq import BigQueryClient
@@ -790,11 +790,9 @@ def main(input_dataset_id,
             project_id, bq_client)
 
     logging.info('Dropping race/ethnicity/gender records from Observation')
-    common_cleaning_args = [
-        '-p', project_id, '-d', output_dataset_id, '-b', output_dataset_id,
-        '-s', '-a', consts.EHR
-    ]
-    clean_cdr.main(args=common_cleaning_args)
+    clean_engine.clean_dataset(project_id, output_dataset_id, output_dataset_id,
+                               [(DropRaceEthnicityGenderObservation,)])
+
     logging.info(
         'Completed dropping race/ethnicity/gender records from Observation')
 
