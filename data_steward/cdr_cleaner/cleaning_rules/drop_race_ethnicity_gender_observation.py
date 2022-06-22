@@ -1,5 +1,11 @@
 """
+Deletes records in observation that are observation_concept_id in (4013886, 4135376, 4271761).
+This cleaning rule runs during EHR union process. 
+With this cleaning rule, we can guarantee that race/ethnicity/gender records submitted by sites 
+directly into the obsevation are dropped before the person table records are mapped to the 
+observation: This cleaning rule needs to run before person table records are moved to observation table.
 
+Original Issues: DC-2340
 """
 # Python imports
 import logging
@@ -32,6 +38,7 @@ WHERE observation_id IN (
 
 class DropRaceEthnicityGenderObservation(BaseCleaningRule):
     """
+    Deletes race/ethnicity/gender records in observation.
     """
 
     def __init__(self,
@@ -39,7 +46,7 @@ class DropRaceEthnicityGenderObservation(BaseCleaningRule):
                  dataset_id,
                  sandbox_dataset_id,
                  table_namer=None):
-        desc = ('')
+        desc = ('Deletes race/ethnicity/gender records in observation.')
         super().__init__(issue_numbers=['DC2340'],
                          description=desc,
                          affected_datasets=[cdr_consts.EHR],

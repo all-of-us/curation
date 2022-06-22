@@ -789,12 +789,13 @@ def main(input_dataset_id,
     mapping(domain_table, hpo_ids, input_dataset_id, output_dataset_id,
             project_id, bq_client)
 
-    logging.info('Dropping race/ethnicity/gender records from Observation')
+    logging.info(
+        'Dropping race/ethnicity/gender records from unioned_ehr_observation')
     clean_engine.clean_dataset(project_id, output_dataset_id, output_dataset_id,
                                [(DropRaceEthnicityGenderObservation,)])
-
     logging.info(
-        'Completed dropping race/ethnicity/gender records from Observation')
+        'Completed dropping race/ethnicity/gender records from unioned_ehr_observation'
+    )
 
     logging.info('Starting process for Person to Observation')
     # Map and move EHR person records into four rows in observation, one each for race, ethnicity, dob and gender

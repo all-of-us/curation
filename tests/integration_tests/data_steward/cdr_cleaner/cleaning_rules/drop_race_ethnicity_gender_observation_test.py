@@ -1,4 +1,4 @@
-"""Integration test for xyz
+"""Integration test for DropRaceEthnicityGenderObservation
 """
 # Python imports
 import os
@@ -50,8 +50,6 @@ class DropRaceEthnicityGenderObservationTest(BaseTest.CleaningRulesTestBase):
         super().setUpClass()
 
     def setUp(self):
-        """
-        """
         self.date = parser.parse('2020-05-05').date()
         self.client.create_tables(self.fq_table_names,
                                   exists_ok=True,
@@ -59,6 +57,7 @@ class DropRaceEthnicityGenderObservationTest(BaseTest.CleaningRulesTestBase):
 
     def test_drop_race_ethnicity_gender_observation(self):
         """
+        Validates pre-conditions, test execution and post conditions based on the tables_and_counts variable.
         """
         insert_observation = self.jinja_env.from_string("""
             INSERT INTO `{{fq_table_names}}`
