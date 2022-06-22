@@ -19,7 +19,8 @@ from google.cloud.bigquery import  Dataset, SchemaField, LoadJob, LoadJobConfig,
 from gcloud.gcs import StorageClient
 from gcloud.bq import BigQueryClient
 from utils import pipeline_logging
-from common import VOCABULARY_TABLES, JINJA_ENV, CONCEPT, VOCABULARY, VOCABULARY_UPDATES, CDR_SCOPES
+from common import VOCABULARY_TABLES, JINJA_ENV, CONCEPT, VOCABULARY, VOCABULARY_UPDATES, CDR_SCOPES, \
+    SOURCE_TO_CONCEPT_MAP
 from resources import AOU_VOCAB_PATH
 from utils.auth import get_impersonation_credentials
 
@@ -163,7 +164,8 @@ def load_stage(dst_dataset: Dataset, bq_client: BigQueryClient,
 
     table_blobs = [_filename_to_table_name(blob.name) for blob in blobs]
     missing_blobs = [
-        table for table in VOCABULARY_TABLES if table not in table_blobs
+        # source_to_concept_map is a custom, standard vocabulary table and not in Athena
+        table for table in VOCABULARY_TABLES if table not in table_blobs and table != SOURCE_TO_CONCEPT_MAP
     ]
     if missing_blobs:
         raise RuntimeError(
