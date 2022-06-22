@@ -55,7 +55,7 @@ class DropRaceEthnicityGenderObservationTest(BaseTest.CleaningRulesTestBase):
         self.date = parser.parse('2020-05-05').date()
         self.client.create_tables(self.fq_table_names,
                                   exists_ok=True,
-                                  fields=fields_for(OBSERVATION))
+                                  fields=[fields_for(OBSERVATION)])
 
     def test_drop_race_ethnicity_gender_observation(self):
         """
