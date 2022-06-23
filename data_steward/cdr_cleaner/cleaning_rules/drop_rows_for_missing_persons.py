@@ -98,11 +98,6 @@ class DropMissingParticipants(BaseCleaningRule):
 
         return query_list
 
-    def sandbox_table_for(self, affected_table):
-        issue_numbers_str = '_'.join(
-            [issue_num.lower() for issue_num in self.issue_numbers])
-        return f'{issue_numbers_str}_{affected_table}'
-
     def get_sandbox_tablenames(self):
         return [
             self.sandbox_table_for(affected_table)
