@@ -19,8 +19,10 @@ from google.cloud.bigquery import  Dataset, SchemaField, LoadJob, LoadJobConfig,
 from gcloud.gcs import StorageClient
 from gcloud.bq import BigQueryClient
 from utils import pipeline_logging
-from common import VOCABULARY_TABLES, JINJA_ENV, CONCEPT, VOCABULARY, VOCABULARY_UPDATES
+from common import VOCABULARY_TABLES, JINJA_ENV, CONCEPT, VOCABULARY, VOCABULARY_UPDATES, CDR_SCOPES, \
+    SOURCE_TO_CONCEPT_MAP
 from resources import AOU_VOCAB_PATH
+from utils.auth import get_impersonation_credentials
 
 LOGGER = logging.getLogger(__name__)
 DATE_TIME_TYPES = ['date', 'timestamp', 'datetime']
@@ -162,7 +164,10 @@ def load_stage(dst_dataset: Dataset, bq_client: BigQueryClient,
 
     table_blobs = [_filename_to_table_name(blob.name) for blob in blobs]
     missing_blobs = [
-        table for table in VOCABULARY_TABLES if table not in table_blobs
+        # source_to_concept_map is a custom, standard vocabulary table and not in Athena
+        table
+        for table in VOCABULARY_TABLES
+        if table not in table_blobs and table != SOURCE_TO_CONCEPT_MAP
     ]
     if missing_blobs:
         raise RuntimeError(
@@ -230,18 +235,20 @@ def load(project_id: str, bq_client: BigQueryClient, src_dataset_id: str,
     return query_jobs
 
 
-def main(project_id: str, bucket_name: str, vocab_folder_path: str,
+def main(project_id: str, run_as: str, bucket_name: str, vocab_folder_path: str,
          dst_dataset_id: str):
     """
     Load and transform vocabulary files in GCS to a BigQuery dataset
 
     :param project_id: Identifies the BQ project
+    :param run_as: Identifies the service account to impersonate
     :param bucket_name: refers to the bucket containing vocabulary files
     :param vocab_folder_path: points to the directory containing files downloaded from athena with CPT4 applied
     :param dst_dataset_id: final destination to load the vocabulary in BigQuery
     """
-    bq_client = BigQueryClient(project_id)
-    gcs_client = StorageClient(project_id)
+    impersonation_creds = get_impersonation_credentials(run_as, CDR_SCOPES)
+    bq_client = BigQueryClient(project_id, credentials=impersonation_creds)
+    gcs_client = StorageClient(project_id, credentials=impersonation_creds)
     vocab_folder_path = Path(vocab_folder_path)
     update_aou_vocabs(vocab_folder_path)
     upload_stage(bucket_name, vocab_folder_path, gcs_client)
@@ -298,6 +305,13 @@ def get_arg_parser() -> argparse.ArgumentParser:
         help=
         'Identifies the target dataset where the vocabulary is to be loaded',
         required=False)
+    argument_parser.add_argument(
+        '-a',
+        '--run_as',
+        dest='run_as',
+        action='store',
+        help='Email address of service account to impersonate.',
+        required=True)
     return argument_parser
 
 
@@ -324,5 +338,5 @@ if __name__ == '__main__':
     TARGET_DATASET_ID = ARGS.target_dataset_id or get_target_dataset_id(
         RELEASE_TAG)
     pipeline_logging.configure(add_console_handler=True)
-    main(ARGS.project_id, ARGS.bucket_name, ARGS.vocab_folder_path,
+    main(ARGS.project_id, ARGS.run_as, ARGS.bucket_name, ARGS.vocab_folder_path,
          TARGET_DATASET_ID)
