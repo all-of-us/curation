@@ -429,7 +429,7 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
         Set the table_namer for this class instance. If no value is provided, it is set to a default value.
         """
         if not table_namer:
-            self._table_namer = re.sub('\d\d\d\dq\dr\d', '', self.dataset_id)
+            self._table_namer = re.sub('\d{4}q\dr\d', '', self.dataset_id)
             LOGGER.info(f"'table_namer' was not set.  "
                         f"Using default value of `{table_namer}`.")
         else:
