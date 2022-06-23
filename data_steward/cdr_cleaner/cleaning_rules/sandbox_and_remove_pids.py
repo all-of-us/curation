@@ -74,7 +74,6 @@ class SandboxAndRemovePids(BaseCleaningRule):
 
     def setup_rule(self, client: BigQueryClient):
 
-        # def get_tables_with_person_id(self, client: BigQueryClient):
         """
         Get list of tables that have a person_id column, excluding mapping tables
         """
@@ -84,9 +83,6 @@ class SandboxAndRemovePids(BaseCleaningRule):
         person_table_query = PERSON_TABLE_QUERY.render(project=self.project_id,
                                                        dataset=self.dataset_id)
         person_tables = client.query(person_table_query).result()
-        # utils.bq.query(person_table_query).get(
-        #     TABLE_NAME_COLUMN).to_list()
-        # exclude mapping tables from list, to be removed after all cleaning rules
         self.person_table_list = [
             table.get('table_name')
             for table in person_tables
