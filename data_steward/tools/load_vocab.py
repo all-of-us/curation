@@ -165,7 +165,9 @@ def load_stage(dst_dataset: Dataset, bq_client: BigQueryClient,
     table_blobs = [_filename_to_table_name(blob.name) for blob in blobs]
     missing_blobs = [
         # source_to_concept_map is a custom, standard vocabulary table and not in Athena
-        table for table in VOCABULARY_TABLES if table not in table_blobs and table != SOURCE_TO_CONCEPT_MAP
+        table
+        for table in VOCABULARY_TABLES
+        if table not in table_blobs and table != SOURCE_TO_CONCEPT_MAP
     ]
     if missing_blobs:
         raise RuntimeError(
