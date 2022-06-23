@@ -280,15 +280,15 @@ CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     (GeoLocationConceptSuppression,),
     (BirthInformationSuppression,),
     (YearOfBirthRecordsSuppression,),
-    (StringFieldsSuppression,),
     (ControlledCopeSurveySuppression,),
+    (IDFieldSuppression,),  # Should run after any data remapping
     (GenerateExtTables,),
     (COPESurveyVersionTask,
     ),  # Should run after GenerateExtTables and before CleanMappingExtTables
     (CancerConceptSuppression,),  # Should run after any data remapping rules
-    (AggregateZipCodes,),
     (SectionParticipationConceptSuppression,),
-    (IDFieldSuppression,),  # Should run after any data remapping
+    (StringFieldsSuppression,),
+    (AggregateZipCodes,),
     (DropOrphanedPIDS,),
     (RemoveExtraTables,),  # Should be last cleaning rule to be run
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
@@ -328,11 +328,11 @@ REGISTERED_TIER_DEID_CLEANING_CLASSES = [
     ####################################
     (
         CovidEHRVaccineConceptSuppression,),  # should run after QRIDtoRID
-    (StringFieldsSuppression,),
     (VehicularAccidentConceptSuppression,),
     (SectionParticipationConceptSuppression,),
     (RegisteredCopeSurveyQuestionsSuppression,),
     (CancerConceptSuppression,),
+    (StringFieldsSuppression,),
     (DropOrphanedPIDS,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
