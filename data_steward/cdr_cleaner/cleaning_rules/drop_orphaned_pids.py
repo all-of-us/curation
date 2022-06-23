@@ -26,9 +26,9 @@ SELECT
   DISTINCT person_id
 FROM
   `{{project}}.{{dataset}}.{{person_table}}` p
-LEFT JOIN ( SELECT DISTINCT person_id FROM `{{project}}.{{dataset}}.condition_occurrence`) co
+LEFT JOIN (SELECT DISTINCT person_id FROM `{{project}}.{{dataset}}.condition_occurrence`) co
 USING (person_id)
-LEFT JOIN ( SELECT DISTINCT person_id FROM `{{project}}.{{dataset}}.death`) d
+LEFT JOIN (SELECT DISTINCT person_id FROM `{{project}}.{{dataset}}.death`) d
 USING (person_id)
 LEFT JOIN (SELECT DISTINCT person_id FROM `{{project}}.{{dataset}}.device_exposure`) dee
 USING (person_id)
@@ -82,7 +82,9 @@ class DropOrphanedPIDS(BaseCleaningRule):
         this SQL, append them to the list of Jira Issues.
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
-        desc = 'Removes all but the most recent of each Physical Measurement for all participants.'
+        desc = (
+            'Removes all pids from person table if they do not have records in any of the'
+            'AoU required OMOP tables.')
         super().__init__(issue_numbers=ISSUE_NUMBERS,
                          description=desc,
                          affected_datasets=[
