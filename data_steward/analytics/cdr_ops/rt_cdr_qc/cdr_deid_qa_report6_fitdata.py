@@ -17,6 +17,8 @@
 
 import urllib
 import pandas as pd
+
+from common import PIPELINE_TABLES
 from utils import auth
 from gcloud.bq import BigQueryClient
 from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
@@ -24,18 +26,18 @@ pd.options.display.max_rows = 120
 
 # + tags=["parameters"]
 project_id = ""
-pipeline=""
-non_deid_fitbit=""
-deid_cdr_fitbit=""
-deid_cdr=""
-com_cdr=""
-truncation_date=""
-maximum_age=""
+pipeline = ""
+non_deid_fitbit = ""
+deid_cdr_fitbit = ""
+deid_cdr = ""
+com_cdr = ""
+truncation_date = ""
+maximum_age = ""
 run_as = ""
 # -
 
 # df will have a summary in the end
-df = pd.DataFrame(columns = ['query', 'result']) 
+df = pd.DataFrame(columns=['query', 'result'])
 
 # +
 impersonation_creds = auth.get_impersonation_credentials(
@@ -44,7 +46,7 @@ impersonation_creds = auth.get_impersonation_credentials(
 client = BigQueryClient(project_id, credentials=impersonation_creds)
 # -
 
-# This notebook was updated per [DC-1786]. 
+# This notebook was updated per [DC-1786].
 #
 #
 
@@ -54,7 +56,7 @@ client = BigQueryClient(project_id, credentials=impersonation_creds)
 #
 # by adding m.shift back to deid_table and see if any date is newer than cutoff date.
 
-query=f''' 
+query = f'''
 WITH df1 AS (
 SELECT '1' as col ,COUNT (*) AS n_row_not_pass_activity_summary
 FROM `{project_id}.{deid_cdr_fitbit}.activity_summary`  a
@@ -89,21 +91,29 @@ JOIN df3 USING (col)
 JOIN df4 USING (col)
 
 '''
-df1=execute(client, query)  
-df1=df1.iloc[:,1:5]
-if df1.loc[0].sum()==0:
- df = df.append({'query' : 'Query1 cutoff date in fitbit datasets', 'result' : 'PASS'},  
-                ignore_index = True) 
+df1 = execute(client, query)
+df1 = df1.iloc[:, 1:5]
+if df1.loc[0].sum() == 0:
+    df = df.append(
+        {
+            'query': 'Query1 cutoff date in fitbit datasets',
+            'result': 'PASS'
+        },
+        ignore_index=True)
 else:
- df = df.append({'query' : 'Query1 cutoff date in fitbit datasets', 'result' : ''},  
-                ignore_index = True) 
+    df = df.append(
+        {
+            'query': 'Query1 cutoff date in fitbit datasets',
+            'result': ''
+        },
+        ignore_index=True)
 df1
 
 # # Verify if that the fitdata data is removed FROM the fitbit tables for participants exceeding allowable age (maximum_age, i.e.,89). ((row counts = 0))
 #
 # DC-1001
 
-query=f''' 
+query = f'''
 
 WITH df1 AS (
 SELECT '1' as col ,COUNT (*) n_row_not_pass_activity_summary
@@ -112,7 +122,7 @@ JOIN `{project_id}.{pipeline}.pid_rid_mapping` m
 ON m.research_id = d.person_id
 JOIN `{project_id}.{com_cdr}.person` i
 ON m.person_id = i.person_id
-WHERE  FLOOR(DATE_DIFF(CURRENT_DATE(),DATE(i.birth_datetime), YEAR)) >{maximum_age}),
+WHERE {PIPELINE_TABLES}.calculate_age(CURRENT_DATE, EXTRACT(DATE FROM i.birth_datetime)) >{maximum_age}),
 
 df2 AS (
 SELECT '1' as col ,COUNT (*) n_row_not_pass_heart_rate_summary
@@ -121,7 +131,7 @@ JOIN `{project_id}.{pipeline}.pid_rid_mapping` m
 ON m.research_id = d.person_id
 JOIN `{project_id}.{com_cdr}.person` i
 ON m.person_id = i.person_id
-WHERE  FLOOR(DATE_DIFF(CURRENT_DATE(),DATE(i.birth_datetime), YEAR)) >{maximum_age}),
+WHERE {PIPELINE_TABLES}.calculate_age(CURRENT_DATE, EXTRACT(DATE FROM i.birth_datetime)) >{maximum_age}),
 
 df3 AS (
 SELECT '1' as col ,COUNT (*) n_row_not_pass_heart_rate_minute_level
@@ -130,7 +140,7 @@ JOIN `{project_id}.{pipeline}.pid_rid_mapping` m
 ON m.research_id = d.person_id
 JOIN `{project_id}.{com_cdr}.person` i
 ON m.person_id = i.person_id
-WHERE  FLOOR(DATE_DIFF(CURRENT_DATE(),DATE(i.birth_datetime), YEAR)) >{maximum_age}),
+WHERE {PIPELINE_TABLES}.calculate_age(CURRENT_DATE, EXTRACT(DATE FROM i.birth_datetime)) >{maximum_age}),
 
 df4 AS (
 SELECT '1' as col ,COUNT (*) n_row_not_pass_steps_intraday
@@ -139,7 +149,7 @@ JOIN `{project_id}.{pipeline}.pid_rid_mapping` m
 ON m.research_id = d.person_id
 JOIN `{project_id}.{com_cdr}.person` i
 ON m.person_id = i.person_id
-WHERE  FLOOR(DATE_DIFF(CURRENT_DATE(),DATE(i.birth_datetime), YEAR)) >{maximum_age})
+WHERE {PIPELINE_TABLES}.calculate_age(CURRENT_DATE, EXTRACT(DATE FROM i.birth_datetime)) >{maximum_age})
 
 SELECT * from df1
 JOIN df2 USING (col)
@@ -147,23 +157,31 @@ JOIN df3 USING (col)
 JOIN df4 USING (col)
 
 '''
-df1=execute(client, query)  
-df1=df1.iloc[:,1:5]
-if df1.loc[0].sum()==0:
- df = df.append({'query' : 'Query2 no maximum_age in fitbit datasets', 'result' : 'PASS'},  
-                ignore_index = True) 
+df1 = execute(client, query)
+df1 = df1.iloc[:, 1:5]
+if df1.loc[0].sum() == 0:
+    df = df.append(
+        {
+            'query': 'Query2 no maximum_age in fitbit datasets',
+            'result': 'PASS'
+        },
+        ignore_index=True)
 else:
- df = df.append({'query' : 'Query2 no maximum_age in fitbit datasets', 'result' : ''},  
-                ignore_index = True) 
-df1               
+    df = df.append(
+        {
+            'query': 'Query2 no maximum_age in fitbit datasets',
+            'result': ''
+        },
+        ignore_index=True)
+df1
 
 # # Verify that correct date shift is applied to the fitbit data
 #
 # DC-1005
 #
-# objective: 
+# objective:
 #
-# find the difference between the non-deid date and the deid date to validate that the dateshift is applied as specified in the map . 
+# find the difference between the non-deid date and the deid date to validate that the dateshift is applied as specified in the map .
 #
 # the original code uses min(date) to have the difference, but not sure why min(), not max(), or any date.
 #
@@ -171,7 +189,7 @@ df1
 # [DC-1786] date shifting should be checked against activity_summary, heart_rate_summary, heart_rate_minute_level, and steps_intraday.
 
 # activity_summary
-query=f''' 
+query = f'''
 
 WITH df1 AS (
 SELECT m.research_id,
@@ -186,23 +204,31 @@ SELECT d.person_id,
 CONCAT(d.person_id, '_', DATE_ADD(d.date, INTERVAL m.shift DAY))  d_newc
 FROM `{project_id}.{pipeline}.pid_rid_mapping` m
 JOIN `{project_id}.{deid_cdr_fitbit}.activity_summary` d
-ON m.research_id = d.person_id 
+ON m.research_id = d.person_id
 )
 
 SELECT COUNT (*) n_row_not_pass FROM df2
 WHERE d_newc NOT IN (SELECT i_newc FROM df1)
 '''
-df1=execute(client, query)  
+df1 = execute(client, query)
 if df1.eq(0).any().any():
- df = df.append({'query' : 'Query3.1 Date shifted in activity_summary', 'result' : 'PASS'},  
-                ignore_index = True) 
+    df = df.append(
+        {
+            'query': 'Query3.1 Date shifted in activity_summary',
+            'result': 'PASS'
+        },
+        ignore_index=True)
 else:
- df = df.append({'query' : 'Query3.1 Date shifted in activity_summary', 'result' : ''},  
-                ignore_index = True) 
-df1        
+    df = df.append(
+        {
+            'query': 'Query3.1 Date shifted in activity_summary',
+            'result': ''
+        },
+        ignore_index=True)
+df1
 
 # heart_rate_summary
-query=f''' 
+query = f'''
 
 WITH df1 AS (
 SELECT m.research_id,
@@ -217,25 +243,33 @@ SELECT d.person_id,
 CONCAT(d.person_id, '_', DATE_ADD(d.date, INTERVAL m.shift DAY)) AS d_newc
 FROM `{project_id}.{pipeline}.pid_rid_mapping` m
 JOIN `{project_id}.{deid_cdr_fitbit}.heart_rate_summary` d
-ON m.research_id = d.person_id 
+ON m.research_id = d.person_id
 )
 
 SELECT COUNT (*) n_row_not_pass FROM df2
 WHERE d_newc NOT IN (SELECT i_newc FROM df1)
 '''
-df1=execute(client, query)  
+df1 = execute(client, query)
 if df1.eq(0).any().any():
- df = df.append({'query' : 'Query3.2 Date shifted in heart_rate_summary', 'result' : 'PASS'},  
-                ignore_index = True) 
+    df = df.append(
+        {
+            'query': 'Query3.2 Date shifted in heart_rate_summary',
+            'result': 'PASS'
+        },
+        ignore_index=True)
 else:
- df = df.append({'query' : 'Query3.2 Date shifted in heart_rate_summary', 'result' : ''},  
-                ignore_index = True) 
-df1        
+    df = df.append(
+        {
+            'query': 'Query3.2 Date shifted in heart_rate_summary',
+            'result': ''
+        },
+        ignore_index=True)
+df1
 
 # +
 # heart_rate_minute_level
 
-query=f''' 
+query = f'''
 
 WITH df1 AS (
 SELECT m.research_id,
@@ -250,25 +284,33 @@ SELECT d.person_id,
 CONCAT(d.person_id, '_', DATE_ADD(d.datetime, INTERVAL m.shift DAY)) AS d_newc
 FROM `{project_id}.{pipeline}.pid_rid_mapping` m
 JOIN `{project_id}.{deid_cdr_fitbit}.heart_rate_minute_level` d
-ON m.research_id = d.person_id 
+ON m.research_id = d.person_id
 )
 
 SELECT COUNT (*) n_row_not_pass FROM df2
 WHERE d_newc NOT IN (SELECT i_newc FROM df1)
 '''
-df1=execute(client, query)  
+df1 = execute(client, query)
 if df1.eq(0).any().any():
- df = df.append({'query' : 'Query3.3 Date shifted in heart_rate_minute_level', 'result' : 'PASS'},  
-                ignore_index = True) 
+    df = df.append(
+        {
+            'query': 'Query3.3 Date shifted in heart_rate_minute_level',
+            'result': 'PASS'
+        },
+        ignore_index=True)
 else:
- df = df.append({'query' : 'Query3.3 Date shifted in heart_rate_minute_level', 'result' : ''},  
-                ignore_index = True) 
-df1       
+    df = df.append(
+        {
+            'query': 'Query3.3 Date shifted in heart_rate_minute_level',
+            'result': ''
+        },
+        ignore_index=True)
+df1
 
 # +
 # steps_intraday
 
-query=f''' 
+query = f'''
 
 WITH df1 AS (
 SELECT m.research_id,
@@ -283,28 +325,36 @@ SELECT d.person_id,
 CONCAT(d.person_id, '_', DATE_ADD(d.datetime, INTERVAL m.shift DAY)) AS d_newc
 FROM `{project_id}.{pipeline}.pid_rid_mapping` m
 JOIN `{project_id}.{deid_cdr_fitbit}.steps_intraday` d
-ON m.research_id = d.person_id 
+ON m.research_id = d.person_id
 )
 
 SELECT COUNT (*) n_row_not_pass FROM df2
 WHERE d_newc NOT IN (SELECT i_newc FROM df1)
 '''
-df1=execute(client, query)  
+df1 = execute(client, query)
 if df1.eq(0).any().any():
- df = df.append({'query' : 'Query3.4 Date shifted in steps_intraday', 'result' : 'PASS'},  
-                ignore_index = True) 
+    df = df.append(
+        {
+            'query': 'Query3.4 Date shifted in steps_intraday',
+            'result': 'PASS'
+        },
+        ignore_index=True)
 else:
- df = df.append({'query' : 'Query3.4 Date shifted in steps_intraday', 'result' : ''},  
-                ignore_index = True) 
-df1   
+    df = df.append(
+        {
+            'query': 'Query3.4 Date shifted in steps_intraday',
+            'result': ''
+        },
+        ignore_index=True)
+df1
 # -
 
-# # Verify that the participants are correctly mapped to their Research ID 
+# # Verify that the participants are correctly mapped to their Research ID
 #
 # DC-1000
 
 # activity_summary
-query=f''' 
+query = f'''
 
 WITH df1 AS (
 SELECT DISTINCT i.person_id  AS non_deid_pid,m.research_id
@@ -322,17 +372,25 @@ SELECT COUNT (*) n_row_not_pass_activity_summary FROM df1
 JOIN df2 USING (research_id)
 WHERE research_id != deid_pid
 '''
-df1=execute(client, query)  
+df1 = execute(client, query)
 if df1.eq(0).any().any():
- df = df.append({'query' : 'Query4.1 resarch_id=person_id in activity_summary', 'result' : 'PASS'},  
-                ignore_index = True) 
+    df = df.append(
+        {
+            'query': 'Query4.1 resarch_id=person_id in activity_summary',
+            'result': 'PASS'
+        },
+        ignore_index=True)
 else:
- df = df.append({'query' : 'Query4.1 resarch_id=person_id in activity_summary', 'result' : ''},  
-                ignore_index = True) 
-df1        
+    df = df.append(
+        {
+            'query': 'Query4.1 resarch_id=person_id in activity_summary',
+            'result': ''
+        },
+        ignore_index=True)
+df1
 
 # heart_rate_summary
-query=f''' 
+query = f'''
 
 WITH df1 AS (
 SELECT DISTINCT i.person_id  AS non_deid_pid,m.research_id
@@ -350,17 +408,25 @@ SELECT COUNT (*) n_row_not_pass_heart_rate_summary FROM df1
 JOIN df2 USING (research_id)
 WHERE research_id != deid_pid
 '''
-df1=execute(client, query)  
+df1 = execute(client, query)
 if df1.eq(0).any().any():
- df = df.append({'query' : 'Query4.2 resarch_id=person_id in heart_rate_summary', 'result' : 'PASS'},  
-                ignore_index = True) 
+    df = df.append(
+        {
+            'query': 'Query4.2 resarch_id=person_id in heart_rate_summary',
+            'result': 'PASS'
+        },
+        ignore_index=True)
 else:
- df = df.append({'query' : 'Query4.2 resarch_id=person_id in heart_rate_summary', 'result' : ''},  
-                ignore_index = True) 
-df1     
+    df = df.append(
+        {
+            'query': 'Query4.2 resarch_id=person_id in heart_rate_summary',
+            'result': ''
+        },
+        ignore_index=True)
+df1
 
 # heart_rate_minute_level
-query=f''' 
+query = f'''
 
 WITH df1 AS (
 SELECT DISTINCT i.person_id  AS non_deid_pid,m.research_id
@@ -378,17 +444,25 @@ SELECT COUNT (*) n_row_not_pass_heart_rate_minute_level FROM df1
 JOIN df2 USING (research_id)
 WHERE research_id != deid_pid
 '''
-df1=execute(client, query)  
+df1 = execute(client, query)
 if df1.eq(0).any().any():
- df = df.append({'query' : 'Query4.3 resarch_id=person_id in heart_rate_minute_level', 'result' : 'PASS'},  
-                ignore_index = True) 
+    df = df.append(
+        {
+            'query': 'Query4.3 resarch_id=person_id in heart_rate_minute_level',
+            'result': 'PASS'
+        },
+        ignore_index=True)
 else:
- df = df.append({'query' : 'Query4.3 resarch_id=person_id in heart_rate_minute_level', 'result' : ''},  
-                ignore_index = True) 
-df1     
+    df = df.append(
+        {
+            'query': 'Query4.3 resarch_id=person_id in heart_rate_minute_level',
+            'result': ''
+        },
+        ignore_index=True)
+df1
 
 # steps_intraday
-query=f''' 
+query = f'''
 
 WITH df1 AS (
 SELECT DISTINCT i.person_id  AS non_deid_pid,m.research_id
@@ -407,14 +481,22 @@ JOIN df2 USING (research_id)
 WHERE research_id != deid_pid
 
 '''
-df1=execute(client, query)  
+df1 = execute(client, query)
 if df1.eq(0).any().any():
- df = df.append({'query' : 'Query4.4 resarch_id=person_id in steps_intraday', 'result' : 'PASS'},  
-                ignore_index = True) 
+    df = df.append(
+        {
+            'query': 'Query4.4 resarch_id=person_id in steps_intraday',
+            'result': 'PASS'
+        },
+        ignore_index=True)
 else:
- df = df.append({'query' : 'Query4.4 resarch_id=person_id in steps_intraday', 'result' : ''},  
-                ignore_index = True) 
-df1     
+    df = df.append(
+        {
+            'query': 'Query4.4 resarch_id=person_id in steps_intraday',
+            'result': ''
+        },
+        ignore_index=True)
+df1
 
 # # Verify all person_ids in fitbit datasets exsit in deid_cdr person table
 #
@@ -422,21 +504,21 @@ df1
 #
 # This check should fail if a person_id in the activity_summary, heart_rate_summary, heart_rate_minute_level, or steps_intra_day tables does not exist in a corresponding RT de-identified dataset.
 
-query=f''' 
+query = f'''
 
 WITH df1 AS (
 SELECT '1' AS col , COUNT (DISTINCT person_id)  AS n_person_id_not_pass_activity_summary
-FROM `{project_id}.{deid_cdr_fitbit}.activity_summary` 
+FROM `{project_id}.{deid_cdr_fitbit}.activity_summary`
 WHERE person_id NOT IN (SELECT person_id FROM `{project_id}.{deid_cdr}.person`)),
 
 df2 AS (
 SELECT '1' AS col, COUNT (DISTINCT person_id)  AS n_person_id_not_pass_heart_rate_summary
-FROM `{project_id}.{deid_cdr_fitbit}.heart_rate_summary` 
+FROM `{project_id}.{deid_cdr_fitbit}.heart_rate_summary`
 WHERE person_id NOT IN (SELECT person_id FROM `{project_id}.{deid_cdr}.person`)),
 
 df3 AS (
 SELECT '1' AS col,COUNT (DISTINCT person_id)  AS n_person_id_not_pass_heart_rate_minute_level
-FROM `{project_id}.{deid_cdr_fitbit}.heart_rate_minute_level` 
+FROM `{project_id}.{deid_cdr_fitbit}.heart_rate_minute_level`
 WHERE person_id NOT IN (SELECT person_id FROM `{project_id}.{deid_cdr}.person`)),
 
 df4 AS (
@@ -449,18 +531,27 @@ JOIN df2 USING (col)
 JOIN df3 USING (col)
 JOIN df4 USING (col)
 '''
-df1=execute(client, query)  
-df1=df1.iloc[:,1:5]
-if df1.loc[0].sum()==0:
- df = df.append({'query' : 'Query5 person_ids in fitbit exist in deid.person table', 'result' : 'PASS'},  
-                ignore_index = True) 
+df1 = execute(client, query)
+df1 = df1.iloc[:, 1:5]
+if df1.loc[0].sum() == 0:
+    df = df.append(
+        {
+            'query': 'Query5 person_ids in fitbit exist in deid.person table',
+            'result': 'PASS'
+        },
+        ignore_index=True)
 else:
- df = df.append({'query' : 'Query5 person_ids in fitbit exist in deid.person table', 'result' : ''},  
-                ignore_index = True) 
-df1.T             
+    df = df.append(
+        {
+            'query': 'Query5 person_ids in fitbit exist in deid.person table',
+            'result': ''
+        },
+        ignore_index=True)
+df1.T
 
 # # Summary_fitdata
 
 # if not pass, will be highlighted in red
-df = df.mask(df.isin(['Null','']))
-df.style.highlight_null(null_color='red').set_properties(**{'text-align': 'left'})
+df = df.mask(df.isin(['Null', '']))
+df.style.highlight_null(null_color='red').set_properties(
+    **{'text-align': 'left'})
