@@ -33,7 +33,6 @@ from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
 from cdr_cleaner.cleaning_rules.suppress_combined_pfmh_survey import DROP_PFMHH_CONCEPTS
 from IPython.display import display, HTML
 
-
 # # Table comparison
 # The export should generally contain the same tables from month to month.
 # Tables found only in the old or the new export are listed below.
@@ -671,12 +670,16 @@ query = tpl.render(dataset=new_rdr,
                    combined_pfmhh_concepts=DROP_PFMHH_CONCEPTS)
 execute(client, query)
 
-
 # # Check that the Question and Answer Concepts in the old_map_short_codes tables are not paired with 0-valued concept_identifiers
 
 # According to this [ticket](https://precisionmedicineinitiative.atlassian.net/browse/DC-2488), Question and Answer concepts that are identified in the `old_map_short_codes` table should not be paired with 0-valued concept_identifiers after the RDR dataset is cleaned. These concept identifiers include the `observation_concept_id` and `observation_source_concept_id` fields.
 
-def render_message(results_df, success_msg=None, failure_msg=None, success_msg_args={}, failure_msg_args={}):
+
+def render_message(results_df,
+                   success_msg=None,
+                   failure_msg=None,
+                   success_msg_args={},
+                   failure_msg_args={}):
     """
     Renders a conditional success or failure message for a DQ check.
     
@@ -690,28 +693,26 @@ def render_message(results_df, success_msg=None, failure_msg=None, success_msg_a
     is_success = len(results_df) == 0
     status_msg = 'Success' if is_success else 'Failure'
     if is_success:
-        display(HTML(
-            f'''
+        display(
+            HTML(f'''
                 <h3>
                     Check Status: <span style="color: {'red' if not is_success else 'green'}">{status_msg}</span>
                 </h3>
                 <p>
                     {success_msg.format(**success_msg_args)}
                 </p>
-            ''')
-        )    
+            '''))
     else:
-        display(HTML(
-            f'''
+        display(
+            HTML(f'''
                 <h3>
                     Check Status: <span style="color: {'red' if not is_success else 'green'}">{status_msg}</span>
                 </h3>
                 <p>
                     {failure_msg.format(**failure_msg_args)}
                 </p>
-            ''')
-        )
-        display(df)   
+            '''))
+        display(df)
 
 
 # ## Question Codes
@@ -734,7 +735,7 @@ WHERE (o.observation_source_concept_id = 0
 GROUP BY qc.pmi_code, o.observation_source_value, o.observation_concept_id, o.observation_source_concept_id
 ORDER BY invalid_id_count DESC
 """)
-query = tpl.render(project_id=project_id, 
+query = tpl.render(project_id=project_id,
                    dataset=new_rdr,
                    sandbox_dataset=new_rdr_sandbox)
 df = execute(client, query)
@@ -746,7 +747,10 @@ failure_msg = '''
     Bug likely due to failure in the <code>update_questions_answers_not_mapped_to_omop</code> cleaning rule.
 '''
 
-render_message(df, success_msg, failure_msg, failure_msg_args={'code_count': len(df)})
+render_message(df,
+               success_msg,
+               failure_msg,
+               failure_msg_args={'code_count': len(df)})
 # -
 
 # ## Answer Codes
@@ -769,7 +773,7 @@ WHERE (o.value_source_concept_id = 0
 GROUP BY ac.pmi_code, o.value_source_value, o.value_source_concept_id, o.value_as_concept_id
 ORDER BY invalid_id_count DESC
 """)
-query = tpl.render(project_id=project_id, 
+query = tpl.render(project_id=project_id,
                    dataset=new_rdr,
                    sandbox_dataset=new_rdr_sandbox)
 df = execute(client, query)
@@ -781,7 +785,10 @@ failure_msg = '''
     Bug likely due to failure in the <code>update_questions_answers_not_mapped_to_omop</code> cleaning rule.
 '''
 
-render_message(df, success_msg, failure_msg, failure_msg_args={'code_count': len(df)})
+render_message(df,
+               success_msg,
+               failure_msg,
+               failure_msg_args={'code_count': len(df)})
 # -
 
 # ### Question-Answer Codes Combo
@@ -806,7 +813,7 @@ GROUP BY ac.pmi_code, o.value_source_value, o.value_source_concept_id, o.value_a
   o.observation_source_value, o.observation_concept_id, o.observation_source_concept_id
 ORDER BY invalid_id_count DESC
 """)
-query = tpl.render(project_id=project_id, 
+query = tpl.render(project_id=project_id,
                    dataset=new_rdr,
                    sandbox_dataset=new_rdr_sandbox)
 df = execute(client, query)
@@ -818,4 +825,7 @@ failure_msg = '''
     Bug likely due to failure in the <code>update_questions_answers_not_mapped_to_omop</code> cleaning rule.
 '''
 
-render_message(df, success_msg, failure_msg, failure_msg_args={'code_count': len(df)})
+render_message(df,
+               success_msg,
+               failure_msg,
+               failure_msg_args={'code_count': len(df)})
