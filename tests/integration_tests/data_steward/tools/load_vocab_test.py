@@ -60,19 +60,25 @@ class LoadVocabTest(unittest.TestCase):
             with vocab_path.open('r') as f:
                 self.contents[vocab] = f.read()
 
+    @mock.patch('tools.load_vocab.get_impersonation_credentials')
     @mock.patch('tools.load_vocab.VOCABULARY_TABLES', [CONCEPT, VOCABULARY])
-    def test_upload_stage(self):
-        lv.main(self.project_id, self.run_as, self.bucket, self.test_vocab_folder_path,
-                self.dataset_id)
+    def test_upload_stage(self, get_imp):
+        get_imp.return_value = None
+        lv.main(self.project_id, self.run_as, self.bucket,
+                self.test_vocab_folder_path, self.dataset_id)
         expected_row_count = get_custom_concept_and_vocabulary_counts()
         for dataset in [self.staging_dataset_id, self.dataset_id]:
             # Custom concept counts check
-            content_query = f'SELECT * FROM `{self.project_id}.{dataset}.{CONCEPT}` WHERE concept_id >= 2000000000'
+            content_query = (f'SELECT * '
+                             f'FROM `{self.project_id}.{dataset}.{CONCEPT}` '
+                             f'WHERE concept_id >= 2000000000')
             content_job = self.bq_client.query(content_query)
             rows = content_job.result()
             self.assertEqual(len(list(rows)), expected_row_count[CONCEPT])
             # Custom Vocabulary counts check
-            content_query = f'SELECT * FROM `{self.project_id}.{dataset}.{VOCABULARY}` WHERE vocabulary_concept_id >= 2000000000'
+            content_query = (f'SELECT * '
+                             f'FROM `{self.project_id}.{dataset}.{VOCABULARY}` '
+                             f'WHERE vocabulary_concept_id >= 2000000000')
 
             content_job = self.bq_client.query(content_query)
             rows = content_job.result()
