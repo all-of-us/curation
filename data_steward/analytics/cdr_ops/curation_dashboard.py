@@ -19,6 +19,7 @@ import warnings
 
 import seaborn as sns
 
+from common import PIPELINE_TABLES
 from notebooks.defaults import DEFAULT_DATASETS
 from utils import bq
 
@@ -32,7 +33,7 @@ def row_counts(dataset_ids):
     sq = "SELECT '{dataset_id}' dataset_id, table_id, row_count FROM `{dataset_id}.__TABLES__`"
     sqs = [sq.format(dataset_id=d) for d in dataset_ids]
     iq = "\nUNION ALL\n".join(sqs)
-    q = """ 
+    q = """
     SELECT dataset_id, table_id, row_count 
     FROM ({iq})
     WHERE table_id NOT LIKE '%union%' 
@@ -125,21 +126,21 @@ g = sns.factorplot('ethnicity',
 # # Characterization of CDR data
 # The following statistics describe the candidate CDR dataset. This dataset is formed by combining the unioned EHR data submitted by HPOs with the PPI data we receive from the RDR.
 
-df = bq.query('''
+df = bq.query(f'''
 SELECT 
-  (EXTRACT(YEAR FROM CURRENT_DATE()) - p.year_of_birth) AS age,
+  {PIPELINE_TABLES}.calculate_age(CURRENT_DATE, EXTRACT(DATE FROM p.birth_datetime)) AS age,
   gc.concept_name AS gender,
   rc.concept_name AS race,
   ec.concept_name AS ethnicity
-FROM `{latest.unioned}.person` p
-JOIN `{latest.vocabulary}.concept` gc 
+FROM `{DEFAULT_DATASETS.latest.unioned}.person` p
+JOIN `{DEFAULT_DATASETS.latest.vocabulary}.concept` gc 
   ON p.gender_concept_id = gc.concept_id
-JOIN `{latest.vocabulary}.concept` rc
+JOIN `{DEFAULT_DATASETS.latest.vocabulary}.concept` rc
   ON p.race_concept_id = rc.concept_id
-JOIN `{latest.vocabulary}.concept` ec
+JOIN `{DEFAULT_DATASETS.latest.vocabulary}.concept` ec
   ON p.ethnicity_concept_id = ec.concept_id
 ORDER BY age, gender, race
-'''.format(latest=DEFAULT_DATASETS.latest))
+''')
 
 # ## Distribution of participant age stratified by gender
 

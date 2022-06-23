@@ -17,7 +17,7 @@ import google.cloud.bigquery as gbq
 # Project Imports
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
-from common import FITBIT_TABLES, JINJA_ENV
+from common import FITBIT_TABLES, JINJA_ENV, PIPELINE_TABLES
 from constants.bq_utils import WRITE_TRUNCATE
 
 LOGGER = logging.getLogger(__name__)
@@ -30,7 +30,7 @@ WHERE person_id IN (
   SELECT person_id
     FROM (
     SELECT DISTINCT person_id,
-        EXTRACT(YEAR FROM CURRENT_DATE()) - year_of_birth AS age
+        {{PIPELINE_TABLES}}.calculate_age(CURRENT_DATE, EXTRACT(DATE FROM birth_datetime)) AS age
             FROM `{{combined_dataset.project}}.{{combined_dataset.dataset_id}}.{{combined_dataset.table_id}}` ORDER BY 2)
         WHERE age >= 89)
 """)
@@ -98,6 +98,7 @@ class RemoveFitbitDataIfMaxAgeExceeded(BaseCleaningRule):
                         sandbox_table=self.sandbox_table_for(table),
                         dataset=self.dataset_id,
                         table=table,
+                        PIPELINE_TABLES=PIPELINE_TABLES,
                         combined_dataset=self.person,
                     )
             })
