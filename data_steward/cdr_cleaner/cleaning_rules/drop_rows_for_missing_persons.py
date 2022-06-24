@@ -57,7 +57,7 @@ class DropMissingParticipants(BaseCleaningRule):
 
         super().__init__(
             issue_numbers=list(set(ISSUE_NUMBERS) | set(issue_numbers)),
-            description=f'{description} AND {desc}',
+            description=f'{description}\nAND\n{desc}',
             affected_datasets=affected_datasets,
             affected_tables=list(TABLES_TO_DELETE_FROM),
             project_id=project_id,

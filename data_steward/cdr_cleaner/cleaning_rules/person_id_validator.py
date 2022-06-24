@@ -2,126 +2,171 @@
 Run the person_id validation clean rule.
 
 1.  The person_id in each of the defined tables exists in the person table.
-    If not valid, remove the record.
+    If not valid, remove the record.  This is accomplished by the
+    extended class, DropMissingParticipants.
 2.  The person_id is consenting.  If not consenting, remove EHR records.
     Keep PPI records.
 """
 import logging
 
-import common
-from cdr_cleaner.cleaning_rules import drop_rows_for_missing_persons
-from constants import bq_utils as bq_consts
+from cdr_cleaner.cleaning_rules.drop_rows_for_missing_persons import DropMissingParticipants
 from constants.cdr_cleaner import clean_cdr as clean_consts
-import resources
+from common import JINJA_ENV
 
 LOGGER = logging.getLogger(__name__)
 
-# The below query translates to:
-# Find all consented participants.
-# Find all non-ehr consented participants.
-# Find all mappings not like ehr (i.e. ppi mappings).
-# Join the table with consented participants then union that
-# with the table joined with non-ehr consented participants and joined with
-# non-ehr mappings mappings
-EXISTING_AND_VALID_CONSENTING_RECORDS = (
-    'WITH consented AS ( '
-    'SELECT person_id '
-    'FROM ( '
-    'SELECT person_id, value_source_concept_id, observation_datetime, '
-    'ROW_NUMBER() OVER( '
-    'PARTITION BY person_id ORDER BY observation_datetime DESC, '
-    'value_source_concept_id ASC) AS rn '
-    'FROM `{project}.{dataset}.observation` '
-    'WHERE observation_source_value = \'EHRConsentPII_ConsentPermission\')'
-    'WHERE rn=1 AND value_source_concept_id = 1586100),'
-    'unconsented AS ( '
-    'SELECT person_id '
-    'FROM ( '
-    'SELECT person_id, value_source_concept_id, observation_datetime, '
-    'ROW_NUMBER() OVER( '
-    'PARTITION BY person_id ORDER BY observation_datetime DESC, '
-    'value_source_concept_id ASC) AS rn '
-    'FROM `{project}.{dataset}.observation` '
-    'WHERE observation_source_value = \'EHRConsentPII_ConsentPermission\')'
-    'WHERE rn=1 AND value_source_concept_id != 1586100),'
-    'ppi_mappings AS ( '
-    'SELECT {table}_id '
-    'FROM `{project}.{dataset}._mapping_{table}` '
-    'WHERE src_dataset_id not like \'%ehr%\') '
-    # get all consented rows
-    'SELECT {fields} FROM `{project}.{dataset}.{table}` AS entry '
-    'JOIN consented AS cons '
-    'ON entry.person_id = cons.person_id '
-    'UNION ALL '
-    # get all unconsented non-ehr rows
-    'SELECT {fields} FROM `{project}.{dataset}.{table}` AS entry '
-    'JOIN unconsented as cons on entry.person_id = cons.person_id '
-    'JOIN ppi_mappings AS maps ON maps.{table}_id = entry.{table}_id ')
+ISSUE_NUMBERS = ['DC391', 'DC584']
+
+NON_EHR_CONSENT_LOOKUP = f'non_ehr_consented'
+
+SET_LOOKUP_NON_EHR_CONSENTED_PERSONS = JINJA_ENV.from_string("""
+CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{lookup_table}}` AS (
+SELECT person_id
+FROM (
+  SELECT person_id, value_source_concept_id, observation_date, observation_datetime,
+  ROW_NUMBER() OVER(
+    PARTITION BY person_id ORDER BY observation_date DESC, observation_datetime DESC,
+    value_source_concept_id ASC) AS rn
+  FROM `{{project}}.{{dataset}}.observation`
+  WHERE observation_source_value = 'EHRConsentPII_ConsentPermission')
+WHERE rn=1 AND value_source_concept_id != 1586100
+)""")
+
+SANDBOX_EHR_RECORDS = JINJA_ENV.from_string("""
+CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` AS (
+    SELECT *
+    FROM `{{project}}.{{dataset}}.{{table}}` t
+    {% if dataset[0].isalpha() %}
+    -- expect extension tables --
+    JOIN `{{project}}.{{dataset}}.{{table}}_ext` moe
+    {% else %}
+    -- expect mapping tables --
+    JOIN `{{project}}.{{dataset}}._mapping_{{table}}` moe
+    {% endif %}
+    USING ({{table}}_id)
+    WHERE t.person_id in (
+        SELECT distinct person_id
+        FROM `{{project}}.{{sandbox_dataset}}.{{person_lookup}}`
+    )
+    -- Need to use Jinja templates to make this decision --
+    {% if dataset[0].isalpha() %}
+    -- should expect extension tables --
+     and lower(moe.src_id) <> 'ppi/pm'
+    {% else %}
+    -- should expect mapping tables --
+     and lower(moe.src_hpo_id) <> 'rdr'
+    {% endif %}
+)
+""")
+
+DELETE_EHR_RECORDS = JINJA_ENV.from_string("""
+DELETE 
+FROM `{{project}}.{{dataset}}.{{table}}`
+WHERE {{table}}_id IN (
+    SELECT {{table}}_id FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}`
+)
+""")
+
+PERSON_TABLE_QUERY = JINJA_ENV.from_string("""
+SELECT table_name
+FROM `{{project}}.{{dataset}}.INFORMATION_SCHEMA.COLUMNS`
+WHERE lower(COLUMN_NAME) = 'person_id'
+-- exclude mapping and extension tables from the result set --
+AND NOT REGEXP_CONTAINS(table_name, r'(?i)(^_mapping)|(_ext$)')
+AND lower(table_name) <> 'person'
+""")
 
 
-def get_person_id_validation_queries(project=None,
-                                     dataset=None,
-                                     sandbox_dataset_id=None):
-    """
-    Return query list of queries to ensure valid people are in the tables.
+class PersonIdValidation(DropMissingParticipants):
 
-    The non-consenting queries rely on the mapping tables.  When using the
-    combined and unidentified dataset, the last portion of the dataset name is
-    removed to access these tables.  Any other dataset is expected to have
-    these tables and uses the mapping tables from within the same dataset.
-    :param sandbox_dataset_id: Identifies the sandbox dataset to store rows
-    #TODO use sandbox_dataset_id for CR
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 table_namer=None):
+        desc = (
+            f'Sandbox and remove PIDs that cannot be found in the person table.'
+            f'Drop EHR data for unconsented participants.')
 
-    :return:  A list of string queries that can be executed to delete invalid
-        records for invalid persons
-    """
-    query_list = []
+        super().__init__(issue_numbers=ISSUE_NUMBERS,
+                         description=desc,
+                         affected_datasets=[],
+                         affected_tables=[],
+                         project_id=project_id,
+                         dataset_id=dataset_id,
+                         sandbox_dataset_id=sandbox_dataset_id,
+                         namer=table_namer,
+                         depends_on=[])
 
-    # TODO:  pull into a curation utils module somewhere
-    if dataset.endswith('_deid'):
-        mapping_ds = dataset[0:-5]
-    else:
-        mapping_ds = dataset
-
-    # generate queries to remove EHR records of non-ehr consented persons
-    for table in common.MAPPED_CLINICAL_DATA_TABLES:
-        field_names = [
-            'entry.' + field['name'] for field in resources.fields_for(table)
+    def setup_rule(self, client, *args, **keyword_args):
+        person_table_query = PERSON_TABLE_QUERY.render(project=self.project_id,
+                                                       dataset=self.dataset_id)
+        person_tables = client.query(person_table_query).result()
+        self.affected_tables = [
+            table.get('table_name') for table in person_tables
         ]
-        fields = ', '.join(field_names)
-        consent_query = EXISTING_AND_VALID_CONSENTING_RECORDS.format(
-            project=project,
-            dataset=dataset,
-            table=table,
-            mapping_dataset=mapping_ds,
-            fields=fields,
-        )
 
-        query_dict = {
-            clean_consts.QUERY: consent_query,
-            clean_consts.DESTINATION_TABLE: table,
-            clean_consts.DESTINATION_DATASET: dataset,
-            clean_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE,
-        }
-        query_list.append(query_dict)
+    def get_query_specs(self):
+        """
+        Return query list of queries to ensure valid people are in the tables.
 
-    # TODO use inheritance from DropMissingParticipants to create PersonIdValidator cleaning rule
-    # and reorganize similar to drop_participants_without_ppi_or_ehr
-    drop_rows_for_missing_persons_rule_instance = drop_rows_for_missing_persons.DropMissingParticipants(
-        issue_numbers=[],
-        description='',
-        affected_datasets=[],
-        affected_tables=[],
-        project_id=project,
-        dataset_id=dataset,
-        sandbox_dataset_id=sandbox_dataset_id,
-        namer='data_stage')
+        The non-consenting queries rely on the mapping tables.  When using the
+        combined and unidentified dataset, the last portion of the dataset name is
+        removed to access these tables.  Any other dataset is expected to have
+        these tables and uses the mapping tables from within the same dataset.
 
-    # generate queries to remove person_ids of people not in the person table
-    query_list.extend(
-        drop_rows_for_missing_persons_rule_instance.get_query_specs())
+        :param sandbox_dataset_id: Identifies the sandbox dataset to store rows
 
-    return query_list
+        :return:  A list of string queries that can be executed to delete invalid
+            records for invalid persons
+        """
+        queries = []
+
+        # sandbox any person table record where the person does not have EHR consent
+        queries.append({
+            clean_consts.QUERY:
+                SET_LOOKUP_NON_EHR_CONSENTED_PERSONS.render(
+                    project=self.project_id,
+                    sandbox_dataset=self.sandbox_dataset_id,
+                    lookup_table=NON_EHR_CONSENT_LOOKUP,
+                    dataset=self.dataset_id)
+        })
+
+        # generate queries to remove EHR records of non-ehr consented persons
+        for table in self.affected_tables:
+            # sandbox query
+            queries.append({
+                clean_consts.QUERY:
+                    SANDBOX_EHR_RECORDS.render(
+                        project=self.project_id,
+                        sandbox_dataset=self.sandbox_dataset_id,
+                        sandbox_table=self.sandbox_table_for(table),
+                        dataset=self.dataset_id,
+                        table=table,
+                        person_lookup=NON_EHR_CONSENT_LOOKUP)
+            })
+
+            # delete ehr query
+            queries.append({
+                clean_consts.QUERY:
+                    DELETE_EHR_RECORDS.render(
+                        project=self.project_id,
+                        dataset=self.dataset_id,
+                        table=table,
+                        sandbox_dataset=self.sandbox_dataset_id,
+                        sandbox_table=self.sandbox_table_for(table))
+            })
+
+            # generate queries to remove person_ids of people not in the person table
+        queries.extend(super().get_query_specs())
+
+        return queries
+
+    def get_sandbox_tablenames(self):
+        sandbox_names = [
+            self.sandbox_table_for(table) for table in self.affected_tables
+        ] + [NON_EHR_CONSENT_LOOKUP]
+        return sandbox_names
 
 
 if __name__ == '__main__':
@@ -131,13 +176,14 @@ if __name__ == '__main__':
     ARGS = parser.parse_args()
     if ARGS.list_queries:
         clean_engine.add_console_logging()
-        query_list = clean_engine.get_query_list(
-            ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id,
-            [(get_person_id_validation_queries,)])
+        query_list = clean_engine.get_query_list(ARGS.project_id,
+                                                 ARGS.dataset_id,
+                                                 ARGS.sandbox_dataset_id,
+                                                 [(PersonIdValidation,)])
         for query in query_list:
             LOGGER.info(query)
     else:
         clean_engine.add_console_logging(ARGS.console_log)
         clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
                                    ARGS.sandbox_dataset_id,
-                                   [(get_person_id_validation_queries,)])
+                                   [(PersonIdValidation,)])

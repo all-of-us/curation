@@ -88,6 +88,8 @@ class SandboxAndRemovePids(BaseCleaningRule):
             if '_mapping' not in table.get('table_name')
         ]
 
+        self.affected_tables = self.person_table_list
+
         return self.person_table_list
 
     def get_sandbox_queries(self, lookup_table: str = None) -> list:
