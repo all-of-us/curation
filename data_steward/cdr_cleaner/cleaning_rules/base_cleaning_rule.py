@@ -431,7 +431,7 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
         if not table_namer:
             self._table_namer = re.sub('\d{4}q\dr\d', '', self.dataset_id)
             LOGGER.info(f"'table_namer' was not set.  "
-                        f"Using default value of `{table_namer}`.")
+                        f"Using default value of `{self._table_namer}`.")
         else:
             self._table_namer = table_namer
 
