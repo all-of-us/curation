@@ -15,7 +15,7 @@ import mock
 # Project imports
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.deid.remove_fitbit_data_if_max_age_exceeded import RemoveFitbitDataIfMaxAgeExceeded, \
-    SAVE_ROWS_TO_BE_DROPPED_QUERY, DROP_MAX_AGE_EXCEEDED_ROWS_QUERY
+    SAVE_ROWS_TO_BE_DROPPED_QUERY, DROP_MAX_AGE_EXCEEDED_ROWS_QUERY, PIPELINE_TABLES
 from constants.cdr_cleaner import clean_cdr as clean_consts
 from constants.bq_utils import WRITE_TRUNCATE
 from common import FITBIT_TABLES
@@ -81,6 +81,7 @@ class RemoveFitbitDataIfMaxAgeExceededTest(unittest.TestCase):
                         )[i],
                         dataset=self.dataset_id,
                         table=table,
+                        PIPELINE_TABLES=PIPELINE_TABLES,
                         combined_dataset=mock_table_reference)
             })
 
