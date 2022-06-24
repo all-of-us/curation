@@ -23,9 +23,10 @@ WHERE table_id IN (
 
 CREATE_AGE_UDF = JINJA_ENV.from_string("""
 CREATE OR REPLACE FUNCTION `{{project}}.{{PIPELINE_TABLES}}.calculate_age`(as_of_date DATE, date_of_birth DATE)
+RETURNS FLOAT64
 AS (
   FLOOR((CAST(FORMAT_DATE("%Y%m%d",as_of_date) AS INT64) - CAST(FORMAT_DATE("%Y%m%d",date_of_birth) AS INT64))/10000)
-  -- FROM https://gertjans.home.xs4all.nl/sql/calculate-age.html
+  -- FROM https://gertjans.home.xs4all.nl/sql/calculate-age.html --
 )""")
 
 
