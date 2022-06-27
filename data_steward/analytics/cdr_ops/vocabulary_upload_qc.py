@@ -18,7 +18,10 @@ old_vocabulary = ''
 new_vocabulary = ''
 # -
 
-# # QC of a new vocabulary downloaded from Athena and imported into BigQuery, via the vocabulary playbook.
+#
+# # Description:
+#
+# > - These queries will ensure the new vocabulary is reliable prior to implementing in production. <br>
 #
 
 # # + Import packages
@@ -35,7 +38,12 @@ client = BigQueryClient(project_id)
 
 pd.set_option('max_colwidth', None)
 
-# # New PPI. Where ppi concepts are not present in the old vocabulary.
+#
+# # PPI concept comparison, new concepts
+#
+# > - The dataframe will contain all new PPI concepts. <br>
+# > - Generally there will be additions to the PPI vocabulary between uploads.<br>
+# > - If the dataframe is empty, confirm this finding with the survey team.<br>
 
 tpl = JINJA_ENV.from_string('''
 SELECT
@@ -51,17 +59,24 @@ query = tpl.render(vocabulary_dataset_old=vocabulary_dataset_old,
                    vocabulary_dataset_new=vocabulary_dataset_new)
 execute(client, query, max_rows=True)
 
-# # Removed PPI. Where ppi concepts are not present in the new vocabulary
+#
+# # PPI concept comparison, retired or removed concepts 
+#
+# > - The dataframe will contain all PPI concepts that were newly deprecated or removed from Athena. <br>
+# > - Generally none would be deprecated or removed. <br>
+# > - If the dataframe is not empty contact the survey team to inquire about the concepts.<br>
 
 tpl = JINJA_ENV.from_string('''
 SELECT
 c.concept_code 
-FROM `{{vocabulary_dataset_old}}.concept` c
+FROM `{{vocabulary_dataset_new}}.concept` c
 WHERE c.concept_code NOT IN (SELECT concept_code 
-                            FROM `{{vocabulary_dataset_new}}.concept` sq 
-                            WHERE sq.vocabulary_id LIKE "PPI" )
- AND c.vocabulary_id LIKE "PPI"
- ORDER BY c.concept_code
+                            FROM `{{vocabulary_dataset_old}}.concept` sq 
+                            WHERE sq.vocabulary_id LIKE "PPI"
+                            AND c.valid_end_date < CURRENT_DATE())
+AND c.vocabulary_id LIKE "PPI"
+AND c.valid_end_date < CURRENT_DATE()
+ORDER BY c.concept_code
 ''')
 query = tpl.render(vocabulary_dataset_old=vocabulary_dataset_old,
                    vocabulary_dataset_new=vocabulary_dataset_new)
@@ -82,7 +97,12 @@ execute(client, query, max_rows=True)
 # ''')
 # -
 
-# # The difference between the number of rows in each table of the dataset. All 'changes' should increase. https://github.com/OHDSI/Vocabulary-v5.0/releases
+#
+# # Tables row count comparison
+#
+# > - The difference between the number of rows in each table of the datasets.  <br>
+# > - All 'changes' should increase. Expected changes are found in the [release notes](https://github.com/OHDSI/Vocabulary-v5.0/releases).  <br>
+# > - Investigate any negative values.   <br>
 
 tpl = JINJA_ENV.from_string('''
 WITH new_table_info AS (
@@ -107,7 +127,10 @@ query = tpl.render(vocabulary_dataset_old=vocabulary_dataset_old,
                    vocabulary_dataset_new=vocabulary_dataset_new)
 execute(client, query, max_rows=True)
 
-# # The vocabularies that exist, in each vocab version. Check that none are lost, or any are added. Use the release notes if there is a change.
+# # Vocabulary_id comparison
+# > - The table should contain every vocabulary_id for both old and new datasets. <br>
+# > - The vocabulary_ids should be the same in each.<br>
+# > - Investigate if any are missing or added. [release notes](https://github.com/OHDSI/Vocabulary-v5.0/releases).  <br>
 
 tpl = JINJA_ENV.from_string('''
 WITH new_table_info AS (
@@ -132,7 +155,24 @@ query = tpl.render(vocabulary_dataset_old=vocabulary_dataset_old,
                    vocabulary_dataset_new=vocabulary_dataset_new)
 execute(client, query, max_rows=True)
 
-# Shows the number of individual concepts added to each vocab type.The 'diff' should always increase.
+# # Confirm presence of vocabularies 
+# > - This table should contain five rows.<br>
+# > - These vocabulary_ids should exist in the new vocabulary <br>
+# > - Investigate if this is not the case. <br>
+
+tpl = JINJA_ENV.from_string('''
+SELECT vocabulary_id
+FROM `{{vocabulary_dataset_new}}.vocabulary`
+WHERE REGEXP_CONTAINS(vocabulary_id, r'(?i)(Type Concept)|(Condition Status)|(CPT)|(AoU)')
+''')
+query = tpl.render(vocabulary_dataset_old=vocabulary_dataset_old,
+                   vocabulary_dataset_new=vocabulary_dataset_new)
+execute(client, query, max_rows=True)
+
+# # Row count comparison by vocabulary_id
+# > - Shows the number of individual concepts added or removed from each vocabulary.<br>
+# > - Generally the count should only increase (when it does change).<br>
+# > - Investigate any negative differences.<br>
 
 tpl = JINJA_ENV.from_string('''
 WITH new_table_info AS (
@@ -156,8 +196,10 @@ query = tpl.render(vocabulary_dataset_old=vocabulary_dataset_old,
 execute(client, query, max_rows=True)
 
 # # Access to the new vocabulary
-# This query shows the users and the roles who have access to the new vocabulary.
-# Confirm that the PDR service account has BigQuery Data Viewer access to it.
+# > - This query shows the users and the roles who have access to the new vocabulary.
+# > - The project_id should be prod here.
+# > - Confirm that the PDR service account has BigQuery Data Viewer access to it.
+# > - If no access, re-run the step in the [vocabulary playbook](https://docs.google.com/document/d/1U8AIunEVRdJOUGgYJASKcTGkzPDg5MVU_hiIKDwmipk/edit#). <br>
 
 tpl = JINJA_ENV.from_string('''
 select * from `{{project_id}}.region-us.INFORMATION_SCHEMA.OBJECT_PRIVILEGES`
@@ -166,3 +208,5 @@ order by grantee
 ''')
 query = tpl.render(project_id=project_id, new_vocabulary=new_vocabulary)
 execute(client, query)
+
+
