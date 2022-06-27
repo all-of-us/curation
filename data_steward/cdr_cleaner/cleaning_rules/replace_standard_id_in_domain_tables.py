@@ -38,13 +38,16 @@ TODO when the time comes, include care_site, death, note, provider, specimen
 """
 import logging
 
+# Project imports
+import resources
+from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list, \
+    get_delete_empty_sandbox_tables_queries
+from cdr_cleaner.cleaning_rules.set_unmapped_question_answer_survey_concepts import (
+    SetConceptIdsForSurveyQuestionsAnswers)
 from common import JINJA_ENV
 from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as cdr_consts
-import resources
 from validation.ehr_union import mapping_table_for
-from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list, \
-    get_delete_empty_sandbox_tables_queries
 
 LOGGER = logging.getLogger(__name__)
 
@@ -194,7 +197,8 @@ class ReplaceWithStandardConceptId(BaseCleaningRule):
                          affected_tables=DOMAIN_TABLE_NAMES,
                          project_id=project_id,
                          dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id)
+                         sandbox_dataset_id=sandbox_dataset_id,
+                         depends_on=[SetConceptIdsForSurveyQuestionsAnswers])
 
     def get_sandbox_tablenames(self):
         return [

@@ -29,8 +29,6 @@ from cdr_cleaner.cleaning_rules.update_family_history_qa_codes import UpdateFami
 import cdr_cleaner.manual_cleaning_rules.clean_smoking_ppi as smoking
 import cdr_cleaner.manual_cleaning_rules.negative_ppi as negative_ppi
 import cdr_cleaner.manual_cleaning_rules.remove_operational_pii_fields as operational_pii_fields
-import \
-    cdr_cleaner.manual_cleaning_rules.update_questiona_answers_not_mapped_to_omop as map_questions_answers_to_omop
 from cdr_cleaner.cleaning_rules.clean_height_weight import CleanHeightAndWeight
 from cdr_cleaner.cleaning_rules.clean_mapping import CleanMappingExtTables
 from cdr_cleaner.cleaning_rules.clean_ppi_numeric_fields_using_parameters import \
@@ -102,7 +100,6 @@ from cdr_cleaner.cleaning_rules.identifying_field_suppression import IDFieldSupp
 from cdr_cleaner.cleaning_rules.aggregate_zip_codes import AggregateZipCodes
 from cdr_cleaner.cleaning_rules.remove_extra_tables import RemoveExtraTables
 from cdr_cleaner.cleaning_rules.store_pid_rid_mappings import StoreNewPidRidMappings
-from cdr_cleaner.cleaning_rules.suppress_combined_pfmh_survey import CombinedPersonalFamilyHealthSurveySuppression
 from cdr_cleaner.cleaning_rules.update_invalid_zip_codes import UpdateInvalidZipCodes
 from cdr_cleaner.manual_cleaning_rules.survey_version_info import COPESurveyVersionTask
 from cdr_cleaner.cleaning_rules.deid.string_fields_suppression import StringFieldsSuppression
@@ -111,9 +108,12 @@ from cdr_cleaner.cleaning_rules.section_participation_concept_suppression import
 from cdr_cleaner.cleaning_rules.covid_ehr_vaccine_concept_suppression import CovidEHRVaccineConceptSuppression
 from cdr_cleaner.cleaning_rules.missing_concept_record_suppression import MissingConceptRecordSuppression
 from cdr_cleaner.cleaning_rules.create_deid_questionnaire_response_map import CreateDeidQuestionnaireResponseMap
+from cdr_cleaner.cleaning_rules.set_unmapped_question_answer_survey_concepts import (
+    SetConceptIdsForSurveyQuestionsAnswers)
 from cdr_cleaner.cleaning_rules.vehicular_accident_concept_suppression import VehicularAccidentConceptSuppression
 from cdr_cleaner.cleaning_rules.deid.ct_replaced_concept_suppression import \
     ControlledTierReplacedConceptSuppression
+from cdr_cleaner.cleaning_rules.drop_orphaned_pids import DropOrphanedPIDS
 from constants.cdr_cleaner import clean_cdr_engine as ce_consts
 from constants.cdr_cleaner.clean_cdr import DataStage
 
@@ -148,15 +148,10 @@ RDR_CLEANING_CLASSES = [
     (CreateDeidQuestionnaireResponseMap,),
     (TruncateRdrData,),
     (RemoveParticipantsUnder18Years,),
-    (CombinedPersonalFamilyHealthSurveySuppression,),
-    # execute map_questions_answers_to_omop before PpiBranching gets executed
+    # execute SetConceptIdsForSurveyQuestionAnswers before PpiBranching gets executed
     # since PpiBranching relies on fully mapped concepts
-    # trying to load a table while creating query strings,
-    # won't work with mocked strings.  should use base class
-    # setup_query_execution function to load dependencies before query execution
     (
-        map_questions_answers_to_omop.
-        get_update_questions_answers_not_mapped_to_omop,),
+        SetConceptIdsForSurveyQuestionsAnswers,),
     (PpiBranching,),
     # execute FixUnmappedSurveyAnswers before the dropping responses rules get executed
     # (e.g. DropPpiDuplicateResponses and DropDuplicatePpiQuestionsAndAnswers)
@@ -229,6 +224,7 @@ COMBINED_CLEANING_CLASSES = [
     (RemoveNonMatchingParticipant,),
     (DropParticipantsWithoutPPI,
     ),  # dependent on RemoveParticipantDataPastDeactivationDate
+    (DropOrphanedPIDS,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
@@ -293,6 +289,7 @@ CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     (CancerConceptSuppression,),  # Should run after any data remapping rules
     (AggregateZipCodes,),
     (SectionParticipationConceptSuppression,),
+    (DropOrphanedPIDS,),
     (RemoveExtraTables,),  # Should be last cleaning rule to be run
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
@@ -336,6 +333,7 @@ REGISTERED_TIER_DEID_CLEANING_CLASSES = [
     (SectionParticipationConceptSuppression,),
     (RegisteredCopeSurveyQuestionsSuppression,),
     (CancerConceptSuppression,),
+    (DropOrphanedPIDS,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 

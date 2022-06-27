@@ -1,0 +1,20 @@
+[
+    {
+        "type": "string",
+        "name": "type",
+        "mode": "required",
+        "description": "Identifies the code as an expected 'Question' or 'Answer' code.  'Question' codes are checked against values in observation.observation_source_value.  'Answer' codes are checked against values in observation.value_source_value."
+    },
+    {
+        "type": "string",
+        "name": "pmi_code",
+        "mode": "required",
+        "description": "concept_code in use by the survey administration team.  This code exists in the data but does not have a valid associated concept_id in the vocabulary."
+    },
+    {
+        "type": "string",
+        "name": "short_code",
+        "mode": "required",
+        "description": "Short codes implemented by Odysseus, i.e. they exist in the vocabulary.  The concept_ids associated with these codes are expected to set the values of the observation.observation_concept_id, observation.observation_source_concept_id, observation.value_as_concept_id, and observation.value_source_concept_id fields."
+    }
+]

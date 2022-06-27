@@ -57,7 +57,7 @@ class DropMissingParticipants(BaseCleaningRule):
 
         super().__init__(
             issue_numbers=list(set(ISSUE_NUMBERS) | set(issue_numbers)),
-            description=f'{description} AND {desc}',
+            description=f'{description}\nAND\n{desc}',
             affected_datasets=affected_datasets,
             affected_tables=list(TABLES_TO_DELETE_FROM),
             project_id=project_id,
@@ -97,11 +97,6 @@ class DropMissingParticipants(BaseCleaningRule):
             query_list.append({cdr_consts.QUERY: delete_query})
 
         return query_list
-
-    def sandbox_table_for(self, affected_table):
-        issue_numbers_str = '_'.join(
-            [issue_num.lower() for issue_num in self.issue_numbers])
-        return f'{issue_numbers_str}_{affected_table}'
 
     def get_sandbox_tablenames(self):
         return [

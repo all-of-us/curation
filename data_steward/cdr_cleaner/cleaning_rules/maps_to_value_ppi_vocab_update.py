@@ -1,3 +1,10 @@
+"""
+Depends on the successful execution of SetConceptIdsForSurveyQuestionsAnswers rule.
+TODO:  SetConceptIdsForSurveyQuestionsAnswers should be added as a dependency once
+       this rule is base classed.
+       `depends_on=[SetConceptIdsForSurveyQuestionsAnswers, <anything else that needs to be added>]`
+"""
+
 import logging
 
 import constants.cdr_cleaner.clean_cdr as cdr_consts

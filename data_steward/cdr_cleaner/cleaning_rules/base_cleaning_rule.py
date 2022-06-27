@@ -11,6 +11,7 @@ features.
 """
 # Python imports
 import logging
+import re
 from abc import ABC, abstractmethod
 from typing import List, NewType
 
@@ -224,7 +225,7 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
         self._issue_urls = issue_urls if issue_urls else []
         self._depends_on_classes = depends_on if depends_on else []
         self._affected_tables = affected_tables
-        self._table_namer = table_namer
+        self._table_namer = self.table_namer = table_namer
         self._table_tag = table_tag
 
         # fields jinja template
@@ -423,13 +424,14 @@ class BaseCleaningRule(AbstractBaseCleaningRule):
             self._affected_tables = []
 
     @table_namer.setter
-    def table_namer(self, table_namer, **kwargs):
+    def table_namer(self, table_namer):
         """
         Set the table_namer for this class instance. If no value is provided, it is set to a default value.
         """
         if not table_namer:
-            for key, value in kwargs.items():
-                self._table_namer = kwargs.get(value)
+            self._table_namer = re.sub('\d{4}q\dr\d', '', self.dataset_id)
+            LOGGER.info(f"'table_namer' was not set.  "
+                        f"Using default value of `{self._table_namer}`.")
         else:
             self._table_namer = table_namer
 
