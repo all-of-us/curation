@@ -19,8 +19,7 @@ from gcloud.bq import BigQueryClient
 import resources
 from common import JINJA_ENV, IDENTITY_MATCH, PARTICIPANT_MATCH
 from validation.participants import readers
-from cdr_cleaner.cleaning_rules import sandbox_and_remove_pids as remove_pids
-from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
+from cdr_cleaner.cleaning_rules.sandbox_and_remove_pids import SandboxAndRemovePids
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from constants.validation.participants.identity_match import (PERSON_ID_FIELD,
                                                               FIRST_NAME_FIELD,
@@ -75,7 +74,7 @@ CRITERIA_COLUMN_TEMPLATE = JINJA_ENV.from_string(
     """({{column_expr}}) >= {{num_of_missing}}""")
 
 
-class RemoveNonMatchingParticipant(BaseCleaningRule):
+class RemoveNonMatchingParticipant(SandboxAndRemovePids):
     """
     Removes records with person_ids that are not validated by sites and non-matching.
     """
@@ -178,6 +177,8 @@ class RemoveNonMatchingParticipant(BaseCleaningRule):
             job = client.query(not_validated_participants_query)
             job.result()
 
+            super().setup_rule(client)
+
     def setup_validation(self, client: BigQueryClient) -> None:
         pass
 
@@ -238,17 +239,9 @@ class RemoveNonMatchingParticipant(BaseCleaningRule):
             are optional but the query is required.
         """
 
-        sandbox_queries = remove_pids.get_sandbox_queries(
-            self.project_id,
-            self.dataset_id,
-            self.issue_numbers,
-            sandbox_dataset_id=self.sandbox_dataset_id,
-            lookup_table=NOT_MATCH_TABLE)
+        sandbox_queries = self.get_sandbox_queries(lookup_table=NOT_MATCH_TABLE)
 
-        remove_pids_queries = remove_pids.get_remove_pids_queries(
-            self.project_id,
-            self.dataset_id,
-            sandbox_dataset_id=self.sandbox_dataset_id,
+        remove_pids_queries = self.get_remove_pids_queries(
             lookup_table=NOT_MATCH_TABLE)
 
         return sandbox_queries + remove_pids_queries

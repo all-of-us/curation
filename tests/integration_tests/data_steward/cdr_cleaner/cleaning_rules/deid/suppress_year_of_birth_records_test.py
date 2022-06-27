@@ -14,8 +14,8 @@ import datetime
 from common import VISIT_OCCURRENCE, OBSERVATION
 from common import JINJA_ENV
 from app_identity import PROJECT_ID
-from cdr_cleaner.cleaning_rules.deid.year_of_birth_records_suppression import \
-    YearOfBirthRecordsSuppression
+from cdr_cleaner.cleaning_rules.deid.year_of_birth_records_suppression import (
+    YearOfBirthRecordsSuppression, LOOKUP_TABLE)
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import \
     BaseTest
 
@@ -92,6 +92,11 @@ class SuppressYearOfBirthRecordsTest(BaseTest.CleaningRulesTestBase):
             sandbox_table_name = cls.rule_instance.sandbox_table_for(table_name)
             cls.fq_sandbox_table_names.append(
                 f'{cls.project_id}.{cls.sandbox_id}.{sandbox_table_name}')
+
+        # clean out the lookup table too
+        cls.fq_sandbox_table_names.append(
+            f'{cls.project_id}.{cls.sandbox_id}.{cls.rule_instance.sandbox_table_for(LOOKUP_TABLE)}'
+        )
 
         # call super to set up the client, create datasets
         cls.up_class = super().setUpClass()
