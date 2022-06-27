@@ -94,3 +94,7 @@ type,pmi_code,short_code
 "Answer","HowOldWereYouOtherMentalHealthSubstanceUse_OlderAdult","MentalHealthCondition_OtherOlderAdult"
 "Answer","HowOldWereYouOtherMentalHealthSubstanceUse_Elderly","MentalHealthCondition_OtherElderly"
 "Question","MentalHealth_RxMedsforOtherMentalHealthSubstanceUse","MentalHealth_RxMedsOtherCondition"
+"Question","circulatorycondition_coronaryarteryheartdisease_yes","CirculatoryCondition_CoronaryArteryHeartDisease_y"
+"Question","circulatorycondition_pulmonaryembolismthrombosis_yes","CirculatoryCondition_PulmonaryEmbolismThrombosis_y"
+"Question","Endocrine_HowOldWereYouOtherHormone/EndocrineCondition","Endocrine_HowOldWereYouOtherHormone/EndocrineCondi"
+"Question","SkeletalMuscular_RxMedsforOtherBoneJointMuscleCondition","SkeletalMuscular_RxMedsforOtherBoneJointMuscleCond"
