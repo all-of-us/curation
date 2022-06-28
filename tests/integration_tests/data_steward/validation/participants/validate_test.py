@@ -15,7 +15,7 @@ from google.cloud.bigquery import DatasetReference, Table, TimePartitioning, Tim
 # Project imports
 from gcloud.bq import BigQueryClient
 from tests import test_util
-from app_identity import PROJECT_ID
+import app_identity
 from common import JINJA_ENV, PS_API_VALUES, PII_EMAIL, PII_PHONE_NUMBER, PII_NAME, PII_ADDRESS
 from validation.participants.create_update_drc_id_match_table import (
     create_drc_validation_table, populate_validation_table)
@@ -75,7 +75,7 @@ class ValidateTest(TestCase):
 
     def setUp(self):
         self.maxDiff = None
-        self.project_id = os.environ.get(PROJECT_ID)
+        self.project_id = app_identity.get_application_id()
         self.dataset_id = os.environ.get('COMBINED_DATASET_ID')
         self.dataset_ref = DatasetReference(self.project_id, self.dataset_id)
         self.bq_client = BigQueryClient(self.project_id)
