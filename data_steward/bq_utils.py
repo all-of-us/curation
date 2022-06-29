@@ -727,6 +727,9 @@ def list_all_table_ids(dataset_id=None):
     return [table['tableReference']['tableId'] for table in tables]
 
 
+@deprecated(reason=(
+    'see: https://googleapis.dev/python/bigquery/latest/generated/google.cloud.bigquery.client.Client.html#google.cloud.bigquery.client.Client.create_dataset'
+))
 def create_dataset(project_id=None,
                    dataset_id=None,
                    description=None,
