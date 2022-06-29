@@ -1,10 +1,11 @@
 # Python imports
 from __future__ import print_function
+from lib2to3.pgen2.tokenize import untokenize
 import os
 import unittest
 
 # Third party imports
-from mock import call, patch
+from mock import call, patch, PropertyMock
 from mock.mock import MagicMock
 
 # Project imports
@@ -71,15 +72,26 @@ class IdentityMatchTest(unittest.TestCase):
         self.mock_ehr_tables.return_value = self.dataset_contents
         self.addCleanup(mock_list_ehr_tables.stop)
 
-        mock_dest_dataset_patcher = patch(
-            'validation.participants.identity_match.bq_utils.create_dataset')
-        self.mock_dest_dataset = mock_dest_dataset_patcher.start()
-        self.mock_dest_dataset.return_value = {
-            bq_consts.DATASET_REF: {
-                bq_consts.DATASET_ID: self.dest_dataset
-            }
-        }
-        self.addCleanup(mock_dest_dataset_patcher.stop)
+        mock_bq_client_patcher = patch(
+            'validation.participants.identity_match.BigQueryClient')
+        self.mock_bq_client = mock_bq_client_patcher.start()
+        self.bq_client = MagicMock()
+        self.mock_dest_dataset = MagicMock()
+        self.mock_bq_client.return_value = self.bq_client
+        self.bq_client.project = self.project
+        self.bq_client.create_dataset.return_value = self.mock_dest_dataset
+        self.mock_dest_dataset.dataset_id = self.dest_dataset
+        self.addCleanup(mock_bq_client_patcher.stop)
+
+        # mock_dest_dataset_patcher = patch(
+        #     'validation.participants.identity_match.bq_utils.create_dataset')
+        # self.mock_dest_dataset = mock_dest_dataset_patcher.start()
+        # self.mock_dest_dataset.return_value = {
+        #     bq_consts.DATASET_REF: {
+        #         bq_consts.DATASET_ID: self.dest_dataset
+        #     }
+        # }
+        # self.addCleanup(mock_dest_dataset_patcher.stop)
 
         mock_match_tables_patcher = patch(
             'validation.participants.identity_match.readers.create_match_values_table'
@@ -261,15 +273,15 @@ class IdentityMatchTest(unittest.TestCase):
                                     self.pii_dataset, self.dest_dataset)
 
         # post conditions
-        self.assertEqual(self.mock_dest_dataset.call_count, 1)
-        self.assertEqual(
-            self.mock_dest_dataset.assert_called_with(
-                dataset_id=self.dest_dataset,
-                description=consts.DESTINATION_DATASET_DESCRIPTION.format(
-                    version='',
-                    rdr_dataset=self.rdr_dataset,
-                    ehr_dataset=self.pii_dataset),
-                overwrite_existing=True), None)
+        self.bq_client.delete_dataset.assert_called_once()
+        self.bq_client.create_dataset.assert_called_once()
+        self.bq_client.delete_dataset.assert_called_with(self.dest_dataset,
+                                                         delete_contents=True,
+                                                         not_found_ok=True)
+        self.bq_client.create_dataset.assert_called_with(self.dest_dataset)
+        self.assertEqual(self.mock_dest_dataset.description,
+                         f' {self.rdr_dataset} + {self.pii_dataset}')
+        self.assertEqual(self.mock_dest_dataset.dataset_id, self.dest_dataset)
 
         self.assertEqual(self.mock_match_tables.call_count, 1)
         self.assertEqual(
