@@ -21,6 +21,7 @@ import oauth2client
 import bq_utils
 import app_identity
 from gcloud.gcs import StorageClient
+from gcloud.bq import BigQueryClient
 from constants import bq_utils as bq_consts
 from constants.validation.participants import identity_match as consts
 import resources
@@ -739,14 +740,23 @@ def match_participants(project, rdr_dataset, ehr_dataset, dest_dataset_id):
         dest_dataset_id += date_string
 
     # create new dataset for the intermediate tables and results
-    dataset_result = bq_utils.create_dataset(
-        dataset_id=dest_dataset_id,
-        description=consts.DESTINATION_DATASET_DESCRIPTION.format(
-            version='', rdr_dataset=rdr_dataset, ehr_dataset=ehr_dataset),
-        overwrite_existing=True)
+    bq_client = BigQueryClient(project)
+    bq_client.delete_dataset(dest_dataset_id,
+                             delete_contents=True,
+                             not_found_ok=True)
+    dataset_result = bq_client.create_dataset(dest_dataset_id)
+    dataset_result.description = consts.DESTINATION_DATASET_DESCRIPTION.format(
+        version='', rdr_dataset=rdr_dataset, ehr_dataset=ehr_dataset)
 
-    validation_dataset = dataset_result.get(bq_consts.DATASET_REF, {})
-    validation_dataset = validation_dataset.get(bq_consts.DATASET_ID, '')
+    # dataset_result = bq_utils.create_dataset(
+    #     dataset_id=dest_dataset_id,
+    #     description=consts.DESTINATION_DATASET_DESCRIPTION.format(
+    #         version='', rdr_dataset=rdr_dataset, ehr_dataset=ehr_dataset),
+    #     overwrite_existing=True)
+
+    # validation_dataset = dataset_result.get(bq_consts.DATASET_REF, {})
+    # validation_dataset = validation_dataset.get(bq_consts.DATASET_ID, '')
+    validation_dataset = dataset_result.dataset_id
     LOGGER.info(
         f"Created new validation results dataset:\t{validation_dataset}")
 
