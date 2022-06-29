@@ -37,20 +37,31 @@ class DeleteStaleTestDatasetsTest(TestCase):
         ]
 
         self.mock_old_dataset_1 = Mock()
+        self.mock_old_dataset_1.labels = {}
         self.mock_old_dataset_1.created = datetime.now(
             timezone.utc) - timedelta(days=365)
 
         self.mock_old_dataset_2 = Mock()
+        self.mock_old_dataset_2.labels = {}
         self.mock_old_dataset_2.created = datetime.now(
             timezone.utc) - timedelta(days=180)
 
+        self.mock_old_dataset_3 = Mock()
+        self.mock_old_dataset_3.labels = {
+            delete_stale_test_datasets.DO_NOT_DELETE: 'true',
+            'foo': 'bar'
+        }
+        self.mock_old_dataset_3.created = datetime.now(
+            timezone.utc) - timedelta(days=180)
+
         self.mock_new_dataset = Mock()
+        self.mock_new_dataset.labels = {}
         self.mock_new_dataset.created = datetime.now(
             timezone.utc) - timedelta(days=1)
 
         self.datasets = [
             self.mock_old_dataset_1, self.mock_old_dataset_2,
-            self.mock_new_dataset
+            self.mock_old_dataset_3, self.mock_new_dataset
         ]
 
         self.mock_table = Mock()
@@ -68,11 +79,12 @@ class DeleteStaleTestDatasetsTest(TestCase):
 
     def test_filter_stale_datasets_all_not_empty(self):
         """Test case: All datasets are NOT empty.
+        -> No buckets are deleted.
         """
         self.mock_bq_client.list_datasets.return_value = self.dataset_list_items
         self.mock_bq_client.get_dataset.side_effect = self.datasets
         self.mock_bq_client.list_tables.return_value = [
-            self.mock_table for _ in range(0, 3)
+            self.mock_table for _ in range(0, 4)
         ]
 
         result = delete_stale_test_datasets._filter_stale_datasets(
@@ -82,6 +94,8 @@ class DeleteStaleTestDatasetsTest(TestCase):
 
     def test_filter_stale_datasets_all_empty(self):
         """Test case: All datasets are empty.
+        -> Old datasets #1 and #2 are deleted.
+           #3 is not deleted because it has DO_NOT_DELETE label.
         """
         self.mock_bq_client.list_datasets.return_value = self.dataset_list_items
         self.mock_bq_client.get_dataset.side_effect = self.datasets
@@ -96,7 +110,9 @@ class DeleteStaleTestDatasetsTest(TestCase):
         ])
 
     def test_filter_stale_datasets_first_n_not_given(self,):
-        """Test case: All buckets are empty. first_n not given.
+        """Test case: All datasets are empty. first_n not given.
+        -> Old datasets #1 and #2 are deleted.
+           #3 is not deleted because it has DO_NOT_DELETE label.
         """
         self.mock_bq_client.list_datasets.return_value = self.dataset_list_items
         self.mock_bq_client.get_dataset.side_effect = self.datasets
@@ -111,7 +127,10 @@ class DeleteStaleTestDatasetsTest(TestCase):
         ])
 
     def test_filter_stale_datasets_first_n_given(self):
-        """Test case: All buckets are empty. first_n given. first_n < # of stale buckets.
+        """Test case: All datasets are empty. first_n given. first_n < # of stale buckets.
+        -> Old datasets #1 is deleted.
+           #2 is not deleted because first_n = 1 is specified.
+           #3 is not deleted because it has DO_NOT_DELETE label.
         """
         self.mock_bq_client.list_datasets.return_value = self.dataset_list_items
         self.mock_bq_client.get_dataset.side_effect = self.datasets

@@ -3,7 +3,8 @@ Delete first_n stale buckets in test environment.
 Stale buckets meet all of the following conditions:
 (1) equal to or older than 90 days old, 
 (2) empty, and 
-(3) in test environment.
+(3) label 'do_not_delete':'true' is NOT attached, and 
+(4) in test environment.
 """
 import argparse
 import logging

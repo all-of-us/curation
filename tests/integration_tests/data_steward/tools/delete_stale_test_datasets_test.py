@@ -32,7 +32,9 @@ class DeleteStaleTestDatasetsTest(TestCase):
         datasets_to_delete = delete_stale_test_datasets.main(self.first_n)
 
         for dataset_name in datasets_to_delete:
-            dataset_created = self.bq_client.get_dataset(dataset_name).created
+            dataset = self.bq_client.get_dataset(dataset_name)
+            dataset_created = dataset.created
+            dataset_labels = dataset.labels
 
             # Assert: Dataset is stale (1: 90 days or older)
             self.assertGreaterEqual((self.now - dataset_created).days, 90)
@@ -40,3 +42,6 @@ class DeleteStaleTestDatasetsTest(TestCase):
             # Assert: Dataset is stale (2: Empty(=no tables))
             self.assertEqual(
                 len(list(self.bq_client.list_tables(dataset_name))), 0)
+
+            # Assert: Dataset is stale (3: label 'do_not_delete':'true' is NOT attached)
+            self.assertEqual(dataset_labels, {})

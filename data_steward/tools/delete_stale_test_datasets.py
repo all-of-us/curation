@@ -2,8 +2,9 @@
 Delete first_n stale datasets in test environment. 
 Stale datasets meet all of the following conditions:
 (1) equal to or older than 90 days old, 
-(2) empty(=no datasets/routines/models), and 
-(3) in test environment.
+(2) empty(=no datasets/routines/models),
+(3) label 'do_not_delete':'true' is NOT attached, and 
+(4) in test environment.
 """
 from datetime import datetime, timezone
 import argparse
