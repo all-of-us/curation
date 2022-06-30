@@ -241,7 +241,7 @@ class MapHealthInsuranceResponses(BaseCleaningRule):
 
         insert_query = dict()
         insert_query[
-            cdr_consts.QUERY] = INSERT_ANSWERS_FOR_HCAU_PARTICIPANTS.format(
+            cdr_consts.QUERY] = INSERT_ANSWERS_FOR_HCAU_PARTICIPANTS.render(
                 project_id=self.project_id,
                 combined_dataset_id=self.dataset_id,
                 sandbox_dataset_id=self.sandbox_dataset_id,
