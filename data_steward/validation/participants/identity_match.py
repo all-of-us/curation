@@ -22,7 +22,6 @@ import bq_utils
 import app_identity
 from gcloud.gcs import StorageClient
 from gcloud.bq import BigQueryClient
-from constants import bq_utils as bq_consts
 from constants.validation.participants import identity_match as consts
 import resources
 from validation.participants import normalizers as normalizer
