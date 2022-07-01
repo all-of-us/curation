@@ -8,7 +8,6 @@ from mock import call, patch
 from mock.mock import MagicMock
 
 # Project imports
-from constants import bq_utils as bq_consts
 from constants.validation.participants import identity_match as consts
 from validation.participants import identity_match as id_match
 import test_util
@@ -81,16 +80,6 @@ class IdentityMatchTest(unittest.TestCase):
         self.bq_client.create_dataset.return_value = self.mock_dest_dataset
         self.mock_dest_dataset.dataset_id = self.dest_dataset
         self.addCleanup(mock_bq_client_patcher.stop)
-
-        # mock_dest_dataset_patcher = patch(
-        #     'validation.participants.identity_match.bq_utils.create_dataset')
-        # self.mock_dest_dataset = mock_dest_dataset_patcher.start()
-        # self.mock_dest_dataset.return_value = {
-        #     bq_consts.DATASET_REF: {
-        #         bq_consts.DATASET_ID: self.dest_dataset
-        #     }
-        # }
-        # self.addCleanup(mock_dest_dataset_patcher.stop)
 
         mock_match_tables_patcher = patch(
             'validation.participants.identity_match.readers.create_match_values_table'
