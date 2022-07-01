@@ -139,8 +139,6 @@ class RemoveParticipantDataPastDeactivationDateTest(
         # create the string(s) to load the data
         for table in TABLE_ROWS:
             fq_table = TableReference.from_string(
-                f'{self.project_id}.{self.sandbox_id}.{table}'
-            ) if table == '_deactivated_participants' else TableReference.from_string(
                 f'{self.project_id}.{self.dataset_id}.{table}')
             query = TABLE_ROWS[table].render(table=fq_table)
             self.load_statements.append(query)
