@@ -364,15 +364,6 @@ class IdentityMatchTest(unittest.TestCase):
         self.assertEqual(self.mock_dest_dataset.description,
                          f' {self.rdr_dataset} + {self.pii_dataset}')
         self.assertEqual(self.mock_dest_dataset.dataset_id, self.dest_dataset)
-        # self.assertEqual(self.mock_dest_dataset.call_count, 1)
-        # self.assertEqual(
-        #     self.mock_dest_dataset.assert_called_with(
-        #         dataset_id=self.dest_dataset,
-        #         description=consts.DESTINATION_DATASET_DESCRIPTION.format(
-        #             version='',
-        #             rdr_dataset=self.rdr_dataset,
-        #             ehr_dataset=self.pii_dataset),
-        #         overwrite_existing=True), None)
 
         self.assertEqual(self.mock_match_tables.call_count, 1)
         self.assertEqual(
