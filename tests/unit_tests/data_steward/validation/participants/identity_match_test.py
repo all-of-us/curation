@@ -1,11 +1,10 @@
 # Python imports
 from __future__ import print_function
-from lib2to3.pgen2.tokenize import untokenize
 import os
 import unittest
 
 # Third party imports
-from mock import call, patch, PropertyMock
+from mock import call, patch
 from mock.mock import MagicMock
 
 # Project imports
