@@ -76,7 +76,6 @@ class IdentityMatchTest(unittest.TestCase):
         self.bq_client = MagicMock()
         self.mock_dest_dataset = MagicMock()
         self.mock_bq_client.return_value = self.bq_client
-        # self.bq_client.project = self.project
         self.bq_client.create_dataset.return_value = self.mock_dest_dataset
         self.mock_dest_dataset.dataset_id = self.dest_dataset
         self.addCleanup(mock_bq_client_patcher.stop)
