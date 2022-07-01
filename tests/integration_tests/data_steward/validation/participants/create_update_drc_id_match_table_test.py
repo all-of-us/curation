@@ -20,13 +20,12 @@ from google.cloud import bigquery
 from google.cloud.bigquery import DatasetReference, Table
 
 # Project imports
-import bq_utils
-from constants.bq_utils import WRITE_EMPTY
 from gcloud.bq import BigQueryClient
 from tests import test_util
 from app_identity import PROJECT_ID
 from common import JINJA_ENV, PERSON
 from validation.participants import create_update_drc_id_match_table as id_validation
+from constants.bq_utils import WRITE_EMPTY
 from constants.validation.participants.identity_match import IDENTITY_MATCH_TABLE
 
 CONTENT_QUERY = JINJA_ENV.from_string("""
@@ -70,11 +69,9 @@ class CreateUpdateDrcIdMatchTableTest(TestCase):
     def test_get_case_statements(self):
         expected = EXPECTED_CASE_STATEMENTS
         actual = id_validation.get_case_statements(self.bq_client)
-
         self.assertEqual(actual, expected)
 
     def test_create_drc_validation_table(self):
-
         # Test
         expected = id_validation.create_drc_validation_table(
             self.bq_client,
@@ -124,7 +121,8 @@ class CreateUpdateDrcIdMatchTableTest(TestCase):
 
         # Creates validation table if it does not already exist
         # Will need to be created if this test is ran individually
-        if not bq_utils.table_exists(self.id_match_table_id, self.dataset_id):
+        if not self.bq_client.table_exists(self.id_match_table_id,
+                                           self.dataset_id):
             id_validation.create_drc_validation_table(
                 self.bq_client,
                 self.id_match_table_id,

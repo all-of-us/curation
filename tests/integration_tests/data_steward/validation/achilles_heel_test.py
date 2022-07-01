@@ -66,7 +66,7 @@ class AchillesHeelTest(unittest.TestCase):
             bq_utils.load_cdm_csv(hpo_id, cdm_table)
 
         # ensure concept table exists
-        if not bq_utils.table_exists(common.CONCEPT):
+        if not self.bq_client.table_exists(common.CONCEPT):
             bq_utils.create_standard_table(common.CONCEPT, common.CONCEPT)
             q = """INSERT INTO {dataset}.concept
             SELECT * FROM {vocab}.concept""".format(
