@@ -102,7 +102,7 @@ def get_source_fields(client, source_table):
     return [f'{field.name}' for field in client.get_table(source_table).schema]
 
 
-def get_copy_table_query(dataset_id, table_id, client):
+def get_copy_table_query(client, dataset_id, table_id):
     try:
         source_table = f'{client.project}.{dataset_id}.{table_id}'
         source_fields = get_source_fields(client, source_table)
@@ -147,7 +147,7 @@ def copy_tables_to_new_dataset(client, dataset_id, snapshot_dataset_id):
                     False, [fields])
             except RuntimeError:
                 LOGGER.info(f'Unable to find schema for {table_id}')
-        q = get_copy_table_query(dataset_id, table_id, client)
+        q = get_copy_table_query(client, dataset_id, table_id)
         results = query(q,
                         use_legacy_sql=False,
                         destination_table_id=table_id,
