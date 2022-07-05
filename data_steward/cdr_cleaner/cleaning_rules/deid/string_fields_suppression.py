@@ -8,6 +8,10 @@ import resources
 from common import CDM_TABLES, OBSERVATION, JINJA_ENV
 from constants import bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
+from cdr_cleaner.cleaning_rules.cancer_concept_suppression import CancerConceptSuppression
+from cdr_cleaner.cleaning_rules.section_participation_concept_suppression import SectionParticipationConceptSuppression
+from cdr_cleaner.cleaning_rules.deid.registered_cope_survey_suppression import RegisteredCopeSurveyQuestionsSuppression
+from cdr_cleaner.cleaning_rules.vehicular_accident_concept_suppression import VehicularAccidentConceptSuppression
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
 from cdr_cleaner.clean_cdr_utils import get_tables_in_dataset
 
@@ -119,6 +123,12 @@ class StringFieldsSuppression(BaseCleaningRule):
                          affected_datasets=[
                              cdr_consts.CONTROLLED_TIER_DEID,
                              cdr_consts.REGISTERED_TIER_DEID
+                         ],
+                         depends_on=[
+                             CancerConceptSuppression,
+                             SectionParticipationConceptSuppression,
+                             VehicularAccidentConceptSuppression,
+                             RegisteredCopeSurveyQuestionsSuppression,
                          ],
                          project_id=project_id,
                          dataset_id=dataset_id,
