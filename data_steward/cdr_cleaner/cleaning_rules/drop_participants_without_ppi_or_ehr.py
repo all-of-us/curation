@@ -72,7 +72,7 @@ class DropParticipantsWithoutPPI(DropMissingParticipants):
                  project_id,
                  dataset_id,
                  sandbox_dataset_id,
-                 namer='stage_less'):
+                 table_namer='stage_less'):
         desc = (f'Sandbox and remove PIDs with no PPI basics or EHR data.'
                 f'Use drop missing participants CR to remove their records.')
 
@@ -83,7 +83,7 @@ class DropParticipantsWithoutPPI(DropMissingParticipants):
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
-                         namer=namer,
+                         table_namer=table_namer,
                          depends_on=[RemoveParticipantDataPastDeactivationDate])
 
     def get_query_specs(self):
