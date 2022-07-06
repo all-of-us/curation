@@ -60,7 +60,8 @@ class RemoveNonExistingPids(BaseCleaningRule):
                          affected_tables=FITBIT_TABLES,
                          project_id=project_id,
                          dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id)
+                         sandbox_dataset_id=sandbox_dataset_id,
+                         table_namer=table_namer)
 
     def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
 
