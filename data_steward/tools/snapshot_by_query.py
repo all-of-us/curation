@@ -37,11 +37,6 @@ def create_empty_dataset(client, dataset_id, snapshot_dataset_id):
     dataset_result = client.create_dataset(snapshot_dataset_id)
     dataset_result.description = 'Snapshot of {dataset_id}'.format(
         dataset_id=dataset_id)
-    # create_dataset(
-    #     project_id=project_id,
-    #     dataset_id=snapshot_dataset_id,
-    #     description='Snapshot of {dataset_id}'.format(dataset_id=dataset_id),
-    #     overwrite_existing=True)
 
 
 def create_empty_cdm_tables(snapshot_dataset_id, hpo_id=None):

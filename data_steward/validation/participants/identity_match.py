@@ -747,14 +747,6 @@ def match_participants(project, rdr_dataset, ehr_dataset, dest_dataset_id):
     dataset_result.description = consts.DESTINATION_DATASET_DESCRIPTION.format(
         version='', rdr_dataset=rdr_dataset, ehr_dataset=ehr_dataset)
 
-    # dataset_result = bq_utils.create_dataset(
-    #     dataset_id=dest_dataset_id,
-    #     description=consts.DESTINATION_DATASET_DESCRIPTION.format(
-    #         version='', rdr_dataset=rdr_dataset, ehr_dataset=ehr_dataset),
-    #     overwrite_existing=True)
-
-    # validation_dataset = dataset_result.get(bq_consts.DATASET_REF, {})
-    # validation_dataset = validation_dataset.get(bq_consts.DATASET_ID, '')
     validation_dataset = dataset_result.dataset_id
     LOGGER.info(
         f"Created new validation results dataset:\t{validation_dataset}")
