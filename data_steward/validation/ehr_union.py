@@ -791,8 +791,11 @@ def main(input_dataset_id,
 
     logging.info(
         'Dropping race/ethnicity/gender records from unioned_ehr_observation')
-    clean_engine.clean_dataset(project_id, output_dataset_id, output_dataset_id,
-                               [(DropRaceEthnicityGenderObservation,)])
+    clean_engine.clean_dataset(project_id,
+                               output_dataset_id,
+                               output_dataset_id,
+                               [(DropRaceEthnicityGenderObservation,)],
+                               table_namer='')
     logging.info(
         'Completed dropping race/ethnicity/gender records from unioned_ehr_observation'
     )
