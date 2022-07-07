@@ -314,7 +314,7 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
     """
     tables_to_ref = []
     for table in resources.CDM_TABLES:
-        if bq_utils.has_primary_key(table):
+        if resources.has_primary_key(table):
             tables_to_ref.append(table)
 
     is_id_mapped = table_name in tables_to_ref
