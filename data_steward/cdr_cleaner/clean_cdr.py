@@ -235,16 +235,32 @@ FITBIT_CLEANING_CLASSES = [
     (RemoveNonExistingPids,),  # assumes combined dataset is ready for reference
 ]
 
-FITBIT_DEID_CLEANING_CLASSES = [
-    (RemoveFitbitDataIfMaxAgeExceeded,),
-    (FitbitPIDtoRID,),
-    (RemoveNonExistingPids,),  # assumes RT dataset is ready for reference
-    (FitbitDateShiftRule,),
-]
+REGISTERED_TIER_DEID_CLEANING_CLASSES = [
+    # Data mappings/re-mappings
+    ####################################
+    (
+        QRIDtoRID,),  # Should run before any row suppression rules
+    (GenerateExtTables,),
+    (COPESurveyVersionTask,
+    ),  # Should run after GenerateExtTables and before CleanMappingExtTables
 
-CONTROLLED_TIER_FITBIT_CLEANING_CLASSES = [
-    (FitbitPIDtoRID,),
-    (RemoveNonExistingPids,),  # assumes CT dataset is ready for reference
+    # Data generalizations
+    ####################################
+    (
+        GeneralizeStateByPopulation,),
+    (GeneralizeCopeInsuranceAnswers,),
+
+    # Data suppressions
+    ####################################
+    (
+        CovidEHRVaccineConceptSuppression,),  # should run after QRIDtoRID
+    (VehicularAccidentConceptSuppression,),
+    (SectionParticipationConceptSuppression,),
+    (RegisteredCopeSurveyQuestionsSuppression,),
+    (CancerConceptSuppression,),
+    (StringFieldsSuppression,),
+    (DropOrphanedPIDS,),
+    (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
 REGISTERED_TIER_DEID_BASE_CLEANING_CLASSES = [
@@ -261,6 +277,13 @@ REGISTERED_TIER_DEID_CLEAN_CLEANING_CLASSES = [
     (UnitNormalization,),  # dependent on CleanHeightAndWeight
     (DropZeroConceptIDs,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
+]
+
+REGISTERED_TIER_FITBIT_CLEANING_CLASSES = [
+    (RemoveFitbitDataIfMaxAgeExceeded,),
+    (FitbitPIDtoRID,),
+    (RemoveNonExistingPids,),  # assumes RT dataset is ready for reference
+    (FitbitDateShiftRule,),
 ]
 
 CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
@@ -309,32 +332,9 @@ CONTROLLED_TIER_DEID_CLEAN_CLEANING_CLASSES = [
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
-REGISTERED_TIER_DEID_CLEANING_CLASSES = [
-    # Data mappings/re-mappings
-    ####################################
-    (
-        QRIDtoRID,),  # Should run before any row suppression rules
-    (GenerateExtTables,),
-    (COPESurveyVersionTask,
-    ),  # Should run after GenerateExtTables and before CleanMappingExtTables
-
-    # Data generalizations
-    ####################################
-    (
-        GeneralizeStateByPopulation,),
-    (GeneralizeCopeInsuranceAnswers,),
-
-    # Data suppressions
-    ####################################
-    (
-        CovidEHRVaccineConceptSuppression,),  # should run after QRIDtoRID
-    (VehicularAccidentConceptSuppression,),
-    (SectionParticipationConceptSuppression,),
-    (RegisteredCopeSurveyQuestionsSuppression,),
-    (CancerConceptSuppression,),
-    (StringFieldsSuppression,),
-    (DropOrphanedPIDS,),
-    (CleanMappingExtTables,),  # should be one of the last cleaning rules run
+CONTROLLED_TIER_FITBIT_CLEANING_CLASSES = [
+    (FitbitPIDtoRID,),
+    (RemoveNonExistingPids,),  # assumes CT dataset is ready for reference
 ]
 
 DATA_STAGE_RULES_MAPPING = {
@@ -346,24 +346,24 @@ DATA_STAGE_RULES_MAPPING = {
         RDR_CLEANING_CLASSES,
     DataStage.COMBINED.value:
         COMBINED_CLEANING_CLASSES,
+    DataStage.FITBIT.value:
+        FITBIT_CLEANING_CLASSES,
+    DataStage.REGISTERED_TIER_DEID.value:
+        REGISTERED_TIER_DEID_CLEANING_CLASSES,
     DataStage.REGISTERED_TIER_DEID_BASE.value:
         REGISTERED_TIER_DEID_BASE_CLEANING_CLASSES,
     DataStage.REGISTERED_TIER_DEID_CLEAN.value:
         REGISTERED_TIER_DEID_CLEAN_CLEANING_CLASSES,
-    DataStage.FITBIT.value:
-        FITBIT_CLEANING_CLASSES,
-    DataStage.CONTROLLED_TIER_FITBIT.value:
-        CONTROLLED_TIER_FITBIT_CLEANING_CLASSES,
-    DataStage.FITBIT_DEID.value:
-        FITBIT_DEID_CLEANING_CLASSES,
+    DataStage.REGISTERED_TIER_FITBIT.value:
+        REGISTERED_TIER_FITBIT_CLEANING_CLASSES,
     DataStage.CONTROLLED_TIER_DEID.value:
         CONTROLLED_TIER_DEID_CLEANING_CLASSES,
     DataStage.CONTROLLED_TIER_DEID_BASE.value:
         CONTROLLED_TIER_DEID_BASE_CLEANING_CLASSES,
     DataStage.CONTROLLED_TIER_DEID_CLEAN.value:
         CONTROLLED_TIER_DEID_CLEAN_CLEANING_CLASSES,
-    DataStage.REGISTERED_TIER_DEID.value:
-        REGISTERED_TIER_DEID_CLEANING_CLASSES
+    DataStage.CONTROLLED_TIER_FITBIT.value:
+        CONTROLLED_TIER_FITBIT_CLEANING_CLASSES
 }
 
 
