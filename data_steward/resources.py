@@ -462,3 +462,18 @@ def get_base_table_name(table_id, hpo_id=None):
     if hpo_id:
         return table_id.replace(f'{hpo_id}_', '')
     return table_id
+
+
+def has_primary_key(table):
+    """
+    Determines if a CDM table contains a numeric primary key field
+
+    :param table: name of a CDM table
+    :return: True if the CDM table contains a primary key field, False otherwise
+    """
+    if table not in CDM_TABLES:
+        raise AssertionError()
+    fields = fields_for(table)
+    id_field = table + '_id'
+    return any(field for field in fields
+               if field['type'] == 'integer' and field['name'] == id_field)
