@@ -3,7 +3,8 @@ Delete first_n stale buckets in test environment.
 Stale buckets meet all of the following conditions:
 (1) equal to or older than 90 days old, 
 (2) empty, and 
-(3) in test environment.
+(3) label 'do_not_delete':'true' is NOT attached, and 
+(4) in test environment.
 """
 import argparse
 import logging
@@ -15,6 +16,7 @@ from gcloud.gcs import StorageClient
 from utils import pipeline_logging
 
 LOGGER = logging.getLogger(__name__)
+DO_NOT_DELETE = 'do_not_delete'
 
 
 def _check_project(storage_client):
@@ -56,10 +58,19 @@ def _filter_stale_buckets(storage_client, first_n: int = None):
         if first_n and n >= first_n:
             break
 
+        if DO_NOT_DELETE in bucket.labels and bucket.labels[
+                DO_NOT_DELETE] == 'true':
+            LOGGER.info(
+                f"Skipping {bucket.name} - label '{DO_NOT_DELETE}' is attached to it."
+            )
+            continue
+
         if (now - bucket.time_created).days <= 90:
+            LOGGER.info(f"Skipping {bucket.name} - it is not old enough.")
             continue
 
         if len(list(storage_client.list_blobs(bucket.name))) >= 1:
+            LOGGER.info(f"Skipping {bucket.name} - it has objects in it.")
             continue
 
         stale_buckets.append(bucket.name)

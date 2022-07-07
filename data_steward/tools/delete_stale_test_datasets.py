@@ -2,8 +2,9 @@
 Delete first_n stale datasets in test environment. 
 Stale datasets meet all of the following conditions:
 (1) equal to or older than 90 days old, 
-(2) empty(=no datasets/routines/models), and 
-(3) in test environment.
+(2) empty(=no datasets/routines/models),
+(3) label 'do_not_delete':'true' is NOT attached, and 
+(4) in test environment.
 """
 from datetime import datetime, timezone
 import argparse
@@ -18,6 +19,7 @@ from utils import pipeline_logging
 from gcloud.bq import BigQueryClient
 
 LOGGER = logging.getLogger(__name__)
+DO_NOT_DELETE = 'do_not_delete'
 
 
 def _check_project(bq_client: BigQueryClient):
@@ -61,7 +63,16 @@ def _filter_stale_datasets(bq_client: BigQueryClient, first_n: int = None):
             break
 
         try:
-            dataset_created = bq_client.get_dataset(dataset_name).created
+            dataset = bq_client.get_dataset(dataset_name)
+            dataset_labels = dataset.labels
+            dataset_created = dataset.created
+
+            if DO_NOT_DELETE in dataset_labels:
+                if dataset_labels[DO_NOT_DELETE] == 'true':
+                    LOGGER.info(
+                        f"Skipping {dataset_name} - label '{DO_NOT_DELETE}' is attached to it."
+                    )
+                    continue
 
             if (now - dataset_created).days <= 90:
                 LOGGER.info(f"Skipping {dataset_name} - it is not old enough.")

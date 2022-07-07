@@ -33,8 +33,9 @@ class DeleteStaleTestBucketsTest(TestCase):
         buckets_to_delete = delete_stale_test_buckets.main(self.first_n)
 
         for bucket_name in buckets_to_delete:
-            bucket_created = self.storage_client.get_bucket(
-                bucket_name).time_created
+            bucket = self.storage_client.get_bucket(bucket_name)
+            bucket_created = bucket.time_created
+            bucket_labels = bucket.labels
 
             # Assert: Bucket is stale (1: 90 days or older)
             self.assertGreaterEqual((self.now - bucket_created).days, 90)
@@ -42,3 +43,6 @@ class DeleteStaleTestBucketsTest(TestCase):
             # Assert: Bucket is stale (2: Empty(=no blobs))
             self.assertEqual(
                 len(list(self.storage_client.list_blobs(bucket_name))), 0)
+
+            # Assert: Bucket is stale (3: label 'do_not_delete':'true' is NOT attached)
+            self.assertEqual(bucket_labels, {})
