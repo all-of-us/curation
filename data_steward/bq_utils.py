@@ -915,6 +915,7 @@ def get_hpo_info():
     return hpo_list
 
 
+@deprecated(reason='Use resources.has_primary_key(table) instead')
 def has_primary_key(table):
     """
     Determines if a CDM table contains a numeric primary key field
