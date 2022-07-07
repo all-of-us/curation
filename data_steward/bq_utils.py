@@ -132,6 +132,8 @@ def get_validation_results_dataset_id():
     return dataset_id
 
 
+@deprecated(
+    reason='Discovery client is being replaced by gcloud.gcs.BigQueryClient()')
 def create_service():
     return build('bigquery', 'v2', cache={})
 
