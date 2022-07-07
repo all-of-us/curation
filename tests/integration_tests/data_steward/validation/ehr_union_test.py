@@ -222,7 +222,9 @@ class EhrUnionTest(unittest.TestCase):
         output_cdm_tables = [
             ehr_union.output_table_for(table) for table in resources.CDM_TABLES
         ]
-        sandbox_tables = ['dc2340_unioned_ehr_observation']
+        sandbox_tables = [
+            f'{self.output_dataset_id}_dc2340_unioned_ehr_observation'
+        ]
         expected_output = set(output_tables_before + mapping_tables +
                               output_cdm_tables + sandbox_tables)
 
