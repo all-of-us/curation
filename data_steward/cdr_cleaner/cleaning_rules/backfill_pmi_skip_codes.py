@@ -1,5 +1,5 @@
 """
-
+Descrption -> 
 """
 # Python imports
 import logging
@@ -47,7 +47,7 @@ PMI_SKIP_FIX_QUERY = JINJA_ENV.from_string("""
     NULL AS questionnaire_response_id 
   FROM `{{project}}.{{dataset}}.observation` AS obs
   FULL OUTER JOIN (
-    WITH potentially_skipped_person AS (
+    WITH person_gender AS (
       SELECT DISTINCT 
         obs.person_id, 
         per.gender_concept_id
@@ -81,15 +81,15 @@ PMI_SKIP_FIX_QUERY = JINJA_ENV.from_string("""
       default_date.default_observation_datetime
     FROM (
       SELECT
-        potentially_skipped_person.person_id,
+        person_gender.person_id,
         observation_concept_id,
         observation_source_concept_id,
         observation_source_value,
         observation_type_concept_id
-      FROM potentially_skipped_person, backfill_observation
+      FROM person_gender, backfill_observation
       WHERE (observation_source_concept_id != 1585784)
       OR (
-        potentially_skipped_person.gender_concept_id = 8532
+        person_gender.gender_concept_id = 8532
         AND observation_source_concept_id = 1585784
       ) 
     ) potential_backfill
@@ -104,13 +104,15 @@ PMI_SKIP_FIX_QUERY = JINJA_ENV.from_string("""
 
 
 class BackfillPmiSkipCodes(BaseCleaningRule):
-    """
+    """Descrption -> 
+
     """
 
     def __init__(self, project_id, dataset_id, sandbox_dataset_id):
+        """Descrption -> 
+
         """
-        """
-        desc = ()
+        desc = ''
 
         super().__init__(issue_numbers=['DC420', 'DC821'],
                          description=desc,
