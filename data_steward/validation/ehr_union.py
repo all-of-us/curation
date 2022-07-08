@@ -224,7 +224,7 @@ def mapping(domain_table, hpo_ids, input_dataset_id, output_dataset_id,
     :param input_dataset_id: identifies dataset with multiple CDMs, each from an HPO submission
     :param output_dataset_id: identifies dataset where mapping table should be output
     :param project_id: identifies GCP project that contain the datasets
-    :param client: Bigquery Client
+    :param client: a BigQueryClient
     :return:
     """
     q = mapping_query(domain_table, hpo_ids, input_dataset_id, project_id)
