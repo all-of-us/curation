@@ -5,7 +5,6 @@
 import logging
 
 # Project imports
-import constants.bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from common import JINJA_ENV, OBSERVATION
@@ -116,7 +115,7 @@ class BackfillPmiSkipCodes(BaseCleaningRule):
         super().__init__(issue_numbers=['DC420', 'DC821'],
                          description=desc,
                          affected_datasets=[cdr_consts.RDR],
-                         affected_tables=['xyz'],
+                         affected_tables=[OBSERVATION],
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id)
