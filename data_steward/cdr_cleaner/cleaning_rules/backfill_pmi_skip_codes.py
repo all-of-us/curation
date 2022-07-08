@@ -9,6 +9,7 @@ import constants.bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from common import JINJA_ENV, OBSERVATION
+from resources import fields_for
 
 LOGGER = logging.getLogger(__name__)
 
@@ -21,51 +22,33 @@ SKIP_CODES = [
 ]
 
 PMI_SKIP_FIX_QUERY = JINJA_ENV.from_string("""
+  INSERT INTO `{{project}}.{{dataset}}.observation`
+  ({{observation_fields}})
   SELECT 
-    COALESCE(
-      obs.observation_id, ques.observation_id
-      ) AS observation_id,
-    COALESCE(
-      obs.person_id, ques.person_id
-      ) AS person_id,
-    COALESCE(
-      obs.observation_concept_id, ques.observation_concept_id
-      ) AS observation_concept_id,
-    COALESCE(
-      obs.observation_date, ques.default_observation_date
-      ) AS observation_date,
-    COALESCE(
-      obs.observation_datetime, ques.default_observation_datetime
-      ) AS observation_datetime,
-    COALESCE(
-      obs.observation_type_concept_id, ques.observation_type_concept_id
-      ) AS observation_type_concept_id,
-    value_as_number,
-    value_as_string,
-    COALESCE(obs.value_as_concept_id, 903096) AS value_as_concept_id,
-    COALESCE(obs.qualifier_concept_id, 0) AS qualifier_concept_id,
-    COALESCE(obs.unit_concept_id, 0) AS unit_concept_id,
-    provider_id,
-    visit_occurrence_id,
-    visit_detail_id,
-    COALESCE(
-      obs.observation_source_value, ques.observation_source_value
-      ) AS observation_source_value,
-    COALESCE(
-      obs.observation_source_concept_id, ques.observation_source_concept_id
-      ) AS observation_source_concept_id,
-    unit_source_value,
-    qualifier_source_value,
-    COALESCE(obs.value_source_concept_id, 903096) AS value_source_concept_id,
-    CASE 
-      WHEN obs.value_source_concept_id = 903096 THEN 'PMI_Skip' 
-      WHEN value_source_concept_id = 903096 THEN 'PMI_Skip' 
-      ELSE obs.value_source_value 
-      END AS value_source_value, 
-    questionnaire_response_id 
+    pb.observation_id,
+    pb.person_id,
+    pb.observation_concept_id,
+    pb.default_observation_date AS observation_date,
+    pb.default_observation_datetime AS observation_datetime,
+    pb.observation_type_concept_id,
+    NULL AS value_as_number,
+    NULL AS value_as_string,
+    903096 AS value_as_concept_id,
+    0 AS qualifier_concept_id,
+    0 AS unit_concept_id,
+    NULL AS provider_id,
+    NULL AS visit_occurrence_id,
+    NULL AS visit_detail_id,
+    pb.observation_source_value,
+    pb.observation_source_concept_id,
+    NULL AS unit_source_value,
+    NULL AS qualifier_source_value,
+    903096 AS value_source_concept_id,
+    'PMI_Skip' AS value_source_value, 
+    NULL AS questionnaire_response_id 
   FROM `{{project}}.{{dataset}}.observation` AS obs
   FULL OUTER JOIN (
-    WITH per AS (
+    WITH potentially_skipped_person AS (
       SELECT DISTINCT 
         obs.person_id, 
         per.gender_concept_id
@@ -74,7 +57,7 @@ PMI_SKIP_FIX_QUERY = JINJA_ENV.from_string("""
       ON obs.person_id = per.person_id
       WHERE observation_source_concept_id IN ({{skip_codes}})
     ),
-    obs AS (
+    backfill_observation AS (
       SELECT DISTINCT 
         observation_concept_id,
         observation_source_concept_id,
@@ -83,7 +66,7 @@ PMI_SKIP_FIX_QUERY = JINJA_ENV.from_string("""
       FROM `{{project}}.{{dataset}}.observation`
       WHERE observation_source_concept_id IN ({{skip_codes}})
     ),
-    dte AS (
+    default_date AS (
       SELECT
         person_id,
         MAX(observation_date) AS default_observation_date,
@@ -94,29 +77,30 @@ PMI_SKIP_FIX_QUERY = JINJA_ENV.from_string("""
     )
     SELECT
       ROW_NUMBER() OVER() + 1000000000000 AS observation_id,
-      cartesian.*,
-      dte.default_observation_date,
-      dte.default_observation_datetime
+      potential_backfill.*,
+      default_date.default_observation_date,
+      default_date.default_observation_datetime
     FROM (
       SELECT
-        per.person_id,
+        potentially_skipped_person.person_id,
         observation_concept_id,
         observation_source_concept_id,
         observation_source_value,
         observation_type_concept_id
-      FROM per, obs
+      FROM potentially_skipped_person, backfill_observation
       WHERE (observation_source_concept_id != 1585784)
       OR (
-        per.gender_concept_id = 8532
+        potentially_skipped_person.gender_concept_id = 8532
         AND observation_source_concept_id = 1585784
       ) 
-    ) cartesian
-    JOIN dte
-    ON cartesian.person_id = dte.person_id
-    ORDER BY cartesian.person_id 
-  ) AS ques
-  ON obs.person_id = ques.person_id
-  AND obs.observation_concept_id = ques.observation_concept_id
+    ) potential_backfill
+    JOIN default_date
+    ON potential_backfill.person_id = default_date.person_id
+    ORDER BY potential_backfill.person_id 
+  ) AS pb
+  ON obs.person_id = pb.person_id
+  AND obs.observation_concept_id = pb.observation_concept_id
+  WHERE obs.observation_id IS NULL
 """)
 
 
@@ -140,20 +124,18 @@ class BackfillPmiSkipCodes(BaseCleaningRule):
     def get_query_specs(self):
         """
         runs the query which adds skipped rows in survey before 2019-04-10 as PMI_Skip
+        no sandbox since this is only insert.
         """
-        queries_list = []
-
-        query = dict()
-        query[cdr_consts.QUERY] = PMI_SKIP_FIX_QUERY.render(
+        insert_query = PMI_SKIP_FIX_QUERY.render(
             dataset=self.dataset_id,
             project=self.project_id,
+            observation_fields=', '.join(
+                field['name'] for field in fields_for(OBSERVATION)),
             skip_codes=', '.join(map(str, SKIP_CODES)))
-        query[cdr_consts.DESTINATION_TABLE] = OBSERVATION
-        query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
-        query[cdr_consts.DESTINATION_DATASET] = self.dataset_id
-        queries_list.append(query)
 
-        return queries_list
+        insert_query_dict = {cdr_consts.QUERY: insert_query}
+
+        return [insert_query_dict]
 
     def setup_rule(self, client):
         """
