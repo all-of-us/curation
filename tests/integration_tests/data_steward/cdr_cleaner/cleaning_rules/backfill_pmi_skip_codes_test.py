@@ -11,7 +11,7 @@ from dateutil import parser
 # Project imports
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.backfill_pmi_skip_codes import BackfillPmiSkipCodes
-from common import OBSERVATION
+from common import JINJA_ENV, OBSERVATION, PERSON
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
 
@@ -42,6 +42,7 @@ class BackfillPmiSkipCodesTest(BaseTest.CleaningRulesTestBase):
 
         cls.fq_table_names = [
             f'{project_id}.{dataset_id}.{OBSERVATION}',
+            f'{project_id}.{dataset_id}.{PERSON}',
         ]
 
         super().setUpClass()
@@ -62,7 +63,7 @@ class BackfillPmiSkipCodesTest(BaseTest.CleaningRulesTestBase):
 
         #Append some queries
 
-        create_concepts_query_tmpl = self.jinja_env.from_string("""
+        insert_observation = JINJA_ENV.from_string("""
             INSERT INTO `{{project}}.{{dataset}}.observation`
                 (concept_id, concept_name, domain_id, vocabulary_id, concept_class_id, concept_code, valid_start_date, valid_end_date)
             VALUES
@@ -76,24 +77,23 @@ class BackfillPmiSkipCodesTest(BaseTest.CleaningRulesTestBase):
                 (42181902, "some text", "some text", "PPI", "some text", "Cancer", date('2020-05-05'), date('2020-05-05')),
                 (24182910, "some text", "some text", "PPI", "some text", "", date('2020-05-05'), date('2020-05-05')),
                 (43529098, "some text", "some text", "PPI", "some text", "FatherDiagnosisHistory_WhichConditions", date('2020-05-05'), date('2020-05-05'))
-        """).render(fq_dataset_name=self.fq_dataset_name)
+        """)
 
-        drop_records_query_tmpl = self.jinja_env.from_string("""
-            INSERT INTO `{{fq_dataset_name}}.observation`
-                (observation_id, person_id, observation_concept_id, observation_date, 
-                observation_type_concept_id)
+        insert_person = JINJA_ENV.from_string("""
+            INSERT INTO `{{project}}.{{dataset}}.person`
+                (person_id, gender_concept_id, year_of_birth, race_concept_id, ethnicity_concept_id)
             VALUES
-                (1, 1, 43529626, date('2020-05-05'), 1),
-                (2, 2, 43529099, date('2020-05-05'), 2),
-                (3, 3, 43529102, date('2020-05-05'), 3),
-                (4, 4, 43529627, date('2020-05-05'), 4),
-                (5, 5, 43529625, date('2020-05-05'), 5),
-                (6, 6, 43529100, date('2020-05-05'), 6),
-                (7, 7, 43529098, date('2020-05-05'), 7),
-                (8, 8, 10821410, date('2020-05-05'), 8),
-                (9, 9, 42181902, date('2020-05-05'), 9),
-                (10, 10, 24182910, date('2020-05-05'), 10)
-            """).render(fq_dataset_name=self.fq_dataset_name)
+                (43529626, "some text", "some text", "PPI", "some text", "OutsideTravel6Month_OutsideTravel6MonthWhereTravel", date('2020-05-05'), date('2020-05-05')),
+                (43529099, "some text", "some text", "PPI", "some text", "OutsideTravel6Month_OutsideTravel6MonthWhere", date('2020-05-05'), date('2020-05-05')),
+                (43529102, "some text", "some text", "PPI", "some text", "MotherDiagnosisHistory_WhichConditions", date('2020-05-05'), date('2020-05-05')),
+                (43529627, "some text", "some text", "PPI", "some text", "CancerCondition_OtherCancer", date('2020-05-05'), date('2020-05-05')),
+                (43529625, "some text", "some text", "PPI", "some text", "FatherCancerCondition_OtherCancers", date('2020-05-05'), date('2020-05-05')),
+                (43529100, "some text", "some text", "PPI", "some text", "SonCancerCondition_History_AdditionalDiagnosis", date('2020-05-05'), date('2020-05-05')),
+                (10821410, "some text", "some text", "PPI", "some text", "Sister_History_AdditionalDiagnoses", date('2020-05-05'), date('2020-05-05')),
+                (42181902, "some text", "some text", "PPI", "some text", "Cancer", date('2020-05-05'), date('2020-05-05')),
+                (24182910, "some text", "some text", "PPI", "some text", "", date('2020-05-05'), date('2020-05-05')),
+                (43529098, "some text", "some text", "PPI", "some text", "FatherDiagnosisHistory_WhichConditions", date('2020-05-05'), date('2020-05-05'))
+        """)
 
         queries = [create_concepts_query_tmpl, drop_records_query_tmpl]
 
