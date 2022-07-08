@@ -1,5 +1,6 @@
 """
-
+TODO add description
+TODO add table_namer
 
 
 
@@ -21,8 +22,8 @@ PERSON ID:
 """
 
 # Python Imports
-import mock
 import os
+import mock
 
 # Third party imports
 from dateutil import parser
@@ -37,32 +38,32 @@ from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_te
 OBSERVATION_TEMPLATE = JINJA_ENV.from_string("""
     INSERT INTO `{{project}}.{{dataset}}.observation` ({{observation_fields}})
     VALUES
-        (11, 1, 9999999, date('2020-01-01'), NULL, 99999999, 99, 'value_as_string', 99, 99, 99, 99, 99, 99, 
+        (11, 1, 9999999, date('2020-01-01'), NULL, 99999999, NULL, 'value_as_string', 99, 99, 99, 99, 99, 99, 
          'observation_source_value', 9999999, 
          'unit_source_value', 'qualifier_source_value', 99, 'value_source_value', 99),
-        (12, 1, 1586135, date('2020-01-01'), NULL, 45905771, 99, 'value_as_string', 99, 99, 99, 99, 99, 99, 
-         'TheBasics_Birthplace', 3005917, 
+        (12, 1, 3005917, date('2020-01-01'), NULL, 45905771, NULL, 'value_as_string', 99, 99, 99, 99, 99, 99, 
+         'TheBasics_Birthplace', 1586135, 
          'unit_source_value', 'qualifier_source_value', 99, 'value_source_value', 99),
-        (13, 1, 1585386, date('2020-01-01'), NULL, 45905771, 99, 'value_as_string', 99, 99, 99, 99, 99, 99, 
-         'Insurance_HealthInsurance', 40766240, 
+        (13, 1, 40766240, date('2020-01-01'), NULL, 45905771, NULL, 'value_as_string', 99, 99, 99, 99, 99, 99, 
+         'Insurance_HealthInsurance', 1585386, 
          'unit_source_value', 'qualifier_source_value', 99, 'value_source_value', 99),
-        (14, 1, 1586166, date('2020-01-01'), NULL, 45905771, 99, 'value_as_string', 99, 99, 99, 99, 99, 99, 
+        (14, 1, 1586166, date('2020-01-01'), NULL, 45905771, NULL, 'value_as_string', 99, 99, 99, 99, 99, 99, 
          'ElectronicSmoking_ElectricSmokeParticipant', 1586166, 
          'unit_source_value', 'qualifier_source_value', 99, 'value_source_value', 99),
-        (15, 1, 1585784, date('2020-01-01'), NULL, 45905771, 99, 'value_as_string', 99, 99, 99, 99, 99, 99, 
-         'OverallHealth_MenstrualStopped', 40767407, 
+        (15, 1, 40767407, date('2020-01-01'), NULL, 45905771, NULL, 'value_as_string', 99, 99, 99, 99, 99, 99, 
+         'OverallHealth_MenstrualStopped', 1585784, 
          'unit_source_value', 'qualifier_source_value', 99, 'value_source_value', 99),
-        (21, 2, 1586135, date('2020-02-01'), NULL, 45905771, 99, 'value_as_string', 99, 99, 99, 99, 99, 99, 
-         'TheBasics_Birthplace', 3005917, 
+        (21, 2, 3005917, date('2020-02-01'), NULL, 45905771, NULL, 'value_as_string', 99, 99, 99, 99, 99, 99, 
+         'TheBasics_Birthplace', 1586135, 
          'unit_source_value', 'qualifier_source_value', 99, 'value_source_value', 99),
-        (31, 3, 1586135, date('2020-03-01'), NULL, 45905771, 99, 'value_as_string', 99, 99, 99, 99, 99, 99, 
-         'TheBasics_Birthplace', 3005917, 
+        (31, 3, 3005917, date('2020-03-01'), NULL, 45905771, NULL, 'value_as_string', 99, 99, 99, 99, 99, 99, 
+         'TheBasics_Birthplace', 1586135, 
          'unit_source_value', 'qualifier_source_value', 99, 'value_source_value', 99),
-        (32, 3, 1585386, date('2020-03-02'), NULL, 45905771, 99, 'value_as_string', 99, 99, 99, 99, 99, 99, 
-         'Insurance_HealthInsurance', 40766240, 
+        (32, 3, 40766240, date('2020-03-02'), NULL, 45905771, NULL, 'value_as_string', 99, 99, 99, 99, 99, 99, 
+         'Insurance_HealthInsurance', 1585386, 
          'unit_source_value', 'qualifier_source_value', 99, 'value_source_value', 99),
-        (41, 4, 1586135, date('2020-01-01'), NULL, 45905771, 99, 'value_as_string', 99, 99, 99, 99, 99, 99, 
-         'TheBasics_Birthplace', 3005917, 
+        (41, 4, 3005917, date('2020-01-01'), NULL, 45905771, NULL, 'value_as_string', 99, 99, 99, 99, 99, 99, 
+         'TheBasics_Birthplace', 1586135, 
          'unit_source_value', 'qualifier_source_value', 99, 'value_source_value', 99)
 """)
 
@@ -135,10 +136,7 @@ class BackfillPmiSkipCodesTest(BaseTest.CleaningRulesTestBase):
                 [1586135, 1585386, 1586166, 1585784])
     def test_backfill_pmi_skip_codes(self):
         """
-        Tests that the sepcifications for QUERYNAME perform as designed.
-
-        Validates pre conditions, tests execution, and post conditions based on the load
-        statements and the tables_and_counts variable.        
+        
         """
 
         tables_and_counts = [
@@ -153,43 +151,78 @@ class BackfillPmiSkipCodesTest(BaseTest.CleaningRulesTestBase):
                     OBSERVATION_FIELDS,
                 'cleaned_values': [
                     (11, 1, 9999999, parser.parse('2020-01-01').date(), None,
-                     99999999, 99, 'value_as_string', 99, 99, 99, 99, 99, 99,
+                     99999999, None, 'value_as_string', 99, 99, 99, 99, 99, 99,
                      'observation_source_value', 9999999, 'unit_source_value',
                      'qualifier_source_value', 99, 'value_source_value', 99),
-                    (12, 1, 1586135, parser.parse('2020-01-01').date(), None,
-                     45905771, 99, 'value_as_string', 99, 99, 99, 99, 99, 99,
-                     'TheBasics_Birthplace', 3005917, 'unit_source_value',
+                    (12, 1, 3005917, parser.parse('2020-01-01').date(), None,
+                     45905771, None, 'value_as_string', 99, 99, 99, 99, 99, 99,
+                     'TheBasics_Birthplace', 1586135, 'unit_source_value',
                      'qualifier_source_value', 99, 'value_source_value', 99),
-                    (13, 1, 1585386, parser.parse('2020-01-01').date(), None,
-                     45905771, 99, 'value_as_string', 99, 99, 99, 99, 99, 99,
-                     'Insurance_HealthInsurance', 40766240, 'unit_source_value',
+                    (13, 1, 40766240, parser.parse('2020-01-01').date(), None,
+                     45905771, None, 'value_as_string', 99, 99, 99, 99, 99, 99,
+                     'Insurance_HealthInsurance', 1585386, 'unit_source_value',
                      'qualifier_source_value', 99, 'value_source_value', 99),
                     (14, 1, 1586166, parser.parse('2020-01-01').date(), None,
-                     45905771, 99, 'value_as_string', 99, 99, 99, 99, 99, 99,
+                     45905771, None, 'value_as_string', 99, 99, 99, 99, 99, 99,
                      'ElectronicSmoking_ElectricSmokeParticipant', 1586166,
                      'unit_source_value', 'qualifier_source_value', 99,
                      'value_source_value', 99),
-                    (15, 1, 1585784, parser.parse('2020-01-01').date(), None,
-                     45905771, 99, 'value_as_string', 99, 99, 99, 99, 99, 99,
-                     'OverallHealth_MenstrualStopped', 40767407,
+                    (15, 1, 40767407, parser.parse('2020-01-01').date(), None,
+                     45905771, None, 'value_as_string', 99, 99, 99, 99, 99, 99,
+                     'OverallHealth_MenstrualStopped', 1585784,
                      'unit_source_value', 'qualifier_source_value', 99,
                      'value_source_value', 99),
-                    (21, 2, 1586135, parser.parse('2020-02-01').date(), None,
-                     45905771, 99, 'value_as_string', 99, 99, 99, 99, 99, 99,
-                     'TheBasics_Birthplace', 3005917, 'unit_source_value',
+                    (21, 2, 3005917, parser.parse('2020-02-01').date(), None,
+                     45905771, None, 'value_as_string', 99, 99, 99, 99, 99, 99,
+                     'TheBasics_Birthplace', 1586135, 'unit_source_value',
                      'qualifier_source_value', 99, 'value_source_value', 99),
-                    (31, 3, 1586135, parser.parse('2020-03-01').date(), None,
-                     45905771, 99, 'value_as_string', 99, 99, 99, 99, 99, 99,
-                     'TheBasics_Birthplace', 3005917, 'unit_source_value',
+                    (31, 3, 3005917, parser.parse('2020-03-01').date(), None,
+                     45905771, None, 'value_as_string', 99, 99, 99, 99, 99, 99,
+                     'TheBasics_Birthplace', 1586135, 'unit_source_value',
                      'qualifier_source_value', 99, 'value_source_value', 99),
-                    (32, 3, 1585386, parser.parse('2020-03-02').date(), None,
-                     45905771, 99, 'value_as_string', 99, 99, 99, 99, 99, 99,
-                     'Insurance_HealthInsurance', 40766240, 'unit_source_value',
+                    (32, 3, 40766240, parser.parse('2020-03-02').date(), None,
+                     45905771, None, 'value_as_string', 99, 99, 99, 99, 99, 99,
+                     'Insurance_HealthInsurance', 1585386, 'unit_source_value',
                      'qualifier_source_value', 99, 'value_source_value', 99),
-                    (41, 4, 1586135, parser.parse('2020-01-01').date(), None,
-                     45905771, 99, 'value_as_string', 99, 99, 99, 99, 99, 99,
-                     'TheBasics_Birthplace', 3005917, 'unit_source_value',
-                     'qualifier_source_value', 99, 'value_source_value', 99)
+                    (41, 4, 3005917, parser.parse('2020-01-01').date(), None,
+                     45905771, None, 'value_as_string', 99, 99, 99, 99, 99, 99,
+                     'TheBasics_Birthplace', 1586135, 'unit_source_value',
+                     'qualifier_source_value', 99, 'value_source_value', 99),
+                    (1000000000005, 2, 40766240,
+                     parser.parse('2020-02-01').date(), None, 45905771, None,
+                     None, 903096, 0, 0, None, None, None,
+                     'Insurance_HealthInsurance', 1585386, None, None, 903096,
+                     'PMI_Skip', None),
+                    (1000000000006, 2, 40767407,
+                     parser.parse('2020-02-01').date(), None, 45905771, None,
+                     None, 903096, 0, 0, None, None, None,
+                     'OverallHealth_MenstrualStopped', 1585784, None, None,
+                     903096, 'PMI_Skip', None),
+                    (1000000000008, 2, 1586166,
+                     parser.parse('2020-02-01').date(), None, 45905771, None,
+                     None, 903096, 0, 0, None, None, None,
+                     'ElectronicSmoking_ElectricSmokeParticipant', 1586166,
+                     None, None, 903096, 'PMI_Skip', None),
+                    (1000000000010, 3, 40767407,
+                     parser.parse('2020-03-02').date(), None, 45905771, None,
+                     None, 903096, 0, 0, None, None, None,
+                     'OverallHealth_MenstrualStopped', 1585784, None, None,
+                     903096, 'PMI_Skip', None),
+                    (1000000000012, 3, 1586166,
+                     parser.parse('2020-03-02').date(), None, 45905771, None,
+                     None, 903096, 0, 0, None, None, None,
+                     'ElectronicSmoking_ElectricSmokeParticipant', 1586166,
+                     None, None, 903096, 'PMI_Skip', None),
+                    (1000000000013, 4, 40766240,
+                     parser.parse('2020-01-01').date(), None, 45905771, None,
+                     None, 903096, 0, 0, None, None, None,
+                     'Insurance_HealthInsurance', 1585386, None, None, 903096,
+                     'PMI_Skip', None),
+                    (1000000000015, 4, 1586166,
+                     parser.parse('2020-01-01').date(), None, 45905771, None,
+                     None, 903096, 0, 0, None, None, None,
+                     'ElectronicSmoking_ElectricSmokeParticipant', 1586166,
+                     None, None, 903096, 'PMI_Skip', None),
                 ]
             },
             {

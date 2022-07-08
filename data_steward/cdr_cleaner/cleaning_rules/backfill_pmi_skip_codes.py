@@ -75,7 +75,10 @@ PMI_SKIP_FIX_QUERY = JINJA_ENV.from_string("""
       GROUP BY person_id
     )
     SELECT
-      ROW_NUMBER() OVER() + 1000000000000 AS observation_id,
+      ROW_NUMBER() OVER(ORDER BY 
+        potential_backfill.person_id,
+        potential_backfill.observation_source_concept_id
+        ) + 1000000000000 AS observation_id,
       potential_backfill.*,
       default_date.default_observation_date,
       default_date.default_observation_datetime
@@ -95,7 +98,6 @@ PMI_SKIP_FIX_QUERY = JINJA_ENV.from_string("""
     ) potential_backfill
     JOIN default_date
     ON potential_backfill.person_id = default_date.person_id
-    ORDER BY potential_backfill.person_id 
   ) AS pb
   ON obs.person_id = pb.person_id
   AND obs.observation_concept_id = pb.observation_concept_id
