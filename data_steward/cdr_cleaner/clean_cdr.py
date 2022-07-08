@@ -9,7 +9,7 @@ import logging
 
 # Project imports
 import cdr_cleaner.clean_cdr_engine as clean_engine
-import cdr_cleaner.cleaning_rules.backfill_pmi_skip_codes as back_fill_pmi_skip
+from cdr_cleaner.cleaning_rules.backfill_pmi_skip_codes import BackfillPmiSkipCodes
 from cdr_cleaner.cleaning_rules.clean_by_birth_year import CleanByBirthYear
 import cdr_cleaner.cleaning_rules.domain_alignment as domain_alignment
 import cdr_cleaner.cleaning_rules.drop_duplicate_states as drop_duplicate_states
@@ -161,7 +161,7 @@ RDR_CLEANING_CLASSES = [
     (UpdateFieldsNumbersAsStrings,),
     (UpdateCopeFluQuestionConcept,),
     (maps_to_value_vocab_update.get_maps_to_value_ppi_vocab_update_queries,),
-    (back_fill_pmi_skip.get_run_pmi_fix_queries,),
+    (BackfillPmiSkipCodes,),
     (CleanPPINumericFieldsUsingParameters,),
     (RemoveMultipleRaceEthnicityAnswersQueries,),
     (negative_ppi.get_update_ppi_queries,),
