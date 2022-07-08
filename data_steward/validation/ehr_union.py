@@ -210,7 +210,7 @@ def mapping_table_for(domain_table):
     :param domain_table: one of the domain tables (e.g. 'visit_occurrence', 'condition_occurrence')
     :return:
     """
-    return '_mapping_' + domain_table
+    return f'_mapping_{domain_table}'
 
 
 def mapping(domain_table, hpo_ids, input_dataset_id, output_dataset_id,
