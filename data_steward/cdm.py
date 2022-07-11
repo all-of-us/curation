@@ -1,10 +1,11 @@
 """
 OMOP CDM utility functions
 """
-
+# Python imports
 import argparse
 import logging
 
+# Project imports
 import bq_utils
 import common
 import resources
