@@ -533,6 +533,10 @@ def create_standard_table(table_name,
     return create_table(table_id, fields, drop_existing, dataset_id)
 
 
+@deprecated(
+    reason=
+    'Use gcloud.bq.BigQueryClient.list_tables(self, dataset: typing.Union[bigquery.DatasetReference, str]) instead'
+)
 def list_tables(dataset_id=None,
                 max_results=bq_consts.LIST_TABLES_MAX_RESULTS,
                 project_id=None):
