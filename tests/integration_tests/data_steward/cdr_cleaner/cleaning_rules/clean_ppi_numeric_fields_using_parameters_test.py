@@ -85,18 +85,18 @@ class CleanPPINumericFieldsUsingParameterTest(BaseTest.CleaningRulesTestBase):
             """
             INSERT INTO `{{fq_dataset_name}}.observation`
             (observation_id, person_id, observation_concept_id, observation_date,
-             observation_type_concept_id, value_as_number, value_as_concept_id)
+             observation_type_concept_id, value_as_number, value_as_concept_id, value_source_concept_id)
             VALUES
                 -- invalid values test setup --
-                (103, 3, 1585795, date('2015-07-15'), 0, 100, 1234567),
-                (104, 4, 1585802, date('2015-07-15'), 0, -100, 1234567),
-                (105, 5, 1585820, date('2015-07-15'), 0, 256, 1234567),
-                (106, 6, 1585820, date('2015-07-15'), 0, -256, 1234567),
-                (107, 7, 1585864, date('2015-07-15'), 0, 100, 1234567),
-                (108, 8, 1585870, date('2015-07-15'), 0, -100, 1234567),
-                (109, 9, 1585873, date('2015-07-15'), 0, 15, 7654321),
-                (110, 10, 1586159, date('2015-07-15'), 0, 16, 7654321),
-                (111, 11, 1586162, date('2015-07-15'), 0, 17, 7654321)"""
+                (103, 3, 1585795, date('2015-07-15'), 0, 100, 1234567, 1234567),
+                (104, 4, 1585802, date('2015-07-15'), 0, -100, 1234567, 1234567),
+                (105, 5, 1585820, date('2015-07-15'), 0, 256, 1234567, 1234567),
+                (106, 6, 1585820, date('2015-07-15'), 0, -256, 1234567, 1234567),
+                (107, 7, 1585864, date('2015-07-15'), 0, 100, 1234567, 1234567),
+                (108, 8, 1585870, date('2015-07-15'), 0, -100, 1234567, 1234567),
+                (109, 9, 1585873, date('2015-07-15'), 0, 15, 7654321, 7654321),
+                (110, 10, 1586159, date('2015-07-15'), 0, 16, 7654321, 7654321),
+                (111, 11, 1586162, date('2015-07-15'), 0, 17, 7654321, 7654321)"""
         ).render(fq_dataset_name=self.fq_dataset_name)
         queries.append(invalid_values_tmpl)
 
@@ -104,14 +104,14 @@ class CleanPPINumericFieldsUsingParameterTest(BaseTest.CleaningRulesTestBase):
             """
             INSERT INTO `{{fq_dataset_name}}.observation`
             (observation_id, person_id, observation_concept_id, observation_date,
-             observation_type_concept_id, value_as_number, value_as_concept_id)
+             observation_type_concept_id, value_as_number, value_as_concept_id, value_source_concept_id)
             VALUES
                 -- 11+ generalization test setup --
-                (112, 12, 1333015, date('2020-09-06'), 0, -12, 1234567),
-                (113, 13, 1585889, date('2020-09-06'), 0, 12, 1234567),
-                (114, 14, 1333015, date('2020-09-06'), 0, 10, 7654321),
-                (118, 18, 1585889, date('2020-09-06'), 0, 20, 7654321),
-                (121, 21, 1333015, date('2020-09-06'), 0, 15, 1234567)"""
+                (112, 12, 1333015, date('2020-09-06'), 0, -12, 1234567, 1234567),
+                (113, 13, 1585889, date('2020-09-06'), 0, 12, 1234567, 1234567),
+                (114, 14, 1333015, date('2020-09-06'), 0, 10, 7654321, 7654321),
+                (118, 18, 1585889, date('2020-09-06'), 0, 20, 7654321, 1234567),
+                (121, 21, 1333015, date('2020-09-06'), 0, 15, 1234567, 1234567)"""
         ).render(fq_dataset_name=self.fq_dataset_name)
         queries.append(eleven_plus_tmpl)
 
@@ -119,14 +119,14 @@ class CleanPPINumericFieldsUsingParameterTest(BaseTest.CleaningRulesTestBase):
             """
             INSERT INTO `{{fq_dataset_name}}.observation`
             (observation_id, person_id, observation_concept_id, observation_date,
-             observation_type_concept_id, value_as_number, value_as_concept_id)
+             observation_type_concept_id, value_as_number, value_as_concept_id, value_source_concept_id)
             VALUES
                 -- 6+ generalization test setup --
-                (115, 15, 1333023, date('2020-09-11'), 0, -7, 1234567),
-                (116, 16, 1585890, date('2020-09-11'), 0, 7, 1234567),
-                (117, 17, 1333023, date('2020-09-11'), 0, 5, 7654321),
-                (119, 19, 1585890, date('2020-09-11'), 0, 20, 7654321),
-                (120, 20, 1333023, date('2020-09-11'), 0, 6, 1234567)"""
+                (115, 15, 1333023, date('2020-09-11'), 0, -7, 1234567, 1234567),
+                (116, 16, 1585890, date('2020-09-11'), 0, 7, 1234567, 1234567),
+                (117, 17, 1333023, date('2020-09-11'), 0, 5, 7654321, 7654321),
+                (119, 19, 1585890, date('2020-09-11'), 0, 20, 7654321, 7654321),
+                (120, 20, 1333023, date('2020-09-11'), 0, 6, 1234567, 1234567)"""
         ).render(fq_dataset_name=self.fq_dataset_name)
         queries.append(six_plus_tmpl)
 
@@ -148,31 +148,50 @@ class CleanPPINumericFieldsUsingParameterTest(BaseTest.CleaningRulesTestBase):
             ],
             'fields': [
                 'observation_id', 'observation_concept_id', 'value_as_number',
-                'value_as_concept_id'
+                'value_as_concept_id', 'value_source_concept_id'
             ],
             'cleaned_values': [
                 # invalid values tests
-                (103, 1585795, None, self.invalid_values_value_as_concept_id),
-                (104, 1585802, None, self.invalid_values_value_as_concept_id),
-                (105, 1585820, None, self.invalid_values_value_as_concept_id),
-                (106, 1585820, None, self.invalid_values_value_as_concept_id),
-                (107, 1585864, None, self.invalid_values_value_as_concept_id),
-                (108, 1585870, None, self.invalid_values_value_as_concept_id),
-                (109, 1585873, 15, 7654321),
-                (110, 1586159, 16, 7654321),
-                (111, 1586162, 17, 7654321),
+                (103, 1585795, None, self.invalid_values_value_as_concept_id,
+                 self.invalid_values_value_as_concept_id),
+                (104, 1585802, None, self.invalid_values_value_as_concept_id,
+                 self.invalid_values_value_as_concept_id),
+                (105, 1585820, None, self.invalid_values_value_as_concept_id,
+                 self.invalid_values_value_as_concept_id),
+                (106, 1585820, None, self.invalid_values_value_as_concept_id,
+                 self.invalid_values_value_as_concept_id),
+                (107, 1585864, None, self.invalid_values_value_as_concept_id,
+                 self.invalid_values_value_as_concept_id),
+                (108, 1585870, None, self.invalid_values_value_as_concept_id,
+                 self.invalid_values_value_as_concept_id),
+                (109, 1585873, 15, 7654321, 7654321),
+                (110, 1586159, 16, 7654321, 7654321),
+                (111, 1586162, 17, 7654321, 7654321),
                 # 11+ values tests
-                (112, 1333015, None, self.invalid_values_value_as_concept_id),
-                (113, 1585889, None, self.eleven_plus_value_as_concept_id),
-                (114, 1333015, 10, 7654321),
-                (118, 1585889, None, self.invalid_values_value_as_concept_id),
-                (121, 1333015, None, self.eleven_plus_value_as_concept_id),
+                (112, 1333015, None, self.invalid_values_value_as_concept_id,
+                 self.invalid_values_value_as_concept_id),
+                (113, 1585889, None, self.eleven_plus_value_as_concept_id,
+                 self.eleven_plus_value_as_concept_id),
+                (114, 1333015, 10, 7654321, 7654321),
+                (118, 1585889, None, self.invalid_values_value_as_concept_id,
+                 self.invalid_values_value_as_concept_id),
+                (121, 1333015, None, self.eleven_plus_value_as_concept_id,
+                 self.eleven_plus_value_as_concept_id),
                 # 6+ values tests
-                (115, 1333023, None, self.invalid_values_value_as_concept_id),
-                (116, 1585890, None, self.six_plus_value_as_concept_id),
-                (117, 1333023, 5, 7654321),
-                (119, 1585890, None, self.invalid_values_value_as_concept_id),
-                (120, 1333023, None, self.six_plus_value_as_concept_id)
+                (115, 1333023, None, self.invalid_values_value_as_concept_id,
+                 self.invalid_values_value_as_concept_id),
+                (
+                    116,
+                    1585890,
+                    None,
+                    self.six_plus_value_as_concept_id,
+                    self.six_plus_value_as_concept_id,
+                ),
+                (117, 1333023, 5, 7654321, 7654321),
+                (119, 1585890, None, self.invalid_values_value_as_concept_id,
+                 self.invalid_values_value_as_concept_id),
+                (120, 1333023, None, self.six_plus_value_as_concept_id,
+                 self.six_plus_value_as_concept_id)
             ]
         }]
 
