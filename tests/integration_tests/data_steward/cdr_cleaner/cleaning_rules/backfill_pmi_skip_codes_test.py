@@ -1,24 +1,20 @@
 """
-TODO add description
-TODO add table_namer
+Integration test for BackfillPmiSkipCodes.
 
+For simplification, only the following 4 concepts are treated as potentially 
+skipped questions in this test: [1586135, 1585386, 1586166, 1585784]
+Out of the questions, only 1585784 is female(=8532) specific.
 
-
-OBSERVATION ID:
-    1 - 
-    2 - 
-    3 - 
-    4 - 
-    5 - 
-
+There are 4 persons in this test. Each person represents the following test cases.
 PERSON ID:
-    1 - Has no records that are relevant to this clearning rule.
-    2 - Has 2 records that need backfill. 
-        One of them is female-specific (1585784) and this person is female(=8532).
-    3 - Has a record that needs backfill. 
-        There is a female-specific (1585784) record but this person is not female, 
-        so this one is not backfilled.
-    4 - 
+    1 - Female. Has all of the 4 questions in Observation table. No backfill needed.
+    2 - Female. Has 2 records that need backfill. One of them is female-specific (1585784).
+    3 - Not female. Has 1 record that needs backfill. 
+        The female-specific (1585784) record is not backfilled because #3 is not female.
+        #3's newest observation_date(=2020-03-02) is set as the observation_date for the 
+        backfilled record.
+    4 - Not female. Has 2 records that needs backfill. 
+        The female-specific (1585784) record is not backfilled because #4 is not female.
 """
 
 # Python Imports
@@ -132,11 +128,14 @@ class BackfillPmiSkipCodesTest(BaseTest.CleaningRulesTestBase):
         queries = [insert_observation, insert_person]
         self.load_test_data(queries)
 
-    @mock.patch('cdr_cleaner.cleaning_rules.backfill_pmi_skip_codes.SKIP_CODES',
-                [1586135, 1585386, 1586166, 1585784])
+    @mock.patch(
+        'cdr_cleaner.cleaning_rules.backfill_pmi_skip_codes.SKIPPED_QUESTIONS',
+        [1586135, 1585386, 1586166, 1585784])
     def test_backfill_pmi_skip_codes(self):
         """
-        
+        Tests that the queries perform as designed.
+        Validates pre conditions, tests execution, and post conditions based on the load
+        statements and the tables_and_counts variable.
         """
 
         tables_and_counts = [

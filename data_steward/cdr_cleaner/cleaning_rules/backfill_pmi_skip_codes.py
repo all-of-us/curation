@@ -1,5 +1,8 @@
 """
-Descrption -> 
+Backfills survey data for participants who took the core surveys before
+skip codes were implemented (April 10, 2018).
+
+Original issue: DC-420
 """
 # Python imports
 import logging
@@ -12,7 +15,7 @@ from resources import fields_for
 
 LOGGER = logging.getLogger(__name__)
 
-SKIP_CODES = [
+SKIPPED_QUESTIONS = [
     1586135, 1586140, 1585838, 1585899, 1585940, 1585892, 1585889, 1585890,
     1585386, 1585389, 1585952, 1585375, 1585370, 1585879, 1585886, 1585857,
     1586166, 1586174, 1586182, 1586190, 1586198, 1585636, 1585766, 1585772,
@@ -54,7 +57,7 @@ PMI_SKIP_FIX_QUERY = JINJA_ENV.from_string("""
       FROM `{{project}}.{{dataset}}.observation` obs
       JOIN `{{project}}.{{dataset}}.person` AS per
       ON obs.person_id = per.person_id
-      WHERE observation_source_concept_id IN ({{skip_codes}})
+      WHERE observation_source_concept_id IN ({{skipped_questions}})
     ),
     backfill_observation AS (
       SELECT DISTINCT 
@@ -63,7 +66,7 @@ PMI_SKIP_FIX_QUERY = JINJA_ENV.from_string("""
         observation_source_value,
         observation_type_concept_id
       FROM `{{project}}.{{dataset}}.observation`
-      WHERE observation_source_concept_id IN ({{skip_codes}})
+      WHERE observation_source_concept_id IN ({{skipped_questions}})
     ),
     default_date AS (
       SELECT
@@ -71,7 +74,7 @@ PMI_SKIP_FIX_QUERY = JINJA_ENV.from_string("""
         MAX(observation_date) AS default_observation_date,
         MAX(observation_datetime) AS default_observation_datetime
       FROM `{{project}}.{{dataset}}.observation`
-      WHERE observation_source_concept_id IN ({{skip_codes}})
+      WHERE observation_source_concept_id IN ({{skipped_questions}})
       GROUP BY person_id
     )
     SELECT
@@ -106,15 +109,23 @@ PMI_SKIP_FIX_QUERY = JINJA_ENV.from_string("""
 
 
 class BackfillPmiSkipCodes(BaseCleaningRule):
-    """Descrption -> 
-
+    """
+    Backfills survey data for participants who took the core surveys before
+    skip codes were implemented.
     """
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id):
-        """Descrption -> 
-
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 table_namer=None):
         """
-        desc = ''
+        Initialize the class with proper information.
+        DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
+        """
+        desc = (
+            'Backfills survey data for participants who took the core surveys '
+            'before skip codes were implemented.')
 
         super().__init__(issue_numbers=['DC420', 'DC821'],
                          description=desc,
@@ -122,19 +133,20 @@ class BackfillPmiSkipCodes(BaseCleaningRule):
                          affected_tables=[OBSERVATION],
                          project_id=project_id,
                          dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id)
+                         sandbox_dataset_id=sandbox_dataset_id,
+                         table_namer=table_namer)
 
     def get_query_specs(self):
         """
-        runs the query which adds skipped rows in survey before 2019-04-10 as PMI_Skip
-        no sandbox since this is only insert.
+        Runs the query which adds skipped questions to observation table.
+        No sandbox table since this is only insert.
         """
         insert_query = PMI_SKIP_FIX_QUERY.render(
             dataset=self.dataset_id,
             project=self.project_id,
             observation_fields=', '.join(
                 field['name'] for field in fields_for(OBSERVATION)),
-            skip_codes=', '.join(map(str, SKIP_CODES)))
+            skipped_questions=', '.join(map(str, SKIPPED_QUESTIONS)))
 
         insert_query_dict = {cdr_consts.QUERY: insert_query}
 
