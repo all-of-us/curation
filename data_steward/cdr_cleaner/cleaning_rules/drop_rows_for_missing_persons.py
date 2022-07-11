@@ -51,7 +51,7 @@ class DropMissingParticipants(BaseCleaningRule):
                  project_id,
                  dataset_id,
                  sandbox_dataset_id,
-                 namer,
+                 table_namer,
                  depends_on=None):
         desc = f'Sandbox and remove rows for PIDs missing from the person table.'
 
@@ -64,7 +64,7 @@ class DropMissingParticipants(BaseCleaningRule):
             dataset_id=dataset_id,
             sandbox_dataset_id=sandbox_dataset_id,
             depends_on=depends_on,
-            table_namer=namer)
+            table_namer=table_namer)
 
     def get_query_specs(self):
         """
