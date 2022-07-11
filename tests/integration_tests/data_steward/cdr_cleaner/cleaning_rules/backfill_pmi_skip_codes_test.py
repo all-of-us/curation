@@ -1,7 +1,7 @@
 """
 Integration test for BackfillPmiSkipCodes.
 
-For simplification, only the following 4 concepts are treated as potentially 
+For simplification, only the following 4 concepts are treated as potentially
 skipped questions in this test: [1586135, 1585386, 1586166, 1585784]
 Out of the questions, only 1585784 is female(=8532) specific.
 
@@ -9,11 +9,11 @@ There are 4 persons in this test. Each person represents the following test case
 PERSON ID:
     1 - Female. Has all of the 4 questions in Observation table. No backfill needed.
     2 - Female. Has 2 records that need backfill. One of them is female-specific (1585784).
-    3 - Not female. Has 1 record that needs backfill. 
+    3 - Not female. Has 1 record that needs backfill.
         The female-specific (1585784) record is not backfilled because #3 is not female.
-        #3's newest observation_date(=2020-03-02) is set as the observation_date for the 
+        #3's newest observation_date(=2020-03-02) is set as the observation_date for the
         backfilled record.
-    4 - Not female. Has 2 records that needs backfill. 
+    4 - Not female. Has 2 records that need backfill.
         The female-specific (1585784) record is not backfilled because #4 is not female.
 """
 
