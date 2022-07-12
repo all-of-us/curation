@@ -43,6 +43,3 @@ class DeleteStaleTestBucketsTest(TestCase):
             # Assert: Bucket is stale (2: Empty(=no blobs))
             self.assertEqual(
                 len(list(self.storage_client.list_blobs(bucket_name))), 0)
-
-            # Assert: Bucket is stale (3: label 'do_not_delete':'true' is NOT attached)
-            self.assertEqual(bucket_labels, {})
