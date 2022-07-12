@@ -210,7 +210,7 @@ def mapping_table_for(domain_table):
     :param domain_table: one of the domain tables (e.g. 'visit_occurrence', 'condition_occurrence')
     :return:
     """
-    return '_mapping_' + domain_table
+    return f'_mapping_{domain_table}'
 
 
 def mapping(domain_table, hpo_ids, input_dataset_id, output_dataset_id,
@@ -224,7 +224,7 @@ def mapping(domain_table, hpo_ids, input_dataset_id, output_dataset_id,
     :param input_dataset_id: identifies dataset with multiple CDMs, each from an HPO submission
     :param output_dataset_id: identifies dataset where mapping table should be output
     :param project_id: identifies GCP project that contain the datasets
-    :param client: Bigquery Client
+    :param client: a BigQueryClient
     :return:
     """
     q = mapping_query(domain_table, hpo_ids, input_dataset_id, project_id)
@@ -314,7 +314,7 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
     """
     tables_to_ref = []
     for table in resources.CDM_TABLES:
-        if bq_utils.has_primary_key(table):
+        if resources.has_primary_key(table):
             tables_to_ref.append(table)
 
     is_id_mapped = table_name in tables_to_ref

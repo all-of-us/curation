@@ -132,6 +132,8 @@ def get_validation_results_dataset_id():
     return dataset_id
 
 
+@deprecated(
+    reason='Discovery client is being replaced by gcloud.gcs.BigQueryClient()')
 def create_service():
     return build('bigquery', 'v2', cache={})
 
@@ -915,6 +917,7 @@ def get_hpo_info():
     return hpo_list
 
 
+@deprecated(reason='Use resources.has_primary_key(table) instead')
 def has_primary_key(table):
     """
     Determines if a CDM table contains a numeric primary key field
