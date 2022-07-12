@@ -62,11 +62,23 @@ class EhrUnionTest(unittest.TestCase):
         for table in cdm.tables_to_map():
             field = f'{table}_id'
             mapped_fields.append(field)
-        self.mapped_fields = mapped_fields
+        self.mapped_fields = mapped_fields + [
+            eu_constants.PRECEDING_VISIT_DETAIL_ID,
+            eu_constants.PRECEDING_VISIT_OCCURRENCE_ID,
+            eu_constants.VISIT_DETAIL_PARENT_ID
+        ]
         self.implemented_foreign_keys = [
             eu_constants.VISIT_OCCURRENCE_ID, eu_constants.VISIT_DETAIL_ID,
-            eu_constants.CARE_SITE_ID, eu_constants.LOCATION_ID
+            eu_constants.CARE_SITE_ID, eu_constants.LOCATION_ID,
+            eu_constants.PRECEDING_VISIT_DETAIL_ID,
+            eu_constants.PRECEDING_VISIT_OCCURRENCE_ID,
+            eu_constants.VISIT_DETAIL_PARENT_ID
         ]
+        self.self_reference_keys = {
+            eu_constants.PRECEDING_VISIT_DETAIL_ID: 'visit_detail',
+            eu_constants.VISIT_DETAIL_PARENT_ID: 'visit_detail',
+            eu_constants.PRECEDING_VISIT_OCCURRENCE_ID: 'visit_occurrence'
+        }
 
         self.ehr_cutoff_date = '2022-01-05'
 
@@ -579,6 +591,7 @@ class EhrUnionTest(unittest.TestCase):
                         dpath.util.values(stmt, 'from/%s/join/value' % key_ind))
                     expected_join = dataset_out + '.' + ehr_union.mapping_table_for(
                         table)
+
                 elif field['name'] in self.implemented_foreign_keys:
                     # Foreign key, mapping table associated with the referenced table should be LEFT joined
                     key_ind += 1
@@ -589,13 +602,19 @@ class EhrUnionTest(unittest.TestCase):
                     # 'visit_occurrence' before 'care_site'. The following reorder is required to match the sequence
                     # to the actual-query.
                     if table == 'visit_detail' and key_ind == 2:
-                        stmt['from'][2], stmt['from'][3] = stmt['from'][
-                            3], stmt['from'][2]
+                        stmt['from'][2], stmt['from'][3], stmt['from'][4], stmt[
+                            'from'][5] = stmt['from'][3], stmt['from'][4], stmt[
+                                'from'][5], stmt['from'][2]
                     actual_join = first_or_none(
                         dpath.util.values(stmt,
                                           'from/%s/left join/value' % key_ind))
                     joined_table = field['name'].replace('_id', '')
-                    expected_join = f'{dataset_out}.{ehr_union.mapping_table_for(joined_table)}'
+
+                    if field['name'] in self.self_reference_keys:
+                        expected_join = f'{dataset_out}.{ehr_union.mapping_table_for(self.self_reference_keys[field["name"]])}'
+                    else:
+                        expected_join = f'{dataset_out}.{ehr_union.mapping_table_for(joined_table)}'
+
                 if expected_join != actual_join:
                     return SUBQUERY_FAIL_MSG.format(expr=expr,
                                                     table=table,

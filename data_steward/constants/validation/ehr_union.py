@@ -9,6 +9,11 @@ LOCATION_ID = 'location_id'
 CONCEPT_CONSTANT_FACTOR = int(1e14)
 HPO_CONSTANT_FACTOR = int(1e11)
 
+# Self-referential keys
+PRECEDING_VISIT_OCCURRENCE_ID = 'preceding_visit_occurrence_id'
+PRECEDING_VISIT_DETAIL_ID = 'preceding_visit_detail_id'
+VISIT_DETAIL_PARENT_ID = 'visit_detail_parent_id'
+
 # Starting factor to create ID space for person to observation mapped record
 EHR_PERSON_TO_OBS_CONSTANT = 2 * common.ID_CONSTANT_FACTOR
 
