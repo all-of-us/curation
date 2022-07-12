@@ -1,6 +1,8 @@
+# Python imports
 import unittest
 import os
 
+# Project imports
 import app_identity
 from gcloud.bq import BigQueryClient
 from constants.utils.bq import LOOKUP_TABLES_DATASET_ID, HPO_SITE_ID_MAPPINGS_TABLE_ID

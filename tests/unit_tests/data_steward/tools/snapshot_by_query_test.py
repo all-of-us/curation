@@ -27,7 +27,7 @@ class SnapshotByQueryTest(unittest.TestCase):
         ]
 
         actual_query = snapshot_by_query.get_copy_table_query(
-            'test-dataset', 'person', self.mock_bq_client)
+            self.mock_bq_client, 'test-dataset', 'person')
         expected_query = """SELECT
   CAST(person_id AS INT64) AS person_id,
   CAST(gender_concept_id AS INT64) AS gender_concept_id,
@@ -54,6 +54,6 @@ FROM
                          re.sub(WHITESPACE, SPACE, expected_query))
 
         actual_query = snapshot_by_query.get_copy_table_query(
-            'test-dataset', 'non_cdm_table', self.mock_bq_client)
+            self.mock_bq_client, 'test-dataset', 'non_cdm_table')
         expected_query = '''SELECT * FROM `test-project.test-dataset.non_cdm_table`'''
         self.assertEqual(actual_query, expected_query)

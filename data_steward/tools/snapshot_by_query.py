@@ -3,7 +3,7 @@ import logging
 
 import cdm
 import resources
-from bq_utils import create_dataset, list_all_table_ids, query, wait_on_jobs, BigQueryJobWaitError, \
+from bq_utils import list_all_table_ids, query, wait_on_jobs, BigQueryJobWaitError, \
     create_standard_table
 from gcloud.bq import BigQueryClient
 from utils.pipeline_logging import configure
@@ -23,19 +23,20 @@ BIGQUERY_DATA_TYPES = {
 }
 
 
-def create_empty_dataset(project_id, dataset_id, snapshot_dataset_id):
+def create_empty_dataset(client, dataset_id, snapshot_dataset_id):
     """
     Create the empty tables in the new snapshot dataset
-    :param project_id: identifies the project
+    :param client: a BigQueryClient
     :param dataset_id: identifies the source dataset
     :param snapshot_dataset_id: identifies the new dataset
     :return:
     """
-    create_dataset(
-        project_id=project_id,
-        dataset_id=snapshot_dataset_id,
-        description='Snapshot of {dataset_id}'.format(dataset_id=dataset_id),
-        overwrite_existing=True)
+    client.delete_dataset(snapshot_dataset_id,
+                          delete_contents=True,
+                          not_found_ok=True)
+    dataset_result = client.create_dataset(snapshot_dataset_id)
+    dataset_result.description = 'Snapshot of {dataset_id}'.format(
+        dataset_id=dataset_id)
 
 
 def create_empty_cdm_tables(snapshot_dataset_id, hpo_id=None):
@@ -96,7 +97,7 @@ def get_source_fields(client, source_table):
     return [f'{field.name}' for field in client.get_table(source_table).schema]
 
 
-def get_copy_table_query(dataset_id, table_id, client):
+def get_copy_table_query(client, dataset_id, table_id):
     try:
         source_table = f'{client.project}.{dataset_id}.{table_id}'
         source_fields = get_source_fields(client, source_table)
@@ -119,16 +120,15 @@ def get_copy_table_query(dataset_id, table_id, client):
                                    table_id=table_id)
 
 
-def copy_tables_to_new_dataset(project_id, dataset_id, snapshot_dataset_id):
+def copy_tables_to_new_dataset(client, dataset_id, snapshot_dataset_id):
     """
     lists the tables in the dataset and copies each table to a new dataset.
+    :param client: a BigQueryClient
     :param dataset_id: identifies the source dataset
-    :param project_id: identifies the project
     :param snapshot_dataset_id: identifies the destination dataset
     :return:
     """
     copy_table_job_ids = []
-    bq_client = BigQueryClient(project_id)
     destination_tables = list_all_table_ids(snapshot_dataset_id)
     for table_id in list_all_table_ids(dataset_id):
         LOGGER.info(
@@ -137,12 +137,12 @@ def copy_tables_to_new_dataset(project_id, dataset_id, snapshot_dataset_id):
         if table_id not in destination_tables:
             try:
                 fields = resources.fields_for(table_id)
-                bq_client.create_tables(
-                    [f'{project_id}.{snapshot_dataset_id}.{table_id}'], False,
-                    [fields])
+                client.create_tables(
+                    [f'{client.project}.{snapshot_dataset_id}.{table_id}'],
+                    False, [fields])
             except RuntimeError:
                 LOGGER.info(f'Unable to find schema for {table_id}')
-        q = get_copy_table_query(dataset_id, table_id, bq_client)
+        q = get_copy_table_query(client, dataset_id, table_id)
         results = query(q,
                         use_legacy_sql=False,
                         destination_table_id=table_id,
@@ -154,23 +154,23 @@ def copy_tables_to_new_dataset(project_id, dataset_id, snapshot_dataset_id):
         raise BigQueryJobWaitError(incomplete_jobs)
 
 
-def create_schemaed_snapshot_dataset(project_id,
+def create_schemaed_snapshot_dataset(client,
                                      dataset_id,
                                      snapshot_dataset_id,
                                      overwrite_existing=True):
     """
-    :param project_id: identifies the project
+    :param client: a BigQueryClient
     :param dataset_id: identifies the source dataset
     :param snapshot_dataset_id: identifies the destination dataset
     :param overwrite_existing: Default is True, False if a dataset is already created.
     :return:
     """
     if overwrite_existing:
-        create_empty_dataset(project_id, dataset_id, snapshot_dataset_id)
+        create_empty_dataset(client, dataset_id, snapshot_dataset_id)
 
     create_empty_cdm_tables(snapshot_dataset_id)
 
-    copy_tables_to_new_dataset(project_id, dataset_id, snapshot_dataset_id)
+    copy_tables_to_new_dataset(client, dataset_id, snapshot_dataset_id)
 
 
 if __name__ == '__main__':
@@ -198,6 +198,6 @@ if __name__ == '__main__':
                         help='Name of the new dataset that needs to be created',
                         required=True)
     args = parser.parse_args()
-
-    create_schemaed_snapshot_dataset(args.project_id, args.dataset_id,
+    bq_client = BigQueryClient(args.project_id)
+    create_schemaed_snapshot_dataset(bq_client, args.dataset_id,
                                      args.snapshot_dataset_id)

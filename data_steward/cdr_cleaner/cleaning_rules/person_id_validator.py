@@ -95,7 +95,7 @@ class PersonIdValidation(DropMissingParticipants):
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
-                         namer=table_namer,
+                         table_namer=table_namer,
                          depends_on=[])
 
     def setup_rule(self, client, *args, **keyword_args):
