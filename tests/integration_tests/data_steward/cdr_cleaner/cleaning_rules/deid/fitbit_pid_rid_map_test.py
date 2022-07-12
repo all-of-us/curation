@@ -148,8 +148,7 @@ class FitbitPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
             (1234, 234, 256),
             (5678, 678, 250),
             (2345, 345, 255),
-            (6789, 789, 256),
-            (3456, 456, 255)""").render(fq_table=self.fq_deid_map_table)
+            (6789, 789, 256)""").render(fq_table=self.fq_deid_map_table)
         queries.append(map_query)
 
         self.load_test_data(queries)
@@ -160,48 +159,48 @@ class FitbitPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
                 '.'.join([self.fq_dataset_name, ACTIVITY_SUMMARY]),
             'fields': ['person_id', 'activity_calories', 'date'],
             'loaded_ids': [1234, 5678, 2345, 6789, 3456],
+            'sandboxed_ids': [3456],
             'cleaned_values': [
                 (234, 100, datetime.fromisoformat('2020-08-17').date()),
                 (678, 200, datetime.fromisoformat('2020-08-17').date()),
                 (345, 500, datetime.fromisoformat('2020-08-17').date()),
-                (789, 800, datetime.fromisoformat('2020-08-17').date()),
-                (456, 1000, datetime.fromisoformat('2020-08-17').date())
+                (789, 800, datetime.fromisoformat('2020-08-17').date())
             ]
         }, {
             'fq_table_name':
                 '.'.join([self.fq_dataset_name, HEART_RATE_MINUTE_LEVEL]),
             'fields': ['person_id', 'heart_rate_value', 'datetime'],
             'loaded_ids': [1234, 5678, 2345, 6789, 3456],
+            'sandboxed_ids': [3456],
             'cleaned_values': [
                 (234, 60, datetime.fromisoformat('2020-08-17 15:00:00')),
                 (678, 50, datetime.fromisoformat('2020-08-17 15:30:00')),
                 (345, 55, datetime.fromisoformat('2020-08-17 16:00:00')),
-                (789, 40, datetime.fromisoformat('2020-08-17 16:30:00')),
-                (456, 65, datetime.fromisoformat('2020-08-17 17:00:00'))
+                (789, 40, datetime.fromisoformat('2020-08-17 16:30:00'))
             ]
         }, {
             'fq_table_name':
                 '.'.join([self.fq_dataset_name, HEART_RATE_SUMMARY]),
             'fields': ['person_id', 'date', 'calorie_count'],
             'loaded_ids': [1234, 5678, 2345, 6789, 3456],
+            'sandboxed_ids': [3456],
             'cleaned_values': [
                 (234, datetime.fromisoformat('2020-08-17').date(), 100),
                 (678, datetime.fromisoformat('2020-08-17').date(), 200),
                 (345, datetime.fromisoformat('2020-08-17').date(), 500),
-                (789, datetime.fromisoformat('2020-08-17').date(), 800),
-                (456, datetime.fromisoformat('2020-08-17').date(), 1000)
+                (789, datetime.fromisoformat('2020-08-17').date(), 800)
             ]
         }, {
             'fq_table_name':
                 '.'.join([self.fq_dataset_name, STEPS_INTRADAY]),
             'fields': ['person_id', 'datetime', 'steps'],
             'loaded_ids': [1234, 5678, 2345, 6789, 3456],
+            'sandboxed_ids': [3456],
             'cleaned_values': [
                 (234, datetime.fromisoformat('2020-08-17 15:00:00'), 60),
                 (678, datetime.fromisoformat('2020-08-17 15:30:00'), 50),
                 (345, datetime.fromisoformat('2020-08-17 16:00:00'), 55),
-                (789, datetime.fromisoformat('2020-08-17 16:30:00'), 40),
-                (456, datetime.fromisoformat('2020-08-17 17:00:00'), 65)
+                (789, datetime.fromisoformat('2020-08-17 16:30:00'), 40)
             ]
         }]
 
