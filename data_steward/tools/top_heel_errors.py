@@ -1,14 +1,15 @@
 """
 Fetch the most prevalent achilles heel errors in a dataset
 """
+# Python imports
 import csv
 import json
 import os
 from io import open
 from functools import partial
 
+# Project imports
 import app_identity
-
 import bq_utils
 from gcloud.bq import BigQueryClient
 import common
