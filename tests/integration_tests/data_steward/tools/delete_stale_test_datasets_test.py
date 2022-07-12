@@ -42,6 +42,3 @@ class DeleteStaleTestDatasetsTest(TestCase):
             # Assert: Dataset is stale (2: Empty(=no tables))
             self.assertEqual(
                 len(list(self.bq_client.list_tables(dataset_name))), 0)
-
-            # Assert: Dataset is stale (3: label 'do_not_delete':'true' is NOT attached)
-            self.assertEqual(dataset_labels, {})
