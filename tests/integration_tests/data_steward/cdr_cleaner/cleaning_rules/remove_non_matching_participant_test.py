@@ -324,7 +324,7 @@ class RemoveNonMatchingParticipantTest(BaseTest.CleaningRulesTestBase):
 
     @classmethod
     def tearDownClass(cls):
-        test_util.delete_all_tables(cls.dataset_id)
-        test_util.delete_all_tables(cls.ehr_dataset_id)
-        test_util.delete_all_tables(cls.validation_dataset_id)
-        test_util.delete_all_tables(cls.sandbox_id)
+        test_util.delete_all_tables(cls.client, cls.dataset_id)
+        test_util.delete_all_tables(cls.client, cls.ehr_dataset_id)
+        test_util.delete_all_tables(cls.client, cls.validation_dataset_id)
+        test_util.delete_all_tables(cls.client, cls.sandbox_id)

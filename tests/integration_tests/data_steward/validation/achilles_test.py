@@ -40,10 +40,10 @@ class AchillesTest(unittest.TestCase):
             test_util.FAKE_HPO_ID)
 
         self.storage_client.empty_bucket(self.hpo_bucket)
-        test_util.delete_all_tables(self.dataset_id)
+        test_util.delete_all_tables(self.bq_client, self.dataset_id)
 
     def tearDown(self):
-        test_util.delete_all_tables(self.dataset_id)
+        test_util.delete_all_tables(self.bq_client, self.dataset_id)
         self.storage_client.empty_bucket(self.hpo_bucket)
 
     @classmethod

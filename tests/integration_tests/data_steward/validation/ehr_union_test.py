@@ -641,8 +641,8 @@ class EhrUnionTest(unittest.TestCase):
 
     def tearDown(self):
         self._empty_hpo_buckets()
-        test_util.delete_all_tables(self.input_dataset_id)
-        test_util.delete_all_tables(self.output_dataset_id)
+        test_util.delete_all_tables(self.bq_client, self.input_dataset_id)
+        test_util.delete_all_tables(self.bq_client, self.output_dataset_id)
 
     @classmethod
     def tearDownClass(cls):

@@ -6,6 +6,7 @@ from unittest import mock, TestCase
 import app_identity
 import bq_utils
 import common
+from gcloud.bq import BigQueryClient
 from gcloud.gcs import StorageClient
 import resources
 from tests import test_util
@@ -63,10 +64,11 @@ class TopHeelErrorsTest(TestCase):
         self.project_id = app_identity.get_application_id()
         self.dataset_id = bq_utils.get_dataset_id()
         self.storage_client = StorageClient(self.project_id)
+        self.bq_client = BigQueryClient(self.project_id)
         self.drc_bucket = self.storage_client.get_drc_bucket()
 
         self.storage_client.empty_bucket(self.drc_bucket)
-        test_util.delete_all_tables(self.dataset_id)
+        test_util.delete_all_tables(self.bq_client, self.dataset_id)
         self.load_test_data(hpo_id=HPO_NYC)
 
     def load_test_data(self, hpo_id: str = None):
@@ -124,4 +126,4 @@ class TopHeelErrorsTest(TestCase):
 
     def tearDown(self):
         self.storage_client.empty_bucket(self.drc_bucket)
-        test_util.delete_all_tables(self.dataset_id)
+        test_util.delete_all_tables(self.bq_client, self.dataset_id)

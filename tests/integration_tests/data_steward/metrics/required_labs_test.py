@@ -43,7 +43,7 @@ class RequiredLabsTest(unittest.TestCase):
         self.rdr_dataset_id = bq_utils.get_rdr_dataset_id()
         # Cleanup
         self.storage_client.empty_bucket(self.hpo_bucket)
-        test_util.delete_all_tables(self.dataset_id)
+        test_util.delete_all_tables(self.bq_client, self.dataset_id)
 
         mock_get_hpo_name = mock.patch('validation.main.get_hpo_name')
         self.mock_get_hpo_name = mock_get_hpo_name.start()
@@ -54,7 +54,7 @@ class RequiredLabsTest(unittest.TestCase):
 
     def tearDown(self):
         self.storage_client.empty_bucket(self.hpo_bucket)
-        test_util.delete_all_tables(bq_utils.get_dataset_id())
+        test_util.delete_all_tables(self.bq_client, bq_utils.get_dataset_id())
 
     @classmethod
     def tearDownClass(cls):

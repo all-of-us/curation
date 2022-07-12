@@ -7,6 +7,7 @@ import bq_utils
 import cdr_cleaner.manual_cleaning_rules.clean_smoking_ppi as smoking_ppi
 import resources
 from tests import test_util
+from gcloud.bq import BigQueryClient
 
 SELECT_RECORDS = """ SELECT * FROM `{project_id}.{dataset_id}.{table_id}`"""
 
@@ -22,6 +23,7 @@ class CleanSmokingPPITest(unittest.TestCase):
     def setUp(self):
         self.project_id = app_identity.get_application_id()
         self.sandbox_dataset_id = bq_utils.get_unioned_dataset_id()
+        self.bq_client = BigQueryClient(self.project_id)
 
     def test_integration_load_smoking_lookup_table(self):
         csv_file = 'smoking_lookup.csv'
@@ -42,4 +44,4 @@ class CleanSmokingPPITest(unittest.TestCase):
             self.assertCountEqual(expected[i], actual[i])
 
     def tearDown(self):
-        test_util.delete_all_tables(self.sandbox_dataset_id)
+        test_util.delete_all_tables(self.bq_client, self.sandbox_dataset_id)

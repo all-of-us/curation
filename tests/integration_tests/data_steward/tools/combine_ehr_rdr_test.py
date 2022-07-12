@@ -43,8 +43,8 @@ class CombineEhrRdrTest(unittest.TestCase):
         # TODO base class this
         ehr_dataset_id = bq_utils.get_dataset_id()
         rdr_dataset_id = bq_utils.get_rdr_dataset_id()
-        test_util.delete_all_tables(ehr_dataset_id)
-        test_util.delete_all_tables(rdr_dataset_id)
+        test_util.delete_all_tables(cls.bq_client, ehr_dataset_id)
+        test_util.delete_all_tables(cls.bq_client, rdr_dataset_id)
         test_util.setup_hpo_id_bucket_name_table(cls.bq_client, cls.dataset_id)
         cls.load_dataset_from_files(ehr_dataset_id,
                                     test_util.NYC_FIVE_PERSONS_PATH, True)
@@ -95,7 +95,7 @@ class CombineEhrRdrTest(unittest.TestCase):
         self.ehr_dataset_id = bq_utils.get_dataset_id()
         self.rdr_dataset_id = bq_utils.get_rdr_dataset_id()
         self.combined_dataset_id = bq_utils.get_combined_dataset_id()
-        test_util.delete_all_tables(self.combined_dataset_id)
+        test_util.delete_all_tables(self.bq_client, self.combined_dataset_id)
 
     def test_consented_person_id(self):
         """
@@ -328,12 +328,12 @@ class CombineEhrRdrTest(unittest.TestCase):
         self._all_rdr_records_included()
 
     def tearDown(self):
-        test_util.delete_all_tables(self.combined_dataset_id)
+        test_util.delete_all_tables(self.bq_client, self.combined_dataset_id)
 
     @classmethod
     def tearDownClass(cls):
         ehr_dataset_id = bq_utils.get_dataset_id()
         rdr_dataset_id = bq_utils.get_rdr_dataset_id()
-        test_util.delete_all_tables(ehr_dataset_id)
-        test_util.delete_all_tables(rdr_dataset_id)
+        test_util.delete_all_tables(cls.bq_client, ehr_dataset_id)
+        test_util.delete_all_tables(cls.bq_client, rdr_dataset_id)
         test_util.drop_hpo_id_bucket_name_table(cls.bq_client, cls.dataset_id)

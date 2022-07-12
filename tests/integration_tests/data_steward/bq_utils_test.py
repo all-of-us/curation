@@ -36,7 +36,7 @@ class BqUtilsTest(unittest.TestCase):
     @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def setUp(self):
         self.person_table_id = bq_utils.get_table_id(FAKE_HPO_ID, common.PERSON)
-        test_util.delete_all_tables(self.dataset_id)
+        test_util.delete_all_tables(self.bq_client, self.dataset_id)
         self.TEST_FIELDS = [
             {
                 "type": "integer",
@@ -374,7 +374,7 @@ class BqUtilsTest(unittest.TestCase):
             f'Value not provided for required field required_integer_col')
 
     def tearDown(self):
-        test_util.delete_all_tables(self.dataset_id)
+        test_util.delete_all_tables(self.bq_client, self.dataset_id)
         self.storage_client.empty_bucket(self.hpo_bucket)
 
     @classmethod

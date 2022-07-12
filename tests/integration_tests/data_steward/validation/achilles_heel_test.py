@@ -39,10 +39,10 @@ class AchillesHeelTest(unittest.TestCase):
         self.hpo_bucket = self.storage_client.get_hpo_bucket(FAKE_HPO_ID)
         self.dataset = bq_utils.get_dataset_id()
         self.storage_client.empty_bucket(self.hpo_bucket)
-        test_util.delete_all_tables(self.dataset)
+        test_util.delete_all_tables(self.bq_client, self.dataset)
 
     def tearDown(self):
-        test_util.delete_all_tables(self.dataset_id)
+        test_util.delete_all_tables(self.bq_client, self.dataset_id)
         self.storage_client.empty_bucket(self.hpo_bucket)
 
     @classmethod
