@@ -209,17 +209,18 @@ def _export_query_responses():
         _export_query_response_by_path(p, FAKE_HPO_ID)
 
 
-def delete_all_tables(dataset_id):
+def delete_all_tables(client, dataset_id):
     """
     Remove all non-vocabulary and non-lookup tables from a dataset
 
+    :param client: a BigQueryClient
     :param dataset_id: ID of the dataset with the tables to delete
     :return: list of deleted tables
     """
 
     deleted = []
-    table_infos = bq_utils.list_tables(dataset_id)
-    table_ids = [table['tableReference']['tableId'] for table in table_infos]
+    table_infos = client.list_tables(dataset_id)
+    table_ids = [table.table_id for table in table_infos]
     for table_id in table_ids:
         if table_id not in common.VOCABULARY_TABLES + LOOKUP_TABLES:
             bq_utils.delete_table(table_id, dataset_id)
