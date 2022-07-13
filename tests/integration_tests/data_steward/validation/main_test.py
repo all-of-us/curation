@@ -2,7 +2,6 @@
 Unit test components of data_steward.validation.main
 """
 # Python imports
-from __future__ import print_function
 import datetime
 from time import sleep
 import os

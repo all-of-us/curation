@@ -1,7 +1,9 @@
+# Python imports
 import csv
 import os
 import unittest
 
+# Project imports
 import app_identity
 import bq_utils
 import cdr_cleaner.manual_cleaning_rules.clean_smoking_ppi as smoking_ppi
