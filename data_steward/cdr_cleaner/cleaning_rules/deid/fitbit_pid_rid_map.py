@@ -22,9 +22,9 @@ class FitbitPIDtoRID(PIDtoRID):
                  project_id,
                  dataset_id,
                  sandbox_dataset_id,
-                 mapping_dataset_id,
-                 mapping_table_id,
-                 table_namer=None):
+                 table_namer=None,
+                 mapping_dataset_id=None,
+                 mapping_table_id=None):
         """
         Initialize the class with proper info.
 

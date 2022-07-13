@@ -37,10 +37,13 @@ class FitbitPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
         })
         cls.fq_deid_map_table = f'{project_id}.{mapping_dataset_id}.{mapping_table_id}'
 
-        cls.rule_instance = pr.FitbitPIDtoRID(project_id, cls.dataset_id,
-                                              cls.sandbox_id,
-                                              mapping_dataset_id,
-                                              mapping_table_id)
+        cls.rule_instance = pr.FitbitPIDtoRID(
+            project_id,
+            cls.dataset_id,
+            cls.sandbox_id,
+            table_namer=None,
+            mapping_dataset_id=mapping_dataset_id,
+            mapping_table_id=mapping_table_id)
 
         cls.fq_sandbox_table_names = [
             f'{project_id}.{cls.sandbox_id}.{cls.rule_instance.sandbox_table_for(table_id)}'
