@@ -466,6 +466,7 @@ def setup_hpo_id_bucket_name_table(client, dataset_id):
     """
     Sets up `hpo_id_bucket_name` table that `get_hpo_bucket()` looks up.
     Drops the table if exist first, and create it with test lookup data.
+
     :param client: a BigQueryClient
     :param dataset_id: dataset id where the lookup table is created
     """
@@ -512,6 +513,7 @@ def setup_hpo_id_bucket_name_table(client, dataset_id):
 def drop_hpo_id_bucket_name_table(client, dataset_id):
     """
     Drops `hpo_id_bucket_name` table that `get_hpo_bucket()` looks up.
+    
     :param client: a BigQueryClient
     :param dataset_id: dataset id where the lookup table is located
     """
