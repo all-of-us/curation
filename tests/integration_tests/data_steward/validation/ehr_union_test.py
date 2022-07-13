@@ -217,8 +217,8 @@ class EhrUnionTest(unittest.TestCase):
         :param dataset_id: identifies the dataset
         :return: list of table_ids
         """
-        tables = bq_utils.list_tables(dataset_id)
-        return [table['tableReference']['tableId'] for table in tables]
+        tables = self.bq_client.list_tables(dataset_id)
+        return [table.table_id for table in tables]
 
     @mock.patch('bq_utils.get_hpo_info')
     def test_union_ehr(self, mock_hpo_info):
