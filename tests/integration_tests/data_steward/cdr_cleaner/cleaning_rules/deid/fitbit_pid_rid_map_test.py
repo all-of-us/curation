@@ -42,7 +42,10 @@ class FitbitPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
                                               mapping_dataset_id,
                                               mapping_table_id)
 
-        cls.fq_sandbox_table_names = []
+        cls.fq_sandbox_table_names = [
+            f'{project_id}.{cls.sandbox_id}.{cls.rule_instance.sandbox_table_for(table_id)}'
+            for table_id in pr.FITBIT_TABLES
+        ]
 
         cls.fq_table_names = [
             f'{project_id}.{cls.dataset_id}.{table_id}'
@@ -157,6 +160,8 @@ class FitbitPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
         tables_and_counts = [{
             'fq_table_name':
                 '.'.join([self.fq_dataset_name, ACTIVITY_SUMMARY]),
+            'fq_sandbox_table_name':
+                self.fq_sandbox_table_names[0],
             'fields': ['person_id', 'activity_calories', 'date'],
             'loaded_ids': [1234, 5678, 2345, 6789, 3456],
             'sandboxed_ids': [3456],
@@ -169,6 +174,8 @@ class FitbitPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
         }, {
             'fq_table_name':
                 '.'.join([self.fq_dataset_name, HEART_RATE_MINUTE_LEVEL]),
+            'fq_sandbox_table_name':
+                self.fq_sandbox_table_names[1],
             'fields': ['person_id', 'heart_rate_value', 'datetime'],
             'loaded_ids': [1234, 5678, 2345, 6789, 3456],
             'sandboxed_ids': [3456],
@@ -181,6 +188,8 @@ class FitbitPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
         }, {
             'fq_table_name':
                 '.'.join([self.fq_dataset_name, HEART_RATE_SUMMARY]),
+            'fq_sandbox_table_name':
+                self.fq_sandbox_table_names[2],
             'fields': ['person_id', 'date', 'calorie_count'],
             'loaded_ids': [1234, 5678, 2345, 6789, 3456],
             'sandboxed_ids': [3456],
@@ -193,6 +202,8 @@ class FitbitPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
         }, {
             'fq_table_name':
                 '.'.join([self.fq_dataset_name, STEPS_INTRADAY]),
+            'fq_sandbox_table_name':
+                self.fq_sandbox_table_names[3],
             'fields': ['person_id', 'datetime', 'steps'],
             'loaded_ids': [1234, 5678, 2345, 6789, 3456],
             'sandboxed_ids': [3456],

@@ -34,7 +34,11 @@ class CtPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
         cls.rule_instance = cr.CtPIDtoRID(project_id, cls.dataset_id,
                                           cls.sandbox_id)
 
-        cls.fq_sandbox_table_names = []
+        sb_table_name = cls.rule_instance.sandbox_table_for(
+            CONDITION_OCCURRENCE)
+        cls.fq_sandbox_table_names = [
+            f'{project_id}.{cls.sandbox_id}.{sb_table_name}'
+        ]
 
         cls.fq_table_names = [
             f'{project_id}.{cls.dataset_id}.{table_id}'
@@ -125,6 +129,8 @@ class CtPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
         tables_and_counts = [{
             'fq_table_name':
                 '.'.join([self.fq_dataset_name, CONDITION_OCCURRENCE]),
+            'fq_sandbox_table_name':
+                self.fq_sandbox_table_names[0],
             'fields': [
                 'condition_occurrence_id', 'person_id', 'condition_concept_id',
                 'condition_start_date', 'condition_start_datetime',

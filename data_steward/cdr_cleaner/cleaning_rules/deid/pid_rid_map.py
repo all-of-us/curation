@@ -15,21 +15,21 @@ from common import JINJA_ENV, DEID_MAP, PRIMARY_PID_RID_MAPPING, PIPELINE_TABLES
 
 LOGGER = logging.getLogger(__name__)
 
-PID_RID_QUERY_TMPL = JINJA_ENV.from_string("""
-UPDATE `{{input_table.project}}.{{input_table.dataset_id}}.{{input_table.table_id}}` t
-SET t.person_id = d.research_id
-FROM `{{deid_map.project}}.{{deid_map.dataset_id}}.{{deid_map.table_id}}` d
-WHERE t.person_id = d.person_id
-""")
-
 SANDBOX_QUERY_TMPL = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE
   `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` AS
 SELECT *
 FROM `{{input_table.project}}.{{input_table.dataset_id}}.{{input_table.table_id}}`
 WHERE person_id NOT IN (
-    SELECT research_id FROM `{{deid_map.project}}.{{deid_map.dataset_id}}.{{deid_map.table_id}}`
+    SELECT person_id FROM `{{deid_map.project}}.{{deid_map.dataset_id}}.{{deid_map.table_id}}`
 )
+""")
+
+PID_RID_QUERY_TMPL = JINJA_ENV.from_string("""
+UPDATE `{{input_table.project}}.{{input_table.dataset_id}}.{{input_table.table_id}}` t
+SET t.person_id = d.research_id
+FROM `{{deid_map.project}}.{{deid_map.dataset_id}}.{{deid_map.table_id}}` d
+WHERE t.person_id = d.person_id
 """)
 
 DELETE_PID_QUERY_TMPL = JINJA_ENV.from_string("""
@@ -93,21 +93,6 @@ class PIDtoRID(BaseCleaningRule):
         update_queries, delete_queries, sandbox_queries = [], [], []
 
         for table in self.pid_tables:
-            table_query = {
-                cdr_consts.QUERY:
-                    PID_RID_QUERY_TMPL.render(input_table=table,
-                                              deid_map=self.deid_map)
-            }
-            update_queries.append(table_query)
-            delete_query = {
-                cdr_consts.QUERY:
-                    DELETE_PID_QUERY_TMPL.render(
-                        project=self.project_id,
-                        sandbox_dataset=self.sandbox_dataset_id,
-                        sandbox_table=self.sandbox_table_for(table.table_id),
-                        input_table=table)
-            }
-            delete_queries.append(delete_query)
             sandbox_query = {
                 cdr_consts.QUERY:
                     SANDBOX_QUERY_TMPL.render(
@@ -119,7 +104,24 @@ class PIDtoRID(BaseCleaningRule):
             }
             sandbox_queries.append(sandbox_query)
 
-        return update_queries + delete_queries + sandbox_queries
+            table_query = {
+                cdr_consts.QUERY:
+                    PID_RID_QUERY_TMPL.render(input_table=table,
+                                              deid_map=self.deid_map)
+            }
+            update_queries.append(table_query)
+
+            delete_query = {
+                cdr_consts.QUERY:
+                    DELETE_PID_QUERY_TMPL.render(
+                        project=self.project_id,
+                        sandbox_dataset=self.sandbox_dataset_id,
+                        sandbox_table=self.sandbox_table_for(table.table_id),
+                        input_table=table)
+            }
+            delete_queries.append(delete_query)
+
+        return sandbox_queries + update_queries + delete_queries
 
     def get_sandbox_tablenames(self):
         return [self.sandbox_table_for(table) for table in self.affected_tables]
