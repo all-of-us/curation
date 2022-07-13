@@ -103,7 +103,7 @@ class TopHeelErrorsTest(TestCase):
             row[FIELD_DATASET_NAME] = self.dataset_id
         errors = top_n_errors(rows)
         expected_results = comparison_view(errors)
-        dataset_errors = top_heel_errors(self.project_id, self.dataset_id)
+        dataset_errors = top_heel_errors(self.bq_client, self.dataset_id)
         actual_results = comparison_view(dataset_errors)
         self.assertCountEqual(actual_results, expected_results)
 
@@ -118,7 +118,7 @@ class TopHeelErrorsTest(TestCase):
                 row[FIELD_DATASET_NAME] = hpo_id
             errors = top_n_errors(rows)
             expected_results += comparison_view(errors)
-        dataset_errors = top_heel_errors(self.project_id,
+        dataset_errors = top_heel_errors(self.bq_client,
                                          self.dataset_id,
                                          all_hpo=True)
         actual_results = comparison_view(dataset_errors)
