@@ -166,6 +166,7 @@ class EhrUnionTest(unittest.TestCase):
     def _get_cdm_filepath(self, cdm_table, hpo_id) -> str:
         """
         Get the path of the specified CDM table's data file for the HPO.
+
         :param cdm_table: name of the CDM table (e.g. 'person', 'visit_occurrence', 'death')
         :param hpo_ids: identifies which HPOs to include in union
         :return: str. Path of the data file, including the file name.
@@ -189,6 +190,7 @@ class EhrUnionTest(unittest.TestCase):
     def _get_valid_visit_occurrence_ids(self, hpo_id) -> list:
         """
         Get the list of the valid visit_occurrence_ids for the HPO.
+        
         :param hpo_ids: identifies which HPOs to include in union
         :return: list of valid occurrence IDs.
         """

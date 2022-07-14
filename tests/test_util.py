@@ -255,6 +255,7 @@ def populate_achilles(hpo_id=FAKE_HPO_ID, include_heel=True):
 def generate_rdr_files():
     """
     Generate test csv files based on a sample of synthetic RDR data
+
     :return:
     """
     d = 'rdr_dataset_2018_4_17'
@@ -296,6 +297,7 @@ def command(cmd):
 def list_files_in(path):
     """
     List the abs paths to files (not dirs) in the supplied path
+
     :param path:
     :return:
     """
@@ -309,6 +311,7 @@ def list_files_in(path):
 def get_table_summary(dataset_id):
     """
     Get summary of tables in a bq dataset
+
     :param dataset_id: identifies the dataset
     :return: list of dict with keys: project_id dataset_id table_id creation_time type
     """
@@ -365,6 +368,7 @@ def get_table_counts(dataset_id, table_ids=None, where=''):
 def normalize_field_payload(field):
     """
     Standardize schema field payload so it is easy to compare in tests
+    
     :param field: a field from a table/query's schema
     :return: the normalized field
     """

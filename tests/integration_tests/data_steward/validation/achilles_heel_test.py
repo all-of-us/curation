@@ -163,4 +163,3 @@ class AchillesHeelTest(unittest.TestCase):
         actual_result = [row["analysis_id"] for row in rows]
         for analysis_id in actual_result:
             self.assertIn(analysis_id, notifications)
-        # self.assertEqual(ACHILLES_HEEL_RESULTS_NOTIFICATION_COUNT, int(result['rows'][0]['f'][0]['v']))
