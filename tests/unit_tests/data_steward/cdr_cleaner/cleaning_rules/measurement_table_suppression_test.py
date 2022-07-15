@@ -3,7 +3,7 @@ Unit Test for the measurement_table_suppression module.
 
 The intent is to clean measurement data from sites that submit only
 junk, clean records that do not provide any quality data, and
-remove duplicates. 
+remove duplicates.
 """
 # Python imports
 import unittest
@@ -11,8 +11,6 @@ import unittest
 # Third party imports
 
 # Project imports
-from common import MEASUREMENT
-from constants.bq_utils import WRITE_TRUNCATE
 from constants.cdr_cleaner import clean_cdr as clean_consts
 import cdr_cleaner.cleaning_rules.measurement_table_suppression as mts
 
@@ -82,13 +80,7 @@ class MeasurementTableSuppressionTest(unittest.TestCase):
         }, {
             clean_consts.QUERY:
                 mts.NULL_VALUES_UPDATE_QUERY.render(project=self.project_id,
-                                                    dataset=self.dataset_id),
-            clean_consts.DESTINATION_TABLE:
-                MEASUREMENT,
-            clean_consts.DESTINATION_DATASET:
-                self.dataset_id,
-            clean_consts.DISPOSITION:
-                WRITE_TRUNCATE
+                                                    dataset=self.dataset_id)
         }, {
             clean_consts.QUERY:
                 mts.SITES_TO_REMOVE_DATA_FOR.render(
@@ -125,14 +117,8 @@ class MeasurementTableSuppressionTest(unittest.TestCase):
                         mts.SAVE_NULL_VALUE_RECORDS)),
         }, {
             clean_consts.QUERY:
-                mts.SELECT_RECORDS_WITH_VALID_DATA.render(
-                    project=self.project_id, dataset=self.dataset_id),
-            clean_consts.DESTINATION_TABLE:
-                MEASUREMENT,
-            clean_consts.DESTINATION_DATASET:
-                self.dataset_id,
-            clean_consts.DISPOSITION:
-                WRITE_TRUNCATE
+                mts.DELETE_RECORDS_WITH_INVALID_DATA.render(
+                    project=self.project_id, dataset=self.dataset_id)
         }, {
             clean_consts.QUERY:
                 mts.SANDBOX_DUPLICATES.render(
@@ -148,13 +134,7 @@ class MeasurementTableSuppressionTest(unittest.TestCase):
                     dataset=self.dataset_id,
                     sandbox=self.sandbox_id,
                     id_table=self.rule_instance.sandbox_table_for(
-                        mts.SAVE_DUPLICATE_RECORDS)),
-            clean_consts.DESTINATION_TABLE:
-                MEASUREMENT,
-            clean_consts.DESTINATION_DATASET:
-                self.dataset_id,
-            clean_consts.DISPOSITION:
-                WRITE_TRUNCATE
+                        mts.SAVE_DUPLICATE_RECORDS))
         }]
 
         self.assertEqual(result_list, expected_list)
