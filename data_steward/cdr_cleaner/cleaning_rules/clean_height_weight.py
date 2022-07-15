@@ -15,18 +15,29 @@ from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from cdr_cleaner.cleaning_rules.measurement_table_suppression import (
     MeasurementRecordsSuppression)
 # Project imports
+<<<<<<< HEAD
 from common import MEASUREMENT, JINJA_ENV, PIPELINE_TABLES
 from constants.bq_utils import WRITE_TRUNCATE, WRITE_APPEND
+=======
+from common import MEASUREMENT, JINJA_ENV
+from constants.bq_utils import WRITE_APPEND
+>>>>>>> f4b2912a ([DC-2456] upgrading rule to work with 53 measurement table schema)
 from constants.cdr_cleaner import clean_cdr as cdr_consts
+from resources import fields_for
 
 LOGGER = logging.getLogger(__name__)
 
-ISSUE_NUMBERS = ['DC-416', 'DC-701']
+ISSUE_NUMBERS = ['DC-416', 'DC-701', 'DC2456']
 
 HEIGHT_TABLE = 'height_table'
 WEIGHT_TABLE = 'weight_table'
 NEW_HEIGHT_ROWS = 'new_height_rows'
 NEW_WEIGHT_ROWS = 'new_weight_rows'
+
+WEIGHT_CONCEPT_IDS = [3025315, 3013762, 3023166]
+HEIGHT_CONCEPT_IDS = [3036277, 3023540, 3019171]
+
+MEASUREMENT_FIELDS = [field.get('name') for field in fields_for(MEASUREMENT)]
 
 # height queries
 CREATE_HEIGHT_SANDBOX_QUERY = JINJA_ENV.from_string("""
@@ -60,11 +71,13 @@ WITH
       m.operator_concept_id,
       m.value_as_number,
       m.value_as_concept_id,
-      m.unit_concept_id
+      m.unit_concept_id,
+      m.measurement_time,
+      m.visit_detail_id
     FROM `{{project_id}}.{{dataset_id}}.measurement` m
     LEFT JOIN sites s
     USING (measurement_id)
-    WHERE (m.measurement_concept_id IN (3036277, 3023540, 3019171))
+    WHERE (m.measurement_concept_id IN ({{measurement_concept_ids}}))
       AND m.value_as_number IS NOT NULL
       AND m.value_as_number != 0
       AND s.src_id != 'PPI/PM' -- site could use measurement_source_concept_id 903133 but we still need to include them --
@@ -212,25 +225,10 @@ WITH
 
 NEW_HEIGHT_ROWS_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{new_height_rows}}` AS
-SELECT
-  measurement_id,
-  person_id,
-  measurement_concept_id,
-  measurement_date,
-  measurement_datetime,
-  measurement_type_concept_id,
-  operator_concept_id,
-  adj_Ht AS value_as_number,
-  value_as_concept_id,
+SELECT *
+  REPLACE(adj_Ht AS value_as_number,
   adj_unit AS unit_concept_id,
-  range_low,
-  range_high,
-  provider_id,
-  visit_occurrence_id,
-  measurement_source_value,
-  measurement_source_concept_id,
-  COALESCE(u_c.concept_code, unit_source_value) AS unit_source_value,
-  value_source_value
+  COALESCE(u_c.concept_code, unit_source_value) AS unit_source_value)
 FROM (
   SELECT
     measurement_id,
@@ -244,18 +242,6 @@ FROM (
 )
 JOIN `{{project_id}}.{{dataset_id}}.measurement` m USING (measurement_id)
 LEFT JOIN `{{project_id}}.{{dataset_id}}.concept` u_c ON (adj_unit=concept_id)
-""")
-
-DROP_HEIGHT_ROWS_QUERY = JINJA_ENV.from_string("""
-    SELECT * 
-    FROM `{{project_id}}.{{dataset_id}}.measurement` AS m
-    WHERE measurement_id NOT IN
-    (SELECT measurement_id 
-    FROM `{{project_id}}.{{dataset_id}}.measurement` AS m
-    LEFT JOIN `{{project_id}}.{{dataset_id}}.measurement_ext` AS me
-    USING (measurement_id)
-    WHERE (m.measurement_concept_id IN (3036277, 3023540, 3019171))
-    AND me.src_id != 'PPI/PM')
 """)
 
 # weight queries
@@ -290,11 +276,13 @@ WITH
       m.operator_concept_id,
       m.value_as_number,
       m.value_as_concept_id,
-      m.unit_concept_id
+      m.unit_concept_id,
+      m.measurement_time,
+      m.visit_detail_id
     FROM `{{project_id}}.{{dataset_id}}.measurement` m
     LEFT JOIN sites s
     USING (measurement_id)
-    WHERE (m.measurement_concept_id IN (3025315, 3013762, 3023166))
+    WHERE (m.measurement_concept_id IN ({{measurement_concept_ids}}))
       AND m.value_as_number IS NOT NULL
       AND m.value_as_number != 0
       AND s.src_id != 'PPI/PM' -- site could use measurement_source_concept_id 903121 but we still need to include them --
@@ -366,6 +354,8 @@ WITH
       value_as_number,
       value_as_concept_id,
       COALESCE(unit_concept_id,-2) AS unit_concept_id,
+      measurement_time,
+      visit_detail_id,
       src_id,
       birth_datetime,
       f_outlierDx_Wt_high,
@@ -524,24 +514,10 @@ WITH
 NEW_WEIGHT_ROWS_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{new_weight_rows}}` AS
 SELECT
-  measurement_id,
-  person_id,
-  measurement_concept_id,
-  measurement_date,
-  measurement_datetime,
-  measurement_type_concept_id,
-  operator_concept_id,
-  adj_Wt AS value_as_number,
-  value_as_concept_id,
+  *
+  REPLACE(adj_Wt AS value_as_number,
   adj_unit AS unit_concept_id,
-  range_low,
-  range_high,
-  provider_id,
-  visit_occurrence_id,
-  measurement_source_value,
-  measurement_source_concept_id,
-  COALESCE(u_c.concept_code, unit_source_value) AS unit_source_value,
-  value_source_value
+  COALESCE(u_c.concept_code, unit_source_value) AS unit_source_value)
 FROM (
   SELECT
     measurement_id,
@@ -558,37 +534,21 @@ JOIN `{{project_id}}.{{dataset_id}}.measurement` m USING (measurement_id)
 LEFT JOIN `{{project_id}}.{{dataset_id}}.concept` u_c ON (adj_unit=concept_id)
 """)
 
-DROP_WEIGHT_ROWS_QUERY = JINJA_ENV.from_string("""
-    SELECT * FROM `{{project_id}}.{{dataset_id}}.measurement`
-    WHERE measurement_id NOT IN
-    (SELECT measurement_id
+DROP_ROWS_QUERY = JINJA_ENV.from_string("""
+  DELETE
+  FROM `{{project_id}}.{{dataset_id}}.measurement`
+  WHERE measurement_id IN (
+    SELECT measurement_id
     FROM `{{project_id}}.{{dataset_id}}.measurement` AS m
     LEFT JOIN `{{project_id}}.{{dataset_id}}.measurement_ext` AS me
     USING (measurement_id)
-    WHERE (m.measurement_concept_id IN (3025315, 3013762, 3023166))
+    WHERE m.measurement_concept_id IN ({{ids_to_drop}})
     AND me.src_id != 'PPI/PM')
 """)
 
 INSERT_NEW_ROWS_QUERY = JINJA_ENV.from_string("""
-SELECT
-  measurement_id,
-  person_id,
-  measurement_concept_id,
-  measurement_date,
-  measurement_datetime,
-  measurement_type_concept_id,
-  operator_concept_id,
-  value_as_number,
-  value_as_concept_id,
-  unit_concept_id,
-  range_low,
-  range_high,
-  provider_id,
-  visit_occurrence_id,
-  measurement_source_value,
-  measurement_source_concept_id,
-  unit_source_value,
-  value_source_value
+SELECT {{fields}}
+-- the lookup table contains joined table fields, so we must specify which fields to include --
 FROM `{{project_id}}.{{sandbox_dataset_id}}.{{new_rows}}`
 """)
 
@@ -643,7 +603,12 @@ class CleanHeightAndWeight(BaseCleaningRule):
                     dataset_id=self.dataset_id,
                     sandbox_dataset_id=self.sandbox_dataset_id,
                     height_table=self.sandbox_table_for(HEIGHT_TABLE),
+<<<<<<< HEAD
                     PIPELINE_TABLES=PIPELINE_TABLES),
+=======
+                    measurement_concept_ids=','.join(
+                        [str(con) for con in HEIGHT_CONCEPT_IDS])),
+>>>>>>> f4b2912a ([DC-2456] upgrading rule to work with 53 measurement table schema)
         }
 
         save_new_height_rows_query = {
@@ -658,14 +623,11 @@ class CleanHeightAndWeight(BaseCleaningRule):
 
         drop_height_rows_query = {
             cdr_consts.QUERY:
-                DROP_HEIGHT_ROWS_QUERY.render(project_id=self.project_id,
-                                              dataset_id=self.dataset_id),
-            cdr_consts.DESTINATION_TABLE:
-                MEASUREMENT,
-            cdr_consts.DESTINATION_DATASET:
-                self.dataset_id,
-            cdr_consts.DISPOSITION:
-                WRITE_TRUNCATE
+                DROP_ROWS_QUERY.render(
+                    project_id=self.project_id,
+                    dataset_id=self.dataset_id,
+                    ids_to_drop=','.join(
+                        [str(con) for con in HEIGHT_CONCEPT_IDS]))
         }
 
         insert_new_height_rows_query = {
@@ -673,7 +635,8 @@ class CleanHeightAndWeight(BaseCleaningRule):
                 INSERT_NEW_ROWS_QUERY.render(
                     project_id=self.project_id,
                     sandbox_dataset_id=self.sandbox_dataset_id,
-                    new_rows=self.sandbox_table_for(NEW_HEIGHT_ROWS)),
+                    new_rows=self.sandbox_table_for(NEW_HEIGHT_ROWS),
+                    fields=','.join(MEASUREMENT_FIELDS)),
             cdr_consts.DESTINATION_TABLE:
                 MEASUREMENT,
             cdr_consts.DESTINATION_DATASET:
@@ -690,7 +653,12 @@ class CleanHeightAndWeight(BaseCleaningRule):
                     sandbox_dataset_id=self.sandbox_dataset_id,
                     weight_table=self.sandbox_table_for(WEIGHT_TABLE),
                     dataset_id=self.dataset_id,
+<<<<<<< HEAD
                     PIPELINE_TABLES=PIPELINE_TABLES),
+=======
+                    measurement_concept_ids=','.join(
+                        [str(con) for con in WEIGHT_CONCEPT_IDS])),
+>>>>>>> f4b2912a ([DC-2456] upgrading rule to work with 53 measurement table schema)
         }
 
         save_new_weight_rows_query = {
@@ -705,14 +673,11 @@ class CleanHeightAndWeight(BaseCleaningRule):
 
         drop_weight_rows_query = {
             cdr_consts.QUERY:
-                DROP_WEIGHT_ROWS_QUERY.render(project_id=self.project_id,
-                                              dataset_id=self.dataset_id),
-            cdr_consts.DESTINATION_TABLE:
-                MEASUREMENT,
-            cdr_consts.DESTINATION_DATASET:
-                self.dataset_id,
-            cdr_consts.DISPOSITION:
-                WRITE_TRUNCATE
+                DROP_ROWS_QUERY.render(
+                    project_id=self.project_id,
+                    dataset_id=self.dataset_id,
+                    ids_to_drop=','.join(
+                        [str(con) for con in WEIGHT_CONCEPT_IDS]))
         }
 
         insert_new_weight_rows_query = {
@@ -720,7 +685,8 @@ class CleanHeightAndWeight(BaseCleaningRule):
                 INSERT_NEW_ROWS_QUERY.render(
                     project_id=self.project_id,
                     sandbox_dataset_id=self.sandbox_dataset_id,
-                    new_rows=self.sandbox_table_for(NEW_WEIGHT_ROWS)),
+                    new_rows=self.sandbox_table_for(NEW_WEIGHT_ROWS),
+                    fields=','.join(MEASUREMENT_FIELDS)),
             cdr_consts.DESTINATION_TABLE:
                 MEASUREMENT,
             cdr_consts.DESTINATION_DATASET:
