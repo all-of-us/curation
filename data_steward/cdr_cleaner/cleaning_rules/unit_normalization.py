@@ -18,7 +18,7 @@ from google.api_core.exceptions import Conflict
 # Project Imports
 import constants.bq_utils as bq_consts
 import resources
-from common import JINJA_ENV
+from common import JINJA_ENV, MEASUREMENT
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from cdr_cleaner.cleaning_rules.clean_height_weight import CleanHeightAndWeight
 from cdr_cleaner.cleaning_rules.measurement_table_suppression import (
@@ -30,7 +30,6 @@ LOGGER = logging.getLogger(__name__)
 
 UNIT_MAPPING_TABLE = '_unit_mapping'
 UNIT_MAPPING_FILE = '_unit_mapping.csv'
-MEASUREMENT = 'measurement'
 UNIT_MAPPING_TABLE_DISPOSITION = 'WRITE_EMPTY'
 
 SANDBOX_UNITS_QUERY = JINJA_ENV.from_string("""
@@ -48,80 +47,74 @@ CREATE OR REPLACE TABLE
 """)
 
 UNIT_NORMALIZATION_QUERY = JINJA_ENV.from_string("""
-SELECT
-  measurement_id,
-  person_id,
-  measurement_concept_id,
-  measurement_date,
-  measurement_datetime,
-  measurement_type_concept_id,
-  operator_concept_id,
-  CASE transform_value_as_number
-    WHEN "(1/x)" THEN IF (value_as_number = 0, 0, 1/value_as_number)
-    WHEN "(x-32)*(5/9)" THEN (value_as_number-32)*(5/9)
-    WHEN "*0.02835" THEN value_as_number * 0.02835
-    WHEN "*0.394" THEN value_as_number * 0.394
-    WHEN "*0.4536" THEN value_as_number * 0.4536
-    WHEN "*1" THEN value_as_number * 1
-    WHEN "*10" THEN value_as_number * 10
-    WHEN "*10^(-1)" THEN value_as_number * 0.1
-    WHEN "*10^(-2)" THEN value_as_number * 0.01
-    WHEN "*10^(3)" THEN value_as_number * 1000
-    WHEN "*10^(-3)" THEN value_as_number * 0.001
-    WHEN "*10^(6)" THEN value_as_number * 1000000
-    WHEN "*10^(-6)" THEN value_as_number * 0.000001
-    -- when transform_value_as_number is null due to left join --
-    ELSE value_as_number
-  END AS value_as_number,
-  value_as_concept_id,
-  COALESCE(set_unit_concept_id,
-    unit_concept_id) AS unit_concept_id,
-  CASE transform_value_as_number
-    WHEN "(1/x)" THEN 1/range_low
-    WHEN "(x-32)*(5/9)" THEN (range_low-32)*(5/9)
-    WHEN "*0.02835" THEN range_low * 0.02835
-    WHEN "*0.394" THEN range_low * 0.394
-    WHEN "*0.4536" THEN range_low * 0.4536
-    WHEN "*1" THEN range_low * 1
-    WHEN "*10" THEN range_low * 10
-    WHEN "*10^(-1)" THEN range_low * 0.1
-    WHEN "*10^(-2)" THEN range_low * 0.01
-    WHEN "*10^(3)" THEN range_low * 1000
-    WHEN "*10^(-3)" THEN range_low * 0.001
-    WHEN "*10^(6)" THEN range_low * 1000000
-    WHEN "*10^(-6)" THEN range_low * 0.000001
-    -- when transform_value_as_number is null due to left join --
-    ELSE range_low
-  END AS range_low,
-  CASE transform_value_as_number
-    WHEN "(1/x)" THEN 1/range_high
-    WHEN "(x-32)*(5/9)" THEN (range_high-32)*(5/9)
-    WHEN "*0.02835" THEN range_high * 0.02835
-    WHEN "*0.394" THEN range_high * 0.394
-    WHEN "*0.4536" THEN range_high * 0.4536
-    WHEN "*1" THEN range_high * 1
-    WHEN "*10" THEN range_high * 10
-    WHEN "*10^(-1)" THEN range_high * 0.1
-    WHEN "*10^(-2)" THEN range_high * 0.01
-    WHEN "*10^(3)" THEN range_high * 1000
-    WHEN "*10^(-3)" THEN range_high * 0.001
-    WHEN "*10^(6)" THEN range_high * 1000000
-    WHEN "*10^(-6)" THEN range_high * 0.000001
-    -- when transform_value_as_number is null due to left join --
-    ELSE range_high
-  END AS range_high,
-  provider_id,
-  visit_occurrence_id,
-  measurement_source_value,
-  measurement_source_concept_id,
-  unit_source_value,
-  value_source_value
+UPDATE `{{project_id}}.{{dataset_id}}.{{measurement_table}}` m1
+  SET
+  m1.value_as_number =  CASE ut.transform_value_as_number
+    WHEN "(1/x)" THEN IF (m1.value_as_number = 0, 0, 1/m1.value_as_number)
+    WHEN "(x-32)*(5/9)" THEN (m1.value_as_number-32)*(5/9)
+    WHEN "*0.02835" THEN m1.value_as_number * 0.02835
+    WHEN "*0.394" THEN m1.value_as_number * 0.394
+    WHEN "*0.4536" THEN m1.value_as_number * 0.4536
+    WHEN "*1" THEN m1.value_as_number * 1
+    WHEN "*10" THEN m1.value_as_number * 10
+    WHEN "*10^(-1)" THEN m1.value_as_number * 0.1
+    WHEN "*10^(-2)" THEN m1.value_as_number * 0.01
+    WHEN "*10^(3)" THEN m1.value_as_number * 1000
+    WHEN "*10^(-3)" THEN m1.value_as_number * 0.001
+    WHEN "*10^(6)" THEN m1.value_as_number * 1000000
+    WHEN "*10^(-6)" THEN m1.value_as_number * 0.000001
+    -- when ut.transform_value_as_number is null due to left join --
+    ELSE m1.value_as_number
+  END,
+
+  m1.unit_concept_id = COALESCE(ut.set_unit_concept_id, ut.unit_concept_id),
+
+  m1.range_low = CASE ut.transform_value_as_number
+    WHEN "(1/x)" THEN 1/m1.range_low
+    WHEN "(x-32)*(5/9)" THEN (m1.range_low-32)*(5/9)
+    WHEN "*0.02835" THEN m1.range_low * 0.02835
+    WHEN "*0.394" THEN m1.range_low * 0.394
+    WHEN "*0.4536" THEN m1.range_low * 0.4536
+    WHEN "*1" THEN m1.range_low * 1
+    WHEN "*10" THEN m1.range_low * 10
+    WHEN "*10^(-1)" THEN m1.range_low * 0.1
+    WHEN "*10^(-2)" THEN m1.range_low * 0.01
+    WHEN "*10^(3)" THEN m1.range_low * 1000
+    WHEN "*10^(-3)" THEN m1.range_low * 0.001
+    WHEN "*10^(6)" THEN m1.range_low * 1000000
+    WHEN "*10^(-6)" THEN m1.range_low * 0.000001
+    -- when ut.transform_value_as_number is null due to left join --
+    ELSE m1.range_low
+  END,
+
+  m1.range_high = CASE ut.transform_value_as_number
+    WHEN "(1/x)" THEN 1/m1.range_high
+    WHEN "(x-32)*(5/9)" THEN (m1.range_high-32)*(5/9)
+    WHEN "*0.02835" THEN m1.range_high * 0.02835
+    WHEN "*0.394" THEN m1.range_high * 0.394
+    WHEN "*0.4536" THEN m1.range_high * 0.4536
+    WHEN "*1" THEN m1.range_high * 1
+    WHEN "*10" THEN m1.range_high * 10
+    WHEN "*10^(-1)" THEN m1.range_high * 0.1
+    WHEN "*10^(-2)" THEN m1.range_high * 0.01
+    WHEN "*10^(3)" THEN m1.range_high * 1000
+    WHEN "*10^(-3)" THEN m1.range_high * 0.001
+    WHEN "*10^(6)" THEN m1.range_high * 1000000
+    WHEN "*10^(-6)" THEN m1.range_high * 0.000001
+    -- when ut.transform_value_as_number is null due to left join --
+    ELSE m1.range_high
+  END
+
+-- use unit normalization table to identify records to update with the WHERE clause below --
 FROM
-  `{{project_id}}.{{dataset_id}}.{{measurement_table}}`
-LEFT JOIN
-  `{{project_id}}.{{sandbox_dataset_id}}.{{unit_table_name}}`
-USING
-  (measurement_concept_id, unit_concept_id)
+  `{{project_id}}.{{sandbox_dataset_id}}.{{unit_table_name}}` ut
+WHERE
+  m1.measurement_concept_id = ut.measurement_concept_id
+  AND m1.unit_concept_id = ut.unit_concept_id
+  AND m1.measurement_id IN
+    (SELECT
+       distinct measurement_id
+     FROM `{{project_id}}.{{sandbox_dataset_id}}.{{intermediary_table}}`)
 """)
 
 
@@ -145,13 +138,13 @@ class UnitNormalization(BaseCleaningRule):
         desc = ('Units for labs/measurements will be normalized using '
                 'unit_mapping lookup table.')
         super().__init__(
-            issue_numbers=['DC414', 'DC700', 'DC2453'],
+            issue_numbers=['DC414', 'DC700', 'DC2453', 'DC2454'],
             description=desc,
             affected_datasets=[
                 cdr_consts.REGISTERED_TIER_DEID_CLEAN,
                 cdr_consts.CONTROLLED_TIER_DEID_CLEAN
             ],
-            affected_tables=['measurement'],
+            affected_tables=[MEASUREMENT],
             project_id=project_id,
             dataset_id=dataset_id,
             sandbox_dataset_id=sandbox_dataset_id,
@@ -206,25 +199,28 @@ class UnitNormalization(BaseCleaningRule):
         """
         :return:
         """
-        sandbox_query = dict()
-        sandbox_query[cdr_consts.QUERY] = SANDBOX_UNITS_QUERY.render(
-            project_id=self.project_id,
-            sandbox_dataset_id=self.sandbox_dataset_id,
-            intermediary_table=self.get_sandbox_tablenames()[0],
-            dataset_id=self.dataset_id,
-            unit_table_name=UNIT_MAPPING_TABLE,
-            measurement_table=MEASUREMENT)
+        sandbox_query = {
+            cdr_consts.QUERY:
+                SANDBOX_UNITS_QUERY.render(
+                    project_id=self.project_id,
+                    sandbox_dataset_id=self.sandbox_dataset_id,
+                    intermediary_table=self.sandbox_table_for(MEASUREMENT),
+                    dataset_id=self.dataset_id,
+                    unit_table_name=UNIT_MAPPING_TABLE,
+                    measurement_table=MEASUREMENT)
+        }
 
-        update_query = dict()
-        update_query[cdr_consts.QUERY] = UNIT_NORMALIZATION_QUERY.render(
-            project_id=self.project_id,
-            dataset_id=self.dataset_id,
-            sandbox_dataset_id=self.sandbox_dataset_id,
-            unit_table_name=UNIT_MAPPING_TABLE,
-            measurement_table=MEASUREMENT)
-        update_query[cdr_consts.DESTINATION_TABLE] = MEASUREMENT
-        update_query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
-        update_query[cdr_consts.DESTINATION_DATASET] = self.dataset_id
+        update_query = {
+            cdr_consts.QUERY:
+                UNIT_NORMALIZATION_QUERY.render(
+                    project_id=self.project_id,
+                    dataset_id=self.dataset_id,
+                    sandbox_dataset_id=self.sandbox_dataset_id,
+                    intermediary_table=self.sandbox_table_for(MEASUREMENT),
+                    unit_table_name=UNIT_MAPPING_TABLE,
+                    measurement_table=MEASUREMENT)
+        }
+
         return [sandbox_query, update_query]
 
     def setup_validation(self, client):

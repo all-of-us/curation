@@ -57,7 +57,9 @@ INSERT_UNITS_RAW_DATA = JINJA_ENV.from_string("""
       (7,1,3000905,10.1,8647,4.5,11.0,'2020-01-01', '2020-01-01 01:01:01' ,0,0,0,0,0,null,0,null,null),
       (8,1,3020630,6.2,8840,6.4,8.2,'2020-01-01', '2020-01-01 01:01:01' ,0,0,0,0,0,null,0,null,null),
       (9,1,3020416,5.06,8816,4.2,5.8,'2020-01-01', '2020-01-01 01:01:01' ,0,0,0,0,0,null,0,null,null),
-      (10,1,3000963,3.4,8554,0.5,5.0,'2020-01-01', '2020-01-01 01:01:01' ,0,0,0,0,0,null,0,null,null)
+      (10,1,3000963,3.4,8554,0.5,5.0,'2020-01-01', '2020-01-01 01:01:01' ,0,0,0,0,0,null,0,null,null),
+      -- should remain unchanged, should not be sandboxed --
+      (11,1,3000963,3.4,11,0.5,5.0,'2020-01-01', '2020-01-01 01:01:01' ,0,0,0,0,0,null,0,null,null)
 """)
 
 
@@ -143,7 +145,7 @@ class UnitNormalizationTest(BaseTest.CleaningRulesTestBase):
         tables_and_counts = [{
             'fq_table_name':
                 f'{self.project_id}.{self.dataset_id}.{MEASUREMENT}',
-            'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+            'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
             'sandboxed_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
             'fields': [
                 'measurement_id', 'person_id', 'measurement_concept_id',
@@ -161,7 +163,8 @@ class UnitNormalizationTest(BaseTest.CleaningRulesTestBase):
                                (8, 1, 3020630, 0.006200000000000001, 8713,
                                 0.0064, 0.008199999999999999),
                                (9, 1, 3020416, 5060.0, 8815, 4200.0, 5800.0),
-                               (10, 1, 3000963, 0.34, 8636, 0.05, 0.5)]
+                               (10, 1, 3000963, 0.34, 8636, 0.05, 0.5),
+                               (11, 1, 3000963, 3.4, 11, 0.5, 5.0)]
         }]
 
         self.default_test(tables_and_counts)
