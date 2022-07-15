@@ -88,6 +88,8 @@ from google.oauth2 import service_account
 
 # Project imports
 import bq_utils
+from gcloud.bq import BigQueryClient
+import app_identity
 import constants.bq_utils as bq_consts
 from common import PIPELINE_TABLES
 from constants.deid.deid import MAX_AGE
@@ -110,12 +112,12 @@ def milliseconds_since_epoch():
         (datetime.utcnow() - datetime(1970, 1, 1)).total_seconds() * 1000)
 
 
-def create_person_id_src_hpo_map(input_dataset, credentials):
+def create_person_id_src_hpo_map(client, input_dataset):
     """
     Create a table containing person_ids and src_hpo_ids
 
+    :param client: a BigQueryClient
     :param input_dataset:  the input dataset to deid
-    :param credentidals:  the credentials needed to create a new table.
     """
     map_tablename = "_mapping_person_src_hpos"
     sql = ("select person_id, src_hpo_id "
@@ -125,10 +127,12 @@ def create_person_id_src_hpo_map(input_dataset, credentials):
            "where src_hpo_id not like 'rdr'")
 
     # list dataset contents
-    dataset_tables = bq_utils.list_dataset_contents(input_dataset)
+    dataset_tables = client.list_tables(input_dataset)
+    dataset_table_ids = [table.table_id for table in dataset_tables]
+
     mapping_tables = []
     mapped_tables = []
-    for table in dataset_tables:
+    for table in dataset_table_ids:
         if table.startswith('_mapping_'):
             mapping_tables.append(table)
             mapped_tables.append(table[9:])
@@ -136,7 +140,7 @@ def create_person_id_src_hpo_map(input_dataset, credentials):
     # make sure mapped tables all exist
     check_tables = []
     for table in mapped_tables:
-        if table in dataset_tables:
+        if table in dataset_table_ids:
             check_tables.append(table)
 
     # make sure check_tables contain person_id fields
@@ -160,7 +164,7 @@ def create_person_id_src_hpo_map(input_dataset, credentials):
     final_query = ' UNION ALL '.join(sql_statement)
 
     # create the mapping table
-    if map_tablename not in dataset_tables:
+    if map_tablename not in dataset_table_ids:
         fields = [{
             "type": "integer",
             "name": "person_id",
@@ -195,12 +199,12 @@ def create_allowed_states_table(input_dataset, credentials):
     data.to_gbq(map_tablename, credentials=credentials, if_exists='replace')
 
 
-def create_concept_id_lookup_table(input_dataset, credentials):
+def create_concept_id_lookup_table(client, input_dataset):
     """
     Create a lookup table of concept_id's to suppress
 
+    :param client: a BigQueryClient
     :param input_dataset: input dataset to save lookup table to
-    :param credentials: bigquery credentials
     """
 
     lookup_tablename = input_dataset + "._concept_ids_suppression"
@@ -208,13 +212,14 @@ def create_concept_id_lookup_table(input_dataset, credentials):
         'vocabulary_id', 'concept_code', 'concept_name', 'concept_id',
         'domain_id', 'rule', 'question'
     ]
-    client = bq.Client(credentials=credentials)
 
     # use utility to get and append concept_ids from csv files and queries
     data = get_all_concept_ids(columns, input_dataset, client)
 
     # write this to bigquery.
-    data.to_gbq(lookup_tablename, credentials=credentials, if_exists='replace')
+    data.to_gbq(lookup_tablename,
+                credentials=client.credentials,
+                if_exists='replace')
 
 
 class AOU(Press):
@@ -227,6 +232,9 @@ class AOU(Press):
             self.private_key)
         self.partition = args.get('cluster', False)
         self.priority = args.get('interactive', 'BATCH')
+        self.project_id = app_identity.get_application_id()
+        self.bq_client = BigQueryClient(project_id=self.project_id,
+                                        credentials=self.credentials)
 
         if 'shift' in self.deid_rules:
             #
@@ -252,12 +260,12 @@ class AOU(Press):
         map_table = pd.DataFrame()
 
         # Create concept_id lookup table for suppressions
-        create_concept_id_lookup_table(self.idataset, self.credentials)
+        create_concept_id_lookup_table(self.bq_client, self.idataset)
 
         # only need to create these tables deidentifying the observation table
         if 'observation' in self.get_tablename().lower().split('.'):
             create_allowed_states_table(self.idataset, self.credentials)
-            create_person_id_src_hpo_map(self.idataset, self.credentials)
+            create_person_id_src_hpo_map(self.bq_client, self.idataset)
 
         # ensure mapping table only contains participants within age limits
         sql = (
