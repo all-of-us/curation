@@ -17,7 +17,7 @@ from constants.cdr_cleaner import clean_cdr as cdr_consts
 
 LOGGER = logging.getLogger(__name__)
 
-ISSUE_NUMBERS = ['DC-699', 'DC-481']
+ISSUE_NUMBERS = ['DC-699', 'DC-481', 'DC2455']
 
 INVALID_VALUES_RECORDS = 'dc699_save_9999999_as_null'
 SITES_WITH_ONLY_BAD_DATA = 'dc699_sites_with_only_null_or_zero_meas_data'
