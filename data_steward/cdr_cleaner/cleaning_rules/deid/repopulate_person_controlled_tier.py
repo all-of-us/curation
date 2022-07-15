@@ -16,6 +16,7 @@ concepts are in the race class such mappings do not exist in concept_relationshi
 multiple race responses, we replace the multiple responses with a generalized concept 2000000008 
 (WhatRaceEthnicity_GeneralizedMultPopulations). 
 
+TODO update this paragraph
 Ethnicity: "Hispanic or Latino" is one of the responses in "what is your race/ethnicity?" question. 
 Participants can only indicate their ethnicity to be "Hispanic or Latino" but doesn't have the 
 option to indicate they are "Not Hispanic or Latino". We manually map the PPI response 1586147 to 
