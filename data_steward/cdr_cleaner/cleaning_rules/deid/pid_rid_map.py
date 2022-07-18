@@ -18,7 +18,7 @@ LOGGER = logging.getLogger(__name__)
 SANDBOX_QUERY_TMPL = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE
   `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` AS
-SELECT *
+SELECT DISTINCT person_id
 FROM `{{input_table.project}}.{{input_table.dataset_id}}.{{input_table.table_id}}`
 WHERE person_id NOT IN (
     SELECT person_id FROM `{{deid_map.project}}.{{deid_map.dataset_id}}.{{deid_map.table_id}}`
@@ -36,7 +36,7 @@ DELETE_PID_QUERY_TMPL = JINJA_ENV.from_string("""
 DELETE
 FROM `{{input_table.project}}.{{input_table.dataset_id}}.{{input_table.table_id}}`
 WHERE person_id IN (
-    SELECT person_id FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}`
+    SELECT DISTINCT person_id FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}`
 )
 """)
 
