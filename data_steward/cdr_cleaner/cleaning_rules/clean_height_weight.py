@@ -71,9 +71,7 @@ WITH
       m.operator_concept_id,
       m.value_as_number,
       m.value_as_concept_id,
-      m.unit_concept_id,
-      m.measurement_time,
-      m.visit_detail_id
+      m.unit_concept_id
     FROM `{{project_id}}.{{dataset_id}}.measurement` m
     LEFT JOIN sites s
     USING (measurement_id)
@@ -276,9 +274,7 @@ WITH
       m.operator_concept_id,
       m.value_as_number,
       m.value_as_concept_id,
-      m.unit_concept_id,
-      m.measurement_time,
-      m.visit_detail_id
+      m.unit_concept_id
     FROM `{{project_id}}.{{dataset_id}}.measurement` m
     LEFT JOIN sites s
     USING (measurement_id)
@@ -354,8 +350,6 @@ WITH
       value_as_number,
       value_as_concept_id,
       COALESCE(unit_concept_id,-2) AS unit_concept_id,
-      measurement_time,
-      visit_detail_id,
       src_id,
       birth_datetime,
       f_outlierDx_Wt_high,
