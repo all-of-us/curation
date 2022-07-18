@@ -205,9 +205,12 @@ class BigQueryClient(Client):
         """
         # Copy input dataset tables to backup and staging datasets
         tables = super(BigQueryClient, self).list_tables(input_dataset)
+        job_list = []
         for table in tables:
             staging_table = f'{output_dataset}.{table.table_id}'
-            self.copy_table(table, staging_table)
+            job = self.copy_table(table, staging_table)
+            job_list.append(job.job_id)
+        self.wait_on_jobs(job_list)
 
     def list_tables(
         self, dataset: typing.Union[bigquery.DatasetReference, str]
