@@ -15,8 +15,6 @@ from tests import test_util
 from tests.test_util import FAKE_HPO_ID, NYC_HPO_ID
 from validation import export, main
 
-BQ_TIMEOUT_RETRIES = 3
-
 
 class ExportTest(unittest.TestCase):
 
