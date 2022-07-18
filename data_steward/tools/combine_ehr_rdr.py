@@ -44,7 +44,6 @@ TODO
  * Load `combined.<hpo>_observation` with records derived from values in `ehr.<hpo>_person`
  * Communicate to data steward EHR records not matched with RDR
 """
-from http import client
 import logging
 
 import google.cloud.bigquery as bq
