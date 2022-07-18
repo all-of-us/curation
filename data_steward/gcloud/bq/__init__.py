@@ -5,8 +5,11 @@ Interact with Google Cloud BigQuery
 import os
 from datetime import datetime
 import typing
+import logging
+from time import sleep
 
 # Third-party imports
+from google.api_core import retry
 from google.cloud import bigquery
 from google.cloud.bigquery import Client
 from google.auth import default
@@ -26,6 +29,8 @@ from common import JINJA_ENV
 tracer_provider = TracerProvider()
 trace.set_tracer_provider(tracer_provider)
 tracer = trace.get_tracer(__name__)
+
+LOGGER = logging.getLogger(__name__)
 
 
 class BigQueryClient(Client):
@@ -478,3 +483,43 @@ class BigQueryClient(Client):
             return True
         except NotFound:
             return False
+
+    def serialize_jobs(self, job_list: list):
+        """
+        Waits on jobs until completion one by one
+
+        :param job_list: list of job_ids
+        """
+        for job_id in job_list:
+            job_info = self.get_job(job_id)
+            while job_info.state != 'DONE':
+                LOGGER.info(f"Waiting on job {job_id} to complete")
+                job_info.result()
+
+    def wait_on_jobs(self,
+                     job_list: list = None,
+                     retry_limit: int = 300,
+                     backoff_limit: int = 2**8) -> list:
+        """
+        Waits on jobs until all are 'DONE' until backoff_limit is reached
+
+        :param job_list: list of job_ids. If not set, defaults to the last 10 jobs
+        :param retry_limit: Max time to wait in retry strategy
+        :param backoff_limit: Max time to wait in backoff strategy
+        :return jobs: list of incomplete jobs
+        """
+        result = []
+        incomplete_jobs = job_list
+        my_retry = retry.Retry(deadline=retry_limit)
+        backoff = 1
+        while result != job_list and backoff <= backoff_limit:
+            incomplete_jobs = list(set(job_list) - set(result))
+            LOGGER.info(f"Waiting on jobs {incomplete_jobs} to complete")
+            bq_jobs = self.list_jobs(max_results=len(job_list) * 3,
+                                     state_filter='DONE',
+                                     retry=my_retry)
+            bq_job_ids = [job.job_id for job in bq_jobs]
+            result = [job_id for job_id in job_list if job_id in bq_job_ids]
+            sleep(backoff)
+            backoff *= 2
+        return incomplete_jobs
