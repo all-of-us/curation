@@ -44,11 +44,14 @@ TODO
  * Load `combined.<hpo>_observation` with records derived from values in `ehr.<hpo>_person`
  * Communicate to data steward EHR records not matched with RDR
 """
+from http import client
 import logging
 
 import google.cloud.bigquery as bq
 
 import bq_utils
+from gcloud.bq import BigQueryClient
+import app_identity
 import common
 import resources
 from constants.tools import combine_ehr_rdr as combine_consts
@@ -87,27 +90,32 @@ def ehr_consent_query():
         CONCEPT_ID_CONSENT_PERMISSION_YES)
 
 
-def assert_tables_in(dataset_id):
+def assert_tables_in(client, dataset_id):
     """
     Raise assertion error if any CDM tables missing from a dataset
+
+    :param client: a BigQueryClient
     :param dataset_id: dataset to check for tables in
     """
-    tables = bq_utils.list_dataset_contents(dataset_id)
-    logging.info(f'Dataset {dataset_id} has tables: {tables}')
+    tables = client.list_tables(dataset_id)
+    table_ids = [table.table_id for table in tables]
+    logging.info(f'Dataset {dataset_id} has tables: {table_ids}')
     for table in combine_consts.TABLES_TO_PROCESS:
-        if table not in tables:
+        if table not in table_ids:
             raise RuntimeError(
                 f'Dataset {dataset_id} is missing table {table}. Aborting.')
 
 
-def assert_ehr_and_rdr_tables():
+def assert_ehr_and_rdr_tables(client):
     """
     Raise assertion error if any CDM tables missing from EHR or RDR dataset
+
+    :param client: a BigQueryClient
     """
     ehr_dataset_id = bq_utils.get_dataset_id()
-    assert_tables_in(ehr_dataset_id)
+    assert_tables_in(client, ehr_dataset_id)
     rdr_dataset_id = bq_utils.get_rdr_dataset_id()
-    assert_tables_in(rdr_dataset_id)
+    assert_tables_in(client, rdr_dataset_id)
 
 
 def create_cdm_tables():
@@ -370,10 +378,11 @@ def load_mapped_person():
 
 
 def main():
-    client = bq.Client()
+    project_id = app_identity.get_application_id()
+    bq_client = BigQueryClient(project_id)
     logging.info('EHR + RDR combine started')
     logging.info('Verifying all CDM tables in EHR and RDR datasets...')
-    assert_ehr_and_rdr_tables()
+    assert_ehr_and_rdr_tables(bq_client)
     logging.info('Creating destination CDM tables...')
     create_cdm_tables()
     ehr_consent()
@@ -387,7 +396,7 @@ def main():
     logging.info(f'Loading {combine_consts.EHR_CONSENT_TABLE_ID}...')
     for domain_table in combine_consts.DOMAIN_TABLES:
         logging.info(f'Mapping {domain_table}...')
-        mapping(client, domain_table)
+        mapping(bq_client, domain_table)
     for domain_table in combine_consts.DOMAIN_TABLES:
         logging.info(f'Loading {domain_table}...')
         load(domain_table)
