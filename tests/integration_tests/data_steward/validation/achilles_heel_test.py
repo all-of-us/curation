@@ -95,7 +95,7 @@ class AchillesHeelTest(unittest.TestCase):
 
         # create randomized tables to bypass BQ rate limits
         random_string = str(randint(10000, 99999))
-        randomized_hpo_id = FAKE_HPO_ID + '_' + random_string
+        randomized_hpo_id = f'{FAKE_HPO_ID}_{random_string}'
 
         # prepare
         self._load_dataset(randomized_hpo_id)
@@ -103,8 +103,8 @@ class AchillesHeelTest(unittest.TestCase):
                                     include_heel=False)
 
         # define tables
-        achilles_heel_results = randomized_hpo_id + '_' + achilles_heel.ACHILLES_HEEL_RESULTS
-        achilles_results_derived = randomized_hpo_id + '_' + achilles_heel.ACHILLES_RESULTS_DERIVED
+        achilles_heel_results = f'{randomized_hpo_id}_{achilles_heel.ACHILLES_HEEL_RESULTS}'
+        achilles_results_derived = f'{randomized_hpo_id}_{achilles_heel.ACHILLES_RESULTS_DERIVED}'
 
         # run achilles heel
         achilles_heel.create_tables(randomized_hpo_id, True)
