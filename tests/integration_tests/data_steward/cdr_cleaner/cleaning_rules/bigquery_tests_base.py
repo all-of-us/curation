@@ -327,7 +327,11 @@ class BaseTest:
                     # this is assuming the uniquely identifiable field name is specified
                     # first in the fields list.  this check verifies by id field
                     # that the table data loaded correctly.
-                    fields = [table_info.get('fields', [])[0]]
+                    sandbox_fields = table_info.get('sandbox_fields', [])
+                    cdm_fields = table_info.get('fields', [])
+                    fields = [
+                        sandbox_fields[0] if sandbox_fields else cdm_fields[0]
+                    ]
                     self.assertRowIDsMatch(fq_sandbox_name, fields, values)
 
         def copy_vocab_tables(self, vocabulary_id):
