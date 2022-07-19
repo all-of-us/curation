@@ -214,8 +214,11 @@ def infer_rule(clazz, project_id, dataset_id, sandbox_dataset_id, table_namer,
     kwargs = get_custom_kwargs(clazz, **kwargs)
     if inspect.isclass(clazz) and issubclass(clazz, BaseCleaningRule):
         try:
-            instance = clazz(project_id, dataset_id, sandbox_dataset_id,
-                             table_namer, **kwargs)
+            instance = clazz(project_id,
+                             dataset_id,
+                             sandbox_dataset_id,
+                             table_namer=table_namer,
+                             **kwargs)
         except TypeError as e:
             LOGGER.warning(f"{clazz.__name__} does not accept the "
                            f"`table_namer` property yet.")
