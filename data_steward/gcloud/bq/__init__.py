@@ -195,13 +195,13 @@ class BigQueryClient(Client):
 
         return dataset
 
-    def copy_dataset(self, input_dataset: str, output_dataset: str):
+    def copy_dataset(self, input_dataset: str, output_dataset: str) -> list:
         """
         Copies tables from source dataset to a destination datasets
 
         :param input_dataset: fully qualified name of the input(source) dataset
         :param output_dataset: fully qualified name of the output(destination) dataset
-        :return:
+        :return: incomplete jobs
         """
         # Copy input dataset tables to backup and staging datasets
         tables = super(BigQueryClient, self).list_tables(input_dataset)
@@ -210,7 +210,7 @@ class BigQueryClient(Client):
             staging_table = f'{output_dataset}.{table.table_id}'
             job = self.copy_table(table, staging_table)
             job_list.append(job.job_id)
-        self.wait_on_jobs(job_list)
+        return job_list
 
     def list_tables(
         self, dataset: typing.Union[bigquery.DatasetReference, str]

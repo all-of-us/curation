@@ -160,16 +160,19 @@ if __name__ == '__main__':
         f'Copying fitbit tables from dataset {args.src_project_id}.{args.fitbit_dataset_id} to {args.src_project_id}.{args.src_dataset_id}...'
     )
 
-    bq_client.copy_dataset(f'{args.src_project_id}.{args.fitbit_dataset_id}',
-                           f'{args.src_project_id}.{args.src_dataset_id}')
+    copy_fitbit_jobs = bq_client.copy_dataset(
+        f'{args.src_project_id}.{args.fitbit_dataset_id}',
+        f'{args.src_project_id}.{args.src_dataset_id}')
+    bq_client.wait_on_jobs(copy_fitbit_jobs)
 
     #Copy tables from source to output-prod
     LOGGER.info(
         f'Copying tables from dataset {args.src_project_id}.{args.src_dataset_id} to {args.output_prod_project_id}.{output_dataset_name}...'
     )
-    bq_client.copy_dataset(
+    copy_src_jobs = bq_client.copy_dataset(
         f'{args.src_project_id}.{args.src_dataset_id}',
         f'{args.output_prod_project_id}.{output_dataset_name}')
+    bq_client.wait_on_jobs(copy_src_jobs)
 
     #Append extra columns to person table
     LOGGER.info(f'Appending extract columns to the person table...')

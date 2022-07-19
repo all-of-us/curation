@@ -112,9 +112,7 @@ class DummyClient(BigQueryClient):
             >>> from tests import bq_test_helpers
             >>> d = {'item': 'book', 'qty': 2, 'price': 1.99}
             >>> bq_test_helpers.fields_from_dict(d)
-                [SchemaField('item', 'STRING', 'NULLABLE', None, ()),
-                SchemaField('qty', 'INT64', 'NULLABLE', None, ()),
-                SchemaField('price', 'FLOAT64', 'NULLABLE', None, ())]
+            [SchemaField('item', 'STRING', 'NULLABLE', None, (), None), SchemaField('qty', 'INT64', 'NULLABLE', None, (), None), SchemaField('price', 'FLOAT64', 'NULLABLE', None, (), None)]
         """
         return [
             self._field_from_key_value(key, value)
@@ -264,6 +262,19 @@ class BQCTest(TestCase):
             ) for table_object in list_tables_results
         ]
         mock_copy_table.assert_has_calls(expected_calls)
+
+    @patch('gcloud.bq.Client.list_jobs')
+    def test_wait_on_jobs(self, mock_list_jobs):
+        fake_job = MagicMock()
+        jobs = []
+        for i in range(1, 4):
+            fake_job.job_id = f'fake_job_{i}'
+            jobs.append(fake_job)
+        mock_list_jobs.return_value = jobs
+
+        self.client.wait_on_jobs(jobs)
+        mock_list_jobs.assert_called_once_with(self.dataset_id)
+        self.assertEqual(mock_list_jobs.call_count, len(mock_list_jobs))
 
     @patch.object(BigQueryClient, 'get_dataset')
     @patch.object(BigQueryClient, 'get_table_count')
