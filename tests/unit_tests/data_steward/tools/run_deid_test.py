@@ -8,13 +8,13 @@ test_get_output_table_schemas -- ensures only table schemas for suppressed table
 
 Original Issue: DC-744
 """
-
-import os
 # Python imports
+import os
 import unittest
 
 # Third party imports
 from mock import patch
+import mock
 
 from resources import DEID_PATH
 # Project imports
@@ -136,8 +136,8 @@ class RunDeidTest(unittest.TestCase):
         expected = ['fake/file/table', 'table2', 'odd_name.csv']
         self.assertEqual(result, expected)
 
-    @patch('tools.run_deid.bq_utils.list_dataset_contents')
-    def test_get_output_tables(self, mock_contents):
+    @patch('tools.run_deid.BigQueryClient')
+    def test_get_output_tables(self, mock_bq_client):
         # pre-conditions
         input_dataset = 'fake_input_dataset'
         known_tables = [
@@ -146,7 +146,7 @@ class RunDeidTest(unittest.TestCase):
         skip_tables = 'odd_name.csv,madeup,skip_table'
         only_tables = 'observation,table_zed'
 
-        mock_contents.return_value = [
+        table_ids = [
             '_map_table',
             'pii_fake',
             'note',
@@ -156,9 +156,16 @@ class RunDeidTest(unittest.TestCase):
             'skip_table',
         ]
 
+        mock_table_object = mock.MagicMock()
+        type(mock_table_object).table_id = mock.PropertyMock(
+            side_effect=table_ids)
+        tables = [mock_table_object] * 7
+        mock_bq_client.list_tables.return_value = tables
+
         # test
-        result = run_deid.get_output_tables(input_dataset, known_tables,
-                                            skip_tables, only_tables)
+        result = run_deid.get_output_tables(mock_bq_client, input_dataset,
+                                            known_tables, skip_tables,
+                                            only_tables)
 
         # post condition
         expected = ['observation']
