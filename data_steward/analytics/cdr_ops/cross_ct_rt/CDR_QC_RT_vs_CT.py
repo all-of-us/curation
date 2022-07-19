@@ -27,7 +27,7 @@ maximum_age = ""
 import pandas as pd
 
 from analytics.cdr_ops.notebook_utils import execute
-from common import JINJA_ENV
+from common import JINJA_ENV, PIPELINE_TABLES
 from gcloud.bq import BigQueryClient
 
 client = BigQueryClient(project_id)
@@ -554,8 +554,9 @@ WHERE person_id NOT IN (SELECT DISTINCT person_id FROM ct_person_id)
 END LOOP;
 
 SELECT DISTINCT person_id,
-(EXTRACT(YEAR FROM CURRENT_DATE) - year_of_birth) AS age,
-CASE WHEN (EXTRACT(YEAR FROM CURRENT_DATE) - year_of_birth) < {{maximum_age}} THEN 1 ELSE 0 END AS Failure
+{{PIPELINE_TABLES}}.calculate_age(CURRENT_DATE, birth_datetime) AS age,
+CASE WHEN {{PIPELINE_TABLES}}.calculate_age(CURRENT_DATE, birth_datetime) < {{maximum_age}}
+    THEN 1 ELSE 0 END AS Failure
 FROM ct_person_id
 JOIN `{{project_id}}.{{ct_dataset}}.person`
 USING (person_id)
@@ -566,6 +567,7 @@ ORDER BY age;
 q = query.render(project_id=project_id,
                  rt_dataset=rt_dataset,
                  ct_dataset=ct_dataset,
+                 PIPELINE_TABLES=PIPELINE_TABLES,
                  maximum_age=maximum_age)
 
 df1 = execute(client, q)

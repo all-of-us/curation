@@ -15,7 +15,7 @@ from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from cdr_cleaner.cleaning_rules.measurement_table_suppression import (
     MeasurementRecordsSuppression)
 # Project imports
-from common import MEASUREMENT, JINJA_ENV
+from common import MEASUREMENT, JINJA_ENV, PIPELINE_TABLES
 from constants.bq_utils import WRITE_TRUNCATE, WRITE_APPEND
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 
@@ -168,12 +168,12 @@ WITH
         WHEN (value_as_number BETWEEN 90 AND 230) THEN 8582
         ELSE (unit_concept_id)
       END AS adj_unit,
-      DATE_DIFF(measurement_date, EXTRACT(DATE from birth_datetime), YEAR) as age
+      {{PIPELINE_TABLES}}.calculate_age(measurement_date, EXTRACT(DATE FROM birth_datetime)) as age
     FROM height_measurements
     LEFT JOIN persons USING (person_id)
     LEFT JOIN sites USING (measurement_id)
     LEFT JOIN outlierHt_pts USING (person_id)
-    WHERE DATE_DIFF(measurement_date, EXTRACT(DATE from birth_datetime), YEAR) >= 18
+    WHERE {{PIPELINE_TABLES}}.calculate_age(measurement_date, EXTRACT(DATE FROM birth_datetime)) >= 18
   ),
   -- Height disagreement: count == 2, sd > 10 --
   height_disagreement_pts AS (
@@ -374,13 +374,13 @@ WITH
         WHEN ABS(value_as_number)>16000 THEN NULL
         ELSE ABS(value_as_number)
     END AS value_as_number_adj,
-    DATE_DIFF(measurement_date, EXTRACT(DATE from birth_datetime), YEAR) AS age
+    {{PIPELINE_TABLES}}.calculate_age(measurement_date, EXTRACT(DATE FROM birth_datetime)) AS age
     FROM weight_measurements
     LEFT JOIN persons USING (person_id)
     LEFT JOIN sites USING (measurement_id)
     LEFT JOIN outlierWt_pts_high USING (person_id)
     LEFT JOIN outlierWt_pts_low USING (person_id)
-    WHERE DATE_DIFF(measurement_date, EXTRACT(DATE from birth_datetime), YEAR) >= 18
+    WHERE {{PIPELINE_TABLES}}.calculate_age(measurement_date, EXTRACT(DATE FROM birth_datetime)) >= 18
   ),
   --3) Check medians by site, concept_id, unit_concept_id --
   --Note that there are 'grams' recorded, but essentially nothing that can feasibly be grams. --
@@ -642,7 +642,8 @@ class CleanHeightAndWeight(BaseCleaningRule):
                     project_id=self.project_id,
                     dataset_id=self.dataset_id,
                     sandbox_dataset_id=self.sandbox_dataset_id,
-                    height_table=self.sandbox_table_for(HEIGHT_TABLE)),
+                    height_table=self.sandbox_table_for(HEIGHT_TABLE),
+                    PIPELINE_TABLES=PIPELINE_TABLES),
         }
 
         save_new_height_rows_query = {
@@ -688,7 +689,8 @@ class CleanHeightAndWeight(BaseCleaningRule):
                     project_id=self.project_id,
                     sandbox_dataset_id=self.sandbox_dataset_id,
                     weight_table=self.sandbox_table_for(WEIGHT_TABLE),
-                    dataset_id=self.dataset_id),
+                    dataset_id=self.dataset_id,
+                    PIPELINE_TABLES=PIPELINE_TABLES),
         }
 
         save_new_weight_rows_query = {

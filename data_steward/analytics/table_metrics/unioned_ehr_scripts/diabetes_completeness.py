@@ -15,6 +15,8 @@
 
 from google.cloud import bigquery
 # %reload_ext google.cloud.bigquery
+from common import PIPELINE_TABLES
+
 client = bigquery.Client()
 # %load_ext google.cloud.bigquery
 
@@ -97,13 +99,15 @@ site_df
 print('Getting the data from the database...')
 ######################################
 
-birth_df = pd.io.gbq.read_gbq('''
+birth_df = pd.io.gbq.read_gbq(f'''
     SELECT
         COUNT(*) AS total,
-        sum(case when (DATE_DIFF(CURRENT_DATE, EXTRACT(DATE FROM birth_datetime), YEAR)<18) then 1 else 0 end) as minors_in_dataset
+        sum(case when ({PIPELINE_TABLES}.calculate_age(CURRENT_DATE, EXTRACT(DATE FROM birth_datetime))<18)
+            then 1 else 0 end) as minors_in_dataset
     FROM
        `{DATASET}.unioned_ehr_person` AS t1
-    '''.format(DATASET=DATASET), dialect='standard')
+''',
+                              dialect='standard')
 print(birth_df.shape[0], 'records received.')
 # -
 
@@ -114,14 +118,14 @@ birth_df
 print('Getting the data from the database...')
 ######################################
 
-birth_df = pd.io.gbq.read_gbq('''
+birth_df = pd.io.gbq.read_gbq(f'''
     SELECT
         person_id          
     FROM
        `{DATASET}.unioned_ehr_person` AS t1
     where 
-        (DATE_DIFF(CURRENT_DATE, EXTRACT(DATE FROM birth_datetime), YEAR)<18)
-    '''.format(DATASET=DATASET),
+        {PIPELINE_TABLES}.calculate_age(CURRENT_DATE, EXTRACT(DATE FROM birth_datetime))<18
+''',
                               dialect='standard')
 print(birth_df.shape[0], 'records received.')
 # -
@@ -136,14 +140,16 @@ birth_df
 print('Getting the data from the database...')
 ######################################
 
-birth_df = pd.io.gbq.read_gbq('''
+birth_df = pd.io.gbq.read_gbq(f'''
     SELECT
         COUNT(*) AS total,
-        sum(case when (DATE_DIFF(CURRENT_DATE, EXTRACT(DATE FROM birth_datetime), YEAR)>120) then 1 else 0 end) as over_120_in_dataset
+        sum(case when {PIPELINE_TABLES}.calculate_age(CURRENT_DATE, EXTRACT(DATE FROM birth_datetime))>120
+            then 1 else 0 end) as over_120_in_dataset
          
     FROM
        `{DATASET}.unioned_ehr_person` AS t1
-    '''.format(DATASET=DATASET), dialect='standard')
+''',
+                              dialect='standard')
 print(birth_df.shape[0], 'records received.')
 # -
 
@@ -154,14 +160,15 @@ birth_df
 print('Getting the data from the database...')
 ######################################
 
-birth_df = pd.io.gbq.read_gbq('''
+birth_df = pd.io.gbq.read_gbq(f'''
     SELECT
         person_id          
     FROM
        `{DATASET}.unioned_ehr_person` AS t1
     where 
-        DATE_DIFF(CURRENT_DATE, EXTRACT(DATE FROM birth_datetime), YEAR)>120
-    '''.format(DATASET=DATASET), dialect='standard')
+        {PIPELINE_TABLES}.calculate_age(CURRENT_DATE, EXTRACT(DATE FROM birth_datetime))>120
+''',
+                              dialect='standard')
 
 print(birth_df.shape[0], 'records received.')
 # -
@@ -176,12 +183,13 @@ birth_df
 print('Getting the data from the database...')
 ######################################
 
-birth_df = pd.io.gbq.read_gbq('''
+birth_df = pd.io.gbq.read_gbq(f'''
     SELECT
-        DATE_DIFF(CURRENT_DATE, EXTRACT(DATE FROM birth_datetime), YEAR) as AGE    
+        {PIPELINE_TABLES}.calculate_age(CURRENT_DATE, EXTRACT(DATE FROM birth_datetime)) as AGE    
     FROM
-       `{DATASET}.unioned_ehr_person` AS t1
-    '''.format(DATASET=DATASET), dialect='standard')
+        `{DATASET}.unioned_ehr_person` AS t1
+''',
+                              dialect='standard')
 
 print(birth_df.shape[0], 'records received.')
 # -
@@ -223,10 +231,10 @@ AND
 (invalid_reason is null or invalid_reason = '')
 GROUP BY 1, 2
 ORDER BY 1, 2 DESC
-""".format(DATASET = DATASET)
+""".format(DATASET=DATASET)
 
 persons_with_conditions_related_to_diabetes = pd.io.gbq.read_gbq(
-    persons_with_conditions_related_to_diabetes_query, dialect = 'standard')
+    persons_with_conditions_related_to_diabetes_query, dialect='standard')
 
 num_persons_w_diabetes_query = """
 SELECT
@@ -234,14 +242,16 @@ DISTINCT
 COUNT(p.person_id) as num_with_diab
 FROM
 `{DATASET}.persons_with_diabetes_according_to_condition_table` p
-""".format(DATASET = DATASET)
+""".format(DATASET=DATASET)
 
-num_persons_w_diabetes = pd.io.gbq.read_gbq(num_persons_w_diabetes_query, dialect = 'standard')
+num_persons_w_diabetes = pd.io.gbq.read_gbq(num_persons_w_diabetes_query,
+                                            dialect='standard')
 
 # +
 diabetics = num_persons_w_diabetes['num_with_diab'][0]
 
-print("There are {diabetics} persons with diabetes in the total dataset".format(diabetics = diabetics))
+print("There are {diabetics} persons with diabetes in the total dataset".format(
+    diabetics=diabetics))
 # -
 
 diabetics_per_site_query = """
@@ -252,9 +262,10 @@ FROM
 `{DATASET}.persons_with_diabetes_according_to_condition_table` p
 GROUP BY 1
 ORDER BY num_with_diab DESC
-""".format(DATASET = DATASET)
+""".format(DATASET=DATASET)
 
-diabetics_per_site = pd.io.gbq.read_gbq(diabetics_per_site_query, dialect = 'standard')
+diabetics_per_site = pd.io.gbq.read_gbq(diabetics_per_site_query,
+                                        dialect='standard')
 
 diabetics_per_site
 
@@ -282,9 +293,11 @@ AND
 (c.invalid_reason is NULL 
 or 
 C.invalid_reason = '')
-""".format(DATASET = DATASET)
+""".format(DATASET=DATASET)
 
-substantiating_diabetic_drug_concept_ids = pd.io.gbq.read_gbq(create_table_with_substantiating_diabetic_drug_concept_ids, dialect = 'standard')
+substantiating_diabetic_drug_concept_ids = pd.io.gbq.read_gbq(
+    create_table_with_substantiating_diabetic_drug_concept_ids,
+    dialect='standard')
 
 # +
 ######################################
@@ -307,10 +320,11 @@ ON
 de.drug_concept_id = t2drugs.descendant_concept_id 
 GROUP BY 1
 ORDER BY num_with_diab_and_drugs DESC
-""".format(DATASET = DATASET)
+""".format(DATASET=DATASET)
 
-
-diabetics_with_substantiating_drugs = pd.io.gbq.read_gbq(persons_w_t2d_by_condition_and_substantiating_drugs_query, dialect='standard')
+diabetics_with_substantiating_drugs = pd.io.gbq.read_gbq(
+    persons_w_t2d_by_condition_and_substantiating_drugs_query,
+    dialect='standard')
 # -
 
 diabetics_with_substantiating_drugs
@@ -339,7 +353,7 @@ AND
 c.invalid_reason IS NULL
 OR
 c.invalid_reason = ''
-""".format(DATASET = DATASET)
+""".format(DATASET=DATASET)
 
 valid_glucose_labs = pd.io.gbq.read_gbq(valid_glucose_labs, dialect='standard')
 
@@ -361,9 +375,10 @@ ON
 vgl.concept_id = m.measurement_concept_id -- only get those with the substantiating labs
 GROUP BY 1
 ORDER BY num_with_diab_and_glucose DESC
-""".format(DATASET = DATASET)
+""".format(DATASET=DATASET)
 
-diabetics_with_glucose_measurement = pd.io.gbq.read_gbq(diabetics_with_glucose_measurement_query, dialect='standard')
+diabetics_with_glucose_measurement = pd.io.gbq.read_gbq(
+    diabetics_with_glucose_measurement_query, dialect='standard')
 
 diabetics_with_glucose_measurement.shape
 
@@ -382,9 +397,10 @@ FROM
 `{DATASET}.union_concept_ancestor` ca
 WHERE
 ca.ancestor_concept_id IN (40789263)
-""".format(DATASET = DATASET)
+""".format(DATASET=DATASET)
 
-hemoglobin_a1c_desc = pd.io.gbq.read_gbq(hemoglobin_a1c_desc_query, dialect='standard')
+hemoglobin_a1c_desc = pd.io.gbq.read_gbq(hemoglobin_a1c_desc_query,
+                                         dialect='standard')
 
 diabetics_with_a1c_measurement_query = """
 SELECT
@@ -402,10 +418,11 @@ ON
 a1c.concept_id = m.measurement_concept_id -- only get those with the substantiating labs
 GROUP BY 1
 ORDER BY num_with_diab_and_a1c DESC
-""".format(DATASET = DATASET)
+""".format(DATASET=DATASET)
 
 # +
-diabetics_with_a1c_measurement = pd.io.gbq.read_gbq(diabetics_with_a1c_measurement_query, dialect='standard')
+diabetics_with_a1c_measurement = pd.io.gbq.read_gbq(
+    diabetics_with_a1c_measurement_query, dialect='standard')
 
 diabetics_with_a1c_measurement.shape
 # -
@@ -435,31 +452,47 @@ WHERE
 LOWER(c.concept_name) LIKE '%insulin%'  -- generous for detecting insulin
 GROUP BY 1
 ORDER BY num_with_diab_and_insulin DESC
-""".format(DATASET = DATASET)
+""".format(DATASET=DATASET)
 # -
 
-diabetics_with_insulin = pd.io.gbq.read_gbq(persons_with_insulin_query, dialect='standard')
+diabetics_with_insulin = pd.io.gbq.read_gbq(persons_with_insulin_query,
+                                            dialect='standard')
 
-final_diabetic_df = pd.merge(diabetics_per_site, diabetics_with_substantiating_drugs, on = 'src_hpo_id')
+final_diabetic_df = pd.merge(diabetics_per_site,
+                             diabetics_with_substantiating_drugs,
+                             on='src_hpo_id')
 
-final_diabetic_df['diabetics_w_drugs'] = round(final_diabetic_df['num_with_diab_and_drugs'] / final_diabetic_df['num_with_diab'] * 100, 2)
+final_diabetic_df['diabetics_w_drugs'] = round(
+    final_diabetic_df['num_with_diab_and_drugs'] /
+    final_diabetic_df['num_with_diab'] * 100, 2)
 
-final_diabetic_df = pd.merge(final_diabetic_df, diabetics_with_glucose_measurement, on = 'src_hpo_id')
+final_diabetic_df = pd.merge(final_diabetic_df,
+                             diabetics_with_glucose_measurement,
+                             on='src_hpo_id')
 
-final_diabetic_df['diabetics_w_glucose'] = round(final_diabetic_df['num_with_diab_and_glucose'] / final_diabetic_df['num_with_diab'] * 100, 2)
+final_diabetic_df['diabetics_w_glucose'] = round(
+    final_diabetic_df['num_with_diab_and_glucose'] /
+    final_diabetic_df['num_with_diab'] * 100, 2)
 
-final_diabetic_df = pd.merge(final_diabetic_df, diabetics_with_a1c_measurement, on = 'src_hpo_id')
+final_diabetic_df = pd.merge(final_diabetic_df,
+                             diabetics_with_a1c_measurement,
+                             on='src_hpo_id')
 
-final_diabetic_df['diabetics_w_a1c'] = round(final_diabetic_df['num_with_diab_and_a1c'] / final_diabetic_df['num_with_diab'] * 100, 2)
+final_diabetic_df['diabetics_w_a1c'] = round(
+    final_diabetic_df['num_with_diab_and_a1c'] /
+    final_diabetic_df['num_with_diab'] * 100, 2)
 
-final_diabetic_df = pd.merge(final_diabetic_df, diabetics_with_insulin, on = 'src_hpo_id')
+final_diabetic_df = pd.merge(final_diabetic_df,
+                             diabetics_with_insulin,
+                             on='src_hpo_id')
 
-final_diabetic_df['diabetics_w_insulin'] = round(final_diabetic_df['num_with_diab_and_insulin'] / final_diabetic_df['num_with_diab'] * 100, 2)
+final_diabetic_df['diabetics_w_insulin'] = round(
+    final_diabetic_df['num_with_diab_and_insulin'] /
+    final_diabetic_df['num_with_diab'] * 100, 2)
 
-final_diabetic_df = final_diabetic_df.sort_values(by='diabetics_w_glucose', ascending = False)
+final_diabetic_df = final_diabetic_df.sort_values(by='diabetics_w_glucose',
+                                                  ascending=False)
 
 final_diabetic_df
 
-final_diabetic_df.to_csv("{cwd}/diabetes.csv".format(cwd = cwd))
-
-
+final_diabetic_df.to_csv("{cwd}/diabetes.csv".format(cwd=cwd))

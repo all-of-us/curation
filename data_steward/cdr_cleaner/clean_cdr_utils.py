@@ -4,7 +4,8 @@ import logging
 from google.cloud.bigquery import Client
 from google.cloud.exceptions import GoogleCloudError
 
-from common import JINJA_ENV
+from common import JINJA_ENV, PIPELINE_TABLES
+from gcloud.bq import BigQueryClient
 
 LOGGER = logging.getLogger(__name__)
 TABLE_ID = 'table_id'
@@ -20,17 +21,26 @@ WHERE table_id IN (
 )
 """)
 
+CREATE_AGE_UDF = JINJA_ENV.from_string("""
+CREATE OR REPLACE FUNCTION `{{project}}.{{PIPELINE_TABLES}}.calculate_age`(as_of_date DATE, date_of_birth DATE)
+RETURNS FLOAT64
+AS (
+  FLOOR((CAST(FORMAT_DATE("%Y%m%d", IFNULL(as_of_date, ERROR('as_of_date cannot be NULL'))) AS INT64) - 
+    CAST(FORMAT_DATE("%Y%m%d", IFNULL(date_of_birth, ERROR('date_of_birth cannot be NULL'))) AS INT64))/10000)
+  -- FROM https://gertjans.home.xs4all.nl/sql/calculate-age.html --
+)""")
+
 
 def get_tables_in_dataset(client: Client, project_id, dataset_id,
                           table_names) -> List[str]:
     """
-    This function retrieves tables that exist in dataset for an inital list table_names . This 
+    This function retrieves tables that exist in dataset for an inital list table_names . This
     function raises GoogleCloudError if the query throws an error
-    
-    :param client: 
-    :param project_id: 
-    :param dataset_id: 
-    :param table_names: 
+
+    :param client:
+    :param project_id:
+    :param dataset_id:
+    :param table_names:
     :return: a list of tables that exist in the given dataset
     """
     # The following makes sure the tables exist in the dataset
@@ -53,3 +63,21 @@ def get_tables_in_dataset(client: Client, project_id, dataset_id,
         # Log the error and raise it again
         LOGGER.error(f"Error running job {result.job_id}: {e}")
         raise
+
+
+def create_calculate_age_udf(bq_client: BigQueryClient,
+                             dataset_id=PIPELINE_TABLES) -> None:
+    """
+    Creates the UDF to calculate age accurately, factoring in leap years
+    and if the birthday/current day is a leap day
+
+    :param bq_client: BigQuery client
+    :param dataset_id: Dataset to create the UDF in
+    :return: None
+    """
+    query_job = bq_client.query(
+        CREATE_AGE_UDF.render(project=bq_client.project, dataset=dataset_id))
+
+    query_job.result()
+    LOGGER.info(f"Created calculate_age UDF in {PIPELINE_TABLES}")
+    return

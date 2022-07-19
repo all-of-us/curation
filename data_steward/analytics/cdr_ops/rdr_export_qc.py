@@ -26,7 +26,7 @@ run_as = ""
 #
 # Quality checks performed on a new RDR dataset and comparison with previous RDR dataset.
 
-from common import JINJA_ENV
+from common import JINJA_ENV, PIPELINE_TABLES
 from utils import auth
 from gcloud.bq import BigQueryClient
 from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
@@ -574,9 +574,11 @@ SELECT *
 FROM `{{project_id}}.{{new_rdr}}.observation`
 JOIN `{{project_id}}.{{new_rdr}}.person` USING (person_id)
 WHERE  (observation_source_concept_id=1585482 OR observation_concept_id=1585482)
-AND DATE_DIFF(DATE(observation_date), DATE(birth_datetime), YEAR) < 18
+AND {{PIPELINE_TABLES}}.calculate_age(observation_date, EXTRACT(DATE FROM birth_datetime)) < 18
 ''')
-query = tpl.render(new_rdr=new_rdr, project_id=project_id)
+query = tpl.render(new_rdr=new_rdr,
+                   project_id=project_id,
+                   PIPELINE_TABLES=PIPELINE_TABLES)
 execute(client, query)
 
 # # Check for missing questionnaire_response_id
@@ -682,13 +684,13 @@ def render_message(results_df,
                    failure_msg_args={}):
     """
     Renders a conditional success or failure message for a DQ check.
-    
+
     results_df: Dataframe containing the results of the check.
     success_msg: A templated string to describe success.
     failure_msg: A templated string to describe failure.
     success_msg_args: A dictionary of args to pass to success_msg template.
     failure_msg_args: A dictionary of args to pass to failiure_msg template.
-    
+
     """
     is_success = len(results_df) == 0
     status_msg = 'Success' if is_success else 'Failure'

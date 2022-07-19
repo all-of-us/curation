@@ -101,14 +101,14 @@ class RemoveFitbitDataIfMaxAgeExceededTest(BaseTest.CleaningRulesTestBase):
 
         tmpl = self.jinja_env.from_string("""
         INSERT INTO `{{fq_dataset_name}}.person`
-        (person_id, gender_concept_id, year_of_birth, race_concept_id, ethnicity_concept_id)
+        (person_id, gender_concept_id, year_of_birth, birth_datetime, race_concept_id, ethnicity_concept_id)
         VALUES
-        (111, 0, 1900, 0, 0),
-        (222, 0, 1910, 0, 0),
-        (333, 0, 1920, 0, 0),
-        (444, 0, 1951, 0, 0),
-        (555, 0, 1951, 0, 0),
-        (666, 0, 1931, 0, 0)
+        (111, 0, 1900, '1900-01-01 00:00:00', 0, 0),
+        (222, 0, 1910, '1910-01-01 00:00:00', 0, 0),
+        (333, 0, 1920, '1920-01-01 00:00:00', 0, 0),
+        (444, 0, 1951, '1951-01-01 00:00:00', 0, 0),
+        (555, 0, 1951, '1951-01-01 00:00:00', 0, 0),
+        (666, 0, 1931, '1931-01-01 00:00:00', 0, 0)
         """)
 
         query = tmpl.render(

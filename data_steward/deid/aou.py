@@ -89,6 +89,7 @@ from google.oauth2 import service_account
 # Project imports
 import bq_utils
 import constants.bq_utils as bq_consts
+from common import PIPELINE_TABLES
 from constants.deid.deid import MAX_AGE
 from deid.parser import parse_args
 from deid.press import Press
@@ -259,12 +260,13 @@ class AOU(Press):
             create_person_id_src_hpo_map(self.idataset, self.credentials)
 
         # ensure mapping table only contains participants within age limits
-        sql = (f"SELECT DISTINCT p.person_id, "
-               f"EXTRACT(YEAR FROM CURRENT_DATE()) - year_of_birth AS age "
-               f"FROM {self.idataset}.person AS p "
-               f"JOIN {map_tablename} AS map "
-               f"USING (person_id) "
-               f"ORDER BY age")
+        sql = (
+            f"SELECT DISTINCT p.person_id, "
+            f"{PIPELINE_TABLES}.calculate_age(CURRENT_DATE, EXTRACT(DATE FROM birth_datetime)) AS age "
+            f"FROM {self.idataset}.person AS p "
+            f"JOIN {map_tablename} AS map "
+            f"USING (person_id) "
+            f"ORDER BY age")
         job_config = {'query': {'defaultDataset': {'datasetId': self.idataset}}}
         person_table = self.get_dataframe(sql=sql, query_config=job_config)
         LOGGER.info(f"possible patient count is:\t{person_table.shape[0]}")

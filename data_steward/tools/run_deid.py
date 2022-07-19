@@ -20,7 +20,7 @@ import deid.aou as aou
 from deid.parser import odataset_name_verification
 from resources import fields_for, fields_path, DEID_PATH
 from gcloud.bq import BigQueryClient
-from common import JINJA_ENV
+from common import JINJA_ENV, PIPELINE_TABLES
 
 LOGGER = logging.getLogger(__name__)
 DEID_TABLES = [
@@ -55,7 +55,7 @@ WHERE
   FROM (
     SELECT
       DISTINCT person_id,
-      EXTRACT(YEAR FROM CURRENT_DATE()) - year_of_birth AS age
+      `{{project}}.{{PIPELINE_TABLES}}.calculate_age`(CURRENT_DATE, EXTRACT(DATE FROM birth_datetime)) AS age
     FROM `{{project}}.{{input_dataset}}.person`
     ORDER BY 2)
   WHERE
@@ -261,6 +261,7 @@ def copy_deid_map_table(client, deid_map_table, lookup_dataset_id,
                                   lookup_dataset=lookup_dataset_id,
                                   input_dataset=input_dataset_id,
                                   max_age=age_limit,
+                                  PIPELINE_TABLES=PIPELINE_TABLES,
                                   pid_rid_table=DEID_MAP_TABLE)
 
     query_job = client.query(q)

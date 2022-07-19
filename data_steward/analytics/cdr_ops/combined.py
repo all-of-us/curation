@@ -85,7 +85,7 @@ WHERE
  t.{{date_field}} < DATE(p.birth_datetime)
 
  -- age >= 150y --
- OR DATE_DIFF(t.{{date_field}}, DATE(p.birth_datetime), YEAR) >= 150 
+ OR {{PIPELINE_TABLES}}.calculate_age(t.{{date_field}}, EXTRACT(DATE FROM p.birth_datetime)) >= 150
 )
 {% if not loop.last -%}
    UNION ALL
