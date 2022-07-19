@@ -42,8 +42,9 @@ pd.set_option('max_colwidth', None)
 # # PPI concept comparison, new concepts
 #
 # > - The dataframe will contain all new PPI concepts. <br>
-# > - Generally there will be additions to the PPI vocabulary between uploads.<br>
-# > - If the dataframe is empty, confirm this finding with the survey team.<br>
+# > - Generally there will be additions to the PPI vocabulary between uploads, but not always.<br>
+# > - It is also possible that the update contains changes only to the EHR vocabularies.<br>
+# > - If the dataframe is empty, get confirmation from the survey team that no new PPI concepts are expected.<br>
 
 tpl = JINJA_ENV.from_string('''
 SELECT
@@ -69,14 +70,23 @@ execute(client, query, max_rows=True)
 tpl = JINJA_ENV.from_string('''
 SELECT
 c.concept_code 
+FROM `{{vocabulary_dataset_old}}.concept` c
+WHERE c.concept_code NOT IN (SELECT concept_code 
+                            FROM `{{vocabulary_dataset_new}}.concept`  
+                            WHERE vocabulary_id LIKE "PPI")
+AND c.vocabulary_id LIKE "PPI"
+
+UNION ALL
+
+SELECT
+c.concept_code
 FROM `{{vocabulary_dataset_new}}.concept` c
 WHERE c.concept_code NOT IN (SELECT concept_code 
-                            FROM `{{vocabulary_dataset_old}}.concept` sq 
-                            WHERE sq.vocabulary_id LIKE "PPI"
+                            FROM `{{vocabulary_dataset_old}}.concept` 
+                            WHERE vocabulary_id LIKE "PPI"
                             AND c.valid_end_date < CURRENT_DATE())
 AND c.vocabulary_id LIKE "PPI"
 AND c.valid_end_date < CURRENT_DATE()
-ORDER BY c.concept_code
 ''')
 query = tpl.render(vocabulary_dataset_old=vocabulary_dataset_old,
                    vocabulary_dataset_new=vocabulary_dataset_new)
@@ -101,8 +111,9 @@ execute(client, query, max_rows=True)
 # # Tables row count comparison
 #
 # > - The difference between the number of rows in each table of the datasets.  <br>
-# > - All 'changes' should increase. Expected changes are found in the [release notes](https://github.com/OHDSI/Vocabulary-v5.0/releases).  <br>
-# > - Investigate any negative values.   <br>
+# > - Generally, all 'changes' should increase, but with the occasional edge case. <br>
+# > - Investigate any negative values, the release notes are a great starting reference. <br>
+# > - [Release notes](https://github.com/OHDSI/Vocabulary-v5.0/releases).   <br>
 
 tpl = JINJA_ENV.from_string('''
 WITH new_table_info AS (
@@ -128,8 +139,8 @@ query = tpl.render(vocabulary_dataset_old=vocabulary_dataset_old,
 execute(client, query, max_rows=True)
 
 # # Vocabulary_id comparison
-# > - The table should contain every vocabulary_id for both old and new datasets. <br>
-# > - The vocabulary_ids should be the same in each.<br>
+# > - The table will show the vocabulary_ids that exist in either the new or old datasets but not both. <br>
+# > - Generally, the same vocabularies should exist in each dataset, so the table below should be empty. <br>
 # > - Investigate if any are missing or added. [release notes](https://github.com/OHDSI/Vocabulary-v5.0/releases).  <br>
 
 tpl = JINJA_ENV.from_string('''
@@ -149,21 +160,8 @@ n.vocabulary_id, n.c AS new_count, o.c AS old_count , o.vocabulary_id
 FROM new_table_info AS n
 FULL OUTER JOIN old_table_info AS o
 USING (vocabulary_id)
+WHERE n.c != o.c
 ORDER BY n.vocabulary_id
-''')
-query = tpl.render(vocabulary_dataset_old=vocabulary_dataset_old,
-                   vocabulary_dataset_new=vocabulary_dataset_new)
-execute(client, query, max_rows=True)
-
-# # Confirm presence of vocabularies 
-# > - This table should contain five rows.<br>
-# > - These vocabulary_ids should exist in the new vocabulary <br>
-# > - Investigate if this is not the case. <br>
-
-tpl = JINJA_ENV.from_string('''
-SELECT vocabulary_id
-FROM `{{vocabulary_dataset_new}}.vocabulary`
-WHERE REGEXP_CONTAINS(vocabulary_id, r'(?i)(Type Concept)|(Condition Status)|(CPT)|(AoU)')
 ''')
 query = tpl.render(vocabulary_dataset_old=vocabulary_dataset_old,
                    vocabulary_dataset_new=vocabulary_dataset_new)
@@ -173,6 +171,8 @@ execute(client, query, max_rows=True)
 # > - Shows the number of individual concepts added or removed from each vocabulary.<br>
 # > - Generally the count should only increase (when it does change).<br>
 # > - Investigate any negative differences.<br>
+# > - Changes to AoU_Custom and AoU_General can be validated by looking for Jira issues that affect the<br>
+#     data_steward/resource_files/aou_vocab/CONCEPT.csv file.<br>
 
 tpl = JINJA_ENV.from_string('''
 WITH new_table_info AS (
