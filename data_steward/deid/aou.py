@@ -199,12 +199,13 @@ def create_allowed_states_table(input_dataset, credentials):
     data.to_gbq(map_tablename, credentials=credentials, if_exists='replace')
 
 
-def create_concept_id_lookup_table(client, input_dataset):
+def create_concept_id_lookup_table(client, input_dataset, credentials):
     """
     Create a lookup table of concept_id's to suppress
 
     :param client: a BigQueryClient
     :param input_dataset: input dataset to save lookup table to
+    :param credentials: bigquery credentials
     """
 
     lookup_tablename = input_dataset + "._concept_ids_suppression"
@@ -217,9 +218,7 @@ def create_concept_id_lookup_table(client, input_dataset):
     data = get_all_concept_ids(columns, input_dataset, client)
 
     # write this to bigquery.
-    data.to_gbq(lookup_tablename,
-                credentials=client.credentials,
-                if_exists='replace')
+    data.to_gbq(lookup_tablename, credentials=credentials, if_exists='replace')
 
 
 class AOU(Press):
@@ -233,8 +232,7 @@ class AOU(Press):
         self.partition = args.get('cluster', False)
         self.priority = args.get('interactive', 'BATCH')
         self.project_id = app_identity.get_application_id()
-        self.bq_client = BigQueryClient(project_id=self.project_id,
-                                        credentials=self.credentials)
+        self.bq_client = BigQueryClient(project_id=self.project_id)
 
         if 'shift' in self.deid_rules:
             #
@@ -260,7 +258,8 @@ class AOU(Press):
         map_table = pd.DataFrame()
 
         # Create concept_id lookup table for suppressions
-        create_concept_id_lookup_table(self.bq_client, self.idataset)
+        create_concept_id_lookup_table(self.bq_client, self.idataset,
+                                       self.credentials)
 
         # only need to create these tables deidentifying the observation table
         if 'observation' in self.get_tablename().lower().split('.'):
