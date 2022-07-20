@@ -6,6 +6,9 @@ from typing import FrozenSet, List, Union, Dict, Iterable, Any
 from collections import OrderedDict
 
 # Third party imports
+from unittest.mock import ANY
+
+from google.api_core import retry
 from google.cloud import bigquery
 from google.cloud.bigquery import TableReference, DatasetReference
 from google.cloud.bigquery.table import TableListItem
@@ -265,16 +268,21 @@ class BQCTest(TestCase):
 
     @patch('gcloud.bq.Client.list_jobs')
     def test_wait_on_jobs(self, mock_list_jobs):
-        fake_job = MagicMock()
         jobs = []
+        fake_job_ids = []
         for i in range(1, 4):
-            fake_job.job_id = f'fake_job_{i}'
+            fake_job = MagicMock()
+            fake_job_id = f'fake_job_{i}'
+            fake_job_ids.append(fake_job_id)
+            fake_job.job_id = fake_job_id
             jobs.append(fake_job)
         mock_list_jobs.return_value = jobs
 
-        self.client.wait_on_jobs(jobs)
-        mock_list_jobs.assert_called_once_with(self.dataset_id)
-        self.assertEqual(mock_list_jobs.call_count, len(mock_list_jobs))
+        self.client.wait_on_jobs(fake_job_ids)
+        mock_list_jobs.assert_called_once_with(max_results=9,
+                                               state_filter='DONE',
+                                               retry=ANY)
+        self.assertEqual(mock_list_jobs.call_count, 1)
 
     @patch.object(BigQueryClient, 'get_dataset')
     @patch.object(BigQueryClient, 'get_table_count')
