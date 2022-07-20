@@ -17,8 +17,8 @@ from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.deid.repopulate_person_controlled_tier import \
     RepopulatePersonControlledTier, GENERALIZED_RACE_CONCEPT_ID, GENERALIZED_RACE_SOURCE_VALUE, \
     GENERALIZED_GENDER_IDENTITY_CONCEPT_ID, GENERALIZED_GENDER_IDENTITY_SOURCE_VALUE, \
-    HISPANIC_LATINO_CONCEPT_ID, HISPANIC_LATINO_CONCEPT_SOURCE_VALUE, NON_HISPANIC_LATINO_CONCEPT_ID, \
-    SKIP_CONCEPT_ID, NON_HISPANIC_LATINO_CONCEPT_SOURCE_VALUE
+    HISPANIC_LATINO_CONCEPT_SOURCE_VALUE, NON_HISPANIC_LATINO_CONCEPT_ID, \
+    SKIP_CONCEPT_ID, NON_HISPANIC_LATINO_CONCEPT_SOURCE_VALUE, HISPANIC_LATINO_STANDARD_CONCEPT_ID
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import \
     BaseTest
 
@@ -161,13 +161,14 @@ class RepopulatePersonControlledTierTestBase(BaseTest.CleaningRulesTestBase):
                  NON_HISPANIC_LATINO_CONCEPT_SOURCE_VALUE,
                  NON_HISPANIC_LATINO_CONCEPT_ID),
                 (2, GENERALIZED_GENDER_IDENTITY_CONCEPT_ID, 1980, None, None,
-                 parser.parse('1980-06-15 00:00:00 UTC'), 8515, 38003563, 1, 1,
-                 1, 'person_source_value',
+                 parser.parse('1980-06-15 00:00:00 UTC'), 8515,
+                 HISPANIC_LATINO_STANDARD_CONCEPT_ID, 1, 1, 1,
+                 'person_source_value',
                  GENERALIZED_GENDER_IDENTITY_SOURCE_VALUE,
                  GENERALIZED_GENDER_IDENTITY_CONCEPT_ID,
                  'WhatRaceEthnicity_Asian', 1586142,
                  HISPANIC_LATINO_CONCEPT_SOURCE_VALUE,
-                 HISPANIC_LATINO_CONCEPT_ID),
+                 HISPANIC_LATINO_STANDARD_CONCEPT_ID),
                 (3, 45878463, 1970, None, None,
                  parser.parse('1970-06-15 00:00:00 UTC'), SKIP_CONCEPT_ID,
                  SKIP_CONCEPT_ID, None, None, None, 'person_source_value',

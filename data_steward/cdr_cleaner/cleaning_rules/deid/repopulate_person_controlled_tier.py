@@ -68,6 +68,7 @@ GENERALIZED_RACE_SOURCE_VALUE = 'WhatRaceEthnicity_GeneralizedMultPopulations'
 # Hispanic or Latino response concept id
 HISPANIC_LATINO_CONCEPT_ID = 1586147
 HISPANIC_LATINO_CONCEPT_SOURCE_VALUE = 'WhatRaceEthnicity_Hispanic'
+HISPANIC_LATINO_STANDARD_CONCEPT_ID = 38003563
 
 PNA_CONCEPT_ID = 903079
 NONE_OF_THESE_CONCEPT_ID = 1586148
@@ -187,18 +188,18 @@ WHERE o.rank_order = 1
 
 ETHNICITY_QUERY_TEMPLATE = JINJA_ENV.from_string("""
 SELECT DISTINCT
-    o.* EXCEPT (rank_order)
-    {% if translate_source_concepts is not none and translate_source_concepts|length > 0 -%}{{'\t'}}   
+    o.* 
+    EXCEPT(rank_order) 
     REPLACE(
         CASE ethnicity_source_concept_id
-        {% for translate_source_concept in translate_source_concepts %}
-            WHEN {{translate_source_concept.concept_id}} THEN {{translate_source_concept.translated_concept_id}}
-            {%- if translate_source_concept.comment is not none %} /*{{translate_source_concept.comment}}*/{%- endif %}{{'\n'}}
-        {%- endfor %}
+            WHEN {{hispanic_latino_concept_id}} THEN {{hispanic_latino_standard_concept_id}}
             ELSE ethnicity_concept_id
-        END AS ethnicity_concept_id
+        END AS ethnicity_concept_id,
+        CASE ethnicity_source_concept_id
+            WHEN {{hispanic_latino_concept_id}} THEN {{hispanic_latino_standard_concept_id}}
+            ELSE ethnicity_source_concept_id
+        END AS ethnicity_source_concept_id
     )
-    {% endif %}
 FROM 
 (
     SELECT
@@ -387,6 +388,8 @@ class RepopulatePersonControlledTier(AbstractRepopulatePerson):
             non_hispanic_latino_concept_source_value=
             NON_HISPANIC_LATINO_CONCEPT_SOURCE_VALUE,
             hispanic_latino_concept_id=HISPANIC_LATINO_CONCEPT_ID,
+            hispanic_latino_standard_concept_id=
+            HISPANIC_LATINO_STANDARD_CONCEPT_ID,
             translate_source_concepts=self.get_ethnicity_manual_translation())
 
         return {
@@ -444,13 +447,7 @@ class RepopulatePersonControlledTier(AbstractRepopulatePerson):
         ]
 
     def get_ethnicity_manual_translation(self) -> List[ConceptTranslation]:
-        # translate from https://athena.ohdsi.org/search-terms/terms/1586147
-        # to https://athena.ohdsi.org/search-terms/terms/38003563
-        return [
-            ConceptTranslation(concept_id=1586147,
-                               translated_concept_id=38003563,
-                               comment='Hispanic or Latino')
-        ]
+        pass
 
 
 if __name__ == '__main__':
