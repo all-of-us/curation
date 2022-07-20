@@ -15,34 +15,38 @@ from common import JINJA_ENV, DEID_MAP, PRIMARY_PID_RID_MAPPING, PIPELINE_TABLES
 
 LOGGER = logging.getLogger(__name__)
 
-PID_RID_QUERY = """
+SANDBOX_QUERY_TMPL = JINJA_ENV.from_string("""
+CREATE OR REPLACE TABLE
+  `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` AS
+SELECT DISTINCT person_id
+FROM `{{input_table.project}}.{{input_table.dataset_id}}.{{input_table.table_id}}`
+WHERE person_id NOT IN (
+    SELECT person_id FROM `{{deid_map.project}}.{{deid_map.dataset_id}}.{{deid_map.table_id}}`
+)
+""")
+
+PID_RID_QUERY_TMPL = JINJA_ENV.from_string("""
 UPDATE `{{input_table.project}}.{{input_table.dataset_id}}.{{input_table.table_id}}` t
 SET t.person_id = d.research_id
 FROM `{{deid_map.project}}.{{deid_map.dataset_id}}.{{deid_map.table_id}}` d
 WHERE t.person_id = d.person_id
-"""
+""")
 
-PID_RID_QUERY_TMPL = JINJA_ENV.from_string(PID_RID_QUERY)
-
-DELETE_PID_QUERY = """
+DELETE_PID_QUERY_TMPL = JINJA_ENV.from_string("""
 DELETE
 FROM `{{input_table.project}}.{{input_table.dataset_id}}.{{input_table.table_id}}`
-WHERE person_id NOT IN 
-(SELECT research_id
-FROM `{{deid_map.project}}.{{deid_map.dataset_id}}.{{deid_map.table_id}}`)
-"""
+WHERE person_id IN (
+    SELECT DISTINCT person_id FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}`
+)
+""")
 
-DELETE_PID_QUERY_TMPL = JINJA_ENV.from_string(DELETE_PID_QUERY)
-
-VALIDATE_QUERY = """
+VALIDATE_QUERY_TMPL = JINJA_ENV.from_string("""
 SELECT person_id
 FROM `{{input_table.project}}.{{input_table.dataset_id}}.{{input_table.table_id}}`
 WHERE person_id NOT IN 
 (SELECT {{pid}}
 FROM `{{deid_map.project}}.{{deid_map.dataset_id}}.{{deid_map.table_id}}`)
-"""
-
-VALIDATE_QUERY_TMPL = JINJA_ENV.from_string(VALIDATE_QUERY)
+""")
 
 
 class PIDtoRID(BaseCleaningRule):
@@ -86,27 +90,41 @@ class PIDtoRID(BaseCleaningRule):
             single query and a specification for how to execute that query.
             The specifications are optional but the query is required.
         """
-        update_queries = []
-        delete_queries = []
+        update_queries, delete_queries, sandbox_queries = [], [], []
 
         for table in self.pid_tables:
+            sandbox_query = {
+                cdr_consts.QUERY:
+                    SANDBOX_QUERY_TMPL.render(
+                        project=self.project_id,
+                        sandbox_dataset=self.sandbox_dataset_id,
+                        sandbox_table=self.sandbox_table_for(table.table_id),
+                        input_table=table,
+                        deid_map=self.deid_map)
+            }
+            sandbox_queries.append(sandbox_query)
+
             table_query = {
                 cdr_consts.QUERY:
                     PID_RID_QUERY_TMPL.render(input_table=table,
                                               deid_map=self.deid_map)
             }
             update_queries.append(table_query)
+
             delete_query = {
                 cdr_consts.QUERY:
-                    DELETE_PID_QUERY_TMPL.render(input_table=table,
-                                                 deid_map=self.deid_map)
+                    DELETE_PID_QUERY_TMPL.render(
+                        project=self.project_id,
+                        sandbox_dataset=self.sandbox_dataset_id,
+                        sandbox_table=self.sandbox_table_for(table.table_id),
+                        input_table=table)
             }
             delete_queries.append(delete_query)
 
-        return update_queries + delete_queries
+        return sandbox_queries + update_queries + delete_queries
 
     def get_sandbox_tablenames(self):
-        return []
+        return [self.sandbox_table_for(table) for table in self.affected_tables]
 
     def inspect_rule(self, client):
         """

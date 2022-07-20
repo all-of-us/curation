@@ -34,13 +34,16 @@ class CtPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
         cls.rule_instance = cr.CtPIDtoRID(project_id, cls.dataset_id,
                                           cls.sandbox_id)
 
-        cls.fq_sandbox_table_names = []
+        sb_table_name = cls.rule_instance.sandbox_table_for(
+            CONDITION_OCCURRENCE)
+        cls.fq_sandbox_table_names = [
+            f'{project_id}.{cls.sandbox_id}.{sb_table_name}'
+        ]
 
         cls.fq_table_names = [
             f'{project_id}.{cls.dataset_id}.{table_id}'
-            for table_id in [CONDITION_OCCURRENCE]
-        ] + [cls.fq_deid_map_table
-            ] + [f'{project_id}.{cls.sandbox_id}.{PERSON}']
+            for table_id in [CONDITION_OCCURRENCE, PERSON]
+        ] + [cls.fq_deid_map_table]
 
         # call super to set up the client, create datasets, and create
         # empty test tables
@@ -95,7 +98,7 @@ class CtPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
             (2345, 0, 1980, 0, 0),
             (6789, 0, 1990, 0, 0),
             (3456, 0, 1965, 0, 0)""").render(
-            fq_dataset_name=f'{self.project_id}.{self.sandbox_id}')
+            fq_dataset_name=f'{self.project_id}.{self.dataset_id}')
         queries.append(pid_query)
 
         map_query = self.jinja_env.from_string("""
@@ -119,18 +122,31 @@ class CtPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
         expected_log_msg = f"{log_level}:{log_module}:{log_message}"
         with self.assertLogs(LOGGER, level='WARN') as ir:
             self.rule_instance.inspect_rule(self.client)
-        self.assertEqual(ir.output, [expected_log_msg])
+        # expected log message is seen twice because there are two tables in the dataset to clean
+        self.assertEqual(ir.output, [expected_log_msg] * 2)
+
+        person_sandbox_table = ''
+        co_sandbox_table = ''
+        for table in self.fq_sandbox_table_names:
+            if PERSON in table:
+                person_sandbox_table = table
+            elif CONDITION_OCCURRENCE in table:
+                co_sandbox_table = table
 
         # Expected results list
         tables_and_counts = [{
             'fq_table_name':
                 '.'.join([self.fq_dataset_name, CONDITION_OCCURRENCE]),
+            'fq_sandbox_table_name':
+                co_sandbox_table,
             'fields': [
                 'condition_occurrence_id', 'person_id', 'condition_concept_id',
                 'condition_start_date', 'condition_start_datetime',
                 'condition_type_concept_id'
             ],
             'loaded_ids': [50001, 50002, 50003, 50004, 50005],
+            'sandboxed_ids': [3456],
+            'sandbox_fields': ['person_id'],
             'cleaned_values': [
                 (50001, 234, 100, datetime.fromisoformat('2020-08-17').date(),
                  datetime.fromisoformat('2020-08-17 15:00:00+00:00'), 10),
@@ -141,6 +157,16 @@ class CtPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
                 (50004, 789, 800, datetime.fromisoformat('2020-08-17').date(),
                  datetime.fromisoformat('2020-08-17 12:00:00+00:00'), 13)
             ]
+        }, {
+            'fq_table_name':
+                '.'.join([self.fq_dataset_name, PERSON]),
+            'fq_sandbox_table_name':
+                person_sandbox_table,
+            'fields': ['person_id', 'year_of_birth'],
+            'loaded_ids': [1234, 5678, 2345, 6789, 3456],
+            'sandboxed_ids': [3456],
+            'cleaned_values': [(234, 1960), (678, 1970), (345, 1980),
+                               (789, 1990)]
         }]
 
         self.default_test(tables_and_counts)
