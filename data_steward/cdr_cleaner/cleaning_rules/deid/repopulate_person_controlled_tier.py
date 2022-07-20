@@ -16,16 +16,10 @@ concepts are in the race class such mappings do not exist in concept_relationshi
 multiple race responses, we replace the multiple responses with a generalized concept 2000000008 
 (WhatRaceEthnicity_GeneralizedMultPopulations). 
 
-TODO update this paragraph
 Ethnicity: "Hispanic or Latino" is one of the responses in "what is your race/ethnicity?" question. 
 Participants can only indicate their ethnicity to be "Hispanic or Latino" but doesn't have the 
 option to indicate they are "Not Hispanic or Latino". We manually map the PPI response 1586147 to 
-the standard OMOP concept 38003563. For those participants who didn't check this option, we will set 
-their ethnicity_concept_id = 2100000001, ethnicity_source_concept_id = 2100000001, 
-and ethnicity_source_value = ‘AoUDRC_NoneIndicated’
-
-Per ticket DC-1664, the ethnicity_concept_id and ethnicity_source_concept_id are no longer set to
-2100000001 and the and ethnicity_source_value is no longer set to ‘AoUDRC_NoneIndicated’. Instead,
+the standard OMOP concept 38003563. For those participants who didn't check this option, 
 non-Hispanic options are expanded as done in the registered tier repopulation.
 
 Gender: the standard OMOP gender concepts are very limiting and the PPI gender concepts are used 
