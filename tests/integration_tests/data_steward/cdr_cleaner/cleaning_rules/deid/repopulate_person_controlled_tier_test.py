@@ -15,10 +15,10 @@ from dateutil import parser
 from common import PERSON, OBSERVATION, VOCABULARY_TABLES
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.deid.repopulate_person_controlled_tier import \
-    NON_HISPANIC_LATINO_CONCEPT_SOURCE_VALUE, RepopulatePersonControlledTier, GENERALIZED_RACE_CONCEPT_ID, GENERALIZED_RACE_SOURCE_VALUE, \
+    RepopulatePersonControlledTier, GENERALIZED_RACE_CONCEPT_ID, GENERALIZED_RACE_SOURCE_VALUE, \
     GENERALIZED_GENDER_IDENTITY_CONCEPT_ID, GENERALIZED_GENDER_IDENTITY_SOURCE_VALUE, \
     HISPANIC_LATINO_CONCEPT_ID, HISPANIC_LATINO_CONCEPT_SOURCE_VALUE, NON_HISPANIC_LATINO_CONCEPT_ID, \
-    NO_MATCHING_CONCEPT_ID, NO_MATCHING_SOURCE_VALUE, SKIP_CONCEPT_ID
+    SKIP_CONCEPT_ID, NON_HISPANIC_LATINO_CONCEPT_SOURCE_VALUE
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import \
     BaseTest
 
