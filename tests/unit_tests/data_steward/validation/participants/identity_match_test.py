@@ -5,7 +5,7 @@ import unittest
 
 # Third party imports
 from mock import call, patch
-from mock.mock import MagicMock
+from mock.mock import MagicMock, PropertyMock
 
 # Project imports
 from constants.validation.participants import identity_match as consts
@@ -63,12 +63,10 @@ class IdentityMatchTest(unittest.TestCase):
             'rdr_birthdate': '1990-01-01'
         }
 
-        mock_list_ehr_tables = patch(
-            'validation.participants.identity_match.bq_utils.list_dataset_contents'
-        )
-        self.mock_ehr_tables = mock_list_ehr_tables.start()
-        self.mock_ehr_tables.return_value = self.dataset_contents
-        self.addCleanup(mock_list_ehr_tables.stop)
+        mock_table_object = MagicMock()
+        type(mock_table_object).table_id = PropertyMock(
+            side_effect=self.dataset_contents)
+        self.mock_ehr_tables = [mock_table_object] * 10
 
         mock_bq_client_patcher = patch(
             'validation.participants.identity_match.BigQueryClient')
@@ -76,6 +74,7 @@ class IdentityMatchTest(unittest.TestCase):
         self.bq_client = MagicMock()
         self.mock_dest_dataset = MagicMock()
         self.mock_bq_client.return_value = self.bq_client
+        self.bq_client.list_tables.return_value = self.mock_ehr_tables
         self.bq_client.create_dataset.return_value = self.mock_dest_dataset
         self.mock_dest_dataset.dataset_id = self.dest_dataset
         self.addCleanup(mock_bq_client_patcher.stop)
@@ -260,6 +259,8 @@ class IdentityMatchTest(unittest.TestCase):
                                     self.pii_dataset, self.dest_dataset)
 
         # post conditions
+        self.bq_client.list_tables.assert_called_with(self.pii_dataset)
+
         self.bq_client.delete_dataset.assert_called_once()
         self.bq_client.create_dataset.assert_called_once()
         self.bq_client.delete_dataset.assert_called_with(self.dest_dataset,
@@ -301,6 +302,8 @@ class IdentityMatchTest(unittest.TestCase):
                                     self.pii_dataset, self.dest_dataset)
 
         # post conditions
+        self.bq_client.list_tables.assert_called_with(self.pii_dataset)
+
         self.bq_client.delete_dataset.assert_called_once()
         self.bq_client.create_dataset.assert_called_once()
         self.bq_client.delete_dataset.assert_called_with(self.dest_dataset,
@@ -342,6 +345,8 @@ class IdentityMatchTest(unittest.TestCase):
                                     self.pii_dataset, self.dest_dataset)
 
         # post conditions
+        self.bq_client.list_tables.assert_called_with(self.pii_dataset)
+
         self.bq_client.delete_dataset.assert_called_once()
         self.bq_client.create_dataset.assert_called_once()
         self.bq_client.delete_dataset.assert_called_with(self.dest_dataset,
@@ -384,6 +389,8 @@ class IdentityMatchTest(unittest.TestCase):
                                     self.pii_dataset, self.dest_dataset)
 
         # post conditions
+        self.bq_client.list_tables.assert_called_with(self.pii_dataset)
+
         self.bq_client.delete_dataset.assert_called_once()
         self.bq_client.create_dataset.assert_called_once()
         self.bq_client.delete_dataset.assert_called_with(self.dest_dataset,
@@ -425,6 +432,8 @@ class IdentityMatchTest(unittest.TestCase):
                                     self.pii_dataset, self.dest_dataset)
 
         # post conditions
+        self.bq_client.list_tables.assert_called_with(self.pii_dataset)
+
         self.bq_client.delete_dataset.assert_called_once()
         self.bq_client.create_dataset.assert_called_once()
         self.bq_client.delete_dataset.assert_called_with(self.dest_dataset,
