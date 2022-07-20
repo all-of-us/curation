@@ -872,6 +872,8 @@ def _get_submission_folder(bucket, bucket_items, force_process=False):
         processed = _validation_done(bucket, to_process_folder)
         if not processed:
             return to_process_folder
+        else:
+            logging.info(f'Skipping folder {to_process_folder} since it is already processed')
     return None
 
 
