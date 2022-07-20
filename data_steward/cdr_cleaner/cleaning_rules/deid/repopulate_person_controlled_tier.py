@@ -203,43 +203,38 @@ FROM
 (
     SELECT
         p.person_id,
-        IF
-        (ethnicity_ob.value_as_concept_id IS NULL,
+        IF (
+            ethnicity_ob.value_as_concept_id IS NULL,
             CASE 
                 WHEN race_ob.value_source_concept_id = {{no_matching_concept_id}} THEN {{no_matching_concept_id}}
                 WHEN race_ob.value_source_concept_id IS NULL THEN {{no_matching_concept_id}}
                 WHEN race_ob.value_source_concept_id = {{pna_concept_id}} THEN {{pna_concept_id}}
                 WHEN race_ob.value_source_concept_id = {{skip_concept_id}} THEN {{skip_concept_id}}
-                WHEN race_ob.value_source_concept_id = {{none_of_these_concept_id}} THEN {{none_of_these_concept_id}}            
-            ELSE {{non_hispanic_latino_concept_id}}
-            END,
+                WHEN race_ob.value_source_concept_id = {{none_of_these_concept_id}} THEN {{none_of_these_concept_id}}
+            ELSE {{non_hispanic_latino_concept_id}} END,
             {{hispanic_latino_concept_id}}
         ) AS ethnicity_concept_id,
-        COALESCE(
-            ethnicity_ob.value_source_concept_id, 
+        IF (
+            ethnicity_ob.value_as_concept_id IS NULL,
             CASE 
                 WHEN race_ob.value_source_concept_id = {{no_matching_concept_id}} THEN {{no_matching_concept_id}}
                 WHEN race_ob.value_source_concept_id IS NULL THEN {{no_matching_concept_id}}
                 WHEN race_ob.value_source_concept_id = {{pna_concept_id}} THEN {{pna_concept_id}}
                 WHEN race_ob.value_source_concept_id = {{skip_concept_id}} THEN {{skip_concept_id}}
-                WHEN race_ob.value_source_concept_id = {{none_of_these_concept_id}} THEN {{none_of_these_concept_id}}            
-            ELSE {{non_hispanic_latino_concept_id}}
-            END,
-            {{no_matching_concept_id}}
+                WHEN race_ob.value_source_concept_id = {{none_of_these_concept_id}} THEN {{none_of_these_concept_id}}
+            ELSE {{non_hispanic_latino_concept_id}} END,
+            ethnicity_ob.value_source_concept_id
         ) AS ethnicity_source_concept_id,
-        COALESCE(
-            ethnicity_ob.value_source_value,
-            IF (
-                race_ob.value_source_concept_id IN ({{pna_concept_id}}, {{skip_concept_id}}, {{none_of_these_concept_id}}),
-                race_ob.value_source_value,
-                NULL
-            ),
-            IF (
-                race_ob.value_source_concept_id = {{no_matching_concept_id}} OR race_ob.value_source_concept_id IS NULL,
-                "{{no_matching_source_value}}",
-                NULL
-            ),
-            "{{non_hispanic_latino_concept_source_value}}"
+        IF (
+            ethnicity_ob.value_as_concept_id IS NULL,
+            CASE 
+                WHEN race_ob.value_source_concept_id = {{no_matching_concept_id}} THEN "{{no_matching_source_value}}"
+                WHEN race_ob.value_source_concept_id IS NULL THEN "{{no_matching_source_value}}"
+                WHEN race_ob.value_source_concept_id = {{pna_concept_id}} THEN race_ob.value_source_value
+                WHEN race_ob.value_source_concept_id = {{skip_concept_id}} THEN race_ob.value_source_value
+                WHEN race_ob.value_source_concept_id = {{none_of_these_concept_id}} THEN race_ob.value_source_value
+            ELSE "{{non_hispanic_latino_concept_source_value}}" END,
+            ethnicity_ob.value_source_value
         ) AS ethnicity_source_value,
         DENSE_RANK() OVER(PARTITION BY p.person_id ORDER BY ethnicity_ob.observation_datetime DESC, ethnicity_ob.observation_id DESC) AS rank_order
     FROM `{{project}}.{{dataset}}.person` AS p
