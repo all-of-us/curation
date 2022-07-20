@@ -15,8 +15,8 @@ import unittest
 # Third party imports
 from mock import patch
 import mock
-
 from resources import DEID_PATH
+
 # Project imports
 from tools import run_deid
 
