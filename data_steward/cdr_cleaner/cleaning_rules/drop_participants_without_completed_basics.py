@@ -61,7 +61,6 @@ WHERE person_id NOT IN
 """)
 
 
-# class DropParticipantsWithoutPPI(DropMissingParticipants):
 class DropParticipantsWithoutCompletedBasics(DropMissingParticipants):
     """
     Drops participants who have not completed any question in The Basics

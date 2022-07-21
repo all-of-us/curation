@@ -16,7 +16,6 @@ BASICS_CONCEPT_ID = 1586134
 TYPE_CONCEPT_ID_SURVEY = 45905771
 
 
-# class DropParticipantsWithoutPPITest(BaseTest.CleaningRulesTestBase):
 class DropParticipantsWithoutCompletedBasicsTest(BaseTest.CleaningRulesTestBase
                                                 ):
 
