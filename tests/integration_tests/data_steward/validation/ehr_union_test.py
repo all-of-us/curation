@@ -166,6 +166,7 @@ class EhrUnionTest(unittest.TestCase):
     def _get_cdm_filepath(self, cdm_table, hpo_id) -> str:
         """
         Get the path of the specified CDM table's data file for the HPO.
+
         :param cdm_table: name of the CDM table (e.g. 'person', 'visit_occurrence', 'death')
         :param hpo_ids: identifies which HPOs to include in union
         :return: str. Path of the data file, including the file name.
@@ -189,6 +190,7 @@ class EhrUnionTest(unittest.TestCase):
     def _get_valid_visit_occurrence_ids(self, hpo_id) -> list:
         """
         Get the list of the valid visit_occurrence_ids for the HPO.
+        
         :param hpo_ids: identifies which HPOs to include in union
         :return: list of valid occurrence IDs.
         """
@@ -217,8 +219,8 @@ class EhrUnionTest(unittest.TestCase):
         :param dataset_id: identifies the dataset
         :return: list of table_ids
         """
-        tables = bq_utils.list_tables(dataset_id)
-        return [table['tableReference']['tableId'] for table in tables]
+        tables = self.bq_client.list_tables(dataset_id)
+        return [table.table_id for table in tables]
 
     @mock.patch('bq_utils.get_hpo_info')
     def test_union_ehr(self, mock_hpo_info):
@@ -641,8 +643,8 @@ class EhrUnionTest(unittest.TestCase):
 
     def tearDown(self):
         self._empty_hpo_buckets()
-        test_util.delete_all_tables(self.input_dataset_id)
-        test_util.delete_all_tables(self.output_dataset_id)
+        test_util.delete_all_tables(self.bq_client, self.input_dataset_id)
+        test_util.delete_all_tables(self.bq_client, self.output_dataset_id)
 
     @classmethod
     def tearDownClass(cls):

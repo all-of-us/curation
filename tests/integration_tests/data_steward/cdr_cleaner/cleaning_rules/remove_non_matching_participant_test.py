@@ -139,7 +139,7 @@ class RemoveNonMatchingParticipantTest(BaseTest.CleaningRulesTestBase):
 
         cls.project_id = os.environ.get(PROJECT_ID)
         cls.dataset_id = os.environ.get('COMBINED_DATASET_ID')
-        cls.sandbox_id = cls.dataset_id + '_sandbox'
+        cls.sandbox_id = f'{cls.dataset_id}_sandbox'
         cls.ehr_dataset_id = os.environ.get('UNIONED_DATASET_ID')
         cls.validation_dataset_id = os.environ.get('RDR_DATASET_ID')
 
@@ -324,7 +324,7 @@ class RemoveNonMatchingParticipantTest(BaseTest.CleaningRulesTestBase):
 
     @classmethod
     def tearDownClass(cls):
-        test_util.delete_all_tables(cls.dataset_id)
-        test_util.delete_all_tables(cls.ehr_dataset_id)
-        test_util.delete_all_tables(cls.validation_dataset_id)
-        test_util.delete_all_tables(cls.sandbox_id)
+        test_util.delete_all_tables(cls.client, cls.dataset_id)
+        test_util.delete_all_tables(cls.client, cls.ehr_dataset_id)
+        test_util.delete_all_tables(cls.client, cls.validation_dataset_id)
+        test_util.delete_all_tables(cls.client, cls.sandbox_id)

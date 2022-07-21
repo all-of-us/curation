@@ -39,10 +39,10 @@ class AchillesHeelTest(unittest.TestCase):
         self.hpo_bucket = self.storage_client.get_hpo_bucket(FAKE_HPO_ID)
         self.dataset = bq_utils.get_dataset_id()
         self.storage_client.empty_bucket(self.hpo_bucket)
-        test_util.delete_all_tables(self.dataset)
+        test_util.delete_all_tables(self.bq_client, self.dataset)
 
     def tearDown(self):
-        test_util.delete_all_tables(self.dataset_id)
+        test_util.delete_all_tables(self.bq_client, self.dataset_id)
         self.storage_client.empty_bucket(self.hpo_bucket)
 
     @classmethod
@@ -95,7 +95,7 @@ class AchillesHeelTest(unittest.TestCase):
 
         # create randomized tables to bypass BQ rate limits
         random_string = str(randint(10000, 99999))
-        randomized_hpo_id = FAKE_HPO_ID + '_' + random_string
+        randomized_hpo_id = f'{FAKE_HPO_ID}_{random_string}'
 
         # prepare
         self._load_dataset(randomized_hpo_id)
@@ -103,8 +103,8 @@ class AchillesHeelTest(unittest.TestCase):
                                     include_heel=False)
 
         # define tables
-        achilles_heel_results = randomized_hpo_id + '_' + achilles_heel.ACHILLES_HEEL_RESULTS
-        achilles_results_derived = randomized_hpo_id + '_' + achilles_heel.ACHILLES_RESULTS_DERIVED
+        achilles_heel_results = f'{randomized_hpo_id}_{achilles_heel.ACHILLES_HEEL_RESULTS}'
+        achilles_results_derived = f'{randomized_hpo_id}_{achilles_heel.ACHILLES_RESULTS_DERIVED}'
 
         # run achilles heel
         achilles_heel.create_tables(randomized_hpo_id, True)
@@ -163,4 +163,3 @@ class AchillesHeelTest(unittest.TestCase):
         actual_result = [row["analysis_id"] for row in rows]
         for analysis_id in actual_result:
             self.assertIn(analysis_id, notifications)
-        # self.assertEqual(ACHILLES_HEEL_RESULTS_NOTIFICATION_COUNT, int(result['rows'][0]['f'][0]['v']))

@@ -2,7 +2,6 @@
 Unit test components of data_steward.validation.main
 """
 # Python imports
-from __future__ import print_function
 import datetime
 from time import sleep
 import os
@@ -59,7 +58,7 @@ class ValidationMainTest(unittest.TestCase):
         self.storage_client.empty_bucket(self.drc_bucket)
         self.storage_client.empty_bucket(self.hpo_bucket)
 
-        test_util.delete_all_tables(self.dataset_id)
+        test_util.delete_all_tables(self.bq_client, self.dataset_id)
         self.create_drug_class_table()
 
     def create_drug_class_table(self):
@@ -411,7 +410,7 @@ class ValidationMainTest(unittest.TestCase):
         self.storage_client.empty_bucket(self.hpo_bucket)
         self.storage_client.empty_bucket(self.drc_bucket)
 
-        test_util.delete_all_tables(self.dataset_id)
+        test_util.delete_all_tables(self.bq_client, self.dataset_id)
 
     @classmethod
     def tearDownClass(cls):

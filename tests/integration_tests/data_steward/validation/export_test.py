@@ -15,8 +15,6 @@ from tests import test_util
 from tests.test_util import FAKE_HPO_ID, NYC_HPO_ID
 from validation import export, main
 
-BQ_TIMEOUT_RETRIES = 3
-
 
 class ExportTest(unittest.TestCase):
 
@@ -31,7 +29,7 @@ class ExportTest(unittest.TestCase):
         print(cls.__name__)
         print('**************************************************************')
         test_util.setup_hpo_id_bucket_name_table(cls.bq_client, cls.dataset_id)
-        test_util.delete_all_tables(cls.dataset_id)
+        test_util.delete_all_tables(cls.bq_client, cls.dataset_id)
         test_util.populate_achilles()
 
     @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
@@ -167,5 +165,5 @@ class ExportTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        test_util.delete_all_tables(cls.dataset_id)
+        test_util.delete_all_tables(cls.bq_client, cls.dataset_id)
         test_util.drop_hpo_id_bucket_name_table(cls.bq_client, cls.dataset_id)

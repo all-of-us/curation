@@ -1,15 +1,17 @@
 """
 Fetch the most prevalent achilles heel errors in a dataset
 """
+# Python imports
 import csv
 import json
 import os
 from io import open
 from functools import partial
 
+# Project imports
 import app_identity
-
 import bq_utils
+from gcloud.bq import BigQueryClient
 import common
 import resources
 
@@ -106,13 +108,13 @@ def get_hpo_subqueries(app_id, dataset_id, all_table_ids):
     return result
 
 
-def construct_query(app_id, dataset_id, all_hpo=False):
+def construct_query(client, dataset_id, all_hpo=False):
     """
     Construct query to retrieve most prevalent errors from achilles heel results table(s)
 
     Construct an appropriate and executable query.
 
-    :param app_id: Identifies the google cloud project containing the dataset
+    :param client: a BigQueryClient
     :param dataset_id: Identifies the dataset where from achilles heel results
         should be obtained
     :param all_hpo: If `True` query <hpo_id>_achilles_heel_results, otherwise
@@ -121,11 +123,12 @@ def construct_query(app_id, dataset_id, all_hpo=False):
     """
     query = None
     # Resulting query should only reference existing tables in dataset
-    all_tables = bq_utils.list_tables(dataset_id)
-    all_table_ids = [r['tableReference']['tableId'] for r in all_tables]
+    all_tables = client.list_tables(dataset_id)
+    all_table_ids = [table.table_id for table in all_tables]
     if all_hpo:
         # Fetch and union results from all <hpo_id>_achilles_heel_results tables
-        subqueries = get_hpo_subqueries(app_id, dataset_id, all_table_ids)
+        subqueries = get_hpo_subqueries(client.project, dataset_id,
+                                        all_table_ids)
         enclosed = ['(%s)' % s for s in subqueries]
         query = UNION_ALL.join(enclosed)
     else:
@@ -133,17 +136,17 @@ def construct_query(app_id, dataset_id, all_hpo=False):
         table_id = common.ACHILLES_HEEL_RESULTS
         if table_id in all_table_ids:
             query = QUERY_FORMAT(dataset_name=dataset_id,
-                                 app_id=app_id,
+                                 app_id=client.project,
                                  dataset_id=dataset_id,
                                  table_id=table_id)
     return query
 
 
-def top_heel_errors(app_id, dataset_id, all_hpo=False):
+def top_heel_errors(client, dataset_id, all_hpo=False):
     """
     Retrieve most prevalent errors from achilles heel results
 
-    :param app_id: Identifies the google cloud project containing the dataset
+    :param client: a BigQueryClient
     :param dataset_id: Identifies the dataset where from achilles heel results
         should be obtained
     :param all_hpo: If `True` query <hpo_id>_achilles_heel_results, otherwise
@@ -152,7 +155,7 @@ def top_heel_errors(app_id, dataset_id, all_hpo=False):
         is found whatsoever
     """
     result = None
-    query = construct_query(app_id, dataset_id, all_hpo)
+    query = construct_query(client, dataset_id, all_hpo)
     if query:
         # Found achilles_heel_results table(s), run the query
         response = bq_utils.query(query)
@@ -190,7 +193,8 @@ def main(app_id, dataset_id, file_name, all_hpo=False, file_format=None):
     if file_format not in OUTPUT_FORMATS:
         raise ValueError('File format must be one of (%s)' %
                          ', '.join(OUTPUT_FORMATS))
-    heel_errors = top_heel_errors(app_id, dataset_id, all_hpo)
+    bq_client = BigQueryClient(app_id)
+    heel_errors = top_heel_errors(bq_client, dataset_id, all_hpo)
     if file_format == CSV:
         save_csv(heel_errors, file_name)
     elif file_format == JSON:

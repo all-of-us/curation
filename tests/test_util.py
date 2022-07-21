@@ -209,17 +209,18 @@ def _export_query_responses():
         _export_query_response_by_path(p, FAKE_HPO_ID)
 
 
-def delete_all_tables(dataset_id):
+def delete_all_tables(client, dataset_id):
     """
     Remove all non-vocabulary and non-lookup tables from a dataset
 
+    :param client: a BigQueryClient
     :param dataset_id: ID of the dataset with the tables to delete
     :return: list of deleted tables
     """
 
     deleted = []
-    table_infos = bq_utils.list_tables(dataset_id)
-    table_ids = [table['tableReference']['tableId'] for table in table_infos]
+    table_infos = client.list_tables(dataset_id)
+    table_ids = [table.table_id for table in table_infos]
     for table_id in table_ids:
         if table_id not in common.VOCABULARY_TABLES + LOOKUP_TABLES:
             bq_utils.delete_table(table_id, dataset_id)
@@ -254,6 +255,7 @@ def populate_achilles(hpo_id=FAKE_HPO_ID, include_heel=True):
 def generate_rdr_files():
     """
     Generate test csv files based on a sample of synthetic RDR data
+
     :return:
     """
     d = 'rdr_dataset_2018_4_17'
@@ -295,6 +297,7 @@ def command(cmd):
 def list_files_in(path):
     """
     List the abs paths to files (not dirs) in the supplied path
+
     :param path:
     :return:
     """
@@ -308,6 +311,7 @@ def list_files_in(path):
 def get_table_summary(dataset_id):
     """
     Get summary of tables in a bq dataset
+
     :param dataset_id: identifies the dataset
     :return: list of dict with keys: project_id dataset_id table_id creation_time type
     """
@@ -364,6 +368,7 @@ def get_table_counts(dataset_id, table_ids=None, where=''):
 def normalize_field_payload(field):
     """
     Standardize schema field payload so it is easy to compare in tests
+    
     :param field: a field from a table/query's schema
     :return: the normalized field
     """
@@ -465,6 +470,7 @@ def setup_hpo_id_bucket_name_table(client, dataset_id):
     """
     Sets up `hpo_id_bucket_name` table that `get_hpo_bucket()` looks up.
     Drops the table if exist first, and create it with test lookup data.
+
     :param client: a BigQueryClient
     :param dataset_id: dataset id where the lookup table is created
     """
@@ -511,6 +517,7 @@ def setup_hpo_id_bucket_name_table(client, dataset_id):
 def drop_hpo_id_bucket_name_table(client, dataset_id):
     """
     Drops `hpo_id_bucket_name` table that `get_hpo_bucket()` looks up.
+    
     :param client: a BigQueryClient
     :param dataset_id: dataset id where the lookup table is located
     """

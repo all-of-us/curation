@@ -147,4 +147,4 @@ class CreateUpdateDrcIdMatchTableTest(TestCase):
         self.assertCountEqual(actual, expected)
 
     def tearDown(self):
-        test_util.delete_all_tables(self.dataset_id)
+        test_util.delete_all_tables(self.bq_client, self.dataset_id)
