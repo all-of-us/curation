@@ -118,20 +118,7 @@ WITH
       coalesce(race_ob.value_source_value,
         "No matching concept") AS race_source_value,
       coalesce(race_ob.value_source_concept_id,
-        0) AS race_source_concept_id,
-      coalesce(ethnicity_ob.value_source_value,
-        /*fill in the skip/pna/none of these if needed*/
-      IF
-        (race_ob.value_source_concept_id IN (903079,
-            903096,
-            1586148),
-          race_ob.value_source_value,
-          NULL)
-        /*otherwise it is no matching*/
-        ,
-        "No matching concept") AS ethnicity_source_value,
-      coalesce(ethnicity_ob.value_source_concept_id,
-        0) AS ethnicity_source_concept_id
+        0) AS race_source_concept_id
     FROM
       `{{project}}.{{dataset}}.person` AS per
     LEFT JOIN
@@ -177,10 +164,12 @@ END
 END
   AS race_source_value,
   race_source_concept_id,
-  ethnicity_source_value,
-  ethnicity_source_concept_id
+  ethnicity_concept.concept_code ethnicity_source_value,
+  ethnicity_concept_id ethnicity_source_concept_id
 FROM
-  repopulate_person_from_observation
+  repopulate_person_from_observation r
+  JOIN `{{project}}.{{dataset}}.concept` ethnicity_concept
+    ON ethnicity_concept.concept_id = r.ethnicity_concept_id
 """)
 
 

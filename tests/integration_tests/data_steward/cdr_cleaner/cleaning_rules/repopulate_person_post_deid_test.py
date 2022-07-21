@@ -40,6 +40,8 @@ GENDER_NONBINARY_CONCEPT_ID = 1585841
 GENDER_NONBINARY_SOURCE_CONCEPT_ID = 123
 SEX_FEMALE_CONCEPT_ID = 1585847
 SEX_FEMALE_SOURCE_CONCEPT_ID = 45878463
+ETHNICITY_NONEOFTHESE_CONCEPT_ID = 1586148
+ETHNICITY_NONEOFTHESE_CONCEPT_CODE = "WhatRaceEthnicity_RaceEthnicityNoneOfThese"
 
 
 class RepopulatePersonPostDeidTest(BaseTest.CleaningRulesTestBase):
@@ -103,20 +105,26 @@ class RepopulatePersonPostDeidTest(BaseTest.CleaningRulesTestBase):
             VALUES
                 ({{gender_concept_id}}, "some text", "some text", "some text", "some text", "gender", date('2020-05-05'), date('2020-05-05')),
                 ({{gender_nonbinary_concept_id}}, "some text", "some text", "some text", "some text", "nonbinary", date('2020-05-05'), date('2020-05-05')),
-                ({{gender_nonbinary_source_concept_id}}, "some text", "some text", "some text", "some text", "nonbinary_src", date('2020-05-05'), date('2020-05-05'))
-        """).render(fq_dataset_name=self.fq_dataset_name,
-                    gender_concept_id=GENDER_CONCEPT_ID,
-                    gender_nonbinary_concept_id=GENDER_NONBINARY_CONCEPT_ID,
-                    gender_nonbinary_source_concept_id=
-                    GENDER_NONBINARY_SOURCE_CONCEPT_ID,
-                    sex_female_concept_id=SEX_FEMALE_CONCEPT_ID,
-                    sex_female_source_concept_id=SEX_FEMALE_SOURCE_CONCEPT_ID)
+                ({{gender_nonbinary_source_concept_id}}, "some text", "some text", "some text", "some text", "nonbinary_src", date('2020-05-05'), date('2020-05-05')),
+                ({{ethnicity_noneofthese_concept_id}}, "some text", "some text", "some text", "some text", "{{ethnicity_noneofthese_concept_code}}", date('2020-05-05'), date('2020-05-05'))
+        """).render(
+            fq_dataset_name=self.fq_dataset_name,
+            gender_concept_id=GENDER_CONCEPT_ID,
+            gender_nonbinary_concept_id=GENDER_NONBINARY_CONCEPT_ID,
+            gender_nonbinary_source_concept_id=
+            GENDER_NONBINARY_SOURCE_CONCEPT_ID,
+            sex_female_concept_id=SEX_FEMALE_CONCEPT_ID,
+            sex_female_source_concept_id=SEX_FEMALE_SOURCE_CONCEPT_ID,
+            ethnicity_noneofthese_concept_id=ETHNICITY_NONEOFTHESE_CONCEPT_ID,
+            ethnicity_noneofthese_concept_code=ETHNICITY_NONEOFTHESE_CONCEPT_CODE
+        )
 
         create_persons_query = self.jinja_env.from_string("""
             INSERT INTO `{{fq_dataset_name}}.person` (person_id, gender_concept_id, birth_datetime, year_of_birth, race_concept_id, ethnicity_concept_id, gender_source_value, gender_source_concept_id)
             VALUES
                 (1, 1, timestamp('1991-05-05'), 1991, 1, 1, "some text", 1),
-                (2, 2, timestamp('1976-05-05'), 1976, 2, 2, "some text", 2)
+                (2, 2, timestamp('1976-05-05'), 1976, 2, 2, "some text", 2),
+                (3, 2, timestamp('1945-05-05'), 1945, 2, 3, "some text", 2)
         """).render(fq_dataset_name=self.fq_dataset_name)
 
         create_observations_query = self.jinja_env.from_string("""
@@ -124,15 +132,21 @@ class RepopulatePersonPostDeidTest(BaseTest.CleaningRulesTestBase):
                 observation_date, observation_type_concept_id, observation_concept_id)
             VALUES
                 (1, 100, {{gender_concept_id}}, {{gender_nonbinary_concept_id}}, {{gender_nonbinary_source_concept_id}}, date('2020-05-05'), 1, 1),
+                --What race ethnicity? White --
                 (1, 101, 1586140, 45877987, 1586146, '2020-01-01', 1, 1586140),
-                (2, 102, 1586140, 45876489, 1586143, '2020-01-01', 1, 1586140)
-        """).render(fq_dataset_name=self.fq_dataset_name,
-                    gender_concept_id=GENDER_CONCEPT_ID,
-                    gender_nonbinary_concept_id=GENDER_NONBINARY_CONCEPT_ID,
-                    gender_nonbinary_source_concept_id=
-                    GENDER_NONBINARY_SOURCE_CONCEPT_ID,
-                    sex_female_concept_id=SEX_FEMALE_CONCEPT_ID,
-                    sex_female_source_concept_id=SEX_FEMALE_SOURCE_CONCEPT_ID)
+                --What race ethnicity? Black --
+                (2, 102, 1586140, 45876489, 1586143, '2020-01-01', 1, 1586140),
+                -- What race ethnicity? Ethnicity NoneofThese --
+                (3, 103, 1586140, {{ethnicity_noneofthese_concept_id}}, {{ethnicity_noneofthese_concept_id}}, '2020-01-01', 1, 1586140)
+        """).render(
+            fq_dataset_name=self.fq_dataset_name,
+            gender_concept_id=GENDER_CONCEPT_ID,
+            gender_nonbinary_concept_id=GENDER_NONBINARY_CONCEPT_ID,
+            gender_nonbinary_source_concept_id=
+            GENDER_NONBINARY_SOURCE_CONCEPT_ID,
+            sex_female_concept_id=SEX_FEMALE_CONCEPT_ID,
+            sex_female_source_concept_id=SEX_FEMALE_SOURCE_CONCEPT_ID,
+            ethnicity_noneofthese_concept_id=ETHNICITY_NONEOFTHESE_CONCEPT_ID)
 
         queries = [
             insert_concepts_query, create_persons_query,
@@ -145,16 +159,21 @@ class RepopulatePersonPostDeidTest(BaseTest.CleaningRulesTestBase):
                 '.'.join([self.fq_dataset_name, 'person']),
             'fq_sandbox_table_name':
                 '',
-            'loaded_ids': [1, 2],
+            'loaded_ids': [1, 2, 3],
             'sandboxed_ids': [],
             'fields': [
                 'person_id', 'gender_concept_id', 'year_of_birth',
                 'race_concept_id', 'ethnicity_concept_id',
-                'gender_source_value', 'gender_source_concept_id'
+                'gender_source_value', 'gender_source_concept_id',
+                'ethnicity_source_concept_id', 'ethnicity_source_value'
             ],
             'cleaned_values': [
-                (1, 1585841, 1991, 8527, 38003564, "nonbinary_src", 123),
-                (2, 0, 1976, 8516, 38003564, "No matching concept", 0)
+                (1, 1585841, 1991, 8527, 38003564, "nonbinary_src", 123,
+                 38003564, "Not Hispanic"),
+                (2, 0, 1976, 8516, 38003564, "No matching concept", 0, 38003564,
+                 "Not Hispanic"),
+                (3, 0, 1945, 1586148, 1586148, "No matching concept", 0,
+                 1586148, "WhatRaceEthnicity_RaceEthnicityNoneOfThese")
             ]
         }]
 
