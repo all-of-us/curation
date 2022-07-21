@@ -18,16 +18,21 @@
 PROJECT_ID = ''  # identifies the project containing the datasets
 DATASET_ID = ''  # the dataset to evaluate
 BASELINE_DATASET_ID = ''  # a baseline dataset for metrics comparison (ex: a prior combined dataset)
+run_as = ""
 
 # +
 import pandas as pd
 
 from common import JINJA_ENV
+from utils import auth
 from cdr_cleaner.cleaning_rules.negative_ages import date_fields
 from gcloud.bq import BigQueryClient
-from analytics.cdr_ops.notebook_utils import execute
+from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
 
-client = BigQueryClient(PROJECT_ID)
+impersonation_creds = auth.get_impersonation_credentials(
+    run_as, target_scopes=IMPERSONATION_SCOPES)
+
+client = BigQueryClient(PROJECT_ID, credentials=impersonation_creds)
 
 pd.options.display.max_rows = 1000
 pd.options.display.max_colwidth = 0
