@@ -65,21 +65,32 @@ GENERALIZED_GENDER_IDENTITY_SOURCE_VALUE = 'GenderIdentity_GeneralizedDiffGender
 RACE_CONCEPT_ID = 1586140
 GENERALIZED_RACE_CONCEPT_ID = 2000000008
 GENERALIZED_RACE_SOURCE_VALUE = 'WhatRaceEthnicity_GeneralizedMultPopulations'
+
 # Hispanic or Latino response concept id
 HISPANIC_LATINO_CONCEPT_ID = 1586147
 HISPANIC_LATINO_CONCEPT_SOURCE_VALUE = 'WhatRaceEthnicity_Hispanic'
 HISPANIC_LATINO_STANDARD_CONCEPT_ID = 38003563
+HISPANIC_LATINO_STANDARD_SOURCE_VALUE = "Hispanic"
 
+# Prefer not to answer
 PNA_CONCEPT_ID = 903079
+PNA_CONCEPT_SOURCE_VALUE = 'PMI_PreferNotToAnswer'
+
+# None of these
 NONE_OF_THESE_CONCEPT_ID = 1586148
+NONE_OF_THESE_CONCEPT_SOURCE_VALUE = 'WhatRaceEthnicity_RaceEthnicityNoneOfThese'
+
+# Non hispanic
 NON_HISPANIC_LATINO_CONCEPT_ID = 38003564
 NON_HISPANIC_LATINO_CONCEPT_SOURCE_VALUE = "Not Hispanic"
+
 # OMOP non matching concept id
 NO_MATCHING_CONCEPT_ID = 0
 NO_MATCHING_SOURCE_VALUE = 'No matching concept'
 
 # Skip concept
 SKIP_CONCEPT_ID = 903096
+SKIP_CONCEPT_SOURCE_VALUE = "PMI_Skip"
 
 # Observation fields
 OBSERVATION_SOURCE_CONCEPT_ID = 'observation_source_concept_id'
@@ -231,11 +242,11 @@ FROM
             CASE 
                 WHEN race_ob.value_source_concept_id = {{no_matching_concept_id}} THEN "{{no_matching_source_value}}"
                 WHEN race_ob.value_source_concept_id IS NULL THEN "{{no_matching_source_value}}"
-                WHEN race_ob.value_source_concept_id = {{pna_concept_id}} THEN race_ob.value_source_value
-                WHEN race_ob.value_source_concept_id = {{skip_concept_id}} THEN race_ob.value_source_value
-                WHEN race_ob.value_source_concept_id = {{none_of_these_concept_id}} THEN race_ob.value_source_value
+                WHEN race_ob.value_source_concept_id = {{pna_concept_id}} THEN "{{pna_concept_source_value}}"
+                WHEN race_ob.value_source_concept_id = {{skip_concept_id}} THEN "{{skip_concept_source_value}}"
+                WHEN race_ob.value_source_concept_id = {{none_of_these_concept_id}} THEN "{{none_of_these_concept_source_value}}"
             ELSE "{{non_hispanic_latino_concept_source_value}}" END,
-            ethnicity_ob.value_source_value
+            "{{hispanic_latino_standard_source_value}}"
         ) AS ethnicity_source_value,
         DENSE_RANK() OVER(PARTITION BY p.person_id ORDER BY ethnicity_ob.observation_datetime DESC, ethnicity_ob.observation_id DESC) AS rank_order
     FROM `{{project}}.{{dataset}}.person` AS p
@@ -382,14 +393,20 @@ class RepopulatePersonControlledTier(AbstractRepopulatePerson):
             no_matching_concept_id=NO_MATCHING_CONCEPT_ID,
             no_matching_source_value=NO_MATCHING_SOURCE_VALUE,
             skip_concept_id=SKIP_CONCEPT_ID,
+            skip_concept_source_value=SKIP_CONCEPT_SOURCE_VALUE,
             pna_concept_id=PNA_CONCEPT_ID,
+            pna_concept_source_value=PNA_CONCEPT_SOURCE_VALUE,
             none_of_these_concept_id=NONE_OF_THESE_CONCEPT_ID,
+            none_of_these_concept_source_value=
+            NONE_OF_THESE_CONCEPT_SOURCE_VALUE,
             non_hispanic_latino_concept_id=NON_HISPANIC_LATINO_CONCEPT_ID,
             non_hispanic_latino_concept_source_value=
             NON_HISPANIC_LATINO_CONCEPT_SOURCE_VALUE,
             hispanic_latino_concept_id=HISPANIC_LATINO_CONCEPT_ID,
             hispanic_latino_standard_concept_id=
             HISPANIC_LATINO_STANDARD_CONCEPT_ID,
+            hispanic_latino_standard_source_value=
+            HISPANIC_LATINO_STANDARD_SOURCE_VALUE,
             translate_source_concepts=self.get_ethnicity_manual_translation())
 
         return {
