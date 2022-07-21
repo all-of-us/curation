@@ -731,7 +731,9 @@ def match_participants(project, rdr_dataset, ehr_dataset, dest_dataset_id):
                 f"ehr_dataset:\t{ehr_dataset}\n"
                 f"dest_dataset_id:\t{dest_dataset_id}\n")
 
-    ehr_tables = bq_utils.list_dataset_contents(ehr_dataset)
+    bq_client = BigQueryClient(project)
+    all_ehr_tables = bq_client.list_tables(ehr_dataset)
+    ehr_tables = [table.table_id for table in all_ehr_tables]
 
     date_string = _get_date_string(rdr_dataset)
 
@@ -739,7 +741,6 @@ def match_participants(project, rdr_dataset, ehr_dataset, dest_dataset_id):
         dest_dataset_id += date_string
 
     # create new dataset for the intermediate tables and results
-    bq_client = BigQueryClient(project)
     bq_client.delete_dataset(dest_dataset_id,
                              delete_contents=True,
                              not_found_ok=True)

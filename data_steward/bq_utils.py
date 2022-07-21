@@ -581,6 +581,10 @@ def get_table_id_from_obj(table_obj):
     return table_obj['id'].split('.')[-1]
 
 
+@deprecated(
+    reason=
+    'Use gcloud.bq.BigQueryClient.list_tables(self, dataset: typing.Union[bigquery.DatasetReference, str]) instead'
+)
 def list_dataset_contents(dataset_id):
     project_id = app_identity.get_application_id()
     service = create_service()

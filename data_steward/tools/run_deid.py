@@ -105,13 +105,15 @@ def get_known_tables(field_path):
     return known_tables
 
 
-def get_output_tables(input_dataset, known_tables, skip_tables, only_tables):
+def get_output_tables(client, input_dataset, known_tables, skip_tables,
+                      only_tables):
     """
     Get list of output tables deid should produce.
 
     Specifically excludes table names that start with underscores, pii, or
     are explicitly suppressed.
 
+    :param client: a BigQueryClient
     :param input_dataset:  dataset to read when gathering all possible table names.
     :param known_tables:  list of tables known to curation.  If a table exists in
         the input dataset but is not known to curation, it is skippped.
@@ -120,12 +122,13 @@ def get_output_tables(input_dataset, known_tables, skip_tables, only_tables):
 
     :return: a list of table names to execute deid over.
     """
-    tables = bq_utils.list_dataset_contents(input_dataset)
+    tables = client.list_tables(input_dataset)
+    table_ids = [table.table_id for table in tables]
     skip_tables = [table.strip() for table in skip_tables.split(',')]
     only_tables = [table.strip() for table in only_tables.split(',')]
 
     allowed_tables = []
-    for table in tables:
+    for table in table_ids:
         if table.startswith('_') or table.startswith(
                 'pii') or table in SUPPRESSED_TABLES:
             continue
@@ -270,24 +273,21 @@ def copy_deid_map_table(client, deid_map_table, lookup_dataset_id,
         logging.error(f"The _deid_map table was not copied successfully")
 
 
-def load_deid_map_table(deid_map_dataset_name, age_limit):
+def load_deid_map_table(client, deid_map_dataset_name, age_limit):
 
     # Create _deid_map table in input dataset
-    project_id = app_identity.get_application_id()
-    bq_client = BigQueryClient(project_id)
-    deid_map_table = f'{project_id}.{deid_map_dataset_name}._deid_map'
+    deid_map_table = f'{client.project}.{deid_map_dataset_name}._deid_map'
 
     # Copy master _deid_map table records to _deid_map table
-    if bq_client.table_exists(DEID_MAP_TABLE,
-                              dataset_id=PIPELINE_TABLES_DATASET):
-        copy_deid_map_table(bq_client, deid_map_table, PIPELINE_TABLES_DATASET,
+    if client.table_exists(DEID_MAP_TABLE, dataset_id=PIPELINE_TABLES_DATASET):
+        copy_deid_map_table(client, deid_map_table, PIPELINE_TABLES_DATASET,
                             deid_map_dataset_name, age_limit)
         logging.info(
             f"copied participants younger than {age_limit} to the table {deid_map_table}"
         )
     else:
         raise RuntimeError(
-            f'{DEID_MAP_TABLE} is not available in {project_id}.{PIPELINE_TABLES_DATASET}'
+            f'{DEID_MAP_TABLE} is not available in {client.project}.{PIPELINE_TABLES_DATASET}'
         )
 
 
@@ -299,13 +299,18 @@ def main(raw_args=None):
     """
     args = parse_args(raw_args)
     add_console_logging(args.console_log)
+
+    project_id = app_identity.get_application_id()
+    bq_client = BigQueryClient(project_id)
+
     known_tables = get_known_tables(fields_path)
     deid_tables_path = os.path.join(DEID_PATH, 'config', 'ids', 'tables')
     configured_tables = get_known_tables(deid_tables_path)
-    tables = get_output_tables(args.input_dataset, known_tables,
+    tables = get_output_tables(bq_client, args.input_dataset, known_tables,
                                args.skip_tables, args.tables)
     logging.info(f"Loading {DEID_MAP_TABLE} table...")
-    load_deid_map_table(deid_map_dataset_name=args.input_dataset,
+    load_deid_map_table(bq_client,
+                        deid_map_dataset_name=args.input_dataset,
                         age_limit=args.age_limit)
     logging.info(f"Loaded {DEID_MAP_TABLE} table.")
 
