@@ -42,7 +42,8 @@ class UnitNormalizationTest(unittest.TestCase):
         sandbox_query[clean_consts.QUERY] = SANDBOX_UNITS_QUERY.render(
             project_id=self.project_id,
             sandbox_dataset_id=self.sandbox_id,
-            intermediary_table=self.rule_instance.get_sandbox_tablenames()[0],
+            intermediary_table=self.rule_instance.sandbox_table_for(
+                MEASUREMENT),
             dataset_id=self.dataset_id,
             unit_table_name=UNIT_MAPPING_TABLE,
             measurement_table=MEASUREMENT)
@@ -52,11 +53,10 @@ class UnitNormalizationTest(unittest.TestCase):
             project_id=self.project_id,
             dataset_id=self.dataset_id,
             sandbox_dataset_id=self.sandbox_id,
+            intermediary_table=self.rule_instance.sandbox_table_for(
+                MEASUREMENT),
             unit_table_name=UNIT_MAPPING_TABLE,
             measurement_table=MEASUREMENT)
-        update_query[clean_consts.DESTINATION_TABLE] = MEASUREMENT
-        update_query[clean_consts.DESTINATION_DATASET] = self.dataset_id
-        update_query[clean_consts.DISPOSITION] = WRITE_TRUNCATE
 
         expected_list = [sandbox_query, update_query]
 
@@ -73,7 +73,8 @@ class UnitNormalizationTest(unittest.TestCase):
         store_rows_to_be_changed = SANDBOX_UNITS_QUERY.render(
             project_id=self.project_id,
             sandbox_dataset_id=self.sandbox_id,
-            intermediary_table=self.rule_instance.get_sandbox_tablenames()[0],
+            intermediary_table=self.rule_instance.sandbox_table_for(
+                MEASUREMENT),
             dataset_id=self.dataset_id,
             unit_table_name=UNIT_MAPPING_TABLE,
             measurement_table=MEASUREMENT)
@@ -82,6 +83,8 @@ class UnitNormalizationTest(unittest.TestCase):
             project_id=self.project_id,
             dataset_id=self.dataset_id,
             sandbox_dataset_id=self.sandbox_id,
+            intermediary_table=self.rule_instance.sandbox_table_for(
+                MEASUREMENT),
             unit_table_name=UNIT_MAPPING_TABLE,
             measurement_table=MEASUREMENT)
 
