@@ -23,7 +23,7 @@ from constants.cdr_cleaner import clean_cdr as cdr_consts
 
 LOGGER = logging.getLogger(__name__)
 
-ISSUE_NUMBERS = ["DC584", "DC696", "DC706"]
+ISSUE_NUMBERS = ["DC584", "DC696", "DC706", "DC2551"]
 
 BASICS_MODULE_CONCEPT_ID = 1586134
 
