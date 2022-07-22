@@ -52,11 +52,8 @@ WHERE person_id NOT IN
     ON (concept_id = ancestor_concept_id)
   JOIN `{{project}}.{{dataset}}.observation`
     ON (descendant_concept_id = observation_concept_id)
-  JOIN `{{project}}.{{dataset}}._mapping_observation`
-    USING (observation_id)
   WHERE concept_class_id = 'Module'
     AND concept_name IN ('The Basics')
-    AND src_hpo_id = 'rdr'
     AND questionnaire_response_id IS NOT NULL)
 """)
 
