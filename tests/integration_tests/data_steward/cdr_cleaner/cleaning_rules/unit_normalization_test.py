@@ -141,10 +141,17 @@ class UnitNormalizationTest(BaseTest.CleaningRulesTestBase):
         """
         Tests unit_normalization for the loaded test data
         """
+        sandbox_table_name = ''
+        for table in self.fq_sandbox_table_names:
+            if MEASUREMENT in table:
+                sandbox_table_name = table
+
         # Expected results list
         tables_and_counts = [{
             'fq_table_name':
                 f'{self.project_id}.{self.dataset_id}.{MEASUREMENT}',
+            'fq_sandbox_table_name':
+                sandbox_table_name,
             'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
             'sandboxed_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
             'fields': [
