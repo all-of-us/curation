@@ -15,13 +15,8 @@ from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from cdr_cleaner.cleaning_rules.measurement_table_suppression import (
     MeasurementRecordsSuppression)
 # Project imports
-<<<<<<< HEAD
 from common import MEASUREMENT, JINJA_ENV, PIPELINE_TABLES
-from constants.bq_utils import WRITE_TRUNCATE, WRITE_APPEND
-=======
-from common import MEASUREMENT, JINJA_ENV
 from constants.bq_utils import WRITE_APPEND
->>>>>>> f4b2912a ([DC-2456] upgrading rule to work with 53 measurement table schema)
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from resources import fields_for
 
@@ -71,7 +66,9 @@ WITH
       m.operator_concept_id,
       m.value_as_number,
       m.value_as_concept_id,
-      m.unit_concept_id
+      m.unit_concept_id,
+      m.measurement_time,
+      m.visit_detail_id
     FROM `{{project_id}}.{{dataset_id}}.measurement` m
     LEFT JOIN sites s
     USING (measurement_id)
@@ -179,12 +176,12 @@ WITH
         WHEN (value_as_number BETWEEN 90 AND 230) THEN 8582
         ELSE (unit_concept_id)
       END AS adj_unit,
-      {{PIPELINE_TABLES}}.calculate_age(measurement_date, EXTRACT(DATE FROM birth_datetime)) as age
+      {{pipeline_tables}}.calculate_age(measurement_date, EXTRACT(DATE FROM birth_datetime)) as age
     FROM height_measurements
     LEFT JOIN persons USING (person_id)
     LEFT JOIN sites USING (measurement_id)
     LEFT JOIN outlierHt_pts USING (person_id)
-    WHERE {{PIPELINE_TABLES}}.calculate_age(measurement_date, EXTRACT(DATE FROM birth_datetime)) >= 18
+    WHERE {{pipeline_tables}}.calculate_age(measurement_date, EXTRACT(DATE FROM birth_datetime)) >= 18
   ),
   -- Height disagreement: count == 2, sd > 10 --
   height_disagreement_pts AS (
@@ -274,7 +271,9 @@ WITH
       m.operator_concept_id,
       m.value_as_number,
       m.value_as_concept_id,
-      m.unit_concept_id
+      m.unit_concept_id,
+      m.measurement_time,
+      m.visit_detail_id
     FROM `{{project_id}}.{{dataset_id}}.measurement` m
     LEFT JOIN sites s
     USING (measurement_id)
@@ -350,6 +349,8 @@ WITH
       value_as_number,
       value_as_concept_id,
       COALESCE(unit_concept_id,-2) AS unit_concept_id,
+      measurement_time,
+      visit_detail_id,
       src_id,
       birth_datetime,
       f_outlierDx_Wt_high,
@@ -358,13 +359,13 @@ WITH
         WHEN ABS(value_as_number)>16000 THEN NULL
         ELSE ABS(value_as_number)
     END AS value_as_number_adj,
-    {{PIPELINE_TABLES}}.calculate_age(measurement_date, EXTRACT(DATE FROM birth_datetime)) AS age
+    {{pipeline_tables}}.calculate_age(measurement_date, EXTRACT(DATE FROM birth_datetime)) AS age
     FROM weight_measurements
     LEFT JOIN persons USING (person_id)
     LEFT JOIN sites USING (measurement_id)
     LEFT JOIN outlierWt_pts_high USING (person_id)
     LEFT JOIN outlierWt_pts_low USING (person_id)
-    WHERE {{PIPELINE_TABLES}}.calculate_age(measurement_date, EXTRACT(DATE FROM birth_datetime)) >= 18
+    WHERE {{pipeline_tables}}.calculate_age(measurement_date, EXTRACT(DATE FROM birth_datetime)) >= 18
   ),
   --3) Check medians by site, concept_id, unit_concept_id --
   --Note that there are 'grams' recorded, but essentially nothing that can feasibly be grams. --
@@ -597,12 +598,9 @@ class CleanHeightAndWeight(BaseCleaningRule):
                     dataset_id=self.dataset_id,
                     sandbox_dataset_id=self.sandbox_dataset_id,
                     height_table=self.sandbox_table_for(HEIGHT_TABLE),
-<<<<<<< HEAD
-                    PIPELINE_TABLES=PIPELINE_TABLES),
-=======
                     measurement_concept_ids=','.join(
-                        [str(con) for con in HEIGHT_CONCEPT_IDS])),
->>>>>>> f4b2912a ([DC-2456] upgrading rule to work with 53 measurement table schema)
+                        [str(con) for con in HEIGHT_CONCEPT_IDS]),
+                    pipeline_tables=PIPELINE_TABLES),
         }
 
         save_new_height_rows_query = {
@@ -647,12 +645,9 @@ class CleanHeightAndWeight(BaseCleaningRule):
                     sandbox_dataset_id=self.sandbox_dataset_id,
                     weight_table=self.sandbox_table_for(WEIGHT_TABLE),
                     dataset_id=self.dataset_id,
-<<<<<<< HEAD
-                    PIPELINE_TABLES=PIPELINE_TABLES),
-=======
                     measurement_concept_ids=','.join(
-                        [str(con) for con in WEIGHT_CONCEPT_IDS])),
->>>>>>> f4b2912a ([DC-2456] upgrading rule to work with 53 measurement table schema)
+                        [str(con) for con in WEIGHT_CONCEPT_IDS]),
+                    pipeline_tables=PIPELINE_TABLES),
         }
 
         save_new_weight_rows_query = {
