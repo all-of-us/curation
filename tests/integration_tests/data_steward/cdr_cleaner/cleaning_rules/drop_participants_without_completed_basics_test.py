@@ -3,8 +3,6 @@ import os
 from datetime import date, datetime
 from unittest.mock import patch
 
-# Third party imports
-
 # Project imports
 import common
 from app_identity import PROJECT_ID
