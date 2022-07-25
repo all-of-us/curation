@@ -1,5 +1,9 @@
 """
+Due to a bug in the Odysseus ETL, we need to manually fix the VALUE AS CONCEPT ID mapping.
+This cleaning rule correct all VALUE AS CONCEPT ID to be the ANSWER concept ID which may
+not be from PPI vocab.
 
+Original Issues: DC-418, DC-2590
 """
 
 import logging
@@ -17,8 +21,34 @@ JIRA_ISSUE_NUMBERS = ['DC418', 'DC2590']
 
 SANDBOX_PPI_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` AS (
-    SELECT t.* FROM `xyz` AS t 
-    WHERE xyz)
+    SELECT a.observation_id, a.value_as_concept_id 
+    FROM `{{project}}.{{dataset}}.observation` AS a 
+    JOIN (
+        SELECT *
+        FROM (
+            SELECT
+                c2.concept_name,
+                c2.concept_id,
+                o.*,
+                RANK() OVER (
+                PARTITION BY o.observation_id, o.value_source_concept_id ORDER BY c2.concept_id ASC
+                ) AS rank
+            FROM `{{project}}.{{dataset}}.observation` o
+            JOIN `{{project}}.{{dataset}}.concept` c
+            ON o.value_source_concept_id = c.concept_id
+            JOIN `{{project}}.{{dataset}}.concept_relationship` cr
+            ON c.concept_id = cr.concept_id_1
+            AND cr.relationship_id = 'Maps to value'
+            JOIN `{{project}}.{{dataset}}.concept` c2
+            ON c2.concept_id = cr.concept_id_2
+            WHERE o.observation_concept_id = o.value_as_concept_id
+            AND o.observation_concept_id != 0
+        )
+        WHERE rank=1
+    ) AS b
+    ON a.observation_id = b.observation_id
+    WHERE a.value_as_concept_id != b.concept_id
+)
 """)
 
 UPDATE_PPI_QUERY = JINJA_ENV.from_string("""
@@ -65,9 +95,7 @@ class MapsToValuePpiVocabUpdate(BaseCleaningRule):
         this SQL, append them to the list of Jira Issues.
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
-        desc = (
-            'Runs the query which updates the ppi vocabulary in observation table'
-        )
+        desc = ('Corrects VALUE AS CONCEPT ID to be the ANSWER concept ID')
 
         super().__init__(issue_numbers=JIRA_ISSUE_NUMBERS,
                          description=desc,
@@ -92,7 +120,10 @@ class MapsToValuePpiVocabUpdate(BaseCleaningRule):
         sandbox_query, update_query = dict(), dict()
 
         sandbox_query[cdr_consts.QUERY] = SANDBOX_PPI_QUERY.render(
-            project=self.project_id, dataset=self.dataset_id)
+            sandbox_dataset=self.sandbox_dataset_id,
+            sandbox_table=self.sandbox_table_for(OBSERVATION),
+            project=self.project_id,
+            dataset=self.dataset_id)
         queries_list.append(sandbox_query)
 
         update_query[cdr_consts.QUERY] = UPDATE_PPI_QUERY.render(
@@ -105,15 +136,9 @@ class MapsToValuePpiVocabUpdate(BaseCleaningRule):
         pass
 
     def setup_validation(self, client):
-        """
-        Run required steps for validation setup
-        """
         raise NotImplementedError("Please fix me.")
 
     def validate_rule(self, client):
-        """
-        Validates the cleaning rule which deletes or updates the data from the tables
-        """
         raise NotImplementedError("Please fix me.")
 
     def get_sandbox_tablenames(self):
