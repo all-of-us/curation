@@ -1,6 +1,6 @@
 """
 Due to a bug in the Odysseus ETL, we need to manually fix the VALUE AS CONCEPT ID mapping.
-This cleaning rule correct all VALUE AS CONCEPT ID to be the ANSWER concept ID which may
+This cleaning rule corrects all VALUE AS CONCEPT ID to be the ANSWER concept ID which may
 not be from PPI vocab.
 
 Original Issues: DC-418, DC-2590
