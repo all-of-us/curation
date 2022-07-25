@@ -73,7 +73,7 @@ with rdr_persons as (
     OR p.year_of_birth > (EXTRACT(YEAR FROM CURRENT_DATE()) - 17)
 )
 
--- store the research_id of all participants 
+-- store the research_id of all participants --
 select m.research_id
 from rdr_persons p
 left join `{{project_id}}.{{pipeline_lookup_tables}}.{{mapping_table}}` m
@@ -116,7 +116,7 @@ class StoreExpectedCTList(BaseCleaningRule):
             dataset_id=self.dataset_id,
             sandbox_dataset_id=self.sandbox_dataset_id,
             mapping_table=PRIMARY_PID_RID_MAPPING,
-            storage_table_name=EXPECTED_CT_LIST,
+            storage_table_name=self.sandbox_table_for(EXPECTED_CT_LIST),
             pipeline_lookup_tables=PIPELINE_TABLES)
 
         create_sandbox_table_dict = {cdr_consts.QUERY: create_sandbox_table}
@@ -124,9 +124,9 @@ class StoreExpectedCTList(BaseCleaningRule):
         return [create_sandbox_table_dict]
 
     def get_sandbox_tablenames(self):
-        return [EXPECTED_CT_LIST]
+        return [self.sandbox_table_for(EXPECTED_CT_LIST)]
 
-    def setup_rule(self):
+    def setup_rule(self, client):
         pass
 
     def setup_validation(self):
