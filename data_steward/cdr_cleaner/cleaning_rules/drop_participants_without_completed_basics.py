@@ -2,13 +2,17 @@
 Run the drop_participants_without_completed_basics validation clean rule.
 
 Drops all data for participants who:
-  1. have not completed any of the "The Basics" survey.
+  1. have not completed any question in The Basics
 
 (1) is achieved by checking the observation table for children of TheBasics
 module.
 
 As part of DC-696, several participants were found with no basics survey still persisting in the CDR
-These records were removed, and DC-706 was created to remove such participants in the future.
+These records were removed, and DC-706 was created to remove such participants in the future. DC-2551
+was created to update DropParticipantsWithoutPPI to DropParticipantsWithoutCompletedBasics to
+reflect what the rule is actually doing, dropping participants who have not completed any question in The Basics.
+It also moves the cleaning rule to RDR_CLEANING_CLASSES list to allow curation to deliver a list of
+participants expected to exist in the CT dataset when the RDR dataset is cleaned.
 
 As part of this effort, the condition for dropping has been modified to participants who:
   1. have not completed "The Basics" PPI module, via the RDR
@@ -60,7 +64,7 @@ WHERE person_id NOT IN
 
 class DropParticipantsWithoutCompletedBasics(DropMissingParticipants):
     """
-    Drops participants who have not completed any question in The Basics
+    Drops participants who have not completed any of the "The Basics" survey
     """
 
     def __init__(self,
