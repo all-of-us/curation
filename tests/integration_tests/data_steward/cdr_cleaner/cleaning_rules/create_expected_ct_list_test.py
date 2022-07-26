@@ -61,18 +61,18 @@ class StoreExpectedCTListTest(BaseTest.CleaningRulesTestBase):
             VALUES
                 -- should not be included in sandbox table because of bad birth year --
                 (100, 1799, 5, 5, 5),
-                -- should be kept --
+                -- should be included --
                 (200, 1801, 5, 5, 5),
                 -- should not be included in sandbox table because of bad birth year --
                 (300, 2020, 5, 5, 5),
-                -- should be kept --
+                -- should be included --
                 (400, 2000, 5, 5, 5),
-                -- should be kept.  added for ai/an checks --
+                -- should be included.  added for ai/an regression checks --
                 (500, 1990, 5, 5, 5),
                 (600, 1980, 5, 5, 5),
                 -- should not be included in sandbox table for not having the basics --
                 (700, 1985, 5, 5, 5),
-                -- kept for having the basics --
+                -- included for having the basics --
                 (800, 1985, 5, 5, 5)
         """).render(project=self.project_id,
                     dataset=self.dataset_id,
@@ -99,10 +99,10 @@ class StoreExpectedCTListTest(BaseTest.CleaningRulesTestBase):
           (observation_id, person_id, observation_source_concept_id, value_source_concept_id,
           observation_concept_id, observation_date, observation_type_concept_id)
         VALUES
-          -- should not be included in sandbox table due to ai/an answer --
+          -- should be included in sandbox table.  ai/an regression check --
           (10, 500, 1586140, 1586141, 1586140, '1900-01-01', 0),
           (20, 500, 1586140, 1586147, 1586140, '1900-01-01', 0),
-          -- keep because not ai/an --
+          -- include because not ai/an --
           (30, 600, 1586140, 1586145, 1586140, '1900-01-01', 0),
           -- should not be included in sandbox table.  does not have the basics --
           (40, 700, 1000, 0, 1000, '1900-01-01', 0),
