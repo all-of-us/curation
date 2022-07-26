@@ -701,8 +701,8 @@ def perform_validation_on_file(file_name: str, found_file_names: list,
     results = []
     found = parsed = loaded = 0
     table_name, extension = file_name.split('.')
-    if extension.upper() in ['JSON', 'JSONL']:
-        logging.info(f"Validating JSON file '{file_name}'")
+    if extension.upper() == 'JSONL':
+        logging.info(f"Validating JSONL file '{file_name}'")
         if file_name in found_file_names:
             found = 1
             app_id: str = app_identity.get_application_id()
