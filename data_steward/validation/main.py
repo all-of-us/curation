@@ -280,6 +280,7 @@ def validate_submission(hpo_id: str, bucket, folder_items: list,
     for cdm_file_name in [f'{common.NOTE}.jsonl']:
         file_results, file_errors = perform_validation_on_file(
             cdm_file_name, found_cdm_files, hpo_id, folder_prefix, bucket)
+        # If JSONL file found, remove note.csv and add note.jsonl instead
         if file_results[0][1]:
             results = [
                 result for result in results
