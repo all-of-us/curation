@@ -90,6 +90,7 @@ CDM_TABLES = AOU_REQUIRED + OTHER_CDM_TABLES
 
 AOU_REQUIRED_FILES = [table + '.csv' for table in AOU_REQUIRED]
 PII_FILES = [table + '.csv' for table in PII_TABLES]
+NOTE_JSONL = 'note.jsonl'
 SUBMISSION_FILES = AOU_REQUIRED_FILES + PII_FILES
 RESULTS_HTML = 'results.html'
 PROCESSED_TXT = 'processed.txt'
