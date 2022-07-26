@@ -93,8 +93,10 @@ class CleanDigitalHealthDataTest(BaseTest.CleaningRulesTestBase):
         sandbox_id = dataset_id + '_sandbox'
         cls.sandbox_id = sandbox_id
 
+        cls.kwargs = {'api_project_id': 'rdr_project_id'}
+
         cls.rule_instance = clean_dhd.CleanDigitalHealthStatus(
-            project_id, dataset_id, sandbox_id)
+            project_id, dataset_id, sandbox_id, **cls.kwargs)
 
         sandbox_tables = cls.rule_instance.get_sandbox_tablenames()
         cls.fq_sandbox_table_names = [
