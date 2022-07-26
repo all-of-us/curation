@@ -47,7 +47,9 @@ OR
     (observation_concept_id IN (1333015, 1585889) AND (value_as_number < 0 OR value_as_number > 10))
 OR
     -- from dc1058: sandbox any participant data who have 6 or more members under 18 in their household --
-    (observation_concept_id IN (1333023, 1585890) AND (value_as_number < 0 OR value_as_number > 5)))
+    (observation_concept_id IN (1333023, 1585890) AND (value_as_number < 0 OR value_as_number > 5))
+OR
+    (observation_concept_id = 1333023 AND value_as_number IS NULL AND value_as_string IS NOT NULL))
 """)
 
 CLEAN_INVALID_VALUES_QUERY = JINJA_ENV.from_string("""
@@ -70,9 +72,17 @@ CASE
   ELSE value_as_number
 END AS
     value_as_number,
-    value_as_string,
+    CASE WHEN observation_concept_id = 1333023 AND value_as_number IS NULL AND value_as_string IS NOT NULL THEN NULL
+    ELSE value_as_string
+    END AS value_as_string,
 CASE
-    WHEN observation_concept_id IN (1585890, 1333023, 1333015, 1585889) AND (value_as_number < 0 OR value_as_number >= 20) THEN 2000000010
+    WHEN observation_concept_id IN (1585890, 1333023, 1333015, 1585889) 
+        AND (
+            value_as_number < 0 
+            OR value_as_number >= 20 
+            OR (value_as_number IS NULL AND value_as_string IS NOT NULL)
+        )
+        THEN 2000000010
     WHEN observation_concept_id IN (1585795, 1585802, 1585864, 1585870, 1585873, 1586159, 1586162) AND (value_as_number < 0 OR value_as_number > 99) THEN 2000000010
     WHEN observation_concept_id = 1585820 AND (value_as_number < 0 OR value_as_number > 255) THEN 2000000010
     
@@ -96,7 +106,13 @@ END AS
     unit_source_value,
     qualifier_source_value,
     CASE
-        WHEN observation_concept_id IN (1585890, 1333023, 1333015, 1585889) AND (value_as_number < 0 OR value_as_number >= 20) THEN 2000000010
+        WHEN observation_concept_id IN (1585890, 1333023, 1333015, 1585889) 
+            AND (
+                value_as_number < 0 
+                OR value_as_number >= 20 
+                OR (value_as_number IS NULL AND value_as_string IS NOT NULL)
+            )
+            THEN 2000000010
         WHEN observation_concept_id IN (1585795, 1585802, 1585864, 1585870, 1585873, 1586159, 1586162) AND (value_as_number < 0 OR value_as_number > 99) THEN 2000000010
         WHEN observation_concept_id = 1585820 AND (value_as_number < 0 OR value_as_number > 255) THEN 2000000010
     
