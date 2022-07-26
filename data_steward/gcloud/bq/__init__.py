@@ -194,8 +194,8 @@ class BigQueryClient(Client):
         """
         Copies tables from source dataset to a destination datasets
 
-        :param input_dataset: name of the input dataset
-        :param output_dataset: name of the output dataset
+        :param input_dataset: name of the input(source) dataset
+        :param output_dataset: name of the output(destination) dataset
         :return:
         """
         # Copy input dataset tables to backup and staging datasets
