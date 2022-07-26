@@ -60,12 +60,13 @@ FIVE_PERSON_FACT_RELATIONSHIP_CSV = os.path.join(FIVE_PERSONS_PATH,
 FIVE_PERSONS_PII_NAME_CSV = os.path.join(FIVE_PERSONS_PATH, 'pii_name.csv')
 FIVE_PERSONS_PARTICIPANT_MATCH_CSV = os.path.join(FIVE_PERSONS_PATH,
                                                   'participant_match.csv')
+FIVE_PERSONS_NOTE_JSONL = os.path.join(FIVE_PERSONS_PATH, 'note.jsonl')
 FIVE_PERSONS_FILES = [
     FIVE_PERSONS_PERSON_CSV, FIVE_PERSONS_VISIT_OCCURRENCE_CSV,
     FIVE_PERSONS_CONDITION_OCCURRENCE_CSV,
     FIVE_PERSONS_PROCEDURE_OCCURRENCE_CSV, FIVE_PERSONS_DRUG_EXPOSURE_CSV,
     FIVE_PERSONS_MEASUREMENT_CSV, FIVE_PERSONS_PII_NAME_CSV,
-    FIVE_PERSONS_PARTICIPANT_MATCH_CSV
+    FIVE_PERSONS_PARTICIPANT_MATCH_CSV, FIVE_PERSONS_NOTE_JSONL
 ]
 
 FIVE_PERSONS_SUCCESS_RESULT_CSV = os.path.join(
@@ -159,7 +160,7 @@ def _create_five_persons_success_result():
     field_names = ['file_name', 'found', 'parsed', 'loaded']
 
     expected_result_items = []
-    for cdm_file in resources.CDM_FILES:
+    for cdm_file in resources.CDM_CSV_FILES:
         expected_item = dict(file_name=cdm_file,
                              found="1",
                              parsed="1",

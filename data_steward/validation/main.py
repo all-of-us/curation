@@ -16,8 +16,9 @@ from io import StringIO, open
 # Third party imports
 import dateutil
 from flask import Flask
+from google.cloud import bigquery
 from google.cloud.storage.bucket import Blob
-from google.cloud.exceptions import GoogleCloudError
+from google.cloud.exceptions import GoogleCloudError, BadRequest
 from googleapiclient.errors import HttpError
 
 # Project imports
@@ -264,16 +265,28 @@ def validate_submission(hpo_id: str, bucket, folder_items: list,
 
     # Create all tables first to simplify downstream processes
     # (e.g. ehr_union doesn't have to check if tables exist)
-    for file_name in resources.CDM_FILES + common.PII_FILES:
+    for file_name in resources.CDM_CSV_FILES + common.PII_FILES:
         table_name = file_name.split('.')[0]
         table_id = resources.get_table_id(table_name, hpo_id=hpo_id)
         bq_utils.create_standard_table(table_name, table_id, drop_existing=True)
 
-    for cdm_file_name in sorted(resources.CDM_FILES):
+    for cdm_file_name in sorted(resources.CDM_CSV_FILES):
         file_results, file_errors = perform_validation_on_file(
             cdm_file_name, found_cdm_files, hpo_id, folder_prefix, bucket)
         results.extend(file_results)
         errors.extend(file_errors)
+
+    # TODO use sorted(resources.CDM_JSONL_FILES) in the future
+    for cdm_file_name in [f'{common.NOTE}.jsonl']:
+        file_results, file_errors = perform_validation_on_file(
+            cdm_file_name, found_cdm_files, hpo_id, folder_prefix, bucket)
+        if file_results[0][1]:
+            results = [
+                result for result in results
+                if not result[0].startswith(f'{common.NOTE}')
+            ]
+            results.extend(file_results)
+            errors.extend(file_errors)
 
     for pii_file_name in sorted(common.PII_FILES):
         file_results, file_errors = perform_validation_on_file(
@@ -685,10 +698,60 @@ def perform_validation_on_file(file_name: str, found_file_names: list,
     """
     errors = []
     results = []
-    logging.info(f"Validating file '{file_name}'")
     found = parsed = loaded = 0
-    table_name = file_name.split('.')[0]
+    table_name, extension = file_name.split('.')
+    if extension.upper() in ['JSON', 'JSONL']:
+        logging.info(f"Validating JSON file '{file_name}'")
+        if file_name in found_file_names:
+            found = 1
+            app_id: str = app_identity.get_application_id()
+            storage_client = StorageClient(app_id)
+            hpo_bucket = storage_client.get_hpo_bucket(hpo_id)
 
+            bq_client = BigQueryClient(app_id)
+
+            if table_name not in resources.CDM_TABLES:
+                raise ValueError(f'{table_name} is not a valid table to load')
+
+            dataset_id: str = bq_utils.get_dataset_id()
+
+            gcs_object_path: str = (f'gs://{hpo_bucket.name}/'
+                                    f'{folder_prefix}'
+                                    f'{table_name}.{extension}')
+            table_id = resources.get_table_id(table_name, hpo_id)
+            fq_table_id = f'{bq_client.project}.{dataset_id}.{table_id}'
+
+            job_config = bigquery.LoadJobConfig(
+                schema=bq_client.get_table_schema(table_name),
+                source_format=bigquery.SourceFormat.NEWLINE_DELIMITED_JSON,
+            )
+
+            load_job = bq_client.load_table_from_uri(
+                gcs_object_path,
+                destination=fq_table_id,
+                location="US",
+                job_config=job_config,
+            )
+
+            try:
+                # These are issues (which we report back) as opposed to internal errors
+                load_job.result()
+                # Processed ok
+                parsed = loaded = 1
+                destination_table = bq_client.get_table(fq_table_id)
+                logging.info(f"Loaded {destination_table.num_rows} rows.")
+            except BadRequest:
+                for e in load_job.errors:
+                    errors.append((file_name, e["message"]))
+                    logging.info(
+                        f"Issues found in gs://{bucket.name}/{folder_prefix}/{file_name}"
+                    )
+
+        results.append((file_name, found, parsed, loaded))
+
+        return results, errors
+
+    logging.info(f"Validating file '{file_name}'")
     if file_name in found_file_names:
         found = 1
         load_results = bq_utils.load_from_csv(hpo_id, table_name, folder_prefix)
@@ -873,12 +936,15 @@ def _get_submission_folder(bucket, bucket_items, force_process=False):
         if not processed:
             return to_process_folder
         else:
-            logging.info(f'Skipping folder {to_process_folder} since it is already processed')
+            logging.info(
+                f'Skipping already processed folder {to_process_folder}')
     return None
 
 
 def _is_cdm_file(gcs_file_name):
-    return gcs_file_name.lower() in resources.CDM_FILES
+    return gcs_file_name.lower(
+    ) in resources.CDM_CSV_FILES or gcs_file_name.lower(
+    ) in resources.CDM_JSONL_FILES
 
 
 def _is_pii_file(gcs_file_name):
