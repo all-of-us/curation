@@ -3,6 +3,7 @@ Run the drop_participants_without_completed_basics validation clean rule.
 
 Drops all data for participants who:
   1. have not completed any question in The Basics
+  2. do not have any EHR data (- excluded as of DC-706 as noted below)
 
 (1) is achieved by checking the observation table for children of TheBasics
 module.
