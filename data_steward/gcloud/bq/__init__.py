@@ -201,7 +201,7 @@ class BigQueryClient(Client):
         # Copy input dataset tables to backup and staging datasets
         tables = super(BigQueryClient, self).list_tables(input_dataset)
         for table in tables:
-            staging_table = f'{self.project}.{output_dataset}.{table.table_id}'
+            staging_table = f'{output_dataset}.{table.table_id}'
             self.copy_table(table, staging_table)
 
     def list_tables(
