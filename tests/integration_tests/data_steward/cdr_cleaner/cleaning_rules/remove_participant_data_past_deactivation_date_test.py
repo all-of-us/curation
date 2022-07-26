@@ -17,7 +17,7 @@ import pandas as pd
 from google.cloud.bigquery import TableReference
 
 # Project imports
-from common import JINJA_ENV, OBSERVATION, DRUG_EXPOSURE, DEATH, PERSON
+from common import JINJA_ENV, OBSERVATION, DRUG_EXPOSURE, DEATH, PERSON, HEART_RATE_MINUTE_LEVEL, STEPS_INTRADAY
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.remove_participant_data_past_deactivation_date import (
     RemoveParticipantDataPastDeactivationDate, DEACTIVATED_PARTICIPANTS, DATE,
@@ -132,6 +132,22 @@ class RemoveParticipantDataPastDeactivationDateTest(
         (2008,4,50,'2009-11-25','2009-11-25 00:30:00 UTC','2009-11-25','2009-11-25 00:45:00 UTC','2009-11-24',87),
         (2009,6,50,'2009-10-06','2009-10-06 01:30:00 UTC',NULL,NULL,'2009-10-05',87),
         (2010,5,274,'2009-09-20','2009-09-20 11:00:00 UTC', '2009-09-20', NULL, NULL, 436)
+        """),
+            HEART_RATE_MINUTE_LEVEL:
+                JINJA_ENV.from_string("""
+        INSERT INTO `{{table.project}}.{{table.dataset_id}}.{{table.table_id}}`
+        (person_id, datetime, heart_rate_value)
+        VALUES
+        (1, '2009-01-01T00:00:00', 60),
+        (1, '2010-01-01T00:00:00', 70)
+        """),
+            STEPS_INTRADAY:
+                JINJA_ENV.from_string("""
+        INSERT INTO `{{table.project}}.{{table.dataset_id}}.{{table.table_id}}`
+        (person_id, datetime, steps)
+        VALUES
+        (2, '2009-01-01T00:00:00', 100),
+        (2, '2010-01-01T00:00:00', 150)
         """)
         }
 
@@ -179,6 +195,7 @@ class RemoveParticipantDataPastDeactivationDateTest(
         self.assertDictEqual(actual_dict, expected_dict)
 
     def get_date_cols_dict(self):
+
         date_cols = ["visit_date", "measurement_date", "measurement_datetime"]
         expected = {DATE: "measurement_date", DATETIME: "measurement_datetime"}
         actual = self.rule_instance.get_date_cols_dict(date_cols)
@@ -257,6 +274,28 @@ class RemoveParticipantDataPastDeactivationDateTest(
             'loaded_ids': [2, 3, 4, 5],
             'sandboxed_ids': [3, 5],
             'cleaned_values': [(2,), (4,)]
+        }, {
+            'name':
+                HEART_RATE_MINUTE_LEVEL,
+            'fq_table_name':
+                f'{self.project_id}.{self.dataset_id}.{HEART_RATE_MINUTE_LEVEL}',
+            'fq_sandbox_table_name':
+                f'{self.project_id}.{self.sandbox_id}.{self.rule_instance.sandbox_table_for(HEART_RATE_MINUTE_LEVEL)}',
+            'fields': ['person_id', 'heart_rate_value'],
+            'loaded_ids': [1, 1],
+            'sandboxed_ids': [1],
+            'cleaned_values': [(1, 60)]
+        }, {
+            'name':
+                STEPS_INTRADAY,
+            'fq_table_name':
+                f'{self.project_id}.{self.dataset_id}.{STEPS_INTRADAY}',
+            'fq_sandbox_table_name':
+                f'{self.project_id}.{self.sandbox_id}.{self.rule_instance.sandbox_table_for(STEPS_INTRADAY)}',
+            'fields': ['person_id', 'steps'],
+            'loaded_ids': [2, 2],
+            'sandboxed_ids': [2],
+            'cleaned_values': [(2, 100)]
         }]
 
         self.default_test(tables_and_counts)
