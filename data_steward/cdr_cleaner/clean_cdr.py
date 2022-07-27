@@ -185,8 +185,7 @@ RDR_CLEANING_CLASSES = [
     (DropMultipleMeasurements,),
     (CleanByBirthYear,),
     (UpdateInvalidZipCodes,),
-    (DropParticipantsWithoutAnyBasics,
-    ),  # dependent on RemoveParticipantDataPastDeactivationDate
+    (DropParticipantsWithoutAnyBasics,),
 ]
 
 COMBINED_CLEANING_CLASSES = [
