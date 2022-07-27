@@ -14,8 +14,7 @@ BASICS_CONCEPT_ID = 1586134
 TYPE_CONCEPT_ID_SURVEY = 45905771
 
 
-class DropParticipantsWithoutCompletedBasicsTest(BaseTest.CleaningRulesTestBase
-                                                ):
+class DropParticipantsWithoutAnyBasicsTest(BaseTest.CleaningRulesTestBase):
 
     @classmethod
     def setUpClass(cls):
