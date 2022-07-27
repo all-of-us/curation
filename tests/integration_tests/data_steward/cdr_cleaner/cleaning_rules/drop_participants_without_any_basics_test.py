@@ -6,7 +6,7 @@ from unittest.mock import patch
 # Project imports
 import common
 from app_identity import PROJECT_ID
-from cdr_cleaner.cleaning_rules.drop_participants_without_any_basics import DropParticipantsWithoutCompletedBasics
+from cdr_cleaner.cleaning_rules.drop_participants_without_any_basics import DropParticipantsWithoutAnyBasics
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
 CONSENT_CONCEPT_ID = 1586100
@@ -32,7 +32,7 @@ class DropParticipantsWithoutCompletedBasicsTest(BaseTest.CleaningRulesTestBase
         cls.dataset_id = os.environ.get('COMBINED_DATASET_ID')
         cls.sandbox_id = f'{cls.dataset_id}_sandbox'
         cls.vocabulary_id = os.environ.get('VOCABULARY_DATASET')
-        cls.rule_instance = DropParticipantsWithoutCompletedBasics(
+        cls.rule_instance = DropParticipantsWithoutAnyBasics(
             cls.project_id, cls.dataset_id, cls.sandbox_id)
 
         cls.affected_tables = [
