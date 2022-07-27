@@ -18,7 +18,7 @@ import dateutil
 from flask import Flask
 from google.cloud import bigquery
 from google.cloud.storage.bucket import Blob
-from google.cloud.exceptions import GoogleCloudError, BadRequest
+from google.cloud.exceptions import GoogleCloudError
 from googleapiclient.errors import HttpError
 
 # Project imports
@@ -741,7 +741,7 @@ def perform_validation_on_file(file_name: str, found_file_names: list,
                 parsed = loaded = 1
                 destination_table = bq_client.get_table(fq_table_id)
                 logging.info(f"Loaded {destination_table.num_rows} rows.")
-            except BadRequest:
+            except GoogleCloudError:
                 for e in load_job.errors:
                     errors.append((file_name, e["message"]))
                     logging.info(
