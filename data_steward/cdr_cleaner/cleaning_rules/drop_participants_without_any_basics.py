@@ -1,5 +1,5 @@
 """
-Run the drop_participants_without_completed_basics validation clean rule.
+Run the drop_participants_without_any_basics validation clean rule.
 
 Drops all data for participants who:
   1. have not completed any question in The Basics

@@ -1,7 +1,7 @@
 """
 Deletes records for participants who are missing from the person table.
 
-Developed to assist drop_participants_without_completed_basics.py in removing records
+Developed to assist drop_participants_without_any_basics.py in removing records
 """
 
 # Python imports
