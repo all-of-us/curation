@@ -6,7 +6,7 @@ from unittest.mock import patch
 # Project imports
 import common
 from app_identity import PROJECT_ID
-from cdr_cleaner.cleaning_rules.drop_participants_without_completed_basics import DropParticipantsWithoutCompletedBasics
+from cdr_cleaner.cleaning_rules.drop_participants_without_any_basics import DropParticipantsWithoutCompletedBasics
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
 CONSENT_CONCEPT_ID = 1586100
