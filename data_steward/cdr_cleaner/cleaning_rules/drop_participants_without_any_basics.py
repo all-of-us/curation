@@ -10,7 +10,7 @@ module.
 
 As part of DC-696, several participants were found with no basics survey still persisting in the CDR
 These records were removed, and DC-706 was created to remove such participants in the future. DC-2551
-was created to update DropParticipantsWithoutPPI to DropParticipantsWithoutCompletedBasics to
+was created to update DropParticipantsWithoutPPI to DropParticipantsWithoutAnyBasics to
 reflect what the rule is actually doing, dropping participants who have not completed any question in The Basics.
 It also moves the cleaning rule to RDR_CLEANING_CLASSES list to allow curation to deliver a list of
 participants expected to exist in the CT dataset when the RDR dataset is cleaned.
