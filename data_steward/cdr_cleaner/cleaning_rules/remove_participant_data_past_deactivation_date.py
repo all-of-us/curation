@@ -68,7 +68,7 @@ OR (death_datetime IS NULL AND death_date >= DATE(d.deactivated_datetime))
 {% elif table_ref.table_id in ['activity_summary', 'heart_rate_summary'] %}
 WHERE date >= DATE(d.deactivated_datetime)
 {% elif table_ref.table_id in ['heart_rate_minute_level', 'steps_intraday']  %}
-WHERE datetime >= PARSE_DATETIME('%F', CAST(d.deactivated_datetime as STRING))
+WHERE datetime >= DATETIME(d.deactivated_datetime)
 {% elif table_ref.table_id in ['payer_plan_period', 'observation_period']  %}
 WHERE COALESCE({{table_ref.table_id + '_end_date'}},
 {{table_ref.table_id + '_start_date'}}) >= DATE(d.deactivated_datetime)
@@ -113,7 +113,8 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
                  dataset_id,
                  sandbox_dataset_id,
                  table_namer=None,
-                 api_project_id=None):
+                 api_project_id=None,
+                 key_path=None):
         """
         Initialize the class with proper information.
 
@@ -145,6 +146,7 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
         self.table_cols_df = self.get_table_cols_df(None, self.project_id,
                                                     self.dataset_id)
         self.table_dates_info = self.get_table_dates_info(self.table_cols_df)
+        self.key_path = key_path
 
     def get_date_cols_dict(self, date_cols_list):
         """
@@ -285,6 +287,8 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
         :param client: a BiQueryClient passed to store the data
         """
         LOGGER.info("Querying RDR API for deactivated participant data")
+        import os
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = self.key_path
         # gets the deactivated participant dataset to ensure it's up-to-date
         df = psr.get_deactivated_participants(self.api_project_id,
                                               DEACTIVATED_PARTICIPANTS_COLUMNS)
@@ -293,6 +297,10 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
 
         # To store dataframe in a BQ dataset table named _deactivated_participants
         psr.store_participant_data(df, client, self.destination_table)
+
+        LOGGER.info(f"Finished storing participant records in: "
+                    f"`{self.destination_table}`")
+        del os.environ["GOOGLE_APPLICATION_CREDENTIALS"]
 
         LOGGER.info(f"Finished storing participant records in: "
                     f"`{self.destination_table}`")
@@ -345,6 +353,12 @@ if __name__ == '__main__':
         dest='api_project_id',
         help='Identifies the RDR project for participant summary API',
         required=True)
+    ext_parser.add_argument('-kp',
+                            '--key_path',
+                            action='store',
+                            dest='key_path',
+                            help='Path to service account key file',
+                            required=True)
     ARGS = ext_parser.parse_args()
 
     if ARGS.list_queries:
@@ -355,6 +369,7 @@ if __name__ == '__main__':
             ARGS.sandbox_dataset_id,
             [(RemoveParticipantDataPastDeactivationDate,)],
             api_project_id=ARGS.api_project_id,
+            key_path=ARGS.key_path,
             table_namer='manual')
         for query in query_list:
             LOGGER.info(query)
@@ -366,4 +381,5 @@ if __name__ == '__main__':
             ARGS.sandbox_dataset_id,
             [(RemoveParticipantDataPastDeactivationDate,)],
             api_project_id=ARGS.api_project_id,
+            key_path=ARGS.key_path,
             table_namer='manual')

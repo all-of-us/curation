@@ -40,7 +40,9 @@ class CleanDigitalHealthStatus(BaseCleaningRule):
                  project_id,
                  dataset_id,
                  sandbox_dataset_id,
-                 table_namer=None):
+                 table_namer=None,
+                 api_project_id=None,
+                 key_path=None):
         """
         Initialize the class with proper information.
 
@@ -58,6 +60,8 @@ class CleanDigitalHealthStatus(BaseCleaningRule):
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
                          table_namer=table_namer)
+        self.key_path = key_path
+        self.api_project_id = api_project_id
 
     def setup_rule(self, client, *args, **keyword_args):
         """
@@ -70,12 +74,21 @@ class CleanDigitalHealthStatus(BaseCleaningRule):
         :param client: a BigQueryClient
         :return:
         """
+
+        import os
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = self.key_path
+
         digital_health_json_list = get_digital_health_information(
-            self.project_id)
+            self.api_project_id)
+
+        # gets the deactivated participant dataset to ensure it's up-to-date
+
         store_digital_health_status_data(
             client, digital_health_json_list,
             f'{self.project_id}.{PIPELINE_TABLES}.{DIGITAL_HEALTH_SHARING_STATUS}'
         )
+
+        del os.environ["GOOGLE_APPLICATION_CREDENTIALS"]
         # Snapshot DIGITAL_HEALTH_SHARING_STATUS table for current CDR
         client.copy_table(
             f'{self.project_id}.{PIPELINE_TABLES}.{DIGITAL_HEALTH_SHARING_STATUS}',
@@ -158,20 +171,45 @@ if __name__ == '__main__':
     import cdr_cleaner.args_parser as parser
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
-    ARGS = parser.parse_args()
+    ext_parser = parser.get_argument_parser()
+    ext_parser.add_argument(
+        '-q',
+        '--api_project_id',
+        action='store',
+        dest='api_project_id',
+        help='Identifies the RDR project for participant summary API',
+        required=True)
+    ext_parser.add_argument('-kp',
+                            '--key_path',
+                            action='store',
+                            dest='key_path',
+                            help='Path to service account key file',
+                            required=True)
+
+    ARGS = ext_parser.parse_args()
+
     pipeline_logging.configure(level=logging.DEBUG, add_console_handler=True)
 
     if ARGS.list_queries:
         clean_engine.add_console_logging()
-        query_list = clean_engine.get_query_list(ARGS.project_id,
-                                                 ARGS.dataset_id,
-                                                 ARGS.sandbox_dataset_id,
-                                                 [(CleanDigitalHealthStatus,)])
+        query_list = clean_engine.get_query_list(
+            ARGS.project_id,
+            ARGS.dataset_id,
+            ARGS.sandbox_dataset_id,
+            [(CleanDigitalHealthStatus,)],
+            api_project_id=ARGS.api_project_id,
+            key_path=ARGS.key_path,
+        )
 
         for query in query_list:
             LOGGER.info(query)
     else:
         clean_engine.add_console_logging(ARGS.console_log)
-        clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
-                                   ARGS.sandbox_dataset_id,
-                                   [(CleanDigitalHealthStatus,)])
+        clean_engine.clean_dataset(
+            ARGS.project_id,
+            ARGS.dataset_id,
+            ARGS.sandbox_dataset_id,
+            [(CleanDigitalHealthStatus,)],
+            api_project_id=ARGS.api_project_id,
+            key_path=ARGS.key_path,
+        )
