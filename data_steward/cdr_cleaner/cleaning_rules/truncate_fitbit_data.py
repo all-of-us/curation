@@ -25,11 +25,14 @@ FITBIT_DATETIME_TABLES = [common.HEART_RATE_MINUTE_LEVEL, common.STEPS_INTRADAY]
 
 FITBIT_TABLES_DATE_FIELDS = {
     common.ACTIVITY_SUMMARY: 'date',
-    common.HEART_RATE_SUMMARY: 'date'
+    common.HEART_RATE_SUMMARY: 'date',
+    common.SLEEP_DAILY_SUMMARY: 'sleep_date',
+    common.SLEEP_LEVEL: 'sleep_date'
 }
 FITBIT_TABLES_DATETIME_FIELDS = {
     common.HEART_RATE_MINUTE_LEVEL: 'datetime',
-    common.STEPS_INTRADAY: 'datetime'
+    common.STEPS_INTRADAY: 'datetime',
+    common.SLEEP_LEVEL: 'start_datetime'
 }
 
 # Save rows that will be dropped to a sandboxed dataset
