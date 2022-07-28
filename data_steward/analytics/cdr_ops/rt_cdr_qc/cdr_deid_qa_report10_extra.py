@@ -381,33 +381,7 @@ else:
         ignore_index=True)
 df1
 
-# ## 4b sandbox._site_mappings
-
-query = f'''
-SELECT COUNT (*) AS n_row_not_pass
-FROM `{project_id}.{ct_deid_sand}._site_mappings` as c
-LEFT JOIN `{project_id}.{deid_sand}.site_maskings` as r
-USING (hpo_id)
-WHERE c.src_id != r.src_id
-'''
-df1 = execute(client, query)
-if df1.loc[0].sum() == 0:
-    df = df.append(
-        {
-            'query': 'Query4b sandbox.site_maskings matching',
-            'result': 'PASS'
-        },
-        ignore_index=True)
-else:
-    df = df.append(
-        {
-            'query': 'Query4b sandbox.site_maskings matching',
-            'result': ''
-        },
-        ignore_index=True)
-df1
-
-# ## 4c pipeline_tables.site_maskings
+# ## 4b pipeline_tables.site_maskings
 
 # +
 query = f'''
