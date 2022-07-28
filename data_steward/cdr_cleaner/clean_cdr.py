@@ -15,7 +15,7 @@ import cdr_cleaner.cleaning_rules.domain_alignment as domain_alignment
 import cdr_cleaner.cleaning_rules.drop_duplicate_states as drop_duplicate_states
 import cdr_cleaner.cleaning_rules.drop_extreme_measurements as extreme_measurements
 from cdr_cleaner.cleaning_rules.drop_multiple_measurements import DropMultipleMeasurements
-from cdr_cleaner.cleaning_rules.drop_participants_without_ppi_or_ehr import DropParticipantsWithoutPPI
+from cdr_cleaner.cleaning_rules.drop_participants_without_any_basics import DropParticipantsWithoutAnyBasics
 import cdr_cleaner.cleaning_rules.drug_refills_days_supply as drug_refills_supply
 import cdr_cleaner.cleaning_rules.maps_to_value_ppi_vocab_update as maps_to_value_vocab_update
 import cdr_cleaner.cleaning_rules.populate_route_ids as populate_routes
@@ -185,6 +185,7 @@ RDR_CLEANING_CLASSES = [
     (DropMultipleMeasurements,),
     (CleanByBirthYear,),
     (UpdateInvalidZipCodes,),
+    (DropParticipantsWithoutAnyBasics,),
 ]
 
 COMBINED_CLEANING_CLASSES = [
@@ -222,8 +223,6 @@ COMBINED_CLEANING_CLASSES = [
         NullInvalidForeignKeys,),
     (RemoveParticipantDataPastDeactivationDate,),
     (RemoveNonMatchingParticipant,),
-    (DropParticipantsWithoutPPI,
-    ),  # dependent on RemoveParticipantDataPastDeactivationDate
     (DropOrphanedPIDS,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]

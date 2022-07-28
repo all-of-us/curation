@@ -3,12 +3,10 @@ import os
 from datetime import date, datetime
 from unittest.mock import patch
 
-# Third party imports
-
 # Project imports
 import common
 from app_identity import PROJECT_ID
-from cdr_cleaner.cleaning_rules.drop_participants_without_ppi_or_ehr import DropParticipantsWithoutPPI
+from cdr_cleaner.cleaning_rules.drop_participants_without_any_basics import DropParticipantsWithoutAnyBasics
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
 CONSENT_CONCEPT_ID = 1586100
@@ -16,7 +14,7 @@ BASICS_CONCEPT_ID = 1586134
 TYPE_CONCEPT_ID_SURVEY = 45905771
 
 
-class DropParticipantsWithoutPPITest(BaseTest.CleaningRulesTestBase):
+class DropParticipantsWithoutAnyBasicsTest(BaseTest.CleaningRulesTestBase):
 
     @classmethod
     def setUpClass(cls):
@@ -30,23 +28,20 @@ class DropParticipantsWithoutPPITest(BaseTest.CleaningRulesTestBase):
         cls.project_id = os.environ.get(PROJECT_ID)
 
         # Set the expected test datasets
-        cls.dataset_id = os.environ.get('COMBINED_DATASET_ID')
+        cls.dataset_id = os.environ.get('RDR_DATASET_ID')
         cls.sandbox_id = f'{cls.dataset_id}_sandbox'
         cls.vocabulary_id = os.environ.get('VOCABULARY_DATASET')
-        cls.rule_instance = DropParticipantsWithoutPPI(cls.project_id,
-                                                       cls.dataset_id,
-                                                       cls.sandbox_id)
+        cls.rule_instance = DropParticipantsWithoutAnyBasics(
+            cls.project_id, cls.dataset_id, cls.sandbox_id)
 
         cls.affected_tables = [
             common.PERSON, common.OBSERVATION, common.DRUG_EXPOSURE
         ]
-        supporting_tables = ['_mapping_observation']
         cls.vocab_tables = common.VOCABULARY_TABLES
         # Generates list of fully qualified table names and their corresponding sandbox table names
         cls.fq_table_names = [
             f"{cls.project_id}.{cls.dataset_id}.{table}"
-            for table in cls.affected_tables + supporting_tables +
-            cls.vocab_tables
+            for table in cls.affected_tables + cls.vocab_tables
         ]
 
         cls.fq_sandbox_table_names = [
@@ -88,16 +83,6 @@ class DropParticipantsWithoutPPITest(BaseTest.CleaningRulesTestBase):
                 (103, 5, {{rdr_consent_concept_id}}, '2021-01-01', {{survey_concept_id}}),
                 (104, 6, 12345, '2021-01-01', 23456)
             """)
-        mapping_observation_tmpl = self.jinja_env.from_string("""
-            INSERT INTO `{{project_id}}.{{dataset_id}}._mapping_observation`
-                (observation_id, src_hpo_id)
-            VALUES
-                (100, 'rdr'),
-                (101, 'rdr'),
-                (102, 'rdr'),
-                (103, 'rdr'),
-                (104, 'fake')
-            """)
         person_tmpl = self.jinja_env.from_string("""
             INSERT INTO `{{project_id}}.{{dataset_id}}.person`
                 (person_id, gender_concept_id, year_of_birth, race_concept_id, ethnicity_concept_id)
@@ -112,22 +97,19 @@ class DropParticipantsWithoutPPITest(BaseTest.CleaningRulesTestBase):
 
         drug_query = drug_tmpl.render(project_id=self.project_id,
                                       dataset_id=self.dataset_id)
+
         observation_query = observation_tmpl.render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
             rdr_basics_concept_id=BASICS_CONCEPT_ID,
             rdr_consent_concept_id=CONSENT_CONCEPT_ID,
             survey_concept_id=TYPE_CONCEPT_ID_SURVEY)
-        mapping_observation_query = mapping_observation_tmpl.render(
-            project_id=self.project_id, dataset_id=self.dataset_id)
+
         person_query = person_tmpl.render(project_id=self.project_id,
                                           dataset_id=self.dataset_id)
 
         # load the test data
-        self.load_test_data([
-            drug_query, observation_query, mapping_observation_query,
-            person_query
-        ])
+        self.load_test_data([drug_query, observation_query, person_query])
 
     @patch(
         'cdr_cleaner.cleaning_rules.drop_rows_for_missing_persons.TABLES_TO_DELETE_FROM',

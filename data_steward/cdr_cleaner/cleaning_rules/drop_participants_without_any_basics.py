@@ -1,31 +1,32 @@
 """
-Run the drop_participants_without_ppi_or_ehr validation clean rule.
+Run the drop_participants_without_any_basics validation clean rule.
 
 Drops all data for participants who:
-  1. have not completed "The Basics" PPI module, via the RDR
+  1. have not completed any question in The Basics
   2. do not have any EHR data (- excluded as of DC-706 as noted below)
 
 (1) is achieved by checking the observation table for children of TheBasics
-module. (2) is achieved by checking all mapping tables for all person_id tables,
-to confirm whether any data is sourced from EHR per participant.
+module.
 
 As part of DC-696, several participants were found with no basics survey still persisting in the CDR
-These records were removed, and DC-706 was created to remove such participants in the future.
+These records were removed, and DC-706 was created to remove such participants in the future. DC-2551
+was created to update DropParticipantsWithoutPPI to DropParticipantsWithoutAnyBasics to
+reflect what the rule is actually doing, dropping participants who have not completed any question in The Basics.
+It also moves the cleaning rule to RDR_CLEANING_CLASSES list to allow curation to deliver a list of
+participants expected to exist in the CT dataset when the RDR dataset is cleaned.
 
 As part of this effort, the condition for dropping has been modified to participants who:
   1. have not completed "The Basics" PPI module, via the RDR
 """
 import logging
 
-from cdr_cleaner.cleaning_rules.remove_participant_data_past_deactivation_date import \
-    RemoveParticipantDataPastDeactivationDate
 from cdr_cleaner.cleaning_rules.drop_rows_for_missing_persons import DropMissingParticipants
 from common import JINJA_ENV, PERSON
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 
 LOGGER = logging.getLogger(__name__)
 
-ISSUE_NUMBERS = ["DC584", "DC696", "DC706"]
+ISSUE_NUMBERS = ["DC584", "DC696", "DC706", "DC2551"]
 
 BASICS_MODULE_CONCEPT_ID = 1586134
 
@@ -54,18 +55,15 @@ WHERE person_id NOT IN
     ON (concept_id = ancestor_concept_id)
   JOIN `{{project}}.{{dataset}}.observation`
     ON (descendant_concept_id = observation_concept_id)
-  JOIN `{{project}}.{{dataset}}._mapping_observation`
-    USING (observation_id)
   WHERE concept_class_id = 'Module'
     AND concept_name IN ('The Basics')
-    AND src_hpo_id = 'rdr'
     AND questionnaire_response_id IS NOT NULL)
 """)
 
 
-class DropParticipantsWithoutPPI(DropMissingParticipants):
+class DropParticipantsWithoutAnyBasics(DropMissingParticipants):
     """
-    Drops participants without basics survey or EHR data
+    Drops participants who have not completed any of the "The Basics" survey
     """
 
     def __init__(self,
@@ -73,18 +71,17 @@ class DropParticipantsWithoutPPI(DropMissingParticipants):
                  dataset_id,
                  sandbox_dataset_id,
                  table_namer='stage_less'):
-        desc = (f'Sandbox and remove PIDs with no PPI basics or EHR data.'
+        desc = (f'Sandbox and remove PIDs with no PPI basics.'
                 f'Use drop missing participants CR to remove their records.')
 
         super().__init__(issue_numbers=ISSUE_NUMBERS,
                          description=desc,
-                         affected_datasets=[cdr_consts.COMBINED],
+                         affected_datasets=[cdr_consts.RDR],
                          affected_tables=[PERSON],
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
-                         table_namer=table_namer,
-                         depends_on=[RemoveParticipantDataPastDeactivationDate])
+                         table_namer=table_namer)
 
     def get_query_specs(self):
         """
@@ -133,11 +130,11 @@ if __name__ == '__main__':
         clean_engine.add_console_logging()
         query_list = clean_engine.get_query_list(
             ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id,
-            [(DropParticipantsWithoutPPI,)])
+            [(DropParticipantsWithoutAnyBasics,)])
         for query in query_list:
             LOGGER.info(query)
     else:
         clean_engine.add_console_logging(ARGS.console_log)
         clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
                                    ARGS.sandbox_dataset_id,
-                                   [(DropParticipantsWithoutPPI,)])
+                                   [(DropParticipantsWithoutAnyBasics,)])
