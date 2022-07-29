@@ -257,14 +257,12 @@ class BQCTest(TestCase):
         mock_list_tables.assert_called_once_with(
             f'{self.client.project}.{self.dataset_id}')
         self.assertEqual(mock_copy_table.call_count, len(list_tables_results))
-        expected_calls = []
-        for table_object in list_tables_results:
-            table_id = table_object.table_id
-            expected_calls.append(
-                call(
-                    table_object,
-                    f'{self.client.project}.{self.dataset_id}_snapshot.{table_id}'
-                ))
+        expected_calls = [
+            call(
+                table_object,
+                f'{self.client.project}.{self.dataset_id}_snapshot.{table_object.table_id}'
+            ) for table_object in list_tables_results
+        ]
         mock_copy_table.assert_has_calls(expected_calls)
 
     @patch.object(BigQueryClient, 'get_dataset')
