@@ -2,7 +2,7 @@
 Apply value ranges to ensure that values are reasonable and to minimize the likelihood
 of sensitive information (like phone numbers) within the free text fields.
 
-Original Issues: DC-1058, DC-1061, DC-827, DC-502, DC-487
+Original Issues: DC-1058, DC-1061, DC-827, DC-502, DC-487, DC-2475
 
 The intent is to ensure that numeric free-text fields that are not manipulated by de-id
 have value range restrictions applied to the value_as_number field across the entire dataset.
@@ -154,14 +154,15 @@ class CleanPPINumericFieldsUsingParameters(BaseCleaningRule):
             'Sets value_as_number to NULL and value_as_concept_id and value_as_number '
             'to new AOU custom concept 2000000012 for households with 6 or more individuals '
             'under the age of 18')
-        super().__init__(
-            issue_numbers=['DC1058', 'DC1061', 'DC827', 'DC502', 'DC487'],
-            description=desc,
-            affected_datasets=[cdr_consts.RDR],
-            affected_tables=['observation'],
-            project_id=project_id,
-            dataset_id=dataset_id,
-            sandbox_dataset_id=sandbox_dataset_id)
+        super().__init__(issue_numbers=[
+            'DC1058', 'DC1061', 'DC827', 'DC502', 'DC487', 'DC2475'
+        ],
+                         description=desc,
+                         affected_datasets=[cdr_consts.RDR],
+                         affected_tables=['observation'],
+                         project_id=project_id,
+                         dataset_id=dataset_id,
+                         sandbox_dataset_id=sandbox_dataset_id)
 
     def get_query_specs(self):
         """
