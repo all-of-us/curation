@@ -251,8 +251,11 @@ class BQCTest(TestCase):
         ]
         mock_list_tables.return_value = list_tables_results
 
-        self.client.copy_dataset(self.dataset_id, f'{self.dataset_id}_snapshot')
-        mock_list_tables.assert_called_once_with(self.dataset_id)
+        self.client.copy_dataset(
+            f'{self.client.project}.{self.dataset_id}',
+            f'{self.client.project}.{self.dataset_id}_snapshot')
+        mock_list_tables.assert_called_once_with(
+            f'{self.client.project}.{self.dataset_id}')
         self.assertEqual(mock_copy_table.call_count, len(list_tables_results))
 
     @patch.object(BigQueryClient, 'get_dataset')
