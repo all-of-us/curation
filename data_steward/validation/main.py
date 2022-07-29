@@ -807,8 +807,8 @@ def basename(item_metadata):
     return ''
 
 
-def _has_all_required_files(folder_bucketitems_basenames):
-    return set(AOU_REQUIRED_FILES).issubset(set(folder_bucketitems_basenames))
+def _has_all_required_files(table_names):
+    return set(common.AOU_REQUIRED).issubset(set(table_names))
 
 
 def list_submitted_bucket_items(folder_bucketitems):
@@ -821,8 +821,8 @@ def list_submitted_bucket_items(folder_bucketitems):
     utc_today = datetime.datetime.now(tz=None)
 
     # If any required file missing, stop submission
-    folder_bucketitems_basenames = [
-        basename(file_name) for file_name in folder_bucketitems
+    folder_bucketitems_table_names = [
+        basename(file_name).split('.')[0] for file_name in folder_bucketitems
     ]
 
     to_process_items = [
@@ -834,7 +834,7 @@ def list_submitted_bucket_items(folder_bucketitems):
         return files_list
 
     # Process if all required files present
-    if _has_all_required_files(folder_bucketitems_basenames):
+    if _has_all_required_files(folder_bucketitems_table_names):
         logging.info(f"All required files found, processing.")
         return to_process_items
 
