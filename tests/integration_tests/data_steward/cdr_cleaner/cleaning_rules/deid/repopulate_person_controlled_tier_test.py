@@ -1,10 +1,11 @@
 """
 Integration test for repopulate_person_controlled_tier module
 
-Original Issues: DC-1439
+Original Issues: DC-1439, DC-2273
 
 The intent is to repopulate the person table using the PPI responses based on the controlled tier
-privacy requirements """
+privacy requirements.
+"""
 
 # Python Imports
 import os
@@ -14,10 +15,13 @@ from dateutil import parser
 from common import PERSON, OBSERVATION, VOCABULARY_TABLES
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.deid.repopulate_person_controlled_tier import \
-    RepopulatePersonControlledTier, GENERALIZED_RACE_CONCEPT_ID, GENERALIZED_RACE_SOURCE_VALUE, \
+    RepopulatePersonControlledTier, \
+    NONE_OF_THESE_CONCEPT_ID, NONE_OF_THESE_CONCEPT_SOURCE_VALUE, SKIP_CONCEPT_SOURCE_VALUE, \
+    GENERALIZED_RACE_CONCEPT_ID, GENERALIZED_RACE_SOURCE_VALUE, \
     GENERALIZED_GENDER_IDENTITY_CONCEPT_ID, GENERALIZED_GENDER_IDENTITY_SOURCE_VALUE, \
-    HISPANIC_LATINO_CONCEPT_ID, HISPANIC_LATINO_CONCEPT_SOURCE_VALUE, NON_HISPANIC_LATINO_CONCEPT_ID, \
-    NO_MATCHING_CONCEPT_ID, NO_MATCHING_SOURCE_VALUE, SKIP_CONCEPT_ID
+    NON_HISPANIC_LATINO_CONCEPT_ID, SKIP_CONCEPT_ID, NON_HISPANIC_LATINO_CONCEPT_SOURCE_VALUE, \
+    HISPANIC_LATINO_STANDARD_CONCEPT_ID, HISPANIC_LATINO_STANDARD_SOURCE_VALUE, \
+    PNA_CONCEPT_ID, PNA_CONCEPT_SOURCE_VALUE, NO_MATCHING_CONCEPT_ID, NO_MATCHING_SOURCE_VALUE
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import \
     BaseTest
 
@@ -62,13 +66,10 @@ class RepopulatePersonControlledTierTestBase(BaseTest.CleaningRulesTestBase):
 
     def setUp(self):
         """
-        Create empty tables for the rule to run on
+        Setting up tables before running the tests.
         """
-        # Create domain tables required for the test
         super().setUp()
 
-        # Load the test data
-        # Load the test data
         person_data_template = self.jinja_env.from_string("""
             INSERT INTO `{{project_id}}.{{dataset_id}}.person`
             (
@@ -94,8 +95,13 @@ class RepopulatePersonControlledTierTestBase(BaseTest.CleaningRulesTestBase):
             VALUES
             (1, 0, 1990, 1, 1, '1990-01-01T00:00:01', 0, 0, NULL, NULL, NULL, 'person_source_value', 'gender_source_value', 0, 'race_source_value', 0, 'ethnicity', 0),
             (2, 0, 1980, 1, 1, '1980-01-01T00:00:01', 0, 0, 1, 1, 1, 'person_source_value', 'gender_source_value', 0, 'race_source_value', 0, 'ethnicity', 0),
-            (3, 0, 1970, 1, 1, '1970-01-01T00:00:01', 0, 0, NULL, NULL, NULL, 'person_source_value', 'gender_source_value', 0, 'race_source_value', 0, 'ethnicity', 0)
-        """)
+            (3, 0, 1970, 1, 1, '1970-01-01T00:00:01', 0, 0, NULL, NULL, NULL, 'person_source_value', 'gender_source_value', 0, 'race_source_value', 0, 'ethnicity', 0),
+            (4, 0, 1970, 1, 1, '1970-01-01T00:00:01', 0, 0, NULL, NULL, NULL, 'person_source_value', 'gender_source_value', 0, 'race_source_value', 0, 'ethnicity', 0),
+            (5, 0, 1970, 1, 1, '1970-01-01T00:00:01', 0, 0, NULL, NULL, NULL, 'person_source_value', 'gender_source_value', 0, 'race_source_value', 0, 'ethnicity', 0),
+            (6, 0, 1970, 1, 1, '1970-01-01T00:00:01', 0, 0, NULL, NULL, NULL, 'person_source_value', 'gender_source_value', 0, 'race_source_value', 0, 'ethnicity', 0),
+            (7, 0, 1970, 1, 1, '1970-01-01T00:00:01', 0, 0, NULL, NULL, NULL, 'person_source_value', 'gender_source_value', 0, 'race_source_value', 0, 'ethnicity', 0),
+            (8, 0, 1970, 1, 1, '1970-01-01T00:00:01', 0, 0, NULL, NULL, NULL, 'person_source_value', 'gender_source_value', 0, 'race_source_value', 0, 'ethnicity', 0)
+       """)
 
         observation_data_template = self.jinja_env.from_string("""
             INSERT INTO `{{project_id}}.{{dataset_id}}.observation`
@@ -111,36 +117,61 @@ class RepopulatePersonControlledTierTestBase(BaseTest.CleaningRulesTestBase):
                 observation_type_concept_id
             )
             VALUES
-                (1, 1, 45877987, 1586140, 1586146, 'WhatRaceEthnicity_White', '2020-01-01', 0, 0),
-                (2, 1, 1586143, 1586140, 1586143, 'WhatRaceEthnicity_Black', '2020-01-01', 0, 0),
-                (3, 2, 45879439, 1586140, 1586142, 'WhatRaceEthnicity_Asian', '2020-01-01', 0, 0),
-                (4, 2, 1586147, 1586140, 1586147, 'WhatRaceEthnicity_Hispanic', '2020-01-01', 0, 0),
-                (5, 1, 45878463, 1585838, 1585840, 'GenderIdentity_Woman', '2020-01-01', 0, 0),
-                (6, 2, 45880669, 1585838, 1585839, 'GenderIdentity_Man', '2020-01-01', 0, 0),
-                (7, 2, 1585841, 1585838, 1585841, 'GenderIdentity_NonBinary', '2020-01-01', 0, 0),
-                (8, 1, 45878463, 1585845, 1585847, 'SexAtBirth_Female', '2020-01-01', 0, 0),
-                (9, 2, 45880669, 1585845, 1585846, 'SexAtBirth_Male', '2020-01-01', 0, 0),
-                (10, 3, 903096, 1586140, 903096, 'PMI_Skip', '2020-01-01', 0, 0),
-                (11, 3, 45878463, 1585838, 1585840, 'GenderIdentity_Woman', '2020-01-01', 0, 0),
-                (12, 3, 45878463, 1585845, 1585847, 'SexAtBirth_Female', '2020-01-01', 0, 0)
-
+                (11, 1, 45877987, 1586140, 1586146, 'WhatRaceEthnicity_White', '2020-01-01', 0, 0),
+                (12, 1, 1586143, 1586140, 1586143, 'WhatRaceEthnicity_Black', '2020-01-01', 0, 0),
+                (13, 1, 45878463, 1585838, 1585840, 'GenderIdentity_Woman', '2020-01-01', 0, 0),
+                (14, 1, 45878463, 1585845, 1585847, 'SexAtBirth_Female', '2020-01-01', 0, 0),
+                (21, 2, 45879439, 1586140, 1586142, 'WhatRaceEthnicity_Asian', '2020-01-01', 0, 0),
+                (22, 2, 1586147, 1586140, 1586147, 'WhatRaceEthnicity_Hispanic', '2020-01-01', 0, 0),
+                (23, 2, 45880669, 1585838, 1585839, 'GenderIdentity_Man', '2020-01-01', 0, 0),
+                (24, 2, 1585841, 1585838, 1585841, 'GenderIdentity_NonBinary', '2020-01-01', 0, 0),
+                (25, 2, 45880669, 1585845, 1585846, 'SexAtBirth_Male', '2020-01-01', 0, 0),
+                (31, 3, 903096, 1586140, 903096, 'PMI_Skip', '2020-01-01', 0, 0),
+                (32, 3, 45878463, 1585838, 1585840, 'GenderIdentity_Woman', '2020-01-01', 0, 0),
+                (33, 3, 45878463, 1585845, 1585847, 'SexAtBirth_Female', '2020-01-01', 0, 0),
+                (41, 4, 903079, 1586140, 903079, 'PMI_PreferNotToAnswer', '2020-01-01', 0, 0),
+                (42, 4, 45878463, 1585838, 1585840, 'GenderIdentity_Woman', '2020-01-01', 0, 0),
+                (43, 4, 45878463, 1585845, 1585847, 'SexAtBirth_Female', '2020-01-01', 0, 0),
+                (51, 5, 1586148, 1586140, 1586148, 'WhatRaceEthnicity_RaceEthnicityNoneOfThese', '2020-01-01', 0, 0),
+                (52, 5, 45878463, 1585838, 1585840, 'GenderIdentity_Woman', '2020-01-01', 0, 0),
+                (53, 5, 45878463, 1585845, 1585847, 'SexAtBirth_Female', '2020-01-01', 0, 0),
+                (61, 6, 45877987, 1586140, 1586146, 'WhatRaceEthnicity_White', '2020-01-01', 0, 0),
+                (62, 6, 45878463, 1585838, 1585840, 'GenderIdentity_Woman', '2020-01-01', 0, 0),
+                (63, 6, 45878463, 1585845, 1585847, 'SexAtBirth_Female', '2020-01-01', 0, 0),
+                (71, 7, 0, 1586140, 0, NULL, '2020-01-01', 0, 0),
+                (72, 7, 45878463, 1585838, 1585840, 'GenderIdentity_Woman', '2020-01-01', 0, 0),
+                (73, 7, 45878463, 1585845, 1585847, 'SexAtBirth_Female', '2020-01-01', 0, 0),
+                (82, 8, 45878463, 1585838, 1585840, 'GenderIdentity_Woman', '2020-01-01', 0, 0),
+                (83, 8, 45878463, 1585845, 1585847, 'SexAtBirth_Female', '2020-01-01', 0, 0)
         """)
+
         insert_person_query = person_data_template.render(
             project_id=self.project_id, dataset_id=self.dataset_id)
         insert_observation_query = observation_data_template.render(
             project_id=self.project_id, dataset_id=self.dataset_id)
 
-        # Load test data
         self.load_test_data(
             [f'{insert_person_query}', f'{insert_observation_query}'])
 
     def test_repopulate_person_controlled_tier(self):
+        """
+        Test cases
+        1 - Race: White and Black,     Ethnicity: Non-hispanic, Gender Identity: Woman,              Sex at Birth: Female,
+        2 - Race: Asian,               Ethnicity: Hispanic,     Gender Identity: Man and Non-binary, Sex at Birth: Male,
+        3 - Race and Ethnicity: Skipped,                        Gender Identity: Woman,              Sex at Birth: Female,
+        4 - Race and Ethnicity: Prefer not to answer,           Gender Identity: Woman,              Sex at Birth: Female,
+        5 - Race and Ethnicity: None of these,                  Gender Identity: Woman,              Sex at Birth: Female,
+        6 - Race: White,               Ethnicity: Non-hispanic, Gender Identity: Woman,              Sex at Birth: Female,
+        7 - Race and Ethnicity: No matching concept,            Gender Identity: Woman,              Sex at Birth: Female,
+        8 - Race and Ethnicity: No record,                      Gender Identity: Woman,              Sex at Birth: Female,
+        """
 
-        # Expected results list
+        self.maxDiff = None
+
         tables_and_counts = [{
             'fq_table_name':
                 f'{self.project_id}.{self.dataset_id}.person',
-            'loaded_ids': [1, 2, 3],
+            'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8],
             'fields': [
                 'person_id', 'gender_concept_id', 'year_of_birth',
                 'month_of_birth', 'day_of_birth', 'birth_datetime',
@@ -156,21 +187,53 @@ class RepopulatePersonControlledTierTestBase(BaseTest.CleaningRulesTestBase):
                  GENERALIZED_RACE_CONCEPT_ID, NON_HISPANIC_LATINO_CONCEPT_ID,
                  None, None, None, 'person_source_value',
                  'GenderIdentity_Woman', 1585840, GENERALIZED_RACE_SOURCE_VALUE,
-                 GENERALIZED_RACE_CONCEPT_ID, NO_MATCHING_SOURCE_VALUE,
-                 NO_MATCHING_CONCEPT_ID),
+                 GENERALIZED_RACE_CONCEPT_ID,
+                 NON_HISPANIC_LATINO_CONCEPT_SOURCE_VALUE,
+                 NON_HISPANIC_LATINO_CONCEPT_ID),
                 (2, GENERALIZED_GENDER_IDENTITY_CONCEPT_ID, 1980, None, None,
-                 parser.parse('1980-06-15 00:00:00 UTC'), 8515, 38003563, 1, 1,
-                 1, 'person_source_value',
+                 parser.parse('1980-06-15 00:00:00 UTC'), 8515,
+                 HISPANIC_LATINO_STANDARD_CONCEPT_ID, 1, 1, 1,
+                 'person_source_value',
                  GENERALIZED_GENDER_IDENTITY_SOURCE_VALUE,
                  GENERALIZED_GENDER_IDENTITY_CONCEPT_ID,
                  'WhatRaceEthnicity_Asian', 1586142,
-                 HISPANIC_LATINO_CONCEPT_SOURCE_VALUE,
-                 HISPANIC_LATINO_CONCEPT_ID),
+                 HISPANIC_LATINO_STANDARD_SOURCE_VALUE,
+                 HISPANIC_LATINO_STANDARD_CONCEPT_ID),
                 (3, 45878463, 1970, None, None,
                  parser.parse('1970-06-15 00:00:00 UTC'), SKIP_CONCEPT_ID,
                  SKIP_CONCEPT_ID, None, None, None, 'person_source_value',
-                 'GenderIdentity_Woman', 1585840, 'PMI_Skip', 903096,
-                 'PMI_Skip', NO_MATCHING_CONCEPT_ID),
+                 'GenderIdentity_Woman', 1585840, SKIP_CONCEPT_SOURCE_VALUE,
+                 SKIP_CONCEPT_ID, SKIP_CONCEPT_SOURCE_VALUE, SKIP_CONCEPT_ID),
+                (4, 45878463, 1970, None, None,
+                 parser.parse('1970-06-15 00:00:00 UTC'), PNA_CONCEPT_ID,
+                 PNA_CONCEPT_ID, None, None, None, 'person_source_value',
+                 'GenderIdentity_Woman', 1585840, PNA_CONCEPT_SOURCE_VALUE,
+                 PNA_CONCEPT_ID, PNA_CONCEPT_SOURCE_VALUE, PNA_CONCEPT_ID),
+                (5, 45878463, 1970, None, None,
+                 parser.parse('1970-06-15 00:00:00 UTC'),
+                 NONE_OF_THESE_CONCEPT_ID, NONE_OF_THESE_CONCEPT_ID, None, None,
+                 None, 'person_source_value', 'GenderIdentity_Woman', 1585840,
+                 NONE_OF_THESE_CONCEPT_SOURCE_VALUE, NONE_OF_THESE_CONCEPT_ID,
+                 NONE_OF_THESE_CONCEPT_SOURCE_VALUE, NONE_OF_THESE_CONCEPT_ID),
+                (6, 45878463, 1970, None, None,
+                 parser.parse('1970-06-15 00:00:00 UTC'), 8527,
+                 NON_HISPANIC_LATINO_CONCEPT_ID, None, None, None,
+                 'person_source_value', 'GenderIdentity_Woman', 1585840,
+                 'WhatRaceEthnicity_White', 1586146,
+                 NON_HISPANIC_LATINO_CONCEPT_SOURCE_VALUE,
+                 NON_HISPANIC_LATINO_CONCEPT_ID),
+                (7, 45878463, 1970, None, None,
+                 parser.parse('1970-06-15 00:00:00 UTC'), 2100000001,
+                 NO_MATCHING_CONCEPT_ID, None, None, None,
+                 'person_source_value', 'GenderIdentity_Woman', 1585840,
+                 'AoUDRC_NoneIndicated', NO_MATCHING_CONCEPT_ID,
+                 NO_MATCHING_SOURCE_VALUE, NO_MATCHING_CONCEPT_ID),
+                (8, 45878463, 1970, None, None,
+                 parser.parse('1970-06-15 00:00:00 UTC'), 2100000001,
+                 NO_MATCHING_CONCEPT_ID, None, None, None,
+                 'person_source_value', 'GenderIdentity_Woman', 1585840,
+                 'AoUDRC_NoneIndicated', NO_MATCHING_CONCEPT_ID,
+                 NO_MATCHING_SOURCE_VALUE, NO_MATCHING_CONCEPT_ID),
             ]
         }]
 

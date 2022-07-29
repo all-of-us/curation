@@ -19,12 +19,7 @@ multiple race responses, we replace the multiple responses with a generalized co
 Ethnicity: "Hispanic or Latino" is one of the responses in "what is your race/ethnicity?" question. 
 Participants can only indicate their ethnicity to be "Hispanic or Latino" but doesn't have the 
 option to indicate they are "Not Hispanic or Latino". We manually map the PPI response 1586147 to 
-the standard OMOP concept 38003563. For those participants who didn't check this option, we will set 
-their ethnicity_concept_id = 2100000001, ethnicity_source_concept_id = 2100000001, 
-and ethnicity_source_value = ‘AoUDRC_NoneIndicated’
-
-Per ticket DC-1664, the ethnicity_concept_id and ethnicity_source_concept_id are no longer set to
-2100000001 and the and ethnicity_source_value is no longer set to ‘AoUDRC_NoneIndicated’. Instead,
+the standard OMOP concept 38003563. For those participants who didn't check this option, 
 non-Hispanic options are expanded as done in the registered tier repopulation.
 
 Gender: the standard OMOP gender concepts are very limiting and the PPI gender concepts are used 
@@ -54,12 +49,11 @@ from common import JINJA_ENV, PERSON
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from constants import bq_utils as bq_consts
 from cdr_cleaner.cleaning_rules.deid.repopulate_person_using_observation import \
-    AbstractRepopulatePerson, ConceptTranslation, \
-    AOU_NONE_INDICATED_SOURCE_VALUE
+    AbstractRepopulatePerson, ConceptTranslation
 
 LOGGER = logging.getLogger(__name__)
 
-JIRA_ISSUE_NUMBERS = ['DC1439', 'DC1446', 'DC1584']
+JIRA_ISSUE_NUMBERS = ['DC1439', 'DC1446', 'DC1584', 'DC2273']
 
 # Gender question concept id
 GENDER_IDENTITY_CONCEPT_ID = 1585838
@@ -71,19 +65,32 @@ GENERALIZED_GENDER_IDENTITY_SOURCE_VALUE = 'GenderIdentity_GeneralizedDiffGender
 RACE_CONCEPT_ID = 1586140
 GENERALIZED_RACE_CONCEPT_ID = 2000000008
 GENERALIZED_RACE_SOURCE_VALUE = 'WhatRaceEthnicity_GeneralizedMultPopulations'
+
 # Hispanic or Latino response concept id
 HISPANIC_LATINO_CONCEPT_ID = 1586147
 HISPANIC_LATINO_CONCEPT_SOURCE_VALUE = 'WhatRaceEthnicity_Hispanic'
+HISPANIC_LATINO_STANDARD_CONCEPT_ID = 38003563
+HISPANIC_LATINO_STANDARD_SOURCE_VALUE = "Hispanic"
 
+# Prefer not to answer
 PNA_CONCEPT_ID = 903079
+PNA_CONCEPT_SOURCE_VALUE = 'PMI_PreferNotToAnswer'
+
+# None of these
 NONE_OF_THESE_CONCEPT_ID = 1586148
+NONE_OF_THESE_CONCEPT_SOURCE_VALUE = 'WhatRaceEthnicity_RaceEthnicityNoneOfThese'
+
+# Non hispanic
 NON_HISPANIC_LATINO_CONCEPT_ID = 38003564
+NON_HISPANIC_LATINO_CONCEPT_SOURCE_VALUE = "Not Hispanic"
+
 # OMOP non matching concept id
 NO_MATCHING_CONCEPT_ID = 0
 NO_MATCHING_SOURCE_VALUE = 'No matching concept'
 
 # Skip concept
 SKIP_CONCEPT_ID = 903096
+SKIP_CONCEPT_SOURCE_VALUE = "PMI_Skip"
 
 # Observation fields
 OBSERVATION_SOURCE_CONCEPT_ID = 'observation_source_concept_id'
@@ -192,61 +199,66 @@ WHERE o.rank_order = 1
 
 ETHNICITY_QUERY_TEMPLATE = JINJA_ENV.from_string("""
 SELECT DISTINCT
-    o.* EXCEPT (rank_order)
-    {% if translate_source_concepts is not none and translate_source_concepts|length > 0 -%}{{'\t'}}   
+    o.* 
+    EXCEPT(rank_order) 
     REPLACE(
-        CASE {{prefix}}_source_concept_id
-        {% for translate_source_concept in translate_source_concepts %}
-            WHEN {{translate_source_concept.concept_id}} THEN {{translate_source_concept.translated_concept_id}}
-            {%- if translate_source_concept.comment is not none %} /*{{translate_source_concept.comment}}*/{%- endif %}{{'\n'}}
-        {%- endfor %}
-            ELSE {{prefix}}_concept_id
-        END AS {{prefix}}_concept_id
+        CASE ethnicity_source_concept_id
+            WHEN {{hispanic_latino_concept_id}} THEN {{hispanic_latino_standard_concept_id}}
+            ELSE ethnicity_concept_id
+        END AS ethnicity_concept_id,
+        CASE ethnicity_source_concept_id
+            WHEN {{hispanic_latino_concept_id}} THEN {{hispanic_latino_standard_concept_id}}
+            ELSE ethnicity_source_concept_id
+        END AS ethnicity_source_concept_id
     )
-    {% endif %}
 FROM 
 (
     SELECT
         p.person_id,
-        IF
-        (ethnicity_ob.value_as_concept_id IS NULL,
-            /*Case this out based on the race_ob (race) values, ie if it's a skip/pna respect that.*/
+        IF (
+            ethnicity_ob.value_as_concept_id IS NULL,
             CASE 
-                WHEN race_ob.value_source_concept_id = {{no_matching_concept_id}} THEN {{no_matching_concept_id}} /*missing answer*/
-                WHEN race_ob.value_source_concept_id IS NULL THEN {{no_matching_concept_id}} /*missing answer*/
-                WHEN race_ob.value_source_concept_id = {{pna_concept_id}} THEN {{pna_concept_id}} /*PNA*/
-                WHEN race_ob.value_source_concept_id = {{skip_concept_id}} THEN {{skip_concept_id}} /*Skip*/
-                WHEN race_ob.value_source_concept_id = {{none_of_these_concept_id}} THEN {{none_of_these_concept_id}} /*None of these*/
-            /*otherwise, it's non-hispanic*/
-            ELSE
-            {{default_answer_concept_id}}
-        END
-            /*Assign HLS if it's present*/
-            ,
-            {{hispanic_latino_concept_id}}) AS {{prefix}}_concept_id,
-        COALESCE(ethnicity_ob.value_source_concept_id, {{no_matching_concept_id}}) AS {{prefix}}_source_concept_id,
-        COALESCE(ethnicity_ob.value_source_value,
-                /*fill in the skip/pna/none of these if needed*/
-            IF
-                (race_ob.value_source_concept_id IN ({{pna_concept_id}},
-                    {{skip_concept_id}},
-                    {{none_of_these_concept_id}}),
-                race_ob.value_source_value,
-                NULL)
-                /*otherwise it is no matching*/
-                ,
-                "{{no_matching_source_value}}") AS {{prefix}}_source_value,
-                DENSE_RANK() OVER(PARTITION BY p.person_id ORDER BY ethnicity_ob.observation_datetime DESC, ethnicity_ob.observation_id DESC) AS rank_order
+                WHEN race_ob.value_source_concept_id = {{no_matching_concept_id}} THEN {{no_matching_concept_id}}
+                WHEN race_ob.value_source_concept_id IS NULL THEN {{no_matching_concept_id}}
+                WHEN race_ob.value_source_concept_id = {{pna_concept_id}} THEN {{pna_concept_id}}
+                WHEN race_ob.value_source_concept_id = {{skip_concept_id}} THEN {{skip_concept_id}}
+                WHEN race_ob.value_source_concept_id = {{none_of_these_concept_id}} THEN {{none_of_these_concept_id}}
+            ELSE {{non_hispanic_latino_concept_id}} END,
+            {{hispanic_latino_concept_id}}
+        ) AS ethnicity_concept_id,
+        IF (
+            ethnicity_ob.value_as_concept_id IS NULL,
+            CASE 
+                WHEN race_ob.value_source_concept_id = {{no_matching_concept_id}} THEN {{no_matching_concept_id}}
+                WHEN race_ob.value_source_concept_id IS NULL THEN {{no_matching_concept_id}}
+                WHEN race_ob.value_source_concept_id = {{pna_concept_id}} THEN {{pna_concept_id}}
+                WHEN race_ob.value_source_concept_id = {{skip_concept_id}} THEN {{skip_concept_id}}
+                WHEN race_ob.value_source_concept_id = {{none_of_these_concept_id}} THEN {{none_of_these_concept_id}}
+            ELSE {{non_hispanic_latino_concept_id}} END,
+            ethnicity_ob.value_source_concept_id
+        ) AS ethnicity_source_concept_id,
+        IF (
+            ethnicity_ob.value_as_concept_id IS NULL,
+            CASE 
+                WHEN race_ob.value_source_concept_id = {{no_matching_concept_id}} THEN "{{no_matching_source_value}}"
+                WHEN race_ob.value_source_concept_id IS NULL THEN "{{no_matching_source_value}}"
+                WHEN race_ob.value_source_concept_id = {{pna_concept_id}} THEN "{{pna_concept_source_value}}"
+                WHEN race_ob.value_source_concept_id = {{skip_concept_id}} THEN "{{skip_concept_source_value}}"
+                WHEN race_ob.value_source_concept_id = {{none_of_these_concept_id}} THEN "{{none_of_these_concept_source_value}}"
+            ELSE "{{non_hispanic_latino_concept_source_value}}" END,
+            "{{hispanic_latino_standard_source_value}}"
+        ) AS ethnicity_source_value,
+        DENSE_RANK() OVER(PARTITION BY p.person_id ORDER BY ethnicity_ob.observation_datetime DESC, ethnicity_ob.observation_id DESC) AS rank_order
     FROM `{{project}}.{{dataset}}.person` AS p
     LEFT JOIN `{{project}}.{{dataset}}.observation` AS ethnicity_ob
-        ON p.person_id = ethnicity_ob.person_id
+    ON p.person_id = ethnicity_ob.person_id
     {% for join_expression in ethnicity_join_expressions %}
-            AND ethnicity_ob.{{join_expression.field_name}} {{join_expression.join_operator.value}} {{join_expression.value}} 
+    AND ethnicity_ob.{{join_expression.field_name}} {{join_expression.join_operator.value}} {{join_expression.value}} 
     {% endfor %}
     LEFT JOIN `{{project}}.{{dataset}}.observation` AS race_ob
-        ON p.person_id = race_ob.person_id
+    ON p.person_id = race_ob.person_id
     {% for join_expression in race_join_expressions %}
-            AND race_ob.{{join_expression.field_name}} {{join_expression.join_operator.value}} {{join_expression.value}} 
+    AND race_ob.{{join_expression.field_name}} {{join_expression.join_operator.value}} {{join_expression.value}} 
     {% endfor %}
 ) AS o
 WHERE o.rank_order = 1
@@ -376,16 +388,25 @@ class RepopulatePersonControlledTier(AbstractRepopulatePerson):
         ethnicity_query = ETHNICITY_QUERY_TEMPLATE.render(
             project=self.project_id,
             dataset=self.dataset_id,
-            prefix=self.ETHNICITY,
             ethnicity_join_expressions=ethnicity_join_expressions,
             race_join_expressions=race_join_expressions,
             no_matching_concept_id=NO_MATCHING_CONCEPT_ID,
             no_matching_source_value=NO_MATCHING_SOURCE_VALUE,
             skip_concept_id=SKIP_CONCEPT_ID,
+            skip_concept_source_value=SKIP_CONCEPT_SOURCE_VALUE,
             pna_concept_id=PNA_CONCEPT_ID,
+            pna_concept_source_value=PNA_CONCEPT_SOURCE_VALUE,
             none_of_these_concept_id=NONE_OF_THESE_CONCEPT_ID,
-            default_answer_concept_id=NON_HISPANIC_LATINO_CONCEPT_ID,
+            none_of_these_concept_source_value=
+            NONE_OF_THESE_CONCEPT_SOURCE_VALUE,
+            non_hispanic_latino_concept_id=NON_HISPANIC_LATINO_CONCEPT_ID,
+            non_hispanic_latino_concept_source_value=
+            NON_HISPANIC_LATINO_CONCEPT_SOURCE_VALUE,
             hispanic_latino_concept_id=HISPANIC_LATINO_CONCEPT_ID,
+            hispanic_latino_standard_concept_id=
+            HISPANIC_LATINO_STANDARD_CONCEPT_ID,
+            hispanic_latino_standard_source_value=
+            HISPANIC_LATINO_STANDARD_SOURCE_VALUE,
             translate_source_concepts=self.get_ethnicity_manual_translation())
 
         return {
@@ -443,13 +464,7 @@ class RepopulatePersonControlledTier(AbstractRepopulatePerson):
         ]
 
     def get_ethnicity_manual_translation(self) -> List[ConceptTranslation]:
-        # translate from https://athena.ohdsi.org/search-terms/terms/1586147
-        # to https://athena.ohdsi.org/search-terms/terms/38003563
-        return [
-            ConceptTranslation(concept_id=1586147,
-                               translated_concept_id=38003563,
-                               comment='Hispanic or Latino')
-        ]
+        pass
 
 
 if __name__ == '__main__':
