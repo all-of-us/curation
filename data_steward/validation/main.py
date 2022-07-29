@@ -702,8 +702,9 @@ def perform_validation_on_file(file_name: str, found_file_names: list,
     found = parsed = loaded = 0
     table_name, extension = file_name.split('.')
     if extension.upper() == 'JSONL':
-        logging.info(f"Validating JSONL file '{file_name}'")
+        logging.info(f"Validating JSONL file '{file_name}' if found")
         if file_name in found_file_names:
+            logging.info(f"Found file '{file_name}'")
             found = 1
             app_id: str = app_identity.get_application_id()
             storage_client = StorageClient(app_id)
@@ -752,8 +753,9 @@ def perform_validation_on_file(file_name: str, found_file_names: list,
 
         return results, errors
 
-    logging.info(f"Validating file '{file_name}'")
+    logging.info(f"Validating file '{file_name}' if found")
     if file_name in found_file_names:
+        logging.info(f"Found file '{file_name}'")
         found = 1
         load_results = bq_utils.load_from_csv(hpo_id, table_name, folder_prefix)
         load_job_id = load_results['jobReference']['jobId']
