@@ -246,7 +246,9 @@ class ValidationMainTest(TestCase):
         expected_results = []
         expected_errors = []
         expected_warnings = [('invalid_file.csv', 'Unknown file')]
-        for file_name in sorted(resources.CDM_FILES) + sorted(common.PII_FILES):
+        for file_name in sorted(resources.CDM_CSV_FILES) + [
+                common.NOTE_JSONL
+        ] + sorted(common.PII_FILES):
             result = []
             errors = []
             found = 0
@@ -260,6 +262,10 @@ class ValidationMainTest(TestCase):
                 found = 1
                 error = (file_name, 'Fake parsing error')
                 errors.append(error)
+            elif file_name == 'note.jsonl':
+                result.append((file_name, found, parsed, loaded))
+                perform_validation_on_file_returns[file_name] = result, errors
+                continue
             result.append((file_name, found, parsed, loaded))
             perform_validation_on_file_returns[file_name] = result, errors
             expected_results += result

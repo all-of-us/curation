@@ -154,7 +154,10 @@ def retract(pids, bucket, found_files, folder_prefix, force_flag):
     :param force_flag: if False then prompt for each file
     """
     for file_name in found_files:
-        table_name = file_name.split(".")[0]
+        table_name, extension = file_name.split(".")
+        # TODO retract from JSONL files
+        if extension.upper() in ['JSON', 'JSONL']:
+            continue
         lines_removed = 0
         file_gcs_path = f'{bucket.name}/{folder_prefix}{file_name}'
         if force_flag:

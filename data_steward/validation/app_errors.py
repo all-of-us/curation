@@ -7,6 +7,7 @@ returning generic error data to views to ensure program integrity.
 """
 # Python imports
 import logging
+import traceback
 
 # Third party imports
 import flask
@@ -40,6 +41,7 @@ def log_traceback(func):
         except Exception as e:
             alert_message = format_alert_message(e.__class__.__name__, str(e))
             logging.exception(alert_message, exc_info=True, stack_info=True)
+            logging.info(f'{traceback.print_exc()}')
             raise e
 
     return wrapper
