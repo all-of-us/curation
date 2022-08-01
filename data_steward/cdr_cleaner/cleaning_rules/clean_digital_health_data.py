@@ -74,9 +74,9 @@ class CleanDigitalHealthStatus(BaseCleaningRule):
         :param client: a BigQueryClient
         :return:
         """
-
         import os
-        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = self.key_path
+        if self.key_path:
+            os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = self.key_path
 
         digital_health_json_list = get_digital_health_information(
             self.api_project_id)
@@ -88,7 +88,8 @@ class CleanDigitalHealthStatus(BaseCleaningRule):
             f'{self.project_id}.{PIPELINE_TABLES}.{DIGITAL_HEALTH_SHARING_STATUS}'
         )
 
-        del os.environ["GOOGLE_APPLICATION_CREDENTIALS"]
+        if self.key_path:
+            del os.environ["GOOGLE_APPLICATION_CREDENTIALS"]
         # Snapshot DIGITAL_HEALTH_SHARING_STATUS table for current CDR
         client.copy_table(
             f'{self.project_id}.{PIPELINE_TABLES}.{DIGITAL_HEALTH_SHARING_STATUS}',

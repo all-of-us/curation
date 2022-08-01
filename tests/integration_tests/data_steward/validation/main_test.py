@@ -26,7 +26,6 @@ from validation.metrics import required_labs
 
 
 class ValidationMainTest(unittest.TestCase):
-
     dataset_id = bq_utils.get_dataset_id()
     project_id = app_identity.get_application_id()
     bq_client = BigQueryClient(project_id)
@@ -411,6 +410,7 @@ class ValidationMainTest(unittest.TestCase):
         self.storage_client.empty_bucket(self.drc_bucket)
 
         test_util.delete_all_tables(self.bq_client, self.dataset_id)
+        test_util.delete_all_tables(self.bq_client, self.rdr_dataset_id)
 
     @classmethod
     def tearDownClass(cls):

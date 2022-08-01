@@ -288,7 +288,9 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
         """
         LOGGER.info("Querying RDR API for deactivated participant data")
         import os
-        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = self.key_path
+        if self.key_path:
+            os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = self.key_path
+
         # gets the deactivated participant dataset to ensure it's up-to-date
         df = psr.get_deactivated_participants(self.api_project_id,
                                               DEACTIVATED_PARTICIPANTS_COLUMNS)
@@ -300,7 +302,8 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
 
         LOGGER.info(f"Finished storing participant records in: "
                     f"`{self.destination_table}`")
-        del os.environ["GOOGLE_APPLICATION_CREDENTIALS"]
+        if self.key_path:
+            del os.environ["GOOGLE_APPLICATION_CREDENTIALS"]
 
         LOGGER.info(f"Finished storing participant records in: "
                     f"`{self.destination_table}`")
