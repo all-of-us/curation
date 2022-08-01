@@ -275,7 +275,7 @@ class CreateTierTest(unittest.TestCase):
                           self.tier, self.release_tag,
                           incorrect_deid_stage_param)
 
-    def test_create_dataset(self):
+    def test_create_datasets(self):
         # Preconditions
         mocked_labels = [{
             'de-identified': 'true',
