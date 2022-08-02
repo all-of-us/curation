@@ -106,6 +106,8 @@ ACTIVITY_SUMMARY = 'activity_summary'
 HEART_RATE_MINUTE_LEVEL = 'heart_rate_minute_level'
 HEART_RATE_SUMMARY = 'heart_rate_summary'
 STEPS_INTRADAY = 'steps_intraday'
+SLEEP_DAILY_SUMMARY = 'sleep_daily_summary'
+SLEEP_LEVEL = 'sleep_level'
 
 FITBIT_TABLES = [
     ACTIVITY_SUMMARY, HEART_RATE_MINUTE_LEVEL, HEART_RATE_SUMMARY,
