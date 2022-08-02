@@ -13,12 +13,11 @@ import logging
 # Project imports
 from common import MEASUREMENT, JINJA_ENV
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
-from constants.bq_utils import WRITE_TRUNCATE
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 
 LOGGER = logging.getLogger(__name__)
 
-ISSUE_NUMBERS = ['DC-699', 'DC-481']
+ISSUE_NUMBERS = ['DC-699', 'DC-481', 'DC2455']
 
 INVALID_VALUES_RECORDS = 'dc699_save_9999999_as_null'
 SITES_WITH_ONLY_BAD_DATA = 'dc699_sites_with_only_null_or_zero_meas_data'
@@ -36,17 +35,9 @@ WHERE value_as_number = 9999999
 
 # Alter rows by changing 9999999 to NULL
 NULL_VALUES_UPDATE_QUERY = JINJA_ENV.from_string("""
-SELECT
-measurement_id, person_id, measurement_concept_id, measurement_date,
-measurement_datetime, measurement_type_concept_id, operator_concept_id,
-CASE
-WHEN value_as_number = 9999999 THEN NULL
-ELSE value_as_number
-END AS value_as_number,
-value_as_concept_id, unit_concept_id, range_low, range_high, provider_id,
-visit_occurrence_id, measurement_source_value, measurement_source_concept_id,
-unit_source_value, value_source_value
-from `{{project}}.{{dataset}}.measurement`
+UPDATE `{{project}}.{{dataset}}.measurement`
+SET value_as_number = NULL
+WHERE value_as_number = 9999999
 """)
 
 # Identify sites who submitted "junk" data.  Either all nulls or zero values in
@@ -116,11 +107,12 @@ FROM `{{project}}.{{dataset}}.measurement` AS m
 WHERE m.value_as_number IS NULL AND m.value_as_concept_id IS NULL
 )""")
 
-# Only select records that we want to keep
-SELECT_RECORDS_WITH_VALID_DATA = JINJA_ENV.from_string("""
-SELECT *
-FROM `{{project}}.{{dataset}}.measurement` AS m
-WHERE m.value_as_number IS NOT NULL OR m.value_as_concept_id IS NOT NULL
+# Only select records that we want to delete.  These records were sandboxed by the
+# SAVE_NULL_DROP_RECORDS query
+DELETE_RECORDS_WITH_INVALID_DATA = JINJA_ENV.from_string("""
+DELETE
+FROM `{{project}}.{{dataset}}.measurement` m
+WHERE m.value_as_number IS NULL AND m.value_as_concept_id IS NULL
 """)
 
 # Sandbox duplicate records based on the fields:  person_id,
@@ -158,10 +150,10 @@ WHERE row_num > 1
 )""")
 
 REMOVE_DUPLICATES = JINJA_ENV.from_string("""
--- Select only the records that have not been sandboxed --
-SELECT *
+-- Delete records that have been sandboxed --
+DELETE
 FROM `{{project}}.{{dataset}}.measurement`
-WHERE measurement_id NOT IN
+WHERE measurement_id IN
   (SELECT measurement_id FROM `{{project}}.{{sandbox}}.{{id_table}}`)
 """)
 
@@ -227,13 +219,7 @@ class MeasurementRecordsSuppression(BaseCleaningRule):
         update_to_null_values = {
             cdr_consts.QUERY:
                 NULL_VALUES_UPDATE_QUERY.render(project=self.project_id,
-                                                dataset=self.dataset_id),
-            cdr_consts.DESTINATION_TABLE:
-                MEASUREMENT,
-            cdr_consts.DESTINATION_DATASET:
-                self.dataset_id,
-            cdr_consts.DISPOSITION:
-                WRITE_TRUNCATE
+                                                dataset=self.dataset_id)
         }
 
         identify_bad_sites = {
@@ -275,14 +261,8 @@ class MeasurementRecordsSuppression(BaseCleaningRule):
 
         keep_records_with_good_data = {
             cdr_consts.QUERY:
-                SELECT_RECORDS_WITH_VALID_DATA.render(project=self.project_id,
-                                                      dataset=self.dataset_id),
-            cdr_consts.DESTINATION_TABLE:
-                MEASUREMENT,
-            cdr_consts.DESTINATION_DATASET:
-                self.dataset_id,
-            cdr_consts.DISPOSITION:
-                WRITE_TRUNCATE
+                DELETE_RECORDS_WITH_INVALID_DATA.render(project=self.project_id,
+                                                        dataset=self.dataset_id)
         }
 
         sandbox_duplicates = {
@@ -293,19 +273,14 @@ class MeasurementRecordsSuppression(BaseCleaningRule):
                     sandbox=self.sandbox_dataset_id,
                     save_table=self.sandbox_table_for(SAVE_DUPLICATE_RECORDS))
         }
+
         remove_duplicates = {
             cdr_consts.QUERY:
                 REMOVE_DUPLICATES.render(
                     project=self.project_id,
                     dataset=self.dataset_id,
                     sandbox=self.sandbox_dataset_id,
-                    id_table=self.sandbox_table_for(SAVE_DUPLICATE_RECORDS)),
-            cdr_consts.DESTINATION_TABLE:
-                MEASUREMENT,
-            cdr_consts.DESTINATION_DATASET:
-                self.dataset_id,
-            cdr_consts.DISPOSITION:
-                WRITE_TRUNCATE
+                    id_table=self.sandbox_table_for(SAVE_DUPLICATE_RECORDS))
         }
 
         return [
