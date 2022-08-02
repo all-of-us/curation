@@ -85,18 +85,16 @@ JOIN (
     AS new_value_as_concept_id
   FROM 
     `{{project_id}}.{{sandbox_dataset_id}}.{{insurance_lookup}}`
-  JOIN `{project_id}.{combined_dataset_id}.concept` source_c ON (basics_value_source_concept_id=source_c.concept_id)
-  JOIN `{project_id}.{combined_dataset_id}.concept_relationship` c_r ON (source_c.concept_id=c_r.concept_id_1)
-  JOIN `{project_id}.{combined_dataset_id}.concept` standard_c ON (standard_c.concept_id=c_r.concept_id_2)
+  JOIN `{{project_id}}.{{combined_dataset_id}}.concept` source_c ON (basics_value_source_concept_id=source_c.concept_id)
+  JOIN `{{project_id}}.{{combined_dataset_id}}.concept_relationship` c_r ON (source_c.concept_id=c_r.concept_id_1)
+  JOIN `{{project_id}}.{{combined_dataset_id}}.concept` standard_c ON (standard_c.concept_id=c_r.concept_id_2)
   WHERE source_c.vocabulary_id='PPI' 
-  AND c_r.relationship_id LIKE 'Maps to%'  --prefers the 'maps to value', but will take 'maps to' if necessary
+  AND c_r.relationship_id LIKE 'Maps to%'  --prefers the 'maps to value', but will take 'maps to' if necessary --
 )
 ON ob.value_source_concept_id = hcau_value_source_concept_id 
 WHERE observation_source_concept_id IN ({{HCAU_OBSERVATION_SOURCE_CONCEPT_ID}})
-AND person_id IN (
-    SELECT person_id FROM
-     `{{project_id}}.{{pipeline_tables}}.{{pids_lookup_table}}`
-     )
+AND person_id IN (SELECT person_id FROM
+     `{{project_id}}.{{pipeline_tables}}.{{pids_lookup_table}}`)
 )
 """)
 
