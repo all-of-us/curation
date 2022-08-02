@@ -52,6 +52,10 @@ class CleanDigitalHealthStatus(BaseCleaningRule):
         """
         desc = ('Sandbox and remove wearables data for participants without '
                 'consent in digitalHealthSharingStatus')
+
+        if not api_project_id:
+            raise TypeError("`api_project_id` cannot be empty")
+
         super().__init__(issue_numbers=['DC1910'],
                          description=desc,
                          affected_datasets=[cdr_consts.FITBIT],
