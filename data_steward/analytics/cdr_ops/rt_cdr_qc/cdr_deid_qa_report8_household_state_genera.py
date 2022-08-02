@@ -23,14 +23,14 @@ pd.options.display.max_rows = 120
 
 # + tags=["parameters"]
 project_id = ""
-deid_cdr=""
+deid_cdr = ""
 # deid_clean=""
 com_cdr = ""
 run_as = ""
 # -
 
 # df will have a summary in the end
-df = pd.DataFrame(columns = ['query', 'result']) 
+df = pd.DataFrame(columns=['query', 'result'])
 
 # +
 impersonation_creds = auth.get_impersonation_credentials(
@@ -45,14 +45,14 @@ client = BigQueryClient(project_id, credentials=impersonation_creds)
 #
 # Expected result:
 #
-# Null is the value poplulated in the value_as_number fields 
+# Null is the value poplulated in the value_as_number fields
 #
 # AND 2000000012, 2000000010 AND 903096 are the values that are populated in value_as_concept_id field  in the deid table.
 #
-# Per Francis, the other two values are valid. so it is pass. 
+# Per Francis, the other two values are valid. so it is pass.
 
 # +
-query=f''' 
+query = f''' 
 
 SELECT COUNT (*) AS n_row_not_pass
 FROM `{project_id}.{deid_cdr}.observation`
@@ -60,14 +60,22 @@ WHERE
   observation_source_concept_id = 1585890
   AND value_as_concept_id NOT IN (2000000012,2000000010,903096)
 '''
-df1=execute(client, query)  
+df1 = execute(client, query)
 
-if df1.loc[0].sum()==0:
- df = df.append({'query' : 'Query1 observation_source_concept_id 1585890', 'result' : 'PASS'},  
-                ignore_index = True) 
+if df1.loc[0].sum() == 0:
+    df = df.append(
+        {
+            'query': 'Query1 observation_source_concept_id 1585890',
+            'result': 'PASS'
+        },
+        ignore_index=True)
 else:
- df = df.append({'query' : 'Query1 observation_source_concept_id 1585890', 'result' : ''},  
-                ignore_index = True) 
+    df = df.append(
+        {
+            'query': 'Query1 observation_source_concept_id 1585890',
+            'result': ''
+        },
+        ignore_index=True)
 df1
 # -
 
@@ -79,10 +87,9 @@ df1
 #
 # AND 2000000012, 2000000010 AND 903096 are the values that are populated in value_as_concept_id field in the deid table.
 #
-# ## one row had error in new cdr
 
 # +
-query=f''' 
+query = f''' 
 
 SELECT COUNT (*) AS n_row_not_pass
 FROM `{project_id}.{deid_cdr}.observation`
@@ -90,18 +97,26 @@ WHERE
   observation_source_concept_id = 1333023
   AND value_as_concept_id NOT IN (2000000012,2000000010,903096)
 '''
-df1=execute(client, query)  
+df1 = execute(client, query)
 
-if df1.loc[0].sum()==0:
- df = df.append({'query' : 'Query2 observation_source_concept_id 1333023', 'result' : 'PASS'},  
-                ignore_index = True) 
+if df1.loc[0].sum() == 0:
+    df = df.append(
+        {
+            'query': 'Query2 observation_source_concept_id 1333023',
+            'result': 'PASS'
+        },
+        ignore_index=True)
 else:
- df = df.append({'query' : 'Query2 observation_source_concept_id 1333023', 'result' : ''},  
-                ignore_index = True) 
+    df = df.append(
+        {
+            'query': 'Query2 observation_source_concept_id 1333023',
+            'result': ''
+        },
+        ignore_index=True)
 df1
 # -
 
-query=f''' 
+query = f''' 
 
 SELECT *
 FROM `{project_id}.{deid_cdr}.observation`
@@ -109,7 +124,7 @@ WHERE
   observation_source_concept_id = 1333023
   AND value_as_concept_id NOT IN (2000000012,2000000010,903096)
 '''
-df1=execute(client, query)  
+df1 = execute(client, query)
 df1
 
 # # 3 Verify that if the observation_source_concept_id  field in OBSERVATION table populates: 1585889,  the value_as_concept_id field in de-id table should populate : 2000000013
@@ -118,12 +133,12 @@ df1
 #
 # expected results:
 #
-# Null is the value poplulated in the value_as_number fields 
+# Null is the value poplulated in the value_as_number fields
 #
 # AND 2000000013, 2000000010 AND 903096 are the values that are populated in value_as_concept_id field in the deid table.
 
 # +
-query=f''' 
+query = f''' 
 
 SELECT COUNT (*) AS n_row_not_pass
 FROM  `{project_id}.{deid_cdr}.observation`
@@ -131,31 +146,39 @@ WHERE
   observation_source_concept_id = 1585889
   AND value_as_concept_id NOT IN (2000000013,2000000010,903096)
 '''
-df1=execute(client, query)  
+df1 = execute(client, query)
 
-if df1.loc[0].sum()==0:
- df = df.append({'query' : 'Query3 observation_source_concept_id 1585889', 'result' : 'PASS'},  
-                ignore_index = True) 
+if df1.loc[0].sum() == 0:
+    df = df.append(
+        {
+            'query': 'Query3 observation_source_concept_id 1585889',
+            'result': 'PASS'
+        },
+        ignore_index=True)
 else:
- df = df.append({'query' : 'Query3 observation_source_concept_id 1585889', 'result' : ''},  
-                ignore_index = True) 
+    df = df.append(
+        {
+            'query': 'Query3 observation_source_concept_id 1585889',
+            'result': ''
+        },
+        ignore_index=True)
 df1
 # -
 
 # # 4 Verify that if the observation_source_concept_id  field in OBSERVATION table populates: 1333015,  the value_as_concept_id field in de-id table should populate : 2000000013
 #
-# Generalization Rules for reference 
+# Generalization Rules for reference
 #
 # Living Situation: COPE survey Generalize household size >10
 #
 # expected results:
 #
-# Null is the value poplulated in the value_as_number fields 
+# Null is the value poplulated in the value_as_number fields
 #
 # AND 2000000013, 2000000010 AND 903096 are the values that are populated in value_as_concept_id field in the deid table.
 
 # +
-query=f''' 
+query = f''' 
 
 SELECT COUNT (*) AS n_row_not_pass
 FROM  `{project_id}.{deid_cdr}.observation`
@@ -163,14 +186,22 @@ WHERE
   observation_source_concept_id = 1333015
   AND value_as_concept_id NOT IN (2000000013,2000000010,903096)
 '''
-df1=execute(client, query)  
+df1 = execute(client, query)
 
-if df1.loc[0].sum()==0:
- df = df.append({'query' : 'Query4 observation_source_concept_id 1333015', 'result' : 'PASS'},  
-                ignore_index = True) 
+if df1.loc[0].sum() == 0:
+    df = df.append(
+        {
+            'query': 'Query4 observation_source_concept_id 1333015',
+            'result': 'PASS'
+        },
+        ignore_index=True)
 else:
- df = df.append({'query' : 'Query4 observation_source_concept_id 1333015', 'result' : ''},  
-                ignore_index = True) 
+    df = df.append(
+        {
+            'query': 'Query4 observation_source_concept_id 1333015',
+            'result': ''
+        },
+        ignore_index=True)
 df1
 # -
 
@@ -184,26 +215,26 @@ df1
 #
 # step1:
 #
-# 1. query with the condition 
+# 1. query with the condition
 # observation_source_concept_id = 1585249
-# 2. verify that none value_source_concept_id listed in J show up in the results.  
+# 2. verify that none value_source_concept_id listed in J show up in the results.
 #
 # expected results:
 #
-# 1. value_source_concept_id of the States that are not generalized show up AND 
+# 1. value_source_concept_id of the States that are not generalized show up AND
 #
-# 2.only one row displays the generalized value_source_concept_id :  2000000011. 
-#  
-# step2 
+# 2.only one row displays the generalized value_source_concept_id :  2000000011.
+#
+# step2
 #
 # 1. query using the listed value_source_concept_id as condition
 #
-# 2. these are the states that are generalized. 
+# 2. these are the states that are generalized.
 #
-# expected results: returns no results 
+# expected results: returns no results
 
 # +
-query=f''' 
+query = f''' 
 WITH df1 AS (
 SELECT distinct deid.value_source_concept_id
 FROM
@@ -235,19 +266,26 @@ OR com.value_source_concept_id =        1585275)
 SELECT COUNT (*) AS n_row_not_pass FROM df1
 WHERE value_source_concept_id !=2000000011
 '''
-df1=execute(client, query)  
+df1 = execute(client, query)
 
-if df1.loc[0].sum()==0:
- df = df.append({'query' : 'Query5_state_generalization', 'result' : 'PASS'},  
-                ignore_index = True) 
+if df1.loc[0].sum() == 0:
+    df = df.append({
+        'query': 'Query5_state_generalization',
+        'result': 'PASS'
+    },
+                   ignore_index=True)
 else:
- df = df.append({'query' : 'Query5_state_generalization', 'result' : ''},  
-                ignore_index = True) 
+    df = df.append({
+        'query': 'Query5_state_generalization',
+        'result': ''
+    },
+                   ignore_index=True)
 df1
 # -
 
 # # Summary_deid_household AND state generalization
 
 # if not pass, will be highlighted in red
-df = df.mask(df.isin(['Null','']))
-df.style.highlight_null(null_color='red').set_properties(**{'text-align': 'left'})
+df = df.mask(df.isin(['Null', '']))
+df.style.highlight_null(null_color='red').set_properties(
+    **{'text-align': 'left'})
