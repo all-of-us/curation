@@ -5,7 +5,7 @@ For all answers for the survey question (43528428) and given pids,
 """
 import logging
 
-from common import JINJA_ENV, OBSERVATION
+from common import JINJA_ENV, OBSERVATION, RDR
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
 
@@ -172,6 +172,7 @@ class MapHealthInsuranceResponses(BaseCleaningRule):
         super().__init__(issue_numbers=ISSUE_NUMBERS,
                          description=desc,
                          affected_tables=[OBSERVATION],
+                         affected_datasets=[RDR],
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
