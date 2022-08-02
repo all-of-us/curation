@@ -19,17 +19,14 @@
 PROJECT_ID = ""  # identifies the project containing the datasets
 DRC_DATASET_ID = ""  # Identifies the DRC dataset
 EHR_DATASET_ID = ""  # Identifies the EHR dataset
-
-EHR_SNAPSHOT_DATASET_ID = ""  # Identifies the snapshot dataset
-RELEASE_TAG = ""  # identifies the release tag for the current CDR release
-EXCLUDED_SITES = "default"  # List of excluded sites passed as string: eg. "'hpo_id1', 'hpo_id_2', 'hpo_id3',..."
-
+EHR_SNAPSHOT_ID = ""  # Identifies the EHR snapshot dataset
+LOOKUP_DATASET_ID = ""  # Identifies the lookup dataset
+VALIDATION_DATASET_ID = ""  # Identifies the validation dataset
+EXCLUDED_SITES = "''"  # List of excluded sites passed as string: eg. "'hpo_id1', 'hpo_id_2', 'hpo_id3',..."
 # +
 import pandas as pd
-
 from gcloud.bq import BigQueryClient
 from analytics.cdr_ops.notebook_utils import execute
-from common import MAPPED_CLINICAL_DATA_TABLES
 
 client = BigQueryClient(PROJECT_ID)
 
@@ -37,22 +34,11 @@ pd.options.display.max_rows = 1000
 pd.options.display.max_colwidth = 0
 pd.options.display.max_columns = None
 pd.options.display.width = None
-
 # -
 
-stage = 'unioned_ehr'
-for suffix in ['_backup', '_staging', '_sandbox', '']:
-    dataset_id = f'{RELEASE_TAG}_unioned_ehr{suffix}'
-    dataset = client.get_dataset(dataset_id)
-    print(f'''{dataset.dataset_id}
-  description: {dataset.description}
-  labels: {dataset.labels}
-  
-    ''')
-
-# ## QC for Participant Validation
-#
-# Quality checks performed on a new paticipant validation dataset and comparison.
+# # QC for Participant Validation
+# - This notebook checks the data quality of the participant validation tables and the EHR snapshot tables.
+# - Run this notebook after generating the EHR snapshot dataset and the validation dataset.
 
 # # Latest identity match table for each EHR site
 # - This query lists the latest partitions of the identity match tables for the EHR sites.
@@ -71,12 +57,10 @@ ORDER BY total_rows DESC
 '''
 execute(client, query)
 
-# # Row count comparison
-# The snapshot tables should have the same row counts as that of the baseline dataset.
-# In ideal circumstances, this query will not return any results.
-# Any tables with differing row counts have not been copied correctly.
-# If the difference is justified due to site exclusion etc., the tables can be ignored.
-# Else, such tables need to be copied again so that the below query returns no results.
+# # Row count comparison (identity match tables and person tables)
+# - This query compares the row counts of the idendity table and the person table for each HPO site.
+# - `diff` should be 0 for all the HPO sites. If not, investigate.
+# - The SQLs in the following paragraphs will be helpful for the investigation.
 
 query = f'''
 SELECT partition_id, table_name, table_id, total_rows, row_count, total_rows - row_count AS diff
@@ -98,75 +82,64 @@ ORDER BY diff DESC
 '''
 execute(client, query)
 
-# # Zero row counts
-# The snapshot should contain tables with zero rows for sites that are excluded by EHR Ops,
-# or if a site has no data to submit for those specific tables.
-# In ideal circumstances, these are the only possibilities that lead to tables with zero rows.
-# However, any tables that do not meet the above criteria but have zero rows
-# need to be investigated and copied again if necessary.
+# # HPO sites with duplicate person IDs
+# - This query lists up the HPO sites that have duplicate person IDs and how many duplicates they have.
+# - For the HPO sites with `diff` not 0 in the previous query, see the result of this query and see if duplicates are the cause of the `diff`.
+# - If there are duplicate person IDs, report that to EHR Ops and Curation to discuss how to move forward.
+# - If the cause of the `diff` is still not clear, the next query might help identify the cause.
 
 query = f'''
-SELECT *
-FROM `{PROJECT_ID}.{EHR_SNAPSHOT_DATASET_ID}.__TABLES__`
-WHERE row_count = 0
-AND REGEXP_CONTAINS(table_id, r'(person)|(observation)|(care_site)|(occurrence)|(death)|(exposure)|(fact_realtionship)|(measurement)|(location)|(note)|(observation)|(provider)|(specimen)')
-AND NOT REGEXP_CONTAINS(table_id, r'(sets)')
-ORDER BY table_id
+WITH hpos AS (
+   SELECT LOWER(hpo_id) as hpo_id
+   FROM `{PROJECT_ID}.{LOOKUP_DATASET_ID}.hpo_site_id_mappings`
+   WHERE TRIM(hpo_id) IS NOT NULL
+   AND TRIM(hpo_id) NOT IN ('', {EXCLUDED_SITES})
+)
+SELECT CONCAT(
+   "SELECT * FROM (",
+   ARRAY_TO_STRING(ARRAY_AGG(FORMAT(
+      """
+      SELECT '%s' AS hpo_id, SUM(Individual_Duplicate_ID_Count-1) as count
+      FROM (
+         SELECT COUNT(person_id) AS Individual_Duplicate_ID_Count
+         FROM `{PROJECT_ID}.{EHR_DATASET_ID}.%s_person`
+         GROUP BY person_id HAVING COUNT(person_id) > 1
+      )
+      """, 
+      hpo_id, hpo_id)), 
+      "UNION ALL"),
+   ") WHERE count!=0 "
+) as q
+FROM hpos
 '''
-execute(client, query)
+sql_to_run = execute(client, query).iloc[0, 0]
+execute(client, sql_to_run)
 
-# # Person_to_observation records observation_date and observation_datetime check
-# Check to make sure records added to observation with observation_concept_id in (4013886, 421761, 4135376, 4083587) are
-# not using participant’s birth date, as seen in person.birth_datetime.
-# Check is successful when result is empty
+# # Missing person IDs in the EHR snapshot dataset
+# - This query lists up the HPO sites that have person IDs that are not in its identity match table and how many IDs are missing.
+# - For the HPO sites with `diff` not 0 in the previous query, see the result of this query and see this is the cause of the `diff`.
+# - If there are missing person IDs, report that to EHR Ops and Curation to discuss how to move forward.
+# - If the cause of the `diff` is still not clear, continue investigation and discuss within Curation on how to move forward.
 
-query = f"""
-WITH
-  person_birth_date AS (
-  SELECT
-    birth_datetime,
-    DATE(birth_datetime) AS birth_date,
-    person_id
-  FROM
-     `{PROJECT_ID}.{EHR_SNAPSHOT_DATASET_ID}.unioned_ehr_person` )
-SELECT
-  observation_id,
-  person_id,
-  observation_concept_id,
-  observation_date,
-  observation_datetime
-FROM
-  `{PROJECT_ID}.{EHR_SNAPSHOT_DATASET_ID}.unioned_ehr_observation`
-JOIN
-  person_birth_date
-USING
-  (person_id)
-WHERE
-  observation_concept_id IN (4013886,
-    4271761,
-    4135376,
-    4083587)
-  AND ((observation_datetime = birth_datetime)
-    OR (observation_date = birth_date))
-"""
-execute(client, query)
-
-# ## Check for Excluded sites
-
-if EXCLUDED_SITES != "default":
-    queries = []
-    for cdm_table in MAPPED_CLINICAL_DATA_TABLES:
-        queries.append(f""" SELECT
-    '{cdm_table}' AS table_name, COUNT(*) AS non_compliant_rows
-    FROM `{EHR_SNAPSHOT_DATASET_ID}.unioned_ehr_{cdm_table}`
-    JOIN `{EHR_SNAPSHOT_DATASET_ID}._mapping_{cdm_table}`
-    USING ({cdm_table}_id)
-    WHERE src_hpo_id IN ({EXCLUDED_SITES})""")
-
-    query = ' \n UNION ALL \n'.join(queries)
-
-    execute(client, query)
-else:
-    print(
-        f'Since list of excluded sites is not provided to the script, check for Excluded Sites is skipped.'
-    )
+query = f'''
+WITH hpos AS (
+   SELECT LOWER(hpo_id) as hpo_id
+   FROM `{PROJECT_ID}.{LOOKUP_DATASET_ID}.hpo_site_id_mappings`
+   WHERE TRIM(hpo_id) IS NOT NULL
+   AND TRIM(hpo_id) NOT IN ('', {EXCLUDED_SITES})
+)
+SELECT ARRAY_TO_STRING(ARRAY_AGG(FORMAT(
+   """
+   SELECT '%s' as hpo_id, COUNT(person_id) as n
+   FROM `{PROJECT_ID}.{EHR_SNAPSHOT_ID}.%s_person`
+   WHERE person_id NOT IN (
+      SELECT person_id
+      FROM `{PROJECT_ID}.{VALIDATION_DATASET_ID}.%s_identity_match`
+   )
+   """,
+   hpo_id, hpo_id, hpo_id)), 
+   "UNION ALL")
+FROM hpos
+'''
+sql_to_run = execute(client, query).iloc[0, 0]
+execute(client, sql_to_run)
