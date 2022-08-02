@@ -76,7 +76,7 @@ WHERE COALESCE({{table_ref.table_id + '_end_date'}},
 WHERE COALESCE({{table_ref.table_id + '_end_date'}},
 {{table_ref.table_id + '_start_date'}}) >= d.deactivated_datetime
 {% elif table_ref.table_id == 'sleep_level' %}
-WHERE (start_datetime IS NOT NULL AND start_dateime >= d.deactivated_datetime)
+WHERE (start_datetime IS NOT NULL AND start_datetime >= d.deactivated_datetime)
     OR (sleep_date IS NOT NULL AND sleep_date >= d.deactivated_datetime)
 {% elif table_ref.table_id == 'sleep_daily_summary' %}
 WHERE (sleep_date IS NOT NULL AND sleep_date >= d.deactivate_datetime)
