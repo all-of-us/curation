@@ -3,11 +3,9 @@ For all answers for the survey question (43528428) and given pids,
     1. Mark answers as invalid for all participants
     2. Use the second survey (1384450) to generate valid answers for a subset of pids who took the second survey
 """
-import csv
 import logging
 
 from common import JINJA_ENV, OBSERVATION
-from bq_utils import load_table_from_csv
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
 
@@ -20,6 +18,8 @@ ISSUE_NUMBERS = ['dc826']
 
 INSURANCE_LOOKUP = 'insurance_lookup'
 NEW_INSURANCE_ROWS = 'new_insurance_rows'
+PIDS_LOOKUP_TABLE = 'health_insurance_pids'
+PIPELINE_TABLES = 'pipeline_tables'
 
 INSURANCE_LOOKUP_FIELDS = [{
     "type": "string",
@@ -93,7 +93,10 @@ JOIN (
 )
 ON ob.value_source_concept_id = hcau_value_source_concept_id 
 WHERE observation_source_concept_id IN ({{HCAU_OBSERVATION_SOURCE_CONCEPT_ID}})
-AND person_id IN ({{pids}})
+AND person_id IN (
+    SELECT person_id FROM
+     `{{project_id}}.{{pipeline_tables}}.{{pids_lookup_table}}`
+     )
 )
 """)
 
@@ -106,7 +109,10 @@ SET
   ob.value_source_concept_id = 46237613,
   ob.value_source_value = 'Invalid'
 WHERE ob.observation_source_concept_id IN ({{ORIGINAL_OBSERVATION_SOURCE_CONCEPT_ID}})
-AND ob.person_id IN ({{pids}})
+AND ob.person_id IN (
+    SELECT person_id FROM
+     `{{project_id}}.{{pipeline_tables}}.{{pids_lookup_table}}`
+     )
 """)
 
 DELETE_ORIGINAL_FOR_HCAU_PARTICIPANTS = JINJA_ENV.from_string("""
@@ -153,7 +159,6 @@ class MapHealthInsuranceResponses(BaseCleaningRule):
                  project_id,
                  dataset_id,
                  sandbox_dataset_id,
-                 pids_file,
                  table_namer=None):
         """
         Initialize the class.
@@ -173,34 +178,21 @@ class MapHealthInsuranceResponses(BaseCleaningRule):
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
                          table_namer=table_namer)
-        self._pids_file = pids_file
-        self.pids = None
 
     def setup_rule(self, client, *args, **keyword_args):
         """
-        This will reset the affected_tables list.
+        Run required steps for validation setup
 
-        For thoroughness, this will query to get the table names
-        of all tables in the dataset containing a person_id.  This
-        will then be used to create the queries.  If setup_rule is not run,
-        then the list will default to the set of AoU Required tables with a
-        person_id column.
+        Method to run to setup validation on cleaning rules that will be updating or deleting the values.
+        For example:
+        if your class updates all the datetime fields you should be implementing the
+        logic to get the initial list of values which adhere to a condition we are looking for.
+
+        if your class deletes a subset of rows in the tables you should be implementing
+        the logic to get the row counts of the tables prior to applying cleaning rule
+
         """
-
-        pids_list = []
-        with open(self._pids_file, 'r') as f:
-            csv_rows = csv.reader(f)
-            next(csv_rows)
-            for row in csv_rows:
-                pids_list.append(int(row[0]))
-
-        self.pids = ', '.join([str(pid) for pid in pids_list])
-
-        load_table_from_csv(self.project_id,
-                            self.sandbox_dataset_id,
-                            INSURANCE_LOOKUP,
-                            csv_path=None,
-                            fields=INSURANCE_LOOKUP_FIELDS)
+        raise NotImplementedError("Please fix me.")
 
     def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
         queries = []
@@ -216,7 +208,8 @@ class MapHealthInsuranceResponses(BaseCleaningRule):
             ORIGINAL_OBSERVATION_SOURCE_CONCEPT_ID,
             HCAU_OBSERVATION_SOURCE_CONCEPT_ID=
             HCAU_OBSERVATION_SOURCE_CONCEPT_ID,
-            pids=self.pids)
+            pipeline_tables=PIPELINE_TABLES,
+            pids_lookup_table=PIDS_LOOKUP_TABLE)
         queries.append(sandbox_query)
 
         invalidate_query = dict()
@@ -225,7 +218,8 @@ class MapHealthInsuranceResponses(BaseCleaningRule):
             combined_dataset_id=self.dataset_id,
             ORIGINAL_OBSERVATION_SOURCE_CONCEPT_ID=
             ORIGINAL_OBSERVATION_SOURCE_CONCEPT_ID,
-            pids=self.pids)
+            pipeline_tables=PIPELINE_TABLES,
+            pids_lookup_table=PIDS_LOOKUP_TABLE)
         queries.append(invalidate_query)
 
         delete_query = dict()
@@ -273,31 +267,17 @@ if __name__ == '__main__':
     import cdr_cleaner.args_parser as parser
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
-    help_text = 'path to csv file (with header row) containing pids whose observation records are to be removed'
-    additional_argument = {
-        parser.SHORT_ARGUMENT: '-f',
-        parser.LONG_ARGUMENT: '--file_path',
-        parser.ACTION: 'store',
-        parser.DEST: 'file_path',
-        parser.HELP: help_text,
-        parser.REQUIRED: True
-    }
-
-    ARGS = parser.default_parse_args([additional_argument])
+    ARGS = parser.default_parse_args()
 
     if ARGS.list_queries:
         clean_engine.add_console_logging()
         query_list = clean_engine.get_query_list(
-            ARGS.project_id,
-            ARGS.dataset_id,
-            ARGS.sandbox_dataset_id, [(MapHealthInsuranceResponses,)],
-            pids_file=ARGS.file_path)
+            ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id,
+            [(MapHealthInsuranceResponses,)])
         for query in query_list:
             LOGGER.info(query)
     else:
         clean_engine.add_console_logging(ARGS.console_log)
-        clean_engine.clean_dataset(ARGS.project_id,
-                                   ARGS.dataset_id,
+        clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
                                    ARGS.sandbox_dataset_id,
-                                   [(MapHealthInsuranceResponses,)],
-                                   pids_file=ARGS.file_path)
+                                   [(MapHealthInsuranceResponses,)])
