@@ -32,7 +32,7 @@ from dateutil import parser
 # Project imports
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.repopulate_person_post_deid import (
-    RepopulatePersonPostDeid, GENDER_CONCEPT_ID, AOU_NONE_INDICATED_CONCEPT_ID)
+    RepopulatePersonPostDeid, GENDER_CONCEPT_ID)
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 from common import PERSON, OBSERVATION, CONCEPT
 
