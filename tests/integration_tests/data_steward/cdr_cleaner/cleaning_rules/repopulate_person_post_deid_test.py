@@ -42,6 +42,8 @@ SEX_FEMALE_CONCEPT_ID = 1585847
 SEX_FEMALE_SOURCE_CONCEPT_ID = 45878463
 ETHNICITY_NONEOFTHESE_CONCEPT_ID = 1586148
 ETHNICITY_NONEOFTHESE_CONCEPT_CODE = "WhatRaceEthnicity_RaceEthnicityNoneOfThese"
+ETHNICITY_NOT_HISPANIC_CONCEPT_ID = 38003564
+ETHNICITY_NOT_HISPANIC_CONCEPT_CODE = "Not Hispanic"
 
 
 class RepopulatePersonPostDeidTest(BaseTest.CleaningRulesTestBase):
@@ -106,7 +108,8 @@ class RepopulatePersonPostDeidTest(BaseTest.CleaningRulesTestBase):
                 ({{gender_concept_id}}, "some text", "some text", "some text", "some text", "gender", date('2020-05-05'), date('2020-05-05')),
                 ({{gender_nonbinary_concept_id}}, "some text", "some text", "some text", "some text", "nonbinary", date('2020-05-05'), date('2020-05-05')),
                 ({{gender_nonbinary_source_concept_id}}, "some text", "some text", "some text", "some text", "nonbinary_src", date('2020-05-05'), date('2020-05-05')),
-                ({{ethnicity_noneofthese_concept_id}}, "some text", "some text", "some text", "some text", "{{ethnicity_noneofthese_concept_code}}", date('2020-05-05'), date('2020-05-05'))
+                ({{ethnicity_noneofthese_concept_id}}, "some text", "some text", "some text", "some text", "{{ethnicity_noneofthese_concept_code}}", date('2020-05-05'), date('2020-05-05')),
+                ({{ethnicity_not_hispanic_concept_id}}, "some text", "some text", "some text", "some text", "{{ethnicity_not_hispanic_concept_code}}", date('2020-05-05'), date('2020-05-05'))
         """).render(
             fq_dataset_name=self.fq_dataset_name,
             gender_concept_id=GENDER_CONCEPT_ID,
@@ -116,7 +119,11 @@ class RepopulatePersonPostDeidTest(BaseTest.CleaningRulesTestBase):
             sex_female_concept_id=SEX_FEMALE_CONCEPT_ID,
             sex_female_source_concept_id=SEX_FEMALE_SOURCE_CONCEPT_ID,
             ethnicity_noneofthese_concept_id=ETHNICITY_NONEOFTHESE_CONCEPT_ID,
-            ethnicity_noneofthese_concept_code=ETHNICITY_NONEOFTHESE_CONCEPT_CODE
+            ethnicity_noneofthese_concept_code=
+            ETHNICITY_NONEOFTHESE_CONCEPT_CODE,
+            ethnicity_not_hispanic_concept_id=ETHNICITY_NOT_HISPANIC_CONCEPT_ID,
+            ethnicity_not_hispanic_concept_code=
+            ETHNICITY_NOT_HISPANIC_CONCEPT_CODE,
         )
 
         create_persons_query = self.jinja_env.from_string("""
