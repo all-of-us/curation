@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS `{{project_id}}.{{sandbox_dataset_id}}.{{not_match_ta
 """)
 
 INSERT_NOT_MATCH_PERSON_ID = JINJA_ENV.from_string("""
-INSERT INTO  `{{project_id}}.{{sandbox_dataset_id}}.{{not_match_table}}`
+INSERT INTO `{{project_id}}.{{sandbox_dataset_id}}.{{not_match_table}}`
 (source_table, person_id)
 WITH non_match_participants AS
 (

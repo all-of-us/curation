@@ -3,8 +3,6 @@ import constants.cdr_cleaner.clean_cdr as cdr_consts
 from common import JINJA_ENV
 from gcloud.bq import BigQueryClient
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
-from constants import bq_utils as bq_consts
-from constants.cdr_cleaner import clean_cdr as clean_consts
 
 # Query to create tables in sandbox with rows that will be removed per cleaning rule
 SANDBOX_QUERY = JINJA_ENV.from_string("""
@@ -31,8 +29,6 @@ SELECT table_name
 FROM `{{project}}.{{dataset}}.INFORMATION_SCHEMA.COLUMNS`
 WHERE COLUMN_NAME = 'person_id'
 """)
-
-TABLE_NAME_COLUMN = 'table_name'
 
 
 class SandboxAndRemovePids(BaseCleaningRule):
@@ -70,27 +66,19 @@ class SandboxAndRemovePids(BaseCleaningRule):
                          depends_on=depends_on,
                          table_namer=table_namer)
 
-        self.person_table_list = []
-
     def setup_rule(self, client: BigQueryClient):
         """
         Get list of tables that have a person_id column, excluding mapping tables
         """
-        if self.person_table_list:
-            return self.person_table_list
-
         person_table_query = PERSON_TABLE_QUERY.render(project=self.project_id,
                                                        dataset=self.dataset_id)
         person_tables = client.query(person_table_query).result()
-        self.person_table_list = [
+
+        self.affected_tables = [
             table.get('table_name')
             for table in person_tables
             if '_mapping' not in table.get('table_name')
         ]
-
-        self.affected_tables = self.person_table_list
-
-        return self.person_table_list
 
     def get_sandbox_queries(self, lookup_table: str = None) -> list:
         """
@@ -104,10 +92,9 @@ class SandboxAndRemovePids(BaseCleaningRule):
             raise RuntimeError(
                 f"sandbox_dataset_id is None.  This is not allowed.")
 
-        # person_tables_list = self.get_tables_with_person_id()
         queries_list = []
 
-        for table in self.person_table_list:
+        for table in self.affected_tables:
             queries_list.append({
                 cdr_consts.QUERY:
                     SANDBOX_QUERY.render(
@@ -129,10 +116,9 @@ class SandboxAndRemovePids(BaseCleaningRule):
         :param lookup_table: name of the lookup table
         :return: list of select statements that will truncate the existing tables with clean data
         """
-        # person_tables_list = self.get_tables_with_person_id()
         queries_list = []
 
-        for table in self.person_table_list:
+        for table in self.affected_tables:
             queries_list.append({
                 cdr_consts.QUERY:
                     CLEAN_QUERY.render(project=self.project_id,
