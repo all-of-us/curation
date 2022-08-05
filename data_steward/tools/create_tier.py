@@ -209,7 +209,8 @@ def create_tier(credentials_filepath, project_id, tier, input_dataset,
     # Create intermediary datasets and copy tables from input dataset to newly created dataset
     datasets = create_datasets(bq_client, final_dataset_name, input_dataset,
                                tier, release_tag)
-    bq_client.copy_dataset(input_dataset, datasets[consts.STAGING])
+    bq_client.copy_dataset(f'{project_id}.{input_dataset}',
+                           f'{project_id}.{datasets[consts.STAGING]}')
 
     # Run cleaning rules
     cleaning_args = [
