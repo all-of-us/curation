@@ -75,6 +75,11 @@ WHERE COALESCE({{table_ref.table_id + '_end_date'}},
 {% elif table_ref.table_id in ['drug_era', 'condition_era', 'dose_era']  %}
 WHERE COALESCE({{table_ref.table_id + '_end_date'}},
 {{table_ref.table_id + '_start_date'}}) >= d.deactivated_datetime
+{% elif table_ref.table_id == 'sleep_level' %}
+ WHERE (start_datetime IS NOT NULL AND TIMESTAMP(start_datetime) >= d.deactivated_datetime)
+     OR (sleep_date IS NOT NULL AND sleep_date >= DATE(d.deactivated_datetime))
+ {% elif table_ref.table_id == 'sleep_daily_summary' %}
+ WHERE (sleep_date IS NOT NULL AND sleep_date >= DATE(d.deactivated_datetime))
 {% else %}
 WHERE ({{datetime}} IS NOT NULL AND {{datetime}} >= d.deactivated_datetime)
 OR ({{datetime}} IS NULL AND {{date}} >= DATE(d.deactivated_datetime))
