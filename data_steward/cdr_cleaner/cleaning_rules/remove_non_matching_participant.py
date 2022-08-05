@@ -1,13 +1,15 @@
 """
-Participant ID validation must be performed on site submission data for it to be included in the CDR. 
+Participant ID validation must be performed on site submission data for it to be included in the CDR.
 Ideally, sites conduct participant matching and only submit data for matched participants,
 along with a table detailing their matching process.
 The DRC also performs a matching process on data received to validate matching done at the site level.
 
-Some sites may not provide participant matching tables for the launch dataset or may not run any 
+Some sites may not provide participant matching tables for the launch dataset or may not run any
 matching processes for some of the data.
-In these cases, the DRC matching algorithm should run and any non-matching PIDs identified 
-by the algorithm should be dropped from the launch dataset.
+In these cases, the DRC matching algorithm should run and any non-matching EHR records identified
+by the algorithm should be dropped from the launch dataset. Any records from RDR should not be dropped
+in this process. Person table is not affected by this CR since all records come from RDR.
+
 This will ensure at least one level of identity validation is occurring.
 """
 
@@ -17,7 +19,7 @@ import logging
 # Project imports
 from gcloud.bq import BigQueryClient
 import resources
-from common import JINJA_ENV, IDENTITY_MATCH, PARTICIPANT_MATCH
+from common import JINJA_ENV, IDENTITY_MATCH, PARTICIPANT_MATCH, PERSON
 from validation.participants import readers
 from cdr_cleaner.cleaning_rules.sandbox_and_remove_pids import SandboxAndRemovePids
 from constants.cdr_cleaner import clean_cdr as cdr_consts
@@ -100,7 +102,7 @@ class RemoveNonMatchingParticipant(SandboxAndRemovePids):
         affected_tables = [
             table for table in resources.CDM_TABLES
             if any(field['name'] == 'person_id'
-                   for field in resources.fields_for(table))
+                   for field in resources.fields_for(table)) and table != PERSON
         ]
 
         if ehr_dataset_id is None:
@@ -111,7 +113,7 @@ class RemoveNonMatchingParticipant(SandboxAndRemovePids):
                 'Required parameter validation_dataset_id not set')
 
         desc = 'Removes non-matching and not validated participant records from the combined dataset.'
-        super().__init__(issue_numbers=['DC468', 'DC823'],
+        super().__init__(issue_numbers=['DC468', 'DC823', 'DC2552'],
                          description=desc,
                          affected_datasets=[cdr_consts.COMBINED],
                          project_id=project_id,
@@ -239,10 +241,11 @@ class RemoveNonMatchingParticipant(SandboxAndRemovePids):
             are optional but the query is required.
         """
 
-        sandbox_queries = self.get_sandbox_queries(lookup_table=NOT_MATCH_TABLE)
+        sandbox_queries = self.get_sandbox_queries(lookup_table=NOT_MATCH_TABLE,
+                                                   ehr_only=True)
 
         remove_pids_queries = self.get_remove_pids_queries(
-            lookup_table=NOT_MATCH_TABLE)
+            lookup_table=NOT_MATCH_TABLE, ehr_only=True)
 
         return sandbox_queries + remove_pids_queries
 

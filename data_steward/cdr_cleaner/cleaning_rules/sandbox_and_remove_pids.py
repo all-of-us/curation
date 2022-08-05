@@ -7,19 +7,30 @@ from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 # Query to create tables in sandbox with rows that will be removed per cleaning rule
 SANDBOX_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{intermediary_table}}` AS (
-SELECT *
-FROM `{{project}}.{{dataset}}.{{table}}`
+SELECT t.* FROM `{{project}}.{{dataset}}.{{table}}` t
+{{ehr_only_join}}
 WHERE person_id IN (
     SELECT person_id FROM `{{project}}.{{sandbox_dataset}}.{{lookup_table}}`
 ))
 """)
 
+SANDBOX_EHR_ONLY_JOIN = JINJA_ENV.from_string("""
+JOIN `{{project}}.{{dataset}}._mapping_{{table}}` m
+ON t.{{table}}_id = m.{{table}}_id AND LOWER(m.src_hpo_id) != 'rdr'
+""")
+
 # Query to truncate existing tables to remove PIDs based on cleaning rule criteria
 CLEAN_QUERY = JINJA_ENV.from_string("""
-DELETE
-FROM `{{project}}.{{dataset}}.{{table}}`
+DELETE FROM `{{project}}.{{dataset}}.{{table}}`
 WHERE person_id IN (
-    SELECT distinct person_id FROM `{{project}}.{{sandbox_dataset}}.{{lookup_table}}`
+    SELECT DISTINCT person_id FROM `{{project}}.{{sandbox_dataset}}.{{lookup_table}}`
+)
+{{ehr_only_condition}}
+""")
+
+CLEAN_EHR_ONLY_CONDITION = JINJA_ENV.from_string("""
+AND {{table}}_id IN (
+    SELECT DISTINCT {{table}}_id FROM `{{project}}.{{sandbox_dataset}}.{{intermediary_table}}`
 )
 """)
 
@@ -28,6 +39,7 @@ PERSON_TABLE_QUERY = JINJA_ENV.from_string("""
 SELECT table_name
 FROM `{{project}}.{{dataset}}.INFORMATION_SCHEMA.COLUMNS`
 WHERE COLUMN_NAME = 'person_id'
+AND LOWER(table_name) != 'person'
 """)
 
 
@@ -80,12 +92,15 @@ class SandboxAndRemovePids(BaseCleaningRule):
             if '_mapping' not in table.get('table_name')
         ]
 
-    def get_sandbox_queries(self, lookup_table: str = None) -> list:
+    def get_sandbox_queries(self,
+                            lookup_table: str = None,
+                            ehr_only: bool = False) -> list:
         """
         Returns a list of queries of all tables to be added to the datasets sandbox. These tables include all rows from all
         effected tables that include PIDs that will be removed by a specific cleaning rule.
 
         :param lookup_table: name of the lookup table
+        :param ehr_only: For Combined dataset, True if removing only EHR records. False if removing both RDR and EHR records.
         :return: list of CREATE OR REPLACE queries to create tables in sandbox
         """
         if self.sandbox_dataset_id is None:
@@ -95,37 +110,61 @@ class SandboxAndRemovePids(BaseCleaningRule):
         queries_list = []
 
         for table in self.affected_tables:
+
+            if ehr_only:
+                ehr_only_join = SANDBOX_EHR_ONLY_JOIN.render(
+                    project=self.project_id,
+                    dataset=self.dataset_id,
+                    table=table)
+            else:
+                ehr_only_join = ''
+
             queries_list.append({
                 cdr_consts.QUERY:
                     SANDBOX_QUERY.render(
-                        dataset=self.dataset_id,
                         project=self.project_id,
+                        dataset=self.dataset_id,
                         table=table,
                         sandbox_dataset=self.sandbox_dataset_id,
                         intermediary_table=self.sandbox_table_for(table),
-                        lookup_table=lookup_table)
+                        lookup_table=lookup_table,
+                        ehr_only_join=ehr_only_join)
             })
 
         return queries_list
 
-    def get_remove_pids_queries(self, lookup_table=None):
+    def get_remove_pids_queries(self,
+                                lookup_table=None,
+                                ehr_only: bool = False):
         """
         Returns a list of queries in which the table will be truncated with clean data, ie: all removed PIDs from all
         datasets based on a cleaning rule.
 
         :param lookup_table: name of the lookup table
+        :param ehr_only: For Combined dataset, True if removing only EHR records. False if removing both RDR and EHR records.
         :return: list of select statements that will truncate the existing tables with clean data
         """
         queries_list = []
 
         for table in self.affected_tables:
+
+            if ehr_only:
+                ehr_only_condition = CLEAN_EHR_ONLY_CONDITION.render(
+                    project=self.project_id,
+                    sandbox_dataset=self.sandbox_dataset_id,
+                    table=table,
+                    intermediary_table=self.sandbox_table_for(table))
+            else:
+                ehr_only_condition = ''
+
             queries_list.append({
                 cdr_consts.QUERY:
                     CLEAN_QUERY.render(project=self.project_id,
                                        dataset=self.dataset_id,
                                        table=table,
                                        sandbox_dataset=self.sandbox_dataset_id,
-                                       lookup_table=lookup_table)
+                                       lookup_table=lookup_table,
+                                       ehr_only_condition=ehr_only_condition)
             })
 
         return queries_list

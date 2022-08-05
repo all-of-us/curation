@@ -5,7 +5,6 @@
 import os
 
 # Third party imports
-from dateutil.parser import parse
 from google.cloud.bigquery import Table
 
 # Project Imports
@@ -47,22 +46,76 @@ POPULATE_STATEMENTS = {
         INSERT INTO `{{fq_table_name}}` 
         (observation_id, person_id, observation_concept_id, observation_date, observation_type_concept_id)
         VALUES
-        (1001, 101, 0, date('2022-01-01'), 0),
-        (1002, 102, 0, date('2022-01-02'), 0),
-        (1003, 103, 0, date('2022-01-03'), 0),
-        (1004, 104, 0, date('2022-01-04'), 0),
-        (2001, 201, 0, date('2022-01-01'), 0),
-        (2002, 202, 0, date('2022-01-02'), 0),
-        (2003, 203, 0, date('2022-01-03'), 0),
-        (2004, 204, 0, date('2022-01-04'), 0),
-        (3001, 301, 0, date('2022-01-01'), 0),
-        (3002, 302, 0, date('2022-01-02'), 0),
-        (3003, 303, 0, date('2022-01-03'), 0),
-        (3004, 304, 0, date('2022-01-04'), 0),
-        (4001, 401, 0, date('2022-01-01'), 0),
-        (4002, 402, 0, date('2022-01-02'), 0),
-        (4003, 403, 0, date('2022-01-03'), 0),
-        (4004, 404, 0, date('2022-01-04'), 0)
+        (10101, 101, 0, date('2022-01-01'), 0),
+        (10102, 101, 0, date('2022-01-01'), 0),
+        (10201, 102, 0, date('2022-01-02'), 0),
+        (10202, 102, 0, date('2022-01-02'), 0),
+        (10301, 103, 0, date('2022-01-03'), 0),
+        (10302, 103, 0, date('2022-01-03'), 0),
+        (10401, 104, 0, date('2022-01-04'), 0),
+        (10402, 104, 0, date('2022-01-04'), 0),
+        (20101, 201, 0, date('2022-01-01'), 0),
+        (20102, 201, 0, date('2022-01-01'), 0),
+        (20201, 202, 0, date('2022-01-02'), 0),
+        (20202, 202, 0, date('2022-01-02'), 0),
+        (20301, 203, 0, date('2022-01-03'), 0),
+        (20302, 203, 0, date('2022-01-03'), 0),
+        (20401, 204, 0, date('2022-01-04'), 0),
+        (20402, 204, 0, date('2022-01-04'), 0),
+        (30101, 301, 0, date('2022-01-01'), 0),
+        (30102, 301, 0, date('2022-01-01'), 0),
+        (30201, 302, 0, date('2022-01-02'), 0),
+        (30202, 302, 0, date('2022-01-02'), 0),
+        (30301, 303, 0, date('2022-01-03'), 0),
+        (30302, 303, 0, date('2022-01-03'), 0),
+        (30401, 304, 0, date('2022-01-04'), 0),
+        (30402, 304, 0, date('2022-01-04'), 0),
+        (40101, 401, 0, date('2022-01-01'), 0),
+        (40102, 401, 0, date('2022-01-01'), 0),
+        (40201, 402, 0, date('2022-01-02'), 0),
+        (40202, 402, 0, date('2022-01-02'), 0),
+        (40301, 403, 0, date('2022-01-03'), 0),
+        (40302, 403, 0, date('2022-01-03'), 0),
+        (40401, 404, 0, date('2022-01-04'), 0),
+        (40402, 404, 0, date('2022-01-04'), 0)
+        """),
+    f'_mapping_{OBSERVATION}':
+        JINJA_ENV.from_string("""
+        INSERT INTO `{{fq_table_name}}` 
+        (observation_id, src_dataset_id, src_observation_id, src_hpo_id, src_table_id)
+        VALUES
+        (10101, '{{rdr_dataset_id}}', 111, 'rdr', 'observation'),
+        (10102, '{{ehr_dataset_id}}', 112, '{{hpo_1}}', 'observation'),
+        (10201, '{{rdr_dataset_id}}', 121, 'rdr', 'observation'),
+        (10202, '{{ehr_dataset_id}}', 122, '{{hpo_1}}', 'observation'),
+        (10301, '{{rdr_dataset_id}}', 131, 'rdr', 'observation'),
+        (10302, '{{ehr_dataset_id}}', 132, '{{hpo_1}}', 'observation'),
+        (10401, '{{rdr_dataset_id}}', 141, 'rdr', 'observation'),
+        (10402, '{{ehr_dataset_id}}', 142, '{{hpo_1}}', 'observation'),
+        (20101, '{{rdr_dataset_id}}', 211, 'rdr', 'observation'),
+        (20102, '{{ehr_dataset_id}}', 212, '{{hpo_2}}', 'observation'),
+        (20201, '{{rdr_dataset_id}}', 221, 'rdr', 'observation'),
+        (20202, '{{ehr_dataset_id}}', 222, '{{hpo_2}}', 'observation'),
+        (20301, '{{rdr_dataset_id}}', 231, 'rdr', 'observation'),
+        (20302, '{{ehr_dataset_id}}', 232, '{{hpo_2}}', 'observation'),
+        (20401, '{{rdr_dataset_id}}', 241, 'rdr', 'observation'),
+        (20402, '{{ehr_dataset_id}}', 242, '{{hpo_2}}', 'observation'),
+        (30101, '{{rdr_dataset_id}}', 311, 'rdr', 'observation'),
+        (30102, '{{ehr_dataset_id}}', 312, '{{hpo_3}}', 'observation'),
+        (30201, '{{rdr_dataset_id}}', 321, 'rdr', 'observation'),
+        (30202, '{{ehr_dataset_id}}', 322, '{{hpo_3}}', 'observation'),
+        (30301, '{{rdr_dataset_id}}', 331, 'rdr', 'observation'),
+        (30302, '{{ehr_dataset_id}}', 332, '{{hpo_3}}', 'observation'),
+        (30401, '{{rdr_dataset_id}}', 341, 'rdr', 'observation'),
+        (30402, '{{ehr_dataset_id}}', 342, '{{hpo_3}}', 'observation'),
+        (40101, '{{rdr_dataset_id}}', 411, 'rdr', 'observation'),
+        (40102, '{{ehr_dataset_id}}', 412, '{{hpo_4}}', 'observation'),
+        (40201, '{{rdr_dataset_id}}', 421, 'rdr', 'observation'),
+        (40202, '{{ehr_dataset_id}}', 422, '{{hpo_4}}', 'observation'),
+        (40301, '{{rdr_dataset_id}}', 431, 'rdr', 'observation'),
+        (40302, '{{ehr_dataset_id}}', 432, '{{hpo_4}}', 'observation'),
+        (40401, '{{rdr_dataset_id}}', 441, 'rdr', 'observation'),
+        (40402, '{{ehr_dataset_id}}', 442, '{{hpo_4}}', 'observation')
         """),
     f'{HPO_1}_{IDENTITY_MATCH}':
         JINJA_ENV.from_string("""
@@ -141,6 +194,7 @@ class RemoveNonMatchingParticipantTest(BaseTest.CleaningRulesTestBase):
         cls.dataset_id = os.environ.get('COMBINED_DATASET_ID')
         cls.sandbox_id = f'{cls.dataset_id}_sandbox'
         cls.ehr_dataset_id = os.environ.get('UNIONED_DATASET_ID')
+        cls.rdr_dataset_id = os.environ.get('RDR_DATASET_ID')
         cls.validation_dataset_id = os.environ.get('RDR_DATASET_ID')
 
         cls.kwargs = {
@@ -177,7 +231,28 @@ class RemoveNonMatchingParticipantTest(BaseTest.CleaningRulesTestBase):
             validation_dataset_id=cls.validation_dataset_id)
 
         # Overwriting affected_tables, as only PERSON and OBSERVATION are prepared for this test.
-        cls.rule_instance.affected_tables = [PERSON, OBSERVATION]
+        cls.rule_instance.affected_tables = [OBSERVATION]
+
+        for table_name in cls.rule_instance.affected_tables:
+
+            mapping_table = f'_mapping_{table_name}'
+
+            fq_table_name = f'{cls.project_id}.{cls.dataset_id}.{mapping_table}'
+
+            schema = resources.fields_for(f'{mapping_table}')
+            table = Table(fq_table_name, schema=schema)
+            table = cls.client.create_table(table, exists_ok=True)
+
+            query = POPULATE_STATEMENTS[mapping_table].render(
+                fq_table_name=fq_table_name,
+                rdr_dataset_id=cls.rdr_dataset_id,
+                ehr_dataset_id=cls.ehr_dataset_id,
+                hpo_1=HPO_1,
+                hpo_2=HPO_2,
+                hpo_3=HPO_3,
+                hpo_4=HPO_4)
+            job = cls.client.query(query)
+            job.result()
 
         sb_table_names = cls.rule_instance.get_sandbox_tablenames()
         for table_name in sb_table_names:
@@ -228,92 +303,81 @@ class RemoveNonMatchingParticipantTest(BaseTest.CleaningRulesTestBase):
         """
         Validates pre-conditions, test execution and post conditions based on the tables_and_counts variable.
 
-        Test HPO sites...
-        HPO_1: have both participant_match and identity_match. And all the person_ids are validated by the site.
-               -> CR skips all the person_ids from HPO_1.
-        HPO_2: have both participant_match and identity_match. But person_id 204 is not validated by the site.
-               -> CR runs against only 204 from HPO_1.
-        HPO_3: has identity_match but not participant_match.
-               -> CR runs through all the person_ids from HPO_3.
-        HPO_4: has participant_match but not identity_match.
-               -> CR skips all the person_ids from HPO_4.
+        EHR validation(participant_match) and DRC matching algorithm(identity_match)...
+            HPO_1: participant_match exists? -> Yes. identity_match exists? -> Yes.
+            HPO_2: participant_match exists? -> Yes. identity_match exists? -> Yes.
+            HPO_3: participant_match exists? -> No.  identity_match exists? -> Yes.
+            HPO_4: participant_match exists? -> Yes. identity_match exists? -> No.
 
-        Test person_ids...
-        X01: All "match" -> None of X01s should be removed.
-        X02: Some "missing" but not exceeding NUM_OF_MISSING_[KEY,ALL]_FIELDS -> None of X02s should be removed.
-        X03: "missing" exceeding NUM_OF_MISSING_KEY_FIELDS -> Only 303 should be removed. 103 and 203 are 
-             validated, and 4XX is skipped because of missing identity_match table.
-        X04: "missing" exceeding NUM_OF_MISSING_ALL_FIELDS -> 204 and 304 should be removed. 104 is validated,
-             and 4XX is skipped because of missing identity_match table.
+        For each person_id, is it validated by EHR sites?
+            HPO_1: 101...Yes, 102...Yes, 103...Yes, 104...Yes
+            HPO_2: 201...Yes, 202...Yes, 203...Yes, 204...NO
+            HPO_3: 301...NO,  302...NO,  303...NO,  304...NO (all NO because no participant_match table exists)
+            HPO_4: 401...NO,  402...NO,  403...NO,  404...NO
+
+        For each person_id, what is the result of the DRC matching algorithm?
+            101, 201, 301 ... All "match", so it's OK
+            102, 202, 302 ... Some "missing" but not exceeding NUM_OF_MISSING_[KEY,ALL]_FIELDS so it's OK
+            103, 203, 303 ... "missing" exceeding NUM_OF_MISSING_KEY_FIELDS, so it's NOT OK
+            104, 204, 304 ... "missing" exceeding NUM_OF_MISSING_ALL_FIELDS, so it's NOT OK
+            401, 402, 403, 404 ... Not validated (no identity_match table exists). This CR skips them.
+
+        Test Observation IDs...
+            XXX01 ... Records from RDR
+            XXX02 ... Records from EHR
+
+        The records that meet all the following criteria are removed by this CR:
+            1. Not validated by the EHR site,
+            2. Fails DRC matching algorithm, and
+            3. From EHR.
+            * Person table is not affected by this CR since all the data is from RDR.
+
+        The test records that meet all the criteria are [20402, 30302, 30402] in observation.
         """
         tables_and_counts = [
             {
                 'name':
-                    f'{PERSON}',
+                    PERSON,
                 'fq_table_name':
                     f'{self.project_id}.{self.dataset_id}.{PERSON}',
-                'fq_sandbox_table_name': [
-                    table for table in self.fq_sandbox_table_names
-                    if PERSON in table
-                ][0],
-                'fields': [
-                    'person_id', 'gender_concept_id', 'year_of_birth',
-                    'race_concept_id', 'ethnicity_concept_id'
-                ],
+                'fields': ['person_id'],
                 'loaded_ids': [
                     101, 102, 103, 104, 201, 202, 203, 204, 301, 302, 303, 304,
                     401, 402, 403, 404
                 ],
-                'sandboxed_ids': [204, 303, 304],
                 'cleaned_values': [
-                    (101, 0, 1991, 0, 0),
-                    (102, 0, 1992, 0, 0),
-                    (103, 0, 1993, 0, 0),
-                    (104, 0, 1994, 0, 0),
-                    (201, 0, 1991, 0, 0),
-                    (202, 0, 1992, 0, 0),
-                    (203, 0, 1993, 0, 0),
-                    (301, 0, 1991, 0, 0),
-                    (302, 0, 1992, 0, 0),
-                    (401, 0, 1991, 0, 0),
-                    (402, 0, 1992, 0, 0),
-                    (403, 0, 1993, 0, 0),
-                    (404, 0, 1994, 0, 0),
+                    (101,), (102,), (103,), (104,), (201,), (202,), (203,),
+                    (204,), (301,), (302,), (303,), (304,), (401,), (402,),
+                    (403,), (404,)
                 ]
             },
             {
                 'name':
-                    f'{OBSERVATION}',
+                    OBSERVATION,
                 'fq_table_name':
                     f'{self.project_id}.{self.dataset_id}.{OBSERVATION}',
                 'fq_sandbox_table_name': [
                     table for table in self.fq_sandbox_table_names
                     if OBSERVATION in table
                 ][0],
-                'fields': [
-                    'observation_id', 'person_id', 'observation_concept_id',
-                    'observation_date', 'observation_type_concept_id'
-                ],
+                'fields': ['observation_id', 'person_id'],
                 'loaded_ids': [
-                    1001, 1002, 1003, 1004, 2001, 2002, 2003, 2004, 3001, 3002,
-                    3003, 3004, 4001, 4002, 4003, 4004
+                    10101, 10102, 10201, 10202, 10301, 10302, 10401, 10402,
+                    20101, 20102, 20201, 20202, 20301, 20302, 20401, 20402,
+                    30101, 30102, 30201, 30202, 30301, 30302, 30401, 30402,
+                    40101, 40102, 40201, 40202, 40301, 40302, 40401, 40402
                 ],
-                'sandboxed_ids': [2004, 3003, 3004],
-                'cleaned_values': [
-                    (1001, 101, 0, parse('2022-01-01').date(), 0),
-                    (1002, 102, 0, parse('2022-01-02').date(), 0),
-                    (1003, 103, 0, parse('2022-01-03').date(), 0),
-                    (1004, 104, 0, parse('2022-01-04').date(), 0),
-                    (2001, 201, 0, parse('2022-01-01').date(), 0),
-                    (2002, 202, 0, parse('2022-01-02').date(), 0),
-                    (2003, 203, 0, parse('2022-01-03').date(), 0),
-                    (3001, 301, 0, parse('2022-01-01').date(), 0),
-                    (3002, 302, 0, parse('2022-01-02').date(), 0),
-                    (4001, 401, 0, parse('2022-01-01').date(), 0),
-                    (4002, 402, 0, parse('2022-01-02').date(), 0),
-                    (4003, 403, 0, parse('2022-01-03').date(), 0),
-                    (4004, 404, 0, parse('2022-01-04').date(), 0),
-                ]
+                'sandboxed_ids': [20402, 30302, 30402],
+                'cleaned_values': [(10101, 101), (10102, 101), (10201, 102),
+                                   (10202, 102), (10301, 103), (10302, 103),
+                                   (10401, 104), (10402, 104), (20101, 201),
+                                   (20102, 201), (20201, 202), (20202, 202),
+                                   (20301, 203), (20302, 203), (20401, 204),
+                                   (30101, 301), (30102, 301), (30201, 302),
+                                   (30202, 302), (30301, 303), (30401, 304),
+                                   (40101, 401), (40102, 401), (40201, 402),
+                                   (40202, 402), (40301, 403), (40302, 403),
+                                   (40401, 404), (40402, 404)]
             },
         ]
 
