@@ -17,7 +17,7 @@ import cdr_cleaner.cleaning_rules.drop_extreme_measurements as extreme_measureme
 from cdr_cleaner.cleaning_rules.drop_multiple_measurements import DropMultipleMeasurements
 from cdr_cleaner.cleaning_rules.drop_participants_without_any_basics import DropParticipantsWithoutAnyBasics
 import cdr_cleaner.cleaning_rules.drug_refills_days_supply as drug_refills_supply
-import cdr_cleaner.cleaning_rules.maps_to_value_ppi_vocab_update as maps_to_value_vocab_update
+from cdr_cleaner.cleaning_rules.maps_to_value_ppi_vocab_update import MapsToValuePpiVocabUpdate
 import cdr_cleaner.cleaning_rules.populate_route_ids as populate_routes
 import \
     cdr_cleaner.cleaning_rules.remove_invalid_procedure_source_records as invalid_procedure_source
@@ -160,7 +160,7 @@ RDR_CLEANING_CLASSES = [
     (ObservationSourceConceptIDRowSuppression,),
     (UpdateFieldsNumbersAsStrings,),
     (UpdateCopeFluQuestionConcept,),
-    (maps_to_value_vocab_update.get_maps_to_value_ppi_vocab_update_queries,),
+    (MapsToValuePpiVocabUpdate,),
     (BackfillPmiSkipCodes,),
     (CleanPPINumericFieldsUsingParameters,),
     (RemoveMultipleRaceEthnicityAnswersQueries,),
