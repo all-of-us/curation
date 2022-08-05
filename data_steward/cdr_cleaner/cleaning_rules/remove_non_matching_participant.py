@@ -179,7 +179,7 @@ class RemoveNonMatchingParticipant(SandboxAndRemovePids):
             job = client.query(not_validated_participants_query)
             job.result()
 
-            super().setup_rule(client)
+            super().setup_rule(client, ehr_only=True)
 
     def setup_validation(self, client: BigQueryClient) -> None:
         pass

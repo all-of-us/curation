@@ -39,8 +39,10 @@ PERSON_TABLE_QUERY = JINJA_ENV.from_string("""
 SELECT table_name
 FROM `{{project}}.{{dataset}}.INFORMATION_SCHEMA.COLUMNS`
 WHERE COLUMN_NAME = 'person_id'
-AND LOWER(table_name) != 'person'
+{{ehr_only_condition}}
 """)
+
+PERSON_TABLE_EHR_ONLY_CONDITION = "AND LOWER(table_name) != 'person'"
 
 
 class SandboxAndRemovePids(BaseCleaningRule):
@@ -78,12 +80,17 @@ class SandboxAndRemovePids(BaseCleaningRule):
                          depends_on=depends_on,
                          table_namer=table_namer)
 
-    def setup_rule(self, client: BigQueryClient):
+    def setup_rule(self, client: BigQueryClient, ehr_only: bool = False):
         """
         Get list of tables that have a person_id column, excluding mapping tables
+        :param ehr_only: For Combined dataset, True if removing only EHR records. False if removing both RDR and EHR records.
         """
-        person_table_query = PERSON_TABLE_QUERY.render(project=self.project_id,
-                                                       dataset=self.dataset_id)
+        ehr_only_condition = PERSON_TABLE_EHR_ONLY_CONDITION if ehr_only else ''
+
+        person_table_query = PERSON_TABLE_QUERY.render(
+            project=self.project_id,
+            dataset=self.dataset_id,
+            ehr_only_condition=ehr_only_condition)
         person_tables = client.query(person_table_query).result()
 
         self.affected_tables = [
