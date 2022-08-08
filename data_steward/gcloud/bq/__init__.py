@@ -30,8 +30,6 @@ tracer_provider = TracerProvider()
 trace.set_tracer_provider(tracer_provider)
 tracer = trace.get_tracer(__name__)
 
-LOGGER = logging.getLogger(__name__)
-
 
 class BigQueryClient(Client):
     """
@@ -496,7 +494,7 @@ class BigQueryClient(Client):
         for job_id in job_list:
             job_info = self.get_job(job_id)
             if job_info.state != 'DONE':
-                LOGGER.info(f"Waiting on job {job_id} to complete")
+                logging.info(f"Waiting on job {job_id} to complete")
                 job_info.result()
 
     def wait_on_jobs(self,
@@ -523,7 +521,7 @@ class BigQueryClient(Client):
             incomplete_jobs = list(set(job_list) - set(result))
             if not incomplete_jobs:
                 break
-            LOGGER.info(f"Waiting on jobs {incomplete_jobs} to complete")
+            logging.info(f"Waiting on jobs {incomplete_jobs} to complete")
             sleep(backoff)
             backoff *= 2
         return incomplete_jobs
