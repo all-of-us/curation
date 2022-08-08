@@ -194,14 +194,14 @@ class BigQueryClient(Client):
         """
         Copies tables from source dataset to a destination datasets
 
-        :param input_dataset: name of the input dataset
-        :param output_dataset: name of the output dataset
+        :param input_dataset: fully qualified name of the input(source) dataset
+        :param output_dataset: fully qualified name of the output(destination) dataset
         :return:
         """
         # Copy input dataset tables to backup and staging datasets
         tables = super(BigQueryClient, self).list_tables(input_dataset)
         for table in tables:
-            staging_table = f'{self.project}.{output_dataset}.{table.table_id}'
+            staging_table = f'{output_dataset}.{table.table_id}'
             self.copy_table(table, staging_table)
 
     def list_tables(

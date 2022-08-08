@@ -10,7 +10,7 @@ from google.cloud import bigquery
 from google.cloud.bigquery import TableReference, DatasetReference
 from google.cloud.bigquery.table import TableListItem
 from google.cloud.exceptions import NotFound
-from mock import patch, MagicMock, Mock
+from mock import patch, MagicMock, Mock, call
 
 # Project imports
 from gcloud.bq import BigQueryClient
@@ -251,9 +251,19 @@ class BQCTest(TestCase):
         ]
         mock_list_tables.return_value = list_tables_results
 
-        self.client.copy_dataset(self.dataset_id, f'{self.dataset_id}_snapshot')
-        mock_list_tables.assert_called_once_with(self.dataset_id)
+        self.client.copy_dataset(
+            f'{self.client.project}.{self.dataset_id}',
+            f'{self.client.project}.{self.dataset_id}_snapshot')
+        mock_list_tables.assert_called_once_with(
+            f'{self.client.project}.{self.dataset_id}')
         self.assertEqual(mock_copy_table.call_count, len(list_tables_results))
+        expected_calls = [
+            call(
+                table_object,
+                f'{self.client.project}.{self.dataset_id}_snapshot.{table_object.table_id}'
+            ) for table_object in list_tables_results
+        ]
+        mock_copy_table.assert_has_calls(expected_calls)
 
     @patch.object(BigQueryClient, 'get_dataset')
     @patch.object(BigQueryClient, 'get_table_count')
