@@ -77,6 +77,7 @@ class BirthInformationSuppressionTestBase(BaseTest.CleaningRulesTestBase):
               -- Concepts to suppress --
               -- 1585259: PII Birth Information: Birth Date --
               -- 4083587: Date of birth --
+              -- 3022007: Birth date --
              
               -- Concepts to keep --
               -- 42628400: Follow-up service --
@@ -91,7 +92,8 @@ class BirthInformationSuppressionTestBase(BaseTest.CleaningRulesTestBase):
               (7, 1, 0, 1332785, 0, 0, 0, 0, 0, '2020-01-01'),
               (8, 1, 0, 0, 43533330, 0, 0, 0, 0, '2020-01-01'),
               (9, 1, 0, 0, 0, 43533330, 0, 0, 0, '2020-01-01'),
-              (10, 1, 42628400, 1332785, 43533330, 43533330, 0, 0, 0, '2020-01-01')
+              (10, 1, 42628400, 1332785, 43533330, 43533330, 0, 0, 0, '2020-01-01'),
+              (11, 1, 0, 3022007, 0, 0, 0, 0, 0, '2020-01-01')
             """)
 
         insert_observation_query = observation_data_template.render(
@@ -108,8 +110,8 @@ class BirthInformationSuppressionTestBase(BaseTest.CleaningRulesTestBase):
             'fq_sandbox_table_name':
                 f'{self.project_id}.{self.sandbox_id}.'
                 f'{self.rule_instance.sandbox_table_for("observation")}',
-            'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-            'sandboxed_ids': [1, 2, 3, 4, 5],
+            'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+            'sandboxed_ids': [1, 2, 3, 4, 5, 11],
             'fields': [
                 'observation_id', 'person_id', 'observation_concept_id',
                 'observation_type_concept_id', 'value_as_concept_id',

@@ -40,7 +40,7 @@ class BirthInformationSuppression(AbstractInMemoryLookupTableConceptSuppression
     def get_suppressed_concept_ids(self):
         # https://athena.ohdsi.org/search-terms/terms/1585259
         # https://athena.ohdsi.org/search-terms/terms/4083587
-        return [1585259, 4083587]
+        return [1585259, 4083587, 3022007]
 
     def setup_validation(self, client, *args, **keyword_args):
         pass
