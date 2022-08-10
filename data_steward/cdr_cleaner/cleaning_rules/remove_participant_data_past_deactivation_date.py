@@ -6,7 +6,7 @@ Original Issue: DC-686
 The intent is to sandbox and drop records dated after the date of deactivation for participants
 who have deactivated from the Program.
 
-Subsequent issues: DC-686, DC-1184, DC-1799, DC-1791, DC-1896
+Subsequent issues: DC-686, DC-1184, DC-1799, DC-1791, DC-1896, DC-2129
 """
 
 # Python imports
@@ -34,7 +34,7 @@ DEACTIVATED_PARTICIPANTS_COLUMNS = [
 
 # For reference
 DEACTIVATION_ISSUE_NUMBERS = ['DC686', 'DC1184', 'DC1799']
-ISSUE_NUMBERS = ['DC1791', 'DC1896']
+ISSUE_NUMBERS = ['DC1791', 'DC1896', 'DC2129']
 
 TABLE_INFORMATION_SCHEMA = JINJA_ENV.from_string(  # language=JINJA2
     """
