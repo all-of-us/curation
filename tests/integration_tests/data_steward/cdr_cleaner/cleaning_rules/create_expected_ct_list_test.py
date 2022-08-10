@@ -5,7 +5,8 @@ import mock
 from dateutil import parser
 
 from app_identity import get_application_id
-from common import (OBSERVATION, PERSON, PRIMARY_PID_RID_MAPPING)
+from common import (OBSERVATION, PERSON, PRIMARY_PID_RID_MAPPING,
+                    VOCABULARY_TABLES)
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 from cdr_cleaner.cleaning_rules.create_expected_ct_list import StoreExpectedCTList
 
@@ -41,7 +42,8 @@ class StoreExpectedCTListTest(BaseTest.CleaningRulesTestBase):
         cls.stable_map_name = f'{cls.project_id}.{cls.dataset_id}.{PRIMARY_PID_RID_MAPPING}'
         cls.fq_table_names = [
             f'{cls.project_id}.{cls.dataset_id}.{table}'
-            for table in [OBSERVATION, PERSON, PRIMARY_PID_RID_MAPPING]
+            for table in [OBSERVATION, PERSON, PRIMARY_PID_RID_MAPPING] +
+            VOCABULARY_TABLES
         ]
 
         # call super to set up the client, create datasets, and create
