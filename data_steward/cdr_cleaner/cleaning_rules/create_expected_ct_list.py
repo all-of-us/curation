@@ -88,7 +88,11 @@ class StoreExpectedCTList(BaseCleaningRule):
     Store the expected CT participant list.
     """
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id, namer=None):
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 table_namer=None):
         desc = (
             f'Creates a sandbox table with expected participant research_ids '
             f'that will be found in the controlled tier dataset.  May be used '
@@ -103,7 +107,7 @@ class StoreExpectedCTList(BaseCleaningRule):
             dataset_id=dataset_id,
             sandbox_dataset_id=sandbox_dataset_id,
             depends_on=[CleanMappingExtTables],
-            table_namer=namer)
+            table_namer=table_namer)
 
     def get_query_specs(self):
         """
