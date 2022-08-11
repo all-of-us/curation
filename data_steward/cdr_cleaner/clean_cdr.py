@@ -11,6 +11,7 @@ import logging
 import cdr_cleaner.clean_cdr_engine as clean_engine
 from cdr_cleaner.cleaning_rules.backfill_pmi_skip_codes import BackfillPmiSkipCodes
 from cdr_cleaner.cleaning_rules.clean_by_birth_year import CleanByBirthYear
+from cdr_cleaner.cleaning_rules.create_expected_ct_list import StoreExpectedCTList
 import cdr_cleaner.cleaning_rules.domain_alignment as domain_alignment
 import cdr_cleaner.cleaning_rules.drop_duplicate_states as drop_duplicate_states
 import cdr_cleaner.cleaning_rules.drop_extreme_measurements as extreme_measurements
@@ -186,6 +187,7 @@ RDR_CLEANING_CLASSES = [
     (CleanByBirthYear,),
     (UpdateInvalidZipCodes,),
     (DropParticipantsWithoutAnyBasics,),
+    (StoreExpectedCTList,),
 ]
 
 COMBINED_CLEANING_CLASSES = [
