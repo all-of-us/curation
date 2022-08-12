@@ -4,7 +4,7 @@ Remove all FitBit data for participants exceeding the maximum age of 89
 Original Issue: DC-1001, DC-1037, DC-2429, DC-2135
 
 The intent is to ensure there is no data for participants over the age of 89 in
-Activity Summary, Heart Rate Minute Level, Heart Rate Summary, and Steps Intraday tables
+Activity Summary, Heart Rate Minute Level, Heart Rate Summary, Steps Intraday, Sleep Daily Summary, and Sleep Level tables
 by sandboxing the applicable records and then dropping them.
 """
 
