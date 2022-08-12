@@ -89,7 +89,7 @@ class RemoveFitbitDataIfMaxAgeExceeded(BaseCleaningRule):
 
         sandbox_queries_list = []
         drop_queries_list = []
-        for i, table in enumerate(FITBIT_TABLES):
+        for table in FITBIT_TABLES:
             sandbox_queries_list.append({
                 cdr_consts.QUERY:
                     SAVE_ROWS_TO_BE_DROPPED_QUERY.render(
@@ -103,7 +103,6 @@ class RemoveFitbitDataIfMaxAgeExceeded(BaseCleaningRule):
                     )
             })
 
-        for i, table in enumerate(FITBIT_TABLES):
             drop_queries_list.append({
                 cdr_consts.QUERY:
                     DROP_MAX_AGE_EXCEEDED_ROWS_QUERY.render(
