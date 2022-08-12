@@ -9,11 +9,9 @@ import constants.bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules import domain_mapping, field_mapping
 import resources
-from resources import get_domain_id_field
+from resources import get_domain_id_field, mapping_table_for
 from common import JINJA_ENV, OBSERVATION
 from cdr_cleaner.cleaning_rules.domain_mapping import EMPTY_STRING, METADATA_DOMAIN
-from tools.combine_ehr_rdr import mapping_table_for
-from utils import bq
 from gcloud.bq import BigQueryClient
 
 LOGGER = logging.getLogger(__name__)
@@ -472,7 +470,7 @@ def get_clean_domain_queries(project_id, dataset_id, sandbox_dataset_id):
     """
     This function generates a list of query dicts for dropping records that do not belong to the
     domain table after rerouting.
-    
+
     :param project_id: the project_id in which the query is run
     :param dataset_id: the dataset_id in which the query is run
     :param sandbox_dataset_id: sandbox dataset for dataset_id
@@ -482,7 +480,7 @@ def get_clean_domain_queries(project_id, dataset_id, sandbox_dataset_id):
     queries = []
     sandbox_queries = []
     for domain_table in domain_mapping.DOMAIN_TABLE_NAMES:
-        #Use non-standard concept if table is observation
+        # Use non-standard concept if table is observation
         if domain_table == OBSERVATION:
             domain_concept_id = 'observation_source_concept_id'
         else:

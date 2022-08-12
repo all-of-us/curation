@@ -13,7 +13,6 @@ import app_identity
 import bq_utils
 import cdm
 import common
-from constants.tools import combine_ehr_rdr
 from constants.validation import ehr_union as eu_constants
 from gcloud.bq import BigQueryClient
 from gcloud.gcs import StorageClient
@@ -37,7 +36,6 @@ def first_or_none(l):
 
 
 class EhrUnionTest(unittest.TestCase):
-
     dataset_id = bq_utils.get_dataset_id()
     project_id = app_identity.get_application_id()
     bq_client = BigQueryClient(project_id)
@@ -231,7 +229,7 @@ class EhrUnionTest(unittest.TestCase):
         output_tables_before = self._dataset_tables(self.output_dataset_id)
         mapping_tables = [
             ehr_union.mapping_table_for(table)
-            for table in cdm.tables_to_map() + [combine_ehr_rdr.PERSON_TABLE]
+            for table in cdm.tables_to_map() + [common.PERSON]
         ]
         output_cdm_tables = [
             ehr_union.output_table_for(table) for table in resources.CDM_TABLES

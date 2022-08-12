@@ -4,10 +4,10 @@ import inspect
 import json
 import logging
 import os
+import cachetools
 from io import open
 from typing import List
-
-import cachetools
+from git import Repo, TagReference
 
 from common import (VOCABULARY, ACHILLES, PROCESSED_TXT, RESULTS_HTML,
                     FITBIT_TABLES, PID_RID_MAPPING, COPE_SURVEY_MAP)
@@ -316,11 +316,22 @@ def get_person_id_tables(domain_tables):
     """
     person_id_tables = []
     for table in domain_tables:
-        fields = fields_for(table)
-        field_names = [field['name'] for field in fields]
-        if 'person_id' in field_names:
+        if has_person_id(table):
             person_id_tables.append(table)
     return person_id_tables
+
+
+def has_person_id(domain_table):
+    """
+        A helper function to identify if a CDM_tables has  person_id
+        :param domain_table: domain tables name
+        return: True of False if person_id exists or not.
+        """
+    field_names = [field['name'] for field in fields_for(domain_table)]
+    if 'person_id' in field_names:
+        return True
+    else:
+        return False
 
 
 def mapping_schemas():
@@ -478,3 +489,26 @@ def has_primary_key(table):
     id_field = table + '_id'
     return any(field for field in fields
                if field['type'] == 'integer' and field['name'] == id_field)
+
+
+def get_git_tag():
+    """
+    gets latest git tag.
+    :return: git tag in string format
+    """
+    repo = Repo(os.getcwd(), search_parent_directories=True)
+    try:
+        tag_ref = TagReference.list_items(repo)[-1]
+    except IndexError as e:
+        tag_ref = ''
+    return tag_ref
+
+
+def mapping_table_for(domain_table):
+    """
+    Get name of mapping table generated for a domain table
+
+    :param domain_table: one of the domain tables (e.g. 'visit_occurrence', 'condition_occurrence')
+    :return:
+    """
+    return '_mapping_' + domain_table

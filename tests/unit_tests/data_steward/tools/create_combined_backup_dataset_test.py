@@ -4,8 +4,8 @@ from mock import patch
 
 # Project imports
 import common
-import tools.combine_ehr_rdr as combine_ehr_rdr
-from constants.tools.combine_ehr_rdr import EHR_CONSENT_TABLE_ID
+import tools.create_combined_backup_dataset as combined_backup
+from constants.tools.create_combined_backup_dataset import EHR_CONSENT_TABLE_ID
 
 EXPECTED_MAPPING_QUERY = """
 SELECT DISTINCT
@@ -32,7 +32,7 @@ SELECT DISTINCT
   WHERE t.person_id = c.person_id)"""
 
 
-class CombineEhrRdrTest(unittest.TestCase):
+class CreateCombinedBackupDatasetTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -45,19 +45,14 @@ class CombineEhrRdrTest(unittest.TestCase):
         self.rdr_dataset_id = 'rdr_dataset'
         self.combined_dataset_id = 'ehr_rdr_dataset'
 
-    @patch('tools.combine_ehr_rdr.bq_utils.get_combined_dataset_id')
-    @patch('tools.combine_ehr_rdr.bq_utils.get_dataset_id')
-    @patch('tools.combine_ehr_rdr.bq_utils.get_rdr_dataset_id')
-    def test_mapping_query(self, mock_rdr, mock_ehr, mock_combined):
+    def test_mapping_query(self):
         # pre-condition
         table_name = 'visit_occurrence'
 
-        mock_rdr.return_value = self.rdr_dataset_id
-        mock_ehr.return_value = self.ehr_dataset_id
-        mock_combined.return_value = self.combined_dataset_id
-
         # test
-        q = combine_ehr_rdr.mapping_query(table_name)
+        q = combined_backup.mapping_query(table_name, self.rdr_dataset_id,
+                                          self.ehr_dataset_id,
+                                          self.combined_dataset_id)
 
         # post conditions
         expected_query = EXPECTED_MAPPING_QUERY.format(
