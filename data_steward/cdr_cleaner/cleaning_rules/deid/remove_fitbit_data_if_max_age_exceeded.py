@@ -66,7 +66,7 @@ class RemoveFitbitDataIfMaxAgeExceeded(BaseCleaningRule):
         """
         desc = (
             'Drops all FitBit data from participants whose max age exceeds 89')
-        super().__init__(issue_numbers=['DC1001', 'DC1037', 'DC2429'],
+        super().__init__(issue_numbers=['DC1001', 'DC1037', 'DC2429', 'DC2135'],
                          description=desc,
                          affected_datasets=[cdr_consts.FITBIT],
                          affected_tables=FITBIT_TABLES,
