@@ -82,7 +82,7 @@ def parse_combined_args(raw_args=None):
 
 def main(raw_args=None):
     """
-    Clean an combined import.
+    Clean combined import.
 
     Assumes you are passing arguments either via command line or a
     list.

@@ -126,6 +126,7 @@ def query(client: BigQueryClient,
     prefix = f'cb_{dst_table_id if dst_table_id else ""}_{datetime.now().strftime("%m%d%H%M%S")}_'
     query_job = client.query(q, job_config, job_id_prefix=prefix)
     result = query_job.result()
+    LOGGER.info(f"Query with prefix: `{prefix}` has completed")
 
     if hasattr(result, 'errors') and result.errors:
         LOGGER.error(f"Error running job {result.job_id}: {result.errors}")

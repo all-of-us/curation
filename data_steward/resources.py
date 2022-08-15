@@ -327,11 +327,7 @@ def has_person_id(domain_table):
         :param domain_table: domain tables name
         return: True of False if person_id exists or not.
         """
-    field_names = [field['name'] for field in fields_for(domain_table)]
-    if 'person_id' in field_names:
-        return True
-    else:
-        return False
+    return 'person_id' in [field['name'] for field in fields_for(domain_table)]
 
 
 def mapping_schemas():
@@ -506,9 +502,9 @@ def get_git_tag():
 
 def mapping_table_for(domain_table):
     """
-    Get name of mapping table generated for a domain table
 
+    Get name of mapping table generated for a domain table
     :param domain_table: one of the domain tables (e.g. 'visit_occurrence', 'condition_occurrence')
     :return:
     """
-    return '_mapping_' + domain_table
+    return f'_mapping_{domain_table}'
