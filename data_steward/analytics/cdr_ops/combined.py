@@ -95,56 +95,6 @@ WHERE
 query = tpl.render(dataset_id=DATASET_ID, date_fields=date_fields)
 execute(client, query)
 
-# ## Participants must have basics data
-# Identify any participants who have don't have any responses
-# to questions in the basics survey module (see [DC-706](https://precisionmedicineinitiative.atlassian.net/browse/DC-706)). These should be
-# reported to the RDR as they are supposed to be filtered out
-# from the RDR export.
-
-# +
-BASICS_MODULE_CONCEPT_ID = 1586134
-
-# Note: This assumes that concept_ancestor sufficiently
-# represents the hierarchy
-query = f'''
-WITH 
-
- -- all PPI question concepts in the basics survey module
- basics_concept AS
- (SELECT
-   c.concept_id
-  ,c.concept_name
-  ,c.concept_code
-  FROM `{DATASET_ID}.concept_ancestor` ca
-  JOIN `{DATASET_ID}.concept` c
-   ON ca.descendant_concept_id = c.concept_id
-  WHERE 1=1
-    AND ancestor_concept_id={BASICS_MODULE_CONCEPT_ID}
-    AND c.vocabulary_id='PPI'
-    AND c.concept_class_id='Question')
-
- -- maps pids to all their associated basics questions in the rdr
-,pid_basics AS
- (SELECT
-   person_id 
-  ,ARRAY_AGG(DISTINCT c.concept_code IGNORE NULLS) basics_codes
-  FROM `{DATASET_ID}.observation` o
-  JOIN `{DATASET_ID}._mapping_observation` m
-   USING (observation_id)
-  JOIN basics_concept c
-   ON o.observation_concept_id = c.concept_id
-  WHERE 1=1
-    AND src_hpo_id = 'rdr'
-  GROUP BY 1)
-
- -- list all pids for whom no basics questions are found
-SELECT * 
-FROM pid_basics
-WHERE ARRAY_LENGTH(basics_codes) = 0
-'''
-execute(client, query)
-# -
-
 # ## PPI records should never follow death date
 # Make sure no one could die before the program began or have PPI records after their death.
 
