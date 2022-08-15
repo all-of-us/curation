@@ -208,6 +208,7 @@ class BigQueryClient(Client):
             staging_table = f'{output_dataset}.{table.table_id}'
             job = self.copy_table(table, staging_table)
             job_list.append(job.job_id)
+        self.wait_on_jobs(job_list)
         return job_list
 
     def list_tables(
