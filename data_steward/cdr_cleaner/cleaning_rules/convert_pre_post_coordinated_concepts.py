@@ -11,22 +11,22 @@ import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
 from cdr_cleaner.cleaning_rules.set_unmapped_question_answer_survey_concepts import (
     SetConceptIdsForSurveyQuestionsAnswers)
-from constants.bq_utils import WRITE_TRUNCATE
 from common import OBSERVATION, JINJA_ENV
+from resources import fields_for
 
 LOGGER = logging.getLogger(__name__)
 
 JIRA_ISSUE_NUMBERS = ['DC2617']
 
 # update this logic so that it actually has the combination of the new ids, not the count
-MAPPING_QUERY_1 = JINJA_ENV.from_string("""
+MAPPING_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}_mapping` AS
 WITH non_standard_concept AS (
-    SELECT 
+    SELECT DISTINCT
         o.value_source_value, 
         c1.concept_id, 
         cr.relationship_id, 
-        COUNT(DISTINCT cr.concept_id_2) AS count_
+        cr.concept_id_2
     FROM `{{project}}.{{dataset}}.observation` o
     JOIN `{{project}}.{{dataset}}.concept` c1
     ON o.value_source_concept_id = c1.concept_id
@@ -36,18 +36,27 @@ WITH non_standard_concept AS (
     ON o.value_source_concept_id = c2.concept_id
     WHERE c2.standard_concept IS NULL
     AND cr.relationship_id IN ('Maps to', 'Maps to value')
-    GROUP BY 1, 2, 3
+    AND o.value_source_value != ''
 ),
 maps_to AS (
-    SELECT * FROM non_standard_concept WHERE relationship_id = 'Maps to'
+    SELECT
+        value_source_value,
+        concept_id,
+        concept_id_2 AS new_observation_concept_id
+    FROM non_standard_concept WHERE relationship_id = 'Maps to'
 ),
 maps_to_value AS (
-    SELECT * FROM non_standard_concept WHERE relationship_id = 'Maps to value'
+    SELECT
+        value_source_value,
+        concept_id,
+        concept_id_2 AS new_value_as_cocnept_id 
+    FROM non_standard_concept WHERE relationship_id = 'Maps to value'
 )
-SELECT 
+SELECT DISTINCT
     COALESCE(m1.concept_id, m2.concept_id) AS concept_id,
     COALESCE(m1.value_source_value, m2.value_source_value) AS value_source_value,
-    COALESCE(m1.count_ * m2.count_, m1.count_, m2.count_) AS num_new_rows
+    m1.new_observation_concept_id,
+    m2.new_value_as_cocnept_id
 FROM maps_to AS m1
 FULL OUTER JOIN maps_to_value AS m2
 ON m1.concept_id = m2.concept_id
@@ -55,12 +64,12 @@ ON m1.concept_id = m2.concept_id
 
 SANDBOX_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` AS
-SELECT * FROM `{{project}}.{{dataset}}.observation` o
+SELECT DISTINCT o.* FROM `{{project}}.{{dataset}}.observation` o
 JOIN `{{project}}.{{dataset}}.concept` c1
 ON o.value_source_concept_id = c1.concept_id
 JOIN `{{project}}.{{dataset}}.concept` c2
-ON o.value_source_value = c2.concept_id
-JOIN `{{project}}.{{sandbox_dataset}}.concept_relationship` cr1
+ON o.value_source_value = c2.concept_code
+JOIN `{{project}}.{{dataset}}.concept_relationship` cr1
 ON c2.concept_id = cr1.concept_id_1
 WHERE c1.standard_concept IS NULL
 AND cr1.relationship_id = 'Maps to value'
@@ -73,19 +82,24 @@ WHERE observation_id IN (
 )
 """)
 
-INSERT_1_RECORD = JINJA_ENV.from_string("""
-INSERT INTO `{{project}}.{{dataset}}.observation`                             
-  ({{observation_fields}})
-  SELECT 
-    o.observation_id, --> make it a new id?
+INSERT_QUERY = JINJA_ENV.from_string("""
+INSERT INTO `{{project}}.{{dataset}}.observation`
+({{observation_fields}})
+SELECT 
+    ROW_NUMBER() OVER(
+        PARTITION BY o.observation_id
+        ORDER BY
+            m.new_observation_concept_id, 
+            m.new_value_as_cocnept_id
+        ) * 100000000000 + o.observation_id AS observation_id,
     o.person_id,
-    cr1.concept_id_2 AS observation_concept_id,
+    m.new_observation_concept_id AS observation_concept_id,
     o.observation_date,
     o.observation_datetime,
     o.observation_type_concept_id,
     o.value_as_number,
     o.value_as_string,
-    cr2.concept_id_2 AS value_as_concept_id,
+    m.new_value_as_cocnept_id AS value_as_concept_id,
     o.qualifier_concept_id,
     o.unit_concept_id,
     o.provider_id,
@@ -99,63 +113,14 @@ INSERT INTO `{{project}}.{{dataset}}.observation`
     o.value_source_value, 
     o.questionnaire_response_id
 FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` o
+JOIN `{{project}}.{{dataset}}.concept` c
+ON o.value_source_value = c.concept_code
 JOIN `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}_mapping` m
-ON o.value_source_concept_id = m.concept_id
-JOIN `{{project}}.{{sandbox_dataset}}.concept` c1
-ON o.value_source_value = c1.concept_code
-JOIN `{{project}}.{{sandbox_dataset}}.concept_relationship` cr1
-ON c1.concept_id = cr1.concept_id_1 AND cr1.relationship_id = 'Maps to'
-JOIN `{{project}}.{{sandbox_dataset}}.concept_relationship` cr2
-ON c1.concept_id = cr2.concept_id_1 AND cr2.relationship_id = 'Maps to value'
-WHERE m.num_new_rows = 1
+ON c.concept_id = m.concept_id
 """)
 
-# TODO kokokara dousuru?
-INSERT_2_RECORDS_1 = JINJA_ENV.from_string("""
-INSERT INTO `{{project}}.{{dataset}}.observation`                             
-  ({{observation_fields}})
-  SELECT 
-    o.observation_id,
-    o.person_id,
-    cr1.concept_id_2 AS observation_concept_id,
-    o.observation_date,
-    o.observation_datetime,
-    o.observation_type_concept_id,
-    o.value_as_number,
-    o.value_as_string,
-    cr2.concept_id_2 AS value_as_concept_id,
-    o.qualifier_concept_id,
-    o.unit_concept_id,
-    o.provider_id,
-    o.visit_occurrence_id,
-    o.visit_detail_id,
-    o.observation_source_value,
-    o.observation_source_concept_id,
-    o.unit_source_value,
-    o.qualifier_source_value,
-    o.value_source_concept_id,
-    o.value_source_value, 
-    o.questionnaire_response_id
-FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` o
-JOIN `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}_mapping` m
-ON o.value_source_concept_id = m.concept_id
-JOIN `{{project}}.{{sandbox_dataset}}.concept` c1
-ON o.value_source_value = c1.concept_code
-JOIN `{{project}}.{{sandbox_dataset}}.concept_relationship` cr1
-ON c1.concept_id = cr1.concept_id_1 AND cr1.relationship_id = 'Maps to'
-JOIN `{{project}}.{{sandbox_dataset}}.concept_relationship` cr2
-ON c1.concept_id = cr2.concept_id_1 AND cr2.relationship_id = 'Maps to value'
-WHERE m.num_new_rows = 1
-""")
 
-INSERT_2_RECORDS_2 = JINJA_ENV("""
-                            """)
-
-INSERT_4_RECORDS = JINJA_ENV("""
-                            """)
-
-
-class UpdatePfhhConcepts(BaseCleaningRule):
+class ConvertPrePostCoordinatedConcepts(BaseCleaningRule):
 
     def __init__(self, project_id, dataset_id, sandbox_dataset_id):
         """
@@ -186,32 +151,45 @@ class UpdatePfhhConcepts(BaseCleaningRule):
         """
         sandbox_query_dict = {
             cdr_consts.QUERY:
-                SANDBOX_FIX_UNMAPPED_SURVEY_ANSWERS_QUERY.render(
+                SANDBOX_QUERY.render(
                     project=self.project_id,
                     sandbox_dataset=self.sandbox_dataset_id,
                     sandbox_table=self.sandbox_table_for(OBSERVATION),
                     dataset=self.dataset_id)
         }
 
-        update_query_dict = {
+        delete_query_dict = {
             cdr_consts.QUERY:
-                UPDATE_FIX_UNMAPPED_SURVEY_ANSWERS_QUERY.render(
+                DELETE_QUERY.render(
                     project=self.project_id,
                     sandbox_dataset=self.sandbox_dataset_id,
                     sandbox_table=self.sandbox_table_for(OBSERVATION),
-                    dataset=self.dataset_id),
-            cdr_consts.DESTINATION_TABLE:
-                OBSERVATION,
-            cdr_consts.DESTINATION_DATASET:
-                self.dataset_id,
-            cdr_consts.DISPOSITION:
-                WRITE_TRUNCATE
+                    dataset=self.dataset_id)
         }
 
-        return [sandbox_query_dict, update_query_dict]
+        insert_query_dict = {
+            cdr_consts.QUERY:
+                INSERT_QUERY.render(
+                    project=self.project_id,
+                    sandbox_dataset=self.sandbox_dataset_id,
+                    sandbox_table=self.sandbox_table_for(OBSERVATION),
+                    dataset=self.dataset_id,
+                    observation_fields=', '.join(
+                        field['name'] for field in fields_for(OBSERVATION)))
+        }
+
+        return [sandbox_query_dict, delete_query_dict, insert_query_dict]
 
     def setup_rule(self, client, *args, **keyword_args):
-        pass
+        """
+        """
+        create_mapping_table = MAPPING_QUERY.render(
+            project=self.project_id,
+            sandbox_dataset=self.sandbox_dataset_id,
+            sandbox_table=self.sandbox_table_for(OBSERVATION),
+            dataset=self.dataset_id)
+        job = client.query(create_mapping_table)
+        job.result()
 
     def setup_validation(self, client):
         """
@@ -240,14 +218,13 @@ if __name__ == '__main__':
 
     if ARGS.list_queries:
         clean_engine.add_console_logging()
-        query_list = clean_engine.get_query_list(ARGS.project_id,
-                                                 ARGS.dataset_id,
-                                                 ARGS.sandbox_dataset_id,
-                                                 [(UpdatePfhhConcepts,)])
+        query_list = clean_engine.get_query_list(
+            ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id,
+            [(ConvertPrePostCoordinatedConcepts,)])
         for query in query_list:
             LOGGER.info(query)
     else:
         clean_engine.add_console_logging(ARGS.console_log)
         clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
                                    ARGS.sandbox_dataset_id,
-                                   [(UpdatePfhhConcepts,)])
+                                   [(ConvertPrePostCoordinatedConcepts,)])
