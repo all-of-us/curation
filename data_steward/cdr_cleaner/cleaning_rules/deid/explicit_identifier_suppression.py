@@ -113,7 +113,7 @@ class ExplicitIdentifierSuppression(BaseCleaningRule):
                          description=desc,
                          affected_datasets=[
                              cdr_consts.CONTROLLED_TIER_DEID,
-                             cdr_consts.COMBINED
+                             cdr_consts.REGISTERED_TIER_DEID
                          ],
                          affected_tables=OBSERVATION,
                          project_id=project_id,
