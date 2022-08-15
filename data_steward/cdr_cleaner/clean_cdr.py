@@ -111,6 +111,7 @@ from cdr_cleaner.cleaning_rules.missing_concept_record_suppression import Missin
 from cdr_cleaner.cleaning_rules.create_deid_questionnaire_response_map import CreateDeidQuestionnaireResponseMap
 from cdr_cleaner.cleaning_rules.set_unmapped_question_answer_survey_concepts import (
     SetConceptIdsForSurveyQuestionsAnswers)
+from cdr_cleaner.cleaning_rules.map_health_insurance_responses import MapHealthInsuranceResponses
 from cdr_cleaner.cleaning_rules.vehicular_accident_concept_suppression import VehicularAccidentConceptSuppression
 from cdr_cleaner.cleaning_rules.deid.ct_replaced_concept_suppression import \
     ControlledTierReplacedConceptSuppression
@@ -153,6 +154,7 @@ RDR_CLEANING_CLASSES = [
     # since PpiBranching relies on fully mapped concepts
     (
         SetConceptIdsForSurveyQuestionsAnswers,),
+    (MapHealthInsuranceResponses,),
     (PpiBranching,),
     # execute FixUnmappedSurveyAnswers before the dropping responses rules get executed
     # (e.g. DropPpiDuplicateResponses and DropDuplicatePpiQuestionsAndAnswers)
