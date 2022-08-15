@@ -116,7 +116,8 @@ class RegisteredCopeSurveyQuestionsSuppressionTest(
               (13, 113, 0, 0, 0, 2222222, 0, 0, 0, '2020-01-01'),
               (14, 114, 0, 0, 0, null, 0, 0, 0, '2020-01-01'),
               (15, 115, 0, 0, 0, 1333023, 0, 0, 0, '2020-01-01'),
-              (16, 116, 0, 0, 0, 1333015, 0, 0, 0, '2020-01-01')
+              (16, 116, 0, 0, 0, 1333015, 0, 0, 0, '2020-01-01'),
+              (30, 130, 0, 0, 0, 596889, 0, 0, 0, '2022-01-01')
             """)
 
         insert_observation_query = observation_data_template.render(
@@ -135,11 +136,11 @@ class RegisteredCopeSurveyQuestionsSuppressionTest(
                 f'{self.rule_instance.sandbox_table_for("observation")}',
             'loaded_ids': [
                 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18,
-                19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29
+                19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30
             ],
             'sandboxed_ids': [
                 1, 2, 3, 4, 5, 6, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27,
-                28, 29
+                28, 29, 30
             ],
             'fields': [
                 'observation_id', 'person_id', 'observation_concept_id',
