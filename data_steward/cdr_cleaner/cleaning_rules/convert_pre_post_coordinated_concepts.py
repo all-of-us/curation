@@ -1,4 +1,12 @@
 """
+As new PFMH (Personal Family Medical History (combo version)) is released, we have also
+changed the approach used to map PPI concepts. Moving from pre-coordinated to 
+post-coordinated mapping enables survey responses to map to standard vocabularies.
+Mapping to the standard vocabularies(post-coordination) will allow for harmonization 
+between survey data and EHR data. 
+
+This cleaning rule converts the observation records with pre-coordinated mapping to
+post-coordinated mapping.
 
 Original Issues: DC-2617
 
@@ -18,12 +26,11 @@ LOGGER = logging.getLogger(__name__)
 
 JIRA_ISSUE_NUMBERS = ['DC2617']
 
-# update this logic so that it actually has the combination of the new ids, not the count
 MAPPING_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}_mapping` AS
 WITH non_standard_concept AS (
     SELECT DISTINCT
-        o.value_source_value, 
+        c1.concept_code, 
         c1.concept_id, 
         cr.relationship_id, 
         cr.concept_id_2
@@ -36,25 +43,24 @@ WITH non_standard_concept AS (
     ON o.value_source_concept_id = c2.concept_id
     WHERE c2.standard_concept IS NULL
     AND cr.relationship_id IN ('Maps to', 'Maps to value')
-    AND o.value_source_value != ''
 ),
 maps_to AS (
     SELECT
-        value_source_value,
+        concept_code,
         concept_id,
         concept_id_2 AS new_observation_concept_id
     FROM non_standard_concept WHERE relationship_id = 'Maps to'
 ),
 maps_to_value AS (
     SELECT
-        value_source_value,
+        concept_code,
         concept_id,
         concept_id_2 AS new_value_as_cocnept_id 
     FROM non_standard_concept WHERE relationship_id = 'Maps to value'
 )
 SELECT DISTINCT
     COALESCE(m1.concept_id, m2.concept_id) AS concept_id,
-    COALESCE(m1.value_source_value, m2.value_source_value) AS value_source_value,
+    COALESCE(m1.concept_code, m2.concept_code) AS concept_code,
     m1.new_observation_concept_id,
     m2.new_value_as_cocnept_id
 FROM maps_to AS m1
@@ -65,14 +71,10 @@ ON m1.concept_id = m2.concept_id
 SANDBOX_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` AS
 SELECT DISTINCT o.* FROM `{{project}}.{{dataset}}.observation` o
-JOIN `{{project}}.{{dataset}}.concept` c1
-ON o.value_source_concept_id = c1.concept_id
-JOIN `{{project}}.{{dataset}}.concept` c2
-ON o.value_source_value = c2.concept_code
-JOIN `{{project}}.{{dataset}}.concept_relationship` cr1
-ON c2.concept_id = cr1.concept_id_1
-WHERE c1.standard_concept IS NULL
-AND cr1.relationship_id = 'Maps to value'
+JOIN `{{project}}.{{dataset}}.concept` c1 ON o.value_source_concept_id = c1.concept_id
+JOIN `{{project}}.{{dataset}}.concept` c2 ON o.value_source_value = c2.concept_code
+JOIN `{{project}}.{{dataset}}.concept_relationship` cr1 ON c2.concept_id = cr1.concept_id_1
+WHERE c1.standard_concept IS NULL AND cr1.relationship_id = 'Maps to value'
 """)
 
 DELETE_QUERY = JINJA_ENV.from_string("""
@@ -130,7 +132,9 @@ class ConvertPrePostCoordinatedConcepts(BaseCleaningRule):
         this SQL, append them to the list of Jira Issues.
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
-        desc = ('   ' '   ')
+        desc = (
+            'Converts the observation records with pre-coordinated mapping to'
+            'post-coordinated mapping.')
 
         super().__init__(issue_numbers=JIRA_ISSUE_NUMBERS,
                          description=desc,
@@ -143,11 +147,23 @@ class ConvertPrePostCoordinatedConcepts(BaseCleaningRule):
 
     def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
         """
-        Return a list of dictionary query specifications.
+        Queries are generated for creating a sandbox table, deleting records from observation,
+        and inserting new records to observation.
+        
+        The sandbox query sandboxes rows from observation that meet the following criteria:
+            1. value_source_concept_id is a non-standard concept, and
+            2. value_source_value has a "Maps to value" relationship.
+            
+        The delete query deletes rows from observation that are sandboxed.
+        
+        The insert query isnerts rows with newly assigned observation_ids and updated
+        observation_concept_ids and value_as_concept_ids.
+        New observation_id is generated as:
+            100,000,000,000 * ((n)th record from the mapping table for the value_source_concept_id) + original observation_id.
 
-        :return:  A list of dictionaries. Each dictionary contains a single query
-            and a specification for how to execute that query. The specifications
-            are optional but the query is required.
+        Note: "backfill_pmi_skip_codes" has a similar logic. It generates new observation_ids with 1,000,000,000,000.
+              This CR generates the IDs with 100,000,000,000 - 400,000,000,000. So, the IDs do not overlap with the ones from
+              "backfill_pmi_skip_codes".
         """
         sandbox_query_dict = {
             cdr_consts.QUERY:
@@ -182,6 +198,11 @@ class ConvertPrePostCoordinatedConcepts(BaseCleaningRule):
 
     def setup_rule(self, client, *args, **keyword_args):
         """
+        Create the mapping table before cleaning the dataset.
+        This mapping table has non-standard value_source_concept_ids from observation
+        and corresponding "Maps to" and "Maps to value" concepts.
+        Most value_source_concept_ids have only 1 record. But some IDs have either 2 or 4
+        records, as they have 2 "Maps to" and/or 2 "Maps to value" relationships.
         """
         create_mapping_table = MAPPING_QUERY.render(
             project=self.project_id,

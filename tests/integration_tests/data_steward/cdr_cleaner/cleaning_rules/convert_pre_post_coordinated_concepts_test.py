@@ -74,7 +74,17 @@ class ConvertPrePostCoordinatedConceptsTest(BaseTest.CleaningRulesTestBase):
 
     def test_convert_pre_post_coordinated_concepts(self):
         """
-        :return: 
+        Test cases for each observation ID:
+        1: 40192464... Standard concept. This CR does not affect it.
+        2:  1585793... Non-standard concept, but no "Maps to value" relationship. This CR does not affect it.
+        3: 43530574... Non-standard concept, and it has 1 "Maps to" and 1 "Maps to value" relationships.
+                       This CR removes the record and create 1 new record with new observation_id.
+        4: 43529989... Non-standard concept, and it has 1 "Maps to" and 2 "Maps to value" relationships.
+                       This CR removes the record and create 2 new records with new observation_ids.
+        5: 43529625... Non-standard concept, and it has 2 "Maps to" and 1 "Maps to value" relationships.
+                       This CR removes the record and create 2 new records with new observation_ids.
+        6: 43528574... Non-standard concept, and it has 2 "Maps to" and 2"Maps to value" relationships.
+                       This CR removes the record and create 4 new records with new observation_ids.
         """
 
         tables_and_counts = [{
