@@ -191,7 +191,7 @@ class MapHealthInsuranceResponses(BaseCleaningRule):
         the logic to get the row counts of the tables prior to applying cleaning rule
 
         """
-        raise NotImplementedError("Please fix me.")
+        pass
 
     def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
         queries = []
