@@ -119,8 +119,7 @@ class RemoveFitbitDataIfMaxAgeExceededTest(BaseTest.CleaningRulesTestBase):
         self.load_test_data([query])
 
         # Iterate through and load data for all tables except for the person table
-        for i in range(0, 6):
-            self.load_test_data([self.load_statements[i]])
+        self.load_test_data(self.load_statements)
 
         tables_and_counts_list = []
         for i in range(0, 6):
