@@ -242,7 +242,8 @@ class BQCTest(TestCase):
     @patch.object(BigQueryClient, 'copy_table')
     @patch('gcloud.bq.Client.list_tables')
     @patch('gcloud.bq.Client.list_jobs')
-    def test_copy_dataset(self, mock_list_jobs, mock_list_tables, mock_copy_table):
+    def test_copy_dataset(self, mock_list_jobs, mock_list_tables,
+                          mock_copy_table):
         jobs = []
         fake_job_ids = []
         for i in resources.CDM_TABLES:
