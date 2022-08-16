@@ -494,7 +494,7 @@ class BigQueryClient(Client):
         """
         for job_id in job_list:
             job_info = self.get_job(job_id)
-            if job_info.state != 'DONE':
+            if job_info.state.upper() != 'DONE':
                 logging.info(f"Waiting on job {job_id} to complete")
                 job_info.result()
 
