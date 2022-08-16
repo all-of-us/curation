@@ -24,7 +24,7 @@ from constants.cdr_cleaner import clean_cdr as cdr_consts
 
 LOGGER = logging.getLogger(__name__)
 
-ISSUE_NUMBERS = ['DC-1040','DC-2609]
+ISSUE_NUMBERS = ['DC-1040','DC-2609']
 
 VERSION_COPE_SURVEYS_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project_id}}.{{out_dataset_id}}.observation_ext` AS (
