@@ -37,7 +37,7 @@ class GcsClientTest(unittest.TestCase):
     def test_get_hpo_bucket_not_found(self, mock_get_bucket_id):
         # assumes the bucket 'fake_bucket_name' does not exist.
         fake_hpo_id = 'fake_hpo_id'
-        fake_bucket_name = 'fake_bucket_name'
+        fake_bucket_name = f"{os.environ.get('BUCKET_NAME_FAKE')}_fake"
         mock_get_bucket_id.return_value = fake_bucket_name
         expected_message = f"Failed to acquire bucket '{fake_bucket_name}' for hpo '{fake_hpo_id}'"
 
