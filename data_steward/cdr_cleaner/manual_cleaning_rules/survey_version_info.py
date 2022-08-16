@@ -1,9 +1,9 @@
 """
-Adding COPE survey version info to the observation_ext table.
+Adding COPE and Minute survey version info to the observation_ext table.
 
 Original Issue:  DC-1040
 
-The intent is to provide COPE survey version info as part of the observation_ext
+The intent is to provide COPE and Minute survey version info as part of the observation_ext
 table.  In an ad-hoc form, this relies on receiving questionnaire_response_id to
 COPE month mapping information from the RDR team.  It also currently relies on
 the static mapping of an AoU custom concept id to a COPE survey month.  Once
@@ -24,7 +24,7 @@ from constants.cdr_cleaner import clean_cdr as cdr_consts
 
 LOGGER = logging.getLogger(__name__)
 
-ISSUE_NUMBERS = ['DC-1040']
+ISSUE_NUMBERS = ['DC-1040','DC-2609]
 
 VERSION_COPE_SURVEYS_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project_id}}.{{out_dataset_id}}.observation_ext` AS (
@@ -60,10 +60,10 @@ CREATE OR REPLACE TABLE `{{project_id}}.{{out_dataset_id}}.observation_ext` AS (
 
 class COPESurveyVersionTask(BaseCleaningRule):
     """
-    Map COPE survey version to AoU custom concept id.
+    Map COPE and Minute survey version to AoU custom concept id.
 
-    Given a mapping of questionnaire_concept_ids to COPE month from the RDR
-    team, assign a custom COPE month concept id for COPE survey information.
+    Given a mapping of questionnaire_concept_ids to COPE and Minute survey versions from the RDR
+    team, assign a custom survey concept id for survey information.
     """
 
     def __init__(self,
@@ -82,8 +82,8 @@ class COPESurveyVersionTask(BaseCleaningRule):
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
         desc = (
-            f'Add COPE survey information after the data is de-identified.  '
-            f'Only applies to COPE surveys.')
+            f'Add COPE and Minute survey information after the data is de-identified.  '
+            f'Only applies to COPE and Minute surveys.')
         super().__init__(
             issue_numbers=ISSUE_NUMBERS,
             description=desc,
