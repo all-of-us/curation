@@ -149,13 +149,13 @@ class ConvertPrePostCoordinatedConcepts(BaseCleaningRule):
         """
         Queries are generated for creating a sandbox table, deleting records from observation,
         and inserting new records to observation.
-        
+
         The sandbox query sandboxes rows from observation that meet the following criteria:
             1. value_source_concept_id is a non-standard concept, and
             2. value_source_value has a "Maps to value" relationship.
-            
+
         The delete query deletes rows from observation that are sandboxed.
-        
+
         The insert query isnerts rows with newly assigned observation_ids and updated
         observation_concept_ids and value_as_concept_ids.
         New observation_id is generated as:
