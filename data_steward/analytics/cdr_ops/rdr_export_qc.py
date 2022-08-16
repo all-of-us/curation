@@ -295,18 +295,39 @@ query = tpl.render(new_rdr=new_rdr, project_id=project_id)
 execute(client, query)
 
 # # Survey version and dates
-# Cope survey versions and the minimum and maximum dates associated with those surveys are listed.
-# Dates should roughly line up with survey opening and closing dates.
+# This query checks the validity of cope_survey_semantic_version_map table which contains the version of each
+# COPE and/or Minute module that each participant took.
+# This table is created by RDR and is included in the rdr export. <br>
+# For each COPE and Minute module the min and max survey observation dates in the RDR are listed,
+# as well as a count of surveys taken outside of each module's expected implementation range. <br>
+# Expected implementation ranges are found in the query or in
+# [this documentation](https://docs.google.com/document/d/1IhRnvAymSZeko8AbS4TCaqnw_78Qa_NkTROfHOFqGGQ/edit?usp=sharing)
+#  - If all surveys have data(10 modules), and the *_failure columns have a result = 0 this check PASSES.
+#  - If all 10 surveys are not represented in the query results, this check FAILS.
+#  Notify RDR of the missing survey data.
+#  - If any of the *_failure columns have a result > 0 this check FAILS.
+#  Notify RDR that there are surveys with observation_dates outside of the survey's expected implementation range.
+#
 
 tpl = JINJA_ENV.from_string("""
 SELECT
-  cope_month
- ,MIN(observation_date) AS min_date
- ,MAX(observation_date) AS max_date
+ cope_month AS survey_version
+,MIN(observation_date) AS min_obs_date
+,MAX(observation_date) AS max_obs_date
+,COUNTIF(cope_month ='may' AND observation_date NOT BETWEEN '2020-05-07' AND '2020-05-30' ) AS may_failure
+,COUNTIF(cope_month ='june' AND observation_date NOT BETWEEN '2020-06-02' AND '2020-06-26' ) AS june_failure
+,COUNTIF(cope_month ='july' AND observation_date NOT BETWEEN '2020-07-07' AND '2020-09-25' ) AS july_failure
+,COUNTIF(cope_month ='nov' AND observation_date NOT BETWEEN '2020-10-27' AND '2020-12-03' ) AS nov_failure
+,COUNTIF(cope_month ='dec' AND observation_date NOT BETWEEN '2020-12-08' AND '2021-01-04' ) AS dec_failure
+,COUNTIF(cope_month ='feb' AND observation_date NOT BETWEEN '2021-02-08' AND '2021-03-05' ) AS feb_failure
+,COUNTIF(cope_month ='vaccine1' AND observation_date NOT BETWEEN '2021-06-10' AND '2021-08-19' ) AS summer_failure
+,COUNTIF(cope_month ='vaccine2' AND observation_date NOT BETWEEN '2021-08-19' AND '2021-10-28' ) AS fall_failure
+,COUNTIF(cope_month ='vaccine3' AND observation_date NOT BETWEEN '2021-10-28' AND '2022-01-20' ) AS winter_failure
+,COUNTIF(cope_month ='vaccine4' AND observation_date NOT BETWEEN '2022-01-20' AND '2022-03-08' ) AS new_year_failure
 FROM `{{project_id}}.{{new_rdr}}.observation`
 JOIN `{{project_id}}.{{new_rdr}}.cope_survey_semantic_version_map` USING (questionnaire_response_id)
 GROUP BY 1
-ORDER BY min_date
+ORDER BY MIN(observation_date)
 """)
 query = tpl.render(new_rdr=new_rdr, project_id=project_id)
 execute(client, query)
