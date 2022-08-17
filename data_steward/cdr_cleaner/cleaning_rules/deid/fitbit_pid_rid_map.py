@@ -1,5 +1,6 @@
 """
 DEID rule to change PIDs to RIDs for Fitbit tables
+Maps the person_id used in fitbit to the research_id
 """
 # Python Imports
 import logging
