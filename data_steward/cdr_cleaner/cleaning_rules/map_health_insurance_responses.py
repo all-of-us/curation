@@ -4,7 +4,9 @@ For all answers for the survey question (43528428) and given pids,
     2. Use the second survey (1384450) to generate valid answers for a subset of pids who took the second survey
 """
 import logging
+import os
 
+import resources
 from common import JINJA_ENV, OBSERVATION, RDR
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
@@ -191,7 +193,14 @@ class MapHealthInsuranceResponses(BaseCleaningRule):
         the logic to get the row counts of the tables prior to applying cleaning rule
 
         """
-        pass
+        client.create_tables(
+            [f'{self.project_id}.{self.dataset_id}.{INSURANCE_LOOKUP}'], False,
+            [INSURANCE_LOOKUP_FIELDS])
+        fq_file_path = os.path.join(resources.resource_files_path,
+                                    INSURANCE_LOOKUP + ".csv")
+        client.upload_csv_data_to_bq_table(self.sandbox_dataset_id,
+                                           INSURANCE_LOOKUP, fq_file_path,
+                                           'write_empty')
 
     def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
         queries = []
