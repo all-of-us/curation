@@ -83,7 +83,7 @@ class ConvertPrePostCoordinatedConceptsTest(BaseTest.CleaningRulesTestBase):
                        This CR removes the record and create 2 new records with new observation_ids.
         5: 43529625... Non-standard concept, and it has 2 "Maps to" and 1 "Maps to value" relationships.
                        This CR removes the record and create 2 new records with new observation_ids.
-        6: 43528574... Non-standard concept, and it has 2 "Maps to" and 2"Maps to value" relationships.
+        6: 43528574... Non-standard concept, and it has 2 "Maps to" and 2 "Maps to value" relationships.
                        This CR removes the record and create 4 new records with new observation_ids.
         """
 
