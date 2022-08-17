@@ -10,7 +10,7 @@ from common import FITBIT_TABLES
 
 LOGGER = logging.getLogger(__name__)
 
-ISSUE_NUMBERS = ['DC-1000']
+ISSUE_NUMBERS = ['DC-1000', 'DC-2136']
 
 
 class FitbitPIDtoRID(PIDtoRID):
