@@ -60,7 +60,7 @@ CREATE OR REPLACE TABLE `{{project_id}}.{{out_dataset_id}}.observation_ext` AS (
 
 class COPESurveyVersionTask(BaseCleaningRule):
     """
-    Map COPE and Minute survey version to AoU custom concept id.
+    Map COPE and Minute survey versions to AoU custom concept id.
 
     Given a mapping of questionnaire_concept_ids to COPE and Minute survey versions from the RDR
     team, assign a custom survey concept id for survey information.
