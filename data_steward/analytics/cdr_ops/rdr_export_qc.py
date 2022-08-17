@@ -484,7 +484,7 @@ WITH
   JOIN `{{DATASET_ID}}.concept` c
    ON ca.descendant_concept_id = c.concept_id
   WHERE 1=1
-    AND ancestor_concept_id={BASICS_MODULE_CONCEPT_ID}
+    AND ancestor_concept_id={{BASICS_MODULE_CONCEPT_ID}}
     AND c.vocabulary_id='PPI'
     AND c.concept_class_id='Question')
 
@@ -501,10 +501,11 @@ WITH
 
  -- list all pids for whom no basics questions are found
 SELECT * 
-FROM pid_basics
-WHERE ARRAY_LENGTH(basics_codes) = 0
+FROM `{{DATASET_ID}}.person`
+WHERE person_id not in (select person_id from pid_basics)
 """)
-query = tpl.render(DATASET_ID=new_rdr)
+query = tpl.render(DATASET_ID=new_rdr,
+                   BASICS_MODULE_CONCEPT_ID=BASICS_MODULE_CONCEPT_ID)
 execute(client, query)
 # -
 
