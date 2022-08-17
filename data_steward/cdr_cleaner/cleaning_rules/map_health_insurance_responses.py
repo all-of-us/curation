@@ -194,8 +194,8 @@ class MapHealthInsuranceResponses(BaseCleaningRule):
 
         """
         client.create_tables(
-            [f'{self.project_id}.{self.dataset_id}.{INSURANCE_LOOKUP}'], False,
-            [INSURANCE_LOOKUP_FIELDS])
+            [f'{self.project_id}.{self.sandbox_dataset_id}.{INSURANCE_LOOKUP}'],
+            False, [INSURANCE_LOOKUP_FIELDS])
         fq_file_path = os.path.join(resources.resource_files_path,
                                     INSURANCE_LOOKUP + ".csv")
         client.upload_csv_data_to_bq_table(self.sandbox_dataset_id,
