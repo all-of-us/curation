@@ -108,8 +108,11 @@ def main(raw_args=None):
                                args.release_tag)
 
     # copy raw data into staging dataset
-    copy_raw_combined_tables(bq_client, args.combined_dataset,
-                             datasets.get('staging'))
+    bq_client.copy_dataset(f'{bq_client.project}.{args.combined_dataset}',
+                           f'{bq_client.project}.{datasets.get("staging")}')
+    LOGGER.info(
+        f'combined raw table COPY from `{args.combined_dataset}` to `{datasets.get("staging")}` is complete'
+    )
 
     # clean the combined staging dataset
     cleaning_args = [
@@ -141,44 +144,13 @@ def main(raw_args=None):
     LOGGER.info(
         f'Updated dataset `{sandbox_dataset.full_dataset_id}` with description `{sandbox_dataset.description}`'
     )
-
-    LOGGER.info(f'combined snapshot and cleaning, '
-                f'`{bq_client.project}.{datasets.get("clean")}`, is complete.')
-    bq_client.copy_dataset(datasets.get("clean"), datasets.get("release"))
-    LOGGER.info(f'combined snapshot and cleaning, '
-                f'`{bq_client.project}.{datasets.get("clean")}`, is complete.')
-
-
-def copy_raw_combined_tables(client, combined_dataset, combined_staging):
     LOGGER.info(
-        f'Beginning COPY of raw combined tables from `{combined_dataset}` to `{combined_staging}`'
+        f'Cleaning, `{bq_client.project}.{datasets.get("clean")}`, is complete.'
     )
-    # get list of tables
-    src_tables = client.list_tables(combined_dataset)
 
-    # create a copy job config
-    job_config = bigquery.job.CopyJobConfig(
-        write_disposition=bigquery.job.WriteDisposition.WRITE_EMPTY)
-
-    for table_item in src_tables:
-        job_config.labels = {
-            'table_name': table_item.table_id,
-            'copy_from': combined_dataset,
-            'copy_to': combined_staging
-        }
-
-        destination_table = f'{client.project}.{combined_staging}.{table_item.table_id}'
-        # job_id defined to the second precision
-        job_id = (f'combined_staging_copy_{table_item.table_id.lower()}_'
-                  f'{datetime.now().strftime("%Y%m%d_%H%M%S")}')
-        # copy each table to combined dataset
-        client.copy_table(table_item.reference,
-                          destination_table,
-                          job_id=job_id,
-                          job_config=job_config)
-
+    bq_client.copy_dataset(datasets.get("clean"), datasets.get("release"))
     LOGGER.info(
-        f'combined raw table COPY from `{combined_dataset}` to `{combined_staging}` is complete'
+        f' Snapshotting `{datasets.get("clean")}` into {datasets.get("release")} is completed.'
     )
 
 
