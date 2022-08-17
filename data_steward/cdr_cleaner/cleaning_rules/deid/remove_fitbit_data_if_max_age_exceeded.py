@@ -47,7 +47,7 @@ WHERE person_id NOT IN (
 class RemoveFitbitDataIfMaxAgeExceeded(BaseCleaningRule):
     """
     Ensures that there is no FitBit data for participants over the age of 89
-    in the Activity Summary, Heart Rate Minute Level, Heart Rate Summary, 
+    in the Activity Summary, Heart Rate Minute Level, Heart Rate Summary,
     Steps Intraday, Sleep Daily Summary, and Sleep Level FitBit tables.
     """
 
