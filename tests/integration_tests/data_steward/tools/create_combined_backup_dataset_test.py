@@ -12,9 +12,10 @@ import resources
 from gcloud.gcs import StorageClient
 from gcloud.bq import BigQueryClient
 from tests import test_util
-from constants.tools.combine_ehr_rdr import EHR_CONSENT_TABLE_ID, RDR_TABLES_TO_COPY, DOMAIN_TABLES
-from tools.combine_ehr_rdr import (copy_rdr_table, ehr_consent, main,
-                                   mapping_table_for, create_cdm_tables)
+from constants.tools.create_combined_backup_dataset import EHR_CONSENT_TABLE_ID, RDR_TABLES_TO_COPY, DOMAIN_TABLES
+from tools.create_combined_backup_dataset import (ehr_consent,
+                                                  create_cdm_tables)
+from resources import mapping_table_for
 
 UNCONSENTED_EHR_COUNTS_QUERY = (
     '  select \'{domain_table}\' as table_id, count(1) as n from (SELECT DISTINCT'
@@ -28,8 +29,7 @@ UNCONSENTED_EHR_COUNTS_QUERY = (
     '  WHERE t.person_id = c.person_id))')
 
 
-class CombineEhrRdrTest(unittest.TestCase):
-
+class CreateCombinedBackupDatasetTest(unittest.TestCase):
     project_id = app_identity.get_application_id()
     storage_client = StorageClient(project_id)
     bq_client = BigQueryClient(project_id)
@@ -115,7 +115,8 @@ class CombineEhrRdrTest(unittest.TestCase):
                                         self.combined_dataset_id))
 
         # test
-        ehr_consent()
+        ehr_consent(self.bq_client, self.rdr_dataset_id,
+                    self.combined_dataset_id)
 
         # post conditions
         self.assertTrue(
@@ -137,37 +138,14 @@ class CombineEhrRdrTest(unittest.TestCase):
             self.assertFalse(
                 self.bq_client.table_exists(
                     table, self.combined_dataset_id))  # sanity check
-            copy_rdr_table(table)
-            actual = self.bq_client.table_exists(table,
-                                                 self.combined_dataset_id)
+            # self.bq_client.create_table(f'{self.combined_dataset_id}.{table}',
+            #                             exists_ok=True)
+            self.bq_client.copy_table(f'{self.rdr_dataset_id}.{table}',
+                                      f'{self.combined_dataset_id}.{table}')
+            actual = self.bq_client.table_exists(f'{table}')
             self.assertTrue(
                 actual,
                 msg='RDR table {table} should be copied'.format(table=table))
-
-            # Check that row count in combined is same as rdr
-            query = (
-                'WITH rdr AS '
-                ' (SELECT COUNT(1) n FROM `{rdr_dataset_id}.{table}`), '
-                'combined AS '
-                ' (SELECT COUNT(1) n FROM `{combined_dataset_id}.{table}`) '
-                'SELECT '
-                'rdr.n AS rdr_count, '
-                'combined.n AS combined_count '
-                'FROM rdr, combined ').format(
-                    rdr_dataset_id=self.rdr_dataset_id,
-                    combined_dataset_id=self.combined_dataset_id,
-                    table=table)
-            response = bq_utils.query(query)
-            rows = bq_utils.response2rows(response)
-            self.assertTrue(len(rows) == 1)  # sanity check
-            row = rows[0]
-            rdr_count, combined_count = row['rdr_count'], row['combined_count']
-            msg_fmt = 'Table {table} has {rdr_count} in rdr and {combined_count} in combined (expected to be equal)'
-            self.assertEqual(
-                rdr_count, combined_count,
-                msg_fmt.format(table=table,
-                               rdr_count=rdr_count,
-                               combined_count=combined_count))
 
     def _ehr_only_records_excluded(self):
         """
@@ -300,7 +278,7 @@ class CombineEhrRdrTest(unittest.TestCase):
             self.assertNotIn(table, table_names_before)
 
         # test
-        create_cdm_tables()
+        create_cdm_tables(self.bq_client, self.combined_dataset_id)
 
         # post conditions
         tables_after = self.bq_client.list_tables(self.combined_dataset_id)
@@ -313,15 +291,6 @@ class CombineEhrRdrTest(unittest.TestCase):
         # All fact_id_1 where domain_concept_id_1==21 map to measurement
         # All fact_id_2 where domain_concept_id_2==27 map to observation
         pass
-
-    def test_main(self):
-        # test
-        main()
-
-        # post conditions
-        self._mapping_table_checks()
-        self._ehr_only_records_excluded()
-        self._all_rdr_records_included()
 
     def tearDown(self):
         test_util.delete_all_tables(self.bq_client, self.combined_dataset_id)
