@@ -103,7 +103,7 @@ df1
 # the value_as_concept_id field in de-id table populates 1177221
 #
 # - Verify that if the value_source_concept_id field in OBSERVATION table populates: 903096 , 
-# the value_as_concept_id field in de-id table populates: 903096
+# the value_as_concept_id field in de-id table populates: 903096 or 2000000010
 #
 
 query = f'''
@@ -123,7 +123,7 @@ WHERE (value_source_concept_id=2000000001 AND value_as_concept_id !=2000000001)
  OR (value_source_concept_id=1586147 AND value_as_concept_id !=1586147)
  OR (value_source_concept_id=1586148 AND value_as_concept_id !=45882607)
  OR (value_source_concept_id=903079 AND value_as_concept_id !=1177221)
- OR (value_source_concept_id=903096 AND value_as_concept_id !=903096)
+ OR (value_source_concept_id=903096 AND value_as_concept_id NOT IN (903096, 2000000010))
  
 '''
 df1=execute(client, query)  
@@ -443,7 +443,7 @@ df1
 # the value_as_concept_id field in de-id table populates 1177221
 #
 # - Verify that if the value_source_concept_id in OBSERVATION table populates: 903096, 
-# the value_as_concept_id field in de-id table populates 903096
+# the value_as_concept_id field in de-id table populates: 903096 or 2000000010
 
 query = f'''
 
@@ -458,7 +458,7 @@ WHERE (value_source_concept_id=2000000007 AND value_as_concept_id !=2000000007)
 OR (value_source_concept_id=2000000006 AND value_as_concept_id !=2000000006)
 OR (value_source_concept_id=1585945 AND value_as_concept_id !=43021808)
 OR (value_source_concept_id=1585946 AND value_as_concept_id !=4260980)
-OR (value_source_concept_id=903096 AND value_as_concept_id !=903096)
+OR (value_source_concept_id=903096 AND value_as_concept_id NOT IN (903096, 2000000010))
 OR (value_source_concept_id=903079 AND value_as_concept_id !=1177221)
 
 '''
@@ -489,7 +489,7 @@ df1
 # - Verify that if the value_source_concept_id in OBSERVATION table populates: 903079, 
 # the value_as_concept_id field in de-id table populates 1177221
 # - Verify that if the value_source_concept_id in OBSERVATION table populates: 903096, 
-# the value_as_concept_id field in de-id table populates 903096
+# the value_as_concept_id field in de-id table populates: 903096 or 2000000010
 #
 
 query = f'''
@@ -504,7 +504,7 @@ SELECT COUNT (*) AS n_row_not_pass FROM df1
 WHERE (value_source_concept_id=2000000005 AND value_as_concept_id !=2000000005)
 OR (value_source_concept_id=2000000004 AND value_as_concept_id !=2000000004)
 OR (value_source_concept_id=903079 AND value_as_concept_id !=1177221)
-OR (value_source_concept_id=903096 AND value_as_concept_id !=903096)
+OR (value_source_concept_id=903096 AND value_as_concept_id NOT IN (903096, 2000000010))
 
 
 '''
