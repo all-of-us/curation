@@ -1,0 +1,20 @@
+[
+    {
+        "type": "integer",
+        "name": "person_id",
+        "mode": "required",
+        "description": ""
+    },
+    {
+        "type": "string",
+        "name": "id_type",
+        "mode": "required",
+        "description": ""
+    },
+    {
+        "type": "integer",
+        "name": "mapped_value",
+        "mode": "required",
+        "description": ""
+    }
+]
