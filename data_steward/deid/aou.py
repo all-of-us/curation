@@ -120,7 +120,7 @@ def create_person_id_src_hpo_map(client, input_dataset):
     :param input_dataset:  the input dataset to deid
     """
     map_tablename = "_mapping_person_src_hpos"
-    sql = ("select person_id, src_hpo_id "
+    sql = ("select distinct person_id, src_hpo_id "
            "from {input_dataset}._mapping_{table} "
            "join {input_dataset}.{table} "
            "using ({table}_id) "
@@ -161,7 +161,7 @@ def create_person_id_src_hpo_map(client, input_dataset):
         sql_statement.append(
             sql.format(table=table, input_dataset=input_dataset))
 
-    final_query = ' UNION ALL '.join(sql_statement)
+    final_query = ' UNION '.join(sql_statement)
 
     # create the mapping table
     if map_tablename not in dataset_table_ids:
