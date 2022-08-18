@@ -20,13 +20,12 @@ class FitbitPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
         super().initialize_class_vars()
 
         # Set the test project identifier
-        project_id = os.environ.get(PROJECT_ID)
-        cls.project_id = project_id
+        cls.project_id = os.environ.get(PROJECT_ID)
 
         # Set the expected test datasets
         # using unioned since we don't declare a deid dataset
         cls.dataset_id = os.environ.get('UNIONED_DATASET_ID')
-        cls.sandbox_id = cls.dataset_id + '_sandbox'
+        cls.sandbox_id = f'{cls.dataset_id}_sandbox'
 
         mapping_dataset_id = os.environ.get('COMBINED_DATASET_ID')
         mapping_table_id = DEID_MAP
@@ -35,23 +34,23 @@ class FitbitPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
             'mapping_dataset_id': mapping_dataset_id,
             'mapping_table_id': mapping_table_id
         })
-        cls.fq_deid_map_table = f'{project_id}.{mapping_dataset_id}.{mapping_table_id}'
+        cls.fq_deid_map_table = f'{cls.project_id}.{mapping_dataset_id}.{mapping_table_id}'
 
-        cls.rule_instance = pr.FitbitPIDtoRID(project_id, cls.dataset_id,
+        cls.rule_instance = pr.FitbitPIDtoRID(cls.project_id, cls.dataset_id,
                                               cls.sandbox_id,
                                               mapping_dataset_id,
                                               mapping_table_id)
 
         cls.fq_sandbox_table_names = [
-            f'{project_id}.{cls.sandbox_id}.{cls.rule_instance.sandbox_table_for(table_id)}'
+            f'{cls.project_id}.{cls.sandbox_id}.{cls.rule_instance.sandbox_table_for(table_id)}'
             for table_id in pr.FITBIT_TABLES
         ]
 
         cls.fq_table_names = [
-            f'{project_id}.{cls.dataset_id}.{table_id}'
+            f'{cls.project_id}.{cls.dataset_id}.{table_id}'
             for table_id in pr.FITBIT_TABLES
         ] + [cls.fq_deid_map_table
-            ] + [f'{project_id}.{mapping_dataset_id}.person']
+            ] + [f'{cls.project_id}.{mapping_dataset_id}.person']
 
         # call super to set up the client, create datasets, and create
         # empty test tables
