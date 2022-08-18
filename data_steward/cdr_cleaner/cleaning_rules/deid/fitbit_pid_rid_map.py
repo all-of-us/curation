@@ -29,7 +29,7 @@ class FitbitPIDtoRID(PIDtoRID):
         """
         Initialize the class with proper info.
 
-        Set the issue numbers, description and affected datasets.  As other
+        Set the issue numbers, description and affected datasets. As other
         tickets may affect this SQL, append them to the list of Jira Issues.
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
