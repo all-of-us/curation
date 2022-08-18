@@ -19,6 +19,8 @@ import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
 from cdr_cleaner.cleaning_rules.set_unmapped_question_answer_survey_concepts import (
     SetConceptIdsForSurveyQuestionsAnswers)
+from cdr_cleaner.cleaning_rules.update_family_history_qa_codes import (
+    UpdateFamilyHistoryCodes)
 from common import OBSERVATION, JINJA_ENV
 from resources import fields_for
 
@@ -147,7 +149,10 @@ class ConvertPrePostCoordinatedConcepts(BaseCleaningRule):
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
-                         depends_on=[SetConceptIdsForSurveyQuestionsAnswers],
+                         depends_on=[
+                             SetConceptIdsForSurveyQuestionsAnswers,
+                             UpdateFamilyHistoryCodes
+                         ],
                          table_namer=table_namer)
 
     def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
@@ -161,7 +166,7 @@ class ConvertPrePostCoordinatedConcepts(BaseCleaningRule):
 
         The delete query deletes rows from observation that are sandboxed.
 
-        The insert query isnerts rows with newly assigned observation_ids and updated
+        The insert query inserts rows with newly assigned observation_ids and updated
         observation_concept_ids and value_as_concept_ids.
         New observation_id is generated as:
             100,000,000,000 * ((n)th record from the mapping table for the value_source_concept_id) + original observation_id.
