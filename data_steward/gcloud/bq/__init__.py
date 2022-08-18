@@ -73,7 +73,12 @@ class BigQueryClient(Client):
         if fields:
             fields = fields
         else:
-            fields = fields_for(table_name)
+            if table_name.endswith('identity_match'):
+                fields = fields_for('identity_match')
+            elif table_name.endswith('participant_match'):
+                fields = fields_for('participant_match')
+            else:
+                fields = fields_for(table_name)
 
         schema = []
         for column in fields:

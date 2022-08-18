@@ -8,15 +8,13 @@ from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 SANDBOX_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{intermediary_table}}` AS (
 SELECT t.* FROM `{{project}}.{{dataset}}.{{table}}` t
-{{ehr_only_join}}
+{% if ehr_only %}
+JOIN `{{project}}.{{dataset}}._mapping_{{table}}` m
+ON t.{{table}}_id = m.{{table}}_id AND LOWER(m.src_hpo_id) != 'rdr'
+{% endif %}
 WHERE person_id IN (
     SELECT person_id FROM `{{project}}.{{sandbox_dataset}}.{{lookup_table}}`
 ))
-""")
-
-SANDBOX_EHR_ONLY_JOIN = JINJA_ENV.from_string("""
-JOIN `{{project}}.{{dataset}}._mapping_{{table}}` m
-ON t.{{table}}_id = m.{{table}}_id AND LOWER(m.src_hpo_id) != 'rdr'
 """)
 
 # Query to truncate existing tables to remove PIDs based on cleaning rule criteria
@@ -25,13 +23,11 @@ DELETE FROM `{{project}}.{{dataset}}.{{table}}`
 WHERE person_id IN (
     SELECT DISTINCT person_id FROM `{{project}}.{{sandbox_dataset}}.{{lookup_table}}`
 )
-{{ehr_only_condition}}
-""")
-
-CLEAN_EHR_ONLY_CONDITION = JINJA_ENV.from_string("""
+{% if ehr_only %}
 AND {{table}}_id IN (
     SELECT DISTINCT {{table}}_id FROM `{{project}}.{{sandbox_dataset}}.{{intermediary_table}}`
 )
+{% endif %}
 """)
 
 # Query to list all tables within a dataset that contains person_id in the schema
@@ -39,10 +35,10 @@ PERSON_TABLE_QUERY = JINJA_ENV.from_string("""
 SELECT table_name
 FROM `{{project}}.{{dataset}}.INFORMATION_SCHEMA.COLUMNS`
 WHERE COLUMN_NAME = 'person_id'
-{{ehr_only_condition}}
+{% if ehr_only %}
+AND LOWER(table_name) != 'person'
+{% endif %}
 """)
-
-PERSON_TABLE_EHR_ONLY_CONDITION = "AND LOWER(table_name) != 'person'"
 
 
 class SandboxAndRemovePids(BaseCleaningRule):
@@ -85,12 +81,10 @@ class SandboxAndRemovePids(BaseCleaningRule):
         Get list of tables that have a person_id column, excluding mapping tables
         :param ehr_only: For Combined dataset, True if removing only EHR records. False if removing both RDR and EHR records.
         """
-        ehr_only_condition = PERSON_TABLE_EHR_ONLY_CONDITION if ehr_only else ''
 
-        person_table_query = PERSON_TABLE_QUERY.render(
-            project=self.project_id,
-            dataset=self.dataset_id,
-            ehr_only_condition=ehr_only_condition)
+        person_table_query = PERSON_TABLE_QUERY.render(project=self.project_id,
+                                                       dataset=self.dataset_id,
+                                                       ehr_only=ehr_only)
         person_tables = client.query(person_table_query).result()
 
         self.affected_tables = [
@@ -118,14 +112,6 @@ class SandboxAndRemovePids(BaseCleaningRule):
 
         for table in self.affected_tables:
 
-            if ehr_only:
-                ehr_only_join = SANDBOX_EHR_ONLY_JOIN.render(
-                    project=self.project_id,
-                    dataset=self.dataset_id,
-                    table=table)
-            else:
-                ehr_only_join = ''
-
             queries_list.append({
                 cdr_consts.QUERY:
                     SANDBOX_QUERY.render(
@@ -135,7 +121,7 @@ class SandboxAndRemovePids(BaseCleaningRule):
                         sandbox_dataset=self.sandbox_dataset_id,
                         intermediary_table=self.sandbox_table_for(table),
                         lookup_table=lookup_table,
-                        ehr_only_join=ehr_only_join)
+                        ehr_only=ehr_only)
             })
 
         return queries_list
@@ -155,23 +141,16 @@ class SandboxAndRemovePids(BaseCleaningRule):
 
         for table in self.affected_tables:
 
-            if ehr_only:
-                ehr_only_condition = CLEAN_EHR_ONLY_CONDITION.render(
-                    project=self.project_id,
-                    sandbox_dataset=self.sandbox_dataset_id,
-                    table=table,
-                    intermediary_table=self.sandbox_table_for(table))
-            else:
-                ehr_only_condition = ''
-
             queries_list.append({
                 cdr_consts.QUERY:
-                    CLEAN_QUERY.render(project=self.project_id,
-                                       dataset=self.dataset_id,
-                                       table=table,
-                                       sandbox_dataset=self.sandbox_dataset_id,
-                                       lookup_table=lookup_table,
-                                       ehr_only_condition=ehr_only_condition)
+                    CLEAN_QUERY.render(
+                        project=self.project_id,
+                        dataset=self.dataset_id,
+                        table=table,
+                        sandbox_dataset=self.sandbox_dataset_id,
+                        intermediary_table=self.sandbox_table_for(table),
+                        lookup_table=lookup_table,
+                        ehr_only=ehr_only)
             })
 
         return queries_list

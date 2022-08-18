@@ -112,7 +112,7 @@ class RemoveNonMatchingParticipant(SandboxAndRemovePids):
             raise RuntimeError(
                 'Required parameter validation_dataset_id not set')
 
-        desc = 'Removes non-matching and not validated participant records from the combined dataset.'
+        desc = 'Removes non-matching and not validated participant EHR records from the combined dataset.'
         super().__init__(issue_numbers=['DC468', 'DC823', 'DC2552'],
                          description=desc,
                          affected_datasets=[cdr_consts.COMBINED],

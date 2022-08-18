@@ -5,16 +5,14 @@
 import os
 
 # Third party imports
-from google.cloud.bigquery import Table
 
 # Project Imports
 from app_identity import PROJECT_ID
-from cdr_cleaner.cleaning_rules.remove_non_matching_participant import RemoveNonMatchingParticipant
-from common import JINJA_ENV, IDENTITY_MATCH, OBSERVATION, PARTICIPANT_MATCH, PERSON
-from validation.participants.create_update_drc_id_match_table import create_drc_validation_table
-from tests import test_util
+from cdr_cleaner.cleaning_rules.remove_non_matching_participant import (
+    RemoveNonMatchingParticipant, NOT_MATCH_TABLE)
+from common import (JINJA_ENV, IDENTITY_MATCH, OBSERVATION, PARTICIPANT_MATCH,
+                    PERSON)
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
-import resources
 
 HPO_1, HPO_2, HPO_3, HPO_4 = 'fake', 'pitt', 'nyc', 'chs'
 
@@ -202,27 +200,6 @@ class RemoveNonMatchingParticipantTest(BaseTest.CleaningRulesTestBase):
             'ehr_dataset_id': cls.ehr_dataset_id
         }
 
-        cls.fq_table_names = []
-        for cdm_table in [PERSON, OBSERVATION]:
-            fq_table_name = f'{cls.project_id}.{cls.dataset_id}.{cdm_table}'
-            cls.fq_table_names.append(fq_table_name)
-
-        # Set client and create datasets if not exist
-        super().setUpClass()
-
-        for cdm_table in [PERSON, OBSERVATION]:
-
-            fq_table_name = f'{cls.project_id}.{cls.dataset_id}.{cdm_table}'
-
-            schema = resources.fields_for(cdm_table)
-            table = Table(fq_table_name, schema=schema)
-            table = cls.client.create_table(table, exists_ok=True)
-
-            query = POPULATE_STATEMENTS[cdm_table].render(
-                fq_table_name=fq_table_name)
-            job = cls.client.query(query)
-            job.result()
-
         cls.rule_instance = RemoveNonMatchingParticipant(
             cls.project_id,
             cls.dataset_id,
@@ -230,65 +207,29 @@ class RemoveNonMatchingParticipantTest(BaseTest.CleaningRulesTestBase):
             ehr_dataset_id=cls.ehr_dataset_id,
             validation_dataset_id=cls.validation_dataset_id)
 
+        cls.fq_table_names = []
+        for cdm_table in [PERSON, OBSERVATION, '_mapping_observation']:
+            fq_table_name = f'{cls.project_id}.{cls.dataset_id}.{cdm_table}'
+            cls.fq_table_names.append(fq_table_name)
+
         # Overwriting affected_tables, as only PERSON and OBSERVATION are prepared for this test.
         cls.rule_instance.affected_tables = [OBSERVATION]
 
-        for table_name in cls.rule_instance.affected_tables:
-
-            mapping_table = f'_mapping_{table_name}'
-
-            fq_table_name = f'{cls.project_id}.{cls.dataset_id}.{mapping_table}'
-
-            schema = resources.fields_for(f'{mapping_table}')
-            table = Table(fq_table_name, schema=schema)
-            table = cls.client.create_table(table, exists_ok=True)
-
-            query = POPULATE_STATEMENTS[mapping_table].render(
-                fq_table_name=fq_table_name,
-                rdr_dataset_id=cls.rdr_dataset_id,
-                ehr_dataset_id=cls.ehr_dataset_id,
-                hpo_1=HPO_1,
-                hpo_2=HPO_2,
-                hpo_3=HPO_3,
-                hpo_4=HPO_4)
-            job = cls.client.query(query)
-            job.result()
-
         sb_table_names = cls.rule_instance.get_sandbox_tablenames()
-        for table_name in sb_table_names:
+        for table_name in sb_table_names + [NOT_MATCH_TABLE]:
             cls.fq_sandbox_table_names.append(
                 f'{cls.project_id}.{cls.sandbox_id}.{table_name}')
 
         for hpo_id in [HPO_1, HPO_2, HPO_3]:
-            id_match_table_id = f'{hpo_id}_{IDENTITY_MATCH}'
+            fq_table_name = f'{cls.project_id}.{cls.validation_dataset_id}.{hpo_id}_{IDENTITY_MATCH}'
+            cls.fq_table_names.append(fq_table_name)
 
-            create_drc_validation_table(cls.client, id_match_table_id,
-                                        cls.validation_dataset_id)
-
-            populate_query = POPULATE_STATEMENTS[
-                f'{hpo_id}_{IDENTITY_MATCH}'].render(
-                    project_id=cls.project_id,
-                    validation_dataset_id=cls.validation_dataset_id,
-                    table_id=id_match_table_id)
-            job = cls.client.query(populate_query)
-            job.result()
-
-        schema = resources.fields_for(PARTICIPANT_MATCH)
         for hpo_id in [HPO_1, HPO_2, HPO_4]:
-            participant_match_table_id = f'{hpo_id}_{PARTICIPANT_MATCH}'
+            fq_table_name = f'{cls.project_id}.{cls.ehr_dataset_id}.{hpo_id}_{PARTICIPANT_MATCH}'
+            cls.fq_table_names.append(fq_table_name)
 
-            table = Table(
-                f'{cls.project_id}.{cls.ehr_dataset_id}.{participant_match_table_id}',
-                schema=schema)
-            table = cls.client.create_table(table, exists_ok=True)
-
-            populate_query = POPULATE_STATEMENTS[
-                f'{hpo_id}_{PARTICIPANT_MATCH}'].render(
-                    project_id=cls.project_id,
-                    ehr_dataset_id=cls.ehr_dataset_id,
-                    table_id=participant_match_table_id)
-            job = cls.client.query(populate_query)
-            job.result()
+        # Set client and create datasets if not exist
+        super().setUpClass()
 
     def setUp(self):
         """
@@ -297,7 +238,43 @@ class RemoveNonMatchingParticipantTest(BaseTest.CleaningRulesTestBase):
         Creates common expected parameter types from cleaned tables and a common
         fully qualified (fq) dataset name string to load the data.
         """
-        pass
+
+        load_statements = []
+
+        for cdm_table in self.fq_table_names:
+            table_id = cdm_table.split('.')[-1]
+            query = POPULATE_STATEMENTS[table_id].render(
+                fq_table_name=cdm_table,
+                project_id=self.project_id,
+                validation_dataset_id=self.validation_dataset_id,
+                table_id=table_id,
+                rdr_dataset_id=self.rdr_dataset_id,
+                ehr_dataset_id=self.ehr_dataset_id,
+                hpo_1=HPO_1,
+                hpo_2=HPO_2,
+                hpo_3=HPO_3,
+                hpo_4=HPO_4)
+            load_statements.append(query)
+
+        for hpo_id in [HPO_1, HPO_2, HPO_3]:
+            id_match_table_id = f'{hpo_id}_{IDENTITY_MATCH}'
+
+            id_match = POPULATE_STATEMENTS[id_match_table_id].render(
+                project_id=self.project_id,
+                validation_dataset_id=self.validation_dataset_id,
+                table_id=id_match_table_id)
+            load_statements.append(id_match)
+
+        for hpo_id in [HPO_1, HPO_2, HPO_4]:
+            participant_match_table_id = f'{hpo_id}_{PARTICIPANT_MATCH}'
+            query = POPULATE_STATEMENTS[participant_match_table_id].render(
+                project_id=self.project_id,
+                ehr_dataset_id=self.ehr_dataset_id,
+                table_id=participant_match_table_id)
+            load_statements.append(query)
+
+        super().setUp()
+        self.load_test_data(load_statements)
 
     def test_remove_non_matching_participant(self):
         """
@@ -382,13 +359,3 @@ class RemoveNonMatchingParticipantTest(BaseTest.CleaningRulesTestBase):
         ]
 
         self.default_test(tables_and_counts)
-
-    def tearDown(self):
-        pass
-
-    @classmethod
-    def tearDownClass(cls):
-        test_util.delete_all_tables(cls.client, cls.dataset_id)
-        test_util.delete_all_tables(cls.client, cls.ehr_dataset_id)
-        test_util.delete_all_tables(cls.client, cls.validation_dataset_id)
-        test_util.delete_all_tables(cls.client, cls.sandbox_id)
