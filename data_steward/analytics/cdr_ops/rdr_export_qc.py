@@ -30,7 +30,7 @@ from common import JINJA_ENV, PIPELINE_TABLES
 from utils import auth
 from gcloud.bq import BigQueryClient
 from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
-from cdr_cleaner.cleaning_rules.suppress_combined_pfmh_survey import DROP_PFMHH_CONCEPTS
+# from cdr_cleaner.cleaning_rules.suppress_combined_pfmh_survey import DROP_PFMHH_CONCEPTS
 from IPython.display import display, HTML
 
 # # Table comparison
@@ -233,7 +233,7 @@ with duplicates AS (
    -- ,questionnaire_response_id --
      ,COUNT(1) AS n_data
     FROM `{{project_id}}.{{new_rdr}}.observation`
-    INNER JOIN `{{project_id}}.{{new_rdr}}.cope_survey_semantic_version_map` 
+    INNER JOIN `{{project_id}}.{{new_rdr}}.cope_survey_semantic_version_map`
         USING (questionnaire_response_id) -- For COPE only --
     GROUP BY 1,2,3,4,5,6
 )
@@ -471,9 +471,9 @@ SELECT
     observation_id
     ,person_id
     ,value_as_string
-FROM `{{project_id}}.{{new_rdr}}.observation` 
+FROM `{{project_id}}.{{new_rdr}}.observation`
 WHERE observation_source_concept_id = 715711
-AND SAFE_CAST(value_as_string AS DATE) IS NULL 
+AND SAFE_CAST(value_as_string AS DATE) IS NULL
 AND value_as_string != 'PMI Skip'
 ''')
 query = tpl.render(new_rdr=new_rdr, project_id=project_id)
@@ -523,17 +523,17 @@ SELECT
     'missing_person' as issue_type
     ,person_id
 FROM `{{project_id}}.{{new_rdr}}.pid_rid_mapping`
-WHERE person_id NOT IN 
+WHERE person_id NOT IN
 (SELECT person_id
 FROM `{{project_id}}.{{new_rdr}}.person`)
 
 UNION ALL
 
-SELECT 
+SELECT
     'unmapped_person' as issue_type
     ,person_id
 FROM `{{project_id}}.{{new_rdr}}.person`
-WHERE person_id NOT IN 
+WHERE person_id NOT IN
 (SELECT person_id
 FROM `{{project_id}}.{{new_rdr}}.pid_rid_mapping`)
 ''')
@@ -569,10 +569,10 @@ execute(client, query)
 # In ideal circumstances, this query will not return any results.
 
 tpl = JINJA_ENV.from_string('''
-SELECT DISTINCT person_id FROM `{{project_id}}.{{new_rdr}}.observation` 
+SELECT DISTINCT person_id FROM `{{project_id}}.{{new_rdr}}.observation`
 JOIN `{{project_id}}.{{new_rdr}}.concept` on (observation_source_concept_id=concept_id)
 WHERE vocabulary_id = 'PPI' AND person_id NOT IN (
-SELECT DISTINCT person_id FROM `{{project_id}}.{{new_rdr}}.concept`  
+SELECT DISTINCT person_id FROM `{{project_id}}.{{new_rdr}}.concept`
 JOIN `{{project_id}}.{{new_rdr}}.concept_ancestor` on (concept_id=ancestor_concept_id)
 JOIN `{{project_id}}.{{new_rdr}}.observation` on (descendant_concept_id=observation_concept_id)
 WHERE concept_class_id='Module'
@@ -611,8 +611,8 @@ execute(client, query)
 # [DC-2254](https://precisionmedicineinitiative.atlassian.net/browse/DC-2254).
 
 tpl = JINJA_ENV.from_string('''
-SELECT  
-    person_id, 
+SELECT
+    person_id,
     STRING_AGG(observation_source_value) AS observation_source_value
 FROM `{{project_id}}.{{new_rdr}}.observation`
 WHERE observation_type_concept_id = 45905771 -- is a survey response --
@@ -629,19 +629,19 @@ execute(client, query)
 # the RDR export should not contain some operational concepts that are irrelevant to researchers.
 # Any violations should be reported to the RDR team.
 
-tpl = JINJA_ENV.from_string("""
-SELECT 
-    observation_source_value,
-    COUNT(1) AS n_row_violation
-FROM `{{project_id}}.{{new_rdr}}.observation`
-WHERE observation_source_value IN (
-  SELECT observation_source_value FROM `{{project_id}}.operational_data.operational_ehr_consent`
-)
-GROUP BY 1
-HAVING count(1) > 0
-""")
-query = tpl.render(new_rdr=new_rdr, project_id=project_id)
-execute(client, query)
+# tpl = JINJA_ENV.from_string("""
+# SELECT
+#     observation_source_value,
+#     COUNT(1) AS n_row_violation
+# FROM `{{project_id}}.{{new_rdr}}.observation`
+# WHERE observation_source_value IN (
+#   SELECT observation_source_value FROM `{{project_id}}.operational_data.operational_ehr_consent`
+# )
+# GROUP BY 1
+# HAVING count(1) > 0
+# """)
+# query = tpl.render(new_rdr=new_rdr, project_id=project_id)
+# execute(client, query)
 
 # # Check if Responses for question [46234786](https://athena.ohdsi.org/search-terms/terms/46234786)
 # # are updated to 2000000010 - AoUDRC_ResponseRemoval from dates ranging 11/1/2021 – 11/9/2021
@@ -688,10 +688,10 @@ GROUP BY
 ORDER BY
   n_rows_violation DESC
 """)
-query = tpl.render(dataset=new_rdr,
-                   project_id=project_id,
-                   combined_pfmhh_concepts=DROP_PFMHH_CONCEPTS)
-execute(client, query)
+# query = tpl.render(dataset=new_rdr,
+#                    project_id=project_id,
+#                    combined_pfmhh_concepts=DROP_PFMHH_CONCEPTS)
+# execute(client, query)
 
 # # Check that the Question and Answer Concepts in the old_map_short_codes tables are not paired with 0-valued concept_identifiers
 
@@ -745,7 +745,7 @@ tpl = JINJA_ENV.from_string("""
 WITH question_codes AS (
   SELECT
     pmi_code
-  FROM `{{project_id}}.{{sandbox_dataset}}.old_map_short_codes` 
+  FROM `{{project_id}}.{{sandbox_dataset}}.old_map_short_codes`
   WHERE type = 'Question'
 )
 SELECT
@@ -783,7 +783,7 @@ tpl = JINJA_ENV.from_string("""
 WITH answer_codes AS (
   SELECT
     pmi_code
-  FROM `{{project_id}}.{{sandbox_dataset}}.old_map_short_codes` 
+  FROM `{{project_id}}.{{sandbox_dataset}}.old_map_short_codes`
   WHERE type = 'Answer'
 )
 SELECT
@@ -821,7 +821,7 @@ tpl = JINJA_ENV.from_string("""
 WITH answer_codes AS (
   SELECT
     pmi_code
-  FROM `{{project_id}}.{{sandbox_dataset}}.old_map_short_codes` 
+  FROM `{{project_id}}.{{sandbox_dataset}}.old_map_short_codes`
   WHERE type = 'Answer'
 )
 SELECT
