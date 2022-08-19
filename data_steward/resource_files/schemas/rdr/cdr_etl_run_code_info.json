@@ -1,18 +1,26 @@
 [
   {
     "type": "string",
-    "name": "codeType"
+    "name": "codeType",
+    "mode": "nullable",
+    "description": ""
   },
   {
     "type": "integer",
-    "name": "etlRunId"
+    "name": "etlRunId",
+    "mode": "nullable",
+    "description": ""
   },
   {
     "type": "string",
-    "name": "status"
+    "name": "status",
+    "mode": "nullable",
+    "description": ""
   },
   {
     "type": "string",
-    "name": "codeType"
+    "name": "codeType",
+    "mode": "nullable",
+    "description": ""
   }
 ]
