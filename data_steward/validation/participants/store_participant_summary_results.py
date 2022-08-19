@@ -177,6 +177,7 @@ if __name__ == '__main__':
         """)
     parser.add_argument('--project_id', '-p', required=True)
     parser.add_argument('--rdr_project_id', '-r', required=True)
+    # HPO to download data for. Use the keyword 'all_hpo' to get all participant summary data
     parser.add_argument('--hpo_id', required=True)
 
     args = parser.parse_args()
@@ -185,6 +186,11 @@ if __name__ == '__main__':
 
     bq_client = BigQueryClient(args.project_id)
 
-    fetch_and_store_ps_hpo_data(bq_client,
-                                args.rdr_project_id,
-                                hpo_id=args.hpo_id)
+    if args.hpo_id.lower() == 'all_hpo':
+        fetch_and_store_ps_hpo_data(bq_client,
+                                    args.rdr_project_id,
+                                    hpo_id=args.hpo_id)
+    else:
+        fetch_and_store_full_ps_data(bq_client,
+                                     args.project_id,
+                                     args.rdr_project_id)
