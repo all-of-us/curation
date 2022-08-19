@@ -1,0 +1,22 @@
+[
+    {
+        "type": "integer",
+        "name": "etlRunId"
+    },
+    {
+        "type": "string",
+        "name": "vocabularyPath"
+    },
+    {
+        "type": "date",
+        "name": "cutoffDate"
+    },
+    {
+        "type": "datetime",
+        "name": "startTime"
+    },
+    {
+        "type": "datetime",
+        "name": "endTime"
+    }
+]

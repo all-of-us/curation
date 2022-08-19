@@ -1,0 +1,18 @@
+[
+  {
+    "type": "string",
+    "name": "codeType"
+  },
+  {
+    "type": "integer",
+    "name": "etlRunId"
+  },
+  {
+    "type": "string",
+    "name": "status"
+  },
+  {
+    "type": "string",
+    "name": "codeType"
+  }
+]
