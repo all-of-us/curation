@@ -1,22 +1,32 @@
 [
     {
         "type": "integer",
-        "name": "etlRunId"
+        "name": "etlRunId",
+        "mode": "nullable",
+        "description": ""
     },
     {
         "type": "string",
-        "name": "vocabularyPath"
+        "name": "vocabularyPath",
+        "mode": "nullable",
+        "description": ""
     },
     {
         "type": "date",
-        "name": "cutoffDate"
+        "name": "cutoffDate",
+        "mode": "nullable",
+        "description": ""
     },
     {
         "type": "datetime",
-        "name": "startTime"
+        "name": "startTime",
+        "mode": "nullable",
+        "description": ""
     },
     {
         "type": "datetime",
-        "name": "endTime"
+        "name": "endTime",
+        "mode": "nullable",
+        "description": ""
     }
 ]
