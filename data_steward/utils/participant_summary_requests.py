@@ -192,7 +192,7 @@ def get_paginated_participant_data(api_project_id: str,
             row
             for row in r_json.get('entry', {})
             if row.get('resource', {}).keys() &
-               set(expected_fields) == set(expected_fields)
+            set(expected_fields) == set(expected_fields)
         ]
         if 'link' in r_json:
             link_obj = r_json.get('link')
