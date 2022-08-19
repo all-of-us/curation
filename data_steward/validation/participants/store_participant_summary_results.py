@@ -7,15 +7,20 @@ Original Issue: DC-1214
 import argparse
 import logging
 from typing import List, Dict
+from requests import Session
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 # Third party imports
 from google.cloud import bigquery
 from google.cloud.exceptions import NotFound
 
 # Project imports
-from utils.participant_summary_requests import (get_org_participant_information,
-                                                get_all_participant_information,
-                                                store_participant_data)
+from utils.participant_summary_requests import (
+    get_org_participant_information, get_paginated_participant_data,
+    store_participant_data, process_api_data_to_df,
+    FIELDS_OF_INTEREST_FOR_VALIDATION, MAX_RETRIES, BACKOFF_FACTOR,
+    STATUS_FORCELIST)
 from common import PS_API_VALUES, DRC_OPS, UNIONED
 from utils import pipeline_logging
 from gcloud.bq import BigQueryClient
@@ -140,14 +145,8 @@ def fetch_and_store_full_ps_data(client,
     :param dataset_id: contains table to store PS API data
     :return: 
     """
-
-    # Get participant summary data
-    LOGGER.info(f'Getting participant summary data')
-    participant_info = get_all_participant_information(rdr_project_id)
-
     # Load schema
     schema = client.get_table_schema(PS_API_VALUES)
-    # TODO use resources.get_table_id after updating it to flip hpo_id, table_name
     table_name = f'{PS_API_VALUES}'
     fq_table_id = f'{project_id}.{dataset_id}.{table_name}'
 
@@ -158,13 +157,54 @@ def fetch_and_store_full_ps_data(client,
     table = bigquery.Table(fq_table_id, schema=schema)
     table = client.create_table(table)
 
-    # Insert summary data into table
-    LOGGER.info(f'Storing participant data in table {fq_table_id}')
-    store_participant_data(participant_info,
-                           client,
-                           f'{dataset_id}.{table_name}',
-                           schema=schema,
-                           to_hour_partition=False)
+    done = False
+    url = None
+
+    params = {
+        'suspensionStatus': 'NOT_SUSPENDED',
+        'consentForElectronicHealthRecords': 'SUBMITTED',
+        'withdrawalStatus': 'NOT_WITHDRAWN',
+        '_sort': 'participantId',
+        '_count': '10000'
+    }
+
+    # Create session for reuse
+    session = Session()
+    retries = Retry(total=MAX_RETRIES,
+                    read=MAX_RETRIES,
+                    connect=MAX_RETRIES,
+                    backoff_factor=BACKOFF_FACTOR,
+                    status_forcelist=STATUS_FORCELIST)
+    session.mount('https://', HTTPAdapter(max_retries=retries))
+    session.mount('http://', HTTPAdapter(max_retries=retries))
+
+    while not done:
+        # Get paginated participant summary data
+        LOGGER.info(f'Getting paginated participant summary data')
+
+        paginated_dict = get_paginated_participant_data(rdr_project_id,
+                                                        params=params,
+                                                        url=url,
+                                                        session=session)
+        participant_data = paginated_dict['data']
+        url = paginated_dict['url']
+
+        column_map = {'participant_id': 'person_id'}
+
+        df = process_api_data_to_df(participant_data,
+                                    FIELDS_OF_INTEREST_FOR_VALIDATION,
+                                    column_map)
+        # Insert paginated summary data into table
+        LOGGER.info(
+            f'Storing paginated participant data in table {fq_table_id}')
+        store_participant_data(df,
+                               client,
+                               f'{dataset_id}.{table_name}',
+                               schema=schema,
+                               to_hour_partition=False,
+                               append=True)
+        if not url:
+            done = True
 
     LOGGER.info(f'Done.')
 
@@ -187,10 +227,9 @@ if __name__ == '__main__':
     bq_client = BigQueryClient(args.project_id)
 
     if args.hpo_id.lower() == 'all_hpo':
+        fetch_and_store_full_ps_data(bq_client, args.project_id,
+                                     args.rdr_project_id)
+    else:
         fetch_and_store_ps_hpo_data(bq_client,
                                     args.rdr_project_id,
                                     hpo_id=args.hpo_id)
-    else:
-        fetch_and_store_full_ps_data(bq_client,
-                                     args.project_id,
-                                     args.rdr_project_id)
