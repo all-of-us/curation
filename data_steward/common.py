@@ -88,8 +88,8 @@ OTHER_CDM_TABLES = [
 
 CDM_TABLES = AOU_REQUIRED + OTHER_CDM_TABLES
 
-AOU_REQUIRED_FILES = [table + '.csv' for table in AOU_REQUIRED]
-PII_FILES = [table + '.csv' for table in PII_TABLES]
+AOU_REQUIRED_FILES = [f'{table}.csv' for table in AOU_REQUIRED]
+PII_FILES = [f'{table}.csv' for table in PII_TABLES]
 NOTE_JSONL = 'note.jsonl'
 SUBMISSION_FILES = AOU_REQUIRED_FILES + PII_FILES
 RESULTS_HTML = 'results.html'
@@ -99,7 +99,7 @@ ACHILLES_HEEL_REPORT = 'achillesheel'
 PERSON_REPORT = 'person'
 DATA_DENSITY_REPORT = 'datadensity'
 ALL_REPORTS = [ACHILLES_HEEL_REPORT, PERSON_REPORT, DATA_DENSITY_REPORT]
-ALL_REPORT_FILES = [report + '.json' for report in ALL_REPORTS]
+ALL_REPORT_FILES = [f'{report}.json' for report in ALL_REPORTS]
 
 # Wearables
 ACTIVITY_SUMMARY = 'activity_summary'
@@ -145,7 +145,7 @@ REQUIRED_FILES = [table + '.csv' for table in REQUIRED_TABLES]
 
 ACHILLES_EXPORT_PREFIX_STRING = "curation_report/data/"
 IGNORE_STRING_LIST = [ACHILLES_EXPORT_PREFIX_STRING]
-ACHILLES_EXPORT_DATASOURCES_JSON = ACHILLES_EXPORT_PREFIX_STRING + 'datasources.json'
+ACHILLES_EXPORT_DATASOURCES_JSON = f'{ACHILLES_EXPORT_PREFIX_STRING}datasources.json'
 
 # latest vocabulary dataset name in test and prod
 VOCABULARY_DATASET = os.environ.get('VOCABULARY_DATASET')
