@@ -1,5 +1,6 @@
 """
 Date shifting fitbit tables.
+Date shift any fields that are of type DATE, DATETIME, or TIMESTAMP.
 
 Extends the basic date shifting rule by providing table names
 and schemas.
