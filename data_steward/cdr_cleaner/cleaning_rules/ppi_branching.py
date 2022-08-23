@@ -267,7 +267,9 @@ class PpiBranching(BaseCleaningRule):
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
                          affected_tables=[OBSERVATION],
-                         depends_on=[SetConceptIdsForSurveyQuestionsAnswers])
+                         depends_on=[SetConceptIdsForSurveyQuestionsAnswers],
+                         run_for_synthetic=True)
+
         dataset_ref = bigquery.DatasetReference(project_id, dataset_id)
         sandbox_dataset_ref = bigquery.DatasetReference(project_id,
                                                         sandbox_dataset_id)

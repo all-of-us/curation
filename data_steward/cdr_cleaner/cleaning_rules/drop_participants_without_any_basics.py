@@ -70,7 +70,7 @@ class DropParticipantsWithoutAnyBasics(DropMissingParticipants):
                  project_id,
                  dataset_id,
                  sandbox_dataset_id,
-                 table_namer='stage_less'):
+                 table_namer=None):
         desc = (f'Sandbox and remove PIDs with no PPI basics.'
                 f'Use drop missing participants CR to remove their records.')
 
@@ -81,7 +81,8 @@ class DropParticipantsWithoutAnyBasics(DropMissingParticipants):
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
-                         table_namer=table_namer)
+                         table_namer=table_namer,
+                         run_for_synthetic=True)
 
     def get_query_specs(self):
         """

@@ -132,7 +132,8 @@ class FixUnmappedSurveyAnswers(BaseCleaningRule):
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
-                         depends_on=[SetConceptIdsForSurveyQuestionsAnswers])
+                         depends_on=[SetConceptIdsForSurveyQuestionsAnswers],
+                         run_for_synthetic=True)
 
     def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
         """

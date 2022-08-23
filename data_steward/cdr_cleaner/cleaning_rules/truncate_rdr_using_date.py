@@ -92,7 +92,8 @@ class TruncateRdrData(BaseCleaningRule):
                          affected_tables=TRUNCATE_TABLES,
                          project_id=project_id,
                          dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id)
+                         sandbox_dataset_id=sandbox_dataset_id,
+                         run_for_synthetic=True)
 
     def get_query_specs(self):
         """

@@ -96,15 +96,14 @@ class RemoveParticipantsUnder18Years(BaseCleaningRule):
             'All EHR data associated with a participant who was younger than 18 years old at consent '
             'is to be sandboxed and dropped from the CDR.')
 
-        super().__init__(
-            issue_numbers=['DC1724', 'DC2260', 'DC2632'],
-            description=desc,
-            affected_datasets=[cdr_consts.RDR],
-            affected_tables=AFFECTED_TABLES,
-            project_id=project_id,
-            dataset_id=dataset_id,
-            sandbox_dataset_id=sandbox_dataset_id,
-        )
+        super().__init__(issue_numbers=['DC1724', 'DC2260', 'DC2632'],
+                         description=desc,
+                         affected_datasets=[cdr_consts.RDR],
+                         affected_tables=AFFECTED_TABLES,
+                         project_id=project_id,
+                         dataset_id=dataset_id,
+                         sandbox_dataset_id=sandbox_dataset_id,
+                         run_for_synthetic=True)
 
     def get_query_specs(self):
         """

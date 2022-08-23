@@ -84,7 +84,8 @@ class RemoveMultipleRaceEthnicityAnswersQueries(BaseCleaningRule):
                          affected_tables=[OBSERVATION],
                          project_id=project_id,
                          dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id)
+                         sandbox_dataset_id=sandbox_dataset_id,
+                         run_for_synthetic=True)
 
     def get_query_specs(self):
         """
