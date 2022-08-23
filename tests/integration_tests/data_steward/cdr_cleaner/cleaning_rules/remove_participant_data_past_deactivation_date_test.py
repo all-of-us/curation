@@ -17,7 +17,7 @@ import pandas as pd
 from google.cloud.bigquery import TableReference
 
 # Project imports
-from common import JINJA_ENV, OBSERVATION, DRUG_EXPOSURE, DEATH, PERSON, HEART_RATE_MINUTE_LEVEL, STEPS_INTRADAY
+from common import JINJA_ENV, OBSERVATION, DRUG_EXPOSURE, DEATH, PERSON, HEART_RATE_MINUTE_LEVEL, SLEEP_LEVEL, STEPS_INTRADAY
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.remove_participant_data_past_deactivation_date import (
     RemoveParticipantDataPastDeactivationDate, DEACTIVATED_PARTICIPANTS, DATE,
@@ -148,6 +148,14 @@ class RemoveParticipantDataPastDeactivationDateTest(
         VALUES
         (2, '2009-01-01T00:00:00', 100),
         (2, '2010-01-01T00:00:00', 150)
+        """),
+            SLEEP_LEVEL:
+                JINJA_ENV.from_string("""
+        INSERT INTO `{{table.project}}.{{table.dataset_id}}.{{table.table_id}}`
+        (person_id, sleep_date, is_main_sleep, level, start_datetime, duration_in_min)
+        VALUES
+        (1, '2010-01-01','true', 'light', '2010-01-01T00:00:00', 3.5),
+        (1, '2008-11-18','false', 'wake', '2008-11-18T05:00:00', 4.5)
         """)
         }
 
@@ -296,6 +304,17 @@ class RemoveParticipantDataPastDeactivationDateTest(
             'loaded_ids': [2, 2],
             'sandboxed_ids': [2],
             'cleaned_values': [(2, 100)]
+        }, {
+            'name':
+                SLEEP_LEVEL,
+            'fq_table_name':
+                f'{self.project_id}.{self.dataset_id}.{SLEEP_LEVEL}',
+            'fq_sandbox_table_name':
+                f'{self.project_id}.{self.sandbox_id}.{self.rule_instance.sandbox_table_for(SLEEP_LEVEL)}',
+            'fields': ['person_id', 'duration_in_min'],
+            'loaded_ids': [1, 1],
+            'sandboxed_ids': [1],
+            'cleaned_values': [(1, 4.5)]
         }]
 
         self.default_test(tables_and_counts)
