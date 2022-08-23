@@ -57,7 +57,7 @@
         "name": "respondent_type_concept_id",
         "description": "",
         "type": "integer",
-        "mode": "nullable"
+        "mode": "required"
     },
     {
         "name": "timing_concept_id",
@@ -80,7 +80,7 @@
     {
         "name": "respondent_type_source_value",
         "description": "",
-        "type": "integer",
+        "type": "string",
         "mode": "nullable"
     },
     {
