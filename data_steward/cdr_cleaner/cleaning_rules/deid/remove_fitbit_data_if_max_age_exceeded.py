@@ -1,11 +1,12 @@
 """
 Remove all FitBit data for participants exceeding the maximum age of 89
 
-Original Issue: DC-1001, DC-1037, DC-2429
+Original Issue: DC-1001, DC-1037, DC-2429, DC-2135
 
 The intent is to ensure there is no data for participants over the age of 89 in
-Activity Summary, Heart Rate Minute Level, Heart Rate Summary, and Steps Intraday tables
-by sandboxing the applicable records and then dropping them.
+Activity Summary, Heart Rate Minute Level, Heart Rate Summary, Steps Intraday,
+Sleep Daily Summary, and Sleep Level tables by sandboxing the applicable records 
+and then dropping them.
 """
 
 # Python Imports
@@ -47,8 +48,8 @@ WHERE person_id NOT IN (
 class RemoveFitbitDataIfMaxAgeExceeded(BaseCleaningRule):
     """
     Ensures that there is no FitBit data for participants over the age of 89
-    in the Activity Summary, Heart Rate Minute Level, Heart Rate Summary, and
-    Steps Intraday FitBit tables.
+    in the Activity Summary, Heart Rate Minute Level, Heart Rate Summary,
+    Steps Intraday, Sleep Daily Summary, and Sleep Level FitBit tables.
     """
 
     def __init__(self,
@@ -66,7 +67,7 @@ class RemoveFitbitDataIfMaxAgeExceeded(BaseCleaningRule):
         """
         desc = (
             'Drops all FitBit data from participants whose max age exceeds 89')
-        super().__init__(issue_numbers=['DC1001', 'DC1037', 'DC2429'],
+        super().__init__(issue_numbers=['DC1001', 'DC1037', 'DC2429', 'DC2135'],
                          description=desc,
                          affected_datasets=[cdr_consts.FITBIT],
                          affected_tables=FITBIT_TABLES,
@@ -89,7 +90,7 @@ class RemoveFitbitDataIfMaxAgeExceeded(BaseCleaningRule):
 
         sandbox_queries_list = []
         drop_queries_list = []
-        for i, table in enumerate(FITBIT_TABLES):
+        for table in FITBIT_TABLES:
             sandbox_queries_list.append({
                 cdr_consts.QUERY:
                     SAVE_ROWS_TO_BE_DROPPED_QUERY.render(
@@ -103,7 +104,6 @@ class RemoveFitbitDataIfMaxAgeExceeded(BaseCleaningRule):
                     )
             })
 
-        for i, table in enumerate(FITBIT_TABLES):
             drop_queries_list.append({
                 cdr_consts.QUERY:
                     DROP_MAX_AGE_EXCEEDED_ROWS_QUERY.render(
