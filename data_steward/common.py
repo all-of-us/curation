@@ -47,6 +47,10 @@ AOU_REQUIRED = [
     PROCEDURE_OCCURRENCE, PROVIDER, SPECIMEN, VISIT_OCCURRENCE, VISIT_DETAIL
 ]
 
+# CATI Tables
+SURVEY_CONDUCT = 'survey_conduct'
+CATI_TABLES = AOU_REQUIRED + [SURVEY_CONDUCT]
+
 # Standardized clinical data tables in OMOP. All should contain a person_id column. See
 # https://github.com/OHDSI/CommonDataModel/wiki/Standardized-Clinical-Data-Tables
 
@@ -88,10 +92,6 @@ OTHER_CDM_TABLES = [
 ] + OTHER_CLINICAL_TABLES
 
 CDM_TABLES = AOU_REQUIRED + OTHER_CDM_TABLES
-
-# CATI Tables
-SURVEY_CONDUCT = 'survey_conduct'
-CATI_TABLES = AOU_REQUIRED + [SURVEY_CONDUCT]
 
 AOU_REQUIRED_FILES = [table + '.csv' for table in AOU_REQUIRED]
 PII_FILES = [table + '.csv' for table in PII_TABLES]
