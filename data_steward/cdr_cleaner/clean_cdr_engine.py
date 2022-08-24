@@ -255,6 +255,7 @@ def infer_rule(clazz, project_id, dataset_id, sandbox_dataset_id, table_namer,
             module_name = inspect.getmodule(clazz).__name__
             line_no = inspect.getsourcelines(clazz)[1]
 
+            # pylint:  disable=function-redefined
             def query_function():
                 """
                 Imitates base class get_query_specs()
@@ -263,6 +264,7 @@ def infer_rule(clazz, project_id, dataset_id, sandbox_dataset_id, table_namer,
                 return clazz(project_id, dataset_id, sandbox_dataset_id,
                              **kwargs)
 
+            # pylint:  disable=function-redefined
             def setup_function(client):
                 """
                 Imitates base class setup_rule()
