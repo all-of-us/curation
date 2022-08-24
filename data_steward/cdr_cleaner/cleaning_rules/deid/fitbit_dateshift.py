@@ -5,7 +5,7 @@ Date shift any fields that are of type DATE, DATETIME, or TIMESTAMP.
 Extends the basic date shifting rule by providing table names
 and schemas.
 
-Original Issue:  DC-1005
+Original Issue:  DC-1005, DC-2137
 """
 # Python Imports
 import logging
@@ -19,7 +19,7 @@ from resources import fields_for
 
 LOGGER = logging.getLogger(__name__)
 
-ISSUE_NUMBERS = ['DC-1005']
+ISSUE_NUMBERS = ['DC-1005', 'DC-2137']
 
 
 class FitbitDateShiftRule(DateShiftRule):
