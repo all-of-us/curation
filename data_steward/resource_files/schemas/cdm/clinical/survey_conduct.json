@@ -130,8 +130,8 @@
         "description": "Version number of the questionnaire or survey used.",
         "type": "string",
         "mode": "nullable"
-    }
-        {
+    },
+    {
         "name": "visit_occurrence_id",
         "description": "The Visit during which the Survey occurred.",
         "type": "integer",
