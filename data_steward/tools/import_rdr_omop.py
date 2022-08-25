@@ -13,6 +13,7 @@ from google.api_core.exceptions import NotFound
 
 from utils import auth
 from gcloud.bq import BigQueryClient
+from gcloud.gcs import StorageClient
 from utils import pipeline_logging
 from common import CDR_SCOPES
 from resources import replace_special_characters_for_labels, validate_date_string, cdm_schemas, rdr_specific_schemas, \
@@ -21,16 +22,38 @@ from resources import replace_special_characters_for_labels, validate_date_strin
 LOGGER = logging.getLogger(__name__)
 
 
+def verify_bucket_name(value: str) -> str:
+    """
+    Custom verification of bucket name.
+
+    Will raise an error if a name starts with a '/', 'gs:', or 'gs://'
+
+    :param value: the value passed in via the command line
+
+    :return: a value that conforms to required bucket naming conventions
+
+    :raises ValueError: if a bucket name is entered that will be parsed incorrectly
+        by the code in this module.
+    """
+    if value.startswith('/') or value.startswith('gs:'):
+        raise ValueError(
+            f"Bucket name cannot begin with '/', 'gs://', or 'gs:'.  "
+            f"Provided value, '{value}', violates policy.")
+
+    return value
+
+
 def parse_rdr_args(raw_args=None):
     parser = ArgumentParser(
         description='Arguments pertaining to an RDR raw load')
 
-    parser.add_argument(
-        '--rdr_bucket',
-        action='store',
-        dest='bucket',
-        help='Bucket directory not including the "gs://" portion of the name',
-        required=True)
+    parser.add_argument('--rdr_bucket',
+                        action='store',
+                        dest='bucket',
+                        help=('Bucket directory not including the '
+                              '"gs://" portion of the name'),
+                        type=verify_bucket_name,
+                        required=True)
     parser.add_argument('--run_as',
                         action='store',
                         dest='run_as_email',
@@ -66,7 +89,6 @@ def parse_rdr_args(raw_args=None):
                         action='store_true',
                         required=False,
                         help='Log to the console as well as to a file.')
-
     return parser.parse_args(raw_args)
 
 
@@ -87,6 +109,8 @@ def create_rdr_tables(client, rdr_dataset, bucket, with_src_id=False):
     schema_dict.update(rdr_specific_schemas())
     if with_src_id:
         schema_dict.update(rdr_src_id_schemas())
+
+    tables_loaded = []
 
     for table, schema in schema_dict.items():
         schema_list = client.get_table_schema(table, schema)
@@ -128,7 +152,7 @@ def create_rdr_tables(client, rdr_dataset, bucket, with_src_id=False):
 
             load_job.result()  # Waits for the job to complete.
         except NotFound:
-            LOGGER.info(
+            LOGGER.warning(
                 f'{table} not provided by RDR team.  Creating empty table '
                 f'in dataset: `{rdr_dataset}`')
 
@@ -141,8 +165,11 @@ def create_rdr_tables(client, rdr_dataset, bucket, with_src_id=False):
                 table_id)  # Make an API request.
         LOGGER.info(f'Loaded {destination_table.num_rows} rows into '
                     f'`{destination_table.table_id}`.')
+        tables_loaded.append(uri.split('/')[-1])
 
     LOGGER.info(f"Finished RDR table LOAD from bucket gs://{bucket}")
+
+    return tables_loaded
 
 
 def copy_vocab_tables(client, rdr_dataset, vocab_dataset):
