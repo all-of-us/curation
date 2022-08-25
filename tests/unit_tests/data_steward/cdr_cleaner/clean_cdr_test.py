@@ -349,4 +349,5 @@ class CleanCDRTest(unittest.TestCase):
             dataset_id=self.dataset_id,
             sandbox_dataset_id=self.sandbox_dataset_id,
             rules=rules,
-            table_namer=DataStage.EHR.value)
+            table_namer=DataStage.EHR.value,
+            run_synthetic=False)
