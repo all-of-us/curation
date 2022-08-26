@@ -5,7 +5,7 @@ Date shift any fields that are of type DATE, DATETIME, or TIMESTAMP.
 Extends the basic date shifting rule by providing table names
 and schemas.
 
-Original Issue:  DC-1005, DC-2137
+Original Issue:  DC-1005
 """
 # Python Imports
 import logging
