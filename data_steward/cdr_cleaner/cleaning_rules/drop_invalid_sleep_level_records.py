@@ -13,7 +13,7 @@ from common import JINJA_ENV, FITBIT_TABLES
 
 LOGGER = logging.getLogger(__name__)
 
-ISSUE_NUMBERS = []
+ISSUE_NUMBERS = ['DC2605']
 
 LEVEL_FIELD_VALUES = [
     'awake', 'light', 'asleep', 'deep', 'restless', 'wake', 'rem', 'unknown'
