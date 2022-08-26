@@ -15,10 +15,20 @@ LOGGER = logging.getLogger(__name__)
 
 ISSUE_NUMBERS = []
 
+LEVEL_FIELD_VALUES = [
+    'awake', 'light', 'asleep', 'deep', 'restless', 'wake', 'rem', 'unknown'
+]
+
 PERSON_WITH_INVALID_LEVEL_VALUES = JINJA_ENV.from_string("""
     SELECT person_id
     FROM `{{project}}.{{dataset}}.{{sleep_level_table}}`
     WHERE level NOT IN ({{level_field_values}})
+ """)
+
+DELETE_RECORDS_WITH_INVALID_LEVEL_VALUES = JINJA_ENV.from_string("""
+    DELETE
+    FROM `{{project}}.{{dataset}}.{{sleep_level_table}}`
+    WHERE person_id IN ({{person_ids}})
  """)
 
 
