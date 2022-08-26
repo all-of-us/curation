@@ -31,8 +31,7 @@ class FitbitDateShiftTest(BaseTest.DeidRulesTestBase):
         super().initialize_class_vars()
 
         # set the test project identifier
-        project_id = os.environ.get(PROJECT_ID)
-        cls.project_id = project_id
+        cls.project_id = os.environ.get(PROJECT_ID)
 
         # set the expected test datasets
         dataset_id = os.environ.get('RDR_DATASET_ID')
@@ -47,17 +46,18 @@ class FitbitDateShiftTest(BaseTest.DeidRulesTestBase):
             'mapping_table_id': mapping_table_id
         })
 
-        cls.rule_instance = FitbitDateShiftRule(project_id, dataset_id,
+        cls.rule_instance = FitbitDateShiftRule(cls.project_id, dataset_id,
                                                 sandbox_id, mapping_dataset_id,
                                                 mapping_table_id)
 
         # can test the full functionality with one table
         cls.fq_table_names = [
-            f"{project_id}.{dataset_id}.{cls.rule_instance.tables[0]}"
+            f"{cls.project_id}.{dataset_id}.{cls.rule_instance.tables[0]}",
+            f"{cls.project_id}.{dataset_id}.{cls.rule_instance.tables[5]}"
         ]
 
         # provide mapping table info
-        cls.fq_mapping_tablename = f"{project_id}.{mapping_dataset_id}.{mapping_table_id}"
+        cls.fq_mapping_tablename = f"{cls.project_id}.{mapping_dataset_id}.{mapping_table_id}"
 
         # call super to set up the client, create datasets, and create
         # empty test tables
@@ -67,7 +67,7 @@ class FitbitDateShiftTest(BaseTest.DeidRulesTestBase):
         """
         Add data to the tables for the rule to run on.
         """
-        # create a false fitbit table to query
+        # create false fitbit tables to query
         # this schema is mocked later
         schema = [
             bigquery.SchemaField("person_id", "INTEGER", mode="REQUIRED"),
@@ -81,8 +81,9 @@ class FitbitDateShiftTest(BaseTest.DeidRulesTestBase):
             table = bigquery.Table(table_id, schema=schema)
             table = self.client.create_table(table)  # Make an API request.
 
-        self.mock_schema = {
-            self.fq_table_names[0].split('.')[-1]: [{
+        self.mock_schema = {}
+        for table in self.fq_table_names:
+            self.mock_schema[table.split('.')[-1]] = [{
                 "mode": "REQUIRED",
                 "name": "person_id",
                 "type": "INTEGER"
@@ -103,13 +104,12 @@ class FitbitDateShiftTest(BaseTest.DeidRulesTestBase):
                 "name": "p_name",
                 "type": "STRING"
             }]
-        }
 
         # create a mapping table
         self.create_mapping_table()
 
         # load statement for the test data to shift
-        query = self.jinja_env.from_string("""
+        a_query = self.jinja_env.from_string("""
         INSERT INTO `{{fq_table_name}}`
         (person_id, p_date, p_datetime, p_timestamp, p_name)
         VALUES
@@ -118,21 +118,35 @@ class FitbitDateShiftTest(BaseTest.DeidRulesTestBase):
           (802, date(2016, 05, 10), datetime(2016, 05, 10, 12, 45, 00), timestamp('2016-05-10 12:45:00 UTC'), "jane doe")
         """)
 
+        s_query = self.jinja_env.from_string("""
+        INSERT INTO `{{fq_table_name}}`
+        (person_id, p_date, p_datetime, p_timestamp, p_name)
+        VALUES
+          -- setting day to the 11th to make it easier to calculate the shifted date --
+          (803, date(2016, 05, 15), datetime(2016, 05, 15, 12, 45, 00), timestamp('2016-05-15 12:45:00 UTC'), "john doe"),
+          (804, date(2016, 05, 14), datetime(2016, 05, 14, 12, 45, 00), timestamp('2016-05-14 12:45:00 UTC'), "jane doe")
+        """)
+
         # load statement for mapping table under test
         map_query = self.jinja_env.from_string("""
         INSERT INTO `{{map_table_name}}`
         (person_id, research_id, shift)
-        -- setting the date shift to 10 days in the past for participant with research_id 801 --
+        -- setting the date shift to 10 days in the past for participant with research_id 801 and 803 --
         -- the research_id maps to the real person_id here --
         -- this assumes the pid/rid mapping has already occurred. --
         VALUES 
         -- a date shift of 10 days --
         (700, 801, 10),
         -- a date shift of 5 days --
-        (500, 802, 5)
+        (500, 802, 5),
+        -- a date shift of 10 days --
+        (600, 803, 10),
+        -- a date shift of 5 days --
+        (400, 804, 5)
         """)
         load_statements = [
-            query.render(fq_table_name=self.fq_table_names[0]),
+            a_query.render(fq_table_name=self.fq_table_names[0]),
+            s_query.render(fq_table_name=self.fq_table_names[1]),
             map_query.render(map_table_name=self.fq_mapping_tablename)
         ]
         self.load_test_data(load_statements)
@@ -144,7 +158,7 @@ class FitbitDateShiftTest(BaseTest.DeidRulesTestBase):
         """
         Use the default drop rows test function.
 
-        Mocks the table schema to limit this to a single test that tests all possible values.
+        Mocks the table schema to limit the scope to tests all possible values.
         """
         # mock return value
         mock_schema.return_value = self.mock_schema
@@ -155,8 +169,6 @@ class FitbitDateShiftTest(BaseTest.DeidRulesTestBase):
             parser.parse('2016-05-01 12:45:00'))
         four_days = timedelta(days=4)
 
-        # Using the 0 position because there is only one sandbox table and
-        # one affected OMOP table
         tables_and_counts = [{
             'name':
                 self.fq_table_names[0].split('.')[-1],
@@ -174,6 +186,25 @@ class FitbitDateShiftTest(BaseTest.DeidRulesTestBase):
                  'john doe'),
                 (802, shifted_date + four_days, shifted_datetime + four_days,
                  shifted_timestamp + four_days, 'jane doe')
+            ]
+        }, {
+            'name':
+                self.fq_table_names[1].split('.')[-1],
+            'fq_table_name':
+                self.fq_table_names[1],
+            'fq_sandbox_table_name':
+                '',
+            'fields': [
+                'person_id', 'p_date', 'p_datetime', 'p_timestamp', 'p_name'
+            ],
+            'loaded_ids': [803, 804],
+            'sandboxed_ids': [],
+            'cleaned_values': [
+                (803, shifted_date + four_days, shifted_datetime + four_days,
+                 shifted_timestamp + four_days, 'john doe'),
+                (804, shifted_date + (four_days * 2),
+                 shifted_datetime + (four_days * 2),
+                 shifted_timestamp + (four_days * 2), 'jane doe')
             ]
         }]
 
