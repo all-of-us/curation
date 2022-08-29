@@ -3,14 +3,15 @@ import constants.cdr_cleaner.clean_cdr as cdr_consts
 from common import JINJA_ENV
 from gcloud.bq import BigQueryClient
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
-from constants import bq_utils as bq_consts
-from constants.cdr_cleaner import clean_cdr as clean_consts
 
 # Query to create tables in sandbox with rows that will be removed per cleaning rule
 SANDBOX_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{intermediary_table}}` AS (
-SELECT *
-FROM `{{project}}.{{dataset}}.{{table}}`
+SELECT t.* FROM `{{project}}.{{dataset}}.{{table}}` t
+{% if ehr_only %}
+JOIN `{{project}}.{{dataset}}._mapping_{{table}}` m
+ON t.{{table}}_id = m.{{table}}_id AND LOWER(m.src_hpo_id) != 'rdr'
+{% endif %}
 WHERE person_id IN (
     SELECT person_id FROM `{{project}}.{{sandbox_dataset}}.{{lookup_table}}`
 ))
@@ -18,11 +19,15 @@ WHERE person_id IN (
 
 # Query to truncate existing tables to remove PIDs based on cleaning rule criteria
 CLEAN_QUERY = JINJA_ENV.from_string("""
-DELETE
-FROM `{{project}}.{{dataset}}.{{table}}`
+DELETE FROM `{{project}}.{{dataset}}.{{table}}`
 WHERE person_id IN (
-    SELECT distinct person_id FROM `{{project}}.{{sandbox_dataset}}.{{lookup_table}}`
+    SELECT DISTINCT person_id FROM `{{project}}.{{sandbox_dataset}}.{{lookup_table}}`
 )
+{% if ehr_only %}
+AND {{table}}_id IN (
+    SELECT DISTINCT {{table}}_id FROM `{{project}}.{{sandbox_dataset}}.{{intermediary_table}}`
+)
+{% endif %}
 """)
 
 # Query to list all tables within a dataset that contains person_id in the schema
@@ -30,9 +35,10 @@ PERSON_TABLE_QUERY = JINJA_ENV.from_string("""
 SELECT table_name
 FROM `{{project}}.{{dataset}}.INFORMATION_SCHEMA.COLUMNS`
 WHERE COLUMN_NAME = 'person_id'
+{% if ehr_only %}
+AND LOWER(table_name) != 'person'
+{% endif %}
 """)
-
-TABLE_NAME_COLUMN = 'table_name'
 
 
 class SandboxAndRemovePids(BaseCleaningRule):
@@ -70,76 +76,81 @@ class SandboxAndRemovePids(BaseCleaningRule):
                          depends_on=depends_on,
                          table_namer=table_namer)
 
-        self.person_table_list = []
-
-    def setup_rule(self, client: BigQueryClient):
+    def setup_rule(self, client: BigQueryClient, ehr_only: bool = False):
         """
         Get list of tables that have a person_id column, excluding mapping tables
+        :param ehr_only: For Combined dataset, True if removing only EHR records. False if removing both RDR and EHR records.
         """
-        if self.person_table_list:
-            return self.person_table_list
 
         person_table_query = PERSON_TABLE_QUERY.render(project=self.project_id,
-                                                       dataset=self.dataset_id)
+                                                       dataset=self.dataset_id,
+                                                       ehr_only=ehr_only)
         person_tables = client.query(person_table_query).result()
-        self.person_table_list = [
+
+        self.affected_tables = [
             table.get('table_name')
             for table in person_tables
             if '_mapping' not in table.get('table_name')
         ]
 
-        self.affected_tables = self.person_table_list
-
-        return self.person_table_list
-
-    def get_sandbox_queries(self, lookup_table: str = None) -> list:
+    def get_sandbox_queries(self,
+                            lookup_table: str = None,
+                            ehr_only: bool = False) -> list:
         """
         Returns a list of queries of all tables to be added to the datasets sandbox. These tables include all rows from all
         effected tables that include PIDs that will be removed by a specific cleaning rule.
 
         :param lookup_table: name of the lookup table
+        :param ehr_only: For Combined dataset, True if removing only EHR records. False if removing both RDR and EHR records.
         :return: list of CREATE OR REPLACE queries to create tables in sandbox
         """
         if self.sandbox_dataset_id is None:
             raise RuntimeError(
                 f"sandbox_dataset_id is None.  This is not allowed.")
 
-        # person_tables_list = self.get_tables_with_person_id()
         queries_list = []
 
-        for table in self.person_table_list:
+        for table in self.affected_tables:
+
             queries_list.append({
                 cdr_consts.QUERY:
                     SANDBOX_QUERY.render(
-                        dataset=self.dataset_id,
                         project=self.project_id,
+                        dataset=self.dataset_id,
                         table=table,
                         sandbox_dataset=self.sandbox_dataset_id,
                         intermediary_table=self.sandbox_table_for(table),
-                        lookup_table=lookup_table)
+                        lookup_table=lookup_table,
+                        ehr_only=ehr_only)
             })
 
         return queries_list
 
-    def get_remove_pids_queries(self, lookup_table=None):
+    def get_remove_pids_queries(self,
+                                lookup_table=None,
+                                ehr_only: bool = False):
         """
         Returns a list of queries in which the table will be truncated with clean data, ie: all removed PIDs from all
         datasets based on a cleaning rule.
 
         :param lookup_table: name of the lookup table
+        :param ehr_only: For Combined dataset, True if removing only EHR records. False if removing both RDR and EHR records.
         :return: list of select statements that will truncate the existing tables with clean data
         """
-        # person_tables_list = self.get_tables_with_person_id()
         queries_list = []
 
-        for table in self.person_table_list:
+        for table in self.affected_tables:
+
             queries_list.append({
                 cdr_consts.QUERY:
-                    CLEAN_QUERY.render(project=self.project_id,
-                                       dataset=self.dataset_id,
-                                       table=table,
-                                       sandbox_dataset=self.sandbox_dataset_id,
-                                       lookup_table=lookup_table)
+                    CLEAN_QUERY.render(
+                        project=self.project_id,
+                        dataset=self.dataset_id,
+                        table=table,
+                        sandbox_dataset=self.sandbox_dataset_id,
+                        intermediary_table=self.sandbox_table_for(table),
+                        lookup_table=lookup_table,
+                        ehr_only=ehr_only)
             })
 
         return queries_list
