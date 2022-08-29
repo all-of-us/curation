@@ -149,6 +149,60 @@ def get_participant_data(api_project_id: str,
     return participant_data
 
 
+def get_paginated_participant_data(api_project_id: str,
+                                   params: Dict,
+                                   url: str = None,
+                                   session: Session = None,
+                                   expected_fields: List[str] = None) -> Dict:
+    """
+    Fetches participant data via ParticipantSummary API with pagination
+
+    :param api_project_id: RDR project id when PS API rests
+    :param params: the fields and their values
+    :param url: if paginating, use url with token to continue
+    :param session: persisting http session
+    :param expected_fields: filter participants not containing any of the fields.
+        Use only if API cannot filter fields via params. If unspecified, fetches all participants
+
+    :return: list of data fetched from the ParticipantSummary API
+    """
+    # Base /ParticipantSummary endpoint to fetch information about the participant
+    if url:
+        params = dict()
+    else:
+        url = BASE_URL.format(api_project_id=api_project_id)
+
+    token = get_access_token()
+
+    headers = {
+        'content-type': 'application/json',
+        'Authorization': f'Bearer {token}'
+    }
+
+    resp = session.get(url, headers=headers, params=params, timeout=MAX_TIMEOUT)
+    if not resp or resp.status_code != 200:
+        # Session has a backoff implemented, meaning a failure indicates an error with the API server, so quit
+        raise RuntimeError(f'Error: API request failed because {resp}')
+    else:
+        LOGGER.info(
+            f'Fetching data from PS API using params/url:{params}/{url}')
+        r_json = resp.json()
+        participant_data = r_json.get('entry', {}) if not expected_fields else [
+            # filter out participants who do not have all fields in expected_fields
+            row
+            for row in r_json.get('entry', {})
+            if row.get('resource', {}).keys() &
+            set(expected_fields) == set(expected_fields)
+        ]
+        if 'link' in r_json:
+            link_obj = r_json.get('link')
+            # Use the next paged url directly (with paged '_token' included) and reset params
+            url = link_obj[0].get('url')
+        else:
+            url = None
+        return {'data': participant_data, 'url': url}
+
+
 def camel_to_snake_case(in_str: str):
     """
     Convert camel case to snake case
@@ -480,17 +534,19 @@ def store_participant_data(df: pandas.DataFrame,
                            client: BigQueryClient,
                            destination_table: str,
                            schema=None,
-                           to_hour_partition=None):
+                           to_hour_partition=None,
+                           append=False):
     """
     Stores the fetched participant data in a BigQuery dataset. If the
     table doesn't exist, it will create that table. If the table does
     exist, it will append the data onto that designated table.
 
     :param df: pandas dataframe created to hold participant data fetched from ParticipantSummary API
-    :param project_id: a BigQueryClient
+    :param client: a BigQueryClient
     :param destination_table: name of the table to be written in the form of dataset.tablename
     :param schema: a list of SchemaField objects corresponding to the destination table
     :param to_hour_partition: Boolean to indicate store to current hour partition or no partition
+    :param append: append data to table
 
     :return: returns the bq job_id for the loading of participant data
     """
@@ -514,7 +570,12 @@ def store_participant_data(df: pandas.DataFrame,
             schema=schema,
             time_partitioning=TimePartitioning(type_=TimePartitioningType.HOUR))
     else:
-        load_job_config = LoadJobConfig(schema=schema)
+        if append:
+            write_disposition = 'WRITE_APPEND'
+        else:
+            write_disposition = 'WRITE_EMPTY'
+        load_job_config = LoadJobConfig(schema=schema,
+                                        write_disposition=write_disposition)
 
     # Run load job with specified config
     job = client.load_table_from_dataframe(df,

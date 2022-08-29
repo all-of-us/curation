@@ -469,7 +469,8 @@ class ParticipantSummaryRequestsTest(TestCase):
         pandas.testing.assert_frame_equal(
             mock_bq_client.load_table_from_dataframe.call_args[0][0],
             mod_fake_dataframe)
-        mock_load_job_config.assert_called_once_with(schema=mock_table_schema)
+        mock_load_job_config.assert_called_once_with(
+            schema=mock_table_schema, write_disposition='WRITE_EMPTY')
         mock_load_job.result.assert_called_once_with()
         self.assertEqual(actual_job_id, fake_job_id)
 
