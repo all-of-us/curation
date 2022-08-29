@@ -93,7 +93,8 @@ class COPESurveyVersionTask(BaseCleaningRule):
             sandbox_dataset_id=sandbox_dataset_id,
             affected_tables=[f'{OBSERVATION}_ext'],
             depends_on=[GenerateExtTables],
-            table_namer=table_namer)
+            table_namer=table_namer,
+            run_for_synthetic=True)
 
         if not clean_survey_dataset_id:
             raise RuntimeError("'clean_survey_dataset_id' must be set")

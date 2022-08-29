@@ -9,12 +9,13 @@ from datetime import datetime
 # Project imports
 from cdr_cleaner import clean_cdr
 from cdr_cleaner.args_parser import add_kwargs_to_args
-from utils import auth
-from gcloud.bq import BigQueryClient
-from utils import pipeline_logging
-from tools import import_rdr_omop
 from common import CDR_SCOPES
 from constants.cdr_cleaner import clean_cdr as consts
+from constants.tools import create_combined_backup_dataset as combine_consts
+from gcloud.bq import BigQueryClient
+from tools import import_rdr_omop
+from tools.create_combined_backup_dataset import generate_combined_mapping_tables
+from utils import auth, pipeline_logging
 
 LOGGER = logging.getLogger(__name__)
 
@@ -128,13 +129,20 @@ def create_tier(project_id: str, input_dataset: str, release_tag: str,
     bq_client = BigQueryClient(project_id, credentials=impersonation_creds)
 
     # Get Final Dataset name
-    final_dataset_name = f"{release_tag}_rdr"
+    final_dataset_name = f"{release_tag}_synthetic"
 
     # Create intermediary datasets and copy tables from input dataset to newly created dataset
     datasets = create_datasets(bq_client, final_dataset_name, input_dataset,
                                release_tag)
     bq_client.copy_dataset(f'{project_id}.{input_dataset}',
                            f'{project_id}.{datasets[consts.STAGING]}')
+
+    # 1. add mapping tables
+    for domain_table in combine_consts.DOMAIN_TABLES:
+        LOGGER.info(f'Mapping {domain_table}...')
+        generate_combined_mapping_tables(bq_client, domain_table,
+                                         datasets[consts.STAGING], '',
+                                         datasets[consts.STAGING])
 
     # Run cleaning rules
     cleaning_args = [
@@ -144,6 +152,7 @@ def create_tier(project_id: str, input_dataset: str, release_tag: str,
     ]
 
     synthetic_cleaning_args = add_kwargs_to_args(cleaning_args, kwargs)
+    # run synthetic data rules.  will run synthetic extension table generation too.
     clean_cdr.main(args=synthetic_cleaning_args)
 
     # Snapshot the staging dataset to final dataset
@@ -217,6 +226,10 @@ def main(raw_args=None) -> dict:
     datasets = create_tier(args.credentials_filepath, args.project_id,
                            args.idataset, args.release_tag,
                            args.target_principal, **kwargs)
+
+    # #TODO:
+    # 2. follow publishing guidelines so the person table looks correct.  publish internally first to
+    # verify all required datatypes exist.  Afterward, can copy to the correct dev environment.
     return datasets
 
 
