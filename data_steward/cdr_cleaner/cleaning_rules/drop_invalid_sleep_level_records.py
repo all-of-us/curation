@@ -15,12 +15,6 @@ LOGGER = logging.getLogger(__name__)
 
 ISSUE_NUMBERS = ['DC2605']
 
-# DELETE_RECORDS_WITH_INVALID_LEVEL_VALUES = JINJA_ENV.from_string("""
-#     DELETE
-#     FROM `{{project}}.{{dataset}}.{{sleep_level_table}}`
-#     WHERE person_id IN ({{person_ids}})
-#  """)
-
 SANDBOX_INVALID_LEVEL_RECORDS = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE
     `{{project_id}}.{{sandbox_dataset}}.{{sandbox_table}}` AS
@@ -33,8 +27,14 @@ CREATE OR REPLACE TABLE
 )
  """)
 
-REMOVE_INVALID_LEVEL_RECORDS = JINJA_ENV.from_string("""
-
+DELETE_INVALID_LEVEL_RECORDS = JINJA_ENV.from_string("""
+    DELETE
+    FROM `{{project_id}}.{{dataset_id}}.{{sleep_level_table}}`
+    WHERE person_id IN
+    (
+        SELECT person_id
+        FROM `{{project_id}}.{{sandbox_dataset}}.{{sandbox_table}}`
+    )
  """)
 
 
@@ -88,11 +88,23 @@ class DropInvalidSleepLevelRecords(BaseCleaningRule):
                     sandbox_table=self.get_sandbox_tablenames()[0])
         }
 
+        delete_invalid_records = {
+            cdr_consts.QUERY:
+                DELETE_INVALID_LEVEL_RECORDS.render(
+                    project_id=self.project_id,
+                    dataset_id=self.dataset_id,
+                    sleep_level_table=SLEEP_LEVEL,
+                    sandbox_dataset=self.sandbox_dataset_id,
+                    sandbox_table=self.get_sandbox_tablenames()[0])
+        }
+
+        return [sandbox_invalid_records, delete_invalid_records]
+
     def get_sandbox_tablenames(self):
         """
         generates sandbox table names
         """
-        sandbox_table = self.sandbox_table_for(self.affected_tables[5])
+        sandbox_table = self.sandbox_table_for(SLEEP_LEVEL)
         return [sandbox_table]
 
     def setup_validation(self, client):
