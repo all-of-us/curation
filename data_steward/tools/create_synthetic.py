@@ -15,6 +15,7 @@ from constants.tools import create_combined_backup_dataset as combine_consts
 from gcloud.bq import BigQueryClient
 from tools import import_rdr_omop
 from tools.create_combined_backup_dataset import generate_combined_mapping_tables
+from tools.recreate_person import update_person
 from utils import auth, pipeline_logging
 
 LOGGER = logging.getLogger(__name__)
@@ -155,6 +156,11 @@ def create_tier(project_id: str, input_dataset: str, release_tag: str,
     # run synthetic data rules.  will run synthetic extension table generation too.
     clean_cdr.main(args=synthetic_cleaning_args)
 
+    # TODO:
+    # 2. mimic publishing guidelines so the person table looks correct.  publish internally first to
+    # verify all required datatypes exist.  Afterward, can copy to the correct dev environment.
+    update_person(bq_client, datasets[consts.STAGING])
+
     # Snapshot the staging dataset to final dataset
     bq_client.build_and_copy_contents(datasets[consts.STAGING],
                                       final_dataset_name)
@@ -227,9 +233,6 @@ def main(raw_args=None) -> dict:
                            args.idataset, args.release_tag,
                            args.target_principal, **kwargs)
 
-    # #TODO:
-    # 2. follow publishing guidelines so the person table looks correct.  publish internally first to
-    # verify all required datatypes exist.  Afterward, can copy to the correct dev environment.
     return datasets
 
 
