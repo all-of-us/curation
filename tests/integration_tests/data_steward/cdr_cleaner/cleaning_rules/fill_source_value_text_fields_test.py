@@ -73,7 +73,7 @@ class FillSourceValueTextFieldsTest(BaseTest.CleaningRulesTestBase):
         Tests that the specifications for queries perform as designed.
 
         Validates pre conditions, tests execution, and post conditions based on the load
-        statements and the tables_and_counts variable.        
+        statements and the tables_and_counts variable.
         """
 
         create_concepts_query_tmpl = self.jinja_env.from_string("""
@@ -90,7 +90,7 @@ class FillSourceValueTextFieldsTest(BaseTest.CleaningRulesTestBase):
         observations_query_tmpl = self.jinja_env.from_string("""
             INSERT INTO `{{fq_dataset_name}}.observation`
                 (observation_id, person_id, observation_date,
-                value_as_string, value_as_concept_id, observation_source_concept_id, 
+                value_as_string, value_as_concept_id, observation_source_concept_id,
                 value_source_concept_id, value_source_value, observation_source_value,
                 observation_concept_id, observation_type_concept_id)
             VALUES
@@ -119,11 +119,18 @@ class FillSourceValueTextFieldsTest(BaseTest.CleaningRulesTestBase):
             'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
             'sandboxed_ids': [],
             'fields': [
-                'observation_id', 'person_id', 'observation_date',
-                'value_as_string', 'value_as_concept_id',
-                'observation_source_concept_id', 'value_source_concept_id',
-                'value_source_value', 'observation_source_value',
-                'observation_concept_id', 'observation_type_concept_id'
+                'observation_id',
+                'person_id',
+                'observation_date',
+                'value_as_string',
+                'value_as_concept_id',
+                'observation_source_concept_id',
+                'value_source_concept_id',
+                'value_source_value',
+                'observation_source_value',
+                'observation_concept_id',
+                'observation_type_concept_id',
+                'conduct_survey',
             ],
             'cleaned_values': [
                 (1, 1, self.date, "063**", 0, 1585250, 0, None,
