@@ -260,6 +260,7 @@ REGISTERED_TIER_DEID_CLEANING_CLASSES = [
     (VehicularAccidentConceptSuppression,),
     (SectionParticipationConceptSuppression,),
     (RegisteredCopeSurveyQuestionsSuppression,),
+    (ExplicitIdentifierSuppression,),
     (CancerConceptSuppression,),
     (StringFieldsSuppression,),
     (DropOrphanedPIDS,),

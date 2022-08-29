@@ -47,8 +47,9 @@ class ExplicitIdentifierSuppressionTest(unittest.TestCase):
 
     def test_get_query_spec(self):
         # Pre conditions
-        self.assertEqual(self.rule_instance.affected_datasets,
-                         [cdr_consts.CONTROLLED_TIER_DEID, cdr_consts.COMBINED])
+        self.assertEqual(
+            self.rule_instance.affected_datasets,
+            [cdr_consts.CONTROLLED_TIER_DEID, cdr_consts.REGISTERED_TIER_DEID])
 
         # Test
         result_list = self.rule_instance.get_query_specs()
@@ -85,8 +86,9 @@ class ExplicitIdentifierSuppressionTest(unittest.TestCase):
 
     def test_log_queries(self):
         # Pre conditions
-        self.assertEqual(self.rule_instance.affected_datasets,
-                         [cdr_consts.CONTROLLED_TIER_DEID, cdr_consts.COMBINED])
+        self.assertEqual(
+            self.rule_instance.affected_datasets,
+            [cdr_consts.CONTROLLED_TIER_DEID, cdr_consts.REGISTERED_TIER_DEID])
         look_up_table = LOOKUP_TABLE_CREATION_QUERY.render(
             project_id=self.project_id,
             sandbox_dataset=self.sandbox_dataset_id,
