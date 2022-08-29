@@ -7,7 +7,6 @@ not one of the following: awake, light, asleep, deep, restless, wake, rem, unkno
 import logging
 
 # Project imports
-from utils import pipeline_logging
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from common import JINJA_ENV, FITBIT_TABLES, SLEEP_LEVEL
@@ -126,7 +125,6 @@ if __name__ == '__main__':
     import cdr_cleaner.args_parser as parser
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
-    pipeline_logging.configure()
     ARGS = parser.default_parse_args()
 
     if ARGS.list_queries:
