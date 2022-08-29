@@ -9,26 +9,32 @@ import logging
 # Project imports
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.cdr_cleaner import clean_cdr as cdr_consts
-from common import JINJA_ENV, FITBIT_TABLES
+from common import JINJA_ENV, FITBIT_TABLES, SLEEP_LEVEL
 
 LOGGER = logging.getLogger(__name__)
 
 ISSUE_NUMBERS = ['DC2605']
 
-LEVEL_FIELD_VALUES = [
-    'awake', 'light', 'asleep', 'deep', 'restless', 'wake', 'rem', 'unknown'
-]
+# DELETE_RECORDS_WITH_INVALID_LEVEL_VALUES = JINJA_ENV.from_string("""
+#     DELETE
+#     FROM `{{project}}.{{dataset}}.{{sleep_level_table}}`
+#     WHERE person_id IN ({{person_ids}})
+#  """)
 
-PERSON_WITH_INVALID_LEVEL_VALUES = JINJA_ENV.from_string("""
-    SELECT person_id
-    FROM `{{project}}.{{dataset}}.{{sleep_level_table}}`
-    WHERE level NOT IN ({{level_field_values}})
+SANDBOX_INVALID_LEVEL_RECORDS = JINJA_ENV.from_string("""
+CREATE OR REPLACE TABLE
+    `{{project_id}}.{{sandbox_dataset}}.{{sandbox_table}}` AS
+(
+    SELECT
+        *
+    FROM
+        `{{project_id}}.{{dataset_id}}.{{sleep_level_table}}`
+    WHERE level NOT IN ('awake','light','asleep','deep','restless','wake','rem','unknown')
+)
  """)
 
-DELETE_RECORDS_WITH_INVALID_LEVEL_VALUES = JINJA_ENV.from_string("""
-    DELETE
-    FROM `{{project}}.{{dataset}}.{{sleep_level_table}}`
-    WHERE person_id IN ({{person_ids}})
+REMOVE_INVALID_LEVEL_RECORDS = JINJA_ENV.from_string("""
+
  """)
 
 
@@ -58,18 +64,36 @@ class DropInvalidSleepLevelRecords(BaseCleaningRule):
                          sandbox_dataset_id=sandbox_dataset_id,
                          table_namer=table_namer)
 
-    def setup_rule(self, client, *args, **keyword_args):
-
+    def setup_rule(self, client):
+        """
+        Function to run any data upload options before executing a query.
+        """
         pass
 
     def get_query_specs(self, *args, **keyword_args):
-        pass
+        """
+        Return a list of dictionary query specifications.
+
+        :return:  A list of dictionaries. Each dictionary contains a single query
+            and a specification for how to execute that query. The specifications
+            are optional but the query is required.
+        """
+        sandbox_invalid_records = {
+            cdr_consts.QUERY:
+                SANDBOX_INVALID_LEVEL_RECORDS.render(
+                    project_id=self.project_id,
+                    dataset_id=self.dataset_id,
+                    sleep_level_table=SLEEP_LEVEL,
+                    sandbox_dataset=self.sandbox_dataset_id,
+                    sandbox_table=self.get_sandbox_tablenames()[0])
+        }
 
     def get_sandbox_tablenames(self):
         """
         generates sandbox table names
         """
-        raise NotImplementedError("Please fix me.")
+        sandbox_table = self.sandbox_table_for(self.affected_tables[5])
+        return [sandbox_table]
 
     def setup_validation(self, client):
         """
