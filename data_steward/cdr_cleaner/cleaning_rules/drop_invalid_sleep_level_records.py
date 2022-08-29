@@ -7,6 +7,7 @@ not one of the following: awake, light, asleep, deep, restless, wake, rem, unkno
 import logging
 
 # Project imports
+from utils import pipeline_logging
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from common import JINJA_ENV, FITBIT_TABLES, SLEEP_LEVEL
@@ -64,12 +65,6 @@ class DropInvalidSleepLevelRecords(BaseCleaningRule):
                          sandbox_dataset_id=sandbox_dataset_id,
                          table_namer=table_namer)
 
-    def setup_rule(self, client):
-        """
-        Function to run any data upload options before executing a query.
-        """
-        pass
-
     def get_query_specs(self, *args, **keyword_args):
         """
         Return a list of dictionary query specifications.
@@ -78,6 +73,7 @@ class DropInvalidSleepLevelRecords(BaseCleaningRule):
             and a specification for how to execute that query. The specifications
             are optional but the query is required.
         """
+
         sandbox_invalid_records = {
             cdr_consts.QUERY:
                 SANDBOX_INVALID_LEVEL_RECORDS.render(
@@ -100,12 +96,11 @@ class DropInvalidSleepLevelRecords(BaseCleaningRule):
 
         return [sandbox_invalid_records, delete_invalid_records]
 
-    def get_sandbox_tablenames(self):
+    def setup_rule(self, client):
         """
-        generates sandbox table names
+        Function to run any data upload options before executing a query.
         """
-        sandbox_table = self.sandbox_table_for(SLEEP_LEVEL)
-        return [sandbox_table]
+        pass
 
     def setup_validation(self, client):
         """
@@ -119,11 +114,19 @@ class DropInvalidSleepLevelRecords(BaseCleaningRule):
         """
         raise NotImplementedError("Please fix me.")
 
+    def get_sandbox_tablenames(self):
+        """
+        generates sandbox table names
+        """
+        sandbox_table = self.sandbox_table_for(SLEEP_LEVEL)
+        return [sandbox_table]
+
 
 if __name__ == '__main__':
     import cdr_cleaner.args_parser as parser
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
+    pipeline_logging.configure()
     ARGS = parser.default_parse_args()
 
     if ARGS.list_queries:
