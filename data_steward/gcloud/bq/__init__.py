@@ -24,7 +24,7 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from utils import auth
 from resources import fields_for
 from constants.utils import bq as consts
-from common import JINJA_ENV
+from common import JINJA_ENV, IDENTITY_MATCH, PARTICIPANT_MATCH
 
 tracer_provider = TracerProvider()
 trace.set_tracer_provider(tracer_provider)
@@ -73,10 +73,10 @@ class BigQueryClient(Client):
         if fields:
             fields = fields
         else:
-            if table_name.endswith('identity_match'):
-                fields = fields_for('identity_match')
-            elif table_name.endswith('participant_match'):
-                fields = fields_for('participant_match')
+            if table_name.endswith(IDENTITY_MATCH):
+                fields = fields_for(IDENTITY_MATCH)
+            elif table_name.endswith(PARTICIPANT_MATCH):
+                fields = fields_for(PARTICIPANT_MATCH)
             else:
                 fields = fields_for(table_name)
 
