@@ -18,7 +18,7 @@ from dateutil import parser
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.fill_source_value_text_fields import FillSourceValueTextFields
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
-from common import OBSERVATION, CONCEPT, CDM_TABLES, VOCABULARY_TABLES
+from common import OBSERVATION, CONCEPT, CDM_TABLES, SURVEY_CONDUCT, VOCABULARY_TABLES
 
 
 class FillSourceValueTextFieldsTest(BaseTest.CleaningRulesTestBase):
@@ -44,7 +44,7 @@ class FillSourceValueTextFieldsTest(BaseTest.CleaningRulesTestBase):
         cls.rule_instance = FillSourceValueTextFields(project_id, dataset_id,
                                                       sandbox_id)
 
-        table_names = CDM_TABLES + VOCABULARY_TABLES
+        table_names = CDM_TABLES + VOCABULARY_TABLES + [SURVEY_CONDUCT]
 
         cls.fq_table_names = [
             f'{project_id}.{dataset_id}.{table}' for table in table_names
@@ -119,18 +119,11 @@ class FillSourceValueTextFieldsTest(BaseTest.CleaningRulesTestBase):
             'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
             'sandboxed_ids': [],
             'fields': [
-                'observation_id',
-                'person_id',
-                'observation_date',
-                'value_as_string',
-                'value_as_concept_id',
-                'observation_source_concept_id',
-                'value_source_concept_id',
-                'value_source_value',
-                'observation_source_value',
-                'observation_concept_id',
-                'observation_type_concept_id',
-                'conduct_survey',
+                'observation_id', 'person_id', 'observation_date',
+                'value_as_string', 'value_as_concept_id',
+                'observation_source_concept_id', 'value_source_concept_id',
+                'value_source_value', 'observation_source_value',
+                'observation_concept_id', 'observation_type_concept_id'
             ],
             'cleaned_values': [
                 (1, 1, self.date, "063**", 0, 1585250, 0, None,
