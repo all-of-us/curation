@@ -4,6 +4,7 @@ Integration test for drop_invalid_sleep_level_records module
 Rule to sandbox and drop records in the sleep_level table where level is
 not one of the following: awake, light, asleep, deep, restless, wake, rem, unknown.
 
+Original Issues: DC-2605
 """
 
 # Python Imports
