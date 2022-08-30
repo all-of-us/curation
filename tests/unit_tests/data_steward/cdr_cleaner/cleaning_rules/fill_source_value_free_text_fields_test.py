@@ -122,7 +122,7 @@ class FillSourceValueTextFieldsTest(unittest.TestCase):
     def test_get_query_specs(self, mock_affected_tables, mock_fields_for,
                              mock_get_fields_dict, mock_get_modified_columns,
                              mock_get_full_join_expression):
-        mock_affected_tables.__iter__.return_value = self.cdm_tables
+        mock_affected_tables.return_value = self.cdm_tables
         mock_fields_for.__iter__.return_value = self.fields_resource
         mock_get_fields_dict.return_value = self.fields_dict
         mock_get_modified_columns.return_value = self.cols
