@@ -52,7 +52,7 @@ import logging
 
 import resources
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
-from common import JINJA_ENV, OBSERVATION
+from common import JINJA_ENV, OBSERVATION, SURVEY_CONDUCT
 from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 
@@ -70,7 +70,7 @@ FIELD_REPLACE_QUERY = JINJA_ENV.from_string("""select {{columns}}
 
 
 def get_affected_tables():
-    return resources.CDM_TABLES
+    return resources.CDM_TABLES + [SURVEY_CONDUCT]
 
 
 def get_fields_dict(table_name, fields):
