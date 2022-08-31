@@ -15,6 +15,6 @@
     "type": "string",
     "name": "value",
     "mode": "nullable",
-    "description": "Values in { LANGUAGE: [en, es], NON_PARTICIPANT_AUTHOR_INDICATOR: [CATI]}, CODE: [surveys - 91 listed]"
+    "description": "Values in { LANGUAGE: [en, es], NON_PARTICIPANT_AUTHOR_INDICATOR: [CATI]}, CODE: [survey taken]"
   }
 ]
