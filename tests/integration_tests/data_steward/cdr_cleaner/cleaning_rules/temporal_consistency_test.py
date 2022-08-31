@@ -112,7 +112,7 @@ class TemporalConsistencyTest(BaseTest.CleaningRulesTestBase):
                 date('2021-10-18'), timestamp('2021-10-18 00:00:00'), 7),
             (201, 2, 9201, date('2021-10-01'), timestamp('2021-10-01 00:00:00'),
                 date('2021-09-30'), timestamp('2021-09-30 00:00:00'), 7)"""
-        ).render(fq_table_id=self.fq_table_names[3])
+        ).render(fq_table_id=self.fq_table_names[-1])
         queries.append(vo_insert)
 
         self.load_test_data(queries)
@@ -211,9 +211,9 @@ class TemporalConsistencyTest(BaseTest.CleaningRulesTestBase):
             ]
         }, {
             'fq_table_name':
-                self.fq_table_names[3],
+                self.fq_table_names[-1],
             'fq_sandbox_table_name':
-                self.fq_sandbox_table_names[3],
+                self.fq_sandbox_table_names[-1],
             'loaded_ids': [101, 102, 201],
             'sandboxed_ids': [101, 201],
             'fields': [
