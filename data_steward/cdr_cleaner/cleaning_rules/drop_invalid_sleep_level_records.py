@@ -24,7 +24,7 @@ CREATE OR REPLACE TABLE
     FROM
         `{{project_id}}.{{dataset_id}}.{{sleep_level_table}}`
     WHERE level NOT IN 
-        ('awake','light','asleep','deep','restless','wake','rem','unknown') or level is NULL
+        ('awake','light','asleep','deep','restless','wake','rem','unknown') OR level IS NULL
 )
  """)
 
