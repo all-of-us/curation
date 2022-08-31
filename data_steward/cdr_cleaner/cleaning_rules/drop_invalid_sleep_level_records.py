@@ -23,17 +23,21 @@ CREATE OR REPLACE TABLE
         *
     FROM
         `{{project_id}}.{{dataset_id}}.{{sleep_level_table}}`
-    WHERE level NOT IN ('awake','light','asleep','deep','restless','wake','rem','unknown') or level is NULL
+    WHERE level NOT IN 
+        ('awake','light','asleep','deep','restless','wake','rem','unknown') or level is NULL
 )
  """)
 
 DELETE_INVALID_LEVEL_RECORDS = JINJA_ENV.from_string("""
 DELETE
-FROM `{{project_id}}.{{dataset_id}}.{{sleep_level_table}}`
+FROM 
+    `{{project_id}}.{{dataset_id}}.{{sleep_level_table}}`
 WHERE person_id IN
 (
-    SELECT person_id
-    FROM `{{project_id}}.{{sandbox_dataset}}.{{sandbox_table}}`
+    SELECT 
+        person_id
+    FROM 
+        `{{project_id}}.{{sandbox_dataset}}.{{sandbox_table}}`
 )
  """)
 
