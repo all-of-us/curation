@@ -6,6 +6,7 @@ import mock
 from cdr_cleaner.cleaning_rules.fill_source_value_text_fields import (
     FillSourceValueTextFields, get_fields_dict, get_modified_columns,
     get_full_join_expression)
+from common import SURVEY_CONDUCT
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 
 
@@ -116,12 +117,12 @@ class FillSourceValueTextFieldsTest(unittest.TestCase):
         'cdr_cleaner.cleaning_rules.fill_source_value_text_fields.resources.fields_for'
     )
     @mock.patch(
-        'cdr_cleaner.cleaning_rules.fill_source_value_text_fields.resources.CDM_TABLES'
+        'cdr_cleaner.cleaning_rules.fill_source_value_text_fields.get_affected_tables'
     )
-    def test_get_query_specs(self, mock_cdm_tables, mock_fields_for,
+    def test_get_query_specs(self, mock_affected_tables, mock_fields_for,
                              mock_get_fields_dict, mock_get_modified_columns,
                              mock_get_full_join_expression):
-        mock_cdm_tables.__iter__.return_value = self.cdm_tables
+        mock_affected_tables.return_value = self.cdm_tables
         mock_fields_for.__iter__.return_value = self.fields_resource
         mock_get_fields_dict.return_value = self.fields_dict
         mock_get_modified_columns.return_value = self.cols

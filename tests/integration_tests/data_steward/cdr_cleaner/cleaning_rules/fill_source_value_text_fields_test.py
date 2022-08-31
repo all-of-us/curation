@@ -18,7 +18,8 @@ from dateutil import parser
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.fill_source_value_text_fields import FillSourceValueTextFields
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
-from common import OBSERVATION, CONCEPT, CDM_TABLES, VOCABULARY_TABLES
+from common import OBSERVATION, CONCEPT, VOCABULARY_TABLES
+from resources import CDM_TABLES
 
 
 class FillSourceValueTextFieldsTest(BaseTest.CleaningRulesTestBase):
@@ -73,7 +74,7 @@ class FillSourceValueTextFieldsTest(BaseTest.CleaningRulesTestBase):
         Tests that the specifications for queries perform as designed.
 
         Validates pre conditions, tests execution, and post conditions based on the load
-        statements and the tables_and_counts variable.        
+        statements and the tables_and_counts variable.
         """
 
         create_concepts_query_tmpl = self.jinja_env.from_string("""
@@ -90,7 +91,7 @@ class FillSourceValueTextFieldsTest(BaseTest.CleaningRulesTestBase):
         observations_query_tmpl = self.jinja_env.from_string("""
             INSERT INTO `{{fq_dataset_name}}.observation`
                 (observation_id, person_id, observation_date,
-                value_as_string, value_as_concept_id, observation_source_concept_id, 
+                value_as_string, value_as_concept_id, observation_source_concept_id,
                 value_source_concept_id, value_source_value, observation_source_value,
                 observation_concept_id, observation_type_concept_id)
             VALUES
