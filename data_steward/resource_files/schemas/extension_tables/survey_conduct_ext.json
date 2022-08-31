@@ -1,0 +1,20 @@
+[
+    {
+        "type": "integer",
+        "name": "survey_conduct_id",
+        "mode": "nullable",
+        "description": "The survey_conduct_id used in the survey_conduct table."
+    },
+    {
+        "type": "string",
+        "name": "src_id",
+        "mode": "nullable",
+        "description": "The provenance of the data associated with the survey_conduct_id."
+    },
+    {
+        "type": "<field type from questionnaire_response_additional_info table>",
+        "name": "<field from questionnaire_response_additional_info table>",
+        "mode": "nullable",
+        "description": ""
+    }
+]
