@@ -161,7 +161,7 @@ def create_person_id_src_hpo_map(client, input_dataset):
         sql_statement.append(
             sql.format(table=table, input_dataset=input_dataset))
 
-    final_query = ' UNION '.join(sql_statement)
+    final_query = ' UNION DISTINCT '.join(sql_statement)
 
     # create the mapping table
     if map_tablename not in dataset_table_ids:
