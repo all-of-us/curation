@@ -11,7 +11,7 @@ from cdr_cleaner.clean_cdr_utils import get_tables_in_dataset
 
 LOGGER = logging.getLogger(__name__)
 
-JIRA_ISSUE_NUMBERS = ['DC1787']
+JIRA_ISSUE_NUMBERS = ['DC1787', 'DC2138']
 
 SANDBOX_NON_EXISTING_PIDS = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table_id}}` AS
@@ -65,8 +65,7 @@ class RemoveNonExistingPids(BaseCleaningRule):
 
     def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
 
-        sandbox_queries = []
-        queries = []
+        sandbox_queries, queries = [], []
         # iterate through the list of tables
         for table in self.affected_tables:
             sandbox_queries.append({

@@ -37,10 +37,10 @@ def get_tables_in_dataset(client: Client, project_id, dataset_id,
     This function retrieves tables that exist in dataset for an inital list table_names . This
     function raises GoogleCloudError if the query throws an error
 
-    :param client:
-    :param project_id:
-    :param dataset_id:
-    :param table_names:
+    :param client: a BigQueryClient
+    :param project_id: identifies the project
+    :param dataset_id: dataset that contains the tables
+    :param table_names: tables to retrieve
     :return: a list of tables that exist in the given dataset
     """
     # The following makes sure the tables exist in the dataset
