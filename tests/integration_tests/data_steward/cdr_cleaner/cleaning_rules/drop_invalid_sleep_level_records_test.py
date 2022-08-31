@@ -30,7 +30,8 @@ VALUES
 (7, '2009-06-23','false', NULL, '2009-06-23T05:00:00', 3.8),
 (8, '2011-09-12','true', 'restless', '2011-09-12T05:00:00', 5.3),
 (9, '2015-01-21','true', 'unknown', '2015-01-21T05:00:00', 7.3),
-(10, '2017-02-05','false', 'asleep', '2017-02-05T05:00:00', 3.8)
+(10, '2017-02-05','false', 'asleep', '2017-02-05T05:00:00', 3.8),
+(11, '2010-07-18','false', 'invalid', '2010-07-18T05:00:00', 7.5)
  """)
 
 
@@ -79,6 +80,7 @@ class DropInvalidSleepLevelRecordsTest(BaseTest.CleaningRulesTestBase):
         """
         super().setUp()
 
+        # Query to insert test records into sleep_level table
         sleep_level_query = SLEEP_LEVEL_TEMPLATE.render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
@@ -89,7 +91,7 @@ class DropInvalidSleepLevelRecordsTest(BaseTest.CleaningRulesTestBase):
 
     def test_field_cleaning(self):
         """
-        person_ids 3 and 7 contain values that are not
+        person_ids 3, 7, and 11 contain values that are not
         one of the following: awake, light, asleep, deep, restless, wake, rem, unknown.
         """
         # Expected results list
@@ -98,8 +100,8 @@ class DropInvalidSleepLevelRecordsTest(BaseTest.CleaningRulesTestBase):
                 self.fq_table_names[0],
             'fq_sandbox_table_name':
                 self.fq_sandbox_table_names[0],
-            'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-            'sandboxed_ids': [3, 7],
+            'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+            'sandboxed_ids': [3, 7, 11],
             'fields': [
                 'person_id', 'sleep_date', 'is_main_sleep', 'level',
                 'start_datetime', 'duration_in_min'
