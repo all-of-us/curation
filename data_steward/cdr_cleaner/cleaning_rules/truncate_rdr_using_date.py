@@ -21,14 +21,15 @@ LOGGER = logging.getLogger(__name__)
 
 TRUNCATE_TABLES = [
     common.VISIT_OCCURRENCE, common.OBSERVATION, common.MEASUREMENT,
-    common.PROCEDURE_OCCURRENCE
+    common.PROCEDURE_OCCURRENCE, common.SURVEY_CONDUCT
 ]
 
 TABLES_DATES_FIELDS = {
     common.VISIT_OCCURRENCE: 'visit_start_date',
     common.OBSERVATION: 'observation_date',
     common.MEASUREMENT: 'measurement_date',
-    common.PROCEDURE_OCCURRENCE: 'procedure_date'
+    common.PROCEDURE_OCCURRENCE: 'procedure_date',
+    common.SURVEY_CONDUCT: 'survey_start_date'
 }
 
 # Query to create tables in sandbox with the rows that will be removed per cleaning rule
