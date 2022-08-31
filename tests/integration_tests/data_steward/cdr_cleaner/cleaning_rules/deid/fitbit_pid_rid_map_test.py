@@ -6,7 +6,7 @@ from datetime import datetime
 from app_identity import PROJECT_ID
 import cdr_cleaner.cleaning_rules.deid.fitbit_pid_rid_map as pr
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
-from common import ACTIVITY_SUMMARY, HEART_RATE_SUMMARY, HEART_RATE_MINUTE_LEVEL, STEPS_INTRADAY, DEID_MAP
+from common import ACTIVITY_SUMMARY, HEART_RATE_SUMMARY, HEART_RATE_MINUTE_LEVEL, STEPS_INTRADAY, SLEEP_DAILY_SUMMARY, SLEEP_LEVEL, DEID_MAP
 
 
 class FitbitPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
@@ -20,13 +20,12 @@ class FitbitPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
         super().initialize_class_vars()
 
         # Set the test project identifier
-        project_id = os.environ.get(PROJECT_ID)
-        cls.project_id = project_id
+        cls.project_id = os.environ.get(PROJECT_ID)
 
         # Set the expected test datasets
         # using unioned since we don't declare a deid dataset
         cls.dataset_id = os.environ.get('UNIONED_DATASET_ID')
-        cls.sandbox_id = cls.dataset_id + '_sandbox'
+        cls.sandbox_id = f'{cls.dataset_id}_sandbox'
 
         mapping_dataset_id = os.environ.get('COMBINED_DATASET_ID')
         mapping_table_id = DEID_MAP
@@ -35,23 +34,23 @@ class FitbitPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
             'mapping_dataset_id': mapping_dataset_id,
             'mapping_table_id': mapping_table_id
         })
-        cls.fq_deid_map_table = f'{project_id}.{mapping_dataset_id}.{mapping_table_id}'
+        cls.fq_deid_map_table = f'{cls.project_id}.{mapping_dataset_id}.{mapping_table_id}'
 
-        cls.rule_instance = pr.FitbitPIDtoRID(project_id, cls.dataset_id,
+        cls.rule_instance = pr.FitbitPIDtoRID(cls.project_id, cls.dataset_id,
                                               cls.sandbox_id,
                                               mapping_dataset_id,
                                               mapping_table_id)
 
         cls.fq_sandbox_table_names = [
-            f'{project_id}.{cls.sandbox_id}.{cls.rule_instance.sandbox_table_for(table_id)}'
+            f'{cls.project_id}.{cls.sandbox_id}.{cls.rule_instance.sandbox_table_for(table_id)}'
             for table_id in pr.FITBIT_TABLES
         ]
 
         cls.fq_table_names = [
-            f'{project_id}.{cls.dataset_id}.{table_id}'
+            f'{cls.project_id}.{cls.dataset_id}.{table_id}'
             for table_id in pr.FITBIT_TABLES
         ] + [cls.fq_deid_map_table
-            ] + [f'{project_id}.{mapping_dataset_id}.person']
+            ] + [f'{cls.project_id}.{mapping_dataset_id}.person']
 
         # call super to set up the client, create datasets, and create
         # empty test tables
@@ -134,6 +133,31 @@ class FitbitPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
             fq_dataset_name=self.fq_dataset_name, fitbit_table=STEPS_INTRADAY)
         queries.append(sid_query)
 
+        sds_query = self.jinja_env.from_string("""
+        INSERT INTO `{{fq_dataset_name}}.{{fitbit_table}}`
+        (person_id,sleep_date,minute_in_bed)
+        VALUES
+            (1234, date('2020-08-17'), 502),
+            (5678, date('2020-08-17'), 443),
+            (2345, date('2020-08-17'), 745),
+            (6789, date('2020-08-17'), 605),
+            (3456, date('2020-08-17'), 578)""").render(
+            fq_dataset_name=self.fq_dataset_name,
+            fitbit_table=SLEEP_DAILY_SUMMARY)
+        queries.append(sds_query)
+
+        sl_query = self.jinja_env.from_string("""
+        INSERT INTO `{{fq_dataset_name}}.{{fitbit_table}}`
+        (person_id,sleep_date,duration_in_min)
+        VALUES
+            (1234, date('2020-08-17'), 42),
+            (5678, date('2020-08-17'), 15),
+            (2345, date('2020-08-17'), 22),
+            (6789, date('2020-08-17'), 56),
+            (3456, date('2020-08-17'), 12)""").render(
+            fq_dataset_name=self.fq_dataset_name, fitbit_table=SLEEP_LEVEL)
+        queries.append(sl_query)
+
         pid_query = self.jinja_env.from_string("""
         INSERT INTO `{{fq_dataset_name}}.person`
         (person_id, gender_concept_id, year_of_birth, race_concept_id, ethnicity_concept_id)
@@ -214,6 +238,34 @@ class FitbitPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
                 (678, datetime.fromisoformat('2020-08-17 15:30:00'), 50),
                 (345, datetime.fromisoformat('2020-08-17 16:00:00'), 55),
                 (789, datetime.fromisoformat('2020-08-17 16:30:00'), 40)
+            ]
+        }, {
+            'fq_table_name':
+                '.'.join([self.fq_dataset_name, SLEEP_DAILY_SUMMARY]),
+            'fq_sandbox_table_name':
+                self.fq_sandbox_table_names[4],
+            'fields': ['person_id', 'sleep_date', 'minute_in_bed'],
+            'loaded_ids': [1234, 5678, 2345, 6789, 3456],
+            'sandboxed_ids': [3456],
+            'cleaned_values': [
+                (234, datetime.fromisoformat('2020-08-17').date(), 502),
+                (678, datetime.fromisoformat('2020-08-17').date(), 443),
+                (345, datetime.fromisoformat('2020-08-17').date(), 745),
+                (789, datetime.fromisoformat('2020-08-17').date(), 605)
+            ]
+        }, {
+            'fq_table_name':
+                '.'.join([self.fq_dataset_name, SLEEP_LEVEL]),
+            'fq_sandbox_table_name':
+                self.fq_sandbox_table_names[5],
+            'fields': ['person_id', 'sleep_date', 'duration_in_min'],
+            'loaded_ids': [1234, 5678, 2345, 6789, 3456],
+            'sandboxed_ids': [3456],
+            'cleaned_values': [
+                (234, datetime.fromisoformat('2020-08-17').date(), 42),
+                (678, datetime.fromisoformat('2020-08-17').date(), 15),
+                (345, datetime.fromisoformat('2020-08-17').date(), 22),
+                (789, datetime.fromisoformat('2020-08-17').date(), 56)
             ]
         }]
 

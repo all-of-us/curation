@@ -1,5 +1,6 @@
 """
 DEID rule to change PIDs to RIDs for Fitbit tables
+Maps the PIDs used in fitbit to the RIDs
 """
 # Python Imports
 import logging
@@ -10,7 +11,7 @@ from common import FITBIT_TABLES
 
 LOGGER = logging.getLogger(__name__)
 
-ISSUE_NUMBERS = ['DC-1000']
+ISSUE_NUMBERS = ['DC-1000', 'DC-2136']
 
 
 class FitbitPIDtoRID(PIDtoRID):
@@ -28,7 +29,7 @@ class FitbitPIDtoRID(PIDtoRID):
         """
         Initialize the class with proper info.
 
-        Set the issue numbers, description and affected datasets.  As other
+        Set the issue numbers, description and affected datasets. As other
         tickets may affect this SQL, append them to the list of Jira Issues.
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
