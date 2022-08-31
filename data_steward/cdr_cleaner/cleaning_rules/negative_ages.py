@@ -28,6 +28,7 @@ date_fields = {
     common.DRUG_ERA: 'drug_era_start_date',
     common.CONDITION_ERA: 'condition_era_start_date',
     common.MEASUREMENT: 'measurement_date',
+    common.SURVEY_CONDUCT: 'survey_start_date',
     common.DEVICE_EXPOSURE: 'device_exposure_start_date'
 }
 
