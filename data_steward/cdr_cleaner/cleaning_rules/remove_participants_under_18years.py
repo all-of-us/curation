@@ -98,7 +98,7 @@ class RemoveParticipantsUnder18Years(BaseCleaningRule):
             'is to be sandboxed and dropped from the CDR.')
 
         super().__init__(
-            issue_numbers=['DC1724', 'DC2260'],
+            issue_numbers=['DC1724', 'DC2260', 'DC2632'],
             description=desc,
             affected_datasets=[cdr_consts.RDR],
             affected_tables=AFFECTED_TABLES,
