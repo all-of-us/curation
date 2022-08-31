@@ -86,7 +86,7 @@ class TruncateRdrData(BaseCleaningRule):
         desc = (f'All rows of data in the RDR export with dates after '
                 f'{self.cutoff_date} will be truncated.')
 
-        super().__init__(issue_numbers=['DC1009'],
+        super().__init__(issue_numbers=['DC1009', 'DC2630'],
                          description=desc,
                          affected_datasets=[cdr_consts.RDR],
                          affected_tables=TRUNCATE_TABLES,
