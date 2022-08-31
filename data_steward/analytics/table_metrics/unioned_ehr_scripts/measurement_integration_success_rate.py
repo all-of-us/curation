@@ -13,18 +13,12 @@
 #     name: python3
 # ---
 
-from google.cloud import bigquery
-# %reload_ext google.cloud.bigquery
-client = bigquery.Client()
-# %load_ext google.cloud.bigquery
-
-# +
-from notebooks import parameters
-DATASET = parameters.LATEST_DATASET
-LOOKUP_TABLES = parameters.LOOKUP_TABLES
-
-print(f"Dataset to use: {DATASET}")
-print(f"Lookup tables: {LOOKUP_TABLES}")
+# + tags=["parameters"]
+PROJECT_ID = ""
+DATASET = ""
+LOOKUP_TABLES = ""
+RUN_AS = ""
+# -
 
 # +
 import warnings
@@ -33,6 +27,14 @@ warnings.filterwarnings('ignore')
 import pandas as pd
 import matplotlib.pyplot as plt
 import os
+from utils import auth
+from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
+from gcloud.bq import BigQueryClient
+
+impersonation_creds = auth.get_impersonation_credentials(
+    RUN_AS, target_scopes=IMPERSONATION_SCOPES)
+
+client = BigQueryClient(PROJECT_ID, credentials=impersonation_creds)
 
 plt.style.use('ggplot')
 pd.options.display.max_rows = 999
@@ -64,13 +66,13 @@ NOT LIKE '%unioned_ehr_%'
 AND table_id NOT LIKE '\\\_%'
 """
 
-site_df = pd.io.gbq.read_gbq(hpo_id_query, dialect='standard')
+site_df = execute(client, hpo_id_query)
 
 get_full_names = f"""
 select * from {LOOKUP_TABLES}.hpo_site_id_mappings
 """
 
-full_names_df = pd.io.gbq.read_gbq(get_full_names, dialect='standard')
+full_names_df = execute(client, get_full_names)
 
 # +
 full_names_df.columns = ['org_id', 'src_hpo_id', 'site_name', 'display_order']
@@ -87,17 +89,18 @@ site_df = pd.merge(site_df, full_names_df, on=['src_hpo_id'], how='left')
 
 Lipid = (40782589, 40795800, 40772572)
 
-CBC = (40789356, 40789120, 40789179, 40772748, 40782735,
-40789182, 40786033, 40779159)
+CBC = (40789356, 40789120, 40789179, 40772748, 40782735, 40789182, 40786033,
+       40779159)
 
-CBCwDiff = (40785788, 40785796, 40779195, 40795733, 40795725,
-40772531, 40779190, 40785793, 40779191, 40782561, 40789266)
+CBCwDiff = (40785788, 40785796, 40779195, 40795733, 40795725, 40772531,
+            40779190, 40785793, 40779191, 40782561, 40789266)
 
 CMP = (3049187, 3053283, 40775801, 40779224, 40782562, 40782579, 40785850,
-40785861, 40785869, 40789180, 40789190, 40789527, 40791227, 40792413, 40792440,
-40795730, 40795740, 40795754, 40771922)
+       40785861, 40785869, 40789180, 40789190, 40789527, 40791227, 40792413,
+       40792440, 40795730, 40795740, 40795754, 40771922)
 
-Physical_Measurement = (40654163, 40655804, 40654162, 40655805, 40654167, 40654164)
+Physical_Measurement = (40654163, 40655804, 40654162, 40655805, 40654167,
+                        40654164)
 
 all_measurements = Lipid + CBC + CBCwDiff + CMP + Physical_Measurement
 
@@ -109,7 +112,7 @@ len(Lipid)
 
 num_lipids = len(set(Lipid))
 
-df = pd.io.gbq.read_gbq('''
+lipid_query = '''
 SELECT
     a.src_hpo_id, 
     round(COUNT(a.src_hpo_id) / {num_lipids} * 100, 2) perc_ancestors -- does not make sense
@@ -136,11 +139,11 @@ FROM
      ) a
  GROUP BY 1
  ORDER BY perc_ancestors DESC, a.src_hpo_id
-    '''.format(DATASET=DATASET, num_lipids=num_lipids,Lipid=Lipid),
-                        dialect='standard')
-df.shape
+    '''.format(DATASET=DATASET, num_lipids=num_lipids, Lipid=Lipid)
 
-df_Lipid = df.rename(columns={"perc_ancestors": 'Lipid'})
+df_Lipid = execute(client, lipid_query)
+
+df_Lipid = df_Lipid.rename(columns={"perc_ancestors": 'Lipid'})
 
 df_Lipid.head(100)
 
@@ -150,7 +153,7 @@ len(CBC)
 
 num_cbc = len(set(CBC))
 
-df = pd.io.gbq.read_gbq('''
+CBC_query = '''
 SELECT
     a.src_hpo_id, 
     round(COUNT(a.src_hpo_id) / {num_cbc} * 100, 2) perc_ancestors
@@ -177,11 +180,11 @@ FROM
      ) a
  GROUP BY 1
  ORDER BY perc_ancestors DESC, a.src_hpo_id
-    '''.format(num_cbc=num_cbc, DATASET=DATASET, CBC=CBC),
-                        dialect='standard')
-df.shape
+    '''.format(num_cbc=num_cbc, DATASET=DATASET, CBC=CBC)
 
-df_CBC = df.rename(columns={"perc_ancestors": 'CBC'})
+df_CBC = execute(client, CBC_query)
+
+df_CBC = df_CBC.rename(columns={"perc_ancestors": 'CBC'})
 
 df_CBC.head(100)
 
@@ -191,7 +194,7 @@ len(CBCwDiff)
 
 num_cbc_w_diff = len(set(CBCwDiff))
 
-df = pd.io.gbq.read_gbq('''
+CBCwDiff_query = '''
 SELECT
     a.src_hpo_id, 
     round(COUNT(a.src_hpo_id) / {num_cbc_w_diff} * 100, 2) perc_ancestors
@@ -218,12 +221,12 @@ FROM
      ) a
  GROUP BY 1
  ORDER BY perc_ancestors DESC, a.src_hpo_id
-    '''.format(num_cbc_w_diff=num_cbc_w_diff, DATASET=DATASET, 
-               CBCwDiff=CBCwDiff),
-                        dialect='standard')
-df.shape
+    '''.format(num_cbc_w_diff=num_cbc_w_diff,
+               DATASET=DATASET,
+               CBCwDiff=CBCwDiff)
+df_CBCwDiff = execute(client, CBCwDiff_query)
 
-df_CBCwDiff = df.rename(columns={"perc_ancestors": 'CBCwDiff'})
+df_CBCwDiff = df_CBCwDiff.rename(columns={"perc_ancestors": 'CBCwDiff'})
 
 df_CBCwDiff.head(100)
 
@@ -233,7 +236,7 @@ len(CMP)
 
 num_cmp = len(set(CMP))
 
-df = pd.io.gbq.read_gbq('''
+CMP_query = '''
 SELECT
     a.src_hpo_id, 
     round(COUNT(a.src_hpo_id) / {num_cmp} * 100, 2) perc_ancestors
@@ -260,11 +263,10 @@ FROM
      ) a
  GROUP BY 1
  ORDER BY perc_ancestors DESC, a.src_hpo_id
-    '''.format(num_cmp=num_cmp, DATASET=DATASET, CMP=CMP),
-                        dialect='standard')
-df.shape
+    '''.format(num_cmp=num_cmp, DATASET=DATASET, CMP=CMP)
+df_CMP = execute(client, CMP_query)
 
-df_CMP = df.rename(columns={"perc_ancestors": 'CMP'})
+df_CMP = df_CMP.rename(columns={"perc_ancestors": 'CMP'})
 
 df_CMP.head(100)
 
@@ -274,7 +276,7 @@ len(Physical_Measurement)
 
 num_pms = len(set(Physical_Measurement))
 
-df = pd.io.gbq.read_gbq('''
+Physical_Measurement_query = '''
 SELECT
     a.src_hpo_id, 
     round(COUNT(a.src_hpo_id) / {num_pms} * 100, 2) perc_ancestors
@@ -301,11 +303,12 @@ FROM
      ) a
  GROUP BY 1
  ORDER BY perc_ancestors DESC, a.src_hpo_id
-    '''.format(num_pms=num_pms, DATASET=DATASET, Physical_Measurement=Physical_Measurement),
-                        dialect='standard')
-df.shape
+    '''.format(num_pms=num_pms,
+               DATASET=DATASET,
+               Physical_Measurement=Physical_Measurement)
+df_Physical_Measurement = execute(client, Physical_Measurement_query)
 
-df_Physical_Measurement = df.rename(
+df_Physical_Measurement = df_Physical_Measurement.rename(
     columns={"perc_ancestors": 'Physical_Measurement'})
 
 df_Physical_Measurement.head(100)
@@ -316,7 +319,7 @@ len(all_measurements)
 
 num_all_measurements = len(set(all_measurements))
 
-df = pd.io.gbq.read_gbq('''
+all_measurements_query = '''
 SELECT
     a.src_hpo_id, 
     round(COUNT(a.src_hpo_id) / {num_all_measurements} * 100, 2) perc_ancestors
@@ -343,12 +346,13 @@ FROM
      ) a
  GROUP BY 1
  ORDER BY perc_ancestors DESC, a.src_hpo_id
-    '''.format(num_all_measurements=num_all_measurements, DATASET=DATASET,
-              all_measurements=all_measurements),
-                        dialect='standard')
-df.shape
+    '''.format(num_all_measurements=num_all_measurements,
+               DATASET=DATASET,
+               all_measurements=all_measurements)
+df_all_measurements = execute(client, all_measurements_query)
 
-df_all_measurements = df.rename(columns={"perc_ancestors": 'All_Measurements'})
+df_all_measurements = df_all_measurements.rename(
+    columns={"perc_ancestors": 'All_Measurements'})
 
 df_all_measurements.head(100)
 
@@ -375,8 +379,8 @@ sites_measurement = pd.merge(sites_measurement,
                              how='outer',
                              on='src_hpo_id')
 
-sites_measurement[["Physical_Measurement","CMP","CBCwDiff","CBC","Lipid","All_Measurements"]]\
-    =sites_measurement[["Physical_Measurement","CMP","CBCwDiff","CBC","Lipid","All_Measurements"]]
+sites_measurement[["Physical_Measurement", "CMP", "CBCwDiff", "CBC", "Lipid", "All_Measurements"]] \
+    = sites_measurement[["Physical_Measurement", "CMP", "CBCwDiff", "CBC", "Lipid", "All_Measurements"]]
 
 sites_measurement = pd.merge(sites_measurement,
                              site_df,
@@ -386,10 +390,9 @@ sites_measurement = sites_measurement.fillna(0)
 
 sites_measurement
 
-sites_measurement = sites_measurement.sort_values(by='All_Measurements', ascending = False)
+sites_measurement = sites_measurement.sort_values(by='All_Measurements',
+                                                  ascending=False)
 
 sites_measurement
 
-sites_measurement.to_csv("{cwd}/sites_measurement.csv".format(cwd = cwd))
-
-
+sites_measurement.to_csv("{cwd}/sites_measurement.csv".format(cwd=cwd))

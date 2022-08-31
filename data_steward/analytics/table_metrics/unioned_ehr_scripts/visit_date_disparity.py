@@ -12,18 +12,12 @@
 #     name: python3
 # ---
 
-from google.cloud import bigquery
-# %reload_ext google.cloud.bigquery
-client = bigquery.Client()
-# %load_ext google.cloud.bigquery
-
-# +
-from notebooks import parameters
-DATASET = parameters.LATEST_DATASET
-LOOKUP_TABLES = parameters.LOOKUP_TABLES
-
-print(f"Dataset to use: {DATASET}")
-print(f"Lookup tables: {LOOKUP_TABLES}")
+# + tags=["parameters"]
+PROJECT_ID = ""
+DATASET = ""
+LOOKUP_TABLES = ""
+RUN_AS = ""
+# -
 
 # +
 import warnings
@@ -32,6 +26,14 @@ warnings.filterwarnings('ignore')
 import pandas as pd
 import matplotlib.pyplot as plt
 import os
+from utils import auth
+from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
+from gcloud.bq import BigQueryClient
+
+impersonation_creds = auth.get_impersonation_credentials(
+    RUN_AS, target_scopes=IMPERSONATION_SCOPES)
+
+client = BigQueryClient(PROJECT_ID, credentials=impersonation_creds)
 
 plt.style.use('ggplot')
 pd.options.display.max_rows = 999
@@ -63,13 +65,13 @@ NOT LIKE '%unioned_ehr_%'
 AND table_id NOT LIKE '\\\_%'
 """
 
-site_df = pd.io.gbq.read_gbq(hpo_id_query, dialect='standard')
+site_df = execute(client, hpo_id_query)
 
 get_full_names = f"""
 select * from {LOOKUP_TABLES}.hpo_site_id_mappings
 """
 
-full_names_df = pd.io.gbq.read_gbq(get_full_names, dialect='standard')
+full_names_df = execute(client, get_full_names)
 
 # +
 full_names_df.columns = ['org_id', 'src_hpo_id', 'site_name', 'display_order']
@@ -227,19 +229,18 @@ OR
 a.procedure_dt_vis_end_dt_diff > 0
 )
 ORDER BY src_hpo_id ASC, num_bad_records DESC, total_diff DESC, all_discrepancies_equal ASC
-""".format(DATASET = DATASET)
+""".format(DATASET=DATASET)
 
 print(p_v_query)
 
-procedure_visit_df = pd.io.gbq.read_gbq(p_v_query, dialect='standard')
-
-
+procedure_visit_df = execute(client, p_v_query)
 
 procedure_visit_df
 
 # ### Now let's make the dataframe a little more condensed - only show the total number of 'bad records' for each site
 
-bad_procedure_records_df = procedure_visit_df.groupby('src_hpo_id')['num_bad_records'].sum().to_frame()
+bad_procedure_records_df = procedure_visit_df.groupby(
+    'src_hpo_id')['num_bad_records'].sum().to_frame()
 
 bad_procedure_records_df
 
@@ -255,34 +256,42 @@ ON
 p.procedure_occurrence_id = mp.procedure_occurrence_id
 GROUP BY 1
 ORDER BY num_total_records DESC
-""".format(DATASET = DATASET)
+""".format(DATASET=DATASET)
 
-total_procedure_df = pd.io.gbq.read_gbq(num_total_procedure_records_query, dialect='standard')
+total_procedure_df = execute(client, num_total_procedure_records_query)
 
-total_procedure_df = pd.merge(total_procedure_df, site_df, how='outer', on='src_hpo_id')
+total_procedure_df = pd.merge(total_procedure_df,
+                              site_df,
+                              how='outer',
+                              on='src_hpo_id')
 
 total_procedure_df = total_procedure_df[['src_hpo_id', 'num_total_records']]
 
-final_procedure_df = pd.merge(total_procedure_df, bad_procedure_records_df, how='outer', on='src_hpo_id') 
+final_procedure_df = pd.merge(total_procedure_df,
+                              bad_procedure_records_df,
+                              how='outer',
+                              on='src_hpo_id')
 
 final_procedure_df = final_procedure_df.fillna(0)
 
 # ### Now we can actually calculate the 'tangible success rate'
 
 final_procedure_df['procedure_occurrence'] = \
-round((final_procedure_df['num_bad_records']) / final_procedure_df['num_total_records'] * 100, 2)
+    round((final_procedure_df['num_bad_records']) / final_procedure_df['num_total_records'] * 100, 2)
 
 # +
 final_procedure_df = final_procedure_df.fillna(0)
 
-final_procedure_df = final_procedure_df.sort_values(by=['procedure_occurrence'], ascending = False)
+final_procedure_df = final_procedure_df.sort_values(by=['procedure_occurrence'],
+                                                    ascending=False)
 # -
 
 final_procedure_df
 
 # ### to ensure all the dataframes are easy to ultimately merge, let's create a dataframe that only has the success rates and HPOs
 
-short_procedure_df = final_procedure_df.drop(columns=['num_total_records', 'num_bad_records'])
+short_procedure_df = final_procedure_df.drop(
+    columns=['num_total_records', 'num_bad_records'])
 
 # # Now let's move to the observation table
 
@@ -405,14 +414,14 @@ OR
 a.observation_dt_vis_end_dt_diff > 0
 )
 ORDER BY src_hpo_id ASC, num_bad_records DESC, total_diff DESC, all_discrepancies_equal ASC
-""".format(DATASET = DATASET)
+""".format(DATASET=DATASET)
 
-
-observation_visit_df = pd.io.gbq.read_gbq(observation_visit_query, dialect='standard')
+observation_visit_df = execute(client, observation_visit_query)
 
 # ### Now let's make the dataframe a little more condensed - only show the total number of 'bad records' for each site
 
-bad_observation_records_df = observation_visit_df.groupby('src_hpo_id')['num_bad_records'].sum().to_frame()
+bad_observation_records_df = observation_visit_df.groupby(
+    'src_hpo_id')['num_bad_records'].sum().to_frame()
 
 num_total_observation_records_query = """
 SELECT
@@ -426,34 +435,42 @@ ON
 o.observation_id = mo.observation_id
 GROUP BY 1
 ORDER BY num_total_records DESC
-""".format(DATASET = DATASET)
+""".format(DATASET=DATASET)
 
-total_observation_df = pd.io.gbq.read_gbq(num_total_observation_records_query, dialect='standard')
+total_observation_df = execute(client, num_total_observation_records_query)
 
 # +
-total_observation_df = pd.merge(total_observation_df, site_df, how='outer', on='src_hpo_id')
+total_observation_df = pd.merge(total_observation_df,
+                                site_df,
+                                how='outer',
+                                on='src_hpo_id')
 
 total_observation_df = total_observation_df[['src_hpo_id', 'num_total_records']]
 # -
 
-final_observation_df = pd.merge(total_observation_df, bad_observation_records_df, how='outer', on='src_hpo_id') 
+final_observation_df = pd.merge(total_observation_df,
+                                bad_observation_records_df,
+                                how='outer',
+                                on='src_hpo_id')
 
 final_observation_df = final_observation_df.fillna(0)
 
 # ### Now we can actually calculate the 'tangible success rate'
 
 final_observation_df['observation'] = \
-round((final_observation_df['num_bad_records']) / final_observation_df['num_total_records'] * 100, 2)
+    round((final_observation_df['num_bad_records']) / final_observation_df['num_total_records'] * 100, 2)
 
 # +
 final_observation_df = final_observation_df.fillna(0)
 
-final_observation_df = final_observation_df.sort_values(by=['observation'], ascending = False)
+final_observation_df = final_observation_df.sort_values(by=['observation'],
+                                                        ascending=False)
 # -
 
 # ### Creating a shorter df
 
-short_observation_df = final_observation_df.drop(columns=['num_total_records', 'num_bad_records'])
+short_observation_df = final_observation_df.drop(
+    columns=['num_total_records', 'num_bad_records'])
 
 short_observation_df
 
@@ -578,13 +595,14 @@ OR
 a.measurement_dt_vis_end_dt_diff > 0
 )
 ORDER BY src_hpo_id ASC, num_bad_records DESC, total_diff DESC, all_discrepancies_equal ASC
-""".format(DATASET = DATASET)
+""".format(DATASET=DATASET)
 
-measurement_visit_df = pd.io.gbq.read_gbq(measurement_visit_query, dialect='standard')
+measurement_visit_df = execute(client, measurement_visit_query)
 
 # ### Now let's make the dataframe a little more condensed - only show the total number of 'bad records' for each site
 
-bad_measurement_records_df = measurement_visit_df.groupby('src_hpo_id')['num_bad_records'].sum().to_frame()
+bad_measurement_records_df = measurement_visit_df.groupby(
+    'src_hpo_id')['num_bad_records'].sum().to_frame()
 
 num_total_measurement_records_query = """
 SELECT
@@ -598,17 +616,23 @@ ON
 m.measurement_id = mm.measurement_id
 GROUP BY 1
 ORDER BY num_total_records DESC
-""".format(DATASET = DATASET)
+""".format(DATASET=DATASET)
 
-total_measurement_df = pd.io.gbq.read_gbq(num_total_measurement_records_query, dialect='standard')
+total_measurement_df = execute(client, num_total_measurement_records_query)
 
 # +
-total_measurement_df = pd.merge(total_measurement_df, site_df, how='outer', on='src_hpo_id')
+total_measurement_df = pd.merge(total_measurement_df,
+                                site_df,
+                                how='outer',
+                                on='src_hpo_id')
 
 total_measurement_df = total_measurement_df[['src_hpo_id', 'num_total_records']]
 
 # +
-final_measurment_df = pd.merge(total_measurement_df, bad_measurement_records_df, how='outer', on='src_hpo_id') 
+final_measurment_df = pd.merge(total_measurement_df,
+                               bad_measurement_records_df,
+                               how='outer',
+                               on='src_hpo_id')
 
 final_measurment_df = final_measurment_df.fillna(0)
 # -
@@ -616,23 +640,24 @@ final_measurment_df = final_measurment_df.fillna(0)
 # ### Now we can actually calculate the 'tangible success rate'
 
 final_measurment_df['measurement'] = \
-round((final_measurment_df['num_bad_records']) / final_measurment_df['num_total_records'] * 100, 2)
+    round((final_measurment_df['num_bad_records']) / final_measurment_df['num_total_records'] * 100, 2)
 
 # +
 final_measurment_df = final_measurment_df.fillna(0)
 
-final_measurment_df = final_measurment_df.sort_values(by=['measurement'], ascending = False)
+final_measurment_df = final_measurment_df.sort_values(by=['measurement'],
+                                                      ascending=False)
 
 # +
 ### Creating a shorter df
 
 # +
-short_measurement_df = final_measurment_df.drop(columns=['num_total_records', 'num_bad_records'])
+short_measurement_df = final_measurment_df.drop(
+    columns=['num_total_records', 'num_bad_records'])
 
 short_measurement_df
 # -
 # # Next up: the condition table
-
 
 condition_visit_query = """
 SELECT
@@ -749,13 +774,14 @@ OR
 a.condition_dt_vis_end_dt_diff > 0
 )
 ORDER BY src_hpo_id ASC, num_bad_records DESC, total_diff DESC, all_discrepancies_equal ASC
-""".format(DATASET = DATASET)
+""".format(DATASET=DATASET)
 
-condition_visit_df = pd.io.gbq.read_gbq(condition_visit_query, dialect='standard')
+condition_visit_df = execute(client, condition_visit_query)
 
 # ### Now let's make the dataframe a little more condensed - only show the total number of 'bad records' for each site
 
-bad_condition_records_df = condition_visit_df.groupby('src_hpo_id')['num_bad_records'].sum().to_frame()
+bad_condition_records_df = condition_visit_df.groupby(
+    'src_hpo_id')['num_bad_records'].sum().to_frame()
 
 num_total_conditions_query = """
 SELECT
@@ -769,17 +795,23 @@ ON
 co.condition_occurrence_id = mco.condition_occurrence_id
 GROUP BY 1
 ORDER BY num_total_records DESC
-""".format(DATASET = DATASET)
+""".format(DATASET=DATASET)
 
-total_condition_df = pd.io.gbq.read_gbq(num_total_conditions_query, dialect='standard')
+total_condition_df = execute(client, num_total_conditions_query)
 
 # +
-total_condition_df = pd.merge(total_condition_df, site_df, how='outer', on='src_hpo_id')
+total_condition_df = pd.merge(total_condition_df,
+                              site_df,
+                              how='outer',
+                              on='src_hpo_id')
 
 total_condition_df = total_condition_df[['src_hpo_id', 'num_total_records']]
 
 # +
-final_condition_df = pd.merge(total_condition_df, bad_condition_records_df, how='outer', on='src_hpo_id') 
+final_condition_df = pd.merge(total_condition_df,
+                              bad_condition_records_df,
+                              how='outer',
+                              on='src_hpo_id')
 
 final_condition_df = final_condition_df.fillna(0)
 # -
@@ -787,18 +819,20 @@ final_condition_df = final_condition_df.fillna(0)
 # ### Now we can actually calculate the 'tangible success rate'
 
 final_condition_df['condition_occurrence'] = \
-round((final_condition_df['num_bad_records']) / final_condition_df['num_total_records'] * 100, 2)
+    round((final_condition_df['num_bad_records']) / final_condition_df['num_total_records'] * 100, 2)
 
 # +
 final_condition_df = final_condition_df.fillna(0)
 
-final_condition_df = final_condition_df.sort_values(by=['condition_occurrence'], ascending = False)
+final_condition_df = final_condition_df.sort_values(by=['condition_occurrence'],
+                                                    ascending=False)
 # -
 
 # ### Creating a shorter df
 
 # +
-short_condition_df = final_condition_df.drop(columns=['num_total_records', 'num_bad_records'])
+short_condition_df = final_condition_df.drop(
+    columns=['num_total_records', 'num_bad_records'])
 
 short_condition_df
 # -
@@ -920,13 +954,14 @@ OR
 a.drug_dt_vis_end_dt_diff > 0
 )
 ORDER BY src_hpo_id ASC, num_bad_records DESC, total_diff DESC, all_discrepancies_equal ASC
-""".format(DATASET = DATASET)
+""".format(DATASET=DATASET)
 
-drug_visit_df = pd.io.gbq.read_gbq(drug_visit_query, dialect='standard')
+drug_visit_df = execute(client, drug_visit_query)
 
 # ### Now let's make the dataframe a little more condensed - only show the total number of 'bad records' for each site
 
-bad_drug_records_df = drug_visit_df.groupby('src_hpo_id')['num_bad_records'].sum().to_frame()
+bad_drug_records_df = drug_visit_df.groupby(
+    'src_hpo_id')['num_bad_records'].sum().to_frame()
 
 num_total_drugs_query = """
 SELECT
@@ -940,9 +975,9 @@ ON
 de.drug_exposure_id = mde.drug_exposure_id
 GROUP BY 1
 ORDER BY num_total_records DESC
-""".format(DATASET = DATASET)
+""".format(DATASET=DATASET)
 
-total_drug_df = pd.io.gbq.read_gbq(num_total_drugs_query, dialect='standard')
+total_drug_df = execute(client, num_total_drugs_query)
 
 # +
 total_drug_df = pd.merge(total_drug_df, site_df, how='outer', on='src_hpo_id')
@@ -950,7 +985,10 @@ total_drug_df = pd.merge(total_drug_df, site_df, how='outer', on='src_hpo_id')
 total_drug_df = total_drug_df[['src_hpo_id', 'num_total_records']]
 
 # +
-final_drug_df = pd.merge(total_drug_df, bad_drug_records_df, how='outer', on='src_hpo_id') 
+final_drug_df = pd.merge(total_drug_df,
+                         bad_drug_records_df,
+                         how='outer',
+                         on='src_hpo_id')
 
 final_drug_df = final_drug_df.fillna(0)
 # -
@@ -958,36 +996,51 @@ final_drug_df = final_drug_df.fillna(0)
 # ### Now we can actually calculate the 'tangible success rate'
 
 final_drug_df['drug_exposure'] = \
-round((final_drug_df['num_bad_records']) / final_drug_df['num_total_records'] * 100, 2)
+    round((final_drug_df['num_bad_records']) / final_drug_df['num_total_records'] * 100, 2)
 
 # +
 final_drug_df = final_drug_df.fillna(0)
 
-final_drug_df = final_drug_df.sort_values(by=['drug_exposure'], ascending = False)
+final_drug_df = final_drug_df.sort_values(by=['drug_exposure'], ascending=False)
 # -
 
 # ### Creating a shorter dataframe
 
 # +
-short_drug_df = final_drug_df.drop(columns=['num_total_records', 'num_bad_records'])
+short_drug_df = final_drug_df.drop(
+    columns=['num_total_records', 'num_bad_records'])
 
 short_drug_df
 # -
 
 final_success_df = 0
 
-final_success_df = pd.merge(short_drug_df, site_df, how='outer', on='src_hpo_id') 
-final_success_df = final_success_df[['src_hpo_id', 'drug_exposure']]  #rearrang columnds
+final_success_df = pd.merge(short_drug_df,
+                            site_df,
+                            how='outer',
+                            on='src_hpo_id')
+final_success_df = final_success_df[['src_hpo_id',
+                                     'drug_exposure']]  # rearrang columnds
 
 # +
-final_success_df = pd.merge(final_success_df, short_observation_df, how='outer', on='src_hpo_id') 
-final_success_df = pd.merge(final_success_df, short_procedure_df, how='outer', on='src_hpo_id')
-final_success_df = pd.merge(final_success_df, short_measurement_df, how='outer', on='src_hpo_id') 
-final_success_df = pd.merge(final_success_df, short_condition_df, how='outer', on='src_hpo_id')
+final_success_df = pd.merge(final_success_df,
+                            short_observation_df,
+                            how='outer',
+                            on='src_hpo_id')
+final_success_df = pd.merge(final_success_df,
+                            short_procedure_df,
+                            how='outer',
+                            on='src_hpo_id')
+final_success_df = pd.merge(final_success_df,
+                            short_measurement_df,
+                            how='outer',
+                            on='src_hpo_id')
+final_success_df = pd.merge(final_success_df,
+                            short_condition_df,
+                            how='outer',
+                            on='src_hpo_id')
 
 final_success_df
 # -
 
-final_success_df.to_csv("{cwd}/visit_date_disparity.csv".format(cwd = cwd))
-
-
+final_success_df.to_csv("{cwd}/visit_date_disparity.csv".format(cwd=cwd))

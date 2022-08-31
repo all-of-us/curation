@@ -21,16 +21,22 @@ BASELINE_EHR_DATASET_ID = ""  # Identifies the dataset the snapshot was created 
 EHR_SNAPSHOT_DATASET_ID = ""  # Identifies the snapshot dataset
 RELEASE_TAG = ""  # identifies the release tag for the current CDR release
 EXCLUDED_SITES = "default"  # List of excluded sites passed as string: eg. "'hpo_id1', 'hpo_id_2', 'hpo_id3',..."
+RUN_AS = ""  # Service account email for impersonation
 # -
 
 # +
 import pandas as pd
-
-from gcloud.bq import BigQueryClient
-from analytics.cdr_ops.notebook_utils import execute
 from common import MAPPED_CLINICAL_DATA_TABLES
+from utils import auth
+from gcloud.bq import BigQueryClient
+from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
 
-client = BigQueryClient(PROJECT_ID)
+# -
+
+impersonation_creds = auth.get_impersonation_credentials(
+    RUN_AS, target_scopes=IMPERSONATION_SCOPES)
+
+client = BigQueryClient(PROJECT_ID, credentials=impersonation_creds)
 
 pd.options.display.max_rows = 1000
 pd.options.display.max_colwidth = 0

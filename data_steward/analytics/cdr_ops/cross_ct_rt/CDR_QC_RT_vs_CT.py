@@ -22,15 +22,20 @@ project_id = ""
 rt_dataset = ""
 ct_dataset = ""
 maximum_age = ""
+run_as = ""
 
 # +
 import pandas as pd
 
-from analytics.cdr_ops.notebook_utils import execute
+from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
 from common import JINJA_ENV, PIPELINE_TABLES
 from gcloud.bq import BigQueryClient
+from utils import auth
 
-client = BigQueryClient(project_id)
+impersonation_creds = auth.get_impersonation_credentials(
+    run_as, target_scopes=IMPERSONATION_SCOPES)
+
+client = BigQueryClient(project_id, credentials=impersonation_creds)
 
 pd.options.display.max_rows = 120
 # -

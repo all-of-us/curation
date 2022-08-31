@@ -13,7 +13,7 @@
 #     name: python3
 # ---
 
-# ### This notebook is intended to show the percentage of rows with 'invalid' 'person_id' (a type of 'foreign key') in each of the 6 canonical tables. 
+# ### This notebook is intended to show the percentage of rows with 'invalid' 'person_id' (a type of 'foreign key') in each of the 6 canonical tables.
 #
 # ### An 'invalid' row would be one where the field value ('person_id') either:
 # ###     a. does not exist in the person table
@@ -30,18 +30,12 @@
 # - measurement
 # - visit occurrence
 
-from google.cloud import bigquery
-# %reload_ext google.cloud.bigquery
-client = bigquery.Client()
-# %load_ext google.cloud.bigquery
-
-# +
-from notebooks import parameters
-DATASET = parameters.LATEST_DATASET
-LOOKUP_TABLES = parameters.LOOKUP_TABLES
-
-print(f"Dataset to use: {DATASET}")
-print(f"Lookup tables: {LOOKUP_TABLES}")
+# + tags=["parameters"]
+PROJECT_ID = ""
+DATASET = ""
+LOOKUP_TABLES = ""
+RUN_AS = ""
+# -
 
 # +
 import warnings
@@ -50,6 +44,14 @@ warnings.filterwarnings('ignore')
 import pandas as pd
 import matplotlib.pyplot as plt
 import os
+from utils import auth
+from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
+from gcloud.bq import BigQueryClient
+
+impersonation_creds = auth.get_impersonation_credentials(
+    RUN_AS, target_scopes=IMPERSONATION_SCOPES)
+
+client = BigQueryClient(PROJECT_ID, credentials=impersonation_creds)
 
 plt.style.use('ggplot')
 pd.options.display.max_rows = 999
@@ -81,13 +83,13 @@ NOT LIKE '%unioned_ehr_%'
 AND table_id NOT LIKE '\\\_%'
 """
 
-site_df = pd.io.gbq.read_gbq(hpo_id_query, dialect='standard')
+site_df = execute(client, hpo_id_query)
 
 get_full_names = f"""
 select * from {LOOKUP_TABLES}.hpo_site_id_mappings
 """
 
-full_names_df = pd.io.gbq.read_gbq(get_full_names, dialect='standard')
+full_names_df = execute(client, get_full_names)
 
 # +
 full_names_df.columns = ['org_id', 'src_hpo_id', 'site_name', 'display_order']
@@ -171,7 +173,7 @@ total_rows.src_hpo_id = invalid_row_count.src_hpo_id
 ORDER BY condition_occurrence DESC
 """
 
-condition_occurrence_df = pd.io.gbq.read_gbq(condition_occurrence_query, dialect ='standard')
+condition_occurrence_df = execute(client, condition_occurrence_query)
 
 condition_occurrence_df
 
@@ -243,7 +245,7 @@ total_rows.src_hpo_id = invalid_row_count.src_hpo_id
 ORDER BY observation DESC
 """
 
-observation_df = pd.io.gbq.read_gbq(observation_query, dialect ='standard')
+observation_df = execute(client, observation_query)
 
 observation_df
 
@@ -315,7 +317,7 @@ total_rows.src_hpo_id = invalid_row_count.src_hpo_id
 ORDER BY drug_exposure DESC
 """
 
-drug_exposure_df = pd.io.gbq.read_gbq(drug_exposure_query, dialect ='standard')
+drug_exposure_df = execute(client, drug_exposure_query)
 
 drug_exposure_df
 
@@ -386,7 +388,7 @@ total_rows.src_hpo_id = invalid_row_count.src_hpo_id
 ORDER BY procedure_occurrence DESC
 """
 
-procedure_occurrence_df = pd.io.gbq.read_gbq(procedure_occurrence_query, dialect ='standard')
+procedure_occurrence_df = execute(client, procedure_occurrence_query)
 
 procedure_occurrence_df
 
@@ -456,7 +458,7 @@ total_rows.src_hpo_id = invalid_row_count.src_hpo_id
 ORDER BY measurement DESC
 """
 
-measurement_df = pd.io.gbq.read_gbq(measurement_query, dialect ='standard')
+measurement_df = execute(client, measurement_query)
 
 measurement_df
 
@@ -528,30 +530,42 @@ total_rows.src_hpo_id = invalid_row_count.src_hpo_id
 ORDER BY visit_occurrence DESC
 """
 
-visit_occurrence_df = pd.io.gbq.read_gbq(visit_occurrence_query, dialect ='standard')
+visit_occurrence_df = execute(client, visit_occurrence_query)
 
 visit_occurrence_df
 
 # # Bringing it all together
 
 # +
-person_id_foreign_key_df = pd.merge(
-    site_df, observation_df, how='outer', on='src_hpo_id')
+person_id_foreign_key_df = pd.merge(site_df,
+                                    observation_df,
+                                    how='outer',
+                                    on='src_hpo_id')
 
-person_id_foreign_key_df = pd.merge(
-    person_id_foreign_key_df, measurement_df, how='outer', on='src_hpo_id')
+person_id_foreign_key_df = pd.merge(person_id_foreign_key_df,
+                                    measurement_df,
+                                    how='outer',
+                                    on='src_hpo_id')
 
-person_id_foreign_key_df = pd.merge(
-    person_id_foreign_key_df, visit_occurrence_df, how='outer', on='src_hpo_id')
+person_id_foreign_key_df = pd.merge(person_id_foreign_key_df,
+                                    visit_occurrence_df,
+                                    how='outer',
+                                    on='src_hpo_id')
 
-person_id_foreign_key_df = pd.merge(
-    person_id_foreign_key_df, procedure_occurrence_df, how='outer', on='src_hpo_id')
+person_id_foreign_key_df = pd.merge(person_id_foreign_key_df,
+                                    procedure_occurrence_df,
+                                    how='outer',
+                                    on='src_hpo_id')
 
-person_id_foreign_key_df = pd.merge(
-    person_id_foreign_key_df, drug_exposure_df, how='outer', on='src_hpo_id')
+person_id_foreign_key_df = pd.merge(person_id_foreign_key_df,
+                                    drug_exposure_df,
+                                    how='outer',
+                                    on='src_hpo_id')
 
-person_id_foreign_key_df = pd.merge(
-    person_id_foreign_key_df, condition_occurrence_df, how='outer', on='src_hpo_id')
+person_id_foreign_key_df = pd.merge(person_id_foreign_key_df,
+                                    condition_occurrence_df,
+                                    how='outer',
+                                    on='src_hpo_id')
 
 # +
 person_id_foreign_key_df = person_id_foreign_key_df.fillna(0)
@@ -560,5 +574,3 @@ person_id_foreign_key_df
 # -
 
 person_id_foreign_key_df.to_csv(f"{cwd}/person_id_failure_rate.csv")
-
-

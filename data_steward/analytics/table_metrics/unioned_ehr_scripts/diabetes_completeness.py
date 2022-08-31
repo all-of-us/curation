@@ -13,20 +13,13 @@
 #     name: python3
 # ---
 
-from google.cloud import bigquery
-# %reload_ext google.cloud.bigquery
-from common import PIPELINE_TABLES
-
-client = bigquery.Client()
-# %load_ext google.cloud.bigquery
-
-# +
-from notebooks import parameters
-DATASET = parameters.LATEST_DATASET
-LOOKUP_TABLES = parameters.LOOKUP_TABLES
-
-print(f"Dataset to use: {DATASET}")
-print(f"Lookup tables: {LOOKUP_TABLES}")
+# + tags=["parameters"]
+PROJECT_ID = ""
+DATASET = ""
+PIPELINE_TABLES = ""
+LOOKUP_TABLES = ""
+RUN_AS = ""
+# -
 
 # +
 import warnings
@@ -35,6 +28,15 @@ warnings.filterwarnings('ignore')
 import pandas as pd
 import matplotlib.pyplot as plt
 import os
+
+from utils import auth
+from gcloud.bq import BigQueryClient
+from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
+
+impersonation_creds = auth.get_impersonation_credentials(
+    RUN_AS, target_scopes=IMPERSONATION_SCOPES)
+
+client = BigQueryClient(PROJECT_ID, credentials=impersonation_creds)
 
 plt.style.use('ggplot')
 pd.options.display.max_rows = 999
@@ -66,13 +68,13 @@ NOT LIKE '%unioned_ehr_%'
 AND table_id NOT LIKE '\\\_%'
 """
 
-site_df = pd.io.gbq.read_gbq(hpo_id_query, dialect='standard')
+site_df = execute(client, hpo_id_query)
 
 get_full_names = f"""
 select * from {LOOKUP_TABLES}.hpo_site_id_mappings
 """
 
-full_names_df = pd.io.gbq.read_gbq(get_full_names, dialect='standard')
+full_names_df = execute(client, get_full_names)
 
 # +
 full_names_df.columns = ['org_id', 'src_hpo_id', 'site_name', 'display_order']
@@ -99,15 +101,15 @@ site_df
 print('Getting the data from the database...')
 ######################################
 
-birth_df = pd.io.gbq.read_gbq(f'''
+birth_query = f'''
     SELECT
         COUNT(*) AS total,
         sum(case when ({PIPELINE_TABLES}.calculate_age(CURRENT_DATE, EXTRACT(DATE FROM birth_datetime))<18)
             then 1 else 0 end) as minors_in_dataset
     FROM
        `{DATASET}.unioned_ehr_person` AS t1
-''',
-                              dialect='standard')
+'''
+birth_df = execute(client, birth_query)
 print(birth_df.shape[0], 'records received.')
 # -
 
@@ -118,15 +120,15 @@ birth_df
 print('Getting the data from the database...')
 ######################################
 
-birth_df = pd.io.gbq.read_gbq(f'''
+birth_query = f'''
     SELECT
         person_id          
     FROM
        `{DATASET}.unioned_ehr_person` AS t1
     where 
         {PIPELINE_TABLES}.calculate_age(CURRENT_DATE, EXTRACT(DATE FROM birth_datetime))<18
-''',
-                              dialect='standard')
+'''
+birth_df = execute(client, birth_query)
 print(birth_df.shape[0], 'records received.')
 # -
 
@@ -140,7 +142,7 @@ birth_df
 print('Getting the data from the database...')
 ######################################
 
-birth_df = pd.io.gbq.read_gbq(f'''
+birth_query = f'''
     SELECT
         COUNT(*) AS total,
         sum(case when {PIPELINE_TABLES}.calculate_age(CURRENT_DATE, EXTRACT(DATE FROM birth_datetime))>120
@@ -148,8 +150,8 @@ birth_df = pd.io.gbq.read_gbq(f'''
          
     FROM
        `{DATASET}.unioned_ehr_person` AS t1
-''',
-                              dialect='standard')
+'''
+birth_df = execute(client, birth_query)
 print(birth_df.shape[0], 'records received.')
 # -
 
@@ -160,16 +162,15 @@ birth_df
 print('Getting the data from the database...')
 ######################################
 
-birth_df = pd.io.gbq.read_gbq(f'''
+birth_query = f'''
     SELECT
         person_id          
     FROM
        `{DATASET}.unioned_ehr_person` AS t1
     where 
         {PIPELINE_TABLES}.calculate_age(CURRENT_DATE, EXTRACT(DATE FROM birth_datetime))>120
-''',
-                              dialect='standard')
-
+'''
+birth_df = execute(client, birth_query)
 print(birth_df.shape[0], 'records received.')
 # -
 
@@ -183,14 +184,13 @@ birth_df
 print('Getting the data from the database...')
 ######################################
 
-birth_df = pd.io.gbq.read_gbq(f'''
+birth_query = f'''
     SELECT
         {PIPELINE_TABLES}.calculate_age(CURRENT_DATE, EXTRACT(DATE FROM birth_datetime)) as AGE    
     FROM
         `{DATASET}.unioned_ehr_person` AS t1
-''',
-                              dialect='standard')
-
+'''
+birth_df = execute(client, birth_query)
 print(birth_df.shape[0], 'records received.')
 # -
 
@@ -233,8 +233,8 @@ GROUP BY 1, 2
 ORDER BY 1, 2 DESC
 """.format(DATASET=DATASET)
 
-persons_with_conditions_related_to_diabetes = pd.io.gbq.read_gbq(
-    persons_with_conditions_related_to_diabetes_query, dialect='standard')
+persons_with_conditions_related_to_diabetes = execute(
+    client, persons_with_conditions_related_to_diabetes_query)
 
 num_persons_w_diabetes_query = """
 SELECT
@@ -244,8 +244,7 @@ FROM
 `{DATASET}.persons_with_diabetes_according_to_condition_table` p
 """.format(DATASET=DATASET)
 
-num_persons_w_diabetes = pd.io.gbq.read_gbq(num_persons_w_diabetes_query,
-                                            dialect='standard')
+num_persons_w_diabetes = execute(client, num_persons_w_diabetes_query)
 
 # +
 diabetics = num_persons_w_diabetes['num_with_diab'][0]
@@ -264,8 +263,7 @@ GROUP BY 1
 ORDER BY num_with_diab DESC
 """.format(DATASET=DATASET)
 
-diabetics_per_site = pd.io.gbq.read_gbq(diabetics_per_site_query,
-                                        dialect='standard')
+diabetics_per_site = execute(client, diabetics_per_site_query)
 
 diabetics_per_site
 
@@ -295,9 +293,8 @@ or
 C.invalid_reason = '')
 """.format(DATASET=DATASET)
 
-substantiating_diabetic_drug_concept_ids = pd.io.gbq.read_gbq(
-    create_table_with_substantiating_diabetic_drug_concept_ids,
-    dialect='standard')
+substantiating_diabetic_drug_concept_ids = execute(
+    client, create_table_with_substantiating_diabetic_drug_concept_ids)
 
 # +
 ######################################
@@ -322,9 +319,8 @@ GROUP BY 1
 ORDER BY num_with_diab_and_drugs DESC
 """.format(DATASET=DATASET)
 
-diabetics_with_substantiating_drugs = pd.io.gbq.read_gbq(
-    persons_w_t2d_by_condition_and_substantiating_drugs_query,
-    dialect='standard')
+diabetics_with_substantiating_drugs = execute(
+    client, persons_w_t2d_by_condition_and_substantiating_drugs_query)
 # -
 
 diabetics_with_substantiating_drugs
@@ -355,7 +351,7 @@ OR
 c.invalid_reason = ''
 """.format(DATASET=DATASET)
 
-valid_glucose_labs = pd.io.gbq.read_gbq(valid_glucose_labs, dialect='standard')
+valid_glucose_labs = execute(client, valid_glucose_labs)
 
 # #### diabetic persons who have at least one 'glucose' measurement
 
@@ -377,10 +373,8 @@ GROUP BY 1
 ORDER BY num_with_diab_and_glucose DESC
 """.format(DATASET=DATASET)
 
-diabetics_with_glucose_measurement = pd.io.gbq.read_gbq(
-    diabetics_with_glucose_measurement_query, dialect='standard')
-
-diabetics_with_glucose_measurement.shape
+diabetics_with_glucose_measurement = execute(
+    client, diabetics_with_glucose_measurement_query)
 
 # ## a1c
 
@@ -399,8 +393,7 @@ WHERE
 ca.ancestor_concept_id IN (40789263)
 """.format(DATASET=DATASET)
 
-hemoglobin_a1c_desc = pd.io.gbq.read_gbq(hemoglobin_a1c_desc_query,
-                                         dialect='standard')
+hemoglobin_a1c_desc = execute(client, hemoglobin_a1c_desc_query)
 
 diabetics_with_a1c_measurement_query = """
 SELECT
@@ -421,10 +414,8 @@ ORDER BY num_with_diab_and_a1c DESC
 """.format(DATASET=DATASET)
 
 # +
-diabetics_with_a1c_measurement = pd.io.gbq.read_gbq(
-    diabetics_with_a1c_measurement_query, dialect='standard')
-
-diabetics_with_a1c_measurement.shape
+diabetics_with_a1c_measurement = execute(client,
+                                         diabetics_with_a1c_measurement_query)
 # -
 
 # ## insulin
@@ -455,8 +446,7 @@ ORDER BY num_with_diab_and_insulin DESC
 """.format(DATASET=DATASET)
 # -
 
-diabetics_with_insulin = pd.io.gbq.read_gbq(persons_with_insulin_query,
-                                            dialect='standard')
+diabetics_with_insulin = execute(client, persons_with_insulin_query)
 
 final_diabetic_df = pd.merge(diabetics_per_site,
                              diabetics_with_substantiating_drugs,

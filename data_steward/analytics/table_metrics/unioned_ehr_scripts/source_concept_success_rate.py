@@ -18,18 +18,12 @@
 
 # ### 20.Dataframe (row for each hpo_id) Condition_occurrence table, condition_source_concept_id field
 
-from google.cloud import bigquery
-# %reload_ext google.cloud.bigquery
-client = bigquery.Client()
-# %load_ext google.cloud.bigquery
-
-# +
-from notebooks import parameters
-DATASET = parameters.LATEST_DATASET
-LOOKUP_TABLES = parameters.LOOKUP_TABLES
-
-print(f"Dataset to use: {DATASET}")
-print(f"Lookup tables: {LOOKUP_TABLES}")
+# + tags=["parameters"]
+PROJECT_ID = ""
+DATASET = ""
+LOOKUP_TABLES = ""
+RUN_AS = ""
+# -
 
 # +
 import warnings
@@ -38,6 +32,14 @@ warnings.filterwarnings('ignore')
 import pandas as pd
 import matplotlib.pyplot as plt
 import os
+from utils import auth
+from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
+from gcloud.bq import BigQueryClient
+
+impersonation_creds = auth.get_impersonation_credentials(
+    RUN_AS, target_scopes=IMPERSONATION_SCOPES)
+
+client = BigQueryClient(PROJECT_ID, credentials=impersonation_creds)
 
 plt.style.use('ggplot')
 pd.options.display.max_rows = 999
@@ -69,13 +71,13 @@ NOT LIKE '%unioned_ehr_%'
 AND table_id NOT LIKE '\\\_%'
 """
 
-site_df = pd.io.gbq.read_gbq(hpo_id_query, dialect='standard')
+site_df = execute(client, hpo_id_query)
 
 get_full_names = f"""
 select * from {LOOKUP_TABLES}.hpo_site_id_mappings
 """
 
-full_names_df = pd.io.gbq.read_gbq(get_full_names, dialect='standard')
+full_names_df = execute(client, get_full_names)
 
 # +
 full_names_df.columns = ['org_id', 'src_hpo_id', 'site_name', 'display_order']
@@ -90,7 +92,7 @@ cols_to_join = ['src_hpo_id']
 site_df = pd.merge(site_df, full_names_df, on=['src_hpo_id'], how='left')
 # -
 
-condition_concept_df = pd.io.gbq.read_gbq('''
+condition_concept_query = '''
     WITH
         data1 AS (
             SELECT
@@ -173,15 +175,16 @@ condition_concept_df = pd.io.gbq.read_gbq('''
         data1.src_hpo_id=data3.src_hpo_id
     ORDER BY
         1 DESC
-    '''.format(DATASET=DATASET), dialect='standard')
-condition_concept_df.shape
+    '''.format(DATASET=DATASET)
+
+condition_concept_df = execute(client, condition_concept_query)
 
 condition_concept_df = condition_concept_df.fillna(0)
 condition_concept_df
 
 # # 21.Dataframe (row for each hpo_id) Procedure_occurrence table, procedure_source_concept_id field
 
-procedure_concept_df = pd.io.gbq.read_gbq('''
+procedure_concept_query = '''
     WITH
         data1 AS (
             SELECT
@@ -236,15 +239,15 @@ procedure_concept_df = pd.io.gbq.read_gbq('''
         data1.src_hpo_id=data2.src_hpo_id
     ORDER BY
         1 DESC
-    '''.format(DATASET=DATASET), dialect='standard')
-procedure_concept_df.shape
+    '''.format(DATASET=DATASET)
+procedure_concept_df = execute(client, procedure_concept_query)
 
 procedure_concept_df = procedure_concept_df.fillna(0)
 procedure_concept_df
 
 # # 22.Dataframe (row for each hpo_id) Drug_exposures table, drug_source_concept_id  field
 
-drug_concept_df = pd.io.gbq.read_gbq('''
+drug_concept_query = '''
     WITH
         data1 AS (
             SELECT
@@ -299,8 +302,8 @@ drug_concept_df = pd.io.gbq.read_gbq('''
         data1.src_hpo_id=data2.src_hpo_id
     ORDER BY
         1 DESC
-    '''.format(DATASET=DATASET), dialect='standard')
-drug_concept_df.shape
+    '''.format(DATASET=DATASET)
+drug_concept_df = execute(client, drug_concept_query)
 
 drug_concept_df = drug_concept_df.fillna(0)
 drug_concept_df
@@ -309,7 +312,7 @@ drug_concept_df
 #
 #
 
-observation_concept_df = pd.io.gbq.read_gbq('''
+observation_concept_query = '''
     WITH
         data1 AS (
             SELECT
@@ -364,15 +367,15 @@ observation_concept_df = pd.io.gbq.read_gbq('''
         data1.src_hpo_id=data2.src_hpo_id
     ORDER BY
         1 DESC
-    '''.format(DATASET=DATASET), dialect='standard')
-observation_concept_df.shape
+    '''.format(DATASET=DATASET)
+observation_concept_df = execute(client, observation_concept_query)
 
 observation_concept_df = observation_concept_df.fillna(0)
 observation_concept_df
 
 # # 21.Dataframe (row for each hpo_id) Measurement table, measurement_source_concept_id field
 
-measurement_concept_df = pd.io.gbq.read_gbq('''
+measurement_concept_query = '''
     WITH
         data1 AS (
             SELECT
@@ -427,15 +430,15 @@ measurement_concept_df = pd.io.gbq.read_gbq('''
         data1.src_hpo_id=data2.src_hpo_id
     ORDER BY
         1 DESC
-    '''.format(DATASET=DATASET), dialect='standard')
-measurement_concept_df.shape
+    '''.format(DATASET=DATASET)
+measurement_concept_df = execute(client, measurement_concept_query)
 
 measurement_concept_df = measurement_concept_df.fillna(0)
 measurement_concept_df
 
 # # 21.Dataframe (row for each hpo_id) visit_occurrence table, visit_source_concept_id field
 
-visit_concept_df = pd.io.gbq.read_gbq('''
+visit_concept_query = '''
     WITH
         data1 AS (
             SELECT
@@ -490,8 +493,8 @@ visit_concept_df = pd.io.gbq.read_gbq('''
         data1.src_hpo_id=data2.src_hpo_id
     ORDER BY
         1 DESC
-    '''.format(DATASET=DATASET), dialect='standard')
-visit_concept_df.shape
+    '''.format(DATASET=DATASET)
+visit_concept_df = execute(client, visit_concept_query)
 
 visit_concept_df = visit_concept_df.fillna(0)
 visit_concept_df
@@ -510,6 +513,4 @@ master_df
 
 source = pd.merge(master_df, site_df, how='outer', on='src_hpo_id')
 source = source.fillna("No Data")
-source.to_csv("{cwd}/source_concept_success_rate.csv".format(cwd = cwd))
-
-
+source.to_csv("{cwd}/source_concept_success_rate.csv".format(cwd=cwd))
