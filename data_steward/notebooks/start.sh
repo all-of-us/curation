@@ -1,17 +1,21 @@
 #!/usr/bin/env bash
 
-USAGE="start.sh --key_file <Path to service account key>"
+USAGE="
+start.sh
+  --pmi_email <PMI-OPS email to set credential account>
+  --project_id <Project id to set default project>
+"
 
 while true; do
   case "$1" in
-    --key_file) KEY_FILE=$2; shift 2;;
-    --app_id) APP_ID=$2; shift 2;;
+    --pmi_email) PMI_EMAIL=$2; shift 2;;
+    --project_id) PROJECT_ID=$2; shift 2;;
     -- ) shift; break ;;
     * ) break ;;
   esac
 done
 
-if [[ -z "${KEY_FILE}" ]]
+if [[ -z "${PMI_EMAIL}" ]] || [[ -z "${PROJECT_ID}" ]];
 then
   echo "Usage: $USAGE"
   exit 1
@@ -27,17 +31,11 @@ fi
 NOTEBOOKS_DIR="$( cd "$(dirname "$0")" ; pwd -P )"
 BASE_DIR="$( cd "${NOTEBOOKS_DIR}" && cd .. && pwd )"
 export PYTHONPATH="${PYTHONPATH}${SEP}${BASE_DIR}"
-export GOOGLE_APPLICATION_CREDENTIALS="${KEY_FILE}"
+unset GOOGLE_APPLICATION_CREDENTIALS
 
-export APPLICATION_ID=$(cat ${KEY_FILE} | python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["project_id"]);')
-export PROJECT_ID="${APPLICATION_ID}"
-
-ACCOUNT=$(cat ${KEY_FILE} | python -c 'import json,sys;obj=json.load(sys.stdin);print(obj["client_email"]);')
-
-echo "Activating service account ${ACCOUNT} for application ID ${APPLICATION_ID}..."
-
-gcloud auth activate-service-account ${ACCOUNT} --key-file=${KEY_FILE}
-gcloud config set project "${APPLICATION_ID}"
+echo "Setting gcloud config with ${PMI_EMAIL} for application ID ${PROJECT_ID}..."
+gcloud config set account "${PMI_EMAIL}"
+gcloud config set project "${PROJECT_ID}"
 
 echo "Which python: $(which python)"
 
