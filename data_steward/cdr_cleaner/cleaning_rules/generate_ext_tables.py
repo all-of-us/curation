@@ -23,7 +23,7 @@ import constants.cdr_cleaner.clean_cdr as cdr_consts
 
 LOGGER = logging.getLogger(__name__)
 
-ISSUE_NUMBERS = ['DC-1351', 'DC-1500', 'DC-1640']
+ISSUE_NUMBERS = ['DC-1351', 'DC-1500', 'DC-1640', 'DC-2628']
 EXT_FIELD_TEMPLATE = [{
     "type": "integer",
     "name": "{table}_id",
@@ -104,12 +104,15 @@ class GenerateExtTables(BaseCleaningRule):
 
     def get_table_fields_str(self, table, ext_table_id):
         """
-        Generates fields for ext tables for the provided cdm table in SQL form
+        Generates fields for ext tables for the provided cdm table
 
         :param table: cdm table to generate ext fields for
         :param ext_table_id: cdm table extension name.  used to load schema
             definition if it exists as a json file
-        :return: dict containing ext fields for the cdm table in SQL form
+        :return: tuple that contains the following:
+            first item: Fields for the ext table in str format.
+                        You can use this string for the DDL "CREATE TABLE xyz (_HERE_)"
+            second item: Fields for the ext table in dict format
         """
         table_fields = []
 

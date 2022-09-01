@@ -1,10 +1,16 @@
+"""
+integration test for generate_ext_tables
+"""
+# Python imports
 import os
 
+# Third Party imports
 import mock
 
+# Project imports
 from app_identity import get_application_id
 from common import (EXT_SUFFIX, MAPPING_PREFIX, OBSERVATION,
-                    PROCEDURE_OCCURRENCE, SITE_MASKING_TABLE_ID)
+                    PROCEDURE_OCCURRENCE, SITE_MASKING_TABLE_ID, SURVEY_CONDUCT)
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 from cdr_cleaner.cleaning_rules.generate_ext_tables import GenerateExtTables
 
@@ -43,8 +49,10 @@ class GenerateExtTablesTest(BaseTest.CleaningRulesTestBase):
         cls.stable_map_name = f'{cls.project_id}.{cls.dataset_id}.{SITE_MASKING_TABLE_ID}'
         cls.mapping_obs = f'{cls.project_id}.{cls.dataset_id}.{MAPPING_PREFIX}{OBSERVATION}'
         cls.mapping_proc_occur = f'{cls.project_id}.{cls.dataset_id}.{MAPPING_PREFIX}{PROCEDURE_OCCURRENCE}'
+        cls.mapping_survey_conduct = f'{cls.project_id}.{cls.dataset_id}.{MAPPING_PREFIX}{SURVEY_CONDUCT}'
         cls.fq_table_names = [
-            cls.stable_map_name, cls.mapping_obs, cls.mapping_proc_occur
+            cls.stable_map_name, cls.mapping_obs, cls.mapping_proc_occur,
+            cls.mapping_survey_conduct
         ]
 
         # call super to set up the client, create datasets, and create
@@ -62,6 +70,8 @@ class GenerateExtTablesTest(BaseTest.CleaningRulesTestBase):
         self.fq_table_names.append(self.obs_ext)
         self.proc_occur_ext = f'{self.project_id}.{self.dataset_id}.{PROCEDURE_OCCURRENCE}{EXT_SUFFIX}'
         self.fq_table_names.append(self.proc_occur_ext)
+        self.survey_conduct_ext = f'{self.project_id}.{self.dataset_id}.{SURVEY_CONDUCT}{EXT_SUFFIX}'
+        self.fq_table_names.append(self.survey_conduct_ext)
 
         # pre-conditions
         site_mask_tmpl = self.jinja_env.from_string("""
@@ -91,7 +101,19 @@ class GenerateExtTablesTest(BaseTest.CleaningRulesTestBase):
             (33, '2021_foo', 3, 'foo', 'procedure_occurrence')
         """).render(proc_occur_map_name=self.mapping_proc_occur)
 
-        queries = [site_mask_tmpl, mapping_obs_tmpl, mapping_proc_occur_tmpl]
+        survey_conduct_tmpl = self.jinja_env.from_string("""
+        INSERT INTO `{{survey_conduct_map_name}}`
+           (survey_conduct_id, src_dataset_id, src_survey_conduct_id, src_hpo_id, src_table_id)
+        VALUES
+            (41, '2021_baz', 1, 'baz', 'survey_conduct'),
+            (42, '2021_phi', 2, 'phi', 'survey_conduct'),
+            (43, '2021_foo', 3, 'foo', 'survey_conduct')
+        """).render(survey_conduct_map_name=self.mapping_survey_conduct)
+
+        queries = [
+            site_mask_tmpl, mapping_obs_tmpl, mapping_proc_occur_tmpl,
+            survey_conduct_tmpl
+        ]
         self.load_test_data(queries)
 
     def test_generate_ext_tables(self):
@@ -119,6 +141,18 @@ class GenerateExtTablesTest(BaseTest.CleaningRulesTestBase):
                 False,
             'cleaned_values': [(31, 'pi/pm'), (32, 'site yum'),
                                (33, 'site bar')]
+        }, {
+            'fq_table_name':
+                self.survey_conduct_ext,
+            'fields': ['survey_conduct_id', 'src_id'],
+            'loaded_ids': [],
+            'tables_created_on_setup': [
+                f'{self.project_id}.{self.sandbox_id}.{self.rule_instance.get_sandbox_tablenames()[0]}'
+            ],
+            'check_preconditions':
+                False,
+            'cleaned_values': [(41, 'pi/pm'), (42, 'site yum'),
+                               (43, 'site bar')]
         }]
 
         # mock the PIPELINE_TABLES variable so tests on different branches

@@ -68,12 +68,12 @@ class GenerateExtTablesTest(unittest.TestCase):
         }]
 
         mapped_table_names = [
-            cdm_table for cdm_table in common.AOU_REQUIRED if cdm_table not in
+            cdm_table for cdm_table in common.CATI_TABLES if cdm_table not in
             [common.PERSON, common.DEATH, common.FACT_RELATIONSHIP]
         ]
 
         mapping_table_names = [
-            gen_ext.MAPPING_PREFIX + cdm_table
+            f"{gen_ext.MAPPING_PREFIX}{cdm_table}"
             for cdm_table in mapped_table_names
         ]
 
@@ -112,7 +112,7 @@ class GenerateExtTablesTest(unittest.TestCase):
 
         fields_str = ','.join(fields_list)
         table = 'foo'
-        ext_table = f'foo{gen_ext.EXT_TABLE_SUFFIX}'
+        ext_table = f'{table}{gen_ext.EXT_TABLE_SUFFIX}'
 
         # test
         with self.assertLogs(level='INFO') as cm:
@@ -129,10 +129,10 @@ class GenerateExtTablesTest(unittest.TestCase):
         Get table fields when a schema file is defined.
         """
         # pre-conditions
-        table = common.OBSERVATION
-        ext_table = common.OBSERVATION + gen_ext.EXT_TABLE_SUFFIX
+        table = common.SURVEY_CONDUCT
+        ext_table = f"{table}{gen_ext.EXT_TABLE_SUFFIX}"
         table_path = os.path.join(fields_path, 'extension_tables',
-                                  ext_table + '.json')
+                                  f"{ext_table}.json")
         with open(table_path, 'r') as schema:
             expected = json.load(schema)
 
@@ -162,9 +162,9 @@ class GenerateExtTablesTest(unittest.TestCase):
         mock_client = mock.Mock()
         mock_client.list_tables.return_value = self.mapping_table_objs
         expected = []
-        for cdm_table in common.AOU_REQUIRED:
+        for cdm_table in common.CATI_TABLES:
             ext_table_fields_str, _ = self.rule_instance.get_table_fields_str(
-                cdm_table, (cdm_table + gen_ext.EXT_TABLE_SUFFIX))
+                cdm_table, f"{cdm_table}{gen_ext.EXT_TABLE_SUFFIX}")
 
             additional_fields = _get_field_names(
                 f'{cdm_table}{common.EXT_SUFFIX}')
