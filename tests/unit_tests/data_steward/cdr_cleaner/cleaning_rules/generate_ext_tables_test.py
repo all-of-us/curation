@@ -67,6 +67,8 @@ class GenerateExtTablesTest(unittest.TestCase):
                 "The provenance of the data associated with the foo_id."
         }]
 
+        # Excluding PERSON, DEATH, and FACT_RELATIONSHIP beacuse they do not
+        # have mapping tables in the combined dataset.
         mapped_table_names = [
             cdm_table for cdm_table in common.CATI_TABLES if cdm_table not in
             [common.PERSON, common.DEATH, common.FACT_RELATIONSHIP]
