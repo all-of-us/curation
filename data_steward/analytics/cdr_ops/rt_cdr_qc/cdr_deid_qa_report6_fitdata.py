@@ -556,6 +556,12 @@ df = df.mask(df.isin(['Null', '']))
 df.style.highlight_null(null_color='red').set_properties(
     **{'text-align': 'left'})
 
+# #
+#
+# Queries the sandbox table for the corresponding cleaning rule (created in DC-2605) and outputs any records that are being dropped due to invalid values.
+#
+# DC-2606
+
 sandbox_dataset = ''
 sandbox_table = ''
 dataset_id = ''
