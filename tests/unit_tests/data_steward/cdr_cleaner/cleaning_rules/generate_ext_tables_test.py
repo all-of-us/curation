@@ -75,7 +75,7 @@ class GenerateExtTablesTest(unittest.TestCase):
         ]
 
         mapping_table_names = [
-            f"{gen_ext.MAPPING_PREFIX}{cdm_table}"
+            f"{common.MAPPING_PREFIX}{cdm_table}"
             for cdm_table in mapped_table_names
         ]
 
@@ -114,7 +114,7 @@ class GenerateExtTablesTest(unittest.TestCase):
 
         fields_str = ','.join(fields_list)
         table = 'foo'
-        ext_table = f'{table}{gen_ext.EXT_TABLE_SUFFIX}'
+        ext_table = f'{table}{common.EXT_SUFFIX}'
 
         # test
         with self.assertLogs(level='INFO') as cm:
@@ -132,7 +132,7 @@ class GenerateExtTablesTest(unittest.TestCase):
         """
         # pre-conditions
         table = common.SURVEY_CONDUCT
-        ext_table = f"{table}{gen_ext.EXT_TABLE_SUFFIX}"
+        ext_table = f"{table}{common.EXT_SUFFIX}"
         table_path = os.path.join(fields_path, 'extension_tables',
                                   f"{ext_table}.json")
         with open(table_path, 'r') as schema:
@@ -166,7 +166,7 @@ class GenerateExtTablesTest(unittest.TestCase):
         expected = []
         for cdm_table in common.CATI_TABLES:
             ext_table_fields_str, _ = self.rule_instance.get_table_fields_str(
-                cdm_table, f"{cdm_table}{gen_ext.EXT_TABLE_SUFFIX}")
+                cdm_table, f"{cdm_table}{common.EXT_SUFFIX}")
 
             additional_fields = _get_field_names(
                 f'{cdm_table}{common.EXT_SUFFIX}')
@@ -185,15 +185,15 @@ class GenerateExtTablesTest(unittest.TestCase):
                 query[cdr_consts.QUERY] = gen_ext.REPLACE_SRC_QUERY.render(
                     project_id=self.project_id,
                     dataset_id=self.dataset_id,
-                    ext_table=cdm_table + gen_ext.EXT_TABLE_SUFFIX,
+                    ext_table=f"{cdm_table}{common.EXT_SUFFIX}",
                     ext_table_fields=ext_table_fields_str,
                     cdm_table_id=cdm_table,
                     additional_fields=additional_fields,
                     mapping_fields=mapping_fields,
                     mapping_dataset_id=self.mapping_dataset_id,
-                    mapping_table_id=gen_ext.MAPPING_PREFIX + cdm_table,
+                    mapping_table_id=f"{common.MAPPING_PREFIX}{cdm_table}",
                     shared_sandbox_id=self.sandbox_dataset_id,
-                    site_maskings_table_id=gen_ext.SITE_TABLE_ID)
+                    site_maskings_table_id=common.SITE_MASKING_TABLE_ID)
                 expected.append(query)
 
         # Test
