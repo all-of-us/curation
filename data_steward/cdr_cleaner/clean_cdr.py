@@ -21,6 +21,7 @@ from cdr_cleaner.cleaning_rules.drop_participants_without_any_basics import Drop
 import cdr_cleaner.cleaning_rules.drug_refills_days_supply as drug_refills_supply
 from cdr_cleaner.cleaning_rules.maps_to_value_ppi_vocab_update import MapsToValuePpiVocabUpdate
 import cdr_cleaner.cleaning_rules.populate_route_ids as populate_routes
+from cdr_cleaner.cleaning_rules.populate_survey_conduct_ext import PopulateSurveyConductExt
 import \
     cdr_cleaner.cleaning_rules.remove_invalid_procedure_source_records as invalid_procedure_source
 from cdr_cleaner.cleaning_rules.remove_non_matching_participant import RemoveNonMatchingParticipant
@@ -248,6 +249,7 @@ REGISTERED_TIER_DEID_CLEANING_CLASSES = [
     (GenerateExtTables,),
     (COPESurveyVersionTask,
     ),  # Should run after GenerateExtTables and before CleanMappingExtTables
+    (PopulateSurveyConductExt,),
 
     # Data generalizations
     ####################################
@@ -314,6 +316,7 @@ CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     (GenerateExtTables,),
     (COPESurveyVersionTask,
     ),  # Should run after GenerateExtTables and before CleanMappingExtTables
+    (PopulateSurveyConductExt,),
     (CancerConceptSuppression,),  # Should run after any data remapping rules
     (SectionParticipationConceptSuppression,),
     (StringFieldsSuppression,),
