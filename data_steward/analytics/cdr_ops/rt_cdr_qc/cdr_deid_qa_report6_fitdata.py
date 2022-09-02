@@ -555,3 +555,37 @@ df1.T
 df = df.mask(df.isin(['Null', '']))
 df.style.highlight_null(null_color='red').set_properties(
     **{'text-align': 'left'})
+
+sandbox_dataset = ''
+sandbox_table = ''
+dataset_id = ''
+
+query = f'''
+SELECT person_id
+FROM `{project_id}.{dataset_id}.sleep_level`
+WHERE (level NOT IN 
+         ('awake','light','asleep','deep','restless','wake','rem','unknown') OR level IS NULL)
+
+AND person_id NOT IN
+(
+    SELECT person_id 
+    FROM `{project_id}.{sandbox_dataset}.{sandbox_table}`
+)
+'''
+# df1 = execute(client, query)
+# df1 = df1.iloc[:, 1:5]
+# if df1.loc[0].sum() == 0:
+#     df = df.append(
+#         {
+#             'query': 'Query2 no maximum_age in fitbit datasets',
+#             'result': 'PASS'
+#         },
+#         ignore_index=True)
+# else:
+#     df = df.append(
+#         {
+#             'query': 'Query2 no maximum_age in fitbit datasets',
+#             'result': ''
+#         },
+#         ignore_index=True)
+# df1
