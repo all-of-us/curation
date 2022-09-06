@@ -20,7 +20,7 @@ from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, quer
 
 LOGGER = logging.getLogger(__name__)
 
-JIRA_ISSUE_NUMBERS = ['DC813', 'DC400']
+JIRA_ISSUE_NUMBERS = ['DC813', 'DC400', 'DC2634']
 
 table_dates = {
     common.CONDITION_OCCURRENCE: ['condition_start_date', 'condition_end_date'],
@@ -29,7 +29,8 @@ table_dates = {
     ],
     common.DEVICE_EXPOSURE: [
         'device_exposure_start_date', 'device_exposure_end_date'
-    ]
+    ],
+    common.SURVEY_CONDUCT: ['survey_start_date', 'survey_end_date']
 }
 
 visit_occurrence = common.VISIT_OCCURRENCE
@@ -130,7 +131,8 @@ class TemporalConsistency(BaseCleaningRule):
                          affected_datasets=[cdr_consts.COMBINED],
                          affected_tables=[
                              common.CONDITION_OCCURRENCE, common.DRUG_EXPOSURE,
-                             common.DEVICE_EXPOSURE, visit_occurrence
+                             common.DEVICE_EXPOSURE, common.SURVEY_CONDUCT,
+                             common.VISIT_OCCURRENCE
                          ],
                          project_id=project_id,
                          dataset_id=dataset_id,
