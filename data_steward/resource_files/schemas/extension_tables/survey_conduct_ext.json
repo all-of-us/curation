@@ -12,15 +12,9 @@
         "description": "The provenance of the data associated with the survey_conduct_id."
     },
     {
-        "type": "string",
-        "name": "type",
+        "type": "",
+        "name": "language",
         "mode": "nullable",
-        "description": "Response type relating to the survey_conduct_id.  Should be one of [NON_PARTICIPANT_AUTHOR_INDICATOR, LANGUAGE]."
-    },
-    {
-        "type": "string",
-        "name": "value",
-        "mode": "nullable",
-        "description": "Response value associated with survey_conduct_id and type.  If type is LANGUAGE, should be one of [en, es].  If type is NON_PARTICIPANT_AUTHOR_INDICATOR, should be [CATI]."
+        "description": ""
     }
 ]
