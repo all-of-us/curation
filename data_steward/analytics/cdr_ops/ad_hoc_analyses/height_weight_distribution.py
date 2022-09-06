@@ -122,9 +122,15 @@ height_before_unit_dict = get_unit_concept_id_dict(height_before_dist)
 height_after_unit_dict = get_unit_concept_id_dict(height_after_dist)
 
 for height_concept_id in HEIGHT_CONCEPT_IDS:
-    generate_plot(height_concept_id, height_concept_dict, height_before_dist,
-                  height_after_dist, height_before_unit_dict,
-                  height_after_unit_dict, False, False)
+    generate_plot(height_concept_id,
+                  height_concept_dict,
+                  height_before_dist,
+                  height_after_dist,
+                  height_before_unit_dict,
+                  height_after_unit_dict,
+                  False,
+                  False,
+                  figure_name='height_weight_distribution.png')
 # -
 
 # ## Compute distributes for weights
@@ -159,9 +165,13 @@ weight_before_unit_dict = get_unit_concept_id_dict(weight_before_dist)
 weight_after_unit_dict = get_unit_concept_id_dict(weight_after_dist)
 
 for weight_concept_id in WEIGHT_CONCEPT_IDS:
-    generate_plot(weight_concept_id, weight_concept_dict, weight_before_dist,
-                  weight_after_dist, weight_before_unit_dict,
-                  weight_after_unit_dict, False, False)
+    generate_plot(weight_concept_id,
+                  weight_concept_dict,
+                  weight_before_dist,
+                  weight_after_dist,
+                  weight_before_unit_dict,
+                  weight_after_unit_dict,
+                  False,
+                  False,
+                  figure_name='unit_standardization.png')
 # -
-
-
