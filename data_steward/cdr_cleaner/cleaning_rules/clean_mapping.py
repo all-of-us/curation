@@ -11,6 +11,7 @@ when the records of the row references have been dropped by a cleaning rule.
 
 import logging
 
+from common import EXT, EXT_SUFFIX, JINJA_ENV, MAPPING, MAPPING_PREFIX, UNIONED_EHR
 import constants.bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 import resources
@@ -19,28 +20,22 @@ from utils import bq
 
 LOGGER = logging.getLogger(__name__)
 
-RECORDS_QUERY = """
-{query_stmt}
-FROM `{project}.{dataset}.{table}`
-WHERE {table_id} NOT IN 
-(SELECT {table_id} FROM `{project}.{dataset}.{cdm_table}`)
-"""
+RECORDS_QUERY = JINJA_ENV.from_string("""
+{{query_stmt}}
+FROM `{{project}}.{{dataset}}.{{table}}`
+WHERE {{table_id}} NOT IN 
+(SELECT {{table_id}} FROM `{{project}}.{{dataset}}.{{cdm_table}}`)
+""")
 
-GET_TABLES_QUERY = """
+GET_TABLES_QUERY = JINJA_ENV.from_string("""
 SELECT DISTINCT table_name
-FROM `{project}.{dataset}.INFORMATION_SCHEMA.COLUMNS`
-WHERE table_name LIKE '%{table_type}%'
-"""
-
-UNIONED_PREFIX = 'unioned_ehr_'
+FROM `{{project}}.{{dataset}}.INFORMATION_SCHEMA.COLUMNS`
+WHERE table_name LIKE '%{{table_type}}%'
+""")
 
 TABLE_NAME = 'table_name'
-MAPPING = 'mapping'
-MAPPING_PREFIX = '_{}_'.format(MAPPING)
-EXT = 'ext'
-EXT_SUFFIX = '_{}'.format(EXT)
 
-ISSUE_NUMBERS = ['DC-715', 'DC-1513']
+ISSUE_NUMBERS = ['DC-715', 'DC-1513', 'DC-2629']
 
 
 def get_mapping_tables():
@@ -56,8 +51,8 @@ def get_mapping_tables():
     mapping_tables = resources.MAPPING_TABLES
     ext_tables = []
     for table in mapping_tables:
-        table_name = table.replace('_mapping_', '')
-        table_name = table_name + '_ext'
+        table_name = table.replace(MAPPING_PREFIX, '')
+        table_name = f"{table_name}{EXT_SUFFIX}"
         ext_tables.append(table_name)
     return mapping_tables + ext_tables
 
@@ -105,9 +100,11 @@ class CleanMappingExtTables(BaseCleaningRule):
         # reset when setup_rule is executed.
         tables = get_mapping_tables()
         self.mapping_tables = [
-            table for table in tables if table.startswith('_mapping')
+            table for table in tables if table.startswith(MAPPING_PREFIX)
         ]
-        self.ext_tables = [table for table in tables if table.endswith('_ext')]
+        self.ext_tables = [
+            table for table in tables if table.endswith(EXT_SUFFIX)
+        ]
 
     @staticmethod
     def get_cdm_table(table, table_type):
@@ -134,7 +131,7 @@ class CleanMappingExtTables(BaseCleaningRule):
 
         :return: list of tables in the dataset which are mapping or ext tables of cdm_tables
         """
-        tables_query = GET_TABLES_QUERY.format(project=self.project_id,
+        tables_query = GET_TABLES_QUERY.render(project=self.project_id,
                                                dataset=self.dataset_id,
                                                table_type=table_type)
         tables = bq.query(tables_query).get(TABLE_NAME).to_list()
@@ -173,13 +170,13 @@ class CleanMappingExtTables(BaseCleaningRule):
         for table in table_list:
             cdm_table = self.get_cdm_table(table, table_type)
             if is_ehr:
-                cdm_table = UNIONED_PREFIX + cdm_table
+                cdm_table = f"{UNIONED_EHR}_{cdm_table}"
 
-            table_id = cdm_table + '_id'
+            table_id = f"{cdm_table}_id"
 
             if self.sandbox_dataset_id is not None:
                 sandbox_query = dict()
-                sandbox_query[cdr_consts.QUERY] = RECORDS_QUERY.format(
+                sandbox_query[cdr_consts.QUERY] = RECORDS_QUERY.render(
                     query_stmt='SELECT *',
                     project=self.project_id,
                     dataset=self.dataset_id,
@@ -194,7 +191,7 @@ class CleanMappingExtTables(BaseCleaningRule):
                 queries.append(sandbox_query)
 
             query = dict()
-            query[cdr_consts.QUERY] = RECORDS_QUERY.format(
+            query[cdr_consts.QUERY] = RECORDS_QUERY.render(
                 query_stmt='DELETE',
                 project=self.project_id,
                 dataset=self.dataset_id,
