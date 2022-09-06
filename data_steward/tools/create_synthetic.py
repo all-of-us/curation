@@ -204,6 +204,11 @@ def parse_deid_args(args=None):
                         action='store_true',
                         required=False,
                         help='Log to the console as well as to a file.')
+    parser.add_argument('--vocab_dataset',
+                        dest='vocab_dataset',
+                        action='store',
+                        help=('Vocabulary dataset location.'),
+                        required=True)
 
     common_args, unknown_args = parser.parse_known_args(args)
     custom_args = clean_cdr._get_kwargs(unknown_args)
@@ -222,18 +227,18 @@ def main(raw_args=None) -> dict:
 
     # load synthetic data from the bucket
     import_rdr_omop.main([
-        '--rdr_bucket', args.bucket_name, '--run_as', args.run_as,
+        '--rdr_bucket', args.bucket_name, '--run_as', args.target_principal,
         '--export_date',
         datetime.now().strftime("%Y-%m-%d"), '--curation_project',
         args.project_id, '--vocab_dataset', args.vocab_dataset, '--console_log'
     ])
 
-    # Creates synthetic dataset and runs a subset of cleaning rules marked for synthetic data
-    datasets = create_tier(args.credentials_filepath, args.project_id,
-                           args.idataset, args.release_tag,
-                           args.target_principal, **kwargs)
+    # # Creates synthetic dataset and runs a subset of cleaning rules marked for synthetic data
+    # datasets = create_tier(args.credentials_filepath, args.project_id,
+    #                        args.idataset, args.release_tag,
+    #                        args.target_principal, **kwargs)
 
-    return datasets
+    # return datasets
 
 
 if __name__ == '__main__':
