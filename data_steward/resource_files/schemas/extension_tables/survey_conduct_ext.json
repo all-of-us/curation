@@ -12,7 +12,7 @@
         "description": "The provenance of the data associated with the survey_conduct_id."
     },
     {
-        "type": "",
+        "type": "string",
         "name": "language",
         "mode": "nullable",
         "description": ""
