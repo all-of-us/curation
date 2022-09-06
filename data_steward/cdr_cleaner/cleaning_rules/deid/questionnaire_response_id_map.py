@@ -108,7 +108,7 @@ class QRIDtoRID(BaseCleaningRule):
     def get_query_specs(self, *args, **keyword_args):
         """
         Return a list of dictionary query specifications.
-        
+
         :return:  A list of dictionaries.  Each dictionary contains a
             single query and a specification for how to execute that query.
             The specifications are optional but the query is required.
