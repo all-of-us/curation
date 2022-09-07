@@ -119,6 +119,7 @@ from cdr_cleaner.cleaning_rules.map_health_insurance_responses import MapHealthI
 from cdr_cleaner.cleaning_rules.vehicular_accident_concept_suppression import VehicularAccidentConceptSuppression
 from cdr_cleaner.cleaning_rules.deid.ct_replaced_concept_suppression import \
     ControlledTierReplacedConceptSuppression
+from cdr_cleaner.cleaning_rules.dedup_measurement_value_as_concept_id import DedupMeasurementValueAsConceptId
 from cdr_cleaner.cleaning_rules.drop_orphaned_pids import DropOrphanedPIDS
 from constants.cdr_cleaner import clean_cdr_engine as ce_consts
 from constants.cdr_cleaner.clean_cdr import DataStage
@@ -216,6 +217,7 @@ COMBINED_CLEANING_CLASSES = [
         ValidDeathDates,),
     (NoDataAfterDeath,),
     (RemoveEhrDataWithoutConsent,),
+    (DedupMeasurementValueAsConceptId,),
     (drug_refills_supply.get_days_supply_refills_queries,),
     # trying to load a table while creating query strings,
     # won't work with mocked strings.  should use base class
