@@ -1,5 +1,5 @@
 """
-Populates survey_conduct_ext table with the language and versioning information
+Populates survey_conduct_ext table with the language information
 as provided in the questionnaire_response_additional_info table.
 
 Original issue: DC-2627
@@ -49,8 +49,8 @@ class PopulateSurveyConductExt(BaseCleaningRule):
         Initialize the class with proper information.
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
-        desc = ('Populates survey_conduct_ext table with the language and '
-                'versioning information as provided in the '
+        desc = ('Populates survey_conduct_ext table with the language '
+                'information as provided in the '
                 'questionnaire_response_additional_info table.')
 
         super().__init__(issue_numbers=['DC2627'],
@@ -68,8 +68,7 @@ class PopulateSurveyConductExt(BaseCleaningRule):
 
     def get_query_specs(self):
         """
-        Runs the query which adds skipped questions to observation table.
-        No sandbox table since this is only insert.
+        Return a list of dictionary query specifications.
         """
         sandbox_query = SANDBOX_SURVEY_CONDUCT_EXT_QUERY.render(
             project_id=self.project_id,
