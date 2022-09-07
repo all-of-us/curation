@@ -50,7 +50,7 @@ class FitbitDateShiftTest(BaseTest.DeidRulesTestBase):
                                                 sandbox_id, mapping_dataset_id,
                                                 mapping_table_id)
 
-        # can test the full functionality with one table
+        # can test the full functionality with two tables
         cls.fq_table_names = [
             f"{cls.project_id}.{dataset_id}.{cls.rule_instance.tables[0]}",
             f"{cls.project_id}.{dataset_id}.{cls.rule_instance.tables[5]}"
@@ -122,7 +122,7 @@ class FitbitDateShiftTest(BaseTest.DeidRulesTestBase):
         INSERT INTO `{{fq_table_name}}`
         (person_id, p_date, p_datetime, p_timestamp, p_name)
         VALUES
-          -- setting day to the 11th to make it easier to calculate the shifted date --
+          -- setting day to the 15th to make it easier to calculate the shifted date --
           (803, date(2016, 05, 15), datetime(2016, 05, 15, 12, 45, 00), timestamp('2016-05-15 12:45:00 UTC'), "john doe"),
           (804, date(2016, 05, 14), datetime(2016, 05, 14, 12, 45, 00), timestamp('2016-05-14 12:45:00 UTC'), "jane doe")
         """)
