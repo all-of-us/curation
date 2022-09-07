@@ -10,6 +10,9 @@ import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from common import JINJA_ENV, MEASUREMENT
 
+# Third party imports
+from google.cloud.exceptions import NotFound
+
 LOGGER = logging.getLogger(__name__)
 
 JIRA_ISSUE_NUMBERS = ['DC2651', 'DC2650', 'DC2358']
@@ -20,11 +23,11 @@ SANDBOX_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE
   `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` AS (
   SELECT
-    *
+    m.*
   FROM
     `{{project}}.{{dataset}}.measurement` m
   JOIN
-    `{{project}}.{{pipeline_tables}}.{{identical_labs_table}}` lm
+    `{{project}}.{{sandbox_dataset}}.{{identical_labs_table}}` lm
   ON
     m.value_as_concept_id = lm.value_as_concept_id
   WHERE
@@ -32,18 +35,36 @@ CREATE OR REPLACE TABLE
 """)
 
 UPDATE_QUERY = JINJA_ENV.from_string("""
-UPDATE
-  `{{project}}.{{dataset}}.measurement`
-SET
-  value_as_concept_id = lm.aou_standard_vac
+CREATE OR REPLACE TABLE
+  `{{project}}.{{dataset}}.measurement` AS (
+SELECT
+  measurement_id,
+  person_id,
+  measurement_concept_id,
+  measurement_date,
+  measurement_datetime,
+  measurement_time,
+  measurement_type_concept_id,
+  operator_concept_id,
+  value_as_number,
+  COALESCE(lm.aou_standard_vac, m.value_as_concept_id) AS value_as_concept_id,
+  unit_concept_id,
+  range_low,
+  range_high,
+  provider_id,
+  visit_occurrence_id,
+  visit_detail_id,
+  measurement_source_value,
+  measurement_source_concept_id,
+  unit_source_value,
+  value_source_value
 FROM
   `{{project}}.{{dataset}}.measurement` m
-JOIN
-  `{{project}}.{{pipeline_tables}}.{{identical_labs_table}}` lm
+LEFT JOIN
+  `{{project}}.{{sandbox_dataset}}.{{identical_labs_table}}` lm
 ON
   m.value_as_concept_id = lm.value_as_concept_id
-WHERE
-  m.value_as_concept_id <> lm.aou_standard_vac )
+)
 """)
 
 
@@ -96,14 +117,26 @@ class DedupMeasurementValueAsConceptId(BaseCleaningRule):
         update_query[cdr_consts.QUERY] = UPDATE_QUERY.render(
             project=self.project_id,
             dataset=self.dataset_id,
-            pipeline_tables=PIPELINE_TABLES,
+            sandbox_dataset=self.sandbox_dataset_id,
             identical_labs_table=IDENTICAL_LABS_LOOKUP_TABLE)
         queries_list.append(update_query)
 
         return queries_list
 
     def setup_rule(self, client, *args, **keyword_args):
-        pass
+        try:
+            client.get_table(
+                f'{self.project_id}.{self.sandbox_dataset_id}.{IDENTICAL_LABS_LOOKUP_TABLE}'
+            )
+        except NotFound:
+            job = client.copy_table(
+                f'{self.project_id}.{PIPELINE_TABLES}.{IDENTICAL_LABS_LOOKUP_TABLE}',
+                f'{self.project_id}.{self.sandbox_dataset_id}.{IDENTICAL_LABS_LOOKUP_TABLE}'
+            )
+            job.result()
+            LOGGER.info(
+                f'Copied {PIPELINE_TABLES}.{IDENTICAL_LABS_LOOKUP_TABLE} to '
+                f'{self.sandbox_dataset_id}.{IDENTICAL_LABS_LOOKUP_TABLE}')
 
     def setup_validation(self, client):
         raise NotImplementedError("Please fix me.")

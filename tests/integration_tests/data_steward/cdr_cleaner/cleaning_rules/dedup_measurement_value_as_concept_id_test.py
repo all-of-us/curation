@@ -60,20 +60,24 @@ class DedupMeasurementValueAsConceptIdTest(BaseTest.CleaningRulesTestBase):
         """
         insert_fake_measurements = self.jinja_env.from_string("""
         INSERT INTO `{{project}}.{{dataset}}.measurement`
-        (measurement_id, person_id, measurement_concept_id, measurement_date,
-         measurement_type_concept_id, value_as_number, value_as_concept_id,
-         measurement_source_concept_id, unit_concept_id, measurement_datetime)
+        (measurement_id, person_id, measurement_concept_id, measurement_date, measurement_datetime,
+        measurement_time, measurement_type_concept_id, operator_concept_id, value_as_number, value_as_concept_id, 
+        unit_concept_id, range_low, range_high, provider_id, visit_occurrence_id, visit_detail_id, 
+        measurement_source_value, measurement_source_concept_id, unit_source_value, value_source_value)
         VALUES
-
-          (801, 1, 0, '2016-05-01', 0, 0, 45880618, 0, 0, "2016-05-01 05:30:00+00"),
-          (802, 2, 0, '2016-05-01', 0, 0, 4121196, 0, 0, "2016-05-01 05:30:00+00"),
-          (803, 3, 0, '2016-05-01', 0, 0, 45878745, 0, 0, "2016-05-01 05:30:00+00"),
-          (804, 4, 0, '2016-05-01', 0, 0, 4135493, 0, 0,"2016-05-01 05:30:00+00"),
-          (805, 5, 0, '2016-05-01', 0, 0, 35919331, 0, 0,"2016-05-01 05:30:00+00"),
-          
+        -- Concept_name 0 -> 45880618 LOINC, should not be modified --
+          (801, 1, 0, '2016-05-01', "2016-05-01 05:30:00+00", NULL, 0, 0, 0, 45880618, 0, 0, 0, 0, 0, 0, "", 0, "", ""),
+        -- Concept_name 0 -> 4121196 SNOMED, should be updated to LOINC code for 0 - 45880618--
+          (802, 2, 0, '2016-05-01', "2016-05-01 05:30:00+00", NULL, 0, 0, 0, 4121196, 0, 0, 0, 0, 0, 0, "", 0, "", ""),
+        -- Concept_name Abnormal -> 45878745 LOINC, should not be modified --
+          (803, 3, 0, '2016-05-01', "2016-05-01 05:30:00+00", NULL, 0, 0, 0, 45878745, 0, 0, 0, 0, 0, 0, "", 0, "", ""),
+        -- Concept_name Abnormal -> 4135493 SNOMED, should be updated to LOINC code for Abnormal - 45878745--
+          (804, 4, 0, '2016-05-01', "2016-05-01 05:30:00+00", NULL, 0, 0, 0, 4135493, 0, 0, 0, 0, 0, 0, "", 0, "", ""),
+        -- Concept_name 0 -> 35919331 NAACCR, should not be modified --
+          (805, 5, 0, '2016-05-01', "2016-05-01 05:30:00+00", NULL, 0, 0, 0, 35919331, 0, 0, 0, 0, 0, 0, "", 0, "", "")
         """).render(project=self.project_id, dataset=self.dataset_id)
 
-        self.load_test_data(insert_fake_measurements)
+        self.load_test_data([insert_fake_measurements])
 
         tables_and_counts = [{
             'name':
@@ -81,7 +85,7 @@ class DedupMeasurementValueAsConceptIdTest(BaseTest.CleaningRulesTestBase):
             'fq_table_name':
                 self.fq_table_names[0],
             'fq_sandbox_table_name':
-                self.fq_sandbox_table_names[4],
+                self.fq_sandbox_table_names[0],
             'fields': ['measurement_id', 'value_as_concept_id'],
             'loaded_ids': [801, 802, 803, 804, 805],
             'sandboxed_ids': [802, 804],
