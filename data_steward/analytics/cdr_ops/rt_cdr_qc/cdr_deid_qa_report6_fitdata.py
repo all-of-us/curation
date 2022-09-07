@@ -549,13 +549,6 @@ else:
         ignore_index=True)
 df1.T
 
-# # Summary_fitdata
-
-# if not pass, will be highlighted in red
-df = df.mask(df.isin(['Null', '']))
-df.style.highlight_null(null_color='red').set_properties(
-    **{'text-align': 'left'})
-
 # #
 #
 # Queries the sandbox table for the corresponding cleaning rule (created in DC-2605) and outputs any records that are being dropped due to invalid values.
@@ -566,8 +559,17 @@ sandbox_dataset = ''
 sandbox_table = ''
 dataset_id = ''
 
+sandbox_query = f'''
+SELECT *
+FROM `{project_id}.{dataset_id}.{sandbox_table}`
+WHERE (level NOT IN 
+         ('awake','light','asleep','deep','restless','wake','rem','unknown') OR level IS NULL)
+'''
+df2 = execute(client, sandbox_query)
+df2
+
 query = f'''
-SELECT person_id
+SELECT *
 FROM `{project_id}.{dataset_id}.sleep_level`
 WHERE (level NOT IN 
          ('awake','light','asleep','deep','restless','wake','rem','unknown') OR level IS NULL)
@@ -578,20 +580,26 @@ AND person_id NOT IN
     FROM `{project_id}.{sandbox_dataset}.{sandbox_table}`
 )
 '''
-# df1 = execute(client, query)
-# df1 = df1.iloc[:, 1:5]
-# if df1.loc[0].sum() == 0:
-#     df = df.append(
-#         {
-#             'query': 'Query2 no maximum_age in fitbit datasets',
-#             'result': 'PASS'
-#         },
-#         ignore_index=True)
-# else:
-#     df = df.append(
-#         {
-#             'query': 'Query2 no maximum_age in fitbit datasets',
-#             'result': ''
-#         },
-#         ignore_index=True)
-# df1
+df1 = execute(client, query)
+if df1.shape[0] == 0:
+    df = df.append(
+        {
+            'query': 'Query6 no invalid level records in sleep_level table',
+            'result': 'PASS'
+        },
+        ignore_index=True)
+else:
+    df = df.append(
+        {
+            'query': 'Query6 no invalid level records in sleep_level table',
+            'result': ''
+        },
+        ignore_index=True)
+df1
+
+# # Summary_fitdata
+
+# if not pass, will be highlighted in red
+df = df.mask(df.isin(['Null', '']))
+df.style.highlight_null(null_color='red').set_properties(
+    **{'text-align': 'left'})
