@@ -22,14 +22,16 @@ AS
     SELECT sce.* FROM `{{project_id}}.{{dataset_id}}.survey_conduct_ext` AS sce
     JOIN `{{project_id}}.{{dataset_id}}.questionnaire_response_additional_info` AS qrai
     ON sce.survey_conduct_id = qrai.questionnaire_response_id
-    WHERE sce.type IS NULL OR sce.value IS NULL OR sce.type != qrai.type OR sce.value != qrai.value
+    WHERE (sce.language IS NULL OR sce.language != qrai.value)
+    AND qrai.type = 'LANGUAGE'
 """)
 
 UPDATE_SURVEY_CONDUCT_EXT_QUERY = JINJA_ENV.from_string("""
 UPDATE `{{project_id}}.{{dataset_id}}.survey_conduct_ext` AS sce
-SET type = qrai.type, value = qrai.value
+SET language = qrai.value
 FROM `{{project_id}}.{{dataset_id}}.questionnaire_response_additional_info` AS qrai
 WHERE sce.survey_conduct_id = qrai.questionnaire_response_id
+AND qrai.type = 'LANGUAGE'
 """)
 
 
