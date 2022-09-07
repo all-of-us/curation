@@ -24,7 +24,7 @@ LOGGER = logging.getLogger(__name__)
 
 UNDER18_PARTICIPANTS_LOOKUP_TABLE = '_under18_participants'
 
-AFFECTED_TABLES = [table for table in get_person_id_tables(common.AOU_REQUIRED)]
+AFFECTED_TABLES = [table for table in get_person_id_tables(common.CATI_TABLES)]
 
 PARTICIPANTS_UNDER_18_AT_CONSENT_QUERY = common.JINJA_ENV.from_string("""
   CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{under18_participant_lookup_table}}` AS (
@@ -98,7 +98,7 @@ class RemoveParticipantsUnder18Years(BaseCleaningRule):
             'is to be sandboxed and dropped from the CDR.')
 
         super().__init__(
-            issue_numbers=['DC1724', 'DC2260'],
+            issue_numbers=['DC1724', 'DC2260', 'DC2632'],
             description=desc,
             affected_datasets=[cdr_consts.RDR],
             affected_tables=AFFECTED_TABLES,
