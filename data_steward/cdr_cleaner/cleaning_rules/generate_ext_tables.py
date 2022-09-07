@@ -15,7 +15,7 @@ from google.cloud.bigquery import DatasetReference
 from google.cloud.exceptions import NotFound
 
 # Project imports
-from common import JINJA_ENV, PIPELINE_TABLES, SITE_MASKING_TABLE_ID
+from common import EXT_SUFFIX, JINJA_ENV, MAPPING_PREFIX, PIPELINE_TABLES, SITE_MASKING_TABLE_ID
 from utils import pipeline_logging
 from resources import fields_for, MAPPING_TABLES
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
@@ -23,7 +23,7 @@ import constants.cdr_cleaner.clean_cdr as cdr_consts
 
 LOGGER = logging.getLogger(__name__)
 
-ISSUE_NUMBERS = ['DC-1351', 'DC-1500', 'DC-1640']
+ISSUE_NUMBERS = ['DC-1351', 'DC-1500', 'DC-1640', 'DC-2628']
 EXT_FIELD_TEMPLATE = [{
     "type": "integer",
     "name": "{table}_id",
@@ -35,10 +35,6 @@ EXT_FIELD_TEMPLATE = [{
     "mode": "nullable",
     "description": "The provenance of the data associated with the {table}_id."
 }]
-
-EXT_TABLE_SUFFIX = '_ext'
-MAPPING_PREFIX = '_mapping_'
-SITE_TABLE_ID = 'site_maskings'
 
 REPLACE_SRC_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project_id}}.{{dataset_id}}.{{ext_table}}` ({{ext_table_fields}})
@@ -104,12 +100,15 @@ class GenerateExtTables(BaseCleaningRule):
 
     def get_table_fields_str(self, table, ext_table_id):
         """
-        Generates fields for ext tables for the provided cdm table in SQL form
+        Generates fields for ext tables for the provided cdm table
 
         :param table: cdm table to generate ext fields for
         :param ext_table_id: cdm table extension name.  used to load schema
             definition if it exists as a json file
-        :return: dict containing ext fields for the cdm table in SQL form
+        :return: tuple that contains the following:
+            first item: Fields for the ext table in str format.
+                        You can use this string for the DDL "CREATE TABLE xyz (_HERE_)"
+            second item: Fields for the ext table in dict format
         """
         table_fields = []
 
@@ -161,7 +160,7 @@ class GenerateExtTables(BaseCleaningRule):
         for mapping_table_id in self.mapping_table_ids:
             # get cdm table name
             cdm_table_id = mapping_table_id[len(MAPPING_PREFIX):]
-            ext_table_id = cdm_table_id + EXT_TABLE_SUFFIX
+            ext_table_id = f"{cdm_table_id}{EXT_SUFFIX}"
             ext_table_fields_str, table_fields = self.get_table_fields_str(
                 cdm_table_id, ext_table_id)
 
@@ -188,7 +187,7 @@ class GenerateExtTables(BaseCleaningRule):
                 mapping_dataset_id=self._mapping_dataset_id,
                 mapping_table_id=mapping_table_id,
                 shared_sandbox_id=self.sandbox_dataset_id,
-                site_maskings_table_id=SITE_TABLE_ID)
+                site_maskings_table_id=SITE_MASKING_TABLE_ID)
             queries.append(query)
 
         return queries
@@ -199,14 +198,16 @@ class GenerateExtTables(BaseCleaningRule):
         """
         try:
             client.get_table(
-                f'{self.project_id}.{self.sandbox_dataset_id}.{SITE_TABLE_ID}')
+                f'{self.project_id}.{self.sandbox_dataset_id}.{SITE_MASKING_TABLE_ID}'
+            )
         except NotFound:
             job = client.copy_table(
                 f'{self.project_id}.{PIPELINE_TABLES}.{SITE_MASKING_TABLE_ID}',
-                f'{self.project_id}.{self.sandbox_dataset_id}.{SITE_TABLE_ID}')
+                f'{self.project_id}.{self.sandbox_dataset_id}.{SITE_MASKING_TABLE_ID}'
+            )
             job.result()
             LOGGER.info(f'Copied {PIPELINE_TABLES}.{SITE_MASKING_TABLE_ID} to '
-                        f'{self.sandbox_dataset_id}.{SITE_TABLE_ID}')
+                        f'{self.sandbox_dataset_id}.{SITE_MASKING_TABLE_ID}')
 
         self.mapping_table_ids = self.get_mapping_table_ids(client)
 
@@ -214,7 +215,7 @@ class GenerateExtTables(BaseCleaningRule):
         """
         Get the sandbox table ids for this class instance
         """
-        return [SITE_TABLE_ID]
+        return [SITE_MASKING_TABLE_ID]
 
     def setup_validation(self, client, *args, **keyword_args):
         """
