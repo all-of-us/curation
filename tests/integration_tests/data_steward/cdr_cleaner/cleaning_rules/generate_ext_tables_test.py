@@ -118,7 +118,7 @@ class GenerateExtTablesTest(BaseTest.CleaningRulesTestBase):
     def test_generate_ext_tables(self):
         """
         Test that ext tables are created as expected.
-        For survey_conduct_ext, the columns 'language' is NULL at this point.
+        For survey_conduct_ext, the column 'language' is NULL at this point.
         The cleaning rule from DC-2627 populates these columns.
         """
         tables_and_counts = [{
