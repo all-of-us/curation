@@ -58,7 +58,6 @@ class GenerateExtTablesTest(BaseTest.CleaningRulesTestBase):
         # call super to set up the client, create datasets, and create
         # empty test tables
         # NOTE:  does not create empty sandbox tables.
-
         super().setUpClass()
 
     def setUp(self):
@@ -119,7 +118,7 @@ class GenerateExtTablesTest(BaseTest.CleaningRulesTestBase):
     def test_generate_ext_tables(self):
         """
         Test that ext tables are created as expected.
-        For survey_conduct_ext, the columns 'type' and 'value' are NULL at this point.
+        For survey_conduct_ext, the columns 'language' is NULL at this point.
         The cleaning rule from DC-2627 populates these columns.
         """
         tables_and_counts = [{
@@ -149,16 +148,15 @@ class GenerateExtTablesTest(BaseTest.CleaningRulesTestBase):
         }, {
             'fq_table_name':
                 self.survey_conduct_ext,
-            'fields': ['survey_conduct_id', 'src_id', 'type', 'value'],
+            'fields': ['survey_conduct_id', 'src_id', 'language'],
             'loaded_ids': [],
             'tables_created_on_setup': [
                 f'{self.project_id}.{self.sandbox_id}.{self.rule_instance.get_sandbox_tablenames()[0]}'
             ],
             'check_preconditions':
                 False,
-            'cleaned_values': [(41, 'pi/pm', None, None),
-                               (42, 'site yum', None, None),
-                               (43, 'site bar', None, None)]
+            'cleaned_values': [(41, 'pi/pm', None), (42, 'site yum', None),
+                               (43, 'site bar', None)]
         }]
 
         # mock the PIPELINE_TABLES variable so tests on different branches
