@@ -6,7 +6,7 @@ import unittest
 # Project imports
 import app_identity
 import bq_utils
-import cdr_cleaner.manual_cleaning_rules.clean_smoking_ppi as smoking_ppi
+import cdr_cleaner.cleaning_rules.clean_smoking_ppi as smoking_ppi
 import resources
 from tests import test_util
 from gcloud.bq import BigQueryClient
