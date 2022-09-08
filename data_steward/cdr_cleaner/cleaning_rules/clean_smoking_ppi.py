@@ -13,6 +13,8 @@ from google.cloud import bigquery
 import resources
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
+from cdr_cleaner.cleaning_rules.convert_pre_post_coordinated_concepts import (
+    ConvertPrePostCoordinatedConcepts)
 from common import JINJA_ENV, OBSERVATION
 
 LOGGER = logging.getLogger(__name__)
@@ -187,7 +189,7 @@ class CleanSmokingPpi(BaseCleaningRule):
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
-                         depends_on=[convert_pre_post_coordinated_concepts_test],
+                         depends_on=[ConvertPrePostCoordinatedConcepts],
                          table_namer=table_namer)
 
     def get_sandbox_tablenames(self):
@@ -293,7 +295,7 @@ if __name__ == '__main__':
             ARGS.project_id,
             ARGS.dataset_id,
             ARGS.sandbox_dataset_id,
-            [(CleanSmokingPPI,)])
+            [(CleanSmokingPpi,)])
         for query in query_list:
             LOGGER.info(query)
     else:
@@ -301,4 +303,4 @@ if __name__ == '__main__':
         clean_engine.clean_dataset(ARGS.project_id,
                                    ARGS.dataset_id,
                                    ARGS.sandbox_dataset_id,
-                                   [(CleanSmokingPPI,)])
+                                   [(CleanSmokingPpi,)])
