@@ -16,6 +16,7 @@
 project_id = ''
 old_vocabulary = ''
 new_vocabulary = ''
+run_as = ''
 # -
 
 #
@@ -26,15 +27,20 @@ new_vocabulary = ''
 
 # # + Import packages
 from common import JINJA_ENV
+from utils import auth
 from gcloud.bq import BigQueryClient
-from analytics.cdr_ops.notebook_utils import execute
+from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
 import pandas as pd
+
 # -
 
 vocabulary_dataset_old = f'{project_id}.{old_vocabulary}'
 vocabulary_dataset_new = f'{project_id}.{new_vocabulary}'
 
-client = BigQueryClient(project_id)
+impersonation_creds = auth.get_impersonation_credentials(
+    run_as, target_scopes=IMPERSONATION_SCOPES)
+
+client = BigQueryClient(project_id, credentials=impersonation_creds)
 
 pd.set_option('max_colwidth', None)
 

@@ -18,15 +18,22 @@ ct_ser_dataset = ""
 new_ct_dataset = ""
 cur_project = ""
 cur_out_project = ""
+run_as = ""
 # -
+
 import pandas as pd
 import warnings
-from analytics.cdr_ops.notebook_utils import execute
+from utils import auth
+from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
 from common import JINJA_ENV
 from gcloud.bq import BigQueryClient
+
 warnings.filterwarnings('ignore')
 
-client = BigQueryClient(cur_project)
+impersonation_creds = auth.get_impersonation_credentials(
+    run_as, target_scopes=IMPERSONATION_SCOPES)
+
+client = BigQueryClient(cur_project, credentials=impersonation_creds)
 
 
 def get_table(table, cols, dataset, project):

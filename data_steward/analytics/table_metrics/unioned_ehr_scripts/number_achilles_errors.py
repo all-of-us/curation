@@ -16,18 +16,12 @@
 # - Number of distinct ACHILLES errors
 # - Number of TOTAL ACHILLES errors (meaning the same 'issue' can be reported twice)
 
-from google.cloud import bigquery
-# %reload_ext google.cloud.bigquery
-client = bigquery.Client()
-# %load_ext google.cloud.bigquery
-
-# +
-from notebooks import parameters
-DATASET = parameters.LATEST_DATASET
-LOOKUP_TABLES = parameters.LOOKUP_TABLES
-
-print(f"Dataset to use: {DATASET}")
-print(f"Lookup tables: {LOOKUP_TABLES}")
+# + tags=["parameters"]
+PROJECT_ID = ""
+DATASET = ""
+LOOKUP_TABLES = ""
+RUN_AS = ""
+# -
 
 # +
 import warnings
@@ -36,6 +30,14 @@ warnings.filterwarnings('ignore')
 import pandas as pd
 import matplotlib.pyplot as plt
 import os
+from utils import auth
+from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
+from gcloud.bq import BigQueryClient
+
+impersonation_creds = auth.get_impersonation_credentials(
+    RUN_AS, target_scopes=IMPERSONATION_SCOPES)
+
+client = BigQueryClient(PROJECT_ID, credentials=impersonation_creds)
 
 plt.style.use('ggplot')
 pd.options.display.max_rows = 999
@@ -67,13 +69,13 @@ NOT LIKE '%unioned_ehr_%'
 AND table_id NOT LIKE '\\\_%'
 """
 
-site_df = pd.io.gbq.read_gbq(hpo_id_query, dialect='standard')
+site_df = execute(client, hpo_id_query)
 
 get_full_names = f"""
 select * from {LOOKUP_TABLES}.hpo_site_id_mappings
 """
 
-full_names_df = pd.io.gbq.read_gbq(get_full_names, dialect='standard')
+full_names_df = execute(client, get_full_names)
 
 # +
 full_names_df.columns = ['org_id', 'src_hpo_id', 'site_name', 'display_order']
@@ -90,7 +92,7 @@ site_df = pd.merge(site_df, full_names_df, on=['src_hpo_id'], how='left')
 
 site_df
 
-# # Note!!! 
+# # Note!!!
 # Sites that have yet made a submission should be suppressed
 #
 # ## do check again every time before run
@@ -115,7 +117,7 @@ FROM
 
 for src_hpo_id in hpo_ids:
     subqueries.append(subquery.format(DATASET=DATASET, src_hpo_id=src_hpo_id))
-    
+
 final_query = '\n\nUNION ALL\n'.join(subqueries)
 # -
 
@@ -130,7 +132,7 @@ num_distinct_ahes
 ORDER BY num_distinct_warnings DESC
 """.format(final_query=final_query)
 
-distinct_ahes_df = pd.io.gbq.read_gbq(dataframe_distinct_ahes, dialect='standard')
+distinct_ahes_df = execute(client, dataframe_distinct_ahes)
 
 distinct_ahes_df
 
@@ -165,7 +167,7 @@ num_distinct_ids
 ORDER BY num_distinct_ids DESC
 """.format(final_query=final_query)
 
-dataframe_distinct_ids = pd.io.gbq.read_gbq(dataframe_distinct_ids, dialect='standard')
+dataframe_distinct_ids = execute(client, dataframe_distinct_ids)
 
 dataframe_distinct_ids
 
@@ -199,18 +201,22 @@ num_rows_with_ah_failure
 ORDER BY rows_with_ah_failure DESC
 """.format(final_query=final_query)
 
-ahe_id_failure_counts = pd.io.gbq.read_gbq(dataframe_ahe_failure_count, dialect='standard')
+ahe_id_failure_counts = execute(client, dataframe_ahe_failure_count)
 
 ahe_id_failure_counts
 
-final_df = pd.merge(dataframe_distinct_ids, distinct_ahes_df, how='outer', on='src_hpo_id')
+final_df = pd.merge(dataframe_distinct_ids,
+                    distinct_ahes_df,
+                    how='outer',
+                    on='src_hpo_id')
 
-final_df = pd.merge(final_df, ahe_id_failure_counts, how='outer', on='src_hpo_id')
+final_df = pd.merge(final_df,
+                    ahe_id_failure_counts,
+                    how='outer',
+                    on='src_hpo_id')
 
 final_df.fillna(0)
 
 final_df
 
-final_df.to_csv("{cwd}/achilles_errors.csv".format(cwd = cwd))
-
-
+final_df.to_csv("{cwd}/achilles_errors.csv".format(cwd=cwd))

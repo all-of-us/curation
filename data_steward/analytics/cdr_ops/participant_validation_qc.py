@@ -23,12 +23,18 @@ EHR_SNAPSHOT_ID = ""  # Identifies the EHR snapshot dataset
 LOOKUP_DATASET_ID = ""  # Identifies the lookup dataset
 VALIDATION_DATASET_ID = ""  # Identifies the validation dataset
 EXCLUDED_SITES = "''"  # List of excluded sites passed as string: eg. "'hpo_id1', 'hpo_id_2', 'hpo_id3',..."
-# +
-import pandas as pd
-from gcloud.bq import BigQueryClient
-from analytics.cdr_ops.notebook_utils import execute
+RUN_AS = ""
+# -
 
-client = BigQueryClient(PROJECT_ID)
+import pandas as pd
+from utils import auth
+from gcloud.bq import BigQueryClient
+from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
+
+impersonation_creds = auth.get_impersonation_credentials(
+    RUN_AS, target_scopes=IMPERSONATION_SCOPES)
+
+client = BigQueryClient(PROJECT_ID, credentials=impersonation_creds)
 
 pd.options.display.max_rows = 1000
 pd.options.display.max_colwidth = 0

@@ -21,13 +21,20 @@ PREVIOUS_UNIONED_EHR_DATASET_ID = ""  # Identifies the dataset the snapshot was 
 CURRENT_UNIONED_EHR_DATASET_ID = ""  # Identifies the snapshot dataset
 RELEASE_TAG = ""  # Identifies the release tag for current CDR
 EHR_CUTOFF_DATE = ""  # CDR cutoff date
-
-# +
-from gcloud.bq import BigQueryClient
-from analytics.cdr_ops.notebook_utils import execute
+RUN_AS = ""  # service account email to impersonate
 # -
 
-client = BigQueryClient(PROJECT_ID)
+# +
+from utils import auth
+from gcloud.bq import BigQueryClient
+from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
+
+# -
+
+impersonation_creds = auth.get_impersonation_credentials(
+    RUN_AS, target_scopes=IMPERSONATION_SCOPES)
+
+client = BigQueryClient(PROJECT_ID, credentials=impersonation_creds)
 
 # ## Check Tags and lables added to Unioned_ehr datasets
 

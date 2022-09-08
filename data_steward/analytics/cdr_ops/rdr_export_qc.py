@@ -30,7 +30,6 @@ from common import JINJA_ENV, PIPELINE_TABLES
 from utils import auth
 from gcloud.bq import BigQueryClient
 from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
-from cdr_cleaner.cleaning_rules.suppress_combined_pfmh_survey import DROP_PFMHH_CONCEPTS
 from IPython.display import display, HTML
 
 # # Table comparison
@@ -714,32 +713,6 @@ WHERE
 group by value_source_concept_id, value_as_concept_id
 """)
 query = tpl.render(new_rdr=new_rdr, project_id=project_id)
-execute(client, query)
-
-# # Verify that no joint Personal Family Medical History survey information exists in the Dataset.
-# [DC-2146](https://precisionmedicineinitiative.atlassian.net/browse/DC-2146)
-# The survey launched on 2021/11/01.  This date has been used to help identify this data.
-# Checking PFMH concept_codes in conjunction with the survey date.
-
-tpl = JINJA_ENV.from_string("""
-SELECT
-  observation_source_value,
-  COUNT(*) AS n_rows_violation
-FROM
-  `{{project_id}}.{{dataset}}.observation`
-WHERE
-  -- separated surveys were removed from participant portal on 2021-11-01 --
-  -- combined survey was launched on 2021-11-01 --
-  observation_date > '2021-10-31'
-  AND LOWER(observation_source_value) IN ({{combined_pfmhh_concepts}})
-GROUP BY
-  observation_source_value
-ORDER BY
-  n_rows_violation DESC
-""")
-query = tpl.render(dataset=new_rdr,
-                   project_id=project_id,
-                   combined_pfmhh_concepts=DROP_PFMHH_CONCEPTS)
 execute(client, query)
 
 # # Check that the Question and Answer Concepts in the old_map_short_codes tables are not paired with 0-valued concept_identifiers

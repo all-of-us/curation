@@ -13,18 +13,12 @@
 #     name: python3
 # ---
 
-from google.cloud import bigquery
-# %reload_ext google.cloud.bigquery
-client = bigquery.Client()
-# %load_ext google.cloud.bigquery
-
-# +
-from notebooks import parameters
-DATASET = parameters.LATEST_DATASET
-LOOKUP_TABLES = parameters.LOOKUP_TABLES
-
-print(f"Dataset to use: {DATASET}")
-print(f"Lookup tables: {LOOKUP_TABLES}")
+# + tags=["parameters"]
+PROJECT_ID = ""
+DATASET = ""
+LOOKUP_TABLES = ""
+RUN_AS = ""
+# -
 
 # +
 import warnings
@@ -33,6 +27,15 @@ warnings.filterwarnings('ignore')
 import pandas as pd
 import matplotlib.pyplot as plt
 import os
+
+from utils import auth
+from gcloud.bq import BigQueryClient
+from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
+
+impersonation_creds = auth.get_impersonation_credentials(
+    RUN_AS, target_scopes=IMPERSONATION_SCOPES)
+
+client = BigQueryClient(PROJECT_ID, credentials=impersonation_creds)
 
 plt.style.use('ggplot')
 pd.options.display.max_rows = 999
@@ -64,13 +67,13 @@ NOT LIKE '%unioned_ehr_%'
 AND table_id NOT LIKE '\\\_%'
 """
 
-site_df = pd.io.gbq.read_gbq(hpo_id_query, dialect='standard')
+site_df = execute(client, hpo_id_query)
 
 get_full_names = f"""
 select * from {LOOKUP_TABLES}.hpo_site_id_mappings
 """
 
-full_names_df = pd.io.gbq.read_gbq(get_full_names, dialect='standard')
+full_names_df = execute(client, get_full_names)
 
 # +
 full_names_df.columns = ['org_id', 'src_hpo_id', 'site_name', 'display_order']
@@ -89,28 +92,31 @@ site_df
 
 # # Improve the Definitions of Drug Ingredient
 
-diuretics = (974166, 956874, 970250, 1395058, 904542, 942350, 932745,
-            907013, 978555, 991382, 1309799)
+diuretics = (974166, 956874, 970250, 1395058, 904542, 942350, 932745, 907013,
+             978555, 991382, 1309799)
 
 ccb = (1332418, 1328165, 1318853, 1307863, 1353776, 1318137)
 
-vaccine = (45637323, 529411, 529303, 42800027, 45658522, 45628027, 529218, 36212685, 40163692,
-           528323, 528986, 792777, 596876)
+vaccine = (45637323, 529411, 529303, 42800027, 45658522, 45628027, 529218,
+           36212685, 40163692, 528323, 528986, 792777, 596876)
 
-oralhypoglycemics = (1503297, 1560171, 1580747, 1559684, 1525215, 1597756, 45774751,
-                    40239216, 40166035, 1516766, 1529331)
+oralhypoglycemics = (1503297, 1560171, 1580747, 1559684, 1525215, 1597756,
+                     45774751, 40239216, 40166035, 1516766, 1529331)
 
-opioids = (1124957, 1103314, 1201620, 1174888, 1126658, 1110410, 1154029, 1103640, 1102527)
+opioids = (1124957, 1103314, 1201620, 1174888, 1126658, 1110410, 1154029,
+           1103640, 1102527)
 
-antibiotics = (1734104, 1836430, 1713332, 1797513, 1705674, 1786621,
-1742253, 997881, 1707164, 1738521, 1759842, 1746940, 902722, 45892419,
-1717327, 1777806, 1836948, 1746114, 1775741)
+antibiotics = (1734104, 1836430, 1713332, 1797513, 1705674, 1786621, 1742253,
+               997881, 1707164, 1738521, 1759842, 1746940, 902722, 45892419,
+               1717327, 1777806, 1836948, 1746114, 1775741)
 
 statins = (1551860, 1545958, 1539403, 1510813, 1592085, 1549686, 40165636)
 
-msknsaids = (1115008, 1177480, 1124300, 1178663, 1136980, 1118084, 1150345, 1236607, 1395573, 1146810)
+msknsaids = (1115008, 1177480, 1124300, 1178663, 1136980, 1118084, 1150345,
+             1236607, 1395573, 1146810)
 
-painnsaids = (1177480, 1125315, 1112807, 1115008, 45660697, 45787568, 36156482, 45696636, 45696805)
+painnsaids = (1177480, 1125315, 1112807, 1115008, 45660697, 45787568, 36156482,
+              45696636, 45696805)
 
 ace_inhibitors = (1308216, 1341927, 1335471, 1331235, 1334456, 1340128, 1363749)
 
@@ -124,7 +130,7 @@ len(diuretics)
 
 num_diuretics = len(set(diuretics))
 
-df_diuretics = pd.io.gbq.read_gbq('''
+diuretics_query = '''
 SELECT
      mde.src_hpo_id, 
      round(COUNT(DISTINCT ca.ancestor_concept_id) / {num_diuretics} * 100, 0) as ancestor_usage
@@ -145,8 +151,10 @@ SELECT
  ORDER BY 
      ancestor_usage DESC, 
      mde.src_hpo_id
-    '''.format(num_diuretics = num_diuretics, DATASET=DATASET, diuretics=diuretics),
-                                  dialect='standard')
+    '''.format(num_diuretics=num_diuretics,
+               DATASET=DATASET,
+               diuretics=diuretics)
+df_diuretics = execute(client, diuretics_query)
 df_diuretics.shape
 
 df_diuretics = df_diuretics.rename(columns={"ancestor_usage": 'diuretics'})
@@ -159,7 +167,7 @@ len(ccb)
 
 num_ccbs = len(set(ccb))
 
-df_ccb = pd.io.gbq.read_gbq('''
+ccb_query = '''
 SELECT
      mde.src_hpo_id, 
      round(COUNT(DISTINCT ca.ancestor_concept_id) / {num_ccbs} * 100, 0) as ancestor_usage
@@ -180,8 +188,9 @@ SELECT
  ORDER BY 
      ancestor_usage DESC, 
      mde.src_hpo_id
-    '''.format(num_ccbs=num_ccbs, ccbs=ccb, DATASET=DATASET),
-                            dialect='standard')
+    '''.format(num_ccbs=num_ccbs, ccbs=ccb, DATASET=DATASET)
+
+df_ccb = execute(client, ccb_query)
 df_ccb.shape
 
 df_ccb = df_ccb.rename(columns={"ancestor_usage": 'ccb'})
@@ -194,7 +203,7 @@ len(vaccine)
 
 num_vaccines = len(set(vaccine))
 
-df_vaccine = pd.io.gbq.read_gbq('''
+vaccine_query = '''
 SELECT
      mde.src_hpo_id, 
      round(COUNT(DISTINCT ca.ancestor_concept_id) / {num_vaccines} * 100, 0) as ancestor_usage
@@ -215,8 +224,9 @@ SELECT
  ORDER BY 
      ancestor_usage DESC, 
      mde.src_hpo_id
-    '''.format(num_vaccines = num_vaccines, DATASET=DATASET, vaccine=vaccine),
-                                dialect='standard')
+    '''.format(num_vaccines=num_vaccines, DATASET=DATASET, vaccine=vaccine)
+
+df_vaccine = execute(client, vaccine_query)
 df_vaccine.shape
 
 df_vaccine = df_vaccine.rename(columns={"ancestor_usage": 'vaccine'})
@@ -251,8 +261,9 @@ SELECT
      ancestor_usage DESC, 
      mde.src_hpo_id
     '''.format(num_oralhypoglycemics=num_oralhypoglycemics,
-              DATASET=DATASET, oralhypoglycemics=oralhypoglycemics),
-              dialect='standard')
+               DATASET=DATASET,
+               oralhypoglycemics=oralhypoglycemics),
+                                          dialect='standard')
 df_oralhypoglycemics.shape
 
 df_oralhypoglycemics = df_oralhypoglycemics.rename(
@@ -266,7 +277,7 @@ len(opioids)
 
 num_opioids = len(set(opioids))
 
-df_opioids = pd.io.gbq.read_gbq('''
+opiods_query = '''
 SELECT
      mde.src_hpo_id, 
      round(COUNT(DISTINCT ca.ancestor_concept_id) / {num_opioids} * 100, 0) as ancestor_usage
@@ -287,8 +298,10 @@ SELECT
  ORDER BY 
      ancestor_usage DESC, 
      mde.src_hpo_id
-    '''.format(num_opioids=num_opioids, DATASET=DATASET, opioids=opioids),
-                                dialect='standard')
+    '''.format(num_opioids=num_opioids, DATASET=DATASET, opioids=opioids)
+
+df_opioids = execute(client, opiods_query)
+
 df_opioids.shape
 
 df_opioids = df_opioids.rename(columns={"ancestor_usage": 'opioids'})
@@ -323,8 +336,10 @@ SELECT
  ORDER BY 
      ancestor_usage DESC, 
      mde.src_hpo_id
-    '''.format(num_antibiotics=num_antibiotics, DATASET=DATASET, antibiotics=antibiotics),
-                dialect='standard')
+    '''.format(num_antibiotics=num_antibiotics,
+               DATASET=DATASET,
+               antibiotics=antibiotics),
+                                    dialect='standard')
 
 df_antibiotics.shape
 # -
@@ -340,7 +355,7 @@ len(statins)
 
 num_statins = len(set(statins))
 
-df_statins = pd.io.gbq.read_gbq('''
+statins_query = '''
 SELECT
      mde.src_hpo_id, 
      round(COUNT(DISTINCT ca.ancestor_concept_id) / {num_statins} * 100, 0) as ancestor_usage
@@ -361,8 +376,10 @@ SELECT
  ORDER BY 
      ancestor_usage DESC, 
      mde.src_hpo_id
-    '''.format(num_statins=num_statins, DATASET=DATASET, statins=statins),
-               dialect='standard')
+    '''.format(num_statins=num_statins, DATASET=DATASET, statins=statins)
+
+df_statins = execute(client, statins_query)
+
 df_statins.shape
 
 df_statins = df_statins.rename(columns={"ancestor_usage": 'statins'})
@@ -396,8 +413,10 @@ SELECT
  ORDER BY 
      ancestor_usage DESC, 
      mde.src_hpo_id
-    '''.format(num_msknsaids=num_msknsaids, DATASET=DATASET, msknsaids=msknsaids),
-                dialect='standard')
+    '''.format(num_msknsaids=num_msknsaids,
+               DATASET=DATASET,
+               msknsaids=msknsaids),
+                                  dialect='standard')
 df_msknsaids.shape
 
 df_msknsaids = df_msknsaids.rename(columns={"ancestor_usage": 'msknsaids'})
@@ -431,8 +450,10 @@ SELECT
  ORDER BY 
      ancestor_usage DESC, 
      mde.src_hpo_id
-    '''.format(DATASET=DATASET, num_painnsaids=num_painnsaids,
-              painnsaids=painnsaids), dialect='standard')
+    '''.format(DATASET=DATASET,
+               num_painnsaids=num_painnsaids,
+               painnsaids=painnsaids),
+                                   dialect='standard')
 df_painnsaids.shape
 
 df_painnsaids = df_painnsaids.rename(columns={"ancestor_usage": 'painnsaids'})
@@ -466,10 +487,10 @@ SELECT
  ORDER BY 
      ancestor_usage DESC, 
      mde.src_hpo_id
-    '''.format(num_ace_inhib=num_ace_inhib, DATASET=DATASET,
-              ace_inhibitors=ace_inhibitors),
+    '''.format(num_ace_inhib=num_ace_inhib,
+               DATASET=DATASET,
+               ace_inhibitors=ace_inhibitors),
                                        dialect='standard')
-df_ace_inhibitors.shape
 
 df_ace_inhibitors = df_ace_inhibitors.rename(
     columns={"ancestor_usage": 'ace_inhibitors'})
@@ -482,7 +503,7 @@ len(all_drugs)
 
 num_drugs = len(set(all_drugs))
 
-df_all_drugs = pd.io.gbq.read_gbq('''
+all_drugs_query = '''
 SELECT
      mde.src_hpo_id, 
      round(COUNT(DISTINCT ca.ancestor_concept_id) / {num_drugs} * 100, 0) as ancestor_usage
@@ -503,9 +524,9 @@ SELECT
  ORDER BY 
      ancestor_usage DESC, 
      mde.src_hpo_id
-    '''.format(num_drugs=num_drugs, DATASET=DATASET, all_drugs=all_drugs),
-                                  dialect='standard')
-df_all_drugs.shape
+    '''.format(num_drugs=num_drugs, DATASET=DATASET, all_drugs=all_drugs)
+
+df_all_drugs = execute(client, all_drugs_query)
 
 df_all_drugs = df_all_drugs.rename(columns={"ancestor_usage": 'all_drugs'})
 
@@ -557,8 +578,12 @@ sites_drug_success = pd.merge(sites_drug_success,
 sites_drug_success = sites_drug_success.fillna(0)
 sites_drug_success
 
-sites_drug_success[["ace_inhibitors","painnsaids","msknsaids","statins","antibiotics","opioids","oralhypoglycemics","vaccine","ccb","diuretics","all_drugs"]]\
-    =sites_drug_success[["ace_inhibitors","painnsaids","msknsaids","statins","antibiotics","opioids","oralhypoglycemics","vaccine","ccb","diuretics","all_drugs"]]
+sites_drug_success[
+    ["ace_inhibitors", "painnsaids", "msknsaids", "statins", "antibiotics", "opioids", "oralhypoglycemics", "vaccine",
+     "ccb", "diuretics", "all_drugs"]] \
+    = sites_drug_success[
+    ["ace_inhibitors", "painnsaids", "msknsaids", "statins", "antibiotics", "opioids", "oralhypoglycemics", "vaccine",
+     "ccb", "diuretics", "all_drugs"]]
 sites_drug_success
 
 sites_drug_success = pd.merge(sites_drug_success,
@@ -567,8 +592,9 @@ sites_drug_success = pd.merge(sites_drug_success,
                               on='src_hpo_id')
 sites_drug_success = sites_drug_success.fillna(0)
 
-sites_drug_success = sites_drug_success.sort_values(by='all_drugs', ascending = False)
+sites_drug_success = sites_drug_success.sort_values(by='all_drugs',
+                                                    ascending=False)
 
 sites_drug_success
 
-sites_drug_success.to_csv("{cwd}/drug_success.csv".format(cwd = cwd))
+sites_drug_success.to_csv("{cwd}/drug_success.csv".format(cwd=cwd))
