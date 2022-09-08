@@ -50,6 +50,10 @@ TABLE_DATES = {
     common.SPECIMEN: {
         'specimen_datetime': 'specimen_date'
     },
+    common.SURVEY_CONDUCT: {
+        'survey_start_datetime': 'survey_start_date',
+        'survey_end_datetime': 'survey_end_date'
+    },
     common.OBSERVATION_PERIOD: {
         'observation_period_start_datetime': 'observation_period_start_date',
         'observation_period_end_datetime': 'observation_period_end_date'
@@ -116,7 +120,8 @@ class EnsureDateDatetimeConsistency(BaseCleaningRule):
                              common.CONDITION_OCCURRENCE, common.DRUG_EXPOSURE,
                              common.DEVICE_EXPOSURE, common.MEASUREMENT,
                              common.OBSERVATION, common.PROCEDURE_OCCURRENCE,
-                             common.SPECIMEN, common.DEATH, common.NOTE,
+                             common.SPECIMEN, common.SURVEY_CONDUCT,
+                             common.DEATH, common.NOTE,
                              common.OBSERVATION_PERIOD, common.VISIT_OCCURRENCE,
                              common.VISIT_DETAIL
                          ],
