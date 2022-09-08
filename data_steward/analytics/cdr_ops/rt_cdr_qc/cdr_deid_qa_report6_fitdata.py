@@ -549,9 +549,9 @@ else:
         ignore_index=True)
 df1.T
 
-# #
+# # Verify that all records with invalid level values are being dropped from sleep_level table
 #
-# Queries the sandbox table for the corresponding cleaning rule (created in DC-2605) and outputs any records that are being dropped due to invalid values.
+# Queries the sandbox table for the corresponding cleaning rule (created in DC-2605) and outputs any records that are being dropped due to invalid level values.
 #
 # DC-2606
 
@@ -559,46 +559,29 @@ sandbox_dataset = ''
 sandbox_table = ''
 dataset_id = ''
 
-sandbox_query = f'''
-SELECT *
-FROM `{project_id}.{dataset_id}.sleep_level`
-WHERE (level NOT IN 
-         ('awake','light','asleep','deep','restless','wake','rem','unknown') OR level IS NULL)
-'''
-df1 = execute(client, sandbox_query)
-
 query = f'''
 WITH df1 AS (
 SELECT 
-    *, 'dropped' AS dropped_status
+*, 'dropped' AS dropped_status
 FROM 
-    `{project_id}.{sandbox_dataset}.{sandbox_table}`),
+`{project_id}.{sandbox_dataset}.{sandbox_table}`),
 
 df2 AS (
 SELECT 
-    *,'not dropped' AS dropped_status
+*,'not dropped' AS dropped_status
 FROM 
-    `{project_id}.{dataset_id}.sleep_level`
+`{project_id}.{dataset_id}.sleep_level`
 WHERE (level NOT IN 
-         ('awake','light','asleep','deep','restless','wake','rem','unknown') OR level IS NULL)
-
-AND person_id NOT IN
-(
-    SELECT 
-        person_id 
-    FROM 
-        `{project_id}.{sandbox_dataset}.{sandbox_table}`
-))
+         ('awake','light','asleep','deep','restless','wake','rem','unknown') OR level IS NULL))
 
 select *
 from df1
 UNION ALL
 select *
 from df2
-
 '''
 df2 = execute(client, query)
-if df1.shape[0] == 0:
+if ('not dropped' not in set(df2['dropped_status'])):
     df = df.append(
         {
             'query': 'Query6 no invalid level records in sleep_level table',
