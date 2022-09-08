@@ -30,7 +30,6 @@ from common import JINJA_ENV, PIPELINE_TABLES
 from utils import auth
 from gcloud.bq import BigQueryClient
 from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
-from cdr_cleaner.cleaning_rules.suppress_combined_pfmh_survey import DROP_PFMHH_CONCEPTS
 from IPython.display import display, HTML
 
 # # Table comparison
@@ -474,7 +473,7 @@ BASICS_MODULE_CONCEPT_ID = 1586134
 tpl = JINJA_ENV.from_string("""
 WITH 
 
- -- all PPI question concepts in the basics survey module
+ -- all PPI question concepts in the basics survey module --
  basics_concept AS
  (SELECT
    c.concept_id
@@ -488,7 +487,7 @@ WITH
     AND c.vocabulary_id='PPI'
     AND c.concept_class_id='Question')
 
- -- maps pids to all their associated basics questions in the rdr
+ -- maps pids to all their associated basics questions in the rdr --
 ,pid_basics AS
  (SELECT
    person_id 
@@ -499,7 +498,7 @@ WITH
   WHERE 1=1
   GROUP BY 1)
 
- -- list all pids for whom no basics questions are found
+ -- list all pids for whom no basics questions are found --
 SELECT * 
 FROM `{{DATASET_ID}}.person`
 WHERE person_id not in (select person_id from pid_basics)
@@ -716,32 +715,6 @@ group by value_source_concept_id, value_as_concept_id
 query = tpl.render(new_rdr=new_rdr, project_id=project_id)
 execute(client, query)
 
-# # Verify that no joint Personal Family Medical History survey information exists in the Dataset.
-# [DC-2146](https://precisionmedicineinitiative.atlassian.net/browse/DC-2146)
-# The survey launched on 2021/11/01.  This date has been used to help identify this data.
-# Checking PFMH concept_codes in conjunction with the survey date.
-
-tpl = JINJA_ENV.from_string("""
-SELECT
-  observation_source_value,
-  COUNT(*) AS n_rows_violation
-FROM
-  `{{project_id}}.{{dataset}}.observation`
-WHERE
-  -- separated surveys were removed from participant portal on 2021-11-01 --
-  -- combined survey was launched on 2021-11-01 --
-  observation_date > '2021-10-31'
-  AND LOWER(observation_source_value) IN ({{combined_pfmhh_concepts}})
-GROUP BY
-  observation_source_value
-ORDER BY
-  n_rows_violation DESC
-""")
-query = tpl.render(dataset=new_rdr,
-                   project_id=project_id,
-                   combined_pfmhh_concepts=DROP_PFMHH_CONCEPTS)
-execute(client, query)
-
 # # Check that the Question and Answer Concepts in the old_map_short_codes tables are not paired with 0-valued concept_identifiers
 
 # According to this [ticket](https://precisionmedicineinitiative.atlassian.net/browse/DC-2488), Question and Answer concepts that are identified in the `old_map_short_codes` table should not be paired with 0-valued concept_identifiers after the RDR dataset is cleaned. These concept identifiers include the `observation_concept_id` and `observation_source_concept_id` fields.
@@ -901,3 +874,87 @@ render_message(df,
                success_msg,
                failure_msg,
                failure_msg_args={'code_count': len(df)})
+
+# -
+
+# # COPE survey mapping
+
+# There is a known issue that COPE survey questions all map to the module
+# 1333342 (COPE survey with no version specified). This check is to confirm
+# if this issue still exists in the vocabulary or not.
+# If this issue is fixed, each COPE survey questions will have mapping to
+# individual COPE survey modules and will no longer have mapping to 1333342.
+# cope_question_concept_ids are collected using the SQL listed in DC-2641:
+# [DC-2641](https://precisionmedicineinitiative.atlassian.net/browse/DC-2641).
+
+cope_question_concept_ids = [
+    596884, 596885, 596886, 596887, 596888, 702686, 713888, 715711, 715713,
+    715714, 715719, 715720, 715721, 715722, 715723, 715724, 715725, 715726,
+    903629, 903630, 903631, 903632, 903633, 903634, 903635, 903641, 903642,
+    1310051, 1310052, 1310053, 1310054, 1310056, 1310058, 1310060, 1310062,
+    1310065, 1310066, 1310067, 1310132, 1310133, 1310134, 1310135, 1310136,
+    1310137, 1310138, 1310139, 1310140, 1310141, 1310142, 1310144, 1310145,
+    1310146, 1310147, 1310148, 1332734, 1332735, 1332737, 1332738, 1332739,
+    1332741, 1332742, 1332744, 1332745, 1332746, 1332747, 1332748, 1332749,
+    1332750, 1332751, 1332752, 1332753, 1332754, 1332755, 1332756, 1332762,
+    1332763, 1332767, 1332769, 1332792, 1332793, 1332794, 1332795, 1332796,
+    1332797, 1332800, 1332801, 1332802, 1332803, 1332804, 1332805, 1332806,
+    1332807, 1332808, 1332819, 1332820, 1332822, 1332824, 1332826, 1332828,
+    1332829, 1332830, 1332831, 1332832, 1332833, 1332835, 1332843, 1332847,
+    1332848, 1332849, 1332853, 1332854, 1332861, 1332862, 1332863, 1332866,
+    1332867, 1332868, 1332869, 1332870, 1332871, 1332872, 1332874, 1332876,
+    1332878, 1332880, 1332935, 1332937, 1332944, 1332998, 1333004, 1333011,
+    1333012, 1333013, 1333014, 1333015, 1333016, 1333017, 1333018, 1333019,
+    1333020, 1333021, 1333022, 1333023, 1333024, 1333102, 1333104, 1333105,
+    1333118, 1333119, 1333120, 1333121, 1333156, 1333163, 1333164, 1333165,
+    1333166, 1333167, 1333168, 1333182, 1333183, 1333184, 1333185, 1333186,
+    1333187, 1333188, 1333189, 1333190, 1333191, 1333192, 1333193, 1333194,
+    1333195, 1333200, 1333216, 1333221, 1333234, 1333235, 1333274, 1333275,
+    1333276, 1333277, 1333278, 1333279, 1333280, 1333281, 1333285, 1333286,
+    1333287, 1333288, 1333289, 1333291, 1333292, 1333293, 1333294, 1333295,
+    1333296, 1333297, 1333298, 1333299, 1333300, 1333301, 1333303, 1333311,
+    1333312, 1333313, 1333314, 1333324, 1333325, 1333326, 1333327, 1333328
+]
+
+tpl = JINJA_ENV.from_string("""
+WITH question_topic_module AS (
+  SELECT
+      cr1.concept_id_1 AS question, 
+      cr1.concept_id_2 AS topic, 
+      cr2.concept_id_2 AS module
+  FROM `{{projcet_id}}.{{dataset}}.concept_relationship` cr1
+  JOIN `{{projcet_id}}.{{dataset}}.concept` c1 ON cr1.concept_id_2 = c1.concept_id
+  JOIN `{{projcet_id}}.{{dataset}}.concept_relationship` cr2 ON c1.concept_id = cr2.concept_id_1
+  JOIN `{{projcet_id}}.{{dataset}}.concept` c2 ON cr2.concept_id_2 = c2.concept_id
+  WHERE cr1.concept_id_1 IN ({{cope_question_concept_ids}})
+  AND c1.concept_class_id = 'Topic'
+  AND c2.concept_class_id = 'Module'
+)
+SELECT DISTINCT question FROM question_topic_module
+WHERE module = 1333342
+""")
+query = tpl.render(
+    new_rdr=new_rdr,
+    project_id=project_id,
+    dataset=new_rdr,
+    cope_question_concept_ids=", ".join(
+        str(concept_id) for concept_id in cope_question_concept_ids))
+df = execute(client, query)
+
+# +
+success_msg = '''
+    The mapping issue is resolved. Double-check each concept is mapped to individual COPE module.
+    Once we double-checked it, we can remove this QC from this notebook.
+'''
+failure_msg = '''
+    The mapping issue still exists. There are <b>{code_count}</b> concepts for COPE questions
+    that map to 1333342. Notify Odysseus that the issue still persists.
+    For pipeline, we can use cope_survey_semantic_version_map to diffrentiate COPE module versions,
+    so we can still move on. See DC-2641 for detail.
+'''
+
+render_message(df,
+               success_msg,
+               failure_msg,
+               failure_msg_args={'code_count': len(df)})
+# -
