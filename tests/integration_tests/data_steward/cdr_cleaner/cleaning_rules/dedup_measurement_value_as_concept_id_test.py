@@ -67,11 +67,11 @@ class DedupMeasurementValueAsConceptIdTest(BaseTest.CleaningRulesTestBase):
         VALUES
         -- Concept_name 0 -> 45880618 LOINC, should not be modified --
           (801, 1, 0, '2016-05-01', "2016-05-01 05:30:00+00", NULL, 0, 0, 0, 45880618, 0, 0, 0, 0, 0, 0, "", 0, "", ""),
-        -- Concept_name 0 -> 4121196 SNOMED, should be updated to LOINC code for 0 - 45880618--
+        -- Concept_name 0 -> 4121196 SNOMED, should be updated to LOINC code for 0 - 45880618 --
           (802, 2, 0, '2016-05-01', "2016-05-01 05:30:00+00", NULL, 0, 0, 0, 4121196, 0, 0, 0, 0, 0, 0, "", 0, "", ""),
         -- Concept_name Abnormal -> 45878745 LOINC, should not be modified --
           (803, 3, 0, '2016-05-01', "2016-05-01 05:30:00+00", NULL, 0, 0, 0, 45878745, 0, 0, 0, 0, 0, 0, "", 0, "", ""),
-        -- Concept_name Abnormal -> 4135493 SNOMED, should be updated to LOINC code for Abnormal - 45878745--
+        -- Concept_name Abnormal -> 4135493 SNOMED, should be updated to LOINC code for Abnormal - 45878745 --
           (804, 4, 0, '2016-05-01', "2016-05-01 05:30:00+00", NULL, 0, 0, 0, 4135493, 0, 0, 0, 0, 0, 0, "", 0, "", ""),
         -- Concept_name 0 -> 35919331 NAACCR, should not be modified --
           (805, 5, 0, '2016-05-01', "2016-05-01 05:30:00+00", NULL, 0, 0, 0, 35919331, 0, 0, 0, 0, 0, 0, "", 0, "", "")
