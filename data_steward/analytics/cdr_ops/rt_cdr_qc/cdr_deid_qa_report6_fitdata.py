@@ -561,26 +561,43 @@ dataset_id = ''
 
 sandbox_query = f'''
 SELECT *
-FROM `{project_id}.{dataset_id}.{sandbox_table}`
+FROM `{project_id}.{dataset_id}.sleep_level`
 WHERE (level NOT IN 
          ('awake','light','asleep','deep','restless','wake','rem','unknown') OR level IS NULL)
 '''
-df2 = execute(client, sandbox_query)
-df2
+df1 = execute(client, sandbox_query)
 
 query = f'''
-SELECT *
-FROM `{project_id}.{dataset_id}.sleep_level`
+WITH df1 AS (
+SELECT 
+    *, 'dropped' AS dropped_status
+FROM 
+    `{project_id}.{sandbox_dataset}.{sandbox_table}`),
+
+df2 AS (
+SELECT 
+    *,'not dropped' AS dropped_status
+FROM 
+    `{project_id}.{dataset_id}.sleep_level`
 WHERE (level NOT IN 
          ('awake','light','asleep','deep','restless','wake','rem','unknown') OR level IS NULL)
 
 AND person_id NOT IN
 (
-    SELECT person_id 
-    FROM `{project_id}.{sandbox_dataset}.{sandbox_table}`
-)
+    SELECT 
+        person_id 
+    FROM 
+        `{project_id}.{sandbox_dataset}.{sandbox_table}`
+))
+
+select *
+from df1
+UNION ALL
+select *
+from df2
+
 '''
-df1 = execute(client, query)
+df2 = execute(client, query)
 if df1.shape[0] == 0:
     df = df.append(
         {
@@ -595,7 +612,7 @@ else:
             'result': ''
         },
         ignore_index=True)
-df1
+df2
 
 # # Summary_fitdata
 
