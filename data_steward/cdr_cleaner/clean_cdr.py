@@ -46,7 +46,7 @@ from cdr_cleaner.cleaning_rules.deid.fitbit_dateshift import FitbitDateShiftRule
 from cdr_cleaner.cleaning_rules.deid.fitbit_pid_rid_map import FitbitPIDtoRID
 from cdr_cleaner.cleaning_rules.deid.remove_fitbit_data_if_max_age_exceeded import \
     RemoveFitbitDataIfMaxAgeExceeded
-from cdr_cleaner.cleaning_rules.deid.ct_pid_rid_map import CtPIDtoRID
+from cdr_cleaner.cleaning_rules.deid.rt_ct_pid_rid_map import RtCtPIDtoRID
 from cdr_cleaner.cleaning_rules.deid.repopulate_person_controlled_tier import \
     RepopulatePersonControlledTier
 from cdr_cleaner.cleaning_rules.deid.generalize_cope_insurance_answers import GeneralizeCopeInsuranceAnswers
@@ -278,6 +278,7 @@ REGISTERED_TIER_DEID_BASE_CLEANING_CLASSES = [
 ]
 
 REGISTERED_TIER_DEID_CLEAN_CLEANING_CLASSES = [
+    (RtCtPIDtoRID,),
     (MeasurementRecordsSuppression,),
     (CleanHeightAndWeight,),  # dependent on MeasurementRecordsSuppression
     (UnitNormalization,),  # dependent on CleanHeightAndWeight
@@ -293,7 +294,7 @@ REGISTERED_TIER_FITBIT_CLEANING_CLASSES = [
 ]
 
 CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
-    (CtPIDtoRID,),
+    (RtCtPIDtoRID,),
     (QRIDtoRID,),  # Should run before any row suppression rules
     (NullPersonBirthdate,),
     (TableSuppression,),
