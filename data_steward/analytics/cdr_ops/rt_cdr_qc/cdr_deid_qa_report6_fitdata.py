@@ -555,22 +555,22 @@ df1.T
 #
 # DC-2606
 
-sandbox_dataset = ''
-sandbox_table = ''
-dataset_id = ''
+fitbit_sandbox_dataset = ''
+sleep_level_sandbox_table = ''
+fitbit_dataset = ''
 
 query = f'''
 WITH df1 AS (
 SELECT 
 *, 'dropped' AS dropped_status
 FROM 
-`{project_id}.{sandbox_dataset}.{sandbox_table}`),
+`{project_id}.{fitbit_sandbox_dataset}.{sleep_level_sandbox_table}`),
 
 df2 AS (
 SELECT 
 *,'not dropped' AS dropped_status
 FROM 
-`{project_id}.{dataset_id}.sleep_level`
+`{project_id}.{fitbit_dataset}.sleep_level`
 WHERE (level NOT IN 
          ('awake','light','asleep','deep','restless','wake','rem','unknown') OR level IS NULL))
 
