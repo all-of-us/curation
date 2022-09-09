@@ -877,9 +877,9 @@ render_message(df,
                failure_msg_args={'code_count': len(df)})
 # -
 
-# ### Question-Answer Codes Combo
+# ### RDR date cutoff check
 
-# Check that survey start dates are not beyond the RDR cutoff date.
+# Check that survey dates are not beyond the RDR cutoff date, also check observation.
 query = JINJA_ENV.from_string(f"""
 SELECT
   'observation' AS TABLE,
