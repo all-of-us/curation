@@ -551,7 +551,7 @@ df1.T
 
 # # Verify that all records with invalid level values are being dropped from sleep_level table
 #
-# Queries the sandbox table for the corresponding cleaning rule (created in DC-2605) and outputs any records that are being dropped due to invalid level values. It also outputs any records in the sleep_level table that should be dropped but are not.
+# Queries the sandbox table for the corresponding cleaning rule (created in DC-2605) and outputs any records that are being dropped due to invalid level values. It also outputs any records in the sleep_level table that should have been dropped but were not.
 #
 # DC-2606
 
@@ -581,7 +581,7 @@ select *
 from df2
 '''
 df2 = execute(client, query)
-if ('not dropped' not in set(df2['dropped_status'])):
+if 'not dropped' not in set(df2['dropped_status']):
     df = df.append(
         {
             'query': 'Query6 no invalid level records in sleep_level table',
