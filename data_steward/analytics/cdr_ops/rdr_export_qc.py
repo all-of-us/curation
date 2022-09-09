@@ -20,6 +20,7 @@ new_rdr = ""
 raw_rdr = "default"  # do not need to provide this if running on a raw rdr import
 new_rdr_sandbox = ""
 run_as = ""
+rdr_cutoff_date = ""
 # -
 
 # # QC for RDR Export
@@ -874,3 +875,48 @@ render_message(df,
                success_msg,
                failure_msg,
                failure_msg_args={'code_count': len(df)})
+# -
+
+# ### RDR date cutoff check
+
+# Check that survey dates are not beyond the RDR cutoff date, also check observation.
+query = JINJA_ENV.from_string(f"""
+SELECT
+  'observation' AS TABLE,
+  COUNT(*) AS rows_beyond_cutoff
+FROM
+  `{{project_id}}.{{new_rdr}}.observation`
+WHERE
+  observation_date > DATE('{{rdr_cutoff_date}}')
+UNION ALL
+SELECT
+  'survey_conduct_start' AS TABLE,
+  COUNT(*) AS rows_beyond_cutoff
+FROM
+  `{{project_id}}.{{new_rdr}}.survey_conduct`
+WHERE
+  survey_conduct_start_date > DATE('{{rdr_cutoff_date}}')
+UNION ALL
+SELECT
+  'survey_conduct_end' AS TABLE,
+  COUNT(*) AS rows_beyond_cutoff
+FROM
+  `{{project_id}}.{{new_rdr}}.survey_conduct`
+WHERE
+  survey_conduct_end_date > DATE('{{rdr_cutoff_date}}')
+""")
+
+df = execute(client, query)
+
+# +
+success_msg = 'No rows beyond cutoff date found.'
+failure_msg = '''
+    <b>{tables_with_rows_beyond_cutoff}</b> tables have rows that are beyond the cutoff date. 
+    Report failure back to curation team.
+    Bug likely due to failure in the <code>truncate_rdr_using_date</code> cleaning rule.
+'''
+
+render_message(df,
+               success_msg,
+               failure_msg,
+               failure_msg_args={'tables_with_rows_beyond_cutoff': len(df)})
