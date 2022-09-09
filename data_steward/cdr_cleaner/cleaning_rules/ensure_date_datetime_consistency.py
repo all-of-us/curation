@@ -1,7 +1,7 @@
 """
 Ensuring there are no null datetimes.
 
-Original Issues: DC-614, DC-509, and DC-432
+Original Issues: DC-614, DC-509, DC-432 and DC-2635
 
 The intent is to copy the date over to the datetime field if the datetime
 field is null or incorrect.
@@ -107,25 +107,24 @@ class EnsureDateDatetimeConsistency(BaseCleaningRule):
             'midnight (00:00:00); or '
             '(2) If the date and datetime fields are equal: Setting the datetime field\'s values to the date from the '
             'date field and the time from the datetime field.')
-        super().__init__(issue_numbers=['DC-614', 'DC-509', 'DC-432'],
-                         description=desc,
-                         affected_datasets=[
-                             cdr_consts.RDR, cdr_consts.UNIONED,
-                             cdr_consts.COMBINED
-                         ],
-                         project_id=project_id,
-                         dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id,
-                         affected_tables=[
-                             common.CONDITION_OCCURRENCE, common.DRUG_EXPOSURE,
-                             common.DEVICE_EXPOSURE, common.MEASUREMENT,
-                             common.OBSERVATION, common.PROCEDURE_OCCURRENCE,
-                             common.SPECIMEN, common.SURVEY_CONDUCT,
-                             common.DEATH, common.NOTE,
-                             common.OBSERVATION_PERIOD, common.VISIT_OCCURRENCE,
-                             common.VISIT_DETAIL
-                         ],
-                         depends_on=[temporal_consistency.TemporalConsistency])
+        super().__init__(
+            issue_numbers=['DC-614', 'DC-509', 'DC-432', 'DC-2635'],
+            description=desc,
+            affected_datasets=[
+                cdr_consts.RDR, cdr_consts.UNIONED, cdr_consts.COMBINED
+            ],
+            project_id=project_id,
+            dataset_id=dataset_id,
+            sandbox_dataset_id=sandbox_dataset_id,
+            affected_tables=[
+                common.CONDITION_OCCURRENCE, common.DRUG_EXPOSURE,
+                common.DEVICE_EXPOSURE, common.MEASUREMENT, common.OBSERVATION,
+                common.PROCEDURE_OCCURRENCE, common.SPECIMEN,
+                common.SURVEY_CONDUCT, common.DEATH, common.NOTE,
+                common.OBSERVATION_PERIOD, common.VISIT_OCCURRENCE,
+                common.VISIT_DETAIL
+            ],
+            depends_on=[temporal_consistency.TemporalConsistency])
 
     def get_cols(self, table):
         """
