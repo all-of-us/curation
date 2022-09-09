@@ -678,19 +678,19 @@ execute(client, query)
 # the RDR export should not contain some operational concepts that are irrelevant to researchers.
 # Any violations should be reported to the RDR team.
 
-tpl = JINJA_ENV.from_string("""
-SELECT
-    observation_source_value,
-    COUNT(1) AS n_row_violation
-FROM `{{project_id}}.{{new_rdr}}.observation`
-WHERE observation_source_value IN (
-  SELECT observation_source_value FROM `{{project_id}}.operational_data.operational_ehr_consent`
-)
-GROUP BY 1
-HAVING count(1) > 0
-""")
-query = tpl.render(new_rdr=new_rdr, project_id=project_id)
-execute(client, query)
+# tpl = JINJA_ENV.from_string("""
+# SELECT
+#     observation_source_value,
+#     COUNT(1) AS n_row_violation
+# FROM `{{project_id}}.{{new_rdr}}.observation`
+# WHERE observation_source_value IN (
+#   SELECT observation_source_value FROM `{{project_id}}.operational_data.operational_ehr_consent`
+# )
+# GROUP BY 1
+# HAVING count(1) > 0
+# """)
+# query = tpl.render(new_rdr=new_rdr, project_id=project_id)
+# execute(client, query)
 
 # # Check if Responses for question [46234786](https://athena.ohdsi.org/search-terms/terms/46234786)
 # # are updated to 2000000010 - AoUDRC_ResponseRemoval from dates ranging 11/1/2021 – 11/9/2021
@@ -953,12 +953,17 @@ failure_msg = '''
     For pipeline, we can use cope_survey_semantic_version_map to diffrentiate COPE module versions,
     so we can still move on. See DC-2641 for detail.
 '''
+
+render_message(df,
+               success_msg,
+               failure_msg,
+               failure_msg_args={'code_count': len(df)})
 # -
 
 # ### RDR date cutoff check
 
 # Check that survey dates are not beyond the RDR cutoff date, also check observation.
-query = JINJA_ENV.from_string(f"""
+query = JINJA_ENV.from_string("""
 SELECT
   'observation' AS TABLE,
   COUNT(*) AS rows_beyond_cutoff
@@ -982,7 +987,9 @@ FROM
   `{{project_id}}.{{new_rdr}}.survey_conduct`
 WHERE
   survey_conduct_end_date > DATE('{{rdr_cutoff_date}}')
-""")
+""").render(project_id=project_id,
+            new_rdr=new_rdr,
+            rdr_cutoff_date=rdr_cutoff_date)
 
 df = execute(client, query)
 
