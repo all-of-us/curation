@@ -551,7 +551,7 @@ df1.T
 
 # # Verify that all records with invalid level values are being dropped from sleep_level table
 #
-# Queries the sandbox table for the corresponding cleaning rule (created in DC-2605) and outputs any records that are being dropped due to invalid level values.
+# Queries the sandbox table for the corresponding cleaning rule (created in DC-2605) and outputs any records that are being dropped due to invalid level values. It also outputs any records in the sleep_level table that should be dropped but are not.
 #
 # DC-2606
 
