@@ -14,11 +14,13 @@ PIIState_CA,1585266,cpmc_ucsf
 PIIState_CA,1585266,cpmc_usc
 PIIState_SC,1585308,ecchc
 PIIState_NY,1585297,hrhc
+PIIState_IL,1585277,cook_county
 PIIState_IL,1585277,ipmc_northshore
 PIIState_IL,1585277,ipmc_nu
 PIIState_IL,1585277,ipmc_rush
 PIIState_IL,1585277,ipmc_uchicago
 PIIState_IL,1585277,ipmc_uic
+PIIState_IL,1585277,ipmc_unity_point
 PIIState_IL,1585277,illinois_near_north
 PIIState_MS,1585289,jhchc
 PIIState_MA,1585286,nec_bmc
