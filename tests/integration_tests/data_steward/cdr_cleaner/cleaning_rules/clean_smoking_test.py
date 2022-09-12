@@ -48,11 +48,12 @@ class CleanSmokingPpiTest(BaseTest.CleaningRulesTestBase):
         cls.dataset_id = os.environ.get('RDR_DATASET_ID')
         cls.sandbox_id = cls.dataset_id + '_sandbox'
 
-        cls.rule_instance = CleanSmokingPpi(cls.project_id,
-                                            cls.dataset_id,
+        cls.rule_instance = CleanSmokingPpi(cls.project_id, cls.dataset_id,
                                             cls.sandbox_id)
 
-        cls.fq_table_names = [f'{cls.project_id}.{cls.dataset_id}.{OBSERVATION}']
+        cls.fq_table_names = [
+            f'{cls.project_id}.{cls.dataset_id}.{OBSERVATION}'
+        ]
 
         cls.fq_sandbox_table_names = [
             f'{cls.project_id}.{cls.sandbox_id}.{cls.rule_instance.sandbox_table_for(OBSERVATION)}'
@@ -92,7 +93,8 @@ class CleanSmokingPpiTest(BaseTest.CleaningRulesTestBase):
             'fields': [
                 'observation_id', 'person_id', 'observation_concept_id',
                 'observation_source_concept_id', 'value_as_concept_id',
-                'value_source_concept_id'],
+                'value_source_concept_id'
+            ],
             'cleaned_values': [
                 (1, 11, 40766333, 1585864, 1177221, 903079),
                 (2, 12, 1585870, 1585870, 1177221, 903079),
