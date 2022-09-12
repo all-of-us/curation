@@ -46,18 +46,13 @@ class PopulateSurveyConductExtTest(BaseTest.CleaningRulesTestBase):
 
         super().initialize_class_vars()
 
-        # set the test project identifier
-        project_id = os.environ.get(PROJECT_ID)
-        cls.project_id = project_id
-
-        # set the expected test datasets
-        dataset_id = os.environ.get('RDR_DATASET_ID')
-        cls.dataset_id = dataset_id
-        sandbox_id = dataset_id + '_sandbox'
+        cls.project_id = os.environ.get(PROJECT_ID)
+        cls.dataset_id = os.environ.get('RDR_DATASET_ID')
+        sandbox_id = f"{cls.dataset_id}_sandbox"
         cls.sandbox_id = sandbox_id
 
-        cls.rule_instance = PopulateSurveyConductExt(project_id, dataset_id,
-                                                     sandbox_id)
+        cls.rule_instance = PopulateSurveyConductExt(cls.project_id,
+                                                     cls.dataset_id, sandbox_id)
 
         sb_table_name = cls.rule_instance.sandbox_table_for(
             f"{SURVEY_CONDUCT}{EXT_SUFFIX}")
@@ -67,8 +62,8 @@ class PopulateSurveyConductExtTest(BaseTest.CleaningRulesTestBase):
         ]
 
         cls.fq_table_names = [
-            f'{project_id}.{dataset_id}.{SURVEY_CONDUCT}{EXT_SUFFIX}',
-            f'{project_id}.{dataset_id}.{QUESTIONNAIRE_RESPONSE_ADDITIONAL_INFO}',
+            f'{cls.project_id}.{cls.dataset_id}.{SURVEY_CONDUCT}{EXT_SUFFIX}',
+            f'{cls.project_id}.{cls.dataset_id}.{QUESTIONNAIRE_RESPONSE_ADDITIONAL_INFO}',
         ]
 
         super().setUpClass()
