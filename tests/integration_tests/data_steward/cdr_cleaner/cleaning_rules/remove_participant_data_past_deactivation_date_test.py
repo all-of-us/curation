@@ -17,7 +17,8 @@ import pandas as pd
 from google.cloud.bigquery import TableReference
 
 # Project imports
-from common import JINJA_ENV, OBSERVATION, DRUG_EXPOSURE, DEATH, PERSON, HEART_RATE_MINUTE_LEVEL, SLEEP_LEVEL, STEPS_INTRADAY
+from common import JINJA_ENV, OBSERVATION, DRUG_EXPOSURE, DEATH, PERSON, SURVEY_CONDUCT, HEART_RATE_MINUTE_LEVEL, \
+    SLEEP_LEVEL, STEPS_INTRADAY
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.remove_participant_data_past_deactivation_date import (
     RemoveParticipantDataPastDeactivationDate, DEACTIVATED_PARTICIPANTS, DATE,
@@ -133,6 +134,19 @@ class RemoveParticipantDataPastDeactivationDateTest(
         (2009,6,50,'2009-10-06','2009-10-06 01:30:00 UTC',NULL,NULL,'2009-10-05',87),
         (2010,5,274,'2009-09-20','2009-09-20 11:00:00 UTC', '2009-09-20', NULL, NULL, 436)
         """),
+            SURVEY_CONDUCT:
+                JINJA_ENV.from_string("""
+            INSERT INTO `{{table.project}}.{{table.dataset_id}}.{{table.table_id}}`
+            (survey_conduct_id, person_id, survey_concept_id, survey_end_datetime,
+             assisted_concept_id, respondent_type_concept_id, timing_concept_id,
+              collection_method_concept_id, survey_source_concept_id, validated_survey_concept_id )
+            VALUES
+            (1, 1, 0, '2009-08-30 00:00:00 UTC', 0, 0, 0, 0, 0, 0),
+            (2, 1, 0, '2009-08-30 19:33:53 UTC', 0, 0, 0, 0, 0, 0),
+            (3, 2, 0, '2009-08-30 19:33:53 UTC', 0, 0, 0, 0, 0, 0),
+            (4, 3, 0, '2009-08-30 19:33:53 UTC', 0, 0, 0, 0, 0, 0),
+            (5, 4, 0, '2009-08-30 19:33:53 UTC', 0, 0, 0, 0, 0, 0)
+                """),
             HEART_RATE_MINUTE_LEVEL:
                 JINJA_ENV.from_string("""
         INSERT INTO `{{table.project}}.{{table.dataset_id}}.{{table.table_id}}`
@@ -203,7 +217,6 @@ class RemoveParticipantDataPastDeactivationDateTest(
         self.assertDictEqual(actual_dict, expected_dict)
 
     def get_date_cols_dict(self):
-
         date_cols = ["visit_date", "measurement_date", "measurement_datetime"]
         expected = {DATE: "measurement_date", DATETIME: "measurement_datetime"}
         actual = self.rule_instance.get_date_cols_dict(date_cols)
@@ -271,6 +284,17 @@ class RemoveParticipantDataPastDeactivationDateTest(
             ],
             'sandboxed_ids': [2002, 2003, 2004, 2005, 2006, 2007, 2009, 2010],
             'cleaned_values': [(2008,)]
+        }, {
+            'name':
+                SURVEY_CONDUCT,
+            'fq_table_name':
+                f'{self.project_id}.{self.dataset_id}.{SURVEY_CONDUCT}',
+            'fq_sandbox_table_name':
+                f'{self.project_id}.{self.sandbox_id}.{self.rule_instance.sandbox_table_for(SURVEY_CONDUCT)}',
+            'fields': ['survey_conduct_id'],
+            'loaded_ids': [1, 2, 3, 4, 5],
+            'sandboxed_ids': [1, 2, 3],
+            'cleaned_values': [(4,), (5,)]
         }, {
             'name':
                 DEATH,
