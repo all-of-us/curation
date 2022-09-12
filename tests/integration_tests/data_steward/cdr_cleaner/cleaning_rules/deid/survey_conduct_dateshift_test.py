@@ -29,13 +29,12 @@ class SurveyConductDateShiftTest(BaseTest.DeidRulesTestBase):
         super().initialize_class_vars()
 
         # set the test project identifier
-        project_id = os.environ.get(PROJECT_ID)
-        cls.project_id = project_id
+        cls.project_id = os.environ.get(PROJECT_ID)
 
         # set the expected test datasets
         dataset_id = os.environ.get('RDR_DATASET_ID')
         cls.dataset_id = dataset_id
-        sandbox_id = dataset_id + '_sandbox'
+        sandbox_id = f'{dataset_id}_sandbox'
         cls.sandbox_id = sandbox_id
 
         mapping_dataset_id = os.environ.get('COMBINED_DATASET_ID')
@@ -45,18 +44,18 @@ class SurveyConductDateShiftTest(BaseTest.DeidRulesTestBase):
             'mapping_table_id': mapping_table_id
         })
 
-        cls.rule_instance = SurveyConductDateShiftRule(project_id, dataset_id,
-                                                       sandbox_id,
+        cls.rule_instance = SurveyConductDateShiftRule(cls.project_id,
+                                                       dataset_id, sandbox_id,
                                                        mapping_dataset_id,
                                                        mapping_table_id)
 
         # can test the full functionality with one table
         cls.fq_table_names = [
-            f"{project_id}.{dataset_id}.{cls.rule_instance.tables[0]}"
+            f"{cls.project_id}.{dataset_id}.{cls.rule_instance.tables[0]}"
         ]
 
         # provide mapping table info
-        cls.fq_mapping_tablename = f"{project_id}.{mapping_dataset_id}.{mapping_table_id}"
+        cls.fq_mapping_tablename = f"{cls.project_id}.{mapping_dataset_id}.{mapping_table_id}"
 
         # call super to set up the client, create datasets, and create
         # empty test tables
