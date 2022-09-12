@@ -50,6 +50,7 @@ AOU_REQUIRED = [
 # CATI Tables
 SURVEY_CONDUCT = 'survey_conduct'
 CATI_TABLES = AOU_REQUIRED + [SURVEY_CONDUCT]
+QUESTIONNAIRE_RESPONSE_ADDITIONAL_INFO = 'questionnaire_response_additional_info'
 
 # Standardized clinical data tables in OMOP. All should contain a person_id column. See
 # https://github.com/OHDSI/CommonDataModel/wiki/Standardized-Clinical-Data-Tables
