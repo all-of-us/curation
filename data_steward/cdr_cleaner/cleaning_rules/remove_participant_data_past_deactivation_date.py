@@ -16,11 +16,11 @@ import logging
 from pandas import DataFrame
 
 # Project imports
-from common import CDM_TABLES, FITBIT_TABLES, JINJA_ENV
+from common import FITBIT_TABLES, JINJA_ENV
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 import utils.participant_summary_requests as psr
 from constants.bq_utils import WRITE_TRUNCATE
-from resources import fields_for
+from resources import fields_for, CDM_TABLES
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 
 # Third-Party imports
@@ -34,7 +34,7 @@ DEACTIVATED_PARTICIPANTS_COLUMNS = [
 
 # For reference
 DEACTIVATION_ISSUE_NUMBERS = ['DC686', 'DC1184', 'DC1799']
-ISSUE_NUMBERS = ['DC1791', 'DC1896', 'DC2129']
+ISSUE_NUMBERS = ['DC1791', 'DC1896', 'DC2129', 'DC2631']
 
 TABLE_INFORMATION_SCHEMA = JINJA_ENV.from_string(  # language=JINJA2
     """
