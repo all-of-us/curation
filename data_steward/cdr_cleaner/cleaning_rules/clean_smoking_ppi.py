@@ -167,6 +167,7 @@ SELECT
 FROM `{project_id}.{sandbox_dataset_id}.{new_smoking_rows}`
 """)
 
+
 class CleanSmokingPpi(BaseCleaningRule):
 
     def __init__(self,
@@ -180,7 +181,7 @@ class CleanSmokingPpi(BaseCleaningRule):
         this SQL, append them to the list of Jira Issues.
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
-        desc = ('Cleans the data associated with the smoking concepts which have a bug in the vocabulary.')
+        desc = 'Cleans the data associated with the smoking concepts which have a bug in the vocabulary.'
 
         super().__init__(issue_numbers=JIRA_ISSUE_NUMBERS,
                          description=desc,
@@ -249,23 +250,23 @@ class CleanSmokingPpi(BaseCleaningRule):
             sandbox_dataset_id=self.sandbox_dataset_id,
             new_smoking_rows=NEW_SMOKING_ROWS,
             smoking_lookup_table=SMOKING_LOOKUP_TABLE,
-            dataset_id = self.dataset_id)
+            dataset_id=self.dataset_id)
         queries_list.append(sandbox_query)
 
         delete_query = dict()
         delete_query[cdr_consts.QUERY] = DELETE_INCORRECT_RECORDS.render(
-                project_id=self.project_id,
-                dataset_id=self.dataset_id,
-                sandbox_dataset_id=self.sandbox_dataset_id,
-                smoking_lookup_table=SMOKING_LOOKUP_TABLE)
+            project_id=self.project_id,
+            dataset_id=self.dataset_id,
+            sandbox_dataset_id=self.sandbox_dataset_id,
+            smoking_lookup_table=SMOKING_LOOKUP_TABLE)
         queries_list.append(delete_query)
 
         insert_query = dict()
         insert_query[cdr_consts.QUERY] = INSERT_CORRECTED_RECORDS.render(
-                project_id=self.project_id,
-                dataset_id=self.dataset_id,
-                sandbox_dataset_id=self.sandbox_dataset_id,
-                new_smoking_rows=NEW_SMOKING_ROWS)
+            project_id=self.project_id,
+            dataset_id=self.dataset_id,
+            sandbox_dataset_id=self.sandbox_dataset_id,
+            new_smoking_rows=NEW_SMOKING_ROWS)
         queries_list.append(insert_query)
 
         return queries_list

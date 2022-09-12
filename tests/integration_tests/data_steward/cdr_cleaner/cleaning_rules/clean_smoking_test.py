@@ -30,7 +30,7 @@ LOAD_QUERY = JINJA_ENV.from_string("""
         (7, 17, 7, 1585864, 903096, 7),
         (8, 18, 8, 1585870, 903096, 8),
         (9, 19, 40770349, 1585873, 903096, 903096),
-        (10, 20, 40766333, 1585864, 45876636, 903087),
+        (10, 20, 40766333, 1585864, 45876636, 903087)
 """)
 
 
@@ -49,8 +49,8 @@ class CleanSmokingPpiTest(BaseTest.CleaningRulesTestBase):
         cls.sandbox_id = cls.dataset_id + '_sandbox'
 
         cls.rule_instance = CleanSmokingPpi(cls.project_id,
-                                                      cls.dataset_id,
-                                                      cls.sandbox_id)
+                                            cls.dataset_id,
+                                            cls.sandbox_id)
 
         cls.fq_table_names = [f'{cls.project_id}.{cls.dataset_id}.{OBSERVATION}']
 
@@ -58,7 +58,7 @@ class CleanSmokingPpiTest(BaseTest.CleaningRulesTestBase):
             f'{cls.project_id}.{cls.sandbox_id}.{cls.rule_instance.sandbox_table_for(OBSERVATION)}'
         ]
 
-        cls.up_class = super().setUpClass()
+        super().setUpClass()
 
     def setUp(self):
 
@@ -68,6 +68,14 @@ class CleanSmokingPpiTest(BaseTest.CleaningRulesTestBase):
             LOAD_QUERY.render(project_id=self.project_id,
                               dataset_id=self.dataset_id)
         ])
+
+    def test_setup_rule(self):
+        # run setup_rule and see if the affected_table is updated
+        self.rule_instance.setup_rule(self.client)
+
+        # sees that setup worked and reset affected_tables as expected
+        self.assertEqual(set(OBSERVATION),
+                         set(self.rule_instance.affected_tables))
 
     def test_clean_smoking_ppi(self):
         """
@@ -84,8 +92,7 @@ class CleanSmokingPpiTest(BaseTest.CleaningRulesTestBase):
             'fields': [
                 'observation_id', 'person_id', 'observation_concept_id',
                 'observation_source_concept_id', 'value_as_concept_id',
-                'value_source_concept_id'
-            ],
+                'value_source_concept_id'],
             'cleaned_values': [
                 (1, 11, 40766333, 1585864, 1177221, 903079),
                 (2, 12, 1585870, 1585870, 1177221, 903079),
@@ -96,8 +103,7 @@ class CleanSmokingPpiTest(BaseTest.CleaningRulesTestBase):
                 (7, 17, 40766333, 1585864, 903096, 903096),
                 (8, 18, 1585870, 1585870, 903096, 903096),
                 (9, 19, 40770349, 1585873, 903096, 903096),
-                (10, 20, 40766333, 1585864, 45876636, 903087)
-            ]
+                (10, 20, 40766333, 1585864, 45876636, 903087)]
         }]
 
         self.default_test(tables_and_counts)
