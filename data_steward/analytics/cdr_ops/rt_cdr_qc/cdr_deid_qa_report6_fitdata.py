@@ -551,15 +551,16 @@ df1.T
 
 # # Verify that all records with invalid level values are being dropped from sleep_level table
 #
-# Queries the sandbox table for the corresponding cleaning rule (created in DC-2605) and outputs any records that are being dropped due to invalid level values. It also outputs any records in the sleep_level table that should have been dropped but were not.
-#
 # DC-2606
+#
+# Queries the sandbox table for the corresponding cleaning rule (created in DC-2605) and outputs any records that are being dropped due to invalid level values. It also outputs any records in the sleep_level table that should have been dropped but were not.
 
 fitbit_sandbox_dataset = ''
 sleep_level_sandbox_table = ''
 fitbit_dataset = ''
 
 query = f'''
+
 WITH df1 AS (
 SELECT 
 *, 'dropped' AS dropped_status
