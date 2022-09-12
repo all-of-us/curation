@@ -205,9 +205,8 @@ class CleanSmokingPpi(BaseCleaningRule):
         table_path = os.path.join(resources.resource_files_path,
                                   f"{SMOKING_LOOKUP_TABLE}.csv")
         with open(table_path, 'rb') as csv_file:
-            schema_list = client.get_table_schema(
-                SMOKING_LOOKUP_TABLE,
-                fields=SMOKING_LOOKUP_FIELDS)
+            schema_list = client.get_table_schema(SMOKING_LOOKUP_TABLE,
+                                                  fields=SMOKING_LOOKUP_FIELDS)
             table_id = f'{self.project_id}.{self.sandbox_dataset_id}.{SMOKING_LOOKUP_TABLE}'
             job_config = bigquery.LoadJobConfig(
                 schema=schema_list,
@@ -292,16 +291,14 @@ if __name__ == '__main__':
 
     if ARGS.list_queries:
         clean_engine.add_console_logging()
-        query_list = clean_engine.get_query_list(
-            ARGS.project_id,
-            ARGS.dataset_id,
-            ARGS.sandbox_dataset_id,
-            [(CleanSmokingPpi,)])
+        query_list = clean_engine.get_query_list(ARGS.project_id,
+                                                 ARGS.dataset_id,
+                                                 ARGS.sandbox_dataset_id,
+                                                 [(CleanSmokingPpi,)])
         for query in query_list:
             LOGGER.info(query)
     else:
         clean_engine.add_console_logging(ARGS.console_log)
-        clean_engine.clean_dataset(ARGS.project_id,
-                                   ARGS.dataset_id,
+        clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
                                    ARGS.sandbox_dataset_id,
                                    [(CleanSmokingPpi,)])

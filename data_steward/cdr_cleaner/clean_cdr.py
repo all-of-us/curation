@@ -172,7 +172,8 @@ RDR_CLEANING_CLASSES = [
     # trying to load a table while creating query strings,
     # won't work with mocked strings.  should use base class
     # setup_query_execution function to load dependencies before query execution
-    (DropPpiDuplicateResponses,),
+    (
+        DropPpiDuplicateResponses,),
     (DropCopeDuplicateResponses,),
     # trying to load a table while creating query strings,
     # won't work with mocked strings.  should use base class
