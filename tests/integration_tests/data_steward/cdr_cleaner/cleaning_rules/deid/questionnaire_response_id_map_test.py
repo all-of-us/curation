@@ -91,12 +91,12 @@ class QRIDtoRIDTest(BaseTest.CleaningRulesTestBase):
                 (survey_conduct_id, person_id, survey_concept_id, survey_end_datetime, 
                 assisted_concept_id, respondent_type_concept_id, timing_concept_id,
                 collection_method_concept_id, survey_source_concept_id,
-                validated_survey_concept_id)
+                survey_source_identifier, validated_survey_concept_id)
             VALUES
-                (1, 1, 0, timestamp('2020-05-05 00:00:00'), 0, 0, 0, 0, 0, 0),
-                (2, 2, 0, timestamp('2020-05-05 00:00:00'), 0, 0, 0, 0, 0, 0),
-                (3, 3, 0, timestamp('2020-05-05 00:00:00'), 0, 0, 0, 0, 0, 0),
-                (4, 4, 0, timestamp('2020-05-05 00:00:00'), 0, 0, 0, 0, 0, 0)
+                (1, 1, 0, timestamp('2020-05-05 00:00:00'), 0, 0, 0, 0, 0, '1', 0),
+                (2, 2, 0, timestamp('2020-05-05 00:00:00'), 0, 0, 0, 0, 0, '2', 0),
+                (3, 3, 0, timestamp('2020-05-05 00:00:00'), 0, 0, 0, 0, 0, '3', 0),
+                (4, 4, 0, timestamp('2020-05-05 00:00:00'), 0, 0, 0, 0, 0, '4', 0)
             """).render(fq_dataset_name=self.fq_dataset_name)
 
         create_mappings_query = self.jinja_env.from_string("""
@@ -130,12 +130,17 @@ class QRIDtoRIDTest(BaseTest.CleaningRulesTestBase):
             'cleaned_values': [(1, 1, 5000), (2, 2, 5000), (3, 3, 8005),
                                (4, 4, 8005), (5, 5, 9000), (6, 6, None)]
         }, {
-            'fq_table_name': f'{self.fq_dataset_name}.{SURVEY_CONDUCT}',
-            'fq_sandbox_table_name': self.fq_sandbox_table_names[0],
+            'fq_table_name':
+                f'{self.fq_dataset_name}.{SURVEY_CONDUCT}',
+            'fq_sandbox_table_name':
+                self.fq_sandbox_table_names[0],
             'loaded_ids': [1, 2, 3, 4],
             'sandboxed_ids': [4],
-            'fields': ['survey_conduct_id', 'person_id'],
-            'cleaned_values': [(5000, 1), (8005, 2), (9000, 3)]
+            'fields': [
+                'survey_conduct_id', 'person_id', 'survey_source_identifier'
+            ],
+            'cleaned_values': [(5000, 1, '5000'), (8005, 2, '8005'),
+                               (9000, 3, '9000')]
         }]
 
         self.default_test(tables_and_counts)

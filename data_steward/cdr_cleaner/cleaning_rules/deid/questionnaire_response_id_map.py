@@ -2,7 +2,7 @@
 Maps questionnaire_response_id to research_response_id.
 Questionnaire_response_id exists in the following two tables:
     1. observation table, as column questionnaire_response_id
-    2. survey_conduct table, as column survey_conduct_id
+    2. survey_conduct table, as columns survey_conduct_id(int) and survey_source_identifier(str).
 
 The mapping for questionnaire_response_id and research_response_id is in the 
 _deid_questionnaire_response_map lookup table.
@@ -51,6 +51,9 @@ WHERE survey_conduct_id IN (
 QRID_RID_MAPPING_QUERY = JINJA_ENV.from_string("""
 UPDATE `{{project_id}}.{{dataset_id}}.{{table}}` t
 SET t.{{qrid_column}} = d.research_response_id
+{% if table == 'survey_conduct' %}
+   ,t.survey_source_identifier = CAST(d.research_response_id AS STRING)
+{% endif %}
 FROM (
     SELECT
         o.*, m.research_response_id
@@ -64,8 +67,8 @@ WHERE t.{{table}}_id = d.{{table}}_id
 
 class QRIDtoRID(BaseCleaningRule):
     """
-    Remap the QRID (questionnaire_response_id/survey_conduct_id) to the RID 
-    (research_response_id) using mapping lookup table.
+    Remap the QRID (questionnaire_response_id/survey_conduct_id/survey_source_identifier(str))
+    to the RID (research_response_id) using mapping lookup table.
     Sandbox and delete survey_conduct entries that cannot be mapped.
     """
 
@@ -84,8 +87,9 @@ class QRIDtoRID(BaseCleaningRule):
         """
         desc = (
             'Remap the QID (questionnaire_response_id for observation and '
-            'survey_conduct_id for survey_conduct) to the RID (research_response_id) '
-            'found in the deid questionnaire response mapping lookup table.')
+            'survey_conduct_id(int) and survey_source_identifier(str) for survey_conduct) '
+            'to the RID (research_response_id) found in the deid questionnaire '
+            'response mapping lookup table.')
 
         if not deid_questionnaire_response_map_dataset:
             raise TypeError(
