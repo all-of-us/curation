@@ -29,6 +29,7 @@ pd.options.display.max_rows = 120
 project_id = ""
 com_cdr = ""
 deid_cdr = ""
+deid_questionnaire_response_map_dataset = ""
 pipeline=""
 run_as = ""
 # -
@@ -486,6 +487,50 @@ if df1.eq(0).any().any():
                 ignore_index = True) 
 else:
  df = df.append({'query' : 'Query15.3 person_id replaed by research_id in other 9 tables', 'result' : ''},  
+                ignore_index = True) 
+df1
+
+# # 16 Verify that  questionnaire_response_id/survey_conduct_id has been replaced by research_response_id
+
+query = f'''
+WITH df1 AS (
+SELECT COUNT (*) AS n_row_not_pass
+FROM  `{project_id}.{com_cdr}.survey_conduct` non_deid
+JOIN `{project_id}.{deid_questionnaire_response_map_dataset}._deid_questionnaire_response_map` m
+ON m.questionnaire_response_id=non_deid.survey_conduct_id
+JOIN `{project_id}.{deid_cdr}.survey_conduct` deid USING(survey_conduct_id)
+WHERE deid.survey_conduct_id != m.research_response_id
+),
+
+df2 AS (
+SELECT COUNT (*) AS n_row_not_pass
+FROM  `{project_id}.{com_cdr}.survey_conduct` non_deid
+JOIN `{project_id}.{deid_questionnaire_response_map_dataset}._deid_questionnaire_response_map` m
+ON m.questionnaire_response_id=non_deid.survey_conduct_id
+JOIN `{project_id}.{deid_cdr}.survey_conduct` deid USING(survey_conduct_id)
+WHERE deid.survey_source_identifier != m.research_response_id
+),
+df3 AS (
+SELECT COUNT (*) AS n_row_not_pass
+FROM  `{project_id}.{com_cdr}.observation` non_deid
+JOIN `{project_id}.{deid_questionnaire_response_map_dataset}._deid_questionnaire_response_map` m
+ON m.questionnaire_response_id=non_deid.questionnaire_response_id
+JOIN `{project_id}.{deid_cdr}.observation` deid USING(observation_id)
+WHERE deid.questionnaire_response_id != m.research_response_id
+)
+
+SELECT * FROM df1
+JOIN df2 USING(n_row_not_pass)
+JOIN df3 USING(n_row_not_pass)
+
+
+'''
+df1=execute(client, query)
+if df1.eq(0).any().any():
+ df = df.append({'query' : 'Query16 questionnaire_response_id/survey_conduct_id/survey_source_identifier replaced by research_response_id', 'result' : 'PASS'},  
+                ignore_index = True) 
+else:
+ df = df.append({'query' : 'Query16 questionnaire_response_id/survey_conduct_id/survey_source_identifier replaced by research_response_id', 'result' : ''},  
                 ignore_index = True) 
 df1
 
