@@ -290,7 +290,7 @@ class CleanSmokingPpi(BaseCleaningRule):
         """
         Run required steps for validation setup
         """
-        self.init_counts = self.get_counts(client)
+        self.init_counts = self._get_counts(client)
 
         if self.init_counts.get('total_rows') == 0:
             raise RuntimeError('NO DATA EXISTS IN OBSERVATION TABLE')
