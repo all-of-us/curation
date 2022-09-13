@@ -167,6 +167,18 @@ SELECT
 FROM `{project_id}.{sandbox_dataset_id}.{new_smoking_rows}`
 """)
 
+### Validation Query ####
+COUNTS_QUERY = JINJA_ENV.from_string("""
+SELECT
+COUNTIF(observation_source_concept_id IN (1585866,903062,1585872,1586158,903063,
+    1586161,903064,1586164,1585865,1585871,1586157,1586160,1586163)
+    AND value_as_concept_id = 45877994) AS n_old_child,
+COUNTIF(observation_source_concept_id IN (1585864,1585870,1585873,1586159,1586162) 
+    AND (value_as_concept_id = 0 OR value_as_concept_id = 903096) AS n_old_parent,
+COUNT(*) AS total
+FROM `{{project_id}}.{{dataset_id}}.{{obs_table}}`
+""")
+
 
 class CleanSmokingPpi(BaseCleaningRule):
 
@@ -192,6 +204,10 @@ class CleanSmokingPpi(BaseCleaningRule):
                          sandbox_dataset_id=sandbox_dataset_id,
                          depends_on=[ConvertPrePostCoordinatedConcepts],
                          table_namer=table_namer)
+
+        self.counts_query = COUNTS_QUERY.render(project_id=self.project_id,
+                                                dataset_id=self.dataset_id,
+                                                obs_table=OBSERVATION)
 
     def get_sandbox_tablenames(self):
         return [self.sandbox_table_for(OBSERVATION)]
@@ -274,13 +290,55 @@ class CleanSmokingPpi(BaseCleaningRule):
         """
         Run required steps for validation setup
         """
-        raise NotImplementedError("Please fix me.")
+        self.init_counts = self.get_counts(client)
+
+        if self.init_counts.get('total_rows') == 0:
+            raise RuntimeError('NO DATA EXISTS IN OBSERVATION TABLE')
 
     def validate_rule(self, client):
         """
         Validates the cleaning rule which deletes or updates the data from the tables
         """
-        raise NotImplementedError("Please fix me.")
+        clean_counts = self._get_counts(client)
+
+        if clean_counts.get('total_rows') == 0:
+            raise RuntimeError('LOST ALL DATA IN OBSERVATION TABLE')
+
+        if self.init_counts.get('total_rows') != clean_counts.get('total_rows'):
+            raise RuntimeError(
+                f'{self.__class__.__name__} unexpectedly changed table counts.\n'
+                f'initial count is: {self.init_counts.get("total_rows")}\n'
+                f'clean count is: {clean_counts.get("total_rows")}')
+
+        if clean_counts.get('child_count') or clean_counts.get('parent_count'):
+            raise RuntimeError(
+                f'{self.__class__.__name__} did not clean as expected.\n'
+                f'Found data in: {clean_counts}')
+
+    def _get_counts(self, client):
+        """
+        Counts query.
+        Used for job validation.
+        """
+        job = client.query(self.counts_query)
+        response = job.result()
+
+        errors = []
+        if job.exception():
+            errors.append(job.exception())
+            LOGGER.error(f"FAILURE:  {job.exception()}\n"
+                         f"Problem executing query:\n{self.counts_query}")
+        else:
+            for item in response:
+                total = item.get('total', 0)
+                n_child = item.get('n_old_child', 0)
+                n_parent = item.get('n_old_parent', 0)
+
+        return {
+            'total_rows': total,
+            'child_count': n_child,
+            'parent_count': n_parent
+        }
 
 
 if __name__ == '__main__':
