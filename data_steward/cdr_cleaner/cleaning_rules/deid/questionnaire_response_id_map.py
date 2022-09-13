@@ -1,11 +1,21 @@
 """
-Maps questionnaire_response_ids from the observation table to the research_response_id in the
+Maps questionnaire_response_id to research_response_id.
+Questionnaire_response_id exists in the following two tables:
+    1. observation table, as column questionnaire_response_id
+    2. survey_conduct table, as columns survey_conduct_id(int) and survey_source_identifier(str).
+
+The mapping for questionnaire_response_id and research_response_id is in the 
 _deid_questionnaire_response_map lookup table.
 
-Original Issue: DC-1347, DC-518, DC-2065
+If no mapping is found for a survey_conduct_id in the mapping table, the row
+will be sandboxed and deleted from survey_conduct table, as survey_conduct_id
+is the primary key for survey_conduct table and it cannot be mapped to None.
 
-The purpose of this cleaning rule is to use the questionnaire mapping lookup table to remap the questionnaire_response_id 
-in the observation table to the randomly generated research_response_id in the _deid_questionnaire_response_map table.
+Original Issue: DC-1347, DC-518, DC-2065, DC-2637
+
+The purpose of this cleaning rule is to use the questionnaire mapping lookup 
+table to remap the questionnaire_response_id to the randomly generated 
+research_response_id in the _deid_questionnaire_response_map table.
 """
 
 # Python imports
@@ -13,35 +23,53 @@ import logging
 
 # Project imports
 from utils import pipeline_logging
-from common import OBSERVATION, DEID_QUESTIONNAIRE_RESPONSE_MAP, JINJA_ENV
+from common import DEID_QUESTIONNAIRE_RESPONSE_MAP, JINJA_ENV, OBSERVATION, SURVEY_CONDUCT
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 
 LOGGER = logging.getLogger(__name__)
 
-ISSUE_NUMBERS = ['DC1347', 'DC518', 'DC-2065']
+ISSUE_NUMBERS = ['DC1347', 'DC518', 'DC2065', 'DC2637']
 
-# Map the research_response_id from _deid_questionnaire_response_map lookup table to the questionnaire_response_id in
-# the observation table
+SANDBOX_SC_QUERY = JINJA_ENV.from_string("""
+CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table}}` as (
+    SELECT *
+    FROM `{{project_id}}.{{dataset_id}}.survey_conduct`
+    WHERE survey_conduct_id NOT IN (
+        SELECT questionnaire_response_id 
+        FROM `{{project_id}}.{{deid_questionnaire_response_map_dataset_id}}.{{deid_questionnaire_response_map}}`
+    ))
+""")
+
+DELETE_SC_QUERY = JINJA_ENV.from_string("""
+DELETE FROM `{{project_id}}.{{dataset_id}}.survey_conduct`
+WHERE survey_conduct_id IN (
+    SELECT survey_conduct_id FROM `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table}}`
+)
+""")
+
 QRID_RID_MAPPING_QUERY = JINJA_ENV.from_string("""
-UPDATE `{{project_id}}.{{dataset_id}}.observation` t
-SET t.questionnaire_response_id = d.research_response_id
+UPDATE `{{project_id}}.{{dataset_id}}.{{table}}` t
+SET t.{{qrid_column}} = d.research_response_id
+{% if table == 'survey_conduct' %}
+   ,t.survey_source_identifier = CAST(d.research_response_id AS STRING)
+{% endif %}
 FROM (
     SELECT
-        o.* EXCEPT (questionnaire_response_id),
-        m.research_response_id
-    FROM `{{project_id}}.{{dataset_id}}.observation` o
+        o.*, m.research_response_id
+    FROM `{{project_id}}.{{dataset_id}}.{{table}}` o
     LEFT JOIN `{{project_id}}.{{deid_questionnaire_response_map_dataset_id}}.{{deid_questionnaire_response_map}}` m
-    ON o.questionnaire_response_id = m.questionnaire_response_id
+    ON o.{{qrid_column}} = m.questionnaire_response_id
     ) d
-WHERE t.observation_id = d.observation_id
+WHERE t.{{table}}_id = d.{{table}}_id
 """)
 
 
 class QRIDtoRID(BaseCleaningRule):
     """
-    Remap the QID (questionnaire_response_id) from the
-    observation table to the RID (research_response_id) found in that deid questionnaire response mapping lookup table
+    Remap the QRID (questionnaire_response_id/survey_conduct_id/survey_source_identifier(str))
+    to the RID (research_response_id) using mapping lookup table.
+    Sandbox and delete survey_conduct entries that cannot be mapped.
     """
 
     def __init__(self,
@@ -57,9 +85,11 @@ class QRIDtoRID(BaseCleaningRule):
         tickets may affect this SQL, append them to the list of Jira Issues.
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
-        desc = f'Remap the QID (questionnaire_response_id) from the observation table to the ' \
-               f'RID (research_response_id) found in ' \
-               f'the deid questionnaire response mapping lookup table.'
+        desc = (
+            'Remap the QID (questionnaire_response_id for observation and '
+            'survey_conduct_id(int) and survey_source_identifier(str) for survey_conduct) '
+            'to the RID (research_response_id) found in the deid questionnaire '
+            'response mapping lookup table.')
 
         if not deid_questionnaire_response_map_dataset:
             raise TypeError(
@@ -73,7 +103,7 @@ class QRIDtoRID(BaseCleaningRule):
                              cdr_consts.CONTROLLED_TIER_DEID,
                              cdr_consts.REGISTERED_TIER_DEID
                          ],
-                         affected_tables=OBSERVATION,
+                         affected_tables=[OBSERVATION, SURVEY_CONDUCT],
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
@@ -88,18 +118,58 @@ class QRIDtoRID(BaseCleaningRule):
             The specifications are optional but the query is required.
         """
 
-        mapping_query = {
+        sandbox_query = {
             cdr_consts.QUERY:
-                QRID_RID_MAPPING_QUERY.render(
+                SANDBOX_SC_QUERY.render(
                     project_id=self.project_id,
                     dataset_id=self.dataset_id,
                     deid_questionnaire_response_map=
                     DEID_QUESTIONNAIRE_RESPONSE_MAP,
                     deid_questionnaire_response_map_dataset_id=self.
-                    deid_questionnaire_response_map_dataset)
+                    deid_questionnaire_response_map_dataset,
+                    sandbox_dataset_id=self.sandbox_dataset_id,
+                    sandbox_table=self.sandbox_table_for(SURVEY_CONDUCT))
         }
 
-        return [mapping_query]
+        delete_query = {
+            cdr_consts.QUERY:
+                DELETE_SC_QUERY.render(
+                    project_id=self.project_id,
+                    dataset_id=self.dataset_id,
+                    sandbox_dataset_id=self.sandbox_dataset_id,
+                    sandbox_table=self.sandbox_table_for(SURVEY_CONDUCT))
+        }
+
+        table_qrid_mappings = [
+            {
+                "table": OBSERVATION,
+                "qrid_column": "questionnaire_response_id"
+            },
+            {
+                "table": SURVEY_CONDUCT,
+                "qrid_column": "survey_conduct_id"
+            },
+        ]
+
+        mapping_queries = []
+        for table_qrid_mapping in table_qrid_mappings:
+
+            mapping_query = {
+                cdr_consts.QUERY:
+                    QRID_RID_MAPPING_QUERY.render(
+                        project_id=self.project_id,
+                        dataset_id=self.dataset_id,
+                        table=table_qrid_mapping["table"],
+                        qrid_column=table_qrid_mapping["qrid_column"],
+                        deid_questionnaire_response_map=
+                        DEID_QUESTIONNAIRE_RESPONSE_MAP,
+                        deid_questionnaire_response_map_dataset_id=self.
+                        deid_questionnaire_response_map_dataset)
+            }
+
+            mapping_queries.append(mapping_query)
+
+        return [sandbox_query] + [delete_query] + mapping_queries
 
     def setup_rule(self, client, *args, **keyword_args):
         """
