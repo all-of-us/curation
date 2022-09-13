@@ -23,7 +23,7 @@ CREATE OR REPLACE TABLE
         *
     FROM
         `{{project_id}}.{{dataset_id}}.{{sleep_level_table}}`
-    WHERE level NOT IN 
+    WHERE LOWER(level) NOT IN 
         ('awake','light','asleep','deep','restless','wake','rem','unknown') OR level IS NULL
 )
  """)
@@ -37,7 +37,12 @@ WHERE person_id IN
     SELECT 
         person_id
     FROM 
-        `{{project_id}}.{{sandbox_dataset}}.{{sandbox_table}}`
+        `{{project_id}}.{{sandbox_dataset}}.{{sandbox_table}}`   
+)
+AND
+(
+    LOWER(level) NOT IN
+        ('awake','light','asleep','deep','restless','wake','rem','unknown') OR level IS NULL
 )
  """)
 
@@ -62,7 +67,7 @@ class DropInvalidSleepLevelRecords(BaseCleaningRule):
         super().__init__(issue_numbers=ISSUE_NUMBERS,
                          description=desc,
                          affected_datasets=[cdr_consts.FITBIT],
-                         affected_tables=FITBIT_TABLES,
+                         affected_tables=[SLEEP_LEVEL],
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
