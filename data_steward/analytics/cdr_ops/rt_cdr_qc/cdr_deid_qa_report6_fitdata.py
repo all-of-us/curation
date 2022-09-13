@@ -572,7 +572,9 @@ SELECT
 *,'not dropped' AS dropped_status
 FROM 
 `{project_id}.{fitbit_dataset}.sleep_level`
-WHERE (level NOT IN 
+WHERE 
+(
+    LOWER(level) NOT IN 
          ('awake','light','asleep','deep','restless','wake','rem','unknown') OR level IS NULL))
 
 select *
