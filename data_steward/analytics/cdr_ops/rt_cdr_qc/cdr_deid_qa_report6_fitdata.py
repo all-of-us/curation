@@ -34,6 +34,9 @@ com_cdr = ""
 truncation_date = ""
 maximum_age = ""
 run_as = ""
+fitbit_sandbox_dataset = ""
+sleep_level_sandbox_table = ""
+fitbit_dataset = ""
 # -
 
 # df will have a summary in the end
@@ -554,10 +557,6 @@ df1.T
 # DC-2606
 #
 # Queries the sandbox table for the corresponding cleaning rule (created in DC-2605) and outputs any records that are being dropped due to invalid level values. It also outputs any records in the sleep_level table that should have been dropped but were not.
-
-fitbit_sandbox_dataset = ''
-sleep_level_sandbox_table = ''
-fitbit_dataset = ''
 
 query = f'''
 
