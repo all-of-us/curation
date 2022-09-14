@@ -31,7 +31,9 @@ VALUES
 (8, '2011-09-12','true', 'restless', '2011-09-12T05:00:00', 5.3),
 (9, '2015-01-21','true', 'unknown', '2015-01-21T05:00:00', 7.3),
 (10, '2017-02-05','false', 'asleep', '2017-02-05T05:00:00', 3.8),
-(11, '2010-07-18','false', 'invalid', '2010-07-18T05:00:00', 7.5)
+(11, '2010-07-18','false', 'invalid', '2010-07-18T05:00:00', 7.5),
+(11, '2013-03-23','true', 'light', '2013-03-23T05:00:00', 4.5),
+(12, '2009-06-15','true', 'Deep', '2009-06-15T05:00:00', 7.5)
  """)
 
 
@@ -100,7 +102,7 @@ class DropInvalidSleepLevelRecordsTest(BaseTest.CleaningRulesTestBase):
                 self.fq_table_names[0],
             'fq_sandbox_table_name':
                 self.fq_sandbox_table_names[0],
-            'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+            'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 11, 12],
             'sandboxed_ids': [3, 7, 11],
             'fields': [
                 'person_id', 'sleep_date', 'is_main_sleep', 'level',
@@ -122,7 +124,11 @@ class DropInvalidSleepLevelRecordsTest(BaseTest.CleaningRulesTestBase):
                 (9, date.fromisoformat('2015-01-21'), 'true', 'unknown',
                  datetime.fromisoformat('2015-01-21T05:00:00'), 7.3),
                 (10, date.fromisoformat('2017-02-05'), 'false', 'asleep',
-                 datetime.fromisoformat('2017-02-05T05:00:00'), 3.8)
+                 datetime.fromisoformat('2017-02-05T05:00:00'), 3.8),
+                (11, date.fromisoformat('2013-03-23'), 'true', 'light',
+                 datetime.fromisoformat('2013-03-23T05:00:00'), 4.5),
+                (12, date.fromisoformat('2009-06-15'), 'true', 'Deep',
+                 datetime.fromisoformat('2009-06-15T05:00:00'), 7.5)
             ]
         }]
 
