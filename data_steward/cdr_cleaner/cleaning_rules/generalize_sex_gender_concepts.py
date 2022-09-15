@@ -16,7 +16,7 @@ MAN_CONCEPT_ID = 1585839
 SEX_AT_BIRTH_MALE_CONCEPT_ID = 1585846
 SEX_AT_BIRTH_FEMALE_CONCEPT_ID = 1585847
 
-NEW_GENERALIZED_CONCEPT_ID_QUERY_TEMPLATE = JINJA_ENV.from_string("""
+GENERALIZED_CONCEPT_ID_QUERY_TEMPLATE = JINJA_ENV.from_string("""
 UPDATE
   `{{project_id}}.{{dataset_id}}.observation`
 SET
@@ -37,6 +37,7 @@ WHERE
   )
 """)
 
+# Will be removed after integration test has been implemented
 GENERALIZED_CONCEPT_ID_QUERY_TEMPLATE = '''
 UPDATE
   `{project_id}.{dataset_id}.observation`
@@ -92,7 +93,7 @@ class GeneralizeSexGenderConcepts(BaseCleaningRule):
 
         updating_woman_to_generalized_concept_id = {
             cdr_consts.QUERY:
-                NEW_GENERALIZED_CONCEPT_ID_QUERY_TEMPLATE.render(
+                GENERALIZED_CONCEPT_ID_QUERY_TEMPLATE.render(
                     project_id=self.project_id,
                     dataset_id=self.dataset_id,
                     gender_value_source_concept_id=WOMAN_CONCEPT_ID,
@@ -102,7 +103,7 @@ class GeneralizeSexGenderConcepts(BaseCleaningRule):
 
         updating_man_to_generalized_concept_id = {
             cdr_consts.QUERY:
-                NEW_GENERALIZED_CONCEPT_ID_QUERY_TEMPLATE.render(
+                GENERALIZED_CONCEPT_ID_QUERY_TEMPLATE.render(
                     project_id=self.project_id,
                     dataset_id=self.dataset_id,
                     gender_value_source_concept_id=MAN_CONCEPT_ID,
@@ -141,6 +142,7 @@ class GeneralizeSexGenderConcepts(BaseCleaningRule):
         raise NotImplementedError("Please fix me.")
 
 
+# Will be removed after integration test has been implemented
 def parse_query_for_updating_woman_to_generalized_concept_id(
     project_id, dataset_id):
     """
@@ -158,6 +160,7 @@ def parse_query_for_updating_woman_to_generalized_concept_id(
         generalized_gender_concept_id=GENERALIZE_GENDER_CONCEPT_ID)
 
 
+# Will be removed after integration test has been implemented
 def parse_query_for_updating_man_to_generalized_concept_id(
     project_id, dataset_id):
     """
@@ -175,6 +178,7 @@ def parse_query_for_updating_man_to_generalized_concept_id(
         generalized_gender_concept_id=GENERALIZE_GENDER_CONCEPT_ID)
 
 
+# Will be removed after integration test has been implemented
 def get_generalized_concept_id_queries(project_id,
                                        dataset_id,
                                        sandbox_dataset_id=None):
