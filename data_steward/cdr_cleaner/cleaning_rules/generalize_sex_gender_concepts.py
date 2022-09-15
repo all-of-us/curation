@@ -16,7 +16,7 @@ MAN_CONCEPT_ID = 1585839
 SEX_AT_BIRTH_MALE_CONCEPT_ID = 1585846
 SEX_AT_BIRTH_FEMALE_CONCEPT_ID = 1585847
 
-GENERALIZED_CONCEPT_ID_QUERY_TEMPLATE = JINJA_ENV.from_string("""
+NEW_GENERALIZED_CONCEPT_ID_QUERY_TEMPLATE = JINJA_ENV.from_string("""
 UPDATE
   `{{project_id}}.{{dataset_id}}.observation`
 SET
@@ -93,7 +93,7 @@ class GeneralizeSexGenderConcepts(BaseCleaningRule):
 
         updating_woman_to_generalized_concept_id = {
             cdr_consts.QUERY:
-                GENERALIZED_CONCEPT_ID_QUERY_TEMPLATE.render(
+                NEW_GENERALIZED_CONCEPT_ID_QUERY_TEMPLATE.render(
                     project_id=self.project_id,
                     dataset_id=self.dataset_id,
                     gender_value_source_concept_id=WOMAN_CONCEPT_ID,
@@ -103,7 +103,7 @@ class GeneralizeSexGenderConcepts(BaseCleaningRule):
 
         updating_man_to_generalized_concept_id = {
             cdr_consts.QUERY:
-                GENERALIZED_CONCEPT_ID_QUERY_TEMPLATE.render(
+                NEW_GENERALIZED_CONCEPT_ID_QUERY_TEMPLATE.render(
                     project_id=self.project_id,
                     dataset_id=self.dataset_id,
                     gender_value_source_concept_id=MAN_CONCEPT_ID,
