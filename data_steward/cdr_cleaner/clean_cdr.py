@@ -278,8 +278,10 @@ REGISTERED_TIER_DEID_BASE_CLEANING_CLASSES = [
 ]
 
 REGISTERED_TIER_DEID_CLEAN_CLEANING_CLASSES = [
-    (RtCtPIDtoRID,),
-    (MeasurementRecordsSuppression,),
+    # TODO: uncomment when pid-rid logic is removed from legacy deid
+    # (RtCtPIDtoRID,),
+    (
+        MeasurementRecordsSuppression,),
     (CleanHeightAndWeight,),  # dependent on MeasurementRecordsSuppression
     (UnitNormalization,),  # dependent on CleanHeightAndWeight
     (DropZeroConceptIDs,),
