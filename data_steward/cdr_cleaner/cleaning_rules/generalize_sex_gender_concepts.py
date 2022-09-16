@@ -1,5 +1,4 @@
 #Python imports
-from genericpath import exists
 import logging
 
 # Project imports
@@ -27,7 +26,8 @@ INSERT INTO
     `{{project_id}}.{{dataset_id}}.observation`
   WHERE
     observation_source_concept_id = 1585838 -- the concept for gender identity
-    AND value_source_concept_id = {{gender_value_source_concept_id}}
+  AND 
+      value_source_concept_id = {{gender_value_source_concept_id}}
   AND person_id IN 
   (
     SELECT
@@ -36,7 +36,8 @@ INSERT INTO
       `{{project_id}}.{{dataset_id}}.observation`
     WHERE
       observation_source_concept_id = 1585845 -- the concept for biological sex at birth
-        AND value_source_concept_id = {{biological_sex_birth_concept_id}}
+    AND 
+        value_source_concept_id = {{biological_sex_birth_concept_id}}
   )
 )
 """)
