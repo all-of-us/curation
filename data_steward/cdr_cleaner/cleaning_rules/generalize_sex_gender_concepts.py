@@ -1,6 +1,9 @@
 #Python imports
 import logging
 
+# Third-party imports
+from google.cloud import bigquery
+
 # Project imports
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 import constants.cdr_cleaner.clean_cdr as cdr_consts
@@ -94,11 +97,10 @@ class GeneralizeSexGenderConcepts(BaseCleaningRule):
         """
 
         #Create sandbox table
-        schema = client.get_table_schema(OBSERVATION)
         sandbox_table_name = f'{self.project_id}.{self.sandbox_dataset_id}.{self.get_sandbox_tablenames()[0]}'
-        client.create_tables([sandbox_table_name],
-                             exists_ok=False,
-                             fields=schema)
+        schema = client.get_table_schema(OBSERVATION)
+        table = bigquery.Table(sandbox_table_name, schema=schema)
+        client.create_table(table, exists_ok=True)
 
     def get_query_specs(self, *args, **keyword_args):
         """
