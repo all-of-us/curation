@@ -1,8 +1,8 @@
 """
- Integration test for generalize_sex_gender_concepts.py module
+Integration test for generalize_sex_gender_concepts.py module
 
- Original Issues: DC-1224
- """
+Original Issues: DC-1224
+"""
 
 # Python Imports
 import os
