@@ -7,7 +7,8 @@ import os
 
 # Project imports
 from app_identity import PROJECT_ID
-from cdr_cleaner.cleaning_rules.clean_smoking_ppi import CleanSmokingPpi
+from cdr_cleaner.cleaning_rules.clean_smoking_ppi import (CleanSmokingPpi,
+                                                          SMOKING_LOOKUP_TABLE)
 from common import JINJA_ENV, OBSERVATION
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
@@ -46,7 +47,8 @@ class CleanSmokingPpiTest(BaseTest.CleaningRulesTestBase):
 
         cls.project_id = os.environ.get(PROJECT_ID)
         cls.dataset_id = os.environ.get('RDR_DATASET_ID')
-        cls.sandbox_id = cls.dataset_id + '_sandbox'
+        cls.sandbox_id = f'{cls.dataset_id}_sandbox'
+        cls.lookup_table = SMOKING_LOOKUP_TABLE
 
         cls.rule_instance = CleanSmokingPpi(cls.project_id, cls.dataset_id,
                                             cls.sandbox_id)
@@ -56,7 +58,8 @@ class CleanSmokingPpiTest(BaseTest.CleaningRulesTestBase):
         ]
 
         cls.fq_sandbox_table_names = [
-            f'{cls.project_id}.{cls.sandbox_id}.{cls.rule_instance.sandbox_table_for(OBSERVATION)}'
+            f'{cls.project_id}.{cls.sandbox_id}.{cls.rule_instance.sandbox_table_for(OBSERVATION)}',
+            f'{cls.project_id}.{cls.sandbox_id}.{cls.lookup_table}'
         ]
 
         super().setUpClass()

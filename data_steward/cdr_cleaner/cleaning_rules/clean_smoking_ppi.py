@@ -1,6 +1,15 @@
 """
-Several answers to smoking questions were incorrectly coded as questions
-This rule generates corrected rows and deletes incorrect rows
+Update the smoking question rows with new source and standard ids.
+
+The mapping of several smoking, question and answer pairs in the lifestyle survey
+were written abnormally in REDCap. The irregular branching logic was used by the survey
+implementers as well as Odysseus when creating the vocabulary. The smoking rows need
+to have their source and standard concept_ids remapped to ensure clear and meaningful data.
+
+This rule should be reviewed after any change in Athena to the concepts in smoking_lookup.csv.
+Post-coordination of these terms could impact how this rule is applied.
+
+This rule generates corrected rows and deletes incorrect rows.
 
 Original issues: AC-77  , DC-806
 """
@@ -9,7 +18,7 @@ import os
 from datetime import datetime
 
 from google.cloud import bigquery
-
+from gcloud.bq import BigQueryClient
 import resources
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
@@ -24,56 +33,8 @@ NEW_SMOKING_ROWS = 'new_smoking_rows'
 
 JIRA_ISSUE_NUMBERS = ['AC77', 'DC806']
 
-SMOKING_LOOKUP_FIELDS = [{
-    "type": "string",
-    "name": "type",
-    "mode": "nullable",
-    "description": ""
-}, {
-    "type": "string",
-    "name": "observation_source_value_info",
-    "mode": "nullable",
-    "description": ""
-}, {
-    "type": "integer",
-    "name": "rank",
-    "mode": "nullable",
-    "description": ""
-}, {
-    "type": "integer",
-    "name": "observation_source_concept_id",
-    "mode": "nullable",
-    "description": ""
-}, {
-    "type": "integer",
-    "name": "value_as_concept_id",
-    "mode": "nullable",
-    "description": ""
-}, {
-    "type": "integer",
-    "name": "new_"
-            "observation_concept_id",
-    "mode": "nullable",
-    "description": ""
-}, {
-    "type": "integer",
-    "name": "new_observation_source_concept_id",
-    "mode": "nullable",
-    "description": ""
-}, {
-    "type": "integer",
-    "name": "new_value_as_concept_id",
-    "mode": "nullable",
-    "description": ""
-}, {
-    "type": "integer",
-    "name": "new_value_source_concept_id",
-    "mode": "nullable",
-    "description": ""
-}]
-
 SANDBOX_CREATE_QUERY = JINJA_ENV.from_string("""
-CREATE TABLE `{project_id}.{sandbox_dataset_id}.{new_smoking_rows}`
+CREATE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{new_smoking_rows}}`
 AS
 SELECT
     observation_id,
@@ -122,8 +83,8 @@ FROM
     questionnaire_response_id,
     ROW_NUMBER() OVER(PARTITION BY person_id, new_observation_source_concept_id ORDER BY rank ASC) AS this_row
 FROM
-    `{project_id}.{sandbox_dataset_id}.{smoking_lookup_table}`
-JOIN `{project_id}.{dataset_id}.observation`
+    `{{project_id}}.{{sandbox_dataset_id}}.{{smoking_lookup_table}}`
+JOIN `{{project_id}}.{{dataset_id}}.observation`
     USING (observation_source_concept_id, value_as_concept_id)
 )
 WHERE this_row=1
@@ -131,16 +92,16 @@ WHERE this_row=1
 
 DELETE_INCORRECT_RECORDS = JINJA_ENV.from_string("""
 DELETE
-FROM `{project_id}.{dataset_id}.observation`
+FROM `{{project_id}}.{{dataset_id}}.observation`
 WHERE observation_source_concept_id IN
 (SELECT
   observation_source_concept_id
-FROM `{project_id}.{sandbox_dataset_id}.{smoking_lookup_table}`
+FROM `{{project_id}}.{{sandbox_dataset_id}}.{{smoking_lookup_table}}`
 )
 """)
 
 INSERT_CORRECTED_RECORDS = JINJA_ENV.from_string("""
-INSERT INTO `{project_id}.{dataset_id}.observation`
+INSERT INTO `{{project_id}}.{{dataset_id}}.observation`
     (observation_id,
     person_id,
     observation_concept_id,
@@ -164,7 +125,7 @@ INSERT INTO `{project_id}.{dataset_id}.observation`
     questionnaire_response_id)
 SELECT
     *
-FROM `{project_id}.{sandbox_dataset_id}.{new_smoking_rows}`
+FROM `{{project_id}}.{{sandbox_dataset_id}}.{{new_smoking_rows}}`
 """)
 
 ### Validation Query ####
@@ -189,6 +150,7 @@ class CleanSmokingPpi(BaseCleaningRule):
                  table_namer=None):
         """
         Initialize the class with proper information.
+
         Set the issue numbers, description and affected datasets. As other tickets may affect
         this SQL, append them to the list of Jira Issues.
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
@@ -209,20 +171,20 @@ class CleanSmokingPpi(BaseCleaningRule):
                                                 dataset_id=self.dataset_id,
                                                 obs_table=OBSERVATION)
 
-    def get_sandbox_tablenames(self):
+    def get_sandbox_tablenames(self) -> list:
         return [self.sandbox_table_for(OBSERVATION)]
 
-    def setup_rule(self, client, *args, **keyword_args):
+    def setup_rule(self, client: BigQueryClient, *args, **keyword_args) -> None:
         """
         Run the lookup table load.
+
         Load the lookup table values into the sandbox.  The following queries
         will use the lookup table as part of the execution.
         """
         table_path = os.path.join(resources.resource_files_path,
                                   f"{SMOKING_LOOKUP_TABLE}.csv")
         with open(table_path, 'rb') as csv_file:
-            schema_list = client.get_table_schema(SMOKING_LOOKUP_TABLE,
-                                                  fields=SMOKING_LOOKUP_FIELDS)
+            schema_list = client.get_table_schema(SMOKING_LOOKUP_TABLE)
             table_id = f'{self.project_id}.{self.sandbox_dataset_id}.{SMOKING_LOOKUP_TABLE}'
             job_config = bigquery.LoadJobConfig(
                 schema=schema_list,
@@ -286,7 +248,7 @@ class CleanSmokingPpi(BaseCleaningRule):
 
         return queries_list
 
-    def setup_validation(self, client):
+    def setup_validation(self, client: BigQueryClient) -> None:
         """
         Run required steps for validation setup
         """
@@ -295,7 +257,7 @@ class CleanSmokingPpi(BaseCleaningRule):
         if self.init_counts.get('total_rows') == 0:
             raise RuntimeError('NO DATA EXISTS IN OBSERVATION TABLE')
 
-    def validate_rule(self, client):
+    def validate_rule(self, client: BigQueryClient) -> None:
         """
         Validates the cleaning rule which deletes or updates the data from the tables
         """
@@ -315,9 +277,10 @@ class CleanSmokingPpi(BaseCleaningRule):
                 f'{self.__class__.__name__} did not clean as expected.\n'
                 f'Found data in: {clean_counts}')
 
-    def _get_counts(self, client):
+    def _get_counts(self, client: BigQueryClient) -> dict[str, int]:
         """
         Counts query.
+
         Used for job validation.
         """
         job = client.query(self.counts_query)
