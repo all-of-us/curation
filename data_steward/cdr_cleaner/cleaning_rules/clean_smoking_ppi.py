@@ -16,6 +16,7 @@ Original issues: AC-77  , DC-806
 import logging
 import os
 from datetime import datetime
+from typing import Dict
 
 from google.cloud import bigquery
 from gcloud.bq import BigQueryClient
@@ -277,7 +278,7 @@ class CleanSmokingPpi(BaseCleaningRule):
                 f'{self.__class__.__name__} did not clean as expected.\n'
                 f'Found data in: {clean_counts}')
 
-    def _get_counts(self, client: BigQueryClient) -> dict[str, int]:
+    def _get_counts(self, client: BigQueryClient) -> Dict[str, int]:
         """
         Counts query.
 
