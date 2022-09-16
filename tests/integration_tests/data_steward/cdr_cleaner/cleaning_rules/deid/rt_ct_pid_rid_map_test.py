@@ -4,13 +4,13 @@ from datetime import datetime
 
 # Project Imports
 from app_identity import PROJECT_ID
-import cdr_cleaner.cleaning_rules.deid.ct_pid_rid_map as cr
+import cdr_cleaner.cleaning_rules.deid.rt_ct_pid_rid_map as cr
 from cdr_cleaner.cleaning_rules.deid.pid_rid_map import LOGGER
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 from common import DEID_MAP, CONDITION_OCCURRENCE, PERSON
 
 
-class CtPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
+class RtCtPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
 
     @classmethod
     def setUpClass(cls):
@@ -31,8 +31,8 @@ class CtPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
 
         cls.fq_deid_map_table = f'{project_id}.{cls.sandbox_id}.{DEID_MAP}'
 
-        cls.rule_instance = cr.CtPIDtoRID(project_id, cls.dataset_id,
-                                          cls.sandbox_id)
+        cls.rule_instance = cr.RtCtPIDtoRID(project_id, cls.dataset_id,
+                                            cls.sandbox_id)
 
         sb_table_name = cls.rule_instance.sandbox_table_for(
             CONDITION_OCCURRENCE)
