@@ -1,4 +1,5 @@
 #Python imports
+from genericpath import exists
 import logging
 
 # Project imports
@@ -15,6 +16,30 @@ WOMAN_CONCEPT_ID = 1585840
 MAN_CONCEPT_ID = 1585839
 SEX_AT_BIRTH_MALE_CONCEPT_ID = 1585846
 SEX_AT_BIRTH_FEMALE_CONCEPT_ID = 1585847
+
+SANDBOX_CONCEPT_ID_QUERY_TEMPLATE = JINJA_ENV.from_string("""
+INSERT INTO
+  `{{project_id}}.{{sandbox_dataset}}.{{sandbox_table}}` AS
+(
+  SELECT
+    *
+  FROM
+    `{{project_id}}.{{dataset_id}}.observation`
+  WHERE
+    observation_source_concept_id = 1585838 -- the concept for gender identity
+    AND value_source_concept_id = {{gender_value_source_concept_id}}
+  AND person_id IN 
+  (
+    SELECT
+      person_id
+    FROM
+      `{{project_id}}.{{dataset_id}}.observation`
+    WHERE
+      observation_source_concept_id = 1585845 -- the concept for biological sex at birth
+        AND value_source_concept_id = {{biological_sex_birth_concept_id}}
+  )
+)
+""")
 
 NEW_GENERALIZED_CONCEPT_ID_QUERY_TEMPLATE = JINJA_ENV.from_string("""
 UPDATE
@@ -37,33 +62,13 @@ WHERE
   )
 """)
 
-# Will be removed after integration test has been implemented
-GENERALIZED_CONCEPT_ID_QUERY_TEMPLATE = '''
-UPDATE
-  `{project_id}.{dataset_id}.observation`
-SET
-  value_as_concept_id = {generalized_gender_concept_id},
-  value_source_concept_id = {generalized_gender_concept_id}
-WHERE
-  observation_source_concept_id = 1585838 -- the concept for gender identity
-  AND value_source_concept_id = {gender_value_source_concept_id}
-  AND person_id IN (
-  SELECT
-    person_id
-  FROM
-    `{project_id}.{dataset_id}.observation`
-  WHERE
-    observation_source_concept_id = 1585845 -- the concept for biological sex at birth
-      AND value_source_concept_id = {biological_sex_birth_concept_id})
-'''
-
 
 class GeneralizeSexGenderConcepts(BaseCleaningRule):
 
     def __init__(self,
                  project_id,
                  dataset_id,
-                 sandbox_dataset_id=None,
+                 sandbox_dataset_id,
                  table_namer=None):
         """
         Initialize the class with proper information.
@@ -82,6 +87,18 @@ class GeneralizeSexGenderConcepts(BaseCleaningRule):
                          sandbox_dataset_id=sandbox_dataset_id,
                          table_namer=table_namer)
 
+    def setup_rule(self, client):
+        """
+        Function to run any data upload options before executing a query.
+        """
+
+        #Create sandbox table
+        schema = client.get_table_schema(OBSERVATION)
+        sandbox_table_name = f'{self.project_id}.{self.sandbox_dataset_id}.{self.get_sandbox_tablenames()[0]}'
+        client.create_tables([sandbox_table_name],
+                             exists_ok=False,
+                             fields=schema)
+
     def get_query_specs(self, *args, **keyword_args):
         """
         Return a list of dictionary query specifications.
@@ -90,6 +107,30 @@ class GeneralizeSexGenderConcepts(BaseCleaningRule):
              and a specification for how to execute that query. The specifications
              are optional but the query is required.
         """
+
+        sandbox_woman_to_generalized_concept_id = {
+            cdr_consts.QUERY:
+                NEW_GENERALIZED_CONCEPT_ID_QUERY_TEMPLATE.render(
+                    project_id=self.project_id,
+                    dataset_id=self.dataset_id,
+                    sandbox_dataset=self.sandbox_dataset_id,
+                    sandbox_table=self.get_sandbox_tablenames()[0],
+                    gender_value_source_concept_id=WOMAN_CONCEPT_ID,
+                    biological_sex_birth_concept_id=SEX_AT_BIRTH_MALE_CONCEPT_ID
+                )
+        }
+
+        sandbox_man_to_generalized_concept_id = {
+            cdr_consts.QUERY:
+                NEW_GENERALIZED_CONCEPT_ID_QUERY_TEMPLATE.render(
+                    project_id=self.project_id,
+                    dataset_id=self.dataset_id,
+                    sandbox_dataset=self.sandbox_dataset_id,
+                    sandbox_table=self.get_sandbox_tablenames()[0],
+                    gender_value_source_concept_id=MAN_CONCEPT_ID,
+                    biological_sex_birth_concept_id=
+                    SEX_AT_BIRTH_FEMALE_CONCEPT_ID)
+        }
 
         updating_woman_to_generalized_concept_id = {
             cdr_consts.QUERY:
@@ -113,15 +154,11 @@ class GeneralizeSexGenderConcepts(BaseCleaningRule):
         }
 
         return [
+            sandbox_woman_to_generalized_concept_id,
+            sandbox_man_to_generalized_concept_id,
             updating_woman_to_generalized_concept_id,
             updating_man_to_generalized_concept_id
         ]
-
-    def setup_rule(self, client):
-        """
-        Function to run any data upload options before executing a query.
-        """
-        pass
 
     def setup_validation(self, client):
         """
@@ -139,7 +176,29 @@ class GeneralizeSexGenderConcepts(BaseCleaningRule):
         """
         generates sandbox table names
         """
-        raise NotImplementedError("Please fix me.")
+        sandbox_table = self.sandbox_table_for(OBSERVATION)
+        return [sandbox_table]
+
+
+# Will be removed after integration test has been implemented
+GENERALIZED_CONCEPT_ID_QUERY_TEMPLATE = '''
+UPDATE
+  `{project_id}.{dataset_id}.observation`
+SET
+  value_as_concept_id = {generalized_gender_concept_id},
+  value_source_concept_id = {generalized_gender_concept_id}
+WHERE
+  observation_source_concept_id = 1585838 -- the concept for gender identity
+  AND value_source_concept_id = {gender_value_source_concept_id}
+  AND person_id IN (
+  SELECT
+    person_id
+  FROM
+    `{project_id}.{dataset_id}.observation`
+  WHERE
+    observation_source_concept_id = 1585845 -- the concept for biological sex at birth
+      AND value_source_concept_id = {biological_sex_birth_concept_id})
+'''
 
 
 # Will be removed after integration test has been implemented
