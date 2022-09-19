@@ -135,6 +135,8 @@ class GeneralizeSexGenderConcepts(BaseCleaningRule):
                     SEX_AT_BIRTH_FEMALE_CONCEPT_ID)
         }
 
+        # An update query to update the gender to the generalized gender concept_id for the cases
+        # where the biological sex is reported as male and gender is reported as woman.
         updating_woman_to_generalized_concept_id = {
             cdr_consts.QUERY:
                 NEW_GENERALIZED_CONCEPT_ID_QUERY_TEMPLATE.render(
@@ -145,6 +147,8 @@ class GeneralizeSexGenderConcepts(BaseCleaningRule):
                     generalized_gender_concept_id=GENERALIZE_GENDER_CONCEPT_ID)
         }
 
+        # An update query to update the gender to the generalized gender concept_id for the cases
+        # where the biological sex is reported as female and gender is reported as man.
         updating_man_to_generalized_concept_id = {
             cdr_consts.QUERY:
                 NEW_GENERALIZED_CONCEPT_ID_QUERY_TEMPLATE.render(
