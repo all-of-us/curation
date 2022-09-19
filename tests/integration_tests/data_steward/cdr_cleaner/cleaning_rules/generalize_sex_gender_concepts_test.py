@@ -121,7 +121,7 @@ class GeneralizeSexGenderConceptsTest(BaseTest.CleaningRulesTestBase):
         """
         super().setUp()
 
-        # Query to insert test records into sleep_level table
+        # Query to insert test records into observation table
         generalized_concept_query = GENERALIZED_CONCEPT_ID_TEST_QUERY_TEMPLATE.render(
             project_id=self.project_id, dataset_id=self.dataset_id)
 
