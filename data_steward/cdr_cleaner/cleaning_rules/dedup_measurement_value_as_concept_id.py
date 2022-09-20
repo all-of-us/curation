@@ -11,7 +11,7 @@ from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from common import JINJA_ENV, MEASUREMENT
 
 # Third party imports
-from google.cloud.exceptions import NotFound
+from google.cloud import bigquery
 
 LOGGER = logging.getLogger(__name__)
 
@@ -102,19 +102,15 @@ class DedupMeasurementValueAsConceptId(BaseCleaningRule):
         return queries_list
 
     def setup_rule(self, client, *args, **keyword_args):
-        try:
-            client.get_table(
-                f'{self.project_id}.{self.sandbox_dataset_id}.{IDENTICAL_LABS_LOOKUP_TABLE}'
-            )
-        except NotFound:
-            job = client.copy_table(
-                f'{self.project_id}.{PIPELINE_TABLES}.{IDENTICAL_LABS_LOOKUP_TABLE}',
-                f'{self.project_id}.{self.sandbox_dataset_id}.{IDENTICAL_LABS_LOOKUP_TABLE}'
-            )
-            job.result()
-            LOGGER.info(
-                f'Copied {PIPELINE_TABLES}.{IDENTICAL_LABS_LOOKUP_TABLE} to '
-                f'{self.sandbox_dataset_id}.{IDENTICAL_LABS_LOOKUP_TABLE}')
+        job = client.copy_table(
+            f'{self.project_id}.{PIPELINE_TABLES}.{IDENTICAL_LABS_LOOKUP_TABLE}',
+            f'{self.project_id}.{self.sandbox_dataset_id}.{IDENTICAL_LABS_LOOKUP_TABLE}',
+            job_config=bigquery.job.CopyJobConfig(
+                write_disposition=bigquery.job.WriteDisposition.WRITE_TRUNCATE))
+        job.result()
+        LOGGER.info(
+            f'Copied {PIPELINE_TABLES}.{IDENTICAL_LABS_LOOKUP_TABLE} to '
+            f'{self.sandbox_dataset_id}.{IDENTICAL_LABS_LOOKUP_TABLE}')
 
     def setup_validation(self, client):
         raise NotImplementedError("Please fix me.")
