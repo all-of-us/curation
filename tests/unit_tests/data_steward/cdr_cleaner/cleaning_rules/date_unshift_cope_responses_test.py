@@ -2,14 +2,14 @@
 import unittest
 
 from cdr_cleaner.cleaning_rules.date_unshift_cope_responses import (
-    DateShiftCopeResponses, SANDBOX_COPE_SURVEY_QUERY, DATE_SHIFT_QUERY,
+    DateUnShiftCopeResponses, SANDBOX_COPE_SURVEY_OBS_QUERY, DATE_UNSHIFT_OBS_QUERY,
     OBSERVATION_EXT, OBSERVATION)
 # Project imports
 from constants.bq_utils import WRITE_TRUNCATE
 from constants.cdr_cleaner import clean_cdr as clean_consts
 
 
-class DateShiftCopeResponsesTest(unittest.TestCase):
+class DateUnShiftCopeResponsesTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -22,9 +22,9 @@ class DateShiftCopeResponsesTest(unittest.TestCase):
         self.dataset_id = 'bar_dataset'
         self.sandbox_id = 'baz_sandbox'
 
-        self.rule_instance = DateShiftCopeResponses(self.project_id,
-                                                    self.dataset_id,
-                                                    self.sandbox_id)
+        self.rule_instance = DateUnShiftCopeResponses(self.project_id,
+                                                      self.dataset_id,
+                                                      self.sandbox_id)
 
         self.assertEqual(self.rule_instance.project_id, self.project_id)
         self.assertEqual(self.rule_instance.dataset_id, self.dataset_id)
@@ -41,7 +41,7 @@ class DateShiftCopeResponsesTest(unittest.TestCase):
         # Post conditions
         expected_list = [{
             clean_consts.QUERY:
-                SANDBOX_COPE_SURVEY_QUERY.render(
+                SANDBOX_COPE_SURVEY_OBS_QUERY.render(
                     project_id=self.project_id,
                     dataset_id=self.dataset_id,
                     sandbox_dataset=self.sandbox_id,
@@ -51,15 +51,15 @@ class DateShiftCopeResponsesTest(unittest.TestCase):
                     observation_table=OBSERVATION)
         }, {
             clean_consts.QUERY:
-                DATE_SHIFT_QUERY.render(project_id=self.project_id,
-                                        pre_deid_dataset=self.rule_instance.
-                                        get_combined_dataset_from_deid_dataset(
-                                            self.dataset_id),
-                                        dataset_id=self.dataset_id,
-                                        sandbox_dataset=self.sandbox_id,
-                                        observation_table=OBSERVATION,
-                                        intermediary_table=self.rule_instance.
-                                        get_sandbox_tablenames()[0]),
+                DATE_UNSHIFT_OBS_QUERY.render(project_id=self.project_id,
+                                              pre_deid_dataset=self.rule_instance.
+                                              get_combined_dataset_from_deid_dataset(
+                                                  self.dataset_id),
+                                              dataset_id=self.dataset_id,
+                                              sandbox_dataset=self.sandbox_id,
+                                              observation_table=OBSERVATION,
+                                              intermediary_table=self.rule_instance.
+                                              get_sandbox_tablenames()[0]),
             clean_consts.DESTINATION_TABLE:
                 OBSERVATION,
             clean_consts.DESTINATION_DATASET:
@@ -75,7 +75,7 @@ class DateShiftCopeResponsesTest(unittest.TestCase):
         self.assertEqual(self.rule_instance.affected_datasets,
                          [clean_consts.REGISTERED_TIER_DEID_BASE])
 
-        store_rows_to_be_changed = SANDBOX_COPE_SURVEY_QUERY.render(
+        store_rows_to_be_changed = SANDBOX_COPE_SURVEY_OBS_QUERY.render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
             sandbox_dataset=self.sandbox_id,
@@ -83,7 +83,7 @@ class DateShiftCopeResponsesTest(unittest.TestCase):
             observation_ext_table=OBSERVATION_EXT,
             observation_table=OBSERVATION)
 
-        select_rows_to_be_changed = DATE_SHIFT_QUERY.render(
+        select_rows_to_be_changed = DATE_UNSHIFT_OBS_QUERY.render(
             project_id=self.project_id,
             pre_deid_dataset=self.rule_instance.
             get_combined_dataset_from_deid_dataset(self.dataset_id),
