@@ -27,17 +27,16 @@ import logging
 import constants.bq_utils as bq_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.cdr_cleaner import clean_cdr as cdr_consts
-from common import JINJA_ENV
+from common import JINJA_ENV, OBSERVATION
 from cdr_cleaner.manual_cleaning_rules.survey_version_info import COPESurveyVersionTask
 
 LOGGER = logging.getLogger(__name__)
 
-OBSERVATION = 'observation'
-OBSERVATION_EXT = 'observation_ext'
+OBSERVATION_EXT = f'{OBSERVATION}_ext'
 
-SANDBOX_COPE_SURVEY_QUERY = JINJA_ENV.from_string("""
+SANDBOX_COPE_SURVEY_OBS_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE
-  `{{project_id}}.{{sandbox_dataset}}.{{intermediary_table}}` AS
+  `{{project_id}}.{{sandbox_dataset}}.{{intermediary_obs_table}}` AS
 SELECT
   *
 FROM
@@ -51,9 +50,21 @@ WHERE
  2100000007, 905047, 905055, 765936) 
     """)
 
-DATE_SHIFT_QUERY = JINJA_ENV.from_string("""
+SANDBOX_COPE_SURVEY_SC_QUERY = JINJA_ENV.from_string("""
+CREATE OR REPLACE TABLE
+  `{{project_id}}.{{sandbox_dataset}}.{{intermediary_sc_table}}` AS
+SELECT
+  *
+FROM
+  `{{project_id}}.{{dataset_id}}.{{sc_table}}`
+WHERE
+  survey_source_concept_id IN (2100000002, 2100000003, 2100000004, 2100000005, 2100000006,
+ 2100000007, 905047, 905055, 765936) 
+    """)
+
+DATE_UNSHIFT_OBS_QUERY = JINJA_ENV.from_string("""
 WITH
-  cope_shift AS (
+  cope_unshift AS (
   SELECT
     observation_id,
     observation_date,
@@ -65,7 +76,7 @@ WITH
     SELECT
       observation_id
     FROM
-      `{{project_id}}.{{sandbox_dataset}}.{{intermediary_table}}`))
+      `{{project_id}}.{{sandbox_dataset}}.{{intermediary_obs_table}}`))
 SELECT
   ob.observation_id,
   ob.person_id,
@@ -93,12 +104,12 @@ SELECT
 FROM
   `{{project_id}}.{{dataset_id}}.{{observation_table}}` AS ob
 LEFT JOIN
-  cope_shift AS cs
+  cope_unshift AS cs
 USING
   (observation_id)""")
 
 
-class DateShiftCopeResponses(BaseCleaningRule):
+class DateUnShiftCopeResponses(BaseCleaningRule):
     """
     Reverse Date Shift for COPE Responses...
     """
@@ -154,7 +165,7 @@ class DateShiftCopeResponses(BaseCleaningRule):
         :return:
         """
         sandbox_query = dict()
-        sandbox_query[cdr_consts.QUERY] = SANDBOX_COPE_SURVEY_QUERY.render(
+        sandbox_query[cdr_consts.QUERY] = SANDBOX_COPE_SURVEY_OBS_QUERY.render(
             project_id=self.project_id,
             sandbox_dataset=self.sandbox_dataset_id,
             intermediary_table=self.get_sandbox_tablenames()[0],
@@ -163,7 +174,7 @@ class DateShiftCopeResponses(BaseCleaningRule):
             observation_ext_table=OBSERVATION_EXT)
 
         update_query = dict()
-        update_query[cdr_consts.QUERY] = DATE_SHIFT_QUERY.render(
+        update_query[cdr_consts.QUERY] = DATE_UNSHIFT_OBS_QUERY.render(
             project_id=self.project_id,
             pre_deid_dataset=self.get_combined_dataset_from_deid_dataset(
                 self.dataset_id),
@@ -203,11 +214,11 @@ if __name__ == '__main__':
         query_list = clean_engine.get_query_list(ARGS.project_id,
                                                  ARGS.dataset_id,
                                                  ARGS.sandbox_dataset_id,
-                                                 [(DateShiftCopeResponses,)])
+                                                 [(DateUnShiftCopeResponses,)])
         for query in query_list:
             LOGGER.info(query)
     else:
         clean_engine.add_console_logging(ARGS.console_log)
         clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
                                    ARGS.sandbox_dataset_id,
-                                   [(DateShiftCopeResponses,)])
+                                   [(DateUnShiftCopeResponses,)])
