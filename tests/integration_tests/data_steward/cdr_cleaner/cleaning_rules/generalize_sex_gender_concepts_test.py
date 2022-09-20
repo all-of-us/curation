@@ -130,8 +130,8 @@ class GeneralizeSexGenderConceptsTest(BaseTest.CleaningRulesTestBase):
 
     def test_field_cleaning(self):
         """
-        person_id = 1 and observation_concept_id = 1585838 is sandboxed
-        person_id = 3 and observation_concept_id = 1585838 is sandboxed
+        person_id = 1 with observation_concept_id = 1585838 is sandboxed
+        person_id = 3 with observation_concept_id = 1585838 is sandboxed
         """
 
         # Expected results list
