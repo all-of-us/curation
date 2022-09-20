@@ -1,10 +1,10 @@
 # Python imports
 import unittest
 
+# Project imports
 from cdr_cleaner.cleaning_rules.date_unshift_cope_responses import (
     DateUnShiftCopeResponses, SANDBOX_COPE_SURVEY_OBS_QUERY, DATE_UNSHIFT_OBS_QUERY,
     OBSERVATION_EXT, OBSERVATION)
-# Project imports
 from constants.bq_utils import WRITE_TRUNCATE
 from constants.cdr_cleaner import clean_cdr as clean_consts
 
