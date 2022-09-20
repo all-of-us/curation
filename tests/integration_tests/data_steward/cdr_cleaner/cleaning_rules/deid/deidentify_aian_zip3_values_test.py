@@ -29,7 +29,7 @@ class DeidentifyAIANZip3ValuesTest(BaseTest.CleaningRulesTestBase):
 
         # Set the expected test datasets
         cls.dataset_id = os.environ.get('COMBINED_DATASET_ID')
-        cls.sandbox_id = cls.dataset_id + '_sandbox'
+        cls.sandbox_id = f'{cls.dataset_id}_sandbox'
 
         cls.rule_instance = DeidentifyAIANZip3Values(cls.project_id,
                                                      cls.dataset_id,
@@ -67,7 +67,7 @@ class DeidentifyAIANZip3ValuesTest(BaseTest.CleaningRulesTestBase):
                 value_source_concept_id
             )
             VALUES
-              -- First oarticipant to be identified as AIAN as --
+              -- First participant to be identified as AIAN as --
               -- observation_source_concept_id =1586140 and value_source_concept_id = 1586141 -- 
               (1, 1, 0, 0, '2020-01-01', '', 0, 1586140, 1586141),
               -- Second participant doesnot identifies as AIAN as --

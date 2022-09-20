@@ -27,6 +27,7 @@ FROM
   `{{project}}.{{dataset}}.observation`
 WHERE
   person_id IN (
+  -- Query to identify AI/AN participants --
   SELECT
     person_id
   FROM
@@ -34,6 +35,7 @@ WHERE
   WHERE
     observation_source_concept_id = 1586140
     AND value_source_concept_id = 1586141)
+    -- Filter to identify State and zip records for AI/AN participants --
   AND observation_source_concept_id IN (1585250,
     1585249)
 )
@@ -61,10 +63,7 @@ WHERE
   SELECT
     person_id
   FROM
-    `{{project}}.{{dataset}}.observation` o
-  WHERE
-    observation_source_concept_id = 1586140
-    AND value_source_concept_id = 1586141)
+    `{{project_id}}.{{sandbox_id}}.{{sandbox_table}}`)
   AND observation_source_concept_id IN (1585250,
     1585249)
 """)
@@ -121,7 +120,10 @@ class DeidentifyAIANZip3Values(BaseCleaningRule):
         deidentification_query = dict()
         deidentification_query[
             cdr_consts.QUERY] = DEIDENTIFY_AIAN_ZIP3_VALUES_QUERY.render(
-                project=self.project_id, dataset=self.dataset_id)
+                project=self.project_id,
+                dataset=self.dataset_id,
+                sandbox_id=self.sandbox_dataset_id,
+                sandbox_table=self.sandbox_table_for(OBSERVATION))
 
         return [sandbox_query, deidentification_query]
 
