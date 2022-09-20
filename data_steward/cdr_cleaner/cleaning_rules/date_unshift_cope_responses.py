@@ -5,7 +5,7 @@ The COPE survey is longitudinal (administered monthly), so researchers will need
 monthly iteration data is associated. Although there is a long-term plan to allow for survey versioning,
 this is anticipated to provide a short-term solution to support inclusion of COPE data in the CDR.
 
-The Date shift is applied on the cope survey responses by following steps:
+The Date unshift is applied on the cope survey responses by following steps:
 
 1)lookup table with all the COPE survey module descendants were generated using the concept_relationship table.
 
@@ -14,7 +14,7 @@ The Date shift is applied on the cope survey responses by following steps:
 
 3) Then Left joined this CTE temp table to the observation table post_deid using the observation_id.
 
-4) Using the Left join used coalesce function to get the date_shifted observation_date and observation_datetime for the
+4) Using the Left join used coalesce function to get the date_unshifted observation_date and observation_datetime for
  cope survey responses.
 
 Original Issue: DC-938
