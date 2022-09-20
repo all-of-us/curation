@@ -1,3 +1,9 @@
+"""
+Generalizes sex/gender concepts
+
+Original Issues: DC-526, DC-838
+"""
+
 #Python imports
 import logging
 
@@ -11,7 +17,7 @@ from common import JINJA_ENV, OBSERVATION
 
 LOGGER = logging.getLogger(__name__)
 
-ISSUE_NUMBERS = ['DC838']
+ISSUE_NUMBERS = ['DC526', 'DC838']
 
 GENERALIZE_GENDER_CONCEPT_ID = 2000000002
 WOMAN_CONCEPT_ID = 1585840
@@ -28,7 +34,7 @@ INSERT INTO
   FROM
     `{{project_id}}.{{dataset_id}}.observation`
   WHERE
-    observation_source_concept_id = 1585838 -- the concept for gender identity
+    observation_source_concept_id = 1585838
   AND 
       value_source_concept_id = {{gender_value_source_concept_id}}
   AND person_id IN 
@@ -38,7 +44,7 @@ INSERT INTO
     FROM
       `{{project_id}}.{{dataset_id}}.observation`
     WHERE
-      observation_source_concept_id = 1585845 -- the concept for biological sex at birth
+      observation_source_concept_id = 1585845
     AND 
         value_source_concept_id = {{biological_sex_birth_concept_id}}
   )
@@ -52,7 +58,7 @@ SET
   value_as_concept_id = {{generalized_gender_concept_id}},
   value_source_concept_id = {{generalized_gender_concept_id}}
 WHERE
-  observation_source_concept_id = 1585838 -- the concept for gender identity
+  observation_source_concept_id = 1585838
   AND value_source_concept_id = {{gender_value_source_concept_id}}
   AND person_id IN 
   (
@@ -61,7 +67,7 @@ WHERE
     FROM
       `{{project_id}}.{{dataset_id}}.observation`
     WHERE
-      observation_source_concept_id = 1585845 -- the concept for biological sex at birth
+      observation_source_concept_id = 1585845
         AND value_source_concept_id = {{biological_sex_birth_concept_id}}
   )
 """)
@@ -113,7 +119,7 @@ class GeneralizeSexGenderConcepts(BaseCleaningRule):
 
         sandbox_woman_to_generalized_concept_id = {
             cdr_consts.QUERY:
-                NEW_GENERALIZED_CONCEPT_ID_QUERY_TEMPLATE.render(
+                SANDBOX_CONCEPT_ID_QUERY_TEMPLATE.render(
                     project_id=self.project_id,
                     dataset_id=self.dataset_id,
                     sandbox_dataset=self.sandbox_dataset_id,
@@ -125,7 +131,7 @@ class GeneralizeSexGenderConcepts(BaseCleaningRule):
 
         sandbox_man_to_generalized_concept_id = {
             cdr_consts.QUERY:
-                NEW_GENERALIZED_CONCEPT_ID_QUERY_TEMPLATE.render(
+                SANDBOX_CONCEPT_ID_QUERY_TEMPLATE.render(
                     project_id=self.project_id,
                     dataset_id=self.dataset_id,
                     sandbox_dataset=self.sandbox_dataset_id,
