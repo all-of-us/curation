@@ -1,7 +1,7 @@
 # Python imports
 import unittest
 
-from cdr_cleaner.cleaning_rules.date_shift_cope_responses import (
+from cdr_cleaner.cleaning_rules.date_unshift_cope_responses import (
     DateShiftCopeResponses, SANDBOX_COPE_SURVEY_QUERY, DATE_SHIFT_QUERY,
     OBSERVATION_EXT, OBSERVATION)
 # Project imports
