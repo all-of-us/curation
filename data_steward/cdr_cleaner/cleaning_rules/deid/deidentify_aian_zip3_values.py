@@ -12,6 +12,7 @@ import logging
 
 # Project imports
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
+from cdr_cleaner.cleaning_rules.aggregate_zip_codes import AggregateZipCodes
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from common import JINJA_ENV, OBSERVATION
 from utils import pipeline_logging
@@ -88,6 +89,7 @@ class DeidentifyAIANZip3Values(BaseCleaningRule):
                          description=desc,
                          affected_datasets=[cdr_consts.CONTROLLED_TIER_DEID],
                          affected_tables=[OBSERVATION],
+                         depends_on=[AggregateZipCodes],
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
