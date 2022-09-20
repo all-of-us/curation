@@ -35,36 +35,14 @@ CREATE OR REPLACE TABLE
 """)
 
 UPDATE_QUERY = JINJA_ENV.from_string("""
-CREATE OR REPLACE TABLE
-  `{{project}}.{{dataset}}.measurement` AS (
-SELECT
-  measurement_id,
-  person_id,
-  measurement_concept_id,
-  measurement_date,
-  measurement_datetime,
-  measurement_time,
-  measurement_type_concept_id,
-  operator_concept_id,
-  value_as_number,
-  COALESCE(lm.aou_standard_vac, m.value_as_concept_id) AS value_as_concept_id,
-  unit_concept_id,
-  range_low,
-  range_high,
-  provider_id,
-  visit_occurrence_id,
-  visit_detail_id,
-  measurement_source_value,
-  measurement_source_concept_id,
-  unit_source_value,
-  value_source_value
-FROM
+UPDATE
   `{{project}}.{{dataset}}.measurement` m
-LEFT JOIN
+SET
+  value_as_concept_id = lm.aou_standard_vac
+FROM
   `{{project}}.{{sandbox_dataset}}.{{identical_labs_table}}` lm
-ON
+WHERE
   m.value_as_concept_id = lm.value_as_concept_id
-)
 """)
 
 
