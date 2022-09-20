@@ -29,6 +29,7 @@ pd.options.display.max_rows = 120
 project_id = ""
 com_cdr = ""
 deid_cdr = ""
+deid_questionnaire_response_map_dataset = ""
 pipeline=""
 run_as = ""
 # -
@@ -335,7 +336,35 @@ else:
 df1
 # -
 
-# # 13 DS_13 Verify the date shift has been implemented following the date shift noted in the deid_map table in the non-deid dataset.
+# # 13 DS_13 Verify that the field identified to follow the date shift rule as de-identification action in SURVEY_CONDUCT table have been randomly date shifted.
+
+# +
+query = f'''
+WITH df1 AS (
+SELECT
+DATE_DIFF(DATE(i.survey_start_date), DATE(d.survey_start_date),day)-m.shift as diff
+FROM `{project_id}.{pipeline}.pid_rid_mapping` m
+JOIN `{project_id}.{com_cdr}.survey_conduct` i
+ON m.person_id = i.person_id
+JOIN `{project_id}.{deid_cdr}.survey_conduct` d
+ON d.survey_conduct_id = i.survey_conduct_id
+  )
+SELECT COUNT(*) AS n_row_not_pass FROM df1
+WHERE diff !=0
+  
+'''
+df1=execute(client, query)
+
+if df1.eq(0).any().any():
+ df = df.append({'query' : 'Query13 Survey Conduct', 'result' : 'PASS'},  
+                ignore_index = True) 
+else:
+ df = df.append({'query' : 'Query13 Survey Conduct', 'result' : ''},  
+                ignore_index = True) 
+df1
+# -
+
+# # 14 DS_14 Verify the date shift has been implemented following the date shift noted in the deid_map table in the non-deid dataset.
 
 query = f'''
 SELECT COUNT (*) AS n_row_not_pass
@@ -345,14 +374,14 @@ WHERE shift <=0
 '''
 df1=execute(client, query)
 if df1.eq(0).any().any():
- df = df.append({'query' : 'Query13 date shifted in non_deid', 'result' : 'PASS'},  
+ df = df.append({'query' : 'Query14 date shifted in non_deid', 'result' : 'PASS'},  
                 ignore_index = True) 
 else:
- df = df.append({'query' : 'Query13 date shifited in non_deid', 'result' : ''},  
+ df = df.append({'query' : 'Query14 date shifited in non_deid', 'result' : ''},  
                 ignore_index = True) 
 df1
 
-# # 14 DS_14 Verify that  person_id has been replaced by research_id
+# # 15 DS_15 Verify that  person_id has been replaced by research_id
 #
 #
 # checked total 8 tables including  specimen etc tables in deid. However will be hard to check person or death tables without row_id.
@@ -428,7 +457,15 @@ JOIN `{project_id}.{pipeline}.pid_rid_mapping` m
 ON m.person_id=non_deid.person_id
 JOIN `{project_id}.{deid_cdr}.specimen` deid USING(specimen_id)
 WHERE deid.person_id !=m.research_id
-)
+),
+
+df9 AS (
+SELECT COUNT (*) AS n_row_not_pass
+FROM  `{project_id}.{com_cdr}.survey_conduct` non_deid
+JOIN `{project_id}.{pipeline}.pid_rid_mapping` m
+ON m.person_id=non_deid.person_id
+JOIN `{project_id}.{deid_cdr}.survey_conduct` deid USING(survey_conduct_id)
+WHERE deid.person_id !=m.research_id
 
 
 SELECT * FROM df1
@@ -439,16 +476,61 @@ JOIN df5 USING(n_row_not_pass)
 JOIN df6 USING(n_row_not_pass)
 JOIN df7 USING(n_row_not_pass)
 JOIN df8 USING(n_row_not_pass)
+JOIN df9 USING(n_row_not_pass)
 
 
 
 '''
 df1=execute(client, query)
 if df1.eq(0).any().any():
- df = df.append({'query' : 'Query14.3 person_id replaed by research_id in other 8 tables', 'result' : 'PASS'},  
+ df = df.append({'query' : 'Query15.3 person_id replaed by research_id in other 9 tables', 'result' : 'PASS'},  
                 ignore_index = True) 
 else:
- df = df.append({'query' : 'Query14.3 person_id replaed by research_id in other 8 tables', 'result' : ''},  
+ df = df.append({'query' : 'Query15.3 person_id replaed by research_id in other 9 tables', 'result' : ''},  
+                ignore_index = True) 
+df1
+
+# # 16 Verify that  questionnaire_response_id/survey_conduct_id has been replaced by research_response_id
+
+query = f'''
+WITH df1 AS (
+SELECT COUNT (*) AS n_row_not_pass
+FROM  `{project_id}.{com_cdr}.survey_conduct` non_deid
+JOIN `{project_id}.{deid_questionnaire_response_map_dataset}._deid_questionnaire_response_map` m
+ON m.questionnaire_response_id=non_deid.survey_conduct_id
+JOIN `{project_id}.{deid_cdr}.survey_conduct` deid USING(survey_conduct_id)
+WHERE deid.survey_conduct_id != m.research_response_id
+),
+
+df2 AS (
+SELECT COUNT (*) AS n_row_not_pass
+FROM  `{project_id}.{com_cdr}.survey_conduct` non_deid
+JOIN `{project_id}.{deid_questionnaire_response_map_dataset}._deid_questionnaire_response_map` m
+ON m.questionnaire_response_id=non_deid.survey_conduct_id
+JOIN `{project_id}.{deid_cdr}.survey_conduct` deid USING(survey_conduct_id)
+WHERE deid.survey_source_identifier != m.research_response_id
+),
+df3 AS (
+SELECT COUNT (*) AS n_row_not_pass
+FROM  `{project_id}.{com_cdr}.observation` non_deid
+JOIN `{project_id}.{deid_questionnaire_response_map_dataset}._deid_questionnaire_response_map` m
+ON m.questionnaire_response_id=non_deid.questionnaire_response_id
+JOIN `{project_id}.{deid_cdr}.observation` deid USING(observation_id)
+WHERE deid.questionnaire_response_id != m.research_response_id
+)
+
+SELECT * FROM df1
+JOIN df2 USING(n_row_not_pass)
+JOIN df3 USING(n_row_not_pass)
+
+
+'''
+df1=execute(client, query)
+if df1.eq(0).any().any():
+ df = df.append({'query' : 'Query16 questionnaire_response_id/survey_conduct_id/survey_source_identifier replaced by research_response_id', 'result' : 'PASS'},  
+                ignore_index = True) 
+else:
+ df = df.append({'query' : 'Query16 questionnaire_response_id/survey_conduct_id/survey_source_identifier replaced by research_response_id', 'result' : ''},  
                 ignore_index = True) 
 df1
 
