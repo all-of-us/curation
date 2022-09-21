@@ -24,10 +24,9 @@ Original Issue: DC-938
 import logging
 
 # Project Imports
-import constants.bq_utils as bq_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.cdr_cleaner import clean_cdr as cdr_consts
-from common import JINJA_ENV, OBSERVATION
+from common import JINJA_ENV, OBSERVATION, SURVEY_CONDUCT
 from cdr_cleaner.manual_cleaning_rules.survey_version_info import COPESurveyVersionTask
 
 LOGGER = logging.getLogger(__name__)
@@ -35,131 +34,46 @@ LOGGER = logging.getLogger(__name__)
 OBSERVATION_EXT = f'{OBSERVATION}_ext'
 
 SANDBOX_COPE_SURVEY_OBS_QUERY = JINJA_ENV.from_string("""
-CREATE OR REPLACE TABLE
-  `{{project_id}}.{{sandbox_dataset}}.{{intermediary_obs_table}}` AS
-SELECT
-  *
-FROM
-  `{{project_id}}.{{dataset_id}}.{{observation_table}}`
-INNER JOIN
-  `{{project_id}}.{{dataset_id}}.{{observation_ext_table}}`
-USING
-  (observation_id)
-WHERE
-  survey_version_concept_id IN (2100000002, 2100000003, 2100000004, 2100000005, 2100000006,
- 2100000007, 905047, 905055, 765936) 
-    """)
+CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset}}.{{intermediary_obs_table}}` AS
+SELECT *
+FROM `{{project_id}}.{{dataset_id}}.{{observation_table}}`
+INNER JOIN `{{project_id}}.{{dataset_id}}.{{observation_ext_table}}`
+USING (observation_id)
+WHERE survey_version_concept_id IN (2100000002, 2100000003, 2100000004, 2100000005, 2100000006,
+  2100000007, 905047, 905055, 765936) 
+""")
 
 SANDBOX_COPE_SURVEY_SC_QUERY = JINJA_ENV.from_string("""
-CREATE OR REPLACE TABLE
-  `{{project_id}}.{{sandbox_dataset}}.{{intermediary_sc_table}}` AS
-SELECT
-  *
-FROM
-  `{{project_id}}.{{dataset_id}}.{{sc_table}}`
-WHERE
-  survey_source_concept_id IN (2100000002, 2100000003, 2100000004, 2100000005, 2100000006,
- 2100000007, 905047, 905055, 765936) 
-    """)
+CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset}}.{{intermediary_sc_table}}` AS
+SELECT *
+FROM `{{project_id}}.{{dataset_id}}.{{sc_table}}`
+WHERE survey_source_concept_id IN (2100000002, 2100000003, 2100000004, 2100000005, 2100000006,
+  2100000007, 905047, 905055, 765936) 
+""")
 
 DATE_UNSHIFT_OBS_QUERY = JINJA_ENV.from_string("""
-WITH
-  cope_unshift AS (
-  SELECT
-    observation_id,
-    observation_date,
-    observation_datetime,
-  FROM
-    `{{project_id}}.{{pre_deid_dataset}}.{{observation_table}}`
-   WHERE
-    observation_id IN (
-    SELECT
-      observation_id
-    FROM
-      `{{project_id}}.{{sandbox_dataset}}.{{intermediary_obs_table}}`))
-SELECT
-  ob.observation_id,
-  ob.person_id,
-  ob.observation_concept_id,
-  coalesce(cs.observation_date,
-    ob.observation_date) AS observation_date,
-  coalesce(cs.observation_datetime,
-    ob.observation_datetime) AS observation_datetime,
-  ob.observation_type_concept_id,
-  ob.value_as_number,
-  ob.value_as_string,
-  ob.value_as_concept_id,
-  ob.qualifier_concept_id,
-  ob.unit_concept_id,
-  ob.provider_id,
-  ob.visit_occurrence_id,
-  ob.visit_detail_id,
-  ob.observation_source_value,
-  ob.observation_source_concept_id,
-  ob.unit_source_value,
-  ob.qualifier_source_value,
-  ob.value_source_concept_id,
-  ob.value_source_value,
-  ob.questionnaire_response_id
-FROM
-  `{{project_id}}.{{dataset_id}}.{{observation_table}}` AS ob
-LEFT JOIN
-  cope_unshift AS cs
-USING
-  (observation_id)""")
+UPDATE `{{project_id}}.{{dataset_id}}.{{observation_table}}` ob
+SET observation_date = coalesce(po.observation_date, ob.observation_date),
+    observation_datetime = coalesce(po.observation_datetime, ob.observation_datetime)
+FROM `{{project_id}}.{{pre_deid_dataset}}.{{observation_table}}` po
+WHERE ob.observation_id = po.observation_id
+AND ob.observation_id IN (
+    SELECT observation_id
+    FROM `{{project_id}}.{{sandbox_dataset}}.{{intermediary_obs_table}}`)
+""")
 
 DATE_UNSHIFT_SC_QUERY = JINJA_ENV.from_string("""
-WITH
-  cope_unshift AS (
-  SELECT
-    survey_conduct_id,
-    survey_start_date,
-    survey_start_datetime,
-    survey_end_date,
-    survey_end_datetime
-  FROM
-    `{{project_id}}.{{pre_deid_dataset}}.{{survey_conduct_table}}`
-   WHERE
-    survey_conduct_id IN (
-    SELECT
-      survey_conduct_id
-    FROM
-      `{{project_id}}.{{sandbox_dataset}}.{{intermediary_sc_table}}`))
-SELECT
-  sc.survey_conduct_id,
-  sc.person_id,
-  sc.survey_concept_id,
-  coalesce(cs.survey_start_date,
-    sc.survey_start_date) AS survey_start_date,
-  coalesce(cs.survey_start_datetime,
-    sc.survey_start_datetime) AS survey_start_datetime,
-  coalesce(cs.survey_end_date,
-    sc.survey_end_date) AS survey_end_date,
-  coalesce(cs.survey_end_datetime,
-    sc.survey_end_datetime) AS survey_end_datetime,
-  sc.provider_id,
-  sc.assisted_concept_id,
-  sc.respondent_type_concept_id,
-  sc.timing_concept_id,
-  sc.collection_method_concept_id,
-  sc.assisted_source_value,
-  sc.respondent_type_source_value,
-  sc.timing_source_value,
-  sc.collection_method_source_value,
-  sc.survey_source_value,
-  sc.survey_source_concept_id,
-  sc.survey_source_identifier,
-  sc.validated_survey_concept_id,
-  sc.validated_survey_source_value,
-  sc.survey_version_number,
-  sc.visit_occurrence_id,
-  sc.response_visit_occurrence_id
-FROM
-  `{{project_id}}.{{dataset_id}}.{{survey_conduct_table}}` AS sc
-LEFT JOIN
-  cope_unshift AS cs
-USING
-  (survey_conduct_id)""")
+UPDATE `{{project_id}}.{{dataset_id}}.{{survey_conduct_table}}` sc
+SET survey_start_date = coalesce(psc.survey_start_date, sc.survey_start_date),
+    survey_start_datetime = coalesce(psc.survey_start_datetime, sc.survey_start_datetime),
+    survey_end_date = coalesce(psc.survey_end_date, sc.survey_end_date),
+    survey_end_datetime = coalesce(psc.survey_end_datetime, sc.survey_end_datetime)
+FROM `{{project_id}}.{{pre_deid_dataset}}.{{survey_conduct_table}}` psc
+WHERE sc.survey_conduct_id = psc.survey_conduct_id
+AND survey_conduct_id IN (
+    SELECT survey_conduct_id
+    FROM `{{project_id}}.{{sandbox_dataset}}.{{intermediary_sc_table}}`)
+""")
 
 
 class DateUnShiftCopeResponses(BaseCleaningRule):
@@ -181,10 +95,10 @@ class DateUnShiftCopeResponses(BaseCleaningRule):
         """
         desc = 'Reverse Date Shift for COPE Responses'
         super().__init__(
-            issue_numbers=['DC938', 'DC982', 'DC970', 'DC2438'],
+            issue_numbers=['DC938', 'DC982', 'DC970', 'DC2438', 'DC2717'],
             description=desc,
             affected_datasets=[cdr_consts.REGISTERED_TIER_DEID_BASE],
-            affected_tables=[OBSERVATION],
+            affected_tables=[OBSERVATION, SURVEY_CONDUCT],
             project_id=project_id,
             dataset_id=dataset_id,
             sandbox_dataset_id=sandbox_dataset_id,
@@ -217,28 +131,41 @@ class DateUnShiftCopeResponses(BaseCleaningRule):
         """
         :return:
         """
-        sandbox_query = dict()
-        sandbox_query[cdr_consts.QUERY] = SANDBOX_COPE_SURVEY_OBS_QUERY.render(
+        sandbox_query_obs = dict()
+        sandbox_query_obs[cdr_consts.QUERY] = SANDBOX_COPE_SURVEY_OBS_QUERY.render(
             project_id=self.project_id,
             sandbox_dataset=self.sandbox_dataset_id,
-            intermediary_table=self.get_sandbox_tablenames()[0],
+            intermediary_table=self.sandbox_table_for(OBSERVATION),
             dataset_id=self.dataset_id,
             observation_table=OBSERVATION,
             observation_ext_table=OBSERVATION_EXT)
+        sandbox_query_sc = dict()
+        sandbox_query_sc[cdr_consts.QUERY] = SANDBOX_COPE_SURVEY_SC_QUERY.render(
+            project_id=self.project_id,
+            sandbox_dataset=self.sandbox_dataset_id,
+            intermediary_table=self.sandbox_table_for(SURVEY_CONDUCT),
+            dataset_id=self.dataset_id,
+            sc_table=SURVEY_CONDUCT)
 
-        update_query = dict()
-        update_query[cdr_consts.QUERY] = DATE_UNSHIFT_OBS_QUERY.render(
+        update_query_obs = dict()
+        update_query_obs[cdr_consts.QUERY] = DATE_UNSHIFT_OBS_QUERY.render(
             project_id=self.project_id,
             pre_deid_dataset=self.get_combined_dataset_from_deid_dataset(
                 self.dataset_id),
             dataset_id=self.dataset_id,
             sandbox_dataset=self.sandbox_dataset_id,
-            intermediary_table=self.get_sandbox_tablenames()[0],
+            intermediary_table=self.sandbox_table_for(OBSERVATION),
             observation_table=OBSERVATION)
-        update_query[cdr_consts.DESTINATION_TABLE] = OBSERVATION
-        update_query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
-        update_query[cdr_consts.DESTINATION_DATASET] = self.dataset_id
-        return [sandbox_query, update_query]
+        update_query_sc = dict()
+        update_query_sc[cdr_consts.QUERY] = DATE_UNSHIFT_SC_QUERY.render(
+            project_id=self.project_id,
+            pre_deid_dataset=self.get_combined_dataset_from_deid_dataset(
+                self.dataset_id),
+            dataset_id=self.dataset_id,
+            sandbox_dataset=self.sandbox_dataset_id,
+            intermediary_table=self.sandbox_table_for(SURVEY_CONDUCT),
+            observation_table=SURVEY_CONDUCT)
+        return [sandbox_query_obs, sandbox_query_sc, update_query_obs]
 
     def setup_validation(self, client):
         """
