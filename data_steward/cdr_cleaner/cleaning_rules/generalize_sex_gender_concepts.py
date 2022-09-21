@@ -90,7 +90,7 @@ class GeneralizeSexGenderConcepts(BaseCleaningRule):
         desc = ('Rule to add generalizations for gender/sex mismatch')
         super().__init__(issue_numbers=ISSUE_NUMBERS,
                          description=desc,
-                         affected_datasets=[cdr_consts.FITBIT],
+                         affected_datasets=[cdr_consts.REGISTERED_TIER_DEID],
                          affected_tables=[OBSERVATION],
                          project_id=project_id,
                          dataset_id=dataset_id,
