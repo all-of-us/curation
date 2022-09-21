@@ -113,8 +113,10 @@ WITH
   cope_unshift AS (
   SELECT
     survey_conduct_id,
-    survey_conduct_date,
-    survey_conduct_datetime,
+    survey_start_date,
+    survey_start_datetime,
+    survey_end_date,
+    survey_end_datetime
   FROM
     `{{project_id}}.{{pre_deid_dataset}}.{{survey_conduct_table}}`
    WHERE
@@ -126,11 +128,32 @@ WITH
 SELECT
   sc.survey_conduct_id,
   sc.person_id,
-  sc.survey_conduct_concept_id,
-  coalesce(cs.observation_date,
-    sc.survey_conduct_date) AS survey_conduct_date,
-  coalesce(cs.survey_conduct_datetime,
-    sc.survey_conduct_datetime) AS survey_conduct_datetime,
+  sc.survey_concept_id,
+  coalesce(cs.survey_start_date,
+    sc.survey_start_date) AS survey_start_date,
+  coalesce(cs.survey_start_datetime,
+    sc.survey_start_datetime) AS survey_start_datetime,
+  coalesce(cs.survey_end_date,
+    sc.survey_end_date) AS survey_end_date,
+  coalesce(cs.survey_end_datetime,
+    sc.survey_end_datetime) AS survey_end_datetime,
+  sc.provider_id,
+  sc.assisted_concept_id,
+  sc.respondent_type_concept_id,
+  sc.timing_concept_id,
+  sc.collection_method_concept_id,
+  sc.assisted_source_value,
+  sc.respondent_type_source_value,
+  sc.timing_source_value,
+  sc.collection_method_source_value,
+  sc.survey_source_value,
+  sc.survey_source_concept_id,
+  sc.survey_source_identifier,
+  sc.validated_survey_concept_id,
+  sc.validated_survey_source_value,
+  sc.survey_version_number,
+  sc.visit_occurrence_id,
+  sc.response_visit_occurrence_id
 FROM
   `{{project_id}}.{{dataset_id}}.{{survey_conduct_table}}` AS sc
 LEFT JOIN
