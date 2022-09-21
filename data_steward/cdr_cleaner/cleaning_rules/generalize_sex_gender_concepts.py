@@ -1,6 +1,16 @@
 """
 Generalizes sex/gender concepts
 
+For the following conditions ONLY, generalizes gender as described below:
+1. Male sex at birth AND female gender
+    a. Male sex: observation_source_concept_id = 1585845 with value_source_concept_id = 1585846
+    b. Female gender: observation_source_concept_id = 1585838 with value_source_concept_id = 1585840
+    c. In these conditions, sets value_source_concept_id for gender (observation_source_concept_id = 1585838  ) to 2000000002
+2. Female sex at birth AND male gender
+    a. Female sex: observation_source_concept_id = 1585845 with value_source_concept_id = 1585847
+    b. Male gender: observation_source_concept_id = 1585838 with value_source_concept_id = 1585839
+    c. In these conditions, set value_source_concept_id for gender (observation_source_concept_id = 1585838  ) to 2000000002
+
 Original Issues: DC-526, DC-838
 """
 
