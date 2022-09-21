@@ -556,25 +556,33 @@ df1.T
 #
 # DC-2606
 #
-# Queries the sandbox table for the corresponding cleaning rule (created in DC-2605) and outputs any records that are being dropped due to invalid level values. It also outputs any records in the sleep_level table that should have been dropped but were not.
+# Queries the sandbox table for the corresponding cleaning rule (created in DC-2605) and outputs any records that
+# are being dropped due to invalid level values. It also outputs any records in the sleep_level table that should
+# have been dropped but were not.
 
 query = f'''
 
 WITH df1 AS (
-SELECT 
-*, 'dropped' AS dropped_status
-FROM 
-`{project_id}.{fitbit_sandbox_dataset}.{sleep_level_sandbox_table}`),
+  SELECT 
+    level, 'dropped' AS dropped_status, count(*) as n_violations
+  FROM 
+    `{project_id}.{fitbit_sandbox_dataset}.{sleep_level_sandbox_table}`
+  GROUP BY 1, 2
+  ORDER BY n_violations
+),
 
 df2 AS (
-SELECT 
-*,'not dropped' AS dropped_status
-FROM 
-`{project_id}.{fitbit_dataset}.sleep_level`
-WHERE 
-(
-    LOWER(level) NOT IN 
-         ('awake','light','asleep','deep','restless','wake','rem','unknown') OR level IS NULL))
+  SELECT 
+    level, 'not dropped' AS dropped_status, count(*) as n_violations
+  FROM 
+    `{project_id}.{fitbit_dataset}.sleep_level`
+  WHERE 
+  (
+      LOWER(level) NOT IN 
+          ('awake','light','asleep','deep','restless','wake','rem','unknown') OR level IS NULL
+  )
+  GROUP BY 1, 2
+)
 
 select *
 from df1
