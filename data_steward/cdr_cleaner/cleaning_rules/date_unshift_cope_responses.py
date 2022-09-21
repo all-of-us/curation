@@ -108,6 +108,36 @@ LEFT JOIN
 USING
   (observation_id)""")
 
+DATE_UNSHIFT_SC_QUERY = JINJA_ENV.from_string("""
+WITH
+  cope_unshift AS (
+  SELECT
+    survey_conduct_id,
+    survey_conduct_date,
+    survey_conduct_datetime,
+  FROM
+    `{{project_id}}.{{pre_deid_dataset}}.{{survey_conduct_table}}`
+   WHERE
+    survey_conduct_id IN (
+    SELECT
+      survey_conduct_id
+    FROM
+      `{{project_id}}.{{sandbox_dataset}}.{{intermediary_sc_table}}`))
+SELECT
+  sc.survey_conduct_id,
+  sc.person_id,
+  sc.survey_conduct_concept_id,
+  coalesce(cs.observation_date,
+    sc.survey_conduct_date) AS survey_conduct_date,
+  coalesce(cs.survey_conduct_datetime,
+    sc.survey_conduct_datetime) AS survey_conduct_datetime,
+FROM
+  `{{project_id}}.{{dataset_id}}.{{survey_conduct_table}}` AS sc
+LEFT JOIN
+  cope_unshift AS cs
+USING
+  (survey_conduct_id)""")
+
 
 class DateUnShiftCopeResponses(BaseCleaningRule):
     """
