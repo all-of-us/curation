@@ -121,6 +121,7 @@ from cdr_cleaner.cleaning_rules.deid.ct_replaced_concept_suppression import \
     ControlledTierReplacedConceptSuppression
 from cdr_cleaner.cleaning_rules.dedup_measurement_value_as_concept_id import DedupMeasurementValueAsConceptId
 from cdr_cleaner.cleaning_rules.drop_orphaned_pids import DropOrphanedPIDS
+from cdr_cleaner.cleaning_rules.deid.deidentify_aian_zip3_values import DeidentifyAIANZip3Values
 from constants.cdr_cleaner import clean_cdr_engine as ce_consts
 from constants.cdr_cleaner.clean_cdr import DataStage
 
@@ -330,6 +331,7 @@ CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     (SectionParticipationConceptSuppression,),
     (StringFieldsSuppression,),
     (AggregateZipCodes,),
+    (DeidentifyAIANZip3Values,),
     (DropOrphanedPIDS,),
     (RemoveExtraTables,),  # Should be last cleaning rule to be run
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
