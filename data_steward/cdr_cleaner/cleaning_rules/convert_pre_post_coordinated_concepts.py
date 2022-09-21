@@ -169,7 +169,8 @@ class ConvertPrePostCoordinatedConcepts(BaseCleaningRule):
                              SetConceptIdsForSurveyQuestionsAnswers,
                              UpdateFamilyHistoryCodes
                          ],
-                         table_namer=table_namer)
+                         table_namer=table_namer,
+                         run_for_synthetic=True)
 
     def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
         """

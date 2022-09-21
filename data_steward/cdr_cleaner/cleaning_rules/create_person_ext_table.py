@@ -99,7 +99,8 @@ class CreatePersonExtTable(BaseCleaningRule):
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
-                         table_namer=table_namer)
+                         table_namer=table_namer,
+                         run_for_synthetic=True)
 
     def get_query_specs(self):
         """

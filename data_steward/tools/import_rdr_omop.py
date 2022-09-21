@@ -250,6 +250,8 @@ def main(raw_args=None):
     create_rdr_tables(bq_client, new_dataset_name, args.bucket, with_src_id)
     copy_vocab_tables(bq_client, new_dataset_name, args.vocabulary)
 
+    return dataset_object
+
 
 if __name__ == '__main__':
     main()

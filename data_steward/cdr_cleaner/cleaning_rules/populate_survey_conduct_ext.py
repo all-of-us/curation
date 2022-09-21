@@ -55,7 +55,8 @@ class PopulateSurveyConductExt(BaseCleaningRule):
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
                          depends_on=[GenerateExtTables, COPESurveyVersionTask],
-                         table_namer=table_namer)
+                         table_namer=table_namer,
+                         run_for_synthetic=True)
 
         if not clean_survey_dataset_id:
             raise RuntimeError("'clean_survey_dataset_id' must be set")

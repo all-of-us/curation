@@ -97,7 +97,8 @@ class QRIDtoRID(BaseCleaningRule):
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
                          depends_on=[GenerateExtTables],
-                         table_namer=table_namer)
+                         table_namer=table_namer,
+                         run_for_synthetic=True)
 
     def get_query_specs(self, *args, **keyword_args):
         """
