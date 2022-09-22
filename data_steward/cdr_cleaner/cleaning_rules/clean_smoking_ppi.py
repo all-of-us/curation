@@ -35,7 +35,7 @@ NEW_SMOKING_ROWS = 'new_smoking_rows'
 JIRA_ISSUE_NUMBERS = ['AC77', 'DC806']
 
 SANDBOX_CREATE_QUERY = JINJA_ENV.from_string("""
-CREATE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{new_smoking_rows}}`
+CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{new_smoking_rows}}`
 AS
 SELECT
     observation_id,

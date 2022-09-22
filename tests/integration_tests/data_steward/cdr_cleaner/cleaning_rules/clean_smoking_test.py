@@ -8,7 +8,8 @@ import os
 # Project imports
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.clean_smoking_ppi import (CleanSmokingPpi,
-                                                          SMOKING_LOOKUP_TABLE)
+                                                          SMOKING_LOOKUP_TABLE,
+                                                          NEW_SMOKING_ROWS)
 from common import JINJA_ENV, OBSERVATION
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
@@ -50,7 +51,6 @@ class CleanSmokingPpiTest(BaseTest.CleaningRulesTestBase):
         cls.project_id = os.environ.get(PROJECT_ID)
         cls.dataset_id = os.environ.get('RDR_DATASET_ID')
         cls.sandbox_id = f'{cls.dataset_id}_sandbox'
-        cls.lookup_table = SMOKING_LOOKUP_TABLE
 
         cls.rule_instance = CleanSmokingPpi(cls.project_id, cls.dataset_id,
                                             cls.sandbox_id)
@@ -60,8 +60,8 @@ class CleanSmokingPpiTest(BaseTest.CleaningRulesTestBase):
         ]
 
         cls.fq_sandbox_table_names = [
-            f'{cls.project_id}.{cls.sandbox_id}.{cls.rule_instance.sandbox_table_for(OBSERVATION)}',
-            f'{cls.project_id}.{cls.sandbox_id}.{cls.lookup_table}'
+            f'{cls.project_id}.{cls.sandbox_id}.{SMOKING_LOOKUP_TABLE}',
+            f'{cls.project_id}.{cls.sandbox_id}.{NEW_SMOKING_ROWS}'
         ]
 
         super().setUpClass()
@@ -80,7 +80,7 @@ class CleanSmokingPpiTest(BaseTest.CleaningRulesTestBase):
         self.rule_instance.setup_rule(self.client)
 
         # sees that setup worked and reset affected_tables as expected
-        self.assertEqual(set(OBSERVATION),
+        self.assertEqual(set([OBSERVATION]),
                          set(self.rule_instance.affected_tables))
 
     def test_clean_smoking_ppi(self):
@@ -92,9 +92,9 @@ class CleanSmokingPpiTest(BaseTest.CleaningRulesTestBase):
             'fq_table_name':
                 f'{self.project_id}.{self.dataset_id}.{OBSERVATION}',
             'fq_sandbox_table_name':
-                self.fq_sandbox_table_names[0],
+                f'{self.project_id}.{self.sandbox_id}.{NEW_SMOKING_ROWS}',
             'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-            'sandboxed_ids': [1, 2, 4, 5, 7, 8],
+            'sandboxed_ids': [1, 2, 4, 5, 7, 8, 9],
             'fields': [
                 'observation_id', 'person_id', 'observation_concept_id',
                 'observation_source_concept_id', 'value_as_concept_id',
@@ -105,7 +105,8 @@ class CleanSmokingPpiTest(BaseTest.CleaningRulesTestBase):
                                (4, 14, 40766333, 1585864, 45876636, 903087),
                                (5, 15, 1585870, 1585870, 45876636, 903087),
                                (7, 17, 40766333, 1585864, 903096, 903096),
-                               (8, 18, 1585870, 1585870, 903096, 903096)]
+                               (8, 18, 1585870, 1585870, 903096, 903096)
+                               (9, 19, 40770349, 1585873, 903096, 903096)]
         }]
 
         self.default_test(tables_and_counts)
