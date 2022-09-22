@@ -46,7 +46,7 @@ WHERE survey_version_concept_id IN (2100000002, 2100000003, 2100000004, 21000000
 SANDBOX_COPE_SURVEY_SC_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset}}.{{intermediary_sc_table}}` AS
 SELECT *
-FROM `{{project_id}}.{{dataset_id}}.{{sc_table}}`
+FROM `{{project_id}}.{{dataset_id}}.{{survey_conduct_table}}`
 WHERE survey_source_concept_id IN (2100000002, 2100000003, 2100000004, 2100000005, 2100000006,
   2100000007, 905047, 905055, 765936) 
 """)
@@ -70,7 +70,7 @@ SET survey_start_date = coalesce(psc.survey_start_date, sc.survey_start_date),
     survey_end_datetime = coalesce(psc.survey_end_datetime, sc.survey_end_datetime)
 FROM `{{project_id}}.{{pre_deid_dataset}}.{{survey_conduct_table}}` psc
 WHERE sc.survey_conduct_id = psc.survey_conduct_id
-AND survey_conduct_id IN (
+AND sc.survey_conduct_id IN (
     SELECT survey_conduct_id
     FROM `{{project_id}}.{{sandbox_dataset}}.{{intermediary_sc_table}}`)
 """)
@@ -125,47 +125,57 @@ class DateUnShiftCopeResponses(BaseCleaningRule):
         :param client:
         :return:
         """
-        pass
+        self.affected_tables = [table.table_id for table in client.list_tables(f'{self.project_id}.{self.dataset_id}')]
 
     def get_query_specs(self):
         """
         :return:
         """
-        sandbox_query_obs = dict()
-        sandbox_query_obs[cdr_consts.QUERY] = SANDBOX_COPE_SURVEY_OBS_QUERY.render(
-            project_id=self.project_id,
-            sandbox_dataset=self.sandbox_dataset_id,
-            intermediary_table=self.sandbox_table_for(OBSERVATION),
-            dataset_id=self.dataset_id,
-            observation_table=OBSERVATION,
-            observation_ext_table=OBSERVATION_EXT)
-        sandbox_query_sc = dict()
-        sandbox_query_sc[cdr_consts.QUERY] = SANDBOX_COPE_SURVEY_SC_QUERY.render(
-            project_id=self.project_id,
-            sandbox_dataset=self.sandbox_dataset_id,
-            intermediary_table=self.sandbox_table_for(SURVEY_CONDUCT),
-            dataset_id=self.dataset_id,
-            sc_table=SURVEY_CONDUCT)
+        sandbox_queries = []
+        update_queries = []
+        if OBSERVATION in self.affected_tables:
+            sandbox_query_obs = dict()
+            sandbox_query_obs[cdr_consts.QUERY] = SANDBOX_COPE_SURVEY_OBS_QUERY.render(
+                project_id=self.project_id,
+                sandbox_dataset=self.sandbox_dataset_id,
+                intermediary_obs_table=self.sandbox_table_for(OBSERVATION),
+                dataset_id=self.dataset_id,
+                observation_table=OBSERVATION,
+                observation_ext_table=OBSERVATION_EXT)
+            sandbox_queries.append(sandbox_query_obs)
 
-        update_query_obs = dict()
-        update_query_obs[cdr_consts.QUERY] = DATE_UNSHIFT_OBS_QUERY.render(
-            project_id=self.project_id,
-            pre_deid_dataset=self.get_combined_dataset_from_deid_dataset(
-                self.dataset_id),
-            dataset_id=self.dataset_id,
-            sandbox_dataset=self.sandbox_dataset_id,
-            intermediary_table=self.sandbox_table_for(OBSERVATION),
-            observation_table=OBSERVATION)
-        update_query_sc = dict()
-        update_query_sc[cdr_consts.QUERY] = DATE_UNSHIFT_SC_QUERY.render(
-            project_id=self.project_id,
-            pre_deid_dataset=self.get_combined_dataset_from_deid_dataset(
-                self.dataset_id),
-            dataset_id=self.dataset_id,
-            sandbox_dataset=self.sandbox_dataset_id,
-            intermediary_table=self.sandbox_table_for(SURVEY_CONDUCT),
-            observation_table=SURVEY_CONDUCT)
-        return [sandbox_query_obs, sandbox_query_sc, update_query_obs]
+            update_query_obs = dict()
+            update_query_obs[cdr_consts.QUERY] = DATE_UNSHIFT_OBS_QUERY.render(
+                project_id=self.project_id,
+                pre_deid_dataset=self.get_combined_dataset_from_deid_dataset(
+                    self.dataset_id),
+                dataset_id=self.dataset_id,
+                sandbox_dataset=self.sandbox_dataset_id,
+                intermediary_obs_table=self.sandbox_table_for(OBSERVATION),
+                observation_table=OBSERVATION)
+            update_queries.append(update_query_obs)
+
+        if SURVEY_CONDUCT in self.affected_tables:
+            sandbox_query_sc = dict()
+            sandbox_query_sc[cdr_consts.QUERY] = SANDBOX_COPE_SURVEY_SC_QUERY.render(
+                project_id=self.project_id,
+                sandbox_dataset=self.sandbox_dataset_id,
+                intermediary_sc_table=self.sandbox_table_for(SURVEY_CONDUCT),
+                dataset_id=self.dataset_id,
+                survey_conduct_table=SURVEY_CONDUCT)
+            sandbox_queries.append(sandbox_query_sc)
+
+            update_query_sc = dict()
+            update_query_sc[cdr_consts.QUERY] = DATE_UNSHIFT_SC_QUERY.render(
+                project_id=self.project_id,
+                pre_deid_dataset=self.get_combined_dataset_from_deid_dataset(
+                    self.dataset_id),
+                dataset_id=self.dataset_id,
+                sandbox_dataset=self.sandbox_dataset_id,
+                intermediary_sc_table=self.sandbox_table_for(SURVEY_CONDUCT),
+                survey_conduct_table=SURVEY_CONDUCT)
+            update_queries.append(update_query_sc)
+        return sandbox_queries + update_queries
 
     def setup_validation(self, client):
         """
