@@ -37,8 +37,8 @@ class DateUnShiftCopeResponsesTest(BaseTest.CleaningRulesTestBase):
 
         cls.combined_dataset_id = os.environ.get('COMBINED_DATASET_ID')
 
-        cls.rule_instance = DateUnShiftCopeResponses(cls.project_id,
-                                                     dataset_id, sandbox_id)
+        cls.rule_instance = DateUnShiftCopeResponses(cls.project_id, dataset_id,
+                                                     sandbox_id)
 
         cls.rule_instance.affected_tables = [SURVEY_CONDUCT]
 
@@ -49,7 +49,8 @@ class DateUnShiftCopeResponsesTest(BaseTest.CleaningRulesTestBase):
         ]
 
         cls.fq_sandbox_table_names = [
-            f"{cls.project_id}.{sandbox_id}.{cls.rule_instance.sandbox_table_for(cls.fq_table_names[1].split('.')[-1])}"]
+            f"{cls.project_id}.{sandbox_id}.{cls.rule_instance.sandbox_table_for(cls.fq_table_names[1].split('.')[-1])}"
+        ]
 
         # call super to set up the client, create datasets, and create
         # empty test tables
@@ -81,8 +82,8 @@ class DateUnShiftCopeResponsesTest(BaseTest.CleaningRulesTestBase):
         assisted_concept_id, respondent_type_concept_id, timing_concept_id,
         collection_method_concept_id, survey_source_concept_id, validated_survey_concept_id)
         VALUES
-        (10, 801, 200, date(2016, 05, 4), timestamp(datetime(2016, 05, 4, 12, 45, 00)), date(2017, 05, 4), timestamp(datetime(2017, 05, 4, 12, 45, 00)), 1, 2, 3, 4, 2100000005, 6),
-        (11, 802, 201, date(2016, 05, 6), timestamp(datetime(2016, 05, 6, 12, 45, 00)), date(2017, 05, 6), timestamp(datetime(2017, 05, 6, 12, 45, 00)), 1, 2, 3, 4, 2100000005, 6)
+        (10, 81, 200, date(2016, 05, 4), timestamp(datetime(2016, 05, 4, 12, 45, 00)), date(2017, 05, 4), timestamp(datetime(2017, 05, 4, 12, 45, 00)), 1, 2, 3, 4, 2100000005, 6),
+        (11, 82, 201, date(2016, 05, 6), timestamp(datetime(2016, 05, 6, 12, 45, 00)), date(2017, 05, 6), timestamp(datetime(2017, 05, 6, 12, 45, 00)), 1, 2, 3, 4, 2100000005, 6)
         """)
 
         load_statements = [
@@ -91,7 +92,8 @@ class DateUnShiftCopeResponsesTest(BaseTest.CleaningRulesTestBase):
         ]
         self.load_test_data(load_statements)
 
-    @patch.object(DateUnShiftCopeResponses, 'get_combined_dataset_from_deid_dataset')
+    @patch.object(DateUnShiftCopeResponses,
+                  'get_combined_dataset_from_deid_dataset')
     def test_date_unshifting(self, mock_combined):
         """
         Use the default drop rows test function.
@@ -115,10 +117,14 @@ class DateUnShiftCopeResponsesTest(BaseTest.CleaningRulesTestBase):
             'loaded_ids': [10, 11],
             'sandboxed_ids': [10, 11],
             'cleaned_values': [
-                (10, 801, 200, date.fromisoformat('2016-05-11'), datetime.fromisoformat('2016-05-11 12:45:00+00:00'),
-                 date.fromisoformat('2017-05-11'), datetime.fromisoformat('2017-05-11 12:45:00+00:00')),
-                (11, 802, 201, date.fromisoformat('2016-05-10'), datetime.fromisoformat('2016-05-10 12:45:00+00:00'),
-                 date.fromisoformat('2017-05-11'), datetime.fromisoformat('2017-05-11 12:45:00+00:00'))
+                (10, 801, 200, date.fromisoformat('2016-05-11'),
+                 datetime.fromisoformat('2016-05-11 12:45:00+00:00'),
+                 date.fromisoformat('2017-05-11'),
+                 datetime.fromisoformat('2017-05-11 12:45:00+00:00')),
+                (11, 802, 201, date.fromisoformat('2016-05-10'),
+                 datetime.fromisoformat('2016-05-10 12:45:00+00:00'),
+                 date.fromisoformat('2017-05-11'),
+                 datetime.fromisoformat('2017-05-11 12:45:00+00:00'))
             ]
         }]
 

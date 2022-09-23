@@ -125,7 +125,10 @@ class DateUnShiftCopeResponses(BaseCleaningRule):
         :param client:
         :return:
         """
-        self.affected_tables = [table.table_id for table in client.list_tables(f'{self.project_id}.{self.dataset_id}')]
+        self.affected_tables = [
+            table.table_id for table in client.list_tables(
+                f'{self.project_id}.{self.dataset_id}')
+        ]
 
     def get_query_specs(self):
         """
@@ -135,13 +138,14 @@ class DateUnShiftCopeResponses(BaseCleaningRule):
         update_queries = []
         if OBSERVATION in self.affected_tables:
             sandbox_query_obs = dict()
-            sandbox_query_obs[cdr_consts.QUERY] = SANDBOX_COPE_SURVEY_OBS_QUERY.render(
-                project_id=self.project_id,
-                sandbox_dataset=self.sandbox_dataset_id,
-                intermediary_obs_table=self.sandbox_table_for(OBSERVATION),
-                dataset_id=self.dataset_id,
-                observation_table=OBSERVATION,
-                observation_ext_table=OBSERVATION_EXT)
+            sandbox_query_obs[
+                cdr_consts.QUERY] = SANDBOX_COPE_SURVEY_OBS_QUERY.render(
+                    project_id=self.project_id,
+                    sandbox_dataset=self.sandbox_dataset_id,
+                    intermediary_obs_table=self.sandbox_table_for(OBSERVATION),
+                    dataset_id=self.dataset_id,
+                    observation_table=OBSERVATION,
+                    observation_ext_table=OBSERVATION_EXT)
             sandbox_queries.append(sandbox_query_obs)
 
             update_query_obs = dict()
@@ -157,12 +161,14 @@ class DateUnShiftCopeResponses(BaseCleaningRule):
 
         if SURVEY_CONDUCT in self.affected_tables:
             sandbox_query_sc = dict()
-            sandbox_query_sc[cdr_consts.QUERY] = SANDBOX_COPE_SURVEY_SC_QUERY.render(
-                project_id=self.project_id,
-                sandbox_dataset=self.sandbox_dataset_id,
-                intermediary_sc_table=self.sandbox_table_for(SURVEY_CONDUCT),
-                dataset_id=self.dataset_id,
-                survey_conduct_table=SURVEY_CONDUCT)
+            sandbox_query_sc[
+                cdr_consts.QUERY] = SANDBOX_COPE_SURVEY_SC_QUERY.render(
+                    project_id=self.project_id,
+                    sandbox_dataset=self.sandbox_dataset_id,
+                    intermediary_sc_table=self.sandbox_table_for(
+                        SURVEY_CONDUCT),
+                    dataset_id=self.dataset_id,
+                    survey_conduct_table=SURVEY_CONDUCT)
             sandbox_queries.append(sandbox_query_sc)
 
             update_query_sc = dict()

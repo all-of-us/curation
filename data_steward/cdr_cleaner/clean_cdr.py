@@ -132,7 +132,7 @@ EHR_CLEANING_CLASSES = [
 
 UNIONED_EHR_CLEANING_CLASSES = [
     (EhrSubmissionDataCutoff,
-     ),  # should run before EnsureDateDatetimeConsistency
+    ),  # should run before EnsureDateDatetimeConsistency
     (DeduplicateIdColumn,),
     (CleanByBirthYear,),
     (drug_refills_supply.get_days_supply_refills_queries,),
@@ -143,7 +143,7 @@ UNIONED_EHR_CLEANING_CLASSES = [
         populate_routes.get_route_mapping_queries,),
     (EnsureDateDatetimeConsistency,),
     (remove_records_with_wrong_date.get_remove_records_with_wrong_date_queries,
-     ),
+    ),
     (invalid_procedure_source.get_remove_invalid_procedure_source_queries,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
@@ -224,7 +224,7 @@ COMBINED_CLEANING_CLASSES = [
     (TemporalConsistency,),
     (EnsureDateDatetimeConsistency,),  # dependent on TemporalConsistency
     (remove_records_with_wrong_date.get_remove_records_with_wrong_date_queries,
-     ),
+    ),
     (drop_duplicate_states.get_drop_duplicate_states_queries,),
     # TODO : Make null_invalid_foreign_keys able to run on de_identified dataset
     (
@@ -249,7 +249,7 @@ REGISTERED_TIER_DEID_CLEANING_CLASSES = [
         QRIDtoRID,),  # Should run before any row suppression rules
     (GenerateExtTables,),
     (COPESurveyVersionTask,
-     ),  # Should run after GenerateExtTables and before CleanMappingExtTables
+    ),  # Should run after GenerateExtTables and before CleanMappingExtTables
     # TODO: Uncomment rule after date-shift removed from deid module
     # (SurveyConductDateShiftRule,),
     (
@@ -309,9 +309,9 @@ CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     (ControlledTierReplacedConceptSuppression,),
     (GeneralizeZipCodes,),  # Should run after any data remapping rules
     (RaceEthnicityRecordSuppression,
-     ),  # Should run after any data remapping rules
+    ),  # Should run after any data remapping rules
     (FreeTextSurveyResponseSuppression,
-     ),  # Should run after any data remapping rules
+    ),  # Should run after any data remapping rules
     (MotorVehicleAccidentSuppression,),
     (VehicularAccidentConceptSuppression,),
     (ExplicitIdentifierSuppression,),
@@ -322,7 +322,7 @@ CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     (IDFieldSuppression,),  # Should run after any data remapping
     (GenerateExtTables,),
     (COPESurveyVersionTask,
-     ),  # Should run after GenerateExtTables and before CleanMappingExtTables
+    ),  # Should run after GenerateExtTables and before CleanMappingExtTables
     (PopulateSurveyConductExt,),
     (CancerConceptSuppression,),  # Should run after any data remapping rules
     (SectionParticipationConceptSuppression,),
