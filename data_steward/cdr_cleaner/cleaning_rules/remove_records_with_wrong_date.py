@@ -1,179 +1,204 @@
-import logging
-from datetime import datetime
+"""
+The Data Science team has identified erroneous dates (e.g. years of 206 and 9999) in the procedures and medications tables.
+These dates are causing pandas to break, preventing queries from running in the Notebooks.
 
-from cdr_cleaner.cleaning_rules import field_mapping
-import constants.bq_utils as bq_consts
-import constants.cdr_cleaner.clean_cdr as cdr_consts
+All date fields apart from DOB and death date, which have their own year-limiting cleaning rule, should have similar erroneous dates removed prior to de-id.
+
+Original Issues: DC-489, DC-828
+"""
+# Python imports
+import logging
+
+# Project imports
+from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
+from constants.cdr_cleaner.clean_cdr import COMBINED, QUERY, UNIONED
+from common import CONDITION_OCCURRENCE, DEVICE_EXPOSURE, DRUG_EXPOSURE, JINJA_ENV, MEASUREMENT, OBSERVATION, \
+    OBSERVATION_PERIOD, PROCEDURE_OCCURRENCE, SPECIMEN, VISIT_OCCURRENCE, VISIT_DETAIL
+from resources import fields_for
+from utils import pipeline_logging
+
+# Third party imports
 
 LOGGER = logging.getLogger(__name__)
 
-OBSERVATION_TABLE = 'observation'
+JIRA_ISSUE_NUMBERS = ['DC489', 'DC828']
 
-DOMAIN_TABLES_EXCEPT_OBSERVATION = [
-    'condition_occurrence', 'visit_occurrence', 'drug_exposure', 'measurement',
-    'procedure_occurrence', 'observation_period', 'device_exposure', 'specimen',
-    'visit_detail'
+DOMAIN_TABLES = [
+    CONDITION_OCCURRENCE, DEVICE_EXPOSURE, DRUG_EXPOSURE, MEASUREMENT,
+    OBSERVATION, OBSERVATION_PERIOD, PROCEDURE_OCCURRENCE, SPECIMEN,
+    VISIT_DETAIL, VISIT_OCCURRENCE
 ]
 
 OBSERVATION_DEFAULT_YEAR_THRESHOLD = 1900
-
 DEFAULT_YEAR_THRESHOLD = 1980
 
-DATE_FIELD_KEY_WORD = 'date'
-
-REMOVE_RECORDS_WITH_WRONG_DATE_FIELD_TEMPLATE = '''
-SELECT
-    {col_expr}
-FROM `{project_id}.{dataset_id}.{table_id}`
-WHERE {where_clause}
-'''
-
-WHERE_CLAUSE_REQUIRED_FIELD = (
-    '(EXTRACT(YEAR FROM {date_field_name}) > {year_threshold} AND CAST({date_field_name} AS DATE) <= DATE("{cutoff_date}"))'
+SANDBOX_TEMPLATE = JINJA_ENV.from_string("""
+CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table_id}}` AS (
+    SELECT * FROM `{{project_id}}.{{dataset_id}}.{{table_id}}`
+    WHERE
+    {% for col in cols if col['type'] in ['date', 'datetime', 'timestamp'] %}
+        (EXTRACT(YEAR FROM {{col['name']}}) <= {{year_threshold}} OR DATE('{{cutoff_date}}') < CAST({{col['name']}} AS DATE))
+        {% if not loop.last -%}
+        OR
+        {% endif %}
+    {% endfor %}
 )
+""")
 
-NULLABLE_DATE_FIELD_EXPRESSION = (
-    'IF(EXTRACT(YEAR FROM {date_field_name}) <= {year_threshold} OR CAST({date_field_name} AS DATE) > DATE("{cutoff_date}"), NULL, {date_field_name}) AS {date_field_name}'
-)
+DELETE_TEMPLATE = JINJA_ENV.from_string("""
+DELETE FROM `{{project_id}}.{{dataset_id}}.{{table_id}}`
+WHERE
+{% for col in cols if col['type'] in ['date', 'datetime', 'timestamp'] and col['mode'] == 'required' %}
+    (EXTRACT(YEAR FROM {{col['name']}}) <= {{year_threshold}} OR DATE('{{cutoff_date}}') < CAST({{col['name']}} AS DATE))
+    {% if not loop.last -%}
+    OR
+    {% endif %}
+{% endfor %}
+""")
 
-AND = ' AND '
-
-
-def get_date_fields(table_id):
-    """
-    The function retrieves a list of date related fields for the given table
-    :param table_id:
-    :return:
-    """
-    return [
-        field for field in field_mapping.get_domain_fields(table_id)
-        if DATE_FIELD_KEY_WORD in field
-    ]
-
-
-def generate_field_expr(table_id, year_threshold, cutoff_date):
-    """
-    This function generates the select statements for the table. For the nullable date fields, it sets the value to NULL
-    if the nullable date field fails the threshold criteria
-    :param table_id:
-    :param year_threshold:
-    :param cutoff_date:
-    :return:
-    """
-    col_expression_list = []
-
-    nullable_date_field_names = [
-        field for field in get_date_fields(table_id)
-        if not field_mapping.is_field_required(table_id, field)
-    ]
-
-    for field_name in field_mapping.get_domain_fields(table_id):
-
-        if field_name in nullable_date_field_names:
-            col_expression_list.append(
-                NULLABLE_DATE_FIELD_EXPRESSION.format(
-                    date_field_name=field_name,
-                    year_threshold=year_threshold,
-                    cutoff_date=cutoff_date))
-        else:
-            col_expression_list.append(field_name)
-
-    return ','.join(col_expression_list)
+UPDATE_TEMPLATE = JINJA_ENV.from_string("""
+UPDATE `{{project_id}}.{{dataset_id}}.{{table_id}}`
+SET 
+{% for col in cols if col['type'] in ['date', 'datetime', 'timestamp'] and col['mode'] == 'nullable' %}
+    {{col['name']}} = IF(EXTRACT(YEAR FROM {{col['name']}}) <= {{year_threshold}} OR DATE("{{cutoff_date}}") < CAST({{col['name']}} AS DATE), NULL, {{col['name']}})
+    {% if not loop.last -%}, {% endif %}
+{% endfor %}
+WHERE
+{% for col in cols if col['type'] in ['date', 'datetime', 'timestamp'] and col['mode'] == 'nullable' %}
+    EXTRACT(YEAR FROM {{col['name']}}) <= {{year_threshold}} 
+    OR DATE("{{cutoff_date}}") < CAST({{col['name']}} AS DATE)
+    {% if not loop.last -%} OR {% endif %}
+{% endfor %}
+""")
 
 
-def parse_remove_records_with_wrong_date_query(project_id, dataset_id, table_id,
-                                               year_threshold, cutoff_date):
-    """
-    This query generates the query to keep the records whose date fields are larger than and equal to the year_threshold
-    :param project_id: the project id
-    :param dataset_id: the dataset id
-    :param table_id: the table id
-    :param year_threshold: the year threshold for removing the records
-    :param cutoff_date: EHR/RDR date cutoff of format YYYY-MM-DD
-    :return: a query that keep the records qualifying for the year threshold
-    """
+class RemoveRecordsWithWrongDate(BaseCleaningRule):
 
-    required_date_field_names = [
-        field for field in get_date_fields(table_id)
-        if field_mapping.is_field_required(table_id, field)
-    ]
-    where_clause = ''
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 cutoff_date,
+                 year_threshold=DEFAULT_YEAR_THRESHOLD,
+                 observation_year_threshold=OBSERVATION_DEFAULT_YEAR_THRESHOLD,
+                 table_namer=None):
+        """
+        Initialize the class with proper information.
 
-    for date_field_name in required_date_field_names:
+        Set the issue numbers, description and affected datasets. As other tickets may affect
+        this SQL, append them to the list of Jira Issues.
+        DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
+        """
+        desc = ('Sandboxes and removes erroneous dates from records.')
 
-        if where_clause != '':
-            where_clause += AND
+        super().__init__(issue_numbers=JIRA_ISSUE_NUMBERS,
+                         description=desc,
+                         affected_datasets=[COMBINED, UNIONED],
+                         affected_tables=DOMAIN_TABLES,
+                         project_id=project_id,
+                         dataset_id=dataset_id,
+                         sandbox_dataset_id=sandbox_dataset_id,
+                         table_namer=table_namer)
 
-        where_clause += WHERE_CLAUSE_REQUIRED_FIELD.format(
-            date_field_name=date_field_name,
-            year_threshold=year_threshold,
-            cutoff_date=cutoff_date)
+        self.cutoff_date = cutoff_date
+        self.year_threshold = year_threshold
+        self.observation_year_threshold = observation_year_threshold
 
-    col_expr = generate_field_expr(table_id, year_threshold, cutoff_date)
+    def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
+        """
+        Return a list of dictionary query specifications.
 
-    return REMOVE_RECORDS_WITH_WRONG_DATE_FIELD_TEMPLATE.format(
-        project_id=project_id,
-        dataset_id=dataset_id,
-        table_id=table_id,
-        col_expr=col_expr,
-        where_clause=where_clause)
+        :return:  A list of dictionaries. Each dictionary contains a single query
+            and a specification for how to execute that query. The specifications
+            are optional but the query is required.
+        """
+        sandbox_queries, delete_queries, update_queries = [], [], []
+
+        for table in self.affected_tables:
+
+            if table == OBSERVATION:
+                threshold = self.observation_year_threshold
+            else:
+                threshold = self.year_threshold
+
+            cols = fields_for(table)
+
+            sandbox_queries.append({
+                QUERY:
+                    SANDBOX_TEMPLATE.render(
+                        project_id=self.project_id,
+                        dataset_id=self.dataset_id,
+                        table_id=table,
+                        sandbox_dataset_id=self.sandbox_dataset_id,
+                        sandbox_table_id=self.sandbox_table_for(table),
+                        cols=cols,
+                        year_threshold=threshold,
+                        cutoff_date=self.cutoff_date)
+            })
+
+            delete_queries.append({
+                QUERY:
+                    DELETE_TEMPLATE.render(project_id=self.project_id,
+                                           dataset_id=self.dataset_id,
+                                           table_id=table,
+                                           cols=cols,
+                                           year_threshold=threshold,
+                                           cutoff_date=self.cutoff_date)
+            })
+
+            if not any(col['type'] in ['date', 'datetime', 'timestamp'] and
+                       col['mode'] == 'nullable' for col in cols):
+                LOGGER.info(
+                    f'No update query for {table}. {table}\'s date/datetime columns are '
+                    f'all required. Only delete query is generated for {table}.'
+                )
+                continue
+
+            update_queries.append({
+                QUERY:
+                    UPDATE_TEMPLATE.render(project_id=self.project_id,
+                                           dataset_id=self.dataset_id,
+                                           table_id=table,
+                                           cols=cols,
+                                           year_threshold=threshold,
+                                           cutoff_date=self.cutoff_date)
+            })
+
+        return sandbox_queries + delete_queries + update_queries
+
+    def setup_rule(self, client, *args, **keyword_args):
+        pass
+
+    def setup_validation(self, client):
+        """
+        Run required steps for validation setup
+        """
+        raise NotImplementedError("Please fix me.")
+
+    def validate_rule(self, client):
+        """
+        Validates the cleaning rule which deletes or updates the data from the tables
+        """
+        raise NotImplementedError("Please fix me.")
+
+    def get_sandbox_tablenames(self):
+        return [self.sandbox_table_for(table) for table in self.affected_tables]
 
 
-def get_remove_records_with_wrong_date_queries(
-    project_id,
-    dataset_id,
-    sandbox_dataset_id,
-    cutoff_date=None,
-    year_threshold=DEFAULT_YEAR_THRESHOLD,
-    observation_year_threshold=OBSERVATION_DEFAULT_YEAR_THRESHOLD):
-    """
-    This function generates a list of query dicts for removing the records with wrong date in the corresponding destination table.
-    :param project_id: the project_id in which the query is run
-    :param dataset_id: the dataset_id in which the query is run
-    :param cutoff_date: EHR/RDR date cutoff of format YYYY-MM-DD
-    :param sandbox_dataset_id: Identifies the sandbox dataset to store rows
-    #TODO use sandbox_dataset_id for CR
-    :param year_threshold: the year threshold applied to the pre-defined list of domain tables except observation
-    :param observation_year_threshold: the year threshold applied to observation
-    :return: a list of query dicts for removing the records with wrong date in the corresponding destination table
-    """
-    if not cutoff_date:
-        cutoff_date = str(datetime.now().date())
-    queries = []
-
-    query = dict()
-    query[cdr_consts.QUERY] = parse_remove_records_with_wrong_date_query(
-        project_id, dataset_id, OBSERVATION_TABLE, observation_year_threshold,
-        cutoff_date)
-    query[cdr_consts.DESTINATION_TABLE] = OBSERVATION_TABLE
-    query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
-    query[cdr_consts.DESTINATION_DATASET] = dataset_id
-    query[cdr_consts.BATCH] = True
-    queries.append(query)
-
-    for domain_table in DOMAIN_TABLES_EXCEPT_OBSERVATION:
-        query = dict()
-        query[cdr_consts.QUERY] = parse_remove_records_with_wrong_date_query(
-            project_id, dataset_id, domain_table, year_threshold, cutoff_date)
-        query[cdr_consts.DESTINATION_TABLE] = domain_table
-        query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
-        query[cdr_consts.DESTINATION_DATASET] = dataset_id
-        query[cdr_consts.BATCH] = True
-        queries.append(query)
-
-    return queries
-
-
-def parse_args():
-    """
-    This function expands the default argument list defined in cdr_cleaner.args_parser
-    :return: an expanded argument list object
-    """
+if __name__ == '__main__':
     import cdr_cleaner.args_parser as parser
+    import cdr_cleaner.clean_cdr_engine as clean_engine
 
-    argument_parser = parser.get_argument_parser()
+    ext_parser = parser.get_argument_parser()
 
-    argument_parser.add_argument(
+    ext_parser.add_argument('-c',
+                            '--cutoff_date ',
+                            dest='cutoff_date',
+                            action='store',
+                            help='EHR/RDR date cutoff of format YYYY-MM-DD',
+                            required=True)
+
+    ext_parser.add_argument(
         '-y',
         '--year_threshold',
         dest='year_threshold',
@@ -182,38 +207,26 @@ def parse_args():
         required=False,
         default=DEFAULT_YEAR_THRESHOLD)
 
-    argument_parser.add_argument('-o',
-                                 '--observation_year_threshold',
-                                 dest='observation_year_threshold',
-                                 action='store',
-                                 help='The threshold applied to observation',
-                                 required=False,
-                                 default=OBSERVATION_DEFAULT_YEAR_THRESHOLD)
+    ext_parser.add_argument('-o',
+                            '--observation_year_threshold',
+                            dest='observation_year_threshold',
+                            action='store',
+                            help='The threshold applied to observation',
+                            required=False,
+                            default=OBSERVATION_DEFAULT_YEAR_THRESHOLD)
 
-    argument_parser.add_argument(
-        '-c',
-        '--cutoff_date ',
-        dest='cutoff_date',
-        action='store',
-        help='EHR/RDR date cutoff of format YYYY-MM-DD',
-        required=True)
-
-    return argument_parser.parse_args()
-
-
-if __name__ == '__main__':
-    import cdr_cleaner.clean_cdr_engine as clean_engine
-
-    ARGS = parse_args()
+    ARGS = ext_parser.parse_args()
+    pipeline_logging.configure(level=logging.DEBUG, add_console_handler=True)
 
     if ARGS.list_queries:
         clean_engine.add_console_logging()
         query_list = clean_engine.get_query_list(
             ARGS.project_id,
             ARGS.dataset_id,
-            ARGS.sandbox_dataset_id,
-            [(get_remove_records_with_wrong_date_queries,)],
-            cutoff_date=ARGS.cutoff_date)
+            ARGS.sandbox_dataset_id, [(RemoveRecordsWithWrongDate,)],
+            cutoff_date=ARGS.cutoff_date,
+            year_threshold=ARGS.year_threshold,
+            observation_year_threshold=ARGS.observation_year_threshold)
         for query in query_list:
             LOGGER.info(query)
     else:
@@ -221,6 +234,7 @@ if __name__ == '__main__':
         clean_engine.clean_dataset(
             ARGS.project_id,
             ARGS.dataset_id,
-            ARGS.sandbox_dataset_id,
-            [(get_remove_records_with_wrong_date_queries,)],
-            cutoff_date=ARGS.cutoff_date)
+            ARGS.sandbox_dataset_id, [(RemoveRecordsWithWrongDate,)],
+            cutoff_date=ARGS.cutoff_date,
+            year_threshold=ARGS.year_threshold,
+            observation_year_threshold=ARGS.observation_year_threshold)
