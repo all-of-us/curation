@@ -108,6 +108,7 @@ from cdr_cleaner.cleaning_rules.store_pid_rid_mappings import StoreNewPidRidMapp
 from cdr_cleaner.cleaning_rules.update_invalid_zip_codes import UpdateInvalidZipCodes
 from cdr_cleaner.cleaning_rules.deid.survey_version_info import COPESurveyVersionTask
 from cdr_cleaner.cleaning_rules.deid.string_fields_suppression import StringFieldsSuppression
+from cdr_cleaner.cleaning_rules.generalize_sex_gender_concepts import GeneralizeSexGenderConcepts
 from cdr_cleaner.cleaning_rules.generalize_state_by_population import GeneralizeStateByPopulation
 from cdr_cleaner.cleaning_rules.section_participation_concept_suppression import SectionParticipationConceptSuppression
 from cdr_cleaner.cleaning_rules.covid_ehr_vaccine_concept_suppression import CovidEHRVaccineConceptSuppression
@@ -265,6 +266,7 @@ REGISTERED_TIER_DEID_CLEANING_CLASSES = [
     (
         GeneralizeStateByPopulation,),
     (GeneralizeCopeInsuranceAnswers,),
+    (GeneralizeSexGenderConcepts,),
 
     # Data suppressions
     ####################################
