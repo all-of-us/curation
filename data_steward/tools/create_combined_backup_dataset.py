@@ -200,6 +200,23 @@ def mapping_query(domain_table: str, rdr_dataset: str, unioned_ehr_dataset: str,
         ehr_consent_table_id=combine_consts.EHR_CONSENT_TABLE_ID)
 
 
+def survey_conduct_mapping_query(rdr_dataset: str, combined_dataset: str):
+    """
+        Returns query used to create _mapping_survey_conduct from RDR records of consented participants
+
+        :param rdr_dataset: rdr dataset identifier
+        :param combined_dataset: combined_backup dataset identifier
+        :return:
+    """
+    return combine_consts.SURVEY_CONDUCT_MAPPING_QUERY.render(
+        rdr_dataset_id=rdr_dataset,
+        combined_dataset_id=combined_dataset,
+        domain_table=common.SURVEY_CONDUCT,
+        mapping_constant=common.RDR_ID_CONSTANT,
+        person_id_flag=resources.has_person_id(common.SURVEY_CONDUCT),
+        ehr_consent_table_id=combine_consts.EHR_CONSENT_TABLE_ID)
+
+
 def generate_combined_mapping_tables(client: BigQueryClient, domain_table: str,
                                      rdr_dataset: str, unioned_ehr_dataset: str,
                                      combined_dataset: str):
@@ -208,11 +225,17 @@ def generate_combined_mapping_tables(client: BigQueryClient, domain_table: str,
 
     :param client: Bigquery client
     :param domain_table: cdm table
+    :param rdr_dataset: rdr dataset identifier
+    :param unioned_ehr_dataset: unioned_ehr dataset identifier
+    :param combined_dataset: combined_backup dataset identifier
     :return:
     """
     if domain_table in combine_consts.DOMAIN_TABLES:
         q = mapping_query(domain_table, rdr_dataset, unioned_ehr_dataset,
                           combined_dataset)
+    elif domain_table == common.SURVEY_CONDUCT:
+        q = survey_conduct_mapping_query(rdr_dataset, combined_dataset)
+    if q:
         mapping_table = mapping_table_for(domain_table)
         LOGGER.info(f'Query for {mapping_table} is {q}')
         fq_mapping_table = f'{client.project}.{combined_dataset}.{mapping_table}'
@@ -495,7 +518,7 @@ def main(raw_args=None):
                        combined_dataset)
 
     LOGGER.info('Generating combined mapping tables ...')
-    for domain_table in combine_consts.DOMAIN_TABLES:
+    for domain_table in combine_consts.DOMAIN_TABLES + [common.SURVEY_CONDUCT]:
         LOGGER.info(f'Mapping {domain_table}...')
         generate_combined_mapping_tables(client, domain_table, args.rdr_dataset,
                                          args.unioned_ehr_dataset,
