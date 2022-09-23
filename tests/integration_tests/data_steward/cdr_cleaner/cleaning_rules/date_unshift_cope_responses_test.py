@@ -117,11 +117,11 @@ class DateUnShiftCopeResponsesTest(BaseTest.CleaningRulesTestBase):
             'loaded_ids': [10, 11],
             'sandboxed_ids': [10, 11],
             'cleaned_values': [
-                (10, 801, 200, date.fromisoformat('2016-05-11'),
+                (10, 81, 200, date.fromisoformat('2016-05-11'),
                  datetime.fromisoformat('2016-05-11 12:45:00+00:00'),
                  date.fromisoformat('2017-05-11'),
                  datetime.fromisoformat('2017-05-11 12:45:00+00:00')),
-                (11, 802, 201, date.fromisoformat('2016-05-10'),
+                (11, 82, 201, date.fromisoformat('2016-05-10'),
                  datetime.fromisoformat('2016-05-10 12:45:00+00:00'),
                  date.fromisoformat('2017-05-11'),
                  datetime.fromisoformat('2017-05-11 12:45:00+00:00'))
