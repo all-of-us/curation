@@ -106,7 +106,7 @@ from cdr_cleaner.cleaning_rules.aggregate_zip_codes import AggregateZipCodes
 from cdr_cleaner.cleaning_rules.remove_extra_tables import RemoveExtraTables
 from cdr_cleaner.cleaning_rules.store_pid_rid_mappings import StoreNewPidRidMappings
 from cdr_cleaner.cleaning_rules.update_invalid_zip_codes import UpdateInvalidZipCodes
-from cdr_cleaner.manual_cleaning_rules.survey_version_info import COPESurveyVersionTask
+from cdr_cleaner.cleaning_rules.deid.survey_version_info import COPESurveyVersionTask
 from cdr_cleaner.cleaning_rules.deid.string_fields_suppression import StringFieldsSuppression
 from cdr_cleaner.cleaning_rules.generalize_state_by_population import GeneralizeStateByPopulation
 from cdr_cleaner.cleaning_rules.section_participation_concept_suppression import SectionParticipationConceptSuppression
@@ -251,14 +251,14 @@ REGISTERED_TIER_DEID_CLEANING_CLASSES = [
     # Data mappings/re-mappings
     ####################################
     (
-        QRIDtoRID,),  # Should run before any row suppression rules
-    (GenerateExtTables,),
+        GenerateExtTables,),
     (COPESurveyVersionTask,
     ),  # Should run after GenerateExtTables and before CleanMappingExtTables
     # TODO: Uncomment rule after date-shift removed from deid module
     # (SurveyConductDateShiftRule,),
     (
         PopulateSurveyConductExt,),
+    (QRIDtoRID,),  # Should run before any row suppression rules
 
     # Data generalizations
     ####################################
@@ -308,6 +308,10 @@ REGISTERED_TIER_FITBIT_CLEANING_CLASSES = [
 
 CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     (RtCtPIDtoRID,),
+    (GenerateExtTables,),
+    (COPESurveyVersionTask,
+    ),  # Should run after GenerateExtTables and before CleanMappingExtTables
+    (PopulateSurveyConductExt,),
     (QRIDtoRID,),  # Should run before any row suppression rules
     (NullPersonBirthdate,),
     (TableSuppression,),
@@ -325,10 +329,6 @@ CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     (YearOfBirthRecordsSuppression,),
     (ControlledCopeSurveySuppression,),
     (IDFieldSuppression,),  # Should run after any data remapping
-    (GenerateExtTables,),
-    (COPESurveyVersionTask,
-    ),  # Should run after GenerateExtTables and before CleanMappingExtTables
-    (PopulateSurveyConductExt,),
     (CancerConceptSuppression,),  # Should run after any data remapping rules
     (SectionParticipationConceptSuppression,),
     (StringFieldsSuppression,),

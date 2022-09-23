@@ -9,7 +9,7 @@ import os
 
 # Project imports
 from app_identity import PROJECT_ID
-from cdr_cleaner.manual_cleaning_rules.survey_version_info import (
+from cdr_cleaner.cleaning_rules.deid.survey_version_info import (
     COPESurveyVersionTask)
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 

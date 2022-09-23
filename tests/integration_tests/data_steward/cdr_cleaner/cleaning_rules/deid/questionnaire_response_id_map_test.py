@@ -11,7 +11,8 @@ import os
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.deid.questionnaire_response_id_map import QRIDtoRID
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
-from common import DEID_QUESTIONNAIRE_RESPONSE_MAP, OBSERVATION, SURVEY_CONDUCT
+from common import (DEID_QUESTIONNAIRE_RESPONSE_MAP, EXT_SUFFIX, OBSERVATION,
+                    SURVEY_CONDUCT)
 
 
 class QRIDtoRIDTest(BaseTest.CleaningRulesTestBase):
@@ -31,7 +32,7 @@ class QRIDtoRIDTest(BaseTest.CleaningRulesTestBase):
         # set the expected test datasets
         dataset_id = os.environ.get('COMBINED_DATASET_ID')
         cls.dataset_id = dataset_id
-        sandbox_id = dataset_id + '_sandbox'
+        sandbox_id = f'{dataset_id}_sandbox'
         cls.sandbox_id = sandbox_id
 
         cls.rule_instance = QRIDtoRID(
@@ -44,12 +45,13 @@ class QRIDtoRIDTest(BaseTest.CleaningRulesTestBase):
         cls.fq_table_names = [
             f'{project_id}.{dataset_id}.{OBSERVATION}',
             f'{project_id}.{dataset_id}.{SURVEY_CONDUCT}',
-            f'{project_id}.{dataset_id}.{DEID_QUESTIONNAIRE_RESPONSE_MAP}'
+            f'{project_id}.{dataset_id}.{DEID_QUESTIONNAIRE_RESPONSE_MAP}',
+            f'{project_id}.{dataset_id}.{SURVEY_CONDUCT}{EXT_SUFFIX}'
         ]
 
         sb_table_name = cls.rule_instance.sandbox_table_for(SURVEY_CONDUCT)
         cls.fq_sandbox_table_names = [
-            f'{project_id}.{cls.sandbox_id}.{sb_table_name}'
+            # f'{project_id}.{cls.sandbox_id}.{sb_table_name}'
         ]
 
         cls.kwargs['deid_questionnaire_response_map_dataset'] = dataset_id
@@ -75,7 +77,7 @@ class QRIDtoRIDTest(BaseTest.CleaningRulesTestBase):
 
         create_observations_query = self.jinja_env.from_string("""
             INSERT INTO `{{fq_dataset_name}}.observation`
-                (observation_id, person_id, observation_concept_id, observation_date, 
+                (observation_id, person_id, observation_concept_id, observation_date,
                 observation_type_concept_id, questionnaire_response_id)
             VALUES
                 (1, 1, 43529626, date('2020-05-05'), 1, 1),
@@ -88,7 +90,7 @@ class QRIDtoRIDTest(BaseTest.CleaningRulesTestBase):
 
         create_survey_conduct_query = self.jinja_env.from_string("""
             INSERT INTO `{{fq_dataset_name}}.survey_conduct`
-                (survey_conduct_id, person_id, survey_concept_id, survey_end_datetime, 
+                (survey_conduct_id, person_id, survey_concept_id, survey_end_datetime,
                 assisted_concept_id, respondent_type_concept_id, timing_concept_id,
                 collection_method_concept_id, survey_source_concept_id,
                 survey_source_identifier, validated_survey_concept_id)
@@ -98,6 +100,16 @@ class QRIDtoRIDTest(BaseTest.CleaningRulesTestBase):
                 (3, 3, 0, timestamp('2020-05-05 00:00:00'), 0, 0, 0, 0, 0, '3', 0),
                 (4, 4, 0, timestamp('2020-05-05 00:00:00'), 0, 0, 0, 0, 0, '4', 0)
             """).render(fq_dataset_name=self.fq_dataset_name)
+
+        create_survey_conduct_ext_query = self.jinja_env.from_string("""
+            INSERT INTO `{{fq_dataset_name}}.survey_conduct_ext`
+                (survey_conduct_id, src_id, language)
+            VALUES
+                (1, 'foo', 'en'),
+                (2, 'foo', null),
+                (3, 'foo', 'es'),
+                (4, 'foo', 'es')
+        """).render(fq_dataset_name=self.fq_dataset_name)
 
         create_mappings_query = self.jinja_env.from_string("""
             INSERT INTO `{{fq_dataset_name}}.{{deid_questionnaire_response_map}}`
@@ -112,7 +124,7 @@ class QRIDtoRIDTest(BaseTest.CleaningRulesTestBase):
 
         queries = [
             create_observations_query, create_survey_conduct_query,
-            create_mappings_query
+            create_survey_conduct_ext_query, create_mappings_query
         ]
 
         self.load_test_data(queries)
@@ -128,19 +140,29 @@ class QRIDtoRIDTest(BaseTest.CleaningRulesTestBase):
                 'observation_id', 'person_id', 'questionnaire_response_id'
             ],
             'cleaned_values': [(1, 1, 5000), (2, 2, 5000), (3, 3, 8005),
-                               (4, 4, 8005), (5, 5, 9000), (6, 6, None)]
+                               (4, 4, 8005), (5, 5, 9000), (6, 6, 99999)]
         }, {
             'fq_table_name':
                 f'{self.fq_dataset_name}.{SURVEY_CONDUCT}',
             'fq_sandbox_table_name':
-                self.fq_sandbox_table_names[0],
+                '',
             'loaded_ids': [1, 2, 3, 4],
-            'sandboxed_ids': [4],
+            'sandboxed_ids': [],
             'fields': [
                 'survey_conduct_id', 'person_id', 'survey_source_identifier'
             ],
             'cleaned_values': [(5000, 1, '5000'), (8005, 2, '8005'),
-                               (9000, 3, '9000')]
+                               (9000, 3, '9000'), (4, 4, '4')]
+        }, {
+            'fq_table_name':
+                f'{self.fq_dataset_name}.{SURVEY_CONDUCT}{EXT_SUFFIX}',
+            'fq_sandbox_table_name':
+                '',
+            'loaded_ids': [1, 2, 3, 4],
+            'sandboxed_ids': [],
+            'fields': ['survey_conduct_id', 'src_id', 'language'],
+            'cleaned_values': [(5000, 'foo', 'en'), (8005, 'foo', None),
+                               (9000, 'foo', 'es'), (4, 'foo', 'es')]
         }]
 
         self.default_test(tables_and_counts)

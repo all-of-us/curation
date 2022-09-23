@@ -27,35 +27,29 @@ LOGGER = logging.getLogger(__name__)
 ISSUE_NUMBERS = ['DC-1040', 'DC-2609']
 
 VERSION_COPE_SURVEYS_QUERY = JINJA_ENV.from_string("""
-CREATE OR REPLACE TABLE `{{project_id}}.{{out_dataset_id}}.observation_ext` AS (
-    SELECT
-    oe.src_id,
-    oe.observation_id,
+UPDATE `{{project_id}}.{{out_dataset_id}}.observation_ext` oe
     -- this will work for a one off solution, but needs a mapping to accurately --
     -- map concept-ids to cope-months for a sustainable, long-term solution --
-    CASE
-      WHEN cssf.cope_month = 'may' THEN 2100000002
-      WHEN cssf.cope_month = 'june' THEN 2100000003
-      WHEN cssf.cope_month = 'july' THEN 2100000004
-      WHEN cssf.cope_month = 'nov' THEN 2100000005
-      WHEN cssf.cope_month = 'dec' THEN 2100000006
-      WHEN cssf.cope_month = 'feb' THEN 2100000007
-      WHEN cssf.cope_month = 'vaccine1' THEN 905047
-      WHEN cssf.cope_month = 'vaccine2' THEN 905055
-      WHEN cssf.cope_month = 'vaccine3' THEN 765936
-      WHEN cssf.cope_month = 'vaccine4' THEN 1741006
-      ELSE survey_version_concept_id
-    END AS survey_version_concept_id
-    FROM `{{project_id}}.{{out_dataset_id}}.observation_ext` AS oe
-    JOIN `{{project_id}}.{{out_dataset_id}}.observation` AS o
-    USING (observation_id)
-    LEFT JOIN `{{project_id}}.{{qrid_map_dataset_id}}._deid_questionnaire_response_map` AS m
-    ON o.questionnaire_response_id = m.research_response_id
-    -- the file generating this table is manually imported from the RDR. --
-    -- Curation and RDR should automate this process. --
-    LEFT JOIN `{{project_id}}.{{cope_table_dataset_id}}.{{cope_survey_mapping_table}}` AS cssf
-    ON cssf.questionnaire_response_id = m.questionnaire_response_id
-)""")
+    -- In a future CDR, this implementation will be replaced by the survey_conduct table --
+    SET survey_version_concept_id = CASE
+      WHEN v.cope_month = 'may' THEN 2100000002
+      WHEN v.cope_month = 'june' THEN 2100000003
+      WHEN v.cope_month = 'july' THEN 2100000004
+      WHEN v.cope_month = 'nov' THEN 2100000005
+      WHEN v.cope_month = 'dec' THEN 2100000006
+      WHEN v.cope_month = 'feb' THEN 2100000007
+      WHEN v.cope_month = 'vaccine1' THEN 905047
+      WHEN v.cope_month = 'vaccine2' THEN 905055
+      WHEN v.cope_month = 'vaccine3' THEN 765936
+      WHEN v.cope_month = 'vaccine4' THEN 1741006
+    END
+    FROM (
+        SELECT cope_month, o.observation_id
+        FROM `{{project_id}}.{{out_dataset_id}}.observation` AS o
+        JOIN `{{project_id}}.{{cope_table_dataset_id}}.{{cope_survey_mapping_table}}` AS cssf
+        ON cssf.questionnaire_response_id = o.questionnaire_response_id) v
+    WHERE v.observation_id = oe.observation_id
+""")
 
 
 class COPESurveyVersionTask(BaseCleaningRule):
@@ -95,7 +89,7 @@ class COPESurveyVersionTask(BaseCleaningRule):
             project_id=project_id,
             dataset_id=dataset_id,
             sandbox_dataset_id=sandbox_dataset_id,
-            affected_tables=[OBSERVATION + '_ext'],
+            affected_tables=[f'{OBSERVATION}_ext'],
             depends_on=[GenerateExtTables],
             table_namer=table_namer)
 

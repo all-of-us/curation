@@ -16,16 +16,6 @@ from common import EXT_SUFFIX, JINJA_ENV, SURVEY_CONDUCT
 
 LOGGER = logging.getLogger(__name__)
 
-SANDBOX_SURVEY_CONDUCT_EXT_QUERY = JINJA_ENV.from_string("""
-CREATE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table}}`
-AS
-    SELECT sce.* FROM `{{project_id}}.{{dataset_id}}.survey_conduct_ext` AS sce
-    JOIN `{{project_id}}.{{dataset_id}}.questionnaire_response_additional_info` AS qrai
-    ON sce.survey_conduct_id = qrai.questionnaire_response_id
-    WHERE (sce.language IS NULL OR sce.language != qrai.value)
-    AND UPPER(qrai.type) = 'LANGUAGE'
-""")
-
 UPDATE_SURVEY_CONDUCT_EXT_QUERY = JINJA_ENV.from_string("""
 UPDATE `{{project_id}}.{{dataset_id}}.survey_conduct_ext` AS sce
 SET language = qrai.value
@@ -70,20 +60,12 @@ class PopulateSurveyConductExt(BaseCleaningRule):
         """
         Return a list of dictionary query specifications.
         """
-        sandbox_query = SANDBOX_SURVEY_CONDUCT_EXT_QUERY.render(
-            project_id=self.project_id,
-            dataset_id=self.dataset_id,
-            sandbox_dataset_id=self.sandbox_dataset_id,
-            sandbox_table=self.sandbox_table_for(
-                f"{SURVEY_CONDUCT}{EXT_SUFFIX}"))
-
-        insert_query = UPDATE_SURVEY_CONDUCT_EXT_QUERY.render(
+        update_query = UPDATE_SURVEY_CONDUCT_EXT_QUERY.render(
             project_id=self.project_id, dataset_id=self.dataset_id)
 
-        sandbox_query_dict = {cdr_consts.QUERY: sandbox_query}
-        insert_query_dict = {cdr_consts.QUERY: insert_query}
+        update_query_dict = {cdr_consts.QUERY: update_query}
 
-        return [sandbox_query_dict, insert_query_dict]
+        return [update_query_dict]
 
     def setup_rule(self, client):
         """
