@@ -22,30 +22,8 @@ from typing import Dict
 LOGGER = logging.getLogger(__name__)
 
 OPERATIONAL_PII_FIELDS_TABLE = '_operational_pii_fields'
-INTERMEDIARY_TABLE = 'remove_operational_pii_fields_observation'
 
 JIRA_ISSUE_NUMBERS = ['DC500', 'DC831']
-
-INTERMEDIARY_TABLE_QUERY = JINJA_ENV.from_string("""
-CREATE OR REPLACE TABLE
-    `{{project_id}}.{{sandbox_dataset_id}}.{{intermediary_table}}` AS (
-  SELECT
-    *
-  FROM
-    `{{project_id}}.{{dataset_id}}.observation`
-  WHERE
-    observation_id IN (
-    SELECT
-      observation_id
-    FROM
-      `{{project_id}}.{{sandbox_dataset_id}}.{{operational_pii_fields_table}}` as pii
-    JOIN
-      `{{project_id}}.{{dataset_id}}.observation` as ob
-    USING
-        (observation_source_value)
-    WHERE
-      drop_value=TRUE))
-""")
 
 DELETE_QUERY = JINJA_ENV.from_string("""
 DELETE
@@ -68,24 +46,21 @@ FROM
 ### Validation Query ####
 COUNTS_QUERY = JINJA_ENV.from_string("""
 SELECT
-    observation_source_value, 
     COUNT(*) AS total_count
 FROM
     `{{project_id}}.{{dataset_id}}.observation`
-WHERE
+  WHERE
     observation_id IN (
     SELECT
-        observation_id    
+        observation_id
     FROM
         `{{project_id}}.{{sandbox_dataset_id}}.{{operational_pii_fields_table}}` as pii
     JOIN
-        `{{project_id}}.{{dataset_id}}.{{obs_table}}` as ob
+        `{{project_id}}.{{dataset_id}}.observation` as ob
     USING
         (observation_source_value)
     WHERE
-        drop_value=TRUE
-    GROUP BY 
-        1
+        drop_value=TRUE)
 """)
 
 
@@ -170,15 +145,6 @@ class RemoveOperationalPiiFields(BaseCleaningRule):
             are optional but the query is required.
         """
         queries_list = []
-
-        intermediary_query = dict()
-        intermediary_query[cdr_consts.QUERY] = INTERMEDIARY_TABLE_QUERY.render(
-            dataset_id=self.dataset_id,
-            project_id=self.project_id,
-            intermediary_table=INTERMEDIARY_TABLE,
-            operational_pii_fields_table=OPERATIONAL_PII_FIELDS_TABLE,
-            sandbox_dataset_id=self.sandbox_dataset_id)
-        queries_list.append(intermediary_query)
 
         delete_query = dict()
         delete_query[cdr_consts.QUERY] = DELETE_QUERY.render(
