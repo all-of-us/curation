@@ -37,7 +37,7 @@ from cdr_cleaner.cleaning_rules.clean_mapping import CleanMappingExtTables
 from cdr_cleaner.cleaning_rules.clean_ppi_numeric_fields_using_parameters import \
     CleanPPINumericFieldsUsingParameters
 from cdr_cleaner.cleaning_rules.create_person_ext_table import CreatePersonExtTable
-from cdr_cleaner.cleaning_rules.date_shift_cope_responses import DateShiftCopeResponses
+from cdr_cleaner.cleaning_rules.date_unshift_cope_responses import DateUnShiftCopeResponses
 from cdr_cleaner.cleaning_rules.deid.survey_conduct_dateshift import SurveyConductDateShiftRule
 from cdr_cleaner.cleaning_rules.remove_ehr_data_without_consent import RemoveEhrDataWithoutConsent
 from cdr_cleaner.cleaning_rules.generate_ext_tables import GenerateExtTables
@@ -255,8 +255,10 @@ REGISTERED_TIER_DEID_CLEANING_CLASSES = [
     (GenerateExtTables,),
     (COPESurveyVersionTask,
     ),  # Should run after GenerateExtTables and before CleanMappingExtTables
-    (SurveyConductDateShiftRule,),
-    (PopulateSurveyConductExt,),
+    # TODO: Uncomment rule after date-shift removed from deid module
+    # (SurveyConductDateShiftRule,),
+    (
+        PopulateSurveyConductExt,),
 
     # Data generalizations
     ####################################
@@ -281,7 +283,7 @@ REGISTERED_TIER_DEID_CLEANING_CLASSES = [
 REGISTERED_TIER_DEID_BASE_CLEANING_CLASSES = [
     (FillSourceValueTextFields,),
     (RepopulatePersonPostDeid,),
-    (DateShiftCopeResponses,),
+    (DateUnShiftCopeResponses,),
     (CreatePersonExtTable,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
