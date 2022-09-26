@@ -56,8 +56,7 @@ class DrugRefillsDaysSupply(BaseCleaningRule):
 
     def setup_rule(self, client):
         """
-        Responsible for grabbing and storing deactivated participant data.
-        :param client: a BiQueryClient passed to store the data
+        Function to run any data upload options before executing a query.
         """
         pass
 
