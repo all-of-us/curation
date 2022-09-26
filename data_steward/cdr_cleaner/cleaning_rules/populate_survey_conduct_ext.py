@@ -11,7 +11,7 @@ import logging
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from cdr_cleaner.cleaning_rules.generate_ext_tables import GenerateExtTables
-from cdr_cleaner.manual_cleaning_rules.survey_version_info import COPESurveyVersionTask
+from cdr_cleaner.cleaning_rules.deid.survey_version_info import COPESurveyVersionTask
 from common import EXT_SUFFIX, JINJA_ENV, SURVEY_CONDUCT
 
 LOGGER = logging.getLogger(__name__)
