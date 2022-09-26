@@ -28,7 +28,7 @@ JIRA_ISSUE_NUMBERS = ['DC500', 'DC831']
 
 INTERMEDIARY_TABLE_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE
-    `{{project_id}}}.{{sandbox_dataset_id}}.{{intermediary_table}}` AS (
+    `{{project_id}}.{{sandbox_dataset_id}}.{{intermediary_table}}` AS (
   SELECT
     *
   FROM
@@ -68,18 +68,24 @@ FROM
 ### Validation Query ####
 COUNTS_QUERY = JINJA_ENV.from_string("""
 SELECT
-    ob.observation_source_value, 
+    observation_source_value, 
     COUNT(*) AS total_count
 FROM
-    `{{project_id}}.{{sandbox_dataset_id}}.{{operational_pii_fields_table}}` as pii
-JOIN
-    `{{project_id}}.{{dataset_id}}.{{obs_table}}` as ob
-USING
-    (observation_source_value)
+    `{{project_id}}.{{dataset_id}}.observation`
 WHERE
-    drop_value=TRUE
-GROUP BY 
-    1
+    observation_id IN (
+    SELECT
+        observation_id    
+    FROM
+        `{{project_id}}.{{sandbox_dataset_id}}.{{operational_pii_fields_table}}` as pii
+    JOIN
+        `{{project_id}}.{{dataset_id}}.{{obs_table}}` as ob
+    USING
+        (observation_source_value)
+    WHERE
+        drop_value=TRUE
+    GROUP BY 
+        1
 """)
 
 
@@ -114,6 +120,9 @@ class RemoveOperationalPiiFields(BaseCleaningRule):
             obs_table=OBSERVATION,
             sandbox_dataset_id=self.sandbox_dataset_id,
             operational_pii_fields_table=OPERATIONAL_PII_FIELDS_TABLE)
+
+    def get_sandbox_tablenames(self) -> list:
+        return [self.sandbox_table_for(OBSERVATION)]
 
     def setup_rule(self, client: BigQueryClient, *args, **keyword_args) -> None:
         """

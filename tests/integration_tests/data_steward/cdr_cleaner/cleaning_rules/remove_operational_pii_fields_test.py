@@ -1,5 +1,5 @@
 """
-Integration test for CleanSmokingPpi
+Integration test for RemoveOperationalPiiFields
 """
 
 # Python imports
@@ -8,7 +8,8 @@ import os
 # Project imports
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.remove_operational_pii_fields import (RemoveOperationalPiiFields,
-                                                          OPERATIONAL_PII_FIELDS_TABLE)
+                                                                      OPERATIONAL_PII_FIELDS_TABLE,
+                                                                      INTERMEDIARY_TABLE)
 from common import JINJA_ENV, OBSERVATION
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
@@ -31,7 +32,7 @@ LOAD_QUERY = JINJA_ENV.from_string("""
 """)
 
 
-class CleanSmokingPpiTest(BaseTest.CleaningRulesTestBase):
+class RemoveOperationalPiiFieldsTest(BaseTest.CleaningRulesTestBase):
 
     @classmethod
     def setUpClass(cls):
@@ -53,7 +54,8 @@ class CleanSmokingPpiTest(BaseTest.CleaningRulesTestBase):
         ]
 
         cls.fq_sandbox_table_names = [
-            f'{cls.project_id}.{cls.sandbox_id}.{OPERATIONAL_PII_FIELDS_TABLE}'
+            f'{cls.project_id}.{cls.sandbox_id}.{OPERATIONAL_PII_FIELDS_TABLE}',
+            f'{cls.project_id}.{cls.sandbox_id}.{INTERMEDIARY_TABLE}'
         ]
 
         super().setUpClass()
@@ -75,7 +77,7 @@ class CleanSmokingPpiTest(BaseTest.CleaningRulesTestBase):
         self.assertEqual(set([OBSERVATION]),
                          set(self.rule_instance.affected_tables))
 
-    def test_clean_smoking_ppi(self):
+    def test_remove_operational_pii_fields(self):
         """
         Tests that the specifications for the queries perform as designed.
         """
@@ -89,7 +91,7 @@ class CleanSmokingPpiTest(BaseTest.CleaningRulesTestBase):
             'sandboxed_ids': [],
             'fields': [
                 'observation_id', 'person_id', 'observation_concept_id',
-                'observation_source_concept_id'
+                'observation_source_value'
             ],
             'cleaned_values': [(3, 13, 0, "DiagnosedHealthCondition_DaughterCirculatoryCondit"),
                                (4, 14, 0, "OrganTransplant_BoneTransplantDate")]
