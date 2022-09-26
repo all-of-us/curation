@@ -37,7 +37,7 @@ SEX_AT_BIRTH_FEMALE_CONCEPT_ID = 1585847
 
 SANDBOX_CONCEPT_ID_QUERY_TEMPLATE = JINJA_ENV.from_string("""
 INSERT INTO
-  `{{project_id}}.{{sandbox_dataset}}.{{sandbox_table}}` AS
+  `{{project_id}}.{{sandbox_dataset}}.{{sandbox_table}}`
 (
   SELECT
     *
