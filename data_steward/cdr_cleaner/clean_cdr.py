@@ -18,7 +18,7 @@ import cdr_cleaner.cleaning_rules.drop_duplicate_states as drop_duplicate_states
 import cdr_cleaner.cleaning_rules.drop_extreme_measurements as extreme_measurements
 from cdr_cleaner.cleaning_rules.drop_multiple_measurements import DropMultipleMeasurements
 from cdr_cleaner.cleaning_rules.drop_participants_without_any_basics import DropParticipantsWithoutAnyBasics
-import cdr_cleaner.cleaning_rules.drug_refills_days_supply as drug_refills_supply
+from cdr_cleaner.cleaning_rules.drug_refills_days_supply import DrugRefillsDaysSupply
 from cdr_cleaner.cleaning_rules.maps_to_value_ppi_vocab_update import MapsToValuePpiVocabUpdate
 import cdr_cleaner.cleaning_rules.populate_route_ids as populate_routes
 from cdr_cleaner.cleaning_rules.populate_survey_conduct_ext import PopulateSurveyConductExt
@@ -138,7 +138,6 @@ UNIONED_EHR_CLEANING_CLASSES = [
     ),  # should run before EnsureDateDatetimeConsistency
     (DeduplicateIdColumn,),
     (CleanByBirthYear,),
-    (drug_refills_supply.get_days_supply_refills_queries,),
     # trying to load a table while creating query strings,
     # won't work with mocked strings.  should use base class
     # setup_query_execution function to load dependencies before query execution
@@ -219,7 +218,7 @@ COMBINED_CLEANING_CLASSES = [
     (NoDataAfterDeath,),
     (RemoveEhrDataWithoutConsent,),
     (DedupMeasurementValueAsConceptId,),
-    (drug_refills_supply.get_days_supply_refills_queries,),
+    (DrugRefillsDaysSupply,),
     # trying to load a table while creating query strings,
     # won't work with mocked strings.  should use base class
     # setup_query_execution function to load dependencies before query execution
