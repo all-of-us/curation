@@ -84,8 +84,9 @@ class CreateCombinedBackupDatasetTest(unittest.TestCase):
         table_name = 'survey_conduct'
 
         # test
-        q = combined_backup.survey_conduct_mapping_query(
-            self.rdr_dataset_id, self.combined_dataset_id)
+        q = combined_backup.mapping_query(table_name, self.rdr_dataset_id,
+                                          self.ehr_dataset_id,
+                                          self.combined_dataset_id)
 
         # post conditions
         expected_query = EXPECTED_SURVEY_CONDUCT_MAPPING_QUERY.format(
