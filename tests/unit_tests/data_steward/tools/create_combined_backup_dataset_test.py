@@ -31,6 +31,18 @@ SELECT DISTINCT
   (SELECT 1 FROM `{combined_dataset_id}.{ehr_consent_table_id}` AS c
   WHERE t.person_id = c.person_id)"""
 
+EXPECTED_SURVEY_CONDUCT_MAPPING_QUERY = """
+SELECT DISTINCT
+  '{rdr_dataset_id}'  AS src_dataset_id,
+  {domain_table}_id  AS src_{domain_table}_id,
+  'rdr' as src_hpo_id,
+  {domain_table}_id  AS {domain_table}_id,
+  '{domain_table}' as src_table_id
+  FROM `{rdr_dataset_id}.{domain_table}`
+  WHERE EXISTS
+  (SELECT 1 FROM `{combined_dataset_id}.{ehr_consent_table_id}` AS c
+  WHERE t.person_id = c.person_id)"""
+
 
 class CreateCombinedBackupDatasetTest(unittest.TestCase):
 
@@ -56,6 +68,28 @@ class CreateCombinedBackupDatasetTest(unittest.TestCase):
 
         # post conditions
         expected_query = EXPECTED_MAPPING_QUERY.format(
+            rdr_dataset_id=self.rdr_dataset_id,
+            ehr_dataset_id=self.ehr_dataset_id,
+            combined_dataset_id=self.combined_dataset_id,
+            domain_table=table_name,
+            mapping_constant=common.RDR_ID_CONSTANT,
+            ehr_consent_table_id=EHR_CONSENT_TABLE_ID)
+
+        # account for spacing differences
+        expected_query = ' '.join(expected_query.split())
+        mono_spaced_q = ' '.join(q.split())
+
+        self.assertEqual(expected_query, mono_spaced_q)
+
+        table_name = 'survey_conduct'
+
+        # test
+        q = combined_backup.mapping_query(table_name, self.rdr_dataset_id,
+                                          self.ehr_dataset_id,
+                                          self.combined_dataset_id)
+
+        # post conditions
+        expected_query = EXPECTED_SURVEY_CONDUCT_MAPPING_QUERY.format(
             rdr_dataset_id=self.rdr_dataset_id,
             ehr_dataset_id=self.ehr_dataset_id,
             combined_dataset_id=self.combined_dataset_id,
