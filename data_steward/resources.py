@@ -76,6 +76,9 @@ PPI_BRANCHING_RULE_PATHS = [
     HEALTHCARE_ACCESS_CSV_PATH, LIFESTYLE_CSV_PATH, OVERALL_HEALTH_CSV_PATH,
     PERSONAL_MEDICAL_HISTORY_CSV_PATH
 ]
+MONKEYPOX_CONCEPTS_PATH = os.path.join(CDR_CLEANER_PATH,
+                                       'monkeypox_concept_suppression',
+                                       'monkeypox_concepts.csv')
 
 VALIDATION_STREET_CSV = os.path.join(resource_files_path, 'validation',
                                      'participants', 'abbreviation_street.csv')
@@ -408,7 +411,7 @@ def get_domain(domain_table):
 
 def get_concept_id_fields(table_name) -> List[str]:
     """
-    Determine if column is a concept_id column
+    Get a list of concept_id columns in the table.
 
     :param table_name:
     :return: all *concept_id schemas given a table
@@ -417,6 +420,34 @@ def get_concept_id_fields(table_name) -> List[str]:
         field_name['name']
         for field_name in fields_for(table_name)
         if field_name['name'].endswith('concept_id')
+    ]
+
+
+def get_date_fields(table_name) -> List[str]:
+    """
+    Get a list of date columns in the table.
+
+    :param table_name:
+    :return: all *date schemas in the table
+    """
+    return [
+        field_name['name']
+        for field_name in fields_for(table_name)
+        if field_name['name'].endswith('date')
+    ]
+
+
+def get_datetime_fields(table_name) -> List[str]:
+    """
+    Get a list of datetime columns in the table.
+
+    :param table_name:
+    :return: all *datetime schemas in the table
+    """
+    return [
+        field_name['name']
+        for field_name in fields_for(table_name)
+        if field_name['name'].endswith('datetime')
     ]
 
 
