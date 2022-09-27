@@ -76,17 +76,15 @@ class UpdatePpiNegativePainLevel(BaseCleaningRule):
         # Select all records where observation_source_concept_id = 1585747 and value_as_number = -1
         queries_list.append({
             cdr_consts.QUERY:
-                SELECT_NEGATIVE_PPI_QUERY.render(
-                    dataset_id=self.dataset_id,
-                    project_id=self.project_id)
+                SELECT_NEGATIVE_PPI_QUERY.render(dataset_id=self.dataset_id,
+                                                 project_id=self.project_id)
         })
 
         # Update value_as_number, value_source_concept_id, value_as_concept_id, value_as_string, value_source_value.
         queries_list.append({
             cdr_consts.QUERY:
-                UPDATE_NEGATIVE_PPI_QUERY.render(
-                    dataset_id=self.dataset_id,
-                    project_id=self.project_id)
+                UPDATE_NEGATIVE_PPI_QUERY.render(dataset_id=self.dataset_id,
+                                                 project_id=self.project_id)
         })
 
         return queries_list
