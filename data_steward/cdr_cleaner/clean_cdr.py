@@ -30,7 +30,7 @@ from cdr_cleaner.cleaning_rules.remove_participants_under_18years import RemoveP
 from cdr_cleaner.cleaning_rules.round_ppi_values_to_nearest_integer import RoundPpiValuesToNearestInteger
 from cdr_cleaner.cleaning_rules.update_family_history_qa_codes import UpdateFamilyHistoryCodes
 import cdr_cleaner.manual_cleaning_rules.negative_ppi as negative_ppi
-import cdr_cleaner.cleaning_rules.remove_operational_pii_fields as RemoveOperationalPiiFields
+from cdr_cleaner.cleaning_rules.remove_operational_pii_fields import RemoveOperationalPiiFields
 from cdr_cleaner.cleaning_rules.clean_height_weight import CleanHeightAndWeight
 from cdr_cleaner.cleaning_rules.clean_mapping import CleanMappingExtTables
 from cdr_cleaner.cleaning_rules.clean_ppi_numeric_fields_using_parameters import \
@@ -178,7 +178,8 @@ RDR_CLEANING_CLASSES = [
     (DropPpiDuplicateResponses,),
     (DropCopeDuplicateResponses,),
     # Should run prior to ConvertPrePostCoordinatedConcepts
-    (RemoveOperationalPiiFields,),
+    (
+        RemoveOperationalPiiFields,),
     (RoundPpiValuesToNearestInteger,),
     (UpdateFamilyHistoryCodes,),
     (ConvertPrePostCoordinatedConcepts,),
