@@ -37,24 +37,26 @@ from cdr_cleaner.cleaning_rules.clean_mapping import CleanMappingExtTables
 from cdr_cleaner.cleaning_rules.clean_ppi_numeric_fields_using_parameters import \
     CleanPPINumericFieldsUsingParameters
 from cdr_cleaner.cleaning_rules.create_person_ext_table import CreatePersonExtTable
-from cdr_cleaner.cleaning_rules.date_shift_cope_responses import DateShiftCopeResponses
+from cdr_cleaner.cleaning_rules.date_unshift_cope_responses import DateUnShiftCopeResponses
 from cdr_cleaner.cleaning_rules.deid.survey_conduct_dateshift import SurveyConductDateShiftRule
 from cdr_cleaner.cleaning_rules.remove_ehr_data_without_consent import RemoveEhrDataWithoutConsent
 from cdr_cleaner.cleaning_rules.generate_ext_tables import GenerateExtTables
 from cdr_cleaner.cleaning_rules.truncate_fitbit_data import TruncateFitbitData
 from cdr_cleaner.cleaning_rules.clean_digital_health_data import CleanDigitalHealthStatus
 from cdr_cleaner.cleaning_rules.remove_non_existing_pids import RemoveNonExistingPids
+from cdr_cleaner.cleaning_rules.drop_invalid_sleep_level_records import DropInvalidSleepLevelRecords
 from cdr_cleaner.cleaning_rules.deid.fitbit_dateshift import FitbitDateShiftRule
 from cdr_cleaner.cleaning_rules.deid.fitbit_pid_rid_map import FitbitPIDtoRID
 from cdr_cleaner.cleaning_rules.deid.remove_fitbit_data_if_max_age_exceeded import \
     RemoveFitbitDataIfMaxAgeExceeded
-from cdr_cleaner.cleaning_rules.deid.ct_pid_rid_map import CtPIDtoRID
+from cdr_cleaner.cleaning_rules.deid.rt_ct_pid_rid_map import RtCtPIDtoRID
 from cdr_cleaner.cleaning_rules.deid.repopulate_person_controlled_tier import \
     RepopulatePersonControlledTier
 from cdr_cleaner.cleaning_rules.deid.generalize_cope_insurance_answers import GeneralizeCopeInsuranceAnswers
 from cdr_cleaner.cleaning_rules.drop_cope_duplicate_responses import DropCopeDuplicateResponses
 from cdr_cleaner.cleaning_rules.drop_duplicate_ppi_questions_and_answers import \
     DropDuplicatePpiQuestionsAndAnswers
+from cdr_cleaner.cleaning_rules.clean_smoking_ppi import CleanSmokingPpi
 from cdr_cleaner.cleaning_rules.drop_ppi_duplicate_responses import DropPpiDuplicateResponses
 from cdr_cleaner.cleaning_rules.drop_zero_concept_ids import DropZeroConceptIDs
 from cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency import \
@@ -111,6 +113,7 @@ from cdr_cleaner.cleaning_rules.generalize_state_by_population import Generalize
 from cdr_cleaner.cleaning_rules.section_participation_concept_suppression import SectionParticipationConceptSuppression
 from cdr_cleaner.cleaning_rules.covid_ehr_vaccine_concept_suppression import CovidEHRVaccineConceptSuppression
 from cdr_cleaner.cleaning_rules.missing_concept_record_suppression import MissingConceptRecordSuppression
+from cdr_cleaner.cleaning_rules.monkeypox_concept_suppression import MonkeypoxConceptSuppression
 from cdr_cleaner.cleaning_rules.create_deid_questionnaire_response_map import CreateDeidQuestionnaireResponseMap
 from cdr_cleaner.cleaning_rules.set_unmapped_question_answer_survey_concepts import (
     SetConceptIdsForSurveyQuestionsAnswers)
@@ -118,7 +121,9 @@ from cdr_cleaner.cleaning_rules.map_health_insurance_responses import MapHealthI
 from cdr_cleaner.cleaning_rules.vehicular_accident_concept_suppression import VehicularAccidentConceptSuppression
 from cdr_cleaner.cleaning_rules.deid.ct_replaced_concept_suppression import \
     ControlledTierReplacedConceptSuppression
+from cdr_cleaner.cleaning_rules.dedup_measurement_value_as_concept_id import DedupMeasurementValueAsConceptId
 from cdr_cleaner.cleaning_rules.drop_orphaned_pids import DropOrphanedPIDS
+from cdr_cleaner.cleaning_rules.deid.deidentify_aian_zip3_values import DeidentifyAIANZip3Values
 from constants.cdr_cleaner import clean_cdr_engine as ce_consts
 from constants.cdr_cleaner.clean_cdr import DataStage
 
@@ -174,8 +179,7 @@ RDR_CLEANING_CLASSES = [
     # trying to load a table while creating query strings,
     # won't work with mocked strings.  should use base class
     # setup_query_execution function to load dependencies before query execution
-    (
-        smoking.get_queries_clean_smoking,),
+    (smoking.get_queries_clean_smoking,),
     (DropPpiDuplicateResponses,),
     (DropCopeDuplicateResponses,),
     # trying to load a table while creating query strings,
@@ -186,6 +190,7 @@ RDR_CLEANING_CLASSES = [
     (RoundPpiValuesToNearestInteger,),
     (UpdateFamilyHistoryCodes,),
     (ConvertPrePostCoordinatedConcepts,),
+    (CleanSmokingPpi,),
     (NullConceptIDForNumericPPI,),
     (DropDuplicatePpiQuestionsAndAnswers,),
     (extreme_measurements.get_drop_extreme_measurement_queries,),
@@ -215,6 +220,7 @@ COMBINED_CLEANING_CLASSES = [
         ValidDeathDates,),
     (NoDataAfterDeath,),
     (RemoveEhrDataWithoutConsent,),
+    (DedupMeasurementValueAsConceptId,),
     (drug_refills_supply.get_days_supply_refills_queries,),
     # trying to load a table while creating query strings,
     # won't work with mocked strings.  should use base class
@@ -239,6 +245,7 @@ FITBIT_CLEANING_CLASSES = [
     (TruncateFitbitData,),
     (RemoveParticipantDataPastDeactivationDate,),
     (CleanDigitalHealthStatus,),
+    (DropInvalidSleepLevelRecords,),
     (RemoveNonExistingPids,),  # assumes combined dataset is ready for reference
 ]
 
@@ -250,8 +257,10 @@ REGISTERED_TIER_DEID_CLEANING_CLASSES = [
     (GenerateExtTables,),
     (COPESurveyVersionTask,
     ),  # Should run after GenerateExtTables and before CleanMappingExtTables
-    (SurveyConductDateShiftRule,),
-    (PopulateSurveyConductExt,),
+    # TODO: Uncomment rule after date-shift removed from deid module
+    # (SurveyConductDateShiftRule,),
+    (
+        PopulateSurveyConductExt,),
 
     # Data generalizations
     ####################################
@@ -263,6 +272,7 @@ REGISTERED_TIER_DEID_CLEANING_CLASSES = [
     ####################################
     (
         CovidEHRVaccineConceptSuppression,),  # should run after QRIDtoRID
+    (MonkeypoxConceptSuppression,),
     (VehicularAccidentConceptSuppression,),
     (SectionParticipationConceptSuppression,),
     (RegisteredCopeSurveyQuestionsSuppression,),
@@ -276,13 +286,16 @@ REGISTERED_TIER_DEID_CLEANING_CLASSES = [
 REGISTERED_TIER_DEID_BASE_CLEANING_CLASSES = [
     (FillSourceValueTextFields,),
     (RepopulatePersonPostDeid,),
-    (DateShiftCopeResponses,),
+    (DateUnShiftCopeResponses,),
     (CreatePersonExtTable,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
 REGISTERED_TIER_DEID_CLEAN_CLEANING_CLASSES = [
-    (MeasurementRecordsSuppression,),
+    # TODO: uncomment when pid-rid logic is removed from legacy deid
+    # (RtCtPIDtoRID,),
+    (
+        MeasurementRecordsSuppression,),
     (CleanHeightAndWeight,),  # dependent on MeasurementRecordsSuppression
     (UnitNormalization,),  # dependent on CleanHeightAndWeight
     (DropZeroConceptIDs,),
@@ -297,7 +310,7 @@ REGISTERED_TIER_FITBIT_CLEANING_CLASSES = [
 ]
 
 CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
-    (CtPIDtoRID,),
+    (RtCtPIDtoRID,),
     (QRIDtoRID,),  # Should run before any row suppression rules
     (NullPersonBirthdate,),
     (TableSuppression,),
@@ -323,6 +336,7 @@ CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     (SectionParticipationConceptSuppression,),
     (StringFieldsSuppression,),
     (AggregateZipCodes,),
+    (DeidentifyAIANZip3Values,),
     (DropOrphanedPIDS,),
     (RemoveExtraTables,),  # Should be last cleaning rule to be run
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run

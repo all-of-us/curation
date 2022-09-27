@@ -13,7 +13,7 @@ FOREIGN_KEYS_FIELDS = [
     'visit_occurrence_id', 'location_id', 'care_site_id', 'provider_id',
     'visit_detail_id'
 ]
-RDR_TABLES_TO_COPY = ['person']
+RDR_TABLES_TO_COPY = ['person', 'survey_conduct']
 EHR_TABLES_TO_COPY = ['death']
 DOMAIN_TABLES = list(
     set(cdm.tables_to_map()) - set(RDR_TABLES_TO_COPY + EHR_TABLES_TO_COPY))
@@ -96,21 +96,28 @@ SELECT DISTINCT
 '{{rdr_dataset_id}}'  AS src_dataset_id,
 {{domain_table}}_id  AS src_{{domain_table}}_id,
 'rdr' as src_hpo_id,
-{{domain_table}}_id + {{mapping_constant}}  AS {{domain_table}}_id,
+{% if domain_table != 'survey_conduct' %}
+ {{domain_table}}_id + {{mapping_constant}}  AS {{domain_table}}_id,
+{% else %}
+{{domain_table}}_id AS {{domain_table}}_id,
+{% endif %}
 '{{domain_table}}' as src_table_id
 FROM `{{rdr_dataset_id}}.{{domain_table}}`
 
-UNION ALL
+{% if domain_table != 'survey_conduct' %}
+    UNION ALL
 
-SELECT DISTINCT
-'{{ehr_dataset_id}}'  AS src_dataset_id,
-t.{{domain_table}}_id AS src_{{domain_table}}_id,
-v.src_hpo_id AS src_hpo_id,
-t.{{domain_table}}_id  AS {{domain_table}}_id,
-'{{domain_table}}' as src_table_id
-FROM `{{ehr_dataset_id}}.{{domain_table}}` AS t
-JOIN `{{ehr_dataset_id}}._mapping_{{domain_table}}` AS v 
-ON t.{{domain_table}}_id = v.{{domain_table}}_id
+    SELECT DISTINCT
+    '{{ehr_dataset_id}}'  AS src_dataset_id,
+    t.{{domain_table}}_id AS src_{{domain_table}}_id,
+    v.src_hpo_id AS src_hpo_id,
+    t.{{domain_table}}_id  AS {{domain_table}}_id,
+    '{{domain_table}}' as src_table_id
+    FROM `{{ehr_dataset_id}}.{{domain_table}}` AS t
+    JOIN `{{ehr_dataset_id}}._mapping_{{domain_table}}` AS v 
+    ON t.{{domain_table}}_id = v.{{domain_table}}_id
+{% endif %}
+
 {% if person_id_flag %}
     WHERE EXISTS
     (SELECT 1 FROM `{{combined_dataset_id}}.{{ehr_consent_table_id}}` AS c

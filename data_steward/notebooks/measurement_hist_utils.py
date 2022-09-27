@@ -84,7 +84,8 @@ def generate_plot(measurement_concept_id,
                   unit_dict_1,
                   unit_dict_2,
                   sharex=False,
-                  sharey=False):
+                  sharey=False,
+                  figure_name=None):
     """
     Generate n (the number of source units being transformed) by 2 
     grid to compare the value distributions of before and after unit transformation. 
@@ -97,6 +98,7 @@ def generate_plot(measurement_concept_id,
     :param unit_dict_2 dictionary containing the unit names for dataset 2
     :param sharex a boolean indicating whether subplots share the x-axis
     :param sharey a boolean indicating whether subplots share the y-axis
+    :param figure_name filename to save the figure under
     :return: a list of query dicts for rerouting the records to the corresponding destination table
     """
 
@@ -148,6 +150,10 @@ def generate_plot(measurement_concept_id,
             axs_after.set_title('after unit: {}'.format(unit_after_name))
 
             counter += 1
+
+    # Save figure optionally
+    if figure_name:
+        plt.savefig(figure_name)
 
 
 def convert_to_sql_list(concept_ids):

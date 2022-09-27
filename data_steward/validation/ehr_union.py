@@ -836,14 +836,16 @@ def main(input_dataset_id,
 
     # Create mapping tables
     for domain_table in cdm.tables_to_map():
-        logging.info(f'Mapping {domain_table}...')
-        mapping(domain_table, hpo_ids, input_dataset_id, output_dataset_id,
-                project_id, bq_client)
+        if not domain_table == common.SURVEY_CONDUCT:
+            logging.info(f'Mapping {domain_table}...')
+            mapping(domain_table, hpo_ids, input_dataset_id, output_dataset_id,
+                    project_id, bq_client)
 
     # Load all tables with union of submitted tables
     for table_name in resources.CDM_TABLES:
-        logging.info(f'Creating union of table {table_name}...')
-        load(table_name, hpo_ids, input_dataset_id, output_dataset_id)
+        if not table_name == common.SURVEY_CONDUCT:
+            logging.info(f'Creating union of table {table_name}...')
+            load(table_name, hpo_ids, input_dataset_id, output_dataset_id)
 
     logging.info('Creation of Unioned EHR complete')
 
