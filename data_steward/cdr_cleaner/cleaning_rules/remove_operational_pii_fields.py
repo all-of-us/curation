@@ -22,12 +22,16 @@ from typing import Dict
 LOGGER = logging.getLogger(__name__)
 
 OPERATIONAL_PII_FIELDS_TABLE = '_operational_pii_fields'
+INTERMEDIARY_TABLE = 'remove_operational_pii_fields_observation'
 
 JIRA_ISSUE_NUMBERS = ['DC500', 'DC831']
 
-DELETE_QUERY = JINJA_ENV.from_string("""
-DELETE
-FROM
+SANDBOX_OPERATION_PII_FIELDS = JINJA_ENV.from_string("""
+CREATE OR REPLACE TABLE
+    `{{project_id}}.{{sandbox_dataset_id}}.{{intermediary_table}}` AS (
+  SELECT
+    *
+    FROM
     `{{project_id}}.{{dataset_id}}.observation`
   WHERE
     observation_id IN (
@@ -41,6 +45,18 @@ FROM
         (observation_source_value)
     WHERE
       drop_value=TRUE)
+      )
+""")
+
+DELETE_QUERY = JINJA_ENV.from_string("""
+DELETE
+FROM
+    `{{project_id}}.{{dataset_id}}.observation`
+WHERE
+observation_id
+IN (SELECT
+    observation_id
+    FROM `{{project_id}}.{{sandbox_dataset_id}}.{{intermediary_table}}` )
 """)
 
 ### Validation Query ####
@@ -49,18 +65,11 @@ SELECT
     COUNT(*) AS total_count
 FROM
     `{{project_id}}.{{dataset_id}}.observation`
-  WHERE
-    observation_id IN (
-    SELECT
-        observation_id
-    FROM
-        `{{project_id}}.{{sandbox_dataset_id}}.{{operational_pii_fields_table}}` as pii
-    JOIN
-        `{{project_id}}.{{dataset_id}}.observation` as ob
-    USING
-        (observation_source_value)
-    WHERE
-        drop_value=TRUE)
+WHERE
+observation_id
+IN (SELECT
+    observation_id
+    FROM `{{project}}.{{sandbox_dataset}}.{{intermediary_table}}` )
 """)
 
 
@@ -146,12 +155,22 @@ class RemoveOperationalPiiFields(BaseCleaningRule):
         """
         queries_list = []
 
+        sandbox_query = dict()
+        sandbox_query[cdr_consts.QUERY] = SANDBOX_OPERATION_PII_FIELDS.render(
+            project_id=self.project_id,
+            dataset_id=self.dataset_id,
+            sandbox_dataset_id=self.sandbox_dataset_id,
+            operational_pii_fields_table=OPERATIONAL_PII_FIELDS_TABLE,
+            intermediary_table=INTERMEDIARY_TABLE)
+        queries_list.append(sandbox_query)
+
         delete_query = dict()
         delete_query[cdr_consts.QUERY] = DELETE_QUERY.render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
             sandbox_dataset_id=self.sandbox_dataset_id,
-            operational_pii_fields_table=OPERATIONAL_PII_FIELDS_TABLE)
+            operational_pii_fields_table=OPERATIONAL_PII_FIELDS_TABLE,
+            intermediary_table=INTERMEDIARY_TABLE)
         queries_list.append(delete_query)
 
         return queries_list

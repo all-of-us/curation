@@ -7,9 +7,9 @@ import os
 
 # Project imports
 from app_identity import PROJECT_ID
-from cdr_cleaner.cleaning_rules.remove_operational_pii_fields import (RemoveOperationalPiiFields,
-                                                                      OPERATIONAL_PII_FIELDS_TABLE,
-                                                                      INTERMEDIARY_TABLE)
+from cdr_cleaner.cleaning_rules.remove_operational_pii_fields import (
+    RemoveOperationalPiiFields, OPERATIONAL_PII_FIELDS_TABLE,
+    INTERMEDIARY_TABLE)
 from common import JINJA_ENV, OBSERVATION
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
@@ -46,8 +46,9 @@ class RemoveOperationalPiiFieldsTest(BaseTest.CleaningRulesTestBase):
         cls.dataset_id = os.environ.get('RDR_DATASET_ID')
         cls.sandbox_id = f'{cls.dataset_id}_sandbox'
 
-        cls.rule_instance = RemoveOperationalPiiFields(cls.project_id, cls.dataset_id,
-                                            cls.sandbox_id)
+        cls.rule_instance = RemoveOperationalPiiFields(cls.project_id,
+                                                       cls.dataset_id,
+                                                       cls.sandbox_id)
 
         cls.fq_table_names = [
             f'{cls.project_id}.{cls.dataset_id}.{OBSERVATION}'
@@ -86,15 +87,18 @@ class RemoveOperationalPiiFieldsTest(BaseTest.CleaningRulesTestBase):
             'fq_table_name':
                 f'{self.project_id}.{self.dataset_id}.{OBSERVATION}',
             'fq_sandbox_table_name':
-                f'{self.project_id}.{self.sandbox_id}.{OPERATIONAL_PII_FIELDS_TABLE}',
+                f'{self.project_id}.{self.sandbox_id}.{INTERMEDIARY_TABLE}',
             'loaded_ids': [1, 2, 3, 4, 5, 6],
-            'sandboxed_ids': [],
+            'sandboxed_ids': [1, 2, 5, cd6],
             'fields': [
                 'observation_id', 'person_id', 'observation_concept_id',
                 'observation_source_value'
             ],
-            'cleaned_values': [(3, 13, 0, "DiagnosedHealthCondition_DaughterCirculatoryCondit"),
-                               (4, 14, 0, "OrganTransplant_BoneTransplantDate")]
+            'cleaned_values': [
+                (3, 13, 0,
+                 "DiagnosedHealthCondition_DaughterCirculatoryCondit"),
+                (4, 14, 0, "OrganTransplant_BoneTransplantDate")
+            ]
         }]
 
         self.default_test(tables_and_counts)
