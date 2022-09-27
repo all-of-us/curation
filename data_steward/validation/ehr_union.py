@@ -815,6 +815,7 @@ def main(input_dataset_id,
     :param output_dataset_id identifies the dataset to store the new CDM in
     :param project_id: project containing the datasets
     :param hpo_ids_ex: (optional) list that identifies HPOs not to process, by default process all
+    :param ehr_cutoff_date: (optional) cutoff date for ehr data(same as CDR cutoff date)
     :returns: list of tables generated successfully
     """
     bq_client = BigQueryClient(project_id)
@@ -908,4 +909,5 @@ if __name__ == '__main__':
         main(args.input_dataset_id,
              args.output_dataset_id,
              args.project_id,
+             hpo_ids_ex=args.hpo_id_ex,
              ehr_cutoff_date=args.ehr_cutoff_date)
