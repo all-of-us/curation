@@ -6,11 +6,15 @@ Some new operational fields exists, that were not blacklisted in the RDR export.
 RDR load process so they do not make it to CDR. These do not have concept_id maps. 
 The supplemental operational_pii_fields.csv shows all present PPI codes without a mapped concepts,
 indicating which should be dropped in the “drop_value” column
+
+Jira issues = DC-500, DC-831
 """
+# Python imports
 import logging
 import os
 from datetime import datetime
 
+# Project imports
 from google.cloud import bigquery
 from gcloud.bq import BigQueryClient
 import resources
@@ -26,7 +30,7 @@ INTERMEDIARY_TABLE = 'remove_operational_pii_fields_observation'
 
 JIRA_ISSUE_NUMBERS = ['DC500', 'DC831']
 
-SANDBOX_OPERATION_PII_FIELDS = JINJA_ENV.from_string("""
+SANDBOX_OPERATIONAL_PII_FIELDS = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE
     `{{project_id}}.{{sandbox_dataset_id}}.{{intermediary_table}}` AS (
   SELECT
@@ -82,6 +86,7 @@ class RemoveOperationalPiiFields(BaseCleaningRule):
                  table_namer=None):
         """
         Initialize the class with proper information.
+
         Set the issue numbers, description and affected datasets. As other tickets may affect
         this SQL, append them to the list of Jira Issues.
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
@@ -110,11 +115,11 @@ class RemoveOperationalPiiFields(BaseCleaningRule):
 
     def setup_rule(self, client: BigQueryClient, *args, **keyword_args) -> None:
         """
+        Load the lookup table values into the sandbox.
+
+        The following queries will use the lookup table as part of the execution.
         Loads the operational pii fields from resource_files/_operational_pii_fields.csv
         into project_id.sandbox_dataset_id.operational_pii_fields in BQ
-
-        Load the lookup table values into the sandbox.  The following queries
-        will use the lookup table as part of the execution.
         """
         table_path = os.path.join(resources.resource_files_path,
                                   f"{OPERATIONAL_PII_FIELDS_TABLE}.csv")
@@ -149,6 +154,7 @@ class RemoveOperationalPiiFields(BaseCleaningRule):
     def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
         """
         Return a list of dictionary query specifications.
+
         :return:  A list of dictionaries. Each dictionary contains a single query
             and a specification for how to execute that query. The specifications
             are optional but the query is required.
@@ -156,7 +162,7 @@ class RemoveOperationalPiiFields(BaseCleaningRule):
         queries_list = []
 
         sandbox_query = dict()
-        sandbox_query[cdr_consts.QUERY] = SANDBOX_OPERATION_PII_FIELDS.render(
+        sandbox_query[cdr_consts.QUERY] = SANDBOX_OPERATIONAL_PII_FIELDS.render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
             sandbox_dataset_id=self.sandbox_dataset_id,
@@ -169,7 +175,6 @@ class RemoveOperationalPiiFields(BaseCleaningRule):
             project_id=self.project_id,
             dataset_id=self.dataset_id,
             sandbox_dataset_id=self.sandbox_dataset_id,
-            operational_pii_fields_table=OPERATIONAL_PII_FIELDS_TABLE,
             intermediary_table=INTERMEDIARY_TABLE)
         queries_list.append(delete_query)
 
@@ -197,8 +202,7 @@ class RemoveOperationalPiiFields(BaseCleaningRule):
 
     def _get_counts(self, client: BigQueryClient) -> Dict[str, int]:
         """
-        Counts query.
-        Used for job validation.
+        Counts query, used for job validation.
         """
         job = client.query(self.counts_query)
         response = job.result()

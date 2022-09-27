@@ -89,7 +89,7 @@ class RemoveOperationalPiiFieldsTest(BaseTest.CleaningRulesTestBase):
             'fq_sandbox_table_name':
                 f'{self.project_id}.{self.sandbox_id}.{INTERMEDIARY_TABLE}',
             'loaded_ids': [1, 2, 3, 4, 5, 6],
-            'sandboxed_ids': [1, 2, 5, cd6],
+            'sandboxed_ids': [1, 2, 5, 6],
             'fields': [
                 'observation_id', 'person_id', 'observation_concept_id',
                 'observation_source_value'
