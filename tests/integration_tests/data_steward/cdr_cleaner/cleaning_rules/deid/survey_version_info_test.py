@@ -28,8 +28,7 @@ class COPESurveyVersionTaskTest(BaseTest.DeidRulesTestBase):
         super().initialize_class_vars()
 
         # set the test project identifier
-        project_id = os.environ.get(PROJECT_ID)
-        cls.project_id = project_id
+        cls.project_id = os.environ.get(PROJECT_ID)
 
         # set the expected test datasets
         # intended to be run on the deid_base dataset.  The combined dataset
@@ -43,7 +42,7 @@ class COPESurveyVersionTaskTest(BaseTest.DeidRulesTestBase):
         cls.cope_dataset_id = cls.mapping_dataset_id
 
         dataset_id = os.environ.get('COMBINED_DATASET_ID')
-        sandbox_id = dataset_id + '_sandbox'
+        sandbox_id = f'{dataset_id}_sandbox'
         cls.kwargs.update({
             'deid_questionnaire_response_map_dataset':
                 cls.deid_questionnaire_response_map_dataset,
@@ -54,19 +53,19 @@ class COPESurveyVersionTaskTest(BaseTest.DeidRulesTestBase):
         })
 
         cls.rule_instance = COPESurveyVersionTask(
-            project_id, dataset_id, sandbox_id, cls.cope_dataset_id,
+            cls.project_id, dataset_id, sandbox_id, cls.cope_dataset_id,
             COPE_SURVEY_MAP, cls.deid_questionnaire_response_map_dataset)
 
         cls.fq_table_names = [
-            f"{project_id}.{dataset_id}.observation",
-            f"{project_id}.{dataset_id}.observation_ext",
-            f"{project_id}.{cls.cope_dataset_id}.{COPE_SURVEY_MAP}"
+            f"{cls.project_id}.{dataset_id}.observation",
+            f"{cls.project_id}.{dataset_id}.observation_ext",
+            f"{cls.project_id}.{cls.cope_dataset_id}.{COPE_SURVEY_MAP}"
         ]
 
         cls.dataset_id = dataset_id
         cls.sandbox_id = sandbox_id
 
-        cls.fq_questionnaire_tablename = f'{project_id}.{cls.deid_questionnaire_response_map_dataset}._deid_questionnaire_response_map'
+        cls.fq_questionnaire_tablename = f'{cls.project_id}.{cls.deid_questionnaire_response_map_dataset}._deid_questionnaire_response_map'
         # call super to set up the client, create datasets, and create
         # empty test tables
         # NOTE:  does not create empty sandbox tables.

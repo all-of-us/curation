@@ -50,9 +50,7 @@ class QRIDtoRIDTest(BaseTest.CleaningRulesTestBase):
         ]
 
         sb_table_name = cls.rule_instance.sandbox_table_for(SURVEY_CONDUCT)
-        cls.fq_sandbox_table_names = [
-            # f'{project_id}.{cls.sandbox_id}.{sb_table_name}'
-        ]
+        cls.fq_sandbox_table_names = []
 
         cls.kwargs['deid_questionnaire_response_map_dataset'] = dataset_id
 

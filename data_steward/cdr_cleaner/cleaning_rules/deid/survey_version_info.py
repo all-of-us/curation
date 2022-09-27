@@ -24,7 +24,7 @@ from constants.cdr_cleaner import clean_cdr as cdr_consts
 
 LOGGER = logging.getLogger(__name__)
 
-ISSUE_NUMBERS = ['DC-1040', 'DC-2609']
+ISSUE_NUMBERS = ['DC-1040', 'DC-2609', 'DC2730']
 
 VERSION_COPE_SURVEYS_QUERY = JINJA_ENV.from_string("""
 UPDATE `{{project_id}}.{{out_dataset_id}}.observation_ext` oe
@@ -241,6 +241,7 @@ if __name__ == '__main__':
         ARGS.deid_questionnaire_response_map_dataset)
     query_list = version_task.get_query_specs()
 
+    #TODO:  fix this so it is functional
     if ARGS.list_queries:
         version_task.log_queries()
     else:
