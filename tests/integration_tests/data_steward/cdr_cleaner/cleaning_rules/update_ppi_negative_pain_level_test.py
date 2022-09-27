@@ -87,7 +87,7 @@ class UpdatePpiNegativePainLevelTest(BaseTest.CleaningRulesTestBase):
     def test_setup_rule(self):
 
         # test if intermediary table exists before running the cleaning rule
-        intermediary_table = f'{self.project_id}.{self.sandbox_id}.{OLD_MAP_SHORT_CODES_TABLE}'
+        intermediary_table = f'{self.project_id}.{self.sandbox_id}.{OBSERVATION}'
 
         # run setup_rule and see if the table is created
         self.rule_instance.setup_rule(self.client)
