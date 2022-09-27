@@ -20,14 +20,14 @@ SELECT_NEGATIVE_PPI_QUERY = JINJA_ENV.from_string("""
 SELECT
   *
 FROM
-  `{project_id}.{dataset_id}.observation`
+  `{{project_id}}.{{dataset_id}}.observation`
 WHERE value_as_number = -1
 AND observation_source_concept_id = 1585747
 """)
 
 UPDATE_NEGATIVE_PPI_QUERY = JINJA_ENV.from_string("""
 UPDATE
-  `{project_id}.{dataset_id}.observation`
+  `{{project_id}}.{{dataset_id}}.observation`
 SET value_as_number = NULL,
 value_source_concept_id = 903096,
 value_as_concept_id = 903096,
@@ -77,19 +77,16 @@ class UpdatePpiNegativePainLevel(BaseCleaningRule):
         queries_list.append({
             cdr_consts.QUERY:
                 SELECT_NEGATIVE_PPI_QUERY.render(
-                    dataset=self.dataset_id,
-                    project=self.project_id,
-                    sandbox_dataset=self.sandbox_dataset_id,
-                    sandbox_table=self.sandbox_table_for(OBSERVATION))
+                    dataset_id=self.dataset_id,
+                    project_id=self.project_id)
         })
 
         # Update value_as_number, value_source_concept_id, value_as_concept_id, value_as_string, value_source_value.
         queries_list.append({
             cdr_consts.QUERY:
                 UPDATE_NEGATIVE_PPI_QUERY.render(
-                    dataset=self.dataset_id,
-                    project=self.project_id,
-                    sandbox=self.sandbox_dataset_id)
+                    dataset_id=self.dataset_id,
+                    project_id=self.project_id)
         })
 
         return queries_list
