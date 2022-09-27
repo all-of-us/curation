@@ -48,7 +48,7 @@ class DrugRefillsDaysSupply(BaseCleaningRule):
         super().__init__(issue_numbers=['DC403', 'DC815'],
                          description=desc,
                          affected_datasets=[cdr_consts.COMBINED],
-                         affected_tables=DRUG_EXPOSURE,
+                         affected_tables=[DRUG_EXPOSURE],
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,

@@ -9,7 +9,7 @@ import os
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.drug_refills_days_supply import DrugRefillsDaysSupply
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
-from common import DRUG_EXPOSURE, JINJA_ENV
+from common import DRUG_EXPOSURE
 
 # Third party imports
 
@@ -36,9 +36,10 @@ class DrugRefillsDaysSupplyTest(BaseTest.CleaningRulesTestBase):
             f'{cls.project_id}.{cls.dataset_id}.{DRUG_EXPOSURE}'
         ]
 
-        cls.fq_sandbox_table_names = [
-            f'{cls.project_id}.{cls.sandbox_id}.{cls.rule_instance.sandbox_table_for(DRUG_EXPOSURE)}'
-        ]
+        cls.fq_sandbox_table_names = []
+        for table in cls.rule_instance.get_sandbox_tablenames():
+            cls.fq_sandbox_table_names.append(
+                f'{cls.project_id}.{cls.sandbox_id}.{table}')
 
         super().setUpClass()
 
@@ -47,7 +48,7 @@ class DrugRefillsDaysSupplyTest(BaseTest.CleaningRulesTestBase):
         Tests that the specifications perform as designed.
         """
 
-        INSERT_DRUG_EXPOSURE_QUERY = JINJA_ENV.from_string("""
+        INSERT_DRUG_EXPOSURE_QUERY = self.jinja_env.from_string("""
             INSERT INTO `{{project_id}}.{{dataset_id}}.drug_exposure`
                 (drug_exposure_id, person_id, drug_concept_id,
                  drug_exposure_start_date, drug_exposure_start_datetime,
