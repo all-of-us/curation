@@ -187,7 +187,7 @@ RDR_CLEANING_CLASSES = [
         DropPpiDuplicateResponses,),
     (DropCopeDuplicateResponses,),
     # Should run prior to ConvertPrePostCoordinatedConcepts
-    (RemoveOperationalPiiFields),
+    (RemoveOperationalPiiFields,),
     (RoundPpiValuesToNearestInteger,),
     (UpdateFamilyHistoryCodes,),
     (ConvertPrePostCoordinatedConcepts,),
