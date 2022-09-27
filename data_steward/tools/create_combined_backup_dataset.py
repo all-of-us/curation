@@ -64,11 +64,11 @@ def assert_tables_in(client: BigQueryClient, dataset_id: str):
     """
     tables = client.list_tables(dataset_id)
     table_ids = set([table.table_id for table in tables])
-    LOGGER.info(f'Confirming dataset, {dataset_id}, has tables: {tables}')
-    if table_ids != set(combine_consts.TABLES_TO_PROCESS):
-        raise RuntimeError(
-            f'Dataset, {dataset_id}, is missing tables {set(combine_consts.TABLES_TO_PROCESS) - table_ids}.  '
-            f'Aborting.')
+    LOGGER.info(f'Confirming dataset, {dataset_id}, has tables: {table_ids}')
+    for table in combine_consts.TABLES_TO_PROCESS:
+        if table not in table_ids:
+            raise RuntimeError(
+                f'Dataset {dataset_id} is missing table {table}. Aborting.')
 
 
 def assert_ehr_and_rdr_tables(client: BigQueryClient,
