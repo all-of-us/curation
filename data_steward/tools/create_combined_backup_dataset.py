@@ -188,6 +188,9 @@ def mapping_query(domain_table: str, rdr_dataset: str, unioned_ehr_dataset: str,
     Returns query used to get mapping of all records from RDR combined with EHR records of consented participants
 
     :param domain_table: one of the domain tables (e.g. 'visit_occurrence', 'condition_occurrence')
+    :param rdr_dataset: rdr dataset identifier
+    :param unioned_ehr_dataset: unioned_ehr dataset identifier
+    :param combined_dataset: combined_backup dataset identifier
     :return:
     """
     return combine_consts.MAPPING_QUERY.render(
@@ -208,9 +211,12 @@ def generate_combined_mapping_tables(client: BigQueryClient, domain_table: str,
 
     :param client: Bigquery client
     :param domain_table: cdm table
+    :param rdr_dataset: rdr dataset identifier
+    :param unioned_ehr_dataset: unioned_ehr dataset identifier
+    :param combined_dataset: combined_backup dataset identifier
     :return:
     """
-    if domain_table in combine_consts.DOMAIN_TABLES:
+    if domain_table in combine_consts.DOMAIN_TABLES + [common.SURVEY_CONDUCT]:
         q = mapping_query(domain_table, rdr_dataset, unioned_ehr_dataset,
                           combined_dataset)
         mapping_table = mapping_table_for(domain_table)
@@ -495,7 +501,7 @@ def main(raw_args=None):
                        combined_dataset)
 
     LOGGER.info('Generating combined mapping tables ...')
-    for domain_table in combine_consts.DOMAIN_TABLES:
+    for domain_table in combine_consts.DOMAIN_TABLES + [common.SURVEY_CONDUCT]:
         LOGGER.info(f'Mapping {domain_table}...')
         generate_combined_mapping_tables(client, domain_table, args.rdr_dataset,
                                          args.unioned_ehr_dataset,

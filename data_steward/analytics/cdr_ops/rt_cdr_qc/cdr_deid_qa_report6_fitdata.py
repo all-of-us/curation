@@ -34,6 +34,9 @@ com_cdr = ""
 truncation_date = ""
 maximum_age = ""
 run_as = ""
+fitbit_sandbox_dataset = ""
+sleep_level_sandbox_table = ""
+fitbit_dataset = ""
 # -
 
 # df will have a summary in the end
@@ -548,6 +551,61 @@ else:
         },
         ignore_index=True)
 df1.T
+
+# # Verify that all records with invalid level values are being dropped from sleep_level table
+#
+# DC-2606
+#
+# Queries the sandbox table for the corresponding cleaning rule (created in DC-2605) and outputs any records that
+# are being dropped due to invalid level values. It also outputs any records in the sleep_level table that should
+# have been dropped but were not.
+
+query = f'''
+
+WITH df1 AS (
+  SELECT 
+    level, 'dropped' AS dropped_status, count(*) as n_violations
+  FROM 
+    `{project_id}.{fitbit_sandbox_dataset}.{sleep_level_sandbox_table}`
+  GROUP BY 1, 2
+  ORDER BY n_violations
+),
+
+df2 AS (
+  SELECT 
+    level, 'not dropped' AS dropped_status, count(*) as n_violations
+  FROM 
+    `{project_id}.{fitbit_dataset}.sleep_level`
+  WHERE 
+  (
+      LOWER(level) NOT IN 
+          ('awake','light','asleep','deep','restless','wake','rem','unknown') OR level IS NULL
+  )
+  GROUP BY 1, 2
+)
+
+select *
+from df1
+UNION ALL
+select *
+from df2
+'''
+df2 = execute(client, query)
+if 'not dropped' not in set(df2['dropped_status']):
+    df = df.append(
+        {
+            'query': 'Query6 no invalid level records in sleep_level table',
+            'result': 'PASS'
+        },
+        ignore_index=True)
+else:
+    df = df.append(
+        {
+            'query': 'Query6 no invalid level records in sleep_level table',
+            'result': ''
+        },
+        ignore_index=True)
+df2
 
 # # Summary_fitdata
 

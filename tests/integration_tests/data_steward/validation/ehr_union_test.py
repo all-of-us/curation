@@ -230,6 +230,7 @@ class EhrUnionTest(unittest.TestCase):
         mapping_tables = [
             ehr_union.mapping_table_for(table)
             for table in cdm.tables_to_map() + [common.PERSON]
+            if not table == common.SURVEY_CONDUCT
         ]
         output_cdm_tables = [
             ehr_union.output_table_for(table) for table in resources.CDM_TABLES
@@ -279,57 +280,60 @@ class EhrUnionTest(unittest.TestCase):
         # mapping tables
         tables_to_map = cdm.tables_to_map()
         for table_to_map in tables_to_map:
-            mapping_table = ehr_union.mapping_table_for(table_to_map)
-            expected_fields = {
-                'src_table_id',
-                'src_%s_id' % table_to_map,
-                '%s_id' % table_to_map, 'src_hpo_id', 'src_dataset_id'
-            }
-            mapping_table_info = bq_utils.get_table_info(
-                mapping_table, dataset_id=self.output_dataset_id)
-            mapping_table_fields = mapping_table_info.get('schema', dict()).get(
-                'fields', [])
-            actual_fields = set([f['name'] for f in mapping_table_fields])
-            message = 'Table %s has fields %s when %s expected' % (
-                mapping_table, actual_fields, expected_fields)
-            self.assertSetEqual(expected_fields, actual_fields, message)
+            if not table_to_map == common.SURVEY_CONDUCT:
+                mapping_table = ehr_union.mapping_table_for(table_to_map)
+                expected_fields = {
+                    'src_table_id',
+                    'src_%s_id' % table_to_map,
+                    '%s_id' % table_to_map, 'src_hpo_id', 'src_dataset_id'
+                }
+                mapping_table_info = bq_utils.get_table_info(
+                    mapping_table, dataset_id=self.output_dataset_id)
+                mapping_table_fields = mapping_table_info.get('schema',
+                                                              dict()).get(
+                                                                  'fields', [])
+                actual_fields = set([f['name'] for f in mapping_table_fields])
+                message = 'Table %s has fields %s when %s expected' % (
+                    mapping_table, actual_fields, expected_fields)
+                self.assertSetEqual(expected_fields, actual_fields, message)
 
-            if table_to_map == common.VISIT_DETAIL:
-                expected_num_rows = len(self.expected_tables[mapping_table])
-            else:
-                result_table = ehr_union.output_table_for(table_to_map)
-                expected_num_rows = len(self.expected_tables[result_table])
+                if table_to_map == common.VISIT_DETAIL:
+                    expected_num_rows = len(self.expected_tables[mapping_table])
+                else:
+                    result_table = ehr_union.output_table_for(table_to_map)
+                    expected_num_rows = len(self.expected_tables[result_table])
 
-            actual_num_rows = int(mapping_table_info.get('numRows', -1))
-            message = 'Table %s has %s rows when %s expected' % (
-                mapping_table, actual_num_rows, expected_num_rows)
-            self.assertEqual(expected_num_rows, actual_num_rows, message)
+                actual_num_rows = int(mapping_table_info.get('numRows', -1))
+                message = 'Table %s has %s rows when %s expected' % (
+                    mapping_table, actual_num_rows, expected_num_rows)
+                self.assertEqual(expected_num_rows, actual_num_rows, message)
 
         # check for each output table
         for table_name in resources.CDM_TABLES:
-            # output table exists and row count is sum of those submitted by hpos
-            result_table = ehr_union.output_table_for(table_name)
-            expected_rows = self.expected_tables[result_table]
-            expected_count = len(expected_rows)
-            table_info = bq_utils.get_table_info(
-                result_table, dataset_id=self.output_dataset_id)
-            actual_count = int(table_info.get('numRows'))
-            msg = 'Unexpected row count in table {result_table} after ehr union'.format(
-                result_table=result_table)
-            self.assertEqual(expected_count, actual_count, msg)
-            # TODO Compare table rows to expected accounting for the new ids and ignoring field types
-            # q = 'SELECT * FROM {dataset}.{table}'.format(dataset=self.output_dataset_id, table=result_table)
-            # query_response = bq_utils.query(q)
-            # actual_rows = bq_utils.response2rows(query_response)
+            if not table_name == common.SURVEY_CONDUCT:
+                # output table exists and row count is sum of those submitted by hpos
+                result_table = ehr_union.output_table_for(table_name)
+                expected_rows = self.expected_tables[result_table]
+                expected_count = len(expected_rows)
+                table_info = bq_utils.get_table_info(
+                    result_table, dataset_id=self.output_dataset_id)
+                actual_count = int(table_info.get('numRows'))
+                msg = 'Unexpected row count in table {result_table} after ehr union'.format(
+                    result_table=result_table)
+                self.assertEqual(expected_count, actual_count, msg)
+                # TODO Compare table rows to expected accounting for the new ids and ignoring field types
+                # q = 'SELECT * FROM {dataset}.{table}'.format(dataset=self.output_dataset_id, table=result_table)
+                # query_response = bq_utils.query(q)
+                # actual_rows = bq_utils.response2rows(query_response)
 
-            # output table has clustering on person_id where applicable
-            fields = resources.fields_for(table_name)
-            field_names = [field['name'] for field in fields]
-            if 'person_id' in field_names:
-                self._table_has_clustering(table_info)
+                # output table has clustering on person_id where applicable
+                fields = resources.fields_for(table_name)
+                field_names = [field['name'] for field in fields]
+                if 'person_id' in field_names:
+                    self._table_has_clustering(table_info)
 
-        actual_output = set(self._dataset_tables(self.output_dataset_id))
-        self.assertSetEqual(expected_output, actual_output)
+            actual_output = set(self._dataset_tables(self.output_dataset_id))
+            self.assertSetEqual(expected_output, actual_output)
 
         # explicit check that output person_ids are same as input
         nyc_person_table_id = resources.get_table_id('person',

@@ -1,0 +1,48 @@
+[
+    {
+    "type": "string",
+    "name": "type",
+    "mode": "nullable",
+    "description": ""
+}, {
+    "type": "string",
+    "name": "observation_source_value_info",
+    "mode": "nullable",
+    "description": ""
+}, {
+    "type": "integer",
+    "name": "rank",
+    "mode": "nullable",
+    "description": ""
+}, {
+    "type": "integer",
+    "name": "observation_source_concept_id",
+    "mode": "nullable",
+    "description": ""
+}, {
+    "type": "integer",
+    "name": "value_as_concept_id",
+    "mode": "nullable",
+    "description": ""
+}, {
+    "type": "integer",
+    "name": "new_observation_concept_id",
+    "mode": "nullable",
+    "description": ""
+}, {
+    "type": "integer",
+    "name": "new_observation_source_concept_id",
+    "mode": "nullable",
+    "description": ""
+}, {
+    "type": "integer",
+    "name": "new_value_as_concept_id",
+    "mode": "nullable",
+    "description": ""
+}, {
+    "type": "integer",
+    "name": "new_value_source_concept_id",
+    "mode": "nullable",
+    "description": ""
+}
+]
