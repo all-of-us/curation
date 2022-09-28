@@ -20,7 +20,10 @@ from constants.bq_utils import WRITE_TRUNCATE
 
 LOGGER = logging.getLogger(__name__)
 
-FITBIT_DATE_TABLES = [common.ACTIVITY_SUMMARY, common.HEART_RATE_SUMMARY]
+FITBIT_DATE_TABLES = [
+    common.ACTIVITY_SUMMARY, common.HEART_RATE_SUMMARY, common.SLEEP_LEVEL,
+    common.SLEEP_DAILY_SUMMARY
+]
 FITBIT_DATETIME_TABLES = [common.HEART_RATE_MINUTE_LEVEL, common.STEPS_INTRADAY]
 
 FITBIT_TABLES_DATE_FIELDS = {
@@ -32,7 +35,6 @@ FITBIT_TABLES_DATE_FIELDS = {
 FITBIT_TABLES_DATETIME_FIELDS = {
     common.HEART_RATE_MINUTE_LEVEL: 'datetime',
     common.STEPS_INTRADAY: 'datetime',
-    common.SLEEP_LEVEL: 'start_datetime'
 }
 
 # Save rows that will be dropped to a sandboxed dataset
@@ -199,18 +201,29 @@ if __name__ == '__main__':
     import cdr_cleaner.args_parser as parser
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
-    ARGS = parser.parse_args()
+    ext_parser = parser.get_argument_parser()
+    ext_parser.add_argument('-t',
+                            '--truncation_date',
+                            action='store',
+                            dest='truncation_date',
+                            help='CDR truncation date',
+                            required=True)
+
+    ARGS = ext_parser.parse_args()
 
     if ARGS.list_queries:
         clean_engine.add_console_logging()
-        query_list = clean_engine.get_query_list(ARGS.project_id,
-                                                 ARGS.dataset_id,
-                                                 ARGS.sandbox_dataset_id,
-                                                 [(TruncateFitbitData,)])
+        query_list = clean_engine.get_query_list(
+            ARGS.project_id,
+            ARGS.dataset_id,
+            ARGS.sandbox_dataset_id, [(TruncateFitbitData,)],
+            truncation_date=ARGS.truncation_date)
         for query in query_list:
             LOGGER.info(query)
     else:
         clean_engine.add_console_logging(ARGS.console_log)
-        clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
+        clean_engine.clean_dataset(ARGS.project_id,
+                                   ARGS.dataset_id,
                                    ARGS.sandbox_dataset_id,
-                                   [(TruncateFitbitData,)])
+                                   [(TruncateFitbitData,)],
+                                   truncation_date=ARGS.truncation_date)
