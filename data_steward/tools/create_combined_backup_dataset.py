@@ -256,7 +256,8 @@ def join_expression_generator(domain_table, combined_dataset):
             fields_to_join.append(field_name)
 
         if field_name in fields_to_join:
-            col_expr = f'{field_name[:3]}.' + field_name
+            col_expr = f'{field_name[:3] + "_" + field_name[-7:-3] if "_" in field_name else field_name[:3]}.' \
+                       + field_name
 
         elif field_name in primary_key:
             col_expr = 'm.' + field_name
@@ -273,7 +274,8 @@ def join_expression_generator(domain_table, combined_dataset):
                 join_expression.append(
                     combine_consts.LEFT_JOIN_PERSON.render(
                         dataset_id=combined_dataset,
-                        prefix=key[:3],
+                        prefix=
+                        f'{key[:3] + "_" + key[-7:-3] if "_" in key else key[:3]}',
                         field=key,
                         table=table_alias))
 
@@ -282,17 +284,20 @@ def join_expression_generator(domain_table, combined_dataset):
                 join_expression.append(
                     combine_consts.JOIN_VISIT.render(
                         dataset_id=combined_dataset,
-                        prefix=key[:3],
+                        prefix=
+                        f'{key[:3] + "_" + key[-7:-3] if "_" in key else key[:3]}',
                         field=key,
                         table=table_alias))
 
             else:
                 table_alias = mapping_table_for(f'{key[:-3]}')
                 join_expression.append(
-                    combine_consts.LEFT_JOIN.render(dataset_id=combined_dataset,
-                                                    prefix=key[:3],
-                                                    field=key,
-                                                    table=table_alias))
+                    combine_consts.LEFT_JOIN.render(
+                        dataset_id=combined_dataset,
+                        prefix=
+                        f'{key[:3] + "_" + key[-7:-3] if "_" in key else key[:3]}',
+                        field=key,
+                        table=table_alias))
     full_join_expression = " ".join(join_expression)
     return cols, full_join_expression
 
