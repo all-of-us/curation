@@ -2,7 +2,7 @@
 Populates survey_conduct_ext table with the language information
 as provided in the questionnaire_response_additional_info table.
 
-Original issue: DC-2627
+Original issue: DC-2627, DC-2730
 """
 # Python imports
 import logging
@@ -43,7 +43,7 @@ class PopulateSurveyConductExt(BaseCleaningRule):
                 'information as provided in the '
                 'questionnaire_response_additional_info table.')
 
-        super().__init__(issue_numbers=['DC2627'],
+        super().__init__(issue_numbers=['DC2627', 'DC2730'],
                          description=desc,
                          affected_datasets=[
                              cdr_consts.REGISTERED_TIER_DEID,

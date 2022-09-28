@@ -1,7 +1,7 @@
 """
 Adding COPE and Minute survey version info to the observation_ext table.
 
-Original Issue:  DC-1040
+Original Issue:  DC-1040, DC-2730
 
 The intent is to provide COPE and Minute survey version info as part of the observation_ext
 table.  In an ad-hoc form, this relies on receiving questionnaire_response_id to
