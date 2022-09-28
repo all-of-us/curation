@@ -9,6 +9,10 @@ COPE month mapping information from the RDR team.  It also currently relies on
 the static mapping of an AoU custom concept id to a COPE survey month.  Once
 these two processes are well defined and automated, this can be integrated
 into the pipeline as a well-formed cleaning rule.
+
+This rule has been re-ordered in the pipeline.  This allows us to drop the questionnaire_id remapping
+dataset identifier.  Because the signature is being updated, we also removed the parameterization
+of the cope mapping table name, as it is already stored in a variable and used by other rules.
 """
 # Python Imports
 import logging
@@ -19,7 +23,7 @@ from google.api_core.exceptions import BadRequest, NotFound
 # Project imports
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from cdr_cleaner.cleaning_rules.generate_ext_tables import GenerateExtTables
-from common import OBSERVATION, JINJA_ENV
+from common import (COPE_SURVEY_MAP, OBSERVATION, JINJA_ENV)
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 
 LOGGER = logging.getLogger(__name__)
@@ -27,25 +31,25 @@ LOGGER = logging.getLogger(__name__)
 ISSUE_NUMBERS = ['DC-1040', 'DC-2609', 'DC2730']
 
 VERSION_COPE_SURVEYS_QUERY = JINJA_ENV.from_string("""
-UPDATE `{{project_id}}.{{out_dataset_id}}.observation_ext` oe
+UPDATE `{{project_id}}.{{dataset_id}}.observation_ext` oe
     -- this will work for a one off solution, but needs a mapping to accurately --
     -- map concept-ids to cope-months for a sustainable, long-term solution --
     -- In a future CDR, this implementation will be replaced by the survey_conduct table --
     SET survey_version_concept_id = CASE
-      WHEN v.cope_month = 'may' THEN 2100000002
-      WHEN v.cope_month = 'june' THEN 2100000003
-      WHEN v.cope_month = 'july' THEN 2100000004
-      WHEN v.cope_month = 'nov' THEN 2100000005
-      WHEN v.cope_month = 'dec' THEN 2100000006
-      WHEN v.cope_month = 'feb' THEN 2100000007
-      WHEN v.cope_month = 'vaccine1' THEN 905047
-      WHEN v.cope_month = 'vaccine2' THEN 905055
-      WHEN v.cope_month = 'vaccine3' THEN 765936
-      WHEN v.cope_month = 'vaccine4' THEN 1741006
+      WHEN lower(v.cope_month) = 'may' THEN 2100000002
+      WHEN lower(v.cope_month) = 'june' THEN 2100000003
+      WHEN lower(v.cope_month) = 'july' THEN 2100000004
+      WHEN lower(v.cope_month) = 'nov' THEN 2100000005
+      WHEN lower(v.cope_month) = 'dec' THEN 2100000006
+      WHEN lower(v.cope_month) = 'feb' THEN 2100000007
+      WHEN lower(v.cope_month) = 'vaccine1' THEN 905047
+      WHEN lower(v.cope_month) = 'vaccine2' THEN 905055
+      WHEN lower(v.cope_month) = 'vaccine3' THEN 765936
+      WHEN lower(v.cope_month) = 'vaccine4' THEN 1741006
     END
     FROM (
         SELECT cope_month, o.observation_id
-        FROM `{{project_id}}.{{out_dataset_id}}.observation` AS o
+        FROM `{{project_id}}.{{dataset_id}}.observation` AS o
         JOIN `{{project_id}}.{{cope_table_dataset_id}}.{{cope_survey_mapping_table}}` AS cssf
         ON cssf.questionnaire_response_id = o.questionnaire_response_id) v
     WHERE v.observation_id = oe.observation_id
@@ -64,9 +68,7 @@ class COPESurveyVersionTask(BaseCleaningRule):
                  project_id,
                  dataset_id,
                  sandbox_dataset_id,
-                 cope_lookup_dataset_id,
-                 cope_table_name,
-                 deid_questionnaire_response_map_dataset,
+                 cope_lookup_dataset_id=None,
                  table_namer=None):
         """
         Initialize the class with proper info.
@@ -93,9 +95,10 @@ class COPESurveyVersionTask(BaseCleaningRule):
             depends_on=[GenerateExtTables],
             table_namer=table_namer)
 
-        self.qrid_map_dataset_id = deid_questionnaire_response_map_dataset
+        if not cope_lookup_dataset_id:
+            raise RuntimeError("'cope_lookup_dataset_id' must be set")
+
         self.cope_lookup_dataset_id = cope_lookup_dataset_id
-        self.cope_survey_table = cope_table_name
 
     def get_query_specs(self):
         """
@@ -109,10 +112,9 @@ class COPESurveyVersionTask(BaseCleaningRule):
             cdr_consts.QUERY:
                 VERSION_COPE_SURVEYS_QUERY.render(
                     project_id=self.project_id,
-                    out_dataset_id=self.dataset_id,
-                    qrid_map_dataset_id=self.qrid_map_dataset_id,
+                    dataset_id=self.dataset_id,
                     cope_table_dataset_id=self.cope_lookup_dataset_id,
-                    cope_survey_mapping_table=self.cope_survey_table)
+                    cope_survey_mapping_table=COPE_SURVEY_MAP)
         }
 
         return [apply_cope_survey_versions]
@@ -139,9 +141,9 @@ class COPESurveyVersionTask(BaseCleaningRule):
                    f"does not exist in project: '{self.project_id}'")
             LOGGER.exception(msg)
         else:
-            if self.cope_survey_table not in table_ids:
+            if COPE_SURVEY_MAP not in table_ids:
                 msg = (f"{self.__class__.__name__} cannot execute because the "
-                       f"cope survey mapping table: '{self.cope_survey_table}' "
+                       f"cope survey mapping table: '{COPE_SURVEY_MAP}' "
                        f"does not exist in "
                        f"'{self.project_id}.{self.cope_lookup_dataset_id}'")
                 LOGGER.error(msg)
@@ -179,35 +181,9 @@ class COPESurveyVersionTask(BaseCleaningRule):
         return [self.sandbox_table_for(table) for table in self.affected_tables]
 
 
-def add_console_logging(add_handler):
-    """
-
-    This config should be done in a separate module, but that can wait
-    until later.  Useful for debugging.
-
-    Copied from the clean engine to break the dependency on the clean engine
-    in preparation for the upcoming pipeline execution.
-    """
-    logging.basicConfig(
-        level=logging.INFO,
-        filename=FILENAME,
-        filemode='a',
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-
-    if add_handler:
-        handler = logging.StreamHandler()
-        handler.setLevel(logging.INFO)
-        formatter = logging.Formatter(
-            '%(asctime)s - %(levelname)s - %(name)s - %(message)s')
-        handler.setFormatter(formatter)
-        logging.getLogger('').addHandler(handler)
-
-
 if __name__ == '__main__':
     import cdr_cleaner.args_parser as ap
-    # import cdr_cleaner.clean_cdr_engine as clean_engine
-    from constants.cdr_cleaner.clean_cdr_engine import FILENAME
-    from gcloud.bq import BigQueryClient
+    import cdr_cleaner.clean_cdr_engine as clean_engine
 
     parser = ap.get_argument_parser()
     parser.add_argument(
@@ -217,47 +193,23 @@ if __name__ == '__main__':
         help=('Dataset containing the mapping table provided by RDR team.  '
               'These maps questionnaire_response_ids to cope_months.'),
         required=True)
-    parser.add_argument(
-        '--cope_survey_table',
-        action='store',
-        dest='cope_survey_table',
-        required=True,
-        help='Name of the table cotaining the cope survey mapping information')
-    parser.add_argument(
-        '--deid_questionnaire_response_map_dataset',
-        action='store',
-        dest='deid_questionnaire_response_map_dataset',
-        help=
-        'Identifies the dataset containing the _deid_questionnaire_response_map lookup table',
-        required=True)
 
     ARGS = parser.parse_args()
 
-    # clean_engine.add_console_logging(ARGS.console_log)
-    add_console_logging(ARGS.console_log)
-    version_task = COPESurveyVersionTask(
-        ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id,
-        ARGS.cope_survey_dataset_id, ARGS.cope_survey_table,
-        ARGS.deid_questionnaire_response_map_dataset)
-    query_list = version_task.get_query_specs()
+    clean_engine.add_console_logging(ARGS.console_log)
 
-    #TODO:  fix this so it is functional
     if ARGS.list_queries:
-        version_task.log_queries()
+        clean_engine.add_console_logging()
+        query_list = clean_engine.get_query_list(
+            ARGS.project_id,
+            ARGS.dataset_id,
+            ARGS.sandbox_dataset_id, [(COPESurveyVersionTask,)],
+            cope_lookup_dataset_id=ARGS.cope_survey_dataset_id)
+        for query_dict in query_list:
+            LOGGER.info(query_dict.get(cdr_consts.QUERY))
     else:
-        bq_client = BigQueryClient(ARGS.project_id)
-
-        version_task.setup_rule(bq_client)
-        # clean_engine.clean_dataset(ARGS.project_id, query_list)
-        for query in query_list:
-            q = query.get(cdr_consts.QUERY)
-            if q:
-                query_job = bq_client.query(q)
-                query_job.result()
-                if query_job.exception():
-                    LOGGER.error(
-                        "BAIL OUT!!  SURVEY VERSION TASK encountered an exception"
-                    )
-                    LOGGER.error(query_job.exception())
-            else:
-                LOGGER.error("NO QUERY GENERATED for survey_version_info taks")
+        clean_engine.clean_dataset(
+            ARGS.project_id,
+            ARGS.dataset_id,
+            ARGS.sandbox_dataset_id, [(COPESurveyVersionTask,)],
+            cope_lookup_dataset_id=ARGS.cope_survey_dataset_id)

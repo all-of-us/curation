@@ -43,18 +43,13 @@ class COPESurveyVersionTaskTest(BaseTest.DeidRulesTestBase):
 
         dataset_id = os.environ.get('COMBINED_DATASET_ID')
         sandbox_id = f'{dataset_id}_sandbox'
-        cls.kwargs.update({
-            'deid_questionnaire_response_map_dataset':
-                cls.deid_questionnaire_response_map_dataset,
-            'cope_lookup_dataset_id':
-                cls.cope_dataset_id,
-            'cope_table_name':
-                COPE_SURVEY_MAP
-        })
+        cls.kwargs.update({'cope_lookup_dataset_id': cls.cope_dataset_id})
 
         cls.rule_instance = COPESurveyVersionTask(
-            cls.project_id, dataset_id, sandbox_id, cls.cope_dataset_id,
-            COPE_SURVEY_MAP, cls.deid_questionnaire_response_map_dataset)
+            cls.project_id,
+            dataset_id,
+            sandbox_id,
+            cope_lookup_dataset_id=cls.cope_dataset_id)
 
         cls.fq_table_names = [
             f"{cls.project_id}.{dataset_id}.observation",
