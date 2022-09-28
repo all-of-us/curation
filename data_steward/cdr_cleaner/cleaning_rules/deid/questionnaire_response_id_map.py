@@ -19,7 +19,7 @@ research_response_id in the _deid_questionnaire_response_map table.
 
 This rule will not sandbox survey_conduct_ext records that do not have a questionnaire_response_id mapping because
 1.  The mapping table will be built from the observation.questionnaire_response_id values
-2.  A cleaning rule, DC-2723, will ensure records in survey_conduct map to records in observation
+2.  A cleaning rule, DC-2735, will ensure records in survey_conduct map to records in observation
     IF there is not a valid mapping from survey_conduct.survey_conduct_id = observation.questionnaire_response_id
     THEN the record will be sandboxed and dropped from survey_conduct.
 3.  The clean mapping and extension tables rule will clean the survey_conduct_ext table.
