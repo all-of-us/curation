@@ -27,7 +27,39 @@ LOGGER = logging.getLogger(__name__)
 
 ISSUE_NUMBERS = ['DC583', 'DC845']
 
-INTERMEDIARY_TABLE_NAME = 'procedure_occurrence_dc583'
+SANDBOX_INVALID_PROCEDURE_SOURCE_CONCEPT_IDS_QUERY = JINJA_ENV.from_string("""
+CREATE OR REPLACE TABLE
+`{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` AS
+SELECT *
+FROM
+  `{{project}}.{{dataset}}.{{table}}` p
+WHERE p.procedure_concept_id NOT IN (
+  SELECT
+    concept_id
+  FROM
+    `{{project}}.{{dataset}}.concept`
+  WHERE
+    domain_id = 'Procedure'
+    AND TRIM(concept_class_id) IN ('Procedure', 'CPT4')
+    AND standard_concept = 'S'
+)
+AND
+p.procedure_source_concept_id IN (
+ SELECT
+    concept_id
+  FROM
+    `{{project}}.{{dataset}}.concept`
+  WHERE
+    TRIM(concept_class_id) = 'CPT4 Modifier'
+)
+""")
+
+KEEP_VALID_PROCEDURE_SOURCE_CONCEPT_IDS_QUERY = JINJA_ENV.from_string("""
+SELECT * FROM `{{project}}.{{dataset}}.{{table}}` as p0
+WHERE NOT EXISTS (
+SELECT p1.procedure_occurrence_id FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` AS p1
+WHERE p0.procedure_occurrence_id = p1.procedure_occurrence_id)
+""")
 
 
 class RemoveInvalidProcedureSourceRecords(BaseCleaningRule):
@@ -55,8 +87,77 @@ class RemoveInvalidProcedureSourceRecords(BaseCleaningRule):
                          sandbox_dataset_id=sandbox_dataset_id,
                          table_namer=table_namer)
 
+    def get_query_specs(self, *args, **keyword_args):
+        """
+        runs the query which removes records that contain incorrect values in the procedure_source_concept_id field
+        invalid procedure_source_concept_ids are where it is not in the procedure domain and
+        procedure_concept_id is not standard in the procedure domain
+
+        :return:  A list of dictionaries. Each dictionary contains a single query
+             and a specification for how to execute that query. The specifications
+             are optional but the query is required.
+        """
+        queries_list = []
+
+        # query to sandbox
+        invalid_records = {
+            cdr_consts.QUERY:
+                SANDBOX_INVALID_PROCEDURE_SOURCE_CONCEPT_IDS_QUERY.render(
+                    project=self.project_id,
+                    dataset=self.dataset_id,
+                    table=PROCEDURE_OCCURRENCE,
+                    sandbox_dataset=self.sandbox_dataset_id,
+                    sandbox_table=self.get_sandbox_tablenames()[0])
+        }
+        queries_list.append(invalid_records)
+
+        # query to delete invalid procedure source records
+        valid_records = {
+            cdr_consts.QUERY:
+                KEEP_VALID_PROCEDURE_SOURCE_CONCEPT_IDS_QUERY.render(
+                    project=self.project_id,
+                    dataset=self.dataset_id,
+                    table=PROCEDURE_OCCURRENCE,
+                    sandbox_dataset=self.sandbox_dataset_id,
+                    sandbox_table=self.get_sandbox_tablenames()[0])
+        }
+        queries_list.append({
+            clean_consts.QUERY: valid_records,
+            clean_consts.DESTINATION_TABLE: PROCEDURE_OCCURRENCE,
+            clean_consts.DESTINATION_DATASET: self.dataset_id,
+            clean_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE
+        })
+
+        return query_list
+
+    def setup_rule(self, client):
+        """
+         Function to run any data upload options before executing a query.
+        """
+        pass
+
+    def setup_validation(self, client):
+        """
+        Run required steps for validation setup
+        """
+        raise NotImplementedError("Please fix me.")
+
+    def validate_rule(self, client):
+        """
+        Validates the cleaning rule which deletes or updates the data from the tables
+        """
+        raise NotImplementedError("Please fix me.")
+
+    def get_sandbox_tablenames(self):
+        """
+        generates sandbox table names
+        """
+        sandbox_table = self.sandbox_table_for(PROCEDURE_OCCURRENCE)
+        return [sandbox_table]
+
 
 TABLE = 'procedure_occurrence'
+INTERMEDIARY_TABLE_NAME = 'procedure_occurrence_dc583'
 
 INVALID_PROCEDURE_SOURCE_CONCEPT_IDS_QUERY = """
 CREATE OR REPLACE TABLE
