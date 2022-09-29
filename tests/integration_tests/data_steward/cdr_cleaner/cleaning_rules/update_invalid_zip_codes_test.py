@@ -209,7 +209,8 @@ class UpdateInvalidZipCodesTest(BaseTest.CleaningRulesTestBase):
                  self.invalid_zip_value_as_string, self.invalid_zip_concept,
                  self.invalid_zip_value_source_value),
                 (16, 16, 0, self.date, 0, 1585250, None, '02035', None, None),
-                (17, 17, 0, self.date, 0, 1585250, None, '00601', None, None)]
+                (17, 17, 0, self.date, 0, 1585250, None, '00601', None, None)
+            ]
         }]
 
         # mock the PIPELINE_TABLES variable so tests on different branches
