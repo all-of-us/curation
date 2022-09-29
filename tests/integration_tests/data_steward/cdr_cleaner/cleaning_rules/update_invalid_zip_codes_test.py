@@ -136,7 +136,11 @@ class UpdateInvalidZipCodesTest(BaseTest.CleaningRulesTestBase):
                 -- once cleaned will be valid --
                 (14, 14, 0, date('2019-03-03'), 0, 1585250, null, '     34567', null, null), 
                 -- once cleaned will be invalid --
-                (15, 15, 0, date('2019-03-03'), 0, 1585250, null, '56789     ', null, null) 
+                (15, 15, 0, date('2019-03-03'), 0, 1585250, null, '56789     ', null, null), 
+                
+                -- valid zip codes with preceding 0s will not be affected --
+                (16, 16, 0, date('2019-03-03'), 0, 1585250, null, '02035', null, null),
+                (17, 17, 0, date('2019-03-03'), 0, 1585250, null, '00601', null, null)
             """).render(fq_dataset_name=self.fq_dataset_name)
 
         self.load_test_data([zip3_lookup_tmpl, observation_tmpl])
@@ -153,7 +157,9 @@ class UpdateInvalidZipCodesTest(BaseTest.CleaningRulesTestBase):
                 'value_as_string', 'value_source_concept_id',
                 'value_source_value'
             ],
-            'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+            'loaded_ids': [
+                1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17
+            ],
             'sandboxed_ids': [3, 4, 5, 6, 9, 10, 11, 12, 13, 15],
             'cleaned_values': [
                 (1, 1, 0, self.date, 0, 1585250, None, '12345', None, None),
@@ -201,8 +207,9 @@ class UpdateInvalidZipCodesTest(BaseTest.CleaningRulesTestBase):
                 (15, 15, 0, self.date, 0, 1585250,
                  self.invalid_zip_value_as_number,
                  self.invalid_zip_value_as_string, self.invalid_zip_concept,
-                 self.invalid_zip_value_source_value)
-            ]
+                 self.invalid_zip_value_source_value),
+                (16, 16, 0, self.date, 0, 1585250, None, '02035', None, None),
+                (17, 17, 0, self.date, 0, 1585250, None, '00601', None, None)]
         }]
 
         # mock the PIPELINE_TABLES variable so tests on different branches
