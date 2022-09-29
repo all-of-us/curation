@@ -539,7 +539,8 @@ def main(raw_args=None):
         args.rdr_dataset, '--cdr_generation_date', today,
         '--vocabulary_version', args.vocab_dataset, '--rdr_export_date',
         args.rdr_export_date
-    ])
+    ],
+                          bq_client=client)
     LOGGER.info('EHR + RDR combine completed')
 
 
