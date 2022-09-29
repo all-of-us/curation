@@ -24,9 +24,14 @@ DELETE FROM `{{project}}.{{dataset}}.{{table}}`
 WHERE person_id IN (
     SELECT DISTINCT person_id FROM `{{project}}.{{sandbox_dataset}}.{{lookup_table}}`
 )
-{% if ehr_only %}
+{% if ehr_only and table != 'death' %}
 AND {{table}}_id IN (
     SELECT DISTINCT {{table}}_id FROM `{{project}}.{{sandbox_dataset}}.{{intermediary_table}}`
+)
+{% endif %}
+{% if table == 'death' %}
+AND person_id IN (
+    SELECT DISTINCT person_id FROM `{{project}}.{{sandbox_dataset}}.{{intermediary_table}}`
 )
 {% endif %}
 """)
