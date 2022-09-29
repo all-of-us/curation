@@ -12,6 +12,7 @@ Cleaning rule to remove records where:
 AND
 -procedure_source_concept_id is not in the procedure domain (they ARE allowed to be non-standard).
 
+Original Issues: DC-583, DC-845
 """
 #Python imports
 import logging
