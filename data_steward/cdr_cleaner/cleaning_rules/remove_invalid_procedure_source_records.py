@@ -13,17 +13,50 @@ AND
 -procedure_source_concept_id is not in the procedure domain (they ARE allowed to be non-standard).
 
 """
+#Python imports
 import logging
 
 # Project imports
+from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as clean_consts
+from common import JINJA_ENV, PROCEDURE_OCCURRENCE
 
 LOGGER = logging.getLogger(__name__)
 
-TABLE = 'procedure_occurrence'
+ISSUE_NUMBERS = ['DC583', 'DC845']
+
 INTERMEDIARY_TABLE_NAME = 'procedure_occurrence_dc583'
+
+
+class RemoveInvalidProcedureSourceRecords(BaseCleaningRule):
+
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 table_namer=None):
+        """
+        Initialize the class with proper information.
+        Set the issue numbers, description and affected datasets. As other tickets may affect
+        this SQL, append them to the list of Jira Issues.
+        DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
+        """
+        desc = (
+            'Rule to address CPT modifiers in the procedure_source_concept_id field'
+        )
+        super().__init__(issue_numbers=ISSUE_NUMBERS,
+                         description=desc,
+                         affected_datasets=[cdr_consts.REGISTERED_TIER_DEID],
+                         affected_tables=[PROCEDURE_OCCURRENCE],
+                         project_id=project_id,
+                         dataset_id=dataset_id,
+                         sandbox_dataset_id=sandbox_dataset_id,
+                         table_namer=table_namer)
+
+
+TABLE = 'procedure_occurrence'
 
 INVALID_PROCEDURE_SOURCE_CONCEPT_IDS_QUERY = """
 CREATE OR REPLACE TABLE
