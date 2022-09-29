@@ -2,7 +2,7 @@
 Populates survey_conduct_ext table with the language information
 as provided in the questionnaire_response_additional_info table.
 
-Original issue: DC-2627
+Original issue: DC-2627, DC-2730
 """
 # Python imports
 import logging
@@ -11,20 +11,10 @@ import logging
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from cdr_cleaner.cleaning_rules.generate_ext_tables import GenerateExtTables
-from cdr_cleaner.manual_cleaning_rules.survey_version_info import COPESurveyVersionTask
+from cdr_cleaner.cleaning_rules.deid.survey_version_info import COPESurveyVersionTask
 from common import EXT_SUFFIX, JINJA_ENV, SURVEY_CONDUCT
 
 LOGGER = logging.getLogger(__name__)
-
-SANDBOX_SURVEY_CONDUCT_EXT_QUERY = JINJA_ENV.from_string("""
-CREATE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table}}`
-AS
-    SELECT sce.* FROM `{{project_id}}.{{dataset_id}}.survey_conduct_ext` AS sce
-    JOIN `{{project_id}}.{{dataset_id}}.questionnaire_response_additional_info` AS qrai
-    ON sce.survey_conduct_id = qrai.questionnaire_response_id
-    WHERE (sce.language IS NULL OR sce.language != qrai.value)
-    AND UPPER(qrai.type) = 'LANGUAGE'
-""")
 
 UPDATE_SURVEY_CONDUCT_EXT_QUERY = JINJA_ENV.from_string("""
 UPDATE `{{project_id}}.{{dataset_id}}.survey_conduct_ext` AS sce
@@ -53,7 +43,7 @@ class PopulateSurveyConductExt(BaseCleaningRule):
                 'information as provided in the '
                 'questionnaire_response_additional_info table.')
 
-        super().__init__(issue_numbers=['DC2627'],
+        super().__init__(issue_numbers=['DC2627', 'DC2730'],
                          description=desc,
                          affected_datasets=[
                              cdr_consts.REGISTERED_TIER_DEID,
@@ -70,20 +60,12 @@ class PopulateSurveyConductExt(BaseCleaningRule):
         """
         Return a list of dictionary query specifications.
         """
-        sandbox_query = SANDBOX_SURVEY_CONDUCT_EXT_QUERY.render(
-            project_id=self.project_id,
-            dataset_id=self.dataset_id,
-            sandbox_dataset_id=self.sandbox_dataset_id,
-            sandbox_table=self.sandbox_table_for(
-                f"{SURVEY_CONDUCT}{EXT_SUFFIX}"))
-
-        insert_query = UPDATE_SURVEY_CONDUCT_EXT_QUERY.render(
+        update_query = UPDATE_SURVEY_CONDUCT_EXT_QUERY.render(
             project_id=self.project_id, dataset_id=self.dataset_id)
 
-        sandbox_query_dict = {cdr_consts.QUERY: sandbox_query}
-        insert_query_dict = {cdr_consts.QUERY: insert_query}
+        update_query_dict = {cdr_consts.QUERY: update_query}
 
-        return [sandbox_query_dict, insert_query_dict]
+        return [update_query_dict]
 
     def setup_rule(self, client):
         """

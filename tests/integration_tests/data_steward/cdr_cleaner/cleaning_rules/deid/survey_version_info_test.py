@@ -9,7 +9,8 @@ import os
 
 # Project imports
 from app_identity import PROJECT_ID
-from cdr_cleaner.manual_cleaning_rules.survey_version_info import (
+from common import COPE_SURVEY_MAP
+from cdr_cleaner.cleaning_rules.deid.survey_version_info import (
     COPESurveyVersionTask)
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
@@ -27,8 +28,7 @@ class COPESurveyVersionTaskTest(BaseTest.DeidRulesTestBase):
         super().initialize_class_vars()
 
         # set the test project identifier
-        project_id = os.environ.get(PROJECT_ID)
-        cls.project_id = project_id
+        cls.project_id = os.environ.get(PROJECT_ID)
 
         # set the expected test datasets
         # intended to be run on the deid_base dataset.  The combined dataset
@@ -40,32 +40,27 @@ class COPESurveyVersionTaskTest(BaseTest.DeidRulesTestBase):
         # setting the cope lookup to the same dataset as the qrid map for testing purposes
         # in production, they are likely different datasets
         cls.cope_dataset_id = cls.mapping_dataset_id
-        cls.cope_tablename = 'cope_survey_test_data'
 
         dataset_id = os.environ.get('COMBINED_DATASET_ID')
-        sandbox_id = dataset_id + '_sandbox'
-        cls.kwargs.update({
-            'deid_questionnaire_response_map_dataset':
-                cls.deid_questionnaire_response_map_dataset,
-            'cope_lookup_dataset_id':
-                cls.cope_dataset_id,
-            'cope_table_name':
-                cls.cope_tablename
-        })
+        sandbox_id = f'{dataset_id}_sandbox'
+        cls.kwargs.update({'cope_lookup_dataset_id': cls.cope_dataset_id})
 
         cls.rule_instance = COPESurveyVersionTask(
-            project_id, dataset_id, sandbox_id, cls.cope_dataset_id,
-            cls.cope_tablename, cls.deid_questionnaire_response_map_dataset)
+            cls.project_id,
+            dataset_id,
+            sandbox_id,
+            cope_lookup_dataset_id=cls.cope_dataset_id)
 
         cls.fq_table_names = [
-            f"{project_id}.{dataset_id}.observation",
-            f"{project_id}.{dataset_id}.observation_ext"
+            f"{cls.project_id}.{dataset_id}.observation",
+            f"{cls.project_id}.{dataset_id}.observation_ext",
+            f"{cls.project_id}.{cls.cope_dataset_id}.{COPE_SURVEY_MAP}"
         ]
 
         cls.dataset_id = dataset_id
         cls.sandbox_id = sandbox_id
 
-        cls.fq_questionnaire_tablename = f'{project_id}.{cls.deid_questionnaire_response_map_dataset}._deid_questionnaire_response_map'
+        cls.fq_questionnaire_tablename = f'{cls.project_id}.{cls.deid_questionnaire_response_map_dataset}._deid_questionnaire_response_map'
         # call super to set up the client, create datasets, and create
         # empty test tables
         # NOTE:  does not create empty sandbox tables.
@@ -80,19 +75,20 @@ class COPESurveyVersionTaskTest(BaseTest.DeidRulesTestBase):
 
         insert_fake_measurements = [
             self.jinja_env.from_string("""
-        -- set up observation table data post-deid --
+        -- set up observation table data post-deid  --
+        -- this occurs prior to remapping the questionnaire_response_ids --
         INSERT INTO `{{project}}.{{dataset}}.observation`
         (observation_id, person_id, observation_concept_id, observation_date,
          observation_type_concept_id, questionnaire_response_id)
         VALUES
           -- represents COPE survey records --
-          (801, 337361, 1585899, date('2016-05-01'), 45905771, 100),
-          (804, 337361, 1585899, date('2020-11-01'), 45905771, 150),
+          (801, 337361, 1585899, date('2016-05-01'), 45905771, 10),
+          (804, 337361, 1585899, date('2020-11-01'), 45905771, 30),
           -- represents Minute survey records --
-          (805, 337361, 1585899, date('2021-06-10'), 45905771, 250),
-          (806, 337361, 1585899, date('2021-06-10'), 45905771, 300),
+          (805, 337361, 1585899, date('2021-06-10'), 45905771, 40),
+          (806, 337361, 1585899, date('2021-06-10'), 45905771, 50),
           -- represents other survey record --
-          (802, 337361, 1585899, date('2019-01-01'), 45905771, 200),
+          (802, 337361, 1585899, date('2019-01-01'), 45905771, 20),
           -- represents an EHR observation record --
           (803, 337321, 1585899, date('2019-01-01'), 45905771, null)
         """),
@@ -120,34 +116,17 @@ class COPESurveyVersionTaskTest(BaseTest.DeidRulesTestBase):
           (50, 300)
         """),
             self.jinja_env.from_string("""
-        CREATE OR REPLACE TABLE `{{project}}.{{cope_dataset}}.{{cope_table_name}}` AS (
-        SELECT
+        INSERT INTO `{{project}}.{{cope_dataset}}.{{cope_table_name}}`
+        (participant_id, questionnaire_response_id, semantic_version, cope_month)
+        VALUES
         -- participant id has not been de-identified by RDR --
-        700 AS participant_id,
         -- questionnaire_response_id from RDR has not been de-identified --
-        10 AS questionnaire_response_id,
         -- semantic version provided by RDR but not strictly used by curation --
-        'V2020.05.06' AS semantic_version,
         -- cope month provided by RDR team --
-        'may' AS cope_month
-        UNION ALL
-        SELECT
-        700 AS participant_id,
-        30 AS questionnaire_response_id,
-        'V2020.11.06' AS semantic_version,
-        'nov' AS cope_month
-        UNION ALL
-        SELECT
-        700 AS participant_id,
-        40 AS questionnaire_response_id,
-        'V2021.06.10' AS semantic_version,
-        'vaccine1' AS cope_month
-        UNION ALL
-        SELECT
-        700 AS participant_id,
-        50 AS questionnaire_response_id,
-        'V2021.10.28' AS semantic_version,
-        'vaccine3' AS cope_month)
+        (700, 10, 'V2020.05.06', 'may'),
+        (700, 30, 'V2020.11.06', 'nov'),
+        (700, 40, 'V2021.06.10', 'vaccine1'),
+        (700, 50, 'V2021.10.28', 'vaccine3')
         """)
         ]
 
@@ -158,7 +137,7 @@ class COPESurveyVersionTaskTest(BaseTest.DeidRulesTestBase):
                                    qrid_map_dataset_id=self.
                                    deid_questionnaire_response_map_dataset,
                                    cope_dataset=self.cope_dataset_id,
-                                   cope_table_name=self.cope_tablename)
+                                   cope_table_name=COPE_SURVEY_MAP)
             load_statements.append(sql)
 
         # load the test data
@@ -184,9 +163,3 @@ class COPESurveyVersionTaskTest(BaseTest.DeidRulesTestBase):
         }]
 
         self.default_test(tables_and_counts)
-
-    def tearDown(self):
-        cope_survey_table = f"{self.project_id}.{self.cope_dataset_id}.{self.cope_tablename}"
-        self.client.delete_table(cope_survey_table, not_found_ok=True)
-
-        super().tearDown()

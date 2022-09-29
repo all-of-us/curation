@@ -27,7 +27,7 @@ import logging
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from common import JINJA_ENV, OBSERVATION, SURVEY_CONDUCT
-from cdr_cleaner.manual_cleaning_rules.survey_version_info import COPESurveyVersionTask
+from cdr_cleaner.cleaning_rules.deid.survey_version_info import COPESurveyVersionTask
 
 LOGGER = logging.getLogger(__name__)
 
@@ -40,7 +40,7 @@ FROM `{{project_id}}.{{dataset_id}}.{{observation_table}}`
 INNER JOIN `{{project_id}}.{{dataset_id}}.{{observation_ext_table}}`
 USING (observation_id)
 WHERE survey_version_concept_id IN (2100000002, 2100000003, 2100000004, 2100000005, 2100000006,
-  2100000007, 905047, 905055, 765936) 
+  2100000007, 905047, 905055, 765936)
 """)
 
 SANDBOX_COPE_SURVEY_SC_QUERY = JINJA_ENV.from_string("""
@@ -48,7 +48,7 @@ CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset}}.{{intermediary_sc_ta
 SELECT *
 FROM `{{project_id}}.{{dataset_id}}.{{survey_conduct_table}}`
 WHERE survey_source_concept_id IN (2100000002, 2100000003, 2100000004, 2100000005, 2100000006,
-  2100000007, 905047, 905055, 765936) 
+  2100000007, 905047, 905055, 765936)
 """)
 
 DATE_UNSHIFT_OBS_QUERY = JINJA_ENV.from_string("""

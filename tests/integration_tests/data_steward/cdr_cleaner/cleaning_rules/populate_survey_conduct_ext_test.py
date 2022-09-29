@@ -14,7 +14,7 @@ from common import EXT_SUFFIX, JINJA_ENV, QUESTIONNAIRE_RESPONSE_ADDITIONAL_INFO
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
 INSERT_SURVEY_CONDUCT_EXT = JINJA_ENV.from_string("""
-    INSERT INTO `{{project}}.{{dataset}}.survey_conduct_ext` 
+    INSERT INTO `{{project}}.{{dataset}}.survey_conduct_ext`
         (survey_conduct_id, src_id, language)
     VALUES
         (11, 'pi/pm', NULL),
@@ -24,7 +24,7 @@ INSERT_SURVEY_CONDUCT_EXT = JINJA_ENV.from_string("""
 """)
 
 INSERT_QUESTIONNAIRE_RESPONSE_ADDITIONAL_INFO = JINJA_ENV.from_string("""
-    INSERT INTO `{{project}}.{{dataset}}.questionnaire_response_additional_info` 
+    INSERT INTO `{{project}}.{{dataset}}.questionnaire_response_additional_info`
         (questionnaire_response_id, type, value)
     VALUES
         (11, 'LANGUAGE', 'en'),
@@ -54,12 +54,7 @@ class PopulateSurveyConductExtTest(BaseTest.CleaningRulesTestBase):
         cls.rule_instance = PopulateSurveyConductExt(cls.project_id,
                                                      cls.dataset_id, sandbox_id)
 
-        sb_table_name = cls.rule_instance.sandbox_table_for(
-            f"{SURVEY_CONDUCT}{EXT_SUFFIX}")
-
-        cls.fq_sandbox_table_names = [
-            f'{cls.project_id}.{cls.sandbox_id}.{sb_table_name}'
-        ]
+        cls.fq_sandbox_table_names = []
 
         cls.fq_table_names = [
             f'{cls.project_id}.{cls.dataset_id}.{SURVEY_CONDUCT}{EXT_SUFFIX}',
@@ -91,10 +86,10 @@ class PopulateSurveyConductExtTest(BaseTest.CleaningRulesTestBase):
             'fq_table_name':
                 f'{self.project_id}.{self.dataset_id}.{SURVEY_CONDUCT}{EXT_SUFFIX}',
             'fq_sandbox_table_name':
-                self.fq_sandbox_table_names[0],
+                '',
             'fields': ['survey_conduct_id', 'src_id', 'language'],
             'loaded_ids': [11, 12, 13, 14],
-            'sandboxed_ids': [11, 12],
+            'sandboxed_ids': [],
             'cleaned_values': [
                 (11, 'pi/pm', 'en'),
                 (12, 'site foo', 'es'),
