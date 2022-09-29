@@ -142,8 +142,10 @@ class TruncateFitbitDataTest(BaseTest.CleaningRulesTestBase):
         tables_and_counts = [{
             'fq_table_name':
                 '.'.join([self.fq_dataset_name, common.ACTIVITY_SUMMARY]),
-            'fq_sandbox_table_name':
-                self.fq_sandbox_table_names[0],
+            'fq_sandbox_table_name': [
+                table for table in self.fq_sandbox_table_names
+                if common.ACTIVITY_SUMMARY in table
+            ][0],
             'fields': ['person_id', 'date'],
             'loaded_ids': [111, 222, 333, 444],
             'sandboxed_ids': [333, 444],
@@ -153,8 +155,10 @@ class TruncateFitbitDataTest(BaseTest.CleaningRulesTestBase):
             'fq_table_name':
                 '.'.join([self.fq_dataset_name,
                           common.HEART_RATE_MINUTE_LEVEL]),
-            'fq_sandbox_table_name':
-                self.fq_sandbox_table_names[2],
+            'fq_sandbox_table_name': [
+                table for table in self.fq_sandbox_table_names
+                if common.HEART_RATE_MINUTE_LEVEL in table
+            ][0],
             'fields': ['person_id', 'datetime'],
             'loaded_ids': [111, 222, 333, 444],
             'sandboxed_ids': [333, 444],
@@ -163,8 +167,10 @@ class TruncateFitbitDataTest(BaseTest.CleaningRulesTestBase):
         }, {
             'fq_table_name':
                 '.'.join([self.fq_dataset_name, common.HEART_RATE_SUMMARY]),
-            'fq_sandbox_table_name':
-                self.fq_sandbox_table_names[1],
+            'fq_sandbox_table_name': [
+                table for table in self.fq_sandbox_table_names
+                if common.HEART_RATE_SUMMARY in table
+            ][0],
             'fields': ['person_id', 'date'],
             'loaded_ids': [111, 222, 333, 444],
             'sandboxed_ids': [333, 444],
@@ -173,8 +179,10 @@ class TruncateFitbitDataTest(BaseTest.CleaningRulesTestBase):
         }, {
             'fq_table_name':
                 '.'.join([self.fq_dataset_name, common.STEPS_INTRADAY]),
-            'fq_sandbox_table_name':
-                self.fq_sandbox_table_names[3],
+            'fq_sandbox_table_name': [
+                table for table in self.fq_sandbox_table_names
+                if common.STEPS_INTRADAY in table
+            ][0],
             'fields': ['person_id', 'datetime'],
             'loaded_ids': [111, 222, 333, 444],
             'sandboxed_ids': [333, 444],
