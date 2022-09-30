@@ -1,7 +1,7 @@
 """
 Sandbox and update invalid zip codes found in the observation table.
 
-Original Issues: DC-1632, DC-1633, DC-1645
+Original Issues: DC-1633, DC-1645
 
 The intent of this cleaning rule is to remove any leading/trailing whitespace in the zip code string then sandbox and
 update any invalid zip code in the observation table. A zip code is considered invalid if it:
@@ -26,7 +26,7 @@ from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 
 LOGGER = logging.getLogger(__name__)
 
-JIRA_ISSUE_NUMBERS = ['DC1632', 'DC1633', 'DC1645', 'DC2727']
+JIRA_ISSUE_NUMBERS = ['DC1633', 'DC1645', 'DC2727']
 
 ZIPS_WITH_WHITESPACE_SANDBOX = 'dc1633_zips_with_whitespace'
 
@@ -81,7 +81,7 @@ class UpdateInvalidZipCodes(BaseCleaningRule):
     Any invalid zip code will be sandboxed and updated.
     """
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id):
+    def __init__(self, project_id, dataset_id, sandbox_dataset_id, table_namer=None):
         """
         Initialize the class with proper information.
 
@@ -96,7 +96,8 @@ class UpdateInvalidZipCodes(BaseCleaningRule):
                          affected_tables=[OBSERVATION],
                          project_id=project_id,
                          dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id)
+                         sandbox_dataset_id=sandbox_dataset_id,
+                         table_namer=table_namer)
 
     def get_query_specs(self, *args, **keyword_args):
         """

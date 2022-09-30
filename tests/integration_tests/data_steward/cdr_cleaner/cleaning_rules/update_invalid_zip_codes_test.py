@@ -99,9 +99,9 @@ class UpdateInvalidZipCodesTest(BaseTest.CleaningRulesTestBase):
         """
 
         zip3_lookup_tmpl = self.jinja_env.from_string("""
-            INSERT INTO `{{fq_dataset_name}}.zip3_lookup` (zip3)
+            INSERT INTO `{{fq_dataset_name}}.zip3_lookup` (zip3_as_string)
             VALUES
-                (123), (234), (345)
+                ('123**'), ('234**'), ('345**'), ('020**'), ('006**')
             """).render(fq_dataset_name=self.fq_dataset_name)
 
         observation_tmpl = self.jinja_env.from_string("""
