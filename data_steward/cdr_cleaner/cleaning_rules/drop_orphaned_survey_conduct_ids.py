@@ -16,11 +16,9 @@ import logging
 
 # Project imports
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
-from constants.cdr_cleaner.clean_cdr import CONTROLLED_TIER_DEID, COMBINED, QUERY, RDR, REGISTERED_TIER_DEID
+from constants.cdr_cleaner.clean_cdr import COMBINED, CONTROLLED_TIER_DEID, CONTROLLED_TIER_DEID_CLEAN, QUERY, RDR, REGISTERED_TIER_DEID, REGISTERED_TIER_DEID_CLEAN
 from common import JINJA_ENV, SURVEY_CONDUCT
 from utils import pipeline_logging
-
-# Third party imports
 
 LOGGER = logging.getLogger(__name__)
 
@@ -39,7 +37,8 @@ CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table_i
 DELETE_QUERY = JINJA_ENV.from_string("""
 DELETE FROM `{{project_id}}.{{dataset_id}}.survey_conduct`
 WHERE survey_conduct_id IN (
-    SELECT survey_conduct_id FROM `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table_id}}`
+    SELECT DISTINCT survey_conduct_id 
+    FROM `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table_id}}`
 )
 """)
 
@@ -59,8 +58,9 @@ class DropOrphanedSurveyConductIds(BaseCleaningRule):
         super().__init__(issue_numbers=['DC2735'],
                          description=desc,
                          affected_datasets=[
-                             CONTROLLED_TIER_DEID, COMBINED, RDR,
-                             REGISTERED_TIER_DEID
+                             CONTROLLED_TIER_DEID, CONTROLLED_TIER_DEID_CLEAN,
+                             COMBINED, RDR, REGISTERED_TIER_DEID,
+                             REGISTERED_TIER_DEID_CLEAN
                          ],
                          affected_tables=[SURVEY_CONDUCT],
                          project_id=project_id,

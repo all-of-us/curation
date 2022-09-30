@@ -26,7 +26,6 @@ class DropOrphanedSurveyConductIdsTest(BaseTest.CleaningRulesTestBase):
 
         cls.project_id = os.environ.get(PROJECT_ID)
         cls.dataset_id = os.environ.get('COMBINED_DATASET_ID')
-        cls.mapping_dataset_id = os.environ.get('COMBINED_DATASET_ID')
         cls.sandbox_id = f'{cls.dataset_id}_sandbox'
 
         cls.rule_instance = DropOrphanedSurveyConductIds(
@@ -51,7 +50,7 @@ class DropOrphanedSurveyConductIdsTest(BaseTest.CleaningRulesTestBase):
 
         INSERT_OBSERVATIONS_QUERY = self.jinja_env.from_string("""
             INSERT INTO `{{project_id}}.{{dataset_id}}.observation`
-                (observation_id, person_id, observation_concept_id, observation_source_concept_id, 
+                (observation_id, person_id, observation_concept_id, observation_source_concept_id,
                  observation_date, observation_type_concept_id, questionnaire_response_id)
             VALUES
                 (11, 101, 0, 0, date('2022-09-01'), 0, 1),
@@ -85,6 +84,15 @@ class DropOrphanedSurveyConductIdsTest(BaseTest.CleaningRulesTestBase):
             'sandboxed_ids': [3],
             'fields': ['survey_conduct_id'],
             'cleaned_values': [(1,), (2,)]
+        }, {
+            'fq_table_name':
+                f'{self.project_id}.{self.dataset_id}.{OBSERVATION}',
+            'fq_sandbox_table_name':
+                '',
+            'loaded_ids': [11, 12, 13, 14],
+            'sandboxed_ids': [],
+            'fields': ['observation_id'],
+            'cleaned_values': [(11,), (12,), (13,), (14,)]
         }]
 
         self.default_test(tables_and_counts)

@@ -297,6 +297,7 @@ REGISTERED_TIER_DEID_CLEAN_CLEANING_CLASSES = [
     (CleanHeightAndWeight,),  # dependent on MeasurementRecordsSuppression
     (UnitNormalization,),  # dependent on CleanHeightAndWeight
     (DropZeroConceptIDs,),
+    (DropOrphanedSurveyConductIds,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
@@ -353,6 +354,7 @@ CONTROLLED_TIER_DEID_CLEAN_CLEANING_CLASSES = [
     (CleanHeightAndWeight,),  # dependent on MeasurementRecordsSuppression
     (UnitNormalization,),  # dependent on CleanHeightAndWeight
     (DropZeroConceptIDs,),
+    (DropOrphanedSurveyConductIds,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
