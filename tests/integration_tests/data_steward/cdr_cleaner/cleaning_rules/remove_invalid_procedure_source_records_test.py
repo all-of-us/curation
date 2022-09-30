@@ -1,6 +1,7 @@
 """
 Integration test for remove_invalid_procedure_source_records module
 
+Original Issues: DC-1210
 """
 
 #Python Imports
