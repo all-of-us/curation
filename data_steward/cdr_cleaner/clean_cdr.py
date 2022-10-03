@@ -25,7 +25,7 @@ from cdr_cleaner.cleaning_rules.populate_survey_conduct_ext import PopulateSurve
 import \
     cdr_cleaner.cleaning_rules.remove_invalid_procedure_source_records as invalid_procedure_source
 from cdr_cleaner.cleaning_rules.remove_non_matching_participant import RemoveNonMatchingParticipant
-import cdr_cleaner.cleaning_rules.remove_records_with_wrong_date as remove_records_with_wrong_date
+from cdr_cleaner.cleaning_rules.remove_records_with_wrong_date import RemoveRecordsWithWrongDate
 from cdr_cleaner.cleaning_rules.remove_participants_under_18years import RemoveParticipantsUnder18Years
 from cdr_cleaner.cleaning_rules.round_ppi_values_to_nearest_integer import RoundPpiValuesToNearestInteger
 from cdr_cleaner.cleaning_rules.update_family_history_qa_codes import UpdateFamilyHistoryCodes
@@ -146,8 +146,7 @@ UNIONED_EHR_CLEANING_CLASSES = [
     (
         populate_routes.get_route_mapping_queries,),
     (EnsureDateDatetimeConsistency,),
-    (remove_records_with_wrong_date.get_remove_records_with_wrong_date_queries,
-    ),
+    (RemoveRecordsWithWrongDate,),
     (invalid_procedure_source.get_remove_invalid_procedure_source_queries,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
@@ -225,8 +224,6 @@ COMBINED_CLEANING_CLASSES = [
         populate_routes.get_route_mapping_queries,),
     (TemporalConsistency,),
     (EnsureDateDatetimeConsistency,),  # dependent on TemporalConsistency
-    (remove_records_with_wrong_date.get_remove_records_with_wrong_date_queries,
-    ),
     (drop_duplicate_states.get_drop_duplicate_states_queries,),
     # TODO : Make null_invalid_foreign_keys able to run on de_identified dataset
     (
