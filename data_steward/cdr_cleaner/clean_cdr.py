@@ -224,7 +224,6 @@ COMBINED_CLEANING_CLASSES = [
     (
         populate_routes.get_route_mapping_queries,),
     (TemporalConsistency,),
-    (EnsureDateDatetimeConsistency,),  # dependent on TemporalConsistency
     (remove_records_with_wrong_date.get_remove_records_with_wrong_date_queries,
     ),
     (drop_duplicate_states.get_drop_duplicate_states_queries,),

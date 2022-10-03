@@ -14,7 +14,7 @@ import common
 # Project imports
 import constants.bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
-from cdr_cleaner.cleaning_rules import field_mapping, temporal_consistency
+from cdr_cleaner.cleaning_rules import field_mapping
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 
 LOGGER = logging.getLogger(__name__)
@@ -110,9 +110,7 @@ class EnsureDateDatetimeConsistency(BaseCleaningRule):
         super().__init__(
             issue_numbers=['DC-614', 'DC-509', 'DC-432', 'DC-2635'],
             description=desc,
-            affected_datasets=[
-                cdr_consts.RDR, cdr_consts.UNIONED, cdr_consts.COMBINED
-            ],
+            affected_datasets=[cdr_consts.UNIONED],
             project_id=project_id,
             dataset_id=dataset_id,
             sandbox_dataset_id=sandbox_dataset_id,
@@ -123,8 +121,7 @@ class EnsureDateDatetimeConsistency(BaseCleaningRule):
                 common.SURVEY_CONDUCT, common.DEATH, common.NOTE,
                 common.OBSERVATION_PERIOD, common.VISIT_OCCURRENCE,
                 common.VISIT_DETAIL
-            ],
-            depends_on=[temporal_consistency.TemporalConsistency])
+            ])
 
     def get_cols(self, table):
         """
