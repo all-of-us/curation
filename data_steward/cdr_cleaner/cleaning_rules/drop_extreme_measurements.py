@@ -1,6 +1,4 @@
 """
-Background
-
 Background: For physical measurements collected by the Program, warnings or limits exist for height, weight, and BMI;
 however, there are still some outliers in the dataset from before the addition of these limits (or in cases where limits
 are more relaxed). These outliers need to be dropped to improve data quality.
@@ -11,13 +9,22 @@ participant.
 
 This is expected to drop a very small number of rows (less than 300 total) based on values in the current CDR.
 
+Original Issue: DC-624 
 """
+
+# Python Imports
 import logging
 
-# Project imports
+# Project Imports
+import common
 import constants.cdr_cleaner.clean_cdr as cdr_consts
+from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 
 LOGGER = logging.getLogger(__name__)
+
+# Global constants
+
+# Queries
 
 DELETE_HEIGHT_ROWS_QUERY = """
 DELETE FROM `{project_id}.{dataset_id}.measurement` m
@@ -83,53 +90,99 @@ AND value_as_number NOT BETWEEN 10 AND 125)
 """
 
 
-def get_drop_extreme_measurement_queries(project_id,
-                                         dataset_id,
-                                         sandbox_dataset_id=None):
-    """
-    runs the query which removes all multiple me
+class DropExtremeMeasurements(BaseCleaningRule):
 
-    :param project_id: Name of the project
-    :param dataset_id: Name of the dataset where the queries should be run
-    :param sandbox_dataset_id: Identifies the sandbox dataset to store rows 
-    #TODO use sandbox_dataset_id for CR
-    :return:
-    """
-    queries_list = []
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 table_namer=None):
+        """
+        Initialize the class with proper information.
 
-    height_query = dict()
-    height_query[cdr_consts.QUERY] = DELETE_HEIGHT_ROWS_QUERY.format(
-        dataset_id=dataset_id, project_id=project_id)
-    queries_list.append(height_query)
+        Set the issue numbers, description and affected datasets. As other tickets may affect
+        this SQL, append them to the list of Jira Issues.
+        DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
+        """
 
-    weight_query = dict()
-    weight_query[cdr_consts.QUERY] = DELETE_WEIGHT_ROWS_QUERY.format(
-        dataset_id=dataset_id, project_id=project_id)
-    queries_list.append(weight_query)
+        desc = ('remove extreme physical measurement outliers')
+        super().__init__(issue_numbers=['DC-624', 'DC-849'],
+                         description=desc,
+                         affected_datasets=[cdr_consts.RDR],
+                         affected_tables=[common.MEASUREMENT],
+                         project_id=project_id,
+                         dataset_id=dataset_id,
+                         sandbox_dataset_id=sandbox_dataset_id,
+                         table_namer=table_namer)
 
-    bmi_query = dict()
-    bmi_query[cdr_consts.QUERY] = DELETE_BMI_ROWS_QUERY.format(
-        dataset_id=dataset_id, project_id=project_id)
-    queries_list.append(bmi_query)
+    def get_query_specs(self):
+        """
+        Return a list of dictionary query specifications.
 
-    return queries_list
+        :return:  A list of dictionaries. Each dictionary contains a single query
+            and a specification for how to execute that query. The specifications
+            are optional but the query is required.
+        """
+
+        queries_list = []
+
+        height_query = dict()
+        height_query[cdr_consts.QUERY] = DELETE_HEIGHT_ROWS_QUERY.format(
+            dataset_id=self.dataset_id, project_id=self.project_id)
+        queries_list.append(height_query)
+
+        weight_query = dict()
+        weight_query[cdr_consts.QUERY] = DELETE_WEIGHT_ROWS_QUERY.format(
+            dataset_id=self.dataset_id, project_id=self.project_id)
+        queries_list.append(weight_query)
+
+        bmi_query = dict()
+        bmi_query[cdr_consts.QUERY] = DELETE_BMI_ROWS_QUERY.format(
+            dataset_id=self.dataset_id, project_id=self.project_id)
+        queries_list.append(bmi_query)
+
+        return queries_list
+
+    def setup_rule(self, client):
+        """
+        Function to run any data upload options before executing a query.
+        """
+        pass
+
+    def setup_validation(self, client):
+        """
+        Run required steps for validation setup
+        """
+        raise NotImplementedError("Please fix me.")
+
+    def validate_rule(self, client):
+        """
+        Validates the cleaning rule which deletes or updates the data from the tables
+        """
+        raise NotImplementedError("Please fix me.")
+
+    def get_sandbox_tablenames(self):
+        return [self.sandbox_table_for(table) for table in self.affected_tables]
 
 
 if __name__ == '__main__':
     import cdr_cleaner.args_parser as parser
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
-    ARGS = parser.parse_args()
+    ext_parser = parser.get_argument_parser()
+
+    ARGS = ext_parser.parse_args()
 
     if ARGS.list_queries:
         clean_engine.add_console_logging()
-        query_list = clean_engine.get_query_list(
-            ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id,
-            [(get_drop_extreme_measurement_queries,)])
+        query_list = clean_engine.get_query_list(ARGS.project_id,
+                                                 ARGS.dataset_id,
+                                                 ARGS.sandbox_dataset_id,
+                                                 [(DropExtremeMeasurements,)])
         for query in query_list:
             LOGGER.info(query)
     else:
         clean_engine.add_console_logging(ARGS.console_log)
         clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
                                    ARGS.sandbox_dataset_id,
-                                   [(get_drop_extreme_measurement_queries,)])
+                                   [(DropExtremeMeasurements,)])
