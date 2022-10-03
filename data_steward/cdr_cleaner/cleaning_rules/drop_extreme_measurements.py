@@ -16,7 +16,7 @@ Original Issue: DC-624
 import logging
 
 # Project Imports
-import common
+from common import JINJA_ENV, MEASUREMENT
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 
@@ -26,14 +26,14 @@ LOGGER = logging.getLogger(__name__)
 
 # Queries
 
-DELETE_HEIGHT_ROWS_QUERY = """
-DELETE FROM `{project_id}.{dataset_id}.measurement` m
+DELETE_HEIGHT_ROWS_QUERY = JINJA_ENV.from_string("""
+DELETE FROM `{{project_id}}.{{dataset_id}}.measurement` m
 WHERE 
   EXISTS (
   --subquery to select associated bmi records
   WITH outbound_heights AS (
   SELECT person_id, measurement_datetime
-  FROM `{project_id}.{dataset_id}.measurement`
+  FROM `{{project_id}}.{{dataset_id}}.measurement`
   WHERE measurement_source_concept_id = 903133
   AND value_as_number NOT BETWEEN 90 AND 228
   )
@@ -45,15 +45,15 @@ AND m.measurement_datetime = outbound_heights.measurement_datetime)
 --drop all height records out of bounds
 OR (m.measurement_source_concept_id = 903133
 AND value_as_number NOT BETWEEN 90 AND 228)
-"""
+""")
 
-DELETE_WEIGHT_ROWS_QUERY = """
-DELETE FROM `{project_id}.{dataset_id}.measurement` m
+DELETE_WEIGHT_ROWS_QUERY = JINJA_ENV.from_string("""
+DELETE FROM `{{project_id}}.{{dataset_id}}.measurement` m
 WHERE EXISTS (
   --subquery to select associated bmi records
   WITH outbound_weights AS (
   SELECT person_id, measurement_datetime
-  FROM `{project_id}.{dataset_id}.measurement`
+  FROM `{{project_id}}.{{dataset_id}}.measurement`
   WHERE measurement_source_concept_id = 903121
   AND value_as_number NOT BETWEEN 30 AND 250
   )
@@ -66,16 +66,16 @@ AND m.measurement_datetime = outbound_weights.measurement_datetime)
 OR (m.measurement_source_concept_id = 903121
 AND value_as_number NOT BETWEEN 30 AND 250)
 
-"""
+""")
 
-DELETE_BMI_ROWS_QUERY = """
-DELETE FROM `{project_id}.{dataset_id}.measurement` m
+DELETE_BMI_ROWS_QUERY = JINJA_ENV.from_string("""
+DELETE FROM `{{project_id}}.{{dataset_id}}.measurement` m
 WHERE 
   EXISTS (
   --subquery to select associated height and weight records
   WITH outbound_bmi AS (
   SELECT person_id, measurement_datetime
-  FROM `{project_id}.{dataset_id}.measurement`
+  FROM `{{project_id}}.{{dataset_id}}.measurement`
   WHERE measurement_source_concept_id = 903124
   AND value_as_number NOT BETWEEN 10 AND 125
   )
@@ -87,7 +87,7 @@ AND m.measurement_datetime = outbound_bmi.measurement_datetime)
 --drop all bmi records out of bounds
 OR (m.measurement_source_concept_id = 903124
 AND value_as_number NOT BETWEEN 10 AND 125)
-"""
+""")
 
 
 class DropExtremeMeasurements(BaseCleaningRule):
@@ -109,7 +109,7 @@ class DropExtremeMeasurements(BaseCleaningRule):
         super().__init__(issue_numbers=['DC-624', 'DC-849'],
                          description=desc,
                          affected_datasets=[cdr_consts.RDR],
-                         affected_tables=[common.MEASUREMENT],
+                         affected_tables=[MEASUREMENT],
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
@@ -127,17 +127,17 @@ class DropExtremeMeasurements(BaseCleaningRule):
         queries_list = []
 
         height_query = dict()
-        height_query[cdr_consts.QUERY] = DELETE_HEIGHT_ROWS_QUERY.format(
+        height_query[cdr_consts.QUERY] = DELETE_HEIGHT_ROWS_QUERY.render(
             dataset_id=self.dataset_id, project_id=self.project_id)
         queries_list.append(height_query)
 
         weight_query = dict()
-        weight_query[cdr_consts.QUERY] = DELETE_WEIGHT_ROWS_QUERY.format(
+        weight_query[cdr_consts.QUERY] = DELETE_WEIGHT_ROWS_QUERY.render(
             dataset_id=self.dataset_id, project_id=self.project_id)
         queries_list.append(weight_query)
 
         bmi_query = dict()
-        bmi_query[cdr_consts.QUERY] = DELETE_BMI_ROWS_QUERY.format(
+        bmi_query[cdr_consts.QUERY] = DELETE_BMI_ROWS_QUERY.render(
             dataset_id=self.dataset_id, project_id=self.project_id)
         queries_list.append(bmi_query)
 
