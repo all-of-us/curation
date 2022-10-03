@@ -55,11 +55,19 @@ p.procedure_source_concept_id IN (
 )
 """)
 
-KEEP_VALID_PROCEDURE_SOURCE_CONCEPT_IDS_QUERY = JINJA_ENV.from_string("""
-SELECT * FROM `{{project}}.{{dataset}}.{{table}}` as p0
-WHERE NOT EXISTS (
-SELECT p1.procedure_occurrence_id FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` AS p1
-WHERE p0.procedure_occurrence_id = p1.procedure_occurrence_id)
+DELETE_INVALID_PROCEDURE_SOURCE_CONCEPT_IDS_QUERY = JINJA_ENV.from_string("""
+DELETE 
+FROM 
+  `{{project}}.{{dataset}}.{{table}}` AS p0
+WHERE EXISTS 
+(
+  SELECT 
+    p1.procedure_occurrence_id 
+  FROM 
+    `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` AS p1
+  WHERE 
+    p0.procedure_occurrence_id = p1.procedure_occurrence_id
+)
 """)
 
 
@@ -98,10 +106,9 @@ class RemoveInvalidProcedureSourceRecords(BaseCleaningRule):
              and a specification for how to execute that query. The specifications
              are optional but the query is required.
         """
-        queries_list = []
 
-        # query to sandbox
-        invalid_records = {
+        # query to sandbox invalid procedure source records
+        sandbox_invalid_records = {
             cdr_consts.QUERY:
                 SANDBOX_INVALID_PROCEDURE_SOURCE_CONCEPT_IDS_QUERY.render(
                     project=self.project_id,
@@ -110,26 +117,19 @@ class RemoveInvalidProcedureSourceRecords(BaseCleaningRule):
                     sandbox_dataset=self.sandbox_dataset_id,
                     sandbox_table=self.get_sandbox_tablenames()[0])
         }
-        queries_list.append(invalid_records)
 
         # query to delete invalid procedure source records
-        valid_records = {
+        delete_invalid_records = {
             cdr_consts.QUERY:
-                KEEP_VALID_PROCEDURE_SOURCE_CONCEPT_IDS_QUERY.render(
+                DELETE_INVALID_PROCEDURE_SOURCE_CONCEPT_IDS_QUERY.render(
                     project=self.project_id,
                     dataset=self.dataset_id,
                     table=PROCEDURE_OCCURRENCE,
                     sandbox_dataset=self.sandbox_dataset_id,
                     sandbox_table=self.get_sandbox_tablenames()[0])
         }
-        queries_list.append({
-            clean_consts.QUERY: valid_records,
-            clean_consts.DESTINATION_TABLE: PROCEDURE_OCCURRENCE,
-            clean_consts.DESTINATION_DATASET: self.dataset_id,
-            clean_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE
-        })
 
-        return query_list
+        return [sandbox_invalid_records, delete_invalid_records]
 
     def setup_rule(self, client):
         """
