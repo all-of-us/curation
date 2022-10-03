@@ -16,8 +16,7 @@ from common import CONDITION_OCCURRENCE, DEVICE_EXPOSURE, DRUG_EXPOSURE, JINJA_E
     OBSERVATION_PERIOD, PROCEDURE_OCCURRENCE, SPECIMEN, VISIT_OCCURRENCE, VISIT_DETAIL
 from resources import fields_for
 from utils import pipeline_logging
-
-# Third party imports
+from utils.bq import validate_bq_date_string
 
 LOGGER = logging.getLogger(__name__)
 
@@ -196,6 +195,7 @@ if __name__ == '__main__':
                             dest='cutoff_date',
                             action='store',
                             help='EHR/RDR date cutoff of format YYYY-MM-DD',
+                            type=validate_bq_date_string,
                             required=True)
 
     ext_parser.add_argument(
