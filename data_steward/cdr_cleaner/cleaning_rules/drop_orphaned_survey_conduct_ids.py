@@ -16,7 +16,10 @@ import logging
 
 # Project imports
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
-from constants.cdr_cleaner.clean_cdr import COMBINED, CONTROLLED_TIER_DEID, CONTROLLED_TIER_DEID_CLEAN, QUERY, RDR, REGISTERED_TIER_DEID, REGISTERED_TIER_DEID_CLEAN
+from constants.cdr_cleaner.clean_cdr import (COMBINED, CONTROLLED_TIER_DEID,
+                                             CONTROLLED_TIER_DEID_CLEAN, QUERY,
+                                             RDR, REGISTERED_TIER_DEID,
+                                             REGISTERED_TIER_DEID_CLEAN)
 from common import JINJA_ENV, SURVEY_CONDUCT
 from utils import pipeline_logging
 
