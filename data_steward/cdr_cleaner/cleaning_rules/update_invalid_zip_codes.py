@@ -81,7 +81,11 @@ class UpdateInvalidZipCodes(BaseCleaningRule):
     Any invalid zip code will be sandboxed and updated.
     """
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id, table_namer=None):
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 table_namer=None):
         """
         Initialize the class with proper information.
 
