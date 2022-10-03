@@ -6,28 +6,32 @@ Original Issues: DC-1210
 
 #Python Imports
 import os
+from datetime import date
+
+# Third party imports
+from dateutil import parser
 
 # Project Imports
 from app_identity import PROJECT_ID
-from common import JINJA_ENV, PROCEDURE_OCCURRENCE
+from common import JINJA_ENV, PROCEDURE_OCCURRENCE, CONCEPT
 from cdr_cleaner.cleaning_rules.remove_invalid_procedure_source_records import RemoveInvalidProcedureSourceRecords
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
 PROCEDURE_SOURCE_CONCEPT_IDS_TEMPLATE = JINJA_ENV.from_string("""
 INSERT INTO 
     `{{project_id}}.{{dataset_id}}.{{procedure_occurrence_table}}`
-(procedure_occurrence_id, person_id, procedure_concept_id,procedure_date,procedure_datetime,
-procedure_type_concept_id, modifier_concept_id, quantity,provider_id,visit_occurrence_id,
-procedure_source_value, procedure_source_concept_id, qualifier_source_value)
+(procedure_occurrence_id, person_id, procedure_concept_id, procedure_date, procedure_datetime,
+procedure_type_concept_id, modifier_concept_id, quantity, provider_id, visit_occurrence_id,
+visit_detail_id,procedure_source_value, procedure_source_concept_id, modifier_source_value)
 
 VALUES
-    (51380225, 4, 4000000, '2009-04-27', '2009-04-27T00:00:00', 38000270, 0, 1, 0, NULL, '92014', 4000000, NULL),
-    (76392641, 5, 5000000, '2011-05-19', '2011-05-19T00:00:00', 38000270, 0, 1, 0, NULL, '99243', 5000000, NULL),
-    (22888767, 6, 5000000, '2007-12-23', '2007-12-28T00:00:00', 38000270, 0, 1, 0, NULL, '99243', 5000000, NULL),
+    (51380225, 4, 4000000, '2009-04-27', TIMESTAMP('2009-04-27'), 38000270, 0, 1, 0, NULL,NULL,'92014', 4000000, NULL),
+    (76392641, 5, 5000000, '2011-05-19', TIMESTAMP('2011-05-19'), 38000270, 0, 1, 0, NULL,NULL,'99243', 5000000, NULL),
+    (22888767, 6, 5000000, '2007-12-23', TIMESTAMP('2007-12-28'), 38000270, 0, 1, 0, NULL,NULL,'99243', 5000000, NULL),
 
-    (20074825, 1, 1000000, 2012-09-23, '2012-09-23T00:00:00', 44786631, 0, 1, 0, NULL, '99458', 2514636, NULL),
-    (12557074, 2, 2000000, 2010-06-21, '2010-06-21T00:00:00', 47876139, 0, 1, 0, NULL, '45734', 4578984, NULL),
-    (56145455, 3, 3000000, 2011-02-14, '2011-02-14T00:00:00', 45454515, 0, 1, 0, NULL, '48445', 8545787, NULL),
+    (20074825, 1, 1000000, '2012-09-23', TIMESTAMP('2012-09-23'), 44786631, 0, 1, 0, NULL,NULL,'99458', 2514636, NULL),
+    (12557074, 2, 2000000, '2010-06-21', TIMESTAMP('2010-06-21'), 47876139, 0, 1, 0, NULL,NULL,'45734', 4578984, NULL),
+    (56145455, 3, 3000000, '2011-02-14', TIMESTAMP('2011-02-14'), 45454515, 0, 1, 0, NULL,NULL,'48445', 8545787, NULL)
 
 """)
 
@@ -37,13 +41,13 @@ INSERT INTO
 (concept_id, concept_name, domain_id, vocabulary_id, concept_class_id, standard_concept, concept_code, valid_start_date, valid_end_date, invalid_reason)
 
 VALUES
-    (1000000, NULL, 'Procedure', NULL, 'CPT4', 'S', NULL, NULL, NULL, NULL )
-    (2000000, NULL, 'Procedure', NULL, 'CPT4 Hierarchy', 'S', NULL, NULL, NULL, NULL)
-    (3000000, NULL, 'Procedure', NULL, 'Procedure', 'S', NULL, NULL, NULL, NULL)
+    (1000000, 'Respiratory-1', 'Procedure', 'ABC',  'CPT4',           'S', '1010882', '2011-02-14', '2011-02-15', NULL ),
+    (2000000, 'Respiratory-2', 'Procedure', 'ABC',  'CPT4 Hierarchy', 'S', '1010882', '2011-02-14', '2011-02-15', NULL),
+    (3000000, 'Respiratory-3', 'Procedure', 'ABC',  'Procedure',      'S', '1010882', '2011-02-14', '2011-02-15', NULL),
     
-    (4000000, NULL, 'Drug', NULL, 'CPT4 Modifier', NULL, NULL, NULL, NULL, NULL)
-    (5000000, NULL, 'Observation', NULL, 'CPT4 Modifier', NULL, NULL, NULL, NULL, NULL)
-    (5000000, NULL, 'Procedure', NULL, 'CPT4 Modifier', NULL, NULL, NULL, NULL, NULL)
+    (4000000, 'Respiratory-4', 'Drug',        'ABC', 'CPT4 Modifier', NULL, '1010882', '2011-02-14', '2011-02-15', NULL),
+    (5000000, 'Respiratory-5', 'Observation', 'ABC', 'CPT4 Modifier', NULL, '1010882', '2011-02-14', '2011-02-15', NULL),
+    (5000000, 'Respiratory-6', 'Procedure',   'ABC', 'CPT4 Modifier', NULL, '1010882', '2011-02-14', '2011-02-15', NULL)
 
 """)
 
@@ -75,9 +79,12 @@ class RemoveInvalidProcedureSourceRecordsTest(BaseTest.CleaningRulesTestBase):
             cls.fq_sandbox_table_names.append(
                 f'{cls.project_id}.{cls.sandbox_id}.{table_name}')
 
-        # Store procedure_occurrence table name
+        # Store procedure_occurrence and concept table names
         procedure_occurance_table_name = f'{cls.project_id}.{cls.dataset_id}.{PROCEDURE_OCCURRENCE}'
-        cls.fq_table_names = [procedure_occurance_table_name]
+        concept_table_name = f'{cls.project_id}.{cls.dataset_id}.{CONCEPT}'
+        cls.fq_table_names = [
+            procedure_occurance_table_name, concept_table_name
+        ]
 
         # call super to set up the client, create datasets, and create
         # empty test tables
@@ -102,3 +109,41 @@ class RemoveInvalidProcedureSourceRecordsTest(BaseTest.CleaningRulesTestBase):
 
         self.load_test_data(
             [procedure_source_concept_ids_query, concept_ids_template])
+
+    def test_field_cleaning(self):
+        """
+        person_ids 4, 5, and 6 should be sandboxed
+        """
+
+        # Expected results list
+        tables_and_counts = [{
+            'fq_table_name':
+                self.fq_table_names[0],
+            'fq_sandbox_table_name':
+                self.fq_sandbox_table_names[0],
+            'loaded_ids': [
+                20074825, 12557074, 56145455, 51380225, 76392641, 22888767
+            ],
+            'sandboxed_ids': [51380225, 76392641, 22888767],
+            'fields': [
+                'procedure_occurrence_id', 'person_id', 'procedure_concept_id',
+                'procedure_date', 'procedure_datetime',
+                'procedure_type_concept_id', 'modifier_concept_id', 'quantity',
+                'provider_id', 'visit_occurrence_id', 'visit_detail_id',
+                'procedure_source_value', 'procedure_source_concept_id',
+                'modifier_source_value'
+            ],
+            'cleaned_values': [
+                (20074825, 1, 1000000, date.fromisoformat('2012-09-23'),
+                 parser.parse('2012-09-23 00:00:00 UTC'), 44786631, 0, 1, 0,
+                 None, None, '99458', 2514636, None),
+                (12557074, 2, 2000000, date.fromisoformat('2010-06-21'),
+                 parser.parse('2010-06-21 00:00:00 UTC'), 47876139, 0, 1, 0,
+                 None, None, '45734', 4578984, None),
+                (56145455, 3, 3000000, date.fromisoformat('2011-02-14'),
+                 parser.parse('2011-02-14 00:00:00 UTC'), 45454515, 0, 1, 0,
+                 None, None, '48445', 8545787, None)
+            ]
+        }]
+
+        self.default_test(tables_and_counts)
