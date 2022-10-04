@@ -78,6 +78,7 @@ class RemoveInvalidProcedureSourceRecords(BaseCleaningRule):
                  table_namer=None):
         """
         Initialize the class with proper information.
+
         Set the issue numbers, description and affected datasets. As other tickets may affect
         this SQL, append them to the list of Jira Issues.
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
@@ -87,7 +88,7 @@ class RemoveInvalidProcedureSourceRecords(BaseCleaningRule):
         )
         super().__init__(issue_numbers=ISSUE_NUMBERS,
                          description=desc,
-                         affected_datasets=[cdr_consts.REGISTERED_TIER_DEID],
+                         affected_datasets=[cdr_consts.EHR],
                          affected_tables=[PROCEDURE_OCCURRENCE],
                          project_id=project_id,
                          dataset_id=dataset_id,
