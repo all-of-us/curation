@@ -23,7 +23,7 @@ from cdr_cleaner.cleaning_rules.maps_to_value_ppi_vocab_update import MapsToValu
 from cdr_cleaner.cleaning_rules.populate_route_ids import PopulateRouteIds
 from cdr_cleaner.cleaning_rules.populate_survey_conduct_ext import PopulateSurveyConductExt
 import \
-    cdr_cleaner.cleaning_rules.remove_invalid_procedure_source_records as invalid_procedure_source
+    cdr_cleaner.cleaning_rules.remove_invalid_procedure_source_records as RemoveInvalidProcedureSourceRecords
 from cdr_cleaner.cleaning_rules.remove_non_matching_participant import RemoveNonMatchingParticipant
 from cdr_cleaner.cleaning_rules.remove_records_with_wrong_date import RemoveRecordsWithWrongDate
 from cdr_cleaner.cleaning_rules.remove_participants_under_18years import RemoveParticipantsUnder18Years
@@ -134,6 +134,7 @@ LOGGER = logging.getLogger(__name__)
 
 EHR_CLEANING_CLASSES = [
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
+    (RemoveInvalidProcedureSourceRecords,),
 ]
 
 UNIONED_EHR_CLEANING_CLASSES = [
@@ -143,7 +144,6 @@ UNIONED_EHR_CLEANING_CLASSES = [
     (CleanByBirthYear,),
     (EnsureDateDatetimeConsistency,),
     (RemoveRecordsWithWrongDate,),
-    (invalid_procedure_source.get_remove_invalid_procedure_source_queries,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
