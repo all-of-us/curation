@@ -82,7 +82,7 @@ class DropParticipantsWithoutAnyBasics(DropMissingParticipants):
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
                          table_namer=table_namer,
-                         run_for_synthetic=True)
+                         run_for_synthetic=False)
 
     def get_query_specs(self):
         """

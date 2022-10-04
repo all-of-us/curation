@@ -207,7 +207,7 @@ def _remove_mapping_tables(bq_client, project_id, final_dataset_name):
             bq_client.delete_table(table)
 
 
-def update_domain_table_id(client: BigQueryClient, fq_table: str):
+def _update_domain_table_id(client: BigQueryClient, fq_table: str):
     que = (
         f"UPDATE `{fq_table}`  "
         f"SET {fq_table.split('.')[-1]}_id = {fq_table.split('.')[-1]}_id + 1000000000000000  "
@@ -243,12 +243,29 @@ def create_tier(project_id: str, input_dataset: str, release_tag: str,
     bq_client.copy_dataset(f'{project_id}.{input_dataset}',
                            f'{project_id}.{datasets[consts.STAGING]}')
 
+    import time
+    LOGGER.info("sleeping after the copy")
+    time.sleep(30)
+    LOGGER.info("Done sleeping after copy")
+
     # 1. add mapping tables
     for domain_table in combine_consts.DOMAIN_TABLES:
         LOGGER.info(f'Mapping {domain_table}...')
         generate_combined_mapping_tables(bq_client, domain_table,
                                          datasets[consts.STAGING], '',
                                          datasets[consts.STAGING])
+
+        if domain_table != 'survey_conduct':
+            _update_domain_table_id(
+                bq_client,
+                f'{project_id}.{datasets[consts.STAGING]}.{domain_table}')
+
+    _fix_survey_conduct_records(bq_client, project_id, datasets[consts.STAGING],
+                                datasets[consts.SANDBOX])
+
+    LOGGER.info("sleeping after generating mapping tables")
+    time.sleep(30)
+    LOGGER.info("Done sleeping generating mapping tables")
 
     # Run cleaning rules
     cleaning_args = [
@@ -351,10 +368,10 @@ def main(raw_args=None) -> dict:
         args.project_id, '--vocab_dataset', args.vocab_dataset, '--console_log'
     ])
 
-    dataset_obj = dataset_obj.dataset_id
+    dataset_id = dataset_obj.dataset_id
 
     # Creates synthetic dataset and runs a subset of cleaning rules marked for synthetic data
-    datasets = create_tier(args.project_id, dataset_obj, args.release_tag,
+    datasets = create_tier(args.project_id, dataset_id, args.release_tag,
                            args.target_principal, **kwargs)
 
     return datasets

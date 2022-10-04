@@ -24,6 +24,14 @@ WHERE sce.survey_conduct_id = qrai.questionnaire_response_id
 AND UPPER(qrai.type) = 'LANGUAGE'
 """)
 
+QRID_RID_MAPPING_QUERY = JINJA_ENV.from_string("""
+-- must update the conduct_id now so the extension table is joinable on the de-identified survey_conduct table --
+UPDATE `{{project_id}}.{{dataset_id}}.survey_conduct_ext` t
+SET t.survey_conduct_id = m.research_response_id
+FROM `{{project_id}}.{{deid_questionnaire_response_map_dataset_id}}.{{deid_questionnaire_response_map}}` m
+WHERE t.survey_conduct_id = m.questionnaire_response_id
+""")
+
 
 class PopulateSurveyConductExt(BaseCleaningRule):
     """
