@@ -223,8 +223,7 @@ COMBINED_CLEANING_CLASSES = [
     (
         populate_routes.get_route_mapping_queries,),
     (TemporalConsistency,),
-    (remove_records_with_wrong_date.get_remove_records_with_wrong_date_queries,
-    ),
+    (EnsureDateDatetimeConsistency,),
     (drop_duplicate_states.get_drop_duplicate_states_queries,),
     # TODO : Make null_invalid_foreign_keys able to run on de_identified dataset
     (
