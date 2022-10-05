@@ -122,7 +122,7 @@ FROM `{{rdr_dataset_id}}.{{domain_table}}` AS t
     ON t.{{domain_table}}_id = v.{{domain_table}}_id
 {% endif %}
 
-{% if person_id_flag %}
+{% if person_id_flag and domain_table != 'survey_conduct' %}
     WHERE EXISTS
     (SELECT 1 FROM `{{combined_dataset_id}}.{{ehr_consent_table_id}}` AS c
     WHERE t.person_id = c.person_id)
