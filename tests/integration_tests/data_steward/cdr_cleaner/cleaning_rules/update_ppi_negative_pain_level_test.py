@@ -8,6 +8,7 @@ import os
 
 # Third party imports
 from google.cloud import bigquery
+from dateutil.parser import parse
 
 # Project Imports
 from app_identity import PROJECT_ID
@@ -32,10 +33,10 @@ INSERT_RAW_DATA = JINJA_ENV.from_string("""
       value_source_value
       )
     VALUES
-      (1,1,0,'2020-01-01',1,-1,'',0,1585747,1,'Test Value'),
-      (2,1,0,'2020-01-02',1,-1,'',0,1585747,1,'Test Value'),
-      (3,1,0,'2020-01-03',1,3,'',0,1585747,1,'Test Value'),
-      (4,1,0,'2020-01-04',1,4,'',0,1585747,1,'Test Value')
+      (1,1,0,date('2020-01-01'),1,-1,'',0,1585747,1,'Test Value'),
+      (2,1,0,date('2020-01-01'),1,-1,'',0,1585747,1,'Test Value'),
+      (3,1,0,date('2020-01-01'),1,3,'',0,1585747,1,'Test Value'),
+      (4,1,0,date('2020-01-01'),1,4,'',0,1585747,1,'Test Value')
 """)
 
 
@@ -53,8 +54,8 @@ class UpdatePpiNegativePainLevelTest(BaseTest.CleaningRulesTestBase):
         cls.project_id = os.environ.get(PROJECT_ID)
 
         # Set the expected test datasets
-        cls.dataset_id = os.environ.get('RDR_DATASET_ID')
-        cls.sandbox_id = cls.dataset_id + '_sandbox'
+        cls.dataset_id = os.environ.get('COMBINED_DATASET_ID')
+        cls.sandbox_id = f"{cls.dataset_id}_sandbox"
         cls.vocabulary_id = os.environ.get('VOCABULARY_DATASET')
 
         cls.rule_instance = UpdatePpiNegativePainLevel(cls.project_id,
@@ -72,7 +73,7 @@ class UpdatePpiNegativePainLevelTest(BaseTest.CleaningRulesTestBase):
                 f'{cls.project_id}.{cls.sandbox_id}.{table}')
 
         # call super to set up the client, create datasets
-        cls.up_class = super().setUpClass()
+        super().setUpClass()
 
     def setUp(self):
         # Set the test project identifier
@@ -81,6 +82,7 @@ class UpdatePpiNegativePainLevelTest(BaseTest.CleaningRulesTestBase):
         raw_data_load_query = INSERT_RAW_DATA.render(project_id=self.project_id,
                                                      dataset_id=self.dataset_id)
 
+        self.date = parse('2020-01-01').date()
         # Load test data
         self.load_test_data([f'{raw_data_load_query}'])
 
@@ -119,12 +121,12 @@ class UpdatePpiNegativePainLevelTest(BaseTest.CleaningRulesTestBase):
                 'value_source_value'
             ],
             'cleaned_values': [
-                (1, 1, 0, '2020-01-01', 1, None, 'PMI_Skip', 903096, 1585747,
+                (1, 1, 0, self.date, 1, None, 'PMI_Skip', 903096, 1585747,
                  903096, 'PMI_Skip'),
-                (2, 1, 0, '2020-01-02', 1, None, 'PMI_Skip', 903096, 1585747,
+                (2, 1, 0, self.date, 1, None, 'PMI_Skip', 903096, 1585747,
                  903096, 'PMI_Skip'),
-                (3, 1, 0, '2020-01-03', 1, 3, '', 0, 1585747, 1, 'Test Value'),
-                (4, 1, 0, '2020-01-04', 1, 4, '', 0, 1585747, 1, 'Test Value')
+                (3, 1, 0, self.date, 1, 3, '', 0, 1585747, 1, 'Test Value'),
+                (4, 1, 0, self.date, 1, 4, '', 0, 1585747, 1, 'Test Value')
             ]
         }]
 

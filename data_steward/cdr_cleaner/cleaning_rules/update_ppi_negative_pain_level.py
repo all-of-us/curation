@@ -15,6 +15,7 @@ JIRA_ISSUE_URL = [
     'https://precisionmedicineinitiative.atlassian.net/browse/DC-536',
     'https://precisionmedicineinitiative.atlassian.net/browse/DC-1241'
 ]
+CLEANING_RULE_NAME = 'update_ppi_negative_pain_level'
 
 SELECT_NEGATIVE_PPI_QUERY = JINJA_ENV.from_string("""
 SELECT
@@ -61,6 +62,12 @@ class UpdatePpiNegativePainLevel(BaseCleaningRule):
                          sandbox_dataset_id=sandbox_dataset_id,
                          table_namer=table_namer)
 
+    def setup_rule(self, client, *args, **keyword_args):
+        """
+        Run required steps for setup rule
+        """
+        pass
+
     def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
         """
         This function generate the queries_list that updates negative ppi answers to pmi_skip.
@@ -77,7 +84,10 @@ class UpdatePpiNegativePainLevel(BaseCleaningRule):
         queries_list.append({
             cdr_consts.QUERY:
                 SELECT_NEGATIVE_PPI_QUERY.render(dataset_id=self.dataset_id,
-                                                 project_id=self.project_id)
+                                                 project_id=self.project_id),
+            cdr_consts.DESTINATION_DATASET: self.sandbox_dataset_id,
+            cdr_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE,
+            cdr_consts.DESTINATION_TABLE: CLEANING_RULE_NAME
         })
 
         # Update value_as_number, value_source_concept_id, value_as_concept_id, value_as_string, value_source_value.
@@ -91,12 +101,6 @@ class UpdatePpiNegativePainLevel(BaseCleaningRule):
 
     def get_sandbox_tablenames(self):
         return [self.sandbox_table_for(OBSERVATION)]
-
-    def setup_rule(self, client, *args, **keyword_args):
-        """
-        Run required steps for setup rule
-        """
-        pass
 
     def setup_validation(self, client):
         """
