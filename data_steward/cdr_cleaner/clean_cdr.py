@@ -29,8 +29,8 @@ from cdr_cleaner.cleaning_rules.remove_records_with_wrong_date import RemoveReco
 from cdr_cleaner.cleaning_rules.remove_participants_under_18years import RemoveParticipantsUnder18Years
 from cdr_cleaner.cleaning_rules.round_ppi_values_to_nearest_integer import RoundPpiValuesToNearestInteger
 from cdr_cleaner.cleaning_rules.update_family_history_qa_codes import UpdateFamilyHistoryCodes
-import cdr_cleaner.manual_cleaning_rules.negative_ppi as negative_ppi
 import cdr_cleaner.manual_cleaning_rules.remove_operational_pii_fields as operational_pii_fields
+from cdr_cleaner.cleaning_rules.update_ppi_negative_pain_level import UpdatePpiNegativePainLevel
 from cdr_cleaner.cleaning_rules.clean_height_weight import CleanHeightAndWeight
 from cdr_cleaner.cleaning_rules.clean_mapping import CleanMappingExtTables
 from cdr_cleaner.cleaning_rules.clean_ppi_numeric_fields_using_parameters import \
@@ -173,8 +173,12 @@ RDR_CLEANING_CLASSES = [
     (BackfillPmiSkipCodes,),
     (CleanPPINumericFieldsUsingParameters,),
     (RemoveMultipleRaceEthnicityAnswersQueries,),
-    (negative_ppi.get_update_ppi_queries,),
-    (DropPpiDuplicateResponses,),
+    (UpdatePpiNegativePainLevel,),
+    # trying to load a table while creating query strings,
+    # won't work with mocked strings.  should use base class
+    # setup_query_execution function to load dependencies before query execution
+    (
+        DropPpiDuplicateResponses,),
     (DropCopeDuplicateResponses,),
     # trying to load a table while creating query strings,
     # won't work with mocked strings.  should use base class
