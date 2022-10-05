@@ -21,8 +21,8 @@ PROCEDURE_SOURCE_CONCEPT_IDS_TEMPLATE = JINJA_ENV.from_string("""
 INSERT INTO 
     `{{project_id}}.{{dataset_id}}.{{procedure_occurrence_table}}`
 (procedure_occurrence_id, person_id, procedure_concept_id, procedure_date, procedure_datetime,
-procedure_type_concept_id, modifier_concept_id, quantity, provider_id, visit_occurrence_id,
-visit_detail_id,procedure_source_value, procedure_source_concept_id, modifier_source_value)
+ procedure_type_concept_id, modifier_concept_id, quantity, provider_id, visit_occurrence_id,
+ visit_detail_id, procedure_source_value, procedure_source_concept_id, modifier_source_value)
 
 VALUES
     (51380225, 4, 4000000, '2009-04-27', TIMESTAMP('2009-04-27'), 38000270, 0, 1, 0, NULL,NULL,'92014', 4000000, NULL),
