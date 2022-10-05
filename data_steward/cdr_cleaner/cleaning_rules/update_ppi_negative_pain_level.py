@@ -85,9 +85,12 @@ class UpdatePpiNegativePainLevel(BaseCleaningRule):
             cdr_consts.QUERY:
                 SELECT_NEGATIVE_PPI_QUERY.render(dataset_id=self.dataset_id,
                                                  project_id=self.project_id),
-            cdr_consts.DESTINATION_DATASET: self.sandbox_dataset_id,
-            cdr_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE,
-            cdr_consts.DESTINATION_TABLE: CLEANING_RULE_NAME
+            cdr_consts.DESTINATION_DATASET:
+                self.sandbox_dataset_id,
+            cdr_consts.DISPOSITION:
+                bq_consts.WRITE_TRUNCATE,
+            cdr_consts.DESTINATION_TABLE:
+                CLEANING_RULE_NAME
         })
 
         # Update value_as_number, value_source_concept_id, value_as_concept_id, value_as_string, value_source_value.

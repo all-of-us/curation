@@ -7,7 +7,6 @@ Original Issue: DC-536
 import os
 
 # Third party imports
-from google.cloud import bigquery
 from dateutil.parser import parse
 
 # Project Imports
@@ -85,23 +84,6 @@ class UpdatePpiNegativePainLevelTest(BaseTest.CleaningRulesTestBase):
         self.date = parse('2020-01-01').date()
         # Load test data
         self.load_test_data([f'{raw_data_load_query}'])
-
-    def test_setup_rule(self):
-
-        # test if intermediary table exists before running the cleaning rule
-        intermediary_table = f'{self.project_id}.{self.sandbox_id}.{OBSERVATION}'
-
-        # run setup_rule and see if the table is created
-        self.rule_instance.setup_rule(self.client)
-
-        actual_table = self.client.get_table(intermediary_table)
-        self.assertIsNotNone(actual_table.created)
-
-        query = test_query.render(intermediary_table=intermediary_table)
-        query_job_config = bigquery.job.QueryJobConfig(use_query_cache=False)
-        result = self.client.query(query,
-                                   job_config=query_job_config).to_dataframe()
-        self.assertEqual(result.empty, False)
 
     def test_setting_concept_identifiers(self):
         """
