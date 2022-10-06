@@ -23,7 +23,8 @@ INSERT INTO `{{project_id}}.{{dataset_id}}.observation`
 (observation_id, person_id, observation_concept_id, observation_date, observation_datetime, 
 observation_type_concept_id, value_as_number, value_as_string, value_as_concept_id, qualifier_concept_id, 
 unit_concept_id, provider_id, visit_occurrence_id, visit_detail_id, observation_source_value,
-observation_source_concept_id,unit_source_value,qualifier_source_value,value_source_concept_id,value_source_value,questionnaire_response_id)
+observation_source_concept_id, unit_source_value, qualifier_source_value, value_source_concept_id, value_source_value, 
+questionnaire_response_id)
 
 VALUES
     (100, 1, 1585838, '2009-04-29', TIMESTAMP('2009-04-29'),
@@ -32,43 +33,43 @@ VALUES
      1585838, NULL, NULL, 1585840, NULL, NULL
     ),
 
-    (100, 1, 1585845, '2009-04-29', TIMESTAMP('2009-04-29'),
+    (200, 1, 1585845, '2009-04-29', TIMESTAMP('2009-04-29'),
      8201211115, 1.0, NULL, 0, 0,
      0, 0, NULL, NULL, '99051',
      1585845, NULL, NULL, 1585846, NULL, NULL
     ),
 
-    (200, 2, 1585845, '2009-05-15', TIMESTAMP('2009-05-15'),
+    (300, 2, 1585845, '2009-05-15', TIMESTAMP('2009-05-15'),
      8201211116, 1.0, NULL, 0, 0,
      0, 0, NULL, NULL, '99054',
      1585845, NULL, NULL, 1585846, NULL, NULL
     ),
 
-    (300, 3, 1585838, '2009-05-15', TIMESTAMP('2009-05-15'),
+    (400, 3, 1585838, '2009-05-15', TIMESTAMP('2009-05-15'),
      8201211116, 1.0, NULL, 0, 0,
      0, 0, NULL, NULL, '99054',
      1585838, NULL, NULL, 1585839, NULL, NULL
     ),
 
-    (300, 3, 1585845, '2009-05-15', TIMESTAMP('2009-05-15'),
+    (500, 3, 1585845, '2009-05-15', TIMESTAMP('2009-05-15'),
      8201211116, 1.0, NULL, 0, 0,
      0, 0, NULL, NULL, '99054',
      1585845, NULL, NULL, 1585847, NULL, NULL
     ),
 
-    (400, 4, 1585845, '2009-05-15', TIMESTAMP('2009-05-15'),
+    (600, 4, 1585845, '2009-05-15', TIMESTAMP('2009-05-15'),
      8201211116, 1.0, NULL, 0, 0,
      0, 0, NULL, NULL, '99054',
      1585845, NULL, NULL, 1585847, NULL, NULL
     ),
 
-    (500, 5, 4271761, '2018-11-15', NULL,
+    (700, 5, 4271761, '2018-11-15', NULL,
      45905771, NULL, NULL, 5555555, NULL,
      NULL, NULL, NULL, NULL, NULL,
      4271761, NULL, NULL, 0, NULL, NULL
     ),
 
-    (600, 6, 2617460, '2014-02-26', TIMESTAMP('2014-02-26'),
+    (800, 6, 2617460, '2014-02-26', TIMESTAMP('2014-02-26'),
      8201211115, 1.0, NULL, 0, 0,
      0, 0, 224968761, NULL, '0390',
      2617460, NULL, NULL, NULL, NULL, NULL
@@ -139,8 +140,8 @@ class GeneralizeSexGenderConceptsTest(BaseTest.CleaningRulesTestBase):
                 self.fq_table_names[0],
             'fq_sandbox_table_name':
                 self.fq_sandbox_table_names[0],
-            'loaded_ids': [100, 100, 200, 300, 300, 400, 500, 600],
-            'sandboxed_ids': [100, 300],
+            'loaded_ids': [100, 200, 300, 400, 500, 600, 700, 800],
+            'sandboxed_ids': [100, 400],
             'fields': [
                 'observation_id', 'person_id', 'observation_concept_id',
                 'observation_date', 'observation_datetime',
@@ -158,30 +159,30 @@ class GeneralizeSexGenderConceptsTest(BaseTest.CleaningRulesTestBase):
                  parser.parse('2009-04-29 00:00:00 UTC'), 8201211115, 1.0, None,
                  2000000002, 0, 0, 0, None, None, '99051', 1585838, None, None,
                  2000000002, None, None),
-                (100, 1, 1585845, date.fromisoformat('2009-04-29'),
+                (200, 1, 1585845, date.fromisoformat('2009-04-29'),
                  parser.parse('2009-04-29 00:00:00 UTC'), 8201211115, 1.0, None,
                  0, 0, 0, 0, None, None, '99051', 1585845, None, None, 1585846,
                  None, None),
-                (200, 2, 1585845, date.fromisoformat('2009-05-15'),
+                (300, 2, 1585845, date.fromisoformat('2009-05-15'),
                  parser.parse('2009-05-15 00:00:00 UTC'), 8201211116, 1.0, None,
                  0, 0, 0, 0, None, None, '99054', 1585845, None, None, 1585846,
                  None, None),
-                (300, 3, 1585838, date.fromisoformat('2009-05-15'),
+                (400, 3, 1585838, date.fromisoformat('2009-05-15'),
                  parser.parse('2009-05-15 00:00:00 UTC'), 8201211116, 1.0, None,
                  2000000002, 0, 0, 0, None, None, '99054', 1585838, None, None,
                  2000000002, None, None),
-                (300, 3, 1585845, date.fromisoformat('2009-05-15'),
+                (500, 3, 1585845, date.fromisoformat('2009-05-15'),
                  parser.parse('2009-05-15 00:00:00 UTC'), 8201211116, 1.0, None,
                  0, 0, 0, 0, None, None, '99054', 1585845, None, None, 1585847,
                  None, None),
-                (400, 4, 1585845, date.fromisoformat('2009-05-15'),
+                (600, 4, 1585845, date.fromisoformat('2009-05-15'),
                  parser.parse('2009-05-15 00:00:00 UTC'), 8201211116, 1.0, None,
                  0, 0, 0, 0, None, None, '99054', 1585845, None, None, 1585847,
                  None, None),
-                (500, 5, 4271761, date.fromisoformat('2018-11-15'), None,
+                (700, 5, 4271761, date.fromisoformat('2018-11-15'), None,
                  45905771, None, None, 5555555, None, None, None, None, None,
                  None, 4271761, None, None, 0, None, None),
-                (600, 6, 2617460, date.fromisoformat('2014-02-26'),
+                (800, 6, 2617460, date.fromisoformat('2014-02-26'),
                  parser.parse('2014-02-26 00:00:00 UTC'), 8201211115, 1.0, None,
                  0, 0, 0, 0, 224968761, None, '0390', 2617460, None, None, None,
                  None, None)
