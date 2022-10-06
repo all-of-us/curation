@@ -9,50 +9,13 @@ from dateutil.parser import parse
 import pytz
 
 # Project Imports
-from common import VOCABULARY_TABLES
-from cdr_cleaner.cleaning_rules.domain_mapping import DOMAIN_TABLE_NAMES
-from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
-from resources import mapping_table_for
 from app_identity import PROJECT_ID
-from cdr_cleaner.cleaning_rules.domain_alignment import domain_alignment, \
-    DOMAIN_ALIGNMENT_TABLE_NAME, sandbox_name_for
+from cdr_cleaner.cleaning_rules.domain_alignment import DomainAlignment, LOOKUP_TABLE
+from cdr_cleaner.cleaning_rules.domain_mapping import DOMAIN_TABLE_NAMES
+from common import CONDITION_OCCURRENCE, OBSERVATION, PROCEDURE_OCCURRENCE, VOCABULARY_TABLES
+from resources import mapping_table_for
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import \
     BaseTest
-
-
-class DomainAlignment(BaseCleaningRule):
-    """
-    Imitate a base cleaning rule implementation so that we can use CleaningRulesTestBase
-    """
-
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id):
-        super().__init__(
-            project_id=project_id,
-            dataset_id=dataset_id,
-            sandbox_dataset_id=sandbox_dataset_id,
-            description=
-            'fake CR class for the domain alignment integration test',
-            issue_numbers=[],
-            affected_datasets=[])
-
-    def get_query_specs(self):
-        return domain_alignment(self._project_id, self._dataset_id,
-                                self._sandbox_dataset_id)
-
-    def setup_function(self, client):
-        pass
-
-    def get_sandbox_tablenames(self):
-        pass
-
-    def setup_rule(self, client, *args, **keyword_args):
-        pass
-
-    def setup_validation(self, client, *args, **keyword_args):
-        pass
-
-    def validate_rule(self, client, *args, **keyword_args):
-        pass
 
 
 class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
@@ -76,9 +39,7 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
                                             cls.sandbox_id)
 
         # Generates list of fully qualified table names
-        for table_name in DOMAIN_TABLE_NAMES + VOCABULARY_TABLES + [
-                DOMAIN_ALIGNMENT_TABLE_NAME
-        ]:
+        for table_name in DOMAIN_TABLE_NAMES + VOCABULARY_TABLES:
             cls.fq_table_names.append(
                 f'{cls.project_id}.{cls.dataset_id}.{table_name}')
 
@@ -87,8 +48,11 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
             cls.fq_table_names.append(
                 f'{cls.project_id}.{cls.dataset_id}.{mapping_table_for(table_name)}'
             )
-            sandbox_table = f'{cls.project_id}.{cls.sandbox_id}.{sandbox_name_for(table_name)}'
+            sandbox_table = f'{cls.project_id}.{cls.sandbox_id}.{cls.rule_instance.sandbox_table_for(table_name)}'
             cls.fq_sandbox_table_names.append(sandbox_table)
+
+        sandbox_table = f'{cls.project_id}.{cls.sandbox_id}.{LOOKUP_TABLE}'
+        cls.fq_sandbox_table_names.append(sandbox_table)
 
         # call super to set up the client, create datasets
         cls.up_class = super().setUpClass()
@@ -190,6 +154,8 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
         insert_observation_query = observation_data_tmpl.render(
             project_id=self.project_id, dataset_id=self.dataset_id)
 
+        self.maxDiff = None
+
         insert_observation_mapping_query = mapping_observation_data_template.render(
             project_id=self.project_id, dataset_id=self.dataset_id)
 
@@ -205,10 +171,10 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
         # Expected results list
         tables_and_counts = [{
             'fq_table_name':
-                f'{self.project_id}.{self.dataset_id}.condition_occurrence',
+                f'{self.project_id}.{self.dataset_id}.{CONDITION_OCCURRENCE}',
             'fq_sandbox_table_name':
                 f'{self.project_id}.{self.sandbox_id}.'
-                f'{sandbox_name_for("condition_occurrence")}',
+                f'{self.rule_instance.sandbox_table_for(CONDITION_OCCURRENCE)}',
             'loaded_ids': [100, 101, 102, 103, 104],
             'sandboxed_ids': [101, 104],
             'fields': [
@@ -232,10 +198,10 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
             ]
         }, {
             'fq_table_name':
-                f'{self.project_id}.{self.dataset_id}.procedure_occurrence',
+                f'{self.project_id}.{self.dataset_id}.{PROCEDURE_OCCURRENCE}',
             'fq_sandbox_table_name':
                 f'{self.project_id}.{self.sandbox_id}.'
-                f'{sandbox_name_for("procedure_occurrence")}',
+                f'{self.rule_instance.sandbox_table_for(PROCEDURE_OCCURRENCE)}',
             'loaded_ids': [200, 201],
             'sandboxed_ids': [201],
             'fields': [
@@ -252,10 +218,10 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
             ]
         }, {
             'fq_table_name':
-                f'{self.project_id}.{self.dataset_id}.observation',
+                f'{self.project_id}.{self.dataset_id}.{OBSERVATION}',
             'fq_sandbox_table_name':
                 f'{self.project_id}.{self.sandbox_id}.'
-                f'{sandbox_name_for("observation")}',
+                f'{self.rule_instance.sandbox_table_for(OBSERVATION)}',
             'loaded_ids': [101, 102, 103, 104, 105],
             'sandboxed_ids': [105],
             'fields': [

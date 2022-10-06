@@ -48,9 +48,9 @@ DATASOURCES_JSON = os.path.join(achilles_data_path, 'datasources.json')
 domain_mappings_path = os.path.join(resource_files_path, 'domain_mappings')
 field_mappings_replaced_path = os.path.join(domain_mappings_path,
                                             'field_mappings_replaced.csv')
-table_mappings_path = os.path.join(domain_mappings_path, 'table_mappings.csv')
-field_mappings_path = os.path.join(domain_mappings_path, 'field_mappings.csv')
-value_mappings_path = os.path.join(domain_mappings_path, 'value_mappings.csv')
+TABLE_MAPPINGS_PATH = os.path.join(domain_mappings_path, 'table_mappings.csv')
+FIELD_MAPPINGS_PATH = os.path.join(domain_mappings_path, 'field_mappings.csv')
+VALUE_MAPPINGS_PATH = os.path.join(domain_mappings_path, 'value_mappings.csv')
 CDR_CLEANER_PATH = os.path.join(resource_files_path, 'cdr_cleaner')
 REPLACED_PRIVACY_CONCEPTS_PATH = os.path.join(
     CDR_CLEANER_PATH, 'controlled_tier_replaced_privacy_concepts.csv')
@@ -118,15 +118,15 @@ def _csv_file_to_list(csv_file):
 
 
 def table_mappings_csv():
-    return csv_to_list(table_mappings_path)
+    return csv_to_list(TABLE_MAPPINGS_PATH)
 
 
 def field_mappings_csv():
-    return csv_to_list(field_mappings_path)
+    return csv_to_list(FIELD_MAPPINGS_PATH)
 
 
 def value_mappings_csv():
-    return csv_to_list(value_mappings_path)
+    return csv_to_list(VALUE_MAPPINGS_PATH)
 
 
 def achilles_index_files():
