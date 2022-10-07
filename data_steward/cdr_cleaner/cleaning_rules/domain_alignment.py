@@ -18,7 +18,7 @@ LOGGER = logging.getLogger(__name__)
 
 LOOKUP_TABLE = 'lookup_domain_alignment'
 
-CREATE_LOOKUP_ALIGNMENT_TMPL = JINJA_ENV.from_string("""
+CREATE_LOOKUP_TMPL = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{alignment_table}}`
 (src_table STRING, dest_table STRING, src_id INT64, dest_id INT64, is_rerouted BOOL)
 """)
@@ -64,7 +64,7 @@ FROM `{{project_id}}.{{dataset_id}}.{{table}}` AS s
 JOIN `{{project_id}}.{{dataset_id}}.concept` AS c 
 ON s.{{domain_concept_id}} = c.concept_id 
 WHERE c.domain_id in (
-    {% for domain in domains %} 
+    {%- for domain in domains %} 
     '{{domain}}'{% if not loop.last -%}, {% endif %}
     {% endfor %}
 )
@@ -88,48 +88,25 @@ ON s.{{src_id}} = m.src_id AND m.src_table = '{{src_table}}'
 WHERE m.src_id IS NULL
 """)
 
-# !!! ADD cast if the datatypes are different between source column and destination column
-INSERT_DOMAIN_TMPL = JINJA_ENV.from_string("""
+INSERT_TMPL = JINJA_ENV.from_string("""
 INSERT INTO `{{project_id}}.{{dataset_id}}.{{dest_table}}`
 ({% for field in fields %}{{field['name']}}{% if not loop.last -%}, {% endif %}{% endfor %})
 SELECT 
-    {% for f in fields %}{% set dest_field = f['name'] %}
-        {% if dest_field == dest_domain_id_field -%}
-            m.dest_id AS {{dest_domain_id_field}}
-        {% elif field_mappings[dest_field]['translation'] == '0' and dest_field in required_fields_dest -%}
-        -- !!! Use coalsce --
-            {% if f['type'] == 'timestamp' -%} timestamp('2015-07-15') AS {{dest_field}}
-            {% elif f['type'] == 'date' -%} date('2015-07-15') AS {{dest_field}}
-            {% elif f['type'] == 'string' -%} '' AS {{dest_field}}
-            {% elif f['type'] == 'integer' -%} 0 AS {{dest_field}}
-            {% elif f['type'] == 'float' -%} 0.0 AS {{dest_field}}
-            {% endif %}
-        {% elif field_mappings[dest_field]['translation'] == '0' -%}
-            {{field_mappings[dest_field]['src_field']}} AS {{dest_field}}
-        {% elif value_mappings and field_mappings[dest_field]['src_field'] == value_mappings[dest_field]['src_field'] %}
-            CASE {{field_mappings[dest_field]['src_field']}}
-            {% for src_field, f, src_value, dest_value in value_mappings %}
-            WHEN {{src_value}} THEN {{dest_value}}
-            {% endfor %}
-            ELSE 0 END AS {{dest_field}}
-        {% elif dest_field in required_fields_dest %}
-            0 AS {{dest_field}}
-        {% else %}
-            NULL AS {{dest_field}}
-        {% endif %}
-        {%- if not loop.last -%}, {% endif %}
+    {% for col in cols %}
+    {{col}}
+    {% if not loop.last %}, {% endif %}
     {% endfor %}
 FROM `{{project_id}}.{{dataset_id}}.{{src_table}}` AS s 
 JOIN `{{project_id}}.{{sandbox_dataset_id}}.{{alignment_table}}` AS m 
-ON s.{{src_domain_id_field}} = m.src_id 
+ON s.{{src_table}}_id = m.src_id 
 AND m.src_table = '{{src_table}}' 
 AND m.dest_table = '{{dest_table}}' 
 AND m.is_rerouted = True 
 """)
 
-INSERT_MAPPING_RECORD_TMPL = JINJA_ENV.from_string("""
+INSERT_MAPPING_TMPL = JINJA_ENV.from_string("""
 INSERT INTO `{{project_id}}.{{dataset_id}}._mapping_{{dest_table}}`
-({% for field in fields %}{{field}}{% if not loop.last -%}, {% endif %}{% endfor %})
+({% for field in fields %}{{field['name']}}{% if not loop.last -%}, {% endif %}{% endfor %})
 SELECT
     m.dest_id AS {{dest_table}}_id,
     src.src_dataset_id,
@@ -144,16 +121,16 @@ JOIN `{{project_id}}.{{dataset_id}}._mapping_{{src_table}}` AS src
 WHERE m.is_rerouted = True
 """)
 
-SANDBOX_DOMAIN_RECORD_QUERY_TMPL = JINJA_ENV.from_string("""
-CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table}} AS (
-SELECT d.*
-FROM `{{project_id}}.{{dataset_id}}.{{domain_table}}` AS d
-LEFT JOIN `{{project_id}}.{{sandbox_dataset_id}}.{{alignment_table}}` AS m
-ON d.{{domain_table}}_id = m.dest_id 
-    AND m.dest_table = '{{domain_table}}'
+SANDBOX_TMPL = JINJA_ENV.from_string("""
+CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table}}` AS (
+    SELECT d.*
+    FROM `{{project_id}}.{{dataset_id}}.{{table}}` AS d
+    LEFT JOIN `{{project_id}}.{{sandbox_dataset_id}}.{{alignment_table}}` AS m
+    ON d.{{table}}_id = m.dest_id 
+    AND m.dest_table = '{{table}}'
     AND m.is_rerouted = True 
-WHERE m.dest_id IS NULL
--- exclude PPI records from sandboxing --
+    WHERE m.dest_id IS NULL
+    -- exclude PPI records from sandboxing --
     AND d.{{domain_concept_id}} NOT IN (
         SELECT c.concept_id
         FROM `{{project_id}}.{{dataset_id}}.concept` c
@@ -162,13 +139,35 @@ WHERE m.dest_id IS NULL
 )
 """)
 
-CLEAN_DOMAIN_RECORD_QUERY_TMPL = JINJA_ENV.from_string("""
-DELETE d
-FROM `{{project_id}}.{{dataset_id}}.{% if is_mapping %}_mapping_{% endif %}{{domain_table}}` AS d
-LEFT JOIN `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table}}` AS s
-  ON d.{{domain_table}}_id = s.{{domain_table}}_id
-WHERE s.{{domain_table}}_id IS NOT NULL
+SANDBOX_MAPPING_TMPL = JINJA_ENV.from_string("""
+CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table}}` AS (
+    SELECT * 
+    FROM `{{project_id}}.{{dataset_id}}.{{mapping_table}}`
+    WHERE {{table}}_id IN (
+        SELECT {{table}}_id 
+        FROM `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_domain_table}}`
+        WHERE {{table}}_id IS NOT NULL        
+    )
+)
 """)
+
+CLEAN_TMPL = JINJA_ENV.from_string("""
+DELETE `{{project_id}}.{{dataset_id}}.{% if is_mapping %}_mapping_{% endif %}{{table}}`
+WHERE {{table}}_id IN (
+    SELECT {{table}}_id FROM `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table}}`
+    WHERE {{table}}_id IS NOT NULL    
+)
+""")
+
+# These values are referenced when the source column is nullable but
+# the destination column is mandatory.
+VALUE_DICT = {
+    'string': '',
+    'integer': 0,
+    'float': 0,
+    'date': "DATE('1970-01-01')",
+    'timestamp': "TIMESTAMP('1970-01-01')"
+}
 
 
 class DomainAlignment(BaseCleaningRule):
@@ -206,7 +205,7 @@ class DomainAlignment(BaseCleaningRule):
         # Lookup table for domain alignment
         setup_rule_queries = []
         setup_rule_queries.append(
-            CREATE_LOOKUP_ALIGNMENT_TMPL.render(
+            CREATE_LOOKUP_TMPL.render(
                 project_id=self.project_id,
                 sandbox_dataset_id=self.sandbox_dataset_id,
                 alignment_table=LOOKUP_TABLE))
@@ -239,9 +238,8 @@ class DomainAlignment(BaseCleaningRule):
                     domain_concept_id=get_domain_concept_id(table),
                     domains=[get_domain(table), METADATA_DOMAIN]))
 
-        # Create the query for the records that are in the wrong domain but will not be moved
-        # TODO maybe this part was not working at all before refactoring.
-        for table in DOMAIN_TABLE_NAMES:
+            # Create the query for the records that are in the wrong domain but will not be moved
+            # TODO maybe this part was not working at all before refactoring.
             setup_rule_queries.append(
                 INSERT_LOOKUP_TO_DROP_TMPL.render(
                     project_id=self.project_id,
@@ -276,15 +274,8 @@ class DomainAlignment(BaseCleaningRule):
     def get_query_specs(self):
         """
 
-        This function returns a list of dictionaries containing query parameters required for applying domain alignment.
-
-        :param project_id: the project_id in which the query is run
-        :param dataset_id: the dataset_id in which the query is run
-        :param sandbox_dataset_id: Identifies the sandbox dataset to store rows
-        #TODO use sandbox_dataset_id for CR
-        :return: a list of query dicts for rerouting the records to the corresponding destination table
         """
-        queries_list = []
+        queries = []
 
         # creates a new dataset called snapshot_dataset_id and copies all content from
         # dataset_id to it. It generates a list of query dicts for rerouting the records to the
@@ -292,120 +283,166 @@ class DomainAlignment(BaseCleaningRule):
         for row in self.table_mappings:
 
             src_table, dest_table = row['src_table'], row['dest_table']
+            select_list = self.get_select_list(src_table, dest_table)
 
-            field_mappings = {
-                r['dest_field']: {
-                    'src_field': r['src_field'],
-                    'translation': r['translation']
-                }
-                for r in csv_to_list(FIELD_MAPPINGS_PATH)
-                if r['src_table'] == src_table and r['dest_table'] == dest_table
-            }
-
-            # TODO This is causing the duplicates. Fix it.
-            value_mappings = {
-                r['dest_field']: {
-                    'src_field': r['src_field'],
-                    'src_value': r['src_value'],
-                    'dest_value': r['dest_value']
-                }
-                for r in csv_to_list(VALUE_MAPPINGS_PATH)
-                if r['src_table'] == src_table and r['dest_table'] == dest_table
-            }
-
-            required_fields_src = [
-                field['name']
-                for field in fields_for(dest_table)
-                if field['mode'] == 'required'
-            ]
-
-            required_fields_dest = [
-                field['name']
-                for field in fields_for(dest_table)
-                if field['mode'] == 'required'
-            ]
-
-            queries_list.append({
+            queries.append({
                 cdr_consts.QUERY:
-                    INSERT_DOMAIN_TMPL.render(
+                    INSERT_TMPL.render(
                         project_id=self.project_id,
                         dataset_id=self.dataset_id,
                         sandbox_dataset_id=self.sandbox_dataset_id,
                         alignment_table=LOOKUP_TABLE,
-                        src_table=row['src_table'],
-                        dest_table=row['dest_table'],
-                        src_domain_id_field=f"{row['src_table']}_id",
-                        dest_domain_id_field=f"{row['dest_table']}_id",
-                        fields=fields_for(row['dest_table']),
-                        required_fields_dest=required_fields_dest,
-                        required_fields_src=required_fields_src,
-                        field_mappings=field_mappings,
-                        value_mappings=value_mappings)
+                        src_table=src_table,
+                        dest_table=dest_table,
+                        fields=fields_for(dest_table),
+                        cols=select_list)
             })
 
-        for row in self.table_mappings:
-            queries_list.append({
+            queries.append({
                 cdr_consts.QUERY:
-                    INSERT_MAPPING_RECORD_TMPL.render(
+                    INSERT_MAPPING_TMPL.render(
                         project_id=self.project_id,
                         dataset_id=self.dataset_id,
                         sandbox_dataset_id=self.sandbox_dataset_id,
                         alignment_table=LOOKUP_TABLE,
-                        src_table=row['src_table'],
-                        dest_table=row['dest_table'],
-                        fields=[
-                            field['name'] for field in fields_for(
-                                mapping_table_for(row['dest_table']))
-                        ])
+                        src_table=src_table,
+                        dest_table=dest_table,
+                        fields=fields_for(mapping_table_for(dest_table)))
             })
 
-        queries = []
-        sandbox_queries = []
-        for domain_table in DOMAIN_TABLE_NAMES:
+        for table in DOMAIN_TABLE_NAMES:
             # Use non-standard concept if table is observation
-            if domain_table == OBSERVATION:
+            if table == OBSERVATION:
                 domain_concept_id = 'observation_source_concept_id'
             else:
-                domain_concept_id = get_domain_concept_id(domain_table)
+                domain_concept_id = get_domain_concept_id(table)
 
-            # TODO create sandbox table for mapping tables too
-            sandbox_queries.append({
+            queries.append({
                 cdr_consts.QUERY:
-                    SANDBOX_DOMAIN_RECORD_QUERY_TMPL.render(
+                    SANDBOX_TMPL.render(
                         project_id=self.project_id,
                         dataset_id=self.dataset_id,
                         sandbox_dataset_id=self.sandbox_dataset_id,
-                        domain_table=domain_table,
+                        table=table,
                         alignment_table=LOOKUP_TABLE,
-                        sandbox_table=self.sandbox_table_for(domain_table),
+                        sandbox_table=self.sandbox_table_for(table),
+                        domain_concept_id=domain_concept_id)
+            })
+            queries.append({
+                cdr_consts.QUERY:
+                    SANDBOX_MAPPING_TMPL.render(
+                        project_id=self.project_id,
+                        dataset_id=self.dataset_id,
+                        sandbox_dataset_id=self.sandbox_dataset_id,
+                        table=table,
+                        mapping_table=mapping_table_for(table),
+                        alignment_table=LOOKUP_TABLE,
+                        sandbox_table=self.sandbox_table_for(
+                            mapping_table_for(table)),
+                        sandbox_domain_table=self.sandbox_table_for(table),
                         domain_concept_id=domain_concept_id)
             })
             # add the clean-up query for the domain table
             queries.append({
                 cdr_consts.QUERY:
-                    CLEAN_DOMAIN_RECORD_QUERY_TMPL.render(
+                    CLEAN_TMPL.render(
                         project_id=self.project_id,
                         dataset_id=self.dataset_id,
                         sandbox_dataset_id=self.sandbox_dataset_id,
-                        domain_table=domain_table,
-                        sandbox_table=self.sandbox_table_for(domain_table),
+                        table=table,
+                        sandbox_table=self.sandbox_table_for(table),
                         is_mapping=False)
             })
             # add the clean-up query for the corresponding mapping of the domain table
             queries.append({
                 cdr_consts.QUERY:
-                    CLEAN_DOMAIN_RECORD_QUERY_TMPL.render(
+                    CLEAN_TMPL.render(
                         project_id=self.project_id,
                         dataset_id=self.dataset_id,
                         sandbox_dataset_id=self.sandbox_dataset_id,
-                        domain_table=domain_table,
-                        sandbox_table=self.sandbox_table_for(domain_table),
+                        table=table,
+                        sandbox_table=self.sandbox_table_for(
+                            mapping_table_for(table)),
                         is_mapping=True)
             })
 
-        queries_list.extend(sandbox_queries + queries)
+        return queries
 
-        return queries_list
+    def get_select_list(self, src_table, dest_table):
+        """
+        abc
+        """
+        cols = []
+
+        for dest_field in fields_for(dest_table):
+
+            dest: str = dest_field['name']
+            dest_type: str = 'float64' if dest_field[
+                'type'] == 'float' else dest_field['type']
+
+            if dest == f"{dest_table}_id":
+                cols.append(f"m.dest_id AS {dest_table}_id")
+                continue
+
+            field_mapping: dict = next(
+                {
+                    'src': r['src_field'],
+                    'translation': r['translation']
+                }
+                for r in csv_to_list(FIELD_MAPPINGS_PATH)
+                if (r['src_table'] == src_table and
+                    r['dest_table'] == dest_table and r['dest_field'] == dest))
+
+            src: str = field_mapping['src']
+            src_type: str = next(
+                ('float64' if f['type'] == 'float' else f['type']
+                 for f in fields_for(src_table)
+                 if f['name'] == src), None)
+
+            is_required: bool = dest_field['mode'] == 'required'
+            needs_cast: bool = src_type != dest_type
+            needs_translation: bool = field_mapping['translation'] == '1'
+
+            translation: dict = {
+                r['src_value']: r['dest_value']
+                for r in csv_to_list(VALUE_MAPPINGS_PATH)
+                if (r['src_table'] == src_table and
+                    r['dest_table'] == dest_table and r['dest_field'] == dest)
+            }
+
+            # Add some comments here
+            if (not is_required and not needs_translation and
+                    not needs_cast) or src == 'NULL':
+                cols.append(f"{src} AS {dest}")
+
+            elif not is_required and not needs_translation and needs_cast:
+                cols.append(f"CAST({src} AS {dest_type}) AS {dest}")
+
+            elif is_required and not needs_translation and not needs_cast:
+                cols.append(
+                    f"COALESCE({src}, {VALUE_DICT[dest_type]}) AS {dest}")
+
+            elif is_required and not needs_translation and needs_cast:
+                cols.append(
+                    f"COALESCE(CAST({src} AS {dest_type}), {VALUE_DICT[dest_type]}) AS {dest}"
+                )
+
+            elif not is_required and needs_translation and not translation:
+                cols.append(f"NULL AS {dest_table}_id")
+
+            elif is_required and needs_translation and not translation:
+                cols.append(f"{VALUE_DICT[dest_type]} AS {dest_table}_id")
+
+            elif translation:
+                cols.append(
+                    f"CASE {src} "
+                    f'{"".join(f"WHEN {src_val} THEN {translation[src_val]} " for src_val in translation)}'
+                    f"ELSE 0 END AS {dest}")
+
+            else:
+                pass  # Throws error
+
+        return cols
 
 
 if __name__ == '__main__':

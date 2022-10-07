@@ -14,8 +14,7 @@ from cdr_cleaner.cleaning_rules.domain_alignment import DomainAlignment, LOOKUP_
 from cdr_cleaner.cleaning_rules.domain_mapping import DOMAIN_TABLE_NAMES
 from common import CONDITION_OCCURRENCE, OBSERVATION, PROCEDURE_OCCURRENCE, VOCABULARY_TABLES
 from resources import mapping_table_for
-from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import \
-    BaseTest
+from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
 
 class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
@@ -154,8 +153,6 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
         insert_observation_query = observation_data_tmpl.render(
             project_id=self.project_id, dataset_id=self.dataset_id)
 
-        self.maxDiff = None
-
         insert_observation_mapping_query = mapping_observation_data_template.render(
             project_id=self.project_id, dataset_id=self.dataset_id)
 
@@ -167,6 +164,8 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
         ])
 
     def test_domain_alignment(self):
+
+        self.maxDiff = None
 
         # Expected results list
         tables_and_counts = [{
@@ -192,8 +191,10 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
                 (103, 4, 201826, date(2015, 7, 15),
                  parse('2015-07-15 00:00:00 UTC').astimezone(pytz.utc),
                  42894222, 4),
-                (105, 1005, 45769242, date(2015, 7, 15), None, 0, None),
-                (106, 6, 320128, date(2015, 8, 15),
+                (106, 1005, 45769242, date(2015, 7, 15),
+                 parse('1970-01-01 00:00:00 UTC').astimezone(pytz.utc), 0,
+                 None),
+                (105, 6, 320128, date(2015, 8, 15),
                  parse('2015-08-15 00:00:00 UTC').astimezone(pytz.utc), 0, 6)
             ]
         }, {
@@ -239,9 +240,7 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
                 (104, 1004, 61909002, date(2015, 7, 15), 45905771,
                  'Language_SpokenWrittenLanguage', 1585413),
             ]
-        }]
-
-        mapping_tables_and_counts = [{
+        }, {
             'fq_table_name':
                 f'{self.project_id}.{self.dataset_id}._mapping_condition_occurrence',
             'loaded_ids': [100, 101, 102, 103, 104],
@@ -253,8 +252,8 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
                 (100, self.dataset_id, 1, 'hpo_1', 'condition_occurrence'),
                 (102, self.dataset_id, 3, 'hpo_3', 'condition_occurrence'),
                 (103, self.dataset_id, 4, 'hpo_4', 'condition_occurrence'),
-                (105, self.dataset_id, 50, 'hpo_5', 'observation'),
-                (106, self.dataset_id, 20, 'hpo_2', 'procedure_occurrence')
+                (106, self.dataset_id, 50, 'hpo_5', 'observation'),
+                (105, self.dataset_id, 20, 'hpo_2', 'procedure_occurrence')
             ]
         }, {
             'fq_table_name':
@@ -284,5 +283,4 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
             ]
         }]
 
-        # Apply the cleaning rule to the dataset
-        self.default_test(tables_and_counts + mapping_tables_and_counts)
+        self.default_test(tables_and_counts)
