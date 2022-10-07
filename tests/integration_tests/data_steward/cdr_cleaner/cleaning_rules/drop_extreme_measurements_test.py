@@ -7,6 +7,12 @@ DC-1211
 # Python Imports
 import os
 
+# Project Imports
+from app_identity import PROJECT_ID
+from common import JINJA_ENV, MEASUREMENT
+from cdr_cleaner.cleaning_rules.drop_extreme_measurements import DropExtremeMeasurements
+from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
+
 
 class DropExtremeMeasurementsTest(BaseTest.CleaningRulesTestBase):
 
