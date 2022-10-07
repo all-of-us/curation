@@ -24,7 +24,7 @@ INSERT_SURVEY_CONDUCT_EXT = JINJA_ENV.from_string("""
 """)
 
 INSERT_QUESTIONNAIRE_RESPONSE_ADDITIONAL_INFO = JINJA_ENV.from_string("""
-    INSERT INTO `{{project}}.{{dataset}}.questionnaire_response_additional_info`
+    INSERT INTO `{{project}}.{{additional_info_dataset}}.questionnaire_response_additional_info`
         (questionnaire_response_id, type, value)
     VALUES
         (11, 'LANGUAGE', 'en'),
@@ -48,17 +48,23 @@ class PopulateSurveyConductExtTest(BaseTest.CleaningRulesTestBase):
 
         cls.project_id = os.environ.get(PROJECT_ID)
         cls.dataset_id = os.environ.get('RDR_DATASET_ID')
+        cls.additional_info_dataset = os.environ.get('RDR_DATASET_ID')
+        cls.kwargs.update(
+            {'additional_info_dataset': cls.additional_info_dataset})
         sandbox_id = f"{cls.dataset_id}_sandbox"
         cls.sandbox_id = sandbox_id
 
-        cls.rule_instance = PopulateSurveyConductExt(cls.project_id,
-                                                     cls.dataset_id, sandbox_id)
+        cls.rule_instance = PopulateSurveyConductExt(
+            cls.project_id,
+            cls.dataset_id,
+            sandbox_id,
+            additional_info_dataset=cls.additional_info_dataset)
 
         cls.fq_sandbox_table_names = []
 
         cls.fq_table_names = [
             f'{cls.project_id}.{cls.dataset_id}.{SURVEY_CONDUCT}{EXT_SUFFIX}',
-            f'{cls.project_id}.{cls.dataset_id}.{QUESTIONNAIRE_RESPONSE_ADDITIONAL_INFO}',
+            f'{cls.project_id}.{cls.additional_info_dataset}.{QUESTIONNAIRE_RESPONSE_ADDITIONAL_INFO}',
         ]
 
         super().setUpClass()
@@ -69,7 +75,8 @@ class PopulateSurveyConductExtTest(BaseTest.CleaningRulesTestBase):
         insert_survey_conduct_ext = INSERT_SURVEY_CONDUCT_EXT.render(
             project=self.project_id, dataset=self.dataset_id)
         insert_questionnaire_response_additional_info = INSERT_QUESTIONNAIRE_RESPONSE_ADDITIONAL_INFO.render(
-            project=self.project_id, dataset=self.dataset_id)
+            project=self.project_id,
+            additional_info_dataset=self.additional_info_dataset)
 
         queries = [
             insert_survey_conduct_ext,
