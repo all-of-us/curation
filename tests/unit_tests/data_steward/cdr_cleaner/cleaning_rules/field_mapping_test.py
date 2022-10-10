@@ -241,8 +241,8 @@ class FieldMappingTest(unittest.TestCase):
             self.condition_table, self.procedure_table, ['test_1', 'test_2'])
         expected = {
             'condition_test_field': 'procedure_test_field',
-            'test_1': NULL_VALUE,
-            'test_2': NULL_VALUE
+            'test_1': 'NULL',
+            'test_2': 'NULL'
         }
         self.assertDictEqual(actual, expected)
 
