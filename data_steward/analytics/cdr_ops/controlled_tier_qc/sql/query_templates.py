@@ -107,7 +107,7 @@ SELECT
     '{{ table_name }}' AS table_name,
     COUNT(*) AS n_row_violation
 FROM `{{ project_id }}.{{ post_deid_dataset }}.{{ table_name }}`
-WHERE {{ column_name }} NOT IN (
+WHERE CAST({{ column_name }} AS INT64) NOT IN (
     SELECT {{ new_id }}
     FROM `{{ project_id }}.{{ mapping_dataset }}.{{ mapping_table }}`
 )
