@@ -10,7 +10,7 @@ from google.cloud import bigquery
 # Project imports
 from cdr_cleaner import clean_cdr
 from cdr_cleaner.args_parser import add_kwargs_to_args
-from common import CDR_SCOPES, FITBIT_TABLES
+from common import CDR_SCOPES, FITBIT_TABLES, ID_CONSTANT_FACTOR, JINJA_ENV
 from constants.cdr_cleaner import clean_cdr as consts
 from constants.tools import create_combined_backup_dataset as combine_consts
 from gcloud.bq import BigQueryClient
@@ -116,33 +116,36 @@ def create_datasets(client: BigQueryClient, name: str, input_dataset: str,
 
 def _fix_survey_conduct_records(client, project_id, staging_ds, sandbox_ds):
     # sandbox and drop orphaned records
-    que = (f"""
-        CREATE OR REPLACE TABLE `{project_id}.{sandbox_ds}.rdr_dc2714_rm_orphan_survey_conduct` AS (
-        SELECT * FROM `{project_id}.{staging_ds}.survey_conduct` sc
+    que = JINJA_ENV.from_string("""
+        CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_ds}}.rdr_dc2714_rm_orphan_survey_conduct` AS (
+        SELECT * FROM `{{project_id}}.{{staging_ds}}.survey_conduct` sc
         WHERE NOT EXISTS (
-         SELECT 1 FROM `{project_id}.{staging_ds}.observation` o
+         SELECT 1 FROM `{{project_id}}.{{staging_ds}}.observation` o
          WHERE sc.survey_conduct_id = o.questionnaire_response_id));
 
-        DELETE FROM `{project_id}.{staging_ds}.survey_conduct` sc
+        DELETE FROM `{{project_id}}.{{staging_ds}}.survey_conduct` sc
         WHERE EXISTS (
-         SELECT 1 FROM `{project_id}.{sandbox_ds}.rdr_dc2714_rm_orphan_survey_conduct` sb
+         SELECT 1 FROM `{{project_id}}.{{sandbox_ds}}.rdr_dc2714_rm_orphan_survey_conduct` sb
          WHERE sc.survey_conduct_id = sb.survey_conduct_id
         );""")
+    que = que.render(project_id=project_id,
+                     staging_ds=staging_ds,
+                     sandbox_ds=sandbox_ds)
 
     resp = client.query(que)
     resp.result()
 
     # fix cope survey responses
     que = (f"""
-        /* save all cope and minute survey responses */
-        CREATE OR REPLACE TABLE `{project_id}.{sandbox_ds}.rdr_dc2713_survey_conduct` AS (
+        -- save all cope and minute survey responses --
+        CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_ds}}.rdr_dc2713_survey_conduct` AS (
         SELECT *
-        FROM `{project_id}.{staging_ds}.survey_conduct`
+        FROM `{{project_id}}.{{staging_ds}}.survey_conduct`
         WHERE REGEXP_CONTAINS(survey_source_value, r'(?i)(^cope$)|(^cope_)')
     );
 
-    /* update cope and minute survey responses */
-    UPDATE `{project_id}.{staging_ds}.survey_conduct` s
+    -- update cope and minute survey responses --
+    UPDATE `{{project_id}}.{{staging_ds}}.survey_conduct` s
     SET survey_concept_id =  CASE WHEN m.cope_month = 'may' THEN 2100000002
       WHEN m.cope_month = 'june' THEN 2100000003
       WHEN m.cope_month = 'july' THEN 2100000004
@@ -168,26 +171,28 @@ def _fix_survey_conduct_records(client, project_id, staging_ds, sandbox_ds):
       WHEN m.cope_month = 'vaccine4' THEN 1741006
       ELSE s.survey_concept_id
     END
-    FROM `{project_id}.{staging_ds}.cope_survey_semantic_version_map` m
+    FROM `{{project_id}}.{{staging_ds}}.cope_survey_semantic_version_map` m
     WHERE s.survey_conduct_id = m.questionnaire_response_id;
 
-    /* save all records that will be changed */
-    CREATE OR REPLACE TABLE `{project_id}.{sandbox_ds}.rdr_dc2713_survey_conduct_source_value` AS (
+    -- save all records that will be changed --
+    CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_ds}}.rdr_dc2713_survey_conduct_source_value` AS (
      SELECT *
-     FROM `{project_id}.{staging_ds}.survey_conduct` s
-     LEFT JOIN `{project_id}.{staging_ds}.concept` c
+     FROM `{{project_id}}.{{staging_ds}}.survey_conduct` s
+     LEFT JOIN `{{project_id}}.{{staging_ds}}.concept` c
      ON s.survey_concept_id = c.concept_id
      AND survey_concept_id = 0
     );
 
-     /* update the survey_source_value field */
-    UPDATE `{project_id}.{staging_ds}.survey_conduct` s
+     -- update the survey_source_value field --
+    UPDATE `{{project_id}}.{{staging_ds}}.survey_conduct` s
      SET s.survey_source_value = c.concept_code
-     FROM `{project_id}.{staging_ds}.concept` c
+     FROM `{{project_id}}.{{staging_ds}}.concept` c
      WHERE s.survey_concept_id = c.concept_id
      AND s.survey_concept_id > 0;
      """)
-
+    que = que.render(project_id=project_id,
+                     staging_ds=staging_ds,
+                     sandbox_ds=sandbox_ds)
     resp = client.query(que)
     resp.result()
 
@@ -208,11 +213,12 @@ def _remove_mapping_tables(bq_client, project_id, final_dataset_name):
 
 
 def _update_domain_table_id(client: BigQueryClient, fq_table: str):
-    que = (
-        f"UPDATE `{fq_table}`  "
-        f"SET {fq_table.split('.')[-1]}_id = {fq_table.split('.')[-1]}_id + 1000000000000000  "
-        f"WHERE 1=1")
+    que = JINJA_ENV.from_string(
+        "UPDATE `{{fq_table}}`  "
+        "SET {{fq_table.split('.')[-1]}}_id = {{fq_table.split('.')[-1]}}_id + {{constant_factor}}  "
+        "WHERE 1=1")
 
+    que = que.render(fq_table=fq_table, constant_factor=ID_CONSTANT_FACTOR)
     resp = client.query(que)
     resp.result()
 
@@ -260,6 +266,9 @@ def create_tier(project_id: str, input_dataset: str, release_tag: str,
                 bq_client,
                 f'{project_id}.{datasets[consts.STAGING]}.{domain_table}')
 
+    LOGGER.warning(
+        "Is `_fix_survey_conduct_records` still needed for generating synthetic data?  "
+        "If unnecessary, remove the function and the call line.")
     _fix_survey_conduct_records(bq_client, project_id, datasets[consts.STAGING],
                                 datasets[consts.SANDBOX])
 
@@ -278,10 +287,13 @@ def create_tier(project_id: str, input_dataset: str, release_tag: str,
     # run synthetic data rules.  will run synthetic extension table generation too.
     clean_cdr.main(args=synthetic_cleaning_args)
 
-    # TODO:
     # 2. mimic publishing guidelines so the person table looks correct.  publish internally first to
     # verify all required datatypes exist.  Afterward, can copy to the correct dev environment.
     update_person(bq_client, datasets[consts.STAGING])
+
+    LOGGER.info("Generating empty fitbit tables")
+    _create_empty_fitbit_tables(bq_client, project_id, datasets[consts.STAGING])
+    LOGGER.info("Empty fitbit table generation complete")
 
     # Snapshot the staging dataset to final dataset
     LOGGER.info("Snapshotting the final dataset")
@@ -290,10 +302,6 @@ def create_tier(project_id: str, input_dataset: str, release_tag: str,
     LOGGER.info(
         f"Snapshot complete.  Final dataset is at `{project_id}.{final_dataset_name}`"
     )
-
-    LOGGER.info("Generating empty fitbit tables")
-    _create_empty_fitbit_tables(bq_client, project_id, final_dataset_name)
-    LOGGER.info("Empty fitbit table generation complete")
 
     LOGGER.info(
         "Removing mapping tables because they are not part of the dataset released to researchers"
