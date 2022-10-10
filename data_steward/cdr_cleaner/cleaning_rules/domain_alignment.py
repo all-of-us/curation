@@ -1,12 +1,22 @@
 """
-COMBINED_SNAPSHOT should be set to create a new snapshot dataset while running this cleaning rule.
+Based on the current CONCEPT table, if the domain_id does not match the domain
+in which the concept is found, then the row should be moved to the appropriate
+domain.
+
+For example, a condition row based on the condition_concept_id might need to
+be moved to the observation table. In this case, the row would be removed from
+the condition table and the values will be inserted into the observation table.
+
+Original Issues: DC-402
 """
 # Python imports
 import logging
 
 # Project imports
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
-from cdr_cleaner.cleaning_rules.domain_mapping import DOMAIN_TABLE_NAMES, METADATA_DOMAIN
+from cdr_cleaner.cleaning_rules.domain_mapping import (
+    DEST_FIELD, DEST_TABLE, DEST_VALUE, DOMAIN_TABLE_NAMES, IS_REROUTED,
+    REROUTING_CRITERIA, SRC_FIELD, SRC_TABLE, SRC_VALUE, TRANSLATION)
 from common import COMBINED, JINJA_ENV, OBSERVATION
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from gcloud.bq import BigQueryClient
@@ -23,9 +33,9 @@ CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{alignment_table
 (src_table STRING, dest_table STRING, src_id INT64, dest_id INT64, is_rerouted BOOL)
 """)
 
-INSERT_LOOKUP_BETWEEN_TABLES_TMPL = JINJA_ENV.from_string("""
+INSERT_LOOKUP_TO_MOVE_TMPL = JINJA_ENV.from_string("""
 INSERT INTO `{{project_id}}.{{sandbox_dataset_id}}.{{alignment_table}}`
-(src_table, dest_table, src_id, dest_id, is_rerouted)
+(src_table, dest_table, src_id, dest_id)
 WITH max_id AS (
     SELECT MAX(dest_id) AS max_dest_id FROM (
         SELECT dest_id 
@@ -40,8 +50,7 @@ SELECT
     '{{src_table}}' AS src_table, 
     '{{dest_table}}' AS dest_table, 
     {{src_id}} AS src_id, 
-    ROW_NUMBER() OVER(ORDER BY {{src_id}}) + max_id.max_dest_id AS dest_id, 
-    True AS is_rerouted 
+    ROW_NUMBER() OVER(ORDER BY {{src_id}}) + max_id.max_dest_id AS dest_id
 FROM `{{project_id}}.{{dataset_id}}.{{src_table}}` AS s 
 JOIN `{{project_id}}.{{dataset_id}}.concept` AS c 
 ON s.{{domain_concept_id}} = c.concept_id 
@@ -50,42 +59,18 @@ WHERE c.domain_id = '{{domain}}'
 {% if criteria -%} AND {{criteria}}{% endif %}
 """)
 
-# TODO is this neccesary!?
-INSERT_LOOKUP_WITHIN_A_TABLE_TMPL = JINJA_ENV.from_string("""
-INSERT INTO `{{project_id}}.{{sandbox_dataset_id}}.{{alignment_table}}`
-(src_table, dest_table, src_id, dest_id, is_rerouted)
-SELECT 
-    '{{table}}' AS src_table, 
-    '{{table}}' AS dest_table, 
-    {{domain_id}} AS src_id, 
-    {{domain_id}} AS dest_id, 
-    True AS is_rerouted 
-FROM `{{project_id}}.{{dataset_id}}.{{table}}` AS s 
-JOIN `{{project_id}}.{{dataset_id}}.concept` AS c 
-ON s.{{domain_concept_id}} = c.concept_id 
-WHERE c.domain_id in (
-    {%- for domain in domains %} 
-    '{{domain}}'{% if not loop.last -%}, {% endif %}
-    {% endfor %}
-)
-""")
-
-# This function generates a query that generates id mappings in _logging_domain_alignment for the records
-# that will get dropped during rerouting because those records either fail the rerouting criteria or rerouting
-# is not possible between src_table and dest_table such as condition_occurrence -> measurement
 INSERT_LOOKUP_TO_DROP_TMPL = JINJA_ENV.from_string("""
 INSERT INTO `{{project_id}}.{{sandbox_dataset_id}}.{{alignment_table}}`
-(src_table, dest_table, src_id, dest_id, is_rerouted)
+(src_table, dest_table, src_id, dest_id)
 SELECT
     '{{src_table}}' AS src_table, 
     NULL AS dest_table, 
-    s.{{src_id}} AS src_id, 
-    NULL AS dest_id, 
-    False AS is_rerouted 
+    {{src_id}} AS src_id, 
+    NULL AS dest_id
 FROM `{{project_id}}.{{dataset_id}}.{{src_table}}` AS s 
-LEFT JOIN `{{project_id}}.{{sandbox_dataset_id}}.{{alignment_table}}` AS m 
-ON s.{{src_id}} = m.src_id AND m.src_table = '{{src_table}}' 
-WHERE m.src_id IS NULL
+JOIN `{{project_id}}.{{dataset_id}}.concept` AS c 
+ON s.{{domain_concept_id}} = c.concept_id 
+WHERE c.domain_id = '{{domain}}'
 """)
 
 INSERT_TMPL = JINJA_ENV.from_string("""
@@ -101,7 +86,6 @@ JOIN `{{project_id}}.{{sandbox_dataset_id}}.{{alignment_table}}` AS m
 ON s.{{src_table}}_id = m.src_id 
 AND m.src_table = '{{src_table}}' 
 AND m.dest_table = '{{dest_table}}' 
-AND m.is_rerouted = True 
 """)
 
 INSERT_MAPPING_TMPL = JINJA_ENV.from_string("""
@@ -118,18 +102,17 @@ JOIN `{{project_id}}.{{dataset_id}}._mapping_{{src_table}}` AS src
     ON m.src_id = src.{{src_table}}_id 
         AND m.src_table = '{{src_table}}'
         AND m.dest_table = '{{dest_table}}'
-WHERE m.is_rerouted = True
 """)
 
 SANDBOX_TMPL = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table}}` AS (
     SELECT d.*
     FROM `{{project_id}}.{{dataset_id}}.{{table}}` AS d
-    LEFT JOIN `{{project_id}}.{{sandbox_dataset_id}}.{{alignment_table}}` AS m
-    ON d.{{table}}_id = m.dest_id 
-    AND m.dest_table = '{{table}}'
-    AND m.is_rerouted = True 
-    WHERE m.dest_id IS NULL
+    WHERE d.{{table}}_id IN (
+        SELECT DISTINCT src_id
+        FROM `{{project_id}}.{{sandbox_dataset_id}}.{{alignment_table}}`
+        WHERE src_table = '{{table}}'
+    )
     -- exclude PPI records from sandboxing --
     AND d.{{domain_concept_id}} NOT IN (
         SELECT c.concept_id
@@ -162,11 +145,11 @@ WHERE {{table}}_id IN (
 # These values are referenced when the source column is nullable but
 # the destination column is mandatory.
 VALUE_DICT = {
-    'string': '',
-    'integer': 0,
-    'float': 0,
-    'date': "DATE('1970-01-01')",
-    'timestamp': "TIMESTAMP('1970-01-01')"
+    'STRING': '',
+    'INT64': 0,
+    'FLOAT64': 0,
+    'DATE': "DATE('1970-01-01')",
+    'TIMESTAMP': "TIMESTAMP('1970-01-01')"
 }
 
 
@@ -179,8 +162,22 @@ class DomainAlignment(BaseCleaningRule):
                  table_namer=None):
         """
         Initialize the class with proper information.
+
+        self.table_mappings_to_move & self.table_mappings_to_drop:
+            The list of dict that has source table -> destination table relatiohship info.
+
+            'rerouting_criteria' is specified when you need extra criteria other than
+            domain and concept IDs for moving records from one table to another.
+
+            If 'is_rerouted' is 0, the records are not moved to another table but simply
+            dropped from the original table. Those records are simply dropped because
+            rerouting is not possible between the src_table and the dest_table.
+            (e.g. condition_occurrence -> measurement)
         """
-        desc = ('.')
+        desc = (
+            'Move records to the appropriate domain tables based on the CONCEPT table.'
+        )
+
         super().__init__(
             issue_numbers=['DC402', 'DC814', 'DC1466'],
             description=desc,
@@ -192,65 +189,59 @@ class DomainAlignment(BaseCleaningRule):
             sandbox_dataset_id=sandbox_dataset_id,
             table_namer=table_namer)
 
-        self.table_mappings = [
+        self.table_mappings_to_move: list[dict[str, str]] = [
             row for row in csv_to_list(TABLE_MAPPINGS_PATH)
-            if row['is_rerouted'] == '1'
+            if row[IS_REROUTED] == '1'
+        ]
+
+        self.table_mappings_to_drop: list[dict[str, str]] = [
+            row for row in csv_to_list(TABLE_MAPPINGS_PATH)
+            if row[IS_REROUTED] == '0'
         ]
 
     def setup_rule(self, client: BigQueryClient):
         """
-        abc
+        Create a lookup table that has source to destination relationship info between
+        source tables and destination tables. This CR cleans the data based on this
+        lookup table.
         """
 
-        # Lookup table for domain alignment
-        setup_rule_queries = []
-        setup_rule_queries.append(
+        queries = []
+        queries.append(
             CREATE_LOOKUP_TMPL.render(
                 project_id=self.project_id,
                 sandbox_dataset_id=self.sandbox_dataset_id,
                 alignment_table=LOOKUP_TABLE))
 
-        for row in self.table_mappings:
-            setup_rule_queries.append(
-                INSERT_LOOKUP_BETWEEN_TABLES_TMPL.render(
+        for row in self.table_mappings_to_move:
+            queries.append(
+                INSERT_LOOKUP_TO_MOVE_TMPL.render(
                     project_id=self.project_id,
                     dataset_id=self.dataset_id,
                     sandbox_dataset_id=self.sandbox_dataset_id,
                     alignment_table=LOOKUP_TABLE,
-                    src_table=row['src_table'],
-                    dest_table=row['dest_table'],
-                    src_id=f"{row['src_table']}_id",
-                    dest_id=f"{row['dest_table']}_id",
-                    domain_concept_id=get_domain_concept_id(row['src_table']),
-                    domain=get_domain(row['dest_table']),
-                    criteria=row['rerouting_criteria']))
+                    src_table=row[SRC_TABLE],
+                    dest_table=row[DEST_TABLE],
+                    src_id=f"{row[SRC_TABLE]}_id",
+                    dest_id=f"{row[DEST_TABLE]}_id",
+                    domain_concept_id=get_domain_concept_id(row[SRC_TABLE]),
+                    domain=get_domain(row[DEST_TABLE]),
+                    criteria=row[REROUTING_CRITERIA]))
 
-        # Create the query for creating field_mappings for the records moving between the same domain
-        for table in DOMAIN_TABLE_NAMES:
-            setup_rule_queries.append(
-                INSERT_LOOKUP_WITHIN_A_TABLE_TMPL.render(
-                    project_id=self.project_id,
-                    dataset_id=self.dataset_id,
-                    sandbox_dataset_id=self.sandbox_dataset_id,
-                    alignment_table=LOOKUP_TABLE,
-                    table=table,
-                    domain_id=f'{table}_id',
-                    domain_concept_id=get_domain_concept_id(table),
-                    domains=[get_domain(table), METADATA_DOMAIN]))
-
-            # Create the query for the records that are in the wrong domain but will not be moved
-            # TODO maybe this part was not working at all before refactoring.
-            setup_rule_queries.append(
+        for row in self.table_mappings_to_drop:
+            queries.append(
                 INSERT_LOOKUP_TO_DROP_TMPL.render(
                     project_id=self.project_id,
                     dataset_id=self.dataset_id,
                     sandbox_dataset_id=self.sandbox_dataset_id,
                     alignment_table=LOOKUP_TABLE,
-                    src_table=table,
-                    src_id=f'{table}_id'))
+                    src_table=row[SRC_TABLE],
+                    src_id=f'{row[SRC_TABLE]}_id',
+                    domain_concept_id=get_domain_concept_id(row[SRC_TABLE]),
+                    domain=get_domain(row[DEST_TABLE])))
 
-        for setup_rule_query in setup_rule_queries:
-            job = client.query(setup_rule_query)
+        for q in queries:
+            job = client.query(q)
             job.result()
 
     def setup_validation(self, client, *args, **keyword_args):
@@ -273,16 +264,16 @@ class DomainAlignment(BaseCleaningRule):
 
     def get_query_specs(self):
         """
-
+        Return a list of dictionary query specifications.
+        :return:  A list of dictionaries. Each dictionary contains a single query
+            and a specification for how to execute that query. The specifications
+            are optional but the query is required.
         """
         queries = []
 
-        # creates a new dataset called snapshot_dataset_id and copies all content from
-        # dataset_id to it. It generates a list of query dicts for rerouting the records to the
-        # corresponding destination table.
-        for row in self.table_mappings:
+        for row in self.table_mappings_to_move:
 
-            src_table, dest_table = row['src_table'], row['dest_table']
+            src_table, dest_table = row[SRC_TABLE], row[DEST_TABLE]
             select_list = self.get_select_list(src_table, dest_table)
 
             queries.append({
@@ -342,7 +333,7 @@ class DomainAlignment(BaseCleaningRule):
                         sandbox_domain_table=self.sandbox_table_for(table),
                         domain_concept_id=domain_concept_id)
             })
-            # add the clean-up query for the domain table
+            # Clean the domain table
             queries.append({
                 cdr_consts.QUERY:
                     CLEAN_TMPL.render(
@@ -353,7 +344,7 @@ class DomainAlignment(BaseCleaningRule):
                         sandbox_table=self.sandbox_table_for(table),
                         is_mapping=False)
             })
-            # add the clean-up query for the corresponding mapping of the domain table
+            # Clean the mapping table
             queries.append({
                 cdr_consts.QUERY:
                     CLEAN_TMPL.render(
@@ -377,8 +368,7 @@ class DomainAlignment(BaseCleaningRule):
         for dest_field in fields_for(dest_table):
 
             dest: str = dest_field['name']
-            dest_type: str = 'float64' if dest_field[
-                'type'] == 'float' else dest_field['type']
+            dest_type: str = self.get_bq_col_type(dest_field['type'])
 
             if dest == f"{dest_table}_id":
                 cols.append(f"m.dest_id AS {dest_table}_id")
@@ -386,28 +376,27 @@ class DomainAlignment(BaseCleaningRule):
 
             field_mapping: dict = next(
                 {
-                    'src': r['src_field'],
-                    'translation': r['translation']
+                    SRC_FIELD: r[SRC_FIELD],
+                    TRANSLATION: r[TRANSLATION]
                 }
                 for r in csv_to_list(FIELD_MAPPINGS_PATH)
-                if (r['src_table'] == src_table and
-                    r['dest_table'] == dest_table and r['dest_field'] == dest))
+                if (r[SRC_TABLE] == src_table and
+                    r[DEST_TABLE] == dest_table and r[DEST_FIELD] == dest))
 
-            src: str = field_mapping['src']
-            src_type: str = next(
-                ('float64' if f['type'] == 'float' else f['type']
-                 for f in fields_for(src_table)
-                 if f['name'] == src), None)
+            src: str = field_mapping[SRC_FIELD]
+            src_type: str = next((self.get_bq_col_type(f['type'])
+                                  for f in fields_for(src_table)
+                                  if f['name'] == src), None)
 
             is_required: bool = dest_field['mode'] == 'required'
             needs_cast: bool = src_type != dest_type
-            needs_translation: bool = field_mapping['translation'] == '1'
+            needs_translation: bool = field_mapping[TRANSLATION] == '1'
 
             translation: dict = {
-                r['src_value']: r['dest_value']
+                r[SRC_VALUE]: r[DEST_VALUE]
                 for r in csv_to_list(VALUE_MAPPINGS_PATH)
-                if (r['src_table'] == src_table and
-                    r['dest_table'] == dest_table and r['dest_field'] == dest)
+                if (r[SRC_TABLE] == src_table and
+                    r[DEST_TABLE] == dest_table and r[DEST_FIELD] == dest)
             }
 
             # Add some comments here
