@@ -13,6 +13,49 @@ from common import JINJA_ENV, MEASUREMENT
 from cdr_cleaner.cleaning_rules.drop_extreme_measurements import DropExtremeMeasurements
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
+EXTREME_MEASUREMENTS_TEMPLATE = JINJA_ENV.from_string("""
+INSERT INTO 
+    `{{project_id}}.{{dataset_id}}.measurement`
+(measurement_id, person_id, measurement_concept_id, measurement_date, measurement_datetime,
+measurement_time, measurement_type_concept_id, operator_concept_id, value_as_number, value_as_concept_id,
+unit_concept_id, range_low, range_high, provider_id, visit_occurrence_id,
+visit_detail_id, measurement_source_value, measurement_source_concept_id, unit_source_value, value_source_value)
+
+VALUES
+    --FIRST SUBQUERY
+    (NULL, 1, 903133, NULL, TIMESTAMP('2009-04-29'), 
+    NULL, NULL, NULL, 19, NULL, 
+    NULL, NULL, NULL, NULL, NULL, 
+    NULL, NULL, 903133, NULL, NULL),
+
+    (NULL, 2, 903133, NULL, TIMESTAMP('2009-04-29'), 
+    NULL, NULL, NULL, 230, NULL, 
+    NULL, NULL, NULL, NULL, NULL, 
+    NULL, NULL, 903133, NULL, NULL),
+
+    (NULL, 3, 903133, NULL, NULL, 
+    NULL, NULL, NULL, 250, NULL, 
+    NULL, NULL, NULL, NULL, NULL, 
+    NULL, NULL, 903133, NULL, NULL)
+
+    --SECOND SUBQUERY
+    (NULL, 4, 903124, NULL, TIMESTAMP('2009-04-29'), 
+    NULL, NULL, NULL, 100, NULL, 
+    NULL, NULL, NULL, NULL, NULL, 
+    NULL, NULL, 903124, NULL, NULL)
+
+    (NULL, 5, 903124, NULL, TIMESTAMP('2010-07-13'), 
+    NULL, NULL, NULL, 100, NULL, 
+    NULL, NULL, NULL, NULL, NULL, 
+    NULL, NULL, 903124, NULL, NULL)
+
+    --THIRD SUBQUERY
+    (NULL, 6, 903133, NULL, TIMESTAMP('2011-08-21'), 
+    NULL, NULL, NULL, 88, NULL, 
+    NULL, NULL, NULL, NULL, NULL, 
+    NULL, NULL, 903133, NULL, NULL)
+""")
+
 
 class DropExtremeMeasurementsTest(BaseTest.CleaningRulesTestBase):
 
