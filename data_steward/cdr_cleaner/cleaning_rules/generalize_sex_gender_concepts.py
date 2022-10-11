@@ -36,6 +36,7 @@ SEX_AT_BIRTH_MALE_CONCEPT_ID = 1585846
 SEX_AT_BIRTH_FEMALE_CONCEPT_ID = 1585847
 
 SANDBOX_CONCEPT_ID_QUERY_TEMPLATE = JINJA_ENV.from_string("""
+-- Using INSERT query because table creation is handled by rule_setup function --
 INSERT INTO
   `{{project_id}}.{{sandbox_dataset}}.{{sandbox_table}}`
 (
