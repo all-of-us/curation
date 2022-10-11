@@ -13,7 +13,7 @@ from utils import auth
 from gcloud.bq import BigQueryClient
 from utils import pipeline_logging
 from tools import add_cdr_metadata
-from common import CDR_SCOPES
+from common import CDR_SCOPES, PIPELINE_TABLES, ZIP3_SES_MAP
 from constants.cdr_cleaner import clean_cdr as consts
 
 LOGGER = logging.getLogger(__name__)
@@ -232,6 +232,11 @@ def create_tier(credentials_filepath, project_id, tier, input_dataset,
             '--target_dataset', datasets[consts.STAGING], '--qa_handoff_date',
             qa_handoff_date, '--etl_version', versions[0]
         ])
+
+        if tier == 'controlled':
+            bq_client.copy_table(
+                f'{project_id}.{PIPELINE_TABLES}.{ZIP3_SES_MAP}',
+                f'{project_id}.{datasets[consts.STAGING]}.{ZIP3_SES_MAP}')
     else:
         LOGGER.info(
             f'deid_stage was not base, no data inserted into _cdr_metadata table'
