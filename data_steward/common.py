@@ -248,6 +248,7 @@ SITE_MASKING_TABLE_ID = 'site_maskings'
 PID_RID_MAPPING = 'pid_rid_mapping'
 PRIMARY_PID_RID_MAPPING = 'primary_pid_rid_mapping'
 ZIP3_LOOKUP = 'zip3_lookup'
+ZIP3_SES_MAP = 'zip3_ses_map'
 DIGITAL_HEALTH_SHARING_STATUS = 'digital_health_sharing_status'
 
 ZIP_CODE_AGGREGATION_MAP = 'zip_code_aggregation_map'
