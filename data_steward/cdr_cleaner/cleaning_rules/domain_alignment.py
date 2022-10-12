@@ -30,7 +30,7 @@ LOOKUP_TABLE = 'lookup_domain_alignment'
 
 CREATE_LOOKUP_TMPL = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{alignment_table}}`
-(src_table STRING, dest_table STRING, src_id INT64, dest_id INT64, is_rerouted BOOL)
+(src_table STRING, dest_table STRING, src_id INT64, dest_id INT64)
 """)
 
 INSERT_LOOKUP_TO_MOVE_TMPL = JINJA_ENV.from_string("""
@@ -163,16 +163,14 @@ class DomainAlignment(BaseCleaningRule):
         """
         Initialize the class with proper information.
 
-        self.table_mappings_to_move & self.table_mappings_to_drop:
-            The list of dict that has source table -> destination table relatiohship info.
-
-            'rerouting_criteria' is specified when you need extra criteria other than
-            domain and concept IDs for moving records from one table to another.
-
-            If 'is_rerouted' is 0, the records are not moved to another table but simply
-            dropped from the original table. Those records are simply dropped because
-            rerouting is not possible between the src_table and the dest_table.
-            (e.g. condition_occurrence -> measurement)
+        self.table_mappings_to_move:
+            A list of dict that has source table -> destination table relatiohship info.
+            The records are moved from the src table to the dest table.
+        self.table_mappings_to_drop:
+            A list of dict that has source table -> destination table relatiohship info.
+            The records are dropped from the src table but not moved to the dest table.
+            The records are dropped because rerouting is not possible between
+            the src_table and the dest_table. (e.g. condition_occurrence -> measurement)
         """
         desc = (
             'Move records to the appropriate domain tables based on the CONCEPT table.'
@@ -265,9 +263,17 @@ class DomainAlignment(BaseCleaningRule):
     def get_query_specs(self):
         """
         Return a list of dictionary query specifications.
-        :return:  A list of dictionaries. Each dictionary contains a single query
-            and a specification for how to execute that query. The specifications
-            are optional but the query is required.
+        The list contains 6 types of queries.
+        
+        For each of the table mappings:
+        1. Insert: Move records from src_table to dest_table.
+        2. Insert: Same as 1, but for mapping table.
+        
+        For each of the domain tables:
+        3. Create: Sandbox the records to be deleted.
+        4. Create: Same as 3, but for mapping table.
+        5. Delete: Delete the records from src_table.
+        6. Delete: Same as 5, but for mapping table.        
         """
         queries = []
 
@@ -359,9 +365,15 @@ class DomainAlignment(BaseCleaningRule):
 
         return queries
 
-    def get_select_list(self, src_table, dest_table):
+    def get_select_list(self, src_table, dest_table) -> list:
         """
-        abc
+        Get the mapping info for the src and dest tables from the
+        [table|field|value]_mapping CSV files, and create statements
+        that will be a part of the SELECT statement for inserting records
+        from src table to dest table.
+
+        :return: A list of strings that can be used in the SELECT statement
+            for each of the columns in dest_table.
         """
         cols = []
 
@@ -399,7 +411,7 @@ class DomainAlignment(BaseCleaningRule):
                     r[DEST_TABLE] == dest_table and r[DEST_FIELD] == dest)
             }
 
-            # Add some comments here
+            # Create the statement for each of the columns.
             if (not is_required and not needs_translation and
                     not needs_cast) or src == 'NULL':
                 cols.append(f"{src} AS {dest}")
@@ -429,7 +441,10 @@ class DomainAlignment(BaseCleaningRule):
                     f"ELSE 0 END AS {dest}")
 
             else:
-                pass  # Throws error
+                raise RuntimeError(
+                    f'Unable to create SELECT statement for the column {dest} in {dest_table}. '
+                    'Make sure the column is properly listed in the mapping CSV files.'
+                )
 
         return cols
 
