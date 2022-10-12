@@ -6,6 +6,10 @@ DC-1211
 
 # Python Imports
 import os
+from datetime import date
+
+# Third party imports
+from dateutil import parser
 
 # Project Imports
 from app_identity import PROJECT_ID
@@ -22,36 +26,36 @@ unit_concept_id, range_low, range_high, provider_id, visit_occurrence_id,
 visit_detail_id, measurement_source_value, measurement_source_concept_id, unit_source_value, value_source_value)
 
 VALUES
-    --FIRST SUBQUERY
-    (NULL, 1, 903133, NULL, TIMESTAMP('2009-04-29'), 
-    NULL, NULL, NULL, 19, NULL, 
+    -- FIRST SUBQUERY --
+    (100, 1, 903133, '2009-04-29', TIMESTAMP('2009-04-29'), 
+    NULL, 1000, NULL, 19, NULL, 
     NULL, NULL, NULL, NULL, NULL, 
     NULL, NULL, 903133, NULL, NULL),
 
-    (NULL, 2, 903133, NULL, TIMESTAMP('2009-04-29'), 
-    NULL, NULL, NULL, 230, NULL, 
+    (200, 2, 903133, '2009-04-29', TIMESTAMP('2009-04-29'), 
+    NULL, 1000, NULL, 230, NULL, 
     NULL, NULL, NULL, NULL, NULL, 
     NULL, NULL, 903133, NULL, NULL),
 
-    (NULL, 3, 903133, NULL, NULL, 
-    NULL, NULL, NULL, 250, NULL, 
+    (300, 3, 903133, '2015-05-14', NULL, 
+    NULL, 1000, NULL, 250, NULL, 
     NULL, NULL, NULL, NULL, NULL, 
-    NULL, NULL, 903133, NULL, NULL)
+    NULL, NULL, 903133, NULL, NULL),
 
-    --SECOND SUBQUERY
-    (NULL, 4, 903124, NULL, TIMESTAMP('2009-04-29'), 
-    NULL, NULL, NULL, 100, NULL, 
+    -- SECOND SUBQUERY --
+    (400, 4, 903124, '2009-04-29', TIMESTAMP('2009-04-29'), 
+    NULL, 1000, NULL, 100, NULL, 
     NULL, NULL, NULL, NULL, NULL, 
-    NULL, NULL, 903124, NULL, NULL)
+    NULL, NULL, 903124, NULL, NULL),
 
-    (NULL, 5, 903124, NULL, TIMESTAMP('2010-07-13'), 
-    NULL, NULL, NULL, 100, NULL, 
+    (500, 5, 903124, '2010-07-13', TIMESTAMP('2010-07-13'), 
+    NULL, 1000, NULL, 100, NULL, 
     NULL, NULL, NULL, NULL, NULL, 
-    NULL, NULL, 903124, NULL, NULL)
-
-    --THIRD SUBQUERY
-    (NULL, 6, 903133, NULL, TIMESTAMP('2011-08-21'), 
-    NULL, NULL, NULL, 88, NULL, 
+    NULL, NULL, 903124, NULL, NULL),
+ 
+    -- THIRD SUBQUERY --
+    (600, 6, 903133, '2011-08-21', TIMESTAMP('2011-08-21'), 
+    NULL, 1000, NULL, 88, NULL, 
     NULL, NULL, NULL, NULL, NULL, 
     NULL, NULL, 903133, NULL, NULL)
 """)
@@ -101,9 +105,66 @@ class DropExtremeMeasurementsTest(BaseTest.CleaningRulesTestBase):
         Create test table for the rule to run on
         """
         super().setUp()
-        pass
+
+        #Query to insert test records into measurement table
+        extreme_measurement_template = EXTREME_MEASUREMENTS_TEMPLATE.render(
+            project_id=self.project_id, dataset_id=self.dataset_id)
+
+        #Load test data
+        self.load_test_data([extreme_measurement_template])
 
     def test_field_cleaning(self):
         """
+        test
         """
-        pass
+        # Expected results list
+        tables_and_counts = [{
+            'fq_table_name':
+                self.fq_table_names[0],
+            'fq_sandbox_table_name':
+                self.fq_sandbox_table_names[0],
+            'loaded_ids': [100, 200, 300, 400, 500, 600],
+            'sandboxed_ids': [100, 400],
+            'fields': [
+                'measurement_id', 'person_id', 'measurement_concept_id',
+                'measurement_date', 'measurement_datetime', 'measurement_time',
+                'measurement_type_concept_id', 'operator_concept_id',
+                'value_as_number', 'value_as_concept_id', 'unit_concept_id',
+                'range_low', 'range_high', 'provider_id', 'visit_occurrence_id',
+                'visit_detail_id', 'measurement_source_value',
+                'measurement_source_concept_id', 'unit_source_value',
+                'value_source_value'
+            ],
+            'cleaned_values': [
+                (100, 1, 903133, date.fromisoformat('2009-04-29'),
+                 parser.parse('2009-04-29 00:00:00 UTC'), None, 1000, None, 19,
+                 None, None, None, None, None, None, None, None, 903133, None,
+                 None),
+                ##################################
+                (200, 2, 903133, date.fromisoformat('2009-04-29'),
+                 parser.parse('2009-04-29 00:00:00 UTC'), None, 1000, None, 230,
+                 None, None, None, None, None, None, None, None, 903133, None,
+                 None),
+                ##################################
+                (300, 3, 903133, date.fromisoformat('2015-05-14'), None, None,
+                 1000, None, 250, None, None, None, None, None, None, None,
+                 None, 903133, None, None),
+                ##################################
+                (400, 4, 903124, date.fromisoformat('2009-04-29'),
+                 parser.parse('2009-04-29 00:00:00 UTC'), None, 1000, None, 100,
+                 None, None, None, None, None, None, None, None, 903124, None,
+                 None),
+                ##################################
+                (500, 5, 903124, date.fromisoformat('2010-07-13'),
+                 parser.parse('2010-07-13 00:00:00 UTC'), None, 1000, None, 100,
+                 None, None, None, None, None, None, None, None, 903124, None,
+                 None),
+                ##################################
+                (600, 6, 903133, date.fromisoformat('2011-08-21'),
+                 parser.parse('2011-08-21 00:00:00 UTC'), None, 1000, None, 88,
+                 None, None, None, None, None, None, None, None, 903133, None,
+                 None)
+            ]
+        }]
+
+        self.default_test(tables_and_counts)
