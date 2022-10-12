@@ -120,9 +120,9 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
                 (103, 13, 201826, '2015-07-15', timestamp('2015-07-15'), 42894222, 3),
                 (104, 14, 36676219, '2015-07-15', timestamp('2015-07-15'), 42865906, 4),
                 (105, 15, 40488434, '2015-07-15', timestamp('2015-07-15'), 45754805, 5),
-                (106, 16, 42542298, '2015-07-15', timestamp('2015-07-15'), 0, 6),
+                (106, 16, 42542298, '2015-07-15', timestamp('2015-07-15'), 99999, 6),
                 (107, 17, 3009160, '2015-07-15', timestamp('2015-07-15'), 42894222, 7),
-                (108, 18, 40218685, '2015-07-15', timestamp('2015-07-15'), 0, 8)
+                (108, 18, 40218685, '2015-07-15', timestamp('2015-07-15'), 99999, 8)
         """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
         INSERT_CONDITION_OCCURRENCE_MAPPING = self.jinja_env.from_string("""
@@ -149,7 +149,7 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
                 (202, 22, 320128, '2015-07-15', timestamp('2015-07-15'), 42894222, 2),
                 (203, 23, 45892531, '2015-07-15', timestamp('2015-07-15'), 44786630, 3),
                 (204, 24, 2414345, '2015-07-15', timestamp('2015-07-15'), 44786630, 4),
-                (205, 25, 45887635, '2015-07-15', timestamp('2015-07-15'), 0, 5),
+                (205, 25, 45887635, '2015-07-15', timestamp('2015-07-15'), 99999, 5),
                 (206, 26, 2211851, '2015-07-15', timestamp('2015-07-15'), 44786630, 6)
         """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
@@ -176,10 +176,10 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
                 (302, 32, 8621, '2015-07-15', 45905771, 'ipaq_3', 1332871, NULL, NULL),
                 (303, 33, 8621, '2015-07-15', 45905771, 'ipaq_5', 1332872, NULL, NULL),
                 (304, 34, 61909002, '2015-07-15', 45905771, 'Language', 1585413, NULL, NULL),
-                (305, 35, 45769242, '2015-07-15', 44814721, 'IS_ILLICIT', 0, NULL, NULL),
+                (305, 35, 45769242, '2015-07-15', 44814721, 'IS_ILLICIT', 99999, NULL, NULL),
                 (306, 36, 42740600, '2015-07-15', 44814721, '0057T', 42740600, NULL, NULL),
-                (307, 37, 1126658, '2015-07-15', 32817, '4650', 0, NULL, NULL),
-                (308, 38, 4237601, '2015-07-15', 32817, '115', 0, NULL, NULL),
+                (307, 37, 1126658, '2015-07-15', 32817, '4650', 99999, NULL, NULL),
+                (308, 38, 4237601, '2015-07-15', 32817, '115', 99999, NULL, NULL),
                 (309, 39, 4159568, '2015-07-15', 45905771, 'DAST', 39141, NULL, 1),
                 (310, 30, 4159568, '2015-07-15', 45905771, 'DAST', 39141, NULL, NULL)
         """).render(project_id=self.project_id, dataset_id=self.dataset_id)
@@ -207,12 +207,12 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
                 drug_exposure_start_date, drug_exposure_start_datetime,
                 drug_type_concept_id)
             VALUES
-                (401, 41, 1126658, '2015-07-15', timestamp('2015-07-15'), 0),
-                (402, 42, 320128, '2015-07-15', timestamp('2015-07-15'), 0),
-                (403, 43, 36676219, '2015-07-15', timestamp('2015-07-15'), 0),
-                (404, 44, 2414345, '2015-07-15', timestamp('2015-07-15'), 0),
-                (405, 45, 45887635, '2015-07-15', timestamp('2015-07-15'), 0),
-                (406, 46, 45077152, '2015-07-15', timestamp('2015-07-15'), 0)
+                (401, 41, 1126658, '2015-07-15', timestamp('2015-07-15'), 99999),
+                (402, 42, 320128, '2015-07-15', timestamp('2015-07-15'), 99999),
+                (403, 43, 36676219, '2015-07-15', timestamp('2015-07-15'), 99999),
+                (404, 44, 2414345, '2015-07-15', timestamp('2015-07-15'), 99999),
+                (405, 45, 45887635, '2015-07-15', timestamp('2015-07-15'), 99999),
+                (406, 46, 45077152, '2015-07-15', timestamp('2015-07-15'), 99999)
         """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
         INSERT_DRUG_EXPOSURE_MAPPING = self.jinja_env.from_string("""
@@ -235,11 +235,11 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
                 device_type_concept_id)
             VALUES
                 (501, 51, 4206863, '2015-07-15', timestamp('2015-07-15'), 44818707),
-                (502, 52, 320128, '2015-07-15', timestamp('2015-07-15'), 0),
-                (503, 53, 2101931, '2015-07-15', timestamp('2015-07-15'), 0),
+                (502, 52, 320128, '2015-07-15', timestamp('2015-07-15'), 99999),
+                (503, 53, 2101931, '2015-07-15', timestamp('2015-07-15'), 99999),
                 (504, 54, 740910, '2015-07-15', timestamp('2015-07-15'), 44818707),
-                (505, 55, 2106252, '2015-07-15', timestamp('2015-07-15'), 0),
-                (506, 56, 45887635, '2015-07-15', timestamp('2015-07-15'), 0)
+                (505, 55, 2106252, '2015-07-15', timestamp('2015-07-15'), 99999),
+                (506, 56, 45887635, '2015-07-15', timestamp('2015-07-15'), 99999)
         """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
         INSERT_DEVICE_EXPOSURE_MAPPING = self.jinja_env.from_string("""
@@ -262,11 +262,11 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
                 measurement_type_concept_id)
             VALUES
                 (601, 61, 44782827, '2015-07-15', timestamp('2015-07-15'), 44818704),
-                (602, 62, 320128, '2015-07-15', timestamp('2015-07-15'), 0),
-                (603, 63, 36676219, '2015-07-15', timestamp('2015-07-15'), 0),
-                (604, 64, 45892531, '2015-07-15', timestamp('2015-07-15'), 0),
+                (602, 62, 320128, '2015-07-15', timestamp('2015-07-15'), 99999),
+                (603, 63, 36676219, '2015-07-15', timestamp('2015-07-15'), 99999),
+                (604, 64, 45892531, '2015-07-15', timestamp('2015-07-15'), 99999),
                 (605, 65, 3045429, '2015-07-15', timestamp('2015-07-15'), 44818702),
-                (606, 66, 4237601, '2015-07-15', timestamp('2015-07-15'), 0)
+                (606, 66, 4237601, '2015-07-15', timestamp('2015-07-15'), 99999)
         """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
         INSERT_MEASUREMENT_MAPPING = self.jinja_env.from_string("""
@@ -428,7 +428,7 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
                 'drug_type_concept_id'
             ],
             'cleaned_values': [
-                (401, 41, 1126658, test_date, test_datetime, 0),
+                (401, 41, 1126658, test_date, test_datetime, 99999),
                 (407, 23, 45892531, test_date, test_datetime, 0),
                 (408, 37, 1126658, test_date,
                  parse('1970-01-01 00:00:00 UTC').astimezone(pytz.utc), 0),
