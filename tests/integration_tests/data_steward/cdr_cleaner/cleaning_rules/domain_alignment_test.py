@@ -83,7 +83,7 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
             306: observation -> procedure_occurrence ('is_rerouted'='1'). Moved to PROCEDURE_OCCURRENCE as 212.
             307: observation -> drug_exposure ('is_rerouted'='1'). Moved to DRUG_EXPOSURE as 408.
             308: observation -> device_exposure ('is_rerouted'='1'). Moved to DEVICE_EXPOSURE as 508.
-            309: observation -> measurement ('is_rerouted'='1').  Moved to MEASUREMENT as 607.
+            309: observation -> measurement ('is_rerouted'='1'). Moved to MEASUREMENT as 607.
             310: observation -> measurement ('is_rerouted'='1') but not meeting rerouting_criteria. Stays.
 
         DRUG_EXPOSURE and its mapping table:

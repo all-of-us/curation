@@ -123,7 +123,7 @@ CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table}}
     WHERE {{table}}_id IN (
         SELECT {{table}}_id 
         FROM `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_domain_table}}`
-        WHERE {{table}}_id IS NOT NULL        
+        WHERE {{table}}_id IS NOT NULL
     )
 )
 """)
@@ -132,7 +132,7 @@ CLEAN_TMPL = JINJA_ENV.from_string("""
 DELETE `{{project_id}}.{{dataset_id}}.{% if is_mapping %}_mapping_{% endif %}{{table}}`
 WHERE {{table}}_id IN (
     SELECT {{table}}_id FROM `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table}}`
-    WHERE {{table}}_id IS NOT NULL    
+    WHERE {{table}}_id IS NOT NULL
 )
 """)
 
