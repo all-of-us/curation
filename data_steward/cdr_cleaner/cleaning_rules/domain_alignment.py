@@ -113,12 +113,6 @@ CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table}}
         FROM `{{project_id}}.{{sandbox_dataset_id}}.{{alignment_table}}`
         WHERE src_table = '{{table}}'
     )
-    -- exclude PPI records from sandboxing --
-    AND d.{{domain_concept_id}} NOT IN (
-        SELECT c.concept_id
-        FROM `{{project_id}}.{{dataset_id}}.concept` c
-        WHERE c.vocabulary_id = 'PPI'
-    )
 )
 """)
 
@@ -264,16 +258,16 @@ class DomainAlignment(BaseCleaningRule):
         """
         Return a list of dictionary query specifications.
         The list contains 6 types of queries.
-        
+
         For each of the table mappings:
         1. Insert: Move records from src_table to dest_table.
         2. Insert: Same as 1, but for mapping table.
-        
+
         For each of the domain tables:
         3. Create: Sandbox the records to be deleted.
         4. Create: Same as 3, but for mapping table.
         5. Delete: Delete the records from src_table.
-        6. Delete: Same as 5, but for mapping table.        
+        6. Delete: Same as 5, but for mapping table.
         """
         queries = []
 

@@ -10,8 +10,10 @@ import pytz
 
 # Project Imports
 from app_identity import PROJECT_ID
-from cdr_cleaner.cleaning_rules.domain_alignment import DomainAlignment, LOOKUP_TABLE, VALUE_DICT
-from common import CONDITION_OCCURRENCE, DEVICE_EXPOSURE, DRUG_EXPOSURE, MEASUREMENT, OBSERVATION, PROCEDURE_OCCURRENCE, VOCABULARY_TABLES
+from cdr_cleaner.cleaning_rules.domain_alignment import DomainAlignment, LOOKUP_TABLE
+from common import (CONDITION_OCCURRENCE, DEVICE_EXPOSURE, DRUG_EXPOSURE,
+                    MEASUREMENT, OBSERVATION, PROCEDURE_OCCURRENCE,
+                    VOCABULARY_TABLES)
 from resources import mapping_table_for
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
@@ -57,24 +59,28 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
 
         CONDITION_OCCURRENCE and its mapping table:
             101, 102, 103: Stay in this table.
-            104: condtion_occurrence -> procedure_occurrence ('is_rerouted'='1'). Moved to PROCEDURE_OCCURRENCE as 207.
+            104: condtion_occurrence -> procedure_occurrence ('is_rerouted'='1'). Moved to PROCEDURE_OCCURRENCE as 209.
             105: condtion_occurrence -> observation ('is_rerouted'='1'). Moved to OBSERVATION as 311.
             106: condtion_occurrence -> drug_exposure ('is_rerouted'='0'). Dropped.
             107: condtion_occurrence -> measurement ('is_rerouted'='0'). Dropped.
             108: condtion_occurrence -> device_exposure ('is_rerouted'='0'). Dropped.
+            109: Similar to 104 but translated using value_mappigs.csv. Moved to PROCEDURE_OCCURRENCE as 210.
+            110: Similar to 104 but translated using value_mappigs.csv. Moved to PROCEDURE_OCCURRENCE as 211.
 
         PROCEDURE_OCCURRENCE and its mapping table:
             201: Stays in this table.
-            202: procedure_occurrence -> condtion_occurrence ('is_rerouted'='1'). Moved to CONDITION_OCCURRENCE as 109.
+            202: procedure_occurrence -> condtion_occurrence ('is_rerouted'='1'). Moved to CONDITION_OCCURRENCE as 111.
             203: procedure_occurrence -> drug_exposure ('is_rerouted'='1'). Moved to DRUG_EXPOSURE as 407.
             204: procedure_occurrence -> observation ('is_rerouted'='1'). Moved to OBSERVATION as 312.
             205: procedure_occurrence -> measurement ('is_rerouted'='0'). Dropped.
             206: procedure_occurrence -> device_exposure ('is_rerouted'='1'). Moved to DEVICE_EXPOSURE as 507.
+            207: Similar to 202 but translated using value_mappigs.csv. Moved to CONDITION_OCCURRENCE as 112.
+            208: Similar to 202 but translated using value_mappigs.csv. Moved to CONDITION_OCCURRENCE as 113.
 
         OBSERVATION and its mapping table:
             301, 302, 303, 304: Stay in this table. These are PPI records.
-            305: observation -> condtion_occurrence ('is_rerouted'='1'). Moved to CONDITION_OCCURRENCE as 110.
-            306: observation -> procedure_occurrence ('is_rerouted'='1'). Moved to PROCEDURE_OCCURRENCE as 208.
+            305: observation -> condtion_occurrence ('is_rerouted'='1'). Moved to CONDITION_OCCURRENCE as 114.
+            306: observation -> procedure_occurrence ('is_rerouted'='1'). Moved to PROCEDURE_OCCURRENCE as 212.
             307: observation -> drug_exposure ('is_rerouted'='1'). Moved to DRUG_EXPOSURE as 408.
             308: observation -> device_exposure ('is_rerouted'='1'). Moved to DEVICE_EXPOSURE as 508.
             309: observation -> measurement ('is_rerouted'='1').  Moved to MEASUREMENT as 607.
@@ -91,7 +97,7 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
         DEVICE_EXPOSURE and its mapping table:
             501: Stays in this table.
             502: device_exposure -> condtion_occurrence ('is_rerouted'='0'). Dropped.
-            503: device_exposure -> procedure_occurrence ('is_rerouted'='1'). Moved to PROCEDURE_OCCURRENCE as 209.
+            503: device_exposure -> procedure_occurrence ('is_rerouted'='1'). Moved to PROCEDURE_OCCURRENCE as 213.
             504: device_exposure -> drug_exposure ('is_rerouted'='1'). Moved to DRUG_EXPOSURE as 409.
             505: device_exposure -> observation ('is_rerouted'='1'). Moved to OBSERVATION as 314.
             506: device_exposure -> measurement ('is_rerouted'='0'). Dropped.
@@ -122,7 +128,9 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
                 (105, 15, 40488434, '2015-07-15', timestamp('2015-07-15'), 45754805, 5),
                 (106, 16, 42542298, '2015-07-15', timestamp('2015-07-15'), 99999, 6),
                 (107, 17, 3009160, '2015-07-15', timestamp('2015-07-15'), 42894222, 7),
-                (108, 18, 40218685, '2015-07-15', timestamp('2015-07-15'), 99999, 8)
+                (108, 18, 40218685, '2015-07-15', timestamp('2015-07-15'), 99999, 8),
+                (109, 19, 36676219, '2015-07-15', timestamp('2015-07-15'), 44786627, 9),
+                (110, 10, 36676219, '2015-07-15', timestamp('2015-07-15'), 44786629, 10)
         """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
         INSERT_CONDITION_OCCURRENCE_MAPPING = self.jinja_env.from_string("""
@@ -137,7 +145,9 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
                 (105, 'dataset', 5, 'hpo_5', 'condition_occurrence'),
                 (106, 'dataset', 6, 'hpo_6', 'condition_occurrence'),
                 (107, 'dataset', 7, 'hpo_7', 'condition_occurrence'),
-                (108, 'dataset', 8, 'hpo_8', 'condition_occurrence')
+                (108, 'dataset', 8, 'hpo_8', 'condition_occurrence'),
+                (109, 'dataset', 9, 'hpo_9', 'condition_occurrence'),
+                (110, 'dataset', 10, 'hpo_10', 'condition_occurrence')
         """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
         INSERT_PROCEDURE_OCCURRENCE = self.jinja_env.from_string("""
@@ -150,7 +160,9 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
                 (203, 23, 45892531, '2015-07-15', timestamp('2015-07-15'), 44786630, 3),
                 (204, 24, 2414345, '2015-07-15', timestamp('2015-07-15'), 44786630, 4),
                 (205, 25, 45887635, '2015-07-15', timestamp('2015-07-15'), 99999, 5),
-                (206, 26, 2211851, '2015-07-15', timestamp('2015-07-15'), 44786630, 6)
+                (206, 26, 2211851, '2015-07-15', timestamp('2015-07-15'), 44786630, 6),
+                (207, 27, 320128, '2015-07-15', timestamp('2015-07-15'), 44786630, 7),
+                (208, 28, 320128, '2015-07-15', timestamp('2015-07-15'), 44786631, 8)
         """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
         INSERT_PROCEDURE_OCCURRENCE_MAPPING = self.jinja_env.from_string("""
@@ -163,7 +175,9 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
                 (203, 'dataset', 3, 'hpo_3', 'procedure_occurrence'),
                 (204, 'dataset', 4, 'hpo_4', 'procedure_occurrence'),
                 (205, 'dataset', 5, 'hpo_5', 'procedure_occurrence'),
-                (206, 'dataset', 6, 'hpo_6', 'procedure_occurrence')
+                (206, 'dataset', 6, 'hpo_6', 'procedure_occurrence'),
+                (207, 'dataset', 7, 'hpo_7', 'procedure_occurrence'),
+                (208, 'dataset', 8, 'hpo_8', 'procedure_occurrence')
         """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
         INSERT_OBSERVATION = self.jinja_env.from_string("""
@@ -299,8 +313,8 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
                 f'{self.project_id}.{self.dataset_id}.{CONDITION_OCCURRENCE}',
             'fq_sandbox_table_name':
                 f'{self.project_id}.{self.sandbox_id}.{self.rule_instance.sandbox_table_for(CONDITION_OCCURRENCE)}',
-            'loaded_ids': [101, 102, 103, 104, 105, 106, 107, 108],
-            'sandboxed_ids': [104, 105, 106, 107, 108],
+            'loaded_ids': [101, 102, 103, 104, 105, 106, 107, 108, 109, 110],
+            'sandboxed_ids': [104, 105, 106, 107, 108, 109, 110],
             'fields': [
                 'condition_occurrence_id', 'person_id', 'condition_concept_id',
                 'condition_start_date', 'condition_start_datetime',
@@ -310,8 +324,10 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
                 (101, 11, 201826, test_date, test_datetime, 42894222, 1),
                 (102, 12, 201826, test_date, test_datetime, 42894222, 2),
                 (103, 13, 201826, test_date, test_datetime, 42894222, 3),
-                (109, 22, 320128, test_date, test_datetime, 0, 2),
-                (110, 35, 45769242, test_date,
+                (111, 22, 320128, test_date, test_datetime, 0, 2),
+                (112, 27, 320128, test_date, test_datetime, 44786627, 7),
+                (113, 28, 320128, test_date, test_datetime, 44786629, 8),
+                (114, 35, 45769242, test_date,
                  parse('1970-01-01 00:00:00 UTC').astimezone(pytz.utc), 0,
                  None),
             ]
@@ -320,8 +336,8 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
                 f'{self.project_id}.{self.dataset_id}.{mapping_table_for(CONDITION_OCCURRENCE)}',
             'fq_sandbox_table_name':
                 f'{self.project_id}.{self.sandbox_id}.{self.rule_instance.sandbox_table_for(mapping_table_for(CONDITION_OCCURRENCE))}',
-            'loaded_ids': [101, 102, 103, 104, 105, 106, 107, 108],
-            'sandboxed_ids': [104, 105, 106, 107, 108],
+            'loaded_ids': [101, 102, 103, 104, 105, 106, 107, 108, 109, 110],
+            'sandboxed_ids': [104, 105, 106, 107, 108, 109, 110],
             'fields': [
                 'condition_occurrence_id', 'src_dataset_id',
                 'src_condition_occurrence_id', 'src_hpo_id', 'src_table_id'
@@ -330,16 +346,18 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
                 (101, 'dataset', 1, 'hpo_1', 'condition_occurrence'),
                 (102, 'dataset', 2, 'hpo_2', 'condition_occurrence'),
                 (103, 'dataset', 3, 'hpo_3', 'condition_occurrence'),
-                (109, 'dataset', 2, 'hpo_2', 'procedure_occurrence'),
-                (110, 'dataset', 5, 'hpo_5', 'observation'),
+                (111, 'dataset', 2, 'hpo_2', 'procedure_occurrence'),
+                (112, 'dataset', 7, 'hpo_7', 'procedure_occurrence'),
+                (113, 'dataset', 8, 'hpo_8', 'procedure_occurrence'),
+                (114, 'dataset', 5, 'hpo_5', 'observation'),
             ]
         }, {
             'fq_table_name':
                 f'{self.project_id}.{self.dataset_id}.{PROCEDURE_OCCURRENCE}',
             'fq_sandbox_table_name':
                 f'{self.project_id}.{self.sandbox_id}.{self.rule_instance.sandbox_table_for(PROCEDURE_OCCURRENCE)}',
-            'loaded_ids': [201, 202, 203, 204, 205, 206],
-            'sandboxed_ids': [202, 203, 204, 205, 206],
+            'loaded_ids': [201, 202, 203, 204, 205, 206, 207, 208],
+            'sandboxed_ids': [202, 203, 204, 205, 206, 207, 208],
             'fields': [
                 'procedure_occurrence_id', 'person_id', 'procedure_concept_id',
                 'procedure_date', 'procedure_datetime',
@@ -347,28 +365,32 @@ class DomainAlignmentTest(BaseTest.CleaningRulesTestBase):
             ],
             'cleaned_values': [
                 (201, 21, 36676219, test_date, test_datetime, 42865906, 1),
-                (207, 14, 36676219, test_date, test_datetime, 0, 4),
-                (208, 36, 42740600, test_date,
+                (209, 14, 36676219, test_date, test_datetime, 0, 4),
+                (210, 19, 36676219, test_date, test_datetime, 44786630, 9),
+                (211, 10, 36676219, test_date, test_datetime, 44786631, 10),
+                (212, 36, 42740600, test_date,
                  parse('1970-01-01 00:00:00 UTC').astimezone(pytz.utc), 0,
                  None),
-                (209, 53, 2101931, test_date, test_datetime, 0, None),
+                (213, 53, 2101931, test_date, test_datetime, 0, None),
             ]
         }, {
             'fq_table_name':
                 f'{self.project_id}.{self.dataset_id}.{mapping_table_for(PROCEDURE_OCCURRENCE)}',
             'fq_sandbox_table_name':
                 f'{self.project_id}.{self.sandbox_id}.{self.rule_instance.sandbox_table_for(mapping_table_for(PROCEDURE_OCCURRENCE))}',
-            'loaded_ids': [201, 202, 203, 204, 205, 206],
-            'sandboxed_ids': [202, 203, 204, 205, 206],
+            'loaded_ids': [201, 202, 203, 204, 205, 206, 207, 208],
+            'sandboxed_ids': [202, 203, 204, 205, 206, 207, 208],
             'fields': [
                 'procedure_occurrence_id', 'src_dataset_id',
                 'src_procedure_occurrence_id', 'src_hpo_id', 'src_table_id'
             ],
             'cleaned_values': [
                 (201, 'dataset', 1, 'hpo_1', 'procedure_occurrence'),
-                (207, 'dataset', 4, 'hpo_4', 'condition_occurrence'),
-                (208, 'dataset', 6, 'hpo_6', 'observation'),
-                (209, 'dataset', 3, 'hpo_3', 'device_exposure'),
+                (209, 'dataset', 4, 'hpo_4', 'condition_occurrence'),
+                (210, 'dataset', 9, 'hpo_9', 'condition_occurrence'),
+                (211, 'dataset', 10, 'hpo_10', 'condition_occurrence'),
+                (212, 'dataset', 6, 'hpo_6', 'observation'),
+                (213, 'dataset', 3, 'hpo_3', 'device_exposure'),
             ]
         }, {
             'fq_table_name':
