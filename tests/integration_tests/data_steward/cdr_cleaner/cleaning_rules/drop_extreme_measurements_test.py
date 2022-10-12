@@ -37,17 +37,13 @@ VALUES
     NULL, NULL, NULL, NULL, NULL, 
     NULL, NULL, 903133, NULL, NULL),
 
-    (300, 3, 903133, '2015-05-14', NULL, 
-    NULL, 1000, NULL, 250, NULL, 
-    NULL, NULL, NULL, NULL, NULL, 
-    NULL, NULL, 903133, NULL, NULL),
-
     -- SECOND SUBQUERY --
     (400, 4, 903124, '2009-04-29', TIMESTAMP('2009-04-29'), 
     NULL, 1000, NULL, 100, NULL, 
     NULL, NULL, NULL, NULL, NULL, 
     NULL, NULL, 903124, NULL, NULL),
 
+    -- NOT SANDBOXED --
     (500, 5, 903124, '2010-07-13', TIMESTAMP('2010-07-13'), 
     NULL, 1000, NULL, 100, NULL, 
     NULL, NULL, NULL, NULL, NULL, 
@@ -57,7 +53,32 @@ VALUES
     (600, 6, 903133, '2011-08-21', TIMESTAMP('2011-08-21'), 
     NULL, 1000, NULL, 88, NULL, 
     NULL, NULL, NULL, NULL, NULL, 
-    NULL, NULL, 903133, NULL, NULL)
+    NULL, NULL, 903133, NULL, NULL),
+
+    -- NOT SANDBOXED --
+    (300, 3, 903135, '2015-05-14', NULL, 
+    NULL, 1000, NULL, 250, NULL, 
+    NULL, NULL, NULL, NULL, NULL, 
+    NULL, NULL, 903135, NULL, NULL),
+
+
+    -- FIRST SUBQUERY --
+    (700, 7, 903121, '2009-04-29', TIMESTAMP('2009-04-29'), 
+    NULL, 1000, NULL, 10, NULL, 
+    NULL, NULL, NULL, NULL, NULL, 
+    NULL, NULL, 903121, NULL, NULL),
+
+    (800, 8, 903124, '2009-04-29', TIMESTAMP('2009-04-29'), 
+    NULL, 1000, NULL, 10, NULL, 
+    NULL, NULL, NULL, NULL, NULL, 
+    NULL, NULL, 903124, NULL, NULL),
+
+    -- SECOND SUBQUERY --
+    -- NOT SANDBOXED --
+    (900, 9, 903121, '2010-04-10', TIMESTAMP('2010-04-10'), 
+    NULL, 1000, NULL, 50, NULL, 
+    NULL, NULL, NULL, NULL, NULL, 
+    NULL, NULL, 903121, NULL, NULL)
 """)
 
 
@@ -123,8 +144,8 @@ class DropExtremeMeasurementsTest(BaseTest.CleaningRulesTestBase):
                 self.fq_table_names[0],
             'fq_sandbox_table_name':
                 self.fq_sandbox_table_names[0],
-            'loaded_ids': [100, 200, 300, 400, 500, 600],
-            'sandboxed_ids': [100, 400],
+            'loaded_ids': [100, 200, 300, 400, 500, 600, 700, 800, 900],
+            'sandboxed_ids': [100, 200, 400, 600, 700, 800],
             'fields': [
                 'measurement_id', 'person_id', 'measurement_concept_id',
                 'measurement_date', 'measurement_datetime', 'measurement_time',
@@ -136,33 +157,16 @@ class DropExtremeMeasurementsTest(BaseTest.CleaningRulesTestBase):
                 'value_source_value'
             ],
             'cleaned_values': [
-                (100, 1, 903133, date.fromisoformat('2009-04-29'),
-                 parser.parse('2009-04-29 00:00:00 UTC'), None, 1000, None, 19,
-                 None, None, None, None, None, None, None, None, 903133, None,
-                 None),
-                ##################################
-                (200, 2, 903133, date.fromisoformat('2009-04-29'),
-                 parser.parse('2009-04-29 00:00:00 UTC'), None, 1000, None, 230,
-                 None, None, None, None, None, None, None, None, 903133, None,
-                 None),
-                ##################################
-                (300, 3, 903133, date.fromisoformat('2015-05-14'), None, None,
+                (300, 3, 903135, date.fromisoformat('2015-05-14'), None, None,
                  1000, None, 250, None, None, None, None, None, None, None,
-                 None, 903133, None, None),
-                ##################################
-                (400, 4, 903124, date.fromisoformat('2009-04-29'),
-                 parser.parse('2009-04-29 00:00:00 UTC'), None, 1000, None, 100,
-                 None, None, None, None, None, None, None, None, 903124, None,
-                 None),
-                ##################################
+                 None, 903135, None, None),
                 (500, 5, 903124, date.fromisoformat('2010-07-13'),
                  parser.parse('2010-07-13 00:00:00 UTC'), None, 1000, None, 100,
                  None, None, None, None, None, None, None, None, 903124, None,
                  None),
-                ##################################
-                (600, 6, 903133, date.fromisoformat('2011-08-21'),
-                 parser.parse('2011-08-21 00:00:00 UTC'), None, 1000, None, 88,
-                 None, None, None, None, None, None, None, None, 903133, None,
+                (900, 9, 903121, date.fromisoformat('2010-04-10'),
+                 parser.parse('2010-04-10 00:00:00 UTC'), None, 1000, None, 50,
+                 None, None, None, None, None, None, None, None, 903121, None,
                  None)
             ]
         }]
