@@ -20,6 +20,7 @@ from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_te
 EXTREME_MEASUREMENTS_TEMPLATE = JINJA_ENV.from_string("""
 INSERT INTO 
     `{{project_id}}.{{dataset_id}}.measurement`
+    
 (measurement_id, person_id, measurement_concept_id, measurement_date, measurement_datetime,
 measurement_time, measurement_type_concept_id, operator_concept_id, value_as_number, value_as_concept_id,
 unit_concept_id, range_low, range_high, provider_id, visit_occurrence_id,
@@ -134,17 +135,18 @@ class DropExtremeMeasurementsTest(BaseTest.CleaningRulesTestBase):
         """
         super().setUp()
 
-        #Query to insert test records into measurement table
+        # Query to insert test records into measurement table
         extreme_measurement_template = EXTREME_MEASUREMENTS_TEMPLATE.render(
             project_id=self.project_id, dataset_id=self.dataset_id)
 
-        #Load test data
+        # Load test data
         self.load_test_data([extreme_measurement_template])
 
     def test_field_cleaning(self):
         """
         person_ids 1,2,4,6,7,8, and 12 are sandboxed
         """
+
         # Expected results list
         tables_and_counts = [{
             'fq_table_name':
