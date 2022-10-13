@@ -8,11 +8,10 @@ import os
 
 # Project imports
 from app_identity import PROJECT_ID
-from cdr_cleaner.cleaning_rules.populate_route_ids import DOSE_FORM_ROUTE_MAPPING_TABLE, DRUG_ROUTE_MAPPING_TABLE, PopulateRouteIds
+from cdr_cleaner.cleaning_rules.populate_route_ids import (
+    DOSE_FORM_ROUTE_MAPPING_TABLE, DRUG_ROUTE_MAPPING_TABLE, PopulateRouteIds)
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 from common import DRUG_EXPOSURE
-
-# Third party imports
 
 
 class PopulateRouteIdsTest(BaseTest.CleaningRulesTestBase):
@@ -63,7 +62,7 @@ class PopulateRouteIdsTest(BaseTest.CleaningRulesTestBase):
         """
 
         INSERT_DRUG_EXPOSURE_QUERY = self.jinja_env.from_string("""
-            INSERT INTO `{{project_id}}.{{dataset_id}}.drug_exposure`
+            INSERT INTO `{{fq_table_name}}`
                 (drug_exposure_id, person_id, drug_concept_id,
                  drug_exposure_start_date, drug_exposure_start_datetime,
                  drug_type_concept_id, route_concept_id)
@@ -71,7 +70,7 @@ class PopulateRouteIdsTest(BaseTest.CleaningRulesTestBase):
                 (11, 1, 99999999, date('2022-09-01'), timestamp('2022-09-01 00:00:00'), 0, 99999999),
                 (12, 2, 43012486, date('2022-09-01'), timestamp('2022-09-01 00:00:00'), 0, NULL),
                 (13, 3, 43012486, date('2022-09-01'), timestamp('2022-09-01 00:00:00'), 0, 99999999)
-        """).render(project_id=self.project_id, dataset_id=self.dataset_id)
+        """).render(fq_table_name=self.fq_table_names[0])
 
         queries = [INSERT_DRUG_EXPOSURE_QUERY]
 

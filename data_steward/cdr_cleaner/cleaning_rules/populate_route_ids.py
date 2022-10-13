@@ -78,7 +78,7 @@ CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{drug_route_mapp
 SANDBOX_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table_id}}` AS (
     SELECT de.* 
-    FROM `{{project_id}}.{{dataset_id}}.drug_exposure` de
+    FROM `{{project_id}}.{{dataset_id}}.{{table_id}}` de
     LEFT JOIN `{{project_id}}.{{sandbox_dataset_id}}.{{drug_route_mapping_table}}` rm
     ON de.drug_concept_id = rm.drug_concept_id
     WHERE de.route_concept_id != rm.route_concept_id
@@ -87,7 +87,7 @@ CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table_i
 """)
 
 UPDATE_QUERY = JINJA_ENV.from_string("""
-UPDATE `{{project_id}}.{{dataset_id}}.drug_exposure` de
+UPDATE `{{project_id}}.{{dataset_id}}.{{table_id}}` de
 SET route_concept_id = rm.route_concept_id
 FROM `{{project_id}}.{{sandbox_dataset_id}}.{{drug_route_mapping_table}}` rm
 WHERE de.drug_concept_id = rm.drug_concept_id
@@ -171,6 +171,7 @@ class PopulateRouteIds(BaseCleaningRule):
                     sandbox_dataset_id=self.sandbox_dataset_id,
                     sandbox_table_id=self.sandbox_table_for(DRUG_EXPOSURE),
                     dataset_id=self.dataset_id,
+                    table_id=DRUG_EXPOSURE,
                     drug_route_mapping_table=DRUG_ROUTE_MAPPING_TABLE)
         }
 
@@ -181,6 +182,7 @@ class PopulateRouteIds(BaseCleaningRule):
                     sandbox_dataset_id=self.sandbox_dataset_id,
                     sandbox_table_id=self.sandbox_table_for(DRUG_EXPOSURE),
                     dataset_id=self.dataset_id,
+                    table_id=DRUG_EXPOSURE,
                     drug_route_mapping_table=DRUG_ROUTE_MAPPING_TABLE)
         }
 
