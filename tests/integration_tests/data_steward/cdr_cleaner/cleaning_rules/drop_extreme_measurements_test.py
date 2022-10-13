@@ -26,7 +26,7 @@ unit_concept_id, range_low, range_high, provider_id, visit_occurrence_id,
 visit_detail_id, measurement_source_value, measurement_source_concept_id, unit_source_value, value_source_value)
 
 VALUES
-    -- FIRST SUBQUERY --
+
     (100, 1, 903133, '2009-04-29', TIMESTAMP('2009-04-29'), 
     NULL, 1000, NULL, 19, NULL, 
     NULL, NULL, NULL, NULL, NULL, 
@@ -37,7 +37,6 @@ VALUES
     NULL, NULL, NULL, NULL, NULL, 
     NULL, NULL, 903133, NULL, NULL),
 
-    -- SECOND SUBQUERY --
     (400, 4, 903124, '2009-04-29', TIMESTAMP('2009-04-29'), 
     NULL, 1000, NULL, 100, NULL, 
     NULL, NULL, NULL, NULL, NULL, 
@@ -48,7 +47,6 @@ VALUES
     NULL, NULL, NULL, NULL, NULL, 
     NULL, NULL, 903124, NULL, NULL),
  
-    -- THIRD SUBQUERY --
     (600, 6, 903133, '2011-08-21', TIMESTAMP('2011-08-21'), 
     NULL, 1000, NULL, 88, NULL, 
     NULL, NULL, NULL, NULL, NULL, 
@@ -59,8 +57,6 @@ VALUES
     NULL, NULL, NULL, NULL, NULL, 
     NULL, NULL, 903135, NULL, NULL),
 
-
-    -- FIRST SUBQUERY --
     (700, 7, 903121, '2009-04-29', TIMESTAMP('2009-04-29'), 
     NULL, 1000, NULL, 10, NULL, 
     NULL, NULL, NULL, NULL, NULL, 
@@ -71,14 +67,11 @@ VALUES
     NULL, NULL, NULL, NULL, NULL, 
     NULL, NULL, 903124, NULL, NULL),
 
-    -- SECOND SUBQUERY --
     (900, 9, 903121, '2010-04-10', TIMESTAMP('2010-04-10'), 
     NULL, 1000, NULL, 50, NULL, 
     NULL, NULL, NULL, NULL, NULL, 
     NULL, NULL, 903121, NULL, NULL),
 
-
-    -- FIRST SUBQUERY --
     (1000, 10, 903121, '2015-02-11', TIMESTAMP('2015-02-11'), 
     NULL, 1000, NULL, 160, NULL, 
     NULL, NULL, NULL, NULL, NULL, 
@@ -89,7 +82,6 @@ VALUES
     NULL, NULL, NULL, NULL, NULL, 
     NULL, NULL, 903124, NULL, NULL),
 
-    -- SECOND SUBQUERY --
     (1200, 12, 903124, '2014-02-11', TIMESTAMP('2014-02-11'), 
     NULL, 1000, NULL, 130, NULL, 
     NULL, NULL, NULL, NULL, NULL, 
@@ -151,7 +143,7 @@ class DropExtremeMeasurementsTest(BaseTest.CleaningRulesTestBase):
 
     def test_field_cleaning(self):
         """
-        test
+        person_ids 1,2,4,6,7,8, and 12 are sandboxed
         """
         # Expected results list
         tables_and_counts = [{
