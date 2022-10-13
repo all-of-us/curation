@@ -43,7 +43,6 @@ VALUES
     NULL, NULL, NULL, NULL, NULL, 
     NULL, NULL, 903124, NULL, NULL),
 
-    -- NOT SANDBOXED --
     (500, 5, 903124, '2010-07-13', TIMESTAMP('2010-07-13'), 
     NULL, 1000, NULL, 100, NULL, 
     NULL, NULL, NULL, NULL, NULL, 
@@ -55,7 +54,6 @@ VALUES
     NULL, NULL, NULL, NULL, NULL, 
     NULL, NULL, 903133, NULL, NULL),
 
-    -- NOT SANDBOXED --
     (300, 3, 903135, '2015-05-14', NULL, 
     NULL, 1000, NULL, 250, NULL, 
     NULL, NULL, NULL, NULL, NULL, 
@@ -74,11 +72,28 @@ VALUES
     NULL, NULL, 903124, NULL, NULL),
 
     -- SECOND SUBQUERY --
-    -- NOT SANDBOXED --
     (900, 9, 903121, '2010-04-10', TIMESTAMP('2010-04-10'), 
     NULL, 1000, NULL, 50, NULL, 
     NULL, NULL, NULL, NULL, NULL, 
-    NULL, NULL, 903121, NULL, NULL)
+    NULL, NULL, 903121, NULL, NULL),
+
+
+    -- FIRST SUBQUERY --
+    (1000, 10, 903121, '2015-02-11', TIMESTAMP('2015-02-11'), 
+    NULL, 1000, NULL, 160, NULL, 
+    NULL, NULL, NULL, NULL, NULL, 
+    NULL, NULL, 903121, NULL, NULL),
+
+    (1100, 11, 903124, '2014-02-11', TIMESTAMP('2014-02-11'), 
+    NULL, 1000, NULL, 100, NULL, 
+    NULL, NULL, NULL, NULL, NULL, 
+    NULL, NULL, 903124, NULL, NULL),
+
+    -- SECOND SUBQUERY --
+    (1200, 12, 903124, '2014-02-11', TIMESTAMP('2014-02-11'), 
+    NULL, 1000, NULL, 130, NULL, 
+    NULL, NULL, NULL, NULL, NULL, 
+    NULL, NULL, 903124, NULL, NULL)
 """)
 
 
@@ -144,8 +159,10 @@ class DropExtremeMeasurementsTest(BaseTest.CleaningRulesTestBase):
                 self.fq_table_names[0],
             'fq_sandbox_table_name':
                 self.fq_sandbox_table_names[0],
-            'loaded_ids': [100, 200, 300, 400, 500, 600, 700, 800, 900],
-            'sandboxed_ids': [100, 200, 400, 600, 700, 800],
+            'loaded_ids': [
+                100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200
+            ],
+            'sandboxed_ids': [100, 200, 400, 600, 700, 800, 1200],
             'fields': [
                 'measurement_id', 'person_id', 'measurement_concept_id',
                 'measurement_date', 'measurement_datetime', 'measurement_time',
@@ -167,6 +184,14 @@ class DropExtremeMeasurementsTest(BaseTest.CleaningRulesTestBase):
                 (900, 9, 903121, date.fromisoformat('2010-04-10'),
                  parser.parse('2010-04-10 00:00:00 UTC'), None, 1000, None, 50,
                  None, None, None, None, None, None, None, None, 903121, None,
+                 None),
+                (1000, 10, 903121, date.fromisoformat('2015-02-11'),
+                 parser.parse('2015-02-11 00:00:00 UTC'), None, 1000, None, 160,
+                 None, None, None, None, None, None, None, None, 903121, None,
+                 None),
+                (1100, 11, 903124, date.fromisoformat('2014-02-11'),
+                 parser.parse('2014-02-11 00:00:00 UTC'), None, 1000, None, 100,
+                 None, None, None, None, None, None, None, None, 903124, None,
                  None)
             ]
         }]
