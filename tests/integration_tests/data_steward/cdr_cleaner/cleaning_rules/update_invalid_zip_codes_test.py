@@ -1,10 +1,7 @@
 """
 Integration test for drop_invalid_zip_codes.py module.
-
 This cleaning rule sandboxes and updates any invalid zip codes.
-
 Original Issues: DC-1633, DC-1645
-
 Ensures that any zip codes are trimmed of any excess leading/trailing whitespace and sandboxed and updated in the
 observation table. invalid zip codes are sandboxed and updated. A zip code is considered invalid if it:
         Is less than 5 digits in length
@@ -74,7 +71,6 @@ class UpdateInvalidZipCodesTest(BaseTest.CleaningRulesTestBase):
     def setUp(self):
         """
         Create common information for tests.
-
         Creates common expected parameter types from cleaned tables and a common fully qualified (fq)
         dataset name string used to load the data.
         """
@@ -93,15 +89,14 @@ class UpdateInvalidZipCodesTest(BaseTest.CleaningRulesTestBase):
         """
         Tests that the specifications for SANDBOX_INVALID_ZIP_CODES, SANDBOX_ZIPS_WITH_WHITESPACE,
             CLEAN_ZIPS_OF_WHITESPACE and UPDATE_INVALID_ZIP_CODES all perform as designed.
-
         Validates pre conditions, tests execution, and post conditions based on the load
         statements and the tables_and_counts variable.
         """
 
         zip3_lookup_tmpl = self.jinja_env.from_string("""
-            INSERT INTO `{{fq_dataset_name}}.zip3_lookup` (zip3)
+            INSERT INTO `{{fq_dataset_name}}.zip3_lookup` (zip3_as_string)
             VALUES
-                (123), (234), (345)
+                ('123**'), ('234**'), ('345**'), ('020**'), ('006**')
             """).render(fq_dataset_name=self.fq_dataset_name)
 
         observation_tmpl = self.jinja_env.from_string("""
@@ -112,31 +107,35 @@ class UpdateInvalidZipCodesTest(BaseTest.CleaningRulesTestBase):
                 -- valid zip codes, will not be affected --
                 (1, 1, 0, date('2019-03-03'), 0, 1585250, null, '12345', null, null), 
                 (2, 2, 0, date('2019-03-03'), 0, 1585250, null, '23456-1234', null, null),
-                
+
                 -- invalid zip codes with less than 5 digits, will be sandboxed and updated in observation table --
                 (3, 3, 0, date('2019-03-03'), 0, 1585250, null, '1234', null, null), 
                 (4, 4, 0, date('2019-03-03'), 0, 1585250, null, '123', null, null),
                 (5, 5, 0, date('2019-03-03'), 0, 1585250, null, '12', null, null),
                 (6, 6, 0, date('2019-03-03'), 0, 1585250, null, '1', null, null),
-                
+
                 -- not zip codes (not zip code concept id), will not be affected --
                 (7, 7, 0, date('2019-03-03'), 0, 1111111, null, '111', null, null),
                 (8, 8, 0, date('2019-03-03'), 0, 2222222, null, '222', null, null),
-                
+
                 -- invalid zip codes with 5 characters and unknown zip 3, will be sandboxed and updated in obs table --
                 (9, 9, 0, date('2019-03-03'), 0, 1585250, null, '00501', null, null),
                 (10, 10, 0, date('2019-03-03'), 0, 1585250, null, '00566', null, null),
-                
+
                 -- invalid zip codes, are alphanumeric, will be sandboxed and updated in observation table --
                 (11, 11, 0, date('2019-03-03'), 0, 1585250, null, '123ab', null, null),
                 (12, 12, 0, date('2019-03-03'), 0, 1585250, null, '1abc', null, null),
                 (13, 13, 0, date('2019-03-03'), 0, 1585250, null, 'abc12', null, null), 
-                
+
                 -- invalid zip codes, excess whitespace, will be sandboxed and updated in observation table --
                 -- once cleaned will be valid --
                 (14, 14, 0, date('2019-03-03'), 0, 1585250, null, '     34567', null, null), 
                 -- once cleaned will be invalid --
-                (15, 15, 0, date('2019-03-03'), 0, 1585250, null, '56789     ', null, null) 
+                (15, 15, 0, date('2019-03-03'), 0, 1585250, null, '56789     ', null, null), 
+
+                -- valid zip codes with preceding 0s will not be affected --
+                (16, 16, 0, date('2019-03-03'), 0, 1585250, null, '02035', null, null),
+                (17, 17, 0, date('2019-03-03'), 0, 1585250, null, '00601', null, null)
             """).render(fq_dataset_name=self.fq_dataset_name)
 
         self.load_test_data([zip3_lookup_tmpl, observation_tmpl])
@@ -153,7 +152,9 @@ class UpdateInvalidZipCodesTest(BaseTest.CleaningRulesTestBase):
                 'value_as_string', 'value_source_concept_id',
                 'value_source_value'
             ],
-            'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+            'loaded_ids': [
+                1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17
+            ],
             'sandboxed_ids': [3, 4, 5, 6, 9, 10, 11, 12, 13, 15],
             'cleaned_values': [
                 (1, 1, 0, self.date, 0, 1585250, None, '12345', None, None),
@@ -201,7 +202,9 @@ class UpdateInvalidZipCodesTest(BaseTest.CleaningRulesTestBase):
                 (15, 15, 0, self.date, 0, 1585250,
                  self.invalid_zip_value_as_number,
                  self.invalid_zip_value_as_string, self.invalid_zip_concept,
-                 self.invalid_zip_value_source_value)
+                 self.invalid_zip_value_source_value),
+                (16, 16, 0, self.date, 0, 1585250, None, '02035', None, None),
+                (17, 17, 0, self.date, 0, 1585250, None, '00601', None, None)
             ]
         }]
 

@@ -1,8 +1,6 @@
 """
 Sandbox and update invalid zip codes found in the observation table.
-
 Original Issues: DC-1633, DC-1645
-
 The intent of this cleaning rule is to remove any leading/trailing whitespace in the zip code string then sandbox and
 update any invalid zip code in the observation table. A zip code is considered invalid if it:
         Is less than 5 digits in length
@@ -12,6 +10,7 @@ If zip code is deemed invalid the record is sandboxed and updated to have the fo
         value_as_string and value_source_value = 'Response removed due to invalid value'
         value_as_number = 0
         value_source_concept_id = 2000000010
+zip3_lookup is a view that uses "Census Bureau US Boundaries" public dataset available in BigQuery.
 """
 
 # Python imports
@@ -24,6 +23,8 @@ from common import JINJA_ENV, OBSERVATION, PIPELINE_TABLES, ZIP3_LOOKUP
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 
 LOGGER = logging.getLogger(__name__)
+
+JIRA_ISSUE_NUMBERS = ['DC1633', 'DC1645', 'DC2727']
 
 ZIPS_WITH_WHITESPACE_SANDBOX = 'dc1633_zips_with_whitespace'
 
@@ -51,8 +52,8 @@ UNION DISTINCT (
 -- Selects all zips that do not match one in the master zip3 lookup table --
 SELECT o.* FROM `{{project_id}}.{{dataset_id}}.{{obs_table}}` o
 LEFT JOIN `{{project_id}}.{{pipeline_tables}}.{{zip3_lookup}}` z
-ON SUBSTR(o.value_as_string, 1, 3) = CAST(z.zip3 AS STRING)
-WHERE (observation_source_concept_id = 1585250 AND z.zip3 IS NULL)))
+ON SUBSTR(o.value_as_string, 1, 3) = SUBSTR(z.zip3_as_string, 1, 3)
+WHERE (observation_source_concept_id = 1585250 AND z.zip3_as_string IS NULL)))
 """)
 
 CLEAN_ZIPS_OF_WHITESPACE = JINJA_ENV.from_string("""
@@ -78,27 +79,30 @@ class UpdateInvalidZipCodes(BaseCleaningRule):
     Any invalid zip code will be sandboxed and updated.
     """
 
-    def __init__(self, project_id, dataset_id, sandbox_dataset_id):
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 table_namer=None):
         """
         Initialize the class with proper information.
-
         Set the issue numbers, description and affected datasets. As other tickets may affect
         this SQL, append them to the list of Jira Issues.
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
         desc = 'Sandbox and update invalid zip codes found in the observation table.'
-        super().__init__(issue_numbers=['DC1633'],
+        super().__init__(issue_numbers=JIRA_ISSUE_NUMBERS,
                          description=desc,
                          affected_datasets=[cdr_consts.RDR],
                          affected_tables=[OBSERVATION],
                          project_id=project_id,
                          dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id)
+                         sandbox_dataset_id=sandbox_dataset_id,
+                         table_namer=table_namer)
 
     def get_query_specs(self, *args, **keyword_args):
         """
         Return a list of dictionary query specifications.
-
         :return:  A list of dictionaries. Each dictionary contains a single query
             and a specification for how to execute that query. The specifications
             are optional but the query is required.
