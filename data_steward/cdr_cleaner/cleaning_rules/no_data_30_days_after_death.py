@@ -14,20 +14,24 @@ from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, quer
 
 LOGGER = logging.getLogger(__name__)
 
-JIRA_ISSUE_NUMBERS = ['DC816', 'DC404']
+JIRA_ISSUE_NUMBERS = ['DC816', 'DC404', 'DC2771']
 
 # add table names as keys and temporal representations as values into a dictionary
 TEMPORAL_TABLES_WITH_START_DATE = {
     'visit_occurrence': 'visit_start_date',
+    'visit_detail': 'visit_detail_start_date',
     'condition_occurrence': 'condition_start_date',
     'drug_exposure': 'drug_exposure_start_date',
+    'drug_era': 'drug_era_start_date',
     'device_exposure': 'device_exposure_start_date'
 }
 
 TEMPORAL_TABLES_WITH_END_DATE = {
     'visit_occurrence': 'visit_end_date',
+    'visit_detail': 'visit_detail_end_date',
     'condition_occurrence': 'condition_end_date',
     'drug_exposure': 'drug_exposure_end_date',
+    'drug_era': 'drug_era_end_date',
     'device_exposure': 'device_exposure_end_date'
 }
 
@@ -46,25 +50,29 @@ TEMPORAL_TABLES_WITH_DATE = {
 # select rows in a domain_table where the domain_table_ids not in above generated list of ids
 
 SANDBOX_DEATH_DATE_WITH_END_DATES_QUERY = JINJA_ENV.from_string("""
+CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` AS (
 SELECT ma.*
 FROM `{{project}}.{{dataset}}.{{table_name}}` AS ma
 JOIN `{{project}}.{{dataset}}.death` AS d
 ON ma.person_id = d.person_id
 WHERE date_diff(GREATEST(CAST(ma.{{start_date}} AS DATE), CAST(ma.{{end_date}} AS DATE)), d.death_date, DAY) > 30
+)
 """)
 
-SANDBOX_DEATH_DATE_QUERY_QUERY = JINJA_ENV.from_string("""
+SANDBOX_DEATH_DATE_QUERY = JINJA_ENV.from_string("""
+CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` AS (
 SELECT ma.*
 FROM `{{project}}.{{dataset}}.{{table_name}}` AS ma
 JOIN `{{project}}.{{dataset}}.death` AS d
 ON ma.person_id = d.person_id
 WHERE date_diff(CAST({{date_column}} AS DATE), death_date, DAY) > 30
+)
 """)
 
 REMOVE_DEATH_DATE_QUERY = JINJA_ENV.from_string("""
-SELECT * 
+DELETE 
 FROM `{{project}}.{{dataset}}.{{table_name}}`
-WHERE {{table_name}}_id NOT IN (
+WHERE {{table_name}}_id IN (
     SELECT {{table_name}}_id 
     FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table_name}}`
 )
@@ -158,13 +166,15 @@ class NoDataAfterDeath(BaseCleaningRule):
         :return: 
         """
         # Choose a template depending on whether the table has start/end date columns
-        query_template = (SANDBOX_DEATH_DATE_QUERY_QUERY
+        query_template = (SANDBOX_DEATH_DATE_QUERY
                           if table in TEMPORAL_TABLES_WITH_DATE else
                           SANDBOX_DEATH_DATE_WITH_END_DATES_QUERY)
 
         query_params = {
             'project': self.project_id,
             'dataset': self.dataset_id,
+            'sandbox_dataset': self.sandbox_dataset_id,
+            'sandbox_table': self.sandbox_table_for(table),
             'table_name': table
         }
 
@@ -194,19 +204,10 @@ class NoDataAfterDeath(BaseCleaningRule):
         queries = []
 
         for table in get_affected_tables():
-            queries.append({
-                cdr_consts.QUERY: self.get_sandbox_query_for(table),
-                cdr_consts.DESTINATION_TABLE: self.sandbox_table_for(table),
-                cdr_consts.DESTINATION_DATASET: self.sandbox_dataset_id,
-                cdr_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE
-            })
+            queries.append(
+                {cdr_consts.QUERY: self.get_sandbox_query_for(table)})
 
-            queries.append({
-                cdr_consts.QUERY: self.get_query_for(table),
-                cdr_consts.DESTINATION_TABLE: table,
-                cdr_consts.DESTINATION_DATASET: self.dataset_id,
-                cdr_consts.DISPOSITION: bq_consts.WRITE_TRUNCATE
-            })
+            queries.append({cdr_consts.QUERY: self.get_query_for(table)})
         return queries
 
     def setup_rule(self, client, *args, **keyword_args):
