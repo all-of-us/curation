@@ -8,8 +8,7 @@ import os
 # Project imports
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.remove_operational_pii_fields import (
-    RemoveOperationalPiiFields, OPERATIONAL_PII_FIELDS_TABLE,
-    INTERMEDIARY_TABLE)
+    RemoveOperationalPiiFields, OPERATIONAL_PII_FIELDS_TABLE)
 from common import JINJA_ENV, OBSERVATION
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
@@ -56,7 +55,7 @@ class RemoveOperationalPiiFieldsTest(BaseTest.CleaningRulesTestBase):
 
         cls.fq_sandbox_table_names = [
             f'{cls.project_id}.{cls.sandbox_id}.{OPERATIONAL_PII_FIELDS_TABLE}',
-            f'{cls.project_id}.{cls.sandbox_id}.{INTERMEDIARY_TABLE}'
+            f'{cls.project_id}.{cls.sandbox_id}.{cls.rule_instance.sandbox_table_for(OBSERVATION)}'
         ]
 
         super().setUpClass()
@@ -87,7 +86,7 @@ class RemoveOperationalPiiFieldsTest(BaseTest.CleaningRulesTestBase):
             'fq_table_name':
                 f'{self.project_id}.{self.dataset_id}.{OBSERVATION}',
             'fq_sandbox_table_name':
-                f'{self.project_id}.{self.sandbox_id}.{INTERMEDIARY_TABLE}',
+                self.fq_sandbox_table_names[1],
             'loaded_ids': [1, 2, 3, 4, 5, 6],
             'sandboxed_ids': [1, 2, 5, 6],
             'fields': [
