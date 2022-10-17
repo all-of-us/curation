@@ -7,7 +7,7 @@ import cdr_cleaner.cleaning_rules.no_data_30_days_after_death as death
 from cdr_cleaner.cleaning_rules.no_data_30_days_after_death import (
     TEMPORAL_TABLES_WITH_START_DATE, TEMPORAL_TABLES_WITH_END_DATE,
     TEMPORAL_TABLES_WITH_DATE, NoDataAfterDeath,
-    SANDBOX_DEATH_DATE_WITH_END_DATES_QUERY, SANDBOX_DEATH_DATE_QUERY_QUERY,
+    SANDBOX_DEATH_DATE_WITH_END_DATES_QUERY, SANDBOX_DEATH_DATE_QUERY,
     REMOVE_DEATH_DATE_QUERY)
 from constants.bq_utils import WRITE_TRUNCATE
 import constants.cdr_cleaner.clean_cdr as cdr_consts
@@ -66,9 +66,11 @@ class NoDataAfterDeathTest(unittest.TestCase):
 
     def test_get_sandbox_query_for(self):
         actual_query = self.rule_instance.get_sandbox_query_for(PERSON)
-        expected_query = SANDBOX_DEATH_DATE_QUERY_QUERY.render(
+        expected_query = SANDBOX_DEATH_DATE_QUERY.render(
             project=self.project_id,
             dataset=self.dataset_id,
+            sandbox_dataset=self.sandbox_id,
+            sandbox_table=self.rule_instance.sandbox_table_for(PERSON),
             table_name=PERSON,
             date_column=TEMPORAL_TABLES_WITH_DATE[PERSON])
         self.assertEqual(expected_query, actual_query)
@@ -79,6 +81,9 @@ class NoDataAfterDeathTest(unittest.TestCase):
             project=self.project_id,
             dataset=self.dataset_id,
             table_name=VISIT_OCCURRENCE,
+            sandbox_dataset=self.sandbox_id,
+            sandbox_table=self.rule_instance.sandbox_table_for(
+                VISIT_OCCURRENCE),
             start_date=TEMPORAL_TABLES_WITH_START_DATE[VISIT_OCCURRENCE],
             end_date=TEMPORAL_TABLES_WITH_END_DATE[VISIT_OCCURRENCE])
         self.assertEqual(expected_query, actual_query)
@@ -120,24 +125,12 @@ class NoDataAfterDeathTest(unittest.TestCase):
 
         expected_query_dicts = [{
             cdr_consts.QUERY: sandbox_query_1,
-            cdr_consts.DESTINATION_TABLE: sandbox_table_1,
-            cdr_consts.DESTINATION_DATASET: self.sandbox_id,
-            cdr_consts.DISPOSITION: WRITE_TRUNCATE
         }, {
             cdr_consts.QUERY: query_1,
-            cdr_consts.DESTINATION_TABLE: PERSON,
-            cdr_consts.DESTINATION_DATASET: self.dataset_id,
-            cdr_consts.DISPOSITION: WRITE_TRUNCATE
         }, {
             cdr_consts.QUERY: sandbox_query_2,
-            cdr_consts.DESTINATION_TABLE: sandbox_table_2,
-            cdr_consts.DESTINATION_DATASET: self.sandbox_id,
-            cdr_consts.DISPOSITION: WRITE_TRUNCATE
         }, {
             cdr_consts.QUERY: query_2,
-            cdr_consts.DESTINATION_TABLE: VISIT_OCCURRENCE,
-            cdr_consts.DESTINATION_DATASET: self.dataset_id,
-            cdr_consts.DISPOSITION: WRITE_TRUNCATE
         }]
 
         actual_query_dicts = self.rule_instance.get_query_specs()
