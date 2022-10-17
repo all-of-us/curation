@@ -56,15 +56,10 @@ p.procedure_source_concept_id IN (
 DELETE_INVALID_PROCEDURE_SOURCE_CONCEPT_IDS_QUERY = JINJA_ENV.from_string("""
 DELETE 
 FROM 
-  `{{project}}.{{dataset}}.{{table}}` AS p0
-WHERE EXISTS 
-(
-  SELECT 
-    p1.procedure_occurrence_id 
-  FROM 
-    `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` AS p1
-  WHERE 
-    p0.procedure_occurrence_id = p1.procedure_occurrence_id
+  `{{project}}.{{dataset}}.{{table}}`
+WHERE procedure_occurrence_id IN (
+  SELECT DISTINCT procedure_occurrence_id
+  FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}`
 )
 """)
 
