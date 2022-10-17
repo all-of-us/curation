@@ -124,13 +124,13 @@ class NoDataAfterDeathTest(unittest.TestCase):
         mock_get_query_for.side_effect = [query_1, query_2]
 
         expected_query_dicts = [{
-            cdr_consts.QUERY: sandbox_query_1,
+            cdr_consts.QUERY: sandbox_query_1
         }, {
-            cdr_consts.QUERY: query_1,
+            cdr_consts.QUERY: query_1
         }, {
-            cdr_consts.QUERY: sandbox_query_2,
+            cdr_consts.QUERY: sandbox_query_2
         }, {
-            cdr_consts.QUERY: query_2,
+            cdr_consts.QUERY: query_2
         }]
 
         actual_query_dicts = self.rule_instance.get_query_specs()
