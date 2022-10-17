@@ -26,7 +26,6 @@ from typing import Dict
 LOGGER = logging.getLogger(__name__)
 
 OPERATIONAL_PII_FIELDS_TABLE = '_operational_pii_fields'
-INTERMEDIARY_TABLE = 'remove_operational_pii_fields_observation'
 
 JIRA_ISSUE_NUMBERS = ['DC500', 'DC831']
 
@@ -100,18 +99,16 @@ class RemoveOperationalPiiFields(BaseCleaningRule):
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
-                         depends_on=[],
                          table_namer=table_namer)
 
         self.counts_query = COUNTS_QUERY.render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
-            obs_table=OBSERVATION,
             sandbox_dataset_id=self.sandbox_dataset_id,
-            operational_pii_fields_table=OPERATIONAL_PII_FIELDS_TABLE)
+            intermediary_table=self.get_sandbox_tablenames()[0])
 
     def get_sandbox_tablenames(self) -> list:
-        return [self.sandbox_table_for(OBSERVATION)]
+        return [self.sandbox_table_for(table) for table in self.affected_tables]
 
     def setup_rule(self, client: BigQueryClient, *args, **keyword_args) -> None:
         """
@@ -167,7 +164,7 @@ class RemoveOperationalPiiFields(BaseCleaningRule):
             dataset_id=self.dataset_id,
             sandbox_dataset_id=self.sandbox_dataset_id,
             operational_pii_fields_table=OPERATIONAL_PII_FIELDS_TABLE,
-            intermediary_table=INTERMEDIARY_TABLE)
+            intermediary_table=self.get_sandbox_tablenames()[0])
         queries_list.append(sandbox_query)
 
         delete_query = dict()
@@ -175,7 +172,7 @@ class RemoveOperationalPiiFields(BaseCleaningRule):
             project_id=self.project_id,
             dataset_id=self.dataset_id,
             sandbox_dataset_id=self.sandbox_dataset_id,
-            intermediary_table=INTERMEDIARY_TABLE)
+            intermediary_table=self.get_sandbox_tablenames()[0])
         queries_list.append(delete_query)
 
         return queries_list
@@ -184,9 +181,9 @@ class RemoveOperationalPiiFields(BaseCleaningRule):
         """
         Run required steps for validation setup
         """
-        self.init_counts = self._get_counts(client)
+        init_counts = self._get_counts(client)
 
-        if self.init_counts.get('total_count') == 0:
+        if init_counts.get('total_count') == 0:
             raise RuntimeError('NO DATA TO REMOVE IN OBSERVATION TABLE ')
 
     def validate_rule(self, client: BigQueryClient) -> None:
