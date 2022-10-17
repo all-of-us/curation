@@ -333,9 +333,12 @@ verify_dataset_labels(client.get_dataset(DATASET_ID))
 # EHR submissions may provide source `concept_id`s which we assume would be
 # successfully mapped to standard `concept_id`s. This compares the frequency
 # of invalid values in required concept_id fields per hpo between the current
-# combined dataset and a baseline combined dataset. The frequency of invalid
+# raw combined dataset and a baseline raw combined dataset. The frequency of invalid
 # values in this dataset should generally be non-increasing compared to baseline.
 # If the prevalence of invalid concepts is increasing, EHR Ops should be alerted.
+#
+# NOTE: This check uses the raw combined datasets(combined_backup) as the invalid rows
+# are removed during the cleaning process. See MissingConceptRecordSuppression
 
 tpl = JINJA_ENV.from_string('''
 -- Construct a table that summarizes all rows in all tables --
@@ -365,15 +368,15 @@ DECLARE query DEFAULT (
      || 'FROM `' || table_schema || '.' || table_name || '` t'
      || ' JOIN `' || table_schema || '.' || '_mapping_' || table_name || '` m'
      || '  USING (' || c.table_name || '_id) '
-     || ' LEFT JOIN `{{DATASET_ID}}.concept` c '
+     || ' LEFT JOIN `{{DATASET_ID}}_backup.concept` c '
      || '  ON ' || column_name || ' = c.concept_id '
      
      -- invalid concept_id --
      || 'WHERE c.concept_id IS NULL '
      || 'GROUP BY 1, 2, 3, 4',
            ' UNION ALL ')
-FROM `{{DATASET_ID}}.INFORMATION_SCHEMA.COLUMNS` c
-JOIN `{{DATASET_ID}}.__TABLES__` t
+FROM `{{DATASET_ID}}_backup.INFORMATION_SCHEMA.COLUMNS` c
+JOIN `{{DATASET_ID}}_backup.__TABLES__` t
  ON c.table_name = t.table_id
 WHERE 1=1
   -- the table has data --
@@ -381,7 +384,7 @@ WHERE 1=1
   -- there is an associated mapping table --
   AND EXISTS (
        SELECT 1 
-       FROM `{{DATASET_ID}}.INFORMATION_SCHEMA.COLUMNS` 
+       FROM `{{DATASET_ID}}_backup.INFORMATION_SCHEMA.COLUMNS` 
       WHERE table_name = '_mapping_' || c.table_name
         AND column_name = c.table_name || '_id'
   )
@@ -399,6 +402,8 @@ query = tpl.render(DATASET_ID=BASELINE_DATASET_ID)
 execute(client, query)
 
 query = f'''
+-- The results are invalid concepts that had increased usage since the baseline dataset. --
+-- Inform EHR OPS of these results. --
 WITH 
  baseline AS
  (SELECT * FROM `{BASELINE_DATASET_ID}_sandbox.invalid_concept`)
@@ -409,11 +414,14 @@ SELECT
 ,column_name
 ,src_hpo_id
 ,concept_id
-,baseline.row_count        AS _{BASELINE_DATASET_ID}
-,latest.row_count          AS _{DATASET_ID}
+,baseline.row_count                       AS _{BASELINE_DATASET_ID}
+,latest.row_count                         AS _{DATASET_ID}
+,latest.row_count - baseline.row_count    AS diff
 FROM baseline
 FULL OUTER JOIN latest
  USING (table_name, column_name, src_hpo_id, concept_id)
-ORDER BY ABS(latest.row_count - baseline.row_count) DESC
+GROUP BY 1,2,3,4,5,6
+HAVING latest.row_count - baseline.row_count > 0
+ORDER BY diff DESC
 '''
 execute(client, query)
