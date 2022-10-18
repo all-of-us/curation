@@ -34,54 +34,54 @@ FROM `{{project_id}}.{{dataset_id}}.measurement` m
 WHERE
     (
     EXISTS (
-    --subquery to select associated bmi records
+    --subquery to select associated bmi records --
     WITH outbound_heights AS (
     SELECT person_id, measurement_datetime
     FROM `{{project_id}}.{{dataset_id}}.measurement`
     WHERE measurement_source_concept_id = 903133
     AND value_as_number NOT BETWEEN 90 AND 228
     )
-    --drop BMI row associated with PID where height is out of bounds
+    --drop BMI row associated with PID where height is out of bounds --
     (SELECT person_id FROM outbound_heights
     WHERE m.measurement_source_concept_id = 903124
     AND m.measurement_datetime = outbound_heights.measurement_datetime)
     )
-    --drop all height records out of bounds
+    --drop all height records out of bounds --
     OR (m.measurement_source_concept_id = 903133
     AND value_as_number NOT BETWEEN 90 AND 228)
 ) OR (
     EXISTS (
-    --subquery to select associated bmi records
+    --subquery to select associated bmi records --
     WITH outbound_weights AS (
     SELECT person_id, measurement_datetime
     FROM `{{project_id}}.{{dataset_id}}.measurement`
     WHERE measurement_source_concept_id = 903121
     AND value_as_number NOT BETWEEN 30 AND 250
     )
-    --drop BMI row associated with PID where height is out of bounds
+    --drop BMI row associated with PID where height is out of bounds --
     (SELECT person_id FROM outbound_weights
     WHERE m.measurement_source_concept_id = 903124
     AND m.measurement_datetime = outbound_weights.measurement_datetime)
     )
-    --drop all height records out of bounds
+    --drop all height records out of bounds --
     OR (m.measurement_source_concept_id = 903121
     AND value_as_number NOT BETWEEN 30 AND 250)
     )
   OR (
     EXISTS (
-    --subquery to select associated height and weight records
+    --subquery to select associated height and weight records --
     WITH outbound_bmi AS (
     SELECT person_id, measurement_datetime
     FROM `{{project_id}}.{{dataset_id}}.measurement`
     WHERE measurement_source_concept_id = 903124
     AND value_as_number NOT BETWEEN 10 AND 125
     )
-    --drop height & weight rows associated with PID where bmi is out of bounds
+    --drop height & weight rows associated with PID where bmi is out of bounds --
     (SELECT person_id FROM outbound_bmi
     WHERE m.measurement_source_concept_id IN(903133, 903121)
     AND m.measurement_datetime = outbound_bmi.measurement_datetime)
     )
-    --drop all bmi records out of bounds
+    --drop all bmi records out of bounds --
     OR (m.measurement_source_concept_id = 903124
     AND value_as_number NOT BETWEEN 10 AND 125)    
     )
@@ -91,19 +91,19 @@ DELETE_HEIGHT_ROWS_QUERY = JINJA_ENV.from_string("""
 DELETE FROM `{{project_id}}.{{dataset_id}}.measurement` m
 WHERE 
   EXISTS (
-  --subquery to select associated bmi records
+  --subquery to select associated bmi records --
   WITH outbound_heights AS (
   SELECT person_id, measurement_datetime
   FROM `{{project_id}}.{{dataset_id}}.measurement`
   WHERE measurement_source_concept_id = 903133
   AND value_as_number NOT BETWEEN 90 AND 228
   )
---drop BMI row associated with PID where height is out of bounds
+--drop BMI row associated with PID where height is out of bounds --
 (SELECT person_id FROM outbound_heights
 WHERE m.measurement_source_concept_id = 903124
 AND m.measurement_datetime = outbound_heights.measurement_datetime)
 )
---drop all height records out of bounds
+--drop all height records out of bounds --
 OR (m.measurement_source_concept_id = 903133
 AND value_as_number NOT BETWEEN 90 AND 228)
 """)
@@ -118,12 +118,12 @@ WHERE EXISTS (
   WHERE measurement_source_concept_id = 903121
   AND value_as_number NOT BETWEEN 30 AND 250
   )
---drop BMI row associated with PID where height is out of bounds
+--drop BMI row associated with PID where height is out of bounds --
 (SELECT person_id FROM outbound_weights
 WHERE m.measurement_source_concept_id = 903124
 AND m.measurement_datetime = outbound_weights.measurement_datetime)
 )
---drop all height records out of bounds
+--drop all height records out of bounds --
 OR (m.measurement_source_concept_id = 903121
 AND value_as_number NOT BETWEEN 30 AND 250)
 
