@@ -133,19 +133,19 @@ DELETE_BMI_ROWS_QUERY = JINJA_ENV.from_string("""
 DELETE FROM `{{project_id}}.{{dataset_id}}.measurement` m
 WHERE 
   EXISTS (
-  --subquery to select associated height and weight records
+  --subquery to select associated height and weight records --
   WITH outbound_bmi AS (
   SELECT person_id, measurement_datetime
   FROM `{{project_id}}.{{dataset_id}}.measurement`
   WHERE measurement_source_concept_id = 903124
   AND value_as_number NOT BETWEEN 10 AND 125
   )
---drop height & weight rows associated with PID where bmi is out of bounds
+--drop height & weight rows associated with PID where bmi is out of bounds --
 (SELECT person_id FROM outbound_bmi
 WHERE m.measurement_source_concept_id IN(903133, 903121)
 AND m.measurement_datetime = outbound_bmi.measurement_datetime)
 )
---drop all bmi records out of bounds
+--drop all bmi records out of bounds --
 OR (m.measurement_source_concept_id = 903124
 AND value_as_number NOT BETWEEN 10 AND 125)
 """)
