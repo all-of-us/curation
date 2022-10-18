@@ -16,7 +16,7 @@ dose_era,person_id,INT64,dose_era_id,_deid_map,research_id,DC-1346
 survey_conduct,person_id,INT64,survey_conduct_id,_deid_map,research_id,DC-1346
 observation,questionnaire_response_id,INT64,observation_id,_deid_questionnaire_response_map,research_response_id,DC-1348
 survey_conduct,survey_conduct_id,INT64,survey_conduct_id,_deid_questionnaire_response_map,research_response_id,DC-1348
-survey_conduct,survey_source_identifier,INT64,survey_conduct_id,_deid_questionnaire_response_map,research_response_id,DC-1348
+survey_conduct,survey_source_identifier,STRING,survey_conduct_id,_deid_questionnaire_response_map,research_response_id,DC-1348
 observation,value_as_string,STRING,observation_id,_zip_map,,DC-1377
 care_site_ext,src_id,STRING,care_site_id,site_maskings,src_id,DC-1355
 visit_occurrence_ext,src_id,STRING,visit_occurrence_id,site_maskings,src_id,DC-1355

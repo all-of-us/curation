@@ -19,7 +19,7 @@ LOGGER = logging.getLogger(__name__)
 UPDATE_SURVEY_CONDUCT_EXT_QUERY = JINJA_ENV.from_string("""
 UPDATE `{{project_id}}.{{dataset_id}}.survey_conduct_ext` AS sce
 SET language = qrai.value
-FROM `{{project_id}}.{{dataset_id}}.questionnaire_response_additional_info` AS qrai
+FROM `{{project_id}}.{{additional_info_dataset}}.questionnaire_response_additional_info` AS qrai
 WHERE sce.survey_conduct_id = qrai.questionnaire_response_id
 AND UPPER(qrai.type) = 'LANGUAGE'
 """)
@@ -34,6 +34,7 @@ class PopulateSurveyConductExt(BaseCleaningRule):
                  project_id,
                  dataset_id,
                  sandbox_dataset_id,
+                 additional_info_dataset=None,
                  table_namer=None):
         """
         Initialize the class with proper information.
@@ -56,12 +57,16 @@ class PopulateSurveyConductExt(BaseCleaningRule):
                          depends_on=[GenerateExtTables, COPESurveyVersionTask],
                          table_namer=table_namer)
 
+        self.additional_info_dataset = additional_info_dataset
+
     def get_query_specs(self):
         """
         Return a list of dictionary query specifications.
         """
         update_query = UPDATE_SURVEY_CONDUCT_EXT_QUERY.render(
-            project_id=self.project_id, dataset_id=self.dataset_id)
+            project_id=self.project_id,
+            dataset_id=self.dataset_id,
+            additional_info_dataset=self.additional_info_dataset)
 
         update_query_dict = {cdr_consts.QUERY: update_query}
 
@@ -93,18 +98,34 @@ if __name__ == '__main__':
     import cdr_cleaner.args_parser as parser
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
-    ARGS = parser.parse_args()
+    ap = parser.get_argument_parser()
+    ap.add_argument(
+        '--additional_info_dataset',
+        action='store',
+        dest='additional_info_dataset',
+        help=
+        ('Dataset containing the mapping table provided by RDR team.  '
+         'These have additional info like language to questionnaire_response_id.'
+        ),
+        required=True)
+
+    ARGS = ap.parse_args()
+
+    clean_engine.add_console_logging(ARGS.console_log)
 
     if ARGS.list_queries:
         clean_engine.add_console_logging()
-        query_list = clean_engine.get_query_list(ARGS.project_id,
-                                                 ARGS.dataset_id,
-                                                 ARGS.sandbox_dataset_id,
-                                                 [(PopulateSurveyConductExt,)])
+        query_list = clean_engine.get_query_list(
+            ARGS.project_id,
+            ARGS.dataset_id,
+            ARGS.sandbox_dataset_id, [(PopulateSurveyConductExt,)],
+            additional_info_dataset=ARGS.additional_info_dataset)
         for query in query_list:
             LOGGER.info(query)
     else:
         clean_engine.add_console_logging(ARGS.console_log)
-        clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
-                                   ARGS.sandbox_dataset_id,
-                                   [(PopulateSurveyConductExt,)])
+        clean_engine.clean_dataset(
+            ARGS.project_id,
+            ARGS.dataset_id,
+            ARGS.sandbox_dataset_id, [(PopulateSurveyConductExt,)],
+            additional_info_dataset=ARGS.additional_info_dataset)
