@@ -19,7 +19,6 @@ import resources
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
 from common import JINJA_ENV, OBSERVATION
-from typing import Dict
 
 LOGGER = logging.getLogger(__name__)
 
@@ -192,7 +191,7 @@ class RemoveOperationalPiiFields(BaseCleaningRule):
                 f'{self.__class__.__name__} did not clean as expected.\n'
                 f'Found data in: {clean_counts}')
 
-    def _get_counts(self, client: BigQueryClient) -> Dict[str, int]:
+    def _get_counts(self, client: BigQueryClient) -> dict:
         """
         Counts query, used for job validation.
         """
