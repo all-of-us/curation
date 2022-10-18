@@ -14,6 +14,7 @@ Usage: deid_runner.sh
   --dataset_release_tag <release tag for the CDR>
   --cope_lookup_dataset_id <dataset where RDR provided cope survey mapping table is loaded>
   --cope_table_name <name of the cope survey mapping table>
+  --additional_info_dataset <dataset where rdr provided questionnaire_response_additional_info table>
   --deid_max_age <integer maximum age for de-identified participants>
 "
 
@@ -37,6 +38,10 @@ while true; do
     ;;
   --deid_questionnaire_response_map_dataset)
     deid_questionnaire_response_map_dataset=$2
+    shift 2
+    ;;
+  --additional_info_dataset)
+    additional_info_dataset=$2
     shift 2
     ;;
   --vocab_dataset)
@@ -70,7 +75,7 @@ done
 if [[ -z "${key_file}" ]] || [[ -z "${cdr_id}" ]] || [[ -z "${run_as}" ]] || [[ -z "${pmi_email}" ]] || \
    [[ -z "${deid_questionnaire_response_map_dataset}" ]] || [[ -z "${vocab_dataset}" ]] || \
    [[ -z "${dataset_release_tag}" ]] || [[ -z "${cope_lookup_dataset_id}" ]] || \
-   [[ -z "${cope_table_name}" ]] || [[ -z "${deid_max_age}" ]]; then
+   [[ -z "${cope_table_name}" ]] || [[ -z "${additional_info_dataset}" ]] || [[ -z "${deid_max_age}" ]]; then
   echo "${USAGE}"
   exit 1
 fi
@@ -124,7 +129,12 @@ unset GOOGLE_APPLICATION_CREDENTIALS
 gcloud config set account "${pmi_email}"
 
 # apply de-identification rules on registered tier dataset 
-python "${CLEANER_DIR}/clean_cdr.py" --project_id "${APP_ID}" --dataset_id "${registered_cdr_deid}" --run_as "${run_as}" --sandbox_dataset_id "${registered_cdr_deid_sandbox}" --data_stage ${data_stage} --mapping_dataset_id "${cdr_id}"  --cope_lookup_dataset_id "${cope_lookup_dataset_id}" --cope_table_name "${cope_table_name}" --deid_questionnaire_response_map_dataset "${deid_questionnaire_response_map_dataset}" -s 2>&1 | tee registered_tier_cleaning_log.txt
+python "${CLEANER_DIR}/clean_cdr.py" --project_id "${APP_ID}" \
+--dataset_id "${registered_cdr_deid}" --run_as "${run_as}" --sandbox_dataset_id "${registered_cdr_deid_sandbox}" \
+--data_stage ${data_stage} --mapping_dataset_id "${cdr_id}"  --cope_lookup_dataset_id "${cope_lookup_dataset_id}" \
+--cope_table_name "${cope_table_name}" --additional_info_dataset "${additional_info_dataset}" \
+--deid_questionnaire_response_map_dataset "${deid_questionnaire_response_map_dataset}" -s 2>&1 | \
+tee registered_tier_cleaning_log.txt
 
 # Add GOOGLE_APPLICATION_CREDENTIALS environment variable
 export GOOGLE_APPLICATION_CREDENTIALS="${key_file}"
