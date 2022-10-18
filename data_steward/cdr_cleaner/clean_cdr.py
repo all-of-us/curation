@@ -181,7 +181,7 @@ RDR_CLEANING_CLASSES = [
     (
         DropPpiDuplicateResponses,),
     (DropCopeDuplicateResponses,),
-    (RemoveOperationalPiiFields),
+    (RemoveOperationalPiiFields,),
     (RoundPpiValuesToNearestInteger,),
     (UpdateFamilyHistoryCodes,),
     (ConvertPrePostCoordinatedConcepts,),
