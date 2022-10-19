@@ -1,275 +1,192 @@
 """
-Using the drug_concept_id, one can infer the values to populate the route concept ID field
-pseudoephedrine hydrochloride 7.5 MG Chewable Tablet (OMOP: 43012486) would have route as oral
-This cleaning rule populates null and wrong route_concept_ids based on the drug_concept_id
+Using the drug_concept_id, one can infer the values to populate the route concept ID field.
+For example, pseudoephedrine hydrochloride 7.5 MG Chewable Tablet (OMOP: 43012486) would have route as oral.
+This cleaning rule populates the correct route_concept_ids based on the drug_concept_id.
+
+Original Issues: DC-405, DC-817
 """
+
+# Python imports
 import logging
 import os
 
-import bq_utils
-import common
+# Project imports
+from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
+from common import DRUG_EXPOSURE, JINJA_ENV
 import resources
-from constants import bq_utils as bq_consts
+from constants.bq_utils import WRITE_EMPTY
 from constants.cdr_cleaner import clean_cdr as cdr_consts
+from utils import pipeline_logging
 
 LOGGER = logging.getLogger(__name__)
 
-DOSE_FORM_ROUTES_FILE = "dose_form_route_mappings"
-DOSE_FORM_ROUTES_TABLE_ID = "_logging_dose_form_route_mappings"
-DRUG_ROUTES_TABLE_ID = "_logging_drug_route_mappings"
-
-DOSE_FORM_ROUTE_FIELDS = [{
-    "type": "integer",
-    "name": "dose_form_concept_id",
-    "mode": "required",
-    "description": "The dose_form_concept_id of the dose form."
-}, {
-    "type":
-        "integer",
-    "name":
-        "route_concept_id",
-    "mode":
-        "required",
-    "description":
-        "The route_concept_id indicating the typical route used for administering the drug."
-}]
-
-DRUG_ROUTE_FIELDS = [{
-    "type": "integer",
-    "name": "drug_concept_id",
-    "mode": "required",
-    "description": "The drug_concept_id of the drug."
-}, {
-    "type":
-        "integer",
-    "name":
-        "route_concept_id",
-    "mode":
-        "required",
-    "description":
-        "The route_concept_id indicating the typical route used for administering the drug."
-}]
-
-INSERT_ROUTES_QUERY = """
-INSERT INTO `{project_id}.{dataset_id}.{routes_table_id}` (dose_form_concept_id, route_concept_id)
-VALUES {mapping_list}
-"""
+DOSE_FORM_ROUTE_MAPPING_FILE = "dose_form_route_mappings.csv"
+DOSE_FORM_ROUTE_MAPPING_TABLE = "_dose_form_route_mapping"
+DRUG_ROUTE_MAPPING_TABLE = "_drug_route_mapping"
 
 # If a drug maps to multiple dose forms, this can potentially create duplicate records in drug_exposure table
 # We include only those drugs that map to different dose forms which in turn map to the same route
 # We exclude drugs that map to different dose forms which in turn map to the different routes
 # However, even with the following checks it is to be noted that there is potential
 # for spurious duplicate records with different route_concept_ids to be created at this step and they must be removed
-GET_DRUGS_FROM_DOSE_FORM = """
-WITH drug_concept AS
-(SELECT *
-FROM `{project_id}.{vocabulary_dataset}.concept`
-WHERE domain_id = 'Drug'),
- 
-drug_dose_form AS
-(SELECT *
-FROM drug_concept dc 
-JOIN `{project_id}.{vocabulary_dataset}.concept_relationship` cr 
-ON dc.concept_id = cr.concept_id_1
-WHERE cr.relationship_id = 'RxNorm has dose form'),
+CREATE_DRUG_ROUTE_MAPPING = JINJA_ENV.from_string("""
+CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{drug_route_mapping_table}}` AS (
+    WITH drug_concept AS
+    (
+        SELECT concept_id FROM `{{project_id}}.{{dataset_id}}.concept` WHERE domain_id = 'Drug'
+    ),
+    drug_dose_form AS
+    (
+        SELECT 
+            cr.concept_id_1, 
+            cr.concept_id_2
+        FROM drug_concept dc 
+        JOIN `{{project_id}}.{{dataset_id}}.concept_relationship` cr 
+        ON dc.concept_id = cr.concept_id_1
+        WHERE cr.relationship_id = 'RxNorm has dose form'
+    ),
+    drug_route AS
+    (
+        SELECT DISTINCT 
+            ddf.concept_id_1 AS drug_concept_id, 
+            rm.route_concept_id
+        FROM drug_dose_form ddf
+        LEFT JOIN `{{project_id}}.{{sandbox_dataset_id}}.{{dose_form_route_mapping_table}}` rm
+        ON ddf.concept_id_2 = rm.dose_form_concept_id
+        WHERE rm.route_concept_id IS NOT NULL
+    ),
+    drug_route_single AS
+    (
+        SELECT 
+            drug_concept_id, 
+            COUNT(1) n 
+        FROM drug_route 
+        GROUP BY drug_concept_id
+        HAVING n = 1
+    )
+    SELECT 
+        drug_concept_id, 
+        route_concept_id 
+    FROM drug_route dr
+    WHERE EXISTS
+    (
+        SELECT 1 FROM drug_route_single drs WHERE dr.drug_concept_id = drs.drug_concept_id
+    )
+)
+""")
 
-drug_route AS
-(SELECT DISTINCT 
-  ddf.concept_id_1 drug_concept_id, 
-  {route_mapping_prefix}.route_concept_id 
-FROM drug_dose_form ddf
-LEFT JOIN `{project_id}.{route_mapping_dataset_id}.{dose_form_route_mapping_table}` {route_mapping_prefix}
-ON ddf.concept_id_2 = {route_mapping_prefix}.dose_form_concept_id
-WHERE {route_mapping_prefix}.route_concept_id IS NOT NULL),
+SANDBOX_QUERY = JINJA_ENV.from_string("""
+CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table_id}}` AS (
+    SELECT de.* 
+    FROM `{{project_id}}.{{dataset_id}}.{{table_id}}` de
+    LEFT JOIN `{{project_id}}.{{sandbox_dataset_id}}.{{drug_route_mapping_table}}` rm
+    ON de.drug_concept_id = rm.drug_concept_id
+    WHERE de.route_concept_id != rm.route_concept_id
+    OR de.route_concept_id IS NULL
+)
+""")
 
-drug_route_single AS
-(SELECT
-  drug_concept_id,
-  COUNT(1) n
-FROM drug_route 
-GROUP BY drug_concept_id
-HAVING n = 1)
-
-SELECT
- drug_concept_id,
- route_concept_id
-FROM drug_route dr
-WHERE EXISTS
-(SELECT 1 
-FROM drug_route_single drs 
-WHERE dr.drug_concept_id = drs.drug_concept_id)
-"""
-
-FILL_ROUTE_ID_QUERY = """
-SELECT {cols}
-FROM `{project_id}.{dataset_id}.{drug_exposure_table}` {drug_exposure_prefix}
-LEFT JOIN `{project_id}.{route_mapping_dataset_id}.{drug_route_mapping_table}` {route_mapping_prefix}
-ON {drug_exposure_prefix}.drug_concept_id = {route_mapping_prefix}.drug_concept_id
-"""
-
-DRUG_EXPOSURE_ALIAS = "de"
-ROUTE_MAPPING_ALIAS = "rm"
-
-
-def get_mapping_list(route_mappings_list):
-    """
-    Filters out name columns from route_mappings.csv file and returns list of mappings suitable for BQ
-
-    :param route_mappings_list:
-    :return: formatted list suitable for insert in BQ:
-            (dose_form_concept_id1, route_concept_id1), (dose_form_concept_id1, route_concept_id1)
-    """
-    pair_exprs = []
-    for route_mapping_dict in route_mappings_list:
-        pair_expr = '({dose_form_concept_id}, {route_concept_id})'.format(
-            **route_mapping_dict)
-        pair_exprs.append(pair_expr)
-    formatted_mapping_list = ', '.join(pair_exprs)
-    return formatted_mapping_list
-
-
-def create_dose_form_route_mappings_table(project_id, dataset_id=None):
-    """
-    Creates "_logging_dose_form_route_mappings" table with only id columns from resource_files/dose_form_route_mappings.csv
-
-    :param project_id:
-    :param dataset_id: BQ dataset_id
-    :return: upload metadata for created table
-    """
-    if dataset_id is None:
-        # Using table created in bq_dataset instead of re-creating in every dataset
-        dataset_id = bq_utils.get_dataset_id()
-
-    dose_form_routes_table_id = DOSE_FORM_ROUTES_TABLE_ID
-
-    LOGGER.info(f"Creating {dataset_id}.{DOSE_FORM_ROUTES_TABLE_ID}")
-
-    # create empty table
-    bq_utils.create_table(DOSE_FORM_ROUTES_TABLE_ID,
-                          DOSE_FORM_ROUTE_FIELDS,
-                          drop_existing=True,
-                          dataset_id=dataset_id)
-
-    dose_form_route_mappings_csv = os.path.join(resources.resource_files_path,
-                                                DOSE_FORM_ROUTES_FILE + ".csv")
-    dose_form_route_mappings_list = resources.csv_to_list(
-        dose_form_route_mappings_csv)
-    dose_form_routes_populate_query = INSERT_ROUTES_QUERY.format(
-        dataset_id=dataset_id,
-        project_id=project_id,
-        routes_table_id=DOSE_FORM_ROUTES_TABLE_ID,
-        mapping_list=get_mapping_list(dose_form_route_mappings_list))
-    result = bq_utils.query(dose_form_routes_populate_query)
-    LOGGER.info(f"Created {dataset_id}.{dose_form_routes_table_id}")
-    return result
+UPDATE_QUERY = JINJA_ENV.from_string("""
+UPDATE `{{project_id}}.{{dataset_id}}.{{table_id}}` de
+SET route_concept_id = rm.route_concept_id
+FROM `{{project_id}}.{{sandbox_dataset_id}}.{{drug_route_mapping_table}}` rm
+WHERE de.drug_concept_id = rm.drug_concept_id
+AND de.drug_exposure_id IN (
+    SELECT drug_exposure_id FROM `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table_id}}`
+)
+""")
 
 
-def create_drug_route_mappings_table(project_id, route_mapping_dataset_id,
-                                     dose_form_routes_table_id,
-                                     route_mapping_prefix):
-    """
-    Creates "drug_route_mappings" table using the query GET_DRUGS_FROM_DOSE_FORM
-    
-    :param project_id: the project containing the routes dataset
-    :param route_mapping_dataset_id: dataset where the dose_form_route mapping table exists
-            and where the drug_route mapping table will be created
-    :param dose_form_routes_table_id: table_id of the dose_form_routes mapping table
-    :param route_mapping_prefix: prefix for the dose_form_routes_mapping_table
-    :return: upload metadata and created drug_route_table_id
-    """
-    if route_mapping_dataset_id is None:
-        # Using table created in bq_dataset instead of re-creating in every dataset
-        route_mapping_dataset_id = bq_utils.get_dataset_id()
+class PopulateRouteIds(BaseCleaningRule):
 
-    LOGGER.info(f"Creating {route_mapping_dataset_id}.{DRUG_ROUTES_TABLE_ID}")
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 table_namer=None):
+        """
+        Initialize the class with proper information.
+        """
+        desc = ('Update route_concept_id to correct values.')
+        super().__init__(issue_numbers=['DC405', 'DC817'],
+                         description=desc,
+                         affected_datasets=[cdr_consts.COMBINED],
+                         affected_tables=[DRUG_EXPOSURE],
+                         project_id=project_id,
+                         dataset_id=dataset_id,
+                         sandbox_dataset_id=sandbox_dataset_id,
+                         table_namer=table_namer)
 
-    # create empty table
-    bq_utils.create_table(DRUG_ROUTES_TABLE_ID,
-                          DRUG_ROUTE_FIELDS,
-                          drop_existing=True,
-                          dataset_id=route_mapping_dataset_id)
+    def setup_rule(self, client):
+        """
+        Create mapping tables for dose_form - route and drug - route.
+        """
 
-    drug_routes_populate_query = GET_DRUGS_FROM_DOSE_FORM.format(
-        project_id=project_id,
-        vocabulary_dataset=common.VOCABULARY_DATASET,
-        route_mapping_dataset_id=route_mapping_dataset_id,
-        dose_form_route_mapping_table=dose_form_routes_table_id,
-        route_mapping_prefix=route_mapping_prefix)
-    result = bq_utils.query(q=drug_routes_populate_query,
-                            write_disposition='WRITE_TRUNCATE',
-                            destination_dataset_id=route_mapping_dataset_id,
-                            destination_table_id=DRUG_ROUTES_TABLE_ID,
-                            batch=True)
-    incomplete_jobs = bq_utils.wait_on_jobs([result['jobReference']['jobId']])
-    if incomplete_jobs:
-        LOGGER.info('Failed job id {id}'.format(id=incomplete_jobs[0]))
-        raise bq_utils.BigQueryJobWaitError(incomplete_jobs)
-    LOGGER.info(f"Created {route_mapping_dataset_id}.{DRUG_ROUTES_TABLE_ID}")
-    return result
+        # Create the mapping table for dose_form & route
+        client.upload_csv_data_to_bq_table(
+            self.sandbox_dataset_id, DOSE_FORM_ROUTE_MAPPING_TABLE,
+            os.path.join(resources.resource_files_path,
+                         DOSE_FORM_ROUTE_MAPPING_FILE), WRITE_EMPTY)
 
+        # Create the mapping table for drug & route
+        create_mapping_table = CREATE_DRUG_ROUTE_MAPPING.render(
+            project_id=self.project_id,
+            dataset_id=self.dataset_id,
+            sandbox_dataset_id=self.sandbox_dataset_id,
+            drug_route_mapping_table=DRUG_ROUTE_MAPPING_TABLE,
+            dose_form_route_mapping_table=DOSE_FORM_ROUTE_MAPPING_TABLE)
+        job = client.query(create_mapping_table)
+        job.result()
 
-def get_col_exprs():
-    """
-    Get the expressions used to populate drug_exposure
+    def setup_validation(self, client, *args, **keyword_args):
+        """
+        Run required steps for validation setup
+        """
+        raise NotImplementedError("Please fix me.")
 
-    :return: List of strings
-    """
-    fields = resources.fields_for(common.DRUG_EXPOSURE)
-    route_field = "route_concept_id"
-    col_exprs = []
-    for field in fields:
-        # by default we set to prefix for drug exposure
-        col_expr = DRUG_EXPOSURE_ALIAS + '.' + field["name"]
-        if field["name"] == route_field:
-            # COALESCE(rm.route_concept_id, de.route_concept_id)
-            col_expr = "COALESCE(%s, %s) AS route_concept_id" % (
-                ROUTE_MAPPING_ALIAS + '.' + field["name"],
-                DRUG_EXPOSURE_ALIAS + '.' + field["name"])
-        col_exprs.append(col_expr)
-    return col_exprs
+    def validate_rule(self, client, *args, **keyword_args):
+        """
+        Validates the cleaning rule which deletes or updates the data from the tables
+        """
+        raise NotImplementedError("Please fix me.")
 
+    def get_sandbox_tablenames(self):
+        return [
+            self.sandbox_table_for(affected_table)
+            for affected_table in self.affected_tables
+        ]
 
-def get_route_mapping_queries(project_id,
-                              dataset_id,
-                              sandbox_dataset_id=None,
-                              route_mapping_dataset_id=None):
-    """
-    Generates queries to populate route_concept_ids correctly
+    def get_query_specs(self):
+        """
+        Return a list of dictionary query specifications.
+        :return:  A list of dictionaries. Each dictionary contains a single query
+            and a specification for how to execute that query. The specifications
+            are optional but the query is required.
+        """
 
-    :param project_id: the project containing the dataset
-    :param dataset_id: dataset containing the OMOP clinical data
-    :param sandbox_dataset_id: Identifies the sandbox dataset to store rows 
-    #TODO use sandbox_dataset_id for CR
-    :param route_mapping_dataset_id: dataset containing the dose_form-route lookup table
-    :return:
-    """
-    queries = []
-    if route_mapping_dataset_id is None:
-        route_mapping_dataset_id = bq_utils.get_dataset_id()
-    result = create_dose_form_route_mappings_table(project_id,
-                                                   route_mapping_dataset_id)
-    table = common.DRUG_EXPOSURE
-    col_exprs = get_col_exprs()
-    result = create_drug_route_mappings_table(project_id,
-                                              route_mapping_dataset_id,
-                                              DOSE_FORM_ROUTES_TABLE_ID,
-                                              ROUTE_MAPPING_ALIAS)
-    cols = ', '.join(col_exprs)
-    query = dict()
-    query[cdr_consts.QUERY] = FILL_ROUTE_ID_QUERY.format(
-        project_id=project_id,
-        dataset_id=dataset_id,
-        drug_exposure_table=table,
-        route_mapping_dataset_id=route_mapping_dataset_id,
-        drug_route_mapping_table=DRUG_ROUTES_TABLE_ID,
-        cols=cols,
-        drug_exposure_prefix=DRUG_EXPOSURE_ALIAS,
-        route_mapping_prefix=ROUTE_MAPPING_ALIAS)
-    query[cdr_consts.DESTINATION_TABLE] = table
-    query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
-    query[cdr_consts.DESTINATION_DATASET] = dataset_id
-    queries.append(query)
-    return queries
+        sandbox_query = {
+            cdr_consts.QUERY:
+                SANDBOX_QUERY.render(
+                    project_id=self.project_id,
+                    sandbox_dataset_id=self.sandbox_dataset_id,
+                    sandbox_table_id=self.sandbox_table_for(DRUG_EXPOSURE),
+                    dataset_id=self.dataset_id,
+                    table_id=DRUG_EXPOSURE,
+                    drug_route_mapping_table=DRUG_ROUTE_MAPPING_TABLE)
+        }
+
+        update_query = {
+            cdr_consts.QUERY:
+                UPDATE_QUERY.render(
+                    project_id=self.project_id,
+                    sandbox_dataset_id=self.sandbox_dataset_id,
+                    sandbox_table_id=self.sandbox_table_for(DRUG_EXPOSURE),
+                    dataset_id=self.dataset_id,
+                    table_id=DRUG_EXPOSURE,
+                    drug_route_mapping_table=DRUG_ROUTE_MAPPING_TABLE)
+        }
+
+        return [sandbox_query, update_query]
 
 
 if __name__ == '__main__':
@@ -277,17 +194,19 @@ if __name__ == '__main__':
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
     ARGS = parser.parse_args()
+    pipeline_logging.configure(level=logging.DEBUG, add_console_handler=True)
 
     if ARGS.list_queries:
         clean_engine.add_console_logging()
         query_list = clean_engine.get_query_list(ARGS.project_id,
                                                  ARGS.dataset_id,
                                                  ARGS.sandbox_dataset_id,
-                                                 [(get_route_mapping_queries,)])
+                                                 [(PopulateRouteIds,)])
+
         for query in query_list:
             LOGGER.info(query)
     else:
         clean_engine.add_console_logging(ARGS.console_log)
         clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
                                    ARGS.sandbox_dataset_id,
-                                   [(get_route_mapping_queries,)])
+                                   [(PopulateRouteIds,)])

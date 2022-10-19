@@ -1,18 +1,20 @@
-# Python imports
-import time
-import unittest
-from unittest import mock
+"""
+Integration test for PopulateRouteIds module.
+
+Original Issues: DC-405, DC-817
+"""
+# Python Imports
+import os
 
 # Project imports
-import app_identity
-from gcloud.bq import BigQueryClient
-import bq_utils
-import common
-from cdr_cleaner.cleaning_rules import populate_route_ids
-from constants.cdr_cleaner import clean_cdr as cdr_consts
+from app_identity import PROJECT_ID
+from cdr_cleaner.cleaning_rules.populate_route_ids import (
+    DOSE_FORM_ROUTE_MAPPING_TABLE, DRUG_ROUTE_MAPPING_TABLE, PopulateRouteIds)
+from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
+from common import DRUG_EXPOSURE
 
 
-class PopulateRouteIdsTest(unittest.TestCase):
+class PopulateRouteIdsTest(BaseTest.CleaningRulesTestBase):
 
     @classmethod
     def setUpClass(cls):
@@ -20,81 +22,69 @@ class PopulateRouteIdsTest(unittest.TestCase):
         print(cls.__name__)
         print('**************************************************************')
 
-    def setUp(self):
-        self.project_id = app_identity.get_application_id()
-        self.dataset_id = bq_utils.get_dataset_id()
-        self.bq_client = BigQueryClient(self.project_id)
-        self.route_mapping_prefix = "rm"
+        super().initialize_class_vars()
 
-        col_exprs = [
-            'de.drug_exposure_id', 'de.person_id', 'de.drug_concept_id',
-            'de.drug_exposure_start_date', 'de.drug_exposure_start_datetime',
-            'de.drug_exposure_end_date', 'de.drug_exposure_end_datetime',
-            'de.verbatim_end_date', 'de.drug_type_concept_id', 'de.stop_reason',
-            'de.refills', 'de.quantity', 'de.days_supply', 'de.sig',
-            'COALESCE(rm.route_concept_id, de.route_concept_id) AS route_concept_id',
-            'de.lot_number', 'de.provider_id', 'de.visit_occurrence_id',
-            'de.visit_detail_id', 'de.drug_source_value',
-            'de.drug_source_concept_id', 'de.route_source_value',
-            'de.dose_unit_source_value'
+        cls.project_id = os.environ.get(PROJECT_ID)
+        cls.dataset_id = os.environ.get('COMBINED_DATASET_ID')
+        cls.route_mapping_dataset_id = os.environ.get('COMBINED_DATASET_ID')
+        cls.vocabulary_id = os.environ.get('VOCABULARY_DATASET')
+        cls.sandbox_id = f'{cls.dataset_id}_sandbox'
+
+        cls.rule_instance = PopulateRouteIds(cls.project_id, cls.dataset_id,
+                                             cls.sandbox_id)
+
+        cls.fq_table_names = [
+            f'{cls.project_id}.{cls.dataset_id}.{DRUG_EXPOSURE}'
         ]
-        self.cols = ', '.join(col_exprs)
 
-    def test_integration_create_drug_route_mappings_table(self):
-        if self.bq_client.table_exists(populate_route_ids.DRUG_ROUTES_TABLE_ID,
-                                       dataset_id=self.dataset_id):
-            bq_utils.delete_table(populate_route_ids.DRUG_ROUTES_TABLE_ID,
-                                  dataset_id=self.dataset_id)
+        cls.fq_sandbox_table_names = []
+        for table in cls.rule_instance.get_sandbox_tablenames():
+            cls.fq_sandbox_table_names.append(
+                f'{cls.project_id}.{cls.sandbox_id}.{table}')
 
-        if not self.bq_client.table_exists(
-                populate_route_ids.DOSE_FORM_ROUTES_TABLE_ID,
-                dataset_id=self.dataset_id):
-            populate_route_ids.create_dose_form_route_mappings_table(
-                self.project_id, self.dataset_id)
+        cls.fq_sandbox_table_names.append(
+            f'{cls.project_id}.{cls.sandbox_id}.{DOSE_FORM_ROUTE_MAPPING_TABLE}'
+        )
+        cls.fq_sandbox_table_names.append(
+            f'{cls.project_id}.{cls.sandbox_id}.{DRUG_ROUTE_MAPPING_TABLE}')
 
-        populate_route_ids.create_drug_route_mappings_table(
-            self.project_id, self.dataset_id,
-            populate_route_ids.DOSE_FORM_ROUTES_TABLE_ID,
-            self.route_mapping_prefix)
-        time.sleep(10)
-        query = ("SELECT COUNT(*) AS n "
-                 "FROM `{project_id}.{dataset_id}.{table_id}`").format(
-                     project_id=self.project_id,
-                     dataset_id=self.dataset_id,
-                     table_id=populate_route_ids.DRUG_ROUTES_TABLE_ID)
+        super().setUpClass()
 
-        result = bq_utils.query(query)
-        actual = bq_utils.response2rows(result)
-        self.assertGreater(actual[0]["n"], 0)
+    def setUp(self):
 
-    @mock.patch(
-        'cdr_cleaner.cleaning_rules.populate_route_ids.create_drug_route_mappings_table'
-    )
-    @mock.patch(
-        'cdr_cleaner.cleaning_rules.populate_route_ids.create_dose_form_route_mappings_table'
-    )
-    def test_integration_get_route_mapping_queries(
-        self, mock_create_dose_form_route_mappings_table,
-        mock_create_drug_route_mappings_table):
-        result = []
-        mock_create_drug_route_mappings_table.return_value = (
-            result, populate_route_ids.DRUG_ROUTES_TABLE_ID)
-        mock_create_dose_form_route_mappings_table.return_value = (
-            result, populate_route_ids.DOSE_FORM_ROUTES_TABLE_ID)
-        expected_query = populate_route_ids.FILL_ROUTE_ID_QUERY.format(
-            project_id=self.project_id,
-            dataset_id=self.dataset_id,
-            drug_exposure_table=common.DRUG_EXPOSURE,
-            route_mapping_dataset_id=self.dataset_id,
-            drug_route_mapping_table=populate_route_ids.DRUG_ROUTES_TABLE_ID,
-            cols=self.cols,
-            drug_exposure_prefix=populate_route_ids.DRUG_EXPOSURE_ALIAS,
-            route_mapping_prefix=populate_route_ids.ROUTE_MAPPING_ALIAS)
-        queries = populate_route_ids.get_route_mapping_queries(
-            self.project_id, self.dataset_id)
-        self.assertEqual(queries[0][cdr_consts.QUERY], expected_query)
-        self.assertEqual(queries[0][cdr_consts.DESTINATION_DATASET],
-                         self.dataset_id)
-        self.assertEqual(queries[0][cdr_consts.DESTINATION_TABLE],
-                         common.DRUG_EXPOSURE)
-        self.assertEqual(queries[0][cdr_consts.DISPOSITION], 'WRITE_TRUNCATE')
+        super().setUp()
+
+        self.copy_vocab_tables(self.vocabulary_id)
+
+    def test_populate_route_ids(self):
+        """
+        Tests that the specifications perform as designed.
+        """
+
+        INSERT_DRUG_EXPOSURE_QUERY = self.jinja_env.from_string("""
+            INSERT INTO `{{fq_table_name}}`
+                (drug_exposure_id, person_id, drug_concept_id,
+                 drug_exposure_start_date, drug_exposure_start_datetime,
+                 drug_type_concept_id, route_concept_id)
+            VALUES
+                (11, 1, 99999999, date('2022-09-01'), timestamp('2022-09-01 00:00:00'), 0, 99999999),
+                (12, 2, 43012486, date('2022-09-01'), timestamp('2022-09-01 00:00:00'), 0, NULL),
+                (13, 3, 43012486, date('2022-09-01'), timestamp('2022-09-01 00:00:00'), 0, 99999999)
+        """).render(fq_table_name=self.fq_table_names[0])
+
+        queries = [INSERT_DRUG_EXPOSURE_QUERY]
+
+        self.load_test_data(queries)
+
+        tables_and_counts = [{
+            'fq_table_name':
+                f'{self.project_id}.{self.dataset_id}.{DRUG_EXPOSURE}',
+            'fq_sandbox_table_name':
+                self.fq_sandbox_table_names[0],
+            'loaded_ids': [11, 12, 13],
+            'sandboxed_ids': [12, 13],
+            'fields': ['drug_exposure_id', 'route_concept_id'],
+            'cleaned_values': [(11, 99999999), (12, 4132161), (13, 4132161)]
+        }]
+
+        self.default_test(tables_and_counts)
