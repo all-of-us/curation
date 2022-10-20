@@ -44,9 +44,8 @@ class EnsureDateDatetime(unittest.TestCase):
 
     def test_get_cols(self):
         # pre conditions
-        self.assertEqual(
-            self.rule_instance.affected_datasets,
-            [cdr_consts.RDR, cdr_consts.UNIONED, cdr_consts.COMBINED])
+        self.assertEqual(self.rule_instance.affected_datasets,
+                         [cdr_consts.UNIONED])
 
         for table in TABLE_DATES:
             # test
@@ -70,9 +69,8 @@ class EnsureDateDatetime(unittest.TestCase):
 
     def test_get_query_specs(self):
         # pre conditions
-        self.assertEqual(
-            self.rule_instance.affected_datasets,
-            [cdr_consts.RDR, cdr_consts.UNIONED, cdr_consts.COMBINED])
+        self.assertEqual(self.rule_instance.affected_datasets,
+                         [cdr_consts.UNIONED])
 
         # test
         result_list = self.rule_instance.get_query_specs()
