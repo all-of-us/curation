@@ -1,6 +1,7 @@
 # coding=utf-8
 """
 Removes operational Pii fields from rdr export.
+
 Some new operational fields exists, that were not blacklisted in the RDR export. These rows needs to be dropped in the
 RDR load process so they do not make it to CDR. These do not have concept_id maps.
 The supplemental operational_pii_fields.csv shows all present PPI codes without a mapped concepts,
@@ -82,6 +83,7 @@ class RemoveOperationalPiiFields(BaseCleaningRule):
                  table_namer=None):
         """
         Initialize the class with proper information.
+
         Set the issue numbers, description and affected datasets. As other tickets may affect
         this SQL, append them to the list of Jira Issues.
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
@@ -109,6 +111,7 @@ class RemoveOperationalPiiFields(BaseCleaningRule):
     def setup_rule(self, client: BigQueryClient, *args, **keyword_args) -> None:
         """
         Load the lookup table values into the sandbox.
+
         The following queries will use the lookup table as part of the execution.
         Loads the operational pii fields from resource_files/_operational_pii_fields.csv
         into project_id.sandbox_dataset_id.operational_pii_fields in BQ
@@ -146,6 +149,7 @@ class RemoveOperationalPiiFields(BaseCleaningRule):
     def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
         """
         Return a list of dictionary query specifications.
+
         :return:  A list of dictionaries. Each dictionary contains a single query
             and a specification for how to execute that query. The specifications
             are optional but the query is required.
