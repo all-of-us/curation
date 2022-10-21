@@ -111,7 +111,7 @@ AND value_as_number NOT BETWEEN 90 AND 228)
 DELETE_WEIGHT_ROWS_QUERY = JINJA_ENV.from_string("""
 DELETE FROM `{{project_id}}.{{dataset_id}}.measurement` m
 WHERE EXISTS (
-  --subquery to select associated bmi records
+  --subquery to select associated bmi records --
   WITH outbound_weights AS (
   SELECT person_id, measurement_datetime
   FROM `{{project_id}}.{{dataset_id}}.measurement`
