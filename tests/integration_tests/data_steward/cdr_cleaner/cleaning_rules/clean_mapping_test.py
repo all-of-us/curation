@@ -155,7 +155,7 @@ class CleanMappingExtTablesTest(BaseTest.CleaningRulesTestBase):
     @mock.patch.object(CleanMappingExtTables, 'setup_rule')
     def test_field_cleaning(self, mock_setup, mock_mapping_tables):
         """
-        test
+        Records with observation_ids 900 and 150 are sandboxed
         """
         # mock mapping_tables
         mock_mapping_tables.return_value = self.tables
