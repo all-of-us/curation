@@ -6,6 +6,7 @@ Some new operational fields exists, that were not blacklisted in the RDR export.
 RDR load process so they do not make it to CDR. These do not have concept_id maps.
 The supplemental operational_pii_fields.csv shows all present PPI codes without mapped concepts,
 indicating which should be dropped in the “drop_value” column
+
 Jira issues = DC-500, DC-831
 """
 # Python imports
