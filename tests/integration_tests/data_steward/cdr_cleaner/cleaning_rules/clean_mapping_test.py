@@ -42,38 +42,34 @@ EXT_TABLE_TEMPLATE = JINJA_ENV.from_string("""
 """)
 
 OBSERVATION_TABLE_TEMPLATE = JINJA_ENV.from_string("""
-INSERT INTO `{{project_id}}.{{dataset_id}}.observation`
-
-(observation_id, person_id, observation_concept_id, observation_date, observation_datetime, 
-observation_type_concept_id, value_as_number, value_as_string, value_as_concept_id, qualifier_concept_id, 
-unit_concept_id, provider_id, visit_occurrence_id, visit_detail_id, observation_source_value,
-observation_source_concept_id, unit_source_value, qualifier_source_value, value_source_concept_id, value_source_value, 
-questionnaire_response_id)
+INSERT INTO `{{project_id}}.{{dataset_id}}.observation` (
+    observation_id, person_id, observation_concept_id, observation_date, observation_datetime, 
+    observation_type_concept_id, value_as_number, value_as_string, value_as_concept_id, qualifier_concept_id, 
+    unit_concept_id, provider_id, visit_occurrence_id, visit_detail_id, observation_source_value,
+    observation_source_concept_id, unit_source_value, qualifier_source_value, value_source_concept_id, value_source_value, 
+    questionnaire_response_id
+    )
 
 VALUES
     (100, 1, 1585838, '2009-04-29', TIMESTAMP('2009-04-29'),
      8201211115, 1.0, NULL, 0, 0,
      0, 0, NULL, NULL, '99051',
-     1585838, NULL, NULL, 1585840, NULL, NULL
-    ),
+     1585838, NULL, NULL, 1585840, NULL, NULL),
 
     (200, 1, 1585845, '2009-04-29', TIMESTAMP('2009-04-29'),
      8201211115, 1.0, NULL, 0, 0,
      0, 0, NULL, NULL, '99051',
-     1585845, NULL, NULL, 1585846, NULL, NULL
-    ),
+     1585845, NULL, NULL, 1585846, NULL, NULL),
 
     (300, 2, 1585845, '2009-05-15', TIMESTAMP('2009-05-15'),
      8201211116, 1.0, NULL, 0, 0,
      0, 0, NULL, NULL, '99054',
-     1585845, NULL, NULL, 1585846, NULL, NULL
-    ),
+     1585845, NULL, NULL, 1585846, NULL, NULL),
 
     (400, 3, 1585838, '2009-05-15', TIMESTAMP('2009-05-15'),
      8201211116, 1.0, NULL, 0, 0,
      0, 0, NULL, NULL, '99054',
-     1585838, NULL, NULL, 1585839, NULL, NULL
-    )
+     1585838, NULL, NULL, 1585839, NULL, NULL)
 """)
 
 
