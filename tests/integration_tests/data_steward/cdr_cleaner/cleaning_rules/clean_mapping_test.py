@@ -143,9 +143,11 @@ class CleanMappingExtTablesTest(BaseTest.CleaningRulesTestBase):
             project_id=self.project_id,
             dataset_id=self.dataset_id,
             mapping_table='_mapping_observation')
+
         ext_query = EXT_TABLE_TEMPLATE.render(project_id=self.project_id,
                                               dataset_id=self.dataset_id,
                                               ext_table='observation_ext')
+
         observation_query = OBSERVATION_TABLE_TEMPLATE.render(
             project_id=self.project_id, dataset_id=self.dataset_id)
 
