@@ -55,7 +55,7 @@ DELETE
 FROM
     `{{project_id}}.{{dataset_id}}.observation`
 WHERE
-observation_id
+    observation_id
 IN (SELECT
     observation_id
     FROM `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table}}` )
