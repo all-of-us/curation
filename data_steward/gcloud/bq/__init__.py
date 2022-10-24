@@ -440,7 +440,7 @@ class BigQueryClient(Client):
         Copy non-schemaed data to schemaed table.
 
         :param src_dataset: The dataset to copy data from
-        :param dest_dataset: The dataset to copy data to.  It's tables are
+        :param dest_dataset: The dataset to copy data to.  Its tables are
             created with valid schemas before inserting data.
         """
         table_list = self.list_tables(src_dataset)
@@ -461,7 +461,7 @@ class BigQueryClient(Client):
                     field_cast = f'CAST({item.name} AS {BIGQUERY_DATA_TYPES[item.field_type.lower()]}) AS {item.name}'
                     sc_list.append(field_cast)
 
-                fields_name_str = ',\n'.join([item for item in sc_list])
+                fields_name_str = ',\n'.join(sc_list)
 
                 # copy contents from non-schemaed source to schemaed dest
                 sql = (

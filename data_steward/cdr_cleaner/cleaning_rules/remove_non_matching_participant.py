@@ -39,13 +39,8 @@ NOT_MATCH_TABLE = '_not_match_person_id'
 KEY_FIELDS = [FIRST_NAME_FIELD, LAST_NAME_FIELD, BIRTH_DATE_FIELD]
 IDENTITY_MATCH_EXCLUDED_FIELD = [PERSON_ID_FIELD, ALGORITHM_FIELD]
 
-DROP_DATA_FROM_NOT_MATCH_TABLE = JINJA_ENV.from_string("""
-DELETE FROM `{{project_id}}.{{sandbox_dataset_id}}.{{not_match_table}}`
-WHERE 1=1
-""")
-
 CREATE_NOT_MATCH_TABLE = JINJA_ENV.from_string("""
-CREATE TABLE IF NOT EXISTS `{{project_id}}.{{sandbox_dataset_id}}.{{not_match_table}}`
+CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{not_match_table}}`
 (source_table STRING, person_id INT64)
 """)
 
@@ -135,20 +130,12 @@ class RemoveNonMatchingParticipant(SandboxAndRemovePids):
 
         :param client: A BigQueryClient
         """
-        if client.table_exists(NOT_MATCH_TABLE, self.sandbox_dataset_id):
-            drop_not_match_table_data = DROP_DATA_FROM_NOT_MATCH_TABLE.render(
-                project_id=self.project_id,
-                sandbox_dataset_id=self.sandbox_dataset_id,
-                not_match_table=NOT_MATCH_TABLE)
-            job = client.query(drop_not_match_table_data)
-            job.result()
-        else:
-            create_not_match_table = CREATE_NOT_MATCH_TABLE.render(
-                project_id=self.project_id,
-                sandbox_dataset_id=self.sandbox_dataset_id,
-                not_match_table=NOT_MATCH_TABLE)
-            job = client.query(create_not_match_table)
-            job.result()
+        create_not_match_table = CREATE_NOT_MATCH_TABLE.render(
+            project_id=self.project_id,
+            sandbox_dataset_id=self.sandbox_dataset_id,
+            not_match_table=NOT_MATCH_TABLE)
+        job = client.query(create_not_match_table)
+        job.result()
 
         for hpo_id in readers.get_hpo_site_names():
 

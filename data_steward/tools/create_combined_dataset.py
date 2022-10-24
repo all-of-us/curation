@@ -5,7 +5,6 @@ This Script automates the process of generating the combined_staging and apply c
 # Python Imports
 import logging
 from argparse import ArgumentParser
-from datetime import datetime
 
 # Project imports
 from cdr_cleaner import clean_cdr
@@ -14,11 +13,7 @@ from cdr_cleaner.args_parser import add_kwargs_to_args
 from common import CDR_SCOPES
 from gcloud.bq import BigQueryClient
 from utils import auth
-from utils import bq
 from utils import pipeline_logging
-
-# Third Party Imports
-from google.cloud import bigquery
 
 LOGGER = logging.getLogger(__name__)
 
