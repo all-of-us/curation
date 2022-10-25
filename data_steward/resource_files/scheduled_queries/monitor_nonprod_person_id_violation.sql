@@ -1,0 +1,129 @@
+--
+-- Prod data should not exist in nonprod environments. This SQL checks if any prod person_ids
+-- exist in non-prod environments. This query runs daily and stores the result in 
+-- id_violations_in_lower_envs table.
+--
+-- Original issue: DC-2701
+--
+-- !!IMPORTANT!!
+--   Project names and dataset names are sensitive info. Mask them when uploading to GitHub.
+--
+-- This script runs the following steps.
+-- 1. Collect nonprod datasets info into a temp table.
+-- 2. Loop for every `batch_size` datasets:
+-- 2-1. Collect info about tables with person_id that are last updated within 3 days into a temp table.
+-- 2-2. Check if any tables from 2-1 have violated person_ids. If yes, insert the info to id_violations_in_lower_envs.
+-- 3. Check if any violation is found in this execution. 
+--
+
+-- Variables 
+DECLARE proj_prod STRING; -- Prod project ID.
+DECLARE proj_nonprods ARRAY<STRING>; -- List of non-prod project IDs.
+DECLARE admin_dataset STRING; -- Dataset ID that id_violations_in_lower_envs is in.
+DECLARE mapping_dataset STRING; -- Dataset ID that primary_pid_rid_mapping is in.
+DECLARE num_nonprod_datasets INT64; -- Number of datasets in all the non-prod projects combined.
+DECLARE num_violated_tables INT64; -- Number of tables that have violated person_ids.
+DECLARE head, tail INT64 DEFAULT 0; -- Index for loops.
+DECLARE batch_size INT64 DEFAULT 50; -- Number of records to process in each loop. Lower this value if you get gcloud resource error while execution.
+
+-- !!IMPORTANT!! Following SET statements MUST be masked when uploading to GitHub.
+SET proj_prod = '<project id for prod env here>';
+SET proj_nonprods = ['<project id for nonprod env here>', '<project id for nonprod env here>'];
+SET admin_dataset = '<dataset id for admin here>';
+SET mapping_dataset = '<dataset id for mapping here>';
+--
+
+BEGIN
+
+  -- 1. Collect nonprod datasets info into a temp table.
+  EXECUTE IMMEDIATE CONCAT(
+  "  CREATE OR REPLACE TEMP TABLE tmp_nonprod_datasets (project_id STRING, dataset_id STRING, row_num INT64)",
+  "  AS", 
+  "  SELECT *, ROW_NUMBER() OVER (ORDER BY project_id, dataset_id) AS row_num",
+  "  FROM (", (SELECT STRING_AGG(CONCAT(
+  "    SELECT",
+  "      catalog_name AS project_id,",
+  "      schema_name AS dataset_id",
+  "    FROM `", proj_nonprod, ".INFORMATION_SCHEMA.SCHEMATA`"), 
+  "    UNION ALL \n") FROM (SELECT * FROM UNNEST(proj_nonprods) AS proj_nonprod)),
+  "  )"
+  );
+
+  -- Count how many nonprod datasets are there.
+  SET num_nonprod_datasets = (SELECT COUNT(*) FROM tmp_nonprod_datasets);
+
+  -- 2. Loop for every `batch_size` datasets:
+  LOOP
+    IF num_nonprod_datasets <= tail THEN BREAK; END IF;
+
+    SET head = tail + 1; 
+    SET tail = head + batch_size;
+    
+    -- 2-1. Collect info about tables (1) with person_id (2) that are last updated within 3 days into a temp table.
+    EXECUTE IMMEDIATE CONCAT(
+    "  CREATE OR REPLACE TEMP TABLE tmp_tables_with_person_id (project_id STRING, dataset_id STRING, table_id STRING) ",
+    "  AS ", (SELECT STRING_AGG(CONCAT(
+    "  SELECT",
+    "    table_catalog AS project_id,",
+    "    table_schema AS dataset_id,",
+    "    table_name AS table_id",
+    "  FROM `", project_id, ".", dataset_id, ".INFORMATION_SCHEMA.COLUMNS`",
+    "  WHERE LOWER(COLUMN_NAME) = 'person_id'",
+    "  AND table_name IN (",
+    "    SELECT table_id FROM `", project_id, ".", dataset_id, ".__TABLES__`",
+    "    WHERE TIMESTAMP_DIFF(CURRENT_TIMESTAMP(), TIMESTAMP_MILLIS(last_modified_time), DAY) <= 3",
+    "  )"), 
+    "  UNION ALL \n") FROM tmp_nonprod_datasets WHERE row_num BETWEEN head AND tail)
+    );
+
+    -- Log message. Move to the next loop if none is found in 2-1.
+    IF NOT EXISTS (SELECT 1 FROM tmp_tables_with_person_id) THEN
+      SELECT CONCAT(
+        "[INFO]No tables with person_id are found that are updated in the last three days. ", 
+        "Moving on to the next loop."
+      );
+      CONTINUE;
+    ELSE
+      SELECT CONCAT(
+        "[INFO]Found these tables have person_ids and are updated in the last three days. ",
+        "Checking if they have violated person_ids:", 
+        (SELECT STRING_AGG(CONCAT(project_id, ".", dataset_id, ".", table_id), ",") FROM tmp_tables_with_person_id),
+        "."
+      );
+    END IF;
+
+    -- 2-2. Check if any tables from 2-1 have violated person_ids. If yes, insert the info to id_violations_in_lower_envs.
+    EXECUTE IMMEDIATE CONCAT(
+    "  INSERT INTO `", proj_prod, ".", admin_dataset, ".id_violations_in_lower_envs`",
+    "  SELECT project_id, dataset_id, table_id, num_violation, 'person_id' AS violation_type, CURRENT_DATE() AS monitor_date",
+    "  FROM (", (SELECT STRING_AGG(CONCAT(
+    "    SELECT ",
+    "      '", project_id, "' AS project_id,",
+    "      '", dataset_id, "' AS dataset_id,",
+    "      '", table_id, "' AS table_id,",
+    "      count(*) AS num_violation",
+    "    FROM `", project_id, ".", dataset_id, ".", table_id, "`",
+    "    WHERE CAST(person_id AS INT64) IN (", 
+    "      SELECT person_id FROM `", proj_prod, ".", mapping_dataset, ".primary_pid_rid_mapping`",
+    "    )",
+    "    HAVING count(*) > 0"), 
+    "    UNION ALL \n") FROM (SELECT project_id, dataset_id, table_id FROM tmp_tables_with_person_id)), 
+    "  )"
+    ); 
+  END LOOP;
+
+  -- 3. Check if any violation is found in this execution. 
+  EXECUTE IMMEDIATE CONCAT(
+  "  SELECT COUNT(*) FROM `", proj_prod, ".", admin_dataset, ".id_violations_in_lower_envs`",
+  "  WHERE monitor_date = CURRENT_DATE()"
+  ) INTO num_violated_tables
+  ;
+
+  -- Log message
+  IF num_violated_tables > 0 THEN
+    SELECT CONCAT("[WARN]person_id violation found in ", num_violated_tables, " tables. Check id_violations_in_lower_envs for investigation.");
+  ELSE
+    SELECT "[INFO]No person_id violation found.";
+  END IF;
+
+END
