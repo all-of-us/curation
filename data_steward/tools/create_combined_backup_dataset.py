@@ -64,11 +64,11 @@ def assert_tables_in(client: BigQueryClient, dataset_id: str):
     """
     tables = client.list_tables(dataset_id)
     table_ids = set([table.table_id for table in tables])
-    LOGGER.info(f'Confirming dataset, {dataset_id}, has tables: {tables}')
-    if table_ids != set(combine_consts.TABLES_TO_PROCESS):
-        raise RuntimeError(
-            f'Dataset, {dataset_id}, is missing tables {set(combine_consts.TABLES_TO_PROCESS) - table_ids}.  '
-            f'Aborting.')
+    LOGGER.info(f'Confirming dataset, {dataset_id}, has tables: {table_ids}')
+    for table in combine_consts.TABLES_TO_PROCESS:
+        if table not in table_ids:
+            raise RuntimeError(
+                f'Dataset {dataset_id} is missing table {table}. Aborting.')
 
 
 def assert_ehr_and_rdr_tables(client: BigQueryClient,
@@ -256,7 +256,8 @@ def join_expression_generator(domain_table, combined_dataset):
             fields_to_join.append(field_name)
 
         if field_name in fields_to_join:
-            col_expr = f'{field_name[:3]}.' + field_name
+            col_expr = f'{field_name[:3] + "_" + field_name[-7:-3] if "_" in field_name else field_name[:3]}.' \
+                       + field_name
 
         elif field_name in primary_key:
             col_expr = 'm.' + field_name
@@ -273,7 +274,8 @@ def join_expression_generator(domain_table, combined_dataset):
                 join_expression.append(
                     combine_consts.LEFT_JOIN_PERSON.render(
                         dataset_id=combined_dataset,
-                        prefix=key[:3],
+                        prefix=
+                        f'{key[:3] + "_" + key[-7:-3] if "_" in key else key[:3]}',
                         field=key,
                         table=table_alias))
 
@@ -282,17 +284,20 @@ def join_expression_generator(domain_table, combined_dataset):
                 join_expression.append(
                     combine_consts.JOIN_VISIT.render(
                         dataset_id=combined_dataset,
-                        prefix=key[:3],
+                        prefix=
+                        f'{key[:3] + "_" + key[-7:-3] if "_" in key else key[:3]}',
                         field=key,
                         table=table_alias))
 
             else:
                 table_alias = mapping_table_for(f'{key[:-3]}')
                 join_expression.append(
-                    combine_consts.LEFT_JOIN.render(dataset_id=combined_dataset,
-                                                    prefix=key[:3],
-                                                    field=key,
-                                                    table=table_alias))
+                    combine_consts.LEFT_JOIN.render(
+                        dataset_id=combined_dataset,
+                        prefix=
+                        f'{key[:3] + "_" + key[-7:-3] if "_" in key else key[:3]}',
+                        field=key,
+                        table=table_alias))
     full_join_expression = " ".join(join_expression)
     return cols, full_join_expression
 
@@ -534,7 +539,8 @@ def main(raw_args=None):
         args.rdr_dataset, '--cdr_generation_date', today,
         '--vocabulary_version', args.vocab_dataset, '--rdr_export_date',
         args.rdr_export_date
-    ])
+    ],
+                          bq_client=client)
     LOGGER.info('EHR + RDR combine completed')
 
 

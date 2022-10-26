@@ -193,12 +193,13 @@ def parse_cdr_metadata_args(args=None):
     return cdr_metadata_args, custom_args
 
 
-def main(raw_args=None):
+def main(raw_args=None, bq_client=None):
     args, kwargs = parse_cdr_metadata_args(raw_args)
 
     fields = resources.fields_for(METADATA_TABLE)
 
-    bq_client = BigQueryClient(args.project_id)
+    if not bq_client:
+        bq_client = BigQueryClient(args.project_id)
 
     if args.component == CREATE:
         create_metadata_table(bq_client, args.target_dataset, fields)

@@ -525,7 +525,7 @@ def get_git_tag():
     """
     repo = Repo(os.getcwd(), search_parent_directories=True)
     try:
-        tag_ref = TagReference.list_items(repo)[-1]
+        tag_ref = TagReference.list_items(repo)[-1].name
     except IndexError as e:
         tag_ref = ''
     return tag_ref

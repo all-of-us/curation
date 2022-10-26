@@ -1,5 +1,6 @@
 # Project imports
 import constants.cdr_cleaner.clean_cdr as cdr_consts
+from resources import CDM_TABLES
 from common import JINJA_ENV
 from gcloud.bq import BigQueryClient
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
@@ -8,7 +9,7 @@ from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 SANDBOX_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{intermediary_table}}` AS (
 SELECT t.* FROM `{{project}}.{{dataset}}.{{table}}` t
-{% if ehr_only %}
+{% if ehr_only and table != 'death' %}
 JOIN `{{project}}.{{dataset}}._mapping_{{table}}` m
 ON t.{{table}}_id = m.{{table}}_id AND LOWER(m.src_hpo_id) != 'rdr'
 {% endif %}
@@ -23,9 +24,14 @@ DELETE FROM `{{project}}.{{dataset}}.{{table}}`
 WHERE person_id IN (
     SELECT DISTINCT person_id FROM `{{project}}.{{sandbox_dataset}}.{{lookup_table}}`
 )
-{% if ehr_only %}
+{% if ehr_only and table != 'death' %}
 AND {{table}}_id IN (
     SELECT DISTINCT {{table}}_id FROM `{{project}}.{{sandbox_dataset}}.{{intermediary_table}}`
+)
+{% endif %}
+{% if table == 'death' %}
+AND person_id IN (
+    SELECT DISTINCT person_id FROM `{{project}}.{{sandbox_dataset}}.{{intermediary_table}}`
 )
 {% endif %}
 """)
@@ -90,7 +96,7 @@ class SandboxAndRemovePids(BaseCleaningRule):
         self.affected_tables = [
             table.get('table_name')
             for table in person_tables
-            if '_mapping' not in table.get('table_name')
+            if table.get('table_name') in CDM_TABLES
         ]
 
     def get_sandbox_queries(self,
@@ -111,7 +117,6 @@ class SandboxAndRemovePids(BaseCleaningRule):
         queries_list = []
 
         for table in self.affected_tables:
-
             queries_list.append({
                 cdr_consts.QUERY:
                     SANDBOX_QUERY.render(
@@ -140,7 +145,6 @@ class SandboxAndRemovePids(BaseCleaningRule):
         queries_list = []
 
         for table in self.affected_tables:
-
             queries_list.append({
                 cdr_consts.QUERY:
                     CLEAN_QUERY.render(

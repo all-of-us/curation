@@ -38,10 +38,8 @@ SELECT DISTINCT
   'rdr' as src_hpo_id,
   {domain_table}_id  AS {domain_table}_id,
   '{domain_table}' as src_table_id
-  FROM `{rdr_dataset_id}.{domain_table}`
-  WHERE EXISTS
-  (SELECT 1 FROM `{combined_dataset_id}.{ehr_consent_table_id}` AS c
-  WHERE t.person_id = c.person_id)"""
+  FROM `{rdr_dataset_id}.{domain_table}` AS t
+"""
 
 
 class CreateCombinedBackupDatasetTest(unittest.TestCase):

@@ -30,6 +30,18 @@ tracer_provider = TracerProvider()
 trace.set_tracer_provider(tracer_provider)
 tracer = trace.get_tracer(__name__)
 
+BIGQUERY_DATA_TYPES = {
+    'integer': 'INT64',
+    'float': 'FLOAT64',
+    'string': 'STRING',
+    'date': 'DATE',
+    'timestamp': 'TIMESTAMP',
+    'bool': 'BOOLEAN',
+    'datetime': 'DATETIME',
+    'record': 'RECORD',
+    'numeric': 'NUMERIC'
+}
+
 
 class BigQueryClient(Client):
     """
@@ -428,13 +440,13 @@ class BigQueryClient(Client):
         Copy non-schemaed data to schemaed table.
 
         :param src_dataset: The dataset to copy data from
-        :param des_dataset: The dataset to copy data to.  It's tables are
+        :param dest_dataset: The dataset to copy data to.  Its tables are
             created with valid schemas before inserting data.
         """
         table_list = self.list_tables(src_dataset)
 
         for table_item in table_list:
-            # create empty schemaed tablle with client object
+            # create empty schemaed table with client object
             try:
                 schema_list = self.get_table_schema(table_item.table_id)
             except RuntimeError as re:
@@ -444,8 +456,12 @@ class BigQueryClient(Client):
             dest_table = self.create_table(dest_table)  # Make an API request.
 
             if schema_list:
-                fields_name_str = ',\n'.join(
-                    [item.name for item in schema_list])
+                sc_list = []
+                for item in schema_list:
+                    field_cast = f'CAST({item.name} AS {BIGQUERY_DATA_TYPES[item.field_type.lower()]}) AS {item.name}'
+                    sc_list.append(field_cast)
+
+                fields_name_str = ',\n'.join(sc_list)
 
                 # copy contents from non-schemaed source to schemaed dest
                 sql = (

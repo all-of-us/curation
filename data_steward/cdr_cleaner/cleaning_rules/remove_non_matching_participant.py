@@ -40,7 +40,7 @@ KEY_FIELDS = [FIRST_NAME_FIELD, LAST_NAME_FIELD, BIRTH_DATE_FIELD]
 IDENTITY_MATCH_EXCLUDED_FIELD = [PERSON_ID_FIELD, ALGORITHM_FIELD]
 
 CREATE_NOT_MATCH_TABLE = JINJA_ENV.from_string("""
-CREATE TABLE IF NOT EXISTS `{{project_id}}.{{sandbox_dataset_id}}.{{not_match_table}}`
+CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{not_match_table}}`
 (source_table STRING, person_id INT64)
 """)
 

@@ -5,7 +5,6 @@ This Script automates the process of generating the combined_staging and apply c
 # Python Imports
 import logging
 from argparse import ArgumentParser
-from datetime import datetime
 
 # Project imports
 from cdr_cleaner import clean_cdr
@@ -14,11 +13,7 @@ from cdr_cleaner.args_parser import add_kwargs_to_args
 from common import CDR_SCOPES
 from gcloud.bq import BigQueryClient
 from utils import auth
-from utils import bq
 from utils import pipeline_logging
-
-# Third Party Imports
-from google.cloud import bigquery
 
 LOGGER = logging.getLogger(__name__)
 
@@ -48,11 +43,6 @@ def parse_combined_args(raw_args=None):
                         dest='combined_dataset',
                         help='combined dataset to backup and clean.',
                         required=True)
-    parser.add_argument('--unioned_ehr_dataset',
-                        action='store',
-                        dest='unioned_ehr_dataset',
-                        help='Unioned ehr dataset used to generate combined.',
-                        required=True)
     parser.add_argument('--cutoff_date',
                         action='store',
                         dest='cutoff_date',
@@ -74,6 +64,12 @@ def parse_combined_args(raw_args=None):
                         action='store_true',
                         required=False,
                         help='Log to the console as well as to a file.')
+
+    parser.add_argument('--ehr_dataset_id',
+                        action='store',
+                        dest='ehr_dataset_id',
+                        required=True,
+                        help='The EHR snapshot dataset ID')
 
     common_args, unknown_args = parser.parse_known_args(raw_args)
     custom_args = clean_cdr._get_kwargs(unknown_args)
@@ -118,18 +114,18 @@ def main(raw_args=None):
     cleaning_args = [
         '-p', args.curation_project_id, '-d',
         datasets.get('staging', 'UNSET'), '-b',
-        datasets.get('sandbox', 'UNSET'), '--data_stage', 'combined',
-        "--cutoff_date", args.cutoff_date, '--validation_dataset_id',
-        args.validation_dataset_id, '--ehr_dataset_id',
-        args.unioned_ehr_dataset, '--api_project_id', args.api_project_id,
-        args.export_date, '--run_as', args.run_as_email, '-s'
+        datasets.get('sandbox',
+                     'UNSET'), '--data_stage', 'combined', "--cutoff_date",
+        args.cutoff_date, '--validation_dataset_id', args.validation_dataset_id,
+        '--ehr_dataset_id', args.ehr_dataset_id, '--api_project_id',
+        args.api_project_id, '--run_as', args.run_as_email, '-s'
     ]
 
     all_cleaning_args = add_kwargs_to_args(cleaning_args, kwargs)
     clean_cdr.main(args=all_cleaning_args)
 
-    bq.build_and_copy_contents(bq_client, datasets.get('staging', 'UNSET'),
-                               datasets.get('clean', 'UNSET'))
+    bq_client.build_and_copy_contents(datasets.get('staging', 'UNSET'),
+                                      datasets.get('clean', 'UNSET'))
 
     # update sandbox description and labels
     sandbox_dataset = bq_client.get_dataset(datasets.get(

@@ -25,7 +25,7 @@ SELECT *
 FROM (
 SELECT
 *,
-row_number() OVER (PARTITION BY {{prefix}}.{{field}}, {{prefix}}.src_hpo_id ) 
+row_number() OVER (PARTITION BY {{prefix}}.{{field}}, {{prefix}}.src_hpo_id )
 AS row_num
 FROM `{{dataset_id}}.{{table}}` AS {{prefix}}
 )
@@ -41,7 +41,7 @@ SELECT *
 FROM (
 SELECT
 *,
-row_number() OVER (PARTITION BY {{prefix}}.{{field}}, {{prefix}}.src_hpo_id ) 
+row_number() OVER (PARTITION BY {{prefix}}.{{field}}, {{prefix}}.src_hpo_id )
 AS row_num
 FROM `{{dataset_id}}.{{table}}` AS {{prefix}}
 )
@@ -57,7 +57,7 @@ SELECT *
 FROM (
 SELECT
 *,
-row_number() OVER (PARTITION BY {{prefix}}.{{field}}, {{prefix}}.src_hpo_id ) 
+row_number() OVER (PARTITION BY {{prefix}}.{{field}}, {{prefix}}.src_hpo_id )
 AS row_num
 FROM `{{dataset_id}}.{{table}}` AS {{prefix}}
 )
@@ -71,7 +71,7 @@ WITH ordered_response AS
 person_id,
 value_source_concept_id,
 observation_datetime,
-ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY observation_datetime DESC, 
+ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY observation_datetime DESC,
 value_source_concept_id ASC) AS rn
 FROM `{{dataset_id}}.observation`
 WHERE observation_source_value = '{{source_value_ehr_consent}}')
@@ -93,35 +93,34 @@ WHERE EXISTS
 
 MAPPING_QUERY = JINJA_ENV.from_string("""
 SELECT DISTINCT
-'{{rdr_dataset_id}}'  AS src_dataset_id,
-{{domain_table}}_id  AS src_{{domain_table}}_id,
-'rdr' as src_hpo_id,
-{% if domain_table != 'survey_conduct' %}
- {{domain_table}}_id + {{mapping_constant}}  AS {{domain_table}}_id,
+    '{{rdr_dataset_id}}' AS src_dataset_id,
+    {{domain_table}}_id AS src_{{domain_table}}_id,
+    'rdr' as src_hpo_id,
+    {% if domain_table == 'survey_conduct' %}
+    {{domain_table}}_id AS {{domain_table}}_id,
+    {% else %}
+    {{domain_table}}_id + {{mapping_constant}} AS {{domain_table}}_id,
+    {% endif %}
+    '{{domain_table}}' as src_table_id
+{% if domain_table == 'survey_conduct' %}
+FROM `{{rdr_dataset_id}}.{{domain_table}}` AS t
 {% else %}
-{{domain_table}}_id AS {{domain_table}}_id,
-{% endif %}
-'{{domain_table}}' as src_table_id
 FROM `{{rdr_dataset_id}}.{{domain_table}}`
-
-{% if domain_table != 'survey_conduct' %}
-    UNION ALL
-
-    SELECT DISTINCT
+UNION ALL
+SELECT DISTINCT
     '{{ehr_dataset_id}}'  AS src_dataset_id,
     t.{{domain_table}}_id AS src_{{domain_table}}_id,
     v.src_hpo_id AS src_hpo_id,
     t.{{domain_table}}_id  AS {{domain_table}}_id,
     '{{domain_table}}' as src_table_id
-    FROM `{{ehr_dataset_id}}.{{domain_table}}` AS t
-    JOIN `{{ehr_dataset_id}}._mapping_{{domain_table}}` AS v 
-    ON t.{{domain_table}}_id = v.{{domain_table}}_id
-{% endif %}
-
+FROM `{{ehr_dataset_id}}.{{domain_table}}` AS t
+JOIN `{{ehr_dataset_id}}._mapping_{{domain_table}}` AS v
+ON t.{{domain_table}}_id = v.{{domain_table}}_id
 {% if person_id_flag %}
-    WHERE EXISTS
+WHERE EXISTS
     (SELECT 1 FROM `{{combined_dataset_id}}.{{ehr_consent_table_id}}` AS c
-    WHERE t.person_id = c.person_id)
+     WHERE t.person_id = c.person_id)
+{% endif %}
 {% endif %}
 """)
 
@@ -167,14 +166,14 @@ JOIN
     )
     WHERE row_num = 1
 ) m
-    ON t.{{domain_table}}_id = m.src_{{domain_table}}_id 
+    ON t.{{domain_table}}_id = m.src_{{domain_table}}_id
    {{join_expr}}
 WHERE m.src_dataset_id = '{{ehr_dataset_id}}'
 """)
 
 MAPPED_PERSON_QUERY = JINJA_ENV.from_string("""
-select {{cols}} 
-from `{{dataset}}.{{table}}` AS t 
+select {{cols}}
+from `{{dataset}}.{{table}}` AS t
 {{join_expr}}
 """)
 
@@ -207,7 +206,7 @@ FROM (
     LEFT JOIN `{{combined_dataset_id}}.{{mapping_observation}}` AS o2
       ON o2.src_observation_id = fr.fact_id_2 AND fr.domain_concept_id_2={{observation_domain_concept_id}}
 
- UNION ALL 
+ UNION ALL
 
  SELECT * from `{{ehr_dataset}}.fact_relationship`)
 WHERE fact_id_1 IS NOT NULL
