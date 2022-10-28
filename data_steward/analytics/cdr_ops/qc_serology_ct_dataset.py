@@ -16,13 +16,12 @@
 # + tags=["parameters"]
 rt_dataset = ""
 ct_ser_dataset = ""
-new_ct_dataset = "" #the dataset to QC
+new_ct_dataset = ""  #the dataset to QC
 cur_project = ""
 cur_out_project = ""
 run_as = ""
 # -
 
-import pandas as pd
 import warnings
 from utils import auth
 from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
@@ -86,15 +85,16 @@ def get_data_input(rt_dataset, ct_ser_dataset, new_ct_dataset, cur_out_project,
     new_ct_person_table = execute(client, person_query)
     ############
     query = JINJA_ENV.from_string(""" SELECT distinct table_name, column_name
-                        FROM `{{project_id}}.{{new_ct_dataset}}.INFORMATION_SCHEMA.COLUMNS`""")
+                        FROM `{{project_id}}.{{new_ct_dataset}}.INFORMATION_SCHEMA.COLUMNS`"""
+                                 )
     schema_query = query.render(project_id=cur_project,
                                 new_ct_dataset=new_ct_dataset)
     schema = execute(client, schema_query)
     return pos_controls_provider, mayo_positive_controls, ct_person_table, new_ct_person_table, schema
 
 
-def serology_dataset_qc(client, new_ct_dataset, rt_dataset, ct_ser_dataset, cur_project,
-                        cur_out_project):
+def serology_dataset_qc(client, new_ct_dataset, rt_dataset, ct_ser_dataset,
+                        cur_project, cur_out_project):
     pos_controls_provider, mayo_positive_controls, ct_person_table, new_ct_person_table, schema = \
         get_data_input(rt_dataset=rt_dataset, ct_ser_dataset=ct_ser_dataset
                        , new_ct_dataset=new_ct_dataset
@@ -208,7 +208,5 @@ def serology_dataset_qc(client, new_ct_dataset, rt_dataset, ct_ser_dataset, cur_
             '.serology_person.' + "\033[0;0m")
 
 
-serology_dataset_qc(client, new_ct_dataset, rt_dataset, ct_ser_dataset, cur_project,
-                    cur_out_project)
-
-
+serology_dataset_qc(client, new_ct_dataset, rt_dataset, ct_ser_dataset,
+                    cur_project, cur_out_project)
