@@ -20,61 +20,65 @@ DOMAIN_TABLES = list(
 TABLES_TO_PROCESS = RDR_TABLES_TO_COPY + EHR_TABLES_TO_COPY + DOMAIN_TABLES
 LEFT_JOIN = JINJA_ENV.from_string("""
 LEFT JOIN
-(
-SELECT *
-FROM (
-SELECT
-*,
-row_number() OVER (PARTITION BY {{prefix}}.{{field}}, {{prefix}}.src_hpo_id )
-AS row_num
-FROM `{{dataset_id}}.{{table}}` AS {{prefix}}
-)
-WHERE row_num = 1
-) {{prefix}}  ON t.{{field}} = {{prefix}}.src_{{field}}
+  (
+    SELECT *
+    FROM (
+      SELECT
+        *,
+        row_number() OVER (PARTITION BY {{prefix}}.{{field}},{{prefix}}.src_hpo_id) AS row_num
+      FROM `{{dataset_id}}.{{table}}` AS {{prefix}}
+    )
+    WHERE row_num = 1
+  ) {{prefix}}
+ON t.{{field}} = {{prefix}}.src_{{field}}
 AND m.src_dataset_id = {{prefix}}.src_dataset_id
 """)
 
 JOIN_VISIT = JINJA_ENV.from_string("""
 JOIN
-(
-SELECT *
-FROM (
-SELECT
-*,
-row_number() OVER (PARTITION BY {{prefix}}.{{field}}, {{prefix}}.src_hpo_id )
-AS row_num
-FROM `{{dataset_id}}.{{table}}` AS {{prefix}}
-)
-WHERE row_num = 1
-) {{prefix}}  ON t.{{field}} = {{prefix}}.src_{{field}}
+  (
+    SELECT *
+    FROM (
+      SELECT
+        *,
+        row_number() OVER (PARTITION BY {{prefix}}.{{field}}, {{prefix}}.src_hpo_id) AS row_num
+      FROM `{{dataset_id}}.{{table}}` AS {{prefix}}
+    )
+    WHERE row_num = 1
+  ) {{prefix}}
+ON t.{{field}} = {{prefix}}.src_{{field}}
 AND m.src_dataset_id = {{prefix}}.src_dataset_id
 """)
 
 LEFT_JOIN_PERSON = JINJA_ENV.from_string("""
 LEFT JOIN
-(
-SELECT *
-FROM (
-SELECT
-*,
-row_number() OVER (PARTITION BY {{prefix}}.{{field}}, {{prefix}}.src_hpo_id )
-AS row_num
-FROM `{{dataset_id}}.{{table}}` AS {{prefix}}
-)
-WHERE row_num = 1
-) {{prefix}}  ON t.{{field}} = {{prefix}}.src_{{field}}
+  (
+    SELECT *
+    FROM (
+      SELECT
+        *,
+        row_number() OVER (PARTITION BY {{prefix}}.{{field}}, {{prefix}}.src_hpo_id) AS row_num
+      FROM `{{dataset_id}}.{{table}}` AS {{prefix}}
+    )
+    WHERE row_num = 1
+  ) {{prefix}}
+ON t.{{field}} = {{prefix}}.src_{{field}}
 """)
 
 EHR_CONSENT_QUERY = JINJA_ENV.from_string("""
 WITH ordered_response AS
-(SELECT
-person_id,
-value_source_concept_id,
-observation_datetime,
-ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY observation_datetime DESC,
-value_source_concept_id ASC) AS rn
-FROM `{{dataset_id}}.observation`
-WHERE observation_source_value = '{{source_value_ehr_consent}}')
+  (
+    SELECT
+      person_id,
+      value_source_concept_id,
+      observation_datetime,
+      ROW_NUMBER() OVER(
+        PARTITION BY person_id ORDER BY observation_datetime DESC,
+        value_source_concept_id ASC
+        ) AS rn
+    FROM `{{dataset_id}}.observation`
+    WHERE observation_source_value = '{{source_value_ehr_consent}}'
+  )
 SELECT person_id
 FROM ordered_response
 WHERE rn = 1
@@ -108,7 +112,7 @@ FROM `{{rdr_dataset_id}}.{{domain_table}}` AS t
 FROM `{{rdr_dataset_id}}.{{domain_table}}`
 UNION ALL
 SELECT DISTINCT
-    '{{ehr_dataset_id}}'  AS src_dataset_id,
+    '{{ehr_dataset_id}}' AS src_dataset_id,
     t.{{domain_table}}_id AS src_{{domain_table}}_id,
     v.src_hpo_id AS src_hpo_id,
     t.{{domain_table}}_id  AS {{domain_table}}_id,

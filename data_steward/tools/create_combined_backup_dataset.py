@@ -48,6 +48,7 @@ from utils import auth, pipeline_logging
 from gcloud.bq import BigQueryClient
 from constants.tools import create_combined_backup_dataset as combine_consts
 from tools import add_cdr_metadata
+from tools.create_combined_dataset import create_dataset
 
 LOGGER = logging.getLogger(__name__)
 
@@ -461,79 +462,67 @@ def main(raw_args=None):
 
     client = BigQueryClient(args.project_id, credentials=impersonation_creds)
 
-    combined_dataset = f'{args.release_tag}_combined_backup'
-    LOGGER.info(
-        f'Creating Combined backup dataset: `{client.project}.{combined_dataset}` '
-    )
-    combined_backup_desc = f'combined raw version of {args.rdr_dataset} + {args.unioned_ehr_dataset}'
-    labels = {
-        "phase": "backup",
-        "release_tag": args.release_tag,
-        "de_identified": "false"
-    }
-    combined_dataset_object = client.define_dataset(combined_dataset,
-                                                    combined_backup_desc,
-                                                    labels)
-    client.create_dataset(combined_dataset_object)
-    LOGGER.info(f'Created dataset `{client.project}.{combined_dataset}`')
+    combined_backup = create_dataset(client, args.release_tag, 'backup')
+
     LOGGER.info('Creating destination CDM tables...')
-    create_cdm_tables(client, combined_dataset)
+    create_cdm_tables(client, combined_backup)
 
     LOGGER.info(
-        f'Copying vocabulary tables from {args.vocab_dataset} to {combined_dataset}'
+        f'Copying vocabulary tables from {args.vocab_dataset} to {combined_backup}'
     )
-    client.copy_dataset(args.vocab_dataset, combined_dataset)
+    client.copy_dataset(args.vocab_dataset, combined_backup)
     LOGGER.info(
-        f'Finished Copying vocabulary tables from {args.vocab_dataset} to {combined_dataset}'
+        f'Finished Copying vocabulary tables from {args.vocab_dataset} to {combined_backup}'
     )
 
     LOGGER.info('EHR + RDR combine started')
     LOGGER.info('Verifying all CDM tables in EHR and RDR datasets...')
     assert_ehr_and_rdr_tables(client, args.rdr_dataset,
                               args.unioned_ehr_dataset)
-    ehr_consent(client, args.rdr_dataset, combined_dataset)
+
+    combined_sandbox = create_dataset(client, args.release_tag, 'sandbox')
+    ehr_consent(client, args.rdr_dataset, combined_sandbox)
 
     for table in combine_consts.RDR_TABLES_TO_COPY:
         LOGGER.info(f'Copying {table} table from RDR...')
         client.copy_table(f'{client.project}.{args.rdr_dataset}.{table}',
-                          f'{client.project}.{combined_dataset}.{table}')
+                          f'{client.project}.{combined_backup}.{table}')
 
     LOGGER.info(
         f'Translating {combine_consts.EHR_TABLES_TO_COPY} table from EHR...')
     for table in combine_consts.EHR_TABLES_TO_COPY:
         LOGGER.info(f'Copying {table} table from EHR...')
-        copy_ehr_table(client, table, args.unioned_ehr_dataset,
-                       combined_dataset)
+        copy_ehr_table(client, table, args.unioned_ehr_dataset, combined_backup)
 
     LOGGER.info('Generating combined mapping tables ...')
     for domain_table in combine_consts.DOMAIN_TABLES + [common.SURVEY_CONDUCT]:
         LOGGER.info(f'Mapping {domain_table}...')
         generate_combined_mapping_tables(client, domain_table, args.rdr_dataset,
                                          args.unioned_ehr_dataset,
-                                         combined_dataset)
+                                         combined_backup)
 
     LOGGER.info('Loading Domain tables ...')
     for domain_table in combine_consts.DOMAIN_TABLES:
         LOGGER.info(f'Loading {domain_table}...')
         load(client, domain_table, args.rdr_dataset, args.unioned_ehr_dataset,
-             combined_dataset)
+             combined_backup)
 
     LOGGER.info('Loading fact_relationship...')
     load_fact_relationship(client, args.rdr_dataset, args.unioned_ehr_dataset,
-                           combined_dataset)
+                           combined_backup)
     LOGGER.info('Loading foreign key Mapped Person table...')
-    load_mapped_person(client, combined_dataset)
+    load_mapped_person(client, combined_backup)
 
-    LOGGER.info(f'Adding _cdr_metadata table to {combined_dataset}')
+    LOGGER.info(f'Adding _cdr_metadata table to {combined_backup}')
 
     add_cdr_metadata.main([
         '--component', add_cdr_metadata.CREATE, '--project_id', client.project,
-        '--target_dataset', combined_dataset
+        '--target_dataset', combined_backup
     ])
     today = datetime.now().strftime('%Y-%m-%d')
     add_cdr_metadata.main([
         '--component', add_cdr_metadata.INSERT, '--project_id', client.project,
-        '--target_dataset', combined_dataset, '--etl_version',
+        '--target_dataset', combined_backup, '--etl_version',
         resources.get_git_tag(), '--ehr_source', args.unioned_ehr_dataset,
         '--ehr_cutoff_date', args.ehr_cutoff_date, '--rdr_source',
         args.rdr_dataset, '--cdr_generation_date', today,
