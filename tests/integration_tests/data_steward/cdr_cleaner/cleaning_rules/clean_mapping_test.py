@@ -8,9 +8,6 @@ DC-1528
 import os
 from unittest import mock
 
-# Third party imports
-from google.cloud import bigquery
-
 # Project imports
 from app_identity import PROJECT_ID
 from common import JINJA_ENV, OBSERVATION
@@ -92,7 +89,9 @@ class CleanMappingExtTablesTest(BaseTest.CleaningRulesTestBase):
         cls.sandbox_id = f'{cls.dataset_id}_sandbox'
 
         # mock mapping_tables
-        cls.tables = ['_mapping_observation', 'observation_ext']
+        cls.tables = [
+            f'_mapping_{OBSERVATION}', f'{OBSERVATION}_ext', OBSERVATION
+        ]
         mock_mapping_tables.return_value = cls.tables
 
         # Instantiate class
@@ -112,8 +111,6 @@ class CleanMappingExtTablesTest(BaseTest.CleaningRulesTestBase):
             cls.fq_table_names.append(
                 f'{cls.project_id}.{cls.dataset_id}.{table_name}')
 
-        # call super to set up the client, create datasets, and create
-        # empty test tables
         # NOTE:  does not create empty sandbox tables.
         super().setUpClass()
 
@@ -122,27 +119,16 @@ class CleanMappingExtTablesTest(BaseTest.CleaningRulesTestBase):
         Create test table for the rule to run on
         """
 
-        table_schemas = [
-            self.client.get_table_schema('_mapping_observation'),
-            self.client.get_table_schema('observation_ext'),
-            self.client.get_table_schema(OBSERVATION)
-        ]
-
-        # create tables
-        observation_table = f'{self.project_id}.{self.dataset_id}.{OBSERVATION}'
-        for table, schema in zip(self.fq_table_names + [observation_table],
-                                 table_schemas):
-            table_obj = bigquery.Table(table, schema)
-            self.client.create_table(table_obj, exists_ok=True)
+        super().setUp()
 
         mapping_query = MAPPING_TABLE_TEMPLATE.render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
-            mapping_table='_mapping_observation')
+            mapping_table=f'_mapping_{OBSERVATION}')
 
         ext_query = EXT_TABLE_TEMPLATE.render(project_id=self.project_id,
                                               dataset_id=self.dataset_id,
-                                              ext_table='observation_ext')
+                                              ext_table=f'{OBSERVATION}_ext')
 
         observation_query = OBSERVATION_TABLE_TEMPLATE.render(
             project_id=self.project_id, dataset_id=self.dataset_id)
@@ -180,5 +166,3 @@ class CleanMappingExtTablesTest(BaseTest.CleaningRulesTestBase):
             'cleaned_values': [(100, 'pitt', 1000)]
         }]
         self.default_test(tables_and_counts)
-        self.client.delete_table(
-            f'{self.project_id}.{self.dataset_id}.{OBSERVATION}')
