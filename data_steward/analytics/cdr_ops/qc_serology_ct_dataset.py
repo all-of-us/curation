@@ -12,10 +12,11 @@
 #     language: python
 #     name: python3
 # ---
+
 # + tags=["parameters"]
 rt_dataset = ""
 ct_ser_dataset = ""
-new_ct_dataset = ""
+new_ct_dataset = "" #the dataset to QC
 cur_project = ""
 cur_out_project = ""
 run_as = ""
@@ -36,12 +37,13 @@ impersonation_creds = auth.get_impersonation_credentials(
 client = BigQueryClient(cur_project, credentials=impersonation_creds)
 
 
-def get_table(table, cols, dataset, project):
+def get_table(client, table, cols, dataset):
     query = JINJA_ENV.from_string("""
-            SELECT {cols} 
-            FROM `{dataset}.{table}` 
+            SELECT {{cols}}
+            FROM `{{dataset}}.{{table}}`
             """)
-    df = pd.read_gbq(query, project_id=project)
+    query = query.render(cols=cols, dataset=dataset, table=table)
+    df = execute(client, query)
     return df
 
 
@@ -52,8 +54,8 @@ def get_data_input(rt_dataset, ct_ser_dataset, new_ct_dataset, cur_out_project,
                     SELECT distinct serology_person_id
                             , CASE WHEN biobank_id LIKE 'PIO%' THEN 'Vanderbilt'
                                 WHEN biobank_id LIKE 'ST%' THEN 'Mayo'
-                                WHEN biobank_id LIKE '0%' THEN 'Boston' end AS Provider              
-                    FROM `{{rt_dataset}}.person` 
+                                WHEN biobank_id LIKE '0%' THEN 'Boston' end AS Provider
+                    FROM `{{rt_dataset}}.person`
                     LEFT JOIN `{{rt_dataset}}.pid_sid_map` USING(serology_person_id)
                     WHERE control_status = 'Positive' """)
     pos_controls_query = query.render(project_id=cur_project,
@@ -62,36 +64,36 @@ def get_data_input(rt_dataset, ct_ser_dataset, new_ct_dataset, cur_out_project,
     ############
     query = JINJA_ENV.from_string(
         """ SELECT distinct biobank_id, serology_person_id
-                        FROM `{{rt_dataset}}.mayo_person` 
+                        FROM `{{rt_dataset}}.mayo_person`
                         JOIN `{{rt_dataset}}.pid_sid_map` USING(biobank_id)""")
     mayo_positive_query = query.render(project_id=cur_project,
                                        rt_dataset=rt_dataset)
     mayo_positive_controls = execute(client, mayo_positive_query)
     ############
     query = JINJA_ENV.from_string(
-        """SELECT DISTINCT serology_person_id, person_id 
-                                    FROM `{{ct_ser_dataset}}.serology_person` """
+        """SELECT DISTINCT serology_person_id, person_id
+                                    FROM `{{project_id}}.{{ct_ser_dataset}}.serology_person` """
     )
     ct_person_query = query.render(project_id=cur_out_project,
                                    ct_ser_dataset=ct_ser_dataset)
     ct_person_table = execute(client, ct_person_query)
     ############
-    query = JINJA_ENV.from_string(""" SELECT DISTINCT * 
-                                    FROM `{{new_ct_dataset}}.serology_person` """
+    query = JINJA_ENV.from_string(""" SELECT DISTINCT *
+                                    FROM `{{project_id}}.{{new_ct_dataset}}.serology_person` """
                                  )
     person_query = query.render(project_id=cur_project,
                                 new_ct_dataset=new_ct_dataset)
     new_ct_person_table = execute(client, person_query)
     ############
     query = JINJA_ENV.from_string(""" SELECT distinct table_name, column_name
-                        FROM {{new_ct_dataset}}.INFORMATION_SCHEMA.COLUMNS""")
+                        FROM `{{project_id}}.{{new_ct_dataset}}.INFORMATION_SCHEMA.COLUMNS`""")
     schema_query = query.render(project_id=cur_project,
                                 new_ct_dataset=new_ct_dataset)
     schema = execute(client, schema_query)
     return pos_controls_provider, mayo_positive_controls, ct_person_table, new_ct_person_table, schema
 
 
-def serology_dataset_qc(new_ct_dataset, rt_dataset, ct_ser_dataset, cur_project,
+def serology_dataset_qc(client, new_ct_dataset, rt_dataset, ct_ser_dataset, cur_project,
                         cur_out_project):
     pos_controls_provider, mayo_positive_controls, ct_person_table, new_ct_person_table, schema = \
         get_data_input(rt_dataset=rt_dataset, ct_ser_dataset=ct_ser_dataset
@@ -109,9 +111,9 @@ def serology_dataset_qc(new_ct_dataset, rt_dataset, ct_ser_dataset, cur_project,
     all_tables_pids = []
     for table in schema.table_name.unique():
         if pid_col in schema[schema.table_name == table].column_name.unique():
-            df = get_table(dataset=new_ct_dataset,
+            df = get_table(client=client,
+                           dataset=new_ct_dataset,
                            table=table,
-                           project=cur_project,
                            cols='serology_person_id')
             pids = list(set(df[pid_col]))
             all_tables_pids = all_tables_pids + pids
@@ -138,14 +140,14 @@ def serology_dataset_qc(new_ct_dataset, rt_dataset, ct_ser_dataset, cur_project,
         '\n\n############################################## QC3 ####################################################'
     )
     print(''' In ''' + new_ct_dataset + '''.serology_person, check that:
-    
+
     - All participants regardless of control_status have a serology_person_id and a control_status
-        
+
     - VUMC non-controls and VUMC controls (neg controls):
         - have person_id
         - do **not** have demographics. Their person_ids will be used to link to CDR person.
-            
-    - Positive controls (non VUMC; from Boston and Vanderbilt U.):     
+
+    - Positive controls (non VUMC; from Boston and Vanderbilt U.):
         - do **not** have person_id since they are not in AoU database
         - Boston Positive Controls do **not** have demographics becasye they did not provide any
         - Vanderbilt U. have demographics (provided by Vanderbilt U.)''')
@@ -206,5 +208,7 @@ def serology_dataset_qc(new_ct_dataset, rt_dataset, ct_ser_dataset, cur_project,
             '.serology_person.' + "\033[0;0m")
 
 
-serology_dataset_qc(new_ct_dataset, rt_dataset, ct_ser_dataset, cur_project,
+serology_dataset_qc(client, new_ct_dataset, rt_dataset, ct_ser_dataset, cur_project,
                     cur_out_project)
+
+
