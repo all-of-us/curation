@@ -91,7 +91,7 @@ COPY_RDR_QUERY = JINJA_ENV.from_string(
 COPY_EHR_QUERY = JINJA_ENV.from_string("""
 SELECT * FROM `{{ehr_dataset_id}}.{{table}}` AS t
 WHERE EXISTS
-   (SELECT 1 FROM `{{combined_dataset_id}}.{{ehr_consent_table_id}}` AS c
+   (SELECT 1 FROM `{{combined_sandbox_dataset_id}}.{{ehr_consent_table_id}}` AS c
     WHERE t.person_id = c.person_id)
 """)
 
@@ -122,7 +122,7 @@ JOIN `{{ehr_dataset_id}}._mapping_{{domain_table}}` AS v
 ON t.{{domain_table}}_id = v.{{domain_table}}_id
 {% if person_id_flag %}
 WHERE EXISTS
-    (SELECT 1 FROM `{{combined_dataset_id}}.{{ehr_consent_table_id}}` AS c
+    (SELECT 1 FROM `{{combined_sandbox_dataset_id}}.{{ehr_consent_table_id}}` AS c
      WHERE t.person_id = c.person_id)
 {% endif %}
 {% endif %}
@@ -138,10 +138,10 @@ JOIN
       SELECT
           *,
           row_number() OVER (PARTITION BY m.src_{{domain_table}}_id, m.src_hpo_id ) AS row_num
-      FROM `{{combined_dataset_id}}.{{mapping_table}}` AS m
+      FROM `{{combined_backup_dataset_id}}.{{mapping_table}}` AS m
     )
     WHERE row_num = 1
-) m        ON t.{{domain_table}}_id = m.src_{{domain_table}}_id
+) m ON t.{{domain_table}}_id = m.src_{{domain_table}}_id
    {{join_expr}}
 WHERE m.src_dataset_id = '{{rdr_dataset_id}}'
 
@@ -166,7 +166,7 @@ JOIN
       SELECT
           *,
           row_number() OVER (PARTITION BY m.src_{{domain_table}}_id, m.src_hpo_id) AS row_num
-      FROM `{{combined_dataset_id}}.{{mapping_table}}` AS m
+      FROM `{{combined_backup_dataset_id}}.{{mapping_table}}` AS m
     )
     WHERE row_num = 1
 ) m
@@ -201,13 +201,13 @@ FROM (
     END AS fact_id_2,
     fr.relationship_concept_id AS relationship_concept_id
   FROM `{{rdr_dataset_id}}.fact_relationship` AS fr
-    LEFT JOIN `{{combined_dataset_id}}.{{mapping_measurement}}` AS m1
+    LEFT JOIN `{{combined_backup_dataset_id}}.{{mapping_measurement}}` AS m1
       ON m1.src_measurement_id = fr.fact_id_1 AND fr.domain_concept_id_1={{measurement_domain_concept_id}}
-    LEFT JOIN `{{combined_dataset_id}}.{{mapping_observation}}` AS o1
+    LEFT JOIN `{{combined_backup_dataset_id}}.{{mapping_observation}}` AS o1
       ON o1.src_observation_id = fr.fact_id_1 AND fr.domain_concept_id_1={{observation_domain_concept_id}}
-    LEFT JOIN `{{combined_dataset_id}}.{{mapping_measurement}}` AS m2
+    LEFT JOIN `{{combined_backup_dataset_id}}.{{mapping_measurement}}` AS m2
       ON m2.src_measurement_id = fr.fact_id_2 AND fr.domain_concept_id_2={{measurement_domain_concept_id}}
-    LEFT JOIN `{{combined_dataset_id}}.{{mapping_observation}}` AS o2
+    LEFT JOIN `{{combined_backup_dataset_id}}.{{mapping_observation}}` AS o2
       ON o2.src_observation_id = fr.fact_id_2 AND fr.domain_concept_id_2={{observation_domain_concept_id}}
 
  UNION ALL
