@@ -221,6 +221,8 @@ class FillSourceValueTextFields(BaseCleaningRule):
         for table in self.affected_tables:
             fields = [field['name'] for field in resources.fields_for(table)]
             fields_to_replace = get_fields_dict(table, fields)
+            if table == 'survey_conduct':
+                del fields_to_replace['validated_survey_source_value']
 
             if fields_to_replace:
                 cols = get_modified_columns(fields,
