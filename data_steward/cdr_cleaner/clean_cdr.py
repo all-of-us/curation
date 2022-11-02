@@ -133,7 +133,6 @@ LOGGER = logging.getLogger(__name__)
 
 EHR_CLEANING_CLASSES = [
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
-    (RemoveInvalidProcedureSourceRecords,),
 ]
 
 UNIONED_EHR_CLEANING_CLASSES = [
@@ -143,6 +142,7 @@ UNIONED_EHR_CLEANING_CLASSES = [
     (CleanByBirthYear,),
     (EnsureDateDatetimeConsistency,),
     (RemoveRecordsWithWrongDate,),
+    (RemoveInvalidProcedureSourceRecords,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
