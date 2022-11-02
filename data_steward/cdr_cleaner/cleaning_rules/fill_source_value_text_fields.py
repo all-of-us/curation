@@ -221,6 +221,11 @@ class FillSourceValueTextFields(BaseCleaningRule):
         for table in self.affected_tables:
             fields = [field['name'] for field in resources.fields_for(table)]
             fields_to_replace = get_fields_dict(table, fields)
+            # Added this to stop validated_survey_source_value to be refilled as the data type is
+            # integer in schema and if repopulated with concept code it will be changed to string
+            # and fails to copy to final dataset.
+            if table == 'survey_conduct':
+                del fields_to_replace['validated_survey_source_value']
 
             if fields_to_replace:
                 cols = get_modified_columns(fields,
