@@ -1,0 +1,28 @@
+[
+    {
+    "type": "string",
+    "name": "answer_for_obs_src_c_id_43528428",
+    "mode": "nullable",
+    "description": "Answers for observation_source_concept_id = 43528428"
+}, {
+    "type": "string",
+    "name": "basics_value_source_value",
+    "mode": "nullable",
+    "description": "value_source_value field for the basics survey answer"
+}, {
+    "type": "integer",
+    "name": "basics_value_source_concept_id",
+    "mode": "nullable",
+    "description": "value_source_concept_id for the basics survey answer"
+}, {
+    "type": "string",
+    "name": "hcau_value_source_value",
+    "mode": "nullable",
+    "description": "value_source_value field for the HCAU survey answer"
+}, {
+    "type": "integer",
+    "name": "hcau_value_source_concept_id",
+    "mode": "nullable",
+    "description": "value_source_concept_id for the HCAU survey answer"
+}
+]
