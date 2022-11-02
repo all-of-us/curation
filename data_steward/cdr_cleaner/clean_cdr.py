@@ -22,8 +22,7 @@ from cdr_cleaner.cleaning_rules.drug_refills_days_supply import DrugRefillsDaysS
 from cdr_cleaner.cleaning_rules.maps_to_value_ppi_vocab_update import MapsToValuePpiVocabUpdate
 from cdr_cleaner.cleaning_rules.populate_route_ids import PopulateRouteIds
 from cdr_cleaner.cleaning_rules.populate_survey_conduct_ext import PopulateSurveyConductExt
-import \
-    cdr_cleaner.cleaning_rules.remove_invalid_procedure_source_records as invalid_procedure_source
+from cdr_cleaner.cleaning_rules.remove_invalid_procedure_source_records import RemoveInvalidProcedureSourceRecords
 from cdr_cleaner.cleaning_rules.remove_non_matching_participant import RemoveNonMatchingParticipant
 from cdr_cleaner.cleaning_rules.remove_records_with_wrong_date import RemoveRecordsWithWrongDate
 from cdr_cleaner.cleaning_rules.remove_participants_under_18years import RemoveParticipantsUnder18Years
@@ -143,7 +142,7 @@ UNIONED_EHR_CLEANING_CLASSES = [
     (CleanByBirthYear,),
     (EnsureDateDatetimeConsistency,),
     (RemoveRecordsWithWrongDate,),
-    (invalid_procedure_source.get_remove_invalid_procedure_source_queries,),
+    (RemoveInvalidProcedureSourceRecords,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
