@@ -1,5 +1,5 @@
 --
--- Prod data should not exist in nonprod environments. This SQL checks if any prod person_ids
+-- Prod data should not exist in nonprod environments. This SQL checks if any prod person_ids or research_ids
 -- exist in non-prod environments. This query runs daily and stores the result in 
 -- id_violations_in_lower_envs table.
 --
