@@ -3,18 +3,10 @@ Clean insurance data from Spanish Basics and the HCAU follow-up.
 
 For a short time the spanish basics survey did not display the answers to the insurance question (43528428) correctly.
 The question was later asked again in the HCAU survey but with the correct branching logic.
-For those who took the broken version of the basics survey this cleaning rule should invalidate the insurance
-observations. These HCAU answer codes/ids should be replaced by the equivalent
-codes/ids that were used in the original basics survey.
 
 For PIDs who took the original spanish basics insurance question (43528428), invalidate their answers.
-FOR PIDs who took the HCAU insurance question, update the answer given with the HCAU survey to use the codes/ids from
-the basics survey)
-
-1. Sandbox all rows affected by the CR, rows to be updated as well as invalidated.
-2. Invalidate the insurance rows for PIDs who only took the broken basics survey.
-3. Create a temp table of the HCAU answers with the codes/ids replaced by codes/ids used in the basics survey.
-5. Where possible, update the basics rows with the data in the temp table.
+FOR PIDs who took the both insurance questions, update the answer given with the HCAU survey to use the codes/ids used
+in the basics survey)
 """
 import logging
 import os
@@ -41,7 +33,7 @@ SANDBOXED_INSURANCE_ROWS = 'sandboxed_insurance_rows'
 HEALTH_INSURANCE_PIDS = 'health_insurance_pids'
 
 # Sandbox basics rows to be invalidated, and the hcau rows to be updated.
-SANDBOX_UPDATED_BASICS_ROWS = JINJA_ENV.from_string("""
+SANDBOX_CHANGES_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{sandboxed_insurance_rows}}`
 AS
 SELECT 
@@ -53,7 +45,7 @@ WHERE
     AND person_id IN (SELECT person_id FROM `{{project_id}}.{{pipeline_tables}}.{{health_insurance_pids}}`)
 """)
 
-# Invalidate where PIDs took the incorrect insurance question(from basics).
+# Invalidate where PIDs took the original insurance question.
 UPDATE_INVALID_QUERY = JINJA_ENV.from_string("""
 UPDATE 
     `{{project_id}}.{{dataset_id}}.observation` 
@@ -218,7 +210,7 @@ class MapHealthInsuranceResponses(BaseCleaningRule):
         queries = []
 
         sandbox_query = dict()
-        sandbox_query[cdr_consts.QUERY] = SANDBOX_UPDATED_BASICS_ROWS.render(
+        sandbox_query[cdr_consts.QUERY] = SANDBOX_CHANGES_QUERY.render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
             sandbox_dataset_id=self.sandbox_dataset_id,

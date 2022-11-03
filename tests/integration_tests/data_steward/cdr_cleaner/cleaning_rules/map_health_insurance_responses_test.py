@@ -1,4 +1,5 @@
 """
+    Integration test for MapHealthInsuranceResponses
 
 """
 # Python imports
@@ -10,7 +11,7 @@ import mock
 # Project imports
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.map_health_insurance_responses import (
-    MapHealthInsuranceResponses, HEALTH_INSURANCE_PIDS, INSURANCE_LOOKUP, NEW_INSURANCE_ROWS)
+    MapHealthInsuranceResponses, HEALTH_INSURANCE_PIDS, INSURANCE_LOOKUP)
 from common import JINJA_ENV, OBSERVATION, VOCABULARY_TABLES
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
@@ -83,18 +84,18 @@ class MapHealthInsuranceResponsesTest(BaseTest.CleaningRulesTestBase):
                 f'{cls.project_id}.{cls.sandbox_id}.{table_name}')
 
         cls.fq_sandbox_table_names.append(
-                f'{cls.project_id}.{cls.sandbox_id}.{INSURANCE_LOOKUP}')
+            f'{cls.project_id}.{cls.sandbox_id}.{INSURANCE_LOOKUP}')
 
         cls.fq_table_names = [
             f'{cls.project_id}.{cls.dataset_id}.{table}'
-            for table in [OBSERVATION] + VOCABULARY_TABLES + [HEALTH_INSURANCE_PIDS]
+            for table in [OBSERVATION] + VOCABULARY_TABLES +
+            [HEALTH_INSURANCE_PIDS]
         ]
 
         # call super to set up the client, create datasets, and create
         # empty test tables
         # NOTE:  does not create empty sandbox tables.
         super().setUpClass()
-
 
     def setUp(self):
 
@@ -106,7 +107,7 @@ class MapHealthInsuranceResponsesTest(BaseTest.CleaningRulesTestBase):
             LOAD_QUERY.render(project_id=self.project_id,
                               dataset_id=self.dataset_id),
             HEALTH_INSURANCE_PIDS_QUERY.render(project_id=self.project_id,
-                                         dataset_id=self.dataset_id)
+                                               dataset_id=self.dataset_id)
         ])
 
     def test_setup_rule(self):
@@ -115,7 +116,7 @@ class MapHealthInsuranceResponsesTest(BaseTest.CleaningRulesTestBase):
 
         # sees that setup worked and reset affected_tables as expected
         self.assertEqual(set([OBSERVATION]),
-                        set(self.rule_instance.affected_tables))
+                         set(self.rule_instance.affected_tables))
 
     def test_map_health_insurance_responses(self):
         """
@@ -130,30 +131,32 @@ class MapHealthInsuranceResponsesTest(BaseTest.CleaningRulesTestBase):
                 self.fq_table_names[0],
             'fq_sandbox_table_name':
                 self.fq_sandbox_table_names[0],
-            'fields': ['observation_id',
-            'person_id',
-            'observation_concept_id',
-            'value_as_string',
-            'value_as_concept_id',
-            'observation_source_value',
-            'observation_source_concept_id',
-            'value_source_value',
-            'value_source_concept_id'],
+            'fields': [
+                'observation_id', 'person_id', 'observation_concept_id',
+                'value_as_string', 'value_as_concept_id',
+                'observation_source_value', 'observation_source_concept_id',
+                'value_source_value', 'value_source_concept_id'
+            ],
             'loaded_ids': [1, 2, 3, 4, 5],
             'sandboxed_ids': [1, 2, 5],
             'cleaned_values': [
-                (1,1,40766241,"InsuranceTypeUpdate_Medicaid",43529209,"HealthInsurance_InsuranceTypeUpdate"
-                 ,43528428,"InsuranceTypeUpdate_Medicaid",43529209),
-                (5, 1, 40766241, "InsuranceTypeUpdate_Military", 45876394, "HealthInsurance_InsuranceTypeUpdate",
-                 43528428,"InsuranceTypeUpdate_Military", 43529920),
-                (2, 2, 43528428, "Invalid", 46237613, "HealthInsurance_InsuranceTypeUpdate", 43528428, "Invalid", 46237613),
+                (1, 1, 40766241, "InsuranceTypeUpdate_Medicaid", 43529209,
+                 "HealthInsurance_InsuranceTypeUpdate", 43528428,
+                 "InsuranceTypeUpdate_Medicaid", 43529209),
+                (5, 1, 40766241, "InsuranceTypeUpdate_Military", 45876394,
+                 "HealthInsurance_InsuranceTypeUpdate", 43528428,
+                 "InsuranceTypeUpdate_Military", 43529920),
+                (2, 2, 43528428, "Invalid", 46237613,
+                 "HealthInsurance_InsuranceTypeUpdate", 43528428, "Invalid",
+                 46237613),
                 (3, 3, 43528428,
-                 "Medicaid, Medical Assistance, or any kind of government-assistance plan for those with low incomes or disability"
-                 , 0, "HealthInsurance_InsuranceTypeUpdate", 43528428, "InsuranceTypeUpdate_Medicaid", 43529209),
+                 "Medicaid, Medical Assistance, or any kind of government-assistance plan for those with low incomes or disability",
+                 0, "HealthInsurance_InsuranceTypeUpdate", 43528428,
+                 "InsuranceTypeUpdate_Medicaid", 43529209),
                 (4, 4, 40766241,
                  "Medicaid, Medical Assistance, or any kind of government-assistance plan for those with low incomes or disability",
-                 0, "Insurance_InsuranceType", 1384450, "InsuranceType_GovernmentAssistancePlan", 1384441),
-
+                 0, "Insurance_InsuranceType", 1384450,
+                 "InsuranceType_GovernmentAssistancePlan", 1384441),
             ]
         }]
 
@@ -162,4 +165,3 @@ class MapHealthInsuranceResponsesTest(BaseTest.CleaningRulesTestBase):
                 self.dataset_id):
 
             self.default_test(tables_and_counts)
-
