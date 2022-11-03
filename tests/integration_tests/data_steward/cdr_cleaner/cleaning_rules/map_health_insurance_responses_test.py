@@ -59,6 +59,7 @@ HEALTH_INSURANCE_PIDS_QUERY = JINJA_ENV.from_string("""
         (1), (2)
     """)
 
+
 class MapHealthInsuranceResponsesTest(BaseTest.CleaningRulesTestBase):
 
     @classmethod
