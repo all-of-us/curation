@@ -1,5 +1,5 @@
 --
--- Prod data should not exist in nonprod environments. This SQL checks if any prod person_ids
+-- Prod data should not exist in nonprod environments. This SQL checks if any prod person_ids or research_ids
 -- exist in non-prod environments. This query runs daily and stores the result in 
 -- id_violations_in_lower_envs table.
 --
@@ -108,7 +108,22 @@ BEGIN
     "    )",
     "    HAVING count(*) > 0"), 
     "    UNION ALL \n") FROM (SELECT project_id, dataset_id, table_id FROM tmp_tables_with_person_id)), 
-    "  )"
+    "  )",
+    "  UNION DISTINCT",
+    "  SELECT project_id, dataset_id, table_id, num_violation, 'research_id' AS violation_type, CURRENT_DATE() AS monitor_date",
+    "  FROM (", (SELECT STRING_AGG(CONCAT(
+    "    SELECT ",
+    "      '", project_id, "' AS project_id,",
+    "      '", dataset_id, "' AS dataset_id,",
+    "      '", table_id, "' AS table_id,",
+    "      count(*) AS num_violation",
+    "    FROM `", project_id, ".", dataset_id, ".", table_id, "`",
+    "    WHERE CAST(person_id AS INT64) IN (", 
+    "      SELECT research_id FROM `", proj_prod, ".", mapping_dataset, ".primary_pid_rid_mapping`",
+    "    )",
+    "    HAVING count(*) > 0"), 
+    "    UNION ALL \n") FROM (SELECT project_id, dataset_id, table_id FROM tmp_tables_with_person_id)), 
+    "  )"    
     ); 
   END LOOP;
 
