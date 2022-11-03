@@ -5,6 +5,7 @@ import subprocess
 
 import sqlalchemy
 
+from IPython.display import display, HTML
 from gcloud.gsm import SecretManager
 from common import CDR_SCOPES
 from utils.auth import get_impersonation_credentials
@@ -41,7 +42,7 @@ def start_cloud_sql_proxy(project_id, run_as):
 
     instance = SecretManager(
         credentials=credentials).get_secret_from_secret_manager(
-        PDR_INSTANCE_NAME, project_id)
+            PDR_INSTANCE_NAME, project_id)
     command = f'cloud_sql_proxy -instances={instance} --token=$(gcloud auth print-access-token \
     --impersonate-service-account={run_as})'
 
@@ -70,10 +71,10 @@ def pdr_client(project_id, run_as):
             drivername="postgresql+pg8000",
             username=SecretManager(
                 credentials=credentials).get_secret_from_secret_manager(
-                POSTGRES_USER_NAME, project_id),
+                    POSTGRES_USER_NAME, project_id),
             password=SecretManager(
                 credentials=credentials).get_secret_from_secret_manager(
-                POSTGRES_PASSWORD, project_id),
+                    POSTGRES_PASSWORD, project_id),
             host=HOST,
             port=POSTGRES_PORT,
             database=DATABASE_NAME),
@@ -99,3 +100,43 @@ def execute(client, query, max_rows=False):
     if max_rows:
         pd.set_option('display.max_rows', res.shape[0] + 1)
     return res
+
+
+def render_message(results_df,
+                   success_msg='',
+                   failure_msg='',
+                   success_msg_args={},
+                   failure_msg_args={}):
+    """
+    Renders a conditional success or failure message for a DQ check.
+
+    results_df: Dataframe containing the results of the check.
+    success_msg: A templated string to describe success.
+    failure_msg: A templated string to describe failure.
+    success_msg_args: A dictionary of args to pass to success_msg template.
+    failure_msg_args: A dictionary of args to pass to failiure_msg template.
+
+    """
+    is_success = len(results_df) == 0
+    status_msg = 'Success' if is_success else 'Failure'
+    if is_success:
+        display(
+            HTML(f'''
+                <h3>
+                    Check Status: <span style="color: {'red' if not is_success else 'green'}">{status_msg}</span>
+                </h3>
+                <p>
+                    {success_msg.format(**success_msg_args)}
+                </p>
+            '''))
+    else:
+        display(
+            HTML(f'''
+                <h3>
+                    Check Status: <span style="color: {'red' if not is_success else 'green'}">{status_msg}</span>
+                </h3>
+                <p>
+                    {failure_msg.format(**failure_msg_args)}
+                </p>
+            '''))
+        display(results_df)
