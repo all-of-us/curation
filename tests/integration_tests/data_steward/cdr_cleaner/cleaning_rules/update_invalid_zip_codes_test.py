@@ -130,12 +130,18 @@ class UpdateInvalidZipCodesTest(BaseTest.CleaningRulesTestBase):
                 -- invalid zip codes, excess whitespace, will be sandboxed and updated in observation table --
                 -- once cleaned will be valid --
                 (14, 14, 0, date('2019-03-03'), 0, 1585250, null, '     34567', null, null), 
+                -- will not be cleaned, will continue to be invalid --
+                (15, 15, 0, date('2019-03-03'), 0, 1585250, null, '34 5 67', null, null),
                 -- once cleaned will be invalid --
-                (15, 15, 0, date('2019-03-03'), 0, 1585250, null, '56789     ', null, null), 
-
+                (16, 16, 0, date('2019-03-03'), 0, 1585250, null, '56789     ', null, null), 
+                
                 -- valid zip codes with preceding 0s will not be affected --
-                (16, 16, 0, date('2019-03-03'), 0, 1585250, null, '02035', null, null),
-                (17, 17, 0, date('2019-03-03'), 0, 1585250, null, '00601', null, null)
+                (17, 17, 0, date('2019-03-03'), 0, 1585250, null, '02035', null, null),
+                (18, 18, 0, date('2019-03-03'), 0, 1585250, null, '00601', null, null),
+                
+                -- zip codes with improper formatting, will be sandboxed and updated in observation table --
+                (19, 19, 0, date('2019-03-03'), 0, 1585250, null, '123456789', null, null)
+                
             """).render(fq_dataset_name=self.fq_dataset_name)
 
         self.load_test_data([zip3_lookup_tmpl, observation_tmpl])
@@ -153,9 +159,10 @@ class UpdateInvalidZipCodesTest(BaseTest.CleaningRulesTestBase):
                 'value_source_value'
             ],
             'loaded_ids': [
-                1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17
+                1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18,
+                19
             ],
-            'sandboxed_ids': [3, 4, 5, 6, 9, 10, 11, 12, 13, 15],
+            'sandboxed_ids': [3, 4, 5, 6, 9, 10, 11, 12, 13, 15, 16, 19],
             'cleaned_values': [
                 (1, 1, 0, self.date, 0, 1585250, None, '12345', None, None),
                 (2, 2, 0, self.date, 0, 1585250, None, '23456-1234', None,
@@ -203,8 +210,16 @@ class UpdateInvalidZipCodesTest(BaseTest.CleaningRulesTestBase):
                  self.invalid_zip_value_as_number,
                  self.invalid_zip_value_as_string, self.invalid_zip_concept,
                  self.invalid_zip_value_source_value),
-                (16, 16, 0, self.date, 0, 1585250, None, '02035', None, None),
-                (17, 17, 0, self.date, 0, 1585250, None, '00601', None, None)
+                (16, 16, 0, self.date, 0, 1585250,
+                 self.invalid_zip_value_as_number,
+                 self.invalid_zip_value_as_string, self.invalid_zip_concept,
+                 self.invalid_zip_value_source_value),
+                (17, 17, 0, self.date, 0, 1585250, None, '02035', None, None),
+                (18, 18, 0, self.date, 0, 1585250, None, '00601', None, None),
+                (19, 19, 0, self.date, 0, 1585250,
+                 self.invalid_zip_value_as_number,
+                 self.invalid_zip_value_as_string, self.invalid_zip_concept,
+                 self.invalid_zip_value_source_value)
             ]
         }]
 
