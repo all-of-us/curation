@@ -25,29 +25,15 @@ INSERT INTO
  visit_detail_id, procedure_source_value, procedure_source_concept_id, modifier_source_value)
 
 VALUES
-    (51380225, 4, 4000000, '2009-04-27', TIMESTAMP('2009-04-27'), 38000270, 0, 1, 0, NULL,NULL,'92014', 4000000, NULL),
-    (76392641, 5, 5000000, '2011-05-19', TIMESTAMP('2011-05-19'), 38000270, 0, 1, 0, NULL,NULL,'99243', 5000000, NULL),
-    (22888767, 6, 6000000, '2007-12-23', TIMESTAMP('2007-12-28'), 38000270, 0, 1, 0, NULL,NULL,'99243', 6000000, NULL),
+    (51380225, 4, 42628445, '2009-04-27', TIMESTAMP('2009-04-27'), 38000270, 0, 1, 0, NULL,NULL,'92014', 42628445, NULL),
+    (76392641, 5, 42628307, '2011-05-19', TIMESTAMP('2011-05-19'), 38000270, 0, 1, 0, NULL,NULL,'99243', 42628307, NULL),
+    (22888767, 6, 42628248, '2007-12-23', TIMESTAMP('2007-12-28'), 38000270, 0, 1, 0, NULL,NULL,'99243', 42628248, NULL),
 
     (20074825, 1, 1000000, '2012-09-23', TIMESTAMP('2012-09-23'), 44786631, 0, 1, 0, NULL,NULL,'99458', 2514636, NULL),
     (12557074, 2, 2000000, '2010-06-21', TIMESTAMP('2010-06-21'), 47876139, 0, 1, 0, NULL,NULL,'45734', 4578984, NULL),
     (56145455, 3, 3000000, '2011-02-14', TIMESTAMP('2011-02-14'), 45454515, 0, 1, 0, NULL,NULL,'48445', 8545787, NULL)
 
 """)
-
-CONCEPT_IDS_TEMPLATE = JINJA_ENV.from_string("""
- INSERT INTO
-     `{{project_id}}.{{dataset_id}}.concept`
- (concept_id, concept_name, domain_id, vocabulary_id, concept_class_id, standard_concept, concept_code, valid_start_date, valid_end_date, invalid_reason)
- VALUES
-     (1000000, 'Respiratory-1', 'Procedure', 'ABC',  'CPT4',           'S', '1010882', '2011-02-14', '2011-02-15', NULL ),
-     (2000000, 'Respiratory-2', 'Procedure', 'ABC',  'CPT4 Hierarchy', 'S', '1010882', '2011-02-14', '2011-02-15', NULL),
-     (3000000, 'Respiratory-3', 'Procedure', 'ABC',  'Procedure',      'S', '1010882', '2011-02-14', '2011-02-15', NULL),
-     
-     (4000000, 'Respiratory-4', 'Drug',        'ABC', 'CPT4 Modifier', NULL, '1010882', '2011-02-14', '2011-02-15', NULL),
-     (5000000, 'Respiratory-5', 'Observation', 'ABC', 'CPT4 Modifier', NULL, '1010882', '2011-02-14', '2011-02-15', NULL),
-     (6000000, 'Respiratory-6', 'Procedure',   'ABC', 'CPT4 Modifier', NULL, '1010882', '2011-02-14', '2011-02-15', NULL)
- """)
 
 
 class RemoveInvalidProcedureSourceRecordsTest(BaseTest.CleaningRulesTestBase):
@@ -62,6 +48,9 @@ class RemoveInvalidProcedureSourceRecordsTest(BaseTest.CleaningRulesTestBase):
 
         # Set the test project identifier
         cls.project_id = os.environ.get(PROJECT_ID)
+
+        # Set vocab dataset name
+        cls.vocabulary_dataset = os.environ.get('VOCABULARY_DATASET')
 
         # Set the expected test datasets
         cls.dataset_id = os.environ.get('COMBINED_DATASET_ID')
@@ -101,12 +90,10 @@ class RemoveInvalidProcedureSourceRecordsTest(BaseTest.CleaningRulesTestBase):
             dataset_id=self.dataset_id,
             procedure_occurrence_table=PROCEDURE_OCCURRENCE)
 
-        # Query to insert test records into concept table
-        concept_ids_template = CONCEPT_IDS_TEMPLATE.render(
-            project_id=self.project_id, dataset_id=self.dataset_id)
+        # Loads the vocab tables
+        self.copy_vocab_tables(self.vocabulary_dataset)
 
-        self.load_test_data(
-            [procedure_source_concept_ids_query, concept_ids_template])
+        self.load_test_data([procedure_source_concept_ids_query])
 
     def test_field_cleaning(self):
         """
