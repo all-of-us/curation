@@ -20,61 +20,65 @@ DOMAIN_TABLES = list(
 TABLES_TO_PROCESS = RDR_TABLES_TO_COPY + EHR_TABLES_TO_COPY + DOMAIN_TABLES
 LEFT_JOIN = JINJA_ENV.from_string("""
 LEFT JOIN
-(
-SELECT *
-FROM (
-SELECT
-*,
-row_number() OVER (PARTITION BY {{prefix}}.{{field}}, {{prefix}}.src_hpo_id )
-AS row_num
-FROM `{{dataset_id}}.{{table}}` AS {{prefix}}
-)
-WHERE row_num = 1
-) {{prefix}}  ON t.{{field}} = {{prefix}}.src_{{field}}
+  (
+    SELECT *
+    FROM (
+      SELECT
+        *,
+        row_number() OVER (PARTITION BY {{prefix}}.{{field}},{{prefix}}.src_hpo_id) AS row_num
+      FROM `{{dataset_id}}.{{table}}` AS {{prefix}}
+    )
+    WHERE row_num = 1
+  ) {{prefix}}
+ON t.{{field}} = {{prefix}}.src_{{field}}
 AND m.src_dataset_id = {{prefix}}.src_dataset_id
 """)
 
 JOIN_VISIT = JINJA_ENV.from_string("""
 JOIN
-(
-SELECT *
-FROM (
-SELECT
-*,
-row_number() OVER (PARTITION BY {{prefix}}.{{field}}, {{prefix}}.src_hpo_id )
-AS row_num
-FROM `{{dataset_id}}.{{table}}` AS {{prefix}}
-)
-WHERE row_num = 1
-) {{prefix}}  ON t.{{field}} = {{prefix}}.src_{{field}}
+  (
+    SELECT *
+    FROM (
+      SELECT
+        *,
+        row_number() OVER (PARTITION BY {{prefix}}.{{field}}, {{prefix}}.src_hpo_id) AS row_num
+      FROM `{{dataset_id}}.{{table}}` AS {{prefix}}
+    )
+    WHERE row_num = 1
+  ) {{prefix}}
+ON t.{{field}} = {{prefix}}.src_{{field}}
 AND m.src_dataset_id = {{prefix}}.src_dataset_id
 """)
 
 LEFT_JOIN_PERSON = JINJA_ENV.from_string("""
 LEFT JOIN
-(
-SELECT *
-FROM (
-SELECT
-*,
-row_number() OVER (PARTITION BY {{prefix}}.{{field}}, {{prefix}}.src_hpo_id )
-AS row_num
-FROM `{{dataset_id}}.{{table}}` AS {{prefix}}
-)
-WHERE row_num = 1
-) {{prefix}}  ON t.{{field}} = {{prefix}}.src_{{field}}
+  (
+    SELECT *
+    FROM (
+      SELECT
+        *,
+        row_number() OVER (PARTITION BY {{prefix}}.{{field}}, {{prefix}}.src_hpo_id) AS row_num
+      FROM `{{dataset_id}}.{{table}}` AS {{prefix}}
+    )
+    WHERE row_num = 1
+  ) {{prefix}}
+ON t.{{field}} = {{prefix}}.src_{{field}}
 """)
 
 EHR_CONSENT_QUERY = JINJA_ENV.from_string("""
 WITH ordered_response AS
-(SELECT
-person_id,
-value_source_concept_id,
-observation_datetime,
-ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY observation_datetime DESC,
-value_source_concept_id ASC) AS rn
-FROM `{{dataset_id}}.observation`
-WHERE observation_source_value = '{{source_value_ehr_consent}}')
+  (
+    SELECT
+      person_id,
+      value_source_concept_id,
+      observation_datetime,
+      ROW_NUMBER() OVER(
+        PARTITION BY person_id ORDER BY observation_datetime DESC,
+        value_source_concept_id ASC
+        ) AS rn
+    FROM `{{dataset_id}}.observation`
+    WHERE observation_source_value = '{{source_value_ehr_consent}}'
+  )
 SELECT person_id
 FROM ordered_response
 WHERE rn = 1
@@ -87,7 +91,7 @@ COPY_RDR_QUERY = JINJA_ENV.from_string(
 COPY_EHR_QUERY = JINJA_ENV.from_string("""
 SELECT * FROM `{{ehr_dataset_id}}.{{table}}` AS t
 WHERE EXISTS
-   (SELECT 1 FROM `{{combined_dataset_id}}.{{ehr_consent_table_id}}` AS c
+   (SELECT 1 FROM `{{combined_sandbox_dataset_id}}.{{ehr_consent_table_id}}` AS c
     WHERE t.person_id = c.person_id)
 """)
 
@@ -108,7 +112,7 @@ FROM `{{rdr_dataset_id}}.{{domain_table}}` AS t
 FROM `{{rdr_dataset_id}}.{{domain_table}}`
 UNION ALL
 SELECT DISTINCT
-    '{{ehr_dataset_id}}'  AS src_dataset_id,
+    '{{ehr_dataset_id}}' AS src_dataset_id,
     t.{{domain_table}}_id AS src_{{domain_table}}_id,
     v.src_hpo_id AS src_hpo_id,
     t.{{domain_table}}_id  AS {{domain_table}}_id,
@@ -118,7 +122,7 @@ JOIN `{{ehr_dataset_id}}._mapping_{{domain_table}}` AS v
 ON t.{{domain_table}}_id = v.{{domain_table}}_id
 {% if person_id_flag %}
 WHERE EXISTS
-    (SELECT 1 FROM `{{combined_dataset_id}}.{{ehr_consent_table_id}}` AS c
+    (SELECT 1 FROM `{{combined_sandbox_dataset_id}}.{{ehr_consent_table_id}}` AS c
      WHERE t.person_id = c.person_id)
 {% endif %}
 {% endif %}
@@ -134,10 +138,10 @@ JOIN
       SELECT
           *,
           row_number() OVER (PARTITION BY m.src_{{domain_table}}_id, m.src_hpo_id ) AS row_num
-      FROM `{{combined_dataset_id}}.{{mapping_table}}` AS m
+      FROM `{{combined_backup_dataset_id}}.{{mapping_table}}` AS m
     )
     WHERE row_num = 1
-) m        ON t.{{domain_table}}_id = m.src_{{domain_table}}_id
+) m ON t.{{domain_table}}_id = m.src_{{domain_table}}_id
    {{join_expr}}
 WHERE m.src_dataset_id = '{{rdr_dataset_id}}'
 
@@ -162,7 +166,7 @@ JOIN
       SELECT
           *,
           row_number() OVER (PARTITION BY m.src_{{domain_table}}_id, m.src_hpo_id) AS row_num
-      FROM `{{combined_dataset_id}}.{{mapping_table}}` AS m
+      FROM `{{combined_backup_dataset_id}}.{{mapping_table}}` AS m
     )
     WHERE row_num = 1
 ) m
@@ -197,13 +201,13 @@ FROM (
     END AS fact_id_2,
     fr.relationship_concept_id AS relationship_concept_id
   FROM `{{rdr_dataset_id}}.fact_relationship` AS fr
-    LEFT JOIN `{{combined_dataset_id}}.{{mapping_measurement}}` AS m1
+    LEFT JOIN `{{combined_backup_dataset_id}}.{{mapping_measurement}}` AS m1
       ON m1.src_measurement_id = fr.fact_id_1 AND fr.domain_concept_id_1={{measurement_domain_concept_id}}
-    LEFT JOIN `{{combined_dataset_id}}.{{mapping_observation}}` AS o1
+    LEFT JOIN `{{combined_backup_dataset_id}}.{{mapping_observation}}` AS o1
       ON o1.src_observation_id = fr.fact_id_1 AND fr.domain_concept_id_1={{observation_domain_concept_id}}
-    LEFT JOIN `{{combined_dataset_id}}.{{mapping_measurement}}` AS m2
+    LEFT JOIN `{{combined_backup_dataset_id}}.{{mapping_measurement}}` AS m2
       ON m2.src_measurement_id = fr.fact_id_2 AND fr.domain_concept_id_2={{measurement_domain_concept_id}}
-    LEFT JOIN `{{combined_dataset_id}}.{{mapping_observation}}` AS o2
+    LEFT JOIN `{{combined_backup_dataset_id}}.{{mapping_observation}}` AS o2
       ON o2.src_observation_id = fr.fact_id_2 AND fr.domain_concept_id_2={{observation_domain_concept_id}}
 
  UNION ALL

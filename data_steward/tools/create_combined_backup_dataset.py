@@ -1,21 +1,21 @@
 """
-Combine data sets `ehr` and `rdr` to form another data set `combined`
+Combine data sets `ehr` and `rdr` to form another data set `combined_backup`
 
- * Create all the CDM tables in `combined`
+ * Create all the CDM tables in `combined_backup`
 
- * Load `person_id` of those who have consented to share EHR data in `combined.ehr_consent`
+ * Load `person_id` of those who have consented to share EHR data in `combined_sandbox.ehr_consent`
 
- * Copy all `rdr.person` records to `combined.person`
+ * Copy all `rdr.person` records to `combined_backup.person`
 
- * Copy `ehr.death` records that link to `combined.ehr_consent`
+ * Copy `ehr.death` records that link to `combined_sandbox.ehr_consent`
 
- * Load `combined.visit_mapping(dst_visit_occurrence_id, src_dataset, src_visit_occurrence_id)`
+ * Load `combined_backup.visit_mapping(dst_visit_occurrence_id, src_dataset, src_visit_occurrence_id)`
    with UNION ALL of:
      1) all `rdr.visit_occurrence_id`s and
-     2) `ehr.visit_occurrence_id`s that link to `combined.ehr_consent`
+     2) `ehr.visit_occurrence_id`s that link to `combined_sandbox.ehr_consent`
 
- * Load tables `combined.{visit_occurrence, condition_occurrence, procedure_occurrence}` etc. from UNION ALL
-   of `ehr` and `rdr` records that link to `combined.person`. Use `combined.visit_mapping.dest_visit_occurrence_id`
+ * Load tables `combined_backup.{visit_occurrence, condition_occurrence, procedure_occurrence}` etc. from UNION ALL
+   of `ehr` and `rdr` records that link to `combined_backup.person`. Use `combined_backup.visit_mapping.dest_visit_occurrence_id`
    for records that have a (valid) `visit_occurrence_id`.
 
 ## Notes
@@ -46,13 +46,12 @@ import resources
 from resources import mapping_table_for
 from utils import auth, pipeline_logging
 from gcloud.bq import BigQueryClient
+from constants.bq_utils import WRITE_APPEND, WRITE_TRUNCATE
 from constants.tools import create_combined_backup_dataset as combine_consts
 from tools import add_cdr_metadata
+from tools.create_combined_dataset import create_dataset
 
 LOGGER = logging.getLogger(__name__)
-
-WRITE_APPEND = 'WRITE_APPEND'
-WRITE_TRUNCATE = 'WRITE_TRUNCATE'
 
 
 def assert_tables_in(client: BigQueryClient, dataset_id: str):
@@ -86,19 +85,20 @@ def assert_ehr_and_rdr_tables(client: BigQueryClient,
     assert_tables_in(client, rdr_dataset_id)
 
 
-def create_cdm_tables(client: BigQueryClient, combined_dataset_id: str):
+def create_cdm_tables(client: BigQueryClient, combined_backup: str):
     """
     Create all CDM tables
 
     :param client: BigQueryClient
-    :param combined_dataset_id: Identifies combined dataaset name
+    :param combined_backup: Combined backup dataset name
+    :return: None
 
     Note: Recreates any existing tables
     """
     for table in resources.CDM_TABLES:
-        LOGGER.info(f'Creating table {combined_dataset_id}.{table}...')
+        LOGGER.info(f'Creating table {combined_backup}.{table}...')
         schema_list = client.get_table_schema(table_name=table)
-        dest_table = f'{client.project}.{combined_dataset_id}.{table}'
+        dest_table = f'{client.project}.{combined_backup}.{table}'
         dest_table = bigquery.Table(dest_table, schema=schema_list)
         table = client.create_table(dest_table)  # Make an API request.
         LOGGER.info(f"Created table: `{table.table_id}`")
@@ -135,37 +135,46 @@ def query(client: BigQueryClient,
 
 
 def ehr_consent(client: BigQueryClient, rdr_dataset_id: str,
-                combined_dataset: str):
+                combined_sandbox: str):
     """
     Create and load ehr consent table in combined dataset
 
     :param client: a BigQueryClient
     :param rdr_dataset_id: Identifies the name of rdr dataset
-    :param combined_dataset: Identifies the name of combined dataset
+    :param combined_sandbox: Identifies the name of combined sandbox dataset
 
-    :return:
+    :return: None
     """
     q = combine_consts.EHR_CONSENT_QUERY.render(
         dataset_id=rdr_dataset_id,
         source_value_ehr_consent=combine_consts.SOURCE_VALUE_EHR_CONSENT,
         concept_id_consent_permission_yes=combine_consts.
         CONCEPT_ID_CONSENT_PERMISSION_YES)
-    fq_table_name = f'{client.project}.{combined_dataset}.{combine_consts.EHR_CONSENT_TABLE_ID}'
+    fq_table_name = f'{client.project}.{combined_sandbox}.{combine_consts.EHR_CONSENT_TABLE_ID}'
     table = bigquery.Table(fq_table_name)
     table = client.create_table(table, exists_ok=True)
-    LOGGER.info(f'Query for {combine_consts.EHR_CONSENT_TABLE_ID} is {q}')
+    LOGGER.info(
+        f'Query for {combined_sandbox}.{combine_consts.EHR_CONSENT_TABLE_ID} is {q}'
+    )
     query(client,
           q,
-          dst_dataset_id=combined_dataset,
+          dst_dataset_id=combined_sandbox,
           dst_table_id=combine_consts.EHR_CONSENT_TABLE_ID,
           write_disposition=WRITE_APPEND)
 
 
 def copy_ehr_table(client: BigQueryClient, table: str, unioned_ehr_dataset: str,
-                   combined_dataset: str):
+                   combined_backup: str, combined_sandbox: str):
     """
-    Copy table from EHR (consenting participants only) to the combined dataset without regenerating ids
+    Copy table from EHR (consenting participants only) to the combined backup dataset without regenerating ids.
 
+    :param client: a BigQueryClient
+    :param table: a table to copy from unioned ehr dataset to combined backup dataset
+    :param unioned_ehr_dataset: unioned ehr dataset name
+    :param combined_backup: combined backup dataset name
+    :param combined_sandbox: combined sandbox dataset name
+
+    :return: None
     """
     fields = resources.fields_for(table)
     field_names = [field['name'] for field in fields]
@@ -177,26 +186,26 @@ def copy_ehr_table(client: BigQueryClient, table: str, unioned_ehr_dataset: str,
         ehr_dataset_id=unioned_ehr_dataset,
         table=table,
         ehr_consent_table_id=combine_consts.EHR_CONSENT_TABLE_ID,
-        combined_dataset_id=combined_dataset)
-    LOGGER.info(f'Query for {table} is `{q}`')
-    query(client, q, combined_dataset, table, WRITE_APPEND)
+        combined_sandbox_dataset_id=combined_sandbox)
+    LOGGER.info(f'Query for {combined_backup}.{table} is `{q}`')
+    query(client, q, combined_backup, table, WRITE_APPEND)
 
 
 def mapping_query(domain_table: str, rdr_dataset: str, unioned_ehr_dataset: str,
-                  combined_dataset: str):
+                  combined_sandbox: str):
     """
     Returns query used to get mapping of all records from RDR combined with EHR records of consented participants
 
     :param domain_table: one of the domain tables (e.g. 'visit_occurrence', 'condition_occurrence')
     :param rdr_dataset: rdr dataset identifier
     :param unioned_ehr_dataset: unioned_ehr dataset identifier
-    :param combined_dataset: combined_backup dataset identifier
+    :param combined_sandbox: combined_sandbox dataset identifier
     :return:
     """
     return combine_consts.MAPPING_QUERY.render(
         rdr_dataset_id=rdr_dataset,
         ehr_dataset_id=unioned_ehr_dataset,
-        combined_dataset_id=combined_dataset,
+        combined_sandbox_dataset_id=combined_sandbox,
         domain_table=domain_table,
         mapping_constant=common.RDR_ID_CONSTANT,
         person_id_flag=resources.has_person_id(domain_table),
@@ -205,7 +214,8 @@ def mapping_query(domain_table: str, rdr_dataset: str, unioned_ehr_dataset: str,
 
 def generate_combined_mapping_tables(client: BigQueryClient, domain_table: str,
                                      rdr_dataset: str, unioned_ehr_dataset: str,
-                                     combined_dataset: str):
+                                     combined_backup: str,
+                                     combined_sandbox: str):
     """
     Create and load a mapping of all records from RDR combined with EHR records of consented participants
 
@@ -213,31 +223,32 @@ def generate_combined_mapping_tables(client: BigQueryClient, domain_table: str,
     :param domain_table: cdm table
     :param rdr_dataset: rdr dataset identifier
     :param unioned_ehr_dataset: unioned_ehr dataset identifier
-    :param combined_dataset: combined_backup dataset identifier
+    :param combined_backup: combined_backup dataset identifier
+    :param combined_sandbox: combined_sandbox dataset identifier
     :return:
     """
     if domain_table in combine_consts.DOMAIN_TABLES + [common.SURVEY_CONDUCT]:
         q = mapping_query(domain_table, rdr_dataset, unioned_ehr_dataset,
-                          combined_dataset)
+                          combined_sandbox)
         mapping_table = mapping_table_for(domain_table)
-        LOGGER.info(f'Query for {mapping_table} is {q}')
-        fq_mapping_table = f'{client.project}.{combined_dataset}.{mapping_table}'
+        LOGGER.info(f'Query for {combined_backup}.{mapping_table} is {q}')
+        fq_mapping_table = f'{client.project}.{combined_backup}.{mapping_table}'
         schema = resources.fields_for(mapping_table)
         table = bigquery.Table(fq_mapping_table, schema=schema)
         table = client.create_table(table, exists_ok=True)
-        query(client, q, combined_dataset, mapping_table, WRITE_APPEND)
+        query(client, q, combined_backup, mapping_table, WRITE_APPEND)
     else:
         LOGGER.info(
             f'Excluding table {domain_table} from mapping query because it does not exist'
         )
 
 
-def join_expression_generator(domain_table, combined_dataset):
+def join_expression_generator(domain_table, combined_backup):
     """
     adds table aliases as references to columns and generates join expression
 
     :param domain_table: Name of the cdm table
-    :param combined_dataset_id: name of the datqset where the tables are present
+    :param combined_backup: name of the dataset where the tables are present
     :return: returns cols and join expression strings.
     """
     field_names = [
@@ -273,7 +284,7 @@ def join_expression_generator(domain_table, combined_dataset):
                 table_alias = mapping_table_for(f'{key[:-3]}')
                 join_expression.append(
                     combine_consts.LEFT_JOIN_PERSON.render(
-                        dataset_id=combined_dataset,
+                        dataset_id=combined_backup,
                         prefix=
                         f'{key[:3] + "_" + key[-7:-3] if "_" in key else key[:3]}',
                         field=key,
@@ -283,7 +294,7 @@ def join_expression_generator(domain_table, combined_dataset):
                 table_alias = mapping_table_for(f'{key[:-3]}')
                 join_expression.append(
                     combine_consts.JOIN_VISIT.render(
-                        dataset_id=combined_dataset,
+                        dataset_id=combined_backup,
                         prefix=
                         f'{key[:3] + "_" + key[-7:-3] if "_" in key else key[:3]}',
                         field=key,
@@ -293,7 +304,7 @@ def join_expression_generator(domain_table, combined_dataset):
                 table_alias = mapping_table_for(f'{key[:-3]}')
                 join_expression.append(
                     combine_consts.LEFT_JOIN.render(
-                        dataset_id=combined_dataset,
+                        dataset_id=combined_backup,
                         prefix=
                         f'{key[:3] + "_" + key[-7:-3] if "_" in key else key[:3]}',
                         field=key,
@@ -303,19 +314,19 @@ def join_expression_generator(domain_table, combined_dataset):
 
 
 def load_query(domain_table: str, rdr_dataset: str, unioned_ehr_dataset: str,
-               combined_dataset: str):
+               combined_backup: str):
     """
     Returns query used to load a domain table
 
     :param domain_table: one of the domain tables (e.g. 'visit_occurrence', 'condition_occurrence')
     :param rdr_dataset: identifies RDR dataset name
     :param unioned_ehr_dataset: identifies unioned ehr dataset name
-    :param combined_dataset: identifies combined dataset name
+    :param combined_backup: identifies combined backup dataset name
     :return:
     """
     mapping_table = mapping_table_for(domain_table)
     cols, join_expression = join_expression_generator(domain_table,
-                                                      combined_dataset)
+                                                      combined_backup)
 
     return combine_consts.LOAD_QUERY.render(
         cols=cols,
@@ -324,11 +335,11 @@ def load_query(domain_table: str, rdr_dataset: str, unioned_ehr_dataset: str,
         ehr_dataset_id=unioned_ehr_dataset,
         mapping_table=mapping_table,
         join_expr=join_expression,
-        combined_dataset_id=combined_dataset)
+        combined_backup_dataset_id=combined_backup)
 
 
 def load(client: BigQueryClient, domain_table: str, rdr_dataset: str,
-         unioned_ehr_dataset: str, combined_dataset: str):
+         unioned_ehr_dataset: str, combined_backup: str):
     """
     Load a domain table
 
@@ -336,58 +347,59 @@ def load(client: BigQueryClient, domain_table: str, rdr_dataset: str,
     :param domain_table: one of the domain tables (e.g. 'visit_occurrence', 'condition_occurrence')
     :param rdr_dataset: identifies RDR dataset name
     :param unioned_ehr_dataset: identifies unioned ehr dataset name
-    :param combined_dataset: identifies combined dataset name
+    :param combined_backup: identifies combined dataset name
     """
     q = load_query(domain_table, rdr_dataset, unioned_ehr_dataset,
-                   combined_dataset)
-    LOGGER.info(f'Query for {domain_table} is {q}')
-    query(client, q, combined_dataset, domain_table, WRITE_APPEND)
+                   combined_backup)
+    LOGGER.info(f'Query for {combined_backup}.{domain_table} is {q}')
+    query(client, q, combined_backup, domain_table, WRITE_APPEND)
 
 
 def load_fact_relationship(client: BigQueryClient, rdr_dataset: str,
-                           unioned_ehr_dataset: str, combined_dataset: str):
+                           unioned_ehr_dataset: str, combined_backup: str):
     """
     Load fact_relationship table
 
     :param client: a BigQuery client object
     :param rdr_dataset: Identifies the rdr dataset name
     :param unioned_ehr_dataset: Identifies unioned_ehr dataset name
-    :param combined_dataset: Identifies combined dataset name
+    :param combined_backup: Identifies combined backup dataset name
 
     :return: None
     """
     q = combine_consts.FACT_RELATIONSHIP_QUERY.render(
         rdr_dataset_id=rdr_dataset,
-        combined_dataset_id=combined_dataset,
+        combined_backup_dataset_id=combined_backup,
         mapping_measurement=mapping_table_for('measurement'),
         ehr_dataset=unioned_ehr_dataset,
         mapping_observation=mapping_table_for('observation'),
         measurement_domain_concept_id=common.MEASUREMENT_DOMAIN_CONCEPT_ID,
         observation_domain_concept_id=common.OBSERVATION_DOMAIN_CONCEPT_ID)
-    LOGGER.info(f'Query for fact_relationship is {q}')
-    query(client, q, combined_dataset, common.FACT_RELATIONSHIP, WRITE_APPEND)
+    LOGGER.info(
+        f'Query for {combined_backup}.{common.FACT_RELATIONSHIP} is {q}')
+    query(client, q, combined_backup, common.FACT_RELATIONSHIP, WRITE_APPEND)
 
 
-def person_query(table_name: str, combined_dataset: str):
+def person_query(table_name: str, combined_backup: str):
     """
     Maps location and care_Site id in person table
 
     :return: query
     """
     columns, join_expression = join_expression_generator(
-        table_name, combined_dataset)
+        table_name, combined_backup)
     return combine_consts.MAPPED_PERSON_QUERY.render(cols=columns,
-                                                     dataset=combined_dataset,
+                                                     dataset=combined_backup,
                                                      table=table_name,
                                                      join_expr=join_expression)
 
 
-def load_mapped_person(client: BigQueryClient, combined_dataset: str):
-    q = person_query(common.PERSON, combined_dataset)
-    LOGGER.info(f'Query for Person table is {q}')
+def load_mapped_person(client: BigQueryClient, combined_backup: str):
+    q = person_query(common.PERSON, combined_backup)
+    LOGGER.info(f'Query for {combined_backup}.{common.PERSON} table is {q}')
     query(client,
           q,
-          combined_dataset,
+          combined_backup,
           common.PERSON,
           write_disposition=WRITE_TRUNCATE)
 
@@ -461,79 +473,68 @@ def main(raw_args=None):
 
     client = BigQueryClient(args.project_id, credentials=impersonation_creds)
 
-    combined_dataset = f'{args.release_tag}_combined_backup'
-    LOGGER.info(
-        f'Creating Combined backup dataset: `{client.project}.{combined_dataset}` '
-    )
-    combined_backup_desc = f'combined raw version of {args.rdr_dataset} + {args.unioned_ehr_dataset}'
-    labels = {
-        "phase": "backup",
-        "release_tag": args.release_tag,
-        "de_identified": "false"
-    }
-    combined_dataset_object = client.define_dataset(combined_dataset,
-                                                    combined_backup_desc,
-                                                    labels)
-    client.create_dataset(combined_dataset_object)
-    LOGGER.info(f'Created dataset `{client.project}.{combined_dataset}`')
+    combined_backup = create_dataset(client, args.release_tag, 'backup')
+
     LOGGER.info('Creating destination CDM tables...')
-    create_cdm_tables(client, combined_dataset)
+    create_cdm_tables(client, combined_backup)
 
     LOGGER.info(
-        f'Copying vocabulary tables from {args.vocab_dataset} to {combined_dataset}'
+        f'Copying vocabulary tables from {args.vocab_dataset} to {combined_backup}'
     )
-    client.copy_dataset(args.vocab_dataset, combined_dataset)
+    client.copy_dataset(args.vocab_dataset, combined_backup)
     LOGGER.info(
-        f'Finished Copying vocabulary tables from {args.vocab_dataset} to {combined_dataset}'
+        f'Finished Copying vocabulary tables from {args.vocab_dataset} to {combined_backup}'
     )
 
     LOGGER.info('EHR + RDR combine started')
     LOGGER.info('Verifying all CDM tables in EHR and RDR datasets...')
     assert_ehr_and_rdr_tables(client, args.rdr_dataset,
                               args.unioned_ehr_dataset)
-    ehr_consent(client, args.rdr_dataset, combined_dataset)
+
+    combined_sandbox = create_dataset(client, args.release_tag, 'sandbox')
+    ehr_consent(client, args.rdr_dataset, combined_sandbox)
 
     for table in combine_consts.RDR_TABLES_TO_COPY:
         LOGGER.info(f'Copying {table} table from RDR...')
         client.copy_table(f'{client.project}.{args.rdr_dataset}.{table}',
-                          f'{client.project}.{combined_dataset}.{table}')
+                          f'{client.project}.{combined_backup}.{table}')
 
     LOGGER.info(
         f'Translating {combine_consts.EHR_TABLES_TO_COPY} table from EHR...')
     for table in combine_consts.EHR_TABLES_TO_COPY:
         LOGGER.info(f'Copying {table} table from EHR...')
-        copy_ehr_table(client, table, args.unioned_ehr_dataset,
-                       combined_dataset)
+        copy_ehr_table(client, table, args.unioned_ehr_dataset, combined_backup,
+                       combined_sandbox)
 
     LOGGER.info('Generating combined mapping tables ...')
     for domain_table in combine_consts.DOMAIN_TABLES + [common.SURVEY_CONDUCT]:
         LOGGER.info(f'Mapping {domain_table}...')
         generate_combined_mapping_tables(client, domain_table, args.rdr_dataset,
                                          args.unioned_ehr_dataset,
-                                         combined_dataset)
+                                         combined_backup, combined_sandbox)
 
     LOGGER.info('Loading Domain tables ...')
     for domain_table in combine_consts.DOMAIN_TABLES:
         LOGGER.info(f'Loading {domain_table}...')
         load(client, domain_table, args.rdr_dataset, args.unioned_ehr_dataset,
-             combined_dataset)
+             combined_backup)
 
     LOGGER.info('Loading fact_relationship...')
     load_fact_relationship(client, args.rdr_dataset, args.unioned_ehr_dataset,
-                           combined_dataset)
+                           combined_backup)
     LOGGER.info('Loading foreign key Mapped Person table...')
-    load_mapped_person(client, combined_dataset)
+    load_mapped_person(client, combined_backup)
 
-    LOGGER.info(f'Adding _cdr_metadata table to {combined_dataset}')
+    LOGGER.info(f'Adding _cdr_metadata table to {combined_backup}')
 
     add_cdr_metadata.main([
         '--component', add_cdr_metadata.CREATE, '--project_id', client.project,
-        '--target_dataset', combined_dataset
+        '--target_dataset', combined_backup
     ])
     today = datetime.now().strftime('%Y-%m-%d')
     add_cdr_metadata.main([
         '--component', add_cdr_metadata.INSERT, '--project_id', client.project,
-        '--target_dataset', combined_dataset, '--etl_version',
+        '--target_dataset', combined_backup, '--etl_version',
         resources.get_git_tag(), '--ehr_source', args.unioned_ehr_dataset,
         '--ehr_cutoff_date', args.ehr_cutoff_date, '--rdr_source',
         args.rdr_dataset, '--cdr_generation_date', today,

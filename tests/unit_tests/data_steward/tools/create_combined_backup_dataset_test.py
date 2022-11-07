@@ -1,6 +1,5 @@
 # Python imports
 import unittest
-from mock import patch
 
 # Project imports
 import common
