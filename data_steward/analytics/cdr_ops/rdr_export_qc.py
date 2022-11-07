@@ -26,12 +26,10 @@ rdr_cutoff_date = ""
 # # QC for RDR Export
 #
 # Quality checks performed on a new RDR dataset and comparison with previous RDR dataset.
-
 from common import JINJA_ENV, PIPELINE_TABLES
 from utils import auth
 from gcloud.bq import BigQueryClient
-from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
-from IPython.display import display, HTML
+from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES, render_message
 
 # # Table comparison
 # The export should generally contain the same tables from month to month.
@@ -621,7 +619,7 @@ tpl = JINJA_ENV.from_string('''
 SELECT DISTINCT person_id FROM `{{project_id}}.{{new_rdr}}.observation` 
 JOIN `{{project_id}}.{{new_rdr}}.concept` on (observation_source_concept_id=concept_id)
 WHERE vocabulary_id = 'PPI' AND person_id NOT IN (
-SELECT DISTINCT person_id FROM `{{project_id}}.{{new_rdr}}.concept`  
+SELECT DISTINCT person_id FROM `{{project_id}}.{{new_rdr}}.concept` 
 JOIN `{{project_id}}.{{new_rdr}}.concept_ancestor` on (concept_id=ancestor_concept_id)
 JOIN `{{project_id}}.{{new_rdr}}.observation` on (descendant_concept_id=observation_concept_id)
 WHERE concept_class_id='Module'
@@ -660,7 +658,7 @@ execute(client, query)
 # [DC-2254](https://precisionmedicineinitiative.atlassian.net/browse/DC-2254).
 
 tpl = JINJA_ENV.from_string('''
-SELECT  
+SELECT 
     person_id, 
     STRING_AGG(observation_source_value) AS observation_source_value
 FROM `{{project_id}}.{{new_rdr}}.observation`
@@ -719,47 +717,6 @@ execute(client, query)
 # # Check that the Question and Answer Concepts in the old_map_short_codes tables are not paired with 0-valued concept_identifiers
 
 # According to this [ticket](https://precisionmedicineinitiative.atlassian.net/browse/DC-2488), Question and Answer concepts that are identified in the `old_map_short_codes` table should not be paired with 0-valued concept_identifiers after the RDR dataset is cleaned. These concept identifiers include the `observation_concept_id` and `observation_source_concept_id` fields.
-
-
-def render_message(results_df,
-                   success_msg=None,
-                   failure_msg=None,
-                   success_msg_args={},
-                   failure_msg_args={}):
-    """
-    Renders a conditional success or failure message for a DQ check.
-
-    results_df: Dataframe containing the results of the check.
-    success_msg: A templated string to describe success.
-    failure_msg: A templated string to describe failure.
-    success_msg_args: A dictionary of args to pass to success_msg template.
-    failure_msg_args: A dictionary of args to pass to failiure_msg template.
-
-    """
-    is_success = len(results_df) == 0
-    status_msg = 'Success' if is_success else 'Failure'
-    if is_success:
-        display(
-            HTML(f'''
-                <h3>
-                    Check Status: <span style="color: {'red' if not is_success else 'green'}">{status_msg}</span>
-                </h3>
-                <p>
-                    {success_msg.format(**success_msg_args)}
-                </p>
-            '''))
-    else:
-        display(
-            HTML(f'''
-                <h3>
-                    Check Status: <span style="color: {'red' if not is_success else 'green'}">{status_msg}</span>
-                </h3>
-                <p>
-                    {failure_msg.format(**failure_msg_args)}
-                </p>
-            '''))
-        display(df)
-
 
 # ## Question Codes
 

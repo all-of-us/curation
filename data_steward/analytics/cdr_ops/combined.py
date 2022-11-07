@@ -27,7 +27,7 @@ from common import JINJA_ENV
 from cdr_cleaner.cleaning_rules.negative_ages import date_fields
 from utils import auth
 from gcloud.bq import BigQueryClient
-from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
+from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES, render_message
 
 # -
 
@@ -116,10 +116,10 @@ WITH
 ,pid_ppi AS
  (SELECT
    person_id
-   
+
   -- use latest ppi record for most rigid check --
   ,MAX(o.observation_date) AS max_ppi_date
-  
+
   -- in case of multiple death rows, use earliest for most rigid check --
   ,MIN(d.death_date)       AS min_death_date
 
@@ -147,10 +147,10 @@ EHR_CONSENT_PERMISSION_CONCEPT_ID = 1586099
 YES_CONCEPT_ID = 1586100
 
 tpl = JINJA_ENV.from_string('''
--- For participants who do NOT satisfy EHR consent requirements as determined 
+-- For participants who do NOT satisfy EHR consent requirements as determined --
 -- by the temp table below, this dynamic query will provide the      --
 -- table_name, person_id, and hpo_id where any EHR records are found --
-DECLARE query STRING; 
+DECLARE query STRING;
 
 -- PIDs whose last EHR consent response was affirmative --
 CREATE OR REPLACE TEMP TABLE consented AS
@@ -179,7 +179,6 @@ CREATE OR REPLACE TEMP TABLE consented AS
   WHERE 
       last_value_source_concept_id = {{YES_CONCEPT_ID}}
 );
-
 
 SET query = (
  SELECT
@@ -370,7 +369,7 @@ DECLARE query DEFAULT (
      || '  USING (' || c.table_name || '_id) '
      || ' LEFT JOIN `{{DATASET_ID}}_backup.concept` c '
      || '  ON ' || column_name || ' = c.concept_id '
-     
+
      -- invalid concept_id --
      || 'WHERE c.concept_id IS NULL '
      || 'GROUP BY 1, 2, 3, 4',
@@ -425,3 +424,60 @@ HAVING latest.row_count - baseline.row_count > 0
 ORDER BY diff DESC
 '''
 execute(client, query)
+
+# # Invalid survey_conduct_id check
+
+# The survey_conduct table has a primary key, survey_conduct_id, that is a foreign key value to
+# observation.questionnaire_response_id.  For data consistency, curation must ensure that
+# survey_conduct.survey_conduct_id does not contain null values or orphaned values once
+# the dataset has been cleaned.  If it does, curation must be alerted and a manual fix will
+# likely be needed for the short term resolution.
+# This is a validation of [DC-2735](https://precisionmedicineinitiative.atlassian.net/browse/DC-2735)
+#
+# See [DC-2754](https://precisionmedicineinitiative.atlassian.net/browse/DC-2754) for details.
+
+# +
+query_null_check = JINJA_ENV.from_string("""
+SELECT survey_conduct_id, person_id 
+FROM `{{project_id}}.{{dataset_id}}.survey_conduct`
+WHERE survey_conduct_id IS NULL
+""").render(project_id=PROJECT_ID, dataset_id=DATASET_ID)
+
+query_orphaned_check = JINJA_ENV.from_string("""
+SELECT survey_conduct_id
+FROM `{{project_id}}.{{dataset_id}}.survey_conduct`
+WHERE survey_conduct_id NOT IN (
+    SELECT DISTINCT questionnaire_response_id
+    FROM `{{project_id}}.{{dataset_id}}.observation`
+    WHERE questionnaire_response_id IS NOT NULL
+)
+""").render(project_id=PROJECT_ID, dataset_id=DATASET_ID)
+
+success_null_check = '''No NULL values found for survey_conduct_id.'''
+failure_null_check = '''
+There are <b>{code_count}</b> NULL survey_conduct_ids in survey_conduct.
+Manually remove those NULL records as the short term resolution. 
+Create an investigation ticket for root cause and the long term resolution.
+'''
+
+success_orphaned_check = '''No orphaned survey_conduct_id found.'''
+failure_orphaned_check = '''
+There are <b>{code_count}</b> survey_conduct_ids in survey_conduct that cannot 
+be joined to an existing observation.questionnaire_response_id value.
+Manually remove those orphaned survey_conduct records as the short term resolution. 
+Create an investigation ticket for root cause and the long term resolution.
+'''
+
+df_null_check = execute(client, query_null_check)
+df_orphaned_check = execute(client, query_orphaned_check)
+
+render_message(df_null_check,
+               success_null_check,
+               failure_null_check,
+               failure_msg_args={'code_count': len(df_null_check)})
+
+render_message(df_orphaned_check,
+               success_orphaned_check,
+               failure_orphaned_check,
+               failure_msg_args={'code_count': len(df_orphaned_check)})
+# -
