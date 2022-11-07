@@ -15,7 +15,7 @@ from cdr_cleaner.cleaning_rules.convert_pre_post_coordinated_concepts import Con
 from cdr_cleaner.cleaning_rules.create_expected_ct_list import StoreExpectedCTList
 import cdr_cleaner.cleaning_rules.domain_alignment as domain_alignment
 import cdr_cleaner.cleaning_rules.drop_duplicate_states as drop_duplicate_states
-import cdr_cleaner.cleaning_rules.drop_extreme_measurements as extreme_measurements
+from cdr_cleaner.cleaning_rules.drop_extreme_measurements import DropExtremeMeasurements
 from cdr_cleaner.cleaning_rules.drop_multiple_measurements import DropMultipleMeasurements
 from cdr_cleaner.cleaning_rules.drop_participants_without_any_basics import DropParticipantsWithoutAnyBasics
 from cdr_cleaner.cleaning_rules.drug_refills_days_supply import DrugRefillsDaysSupply
@@ -182,7 +182,7 @@ RDR_CLEANING_CLASSES = [
     (CleanSmokingPpi,),
     (NullConceptIDForNumericPPI,),
     (DropDuplicatePpiQuestionsAndAnswers,),
-    (extreme_measurements.get_drop_extreme_measurement_queries,),
+    (DropExtremeMeasurements,),
     (DropMultipleMeasurements,),
     (CleanByBirthYear,),
     (UpdateInvalidZipCodes,),
