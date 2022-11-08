@@ -347,6 +347,12 @@ CONTROLLED_TIER_FITBIT_CLEANING_CLASSES = [
     (RemoveNonExistingPids,),  # assumes CT dataset is ready for reference
 ]
 
+RETRACTION_CLEANING_CLASSES = [
+    (DropOrphanedSurveyConductIds,),
+    (DropOrphanedPIDS,),
+    (CleanMappingExtTables,),  # should be one of the last cleaning rules run
+]
+
 DATA_STAGE_RULES_MAPPING = {
     DataStage.EHR.value:
         EHR_CLEANING_CLASSES,
@@ -373,7 +379,9 @@ DATA_STAGE_RULES_MAPPING = {
     DataStage.CONTROLLED_TIER_DEID_CLEAN.value:
         CONTROLLED_TIER_DEID_CLEAN_CLEANING_CLASSES,
     DataStage.CONTROLLED_TIER_FITBIT.value:
-        CONTROLLED_TIER_FITBIT_CLEANING_CLASSES
+        CONTROLLED_TIER_FITBIT_CLEANING_CLASSES,
+    DataStage.RETRACTION.value:
+        RETRACTION_CLEANING_CLASSES
 }
 
 

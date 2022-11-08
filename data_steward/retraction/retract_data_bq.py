@@ -42,7 +42,8 @@ OTHER_PID_TABLES = [common.OBSERVATION_PERIOD]
 
 # person from RDR should not be removed, but person from EHR must be
 NON_EHR_TABLES = [common.PERSON]
-TABLES_FOR_RETRACTION = set(common.PII_TABLES + common.AOU_REQUIRED +
+# TODO consider mapping tables and ext tables
+TABLES_FOR_RETRACTION = set(common.PII_TABLES + common.CATI_TABLES +
                             OTHER_PID_TABLES) - set(NON_PID_TABLES +
                                                     NON_EHR_TABLES)
 
@@ -282,14 +283,17 @@ def run_bq_retraction(project_id, sandbox_dataset_id, pid_project_id,
                 pid_project=pid_project_id,
                 sandbox_dataset_id=sandbox_dataset_id,
                 pid_table_id=pid_table_id)
+            # TODO obsolete is_ statement
             if ru.is_combined_dataset(dataset):
                 LOGGER.info(f"Retracting from Combined dataset {dataset}")
                 queries = queries_to_retract_from_dataset(
                     client, dataset, person_id_query)
+            # TODO obsolete is_ statement
             elif ru.is_unioned_dataset(dataset):
                 LOGGER.info(f"Retracting from Unioned dataset {dataset}")
                 queries = queries_to_retract_from_dataset(
                     client, dataset, person_id_query)
+            # TODO obsolete is_ statement
             elif ru.is_ehr_dataset(dataset):
                 if hpo_id == NONE_STR:
                     LOGGER.info(
