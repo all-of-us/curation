@@ -1,11 +1,14 @@
 """
-
-This script is not a part of any of the datastages' CR.
-This script is used on-demand.
-
-TODO more details
+Use this script for dropping certain participants from datasets.
+It creates new datasets and run retraction on them. The original datasets will
+not be modified.
 
 Original Issues: DC-2801
+
+TODO: Test run for RDR and EHR datasets.
+    This script is initally created and used for DC-2801. RDR and EHR datasets
+    are not in DC-2801's scope. Therefore, retraction for RDR and EHR is not
+    fully vetted.
 """
 
 # Python imports
@@ -28,22 +31,44 @@ from utils.auth import get_impersonation_credentials
 LOGGER = logging.getLogger(__name__)
 
 
-def ask_if_continue():
-    """abc
+def ask_if_continue() -> None:
+    """
+    Checks if the user wishes to continue running the script or not.
+    This function is placed after each step as a checkpoint.
+    Raises:
+        RuntimeError: Abort the execution when the user wishes not to continue.
     """
     confirm = input("\nContinue? [Y/N]:\n\n")
     if confirm != 'Y':
         raise RuntimeError('User canceled the execution.')
 
 
-def get_new_dataset_name(src_dataset_name, release_tag):
-    """abc
+def get_new_dataset_name(src_dataset_name: str, release_tag: str) -> str:
+    """
+    Based on the old dataset name and the new release tag, creates a new
+    dataset name. This function assumes both the dataset name and the release
+    tag follow the Curation team's naming convention. It may return an
+    incorrect dataset name if those are irregularly named.
+    Args:
+        src_dataset_name: Name of the source dataset.
+        release_tag: Release tag for the new datasets.
+    Returns: Name of the new dataset.
     """
     return re.sub(r'\d{4}q\dr\d', release_tag, src_dataset_name)
 
 
-def create_dataset(client: BigQueryClient, src_dataset_name, release_tag):
-    """abc
+def create_dataset(client: BigQueryClient, src_dataset_name: str,
+                   release_tag: str) -> None:
+    """
+    Create an empty new dataset based on the source dataset name and the new
+    release tag. Definition for the new dataset is copied and updated from the
+    old dataset.
+    If the new dataset already exists, it skips creating and updating the new
+    dataset and its definition.
+    Args:
+        client: BigQueryClient
+        src_dataset_name: Name of the source dataset.
+        release_tag: Release tag for the new datasets.
     """
     dataset_name = get_new_dataset_name(src_dataset_name, release_tag)
 
@@ -71,8 +96,13 @@ def create_dataset(client: BigQueryClient, src_dataset_name, release_tag):
         )
 
 
-def copy_dataset(client: BigQueryClient, src_dataset_name, release_tag):
-    """abc
+def copy_dataset(client: BigQueryClient, src_dataset_name, release_tag) -> None:
+    """
+    Copy data from the source dataset to the new dataset.
+    Args:
+        client: BigQueryClient
+        src_dataset_name: Name of the source dataset.
+        release_tag: Release tag for the new datasets.
     """
     dataset_name = get_new_dataset_name(src_dataset_name, release_tag)
 
@@ -84,14 +114,20 @@ def copy_dataset(client: BigQueryClient, src_dataset_name, release_tag):
     LOGGER.info(f"Copied data from {src_dataset_name} to {dataset_name}.")
 
 
-def create_sandbox_dataset(client: BigQueryClient, release_tag):
-    """abc
+def create_sandbox_dataset(client: BigQueryClient, release_tag) -> None:
+    """
+    Create an empty new sandbox dataset for retraction. This sandbox dataset
+    will be shared by all the new datasets. If the sandbox dataset already
+    exists, it skips creating and updating the new dataset and its definition.
+    Args:
+        client: BigQueryClient
+        release_tag: Release tag for the new datasets.
     """
     sb_dataset_name = f"{release_tag}_sandbox"
 
     dataset_obj = client.define_dataset(
         sb_dataset_name,
-        f'Sandbox created for storing records affected by retraction applied to {release_tag}.',
+        f'Sandbox created for storing records affected by retraction for {release_tag}.',
         {
             "phase": "sandbox",
             "release_tag": release_tag,
@@ -107,20 +143,35 @@ def create_sandbox_dataset(client: BigQueryClient, release_tag):
         )
 
 
-def create_lookup_table(client: BigQueryClient, sql_file_path):
-    """abc
+def create_lookup_table(client: BigQueryClient, sql_file_path: str) -> str:
+    """
+    Run SQL from the local SQL file and create a lookup table for regtraction.
+    The SQL in the local SQL file needs to meet the following criteria:
+        1. The SQL is written for BigQuery
+        2. Only one statement is written in the file
+        3. The table is fully qualified (e.g. `<project>.<dataset>.<table>`)
+        4. Dataset name is f"{release_tag}_sandbox"
+    Args:
+        client: BigQueryClient
+        sql_file_path: Path of the SQL file you store locally.
+    Returns: Name of the created lookup table
     """
     with open(sql_file_path, 'r') as f:
         create_statement = f.read()
 
-    LOGGER.info(f"Running the following SQL: \n{create_statement}")
+    LOGGER.info(f"Running the following SQL: \n{create_statement}\n")
 
     job = client.query(create_statement)
     job.result()
 
-    return re.search(
+    regex_created_table = re.search(
         r"create( or replace)?[ ]+table[ ]+`?[a-z0-9-_]*.[a-z0-9-_]*.([a-z0-9-_]*)`?",
-        create_statement, re.IGNORECASE).group(2)
+        create_statement, re.IGNORECASE)
+    lookup_table_name = regex_created_table.group(2)
+
+    LOGGER.info(
+        f"Created the lookup table {lookup_table_name} in the sandbox dataset.")
+    return lookup_table_name
 
 
 def parse_args(raw_args=None):
@@ -136,22 +187,26 @@ def parse_args(raw_args=None):
                         dest='project_id',
                         help='Curation project ID for running retraction.',
                         required=True)
-    parser.add_argument('--source_datasets',
-                        nargs='+',
-                        action='store',
-                        dest='source_datasets',
-                        help='abc.',
-                        required=True)
-    parser.add_argument('--new_release_tag',
-                        action='store',
-                        dest='new_release_tag',
-                        required=True,
-                        help='abc.')
-    parser.add_argument('--lookup_creation_sql_file_path',
-                        action='store',
-                        dest='lookup_creation_sql_file_path',
-                        required=True,
-                        help='abc.')
+    parser.add_argument(
+        '--source_datasets',
+        nargs='+',
+        action='store',
+        dest='source_datasets',
+        help=
+        'Datasets that need retraction. If there are more than one, seperate them by whitespaces.',
+        required=True)
+    parser.add_argument(
+        '--new_release_tag',
+        action='store',
+        dest='new_release_tag',
+        required=True,
+        help='Release tag for the new datasets after retraction.')
+    parser.add_argument(
+        '--lookup_creation_sql_file_path',
+        action='store',
+        dest='lookup_creation_sql_file_path',
+        required=True,
+        help='Path of the SQL file that has DDL for the lookup table.')
     parser.add_argument('-l',
                         '--console_log',
                         dest='console_log',
@@ -162,7 +217,7 @@ def parse_args(raw_args=None):
                         '--hpo_id',
                         action='store',
                         dest='hpo_id',
-                        help='Identifies the site to retract data from',
+                        help='Identifies the site to retract data from.',
                         required=True)
     parser.add_argument(
         '-r',
@@ -172,14 +227,15 @@ def parse_args(raw_args=None):
         help=(
             f'Identifies whether all data needs to be removed, including RDR, '
             f'or if RDR data needs to be kept intact. Can take the values '
-            f'"{RETRACTION_RDR_EHR}" or "{RETRACTION_EHR}"'),
+            f'"{RETRACTION_RDR_EHR}" or "{RETRACTION_EHR}".'),
         required=True)
 
     return parser.parse_args(raw_args)
 
 
 def main():
-    """pass
+    """
+    Read through LOGGER.info() messages for what it does.
     """
     args = parse_args()
 
