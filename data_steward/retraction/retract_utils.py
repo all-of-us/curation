@@ -1,22 +1,17 @@
 # Python imports
-import os
 import re
 import argparse
 import logging
 
 # Project imports
-import common
+from common import (COMBINED, DEID, EHR, EXT, EXT_SUFFIX, MAPPING,
+                    MAPPING_PREFIX, OTHER, RDR, UNIONED_EHR)
 from gcloud.bq import BigQueryClient
-from utils import bq
 from constants.retraction import retract_utils as consts
 from constants.utils import bq as bq_consts
 
 LOGGER = logging.getLogger(__name__)
 
-UNIONED_REGEX = re.compile(r'unioned_ehr_?\d{6}')
-COMBINED_REGEX = re.compile(r'combined\d{6}')
-DEID_REGEX = re.compile(r'.*deid.*')
-EHR_REGEX = re.compile(r'ehr_?\d{6}')
 RELEASE_REGEX = re.compile(r'R\d{4}Q\dR\d')
 RELEASE_TAG_REGEX = re.compile(r'\d{4}[qQ]\d[rR]\d')
 SANDBOX_REGEX = re.compile(r'.*sandbox.*')
@@ -66,14 +61,12 @@ def get_mapping_type(tables):
     :param tables: list of tables within the dataset
     :return: common.EXT or common.MAPPING
     """
-    mapping_tables = [
-        table for table in tables if common.MAPPING_PREFIX in table
-    ]
-    ext_tables = [table for table in tables if common.EXT_SUFFIX in table]
+    mapping_tables = [table for table in tables if MAPPING_PREFIX in table]
+    ext_tables = [table for table in tables if EXT_SUFFIX in table]
 
     if len(mapping_tables) >= len(ext_tables):
-        return common.MAPPING
-    return common.EXT
+        return MAPPING
+    return EXT
 
 
 def get_src_id(mapping_type):
@@ -84,7 +77,7 @@ def get_src_id(mapping_type):
     :return: src_id or src_hpo_id
     """
     src_id = 'src_id'
-    if mapping_type == common.MAPPING:
+    if mapping_type == MAPPING:
         src_id = 'src_hpo_id'
     return src_id
 
@@ -127,7 +120,7 @@ def get_datasets_list(client, dataset_ids_list):
     # consider datasets containing PPI/EHR data, excluding sandbox/staging datasets
     dataset_ids = [
         dataset_id for dataset_id in dataset_ids
-        if get_dataset_type(dataset_id) != common.OTHER and
+        if get_dataset_type(dataset_id) != OTHER and
         not is_sandbox_dataset(dataset_id)
     ]
 
@@ -176,8 +169,7 @@ def is_deid_dataset(dataset_id):
     :param dataset_id: Identifies the dataset
     :return: Boolean indicating if the dataset is a deid dataset
     """
-    return bool(re.match(DEID_REGEX, dataset_id)) or bool(
-        re.match(RELEASE_REGEX, dataset_id))
+    return DEID in dataset_id
 
 
 def is_combined_dataset(dataset_id):
@@ -186,9 +178,7 @@ def is_combined_dataset(dataset_id):
     :param dataset_id: Identifies the dataset
     :return: Boolean indicating if the dataset is a combined dataset
     """
-    if is_deid_dataset(dataset_id):
-        return False
-    return bool(re.match(COMBINED_REGEX, dataset_id))
+    return COMBINED in dataset_id
 
 
 def is_unioned_dataset(dataset_id):
@@ -197,7 +187,7 @@ def is_unioned_dataset(dataset_id):
     :param dataset_id: Identifies the dataset
     :return: Boolean indicating if the dataset is a unioned dataset
     """
-    return bool(re.match(UNIONED_REGEX, dataset_id))
+    return UNIONED_EHR in dataset_id
 
 
 def is_ehr_dataset(dataset_id):
@@ -206,9 +196,7 @@ def is_ehr_dataset(dataset_id):
     :param dataset_id: Identifies the dataset
     :return: Boolean indicating if the dataset is an ehr dataset
     """
-    return bool(re.match(
-        EHR_REGEX,
-        dataset_id)) or dataset_id == os.environ.get('BIGQUERY_DATASET_ID')
+    return EHR in dataset_id and not UNIONED_EHR in dataset_id
 
 
 def is_sandbox_dataset(dataset_id):
@@ -222,6 +210,8 @@ def is_sandbox_dataset(dataset_id):
 
 def is_staging_dataset(dataset_id):
     """
+    # NOTE This function is not referenced anywhere.
+    
     Returns boolean indicating if a dataset is a staging dataset using the dataset_id
     :param dataset_id: Identifies the dataset
     :return: Boolean indicating if the dataset is a staging dataset
@@ -230,17 +220,17 @@ def is_staging_dataset(dataset_id):
 
 
 def get_dataset_type(dataset_id):
-    if common.COMBINED in dataset_id and common.DEID not in dataset_id:
-        return common.COMBINED
-    if common.UNIONED_EHR in dataset_id:
-        return common.UNIONED_EHR
-    if common.RDR in dataset_id:
-        return common.RDR
-    if common.EHR in dataset_id and common.UNIONED_EHR not in dataset_id:
-        return common.EHR
-    if common.DEID in dataset_id or is_deid_dataset(dataset_id):
-        return common.DEID
-    return common.OTHER
+    if COMBINED in dataset_id and DEID not in dataset_id:
+        return COMBINED
+    if UNIONED_EHR in dataset_id:
+        return UNIONED_EHR
+    if RDR in dataset_id:
+        return RDR
+    if EHR in dataset_id and UNIONED_EHR not in dataset_id:
+        return EHR
+    if DEID in dataset_id or is_deid_dataset(dataset_id):
+        return DEID
+    return OTHER
 
 
 def get_pid_list_to_sql_expr(pid_source):
@@ -272,19 +262,17 @@ def get_mapping_tables(mapping_type, tables):
     :param tables: list of tables in dataset
     :return: list of mapping tables (or ext tables)
     """
-    if mapping_type == common.MAPPING:
-        mapping_tables = [
-            table for table in tables if common.MAPPING_PREFIX in table
-        ]
+    if mapping_type == MAPPING:
+        mapping_tables = [table for table in tables if MAPPING_PREFIX in table]
         return mapping_tables
-    mapping_tables = [table for table in tables if common.EXT_SUFFIX in table]
+    mapping_tables = [table for table in tables if EXT_SUFFIX in table]
     return mapping_tables
 
 
 def get_cdm_table(mapping_ext_table):
-    if common.MAPPING_PREFIX in mapping_ext_table:
-        return mapping_ext_table.replace(common.MAPPING_PREFIX, '')
-    return mapping_ext_table.replace(common.EXT_SUFFIX, '')
+    if MAPPING_PREFIX in mapping_ext_table:
+        return mapping_ext_table.replace(MAPPING_PREFIX, '')
+    return mapping_ext_table.replace(EXT_SUFFIX, '')
 
 
 def get_cdm_and_mapping_tables(mapping_tables, tables_with_pid):

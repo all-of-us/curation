@@ -125,7 +125,7 @@ from cdr_cleaner.cleaning_rules.drop_orphaned_pids import DropOrphanedPIDS
 from cdr_cleaner.cleaning_rules.drop_orphaned_survey_conduct_ids import DropOrphanedSurveyConductIds
 from cdr_cleaner.cleaning_rules.deid.deidentify_aian_zip3_values import DeidentifyAIANZip3Values
 from constants.cdr_cleaner import clean_cdr_engine as ce_consts
-from constants.cdr_cleaner.clean_cdr import DataStage
+from constants.cdr_cleaner.clean_cdr import DataStage, RETRACTION
 
 # Third party imports
 
@@ -518,6 +518,11 @@ def main(args=None):
     rules = DATA_STAGE_RULES_MAPPING[args.data_stage.value]
     validate_custom_params(rules, **kwargs)
 
+    if args.data_stage.value == RETRACTION:
+        table_namer = f"{RETRACTION}_{args.dataset_id}"
+    else:
+        table_namer = args.data_stage.value
+
     if args.list_queries:
         clean_engine.add_console_logging()
         query_list = clean_engine.get_query_list(
@@ -525,7 +530,7 @@ def main(args=None):
             dataset_id=args.dataset_id,
             sandbox_dataset_id=args.sandbox_dataset_id,
             rules=rules,
-            table_namer=args.data_stage.value,
+            table_namer=table_namer,
             **kwargs)
         for query in query_list:
             LOGGER.info(query)
@@ -535,7 +540,7 @@ def main(args=None):
                                    dataset_id=args.dataset_id,
                                    sandbox_dataset_id=args.sandbox_dataset_id,
                                    rules=rules,
-                                   table_namer=args.data_stage.value,
+                                   table_namer=table_namer,
                                    run_as=args.run_as,
                                    **kwargs)
 

@@ -14,8 +14,9 @@ import logging
 # Project imports
 from utils import pipeline_logging
 from gcloud.bq import BigQueryClient
-import common
-from common import JINJA_ENV, ID_CONSTANT_FACTOR
+from common import (CARE_SITE, CATI_TABLES, DEATH, FACT_RELATIONSHIP,
+                    ID_CONSTANT_FACTOR, JINJA_ENV, LOCATION, OBSERVATION_PERIOD,
+                    PERSON, PII_TABLES, PROVIDER)
 from retraction import retract_utils as ru
 
 LOGGER = logging.getLogger(__name__)
@@ -35,15 +36,13 @@ NONE_STR = 'none'
 
 PERSON_DOMAIN = 56
 
-NON_PID_TABLES = [
-    common.CARE_SITE, common.LOCATION, common.FACT_RELATIONSHIP, common.PROVIDER
-]
-OTHER_PID_TABLES = [common.OBSERVATION_PERIOD]
+NON_PID_TABLES = [CARE_SITE, LOCATION, FACT_RELATIONSHIP, PROVIDER]
+OTHER_PID_TABLES = [OBSERVATION_PERIOD]
 
 # person from RDR should not be removed, but person from EHR must be
-NON_EHR_TABLES = [common.PERSON]
+NON_EHR_TABLES = [PERSON]
 # TODO consider mapping tables and ext tables
-TABLES_FOR_RETRACTION = set(common.PII_TABLES + common.CATI_TABLES +
+TABLES_FOR_RETRACTION = set(PII_TABLES + CATI_TABLES +
                             OTHER_PID_TABLES) - set(NON_PID_TABLES +
                                                     NON_EHR_TABLES)
 
@@ -57,7 +56,11 @@ ID_CONST_CONDITION = """
 AND {{table_id}} > {{id_constant}}"""
 
 RETRACT_DATA_TABLE_QUERY = """
+{% if sandbox %}
+CREATE TABLE `{{project}}.{{sb_dataset}}.{{sb_table}}` AS SELECT *
+{% else %}
 DELETE
+{% endif %}
 FROM `{{project}}.{{dataset}}.{{table}}`
 WHERE person_id IN (
   {{person_id_query}}
@@ -67,7 +70,11 @@ WHERE person_id IN (
 """
 
 RETRACT_DATA_FACT_RELATIONSHIP = """
+{% if sandbox %}
+CREATE TABLE `{{project}}.{{sb_dataset}}.{{sb_table}}` AS SELECT *
+{% else %}
 DELETE
+{% endif %}
 FROM `{{project}}.{{dataset}}.{{table}}`
 WHERE (
   (
@@ -116,18 +123,21 @@ def get_table_id(table):
     :param table: CDM table as str
     :return: primary key as str
     """
-    return f'{common.PERSON}_id' if table == common.DEATH else f'{table}_id'
+    return f'{PERSON}_id' if table == DEATH else f'{table}_id'
 
 
-def queries_to_retract_from_ehr_dataset(client, dataset_id, hpo_id,
-                                        person_id_query):
+def queries_to_retract_from_ehr_dataset(client, dataset_id, sb_dataset_id,
+                                        hpo_id, person_id_query,
+                                        skip_sandboxing):
     """
     Get list of queries to remove all records in all tables associated with supplied ids
 
     :param client: a BigQueryClient
     :param dataset_id: identifies associated dataset
+    :param sb_dataset_id: identifies sandbox dataset when skip_sandboxing==False
     :param hpo_id: identifies the HPO site
     :param person_id_query: query to select person_ids to retract
+    :param skip_sandboxing: True if you wish not to sandbox the retracted data.
     :return: list of queries to run
     """
     LOGGER.info(f'Checking existing tables for {client.project}.{dataset_id}')
@@ -144,6 +154,19 @@ def queries_to_retract_from_ehr_dataset(client, dataset_id, hpo_id,
         }
         for table_type in [SITE, UNIONED]:
             if table_names[table_type] in existing_tables:
+                if not skip_sandboxing:
+                    q_sandbox = JINJA_ENV.from_string(
+                        RETRACT_DATA_TABLE_QUERY).render(
+                            project=client.project,
+                            dataset=dataset_id,
+                            table=table_names[table_type],
+                            person_id_query=person_id_query,
+                            sandbox=True,
+                            sb_dataset=sb_dataset_id,
+                            sb_table=
+                            f'retract_{dataset_id}_{table_names[table_type]}')
+                    queries[table_type].append(q_sandbox)
+
                 q_site = JINJA_ENV.from_string(RETRACT_DATA_TABLE_QUERY).render(
                     project=client.project,
                     dataset=dataset_id,
@@ -153,11 +176,27 @@ def queries_to_retract_from_ehr_dataset(client, dataset_id, hpo_id,
 
     # Remove fact_relationship records referencing retracted person_ids
     fact_rel_table_names = {
-        SITE: get_site_table(hpo_id, common.FACT_RELATIONSHIP),
-        UNIONED: UNIONED_EHR + common.FACT_RELATIONSHIP
+        SITE: get_site_table(hpo_id, FACT_RELATIONSHIP),
+        UNIONED: UNIONED_EHR + FACT_RELATIONSHIP
     }
     for table_type in [SITE, UNIONED]:
         if fact_rel_table_names[table_type] in existing_tables:
+            if not skip_sandboxing:
+                q_sandbox_fact_relationship = JINJA_ENV.from_string(
+                    RETRACT_DATA_FACT_RELATIONSHIP
+                ).render(
+                    project=client.project,
+                    dataset=dataset_id,
+                    table=fact_rel_table_names[table_type],
+                    PERSON_DOMAIN=PERSON_DOMAIN,
+                    person_id_query=person_id_query,
+                    sandbox=True,
+                    sb_dataset=sb_dataset_id,
+                    sb_table=
+                    f'retract_{dataset_id}_{fact_rel_table_names[table_type]}')
+
+                queries[table_type].append(q_sandbox_fact_relationship)
+
             q_site_fact_relationship = JINJA_ENV.from_string(
                 RETRACT_DATA_FACT_RELATIONSHIP).render(
                     project=client.project,
@@ -170,16 +209,20 @@ def queries_to_retract_from_ehr_dataset(client, dataset_id, hpo_id,
     return queries[UNIONED] + queries[SITE]
 
 
-def queries_to_retract_from_dataset(client,
+def queries_to_retract_from_dataset(client: BigQueryClient,
                                     dataset_id,
+                                    sb_dataset_id,
                                     person_id_query,
+                                    skip_sandboxing,
                                     retraction_type=None):
     """
     Get list of queries to remove all records in all tables associated with supplied ids
 
     :param client: BigQueryClient object
     :param dataset_id: identifies associated dataset
+    :param sb_dataset_id: identifies sandbox dataset when skip_sandboxing==False
     :param person_id_query: query to select person_ids to retract
+    :param skip_sandboxing: True if you wish not to sandbox the retracted data.
     :param retraction_type: string indicating whether all data needs to be removed, including RDR,
         or if RDR data needs to be kept intact. Can take the values 'rdr_and_ehr' or 'only_ehr'
     :return: list of dict with keys query, dataset, table
@@ -189,39 +232,86 @@ def queries_to_retract_from_dataset(client,
         table.table_id
         for table in client.list_tables(f'{client.project}.{dataset_id}')
     ]
+    tables_to_retract = [
+        table for table in existing_tables
+        if any(col.name == 'person_id' for col in client.get_table(
+            f'{client.project}.{dataset_id}.{table}').schema)
+    ]
+    LOGGER.info(
+        f"Tables to retract in {dataset_id}:\n"
+        f"Tables with person_id column... {', '.join(tables_to_retract)}\n"
+        f"Tables without person_id column but need retraction... {FACT_RELATIONSHIP}\n"
+    )
+
     queries = {TABLES: []}
-    tables_to_retract = set(list(TABLES_FOR_RETRACTION))
+
     # Ignore RDR rows using id constant factor if retraction type is 'only_ehr'
     id_const = 2 * ID_CONSTANT_FACTOR
-    if ru.is_unioned_dataset(
-            dataset_id) or retraction_type == RETRACTION_RDR_EHR:
-        tables_to_retract |= set(NON_EHR_TABLES)
-        id_const = 0
+
     for table in tables_to_retract:
-        id_const_condition = JINJA_ENV.from_string(ID_CONST_CONDITION).render(
-            table_id=get_table_id(table), id_constant=id_const)
-        if table in existing_tables:
-            if table in [common.DEATH, common.PERSON]:
-                q_dataset = JINJA_ENV.from_string(
+
+        if retraction_type == RETRACTION_EHR:
+            id_const_condition = JINJA_ENV.from_string(
+                ID_CONST_CONDITION).render(table_id=get_table_id(table),
+                                           id_constant=id_const)
+        else:
+            id_const_condition = ''
+
+        if table in [DEATH, PERSON]:
+            if not skip_sandboxing:
+                q_sandbox = JINJA_ENV.from_string(
                     RETRACT_DATA_TABLE_QUERY).render(
                         project=client.project,
                         dataset=dataset_id,
                         table=table,
-                        person_id_query=person_id_query)
-                queries[TABLES].append(q_dataset)
-            else:
-                q_dataset = JINJA_ENV.from_string(
+                        person_id_query=person_id_query,
+                        sandbox=True,
+                        sb_dataset=sb_dataset_id,
+                        sb_table=f'retract_{dataset_id}_{table}')
+                queries[TABLES].append(q_sandbox)
+            q_dataset = JINJA_ENV.from_string(RETRACT_DATA_TABLE_QUERY).render(
+                project=client.project,
+                dataset=dataset_id,
+                table=table,
+                person_id_query=person_id_query)
+            queries[TABLES].append(q_dataset)
+        else:
+            if not skip_sandboxing:
+                q_sandbox = JINJA_ENV.from_string(
                     RETRACT_DATA_TABLE_QUERY).render(
                         project=client.project,
                         dataset=dataset_id,
                         table=table,
                         table_id=get_table_id(table),
                         person_id_query=person_id_query,
-                        id_const_condition=id_const_condition)
-                queries[TABLES].append(q_dataset)
+                        id_const_condition=id_const_condition,
+                        sandbox=True,
+                        sb_dataset=sb_dataset_id,
+                        sb_table=f'retract_{dataset_id}_{table}')
+                queries[TABLES].append(q_sandbox)
+            q_dataset = JINJA_ENV.from_string(RETRACT_DATA_TABLE_QUERY).render(
+                project=client.project,
+                dataset=dataset_id,
+                table=table,
+                table_id=get_table_id(table),
+                person_id_query=person_id_query,
+                id_const_condition=id_const_condition)
+            queries[TABLES].append(q_dataset)
 
-    table = common.FACT_RELATIONSHIP
+    table = FACT_RELATIONSHIP
     if table in existing_tables:
+        if not skip_sandboxing:
+            q_sandbox = JINJA_ENV.from_string(
+                RETRACT_DATA_FACT_RELATIONSHIP).render(
+                    project=client.project,
+                    dataset=dataset_id,
+                    table=table,
+                    PERSON_DOMAIN=PERSON_DOMAIN,
+                    person_id_query=person_id_query,
+                    sandbox=True,
+                    sb_dataset=sb_dataset_id,
+                    sb_table=f'retract_{dataset_id}_{table}')
+            queries[TABLES].append(q_sandbox)
         q_fact_relationship = JINJA_ENV.from_string(
             RETRACT_DATA_FACT_RELATIONSHIP).render(
                 project=client.project,
@@ -237,15 +327,22 @@ def queries_to_retract_from_dataset(client,
 def retraction_query_runner(client, queries):
     for query in queries:
         job = client.query(query)
-        LOGGER.info(f'Running query for job_id {job.job_id}')
+        LOGGER.info(f'Running query for job_id {job.job_id}. Query:\n{query}')
         result = job.result()
         LOGGER.info(
             f'Removed {job.num_dml_affected_rows} rows for job_id {job.job_id}')
     return
 
 
-def run_bq_retraction(project_id, sandbox_dataset_id, pid_project_id,
-                      pid_table_id, hpo_id, dataset_ids_list, retraction_type):
+def run_bq_retraction(project_id,
+                      sandbox_dataset_id,
+                      pid_project_id,
+                      pid_table_id,
+                      hpo_id,
+                      dataset_ids_list,
+                      retraction_type,
+                      skip_sandboxing=False,
+                      bq_client=None):
     """
     Main function to perform retraction
     pid table must follow schema described above in PID_TABLE_FIELDS and must reside in sandbox_dataset_id
@@ -260,11 +357,16 @@ def run_bq_retraction(project_id, sandbox_dataset_id, pid_project_id,
         retracts from all datasets. If containing only 'none', skips retraction from BigQuery datasets
     :param retraction_type: string indicating whether all data needs to be removed, including RDR,
         or if RDR data needs to be kept intact. Can take the values 'rdr_and_ehr' or 'only_ehr'
+    :param skip_sandboxing: True if you wish not to sandbox the retracted data.
+    :param bq_client: BigQuery client. Reuse the client if one already exists. If not, a new one will be created.
     :return:
     """
-    client = BigQueryClient(project_id)
-    dataset_ids = ru.get_datasets_list(client, dataset_ids_list)
+    if bq_client:
+        client = bq_client
+    else:
+        client = BigQueryClient(project_id)
 
+    dataset_ids = ru.get_datasets_list(client, dataset_ids_list)
     queries = []
     for dataset in dataset_ids:
         if ru.is_deid_dataset(dataset):
@@ -275,7 +377,9 @@ def run_bq_retraction(project_id, sandbox_dataset_id, pid_project_id,
                 sandbox_dataset_id=sandbox_dataset_id,
                 pid_table_id=pid_table_id)
             queries = queries_to_retract_from_dataset(client, dataset,
+                                                      sandbox_dataset_id,
                                                       research_id_query,
+                                                      skip_sandboxing,
                                                       retraction_type)
         else:
             person_id_query = JINJA_ENV.from_string(PERSON_ID_QUERY).render(
@@ -283,17 +387,16 @@ def run_bq_retraction(project_id, sandbox_dataset_id, pid_project_id,
                 pid_project=pid_project_id,
                 sandbox_dataset_id=sandbox_dataset_id,
                 pid_table_id=pid_table_id)
-            # TODO obsolete is_ statement
             if ru.is_combined_dataset(dataset):
                 LOGGER.info(f"Retracting from Combined dataset {dataset}")
                 queries = queries_to_retract_from_dataset(
-                    client, dataset, person_id_query)
-            # TODO obsolete is_ statement
+                    client, dataset, sandbox_dataset_id, person_id_query,
+                    skip_sandboxing)
             elif ru.is_unioned_dataset(dataset):
                 LOGGER.info(f"Retracting from Unioned dataset {dataset}")
                 queries = queries_to_retract_from_dataset(
-                    client, dataset, person_id_query)
-            # TODO obsolete is_ statement
+                    client, dataset, sandbox_dataset_id, person_id_query,
+                    skip_sandboxing)
             elif ru.is_ehr_dataset(dataset):
                 if hpo_id == NONE_STR:
                     LOGGER.info(
@@ -302,7 +405,8 @@ def run_bq_retraction(project_id, sandbox_dataset_id, pid_project_id,
                 else:
                     LOGGER.info(f"Retracting from EHR dataset {dataset}")
                     queries = queries_to_retract_from_ehr_dataset(
-                        client, dataset, hpo_id, person_id_query)
+                        client, dataset, sandbox_dataset_id, hpo_id,
+                        person_id_query, skip_sandboxing)
         retraction_query_runner(client, queries)
     LOGGER.info('Retraction complete')
     return

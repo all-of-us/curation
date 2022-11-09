@@ -5,10 +5,13 @@ not be modified.
 
 Original Issues: DC-2801
 
-TODO: Test run for RDR and EHR datasets.
-    This script is initally created and used for DC-2801. RDR and EHR datasets
-    are not in DC-2801's scope. Therefore, retraction for RDR and EHR is not
-    fully vetted.
+TODO: Improve code coverage for retracting RDR, EHR, and UNIONED_EHR datasets.
+    This script is initally created and used for DC-2801. RDR, EHR, and
+    UNIONED_EHR datasets are not in DC-2801's scope. Therefore, retraction for
+    RDR, EHR, and UNIONED_EHR is not fully tested.
+TODO: Improve code coverage for retracting with dataset_ids_list = 'all_datasets'.
+    For the same reason, DC-2801 did not use 'all_datasets' option for
+    retraction. This also needs to be tested.
 """
 
 # Python imports
@@ -139,7 +142,7 @@ def create_sandbox_dataset(client: BigQueryClient, release_tag) -> None:
         LOGGER.info(f"Created dataset `{client.project}.{sb_dataset_name}`")
     except Conflict:
         LOGGER.info(
-            f"The dataset `{client.project}.{sb_dataset_name}` already exists. "
+            f"The dataset `{client.project}.{sb_dataset_name}` already exists. Skipping the creation."
         )
 
 
@@ -151,6 +154,7 @@ def create_lookup_table(client: BigQueryClient, sql_file_path: str) -> str:
         2. Only one statement is written in the file
         3. The table is fully qualified (e.g. `<project>.<dataset>.<table>`)
         4. Dataset name is f"{release_tag}_sandbox"
+        5. The table contains 'person_id' and 'research_id' columns
     Args:
         client: BigQueryClient
         sql_file_path: Path of the SQL file you store locally.
@@ -229,6 +233,14 @@ def parse_args(raw_args=None):
             f'or if RDR data needs to be kept intact. Can take the values '
             f'"{RETRACTION_RDR_EHR}" or "{RETRACTION_EHR}".'),
         required=True)
+    parser.add_argument(
+        '--skip_sandboxing',
+        dest='skip_sandboxing',
+        action='store_true',
+        required=False,
+        help=
+        'Specify this option if you do not want this script to sanbox the retracted records.'
+    )
 
     return parser.parse_args(raw_args)
 
@@ -257,6 +269,7 @@ def main():
     client = BigQueryClient(args.project_id, credentials=impersonation_creds)
 
     LOGGER.info(
+        f"Starting retraction.\n"
         f"This script will copy the following datasets to the new datasets with "
         f"the new release tag {tag}, and run retraction on the new datasets. \n"
         f"\n"
@@ -269,7 +282,7 @@ def main():
         f"Steps:\n"
         f"[1/6] Create empty new datasets if not exist\n"
         f"[2/6] Copy data from the source datasets to the new datasets\n"
-        f"[3/6] Create an empty sandbox datasets if not exist. This sandbox dataset will be shared by all the new datasets\n"
+        f"[3/6] Create an empty sandbox dataset if not exists. This sandbox dataset will be shared by all the new datasets\n"
         f"[4/6] Create a lookup table that has PIDs/RIDs to remove\n"
         f"[5/6] Run retraction on the new datasets\n"
         f"[6/6] Run cleaning rules on the new datasets\n"
@@ -281,34 +294,41 @@ def main():
     ask_if_continue()
     for dataset in datasets:
         create_dataset(client, dataset, tag)
-    LOGGER.info(f"Completed [1/6] Create empty new datasets if not exist.")
+    LOGGER.info(f"Completed [1/6] Create empty new datasets if not exist.\n")
 
     LOGGER.info(f"Starting [2/6] Copy data to the new datasets.")
     ask_if_continue()
     for dataset in datasets:
         copy_dataset(client, dataset, tag)
-    LOGGER.info(f"Completed [2/6] Copy data to the new datasets.")
+    LOGGER.info(f"Completed [2/6] Copy data to the new datasets.\n")
 
     LOGGER.info(
-        f"Starting [3/6] Create an empty sandbox datasets if not exist.")
+        f"Starting [3/6] Create an empty sandbox dataset if not exists.")
     ask_if_continue()
     create_sandbox_dataset(client, tag)
     LOGGER.info(
-        f"Completed [3/6] Completed an empty sandbox datasets if not exist.")
+        f"Completed [3/6] Completed an empty sandbox dataset if not exists.\n")
 
     LOGGER.info(
         f"Starting [4/6] Create a lookup table that has PIDs/RIDs to remove.")
     ask_if_continue()
     lookup_table = create_lookup_table(client, sql_file_path)
     LOGGER.info(
-        f"Completed [4/6] Create a lookup table that has PIDs/RIDs to remove.")
+        f"Completed [4/6] Create a lookup table that has PIDs/RIDs to remove.\n"
+    )
 
     LOGGER.info(f"Starting [5/6] Run retraction on the new datasets.")
     ask_if_continue()
-    # TODO add sandbox option to this.
-    run_bq_retraction(project_id, sb_dataset, project_id, lookup_table,
-                      args.hpo_id, new_datasets, args.retraction_type)
-    LOGGER.info(f"Completed [5/6] Run retraction on the new datasets.")
+    run_bq_retraction(project_id,
+                      sb_dataset,
+                      project_id,
+                      lookup_table,
+                      args.hpo_id,
+                      new_datasets,
+                      args.retraction_type,
+                      skip_sandboxing=args.skip_sandboxing,
+                      bq_client=client)
+    LOGGER.info(f"Completed [5/6] Run retraction on the new datasets.\n")
 
     LOGGER.info(f"Starting [6/6] Run cleaning rules on the new datasets.")
     ask_if_continue()
@@ -319,7 +339,7 @@ def main():
         ]
         all_cleaning_args = add_kwargs_to_args(cleaning_args, None)
         clean_cdr.main(args=all_cleaning_args)
-    LOGGER.info(f"Completed [6/6] Run cleaning rules on the new datasets.")
+    LOGGER.info(f"Completed [6/6] Run cleaning rules on the new datasets.\n")
 
 
 if __name__ == '__main__':
