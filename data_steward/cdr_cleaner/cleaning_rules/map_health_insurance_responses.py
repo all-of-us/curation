@@ -8,6 +8,8 @@ For PIDs who took the original spanish basics insurance question (43528428), inv
 FOR PIDs who took the both insurance questions, update the answer given with the HCAU survey to use the codes/ids used
 in the basics survey)
 """
+
+# Python imports
 import logging
 import os
 from datetime import datetime
@@ -276,9 +278,9 @@ class MapHealthInsuranceResponses(BaseCleaningRule):
         """
         Run required steps for validation setup
         """
-        self.init_counts = self._get_counts(client)
+        init_counts = self._get_counts(client)
 
-        if self.init_counts.get('count_valid') == 0:
+        if init_counts.get('count_valid') == 0:
             raise RuntimeError(
                 'NO DATA TO UPDATE OR INVALIDATE IN OBSERVATION TABLE ')
 

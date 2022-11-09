@@ -4,6 +4,8 @@
 """
 # Python imports
 import os
+
+# Third party imports
 import mock
 
 # Third party imports
@@ -72,7 +74,7 @@ class MapHealthInsuranceResponsesTest(BaseTest.CleaningRulesTestBase):
 
         cls.project_id = os.environ.get(PROJECT_ID)
         cls.dataset_id = os.environ.get('RDR_DATASET_ID')
-        cls.sandbox_id = cls.dataset_id + '_sandbox'
+        cls.sandbox_id = f'{cls.dataset_id}_sandbox'
         cls.vocabulary_id = os.environ.get('VOCABULARY_DATASET')
 
         cls.rule_instance = MapHealthInsuranceResponses(cls.project_id,
