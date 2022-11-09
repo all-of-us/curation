@@ -87,6 +87,7 @@ VALUES
     NULL, 1000, NULL, 130, NULL, 
     NULL, NULL, NULL, NULL, NULL, 
     NULL, NULL, 903124, NULL, NULL)
+    
 """)
 
 
