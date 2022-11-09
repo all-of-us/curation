@@ -307,22 +307,40 @@ def verify_dataset_labels(dataset):
     missing_keys = list(expected_keys - dataset.labels.keys())
     if missing_keys:
         print(
-            f"Dataset label validation failed because keys were missing entirely: {missing_keys}"
+            f"[FAILED] Check 1/3: Dataset label validation failed because keys were missing entirely: {missing_keys}"
+        )
+    else:
+        print(
+            f"[SUCCEEDED] Check 1/3: All mandatory keys ({', '.join(expected_keys)}) exist in '{dataset.dataset_id}'"
         )
 
     expected = {'phase': 'clean', 'de_identified': 'false'}
     for key, value in expected.items():
         if key not in missing_keys:
             if dataset.labels[key] != expected[key]:
-                print(f"Label '{key}' was not set to expected value '{value}'")
+                print(
+                    f"[FAILED] Check 2/3: Label '{key}' was not set to expected value '{value}'"
+                )
+            else:
+                print(
+                    f"[SUCCEEDED] Check 2/3: Label '{key}' is set to '{value}' as expected"
+                )
 
     # Check that the release tag is somewhere in the dataset name
     # TODO create a check on release_tag that is independent of dataset_id
     release_tag = dataset.labels['release_tag']
     if release_tag not in dataset.dataset_id:
         print(
-            f"Release tag '{release_tag}' not in dataset_id '{dataset.dataset_id}'"
+            f"[FAILED] Check 3/3: Release tag '{release_tag}' not in dataset_id '{dataset.dataset_id}'"
         )
+    else:
+        print(
+            f"[SUCCEEDED] Check 3/3: Release tag '{release_tag}' is in dataset_id '{dataset.dataset_id}' as expected"
+        )
+
+    print(
+        f"verify_dataset_labels() completed. Investigate if any result is [FAILED]."
+    )
 
 
 verify_dataset_labels(client.get_dataset(DATASET_ID))
