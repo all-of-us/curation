@@ -125,7 +125,7 @@ from cdr_cleaner.cleaning_rules.drop_orphaned_pids import DropOrphanedPIDS
 from cdr_cleaner.cleaning_rules.drop_orphaned_survey_conduct_ids import DropOrphanedSurveyConductIds
 from cdr_cleaner.cleaning_rules.deid.deidentify_aian_zip3_values import DeidentifyAIANZip3Values
 from constants.cdr_cleaner import clean_cdr_engine as ce_consts
-from constants.cdr_cleaner.clean_cdr import DataStage, RETRACTION
+from constants.cdr_cleaner.clean_cdr import DataStage
 
 # Third party imports
 
@@ -347,9 +347,10 @@ CONTROLLED_TIER_FITBIT_CLEANING_CLASSES = [
     (RemoveNonExistingPids,),  # assumes CT dataset is ready for reference
 ]
 
-RETRACTION_CLEANING_CLASSES = [
-    (DropOrphanedSurveyConductIds,),
-    (DropOrphanedPIDS,),
+DATA_CONSISTENCY_CLEANING_CLASSES = [
+    #    (DropOrphanedSurveyConductIds,),
+    (
+        DropOrphanedPIDS,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
@@ -380,8 +381,8 @@ DATA_STAGE_RULES_MAPPING = {
         CONTROLLED_TIER_DEID_CLEAN_CLEANING_CLASSES,
     DataStage.CONTROLLED_TIER_FITBIT.value:
         CONTROLLED_TIER_FITBIT_CLEANING_CLASSES,
-    DataStage.RETRACTION.value:
-        RETRACTION_CLEANING_CLASSES
+    DataStage.DATA_CONSISTENCY.value:
+        DATA_CONSISTENCY_CLEANING_CLASSES
 }
 
 

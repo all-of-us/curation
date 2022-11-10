@@ -3,6 +3,18 @@ Use this script for dropping certain participants from datasets.
 It creates new datasets and run retraction on them. The original datasets will
 not be modified.
 
+You can use this script for retraction for the following datasets:
+    - RDR dataset
+    - EHR dataset
+    - UNIONED EHR dataset
+    - COMBINED / COMBINED RELEASE datasets
+    - [CT|RT] DEID / DEID BASE / DEID CLEAN datasets
+    - [CT|RT] FITBIT datasets
+
+You cannot use this script for retraction for the following datasets.
+You need to re-run the dataset creation script after source datasets are retracted:
+    - [CT] antibody quest dataset
+
 Original Issues: DC-2801
 
 TODO: Improve code coverage for retracting RDR, EHR, and UNIONED_EHR datasets.
@@ -28,6 +40,7 @@ from cdr_cleaner.args_parser import add_kwargs_to_args
 from common import CDR_SCOPES
 from gcloud.bq import BigQueryClient
 from retraction.retract_data_bq import run_bq_retraction, RETRACTION_EHR, RETRACTION_RDR_EHR
+from retraction.retract_utils import is_fitbit_dataset
 from utils import pipeline_logging
 from utils.auth import get_impersonation_credentials
 
@@ -81,13 +94,23 @@ def create_dataset(client: BigQueryClient, src_dataset_name: str,
     src_dataset_obj = client.get_dataset(src_dataset_name)
     src_desc, src_labels = src_dataset_obj.description, src_dataset_obj.labels
 
+    # NOTE The naming for deidendified label is inconsistent over the datasets.
+    if "de_identified" in src_labels:
+        deid_label, deid_value = "de_identified", src_labels["de_identified"]
+    elif "de-identified" in src_labels:
+        deid_label, deid_value = "de-identified", src_labels["de-identified"]
+    else:
+        raise KeyError(
+            f"Label for deid does not exist or is incorrect for {src_dataset_name}."
+            f"Manually add or fix the label and try again.")
+
     dataset_obj = client.define_dataset(
         dataset_name,
         f"Certain participants removed from {src_dataset_name} based on the AoU's decision. \n"
         f"{src_dataset_name}'s description for reference: {src_desc}", {
             "phase": src_labels["phase"],
             "release_tag": release_tag,
-            "de_identified": src_labels["de_identified"]
+            deid_label: deid_value
         })
 
     try:
@@ -333,6 +356,11 @@ def main():
     LOGGER.info(f"Starting [6/6] Run cleaning rules on the new datasets.")
     ask_if_continue()
     for dataset in new_datasets:
+        if is_fitbit_dataset(dataset):
+            LOGGER.info(
+                f"Skipping running CR for {dataset} since it's a fitbit dataset."
+            )
+            continue
         cleaning_args = [
             '-p', project_id, '-d', dataset, '-b', sb_dataset, '--data_stage',
             'retraction', '--run_as', args.run_as_email, '-s'

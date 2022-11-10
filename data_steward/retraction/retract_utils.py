@@ -4,7 +4,7 @@ import argparse
 import logging
 
 # Project imports
-from common import (COMBINED, DEID, EHR, EXT, EXT_SUFFIX, MAPPING,
+from common import (COMBINED, DEID, EHR, EXT, EXT_SUFFIX, FITBIT, MAPPING,
                     MAPPING_PREFIX, OTHER, RDR, UNIONED_EHR)
 from gcloud.bq import BigQueryClient
 from constants.retraction import retract_utils as consts
@@ -12,6 +12,7 @@ from constants.utils import bq as bq_consts
 
 LOGGER = logging.getLogger(__name__)
 
+DEID_REGEX = re.compile(r'.*deid.*')
 RELEASE_REGEX = re.compile(r'R\d{4}Q\dR\d')
 RELEASE_TAG_REGEX = re.compile(r'\d{4}[qQ]\d[rR]\d')
 SANDBOX_REGEX = re.compile(r'.*sandbox.*')
@@ -181,6 +182,25 @@ def is_combined_dataset(dataset_id):
     return COMBINED in dataset_id
 
 
+def is_deid_fitbit_dataset(dataset_id: str):
+    """
+    Returns boolean indicating if a dataset is a deid fitbit dataset using the dataset_id
+    :param dataset_id: Identifies the dataset
+    :return: Boolean indicating if the dataset is a deid fitbit dataset
+    """
+    return FITBIT in dataset_id and (dataset_id.startswith('C') or
+                                     dataset_id.startswith('R'))
+
+
+def is_fitbit_dataset(dataset_id):
+    """
+    Returns boolean indicating if a dataset is a fitbit dataset using the dataset_id
+    :param dataset_id: Identifies the dataset
+    :return: Boolean indicating if the dataset is a fitbit dataset
+    """
+    return FITBIT in dataset_id
+
+
 def is_unioned_dataset(dataset_id):
     """
     Returns boolean indicating if a dataset is a unioned dataset using the dataset_id
@@ -228,6 +248,8 @@ def get_dataset_type(dataset_id):
         return RDR
     if EHR in dataset_id and UNIONED_EHR not in dataset_id:
         return EHR
+    if FITBIT in dataset_id:
+        return FITBIT
     if DEID in dataset_id or is_deid_dataset(dataset_id):
         return DEID
     return OTHER

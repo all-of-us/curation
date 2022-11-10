@@ -369,7 +369,7 @@ def run_bq_retraction(project_id,
     dataset_ids = ru.get_datasets_list(client, dataset_ids_list)
     queries = []
     for dataset in dataset_ids:
-        if ru.is_deid_dataset(dataset):
+        if ru.is_deid_dataset(dataset) or ru.is_deid_fitbit_dataset(dataset):
             LOGGER.info(f"Retracting from DEID dataset {dataset}")
             research_id_query = JINJA_ENV.from_string(PERSON_ID_QUERY).render(
                 person_research_id=RESEARCH_ID,
@@ -387,8 +387,8 @@ def run_bq_retraction(project_id,
                 pid_project=pid_project_id,
                 sandbox_dataset_id=sandbox_dataset_id,
                 pid_table_id=pid_table_id)
-            if ru.is_combined_dataset(dataset):
-                LOGGER.info(f"Retracting from Combined dataset {dataset}")
+            if ru.is_combined_dataset(dataset) or ru.is_fitbit_dataset(dataset):
+                LOGGER.info(f"Retracting from dataset {dataset}")
                 queries = queries_to_retract_from_dataset(
                     client, dataset, sandbox_dataset_id, person_id_query,
                     skip_sandboxing)
