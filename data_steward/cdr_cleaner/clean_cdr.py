@@ -125,7 +125,7 @@ from cdr_cleaner.cleaning_rules.drop_orphaned_pids import DropOrphanedPIDS
 from cdr_cleaner.cleaning_rules.drop_orphaned_survey_conduct_ids import DropOrphanedSurveyConductIds
 from cdr_cleaner.cleaning_rules.deid.deidentify_aian_zip3_values import DeidentifyAIANZip3Values
 from constants.cdr_cleaner import clean_cdr_engine as ce_consts
-from constants.cdr_cleaner.clean_cdr import DataStage
+from constants.cdr_cleaner.clean_cdr import DataStage, DATA_CONSISTENCY
 
 # Third party imports
 
@@ -519,8 +519,8 @@ def main(args=None):
     rules = DATA_STAGE_RULES_MAPPING[args.data_stage.value]
     validate_custom_params(rules, **kwargs)
 
-    if args.data_stage.value == RETRACTION:
-        table_namer = f"{RETRACTION}_{args.dataset_id}"
+    if args.data_stage.value == DATA_CONSISTENCY:
+        table_namer = f"{args.data_stage.value}_{args.dataset_id}"
     else:
         table_namer = args.data_stage.value
 
