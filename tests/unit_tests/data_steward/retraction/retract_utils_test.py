@@ -216,39 +216,6 @@ class RetractUtilsTest(unittest.TestCase):
         # post conditions
         self.assertEqual([], ds_list)
 
-    def test_is_combined_dataset(self):
-        self.assertTrue(ru.is_combined_dataset('combined20190801'))
-        self.assertFalse(ru.is_combined_dataset('combined20190801_deid'))
-        self.assertTrue(ru.is_combined_dataset('combined20190801_base'))
-        self.assertTrue(ru.is_combined_dataset('combined20190801_clean'))
-        self.assertFalse(ru.is_combined_dataset('combined20190801_deid_v1'))
-
-    def test_is_deid_dataset(self):
-        self.assertFalse(ru.is_deid_dataset('combined20190801'))
-        self.assertTrue(ru.is_deid_dataset('combined20190801_deid'))
-        self.assertFalse(ru.is_deid_dataset('combined20190801_base'))
-        self.assertFalse(ru.is_deid_dataset('combined20190801_clean'))
-        self.assertTrue(ru.is_deid_dataset('combined20190801_deid_v1'))
-
-    @mock.patch('retraction.retract_utils.os.environ.get')
-    def test_is_ehr_dataset(self, mock_get_dataset_id):
-        # pre-conditions
-        dataset_id = 'fake_dataset_id'
-        mock_get_dataset_id.return_value = dataset_id
-
-        # tests
-        self.assertTrue(ru.is_ehr_dataset('ehr20190801'))
-        self.assertTrue(ru.is_ehr_dataset('ehr_20190801'))
-        self.assertFalse(ru.is_ehr_dataset('unioned_ehr_20190801_base'))
-        self.assertFalse(ru.is_ehr_dataset('unioned_ehr20190801_clean'))
-        self.assertTrue(ru.is_ehr_dataset(dataset_id))
-
-    def test_is_unioned_dataset(self):
-        self.assertFalse(ru.is_unioned_dataset('ehr20190801'))
-        self.assertFalse(ru.is_unioned_dataset('ehr_20190801'))
-        self.assertTrue(ru.is_unioned_dataset('unioned_ehr_20190801_base'))
-        self.assertTrue(ru.is_unioned_dataset('unioned_ehr20190801_clean'))
-
     def test_get_dataset_type(self):
         self.assertEqual(ru.get_dataset_type('unioned_ehr_4023498'),
                          common.UNIONED_EHR)
