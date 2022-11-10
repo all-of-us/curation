@@ -41,7 +41,6 @@ OTHER_PID_TABLES = [OBSERVATION_PERIOD]
 
 # person from RDR should not be removed, but person from EHR must be
 NON_EHR_TABLES = [PERSON]
-# TODO consider mapping tables and ext tables
 TABLES_FOR_RETRACTION = set(PII_TABLES + CATI_TABLES +
                             OTHER_PID_TABLES) - set(NON_PID_TABLES +
                                                     NON_EHR_TABLES)

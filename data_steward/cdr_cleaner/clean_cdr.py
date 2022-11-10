@@ -348,9 +348,8 @@ CONTROLLED_TIER_FITBIT_CLEANING_CLASSES = [
 ]
 
 DATA_CONSISTENCY_CLEANING_CLASSES = [
-    #    (DropOrphanedSurveyConductIds,),
-    (
-        DropOrphanedPIDS,),
+    (DropOrphanedSurveyConductIds,),
+    (DropOrphanedPIDS,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
@@ -519,6 +518,9 @@ def main(args=None):
     rules = DATA_STAGE_RULES_MAPPING[args.data_stage.value]
     validate_custom_params(rules, **kwargs)
 
+    # NOTE Retraction uses DATA_CONSISTENCY data stage. For retraction,
+    # all datasets share one sandbox dataset. Table_namer needs dataset_id so
+    # the sandbox tables will not overwrite each other.
     if args.data_stage.value == DATA_CONSISTENCY:
         table_namer = f"{args.data_stage.value}_{args.dataset_id}"
     else:

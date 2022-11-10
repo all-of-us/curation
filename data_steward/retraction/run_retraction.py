@@ -38,6 +38,7 @@ from google.cloud.exceptions import Conflict
 from cdr_cleaner import clean_cdr
 from cdr_cleaner.args_parser import add_kwargs_to_args
 from common import CDR_SCOPES
+from constants.cdr_cleaner.clean_cdr import DATA_CONSISTENCY
 from gcloud.bq import BigQueryClient
 from retraction.retract_data_bq import run_bq_retraction, RETRACTION_EHR, RETRACTION_RDR_EHR
 from retraction.retract_utils import is_fitbit_dataset
@@ -171,13 +172,14 @@ def create_sandbox_dataset(client: BigQueryClient, release_tag) -> None:
 
 def create_lookup_table(client: BigQueryClient, sql_file_path: str) -> str:
     """
-    Run SQL from the local SQL file and create a lookup table for regtraction.
+    Run SQL from the local SQL file and create a lookup table for retraction.
     The SQL in the local SQL file needs to meet the following criteria:
         1. The SQL is written for BigQuery
         2. Only one statement is written in the file
-        3. The table is fully qualified (e.g. `<project>.<dataset>.<table>`)
+        3. The table is fully qualified and hard-coded
         4. Dataset name is f"{release_tag}_sandbox"
         5. The table contains 'person_id' and 'research_id' columns
+    You can see the sample SQL file in the JIRA page for DC-2806.
     Args:
         client: BigQueryClient
         sql_file_path: Path of the SQL file you store locally.
@@ -363,7 +365,7 @@ def main():
             continue
         cleaning_args = [
             '-p', project_id, '-d', dataset, '-b', sb_dataset, '--data_stage',
-            'retraction', '--run_as', args.run_as_email, '-s'
+            DATA_CONSISTENCY, '--run_as', args.run_as_email, '-s'
         ]
         all_cleaning_args = add_kwargs_to_args(cleaning_args, None)
         clean_cdr.main(args=all_cleaning_args)
