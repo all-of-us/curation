@@ -5,7 +5,7 @@ from mock import patch
 import resources
 from cdr_cleaner.cleaning_rules.domain_mapping import (
     SRC_TABLE, DEST_TABLE, SRC_FIELD, DEST_FIELD, SRC_VALUE, DEST_VALUE,
-    IS_REROUTED, REROUTING_CRITERIA, EMPTY_STRING, TRANSLATION)
+    IS_REROUTED, REROUTING_CRITERIA, TRANSLATION)
 from cdr_cleaner.cleaning_rules import domain_mapping as domain_mapping
 
 
@@ -51,12 +51,12 @@ class DomainMappingTest(unittest.TestCase):
             SRC_TABLE: self.procedure_table,
             DEST_TABLE: self.condition_table,
             IS_REROUTED: 1,
-            REROUTING_CRITERIA: EMPTY_STRING
+            REROUTING_CRITERIA: ''
         }, {
             SRC_TABLE: self.procedure_table,
             DEST_TABLE: self.measurement_table,
             IS_REROUTED: 0,
-            REROUTING_CRITERIA: EMPTY_STRING
+            REROUTING_CRITERIA: ''
         }]
 
         self.mock_field_mappings_csv_patcher = patch(
@@ -146,15 +146,15 @@ class DomainMappingTest(unittest.TestCase):
             domain_mapping.get_rerouting_criteria(self.condition_table,
                                                   self.procedure_table))
         self.assertEqual(
-            EMPTY_STRING,
+            '',
             domain_mapping.get_rerouting_criteria(self.condition_table,
                                                   self.measurement_table))
         self.assertEqual(
-            EMPTY_STRING,
+            '',
             domain_mapping.get_rerouting_criteria(self.procedure_table,
                                                   self.measurement_table))
         self.assertEqual(
-            EMPTY_STRING,
+            '',
             domain_mapping.get_rerouting_criteria(self.procedure_table,
                                                   self.condition_table))
 

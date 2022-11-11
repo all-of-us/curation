@@ -22,7 +22,6 @@ DOMAIN_TABLE_NAMES = [
 
 METADATA_DOMAIN = 'Metadata'
 NULL_VALUE = 'NULL'
-EMPTY_STRING = ''
 
 table_mappings_csv = resources.table_mappings_csv()
 field_mappings_csv = resources.field_mappings_csv()
