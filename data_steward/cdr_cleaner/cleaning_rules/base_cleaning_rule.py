@@ -143,8 +143,8 @@ class AbstractBaseCleaningRule(ABC):
         longer exists in the table.
 
         if your class deletes a subset of rows in the tables you should be implementing
-        the validation that checks if the count of final final row counts + deleted rows
-        should equals to initial row counts of the affected tables.
+        the validation that checks if the count of final row counts + deleted rows
+        should be equal to initial row counts of the affected tables.
 
         Raises RunTimeError if the validation fails.
         """
