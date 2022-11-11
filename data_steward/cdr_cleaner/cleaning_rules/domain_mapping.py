@@ -1,7 +1,7 @@
 from collections import OrderedDict
-import resources
 import logging
 import re
+import resources
 
 LOGGER = logging.getLogger(__name__)
 
@@ -22,7 +22,6 @@ DOMAIN_TABLE_NAMES = [
 
 METADATA_DOMAIN = 'Metadata'
 NULL_VALUE = 'NULL'
-EMPTY_STRING = ''
 
 table_mappings_csv = resources.table_mappings_csv()
 field_mappings_csv = resources.field_mappings_csv()
@@ -52,8 +51,8 @@ def get_rerouting_criteria(src_table, dest_table):
     """
     for t in table_mappings_csv:
         if t[SRC_TABLE] == src_table and t[DEST_TABLE] == dest_table:
-            return re.sub('^\\s+$', EMPTY_STRING, t[REROUTING_CRITERIA])
-    return EMPTY_STRING
+            return re.sub('^\\s+$', '', t[REROUTING_CRITERIA])
+    return ''
 
 
 def get_field_mappings(src_table, dest_table):

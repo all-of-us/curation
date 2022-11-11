@@ -1,610 +1,446 @@
 """
-COMBINED_SNAPSHOT should be set to create a new snapshot dataset while running this cleaning rule.
+Based on the current CONCEPT table, if the domain_id does not match the domain
+in which the concept is found, then the row should be moved to the appropriate
+domain.
+
+For example, a condition row based on the condition_concept_id might need to
+be moved to the observation table. In this case, the row would be removed from
+the condition table and the values will be inserted into the observation table.
+
+Original Issues: DC-402
 """
 # Python imports
 import logging
 
 # Project imports
-import constants.bq_utils as bq_consts
+from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
+from cdr_cleaner.cleaning_rules.domain_mapping import (
+    DEST_FIELD, DEST_TABLE, DEST_VALUE, DOMAIN_TABLE_NAMES, IS_REROUTED,
+    REROUTING_CRITERIA, SRC_FIELD, SRC_TABLE, SRC_VALUE, TRANSLATION)
+from common import COMBINED, JINJA_ENV, OBSERVATION
 import constants.cdr_cleaner.clean_cdr as cdr_consts
-from cdr_cleaner.cleaning_rules import domain_mapping, field_mapping
-import resources
-from resources import get_domain_id_field, mapping_table_for
-from common import JINJA_ENV, OBSERVATION
-from cdr_cleaner.cleaning_rules.domain_mapping import EMPTY_STRING, METADATA_DOMAIN
 from gcloud.bq import BigQueryClient
+from resources import (FIELD_MAPPINGS_PATH, TABLE_MAPPINGS_PATH,
+                       VALUE_MAPPINGS_PATH, csv_to_list, fields_for, get_domain,
+                       get_domain_concept_id, mapping_table_for)
 
 LOGGER = logging.getLogger(__name__)
 
-# issue numbers
-ISSUE_NUMBERS = ['DC402', 'DC1466']
+LOOKUP_TABLE = 'lookup_domain_alignment'
 
-# Define constants for SQL reserved values
-AND = ' AND '
-NULL_VALUE = 'NULL'
-UNION_ALL = '\n\tUNION ALL\n'
+CREATE_LOOKUP_TMPL = JINJA_ENV.from_string("""
+CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{alignment_table}}`
+(src_table STRING, dest_table STRING, src_id INT64, dest_id INT64)
+""")
 
-# Define the name of the domain alignment table name
-DOMAIN_ALIGNMENT_TABLE_NAME = '_logging_domain_alignment'
-
-DOMAIN_REROUTE_INCLUDED_INNER_QUERY = JINJA_ENV.from_string("""
-SELECT 
+INSERT_LOOKUP_TO_MOVE_TMPL = JINJA_ENV.from_string("""
+INSERT INTO `{{project_id}}.{{sandbox_dataset_id}}.{{alignment_table}}`
+(src_table, dest_table, src_id, dest_id)
+WITH max_id AS (
+    SELECT MAX(dest_id) AS max_dest_id FROM (
+        SELECT dest_id 
+        FROM `{{project_id}}.{{sandbox_dataset_id}}.{{alignment_table}}`
+        WHERE dest_table = '{{dest_table}}'
+        UNION ALL
+        SELECT {{dest_id}} AS dest_id
+        FROM `{{project_id}}.{{dataset_id}}.{{dest_table}}`
+    )
+)
+SELECT
     '{{src_table}}' AS src_table, 
     '{{dest_table}}' AS dest_table, 
     {{src_id}} AS src_id, 
-    {{dest_id}} AS dest_id, 
-    True AS is_rerouted 
+    ROW_NUMBER() OVER(ORDER BY {{src_id}}) + max_id.max_dest_id AS dest_id
 FROM `{{project_id}}.{{dataset_id}}.{{src_table}}` AS s 
 JOIN `{{project_id}}.{{dataset_id}}.concept` AS c 
-    ON s.{{domain_concept_id}} = c.concept_id 
-WHERE c.domain_id in ({{domain}})
+ON s.{{domain_concept_id}} = c.concept_id 
+CROSS JOIN max_id
+WHERE c.domain_id = '{{domain}}'
+{% if criteria -%} AND {{criteria}}{% endif %}
 """)
 
-DOMAIN_REROUTE_EXCLUDED_INNER_QUERY = JINJA_ENV.from_string("""
-SELECT  
+INSERT_LOOKUP_TO_DROP_TMPL = JINJA_ENV.from_string("""
+INSERT INTO `{{project_id}}.{{sandbox_dataset_id}}.{{alignment_table}}`
+(src_table, dest_table, src_id, dest_id)
+SELECT
     '{{src_table}}' AS src_table, 
-    CAST(NULL AS STRING) AS dest_table, 
-    s.{{src_id}} AS src_id, 
-    NULL AS dest_id, 
-    False AS is_rerouted 
+    NULL AS dest_table, 
+    {{src_id}} AS src_id, 
+    NULL AS dest_id
 FROM `{{project_id}}.{{dataset_id}}.{{src_table}}` AS s 
-LEFT JOIN `{{project_id}}.{{dataset_id}}._logging_domain_alignment` AS m 
-    ON s.{{src_id}} = m.src_id 
-        AND m.src_table = '{{src_table}}' 
-WHERE m.src_id IS NULL
+JOIN `{{project_id}}.{{dataset_id}}.concept` AS c 
+ON s.{{domain_concept_id}} = c.concept_id 
+WHERE c.domain_id = '{{domain}}'
 """)
 
-MAXIMUM_DOMAIN_ID_QUERY = JINJA_ENV.from_string("""
-SELECT
-    MAX({{domain_id_field}}) AS max_id
-FROM `{{project_id}}.{{dataset_id}}.{{domain_table}}`
-""")
-
-DOMAIN_MAPPING_OUTER_QUERY = JINJA_ENV.from_string("""
+INSERT_TMPL = JINJA_ENV.from_string("""
+INSERT INTO `{{project_id}}.{{dataset_id}}.{{dest_table}}`
+({% for field in fields %}{{field['name']}}{% if not loop.last -%}, {% endif %}{% endfor %})
 SELECT 
-    u.src_table, 
-    u.dest_table, 
-    u.src_id, 
-    ROW_NUMBER() OVER(ORDER BY u.src_table, u.src_id) + src.max_id AS dest_id, 
-    u.is_rerouted 
-FROM  
-( 
-    {{union_query}} 
-) u 
-CROSS JOIN 
-( 
-    {{domain_query}} 
-) src 
-""")
-
-REROUTE_DOMAIN_RECORD_QUERY = JINJA_ENV.from_string("""
-SELECT 
-    m.dest_id AS {{dest_domain_id_field}}, 
-    {{field_mapping_expr}} 
+    {% for col in cols %}
+    {{col}}
+    {% if not loop.last %}, {% endif %}
+    {% endfor %}
 FROM `{{project_id}}.{{dataset_id}}.{{src_table}}` AS s 
-JOIN `{{project_id}}.{{dataset_id}}._logging_domain_alignment` AS m 
-ON s.{{src_domain_id_field}} = m.src_id 
-    AND m.src_table = '{{src_table}}' 
-    AND m.dest_table = '{{dest_table}}' 
-    AND m.is_rerouted = True 
+JOIN `{{project_id}}.{{sandbox_dataset_id}}.{{alignment_table}}` AS m 
+ON s.{{src_table}}_id = m.src_id 
+AND m.src_table = '{{src_table}}' 
+AND m.dest_table = '{{dest_table}}' 
 """)
 
-SELECT_DOMAIN_RECORD_QUERY = JINJA_ENV.from_string("""
+INSERT_MAPPING_TMPL = JINJA_ENV.from_string("""
+INSERT INTO `{{project_id}}.{{dataset_id}}._mapping_{{dest_table}}`
+({% for field in fields %}{{field['name']}}{% if not loop.last -%}, {% endif %}{% endfor %})
 SELECT
-    {{dest_domain_id_field}},
-    {{field_mapping_expr}} 
-FROM `{{project_id}}.{{dataset_id}}.{{dest_table}}`
-""")
-
-SANDBOX_DOMAIN_RECORD_QUERY_TEMPLATE = JINJA_ENV.from_string("""
-SELECT
-  d.*
-FROM `{{project_id}}.{{dataset_id}}.{{domain_table}}` AS d
-LEFT JOIN `{{project_id}}.{{dataset_id}}._logging_domain_alignment` AS m
-  ON d.{{domain_table}}_id = m.dest_id 
-    AND m.dest_table = '{{domain_table}}'
-    AND m.is_rerouted = True 
-WHERE m.dest_id IS NULL
-    -- exclude PPI records from sandboxing --
-    AND d.{{domain_concept_id}} NOT IN (
-        SELECT
-            c.concept_id
-        FROM `{{project_id}}.{{dataset_id}}.concept` c
-        WHERE c.vocabulary_id = 'PPI'
-    )
-""")
-
-CLEAN_DOMAIN_RECORD_QUERY_TEMPLATE = JINJA_ENV.from_string("""
-SELECT
-  d.*
-FROM `{{project_id}}.{{dataset_id}}.{% if is_mapping %}_mapping_{% endif %}{{domain_table}}` AS d
-LEFT JOIN `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table}}` AS s
-  ON d.{{domain_table}}_id = s.{{domain_table}}_id
-WHERE s.{{domain_table}}_id IS NULL
-""")
-
-REROUTE_DOMAIN_MAPPING_RECORD_QUERY = JINJA_ENV.from_string("""
-{% for src_table in src_tables %}
-    {% if loop.previtem is defined %}{{'\n'}}UNION ALL{{'\n\n'}}{% endif %}
-    
--- if src_table is the same as dest_table, we want to keep all the records --
-{% if src_table == dest_table %}
-SELECT
-    src.src_{{src_table}}_id,
-    src.{{src_table}}_id,
-    src.src_dataset_id,
-    src.src_hpo_id,
-    src.src_table_id
-FROM `{{project_id}}.{{dataset_id}}._mapping_{{src_table}}` AS src
-{% else %}
--- if src_table and dest_table are not the same -- 
--- we want to reroute the mapping records from _mapping_src_table to the _mapping_dest_table --
-SELECT
-    src.src_{{src_table}}_id AS src_{{dest_table}}_id,
     m.dest_id AS {{dest_table}}_id,
     src.src_dataset_id,
+    src.src_{{src_table}}_id AS src_{{dest_table}}_id,
     src.src_hpo_id,
     src.src_table_id
-FROM `{{project_id}}.{{dataset_id}}._logging_domain_alignment` AS m
+FROM `{{project_id}}.{{sandbox_dataset_id}}.{{alignment_table}}` AS m
 JOIN `{{project_id}}.{{dataset_id}}._mapping_{{src_table}}` AS src
     ON m.src_id = src.{{src_table}}_id 
         AND m.src_table = '{{src_table}}'
         AND m.dest_table = '{{dest_table}}'
-WHERE m.is_rerouted = True
-{% endif %}
-{% endfor %}
 """)
 
-CASE_STATEMENT = (' CASE {src_field} '
-                  ' {statements} '
-                  ' ELSE {dummy_value} '
-                  ' END AS {dest_field} ')
+SANDBOX_TMPL = JINJA_ENV.from_string("""
+CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table}}` AS (
+    SELECT d.*
+    FROM `{{project_id}}.{{dataset_id}}.{{table}}` AS d
+    WHERE d.{{table}}_id IN (
+        SELECT DISTINCT src_id
+        FROM `{{project_id}}.{{sandbox_dataset_id}}.{{alignment_table}}`
+        WHERE src_table = '{{table}}'
+    )
+)
+""")
 
-WHEN_STATEMENT = 'WHEN {src_value} THEN {dest_value}'
+SANDBOX_MAPPING_TMPL = JINJA_ENV.from_string("""
+CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table}}` AS (
+    SELECT * 
+    FROM `{{project_id}}.{{dataset_id}}.{{mapping_table}}`
+    WHERE {{table}}_id IN (
+        SELECT {{table}}_id 
+        FROM `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_domain_table}}`
+        WHERE {{table}}_id IS NOT NULL
+    )
+)
+""")
 
-SRC_FIELD_AS_DEST_FIELD = '{src_field} AS {dest_field}'
+CLEAN_TMPL = JINJA_ENV.from_string("""
+DELETE `{{project_id}}.{{dataset_id}}.{% if is_mapping %}_mapping_{% endif %}{{table}}`
+WHERE {{table}}_id IN (
+    SELECT {{table}}_id FROM `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table}}`
+    WHERE {{table}}_id IS NOT NULL
+)
+""")
 
-NULL_AS_DEST_FIELD = 'NULL AS {dest_field}'
-
-ZERO_AS_DEST_FIELD = '0 AS {dest_field}'
-
-
-def fetch_dummy_value(table, field):
-    """
-    This utility function returns a dummy value based on the data type of the field
-
-    :param table: table name which the field belongs too
-    :param field: field name for which a dummy value is expected
-    :return: Returns a value that can be used to add in a required field
-    """
-    if resources.get_field_type(table, field) == 'integer':
-        dummy_value = 0
-    elif resources.get_field_type(table, field) == 'float':
-        dummy_value = 0.0
-    elif resources.get_field_type(table, field) == 'string':
-        dummy_value = ''
-    elif resources.get_field_type(table, field) == 'date':
-        dummy_value = 'DATE(\'1970-01-01\')'
-    elif resources.get_field_type(table, field) == 'timestamp':
-        dummy_value = 'TIMESTAMP(\'1970-01-01\')'
-    else:
-        raise RuntimeError(f'Dummy value for the {field} cannot be found')
-    return dummy_value
+# These values are referenced when the source column is nullable but
+# the destination column is mandatory.
+VALUE_DICT = {
+    'STRING': '',
+    'INT64': 0,
+    'FLOAT64': 0,
+    'DATE': "DATE('1970-01-01')",
+    'TIMESTAMP': "TIMESTAMP('1970-01-01')"
+}
 
 
-def parse_domain_mapping_query_cross_domain(project_id, dataset_id, dest_table):
-    """
-    This function creates a query that generates id mappings in _logging_domain_alignment
-    for the rerouting records for dest_table
+class DomainAlignment(BaseCleaningRule):
 
-    :param project_id: the project_id in which the query is run
-    :param dataset_id: the dataset_id in which the query is run
-    :param dest_table: the destination table to which the records are rerouted
-    :return: the query that generates id mappings for the rerouting records
-    """
-    union_query = EMPTY_STRING
+    def __init__(self,
+                 project_id,
+                 dataset_id,
+                 sandbox_dataset_id,
+                 table_namer=None):
+        """
+        Initialize the class with proper information.
 
-    domain = resources.get_domain(dest_table)
-    dest_id_field = resources.get_domain_id_field(dest_table)
+        self.table_mappings_to_move:
+            A list of dict that has source table -> destination table relatiohship info.
+            The records are moved from the src table to the dest table.
+        self.table_mappings_to_drop:
+            A list of dict that has source table -> destination table relatiohship info.
+            The records are dropped from the src table but not moved to the dest table.
+            The records are dropped because rerouting is not possible between
+            the src_table and the dest_table. (e.g. condition_occurrence -> measurement)
+        """
+        desc = (
+            'Move records to the appropriate domain tables based on the CONCEPT table.'
+        )
 
-    for src_table in domain_mapping.DOMAIN_TABLE_NAMES:
-
-        if src_table != dest_table and domain_mapping.exist_domain_mappings(
-                src_table, dest_table):
-
-            src_id_field = resources.get_domain_id_field(src_table)
-            domain_concept_id = resources.get_domain_concept_id(src_table)
-
-            if union_query != EMPTY_STRING:
-                union_query += UNION_ALL
-
-            union_query += DOMAIN_REROUTE_INCLUDED_INNER_QUERY.render(
-                project_id=project_id,
-                dataset_id=dataset_id,
-                src_table=src_table,
-                dest_table=dest_table,
-                src_id=src_id_field,
-                dest_id=NULL_VALUE,
-                domain_concept_id=domain_concept_id,
-                domain='\'{}\''.format(domain))
-
-            criteria = domain_mapping.get_rerouting_criteria(
-                src_table, dest_table)
-
-            if criteria != EMPTY_STRING:
-                union_query += AND + criteria
-
-    output_query = EMPTY_STRING
-
-    if union_query != EMPTY_STRING:
-        # the query to get the max id for the dest table
-        domain_query = MAXIMUM_DOMAIN_ID_QUERY.render(
+        super().__init__(
+            issue_numbers=['DC402', 'DC814', 'DC1466'],
+            description=desc,
+            affected_datasets=[COMBINED],
+            affected_tables=DOMAIN_TABLE_NAMES +
+            [mapping_table_for(table) for table in DOMAIN_TABLE_NAMES],
             project_id=project_id,
             dataset_id=dataset_id,
-            domain_table=dest_table,
-            domain_id_field=dest_id_field)
+            sandbox_dataset_id=sandbox_dataset_id,
+            table_namer=table_namer)
 
-        output_query = DOMAIN_MAPPING_OUTER_QUERY.render(
-            union_query=union_query, domain_query=domain_query)
-    return output_query
-
-
-def parse_domain_mapping_query_for_same_domains(project_id, dataset_id):
-    """
-    This function generates a query that generates id mappings in _logging_domain_alignment for
-    the records being copied to the same domain table
-
-    :param project_id: the project_id in which the query is run
-    :param dataset_id: the dataset_id in which the query is run
-    :return: a query that generates id mappings for the records that will get copied over to the same domain
-    """
-    union_query = EMPTY_STRING
-
-    for domain_table in domain_mapping.DOMAIN_TABLE_NAMES:
-
-        domain = resources.get_domain(domain_table)
-        domain_id_field = resources.get_domain_id_field(domain_table)
-        domain_concept_id = resources.get_domain_concept_id(domain_table)
-
-        if union_query != EMPTY_STRING:
-            union_query += UNION_ALL
-
-        union_query += DOMAIN_REROUTE_INCLUDED_INNER_QUERY.render(
-            project_id=project_id,
-            dataset_id=dataset_id,
-            src_table=domain_table,
-            dest_table=domain_table,
-            src_id=domain_id_field,
-            dest_id=domain_id_field,
-            domain_concept_id=domain_concept_id,
-            domain='\'{}\''.format('\',\''.join([domain, METADATA_DOMAIN])))
-    return union_query
-
-
-def parse_domain_mapping_query_for_excluded_records(project_id, dataset_id):
-    """
-    This function generates a query that generates id mappings in _logging_domain_alignment for the records
-    that will get dropped during rerouting because those records either fail the rerouting criteria or rerouting
-    is not possible between src_table and dest_table such as condition_occurrence -> measurement
-
-    :param project_id: the project_id in which the query is run
-    :param dataset_id: the dataset_id in which the query is run
-    :return: a query that generates id mappings for the records that will get dropped
-    """
-    union_query = EMPTY_STRING
-
-    for domain_table in domain_mapping.DOMAIN_TABLE_NAMES:
-
-        domain_id_field = get_domain_id_field(domain_table)
-
-        if union_query != EMPTY_STRING:
-            union_query += UNION_ALL
-
-        union_query += DOMAIN_REROUTE_EXCLUDED_INNER_QUERY.render(
-            project_id=project_id,
-            dataset_id=dataset_id,
-            src_table=domain_table,
-            src_id=domain_id_field,
-            src_domain_id_field=domain_id_field)
-    return union_query
-
-
-def get_domain_mapping_queries(project_id, dataset_id):
-    """
-    This function generates a list of query dicts for creating id mappings in _logging_domain_alignment.
-    The list will get consumed clean_engine
-
-    :param project_id: the project_id in which the query is run
-    :param dataset_id: the dataset_id in which the query is run
-    :return: a list of query dicts for creating id mappings in _logging_domain_alignment
-    """
-    # Create _logging_domain_alignment
-    bq_client = BigQueryClient(project_id)
-    table_id = f'{project_id}.{dataset_id}.{DOMAIN_ALIGNMENT_TABLE_NAME}'
-    bq_client.delete_table(table_id, not_found_ok=True)
-    bq_client.create_tables([table_id], exists_ok=False)
-
-    domain_mapping_queries = []
-
-    for domain_table in domain_mapping.DOMAIN_TABLE_NAMES:
-        query = parse_domain_mapping_query_cross_domain(project_id, dataset_id,
-                                                        domain_table)
-        domain_mapping_queries.append(query)
-
-    # Create the query for creating field_mappings for the records moving between the same domain
-    query = parse_domain_mapping_query_for_same_domains(project_id, dataset_id)
-    domain_mapping_queries.append(query)
-
-    # Create the query for the records that are in the wrong domain but will not be moved
-    query = parse_domain_mapping_query_for_excluded_records(
-        project_id, dataset_id)
-    domain_mapping_queries.append(query)
-
-    unioned_query = {
-        cdr_consts.QUERY: UNION_ALL.join(domain_mapping_queries),
-        cdr_consts.DESTINATION_TABLE: DOMAIN_ALIGNMENT_TABLE_NAME,
-        cdr_consts.DISPOSITION: bq_consts.WRITE_EMPTY,
-        cdr_consts.DESTINATION_DATASET: dataset_id
-    }
-
-    return [unioned_query]
-
-
-def resolve_field_mappings(src_table, dest_table):
-    """
-    This function generates the content of SQL select statement for the given src_table and dest_table.
-    :param src_table: the source CDM table for rerouting
-    :param dest_table: the destination CDM table for rerouting
-    :return: the content of the SQL select statements
-    """
-    select_statements = []
-
-    field_mappings = domain_mapping.get_field_mappings(src_table, dest_table)
-
-    for dest_field, src_field in field_mappings.items():
-        if domain_mapping.value_requires_translation(src_table, dest_table,
-                                                     src_field, dest_field):
-            value_mappings = domain_mapping.get_value_mappings(
-                src_table, dest_table, src_field, dest_field)
-
-            if len(value_mappings) == 0:
-                if field_mapping.is_field_required(dest_table, dest_field):
-                    case_statements = ZERO_AS_DEST_FIELD.format(
-                        dest_field=dest_field)
-                else:
-                    case_statements = NULL_AS_DEST_FIELD.format(
-                        dest_field=dest_field)
-            else:
-                case_statements = '\n\t\t'.join([
-                    WHEN_STATEMENT.format(src_value=s, dest_value=d)
-                    for d, s in value_mappings.items()
-                ])
-
-                dummy_value = fetch_dummy_value(
-                    dest_table, dest_field) if field_mapping.is_field_required(
-                        dest_table, dest_field) else NULL_VALUE
-
-                case_statements = CASE_STATEMENT.format(
-                    src_field=src_field,
-                    dest_field=dest_field,
-                    dummy_value=dummy_value,
-                    statements=case_statements)
-            select_statements.append(case_statements)
-        else:
-            select_statements.append(
-                SRC_FIELD_AS_DEST_FIELD.format(src_field=src_field,
-                                               dest_field=dest_field))
-
-    return ',\n\t'.join(select_statements)
-
-
-def parse_reroute_domain_query(project_id, dataset_id, dest_table):
-    """
-    This function generates a query that reroutes the records from all domain tables for the given dest_table.
-    It uses _mapping_alignment_table to determine in which domain table the records should land.
-
-    :param project_id: the project_id in which the query is run
-    :param dataset_id: the dataset_id in which the query is run
-    :param dest_table: the destination CDM table for rerouting
-    :return: a query that reroutes the records from all domain tables for the given dest_table
-    """
-    union_queries = []
-
-    for src_table in domain_mapping.DOMAIN_TABLE_NAMES:
-        src_domain_id_field = get_domain_id_field(src_table)
-        dest_domain_id_field = get_domain_id_field(dest_table)
-        field_mapping_expr = resolve_field_mappings(src_table, dest_table)
-
-        if src_table == dest_table:
-            # We are doing this to make sure the schema doesn't change and also keep all the
-            # records in the domain table for later rerouting to the other domains
-            union_queries.append(
-                SELECT_DOMAIN_RECORD_QUERY.render(
-                    project_id=project_id,
-                    dataset_id=dataset_id,
-                    dest_table=dest_table,
-                    field_mapping_expr=field_mapping_expr,
-                    dest_domain_id_field=dest_domain_id_field))
-        elif domain_mapping.exist_domain_mappings(src_table, dest_table):
-            # We are only rerouting the records between domain tables that are not the same
-            union_queries.append(
-                REROUTE_DOMAIN_RECORD_QUERY.render(
-                    project_id=project_id,
-                    dataset_id=dataset_id,
-                    src_table=src_table,
-                    dest_table=dest_table,
-                    src_domain_id_field=src_domain_id_field,
-                    dest_domain_id_field=dest_domain_id_field,
-                    field_mapping_expr=field_mapping_expr))
-
-    return UNION_ALL.join(union_queries)
-
-
-def get_reroute_domain_queries(project_id, dataset_id):
-    """
-    This function creates a new dataset called snapshot_dataset_id and copies all content from
-    dataset_id to it. It generates a list of query dicts for rerouting the records to the
-    corresponding destination table.
-
-    :param project_id: the project_id in which the query is run
-    :param dataset_id: the dataset_id in which the query is run
-    :return: a list of query dicts for rerouting the records to the corresponding destination table
-    """
-
-    queries = []
-
-    for domain_table in domain_mapping.DOMAIN_TABLE_NAMES:
-        query = dict()
-        query[cdr_consts.QUERY] = parse_reroute_domain_query(
-            project_id, dataset_id, domain_table)
-        query[cdr_consts.DESTINATION_TABLE] = domain_table
-        query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
-        query[cdr_consts.DESTINATION_DATASET] = dataset_id
-        query[cdr_consts.BATCH] = True
-        queries.append(query)
-
-    return queries
-
-
-def get_clean_domain_queries(project_id, dataset_id, sandbox_dataset_id):
-    """
-    This function generates a list of query dicts for dropping records that do not belong to the
-    domain table after rerouting.
-
-    :param project_id: the project_id in which the query is run
-    :param dataset_id: the dataset_id in which the query is run
-    :param sandbox_dataset_id: sandbox dataset for dataset_id
-    :return: list of query dicts to run
-    """
-
-    queries = []
-    sandbox_queries = []
-    for domain_table in domain_mapping.DOMAIN_TABLE_NAMES:
-        # Use non-standard concept if table is observation
-        if domain_table == OBSERVATION:
-            domain_concept_id = 'observation_source_concept_id'
-        else:
-            domain_concept_id = resources.get_domain_concept_id(domain_table)
-
-        sandbox_queries.append({
-            cdr_consts.QUERY:
-                SANDBOX_DOMAIN_RECORD_QUERY_TEMPLATE.render(
-                    project_id=project_id,
-                    dataset_id=dataset_id,
-                    domain_table=domain_table,
-                    domain_concept_id=domain_concept_id),
-            cdr_consts.DESTINATION_TABLE:
-                sandbox_name_for(domain_table),
-            cdr_consts.DISPOSITION:
-                bq_consts.WRITE_TRUNCATE,
-            cdr_consts.DESTINATION_DATASET:
-                sandbox_dataset_id
-        })
-        # add the clean-up query for the domain table
-        queries.append({
-            cdr_consts.QUERY:
-                CLEAN_DOMAIN_RECORD_QUERY_TEMPLATE.render(
-                    project_id=project_id,
-                    dataset_id=dataset_id,
-                    sandbox_dataset_id=sandbox_dataset_id,
-                    domain_table=domain_table,
-                    sandbox_table=sandbox_name_for(domain_table),
-                    is_mapping=False),
-            cdr_consts.DESTINATION_TABLE:
-                domain_table,
-            cdr_consts.DISPOSITION:
-                bq_consts.WRITE_TRUNCATE,
-            cdr_consts.DESTINATION_DATASET:
-                dataset_id
-        })
-        # add the clean-up query for the corresponding mapping of the domain table
-        queries.append({
-            cdr_consts.QUERY:
-                CLEAN_DOMAIN_RECORD_QUERY_TEMPLATE.render(
-                    project_id=project_id,
-                    dataset_id=dataset_id,
-                    sandbox_dataset_id=sandbox_dataset_id,
-                    domain_table=domain_table,
-                    sandbox_table=sandbox_name_for(domain_table),
-                    is_mapping=True),
-            cdr_consts.DESTINATION_TABLE:
-                mapping_table_for(domain_table),
-            cdr_consts.DISPOSITION:
-                bq_consts.WRITE_TRUNCATE,
-            cdr_consts.DESTINATION_DATASET:
-                dataset_id
-        })
-    return sandbox_queries + queries
-
-
-def get_reroute_domain_mapping_queries(project_id, dataset_id):
-    """
-    The functions generates a list of query dicts for rerouting the mapping records to the
-    approapriate domain.
-
-    :param project_id: the project_id in which the query is run
-    :param dataset_id: the dataset_id in which the query is run
-    :return: a list of query dicts for rerouting the mapping records to the corresponding mapping
-    table
-    """
-    queries = []
-
-    for dest_table in domain_mapping.DOMAIN_TABLE_NAMES:
-        # Figure out all possible rerouting source tables for a given destination table
-        src_tables = [
-            src_table for src_table in domain_mapping.DOMAIN_TABLE_NAMES
-            if (src_table == dest_table) or
-            domain_mapping.exist_domain_mappings(src_table, dest_table)
+        self.table_mappings_to_move: list[dict[str, str]] = [
+            row for row in csv_to_list(TABLE_MAPPINGS_PATH)
+            if row[IS_REROUTED] == '1'
         ]
 
-        queries.append({
-            cdr_consts.QUERY:
-                REROUTE_DOMAIN_MAPPING_RECORD_QUERY.render(
-                    project_id=project_id,
-                    dataset_id=dataset_id,
-                    src_tables=src_tables,
-                    dest_table=dest_table),
-            cdr_consts.DESTINATION_TABLE:
-                mapping_table_for(dest_table),
-            cdr_consts.DISPOSITION:
-                bq_consts.WRITE_TRUNCATE,
-            cdr_consts.DESTINATION_DATASET:
-                dataset_id
-        })
-    return queries
+        self.table_mappings_to_drop: list[dict[str, str]] = [
+            row for row in csv_to_list(TABLE_MAPPINGS_PATH)
+            if row[IS_REROUTED] == '0'
+        ]
 
+    def setup_rule(self, client: BigQueryClient):
+        """
+        Create a lookup table that has source to destination relationship info between
+        source tables and destination tables. This CR cleans the data based on this
+        lookup table.
+        """
 
-def sandbox_name_for(domain_table):
-    """
-    This function is used temporarily and can be replaced by the class method once this CR is
-    upgraded to the baseclass
+        queries = []
+        queries.append(
+            CREATE_LOOKUP_TMPL.render(
+                project_id=self.project_id,
+                sandbox_dataset_id=self.sandbox_dataset_id,
+                alignment_table=LOOKUP_TABLE))
 
-    :param domain_table: CDM table name
-    :return: sandbox table name for the CDM table
-    """
-    return f'{"_".join(ISSUE_NUMBERS).lower()}_{domain_table}'
+        for row in self.table_mappings_to_move:
+            queries.append(
+                INSERT_LOOKUP_TO_MOVE_TMPL.render(
+                    project_id=self.project_id,
+                    dataset_id=self.dataset_id,
+                    sandbox_dataset_id=self.sandbox_dataset_id,
+                    alignment_table=LOOKUP_TABLE,
+                    src_table=row[SRC_TABLE],
+                    dest_table=row[DEST_TABLE],
+                    src_id=f"{row[SRC_TABLE]}_id",
+                    dest_id=f"{row[DEST_TABLE]}_id",
+                    domain_concept_id=get_domain_concept_id(row[SRC_TABLE]),
+                    domain=get_domain(row[DEST_TABLE]),
+                    criteria=row[REROUTING_CRITERIA]))
 
+        for row in self.table_mappings_to_drop:
+            queries.append(
+                INSERT_LOOKUP_TO_DROP_TMPL.render(
+                    project_id=self.project_id,
+                    dataset_id=self.dataset_id,
+                    sandbox_dataset_id=self.sandbox_dataset_id,
+                    alignment_table=LOOKUP_TABLE,
+                    src_table=row[SRC_TABLE],
+                    src_id=f'{row[SRC_TABLE]}_id',
+                    domain_concept_id=get_domain_concept_id(row[SRC_TABLE]),
+                    domain=get_domain(row[DEST_TABLE])))
 
-def domain_alignment(project_id, dataset_id, sandbox_dataset_id=None):
-    """
+        for q in queries:
+            job = client.query(q)
+            job.result()
 
-    This function returns a list of dictionaries containing query parameters required for applying domain alignment.
+    def setup_validation(self, client, *args, **keyword_args):
+        """
+        Run required steps for validation setup
+        """
+        raise NotImplementedError("Please fix me.")
 
-    :param project_id: the project_id in which the query is run
-    :param dataset_id: the dataset_id in which the query is run
-    :param sandbox_dataset_id: Identifies the sandbox dataset to store rows
-    #TODO use sandbox_dataset_id for CR
-    :return: a list of query dicts for rerouting the records to the corresponding destination table
-    """
-    queries_list = []
-    queries_list.extend(get_domain_mapping_queries(project_id, dataset_id))
-    queries_list.extend(get_reroute_domain_queries(project_id, dataset_id))
-    queries_list.extend(
-        get_reroute_domain_mapping_queries(project_id, dataset_id))
-    queries_list.extend(
-        get_clean_domain_queries(project_id, dataset_id, sandbox_dataset_id))
+    def validate_rule(self, client, *args, **keyword_args):
+        """
+        Validates the cleaning rule which deletes or updates the data from the tables
+        """
+        raise NotImplementedError("Please fix me.")
 
-    return queries_list
+    def get_sandbox_tablenames(self):
+        return [
+            self.sandbox_table_for(affected_table)
+            for affected_table in self.affected_tables
+        ]
+
+    def get_query_specs(self):
+        """
+        Return a list of dictionary query specifications.
+        The list contains 6 types of queries.
+
+        For each of the table mappings:
+        1. Insert: Move records from src_table to dest_table.
+        2. Insert: Same as 1, but for mapping table.
+
+        For each of the domain tables:
+        3. Create: Sandbox the records to be deleted.
+        4. Create: Same as 3, but for mapping table.
+        5. Delete: Delete the records from src_table.
+        6. Delete: Same as 5, but for mapping table.
+        """
+        queries = []
+
+        for row in self.table_mappings_to_move:
+
+            src_table, dest_table = row[SRC_TABLE], row[DEST_TABLE]
+            select_list = self.get_select_list(src_table, dest_table)
+
+            queries.append({
+                cdr_consts.QUERY:
+                    INSERT_TMPL.render(
+                        project_id=self.project_id,
+                        dataset_id=self.dataset_id,
+                        sandbox_dataset_id=self.sandbox_dataset_id,
+                        alignment_table=LOOKUP_TABLE,
+                        src_table=src_table,
+                        dest_table=dest_table,
+                        fields=fields_for(dest_table),
+                        cols=select_list)
+            })
+
+            queries.append({
+                cdr_consts.QUERY:
+                    INSERT_MAPPING_TMPL.render(
+                        project_id=self.project_id,
+                        dataset_id=self.dataset_id,
+                        sandbox_dataset_id=self.sandbox_dataset_id,
+                        alignment_table=LOOKUP_TABLE,
+                        src_table=src_table,
+                        dest_table=dest_table,
+                        fields=fields_for(mapping_table_for(dest_table)))
+            })
+
+        for table in DOMAIN_TABLE_NAMES:
+            # Use non-standard concept if table is observation
+            if table == OBSERVATION:
+                domain_concept_id = 'observation_source_concept_id'
+            else:
+                domain_concept_id = get_domain_concept_id(table)
+
+            queries.append({
+                cdr_consts.QUERY:
+                    SANDBOX_TMPL.render(
+                        project_id=self.project_id,
+                        dataset_id=self.dataset_id,
+                        sandbox_dataset_id=self.sandbox_dataset_id,
+                        table=table,
+                        alignment_table=LOOKUP_TABLE,
+                        sandbox_table=self.sandbox_table_for(table),
+                        domain_concept_id=domain_concept_id)
+            })
+            queries.append({
+                cdr_consts.QUERY:
+                    SANDBOX_MAPPING_TMPL.render(
+                        project_id=self.project_id,
+                        dataset_id=self.dataset_id,
+                        sandbox_dataset_id=self.sandbox_dataset_id,
+                        table=table,
+                        mapping_table=mapping_table_for(table),
+                        alignment_table=LOOKUP_TABLE,
+                        sandbox_table=self.sandbox_table_for(
+                            mapping_table_for(table)),
+                        sandbox_domain_table=self.sandbox_table_for(table),
+                        domain_concept_id=domain_concept_id)
+            })
+            # Clean the domain table
+            queries.append({
+                cdr_consts.QUERY:
+                    CLEAN_TMPL.render(
+                        project_id=self.project_id,
+                        dataset_id=self.dataset_id,
+                        sandbox_dataset_id=self.sandbox_dataset_id,
+                        table=table,
+                        sandbox_table=self.sandbox_table_for(table),
+                        is_mapping=False)
+            })
+            # Clean the mapping table
+            queries.append({
+                cdr_consts.QUERY:
+                    CLEAN_TMPL.render(
+                        project_id=self.project_id,
+                        dataset_id=self.dataset_id,
+                        sandbox_dataset_id=self.sandbox_dataset_id,
+                        table=table,
+                        sandbox_table=self.sandbox_table_for(
+                            mapping_table_for(table)),
+                        is_mapping=True)
+            })
+
+        return queries
+
+    def get_select_list(self, src_table, dest_table) -> list:
+        """
+        Get the mapping info for the src and dest tables from the
+        [table|field|value]_mapping CSV files, and create statements
+        that will be a part of the SELECT statement for inserting records
+        from src table to dest table.
+
+        :return: A list of strings that can be used in the SELECT statement
+            for each of the columns in dest_table.
+        """
+        cols = []
+
+        for dest_field in fields_for(dest_table):
+
+            dest: str = dest_field['name']
+            dest_type: str = self.get_bq_col_type(dest_field['type'])
+
+            if dest == f"{dest_table}_id":
+                cols.append(f"m.dest_id AS {dest_table}_id")
+                continue
+
+            field_mapping: dict = next(
+                {
+                    SRC_FIELD: r[SRC_FIELD],
+                    TRANSLATION: r[TRANSLATION]
+                }
+                for r in csv_to_list(FIELD_MAPPINGS_PATH)
+                if (r[SRC_TABLE] == src_table and
+                    r[DEST_TABLE] == dest_table and r[DEST_FIELD] == dest))
+
+            src: str = field_mapping[SRC_FIELD]
+            src_type: str = next((self.get_bq_col_type(f['type'])
+                                  for f in fields_for(src_table)
+                                  if f['name'] == src), None)
+
+            is_required: bool = dest_field['mode'] == 'required'
+            needs_cast: bool = src_type != dest_type
+            needs_translation: bool = field_mapping[TRANSLATION] == '1'
+
+            translation: dict = {
+                r[SRC_VALUE]: r[DEST_VALUE]
+                for r in csv_to_list(VALUE_MAPPINGS_PATH)
+                if (r[SRC_TABLE] == src_table and
+                    r[DEST_TABLE] == dest_table and r[DEST_FIELD] == dest)
+            }
+
+            # Create the statement for each of the columns.
+            if (not is_required and not needs_translation and
+                    not needs_cast) or src == 'NULL':
+                cols.append(f"{src} AS {dest}")
+
+            elif not is_required and not needs_translation and needs_cast:
+                cols.append(f"CAST({src} AS {dest_type}) AS {dest}")
+
+            elif is_required and not needs_translation and not needs_cast:
+                cols.append(
+                    f"COALESCE({src}, {VALUE_DICT[dest_type]}) AS {dest}")
+
+            elif is_required and not needs_translation and needs_cast:
+                cols.append(
+                    f"COALESCE(CAST({src} AS {dest_type}), {VALUE_DICT[dest_type]}) AS {dest}"
+                )
+
+            elif not is_required and needs_translation and not translation:
+                cols.append(f"NULL AS {dest_table}_id")
+
+            elif is_required and needs_translation and not translation:
+                cols.append(f"{VALUE_DICT[dest_type]} AS {dest_table}_id")
+
+            elif translation:
+                cols.append(
+                    f"CASE {src} "
+                    f'{"".join(f"WHEN {src_val} THEN {translation[src_val]} " for src_val in translation)}'
+                    f"ELSE 0 END AS {dest}")
+
+            else:
+                raise RuntimeError(
+                    f'Unable to create SELECT statement for the column {dest} in {dest_table}. '
+                    'Make sure the column is properly listed in the mapping CSV files.'
+                )
+
+        return cols
 
 
 if __name__ == '__main__':
@@ -618,11 +454,11 @@ if __name__ == '__main__':
         query_list = clean_engine.get_query_list(ARGS.project_id,
                                                  ARGS.dataset_id,
                                                  ARGS.sandbox_dataset_id,
-                                                 [(domain_alignment,)])
+                                                 [(DomainAlignment,)])
         for query in query_list:
             LOGGER.info(query)
     else:
         clean_engine.add_console_logging(ARGS.console_log)
         clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
                                    ARGS.sandbox_dataset_id,
-                                   [(domain_alignment,)])
+                                   [(DomainAlignment,)])

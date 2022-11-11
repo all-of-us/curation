@@ -13,7 +13,7 @@ from cdr_cleaner.cleaning_rules.backfill_pmi_skip_codes import BackfillPmiSkipCo
 from cdr_cleaner.cleaning_rules.clean_by_birth_year import CleanByBirthYear
 from cdr_cleaner.cleaning_rules.convert_pre_post_coordinated_concepts import ConvertPrePostCoordinatedConcepts
 from cdr_cleaner.cleaning_rules.create_expected_ct_list import StoreExpectedCTList
-import cdr_cleaner.cleaning_rules.domain_alignment as domain_alignment
+from cdr_cleaner.cleaning_rules.domain_alignment import DomainAlignment
 import cdr_cleaner.cleaning_rules.drop_duplicate_states as drop_duplicate_states
 from cdr_cleaner.cleaning_rules.drop_extreme_measurements import DropExtremeMeasurements
 from cdr_cleaner.cleaning_rules.drop_multiple_measurements import DropMultipleMeasurements
@@ -198,11 +198,7 @@ COMBINED_CLEANING_CLASSES = [
     (
         ReplaceWithStandardConceptId,),
     (MissingConceptRecordSuppression,),
-    # trying to load a table while creating query strings,
-    # won't work with mocked strings.  should use base class
-    # setup_query_execution function to load dependencies before query execution
-    (
-        domain_alignment.domain_alignment,),
+    (DomainAlignment,),
     (NegativeAges,),
     # Valid Death dates needs to be applied before no data after death as running no data after death is
     # wiping out the needed consent related data for cleaning.

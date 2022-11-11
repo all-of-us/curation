@@ -3,7 +3,6 @@ import unittest
 import mock
 from mock import patch
 
-from cdr_cleaner.cleaning_rules.domain_alignment import NULL_VALUE
 from cdr_cleaner.cleaning_rules.field_mapping import DOMAIN_DATE_FIELDS, DOMAIN_SPECIFIC_FIELDS, \
     DOMAIN_COMMON_FIELDS
 from cdr_cleaner.cleaning_rules import field_mapping as field_mapping
@@ -217,8 +216,8 @@ class FieldMappingTest(unittest.TestCase):
         expected = {
             'condition_start_datetime': 'procedure_datetime',
             'condition_start_date': 'procedure_date',
-            'condition_end_datetime': NULL_VALUE,
-            'condition_end_date': NULL_VALUE
+            'condition_end_datetime': 'NULL',
+            'condition_end_date': 'NULL'
         }
         self.assertDictEqual(actual, expected)
 
@@ -242,8 +241,8 @@ class FieldMappingTest(unittest.TestCase):
             self.condition_table, self.procedure_table, ['test_1', 'test_2'])
         expected = {
             'condition_test_field': 'procedure_test_field',
-            'test_1': NULL_VALUE,
-            'test_2': NULL_VALUE
+            'test_1': 'NULL',
+            'test_2': 'NULL'
         }
         self.assertDictEqual(actual, expected)
 
