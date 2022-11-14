@@ -255,11 +255,14 @@ def create_tier(project_id: str, input_dataset: str, release_tag: str,
     LOGGER.info("Done sleeping after copy")
 
     # 1. add mapping tables
+    # EHR consent table is not added because we are not generating
+    # synthetic EHR data.  There will not be any to map.
     for domain_table in combine_consts.DOMAIN_TABLES:
         LOGGER.info(f'Mapping {domain_table}...')
         generate_combined_mapping_tables(bq_client, domain_table,
                                          datasets[consts.STAGING], '',
-                                         datasets[consts.STAGING])
+                                         datasets[consts.STAGING],
+                                         datasets[consts.SANDBOX])
 
         if domain_table != 'survey_conduct':
             _update_domain_table_id(
