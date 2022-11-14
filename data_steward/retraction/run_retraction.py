@@ -363,13 +363,17 @@ def main():
                 f"Skipping running CR for {dataset} since it's a fitbit dataset."
             )
             continue
+        LOGGER.info(f"Running CRs for {dataset}...")
         cleaning_args = [
             '-p', project_id, '-d', dataset, '-b', sb_dataset, '--data_stage',
             DATA_CONSISTENCY, '--run_as', args.run_as_email, '-s'
         ]
         all_cleaning_args = add_kwargs_to_args(cleaning_args, None)
         clean_cdr.main(args=all_cleaning_args)
+        LOGGER.info(f"Completed running CRs for {dataset}...")
     LOGGER.info(f"Completed [6/6] Run cleaning rules on the new datasets.\n")
+
+    LOGGER.info(f"Retraction completed.\n")
 
 
 if __name__ == '__main__':
