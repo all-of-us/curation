@@ -17,7 +17,7 @@ LOGGER = logging.getLogger(__name__)
 ISSUE_NUMBERS = ['DC2786']
 
 
-class TruncateEraTablesData(BaseCleaningRule):
+class TruncateEraTables(BaseCleaningRule):
 
     def __init__(self,
                  project_id,
