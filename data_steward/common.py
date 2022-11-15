@@ -250,6 +250,7 @@ PRIMARY_PID_RID_MAPPING = 'primary_pid_rid_mapping'
 ZIP3_LOOKUP = 'zip3_lookup'
 ZIP3_SES_MAP = 'zip3_ses_map'
 DIGITAL_HEALTH_SHARING_STATUS = 'digital_health_sharing_status'
+HEALTH_INSURANCE_PIDS = 'health_insurance_pids'
 
 ZIP_CODE_AGGREGATION_MAP = 'zip_code_aggregation_map'
 DEID_QUESTIONNAIRE_RESPONSE_MAP = '_deid_questionnaire_response_map'
