@@ -12,6 +12,8 @@ from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from common import DOSE_ERA, DRUG_ERA, CONDITION_ERA
 
+LOGGER = logging.getLogger(__name__)
+
 
 class TruncateEraTablesData(BaseCleaningRule):
 
