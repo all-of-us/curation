@@ -95,24 +95,14 @@ def create_dataset(client: BigQueryClient, src_dataset_name: str,
     src_dataset_obj = client.get_dataset(src_dataset_name)
     src_desc, src_labels = src_dataset_obj.description, src_dataset_obj.labels
 
-    # NOTE The naming for deidendified label is inconsistent over the datasets.
-    if "de_identified" in src_labels:
-        deid_label, deid_value = "de_identified", src_labels["de_identified"]
-    elif "de-identified" in src_labels:
-        deid_label, deid_value = "de-identified", src_labels["de-identified"]
-    else:
-        raise KeyError(
-            f"Label for deid does not exist or is incorrect for {src_dataset_name}."
-            f"Manually add or fix the label and try again.")
+    labels: dict = src_labels
+    labels["release_tag"] = release_tag
 
     dataset_obj = client.define_dataset(
         dataset_name,
-        f"Certain participants removed from {src_dataset_name} based on the AoU's decision. \n"
-        f"{src_dataset_name}'s description for reference: {src_desc}", {
-            "phase": src_labels["phase"],
-            "release_tag": release_tag,
-            deid_label: deid_value
-        })
+        f"Certain participants removed from {src_dataset_name} based on the retraction rule. \n"
+        f"-- \n{src_dataset_name}'s description for reference -> {src_desc}",
+        labels)
 
     try:
         client.create_dataset(dataset_obj, exists_ok=False)
