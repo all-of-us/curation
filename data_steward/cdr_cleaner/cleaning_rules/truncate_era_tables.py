@@ -42,3 +42,60 @@ class TruncateEraTables(BaseCleaningRule):
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
                          table_namer=table_namer)
+
+    def setup_rule(self, client):
+        """
+        Function to run any data upload options before executing a query.
+        """
+        pass
+
+    def get_query_specs(self):
+        """
+        This function generates a list of query dicts.
+
+        These queries should sandbox and remove all from dose_era, drug_era,
+        and condition_era tables.
+
+        :return: a list of query dicts
+        """
+
+    def setup_validation(self, client):
+        """
+        Run required steps for validation setup
+        """
+        raise NotImplementedError("Please fix me.")
+
+    def validate_rule(self, client):
+        """
+        Validates the cleaning rule which deletes or updates the data from the tables
+        """
+        raise NotImplementedError("Please fix me.")
+
+    def get_sandbox_tablenames(self):
+        """
+        Return a list table names created to backup deleted data.
+        """
+        return [self.sandbox_table_for(table) for table in self.affected_tables]
+
+
+if __name__ == '__main__':
+    import cdr_cleaner.args_parser as parser
+    import cdr_cleaner.clean_cdr_engine as clean_engine
+
+    ext_parser = parser.get_argument_parser()
+
+    ARGS = ext_parser.parse_args()
+
+    if ARGS.list_queries:
+        clean_engine.add_console_logging()
+        query_list = clean_engine.get_query_list(ARGS.project_id,
+                                                 ARGS.dataset_id,
+                                                 ARGS.sandbox_dataset_id,
+                                                 [(TruncateEraTables,)])
+        for query in query_list:
+            LOGGER.info(query)
+    else:
+        clean_engine.add_console_logging(ARGS.console_log)
+        clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
+                                   ARGS.sandbox_dataset_id,
+                                   [(TruncateEraTables,)])
