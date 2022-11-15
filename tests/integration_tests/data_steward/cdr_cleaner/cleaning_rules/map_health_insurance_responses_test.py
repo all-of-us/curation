@@ -7,6 +7,9 @@ import os
 
 # Third party imports
 import mock
+from datetime import date
+from dateutil.parser import parse
+import pytz
 
 # Third party imports
 
@@ -29,30 +32,36 @@ LOAD_QUERY = JINJA_ENV.from_string("""
         value_source_value,
         value_source_concept_id,
         observation_date,
-        observation_type_concept_id
+        observation_type_concept_id,
+        observation_datetime,
+        questionnaire_response_id
     )
     VALUES
         -- For selected participants, hcau survey rows should be sandboxed and updated in observation --
     (1,1,40766241,
     "Medicaid, Medical Assistance, or any kind of government-assistance plan for those with low incomes or disability",
-    0,"Insurance_InsuranceType",1384450,"InsuranceType_GovernmentAssistancePlan", 1384441,date('2000-01-01'),0),
-    (5,1,40766241,"TRICARE or other military health care",0,"Insurance_InsuranceType",1384450,
-    "InsuranceType_TricareOrMilitary", 1384550,date('2000-01-01'),0), 
+    0,"Insurance_InsuranceType",1384450,"InsuranceType_GovernmentAssistancePlan", 1384441,'2000-01-01',0,
+   TIMESTAMP('2000-01-01'),1),
+    (2,1,40766241,"TRICARE or other military health care",0,"Insurance_InsuranceType",1384450,
+    "InsuranceType_TricareOrMilitary", 1384550,'2000-01-01',0,TIMESTAMP('2000-01-01'),2), 
     
         -- For selected participants, original basics survey rows should be sandboxed and invalidated --
-    (2,2,43528428,
+    (3,2,43528428,
     "Medicaid, Medical Assistance, or any kind of government-assistance plan for those with low incomes or disability"
-    ,0,"HealthInsurance_InsuranceTypeUpdate",43528428,"InsuranceTypeUpdate_Medicaid",43529209,date('2000-01-01'),0),
+    ,0,"HealthInsurance_InsuranceTypeUpdate",43528428,"InsuranceTypeUpdate_Medicaid",43529209,'2000-01-01',0,
+    TIMESTAMP('2000-01-01'),3),
     
         -- For other participants, original basics survey rows should be unaffected --
-    (3,3,43528428,
+    (4,3,43528428,
     "Medicaid, Medical Assistance, or any kind of government-assistance plan for those with low incomes or disability"
-    ,0,"HealthInsurance_InsuranceTypeUpdate",43528428,"InsuranceTypeUpdate_Medicaid",43529209,date('2000-01-01'),0),
+    ,0,"HealthInsurance_InsuranceTypeUpdate",43528428,"InsuranceTypeUpdate_Medicaid",43529209,'2000-01-01',0,
+    TIMESTAMP('2000-01-01'),4),
     
         -- For other participants, hcau survey rows should be unaffected. --
-     (4,4,40766241,
+     (5,4,40766241,
     "Medicaid, Medical Assistance, or any kind of government-assistance plan for those with low incomes or disability",
-    0,"Insurance_InsuranceType",1384450,"InsuranceType_GovernmentAssistancePlan", 1384441,date('2000-01-01'),0)
+    0,"Insurance_InsuranceType",1384450,"InsuranceType_GovernmentAssistancePlan", 1384441,'2000-01-01',0,
+    TIMESTAMP('2000-01-01'),5)
         """)
 
 HEALTH_INSURANCE_PIDS_QUERY = JINJA_ENV.from_string("""
@@ -128,6 +137,7 @@ class MapHealthInsuranceResponsesTest(BaseTest.CleaningRulesTestBase):
         Validates pre-conditions, test execution and post conditions based on
         the load statements and the tables_and_counts variable.
         """
+        self.maxDiff = None
 
         tables_and_counts = [{
             'fq_table_name':
@@ -138,28 +148,33 @@ class MapHealthInsuranceResponsesTest(BaseTest.CleaningRulesTestBase):
                 'observation_id', 'person_id', 'observation_concept_id',
                 'value_as_string', 'value_as_concept_id',
                 'observation_source_value', 'observation_source_concept_id',
-                'value_source_value', 'value_source_concept_id'
+                'value_source_value', 'value_source_concept_id', 'observation_date',
+                'observation_type_concept_id','observation_datetime','questionnaire_response_id'
             ],
             'loaded_ids': [1, 2, 3, 4, 5],
-            'sandboxed_ids': [1, 2, 5],
+            'sandboxed_ids': [1, 2, 3],
             'cleaned_values': [
                 (1, 1, 40766241, "InsuranceTypeUpdate_Medicaid", 43529209,
                  "HealthInsurance_InsuranceTypeUpdate", 43528428,
-                 "InsuranceTypeUpdate_Medicaid", 43529209),
-                (5, 1, 40766241, "InsuranceTypeUpdate_Military", 45876394,
+                 "InsuranceTypeUpdate_Medicaid", 43529209,date(2000,1,1),0,
+                 parse('2000-01-01 00:00:00 UTC').astimezone(pytz.utc),1),
+                (2, 1, 40766241, "InsuranceTypeUpdate_Military", 45876394,
                  "HealthInsurance_InsuranceTypeUpdate", 43528428,
-                 "InsuranceTypeUpdate_Military", 43529920),
-                (2, 2, 43528428, "Invalid", 46237613,
+                 "InsuranceTypeUpdate_Military", 43529920,date(2000,1,1),0,
+                 parse('2000-01-01 00:00:00 UTC').astimezone(pytz.utc),2),
+                (3, 2, 43528428, "Invalid", 46237613,
                  "HealthInsurance_InsuranceTypeUpdate", 43528428, "Invalid",
-                 46237613),
-                (3, 3, 43528428,
+                 46237613,date(2000,1,1),0,parse('2000-01-01 00:00:00 UTC').astimezone(pytz.utc),3),
+                (4, 3, 43528428,
                  "Medicaid, Medical Assistance, or any kind of government-assistance plan for those with low incomes or disability",
                  0, "HealthInsurance_InsuranceTypeUpdate", 43528428,
-                 "InsuranceTypeUpdate_Medicaid", 43529209),
-                (4, 4, 40766241,
+                 "InsuranceTypeUpdate_Medicaid", 43529209,date(2000,1,1),0,
+                 parse('2000-01-01 00:00:00 UTC').astimezone(pytz.utc),4),
+                (5, 4, 40766241,
                  "Medicaid, Medical Assistance, or any kind of government-assistance plan for those with low incomes or disability",
                  0, "Insurance_InsuranceType", 1384450,
-                 "InsuranceType_GovernmentAssistancePlan", 1384441),
+                 "InsuranceType_GovernmentAssistancePlan", 1384441,date(2000,1,1),0,
+                 parse('2000-01-01 00:00:00 UTC').astimezone(pytz.utc),5),
             ]
         }]
 

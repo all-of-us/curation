@@ -18,7 +18,7 @@ from datetime import datetime
 from google.cloud import bigquery
 from gcloud.bq import BigQueryClient
 import resources
-from common import JINJA_ENV, OBSERVATION, RDR, PIPELINE_TABLES
+from common import JINJA_ENV, OBSERVATION, RDR, PIPELINE_TABLES, HEALTH_INSURANCE_PIDS
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
 
@@ -31,12 +31,10 @@ ISSUE_NUMBERS = ['DC826', 'DC2746']
 
 INSURANCE_LOOKUP = 'insurance_lookup'
 NEW_INSURANCE_ROWS = 'new_insurance_rows'
-SANDBOXED_INSURANCE_ROWS = 'sandboxed_insurance_rows'
-HEALTH_INSURANCE_PIDS = 'health_insurance_pids'
 
 # Sandbox basics rows to be invalidated, and the hcau rows to be updated.
 SANDBOX_CHANGES_QUERY = JINJA_ENV.from_string("""
-CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{sandboxed_insurance_rows}}`
+CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{observation_sandbox}}`
 AS
 SELECT 
     *
@@ -220,8 +218,7 @@ class MapHealthInsuranceResponses(BaseCleaningRule):
             ORIGINAL_OBSERVATION_SOURCE_CONCEPT_ID,
             HCAU_OBSERVATION_SOURCE_CONCEPT_ID=
             HCAU_OBSERVATION_SOURCE_CONCEPT_ID,
-            sandboxed_insurance_rows=self.sandbox_table_for(
-                SANDBOXED_INSURANCE_ROWS),
+            observation_sandbox=self.sandbox_table_for(OBSERVATION),
             pipeline_tables=PIPELINE_TABLES,
             health_insurance_pids=HEALTH_INSURANCE_PIDS)
         queries.append(sandbox_query)
@@ -252,25 +249,19 @@ class MapHealthInsuranceResponses(BaseCleaningRule):
                 health_insurance_pids=HEALTH_INSURANCE_PIDS)
         queries.append(new_insurance_rows_query)
 
-        update_basics_query = dict()
-        update_basics_query[cdr_consts.QUERY] = UPDATE_HCAU_ROWS.render(
+        update_hcau_query = dict()
+        update_hcau_query[cdr_consts.QUERY] = UPDATE_HCAU_ROWS.render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
-            ORIGINAL_OBSERVATION_SOURCE_CONCEPT_ID=
-            ORIGINAL_OBSERVATION_SOURCE_CONCEPT_ID,
-            HCAU_OBSERVATION_SOURCE_CONCEPT_ID=
-            HCAU_OBSERVATION_SOURCE_CONCEPT_ID,
-            new_insurance_rows=self.sandbox_table_for(NEW_INSURANCE_ROWS),
             sandbox_dataset_id=self.sandbox_dataset_id,
-            pipeline_tables=PIPELINE_TABLES,
-            health_insurance_pids=HEALTH_INSURANCE_PIDS)
-        queries.append(update_basics_query)
+            new_insurance_rows=self.sandbox_table_for(NEW_INSURANCE_ROWS))
+        queries.append(update_hcau_query)
 
         return queries
 
     def get_sandbox_tablenames(self) -> list:
         return [
-            self.sandbox_table_for(SANDBOXED_INSURANCE_ROWS),
+            self.sandbox_table_for(OBSERVATION),
             self.sandbox_table_for(NEW_INSURANCE_ROWS)
         ]
 
