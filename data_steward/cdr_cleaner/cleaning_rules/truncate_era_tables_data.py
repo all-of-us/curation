@@ -9,6 +9,8 @@ import logging
 
 # Project Imports
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
+import constants.cdr_cleaner.clean_cdr as cdr_consts
+from common import DOSE_ERA, DRUG_ERA, CONDITION_ERA
 
 
 class TruncateEraTablesData(BaseCleaningRule):
@@ -28,3 +30,11 @@ class TruncateEraTablesData(BaseCleaningRule):
         desc = (
             'All the data from drug_era, condition_era, and dose_era tables is dropped'
         )
+        super().__init__(issue_numbers=['DC1046'],
+                         description=desc,
+                         affected_datasets=[cdr_consts.CONTROLLED_TIER_DEID],
+                         affected_tables=[DOSE_ERA, DRUG_ERA, CONDITION_ERA],
+                         project_id=project_id,
+                         dataset_id=dataset_id,
+                         sandbox_dataset_id=sandbox_dataset_id,
+                         table_namer=table_namer)
