@@ -4,7 +4,6 @@ Cleaning rule to generalize conflicting HPO states
 import logging
 import os
 
-import pandas as pd
 from google.cloud import bigquery
 from google.api_core.exceptions import Conflict
 
