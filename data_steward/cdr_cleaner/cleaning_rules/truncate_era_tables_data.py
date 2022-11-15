@@ -14,6 +14,8 @@ from common import DOSE_ERA, DRUG_ERA, CONDITION_ERA
 
 LOGGER = logging.getLogger(__name__)
 
+ISSUE_NUMBERS = ['DC2786']
+
 
 class TruncateEraTablesData(BaseCleaningRule):
 
