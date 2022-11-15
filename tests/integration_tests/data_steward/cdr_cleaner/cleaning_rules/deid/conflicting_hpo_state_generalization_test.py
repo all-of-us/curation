@@ -12,7 +12,6 @@ from cdr_cleaner.cleaning_rules.deid.conflicting_hpo_state_generalization import
 from common import JINJA_ENV, OBSERVATION, VOCABULARY_TABLES
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
-
 INSERT_RAW_DATA = JINJA_ENV.from_string("""
    INSERT INTO `{{project_id}}.{{dataset_id}}.observation` (
        person_id,
@@ -44,9 +43,8 @@ class ConflictingHpoStateGeneralizeTest(BaseTest.CleaningRulesTestBase):
         cls.sandbox_id = f"{cls.dataset_id}_sandbox"
         cls.vocabulary_id = os.environ.get('VOCABULARY_DATASET')
 
-        cls.rule_instance = ConflictingHpoStateGeneralize(cls.project_id,
-                                                          cls.dataset_id,
-                                                          cls.sandbox_id)
+        cls.rule_instance = ConflictingHpoStateGeneralize(
+            cls.project_id, cls.dataset_id, cls.sandbox_id)
 
         # Generates list of fully qualified table names and their corresponding sandbox table names
         cls.fq_table_names.append(
@@ -83,10 +81,7 @@ class ConflictingHpoStateGeneralizeTest(BaseTest.CleaningRulesTestBase):
             'loaded_ids': [1, 2, 3, 4],
             'sandboxed_ids': [1, 4],
             'fields': ['person_id', 'src_hpo_id'],
-            'cleaned_values': [
-                (1, 'hpo_100'),
-                (4, 'hpo_103')
-            ]
+            'cleaned_values': [(1, 'hpo_100'), (4, 'hpo_103')]
         }]
 
         self.default_test(tables_and_counts)
