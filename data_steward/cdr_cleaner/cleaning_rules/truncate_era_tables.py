@@ -76,7 +76,7 @@ class TruncateEraTables(BaseCleaningRule):
         sandbox_queries = []
         truncate_queries = []
 
-        for table in self.affected_datasets:
+        for table in self.affected_tables:
             sandbox_table_query = {
                 cdr_consts.QUERY:
                     SANDBOX_QUERY_TEMPLATE.render(
