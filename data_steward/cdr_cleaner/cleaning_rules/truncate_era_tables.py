@@ -10,11 +10,25 @@ import logging
 # Project Imports
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 import constants.cdr_cleaner.clean_cdr as cdr_consts
-from common import DOSE_ERA, DRUG_ERA, CONDITION_ERA
+from common import JINJA_ENV, DOSE_ERA, DRUG_ERA, CONDITION_ERA
 
 LOGGER = logging.getLogger(__name__)
 
 ISSUE_NUMBERS = ['DC2786']
+
+SANDBOX_QUERY_TEMPLATE = JINJA_ENV.from_string("""
+CREATE OR REPLACE TABLE
+    `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table}}` AS (
+        SELECT
+            *
+        FROM
+            `{{project_id}}.{{dataset_id}}.{{table_era}}`
+    )
+""")
+
+TRUNCATE_QUERY_TEMPLATE = JINJA_ENV.from_string("""
+TRUNCATE TABLE `{{project_id}}.{{dataset_id}}.{{table_era}}`
+""")
 
 
 class TruncateEraTables(BaseCleaningRule):
@@ -58,6 +72,31 @@ class TruncateEraTables(BaseCleaningRule):
 
         :return: a list of query dicts
         """
+
+        sandbox_queries = []
+        truncate_queries = []
+
+        for table in self.affected_datasets:
+            sandbox_table_query = {
+                cdr_consts.QUERY:
+                    SANDBOX_QUERY_TEMPLATE.render(
+                        project_id=self.project_id,
+                        dataset_id=self.dataset_id,
+                        sandbox_dataset_id=self.sandbox_dataset_id,
+                        table_era=table,
+                        sandbox_table=self.sandbox_table_for(table))
+            }
+            sandbox_queries.append(sandbox_table_query)
+
+            truncate_table_query = {
+                cdr_consts.QUERY:
+                    TRUNCATE_QUERY_TEMPLATE.render(project_id=self.project_id,
+                                                   dataset_id=self.dataset_id,
+                                                   table_era=table)
+            }
+            truncate_queries.append(truncate_table_query)
+
+        return sandbox_queries + truncate_queries
 
     def setup_validation(self, client):
         """
