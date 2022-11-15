@@ -25,3 +25,6 @@ class TruncateEraTablesData(BaseCleaningRule):
         this SQL, append them to the list of Jira Issues.
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
+        desc = (
+            'All the data from drug_era, condition_era, and dose_era tables is dropped'
+        )
