@@ -34,7 +34,7 @@ class TruncateEraTablesData(BaseCleaningRule):
         desc = (
             'All the data from drug_era, condition_era, and dose_era tables is dropped'
         )
-        super().__init__(issue_numbers=['DC1046'],
+        super().__init__(issue_numbers=ISSUE_NUMBERS,
                          description=desc,
                          affected_datasets=[cdr_consts.CONTROLLED_TIER_DEID],
                          affected_tables=[DOSE_ERA, DRUG_ERA, CONDITION_ERA],
