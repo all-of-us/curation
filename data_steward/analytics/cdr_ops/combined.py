@@ -407,10 +407,10 @@ for mapped_table in pbar:
             END
           ELSE 'C'
         END cat
-      FROM `aou-res-curation-prod.jp_test_dataset.{mapped_table}` m
-      FULL JOIN `aou-res-curation-prod.jp_test_dataset._mapping_{mapped_table}` mm
+      FROM `{PROJECT_ID}.{DATASET_ID}.{mapped_table}` m
+      FULL JOIN `{PROJECT_ID}.{DATASET_ID}._mapping_{mapped_table}` mm
         ON mm.{mapped_table}_id = m.{mapped_table}_id
-      FULL JOIN `aou-res-curation-prod.jp_test_dataset.{mapped_table}_ext` ext
+      FULL JOIN `{PROJECT_ID}.{DATASET_ID}.{mapped_table}_ext` ext
         ON ext.{mapped_table}_id = COALESCE(m.{mapped_table}_id, mm.{mapped_table}_id)
     )
     SELECT
