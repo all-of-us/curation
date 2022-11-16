@@ -436,7 +436,7 @@ overlaps['cond2'] = overlaps.sum(axis=1) == overlaps['ABC']
 # plot venn diagrams for overlap
 
 total_plots = len(overlaps)
-cols = 1
+cols = 3
 rows = math.ceil(total_plots / cols)
 
 fig, axes = plt.subplots(rows, cols, figsize=(5, 5), squeeze=False)
