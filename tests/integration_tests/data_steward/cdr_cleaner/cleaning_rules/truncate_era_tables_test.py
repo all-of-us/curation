@@ -153,6 +153,20 @@ class TruncateEraTablesTest(BaseTest.CleaningRulesTestBase):
                 'dose_era_end_date'
             ],
             'cleaned_values': []
+        }, {
+            'fq_table_name': self.fq_table_names[1],
+            'fq_sandbox_table_name': self.fq_sandbox_table_names[1],
+            'loaded_ids': [1, 2, 3, 4, 5],
+            'sandboxed_ids': [1, 2, 3, 4, 5],
+            'fields': [],
+            'cleaned_values': []
+        }, {
+            'fq_table_name': self.fq_table_names[2],
+            'fq_sandbox_table_name': self.fq_sandbox_table_names[2],
+            'loaded_ids': [100, 200, 300, 400, 500],
+            'sandboxed_ids': [100, 200, 300, 400, 500],
+            'fields': [],
+            'cleaned_values': []
         }]
 
         # self.default_test(tables_and_counts)
