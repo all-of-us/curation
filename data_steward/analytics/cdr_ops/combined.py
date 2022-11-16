@@ -332,6 +332,11 @@ execute(client, query)
 # On <span style="color: green">Success</span>, the above conditions will be satisfied for all OMOP tables.
 #
 # On <span style="color: red">Failure</span>, at least one of the above conditions will have been broken for at least one of the OMOP tables.
+#
+# The success status of the check is output in the Results section below.
+# * The first dataframe shows the row counts for each OMOP table and shows success only when the clinical, mapping, and extension tables share the same row counts.
+# * The second dataframe shows the number of primary keys shared between the clinical, mapping, and extension tables and shows success only when all primary keys are in the clinical/mapping/extension group.
+# * This dataframe is accompanied by a series of venn diagrams showing the overlap, with the title of failed tables highlighted in red.
 
 # #### Condition 1
 
