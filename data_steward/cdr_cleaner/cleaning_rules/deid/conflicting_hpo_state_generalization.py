@@ -175,7 +175,7 @@ class ConflictingHpoStateGeneralize(BaseCleaningRule):
         """
         Generate SandBox Table Names
         """
-        raise NotImplementedError("Please fix me.")
+        return [self.sandbox_table_for(OBSERVATION)]
 
     def validate_rule(self, client, *args, **keyword_args):
         """
