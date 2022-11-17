@@ -39,7 +39,7 @@ class ConflictingHpoStateGeneralizeTest(BaseTest.CleaningRulesTestBase):
         cls.project_id = os.environ.get(PROJECT_ID)
 
         # Set the expected test datasets
-        cls.dataset_id = os.environ.get('UNIONED_EHR_DATASET_ID')
+        cls.dataset_id = os.environ.get('UNIONED_DATASET_ID')
         cls.sandbox_id = f"{cls.dataset_id}_sandbox"
         cls.vocabulary_id = os.environ.get('VOCABULARY_DATASET')
 
