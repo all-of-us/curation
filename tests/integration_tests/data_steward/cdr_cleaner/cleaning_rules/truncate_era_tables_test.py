@@ -7,9 +7,6 @@ Original Issue: DC-2786
 # Python Imports
 import os
 
-# Third party imports
-from dateutil import parser
-
 # Project Imports
 from app_identity import PROJECT_ID
 from common import JINJA_ENV
@@ -17,9 +14,7 @@ from cdr_cleaner.cleaning_rules.truncate_era_tables import TruncateEraTables
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
 DOSE_ERA_TEMPLATE = JINJA_ENV.from_string("""
-INSERT INTO
-    `{{project_id}}.{{dataset_id}}.dose_era`
-(
+INSERT INTO `{{project_id}}.{{dataset_id}}.dose_era` (
     dose_era_id,
     person_id,
     drug_concept_id,
@@ -38,9 +33,7 @@ VALUES
 """)
 
 DRUG_ERA_TEMPLATE = JINJA_ENV.from_string("""
-INSERT INTO
-    `{{project_id}}.{{dataset_id}}.drug_era`
-(
+INSERT INTO `{{project_id}}.{{dataset_id}}.drug_era` (
     drug_era_id,
     person_id,
     drug_concept_id,
@@ -59,15 +52,13 @@ VALUES
 """)
 
 CONDITION_ERA_TEMPLATE = JINJA_ENV.from_string("""
-INSERT INTO
-    `{{project_id}}.{{dataset_id}}.condition_era`
-(
+INSERT INTO `{{project_id}}.{{dataset_id}}.condition_era` (
     condition_era_id,
     person_id,
     condition_concept_id,
     condition_era_start_date,
     condition_era_end_date,
-    condition_occurence_count
+    condition_occurrence_count
 )
 
 VALUES
@@ -138,7 +129,7 @@ class TruncateEraTablesTest(BaseTest.CleaningRulesTestBase):
 
     def test_truncate_data(self):
         """
-        data from condition_era, drug_era, and dose_era tables is sandboxed and dropped
+        All data from condition_era, drug_era, and dose_era tables is sandboxed and dropped
         """
 
         # Expected results list
@@ -158,15 +149,23 @@ class TruncateEraTablesTest(BaseTest.CleaningRulesTestBase):
             'fq_sandbox_table_name': self.fq_sandbox_table_names[1],
             'loaded_ids': [1, 2, 3, 4, 5],
             'sandboxed_ids': [1, 2, 3, 4, 5],
-            'fields': [],
+            'fields': [
+                'drug_era_id', 'person_id', 'drug_concept_id',
+                'drug_era_start_date', 'drug_era_end_date',
+                'drug_exposure_count', 'gap_days'
+            ],
             'cleaned_values': []
         }, {
             'fq_table_name': self.fq_table_names[2],
             'fq_sandbox_table_name': self.fq_sandbox_table_names[2],
             'loaded_ids': [100, 200, 300, 400, 500],
             'sandboxed_ids': [100, 200, 300, 400, 500],
-            'fields': [],
+            'fields': [
+                'condition_era_id', 'person_id', 'condition_concept_id',
+                'condition_era_start_date', 'condition_era_end_date',
+                'condition_occurrence_count'
+            ],
             'cleaned_values': []
         }]
 
-        # self.default_test(tables_and_counts)
+        self.default_test(tables_and_counts)
