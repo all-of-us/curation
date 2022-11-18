@@ -1166,18 +1166,18 @@ era_tables = ['dose_era', 'drug_era', 'condition_era']
 def my_query(table_era):
 
     query = JINJA_ENV.from_string("""
-    WITH df1 AS (
-      SELECT 
-        person_id
-      FROM
-        `{{project_id}}.{{ct_dataset}}.{{table_era}}`
-    )
+      WITH df1 AS (
+        SELECT 
+          person_id
+        FROM
+          `{{project_id}}.{{ct_dataset}}.{{table_era}}`
+      )
 
-    SELECT
-      '{{table_era}}' as table_name, COUNT(*) AS row_count
-    FROM
-      df1
-  """)
+      SELECT
+        '{{table_era}}' as table_name, COUNT(*) AS row_count
+      FROM
+        df1
+    """)
 
     q = query.render(project_id=project_id,
                      ct_dataset=ct_dataset,
