@@ -129,7 +129,7 @@ class TruncateEraTablesTest(BaseTest.CleaningRulesTestBase):
 
     def test_truncate_data(self):
         """
-        All data from condition_era, drug_era, and dose_era tables is sandboxed and dropped
+        All the data from condition_era, drug_era, and dose_era tables is sandboxed and dropped
         """
 
         # Expected results list
