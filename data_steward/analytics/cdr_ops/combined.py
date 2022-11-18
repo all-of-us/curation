@@ -43,30 +43,64 @@ pd.options.display.width = None
 
 # -
 
-# ## Check for duplicates in observation
+# ## Check for duplicates across all unique identifier fields. 
+# This query gathers any duplicates of the {table}_id from each OMOP table listed. 
+# The OMOP tables `death` and `fact_relationship` are excluded from the check because they do not have primary key fields.
+# The output of this query should be empty. If any duplicates are found there may be a bug in the pipeline.
+#
+# Specific to duplicates in observation:<br>
 # In the past duplicate `observation_id`s were introduced in observation due
 # to multiple sites submitting data for the same participant (see
 # [DC-1512](https://precisionmedicineinitiative.atlassian.net/browse/DC-1512)).
 # If any duplicates are found there may be a bug in the pipeline-
 # particularly in `ehr_union.move_ehr_person_to_observation`.
 
-query = f'''
-WITH 
- dupe AS
- (SELECT 
-    observation_id
-   ,COUNT(1) row_count
-  FROM `{DATASET_ID}.observation`
-  GROUP BY 1)
+query = f"""
+DECLARE i INT64 DEFAULT 0;
+DECLARE tables ARRAY<STRING>;
+
+SET tables = ["observation", "observation_period", "condition_occurrence",
+"care_site", "condition_era", "device_cost", "device_exposure", "dose_era",
+"drug_exposure", "location", "measurement", "note", "note_nlp", "person",
+"procedure_cost", "procedure_occurrence", "provider", "specimen",
+"survey_conduct", "visit_cost", "visit_detail", "visit_occurrence"];
+
+CREATE TEMPORARY TABLE non_unique_primary_keys(table_name STRING, key_column int64);
+
+LOOP 
+  SET i = i + 1;
+
+  IF i > ARRAY_LENGTH(tables) THEN LEAVE; END IF;
+
+  EXECUTE IMMEDIATE '''
+    INSERT 
+        non_unique_primary_keys
+    SELECT 
+        "''' || tables[ORDINAL(i)] || '''" AS table_name,
+        ''' || tables[ORDINAL(i)] || '''_id AS key_column
+    FROM 
+        `{DATASET_ID}.''' || tables[ORDINAL(i)] || '''` o
+    WHERE 
+        ''' || tables[ORDINAL(i)] || '''_id IN (
+              SELECT ''' || tables[ORDINAL(i)] || '''_id
+              FROM `{DATASET_ID}.''' || tables[ORDINAL(i)] || '''`
+              GROUP BY 1
+              HAVING COUNT(''' || tables[ORDINAL(i)] || '''_id) > 1
+                )
+    ORDER BY 
+        ''' || tables[ORDINAL(i)] || '''_id''';
+
+END LOOP;
+
 SELECT * 
-FROM `{DATASET_ID}.observation` o
-WHERE EXISTS
-(SELECT 1 
- FROM dupe d 
- WHERE 1=1
-  AND row_count > 1
-  AND d.observation_id = o.observation_id)
-'''
+FROM non_unique_primary_keys 
+ORDER BY 2 DESC;
+
+SELECT table_name, COUNT(DISTINCT table_name) AS full_count, COUNT(DISTINCT table_name)/2 AS half_count
+FROM non_unique_primary_keys
+GROUP BY 1
+ORDER BY 3 DESC, 2 DESC;
+"""
 execute(client, query)
 
 # ## No records where participant age <0 or >150
