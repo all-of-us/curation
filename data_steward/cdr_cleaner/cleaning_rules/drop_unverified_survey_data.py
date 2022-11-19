@@ -178,6 +178,30 @@ class DropUnverifiedSurveyData(BaseCleaningRule):
     def get_sandbox_tablenames(self):
         return [self.sandbox_table_for(table) for table in DOMAIN_TABLES]
 
+    def _get_counts(self, client) -> dict:
+        """
+        Counts query.
+        Used for job validation.
+
+        """
+        job = client.query(self.counts_query)
+        response = job.result()
+
+        errors = []
+        if job.exception():
+            errors.append(job.exception())
+            LOGGER.error(f"FAILURE:  {job.exception()}\n"
+                         f"Problem executing query:\n{self.counts_query}")
+        else:
+            for item in response:
+                invalid_obs = item.get('invalid_obs', 0)
+                invalid_survey = item.get('invalid_survey', 0)
+
+        return {
+            'invalid_obs': invalid_obs,
+            'invalid_survey': invalid_survey
+        }
+
 
 if __name__ == '__main__':
     import cdr_cleaner.args_parser as parser
