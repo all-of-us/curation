@@ -103,9 +103,6 @@ class TruncateEraTablesTest(BaseTest.CleaningRulesTestBase):
             cls.fq_table_names.append(
                 f'{cls.project_id}.{cls.dataset_id}.{table_name}')
 
-        # call super to set up the client, create datasets, and create
-        # empty test tables
-        # NOTE:  does not create empty sandbox tables.
         super().setUpClass()
 
     def setUp(self):
