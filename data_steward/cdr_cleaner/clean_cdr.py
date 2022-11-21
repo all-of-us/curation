@@ -300,6 +300,7 @@ CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     ),  # Should run after GenerateExtTables and before CleanMappingExtTables
     (PopulateSurveyConductExt,),
     (QRIDtoRID,),  # Should run before any row suppression rules
+    (TruncateEraTables,),
     (NullPersonBirthdate,),
     (TableSuppression,),
     (ControlledTierReplacedConceptSuppression,),
