@@ -12,9 +12,21 @@ from cdr_cleaner.cleaning_rules.deid.conflicting_hpo_state_generalization import
 from common import JINJA_ENV, OBSERVATION, VOCABULARY_TABLES
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
-INSERT_RAW_DATA = JINJA_ENV.from_string("""
+INSERT_RAW_DATA_OBS = JINJA_ENV.from_string("""
    INSERT INTO `{{project_id}}.{{dataset_id}}.observation` (
+       observation_id,
        person_id,
+       )
+     VALUES
+       (1,101),
+       (2,102),
+       (3,103),
+       (4,104)
+ """)
+
+INSERT_RAW_DATA_MAPPING = JINJA_ENV.from_string("""
+   INSERT INTO `{{project_id}}.{{dataset_id}}._mapping_observation` (
+       observation_id,
        src_hpo_id
        )
      VALUES
@@ -64,11 +76,16 @@ class ConflictingHpoStateGeneralizeTest(BaseTest.CleaningRulesTestBase):
         # Set the test project identifier
         super().setUp()
         self.copy_vocab_tables(self.vocabulary_id)
-        raw_data_load_query = INSERT_RAW_DATA.render(project_id=self.project_id,
-                                                     dataset_id=self.dataset_id)
+        raw_data_load_query_obs = INSERT_RAW_DATA_OBS.render(
+            project_id=self.project_id, dataset_id=self.dataset_id)
+        raw_data_load_query_mapping = INSERT_RAW_DATA_MAPPING. \
+            render(project_id=self.project_id, dataset_id=self.dataset_id)
 
         # Load test data
-        self.load_test_data([f'{raw_data_load_query}'])
+        self.load_test_data([
+            f'{raw_data_load_query_obs}',
+            f'{raw_data_load_query_mapping}',
+        ])
 
     def test_conflicting_hpo_id(self):
         """
@@ -77,11 +94,14 @@ class ConflictingHpoStateGeneralizeTest(BaseTest.CleaningRulesTestBase):
         # Expected results list
         tables_and_counts = [{
             'fq_table_name':
-                f'{self.project_id}.{self.dataset_id}.{OBSERVATION}',
+                '.'.join([
+                    f'{self.project_id}.{self.dataset_id}.{OBSERVATION}',
+                    f'{self.project_id}.{self.dataset_id}._mapping_{OBSERVATION}',
+                ]),
             'loaded_ids': [1, 2, 3, 4],
             'sandboxed_ids': [1, 4],
             'fields': ['person_id', 'src_hpo_id'],
-            'cleaned_values': [(1, 'hpo_100'), (4, 'hpo_103')]
+            'cleaned_values': [(101, 'hpo_100'), (104, 'hpo_103')]
         }]
 
         self.default_test(tables_and_counts)
