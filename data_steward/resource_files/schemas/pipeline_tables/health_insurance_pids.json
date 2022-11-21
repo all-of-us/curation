@@ -1,0 +1,8 @@
+[
+  {
+    "type": "integer",
+    "name": "person_id",
+    "mode": "required",
+    "description": "ID of participants who took the affected version of the Basics survey."
+  }
+]
