@@ -137,7 +137,6 @@ class MapHealthInsuranceResponsesTest(BaseTest.CleaningRulesTestBase):
         Validates pre-conditions, test execution and post conditions based on
         the load statements and the tables_and_counts variable.
         """
-        self.maxDiff = None
 
         tables_and_counts = [{
             'fq_table_name':
