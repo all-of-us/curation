@@ -197,10 +197,7 @@ class DropUnverifiedSurveyData(BaseCleaningRule):
                 invalid_obs = item.get('invalid_obs', 0)
                 invalid_survey = item.get('invalid_survey', 0)
 
-        return {
-            'invalid_obs': invalid_obs,
-            'invalid_survey': invalid_survey
-        }
+        return {'invalid_obs': invalid_obs, 'invalid_survey': invalid_survey}
 
 
 if __name__ == '__main__':
