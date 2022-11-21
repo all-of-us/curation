@@ -15,7 +15,7 @@ from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_te
 INSERT_RAW_DATA_OBS = JINJA_ENV.from_string("""
    INSERT INTO `{{project_id}}.{{dataset_id}}.observation` (
        observation_id,
-       person_id,
+       person_id
        )
      VALUES
        (1,101),
