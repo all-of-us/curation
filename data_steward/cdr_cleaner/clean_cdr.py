@@ -125,7 +125,7 @@ from cdr_cleaner.cleaning_rules.drop_orphaned_pids import DropOrphanedPIDS
 from cdr_cleaner.cleaning_rules.drop_orphaned_survey_conduct_ids import DropOrphanedSurveyConductIds
 from cdr_cleaner.cleaning_rules.deid.deidentify_aian_zip3_values import DeidentifyAIANZip3Values
 from constants.cdr_cleaner import clean_cdr_engine as ce_consts
-from constants.cdr_cleaner.clean_cdr import DataStage
+from constants.cdr_cleaner.clean_cdr import DataStage, DATA_CONSISTENCY
 
 # Third party imports
 
@@ -347,6 +347,12 @@ CONTROLLED_TIER_FITBIT_CLEANING_CLASSES = [
     (RemoveNonExistingPids,),  # assumes CT dataset is ready for reference
 ]
 
+DATA_CONSISTENCY_CLEANING_CLASSES = [
+    (DropOrphanedSurveyConductIds,),
+    (DropOrphanedPIDS,),
+    (CleanMappingExtTables,),  # should be one of the last cleaning rules run
+]
+
 DATA_STAGE_RULES_MAPPING = {
     DataStage.EHR.value:
         EHR_CLEANING_CLASSES,
@@ -373,7 +379,9 @@ DATA_STAGE_RULES_MAPPING = {
     DataStage.CONTROLLED_TIER_DEID_CLEAN.value:
         CONTROLLED_TIER_DEID_CLEAN_CLEANING_CLASSES,
     DataStage.CONTROLLED_TIER_FITBIT.value:
-        CONTROLLED_TIER_FITBIT_CLEANING_CLASSES
+        CONTROLLED_TIER_FITBIT_CLEANING_CLASSES,
+    DataStage.DATA_CONSISTENCY.value:
+        DATA_CONSISTENCY_CLEANING_CLASSES
 }
 
 
@@ -510,6 +518,14 @@ def main(args=None):
     rules = DATA_STAGE_RULES_MAPPING[args.data_stage.value]
     validate_custom_params(rules, **kwargs)
 
+    # NOTE Retraction uses DATA_CONSISTENCY data stage. For retraction,
+    # all datasets share one sandbox dataset. Table_namer needs dataset_id so
+    # the sandbox tables will not overwrite each other.
+    if args.data_stage.value == DATA_CONSISTENCY:
+        table_namer = f"{args.data_stage.value}_{args.dataset_id}"
+    else:
+        table_namer = args.data_stage.value
+
     if args.list_queries:
         clean_engine.add_console_logging()
         query_list = clean_engine.get_query_list(
@@ -517,7 +533,7 @@ def main(args=None):
             dataset_id=args.dataset_id,
             sandbox_dataset_id=args.sandbox_dataset_id,
             rules=rules,
-            table_namer=args.data_stage.value,
+            table_namer=table_namer,
             **kwargs)
         for query in query_list:
             LOGGER.info(query)
@@ -527,7 +543,7 @@ def main(args=None):
                                    dataset_id=args.dataset_id,
                                    sandbox_dataset_id=args.sandbox_dataset_id,
                                    rules=rules,
-                                   table_namer=args.data_stage.value,
+                                   table_namer=table_namer,
                                    run_as=args.run_as,
                                    **kwargs)
 

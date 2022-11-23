@@ -19,6 +19,7 @@ CONTROLLED_TIER_DEID_BASE = 'controlled_tier_deid_base'
 CONTROLLED_TIER_DEID_CLEAN = 'controlled_tier_deid_clean'
 CONTROLLED_TIER_FITBIT = 'controlled_tier_fitbit'
 
+DATA_CONSISTENCY = 'data_consistency'
 BACKUP = 'backup'
 STAGING = 'staging'
 SANDBOX = 'sandbox'
@@ -66,6 +67,7 @@ class DataStage(Enum):
     CONTROLLED_TIER_DEID_BASE = CONTROLLED_TIER_DEID_BASE
     CONTROLLED_TIER_DEID_CLEAN = CONTROLLED_TIER_DEID_CLEAN
     CONTROLLED_TIER_FITBIT = CONTROLLED_TIER_FITBIT
+    DATA_CONSISTENCY = DATA_CONSISTENCY
 
     def __str__(self):
         return self.value

@@ -231,6 +231,7 @@ DEID = 'deid'
 EHR = 'ehr'
 RDR = 'rdr'
 RELEASE = 'release'
+FITBIT = 'fitbit'
 OTHER = 'other'
 
 MAPPING = 'mapping'
