@@ -194,7 +194,8 @@ def create_lookup_table(client: BigQueryClient, sql_file_path: str) -> str:
 
 
 def parse_args(raw_args=None):
-    parser = ArgumentParser(description='abc')
+    parser = ArgumentParser(
+        description='Retraction script for BigQuery datasets')
 
     parser.add_argument('--run_as',
                         action='store',
