@@ -6,6 +6,8 @@
 # Python imports
 import os
 
+# Third Party Imports
+
 # Project Imports
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.deid.conflicting_hpo_state_generalization import ConflictingHpoStateGeneralize
@@ -15,13 +17,16 @@ from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_te
 INSERT_RAW_DATA_OBS = JINJA_ENV.from_string("""
    INSERT INTO `{{project_id}}.{{dataset_id}}.observation` (
        observation_id,
-       person_id
+       person_id,
+       observation_concept_id,
+       observation_date,
+       observation_type_concept_id
        )
      VALUES
-       (1,101),
-       (2,102),
-       (3,103),
-       (4,104)
+       (1,101,1001,date('2020-01-01'),1),
+       (2,102,1002,date('2020-01-01'),1),
+       (3,103,1003,date('2020-01-01'),1),
+       (4,104,1004,date('2020-01-01'),1)
  """)
 
 INSERT_RAW_DATA_MAPPING = JINJA_ENV.from_string("""
