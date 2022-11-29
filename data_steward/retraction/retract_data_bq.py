@@ -258,7 +258,10 @@ def queries_to_retract_from_dataset(client: BigQueryClient,
     for table in tables_to_retract:
 
         if retraction_type == RETRACTION_ONLY_EHR:
-            if ru.is_deid_dataset(dataset_id):
+            if table == DEATH:
+                pass
+
+            elif ru.is_deid_dataset(dataset_id):
                 if not client.table_exists(f'{table}_ext', dataset_id):
                     LOGGER.info(f"{table} does not have a extension table. "
                                 f"Assuming it does not contain EHR data. "
@@ -287,6 +290,12 @@ def queries_to_retract_from_dataset(client: BigQueryClient,
             only_ehr_condition = ''
 
         if table in [DEATH, PERSON]:
+            if table == PERSON and retraction_type == RETRACTION_ONLY_EHR:
+                LOGGER.info(
+                    f"{PERSON} has only RDR data..."
+                    f"No retraction needed for {PERSON} when {RETRACTION_ONLY_EHR}"
+                    f"Skipping {PERSON}")
+                continue
             if not skip_sandboxing:
                 q_sandbox = JINJA_ENV.from_string(
                     RETRACT_DATA_TABLE_QUERY).render(
