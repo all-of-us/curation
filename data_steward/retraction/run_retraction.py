@@ -90,7 +90,7 @@ def create_dataset(client: BigQueryClient, src_dataset_name: str,
     dataset_name = get_new_dataset_name(src_dataset_name, release_tag)
 
     LOGGER.info(
-        f"Creating an empty dataset {dataset_name} for {src_dataset_name}.")
+        f"Creating an empty dataset {dataset_name} from {src_dataset_name}.")
 
     src_dataset_obj = client.get_dataset(src_dataset_name)
     src_desc, src_labels = src_dataset_obj.description, src_dataset_obj.labels
