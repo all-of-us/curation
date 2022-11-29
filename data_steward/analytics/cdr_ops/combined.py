@@ -496,6 +496,7 @@ display(
         <h3>
             Check Status:&nbsp <span style="color: {'red' if not is_success else 'green'}">{'Failed' if not is_success else 'Success'}</span>
         </h3>
+        {'<p>Check/run the <a href="https://github.com/all-of-us/curation/blob/develop/data_steward/cdr_cleaner/cleaning_rules/clean_mapping.py">CleanMappingExtTables</a> cleaning rule as a potential remedy.</p>' if not is_success else ''}
         <div>
             <h5>
                 Condition 1 (All row counts are equal):&nbsp     
