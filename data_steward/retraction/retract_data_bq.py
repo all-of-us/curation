@@ -53,8 +53,15 @@ FROM `{{pid_project}}.{{sandbox_dataset_id}}.{{pid_table_id}}`
 
 ONLY_EHR_CONDITION = """
 AND {{table}}_id IN (
-    SELECT {{table}}_id FROM `{{project}}.{{combined_dataset}}._mapping_{{table}}`
+    SELECT {{table}}_id FROM `{{project}}.{{dataset}}._mapping_{{table}}`
     WHERE src_hpo_id != 'rdr'
+)
+"""
+
+ONLY_EHR_CONDITION_DEID = """
+AND {{table}}_id IN (
+    SELECT {{table}}_id FROM `{{project}}.{{dataset}}.{{table}}_ext`
+    WHERE src_id LIKE 'EHR%'
 )
 """
 
@@ -217,8 +224,7 @@ def queries_to_retract_from_dataset(client: BigQueryClient,
                                     sb_dataset_id,
                                     person_id_query,
                                     skip_sandboxing,
-                                    retraction_type=None,
-                                    original_combined_dataset=''):
+                                    retraction_type=None):
     """
     Get list of queries to remove all records in all tables associated with supplied ids
 
@@ -252,18 +258,31 @@ def queries_to_retract_from_dataset(client: BigQueryClient,
     for table in tables_to_retract:
 
         if retraction_type == RETRACTION_ONLY_EHR:
-            if not client.table_exists(mapping_table_for(table),
-                                       original_combined_dataset):
-                LOGGER.info(f"{table} does not have a mapping table. "
-                            f"Assuming it does not contain EHR data. "
-                            f"Skipping retracing {table}...")
-                continue
+            if ru.is_deid_dataset(dataset_id):
+                if not client.table_exists(f'{table}_ext', dataset_id):
+                    LOGGER.info(f"{table} does not have a extension table. "
+                                f"Assuming it does not contain EHR data. "
+                                f"Skipping retracing {table}...")
+                    continue
+                only_ehr_condition = JINJA_ENV.from_string(
+                    ONLY_EHR_CONDITION_DEID).render(project=client.project,
+                                                    dataset=dataset_id,
+                                                    table=table)
 
-            only_ehr_condition = JINJA_ENV.from_string(
-                ONLY_EHR_CONDITION).render(
-                    project=client.project,
-                    combined_dataset=original_combined_dataset,
-                    table=table)
+            elif ru.is_combined_dataset(dataset_id):
+
+                if not client.table_exists(mapping_table_for(table),
+                                           dataset_id):
+                    LOGGER.info(f"{table} does not have a mapping table. "
+                                f"Assuming it does not contain EHR data. "
+                                f"Skipping retracing {table}...")
+                    continue
+
+                only_ehr_condition = JINJA_ENV.from_string(
+                    ONLY_EHR_CONDITION).render(project=client.project,
+                                               dataset=dataset_id,
+                                               table=table)
+
         else:
             only_ehr_condition = ''
 
@@ -358,7 +377,6 @@ def run_bq_retraction(project_id,
                       dataset_ids_list,
                       retraction_type,
                       skip_sandboxing=False,
-                      original_combined_dataset='',
                       bq_client=None):
     """
     Main function to perform retraction.
@@ -376,8 +394,6 @@ def run_bq_retraction(project_id,
     :param retraction_type: string indicating whether all data needs to be removed, including RDR,
         or if RDR data needs to be kept intact. Can take the values 'rdr_and_ehr' or 'only_ehr'
     :param skip_sandboxing: True if you wish not to sandbox the retracted data.    
-    :param original_combined_dataset: You need this option when running it with 'only_ehr'. 
-        This is the dataset that has '_mapping_xyz' tables to know which records are from EHR.
     :param bq_client: BigQuery client. Reuse the client if one already exists. If not, a new one will be created.
     :return:
     """
@@ -404,14 +420,11 @@ def run_bq_retraction(project_id,
         if ru.is_deid_dataset(dataset) or ru.is_deid_fitbit_dataset(
                 dataset) or ru.is_combined_dataset(
                     dataset) or ru.is_fitbit_dataset(dataset):
-            queries = queries_to_retract_from_dataset(
-                client,
-                dataset,
-                sandbox_dataset_id,
-                pid_rid_query,
-                skip_sandboxing,
-                retraction_type,
-                original_combined_dataset=original_combined_dataset)
+            queries = queries_to_retract_from_dataset(client, dataset,
+                                                      sandbox_dataset_id,
+                                                      pid_rid_query,
+                                                      skip_sandboxing,
+                                                      retraction_type)
         elif ru.is_unioned_dataset(dataset):
             queries = queries_to_retract_from_dataset(client, dataset,
                                                       sandbox_dataset_id,
