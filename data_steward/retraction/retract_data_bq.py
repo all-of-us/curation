@@ -102,66 +102,6 @@ WHERE (
   )
 )"""
 
-CREATE_LOOKUP_FACT_RELATIONSHIP_ONLY_EHR = """
-CREATE TABLE `{{project}}.{{sb_dataset}}.fr_lookup` AS 
-WITH expanded_fact_relationship AS (
-  SELECT DISTINCT
-    fr.domain_concept_id_1, dc1.concept_name domain_concept_name_1, fr.fact_id_1,
-    CASE
-      WHEN dc1.concept_name = 'Condition' THEN c1.condition_concept_id
-      WHEN dc1.concept_name = 'Drug' THEN d1.drug_concept_id
-      WHEN dc1.concept_name = 'Measurement' THEN m1.measurement_concept_id
-      WHEN dc1.concept_name = 'Observation' THEN o1.observation_concept_id
-      WHEN dc1.concept_name = 'Procedure' THEN p1.procedure_concept_id
-      ELSE NULL
-    END fact_concept_id_1,
-    fr.relationship_concept_id, r.concept_name relationship_concept_name,
-    fr.domain_concept_id_2, dc2.concept_name domain_concept_name_2, fr.fact_id_2,
-    CASE
-      WHEN dc2.concept_name = 'Condition' THEN c2.condition_concept_id
-      WHEN dc2.concept_name = 'Drug' THEN d2.drug_concept_id
-      WHEN dc2.concept_name = 'Measurement' THEN m2.measurement_concept_id
-      WHEN dc2.concept_name = 'Observation' THEN o2.observation_concept_id
-      WHEN dc2.concept_name = 'Procedure' THEN p2.procedure_concept_id
-      ELSE NULL
-    END fact_concept_id_2
-  FROM `{{project}}.{{dataset}}.fact_relationship` fr
-  JOIN `{{project}}.{{dataset}}.concept` dc1 ON dc1.concept_id = fr.domain_concept_id_1
-  JOIN `{{project}}.{{dataset}}.concept` dc2 ON dc2.concept_id = fr.domain_concept_id_2
-  JOIN `{{project}}.{{dataset}}.concept` r   ON r.concept_id = fr.relationship_concept_id
-  LEFT JOIN `{{project}}.{{dataset}}.condition_occurrence` c1 ON c1.condition_occurrence_id = fr.fact_id_1 AND dc1.concept_name = 'Condition'
-  LEFT JOIN `{{project}}.{{dataset}}.condition_occurrence` c2 ON c2.condition_occurrence_id = fr.fact_id_2 AND dc2.concept_name = 'Condition'
-  LEFT JOIN `{{project}}.{{dataset}}.drug_exposure` d1 ON d1.drug_exposure_id = fr.fact_id_1 AND dc1.concept_name = 'Drug'
-  LEFT JOIN `{{project}}.{{dataset}}.drug_exposure` d2 ON d2.drug_exposure_id = fr.fact_id_2 AND dc2.concept_name = 'Drug'
-  LEFT JOIN `{{project}}.{{dataset}}.measurement` m1 ON m1.measurement_id = fr.fact_id_1 AND dc1.concept_name = 'Measurement'
-  LEFT JOIN `{{project}}.{{dataset}}.measurement` m2 ON m2.measurement_id = fr.fact_id_2 AND dc2.concept_name = 'Measurement'
-  LEFT JOIN `{{project}}.{{dataset}}.observation` o1 ON o1.observation_id = fr.fact_id_1 AND dc1.concept_name = 'Observation'
-  LEFT JOIN `{{project}}.{{dataset}}.observation` o2 ON o2.observation_id = fr.fact_id_2 AND dc2.concept_name = 'Observation'
-  LEFT JOIN `{{project}}.{{dataset}}.procedure_occurrence` p1 ON p1.procedure_occurrence_id = fr.fact_id_1 AND dc1.concept_name = 'Procedure'
-  LEFT JOIN `{{project}}.{{dataset}}.procedure_occurrence` p2 ON p2.procedure_occurrence_id = fr.fact_id_2 AND dc2.concept_name = 'Procedure'
-)
-SELECT
-  domain_concept_id_1,
-  LOWER(domain_concept_name_1) domain_concept_name_1,
-  fact_id_1,
-  relationship_concept_id,
-  domain_concept_id_2,
-  LOWER(domain_concept_name_2) domain_concept_name_2,
-  fact_id_2,
-  fact_concept_id_2,
-  COALESCE(mm.src_measurement_id, md.src_drug_exposure_id, mp.src_procedure_occurrence_id, mc.src_condition_occurrence_id, mo.src_observation_id) src_table_primary_id,
-  COALESCE(mm.src_hpo_id, md.src_hpo_id, mp.src_hpo_id, mc.src_hpo_id, mo.src_hpo_id) src_hpo_id
-FROM expanded_fact_relationship efr
-LEFT JOIN `{{project}}.{{dataset}}.concept` fc1 ON fc1.concept_id = efr.fact_concept_id_1
-LEFT JOIN `{{project}}.{{dataset}}.concept` fc2 ON fc2.concept_id = efr.fact_concept_id_2
-LEFT JOIN `{{project}}.{{dataset}}._mapping_condition_occurrence` mc ON mc.condition_occurrence_id =  efr.fact_id_1 AND efr.domain_concept_name_1 = 'Condition'
-LEFT JOIN `{{project}}.{{dataset}}._mapping_drug_exposure` md ON md.drug_exposure_id =  efr.fact_id_1 AND efr.domain_concept_name_1 = 'Drug'
-LEFT JOIN `{{project}}.{{dataset}}._mapping_measurement` mm ON mm.measurement_id = efr.fact_id_1 AND efr.domain_concept_name_1 = 'Measurement'
-LEFT JOIN `{{project}}.{{dataset}}._mapping_observation` mo ON mo.observation_id =  efr.fact_id_1 AND efr.domain_concept_name_1 = 'Observation'
-LEFT JOIN `{{project}}.{{dataset}}._mapping_procedure_occurrence` mp ON mp.procedure_occurrence_id =  efr.fact_id_1 AND efr.domain_concept_name_1 = 'Procedure'
-WHERE COALESCE(mm.src_hpo_id, md.src_hpo_id, mp.src_hpo_id, mc.src_hpo_id, mo.src_hpo_id) != 'rdr'
-"""
-
 RETRACT_DATA_FACT_RELATIONSHIP_ONLY_EHR = """
 {% if sandbox %}
 CREATE TABLE `{{project}}.{{sb_dataset}}.{{sb_table}}` AS SELECT *
@@ -417,53 +357,53 @@ def queries_to_retract_from_dataset(client: BigQueryClient,
                 only_ehr_condition=only_ehr_condition)
             queries[TABLES].append(q_dataset)
 
-    table = FACT_RELATIONSHIP
-    if retraction_type == RETRACTION_ONLY_EHR:
-        q_lookup = JINJA_ENV.from_string(
-            CREATE_LOOKUP_FACT_RELATIONSHIP_ONLY_EHR).render(
-                project=client.project,
-                sb_dataset=sb_dataset_id,
-                dataset=dataset_id)
-        queries[TABLES].append(q_lookup)
-        if not skip_sandboxing:
-            q_sandbox = JINJA_ENV.from_string(
-                RETRACT_DATA_FACT_RELATIONSHIP_ONLY_EHR).render(
-                    project=client.project,
-                    dataset=dataset_id,
-                    table=table,
-                    sandbox=True,
-                    sb_dataset=sb_dataset_id,
-                    sb_table=f'retract_{dataset_id}_{table}')
-            queries[TABLES].append(q_sandbox)
-        q_fact_relationship = JINJA_ENV.from_string(
-            RETRACT_DATA_FACT_RELATIONSHIP_ONLY_EHR).render(
-                project=client.project,
-                dataset=dataset_id,
-                sb_dataset=sb_dataset_id,
-                table=table)
-        queries[TABLES].append(q_fact_relationship)
+    # table = FACT_RELATIONSHIP
+    # if retraction_type == RETRACTION_ONLY_EHR:
+    #     q_lookup = JINJA_ENV.from_string(
+    #         CREATE_LOOKUP_FACT_RELATIONSHIP_ONLY_EHR).render(
+    #             project=client.project,
+    #             sb_dataset=sb_dataset_id,
+    #             dataset=dataset_id)
+    #     queries[TABLES].append(q_lookup)
+    #     if not skip_sandboxing:
+    #         q_sandbox = JINJA_ENV.from_string(
+    #             RETRACT_DATA_FACT_RELATIONSHIP_ONLY_EHR).render(
+    #                 project=client.project,
+    #                 dataset=dataset_id,
+    #                 table=table,
+    #                 sandbox=True,
+    #                 sb_dataset=sb_dataset_id,
+    #                 sb_table=f'retract_{dataset_id}_{table}')
+    #         queries[TABLES].append(q_sandbox)
+    #     q_fact_relationship = JINJA_ENV.from_string(
+    #         RETRACT_DATA_FACT_RELATIONSHIP_ONLY_EHR).render(
+    #             project=client.project,
+    #             dataset=dataset_id,
+    #             sb_dataset=sb_dataset_id,
+    #             table=table)
+    #     queries[TABLES].append(q_fact_relationship)
 
-    elif table in existing_tables:
-        if not skip_sandboxing:
-            q_sandbox = JINJA_ENV.from_string(
-                RETRACT_DATA_FACT_RELATIONSHIP).render(
-                    project=client.project,
-                    dataset=dataset_id,
-                    table=table,
-                    PERSON_DOMAIN=PERSON_DOMAIN,
-                    person_id_query=person_id_query,
-                    sandbox=True,
-                    sb_dataset=sb_dataset_id,
-                    sb_table=f'retract_{dataset_id}_{table}')
-            queries[TABLES].append(q_sandbox)
-        q_fact_relationship = JINJA_ENV.from_string(
-            RETRACT_DATA_FACT_RELATIONSHIP).render(
-                project=client.project,
-                dataset=dataset_id,
-                table=table,
-                PERSON_DOMAIN=PERSON_DOMAIN,
-                person_id_query=person_id_query)
-        queries[TABLES].append(q_fact_relationship)
+    # elif table in existing_tables:
+    #     if not skip_sandboxing:
+    #         q_sandbox = JINJA_ENV.from_string(
+    #             RETRACT_DATA_FACT_RELATIONSHIP).render(
+    #                 project=client.project,
+    #                 dataset=dataset_id,
+    #                 table=table,
+    #                 PERSON_DOMAIN=PERSON_DOMAIN,
+    #                 person_id_query=person_id_query,
+    #                 sandbox=True,
+    #                 sb_dataset=sb_dataset_id,
+    #                 sb_table=f'retract_{dataset_id}_{table}')
+    #         queries[TABLES].append(q_sandbox)
+    #     q_fact_relationship = JINJA_ENV.from_string(
+    #         RETRACT_DATA_FACT_RELATIONSHIP).render(
+    #             project=client.project,
+    #             dataset=dataset_id,
+    #             table=table,
+    #             PERSON_DOMAIN=PERSON_DOMAIN,
+    #             person_id_query=person_id_query)
+    #     queries[TABLES].append(q_fact_relationship)
 
     return queries[TABLES]
 
