@@ -257,11 +257,15 @@ def parse_args(raw_args=None):
         help=
         'Specify this option if you do not want this script to sanbox the retracted records.'
     )
-    parser.add_argument('--original_combined_dataset',
-                        dest='original_combined_dataset',
-                        action='store',
-                        required=False,
-                        help='')
+    parser.add_argument(
+        '--original_combined_dataset',
+        dest='original_combined_dataset',
+        action='store',
+        required=False,
+        help=
+        f'Specify this option if you run this script with --retraction_type "{RETRACTION_ONLY_EHR}". '
+        f'Source combined dataset that has mapping tables to identify which records are from EHR.'
+    )
 
     return parser.parse_args(raw_args)
 

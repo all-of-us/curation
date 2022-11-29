@@ -16,6 +16,7 @@ from utils import pipeline_logging
 from gcloud.bq import BigQueryClient
 from common import (CARE_SITE, CATI_TABLES, DEATH, FACT_RELATIONSHIP, JINJA_ENV,
                     LOCATION, OBSERVATION_PERIOD, PERSON, PII_TABLES, PROVIDER)
+from resources import mapping_table_for
 from retraction import retract_utils as ru
 
 LOGGER = logging.getLogger(__name__)
@@ -251,12 +252,13 @@ def queries_to_retract_from_dataset(client: BigQueryClient,
     for table in tables_to_retract:
 
         if retraction_type == RETRACTION_ONLY_EHR:
-            if not client.table_exists(f'_mapping_{table}',
+            if not client.table_exists(mapping_table_for(table),
                                        original_combined_dataset):
-                LOGGER.info(
-                    f"ONLY_EHR is specified but {table} does not have a mapping table in combined dataset"
-                    "skipping.")
+                LOGGER.info(f"{table} does not have a mapping table. "
+                            f"Assuming it does not contain EHR data. "
+                            f"Skipping retracing {table}...")
                 continue
+
             only_ehr_condition = JINJA_ENV.from_string(
                 ONLY_EHR_CONDITION).render(
                     project=client.project,
@@ -353,9 +355,10 @@ def run_bq_retraction(project_id,
                       original_combined_dataset='',
                       bq_client=None):
     """
-    Main function to perform retraction
-    pid table must follow schema described above in PID_TABLE_FIELDS and must reside in sandbox_dataset_id
-    This function removes rows from all tables containing person_ids if they exist in pid_table_id
+    Main function to perform retraction.
+    pid table must follow schema described above in PID_TABLE_FIELDS and must reside in sandbox_dataset_id.
+    This function removes rows from all tables containing person_ids if they exist in pid_table_id.
+    If only_ehr is specified, it removes only the records from EHR.
 
     :param project_id: project to retract from
     :param sandbox_dataset_id: identifies the dataset containing the pid table
