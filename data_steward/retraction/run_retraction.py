@@ -40,7 +40,7 @@ from cdr_cleaner.args_parser import add_kwargs_to_args
 from common import CDR_SCOPES
 from constants.cdr_cleaner.clean_cdr import DATA_CONSISTENCY
 from gcloud.bq import BigQueryClient
-from retraction.retract_data_bq import run_bq_retraction, RETRACTION_EHR, RETRACTION_RDR_EHR
+from retraction.retract_data_bq import run_bq_retraction, RETRACTION_ONLY_EHR, RETRACTION_RDR_EHR
 from retraction.retract_utils import is_fitbit_dataset
 from utils import pipeline_logging
 from utils.auth import get_impersonation_credentials
@@ -56,7 +56,7 @@ def ask_if_continue() -> None:
         RuntimeError: Abort the execution when the user wishes not to continue.
     """
     confirm = input("\nContinue? [Y/N]:\n\n")
-    if confirm != 'Y':
+    if confirm.upper() != 'Y':
         raise RuntimeError('User canceled the execution.')
 
 
@@ -247,7 +247,7 @@ def parse_args(raw_args=None):
         help=(
             f'Identifies whether all data needs to be removed, including RDR, '
             f'or if RDR data needs to be kept intact. Can take the values '
-            f'"{RETRACTION_RDR_EHR}" or "{RETRACTION_EHR}".'),
+            f'"{RETRACTION_RDR_EHR}" or "{RETRACTION_ONLY_EHR}".'),
         required=True)
     parser.add_argument(
         '--skip_sandboxing',
@@ -257,6 +257,11 @@ def parse_args(raw_args=None):
         help=
         'Specify this option if you do not want this script to sanbox the retracted records.'
     )
+    parser.add_argument('--original_combined_dataset',
+                        dest='original_combined_dataset',
+                        action='store',
+                        required=False,
+                        help='')
 
     return parser.parse_args(raw_args)
 
@@ -343,6 +348,7 @@ def main():
                       new_datasets,
                       args.retraction_type,
                       skip_sandboxing=args.skip_sandboxing,
+                      original_combined_dataset=args.original_combined_dataset,
                       bq_client=client)
     LOGGER.info(f"Completed [5/6] Run retraction on the new datasets.\n")
 

@@ -14,9 +14,8 @@ import logging
 # Project imports
 from utils import pipeline_logging
 from gcloud.bq import BigQueryClient
-from common import (CARE_SITE, CATI_TABLES, DEATH, FACT_RELATIONSHIP,
-                    ID_CONSTANT_FACTOR, JINJA_ENV, LOCATION, OBSERVATION_PERIOD,
-                    PERSON, PII_TABLES, PROVIDER)
+from common import (CARE_SITE, CATI_TABLES, DEATH, FACT_RELATIONSHIP, JINJA_ENV,
+                    LOCATION, OBSERVATION_PERIOD, PERSON, PII_TABLES, PROVIDER)
 from retraction import retract_utils as ru
 
 LOGGER = logging.getLogger(__name__)
@@ -30,7 +29,7 @@ PERSON_ID = 'person_id'
 RESEARCH_ID = 'research_id'
 
 RETRACTION_RDR_EHR = 'rdr_and_ehr'
-RETRACTION_EHR = 'only_ehr'
+RETRACTION_ONLY_EHR = 'only_ehr'
 
 NONE_STR = 'none'
 
@@ -51,8 +50,12 @@ SELECT
 FROM `{{pid_project}}.{{sandbox_dataset_id}}.{{pid_table_id}}`
 """
 
-ID_CONST_CONDITION = """
-AND {{table_id}} > {{id_constant}}"""
+ONLY_EHR_CONDITION = """
+AND {{table}}_id IN (
+    SELECT {{table}}_id FROM `{{project}}.{{combined_dataset}}._mapping_{{table}}`
+    WHERE src_hpo_id != 'rdr'
+)
+"""
 
 RETRACT_DATA_TABLE_QUERY = """
 {% if sandbox %}
@@ -64,7 +67,7 @@ FROM `{{project}}.{{dataset}}.{{table}}`
 WHERE person_id IN (
   {{person_id_query}}
 )
-{% if id_const_condition is defined %}{{id_const_condition}}
+{% if only_ehr_condition is defined %}{{only_ehr_condition}}
 {% endif %}
 """
 
@@ -213,7 +216,8 @@ def queries_to_retract_from_dataset(client: BigQueryClient,
                                     sb_dataset_id,
                                     person_id_query,
                                     skip_sandboxing,
-                                    retraction_type=None):
+                                    retraction_type=None,
+                                    original_combined_dataset=''):
     """
     Get list of queries to remove all records in all tables associated with supplied ids
 
@@ -244,17 +248,22 @@ def queries_to_retract_from_dataset(client: BigQueryClient,
 
     queries = {TABLES: []}
 
-    # Ignore RDR rows using id constant factor if retraction type is 'only_ehr'
-    id_const = 2 * ID_CONSTANT_FACTOR
-
     for table in tables_to_retract:
 
-        if retraction_type == RETRACTION_EHR:
-            id_const_condition = JINJA_ENV.from_string(
-                ID_CONST_CONDITION).render(table_id=get_table_id(table),
-                                           id_constant=id_const)
+        if retraction_type == RETRACTION_ONLY_EHR:
+            if not client.table_exists(f'_mapping_{table}',
+                                       original_combined_dataset):
+                LOGGER.info(
+                    f"ONLY_EHR is specified but {table} does not have a mapping table in combined dataset"
+                    "skipping.")
+                continue
+            only_ehr_condition = JINJA_ENV.from_string(
+                ONLY_EHR_CONDITION).render(
+                    project=client.project,
+                    combined_dataset=original_combined_dataset,
+                    table=table)
         else:
-            id_const_condition = ''
+            only_ehr_condition = ''
 
         if table in [DEATH, PERSON]:
             if not skip_sandboxing:
@@ -283,7 +292,7 @@ def queries_to_retract_from_dataset(client: BigQueryClient,
                         table=table,
                         table_id=get_table_id(table),
                         person_id_query=person_id_query,
-                        id_const_condition=id_const_condition,
+                        only_ehr_condition=only_ehr_condition,
                         sandbox=True,
                         sb_dataset=sb_dataset_id,
                         sb_table=f'retract_{dataset_id}_{table}')
@@ -294,7 +303,7 @@ def queries_to_retract_from_dataset(client: BigQueryClient,
                 table=table,
                 table_id=get_table_id(table),
                 person_id_query=person_id_query,
-                id_const_condition=id_const_condition)
+                only_ehr_condition=only_ehr_condition)
             queries[TABLES].append(q_dataset)
 
     table = FACT_RELATIONSHIP
@@ -341,6 +350,7 @@ def run_bq_retraction(project_id,
                       dataset_ids_list,
                       retraction_type,
                       skip_sandboxing=False,
+                      original_combined_dataset='',
                       bq_client=None):
     """
     Main function to perform retraction
@@ -375,11 +385,14 @@ def run_bq_retraction(project_id,
                 pid_project=pid_project_id,
                 sandbox_dataset_id=sandbox_dataset_id,
                 pid_table_id=pid_table_id)
-            queries = queries_to_retract_from_dataset(client, dataset,
-                                                      sandbox_dataset_id,
-                                                      research_id_query,
-                                                      skip_sandboxing,
-                                                      retraction_type)
+            queries = queries_to_retract_from_dataset(
+                client,
+                dataset,
+                sandbox_dataset_id,
+                research_id_query,
+                skip_sandboxing,
+                retraction_type,
+                original_combined_dataset=original_combined_dataset)
         else:
             person_id_query = JINJA_ENV.from_string(PERSON_ID_QUERY).render(
                 person_research_id=PERSON_ID,
@@ -389,8 +402,14 @@ def run_bq_retraction(project_id,
             if ru.is_combined_dataset(dataset) or ru.is_fitbit_dataset(dataset):
                 LOGGER.info(f"Retracting from dataset {dataset}")
                 queries = queries_to_retract_from_dataset(
-                    client, dataset, sandbox_dataset_id, person_id_query,
-                    skip_sandboxing)
+                    client,
+                    dataset,
+                    sandbox_dataset_id,
+                    person_id_query,
+                    skip_sandboxing,
+                    retraction_type,
+                    original_combined_dataset=original_combined_dataset)
+
             elif ru.is_unioned_dataset(dataset):
                 LOGGER.info(f"Retracting from Unioned dataset {dataset}")
                 queries = queries_to_retract_from_dataset(
@@ -477,7 +496,7 @@ if __name__ == '__main__':
         help=(
             f'Identifies whether all data needs to be removed, including RDR, '
             f'or if RDR data needs to be kept intact. Can take the values '
-            f'"{RETRACTION_RDR_EHR}" or "{RETRACTION_EHR}"'),
+            f'"{RETRACTION_RDR_EHR}" or "{RETRACTION_ONLY_EHR}"'),
         required=True)
     args = parser.parse_args()
 
