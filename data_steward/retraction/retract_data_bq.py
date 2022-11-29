@@ -335,6 +335,12 @@ def queries_to_retract_from_dataset(client: BigQueryClient,
 
 
 def retraction_query_runner(client, queries):
+    """
+    Runs the retraction queries one by one.
+    Args:
+        client: BigQuery Client
+        queries: List of queries to run
+    """
     for query in queries:
         job = client.query(query)
         LOGGER.info(f'Running query for job_id {job.job_id}. Query:\n{query}')
@@ -369,7 +375,9 @@ def run_bq_retraction(project_id,
         retracts from all datasets. If containing only 'none', skips retraction from BigQuery datasets
     :param retraction_type: string indicating whether all data needs to be removed, including RDR,
         or if RDR data needs to be kept intact. Can take the values 'rdr_and_ehr' or 'only_ehr'
-    :param skip_sandboxing: True if you wish not to sandbox the retracted data.
+    :param skip_sandboxing: True if you wish not to sandbox the retracted data.    
+    :param original_combined_dataset: You need this option when running it with 'only_ehr'. 
+        This is the dataset that has '_mapping_xyz' tables to know which records are from EHR.
     :param bq_client: BigQuery client. Reuse the client if one already exists. If not, a new one will be created.
     :return:
     """
@@ -381,54 +389,48 @@ def run_bq_retraction(project_id,
     dataset_ids = ru.get_datasets_list(client, dataset_ids_list)
     queries = []
     for dataset in dataset_ids:
+
         if ru.is_deid_dataset(dataset) or ru.is_deid_fitbit_dataset(dataset):
-            LOGGER.info(f"Retracting from DEID dataset {dataset}")
-            research_id_query = JINJA_ENV.from_string(PERSON_ID_QUERY).render(
-                person_research_id=RESEARCH_ID,
-                pid_project=pid_project_id,
-                sandbox_dataset_id=sandbox_dataset_id,
-                pid_table_id=pid_table_id)
+            person_research_id = RESEARCH_ID
+        else:
+            person_research_id = PERSON_ID
+
+        pid_rid_query = JINJA_ENV.from_string(PERSON_ID_QUERY).render(
+            person_research_id=person_research_id,
+            pid_project=pid_project_id,
+            sandbox_dataset_id=sandbox_dataset_id,
+            pid_table_id=pid_table_id)
+
+        if ru.is_deid_dataset(dataset) or ru.is_deid_fitbit_dataset(
+                dataset) or ru.is_combined_dataset(
+                    dataset) or ru.is_fitbit_dataset(dataset):
             queries = queries_to_retract_from_dataset(
                 client,
                 dataset,
                 sandbox_dataset_id,
-                research_id_query,
+                pid_rid_query,
                 skip_sandboxing,
                 retraction_type,
                 original_combined_dataset=original_combined_dataset)
-        else:
-            person_id_query = JINJA_ENV.from_string(PERSON_ID_QUERY).render(
-                person_research_id=PERSON_ID,
-                pid_project=pid_project_id,
-                sandbox_dataset_id=sandbox_dataset_id,
-                pid_table_id=pid_table_id)
-            if ru.is_combined_dataset(dataset) or ru.is_fitbit_dataset(dataset):
-                LOGGER.info(f"Retracting from dataset {dataset}")
-                queries = queries_to_retract_from_dataset(
-                    client,
-                    dataset,
-                    sandbox_dataset_id,
-                    person_id_query,
-                    skip_sandboxing,
-                    retraction_type,
-                    original_combined_dataset=original_combined_dataset)
-
-            elif ru.is_unioned_dataset(dataset):
-                LOGGER.info(f"Retracting from Unioned dataset {dataset}")
-                queries = queries_to_retract_from_dataset(
-                    client, dataset, sandbox_dataset_id, person_id_query,
+        elif ru.is_unioned_dataset(dataset):
+            queries = queries_to_retract_from_dataset(client, dataset,
+                                                      sandbox_dataset_id,
+                                                      pid_rid_query,
+                                                      skip_sandboxing)
+        elif ru.is_ehr_dataset(dataset):
+            if hpo_id == NONE_STR:
+                LOGGER.info(
+                    f'"RETRACTION_HPO_ID" set to "{NONE_STR}", skipping retraction from {dataset}'
+                )
+            else:
+                queries = queries_to_retract_from_ehr_dataset(
+                    client, dataset, sandbox_dataset_id, hpo_id, pid_rid_query,
                     skip_sandboxing)
-            elif ru.is_ehr_dataset(dataset):
-                if hpo_id == NONE_STR:
-                    LOGGER.info(
-                        f'"RETRACTION_HPO_ID" set to "{NONE_STR}", skipping retraction from {dataset}'
-                    )
-                else:
-                    LOGGER.info(f"Retracting from EHR dataset {dataset}")
-                    queries = queries_to_retract_from_ehr_dataset(
-                        client, dataset, sandbox_dataset_id, hpo_id,
-                        person_id_query, skip_sandboxing)
+
+        LOGGER.info(f"Started retracting from dataset {dataset}")
         retraction_query_runner(client, queries)
+        LOGGER.info(f"Completed retracting from dataset {dataset}")
+
     LOGGER.info('Retraction complete')
     return
 
