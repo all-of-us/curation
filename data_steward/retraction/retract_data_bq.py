@@ -437,7 +437,10 @@ def queries_to_retract_from_dataset(client: BigQueryClient,
             queries[TABLES].append(q_sandbox)
         q_fact_relationship = JINJA_ENV.from_string(
             RETRACT_DATA_FACT_RELATIONSHIP_ONLY_EHR).render(
-                project=client.project, dataset=dataset_id, table=table)
+                project=client.project,
+                dataset=dataset_id,
+                sb_dataset=sb_dataset_id,
+                table=table)
         queries[TABLES].append(q_fact_relationship)
 
     elif table in existing_tables:
