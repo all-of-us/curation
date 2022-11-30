@@ -337,7 +337,6 @@ def main():
     ask_if_continue()
     run_bq_retraction(project_id,
                       sb_dataset,
-                      project_id,
                       lookup_table,
                       args.hpo_id,
                       new_datasets,
