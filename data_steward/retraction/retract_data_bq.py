@@ -428,8 +428,8 @@ def skip_retraction(client, dataset_id, table_id, retraction_type) -> bool:
     """
     msg_only_rdr = f"Skipping {PERSON} table because it has only RDR data."
     msg_no_mapping_table = (
-        f"Skipping {table_id} table because it does not have a extension"
-        f" table or a mapping table, and it does not contain EHR data.")
+        f"Skipping {table_id} table because it does not have a extension table or a mapping table."
+    )
 
     if retraction_type == RETRACTION_ONLY_EHR:
 
