@@ -34,7 +34,6 @@ NONE_STR = 'none'
 NON_PID_TABLES = [CARE_SITE, LOCATION, FACT_RELATIONSHIP, PROVIDER]
 OTHER_PID_TABLES = [OBSERVATION_PERIOD]
 
-# person from RDR should not be removed, but person from EHR must be
 NON_EHR_TABLES = [PERSON]
 TABLES_FOR_RETRACTION = set(PII_TABLES + CATI_TABLES +
                             OTHER_PID_TABLES) - set(NON_PID_TABLES +
@@ -158,9 +157,9 @@ WHEN MATCHED THEN delete
 """
 
 
-def get_retraction_queries_for_ehr_dataset(client, dataset_id, sb_dataset_id,
-                                           hpo_id, person_id_query,
-                                           skip_sandboxing):
+def get_retraction_queries_for_ehr_dataset(client: BigQueryClient, dataset_id,
+                                           sb_dataset_id, hpo_id,
+                                           person_id_query, skip_sandboxing):
     """
     Get list of queries to remove all records in all tables associated with supplied ids
     :param client: a BigQueryClient
@@ -171,77 +170,75 @@ def get_retraction_queries_for_ehr_dataset(client, dataset_id, sb_dataset_id,
     :param skip_sandboxing: True if you wish not to sandbox the retracted data.
     :raises ValueError: When hpo_id is not specified
     :return: list of queries to run
+    
+    # NOTE this one retracts from 'hpo_id'_tables and unioned_tables within EHR dataset
     """
     if hpo_id == NONE_STR or not hpo_id:
         raise ValueError(
             f'hpo_id is not specified. hpo_id must be defined when retracting from an EHR dataset.'
         )
 
-    LOGGER.info(f'Checking existing tables for {client.project}.{dataset_id}')
-    existing_tables = [
-        table.table_id
-        for table in client.list_tables(f'{client.project}.{dataset_id}')
-    ]
-    queries = {SITE: [], UNIONED: []}
+    queries = []
+
     tables_to_retract = TABLES_FOR_RETRACTION | set(NON_EHR_TABLES)
+
     for table in tables_to_retract:
-        table_names = {
-            SITE: f'{hpo_id}_{table}',
-            UNIONED: f"{UNIONED_EHR}_{table}"
-        }
-        for table_type in [SITE, UNIONED]:
-            if table_names[table_type] in existing_tables:
-                if not skip_sandboxing:
-                    q_sandbox = JINJA_ENV.from_string(RETRACT_QUERY).render(
-                        project=client.project,
-                        dataset=dataset_id,
-                        table=table_names[table_type],
-                        person_id_query=person_id_query,
-                        sandbox=True,
-                        sb_dataset=sb_dataset_id,
-                        sb_table=
-                        f'retract_{dataset_id}_{table_names[table_type]}')
-                    queries[table_type].append(q_sandbox)
+        table_names = [f'{hpo_id}_{table}', f"{UNIONED_EHR}_{table}"]
 
-                q_site = JINJA_ENV.from_string(RETRACT_QUERY).render(
-                    project=client.project,
-                    dataset=dataset_id,
-                    sb_dataset=sb_dataset_id,
-                    table=table_names[table_type],
-                    person_id_query=person_id_query)
-                queries[table_type].append(q_site)
+        for t in table_names:
+            if not client.table_exists(t, dataset_id):
+                LOGGER.info(f"{t} does not exist.")
+                continue
 
-    # Remove fact_relationship records referencing retracted person_ids
-    fact_rel_table_names = {
-        SITE: f'{hpo_id}_{FACT_RELATIONSHIP}',
-        UNIONED: f"{UNIONED_EHR}_{FACT_RELATIONSHIP}"
-    }
-    for table_type in [SITE, UNIONED]:
-        if fact_rel_table_names[table_type] in existing_tables:
             if not skip_sandboxing:
-                q_sandbox_fact_relationship = JINJA_ENV.from_string(
-                    RETRACT_QUERY_FACT_RELATIONSHIP
-                ).render(
+                q_sandbox = JINJA_ENV.from_string(RETRACT_QUERY).render(
                     project=client.project,
                     dataset=dataset_id,
-                    table=fact_rel_table_names[table_type],
+                    table=t,
                     person_id_query=person_id_query,
                     sandbox=True,
                     sb_dataset=sb_dataset_id,
-                    sb_table=
-                    f'retract_{dataset_id}_{fact_rel_table_names[table_type]}')
+                    sb_table=f'retract_{dataset_id}_{t}')
+                queries.append(q_sandbox)
 
-                queries[table_type].append(q_sandbox_fact_relationship)
+            q_site = JINJA_ENV.from_string(RETRACT_QUERY).render(
+                project=client.project,
+                dataset=dataset_id,
+                sb_dataset=sb_dataset_id,
+                table=t,
+                person_id_query=person_id_query)
+            queries.append(q_site)
 
-            q_site_fact_relationship = JINJA_ENV.from_string(
+    # Remove fact_relationship records referencing retracted person_ids
+    for t in [
+            f'{hpo_id}_{FACT_RELATIONSHIP}',
+            f"{UNIONED_EHR}_{FACT_RELATIONSHIP}"
+    ]:
+        if not client.table_exists(t, dataset_id):
+            LOGGER.info(f"{t} does not exist.")
+            continue
+
+        if not skip_sandboxing:
+            q_sandbox_fact_relationship = JINJA_ENV.from_string(
                 RETRACT_QUERY_FACT_RELATIONSHIP).render(
                     project=client.project,
                     dataset=dataset_id,
-                    table=fact_rel_table_names[table_type],
-                    person_id_query=person_id_query)
-            queries[table_type].append(q_site_fact_relationship)
+                    table=t,
+                    person_id_query=person_id_query,
+                    sandbox=True,
+                    sb_dataset=sb_dataset_id,
+                    sb_table=f'retract_{dataset_id}_{t}')
+            queries.append(q_sandbox_fact_relationship)
 
-    return queries[UNIONED] + queries[SITE]
+        q_site_fact_relationship = JINJA_ENV.from_string(
+            RETRACT_QUERY_FACT_RELATIONSHIP).render(
+                project=client.project,
+                dataset=dataset_id,
+                table=t,
+                person_id_query=person_id_query)
+        queries.append(q_site_fact_relationship)
+
+    return queries
 
 
 def get_retraction_queries(client: BigQueryClient,
