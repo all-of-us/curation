@@ -15,15 +15,10 @@ You cannot use this script for retraction for the following datasets.
 You need to re-run the dataset creation script after source datasets are retracted:
     - [CT] antibody quest dataset
 
-Original Issues: DC-2801
-
-TODO: Improve code coverage for retracting RDR, EHR, and UNIONED_EHR datasets.
-    This script is initally created and used for DC-2801. RDR, EHR, and
-    UNIONED_EHR datasets are not in DC-2801's scope. Therefore, retraction for
-    RDR, EHR, and UNIONED_EHR is not fully tested.
-TODO: Improve code coverage for retracting with dataset_ids_list = 'all_datasets'.
-    For the same reason, DC-2801 did not use 'all_datasets' option for
-    retraction. This also needs to be tested.
+Original Issues: DC-2801, DC-2865
+TODO: Test HPO_ID = xyz option
+TODO: Improve code coverage for retracting with dataset_list = 'all_datasets'.
+    DC-2801 did not use 'all_datasets' option for retraction. This needs to be tested.
 """
 
 # Python imports
@@ -212,8 +207,8 @@ def parse_args(raw_args=None):
         nargs='+',
         action='store',
         dest='source_datasets',
-        help=
-        'Datasets that need retraction. If there are more than one, seperate them by whitespaces.',
+        help=('Datasets that need retraction. If there are more than one, '
+              'seperate them by whitespaces.'),
         required=True)
     parser.add_argument(
         '--new_release_tag',
@@ -233,12 +228,16 @@ def parse_args(raw_args=None):
                         action='store_true',
                         required=False,
                         help='Log to the console as well as to a file.')
-    parser.add_argument('-i',
-                        '--hpo_id',
-                        action='store',
-                        dest='hpo_id',
-                        help='Identifies the site to retract data from.',
-                        required=True)
+    parser.add_argument(
+        '-i',
+        '--hpo_id',
+        action='store',
+        dest='hpo_id',
+        help=('Identifies the site to retract data from. '
+              'Specify this argument when retracting from EHR dataset. '
+              'This argument is effective only for EHR dataset. '
+              'For other datasets, it gets ignored.'),
+        required=False)
     parser.add_argument(
         '-r',
         '--retraction_type',

@@ -14,15 +14,14 @@ import logging
 from utils import pipeline_logging
 from gcloud.bq import BigQueryClient
 from common import (CARE_SITE, CATI_TABLES, DEATH, FACT_RELATIONSHIP, JINJA_ENV,
-                    LOCATION, OBSERVATION_PERIOD, PERSON, PII_TABLES, PROVIDER)
+                    LOCATION, OBSERVATION_PERIOD, PERSON, PII_TABLES, PROVIDER,
+                    UNIONED, UNIONED_EHR)
 from resources import mapping_table_for
 from retraction import retract_utils as ru
 
 LOGGER = logging.getLogger(__name__)
 
-UNIONED_EHR = 'unioned_ehr_'
 SITE = 'site'
-UNIONED = 'unioned'
 
 PERSON_ID = 'person_id'
 RESEARCH_ID = 'research_id'
@@ -159,25 +158,6 @@ WHEN MATCHED THEN delete
 """
 
 
-def get_site_table(hpo_id, table):
-    """
-    Return hpo table for site
-    :param hpo_id: identifies the hpo site as str
-    :param table: identifies the cdm table as str
-    :return: cdm table name for the site as str
-    """
-    return f'{hpo_id}_{table}'
-
-
-def get_table_id(table):
-    """
-    Returns primary key for the CDM table
-    :param table: CDM table as str
-    :return: primary key as str
-    """
-    return f'{PERSON}_id' if table == DEATH else f'{table}_id'
-
-
 def get_retraction_queries_for_ehr_dataset(client, dataset_id, sb_dataset_id,
                                            hpo_id, person_id_query,
                                            skip_sandboxing):
@@ -189,10 +169,14 @@ def get_retraction_queries_for_ehr_dataset(client, dataset_id, sb_dataset_id,
     :param hpo_id: identifies the HPO site
     :param person_id_query: query to select person_ids to retract
     :param skip_sandboxing: True if you wish not to sandbox the retracted data.
+    :raises ValueError: When hpo_id is not specified
     :return: list of queries to run
-    
-    # TODO this function is tested yet since it's for EHR dataset.
     """
+    if hpo_id == NONE_STR or not hpo_id:
+        raise ValueError(
+            f'hpo_id is not specified. hpo_id must be defined when retracting from an EHR dataset.'
+        )
+
     LOGGER.info(f'Checking existing tables for {client.project}.{dataset_id}')
     existing_tables = [
         table.table_id
@@ -202,8 +186,8 @@ def get_retraction_queries_for_ehr_dataset(client, dataset_id, sb_dataset_id,
     tables_to_retract = TABLES_FOR_RETRACTION | set(NON_EHR_TABLES)
     for table in tables_to_retract:
         table_names = {
-            SITE: get_site_table(hpo_id, table),
-            UNIONED: UNIONED_EHR + table
+            SITE: f'{hpo_id}_{table}',
+            UNIONED: f"{UNIONED_EHR}_{table}"
         }
         for table_type in [SITE, UNIONED]:
             if table_names[table_type] in existing_tables:
@@ -229,8 +213,8 @@ def get_retraction_queries_for_ehr_dataset(client, dataset_id, sb_dataset_id,
 
     # Remove fact_relationship records referencing retracted person_ids
     fact_rel_table_names = {
-        SITE: get_site_table(hpo_id, FACT_RELATIONSHIP),
-        UNIONED: UNIONED_EHR + FACT_RELATIONSHIP
+        SITE: f'{hpo_id}_{FACT_RELATIONSHIP}',
+        UNIONED: f"{UNIONED_EHR}_{FACT_RELATIONSHIP}"
     }
     for table_type in [SITE, UNIONED]:
         if fact_rel_table_names[table_type] in existing_tables:
@@ -290,7 +274,7 @@ def get_retraction_queries(client: BigQueryClient,
     LOGGER.info(
         f"Tables to retract in {dataset_id}:\n"
         f"Tables with person_id column... {', '.join(tables_to_retract)}\n"
-        f"If it's a non-deid dataset, {FACT_RELATIONSHIP} will be retracted too.\n"
+        f"If it's a non-deid dataset, {FACT_RELATIONSHIP} will be retracted too."
     )
 
     person_id = RESEARCH_ID if ru.is_deid_dataset(dataset_id) else PERSON_ID
@@ -517,18 +501,12 @@ def run_bq_retraction(project_id,
     queries = []
     for dataset in dataset_ids:
 
-        if ru.is_ehr_dataset(dataset) and hpo_id == NONE_STR:
-            # TODO this part is not tested yet
-            LOGGER.info(
-                f'"RETRACTION_HPO_ID" set to "{NONE_STR}", skipping retraction from {dataset}'
-            )
-        elif ru.is_ehr_dataset(dataset):
+        if ru.is_ehr_dataset(dataset):
             # TODO this part is not tested yet
             queries = get_retraction_queries_for_ehr_dataset(
                 client, dataset, sandbox_dataset_id, hpo_id, lookup_table_id,
                 skip_sandboxing)
         else:
-            # TODO test for Unioned dataset
             queries = get_retraction_queries(
                 client,
                 dataset,
@@ -582,7 +560,7 @@ if __name__ == '__main__':
                         action='store',
                         dest='hpo_id',
                         help='Identifies the site to retract data from',
-                        required=True)
+                        required=False)
     parser.add_argument(
         '-d',
         '--dataset_ids',
