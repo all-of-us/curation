@@ -23,12 +23,17 @@ RUN_AS = ''  # Service account email for impersonation
 # +
 import pandas as pd
 
-from common import JINJA_ENV
+from common import JINJA_ENV, MAPPED_CLINICAL_DATA_TABLES
 from cdr_cleaner.cleaning_rules.negative_ages import date_fields
 from utils import auth
 from gcloud.bq import BigQueryClient
 from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES, render_message
 
+import matplotlib.pyplot as plt
+from matplotlib_venn import venn3_unweighted
+from tqdm import tqdm
+import math
+from IPython.display import display, HTML
 # -
 
 impersonation_creds = auth.get_impersonation_credentials(
@@ -317,6 +322,203 @@ DECLARE query DEFAULT (
 EXECUTE IMMEDIATE query;
 '''
 execute(client, query)
+
+# ## OMOP, Mapping, and Extension Tables Contain Same Record Count
+
+# This check ensures that each OMOP table's corresponding mapping and extension tables:
+# 1. Have the same number of rows.
+# 2. Contain the same set of primary key ids.
+#
+# On <span style="color: green">Success</span>, the above conditions will be satisfied for all OMOP tables.
+#
+# On <span style="color: red">Failure</span>, at least one of the above conditions will have been broken for at least one of the OMOP tables.
+#
+# The success status of the check is output in the Results section below.
+# * The first dataframe shows the row counts for each OMOP table and shows success only when the clinical, mapping, and extension tables share the same row counts.
+# * The second dataframe shows the number of primary keys shared between the clinical, mapping, and extension tables and shows success only when all primary keys are in the clinical/mapping/extension group.
+# * This dataframe is accompanied by a series of venn diagrams showing the overlap, with the title of failed tables highlighted in red.
+
+# #### Condition 1
+
+# +
+# Checks if Clinical/Mapping/Extension row counts are all equal
+
+pbar = tqdm(MAPPED_CLINICAL_DATA_TABLES)
+
+row_counts = []
+for mapped_table in pbar:
+    pbar.set_description(mapped_table)
+    
+    query = f'''
+        WITH rows_counts AS (
+          SELECT
+            'Clinical' cat, COUNT(*) row_count
+          FROM `{PROJECT_ID}.{DATASET_ID}.{mapped_table}`
+          UNION ALL
+          SELECT
+            'Mapping' cat, COUNT(*) row_count
+          FROM `{PROJECT_ID}.{DATASET_ID}._mapping_{mapped_table}`
+          UNION ALL
+          SELECT
+            'Extension' cat, COUNT(*) row_count
+          FROM `{PROJECT_ID}.{DATASET_ID}.{mapped_table}_ext`
+        )
+        SELECT
+          '{mapped_table}' tablename, *
+        FROM 
+        (SELECT cat, row_count FROM rows_counts o)
+        PIVOT(SUM(row_count) FOR cat IN ('Clinical', 'Mapping', 'Extension'))
+    '''
+
+    row_count = execute(client, query)
+    row_counts.append(row_count)
+    
+row_counts = pd.concat(row_counts)
+row_counts = row_counts.set_index('tablename')
+row_counts['cond1'] = row_counts.eq(row_counts.iloc[:, 0], axis=0).all(1).astype(bool) 
+# -
+
+# #### Condition 2
+
+# +
+# Checks if Clinical/Mapping/Extension tables have some primary key ids
+
+overlaps = []
+pbar = tqdm(MAPPED_CLINICAL_DATA_TABLES)
+for mapped_table in pbar:
+    
+    pbar.set_description(mapped_table)
+    query = f'''
+    WITH overlap AS (
+      SELECT COALESCE(m.{mapped_table}_id, mm.{mapped_table}_id, ext.{mapped_table}_id) {mapped_table}_id,
+        CASE
+          WHEN m.{mapped_table}_id IS NOT NULL THEN
+            CASE
+              WHEN mm.{mapped_table}_id IS NOT NULL THEN
+                CASE 
+                  WHEN ext.{mapped_table}_id IS NOT NULL THEN 'ABC'
+                  ELSE 'AB'
+                END
+            ELSE
+              CASE 
+                WHEN ext.{mapped_table}_id IS NOT NULL THEN 'AC'
+                ELSE 'A'
+              END
+            END
+          WHEN mm.{mapped_table}_id IS NOT NULL THEN
+            CASE
+              WHEN ext.{mapped_table}_id IS NOT NULL THEN 'BC'
+              ELSE 'B'
+            END
+          ELSE 'C'
+        END cat
+      FROM `{PROJECT_ID}.{DATASET_ID}.{mapped_table}` m
+      FULL JOIN `{PROJECT_ID}.{DATASET_ID}._mapping_{mapped_table}` mm
+        ON mm.{mapped_table}_id = m.{mapped_table}_id
+      FULL JOIN `{PROJECT_ID}.{DATASET_ID}.{mapped_table}_ext` ext
+        ON ext.{mapped_table}_id = COALESCE(m.{mapped_table}_id, mm.{mapped_table}_id)
+    )
+    SELECT
+      '{mapped_table}' tablename, *
+    FROM 
+    (SELECT cat FROM overlap o)
+    PIVOT(COUNT(1) FOR cat IN ('A', 'B', 'AB', 'C', 'AC', 'BC', 'ABC'));
+    '''
+    
+    overlap = execute(client, query)
+    overlaps.append(overlap)
+
+overlaps = pd.concat(overlaps)
+overlaps = overlaps.set_index('tablename')
+overlaps['cond2'] = overlaps.sum(axis=1) == overlaps['ABC']
+
+# +
+# plot venn diagrams for overlap
+
+total_plots = len(overlaps)
+cols = 3
+rows = math.ceil(total_plots / cols)
+
+fig, axes = plt.subplots(rows, cols, figsize=(5, 5), squeeze=False)
+
+k = 0
+while k < total_plots:
+    i, j = k // cols, k % cols
+    
+    row = overlaps.iloc[k]
+    axes[i][j].set_title(row.name, fontdict={'fontweight': 'bold'})
+    
+    Abc, aBc, ABc, abC, AbC, aBC, ABC = row['A'], row['B'], row['AB'], row['C'], row['AC'], row['BC'], row['ABC']
+    v = venn3_unweighted(
+        subsets = (Abc, aBc, ABc, abC, AbC, aBC, ABC),
+        set_labels=('Clinical', 'Mapping', 'Extension'),
+        ax=axes[i][j],
+        subset_areas=[5] * 7
+    )
+    
+    if Abc + aBc + ABc + abC + AbC + aBC > 0:
+        axes[i][j].title.set_color('red')
+
+    k += 1
+    
+while k < rows * cols:
+    i, j = k // cols, k % cols
+    fig.delaxes(axes[i][j])
+    
+    k += 1
+    
+overlaps = overlaps.rename(
+    columns = {
+        'A': 'Clinical',
+        'B': 'Mapping',
+        'C': 'Extension',
+        'AB': 'Clinical/Mapping',
+        'AC': 'Clinical/Extension',
+        'BC': 'Mapping/Extension',
+        'ABC': 'Clinical/Mapping/Extension'
+    }
+)
+
+
+# -
+
+# #### Results
+
+# +
+# check both conditions
+
+is_cond1_success = row_counts['cond1'].all()
+is_cond2_success = overlaps['cond2'].all()
+is_success = is_cond1_success & is_cond2_success
+
+display(
+    HTML(f'''
+        <h3>
+            Check Status:&nbsp <span style="color: {'red' if not is_success else 'green'}">{'Failed' if not is_success else 'Success'}</span>
+        </h3>
+        {'<p>Check/run the <a href="https://github.com/all-of-us/curation/blob/develop/data_steward/cdr_cleaner/cleaning_rules/clean_mapping.py">CleanMappingExtTables</a> cleaning rule as a potential remedy.</p>' if not is_success else ''}
+        <div>
+            <h5>
+                Condition 1 (All row counts are equal):&nbsp     
+                <span style="color: {'red' if not is_cond1_success else 'green'}">
+                    {'Failed' if not is_cond1_success else 'Success'}
+                </span>
+                {row_counts.to_html()}
+            </h5>
+        </div>
+        <br/>
+        <div>
+            <h5>
+                Condition 2 (All sets of primary keys are the same):&nbsp 
+                <span style="color: {'red' if not is_cond2_success else 'green'}">
+                    {'Failed' if not is_cond2_success else 'Success'}
+                </span>
+                {overlaps.to_html()}
+            </h5>
+        </div>
+    '''))
+fig
+# -
 
 # ---
 # # Manual Review
