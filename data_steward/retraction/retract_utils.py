@@ -13,12 +13,8 @@ from constants.utils import bq as bq_consts
 LOGGER = logging.getLogger(__name__)
 
 DEID_REGEX = re.compile(r'.*deid.*')
-RELEASE_REGEX = re.compile(r'R\d{4}Q\dR\d')
-RELEASE_TAG_REGEX = re.compile(r'\d{4}[qQ]\d[rR]\d')
 SANDBOX_REGEX = re.compile(r'.*sandbox.*')
 STAGING_REGEX = re.compile(r'.*staging.*')
-VOCABULARY_REGEX = re.compile(r'vocabulary.*')
-VALIDATION_REGEX = re.compile(r'validation.*')
 
 
 def get_table_id(table):
@@ -217,6 +213,15 @@ def is_ehr_dataset(dataset_id):
     :return: Boolean indicating if the dataset is an ehr dataset
     """
     return EHR in dataset_id and not UNIONED_EHR in dataset_id
+
+
+def is_rdr_dataset(dataset_id):
+    """
+    Returns boolean indicating if a dataset is a rdr dataset using the dataset_id
+    :param dataset_id: Identifies the dataset
+    :return: Boolean indicating if the dataset is an ehr dataset
+    """
+    return RDR in dataset_id
 
 
 def is_sandbox_dataset(dataset_id):
