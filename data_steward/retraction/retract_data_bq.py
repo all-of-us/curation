@@ -278,31 +278,36 @@ def get_retraction_queries_fact_relationship(client: BigQueryClient,
 
 
 def get_tables_to_retract(client: BigQueryClient,
-                          dataset_id,
+                          dataset,
                           hpo_id='',
                           retraction_type=None) -> list:
-    tables_to_retract = []
+    """
+    Creates a list of tables that need retraction in the dataset.
+    :param client: BigQuery client
+    :param dataset: Dataset to run retraction on
+    :param hpo_id: HPO ID that needs retraction. Mandatory only for EHR dataset.
+    :param retraction_type: only_ehr or rdr_and_ehr
+    :return: list of table names for retraction
+    """
+    LOGGER.info(f'Checking tables to retract in {client.project}.{dataset}...')
 
-    if is_ehr_dataset(dataset_id):
+    if is_ehr_dataset(dataset):
         tables_to_retract = [
             f'{prefix}_{table}' for prefix, table in
             product([hpo_id, UNIONED_EHR], TABLES_FOR_RETRACTION |
                     set(NON_EHR_TABLES))
-            if client.table_exists(f'{prefix}_{table}', dataset_id)
+            if client.table_exists(f'{prefix}_{table}', dataset)
         ]
-
     else:
-        LOGGER.info(
-            f'Checking existing tables for {client.project}.{dataset_id}')
         existing_tables = [
             table.table_id
-            for table in client.list_tables(f'{client.project}.{dataset_id}')
+            for table in client.list_tables(f'{client.project}.{dataset}')
         ]
         tables_to_retract = [
             table for table in existing_tables
             if any(col.name == 'person_id' for col in client.get_table(
-                f'{client.project}.{dataset_id}.{table}').schema) and
-            not skip_retraction(client, dataset_id, table, retraction_type)
+                f'{client.project}.{dataset}.{table}').schema) and
+            not skip_retraction(client, dataset, table, retraction_type)
         ]
 
     return tables_to_retract
@@ -310,9 +315,8 @@ def get_tables_to_retract(client: BigQueryClient,
 
 def skip_retraction(client, dataset_id, table_id, retraction_type) -> bool:
     """
-    Some tables have person_id but do not need to be retracted depending on
-    how we want to retract. This function returns True if the table does not
-    need to be retracted.
+    Some tables have person_id but do not need retraction depending on how we
+    want to retract. This function returns True if the table does not need retraction.
 
     :param client: BigQuery client
     :param dataset_id: dataset to run retraction for
@@ -406,7 +410,7 @@ def run_bq_retraction(project_id,
         # Argument hpo_id is effective for only EHR dataset.
         hpo_id = hpo_id if is_ehr_dataset(dataset) else ''
 
-        # retraction type should be none for ehr and unioned_ehr datasets
+        # retraction type should be set none for ehr and unioned_ehr datasets
         retraction_type = None if is_ehr_dataset(dataset) or is_unioned_dataset(
             dataset) else retraction_type
 
@@ -429,13 +433,7 @@ if __name__ == '__main__':
     pipeline_logging.configure(logging.DEBUG, add_console_handler=True)
 
     parser = argparse.ArgumentParser(
-        description=
-        'Runs retraction on specified datasets or all datasets in project. '
-        'Uses project_id, sandbox_dataset_id and pid_table_id to determine '
-        'the pids to retract data for. The pid_table_id needs to contain '
-        'the person_id and research_id columns specified in the schema above, '
-        'but research_id can be null if deid has not been run yet. '
-        'hpo_id is used to retract from ehr datasets.',
+        description='Runs retraction based on the specified conditions.',
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('-p',
                         '--project_id',
