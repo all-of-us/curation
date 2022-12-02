@@ -40,7 +40,7 @@ from cdr_cleaner.args_parser import add_kwargs_to_args
 from common import CDR_SCOPES
 from constants.cdr_cleaner.clean_cdr import DATA_CONSISTENCY
 from gcloud.bq import BigQueryClient
-from retraction.retract_data_bq import run_bq_retraction, RETRACTION_EHR, RETRACTION_RDR_EHR
+from retraction.retract_data_bq import run_bq_retraction, RETRACTION_ONLY_EHR, RETRACTION_RDR_EHR
 from retraction.retract_utils import is_fitbit_dataset
 from utils import pipeline_logging
 from utils.auth import get_impersonation_credentials
@@ -56,7 +56,7 @@ def ask_if_continue() -> None:
         RuntimeError: Abort the execution when the user wishes not to continue.
     """
     confirm = input("\nContinue? [Y/N]:\n\n")
-    if confirm != 'Y':
+    if confirm.upper() != 'Y':
         raise RuntimeError('User canceled the execution.')
 
 
@@ -90,7 +90,7 @@ def create_dataset(client: BigQueryClient, src_dataset_name: str,
     dataset_name = get_new_dataset_name(src_dataset_name, release_tag)
 
     LOGGER.info(
-        f"Creating an empty dataset {dataset_name} for {src_dataset_name}.")
+        f"Creating an empty dataset {dataset_name} from {src_dataset_name}.")
 
     src_dataset_obj = client.get_dataset(src_dataset_name)
     src_desc, src_labels = src_dataset_obj.description, src_dataset_obj.labels
@@ -247,7 +247,7 @@ def parse_args(raw_args=None):
         help=(
             f'Identifies whether all data needs to be removed, including RDR, '
             f'or if RDR data needs to be kept intact. Can take the values '
-            f'"{RETRACTION_RDR_EHR}" or "{RETRACTION_EHR}".'),
+            f'"{RETRACTION_RDR_EHR}" or "{RETRACTION_ONLY_EHR}".'),
         required=True)
     parser.add_argument(
         '--skip_sandboxing',
@@ -337,7 +337,6 @@ def main():
     ask_if_continue()
     run_bq_retraction(project_id,
                       sb_dataset,
-                      project_id,
                       lookup_table,
                       args.hpo_id,
                       new_datasets,

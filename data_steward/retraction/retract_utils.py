@@ -170,7 +170,7 @@ def is_deid_dataset(dataset_id):
     :param dataset_id: Identifies the dataset
     :return: Boolean indicating if the dataset is a deid dataset
     """
-    return DEID in dataset_id
+    return DEID in dataset_id or is_deid_fitbit_dataset(dataset_id)
 
 
 def is_combined_dataset(dataset_id):
