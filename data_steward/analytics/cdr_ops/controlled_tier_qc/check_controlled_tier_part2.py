@@ -1163,7 +1163,7 @@ else:
 era_tables = ['dose_era', 'drug_era', 'condition_era']
 
 
-def my_query(table_era):
+def query_template(table_era):
 
     query = JINJA_ENV.from_string("""
       WITH df1 AS (
@@ -1188,7 +1188,7 @@ def my_query(table_era):
 
 result = []
 for table in era_tables:
-    result.append(my_query(table))
+    result.append(query_template(table))
 
 n = len(era_tables)
 res2 = pd.DataFrame(result[0])
