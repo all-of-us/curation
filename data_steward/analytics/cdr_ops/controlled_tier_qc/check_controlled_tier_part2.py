@@ -1168,7 +1168,7 @@ def my_query(table_era):
     query = JINJA_ENV.from_string("""
       WITH df1 AS (
         SELECT 
-          person_id
+          `{{table_era}}_id`
         FROM
           `{{project_id}}.{{ct_dataset}}.{{table_era}}`
       )
