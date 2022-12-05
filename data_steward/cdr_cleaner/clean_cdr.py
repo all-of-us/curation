@@ -40,6 +40,7 @@ from cdr_cleaner.cleaning_rules.deid.survey_conduct_dateshift import SurveyCondu
 from cdr_cleaner.cleaning_rules.remove_ehr_data_without_consent import RemoveEhrDataWithoutConsent
 from cdr_cleaner.cleaning_rules.generate_ext_tables import GenerateExtTables
 from cdr_cleaner.cleaning_rules.truncate_fitbit_data import TruncateFitbitData
+from cdr_cleaner.cleaning_rules.truncate_era_tables import TruncateEraTables
 from cdr_cleaner.cleaning_rules.clean_digital_health_data import CleanDigitalHealthStatus
 from cdr_cleaner.cleaning_rules.remove_non_existing_pids import RemoveNonExistingPids
 from cdr_cleaner.cleaning_rules.drop_invalid_sleep_level_records import DropInvalidSleepLevelRecords
@@ -299,6 +300,7 @@ CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     ),  # Should run after GenerateExtTables and before CleanMappingExtTables
     (PopulateSurveyConductExt,),
     (QRIDtoRID,),  # Should run before any row suppression rules
+    (TruncateEraTables,),
     (NullPersonBirthdate,),
     (TableSuppression,),
     (ControlledTierReplacedConceptSuppression,),

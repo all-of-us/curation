@@ -1157,6 +1157,67 @@ else:
         },
         ignore_index=True)
 
+# # Query 16:  All the data from drug_era, condition_era, and dose_era tables is dropped
+
+# +
+era_tables = ['dose_era', 'drug_era', 'condition_era']
+
+
+def query_template(table_era):
+
+    query = JINJA_ENV.from_string("""
+      WITH df1 AS (
+        SELECT 
+          `{{table_era}}_id`
+        FROM
+          `{{project_id}}.{{ct_dataset}}.{{table_era}}`
+      )
+
+      SELECT
+        '{{table_era}}' as table_name, COUNT(*) AS row_count
+      FROM
+        df1
+    """)
+
+    q = query.render(project_id=project_id,
+                     ct_dataset=ct_dataset,
+                     table_era=table_era)
+    df2 = execute(client, q)
+    return df2
+
+
+result = []
+for table in era_tables:
+    result.append(query_template(table))
+
+n = len(era_tables)
+res2 = pd.DataFrame(result[0])
+
+for x in range(1, n):
+    res2 = res2.append(result[x])
+
+res2 = res2.sort_values(by='row_count', ascending=False)
+
+if res2['row_count'].sum() == 0:
+    df = df.append(
+        {
+            'query':
+                'Query16: All the data from drug_era, condition_era, and dose_era tables is dropped',
+            'result':
+                'PASS'
+        },
+        ignore_index=True)
+else:
+    df = df.append(
+        {
+            'query':
+                'Query16: All the data from drug_era, condition_era, and dose_era tables is dropped',
+            'result':
+                'Failure'
+        },
+        ignore_index=True)
+res2
+
 # # final summary result
 
 
