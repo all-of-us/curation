@@ -407,6 +407,12 @@ def run_bq_retraction(project_id,
                 f'Cannot run retraction for RDR dataset when {RETRACTION_ONLY_EHR} is specified.'
             )
 
+        if is_fitbit_dataset(
+                dataset) and retraction_type == RETRACTION_ONLY_EHR:
+            raise ValueError(
+                f'Cannot run retraction for FITBIT dataset when {RETRACTION_ONLY_EHR} is specified.'
+            )
+
         # Argument hpo_id is effective for only EHR dataset.
         hpo_id = hpo_id if is_ehr_dataset(dataset) else ''
 
