@@ -1,0 +1,133 @@
+from argparse import ArgumentParser
+from datetime import datetime
+import json
+import logging
+
+from google.cloud import bigquery
+
+from common import CDR_SCOPES
+from gcloud.bq import BigQueryClient
+from utils import pipeline_logging
+from utils import auth
+
+LOGGER = logging.getLogger(__name__)
+
+
+def load_rdr_table(client: BigQueryClient, src_uri: str, table_id: str,
+                   schema_filepath: str) -> None:
+
+    # load the schema from the filepath
+    with open(schema_filepath, 'r') as fp:
+        fields = json.load(fp)
+
+    # turn into SchemaField list
+    schema_list = [
+        bigquery.SchemaField.from_api_repr(field) for field in fields
+    ]
+
+    job_config = bigquery.LoadJobConfig(
+        schema=schema_list,
+        skip_leading_rows=1,
+        # The source format defaults to CSV, so the line below is optional.
+        source_format=bigquery.SourceFormat.CSV,
+        field_delimiter=',',
+        allow_quoted_newlines=True,
+        quote_character='"',
+        write_disposition=bigquery.job.WriteDisposition.WRITE_EMPTY)
+
+    # create job id prefix from filename
+    filename = src_uri.split('/')[-1]
+    job_id_prefix = f'{filename[:15]}_{datetime.now().strftime("%Y%m%d_%H%M%S")}'
+
+    load_job = client.load_table_from_uri(
+        src_uri, table_id, job_config=job_config,
+        job_id_prefix=job_id_prefix)  # Make an API request.
+
+    LOGGER.info(
+        f"load job created and awaiting result.  job_id prefix is: '{job_id_prefix}'"
+    )
+    load_job.result()  # Waits for the job to complete.
+
+    destination_table = client.get_table(table_id)  # Make an API request.
+    LOGGER.info(f"Loaded {destination_table.num_rows} rows into '{table_id}'.")
+
+
+def parse_args(raw_args=None):
+    """
+    Accept incoming arguments for parsing that may be shared by multiple modules.
+    """
+    parser = ArgumentParser(
+        description='Arguments pertaining to a file in the RDR bucket')
+
+    parser.add_argument('--filepath',
+                        action='store',
+                        dest='bucket_filepath',
+                        help=('Full filepath including the '
+                              '"gs://" portion of the name'),
+                        required=True)
+    parser.add_argument('--run_as',
+                        action='store',
+                        dest='run_as_email',
+                        help='Service account email address to impersonate',
+                        required=True)
+    parser.add_argument('--curation_project',
+                        action='store',
+                        dest='curation_project_id',
+                        help='Curation project to load the RDR data into.',
+                        required=True)
+    parser.add_argument('-l',
+                        '--console_log',
+                        dest='console_log',
+                        action='store_true',
+                        required=False,
+                        help='Log to the console as well as to a file.')
+    parser.add_argument('--destination_table',
+                        action='store',
+                        dest='fq_dest_table',
+                        required=True,
+                        help=('Fully qualified GCP table name.  '
+                              'It cannot exist prior to running '
+                              'the script.  Should follow GCP '
+                              'naming conventions.  Formatted as: '
+                              'project_id.dataset_id.table_name'))
+    parser.add_argument('--schema_filepath',
+                        action='store',
+                        dest='schema_filepath',
+                        required=False,
+                        help=('Path to a schema file that contians a list of '
+                              'dictionary field definitions.  The dictionary '
+                              'should minimally define the field name, '
+                              'mode, type, and description.  Yes, description '
+                              'is required.  If you dont know it, make '
+                              'a reasonable description yourself.'))
+
+    return parser.parse_args(raw_args)
+
+
+def main(raw_args=None):
+    """
+    Run a full RDR import.
+
+    Assumes you are passing arguments either via command line or a
+    list.
+    """
+    args = parse_args(raw_args)
+
+    pipeline_logging.configure(level=logging.INFO,
+                               add_console_handler=args.console_log)
+
+    # get credentials and create client
+    impersonation_creds = auth.get_impersonation_credentials(
+        args.run_as_email, CDR_SCOPES)
+
+    bq_client = BigQueryClient(args.curation_project_id,
+                               credentials=impersonation_creds)
+
+    load_rdr_table(bq_client,
+                   args.bucket_filepath,
+                   args.fq_dest_table,
+                   schema_filepath=args.schema_filepath)
+
+
+if __name__ == '__main__':
+    main()
