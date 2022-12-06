@@ -14,8 +14,8 @@
 
 # + tags=["parameters"]
 project_id = ''
-q3_dataset = ''
-q4_dataset = ''
+old_dataset = ''
+new_dataset = ''
 lookup_table = ''
 lookup_table_dataset = ''
 is_deidentified = 'true'
@@ -37,7 +37,7 @@ person_id_tables_query = JINJA_ENV.from_string('''
 SELECT table_name
 FROM `{{project}}.{{new_dataset}}.INFORMATION_SCHEMA.COLUMNS`
 WHERE column_name = "person_id"
-''').render(project=project_id, new_dataset=q4_dataset)
+''').render(project=project_id, new_dataset=new_dataset)
 pid_table_list = client.query(person_id_tables_query).to_dataframe().get(
     'table_name').to_list()
 pid_table_list
@@ -79,7 +79,7 @@ queries_list = []
 for table in pid_table_list:
     queries_list.append(
         table_check_query.render(project=project_id,
-                                 dataset=q4_dataset,
+                                 dataset=new_dataset,
                                  table_name=table))
 
 union_all_query = '\nUNION ALL\n'.join(queries_list)
@@ -97,19 +97,19 @@ execute(client, retraction_status_query)
 table_row_counts_query = JINJA_ENV.from_string('''
 SELECT
 \'{{table_name}}\' as table_name,
-q4r3_minus_aian_row_count,
-q4r4_row_count,
-case when q4r3_minus_aian_row_count = q4r4_row_count then 'OK'
-  when q4r3_minus_aian_row_count is null AND q4r4_row_count is null then 'OK'
-  when q4r3_minus_aian_row_count is NOT NULL and q4r4_row_count is null then 'PROBLEM'
-  when q4r3_minus_aian_row_count is NULL and q4r4_row_count is not NULL then 'PROBLEM'
+newr3_minus_aian_row_count,
+newr4_row_count,
+case when newr3_minus_aian_row_count = newr4_row_count then 'OK'
+  when newr3_minus_aian_row_count is null AND newr4_row_count is null then 'OK'
+  when newr3_minus_aian_row_count is NOT NULL and newr4_row_count is null then 'PROBLEM'
+  when newr3_minus_aian_row_count is NULL and newr4_row_count is not NULL then 'PROBLEM'
   ELSE 'PROBLEM'
   end as table_count_status FROM
 (SELECT
-  count(*) as q4r3_minus_aian_row_count,
+  count(*) as newr3_minus_aian_row_count,
   (select row_count
   from `{{project}}.{{new_dataset}}.__TABLES__` 
-  WHERE table_id = \'{{table_name}}\') as q4r4_row_count
+  WHERE table_id = \'{{table_name}}\') as newr4_row_count
 FROM
   `{{project}}.{{old_dataset}}.{{table_name}}` as tb
 left JOIN
@@ -120,8 +120,8 @@ row_counts_queries_list = []
 for table in pid_table_list:
     row_counts_queries_list.append(
         table_row_counts_query.render(project=project_id,
-                                      old_dataset=q3_dataset,
-                                      new_dataset=q4_dataset,
+                                      old_dataset=old_dataset,
+                                      new_dataset=new_dataset,
                                       table_name=table))
 
 row_counts_union_all_query = '\nUNION ALL\n'.join(row_counts_queries_list)
@@ -144,10 +144,8 @@ on fr.fact_id_1 = p1.person_id
 RIGHT JOIN pids p2
 on fr.fact_id_2 = p2.person_id
 where domain_concept_id_1 = 56
-''').render(project=project_id, dataset=q4_dataset)
-retraction_status_query = (f'{rids_query}\n{fact_relationship_retraction}'
-                           if is_deidentified == 'true' else
-                           f'{pids_query}\n{fact_relationship_retraction}')
+''').render(project=project_id, dataset=new_dataset)
+retraction_status_query = f'{pids_query}\n{fact_relationship_retraction}'
 if is_deidentified == 'false':
     execute(client, retraction_status_query)
 
@@ -175,7 +173,7 @@ for table in pid_table_list:
     if table in CDM_TABLES and table not in ('death', 'person'):
         mapping_queries_list.append(
             mapping_ext_check_query.render(project=project_id,
-                                           dataset=q4_dataset,
+                                           dataset=new_dataset,
                                            table_name=table,
                                            mapping_table=mapping_table_for(
                                                table, is_deidentified)))
