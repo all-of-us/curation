@@ -236,7 +236,7 @@ def is_sandbox_dataset(dataset_id):
 def is_staging_dataset(dataset_id):
     """
     # NOTE This function is not referenced anywhere.
-    
+
     Returns boolean indicating if a dataset is a staging dataset using the dataset_id
     :param dataset_id: Identifies the dataset
     :return: Boolean indicating if the dataset is a staging dataset
