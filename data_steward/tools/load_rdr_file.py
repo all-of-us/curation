@@ -1,4 +1,4 @@
-from argparse import ArgumentParser
+from argparse import ArgumentParser, Namespace
 from datetime import datetime
 import json
 import logging
@@ -15,7 +15,14 @@ LOGGER = logging.getLogger(__name__)
 
 def load_rdr_table(client: BigQueryClient, src_uri: str, table_id: str,
                    schema_filepath: str) -> None:
+    """
+    Load a table from the RDR bucket as a service account with permissions.
 
+    The person running the script must have
+    Service Account Token creator permissions.  This function will read the
+    JSON schema file, build SchemaField objects, create a LoadJobConfig, and
+    load the file into the fully qualified table name if the table does not exist.
+    """
     # load the schema from the filepath
     with open(schema_filepath, 'r') as fp:
         fields = json.load(fp)
@@ -44,7 +51,7 @@ def load_rdr_table(client: BigQueryClient, src_uri: str, table_id: str,
         job_id_prefix=job_id_prefix)  # Make an API request.
 
     LOGGER.info(
-        f"load job created and awaiting result.  job_id prefix is: '{job_id_prefix}'"
+        f"Load job created and awaiting result.\njob_id prefix is: '{job_id_prefix}'"
     )
     load_job.result()  # Waits for the job to complete.
 
@@ -52,9 +59,12 @@ def load_rdr_table(client: BigQueryClient, src_uri: str, table_id: str,
     LOGGER.info(f"Loaded {destination_table.num_rows} rows into '{table_id}'.")
 
 
-def parse_args(raw_args=None):
+def parse_args(raw_args=None) -> Namespace:
     """
     Accept incoming arguments for parsing that may be shared by multiple modules.
+
+    return:  a Namespace object applicable to loading ad hoc files from the
+    secure bucket.
     """
     parser = ArgumentParser(
         description='Arguments pertaining to a file in the RDR bucket')
@@ -104,12 +114,12 @@ def parse_args(raw_args=None):
     return parser.parse_args(raw_args)
 
 
-def main(raw_args=None):
+def main(raw_args=None) -> None:
     """
-    Run a full RDR import.
+    Load an ad hoc file from an RDR owned and secured bucket.
 
-    Assumes you are passing arguments either via command line or a
-    list.
+    Assumes you are passing arguments either via command line or as
+    a list from another module.
     """
     args = parse_args(raw_args)
 
@@ -127,6 +137,8 @@ def main(raw_args=None):
                    args.bucket_filepath,
                    args.fq_dest_table,
                    schema_filepath=args.schema_filepath)
+
+    LOGGER.info("Returned from loading ad hoc file from RDR bucket.  Done.")
 
 
 if __name__ == '__main__':
