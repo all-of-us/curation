@@ -7,8 +7,10 @@ from google.cloud import bigquery
 
 from common import CDR_SCOPES
 from gcloud.bq import BigQueryClient
-from utils import pipeline_logging
 from utils import auth
+from utils import pipeline_logging
+from utils.parameter_validators import (validate_bq_project_name,
+                                        validate_qualified_bq_tablename)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -83,6 +85,7 @@ def parse_args(raw_args=None) -> Namespace:
     parser.add_argument('--curation_project',
                         action='store',
                         dest='curation_project_id',
+                        type=validate_bq_project_name,
                         help='Curation project to load the RDR data into.',
                         required=True)
     parser.add_argument('-l',
@@ -95,6 +98,7 @@ def parse_args(raw_args=None) -> Namespace:
                         action='store',
                         dest='fq_dest_table',
                         required=True,
+                        type=validate_qualified_bq_tablename,
                         help=('Fully qualified GCP table name.  '
                               'It cannot exist prior to running '
                               'the script.  Should follow GCP '
@@ -103,7 +107,7 @@ def parse_args(raw_args=None) -> Namespace:
     parser.add_argument('--schema_filepath',
                         action='store',
                         dest='schema_filepath',
-                        required=False,
+                        required=True,
                         help=('Path to a schema file that contians a list of '
                               'dictionary field definitions.  The dictionary '
                               'should minimally define the field name, '
