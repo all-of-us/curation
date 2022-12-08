@@ -138,6 +138,11 @@ BEGIN
   IF num_violated_tables > 0 THEN
     SELECT CONCAT("[WARN]person_id violation found in ", num_violated_tables, " tables. Check id_violations_in_lower_envs for investigation.");
   ELSE
+    EXECUTE IMMEDIATE CONCAT(
+    "  INSERT INTO `", proj_prod, ".", admin_dataset, ".id_violations_in_lower_envs`",
+    "  VALUES ",
+    "  ('No violation found', 'No violation found', 'No violation found', 0, '-', CURRENT_DATE())"  
+    ); 
     SELECT "[INFO]No person_id violation found.";
   END IF;
 
