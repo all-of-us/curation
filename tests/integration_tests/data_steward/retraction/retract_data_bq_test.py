@@ -25,35 +25,26 @@ LOOKUP_TMPL = JINJA_ENV.from_string("""
 INSERT INTO `{{project}}.{{dataset}}.pid_rid_to_retract` 
     (person_id, research_id)
 VALUES
-    (2, 102), (4, 104)
+    (102, 202), (104, 204)
 """)
 
 PERSON_TMPL = JINJA_ENV.from_string("""
 INSERT INTO `{{project}}.{{dataset}}.{{table}}` 
     (person_id, gender_concept_id, year_of_birth, race_concept_id, ethnicity_concept_id)
 VALUES
-    (1, 0, 2001, 0, 0), 
-    (2, 0, 2001, 0, 0), 
-    (3, 0, 2001, 0, 0), 
-    (4, 0, 2001, 0, 0),
-    (101, 0, 2001, 0, 0), 
-    (102, 0, 2001, 0, 0), 
-    (103, 0, 2001, 0, 0), 
-    (104, 0, 2001, 0, 0)
+{% for pers_id in person_ids %}
+    ({{pers_id}}, 0, 2001, 0, 0){% if not loop.last -%}, {% endif %}
+{% endfor %}
 """)
 
 OBSERVATION_TMPL = JINJA_ENV.from_string("""
 INSERT INTO `{{project}}.{{dataset}}.{{table}}` 
     (observation_id, person_id, observation_concept_id, observation_date, observation_type_concept_id)
 VALUES
-    (111, 1, 0, date('2021-01-01'), 0), (112, 1, 0, date('2021-01-01'), 0), 
-    (121, 2, 0, date('2021-01-01'), 0), (122, 2, 0, date('2021-01-01'), 0), 
-    (131, 3, 0, date('2021-01-01'), 0), (132, 3, 0, date('2021-01-01'), 0), 
-    (141, 4, 0, date('2021-01-01'), 0), (142, 4, 0, date('2021-01-01'), 0),
-    (1111, 101, 0, date('2021-01-01'), 0), (1112, 101, 0, date('2021-01-01'), 0),
-    (1121, 102, 0, date('2021-01-01'), 0), (1122, 102, 0, date('2021-01-01'), 0),
-    (1131, 103, 0, date('2021-01-01'), 0), (1132, 103, 0, date('2021-01-01'), 0), 
-    (1141, 104, 0, date('2021-01-01'), 0), (1142, 104, 0, date('2021-01-01'), 0)
+{% for pers_id in person_ids %}
+    ({{pers_id}}1, {{pers_id}}, 0, date('2021-01-01'), 0),
+    ({{pers_id}}2, {{pers_id}}, 0, date('2021-01-01'), 0){% if not loop.last -%}, {% endif %}
+{% endfor %}
 """)
 
 EHR_TMPL = JINJA_ENV.from_string("""
@@ -65,59 +56,61 @@ MAPPING_OBSERVATION_TMPL = JINJA_ENV.from_string("""
 INSERT INTO `{{project}}.{{dataset}}._mapping_observation` 
     (observation_id, src_hpo_id)
 VALUES
-    (111, 'rdr'), 
-    (112, 'rdr'), 
-    (121, 'rdr'), 
-    (122, 'rdr'), 
-    (131, 'fake'), 
-    (132, 'fake'), 
-    (141, 'fake'), 
-    (142, 'fake'), 
-    (1111, 'bar'), 
-    (1112, 'bar'), 
-    (1121, 'bar'), 
-    (1122, 'bar'), 
-    (1131, 'bar'), 
-    (1132, 'bar'), 
-    (1141, 'bar'), 
-    (1142, 'bar')
+{% for obs_id in observation_ids %}
+    {% if 1011 <= obs_id <= 1022 -%}({{obs_id}}, 'rdr')
+    {% else %}({{obs_id}}, 'foo'){% endif %}
+    {% if not loop.last -%}, {% endif %}
+{% endfor %}
 """)
 
 OBSERVATION_EXT_TMPL = JINJA_ENV.from_string("""
 INSERT INTO `{{project}}.{{dataset}}.observation_ext` 
     (observation_id, src_id)
 VALUES
-    (111, 'EHR foo'), 
-    (112, 'EHR foo'), 
-    (121, 'EHR foo'), 
-    (122, 'EHR foo'), 
-    (131, 'EHR foo'), 
-    (132, 'EHR foo'), 
-    (141, 'EHR foo'), 
-    (142, 'EHR foo'),
-    (1111, 'PPI/PM'), 
-    (1112, 'PPI/PM'), 
-    (1121, 'PPI/PM'), 
-    (1122, 'PPI/PM'), 
-    (1131, 'EHR 130'), 
-    (1132, 'EHR 130'), 
-    (1141, 'EHR 130'), 
-    (1142, 'EHR 130')
+{% for obs_id in observation_ids %}
+    {% if 2011 <= obs_id <= 2022 -%}({{obs_id}}, 'PPI/PM')
+    {% else %}({{obs_id}}, 'EHR 999'){% endif %}
+    {% if not loop.last -%}, {% endif %}
+{% endfor %}
 """)
 
 ACTIVITY_SUMMARY_TMPL = JINJA_ENV.from_string("""
 INSERT INTO `{{project}}.{{dataset}}.activity_summary` 
     (person_id)
 VALUES
-    (1), 
-    (2), 
-    (3), 
-    (4), 
-    (101), 
-    (102),
-    (103),
-    (104)
+{% for pers_id in person_ids %}
+    ({{pers_id}}){% if not loop.last -%}, {% endif %}
+{% endfor %}
 """)
+
+PERS_ALL = [101, 102, 103, 104, 201, 202, 203, 204]
+PERS_PID_TO_RETRACT = [102, 104]
+PERS_RID_TO_RETRACT = [202, 204]
+PERS_PID_RETRACTED = [101, 103, 201, 202, 203, 204]
+PERS_RID_RETRACTED = [101, 102, 103, 104, 201, 203]
+
+OBS_ALL = [
+    1011, 1012, 1021, 1022, 1031, 1032, 1041, 1042, 2011, 2012, 2021, 2022,
+    2031, 2032, 2041, 2042
+]
+OBS_PID_TO_RETRACT = [1021, 1022, 1041, 1042]
+OBS_RID_TO_RETRACT = [2021, 2022, 2041, 2042]
+OBS_PID_TO_RETRACT_ONLY_EHR = [1041, 1042]
+OBS_RID_TO_RETRACT_ONLY_EHR = [2041, 2042]
+OBS_PID_RETRACTED = [
+    1011, 1012, 1031, 1032, 2011, 2012, 2021, 2022, 2031, 2032, 2041, 2042
+]
+OBS_RID_RETRACTED = [
+    1011, 1012, 1021, 1022, 1031, 1032, 1041, 1042, 2011, 2012, 2031, 2032
+]
+OBS_PID_RETRACTED_ONLY_EHR = [
+    1011, 1012, 1021, 1022, 1031, 1032, 2011, 2012, 2021, 2022, 2031, 2032,
+    2041, 2042
+]
+OBS_RID_RETRACTED_ONLY_EHR = [
+    1011, 1012, 1021, 1022, 1031, 1032, 1041, 1042, 2011, 2012, 2021, 2022,
+    2031, 2032
+]
 
 
 def mock_patch_decorator_bundle(*decorators):
@@ -227,23 +220,28 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
         ]:
             insert_pers = PERSON_TMPL.render(project=self.project_id,
                                              dataset=dataset,
-                                             table=PERSON)
+                                             table=PERSON,
+                                             person_ids=PERS_ALL)
             insert_obs = OBSERVATION_TMPL.render(project=self.project_id,
                                                  dataset=dataset,
-                                                 table=OBSERVATION)
+                                                 table=OBSERVATION,
+                                                 person_ids=PERS_ALL)
             queries.extend([insert_pers, insert_obs])
 
         # mapping tables/ ext tables
         insert_map_obs = MAPPING_OBSERVATION_TMPL.render(
-            project=self.project_id, dataset=self.combined_id)
+            project=self.project_id,
+            dataset=self.combined_id,
+            observation_ids=OBS_ALL)
         insert_obs_ext = OBSERVATION_EXT_TMPL.render(project=self.project_id,
-                                                     dataset=self.deid_id)
+                                                     dataset=self.deid_id,
+                                                     observation_ids=OBS_ALL)
         queries.extend([insert_map_obs, insert_obs_ext])
 
         # fitbit tables
         for dataset in [self.deid_id, self.fitbit_id]:
             insert_activity_summary = ACTIVITY_SUMMARY_TMPL.render(
-                project=self.project_id, dataset=dataset)
+                project=self.project_id, dataset=dataset, person_ids=PERS_ALL)
             queries.extend([insert_activity_summary])
 
         # tables for EHR dataset
@@ -295,17 +293,16 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
                           self.client)
 
         self.assertRowIDsMatch(f'{project_id}.{dataset_id}.{PERSON}',
-                               ['person_id'], [1, 3, 101, 102, 103, 104])
+                               ['person_id'], PERS_PID_RETRACTED)
         self.assertRowIDsMatch(
             f'{project_id}.{sandbox_id}.retract_{dataset_id}_{PERSON}',
-            ['person_id'], [2, 4])
+            ['person_id'], PERS_PID_TO_RETRACT)
 
-        self.assertRowIDsMatch(f'{project_id}.{dataset_id}.{OBSERVATION}', [
-            'observation_id'
-        ], [111, 112, 131, 132, 1111, 1112, 1121, 1122, 1131, 1132, 1141, 1142])
+        self.assertRowIDsMatch(f'{project_id}.{dataset_id}.{OBSERVATION}',
+                               ['observation_id'], OBS_PID_RETRACTED)
         self.assertRowIDsMatch(
             f'{project_id}.{sandbox_id}.retract_{dataset_id}_{OBSERVATION}',
-            ['observation_id'], [121, 122, 141, 142])
+            ['observation_id'], OBS_PID_TO_RETRACT)
 
     @mock_patch_bundle
     def test_unioned_ehr_only_ehr(self, mock_get_dataset_type, mock_is_rdr,
@@ -334,17 +331,16 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
                           self.client)
 
         self.assertRowIDsMatch(f'{project_id}.{dataset_id}.{PERSON}',
-                               ['person_id'], [1, 3, 101, 102, 103, 104])
+                               ['person_id'], PERS_PID_RETRACTED)
         self.assertRowIDsMatch(
             f'{project_id}.{sandbox_id}.retract_{dataset_id}_{PERSON}',
-            ['person_id'], [2, 4])
+            ['person_id'], PERS_PID_TO_RETRACT)
 
-        self.assertRowIDsMatch(f'{project_id}.{dataset_id}.{OBSERVATION}', [
-            'observation_id'
-        ], [111, 112, 131, 132, 1111, 1112, 1121, 1122, 1131, 1132, 1141, 1142])
+        self.assertRowIDsMatch(f'{project_id}.{dataset_id}.{OBSERVATION}',
+                               ['observation_id'], OBS_PID_RETRACTED)
         self.assertRowIDsMatch(
             f'{project_id}.{sandbox_id}.retract_{dataset_id}_{OBSERVATION}',
-            ['observation_id'], [121, 122, 141, 142])
+            ['observation_id'], OBS_PID_TO_RETRACT)
 
     @mock_patch_bundle
     def test_combined_rdr_and_ehr(self, mock_get_dataset_type, mock_is_rdr,
@@ -372,17 +368,16 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
                           self.client)
 
         self.assertRowIDsMatch(f'{project_id}.{dataset_id}.{PERSON}',
-                               ['person_id'], [1, 3, 101, 102, 103, 104])
+                               ['person_id'], PERS_PID_RETRACTED)
         self.assertRowIDsMatch(
             f'{project_id}.{sandbox_id}.retract_{dataset_id}_{PERSON}',
-            ['person_id'], [2, 4])
+            ['person_id'], PERS_PID_TO_RETRACT)
 
-        self.assertRowIDsMatch(f'{project_id}.{dataset_id}.{OBSERVATION}', [
-            'observation_id'
-        ], [111, 112, 131, 132, 1111, 1112, 1121, 1122, 1131, 1132, 1141, 1142])
+        self.assertRowIDsMatch(f'{project_id}.{dataset_id}.{OBSERVATION}',
+                               ['observation_id'], OBS_PID_RETRACTED)
         self.assertRowIDsMatch(
             f'{project_id}.{sandbox_id}.retract_{dataset_id}_{OBSERVATION}',
-            ['observation_id'], [121, 122, 141, 142])
+            ['observation_id'], OBS_PID_TO_RETRACT)
 
     @mock_patch_bundle
     def test_combined_only_ehr(self, mock_get_dataset_type, mock_is_rdr,
@@ -411,19 +406,16 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
                           self.client)
 
         self.assertRowIDsMatch(f'{project_id}.{dataset_id}.{PERSON}',
-                               ['person_id'], [1, 2, 3, 4, 101, 102, 103, 104])
+                               ['person_id'], PERS_ALL)
         self.assertTableDoesNotExist(
             f'{self.project_id}.{self.sandbox_id}.retract_{dataset_id}_{PERSON}'
         )
 
         self.assertRowIDsMatch(f'{project_id}.{dataset_id}.{OBSERVATION}',
-                               ['observation_id'], [
-                                   111, 112, 121, 122, 131, 132, 1111, 1112,
-                                   1121, 1122, 1131, 1132, 1141, 1142
-                               ])
+                               ['observation_id'], OBS_PID_RETRACTED_ONLY_EHR)
         self.assertRowIDsMatch(
             f'{project_id}.{sandbox_id}.retract_{dataset_id}_{OBSERVATION}',
-            ['observation_id'], [141, 142])
+            ['observation_id'], OBS_PID_TO_RETRACT_ONLY_EHR)
 
     @mock_patch_bundle
     def test_deid_rdr_and_ehr(self, mock_get_dataset_type, mock_is_rdr,
@@ -450,23 +442,22 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
                           self.client)
 
         self.assertRowIDsMatch(f'{project_id}.{dataset_id}.{PERSON}',
-                               ['person_id'], [1, 2, 3, 4, 101, 103])
+                               ['person_id'], PERS_RID_RETRACTED)
         self.assertRowIDsMatch(
             f'{project_id}.{sandbox_id}.retract_{dataset_id}_{PERSON}',
-            ['person_id'], [102, 104])
+            ['person_id'], PERS_RID_TO_RETRACT)
 
-        self.assertRowIDsMatch(
-            f'{project_id}.{dataset_id}.{OBSERVATION}', ['observation_id'],
-            [111, 112, 121, 122, 131, 132, 141, 142, 1111, 1112, 1131, 1132])
+        self.assertRowIDsMatch(f'{project_id}.{dataset_id}.{OBSERVATION}',
+                               ['observation_id'], OBS_RID_RETRACTED)
         self.assertRowIDsMatch(
             f'{project_id}.{sandbox_id}.retract_{dataset_id}_{OBSERVATION}',
-            ['observation_id'], [1121, 1122, 1141, 1142])
+            ['observation_id'], OBS_RID_TO_RETRACT)
 
         self.assertRowIDsMatch(f'{project_id}.{dataset_id}.{ACTIVITY_SUMMARY}',
-                               ['person_id'], [1, 2, 3, 4, 101, 103])
+                               ['person_id'], PERS_RID_RETRACTED)
         self.assertRowIDsMatch(
             f'{project_id}.{sandbox_id}.retract_{dataset_id}_{ACTIVITY_SUMMARY}',
-            ['person_id'], [102, 104])
+            ['person_id'], PERS_RID_TO_RETRACT)
 
     @mock_patch_bundle
     def test_deid_only_ehr(self, mock_get_dataset_type, mock_is_rdr,
@@ -496,22 +487,19 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
                           self.client)
 
         self.assertRowIDsMatch(f'{project_id}.{dataset_id}.{PERSON}',
-                               ['person_id'], [1, 2, 3, 4, 101, 102, 103, 104])
+                               ['person_id'], PERS_ALL)
         self.assertTableDoesNotExist(
             f'{self.project_id}.{self.sandbox_id}.retract_{dataset_id}_{PERSON}'
         )
 
         self.assertRowIDsMatch(f'{project_id}.{dataset_id}.{OBSERVATION}',
-                               ['observation_id'], [
-                                   111, 112, 121, 122, 131, 132, 141, 142, 1111,
-                                   1112, 1121, 1122, 1131, 1132
-                               ])
+                               ['observation_id'], OBS_RID_RETRACTED_ONLY_EHR)
         self.assertRowIDsMatch(
             f'{project_id}.{sandbox_id}.retract_{dataset_id}_{OBSERVATION}',
-            ['observation_id'], [1141, 1142])
+            ['observation_id'], OBS_RID_TO_RETRACT_ONLY_EHR)
 
         self.assertRowIDsMatch(f'{project_id}.{dataset_id}.{ACTIVITY_SUMMARY}',
-                               ['person_id'], [1, 2, 3, 4, 101, 102, 103, 104])
+                               ['person_id'], PERS_ALL)
         self.assertTableDoesNotExist(
             f'{project_id}.{sandbox_id}.retract_{dataset_id}_{ACTIVITY_SUMMARY}'
         )
@@ -541,17 +529,16 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
                           self.client)
 
         self.assertRowIDsMatch(f'{project_id}.{dataset_id}.{PERSON}',
-                               ['person_id'], [1, 3, 101, 102, 103, 104])
+                               ['person_id'], PERS_PID_RETRACTED)
         self.assertRowIDsMatch(
             f'{project_id}.{sandbox_id}.retract_{dataset_id}_{PERSON}',
-            ['person_id'], [2, 4])
+            ['person_id'], PERS_PID_TO_RETRACT)
 
-        self.assertRowIDsMatch(f'{project_id}.{dataset_id}.{OBSERVATION}', [
-            'observation_id'
-        ], [111, 112, 131, 132, 1111, 1112, 1121, 1122, 1131, 1132, 1141, 1142])
+        self.assertRowIDsMatch(f'{project_id}.{dataset_id}.{OBSERVATION}',
+                               ['observation_id'], OBS_PID_RETRACTED)
         self.assertRowIDsMatch(
             f'{project_id}.{sandbox_id}.retract_{dataset_id}_{OBSERVATION}',
-            ['observation_id'], [121, 122, 141, 142])
+            ['observation_id'], OBS_PID_TO_RETRACT)
 
     @mock_patch_bundle
     def test_rdr_only_ehr(self, mock_get_dataset_type, mock_is_rdr, mock_is_ehr,
@@ -605,43 +592,34 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
 
         self.assertRowIDsMatch(
             f'{project_id}.{dataset_id}.{self.hpo_id}_{PERSON}', ['person_id'],
-            [1, 3, 101, 102, 103, 104])
+            PERS_PID_RETRACTED)
         self.assertRowIDsMatch(
             f'{project_id}.{sandbox_id}.retract_{dataset_id}_{self.hpo_id}_{PERSON}',
-            ['person_id'], [2, 4])
+            ['person_id'], PERS_PID_TO_RETRACT)
 
         self.assertRowIDsMatch(
             f'{project_id}.{dataset_id}.{UNIONED_EHR}_{PERSON}', ['person_id'],
-            [1, 3, 101, 102, 103, 104])
+            PERS_PID_RETRACTED)
         self.assertRowIDsMatch(
             f'{project_id}.{sandbox_id}.retract_{dataset_id}_{UNIONED_EHR}_{PERSON}',
-            ['person_id'], [2, 4])
+            ['person_id'], PERS_PID_TO_RETRACT)
 
         self.assertRowIDsMatch(
             f'{project_id}.{dataset_id}.{self.hpo_id}_{OBSERVATION}',
-            ['observation_id'], [
-                111, 112, 131, 132, 1111, 1112, 1121, 1122, 1131, 1132, 1141,
-                1142
-            ])
+            ['observation_id'], OBS_PID_RETRACTED)
         self.assertRowIDsMatch(
             f'{project_id}.{sandbox_id}.retract_{dataset_id}_{self.hpo_id}_{OBSERVATION}',
-            ['observation_id'], [121, 122, 141, 142])
+            ['observation_id'], OBS_PID_TO_RETRACT)
 
         self.assertRowIDsMatch(
             f'{project_id}.{dataset_id}.{UNIONED_EHR}_{OBSERVATION}',
-            ['observation_id'], [
-                111, 112, 131, 132, 1111, 1112, 1121, 1122, 1131, 1132, 1141,
-                1142
-            ])
+            ['observation_id'], OBS_PID_RETRACTED)
         self.assertRowIDsMatch(
             f'{project_id}.{sandbox_id}.retract_{dataset_id}_{UNIONED_EHR}_{OBSERVATION}',
-            ['observation_id'], [121, 122, 141, 142])
+            ['observation_id'], OBS_PID_TO_RETRACT)
 
         self.assertRowIDsMatch(f'{project_id}.{dataset_id}.foo_{OBSERVATION}',
-                               ['observation_id'], [
-                                   111, 112, 121, 122, 131, 132, 141, 142, 1111,
-                                   1112, 1121, 1122, 1131, 1132, 1141, 1142
-                               ])
+                               ['observation_id'], OBS_ALL)
         self.assertTableDoesNotExist(
             f'{project_id}.{sandbox_id}.retract_{dataset_id}_foo_{OBSERVATION}',
         )
@@ -674,43 +652,34 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
 
         self.assertRowIDsMatch(
             f'{project_id}.{dataset_id}.{self.hpo_id}_{PERSON}', ['person_id'],
-            [1, 3, 101, 102, 103, 104])
+            PERS_PID_RETRACTED)
         self.assertRowIDsMatch(
             f'{project_id}.{sandbox_id}.retract_{dataset_id}_{self.hpo_id}_{PERSON}',
-            ['person_id'], [2, 4])
+            ['person_id'], PERS_PID_TO_RETRACT)
 
         self.assertRowIDsMatch(
             f'{project_id}.{dataset_id}.{UNIONED_EHR}_{PERSON}', ['person_id'],
-            [1, 3, 101, 102, 103, 104])
+            PERS_PID_RETRACTED)
         self.assertRowIDsMatch(
             f'{project_id}.{sandbox_id}.retract_{dataset_id}_{UNIONED_EHR}_{PERSON}',
-            ['person_id'], [2, 4])
+            ['person_id'], PERS_PID_TO_RETRACT)
 
         self.assertRowIDsMatch(
             f'{project_id}.{dataset_id}.{self.hpo_id}_{OBSERVATION}',
-            ['observation_id'], [
-                111, 112, 131, 132, 1111, 1112, 1121, 1122, 1131, 1132, 1141,
-                1142
-            ])
+            ['observation_id'], OBS_PID_RETRACTED)
         self.assertRowIDsMatch(
             f'{project_id}.{sandbox_id}.retract_{dataset_id}_{self.hpo_id}_{OBSERVATION}',
-            ['observation_id'], [121, 122, 141, 142])
+            ['observation_id'], OBS_PID_TO_RETRACT)
 
         self.assertRowIDsMatch(
             f'{project_id}.{dataset_id}.{UNIONED_EHR}_{OBSERVATION}',
-            ['observation_id'], [
-                111, 112, 131, 132, 1111, 1112, 1121, 1122, 1131, 1132, 1141,
-                1142
-            ])
+            ['observation_id'], OBS_PID_RETRACTED)
         self.assertRowIDsMatch(
             f'{project_id}.{sandbox_id}.retract_{dataset_id}_{UNIONED_EHR}_{OBSERVATION}',
-            ['observation_id'], [121, 122, 141, 142])
+            ['observation_id'], OBS_PID_TO_RETRACT)
 
         self.assertRowIDsMatch(f'{project_id}.{dataset_id}.foo_{OBSERVATION}',
-                               ['observation_id'], [
-                                   111, 112, 121, 122, 131, 132, 141, 142, 1111,
-                                   1112, 1121, 1122, 1131, 1132, 1141, 1142
-                               ])
+                               ['observation_id'], OBS_ALL)
         self.assertTableDoesNotExist(
             f'{project_id}.{sandbox_id}.retract_{dataset_id}_foo_{OBSERVATION}',
         )
@@ -763,11 +732,11 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
                           self.client)
 
         self.assertRowIDsMatch(f'{project_id}.{dataset_id}.{ACTIVITY_SUMMARY}',
-                               ['person_id'], [1, 3, 101, 102, 103, 104])
+                               ['person_id'], PERS_PID_RETRACTED)
 
         self.assertRowIDsMatch(
             f'{project_id}.{sandbox_id}.retract_{dataset_id}_{ACTIVITY_SUMMARY}',
-            ['person_id'], [2, 4])
+            ['person_id'], PERS_PID_TO_RETRACT)
 
     @mock_patch_bundle
     def test_fitbit_only_ehr(self, mock_get_dataset_type, mock_is_rdr,
@@ -820,11 +789,11 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
                           self.client)
 
         self.assertRowIDsMatch(f'{project_id}.{dataset_id}.{ACTIVITY_SUMMARY}',
-                               ['person_id'], [1, 2, 3, 4, 101, 103])
+                               ['person_id'], PERS_RID_RETRACTED)
 
         self.assertRowIDsMatch(
             f'{project_id}.{sandbox_id}.retract_{dataset_id}_{ACTIVITY_SUMMARY}',
-            ['person_id'], [102, 104])
+            ['person_id'], PERS_RID_TO_RETRACT)
 
     @mock_patch_bundle
     def test_deid_fitbit_only_ehr(self, mock_get_dataset_type, mock_is_rdr,
