@@ -16,8 +16,6 @@ You need to re-run the dataset creation script after source datasets are retract
     - [CT] antibody quest dataset
 
 Original Issues: DC-2801, DC-2865
-TODO: Improve code coverage for retracting with dataset_list = 'all_datasets'.
-    DC-2801 did not use 'all_datasets' option for retraction. This needs to be tested.
 """
 
 # Python imports

@@ -82,13 +82,10 @@ def get_src_id(mapping_type):
 def get_datasets_list(client, dataset_ids_list):
     """
     Returns list of dataset_ids on which to perform retraction
-
-    Returns list of rdr, ehr, unioned, combined and deid dataset_ids and excludes sandbox and staging datasets
     :param client: a BigQueryClient which has project containing datasets to retract from
-    :param dataset_ids_list: string of datasets to retract from separated by a space. If set to 'all_datasets',
+    :param dataset_ids_list: list of datasets to retract from. If set to 'all_datasets',
         retracts from all datasets. If set to 'none', skips retraction from BigQuery datasets
-    :return: List of dataset_ids
-    :raises: AttributeError if dataset_ids_str does not allow .split()
+    :return: List of dataset_ids to retract from
     """
     all_dataset_ids = [
         dataset.dataset_id for dataset in list(client.list_datasets())
@@ -96,14 +93,14 @@ def get_datasets_list(client, dataset_ids_list):
 
     if not dataset_ids_list or dataset_ids_list == [consts.NONE]:
         dataset_ids = []
-        LOGGER.info(
+        LOGGER.warning(
             "No datasets specified. Defaulting to empty list. Expect bucket only retraction."
         )
     elif dataset_ids_list == [consts.ALL_DATASETS]:
         dataset_ids = all_dataset_ids
         LOGGER.info(
-            f"All datasets are specified. Setting dataset_ids to all datasets in project: {client.project}"
-        )
+            f"All datasets are specified. Setting dataset_ids to all datasets in project: {client.project}\n"
+            f"Found datasets to retract from: {', '.join(dataset_ids)}")
     else:
         # only consider datasets that exist in the project
         dataset_ids = [
@@ -114,14 +111,6 @@ def get_datasets_list(client, dataset_ids_list):
             f"Datasets specified and existing in project {client.project}: {dataset_ids}"
         )
 
-    # consider datasets containing PPI/EHR data, excluding sandbox/staging datasets
-    dataset_ids = [
-        dataset_id for dataset_id in dataset_ids
-        if get_dataset_type(dataset_id) != OTHER and
-        not is_sandbox_dataset(dataset_id)
-    ]
-
-    LOGGER.info(f"Found datasets to retract from: {', '.join(dataset_ids)}")
     return dataset_ids
 
 
@@ -165,6 +154,7 @@ def is_deid_dataset(dataset_id):
     Returns boolean indicating if a dataset is a deid dataset using the dataset_id
     :param dataset_id: Identifies the dataset
     :return: Boolean indicating if the dataset is a deid dataset
+    NOTE It returns True for deid_xyz datasets too (e.g. deid_base_sandbox)
     """
     return DEID in dataset_id or is_deid_fitbit_dataset(dataset_id)
 
@@ -174,6 +164,7 @@ def is_combined_dataset(dataset_id):
     Returns boolean indicating if a dataset is a combined dataset using the dataset_id
     :param dataset_id: Identifies the dataset
     :return: Boolean indicating if the dataset is a combined dataset
+    NOTE It returns True for combined_xyz datasets too (e.g. combined_staging)
     """
     return COMBINED in dataset_id
 
@@ -193,6 +184,7 @@ def is_fitbit_dataset(dataset_id):
     Returns boolean indicating if a dataset is a fitbit dataset using the dataset_id
     :param dataset_id: Identifies the dataset
     :return: Boolean indicating if the dataset is a fitbit dataset
+    NOTE It returns True for fitbit_xyz datasets too (e.g. fitbit_sandbox)
     """
     return FITBIT in dataset_id
 
@@ -202,6 +194,7 @@ def is_unioned_dataset(dataset_id):
     Returns boolean indicating if a dataset is a unioned dataset using the dataset_id
     :param dataset_id: Identifies the dataset
     :return: Boolean indicating if the dataset is a unioned dataset
+    NOTE It returns True for unioned_ehr_xyz datasets too (e.g. unioned_ehr_sandbox)
     """
     return UNIONED_EHR in dataset_id
 
@@ -211,6 +204,7 @@ def is_ehr_dataset(dataset_id):
     Returns boolean indicating if a dataset is an ehr dataset using the dataset_id
     :param dataset_id: Identifies the dataset
     :return: Boolean indicating if the dataset is an ehr dataset
+    NOTE It returns True for ehr_xyz datasets too (e.g. ehr_sandbox)
     """
     return EHR in dataset_id and not UNIONED_EHR in dataset_id
 
@@ -220,6 +214,7 @@ def is_rdr_dataset(dataset_id):
     Returns boolean indicating if a dataset is a rdr dataset using the dataset_id
     :param dataset_id: Identifies the dataset
     :return: Boolean indicating if the dataset is an ehr dataset
+    NOTE It returns True for rdr_xyz datasets too (e.g. rdr_sandbox)
     """
     return RDR in dataset_id
 
