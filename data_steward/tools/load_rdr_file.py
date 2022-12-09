@@ -10,7 +10,10 @@ from gcloud.bq import BigQueryClient
 from utils import auth
 from utils import pipeline_logging
 from utils.parameter_validators import (validate_bq_project_name,
-                                        validate_qualified_bq_tablename)
+                                        validate_qualified_bq_tablename,
+                                        validate_file_exists,
+                                        validate_email_address,
+                                        validate_bucket_filepath)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -71,15 +74,17 @@ def parse_args(raw_args=None) -> Namespace:
     parser = ArgumentParser(
         description='Arguments pertaining to a file in the RDR bucket')
 
-    parser.add_argument('--filepath',
+    parser.add_argument('--bucket_filepath',
                         action='store',
                         dest='bucket_filepath',
+                        type=validate_bucket_filepath,
                         help=('Full filepath including the '
                               '"gs://" portion of the name'),
                         required=True)
     parser.add_argument('--run_as',
                         action='store',
                         dest='run_as_email',
+                        type=validate_email_address,
                         help='Service account email address to impersonate',
                         required=True)
     parser.add_argument('--curation_project',
@@ -108,6 +113,7 @@ def parse_args(raw_args=None) -> Namespace:
                         action='store',
                         dest='schema_filepath',
                         required=True,
+                        type=validate_file_exists,
                         help=('Path to a schema file that contians a list of '
                               'dictionary field definitions.  The dictionary '
                               'should minimally define the field name, '
