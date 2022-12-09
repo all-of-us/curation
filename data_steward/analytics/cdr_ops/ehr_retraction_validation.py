@@ -13,13 +13,13 @@
 # ---
 
 # + tags=["parameters"]
-project_id = ''
-old_dataset = ''
-new_dataset = ''
-lookup_table = ''
-lookup_table_dataset = ''
-is_deidentified = 'true'
-run_as = ''
+project_id: str = ""  # identifies the project where datasets are located
+old_dataset: str = ""  # identifies the dataset name where participants are to be retracted
+new_dataset: str = ""  # identifies the dataset name after retraction
+lookup_table: str = ""  # lookup table name where the pids and rids needs to be retracted are stored
+lookup_table_dataset: str = ""  # the sandbox dataset where lookup tasble is located
+is_deidentified: str = "true"  # identifies if a dataset is pre or post deid
+run_as: str = ""  # service account email to impersonate
 # -
 
 from common import JINJA_ENV, CDM_TABLES
@@ -42,6 +42,10 @@ pid_tables = client.query(person_id_tables_query).to_dataframe().get(
     'table_name').to_list()
 pid_table_list = [
     table for table in pid_tables
+    # Ignoring person and survey_conduct as we copy both the tables as-is from RDR
+    # and we don't have to tertact from them
+    # Ignoring Death as it does not have mapping table and below validation queries rely on mapping table.
+    # A seperate check for death table is added to verify retraction.
     if table in CDM_TABLES and table not in ('person', 'death',
                                              'survey_conduct')
 ]
@@ -67,8 +71,14 @@ WITH
 # -
 
 
-def mapping_table_for(table, is_deidentified):
-    if is_deidentified == 'false':
+def provenance_table_for(table: str, is_deidentified: str = 'false'):
+    """
+    Returns a mapping table for a domain table.
+    
+    :param table: identifies domain table name
+    :param is_deidentified: identifies if a the dataset is de-identified choose b/e true/false.
+    """
+    if is_deidentified.lower() == 'false':
         return f'_mapping_{table}'
     else:
         return f'{table}_ext'
@@ -80,20 +90,27 @@ def mapping_table_for(table, is_deidentified):
 table_check_query = JINJA_ENV.from_string('''
 SELECT
   \'{{table_name}}\' AS table_name,
-  Case when count(tb.person_id) = 0 then 'OK'
-  ELSE 
-  'PROBLEM' end as retraction_status
+
+  CASE
+    WHEN COUNT(tb.person_id) = 0 THEN 'OK'
+  ELSE
+  'PROBLEM'
+END
+  AS ehr_retraction_status
 FROM
-  `{{project}}.{{dataset}}.{{table_name}}` as tb
-inner JOIN
-  pids as p
-USING(person_id)
-inner join `{{project}}.{{dataset}}.{{mapping_table}}` mp
-on tb.{{table_name}}_id = mp.{{table_name}}_id
-{% if is_deidentified == 'false' %}
-where src_hpo_id != 'rdr' AND src_hpo_id is not null
+  `{{project}}.{{dataset}}.{{table_name}}` AS tb
+INNER JOIN
+  pids AS p
+USING
+  (person_id)
+INNER JOIN
+  `{{project}}.{{dataset}}.{{mapping_table}}` mp
+ON
+  tb.{{table_name}}_id = mp.{{table_name}}_id
+{% if is_deidentified.lower() == 'false' %}
+WHERE REGEXP_CONTAINS(src_hpo_id, r'(?i)ehr') AND src_hpo_id is not null
 {% else %}
-where src_id != 'PPI/PM' AND src_id is not null
+WHERE REGEXP_CONTAINS(src_id, r'(?i)EHR Site') AND src_id is not null
 {% endif %}
 ''')
 queries_list = []
@@ -103,7 +120,7 @@ for table in pid_table_list:
                                  dataset=new_dataset,
                                  table_name=table,
                                  is_deidentified=is_deidentified,
-                                 mapping_table=mapping_table_for(
+                                 mapping_table=provenance_table_for(
                                      table, is_deidentified)))
 
 union_all_query = '\nUNION ALL\n'.join(queries_list)
@@ -119,32 +136,49 @@ execute(client, retraction_status_query)
 # +
 table_row_counts_query = JINJA_ENV.from_string('''
 SELECT
-\'{{table_name}}\' as table_name,
+  \'{{table_name}}\' as table_name,
 old_minus_ehr_row_count,
-new_row_count,
-case when old_minus_ehr_row_count = new_row_count then 'OK'
-  when old_minus_ehr_row_count is null AND new_row_count is null then 'OK'
-  when old_minus_ehr_row_count is NOT NULL and new_row_count is null then 'PROBLEM'
-  when old_minus_ehr_row_count is NULL and new_row_count is not NULL then 'PROBLEM'
-  ELSE 'PROBLEM'
-  end as table_count_status FROM
-(SELECT
-  count(*) as old_minus_ehr_row_count,
-  (select count(*)
-  from `{{project}}.{{new_dataset}}.{{table_name}}` tb1
-  inner join pids using (person_id) 
-  ) as new_row_count
-FROM
-  `{{project}}.{{old_dataset}}.{{table_name}}` as tb
-INNER JOIN
-  pids as p USING (person_id)
-INNER join `{{project}}.{{old_dataset}}.{{mapping_table}}` mp
-on tb.{{table_name}}_id = mp.{{table_name}}_id
-{% if is_deidentified == 'true' %}
-where src_id = 'PPI/PM'
-{% else %}
-where src_hpo_id = 'rdr'
-{% endif %}
+  new_row_count,
+  CASE
+    WHEN old_minus_ehr_row_count = new_row_count THEN 'OK'
+    WHEN old_minus_ehr_row_count IS NULL
+  AND new_row_count IS NULL THEN 'OK'
+    WHEN old_minus_ehr_row_count IS NOT NULL AND new_row_count IS NULL THEN 'PROBLEM'
+    WHEN old_minus_ehr_row_count IS NULL
+  AND new_row_count IS NOT NULL THEN 'PROBLEM'
+  ELSE
+  'PROBLEM'
+END
+  AS table_count_status
+FROM (
+  SELECT
+    COUNT(*) AS old_minus_ehr_row_count,
+    (
+    SELECT
+      COUNT(*)
+    FROM
+      `{{project}}.{{new_dataset}}.{{table_name}}` tb1
+    INNER JOIN
+      pids
+    USING
+      (person_id) ) AS new_row_count
+  FROM
+    `{{project}}.{{old_dataset}}.{{table_name}}` AS tb
+  INNER JOIN
+    pids AS p
+  USING
+    (person_id)
+  INNER JOIN
+    `{{project}}.{{old_dataset}}.{{mapping_table}}` mp
+  USING
+    ({{table_name}}_id) 
+  {% if is_deidentified.lower() == 'true' %}
+  WHERE
+    src_id = 'PPI/PM' 
+  {% else %}
+  WHERE
+    src_hpo_id = 'rdr' 
+  {% endif %} 
 )
 ''')
 row_counts_queries_list = []
@@ -155,7 +189,7 @@ for table in pid_table_list:
                                       new_dataset=new_dataset,
                                       is_deidentified=is_deidentified,
                                       table_name=table,
-                                      mapping_table=mapping_table_for(
+                                      mapping_table=provenance_table_for(
                                           table, is_deidentified)))
 
 row_counts_union_all_query = '\nUNION ALL\n'.join(row_counts_queries_list)
@@ -171,15 +205,19 @@ execute(client, retraction_table_count_query)
 # +
 table_check_query = JINJA_ENV.from_string('''
 SELECT
-  'Death' AS table_name,
-  Case when count(tb.person_id) = 0 then 'OK'
-  ELSE 
-  'PROBLEM' end as retraction_status
+  'death' AS table_name,
+  CASE
+    WHEN COUNT(tb.person_id) = 0 THEN 'OK'
+  ELSE
+  'PROBLEM'
+END
+  AS retraction_status
 FROM
-  `{{project}}.{{dataset}}.death` as tb
-right JOIN
-  pids as p
-USING(person_id)
+  `{{project}}.{{dataset}}.death` AS tb
+RIGHT JOIN
+  pids AS p
+USING
+  (person_id)
 ''')
 death_query = table_check_query.render(project=project_id,
                                        dataset=new_dataset,
@@ -195,11 +233,22 @@ execute(client, retraction_status_query)
 
 # +
 mapping_ext_check_query = JINJA_ENV.from_string('''
-select \'{{mapping_table}}\' as table_name,
-count(*) as extra_mapping_records
-from `{{project}}.{{dataset}}.{{table_name}}` d
-right join `{{project}}.{{dataset}}.{{mapping_table}}` mp using({{table_name}}_id)
-where d.{{table_name}}_id is null
+SELECT
+  \'{{mapping_table}}\' as table_name,
+CASE
+    WHEN COUNT(*) = 0 THEN 'OK'
+  ELSE
+  'PROBLEM'
+END
+  AS clean_mapping_status
+FROM
+  `{{project}}.{{dataset}}.{{table_name}}` d
+RIGHT JOIN
+  `{{project}}.{{dataset}}.{{mapping_table}}` mp
+USING
+  ({{table_name}}_id)
+WHERE
+  d.{{table_name}}_id IS null
 ''')
 
 mapping_queries_list = []
@@ -209,7 +258,7 @@ for table in pid_table_list:
             mapping_ext_check_query.render(project=project_id,
                                            dataset=new_dataset,
                                            table_name=table,
-                                           mapping_table=mapping_table_for(
+                                           mapping_table=provenance_table_for(
                                                table, is_deidentified)))
 mapping_check = '\nUNION ALL\n'.join(mapping_queries_list)
 execute(client, mapping_check)
