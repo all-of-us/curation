@@ -381,7 +381,8 @@ def skip_dataset_retraction(dataset_id, hpo_id, retraction_type) -> bool:
             LOGGER.warning(f'{msg_skip}{msg_no_ehr}')
             return True
 
-        if get_dataset_type(dataset_id) == OTHER or is_sandbox_dataset(dataset_id):
+        if get_dataset_type(dataset_id) == OTHER or is_sandbox_dataset(
+                dataset_id):
             LOGGER.warning(f'{msg_skip}{msg_no_mapping}')
             return True
 
