@@ -21,7 +21,8 @@ from resources import mapping_table_for
 from retraction.retract_utils import (get_datasets_list, get_dataset_type,
                                       is_combined_dataset, is_deid_dataset,
                                       is_ehr_dataset, is_fitbit_dataset,
-                                      is_rdr_dataset, is_unioned_dataset)
+                                      is_rdr_dataset, is_sandbox_dataset,
+                                      is_unioned_dataset)
 from constants.retraction.retract_utils import (NONE, PERSON_ID, RESEARCH_ID)
 
 LOGGER = logging.getLogger(__name__)
@@ -200,7 +201,8 @@ def get_retraction_queries(client: BigQueryClient,
                 is_deid=is_deid_dataset(dataset_id))
             queries.append(q)
 
-    if not is_deid_dataset(dataset_id) and not is_fitbit_dataset(dataset_id):
+    if not is_deid_dataset(dataset_id) and not is_fitbit_dataset(
+            dataset_id) and not is_sandbox_dataset(dataset_id):
         queries.extend(
             get_retraction_queries_fact_relationship(client, dataset_id,
                                                      sb_dataset_id,
@@ -379,7 +381,7 @@ def skip_dataset_retraction(dataset_id, hpo_id, retraction_type) -> bool:
             LOGGER.warning(f'{msg_skip}{msg_no_ehr}')
             return True
 
-        if get_dataset_type(dataset_id) == OTHER:
+        if get_dataset_type(dataset_id) == OTHER or is_sandbox_dataset(dataset_id):
             LOGGER.warning(f'{msg_skip}{msg_no_mapping}')
             return True
 

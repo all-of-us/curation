@@ -233,6 +233,7 @@ RDR = 'rdr'
 RELEASE = 'release'
 FITBIT = 'fitbit'
 OTHER = 'other'
+SANDBOX = 'sandbox'
 
 MAPPING = 'mapping'
 MAPPING_PREFIX = '_mapping_'

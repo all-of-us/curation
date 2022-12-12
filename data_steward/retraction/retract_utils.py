@@ -5,7 +5,7 @@ import logging
 
 # Project imports
 from common import (COMBINED, DEID, EHR, EXT, EXT_SUFFIX, FITBIT, MAPPING,
-                    MAPPING_PREFIX, OTHER, RDR, UNIONED_EHR)
+                    MAPPING_PREFIX, OTHER, RDR, SANDBOX, UNIONED_EHR)
 from gcloud.bq import BigQueryClient
 from constants.retraction import retract_utils as consts
 from constants.utils import bq as bq_consts
@@ -13,7 +13,6 @@ from constants.utils import bq as bq_consts
 LOGGER = logging.getLogger(__name__)
 
 DEID_REGEX = re.compile(r'.*deid.*')
-SANDBOX_REGEX = re.compile(r'.*sandbox.*')
 STAGING_REGEX = re.compile(r'.*staging.*')
 
 
@@ -225,7 +224,7 @@ def is_sandbox_dataset(dataset_id):
     :param dataset_id: Identifies the dataset
     :return: Boolean indicating if the dataset is a sandbox dataset
     """
-    return bool(re.match(SANDBOX_REGEX, dataset_id))
+    return SANDBOX in dataset_id
 
 
 def is_staging_dataset(dataset_id):

@@ -10,7 +10,8 @@ from unittest import mock
 
 # Project imports
 from app_identity import PROJECT_ID
-from common import ACTIVITY_SUMMARY, JINJA_ENV, OBSERVATION, OTHER, PERSON, UNIONED_EHR
+from common import (ACTIVITY_SUMMARY, COMBINED, DEID, EHR, FITBIT, JINJA_ENV,
+                    OBSERVATION, OTHER, PERSON, RDR, UNIONED_EHR)
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 from retraction.retract_data_bq import (NONE, RETRACTION_ONLY_EHR,
                                         RETRACTION_RDR_EHR, get_datasets_list,
@@ -130,12 +131,14 @@ def mock_patch_decorator_bundle(*decorators):
 
 
 mock_patch_bundle = mock_patch_decorator_bundle(
+    mock.patch('retraction.retract_data_bq.is_sandbox_dataset'),
     mock.patch('retraction.retract_data_bq.is_fitbit_dataset'),
     mock.patch('retraction.retract_data_bq.is_deid_dataset'),
     mock.patch('retraction.retract_data_bq.is_combined_dataset'),
     mock.patch('retraction.retract_data_bq.is_unioned_dataset'),
     mock.patch('retraction.retract_data_bq.is_ehr_dataset'),
-    mock.patch('retraction.retract_data_bq.is_rdr_dataset'))
+    mock.patch('retraction.retract_data_bq.is_rdr_dataset'),
+    mock.patch('retraction.retract_data_bq.get_dataset_type'))
 
 
 class RetractDataBqTest(BaseTest.BigQueryTestBase):
@@ -269,9 +272,11 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
         self.load_test_data(queries)
 
     @mock_patch_bundle
-    def test_unioned_ehr_rdr_and_ehr(self, mock_is_rdr, mock_is_ehr,
-                                     mock_is_unioned, mock_is_combined,
-                                     mock_is_deid, mock_is_fitbit):
+    def test_retract_unioned_ehr_rdr_and_ehr(self, mock_get_dataset_type,
+                                             mock_is_rdr, mock_is_ehr,
+                                             mock_is_unioned, mock_is_combined,
+                                             mock_is_deid, mock_is_fitbit,
+                                             mock_is_sandbox):
         """
         Test for unioned ehr dataset.
         run_bq_retraction with retraction_type = 'rdr_and_ehr'.
@@ -279,10 +284,11 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
         """
         for mock_ in [
                 mock_is_rdr, mock_is_ehr, mock_is_unioned, mock_is_combined,
-                mock_is_deid, mock_is_fitbit
+                mock_is_deid, mock_is_fitbit, mock_is_sandbox
         ]:
             mock_.return_value = False
         mock_is_unioned.return_value = True
+        mock_get_dataset_type.return_value = UNIONED_EHR
 
         project_id, sandbox_id, dataset_id = self.project_id, self.sandbox_id, self.unioned_ehr_id
 
@@ -302,9 +308,11 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
             ['observation_id'], OBS_PID_TO_RETRACT)
 
     @mock_patch_bundle
-    def test_unioned_ehr_only_ehr(self, mock_is_rdr, mock_is_ehr,
-                                  mock_is_unioned, mock_is_combined,
-                                  mock_is_deid, mock_is_fitbit):
+    def test_retract_unioned_ehr_only_ehr(self, mock_get_dataset_type,
+                                          mock_is_rdr, mock_is_ehr,
+                                          mock_is_unioned, mock_is_combined,
+                                          mock_is_deid, mock_is_fitbit,
+                                          mock_is_sandbox):
         """
         Test for unioned ehr dataset.
         run_bq_retraction with retraction_type = 'only_ehr'.
@@ -313,10 +321,11 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
         """
         for mock_ in [
                 mock_is_rdr, mock_is_ehr, mock_is_unioned, mock_is_combined,
-                mock_is_deid, mock_is_fitbit
+                mock_is_deid, mock_is_fitbit, mock_is_sandbox
         ]:
             mock_.return_value = False
         mock_is_unioned.return_value = True
+        mock_get_dataset_type.return_value = UNIONED_EHR
 
         project_id, sandbox_id, dataset_id = self.project_id, self.sandbox_id, self.unioned_ehr_id
 
@@ -336,9 +345,11 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
             ['observation_id'], OBS_PID_TO_RETRACT)
 
     @mock_patch_bundle
-    def test_combined_rdr_and_ehr(self, mock_is_rdr, mock_is_ehr,
-                                  mock_is_unioned, mock_is_combined,
-                                  mock_is_deid, mock_is_fitbit):
+    def test_retract_combined_rdr_and_ehr(self, mock_get_dataset_type,
+                                          mock_is_rdr, mock_is_ehr,
+                                          mock_is_unioned, mock_is_combined,
+                                          mock_is_deid, mock_is_fitbit,
+                                          mock_is_sandbox):
         """
         Test for combined dataset.
         run_bq_retraction with retraction_type = 'rdr_and_ehr'.
@@ -346,10 +357,11 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
         """
         for mock_ in [
                 mock_is_rdr, mock_is_ehr, mock_is_unioned, mock_is_combined,
-                mock_is_deid, mock_is_fitbit
+                mock_is_deid, mock_is_fitbit, mock_is_sandbox
         ]:
             mock_.return_value = False
         mock_is_combined.return_value = True
+        mock_get_dataset_type.return_value = COMBINED
 
         project_id, sandbox_id, dataset_id = self.project_id, self.sandbox_id, self.combined_id
 
@@ -369,8 +381,10 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
             ['observation_id'], OBS_PID_TO_RETRACT)
 
     @mock_patch_bundle
-    def test_combined_only_ehr(self, mock_is_rdr, mock_is_ehr, mock_is_unioned,
-                               mock_is_combined, mock_is_deid, mock_is_fitbit):
+    def test_retract_combined_only_ehr(self, mock_get_dataset_type, mock_is_rdr,
+                                       mock_is_ehr, mock_is_unioned,
+                                       mock_is_combined, mock_is_deid,
+                                       mock_is_fitbit, mock_is_sandbox):
         """
         Test for combined dataset.
         run_bq_retraction with retraction_type = 'only_ehr'.
@@ -380,10 +394,11 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
         """
         for mock_ in [
                 mock_is_rdr, mock_is_ehr, mock_is_unioned, mock_is_combined,
-                mock_is_deid, mock_is_fitbit
+                mock_is_deid, mock_is_fitbit, mock_is_sandbox
         ]:
             mock_.return_value = False
         mock_is_combined.return_value = True
+        mock_get_dataset_type.return_value = COMBINED
 
         project_id, sandbox_id, dataset_id = self.project_id, self.sandbox_id, self.combined_id
 
@@ -404,8 +419,10 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
             ['observation_id'], OBS_PID_TO_RETRACT_ONLY_EHR)
 
     @mock_patch_bundle
-    def test_deid_rdr_and_ehr(self, mock_is_rdr, mock_is_ehr, mock_is_unioned,
-                              mock_is_combined, mock_is_deid, mock_is_fitbit):
+    def test_retract_deid_rdr_and_ehr(self, mock_get_dataset_type, mock_is_rdr,
+                                      mock_is_ehr, mock_is_unioned,
+                                      mock_is_combined, mock_is_deid,
+                                      mock_is_fitbit, mock_is_sandbox):
         """
         Test for deid dataset.
         run_bq_retraction with retraction_type = 'rdr_and_ehr'.
@@ -413,10 +430,11 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
         """
         for mock_ in [
                 mock_is_rdr, mock_is_ehr, mock_is_unioned, mock_is_combined,
-                mock_is_deid, mock_is_fitbit
+                mock_is_deid, mock_is_fitbit, mock_is_sandbox
         ]:
             mock_.return_value = False
         mock_is_deid.return_value = True
+        mock_get_dataset_type.return_value = DEID
 
         project_id, sandbox_id, dataset_id = self.project_id, self.sandbox_id, self.deid_id
 
@@ -442,8 +460,10 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
             ['person_id'], PERS_RID_TO_RETRACT)
 
     @mock_patch_bundle
-    def test_deid_only_ehr(self, mock_is_rdr, mock_is_ehr, mock_is_unioned,
-                           mock_is_combined, mock_is_deid, mock_is_fitbit):
+    def test_retract_deid_only_ehr(self, mock_get_dataset_type, mock_is_rdr,
+                                   mock_is_ehr, mock_is_unioned,
+                                   mock_is_combined, mock_is_deid,
+                                   mock_is_fitbit, mock_is_sandbox):
         """
         Test for deid dataset.
         run_bq_retraction with retraction_type = 'only_ehr'.
@@ -454,10 +474,11 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
         """
         for mock_ in [
                 mock_is_rdr, mock_is_ehr, mock_is_unioned, mock_is_combined,
-                mock_is_deid, mock_is_fitbit
+                mock_is_deid, mock_is_fitbit, mock_is_sandbox
         ]:
             mock_.return_value = False
         mock_is_deid.return_value = True
+        mock_get_dataset_type.return_value = DEID
 
         project_id, sandbox_id, dataset_id = self.project_id, self.sandbox_id, self.deid_id
 
@@ -484,8 +505,10 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
         )
 
     @mock_patch_bundle
-    def test_rdr_rdr_and_ehr(self, mock_is_rdr, mock_is_ehr, mock_is_unioned,
-                             mock_is_combined, mock_is_deid, mock_is_fitbit):
+    def test_retract_rdr_rdr_and_ehr(self, mock_get_dataset_type, mock_is_rdr,
+                                     mock_is_ehr, mock_is_unioned,
+                                     mock_is_combined, mock_is_deid,
+                                     mock_is_fitbit, mock_is_sandbox):
         """
         Test for rdr dataset.
         run_bq_retraction with retraction_type = 'rdr_and_ehr'.
@@ -493,10 +516,11 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
         """
         for mock_ in [
                 mock_is_rdr, mock_is_ehr, mock_is_unioned, mock_is_combined,
-                mock_is_deid, mock_is_fitbit
+                mock_is_deid, mock_is_fitbit, mock_is_sandbox
         ]:
             mock_.return_value = False
         mock_is_rdr.return_value = True
+        mock_get_dataset_type.return_value = RDR
 
         project_id, sandbox_id, dataset_id = self.project_id, self.sandbox_id, self.rdr_id
 
@@ -516,8 +540,10 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
             ['observation_id'], OBS_PID_TO_RETRACT)
 
     @mock_patch_bundle
-    def test_rdr_only_ehr(self, mock_is_rdr, mock_is_ehr, mock_is_unioned,
-                          mock_is_combined, mock_is_deid, mock_is_fitbit):
+    def test_retract_rdr_only_ehr(self, mock_get_dataset_type, mock_is_rdr,
+                                  mock_is_ehr, mock_is_unioned,
+                                  mock_is_combined, mock_is_deid,
+                                  mock_is_fitbit, mock_is_sandbox):
         """
         Test for rdr dataset.
         run_bq_retraction with retraction_type = 'only_ehr'.
@@ -525,10 +551,11 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
         """
         for mock_ in [
                 mock_is_rdr, mock_is_ehr, mock_is_unioned, mock_is_combined,
-                mock_is_deid, mock_is_fitbit
+                mock_is_deid, mock_is_fitbit, mock_is_sandbox
         ]:
             mock_.return_value = False
         mock_is_rdr.return_value = True
+        mock_get_dataset_type.return_value = RDR
 
         project_id, sandbox_id, dataset_id = self.project_id, self.sandbox_id, self.rdr_id
 
@@ -539,8 +566,10 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
         self.assertTrue(f"Skipping retraction" in cm.output[0])
 
     @mock_patch_bundle
-    def test_ehr_rdr_and_ehr(self, mock_is_rdr, mock_is_ehr, mock_is_unioned,
-                             mock_is_combined, mock_is_deid, mock_is_fitbit):
+    def test_retract_ehr_rdr_and_ehr(self, mock_get_dataset_type, mock_is_rdr,
+                                     mock_is_ehr, mock_is_unioned,
+                                     mock_is_combined, mock_is_deid,
+                                     mock_is_fitbit, mock_is_sandbox):
         """
         Test for ehr dataset.
         run_bq_retraction with retraction_type = 'rdr_and_ehr'.
@@ -549,10 +578,11 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
         """
         for mock_ in [
                 mock_is_rdr, mock_is_ehr, mock_is_unioned, mock_is_combined,
-                mock_is_deid, mock_is_fitbit
+                mock_is_deid, mock_is_fitbit, mock_is_sandbox
         ]:
             mock_.return_value = False
         mock_is_ehr.return_value = True
+        mock_get_dataset_type.return_value = EHR
 
         project_id, sandbox_id, dataset_id = self.project_id, self.sandbox_id, self.ehr_id
 
@@ -595,8 +625,10 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
         )
 
     @mock_patch_bundle
-    def test_ehr_ehr_only_ehr(self, mock_is_rdr, mock_is_ehr, mock_is_unioned,
-                              mock_is_combined, mock_is_deid, mock_is_fitbit):
+    def test_retract_ehr_ehr_only_ehr(self, mock_get_dataset_type, mock_is_rdr,
+                                      mock_is_ehr, mock_is_unioned,
+                                      mock_is_combined, mock_is_deid,
+                                      mock_is_fitbit, mock_is_sandbox):
         """
         Test for ehr dataset.
         run_bq_retraction with retraction_type = 'rdr_and_ehr'.
@@ -606,10 +638,11 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
         """
         for mock_ in [
                 mock_is_rdr, mock_is_ehr, mock_is_unioned, mock_is_combined,
-                mock_is_deid, mock_is_fitbit
+                mock_is_deid, mock_is_fitbit, mock_is_sandbox
         ]:
             mock_.return_value = False
         mock_is_ehr.return_value = True
+        mock_get_dataset_type.return_value = EHR
 
         project_id, sandbox_id, dataset_id = self.project_id, self.sandbox_id, self.ehr_id
 
@@ -652,18 +685,22 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
         )
 
     @mock_patch_bundle
-    def test_ehr_without_hpo_id(self, mock_is_rdr, mock_is_ehr, mock_is_unioned,
-                                mock_is_combined, mock_is_deid, mock_is_fitbit):
+    def test_retract_ehr_without_hpo_id(self, mock_get_dataset_type,
+                                        mock_is_rdr, mock_is_ehr,
+                                        mock_is_unioned, mock_is_combined,
+                                        mock_is_deid, mock_is_fitbit,
+                                        mock_is_sandbox):
         """
         Test for ehr dataset.
         Retraction is skipped for EHR dataset when hpo_id is not specified.
         """
         for mock_ in [
                 mock_is_rdr, mock_is_ehr, mock_is_unioned, mock_is_combined,
-                mock_is_deid, mock_is_fitbit
+                mock_is_deid, mock_is_fitbit, mock_is_sandbox
         ]:
             mock_.return_value = False
         mock_is_ehr.return_value = True
+        mock_get_dataset_type.return_value = EHR
 
         project_id, sandbox_id, dataset_id = self.project_id, self.sandbox_id, self.ehr_id
 
@@ -674,18 +711,22 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
         self.assertTrue(f"Skipping retraction" in cm.output[0])
 
     @mock_patch_bundle
-    def test_fitbit_rdr_and_ehr(self, mock_is_rdr, mock_is_ehr, mock_is_unioned,
-                                mock_is_combined, mock_is_deid, mock_is_fitbit):
+    def test_retract_fitbit_rdr_and_ehr(self, mock_get_dataset_type,
+                                        mock_is_rdr, mock_is_ehr,
+                                        mock_is_unioned, mock_is_combined,
+                                        mock_is_deid, mock_is_fitbit,
+                                        mock_is_sandbox):
         """
         Test for fitbit dataset.
         run_bq_retraction with retraction_type = 'rdr_and_ehr'.
         """
         for mock_ in [
                 mock_is_rdr, mock_is_ehr, mock_is_unioned, mock_is_combined,
-                mock_is_deid, mock_is_fitbit
+                mock_is_deid, mock_is_fitbit, mock_is_sandbox
         ]:
             mock_.return_value = False
         mock_is_fitbit.return_value = True
+        mock_get_dataset_type.return_value = FITBIT
 
         project_id, sandbox_id, dataset_id = self.project_id, self.sandbox_id, self.fitbit_id
 
@@ -700,8 +741,10 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
             ['person_id'], PERS_PID_TO_RETRACT)
 
     @mock_patch_bundle
-    def test_fitbit_only_ehr(self, mock_is_rdr, mock_is_ehr, mock_is_unioned,
-                             mock_is_combined, mock_is_deid, mock_is_fitbit):
+    def test_retract_fitbit_only_ehr(self, mock_get_dataset_type, mock_is_rdr,
+                                     mock_is_ehr, mock_is_unioned,
+                                     mock_is_combined, mock_is_deid,
+                                     mock_is_fitbit, mock_is_sandbox):
         """
         Test for fitbit dataset.
         run_bq_retraction with retraction_type = 'only_ehr'.
@@ -709,10 +752,11 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
         """
         for mock_ in [
                 mock_is_rdr, mock_is_ehr, mock_is_unioned, mock_is_combined,
-                mock_is_deid, mock_is_fitbit
+                mock_is_deid, mock_is_fitbit, mock_is_sandbox
         ]:
             mock_.return_value = False
         mock_is_fitbit.return_value = True
+        mock_get_dataset_type.return_value = FITBIT
 
         project_id, sandbox_id, dataset_id = self.project_id, self.sandbox_id, self.fitbit_id
 
@@ -723,20 +767,23 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
         self.assertTrue(f"Skipping retraction" in cm.output[0])
 
     @mock_patch_bundle
-    def test_deid_fitbit_rdr_and_ehr(self, mock_is_rdr, mock_is_ehr,
-                                     mock_is_unioned, mock_is_combined,
-                                     mock_is_deid, mock_is_fitbit):
+    def test_retract_deid_fitbit_rdr_and_ehr(self, mock_get_dataset_type,
+                                             mock_is_rdr, mock_is_ehr,
+                                             mock_is_unioned, mock_is_combined,
+                                             mock_is_deid, mock_is_fitbit,
+                                             mock_is_sandbox):
         """
         Test for fitbit dataset.
         run_bq_retraction with retraction_type = 'rdr_and_ehr'.
         """
         for mock_ in [
                 mock_is_rdr, mock_is_ehr, mock_is_unioned, mock_is_combined,
-                mock_is_deid, mock_is_fitbit
+                mock_is_deid, mock_is_fitbit, mock_is_sandbox
         ]:
             mock_.return_value = False
         mock_is_deid.return_value = True
         mock_is_fitbit.return_value = True
+        mock_get_dataset_type.return_value = FITBIT
 
         project_id, sandbox_id, dataset_id = self.project_id, self.sandbox_id, self.fitbit_id
 
@@ -751,9 +798,11 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
             ['person_id'], PERS_RID_TO_RETRACT)
 
     @mock_patch_bundle
-    def test_deid_fitbit_only_ehr(self, mock_is_rdr, mock_is_ehr,
-                                  mock_is_unioned, mock_is_combined,
-                                  mock_is_deid, mock_is_fitbit):
+    def test_retract_deid_fitbit_only_ehr(self, mock_get_dataset_type,
+                                          mock_is_rdr, mock_is_ehr,
+                                          mock_is_unioned, mock_is_combined,
+                                          mock_is_deid, mock_is_fitbit,
+                                          mock_is_sandbox):
         """
         Test for deid fitbit dataset.
         run_bq_retraction with retraction_type = 'only_ehr'.
@@ -761,11 +810,12 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
         """
         for mock_ in [
                 mock_is_rdr, mock_is_ehr, mock_is_unioned, mock_is_combined,
-                mock_is_deid, mock_is_fitbit
+                mock_is_deid, mock_is_fitbit, mock_is_sandbox
         ]:
             mock_.return_value = False
         mock_is_deid.return_value = True
         mock_is_fitbit.return_value = True
+        mock_get_dataset_type.return_value = FITBIT
 
         project_id, sandbox_id, dataset_id = self.project_id, self.sandbox_id, self.fitbit_id
 
@@ -776,10 +826,10 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
         self.assertTrue(f"Skipping retraction" in cm.output[0])
 
     @mock_patch_bundle
-    @mock.patch('retraction.retract_data_bq.get_dataset_type')
-    def test_other_rdr_and_ehr(self, mock_get_dataset_type, mock_is_rdr,
-                               mock_is_ehr, mock_is_unioned, mock_is_combined,
-                               mock_is_deid, mock_is_fitbit):
+    def test_retract_other_rdr_and_ehr(self, mock_get_dataset_type, mock_is_rdr,
+                                       mock_is_ehr, mock_is_unioned,
+                                       mock_is_combined, mock_is_deid,
+                                       mock_is_fitbit, mock_is_sandbox):
         """
         Test for dataset that is none of the above.
         run_bq_retraction with retraction_type = 'rdr_and_ehr'.
@@ -787,7 +837,7 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
         """
         for mock_ in [
                 mock_is_rdr, mock_is_ehr, mock_is_unioned, mock_is_combined,
-                mock_is_deid, mock_is_fitbit
+                mock_is_deid, mock_is_fitbit, mock_is_sandbox
         ]:
             mock_.return_value = False
         mock_get_dataset_type.return_value = OTHER
@@ -810,10 +860,10 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
             ['observation_id'], OBS_PID_TO_RETRACT)
 
     @mock_patch_bundle
-    @mock.patch('retraction.retract_data_bq.get_dataset_type')
-    def test_other_only_ehr(self, mock_get_dataset_type, mock_is_rdr,
-                            mock_is_ehr, mock_is_unioned, mock_is_combined,
-                            mock_is_deid, mock_is_fitbit):
+    def test_retract_other_only_ehr(self, mock_get_dataset_type, mock_is_rdr,
+                                    mock_is_ehr, mock_is_unioned,
+                                    mock_is_combined, mock_is_deid,
+                                    mock_is_fitbit, mock_is_sandbox):
         """
         Test for dataset that is none of the above.
         run_bq_retraction with retraction_type = 'only_ehr'.
@@ -821,7 +871,7 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
         """
         for mock_ in [
                 mock_is_rdr, mock_is_ehr, mock_is_unioned, mock_is_combined,
-                mock_is_deid, mock_is_fitbit
+                mock_is_deid, mock_is_fitbit, mock_is_sandbox
         ]:
             mock_.return_value = False
         mock_get_dataset_type.return_value = OTHER
@@ -835,8 +885,51 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
         self.assertTrue(f"Skipping retraction" in cm.output[0])
 
     @mock_patch_bundle
-    def test_skip_sandboxing(self, mock_is_rdr, mock_is_ehr, mock_is_unioned,
-                             mock_is_combined, mock_is_deid, mock_is_fitbit):
+    def test_retract_sandbox_only_ehr(self, mock_get_dataset_type, mock_is_rdr,
+                                      mock_is_ehr, mock_is_unioned,
+                                      mock_is_combined, mock_is_deid,
+                                      mock_is_fitbit, mock_is_sandbox):
+        """
+        Test for combined sandbox dataset and deid sandbox dataset with
+        retraction_type = 'only_ehr'. The retraction is skipped here
+        because mapping table/ ext tables do not exist for the sandbox
+        dataset.
+        NOTE If retraction_type = 'rdr_and_ehr', sandbox datasets are 
+        retracted just like combined/ deid datasets.
+        """
+        for mock_ in [
+                mock_is_rdr, mock_is_ehr, mock_is_unioned, mock_is_combined,
+                mock_is_deid, mock_is_fitbit, mock_is_sandbox
+        ]:
+            mock_.return_value = False
+        mock_is_combined.return_value = True
+        mock_is_sandbox.return_value = True
+        mock_get_dataset_type.return_value = COMBINED
+
+        project_id, sandbox_id, dataset_id = self.project_id, self.sandbox_id, self.combined_id
+
+        with self.assertLogs(level='WARNING') as cm:
+            run_bq_retraction(project_id, sandbox_id, self.lookup_table_id,
+                              NONE, [dataset_id], RETRACTION_ONLY_EHR, False,
+                              self.client)
+        self.assertTrue(f"Skipping retraction" in cm.output[0])
+
+        mock_is_combined.return_value = False
+        mock_is_deid.return_value = True
+        mock_get_dataset_type.return_value = DEID
+        project_id, sandbox_id, dataset_id = self.project_id, self.sandbox_id, self.deid_id
+
+        with self.assertLogs(level='WARNING') as cm:
+            run_bq_retraction(project_id, sandbox_id, self.lookup_table_id,
+                              NONE, [dataset_id], RETRACTION_ONLY_EHR, False,
+                              self.client)
+        self.assertTrue(f"Skipping retraction" in cm.output[0])
+
+    @mock_patch_bundle
+    def test_retract_skip_sandboxing(self, mock_get_dataset_type, mock_is_rdr,
+                                     mock_is_ehr, mock_is_unioned,
+                                     mock_is_combined, mock_is_deid,
+                                     mock_is_fitbit, mock_is_sandbox):
         """
         Test for skip_sandboxing option.
         Everything is same with test_rdr_rdr_and_ehr except skip_sandboxing=True.
@@ -844,10 +937,11 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
         """
         for mock_ in [
                 mock_is_rdr, mock_is_ehr, mock_is_unioned, mock_is_combined,
-                mock_is_deid, mock_is_fitbit
+                mock_is_deid, mock_is_fitbit, mock_is_sandbox
         ]:
             mock_.return_value = False
         mock_is_rdr.return_value = True
+        mock_get_dataset_type.return_value = RDR
 
         project_id, sandbox_id, dataset_id = self.project_id, self.sandbox_id, self.rdr_id
 
