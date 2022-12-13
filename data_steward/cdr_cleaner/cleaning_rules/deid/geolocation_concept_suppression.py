@@ -1,13 +1,19 @@
 """
 Sandbox and record suppress all records with a concept_id or concept_code relating to Geo Location information.
 
-Original Issue: DC-1385
+Original Issue: DC-1385, DC-2769
 
-suppress all records associated with a GeoLocation identifier concepts in PPI vocabulary 
-The concept_ids to suppress can be determined from the vocabulary with the following regular expressions.
-        REGEXP_CONTAINS(concept_code, r'(SitePairing)|(City)|(ArizonaSpecific)|(Michigan)|(_Country)| \
-        (ExtraConsent_[A-Za-z]+((Care)|(Registered)))')AND concept_class_id = 'Question')
+Suppress all records associated with a GeoLocation identifier concepts in PPI vocabulary
+The concept_ids to suppress can be determined from the vocabulary with the following case insensitive regular
+expressions.
+        REGEXP_CONTAINS(concept_code, r'(?i)(SitePairing)|(City)|(ArizonaSpecific)|(Michigan)|(_Country)|
+        (ExtraConsent_[A-Za-z]+((Care)|(Registered)))')
+        AND NOT REGEXP_CONTAINS(concept_code, r'(?i)ethnicity'))
 and also covers all the mapped standard concepts for non standard concepts that the regex filters.
+
+Although 'Ethnicity' contains the word 'city' this cleaning rule is not meant to suppress ethnicity concepts.
+Ethnicity is specifically referenced in the query to ensure these concepts are unaffected by this cleaning rule.
+
 """
 
 # Python Imports
@@ -25,7 +31,7 @@ from cdr_cleaner.cleaning_rules.deid.concept_suppression import \
 
 LOGGER = logging.getLogger(__name__)
 
-ISSUE_NUMBERS = ['DC1385']
+ISSUE_NUMBERS = ['DC1385', 'DC2769']
 GEO_LOCATION_SUPPRESSION_CONCEPT_TABLE = '_geolocation_identifier_concepts'
 
 GEO_LOCATION_CONCEPT_SUPPRESSION_LOOKUP_QUERY = JINJA_ENV.from_string("""
@@ -37,7 +43,8 @@ CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{lookup_table}}`
     FROM
       `{{project_id}}.{{dataset_id}}.concept`
     WHERE
-      REGEXP_CONTAINS(concept_code, r'(SitePairing)|(City)|(ArizonaSpecific)|(Michigan)|(_Country)|(ExtraConsent_[A-Za-z]+((Care)|(Registered)))')AND concept_class_id = 'Question')
+        REGEXP_CONTAINS(concept_code, r'(?i)(SitePairing)|(City)|(ArizonaSpecific)|(Michigan)|(_Country)|(ExtraConsent_[A-Za-z]+((Care)|(Registered)))')
+        AND NOT REGEXP_CONTAINS(concept_code, r'(?i)ethnicity'))
     SELECT
       DISTINCT *
     FROM

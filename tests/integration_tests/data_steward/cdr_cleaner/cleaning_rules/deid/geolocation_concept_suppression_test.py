@@ -1,13 +1,18 @@
 """
 Integration test for geolocation_concept_suppression.py
 
-Original Issue: DC-1385
+Original Issue: DC-1385 , DC-2769
 
-suppress all records associated with a GeoLocation identifier concepts in PPI vocabulary 
-The concept_ids to suppress can be determined from the vocabulary with the following regular expressions.
-        REGEXP_CONTAINS(concept_code, r'(SitePairing)|(City)|(ArizonaSpecific)|(Michigan)|(_Country)| \
-        (ExtraConsent_[A-Za-z]+((Care)|(Registered)))')AND concept_class_id = 'Question')
+Suppress all records associated with a GeoLocation identifier concepts in PPI vocabulary
+The concept_ids to suppress can be determined from the vocabulary with the following case insensitive regular
+expressions.
+        REGEXP_CONTAINS(concept_code, r'(?i)(SitePairing)|(City)|(ArizonaSpecific)|(Michigan)|(_Country)|
+        (ExtraConsent_[A-Za-z]+((Care)|(Registered)))')
+        AND NOT REGEXP_CONTAINS(concept_code, r'(?i)ethnicity'))
 and also covers all the mapped standard concepts for non standard concepts that the regex filters.
+
+Although 'Ethnicity' contains the word 'city' this cleaning rule is not meant to suppress ethnicity concepts.
+Ethnicity is specifically referenced in the query to ensure these concepts are unaffected by this cleaning rule.
 
 """
 # Python Imports
@@ -99,12 +104,15 @@ class GeoLocationConceptSuppressionTestBase(BaseTest.CleaningRulesTestBase):
               -- 1585556: Have you already scheduled an appointment with your local PA Cares for Us team for -- 
               -- physical measurements and biosample collection? --
               -- 1585559: Are you presently a registered patient at any of the following clinics? --
+              -- 903061: SpectrumHealthSitePairing_No: Answer concept_class_id --
+              -- 903060: SpectrumHealthSitePairing_Yes: Answer concept_class_id --
 
               -- Concepts to keep --
               -- 1384550: Insurance Type: Tricare Or Military --
               -- 903152: Hair style or head gear --
               -- 903574: Disability: Blind --
               -- 903155: Manual heart rate --
+              -- 1586142: What Race Ethnicity: Asian --
               (1, 1, 903074, 0, 0, 0, 0, 0, 0, '2020-01-01'),
               (2, 1, 0, 1585543, 0, 0, 0, 0, 0, '2020-01-01'),
               (3, 1, 0, 0, 1585912, 0, 0, 0, 0, '2020-01-01'),
@@ -118,7 +126,10 @@ class GeoLocationConceptSuppressionTestBase(BaseTest.CleaningRulesTestBase):
               (11, 1, 1384550, 903152, 903574, 903155, 0, 0, 0, '2020-01-01'),
               (12, 1, 1585553, 0, 0, 0, 0, 0, 0, '2020-01-01'),
               (13, 1, 1585556, 0, 0, 0, 0, 0, 0, '2020-01-01'),
-              (14, 1, 1585559, 0, 0, 0, 0, 0, 0, '2020-01-01')
+              (14, 1, 1585559, 0, 0, 0, 0, 0, 0, '2020-01-01'),
+              (15, 1, 903061, 0, 0, 0, 0, 0, 0, '2020-01-01'),
+              (16, 1, 903060, 0, 0, 0, 0, 0, 0, '2020-01-01'),
+              (17, 1, 1586142, 0, 0, 0, 0, 0, 0, '2020-01-01')
             """)
 
         insert_observation_query = observation_data_template.render(
@@ -136,8 +147,10 @@ class GeoLocationConceptSuppressionTestBase(BaseTest.CleaningRulesTestBase):
             'fq_sandbox_table_name':
                 f'{self.project_id}.{self.sandbox_id}.'
                 f'{self.rule_instance.sandbox_table_for("observation")}',
-            'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
-            'sandboxed_ids': [1, 2, 3, 4, 5, 6, 12, 13, 14],
+            'loaded_ids': [
+                1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17
+            ],
+            'sandboxed_ids': [1, 2, 3, 4, 5, 6, 12, 13, 14, 15, 16],
             'fields': [
                 'observation_id', 'person_id', 'observation_concept_id',
                 'observation_type_concept_id', 'value_as_concept_id',
@@ -148,8 +161,8 @@ class GeoLocationConceptSuppressionTestBase(BaseTest.CleaningRulesTestBase):
                                (8, 1, 0, 903152, 0, 0, 0, 0, 0),
                                (9, 1, 0, 0, 903574, 0, 0, 0, 0),
                                (10, 1, 0, 0, 0, 903155, 0, 0, 0),
-                               (11, 1, 1384550, 903152, 903574, 903155, 0, 0, 0)
-                              ]
+                               (11, 1, 1384550, 903152, 903574, 903155, 0, 0,
+                                0), (17, 1, 1586142, 0, 0, 0, 0, 0, 0)]
         }]
 
         self.default_test(tables_and_counts)
