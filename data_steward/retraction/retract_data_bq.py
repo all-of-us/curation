@@ -15,8 +15,8 @@ from itertools import product
 from utils import pipeline_logging
 from gcloud.bq import BigQueryClient
 from common import (CARE_SITE, CATI_TABLES, DEATH, FACT_RELATIONSHIP, JINJA_ENV,
-                    LOCATION, OTHER, OBSERVATION_PERIOD, PERSON, PII_TABLES,
-                    PROVIDER, UNIONED_EHR)
+                    LOCATION, MEASUREMENT, OBSERVATION, OBSERVATION_PERIOD,
+                    OTHER, PERSON, PII_TABLES, PROVIDER, UNIONED_EHR)
 from resources import mapping_table_for
 from retraction.retract_utils import (get_datasets_list, get_dataset_type,
                                       is_combined_dataset, is_deid_dataset,
@@ -233,7 +233,16 @@ def get_retraction_queries_fact_relationship(client: BigQueryClient,
     :return: list of queries
     """
     if not client.table_exists(FACT_RELATIONSHIP, dataset_id):
-        LOGGER.info(f"{FACT_RELATIONSHIP} does not exist.")
+        LOGGER.info(f"Skipping {FACT_RELATIONSHIP}. It does not exist.")
+        return []
+
+    if is_combined_dataset(
+            dataset_id) and retraction_type == RETRACTION_ONLY_EHR and (
+                not client.table_exists(mapping_table_for(MEASUREMENT)) or
+                not client.table_exists(mapping_table_for(OBSERVATION))):
+        LOGGER.info(
+            f"Skipping {FACT_RELATIONSHIP}. Mapping tables missing for its ONLY_EHR retraction."
+        )
         return []
 
     queries = []
@@ -313,7 +322,7 @@ def get_tables_to_retract(client: BigQueryClient,
     return tables_to_retract
 
 
-def skip_table_retraction(client, dataset_id, table_id,
+def skip_table_retraction(client: BigQueryClient, dataset_id, table_id,
                           retraction_type) -> bool:
     """
     Some tables have person_id but do not need retraction depending on how we
@@ -330,6 +339,12 @@ def skip_table_retraction(client, dataset_id, table_id,
     msg_no_mapping_table = (
         f"Skipping {table_id} table because it does not have a extension table or a mapping table."
     )
+    msg_view = f"Skipping {table_id} since it's a VIEW."
+
+    if client.get_table(
+            f'{client.project}.{dataset_id}.{table_id}').table_type == 'VIEW':
+        LOGGER.info(msg_view)
+        return True
 
     if retraction_type == RETRACTION_ONLY_EHR:
 
@@ -516,8 +531,25 @@ if __name__ == '__main__':
             f'or if RDR data needs to be kept intact. Can take the values '
             f'"{RETRACTION_RDR_EHR}" or "{RETRACTION_ONLY_EHR}"'),
         required=True)
+    parser.add_argument('-l',
+                        '--console_log',
+                        dest='console_log',
+                        action='store_true',
+                        required=False,
+                        help='Log to the console as well as to a file.')
+    parser.add_argument(
+        '--skip_sandboxing',
+        dest='skip_sandboxing',
+        action='store_true',
+        required=False,
+        help=
+        'Specify this option if you do not want this script to sanbox the retracted records.'
+    )
     args = parser.parse_args()
+
+    pipeline_logging.configure(level=logging.INFO,
+                               add_console_handler=args.console_log)
 
     run_bq_retraction(args.project_id, args.sandbox_dataset_id,
                       args.pid_table_id, args.hpo_id, args.dataset_ids,
-                      args.retraction_type)
+                      args.retraction_type, args.skip_sandboxing)
