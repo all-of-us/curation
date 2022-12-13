@@ -85,12 +85,13 @@ def provenance_table_for(table: str, is_deidentified: str = 'false'):
 
 
 # ## 1. Verify ehr data for participants listed to be dropped in the lookup table are dropped from the pid_tables
+#
+# Here we are checking for no EHR data in a given dataset. We are joining the domain tables onto the provenence tables to identify if a particulary record is from EHR submission.
 
 # +
 table_check_query = JINJA_ENV.from_string('''
 SELECT
   \'{{table_name}}\' AS table_name,
-
   CASE
     WHEN COUNT(tb.person_id) = 0 THEN 'OK'
   ELSE
@@ -131,7 +132,9 @@ retraction_status_query = (f'{rids_query}\n{union_all_query}'
 execute(client, retraction_status_query)
 # -
 
-# ## 2. Verify Row counts of participants in source dataset minus the ehr data is equal to the row counts for the participants in new dataset.
+# ## 2. Row counts of participants in source dataset minus the ehr data is equal to the row counts for the participants in new dataset.
+#
+# We expect PPI/PM data to exist for the listed participants even after the retraction. So here we are checking the record count of the source data minus the EHR records is equal to the recvord count post retraction.
 
 # +
 table_row_counts_query = JINJA_ENV.from_string('''
@@ -141,11 +144,9 @@ old_minus_ehr_row_count,
   new_row_count,
   CASE
     WHEN old_minus_ehr_row_count = new_row_count THEN 'OK'
-    WHEN old_minus_ehr_row_count IS NULL
-  AND new_row_count IS NULL THEN 'OK'
-    WHEN old_minus_ehr_row_count IS NOT NULL AND new_row_count IS NULL THEN 'PROBLEM'
-    WHEN old_minus_ehr_row_count IS NULL
-  AND new_row_count IS NOT NULL THEN 'PROBLEM'
+    WHEN old_minus_ehr_row_count IS NULL AND new_row_count IS NULL THEN 'OK'
+    WHEN old_minus_ehr_row_count IS NOT NULL AND new_row_count IS NULL THEN 'POTENTIAL PROBLEM'
+    WHEN old_minus_ehr_row_count IS NULL AND new_row_count IS NOT NULL THEN 'PROBLEM'
   ELSE
   'PROBLEM'
 END
@@ -201,6 +202,8 @@ execute(client, retraction_table_count_query)
 # -
 
 # ## 3. Verify Death table retraction.
+#
+# Death table is copied as-is from EHR dataset as we do not recieve data for death from RDR export. Death table is missing the provenence table as it doesn't have a domain_id column so we will use person_id column to identify the records if any.
 
 # +
 table_check_query = JINJA_ENV.from_string('''
@@ -224,12 +227,13 @@ death_query = table_check_query.render(project=project_id,
                                        table_name=table)
 
 retraction_status_query = (f'{rids_query}\n{death_query}'
-                           if is_deidentified == 'true' else
+                           if is_deidentified.lower() == 'true' else
                            f'{pids_query}\n{death_query}')
 execute(client, retraction_status_query)
 # -
 
 # ## 4. Verify if mapping/ext tables are cleaned after retraction
+#
 
 # +
 mapping_ext_check_query = JINJA_ENV.from_string('''
@@ -262,4 +266,3 @@ for table in pid_table_list:
                                                table, is_deidentified)))
 mapping_check = '\nUNION ALL\n'.join(mapping_queries_list)
 execute(client, mapping_check)
-# -

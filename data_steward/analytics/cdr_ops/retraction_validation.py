@@ -13,13 +13,13 @@
 # ---
 
 # + tags=["parameters"]
-project_id = ''
-old_dataset = ''
-new_dataset = ''
-lookup_table = ''
-lookup_table_dataset = ''
-is_deidentified = 'true'
-run_as = ''
+project_id: str = ""  # identifies the project where datasets are located
+old_dataset: str = ""  # identifies the dataset name where participants are to be retracted
+new_dataset: str = ""  # identifies the dataset name after retraction
+lookup_table: str = ""  # lookup table name where the pids and rids needs to be retracted are stored
+lookup_table_dataset: str = ""  # the sandbox dataset where lookup tasble is located
+is_deidentified: str = "true"  # identifies if a dataset is pre or post deid
+run_as: str = ""  # service account email to impersonate
 # -
 
 from common import JINJA_ENV, PIPELINE_TABLES, FITBIT_TABLES, CDM_TABLES
@@ -41,6 +41,20 @@ WHERE column_name = "person_id"
 pid_table_list = client.query(person_id_tables_query).to_dataframe().get(
     'table_name').to_list()
 pid_table_list
+
+
+def provenance_table_for(table: str, is_deidentified: str = 'false'):
+    """
+    Returns a mapping table for a domain table.
+    
+    :param table: identifies domain table name
+    :param is_deidentified: identifies if a the dataset is de-identified choose b/e true/false.
+    """
+    if is_deidentified.lower() == 'false':
+        return f'_mapping_{table}'
+    else:
+        return f'{table}_ext'
+
 
 # +
 pids_query = JINJA_ENV.from_string('''
@@ -95,21 +109,22 @@ execute(client, retraction_status_query)
 
 # +
 table_row_counts_query = JINJA_ENV.from_string('''
+
 SELECT
 \'{{table_name}}\' as table_name,
-newr3_minus_aian_row_count,
-newr4_row_count,
-case when newr3_minus_aian_row_count = newr4_row_count then 'OK'
-  when newr3_minus_aian_row_count is null AND newr4_row_count is null then 'OK'
-  when newr3_minus_aian_row_count is NOT NULL and newr4_row_count is null then 'PROBLEM'
-  when newr3_minus_aian_row_count is NULL and newr4_row_count is not NULL then 'PROBLEM'
+new_minus_aian_row_count,
+new_row_count,
+case when old_minus_aian_row_count = new_row_count then 'OK'
+  when old_minus_aian_row_count is null AND new_row_count is null then 'OK'
+  when old_minus_aian_row_count is NOT NULL and new_row_count is null then 'POTENTIAL PROBLEM'
+  when old_minus_aian_row_count is NULL and new_row_count is not NULL then 'PROBLEM'
   ELSE 'PROBLEM'
   end as table_count_status FROM
 (SELECT
-  count(*) as newr3_minus_aian_row_count,
+  count(*) as old_minus_aian_row_count,
   (select row_count
   from `{{project}}.{{new_dataset}}.__TABLES__` 
-  WHERE table_id = \'{{table_name}}\') as newr4_row_count
+  WHERE table_id = \'{{table_name}}\') as new_row_count
 FROM
   `{{project}}.{{old_dataset}}.{{table_name}}` as tb
 left JOIN
@@ -135,15 +150,26 @@ execute(client, retraction_table_count_query)
 # ## 3. Verify if retracted participants are dropped from fact_relationship table.
 
 fact_relationship_retraction = JINJA_ENV.from_string('''
-SELECT 'fact_relationship' as table_name,
-Case when count(p1.person_id) = 0 AND count(p2.person_id) = 0 then 'OK'
-  ELSE 'PROBLEM' end as retraction_status
-FROM `{{project}}.{{dataset}}.fact_relationship`  fr
-RIGHT JOIN pids p1
-on fr.fact_id_1 = p1.person_id 
-RIGHT JOIN pids p2
-on fr.fact_id_2 = p2.person_id
-where domain_concept_id_1 = 56
+SELECT
+  'fact_relationship' AS table_name,
+  CASE
+    WHEN COUNT(p1.person_id) = 0 AND COUNT(p2.person_id) = 0 THEN 'OK'
+  ELSE
+  'PROBLEM'
+END
+  AS retraction_status
+FROM
+  `{{project}}.{{dataset}}.fact_relationship` fr
+RIGHT JOIN
+  pids p1
+ON
+  fr.fact_id_1 = p1.person_id
+RIGHT JOIN
+  pids p2
+ON
+  fr.fact_id_2 = p2.person_id
+WHERE
+  domain_concept_id_1 = 56
 ''').render(project=project_id, dataset=new_dataset)
 retraction_status_query = f'{pids_query}\n{fact_relationship_retraction}'
 if is_deidentified == 'false':
@@ -153,20 +179,23 @@ if is_deidentified == 'false':
 
 # +
 mapping_ext_check_query = JINJA_ENV.from_string('''
-select \'{{mapping_table}}\' as table_name,
-count(*) as extra_mapping_records
-from `{{project}}.{{dataset}}.{{table_name}}` d
-right join `{{project}}.{{dataset}}.{{mapping_table}}` mp using({{table_name}}_id)
-where d.{{table_name}}_id is null
+SELECT
+  \'{{mapping_table}}\' as table_name,
+CASE
+    WHEN COUNT(*) = 0 THEN 'OK'
+  ELSE
+  'PROBLEM'
+END
+  AS clean_mapping_status
+FROM
+  `{{project}}.{{dataset}}.{{table_name}}` d
+RIGHT JOIN
+  `{{project}}.{{dataset}}.{{mapping_table}}` mp
+USING
+  ({{table_name}}_id)
+WHERE
+  d.{{table_name}}_id IS null
 ''')
-
-
-def mapping_table_for(table, is_deidentified):
-    if is_deidentified == 'false':
-        return f'_mapping_{table}'
-    else:
-        return f'{table}_ext'
-
 
 mapping_queries_list = []
 for table in pid_table_list:
@@ -175,7 +204,7 @@ for table in pid_table_list:
             mapping_ext_check_query.render(project=project_id,
                                            dataset=new_dataset,
                                            table_name=table,
-                                           mapping_table=mapping_table_for(
+                                           mapping_table=provenance_table_for(
                                                table, is_deidentified)))
 mapping_check = '\nUNION ALL\n'.join(mapping_queries_list)
 
