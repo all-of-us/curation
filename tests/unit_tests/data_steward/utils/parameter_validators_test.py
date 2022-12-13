@@ -1,4 +1,5 @@
 from argparse import ArgumentTypeError
+from mock import patch
 import unittest
 
 from utils import parameter_validators as pv
@@ -138,3 +139,57 @@ class ParameterValidatorsTest(unittest.TestCase):
         self.assertEqual(
             pv.validate_qualified_bq_tablename('aA-_0!\'.aA0.aA_-0'),
             'aA-_0!\'.aA0.aA_-0')
+
+    def test_validate_bq_project_name(self):
+        # short project name
+        self.assertRaises(ArgumentTypeError, pv.validate_bq_project_name, 'abc')
+
+        # long project name
+        self.assertRaises(ArgumentTypeError, pv.validate_bq_project_name,
+                          'abcdefghijklmnopqrstuvwxyz12345')
+
+        # illegal characters
+        self.assertRaises(ArgumentTypeError, pv.validate_bq_project_name,
+                          'abcd@*')
+
+        # well formed
+        self.assertEqual(pv.validate_bq_project_name('aA-_0!\''), 'aA-_0!\'')
+
+    def test_validate_file_exists(self):
+        # file does not exist
+        with patch('os.path.isfile', return_value=False):
+            self.assertRaises(ArgumentTypeError, pv.validate_file_exists,
+                              'foo.txt')
+
+        # file does exist
+        with patch('os.path.isfile', return_value=True):
+            self.assertEqual(pv.validate_file_exists('foo.txt'), 'foo.txt')
+
+    def test_validate_email_address(self):
+        # missing @ character
+        self.assertRaises(ArgumentTypeError, pv.validate_email_address,
+                          'abc.org')
+
+        # including non-standard email characters
+        self.assertRaises(ArgumentTypeError, pv.validate_email_address,
+                          'abc.efg@foo.b!ar')
+
+        # no dot separated suffix
+        self.assertRaises(ArgumentTypeError, pv.validate_email_address,
+                          'abc.efg@foobar')
+
+        # suffix starts with a dot
+        self.assertRaises(ArgumentTypeError, pv.validate_email_address,
+                          'abc.efg@.foobar')
+
+        # prefix does not contain any characters
+        self.assertRaises(ArgumentTypeError, pv.validate_email_address,
+                          '@.foobar')
+
+        # one dot separated suffix
+        self.assertEqual(pv.validate_email_address('ab.c-e_f@a.b'),
+                         'ab.c-e_f@a.b')
+
+        # two dot separated suffixes
+        self.assertEqual(pv.validate_email_address('ab.c-e_f@a.b.c'),
+                         'ab.c-e_f@a.b.c')

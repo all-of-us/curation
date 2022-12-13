@@ -8,15 +8,40 @@ LOGGER = logging.getLogger(__name__)
 
 def __validate_regular_expression(arg_value: str,
                                   pattern: str,
-                                  human_readable: str = None) -> str:
+                                  human_readable: str = None,
+                                  match_pattern: bool = True) -> str:
+    """
+    Private function to standardize regular expression validations.
+
+    :param arg_value: The string value that is being validated.
+    :param pattern:  The regular expression that arg_value must match or not match
+    :param human_readable:  An optional example of what the pattern represents.
+        This makes error messages easier to read.
+    :param match_pattern: An optional boolean to indicate if the arg_value must match
+        or must not match the given pattern.  The default True, arg_value must match the
+        pattern or an Error is raised.
+
+    :return: On successful validation, the string arg_value is returned
+    :raises argparse.ArgumentTypeError if the string value cannot be
+        validated
+    """
     human_readable = pattern if not human_readable else human_readable
     regex = re.compile(pattern)
-    if not re.match(regex, arg_value):
-        msg = (f"Parameter ERROR, `{arg_value}` is in an incorrect "
-               f"format.\n\tAccepted format:  `{human_readable}`.\n\t"
-               f"Technical format:  `{pattern}`")
+    msg = ''
+    if match_pattern:
+        if not re.match(regex, arg_value):
+            msg = (f"Parameter ERROR, `{arg_value}` is in an incorrect "
+                   f"format.\n\tAccepted format:  `{human_readable}`.\n\t"
+                   f"Technical format:  `{pattern}`")
+    else:
+        if re.match(regex, arg_value):
+            msg = (f"Parameter ERROR, `{arg_value}` matches a known "
+                   f"bad pattern:  `{human_readable}`")
+
+    if msg:
         LOGGER.error(msg)
         raise argparse.ArgumentTypeError(msg)
+
     return arg_value
 
 
@@ -101,7 +126,9 @@ def validate_email_address(arg_value: str) -> str:
     :raises: ArgumentTypeError if the string is not formatted correctly
     """
     pattern = r"^([a-z0-9A-Z_\-\.]+)@([a-z0-9A-Z_\-]+)(\.([a-z0-9A-Z_\-]+))+$"
-    return __validate_regular_expression(arg_value, pattern)
+    return __validate_regular_expression(arg_value,
+                                         pattern,
+                                         human_readable='user_name@domain')
 
 
 def validate_bucket_filepath(arg_value: str) -> str:
@@ -117,5 +144,18 @@ def validate_bucket_filepath(arg_value: str) -> str:
     :return: arg_value
     :raises: ArgumentTypeError if the string is not formatted correctly
     """
-    pattern = r"^(gs:\/\/)(((?!(\.well\-known\/acme\-challenge(\/)?))[a-zA-Z0-9\/\-_\.]+)([^\.]{1,2}))$"
+    pattern = r"^(gs:\/\/\.well\-known\/acme\-challenge(\/)?)"
+    __validate_regular_expression(
+        arg_value,
+        pattern,
+        human_readable='gs://.well-known/acme-challenge/',
+        match_pattern=False)
+
+    pattern = r"^(gs:\/\/\.{1,2})$"
+    __validate_regular_expression(arg_value,
+                                  pattern,
+                                  human_readable='gs://. or gs://..',
+                                  match_pattern=False)
+
+    pattern = r"^(gs:\/\/)([a-zA-Z0-9\/\-_\.]+)$"
     return __validate_regular_expression(arg_value, pattern)
