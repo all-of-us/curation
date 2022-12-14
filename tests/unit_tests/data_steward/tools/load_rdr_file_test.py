@@ -74,3 +74,31 @@ class LoadRDRFileTest(unittest.TestCase):
             call.get_table(self.dest_table)
         ]
         client.assert_has_calls(calls)
+
+    def test_main(self):
+
+        # test setup
+        mo = mock_open(
+            read_data=
+            '[{"name": "person_id", "type": "int", "mode": "required", "description": "none"}]'
+        )
+        args = [
+            '--bucket_filepath', self.bucket_file, '--run_as', self.email,
+            '--curation_project', self.project_id, '-l', '--destination_table',
+            self.dest_table, '--schema_filepath', self.schema_filepath
+        ]
+
+        # running the test
+        # mock opening a json file
+        with patch("tools.load_rdr_file.open", mo) as mock_file:
+            # mock creating a BigQueryClient object
+            with patch('tools.load_rdr_file.BigQueryClient',
+                       return_value=MagicMock()) as client:
+                with patch('os.path.isfile', return_value=True):
+
+                    lrf.main(args)
+
+        # post condition checks
+        mock_file.assert_called_with(self.schema_filepath, 'r')
+        calls = [call(self.project_id, credentials=ANY)]
+        client.assert_has_calls(calls)
