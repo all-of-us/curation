@@ -95,8 +95,10 @@ class LoadRDRFileTest(unittest.TestCase):
             with patch('tools.load_rdr_file.BigQueryClient',
                        return_value=MagicMock()) as client:
                 with patch('os.path.isfile', return_value=True):
-
-                    lrf.main(args)
+                    with patch(
+                            'tools.load_rdr_file.auth.get_impersonation_credentials',
+                            return_value=MagicMock()):
+                        lrf.main(args)
 
         # post condition checks
         mock_file.assert_called_with(self.schema_filepath, 'r')
