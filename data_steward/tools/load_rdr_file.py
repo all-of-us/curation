@@ -72,7 +72,8 @@ def parse_args(raw_args=None) -> Namespace:
     secure bucket.
     """
     parser = ArgumentParser(
-        description='Arguments pertaining to a file in the RDR bucket')
+        description='Arguments pertaining to a file in the RDR bucket',
+        allow_abbrev=False)
 
     parser.add_argument('--bucket_filepath',
                         action='store',
