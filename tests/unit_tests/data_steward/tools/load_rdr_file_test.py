@@ -104,3 +104,39 @@ class LoadRDRFileTest(unittest.TestCase):
         mock_file.assert_called_with(self.schema_filepath, 'r')
         calls = [call(self.project_id, credentials=ANY)]
         client.assert_has_calls(calls)
+
+    def test_get_validated_schema_fields(self):
+        # test setup for a good test
+        mo = mock_open(
+            read_data=
+            '[{"name": "person_id", "type": "int", "mode": "required", "description": "none"}]'
+        )
+        # running the test
+        # mock opening a json file
+        with patch("tools.load_rdr_file.open", mo) as mock_file:
+            results = lrf.get_validated_schema_fields(self.schema_filepath)
+
+        # post condition checks
+        mock_file.assert_called_with(self.schema_filepath, 'r')
+        self.assertEqual(len(results), 1)
+
+        # test setup for a bad test
+        mo = mock_open(
+            read_data=
+            '[{"name": "person_id", "type": "int", "mode": "required", "description": ""}]'
+        )
+        # running the test
+        # mock opening a json file
+        with patch("tools.load_rdr_file.open", mo) as mock_file:
+            self.assertRaises(ValueError, lrf.get_validated_schema_fields,
+                              self.schema_filepath)
+
+        # test setup for a bad test
+        mo = mock_open(
+            read_data=
+            '[{"name": "person_id", "type": "int", "description": "foo"}]')
+        # running the test
+        # mock opening a json file
+        with patch("tools.load_rdr_file.open", mo) as mock_file:
+            self.assertRaises(ValueError, lrf.get_validated_schema_fields,
+                              self.schema_filepath)
