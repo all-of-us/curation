@@ -1,3 +1,5 @@
+from io import open
+from typing import List
 import csv
 import hashlib
 import inspect
@@ -5,9 +7,9 @@ import json
 import logging
 import os
 import cachetools
-from io import open
-from typing import List
+
 from git import Repo, TagReference
+from google.cloud import bigquery
 
 from common import (VOCABULARY, ACHILLES, PROCESSED_TXT, RESULTS_HTML,
                     FITBIT_TABLES, PID_RID_MAPPING, COPE_SURVEY_MAP)
@@ -130,11 +132,11 @@ def value_mappings_csv():
 
 
 def achilles_index_files():
-    achilles_index_files = []
+    achilles_index_files_list = []
     for path, _, files in os.walk(achilles_index_path):
         for name in files:
-            achilles_index_files.append(os.path.join(path, name))
-    return achilles_index_files
+            achilles_index_files_list.append(os.path.join(path, name))
+    return achilles_index_files_list
 
 
 def fields_for(table, sub_path=None):
@@ -174,6 +176,41 @@ def fields_for(table, sub_path=None):
     with open(json_path, 'r') as fp:
         fields = json.load(fp)
 
+    return fields
+
+
+def get_and_validate_schema_fields(schema_filepath: str) -> json:
+    """
+    Read and validate a table schema file
+
+    Will require users to provide field descriptions for new tables.  This is
+    different from `fields_for` because it does not require the schema file
+    to exist in resource_files.  It is expecting a user provided schema file.
+
+    :param schema_filepath: path to the json schema file to load
+    :return [bigquery.SchemaField]: A list of BigQuery SchemaField objects
+    :raises ValueError: Raised when a field is missing a required type or the description
+        of a field is blank
+    """
+    # load the schema from the filepath
+    with open(schema_filepath, 'r') as fp:
+        fields = json.load(fp)
+
+    required_schema_fields = ['type', 'name', 'mode', 'description']
+
+    for field in fields:
+        if not set(field.keys()).issuperset(set(required_schema_fields)):
+            raise ValueError(
+                f"Provide all schema fields with {required_schema_fields} information."
+            )
+
+        desc = field.get('description')
+        if desc.isspace() or not desc:
+            raise ValueError(
+                "Provide a field description value.  Cannot leave this blank.")
+
+    # return json fields list where each minimally has the four
+    # schema definitions and a non-blank description
     return fields
 
 
@@ -475,8 +512,8 @@ def get_field_type(table_name, field_name):
     ]
     if len(field_type) == 0:
         return None
-    else:
-        return field_type[0]
+
+    return field_type[0]
 
 
 def get_table_id(table_name, hpo_id=None):
@@ -526,7 +563,7 @@ def get_git_tag():
     repo = Repo(os.getcwd(), search_parent_directories=True)
     try:
         tag_ref = TagReference.list_items(repo)[-1].name
-    except IndexError as e:
+    except IndexError:
         tag_ref = ''
     return tag_ref
 

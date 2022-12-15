@@ -22,7 +22,7 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
 # Project imports
 from utils import auth
-from resources import fields_for
+from resources import fields_for, get_and_validate_schema_fields
 from constants.utils import bq as consts
 from common import JINJA_ENV, IDENTITY_MATCH, PARTICIPANT_MATCH
 
@@ -130,6 +130,23 @@ class BigQueryClient(Client):
         return bigquery.SchemaField(
             field.name, self._to_standard_sql_type(field.field_type),
             field.mode, field.description, field.fields)
+
+    def get_validated_schema_fields(
+            schema_filepath: str) -> [bigquery.SchemaField]:
+        """
+        Read and validate the table schema file
+
+        Will require users to provide field descriptions for new tables.
+
+        :param schema_filepath: path to the json schema file to load
+        :return [bigquery.SchemaField]: A list of BigQuery SchemaField objects
+        :raises ValueError: Raised when a field is missing a required type or the description
+            of a field is blank
+        """
+        return [
+            bigquery.SchemaField.from_api_repr(field)
+            for field in get_and_validate_schema_fields(schema_filepath)
+        ]
 
     def get_create_or_replace_table_ddl(
             self,

@@ -1,53 +1,19 @@
 from argparse import ArgumentParser, Namespace
 from datetime import datetime
-import json
 import logging
 
 from google.cloud import bigquery
 
-from common import CDR_SCOPES
-from gcloud.bq import BigQueryClient
-from utils import auth
-from utils import pipeline_logging
+from utils import auth, pipeline_logging
 from utils.parameter_validators import (validate_bq_project_name,
                                         validate_qualified_bq_tablename,
                                         validate_file_exists,
                                         validate_email_address,
                                         validate_bucket_filepath)
+from gcloud.bq import BigQueryClient
+from common import CDR_SCOPES
 
 LOGGER = logging.getLogger(__name__)
-
-
-def get_validated_schema_fields(schema_filepath: str) -> [bigquery.SchemaField]:
-    """
-    Read and validate the table schema file
-
-    Will require users to provide field descriptions for new tables.
-
-    :param schema_filepath: path to the json schema file to load
-    :return [bigquery.SchemaField]: A list of BigQuery SchemaField objects
-    :raises ValueError: Raised when a field is missing a required type or the description
-        of a field is blank
-    """
-    # load the schema from the filepath
-    with open(schema_filepath, 'r') as fp:
-        fields = json.load(fp)
-
-    required_schema_fields = ['type', 'name', 'mode', 'description']
-
-    for field in fields:
-        if set(field.keys()) != set(required_schema_fields):
-            raise ValueError(
-                f"Provide all schema fields with {required_schema_fields} information."
-            )
-
-        desc = field.get('description')
-        if desc.isspace() or not desc:
-            raise ValueError(
-                "Provide a field description value.  Cannot leave this blank.")
-
-    # turn into SchemaField list
-    return [bigquery.SchemaField.from_api_repr(field) for field in fields]
 
 
 def load_rdr_table(client: BigQueryClient, src_uri: str, table_id: str,
@@ -60,7 +26,7 @@ def load_rdr_table(client: BigQueryClient, src_uri: str, table_id: str,
     JSON schema file, build SchemaField objects, create a LoadJobConfig, and
     load the file into the fully qualified table name if the table does not exist.
     """
-    schema_list = get_validated_schema_fields(schema_filepath)
+    schema_list = client.get_validated_schema_fields(schema_filepath)
 
     job_config = bigquery.LoadJobConfig(
         schema=schema_list,

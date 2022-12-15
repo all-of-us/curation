@@ -1,7 +1,8 @@
 import json
-import mock
 import os
 import unittest
+
+import mock
 
 import common
 import resources
@@ -104,8 +105,7 @@ class ResourcesTest(unittest.TestCase):
         # test
         data = '[{"id": "fake id desc", "type": "fake type"}]'
         json_data = json.loads(data)
-        with mock.patch('resources.open',
-                        mock.mock_open(read_data=data)) as mock_file:
+        with mock.patch('resources.open', mock.mock_open(read_data=data)):
             with mock.patch('resources.json.load') as mock_json:
                 mock_json.return_value = json_data
                 actual_fields = resources.fields_for('duplicate', sub_dir)
@@ -168,3 +168,42 @@ class ResourcesTest(unittest.TestCase):
         self.assertEqual(actual, expected)
         actual = resources.get_base_table_name(table_id)
         self.assertEqual(actual, table_id)
+
+    def test_get_and_validate_schema_fields(self):
+        # test setup for a good test
+        schema_filepath = 'foo.json'
+        mo = mock.mock_open(
+            read_data=
+            '[{"name": "person_id", "type": "int", "mode": "required", "description": "none"}]'
+        )
+        # running the test
+        # mock opening a json file
+        with mock.patch("resources.open", mo) as mock_file:
+            results = resources.get_and_validate_schema_fields(schema_filepath)
+
+        # post condition checks
+        mock_file.assert_called_with(schema_filepath, 'r')
+        self.assertEqual(len(results), 1)
+
+        # test setup for a bad test, description is missing a value
+        mo = mock.mock_open(
+            read_data=
+            '[{"name": "person_id", "type": "int", "mode": "required", "description": ""}]'
+        )
+        # running the test
+        # mock opening a json file
+        with mock.patch("resources.open", mo) as mock_file:
+            self.assertRaises(ValueError,
+                              resources.get_and_validate_schema_fields,
+                              schema_filepath)
+
+        # test setup for a bad test, required field is missing
+        mo = mock.mock_open(
+            read_data=
+            '[{"name": "person_id", "type": "int", "description": "foo"}]')
+        # running the test
+        # mock opening a json file
+        with mock.patch("resources.open", mo) as mock_file:
+            self.assertRaises(ValueError,
+                              resources.get_and_validate_schema_fields,
+                              schema_filepath)

@@ -1,9 +1,6 @@
 from argparse import Namespace
-from datetime import datetime
 import unittest
 from mock import ANY, call, patch, MagicMock, mock_open
-
-from google.cloud.bigquery import LoadJobConfig
 
 from tools import load_rdr_file as lrf
 
@@ -48,24 +45,18 @@ class LoadRDRFileTest(unittest.TestCase):
 
     def test_load_rdr_file(self):
 
-        # test setup
-        mo = mock_open(
-            read_data=
-            '[{"name": "person_id", "type": "int", "mode": "required", "description": "none"}]'
-        )
-
         # running the test
-        # mock opening a json file
-        with patch("tools.load_rdr_file.open", mo) as mock_file:
-            # mock creating a BigQueryClient object
-            with patch('tools.load_rdr_file.BigQueryClient',
-                       return_value=MagicMock()) as client:
-                lrf.load_rdr_table(client, self.bucket_file, self.dest_table,
-                                   self.schema_filepath)
+        # mock creating a BigQueryClient object
+        with patch('tools.load_rdr_file.BigQueryClient',
+                   return_value=MagicMock()) as client:
+            lrf.load_rdr_table(client, self.bucket_file, self.dest_table,
+                               self.schema_filepath)
 
         # post condition checks
-        mock_file.assert_called_with(self.schema_filepath, 'r')
+
+        print(client.mock_calls)
         calls = [
+            call.get_validated_schema_fields(self.schema_filepath),
             call.load_table_from_uri(self.bucket_file,
                                      self.dest_table,
                                      job_config=ANY,
@@ -73,15 +64,11 @@ class LoadRDRFileTest(unittest.TestCase):
             call.load_table_from_uri().result(),
             call.get_table(self.dest_table)
         ]
-        client.assert_has_calls(calls)
+        client.assert_has_calls(calls, any_order=True)
 
     def test_main(self):
 
         # test setup
-        mo = mock_open(
-            read_data=
-            '[{"name": "person_id", "type": "int", "mode": "required", "description": "none"}]'
-        )
         args = [
             '--bucket_filepath', self.bucket_file, '--run_as', self.email,
             '--curation_project', self.project_id, '-l', '--destination_table',
@@ -89,54 +76,15 @@ class LoadRDRFileTest(unittest.TestCase):
         ]
 
         # running the test
-        # mock opening a json file
-        with patch("tools.load_rdr_file.open", mo) as mock_file:
-            # mock creating a BigQueryClient object
-            with patch('tools.load_rdr_file.BigQueryClient',
-                       return_value=MagicMock()) as client:
-                with patch('os.path.isfile', return_value=True):
-                    with patch(
-                            'tools.load_rdr_file.auth.get_impersonation_credentials',
-                            return_value=MagicMock()):
-                        lrf.main(args)
+        # mock creating a BigQueryClient object
+        with patch('tools.load_rdr_file.BigQueryClient',
+                   return_value=MagicMock()) as client:
+            with patch('os.path.isfile', return_value=True):
+                with patch(
+                        'tools.load_rdr_file.auth.get_impersonation_credentials',
+                        return_value=MagicMock()):
+                    lrf.main(args)
 
         # post condition checks
-        mock_file.assert_called_with(self.schema_filepath, 'r')
         calls = [call(self.project_id, credentials=ANY)]
         client.assert_has_calls(calls)
-
-    def test_get_validated_schema_fields(self):
-        # test setup for a good test
-        mo = mock_open(
-            read_data=
-            '[{"name": "person_id", "type": "int", "mode": "required", "description": "none"}]'
-        )
-        # running the test
-        # mock opening a json file
-        with patch("tools.load_rdr_file.open", mo) as mock_file:
-            results = lrf.get_validated_schema_fields(self.schema_filepath)
-
-        # post condition checks
-        mock_file.assert_called_with(self.schema_filepath, 'r')
-        self.assertEqual(len(results), 1)
-
-        # test setup for a bad test
-        mo = mock_open(
-            read_data=
-            '[{"name": "person_id", "type": "int", "mode": "required", "description": ""}]'
-        )
-        # running the test
-        # mock opening a json file
-        with patch("tools.load_rdr_file.open", mo) as mock_file:
-            self.assertRaises(ValueError, lrf.get_validated_schema_fields,
-                              self.schema_filepath)
-
-        # test setup for a bad test
-        mo = mock_open(
-            read_data=
-            '[{"name": "person_id", "type": "int", "description": "foo"}]')
-        # running the test
-        # mock opening a json file
-        with patch("tools.load_rdr_file.open", mo) as mock_file:
-            self.assertRaises(ValueError, lrf.get_validated_schema_fields,
-                              self.schema_filepath)
