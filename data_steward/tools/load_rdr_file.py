@@ -36,12 +36,13 @@ def get_validated_schema_fields(schema_filepath: str) -> [bigquery.SchemaField]:
     required_schema_fields = ['type', 'name', 'mode', 'description']
 
     for field in fields:
-        if set(field.keys()) != set():
+        if set(field.keys()) != set(required_schema_fields):
             raise ValueError(
                 f"Provide all schema fields with {required_schema_fields} information."
             )
 
-        if field.get('description').isspace() or not field.get('description'):
+        desc = field.get('description')
+        if desc.isspace() or not desc:
             raise ValueError(
                 "Provide a field description value.  Cannot leave this blank.")
 
