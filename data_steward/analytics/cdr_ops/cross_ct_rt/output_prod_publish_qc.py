@@ -15,7 +15,7 @@
 # + tags=["parameters"]
 src_project_id = ""  # project_id of the project the copy initiated from
 dest_project_id = ""  # project_id of the project the copy is going to
-src_dataset_id = ""  # datset_id of the dataset whose contents will be copied
+src_dataset_id = ""  # dataset_id of the dataset whose contents will be copied
 dest_dataset_id = ""  # dataset_id of the destination dataset
 prev_dest_dataset_id = ""  # dataset_id of the previous release of this dataset to downstream teams in their environment
 run_as = ""  # using impersonation, run all these queries as this service account
