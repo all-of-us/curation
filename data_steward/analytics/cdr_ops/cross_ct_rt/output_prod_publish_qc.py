@@ -84,7 +84,7 @@ query = tpl.render(src_project_id=src_project_id,
 execute(client, query)
 # -
 
-# ## Person vs Person_Ext in Destintation Dataset
+# ## Person vs Person_Ext in Destination Dataset
 # Make sure the destination person and the destination person_ext tables have harmonious data for the five appended columns to the person table.
 # 1. sex_at_birth_concept_id
 # 2. sex_at_birth_source_concept_id,
@@ -131,7 +131,7 @@ FROM calculation AS c
 UNION ALL 
 
 SELECT
-   'state_of_residence_concept_id_check' AS check
+   'nulls_state_of_residence_concept_id' AS check
     ,CASE
         WHEN c.ne_nulls_state_of_residence_concept_id > 0
           THEN 'FAILED'
@@ -233,8 +233,8 @@ query = tpl.render(dest_project_id=dest_project_id,
                    dest_dataset_id=dest_dataset_id)
 execute(client, query)
 
-# ## Person in Destintation Dataset vs Person_Ext in Source Dataset
-# Make sure the destintation person and source person_ext tables have harmonious data for the five appended columns to the person table.
+# ## Person in destination Dataset vs Person_Ext in Source Dataset
+# Make sure the destination person and source person_ext tables have harmonious data for the five appended columns to the person table.
 #
 # 1. sex_at_birth_concept_id
 # 2. sex_at_birth_source_concept_id
@@ -418,7 +418,10 @@ execute(client, query)
 # This will identify new or missing tables. <br>
 # **The check automatically passes if there are no results.** <br>
 # Some table changes are expected and any query results should be reviewed as a sanity check.
+#
+# The prep_% , cb_% , and ds_% tables are added by downstream teams after the datasets are published. These will most likely be in the previous dataset but will not be in the new dataset at time of publication. These tables will be ignored by the query.
 
+# +
 tpl = JINJA_ENV.from_string('''
 WITH all_results AS (
 SELECT
@@ -437,10 +440,12 @@ ORDER BY 5, 1, 3)
 SELECT *
 FROM all_results
 WHERE table_change_status <> "ok"
+AND (previous_table_id NOT LIKE 'prep_%'
+AND previous_table_id NOT LIKE 'cb_%' 
+AND previous_table_id NOT LIKE 'ds_%')
 ORDER BY 5, 1, 3
 ;''')
 query = tpl.render(dest_project_id=dest_project_id,
                    prev_dest_dataset_id=prev_dest_dataset_id,
                    dest_dataset_id=dest_dataset_id)
 execute(client, query)
-
