@@ -53,7 +53,7 @@ def validate_release_tag_param(arg_value: str) -> str:
     :return: arg_value
     :raises: ArgumentTypeError if the string is not formatted correctly
     """
-    pattern = r'[0-9]{4}q[1-4]r[0-9]{1,2}'
+    pattern = r'[0-9]{4}q[1-4]r[0-9]{1,2}(_\-[0-9]{1,3})?'
     human_readable = 'YYYYq#r#'
     return __validate_regular_expression(arg_value, pattern, human_readable)
 

@@ -52,6 +52,12 @@ class ParameterValidatorsTest(unittest.TestCase):
         self.assertEqual(pv.validate_release_tag_param('1111q1r11'),
                          '1111q1r11')
 
+        # well formed_extended release tag
+        self.assertEqual(pv.validate_release_tag_param('1111q1r11_12'),
+                         '1111q1r11_12')
+        self.assertEqual(pv.validate_release_tag_param('1111q1r11-12'),
+                         '1111q1r11-12')
+
     def test_validate_output_release_tag_param(self):
         # casing error
         self.assertRaises(ArgumentTypeError,
