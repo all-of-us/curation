@@ -692,7 +692,8 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
                                         mock_is_sandbox):
         """
         Test for ehr dataset.
-        Retraction runs against all the tables with person_id inthe EHR dataset.
+        Retraction runs against all the tables with person_id in EHR dataset 
+        if hpo_id is none.
         """
         for mock_ in [
                 mock_is_rdr, mock_is_ehr, mock_is_unioned, mock_is_combined,
@@ -997,13 +998,15 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
 
     def test_retract_all(self):
         """
-        When ['all_datasets'] specified for dataset_list, BQ retraction runs against all the datasets.
+        When ['all_datasets'] specified for dataset_list, BQ retraction runs against all the datasets
+        excluding sandbox datasets and OTHER datasets.
+        TODO This exclusion rule might be revisited.
         """
         dataset_list = get_datasets_list(self.client, [ALL_DATASETS])
         self.assertTrue(
             set([
-                self.sandbox_id, self.rdr_id, self.ehr_id, self.unioned_ehr_id,
-                self.combined_id, self.deid_id, self.fitbit_id
+                self.rdr_id, self.ehr_id, self.unioned_ehr_id, self.combined_id,
+                self.deid_id, self.fitbit_id
             ]).issubset(dataset_list))
 
     def test_retract_none(self):
