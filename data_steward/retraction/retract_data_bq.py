@@ -33,6 +33,10 @@ RETRACTION_ONLY_EHR = 'only_ehr'
 NON_PID_TABLES = [CARE_SITE, LOCATION, FACT_RELATIONSHIP, PROVIDER]
 OTHER_PID_TABLES = [OBSERVATION_PERIOD]
 
+# person from RDR data should not be removed, while person EHR data may be
+# removed.  If retracting the entire record, then the data will be dropped
+# from the person table.  But if only retracting EHR data, the data will
+# not be dropped from the person table.
 NON_EHR_TABLES = [PERSON]
 TABLES_FOR_RETRACTION = set(PII_TABLES + CATI_TABLES +
                             OTHER_PID_TABLES) - set(NON_PID_TABLES +
@@ -187,9 +191,9 @@ def get_retraction_queries(client: BigQueryClient,
     queries = []
 
     for table in tables_to_retract:
-        for create_sandbox in [False] if skip_sandboxing else [True, False]:
+        for action in ['delete'] if skip_sandboxing else ['sandbox', 'delete']:
             q = JINJA_ENV.from_string(RETRACT_QUERY).render(
-                sandbox=create_sandbox,
+                sandbox=action == 'sandbox',
                 project=client.project,
                 sb_dataset=sb_dataset_id,
                 sb_table=f'retract_{dataset_id}_{table}',
@@ -236,6 +240,8 @@ def get_retraction_queries_fact_relationship(client: BigQueryClient,
         LOGGER.info(f"Skipping {FACT_RELATIONSHIP}. It does not exist.")
         return []
 
+    action_list = ['delete'] if skip_sandboxing else ['sandbox', 'delete']
+
     if is_combined_dataset(
             dataset_id) and retraction_type == RETRACTION_ONLY_EHR and (
                 not client.table_exists(mapping_table_for(MEASUREMENT)) or
@@ -255,12 +261,11 @@ def get_retraction_queries_fact_relationship(client: BigQueryClient,
     person_id = RESEARCH_ID if is_deid_dataset(dataset_id) else PERSON_ID
 
     for table in tables:
-
-        if retraction_type == RETRACTION_ONLY_EHR:
-            for create_sandbox in [False] if skip_sandboxing else [True, False]:
+        for action in action_list:
+            if retraction_type == RETRACTION_ONLY_EHR:
                 q = JINJA_ENV.from_string(
                     RETRACT_QUERY_FACT_RELATIONSHIP_ONLY_EHR).render(
-                        sandbox=create_sandbox,
+                        sandbox=action == 'sandbox',
                         sb_dataset=sb_dataset_id,
                         sb_table=sb_table,
                         project=client.project,
@@ -268,20 +273,17 @@ def get_retraction_queries_fact_relationship(client: BigQueryClient,
                         lookup_table_id=lookup_table_id,
                         person_id=person_id,
                         table=table)
-                queries.append(q)
-
-        else:
-            for create_sandbox in [False] if skip_sandboxing else [True, False]:
+            else:
                 q = JINJA_ENV.from_string(
                     RETRACT_QUERY_FACT_RELATIONSHIP).render(
-                        sandbox=create_sandbox,
+                        sandbox=action == 'sandbox',
                         sb_dataset=sb_dataset_id,
                         sb_table=sb_table,
                         dataset=dataset_id,
                         person_id=person_id,
                         lookup_table_id=lookup_table_id,
                         table=table)
-                queries.append(q)
+            queries.append(q)
 
     return queries
 

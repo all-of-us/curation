@@ -311,16 +311,7 @@ if __name__ == '__main__':
         action='store_true',
         help='Optional. Indicates pids must be retracted without user prompts',
         required=False)
-    parser.add_argument('-l',
-                        '--console_log',
-                        dest='console_log',
-                        action='store_true',
-                        required=False,
-                        help='Log to the console as well as to a file.')
     args = parser.parse_args()
-
-    pipeline_logging.configure(level=logging.INFO,
-                               add_console_handler=args.console_log)
 
     run_gcs_retraction(args.project_id, args.sandbox_dataset_id,
                        args.pid_table_id, args.hpo_id, args.folder_name,
