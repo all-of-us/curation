@@ -625,10 +625,10 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
         )
 
     @mock_patch_bundle
-    def test_retract_ehr_ehr_only_ehr(self, mock_get_dataset_type, mock_is_rdr,
-                                      mock_is_ehr, mock_is_unioned,
-                                      mock_is_combined, mock_is_deid,
-                                      mock_is_fitbit, mock_is_sandbox):
+    def test_retract_ehr_only_ehr(self, mock_get_dataset_type, mock_is_rdr,
+                                  mock_is_ehr, mock_is_unioned,
+                                  mock_is_combined, mock_is_deid,
+                                  mock_is_fitbit, mock_is_sandbox):
         """
         Test for ehr dataset.
         run_bq_retraction with retraction_type = 'rdr_and_ehr'.
@@ -692,7 +692,7 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
                                         mock_is_sandbox):
         """
         Test for ehr dataset.
-        Retraction is skipped for EHR dataset when hpo_id is not specified.
+        Retraction runs against all the tables with person_id inthe EHR dataset.
         """
         for mock_ in [
                 mock_is_rdr, mock_is_ehr, mock_is_unioned, mock_is_combined,
@@ -704,11 +704,48 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
 
         project_id, sandbox_id, dataset_id = self.project_id, self.sandbox_id, self.ehr_id
 
-        with self.assertLogs(level='WARNING') as cm:
-            run_bq_retraction(project_id, sandbox_id, self.lookup_table_id,
-                              NONE, [dataset_id], RETRACTION_ONLY_EHR, False,
-                              self.client)
-        self.assertTrue(f"Skipping retraction" in cm.output[0])
+        run_bq_retraction(project_id, sandbox_id, self.lookup_table_id, NONE,
+                          [dataset_id], RETRACTION_ONLY_EHR, False, self.client)
+
+        self.assertRowIDsMatch(
+            f'{project_id}.{dataset_id}.{self.hpo_id}_{PERSON}', ['person_id'],
+            PERS_PID_AFTER_RETRACTION)
+        self.assertRowIDsMatch(
+            f'{project_id}.{sandbox_id}.retract_{dataset_id}_{self.hpo_id}_{PERSON}',
+            ['person_id'], PERS_PID_TO_RETRACT)
+
+        self.assertRowIDsMatch(
+            f'{project_id}.{dataset_id}.{UNIONED_EHR}_{PERSON}', ['person_id'],
+            PERS_PID_AFTER_RETRACTION)
+        self.assertRowIDsMatch(
+            f'{project_id}.{sandbox_id}.retract_{dataset_id}_{UNIONED_EHR}_{PERSON}',
+            ['person_id'], PERS_PID_TO_RETRACT)
+
+        self.assertRowIDsMatch(f'{project_id}.{dataset_id}.foo_{PERSON}',
+                               ['person_id'], PERS_PID_AFTER_RETRACTION)
+        self.assertRowIDsMatch(
+            f'{project_id}.{sandbox_id}.retract_{dataset_id}_foo_{PERSON}',
+            ['person_id'], PERS_PID_TO_RETRACT)
+
+        self.assertRowIDsMatch(
+            f'{project_id}.{dataset_id}.{self.hpo_id}_{OBSERVATION}',
+            ['observation_id'], OBS_PID_AFTER_RETRACTION)
+        self.assertRowIDsMatch(
+            f'{project_id}.{sandbox_id}.retract_{dataset_id}_{self.hpo_id}_{OBSERVATION}',
+            ['observation_id'], OBS_PID_TO_RETRACT)
+
+        self.assertRowIDsMatch(
+            f'{project_id}.{dataset_id}.{UNIONED_EHR}_{OBSERVATION}',
+            ['observation_id'], OBS_PID_AFTER_RETRACTION)
+        self.assertRowIDsMatch(
+            f'{project_id}.{sandbox_id}.retract_{dataset_id}_{UNIONED_EHR}_{OBSERVATION}',
+            ['observation_id'], OBS_PID_TO_RETRACT)
+
+        self.assertRowIDsMatch(f'{project_id}.{dataset_id}.foo_{OBSERVATION}',
+                               ['observation_id'], OBS_PID_AFTER_RETRACTION)
+        self.assertRowIDsMatch(
+            f'{project_id}.{sandbox_id}.retract_{dataset_id}_foo_{OBSERVATION}',
+            ['observation_id'], OBS_PID_TO_RETRACT)
 
     @mock_patch_bundle
     def test_retract_fitbit_rdr_and_ehr(self, mock_get_dataset_type,

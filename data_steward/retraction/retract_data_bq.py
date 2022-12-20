@@ -301,9 +301,16 @@ def get_tables_to_retract(client: BigQueryClient,
     :param retraction_type: only_ehr or rdr_and_ehr
     :return: list of table names for retraction
     """
-    LOGGER.info(f'Checking tables to retract in {client.project}.{dataset}...')
 
-    if is_ehr_dataset(dataset):
+    LOGGER.info(f'Checking tables to retract in {client.project}.{dataset}...')
+    if is_ehr_dataset(dataset) and (not hpo_id or hpo_id == NONE):
+        LOGGER.warning(
+            f'{dataset} is an EHR dataset but hpo_id is not specified or set to {NONE}. '
+            f'Retraction will run against all the tables with person_id in {dataset}. '
+            'It will take a while since there are more tables in EHR datasets than other datasets.'
+        )
+
+    if is_ehr_dataset(dataset) and (hpo_id and hpo_id != NONE):
         tables_to_retract = [
             f'{prefix}_{table}' for prefix, table in
             product([hpo_id, UNIONED_EHR], TABLES_FOR_RETRACTION |
@@ -371,7 +378,7 @@ def skip_table_retraction(client: BigQueryClient, dataset_id, table_id,
 
 def skip_dataset_retraction(dataset_id, hpo_id, retraction_type) -> bool:
     """
-    Some datasets do not need retraction depending on how we want to retract. 
+    Some datasets do not need retraction depending on how we want to retract.
     This function returns True if the dataset does not need retraction.
     :param dataset_id: dataset to run retraction for
     :param hpo_id: hpo_id of the site to retract from
@@ -380,9 +387,6 @@ def skip_dataset_retraction(dataset_id, hpo_id, retraction_type) -> bool:
     :return: True if the dataset should be skipped. False if we need to retract the dataset.
     """
     msg_skip = f'Skipping retraction for the dataset {dataset_id}, '
-    msg_missing_hpo_id = (
-        'because hpo_id is not specified. This is an EHR dataset and hpo_id '
-        'must be defined when retracting from an EHR dataset.')
     msg_no_ehr = (
         f'because {RETRACTION_ONLY_EHR} is specified. This is a {get_dataset_type(dataset_id)}'
         ' dataset and it does not contain data from EHR.')
@@ -390,15 +394,12 @@ def skip_dataset_retraction(dataset_id, hpo_id, retraction_type) -> bool:
         f'because the script could not find mapping info for identifying which data came from EHR.'
     )
 
-    if is_ehr_dataset(dataset_id) and (hpo_id == NONE or not hpo_id):
-        LOGGER.warning(f'{msg_skip}{msg_missing_hpo_id}')
-        return True
-
     if retraction_type == RETRACTION_ONLY_EHR:
         if is_rdr_dataset(dataset_id) or is_fitbit_dataset(dataset_id):
             LOGGER.warning(f'{msg_skip}{msg_no_ehr}')
             return True
 
+        # TODO Remove this if statement when this script is ready to handle OTHER and sandbox datasets.
         if get_dataset_type(dataset_id) == OTHER or is_sandbox_dataset(
                 dataset_id):
             LOGGER.warning(f'{msg_skip}{msg_no_mapping}')
@@ -451,7 +452,9 @@ def run_bq_retraction(project_id,
     """
     client = bq_client if bq_client else BigQueryClient(project_id)
 
+    # NOTE get_datasets_list() excludes sandbox datasets and datasets that are type=OTHER.
     dataset_ids = get_datasets_list(client, dataset_list)
+
     for dataset in dataset_ids:
 
         if skip_dataset_retraction(dataset, hpo_id, retraction_type):

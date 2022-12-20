@@ -258,7 +258,7 @@ def extract_pids_from_table(project_id, sandbox_dataset_id, pid_table_id):
 
 
 if __name__ == '__main__':
-    pipeline_logging.configure(logging.DEBUG, add_console_handler=True)
+    pipeline_logging.configure(logging.INFO, add_console_handler=True)
 
     parser = argparse.ArgumentParser(
         description=
