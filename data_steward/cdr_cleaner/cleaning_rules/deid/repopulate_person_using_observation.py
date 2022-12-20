@@ -22,9 +22,9 @@ ethnicity_source_concept_id
 
 As per ticket DC-1446, for participants who have not answered the question "What is you race/ethnicity" we need to set
     their race_concept_id to 2100000001.
-    
-Per ticket DC-1584, The sex_at_birth_concept_id, sex_at_ birth_source_concept_id, and sex_at_birth_source_value columns 
-were defined and set in multiple repopulate person scripts. This was redundant and caused unwanted schema changes for 
+
+Per ticket DC-1584, The sex_at_birth_concept_id, sex_at_ birth_source_concept_id, and sex_at_birth_source_value columns
+were defined and set in multiple repopulate person scripts. This was redundant and caused unwanted schema changes for
 the person table.  With the implementation of DC-1514 and DC-1570 these columns are to be removed from all
 repopulate_person_* files.
 """
@@ -44,7 +44,7 @@ AOU_NONE_INDICATED_CONCEPT_ID = 2100000001
 AOU_NONE_INDICATED_SOURCE_VALUE = 'AoUDRC_NoneIndicated'
 
 REPOPULATE_PERSON_QUERY_TEMPLATE = JINJA_ENV.from_string("""
-SELECT DISTINCT 
+SELECT DISTINCT
     p.person_id,
     gs.gender_concept_id,
     bs.year_of_birth,
@@ -52,8 +52,11 @@ SELECT DISTINCT
     bs.day_of_birth,
     bs.birth_datetime,
     CASE -- a special case to handle that requires inputs from both race ethnicity --
+        WHEN rs.race_concept_id = 2100000001 THEN SET table.col = other_table.other_col --
         WHEN rs.race_concept_id = 0  THEN {{aou_none_indicated_concept_id}}
-        ELSE rs.race_concept_id 
+
+
+        ELSE rs.race_concept_id
     END AS race_concept_id,
     es.ethnicity_concept_id,
     CAST(p.location_id AS INT64) AS location_id,
@@ -62,9 +65,10 @@ SELECT DISTINCT
     p.person_source_value,
     gs.gender_source_value,
     gs.gender_source_concept_id,
-    CASE -- a special case to handle that requires inputs from both race ethnicity --
+    CASE -- a special case to handle that requires inputs from both race ethnicity
+        WHEN rs.race_concept_id = 2100000001 THEN SET rs.race_source_concept_id = 2100000001
         WHEN rs.race_concept_id = 0 THEN '{{aou_none_indicated_source_value}}'
-        ELSE rs.race_source_value 
+        ELSE rs.race_source_value
     END AS race_source_value,
     rs.race_source_concept_id,
     es.ethnicity_source_value,
@@ -74,19 +78,29 @@ LEFT JOIN {{project}}.{{sandbox_dataset}}.{{gender_sandbox_table}} AS gs
     ON p.person_id = gs.person_id
 LEFT JOIN {{project}}.{{sandbox_dataset}}.{{race_sandbox_table}} AS rs
     ON p.person_id = rs.person_id
-LEFT JOIN {{project}}.{{sandbox_dataset}}.{{ethnicity_sandbox_table}} AS es 
+LEFT JOIN {{project}}.{{sandbox_dataset}}.{{ethnicity_sandbox_table}} AS es
     ON p.person_id = es.person_id
-LEFT JOIN {{project}}.{{sandbox_dataset}}.{{birth_info_sandbox_table}} AS bs 
+LEFT JOIN {{project}}.{{sandbox_dataset}}.{{birth_info_sandbox_table}} AS bs
     ON p.person_id = bs.person_id
 """)
 
 
+
+
+
+
+set race_source_concept_id = 2100000001
+
+
+
+
+
 class ConceptTranslation(NamedTuple):
     """
-    A NamedTuple for storing the manual translations of the demographics concepts. The reason we 
-    need to do this manually is that PPI demographics concepts are in the Answer class  whereas 
-    the OMOP demographics concepts are in the demographics class such mappings do not exist in 
-    concept_relationship. e.g. 1586142 -> 8515 
+    A NamedTuple for storing the manual translations of the demographics concepts. The reason we
+    need to do this manually is that PPI demographics concepts are in the Answer class  whereas
+    the OMOP demographics concepts are in the demographics class such mappings do not exist in
+    concept_relationship. e.g. 1586142 -> 8515
     """
     concept_id: int
     translated_concept_id: int
@@ -122,91 +136,91 @@ class AbstractRepopulatePerson(BaseCleaningRule):
     @abstractmethod
     def get_gender_query(self, gender_sandbox_table) -> dict:
         """
-        This method creates a query for generating a sandbox table for storing the cleaned up 
-        version of the gender information 
-        
-        :param gender_sandbox_table: 
-        :return: 
+        This method creates a query for generating a sandbox table for storing the cleaned up
+        version of the gender information
+
+        :param gender_sandbox_table:
+        :return:
         """
         pass
 
     @abstractmethod
     def get_race_query(self, race_sandbox_table) -> dict:
         """
-        This method creates a query for generating a sandbox table for storing the cleaned up 
-        version of the race information including race_concept_id, race_source_concept_id, 
-        race_source_value 
-        
-        :param race_sandbox_table: 
-        :return: 
+        This method creates a query for generating a sandbox table for storing the cleaned up
+        version of the race information including race_concept_id, race_source_concept_id,
+        race_source_value
+
+        :param race_sandbox_table:
+        :return:
         """
         pass
 
     @abstractmethod
     def get_ethnicity_query(self, ethnicity_sandbox_table) -> dict:
         """
-        This method creates a query for generating a sandbox table for storing the cleaned up 
-        version of the ethnicity information including ethnicity_concept_id, 
-        ethnicity_source_concept_id, ethnicity_source_value 
-        
-        :param ethnicity_sandbox_table: 
-        :return: 
+        This method creates a query for generating a sandbox table for storing the cleaned up
+        version of the ethnicity information including ethnicity_concept_id,
+        ethnicity_source_concept_id, ethnicity_source_value
+
+        :param ethnicity_sandbox_table:
+        :return:
         """
         pass
 
     @abstractmethod
     def get_birth_info_query(self, birth_info_sandbox_table) -> dict:
         """
-        This method creates a query for generating a sandbox table for storing the cleaned up 
-        version of the birth information including birth_datetime, year_of_birth, month_of_birth, 
-        day_of_birth 
+        This method creates a query for generating a sandbox table for storing the cleaned up
+        version of the birth information including birth_datetime, year_of_birth, month_of_birth,
+        day_of_birth
 
-        
-        :return: 
+
+        :return:
         """
         pass
 
     @abstractmethod
     def get_gender_manual_translation(self) -> List[ConceptTranslation]:
         """
-        Define manual mappings to translate PPI gender concepts to the standard OMOP gender concepts. 
-        The reason we need to do this manually is that PPI gender concepts are in the Answer class 
-        whereas the OMOP gender concepts are in the gender class such mappings do not exist in 
-        concept_relationship 
-        
-        :return: 
+        Define manual mappings to translate PPI gender concepts to the standard OMOP gender concepts.
+        The reason we need to do this manually is that PPI gender concepts are in the Answer class
+        whereas the OMOP gender concepts are in the gender class such mappings do not exist in
+        concept_relationship
+
+        :return:
         """
         pass
 
     @abstractmethod
     def get_race_manual_translation(self) -> List[ConceptTranslation]:
         """
-        Define manual mappings to translate PPI race concepts to the standard OMOP race concepts. 
-        The reason we need to do this manually is that PPI race concepts are in the Answer class 
-        whereas the OMOP race concepts are in the race class such mappings do not exist in 
-        concept_relationship 
-        
-        :return: 
+        Define manual mappings to translate PPI race concepts to the standard OMOP race concepts.
+        The reason we need to do this manually is that PPI race concepts are in the Answer class
+        whereas the OMOP race concepts are in the race class such mappings do not exist in
+        concept_relationship
+
+        :return:
         """
         pass
 
     @abstractmethod
     def get_ethnicity_manual_translation(self) -> List[ConceptTranslation]:
         """
-        Define manual mappings to translate PPI ethnicity concepts to the standard OMOP ethnicity 
-        concepts. The reason we need to do this manually is that PPI ethnicity concepts are in 
-        the Answer class whereas the OMOP ethnicity concepts are in the ethnicity class such 
-        mappings do not exist in concept_relationship 
+        Define manual mappings to translate PPI ethnicity concepts to the standard OMOP ethnicity
+        concepts. The reason we need to do this manually is that PPI ethnicity concepts are in
+        the Answer class whereas the OMOP ethnicity concepts are in the ethnicity class such
+        mappings do not exist in concept_relationship
 
-        :return: 
+        :return:
         """
         pass
 
     def get_gender_sandbox_table(self):
         """
         Sandbox table for storing the gender information for repopulating person
-        
-        :return: 
+
+        :return:
         """
         return self.sandbox_table_for(self.GENDER)
 
@@ -214,7 +228,7 @@ class AbstractRepopulatePerson(BaseCleaningRule):
         """
         Sandbox table for storing the race information for repopulating person
 
-        :return: 
+        :return:
         """
         return self.sandbox_table_for(self.RACE)
 
@@ -222,7 +236,7 @@ class AbstractRepopulatePerson(BaseCleaningRule):
         """
         Sandbox table for storing the ethnicity information for repopulating person
 
-        :return: 
+        :return:
         """
         return self.sandbox_table_for(self.ETHNICITY)
 
@@ -230,7 +244,7 @@ class AbstractRepopulatePerson(BaseCleaningRule):
         """
         Sandbox table for storing the birth information for repopulating person
 
-        :return: 
+        :return:
         """
         return self.sandbox_table_for(self.BIRTH)
 
