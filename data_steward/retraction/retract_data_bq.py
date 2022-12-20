@@ -187,11 +187,12 @@ def get_retraction_queries(client: BigQueryClient,
     )
 
     person_id = RESEARCH_ID if is_deid_dataset(dataset_id) else PERSON_ID
+    action_list = ['delete'] if skip_sandboxing else ['sandbox', 'delete']
 
     queries = []
 
     for table in tables_to_retract:
-        for action in ['delete'] if skip_sandboxing else ['sandbox', 'delete']:
+        for action in action_list:
             q = JINJA_ENV.from_string(RETRACT_QUERY).render(
                 sandbox=action == 'sandbox',
                 project=client.project,
