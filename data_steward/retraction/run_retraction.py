@@ -15,15 +15,7 @@ You cannot use this script for retraction for the following datasets.
 You need to re-run the dataset creation script after source datasets are retracted:
     - [CT] antibody quest dataset
 
-Original Issues: DC-2801
-
-TODO: Improve code coverage for retracting RDR, EHR, and UNIONED_EHR datasets.
-    This script is initally created and used for DC-2801. RDR, EHR, and
-    UNIONED_EHR datasets are not in DC-2801's scope. Therefore, retraction for
-    RDR, EHR, and UNIONED_EHR is not fully tested.
-TODO: Improve code coverage for retracting with dataset_ids_list = 'all_datasets'.
-    For the same reason, DC-2801 did not use 'all_datasets' option for
-    retraction. This also needs to be tested.
+Original Issues: DC-2801, DC-2865
 """
 
 # Python imports
@@ -162,9 +154,10 @@ def create_sandbox_dataset(client: BigQueryClient, release_tag) -> None:
 
 def create_lookup_table(client: BigQueryClient, sql_file_path: str) -> str:
     """
-    Run SQL from the local SQL file and create a lookup table for retraction.
-    The SQL in the local SQL file needs to meet the following criteria:
-        1. The SQL is written for BigQuery
+    Run 'create table' from a local file and create a lookup table for retraction.
+    The local 'create table' file needs to meet the following criteria:
+        1. It's written for creating a table in BigQuery. The statement can start by
+           'CREATE TABLE', 'CREATE TABLE IF NOT EXISTS', or 'CREATE OR REPLACE TABLE'
         2. Only one statement is written in the file
         3. The table is fully qualified and hard-coded
         4. Dataset name is f"{release_tag}_sandbox"
@@ -183,10 +176,11 @@ def create_lookup_table(client: BigQueryClient, sql_file_path: str) -> str:
     job = client.query(create_statement)
     job.result()
 
+    # Read the 'create table' statement and get the table name.
     regex_created_table = re.search(
-        r"create( or replace)?[ ]+table[ ]+`?[a-z0-9-_]*.[a-z0-9-_]*.([a-z0-9-_]*)`?",
+        r"create( +or +replace)?[ ]+table( +if +not +exists)?[ ]+`?[a-z0-9-_]*.[a-z0-9-_]*.([a-z0-9-_]*)`?",
         create_statement, re.IGNORECASE)
-    lookup_table_name = regex_created_table.group(2)
+    lookup_table_name = regex_created_table.group(3)
 
     LOGGER.info(
         f"Created the lookup table {lookup_table_name} in the sandbox dataset.")
@@ -212,8 +206,8 @@ def parse_args(raw_args=None):
         nargs='+',
         action='store',
         dest='source_datasets',
-        help=
-        'Datasets that need retraction. If there are more than one, seperate them by whitespaces.',
+        help=('Datasets that need retraction. If there are more than one, '
+              'seperate them by whitespaces.'),
         required=True)
     parser.add_argument(
         '--new_release_tag',
@@ -233,12 +227,16 @@ def parse_args(raw_args=None):
                         action='store_true',
                         required=False,
                         help='Log to the console as well as to a file.')
-    parser.add_argument('-i',
-                        '--hpo_id',
-                        action='store',
-                        dest='hpo_id',
-                        help='Identifies the site to retract data from.',
-                        required=True)
+    parser.add_argument(
+        '-i',
+        '--hpo_id',
+        action='store',
+        dest='hpo_id',
+        help=('Identifies the site to retract data from. '
+              'Specify this argument when retracting from EHR dataset. '
+              'This argument is effective only for EHR dataset. '
+              'For other datasets, it gets ignored.'),
+        required=False)
     parser.add_argument(
         '-r',
         '--retraction_type',
