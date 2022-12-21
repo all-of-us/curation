@@ -376,12 +376,11 @@ def skip_table_retraction(client: BigQueryClient, dataset_id, table_id,
     return False
 
 
-def skip_dataset_retraction(dataset_id, hpo_id, retraction_type) -> bool:
+def skip_dataset_retraction(dataset_id, retraction_type) -> bool:
     """
     Some datasets do not need retraction depending on how we want to retract.
     This function returns True if the dataset does not need retraction.
     :param dataset_id: dataset to run retraction for
-    :param hpo_id: hpo_id of the site to retract from
     :param retraction_type: string indicating whether all data needs to be removed including RDR,
         or if RDR data needs to be kept intact. Can take the values 'rdr_and_ehr' or 'only_ehr'
     :return: True if the dataset should be skipped. False if we need to retract the dataset.
@@ -457,7 +456,7 @@ def run_bq_retraction(project_id,
 
     for dataset in dataset_ids:
 
-        if skip_dataset_retraction(dataset, hpo_id, retraction_type):
+        if skip_dataset_retraction(dataset, retraction_type):
             continue
 
         # Argument hpo_id is effective for only EHR dataset.

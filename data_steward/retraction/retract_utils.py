@@ -101,8 +101,8 @@ def get_datasets_list(client, dataset_ids_list):
     elif dataset_ids_list == [consts.ALL_DATASETS]:
         dataset_ids = all_dataset_ids
         LOGGER.info(
-            f"All datasets are specified. Setting dataset_ids to all datasets in project: {client.project}\n"
-            f"Found datasets to retract from: {', '.join(dataset_ids)}")
+            f"All datasets are specified. Setting dataset_ids to all datasets in project: {client.project}."
+        )
     else:
         # only consider datasets that exist in the project
         dataset_ids = [
@@ -119,6 +119,8 @@ def get_datasets_list(client, dataset_ids_list):
         if get_dataset_type(dataset_id) != OTHER and
         not is_sandbox_dataset(dataset_id)
     ]
+
+    LOGGER.info(f"Found datasets to retract from: {', '.join(dataset_ids)}")
 
     return dataset_ids
 
