@@ -23,6 +23,7 @@ from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from common import JINJA_ENV, OBSERVATION, SURVEY_CONDUCT, DEID_MAP
 from cdr_cleaner.cleaning_rules.deid.survey_version_info import COPESurveyVersionTask
+from cdr_cleaner.cleaning_rules.deid.questionnaire_response_id_map import QRIDtoRID
 
 LOGGER = logging.getLogger(__name__)
 
@@ -120,7 +121,7 @@ class DateUnShiftCopeResponses(BaseCleaningRule):
             project_id=project_id,
             dataset_id=dataset_id,
             sandbox_dataset_id=sandbox_dataset_id,
-            depends_on=[COPESurveyVersionTask],
+            depends_on=[COPESurveyVersionTask, QRIDtoRID],
             table_namer=table_namer)
 
     def get_combined_dataset_from_deid_dataset(self, dataset_name):
