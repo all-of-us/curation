@@ -8,8 +8,8 @@ value_source_concept_id through 'Maps to' relationship """
 
 # Python Imports
 import os
-import pytz
 import datetime
+import pytz
 
 # Project Imports
 from common import PERSON, VISIT_OCCURRENCE, OBSERVATION
