@@ -15,7 +15,7 @@ from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, quer
 
 LOGGER = logging.getLogger(__name__)
 
-JIRA_ISSUE_NUMBERS = ['DC816', 'DC404', 'DC2771']
+JIRA_ISSUE_NUMBERS = ['DC816', 'DC404', 'DC2771', 'DC2788']
 
 # add table names as keys and temporal representations as values into a dictionary
 TEMPORAL_TABLES_WITH_START_DATE = {
