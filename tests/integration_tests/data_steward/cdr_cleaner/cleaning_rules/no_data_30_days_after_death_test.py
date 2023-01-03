@@ -1,9 +1,9 @@
 """
 Integration test for fix_unmapped_survey_answers module
 
-Original Issues: DC-1043, DC-1053
+Original Issues: DC-1043, DC-1053, DC-2788
 
-The intent is to map the unmapped survey answers (value_as_concept_ids=0) using 
+The intent is to map the unmapped survey answers (value_as_concept_ids=0) using
 value_source_concept_id through 'Maps to' relationship """
 
 # Python Imports
