@@ -56,7 +56,8 @@ SELECT ma.*
 FROM `{{project}}.{{dataset}}.{{table_name}}` AS ma
 JOIN `{{project}}.{{dataset}}.death` AS d
 ON ma.person_id = d.person_id
-WHERE date_diff(GREATEST(CAST(ma.{{start_date}} AS DATE), CAST(ma.{{end_date}} AS DATE)), d.death_date, DAY) > 30
+WHERE date_diff(GREATEST(CAST(COALESCE(ma.{{start_date}}, ma.{{end_date}}) AS DATE), 
+CAST(COALESCE(ma.{{end_date}}, ma.{{start_date}}) AS DATE)), d.death_date, DAY) > 30
 )
 """)
 
