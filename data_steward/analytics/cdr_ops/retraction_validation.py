@@ -25,7 +25,7 @@ run_as: str = ""  # service account email to impersonate
 from common import JINJA_ENV, PIPELINE_TABLES, FITBIT_TABLES, CDM_TABLES
 from utils import auth
 from gcloud.bq import BigQueryClient
-from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES, render_message
+from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES, provenance_table_for
 
 impersonation_creds = auth.get_impersonation_credentials(
     run_as, target_scopes=IMPERSONATION_SCOPES)
@@ -41,20 +41,6 @@ WHERE column_name = "person_id"
 pid_table_list = client.query(person_id_tables_query).to_dataframe().get(
     'table_name').to_list()
 pid_table_list
-
-
-def provenance_table_for(table: str, is_deidentified: str = 'false'):
-    """
-    Returns a mapping table for a domain table.
-    
-    :param table: identifies domain table name
-    :param is_deidentified: identifies if a the dataset is de-identified choose b/e true/false.
-    """
-    if is_deidentified.lower() == 'false':
-        return f'_mapping_{table}'
-    else:
-        return f'{table}_ext'
-
 
 # +
 pids_query = JINJA_ENV.from_string('''

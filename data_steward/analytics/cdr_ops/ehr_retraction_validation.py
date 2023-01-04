@@ -17,7 +17,7 @@ project_id: str = ""  # identifies the project where datasets are located
 old_dataset: str = ""  # identifies the dataset name where participants are to be retracted
 new_dataset: str = ""  # identifies the dataset name after retraction
 lookup_table: str = ""  # lookup table name where the pids and rids needs to be retracted are stored
-lookup_table_dataset: str = ""  # the sandbox dataset where lookup tasble is located
+lookup_table_dataset: str = ""  # the sandbox dataset where lookup table is located
 is_deidentified: str = "true"  # identifies if a dataset is pre or post deid
 run_as: str = ""  # service account email to impersonate
 # -
@@ -25,7 +25,7 @@ run_as: str = ""  # service account email to impersonate
 from common import JINJA_ENV, CDM_TABLES
 from utils import auth
 from gcloud.bq import BigQueryClient
-from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES, render_message
+from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES, provenance_table_for
 
 impersonation_creds = auth.get_impersonation_credentials(
     run_as, target_scopes=IMPERSONATION_SCOPES)
@@ -42,10 +42,10 @@ pid_tables = client.query(person_id_tables_query).to_dataframe().get(
     'table_name').to_list()
 pid_table_list = [
     table for table in pid_tables
-    # Ignoring person and survey_conduct as we copy both the tables as-is from RDR
-    # and we don't have to tertact from them
+    # Ignoring person and survey_conduct as we copy both the tables as-is from RDR,
+    # and we don't have to retract from them
     # Ignoring Death as it does not have mapping table and below validation queries rely on mapping table.
-    # A seperate check for death table is added to verify retraction.
+    # A separate check for death table is added to verify retraction.
     if table in CDM_TABLES and table not in ('person', 'death',
                                              'survey_conduct')
 ]
@@ -70,23 +70,9 @@ WITH
 
 # -
 
-
-def provenance_table_for(table: str, is_deidentified: str = 'false'):
-    """
-    Returns a mapping table for a domain table.
-    
-    :param table: identifies domain table name
-    :param is_deidentified: identifies if a the dataset is de-identified choose b/e true/false.
-    """
-    if is_deidentified.lower() == 'false':
-        return f'_mapping_{table}'
-    else:
-        return f'{table}_ext'
-
-
 # ## 1. Verify ehr data for participants listed to be dropped in the lookup table are dropped from the pid_tables
 #
-# Here we are checking for no EHR data in a given dataset. We are joining the domain tables onto the provenence tables to identify if a particulary record is from EHR submission.
+# Here we are checking for no EHR data in a given dataset. We are joining the domain tables onto the provenence tables to identify if a particular record is from EHR submission.
 
 # +
 table_check_query = JINJA_ENV.from_string('''
@@ -134,7 +120,7 @@ execute(client, retraction_status_query)
 
 # ## 2. Row counts of participants in source dataset minus the ehr data is equal to the row counts for the participants in new dataset.
 #
-# We expect PPI/PM data to exist for the listed participants even after the retraction. So here we are checking the record count of the source data minus the EHR records is equal to the recvord count post retraction.
+# We expect PPI/PM data to exist for the listed participants even after the retraction. So here we are checking the record count of the source data minus the EHR records is equal to the record count post retraction.
 
 # +
 table_row_counts_query = JINJA_ENV.from_string('''
@@ -203,7 +189,7 @@ execute(client, retraction_table_count_query)
 
 # ## 3. Verify Death table retraction.
 #
-# Death table is copied as-is from EHR dataset as we do not recieve data for death from RDR export. Death table is missing the provenence table as it doesn't have a domain_id column so we will use person_id column to identify the records if any.
+# Death table is copied as-is from EHR dataset as we do not receive death data via the RDR export yett. Death table is missing the provenence table as it doesn't have a domain_id column so we will use person_id column to identify any records.
 
 # +
 table_check_query = JINJA_ENV.from_string('''
