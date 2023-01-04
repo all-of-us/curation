@@ -21,24 +21,35 @@ JIRA_ISSUE_URL = [
 ]
 
 MAP_TABLE_NAME = "_mapping_person_src_hpos"
-MAP_HPO_ALLOWED_STATES = "_mapping_src_hpos_to_allowed_states"
-UNIT_MAPPING_TABLE_DISPOSITION = "WRITE_TRUNCATE"
+
+SCHEMA_MAP_TABLE = [{
+    "type": "integer",
+    "name": "person_id",
+    "mode": "required",
+    "description": "the person_id of someone with an ehr record"
+}, {
+    "type": "string",
+    "name": "src_hpo_id",
+    "mode": "required",
+    "description": "the src_hpo_id of an ehr record"
+}]
 
 HPO_ID_NOT_RDR_QUERY = JINJA_ENV.from_string("""
   SELECT
   DISTINCT person_id, src_hpo_id
   FROM
-    `{{dataset_id}}._mapping_{{table}}`
+    `{{project_id}}.{{dataset_id}}._mapping_{{table}}`
   JOIN
-    `{{dataset_id}}.{{table}}`
+    `{{project_id}}.{{dataset_id}}.{{table}}`
   USING
-    `{{table}}_id`
+    ({{table}}_id)
   WHERE
     src_hpo_id NOT LIKE 'rdr'
 """)
 
 LIST_PERSON_ID_TABLES = JINJA_ENV.from_string("""
-  SELECT table_name
+  SELECT
+  DISTINCT table_name
   FROM `{{project_id}}.{{dataset_id}}.INFORMATION_SCHEMA.COLUMNS`
   WHERE lower(column_name) = 'person_id'
 """)
@@ -55,8 +66,10 @@ SANDBOX_QUERY_TO_FIND_RECORDS = JINJA_ENV.from_string("""
   `{{project_id}}.{{sandbox_dataset_id}}.{{target_table}}` AS (
   SELECT observation_id FROM (
     SELECT DISTINCT src_hpo_id, obs.person_id, value_source_concept_id, observation_id
-    FROM {{project_id}}.{{sandbox_dataset_id}}.{{map_table_name}} AS person_hpos
-    LEFT JOIN {{project_id}}.{{sandbox_dataset_id}}.{{map_hpo_allowed_states}}
+    FROM `{{project_id}}.{{sandbox_dataset_id}}.{{map_table_name}}` AS person_hpos
+    JOIN `{{project_id}}.{{dataset_id}}.{{target_table}}` AS obs
+    USING (person_id)
+    LEFT JOIN `{{project_id}}.pipeline_tables.site_maskings`
     USING (src_hpo_id, value_source_concept_id)
     WHERE observation_source_concept_id = 1585249  AND state IS NULL))
 """)
@@ -65,7 +78,8 @@ GENERALIZE_STATE_QUERY = JINJA_ENV.from_string("""
   UPDATE
   `{{project_id}}.{{dataset_id}}.{{updated_table}}` AS D_OBS,
   `{{project_id}}.{{sandbox_dataset_id}}.{{target_table}}` AS SB_OBS
-  SET D_OBS.value_source_concept_id = 2000000011
+  SET D_OBS.value_source_concept_id = 2000000011,
+  D_OBS.value_as_concept_id = 2000000011
   WHERE D_OBS.observation_id = SB_OBS.observation_id
 """)
 
@@ -85,7 +99,7 @@ class ConflictingHpoStateGeneralize(BaseCleaningRule):
         super().__init__(issue_numbers=JIRA_ISSUE_NUMBERS,
                          issue_urls=JIRA_ISSUE_URL,
                          description=desc,
-                         affected_datasets=[cdr_consts.EHR],
+                         affected_datasets=[cdr_consts.REGISTERED_TIER_DEID],
                          affected_tables=[OBSERVATION],
                          project_id=project_id,
                          dataset_id=dataset_id,
@@ -96,95 +110,73 @@ class ConflictingHpoStateGeneralize(BaseCleaningRule):
         """
         Run required steps for setup rule
 
-        Create a mapping table of src_hpos to states they are located in.
-        Create a table containing person_ids and src_hpo_ids
+        1. Identify the states where EHR data is originating from.
+        2. Identify the states participants claim to live in
+           (This is value_source_concept_id where observation_source_concept_id = 1585249.)
+        3. If you find any EHR records for a participant that originates from a state other than the state
+           where the participant claims to live, then that participants original response should be sandboxed
+           and their data should be generalized such that value_source_concept_id = 2000000011 and
+           value_as_concept_id = 2000000011  when observation_source_concept_id = 1585249.
         """
         # Currently this rule is only run for 'OBSERVATION' table.
         # To include more tables in the future, update 'affected_tables' in __init__ args.
-        for _ in self.affected_tables:
 
-            # Create a mapping table of src_hpos to states they are located in.
-            map_tablename = f"{self.sandbox_dataset_id}.{MAP_HPO_ALLOWED_STATES}"
-            client.create_table(map_tablename, exists_ok=True)
+        # List Dataset Content
+        dataset_tables = client.list_tables(self.dataset_id)
+        dataset_table_ids = [table.table_id for table in dataset_tables]
 
-            data_path = os.path.join(DEID_PATH, 'config', 'internal_tables',
-                                     'src_hpos_to_allowed_states.csv')
+        mapped_tables = [
+            table[9:]
+            for table in dataset_table_ids
+            if table.startswith('_mapping_')
+        ]
 
-            # write this to bigquery.
-            try:
-                _ = client.upload_csv_data_to_bq_table(
-                    self.sandbox_dataset_id, MAP_HPO_ALLOWED_STATES, data_path,
-                    UNIT_MAPPING_TABLE_DISPOSITION)
+        # Make sure all mapped_tables exists
+        check_tables = [
+            table for table in mapped_tables if table in dataset_table_ids
+        ]
 
-                LOGGER.info(
-                    f"Created {self.sandbox_dataset_id}.{MAP_HPO_ALLOWED_STATES} and "
-                    f"loaded data from {data_path}")
+        # Make sure check_tables contains person_id field
+        person_id_query = LIST_PERSON_ID_TABLES.render(
+            project_id=self.project_id, dataset_id=self.dataset_id)
+        result = client.query(person_id_query).result()
 
-            except Conflict as c:
-                LOGGER.info(
-                    f"{self.sandbox_dataset_id}.{MAP_HPO_ALLOWED_STATES} Data load encountered conflict: "
-                    f"{c.errors}")
+        # List of mapped tables that exists in given dataset with 'person_id' column.
+        person_id_tables = []
+        for row in result:
+            table = row.get('table_name')
+            if table in check_tables:
+                person_id_tables.append(table)
 
-            # List Dataset Content
-            dataset_tables = client.list_tables(self.dataset_id)
-            dataset_table_ids = [table.table_id for table in dataset_tables]
+        # Run UNION DISTINCT query to join person_id_tables
+        sql_statements = []
+        for table in person_id_tables:
+            sql_statements.append(
+                HPO_ID_NOT_RDR_QUERY.render(project_id=self.project_id,
+                                            dataset_id=self.dataset_id,
+                                            table=table))
+        final_hpo_id_not_rdr_query = ' UNION ALL '.join(sql_statements)
 
-            mapped_tables = [
-                table[9:]
-                for table in dataset_table_ids
-                if table.startswith('_mapping_')
-            ]
+        # Create the mapping table in Sandbox if it does not exist
+        if MAP_TABLE_NAME not in client.list_tables(self.sandbox_dataset_id):
+            table_name = f"{self.project_id}.{self.sandbox_dataset_id}.{MAP_TABLE_NAME}"
+            table = bigquery.Table(table_name, schema=SCHEMA_MAP_TABLE)
+            client.create_table(table, exists_ok=True)
 
-            # Make sure all mapped_tables exists
-            check_tables = [
-                table for table in mapped_tables if table in dataset_table_ids
-            ]
-
-            # Make sure check_tables contains person_id field
-            person_id_query = LIST_PERSON_ID_TABLES.render(
-                project_id=self.project_id, dataset_id=self.dataset_id)
-            result = client.query(person_id_query).result()
-
-            person_id_tables = []
-            for row in result:
-                table = row.get('table_name')
-                if table in check_tables:
-                    person_id_tables.append(table)
-
-            # Run UNION DISTINCT query to join person_id_tables
-            sql_statements = []
-            for table in person_id_tables:
-                sql_statements.append(
-                    HPO_ID_NOT_RDR_QUERY.render(dataset_id=self.dataset_id,
-                                                table=table))
-            final_hpo_id_not_rdr_query = ' UNION ALL '.join(sql_statements)
-
-            # Create the mapping table in Sandbox if it does not exist in dataset_table_ids
-            if MAP_TABLE_NAME not in dataset_table_ids:
-                schema = [{
-                    "type": "integer",
-                    "name": "person_id",
-                    "mode": "required",
-                    "description": "the person_id of someone with an ehr record"
-                }, {
-                    "type": "string",
-                    "name": "src_hpo_id",
-                    "mode": "required",
-                    "description": "the src_hpo_id of an ehr record"
-                }]
-                table_name = f"{self.project_id}.{self.sandbox_dataset_id}.{MAP_TABLE_NAME}"
-                table = bigquery.Table(table_name, schema=schema)
-                client.create_table(table, exists_ok=True)
-
-            client(
-                INSERT_TO_MAP_TABLE_NAME.render(
-                    project_id=self.project_id,
-                    sandbox_dataset_id=self.sandbox_dataset_id,
-                    table_name=MAP_TABLE_NAME,
-                    select_query=final_hpo_id_not_rdr_query))
-            LOGGER.info(
-                f"Created mapping table:\t{self.sandbox_dataset_id}.{MAP_TABLE_NAME}"
-            )
+        # 1. Create 'person_id' and 'src_hpo_id' lookup table (MAP_TABLE_NAME table) in sandbox
+        # for mapping person data to source hpo_site.
+        client.query(
+            INSERT_TO_MAP_TABLE_NAME.render(
+                project_id=self.project_id,
+                sandbox_dataset_id=self.sandbox_dataset_id,
+                table_name=MAP_TABLE_NAME,
+                select_query=final_hpo_id_not_rdr_query))
+        LOGGER.info(
+            f"Created mapping table:\t{self.sandbox_dataset_id}.{MAP_TABLE_NAME}"
+        )
+        # 2. State of hpo_site: site_maskings table.
+        # 3. State of Person: Observation table
+        #    (value_source_concept_id if observation_source_concept_id = 1585249)
 
     def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
         """
@@ -198,10 +190,10 @@ class ConflictingHpoStateGeneralize(BaseCleaningRule):
                 cdr_consts.QUERY:
                     SANDBOX_QUERY_TO_FIND_RECORDS.render(
                         project_id=self.project_id,
+                        dataset_id=self.dataset_id,
                         sandbox_dataset_id=self.sandbox_dataset_id,
                         target_table=target_table,
-                        map_table_name=MAP_TABLE_NAME,
-                        map_hpo_allowed_states=MAP_HPO_ALLOWED_STATES)
+                        map_table_name=MAP_TABLE_NAME)
             }
 
             conflicting_hpo_state_generalize_query = {
@@ -223,7 +215,7 @@ class ConflictingHpoStateGeneralize(BaseCleaningRule):
         """
         Generate SandBox Table Names
         """
-        return [self.sandbox_table_for(OBSERVATION)]
+        return [self.sandbox_table_for(table) for table in self.affected_tables]
 
     def validate_rule(self, client, *args, **keyword_args):
         """

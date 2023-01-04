@@ -17,22 +17,6 @@
             "copy_to": ["value_as_concept_id"]
         },
         {
-            "rules": "@generalize.STATE",
-            "fields": ["value_source_concept_id"],
-            "dataset": ":idataset",
-            "table": "observation",
-            "alias": "state_table",
-            "key_field": "state_table.person_id",
-            "key_row": "state_table.value_source_concept_id",
-            "value_field": "observation.person_id",
-            "on": {
-                "field": "observation_source_concept_id",
-                "qualifier": "in",
-                "values": [1585249]
-            },
-            "copy_to": ["value_as_concept_id"]
-        },
-        {
             "rules": "@generalize.SEXUAL-ORIENTATION",
             "fields": ["value_source_concept_id"],
             "dataset": ":idataset",
