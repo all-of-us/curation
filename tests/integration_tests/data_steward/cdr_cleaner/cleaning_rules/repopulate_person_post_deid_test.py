@@ -104,7 +104,7 @@ class RepopulatePersonPostDeidTest(BaseTest.CleaningRulesTestBase):
         Tests that the specifications for queries perform as designed.
 
         Validates pre conditions, tests execution, and post conditions based on the load
-        statements and the tables_and_counts variable.        
+        statements and the tables_and_counts variable.
         """
 
         self.maxDiff = None
