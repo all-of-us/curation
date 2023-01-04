@@ -52,10 +52,8 @@ SELECT DISTINCT
     bs.day_of_birth,
     bs.birth_datetime,
     CASE -- a special case to handle that requires inputs from both race ethnicity --
-        WHEN rs.race_concept_id = 2100000001 THEN SET table.col = other_table.other_col --
-        WHEN rs.race_concept_id = 0  THEN {{aou_none_indicated_concept_id}}
-
-
+        WHEN rs.race_concept_id = {{aou_none_indicated_concept_id}} THEN race_source_concept_id = {{aou_none_indicated_concept_id}}
+        WHEN rs.race_concept_id = 0 THEN {{aou_none_indicated_concept_id}}
         ELSE rs.race_concept_id
     END AS race_concept_id,
     es.ethnicity_concept_id,
@@ -66,7 +64,7 @@ SELECT DISTINCT
     gs.gender_source_value,
     gs.gender_source_concept_id,
     CASE -- a special case to handle that requires inputs from both race ethnicity
-        WHEN rs.race_concept_id = 2100000001 THEN SET rs.race_source_concept_id = 2100000001
+        WHEN rs.race_concept_id = {{aou_none_indicated_concept_id}} THEN rs.race_source_concept_id = {{aou_none_indicated_concept_id}}
         WHEN rs.race_concept_id = 0 THEN '{{aou_none_indicated_source_value}}'
         ELSE rs.race_source_value
     END AS race_source_value,
@@ -83,17 +81,6 @@ LEFT JOIN {{project}}.{{sandbox_dataset}}.{{ethnicity_sandbox_table}} AS es
 LEFT JOIN {{project}}.{{sandbox_dataset}}.{{birth_info_sandbox_table}} AS bs
     ON p.person_id = bs.person_id
 """)
-
-
-
-
-
-
-set race_source_concept_id = 2100000001
-
-
-
-
 
 class ConceptTranslation(NamedTuple):
     """
