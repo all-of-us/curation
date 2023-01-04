@@ -1,39 +1,39 @@
-"""Repopulate the person table using the PPI responses stored in the observation table for 
-gender, race, and ethnicity. For multi-select questions such as gender and race, 
-PNA and other responses are mutually exclusive so we don't need to worry about the cases where a 
-participant submits multiple responses and one of which is PNA. In addition, the Birth related 
-fields in the person table are generalized as well.  Below is a high-level summary of how we 
-populate each type of demographics information. 
+"""Repopulate the person table using the PPI responses stored in the observation table for
+gender, race, and ethnicity. For multi-select questions such as gender and race,
+PNA and other responses are mutually exclusive so we don't need to worry about the cases where a
+participant submits multiple responses and one of which is PNA. In addition, the Birth related
+fields in the person table are generalized as well.  Below is a high-level summary of how we
+populate each type of demographics information.
 
-Race: since race and ethnicity are grouped under the same question  "what is your 
-race/ethnicity?" when querying the race responses only, we need to exclude ethnicity response, 
-this can be done by value_source_concept_id != 1586147. This makes the assumption that all 
-responses except for value_source_concept_id != 1586147 are valid race responses. 
+Race: since race and ethnicity are grouped under the same question  "what is your
+race/ethnicity?" when querying the race responses only, we need to exclude ethnicity response,
+this can be done by value_source_concept_id != 1586147. This makes the assumption that all
+responses except for value_source_concept_id != 1586147 are valid race responses.
 
-Then we translate the PPI race concepts manually to the standard OMOP race concepts. The reason 
-we need to do this is that PPI race concepts are in the Answer class whereas the OMOP race 
-concepts are in the race class such mappings do not exist in concept_relationship. In case of 
-multiple race responses, we replace the multiple responses with a generalized concept 2000000008 
-(WhatRaceEthnicity_GeneralizedMultPopulations). 
+Then we translate the PPI race concepts manually to the standard OMOP race concepts. The reason
+we need to do this is that PPI race concepts are in the Answer class whereas the OMOP race
+concepts are in the race class such mappings do not exist in concept_relationship. In case of
+multiple race responses, we replace the multiple responses with a generalized concept 2000000008
+(WhatRaceEthnicity_GeneralizedMultPopulations).
 
-Ethnicity: "Hispanic or Latino" is one of the responses in "what is your race/ethnicity?" question. 
-Participants can only indicate their ethnicity to be "Hispanic or Latino" but doesn't have the 
-option to indicate they are "Not Hispanic or Latino". We manually map the PPI response 1586147 to 
-the standard OMOP concept 38003563. For those participants who didn't check this option, 
+Ethnicity: "Hispanic or Latino" is one of the responses in "what is your race/ethnicity?" question.
+Participants can only indicate their ethnicity to be "Hispanic or Latino" but doesn't have the
+option to indicate they are "Not Hispanic or Latino". We manually map the PPI response 1586147 to
+the standard OMOP concept 38003563. For those participants who didn't check this option,
 non-Hispanic options are expanded as done in the registered tier repopulation.
 
-Gender: the standard OMOP gender concepts are very limiting and the PPI gender concepts are used 
-instead, so there is no manual mapping for gender. In case of multiple gender responses, 
+Gender: the standard OMOP gender concepts are very limiting and the PPI gender concepts are used
+instead, so there is no manual mapping for gender. In case of multiple gender responses,
 we replace the multiple responses with a generalized concept 2000000002 (
-GenderIdentity_GeneralizedDiffGender) 
-    
-birth information: 
+GenderIdentity_GeneralizedDiffGender)
+
+birth information:
     - null out month_of_birth and day_of_birth fields.
     - year_of_birth remains the same
     - birth_datetime: defaults to June 15, year_of_birth 00:00:00
-    
-Per ticket DC-1584, The sex_at_birth_concept_id, sex_at_ birth_source_concept_id, and sex_at_birth_source_value columns 
-were defined and set in multiple repopulate person scripts. This was redundant and caused unwanted schema changes for 
+
+Per ticket DC-1584, The sex_at_birth_concept_id, sex_at_ birth_source_concept_id, and sex_at_birth_source_value columns
+were defined and set in multiple repopulate person scripts. This was redundant and caused unwanted schema changes for
 the person table.  With the implementation of DC-1514 and DC-1570 these columns are to be removed from all
 repopulate_person_* files.
 """
@@ -53,7 +53,7 @@ from cdr_cleaner.cleaning_rules.deid.repopulate_person_using_observation import 
 
 LOGGER = logging.getLogger(__name__)
 
-JIRA_ISSUE_NUMBERS = ['DC1439', 'DC1446', 'DC1584', 'DC2273']
+JIRA_ISSUE_NUMBERS = ['DC1439', 'DC1446', 'DC1584', 'DC2273', 'DC2828']
 
 # Gender question concept id
 GENDER_IDENTITY_CONCEPT_ID = 1585838
@@ -122,7 +122,7 @@ WITH ppi_response AS
     LEFT JOIN `{{project}}.{{dataset}}.observation` AS o
         ON p.person_id = o.person_id
     {% for join_expression in join_expressions %}
-            AND o.{{join_expression.field_name}} {{join_expression.join_operator.value}} {{join_expression.value}} 
+            AND o.{{join_expression.field_name}} {{join_expression.join_operator.value}} {{join_expression.value}}
     {% endfor %}
     LEFT JOIN `{{project}}.{{dataset}}.concept` AS c
         ON o.value_source_concept_id = concept_id
@@ -166,7 +166,7 @@ FROM
 SINGLE_RESPONSE_QUERY_TEMPLATE = JINJA_ENV.from_string("""
 SELECT DISTINCT
     o.* EXCEPT (rank_order)
-    {% if translate_source_concepts is not none and translate_source_concepts|length > 0 -%}{{'\t'}}   
+    {% if translate_source_concepts is not none and translate_source_concepts|length > 0 -%}{{'\t'}}
     REPLACE(
         CASE {{prefix}}_source_concept_id
         {% for translate_source_concept in translate_source_concepts %}
@@ -177,7 +177,7 @@ SELECT DISTINCT
         END AS {{prefix}}_concept_id
     )
     {% endif %}
-FROM 
+FROM
 (
     SELECT
         p.person_id,
@@ -189,7 +189,7 @@ FROM
     LEFT JOIN `{{project}}.{{dataset}}.observation` AS o
         ON p.person_id = o.person_id
     {% for join_expression in join_expressions %}
-            AND o.{{join_expression.field_name}} {{join_expression.join_operator.value}} {{join_expression.value}} 
+            AND o.{{join_expression.field_name}} {{join_expression.join_operator.value}} {{join_expression.value}}
     {% endfor %}
     LEFT JOIN `{{project}}.{{dataset}}.concept` AS c
         ON value_source_concept_id = concept_id
@@ -199,8 +199,8 @@ WHERE o.rank_order = 1
 
 ETHNICITY_QUERY_TEMPLATE = JINJA_ENV.from_string("""
 SELECT DISTINCT
-    o.* 
-    EXCEPT(rank_order) 
+    o.*
+    EXCEPT(rank_order)
     REPLACE(
         CASE ethnicity_source_concept_id
             WHEN {{hispanic_latino_concept_id}} THEN {{hispanic_latino_standard_concept_id}}
@@ -211,13 +211,13 @@ SELECT DISTINCT
             ELSE ethnicity_source_concept_id
         END AS ethnicity_source_concept_id
     )
-FROM 
+FROM
 (
     SELECT
         p.person_id,
         IF (
             ethnicity_ob.value_as_concept_id IS NULL,
-            CASE 
+            CASE
                 WHEN race_ob.value_source_concept_id = {{no_matching_concept_id}} THEN {{no_matching_concept_id}}
                 WHEN race_ob.value_source_concept_id IS NULL THEN {{no_matching_concept_id}}
                 WHEN race_ob.value_source_concept_id = {{pna_concept_id}} THEN {{pna_concept_id}}
@@ -228,7 +228,7 @@ FROM
         ) AS ethnicity_concept_id,
         IF (
             ethnicity_ob.value_as_concept_id IS NULL,
-            CASE 
+            CASE
                 WHEN race_ob.value_source_concept_id = {{no_matching_concept_id}} THEN {{no_matching_concept_id}}
                 WHEN race_ob.value_source_concept_id IS NULL THEN {{no_matching_concept_id}}
                 WHEN race_ob.value_source_concept_id = {{pna_concept_id}} THEN {{pna_concept_id}}
@@ -239,7 +239,7 @@ FROM
         ) AS ethnicity_source_concept_id,
         IF (
             ethnicity_ob.value_as_concept_id IS NULL,
-            CASE 
+            CASE
                 WHEN race_ob.value_source_concept_id = {{no_matching_concept_id}} THEN "{{no_matching_source_value}}"
                 WHEN race_ob.value_source_concept_id IS NULL THEN "{{no_matching_source_value}}"
                 WHEN race_ob.value_source_concept_id = {{pna_concept_id}} THEN "{{pna_concept_source_value}}"
@@ -253,12 +253,12 @@ FROM
     LEFT JOIN `{{project}}.{{dataset}}.observation` AS ethnicity_ob
     ON p.person_id = ethnicity_ob.person_id
     {% for join_expression in ethnicity_join_expressions %}
-    AND ethnicity_ob.{{join_expression.field_name}} {{join_expression.join_operator.value}} {{join_expression.value}} 
+    AND ethnicity_ob.{{join_expression.field_name}} {{join_expression.join_operator.value}} {{join_expression.value}}
     {% endfor %}
     LEFT JOIN `{{project}}.{{dataset}}.observation` AS race_ob
     ON p.person_id = race_ob.person_id
     {% for join_expression in race_join_expressions %}
-    AND race_ob.{{join_expression.field_name}} {{join_expression.join_operator.value}} {{join_expression.value}} 
+    AND race_ob.{{join_expression.field_name}} {{join_expression.join_operator.value}} {{join_expression.value}}
     {% endfor %}
 ) AS o
 WHERE o.rank_order = 1
@@ -434,13 +434,13 @@ class RepopulatePersonControlledTier(AbstractRepopulatePerson):
 
     def get_race_manual_translation(self) -> List[ConceptTranslation]:
         """
-        The manual mapping of PPI concepts to the standard OMOP race concepts. 
-        Find all the  answers of the PPI race questions here 
-        https://athena.ohdsi.org/search-terms/terms/1586140. 
-        Find all the standard OMOP race concepts here 
-        https://athena.ohdsi.org/search-terms/terms?conceptClass=Race. 
-        
-        :return: 
+        The manual mapping of PPI concepts to the standard OMOP race concepts.
+        Find all the  answers of the PPI race questions here
+        https://athena.ohdsi.org/search-terms/terms/1586140.
+        Find all the standard OMOP race concepts here
+        https://athena.ohdsi.org/search-terms/terms?conceptClass=Race.
+
+        :return:
         """
         return [
             ConceptTranslation(concept_id=1586142,
