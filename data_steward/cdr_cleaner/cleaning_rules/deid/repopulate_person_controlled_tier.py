@@ -53,7 +53,7 @@ from cdr_cleaner.cleaning_rules.deid.repopulate_person_using_observation import 
 
 LOGGER = logging.getLogger(__name__)
 
-JIRA_ISSUE_NUMBERS = ['DC1439', 'DC1446', 'DC1584', 'DC2273', 'DC2828']
+JIRA_ISSUE_NUMBERS = ['DC1439', 'DC1446', 'DC1584', 'DC2273']
 
 # Gender question concept id
 GENDER_IDENTITY_CONCEPT_ID = 1585838
