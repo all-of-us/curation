@@ -140,3 +140,16 @@ def render_message(results_df,
                 </p>
             '''))
         display(results_df)
+
+
+def provenance_table_for(table: str, is_deidentified: str):
+    """
+    Returns a mapping table for a domain table.
+
+    :param table: identifies domain table name
+    :param is_deidentified: identifies if a the dataset is de-identified choose b/e true/false.
+    """
+    if is_deidentified.lower() == 'false':
+        return f'_mapping_{table}'
+    else:
+        return f'{table}_ext'
