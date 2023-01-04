@@ -132,22 +132,18 @@ class NoDataAfterDeathTest(BaseTest.CleaningRulesTestBase):
         # Create the observation, concept, and concept_relationship tables required for the test
         super().setUp()
 
-        person_data_query = PERSON_DATA_TEMPLATE.render(
-            project_id=self.project_id, dataset_id=self.dataset_id)
-        death_data_query = DEATH_DATA_TEMPLATE.render(
-            project_id=self.project_id, dataset_id=self.dataset_id)
-        visit_occurrence_data_query = VISIT_OCCURRENCE_DATA_TEMPLATE.render(
-            project_id=self.project_id, dataset_id=self.dataset_id)
-        observation_data_query = OBSERVATION_DATA_TEMPLATE.render(
-            project_id=self.project_id, dataset_id=self.dataset_id)
+        templates = [
+            PERSON_DATA_TEMPLATE, DEATH_DATA_TEMPLATE,
+            VISIT_OCCURRENCE_DATA_TEMPLATE, OBSERVATION_DATA_TEMPLATE
+        ]
 
-        # Load test data
-        self.load_test_data([
-            f'''{person_data_query};
-                {death_data_query};
-                {visit_occurrence_data_query};
-                {observation_data_query}'''
-        ])
+        test_queries = []
+        for template in templates:
+            test_queries.append(
+                template.render(project_id=self.project_id,
+                                dataset_id=self.dataset_id))
+
+        self.load_test_data(test_queries)
 
     def test_no_data_30_days_after_death(self):
         """
