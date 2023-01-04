@@ -39,7 +39,7 @@ VALUES
 
 VISIT_OCCURRENCE_DATA_TEMPLATE = JINJA_ENV.from_string("""
 INSERT INTO `{{project_id}}.{{dataset_id}}.visit_occurrence`
-      (visit_occurrence_id, person_id, visit_start_date, visit_end_date, visit_concept_id, visit_type_concept_id)
+(visit_occurrence_id, person_id, visit_start_date, visit_end_date, visit_concept_id, visit_type_concept_id)
 VALUES
       (1, 1, '2000-01-01', '2000-01-02', 0, 0),
       (2, 1, '2000-01-02', '2000-01-03', 0, 0),
@@ -56,6 +56,40 @@ VALUES
       (3, 2, '2020-03-01', 0, 0),
       (4, 2, '2020-01-05', 0, 0),
       (5, 3, '2020-05-05', 0, 0)
+""")
+
+CONDITION_OCCURRENCE_DATA_TEMPLATE = JINJA_ENV.from_string("""
+INSERT INTO `{{project_id}}.{{dataset_id}}.condition_occurrence` (
+(condition_occurrence_id, person_id, condition_concept_id, condition_start_date, condition_start_datetime, condition_end_date, condition_end_datetime, condition_type_concept_id)
+VALUES
+    (1, 1, 80502, "2019-08-20", "2019-08-20 01:00:00 UTC", null, null, 38000245),
+    (2, 2, 321661, "2018-09-10", "2018-09-10 01:00:00 UTC", null, null, 38000245),
+    (3, 3, 435928, "2017-08-15", "2017-08-15 00:00:00 UTC" , null, null, 38000245),
+    (4, 4, 434005, "2018-08-03", "2018-08-03 05:00:00 UTC" , null, null, 32020)
+""")
+
+INSERT_DRUG_EXPOSURE = JINJA_ENV.from_string("""
+INSERT INTO `{{project_id}}.{{dataset_id}}.drug_exposure`
+(drug_exposure_id, person_id, drug_concept_id, drug_exposure_start_date, drug_exposure_start_datetime, drug_type_concept_id)
+VALUES
+    (401, 1, 1126658, '2015-07-15', timestamp('2015-07-15'), 99999),
+    (402, 2, 320128, '2015-07-15', timestamp('2015-07-15'), 99999),
+    (403, 3, 36676219, '2015-07-15', timestamp('2015-07-15'), 99999),
+    (404, 4, 2414345, '2015-07-15', timestamp('2015-07-15'), 99999),
+    (405, 5, 45887635, '2015-07-15', timestamp('2015-07-15'), 99999),
+    (406, 6, 45077152, '2015-07-15', timestamp('2015-07-15'), 99999)
+""")
+
+INSERT_DEVICE_EXPOSURE = JINJA_ENV.from_string("""
+INSERT INTO `{{project_id}}.{{dataset_id}}.device_exposure`
+(device_exposure_id, person_id, device_concept_id, device_exposure_start_date, device_exposure_start_datetime, device_type_concept_id)
+VALUES
+    (501, 1, 4206863, '2015-07-15', timestamp('2015-07-15'), 44818707),
+    (502, 2, 320128, '2015-07-15', timestamp('2015-07-15'), 99999),
+    (503, 3, 2101931, '2015-07-15', timestamp('2015-07-15'), 99999),
+    (504, 4, 740910, '2015-07-15', timestamp('2015-07-15'), 44818707),
+    (505, 5, 2106252, '2015-07-15', timestamp('2015-07-15'), 99999),
+    (506, 6, 45887635, '2015-07-15', timestamp('2015-07-15'), 99999)
 """)
 
 
