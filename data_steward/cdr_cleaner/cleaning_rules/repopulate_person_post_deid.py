@@ -22,9 +22,9 @@ ethnicity_source_concept_id
 
 As per ticket DC-1446, for participants who have not answered the question "What is you race/ethnicity" we need to set
     their race_concept_id to 2100000001.
-    
-Per ticket DC-1584, The sex_at_birth_concept_id, sex_at_ birth_source_concept_id, and sex_at_birth_source_value columns 
-were defined and set in multiple repopulate person scripts. This was redundant and caused unwanted schema changes for 
+
+Per ticket DC-1584, The sex_at_birth_concept_id, sex_at_ birth_source_concept_id, and sex_at_birth_source_value columns
+were defined and set in multiple repopulate person scripts. This was redundant and caused unwanted schema changes for
 the person table.  With the implementation of DC-1514 and DC-1570 these columns are to be removed from all
 repopulate_person_* files.
 """
@@ -97,7 +97,7 @@ WITH
     IF
       (ethnicity_ob.value_as_concept_id IS NULL,
         /*Case this out based on the race_ob (race) values, ie if it's a skip/pna respect that.*/
-        CASE 
+        CASE
           WHEN race_ob.value_source_concept_id = 0 THEN 0 /*missing answer*/
           WHEN race_ob.value_source_concept_id IS NULL THEN 0 /*missing answer*/
           WHEN race_ob.value_source_concept_id = 903079 THEN 903079/*PNA*/
