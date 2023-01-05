@@ -13,7 +13,7 @@ import pytz
 from dateutil import parser
 
 # Project Imports
-from common import PERSON, VISIT_OCCURRENCE, OBSERVATION, CONDITION_OCCURRENCE
+from common import PERSON, VISIT_OCCURRENCE, OBSERVATION, CONDITION_OCCURRENCE, DEVICE_EXPOSURE
 from common import JINJA_ENV
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.no_data_30_days_after_death import (
@@ -63,10 +63,20 @@ CONDITION_OCCURRENCE_DATA_TEMPLATE = JINJA_ENV.from_string("""
 INSERT INTO `{{project_id}}.{{dataset_id}}.condition_occurrence`
 (condition_occurrence_id, person_id, condition_concept_id, condition_start_date, condition_start_datetime, condition_end_date, condition_end_datetime, condition_type_concept_id)
 VALUES
-    (1, 1, 80502, "1969-08-20", "1968-08-20 00:00:00 UTC", null, null, 38000245),
-    (2, 2, 321661, "2020-09-10", "2020-09-10 00:00:00 UTC", "2020-10-10", null, 38000245),
-    (3, 3, 435928, "2017-08-15", "2017-08-15 00:00:00 UTC" , null, null, 38000245),
-    (4, 4, 434005, "2018-08-03", "2018-08-03 00:00:00 UTC" , "2019-02-05", null, 32020)
+    (1, 1, 80502, '1969-08-20', '1968-08-20 00:00:00 UTC', null, null, 38000245),
+    (2, 2, 321661, '2020-09-10', '2020-09-10 00:00:00 UTC', '2020-10-10', null, 38000245),
+    (3, 3, 435928, '2017-08-15', '2017-08-15 00:00:00 UTC' , null, null, 38000245),
+    (4, 4, 434005, '2018-08-03', '2018-08-03 00:00:00 UTC' , '2019-02-05', null, 32020)
+""")
+
+DEVICE_EXPOSURE_DATA_TEMPLATE = JINJA_ENV.from_string("""
+INSERT INTO `{{project_id}}.{{dataset_id}}.device_exposure`
+(device_exposure_id, person_id, device_concept_id, device_exposure_start_date, device_exposure_start_datetime, device_exposure_end_date, device_type_concept_id)
+VALUES
+    (501, 1, 4206863, '1969-05-15', TIMESTAMP('2015-07-15'), null, 44818707),
+    (502, 2, 320128, '2021-07-15', TIMESTAMP('2015-07-15'), null, 99999),
+    (503, 3, 2101931, '2015-07-15', TIMESTAMP('2015-07-15'), null, 99999),
+    (504, 4, 740910, '2015-07-15', TIMESTAMP('2015-07-15'), null, 44818707)
 """)
 
 
@@ -112,7 +122,7 @@ class NoDataAfterDeathTest(BaseTest.CleaningRulesTestBase):
         templates = [
             PERSON_DATA_TEMPLATE, DEATH_DATA_TEMPLATE,
             VISIT_OCCURRENCE_DATA_TEMPLATE, OBSERVATION_DATA_TEMPLATE,
-            CONDITION_OCCURRENCE_DATA_TEMPLATE
+            CONDITION_OCCURRENCE_DATA_TEMPLATE, DEVICE_EXPOSURE_DATA_TEMPLATE
         ]
 
         test_queries = []
@@ -211,6 +221,26 @@ class NoDataAfterDeathTest(BaseTest.CleaningRulesTestBase):
                  parser.parse('2018-08-03 00:00:00 UTC'),
                  datetime.datetime.strptime('2019-02-05',
                                             '%Y-%m-%d').date(), None, 32020)
+            ]
+        }, {
+            'fq_table_name':
+                f'{self.project_id}.{self.dataset_id}.{DEVICE_EXPOSURE}',
+            'fq_sandbox_table_name':
+                f'{self.project_id}.{self.sandbox_id}.{self.rule_instance.sandbox_table_for(DEVICE_EXPOSURE)}',
+            'loaded_ids': [501, 502, 503, 504],
+            'sandboxed_ids': [501, 502],
+            'fields': [
+                'device_exposure_id', 'person_id', 'device_concept_id',
+                'device_exposure_start_date', 'device_exposure_start_datetime',
+                'device_exposure_end_date', 'device_type_concept_id'
+            ],
+            'cleaned_values': [
+                (503, 3, 2101931,
+                 datetime.datetime.strptime('2015-07-15', '%Y-%m-%d').date(),
+                 parser.parse('2015-07-15 00:00:00 UTC'), None, 99999),
+                (504, 4, 740910,
+                 datetime.datetime.strptime('2015-07-15', '%Y-%m-%d').date(),
+                 parser.parse('2015-07-15 00:00:00 UTC'), None, 44818707)
             ]
         }]
 
