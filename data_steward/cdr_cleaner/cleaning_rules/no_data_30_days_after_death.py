@@ -8,10 +8,9 @@ import logging
 from collections import ChainMap
 
 # Project Imports
+from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from common import JINJA_ENV
-
-from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
 
 LOGGER = logging.getLogger(__name__)
 
