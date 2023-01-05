@@ -10,9 +10,10 @@ value_source_concept_id through 'Maps to' relationship """
 import os
 import datetime
 import pytz
+from dateutil import parser
 
 # Project Imports
-from common import PERSON, VISIT_OCCURRENCE, OBSERVATION
+from common import PERSON, VISIT_OCCURRENCE, OBSERVATION, CONDITION_OCCURRENCE
 from common import JINJA_ENV
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.no_data_30_days_after_death import (
@@ -59,37 +60,13 @@ VALUES
 """)
 
 CONDITION_OCCURRENCE_DATA_TEMPLATE = JINJA_ENV.from_string("""
-INSERT INTO `{{project_id}}.{{dataset_id}}.condition_occurrence` (
+INSERT INTO `{{project_id}}.{{dataset_id}}.condition_occurrence`
 (condition_occurrence_id, person_id, condition_concept_id, condition_start_date, condition_start_datetime, condition_end_date, condition_end_datetime, condition_type_concept_id)
 VALUES
-    (1, 1, 80502, "2019-08-20", "2019-08-20 01:00:00 UTC", null, null, 38000245),
-    (2, 2, 321661, "2018-09-10", "2018-09-10 01:00:00 UTC", null, null, 38000245),
+    (1, 1, 80502, "1969-08-20", "1968-08-20 00:00:00 UTC", null, null, 38000245),
+    (2, 2, 321661, "2020-09-10", "2020-09-10 00:00:00 UTC", "2020-10-10", null, 38000245),
     (3, 3, 435928, "2017-08-15", "2017-08-15 00:00:00 UTC" , null, null, 38000245),
-    (4, 4, 434005, "2018-08-03", "2018-08-03 05:00:00 UTC" , null, null, 32020)
-""")
-
-INSERT_DRUG_EXPOSURE = JINJA_ENV.from_string("""
-INSERT INTO `{{project_id}}.{{dataset_id}}.drug_exposure`
-(drug_exposure_id, person_id, drug_concept_id, drug_exposure_start_date, drug_exposure_start_datetime, drug_type_concept_id)
-VALUES
-    (401, 1, 1126658, '2015-07-15', timestamp('2015-07-15'), 99999),
-    (402, 2, 320128, '2015-07-15', timestamp('2015-07-15'), 99999),
-    (403, 3, 36676219, '2015-07-15', timestamp('2015-07-15'), 99999),
-    (404, 4, 2414345, '2015-07-15', timestamp('2015-07-15'), 99999),
-    (405, 5, 45887635, '2015-07-15', timestamp('2015-07-15'), 99999),
-    (406, 6, 45077152, '2015-07-15', timestamp('2015-07-15'), 99999)
-""")
-
-INSERT_DEVICE_EXPOSURE = JINJA_ENV.from_string("""
-INSERT INTO `{{project_id}}.{{dataset_id}}.device_exposure`
-(device_exposure_id, person_id, device_concept_id, device_exposure_start_date, device_exposure_start_datetime, device_type_concept_id)
-VALUES
-    (501, 1, 4206863, '2015-07-15', timestamp('2015-07-15'), 44818707),
-    (502, 2, 320128, '2015-07-15', timestamp('2015-07-15'), 99999),
-    (503, 3, 2101931, '2015-07-15', timestamp('2015-07-15'), 99999),
-    (504, 4, 740910, '2015-07-15', timestamp('2015-07-15'), 44818707),
-    (505, 5, 2106252, '2015-07-15', timestamp('2015-07-15'), 99999),
-    (506, 6, 45887635, '2015-07-15', timestamp('2015-07-15'), 99999)
+    (4, 4, 434005, "2018-08-03", "2018-08-03 00:00:00 UTC" , "2019-02-05", null, 32020)
 """)
 
 
@@ -134,7 +111,8 @@ class NoDataAfterDeathTest(BaseTest.CleaningRulesTestBase):
 
         templates = [
             PERSON_DATA_TEMPLATE, DEATH_DATA_TEMPLATE,
-            VISIT_OCCURRENCE_DATA_TEMPLATE, OBSERVATION_DATA_TEMPLATE
+            VISIT_OCCURRENCE_DATA_TEMPLATE, OBSERVATION_DATA_TEMPLATE,
+            CONDITION_OCCURRENCE_DATA_TEMPLATE
         ]
 
         test_queries = []
@@ -143,6 +121,7 @@ class NoDataAfterDeathTest(BaseTest.CleaningRulesTestBase):
                 template.render(project_id=self.project_id,
                                 dataset_id=self.dataset_id))
 
+        # Load test data
         self.load_test_data(test_queries)
 
     def test_no_data_30_days_after_death(self):
@@ -209,6 +188,29 @@ class NoDataAfterDeathTest(BaseTest.CleaningRulesTestBase):
                                                   '%Y-%m-%d').date()),
                 (5, 3, datetime.datetime.strptime('2020-05-05',
                                                   '%Y-%m-%d').date())
+            ]
+        }, {
+            'fq_table_name':
+                f'{self.project_id}.{self.dataset_id}.{CONDITION_OCCURRENCE}',
+            'fq_sandbox_table_name':
+                f'{self.project_id}.{self.sandbox_id}.{self.rule_instance.sandbox_table_for(CONDITION_OCCURRENCE)}',
+            'loaded_ids': [1, 2, 3, 4],
+            'sandboxed_ids': [1, 2],
+            'fields': [
+                'condition_occurrence_id', 'person_id', 'condition_concept_id',
+                'condition_start_date', 'condition_start_datetime',
+                'condition_end_date', 'condition_end_datetime',
+                'condition_type_concept_id'
+            ],
+            'cleaned_values': [
+                (3, 3, 435928,
+                 datetime.datetime.strptime('2017-08-15', '%Y-%m-%d').date(),
+                 parser.parse('2017-08-15 00:00:00 UTC'), None, None, 38000245),
+                (4, 4, 434005,
+                 datetime.datetime.strptime('2018-08-03', '%Y-%m-%d').date(),
+                 parser.parse('2018-08-03 00:00:00 UTC'),
+                 datetime.datetime.strptime('2019-02-05',
+                                            '%Y-%m-%d').date(), None, 32020)
             ]
         }]
 
