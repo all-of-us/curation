@@ -10,5 +10,4 @@ PID_QUERY = """
 FROM `{pid_source}`)
 """
 
-DE_IDENTIFIED = 'de_identified'
 TRUE = 'true'

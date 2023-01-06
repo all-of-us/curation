@@ -262,6 +262,9 @@ EHR_OPS = 'ehr_ops'
 DRC_OPS = 'drc_ops'
 PS_API_VALUES = 'ps_api_values'
 
+# Dataset labels
+DE_IDENTIFIED = 'de_identified'
+
 # JINJA
 JINJA_ENV = jinja2.Environment(
     # block tags on their own lines
