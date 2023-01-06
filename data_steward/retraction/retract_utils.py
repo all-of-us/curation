@@ -5,7 +5,8 @@ import logging
 
 # Project imports
 from common import (COMBINED, DEID, EHR, EXT, EXT_SUFFIX, FITBIT, MAPPING,
-                    MAPPING_PREFIX, OTHER, RDR, SANDBOX, UNIONED_EHR)
+                    MAPPING_PREFIX, OTHER, RDR, SANDBOX, UNIONED_EHR,
+                    DE_IDENTIFIED)
 from gcloud.bq import BigQueryClient
 from constants.retraction import retract_utils as consts
 from constants.utils import bq as bq_consts
@@ -155,8 +156,8 @@ def _is_labeled_deid(client, project_id, dataset_id):
         return None
 
     dataset = client.get_dataset(f'{project_id}.{dataset_id}')
-    if dataset.labels and consts.DE_IDENTIFIED in dataset.labels:
-        return dataset.labels[consts.DE_IDENTIFIED] == consts.TRUE
+    if dataset.labels and DE_IDENTIFIED in dataset.labels:
+        return dataset.labels[DE_IDENTIFIED] == consts.TRUE
     return None
 
 
