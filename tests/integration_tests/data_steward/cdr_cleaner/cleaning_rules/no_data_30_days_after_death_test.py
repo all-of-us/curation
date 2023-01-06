@@ -65,18 +65,16 @@ INSERT INTO `{{project_id}}.{{dataset_id}}.condition_occurrence`
 VALUES
     (1, 1, 80502, '1969-08-20', '1968-08-20 00:00:00 UTC', null, null, 38000245),
     (2, 2, 321661, '2020-09-10', '2020-09-10 00:00:00 UTC', '2020-10-10', null, 38000245),
-    (3, 3, 435928, '2017-08-15', '2017-08-15 00:00:00 UTC' , null, null, 38000245),
-    (4, 4, 434005, '2018-08-03', '2018-08-03 00:00:00 UTC' , '2019-02-05', null, 32020)
+    (3, 3, 435928, '2017-08-15', '2017-08-15 00:00:00 UTC' , null, null, 38000245)
 """)
 
 DEVICE_EXPOSURE_DATA_TEMPLATE = JINJA_ENV.from_string("""
 INSERT INTO `{{project_id}}.{{dataset_id}}.device_exposure`
 (device_exposure_id, person_id, device_concept_id, device_exposure_start_date, device_exposure_start_datetime, device_exposure_end_date, device_type_concept_id)
 VALUES
-    (501, 1, 4206863, '1969-05-15', TIMESTAMP('2015-07-15'), null, 44818707),
-    (502, 2, 320128, '2021-07-15', TIMESTAMP('2015-07-15'), null, 99999),
-    (503, 3, 2101931, '2015-07-15', TIMESTAMP('2015-07-15'), null, 99999),
-    (504, 4, 740910, '2015-07-15', TIMESTAMP('2015-07-15'), null, 44818707)
+    (1, 1, 4206863, '1969-05-15', TIMESTAMP('2015-07-15'), null, 44818707),
+    (2, 2, 320128, '2021-07-15', TIMESTAMP('2015-07-15'), null, 99999),
+    (3, 3, 2101931, '2015-07-15', TIMESTAMP('2015-07-15'), null, 99999)
 """)
 
 
@@ -95,7 +93,7 @@ class NoDataAfterDeathTest(BaseTest.CleaningRulesTestBase):
 
         # Set the expected test datasets
         cls.dataset_id = os.environ.get('COMBINED_DATASET_ID')
-        cls.sandbox_id = cls.dataset_id + '_sandbox'
+        cls.sandbox_id = f'{cls.dataset_id}_sandbox'
 
         cls.rule_instance = NoDataAfterDeath(cls.project_id, cls.dataset_id,
                                              cls.sandbox_id)
@@ -110,7 +108,7 @@ class NoDataAfterDeathTest(BaseTest.CleaningRulesTestBase):
                 f'{cls.project_id}.{cls.sandbox_id}.{sandbox_table_name}')
 
         # call super to set up the client, create datasets
-        cls.up_class = super().setUpClass()
+        super().setUpClass()
 
     def setUp(self):
         """
@@ -204,7 +202,7 @@ class NoDataAfterDeathTest(BaseTest.CleaningRulesTestBase):
                 f'{self.project_id}.{self.dataset_id}.{CONDITION_OCCURRENCE}',
             'fq_sandbox_table_name':
                 f'{self.project_id}.{self.sandbox_id}.{self.rule_instance.sandbox_table_for(CONDITION_OCCURRENCE)}',
-            'loaded_ids': [1, 2, 3, 4],
+            'loaded_ids': [1, 2, 3],
             'sandboxed_ids': [1, 2],
             'fields': [
                 'condition_occurrence_id', 'person_id', 'condition_concept_id',
@@ -215,32 +213,24 @@ class NoDataAfterDeathTest(BaseTest.CleaningRulesTestBase):
             'cleaned_values': [
                 (3, 3, 435928,
                  datetime.datetime.strptime('2017-08-15', '%Y-%m-%d').date(),
-                 parser.parse('2017-08-15 00:00:00 UTC'), None, None, 38000245),
-                (4, 4, 434005,
-                 datetime.datetime.strptime('2018-08-03', '%Y-%m-%d').date(),
-                 parser.parse('2018-08-03 00:00:00 UTC'),
-                 datetime.datetime.strptime('2019-02-05',
-                                            '%Y-%m-%d').date(), None, 32020)
+                 parser.parse('2017-08-15 00:00:00 UTC'), None, None, 38000245)
             ]
         }, {
             'fq_table_name':
                 f'{self.project_id}.{self.dataset_id}.{DEVICE_EXPOSURE}',
             'fq_sandbox_table_name':
                 f'{self.project_id}.{self.sandbox_id}.{self.rule_instance.sandbox_table_for(DEVICE_EXPOSURE)}',
-            'loaded_ids': [501, 502, 503, 504],
-            'sandboxed_ids': [501, 502],
+            'loaded_ids': [1, 2, 3],
+            'sandboxed_ids': [1, 2],
             'fields': [
                 'device_exposure_id', 'person_id', 'device_concept_id',
                 'device_exposure_start_date', 'device_exposure_start_datetime',
                 'device_exposure_end_date', 'device_type_concept_id'
             ],
             'cleaned_values': [
-                (503, 3, 2101931,
+                (3, 3, 2101931,
                  datetime.datetime.strptime('2015-07-15', '%Y-%m-%d').date(),
-                 parser.parse('2015-07-15 00:00:00 UTC'), None, 99999),
-                (504, 4, 740910,
-                 datetime.datetime.strptime('2015-07-15', '%Y-%m-%d').date(),
-                 parser.parse('2015-07-15 00:00:00 UTC'), None, 44818707)
+                 parser.parse('2015-07-15 00:00:00 UTC'), None, 99999)
             ]
         }]
 

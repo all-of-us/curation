@@ -74,8 +74,8 @@ REMOVE_DEATH_DATE_QUERY = JINJA_ENV.from_string("""
 DELETE 
 FROM `{{project}}.{{dataset}}.{{table_name}}`
 WHERE {{table_name}}_id IN (
-    SELECT {{table_name}}_id 
-    FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table_name}}`
+SELECT {{table_name}}_id 
+FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table_name}}`
 )
 """)
 
