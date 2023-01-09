@@ -11,7 +11,7 @@ from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.populate_route_ids import (
     DOSE_FORM_ROUTE_MAPPING_TABLE, DRUG_ROUTE_MAPPING_TABLE, PopulateRouteIds)
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
-from common import DRUG_EXPOSURE
+from common import DRUG_EXPOSURE, VOCABULARY_TABLES
 
 
 class PopulateRouteIdsTest(BaseTest.CleaningRulesTestBase):
@@ -33,8 +33,10 @@ class PopulateRouteIdsTest(BaseTest.CleaningRulesTestBase):
         cls.rule_instance = PopulateRouteIds(cls.project_id, cls.dataset_id,
                                              cls.sandbox_id)
 
+        tables = DRUG_EXPOSURE + VOCABULARY_TABLES
+
         cls.fq_table_names = [
-            f'{cls.project_id}.{cls.dataset_id}.{DRUG_EXPOSURE}'
+            f'{cls.project_id}.{cls.dataset_id}.{table}' for table in tables
         ]
 
         cls.fq_sandbox_table_names = []
