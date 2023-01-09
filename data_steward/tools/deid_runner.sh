@@ -104,7 +104,7 @@ export PYTHONPATH="${PYTHONPATH}:${DEID_DIR}:${DATA_STEWARD_DIR}"
 version=$(git describe --abbrev=0 --tags)
 
 # create empty de-id dataset
-bq mk --dataset --description "${version} deidentified version of ${cdr_id}" --label "phase:backup" --label "data_tier:registered" --label "release_tag:${dataset_release_tag}" --label "de_identified:true" "${APP_ID}":"${registered_cdr_deid}"
+bq mk --dataset --description "${version} deidentified version of ${cdr_id}" --label "phase:clean" --label "data_tier:registered" --label "release_tag:${dataset_release_tag}" --label "de_identified:true" "${APP_ID}":"${registered_cdr_deid}"
 
 # create the clinical tables
 python "${DATA_STEWARD_DIR}/cdm.py" "${registered_cdr_deid}"
