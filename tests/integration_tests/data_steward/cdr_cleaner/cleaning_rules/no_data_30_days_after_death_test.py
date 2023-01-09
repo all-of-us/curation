@@ -148,7 +148,6 @@ class NoDataAfterDeathTest(BaseTest.CleaningRulesTestBase):
         
         3. person_id=3, this hypothetical person didn't pass away, so we keep all of the records 
         associated with this person. 
-         
         """
 
         # BigQuery returns timestamp in UTC, the expected datetime needs to be converted to UTC.
