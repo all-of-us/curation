@@ -33,7 +33,7 @@ class PopulateRouteIdsTest(BaseTest.CleaningRulesTestBase):
         cls.rule_instance = PopulateRouteIds(cls.project_id, cls.dataset_id,
                                              cls.sandbox_id)
 
-        tables = DRUG_EXPOSURE + VOCABULARY_TABLES
+        tables = VOCABULARY_TABLES.append(DRUG_EXPOSURE)
 
         cls.fq_table_names = [
             f'{cls.project_id}.{cls.dataset_id}.{table}' for table in tables
