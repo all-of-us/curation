@@ -10,6 +10,7 @@ import logging
 
 # Project imports
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
+from cdr_cleaner.cleaning_rules.deid.conflicting_hpo_state_generalization import ConflictingHpoStateGeneralize
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from common import JINJA_ENV, OBSERVATION
 from utils import pipeline_logging
@@ -56,6 +57,7 @@ class GeneralizeStateByPopulation(BaseCleaningRule):
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
+                         depends_on=[ConflictingHpoStateGeneralize],
                          table_namer=table_namer)
 
     def get_sandbox_tablenames(self):
