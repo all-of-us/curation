@@ -6,12 +6,12 @@ and runs the recreate_person tool.
 # Python imports
 import logging
 import argparse
-import re
 
 # Project imports
 from gcloud.bq import BigQueryClient
-from utils import auth, pipeline_logging
 from tools.recreate_person import update_person
+from utils import auth, pipeline_logging
+from utils.parameter_validators import validate_output_release_tag_param
 
 SCOPES = [
     'https://www.googleapis.com/auth/bigquery',
@@ -22,22 +22,6 @@ LOGGER = logging.getLogger(__name__)
 
 TIER_LIST = ['controlled', 'registered']
 DEID_STAGE_LIST = ['deid', 'base', 'clean']
-
-
-def validate_release_tag_param(arg_value):
-    """
-    User defined helper function to validate that the release_tag parameter follows the correct naming convention
-
-    :param arg_value: release tag parameter passed through either the command line arguments
-    :return: arg_value
-    """
-
-    release_tag_regex = re.compile(r'[0-9]{4}Q[0-9]R[0-9]')
-    if not re.match(release_tag_regex, arg_value):
-        msg = f"Parameter ERROR {arg_value} is in an incorrect format, accepted: YYYYQ#R#"
-        LOGGER.error(msg)
-        raise argparse.ArgumentTypeError(msg)
-    return arg_value
 
 
 def get_dataset_name(tier, release_tag, deid_stage):
@@ -66,19 +50,19 @@ def get_arg_parser() -> argparse.ArgumentParser:
     Copy dataset from curation project to output-prod
     """
     argument_parser = argparse.ArgumentParser(description=__doc__)
-    argument_parser.add_argument(
-        '--run_as',
-        action='store',
-        dest='run_as_email',
-        help='Service account email address to impersonate',
-        required=True)
-    argument_parser.add_argument(
-        '-s',
-        '--src_project_id',
-        dest='src_project_id',
-        action='store',
-        help='Identifies the project containing the source dataset',
-        required=True)
+    argument_parser.add_argument('--run_as',
+                                 action='store',
+                                 dest='run_as_email',
+                                 help=('Service account email '
+                                       'address to impersonate'),
+                                 required=True)
+    argument_parser.add_argument('-s',
+                                 '--src_project_id',
+                                 dest='src_project_id',
+                                 action='store',
+                                 help=('Identifies the project containing '
+                                       'the source dataset'),
+                                 required=True)
     argument_parser.add_argument('-o',
                                  '--output_prod_project_id',
                                  dest='output_prod_project_id',
@@ -91,14 +75,14 @@ def get_arg_parser() -> argparse.ArgumentParser:
                                  action='store',
                                  help='The source dataset to copy.',
                                  required=True)
-    argument_parser.add_argument(
-        '-r',
-        '--release_tag',
-        action='store',
-        dest='release_tag',
-        help='release tag for dataset in the format of YYYYQ#R#',
-        type=validate_release_tag_param,
-        required=True)
+    argument_parser.add_argument('-r',
+                                 '--release_tag',
+                                 action='store',
+                                 dest='release_tag',
+                                 help=('release tag for dataset in '
+                                       'the format of YYYYQ#R#'),
+                                 type=validate_output_release_tag_param,
+                                 required=True)
     argument_parser.add_argument('-t',
                                  '--tier',
                                  action='store',

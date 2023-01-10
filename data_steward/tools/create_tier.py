@@ -1,7 +1,6 @@
 # Python imports
 import argparse
 import logging
-import re
 from datetime import datetime
 
 # Third party imports
@@ -9,12 +8,13 @@ from datetime import datetime
 # Project imports
 from cdr_cleaner import clean_cdr
 from cdr_cleaner.args_parser import add_kwargs_to_args
-from utils import auth
-from gcloud.bq import BigQueryClient
-from utils import pipeline_logging
-from tools import add_cdr_metadata
 from common import CDR_SCOPES, PIPELINE_TABLES, ZIP3_SES_MAP
 from constants.cdr_cleaner import clean_cdr as consts
+from gcloud.bq import BigQueryClient
+from tools import add_cdr_metadata
+from utils import auth
+from utils import pipeline_logging
+from utils.parameter_validators import validate_release_tag_param
 
 LOGGER = logging.getLogger(__name__)
 
@@ -33,7 +33,7 @@ def validate_tier_param(tier):
         msg = f"Parameter ERROR: {tier} is an incorrect input for the tier parameter, accepted: controlled or " \
               f"registered"
         LOGGER.error(msg)
-        raise argparse.ArgumentTypeError(msg)
+        raise TypeError(msg)
 
 
 def validate_deid_stage_param(deid_stage):
@@ -47,23 +47,7 @@ def validate_deid_stage_param(deid_stage):
         msg = f"Parameter ERROR: {deid_stage} is an incorrect input for the deid_stage parameter, accepted: deid, " \
               f"base, clean"
         LOGGER.error(msg)
-        raise argparse.ArgumentTypeError(msg)
-
-
-def validate_release_tag_param(arg_value):
-    """
-    User defined helper function to validate that the release_tag parameter follows the correct naming convention
-
-    :param arg_value: release tag parameter passed through either the command line arguments
-    :return: arg_value
-    """
-
-    release_tag_regex = re.compile(r'[0-9]{4}q[0-9]r[0-9]')
-    if not re.match(release_tag_regex, arg_value):
-        msg = f"Parameter ERROR {arg_value} is in an incorrect format, accepted: YYYYq#r#"
-        LOGGER.error(msg)
-        raise argparse.ArgumentTypeError(msg)
-    return arg_value
+        raise TypeError(msg)
 
 
 def validate_create_tier_args(tier, stage, tag):

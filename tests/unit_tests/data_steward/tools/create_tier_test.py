@@ -219,8 +219,7 @@ class CreateTierTest(unittest.TestCase):
         # Test if invalid parameters are given
         for tier in invalid_tier_params:
             # test type error is raised
-            self.assertRaises(argparse.ArgumentTypeError, validate_tier_param,
-                              tier)
+            self.assertRaises(TypeError, validate_tier_param, tier)
 
     def test_add_kwargs_to_args(self):
         actual_args = [
@@ -248,8 +247,7 @@ class CreateTierTest(unittest.TestCase):
         # Test if invalid parameters are given
         for ds in invalid_deid_stage_params:
             # test type error is raised
-            self.assertRaises(argparse.ArgumentTypeError,
-                              validate_deid_stage_param, ds)
+            self.assertRaises(TypeError, validate_deid_stage_param, ds)
 
     def test_get_dataset_name(self):
         # Preconditions
@@ -265,15 +263,13 @@ class CreateTierTest(unittest.TestCase):
         self.assertEqual(result, expected_dataset_name)
 
         # Test if incorrect parameters are given
-        self.assertRaises(argparse.ArgumentTypeError, get_dataset_name,
-                          incorrect_tier_param, self.release_tag,
-                          self.deid_stage)
+        self.assertRaises(TypeError, get_dataset_name, incorrect_tier_param,
+                          self.release_tag, self.deid_stage)
         self.assertRaises(argparse.ArgumentTypeError, get_dataset_name,
                           self.tier, incorrect_release_tag_param,
                           self.deid_stage)
-        self.assertRaises(argparse.ArgumentTypeError, get_dataset_name,
-                          self.tier, self.release_tag,
-                          incorrect_deid_stage_param)
+        self.assertRaises(TypeError, get_dataset_name, self.tier,
+                          self.release_tag, incorrect_deid_stage_param)
 
     def test_create_datasets(self):
         # Preconditions
