@@ -86,6 +86,7 @@ WITH
         WHEN 1586142 THEN 8515 /*asian*/
         WHEN 1586143 THEN 8516 /*black/aa*/
         WHEN 1586146 THEN 8527 /*white*/
+        WHEN 903079 THEN 1177221 /*PNA*/
       /*otherwise, just use the standard mapped answer (or 0)*/
       ELSE
       coalesce(race_ob.value_as_concept_id,
@@ -115,8 +116,9 @@ WITH
       CAST(per.person_id AS STRING) AS person_source_value,
       gender.gender_source_value,
       gender.gender_source_concept_id,
-      coalesce(race_ob.value_source_value,
-        "No matching concept") AS race_source_value,
+      CASE WHEN race_ob.value_source_concept_id = 903079 THEN 'PMI_PreferNotToAnswer'/*PNA*/
+      ELSE coalesce(race_ob.value_source_value, 
+           "No matching concept") END AS race_source_value,
       coalesce(race_ob.value_source_concept_id,
         0) AS race_source_concept_id
     FROM
@@ -129,13 +131,13 @@ WITH
       `{{project}}.{{dataset}}.observation` race_ob
     ON
       per.person_id = race_ob.person_id
-      AND race_ob.observation_concept_id = 1586140
+      AND race_ob.observation_source_concept_id = 1586140
       AND race_ob.value_source_concept_id != 1586147
     LEFT JOIN
       `{{project}}.{{dataset}}.observation` ethnicity_ob
     ON
       per.person_id = ethnicity_ob.person_id
-      AND ethnicity_ob.observation_concept_id=1586140
+      AND ethnicity_ob.observation_source_concept_id=1586140
       AND ethnicity_ob.value_source_concept_id = 1586147) )
 SELECT
   person_id,
