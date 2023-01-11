@@ -62,12 +62,12 @@ commands:
           destination: test_results
       - slack/status:
           fail_only: true
-          only_for_branches: master,develop,ra_circleci_update
+          only_for_branches: master,develop,circleci_update
   lint_teardown:
     steps:
       - slack/status:
           fail_only: true
-          only_for_branches: master,develop,ra_circleci_update
+          only_for_branches: master,develop,circleci_update
 
 jobs:
   linting_checks:
