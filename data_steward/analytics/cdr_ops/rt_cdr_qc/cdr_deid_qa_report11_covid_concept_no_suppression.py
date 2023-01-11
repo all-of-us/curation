@@ -31,11 +31,6 @@ project_id: str = ""  # identifies the project where datasets are located
 post_deid_dataset: str = ""  # the deid dataset
 run_as = ""
 
-# +
-#project_id = "aou-res-curation-prod"
-#post_deid_dataset = "R2021q3r2_deid_base"
-#run_as = "data-analytics@aou-res-curation-prod.iam.gserviceaccount.com"
-# -
 
 # df will have a summary in the end
 df = pd.DataFrame(columns=['QC category', 'Result'])

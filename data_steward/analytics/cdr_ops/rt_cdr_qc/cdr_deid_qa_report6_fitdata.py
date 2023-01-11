@@ -38,21 +38,6 @@ fitbit_dataset = ""
 run_as=""
 
 # +
-# Parameters
-#project_id = "aou-res-curation-prod"
-#pipeline = "pipeline_tables"
-#non_deid_fitbit = "2022q4r3_fitbit"
-#deid_cdr_fitbit = "R2022q2r6_fitbit_deid"
-#com_cdr = "2022q4r3_combined_release"
-#deid_cdr = "R2022q4r4_deid"
-#truncation_date = "2019-11-26"
-#maximum_age = "89"
-#fitbit_sandbox_dataset = "2022q4r3_fitbit_sandbox"
-#sleep_level_sandbox_table = "fitbit_dc1910_sleep_level"
-#fitbit_dataset = "2022q4r3_fitbit"
-#run_as="data-analytics@aou-res-curation-prod.iam.gserviceaccount.com"
-
-# +
 impersonation_creds = auth.get_impersonation_credentials(
     run_as, target_scopes=IMPERSONATION_SCOPES)
 

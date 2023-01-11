@@ -31,14 +31,6 @@ pipeline=""
 run_as=""
 
 # +
-# Parameters
-#project_id = "aou-res-curation-prod"
-#com_cdr = "2021q3r2_combined"
-#deid_cdr = "R2021q3r2_deid"
-#pipeline = "pipeline_tables"
-#run_as = "data-analytics@aou-res-curation-prod.iam.gserviceaccount.com"
-
-# +
 impersonation_creds = auth.get_impersonation_credentials(
     run_as, target_scopes=IMPERSONATION_SCOPES)
 

@@ -32,20 +32,9 @@ pd.options.display.max_rows = 120
 project_id = ""
 com_cdr = ""
 deid_cdr = ""
-#deid_sandbox=""
 sandbox=""
 run_as=""
 
-# +
-# Parameters
-
-#project_id = "aou-res-curation-prod"
-#deid_cdr = "R2022q2r4_deid"
-#com_cdr = "2022q2r4_combined"
-#com_cdr = "2022q2r4_combined"
-#deid_sandbox = "R2021q3r1_deid_sandbox"
-#sandbox='curation_sandbox'
-#run_as = "data-analytics@aou-res-curation-prod.iam.gserviceaccount.com"
 
 # +
 impersonation_creds = auth.get_impersonation_credentials(

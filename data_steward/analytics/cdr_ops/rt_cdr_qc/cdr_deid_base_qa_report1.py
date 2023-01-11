@@ -13,7 +13,7 @@
 #     name: python3
 # ---
 
-# <div class='alert alert-info' style='font-family:Arial; font-size:30px' > These are queries to validate RT_deid_base_cdr </div>
+# These are queries to validate RT_deid_base_cdr </div>
 
 import urllib
 import pandas as pd
@@ -29,14 +29,6 @@ com_cdr = ""
 deid_base_cdr=""
 pipeline=""
 run_as=""
-
-# +
-# Parameters
-#project_id = "aou-res-curation-prod"
-#com_cdr = "2021q3r2_combined"
-#deid_base_cdr = "R2021q3r2_deid_base"
-#pipeline = "pipeline_tables"
-#run_as = "data-analytics@aou-res-curation-prod.iam.gserviceaccount.com"
 
 # +
 impersonation_creds = auth.get_impersonation_credentials(
@@ -70,7 +62,7 @@ df = pd.DataFrame(columns = ['query', 'result'])
 #
 # has been done in first sql for deid, can be skipped here
 
-# ## Query 1.2 step2  Find person_ids in pre_dedi_com_cdr person table who have ethnicity_source_concept_id values AS 1586147  & race_source_concept_id AS ( 1586146 OR 1586142 OR 1586143) , then verify that the output in the deid_base_cdr observation table for that person_id after mapping  will results in 2-rows .
+# ## Query 1.2 Find person_ids in pre_dedi_com_cdr person table who have ethnicity_source_concept_id values AS 1586147  & race_source_concept_id AS ( 1586146 OR 1586142 OR 1586143) , then verify that the output in the deid_base_cdr observation table for that person_id after mapping  will results in 2-rows .
 #
 #   step 3
 # Verify that the 2-rows have 2-different value_source_concept_id values in the deid_base_cdr Observation table.

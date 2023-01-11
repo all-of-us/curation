@@ -42,19 +42,6 @@ run_as=""
 cdr_cutoff_date=""
 
 # +
-# Parameters
-#project_id = "aou-res-curation-prod"
-#reg_combine = "reg_2022q2r4_combined"
-#combine = "2022q2r4_combined"
-#rt_cdr_deid = "R2022q2r4_deid"
-#ct_cdr_deid = "C2022q2r4_deid"
-#rt_cdr_deid_clean = "R2022q2r4_deid_clean"
-#pipeline = "pipeline_tables"
-#deid_sand = "2022q2r4_deid_sandbox"
-#cdr_cutoff_date="2022-07-01"
-#run_as = "data-analytics@aou-res-curation-prod.iam.gserviceaccount.com"
-
-# +
 impersonation_creds = auth.get_impersonation_credentials(
     run_as, target_scopes=IMPERSONATION_SCOPES)
 

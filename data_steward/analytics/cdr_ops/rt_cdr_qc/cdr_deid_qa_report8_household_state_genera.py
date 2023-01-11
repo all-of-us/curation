@@ -34,16 +34,6 @@ pid_threshold=""
 run_as=""
 
 # +
-#project_id = "aou-res-curation-prod"
-#deid_cdr = "R2022q4r4_deid"
-#combine = "2022q4r3_combined"
-#pid_threshold='200'
-#reg_combine='reg_2022q4r3_combined'
-#pipeline = "pipeline_tables"
-#deid_sand = "2022q4r3_deid_sandbox"
-#run_as="data-analytics@aou-res-curation-prod.iam.gserviceaccount.com"
-
-# +
 impersonation_creds = auth.get_impersonation_credentials(
     run_as, target_scopes=IMPERSONATION_SCOPES)
 

@@ -31,12 +31,6 @@ deid_cdr=""
 run_as=""
 
 # +
-# Parameters
-#project_id = "aou-res-curation-prod"
-#deid_cdr = "R2022q2r4_deid"
-#run_as = "data-analytics@aou-res-curation-prod.iam.gserviceaccount.com"
-
-# +
 impersonation_creds = auth.get_impersonation_credentials(
     run_as, target_scopes=IMPERSONATION_SCOPES)
 
