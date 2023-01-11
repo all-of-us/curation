@@ -261,6 +261,7 @@ REGISTERED_TIER_DEID_CLEANING_CLASSES = [
     (SectionParticipationConceptSuppression,),
     (RegisteredCopeSurveyQuestionsSuppression,),
     (ExplicitIdentifierSuppression,),
+    (FreeTextSurveyResponseSuppression,),
     (CancerConceptSuppression,),
     (StringFieldsSuppression,),
     (DropOrphanedSurveyConductIds,),

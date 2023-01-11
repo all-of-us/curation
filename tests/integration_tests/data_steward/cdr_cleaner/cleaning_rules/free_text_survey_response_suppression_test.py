@@ -106,7 +106,13 @@ class FreeTextSurveyResponseSuppressionTest(BaseTest.CleaningRulesTestBase):
            (444, 'Will Not Be Dropped', 'Observation', 'SNOWMED', 
             'Context-dependent', '0036T', '2016-05-01', '2016-05-02'),
            (555, 'Will Not Be Dropped', 'Observation', 'SNOWMED', 
-            'Context-dependent', '46938', '2016-05-01', '2016-05-02')
+            'Context-dependent', '46938', '2016-05-01', '2016-05-02'),
+            (666, 'Text Box 2', 'Observation', 'SNOWMED', 
+            'Context-dependent', 'Whitefreetext', '2016-05-01', '2016-05-02'),
+            (777, 'Text Box 3', 'Observation', 'SNOWMED', 
+            'Context-dependent', 'TexTBoX', '2016-05-01', '2016-05-02'),
+            (888, 'Text Box 3', 'Observation', 'SNOWMED', 
+            'Context-dependent', 'FreeTeXT', '2016-05-01', '2016-05-02')
         """)
 
         observation_table_tmpl = self.jinja_env.from_string("""
@@ -139,7 +145,10 @@ class FreeTextSurveyResponseSuppressionTest(BaseTest.CleaningRulesTestBase):
                 (7, 8, 0, date('2017-05-02'), 0, 0, 0, 0, 0, 111),
             -- all valid *_concept_id, no records will dropped --
                 (8, 9, 444, date('2017-05-02'), 444, 444, 444, 444, 444, 444),
-                (9, 10, 555, date('2017-05-02'), 555, 555, 555, 555, 555, 555)
+                (9, 10, 555, date('2017-05-02'), 555, 555, 555, 555, 555, 555),
+                (10, 11, 666, date('2017-05-02'), 666, 666, 666, 666, 666, 666),
+                (11, 12, 777, date('2017-05-02'), 777, 777, 777, 777, 777, 777),
+                (12, 13, 777, date('2017-05-02'), 777, 777, 777, 777, 777, 777)
         """)
 
         insert_concept_query = concept_table_tmpl.render(
@@ -157,8 +166,8 @@ class FreeTextSurveyResponseSuppressionTest(BaseTest.CleaningRulesTestBase):
                 f'{self.fq_dataset_name}.observation',
             'fq_sandbox_table_name':
                 f'{self.fq_sandbox_name}.{self.rule_instance.sandbox_table_for(OBSERVATION)}',
-            'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9],
-            'sandboxed_ids': [1, 2, 3, 4, 5, 6, 7],
+            'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+            'sandboxed_ids': [1, 2, 3, 4, 5, 6, 7, 10, 11, 12],
             'fields': [
                 'observation_id', 'person_id', 'observation_concept_id',
                 'observation_date', 'observation_type_concept_id',

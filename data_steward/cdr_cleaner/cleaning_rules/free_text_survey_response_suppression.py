@@ -1,7 +1,7 @@
 """
 To ensure participant privacy, remove any records containing concepts related to free text responses
 
-Original Issue: DC-1387
+Original Issue: DC-1387, DC-2799
 """
 
 # Python imports
@@ -24,7 +24,7 @@ FREE_TEXT_CONCEPT_QUERY = JINJA_ENV.from_string("""
 -- free text generated using REGEX --
 CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset}}.{{concept_suppression_table}}` AS
 (SELECT * FROM `{{project_id}}.{{dataset_id}}.concept`
-WHERE REGEXP_CONTAINS(concept_code, r'(FreeText)|(TextBox)') OR concept_code = 'notes')
+WHERE REGEXP_CONTAINS(lower(concept_code), r'(freetext)|(textbox)') OR concept_code = 'notes')
 """)
 
 
@@ -49,9 +49,11 @@ class FreeTextSurveyResponseSuppression(AbstractBqLookupTableConceptSuppression
         desc = (f'Sandbox and record suppress any records containing '
                 f'concepts related to free text responses')
         super().__init__(
-            issue_numbers=['DC1387'],
+            issue_numbers=['DC1387', 'DC2799'],
             description=desc,
-            affected_datasets=[cdr_consts.CONTROLLED_TIER_DEID],
+            affected_datasets=[
+                cdr_consts.CONTROLLED_TIER_DEID, cdr_consts.REGISTERED_TIER_DEID
+            ],
             affected_tables=[OBSERVATION],
             project_id=project_id,
             dataset_id=dataset_id,
