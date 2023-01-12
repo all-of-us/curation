@@ -104,7 +104,9 @@ class DateUnShiftCopeResponsesTest(BaseTest.CleaningRulesTestBase):
         -- Multiple cope records for the same participant. All cope data should be unshifted. --
         (12, 802, 201, date(2016, 05, 7),timestamp(datetime(2016, 05, 7, 12, 45, 00)), date(2017, 05, 7), timestamp(datetime(2017, 05, 7, 12, 45, 00)), 1, 2, 3, 4, 2100000005, 6),
         -- Multiple records for the same participant. Non-cope data should remain shifted. --
-        (13, 802, 201, date(2016, 05, 7),timestamp(datetime(2016, 05, 7, 12, 45, 00)), date(2017, 05, 7), timestamp(datetime(2017, 05, 7, 12, 45, 00)), 1, 2, 3, 4, 201, 6)
+        (13, 802, 201, date(2016, 05, 7),timestamp(datetime(2016, 05, 7, 12, 45, 00)), date(2017, 05, 7), timestamp(datetime(2017, 05, 7, 12, 45, 00)), 1, 2, 3, 4, 201, 6),
+        -- Handling nulls in nullable fields --
+        (14, 802, 201, NULL, NULL, NULL, timestamp(datetime(2017, 05, 7, 12, 45, 00)), 1, 2, 3, 4, 2100000005, 6)
         """)
 
         load_statements = [
@@ -136,8 +138,8 @@ class DateUnShiftCopeResponsesTest(BaseTest.CleaningRulesTestBase):
                 'survey_start_date', 'survey_start_datetime', 'survey_end_date',
                 'survey_end_datetime'
             ],
-            'loaded_ids': [10, 11, 12, 13],
-            'sandboxed_ids': [10, 11, 12],
+            'loaded_ids': [10, 11, 12, 13, 14],
+            'sandboxed_ids': [10, 11, 12, 14],
             'cleaned_values': [
                 (10, 801, 200, date.fromisoformat('2016-05-11'),
                  datetime.fromisoformat('2016-05-11 12:45:00+00:00'),
@@ -154,7 +156,9 @@ class DateUnShiftCopeResponsesTest(BaseTest.CleaningRulesTestBase):
                 (13, 802, 201, date.fromisoformat('2016-05-07'),
                  datetime.fromisoformat('2016-05-07 12:45:00+00:00'),
                  date.fromisoformat('2017-05-07'),
-                 datetime.fromisoformat('2017-05-07 12:45:00+00:00'))
+                 datetime.fromisoformat('2017-05-07 12:45:00+00:00')),
+                (14, 802, 201, None, None, None,
+                 datetime.fromisoformat('2017-05-11 12:45:00+00:00')),
             ]
         }]
 

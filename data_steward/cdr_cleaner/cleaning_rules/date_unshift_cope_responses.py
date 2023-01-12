@@ -55,8 +55,8 @@ SET observation_date       = unshifted_observation_date,
     observation_datetime   = unshifted_observation_datetime
 FROM (SELECT 
         observation_id,
-        DATE_ADD(observation_date, INTERVAL shift DAY) as unshifted_observation_date,
-        DATE_ADD(observation_datetime, INTERVAL shift DAY) as unshifted_observation_datetime
+        COALESCE(DATE_ADD(observation_date, INTERVAL shift DAY), observation_date) as unshifted_observation_date,
+        COALESCE(DATE_ADD(observation_datetime, INTERVAL shift DAY), observation_datetime) as unshifted_observation_datetime
     FROM `{{project_id}}.{{dataset_id}}.{{observation_table}}` ob
     LEFT JOIN `{{project_id}}.{{mapping_dataset}}.{{_deid_map}}` prm
     ON ob.person_id = prm.research_id  -- reminder: obs has been deid --
@@ -75,10 +75,10 @@ SET survey_start_date = unshifted_start_date,
     survey_end_datetime = unshifted_end_datetime
 FROM (SELECT
         survey_conduct_id,
-        DATE_ADD(survey_start_date, INTERVAL shift DAY) as unshifted_start_date,
-        DATE_ADD(survey_start_datetime, INTERVAL shift DAY) as unshifted_start_datetime,
-        DATE_ADD(survey_end_date, INTERVAL shift DAY) as unshifted_end_date,
-        DATE_ADD(survey_end_datetime, INTERVAL shift DAY) as unshifted_end_datetime
+        COALESCE(DATE_ADD(survey_start_date, INTERVAL shift DAY),survey_start_date) as unshifted_start_date,
+        COALESCE(DATE_ADD(survey_start_datetime, INTERVAL shift DAY),survey_start_datetime) as unshifted_start_datetime,
+        COALESCE(DATE_ADD(survey_end_date, INTERVAL shift DAY),survey_end_date) as unshifted_end_date,
+        COALESCE(DATE_ADD(survey_end_datetime, INTERVAL shift DAY),survey_end_datetime) as unshifted_end_datetime
     FROM `{{project_id}}.{{dataset_id}}.{{survey_conduct_table}}`  sc
     LEFT JOIN `{{project_id}}.{{mapping_dataset}}.{{_deid_map}}`  prm
     ON sc.person_id = prm.research_id) AS ref -- reminder: sc has been deid --
