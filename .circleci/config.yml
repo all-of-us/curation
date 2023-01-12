@@ -3,7 +3,7 @@ version: 2.1
 orbs:
   # Send notifications for failed builds on master, develop branches using Slack orb (https://circleci.com/orbs/registry/orb/circleci/slack). Refer to the
   # For channels to notify and webhook URL refer to the CircleCI Slack App page (https://slack.com/apps/A0F7VRE7N-circleci).
-  slack: circleci/slack@3.4.2
+  slack: circleci/slack@4.12.0
 
 job_defaults: &job_defaults
   machine:
@@ -16,7 +16,7 @@ job_defaults: &job_defaults
     - CIRCLE_ARTIFACTS: /tmp/circleci-artifacts
     - GSDK_VERSION: 360.0.0
     - GSDK_CHECKSUM: 6192cb2791f592da6d372888dbd7ee81d3d91f255d844ab5fc518fc97e453648
-    - CIRCLECI_CLI_VERSION: "0.1.15973"
+    - CIRCLECI_CLI_VERSION: "0.1.22924"
     - CIRCLECI_CLI_CHECKSUM: "4187a5245f06dd8e1d51d5a99ad40ed9e8963397cecf006fd2d6a04ac374bef6"
 
 commands:
@@ -60,14 +60,14 @@ commands:
       - store_artifacts:
           path: ./tests/results/coverage
           destination: test_results
-      - slack/status:
-          fail_only: true
-          only_for_branches: master,develop
+      - slack/notify:
+          event: fail
+          branch_pattern: master,develop
   lint_teardown:
     steps:
-      - slack/status:
-          fail_only: true
-          only_for_branches: master,develop
+      - slack/notify:
+          event: fail
+          branch_pattern: master,develop
 
 jobs:
   linting_checks:
