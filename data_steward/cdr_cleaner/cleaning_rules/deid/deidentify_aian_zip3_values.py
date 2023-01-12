@@ -83,7 +83,7 @@ class DeidentifyAIANZip3Values(BaseCleaningRule):
         this SQL, append them to the list of Jira Issues.
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
-        desc = "This cleaning rules generalizes answers to COPE insurance question."
+        desc = "Alters fields to generalize zipcode, and state observations for AI/AN participants"
         super().__init__(issue_numbers=['DC2706'],
                          description=desc,
                          affected_datasets=[cdr_consts.CONTROLLED_TIER_DEID],
