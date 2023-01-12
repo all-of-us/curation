@@ -62,12 +62,12 @@ commands:
           destination: test_results
       - slack/notify:
           event: fail
-          branch_pattern: master,develop,ciupdate
+          branch_pattern: master,develop
   lint_teardown:
     steps:
       - slack/notify:
           event: fail
-          branch_pattern: master,develop,ciupdate
+          branch_pattern: master,develop
 
 jobs:
   linting_checks:
