@@ -29,14 +29,14 @@ SCHEMA_MAP_TABLE = [{
     "description": "the person_id of someone with an ehr record"
 }, {
     "type": "string",
-    "name": "src_hpo_id",
+    "name": "hpo_id",
     "mode": "required",
     "description": "the src_hpo_id of an ehr record"
 }]
 
 HPO_ID_NOT_RDR_QUERY = JINJA_ENV.from_string("""
   SELECT
-  DISTINCT person_id, src_hpo_id
+  DISTINCT person_id, hpo_id
   FROM
     `{{project_id}}.{{dataset_id}}._mapping_{{table}}`
   JOIN
@@ -44,7 +44,7 @@ HPO_ID_NOT_RDR_QUERY = JINJA_ENV.from_string("""
   USING
     ({{table}}_id)
   WHERE
-    src_hpo_id NOT LIKE 'rdr'
+    hpo_id NOT LIKE 'rdr'
 """)
 
 LIST_PERSON_ID_TABLES = JINJA_ENV.from_string("""
@@ -57,7 +57,7 @@ LIST_PERSON_ID_TABLES = JINJA_ENV.from_string("""
 INSERT_TO_MAP_TABLE_NAME = JINJA_ENV.from_string("""
   INSERT INTO `{{project_id}}.{{sandbox_dataset_id}}.{{table_name}}`
   (person_id,
-   src_hpo_id)
+   hpo_id)
   {{select_query}}
 """)
 
@@ -65,12 +65,12 @@ SANDBOX_QUERY_TO_FIND_RECORDS = JINJA_ENV.from_string("""
   CREATE OR REPLACE TABLE
   `{{project_id}}.{{sandbox_dataset_id}}.{{target_table}}` AS (
   SELECT observation_id FROM (
-    SELECT DISTINCT src_hpo_id, obs.person_id, value_source_concept_id, observation_id
+    SELECT DISTINCT hpo_id, obs.person_id, value_source_concept_id, observation_id
     FROM `{{project_id}}.{{sandbox_dataset_id}}.{{map_table_name}}` AS person_hpos
     JOIN `{{project_id}}.{{dataset_id}}.{{target_table}}` AS obs
     USING (person_id)
     LEFT JOIN `{{project_id}}.pipeline_tables.site_maskings`
-    USING (src_hpo_id, value_source_concept_id)
+    USING (hpo_id, value_source_concept_id)
     WHERE observation_source_concept_id = 1585249  AND state IS NULL))
 """)
 
