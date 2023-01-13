@@ -93,8 +93,8 @@ class ConflictingHpoStateGeneralizeTest(BaseTest.CleaningRulesTestBase):
 
         # Load test data
         self.load_test_data([
-            f'{raw_data_load_query_obs}',
-            f'{raw_data_load_query_mapping}',
+            raw_data_load_query_obs,
+            raw_data_load_query_mapping,
         ])
 
     def test_conflicting_hpo_id(self):
@@ -103,11 +103,7 @@ class ConflictingHpoStateGeneralizeTest(BaseTest.CleaningRulesTestBase):
         """
         # Expected results list
         tables_and_counts = [{
-            'fq_table_name':
-                '.'.join([
-                    f'{self.project_id}.{self.dataset_id}.{OBSERVATION}',
-                    f'{self.project_id}.{self.dataset_id}._mapping_{OBSERVATION}',
-                ]),
+            'fq_table_name': f'{self.project_id}.{self.dataset_id}.{OBSERVATION}',
             'loaded_ids': [1, 2, 3, 4],
             'sandboxed_ids': [1],
             'fields': ['observation_id', 'person_id', 'observation_concept_id',
