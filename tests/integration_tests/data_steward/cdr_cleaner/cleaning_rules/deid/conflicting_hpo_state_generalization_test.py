@@ -27,10 +27,10 @@ INSERT_RAW_DATA_OBS = JINJA_ENV.from_string("""
        value_source_concept_id
        )
      VALUES
-       (1,101,1001,2020-01-01,1,100,1585249,100),
-       (2,102,1002,2020-01-01,1,100,1585250,100),
-       (3,103,1003,2020-01-01,1,100,1585249,100),
-       (4,104,1004,2020-01-01,1,100,1585248,100)
+       (1,101,1001,'2020-01-01',1,100,1585249,100),
+       (2,102,1002,'2020-01-01',1,100,1585250,100),
+       (3,103,1003,'2020-01-01',1,100,1585249,100),
+       (4,104,1004,'2020-01-01',1,100,1585248,100)
  """)
 
 INSERT_RAW_DATA_MAPPING = JINJA_ENV.from_string("""
@@ -103,13 +103,16 @@ class ConflictingHpoStateGeneralizeTest(BaseTest.CleaningRulesTestBase):
         """
         # Expected results list
         tables_and_counts = [{
-            'fq_table_name': f'{self.project_id}.{self.dataset_id}.{OBSERVATION}',
+            'fq_table_name':
+                f'{self.project_id}.{self.dataset_id}.{OBSERVATION}',
             'loaded_ids': [1, 2, 3, 4],
             'sandboxed_ids': [1],
-            'fields': ['observation_id', 'person_id', 'observation_concept_id',
-                       'observation_date', 'observation_type_concept_id',
-                       'value_as_concept_id', 'observation_source_concept_id',
-                       'value_source_concept_id'],
+            'fields': [
+                'observation_id', 'person_id', 'observation_concept_id',
+                'observation_date', 'observation_type_concept_id',
+                'value_as_concept_id', 'observation_source_concept_id',
+                'value_source_concept_id'
+            ],
             'cleaned_values': [
                 (1, 101, 1001, self.date, 1, 2000000011, 1585249, 2000000011),
                 (2, 102, 1002, self.date, 1, 100, 1585249, 100),
