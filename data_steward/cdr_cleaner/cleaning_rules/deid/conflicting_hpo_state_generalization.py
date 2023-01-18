@@ -36,7 +36,7 @@ SCHEMA_MAP_TABLE = [{
 
 HPO_ID_NOT_RDR_QUERY = JINJA_ENV.from_string("""
   SELECT
-  DISTINCT person_id, hpo_id
+  DISTINCT person_id, src_hpo_id
   FROM
     `{{project_id}}.{{dataset_id}}._mapping_{{table}}`
   JOIN
@@ -44,7 +44,7 @@ HPO_ID_NOT_RDR_QUERY = JINJA_ENV.from_string("""
   USING
     ({{table}}_id)
   WHERE
-    hpo_id NOT LIKE 'rdr'
+    src_hpo_id NOT LIKE 'rdr'
 """)
 
 LIST_PERSON_ID_TABLES = JINJA_ENV.from_string("""
