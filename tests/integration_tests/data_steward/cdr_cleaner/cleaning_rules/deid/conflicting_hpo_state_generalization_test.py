@@ -105,8 +105,6 @@ class ConflictingHpoStateGeneralizeTest(BaseTest.CleaningRulesTestBase):
         tables_and_counts = [{
             'fq_table_name':
                 f'{self.project_id}.{self.dataset_id}.{OBSERVATION}',
-            'fq_sandbox_table_name':
-                f'{self.project_id}.{self.sandbox_id}.{OBSERVATION}',
             'loaded_ids': [1, 2, 3, 4],
             'sandboxed_ids': [1],
             'fields': [
@@ -115,11 +113,12 @@ class ConflictingHpoStateGeneralizeTest(BaseTest.CleaningRulesTestBase):
                 'value_as_concept_id', 'observation_source_concept_id',
                 'value_source_concept_id'
             ],
-            'cleaned_values': [(1, 101, 1001, self.date, 1, 2000000011, 1585249,
-                                2000000011),
-                               (2, 102, 1002, self.date, 1, 100, 1585250, 100),
-                               (3, 103, 1003, self.date, 1, 100, 1585249, 100),
-                               (4, 104, 1004, self.date, 1, 100, 1585248, 100)]
+            'cleaned_values': [
+                (1, 101, 1001, self.date, 1, 2000000011, 1585249, 2000000011),
+                (2, 102, 1002, self.date, 1, 100, 1585249, 100),
+                (3, 103, 1003, self.date, 1, 100, 1585249, 100),
+                (4, 104, 1004, self.date, 1, 100, 1585248, 100),
+            ]
         }]
 
         self.default_test(tables_and_counts)
