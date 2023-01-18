@@ -76,10 +76,10 @@ SANDBOX_QUERY_TO_FIND_RECORDS = JINJA_ENV.from_string("""
 
 GENERALIZE_STATE_QUERY = JINJA_ENV.from_string("""
   UPDATE
-  `{{project_id}}.{{dataset_id}}.{{updated_table}}` AS D_OBS
+  `{{project_id}}.{{dataset_id}}.{{updated_table}}` AS D_OBS,
+  `{{project_id}}.{{sandbox_dataset_id}}.{{target_table}}` AS SB_OBS
   SET D_OBS.value_source_concept_id = 2000000011,
   D_OBS.value_as_concept_id = 2000000011
-  FROM `{{project_id}}.{{sandbox_dataset_id}}.{{target_table}}` AS SB_OBS
   WHERE D_OBS.observation_id = SB_OBS.observation_id
 """)
 
