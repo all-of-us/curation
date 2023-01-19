@@ -145,10 +145,10 @@ class CleanMappingExtTables(BaseCleaningRule):
     @staticmethod
     def is_ehr_dataset(dataset_id):
         """
-        identifies unioned datasets
+        identifies ehr datasets
 
         :param dataset_id: identifies the dataset
-        :return: Boolean identifying if the dataset is a unioned dataset
+        :return: Boolean identifying if the dataset is an ehr dataset
         """
         return 'ehr' in dataset_id and 'unioned' not in dataset_id
 
@@ -164,15 +164,14 @@ class CleanMappingExtTables(BaseCleaningRule):
         """
         queries = []
 
-        # TODO modify based on new naming convention
         is_ehr = self.is_ehr_dataset(self.dataset_id)
 
         for table in table_list:
             cdm_table = self.get_cdm_table(table, table_type)
+            table_id = f"{cdm_table}_id"
+
             if is_ehr:
                 cdm_table = f"{UNIONED_EHR}_{cdm_table}"
-
-            table_id = f"{cdm_table}_id"
 
             if self.sandbox_dataset_id is not None:
                 sandbox_query = dict()
