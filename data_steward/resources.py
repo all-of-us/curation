@@ -12,7 +12,8 @@ from git import Repo, TagReference
 from google.cloud import bigquery
 
 from common import (VOCABULARY, ACHILLES, PROCESSED_TXT, RESULTS_HTML,
-                    FITBIT_TABLES, PID_RID_MAPPING, COPE_SURVEY_MAP)
+                    FITBIT_TABLES, PID_RID_MAPPING, COPE_SURVEY_MAP,
+                    UNIONED_EHR)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -150,6 +151,10 @@ def fields_for(table, sub_path=None):
         If provided, this directory will be searched.
     :returns: a json object representing the schemas for the named table
     """
+    # Added for unioned_ehr_xyz tables in EHR dataset
+    if table.startswith(UNIONED_EHR):
+        table = table.split(f'{UNIONED_EHR}_')[1]
+
     path = os.path.join(fields_path, sub_path if sub_path else '')
 
     # default setting

@@ -95,3 +95,8 @@ class CleanMappingTest(unittest.TestCase):
         ]
         actual = self.rule_instance.get_query_specs()
         self.assertEqual(len(actual), len(cdm_tables) * 4)
+
+    def test_is_ehr_dataset(self):
+        self.assertTrue(self.rule_instance.is_ehr_dataset('dummy_ehr'))
+        self.assertFalse(self.rule_instance.is_ehr_dataset('dummy'))
+        self.assertFalse(self.rule_instance.is_ehr_dataset('dummy_unioned_ehr'))

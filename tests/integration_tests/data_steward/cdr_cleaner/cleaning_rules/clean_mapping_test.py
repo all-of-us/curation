@@ -10,7 +10,7 @@ from unittest import mock
 
 # Project imports
 from app_identity import PROJECT_ID
-from common import JINJA_ENV, OBSERVATION
+from common import JINJA_ENV, OBSERVATION, UNIONED_EHR
 from cdr_cleaner.cleaning_rules.clean_mapping import CleanMappingExtTables
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
@@ -69,6 +69,27 @@ VALUES
      1585838, NULL, NULL, 1585839, NULL, NULL)
 """)
 
+OBSERVATION_TABLE_EHR_TEMPLATE = JINJA_ENV.from_string("""
+INSERT INTO `{{project_id}}.{{dataset_id}}.unioned_ehr_observation` (
+    observation_id, person_id, observation_concept_id, observation_date, observation_datetime, 
+    observation_type_concept_id, value_as_number, value_as_string, value_as_concept_id, qualifier_concept_id, 
+    unit_concept_id, provider_id, visit_occurrence_id, visit_detail_id, observation_source_value,
+    observation_source_concept_id, unit_source_value, qualifier_source_value, value_source_concept_id, value_source_value, 
+    questionnaire_response_id
+    )
+
+VALUES
+    (900, 1, 1585838, '2009-04-29', TIMESTAMP('2009-04-29'),
+     8201211115, 1.0, NULL, 0, 0,
+     0, 0, NULL, NULL, '99051',
+     1585838, NULL, NULL, 1585840, NULL, NULL),
+
+    (300, 2, 1585845, '2009-05-15', TIMESTAMP('2009-05-15'),
+     8201211116, 1.0, NULL, 0, 0,
+     0, 0, NULL, NULL, '99054',
+     1585845, NULL, NULL, 1585846, NULL, NULL)
+""")
+
 
 class CleanMappingExtTablesTest(BaseTest.CleaningRulesTestBase):
 
@@ -110,6 +131,8 @@ class CleanMappingExtTablesTest(BaseTest.CleaningRulesTestBase):
         for table_name in affected_tables:
             cls.fq_table_names.append(
                 f'{cls.project_id}.{cls.dataset_id}.{table_name}')
+        cls.fq_table_names.append(
+            f'{cls.project_id}.{cls.dataset_id}.{UNIONED_EHR}_{OBSERVATION}')
 
         # NOTE:  does not create empty sandbox tables.
         super().setUpClass()
@@ -133,7 +156,13 @@ class CleanMappingExtTablesTest(BaseTest.CleaningRulesTestBase):
         observation_query = OBSERVATION_TABLE_TEMPLATE.render(
             project_id=self.project_id, dataset_id=self.dataset_id)
 
-        self.load_test_data([mapping_query, ext_query, observation_query])
+        observation_ehr_unioned_query = OBSERVATION_TABLE_EHR_TEMPLATE.render(
+            project_id=self.project_id, dataset_id=self.dataset_id)
+
+        self.load_test_data([
+            mapping_query, ext_query, observation_query,
+            observation_ehr_unioned_query
+        ])
 
     @mock.patch('cdr_cleaner.cleaning_rules.clean_mapping.get_mapping_tables')
     @mock.patch.object(CleanMappingExtTables, 'setup_rule')
@@ -164,5 +193,30 @@ class CleanMappingExtTablesTest(BaseTest.CleaningRulesTestBase):
             'sandboxed_ids': [150],
             'fields': ['observation_id', 'src_id', 'survey_version_concept_id'],
             'cleaned_values': [(100, 'pitt', 1000)]
+        }]
+        self.default_test(tables_and_counts)
+
+    @mock.patch(
+        'cdr_cleaner.cleaning_rules.clean_mapping.CleanMappingExtTables.is_ehr_dataset'
+    )
+    @mock.patch('cdr_cleaner.cleaning_rules.clean_mapping.get_mapping_tables')
+    def test_field_cleaning_ehr(self, mock_mapping_tables, mock_is_ehr_dataset):
+        """
+        Test for clean_mapping when the dataset is an EHR dataset.
+        _mapping_xyz is cleaned based on unioned_ehr_xyz tables.
+        """
+        mock_mapping_tables.return_value = f'_mapping_{OBSERVATION}'
+        mock_is_ehr_dataset.return_value = True
+
+        tables_and_counts = [{
+            'fq_table_name': self.fq_table_names[0],
+            'fq_sandbox_table_name': self.fq_sandbox_table_names[0],
+            'loaded_ids': [100, 900],
+            'sandboxed_ids': [100],
+            'fields': [
+                'observation_id', 'src_dataset_id', 'src_observation_id',
+                'src_hpo_id', 'src_table_id'
+            ],
+            'cleaned_values': [(900, '2021_id', 800, 'chs', 'chs_observation')]
         }]
         self.default_test(tables_and_counts)
