@@ -58,3 +58,24 @@ class CopyDatasetToOutputProdTest(unittest.TestCase):
         ]
 
         self.assertRaises(SystemExit, self.parser.parse_args, test_args)
+
+    def test_hotfix_parser(self):
+        # Valid arguments
+        test_args = [
+            "hotfix", "--run_as", "myemail.com", "-s", "mysrcproject", "-o",
+            "mydestproject", "-d", "mysrcdataset", "-r", "2021Q2R4", "-t",
+            "controlled", "--deid_stage", "base"
+        ]
+
+        args = self.parser.parse_args(test_args)
+        self.assertIn(args.deid_stage, DEID_STAGE_LIST)
+
+        # Invalid fitbit dataset argument
+        test_args = [
+            "hotfix", "--run_as", "myemail.com", "-s", "mysrcproject", "-o",
+            "mydestproject", "-d", "mysrcdataset", "-r", "2021Q2R4", "-t",
+            "controlled", "--deid_stage", "base", "--fitbit_dataset",
+            "myfitbitdataset"
+        ]
+
+        self.assertRaises(SystemExit, self.parser.parse_args, test_args)
