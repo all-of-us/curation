@@ -8,7 +8,7 @@ from datetime import datetime
 # Project imports
 from cdr_cleaner import clean_cdr
 from cdr_cleaner.args_parser import add_kwargs_to_args
-from common import CDR_SCOPES, PIPELINE_TABLES, ZIP3_SES_MAP
+from common import CDR_SCOPES, PIPELINE_TABLES, ZIP3_SES_MAP, DE_IDENTIFIED
 from constants.cdr_cleaner import clean_cdr as consts
 from gcloud.bq import BigQueryClient
 from tools import add_cdr_metadata
@@ -138,11 +138,11 @@ def create_datasets(client, name, input_dataset, tier, release_tag):
         client.create_dataset(dataset_object, exists_ok=True)
         dataset = client.get_dataset(dataset_id)
         if dataset_id in deid_datasets:
-            new_labels = client.update_labels_and_tags(
-                dataset_id, base_labels_and_tags, {
-                    'phase': phase,
-                    'de-identified': 'true'
-                })
+            new_labels = client.update_labels_and_tags(dataset_id,
+                                                       base_labels_and_tags, {
+                                                           'phase': phase,
+                                                           DE_IDENTIFIED: 'true'
+                                                       })
             dataset.labels = new_labels
             dataset.description = f'{phase} {description}'
             client.update_dataset(dataset, ["labels", "description"])
@@ -150,7 +150,7 @@ def create_datasets(client, name, input_dataset, tier, release_tag):
             new_labels = client.update_labels_and_tags(
                 dataset_id, base_labels_and_tags, {
                     'phase': phase,
-                    'de-identified': 'false'
+                    DE_IDENTIFIED: 'false'
                 })
             dataset.labels = new_labels
             dataset.description = f'{phase} {description}'

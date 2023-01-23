@@ -13,7 +13,7 @@ from google.cloud.bigquery import Table, Dataset
 # Project imports
 from utils import auth, pipeline_logging
 from gcloud.bq import BigQueryClient
-from common import DRC_OPS, CDR_SCOPES, IDENTITY_MATCH
+from common import DRC_OPS, CDR_SCOPES, IDENTITY_MATCH, DE_IDENTIFIED
 from constants.validation.participants.snapshot_validaiton_dataset import (
     PARTITIONS_QUERY, SNAPSHOT_TABLE_QUERY)
 from bq_utils import get_hpo_info, get_table_id
@@ -94,7 +94,7 @@ def create_snapshot(client: BigQueryClient, release_tag: str) -> str:
     dataset.description = f'{DRC_OPS} + {release_tag}_ehr'
     dataset.labels = {
         'release_tag': release_tag,
-        'de-identified': 'false',
+        DE_IDENTIFIED: 'false',
         'phase': 'clean'
     }
     dataset = client.create_dataset(dataset_id, exists_ok=True)
