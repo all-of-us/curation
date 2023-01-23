@@ -328,7 +328,7 @@ class CreateTierTest(unittest.TestCase):
                       self.labels_and_tags)
         ])
 
-        # Ensures datasets are updated with the proper labels and tags (if dataset is de_identified or not)
+        # Ensures datasets are updated with the proper labels and tags (if dataset is de-identified or not)
         self.assertEqual(self.mock_bq_client.update_labels_and_tags.call_count,
                          3)
 
