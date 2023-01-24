@@ -13,7 +13,7 @@ from constants.cdr_cleaner import clean_cdr as consts
 from tools.add_cdr_metadata import INSERT
 from tools.create_tier import parse_deid_args, validate_deid_stage_param, validate_tier_param, \
     validate_release_tag_param, create_datasets, get_dataset_name, create_tier, add_kwargs_to_args
-from common import CDR_SCOPES
+from common import CDR_SCOPES, DE_IDENTIFIED
 
 
 class CreateTierTest(unittest.TestCase):
@@ -274,13 +274,13 @@ class CreateTierTest(unittest.TestCase):
     def test_create_datasets(self):
         # Preconditions
         mocked_labels = [{
-            'de-identified': 'true',
+            DE_IDENTIFIED: 'true',
             'phase': consts.CLEAN
         }, {
-            'de-identified': 'true',
+            DE_IDENTIFIED: 'true',
             'phase': consts.STAGING
         }, {
-            'de-identified': 'false',
+            DE_IDENTIFIED: 'false',
             'phase': consts.SANDBOX
         }]
         self.mock_bq_client.update_labels_and_tags.side_effect = mocked_labels
