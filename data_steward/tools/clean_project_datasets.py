@@ -1,8 +1,8 @@
 """
 An administrative utility to remove datasets.
 
-Original purpose is to identify and remove datasets with a given
-substring in the dataset name.
+It identifies and removes datasets with a given substring in the dataset name
+or with a file that has the list of dataset names.
 """
 # Python imports
 import argparse
@@ -43,7 +43,7 @@ def _delete_datasets(client, datasets_to_delete_list):
             f'The following datasets could not be deleted: {failed_to_delete}')
 
 
-def run_deletion(project_id, name_substrings):
+def run_deletion(project_id, name_substrings='', name_file=''):
     """
     Deletes datasets from project containing any of the name_substrings
 
@@ -74,14 +74,23 @@ def run_deletion(project_id, name_substrings):
         dataset.dataset_id for dataset in list(bq_client.list_datasets())
     ]
 
-    datasets_with_substrings = [
-        dataset for dataset in all_datasets for substring in name_substrings
-        if substring in dataset
-    ]
+    if name_substrings:
+        datasets_to_delete = [
+            dataset for dataset in all_datasets for substring in name_substrings
+            if substring in dataset
+        ]
 
-    LOGGER.info(f'{len(datasets_with_substrings)} Datasets marked for '
+    elif name_file:
+        with open(name_file, 'r') as f:
+            name_strings = f.read().split('\n')
+
+        datasets_to_delete = [
+            dataset for dataset in all_datasets if dataset in name_strings
+        ]
+
+    LOGGER.info(f'{len(datasets_to_delete)} Datasets marked for '
                 f'deletion in project `{project_id}`: ')
-    for dataset in datasets_with_substrings:
+    for dataset in datasets_to_delete:
         LOGGER.info(f'\t{dataset}')
 
     msg = (f'After reviewing datasets, proceed?\nYou will need to review '
@@ -92,7 +101,7 @@ def run_deletion(project_id, name_substrings):
     response = input(msg)
 
     if response.lower() == 'y':
-        _delete_datasets(bq_client, datasets_with_substrings)
+        _delete_datasets(bq_client, datasets_to_delete)
     else:
         LOGGER.info("Proper consent was not given.  Aborting deletion.")
 
@@ -122,8 +131,14 @@ def get_arguments(raw_args=None):
         dest='name_substrings',
         help=('Identifies substrings that help identify datasets to delete. '
               'A dataset containing any of these substrings within in their '
-              'dataset_id will be deleted.'),
-        required=True)
+              'dataset_id will be deleted. '
+              'Either -n or -f needs to be specified. Cannot use both.'))
+    parser.add_argument(
+        '-f',
+        '--name_file',
+        dest='name_file',
+        help=('File containing dataset_ids to delete. '
+              'Either -n or -f needs to be specified. Cannot use both.'))
     parser.add_argument('-s',
                         '--console_log',
                         dest='console_log',
@@ -144,7 +159,19 @@ def main(raw_args=None):
 
     pipeline_logging.configure(add_console_handler=args.console_log)
 
-    run_deletion(args.project_id, args.name_substrings)
+    if args.name_substrings and args.name_file:
+        LOGGER.info(
+            f'You cannot speficy both --name_substrings and --name_file. '
+            f'Use only one of them. Exiting the execution.')
+        return
+    elif not args.name_substrings and not args.name_file:
+        LOGGER.info(f'Neither --name_substrings nor --name_file is specified. '
+                    f'Use one of them. Exiting the execution.')
+        return
+    elif args.name_substrings:
+        run_deletion(args.project_id, name_substrings=args.name_substrings)
+    elif args.name_file:
+        run_deletion(args.project_id, name_file=args.name_file)
 
 
 if __name__ == '__main__':
