@@ -3,16 +3,19 @@ import unittest
 from mock import patch
 
 # Project imports
+from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 import cdr_cleaner.cleaning_rules.no_data_30_days_after_death as death
 from cdr_cleaner.cleaning_rules.no_data_30_days_after_death import (
-    TEMPORAL_TABLES_WITH_START_DATE, TEMPORAL_TABLES_WITH_END_DATE,
-    TEMPORAL_TABLES_WITH_DATE, NoDataAfterDeath,
-    SANDBOX_DEATH_DATE_WITH_END_DATES_QUERY, SANDBOX_DEATH_DATE_QUERY,
-    REMOVE_DEATH_DATE_QUERY)
-from constants.bq_utils import WRITE_TRUNCATE
+    TEMPORAL_TABLES_WITH_START_DATE,
+    TEMPORAL_TABLES_WITH_END_DATE,
+    TEMPORAL_TABLES_WITH_DATE,
+    SANDBOX_DEATH_DATE_WITH_END_DATES_QUERY,
+    SANDBOX_DEATH_DATE_QUERY,
+    REMOVE_DEATH_DATE_QUERY,
+    NoDataAfterDeath,
+)
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from common import PERSON, VISIT_OCCURRENCE
-from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 
 
 class NoDataAfterDeathTest(unittest.TestCase):

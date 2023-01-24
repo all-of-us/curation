@@ -3,18 +3,19 @@ If there is a death_date listed for a person_id, ensure that no temporal fields
 (see the CDR cleaning spreadsheet tab labeled all temporal here) for that person_id exist more than
 30 days after the death_date.
 """
+
+# Python Imports
 import logging
 from collections import ChainMap
 
-from constants import bq_utils as bq_consts
+# Project Imports
+from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from common import JINJA_ENV
 
-from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
-
 LOGGER = logging.getLogger(__name__)
 
-JIRA_ISSUE_NUMBERS = ['DC816', 'DC404', 'DC2771']
+JIRA_ISSUE_NUMBERS = ['DC816', 'DC404', 'DC2771', 'DC2788']
 
 # add table names as keys and temporal representations as values into a dictionary
 TEMPORAL_TABLES_WITH_START_DATE = {
@@ -55,7 +56,8 @@ SELECT ma.*
 FROM `{{project}}.{{dataset}}.{{table_name}}` AS ma
 JOIN `{{project}}.{{dataset}}.death` AS d
 ON ma.person_id = d.person_id
-WHERE date_diff(GREATEST(CAST(ma.{{start_date}} AS DATE), CAST(ma.{{end_date}} AS DATE)), d.death_date, DAY) > 30
+WHERE date_diff(GREATEST(CAST(COALESCE(ma.{{start_date}}, ma.{{end_date}}) AS DATE), 
+CAST(COALESCE(ma.{{end_date}}, ma.{{start_date}}) AS DATE)), d.death_date, DAY) > 30
 )
 """)
 
@@ -73,8 +75,8 @@ REMOVE_DEATH_DATE_QUERY = JINJA_ENV.from_string("""
 DELETE 
 FROM `{{project}}.{{dataset}}.{{table_name}}`
 WHERE {{table_name}}_id IN (
-    SELECT {{table_name}}_id 
-    FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table_name}}`
+SELECT {{table_name}}_id 
+FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table_name}}`
 )
 """)
 
@@ -157,7 +159,8 @@ class NoDataAfterDeath(BaseCleaningRule):
                          affected_tables=get_affected_tables(),
                          project_id=project_id,
                          dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id)
+                         sandbox_dataset_id=sandbox_dataset_id,
+                         table_namer=None)
 
     def get_sandbox_query_for(self, table):
         """
