@@ -159,7 +159,8 @@ class NoDataAfterDeath(BaseCleaningRule):
                          affected_tables=get_affected_tables(),
                          project_id=project_id,
                          dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id)
+                         sandbox_dataset_id=sandbox_dataset_id
+                         table_namer=None)
 
     def get_sandbox_query_for(self, table):
         """
