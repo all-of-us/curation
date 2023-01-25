@@ -1,10 +1,11 @@
 """
 A module for the basic `admin` endpoint.
 
-Its solely responsible for automating service key deletions and notifications.
+It's solely responsible for:
+(1) automating service key deletions and notifications, and
+(2) monitoring PID/RID violation in non-prod envs
 """
 import logging
-#Project Imports
 
 # Third party imports
 from flask import Flask
@@ -12,7 +13,7 @@ from flask import Flask
 # Project imports
 import api_util
 import app_identity
-from admin import key_rotation
+from admin import key_rotation, prod_pid_detection
 from curation_logging.curation_gae_handler import (begin_request_logging,
                                                    end_request_logging,
                                                    initialize_logging)
@@ -27,6 +28,8 @@ BODY_HEADER_EXPIRING_KEY_TEMPLATE = '\n# Keys expiring soon\n'
 BODY_TEMPLATE = ('service_account_email={service_account_email}\n'
                  'key_name={key_name}\n'
                  'created_at={created_at}\n')
+
+DETECT_PID_VIOLATION_RULE = f'{PREFIX}DetectPersonIdViolation'
 
 app = Flask(__name__)
 
@@ -83,13 +86,26 @@ def remove_expired_keys():
     return 'remove-expired-keys-complete'
 
 
+@api_util.auth_required_cron
+def detect_pid_violation():
+    project_id = app_identity.get_application_id()
+    prod_pid_detection.check_violation(project_id)
+    return 'detect-pid-violation-complete'
+
+
 @app.before_first_request
 def set_up_logging():
     initialize_logging()
 
 
 app.add_url_rule(REMOVE_EXPIRED_KEYS_RULE,
+                 endpoint='remove_expired_keys',
                  view_func=remove_expired_keys,
+                 methods=['GET'])
+
+app.add_url_rule(DETECT_PID_VIOLATION_RULE,
+                 endpoint='detect_pid_violation',
+                 view_func=detect_pid_violation,
                  methods=['GET'])
 
 app.before_request(

@@ -1,5 +1,5 @@
-import mock
 import unittest
+import mock
 
 from admin import admin_api
 
@@ -64,9 +64,6 @@ class AdminApiTest(unittest.TestCase):
     def test_rm_expired_keys_notification(self, mock_check_cron,
                                           mock_delete_expired_keys,
                                           mock_get_expiring_keys):
-        """
-
-        """
         mock_delete_expired_keys.side_effect = [
             self.expired_keys, self.expired_keys, []
         ]
@@ -89,3 +86,12 @@ class AdminApiTest(unittest.TestCase):
                 self.assertIn(f'INFO:root:{full_body}', cm.output)
                 self.assertIn(f'INFO:root:{expired_section}', cm.output)
                 self.assertIn(f'INFO:root:{expiring_section}', cm.output)
+
+    @mock.patch('admin.prod_pid_detection.check_violation')
+    @mock.patch('api_util.check_cron')
+    def test_detect_pid_violation_endpoint_callable(self, mock_check_cron,
+                                                    mock_check_violation):
+        admin_api.app.testing = True
+        with admin_api.app.test_client() as c:
+            c.get(admin_api.DETECT_PID_VIOLATION_RULE)
+            self.assertTrue(mock_check_violation.called)
