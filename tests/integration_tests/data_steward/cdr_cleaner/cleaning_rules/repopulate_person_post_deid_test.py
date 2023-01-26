@@ -162,22 +162,104 @@ class RepopulatePersonPostDeidTest(BaseTest.CleaningRulesTestBase):
         queries = [create_persons_query, create_observations_query]
         self.load_test_data(queries)
 
-        tables_and_counts = [
-        {
-            'fq_table_name':            '.'.join([self.fq_dataset_name, 'person'])
-            'fq_sandbox_table_name':    ''
-            'loaded_ids':               [1, 2, 3, 4, 5]
-            'sandboxed_ids':            []
-            'fields':                   ['person_id', 'gender_concept_id', 'year_of_birth', 'race_concept_id', 'race_source_concept_id','race_source_value', 'ethnicity_concept_id', 'ethnicity_source_concept_id','ethnicity_source_value', 'gender_source_value', 'gender_source_concept_id']
-            'cleaned_values':           [
-                (1, 1585841,   1991,    8527,      1586146, 'No matching concept',      38003564,  38003564,  "Not Hispanic",                               "No matching concept" 123,),
-                (2, 0,         1976,    8516,      1586143, 'No matching concept',      38003564,  38003564,  "Not Hispanic",                               "No matching concept",  0,),
-                (3, 0,         1945,    1586148,   1586148, 'No matching concept',      1586148,   1586148,   "WhatRaceEthnicity_RaceEthnicityNoneOfThese", "No matching concept",  0,),
-                (4, 0,         1900,    8527,      1586146, 'No matching concept',      38003563,  38003563,  'Hispanic',                                   "No matching concept",  0,),
-                (5, 0,          900,    1177221,    903079, 'PMI_PreferNotToAnswer',    903079,    903079,    'PMI_PreferNotToAnswer',                      "No matching concept",  0,),
-                (6, 0,         1987,    1177221,    903079, 'PMI_PreferNotToAnswer',    903079,    903079,    'PMI_PreferNotToAnswer',                      "No matching concept",  0,)
-                ]
-            }
-        ]
+        tables_and_counts = [{
+            'fq_table_name':
+                '.'.join([self.fq_dataset_name, 'person']),
+            'fq_sandbox_table_name':
+                '',
+            'loaded_ids': [1, 2, 3, 4, 5, 6],
+            'sandboxed_ids': [],
+            'fields': [
+                'person_id',
+                'gender_concept_id',
+                'year_of_birth',
+                'race_concept_id',
+                'race_source_concept_id',
+                'race_source_value',
+                'ethnicity_concept_id',
+                'ethnicity_source_concept_id',
+                'ethnicity_source_value',
+                'gender_source_value',
+                'gender_source_concept_id',
+            ],
+            'cleaned_values': [(
+                1,
+                1585841,
+                1991,
+                8527,
+                1586146,
+                'No matching concept',
+                38003564,
+                38003564,
+                "Not Hispanic",
+                "No matching concept",
+                123,
+            ),
+                               (
+                                   2,
+                                   0,
+                                   1976,
+                                   8516,
+                                   1586143,
+                                   'No matching concept',
+                                   38003564,
+                                   38003564,
+                                   "Not Hispanic",
+                                   "No matching concept",
+                                   0,
+                               ),
+                               (
+                                   3,
+                                   0,
+                                   1945,
+                                   1586148,
+                                   1586148,
+                                   'No matching concept',
+                                   1586148,
+                                   1586148,
+                                   "WhatRaceEthnicity_RaceEthnicityNoneOfThese",
+                                   "No matching concept",
+                                   0,
+                               ),
+                               (
+                                   4,
+                                   0,
+                                   1900,
+                                   8527,
+                                   1586146,
+                                   "No matching concept",
+                                   38003563,
+                                   38003563,
+                                   'Hispanic',
+                                   "No matching concept",
+                                   0,
+                               ),
+                               (
+                                   5,
+                                   0,
+                                   1900,
+                                   1177221,
+                                   903079,
+                                   'PMI_PreferNotToAnswer',
+                                   903079,
+                                   903079,
+                                   'PMI_PreferNotToAnswer',
+                                   "No matching concept",
+                                   0,
+                               ),
+                               (
+                                   6,
+                                   0,
+                                   1900,
+                                   1177221,
+                                   903079,
+                                   'PMI_PreferNotToAnswer',
+                                   903079,
+                                   903079,
+                                   'PMI_PreferNotToAnswer',
+                                   "No matching concept",
+                                   0,
+                               )]
+        }]
 
         self.default_test(tables_and_counts)
