@@ -250,7 +250,7 @@ class RepopulatePersonPostDeidTest(BaseTest.CleaningRulesTestBase):
                                (
                                    6,
                                    0,
-                                   1900,
+                                   1954,
                                    1177221,
                                    903079,
                                    'PMI_PreferNotToAnswer',
