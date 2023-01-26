@@ -62,7 +62,7 @@ def check_violation(project_id, admin_dataset_id=None):
     if len(response_list) == 0:
         LOGGER.error(HEADER_SCHEDULED_QUERY_FAILED)
         LOGGER.error(BODY_SCHEDULED_QUERY_FAILED)
-    elif response_list[0][0] != 'No violation found':
+    elif any(row[0] != 'No violation found' for row in response_list):
         LOGGER.error(HEADER_ID_VIOLATION_FOUND)
         LOGGER.error(BODY_ID_VIOLATION_FOUND)
     else:
@@ -72,7 +72,7 @@ def check_violation(project_id, admin_dataset_id=None):
 
 
 def parse_args():
-    parser = ArgumentParser(description='TODO add description here')
+    parser = ArgumentParser(description='Args for prod_pid_detection')
     parser.add_argument('-p',
                         '--project_id',
                         help='Prod BigQuery project ID',
