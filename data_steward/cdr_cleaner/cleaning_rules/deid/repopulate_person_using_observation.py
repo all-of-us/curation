@@ -82,6 +82,7 @@ LEFT JOIN {{project}}.{{sandbox_dataset}}.{{birth_info_sandbox_table}} AS bs
     ON p.person_id = bs.person_id
 """)
 
+
 class ConceptTranslation(NamedTuple):
     """
     A NamedTuple for storing the manual translations of the demographics concepts. The reason we
