@@ -113,9 +113,6 @@ class RepopulatePersonPostDeidTest(BaseTest.CleaningRulesTestBase):
             INSERT INTO `{{fq_dataset_name}}.person` (person_id, gender_concept_id, birth_datetime, year_of_birth,
             race_concept_id, race_source_concept_id, race_source_value, ethnicity_concept_id, ethnicity_source_concept_id,
             ethnicity_source_value, gender_source_value, gender_source_concept_id)
-            INSERT INTO `{{fq_dataset_name}}.person` (person_id, gender_concept_id, birth_datetime, year_of_birth, 
-            race_concept_id, race_source_concept_id, race_source_value, ethnicity_concept_id, ethnicity_source_concept_id, 
-            ethnicity_source_value, gender_source_value, gender_source_concept_id)
             VALUES
                 (1, 1, timestamp('1991-05-05'), 1991, 1, 1, "race_source_value", 1, 2, "ethnicity source_value", "gender_source_value", 1),
                 (2, 2, timestamp('1976-05-05'), 1976, 2, 2, "race_source_value", 1, 2, "ethnicity source_value", "gender_source_value", 2),
@@ -142,7 +139,7 @@ class RepopulatePersonPostDeidTest(BaseTest.CleaningRulesTestBase):
                 (4, 106, 1586140, 1586146, 1586146, '2020-01-01', 1, 1586140),
                  --What race ethnicity? Prefer not to answer --
                 (5, 107, 1586140,{{ethnicity_pna_concept_id}}, {{ethnicity_pna_concept_id}}, '2020-01-01', 1,903079)
-                
+
         """).render(
             fq_dataset_name=self.fq_dataset_name,
             gender_concept_id=GENDER_CONCEPT_ID,
