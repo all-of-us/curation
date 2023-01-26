@@ -44,9 +44,9 @@ concept_schema = [
 ]
 
 POPULATE_PS_VALUES = JINJA_ENV.from_string("""
-INSERT INTO `{{project_id}}.{{drc_dataset_id}}.{{ps_values_table_id}}` 
+INSERT INTO `{{project_id}}.{{drc_dataset_id}}.{{ps_values_table_id}}`
 (person_id, first_name, middle_name, last_name, street_address, street_address2, city, state, zip_code, email, phone_number, date_of_birth, sex)
-VALUES 
+VALUES
     (1, 'John', 'Jacob', 'Smith', '1 Government Dr', '', 'St. Louis', 'MO', '63110', 'john@gmail.com', '(123)456-7890', date('1978-10-01'), 'SexAtBirth_Female'),
     (2, 'Rebecca', 'Howard', 'Glass', '476 5th Ave', 'Apt 14A', 'New York', 'NY', '10018', 'rebecca@gmail.com', '1234567890', date('1984-10-23'), 'SexAtBirth_Male'),
     (3, 'Sam', 'Felix Rose', 'Smith', '1 2nd 3 4th St', 'APT 7D', 'Andersen AFB', 'ABCD', '96923', 'samwjeo', '123456-7890', date('2003-01-05'), 'SexAtBirth_SexAtBirthNoneOfThese'),
@@ -166,9 +166,9 @@ class ValidateTest(TestCase):
     def test_identify_rdr_ehr_match(self):
 
         POPULATE_PII_EMAILS = JINJA_ENV.from_string("""
-        INSERT INTO `{{project_id}}.{{drc_dataset_id}}.{{pii_email_table_id}}` 
+        INSERT INTO `{{project_id}}.{{drc_dataset_id}}.{{pii_email_table_id}}`
         (person_id, email)
-        VALUES 
+        VALUES
             (1, 'john2@gmail.com'), -- wrong email (non_match) --
             (2, 'REBECCA@gmail.com'), -- capitalized characters (match) --
             (4, '   chris@GMAIL.com    '), -- whitespace padding (match) --
@@ -181,9 +181,9 @@ class ValidateTest(TestCase):
         # person_id = 6 is duplicated but should not have any effect
 
         POPULATE_PII_PHONE_NUMBER = JINJA_ENV.from_string("""
-                INSERT INTO `{{project_id}}.{{drc_dataset_id}}.{{pii_phone_number_table_id}}` 
+                INSERT INTO `{{project_id}}.{{drc_dataset_id}}.{{pii_phone_number_table_id}}`
                 (person_id, phone_number)
-                VALUES 
+                VALUES
                     (1, '0123456789'), -- wrong phonenumber (non_match) --
                     (2, '1234567890'), -- normal 10 digit phone number (match) --
                     (4, '(123)456-7890'), -- formatted phone number (match) --
@@ -227,7 +227,7 @@ class ValidateTest(TestCase):
         """)
 
         POPULATE_PERSON_TABLE = JINJA_ENV.from_string("""
-                INSERT INTO `{{project_id}}.{{drc_dataset_id}}.{{person_table_id}}` 
+                INSERT INTO `{{project_id}}.{{drc_dataset_id}}.{{person_table_id}}`
                 (person_id, gender_concept_id, birth_datetime)
                 VALUES
                     (1, 8532, timestamp ('1978-10-01')),
@@ -235,7 +235,7 @@ class ValidateTest(TestCase):
                     (3, 8551, timestamp ('2004-10-01')),
                     (4, 8521, timestamp ('2003-05-01')),
                     (5, 8570, timestamp ('2000-11-01')),
-                    (6, 0, timestamp ('1900-01-01')),
+                    (6, 0, timestamp ('1954-01-01')),
                     (7, 4215271, timestamp ('1981-01-10')),
                     (8, 4214687, timestamp ('1999-12-1')),
                     (8, 4214687, timestamp ('1999-12-1'))
@@ -244,7 +244,7 @@ class ValidateTest(TestCase):
         # person_id = 9 is missing from ehr person table so should not validate
 
         POPULATE_LOCATION_TABLE = JINJA_ENV.from_string("""
-        INSERT INTO `{{project_id}}.{{drc_dataset_id}}.{{location_table_id}}` 
+        INSERT INTO `{{project_id}}.{{drc_dataset_id}}.{{location_table_id}}`
         (location_id, address_1, address_2, city, state, zip)
         VALUES
             (11, ' 1 government drive ', '', 'Saint Louis ', 'mo', '63110'),
@@ -258,7 +258,7 @@ class ValidateTest(TestCase):
             (18, '42  Nason   St', '', 'Maynard', 'MA', '01754')
         """)
         # location_id = 15 is duplicated but should not have any effect
-        """ 
+        """
         Note: Each test entry is testing for the following test cases:
             11: street_1: match,       street_2: missing_rdr ('1 Government Dr', '') vs (' 1 government drive ', '')
             12: street_1: no_match,    street_2: no_match    ('476 5th Ave', 'Apt 14A') vs ('Wrong street', 'Wrong apartment')
@@ -294,7 +294,7 @@ class ValidateTest(TestCase):
 
         # Create and populate concept table
         CONCEPT_TABLE_QUERY = JINJA_ENV.from_string("""
-        INSERT INTO `{{project_id}}.{{drc_dataset_id}}.concept` 
+        INSERT INTO `{{project_id}}.{{drc_dataset_id}}.concept`
              (concept_id, concept_name)
             VALUES
             (8532, 'FEMALE'),
