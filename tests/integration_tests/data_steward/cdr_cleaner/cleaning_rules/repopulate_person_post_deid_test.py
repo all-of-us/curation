@@ -121,13 +121,9 @@ class RepopulatePersonPostDeidTest(BaseTest.CleaningRulesTestBase):
                 (2, 2, timestamp('1976-05-05'), 1976, 2, 2, "race_source_value", 1, 2, "ethnicity source_value", "gender_source_value", 2),
                 (3, 2, timestamp('1945-05-05'), 1945, 2, 3, "race_source_value", 1, 2, "ethnicity source_value", "gender_source_value", 2),
                 (4, 2, '1900-01-01', 1900, 2, 3, "race_source_value", 1, 2, "ethnicity source_value", "gender_source_value", 2),
-                (5, 2, '1900-01-01', 1900, 2, 3, "race_source_value", 1, 2, "ethnicity source_value", "gender_source_value", 2)
-                (1,    1,    timestamp('1991-05-05'),    1991,    1,            1,             "race_source_value",    1,    2,  "ethnicity source_value",    "gender_source_value",    1),
-                (2,    2,    timestamp('1976-05-05'),    1976,    2,            2,             "race_source_value",    1,    2,  "ethnicity source_value",    "gender_source_value",    2),
-                (3,    2,    timestamp('1945-05-05'),    1945,    2,            3,             "race_source_value",    1,    2,  "ethnicity source_value",    "gender_source_value",    2),
-                (4,    2,    '1900-01-01',               1900,    2,            3,             "race_source_value",    1,    2,  "ethnicity source_value",    "gender_source_value",    2),
-                (5,    2,    '1900-01-01',               1900,    2,            3,             "race_source_value",    1,    2,  "ethnicity source_value",    "gender_source_value",    2),
-                (6,    1,    timestamp(1954-01-01),      1954,    2100000001,   "2100000001",  "race_source_value",    1,    1,  "ethnicity source_value",    "gender_source_value",    2)
+                (5, 2, '1900-01-01', 1900, 2, 3, "race_source_value", 1, 2, "ethnicity source_value", "gender_source_value", 2),
+                (6, 2,  timestamp('1954-03-21'), 1954, 2100000001, 2100000001, "race_source_value", 1, 2, "ethnicity_source_value", "gender_source_value", 2)
+
         """).render(fq_dataset_name=self.fq_dataset_name)
 
         create_observations_query = self.jinja_env.from_string("""
