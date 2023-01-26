@@ -98,7 +98,7 @@ table_row_counts_query = JINJA_ENV.from_string('''
 
 SELECT
 \'{{table_name}}\' as table_name,
-new_minus_aian_row_count,
+old_minus_aian_row_count,
 new_row_count,
 case when old_minus_aian_row_count = new_row_count then 'OK'
   when old_minus_aian_row_count is null AND new_row_count is null then 'OK'
