@@ -27,6 +27,9 @@ Per ticket DC-1584, The sex_at_birth_concept_id, sex_at_ birth_source_concept_id
 were defined and set in multiple repopulate person scripts. This was redundant and caused unwanted schema changes for
 the person table.  With the implementation of DC-1514 and DC-1570 these columns are to be removed from all
 repopulate_person_* files.
+
+Per ticket DC-2828, For both the Registered and Controlled tier person table repopulation scripts, set
+race_source_concept_id = 2100000001 when race_concept_id is set to 2100000001
 """
 import logging
 
@@ -37,7 +40,7 @@ from common import JINJA_ENV, PERSON
 
 LOGGER = logging.getLogger(__name__)
 
-JIRA_ISSUE_NUMBERS = ['DC516', 'DC836', 'DC1446', 'DC1584']
+JIRA_ISSUE_NUMBERS = ['DC516', 'DC836', 'DC1446', 'DC1584', 'DC2828']
 
 GENDER_CONCEPT_ID = 1585838
 AOU_NONE_INDICATED_CONCEPT_ID = 2100000001
@@ -87,6 +90,7 @@ WITH
         WHEN 1586143 THEN 8516 /*black/aa*/
         WHEN 1586146 THEN 8527 /*white*/
         WHEN 903079 THEN 1177221 /*PNA*/
+        WHEN 0 THEN 2100000001 /*None Provided*/
       /*otherwise, just use the standard mapped answer (or 0)*/
       ELSE
       coalesce(race_ob.value_as_concept_id,
@@ -103,6 +107,7 @@ WITH
           WHEN race_ob.value_source_concept_id = 903079 THEN 903079/*PNA*/
           WHEN race_ob.value_source_concept_id = 903096 THEN 903096 /*Skip*/
           WHEN race_ob.value_source_concept_id = 1586148 THEN 1586148 /*None of these*/
+          WHEN race_ob.value_source_concept_id = 1586148 THEN 1586148 /*None of these*/
         /*otherwise, it's non-hispanic*/
         ELSE
         38003564
@@ -117,7 +122,7 @@ WITH
       gender.gender_source_value,
       gender.gender_source_concept_id,
       CASE WHEN race_ob.value_source_concept_id = 903079 THEN 'PMI_PreferNotToAnswer'/*PNA*/
-      ELSE coalesce(race_ob.value_source_value, 
+      ELSE coalesce(race_ob.value_source_value,
            "No matching concept") END AS race_source_value,
       coalesce(race_ob.value_source_concept_id,
         0) AS race_source_concept_id
@@ -139,6 +144,8 @@ WITH
       per.person_id = ethnicity_ob.person_id
       AND ethnicity_ob.observation_source_concept_id=1586140
       AND ethnicity_ob.value_source_concept_id = 1586147) )
+
+
 SELECT
   person_id,
   gender_concept_id,
@@ -165,6 +172,11 @@ END
   race_source_value
 END
   AS race_source_value,
+    CASE
+    WHEN race_concept_id = 2100000001 THEN 2100000001
+  ELSE
+  race_source_concept_id
+END AS
   race_source_concept_id,
   ethnicity_concept.concept_code ethnicity_source_value,
   ethnicity_concept_id ethnicity_source_concept_id
