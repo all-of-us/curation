@@ -139,7 +139,7 @@ class RepopulatePersonPostDeidTest(BaseTest.CleaningRulesTestBase):
                 (4, 106, 1586140, 1586146, 1586146, '2020-01-01', 1, 1586140),
                  --What race ethnicity? Prefer not to answer --
                 (5, 107, 1586140,{{ethnicity_pna_concept_id}}, {{ethnicity_pna_concept_id}}, '2020-01-01', 1,903079),
-                 -- UPDATE --
+                 -- Test custom concept race_concept_id and race_source_concept_id --
                 (6, 108, 1586140, 0, 0, '2020-01-01', 1, 1586140)
 
         """).render(
