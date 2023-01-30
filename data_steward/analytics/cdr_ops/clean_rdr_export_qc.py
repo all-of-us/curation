@@ -398,33 +398,30 @@ execute(client, query)
 # This identifies questions as indicated by a PPI vocabulary and Question concept_class_id that
 # do not exist in the cleaned dataset but did exist in the raw dataset.
 
-if raw_rdr == "default":
-    print("Not running code to validate cleaned dataset against raw dataset.")
-else:
-    tpl = JINJA_ENV.from_string("""
-    with question_codes as (select c.concept_id, c.concept_name, c.concept_class_id
-    from `{{project_id}}.{{new_rdr}}.concept` as c
-    where REGEXP_CONTAINS(c.vocabulary_id, r'(?i)(ppi)') and REGEXP_CONTAINS(c.concept_class_id, r'(?i)(question)'))
-    , used_q_codes as (
-        select distinct o.observation_source_concept_id, o.observation_source_value
-        from `{{project_id}}.{{new_rdr}}.observation` as o
-        join `{{project_id}}.{{new_rdr}}.concept` as c
-        on o.observation_source_concept_id = c.concept_id
-        where REGEXP_CONTAINS(c.vocabulary_id, r'(?i)(ppi)') and REGEXP_CONTAINS(c.concept_class_id, r'(?i)(question)')
-    ), used_rawq_codes as (
-        select distinct o.observation_source_concept_id, o.observation_source_value
-        from `{{project_id}}.{{raw_rdr}}.observation` as o
-        join `{{project_id}}.{{raw_rdr}}.concept` as c
-        on o.observation_source_concept_id = c.concept_id
-        where REGEXP_CONTAINS(c.vocabulary_id, r'(?i)(ppi)') and REGEXP_CONTAINS(c.concept_class_id, r'(?i)(question)')
-    )
-        SELECT *
-        from question_codes
-        where concept_id not in (select observation_source_concept_id from used_q_codes)
-        and concept_id in (select observation_source_concept_id from used_rawq_codes)
-        """)
-    query = tpl.render(new_rdr=new_rdr, project_id=project_id, raw_rdr=raw_rdr)
-    execute(client, query)
+tpl = JINJA_ENV.from_string("""
+with question_codes as (select c.concept_id, c.concept_name, c.concept_class_id
+from `{{project_id}}.{{new_rdr}}.concept` as c
+where REGEXP_CONTAINS(c.vocabulary_id, r'(?i)(ppi)') and REGEXP_CONTAINS(c.concept_class_id, r'(?i)(question)'))
+, used_q_codes as (
+    select distinct o.observation_source_concept_id, o.observation_source_value
+    from `{{project_id}}.{{new_rdr}}.observation` as o
+    join `{{project_id}}.{{new_rdr}}.concept` as c
+    on o.observation_source_concept_id = c.concept_id
+    where REGEXP_CONTAINS(c.vocabulary_id, r'(?i)(ppi)') and REGEXP_CONTAINS(c.concept_class_id, r'(?i)(question)')
+), used_rawq_codes as (
+    select distinct o.observation_source_concept_id, o.observation_source_value
+    from `{{project_id}}.{{raw_rdr}}.observation` as o
+    join `{{project_id}}.{{raw_rdr}}.concept` as c
+    on o.observation_source_concept_id = c.concept_id
+    where REGEXP_CONTAINS(c.vocabulary_id, r'(?i)(ppi)') and REGEXP_CONTAINS(c.concept_class_id, r'(?i)(question)')
+)
+    SELECT *
+    from question_codes
+    where concept_id not in (select observation_source_concept_id from used_q_codes)
+    and concept_id in (select observation_source_concept_id from used_rawq_codes)
+    """)
+query = tpl.render(new_rdr=new_rdr, project_id=project_id, raw_rdr=raw_rdr)
+execute(client, query)
 
 # # Make sure previously corrected missing data still exists
 # Make sure that the cleaning rule clash that previously wiped out all numeric smoking data is corrected.
