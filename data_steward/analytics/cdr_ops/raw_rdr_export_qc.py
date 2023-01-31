@@ -17,8 +17,6 @@
 project_id = ""
 old_rdr = ""
 new_rdr = ""
-raw_rdr = "default"  # do not need to provide this if running on a raw rdr import
-new_rdr_sandbox = ""
 run_as = ""
 rdr_cutoff_date = ""
 # -
@@ -394,38 +392,6 @@ where REGEXP_CONTAINS(c.vocabulary_id, r'(?i)(ppi)') and REGEXP_CONTAINS(c.conce
 query = tpl.render(new_rdr=new_rdr, project_id=project_id)
 execute(client, query)
 
-# # Identify Questions That Dont Exist in the Cleaned RDR Export
-# This identifies questions as indicated by a PPI vocabulary and Question concept_class_id that
-# do not exist in the cleaned dataset but did exist in the raw dataset.
-
-if raw_rdr == "default":
-    print("Not running code to validate cleaned dataset against raw dataset.")
-else:
-    tpl = JINJA_ENV.from_string("""
-    with question_codes as (select c.concept_id, c.concept_name, c.concept_class_id
-    from `{{project_id}}.{{new_rdr}}.concept` as c
-    where REGEXP_CONTAINS(c.vocabulary_id, r'(?i)(ppi)') and REGEXP_CONTAINS(c.concept_class_id, r'(?i)(question)'))
-    , used_q_codes as (
-        select distinct o.observation_source_concept_id, o.observation_source_value
-        from `{{project_id}}.{{new_rdr}}.observation` as o
-        join `{{project_id}}.{{new_rdr}}.concept` as c
-        on o.observation_source_concept_id = c.concept_id
-        where REGEXP_CONTAINS(c.vocabulary_id, r'(?i)(ppi)') and REGEXP_CONTAINS(c.concept_class_id, r'(?i)(question)')
-    ), used_rawq_codes as (
-        select distinct o.observation_source_concept_id, o.observation_source_value
-        from `{{project_id}}.{{raw_rdr}}.observation` as o
-        join `{{project_id}}.{{raw_rdr}}.concept` as c
-        on o.observation_source_concept_id = c.concept_id
-        where REGEXP_CONTAINS(c.vocabulary_id, r'(?i)(ppi)') and REGEXP_CONTAINS(c.concept_class_id, r'(?i)(question)')
-    )
-        SELECT *
-        from question_codes
-        where concept_id not in (select observation_source_concept_id from used_q_codes)
-        and concept_id in (select observation_source_concept_id from used_rawq_codes)
-        """)
-    query = tpl.render(new_rdr=new_rdr, project_id=project_id, raw_rdr=raw_rdr)
-    execute(client, query)
-
 # # Make sure previously corrected missing data still exists
 # Make sure that the cleaning rule clash that previously wiped out all numeric smoking data is corrected.
 # Any returned rows indicate a problem that needs to be fixed.  Identified rows when running on a raw rdr
@@ -649,27 +615,6 @@ query = tpl.render(new_rdr=new_rdr,
                    PIPELINE_TABLES=PIPELINE_TABLES)
 execute(client, query)
 
-# # Check for missing questionnaire_response_id
-
-# Survey data in the RDR export should all have **questionnaire_response_id**
-# except the pmi skip data backfilled by Curation cleaning rule.
-# Any violations should be reported to the RDR team.
-# [DC-1776](https://precisionmedicineinitiative.atlassian.net/browse/DC-1776).
-# [DC-2254](https://precisionmedicineinitiative.atlassian.net/browse/DC-2254).
-
-tpl = JINJA_ENV.from_string('''
-SELECT 
-    person_id, 
-    STRING_AGG(observation_source_value) AS observation_source_value
-FROM `{{project_id}}.{{new_rdr}}.observation`
-WHERE observation_type_concept_id = 45905771 -- is a survey response --
-AND NOT (observation_id >= 1000000000000 AND value_as_concept_id = 903096) -- exclude records from backfill pmi skip --
-AND questionnaire_response_id IS NULL
-GROUP BY 1
-''')
-query = tpl.render(new_rdr=new_rdr, project_id=project_id)
-execute(client, query)
-
 # # Check if concepts for operational use still exist in the data
 
 # According to [this ticket](https://precisionmedicineinitiative.atlassian.net/browse/DC-1792),
@@ -713,127 +658,6 @@ group by value_source_concept_id, value_as_concept_id
 """)
 query = tpl.render(new_rdr=new_rdr, project_id=project_id)
 execute(client, query)
-
-# # Check that the Question and Answer Concepts in the old_map_short_codes tables are not paired with 0-valued concept_identifiers
-
-# According to this [ticket](https://precisionmedicineinitiative.atlassian.net/browse/DC-2488), Question and Answer concepts that are identified in the `old_map_short_codes` table should not be paired with 0-valued concept_identifiers after the RDR dataset is cleaned. These concept identifiers include the `observation_concept_id` and `observation_source_concept_id` fields.
-
-# ## Question Codes
-
-# Check the question codes
-tpl = JINJA_ENV.from_string("""
-WITH question_codes AS (
-  SELECT
-    pmi_code
-  FROM `{{project_id}}.{{sandbox_dataset}}.old_map_short_codes` 
-  WHERE type = 'Question'
-)
-SELECT
-  qc.pmi_code, o.observation_source_value, o.observation_concept_id, o.observation_source_concept_id, COUNT(*) invalid_id_count
-FROM `{{project_id}}.{{dataset}}.observation` o
-JOIN question_codes qc
-  ON qc.pmi_code = o.observation_source_value
-WHERE (o.observation_source_concept_id = 0
-  OR o.observation_concept_id = 0)
-GROUP BY qc.pmi_code, o.observation_source_value, o.observation_concept_id, o.observation_source_concept_id
-ORDER BY invalid_id_count DESC
-""")
-query = tpl.render(project_id=project_id,
-                   dataset=new_rdr,
-                   sandbox_dataset=new_rdr_sandbox)
-df = execute(client, query)
-
-# +
-success_msg = 'No 0-valued concept ids found.'
-failure_msg = '''
-    <b>{code_count}</b> question codes have 0-valued IDs. Report failure back to curation team.
-    Bug likely due to failure in the <code>update_questions_answers_not_mapped_to_omop</code> cleaning rule.
-'''
-
-render_message(df,
-               success_msg,
-               failure_msg,
-               failure_msg_args={'code_count': len(df)})
-# -
-
-# ## Answer Codes
-
-# Check the answer codes
-tpl = JINJA_ENV.from_string("""
-WITH answer_codes AS (
-  SELECT
-    pmi_code
-  FROM `{{project_id}}.{{sandbox_dataset}}.old_map_short_codes` 
-  WHERE type = 'Answer'
-)
-SELECT
-  ac.pmi_code, o.value_source_value, o.value_source_concept_id, o.value_as_concept_id, COUNT(*) invalid_id_count
-FROM `{{project_id}}.{{dataset}}.observation` o
-JOIN answer_codes ac
-  ON ac.pmi_code = o.value_source_value
-WHERE (o.value_source_concept_id = 0
-  OR o.value_as_concept_id = 0)
-GROUP BY ac.pmi_code, o.value_source_value, o.value_source_concept_id, o.value_as_concept_id
-ORDER BY invalid_id_count DESC
-""")
-query = tpl.render(project_id=project_id,
-                   dataset=new_rdr,
-                   sandbox_dataset=new_rdr_sandbox)
-df = execute(client, query)
-
-# +
-success_msg = 'No 0-valued concept ids found.'
-failure_msg = '''
-    <b>{code_count}</b> answer codes have 0-valued IDs. Report failure back to curation team.
-    Bug likely due to failure in the <code>update_questions_answers_not_mapped_to_omop</code> cleaning rule.
-'''
-
-render_message(df,
-               success_msg,
-               failure_msg,
-               failure_msg_args={'code_count': len(df)})
-# -
-
-# ### Question-Answer Codes Combo
-
-# Check that mapped answer codes are paired with correctly mapped question codes.  If the question codes are zero valued, the question and answer pair will be dropped from the clean version of the CDR.
-tpl = JINJA_ENV.from_string("""
-WITH answer_codes AS (
-  SELECT
-    pmi_code
-  FROM `{{project_id}}.{{sandbox_dataset}}.old_map_short_codes` 
-  WHERE type = 'Answer'
-)
-SELECT
-  ac.pmi_code, o.value_source_value, o.value_source_concept_id, o.value_as_concept_id,
-  o.observation_source_value, o.observation_concept_id, o.observation_source_concept_id, COUNT(*) invalid_id_count
-FROM `{{project_id}}.{{dataset}}.observation` o
-JOIN answer_codes ac
-  ON ac.pmi_code = o.value_source_value
-WHERE (o.observation_source_concept_id = 0
-  OR o.observation_concept_id = 0)
-GROUP BY ac.pmi_code, o.value_source_value, o.value_source_concept_id, o.value_as_concept_id,
-  o.observation_source_value, o.observation_concept_id, o.observation_source_concept_id
-ORDER BY invalid_id_count DESC
-""")
-query = tpl.render(project_id=project_id,
-                   dataset=new_rdr,
-                   sandbox_dataset=new_rdr_sandbox)
-df = execute(client, query)
-
-# +
-success_msg = 'No 0-valued concept ids found.'
-failure_msg = '''
-    <b>{code_count}</b> question codes have 0-valued IDs (<em>answer codes visible</em>). Report failure back to curation team.
-    Bug likely due to failure in the <code>update_questions_answers_not_mapped_to_omop</code> cleaning rule.
-'''
-
-render_message(df,
-               success_msg,
-               failure_msg,
-               failure_msg_args={'code_count': len(df)})
-
-# -
 
 # # COPE survey mapping
 
