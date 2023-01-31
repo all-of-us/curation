@@ -25,6 +25,8 @@ from cdr_cleaner.cleaning_rules.deid.repopulate_person_controlled_tier import \
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import \
     BaseTest
 
+AOU_NONE_INDICATED_CONCEPT_ID = 2100000001
+
 
 class RepopulatePersonControlledTierTestBase(BaseTest.CleaningRulesTestBase):
 
@@ -100,7 +102,8 @@ class RepopulatePersonControlledTierTestBase(BaseTest.CleaningRulesTestBase):
             (5, 0, 1970, 1, 1, '1970-01-01T00:00:01', 0, 0, NULL, NULL, NULL, 'person_source_value', 'gender_source_value', 0, 'race_source_value', 0, 'ethnicity', 0),
             (6, 0, 1970, 1, 1, '1970-01-01T00:00:01', 0, 0, NULL, NULL, NULL, 'person_source_value', 'gender_source_value', 0, 'race_source_value', 0, 'ethnicity', 0),
             (7, 0, 1970, 1, 1, '1970-01-01T00:00:01', 0, 0, NULL, NULL, NULL, 'person_source_value', 'gender_source_value', 0, 'race_source_value', 0, 'ethnicity', 0),
-            (8, 0, 1970, 1, 1, '1970-01-01T00:00:01', 0, 0, NULL, NULL, NULL, 'person_source_value', 'gender_source_value', 0, 'race_source_value', 0, 'ethnicity', 0)
+            (8, 0, 1970, 1, 1, '1970-01-01T00:00:01', 0, 0, NULL, NULL, NULL, 'person_source_value', 'gender_source_value', 0, 'race_source_value', 0, 'ethnicity', 0),
+            (9, 0, 1970, 1, 1, '1970-01-01T00:00:01', 0, 0, NULL, NULL, NULL, 'person_source_value', 'gender_source_value', 0, 'race_source_value', 0, 'ethnicity', 0)
        """)
 
         observation_data_template = self.jinja_env.from_string("""
@@ -142,7 +145,9 @@ class RepopulatePersonControlledTierTestBase(BaseTest.CleaningRulesTestBase):
                 (72, 7, 45878463, 1585838, 1585840, 'GenderIdentity_Woman', '2020-01-01', 0, 0),
                 (73, 7, 45878463, 1585845, 1585847, 'SexAtBirth_Female', '2020-01-01', 0, 0),
                 (82, 8, 45878463, 1585838, 1585840, 'GenderIdentity_Woman', '2020-01-01', 0, 0),
-                (83, 8, 45878463, 1585845, 1585847, 'SexAtBirth_Female', '2020-01-01', 0, 0)
+                (83, 8, 45878463, 1585845, 1585847, 'SexAtBirth_Female', '2020-01-01', 0, 0),
+                (92, 9, 45878463, 1585838, 1585840, 'GenderIdentity_Woman', '2020-01-01', 0, 0),
+                (93, 9, 45878463, 1585845, 1585847, 'SexAtBirth_Female', '2020-01-01', 0, 0)
         """)
 
         insert_person_query = person_data_template.render(
@@ -164,6 +169,7 @@ class RepopulatePersonControlledTierTestBase(BaseTest.CleaningRulesTestBase):
         6 - Race: White,               Ethnicity: Non-hispanic, Gender Identity: Woman,              Sex at Birth: Female,
         7 - Race and Ethnicity: No matching concept,            Gender Identity: Woman,              Sex at Birth: Female,
         8 - Race and Ethnicity: No record,                      Gender Identity: Woman,              Sex at Birth: Female,
+        9 - Race concept AoU none indicated,                    Race source concept: AoU none indicated
         """
 
         self.maxDiff = None
@@ -171,7 +177,7 @@ class RepopulatePersonControlledTierTestBase(BaseTest.CleaningRulesTestBase):
         tables_and_counts = [{
             'fq_table_name':
                 f'{self.project_id}.{self.dataset_id}.person',
-            'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8],
+            'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9],
             'fields': [
                 'person_id', 'gender_concept_id', 'year_of_birth',
                 'month_of_birth', 'day_of_birth', 'birth_datetime',
@@ -234,6 +240,12 @@ class RepopulatePersonControlledTierTestBase(BaseTest.CleaningRulesTestBase):
                  'person_source_value', 'GenderIdentity_Woman', 1585840,
                  'AoUDRC_NoneIndicated', NO_MATCHING_CONCEPT_ID,
                  NO_MATCHING_SOURCE_VALUE, NO_MATCHING_CONCEPT_ID),
+                (9, 45878463, 1970, None, None,
+                 parser.parse('1970-06-15 00:00:00 UTC'), 2100000001,
+                 NO_MATCHING_CONCEPT_ID, None, None, None,
+                 'person_source_value', 'GenderIdentity_Woman', 1585840,
+                 'AoUDRC_NoneIndicated', 2100000001, NO_MATCHING_SOURCE_VALUE,
+                 NO_MATCHING_CONCEPT_ID)
             ]
         }]
 
