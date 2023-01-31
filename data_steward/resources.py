@@ -6,6 +6,7 @@ import inspect
 import json
 import logging
 import os
+import re
 import cachetools
 
 from git import Repo, TagReference
@@ -581,3 +582,29 @@ def mapping_table_for(domain_table):
     :return:
     """
     return f'_mapping_{domain_table}'
+
+
+def ask_if_continue() -> None:
+    """
+    Checks if the user wishes to continue running the script or not.
+    This function is placed after each step as a checkpoint.
+    Raises:
+        RuntimeError: Abort the execution when the user wishes not to continue.
+    """
+    confirm = input("\nContinue? [Y/N]:\n\n")
+    if confirm.upper() != 'Y':
+        raise RuntimeError('User canceled the execution.')
+
+
+def get_new_dataset_name(src_dataset_name: str, release_tag: str) -> str:
+    """
+    Based on the old dataset name and the new release tag, creates a new
+    dataset name. This function assumes both the dataset name and the release
+    tag follow the Curation team's naming convention. It may return an
+    incorrect dataset name if those are irregularly named.
+    Args:
+        src_dataset_name: Name of the source dataset.
+        release_tag: Release tag for the new datasets.
+    Returns: Name of the new dataset.
+    """
+    return re.sub(r'\d{4}q\dr\d', release_tag, src_dataset_name)

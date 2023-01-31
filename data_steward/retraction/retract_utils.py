@@ -171,6 +171,24 @@ def is_deid_dataset(dataset_id):
     return DEID in dataset_id or is_deid_fitbit_dataset(dataset_id)
 
 
+def is_ct_dataset(dataset_id):
+    """
+    Returns boolean indicating if a dataset is a controlled tier dataset using the dataset_id
+    :param dataset_id: Identifies the dataset
+    :return: Boolean indicating if the dataset is a controlled tier dataset
+    """
+    return is_deid_dataset(dataset_id) and dataset_id.startswith('C')
+
+
+def is_rt_dataset(dataset_id):
+    """
+    Returns boolean indicating if a dataset is a registered tier dataset using the dataset_id
+    :param dataset_id: Identifies the dataset
+    :return: Boolean indicating if the dataset is a registered tier dataset
+    """
+    return is_deid_dataset(dataset_id) and dataset_id.startswith('R')
+
+
 def is_combined_dataset(dataset_id):
     """
     Returns boolean indicating if a dataset is a combined dataset using the dataset_id
