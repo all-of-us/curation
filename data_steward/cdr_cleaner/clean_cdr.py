@@ -249,8 +249,8 @@ REGISTERED_TIER_DEID_CLEANING_CLASSES = [
     # Data generalizations
     ####################################
     (
-        ConflictingHpoStateGeneralize,),
-    (GeneralizeStateByPopulation,),
+        GeneralizeStateByPopulation,),
+    (ConflictingHpoStateGeneralize,),
     (GeneralizeCopeInsuranceAnswers,),
     # (GeneralizeSexGenderConcepts,),
 
