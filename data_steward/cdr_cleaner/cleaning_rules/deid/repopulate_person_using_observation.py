@@ -27,6 +27,8 @@ Per ticket DC-1584, The sex_at_birth_concept_id, sex_at_ birth_source_concept_id
 were defined and set in multiple repopulate person scripts. This was redundant and caused unwanted schema changes for
 the person table.  With the implementation of DC-1514 and DC-1570 these columns are to be removed from all
 repopulate_person_* files.
+
+As per ticket 2828, we set race_source_concept_id to 2100000001 when race_concept_id is also set to 2100000001
 """
 import logging
 from abc import abstractmethod
@@ -53,7 +55,7 @@ SELECT DISTINCT
     bs.birth_datetime,
     CASE -- a special case to handle that requires inputs from both race ethnicity --
         WHEN rs.race_concept_id = 0 THEN {{aou_none_indicated_concept_id}}
-        WHEN rs.source_concept_id = {{aou_none_indicated_concept_id}} THEN {{aou_none_indicated_concept_id}}
+        WHEN rs.race_source_concept_id = {{aou_none_indicated_concept_id}} THEN {{aou_none_indicated_concept_id}}
         ELSE rs.race_concept_id
     END AS race_concept_id,
     es.ethnicity_concept_id,
@@ -70,7 +72,7 @@ SELECT DISTINCT
     CASE
         WHEN rs.race_concept_id = {{aou_none_indicated_concept_id}} THEN {{aou_none_indicated_concept_id}}
         ELSE rs.race_source_concept_id
-    END
+    END AS race_source_concept_id,
     es.ethnicity_source_value,
     es.ethnicity_source_concept_id
 FROM {{project}}.{{dataset}}.person AS p
