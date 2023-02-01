@@ -22,15 +22,18 @@ INSERT_RAW_DATA_OBS = JINJA_ENV.from_string("""
        observation_concept_id,
        observation_date,
        observation_type_concept_id,
+       value_as_number,
+       value_as_string,
        value_as_concept_id,
        observation_source_concept_id,
-       value_source_concept_id
+       value_source_concept_id,
+       value_source_value
        )
      VALUES
-       (1,101,1001,'2020-01-01',1,100,1585249,100),
-       (2,102,1002,'2020-01-01',1,100,1585250,100),
-       (3,103,1003,'2020-01-01',1,100,1585249,100),
-       (4,104,1004,'2020-01-01',1,100,1585248,100)
+       (1,101,0,'2020-01-01',1,2,'',100,1585249,100,'Test Value'),
+       (2,102,0,'2020-01-01',1,2,'',100,1585250,100,'Test Value'),
+       (3,103,0,'2020-01-01',1,2,'',100,1585249,100,'Test Value'),
+       (4,104,0,'2020-01-01',1,2,'',100,1585248,100,'Test Value')
  """)
 
 INSERT_RAW_DATA_MAPPING = JINJA_ENV.from_string("""
@@ -39,10 +42,10 @@ INSERT_RAW_DATA_MAPPING = JINJA_ENV.from_string("""
        src_hpo_id
        )
      VALUES
-       (1,'hpo_100'),
+       (1,'uamc_uofa'),
        (2,'rdr'),
        (3,'rdr'),
-       (4,'hpo_103')
+       (4,'saou_umc')
  """)
 
 
@@ -112,15 +115,18 @@ class ConflictingHpoStateGeneralizeTest(BaseTest.CleaningRulesTestBase):
             'fields': [
                 'observation_id', 'person_id', 'observation_concept_id',
                 'observation_date', 'observation_type_concept_id',
-                'value_as_concept_id', 'observation_source_concept_id',
-                'value_source_concept_id'
+                'value_as_number', 'value_as_string', 'value_as_concept_id',
+                'observation_source_concept_id', 'value_source_concept_id',
+                'value_source_value'
             ],
-            'cleaned_values': [
-                (1, 101, 1001, self.date, 1, 2000000011, 1585249, 2000000011),
-                (2, 102, 1002, self.date, 1, 100, 1585250, 100),
-                (3, 103, 1003, self.date, 1, 100, 1585249, 100),
-                (4, 104, 1004, self.date, 1, 100, 1585248, 100),
-            ]
+            'cleaned_values': [(1, 101, 0, self.date, 1, 2, '', 2000000011,
+                                1585249, 2000000011, 'Test Value'),
+                               (2, 102, 0, self.date, 1, 2, '', 100, 1585250,
+                                100, 'Test Value'),
+                               (3, 103, 0, self.date, 1, 2, '', 100, 1585249,
+                                100, 'Test Value'),
+                               (4, 104, 0, self.date, 1, 2, '', 100, 1585248,
+                                100, 'Test Value')]
         }]
 
         self.default_test(tables_and_counts)
