@@ -263,6 +263,7 @@ REGISTERED_TIER_DEID_CLEANING_CLASSES = [
     (ExplicitIdentifierSuppression,),
     (CancerConceptSuppression,),
     (StringFieldsSuppression,),
+    (FreeTextSurveyResponseSuppression,),
     (DropOrphanedSurveyConductIds,),
     (DropOrphanedPIDS,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
@@ -309,8 +310,6 @@ CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     (GeneralizeZipCodes,),  # Should run after any data remapping rules
     (RaceEthnicityRecordSuppression,
     ),  # Should run after any data remapping rules
-    (FreeTextSurveyResponseSuppression,
-    ),  # Should run after any data remapping rules
     (MotorVehicleAccidentSuppression,),
     (VehicularAccidentConceptSuppression,),
     (ExplicitIdentifierSuppression,),
@@ -324,6 +323,7 @@ CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     (StringFieldsSuppression,),
     (AggregateZipCodes,),
     (DeidentifyAIANZip3Values,),
+    (FreeTextSurveyResponseSuppression,),
     (DropOrphanedSurveyConductIds,),
     (DropOrphanedPIDS,),
     (RemoveExtraTables,),  # Should be last cleaning rule to be run
