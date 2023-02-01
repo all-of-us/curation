@@ -186,7 +186,7 @@ def generate_output_prod(tier,
     bq_client.create_dataset(dataset_object, exists_ok=False)
 
     # Optionally copy fitbit tables to source dataset
-    if copy_fitbit and fitbit_dataset_id is not None:
+    if copy_fitbit and fitbit_dataset_id:
         LOGGER.info(
             f'Copying fitbit tables from dataset {src_project_id}.{fitbit_dataset_id} to {src_project_id}.{src_dataset_id}...'
         )
