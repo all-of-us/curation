@@ -65,8 +65,10 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
 
         sb_table_name = cls.rule_instance.sandbox_table_for(OBSERVATION)
 
-        cls.fq_sandbox_table_names.append(
-            f'{cls.project_id}.{cls.sandbox_id}.{sb_table_name}')
+        cls.fq_sandbox_table_names = [
+            f'{cls.project_id}.{cls.sandbox_id}.{sb_table_name}',
+            f'{cls.project_id}.{cls.sandbox_id}._observation_id_map'
+        ]
 
         cls.fq_lookup_table_name = f'{cls.project_id}.{cls.lookup_dataset_id}.{cls.lookup_table_id}'
 
@@ -169,6 +171,7 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
                 203 ... Similar to 202, the same behavior even when the source value is 'PMI_Skip'.
                 204, 205 ... Those have multiple corresponding records (=904,905,906).
                              204 and 205 get dropped and 904, 905, and 906 get inserted.
+                * 902 - 906 become 306 - 310 respectively after mapping.
             person_id == 3:
                 This person has no updated basics records. No change will be made to its records.
 
@@ -196,11 +199,11 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
                 (102, self.unshifted_date, self.unshifted_datetime, 1001),
                 (103, self.unshifted_date, self.unshifted_datetime, 1001),
                 (201, self.unshifted_date, self.unshifted_datetime, 1002),
-                (902, self.unshifted_date, self.unshifted_datetime, 1002),
-                (903, self.unshifted_date, self.unshifted_datetime, 1002),
-                (904, self.unshifted_date, self.unshifted_datetime, 1002),
-                (905, self.unshifted_date, self.unshifted_datetime, 1002),
-                (906, self.unshifted_date, self.unshifted_datetime, 1002),
+                (306, self.unshifted_date, self.unshifted_datetime, 1002),
+                (307, self.unshifted_date, self.unshifted_datetime, 1002),
+                (308, self.unshifted_date, self.unshifted_datetime, 1002),
+                (309, self.unshifted_date, self.unshifted_datetime, 1002),
+                (310, self.unshifted_date, self.unshifted_datetime, 1002),
                 (301, self.unshifted_date, self.unshifted_datetime, 1003),
                 (302, self.unshifted_date, self.unshifted_datetime, 1003),
                 (303, self.unshifted_date, self.unshifted_datetime, 1003),
@@ -235,6 +238,7 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
                 303 ... Similar to 302, the same behavior even when the source value is 'PMI_Skip'.
                 304, 305 ... Those have multiple corresponding records (=904,905,906).
                              304 and 305 get dropped and 904, 905, and 906 get inserted.
+                * 902 - 906 become 306 - 310 respectively after mapping.
 
         questionnaire_response_id will be updated based on the deid qrid table.
 
@@ -264,11 +268,11 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
                 (204, self.unshifted_date, self.unshifted_datetime, 1002),
                 (205, self.unshifted_date, self.unshifted_datetime, 1002),
                 (301, self.unshifted_date, self.unshifted_datetime, 1003),
-                (902, self.unshifted_date, self.unshifted_datetime, 2002),
-                (903, self.unshifted_date, self.unshifted_datetime, 2002),
-                (904, self.unshifted_date, self.unshifted_datetime, 2002),
-                (905, self.unshifted_date, self.unshifted_datetime, 2002),
-                (906, self.unshifted_date, self.unshifted_datetime, 2002)
+                (306, self.unshifted_date, self.unshifted_datetime, 2002),
+                (307, self.unshifted_date, self.unshifted_datetime, 2002),
+                (308, self.unshifted_date, self.unshifted_datetime, 2002),
+                (309, self.unshifted_date, self.unshifted_datetime, 2002),
+                (310, self.unshifted_date, self.unshifted_datetime, 2002)
             ]
         }]
 
@@ -298,6 +302,7 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
                 303 ... Similar to 302, the same behavior even when the source value is 'PMI_Skip'.
                 304, 305 ... Those have multiple corresponding records (=904,905,906).
                              304 and 305 get dropped and 904, 905, and 906 get inserted.
+                * 902 - 906 become 306 - 310 respectively after mapping.
 
         questionnaire_response_id will be updated based on the deid qrid table.
 
@@ -327,11 +332,11 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
                 (204, self.unshifted_date, self.unshifted_datetime, 1002),
                 (205, self.unshifted_date, self.unshifted_datetime, 1002),
                 (301, self.unshifted_date, self.unshifted_datetime, 1003),
-                (902, self.shifted_date, self.shifted_datetime, 2002),
-                (903, self.shifted_date, self.shifted_datetime, 2002),
-                (904, self.shifted_date, self.shifted_datetime, 2002),
-                (905, self.shifted_date, self.shifted_datetime, 2002),
-                (906, self.shifted_date, self.shifted_datetime, 2002)
+                (306, self.shifted_date, self.shifted_datetime, 2002),
+                (307, self.shifted_date, self.shifted_datetime, 2002),
+                (308, self.shifted_date, self.shifted_datetime, 2002),
+                (309, self.shifted_date, self.shifted_datetime, 2002),
+                (310, self.shifted_date, self.shifted_datetime, 2002)
             ]
         }]
 

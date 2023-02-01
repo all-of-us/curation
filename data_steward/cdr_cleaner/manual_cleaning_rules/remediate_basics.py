@@ -13,7 +13,7 @@ Original Issues: DC-3016 and its subtasks.
 import logging
 
 # Project imports
-from common import JINJA_ENV, OBSERVATION
+from common import DEID_MAP, DEID_QUESTIONNAIRE_RESPONSE_MAP, JINJA_ENV, OBSERVATION
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.cdr_cleaner.clean_cdr import (COMBINED,
                                              CONTROLLED_TIER_DEID_BASE,
@@ -25,6 +25,33 @@ from retraction.retract_utils import is_combined_dataset, is_ct_dataset, is_deid
 LOGGER = logging.getLogger(__name__)
 
 ISSUE_NUMBERS = ['DC3016']
+
+CREATE_OBS_ID_MAP_QUERY = JINJA_ENV.from_string("""
+CREATE TABLE IF NOT EXISTS `{{project}}.{{sandbox_dataset}}._observation_id_map`
+(
+    source_observation_id INT64 NOT NULL OPTIONS(description="observation_id from the source table."),
+    dataset_id STRING NOT NULL OPTIONS(description="Dataset ID of the destination table."),
+    observation_id INT64 NOT NULL OPTIONS(description="Newly assigned observation_id for the destination dataset.")
+)
+OPTIONS
+(
+    description="Mapping table for observation_ids. New observation_ids are assigned when loaded so no observation_id will be a duplicate."
+)
+""")
+
+INSERT_OBS_ID_MAP_QUERY = JINJA_ENV.from_string("""
+INSERT INTO `{{project}}.{{sandbox_dataset}}._observation_id_map`
+(source_observation_id, dataset_id, observation_id)
+SELECT
+    l.observation_id,
+    '{{dataset}}',
+    ROW_NUMBER() OVER(ORDER BY l.observation_id
+        ) + (
+        SELECT MAX(observation_id) 
+        FROM `{{project}}.{{dataset}}.observation`
+        )
+FROM `{{project}}.{{lookup_dataset}}.{{lookup_table}}` l
+""")
 
 SANDBOX_MEANINGLESS_SURVEY_RESPONSE_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` AS (
@@ -64,7 +91,7 @@ INSERT INTO `{{project}}.{{dataset}}.observation`
      value_source_concept_id, value_source_value,
      questionnaire_response_id)
 SELECT
-    l.observation_id,
+    oim.observation_id,
 {% if is_combined_dataset %}
     l.person_id,
 {% elif is_ct_dataset or is_rt_dataset %}
@@ -99,6 +126,9 @@ SELECT
     l.questionnaire_response_id
 {% endif %}
 FROM `{{project}}.{{lookup_dataset}}.{{lookup_table}}` l
+JOIN `{{project}}.{{sandbox_dataset}}._observation_id_map` oim
+ON l.observation_id = oim.source_observation_id
+AND oim.dataset_id = '{{dataset}}'
 {% if is_ct_dataset or is_rt_dataset %}
 JOIN `{{project}}.{{deid_map_dataset_id}}.{{deid_map_table_id}}` d
 ON l.person_id = d.person_id
@@ -117,9 +147,9 @@ class RemediateBasics(BaseCleaningRule):
                  lookup_dataset_id=None,
                  lookup_table_id=None,
                  deid_map_dataset_id=None,
-                 deid_map_table_id=None,
+                 deid_map_table_id=DEID_MAP,
                  deid_qrid_dataset_id=None,
-                 deid_qrid_table_id=None,
+                 deid_qrid_table_id=DEID_QUESTIONNAIRE_RESPONSE_MAP,
                  table_namer=None):
         """
         Initialize the class with proper information.
@@ -160,6 +190,15 @@ class RemediateBasics(BaseCleaningRule):
             single query and a specification for how to execute that query.
             The specifications are optional but the query is required.
         """
+        insert_map_query = {
+            QUERY:
+                INSERT_OBS_ID_MAP_QUERY.render(
+                    project=self.project_id,
+                    dataset=self.dataset_id,
+                    sandbox_dataset=self.sandbox_dataset_id,
+                    lookup_dataset=self.lookup_dataset_id,
+                    lookup_table=self.lookup_table_id)
+        }
         sandbox_query = {
             QUERY:
                 SANDBOX_MEANINGLESS_SURVEY_RESPONSE_QUERY.render(
@@ -189,6 +228,7 @@ class RemediateBasics(BaseCleaningRule):
                 INSERT_CORRECT_SURVEY_RESPONSE_QUERY.render(
                     project=self.project_id,
                     dataset=self.dataset_id,
+                    sandbox_dataset=self.sandbox_dataset_id,
                     lookup_dataset=self.lookup_dataset_id,
                     lookup_table=self.lookup_table_id,
                     deid_map_dataset_id=self.deid_map_dataset_id,
@@ -200,10 +240,18 @@ class RemediateBasics(BaseCleaningRule):
                     is_rt_dataset=is_rt_dataset(self.dataset_id))
         }
 
-        return [sandbox_query, delete_query, insert_query]
+        return [insert_map_query, sandbox_query, delete_query, insert_query]
 
     def setup_rule(self, client):
-        pass
+        """Create a mapping table for observation_id. New observation_ids need
+        to be assigned for the destination table to ensure no observation_ids
+        will be duplicate. Each destination table can have different new
+        observation_ids so this mapping table has `dataset_id` column.
+        """
+        create_mapping_table = CREATE_OBS_ID_MAP_QUERY.render(
+            project=self.project_id, sandbox_dataset=self.sandbox_dataset_id)
+        job = client.query(create_mapping_table)
+        job.result()
 
     def setup_validation(self, client):
         raise NotImplementedError("Please fix me.")

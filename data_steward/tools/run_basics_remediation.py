@@ -18,7 +18,7 @@ from google.cloud.exceptions import Conflict
 # Project imports
 from cdr_cleaner.clean_cdr_engine import clean_dataset
 from cdr_cleaner.manual_cleaning_rules.remediate_basics import RemediateBasics
-from common import CDR_SCOPES
+from common import CDR_SCOPES, DEID_MAP, DEID_QUESTIONNAIRE_RESPONSE_MAP
 from gcloud.bq import BigQueryClient
 from resources import ask_if_continue, get_new_dataset_name
 from retraction.retract_utils import is_combined_dataset, is_deid_dataset
@@ -155,8 +155,8 @@ def parse_args(raw_args=None):
         dest='deid_map_table_id',
         help=
         ('deid mapping table that has pid-rid association and dateshift values.'
-        ),
-        required=True)
+         f'"{DEID_MAP}" will be used if not specified.'),
+        required=False)
     parser.add_argument(
         '--deid_qrid_dataset_id',
         action='store',
@@ -169,8 +169,8 @@ def parse_args(raw_args=None):
         dest='deid_qrid_table_id',
         help=
         ('deid mapping table that has qrid-rrid association and dateshift values.'
-        ),
-        required=True)
+         f'"{DEID_QUESTIONNAIRE_RESPONSE_MAP}" will be used if not specified.'),
+        required=False)
     parser.add_argument(
         '--new_release_tag',
         action='store',
