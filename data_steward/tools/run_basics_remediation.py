@@ -143,17 +143,32 @@ def parse_args(raw_args=None):
         dest='lookup_table_id',
         help=('Table that has the correct set of the basics responses.'),
         required=True)
-    parser.add_argument('--deid_map_dataset_id',
-                        action='store',
-                        dest='deid_map_dataset_id',
-                        help=('Dataset that has deid mapping table.'),
-                        required=True)
+    parser.add_argument(
+        '--deid_map_dataset_id',
+        action='store',
+        dest='deid_map_dataset_id',
+        help=('Dataset that has deid mapping table for pid-rid.'),
+        required=True)
     parser.add_argument(
         '--deid_map_table_id',
         action='store',
         dest='deid_map_table_id',
         help=
         ('deid mapping table that has pid-rid association and dateshift values.'
+        ),
+        required=True)
+    parser.add_argument(
+        '--deid_qrid_dataset_id',
+        action='store',
+        dest='deid_qrid_dataset_id',
+        help=('Dataset that has deid mapping table for qrid-rrid.'),
+        required=True)
+    parser.add_argument(
+        '--deid_qrid_table_id',
+        action='store',
+        dest='deid_qrid_table_id',
+        help=
+        ('deid mapping table that has qrid-rrid association and dateshift values.'
         ),
         required=True)
     parser.add_argument(
@@ -188,10 +203,9 @@ def main():
     pipeline_logging.configure(level=logging.INFO,
                                add_console_handler=args.console_log)
 
-    # impersonation_creds = get_impersonation_credentials(args.run_as_email,
-    # CDR_SCOPES)
-    # client = BigQueryClient(args.project_id, credentials=impersonation_creds)
-    client = BigQueryClient(args.project_id)
+    impersonation_creds = get_impersonation_credentials(args.run_as_email,
+                                                        CDR_SCOPES)
+    client = BigQueryClient(args.project_id, credentials=impersonation_creds)
 
     LOGGER.info(
         f"Starting the basics remediation.\n"
@@ -248,7 +262,9 @@ def main():
                   lookup_dataset_id=args.lookup_dataset_id,
                   lookup_table_id=args.lookup_table_id,
                   deid_map_dataset_id=args.deid_map_dataset_id,
-                  deid_map_table_id=args.deid_map_table_id)
+                  deid_map_table_id=args.deid_map_table_id,
+                  deid_qrid_dataset_id=args.deid_qrid_dataset_id,
+                  deid_qrid_table_id=args.deid_qrid_table_id)
 
     LOGGER.info(f"Completed running remediation for {new_dataset}...")
 

@@ -93,13 +93,18 @@ SELECT
     l.qualifier_source_value,
     l.value_source_concept_id,
     l.value_source_value,
+{% if is_rt_dataset or is_ct_dataset %}
+    q.research_response_id,
+{% elif is_combined_dataset %}
     l.questionnaire_response_id
+{% endif %}
 FROM `{{project}}.{{lookup_dataset}}.{{lookup_table}}` l
 {% if is_ct_dataset or is_rt_dataset %}
 JOIN `{{project}}.{{deid_map_dataset_id}}.{{deid_map_table_id}}` d
 ON l.person_id = d.person_id
+JOIN `{{project}}.{{deid_qrid_dataset_id}}.{{deid_qrid_table_id}}` q
+ON l.questionnaire_response_id = q.questionnaire_response_id
 {% endif %}
-
 """)
 
 
@@ -113,6 +118,8 @@ class RemediateBasics(BaseCleaningRule):
                  lookup_table_id=None,
                  deid_map_dataset_id=None,
                  deid_map_table_id=None,
+                 deid_qrid_dataset_id=None,
+                 deid_qrid_table_id=None,
                  table_namer=None):
         """
         Initialize the class with proper information.
@@ -142,6 +149,8 @@ class RemediateBasics(BaseCleaningRule):
         self.lookup_table_id = lookup_table_id
         self.deid_map_dataset_id = deid_map_dataset_id
         self.deid_map_table_id = deid_map_table_id
+        self.deid_qrid_dataset_id = deid_qrid_dataset_id
+        self.deid_qrid_table_id = deid_qrid_table_id
 
     def get_query_specs(self):
         """
@@ -184,6 +193,8 @@ class RemediateBasics(BaseCleaningRule):
                     lookup_table=self.lookup_table_id,
                     deid_map_dataset_id=self.deid_map_dataset_id,
                     deid_map_table_id=self.deid_map_table_id,
+                    deid_qrid_dataset_id=self.deid_qrid_dataset_id,
+                    deid_qrid_table_id=self.deid_qrid_table_id,
                     is_combined_dataset=is_combined_dataset(self.dataset_id),
                     is_ct_dataset=is_ct_dataset(self.dataset_id),
                     is_rt_dataset=is_rt_dataset(self.dataset_id))
