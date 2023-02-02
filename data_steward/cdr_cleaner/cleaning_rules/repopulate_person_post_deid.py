@@ -44,6 +44,7 @@ JIRA_ISSUE_NUMBERS = ['DC516', 'DC836', 'DC1446', 'DC1584', 'DC2828']
 
 GENDER_CONCEPT_ID = 1585838
 AOU_NONE_INDICATED_CONCEPT_ID = 2100000001
+AOU_NON_INDICATED_SOURCE_VALUE = "AoUDRC_NoneIndicated"
 
 REPOPULATE_PERSON_QUERY = JINJA_ENV.from_string("""
 WITH
@@ -167,17 +168,16 @@ END
   gender_source_value,
   gender_source_concept_id,
   CASE
-    WHEN race_concept_id = 0 THEN "None Indicated"
+    WHEN race_concept_id = 0 THEN "{{aou_custom_value}}"
   ELSE
   race_source_value
-END
-  AS race_source_value,
-    CASE
-    WHEN race_concept_id = 2100000001 THEN 2100000001
-  ELSE
-  race_source_concept_id
-END AS
-  race_source_concept_id,
+END AS race_source_value,
+
+  CASE
+    WHEN race_source_concept_id = 0 THEN {{aou_custom_concept}}
+    ELSE
+    race_source_concept_id
+END AS race_source_concept_id,
   ethnicity_concept.concept_code ethnicity_source_value,
   ethnicity_concept_id ethnicity_source_concept_id
 FROM
@@ -230,7 +230,8 @@ class RepopulatePersonPostDeid(BaseCleaningRule):
             project=self.project_id,
             dataset=self.dataset_id,
             gender_concept_id=GENDER_CONCEPT_ID,
-            aou_custom_concept=AOU_NONE_INDICATED_CONCEPT_ID)
+            aou_custom_concept=AOU_NONE_INDICATED_CONCEPT_ID,
+            aou_custom_value=AOU_NON_INDICATED_SOURCE_VALUE)
         query[cdr_consts.DESTINATION_TABLE] = PERSON
         query[cdr_consts.DESTINATION_DATASET] = self.dataset_id
         query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
