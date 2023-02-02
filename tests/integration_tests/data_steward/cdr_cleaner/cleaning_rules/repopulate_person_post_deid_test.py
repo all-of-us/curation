@@ -141,7 +141,6 @@ class RepopulatePersonPostDeidTest(BaseTest.CleaningRulesTestBase):
                 (5, 107, 1586140,{{ethnicity_pna_concept_id}}, {{ethnicity_pna_concept_id}}, '2020-01-01', 1,903079),
                  -- Test custom concept race_concept_id and race_source_concept_id --
                 (6, 108, 1586140, 0, 0, '2020-01-01', 1, 1586140)
-
         """).render(
             fq_dataset_name=self.fq_dataset_name,
             gender_concept_id=GENDER_CONCEPT_ID,
