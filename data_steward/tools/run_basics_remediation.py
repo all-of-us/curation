@@ -18,7 +18,7 @@ from google.cloud.exceptions import Conflict
 # Project imports
 from cdr_cleaner.clean_cdr_engine import clean_dataset
 from cdr_cleaner.manual_cleaning_rules.remediate_basics import RemediateBasics
-from common import CDR_SCOPES, DEID_MAP, DEID_QUESTIONNAIRE_RESPONSE_MAP
+from common import CDR_SCOPES
 from gcloud.bq import BigQueryClient
 from resources import ask_if_continue, get_new_dataset_name
 from retraction.retract_utils import is_combined_dataset, is_deid_dataset
@@ -144,34 +144,6 @@ def parse_args(raw_args=None):
         help=('Table that has the correct set of the basics responses.'),
         required=True)
     parser.add_argument(
-        '--deid_map_dataset_id',
-        action='store',
-        dest='deid_map_dataset_id',
-        help=('Dataset that has deid mapping table for pid-rid.'),
-        required=True)
-    parser.add_argument(
-        '--deid_map_table_id',
-        action='store',
-        dest='deid_map_table_id',
-        help=
-        ('deid mapping table that has pid-rid association and dateshift values.'
-         f'"{DEID_MAP}" will be used if not specified.'),
-        required=False)
-    parser.add_argument(
-        '--deid_qrid_dataset_id',
-        action='store',
-        dest='deid_qrid_dataset_id',
-        help=('Dataset that has deid mapping table for qrid-rrid.'),
-        required=True)
-    parser.add_argument(
-        '--deid_qrid_table_id',
-        action='store',
-        dest='deid_qrid_table_id',
-        help=
-        ('deid mapping table that has qrid-rrid association and dateshift values.'
-         f'"{DEID_QUESTIONNAIRE_RESPONSE_MAP}" will be used if not specified.'),
-        required=False)
-    parser.add_argument(
         '--new_release_tag',
         action='store',
         dest='new_release_tag',
@@ -260,11 +232,7 @@ def main():
                   new_dataset,
                   f"{tag}_sandbox", [(RemediateBasics,)],
                   lookup_dataset_id=args.lookup_dataset_id,
-                  lookup_table_id=args.lookup_table_id,
-                  deid_map_dataset_id=args.deid_map_dataset_id,
-                  deid_map_table_id=args.deid_map_table_id,
-                  deid_qrid_dataset_id=args.deid_qrid_dataset_id,
-                  deid_qrid_table_id=args.deid_qrid_table_id)
+                  lookup_table_id=args.lookup_table_id)
 
     LOGGER.info(f"Completed running remediation for {new_dataset}...")
 

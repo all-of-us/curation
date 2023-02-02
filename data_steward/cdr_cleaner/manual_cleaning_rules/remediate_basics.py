@@ -20,7 +20,6 @@ from constants.cdr_cleaner.clean_cdr import (COMBINED,
                                              CONTROLLED_TIER_DEID_CLEAN, QUERY,
                                              REGISTERED_TIER_DEID_BASE,
                                              REGISTERED_TIER_DEID_CLEAN)
-from retraction.retract_utils import is_combined_dataset, is_ct_dataset, is_deid_dataset, is_rt_dataset
 
 LOGGER = logging.getLogger(__name__)
 
@@ -59,13 +58,7 @@ CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` AS (
     FROM `{{project}}.{{dataset}}.observation` o
     WHERE EXISTS (
         SELECT 1 FROM `{{project}}.{{lookup_dataset}}.{{lookup_table}}` l
-{% if is_combined_dataset %}
         WHERE l.person_id = o.person_id
-{% elif is_deid_dataset %}
-        JOIN `{{project}}.{{deid_map_dataset_id}}.{{deid_map_table_id}}` d
-        ON l.person_id = d.person_id
-        WHERE d.research_id = o.person_id
-{% endif %}
         AND l.observation_source_concept_id = o.observation_source_concept_id
     )
 )
@@ -92,19 +85,10 @@ INSERT INTO `{{project}}.{{dataset}}.observation`
      questionnaire_response_id)
 SELECT
     oim.observation_id,
-{% if is_combined_dataset %}
     l.person_id,
-{% elif is_ct_dataset or is_rt_dataset %}
-    d.research_id AS person_id,
-{% endif %}
     l.observation_concept_id,
-{% if is_combined_dataset or is_ct_dataset %}
     l.observation_date,
     l.observation_datetime,
-{% elif is_rt_dataset %}
-    DATE_SUB(l.observation_date, INTERVAL d.shift DAY) AS observation_date,
-    DATE_SUB(l.observation_datetime, INTERVAL d.shift DAY) AS observation_datetime,
-{% endif %}
     l.observation_type_concept_id,
     l.value_as_number,
     l.value_as_string,
@@ -120,21 +104,11 @@ SELECT
     l.qualifier_source_value,
     l.value_source_concept_id,
     l.value_source_value,
-{% if is_rt_dataset or is_ct_dataset %}
-    q.research_response_id,
-{% elif is_combined_dataset %}
     l.questionnaire_response_id
-{% endif %}
 FROM `{{project}}.{{lookup_dataset}}.{{lookup_table}}` l
 JOIN `{{project}}.{{sandbox_dataset}}._observation_id_map` oim
 ON l.observation_id = oim.source_observation_id
 AND oim.dataset_id = '{{dataset}}'
-{% if is_ct_dataset or is_rt_dataset %}
-JOIN `{{project}}.{{deid_map_dataset_id}}.{{deid_map_table_id}}` d
-ON l.person_id = d.person_id
-JOIN `{{project}}.{{deid_qrid_dataset_id}}.{{deid_qrid_table_id}}` q
-ON l.questionnaire_response_id = q.questionnaire_response_id
-{% endif %}
 """)
 
 
@@ -207,11 +181,7 @@ class RemediateBasics(BaseCleaningRule):
                     sandbox_dataset=self.sandbox_dataset_id,
                     sandbox_table=self.get_sandbox_tablenames()[0],
                     lookup_dataset=self.lookup_dataset_id,
-                    lookup_table=self.lookup_table_id,
-                    deid_map_dataset_id=self.deid_map_dataset_id,
-                    deid_map_table_id=self.deid_map_table_id,
-                    is_combined_dataset=is_combined_dataset(self.dataset_id),
-                    is_deid_dataset=is_deid_dataset(self.dataset_id))
+                    lookup_table=self.lookup_table_id)
         }
 
         delete_query = {
@@ -230,14 +200,7 @@ class RemediateBasics(BaseCleaningRule):
                     dataset=self.dataset_id,
                     sandbox_dataset=self.sandbox_dataset_id,
                     lookup_dataset=self.lookup_dataset_id,
-                    lookup_table=self.lookup_table_id,
-                    deid_map_dataset_id=self.deid_map_dataset_id,
-                    deid_map_table_id=self.deid_map_table_id,
-                    deid_qrid_dataset_id=self.deid_qrid_dataset_id,
-                    deid_qrid_table_id=self.deid_qrid_table_id,
-                    is_combined_dataset=is_combined_dataset(self.dataset_id),
-                    is_ct_dataset=is_ct_dataset(self.dataset_id),
-                    is_rt_dataset=is_rt_dataset(self.dataset_id))
+                    lookup_table=self.lookup_table_id)
         }
 
         return [insert_map_query, sandbox_query, delete_query, insert_query]
@@ -286,14 +249,6 @@ if __name__ == '__main__':
                         dest='deid_map_dataset_id',
                         help=('Dataset that has deid mapping table.'),
                         required=True)
-    parser.add_argument(
-        '--deid_map_table_id',
-        action='store',
-        dest='deid_map_table_id',
-        help=
-        ('deid mapping table that has pid-rid association and dateshift values.'
-        ),
-        required=True)
 
     ARGS = parser.parse_args()
 
@@ -306,9 +261,7 @@ if __name__ == '__main__':
             ARGS.dataset_id,
             ARGS.sandbox_dataset_id, [(RemediateBasics,)],
             lookup_dataset_id=ARGS.lookup_dataset_id,
-            lookup_table_id=ARGS.lookup_table_id,
-            deid_map_dataset_id=ARGS.deid_map_dataset_id,
-            deid_map_table_id=ARGS.deid_map_table_id)
+            lookup_table_id=ARGS.lookup_table_id)
         for query_dict in query_list:
             LOGGER.info(query_dict.get(QUERY))
     else:
@@ -317,6 +270,4 @@ if __name__ == '__main__':
                                    ARGS.sandbox_dataset_id,
                                    [(RemediateBasics,)],
                                    lookup_dataset_id=ARGS.lookup_dataset_id,
-                                   lookup_table_id=ARGS.lookup_table_id,
-                                   deid_map_dataset_id=ARGS.deid_map_dataset_id,
-                                   deid_map_table_id=ARGS.deid_map_table_id)
+                                   lookup_table_id=ARGS.lookup_table_id)
