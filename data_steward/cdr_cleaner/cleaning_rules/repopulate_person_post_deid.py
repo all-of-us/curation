@@ -144,8 +144,6 @@ WITH
       per.person_id = ethnicity_ob.person_id
       AND ethnicity_ob.observation_source_concept_id=1586140
       AND ethnicity_ob.value_source_concept_id = 1586147) )
-
-
 SELECT
   person_id,
   gender_concept_id,
@@ -171,7 +169,6 @@ END
   ELSE
   race_source_value
 END AS race_source_value,
-
   CASE
     WHEN race_source_concept_id = 0 THEN {{aou_custom_concept}}
     ELSE
