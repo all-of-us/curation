@@ -34,7 +34,7 @@ class PopulateSurveyConductExt(BaseCleaningRule):
                  project_id,
                  dataset_id,
                  sandbox_dataset_id,
-                 additional_info_dataset=None,
+                 cope_lookup_dataset_id=None,
                  table_namer=None):
         """
         Initialize the class with proper information.
@@ -57,7 +57,10 @@ class PopulateSurveyConductExt(BaseCleaningRule):
                          depends_on=[GenerateExtTables, COPESurveyVersionTask],
                          table_namer=table_namer)
 
-        self.additional_info_dataset = additional_info_dataset
+        if not cope_lookup_dataset_id:
+            raise RuntimeError("'cope_lookup_dataset_id' must be set")
+
+        self.cope_lookup_dataset_id = cope_lookup_dataset_id
 
     def get_query_specs(self):
         """
@@ -66,7 +69,7 @@ class PopulateSurveyConductExt(BaseCleaningRule):
         update_query = UPDATE_SURVEY_CONDUCT_EXT_QUERY.render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
-            additional_info_dataset=self.additional_info_dataset)
+            cope_lookup_dataset_id=self.cope_lookup_dataset_id)
 
         update_query_dict = {cdr_consts.QUERY: update_query}
 
@@ -100,9 +103,9 @@ if __name__ == '__main__':
 
     ap = parser.get_argument_parser()
     ap.add_argument(
-        '--additional_info_dataset',
+        '--cope_survey_dataset',
         action='store',
-        dest='additional_info_dataset',
+        dest='cope_survey_dataset_id',
         help=
         ('Dataset containing the mapping table provided by RDR team.  '
          'These have additional info like language to questionnaire_response_id.'
@@ -119,7 +122,7 @@ if __name__ == '__main__':
             ARGS.project_id,
             ARGS.dataset_id,
             ARGS.sandbox_dataset_id, [(PopulateSurveyConductExt,)],
-            additional_info_dataset=ARGS.additional_info_dataset)
+            cope_lookup_dataset_id=ARGS.cope_survey_dataset_id)
         for query in query_list:
             LOGGER.info(query)
     else:
@@ -128,4 +131,4 @@ if __name__ == '__main__':
             ARGS.project_id,
             ARGS.dataset_id,
             ARGS.sandbox_dataset_id, [(PopulateSurveyConductExt,)],
-            additional_info_dataset=ARGS.additional_info_dataset)
+            cope_lookup_dataset_id=ARGS.cope_survey_dataset_id)
