@@ -96,6 +96,9 @@ SKIP_CONCEPT_SOURCE_VALUE = "PMI_Skip"
 OBSERVATION_SOURCE_CONCEPT_ID = 'observation_source_concept_id'
 VALUE_SOURCE_CONCEPT_ID = 'value_source_concept_id'
 
+AOU_NONE_INDICATED_CONCEPT_ID = 2100000001
+AOU_NONE_INDICATED_SOURCE_VALUE = 'AoUDRC_NoneIndicated'
+
 
 class JoinOperator(Enum):
     EQUAL = '='
@@ -355,8 +358,8 @@ class RepopulatePersonControlledTier(AbstractRepopulatePerson):
             generalized_concept=GENERALIZED_RACE_CONCEPT_ID,
             generalized_concept_source_value=GENERALIZED_RACE_SOURCE_VALUE,
             join_expressions=race_join_expressions,
-            default_answer_concept_id=NO_MATCHING_CONCEPT_ID,
-            default_answer_source_value=NO_MATCHING_SOURCE_VALUE,
+            default_answer_concept_id=AOU_NONE_INDICATED_CONCEPT_ID,
+            default_answer_source_value=AOU_NONE_INDICATED_SOURCE_VALUE,
             translate_source_concepts=self.get_race_manual_translation())
 
         return {
