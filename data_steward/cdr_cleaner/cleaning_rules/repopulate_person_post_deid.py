@@ -108,7 +108,6 @@ WITH
           WHEN race_ob.value_source_concept_id = 903079 THEN 903079/*PNA*/
           WHEN race_ob.value_source_concept_id = 903096 THEN 903096 /*Skip*/
           WHEN race_ob.value_source_concept_id = 1586148 THEN 1586148 /*None of these*/
-          WHEN race_ob.value_source_concept_id = 1586148 THEN 1586148 /*None of these*/
         /*otherwise, it's non-hispanic*/
         ELSE
         38003564
