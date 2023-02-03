@@ -19,7 +19,7 @@ LOGGER = logging.getLogger(__name__)
 UPDATE_SURVEY_CONDUCT_EXT_QUERY = JINJA_ENV.from_string("""
 UPDATE `{{project_id}}.{{dataset_id}}.survey_conduct_ext` AS sce
 SET language = qrai.value
-FROM `{{project_id}}.{{additional_info_dataset}}.questionnaire_response_additional_info` AS qrai
+FROM `{{project_id}}.{{cope_lookup_dataset_id}}.questionnaire_response_additional_info` AS qrai
 WHERE sce.survey_conduct_id = qrai.questionnaire_response_id
 AND UPPER(qrai.type) = 'LANGUAGE'
 """)
