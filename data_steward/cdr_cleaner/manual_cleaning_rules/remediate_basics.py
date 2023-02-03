@@ -13,20 +13,22 @@ Original Issues: DC-3016 and its subtasks.
 import logging
 
 # Project imports
-from common import DEID_MAP, DEID_QUESTIONNAIRE_RESPONSE_MAP, JINJA_ENV, OBSERVATION
+from common import (JINJA_ENV, OBSERVATION, PERSON, SURVEY_CONDUCT)
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.cdr_cleaner.clean_cdr import (COMBINED,
                                              CONTROLLED_TIER_DEID_BASE,
                                              CONTROLLED_TIER_DEID_CLEAN, QUERY,
                                              REGISTERED_TIER_DEID_BASE,
                                              REGISTERED_TIER_DEID_CLEAN)
+from resources import ext_table_for, mapping_table_for
+from retraction.retract_utils import is_combined_dataset, is_deid_dataset
 
 LOGGER = logging.getLogger(__name__)
 
 ISSUE_NUMBERS = ['DC3016']
 
-CREATE_OBS_ID_MAP_QUERY = JINJA_ENV.from_string("""
-CREATE TABLE IF NOT EXISTS `{{project}}.{{sandbox_dataset}}._observation_id_map`
+CREATE_NEW_OBS_ID_LOOKUP = JINJA_ENV.from_string("""
+CREATE TABLE IF NOT EXISTS `{{project}}.{{sandbox_dataset}}.{{new_obs_id_lookup}}`
 (
     source_observation_id INT64 NOT NULL OPTIONS(description="observation_id from the source table."),
     dataset_id STRING NOT NULL OPTIONS(description="Dataset ID of the destination table."),
@@ -34,46 +36,66 @@ CREATE TABLE IF NOT EXISTS `{{project}}.{{sandbox_dataset}}._observation_id_map`
 )
 OPTIONS
 (
-    description="Mapping table for observation_ids. New observation_ids are assigned when loaded so no observation_id will be a duplicate."
+    description="Lookup table for observation_ids. New observation_ids are assigned when loaded so no observation_id will be a duplicate."
 )
 """)
 
-INSERT_OBS_ID_MAP_QUERY = JINJA_ENV.from_string("""
-INSERT INTO `{{project}}.{{sandbox_dataset}}._observation_id_map`
+INSERT_NEW_OBS_ID_LOOKUP = JINJA_ENV.from_string("""
+INSERT INTO `{{project}}.{{sandbox_dataset}}.{{new_obs_id_lookup}}`
 (source_observation_id, dataset_id, observation_id)
 SELECT
-    l.observation_id,
+    inc_o.observation_id,
     '{{dataset}}',
-    ROW_NUMBER() OVER(ORDER BY l.observation_id
+    ROW_NUMBER() OVER(ORDER BY inc_o.observation_id
         ) + (
         SELECT MAX(observation_id) 
-        FROM `{{project}}.{{dataset}}.observation`
+        FROM `{{project}}.{{dataset}}.{{table}}`
         )
-FROM `{{project}}.{{lookup_dataset}}.{{lookup_table}}` l
+FROM `{{project}}.{{incremental_dataset}}.{{table}}` inc_o
 """)
 
-SANDBOX_MEANINGLESS_SURVEY_RESPONSE_QUERY = JINJA_ENV.from_string("""
+SANDBOX_OBS = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` AS (
     SELECT *
-    FROM `{{project}}.{{dataset}}.observation` o
+    FROM `{{project}}.{{dataset}}.{{table}}` o
     WHERE EXISTS (
-        SELECT 1 FROM `{{project}}.{{lookup_dataset}}.{{lookup_table}}` l
-        WHERE l.person_id = o.person_id
-        AND l.observation_source_concept_id = o.observation_source_concept_id
+        SELECT 1 FROM `{{project}}.{{incremental_dataset}}.{{table}}` inc_o
+        WHERE inc_o.person_id = o.person_id
+        AND inc_o.observation_source_concept_id = o.observation_source_concept_id
     )
 )
 """)
 
-DELETE_MEANINGLESS_SURVEY_RESPONSE_QUERY = JINJA_ENV.from_string("""
-DELETE FROM `{{project}}.{{dataset}}.observation`
-WHERE observation_id IN (
-    SELECT observation_id 
+SANDBOX_OBS_MAPPING_EXT = JINJA_ENV.from_string("""
+CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` AS (
+    SELECT *
+    FROM `{{project}}.{{dataset}}.{{table}}`
+    WHERE observation_id IN (
+        SELECT observation_id FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table_obs}}`
+    )
+)
+""")
+
+GENERIC_SANDBOX = JINJA_ENV.from_string("""
+CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` AS (
+    SELECT *
+    FROM `{{project}}.{{dataset}}.{{table}}`
+    WHERE {{domain}}_id IN (
+        SELECT {{domain}}_id FROM `{{project}}.{{incremental_dataset}}.{{table}}` 
+    )
+)
+""")
+
+GENERIC_DELETE = JINJA_ENV.from_string("""
+DELETE FROM `{{project}}.{{dataset}}.{{table}}`
+WHERE {{domain}}_id IN (
+    SELECT {{domain}}_id 
     FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` 
 )
 """)
 
-INSERT_CORRECT_SURVEY_RESPONSE_QUERY = JINJA_ENV.from_string("""
-INSERT INTO `{{project}}.{{dataset}}.observation`
+INSERT_OBS = JINJA_ENV.from_string("""
+INSERT INTO `{{project}}.{{dataset}}.{{table}}`
     (observation_id, person_id, observation_concept_id,
      observation_date, observation_datetime, observation_type_concept_id,
      value_as_number, value_as_string, value_as_concept_id,
@@ -84,32 +106,74 @@ INSERT INTO `{{project}}.{{dataset}}.observation`
      value_source_concept_id, value_source_value,
      questionnaire_response_id)
 SELECT
+    new_id.observation_id,
+    inc_o.person_id,
+    inc_o.observation_concept_id,
+    inc_o.observation_date,
+    inc_o.observation_datetime,
+    inc_o.observation_type_concept_id,
+    inc_o.value_as_number,
+    inc_o.value_as_string,
+    inc_o.value_as_concept_id,
+    inc_o.qualifier_concept_id,
+    inc_o.unit_concept_id,
+    inc_o.provider_id,
+    inc_o.visit_occurrence_id,
+    inc_o.visit_detail_id,
+    inc_o.observation_source_value,
+    inc_o.observation_source_concept_id,
+    inc_o.unit_source_value,
+    inc_o.qualifier_source_value,
+    inc_o.value_source_concept_id,
+    inc_o.value_source_value,
+    inc_o.questionnaire_response_id
+FROM `{{project}}.{{incremental_dataset}}.{{table}}` inc_o
+JOIN `{{project}}.{{sandbox_dataset}}.{{new_obs_id_lookup}}` new_id
+ON inc_o.observation_id = new_id.source_observation_id
+AND new_id.dataset_id = '{{dataset}}'
+""")
+
+INSERT_OBS_MAPPING = JINJA_ENV.from_string("""
+INSERT INTO `{{project}}.{{dataset}}.{{table}}`
+    (observation_id, src_dataset_id, src_observation_id, src_hpo_id, src_table_id)
+SELECT
     oim.observation_id,
-    l.person_id,
-    l.observation_concept_id,
-    l.observation_date,
-    l.observation_datetime,
-    l.observation_type_concept_id,
-    l.value_as_number,
-    l.value_as_string,
-    l.value_as_concept_id,
-    l.qualifier_concept_id,
-    l.unit_concept_id,
-    l.provider_id,
-    l.visit_occurrence_id,
-    l.visit_detail_id,
-    l.observation_source_value,
-    l.observation_source_concept_id,
-    l.unit_source_value,
-    l.qualifier_source_value,
-    l.value_source_concept_id,
-    l.value_source_value,
-    l.questionnaire_response_id
-FROM `{{project}}.{{lookup_dataset}}.{{lookup_table}}` l
+    i.src_dataset_id,
+    i.src_observation_id,
+    i.src_hpo_id,
+    i.src_table_id
+FROM `{{project}}.{{incremental_dataset}}.{{table}}` i
 JOIN `{{project}}.{{sandbox_dataset}}._observation_id_map` oim
-ON l.observation_id = oim.source_observation_id
+ON i.observation_id = oim.source_observation_id
 AND oim.dataset_id = '{{dataset}}'
 """)
+
+INSERT_OBS_EXT = JINJA_ENV.from_string("""
+INSERT INTO `{{project}}.{{dataset}}.{{table}}`
+    (observation_id, src_id, survey_version_concept_id)
+SELECT
+    oim.observation_id,
+    i.src_id,
+    i.survey_version_concept_id
+FROM `{{project}}.{{incremental_dataset}}.{{table}}` i
+JOIN `{{project}}.{{sandbox_dataset}}._observation_id_map` oim
+ON i.observation_id = oim.source_observation_id
+AND oim.dataset_id = '{{dataset}}'
+""")
+
+GENERIC_INSERT = JINJA_ENV.from_string("""
+INSERT INTO `{{project}}.{{dataset}}.{{table}}`
+SELECT * FROM `{{project}}.{{incremental_dataset}}.{{table}}`
+""")
+
+OBS_MAPPING = mapping_table_for(OBSERVATION)
+OBS_EXT = ext_table_for(OBSERVATION)
+NEW_OBS_ID_LOOKUP = '_observation_id_map'
+
+SC_MAPPING = mapping_table_for(SURVEY_CONDUCT)
+SC_EXT = ext_table_for(SURVEY_CONDUCT)
+
+PERS_EXT = ext_table_for(PERSON)
 
 
 class RemediateBasics(BaseCleaningRule):
@@ -118,12 +182,7 @@ class RemediateBasics(BaseCleaningRule):
                  project_id,
                  dataset_id,
                  sandbox_dataset_id,
-                 lookup_dataset_id=None,
-                 lookup_table_id=None,
-                 deid_map_dataset_id=None,
-                 deid_map_table_id=DEID_MAP,
-                 deid_qrid_dataset_id=None,
-                 deid_qrid_table_id=DEID_QUESTIONNAIRE_RESPONSE_MAP,
+                 incremental_dataset_id=None,
                  table_namer=None):
         """
         Initialize the class with proper information.
@@ -143,18 +202,42 @@ class RemediateBasics(BaseCleaningRule):
                              REGISTERED_TIER_DEID_BASE,
                              REGISTERED_TIER_DEID_CLEAN
                          ],
-                         affected_tables=[OBSERVATION],
+                         affected_tables=[
+                             OBSERVATION, OBS_MAPPING, OBS_EXT, SURVEY_CONDUCT,
+                             SC_EXT, SC_MAPPING, PERSON, PERS_EXT
+                         ],
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
                          table_namer=table_namer)
 
-        self.lookup_dataset_id = lookup_dataset_id
-        self.lookup_table_id = lookup_table_id
-        self.deid_map_dataset_id = deid_map_dataset_id
-        self.deid_map_table_id = deid_map_table_id
-        self.deid_qrid_dataset_id = deid_qrid_dataset_id
-        self.deid_qrid_table_id = deid_qrid_table_id
+        self.incremental_dataset_id = incremental_dataset_id
+
+    def _get_query(self, template, domain, table) -> dict:
+        """
+        This cleaning rule runs multiple DDLs and DMLs using JINJA template.
+        This function bundles the common parameters for the templates, and
+        return rendered string in a dict, so we do not have to assign the
+        same parameters over and over.
+        Args:
+            template: Name of the JINJA template
+            domain: Name of the domain
+            table: table name
+        Returns: Rendered DDL/DML in a dict
+        """
+        return {
+            QUERY:
+                template.render(
+                    domain=domain,
+                    project=self.project_id,
+                    dataset=self.dataset_id,
+                    sandbox_dataset=self.sandbox_dataset_id,
+                    sandbox_table=self.sandbox_table_for(table),
+                    sandbox_table_obs=self.sandbox_table_for(OBSERVATION),
+                    incremental_dataset=self.incremental_dataset_id,
+                    table=table,
+                    new_obs_id_lookup=NEW_OBS_ID_LOOKUP)
+        }
 
     def get_query_specs(self):
         """
@@ -164,56 +247,78 @@ class RemediateBasics(BaseCleaningRule):
             single query and a specification for how to execute that query.
             The specifications are optional but the query is required.
         """
-        insert_map_query = {
-            QUERY:
-                INSERT_OBS_ID_MAP_QUERY.render(
-                    project=self.project_id,
-                    dataset=self.dataset_id,
-                    sandbox_dataset=self.sandbox_dataset_id,
-                    lookup_dataset=self.lookup_dataset_id,
-                    lookup_table=self.lookup_table_id)
-        }
-        sandbox_query = {
-            QUERY:
-                SANDBOX_MEANINGLESS_SURVEY_RESPONSE_QUERY.render(
-                    project=self.project_id,
-                    dataset=self.dataset_id,
-                    sandbox_dataset=self.sandbox_dataset_id,
-                    sandbox_table=self.get_sandbox_tablenames()[0],
-                    lookup_dataset=self.lookup_dataset_id,
-                    lookup_table=self.lookup_table_id)
-        }
 
-        delete_query = {
-            QUERY:
-                DELETE_MEANINGLESS_SURVEY_RESPONSE_QUERY.render(
-                    project=self.project_id,
-                    dataset=self.dataset_id,
-                    sandbox_dataset=self.sandbox_dataset_id,
-                    sandbox_table=self.get_sandbox_tablenames()[0])
-        }
+        sandbox_queries = [
+            self._get_query(SANDBOX_OBS, OBSERVATION, OBSERVATION),
+            self._get_query(SANDBOX_OBS_MAPPING_EXT, OBSERVATION, OBS_EXT)
+        ] + [
+            self._get_query(GENERIC_SANDBOX, domain, table)
+            for (domain, table) in [
+                (SURVEY_CONDUCT, SURVEY_CONDUCT),
+                (SURVEY_CONDUCT, SC_EXT),
+                (PERSON, PERSON),
+            ]
+        ]
 
-        insert_query = {
-            QUERY:
-                INSERT_CORRECT_SURVEY_RESPONSE_QUERY.render(
-                    project=self.project_id,
-                    dataset=self.dataset_id,
-                    sandbox_dataset=self.sandbox_dataset_id,
-                    lookup_dataset=self.lookup_dataset_id,
-                    lookup_table=self.lookup_table_id)
-        }
+        delete_queries = [
+            self._get_query(GENERIC_DELETE, domain, table)
+            for (domain, table) in [
+                (OBSERVATION, OBSERVATION),
+                (OBSERVATION, OBS_EXT),
+                (SURVEY_CONDUCT, SURVEY_CONDUCT),
+                (SURVEY_CONDUCT, SC_EXT),
+                (PERSON, PERSON),
+            ]
+        ]
 
-        return [insert_map_query, sandbox_query, delete_query, insert_query]
+        insert_queries = [
+            self._get_query(INSERT_OBS, OBSERVATION, OBSERVATION),
+            self._get_query(INSERT_OBS_EXT, OBSERVATION, OBS_EXT)
+        ] + [
+            self._get_query(GENERIC_INSERT, domain, table)
+            for (domain, table) in [(SURVEY_CONDUCT, SURVEY_CONDUCT),
+                                    (SURVEY_CONDUCT, SC_EXT), (PERSON, PERSON)]
+        ]
+
+        # mapping tables exist only in combined dataset and its upstream datasets
+        if is_combined_dataset(self.dataset_id):
+            sandbox_queries.extend([
+                self._get_query(SANDBOX_OBS_MAPPING_EXT, OBSERVATION,
+                                OBS_MAPPING),
+                self._get_query(GENERIC_SANDBOX, SURVEY_CONDUCT, SC_MAPPING)
+            ])
+            delete_queries.extend([
+                self._get_query(GENERIC_DELETE, OBSERVATION, OBS_MAPPING),
+                self._get_query(GENERIC_DELETE, SURVEY_CONDUCT, SC_MAPPING)
+            ])
+            insert_queries.extend([
+                self._get_query(INSERT_OBS_MAPPING, OBSERVATION, OBS_MAPPING),
+                self._get_query(GENERIC_INSERT, SURVEY_CONDUCT, SC_MAPPING),
+            ])
+
+        elif is_deid_dataset(self.dataset_id):
+            sandbox_queries.extend(
+                [self._get_query(GENERIC_SANDBOX, PERSON, PERS_EXT)])
+            delete_queries.extend(
+                [self._get_query(GENERIC_DELETE, PERSON, PERS_EXT)])
+            insert_queries.extend(
+                [self._get_query(GENERIC_INSERT, PERSON, PERS_EXT)])
+
+        return sandbox_queries + delete_queries + insert_queries
 
     def setup_rule(self, client):
-        """Create a mapping table for observation_id. New observation_ids need
-        to be assigned for the destination table to ensure no observation_ids
-        will be duplicate. Each destination table can have different new
-        observation_ids so this mapping table has `dataset_id` column.
+        """Create a lookup table for observation_id. New observation_ids need
+        to be assigned for the destination table to ensure observation_ids
+        will have NO duplicate. Each destination dataset can have different new
+        observation_ids so this lookup table has `dataset_id` column.
         """
-        create_mapping_table = CREATE_OBS_ID_MAP_QUERY.render(
-            project=self.project_id, sandbox_dataset=self.sandbox_dataset_id)
-        job = client.query(create_mapping_table)
+        create_lookup = self._get_query(CREATE_NEW_OBS_ID_LOOKUP, '', '')[QUERY]
+        job = client.query(create_lookup)
+        job.result()
+
+        insert_lookup = self._get_query(INSERT_NEW_OBS_ID_LOOKUP, OBSERVATION,
+                                        OBSERVATION)[QUERY]
+        job = client.query(insert_lookup)
         job.result()
 
     def setup_validation(self, client):
@@ -231,24 +336,12 @@ if __name__ == '__main__':
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
     parser = ap.get_argument_parser()
-    parser.add_argument('--lookup_dataset_id',
-                        action='store',
-                        dest='lookup_dataset_id',
-                        help=('Dataset that has the lookup table.'),
-                        required=True)
     parser.add_argument(
-        '--lookup_table_id',
+        '--incremental_dataset_id',
         action='store',
-        dest='lookup_table_id',
-        help=
-        ('Observation table that has the set of correct responses for the basics.'
-        ),
+        dest='incremental_dataset_id',
+        help=('Dataset that needs to be loaded together with source_dataset.'),
         required=True)
-    parser.add_argument('--deid_map_dataset_id',
-                        action='store',
-                        dest='deid_map_dataset_id',
-                        help=('Dataset that has deid mapping table.'),
-                        required=True)
 
     ARGS = parser.parse_args()
 
@@ -260,14 +353,12 @@ if __name__ == '__main__':
             ARGS.project_id,
             ARGS.dataset_id,
             ARGS.sandbox_dataset_id, [(RemediateBasics,)],
-            lookup_dataset_id=ARGS.lookup_dataset_id,
-            lookup_table_id=ARGS.lookup_table_id)
+            incremental_dataset_id=ARGS.incremental_dataset_id)
         for query_dict in query_list:
             LOGGER.info(query_dict.get(QUERY))
     else:
-        clean_engine.clean_dataset(ARGS.project_id,
-                                   ARGS.dataset_id,
-                                   ARGS.sandbox_dataset_id,
-                                   [(RemediateBasics,)],
-                                   lookup_dataset_id=ARGS.lookup_dataset_id,
-                                   lookup_table_id=ARGS.lookup_table_id)
+        clean_engine.clean_dataset(
+            ARGS.project_id,
+            ARGS.dataset_id,
+            ARGS.sandbox_dataset_id, [(RemediateBasics,)],
+            incremental_dataset_id=ARGS.incremental_dataset_id)

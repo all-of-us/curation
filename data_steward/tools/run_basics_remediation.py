@@ -16,9 +16,12 @@ import logging
 from google.cloud.exceptions import Conflict
 
 # Project imports
+from cdr_cleaner import clean_cdr
+from cdr_cleaner.args_parser import add_kwargs_to_args
 from cdr_cleaner.clean_cdr_engine import clean_dataset
 from cdr_cleaner.manual_cleaning_rules.remediate_basics import RemediateBasics
 from common import CDR_SCOPES
+from constants.cdr_cleaner.clean_cdr import DATA_CONSISTENCY
 from gcloud.bq import BigQueryClient
 from resources import ask_if_continue, get_new_dataset_name
 from retraction.retract_utils import is_combined_dataset, is_deid_dataset
@@ -127,21 +130,16 @@ def parse_args(raw_args=None):
                         dest='project_id',
                         help='Curation project ID for running retraction.',
                         required=True)
-    parser.add_argument('--source_dataset',
+    parser.add_argument('--source_dataset_id',
                         action='store',
-                        dest='source_dataset',
+                        dest='source_dataset_id',
                         help=('Dataset that needs remediation.'),
                         required=True)
-    parser.add_argument('--lookup_dataset_id',
-                        action='store',
-                        dest='lookup_dataset_id',
-                        help=('Dataset that has the lookup table.'),
-                        required=True)
     parser.add_argument(
-        '--lookup_table_id',
+        '--incremental_dataset_id',
         action='store',
-        dest='lookup_table_id',
-        help=('Table that has the correct set of the basics responses.'),
+        dest='incremental_dataset_id',
+        help=('Dataset that needs to be loaded together with source_dataset.'),
         required=True)
     parser.add_argument(
         '--new_release_tag',
@@ -191,33 +189,34 @@ def main():
         f"will be sandboxed to {sb_dataset}.\n"
         f"\n"
         f"Steps:\n"
-        f"[1/4] Create the empty new dataset if not exist\n"
-        f"[2/4] Copy data from the source dataset to the new dataset\n"
-        f"[3/4] Create an empty sandbox dataset if not exists\n"
-        f"[4/4] Run remediation and cleaning rules on the new dataset\n"
+        f"[1/5] Create the empty new dataset if not exist\n"
+        f"[2/5] Copy data from the source dataset to the new dataset\n"
+        f"[3/5] Create an empty sandbox dataset if not exists\n"
+        f"[4/5] Run remediation and cleaning rules on the new dataset\n"
+        f"[5/5] Run cleaning rules on the new datasets\n"
         f"\n"
-        f"If you answer 'Y', [1/4] will start. \n"
+        f"If you answer 'Y', [1/5] will start. \n"
         f"You will need to answer 'Y' after each step completes.\n")
 
-    LOGGER.info(f"Starting [1/4] Create the empty new dataset if not exist.")
+    LOGGER.info(f"Starting [1/5] Create the empty new dataset if not exist.")
     ask_if_continue()
     create_dataset(client, dataset, tag)
-    LOGGER.info(f"Completed [1/4] Create the empty new dataset if not exist.\n")
+    LOGGER.info(f"Completed [1/5] Create the empty new dataset if not exist.\n")
 
-    LOGGER.info(f"Starting [2/4] Copy data to the new dataset.")
+    LOGGER.info(f"Starting [2/5] Copy data to the new dataset.")
     ask_if_continue()
     copy_dataset(client, dataset, tag)
-    LOGGER.info(f"Completed [2/4] Copy data to the new dataset.\n")
+    LOGGER.info(f"Completed [2/5] Copy data to the new dataset.\n")
 
     LOGGER.info(
-        f"Starting [3/4] Create an empty sandbox dataset if not exists.")
+        f"Starting [3/5] Create an empty sandbox dataset if not exists.")
     ask_if_continue()
     create_sandbox_dataset(client, tag)
     LOGGER.info(
-        f"Completed [3/4] Completed an empty sandbox dataset if not exists.\n")
+        f"Completed [3/5] Completed an empty sandbox dataset if not exists.\n")
 
     LOGGER.info(
-        f"Starting [4/4] Run remediation and cleaning rules on the new dataset."
+        f"Starting [4/5] Run remediation and cleaning rules on the new dataset."
     )
     ask_if_continue()
     if not is_deid_dataset(new_dataset) and not is_combined_dataset(
@@ -231,15 +230,24 @@ def main():
     clean_dataset(project_id,
                   new_dataset,
                   f"{tag}_sandbox", [(RemediateBasics,)],
-                  lookup_dataset_id=args.lookup_dataset_id,
-                  lookup_table_id=args.lookup_table_id)
+                  incremental_dataset_id=args.incremental_dataset_id)
 
     LOGGER.info(f"Completed running remediation for {new_dataset}...")
 
     LOGGER.info(
-        f"[4/4] Run remediation and cleaning rules on the new datasets.\n")
+        f"[4/5] Run remediation and cleaning rules on the new datasets.\n")
 
     LOGGER.info(f"Remediation completed.\n")
+
+    LOGGER.info(f"Starting [5/5] Run cleaning rules on the new datasets.")
+    ask_if_continue()
+    cleaning_args = [
+        '-p', project_id, '-d', dataset, '-b', sb_dataset, '--data_stage',
+        DATA_CONSISTENCY, '--run_as', args.run_as_email, '-s'
+    ]
+    all_cleaning_args = add_kwargs_to_args(cleaning_args, None)
+    clean_cdr.main(args=all_cleaning_args)
+    LOGGER.info(f"Completed [5/5] Run cleaning rules on the new datasets.\n")
 
 
 if __name__ == '__main__':

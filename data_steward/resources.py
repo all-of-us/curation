@@ -576,12 +576,20 @@ def get_git_tag():
 
 def mapping_table_for(domain_table):
     """
-
     Get name of mapping table generated for a domain table
     :param domain_table: one of the domain tables (e.g. 'visit_occurrence', 'condition_occurrence')
     :return:
     """
     return f'_mapping_{domain_table}'
+
+
+def ext_table_for(domain_table):
+    """
+    Get name of extention table generated for a domain table
+    :param domain_table: one of the domain tables (e.g. 'visit_occurrence', 'condition_occurrence')
+    :return:
+    """
+    return f'{domain_table}_ext'
 
 
 def ask_if_continue() -> None:
