@@ -1,7 +1,7 @@
 """
 This is a wrapper script to complete hot-fix for DC-3016.
 
-You can use this script for retraction for the following datasets:
+You can use this script for remediation for the following datasets:
     - COMBINED / COMBINED RELEASE datasets
     - [CT|RT] DEID / DEID BASE / DEID CLEAN datasets
 
@@ -139,7 +139,8 @@ def parse_args(raw_args=None):
         '--incremental_dataset_id',
         action='store',
         dest='incremental_dataset_id',
-        help=('Dataset that needs to be loaded together with source_dataset.'),
+        help=(
+            'Dataset that needs to be loaded together with source_dataset_id.'),
         required=True)
     parser.add_argument(
         '--new_release_tag',
@@ -166,7 +167,7 @@ def main():
     tag: str = args.new_release_tag
     project_id: str = args.project_id
 
-    dataset: str = args.source_dataset
+    dataset: str = args.source_dataset_id
     new_dataset: str = get_new_dataset_name(dataset, tag)
     sb_dataset: str = f"{tag}_sandbox"
 
@@ -237,17 +238,17 @@ def main():
     LOGGER.info(
         f"[4/5] Run remediation and cleaning rules on the new datasets.\n")
 
-    LOGGER.info(f"Remediation completed.\n")
-
-    LOGGER.info(f"Starting [5/5] Run cleaning rules on the new datasets.")
+    LOGGER.info(f"Starting [5/5] Run cleaning rules on {new_dataset}.")
     ask_if_continue()
     cleaning_args = [
-        '-p', project_id, '-d', dataset, '-b', sb_dataset, '--data_stage',
+        '-p', project_id, '-d', new_dataset, '-b', sb_dataset, '--data_stage',
         DATA_CONSISTENCY, '--run_as', args.run_as_email, '-s'
     ]
     all_cleaning_args = add_kwargs_to_args(cleaning_args, None)
     clean_cdr.main(args=all_cleaning_args)
-    LOGGER.info(f"Completed [5/5] Run cleaning rules on the new datasets.\n")
+    LOGGER.info(f"Completed [5/5] Run cleaning rules on {new_dataset}.\n")
+
+    LOGGER.info(f"Remediation completed.\n")
 
 
 if __name__ == '__main__':

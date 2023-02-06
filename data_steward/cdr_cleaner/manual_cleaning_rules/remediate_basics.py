@@ -1,7 +1,6 @@
 """
-This script updates observation with the given new set of the basics survey
-responses. The input table must be located in the sandbox_dataset.
-This update is performed for each dataset based on its data stage.
+This script updates OBSERVATION, SURVEY_CONDUCT, and PERSON tables with the
+given new set of the basics survey responses.
 
 This is a one-off cleaning rule for DC-3016 hot-fix. It is not expected to
 run for every CDR release.
@@ -40,6 +39,11 @@ OPTIONS
 )
 """)
 
+# NOTE In case of re-running remediation for the same dataset, you need to run
+# the following delete statement beforehand:
+# DELETE * FROM new_obs_id_lookup WHERE dataset='the dataset you need to re-run on'
+# Otherwise, there will be duplicate entries in the lookup table and in OBS,
+# OBS_EXT, and OBS_MAPPING tables in the output.
 INSERT_NEW_OBS_ID_LOOKUP = JINJA_ENV.from_string("""
 INSERT INTO `{{project}}.{{sandbox_dataset}}.{{new_obs_id_lookup}}`
 (source_observation_id, dataset_id, observation_id)
@@ -143,7 +147,7 @@ SELECT
     i.src_hpo_id,
     i.src_table_id
 FROM `{{project}}.{{incremental_dataset}}.{{table}}` i
-JOIN `{{project}}.{{sandbox_dataset}}._observation_id_map` oim
+JOIN `{{project}}.{{sandbox_dataset}}.{{new_obs_id_lookup}}` oim
 ON i.observation_id = oim.source_observation_id
 AND oim.dataset_id = '{{dataset}}'
 """)
@@ -156,7 +160,7 @@ SELECT
     i.src_id,
     i.survey_version_concept_id
 FROM `{{project}}.{{incremental_dataset}}.{{table}}` i
-JOIN `{{project}}.{{sandbox_dataset}}._observation_id_map` oim
+JOIN `{{project}}.{{sandbox_dataset}}.{{new_obs_id_lookup}}` oim
 ON i.observation_id = oim.source_observation_id
 AND oim.dataset_id = '{{dataset}}'
 """)
@@ -215,15 +219,14 @@ class RemediateBasics(BaseCleaningRule):
 
     def _get_query(self, template, domain, table) -> dict:
         """
-        This cleaning rule runs multiple DDLs and DMLs using JINJA template.
-        This function bundles the common parameters for the templates, and
-        return rendered string in a dict, so we do not have to assign the
+        This function bundles the common parameters for the JINJA templates,
+        and return rendered string in a dict, so we do not have to assign the
         same parameters over and over.
         Args:
-            template: Name of the JINJA template
-            domain: Name of the domain
+            template: name of the JINJA template
+            domain: name of the domain
             table: table name
-        Returns: Rendered DDL/DML in a dict
+        Returns: rendered DDL/DML in a dict
         """
         return {
             QUERY:
@@ -281,6 +284,7 @@ class RemediateBasics(BaseCleaningRule):
         ]
 
         # mapping tables exist only in combined dataset and its upstream datasets
+        # mapping table for person does not exist in combined dataset
         if is_combined_dataset(self.dataset_id):
             sandbox_queries.extend([
                 self._get_query(SANDBOX_OBS_MAPPING_EXT, OBSERVATION,
@@ -296,6 +300,7 @@ class RemediateBasics(BaseCleaningRule):
                 self._get_query(GENERIC_INSERT, SURVEY_CONDUCT, SC_MAPPING),
             ])
 
+        # person_ext table exists only after DEID
         elif is_deid_dataset(self.dataset_id):
             sandbox_queries.extend(
                 [self._get_query(GENERIC_SANDBOX, PERSON, PERS_EXT)])

@@ -309,10 +309,10 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
                 * 902 - 906 become 206 - 210 respectively after re-mapping using NEW_OBS_ID_LOOKUP.
 
         [2] SURVEY_CONDUCT and its ext/mapping tables
-            survey_conduct_id = 1002 gets sandboxed and updated, since it exists in the incremental dataset.
+            survey_conduct_id = 1002 gets sandboxed and updated since it exists in the incremental dataset.
 
         [3] PERSON table
-            person_id = 2 gets sandboxed and updated, since it exists in the incremental dataset.
+            person_id = 2 gets sandboxed and updated since it exists in the incremental dataset.
 
         [4] PERSON_EXT table
             This table does not exist in combined dataset. No sandboxing/deleting/inserting will run on it.
@@ -410,7 +410,7 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
             Same result as test_remediate_basics_combined
 
         [3] PERSON and its ext table
-            person_id = 2 gets sandboxed and updated, since it exists in the incremental dataset.
+            person_id = 2 gets sandboxed and updated since it exists in the incremental dataset.
 
         [4] OBSERVATION_MAPPING and SURVEY_CONDUCT_MAPPING tables
             These tables do not exist in combined dataset. No sandboxing/deleting/inserting will run on it.
