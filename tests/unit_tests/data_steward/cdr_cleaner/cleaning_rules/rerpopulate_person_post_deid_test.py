@@ -50,7 +50,7 @@ class RepopulatePersonPostDeidTest(unittest.TestCase):
                 REPOPULATE_PERSON_QUERY.render(
                     project=self.project_id,
                     dataset=self.dataset_id,
-                                        gender_concept_id=GENDER_CONCEPT_ID,
+                    gender_concept_id=GENDER_CONCEPT_ID,
                     aou_custom_concept=AOU_NONE_INDICATED_CONCEPT_ID,
                     aou_custom_value=AOU_NON_INDICATED_SOURCE_VALUE),
             cdr_consts.DESTINATION_TABLE:
