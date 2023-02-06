@@ -441,6 +441,7 @@ def update_labels_and_tags(dataset_id,
     return {**existing_labels_or_tags, **updates}
 
 
+@deprecated(reason='is_validation_dataset_id is deprecated')
 def is_validation_dataset_id(dataset_id):
     """
     Check if  bq_consts.VALIDATION_PREFIX is in the dataset_id
@@ -452,6 +453,7 @@ def is_validation_dataset_id(dataset_id):
     return consts.VALIDATION_PREFIX in dataset_id
 
 
+@deprecated(reason='get_latest_validation_dataset_id is deprecated')
 def get_latest_validation_dataset_id(project_id):
     """
     Get the latest validation_dataset_id based on most recent creationTime.
