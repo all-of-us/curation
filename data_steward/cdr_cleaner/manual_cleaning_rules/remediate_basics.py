@@ -56,6 +56,9 @@ SELECT
         FROM `{{project}}.{{dataset}}.{{table}}`
         )
 FROM `{{project}}.{{incremental_dataset}}.{{table}}` inc_o
+WHERE person_id IN (
+    SELECT person_id FROM `{{project}}.{{dataset}}.{{table}}` 
+)
 """)
 
 SANDBOX_OBS = JINJA_ENV.from_string("""
@@ -165,9 +168,32 @@ ON i.observation_id = oim.source_observation_id
 AND oim.dataset_id = '{{dataset}}'
 """)
 
+# NOTE Due to the incremental dataset's setup, state_of_residence_concept_id and
+# state_of_residence_source_value MUST come from the source dataset, not from the
+# incremental dataset.
+INSERT_PERS_EXT = JINJA_ENV.from_string("""
+INSERT INTO `{{project}}.{{dataset}}.{{table}}`
+    (person_id, src_id, state_of_residence_concept_id, state_of_residence_source_value,
+     sex_at_birth_concept_id, sex_at_birth_source_concept_id, sex_at_birth_source_value)
+SELECT
+    i.person_id,
+    i.src_id,
+    sb.state_of_residence_concept_id,
+    sb.state_of_residence_source_value,    
+    i.sex_at_birth_concept_id,
+    i.sex_at_birth_source_concept_id,
+    i.sex_at_birth_source_value
+FROM `{{project}}.{{incremental_dataset}}.{{table}}` i
+JOIN `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` sb
+ON i.person_id = sb.person_id
+""")
+
 GENERIC_INSERT = JINJA_ENV.from_string("""
 INSERT INTO `{{project}}.{{dataset}}.{{table}}`
 SELECT * FROM `{{project}}.{{incremental_dataset}}.{{table}}`
+WHERE {{domain}}_id IN (
+    SELECT {{domain}}_id FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` 
+)
 """)
 
 OBS_MAPPING = mapping_table_for(OBSERVATION)
@@ -307,7 +333,7 @@ class RemediateBasics(BaseCleaningRule):
             delete_queries.extend(
                 [self._get_query(GENERIC_DELETE, PERSON, PERS_EXT)])
             insert_queries.extend(
-                [self._get_query(GENERIC_INSERT, PERSON, PERS_EXT)])
+                [self._get_query(INSERT_PERS_EXT, PERSON, PERS_EXT)])
 
         return sandbox_queries + delete_queries + insert_queries
 

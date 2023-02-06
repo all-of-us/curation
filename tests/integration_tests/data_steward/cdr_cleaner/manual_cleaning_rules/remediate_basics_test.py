@@ -108,11 +108,13 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
                  observation_datetime, observation_type_concept_id, observation_source_concept_id,
                  value_source_concept_id, value_source_value, questionnaire_response_id)
             VALUES
+                (901, 9, 1585845, date('2022-01-01'), timestamp('2022-01-01 12:34:56'), 45905771, 1585845, 1585846, 'SexAtBirth_Male', 9999),
                 (902, 2, 1585845, date('2022-01-01'), timestamp('2022-01-01 12:34:56'), 45905771, 1585845, 1585846, 'SexAtBirth_Male', 1002),
                 (903, 2, 1585838, date('2022-01-01'), timestamp('2022-01-01 12:34:56'), 45905771, 1585838, 1585839, 'GenderIdentity_Man', 1002),
                 (904, 2, 1586140, date('2022-01-01'), timestamp('2022-01-01 12:34:56'), 45905771, 1586140, 1586147, 'WhatRaceEthnicity_Hispanic', 1002),
                 (905, 2, 1586140, date('2022-01-01'), timestamp('2022-01-01 12:34:56'), 45905771, 1586140, 1586146, 'WhatRaceEthnicity_White', 1002),
-                (906, 2, 1586140, date('2022-01-01'), timestamp('2022-01-01 12:34:56'), 45905771, 1586140, 1586142, 'WhatRaceEthnicity_Asian', 1002)
+                (906, 2, 1586140, date('2022-01-01'), timestamp('2022-01-01 12:34:56'), 45905771, 1586140, 1586142, 'WhatRaceEthnicity_Asian', 1002),
+                (999, 9, 1586140, date('2022-01-01'), timestamp('2022-01-01 12:34:56'), 45905771, 1586140, 1586142, 'WhatRaceEthnicity_Asian', 9999)
             """).render(project=self.project_id,
                         incremental_dataset=self.incremental_dataset_id,
                         obs=OBSERVATION)
@@ -143,7 +145,8 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
                 (903, 'dummy_rdr_2', 93, 'rdr', 'observation'),
                 (904, 'dummy_rdr_2', 94, 'rdr', 'observation'),
                 (905, 'dummy_rdr_2', 95, 'rdr', 'observation'),
-                (906, 'dummy_rdr_2', 96, 'rdr', 'observation')
+                (906, 'dummy_rdr_2', 96, 'rdr', 'observation'),
+                (999, 'dummy_rdr_2', 99, 'rdr', 'observation')
             """).render(project=self.project_id,
                         incremental_dataset=self.incremental_dataset_id,
                         obs_mapping=OBS_MAPPING)
@@ -174,7 +177,8 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
                 (903, 'PPI/PM', NULL),
                 (904, 'PPI/PM', NULL),
                 (905, 'PPI/PM', NULL),
-                (906, 'PPI/PM', NULL)
+                (906, 'PPI/PM', NULL),
+                (999, 'PPI/PM', NULL)
             """).render(project=self.project_id,
                         incremental_dataset=self.incremental_dataset_id,
                         obs_ext=OBS_EXT)
@@ -199,7 +203,8 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
                  collection_method_concept_id, survey_source_concept_id,
                  validated_survey_concept_id)
             VALUES
-                (1002, 2, 1586134, timestamp('2022-01-01 12:34:56'), 0, 0, 0, 42531021, 1586134, 99999)
+                (1002, 2, 1586134, timestamp('2022-01-01 12:34:56'), 0, 0, 0, 42531021, 1586134, 1),
+                (9999, 9, 1586134, timestamp('2022-01-01 12:34:56'), 0, 0, 0, 42531021, 1586134, 0)
             """).render(project=self.project_id,
                         incremental_dataset=self.incremental_dataset_id,
                         sc=SURVEY_CONDUCT)
@@ -218,7 +223,8 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
             INSERT INTO `{{project}}.{{incremental_dataset}}.{{sc_mapping}}`
                 (survey_conduct_id, src_dataset_id, src_survey_conduct_id, src_hpo_id, src_table_id)
             VALUES
-                (1002, 'dummy_rdr_2', 1002, 'rdr', 'survey_conduct')
+                (1002, 'dummy_rdr_2', 1002, 'rdr', 'survey_conduct'),
+                (9999, 'dummy_rdr_2', 9999, 'rdr', 'survey_conduct')
             """).render(project=self.project_id,
                         incremental_dataset=self.incremental_dataset_id,
                         sc_mapping=SC_MAPPING)
@@ -237,7 +243,8 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
             INSERT INTO `{{project}}.{{incremental_dataset}}.{{sc_ext}}`
                 (survey_conduct_id, src_id, language)
             VALUES
-                (1002, 'PPI/PM', 'es')
+                (1002, 'PPI/PM', 'es'),
+                (9999, 'PPI/PM', 'es')
             """).render(project=self.project_id,
                         incremental_dataset=self.incremental_dataset_id,
                         sc_ext=SC_EXT)
@@ -256,26 +263,28 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
             INSERT INTO `{{project}}.{{incremental_dataset}}.{{pers}}`
                 (person_id, gender_concept_id, year_of_birth, race_concept_id, ethnicity_concept_id)
             VALUES
-                (2, 1585839, 1995, 1585841, 38003563)
+                (2, 1585839, 1995, 1585841, 38003563),
+                (9, 1585839, 1995, 1585841, 38003563)
             """).render(project=self.project_id,
                         incremental_dataset=self.incremental_dataset_id,
                         pers=PERSON)
 
         insert_pers_ext = self.jinja_env.from_string("""
             INSERT INTO `{{project}}.{{dataset}}.{{pers_ext}}`
-                (person_id, sex_at_birth_source_concept_id)
+                (person_id, state_of_residence_concept_id, state_of_residence_source_value, sex_at_birth_source_concept_id)
             VALUES
-                (1, 1585847),
-                (2, 1585847)
+                (1, 1585266, 'PII State: CA', 1585847),
+                (2, 1585266, 'PII State: CA', 1585847)
             """).render(project=self.project_id,
                         dataset=self.dataset_id,
                         pers_ext=PERS_EXT)
 
         insert_incremental_pers_ext = self.jinja_env.from_string("""
             INSERT INTO `{{project}}.{{incremental_dataset}}.{{pers_ext}}`
-                (person_id, sex_at_birth_source_concept_id)
+                (person_id, state_of_residence_concept_id, state_of_residence_source_value, sex_at_birth_source_concept_id)
             VALUES
-                (2, 1585846)
+                (2, NULL, NULL, 1585846),
+                (9, NULL, NULL, 1585846)
             """).render(project=self.project_id,
                         incremental_dataset=self.incremental_dataset_id,
                         pers_ext=PERS_EXT)
@@ -307,12 +316,19 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
                 204, 205 ... Those have multiple corresponding records (=904,905,906).
                              204 and 205 get dropped and 904, 905, and 906 get inserted.
                 * 902 - 906 become 206 - 210 respectively after re-mapping using NEW_OBS_ID_LOOKUP.
+            person_id == 9 (observation_id 901 and 999):
+                This person only exists in the incremental dataset. Such data MUST NOT be included
+                in the final output.
 
         [2] SURVEY_CONDUCT and its ext/mapping tables
+            survey_conduct_id = 1001 does not change.
             survey_conduct_id = 1002 gets sandboxed and updated since it exists in the incremental dataset.
+            survey_conduct_id = 9999 gets ignored because it belongs to person_id = 9
 
         [3] PERSON table
+            person_id = 1 does not change.
             person_id = 2 gets sandboxed and updated since it exists in the incremental dataset.
+            person_id = 9 gets ignored because it only exists in the incremental dataset.
 
         [4] PERSON_EXT table
             This table does not exist in combined dataset. No sandboxing/deleting/inserting will run on it.
@@ -360,7 +376,7 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
             'loaded_ids': [1001, 1002],
             'sandboxed_ids': [1002],
             'fields': ['survey_conduct_id', 'validated_survey_concept_id'],
-            'cleaned_values': [(1001, 0), (1002, 99999)]
+            'cleaned_values': [(1001, 0), (1002, 1)]
         }, {
             'fq_table_name':
                 f'{self.project_id}.{self.dataset_id}.{SC_MAPPING}',
@@ -410,7 +426,10 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
             Same result as test_remediate_basics_combined
 
         [3] PERSON and its ext table
+            person_id = 1 does not change.
             person_id = 2 gets sandboxed and updated since it exists in the incremental dataset.
+                * state_of_residence_concept_id and state_of_residence_source_value will NOT change.
+            person_id = 9 gets ignored because it only exists in the incremental dataset.
 
         [4] OBSERVATION_MAPPING and SURVEY_CONDUCT_MAPPING tables
             These tables do not exist in combined dataset. No sandboxing/deleting/inserting will run on it.
@@ -445,7 +464,7 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
             'loaded_ids': [1001, 1002],
             'sandboxed_ids': [1002],
             'fields': ['survey_conduct_id', 'validated_survey_concept_id'],
-            'cleaned_values': [(1001, 0), (1002, 99999)]
+            'cleaned_values': [(1001, 0), (1002, 1)]
         }, {
             'fq_table_name':
                 f'{self.project_id}.{self.dataset_id}.{SC_EXT}',
@@ -471,8 +490,13 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
                 f'{self.project_id}.{self.sandbox_id}.{self.sb_pers_ext}',
             'loaded_ids': [1, 2],
             'sandboxed_ids': [2],
-            'fields': ['person_id', 'sex_at_birth_source_concept_id'],
-            'cleaned_values': [(1, 1585847), (2, 1585846)]
+            'fields': [
+                'person_id', 'state_of_residence_concept_id',
+                'state_of_residence_source_value',
+                'sex_at_birth_source_concept_id'
+            ],
+            'cleaned_values': [(1, 1585266, 'PII State: CA', 1585847),
+                               (2, 1585266, 'PII State: CA', 1585846)]
         }]
 
         self.default_test(tables_and_counts)
