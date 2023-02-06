@@ -22,11 +22,14 @@ ethnicity_source_concept_id
 
 As per ticket DC-1446, for participants who have not answered the question "What is you race/ethnicity" we need to set
     their race_concept_id to 2100000001.
-    
-Per ticket DC-1584, The sex_at_birth_concept_id, sex_at_ birth_source_concept_id, and sex_at_birth_source_value columns 
-were defined and set in multiple repopulate person scripts. This was redundant and caused unwanted schema changes for 
+
+Per ticket DC-1584, The sex_at_birth_concept_id, sex_at_ birth_source_concept_id, and sex_at_birth_source_value columns
+were defined and set in multiple repopulate person scripts. This was redundant and caused unwanted schema changes for
 the person table.  With the implementation of DC-1514 and DC-1570 these columns are to be removed from all
 repopulate_person_* files.
+
+Per ticket DC-2828, For both the Registered and Controlled tier person table repopulation scripts, set
+race_source_concept_id = 2100000001 when race_concept_id is set to 2100000001
 """
 import logging
 
@@ -37,10 +40,11 @@ from common import JINJA_ENV, PERSON
 
 LOGGER = logging.getLogger(__name__)
 
-JIRA_ISSUE_NUMBERS = ['DC516', 'DC836', 'DC1446', 'DC1584']
+JIRA_ISSUE_NUMBERS = ['DC516', 'DC836', 'DC1446', 'DC1584', 'DC2828']
 
 GENDER_CONCEPT_ID = 1585838
 AOU_NONE_INDICATED_CONCEPT_ID = 2100000001
+AOU_NON_INDICATED_SOURCE_VALUE = "AoUDRC_NoneIndicated"
 
 REPOPULATE_PERSON_QUERY = JINJA_ENV.from_string("""
 WITH
@@ -87,6 +91,7 @@ WITH
         WHEN 1586143 THEN 8516 /*black/aa*/
         WHEN 1586146 THEN 8527 /*white*/
         WHEN 903079 THEN 1177221 /*PNA*/
+        WHEN 0 THEN 2100000001 /*None Provided*/
       /*otherwise, just use the standard mapped answer (or 0)*/
       ELSE
       coalesce(race_ob.value_as_concept_id,
@@ -97,7 +102,7 @@ WITH
     IF
       (ethnicity_ob.value_as_concept_id IS NULL,
         /*Case this out based on the race_ob (race) values, ie if it's a skip/pna respect that.*/
-        CASE 
+        CASE
           WHEN race_ob.value_source_concept_id = 0 THEN 0 /*missing answer*/
           WHEN race_ob.value_source_concept_id IS NULL THEN 0 /*missing answer*/
           WHEN race_ob.value_source_concept_id = 903079 THEN 903079/*PNA*/
@@ -117,7 +122,7 @@ WITH
       gender.gender_source_value,
       gender.gender_source_concept_id,
       CASE WHEN race_ob.value_source_concept_id = 903079 THEN 'PMI_PreferNotToAnswer'/*PNA*/
-      ELSE coalesce(race_ob.value_source_value, 
+      ELSE coalesce(race_ob.value_source_value,
            "No matching concept") END AS race_source_value,
       coalesce(race_ob.value_source_concept_id,
         0) AS race_source_concept_id
@@ -160,12 +165,15 @@ END
   gender_source_value,
   gender_source_concept_id,
   CASE
-    WHEN race_concept_id = 0 THEN "None Indicated"
+    WHEN race_concept_id = 0 THEN "{{aou_custom_value}}"
   ELSE
   race_source_value
-END
-  AS race_source_value,
-  race_source_concept_id,
+END AS race_source_value,
+  CASE
+    WHEN race_source_concept_id = 0 THEN {{aou_custom_concept}}
+    ELSE
+    race_source_concept_id
+END AS race_source_concept_id,
   ethnicity_concept.concept_code ethnicity_source_value,
   ethnicity_concept_id ethnicity_source_concept_id
 FROM
@@ -218,7 +226,8 @@ class RepopulatePersonPostDeid(BaseCleaningRule):
             project=self.project_id,
             dataset=self.dataset_id,
             gender_concept_id=GENDER_CONCEPT_ID,
-            aou_custom_concept=AOU_NONE_INDICATED_CONCEPT_ID)
+            aou_custom_concept=AOU_NONE_INDICATED_CONCEPT_ID,
+            aou_custom_value=AOU_NON_INDICATED_SOURCE_VALUE)
         query[cdr_consts.DESTINATION_TABLE] = PERSON
         query[cdr_consts.DESTINATION_DATASET] = self.dataset_id
         query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE

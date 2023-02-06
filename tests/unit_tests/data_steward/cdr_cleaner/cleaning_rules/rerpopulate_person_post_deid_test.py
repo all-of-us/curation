@@ -5,7 +5,7 @@ import constants.cdr_cleaner.clean_cdr as cdr_consts
 # Project imports
 from cdr_cleaner.cleaning_rules.repopulate_person_post_deid import (
     RepopulatePersonPostDeid, REPOPULATE_PERSON_QUERY, GENDER_CONCEPT_ID,
-    AOU_NONE_INDICATED_CONCEPT_ID)
+    AOU_NONE_INDICATED_CONCEPT_ID, AOU_NON_INDICATED_SOURCE_VALUE)
 from common import PERSON
 from constants.bq_utils import WRITE_TRUNCATE
 from constants.cdr_cleaner import clean_cdr as clean_consts
@@ -50,8 +50,9 @@ class RepopulatePersonPostDeidTest(unittest.TestCase):
                 REPOPULATE_PERSON_QUERY.render(
                     project=self.project_id,
                     dataset=self.dataset_id,
-                    gender_concept_id=GENDER_CONCEPT_ID,
-                    aou_custom_concept=AOU_NONE_INDICATED_CONCEPT_ID),
+                                        gender_concept_id=GENDER_CONCEPT_ID,
+                    aou_custom_concept=AOU_NONE_INDICATED_CONCEPT_ID,
+                    aou_custom_value=AOU_NON_INDICATED_SOURCE_VALUE),
             cdr_consts.DESTINATION_TABLE:
                 PERSON,
             cdr_consts.DESTINATION_DATASET:
