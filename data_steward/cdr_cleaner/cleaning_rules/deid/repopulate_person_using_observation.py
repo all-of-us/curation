@@ -70,7 +70,7 @@ SELECT DISTINCT
         ELSE rs.race_source_value
     END AS race_source_value,
     CASE
-        WHEN rs.race_concept_id = {{aou_none_indicated_concept_id}} THEN {{aou_none_indicated_concept_id}}
+        WHEN rs.race_concept_id = 0 THEN {{aou_none_indicated_concept_id}}
         ELSE rs.race_source_concept_id
     END AS race_source_concept_id,
     es.ethnicity_source_value,
