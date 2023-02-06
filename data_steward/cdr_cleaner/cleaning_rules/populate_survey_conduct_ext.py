@@ -19,7 +19,7 @@ LOGGER = logging.getLogger(__name__)
 UPDATE_SURVEY_CONDUCT_EXT_QUERY = JINJA_ENV.from_string("""
 UPDATE `{{project_id}}.{{dataset_id}}.survey_conduct_ext` AS sce
 SET language = qrai.value
-FROM `{{project_id}}.{{cope_lookup_dataset_id}}.questionnaire_response_additional_info` AS qrai
+FROM `{{project_id}}.{{clean_survey_dataset_id}}.questionnaire_response_additional_info` AS qrai
 WHERE sce.survey_conduct_id = qrai.questionnaire_response_id
 AND UPPER(qrai.type) = 'LANGUAGE'
 """)
@@ -34,7 +34,7 @@ class PopulateSurveyConductExt(BaseCleaningRule):
                  project_id,
                  dataset_id,
                  sandbox_dataset_id,
-                 cope_lookup_dataset_id=None,
+                 clean_survey_dataset_id=None,
                  table_namer=None):
         """
         Initialize the class with proper information.
@@ -57,10 +57,10 @@ class PopulateSurveyConductExt(BaseCleaningRule):
                          depends_on=[GenerateExtTables, COPESurveyVersionTask],
                          table_namer=table_namer)
 
-        if not cope_lookup_dataset_id:
-            raise RuntimeError("'cope_lookup_dataset_id' must be set")
+        if not clean_survey_dataset_id:
+            raise RuntimeError("'clean_survey_dataset_id' must be set")
 
-        self.cope_lookup_dataset_id = cope_lookup_dataset_id
+        self.clean_survey_dataset_id = clean_survey_dataset_id
 
     def get_query_specs(self):
         """
@@ -69,7 +69,7 @@ class PopulateSurveyConductExt(BaseCleaningRule):
         update_query = UPDATE_SURVEY_CONDUCT_EXT_QUERY.render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
-            cope_lookup_dataset_id=self.cope_lookup_dataset_id)
+            clean_survey_dataset_id=self.clean_survey_dataset_id)
 
         update_query_dict = {cdr_consts.QUERY: update_query}
 
@@ -103,9 +103,9 @@ if __name__ == '__main__':
 
     ap = parser.get_argument_parser()
     ap.add_argument(
-        '--cope_survey_dataset',
+        '--clean_survey_dataset',
         action='store',
-        dest='cope_survey_dataset_id',
+        dest='clean_survey_dataset_id',
         help=
         ('Dataset containing the mapping table provided by RDR team.  '
          'These have additional info like language to questionnaire_response_id.'
@@ -122,7 +122,7 @@ if __name__ == '__main__':
             ARGS.project_id,
             ARGS.dataset_id,
             ARGS.sandbox_dataset_id, [(PopulateSurveyConductExt,)],
-            cope_lookup_dataset_id=ARGS.cope_survey_dataset_id)
+            clean_survey_dataset_id=ARGS.clean_survey_dataset_id)
         for query in query_list:
             LOGGER.info(query)
     else:
@@ -131,4 +131,4 @@ if __name__ == '__main__':
             ARGS.project_id,
             ARGS.dataset_id,
             ARGS.sandbox_dataset_id, [(PopulateSurveyConductExt,)],
-            cope_lookup_dataset_id=ARGS.cope_survey_dataset_id)
+            clean_survey_dataset_id=ARGS.clean_survey_dataset_id)
