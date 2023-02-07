@@ -228,7 +228,7 @@ class RepopulatePersonControlledTierTestBase(BaseTest.CleaningRulesTestBase):
                  'person_source_value', 'GenderIdentity_Woman', 1585840,
                  'AoUDRC_NoneIndicated', 2100000001, NO_MATCHING_SOURCE_VALUE,
                  NO_MATCHING_CONCEPT_ID),
-             ]
+            ]
         }]
 
         self.default_test(tables_and_counts)
