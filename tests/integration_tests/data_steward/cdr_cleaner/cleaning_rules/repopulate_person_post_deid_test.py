@@ -243,7 +243,7 @@ class RepopulatePersonPostDeidTest(BaseTest.CleaningRulesTestBase):
                 ),
                 (6, 0, 1954, 2100000001, 2100000001, "No matching concept", 0,
                  0, "No matching concept", "No matching concept", 0)
-             ]
+            ]
         }]
 
         self.default_test(tables_and_counts)
