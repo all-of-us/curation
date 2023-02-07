@@ -226,9 +226,9 @@ class RepopulatePersonControlledTierTestBase(BaseTest.CleaningRulesTestBase):
                  parser.parse('1970-06-15 00:00:00 UTC'), 2100000001,
                  NO_MATCHING_CONCEPT_ID, None, None, None,
                  'person_source_value', 'GenderIdentity_Woman', 1585840,
-                 'AoUDRC_NoneIndicated', 2100000001,
-                 NO_MATCHING_SOURCE_VALUE, NO_MATCHING_CONCEPT_ID),
-            ]
+                 'AoUDRC_NoneIndicated', 2100000001, NO_MATCHING_SOURCE_VALUE,
+                 NO_MATCHING_CONCEPT_ID),
+             ]
         }]
 
         self.default_test(tables_and_counts)
