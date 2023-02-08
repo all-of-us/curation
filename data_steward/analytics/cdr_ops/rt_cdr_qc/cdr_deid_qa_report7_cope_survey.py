@@ -13,470 +13,403 @@
 #     name: python3
 # ---
 
-# + [markdown] papermill={"duration": 0.024011, "end_time": "2021-02-02T22:30:31.951734", "exception": false,
-# "start_time": "2021-02-02T22:30:31.927723", "status": "completed"} tags=[]
+# + [markdown] papermill={"duration": 0.024011, "end_time": "2021-02-02T22:30:31.951734", "exception": false, "start_time": "2021-02-02T22:30:31.927723", "status": "completed"} tags=[]
 # #  QA queries on new CDR_deid COPE Survey
 #
 # Quality checks performed on a new CDR_deid dataset using QA queries
 
-# + papermill={"duration": 0.709639, "end_time": "2021-02-02T22:30:32.661373", "exception": false,
-# "start_time": "2021-02-02T22:30:31.951734", "status": "completed"} tags=[]
-
+# + papermill={"duration": 0.709639, "end_time": "2021-02-02T22:30:32.661373", "exception": false, "start_time": "2021-02-02T22:30:31.951734", "status": "completed"} tags=[]
+import urllib
 import pandas as pd
+from common import JINJA_ENV
 from utils import auth
 from gcloud.bq import BigQueryClient
 from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
 pd.options.display.max_rows = 120
 
-# + tags=["parameters"]
+# + papermill={"duration": 0.023643, "end_time": "2021-02-02T22:30:31.880820", "exception": false, "start_time": "2021-02-02T22:30:31.857177", "status": "completed"} tags=["parameters"]
+# Parameters
 project_id = ""
 com_cdr = ""
 deid_cdr = ""
-deid_sandbox = ""
-run_as = ""
-# deid_base_cdr=""
-# -
+sandbox=""
+run_as=""
 
-# df will have a summary in the end
-df = pd.DataFrame(columns=['query', 'result'])
 
 # +
 impersonation_creds = auth.get_impersonation_credentials(
     run_as, target_scopes=IMPERSONATION_SCOPES)
 
 client = BigQueryClient(project_id, credentials=impersonation_creds)
+# -
 
-# + [markdown] papermill={"duration": 0.02327, "end_time": "2021-02-02T22:30:32.708257", "exception": false,
-# "start_time": "2021-02-02T22:30:32.684987", "status": "completed"} tags=[]
-# # 1 Verify that the COPE Survey Data identified to be suppressed as
-# the de-identification action in OBSERVATION table have been removed from the de-id dataset.
+# df will have a summary in the end
+df = pd.DataFrame(columns = ['query', 'result']) 
+
+# + [markdown] papermill={"duration": 0.02327, "end_time": "2021-02-02T22:30:32.708257", "exception": false, "start_time": "2021-02-02T22:30:32.684987", "status": "completed"} tags=[]
+# # 1 done Verify that the COPE Survey Data identified to be suppressed as de-identification action in OBSERVATION table have been removed from the de-id dataset.
 #
-# see spread sheet COPE - All Surveys Privacy Rules for details
+# these concept_ids should be suppressed as shown in the spread sheet 'COPE - All Surveys Privacy Rules', and was temporally saved to curation_sandbox.temp_cope_privacy_rules. Moving forward, we only need to update this table accordingly. 
 #
 # https://docs.google.com/spreadsheets/d/1UuUVcRdlp2HkBaVdROFsM4ZX_bfffg6ZoEbqj94MlXU/edit#gid=0
 #
-#  Related tickets [DC-892] [DC-1752]
-#
-# [DC-1752] Refactor analysis 1 so that it provides the observation_source_concept_id, concept_code, concept_name, vocabulary_id,
-# row count per cope survey concept (example query below).
-# Reword the title text to read:
-# Verify that the COPE Survey concepts identified to be suppressed as de-identification action have been removed.
-#
-#  [DC-1784] 1310144, 1310145, 1310148, 715725, 715724
-#
-# The following concepts should be suppressed
-#
-# 715711, 1333327, 1333326, 1333014, 1333118, 1332742,1333324 ,1333012 ,1333234,
-#
-# 903632,702686,715714, 715724, 715725, 715726, 1310054, 1310058, 1310066, 1310146, 1310147, 1333234, 1310065,
-#
-# 596884, 596885, 596886, 596887, 596888, 596889, 1310137,1333016,1310148,1310145,1310144
-#
-# From DC-2109
-# 765938,765939, 765940, 765941, 765942, 765943, 765944, 765945, 765946, 765947, 765948, 765949, 765950, 765951, 765952
-#
-# DC-2113
-# RT suppression
-# +
+# DC-2373, DC-2374 done
+# -
 
-rt_concepts_dict = {
-    'dc_1752': [
-        715711, 1333327, 1333326, 1333014, 1333118, 1332742, 1333324, 1333012,
-        1333234
-    ],
-    'dc_1784': [1310144, 1310145, 1310148, 715725, 715724],
-    'dc_1666': [
-        1310058, 1333325, 1333235, 1310065, 1333012, 1333234, 1332769, 702686,
-        1333156, 713888, 1333327, 1333118, 1310054, 1333326, 1310066, 596884,
-        596885, 596886, 596887, 596888, 596889, 1310137, 1310146, 1333015,
-        1333023, 1333016, 715714, 1310147, 715726
-    ],
-    'dc_1641': [903632],
-    'dc_2113': [  # 596886, 596887, 
-        765946, 765947, 765948, 765949, 765950, 765951, 765952, 765938, 765939,
-        765940, 765941, 765942, 765943, 765944, 765945
-    ],
-    'dc_2112': [
-        766006, 765982, 766032, 40192502, 766040, 765996, 765984, 766020,
-        766008, 766036, 766044, 766024, 905060, 766062, 766028, 766002, 766014,
-        766052, 766034, 765988, 766038, 766058, 905050, 766060, 766046, 766054,
-        766042, 765978, 766050, 766056, 765980, 905049, 766022, 765990, 766018,
-        766010, 766048, 766064, 765998, 765986, 765976, 765994, 766030, 905041,
-        766026, 766016, 905059, 766066, 766000, 766012, 765992, 765974
-    ]
-}
+# these concept_ids should be suppressed
+query = JINJA_ENV.from_string("""
+select OMOP_conceptID,New_Requirement
+from  `{{project_id}}.{{sandbox}}.temp_cope_privacy_rules` 
+where New_Requirement like 'suppress%' or New_Requirement like 'row suppression'
+""")
+q = query.render(project_id=project_id,sandbox=sandbox)
+df1=execute(client, q)
+df1.shape
 
-rt_concepts_list = []
-for concepts in rt_concepts_dict.values():
-    rt_concepts_list.extend(concepts)
-
-# Remove duplicates
-rt_concepts_list = list(set(rt_concepts_list))
-
-query = f'''
-
-SELECT observation_source_concept_id, concept_name,concept_code,vocabulary_id,observation_concept_id,COUNT(1) AS n_row_not_pass FROM 
-`{project_id}.{deid_cdr}.observation` ob
-JOIN `{project_id}.{deid_cdr}.concept` c
-ON ob.observation_source_concept_id=c.concept_id
-WHERE observation_source_concept_id IN
-({','.join(map(str, rt_concepts_list))})
-OR observation_concept_id IN
-({','.join(map(str, rt_concepts_list))})
-GROUP BY 1,2,3,4,5
-ORDER BY n_row_not_pass DESC
-
-'''
-df1 = execute(client, query)
-
-if df1['n_row_not_pass'].sum() == 0:
-    df = df.append(
-        {
-            'query': 'Query1 No COPE in deid_observation table',
-            'result': 'PASS'
-        },
-        ignore_index=True)
-else:
-    df = df.append(
-        {
-            'query': 'Query1 No COPE in deid_observation table',
-            'result': ''
-        },
-        ignore_index=True)
 df1
 
-# + [markdown] papermill={"duration": 0.023633, "end_time": "2021-02-02T22:30:36.860798", "exception": false,
-# "start_time": "2021-02-02T22:30:36.837165", "status": "completed"} tags=[]
-# # 2   Verify if a survey version is provided for the COPE survey.
+
+query = JINJA_ENV.from_string("""
+SELECT observation_source_concept_id, concept_name,concept_code,vocabulary_id,
+observation_concept_id,
+COUNT(1) AS n_row_not_pass 
+FROM `{{project_id}}.{{deid_cdr}}.observation` ob
+JOIN `{{project_id}}.{{deid_cdr}}.concept` c
+ON ob.observation_source_concept_id=c.concept_id
+WHERE observation_source_concept_id IN
+(select OMOP_conceptID from `{{project_id}}.{{sandbox}}.temp_cope_privacy_rules`  
+where New_Requirement like 'suppress%' or New_Requirement like 'row suppression')
+OR observation_concept_id IN
+(select OMOP_conceptID from `{{project_id}}.{{sandbox}}.temp_cope_privacy_rules`  
+where New_Requirement like 'suppress%' or New_Requirement like 'row suppression')
+GROUP BY 1,2,3,4,5
+ORDER BY n_row_not_pass DESC
+""")
+q = query.render(project_id=project_id,sandbox=sandbox,deid_cdr=deid_cdr)
+df1=execute(client, q)
+df1.shape
+
+df1
+
+if df1['n_row_not_pass'].sum()==0:
+ df = df.append({'query' : 'Query1 No COPE in deid_observation table', 'result' : 'Pass'},  
+                ignore_index = True) 
+else:
+ df = df.append({'query' : 'Query1 No COPE in deid_observation table' , 'result' : 'Failure'},  
+                ignore_index = True) 
+
+# + [markdown] papermill={"duration": 0.023633, "end_time": "2021-02-02T22:30:36.860798", "exception": false, "start_time": "2021-02-02T22:30:36.837165", "status": "completed"} tags=[]
+# # 2 done   Verify if a survey version is provided for the COPE survey.
 #
 # [DC-1040]
 #
-# expected results: all the person_id and the questionnaire_response_id has a survey_version_concept_id
+# expected results: all the person_id and the questionnaire_response_id has a survey_version_concept_id 
 # original sql missed something.
 #
 # these should be generalized 2100000002,2100000003,2100000004
+#
+# new update/question as 05062022, there are more survey version which are not included in the original table? shoud I bring this up in the meeting??
 # -
 
-query = f'''
-WITH df1 as (
-SELECT distinct survey_version_concept_id
-FROM `{project_id}.{deid_cdr}.concept` c1
-LEFT JOIN `{project_id}.{deid_cdr}.concept_relationship` cr ON cr.concept_id_2 = c1.concept_id
-JOIN `{project_id}.{deid_cdr}.observation` ob on ob.observation_concept_id=c1.concept_id
-LEFT JOIN `{project_id}.{deid_cdr}.observation_ext` ext USING(observation_id)
+query = JINJA_ENV.from_string("""
+SELECT survey_version_concept_id, 
+count (*) row_counts,
+CASE WHEN 
+  COUNT(*) > 0
+  THEN 0 ELSE 1
+END
+ AS Failure_row_counts
+
+FROM `{{project_id}}.{{deid_cdr}}.concept` c1
+LEFT JOIN `{{project_id}}.{{deid_cdr}}.concept_relationship` cr ON cr.concept_id_2 = c1.concept_id
+JOIN `{{project_id}}.{{deid_cdr}}.observation` ob on ob.observation_concept_id=c1.concept_id
+LEFT JOIN `{{project_id}}.{{deid_cdr}}.observation_ext` ext USING(observation_id)
 WHERE
  cr.concept_id_1 IN (1333174,1333343,1333207,1333310,1332811,1332812,1332715,1332813,1333101,1332814,1332815,1332816,1332817,1332818)
  AND cr.relationship_id = "PPI parent code of" 
- )
- 
-SELECT COUNT (*) AS n_row_not_pass FROM df1
-WHERE survey_version_concept_id=0 or survey_version_concept_id IS NULL
-'''
-df1 = execute(client, query)
-if df1.loc[0].sum() == 0:
-    df = df.append({
-        'query': 'Query2 survey version provided',
-        'result': 'PASS'
-    },
-                   ignore_index=True)
-else:
-    df = df.append({
-        'query': 'Query2 survey version provided',
-        'result': ''
-    },
-                   ignore_index=True)
+ group by 1
+ order by row_counts
+ """)
+q = query.render(project_id=project_id,deid_cdr=deid_cdr)
+df1=execute(client, q)
+df1.shape
+
 df1
 
-# +
-# new cdr
-query = f'''
-SELECT
- distinct survey_version_concept_id
-FROM  `{project_id}.{deid_cdr}.observation` d
-JOIN  `{project_id}.{deid_cdr}.observation_ext` e
-ON  e.observation_id = d.observation_id
+if df1['Failure_row_counts'].sum()==0:
+ df = df.append({'query' : 'Query2 survey version provided', 'result' : 'Pass'},  
+                ignore_index = True) 
+else:
+ df = df.append({'query' : 'Query2 survey version provided', 'result' : 'Failure'},  
+                ignore_index = True) 
 
-'''
-df1 = execute(client, query)
-
-df1.style.format("{:.0f}")
-
-# + [markdown] papermill={"duration": 0.023649, "end_time": "2021-02-02T22:30:39.115495", "exception": false,
-# "start_time": "2021-02-02T22:30:39.091846", "status": "completed"} tags=[]
-# # 3 Verify that all structured concepts related  to COVID are NOT suppressed in EHR tables
-#
+# + [markdown] papermill={"duration": 0.023649, "end_time": "2021-02-02T22:30:39.115495", "exception": false, "start_time": "2021-02-02T22:30:39.091846", "status": "completed"} tags=[]
+# # 3 done no change Verify that all structured concepts related  to COVID are NOT suppressed in EHR tables
+#   
 #   DC-891
 #
 # 756055,4100065,37311061,439676,37311060,45763724
 #
 # update, Remove analyses 3, 4, and 5 as suppression of COVID concepts is no longer part of RT privacy requirements,[DC-1752]
+# -
 
-# +
-query = f'''
+query = JINJA_ENV.from_string("""
 
-SELECT measurement_concept_id, concept_name,concept_code,vocabulary_id,COUNT(1) AS n_row_not_pass FROM 
-`{project_id}.{deid_cdr}.measurement` ob
-JOIN `{project_id}.{deid_cdr}.concept` c
+SELECT measurement_concept_id, concept_name,concept_code,vocabulary_id,
+COUNT(1) AS n_row_not_pass,
+CASE WHEN 
+  COUNT(*) > 0
+  THEN 0 ELSE 1
+END
+ AS Failure_row_counts
+FROM `{{project_id}}.{{deid_cdr}}.measurement` ob
+JOIN `{{project_id}}.{{deid_cdr}}.concept` c
 ON ob.measurement_concept_id=c.concept_id
 WHERE measurement_concept_id=756055
 GROUP BY 1,2,3,4
 ORDER BY n_row_not_pass DESC
 
-'''
-df1 = execute(client, query)
+ """)
+q = query.render(project_id=project_id,deid_cdr=deid_cdr)
+df1=execute(client, q)
+df1.shape
 
-if df1['n_row_not_pass'].sum() == 0:
-    df = df.append(
-        {
-            'query': 'Query3 No COPE in deid_measurement table',
-            'result': ''
-        },
-        ignore_index=True)
-else:
-    df = df.append(
-        {
-            'query': 'Query3 No COPE in deid_measurement table',
-            'result': 'PASS'
-        },
-        ignore_index=True)
 df1
 
-# + [markdown] papermill={"duration": 0.023649, "end_time": "2021-02-02T22:30:39.115495", "exception": false,
-# "start_time": "2021-02-02T22:30:39.091846", "status": "completed"} tags=[]
-# # 4 Verify that all structured concepts related  to COVID are NOT suppressed in EHR condition_occurrence
-#
+if df1['Failure_row_counts'].sum()==0:
+ df = df.append({'query' : 'Query3 No COPE in deid_measurement table', 'result' : 'Pass'},  
+                ignore_index = True) 
+else:
+ df = df.append({'query' : 'Query3 No COPE in deid_measurement table' , 'result' : 'Failure'},  
+                ignore_index = True) 
+
+# + [markdown] papermill={"duration": 0.023649, "end_time": "2021-02-02T22:30:39.115495", "exception": false, "start_time": "2021-02-02T22:30:39.091846", "status": "completed"} tags=[]
+# # 4 done no change Verify that all structured concepts related  to COVID are NOT suppressed in EHR condition_occurrence
+#   
 #   DC-891
 #
 # 756055,4100065,37311061,439676,37311060,45763724
 #
 # update, Remove analyses 3, 4, and 5 as suppression of COVID concepts is no longer part of RT privacy requirements,[DC-1752]
+# -
 
-# +
-query = f'''
+query = JINJA_ENV.from_string("""
 
-SELECT condition_concept_id, concept_name,concept_code,vocabulary_id,COUNT(1) AS n_row_not_pass FROM 
-`{project_id}.{deid_cdr}.condition_occurrence` ob
-JOIN `{project_id}.{deid_cdr}.concept` c
+SELECT condition_concept_id, concept_name,concept_code,vocabulary_id,
+COUNT(1) AS n_row_not_pass,
+CASE WHEN 
+  COUNT(*) > 0
+  THEN 0 ELSE 1
+END
+ AS Failure_row_counts
+FROM  `{{project_id}}.{{deid_cdr}}.condition_occurrence` ob
+JOIN `{{project_id}}.{{deid_cdr}}.concept` c
 ON ob.condition_concept_id=c.concept_id
 WHERE condition_concept_id IN  (4100065, 37311061, 439676)
 GROUP BY 1,2,3,4
 ORDER BY n_row_not_pass DESC
 
-'''
-df1 = execute(client, query)
+ """)
+q = query.render(project_id=project_id,deid_cdr=deid_cdr)
+df1=execute(client, q)
+df1.shape
 
-if df1['n_row_not_pass'].sum() == 0:
-    df = df.append(
-        {
-            'query':
-                'Query4 COVID concepts suppression in deid_observation table',
-            'result':
-                ''
-        },
-        ignore_index=True)
-else:
-    df = df.append(
-        {
-            'query':
-                'Query4 COVID concepts suppression in deid_observation table',
-            'result':
-                'PASS'
-        },
-        ignore_index=True)
 df1
 
-# + [markdown] papermill={"duration": 0.023649, "end_time": "2021-02-02T22:30:39.115495", "exception": false,
-# "start_time": "2021-02-02T22:30:39.091846", "status": "completed"} tags=[]
-# # 5 Verify that all structured concepts related  to COVID are NOT suppressed in EHR observation
-#
+if df1['Failure_row_counts'].sum()==0:
+ df = df.append({'query' : 'Query4 COVID concepts suppression in deid_observation table', 'result' : 'Pass'},  
+                ignore_index = True) 
+else:
+ df = df.append({'query' : 'Query4 COVID concepts suppression in deid_observation table' , 'result' : 'Failure'},  
+                ignore_index = True) 
+
+
+# + [markdown] papermill={"duration": 0.023649, "end_time": "2021-02-02T22:30:39.115495", "exception": false, "start_time": "2021-02-02T22:30:39.091846", "status": "completed"} tags=[]
+# # 5 done no change Verify that all structured concepts related  to COVID are NOT suppressed in EHR observation
+#   
 #   DC-891
 #
 # 756055,4100065,37311061,439676,37311060,45763724
 #
 # update, Remove analyses 3, 4, and 5 as suppression of COVID concepts is no longer part of RT privacy requirements,[DC-1752]
+# -
 
-# +
-query = f'''
+query = JINJA_ENV.from_string("""
 
-SELECT observation_concept_id, concept_name,concept_code,vocabulary_id,observation_source_concept_id,COUNT(1) AS n_row_not_pass FROM 
-`{project_id}.{deid_cdr}.observation` ob
-JOIN `{project_id}.{deid_cdr}.concept` c
+SELECT observation_concept_id, concept_name,concept_code,vocabulary_id,observation_source_concept_id,
+COUNT(1) AS n_row_not_pass,
+CASE WHEN 
+  COUNT(*) > 0
+  THEN 0 ELSE 1
+END
+ AS Failure_row_counts
+FROM `{{project_id}}.{{deid_cdr}}.observation` ob
+JOIN `{{project_id}}.{{deid_cdr}}.concept` c
 ON ob.observation_concept_id=c.concept_id
 WHERE observation_concept_id IN  (37311060, 45763724) OR observation_source_concept_id IN  (37311060, 45763724)
 GROUP BY 1,2,3,4,5
 ORDER BY n_row_not_pass DESC
+""")
+q = query.render(project_id=project_id,deid_cdr=deid_cdr)
+df1=execute(client, q)
+df1.shape
 
-'''
-df1 = execute(client, query)
 
-if df1['n_row_not_pass'].sum() == 0:
-    df = df.append(
-        {
-            'query': 'Query5 COVID concepts suppression in observation table',
-            'result': ''
-        },
-        ignore_index=True)
-else:
-    df = df.append(
-        {
-            'query': 'Query5 COVID concepts suppression in observation table',
-            'result': 'PASS'
-        },
-        ignore_index=True)
 df1
-# -
 
-# # 6 Verify these concepts are NOT suppressed in EHR observation
-#
+if df1['Failure_row_counts'].sum()==0:
+ df = df.append({'query' : 'Query5 COVID concepts suppression in observation table', 'result' : 'Pass'},  
+                ignore_index = True) 
+else:
+ df = df.append({'query' : 'Query5 COVID concepts suppression in observation table' , 'result' : 'Failure'},  
+                ignore_index = True) 
+
+# # 6 done updated Verify these concepts are NOT suppressed in EHR observation
+#   
 # [DC-1747]
 # these concepts 1333015, 	1333023	are not longer suppressed
 #
-# 1332737, [DC-1665]
+# 1332737, [DC-1665] 
 #
 # 1333291
 #
-# 1332904,1333140 should be generalized to 1332737
+# 1332904,1333140 should be generalized to 1332737 , # update ?need to rewrite??
 #
-# 1332843 should be generalized.
+# 1332843 should be generalized. 
 
-# +
-query = f'''
+query = JINJA_ENV.from_string("""
 
-SELECT observation_source_concept_id, concept_name,concept_code,vocabulary_id,observation_concept_id,COUNT(1) AS n_row_not_pass FROM 
-`{project_id}.{deid_cdr}.observation` ob
-JOIN `{project_id}.{deid_cdr}.concept` c
+SELECT observation_source_concept_id, concept_name,concept_code,vocabulary_id,observation_concept_id,
+COUNT(1) AS n_row_pass,
+CASE WHEN 
+  COUNT(*) > 0
+  THEN 0 ELSE 1
+END
+ AS Failure_row_counts
+
+FROM `{{project_id}}.{{deid_cdr}}.observation` ob
+JOIN `{{project_id}}.{{deid_cdr}}.concept` c
 ON ob.observation_source_concept_id=c.concept_id
 WHERE observation_source_concept_id IN  (1333015, 1333023, 1332737,1333291,1332904,1333140,1332843) 
 OR observation_concept_id IN  (1333015, 1333023,1332737,1333291,1332904,1333140,1332843 )
 GROUP BY 1,2,3,4,5
-ORDER BY n_row_not_pass DESC
+ORDER BY n_row_pass DESC
+""")
+q = query.render(project_id=project_id,deid_cdr=deid_cdr)
+df1=execute(client, q)
+df1.shape
 
-'''
-df1 = execute(client, query)
 
-if df1['n_row_not_pass'].sum() == 0:
-    df = df.append(
-        {
-            'query':
-                'Query6 The concepts are not suppressed in observation table',
-            'result':
-                ''
-        },
-        ignore_index=True)
-else:
-    df = df.append(
-        {
-            'query':
-                'Query6 The concepts are not suppressed in observation table',
-            'result':
-                'PASS'
-        },
-        ignore_index=True)
 df1
-# -
 
-# # 7 Vaccine-related concepts as these EHR-submitted COVID concepts are disallowed from RT
-#
-# DC-1752
-#
+if (df1['Failure_row_counts'].sum()==0) and (df1[df1['observation_source_concept_id'].isin(['1332904','1333140'])].empty) :
+ df = df.append({'query' : 'Query6 The concepts are not suppressed in observation table', 'result' : 'Pass'},  
+                ignore_index = True) 
+else:
+ df = df.append({'query' : 'Query6 The concepts are not suppressed in observation table' , 'result' : 'Failure'},  
+                ignore_index = True) 
 
-# +
+# # 7 done Vaccine-related concepts as these EHR-submitted COVID concepts are allowed from RT 
+# DC-2374
+# this query was from DC-1752 
 
-query = f'''
+query = JINJA_ENV.from_string("""
+
 DECLARE vocabulary_tables DEFAULT ['vocabulary', 'concept', 'source_to_concept_map', 
                                    'concept_class', 'concept_synonym', 'concept_ancestor',
                                    'concept_relationship', 'relationship', 'drug_strength'];
+SELECT table_name,column_name
 
-DECLARE query STRING;
-
-CREATE OR REPLACE TABLE `{project_id}.{deid_sandbox}.concept_usage` (
- concept_id   INT64
-,table_name   STRING NOT NULL
-,column_name  STRING NOT NULL
-,row_count    INT64 NOT NULL
-)
-OPTIONS (
-  description='Concept usage counts in deid_cdr'
- ,expiration_timestamp=TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 60 DAY)
-);
-
-SET query = (
-SELECT 
- STRING_AGG('SELECT ' 
-     || column_name         || '  AS concept_id '
-            || ',"' || table_name  || '" AS table_name '
-     || ',"' || column_name || '" AS column_name '
-     || ', COUNT(1) AS row_count '
-     || 'FROM `' || table_schema || '.' || table_name || '` t '
-     || 'GROUP BY 1, 2, 3',
-           ' UNION ALL ')
-FROM `{deid_cdr}.INFORMATION_SCHEMA.COLUMNS` c
-JOIN `{deid_cdr}.__TABLES__` t
+FROM `{{project_id}}.{{deid_cdr}}.INFORMATION_SCHEMA.COLUMNS` c
+JOIN `{{project_id}}.{{deid_cdr}}.__TABLES__` t
  ON c.table_name = t.table_id
 WHERE 
-      table_name NOT IN UNNEST(vocabulary_tables)
-  AND t.row_count > 0
+     table_name NOT IN UNNEST(vocabulary_tables) and 
+  t.row_count > 0
   AND table_name NOT LIKE '\\\_%'
-  AND LOWER(column_name) LIKE '%concept_id%'
-);
+  AND table_name in ('procedure_occurrence','drug_exposure')
+  AND column_name in ('procedure_concept_id','procedure_source_concept_id','drug_concept_id','drug_source_concept_id')
+""")
+q = query.render(project_id=project_id,deid_cdr=deid_cdr)
+target_tables=execute(client, q)
+target_tables.shape
 
-EXECUTE IMMEDIATE 'INSERT `{project_id}.{deid_sandbox}.concept_usage`' || query;
 
-WITH 
-vaccine_concept AS
-(
- SELECT *
- FROM `{project_id}.{deid_cdr}.concept` 
+# +
+#table_name="drug_exposure"
+#@column_name="drug_concept_id"
+
+def my_sql(table_name,column_name):
+
+    query = JINJA_ENV.from_string("""
+    
+SELECT 
+'{{table_name}}' AS table_name,
+'{{column_name}}' AS column_name,
+COUNT(*) AS row_counts,
+CASE WHEN 
+  COUNT(*) > 0
+  THEN 0 ELSE 1
+END
+ AS Failure_row_counts
+ 
+FROM `{{project_id}}.{{deid_cdr}}.{{table_name}}` c
+JOIN  `{{project_id}}.{{deid_cdr}}.concept` on concept_id={{column_name}}
  WHERE (
-        -- done by name and vocab -- this alone should be enough, no need for others--
+        -- done by name and vocab -- -- this alone should be enough, no need for others --
         REGEXP_CONTAINS(concept_name, r'(?i)(COVID)') AND
         REGEXP_CONTAINS(concept_name, r'(?i)(VAC)') AND 
         vocabulary_id not in ('PPI')
     ) OR (
         -- done by code  and vocab --
-        REGEXP_CONTAINS(concept_code, r'(207)|(208)|(210)|(212)|(213)') --not 211--
+        REGEXP_CONTAINS(concept_code, r'(207)|(208)|(210)|(212)|(213)') -- not 211 --
         and vocabulary_id = 'CVX'
     ) OR (
         -- done by code and vocab --
-        REGEXP_CONTAINS(concept_code, r'(91300)|(91301)|(91302)|(91303)|(0031A)|(0021A)|(0022A)|(0002A)|(0001A)|(0012A)|(0011A)')
-        --no 91304--
+        REGEXP_CONTAINS(concept_code, r'(91300)|(91301)|(91302)|(91303)|(0031A)|(0021A)|(0022A)|(0002A)|(0001A)|(0012A)|(0011A)')   -- no 91304 --
         and vocabulary_id = 'CPT4'
      )
-)
 
-SELECT u.* 
-FROM
-`{project_id}.{deid_sandbox}.concept_usage` u
-JOIN vaccine_concept c
-USING (concept_id)
-ORDER BY row_count DESC
+""")
+    q = query.render(project_id=project_id,deid_cdr=deid_cdr,table_name=table_name,column_name=column_name)
+    df11=execute(client, q)
+    return df11
 
-'''
-df1 = execute(client, query)
-if df1['row_count'].sum() == 0:
-    df = df.append(
-        {
-            'query':
-                'Query7 COVID Vaccine-related concepts suppression in EHR tables',
-            'result':
-                'PASS'
-        },
-        ignore_index=True)
-else:
-    df = df.append(
-        {
-            'query':
-                'Query7 COVID Vaccine-related concepts suppression in EHR tables',
-            'result':
-                ''
-        },
-        ignore_index=True)
-df1
+
 # -
+
+# use a loop to get table name AND column name AND run sql function
+result = [my_sql (table_name, column_name) for table_name, column_name in zip(target_tables['table_name'], target_tables['column_name'])]
+result
+
+# +
+# AND then get the result back FROM loop result list
+n=len(target_tables.index)
+res2 = pd.DataFrame(result[0])
+
+for x in range(1,n):    
+  res2=res2.append(result[x])
+    
+#res2=res2.sort_values(by='row_counts_failure', ascending=False)
+res2
+# -
+
+if res2['Failure_row_counts'].sum()==0:
+ df = df.append({'query' : 'Query7 COVID Vaccine-related concepts NOT suppressed in EHR tables', 'result' : 'Pass'},  
+                ignore_index = True) 
+else:
+ df = df.append({'query' : 'Query7 COVID Vaccine-related concepts NOT suppressed in EHR tables' , 'result' : 'Failure'},  
+                ignore_index = True) 
+
 
 # # Summary_deid_COPE_survey
 
-# if not pass, will be highlighted in red
-df = df.mask(df.isin(['Null', '']))
-df.style.highlight_null(null_color='red').set_properties(
-    **{'text-align': 'left'})
+# +
+def highlight_cells(val):
+    color = 'red' if 'Failure' in val else 'white'
+    return f'background-color: {color}' 
+
+df.style.applymap(highlight_cells).set_properties(**{'text-align': 'left'})
+# -
+
+

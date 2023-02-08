@@ -17,6 +17,7 @@
 
 import urllib
 import pandas as pd
+from common import JINJA_ENV
 from utils import auth
 from gcloud.bq import BigQueryClient
 from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
@@ -26,13 +27,8 @@ pd.options.display.max_rows = 120
 project_id = ""
 com_cdr = ""
 deid_cdr=""
-# deid_base_cdr=""
 pipeline=""
 run_as=""
-# -
-
-# df will have a summary in the end
-df = pd.DataFrame(columns = ['query', 'result']) 
 
 # +
 impersonation_creds = auth.get_impersonation_credentials(
@@ -40,6 +36,9 @@ impersonation_creds = auth.get_impersonation_credentials(
 
 client = BigQueryClient(project_id, credentials=impersonation_creds)
 # -
+
+# df will have a summary in the end
+df = pd.DataFrame(columns = ['query', 'result']) 
 
 # # 1 GR_01 Race Generalization Rule
 #
@@ -57,21 +56,22 @@ client = BigQueryClient(project_id, credentials=impersonation_creds)
 # Null is the value poplulated in the value_as_string & value_source_value fields in the deid table.
 #
 
-query = f'''
+query = JINJA_ENV.from_string("""
 SELECT 
 
 SUM(CASE WHEN value_as_string IS NOT NULL THEN 1 ELSE 0 END) AS n_value_as_string_not_null,
 SUM(CASE WHEN value_source_value IS NOT NULL THEN 1 ELSE 0 END) AS n_value_source_value_not_null
 
-FROM `{project_id}.{deid_cdr}.observation`
+FROM `{{project_id}}.{{deid_cdr}}.observation`
 
-'''
-df1=execute(client, query)  
+""")
+q = query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr)  
+df1=execute(client, q) 
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query1 GR01 Race_col_suppressoin in observation', 'result' : 'PASS'},  
                 ignore_index = True) 
 else:
- df = df.append({'query' : 'Query1 GR01 Race_col_suppression in observation', 'result' : ''},  
+ df = df.append({'query' : 'Query1 GR01 Race_col_suppression in observation', 'result' : 'Failure'},  
                 ignore_index = True) 
 df1
 
@@ -103,14 +103,14 @@ df1
 # the value_as_concept_id field in de-id table populates 1177221
 #
 # - Verify that if the value_source_concept_id field in OBSERVATION table populates: 903096 , 
-# the value_as_concept_id field in de-id table populates: 903096 or 2000000010
+# the value_as_concept_id field in de-id table populates: 903096
 #
 
-query = f'''
+query = JINJA_ENV.from_string("""
 
 WITH df1 AS (
 SELECT distinct value_source_concept_id,value_as_concept_id
- FROM `{project_id}.{deid_cdr}.observation`
+ FROM `{{project_id}}.{{deid_cdr}}.observation`
  WHERE value_source_concept_id in (2000000001,2000000008,1586142,1586143,1586146,1586147,1586148,903079,903096)
  )
 
@@ -123,15 +123,16 @@ WHERE (value_source_concept_id=2000000001 AND value_as_concept_id !=2000000001)
  OR (value_source_concept_id=1586147 AND value_as_concept_id !=1586147)
  OR (value_source_concept_id=1586148 AND value_as_concept_id !=45882607)
  OR (value_source_concept_id=903079 AND value_as_concept_id !=1177221)
- OR (value_source_concept_id=903096 AND value_as_concept_id NOT IN (903096, 2000000010))
+ OR (value_source_concept_id=903096 AND value_as_concept_id !=903096)
  
-'''
-df1=execute(client, query)  
+""")
+q = query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr)  
+df1=execute(client, q) 
 if df1['n_row_not_pass'].sum()==0:
  df = df.append({'query' : 'Query1.2 GR01 Race_value_source_concept_id matched value_as_concept_id in observation', 'result' : 'PASS'},  
                 ignore_index = True) 
 else:
- df = df.append({'query' : 'Query1.2 GR01 Race_value_source_concept_id matched value_as_concept_id in observation', 'result' : ''},  
+ df = df.append({'query' : 'Query1.2 GR01 Race_value_source_concept_id matched value_as_concept_id in observation', 'result' : 'Failure'},  
                 ignore_index = True) 
 df1
 
@@ -167,11 +168,11 @@ df1
 # 'SexualOrientation_GeneralizedNotStraight'
 
 # fine in both deid and deid_base
-query = f'''
+query = JINJA_ENV.from_string("""
 
 WITH df1 AS (
 SELECT distinct value_source_concept_id,value_as_concept_id
- FROM `{project_id}.{deid_cdr}.observation`
+ FROM `{{project_id}}.{{deid_cdr}}.observation`
  WHERE value_source_concept_id in (2000000003,1585900)
  )
  
@@ -179,13 +180,14 @@ SELECT COUNT (*) AS n_row_not_pass FROM df1
 WHERE (value_source_concept_id=2000000003 AND value_as_concept_id !=2000000003)
 OR (value_source_concept_id=1585900 AND value_as_concept_id !=4069091)
 
-'''
-df1=execute(client, query)  
+""")
+q = query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr)  
+df1=execute(client, q) 
 if df1['n_row_not_pass'].sum()==0:
  df = df.append({'query' : 'Query2.2 GR02 TheBasics_SexualOrientation matched value_source_concept_id in observation', 'result' : 'PASS'},  
                 ignore_index = True) 
 else:
- df = df.append({'query' : 'Query2.2 GR02 TheBasics_SexualOrientation matched value_source_concept_id in observation', 'result' : ''},  
+ df = df.append({'query' : 'Query2.2 GR02 TheBasics_SexualOrientation matched value_source_concept_id in observation', 'result' : 'Failure'},  
                 ignore_index = True) 
 df1
 
@@ -205,19 +207,19 @@ df1
 # 3 AND then look up for those person_ids in the deid dataset to verify that the  value_as_concept_id field is generalized for those person_ids
 
 # fine in both deid and deid_base
-query=f''' 
+query = JINJA_ENV.from_string("""
 
 WITH df1 AS (
 SELECT m.research_id AS person_id,count (distinct ob.value_source_value) AS countp
-FROM `{project_id}.{com_cdr}.observation` ob
-JOIN `{project_id}.{pipeline}.pid_rid_mapping` m
+FROM `{{project_id}}.{{com_cdr}}.observation` ob
+JOIN `{{project_id}}.{{pipeline}}.pid_rid_mapping` m
 ON ob.person_id = m.person_id
 WHERE REGEXP_CONTAINS(ob.observation_source_value, 'TheBasics_SexualOrientation')
 GROUP BY 1),
 
 df2 AS (
 SELECT person_id 
-FROM `{project_id}.{deid_cdr}.observation` 
+FROM `{{project_id}}.{{deid_cdr}}.observation` 
 WHERE value_as_concept_id =2000000003
 )
 
@@ -225,13 +227,14 @@ SELECT COUNT (distinct person_id) AS n_PERSON_ID_not_pass FROM df1
 WHERE countp >1
 AND person_id NOT IN (SELECT distinct person_id FROM df2 )
 
-'''
-df1=execute(client, query)  
+""")
+q = query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr)  
+df1=execute(client, q) 
 if df1.eq(0).any().any():
  df = df.append({'query' : 'Query2.3 GR02 multiple_SexualOrientation matched value_source_concept_id in observation', 'result' : 'PASS'},  
                 ignore_index = True) 
 else:
- df = df.append({'query' : 'Query2.3 GR02 multiple_SexualOrientation matched value_source_concept_id in observation', 'result' : ''},  
+ df = df.append({'query' : 'Query2.3 GR02 multiple_SexualOrientation matched value_source_concept_id in observation', 'result' : 'Failure'},  
                 ignore_index = True) 
 df1
 
@@ -273,11 +276,11 @@ df1
 #
 
 # fine in both deid and deid_base
-query = f'''
+query = JINJA_ENV.from_string("""
 
 WITH df1 AS (
 SELECT distinct value_source_concept_id,value_as_concept_id
- FROM `{project_id}.{deid_cdr}.observation`
+ FROM `{{project_id}}.{{deid_cdr}}.observation`
  WHERE value_source_concept_id IN (2000000002,1585840,1585839)
  )
 
@@ -286,13 +289,14 @@ WHERE (value_source_concept_id=2000000002 AND value_as_concept_id !=2000000002)
 OR (value_source_concept_id=1585840 AND value_as_concept_id !=45878463)
 OR (value_source_concept_id=1585839 AND value_as_concept_id !=45880669)
 
-'''
-df1=execute(client, query)  
+""")
+q = query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr)  
+df1=execute(client, q) 
 if df1['n_row_not_pass'].sum()==0:
  df = df.append({'query' : 'Query3 GR03 Gender_value_source_concept_id matched value_as_concept_id in observation', 'result' : 'PASS'},  
                 ignore_index = True) 
 else:
- df = df.append({'query' : 'Query3 GR03 Gender_value_source_concept_id matched value_as_concept_id in observation', 'result' : ''},  
+ df = df.append({'query' : 'Query3 GR03 Gender_value_source_concept_id matched value_as_concept_id in observation', 'result' : 'Failure'},  
                 ignore_index = True) 
 df1
 
@@ -319,11 +323,11 @@ df1
 # the value_as_concept_id field in de-id table populates : 45880669
 #
 
-query = f'''
+query = JINJA_ENV.from_string("""
 
 WITH df1 AS (
 SELECT distinct value_source_concept_id,value_as_concept_id
-FROM `{project_id}.{deid_cdr}.observation`
+FROM `{{project_id}}.{{deid_cdr}}.observation`
 WHERE value_source_concept_id IN (2000000009,1585847,1585846)
  )
 
@@ -332,13 +336,14 @@ WHERE (value_source_concept_id=2000000009 AND value_as_concept_id !=2000000009)
 OR (value_source_concept_id=1585847 AND value_as_concept_id !=45878463)
 OR (value_source_concept_id=1585846 AND value_as_concept_id !=45880669)
 
-'''
-df1=execute(client, query)  
+""")
+q = query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr)  
+df1=execute(client, q) 
 if df1.eq(0).any().any():
  df = df.append({'query' : 'Query3 Biological Sex Generalization Rule in observation', 'result' : 'PASS'},  
                 ignore_index = True) 
 else:
- df = df.append({'query' : 'Query3 Biological Sex Generalization Rule in observation', 'result' : ''},  
+ df = df.append({'query' : 'Query3 Biological Sex Generalization Rule in observation', 'result' : 'Failure'},  
                 ignore_index = True) 
 df1
 
@@ -363,12 +368,12 @@ df1
 # +
 # in deid_cdr observation table
 
-query=f''' 
+query = JINJA_ENV.from_string("""
 
 WITH df1 AS (
 SELECT m.research_id AS person_id
-FROM  `{project_id}.{com_cdr}.observation` ob
-JOIN  `{project_id}.{pipeline}.pid_rid_mapping` m 
+FROM  `{{project_id}}.{{com_cdr}}.observation` ob
+JOIN  `{{project_id}}.{{pipeline}}.pid_rid_mapping` m 
 ON ob.person_id=m.person_id
 WHERE value_source_value IN ('SexAtBirth_Female' ,'GenderIdentity_Man')
 GROUP BY m.research_id
@@ -376,48 +381,50 @@ HAVING count (distinct value_source_value)=2
   
   )
   
-SELECT COUNT (*) AS n_row_not_pass FROM `{project_id}.{deid_cdr}.observation` 
+SELECT COUNT (*) AS n_row_not_pass FROM `{{project_id}}.{{deid_cdr}}.observation` 
 WHERE person_id IN (SELECT person_id FROM df1)
 AND observation_source_value LIKE 'Gender_GenderIdentity'
 AND (value_as_concept_id !=2000000002 AND value_source_concept_id !=2000000002)
 
- '''
-df1=execute(client, query)  
+ """)
+q = query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr)  
+df1=execute(client, q) 
 if df1['n_row_not_pass'].sum()==0:
  df = df.append({'query' : 'Query3.3.2 GR_03_1 Sex_female/gender_man mismatch in deid_cdr.observation', 'result' : 'PASS'},  
                 ignore_index = True) 
 else:
- df = df.append({'query' : 'Query3.3.2 GR_03_1 Sex_female/gender_man mismatch in deid_cdr.observation', 'result' : ''},  
+ df = df.append({'query' : 'Query3.3.2 GR_03_1 Sex_female/gender_man mismatch in deid_cdr.observation', 'result' : 'Failure'},  
                 ignore_index = True) 
 df1
 
 # +
 # in deid_cdr obs
 
-query=f''' 
+query = JINJA_ENV.from_string("""
 
 WITH df1 AS (
 
 SELECT m.research_id AS person_id
-FROM `{project_id}.{com_cdr}.observation` ob
-JOIN  `{project_id}.{pipeline}.pid_rid_mapping` m 
+FROM `{{project_id}}.{{com_cdr}}.observation` ob
+JOIN  `{{project_id}}.{{pipeline}}.pid_rid_mapping` m 
 ON ob.person_id=m.person_id
 WHERE value_source_value IN ('SexAtBirth_Male' ,'GenderIdentity_Woman')
 GROUP BY m.research_id
 HAVING count (distinct value_source_value)=2 
 )
   
-SELECT COUNT (*) AS n_row_not_pass FROM  `{project_id}.{deid_cdr}.observation`
+SELECT COUNT (*) AS n_row_not_pass FROM  `{{project_id}}.{{deid_cdr}}.observation`
 WHERE person_id IN (SELECT person_id FROM df1)
 AND observation_source_value LIKE 'Gender_GenderIdentity'
 AND (value_as_concept_id !=2000000002 AND value_source_concept_id !=2000000002)
-'''
-df1=execute(client, query)  
+""")
+q = query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr)  
+df1=execute(client, q) 
 if df1['n_row_not_pass'].sum()==0:
  df = df.append({'query' : 'Query3.3.4 GR_03_1 Sex_male/gender_woman mismatch in deid_cdr.observation', 'result' : 'PASS'},  
                 ignore_index = True) 
 else:
- df = df.append({'query' : 'Query3.3.4 GR_03_1 Sex_male/gender_woman mismatch in deid_cdr.observation', 'result' : ''},  
+ df = df.append({'query' : 'Query3.3.4 GR_03_1 Sex_male/gender_woman mismatch in deid_cdr.observation', 'result' : 'Failure'},  
                 ignore_index = True) 
 df1
 # -
@@ -443,13 +450,13 @@ df1
 # the value_as_concept_id field in de-id table populates 1177221
 #
 # - Verify that if the value_source_concept_id in OBSERVATION table populates: 903096, 
-# the value_as_concept_id field in de-id table populates: 903096 or 2000000010
+# the value_as_concept_id field in de-id table populates 903096
 
-query = f'''
+query = JINJA_ENV.from_string("""
 
 WITH df1 AS (
 SELECT distinct value_source_concept_id,value_as_concept_id
-FROM `{project_id}.{deid_cdr}.observation`
+FROM `{{project_id}}.{{deid_cdr}}.observation`
 WHERE value_source_concept_id IN (2000000007, 2000000006,1585945,1585946,903079,903096)
  )
   
@@ -458,16 +465,17 @@ WHERE (value_source_concept_id=2000000007 AND value_as_concept_id !=2000000007)
 OR (value_source_concept_id=2000000006 AND value_as_concept_id !=2000000006)
 OR (value_source_concept_id=1585945 AND value_as_concept_id !=43021808)
 OR (value_source_concept_id=1585946 AND value_as_concept_id !=4260980)
-OR (value_source_concept_id=903096 AND value_as_concept_id NOT IN (903096, 2000000010))
+OR (value_source_concept_id=903096 AND value_as_concept_id !=903096)
 OR (value_source_concept_id=903079 AND value_as_concept_id !=1177221)
 
-'''
-df1=execute(client, query)  
+""")
+q = query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr)  
+df1=execute(client, q) 
 if df1['n_row_not_pass'].sum()==0:
  df = df.append({'query' : 'Query4 Education Generalization Rule in observation', 'result' : 'PASS'},  
                 ignore_index = True) 
 else:
- df = df.append({'query' : 'Query4 Education Sex Generalization Rule in observation', 'result' : ''},  
+ df = df.append({'query' : 'Query4 Education Sex Generalization Rule in observation', 'result' : 'Failure'},  
                 ignore_index = True) 
 df1
 
@@ -489,14 +497,14 @@ df1
 # - Verify that if the value_source_concept_id in OBSERVATION table populates: 903079, 
 # the value_as_concept_id field in de-id table populates 1177221
 # - Verify that if the value_source_concept_id in OBSERVATION table populates: 903096, 
-# the value_as_concept_id field in de-id table populates: 903096 or 2000000010
+# the value_as_concept_id field in de-id table populates 903096
 #
 
-query = f'''
+query = JINJA_ENV.from_string("""
 
 WITH df1 AS (
 SELECT distinct value_source_concept_id,value_as_concept_id
-FROM `{project_id}.{deid_cdr}.observation`
+FROM `{{project_id}}.{{deid_cdr}}.observation`
 WHERE value_source_concept_id IN (2000000005, 2000000004,903079,903096)
  )
  
@@ -504,16 +512,17 @@ SELECT COUNT (*) AS n_row_not_pass FROM df1
 WHERE (value_source_concept_id=2000000005 AND value_as_concept_id !=2000000005)
 OR (value_source_concept_id=2000000004 AND value_as_concept_id !=2000000004)
 OR (value_source_concept_id=903079 AND value_as_concept_id !=1177221)
-OR (value_source_concept_id=903096 AND value_as_concept_id NOT IN (903096, 2000000010))
+OR (value_source_concept_id=903096 AND value_as_concept_id !=903096)
 
 
-'''
-df1=execute(client, query)  
+""")
+q = query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr)  
+df1=execute(client, q) 
 if df1['n_row_not_pass'].sum()==0:
  df = df.append({'query' : 'Query5 Employment Generalization Rule in observation', 'result' : 'PASS'},  
                 ignore_index = True) 
 else:
- df = df.append({'query' : 'Query5 GR_06 Employment Generalization Rule in observation', 'result' : ''},  
+ df = df.append({'query' : 'Query5 GR_06 Employment Generalization Rule in observation', 'result' : 'Failure'},  
                 ignore_index = True) 
 df1
 
@@ -526,26 +535,32 @@ df1
 # If given a dataset where any person.gender_concept_id field is not 0 will produce a failure.
 
 # +
-query = f'''
+query = JINJA_ENV.from_string("""
 
 SELECT
 SUM(CASE WHEN gender_concept_id !=0 THEN 1 ELSE 0 END) AS n_gender_concept_id_not_zero,
 SUM(CASE WHEN gender_concept_id IS NULL THEN 1 ELSE 0 END) AS n_gender_concept_id_is_null
-FROM `{project_id}.{deid_cdr}.person`
-'''
-df1=execute(client, query)  
+FROM `{{project_id}}.{{deid_cdr}}.person`
+""")
+q = query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr)  
+df1=execute(client, q) 
 
 if df1.loc[0].sum()==0:
  df = df.append({'query' : 'Query6 Gender_concept_id should be 0 in person table', 'result' : 'PASS'},  
                 ignore_index = True) 
 else:
- df = df.append({'query' : 'Query6 GR_06 Gender_concept_id should be 0 in person table', 'result' : ''},  
+ df = df.append({'query' : 'Query6 GR_06 Gender_concept_id should be 0 in person table', 'result' : 'Failure'},  
                 ignore_index = True) 
 df1
+
+
 # -
 
 # # Summary_cdr_deid_Generalization_rule
 
-# if not pass, will be highlighted in red
-df = df.mask(df.isin(['Null','']))
-df.style.highlight_null(null_color='red').set_properties(**{'text-align': 'left'})
+# +
+def highlight_cells(val):
+    color = 'red' if 'Failure' in val else 'white'
+    return f'background-color: {color}' 
+
+df.style.applymap(highlight_cells).set_properties(**{'text-align': 'left'})
