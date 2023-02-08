@@ -21,7 +21,9 @@ from cdr_cleaner.cleaning_rules.deid.repopulate_person_controlled_tier import \
     GENERALIZED_GENDER_IDENTITY_CONCEPT_ID, GENERALIZED_GENDER_IDENTITY_SOURCE_VALUE, \
     NON_HISPANIC_LATINO_CONCEPT_ID, SKIP_CONCEPT_ID, NON_HISPANIC_LATINO_CONCEPT_SOURCE_VALUE, \
     HISPANIC_LATINO_STANDARD_CONCEPT_ID, HISPANIC_LATINO_STANDARD_SOURCE_VALUE, \
-    PNA_CONCEPT_ID, PNA_CONCEPT_SOURCE_VALUE, NO_MATCHING_CONCEPT_ID, NO_MATCHING_SOURCE_VALUE
+    PNA_CONCEPT_ID, PNA_CONCEPT_SOURCE_VALUE, NO_MATCHING_CONCEPT_ID, NO_MATCHING_SOURCE_VALUE, \
+    AOU_NONE_INDICATED_CONCEPT_ID
+
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import \
     BaseTest
 
@@ -99,8 +101,7 @@ class RepopulatePersonControlledTierTestBase(BaseTest.CleaningRulesTestBase):
             (4, 0, 1970, 1, 1, '1970-01-01T00:00:01', 0, 0, NULL, NULL, NULL, 'person_source_value', 'gender_source_value', 0, 'race_source_value', 0, 'ethnicity', 0),
             (5, 0, 1970, 1, 1, '1970-01-01T00:00:01', 0, 0, NULL, NULL, NULL, 'person_source_value', 'gender_source_value', 0, 'race_source_value', 0, 'ethnicity', 0),
             (6, 0, 1970, 1, 1, '1970-01-01T00:00:01', 0, 0, NULL, NULL, NULL, 'person_source_value', 'gender_source_value', 0, 'race_source_value', 0, 'ethnicity', 0),
-            (7, 0, 1970, 1, 1, '1970-01-01T00:00:01', 0, 0, NULL, NULL, NULL, 'person_source_value', 'gender_source_value', 0, 'race_source_value', 0, 'ethnicity', 0),
-            (8, 0, 1970, 1, 1, '1970-01-01T00:00:01', 0, 0, NULL, NULL, NULL, 'person_source_value', 'gender_source_value', 0, 'race_source_value', 0, 'ethnicity', 0)
+            (7, 0, 1970, 1, 1, '1970-01-01T00:00:01', 0, 0, NULL, NULL, NULL, 'person_source_value', 'gender_source_value', 0, 'race_source_value', 0, 'ethnicity', 0)
        """)
 
         observation_data_template = self.jinja_env.from_string("""
@@ -163,7 +164,6 @@ class RepopulatePersonControlledTierTestBase(BaseTest.CleaningRulesTestBase):
         5 - Race and Ethnicity: None of these,                  Gender Identity: Woman,              Sex at Birth: Female,
         6 - Race: White,               Ethnicity: Non-hispanic, Gender Identity: Woman,              Sex at Birth: Female,
         7 - Race and Ethnicity: No matching concept,            Gender Identity: Woman,              Sex at Birth: Female,
-        8 - Race and Ethnicity: No record,                      Gender Identity: Woman,              Sex at Birth: Female,
         """
 
         self.maxDiff = None
@@ -171,7 +171,7 @@ class RepopulatePersonControlledTierTestBase(BaseTest.CleaningRulesTestBase):
         tables_and_counts = [{
             'fq_table_name':
                 f'{self.project_id}.{self.dataset_id}.person',
-            'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8],
+            'loaded_ids': [1, 2, 3, 4, 5, 6, 7],
             'fields': [
                 'person_id', 'gender_concept_id', 'year_of_birth',
                 'month_of_birth', 'day_of_birth', 'birth_datetime',
@@ -223,16 +223,10 @@ class RepopulatePersonControlledTierTestBase(BaseTest.CleaningRulesTestBase):
                  NON_HISPANIC_LATINO_CONCEPT_SOURCE_VALUE,
                  NON_HISPANIC_LATINO_CONCEPT_ID),
                 (7, 45878463, 1970, None, None,
-                 parser.parse('1970-06-15 00:00:00 UTC'), 2100000001,
-                 NO_MATCHING_CONCEPT_ID, None, None, None,
-                 'person_source_value', 'GenderIdentity_Woman', 1585840,
-                 'AoUDRC_NoneIndicated', NO_MATCHING_CONCEPT_ID,
-                 NO_MATCHING_SOURCE_VALUE, NO_MATCHING_CONCEPT_ID),
-                (8, 45878463, 1970, None, None,
-                 parser.parse('1970-06-15 00:00:00 UTC'), 2100000001,
-                 NO_MATCHING_CONCEPT_ID, None, None, None,
-                 'person_source_value', 'GenderIdentity_Woman', 1585840,
-                 'AoUDRC_NoneIndicated', NO_MATCHING_CONCEPT_ID,
+                 parser.parse('1970-06-15 00:00:00 UTC'),
+                 AOU_NONE_INDICATED_CONCEPT_ID, NO_MATCHING_CONCEPT_ID, None,
+                 None, None, 'person_source_value', 'GenderIdentity_Woman',
+                 1585840, 'AoUDRC_NoneIndicated', AOU_NONE_INDICATED_CONCEPT_ID,
                  NO_MATCHING_SOURCE_VALUE, NO_MATCHING_CONCEPT_ID),
             ]
         }]

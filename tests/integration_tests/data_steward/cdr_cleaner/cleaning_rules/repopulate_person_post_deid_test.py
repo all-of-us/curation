@@ -104,21 +104,22 @@ class RepopulatePersonPostDeidTest(BaseTest.CleaningRulesTestBase):
         Tests that the specifications for queries perform as designed.
 
         Validates pre conditions, tests execution, and post conditions based on the load
-        statements and the tables_and_counts variable.        
+        statements and the tables_and_counts variable.
         """
 
         self.maxDiff = None
 
         create_persons_query = self.jinja_env.from_string("""
-            INSERT INTO `{{fq_dataset_name}}.person` (person_id, gender_concept_id, birth_datetime, year_of_birth, 
-            race_concept_id, race_source_concept_id, race_source_value, ethnicity_concept_id, ethnicity_source_concept_id, 
+            INSERT INTO `{{fq_dataset_name}}.person` (person_id, gender_concept_id, birth_datetime, year_of_birth,
+            race_concept_id, race_source_concept_id, race_source_value, ethnicity_concept_id, ethnicity_source_concept_id,
             ethnicity_source_value, gender_source_value, gender_source_concept_id)
             VALUES
                 (1, 1, timestamp('1991-05-05'), 1991, 1, 1, "race_source_value", 1, 2, "ethnicity source_value", "gender_source_value", 1),
                 (2, 2, timestamp('1976-05-05'), 1976, 2, 2, "race_source_value", 1, 2, "ethnicity source_value", "gender_source_value", 2),
                 (3, 2, timestamp('1945-05-05'), 1945, 2, 3, "race_source_value", 1, 2, "ethnicity source_value", "gender_source_value", 2),
                 (4, 2, '1900-01-01', 1900, 2, 3, "race_source_value", 1, 2, "ethnicity source_value", "gender_source_value", 2),
-                (5, 2, '1900-01-01', 1900, 2, 3, "race_source_value", 1, 2, "ethnicity source_value", "gender_source_value", 2)
+                (5, 2, '1900-01-01', 1900, 2, 3, "race_source_value", 1, 2, "ethnicity source_value", "gender_source_value", 2),
+                (6, 1,  timestamp('1954-03-21'), 1954, 2100000001, 4, "race_source_value", 1, 2, "ethnicity_source_value", "gender_source_value", 1)
         """).render(fq_dataset_name=self.fq_dataset_name)
 
         create_observations_query = self.jinja_env.from_string("""
@@ -136,8 +137,9 @@ class RepopulatePersonPostDeidTest(BaseTest.CleaningRulesTestBase):
                 (4, 104, 1586140, {{ethnicity_hispanic_concept_id}}, {{ethnicity_hispanic_concept_id}}, '2020-01-01', 1, 1586140),
                 (4, 106, 1586140, 1586146, 1586146, '2020-01-01', 1, 1586140),
                  --What race ethnicity? Prefer not to answer --
-                (5, 107, 1586140,{{ethnicity_pna_concept_id}}, {{ethnicity_pna_concept_id}}, '2020-01-01', 1,903079)
-                
+                (5, 107, 1586140,{{ethnicity_pna_concept_id}}, {{ethnicity_pna_concept_id}}, '2020-01-01', 1,903079),
+                 -- Test custom concept race_concept_id and race_source_concept_id --
+                (6, 108, 1586140, 0, 0, '2020-01-01', 1, 1586140)
         """).render(
             fq_dataset_name=self.fq_dataset_name,
             gender_concept_id=GENDER_CONCEPT_ID,
@@ -158,7 +160,7 @@ class RepopulatePersonPostDeidTest(BaseTest.CleaningRulesTestBase):
                 '.'.join([self.fq_dataset_name, 'person']),
             'fq_sandbox_table_name':
                 '',
-            'loaded_ids': [1, 2, 3, 4, 5],
+            'loaded_ids': [1, 2, 3, 4, 5, 6],
             'sandboxed_ids': [],
             'fields': [
                 'person_id',
@@ -173,71 +175,75 @@ class RepopulatePersonPostDeidTest(BaseTest.CleaningRulesTestBase):
                 'gender_source_value',
                 'gender_source_concept_id',
             ],
-            'cleaned_values': [(
-                1,
-                1585841,
-                1991,
-                8527,
-                1586146,
-                'No matching concept',
-                38003564,
-                38003564,
-                "Not Hispanic",
-                "No matching concept",
-                123,
-            ),
-                               (
-                                   2,
-                                   0,
-                                   1976,
-                                   8516,
-                                   1586143,
-                                   'No matching concept',
-                                   38003564,
-                                   38003564,
-                                   "Not Hispanic",
-                                   "No matching concept",
-                                   0,
-                               ),
-                               (
-                                   3,
-                                   0,
-                                   1945,
-                                   1586148,
-                                   1586148,
-                                   'No matching concept',
-                                   1586148,
-                                   1586148,
-                                   "WhatRaceEthnicity_RaceEthnicityNoneOfThese",
-                                   "No matching concept",
-                                   0,
-                               ),
-                               (
-                                   4,
-                                   0,
-                                   1900,
-                                   8527,
-                                   1586146,
-                                   "No matching concept",
-                                   38003563,
-                                   38003563,
-                                   'Hispanic',
-                                   "No matching concept",
-                                   0,
-                               ),
-                               (
-                                   5,
-                                   0,
-                                   1900,
-                                   1177221,
-                                   903079,
-                                   'PMI_PreferNotToAnswer',
-                                   903079,
-                                   903079,
-                                   'PMI_PreferNotToAnswer',
-                                   "No matching concept",
-                                   0,
-                               )]
+            'cleaned_values': [
+                (
+                    1,
+                    1585841,
+                    1991,
+                    8527,
+                    1586146,
+                    'No matching concept',
+                    38003564,
+                    38003564,
+                    "Not Hispanic",
+                    "No matching concept",
+                    123,
+                ),
+                (
+                    2,
+                    0,
+                    1976,
+                    8516,
+                    1586143,
+                    'No matching concept',
+                    38003564,
+                    38003564,
+                    "Not Hispanic",
+                    "No matching concept",
+                    0,
+                ),
+                (
+                    3,
+                    0,
+                    1945,
+                    1586148,
+                    1586148,
+                    'No matching concept',
+                    1586148,
+                    1586148,
+                    "WhatRaceEthnicity_RaceEthnicityNoneOfThese",
+                    "No matching concept",
+                    0,
+                ),
+                (
+                    4,
+                    0,
+                    1900,
+                    8527,
+                    1586146,
+                    "No matching concept",
+                    38003563,
+                    38003563,
+                    'Hispanic',
+                    "No matching concept",
+                    0,
+                ),
+                (
+                    5,
+                    0,
+                    1900,
+                    1177221,
+                    903079,
+                    'PMI_PreferNotToAnswer',
+                    903079,
+                    903079,
+                    'PMI_PreferNotToAnswer',
+                    "No matching concept",
+                    0,
+                ),
+                (6, 0, 1954, 2100000001, 2100000001, "AoUDRC_NoneIndicated", 0,
+                 0, "No matching concept", "No matching concept", 0),
+            ]
         }]
 
         self.default_test(tables_and_counts)
