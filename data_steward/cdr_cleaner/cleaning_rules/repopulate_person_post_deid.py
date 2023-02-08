@@ -28,8 +28,13 @@ were defined and set in multiple repopulate person scripts. This was redundant a
 the person table.  With the implementation of DC-1514 and DC-1570 these columns are to be removed from all
 repopulate_person_* files.
 
-Per ticket DC-2828, For both the Registered and Controlled tier person table repopulation scripts, set
-race_source_concept_id = 2100000001 when race_concept_id is set to 2100000001
+Ticket DC-2827: Registered tier code repopulates the person table in the de-identified base datasets incorrectly
+for a single circumstance.  In the scenario where a person does not indicate their racial identity, curation fills
+in race_concept_id = 2100000001 and race_source_value = None Indicated. Current curation convention is to fill the
+*_source_value fields with concept_code values.
+
+Ticket DC-2828 is closely related to DC-2827: For both the Registered and Controlled tier person table repopulation
+scripts, set race_source_concept_id = 2100000001 when race_concept_id is set to 2100000001
 """
 import logging
 
@@ -40,7 +45,7 @@ from common import JINJA_ENV, PERSON
 
 LOGGER = logging.getLogger(__name__)
 
-JIRA_ISSUE_NUMBERS = ['DC516', 'DC836', 'DC1446', 'DC1584', 'DC2828']
+JIRA_ISSUE_NUMBERS = ['DC516', 'DC836', 'DC1446', 'DC1584', 'DC2827', 'DC2828']
 
 GENDER_CONCEPT_ID = 1585838
 AOU_NONE_INDICATED_CONCEPT_ID = 2100000001
