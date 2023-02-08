@@ -21,11 +21,11 @@ from cdr_cleaner.cleaning_rules.deid.repopulate_person_controlled_tier import \
     GENERALIZED_GENDER_IDENTITY_CONCEPT_ID, GENERALIZED_GENDER_IDENTITY_SOURCE_VALUE, \
     NON_HISPANIC_LATINO_CONCEPT_ID, SKIP_CONCEPT_ID, NON_HISPANIC_LATINO_CONCEPT_SOURCE_VALUE, \
     HISPANIC_LATINO_STANDARD_CONCEPT_ID, HISPANIC_LATINO_STANDARD_SOURCE_VALUE, \
-    PNA_CONCEPT_ID, PNA_CONCEPT_SOURCE_VALUE, NO_MATCHING_CONCEPT_ID, NO_MATCHING_SOURCE_VALUE
+    PNA_CONCEPT_ID, PNA_CONCEPT_SOURCE_VALUE, NO_MATCHING_CONCEPT_ID, NO_MATCHING_SOURCE_VALUE, \
+    AOU_NONE_INDICATED_CONCEPT_ID
+
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import \
     BaseTest
-
-AOU_NONE_INDICATED_CONCEPT_ID = 2100000001
 
 
 class RepopulatePersonControlledTierTestBase(BaseTest.CleaningRulesTestBase):
@@ -223,11 +223,11 @@ class RepopulatePersonControlledTierTestBase(BaseTest.CleaningRulesTestBase):
                  NON_HISPANIC_LATINO_CONCEPT_SOURCE_VALUE,
                  NON_HISPANIC_LATINO_CONCEPT_ID),
                 (7, 45878463, 1970, None, None,
-                 parser.parse('1970-06-15 00:00:00 UTC'), 2100000001,
-                 NO_MATCHING_CONCEPT_ID, None, None, None,
-                 'person_source_value', 'GenderIdentity_Woman', 1585840,
-                 'AoUDRC_NoneIndicated', 2100000001, NO_MATCHING_SOURCE_VALUE,
-                 NO_MATCHING_CONCEPT_ID),
+                 parser.parse('1970-06-15 00:00:00 UTC'),
+                 AOU_NONE_INDICATED_CONCEPT_ID, NO_MATCHING_CONCEPT_ID, None,
+                 None, None, 'person_source_value', 'GenderIdentity_Woman',
+                 1585840, 'AoUDRC_NoneIndicated', AOU_NONE_INDICATED_CONCEPT_ID,
+                 NO_MATCHING_SOURCE_VALUE, NO_MATCHING_CONCEPT_ID),
             ]
         }]
 
