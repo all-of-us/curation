@@ -158,6 +158,10 @@ def get_table_id(hpo_id, table_name):
     return hpo_id + '_' + table_name
 
 
+@deprecated(
+    reason=
+    'see: https://cloud.google.com/python/docs/reference/bigquery/latest/google.cloud.bigquery.client.Client#google_cloud_bigquery_client_Client_get_table'
+)
 def get_table_info(table_id, dataset_id=None, project_id=None):
     """
     Get metadata describing a table
