@@ -146,10 +146,9 @@ def create_person_id_src_hpo_map(client, input_dataset):
     # make sure check_tables contain person_id fields
     person_id_tables = []
     for table in check_tables:
-        info = bq_utils.get_table_info(table, dataset_id=input_dataset)
-        schema = info.get('schema', {})
-        for field_info in schema.get('fields', []):
-            if 'person_id' in field_info.get('name'):
+        table_obj = client.get_table(f'{input_dataset}.{table}')
+        for schema_field in table_obj.schema:
+            if 'person_id' in schema_field.name:
                 person_id_tables.append(table)
 
     # revamp mapping tables to contain only mapping tables for tables
