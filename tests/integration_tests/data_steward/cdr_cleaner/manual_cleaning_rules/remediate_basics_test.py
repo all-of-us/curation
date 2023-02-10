@@ -259,6 +259,9 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
                         dataset=self.dataset_id,
                         pers=PERSON)
 
+        # person_id 9 is a participant that we must not include to the output.
+        # (e.g. AIAN participants are included in incremental_dataset while
+        #  the final output must not include AIAN participants for releases W/O AIAN)
         insert_incremental_pers = self.jinja_env.from_string("""
             INSERT INTO `{{project}}.{{incremental_dataset}}.{{pers}}`
                 (person_id, gender_concept_id, year_of_birth, race_concept_id, ethnicity_concept_id)
@@ -318,7 +321,8 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
                 * 902 - 906 become 206 - 210 respectively after re-mapping using NEW_OBS_ID_LOOKUP.
             person_id == 9 (observation_id 901 and 999):
                 This person only exists in the incremental dataset. Such data MUST NOT be included
-                in the final output.
+                in the final output. (e.g. AIAN participants are included in incremental_dataset while
+                the final output must not include AIAN participants for releases W/O AIAN)
 
         [2] SURVEY_CONDUCT and its ext/mapping tables
             survey_conduct_id = 1001 does not change.
@@ -430,6 +434,9 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
             person_id = 2 gets sandboxed and updated since it exists in the incremental dataset.
                 * state_of_residence_concept_id and state_of_residence_source_value will NOT change.
             person_id = 9 gets ignored because it only exists in the incremental dataset.
+                Such data MUST NOT be included in the final output. (e.g. AIAN participants are 
+                included in incremental_dataset while the final output must not include AIAN 
+                participants for releases W/O AIAN)
 
         [4] OBSERVATION_MAPPING and SURVEY_CONDUCT_MAPPING tables
             These tables do not exist in combined dataset. No sandboxing/deleting/inserting will run on it.
