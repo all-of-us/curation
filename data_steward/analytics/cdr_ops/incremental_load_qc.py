@@ -200,10 +200,11 @@ render_message(df,
 
 # -
 
-# ## QC 4. (Only for `is_deidentified == True`) Confirm `person_ext`'s state related columns come from `source_dataset`
+# ## QC 4-1. (Only for `is_deidentified == True`) Confirm `person_ext`'s state related columns come from `source_dataset` <br>- Check against entire `new_dataset`
 # `state_of_residence_concept_id` and `state_of_residence_source_value` in `incremental_dataset.person_ext` are
 # all NULL. This is because these two columns do not originate from the basics. <br>To have a complete `new_dataset.person_ext`,
-# we must pull these columns from `source_dataset`, not from `incremental_dataset`.
+# we must pull these columns from `source_dataset`, not from `incremental_dataset`.<br>
+# If this QC fails, see how QC 4-2 goes.
 
 # +
 if is_deidentified == "False":
@@ -236,6 +237,54 @@ else:
     failure_null_check = (
         f"There are <b>{len(df)}</b> records in {new_dataset}.person_ext that have "
         f"unmatching state columns from {source_dataset}. <br>Look at the table and "
+        "investigate why they are inconsistent. <br><b>QC 4-2 will help narrow down "
+        "the potential cause of the issue.</b><br><br>")
+
+    render_message(df, success_null_check, failure_null_check)
+
+# -
+
+# ## QC 4-2. (Only for `is_deidentified == True`) Confirm `person_ext`'s state related columns come from `source_dataset` <br>- Check against records from `incremental_dataset`
+# If QC 4-1 fails, this QC will be helpful for troubleshooting. This QC checks the same thing as 4-1, but the scope is limited to only the participants from `incremental_dataset`.<br>
+# If QC 4-1 fails but 4-2 is successful, that means the issue comes from the original dataset, not from the incremental dataset. If both 4-1 and 4-2 fail, that means
+# something related to the incremental dataset did not work as expected.
+
+# +
+if is_deidentified == "False":
+    success_msg = "Skipping this check person_ext table exists only in DEID datasets.<br>"
+    render_message('', success_msg=success_msg)
+
+else:
+    query = JINJA_ENV.from_string('''
+        SELECT *
+        FROM `{{project}}.{{new_dataset}}.person_ext` n
+        JOIN `{{project}}.{{source_dataset}}.person_ext` s
+        ON n.person_id = s.person_id
+        WHERE n.person_id IN (
+            SELECT person_id FROM `{{project}}.{{incremental_dataset}}.person`
+        )
+        AND (
+            n.state_of_residence_concept_id != s.state_of_residence_concept_id
+            OR n.state_of_residence_source_value != s.state_of_residence_source_value
+        )
+        OR (
+            (n.state_of_residence_concept_id IS NULL AND s.state_of_residence_concept_id IS NOT NULL)
+            OR (n.state_of_residence_source_value IS NULL AND s.state_of_residence_source_value IS NOT NULL)
+        )
+    ''').render(project=project_id,
+                new_dataset=new_dataset,
+                incremental_dataset=incremental_dataset,
+                source_dataset=source_dataset)
+
+    df = execute(client, query)
+
+    success_null_check = (
+        f"All records in {new_dataset}.person_ext affected by the hotfix have correct state columns.<br> "
+        f"If QC 4-1 failed, we can be sure the problem came from the original data in {source_dataset}, "
+        f"not by the hotfix.<br><br>")
+    failure_null_check = (
+        f"There are <b>{len(df)}</b> records in {new_dataset}.person_ext that are affected by the hotfix "
+        f"and still have unmatching state columns from {source_dataset}. <br>Look at the table and "
         "investigate why they are inconsistent.<br><br>")
 
     render_message(df, success_null_check, failure_null_check)
