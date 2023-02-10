@@ -30,6 +30,8 @@ includes_aian: str = ""  # True if AIAN participants' data is in the dataset, Fa
 # -
 
 # +
+from IPython.display import display, HTML
+
 from common import JINJA_ENV
 from analytics.cdr_ops.notebook_utils import (execute, IMPERSONATION_SCOPES,
                                               render_message)
@@ -42,28 +44,25 @@ impersonation_creds = auth.get_impersonation_credentials(
 client = BigQueryClient(project_id, credentials=impersonation_creds)
 pid_or_rid = 'research_id' if is_deidentified == 'True' else 'person_id'
 
-# ## List of tables with person_id column
-
-person_id_tables_query = JINJA_ENV.from_string('''
-    SELECT table_name
-    FROM `{{project}}.{{new_dataset}}.INFORMATION_SCHEMA.COLUMNS`
-    WHERE column_name = "person_id"
-    ORDER BY table_name
-''').render(project=project_id, new_dataset=new_dataset)
-pid_table_list = client.query(person_id_tables_query).to_dataframe().get(
-    'table_name').to_list()
-pid_table_list
-
 # ## QC 1. (Only for `includes_aian == False`) Confirm no AIAN participants data is included in the new dataset
-# `incremental_dataset` contains AIAN participants' records. We must exclude those in `new_dataset`
+# `incremental_dataset` contains AIAN participants' records. <br>We must exclude those in `new_dataset`
 # when creating a WITHOUT AIAN dataset.
 
 # +
 if includes_aian == "True":
-    success_msg = "Skipping this check because the new dataset can include AIAN participants."
+    success_msg = "Skipping this check because the new dataset can include AIAN participants.<br><br>"
     render_message('', success_msg=success_msg)
 
 else:
+    person_id_tables_query = JINJA_ENV.from_string('''
+        SELECT table_name
+        FROM `{{project}}.{{new_dataset}}.INFORMATION_SCHEMA.COLUMNS`
+        WHERE column_name = "person_id"
+        ORDER BY table_name
+    ''').render(project=project_id, new_dataset=new_dataset)
+    pid_table_list = client.query(person_id_tables_query).to_dataframe().get(
+        'table_name').to_list()
+
     query = JINJA_ENV.from_string('''
         SELECT
             \'{{table}}\' as table_name,
@@ -86,11 +85,11 @@ else:
 
     df = execute(client, union_all_query)
 
-    success_null_check = f"No AIAN participants' records are found in {new_dataset}"
+    success_null_check = f"No AIAN participants' records are found in {new_dataset}.<br><br>"
     failure_null_check = (
         "There are <b>{count}</b> tables that might have "
-        "AIAN participants' records. Look at these tables and investigate why AIAN "
-        "records are there: <b>{tables}</b>")
+        "AIAN participants' records. <br>Look at these tables and investigate why AIAN "
+        "records are there: <b>{tables}</b><br><br>")
 
     render_message(df,
                    success_null_check,
@@ -103,9 +102,9 @@ else:
 
 # ## QC 2. Confirm there are no duplicate `OBSERVATION_ID`s
 # Any observation records from `incremental_dataset` got new `OBSERVATION_ID`s
-# assigned to avoid ID duplicates. We must confirm all the `OBSERVATION_ID`s in
-# `new_dataset` are unique. The same goes to `_mapping_observation` and
-# `obsesrvation_ext`.
+# assigned in `new_dataset` to avoid ID duplicates. <br>We must confirm all the
+# `OBSERVATION_ID`s in `new_dataset` are unique. <br>The same goes to
+# `_mapping_observation` and `obsesrvation_ext`.
 
 # +
 obs_tables = ['observation', 'observation_ext'
@@ -131,10 +130,10 @@ queries = [
 union_all_query = '\nUNION ALL\n'.join(queries)
 df = execute(client, union_all_query)
 
-success_null_check = f"No OBSERVATION_ID duplicates are found in {new_dataset}"
+success_null_check = f"No OBSERVATION_ID duplicates are found in {new_dataset}.<br><br>"
 failure_null_check = (
     "There are total <b>{count}</b> OBSERVATION_IDs that might have"
-    "duplicates. Look at these tables and investigate why there are duplicates: <b>{tables}</b>"
+    "duplicates. <br>Look at these tables and investigate why there are duplicates: <b>{tables}</b><br><br>"
 )
 
 render_message(df,
@@ -148,7 +147,7 @@ render_message(df,
 
 # ## QC 3. Mapping/ext tables are consistent
 # This hotfix runs several delete and insert statements to OBSERVATION, SURVEY_CONDUCT, PERSON
-# and their mapping/ext tables. We must confirm that mapping/ext tables are consistent with
+# and their mapping/ext tables. <br>We must confirm that mapping/ext tables are consistent with
 # their correspondants after the hotfix.
 
 # +
@@ -167,8 +166,8 @@ query = JINJA_ENV.from_string('''
     SELECT
         \'{{mapping_table}}\' as table_name,
         COUNT(*) AS unmatched_ids
-    FROM `{{project}}.{{dataset}}.{{table_name}}` d
-    FULL OUTER JOIN `{{project}}.{{dataset}}.{{mapping_table}}` mp
+    FROM `{{project}}.{{new_dataset}}.{{table_name}}` d
+    FULL OUTER JOIN `{{project}}.{{new_dataset}}.{{mapping_table}}` mp
     USING ({{table_name}}_id)
     WHERE d.{{table_name}}_id IS NULL OR mp.{{table_name}}_id IS NULL
     HAVING COUNT(*) > 0
@@ -178,7 +177,7 @@ queries = []
 for (table, mapping_table) in map_ext_tuples:
     queries.append(
         query.render(project=project_id,
-                     dataset=new_dataset,
+                     new_dataset=new_dataset,
                      table_name=table,
                      mapping_table=mapping_table))
 union_all_query = '\nUNION ALL\n'.join(queries)
@@ -187,12 +186,12 @@ df = execute(client, union_all_query)
 
 success_null_check = (
     "All OBSERVATION, SURVEY_CONDUCT, and PERSON records have "
-    "valid corresponding records in their mapping/ext tables. "
-    "And all there are no invalid records in the mapping/ext tables.")
+    "valid corresponding records in their mapping/ext tables. <br>"
+    "And there are no invalid records in the mapping/ext tables.")
 failure_null_check = (
     "These mapping/ext tables are inconsistent with their "
-    "correspondants. Look at these tables and investigate why "
-    "they are inconsistent: <b>{tables}</b>")
+    "correspondants. <br>Look at these tables and investigate why "
+    "they are inconsistent: <b>{tables}</b><br><br>")
 
 render_message(df,
                success_null_check,
@@ -201,49 +200,121 @@ render_message(df,
 
 # -
 
-# ## QC 4. The number of participants with "missing basics" is smaller (< ~5,000)
-# This hotfix will fix "missing basics" problem. But not all "missing basics"
-# will be fixed. Our investigation shows "missing basics" participants will be
-# about less than 5,000 after the hotfix. We must re-assess our hotfix if we
-# do not meet the number.
+# ## QC 4. (Only for `is_deidentified == True`) `person_ext`'s state related columns come from `source_dataset`
+# `state_of_residence_concept_id` and `state_of_residence_source_value` in `incremental_dataset.person_ext` are
+# all NULL. This is because these two columns do not originate from the basics. <br>To have a complete `new_dataset.person_ext`,
+# we must pull these columns from `source_dataset`, not from `incremental_dataset`.
+
+# +
+if is_deidentified == "False":
+    success_msg = "Skipping this check person_ext table exists only in DEID datasets.<br>"
+    render_message('', success_msg=success_msg)
+
+else:
+    query = JINJA_ENV.from_string('''
+        SELECT *
+        FROM `{{project}}.{{new_dataset}}.person_ext` n
+        JOIN `{{project}}.{{source_dataset}}.person_ext` s
+        ON n.person_id = s.person_id
+        WHERE (
+            n.state_of_residence_concept_id != s.state_of_residence_concept_id
+            OR n.state_of_residence_source_value != s.state_of_residence_source_value
+        )
+        OR (
+            (n.state_of_residence_concept_id IS NULL AND s.state_of_residence_concept_id IS NOT NULL)
+            OR (n.state_of_residence_source_value IS NULL AND s.state_of_residence_source_value IS NOT NULL)
+        )
+    ''').render(project=project_id,
+                new_dataset=new_dataset,
+                source_dataset=source_dataset)
+
+    df = execute(client, query)
+
+    success_null_check = (
+        f"All state columns in {new_dataset}.person_ext come from {source_dataset}, "
+        f"not {incremental_dataset}.<br><br>")
+    failure_null_check = (
+        f"There are <b>{len(df)}</b> records in {new_dataset}.person_ext that have "
+        f"unmatching state columns from {source_dataset}. <br>Look at the table and "
+        "investigate why they are inconsistent.<br><br>")
+
+    render_message(df, success_null_check, failure_null_check)
+
+# -
+
+# ## QC 5. Most of "missing basics" issues are remediated
+# This hotfix will fix the "missing basics" problem. But not all "missing basics"
+# will be fixed. <br>This QC is to see how much of the problem is resolved.
+# (We do not have a specific number for this check to succeed/fail.)<br>
+# We must re-assess our hotfix if unresolved "missing basics" are still way too many.
 
 # +
 query = JINJA_ENV.from_string('''
-    SELECT COUNT(DISTINCT person_id) AS missing_basics_participants
-    FROM `{{project}}.{{new_dataset}}.person`
-    WHERE person_id NOT IN      
-    (
-        SELECT DISTINCT person_id
-        FROM `{{project}}.{{new_dataset}}.concept` 
-        JOIN `{{project}}.{{new_dataset}}.concept_ancestor`
-            ON concept_id = ancestor_concept_id
-        JOIN `{{project}}.{{new_dataset}}.observation`
-            ON descendant_concept_id = observation_concept_id
-        WHERE observation_concept_id NOT IN (40766240, 43528428, 1585389)
-        AND concept_class_id='Module'
-        AND concept_name IN ('The Basics') 
-        AND questionnaire_response_id is not null
-        AND observation_source_value NOT LIKE 'Second%' 
-        AND observation_source_value NOT LIKE 'PersonOne%'
-        AND observation_source_value NOT LIKE 'SocialSecurity%'
+    WITH new_dataset AS (
+        SELECT COUNT(DISTINCT person_id) AS count_missing_basics
+        FROM `{{project}}.{{new_dataset}}.person`
+        WHERE person_id NOT IN
+        (
+            SELECT DISTINCT person_id
+            FROM `{{project}}.{{new_dataset}}.concept` 
+            JOIN `{{project}}.{{new_dataset}}.concept_ancestor`
+                ON concept_id = ancestor_concept_id
+            JOIN `{{project}}.{{new_dataset}}.observation`
+                ON descendant_concept_id = observation_concept_id
+            WHERE observation_concept_id NOT IN (40766240, 43528428, 1585389)
+            AND concept_class_id = 'Module'
+            AND concept_name IN ('The Basics') 
+            AND questionnaire_response_id is not null
+            AND observation_source_value NOT LIKE 'Second%' 
+            AND observation_source_value NOT LIKE 'PersonOne%'
+            AND observation_source_value NOT LIKE 'SocialSecurity%'
+        )
+    ), source_dataset AS (
+        SELECT COUNT(DISTINCT person_id) AS count_missing_basics
+        FROM `{{project}}.{{source_dataset}}.person`
+        WHERE person_id NOT IN
+        (
+            SELECT DISTINCT person_id
+            FROM `{{project}}.{{source_dataset}}.concept` 
+            JOIN `{{project}}.{{source_dataset}}.concept_ancestor`
+                ON concept_id = ancestor_concept_id
+            JOIN `{{project}}.{{source_dataset}}.observation`
+                ON descendant_concept_id = observation_concept_id
+            WHERE observation_concept_id NOT IN (40766240, 43528428, 1585389)
+            AND concept_class_id = 'Module'
+            AND concept_name IN ('The Basics') 
+            AND questionnaire_response_id is not null
+            AND observation_source_value NOT LIKE 'Second%' 
+            AND observation_source_value NOT LIKE 'PersonOne%'
+            AND observation_source_value NOT LIKE 'SocialSecurity%'
+        )
     )
-''').render(project=project_id, new_dataset=new_dataset)
+    SELECT 
+        new_dataset.count_missing_basics AS remaining_missing_basics,
+        source_dataset.count_missing_basics AS original_missing_basics,
+        source_dataset.count_missing_basics - new_dataset.count_missing_basics AS resolved_missing_basics
+    FROM new_dataset CROSS JOIN source_dataset
+''').render(project=project_id,
+            new_dataset=new_dataset,
+            source_dataset=source_dataset)
 
 df = execute(client, query)
-missing_basics_participants = df.missing_basics_participants[0]
+remaining_missing_basics, original_missing_basics, resolved_missing_basics = df.remaining_missing_basics[
+    0], df.original_missing_basics[0], df.resolved_missing_basics[0]
 
-if missing_basics_participants < 5000:
-    df = ''
+check_status = "Cannot tell success or failure. Check the result."
+msg = (
+    f"Originally there were <b>{original_missing_basics}</b> participants who had missing basics. <br>"
+    f"We successfully remediated <b>{resolved_missing_basics}</b> participants with this hotfix. <br>"
+    f"There are still <b>{remaining_missing_basics}</b> participants who miss their basics. <br>"
+    f"If <b>{remaining_missing_basics}</b> seems too high, re-assess our hotfix and ensure "
+    "we are not missing anything.<br><br>")
 
-success_null_check = (
-    f"There are still {missing_basics_participants} participants without "
-    "the basics. But it is known that this hotfix will not solve all "
-    f"the missing basics, and {missing_basics_participants} is small enough.")
-failure_null_check = (
-    f"There are still {missing_basics_participants} participants without "
-    "the basics. The number is still too big. Investigate and make sure "
-    "all the hotfixes are properly applied.")
-
-render_message(df, success_null_check, failure_null_check)
+display(
+    HTML(f'''<br>
+        <h3>Check Status: <span style="color: gold">{check_status}</span></h3>
+        <p>{msg}</p>
+    '''))
+df
 
 # -
