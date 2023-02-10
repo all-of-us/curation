@@ -6,6 +6,7 @@ import os
 import app_identity
 import bq_utils
 import resources
+import common
 from validation import sql_wrangle
 
 ACHILLES_ANALYSIS = 'achilles_analysis'
@@ -53,7 +54,9 @@ def drop_or_truncate_table(client, command):
     else:
         table_id = sql_wrangle.get_drop_table_name(command)
     if client.table_exists(table_id):
-        bq_utils.delete_table(table_id)
+        assert (table_id not in common.VOCABULARY_TABLES)
+        client.delete_table(
+            f'{os.environ.get("BIGQUERY_DATASET_ID")}.{table_id}')
 
 
 def run_analysis_job(command):
