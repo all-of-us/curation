@@ -287,12 +287,10 @@ class EhrUnionTest(unittest.TestCase):
                     'src_%s_id' % table_to_map,
                     '%s_id' % table_to_map, 'src_hpo_id', 'src_dataset_id'
                 }
-                mapping_table_info = bq_utils.get_table_info(
-                    mapping_table, dataset_id=self.output_dataset_id)
-                mapping_table_fields = mapping_table_info.get('schema',
-                                                              dict()).get(
-                                                                  'fields', [])
-                actual_fields = set([f['name'] for f in mapping_table_fields])
+                mapping_table_obj = self.bq_client.get_table(
+                    f'{self.output_dataset_id}.{mapping_table}')
+                actual_fields = set(
+                    [field.name for field in mapping_table_obj.schema])
                 message = 'Table %s has fields %s when %s expected' % (
                     mapping_table, actual_fields, expected_fields)
                 self.assertSetEqual(expected_fields, actual_fields, message)
@@ -303,7 +301,7 @@ class EhrUnionTest(unittest.TestCase):
                     result_table = ehr_union.output_table_for(table_to_map)
                     expected_num_rows = len(self.expected_tables[result_table])
 
-                actual_num_rows = int(mapping_table_info.get('numRows', -1))
+                actual_num_rows = int(mapping_table_obj.num_rows)
                 message = 'Table %s has %s rows when %s expected' % (
                     mapping_table, actual_num_rows, expected_num_rows)
                 self.assertEqual(expected_num_rows, actual_num_rows, message)
@@ -315,9 +313,9 @@ class EhrUnionTest(unittest.TestCase):
                 result_table = ehr_union.output_table_for(table_name)
                 expected_rows = self.expected_tables[result_table]
                 expected_count = len(expected_rows)
-                table_info = bq_utils.get_table_info(
-                    result_table, dataset_id=self.output_dataset_id)
-                actual_count = int(table_info.get('numRows'))
+                table_obj = self.bq_client.get_table(
+                    f'{self.output_dataset_id}.{result_table}')
+                actual_count = int(table_obj.num_rows)
                 msg = 'Unexpected row count in table {result_table} after ehr union'.format(
                     result_table=result_table)
                 self.assertEqual(expected_count, actual_count, msg)
