@@ -151,7 +151,7 @@ def run_achilles(client, hpo_id=None):
     if hpo_id is not None:
         logging.info(f"Running achilles_heel for hpo_id '{hpo_id}'")
     achilles_heel.create_tables(hpo_id, True)
-    achilles_heel.run_heel(hpo_id=hpo_id)
+    achilles_heel.run_heel(client, hpo_id=hpo_id)
 
 
 @api_util.auth_required_cron
