@@ -32,38 +32,13 @@ from cdr_cleaner.args_parser import add_kwargs_to_args
 from common import CDR_SCOPES
 from constants.cdr_cleaner.clean_cdr import DATA_CONSISTENCY
 from gcloud.bq import BigQueryClient
+from resources import ask_if_continue, get_new_dataset_name
 from retraction.retract_data_bq import run_bq_retraction, RETRACTION_ONLY_EHR, RETRACTION_RDR_EHR
 from retraction.retract_utils import is_fitbit_dataset
 from utils import pipeline_logging
 from utils.auth import get_impersonation_credentials
 
 LOGGER = logging.getLogger(__name__)
-
-
-def ask_if_continue() -> None:
-    """
-    Checks if the user wishes to continue running the script or not.
-    This function is placed after each step as a checkpoint.
-    Raises:
-        RuntimeError: Abort the execution when the user wishes not to continue.
-    """
-    confirm = input("\nContinue? [Y/N]:\n\n")
-    if confirm.upper() != 'Y':
-        raise RuntimeError('User canceled the execution.')
-
-
-def get_new_dataset_name(src_dataset_name: str, release_tag: str) -> str:
-    """
-    Based on the old dataset name and the new release tag, creates a new
-    dataset name. This function assumes both the dataset name and the release
-    tag follow the Curation team's naming convention. It may return an
-    incorrect dataset name if those are irregularly named.
-    Args:
-        src_dataset_name: Name of the source dataset.
-        release_tag: Release tag for the new datasets.
-    Returns: Name of the new dataset.
-    """
-    return re.sub(r'\d{4}q\dr\d', release_tag, src_dataset_name)
 
 
 def create_dataset(client: BigQueryClient, src_dataset_name: str,
