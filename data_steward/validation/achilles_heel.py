@@ -7,6 +7,7 @@ from io import open
 # Project imports
 import bq_utils
 import resources
+import common
 from validation import sql_wrangle
 
 ACHILLES_HEEL_RESULTS = 'achilles_heel_results'
@@ -67,9 +68,11 @@ def load_heel(hpo_id):
         bq_utils.query(command)
 
 
-def drop_or_truncate_table(command):
+def drop_or_truncate_table(client, command):
     """
     Deletes or truncates table
+    
+    :param client: BigQueryClient
     :param command: query to run
     :return: None
     """
@@ -79,7 +82,9 @@ def drop_or_truncate_table(command):
         bq_utils.query(query)
     else:
         table_id = sql_wrangle.get_drop_table_name(command)
-        bq_utils.delete_table(table_id)
+        assert (table_id not in common.VOCABULARY_TABLES)
+        client.delete_table(
+            f'{os.environ.get("BIGQUERY_DATASET_ID")}.{table_id}')
 
 
 def run_heel_analysis_job(command):
@@ -103,17 +108,17 @@ def run_heel_analysis_job(command):
         raise RuntimeError('Job id %s taking too long' % job_id)
 
 
-def run_heel(hpo_id):
+def run_heel(client, hpo_id):
     """
     Run heel commands
-
-    :param hpo_id:  string name for the hpo identifier
+    :param client: BigQueryClient
+    :param hpo_id: string name for the hpo identifier
     :returns: None
     """
     commands = _get_heel_commands(hpo_id)
     for command in commands:
         if sql_wrangle.is_truncate(command) or sql_wrangle.is_drop(command):
-            drop_or_truncate_table(command)
+            drop_or_truncate_table(client, command)
         else:
             run_heel_analysis_job(command)
 
