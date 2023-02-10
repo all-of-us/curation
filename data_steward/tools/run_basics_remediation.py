@@ -27,6 +27,7 @@ from resources import ask_if_continue, get_new_dataset_name
 from retraction.retract_utils import is_combined_dataset, is_deid_dataset
 from utils import pipeline_logging
 from utils.auth import get_impersonation_credentials
+from utils.parameter_validators import validate_release_tag_param
 
 LOGGER = logging.getLogger(__name__)
 
@@ -147,6 +148,7 @@ def parse_args(raw_args=None):
         action='store',
         dest='new_release_tag',
         required=True,
+        type=validate_release_tag_param,
         help='Release tag for the new datasets after remediation.')
     parser.add_argument('-l',
                         '--console_log',
