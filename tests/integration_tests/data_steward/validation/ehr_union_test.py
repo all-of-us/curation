@@ -200,15 +200,11 @@ class EhrUnionTest(unittest.TestCase):
         csv_rows = resources.csv_to_list(cdm_filepath)
         return [row['visit_occurrence_id'] for row in csv_rows]
 
-    def _table_has_clustering(self, table_info):
-        clustering = table_info.get('clustering')
-        self.assertIsNotNone(clustering)
-        fields = clustering.get('fields')
-        self.assertSetEqual(set(fields), {'person_id'})
-        time_partitioning = table_info.get('timePartitioning')
-        self.assertIsNotNone(time_partitioning)
-        tpe = time_partitioning.get('type')
-        self.assertEqual(tpe, 'DAY')
+    def _table_has_clustering(self, table_obj):
+        self.assertIsNotNone(table_obj.clustering_fields)
+        self.assertSetEqual(set(table_obj.clustering_fields), {'person_id'})
+        self.assertIsNotNone(table_obj.time_partitioning)
+        self.assertEqual(table_obj.time_partitioning.type_, 'DAY')
 
     def _dataset_tables(self, dataset_id):
         """
