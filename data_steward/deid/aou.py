@@ -88,8 +88,6 @@ from google.oauth2 import service_account
 
 # Project imports
 import bq_utils
-# from gcloud.bq import BigQueryClient
-# import app_identity
 import constants.bq_utils as bq_consts
 from common import PIPELINE_TABLES
 from constants.deid.deid import MAX_AGE
@@ -230,8 +228,6 @@ class AOU(Press):
             self.private_key)
         self.partition = args.get('cluster', False)
         self.priority = args.get('interactive', 'BATCH')
-        # self.project_id = app_identity.get_application_id()
-        # self.bq_client = BigQueryClient(project_id=self.project_id)
 
         if 'shift' in self.deid_rules:
             #
