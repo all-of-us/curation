@@ -324,7 +324,7 @@ class EhrUnionTest(unittest.TestCase):
                 fields = resources.fields_for(table_name)
                 field_names = [field['name'] for field in fields]
                 if 'person_id' in field_names:
-                    self._table_has_clustering(table_info)
+                    self._table_has_clustering(table_obj)
 
             actual_output = set(self._dataset_tables(self.output_dataset_id))
             self.assertSetEqual(expected_output, actual_output)
