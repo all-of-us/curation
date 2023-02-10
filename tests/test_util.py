@@ -224,7 +224,7 @@ def delete_all_tables(client, dataset_id):
     table_ids = [table.table_id for table in table_infos]
     for table_id in table_ids:
         if table_id not in common.VOCABULARY_TABLES + LOOKUP_TABLES:
-            bq_utils.delete_table(table_id, dataset_id)
+            client.delete_table(f'{dataset_id}.{table_id}')
             deleted.append(table_id)
     return deleted
 
