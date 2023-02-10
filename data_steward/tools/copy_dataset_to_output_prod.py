@@ -191,7 +191,7 @@ def generate_output_prod(tier,
             f'Copying fitbit tables from dataset {src_project_id}.{fitbit_dataset_id} to {src_project_id}.{src_dataset_id}...'
         )
 
-        copy_fitbit_jobs = bq_client.copy_dataset(
+        _ = bq_client.copy_dataset(
             f'{src_project_id}.{fitbit_dataset_id}',
             f'{src_project_id}.{src_dataset_id}')
 
@@ -199,7 +199,7 @@ def generate_output_prod(tier,
     LOGGER.info(
         f'Copying tables from dataset {src_project_id}.{src_dataset_id} to {output_prod_project_id}.{output_dataset_name}...'
     )
-    copy_src_jobs = bq_client.copy_dataset(
+    _ = bq_client.copy_dataset(
         f'{src_project_id}.{src_dataset_id}',
         f'{output_prod_project_id}.{output_dataset_name}')
 
