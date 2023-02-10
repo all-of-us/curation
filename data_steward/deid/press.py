@@ -14,6 +14,8 @@ import pandas as pd
 import numpy as np
 
 # Project imports
+from gcloud.bq import BigQueryClient
+import app_identity
 import bq_utils
 from resources import fields_for
 from deid.rules import Deid, create_on_string
@@ -71,6 +73,8 @@ class Press(ABC):
         self.tablepath = args.get('table')
         self.tablename = os.path.basename(
             self.tablepath).split('.json')[0].strip()
+        self.project_id = app_identity.get_application_id()
+        self.bq_client = BigQueryClient(project_id=self.project_id)
 
         self.logpath = args.get('logs', 'logs')
         set_up_logging(self.logpath, self.idataset)
