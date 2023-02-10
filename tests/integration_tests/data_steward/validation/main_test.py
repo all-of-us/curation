@@ -98,15 +98,11 @@ class ValidationMainTest(unittest.TestCase):
                 dataset=self.dataset_id, vocab=common.VOCABULARY_DATASET)
             bq_utils.query(q)
 
-    def table_has_clustering(self, table_info):
-        clustering = table_info.get('clustering')
-        self.assertIsNotNone(clustering)
-        fields = clustering.get('fields')
-        self.assertSetEqual(set(fields), {'person_id'})
-        time_partitioning = table_info.get('timePartitioning')
-        self.assertIsNotNone(time_partitioning)
-        tpe = time_partitioning.get('type')
-        self.assertEqual(tpe, 'DAY')
+    def _table_has_clustering(self, table_obj):
+        self.assertIsNotNone(table_obj.clustering_fields)
+        self.assertSetEqual(set(table_obj.clustering_fields), {'person_id'})
+        self.assertIsNotNone(table_obj.time_partitioning)
+        self.assertEqual(table_obj.time_partitioning.type_, 'DAY')
 
     @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def test_all_files_unparseable_output(self):
