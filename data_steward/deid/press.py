@@ -16,7 +16,6 @@ import numpy as np
 # Project imports
 from gcloud.bq import BigQueryClient
 import app_identity
-import bq_utils
 from resources import fields_for
 from deid.rules import Deid, create_on_string
 
