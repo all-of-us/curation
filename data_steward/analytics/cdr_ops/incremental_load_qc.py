@@ -145,7 +145,7 @@ render_message(df,
                })
 # -
 
-# ## QC 3. Mapping/ext tables are consistent
+# ## QC 3. Confirm mapping/ext tables are consistent
 # This hotfix runs several delete and insert statements to OBSERVATION, SURVEY_CONDUCT, PERSON
 # and their mapping/ext tables. <br>We must confirm that mapping/ext tables are consistent with
 # their correspondants after the hotfix.
@@ -200,7 +200,7 @@ render_message(df,
 
 # -
 
-# ## QC 4. (Only for `is_deidentified == True`) `person_ext`'s state related columns come from `source_dataset`
+# ## QC 4. (Only for `is_deidentified == True`) Confirm `person_ext`'s state related columns come from `source_dataset`
 # `state_of_residence_concept_id` and `state_of_residence_source_value` in `incremental_dataset.person_ext` are
 # all NULL. This is because these two columns do not originate from the basics. <br>To have a complete `new_dataset.person_ext`,
 # we must pull these columns from `source_dataset`, not from `incremental_dataset`.
@@ -242,7 +242,35 @@ else:
 
 # -
 
-# ## QC 5. Most of "missing basics" issues are remediated
+# ## QC 5. Confirm `SURVEY_CONDUCT` references `OBSERVATION` correctly
+# This hotfix runs delete and insert on both `SURVEY_CONDUCT` and `OBSERVATION`. <br>
+# `survey_conduct_id` must have corresponding `questionnaire_response_id` in `OBSERVATION`.
+# This QC confirms all `SURVEY_CONDUCT` records have corresponding records in `OBSERVATION`
+# after the hotfix.
+
+# +
+query = JINJA_ENV.from_string('''
+    SELECT * FROM `{{project}}.{{new_dataset}}.survey_conduct`
+    WHERE survey_conduct_id NOT IN (
+        SELECT questionnaire_response_id FROM `{{project}}.{{new_dataset}}.observation`
+    )
+    ''').render(project=project_id, new_dataset=new_dataset)
+
+df = execute(client, query)
+
+success_null_check = (
+    f"All records in {new_dataset}.survey_conduct have corresponding records in "
+    f"{new_dataset}.observation<br><br>")
+failure_null_check = (
+    f"There are <b>{len(df)}</b> records in {new_dataset}.survey_conduct that miss "
+    f"corresponding records {new_dataset}.observation. <br>Look at the table and "
+    "investigate why they are inconsistent.<br><br>")
+
+render_message(df, success_null_check, failure_null_check)
+
+# -
+
+# ## QC 6. Confirm most of "missing basics" issues are remediated
 # This hotfix will fix the "missing basics" problem. But not all "missing basics"
 # will be fixed. <br>This QC is to see how much of the problem is resolved.
 # (We do not have a specific number for this check to succeed/fail.)<br>
