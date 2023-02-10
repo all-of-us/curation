@@ -132,13 +132,11 @@ class Press(ABC):
         """
         Return a list of columns for the given table name.
         """
-        info = bq_utils.get_table_info(tablename, dataset_id=self.idataset)
-        schema = info.get('schema', {})
-        fields = schema.get('fields')
+        table_obj = self.bq_client.get_table(f'{self.idataset}.{tablename}')
 
         field_names = []
-        for field in fields:
-            field_names.append(field.get('name'))
+        for field in table_obj.schema:
+            field_names.append(field.name)
 
         return field_names
 
