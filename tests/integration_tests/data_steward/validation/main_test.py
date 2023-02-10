@@ -177,11 +177,11 @@ class ValidationMainTest(unittest.TestCase):
         for table in resources.CDM_TABLES + common.PII_TABLES:
             table_id: str = resources.get_table_id(table,
                                                    hpo_id=test_util.FAKE_HPO_ID)
-            table_info = bq_utils.get_table_info(table_id)
-            fields = resources.fields_for(table)
-            field_names: list = [field['name'] for field in fields]
+            table_obj = self.bq_client.get_table(
+                f'{os.environ.get("BIGQUERY_DATASET_ID")}.{table_id}')
+            field_names: list = [field.name for field in table_obj.schema]
             if 'person_id' in field_names:
-                self.table_has_clustering(table_info)
+                self._table_has_clustering(table_obj)
 
     def test_check_processed(self):
 
