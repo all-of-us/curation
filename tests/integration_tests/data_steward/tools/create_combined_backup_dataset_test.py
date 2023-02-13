@@ -214,12 +214,10 @@ class CreateCombinedBackupDatasetTest(unittest.TestCase):
             expected_fields = resources.fields_for(expected_mapping_table)
             mapping_table_obj = self.bq_client.get_table(
                 f'{self.combined_dataset_id}.{expected_mapping_table}')
-            actual_fields = []
-            for schema_field in mapping_table_obj.schema:
-                fields = {}
-                for key, value in schema_field.__dict__['_properties'].items():
-                    fields[key] = value
-                actual_fields.append(fields)
+            actual_fields = [
+                schema_field.__dict__['_properties']
+                for schema_field in mapping_table_obj.schema
+            ]
             actual_fields_norm = map(test_util.normalize_field_payload,
                                      actual_fields)
             self.assertCountEqual(expected_fields, actual_fields_norm)
