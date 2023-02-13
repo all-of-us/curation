@@ -70,6 +70,7 @@ else:
         FROM `{{project}}.{{new_dataset}}.{{table}}`
         WHERE person_id IN (
             SELECT {{pid_or_rid}} FROM `{{project}}.{{aian_lookup_dataset}}.{{aian_lookup_table}}`
+            WHERE {{pid_or_rid}} IS NOT NULL
         )
         HAVING COUNT(*) > 0
     ''')
@@ -262,6 +263,7 @@ else:
         ON n.person_id = s.person_id
         WHERE n.person_id IN (
             SELECT person_id FROM `{{project}}.{{incremental_dataset}}.person`
+            WHERE person_id IS NOT NULL
         )
         AND (
             n.state_of_residence_concept_id != s.state_of_residence_concept_id
@@ -291,31 +293,98 @@ else:
 
 # -
 
-# ## QC 5. Confirm `SURVEY_CONDUCT` references `OBSERVATION` correctly
+# ## QC 5-1. Confirm `SURVEY_CONDUCT` - `OBSERVATION` relationship is still intact
 # This hotfix runs delete and insert on both `SURVEY_CONDUCT` and `OBSERVATION`. <br>
-# `survey_conduct_id` must have corresponding `questionnaire_response_id` in `OBSERVATION`.
-# This QC confirms all `SURVEY_CONDUCT` records have corresponding records in `OBSERVATION`
+# `survey_conduct_id` must have corresponding `questionnaire_response_id` in `OBSERVATION`
+# and vice versa. <br>
+# This QC confirms the relationship between `SURVEY_CONDUCT`and `OBSERVATION` are still complete
 # after the hotfix.
 
 # +
 query = JINJA_ENV.from_string('''
-    SELECT * FROM `{{project}}.{{new_dataset}}.survey_conduct`
+    SELECT 'orphaned survey_conduct_id' AS issue, COUNT(*) 
+    FROM `{{project}}.{{new_dataset}}.survey_conduct`
     WHERE survey_conduct_id NOT IN (
         SELECT questionnaire_response_id FROM `{{project}}.{{new_dataset}}.observation`
+        WHERE questionnaire_response_id IS NOT NULL
     )
+    HAVING COUNT(*) > 0
+    UNION ALL
+    SELECT 'orphaned questionnaire_response_id' AS issue, COUNT(*) 
+    FROM `{{project}}.{{new_dataset}}.observation`
+    WHERE questionnaire_response_id NOT IN (
+        SELECT survey_conduct_id FROM `{{project}}.{{new_dataset}}.survey_conduct`
+        WHERE survey_conduct_id IS NOT NULL
+    )
+    HAVING COUNT(*) > 0
     ''').render(project=project_id, new_dataset=new_dataset)
 
 df = execute(client, query)
+issues = df.issue
 
 success_null_check = (
     f"All records in {new_dataset}.survey_conduct have corresponding records in "
-    f"{new_dataset}.observation<br><br>")
+    f"{new_dataset}.observation and vice versa.<br><br>")
 failure_null_check = (
-    f"There are <b>{len(df)}</b> records in {new_dataset}.survey_conduct that miss "
-    f"corresponding records {new_dataset}.observation. <br>Look at the table and "
+    f"Issue(s) found: {', '.join(issues)}. Look at the result table below. <br>"
     "investigate why they are inconsistent.<br><br>")
 
 render_message(df, success_null_check, failure_null_check)
+
+# -
+
+# ## QC 5-2. How many new `questionnaire_response_id`s and `survey_conduct_id`s came from the "incremental"
+# This is a supplemental check. There is no success/failure for it. <br>
+# This QC shows how many new `questionnaire_response_id`s and `survey_conduct_id`s are introduced
+# to `new_dataset` from `incremental_dataset`.
+# <b>The new questionnaire_response_ids and survey_conduct_ids should be the same.</b>
+
+# +
+query = JINJA_ENV.from_string('''
+    WITH qrid AS (
+        SELECT 
+            COUNT(DISTINCT questionnaire_response_id) AS num_new_id
+        FROM `{{project}}.{{new_dataset}}.observation`
+        WHERE questionnaire_response_id NOT IN (
+            SELECT DISTINCT questionnaire_response_id
+            FROM `{{project}}.{{source_dataset}}.observation`
+            WHERE questionnaire_response_id IS NOT NULL
+        )
+    ), scid AS (
+        SELECT 
+            COUNT(DISTINCT survey_conduct_id) AS num_new_id
+        FROM `{{project}}.{{new_dataset}}.survey_conduct`
+        WHERE survey_conduct_id NOT IN (
+            SELECT DISTINCT survey_conduct_id
+            FROM `{{project}}.{{source_dataset}}.survey_conduct`
+            WHERE survey_conduct_id IS NOT NULL
+        )
+    )
+    SELECT
+        qrid.num_new_id AS new_questionnaire_response_ids,
+        scid.num_new_id AS new_survey_conduct_ids
+    FROM qrid CROSS JOIN scid
+    ''').render(project=project_id,
+                new_dataset=new_dataset,
+                source_dataset=source_dataset)
+
+df = execute(client, query)
+new_questionnaire_response_ids, new_survey_conduct_ids = df.new_questionnaire_response_ids[
+    0], df.new_survey_conduct_ids[0]
+
+check_status = "Cannot tell success or failure. Check the result."
+msg = (
+    f"There are <b>{new_questionnaire_response_ids}</b> questionnaire_response_ids added as a result of the hotfix. <br>"
+    f"There are <b>{new_survey_conduct_ids}</b> survey_conducts added as a result of the hotfix. <br>"
+    "These numbers should be the same. <br>"
+    "If these numbers look off, investigate.<br><br>")
+
+display(
+    HTML(f'''<br>
+        <h3>Check Status: <span style="color: gold">{check_status}</span></h3>
+        <p>{msg}</p>
+    '''))
+df
 
 # -
 
