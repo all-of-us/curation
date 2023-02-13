@@ -13,12 +13,7 @@ from validation import sql_wrangle
 ACHILLES_HEEL_RESULTS = 'achilles_heel_results'
 ACHILLES_RESULTS_DERIVED = 'achilles_results_derived'
 ACHILLES_HEEL_TABLES = [ACHILLES_HEEL_RESULTS, ACHILLES_RESULTS_DERIVED]
-PREFIX_PLACEHOLDER = 'synpuf_100.'
-TEMP_PREFIX = 'temp.'
-TEMP_TABLE_PATTERN = re.compile('\s*INTO\s+([^\s]+)')
 SPLIT_PATTERN = ';zzzzzz'
-TRUNCATE_TABLE_PATTERN = re.compile('\s*truncate\s+table\s+([^\s]+)')
-DROP_TABLE_PATTERN = re.compile('\s*drop\s+table\s+([^\s]+)')
 
 ACHILLES_HEEL_DML = os.path.join(resources.resource_files_path,
                                  'achilles_heel_dml.sql')
@@ -60,12 +55,6 @@ def _get_heel_commands(hpo_id):
     commands = [sql_wrangle.qualify_tables(cmd, hpo_id) for cmd in raw_commands]
     for command in commands:
         yield command
-
-
-def load_heel(hpo_id):
-    commands = _get_heel_commands(hpo_id)
-    for type, command in commands:
-        bq_utils.query(command)
 
 
 def drop_or_truncate_table(client, command):
