@@ -396,7 +396,7 @@ df
 
 # +
 query = JINJA_ENV.from_string('''
-    WITH new_dataset AS (
+    WITH new_missing AS (
         SELECT COUNT(DISTINCT person_id) AS count_missing_basics
         FROM `{{project}}.{{new_dataset}}.person`
         WHERE person_id NOT IN
@@ -415,7 +415,7 @@ query = JINJA_ENV.from_string('''
             AND observation_source_value NOT LIKE 'PersonOne%'
             AND observation_source_value NOT LIKE 'SocialSecurity%'
         )
-    ), source_dataset AS (
+    ), source_missing AS (
         SELECT COUNT(DISTINCT person_id) AS count_missing_basics
         FROM `{{project}}.{{source_dataset}}.person`
         WHERE person_id NOT IN
@@ -434,25 +434,46 @@ query = JINJA_ENV.from_string('''
             AND observation_source_value NOT LIKE 'PersonOne%'
             AND observation_source_value NOT LIKE 'SocialSecurity%'
         )
+    ), new_all AS (
+        SELECT COUNT(*) AS count_new_all
+        FROM `{{project}}.{{new_dataset}}.person`
+    ), source_all AS (
+        SELECT COUNT(*) AS count_source_all
+        FROM `{{project}}.{{source_dataset}}.person`        
     )
     SELECT 
-        new_dataset.count_missing_basics AS remaining_missing_basics,
-        source_dataset.count_missing_basics AS original_missing_basics,
-        source_dataset.count_missing_basics - new_dataset.count_missing_basics AS resolved_missing_basics
-    FROM new_dataset CROSS JOIN source_dataset
+        new_missing.count_missing_basics AS remaining_missing_basics,
+        source_missing.count_missing_basics AS original_missing_basics,
+        new_all.count_new_all AS count_new_all,
+        source_all.count_source_all AS count_source_all,
+        ROUND(source_missing.count_missing_basics / source_all.count_source_all * 100, 1) AS original_missing_percent,
+        ROUND(new_missing.count_missing_basics / new_all.count_new_all * 100, 1) AS remaining_missing_percent,
+        source_missing.count_missing_basics - new_missing.count_missing_basics AS remediated_missing_basics
+    FROM new_missing 
+    CROSS JOIN source_missing
+    CROSS JOIN new_all
+    CROSS JOIN source_all
 ''').render(project=project_id,
             new_dataset=new_dataset,
             source_dataset=source_dataset)
 
 df = execute(client, query)
-remaining_missing_basics, original_missing_basics, resolved_missing_basics = df.remaining_missing_basics[
-    0], df.original_missing_basics[0], df.resolved_missing_basics[0]
+(remaining_missing_basics, original_missing_basics, count_new_all,
+ count_source_all, original_missing_percent, remaining_missing_percent,
+ remediated_missing_basics) = (df.remaining_missing_basics[0],
+                               df.original_missing_basics[0],
+                               df.count_new_all[0], df.count_source_all[0],
+                               df.original_missing_percent[0],
+                               df.remaining_missing_percent[0],
+                               df.remediated_missing_basics[0])
 
 check_status = "Cannot tell success or failure. Check the result."
 msg = (
-    f"Originally there were <b>{original_missing_basics}</b> participants who had missing basics. <br>"
-    f"We successfully remediated <b>{resolved_missing_basics}</b> participants with this hotfix. <br>"
-    f"There are still <b>{remaining_missing_basics}</b> participants who miss their basics. <br>"
+    f"Originally there were <b>{original_missing_basics}</b> participants "
+    f"(<b>{original_missing_percent}% of {count_source_all} participants</b>) who had missing basics. <br>"
+    f"We successfully remediated <b>{remediated_missing_basics}</b> participants with this hotfix. <br>"
+    f"There are still <b>{remaining_missing_basics}</b> participants "
+    f"(<b>{remaining_missing_percent}% of {count_new_all} participants</b>) who miss their basics. <br>"
     f"If <b>{remaining_missing_basics}</b> seems too high, re-assess our hotfix and ensure "
     "we are not missing anything.<br><br>")
 
