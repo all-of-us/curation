@@ -22,6 +22,8 @@ run_as: str = ""  # service account email to impersonate
 project_id: str = ""  # project where datasets are located
 new_dataset: str = ""  # dataset we created during this hotfix
 source_dataset: str = ""  # dataset that new_dataset is based off of
+sandbox_dataset: str = ""  # sandbox dataset that is used for this hotfix
+sandbox_obs: str = ""  # sandbox table for observation used for this hotfix
 aian_lookup_dataset: str = ""  # dataset where we have aian lookup table
 aian_lookup_table: str = ""  # table that has PIDs/RIDs of AIAN participants
 incremental_dataset: str = ""  # dataset so-called "incremental"
@@ -37,7 +39,8 @@ from analytics.cdr_ops.notebook_utils import (execute, IMPERSONATION_SCOPES,
 from utils import auth
 from gcloud.bq import BigQueryClient
 from resources import ext_table_for, mapping_table_for
-from retraction.retract_utils import is_combined_release_dataset, is_deid_dataset
+from retraction.retract_utils import (is_combined_release_dataset,
+                                      is_deid_dataset, is_deid_release_dataset)
 # -
 
 impersonation_creds = auth.get_impersonation_credentials(
@@ -102,14 +105,14 @@ else:
                    })
 # -
 
-# ## QC 2. Confirm there are no duplicate `OBSERVATION_ID`s
+# ## QC 2-1. Confirm there are no duplicate `OBSERVATION_ID`s
 # Any observation records from `incremental_dataset` got new `OBSERVATION_ID`s
 # assigned in `new_dataset` to avoid ID duplicates. <br>We must confirm all the
 # `OBSERVATION_ID`s in `new_dataset` are unique. <br>The same goes to
 # `_mapping_observation` and `obsesrvation_ext`.
 
 # +
-if is_combined_release_dataset(new_dataset):
+if is_deid_dataset(new_dataset):
     obs_tables = [OBSERVATION, ext_table_for(OBSERVATION)]
 elif is_combined_release_dataset(new_dataset):
     obs_tables = [
@@ -151,6 +154,85 @@ render_message(df,
                    'count': len(df),
                    'tables': ', '.join(df.table_name)
                })
+# -
+
+# ## QC 2-2. Confirm all new records in `OBSERVATION` have mapping info in `_observation_id_map`
+# Any observation records from `incremental_dataset` got new `OBSERVATION_ID`s
+# assigned in `new_dataset` to avoid ID duplicates. The mapping of the old-new
+# `OBSERVATION_ID`s is kept in `sandbox._observation_id_map`. <br>We must confirm
+# all the new `OBSERVATION_ID`s have their mapping info in `sandbox._observation_id_map`.
+# <br>We must also confirm that `sandbox._observation_id_map` does not have any junk records.
+
+# +
+query = JINJA_ENV.from_string('''
+    SELECT
+        'no mapping record found in sandbox._observation_id_map' AS issue,
+        COUNT(*) AS no_mapping_row_count
+    FROM `{{project}}.{{new_dataset}}.observation`
+    WHERE observation_id NOT IN (
+        SELECT observation_id FROM `{{project}}.{{sandbox_dataset}}._observation_id_map`
+        WHERE observation_id IS NOT NULL
+    )
+    HAVING COUNT(*) > 1
+    UNION ALL
+    SELECT
+        'no matching observation_id found in new_dataset.observation' AS issue,
+        COUNT(*) AS no_mapping_row_count
+    FROM `{{project}}.{{sandbox_dataset}}._observation_id_map`
+    WHERE observation_id NOT IN (
+        SELECT observation_id FROM `{{project}}.{{new_dataset}}.observation`
+        WHERE observation_id IS NOT NULL
+    )
+    HAVING COUNT(*) > 1
+''').render(project=project_id,
+            new_dataset=new_dataset,
+            sandbox_dataset=sandbox_dataset)
+
+df = execute(client, query)
+issues = df.issue
+
+success_null_check = (
+    f"All records in {new_dataset}.observation have corresponding records in "
+    f"{sandbox_dataset}._observation_id_map and vice versa.<br><br>")
+failure_null_check = (
+    f"Issue(s) found: {', '.join(issues)}. Look at the result table below. <br>"
+    "investigate why they are inconsistent.<br><br>")
+
+render_message(df, success_null_check, failure_null_check)
+# -
+
+# ## QC 2-3. Confirm all the sandboxed `OBSERVATION` records have new records populated in `new_dataset`
+# We must confirm all the sandboxed `OBSERVATION` records have new records in `new_dataset`.
+# We can do so by looking at `OBSERVATION_SOURCE_CONCEPT_ID` and `PERSON_ID`. We cannot use `OBSERVATION_ID`
+# here because old-OBSERVATION_ID:new-OBSERVATION_ID can be 1:N, N:1, and N:N. (Not always 1:1)
+
+# +
+query = JINJA_ENV.from_string('''
+    SELECT COUNT(*) AS unmatched_records
+    FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_obs}}` m
+    WHERE NOT EXISTS (
+        SELECT 1 FROM `{{project}}.{{new_dataset}}.observation` o
+        WHERE m.person_id = o.person_id
+        AND m.observation_source_concept_id = o.observation_source_concept_id
+    )
+    HAVING COUNT(*) > 0
+''').render(project=project_id,
+            new_dataset=new_dataset,
+            sandbox_dataset=sandbox_dataset,
+            sandbox_obs=sandbox_obs)
+
+df = execute(client, query)
+unmatched_records = df.unmatched_records[0]
+
+success_null_check = (
+    f"All the sandboxed records in {sandbox_dataset}.{sandbox_obs} have new records "
+    f"in {new_dataset}.observation.<br><br>")
+failure_null_check = (
+    f"There are <b>{unmatched_records}</b> sandboxed observation records that did not "
+    f"get populated in {new_dataset}. <br>investigate why they are inconsistent.<br><br>"
+)
+
+render_message(df, success_null_check, failure_null_check)
 # -
 
 # ## QC 3. Confirm mapping/ext tables are consistent
@@ -223,8 +305,8 @@ render_message(df,
 # If this QC fails, see how QC 4-2 goes.
 
 # +
-if not is_deid_dataset(new_dataset):
-    success_msg = "Skipping this check person_ext table exists only in DEID datasets.<br>"
+if not is_deid_release_dataset(new_dataset):
+    success_msg = "Skipping this check person_ext table exists only in deid base/clean datasets.<br>"
     render_message('', success_msg=success_msg)
 
 else:
@@ -266,8 +348,8 @@ else:
 # something related to the incremental dataset did not work as expected.
 
 # +
-if not is_deid_dataset(new_dataset):
-    success_msg = "Skipping this check person_ext table exists only in DEID datasets.<br>"
+if not is_deid_release_dataset(new_dataset):
+    success_msg = "Skipping this check person_ext table exists only in deid base/clean datasets.<br>"
     render_message('', success_msg=success_msg)
 
 else:
