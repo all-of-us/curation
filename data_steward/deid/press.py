@@ -110,12 +110,6 @@ class Press(ABC):
         self.action = [term.strip() for term in args['action'].split(',')
                       ] if 'action' in args else ['submit']
 
-    def meta(self, data_frame):
-        return pd.DataFrame({
-            "names": list(data_frame.dtypes.to_dict().keys()),
-            "types": list(data_frame.dtypes.to_dict().values())
-        })
-
     def initialize(self, **args):
         #
         # Let us update and see if the default filters apply at all
@@ -266,7 +260,7 @@ class Press(ABC):
                     - label is the flag for the operation (generalize, suppress, compute, shift)
                     - name  is the attribute name on which the rule gets applied
         """
-        table_name = self.idataset + "." + self.tablename
+        table_name = f'{self.idataset}.{self.tablename}'
         suppression_filters = self.deid_rules['suppress']['FILTERS']
         out = pd.DataFrame()
         counts = {}
@@ -291,7 +285,7 @@ class Press(ABC):
                 continue
 
             field = item['name']
-            alias = 'original_' + field
+            alias = f'original_{field}'
             sql_list = [
                 "SELECT DISTINCT ", field, 'AS ', alias, ",", item['apply'],
                 " FROM ", table_name
@@ -353,7 +347,7 @@ class Press(ABC):
 
             r = self.get_dataframe(
                 sql=" ".join(sql_list).replace(":idataset", self.idataset))
-            table_name = self.idataset + "." + self.tablename
+            table_name = f'{self.idataset}.{self.tablename}'
 
             rdf = pd.DataFrame({
                 "operation": ["row-suppression"],
