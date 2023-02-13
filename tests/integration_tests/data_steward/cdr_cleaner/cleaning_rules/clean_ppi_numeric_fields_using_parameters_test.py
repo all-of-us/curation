@@ -79,7 +79,6 @@ class CleanPPINumericFieldsUsingParameterTest(BaseTest.CleaningRulesTestBase):
         statements and the tables_and_counts variable.
         """
 
-
         queries = []
 
         invalid_values_tmpl = self.jinja_env.from_string(
