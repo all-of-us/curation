@@ -281,12 +281,13 @@ else:
             WHERE person_id IS NOT NULL
         )
         AND (
-            n.state_of_residence_concept_id != s.state_of_residence_concept_id
-            OR n.state_of_residence_source_value != s.state_of_residence_source_value
-        )
-        OR (
-            (n.state_of_residence_concept_id IS NULL AND s.state_of_residence_concept_id IS NOT NULL)
-            OR (n.state_of_residence_source_value IS NULL AND s.state_of_residence_source_value IS NOT NULL)
+            (
+                n.state_of_residence_concept_id != s.state_of_residence_concept_id
+                OR n.state_of_residence_source_value != s.state_of_residence_source_value
+            ) OR (
+                (n.state_of_residence_concept_id IS NULL AND s.state_of_residence_concept_id IS NOT NULL)
+                OR (n.state_of_residence_source_value IS NULL AND s.state_of_residence_source_value IS NOT NULL)
+            )
         )
     ''').render(project=project_id,
                 new_dataset=new_dataset,
