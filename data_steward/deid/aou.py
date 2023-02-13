@@ -78,7 +78,6 @@ import logging
 import os
 import time
 from copy import copy
-from datetime import datetime
 
 # Third party imports
 import numpy as np
@@ -98,16 +97,6 @@ from tools.concept_ids_suppression import get_all_concept_ids
 
 LOGGER = logging.getLogger(__name__)
 MEASUREMENT_TIME = 'measurement_time'
-
-
-def milliseconds_since_epoch():
-    """
-    Helper method to get the number of milliseconds from the epoch to now
-
-    :return:  an integer number of milliseconds
-    """
-    return int(
-        (datetime.utcnow() - datetime(1970, 1, 1)).total_seconds() * 1000)
 
 
 def create_person_id_src_hpo_map(client, input_dataset):
@@ -247,10 +236,7 @@ class AOU(Press):
         age_limit = args.get('age_limit', MAX_AGE)
         LOGGER.info(f"Using participant age limit of {age_limit}")
 
-        million = 1000000
         map_tablename = self.idataset + "._deid_map"
-
-        map_table = pd.DataFrame()
 
         # Create concept_id lookup table for suppressions
         create_concept_id_lookup_table(self.bq_client, self.idataset,
@@ -423,7 +409,7 @@ class AOU(Press):
                 "value_field": self.tablename + ".person_id"
             })
 
-    def _add_dml_statements_rules(self, columns):
+    def _add_dml_statements_rules(self):
         """
         Add default duplicate records dropping configuration, if not specified in the config file.
         """
@@ -474,7 +460,7 @@ class AOU(Press):
         self._add_suppression_rules(columns)
         self._add_temporal_shifting_rules(columns)
         self._add_compute_rules(columns)
-        self._add_dml_statements_rules(columns)
+        self._add_dml_statements_rules()
 
     def submit(self, sql, create, dml=None):
         """
