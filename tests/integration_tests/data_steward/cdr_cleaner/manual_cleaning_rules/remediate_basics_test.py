@@ -304,10 +304,11 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
     @mock.patch(
         'cdr_cleaner.manual_cleaning_rules.remediate_basics.is_deid_dataset')
     @mock.patch(
-        'cdr_cleaner.manual_cleaning_rules.remediate_basics.is_combined_dataset'
+        'cdr_cleaner.manual_cleaning_rules.remediate_basics.is_combined_release_dataset'
     )
-    def test_remediate_basics_combined(self, mock_is_combined, mock_is_deid):
-        """Test to ensure RemediateBasics works as expected for COMBINED dataset.
+    def test_remediate_basics_combined_release(self, mock_is_combined_release,
+                                               mock_is_deid):
+        """Test to ensure RemediateBasics works as expected for COMBINED_RELEASE dataset.
         [1] OBSERVATION and its ext/mapping tables
             person_id == 1:
                 This person has no updated basics records. No change will be made to its records.
@@ -337,7 +338,7 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
         [4] PERSON_EXT table
             This table does not exist in combined dataset. No sandboxing/deleting/inserting will run on it.
         """
-        mock_is_combined.return_value, mock_is_deid.return_value = True, False
+        mock_is_combined_release.return_value, mock_is_deid.return_value = True, False
 
         tables_and_counts = [{
             'fq_table_name':
@@ -412,22 +413,107 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
 
         self.default_test(tables_and_counts)
 
-        # Sandbox for PERSON_EXT does not exist because it's combined dataset.
+        # Sandbox for PERSON_EXT does not exist because it's combined release dataset.
         self.assertTableDoesNotExist(
             f'{self.project_id}.{self.sandbox_id}.{self.sb_pers_ext}')
 
     @mock.patch(
         'cdr_cleaner.manual_cleaning_rules.remediate_basics.is_deid_dataset')
     @mock.patch(
-        'cdr_cleaner.manual_cleaning_rules.remediate_basics.is_combined_dataset'
+        'cdr_cleaner.manual_cleaning_rules.remediate_basics.is_combined_release_dataset'
     )
-    def test_remediate_basics_deid(self, mock_is_combined, mock_is_deid):
+    def test_remediate_basics_combined(self, mock_is_combined_release,
+                                       mock_is_deid):
+        """Test to ensure RemediateBasics works as expected for COMBINED dataset.
+        [1] OBSERVATION and its mapping table
+            Same result as test_remediate_basics_combined_release
+
+        [2] SURVEY_CONDUCT and its ext/mapping tables
+            Same result as test_remediate_basics_combined_release
+
+        [3] PERSON table
+            Same result as test_remediate_basics_combined_release
+
+        [4] PERSON_EXT, OBS_EXT, SC_EXT tables
+            These tables do not exist in combined dataset. No sandboxing/deleting/inserting will run on it.
+        """
+        mock_is_combined_release.return_value, mock_is_deid.return_value = False, False
+
+        tables_and_counts = [{
+            'fq_table_name':
+                f'{self.project_id}.{self.dataset_id}.{OBSERVATION}',
+            'fq_sandbox_table_name':
+                f'{self.project_id}.{self.sandbox_id}.{self.sb_obs}',
+            'loaded_ids': [101, 102, 103, 104, 201, 202, 203, 204, 205],
+            'sandboxed_ids': [202, 203, 204, 205],
+            'fields': ['observation_id'],
+            'cleaned_values': [(101,), (102,), (103,), (104,), (201,), (206,),
+                               (207,), (208,), (209,), (210,)]
+        }, {
+            'fq_table_name':
+                f'{self.project_id}.{self.dataset_id}.{OBS_MAPPING}',
+            'fq_sandbox_table_name':
+                f'{self.project_id}.{self.sandbox_id}.{self.sb_obs_mapping}',
+            'loaded_ids': [101, 102, 103, 104, 201, 202, 203, 204, 205],
+            'sandboxed_ids': [202, 203, 204, 205],
+            'fields': ['observation_id', 'src_dataset_id'],
+            'cleaned_values': [(101, 'dummy_rdr_1'), (102, 'dummy_rdr_1'),
+                               (103, 'dummy_rdr_1'), (104, 'dummy_rdr_1'),
+                               (201, 'dummy_rdr_1'), (206, 'dummy_rdr_2'),
+                               (207, 'dummy_rdr_2'), (208, 'dummy_rdr_2'),
+                               (209, 'dummy_rdr_2'), (210, 'dummy_rdr_2')]
+        }, {
+            'fq_table_name':
+                f'{self.project_id}.{self.dataset_id}.{SURVEY_CONDUCT}',
+            'fq_sandbox_table_name':
+                f'{self.project_id}.{self.sandbox_id}.{self.sb_sc}',
+            'loaded_ids': [1001, 1002],
+            'sandboxed_ids': [1002],
+            'fields': ['survey_conduct_id', 'validated_survey_concept_id'],
+            'cleaned_values': [(1001, 0), (1002, 1)]
+        }, {
+            'fq_table_name':
+                f'{self.project_id}.{self.dataset_id}.{SC_MAPPING}',
+            'fq_sandbox_table_name':
+                f'{self.project_id}.{self.sandbox_id}.{self.sb_sc_mapping}',
+            'loaded_ids': [1001, 1002],
+            'sandboxed_ids': [1002],
+            'fields': ['survey_conduct_id', 'src_dataset_id'],
+            'cleaned_values': [(1001, 'dummy_rdr_1'), (1002, 'dummy_rdr_2')]
+        }, {
+            'fq_table_name':
+                f'{self.project_id}.{self.dataset_id}.{PERSON}',
+            'fq_sandbox_table_name':
+                f'{self.project_id}.{self.sandbox_id}.{self.sb_pers}',
+            'loaded_ids': [1, 2],
+            'sandboxed_ids': [2],
+            'fields': ['person_id', 'gender_concept_id'],
+            'cleaned_values': [(1, 1585839), (2, 1585839)]
+        }]
+
+        self.default_test(tables_and_counts)
+
+        # Sandbox tables for EXT tables do not exist because it's combined dataset.
+        self.assertTableDoesNotExist(
+            f'{self.project_id}.{self.sandbox_id}.{self.sb_pers_ext}')
+        self.assertTableDoesNotExist(
+            f'{self.project_id}.{self.sandbox_id}.{self.sb_obs_ext}')
+        self.assertTableDoesNotExist(
+            f'{self.project_id}.{self.sandbox_id}.{self.sb_sc_ext}')
+
+    @mock.patch(
+        'cdr_cleaner.manual_cleaning_rules.remediate_basics.is_deid_dataset')
+    @mock.patch(
+        'cdr_cleaner.manual_cleaning_rules.remediate_basics.is_combined_release_dataset'
+    )
+    def test_remediate_basics_deid(self,mock_is_combined_release,
+                                       mock_is_deid):
         """Test to ensure RemediateBasics works as expected for DEID (= CT and RT) dataset.
         [1] OBSERVATION and its ext table
-            Same result as test_remediate_basics_combined
+            Same result as test_remediate_basics_combined_release
 
         [2] SURVEY_CONDUCT and its ext table
-            Same result as test_remediate_basics_combined
+            Same result as test_remediate_basics_combined_release
 
         [3] PERSON and its ext table
             person_id = 1 does not change.
@@ -441,7 +527,7 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
         [4] OBSERVATION_MAPPING and SURVEY_CONDUCT_MAPPING tables
             These tables do not exist in combined dataset. No sandboxing/deleting/inserting will run on it.
         """
-        mock_is_combined.return_value, mock_is_deid.return_value = False, True
+        mock_is_combined_release.return_value, mock_is_deid.return_value = False, True
 
         tables_and_counts = [{
             'fq_table_name':

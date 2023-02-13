@@ -181,6 +181,15 @@ def is_combined_dataset(dataset_id):
     return COMBINED in dataset_id
 
 
+def is_combined_release_dataset(dataset_id):
+    """
+    Returns boolean indicating if a dataset is a combined release dataset using the dataset_id
+    :param dataset_id: Identifies the dataset
+    :return: Boolean indicating if the dataset is a combined release dataset or not
+    """
+    return COMBINED in dataset_id and 'release' in dataset_id
+
+
 def is_deid_fitbit_dataset(dataset_id: str):
     """
     Returns boolean indicating if a dataset is a deid fitbit dataset using the dataset_id

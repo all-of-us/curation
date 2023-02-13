@@ -25,24 +25,25 @@ source_dataset: str = ""  # dataset that new_dataset is based off of
 aian_lookup_dataset: str = ""  # dataset where we have aian lookup table
 aian_lookup_table: str = ""  # table that has PIDs/RIDs of AIAN participants
 incremental_dataset: str = ""  # dataset so-called "incremental"
-is_deidentified: str = ""  # True if this is DEID stage, False if not
 includes_aian: str = ""  # True if AIAN participants' data is in the dataset, False if not
 # -
 
 # +
 from IPython.display import display, HTML
 
-from common import JINJA_ENV
+from common import JINJA_ENV, OBSERVATION, PERSON, SURVEY_CONDUCT
 from analytics.cdr_ops.notebook_utils import (execute, IMPERSONATION_SCOPES,
                                               render_message)
 from utils import auth
 from gcloud.bq import BigQueryClient
+from resources import ext_table_for, mapping_table_for
+from retraction.retract_utils import is_combined_release_dataset, is_deid_dataset
 # -
 
 impersonation_creds = auth.get_impersonation_credentials(
     run_as, target_scopes=IMPERSONATION_SCOPES)
 client = BigQueryClient(project_id, credentials=impersonation_creds)
-pid_or_rid = 'research_id' if is_deidentified == 'True' else 'person_id'
+pid_or_rid = 'research_id' if is_deid_dataset(new_dataset) else 'person_id'
 
 # ## QC 1. (Only for `includes_aian == False`) Confirm no AIAN participants data is included in the new dataset
 # `incremental_dataset` contains AIAN participants' records. <br>We must exclude those in `new_dataset`
@@ -108,10 +109,16 @@ else:
 # `_mapping_observation` and `obsesrvation_ext`.
 
 # +
-obs_tables = ['observation', 'observation_ext'
-             ] if is_deidentified == 'True' else [
-                 'observation', '_mapping_observation', 'observation_ext'
-             ]
+if is_combined_release_dataset(new_dataset):
+    obs_tables = [OBSERVATION, ext_table_for(OBSERVATION)]
+elif is_combined_release_dataset(new_dataset):
+    obs_tables = [
+        OBSERVATION,
+        mapping_table_for(OBSERVATION),
+        ext_table_for(OBSERVATION)
+    ]
+else:
+    obs_tables = [OBSERVATION]
 
 query = JINJA_ENV.from_string('''
     SELECT
@@ -152,16 +159,24 @@ render_message(df,
 # their correspondants after the hotfix.
 
 # +
-map_ext_tuples = [
-    ('observation', 'observation_ext'),
-    ('survey_conduct', 'survey_conduct_ext'),
-    ('person', 'person_ext'),
-] if is_deidentified == 'True' else [
-    ('observation', '_mapping_observation'),
-    ('observation', 'observation_ext'),
-    ('survey_conduct', '_mapping_survey_conduct'),
-    ('survey_conduct', 'survey_conduct_ext'),
-]
+if is_combined_release_dataset(new_dataset):
+    map_ext_tuples = [
+        (OBSERVATION, mapping_table_for(OBSERVATION)),
+        (OBSERVATION, ext_table_for(OBSERVATION)),
+        (SURVEY_CONDUCT, mapping_table_for(SURVEY_CONDUCT)),
+        (SURVEY_CONDUCT, ext_table_for(SURVEY_CONDUCT)),
+    ]
+elif is_deid_dataset(new_dataset):
+    map_ext_tuples = [
+        (OBSERVATION, ext_table_for(OBSERVATION)),
+        (SURVEY_CONDUCT, ext_table_for(SURVEY_CONDUCT)),
+        (PERSON, ext_table_for(PERSON)),
+    ]
+else:
+    map_ext_tuples = [
+        (OBSERVATION, mapping_table_for(OBSERVATION)),
+        (SURVEY_CONDUCT, mapping_table_for(SURVEY_CONDUCT)),
+    ]
 
 query = JINJA_ENV.from_string('''
     SELECT
@@ -208,7 +223,7 @@ render_message(df,
 # If this QC fails, see how QC 4-2 goes.
 
 # +
-if is_deidentified == "False":
+if not is_deid_dataset(new_dataset):
     success_msg = "Skipping this check person_ext table exists only in DEID datasets.<br>"
     render_message('', success_msg=success_msg)
 
@@ -251,7 +266,7 @@ else:
 # something related to the incremental dataset did not work as expected.
 
 # +
-if is_deidentified == "False":
+if not is_deid_dataset(new_dataset):
     success_msg = "Skipping this check person_ext table exists only in DEID datasets.<br>"
     render_message('', success_msg=success_msg)
 

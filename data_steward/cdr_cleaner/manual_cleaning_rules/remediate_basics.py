@@ -20,7 +20,7 @@ from constants.cdr_cleaner.clean_cdr import (COMBINED,
                                              REGISTERED_TIER_DEID_BASE,
                                              REGISTERED_TIER_DEID_CLEAN)
 from resources import ext_table_for, mapping_table_for
-from retraction.retract_utils import is_combined_dataset, is_deid_dataset
+from retraction.retract_utils import is_combined_release_dataset, is_deid_dataset
 
 LOGGER = logging.getLogger(__name__)
 
@@ -279,39 +279,52 @@ class RemediateBasics(BaseCleaningRule):
 
         sandbox_queries = [
             self._get_query(SANDBOX_OBS, OBSERVATION, OBSERVATION),
-            self._get_query(SANDBOX_OBS_MAPPING_EXT, OBSERVATION, OBS_EXT)
-        ] + [
-            self._get_query(GENERIC_SANDBOX, domain, table)
-            for (domain, table) in [
-                (SURVEY_CONDUCT, SURVEY_CONDUCT),
-                (SURVEY_CONDUCT, SC_EXT),
-                (PERSON, PERSON),
-            ]
+            self._get_query(GENERIC_SANDBOX, SURVEY_CONDUCT, SURVEY_CONDUCT),
+            self._get_query(GENERIC_SANDBOX, PERSON, PERSON)
         ]
 
         delete_queries = [
             self._get_query(GENERIC_DELETE, domain, table)
             for (domain, table) in [
                 (OBSERVATION, OBSERVATION),
-                (OBSERVATION, OBS_EXT),
                 (SURVEY_CONDUCT, SURVEY_CONDUCT),
-                (SURVEY_CONDUCT, SC_EXT),
                 (PERSON, PERSON),
             ]
         ]
 
         insert_queries = [
             self._get_query(INSERT_OBS, OBSERVATION, OBSERVATION),
-            self._get_query(INSERT_OBS_EXT, OBSERVATION, OBS_EXT)
-        ] + [
-            self._get_query(GENERIC_INSERT, domain, table)
-            for (domain, table) in [(SURVEY_CONDUCT, SURVEY_CONDUCT),
-                                    (SURVEY_CONDUCT, SC_EXT), (PERSON, PERSON)]
+            self._get_query(GENERIC_INSERT, SURVEY_CONDUCT, SURVEY_CONDUCT),
+            self._get_query(GENERIC_INSERT, PERSON, PERSON)
         ]
 
-        # mapping tables exist only in combined dataset and its upstream datasets
-        # mapping table for person does not exist in combined dataset
-        if is_combined_dataset(self.dataset_id):
+        # obs_ext and sc_ext exist in combined_release and deid datasets
+        if is_combined_release_dataset(self.dataset_id) or is_deid_dataset(
+                self.dataset_id):
+            sandbox_queries.extend([
+                self._get_query(SANDBOX_OBS_MAPPING_EXT, OBSERVATION, OBS_EXT),
+                self._get_query(GENERIC_SANDBOX, SURVEY_CONDUCT, SC_EXT)
+            ])
+            delete_queries.extend([
+                self._get_query(GENERIC_DELETE, OBSERVATION, OBS_EXT),
+                self._get_query(GENERIC_DELETE, SURVEY_CONDUCT, SC_EXT)
+            ])
+            insert_queries.extend([
+                self._get_query(INSERT_OBS_EXT, OBSERVATION, OBS_EXT),
+                self._get_query(GENERIC_INSERT, SURVEY_CONDUCT, SC_EXT)
+            ])
+
+        # person_ext table exists only in deid datasets
+        if is_deid_dataset(self.dataset_id):
+            sandbox_queries.extend(
+                [self._get_query(GENERIC_SANDBOX, PERSON, PERS_EXT)])
+            delete_queries.extend(
+                [self._get_query(GENERIC_DELETE, PERSON, PERS_EXT)])
+            insert_queries.extend(
+                [self._get_query(INSERT_PERS_EXT, PERSON, PERS_EXT)])
+
+        # mapping tables exist only in non-deid datasets
+        if not is_deid_dataset(self.dataset_id):
             sandbox_queries.extend([
                 self._get_query(SANDBOX_OBS_MAPPING_EXT, OBSERVATION,
                                 OBS_MAPPING),
@@ -325,15 +338,6 @@ class RemediateBasics(BaseCleaningRule):
                 self._get_query(INSERT_OBS_MAPPING, OBSERVATION, OBS_MAPPING),
                 self._get_query(GENERIC_INSERT, SURVEY_CONDUCT, SC_MAPPING),
             ])
-
-        # person_ext table exists only after DEID
-        elif is_deid_dataset(self.dataset_id):
-            sandbox_queries.extend(
-                [self._get_query(GENERIC_SANDBOX, PERSON, PERS_EXT)])
-            delete_queries.extend(
-                [self._get_query(GENERIC_DELETE, PERSON, PERS_EXT)])
-            insert_queries.extend(
-                [self._get_query(INSERT_PERS_EXT, PERSON, PERS_EXT)])
 
         return sandbox_queries + delete_queries + insert_queries
 
