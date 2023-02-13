@@ -31,15 +31,22 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
         cls.dataset_id = os.environ.get('COMBINED_DATASET_ID')
         cls.sandbox_id = f'{cls.dataset_id}_sandbox'
         cls.incremental_dataset_id = os.environ.get('BIGQUERY_DATASET_ID')
+        cls.dataset_with_largest_observation_id = cls.dataset_id
 
         cls.kwargs.update(
             {'incremental_dataset_id': cls.incremental_dataset_id})
+        cls.kwargs.update({
+            'dataset_with_largest_observation_id':
+                cls.dataset_with_largest_observation_id
+        })
 
         cls.rule_instance = RemediateBasics(
             cls.project_id,
             cls.dataset_id,
             cls.sandbox_id,
-            incremental_dataset_id=cls.incremental_dataset_id)
+            incremental_dataset_id=cls.incremental_dataset_id,
+            dataset_with_largest_observation_id=cls.
+            dataset_with_largest_observation_id)
 
         for dataset in [cls.dataset_id, cls.incremental_dataset_id]:
             cls.fq_table_names.extend([

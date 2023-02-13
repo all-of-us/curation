@@ -28,10 +28,9 @@ LOGGER = logging.getLogger(__name__)
 ISSUE_NUMBERS = ['DC3016']
 
 CREATE_NEW_OBS_ID_LOOKUP = JINJA_ENV.from_string("""
-CREATE TABLE IF NOT EXISTS `{{project}}.{{sandbox_dataset}}.{{new_obs_id_lookup}}`
+CREATE TABLE `{{project}}.{{sandbox_dataset}}.{{new_obs_id_lookup}}`
 (
     source_observation_id INT64 NOT NULL OPTIONS(description="observation_id from the source table."),
-    dataset_id STRING NOT NULL OPTIONS(description="Dataset ID of the destination table."),
     observation_id INT64 NOT NULL OPTIONS(description="Newly assigned observation_id for the destination dataset.")
 )
 OPTIONS
@@ -40,21 +39,15 @@ OPTIONS
 )
 """)
 
-# NOTE In case of re-running remediation for the same dataset, you need to run
-# the following delete statement beforehand:
-# DELETE * FROM new_obs_id_lookup WHERE dataset='the dataset you need to re-run on'
-# Otherwise, there will be duplicate entries in the lookup table and in OBS,
-# OBS_EXT, and OBS_MAPPING tables in the output.
 INSERT_NEW_OBS_ID_LOOKUP = JINJA_ENV.from_string("""
 INSERT INTO `{{project}}.{{sandbox_dataset}}.{{new_obs_id_lookup}}`
-(source_observation_id, dataset_id, observation_id)
+(source_observation_id, observation_id)
 SELECT
     inc_o.observation_id,
-    '{{dataset}}',
     ROW_NUMBER() OVER(ORDER BY inc_o.observation_id
         ) + (
         SELECT MAX(observation_id) 
-        FROM `{{project}}.{{dataset}}.{{table}}`
+        FROM `{{project}}.{{dataset_with_largest_observation_id}}.{{table}}`
         )
 FROM `{{project}}.{{incremental_dataset}}.{{table}}` inc_o
 WHERE person_id IN (
@@ -138,7 +131,6 @@ SELECT
 FROM `{{project}}.{{incremental_dataset}}.{{table}}` inc_o
 JOIN `{{project}}.{{sandbox_dataset}}.{{new_obs_id_lookup}}` new_id
 ON inc_o.observation_id = new_id.source_observation_id
-AND new_id.dataset_id = '{{dataset}}'
 """)
 
 INSERT_OBS_MAPPING = JINJA_ENV.from_string("""
@@ -153,7 +145,6 @@ SELECT
 FROM `{{project}}.{{incremental_dataset}}.{{table}}` i
 JOIN `{{project}}.{{sandbox_dataset}}.{{new_obs_id_lookup}}` oim
 ON i.observation_id = oim.source_observation_id
-AND oim.dataset_id = '{{dataset}}'
 """)
 
 INSERT_OBS_EXT = JINJA_ENV.from_string("""
@@ -166,7 +157,6 @@ SELECT
 FROM `{{project}}.{{incremental_dataset}}.{{table}}` i
 JOIN `{{project}}.{{sandbox_dataset}}.{{new_obs_id_lookup}}` oim
 ON i.observation_id = oim.source_observation_id
-AND oim.dataset_id = '{{dataset}}'
 """)
 
 # NOTE Due to the incremental dataset's setup, state_of_residence_concept_id and
@@ -214,6 +204,7 @@ class RemediateBasics(BaseCleaningRule):
                  dataset_id,
                  sandbox_dataset_id,
                  incremental_dataset_id=None,
+                 dataset_with_largest_observation_id=None,
                  table_namer=None):
         """
         Initialize the class with proper information.
@@ -243,6 +234,7 @@ class RemediateBasics(BaseCleaningRule):
                          table_namer=table_namer)
 
         self.incremental_dataset_id = incremental_dataset_id
+        self.dataset_with_largest_observation_id = dataset_with_largest_observation_id
 
     def _get_query(self, template, domain, table) -> dict:
         """
@@ -266,7 +258,9 @@ class RemediateBasics(BaseCleaningRule):
                     sandbox_table_obs=self.sandbox_table_for(OBSERVATION),
                     incremental_dataset=self.incremental_dataset_id,
                     table=table,
-                    new_obs_id_lookup=NEW_OBS_ID_LOOKUP)
+                    new_obs_id_lookup=NEW_OBS_ID_LOOKUP,
+                    dataset_with_largest_observation_id=self.
+                    dataset_with_largest_observation_id)
         }
 
     def get_query_specs(self):
@@ -348,14 +342,16 @@ class RemediateBasics(BaseCleaningRule):
         will have NO duplicate. Each destination dataset can have different new
         observation_ids so this lookup table has `dataset_id` column.
         """
-        create_lookup = self._get_query(CREATE_NEW_OBS_ID_LOOKUP, '', '')[QUERY]
-        job = client.query(create_lookup)
-        job.result()
+        if not client.table_exists(NEW_OBS_ID_LOOKUP, self.sandbox_dataset_id):
+            create_lookup = self._get_query(CREATE_NEW_OBS_ID_LOOKUP, '',
+                                            '')[QUERY]
+            job = client.query(create_lookup)
+            job.result()
 
-        insert_lookup = self._get_query(INSERT_NEW_OBS_ID_LOOKUP, OBSERVATION,
-                                        OBSERVATION)[QUERY]
-        job = client.query(insert_lookup)
-        job.result()
+            insert_lookup = self._get_query(INSERT_NEW_OBS_ID_LOOKUP,
+                                            OBSERVATION, OBSERVATION)[QUERY]
+            job = client.query(insert_lookup)
+            job.result()
 
     def setup_validation(self, client):
         raise NotImplementedError("Please fix me.")
@@ -378,6 +374,14 @@ if __name__ == '__main__':
         dest='incremental_dataset_id',
         help=('Dataset that needs to be loaded together with source_dataset.'),
         required=True)
+    parser.add_argument(
+        '--dataset_with_largest_observation_id',
+        action='store',
+        dest='dataset_with_largest_observation_id',
+        help=(
+            'Dataset that has the largest observation_id among all the datasets.'
+        ),
+        required=True)
 
     ARGS = parser.parse_args()
 
@@ -389,7 +393,9 @@ if __name__ == '__main__':
             ARGS.project_id,
             ARGS.dataset_id,
             ARGS.sandbox_dataset_id, [(RemediateBasics,)],
-            incremental_dataset_id=ARGS.incremental_dataset_id)
+            incremental_dataset_id=ARGS.incremental_dataset_id,
+            dataset_with_largest_observation_id=ARGS.
+            dataset_with_largest_observation_id)
         for query_dict in query_list:
             LOGGER.info(query_dict.get(QUERY))
     else:
@@ -397,4 +403,6 @@ if __name__ == '__main__':
             ARGS.project_id,
             ARGS.dataset_id,
             ARGS.sandbox_dataset_id, [(RemediateBasics,)],
-            incremental_dataset_id=ARGS.incremental_dataset_id)
+            incremental_dataset_id=ARGS.incremental_dataset_id,
+            dataset_with_largest_observation_id=ARGS.
+            dataset_with_largest_observation_id)
