@@ -506,8 +506,8 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
     @mock.patch(
         'cdr_cleaner.manual_cleaning_rules.remediate_basics.is_combined_release_dataset'
     )
-    def test_remediate_basics_deid(self,mock_is_combined_release,
-                                       mock_is_deid):
+    def test_remediate_basics_deid(self, mock_is_combined_release,
+                                   mock_is_deid):
         """Test to ensure RemediateBasics works as expected for DEID (= CT and RT) dataset.
         [1] OBSERVATION and its ext table
             Same result as test_remediate_basics_combined_release
