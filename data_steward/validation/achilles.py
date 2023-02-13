@@ -15,7 +15,6 @@ ACHILLES_RESULTS_DIST = 'achilles_results_dist'
 ACHILLES_TABLES = [ACHILLES_ANALYSIS, ACHILLES_RESULTS, ACHILLES_RESULTS_DIST]
 ACHILLES_DML_SQL_PATH = os.path.join(resources.resource_files_path,
                                      'achilles_dml.sql')
-INSERT_INTO = 'insert into'
 
 
 def _get_run_analysis_commands(hpo_id):
@@ -27,6 +26,7 @@ def _get_run_analysis_commands(hpo_id):
 def load_analyses(hpo_id):
     """
     Populate achilles lookup table
+    
     :param hpo_id: hpo_id of the site to run achilles on
     :return: None
     """
@@ -45,6 +45,7 @@ def drop_or_truncate_table(client, command):
     """
     Deletes or truncates table
     Previously, deletion was used for both truncate and drop, and this function retains the behavior
+
     :param client: a BigQueryClient
     :param command: query to run
     :return: None
@@ -62,6 +63,7 @@ def drop_or_truncate_table(client, command):
 def run_analysis_job(command):
     """
     Runs command query and waits for job completion
+    
     :param command: query to run
     :return: None
     :raises RuntimeError: Raised if job takes too long to complete
@@ -99,6 +101,7 @@ def run_analyses(client, hpo_id):
 def create_tables(hpo_id, drop_existing=False):
     """
     Create the achilles related tables
+    
     :param hpo_id: associated hpo id
     :param drop_existing: if True, drop existing tables
     :return: None
