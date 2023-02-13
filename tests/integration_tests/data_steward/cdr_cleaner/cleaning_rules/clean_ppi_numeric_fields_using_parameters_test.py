@@ -79,7 +79,6 @@ class CleanPPINumericFieldsUsingParameterTest(BaseTest.CleaningRulesTestBase):
         statements and the tables_and_counts variable.
         """
 
-        self.maxDiff = None
 
         queries = []
 
