@@ -45,6 +45,7 @@ def get_rdr_project_id():
     return os.environ.get('RDR_PROJECT_ID')
 
 
+@deprecated(reason='get_output_project_id is deprecated')
 def get_output_project_id():
     return os.environ.get('OUTPUT_PROJECT_ID')
 
@@ -61,6 +62,7 @@ def get_rdr_dataset_id():
     return os.environ.get('RDR_DATASET_ID')
 
 
+@deprecated(reason='get_combined_snapshot_dataset_id is deprecated')
 def get_combined_snapshot_dataset_id():
     return os.environ.get('COMBINED_SNAPSHOT')
 
@@ -69,6 +71,7 @@ def get_combined_dataset_id():
     return os.environ.get('COMBINED_DATASET_ID')
 
 
+@deprecated(reason='get_combined_deid_clean_dataset_id is deprecated')
 def get_combined_deid_clean_dataset_id():
     return os.environ.get('COMBINED_DEID_CLEAN_DATASET_ID')
 
@@ -89,6 +92,7 @@ def get_retraction_sandbox_dataset_id():
     return os.environ.get('RETRACTION_SANDBOX_DATASET_ID')
 
 
+@deprecated(reason='get_fitbit_dataset_id is deprecated')
 def get_fitbit_dataset_id():
     return os.environ.get('FITBIT_DATASET_ID')
 
@@ -111,6 +115,7 @@ def get_retraction_submission_folder():
     return os.environ.get('RETRACTION_SUBMISSION_FOLDER')
 
 
+@deprecated(reason='get_combined_deid_dataset_id is deprecated')
 def get_combined_deid_dataset_id():
     return os.environ.get('COMBINED_DEID_DATASET_ID')
 
@@ -346,6 +351,7 @@ def job_status_done(job_id):
     return job_running_status == 'DONE'
 
 
+@deprecated(reason='job_status_errored is deprecated')
 def job_status_errored(job_id):
     """
     Check if the job is complete with an error
@@ -577,6 +583,7 @@ def list_tables(dataset_id=None,
     return results
 
 
+@deprecated(reason='get_table_id_from_obj is deprecated')
 def get_table_id_from_obj(table_obj):
     return table_obj['id'].split('.')[-1]
 
@@ -619,6 +626,7 @@ def list_datasets(project_id):
     return all_datasets
 
 
+@deprecated(reason='get_dataset_id_from_obj is deprecated')
 def get_dataset_id_from_obj(dataset_obj):
     return dataset_obj['id'].split(':')[-1]
 
@@ -941,6 +949,7 @@ def has_primary_key(table):
                if field['type'] == 'integer' and field['name'] == id_field)
 
 
+@deprecated(reason='create_snapshot_dataset is deprecated')
 def create_snapshot_dataset(project_id, dataset_id, snapshot_dataset_id):
     """
 
