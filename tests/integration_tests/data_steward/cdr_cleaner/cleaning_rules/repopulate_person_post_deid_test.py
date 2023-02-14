@@ -90,13 +90,14 @@ class RepopulatePersonPostDeidTest(BaseTest.CleaningRulesTestBase):
         super().setUpClass()
 
     def setUp(self):
+        super().setUp()
+
         fq_dataset_name = self.fq_table_names[0].split('.')
         self.fq_dataset_name = '.'.join(fq_dataset_name[:-1])
 
         self.date = parser.parse('2020-05-05').date()
 
         self.copy_vocab_tables(self.vocabulary_dataset)
-        super().setUp()
 
     def test_repopulate_person_post_deid(self):
         """
