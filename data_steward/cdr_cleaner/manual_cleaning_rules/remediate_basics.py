@@ -127,7 +127,7 @@ SELECT
     inc_o.value_source_value,
     inc_o.questionnaire_response_id
 FROM `{{project}}.{{incremental_dataset}}.{{table}}` inc_o
-JOIN `{{project}}.{{sandbox_dataset}}.{{new_obs_id_lookup}}` new_id
+JOIN `{{project}}.{{obs_id_lookup_dataset}}.{{new_obs_id_lookup}}` new_id
 ON inc_o.observation_id = new_id.source_observation_id
 WHERE inc_o.person_id IN (
     SELECT person_id FROM `{{project}}.{{dataset}}.{{table}}` 
@@ -144,7 +144,7 @@ SELECT
     i.src_hpo_id,
     i.src_table_id
 FROM `{{project}}.{{incremental_dataset}}.{{table}}` i
-JOIN `{{project}}.{{sandbox_dataset}}.{{new_obs_id_lookup}}` oim
+JOIN `{{project}}.{{obs_id_lookup_dataset}}.{{new_obs_id_lookup}}` oim
 ON i.observation_id = oim.source_observation_id
 WHERE i.observation_id IN (
     SELECT observation_id FROM `{{project}}.{{incremental_dataset}}.observation`
@@ -162,7 +162,7 @@ SELECT
     i.src_id,
     i.survey_version_concept_id
 FROM `{{project}}.{{incremental_dataset}}.{{table}}` i
-JOIN `{{project}}.{{sandbox_dataset}}.{{new_obs_id_lookup}}` oim
+JOIN `{{project}}.{{obs_id_lookup_dataset}}.{{new_obs_id_lookup}}` oim
 ON i.observation_id = oim.source_observation_id
 WHERE i.observation_id IN (
     SELECT observation_id FROM `{{project}}.{{incremental_dataset}}.observation`
