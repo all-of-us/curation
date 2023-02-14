@@ -2,6 +2,7 @@
 This is a wrapper script to complete hot-fix for DC-3016.
 
 You can use this script for remediation for the following datasets:
+    - RDR dataset
     - COMBINED / COMBINED RELEASE datasets
     - [CT|RT] DEID / DEID BASE / DEID CLEAN datasets
 
@@ -24,7 +25,6 @@ from common import CDR_SCOPES
 from constants.cdr_cleaner.clean_cdr import DATA_CONSISTENCY
 from gcloud.bq import BigQueryClient
 from resources import ask_if_continue, get_new_dataset_name
-from retraction.retract_utils import is_combined_dataset, is_deid_dataset
 from utils import pipeline_logging
 from utils.auth import get_impersonation_credentials
 
@@ -143,6 +143,19 @@ def parse_args(raw_args=None):
             'Dataset that needs to be loaded together with source_dataset_id.'),
         required=True)
     parser.add_argument(
+        '--dataset_with_largest_observation_id',
+        action='store',
+        dest='dataset_with_largest_observation_id',
+        help=(
+            'Dataset that has the largest observation_id among all the datasets.'
+        ),
+        required=True)
+    parser.add_argument('--obs_id_lookup_dataset',
+                        action='store',
+                        dest='obs_id_lookup_dataset',
+                        help=(f'Dataset for NEW_OBS_ID_LOOKUP table.'),
+                        required=True)
+    parser.add_argument(
         '--new_release_tag',
         action='store',
         dest='new_release_tag',
@@ -194,6 +207,7 @@ def main():
         f"[2/5] Copy data from the source dataset to the new dataset\n"
         f"[3/5] Create an empty sandbox dataset if not exists\n"
         f"[4/5] Run remediation and cleaning rules on the new dataset\n"
+        f"-- Pause execution and run validation notebook --\n"
         f"[5/5] Run cleaning rules on the new datasets\n"
         f"\n"
         f"If you answer 'Y', [1/5] will start. \n"
@@ -220,23 +234,26 @@ def main():
         f"Starting [4/5] Run remediation and cleaning rules on the new dataset."
     )
     ask_if_continue()
-    if not is_deid_dataset(new_dataset) and not is_combined_dataset(
-            new_dataset):
-        LOGGER.info(
-            f"Skipping remediation for {new_dataset} since it's neither DEID or COMBINED."
-        )
-        return
 
     LOGGER.info(f"Running remediation for {new_dataset}...")
     clean_dataset(project_id,
                   new_dataset,
                   f"{tag}_sandbox", [(RemediateBasics,)],
-                  incremental_dataset_id=args.incremental_dataset_id)
+                  incremental_dataset_id=args.incremental_dataset_id,
+                  dataset_with_largest_observation_id=args.
+                  dataset_with_largest_observation_id,
+                  obs_id_lookup_dataset=args.obs_id_lookup_dataset)
 
     LOGGER.info(f"Completed running remediation for {new_dataset}...")
 
     LOGGER.info(
-        f"[4/5] Run remediation and cleaning rules on the new datasets.\n")
+        f"[4/5] Run remediation and cleaning rules on the new datasets completed.\n"
+    )
+
+    LOGGER.info(
+        "-- Stop for now and run validation notebook. --\n"
+        "-- Once validation is completed, type 'Y' and proceed to 5. --\n")
+    ask_if_continue()
 
     LOGGER.info(f"Starting [5/5] Run cleaning rules on {new_dataset}.")
     ask_if_continue()

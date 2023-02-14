@@ -171,6 +171,17 @@ def is_deid_dataset(dataset_id):
     return DEID in dataset_id or is_deid_fitbit_dataset(dataset_id)
 
 
+def is_deid_release_dataset(dataset_id):
+    """
+    Returns boolean indicating if a dataset is a deid base/clean dataset using the dataset_id
+    :param dataset_id: Identifies the dataset
+    :return: Boolean indicating if the dataset is a deid base dataset
+    NOTE It returns True for deid_base/clean_xyz datasets too (e.g. deid_base_sandbox)
+    """
+    return DEID in dataset_id and ('base' in dataset_id or
+                                   'clean' in dataset_id)
+
+
 def is_combined_dataset(dataset_id):
     """
     Returns boolean indicating if a dataset is a combined dataset using the dataset_id
@@ -179,6 +190,15 @@ def is_combined_dataset(dataset_id):
     NOTE It returns True for combined_xyz datasets too (e.g. combined_staging)
     """
     return COMBINED in dataset_id
+
+
+def is_combined_release_dataset(dataset_id):
+    """
+    Returns boolean indicating if a dataset is a combined release dataset using the dataset_id
+    :param dataset_id: Identifies the dataset
+    :return: Boolean indicating if the dataset is a combined release dataset or not
+    """
+    return COMBINED in dataset_id and 'release' in dataset_id
 
 
 def is_deid_fitbit_dataset(dataset_id: str):
