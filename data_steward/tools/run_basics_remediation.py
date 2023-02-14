@@ -25,7 +25,6 @@ from common import CDR_SCOPES
 from constants.cdr_cleaner.clean_cdr import DATA_CONSISTENCY
 from gcloud.bq import BigQueryClient
 from resources import ask_if_continue, get_new_dataset_name
-from retraction.retract_utils import is_combined_dataset, is_deid_dataset
 from utils import pipeline_logging
 from utils.auth import get_impersonation_credentials
 
@@ -151,6 +150,11 @@ def parse_args(raw_args=None):
             'Dataset that has the largest observation_id among all the datasets.'
         ),
         required=True)
+    parser.add_argument('--obs_id_lookup_dataset',
+                        action='store',
+                        dest='obs_id_lookup_dataset',
+                        help=(f'Dataset for NEW_OBS_ID_LOOKUP table.'),
+                        required=True)
     parser.add_argument(
         '--new_release_tag',
         action='store',
@@ -237,7 +241,8 @@ def main():
                   f"{tag}_sandbox", [(RemediateBasics,)],
                   incremental_dataset_id=args.incremental_dataset_id,
                   dataset_with_largest_observation_id=args.
-                  dataset_with_largest_observation_id)
+                  dataset_with_largest_observation_id,
+                  obs_id_lookup_dataset=args.obs_id_lookup_dataset)
 
     LOGGER.info(f"Completed running remediation for {new_dataset}...")
 

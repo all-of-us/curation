@@ -163,8 +163,9 @@ render_message(df,
 # Any observation records from `incremental_dataset` got new `OBSERVATION_ID`s
 # assigned in `new_dataset` to avoid ID duplicates. The mapping of the old-new
 # `OBSERVATION_ID`s is kept in `sandbox._observation_id_map`. <br>We must confirm
-# all the new `OBSERVATION_ID`s have their mapping info in `sandbox._observation_id_map`.
-# <br>We must also confirm that `sandbox._observation_id_map` does not have any junk records.
+# all the new `OBSERVATION_ID`s have their mapping info in `sandbox._observation_id_map`<br>.
+# NOTE: Not all records in `_observation_id_map` have corresponding records in `new_dataset`
+# because `_observation_id_map` is referenced by multiple data releases.
 
 # +
 query = JINJA_ENV.from_string('''
@@ -174,16 +175,6 @@ query = JINJA_ENV.from_string('''
     FROM `{{project}}.{{new_dataset}}.observation`
     WHERE observation_id NOT IN (
         SELECT observation_id FROM `{{project}}.{{sandbox_dataset}}._observation_id_map`
-        WHERE observation_id IS NOT NULL
-    )
-    HAVING COUNT(*) > 1
-    UNION ALL
-    SELECT
-        'no matching observation_id found in new_dataset.observation' AS issue,
-        COUNT(*) AS no_mapping_row_count
-    FROM `{{project}}.{{sandbox_dataset}}._observation_id_map`
-    WHERE observation_id NOT IN (
-        SELECT observation_id FROM `{{project}}.{{new_dataset}}.observation`
         WHERE observation_id IS NOT NULL
     )
     HAVING COUNT(*) > 1

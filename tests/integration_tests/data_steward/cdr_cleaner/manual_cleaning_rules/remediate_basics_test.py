@@ -32,6 +32,7 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
         cls.sandbox_id = f'{cls.dataset_id}_sandbox'
         cls.incremental_dataset_id = os.environ.get('BIGQUERY_DATASET_ID')
         cls.dataset_with_largest_observation_id = cls.dataset_id
+        cls.obs_id_lookup_dataset = cls.sandbox_id
 
         cls.kwargs.update(
             {'incremental_dataset_id': cls.incremental_dataset_id})
@@ -39,6 +40,7 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
             'dataset_with_largest_observation_id':
                 cls.dataset_with_largest_observation_id
         })
+        cls.kwargs.update({'obs_id_lookup_dataset': cls.obs_id_lookup_dataset})
 
         cls.rule_instance = RemediateBasics(
             cls.project_id,
@@ -115,13 +117,13 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
                  observation_datetime, observation_type_concept_id, observation_source_concept_id,
                  value_source_concept_id, value_source_value, questionnaire_response_id)
             VALUES
-                (901, 9, 1585845, date('2022-01-01'), timestamp('2022-01-01 12:34:56'), 45905771, 1585845, 1585846, 'SexAtBirth_Male', 9999),
-                (902, 2, 1585845, date('2022-01-01'), timestamp('2022-01-01 12:34:56'), 45905771, 1585845, 1585846, 'SexAtBirth_Male', 1002),
-                (903, 2, 1585838, date('2022-01-01'), timestamp('2022-01-01 12:34:56'), 45905771, 1585838, 1585839, 'GenderIdentity_Man', 1002),
-                (904, 2, 1586140, date('2022-01-01'), timestamp('2022-01-01 12:34:56'), 45905771, 1586140, 1586147, 'WhatRaceEthnicity_Hispanic', 1002),
-                (905, 2, 1586140, date('2022-01-01'), timestamp('2022-01-01 12:34:56'), 45905771, 1586140, 1586146, 'WhatRaceEthnicity_White', 1002),
-                (906, 2, 1586140, date('2022-01-01'), timestamp('2022-01-01 12:34:56'), 45905771, 1586140, 1586142, 'WhatRaceEthnicity_Asian', 1002),
-                (999, 9, 1586140, date('2022-01-01'), timestamp('2022-01-01 12:34:56'), 45905771, 1586140, 1586142, 'WhatRaceEthnicity_Asian', 9999)
+                (901, 9, 1585845, date('2022-01-01'), timestamp('2022-01-01 12:34:56'), 45905771, 1585845, 1585846, 'SexAtBirth_Male', 9999), -- new ID: 206 --
+                (902, 2, 1585845, date('2022-01-01'), timestamp('2022-01-01 12:34:56'), 45905771, 1585845, 1585846, 'SexAtBirth_Male', 1002), -- new ID: 207 --
+                (903, 2, 1585838, date('2022-01-01'), timestamp('2022-01-01 12:34:56'), 45905771, 1585838, 1585839, 'GenderIdentity_Man', 1002),  -- new ID: 208 --
+                (904, 2, 1586140, date('2022-01-01'), timestamp('2022-01-01 12:34:56'), 45905771, 1586140, 1586147, 'WhatRaceEthnicity_Hispanic', 1002),  -- new ID: 209 --
+                (905, 2, 1586140, date('2022-01-01'), timestamp('2022-01-01 12:34:56'), 45905771, 1586140, 1586146, 'WhatRaceEthnicity_White', 1002), -- new ID: 210 --
+                (906, 2, 1586140, date('2022-01-01'), timestamp('2022-01-01 12:34:56'), 45905771, 1586140, 1586142, 'WhatRaceEthnicity_Asian', 1002), -- new ID: 211 --
+                (999, 9, 1586140, date('2022-01-01'), timestamp('2022-01-01 12:34:56'), 45905771, 1586140, 1586142, 'WhatRaceEthnicity_Asian', 9999) -- new ID: 212 --
             """).render(project=self.project_id,
                         incremental_dataset=self.incremental_dataset_id,
                         obs=OBSERVATION)
@@ -333,7 +335,7 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
                 203 ... Similar to 202, the same behavior even when the source value is 'PMI_Skip'.
                 204, 205 ... Those have multiple corresponding records (=904,905,906).
                              204 and 205 get dropped and 904, 905, and 906 get inserted.
-                * 902 - 906 become 206 - 210 respectively after re-mapping using NEW_OBS_ID_LOOKUP.
+                * 901 - 999 become 206 - 212 respectively after re-mapping using NEW_OBS_ID_LOOKUP.
             person_id == 9 (observation_id 901 and 999):
                 This person only exists in the incremental dataset. Such data MUST NOT be included
                 in the final output. (e.g. AIAN participants are included in incremental_dataset while
@@ -362,8 +364,8 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
             'loaded_ids': [101, 102, 103, 104, 201, 202, 203, 204, 205],
             'sandboxed_ids': [202, 203, 204, 205],
             'fields': ['observation_id'],
-            'cleaned_values': [(101,), (102,), (103,), (104,), (201,), (206,),
-                               (207,), (208,), (209,), (210,)]
+            'cleaned_values': [(101,), (102,), (103,), (104,), (201,), (207,),
+                               (208,), (209,), (210,), (211,)]
         }, {
             'fq_table_name':
                 f'{self.project_id}.{self.dataset_id}.{OBS_MAPPING}',
@@ -374,9 +376,9 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
             'fields': ['observation_id', 'src_dataset_id'],
             'cleaned_values': [(101, 'dummy_rdr_1'), (102, 'dummy_rdr_1'),
                                (103, 'dummy_rdr_1'), (104, 'dummy_rdr_1'),
-                               (201, 'dummy_rdr_1'), (206, 'dummy_rdr_2'),
-                               (207, 'dummy_rdr_2'), (208, 'dummy_rdr_2'),
-                               (209, 'dummy_rdr_2'), (210, 'dummy_rdr_2')]
+                               (201, 'dummy_rdr_1'), (207, 'dummy_rdr_2'),
+                               (208, 'dummy_rdr_2'), (209, 'dummy_rdr_2'),
+                               (210, 'dummy_rdr_2'), (211, 'dummy_rdr_2')]
         }, {
             'fq_table_name':
                 f'{self.project_id}.{self.dataset_id}.{OBS_EXT}',
@@ -385,8 +387,8 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
             'loaded_ids': [101, 102, 103, 104, 201, 202, 203, 204, 205],
             'sandboxed_ids': [202, 203, 204, 205],
             'fields': ['observation_id'],
-            'cleaned_values': [(101,), (102,), (103,), (104,), (201,), (206,),
-                               (207,), (208,), (209,), (210,)]
+            'cleaned_values': [(101,), (102,), (103,), (104,), (201,), (207,),
+                               (208,), (209,), (210,), (211,)]
         }, {
             'fq_table_name':
                 f'{self.project_id}.{self.dataset_id}.{SURVEY_CONDUCT}',
@@ -467,8 +469,8 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
             'loaded_ids': [101, 102, 103, 104, 201, 202, 203, 204, 205],
             'sandboxed_ids': [202, 203, 204, 205],
             'fields': ['observation_id'],
-            'cleaned_values': [(101,), (102,), (103,), (104,), (201,), (206,),
-                               (207,), (208,), (209,), (210,)]
+            'cleaned_values': [(101,), (102,), (103,), (104,), (201,), (207,),
+                               (208,), (209,), (210,), (211,)]
         }, {
             'fq_table_name':
                 f'{self.project_id}.{self.dataset_id}.{OBS_MAPPING}',
@@ -479,9 +481,9 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
             'fields': ['observation_id', 'src_dataset_id'],
             'cleaned_values': [(101, 'dummy_rdr_1'), (102, 'dummy_rdr_1'),
                                (103, 'dummy_rdr_1'), (104, 'dummy_rdr_1'),
-                               (201, 'dummy_rdr_1'), (206, 'dummy_rdr_2'),
-                               (207, 'dummy_rdr_2'), (208, 'dummy_rdr_2'),
-                               (209, 'dummy_rdr_2'), (210, 'dummy_rdr_2')]
+                               (201, 'dummy_rdr_1'), (207, 'dummy_rdr_2'),
+                               (208, 'dummy_rdr_2'), (209, 'dummy_rdr_2'),
+                               (210, 'dummy_rdr_2'), (211, 'dummy_rdr_2')]
         }, {
             'fq_table_name':
                 f'{self.project_id}.{self.dataset_id}.{SURVEY_CONDUCT}',
@@ -565,8 +567,8 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
             'loaded_ids': [101, 102, 103, 104, 201, 202, 203, 204, 205],
             'sandboxed_ids': [202, 203, 204, 205],
             'fields': ['observation_id'],
-            'cleaned_values': [(101,), (102,), (103,), (104,), (201,), (206,),
-                               (207,), (208,), (209,), (210,)]
+            'cleaned_values': [(101,), (102,), (103,), (104,), (201,), (207,),
+                               (208,), (209,), (210,), (211,)]
         }, {
             'fq_table_name':
                 f'{self.project_id}.{self.dataset_id}.{OBS_EXT}',
@@ -575,8 +577,8 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
             'loaded_ids': [101, 102, 103, 104, 201, 202, 203, 204, 205],
             'sandboxed_ids': [202, 203, 204, 205],
             'fields': ['observation_id'],
-            'cleaned_values': [(101,), (102,), (103,), (104,), (201,), (206,),
-                               (207,), (208,), (209,), (210,)]
+            'cleaned_values': [(101,), (102,), (103,), (104,), (201,), (207,),
+                               (208,), (209,), (210,), (211,)]
         }, {
             'fq_table_name':
                 f'{self.project_id}.{self.dataset_id}.{SURVEY_CONDUCT}',
@@ -658,8 +660,8 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
             'loaded_ids': [101, 102, 103, 104, 201, 202, 203, 204, 205],
             'sandboxed_ids': [202, 203, 204, 205],
             'fields': ['observation_id'],
-            'cleaned_values': [(101,), (102,), (103,), (104,), (201,), (206,),
-                               (207,), (208,), (209,), (210,)]
+            'cleaned_values': [(101,), (102,), (103,), (104,), (201,), (207,),
+                               (208,), (209,), (210,), (211,)]
         }, {
             'fq_table_name':
                 f'{self.project_id}.{self.dataset_id}.{OBS_EXT}',
@@ -668,8 +670,8 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
             'loaded_ids': [101, 102, 103, 104, 201, 202, 203, 204, 205],
             'sandboxed_ids': [202, 203, 204, 205],
             'fields': ['observation_id'],
-            'cleaned_values': [(101,), (102,), (103,), (104,), (201,), (206,),
-                               (207,), (208,), (209,), (210,)]
+            'cleaned_values': [(101,), (102,), (103,), (104,), (201,), (207,),
+                               (208,), (209,), (210,), (211,)]
         }, {
             'fq_table_name':
                 f'{self.project_id}.{self.dataset_id}.{SURVEY_CONDUCT}',
@@ -750,8 +752,8 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
             'loaded_ids': [101, 102, 103, 104, 201, 202, 203, 204, 205],
             'sandboxed_ids': [202, 203, 204, 205],
             'fields': ['observation_id'],
-            'cleaned_values': [(101,), (102,), (103,), (104,), (201,), (206,),
-                               (207,), (208,), (209,), (210,)]
+            'cleaned_values': [(101,), (102,), (103,), (104,), (201,), (207,),
+                               (208,), (209,), (210,), (211,)]
         }, {
             'fq_table_name':
                 f'{self.project_id}.{self.dataset_id}.{SURVEY_CONDUCT}',
