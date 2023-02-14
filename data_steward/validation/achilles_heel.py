@@ -24,7 +24,6 @@ def remove_sql_comment_from_string(string):
 
     :string: part of sql query -- comment type strings
     :returns: the part of the sql query
-
     """
     query_part = string.strip().split('--')[0].strip()
     return query_part
@@ -79,6 +78,7 @@ def drop_or_truncate_table(client, command):
 def run_heel_analysis_job(command):
     """
     Runs command (query) and waits for job completion
+
     :param command: query to run
     :return: None
     """
@@ -100,6 +100,7 @@ def run_heel_analysis_job(command):
 def run_heel(client, hpo_id):
     """
     Run heel commands
+
     :param client: BigQueryClient
     :param hpo_id: string name for the hpo identifier
     :returns: None
@@ -115,6 +116,7 @@ def run_heel(client, hpo_id):
 def create_tables(hpo_id, drop_existing=False):
     """
     Create the achilles related tables
+    
     :param hpo_id: associated hpo id
     :param drop_existing: if True, drop existing tables
     :return:
