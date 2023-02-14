@@ -615,4 +615,4 @@ def get_new_dataset_name(src_dataset_name: str, release_tag: str) -> str:
         release_tag: Release tag for the new datasets.
     Returns: Name of the new dataset.
     """
-    return re.sub(r'\d{4}q\dr\d', release_tag, src_dataset_name)
+    return re.sub(r'\d{4}q[1-4]r\d{1,3}', release_tag, src_dataset_name)
