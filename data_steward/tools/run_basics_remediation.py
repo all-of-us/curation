@@ -239,6 +239,7 @@ def main():
     clean_dataset(project_id,
                   new_dataset,
                   f"{tag}_sandbox", [(RemediateBasics,)],
+                  table_namer=f"dc3016_{new_dataset}",
                   incremental_dataset_id=args.incremental_dataset_id,
                   dataset_with_largest_observation_id=args.
                   dataset_with_largest_observation_id,
