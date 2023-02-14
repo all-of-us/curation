@@ -21,7 +21,8 @@ from constants.cdr_cleaner.clean_cdr import (COMBINED,
                                              REGISTERED_TIER_DEID_CLEAN)
 from resources import ext_table_for, mapping_table_for
 from retraction.retract_utils import (is_combined_release_dataset,
-                                      is_deid_dataset, is_deid_release_dataset)
+                                      is_deid_dataset, is_deid_release_dataset,
+                                      is_rdr_dataset)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -318,8 +319,9 @@ class RemediateBasics(BaseCleaningRule):
             insert_queries.extend(
                 [self._get_query(INSERT_PERS_EXT, PERSON, PERS_EXT)])
 
-        # mapping tables exist only in non-deid datasets
-        if not is_deid_dataset(self.dataset_id):
+        # mapping tables exist only in non-deid and non-rdr datasets
+        if not is_deid_dataset(self.dataset_id) and not is_rdr_dataset(
+                self.dataset_id):
             sandbox_queries.extend([
                 self._get_query(SANDBOX_OBS_MAPPING_EXT, OBSERVATION,
                                 OBS_MAPPING),

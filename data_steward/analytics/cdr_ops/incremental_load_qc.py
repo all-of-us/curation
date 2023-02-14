@@ -40,7 +40,8 @@ from utils import auth
 from gcloud.bq import BigQueryClient
 from resources import ext_table_for, mapping_table_for
 from retraction.retract_utils import (is_combined_release_dataset,
-                                      is_deid_dataset, is_deid_release_dataset)
+                                      is_deid_dataset, is_deid_release_dataset,
+                                      is_rdr_dataset)
 # -
 
 impersonation_creds = auth.get_impersonation_credentials(
@@ -120,8 +121,10 @@ elif is_combined_release_dataset(new_dataset):
         mapping_table_for(OBSERVATION),
         ext_table_for(OBSERVATION)
     ]
-else:
+elif is_rdr_dataset(new_dataset):
     obs_tables = [OBSERVATION]
+else:
+    obs_tables = [OBSERVATION, mapping_table_for(OBSERVATION)]
 
 query = JINJA_ENV.from_string('''
     SELECT
@@ -241,64 +244,69 @@ render_message(df, success_null_check, failure_null_check)
 # their correspondants after the hotfix.
 
 # +
-if is_combined_release_dataset(new_dataset):
-    map_ext_tuples = [
-        (OBSERVATION, mapping_table_for(OBSERVATION)),
-        (OBSERVATION, ext_table_for(OBSERVATION)),
-        (SURVEY_CONDUCT, mapping_table_for(SURVEY_CONDUCT)),
-        (SURVEY_CONDUCT, ext_table_for(SURVEY_CONDUCT)),
-    ]
-elif is_deid_dataset(new_dataset):
-    map_ext_tuples = [
-        (OBSERVATION, ext_table_for(OBSERVATION)),
-        (SURVEY_CONDUCT, ext_table_for(SURVEY_CONDUCT)),
-        (PERSON, ext_table_for(PERSON)),
-    ]
+if is_rdr_dataset(new_dataset):
+    success_msg = "Skipping this check because RDR dataset does not have mapping/ext tables.<br><br>"
+    render_message('', success_msg=success_msg)
+
 else:
-    map_ext_tuples = [
-        (OBSERVATION, mapping_table_for(OBSERVATION)),
-        (SURVEY_CONDUCT, mapping_table_for(SURVEY_CONDUCT)),
-    ]
+    if is_combined_release_dataset(new_dataset):
+        map_ext_tuples = [
+            (OBSERVATION, mapping_table_for(OBSERVATION)),
+            (OBSERVATION, ext_table_for(OBSERVATION)),
+            (SURVEY_CONDUCT, mapping_table_for(SURVEY_CONDUCT)),
+            (SURVEY_CONDUCT, ext_table_for(SURVEY_CONDUCT)),
+        ]
+    elif is_deid_dataset(new_dataset):
+        map_ext_tuples = [
+            (OBSERVATION, ext_table_for(OBSERVATION)),
+            (SURVEY_CONDUCT, ext_table_for(SURVEY_CONDUCT)),
+            (PERSON, ext_table_for(PERSON)),
+        ]
+    else:
+        map_ext_tuples = [
+            (OBSERVATION, mapping_table_for(OBSERVATION)),
+            (SURVEY_CONDUCT, mapping_table_for(SURVEY_CONDUCT)),
+        ]
 
-query = JINJA_ENV.from_string('''
-    SELECT
-        \'{{mapping_table}}\' as table_name,
-        COUNT(*) AS unmatched_ids
-    FROM `{{project}}.{{new_dataset}}.{{table_name}}` d
-    FULL OUTER JOIN `{{project}}.{{new_dataset}}.{{mapping_table}}` mp
-    USING ({{table_name}}_id)
-    WHERE d.{{table_name}}_id IS NULL OR mp.{{table_name}}_id IS NULL
-    HAVING COUNT(*) > 0
-''')
+    query = JINJA_ENV.from_string('''
+        SELECT
+            \'{{mapping_table}}\' as table_name,
+            COUNT(*) AS unmatched_ids
+        FROM `{{project}}.{{new_dataset}}.{{table_name}}` d
+        FULL OUTER JOIN `{{project}}.{{new_dataset}}.{{mapping_table}}` mp
+        USING ({{table_name}}_id)
+        WHERE d.{{table_name}}_id IS NULL OR mp.{{table_name}}_id IS NULL
+        HAVING COUNT(*) > 0
+    ''')
 
-queries = []
-for (table, mapping_table) in map_ext_tuples:
-    queries.append(
-        query.render(project=project_id,
-                     new_dataset=new_dataset,
-                     table_name=table,
-                     mapping_table=mapping_table))
-union_all_query = '\nUNION ALL\n'.join(queries)
+    queries = []
+    for (table, mapping_table) in map_ext_tuples:
+        queries.append(
+            query.render(project=project_id,
+                         new_dataset=new_dataset,
+                         table_name=table,
+                         mapping_table=mapping_table))
+    union_all_query = '\nUNION ALL\n'.join(queries)
 
-df = execute(client, union_all_query)
+    df = execute(client, union_all_query)
 
-success_null_check = (
-    "All OBSERVATION, SURVEY_CONDUCT, and PERSON records have "
-    "valid corresponding records in their mapping/ext tables. <br>"
-    "And there are no invalid records in the mapping/ext tables.")
-failure_null_check = (
-    "These mapping/ext tables are inconsistent with their "
-    "correspondants. <br>Look at these tables and investigate why "
-    "they are inconsistent: <b>{tables}</b><br><br>")
+    success_null_check = (
+        "All OBSERVATION, SURVEY_CONDUCT, and PERSON records have "
+        "valid corresponding records in their mapping/ext tables. <br>"
+        "And there are no invalid records in the mapping/ext tables.")
+    failure_null_check = (
+        "These mapping/ext tables are inconsistent with their "
+        "correspondants. <br>Look at these tables and investigate why "
+        "they are inconsistent: <b>{tables}</b><br><br>")
 
-render_message(df,
-               success_null_check,
-               failure_null_check,
-               failure_msg_args={'tables': ', '.join(df.table_name)})
+    render_message(df,
+                   success_null_check,
+                   failure_null_check,
+                   failure_msg_args={'tables': ', '.join(df.table_name)})
 
 # -
 
-# ## QC 4-1. (Only for `is_deidentified == True`) Confirm `person_ext`'s state related columns come from `source_dataset` <br>- Check against entire `new_dataset`
+# ## QC 4-1. (Only for deid base/clean) Confirm `person_ext`'s state related columns come from `source_dataset` <br>- Check against entire `new_dataset`
 # `state_of_residence_concept_id` and `state_of_residence_source_value` in `incremental_dataset.person_ext` are
 # all NULL. This is because these two columns do not originate from the basics. <br>To have a complete `new_dataset.person_ext`,
 # we must pull these columns from `source_dataset`, not from `incremental_dataset`.<br>
@@ -342,7 +350,7 @@ else:
 
 # -
 
-# ## QC 4-2. (Only for `is_deidentified == True`) Confirm `person_ext`'s state related columns come from `source_dataset` <br>- Check against records from `incremental_dataset`
+# ## QC 4-2. (Only for deid base/clean) Confirm `person_ext`'s state related columns come from `source_dataset` <br>- Check against records from `incremental_dataset`
 # If QC 4-1 fails, this QC will be helpful for troubleshooting. This QC checks the same thing as 4-1, but the scope is limited to only the participants from `incremental_dataset`.<br>
 # If QC 4-1 fails but 4-2 is successful, that means the issue comes from the original dataset, not from the incremental dataset. If both 4-1 and 4-2 fail, that means
 # something related to the incremental dataset did not work as expected.
@@ -474,7 +482,7 @@ check_status = "Cannot tell success or failure. Check the result."
 msg = (
     f"There are <b>{new_questionnaire_response_ids}</b> questionnaire_response_ids added as a result of the hotfix. <br>"
     f"There are <b>{new_survey_conduct_ids}</b> survey_conducts added as a result of the hotfix. <br>"
-    "These numbers should be the same. <br>"
+    "<b>These numbers should be the same.</b> <br>"
     "If these numbers look off, investigate.<br><br>")
 
 display(

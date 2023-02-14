@@ -2,6 +2,7 @@
 This is a wrapper script to complete hot-fix for DC-3016.
 
 You can use this script for remediation for the following datasets:
+    - RDR dataset
     - COMBINED / COMBINED RELEASE datasets
     - [CT|RT] DEID / DEID BASE / DEID CLEAN datasets
 
