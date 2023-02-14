@@ -27,6 +27,7 @@ sandbox_obs: str = ""  # sandbox table for observation used for this hotfix
 aian_lookup_dataset: str = ""  # dataset where we have aian lookup table
 aian_lookup_table: str = ""  # table that has PIDs/RIDs of AIAN participants
 incremental_dataset: str = ""  # dataset so-called "incremental"
+obs_id_lookup_dataset: str = ""  # dataset that has NEW_OBS_ID_LOOKUP table.
 includes_aian: str = ""  # True if AIAN participants' data is in the dataset, False if not
 # -
 
@@ -162,19 +163,19 @@ render_message(df,
 # ## QC 2-2. Confirm all new records in `OBSERVATION` have mapping info in `_observation_id_map`
 # Any observation records from `incremental_dataset` got new `OBSERVATION_ID`s
 # assigned in `new_dataset` to avoid ID duplicates. The mapping of the old-new
-# `OBSERVATION_ID`s is kept in `sandbox._observation_id_map`. <br>We must confirm
-# all the new `OBSERVATION_ID`s have their mapping info in `sandbox._observation_id_map`<br>.
+# `OBSERVATION_ID`s is kept in `obs_id_lookup_dataset._observation_id_map`. <br>We must confirm
+# all the new `OBSERVATION_ID`s have their mapping info in `obs_id_lookup_dataset._observation_id_map`<br>.
 # NOTE: Not all records in `_observation_id_map` have corresponding records in `new_dataset`
 # because `_observation_id_map` is referenced by multiple data releases.
 
 # +
 query = JINJA_ENV.from_string('''
     SELECT
-        'no mapping record found in sandbox._observation_id_map' AS issue,
+        'no mapping record found in obs_id_lookup_dataset._observation_id_map' AS issue,
         COUNT(*) AS no_mapping_row_count
     FROM `{{project}}.{{new_dataset}}.observation`
     WHERE observation_id NOT IN (
-        SELECT observation_id FROM `{{project}}.{{sandbox_dataset}}._observation_id_map`
+        SELECT observation_id FROM `{{project}}.{{obs_id_lookup_dataset}}._observation_id_map`
         WHERE observation_id IS NOT NULL
     )
     HAVING COUNT(*) > 1
@@ -187,7 +188,7 @@ issues = df.issue
 
 success_null_check = (
     f"All records in {new_dataset}.observation have corresponding records in "
-    f"{sandbox_dataset}._observation_id_map and vice versa.<br><br>")
+    f"{obs_id_lookup_dataset}._observation_id_map and vice versa.<br><br>")
 failure_null_check = (
     f"Issue(s) found: {', '.join(issues)}. Look at the result table below. <br>"
     "investigate why they are inconsistent.<br><br>")
