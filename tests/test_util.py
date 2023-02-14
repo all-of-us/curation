@@ -1,6 +1,5 @@
 # Python imports
 import inspect
-from io import open
 import os
 from typing import Optional
 
