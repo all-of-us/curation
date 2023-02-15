@@ -130,8 +130,12 @@ SELECT
 FROM `{{project}}.{{incremental_dataset}}.{{table}}` inc_o
 JOIN `{{project}}.{{obs_id_lookup_dataset}}.{{new_obs_id_lookup}}` new_id
 ON inc_o.observation_id = new_id.source_observation_id
+WHERE inc_o.person_id IN ( -- Include only existing participants --
+    SELECT DISTINCT person_id
+    FROM `{{project}}.{{dataset}}.person`
+)
 {% if exclude_lookup_dataset and exclude_lookup_table %}
-WHERE inc_o.person_id NOT IN (
+AND inc_o.person_id NOT IN (
     SELECT 
         {% if is_deid %} research_id {% else %} person_id {% endif %}
     FROM `{{project}}.{{exclude_lookup_dataset}}.{{exclude_lookup_table}}` 
@@ -151,9 +155,16 @@ SELECT
 FROM `{{project}}.{{incremental_dataset}}.{{table}}` i
 JOIN `{{project}}.{{obs_id_lookup_dataset}}.{{new_obs_id_lookup}}` oim
 ON i.observation_id = oim.source_observation_id
-{% if exclude_lookup_dataset and exclude_lookup_table %}
 WHERE i.observation_id IN (
-    SELECT observation_id FROM `{{project}}.{{incremental_dataset}}.observation`
+    SELECT observation_id FROM `{{project}}.{{incremental_dataset}}.{{domain}}`
+    WHERE person_id IN ( -- Include only existing participants --
+        SELECT DISTINCT person_id
+        FROM `{{project}}.{{dataset}}.person`
+    )
+)
+{% if exclude_lookup_dataset and exclude_lookup_table %}
+AND i.observation_id IN (
+    SELECT observation_id FROM `{{project}}.{{incremental_dataset}}.{{domain}}`
     WHERE person_id NOT IN (
         SELECT 
             {% if is_deid %} research_id {% else %} person_id {% endif %}
@@ -173,9 +184,16 @@ SELECT
 FROM `{{project}}.{{incremental_dataset}}.{{table}}` i
 JOIN `{{project}}.{{obs_id_lookup_dataset}}.{{new_obs_id_lookup}}` oim
 ON i.observation_id = oim.source_observation_id
-{% if exclude_lookup_dataset and exclude_lookup_table %}
 WHERE i.observation_id IN (
-    SELECT observation_id FROM `{{project}}.{{incremental_dataset}}.observation`
+    SELECT observation_id FROM `{{project}}.{{incremental_dataset}}.{{domain}}`
+    WHERE person_id IN ( -- Include only existing participants --
+        SELECT DISTINCT person_id
+        FROM `{{project}}.{{dataset}}.person`
+    )
+)
+{% if exclude_lookup_dataset and exclude_lookup_table %}
+AND i.observation_id IN (
+    SELECT observation_id FROM `{{project}}.{{incremental_dataset}}.{{domain}}`
     WHERE person_id NOT IN (
         SELECT 
             {% if is_deid %} research_id {% else %} person_id {% endif %}
@@ -195,16 +213,20 @@ INSERT INTO `{{project}}.{{dataset}}.{{table}}`
 SELECT
     i.person_id,
     i.src_id,
-    sb.state_of_residence_concept_id, -- This might be NULL if the person is new from the incremental dataset --
-    sb.state_of_residence_source_value, -- This might be NULL if the person is new from the incremental dataset -- 
+    sb.state_of_residence_concept_id,
+    sb.state_of_residence_source_value,
     i.sex_at_birth_concept_id,
     i.sex_at_birth_source_concept_id,
     i.sex_at_birth_source_value
 FROM `{{project}}.{{incremental_dataset}}.{{table}}` i
 LEFT JOIN `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` sb
 ON i.person_id = sb.person_id
+WHERE i.person_id IN ( -- Include only existing participants --
+    SELECT DISTINCT person_id
+    FROM `{{project}}.{{dataset}}.person`
+)
 {% if exclude_lookup_dataset and exclude_lookup_table %}
-WHERE i.person_id NOT IN (
+AND i.person_id NOT IN (
     SELECT 
         {% if is_deid %} research_id {% else %} person_id {% endif %}
     FROM `{{project}}.{{exclude_lookup_dataset}}.{{exclude_lookup_table}}` 
@@ -215,8 +237,14 @@ WHERE i.person_id NOT IN (
 GENERIC_INSERT = JINJA_ENV.from_string("""
 INSERT INTO `{{project}}.{{dataset}}.{{table}}`
 SELECT * FROM `{{project}}.{{incremental_dataset}}.{{table}}`
+WHERE person_id IN ( -- Include only existing participants --
+    SELECT DISTINCT person_id
+    FROM 
+        {% if table=='person' %} `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}`
+        {% else %} `{{project}}.{{dataset}}.person` {% endif %}
+)
 {% if exclude_lookup_dataset and exclude_lookup_table %}
-WHERE person_id NOT IN (
+AND person_id NOT IN (
     SELECT 
         {% if is_deid %} research_id {% else %} person_id {% endif %}
     FROM `{{project}}.{{exclude_lookup_dataset}}.{{exclude_lookup_table}}` 
@@ -227,8 +255,15 @@ WHERE person_id NOT IN (
 GENERIC_INSERT_MAP_EXT = JINJA_ENV.from_string("""
 INSERT INTO `{{project}}.{{dataset}}.{{table}}`
 SELECT * FROM `{{project}}.{{incremental_dataset}}.{{table}}`
-{% if exclude_lookup_dataset and exclude_lookup_table %}
 WHERE {{domain}}_id IN (
+    SELECT {{domain}}_id FROM `{{project}}.{{incremental_dataset}}.{{domain}}`
+    WHERE person_id IN ( -- Include only existing participants --
+        SELECT DISTINCT person_id
+        FROM `{{project}}.{{dataset}}.person`
+    )
+)
+{% if exclude_lookup_dataset and exclude_lookup_table %}
+AND {{domain}}_id IN (
     SELECT {{domain}}_id FROM `{{project}}.{{incremental_dataset}}.{{domain}}`
     WHERE person_id NOT IN (
         SELECT 
@@ -335,10 +370,17 @@ class RemediateBasics(BaseCleaningRule):
             The specifications are optional but the query is required.
         """
 
+        # Operations for person table must run seperately because it is used
+        # for filtering existing participants in the JINJA teplates
+        person_queries = [
+            self._get_query(GENERIC_SANDBOX, PERSON, PERSON),
+            self._get_query(GENERIC_DELETE, PERSON, PERSON),
+            self._get_query(GENERIC_INSERT, PERSON, PERSON)
+        ]
+
         sandbox_queries = [
             self._get_query(SANDBOX_OBS, OBSERVATION, OBSERVATION),
-            self._get_query(GENERIC_SANDBOX, SURVEY_CONDUCT, SURVEY_CONDUCT),
-            self._get_query(GENERIC_SANDBOX, PERSON, PERSON)
+            self._get_query(GENERIC_SANDBOX, SURVEY_CONDUCT, SURVEY_CONDUCT)
         ]
 
         delete_queries = [
@@ -346,14 +388,12 @@ class RemediateBasics(BaseCleaningRule):
             for (domain, table) in [
                 (OBSERVATION, OBSERVATION),
                 (SURVEY_CONDUCT, SURVEY_CONDUCT),
-                (PERSON, PERSON),
             ]
         ]
 
         insert_queries = [
             self._get_query(INSERT_OBS, OBSERVATION, OBSERVATION),
             self._get_query(GENERIC_INSERT, SURVEY_CONDUCT, SURVEY_CONDUCT),
-            self._get_query(GENERIC_INSERT, PERSON, PERSON)
         ]
 
         # obs_ext and sc_ext exist in combined_release and deid datasets
@@ -399,7 +439,7 @@ class RemediateBasics(BaseCleaningRule):
                                 SC_MAPPING),
             ])
 
-        return sandbox_queries + delete_queries + insert_queries
+        return sandbox_queries + delete_queries + insert_queries + person_queries
 
     def setup_rule(self, client):
         """Create a lookup table for observation_id. New observation_ids need
