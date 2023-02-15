@@ -880,7 +880,8 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
             'loaded_ids': [1001, 1002],
             'sandboxed_ids': [1002],
             'fields': ['survey_conduct_id', 'language'],
-            'cleaned_values': [(1001, 'en'), (1002, 'es'), (1003, 'es'), (9999, 'es')]
+            'cleaned_values': [(1001, 'en'), (1002, 'es'), (1003, 'es'),
+                               (9999, 'es')]
         }, {
             'fq_table_name':
                 f'{self.project_id}.{self.dataset_id}.{PERSON}',
@@ -889,7 +890,8 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
             'loaded_ids': [1, 2],
             'sandboxed_ids': [2],
             'fields': ['person_id', 'gender_concept_id'],
-            'cleaned_values': [(1, 1585839), (2, 1585839), (3, 1585839), (9, 1585839)]
+            'cleaned_values': [(1, 1585839), (2, 1585839), (3, 1585839),
+                               (9, 1585839)]
         }]
 
         self.default_test(tables_and_counts)
