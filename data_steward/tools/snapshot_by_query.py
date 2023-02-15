@@ -1,9 +1,11 @@
+# Python imports
 import argparse
 import logging
 
+# Project imports
 import cdm
 import resources
-from bq_utils import list_all_table_ids, query, wait_on_jobs, BigQueryJobWaitError, \
+from bq_utils import query, wait_on_jobs, BigQueryJobWaitError, \
     create_standard_table
 from gcloud.bq import BigQueryClient
 from utils.pipeline_logging import configure
@@ -26,6 +28,7 @@ BIGQUERY_DATA_TYPES = {
 def create_empty_dataset(client, dataset_id, snapshot_dataset_id):
     """
     Create the empty tables in the new snapshot dataset
+
     :param client: a BigQueryClient
     :param dataset_id: identifies the source dataset
     :param snapshot_dataset_id: identifies the new dataset
@@ -42,6 +45,7 @@ def create_empty_dataset(client, dataset_id, snapshot_dataset_id):
 def create_empty_cdm_tables(snapshot_dataset_id, hpo_id=None):
     """
     Copy the table content from the current dataset to the snapshot dataset
+    
     :param snapshot_dataset_id:
     :param hpo_id: Identifies the hpo_id of the site table
     :return:
@@ -123,29 +127,33 @@ def get_copy_table_query(client, dataset_id, table_id):
 def copy_tables_to_new_dataset(client, dataset_id, snapshot_dataset_id):
     """
     lists the tables in the dataset and copies each table to a new dataset.
+
     :param client: a BigQueryClient
     :param dataset_id: identifies the source dataset
     :param snapshot_dataset_id: identifies the destination dataset
     :return:
     """
     copy_table_job_ids = []
-    destination_tables = list_all_table_ids(snapshot_dataset_id)
-    for table_id in list_all_table_ids(dataset_id):
+    destination_tables = [
+        table.table_id for table in client.list_tables(snapshot_dataset_id)
+    ]
+
+    for table in client.list_tables(dataset_id):
         LOGGER.info(
-            f" Copying {dataset_id}.{table_id} to {snapshot_dataset_id}.{table_id}"
+            f" Copying {dataset_id}.{table.table_id} to {snapshot_dataset_id}.{table.table_id}"
         )
-        if table_id not in destination_tables:
+        if table.table_id not in destination_tables:
             try:
-                fields = resources.fields_for(table_id)
-                client.create_tables(
-                    [f'{client.project}.{snapshot_dataset_id}.{table_id}'],
-                    False, [fields])
+                fields = resources.fields_for(table.table_id)
+                client.create_tables([
+                    f'{client.project}.{snapshot_dataset_id}.{table.table_id}'
+                ], False, [fields])
             except RuntimeError:
-                LOGGER.info(f'Unable to find schema for {table_id}')
-        q = get_copy_table_query(client, dataset_id, table_id)
+                LOGGER.info(f'Unable to find schema for {table.table_id}')
+        q = get_copy_table_query(client, dataset_id, table.table_id)
         results = query(q,
                         use_legacy_sql=False,
-                        destination_table_id=table_id,
+                        destination_table_id=table.table_id,
                         destination_dataset_id=snapshot_dataset_id,
                         batch=True)
         copy_table_job_ids.append(results['jobReference']['jobId'])
