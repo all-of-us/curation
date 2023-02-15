@@ -245,10 +245,6 @@ class BaseTest:
             """
             super().setUp()
 
-            # Variables for tracking loaded vocabulary tables
-            self.vocabulary_loaded = False
-            self.vocabulary_tables = []
-
         def default_test(self, tables_and_test_values):
             """
             Test passing the query specifications to the clean engine module.
@@ -353,18 +349,6 @@ class BaseTest:
                     destination, schema=schema),
                                                      exists_ok=True)
                 self.client.copy_table(src_table, dst_table)
-
-                self.vocabulary_tables.append(destination)
-
-            self.vocabulary_loaded = True
-
-        def tearDown(self):
-            super().tearDown()
-
-            # Remove all vocabulary tables if created
-            if self.vocabulary_loaded:
-                for table in self.vocabulary_tables:
-                    self.client.delete_table(table, not_found_ok=True)
 
     class DeidRulesTestBase(CleaningRulesTestBase):
         """
