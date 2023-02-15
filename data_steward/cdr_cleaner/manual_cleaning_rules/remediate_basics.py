@@ -14,9 +14,10 @@ import logging
 # Project imports
 from common import (JINJA_ENV, OBSERVATION, PERSON, SURVEY_CONDUCT)
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
-from constants.cdr_cleaner.clean_cdr import (COMBINED,
+from constants.cdr_cleaner.clean_cdr import (COMBINED, CONTROLLED_TIER_DEID,
                                              CONTROLLED_TIER_DEID_BASE,
                                              CONTROLLED_TIER_DEID_CLEAN, QUERY,
+                                             RDR, REGISTERED_TIER_DEID,
                                              REGISTERED_TIER_DEID_BASE,
                                              REGISTERED_TIER_DEID_CLEAN)
 from resources import ext_table_for, mapping_table_for
@@ -129,9 +130,13 @@ SELECT
 FROM `{{project}}.{{incremental_dataset}}.{{table}}` inc_o
 JOIN `{{project}}.{{obs_id_lookup_dataset}}.{{new_obs_id_lookup}}` new_id
 ON inc_o.observation_id = new_id.source_observation_id
-WHERE inc_o.person_id IN (
-    SELECT person_id FROM `{{project}}.{{dataset}}.{{table}}` 
+{% if exclude_lookup_dataset and exclude_lookup_table %}
+WHERE inc_o.person_id NOT IN (
+    SELECT 
+        {% if is_deid %} research_id {% else %} person_id {% endif %}
+    FROM `{{project}}.{{exclude_lookup_dataset}}.{{exclude_lookup_table}}` 
 )
+{% endif %}
 """)
 
 INSERT_OBS_MAPPING = JINJA_ENV.from_string("""
@@ -146,12 +151,16 @@ SELECT
 FROM `{{project}}.{{incremental_dataset}}.{{table}}` i
 JOIN `{{project}}.{{obs_id_lookup_dataset}}.{{new_obs_id_lookup}}` oim
 ON i.observation_id = oim.source_observation_id
+{% if exclude_lookup_dataset and exclude_lookup_table %}
 WHERE i.observation_id IN (
     SELECT observation_id FROM `{{project}}.{{incremental_dataset}}.observation`
-    WHERE person_id IN (
-        SELECT person_id FROM `{{project}}.{{dataset}}.person` 
+    WHERE person_id NOT IN (
+        SELECT 
+            {% if is_deid %} research_id {% else %} person_id {% endif %}
+        FROM `{{project}}.{{exclude_lookup_dataset}}.{{exclude_lookup_table}}` 
     )
 )
+{% endif %}
 """)
 
 INSERT_OBS_EXT = JINJA_ENV.from_string("""
@@ -164,12 +173,16 @@ SELECT
 FROM `{{project}}.{{incremental_dataset}}.{{table}}` i
 JOIN `{{project}}.{{obs_id_lookup_dataset}}.{{new_obs_id_lookup}}` oim
 ON i.observation_id = oim.source_observation_id
+{% if exclude_lookup_dataset and exclude_lookup_table %}
 WHERE i.observation_id IN (
     SELECT observation_id FROM `{{project}}.{{incremental_dataset}}.observation`
-    WHERE person_id IN (
-        SELECT person_id FROM `{{project}}.{{dataset}}.person` 
+    WHERE person_id NOT IN (
+        SELECT 
+            {% if is_deid %} research_id {% else %} person_id {% endif %}
+        FROM `{{project}}.{{exclude_lookup_dataset}}.{{exclude_lookup_table}}` 
     )
 )
+{% endif %}
 """)
 
 # NOTE Due to the incremental dataset's setup, state_of_residence_concept_id and
@@ -182,22 +195,48 @@ INSERT INTO `{{project}}.{{dataset}}.{{table}}`
 SELECT
     i.person_id,
     i.src_id,
-    sb.state_of_residence_concept_id,
-    sb.state_of_residence_source_value,    
+    sb.state_of_residence_concept_id, -- This might be NULL if the person is new from the incremental dataset --
+    sb.state_of_residence_source_value, -- This might be NULL if the person is new from the incremental dataset -- 
     i.sex_at_birth_concept_id,
     i.sex_at_birth_source_concept_id,
     i.sex_at_birth_source_value
 FROM `{{project}}.{{incremental_dataset}}.{{table}}` i
-JOIN `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` sb
+LEFT JOIN `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` sb
 ON i.person_id = sb.person_id
+{% if exclude_lookup_dataset and exclude_lookup_table %}
+WHERE i.person_id NOT IN (
+    SELECT 
+        {% if is_deid %} research_id {% else %} person_id {% endif %}
+    FROM `{{project}}.{{exclude_lookup_dataset}}.{{exclude_lookup_table}}` 
+)
+{% endif %}
 """)
 
 GENERIC_INSERT = JINJA_ENV.from_string("""
 INSERT INTO `{{project}}.{{dataset}}.{{table}}`
 SELECT * FROM `{{project}}.{{incremental_dataset}}.{{table}}`
-WHERE {{domain}}_id IN (
-    SELECT {{domain}}_id FROM `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` 
+{% if exclude_lookup_dataset and exclude_lookup_table %}
+WHERE person_id NOT IN (
+    SELECT 
+        {% if is_deid %} research_id {% else %} person_id {% endif %}
+    FROM `{{project}}.{{exclude_lookup_dataset}}.{{exclude_lookup_table}}` 
 )
+{% endif %}
+""")
+
+GENERIC_INSERT_MAP_EXT = JINJA_ENV.from_string("""
+INSERT INTO `{{project}}.{{dataset}}.{{table}}`
+SELECT * FROM `{{project}}.{{incremental_dataset}}.{{table}}`
+{% if exclude_lookup_dataset and exclude_lookup_table %}
+WHERE {{domain}}_id IN (
+    SELECT {{domain}}_id FROM `{{project}}.{{incremental_dataset}}.{{domain}}`
+    WHERE person_id NOT IN (
+        SELECT 
+            {% if is_deid %} research_id {% else %} person_id {% endif %}
+        FROM `{{project}}.{{exclude_lookup_dataset}}.{{exclude_lookup_table}}` 
+    )
+)
+{% endif %}
 """)
 
 OBS_MAPPING = mapping_table_for(OBSERVATION)
@@ -219,6 +258,8 @@ class RemediateBasics(BaseCleaningRule):
                  incremental_dataset_id=None,
                  obs_id_lookup_dataset=None,
                  dataset_with_largest_observation_id=None,
+                 exclude_lookup_dataset=None,
+                 exclude_lookup_table=None,
                  table_namer=None):
         """
         Initialize the class with proper information.
@@ -233,9 +274,10 @@ class RemediateBasics(BaseCleaningRule):
         super().__init__(issue_numbers=ISSUE_NUMBERS,
                          description=desc,
                          affected_datasets=[
-                             COMBINED, CONTROLLED_TIER_DEID_BASE,
-                             CONTROLLED_TIER_DEID_CLEAN,
-                             REGISTERED_TIER_DEID_BASE,
+                             COMBINED, CONTROLLED_TIER_DEID,
+                             CONTROLLED_TIER_DEID_BASE,
+                             CONTROLLED_TIER_DEID_CLEAN, RDR,
+                             REGISTERED_TIER_DEID, REGISTERED_TIER_DEID_BASE,
                              REGISTERED_TIER_DEID_CLEAN
                          ],
                          affected_tables=[
@@ -250,6 +292,8 @@ class RemediateBasics(BaseCleaningRule):
         self.incremental_dataset_id = incremental_dataset_id
         self.dataset_with_largest_observation_id = dataset_with_largest_observation_id
         self.obs_id_lookup_dataset = obs_id_lookup_dataset
+        self.exclude_lookup_dataset = exclude_lookup_dataset
+        self.exclude_lookup_table = exclude_lookup_table
 
     def _get_query(self, template, domain, table) -> dict:
         """
@@ -276,7 +320,10 @@ class RemediateBasics(BaseCleaningRule):
                     new_obs_id_lookup=NEW_OBS_ID_LOOKUP,
                     dataset_with_largest_observation_id=self.
                     dataset_with_largest_observation_id,
-                    obs_id_lookup_dataset=self.obs_id_lookup_dataset)
+                    obs_id_lookup_dataset=self.obs_id_lookup_dataset,
+                    exclude_lookup_dataset=self.exclude_lookup_dataset,
+                    exclude_lookup_table=self.exclude_lookup_table,
+                    is_deid=is_deid_dataset(self.dataset_id))
         }
 
     def get_query_specs(self):
@@ -322,7 +369,7 @@ class RemediateBasics(BaseCleaningRule):
             ])
             insert_queries.extend([
                 self._get_query(INSERT_OBS_EXT, OBSERVATION, OBS_EXT),
-                self._get_query(GENERIC_INSERT, SURVEY_CONDUCT, SC_EXT)
+                self._get_query(GENERIC_INSERT_MAP_EXT, SURVEY_CONDUCT, SC_EXT)
             ])
 
         # person_ext table exists only in deid base/clean datasets
@@ -348,7 +395,8 @@ class RemediateBasics(BaseCleaningRule):
             ])
             insert_queries.extend([
                 self._get_query(INSERT_OBS_MAPPING, OBSERVATION, OBS_MAPPING),
-                self._get_query(GENERIC_INSERT, SURVEY_CONDUCT, SC_MAPPING),
+                self._get_query(GENERIC_INSERT_MAP_EXT, SURVEY_CONDUCT,
+                                SC_MAPPING),
             ])
 
         return sandbox_queries + delete_queries + insert_queries
@@ -405,6 +453,22 @@ if __name__ == '__main__':
                         dest='obs_id_lookup_dataset',
                         help=(f'Dataset for NEW_OBS_ID_LOOKUP table.'),
                         required=True)
+    parser.add_argument(
+        '--exclude_lookup_dataset',
+        action='store',
+        dest='exclude_lookup_dataset',
+        help=
+        (f'Dataset that has the PID/RID table for exlusion (e.g. AIAN participants for W/O AIAN dataset).'
+        ),
+        required=False)
+    parser.add_argument(
+        '--exclude_lookup_table',
+        action='store',
+        dest='exclude_lookup_table',
+        help=
+        (f'PID/RID table for exlusion (e.g. AIAN participants for W/O AIAN dataset).'
+        ),
+        required=False)
 
     ARGS = parser.parse_args()
 
@@ -419,7 +483,9 @@ if __name__ == '__main__':
             incremental_dataset_id=ARGS.incremental_dataset_id,
             dataset_with_largest_observation_id=ARGS.
             dataset_with_largest_observation_id,
-            obs_id_lookup_dataset=ARGS.obs_id_lookup_dataset)
+            obs_id_lookup_dataset=ARGS.obs_id_lookup_dataset,
+            exclude_lookup_dataset=ARGS.exclude_lookup_dataset,
+            exclude_lookup_table=ARGS.exclude_lookup_table)
         for query_dict in query_list:
             LOGGER.info(query_dict.get(QUERY))
     else:
@@ -430,4 +496,6 @@ if __name__ == '__main__':
             incremental_dataset_id=ARGS.incremental_dataset_id,
             dataset_with_largest_observation_id=ARGS.
             dataset_with_largest_observation_id,
-            obs_id_lookup_dataset=ARGS.obs_id_lookup_dataset)
+            obs_id_lookup_dataset=ARGS.obs_id_lookup_dataset,
+            exclude_lookup_dataset=ARGS.exclude_lookup_dataset,
+            exclude_lookup_table=ARGS.exclude_lookup_table)

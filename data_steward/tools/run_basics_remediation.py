@@ -156,6 +156,22 @@ def parse_args(raw_args=None):
                         help=(f'Dataset for NEW_OBS_ID_LOOKUP table.'),
                         required=True)
     parser.add_argument(
+        '--exclude_lookup_dataset',
+        action='store',
+        dest='exclude_lookup_dataset',
+        help=
+        (f'Dataset that has the PID/RID table for exlusion (e.g. AIAN participants for W/O AIAN dataset).'
+        ),
+        required=False)
+    parser.add_argument(
+        '--exclude_lookup_table',
+        action='store',
+        dest='exclude_lookup_table',
+        help=
+        (f'PID/RID table for exlusion (e.g. AIAN participants for W/O AIAN dataset).'
+        ),
+        required=False)
+    parser.add_argument(
         '--new_release_tag',
         action='store',
         dest='new_release_tag',
@@ -243,7 +259,9 @@ def main():
                   incremental_dataset_id=args.incremental_dataset_id,
                   dataset_with_largest_observation_id=args.
                   dataset_with_largest_observation_id,
-                  obs_id_lookup_dataset=args.obs_id_lookup_dataset)
+                  obs_id_lookup_dataset=args.obs_id_lookup_dataset,
+                  exclude_lookup_dataset=args.exclude_lookup_dataset,
+                  exclude_lookup_table=args.exclude_lookup_table)
 
     LOGGER.info(f"Completed running remediation for {new_dataset}...")
 
