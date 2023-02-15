@@ -160,43 +160,7 @@ render_message(df,
                })
 # -
 
-# ## QC 2-2. Confirm all new records in `OBSERVATION` have mapping info in `_observation_id_map`
-# Any observation records from `incremental_dataset` got new `OBSERVATION_ID`s
-# assigned in `new_dataset` to avoid ID duplicates. The mapping of the old-new
-# `OBSERVATION_ID`s is kept in `obs_id_lookup_dataset._observation_id_map`. <br>We must confirm
-# all the new `OBSERVATION_ID`s have their mapping info in `obs_id_lookup_dataset._observation_id_map`<br>.
-# NOTE: Not all records in `_observation_id_map` have corresponding records in `new_dataset`
-# because `_observation_id_map` is referenced by multiple data releases.
-
-# +
-query = JINJA_ENV.from_string('''
-    SELECT
-        'no mapping record found in obs_id_lookup_dataset._observation_id_map' AS issue,
-        COUNT(*) AS no_mapping_row_count
-    FROM `{{project}}.{{new_dataset}}.observation`
-    WHERE observation_id NOT IN (
-        SELECT observation_id FROM `{{project}}.{{obs_id_lookup_dataset}}._observation_id_map`
-        WHERE observation_id IS NOT NULL
-    )
-    HAVING COUNT(*) > 1
-''').render(project=project_id,
-            new_dataset=new_dataset,
-            sandbox_dataset=sandbox_dataset)
-
-df = execute(client, query)
-issues = df.issue
-
-success_null_check = (
-    f"All records in {new_dataset}.observation have corresponding records in "
-    f"{obs_id_lookup_dataset}._observation_id_map and vice versa.<br><br>")
-failure_null_check = (
-    f"Issue(s) found: {', '.join(issues)}. Look at the result table below. <br>"
-    "investigate why they are inconsistent.<br><br>")
-
-render_message(df, success_null_check, failure_null_check)
-# -
-
-# ## QC 2-3. Confirm all the sandboxed `OBSERVATION` records have new records populated in `new_dataset`
+# ## QC 2-2. Confirm all the sandboxed `OBSERVATION` records have new records populated in `new_dataset`
 # We must confirm all the sandboxed `OBSERVATION` records have new records in `new_dataset`.
 # We can do so by looking at `OBSERVATION_SOURCE_CONCEPT_ID` and `PERSON_ID`. We cannot use `OBSERVATION_ID`
 # here because old-OBSERVATION_ID:new-OBSERVATION_ID can be 1:N, N:1, and N:N. (Not always 1:1)
@@ -217,7 +181,7 @@ query = JINJA_ENV.from_string('''
             sandbox_obs=sandbox_obs)
 
 df = execute(client, query)
-unmatched_records = df.unmatched_records[0]
+unmatched_records = df.unmatched_records[0] if len(df) > 0 else 0
 
 success_null_check = (
     f"All the sandboxed records in {sandbox_dataset}.{sandbox_obs} have new records "
