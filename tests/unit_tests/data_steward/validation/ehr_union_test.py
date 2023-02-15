@@ -78,10 +78,16 @@ class EhrUnionTest(unittest.TestCase):
 
     def setUp(self):
         self.hpo_ids = [self.FAKE_SITE_1, self.FAKE_SITE_2]
+        self.mock_bq_client_patcher = mock.patch(
+            'validation.ehr_union.BigQueryClient')
+        self.mock_bq_client = self.mock_bq_client_patcher.start()
+        self.addCleanup(self.mock_bq_client_patcher.stop)
 
-    @mock.patch('bq_utils.list_all_table_ids')
     @mock.patch('bq_utils.get_hpo_info')
-    def test_mapping_subqueries(self, mock_hpo_info, mock_list_all_table_ids):
+    def test_mapping_subqueries(
+        self,
+        mock_hpo_info,
+    ):
         """
         Verify the query for loading mapping tables. A constant value should be added to
         destination key fields in all tables except for person where the values in 
@@ -94,6 +100,7 @@ class EhrUnionTest(unittest.TestCase):
         #   it returns both of their person, visit_occurrence and pii_name tables
         # for FAKE_SITE_1 only
         #   it returns the condition_occurrence table
+
         mock_hpo_info.return_value = [{
             'hpo_id': hpo_id
         } for hpo_id in self.hpo_ids]
@@ -106,12 +113,19 @@ class EhrUnionTest(unittest.TestCase):
         fake_table_ids.append(
             resources.get_table_id('condition_occurrence',
                                    hpo_id=self.FAKE_SITE_1))
-        mock_list_all_table_ids.return_value = fake_table_ids
+
+        mock_table_obj = mock.MagicMock()
+        type(mock_table_obj).table_id = mock.PropertyMock(
+            side_effect=fake_table_ids)
+        mock_fake_tables = [mock_table_obj] * 7
+        self.mock_bq_client.list_tables.return_value = mock_fake_tables
+
         hpo_count = len(self.hpo_ids)
 
         # offset is added to the visit_occurrence destination key field
-        actual = eu._mapping_subqueries('visit_occurrence', self.hpo_ids,
-                                        'fake_dataset', 'fake_project')
+        actual = eu._mapping_subqueries(self.mock_bq_client, 'visit_occurrence',
+                                        self.hpo_ids, 'fake_dataset',
+                                        'fake_project')
         hpo_unique_identifiers = eu.get_hpo_offsets(self.hpo_ids)
         self.assertEqual(hpo_count, len(actual))
         for i in range(0, hpo_count):
@@ -129,7 +143,10 @@ class EhrUnionTest(unittest.TestCase):
 
         # src_person_id and person_id fields both use participant ID value
         # (offset is NOT added to the value)
-        actual = eu._mapping_subqueries('person', self.hpo_ids, 'fake_dataset',
+        type(mock_table_obj).table_id = mock.PropertyMock(
+            side_effect=fake_table_ids)
+        actual = eu._mapping_subqueries(self.mock_bq_client, 'person',
+                                        self.hpo_ids, 'fake_dataset',
                                         'fake_project')
         self.assertEqual(hpo_count, len(actual))
         for i in range(0, hpo_count):
@@ -141,7 +158,10 @@ class EhrUnionTest(unittest.TestCase):
             self.assertIn('person_id AS person_id', subquery)
 
         # only return queries for tables that exist
-        actual = eu._mapping_subqueries('condition_occurrence', self.hpo_ids,
+        type(mock_table_obj).table_id = mock.PropertyMock(
+            side_effect=fake_table_ids)
+        actual = eu._mapping_subqueries(self.mock_bq_client,
+                                        'condition_occurrence', self.hpo_ids,
                                         'fake_dataset', 'fake_project')
         self.assertEqual(1, len(actual))
         subquery = actual[0]
@@ -156,14 +176,20 @@ class EhrUnionTest(unittest.TestCase):
             subquery)
 
     @mock.patch('bq_utils.get_hpo_info')
-    @mock.patch('bq_utils.list_all_table_ids')
-    def test_mapping_query(self, mock_list_all_table_ids, mock_hpo_info):
+    def test_mapping_query(self, mock_hpo_info):
         mock_hpo_info.return_value = [{
             'hpo_id': hpo_id
         } for hpo_id in self.hpo_ids]
-        mock_list_all_table_ids.return_value = [
+
+        fake_table_ids = [
             f'{self.FAKE_SITE_1}_measurement', f'{self.FAKE_SITE_2}_measurement'
         ]
+        mock_table_obj = mock.MagicMock()
+        type(mock_table_obj).table_id = mock.PropertyMock(
+            side_effect=fake_table_ids)
+        mock_fake_tables = [mock_table_obj] * 2
+        self.mock_bq_client.list_tables.return_value = mock_fake_tables
+
         dataset_id = 'fake_dataset'
         project_id = 'fake_project'
         table = 'measurement'
@@ -276,19 +302,17 @@ class EhrUnionTest(unittest.TestCase):
     @mock.patch('validation.ehr_union.clean_engine.clean_dataset')
     @mock.patch('validation.ehr_union.move_ehr_person_to_observation')
     @mock.patch('validation.ehr_union.map_ehr_person_to_observation')
-    @mock.patch('validation.ehr_union.BigQueryClient')
     @mock.patch('validation.ehr_union.load')
     @mock.patch('validation.ehr_union.mapping')
     @mock.patch('bq_utils.create_standard_table')
     @mock.patch('bq_utils.get_hpo_info')
     def test_excluded_hpo_ids(self, mock_hpo_info, mock_create_std_tbl,
-                              mock_mapping, mock_load, mock_bq_client,
-                              mock_map_person, mock_move_person,
-                              mock_clean_dataset):
+                              mock_mapping, mock_load, mock_map_person,
+                              mock_move_person, mock_clean_dataset):
         mock_hpo_info.return_value = [{
             'hpo_id': hpo_id
         } for hpo_id in self.hpo_ids]
-        mock_bq_client.return_value = 'client'
+        self.mock_bq_client.return_value = 'client'
         eu.main("input_dataset_id",
                 "output_dataset_id",
                 "project_id",
