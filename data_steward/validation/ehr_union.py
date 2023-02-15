@@ -127,10 +127,11 @@ def output_table_for(table_id):
     return f'unioned_ehr_{table_id}'
 
 
-def _mapping_subqueries(table_name, hpo_ids, dataset_id, project_id):
+def _mapping_subqueries(client, table_name, hpo_ids, dataset_id, project_id):
     """
     Get list of subqueries (one for each HPO table found in the source) that comprise the ID mapping query
 
+    :param client: a BigQueryClient
     :param table_name: name of a CDM table whose ID field must be remapped
     :param hpo_ids: list of HPOs to process
     :param dataset_id: identifies the source dataset
@@ -152,7 +153,7 @@ def _mapping_subqueries(table_name, hpo_ids, dataset_id, project_id):
     hpo_unique_identifiers = get_hpo_offsets(hpo_ids)
 
     # Exclude subqueries that reference tables that are missing from source dataset
-    all_table_ids = bq_utils.list_all_table_ids(dataset_id)
+    all_table_ids = [table.table_id for table in client.list_tables(dataset_id)]
     for hpo_id in hpo_ids:
         table_id = resources.get_table_id(table_name, hpo_id=hpo_id)
         hpo_offset = hpo_unique_identifiers[hpo_id]
@@ -172,10 +173,15 @@ def _mapping_subqueries(table_name, hpo_ids, dataset_id, project_id):
     return result
 
 
-def mapping_query(table_name, hpo_ids, dataset_id=None, project_id=None):
+def mapping_query(client,
+                  table_name,
+                  hpo_ids,
+                  dataset_id=None,
+                  project_id=None):
     """
     Get query used to generate new ids for a CDM table
 
+    :param client: a BigQueryClient
     :param table_name: name of CDM table
     :param hpo_ids: identifies the HPOs
     :param dataset_id: identifies the BQ dataset containing the input table
@@ -186,7 +192,7 @@ def mapping_query(table_name, hpo_ids, dataset_id=None, project_id=None):
         dataset_id = bq_utils.get_dataset_id()
     if project_id is None:
         project_id = app_identity.get_application_id()
-    subqueries = _mapping_subqueries(table_name, hpo_ids, dataset_id,
+    subqueries = _mapping_subqueries(client, table_name, hpo_ids, dataset_id,
                                      project_id)
     union_all_query = UNION_ALL.join(subqueries)
     return f'''
@@ -227,7 +233,8 @@ def mapping(domain_table, hpo_ids, input_dataset_id, output_dataset_id,
     :param client: a BigQueryClient
     :return:
     """
-    q = mapping_query(domain_table, hpo_ids, input_dataset_id, project_id)
+    q = mapping_query(client, domain_table, hpo_ids, input_dataset_id,
+                      project_id)
     mapping_table = mapping_table_for(domain_table)
     logging.info(f'Query for {mapping_table} is {q}')
     fq_mapping_table = f'{project_id}.{output_dataset_id}.{mapping_table}'
