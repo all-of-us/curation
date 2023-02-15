@@ -382,7 +382,7 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
                 204, 205 ... Those have multiple corresponding records (=904,905,906).
                              204 and 205 get dropped and 904, 905, and 906 get inserted.
                 * 901 - 999 become 206 - 213 respectively after re-mapping using NEW_OBS_ID_LOOKUP.
-            person_id == 2:
+            person_id == 3:
                 This person is new. The records are simply inserted to the observation table.
             person_id == 9 (observation_id 901 and 999):
                 This person only exists in the incremental dataset. Such data MUST NOT be included
@@ -578,7 +578,7 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
         [2] SURVEY_CONDUCT and its ext table
             Same result as test_remediate_basics_combined_release
 
-        [3] PERSON and its ext table
+        [3] PERSON table
             Same result as test_remediate_basics_combined_release
 
         [4] PERSON_EXT table

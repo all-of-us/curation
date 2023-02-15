@@ -160,7 +160,7 @@ def parse_args(raw_args=None):
         action='store',
         dest='exclude_lookup_dataset',
         help=
-        (f'Dataset that has the PID/RID table for exlusion (e.g. AIAN participants for W/O AIAN dataset).'
+        (f'Dataset that has the PID/RID table for exclusion (e.g. AIAN participants for W/O AIAN dataset).'
         ),
         required=False)
     parser.add_argument(
@@ -168,7 +168,7 @@ def parse_args(raw_args=None):
         action='store',
         dest='exclude_lookup_table',
         help=
-        (f'PID/RID table for exlusion (e.g. AIAN participants for W/O AIAN dataset).'
+        (f'PID/RID table for exclusion (e.g. AIAN participants for W/O AIAN dataset).'
         ),
         required=False)
     parser.add_argument(
