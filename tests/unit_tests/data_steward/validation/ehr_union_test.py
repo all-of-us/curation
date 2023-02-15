@@ -193,7 +193,8 @@ class EhrUnionTest(unittest.TestCase):
         dataset_id = 'fake_dataset'
         project_id = 'fake_project'
         table = 'measurement'
-        query = eu.mapping_query(table, self.hpo_ids, dataset_id, project_id)
+        query = eu.mapping_query(self.mock_bq_client, table, self.hpo_ids,
+                                 dataset_id, project_id)
         # testing the query string
         expected_query = f'''
             WITH all_measurement AS (
