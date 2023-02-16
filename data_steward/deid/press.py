@@ -241,7 +241,7 @@ class Press(ABC):
         LOGGER.info(f"FINISHED de-identification on table:\t{self.tablename}")
 
     def get_tablename(self):
-        return self.idataset + "." + self.tablename if self.idataset else self.tablename
+        return f'{self.idataset}.{self.tablename}' if self.idataset else self.tablename
 
     def debug(self, info):
         for row in info:
@@ -375,8 +375,8 @@ class Press(ABC):
         stats.reset_index()
 
         _map = {
-            os.path.join(root, 'samples-' + self.tablename + '.csv'): out,
-            os.path.join(root, 'stats-' + self.tablename + '.csv'): stats
+            os.path.join(root, f'samples-{self.tablename}.csv'): out,
+            os.path.join(root, f'stats-{self.tablename}.csv'): stats
         }
         for path in _map:
             _data_frame = _map[path]
