@@ -1,7 +1,9 @@
+# Python Imports
 import unittest
 from unittest import mock
 from unittest.mock import ANY
 
+# Project imports
 import resources
 from validation import ehr_union as eu
 
@@ -84,10 +86,7 @@ class EhrUnionTest(unittest.TestCase):
         self.addCleanup(self.mock_bq_client_patcher.stop)
 
     @mock.patch('bq_utils.get_hpo_info')
-    def test_mapping_subqueries(
-        self,
-        mock_hpo_info,
-    ):
+    def test_mapping_subqueries(self, mock_hpo_info):
         """
         Verify the query for loading mapping tables. A constant value should be added to
         destination key fields in all tables except for person where the values in 
