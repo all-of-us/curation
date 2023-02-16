@@ -138,8 +138,6 @@ class CreateCombinedBackupDatasetTest(unittest.TestCase):
             self.assertFalse(
                 self.bq_client.table_exists(
                     table, self.combined_dataset_id))  # sanity check
-            # self.bq_client.create_table(f'{self.combined_dataset_id}.{table}',
-            #                             exists_ok=True)
             self.bq_client.copy_table(f'{self.rdr_dataset_id}.{table}',
                                       f'{self.combined_dataset_id}.{table}')
             actual = self.bq_client.table_exists(f'{table}')
