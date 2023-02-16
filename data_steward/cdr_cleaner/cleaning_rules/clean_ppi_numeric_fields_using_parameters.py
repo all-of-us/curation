@@ -80,7 +80,7 @@ CASE
         AND (
             value_as_number < 0 
             OR value_as_number >= 20 
-            OR (value_as_number IS NULL AND value_as_string IS NOT NULL AND TRIM(LOWER(value_as_string)) NOT IN ('pmi_skip', ''))
+            OR (value_as_number IS NULL AND value_as_string IS NOT NULL AND TRIM(LOWER(value_as_string)) NOT IN ('pmi_skip', 'pmi skip', ''))
         )
         THEN 2000000010
     WHEN observation_source_concept_id IN (1585795, 1585802, 1585864, 1585870, 1585873, 1586159, 1586162) AND (value_as_number < 0 OR value_as_number > 99) THEN 2000000010
@@ -110,7 +110,7 @@ END AS
             AND (
                 value_as_number < 0 
                 OR value_as_number >= 20 
-                OR (value_as_number IS NULL AND value_as_string IS NOT NULL AND TRIM(LOWER(value_as_string)) NOT IN ('pmi_skip', ''))
+                OR (value_as_number IS NULL AND value_as_string IS NOT NULL AND TRIM(LOWER(value_as_string)) NOT IN ('pmi_skip', 'pmi skip', ''))
             )
             THEN 2000000010
         WHEN observation_source_concept_id IN (1585795, 1585802, 1585864, 1585870, 1585873, 1586159, 1586162) AND (value_as_number < 0 OR value_as_number > 99) THEN 2000000010
