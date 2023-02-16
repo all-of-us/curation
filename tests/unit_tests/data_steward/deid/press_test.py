@@ -2,7 +2,7 @@
 import unittest
 
 # Third party imports
-from mock import patch, mock
+from mock import patch
 
 # Project imports
 from deid.press import Press
