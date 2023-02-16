@@ -140,7 +140,7 @@ def create_person_id_src_hpo_map(client, input_dataset):
 
     # revamp mapping tables to contain only mapping tables for tables
     # with person_id fields
-    mapping_tables = ['_mapping_' + table for table in person_id_tables]
+    mapping_tables = [f'_mapping_{table}' for table in person_id_tables]
 
     sql_statement = []
     for table in person_id_tables:
@@ -176,7 +176,7 @@ def create_allowed_states_table(input_dataset, credentials):
     Create a mapping table of src_hpos to states they are located in.
     """
 
-    map_tablename = input_dataset + "._mapping_src_hpos_to_allowed_states"
+    map_tablename = f'{input_dataset}._mapping_src_hpos_to_allowed_states'
     data = pd.read_csv(
         os.path.join(DEID_PATH, 'config', 'internal_tables',
                      'src_hpos_to_allowed_states.csv'))
@@ -194,7 +194,7 @@ def create_concept_id_lookup_table(client, input_dataset, credentials):
     :param credentials: bigquery credentials
     """
 
-    lookup_tablename = input_dataset + "._concept_ids_suppression"
+    lookup_tablename = f'{input_dataset}._concept_ids_suppression'
     columns = [
         'vocabulary_id', 'concept_code', 'concept_name', 'concept_id',
         'domain_id', 'rule', 'question'
