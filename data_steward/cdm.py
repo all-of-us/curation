@@ -20,7 +20,9 @@ def get_parser():
         formatter_class=argparse.RawDescriptionHelpFormatter)
 
     parser.add_argument(
-        'dataset_id', help='Identifies the dataset to create OMOP table(s) in')
+        'dataset_id',
+        help='Identifies the dataset to create OMOP table(s) in',
+        required=False)
 
     mutex = parser.add_mutually_exclusive_group(required=True)
     mutex.add_argument(
