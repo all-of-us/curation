@@ -356,7 +356,7 @@ def generate_metrics(project_id, hpo_id, bucket, folder_prefix, summary):
 
         # non-unique key metrics
         logging.info(f"Getting non-unique key stats for {hpo_id}")
-        nonunique_metrics_query = get_duplicate_counts_query(hpo_id)
+        nonunique_metrics_query = get_duplicate_counts_query(bq_client, hpo_id)
         report_data[
             report_consts.NONUNIQUE_KEY_METRICS_REPORT_KEY] = query_rows(
                 nonunique_metrics_query)
@@ -611,15 +611,19 @@ def get_heel_error_query(hpo_id):
     return render_query(consts.HEEL_ERROR_QUERY_VALIDATION, table_id=table_id)
 
 
-def get_duplicate_counts_query(hpo_id):
+def get_duplicate_counts_query(client, hpo_id):
     """
     Query to retrieve count of duplicate primary keys in domain tables for an HPO site
 
+    :param client: BigQueryClient
     :param hpo_id: identifies the HPO site
     :return: the query
     """
     sub_queries = []
-    all_table_ids = bq_utils.list_all_table_ids()
+    all_table_ids = [
+        table.table_id
+        for table in client.list_tables(os.environ.get('BIGQUERY_DATASET_ID'))
+    ]
     for table_name in cdm.tables_to_map():
         table_id = resources.get_table_id(table_name, hpo_id=hpo_id)
         if table_id in all_table_ids:
