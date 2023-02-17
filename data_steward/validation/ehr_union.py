@@ -92,6 +92,7 @@ import common
 import resources
 from cdr_cleaner.cleaning_rules.drop_race_ethnicity_gender_observation import DropRaceEthnicityGenderObservation
 from constants.validation import ehr_union as eu_constants
+from utils import pipeline_logging
 from utils.bq import validate_bq_date_string
 from gcloud.bq import BigQueryClient
 
@@ -898,8 +899,6 @@ def main(input_dataset_id,
 
 
 if __name__ == '__main__':
-    from utils import pipeline_logging
-
     pipeline_logging.configure(logging.INFO, add_console_handler=True)
     parser = argparse.ArgumentParser(
         description=

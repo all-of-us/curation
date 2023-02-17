@@ -45,7 +45,7 @@ def create_empty_dataset(client, dataset_id, snapshot_dataset_id):
 def create_empty_cdm_tables(snapshot_dataset_id, hpo_id=None):
     """
     Copy the table content from the current dataset to the snapshot dataset
-    
+
     :param snapshot_dataset_id:
     :param hpo_id: Identifies the hpo_id of the site table
     :return:
@@ -68,7 +68,7 @@ def get_field_cast_expr(dest_field, source_fields):
 
     :param dest_field: field dictionary object
     :param source_fields: list of field names in source table
-    :return:  col string
+    :return: col string
     """
 
     dest_field_name = dest_field['name']

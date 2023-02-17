@@ -34,7 +34,7 @@ import constants.global_variables
 from gcloud.bq import BigQueryClient
 from gcloud.gcs import StorageClient
 import resources
-from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON, AOU_REQUIRED_FILES
+from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON
 from constants.validation import hpo_report as report_consts
 from constants.validation import main as consts
 from curation_logging.curation_gae_handler import begin_request_logging, end_request_logging, \
