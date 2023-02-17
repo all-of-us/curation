@@ -29,12 +29,10 @@ class ValidationMainTest(TestCase):
             'validation.main.BigQueryClient')
         self.mock_bq_client = self.mock_bq_client_patcher.start()
         self.addCleanup(self.mock_bq_client_patcher.stop)
-
         self.mock_storage_client_patcher = mock.patch(
             'validation.main.StorageClient')
         self.mock_storage_client = self.mock_storage_client_patcher.start()
         self.addCleanup(self.mock_storage_client_patcher.stop)
-
         self.hpo_id = 'fake_hpo_id'
         self.hpo_bucket = 'fake_aou_000'
         self.project_id = 'fake_project_id'
@@ -296,14 +294,11 @@ class ValidationMainTest(TestCase):
         self.assertCountEqual(expected_errors, actual_result.get('errors'))
         self.assertCountEqual(expected_warnings, actual_result.get('warnings'))
 
-    # @mock.patch('validation.main.StorageClient')
     @mock.patch('bq_utils.get_hpo_info')
     @mock.patch('logging.exception')
     @mock.patch('api_util.check_cron')
     def test_validate_all_hpos_exception(self, check_cron, mock_logging_error,
-                                         mock_hpo_csv
-                                         #  , mock_storage_client
-                                        ):
+                                         mock_hpo_csv):
 
         http_error_string = 'fake http error'
         mock_hpo_csv.return_value = [{'hpo_id': self.hpo_id}]
@@ -333,23 +328,12 @@ class ValidationMainTest(TestCase):
     @mock.patch('validation.main._has_all_required_files')
     @mock.patch('validation.main.is_first_validation_run')
     @mock.patch('validation.main.is_valid_rdr')
-    # @mock.patch('validation.main.StorageClient')
     def test_process_hpo_ignore_dirs(
-        self,
-        # mock_storage_client,
-        mock_valid_rdr,
-        mock_first_validation,
-        mock_has_all_required_files,
-        mock_folder_items,
-        mock_validation,
-        mock_get_hpo_name,
-        mock_get_duplicate_counts_query,
-        mock_query_rows,
-        mock_all_required_files_loaded,
-        mock_run_achilles,
-        mock_export,
-        mock_valid_folder_name,
-        mock_query):
+        self, mock_valid_rdr, mock_first_validation,
+        mock_has_all_required_files, mock_folder_items, mock_validation,
+        mock_get_hpo_name, mock_get_duplicate_counts_query, mock_query_rows,
+        mock_all_required_files_loaded, mock_run_achilles, mock_export,
+        mock_valid_folder_name, mock_query):
         """
         Test process_hpo with directories we want to ignore.
 
@@ -456,11 +440,8 @@ class ValidationMainTest(TestCase):
             self.assertTrue(filepath.startswith(submission_path))
         mock_client.get_blob_metadata.assert_called()
 
-    # @mock.patch('validation.main.StorageClient')
     @mock.patch('api_util.check_cron')
-    def test_copy_files_ignore_all(self, mock_check_cron
-                                   #    , mock_storage_client
-                                  ):
+    def test_copy_files_ignore_all(self, mock_check_cron):
         """
         Test copying files to the drc internal bucket.
         This should copy anything in the site's bucket except for files named
@@ -470,7 +451,6 @@ class ValidationMainTest(TestCase):
         test ran as expected and the get and copy blobs methods were never called.
 
         :param mock_check_cron: mocks the cron decorator.
-        :param mock_storage_client: mocks the StorageClient which has bucket and blob functionality.
         """
         # pre-conditions
         mock_client = mock.MagicMock()
@@ -512,11 +492,8 @@ class ValidationMainTest(TestCase):
         mock_hpo_bucket.get_blob.assert_not_called()
         mock_hpo_bucket.copy_blob.assert_not_called()
 
-    # @mock.patch('validation.main.StorageClient')
     @mock.patch('api_util.check_cron')
-    def test_copy_files_accept_all(self, mock_check_cron
-                                   #    , mock_storage_client
-                                  ):
+    def test_copy_files_accept_all(self, mock_check_cron):
         """
         Test copying files to the drc internal bucket.
         This should copy anything in the site's bucket except for files named
@@ -527,7 +504,6 @@ class ValidationMainTest(TestCase):
         environment.
 
         :param mock_check_cron: mocks the cron decorator.
-        :param mock_storage_client: mocks the StorageClient which has bucket and blob functionality.
         """
         # pre-conditions
         mock_client = mock.MagicMock()
