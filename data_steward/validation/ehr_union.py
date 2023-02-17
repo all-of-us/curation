@@ -542,10 +542,12 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
         '''
 
 
-def _union_subqueries(table_name, hpo_ids, input_dataset_id, output_dataset_id):
+def _union_subqueries(client, table_name, hpo_ids, input_dataset_id,
+                      output_dataset_id):
     """
     Get list of subqueries (one for each HPO table found in the source) that comprise the load query
 
+    :param client: BigQueryClient
     :param table_name: name of a CDM table to load
     :param hpo_ids: list of HPOs to process
     :param input_dataset_id: identifies the source dataset
@@ -554,7 +556,9 @@ def _union_subqueries(table_name, hpo_ids, input_dataset_id, output_dataset_id):
     """
     result = []
     # Exclude subqueries that reference tables that are missing from source dataset
-    all_table_ids = bq_utils.list_all_table_ids(input_dataset_id)
+    all_table_ids = [
+        table.table_id for table in client.list_tables(input_dataset_id)
+    ]
     for hpo_id in hpo_ids:
         table_id = resources.get_table_id(table_name, hpo_id=hpo_id)
         if table_id in all_table_ids:
@@ -574,25 +578,35 @@ def _union_subqueries(table_name, hpo_ids, input_dataset_id, output_dataset_id):
     return result
 
 
-def table_union_query(table_name, hpo_ids, input_dataset_id, output_dataset_id):
+def table_union_query(client, table_name, hpo_ids, input_dataset_id,
+                      output_dataset_id):
     """
     For a CDM table returns a query which aggregates all records from each HPO's submission for that table
 
+    :param client: BigQuerClient
     :param table_name: name of a CDM table loaded by the resulting query
     :param hpo_ids: list of HPOs to process
     :param input_dataset_id: identifies the source dataset
     :param output_dataset_id: identifies the output dataset
     :return: query used to load the table in the output dataset
     """
-    subqueries = _union_subqueries(table_name, hpo_ids, input_dataset_id,
-                                   output_dataset_id)
+    subqueries = _union_subqueries(client, table_name, hpo_ids,
+                                   input_dataset_id, output_dataset_id)
     return UNION_ALL.join(subqueries)
 
 
-def fact_table_union_query(cdm_table, hpo_ids, input_dataset_id,
+def fact_table_union_query(client, cdm_table, hpo_ids, input_dataset_id,
                            output_dataset_id):
-    union_query = table_union_query(cdm_table, hpo_ids, input_dataset_id,
-                                    output_dataset_id)
+    """
+    :param client: BigQueryClient
+    :param cdm_table: name of the CDM table (e.g. 'person', 'visit_occurrence', 'death')
+    :param hpo_ids: identifies which HPOs to include in union
+    :param input_dataset_id: identifies dataset containing input data
+    :param output_dataset_id: identifies dataset where result of union should be output
+    :return:
+    """
+    union_query = table_union_query(client, cdm_table, hpo_ids,
+                                    input_dataset_id, output_dataset_id)
 
     return f'''
     SELECT domain_concept_id_1,
@@ -605,10 +619,11 @@ def fact_table_union_query(cdm_table, hpo_ids, input_dataset_id,
     '''
 
 
-def load(cdm_table, hpo_ids, input_dataset_id, output_dataset_id):
+def load(client, cdm_table, hpo_ids, input_dataset_id, output_dataset_id):
     """
     Create and load a single domain table with union of all HPO domain tables
 
+    :param client: BigQueryClient
     :param cdm_table: name of the CDM table (e.g. 'person', 'visit_occurrence', 'death')
     :param hpo_ids: identifies which HPOs to include in union
     :param input_dataset_id: identifies dataset containing input data
@@ -621,10 +636,10 @@ def load(cdm_table, hpo_ids, input_dataset_id, output_dataset_id):
     )
 
     if cdm_table == common.FACT_RELATIONSHIP:
-        q = fact_table_union_query(cdm_table, hpo_ids, input_dataset_id,
+        q = fact_table_union_query(client, cdm_table, hpo_ids, input_dataset_id,
                                    output_dataset_id)
     else:
-        q = table_union_query(cdm_table, hpo_ids, input_dataset_id,
+        q = table_union_query(client, cdm_table, hpo_ids, input_dataset_id,
                               output_dataset_id)
     query_result = query(q, output_table, output_dataset_id)
     query_job_id = query_result['jobReference']['jobId']
@@ -853,7 +868,8 @@ def main(input_dataset_id,
     for table_name in resources.CDM_TABLES:
         if not table_name == common.SURVEY_CONDUCT:
             logging.info(f'Creating union of table {table_name}...')
-            load(table_name, hpo_ids, input_dataset_id, output_dataset_id)
+            load(bq_client, table_name, hpo_ids, input_dataset_id,
+                 output_dataset_id)
 
     logging.info('Creation of Unioned EHR complete')
 
