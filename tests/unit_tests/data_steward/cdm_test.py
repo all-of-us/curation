@@ -1,7 +1,7 @@
 import unittest
-
 from mock import patch
-import cdm
+
+import cdm, common
 
 
 class CDMTest(unittest.TestCase):
@@ -13,19 +13,27 @@ class CDMTest(unittest.TestCase):
         print('**************************************************************')
 
     def setUp(self):
-        self.test_dataset = 'test_dataset'
-        self.test_component = 'test_component'
-        self.test_table = 'test_table'
+        self.mock_dataset = 'mock_dataset'
 
-    @patch('common.VOCABULARY', ['mock_vocabulary'])
-    @patch('common.ACHILLES', ['mock_achilles'])
-    def test_parser_with_bad_ags(self, mock_achilles, mock_vocabulary):
+        self.mock_table = 'mock_table'
+        self.mock_component = 'mock_component'
+
+        self.mock_achilles = common.ACHILLES
+        self.mock_vocabulary = 'mock_vocabulary'
+
+    @patch('common.CDM_COMPONENTS')
+    @patch('resources.CDM_TABLES')
+    def test_parser_with_bad_args(self, mock_cdm_tables, mock_cdm_components):
         """
-        Case 1: No dataset / arg specified
-        Case 2: bad table argument
-        Case 3: bad component argument
-        Case 4: bad table-component mutual exclusion violation
+        Case 1: No dataset
+        Case 2: Bad table
+        Case 3: Bad component
+        Case 4: Using Achilles (NYI)
+        Case 5: table/component mutual exclusion violation with good args
         """
+
+        mock_cdm_tables.return_value = [self.mock_table]
+        mock_cdm_components.return_value = [self.mock_component]
 
         parser = cdm.get_parser()
 
@@ -33,38 +41,46 @@ class CDMTest(unittest.TestCase):
         with self.assertRaises(SystemExit):
             _ = parser.parse_args(test_args)
 
-        test_args = [self.test_dataset, '--table', 'bad_table']
+        test_args = [self.mock_dataset, '--table', 'bad_table']
         with self.assertRaises(SystemExit):
             _ = parser.parse_args(test_args)
 
-        test_args = [self.test_dataset, '--component', 'bad_component']
+        test_args = [self.mock_dataset, '--component', 'bad_component']
+        with self.assertRaises(SystemExit):
+            _ = parser.parse_args(test_args)
+
+        test_args = [self.mock_dataset, '--component', self.mock_achilles]
         with self.assertRaises(SystemExit):
             _ = parser.parse_args(test_args)
 
         test_args = [
-            self.test_dataset, '--component', self.test_component, '--table',
-            self.test_table
+            self.mock_dataset, '--component', self.mock_component, '--table',
+            self.mock_table
         ]
         with self.assertRaises(SystemExit):
             _ = parser.parse_args(test_args)
 
-    @patch('common.VOCABULARY', ['mock_vocabulary'])
-    @patch('common.ACHILLES', ['mock_achilles'])
-    def test_parser_with_good_args(self, mock_achilles, mock_vocabulary):
+    @patch('common.VOCABULARY')
+    def test_parser_with_good_args(self, mock_vocabulary):
         """
         Case 1: Only a dataset specified
         Case 2: Dataset with table
         Case 3: Dataset with common.vocabulary component
-        Case 4: Dataset with non-matching component
+        Case 4: Dataset with no matching component
         """
+
+        mock_vocabulary.return_value = self.mock_vocabulary
 
         parser = cdm.get_parser()
 
-        test_args = [self.test_dataset]
+        test_args = [self.mock_dataset]
         result_args = parser.parse_args(test_args)
 
-        test_args = [self.test_dataset, '--table', mock_achilles]
+        test_args = [self.mock_dataset, '--component', 'test_vocabulary']
         result_args = parser.parse_args(test_args)
 
-        test_args = [self.test_dataset, '--component', mock_vocabulary]
+        test_args = [
+            self.mock_dataset,
+            '--table',
+        ]
         result_args = parser.parse_args(test_args)
