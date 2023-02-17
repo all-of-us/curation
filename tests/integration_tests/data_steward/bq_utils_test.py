@@ -131,9 +131,9 @@ class BqUtilsTest(unittest.TestCase):
         incomplete_jobs = bq_utils.wait_on_jobs([load_job_id])
         self.assertEqual(len(incomplete_jobs), 0,
                          'loading table {} timed out'.format(table_id))
-        table_info = bq_utils.get_table_info(table_id)
-        num_rows = table_info.get('numRows')
-        self.assertEqual(num_rows, '5')
+        table = self.bq_client.get_table(
+            f'{os.environ.get("BIGQUERY_DATASET_ID")}.{table_id}')
+        self.assertEqual(table.num_rows, 5)
 
     @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def test_query_result(self):
@@ -159,8 +159,9 @@ class BqUtilsTest(unittest.TestCase):
         result = bq_utils.create_table(table_id, fields)
         self.assertTrue('kind' in result)
         self.assertEqual(result['kind'], 'bigquery#table')
-        table_info = bq_utils.get_table_info(table_id)
-        self._table_has_clustering(table_info)
+        table = self.bq_client.get_table(
+            f'{os.environ.get("BIGQUERY_DATASET_ID")}.{table_id}')
+        self._table_has_clustering(table)
 
     def test_create_existing_table_without_drop_raises_error(self):
         table_id = 'some_random_table_id'
