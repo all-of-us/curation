@@ -25,6 +25,11 @@ class ValidationMainTest(TestCase):
         print('**************************************************************')
 
     def setUp(self):
+        self.mock_bq_client_patcher = mock.patch(
+            'validation.main.BigQueryClient')
+        self.mock_bq_client = self.mock_bq_client_patcher.start()
+        self.addCleanup(self.mock_bq_client_patcher.stop)
+
         self.hpo_id = 'fake_hpo_id'
         self.hpo_bucket = 'fake_aou_000'
         self.project_id = 'fake_project_id'
@@ -306,12 +311,12 @@ class ValidationMainTest(TestCase):
                 f"HTTP error: {http_error_string}")
             self.assertIn(expected_call, mock_logging_error.mock_calls)
 
-    @mock.patch(
-        'validation.participants.validate.BigQueryClient',
-        mock.MagicMock(query=lambda: mock.MagicMock(result=lambda: None)))
+    # @mock.patch(
+    #     'validation.participants.validate.BigQueryClient',
+    #     mock.MagicMock(query=lambda: mock.MagicMock(result=lambda: None)))
     @mock.patch('validation.main.setup_and_validate_participants',
                 mock.MagicMock())
-    @mock.patch('validation.main.BigQueryClient', mock.MagicMock())
+    # @mock.patch('validation.main.BigQueryClient', mock.MagicMock())
     @mock.patch('bq_utils.query')
     @mock.patch('validation.main.is_valid_folder_prefix_name')
     @mock.patch('validation.main.run_export')
@@ -551,12 +556,12 @@ class ValidationMainTest(TestCase):
         self.assertEqual(mock_hpo_bucket.copy_blob.call_count, 2)
         mock_hpo_bucket.copy_blob.assert_has_calls(expected, any_order=True)
 
-    @mock.patch(
-        'validation.participants.validate.BigQueryClient',
-        mock.MagicMock(query=lambda: mock.MagicMock(result=lambda: None)))
+    # @mock.patch(
+    #     'validation.participants.validate.BigQueryClient',
+    #     mock.MagicMock(query=lambda: mock.MagicMock(result=lambda: None)))
     @mock.patch('validation.main.setup_and_validate_participants',
                 mock.MagicMock())
-    @mock.patch('validation.main.BigQueryClient', mock.MagicMock())
+    # @mock.patch('validation.main.BigQueryClient', mock.MagicMock())
     @mock.patch('bq_utils.query', mock.MagicMock())
     def test_generate_metrics(self):
         summary = {
@@ -581,7 +586,7 @@ class ValidationMainTest(TestCase):
                                          reason='baz',
                                          content=b'bar')
 
-        def get_duplicate_counts_query(hpo_id):
+        def get_duplicate_counts_query(bq_client, hpo_id):
             return ''
 
         def is_valid_rdr(rdr_dataset_id):
@@ -637,7 +642,7 @@ class ValidationMainTest(TestCase):
         self.assertIn(incorrect_folder_prefix,
                       report_data[report_consts.SUBMISSION_ERROR_REPORT_KEY])
 
-    @mock.patch('validation.main.BigQueryClient')
+    # @mock.patch('validation.main.BigQueryClient')
     @mock.patch('validation.main._upload_achilles_files')
     @mock.patch('validation.main.run_export')
     @mock.patch('validation.main.run_achilles')
@@ -649,14 +654,16 @@ class ValidationMainTest(TestCase):
     def test_union_ehr(self, mock_check_cron, mock_get_application_id,
                        mock_get_dataset_id, mock_get_unioned_dataset_id,
                        mock_ehr_union_main, mock_run_achilles, mock_run_export,
-                       mock_upload_achilles_files, mock_bq_client):
+                       mock_upload_achilles_files
+                       #    ,mock_bq_client
+                      ):
 
         application_id = 'application_id'
         input_dataset = 'input_dataset'
         output_dataset = 'output_dataset'
         mock_client = mock.MagicMock()
 
-        mock_bq_client.return_value = mock_client
+        self.mock_bq_client.return_value = mock_client
         mock_check_cron.return_value = True
         mock_get_application_id.return_value = application_id
         mock_get_dataset_id.return_value = input_dataset
