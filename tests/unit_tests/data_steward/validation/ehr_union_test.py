@@ -92,13 +92,8 @@ class EhrUnionTest(unittest.TestCase):
         destination key fields in all tables except for person where the values in 
         the src_person_id and person_id fields should be equal.
         
-        :param mock_list_all_table_ids: simulate tables being returned
+        :param mock_hpo_info: simulate hpo_info being returned
         """
-        # patch list_all_table_ids so that
-        # for FAKE_SITE_1 and FAKE_SITE_2
-        #   it returns both of their person, visit_occurrence and pii_name tables
-        # for FAKE_SITE_1 only
-        #   it returns the condition_occurrence table
 
         mock_hpo_info.return_value = [{
             'hpo_id': hpo_id
