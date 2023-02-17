@@ -20,11 +20,9 @@ def get_parser():
         formatter_class=argparse.RawDescriptionHelpFormatter)
 
     parser.add_argument(
-        'dataset_id',
-        help='Identifies the dataset to create OMOP table(s) in',
-        required=False)
+        'dataset_id', help='Identifies the dataset to create OMOP table(s) in')
 
-    mutex = parser.add_mutually_exclusive_group(required=True)
+    mutex = parser.add_mutually_exclusive_group(required=False)
     mutex.add_argument(
         '--table',
         help='A specific CDM table to create (creates all by default)',
