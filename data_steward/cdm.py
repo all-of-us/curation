@@ -26,10 +26,10 @@ def get_parser():
     mutex.add_argument(
         '--table',
         help='A specific CDM table to create (creates all by default)',
-        choices=list(resources.CDM_TABLES))
+        choices=resources.CDM_TABLES)
     mutex.add_argument('--component',
                        help='Subset of CDM tables to create',
-                       choices=list(common.CDM_COMPONENTS))
+                       choices=common.CDM_COMPONENTS)
 
     return parser
 
