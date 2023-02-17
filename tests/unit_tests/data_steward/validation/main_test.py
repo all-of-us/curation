@@ -311,12 +311,8 @@ class ValidationMainTest(TestCase):
                 f"HTTP error: {http_error_string}")
             self.assertIn(expected_call, mock_logging_error.mock_calls)
 
-    # @mock.patch(
-    #     'validation.participants.validate.BigQueryClient',
-    #     mock.MagicMock(query=lambda: mock.MagicMock(result=lambda: None)))
     @mock.patch('validation.main.setup_and_validate_participants',
                 mock.MagicMock())
-    # @mock.patch('validation.main.BigQueryClient', mock.MagicMock())
     @mock.patch('bq_utils.query')
     @mock.patch('validation.main.is_valid_folder_prefix_name')
     @mock.patch('validation.main.run_export')
@@ -556,12 +552,8 @@ class ValidationMainTest(TestCase):
         self.assertEqual(mock_hpo_bucket.copy_blob.call_count, 2)
         mock_hpo_bucket.copy_blob.assert_has_calls(expected, any_order=True)
 
-    # @mock.patch(
-    #     'validation.participants.validate.BigQueryClient',
-    #     mock.MagicMock(query=lambda: mock.MagicMock(result=lambda: None)))
     @mock.patch('validation.main.setup_and_validate_participants',
                 mock.MagicMock())
-    # @mock.patch('validation.main.BigQueryClient', mock.MagicMock())
     @mock.patch('bq_utils.query', mock.MagicMock())
     def test_generate_metrics(self):
         summary = {
@@ -642,7 +634,6 @@ class ValidationMainTest(TestCase):
         self.assertIn(incorrect_folder_prefix,
                       report_data[report_consts.SUBMISSION_ERROR_REPORT_KEY])
 
-    # @mock.patch('validation.main.BigQueryClient')
     @mock.patch('validation.main._upload_achilles_files')
     @mock.patch('validation.main.run_export')
     @mock.patch('validation.main.run_achilles')
@@ -654,9 +645,7 @@ class ValidationMainTest(TestCase):
     def test_union_ehr(self, mock_check_cron, mock_get_application_id,
                        mock_get_dataset_id, mock_get_unioned_dataset_id,
                        mock_ehr_union_main, mock_run_achilles, mock_run_export,
-                       mock_upload_achilles_files
-                       #    ,mock_bq_client
-                      ):
+                       mock_upload_achilles_files):
 
         application_id = 'application_id'
         input_dataset = 'input_dataset'
