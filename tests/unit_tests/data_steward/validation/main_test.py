@@ -30,6 +30,11 @@ class ValidationMainTest(TestCase):
         self.mock_bq_client = self.mock_bq_client_patcher.start()
         self.addCleanup(self.mock_bq_client_patcher.stop)
 
+        self.mock_storage_client_patcher = mock.patch(
+            'validation.main.StorageClient')
+        self.mock_storage_client = self.mock_storage_client_patcher.start()
+        self.addCleanup(self.mock_storage_client_patcher.stop)
+
         self.hpo_id = 'fake_hpo_id'
         self.hpo_bucket = 'fake_aou_000'
         self.project_id = 'fake_project_id'
@@ -291,17 +296,19 @@ class ValidationMainTest(TestCase):
         self.assertCountEqual(expected_errors, actual_result.get('errors'))
         self.assertCountEqual(expected_warnings, actual_result.get('warnings'))
 
-    @mock.patch('validation.main.StorageClient')
+    # @mock.patch('validation.main.StorageClient')
     @mock.patch('bq_utils.get_hpo_info')
     @mock.patch('logging.exception')
     @mock.patch('api_util.check_cron')
     def test_validate_all_hpos_exception(self, check_cron, mock_logging_error,
-                                         mock_hpo_csv, mock_storage_client):
+                                         mock_hpo_csv
+                                         #  , mock_storage_client
+                                        ):
 
         http_error_string = 'fake http error'
         mock_hpo_csv.return_value = [{'hpo_id': self.hpo_id}]
         mock_client = mock.MagicMock()
-        mock_storage_client.return_value = mock_client
+        self.mock_storage_client.return_value = mock_client
         mock_client.get_bucket_items_metadata.side_effect = mock_google_cloud_error(
             content=http_error_string.encode())
         with main.app.test_client() as c:
@@ -326,13 +333,23 @@ class ValidationMainTest(TestCase):
     @mock.patch('validation.main._has_all_required_files')
     @mock.patch('validation.main.is_first_validation_run')
     @mock.patch('validation.main.is_valid_rdr')
-    @mock.patch('validation.main.StorageClient')
+    # @mock.patch('validation.main.StorageClient')
     def test_process_hpo_ignore_dirs(
-        self, mock_storage_client, mock_valid_rdr, mock_first_validation,
-        mock_has_all_required_files, mock_folder_items, mock_validation,
-        mock_get_hpo_name, mock_get_duplicate_counts_query, mock_query_rows,
-        mock_all_required_files_loaded, mock_run_achilles, mock_export,
-        mock_valid_folder_name, mock_query):
+        self,
+        # mock_storage_client,
+        mock_valid_rdr,
+        mock_first_validation,
+        mock_has_all_required_files,
+        mock_folder_items,
+        mock_validation,
+        mock_get_hpo_name,
+        mock_get_duplicate_counts_query,
+        mock_query_rows,
+        mock_all_required_files_loaded,
+        mock_run_achilles,
+        mock_export,
+        mock_valid_folder_name,
+        mock_query):
         """
         Test process_hpo with directories we want to ignore.
 
@@ -360,7 +377,7 @@ class ValidationMainTest(TestCase):
         mock_client = mock.MagicMock()
         mock_bucket = mock.MagicMock()
         mock_blob = mock.MagicMock()
-        mock_storage_client.return_value = mock_client
+        self.mock_storage_client.return_value = mock_client
         mock_client.get_hpo_bucket.return_value = mock_bucket
         type(mock_bucket).name = mock.PropertyMock(
             return_value='fake_bucket_name')
@@ -439,9 +456,11 @@ class ValidationMainTest(TestCase):
             self.assertTrue(filepath.startswith(submission_path))
         mock_client.get_blob_metadata.assert_called()
 
-    @mock.patch('validation.main.StorageClient')
+    # @mock.patch('validation.main.StorageClient')
     @mock.patch('api_util.check_cron')
-    def test_copy_files_ignore_all(self, mock_check_cron, mock_storage_client):
+    def test_copy_files_ignore_all(self, mock_check_cron
+                                   #    , mock_storage_client
+                                  ):
         """
         Test copying files to the drc internal bucket.
         This should copy anything in the site's bucket except for files named
@@ -474,7 +493,7 @@ class ValidationMainTest(TestCase):
             'name': 'Participant/site_3/person.csv',
         }]
 
-        mock_storage_client.return_value = mock_client
+        self.mock_storage_client.return_value = mock_client
 
         # test
         result = main.copy_files('fake_hpo_id')
@@ -493,9 +512,11 @@ class ValidationMainTest(TestCase):
         mock_hpo_bucket.get_blob.assert_not_called()
         mock_hpo_bucket.copy_blob.assert_not_called()
 
-    @mock.patch('validation.main.StorageClient')
+    # @mock.patch('validation.main.StorageClient')
     @mock.patch('api_util.check_cron')
-    def test_copy_files_accept_all(self, mock_check_cron, mock_storage_client):
+    def test_copy_files_accept_all(self, mock_check_cron
+                                   #    , mock_storage_client
+                                  ):
         """
         Test copying files to the drc internal bucket.
         This should copy anything in the site's bucket except for files named
@@ -527,7 +548,7 @@ class ValidationMainTest(TestCase):
             'name': 'SUBMISSION/measurement.csv',
         }]
 
-        mock_storage_client.return_value = mock_client
+        self.mock_storage_client.return_value = mock_client
 
         # test
         result = main.copy_files('fake_hpo_id')
