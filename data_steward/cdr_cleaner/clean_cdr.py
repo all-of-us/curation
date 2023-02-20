@@ -125,6 +125,7 @@ from cdr_cleaner.cleaning_rules.deid.ct_replaced_concept_suppression import \
 from cdr_cleaner.cleaning_rules.dedup_measurement_value_as_concept_id import DedupMeasurementValueAsConceptId
 from cdr_cleaner.cleaning_rules.drop_orphaned_pids import DropOrphanedPIDS
 from cdr_cleaner.cleaning_rules.drop_orphaned_survey_conduct_ids import DropOrphanedSurveyConductIds
+from cdr_cleaner.cleaning_rules.clean_survey_conduct_table import CleanSurveyConduct
 from cdr_cleaner.cleaning_rules.deid.deidentify_aian_zip3_values import DeidentifyAIANZip3Values
 from constants.cdr_cleaner import clean_cdr_engine as ce_consts
 from constants.cdr_cleaner.clean_cdr import DataStage, DATA_CONSISTENCY
@@ -188,6 +189,7 @@ RDR_CLEANING_CLASSES = [
     (DropMultipleMeasurements,),
     (CleanByBirthYear,),
     (UpdateInvalidZipCodes,),
+    (CleanSurveyConduct,),
     (DropUnverifiedSurveyData,),
     (DropParticipantsWithoutAnyBasics,),
     (StoreExpectedCTList,),

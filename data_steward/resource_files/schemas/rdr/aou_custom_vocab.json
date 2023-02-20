@@ -1,0 +1,62 @@
+[
+    {
+        "type": "integer",
+        "name": "concept_id",
+        "mode": "required",
+        "description": "An unique identifier for each concept."
+    },
+    {
+        "type": "string",
+        "name": "concept_name",
+        "mode": "required",
+        "description": "Description of the concept"
+    },
+    {
+        "type": "string",
+        "name": "domain_id",
+        "mode": "required",
+        "description": "Domain of the concept"
+    },
+    {
+        "type": "string",
+        "name": "vocabulary_id",
+        "mode": "required",
+        "description": "Vocabulary concept"
+    },
+    {
+        "type": "string",
+        "name": "concept_class_id",
+        "mode": "required",
+        "description": "Vocabulary concept"
+    },
+    {
+        "type": "string",
+        "name": "standard_concept",
+        "mode": "nullable",
+        "description": "Vocabulary concept"
+   },
+    {
+        "type": "string",
+        "name": "concept_code",
+        "mode": "required",
+        "description": "Concept code"
+    },
+    {
+        "type": "string",
+        "name": "valid_start_date",
+        "mode": "nullable",
+        "description": "valid start date of the concept"
+    },
+    {
+        "type": "string",
+        "name": "valid_end_date",
+        "mode": "nullable",
+        "description": "valid end date of the concept"
+    },
+    {
+        "type": "string",
+        "name": "invalid_reason",
+        "mode": "nullable",
+        "description": "invalid reason"
+    }
+]
