@@ -37,7 +37,7 @@ class CDMTest(unittest.TestCase):
         mock_common.ACHILLES = self.mock_achilles
         mock_resources.CDM_TABLES = [self.mock_table]
 
-        parser = cdm.get_parser()
+        parser = cdm.create_parser()
 
         # Case 1
         test_args = ['--table', self.mock_table]
