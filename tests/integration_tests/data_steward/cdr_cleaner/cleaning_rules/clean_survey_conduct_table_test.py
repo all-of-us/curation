@@ -40,7 +40,7 @@ class CleanSurveyConductTest(BaseTest.CleaningRulesTestBase):
         cls.vocabulary_id = os.environ.get('VOCABULARY_DATASET')
 
         cls.rule_instance = CleanSurveyConduct(project_id, dataset_id,
-                                                     sandbox_id)
+                                               sandbox_id)
 
         sb_table_names = cls.rule_instance.get_sandbox_tablenames()
         for table_name in sb_table_names:
@@ -50,7 +50,8 @@ class CleanSurveyConductTest(BaseTest.CleaningRulesTestBase):
         for table_name in DOMAIN_TABLES + VOCABULARY_TABLES:
             cls.fq_table_names.append(
                 f'{cls.project_id}.{cls.dataset_id}.{table_name}')
-        cls.fq_table_names.append(f'{cls.project_id}.{cls.sandbox_id}.{AOU_CUSTOM_VOCAB}')
+        cls.fq_table_names.append(
+            f'{cls.project_id}.{cls.sandbox_id}.{AOU_CUSTOM_VOCAB}')
 
         # call super to set up the client, create datasets, and create
         # empty test tables
@@ -101,31 +102,42 @@ class CleanSurveyConductTest(BaseTest.CleaningRulesTestBase):
                 'survey_conduct_id', 'person_id', 'survey_concept_id',
                 'survey_end_datetime', 'assisted_concept_id',
                 'respondent_type_concept_id', 'timing_concept_id',
-                'collection_method_concept_id','survey_source_value', 'survey_source_concept_id',
-                'validated_survey_concept_id'
+                'collection_method_concept_id', 'survey_source_value',
+                'survey_source_concept_id', 'validated_survey_concept_id'
             ],
             'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
             'sandboxed_ids': [1, 2, 3, 4, 7, 8, 9, 10, 11],
             'cleaned_values': [
-
-                (1, 1, 1585855, parse('2020-01-01 00:00:00 UTC').astimezone(pytz.utc), 111, 1111, 11111, 111111, 'Lifestyle', 1585855, 111111111),
-                (2, 2, 1585855, parse('2020-01-01 00:00:00 UTC').astimezone(pytz.utc), 111, 1111, 11111, 111111, 'Lifestyle', 1585855, 111111111),
-
-                (3, 3, 1585855, parse('2020-01-01 00:00:00 UTC').astimezone(pytz.utc), 111, 1111, 11111, 111111, 'Lifestyle', 1585855, 111111111),
-                (4, 4, 1585855, parse('2020-01-01 00:00:00 UTC').astimezone(pytz.utc), 111, 1111, 11111, 111111, 'Lifestyle', 1585855, 111111111),
-
-                (5, 5, 1585855, parse('2020-01-01 00:00:00 UTC').astimezone(pytz.utc), 111, 1111, 11111, 111111, 'Lifestyle', 1585855, 111111111),
-                (6, 6, 2100000004, parse('2020-01-01 00:00:00 UTC').astimezone(pytz.utc), 111, 1111, 11111, 111111,
+                (1, 1, 1585855,
+                 parse('2020-01-01 00:00:00 UTC').astimezone(pytz.utc), 111,
+                 1111, 11111, 111111, 'Lifestyle', 1585855, 111111111),
+                (2, 2, 1585855,
+                 parse('2020-01-01 00:00:00 UTC').astimezone(pytz.utc), 111,
+                 1111, 11111, 111111, 'Lifestyle', 1585855, 111111111),
+                (3, 3, 1585855,
+                 parse('2020-01-01 00:00:00 UTC').astimezone(pytz.utc), 111,
+                 1111, 11111, 111111, 'Lifestyle', 1585855, 111111111),
+                (4, 4, 1585855,
+                 parse('2020-01-01 00:00:00 UTC').astimezone(pytz.utc), 111,
+                 1111, 11111, 111111, 'Lifestyle', 1585855, 111111111),
+                (5, 5, 1585855,
+                 parse('2020-01-01 00:00:00 UTC').astimezone(pytz.utc), 111,
+                 1111, 11111, 111111, 'Lifestyle', 1585855, 111111111),
+                (6, 6, 2100000004, parse('2020-01-01 00:00:00 UTC').astimezone(
+                    pytz.utc), 111, 1111, 11111, 111111,
                  'AoUDRC_SurveyVersion_CopeJuly2020', 2100000004, 111111111),
-
-                (7, 7, 0, parse('2020-01-01 00:00:00 UTC').astimezone(pytz.utc), 111, 1111, 11111, 111111, 'Lifestyle', 0, 111111111),
-                (8, 8, 0, parse('2020-01-01 00:00:00 UTC').astimezone(pytz.utc), 111, 1111, 11111, 111111, 'Lifestyle', 0, 111111111),
-                (9, 9, 0, parse('2020-01-01 00:00:00 UTC').astimezone(pytz.utc), 111, 1111, 11111, 111111, 'Lifestyle', 0, 111111111),
-                (10, 10, 0, parse('2020-01-01 00:00:00 UTC').astimezone(pytz.utc), 111, 1111, 11111, 111111, 'Lifestyle',
-                 0, 111111111),
-                (11, 11, 0, parse('2020-01-01 00:00:00 UTC').astimezone(pytz.utc), 111, 1111, 11111, 111111, 'Lifestyle',
-                 0, 111111111)
-
+                (7, 7, 0, parse('2020-01-01 00:00:00 UTC').astimezone(pytz.utc),
+                 111, 1111, 11111, 111111, 'Lifestyle', 0, 111111111),
+                (8, 8, 0, parse('2020-01-01 00:00:00 UTC').astimezone(pytz.utc),
+                 111, 1111, 11111, 111111, 'Lifestyle', 0, 111111111),
+                (9, 9, 0, parse('2020-01-01 00:00:00 UTC').astimezone(pytz.utc),
+                 111, 1111, 11111, 111111, 'Lifestyle', 0, 111111111),
+                (10, 10, 0,
+                 parse('2020-01-01 00:00:00 UTC').astimezone(pytz.utc), 111,
+                 1111, 11111, 111111, 'Lifestyle', 0, 111111111),
+                (11, 11, 0,
+                 parse('2020-01-01 00:00:00 UTC').astimezone(pytz.utc), 111,
+                 1111, 11111, 111111, 'Lifestyle', 0, 111111111)
             ]
         }]
 

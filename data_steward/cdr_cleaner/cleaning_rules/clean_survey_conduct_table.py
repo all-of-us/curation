@@ -28,7 +28,6 @@ from constants.cdr_cleaner import clean_cdr as cdr_consts
 from common import JINJA_ENV, SURVEY_CONDUCT
 import resources
 
-
 LOGGER = logging.getLogger(__name__)
 
 JIRA_ISSUE_NUMBERS = ['DC3013']
@@ -112,6 +111,7 @@ FROM `{{project_id}}.{{dataset_id}}.survey_conduct`
 )
 """)
 
+
 class CleanSurveyConduct(BaseCleaningRule):
 
     def __init__(self,
@@ -126,9 +126,7 @@ class CleanSurveyConduct(BaseCleaningRule):
         this SQL, append them to the list of Jira Issues.
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
-        desc = (
-            'Updates/Cleans survey_conduct concept_id fields.'
-        )
+        desc = ('Updates/Cleans survey_conduct concept_id fields.')
 
         super().__init__(issue_numbers=JIRA_ISSUE_NUMBERS,
                          description=desc,
@@ -137,7 +135,7 @@ class CleanSurveyConduct(BaseCleaningRule):
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
-                         depends_on= [DropUnverifiedSurveyData],
+                         depends_on=[DropUnverifiedSurveyData],
                          table_namer=table_namer)
 
     def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
