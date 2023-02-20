@@ -88,7 +88,7 @@ def create_all_tables(dataset_id):
         create_table(table, dataset_id)
 
 
-if __name__ == '__main__':
+def main():
     # TODO parse args, support multiple commands
     parser = get_parser()
     args = parser.parse_args()
@@ -105,3 +105,7 @@ if __name__ == '__main__':
         pass
     else:
         create_all_tables(args.dataset_id)
+
+
+if __name__ == '__main__':
+    main()
