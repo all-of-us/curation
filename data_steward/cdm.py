@@ -13,7 +13,7 @@ import resources
 logger = logging.getLogger(__name__)
 
 
-def get_parser():
+def create_parser():
 
     parser = argparse.ArgumentParser(
         description='Parse project_id and dataset_id',
@@ -90,7 +90,7 @@ def create_all_tables(dataset_id):
 
 def main():
     # TODO parse args, support multiple commands
-    parser = get_parser()
+    parser = create_parser()
     args = parser.parse_args()
 
     if args.table:
