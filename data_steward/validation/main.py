@@ -141,7 +141,8 @@ def run_export(datasource_id=None, folder_prefix="", target_bucket=None):
 
 
 def run_achilles(client, hpo_id=None):
-    """checks for full results and run achilles/heel
+    """
+    checks for full results and run achilles/heel
 
     :client: a BigQueryClient
     :hpo_id: hpo on which to run achilles
@@ -806,7 +807,8 @@ def _validation_done(bucket, folder):
 
 
 def basename(item_metadata):
-    """returns name of file inside folder
+    """
+    returns name of file inside folder
 
     :item_metadata: metadata as returned by get bucket times metadata
     :returns: name without folder name
@@ -979,7 +981,6 @@ def _is_string_excluded_file(gcs_file_name):
 def process_hpo_copy(hpo_id):
     """
     copies over files from hpo bucket to drc bucket
-    
     :hpo_id: hpo from which to copy
     """
 
