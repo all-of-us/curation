@@ -13,7 +13,7 @@ import pytz
 # Project imports
 from common import JINJA_ENV, VOCABULARY_TABLES
 from app_identity import PROJECT_ID
-from cdr_cleaner.cleaning_rules.clean_survey_conduct_table import CleanSurveyConduct, DOMAIN_TABLES, AOU_CUSTOM_VOCAB
+from cdr_cleaner.cleaning_rules.clean_survey_conduct_table import CleanSurveyConduct, DOMAIN_TABLES
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest\
 
 
@@ -50,8 +50,7 @@ class CleanSurveyConductTest(BaseTest.CleaningRulesTestBase):
         for table_name in DOMAIN_TABLES + VOCABULARY_TABLES:
             cls.fq_table_names.append(
                 f'{cls.project_id}.{cls.dataset_id}.{table_name}')
-        cls.fq_table_names.append(
-            f'{cls.project_id}.{cls.sandbox_id}.{AOU_CUSTOM_VOCAB}')
+
 
         # call super to set up the client, create datasets, and create
         # empty test tables
@@ -74,21 +73,16 @@ class CleanSurveyConductTest(BaseTest.CleaningRulesTestBase):
         respondent_type_concept_id, timing_concept_id, collection_method_concept_id, survey_source_value,
         survey_source_concept_id, validated_survey_concept_id)
         VALUES
-        -- survey_concept_id is valid, survey_source_concept_id is not valid. Should be sandboxed and cleaned. --
-              (1, 1, 1585855, '2020-01-01 00:00:00 UTC', 111, 1111, 11111, 111111,'Lifestyle', 0, 111111111),
-              (2, 2, 1585855, '2020-01-01 00:00:00 UTC', 111, 1111, 11111, 111111,'Lifestyle', 0, 111111111),
-        -- survey_source_concept_id is valid, survey_concept_id is not valid. Should be sandboxed and cleaned. --
-              (3, 3, 0, '2020-01-01 00:00:00 UTC', 111, 1111, 11111, 111111,'Lifestyle', 1585855, 111111111),
-              (4, 4, 0, '2020-01-01 00:00:00 UTC', 111, 1111, 11111, 111111,'Lifestyle', 1585855, 111111111),          
+        -- survey_concept_id is valid, survey_source_concept_id needs to be updated. Should be sandboxed and cleaned. --
+              (1, 1, 1585855, '2020-01-01 00:00:00 UTC', 111, 1111, 11111, 111111,'Lifestyle', 111, 111111111),
+              (2, 2, 1585855, '2020-01-01 00:00:00 UTC', 111, 1111, 11111, 111111,'Lifestyle', 222, 111111111),         
         -- Both concept_id fields are valid and the same. Should not be affected. --
               (5, 5, 1585855, '2020-01-01 00:00:00 UTC', 111, 1111, 11111, 111111,'Lifestyle', 1585855, 111111111),
               (6, 6, 2100000004, '2020-01-01 00:00:00 UTC', 111, 1111, 11111, 111111,'AoUDRC_SurveyVersion_CopeJuly2020', 2100000004, 111111111),
-        -- At least one concept_id field is invalid. Should be sandboxed and concept_id fields set to 0. --
-              (7, 7, 0, '2020-01-01 00:00:00 UTC', 111, 1111, 11111, 111111,'Lifestyle', 0, 111111111),
-              (8, 8, 0, '2020-01-01 00:00:00 UTC', 111, 1111, 11111, 111111,'Lifestyle', 0, 111111111),
-              (9, 9, 1111, '2020-01-01 00:00:00 UTC', 111, 1111, 11111, 111111,'Lifestyle', 1111, 111111111),
-              (10, 10, 1585855, '2020-01-01 00:00:00 UTC', 111, 1111, 11111, 111111,'Lifestyle', 1111, 111111111),
-              (11, 11, 1111, '2020-01-01 00:00:00 UTC', 111, 1111, 11111, 111111,'Lifestyle', 1585855, 111111111)
+        -- Survey_concept_id is invalid. Should be sandboxed and concept_id fields set to 0. --
+              (7, 7, 0, '2020-01-01 00:00:00 UTC', 111, 1111, 11111, 111111,'Lifestyle', 111, 111111111),
+              (8, 8, 0, '2020-01-01 00:00:00 UTC', 111, 1111, 11111, 111111,'Lifestyle', 111, 111111111)
+
         """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
         self.load_test_data([SURVEY_CONDUCT_TEMPLATE])
@@ -105,19 +99,13 @@ class CleanSurveyConductTest(BaseTest.CleaningRulesTestBase):
                 'collection_method_concept_id', 'survey_source_value',
                 'survey_source_concept_id', 'validated_survey_concept_id'
             ],
-            'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
-            'sandboxed_ids': [1, 2, 3, 4, 7, 8, 9, 10, 11],
+            'loaded_ids': [1, 2, 5, 6, 7, 8],
+            'sandboxed_ids': [1, 2, 7, 8],
             'cleaned_values': [
                 (1, 1, 1585855,
                  parse('2020-01-01 00:00:00 UTC').astimezone(pytz.utc), 111,
                  1111, 11111, 111111, 'Lifestyle', 1585855, 111111111),
                 (2, 2, 1585855,
-                 parse('2020-01-01 00:00:00 UTC').astimezone(pytz.utc), 111,
-                 1111, 11111, 111111, 'Lifestyle', 1585855, 111111111),
-                (3, 3, 1585855,
-                 parse('2020-01-01 00:00:00 UTC').astimezone(pytz.utc), 111,
-                 1111, 11111, 111111, 'Lifestyle', 1585855, 111111111),
-                (4, 4, 1585855,
                  parse('2020-01-01 00:00:00 UTC').astimezone(pytz.utc), 111,
                  1111, 11111, 111111, 'Lifestyle', 1585855, 111111111),
                 (5, 5, 1585855,
@@ -129,15 +117,8 @@ class CleanSurveyConductTest(BaseTest.CleaningRulesTestBase):
                 (7, 7, 0, parse('2020-01-01 00:00:00 UTC').astimezone(pytz.utc),
                  111, 1111, 11111, 111111, 'Lifestyle', 0, 111111111),
                 (8, 8, 0, parse('2020-01-01 00:00:00 UTC').astimezone(pytz.utc),
-                 111, 1111, 11111, 111111, 'Lifestyle', 0, 111111111),
-                (9, 9, 0, parse('2020-01-01 00:00:00 UTC').astimezone(pytz.utc),
-                 111, 1111, 11111, 111111, 'Lifestyle', 0, 111111111),
-                (10, 10, 0,
-                 parse('2020-01-01 00:00:00 UTC').astimezone(pytz.utc), 111,
-                 1111, 11111, 111111, 'Lifestyle', 0, 111111111),
-                (11, 11, 0,
-                 parse('2020-01-01 00:00:00 UTC').astimezone(pytz.utc), 111,
-                 1111, 11111, 111111, 'Lifestyle', 0, 111111111)
+                 111, 1111, 11111, 111111, 'Lifestyle', 0, 111111111)
+
             ]
         }]
 
