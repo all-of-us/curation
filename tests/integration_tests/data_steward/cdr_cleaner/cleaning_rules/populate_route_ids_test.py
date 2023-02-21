@@ -39,6 +39,10 @@ class PopulateRouteIdsTest(BaseTest.CleaningRulesTestBase):
             f'{cls.project_id}.{cls.dataset_id}.{table}' for table in tables
         ]
 
+        for table in VOCABULARY_TABLES:
+            cls.fq_table_names.append(
+                f'{cls.project_id}.{cls.dataset_id}.{table}')
+
         cls.fq_sandbox_table_names = []
         for table in cls.rule_instance.get_sandbox_tablenames():
             cls.fq_sandbox_table_names.append(
