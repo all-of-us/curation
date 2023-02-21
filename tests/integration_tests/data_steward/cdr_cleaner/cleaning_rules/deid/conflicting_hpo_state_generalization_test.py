@@ -130,3 +130,6 @@ class ConflictingHpoStateGeneralizeTest(BaseTest.CleaningRulesTestBase):
         }]
 
         self.default_test(tables_and_counts)
+
+    def tearDown(self):
+        super().tearDown()
