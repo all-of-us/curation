@@ -449,6 +449,14 @@ def run_bq_retraction(project_id,
     :param bq_client: BigQuery client. Reuse the client if one already exists. If not, a new one will be created.
     :return:
     """
+
+    # Skip retraction if type is incorrect
+    if retraction_type not in [RETRACTION_ONLY_EHR, RETRACTION_RDR_EHR]:
+        LOGGER.info(
+            f"{retraction_type} is not {RETRACTION_ONLY_EHR} or {RETRACTION_RDR_EHR}. Skipping BQ retraction."
+        )
+        return
+
     client = bq_client if bq_client else BigQueryClient(project_id)
 
     # NOTE get_datasets_list() excludes sandbox datasets and datasets that are type=OTHER.
