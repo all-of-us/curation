@@ -221,6 +221,10 @@ COMBINED_CLEANING_CLASSES = [
     (RemoveNonMatchingParticipant,),
     (DropOrphanedSurveyConductIds,),
     (DropOrphanedPIDS,),
+    (GenerateExtTables,),
+    (COPESurveyVersionTask,
+    ),  # Should run after GenerateExtTables and before CleanMappingExtTables
+    (PopulateSurveyConductExt,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
@@ -235,15 +239,10 @@ FITBIT_CLEANING_CLASSES = [
 REGISTERED_TIER_DEID_CLEANING_CLASSES = [
     # Data mappings/re-mappings
     ####################################
-    (
-        GenerateExtTables,),
-    (COPESurveyVersionTask,
-    ),  # Should run after GenerateExtTables and before CleanMappingExtTables
     # TODO: Uncomment rule after date-shift removed from deid module
     # (SurveyConductDateShiftRule,),
     (
-        PopulateSurveyConductExt,),
-    (QRIDtoRID,),  # Should run before any row suppression rules
+        QRIDtoRID,),  # Should run before any row suppression rules
 
     # Data generalizations
     ####################################
@@ -298,10 +297,6 @@ REGISTERED_TIER_FITBIT_CLEANING_CLASSES = [
 
 CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     (RtCtPIDtoRID,),
-    (GenerateExtTables,),
-    (COPESurveyVersionTask,
-    ),  # Should run after GenerateExtTables and before CleanMappingExtTables
-    (PopulateSurveyConductExt,),
     (QRIDtoRID,),  # Should run before any row suppression rules
     (TruncateEraTables,),
     (NullPersonBirthdate,),
