@@ -151,7 +151,7 @@ def run_achilles(client, hpo_id=None):
     if hpo_id is not None:
         logging.info(f"Running achilles_heel for hpo_id '{hpo_id}'")
     achilles_heel.create_tables(hpo_id, True)
-    achilles_heel.run_heel(hpo_id=hpo_id)
+    achilles_heel.run_heel(client, hpo_id=hpo_id)
 
 
 @api_util.auth_required_cron
@@ -970,6 +970,7 @@ def _is_string_excluded_file(gcs_file_name):
 def process_hpo_copy(hpo_id):
     """
     copies over files from hpo bucket to drc bucket
+    
     :hpo_id: hpo from which to copy
     """
 
@@ -1006,7 +1007,8 @@ def process_hpo_copy(hpo_id):
 @api_util.auth_required_cron
 @log_traceback
 def copy_files(hpo_id):
-    """endpoint to copy files for hpo_id
+    """
+    endpoint to copy files for hpo_id
 
     :hpo_id: hpo from which to copy
     :return: json string indicating the job has finished

@@ -293,6 +293,10 @@ def load_from_csv(hpo_id, table_name, source_folder_prefix=""):
     return load_cdm_csv(hpo_id, table_name, source_folder_prefix)
 
 
+@deprecated(
+    reason=
+    'see: https://cloud.google.com/python/docs/reference/bigquery/latest/google.cloud.bigquery.client.Client#google_cloud_bigquery_client_Client_delete_table'
+)
 def delete_table(table_id, dataset_id=None):
     """
     Delete bigquery table by id
