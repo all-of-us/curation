@@ -30,6 +30,10 @@ class PressTest(unittest.TestCase):
 
     def setUp(self):
         # set up mocks for initialization
+        self.mock_bq_client_patcher = patch('deid.press.BigQueryClient')
+        self.mock_bq_client = self.mock_bq_client_patcher.start()
+        self.addCleanup(self.mock_bq_client_patcher.stop)
+
         mock_logs = patch('deid.press.set_up_logging')
         mock_logs.start()
         self.addCleanup(mock_logs.stop)
