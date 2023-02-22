@@ -134,7 +134,7 @@ class BigQueryClient(Client):
             field.mode, field.description, field.fields)
 
     def get_validated_schema_fields(
-            schema_filepath: str) -> [bigquery.SchemaField]:
+            schema_filepath: str) -> typing.List[bigquery.SchemaField]:
         """
         Read and validate the table schema file
 
@@ -229,11 +229,7 @@ class BigQueryClient(Client):
 
         return dataset
 
-    def copy_dataset(self,
-                     input_dataset: str,
-                     output_dataset: str,
-                     job_config: CopyJobConfig = None,
-                     include_metadata: bool = False) -> list:
+    def copy_dataset(self, input_dataset: str, output_dataset: str) -> list:
         """
         Copies tables from source dataset to a destination datasets
 
@@ -241,20 +237,19 @@ class BigQueryClient(Client):
         :param output_dataset: fully qualified name of the output(destination) dataset
         :return: incomplete jobs
         """
-        if include_metadata and not job_config:
-            job_config = CopyJobConfig()
-            
+
         # Copy input dataset tables to backup and staging datasets
         tables = super(BigQueryClient, self).list_tables(input_dataset)
         job_list = []
+        job_config = CopyJobConfig(
+            write_disposition=bigquery.job.WriteDisposition.WRITE_EMPTY)
         for table in tables:
             staging_table = f'{output_dataset}.{table.table_id}'
-            if include_metadata:
-                job_config.labels = {
-                    'table_name': table.table_id,
-                    'copy_from': input_dataset,
-                    'copy_to': output_dataset
-                }
+            job_config.labels = {
+                'table_name': table.table_id,
+                'copy_from': input_dataset,
+                'copy_to': output_dataset
+            }
             job = self.copy_table(table, staging_table, job_config=job_config)
             job_list.append(job.job_id)
         self.wait_on_jobs(job_list)
