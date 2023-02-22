@@ -99,18 +99,14 @@ def main(raw_args=None):
 
     # create staging, sandbox, and clean datasets with descriptions and labels
     datasets = create_datasets(bq_client, args.rdr_dataset, args.release_tag)
-
-
-    # copy raw data into staging dataset
-    # To replace with copy_dataset
-    #copy_raw_rdr_tables(bq_client, args.rdr_dataset, datasets.get('staging'))
-
+    
     job_config = CopyJobConfig(
         write_disposition=bigquery.job.WriteDisposition.WRITE_EMPTY)
 
     bq_client.copy_dataset(input_dataset=args.rdr_dataset,
                            output_dataset=datasets.get('staging'),
-                           job_config=job_config)
+                           job_config=job_config,
+                           include_metadata=True)
     LOGGER.info(
         f'RDR dataset COPY from `{args.rdr_dataset}` to `{datasets.get("staging")}` has completed'
     )
@@ -147,39 +143,6 @@ def main(raw_args=None):
 
     LOGGER.info(f'RDR snapshot and cleaning, '
                 f'`{bq_client.project}.{datasets.get("clean")}`, is complete.')
-
-
-def copy_raw_rdr_tables(client: BigQueryClient, rdr_dataset, rdr_staging):
-    LOGGER.info(
-        f'Beginning COPY of raw rdr tables from `{rdr_dataset}` to `{rdr_staging}`'
-    )
-    # get list of tables
-    src_tables = client.list_tables(rdr_dataset)
-
-    # create a copy job config
-    job_config = bigquery.job.CopyJobConfig(
-        write_disposition=bigquery.job.WriteDisposition.WRITE_EMPTY)
-
-    for table_item in src_tables:
-        job_config.labels = {
-            'table_name': table_item.table_id,
-            'copy_from': rdr_dataset,
-            'copy_to': rdr_staging
-        }
-
-        destination_table = f'{client.project}.{rdr_staging}.{table_item.table_id}'
-        # job_id defined to the second precision
-        job_id = (f'rdr_staging_copy_{table_item.table_id.lower()}_'
-                  f'{datetime.now().strftime("%Y%m%d_%H%M%S")}')
-        # copy each table to rdr dataset
-        client.copy_table(table_item.reference,
-                          destination_table,
-                          job_id=job_id,
-                          job_config=job_config)
-
-    LOGGER.info(
-        f'RDR raw table COPY from `{rdr_dataset}` to `{rdr_staging}` is complete'
-    )
 
 
 def create_datasets(client, rdr_dataset, release_tag):
