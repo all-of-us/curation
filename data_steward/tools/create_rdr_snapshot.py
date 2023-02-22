@@ -10,7 +10,7 @@ from google.cloud import bigquery
 from cdr_cleaner import clean_cdr
 from cdr_cleaner.args_parser import add_kwargs_to_args
 from utils import auth
-from gcloud.bq import BigQueryClient
+from gcloud.bq import BigQueryClient, CopyJobConfig, WriteDisposition
 from utils import pipeline_logging
 from common import CDR_SCOPES
 
@@ -100,8 +100,20 @@ def main(raw_args=None):
     # create staging, sandbox, and clean datasets with descriptions and labels
     datasets = create_datasets(bq_client, args.rdr_dataset, args.release_tag)
 
+
     # copy raw data into staging dataset
-    copy_raw_rdr_tables(bq_client, args.rdr_dataset, datasets.get('staging'))
+    # To replace with copy_dataset
+    #copy_raw_rdr_tables(bq_client, args.rdr_dataset, datasets.get('staging'))
+
+    job_config = CopyJobConfig(
+        write_disposition=bigquery.job.WriteDisposition.WRITE_EMPTY)
+
+    bq_client.copy_dataset(input_dataset=args.rdr_dataset,
+                           output_dataset=datasets.get('staging'),
+                           job_config=job_config)
+    LOGGER.info(
+        f'RDR dataset COPY from `{args.rdr_dataset}` to `{datasets.get("staging")}` has completed'
+    )
 
     # clean the RDR staging dataset
     cleaning_args = [
@@ -137,7 +149,7 @@ def main(raw_args=None):
                 f'`{bq_client.project}.{datasets.get("clean")}`, is complete.')
 
 
-def copy_raw_rdr_tables(client, rdr_dataset, rdr_staging):
+def copy_raw_rdr_tables(client: BigQueryClient, rdr_dataset, rdr_staging):
     LOGGER.info(
         f'Beginning COPY of raw rdr tables from `{rdr_dataset}` to `{rdr_staging}`'
     )
