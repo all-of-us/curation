@@ -229,20 +229,22 @@ class BigQueryClient(Client):
 
         return dataset
 
-    def copy_dataset(self, input_dataset: str, output_dataset: str) -> list:
+    def copy_dataset(self,
+                     input_dataset: str,
+                     output_dataset: str,
+                     job_config: CopyJobConfig = None) -> list:
         """
         Copies tables from source dataset to a destination datasets
 
         :param input_dataset: fully qualified name of the input(source) dataset
         :param output_dataset: fully qualified name of the output(destination) dataset
+        :param job_config: An optional google.cloud.bigquery.job.CopyJobConfig
         :return: incomplete jobs
         """
 
         # Copy input dataset tables to backup and staging datasets
         tables = super(BigQueryClient, self).list_tables(input_dataset)
         job_list = []
-        job_config = CopyJobConfig(
-            write_disposition=bigquery.job.WriteDisposition.WRITE_EMPTY)
         for table in tables:
             staging_table = f'{output_dataset}.{table.table_id}'
             job_config.labels = {
