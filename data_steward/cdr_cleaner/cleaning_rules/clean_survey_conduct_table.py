@@ -2,12 +2,13 @@
 Ensures the survey conduct table is populated as expected.
 
 Survey_conduct table is relatively new at the point of this CR's creation. Because bugs still exist in the creation of
-this table.  This CR is needed to ensure all fields are populated as expected.
+this table.  This CR is needed to ensure all survey concept_id fields are populated as expected.
 
 This CR updates both survey_concept_id and survey_source_concept_id depending on the starting value in survey_concept_id
-If survey_concept_id can join to valid ppi or custom concept, survey_source_concept_id will be updated to this concept_id.
-If survey_concept_id does not join to a valid ppi or custom concept from the vocabulary, survey_source_concept_id will
-be updated to 0.
+If survey_concept_id can join to valid ppi or custom concept, survey_source_concept_id will be updated to be the
+same as survey_concept_id.
+If survey_concept_id does not join to a valid ppi or custom concept from the vocabulary, survey_concept_id and
+survey_source_concept_id will be updated to 0.
 
 Dependencies:
 The surveys requiring a AOU custom id should have had their fields updated in a previously run CR.
@@ -17,22 +18,18 @@ Original Issues: DC-3013
 """
 # Python imports
 import logging
-from datetime import datetime
 
 # Project imports
-from google.cloud import bigquery
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
 from cdr_cleaner.cleaning_rules.drop_unverified_survey_data import DropUnverifiedSurveyData
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from common import JINJA_ENV, SURVEY_CONDUCT
-import resources
 
 LOGGER = logging.getLogger(__name__)
 
 JIRA_ISSUE_NUMBERS = ['DC3013']
 
 DOMAIN_TABLES = [SURVEY_CONDUCT]
-
 
 SANDBOX_SURVEY_CONDUCT = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table_id}}` AS (
@@ -45,6 +42,10 @@ OR survey_concept_id NOT IN (SELECT concept_id FROM `{{project_id}}.{{dataset_id
 CLEAN_SURVEY_CONDUCT = JINJA_ENV.from_string("""
 UPDATE `{{project_id}}.{{dataset_id}}.survey_conduct`
 SET
+survey_concept_id = CASE
+    WHEN survey_concept_id IN (SELECT concept_id FROM `{{project_id}}.{{dataset_id}}.concept` WHERE vocabulary_id IN ('PPI','AoU_Custom','AoU_General'))  THEN survey_concept_id
+    WHEN survey_concept_id NOT IN (SELECT concept_id FROM `{{project_id}}.{{dataset_id}}.concept` WHERE vocabulary_id IN ('PPI','AoU_Custom','AoU_General'))   THEN 0
+END,
 survey_source_concept_id = CASE
     WHEN survey_concept_id IN (SELECT concept_id FROM `{{project_id}}.{{dataset_id}}.concept` WHERE vocabulary_id IN ('PPI','AoU_Custom','AoU_General'))  THEN survey_concept_id
     WHEN survey_concept_id NOT IN (SELECT concept_id FROM `{{project_id}}.{{dataset_id}}.concept` WHERE vocabulary_id IN ('PPI','AoU_Custom','AoU_General'))   THEN 0
@@ -52,6 +53,7 @@ END
 WHERE survey_conduct_id IS NOT NULL
 
 """)
+
 
 class CleanSurveyConduct(BaseCleaningRule):
 
@@ -99,10 +101,7 @@ class CleanSurveyConduct(BaseCleaningRule):
 
         clean_sc_query = dict()
         clean_sc_query[cdr_consts.QUERY] = CLEAN_SURVEY_CONDUCT.render(
-            project_id=self.project_id,
-            dataset_id=self.dataset_id,
-            sandbox_dataset_id=self.sandbox_dataset_id,
-            sandbox_table_id=self.sandbox_table_for(SURVEY_CONDUCT))
+            project_id=self.project_id, dataset_id=self.dataset_id)
         queries_list.append(clean_sc_query)
 
         return queries_list

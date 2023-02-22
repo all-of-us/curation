@@ -51,7 +51,6 @@ class CleanSurveyConductTest(BaseTest.CleaningRulesTestBase):
             cls.fq_table_names.append(
                 f'{cls.project_id}.{cls.dataset_id}.{table_name}')
 
-
         # call super to set up the client, create datasets, and create
         # empty test tables
         # NOTE:  does not create empty sandbox tables.
@@ -75,13 +74,13 @@ class CleanSurveyConductTest(BaseTest.CleaningRulesTestBase):
         VALUES
         -- survey_concept_id is valid, survey_source_concept_id needs to be updated. Should be sandboxed and cleaned. --
               (1, 1, 1585855, '2020-01-01 00:00:00 UTC', 111, 1111, 11111, 111111,'Lifestyle', 111, 111111111),
-              (2, 2, 1585855, '2020-01-01 00:00:00 UTC', 111, 1111, 11111, 111111,'Lifestyle', 222, 111111111),         
+              (2, 2, 2100000004, '2020-01-01 00:00:00 UTC', 111, 1111, 11111, 111111,'Lifestyle', 222, 111111111),         
         -- Both concept_id fields are valid and the same. Should not be affected. --
-              (5, 5, 1585855, '2020-01-01 00:00:00 UTC', 111, 1111, 11111, 111111,'Lifestyle', 1585855, 111111111),
-              (6, 6, 2100000004, '2020-01-01 00:00:00 UTC', 111, 1111, 11111, 111111,'AoUDRC_SurveyVersion_CopeJuly2020', 2100000004, 111111111),
+              (3, 3, 1585855, '2020-01-01 00:00:00 UTC', 111, 1111, 11111, 111111,'Lifestyle', 1585855, 111111111),
+              (4, 4, 2100000004, '2020-01-01 00:00:00 UTC', 111, 1111, 11111, 111111,'AoUDRC_SurveyVersion_CopeJuly2020', 2100000004, 111111111),
         -- Survey_concept_id is invalid. Should be sandboxed and concept_id fields set to 0. --
-              (7, 7, 0, '2020-01-01 00:00:00 UTC', 111, 1111, 11111, 111111,'Lifestyle', 111, 111111111),
-              (8, 8, 0, '2020-01-01 00:00:00 UTC', 111, 1111, 11111, 111111,'Lifestyle', 111, 111111111)
+              (5, 5, 0, '2020-01-01 00:00:00 UTC', 111, 1111, 11111, 111111,'Lifestyle', 111, 111111111),
+              (6, 6, 111, '2020-01-01 00:00:00 UTC', 111, 1111, 11111, 111111,'Lifestyle', 111, 111111111)
 
         """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
@@ -99,26 +98,25 @@ class CleanSurveyConductTest(BaseTest.CleaningRulesTestBase):
                 'collection_method_concept_id', 'survey_source_value',
                 'survey_source_concept_id', 'validated_survey_concept_id'
             ],
-            'loaded_ids': [1, 2, 5, 6, 7, 8],
-            'sandboxed_ids': [1, 2, 7, 8],
+            'loaded_ids': [1, 2, 3, 4, 5, 6],
+            'sandboxed_ids': [1, 2, 5, 6],
             'cleaned_values': [
                 (1, 1, 1585855,
                  parse('2020-01-01 00:00:00 UTC').astimezone(pytz.utc), 111,
                  1111, 11111, 111111, 'Lifestyle', 1585855, 111111111),
-                (2, 2, 1585855,
+                (2, 2, 2100000004,
+                 parse('2020-01-01 00:00:00 UTC').astimezone(pytz.utc), 111,
+                 1111, 11111, 111111, 'Lifestyle', 2100000004, 111111111),
+                (3, 3, 1585855,
                  parse('2020-01-01 00:00:00 UTC').astimezone(pytz.utc), 111,
                  1111, 11111, 111111, 'Lifestyle', 1585855, 111111111),
-                (5, 5, 1585855,
-                 parse('2020-01-01 00:00:00 UTC').astimezone(pytz.utc), 111,
-                 1111, 11111, 111111, 'Lifestyle', 1585855, 111111111),
-                (6, 6, 2100000004, parse('2020-01-01 00:00:00 UTC').astimezone(
+                (4, 4, 2100000004, parse('2020-01-01 00:00:00 UTC').astimezone(
                     pytz.utc), 111, 1111, 11111, 111111,
                  'AoUDRC_SurveyVersion_CopeJuly2020', 2100000004, 111111111),
-                (7, 7, 0, parse('2020-01-01 00:00:00 UTC').astimezone(pytz.utc),
+                (5, 5, 0, parse('2020-01-01 00:00:00 UTC').astimezone(pytz.utc),
                  111, 1111, 11111, 111111, 'Lifestyle', 0, 111111111),
-                (8, 8, 0, parse('2020-01-01 00:00:00 UTC').astimezone(pytz.utc),
+                (6, 6, 0, parse('2020-01-01 00:00:00 UTC').astimezone(pytz.utc),
                  111, 1111, 11111, 111111, 'Lifestyle', 0, 111111111)
-
             ]
         }]
 
