@@ -39,7 +39,8 @@ rt_cdr_deid_clean = ''
 reg_combine = ''
 combine = ''
 run_as = ""
-cdr_cutoff_date = ""
+cdr_cutoff_date = ""  # YYYY-MM-DD
+max_age = 89
 
 # +
 impersonation_creds = auth.get_impersonation_credentials(
@@ -61,7 +62,7 @@ cdr_cutoff_date
 query = JINJA_ENV.from_string("""
 
 SELECT COUNT(*) as n_participants_over_89 FROM `{{project_id}}.{{rt_cdr_deid}}.person`
-WHERE FLOOR(DATE_DIFF(DATE('{{cdr_cutoff_date}}'),DATE(birth_datetime), DAY)/365.25) > 89
+WHERE FLOOR(DATE_DIFF(DATE('{{cdr_cutoff_date}}'),DATE(birth_datetime), DAY)/365.25) > {{max_age}}
 """)
 q = query.render(project_id=project_id,
                  rt_cdr_deid=rt_cdr_deid,
