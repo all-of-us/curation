@@ -78,7 +78,6 @@ import logging
 import os
 import time
 from copy import copy
-from datetime import datetime
 
 # Third party imports
 import numpy as np
@@ -88,8 +87,6 @@ from google.oauth2 import service_account
 
 # Project imports
 import bq_utils
-from gcloud.bq import BigQueryClient
-import app_identity
 import constants.bq_utils as bq_consts
 from common import PIPELINE_TABLES
 from constants.deid.deid import MAX_AGE
@@ -100,16 +97,6 @@ from tools.concept_ids_suppression import get_all_concept_ids
 
 LOGGER = logging.getLogger(__name__)
 MEASUREMENT_TIME = 'measurement_time'
-
-
-def milliseconds_since_epoch():
-    """
-    Helper method to get the number of milliseconds from the epoch to now
-
-    :return:  an integer number of milliseconds
-    """
-    return int(
-        (datetime.utcnow() - datetime(1970, 1, 1)).total_seconds() * 1000)
 
 
 def create_person_id_src_hpo_map(client, input_dataset):
@@ -146,15 +133,14 @@ def create_person_id_src_hpo_map(client, input_dataset):
     # make sure check_tables contain person_id fields
     person_id_tables = []
     for table in check_tables:
-        info = bq_utils.get_table_info(table, dataset_id=input_dataset)
-        schema = info.get('schema', {})
-        for field_info in schema.get('fields', []):
-            if 'person_id' in field_info.get('name'):
+        table_obj = client.get_table(f'{input_dataset}.{table}')
+        for schema_field in table_obj.schema:
+            if 'person_id' in schema_field.name:
                 person_id_tables.append(table)
 
     # revamp mapping tables to contain only mapping tables for tables
     # with person_id fields
-    mapping_tables = ['_mapping_' + table for table in person_id_tables]
+    mapping_tables = [f'_mapping_{table}' for table in person_id_tables]
 
     sql_statement = []
     for table in person_id_tables:
@@ -190,7 +176,7 @@ def create_allowed_states_table(input_dataset, credentials):
     Create a mapping table of src_hpos to states they are located in.
     """
 
-    map_tablename = input_dataset + "._mapping_src_hpos_to_allowed_states"
+    map_tablename = f'{input_dataset}._mapping_src_hpos_to_allowed_states'
     data = pd.read_csv(
         os.path.join(DEID_PATH, 'config', 'internal_tables',
                      'src_hpos_to_allowed_states.csv'))
@@ -208,7 +194,7 @@ def create_concept_id_lookup_table(client, input_dataset, credentials):
     :param credentials: bigquery credentials
     """
 
-    lookup_tablename = input_dataset + "._concept_ids_suppression"
+    lookup_tablename = f'{input_dataset}._concept_ids_suppression'
     columns = [
         'vocabulary_id', 'concept_code', 'concept_name', 'concept_id',
         'domain_id', 'rule', 'question'
@@ -231,8 +217,6 @@ class AOU(Press):
             self.private_key)
         self.partition = args.get('cluster', False)
         self.priority = args.get('interactive', 'BATCH')
-        self.project_id = app_identity.get_application_id()
-        self.bq_client = BigQueryClient(project_id=self.project_id)
 
         if 'shift' in self.deid_rules:
             #
@@ -252,10 +236,7 @@ class AOU(Press):
         age_limit = args.get('age_limit', MAX_AGE)
         LOGGER.info(f"Using participant age limit of {age_limit}")
 
-        million = 1000000
         map_tablename = self.idataset + "._deid_map"
-
-        map_table = pd.DataFrame()
 
         # Create concept_id lookup table for suppressions
         create_concept_id_lookup_table(self.bq_client, self.idataset,
@@ -428,7 +409,7 @@ class AOU(Press):
                 "value_field": self.tablename + ".person_id"
             })
 
-    def _add_dml_statements_rules(self, columns):
+    def _add_dml_statements_rules(self):
         """
         Add default duplicate records dropping configuration, if not specified in the config file.
         """
@@ -479,7 +460,7 @@ class AOU(Press):
         self._add_suppression_rules(columns)
         self._add_temporal_shifting_rules(columns)
         self._add_compute_rules(columns)
-        self._add_dml_statements_rules(columns)
+        self._add_dml_statements_rules()
 
     def submit(self, sql, create, dml=None):
         """

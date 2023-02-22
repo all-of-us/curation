@@ -200,15 +200,11 @@ class EhrUnionTest(unittest.TestCase):
         csv_rows = resources.csv_to_list(cdm_filepath)
         return [row['visit_occurrence_id'] for row in csv_rows]
 
-    def _table_has_clustering(self, table_info):
-        clustering = table_info.get('clustering')
-        self.assertIsNotNone(clustering)
-        fields = clustering.get('fields')
-        self.assertSetEqual(set(fields), {'person_id'})
-        time_partitioning = table_info.get('timePartitioning')
-        self.assertIsNotNone(time_partitioning)
-        tpe = time_partitioning.get('type')
-        self.assertEqual(tpe, 'DAY')
+    def _table_has_clustering(self, table_obj):
+        self.assertIsNotNone(table_obj.clustering_fields)
+        self.assertSetEqual(set(table_obj.clustering_fields), {'person_id'})
+        self.assertIsNotNone(table_obj.time_partitioning)
+        self.assertEqual(table_obj.time_partitioning.type_, 'DAY')
 
     def _dataset_tables(self, dataset_id):
         """
@@ -287,12 +283,10 @@ class EhrUnionTest(unittest.TestCase):
                     'src_%s_id' % table_to_map,
                     '%s_id' % table_to_map, 'src_hpo_id', 'src_dataset_id'
                 }
-                mapping_table_info = bq_utils.get_table_info(
-                    mapping_table, dataset_id=self.output_dataset_id)
-                mapping_table_fields = mapping_table_info.get('schema',
-                                                              dict()).get(
-                                                                  'fields', [])
-                actual_fields = set([f['name'] for f in mapping_table_fields])
+                mapping_table_obj = self.bq_client.get_table(
+                    f'{self.output_dataset_id}.{mapping_table}')
+                actual_fields = set(
+                    [field.name for field in mapping_table_obj.schema])
                 message = 'Table %s has fields %s when %s expected' % (
                     mapping_table, actual_fields, expected_fields)
                 self.assertSetEqual(expected_fields, actual_fields, message)
@@ -303,7 +297,7 @@ class EhrUnionTest(unittest.TestCase):
                     result_table = ehr_union.output_table_for(table_to_map)
                     expected_num_rows = len(self.expected_tables[result_table])
 
-                actual_num_rows = int(mapping_table_info.get('numRows', -1))
+                actual_num_rows = int(mapping_table_obj.num_rows)
                 message = 'Table %s has %s rows when %s expected' % (
                     mapping_table, actual_num_rows, expected_num_rows)
                 self.assertEqual(expected_num_rows, actual_num_rows, message)
@@ -315,9 +309,9 @@ class EhrUnionTest(unittest.TestCase):
                 result_table = ehr_union.output_table_for(table_name)
                 expected_rows = self.expected_tables[result_table]
                 expected_count = len(expected_rows)
-                table_info = bq_utils.get_table_info(
-                    result_table, dataset_id=self.output_dataset_id)
-                actual_count = int(table_info.get('numRows'))
+                table_obj = self.bq_client.get_table(
+                    f'{self.output_dataset_id}.{result_table}')
+                actual_count = int(table_obj.num_rows)
                 msg = 'Unexpected row count in table {result_table} after ehr union'.format(
                     result_table=result_table)
                 self.assertEqual(expected_count, actual_count, msg)
@@ -330,7 +324,7 @@ class EhrUnionTest(unittest.TestCase):
                 fields = resources.fields_for(table_name)
                 field_names = [field['name'] for field in fields]
                 if 'person_id' in field_names:
-                    self._table_has_clustering(table_info)
+                    self._table_has_clustering(table_obj)
 
             actual_output = set(self._dataset_tables(self.output_dataset_id))
             self.assertSetEqual(expected_output, actual_output)
