@@ -88,15 +88,11 @@ class BqUtilsTest(unittest.TestCase):
             FAKE_HPO_ID)
         self.storage_client.empty_bucket(self.hpo_bucket)
 
-    def _table_has_clustering(self, table_info):
-        clustering = table_info.get('clustering')
-        self.assertIsNotNone(clustering)
-        fields = clustering.get('fields')
-        self.assertSetEqual(set(fields), {'person_id'})
-        time_partitioning = table_info.get('timePartitioning')
-        self.assertIsNotNone(time_partitioning)
-        tpe = time_partitioning.get('type')
-        self.assertEqual(tpe, 'DAY')
+    def _table_has_clustering(self, table):
+        self.assertIsNotNone(table.clustering_fields)
+        self.assertSetEqual(set(table.clustering_fields), {'person_id'})
+        self.assertIsNotNone(table.time_partitioning)
+        self.assertEqual(table.time_partitioning.type_, 'DAY')
 
     def test_load_csv(self):
         table_name = 'achilles_analysis'
