@@ -21,7 +21,6 @@
 #
 # -
 
-import urllib
 import pandas as pd
 from common import JINJA_ENV
 from utils import auth
