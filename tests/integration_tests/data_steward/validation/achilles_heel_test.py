@@ -108,7 +108,7 @@ class AchillesHeelTest(unittest.TestCase):
 
         # run achilles heel
         achilles_heel.create_tables(randomized_hpo_id, True)
-        achilles_heel.run_heel(hpo_id=randomized_hpo_id)
+        achilles_heel.run_heel(self.bq_client, hpo_id=randomized_hpo_id)
 
         # validate
         query = sql_wrangle.qualify_tables(
