@@ -10,7 +10,7 @@ from google.cloud import bigquery
 from cdr_cleaner import clean_cdr
 from cdr_cleaner.args_parser import add_kwargs_to_args
 from utils import auth
-from gcloud.bq import BigQueryClient, CopyJobConfig, WriteDisposition
+from gcloud.bq import BigQueryClient
 from utils import pipeline_logging
 from common import CDR_SCOPES
 
@@ -99,14 +99,9 @@ def main(raw_args=None):
 
     # create staging, sandbox, and clean datasets with descriptions and labels
     datasets = create_datasets(bq_client, args.rdr_dataset, args.release_tag)
-    
-    job_config = CopyJobConfig(
-        write_disposition=bigquery.job.WriteDisposition.WRITE_EMPTY)
 
     bq_client.copy_dataset(input_dataset=args.rdr_dataset,
-                           output_dataset=datasets.get('staging'),
-                           job_config=job_config,
-                           include_metadata=True)
+                           output_dataset=datasets.get('staging'))
     LOGGER.info(
         f'RDR dataset COPY from `{args.rdr_dataset}` to `{datasets.get("staging")}` has completed'
     )
