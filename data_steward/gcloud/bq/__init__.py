@@ -242,6 +242,9 @@ class BigQueryClient(Client):
         :return: incomplete jobs
         """
 
+        if not job_config:
+            job_config = CopyJobConfig()  # create an empty default
+
         # Copy input dataset tables to backup and staging datasets
         tables = super(BigQueryClient, self).list_tables(input_dataset)
         job_list = []
