@@ -95,7 +95,7 @@ execute(client, retraction_status_query)
 
 # +
 import pandas as pd
-days_interval = '0'
+days_interval = '1'
 
 table_row_counts_query = JINJA_ENV.from_string('''
 
