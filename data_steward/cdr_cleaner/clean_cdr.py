@@ -6,6 +6,7 @@ to the query engine.
 """
 # Python imports
 import logging
+import typing
 
 # Project imports
 import cdr_cleaner.clean_cdr_engine as clean_engine
@@ -434,7 +435,7 @@ def _to_kwarg_val(val: str):
     return val
 
 
-def _get_kwargs(optional_args: str):
+def _get_kwargs(optional_args: typing.List[str]):
     # TODO: Move this function to as project level arg_parser so it can be reused.
     if len(optional_args) % 2:
         raise RuntimeError(
