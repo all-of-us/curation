@@ -241,13 +241,14 @@ class BigQueryClient(Client):
         :param job_config: An optional google.cloud.bigquery.job.CopyJobConfig
         :return: incomplete jobs
         """
-        job_config = job_config if job_config else CopyJobConfig(write_disposition=WriteDisposition.WRITE_EMPTY)
+        job_config = job_config if job_config else CopyJobConfig(
+            write_disposition=WriteDisposition.WRITE_EMPTY)
         # Copy input dataset tables to backup and staging datasets
         tables = super(BigQueryClient, self).list_tables(input_dataset)
         job_list = []
         for table in tables:
             staging_table = f'{output_dataset}.{table.table_id}'
-            job_config.labels.update( {
+            job_config.labels.update({
                 'table_name': table.table_id,
                 'copy_from': input_dataset,
                 'copy_to': output_dataset
