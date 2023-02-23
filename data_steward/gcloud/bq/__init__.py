@@ -241,10 +241,7 @@ class BigQueryClient(Client):
         :param job_config: An optional google.cloud.bigquery.job.CopyJobConfig
         :return: incomplete jobs
         """
-
-        if not job_config:
-            job_config = CopyJobConfig()  # create an empty default
-
+        job_config = job_config if job_config else CopyJobConfig(write_disposition=WriteDisposition.WRITE_EMPTY)
         # Copy input dataset tables to backup and staging datasets
         tables = super(BigQueryClient, self).list_tables(input_dataset)
         job_list = []
