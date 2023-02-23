@@ -95,6 +95,7 @@ execute(client, retraction_status_query)
 
 # +
 import pandas as pd
+import numpy as np
 days_interval = '1'
 
 table_row_counts_query = JINJA_ENV.from_string('''
@@ -154,6 +155,20 @@ old_count = execute(client, old_retraction_table_count_query)
 new_count = execute(client, new_retraction_table_count_query)
 
 results = pd.merge(old_count, new_count, on='table_id', how='outer')
+
+conditions = [
+    (results['old_minus_aian_row_count'] == results['new_row_count']) |
+    (results['old_minus_aian_row_count'] is None) &
+    (results['new_row_count'] is None),
+    (results['old_minus_aian_row_count'] is not None) &
+    (results['new_row_count'] is None),
+    (results['old_minus_aian_row_count'] is None) &
+    (results['new_row_count'] is not None)
+]
+table_count_status = ['OK', 'POTENTIAL PROBLEM', 'PROBLEM']
+results['table_count_status'] = np.select(conditions,
+                                          table_count_status,
+                                          default='PROBLEM')
 results
 # -
 
