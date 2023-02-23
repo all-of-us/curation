@@ -139,9 +139,7 @@ FROM
          pids
     USING
         (person_id) 
-{% endif %}
-
-{% if days != '0'  %}
+{% else %}
   INNER JOIN
       pids AS p
     USING
