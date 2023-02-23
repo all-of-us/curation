@@ -416,7 +416,7 @@ PARSING_ERROR_MESSAGE_FORMAT = (
     'Custom arguments need an associated keyword to store their value.')
 
 
-def _to_kwarg_key(arg):
+def _to_kwarg_key(arg: str):
     # TODO: Move this function to as project level arg_parser so it can be reused.
     if not arg.startswith('--'):
         raise RuntimeError(PARSING_ERROR_MESSAGE_FORMAT.format(arg=arg))
@@ -426,7 +426,7 @@ def _to_kwarg_key(arg):
     return key
 
 
-def _to_kwarg_val(val):
+def _to_kwarg_val(val: str):
     # TODO: Move this function to as project level arg_parser so it can be reused.
     # likely invalid use of args- allowing single dash e.g. negative values
     if val.startswith('--'):
@@ -434,7 +434,7 @@ def _to_kwarg_val(val):
     return val
 
 
-def _get_kwargs(optional_args):
+def _get_kwargs(optional_args: str):
     # TODO: Move this function to as project level arg_parser so it can be reused.
     # TODO: Move this function to as project level arg_parser so it can be reused.
     if len(optional_args) % 2:
