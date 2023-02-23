@@ -436,7 +436,6 @@ def _to_kwarg_val(val: str):
 
 def _get_kwargs(optional_args: str):
     # TODO: Move this function to as project level arg_parser so it can be reused.
-    # TODO: Move this function to as project level arg_parser so it can be reused.
     if len(optional_args) % 2:
         raise RuntimeError(
             f'All provided arguments need key-value pairs in {optional_args}')
