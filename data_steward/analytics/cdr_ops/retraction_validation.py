@@ -17,7 +17,7 @@ project_id: str = ""  # identifies the project where datasets are located
 old_dataset: str = ""  # identifies the dataset name where participants are to be retracted
 new_dataset: str = ""  # identifies the dataset name after retraction
 lookup_table: str = ""  # lookup table name where the pids and rids needs to be retracted are stored
-lookup_table_dataset: str = ""  # the sandbox dataset where lookup tasble is located
+lookup_table_dataset: str = ""  # the sandbox dataset where lookup table is located
 is_deidentified: str = "true"  # identifies if a dataset is pre or post deid
 run_as: str = ""  # service account email to impersonate
 # -
@@ -94,43 +94,67 @@ execute(client, retraction_status_query)
 # table row counts for all the pid tables in new dataset.
 
 # +
+import pandas as pd
+days_interval = '0'
+
 table_row_counts_query = JINJA_ENV.from_string('''
 
-SELECT
-\'{{table_name}}\' as table_name,
-old_minus_aian_row_count,
-new_row_count,
-case when old_minus_aian_row_count = new_row_count then 'OK'
-  when old_minus_aian_row_count is null AND new_row_count is null then 'OK'
-  when old_minus_aian_row_count is NOT NULL and new_row_count is null then 'POTENTIAL PROBLEM'
-  when old_minus_aian_row_count is NULL and new_row_count is not NULL then 'PROBLEM'
-  ELSE 'PROBLEM'
-  end as table_count_status FROM
-(SELECT
-  count(*) as old_minus_aian_row_count,
-  (select row_count
-  from `{{project}}.{{new_dataset}}.__TABLES__` 
-  WHERE table_id = \'{{table_name}}\') as new_row_count
-FROM
-  `{{project}}.{{old_dataset}}.{{table_name}}` as tb
-left JOIN
-  pids as p USING (person_id)
- where p.person_id is null)
+SELECT 
+  '{{table_name}}' as table_id, count(*) as {{count}}
+FROM 
+  `{{project}}.{{new_dataset}}.{{table_name}}`
+      FOR SYSTEM_TIME AS OF TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {{days}} DAY)
+
+{% if days != '0' %}
+WHERE person_id NOT IN (
+    SELECT
+        person_id
+    FROM
+        pids
+    WHERE person_id IS NOT NULL
+)
+{% endif %}
+
 ''')
-row_counts_queries_list = []
+
+old_row_counts_queries_list = []
+new_row_counts_queries_list = []
+
 for table in pid_table_list:
-    row_counts_queries_list.append(
+    old_row_counts_queries_list.append(
         table_row_counts_query.render(project=project_id,
-                                      old_dataset=old_dataset,
                                       new_dataset=new_dataset,
-                                      table_name=table))
+                                      table_name=table,
+                                      count='old_minus_aian_row_count',
+                                      days=days_interval))
+    new_row_counts_queries_list.append(
+        table_row_counts_query.render(project=project_id,
+                                      new_dataset=new_dataset,
+                                      table_name=table,
+                                      count='new_row_count',
+                                      days='0'))
 
-row_counts_union_all_query = '\nUNION ALL\n'.join(row_counts_queries_list)
+old_row_counts_union_all_query = '\nUNION ALL\n'.join(
+    old_row_counts_queries_list)
 
-retraction_table_count_query = (f'{rids_query}\n{row_counts_union_all_query}'
-                                if is_deidentified == 'true' else
-                                f'{pids_query}\n{row_counts_union_all_query}')
-execute(client, retraction_table_count_query)
+new_row_counts_union_all_query = '\nUNION ALL\n'.join(
+    new_row_counts_queries_list)
+
+old_retraction_table_count_query = (
+    f'{rids_query}\n{old_row_counts_union_all_query}'
+    if is_deidentified == 'true' else
+    f'{pids_query}\n{old_row_counts_union_all_query}')
+
+new_retraction_table_count_query = (
+    f'{rids_query}\n{new_row_counts_union_all_query}'
+    if is_deidentified == 'true' else
+    f'{pids_query}\n{new_row_counts_union_all_query}')
+
+old_count = execute(client, old_retraction_table_count_query)
+new_count = execute(client, new_retraction_table_count_query)
+
+results = pd.merge(old_count, new_count, on='table_id', how='outer')
+results
 # -
 
 # ## 3. Verify if retracted participants are dropped from fact_relationship table.
