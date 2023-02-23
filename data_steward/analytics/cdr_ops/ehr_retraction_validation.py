@@ -123,68 +123,88 @@ execute(client, retraction_status_query)
 # We expect PPI/PM data to exist for the listed participants even after the retraction. So here we are checking the record count of the source data minus the EHR records is equal to the record count post retraction.
 
 # +
+import pandas as pd
+days_interval = '1'
+
 table_row_counts_query = JINJA_ENV.from_string('''
-SELECT
-  \'{{table_name}}\' as table_name,
-old_minus_ehr_row_count,
-  new_row_count,
-  CASE
-    WHEN old_minus_ehr_row_count = new_row_count THEN 'OK'
-    WHEN old_minus_ehr_row_count IS NULL AND new_row_count IS NULL THEN 'OK'
-    WHEN old_minus_ehr_row_count IS NOT NULL AND new_row_count IS NULL THEN 'POTENTIAL PROBLEM'
-    WHEN old_minus_ehr_row_count IS NULL AND new_row_count IS NOT NULL THEN 'PROBLEM'
-  ELSE
-  'PROBLEM'
-END
-  AS table_count_status
-FROM (
-  SELECT
-    COUNT(*) AS old_minus_ehr_row_count,
-    (
-    SELECT
-      COUNT(*)
-    FROM
-      `{{project}}.{{new_dataset}}.{{table_name}}` tb1
+
+SELECT 
+  '{{table_name}}' as table_id, count(*) as {{count}}
+FROM 
+  `{{project}}.{{new_dataset}}.{{table_name}}`
+      FOR SYSTEM_TIME AS OF TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {{days}} DAY)
+      
+{% if days == '0'    %}
     INNER JOIN
-      pids
+         pids
     USING
-      (person_id) ) AS new_row_count
-  FROM
-    `{{project}}.{{old_dataset}}.{{table_name}}` AS tb
+        (person_id) 
+{% endif %}
+
+{% if days != '0'  %}
   INNER JOIN
-    pids AS p
-  USING
-    (person_id)
-  INNER JOIN
-    `{{project}}.{{old_dataset}}.{{mapping_table}}` mp
-  USING
-    ({{table_name}}_id) 
-  {% if is_deidentified.lower() == 'true' %}
-  WHERE
-    src_id = 'PPI/PM' 
-  {% else %}
-  WHERE
-    src_hpo_id = 'rdr' 
-  {% endif %} 
-)
+      pids AS p
+    USING
+      (person_id)
+    INNER JOIN
+      `{{project}}.{{new_dataset}}.{{mapping_table}}` mp
+    USING
+      ({{table_name}}_id) 
+    {% if is_deidentified.lower() == 'true' %}
+    WHERE
+      src_id = 'PPI/PM' 
+    {% else %}
+    WHERE
+      src_hpo_id = 'rdr' 
+    {% endif %} 
+{% endif %}
+
 ''')
-row_counts_queries_list = []
+
+old_row_counts_queries_list = []
+new_row_counts_queries_list = []
+
 for table in pid_table_list:
-    row_counts_queries_list.append(
+    old_row_counts_queries_list.append(
         table_row_counts_query.render(project=project_id,
-                                      old_dataset=old_dataset,
                                       new_dataset=new_dataset,
                                       is_deidentified=is_deidentified,
                                       table_name=table,
                                       mapping_table=provenance_table_for(
-                                          table, is_deidentified)))
+                                          table, is_deidentified),
+                                      count='old_minus_aian_row_count',
+                                      days=days_interval))
 
-row_counts_union_all_query = '\nUNION ALL\n'.join(row_counts_queries_list)
+    new_row_counts_queries_list.append(
+        table_row_counts_query.render(project=project_id,
+                                      new_dataset=new_dataset,
+                                      is_deidentified=is_deidentified,
+                                      table_name=table,
+                                      mapping_table=provenance_table_for(
+                                          table, is_deidentified),
+                                      count='new_row_count',
+                                      days='0'))
 
-retraction_table_count_query = (f'{rids_query}\n{row_counts_union_all_query}'
-                                if is_deidentified == 'true' else
-                                f'{pids_query}\n{row_counts_union_all_query}')
-execute(client, retraction_table_count_query)
+old_row_counts_union_all_query = '\nUNION ALL\n'.join(
+    old_row_counts_queries_list)
+new_row_counts_union_all_query = '\nUNION ALL\n'.join(
+    new_row_counts_queries_list)
+
+old_retraction_table_count_query = (
+    f'{rids_query}\n{old_row_counts_union_all_query}'
+    if is_deidentified == 'true' else
+    f'{pids_query}\n{old_row_counts_union_all_query}')
+
+new_retraction_table_count_query = (
+    f'{rids_query}\n{new_row_counts_union_all_query}'
+    if is_deidentified == 'true' else
+    f'{pids_query}\n{new_row_counts_union_all_query}')
+
+old_count = execute(client, old_retraction_table_count_query)
+new_count = execute(client, new_retraction_table_count_query)
+
+results = pd.merge(old_count, new_count, on='table_id', how='outer')
+results
 # -
 
 # ## 3. Verify Death table retraction.
