@@ -21,6 +21,8 @@ lookup_table_dataset: str = ""  # the sandbox dataset where lookup table is loca
 is_deidentified: str = "true"  # identifies if a dataset is pre or post deid
 run_as: str = ""  # service account email to impersonate
 # -
+import pandas as pd
+import numpy as np
 
 from common import JINJA_ENV, CDM_TABLES
 from utils import auth
@@ -123,10 +125,6 @@ execute(client, retraction_status_query)
 # We expect PPI/PM data to exist for the listed participants even after the retraction. So here we are checking the record count of the source data minus the EHR records is equal to the record count post retraction.
 
 # +
-import pandas as pd
-import numpy as np
-days_interval = '1'
-
 table_row_counts_query = JINJA_ENV.from_string('''
 
 SELECT 
@@ -172,7 +170,7 @@ for table in pid_table_list:
                                       mapping_table=provenance_table_for(
                                           table, is_deidentified),
                                       count='old_minus_aian_row_count',
-                                      days=days_interval))
+                                      days='1'))
 
     new_row_counts_queries_list.append(
         table_row_counts_query.render(project=project_id,

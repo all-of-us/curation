@@ -21,6 +21,8 @@ lookup_table_dataset: str = ""  # the sandbox dataset where lookup table is loca
 is_deidentified: str = "true"  # identifies if a dataset is pre or post deid
 run_as: str = ""  # service account email to impersonate
 # -
+import pandas as pd
+import numpy as np
 
 from common import JINJA_ENV, PIPELINE_TABLES, FITBIT_TABLES, CDM_TABLES
 from utils import auth
@@ -94,10 +96,6 @@ execute(client, retraction_status_query)
 # table row counts for all the pid tables in new dataset.
 
 # +
-import pandas as pd
-import numpy as np
-days_interval = '1'
-
 table_row_counts_query = JINJA_ENV.from_string('''
 
 SELECT 
@@ -127,7 +125,7 @@ for table in pid_table_list:
                                       new_dataset=new_dataset,
                                       table_name=table,
                                       count='old_minus_aian_row_count',
-                                      days=days_interval))
+                                      days='1'))
     new_row_counts_queries_list.append(
         table_row_counts_query.render(project=project_id,
                                       new_dataset=new_dataset,
