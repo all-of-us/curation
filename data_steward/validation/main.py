@@ -29,7 +29,8 @@ import cdm
 import common
 from cdr_cleaner import clean_cdr
 from cdr_cleaner.args_parser import add_kwargs_to_args
-from constants.cdr_cleaner.clean_cdr import DATA_CONSISTENCY
+from constants.cdr_cleaner.clean_cdr import CRON_RETRACTION
+import constants.global_variables
 from gcloud.bq import BigQueryClient
 from gcloud.gcs import StorageClient
 import resources
@@ -1043,6 +1044,7 @@ def run_retraction_cron():
     """
     Run a cron job to mimic the run_retraction.py script
     """
+    constants.global_variables.DISABLE_SANDBOX = True
     project_id = bq_utils.app_identity.get_application_id()
     hpo_id = bq_utils.get_retraction_hpo_id()
     retraction_type = bq_utils.get_retraction_type()
@@ -1076,15 +1078,16 @@ def run_retraction_cron():
                                       hpo_id,
                                       dataset_ids,
                                       retraction_type,
+                                      skip_sandboxing=True,
                                       bq_client=bq_client)
     logging.info(f"Completed retraction on BQ datasets")
 
-    # Run memory changes
+    # Run cleaning rules
     for dataset_id in dataset_ids:
         logging.info(f"Running CRs for {dataset_id}...")
         cleaning_args = [
             '-p', project_id, '-d', dataset_id, '-b', sandbox_dataset_id,
-            '--data_stage', DATA_CONSISTENCY, '--run_as',
+            '--data_stage', CRON_RETRACTION, '--run_as',
             bq_client.get_service_account_email(project_id), '-s'
         ]
         all_cleaning_args = add_kwargs_to_args(cleaning_args, None)

@@ -16,6 +16,7 @@ import constants.bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 import resources
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
+import constants.global_variables
 from utils import bq
 
 LOGGER = logging.getLogger(__name__)
@@ -173,7 +174,7 @@ class CleanMappingExtTables(BaseCleaningRule):
             if is_ehr:
                 cdm_table = f"{UNIONED_EHR}_{cdm_table}"
 
-            if self.sandbox_dataset_id is not None:
+            if not constants.global_variables.DISABLE_SANDBOX:
                 sandbox_query = dict()
                 sandbox_query[cdr_consts.QUERY] = RECORDS_QUERY.render(
                     query_stmt='SELECT *',
