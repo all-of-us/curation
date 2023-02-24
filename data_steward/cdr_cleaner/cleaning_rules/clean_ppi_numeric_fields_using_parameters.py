@@ -49,7 +49,8 @@ OR
     -- from dc1058: sandbox any participant data who have 6 or more members under 18 in their household --
     (observation_source_concept_id IN (1333023, 1585890) AND (value_as_number < 0 OR value_as_number > 5))
 OR
-    (observation_source_concept_id = 1333023 AND value_as_number IS NULL AND value_as_string IS NOT NULL))
+    (observation_source_concept_id = 1333023 AND value_as_number IS NULL AND TRIM(LOWER(value_as_string)) NOT IN ('pmi_skip', 'pmi skip', ''))
+)
 """)
 
 CLEAN_INVALID_VALUES_QUERY = JINJA_ENV.from_string("""
@@ -72,7 +73,7 @@ CASE
   ELSE value_as_number
 END AS
     value_as_number,
-    CASE WHEN observation_source_concept_id = 1333023 AND value_as_number IS NULL AND value_as_string IS NOT NULL THEN NULL
+    CASE WHEN observation_source_concept_id = 1333023 AND value_as_number IS NULL AND TRIM(LOWER(value_as_string)) NOT IN ('pmi_skip', 'pmi skip', '') THEN NULL
     ELSE value_as_string
     END AS value_as_string,
 CASE

@@ -132,21 +132,23 @@ class CleanPPINumericFieldsUsingParameterTest(BaseTest.CleaningRulesTestBase):
         queries.append(six_plus_tmpl)
 
         skips_tmpl = self.jinja_env.from_string("""
-                   INSERT INTO `{{fq_dataset_name}}.observation`
-                   (observation_id, person_id, observation_concept_id, observation_source_concept_id, observation_date,
-                    observation_type_concept_id, value_as_number, value_as_string, value_as_concept_id, value_source_concept_id)
-                   VALUES
-                       -- 6+ Skip values should not be invalidated --
-                       (123, 23, 1333023,1333023, date('2015-07-15'), 0, NULL, '', 0, 903096),
-                       (124, 24, 1333023,1333023, date('2015-07-15'), 0, NULL, ' ', 0, 903096),
-                       (125, 25, 1333023,1333023, date('2015-07-15'), 0, NULL, 'PMI_Skip', 0, 903096),
-                       (126, 26, 1333023,1333023, date('2015-07-15'), 0, NULL, NULL, 0, 903096),
-                       -- 11+ Skip values should not be invalidated --
-                       (127, 27, 1333015,1333015, date('2015-07-15'), 0, NULL, '', 903096, 903096),
-                       (128, 28, 1333015,1333015, date('2015-07-15'), 0, NULL, ' ', 903096, 903096),
-                       (129, 29, 1333015,1333015, date('2015-07-15'), 0, NULL, 'PMI_Skip', 903096, 903096),
-                       (130, 30, 1333015,1333015, date('2015-07-15'), 0, NULL, NULL, 903096, 903096)
-                       """).render(fq_dataset_name=self.fq_dataset_name)
+            INSERT INTO `{{fq_dataset_name}}.observation`
+            (observation_id, person_id, observation_concept_id, observation_source_concept_id, observation_date,
+            observation_type_concept_id, value_as_number, value_as_string, value_as_concept_id, value_source_concept_id)
+            VALUES
+                -- 6+ Skip values should not be invalidated --
+                (123, 23, 1333023,1333023, date('2015-07-15'), 0, NULL, '', 0, 903096),
+                (124, 24, 1333023,1333023, date('2015-07-15'), 0, NULL, ' ', 0, 903096),
+                (125, 25, 1333023,1333023, date('2015-07-15'), 0, NULL, 'PMI_Skip', 0, 903096),
+                (126, 26, 1333023,1333023, date('2015-07-15'), 0, NULL, 'PMI Skip', 0, 903096),
+                (127, 27, 1333023,1333023, date('2015-07-15'), 0, NULL, NULL, 0, 903096),
+                -- 11+ Skip values should not be invalidated --
+                (128, 28, 1333015,1333015, date('2015-07-15'), 0, NULL, '', 903096, 903096),
+                (129, 29, 1333015,1333015, date('2015-07-15'), 0, NULL, ' ', 903096, 903096),
+                (130, 30, 1333015,1333015, date('2015-07-15'), 0, NULL, 'PMI_Skip', 903096, 903096),
+                (131, 31, 1333015,1333015, date('2015-07-15'), 0, NULL, 'PMI Skip', 903096, 903096),
+                (132, 32, 1333015,1333015, date('2015-07-15'), 0, NULL, NULL, 903096, 903096)
+                """).render(fq_dataset_name=self.fq_dataset_name)
         queries.append(skips_tmpl)
 
         self.load_test_data(queries)
@@ -160,11 +162,11 @@ class CleanPPINumericFieldsUsingParameterTest(BaseTest.CleaningRulesTestBase):
             'loaded_ids': [
                 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115,
                 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128,
-                129, 130
+                129, 130, 131, 132
             ],
             'sandboxed_ids': [
                 103, 104, 105, 106, 107, 108, 112, 113, 115, 116, 118, 119, 120,
-                121, 122, 123, 124, 125
+                121, 122
             ],
             'fields': [
                 'observation_id', 'observation_concept_id',
@@ -227,14 +229,16 @@ class CleanPPINumericFieldsUsingParameterTest(BaseTest.CleaningRulesTestBase):
                  self.six_plus_value_as_concept_id,
                  self.six_plus_value_as_concept_id),
                 # Test skips
-                (123, 1333023, 1333023, None, None, 0, 903096),
-                (124, 1333023, 1333023, None, None, 0, 903096),
-                (125, 1333023, 1333023, None, None, 0, 903096),
-                (126, 1333023, 1333023, None, None, 0, 903096),
-                (127, 1333015, 1333015, None, '', 903096, 903096),
-                (128, 1333015, 1333015, None, ' ', 903096, 903096),
-                (129, 1333015, 1333015, None, 'PMI_Skip', 903096, 903096),
-                (130, 1333015, 1333015, None, None, 903096, 903096)
+                (123, 1333023, 1333023, None, '', 0, 903096),
+                (124, 1333023, 1333023, None, ' ', 0, 903096),
+                (125, 1333023, 1333023, None, 'PMI_Skip', 0, 903096),
+                (126, 1333023, 1333023, None, 'PMI Skip', 0, 903096),
+                (127, 1333023, 1333023, None, None, 0, 903096),
+                (128, 1333015, 1333015, None, '', 903096, 903096),
+                (129, 1333015, 1333015, None, ' ', 903096, 903096),
+                (130, 1333015, 1333015, None, 'PMI_Skip', 903096, 903096),
+                (131, 1333015, 1333015, None, 'PMI Skip', 903096, 903096),
+                (132, 1333015, 1333015, None, None, 903096, 903096)
             ]
         }]
 
