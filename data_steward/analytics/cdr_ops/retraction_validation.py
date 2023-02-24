@@ -121,11 +121,13 @@ new_row_counts_queries_list = []
 
 for table in pid_table_list:
     old_row_counts_queries_list.append(
-        table_row_counts_query.render(project=project_id,
-                                      new_dataset=new_dataset,
-                                      table_name=table,
-                                      count='old_minus_aian_row_count',
-                                      days='1'))
+        table_row_counts_query.render(
+            project=project_id,
+            new_dataset=new_dataset if not old_dataset else old_dataset,
+            table_name=table,
+            count='old_minus_aian_row_count',
+            days='1'))
+
     new_row_counts_queries_list.append(
         table_row_counts_query.render(project=project_id,
                                       new_dataset=new_dataset,
