@@ -352,8 +352,9 @@ class RemediateBasics(BaseCleaningRule):
                     sandbox_table_obs=self.sandbox_table_for(OBSERVATION),
                     incremental_dataset=self.incremental_dataset_id,
                     table=table,
-                    columns=', '.join(
-                        [field['name'] for field in fields_for(table)]),
+                    columns=', '.join([
+                        field['name'] for field in fields_for(table)
+                    ]) if template == GENERIC_INSERT else None,
                     new_obs_id_lookup=NEW_OBS_ID_LOOKUP,
                     dataset_with_largest_observation_id=self.
                     dataset_with_largest_observation_id,
