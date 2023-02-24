@@ -1,13 +1,18 @@
 #!/usr/bin/env bash
 # This Script automates the process of generating the rdr_snapshot and apply rdr cleaning rules
 
-from argparse import ArgumentParser
+# Python standard imports
 import logging
+from argparse import ArgumentParser
 
+# Third-party imports
+from gcloud.bq import BigQueryClient
+from google.cloud.bigquery.job import CopyJobConfig, WriteDisposition
+
+# Project level imports
+from utils import auth
 from cdr_cleaner import clean_cdr
 from cdr_cleaner.args_parser import add_kwargs_to_args
-from utils import auth
-from gcloud.bq import BigQueryClient, CopyJobConfig, WriteDisposition
 from utils import pipeline_logging
 from common import CDR_SCOPES
 
