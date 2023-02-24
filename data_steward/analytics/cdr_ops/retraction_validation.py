@@ -24,7 +24,7 @@ run_as: str = ""  # service account email to impersonate
 import pandas as pd
 import numpy as np
 
-from common import JINJA_ENV, PIPELINE_TABLES, FITBIT_TABLES, CDM_TABLES
+from common import JINJA_ENV, CDM_TABLES
 from utils import auth
 from gcloud.bq import BigQueryClient
 from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES, provenance_table_for
