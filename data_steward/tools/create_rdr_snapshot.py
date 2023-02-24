@@ -2,7 +2,6 @@
 # This Script automates the process of generating the rdr_snapshot and apply rdr cleaning rules
 
 from argparse import ArgumentParser
-from datetime import datetime
 import logging
 
 from cdr_cleaner import clean_cdr
