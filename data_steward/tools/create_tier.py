@@ -144,6 +144,7 @@ def create_datasets(client, name, input_dataset, tier, release_tag):
         if dataset_id in deid_datasets:
             new_labels = client.update_labels_and_tags(dataset_id,
                                                        base_labels_and_tags, {
+                                                           'owner': 'curation',
                                                            'phase': phase,
                                                            DE_IDENTIFIED: 'true'
                                                        })
@@ -153,6 +154,7 @@ def create_datasets(client, name, input_dataset, tier, release_tag):
         else:
             new_labels = client.update_labels_and_tags(
                 dataset_id, base_labels_and_tags, {
+                    'owner': 'curation',
                     'phase': phase,
                     DE_IDENTIFIED: 'false'
                 })

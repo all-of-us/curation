@@ -103,7 +103,7 @@ def create_sandbox_dataset(client: BigQueryClient, release_tag) -> None:
         sb_dataset_name,
         f'Sandbox created for storing records affected by retraction for {release_tag}.',
         {
-            'owner':" curation",
+            "owner": "curation",
             "phase": "sandbox",
             "release_tag": release_tag,
             "de_identified": "false"
