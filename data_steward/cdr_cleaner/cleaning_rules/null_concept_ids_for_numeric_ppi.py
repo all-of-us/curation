@@ -18,8 +18,6 @@ from constants.cdr_cleaner import clean_cdr as cdr_consts
 
 LOGGER = logging.getLogger(__name__)
 
-SAVE_TABLE_NAME = "dc_703_obs_changed_rows_saved"
-
 # Query to create tables in sandbox with the rows that will be removed per cleaning rule
 SANDBOX_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE
@@ -120,10 +118,11 @@ class NullConceptIDForNumericPPI(BaseCleaningRule):
         """
         save_changed_rows = {
             cdr_consts.QUERY:
-                SANDBOX_QUERY.render(project=self.project_id,
-                                     dataset=self.dataset_id,
-                                     sandbox_dataset=self.sandbox_dataset_id,
-                                     intermediary_table=SAVE_TABLE_NAME),
+                SANDBOX_QUERY.render(
+                    project=self.project_id,
+                    dataset=self.dataset_id,
+                    sandbox_dataset=self.sandbox_dataset_id,
+                    intermediary_table=self.get_sandbox_tablenames()[0]),
         }
 
         clean_numeric_ppi_query = {
@@ -141,7 +140,7 @@ class NullConceptIDForNumericPPI(BaseCleaningRule):
         pass
 
     def get_sandbox_tablenames(self):
-        return [SAVE_TABLE_NAME]
+        return [self.sandbox_table_for(table) for table in self.affected_tables]
 
     def setup_validation(self, client):
         """
