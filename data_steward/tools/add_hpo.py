@@ -37,7 +37,7 @@ WHERE Display_Order >= {{display_order}}
 ADD_HPO_SITE_ID_MAPPING = JINJA_ENV.from_string("""
 INSERT INTO `{{project_id}}.{{lookup_tables_dataset}}.{{hpo_site_id_mappings_table}}`
 (Org_ID, HPO_ID, Site_Name, Display_Order)
-VALUES ("{{hpo_id}}", "{{hpo_name}}", "{{org_id}}", {{display_order}})
+VALUES ("{{org_id}}", "{{hpo_id}}", "{{hpo_name}}", {{display_order}})
 """)
 
 ADD_HPO_ID_BUCKET_NAME = JINJA_ENV.from_string("""
@@ -294,7 +294,6 @@ def update_site_masking_table(bq_client, us_state, value_source_concept_id):
         f'query:\n {update_site_maskings_query}\n ')
 
     query_job = bq_client.query(update_site_maskings_query)
-
     if query_job.errors:
         raise RuntimeError(
             f"Failed to update site_masking table. Error message: {query_job.errors}"

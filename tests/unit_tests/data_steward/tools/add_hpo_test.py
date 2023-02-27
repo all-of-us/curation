@@ -85,19 +85,22 @@ class AddHPOTest(TestCase):
 
     @mock.patch('tools.add_hpo.BigQueryClient')
     def test_update_site_masking_table(self, mock_bq_client):
-        # Preconditions
-        mock_bq_client.return_value.project = self.project_id
-        mock_query = mock_bq_client.return_value.query
         # Mocks the job return
         query_job_reference_results = mock.MagicMock(
             name="query_job_reference_results")
         query_job_reference_results.return_value = query_job_reference_results
         query_job_reference_results.errors = []
+
+        mock_call_response = mock.MagicMock(project=self.project_id)
+        mock_call_response.query.return_value = query_job_reference_results
+        mock_bq_client.return_value = mock_call_response
+        mock_query = mock_bq_client.return_value.query
+
         mock_query.side_effect = query_job_reference_results
 
         # Test
         actual_job = add_hpo.update_site_masking_table(
-            mock_bq_client, self.us_state, self.value_source_concept_id)
+            mock_bq_client(), self.us_state, self.value_source_concept_id)
 
         # Post conditions
         update_site_masking_query = add_hpo.UPDATE_SITE_MASKING_QUERY.render(
