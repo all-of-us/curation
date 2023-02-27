@@ -47,14 +47,14 @@ def run_cron_retraction():
     logging.info(f"Running retraction on BQ datasets")
 
     # retract from default dataset
-    # retract_data_bq.run_bq_retraction(project_id,
-    #                                   sandbox_dataset_id,
-    #                                   pid_table_id,
-    #                                   hpo_id,
-    #                                   dataset_ids,
-    #                                   retraction_type,
-    #                                   skip_sandboxing=True,
-    #                                   bq_client=bq_client)
+    retract_data_bq.run_bq_retraction(project_id,
+                                      sandbox_dataset_id,
+                                      pid_table_id,
+                                      hpo_id,
+                                      dataset_ids,
+                                      retraction_type,
+                                      skip_sandboxing=True,
+                                      bq_client=bq_client)
     logging.info(f"Completed retraction on BQ datasets")
 
     # Run cleaning rules
