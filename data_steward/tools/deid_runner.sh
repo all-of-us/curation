@@ -104,7 +104,7 @@ export PYTHONPATH="${PYTHONPATH}:${DEID_DIR}:${DATA_STEWARD_DIR}"
 version=$(git describe --abbrev=0 --tags)
 
 # create empty de-id dataset
-bq mk --dataset --description "${version} deidentified version of ${cdr_id}" --label "phase:clean" --label "data_tier:registered" --label "release_tag:${dataset_release_tag}" --label "de_identified:true" "${APP_ID}":"${registered_cdr_deid}"
+bq mk --dataset --description "${version} deidentified version of ${cdr_id}" --label "owner:curation" --label "phase:clean" --label "data_tier:registered" --label "release_tag:${dataset_release_tag}" --label "de_identified:true" "${APP_ID}":"${registered_cdr_deid}"
 
 # create the clinical tables
 python "${DATA_STEWARD_DIR}/cdm.py" "${registered_cdr_deid}"
@@ -117,7 +117,7 @@ python "${DATA_STEWARD_DIR}/cdm.py" --component vocabulary "${registered_cdr_dei
 python "${TOOLS_DIR}/run_deid.py" --idataset "${cdr_id}" --private_key "${key_file}" --action submit --interactive --console-log --age_limit "${deid_max_age}" --odataset "${registered_cdr_deid}" 2>&1 | tee deid_run.txt
 
 # create empty sandbox dataset for the deid
-bq mk --dataset --force --description "${version} sandbox dataset to apply cleaning rules on ${registered_cdr_deid}" --label "phase:sandbox" --label "data_tier:registered" --label "release_tag:${dataset_release_tag}" --label "de_identified:true" "${APP_ID}":"${registered_cdr_deid_sandbox}"
+bq mk --dataset --force --description "${version} sandbox dataset to apply cleaning rules on ${registered_cdr_deid}" --label "owner:curation" --label "phase:sandbox" --label "data_tier:registered" --label "release_tag:${dataset_release_tag}" --label "de_identified:true" "${APP_ID}":"${registered_cdr_deid_sandbox}"
 
 # clear GOOGLE_APPLICATION_CREDENTIALS environment variable inorder to make impersonation work in clean_engine
 unset GOOGLE_APPLICATION_CREDENTIALS
