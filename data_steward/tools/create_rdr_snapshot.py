@@ -177,6 +177,7 @@ def create_datasets(client, rdr_dataset, release_tag):
 
     staging_desc = f'Intermediary dataset to apply cleaning rules on {rdr_dataset}'
     labels = {
+        "owner": "curation",
         "phase": "staging",
         "release_tag": release_tag,
         "de_identified": "false"
