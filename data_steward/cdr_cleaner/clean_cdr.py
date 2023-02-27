@@ -127,7 +127,7 @@ from cdr_cleaner.cleaning_rules.drop_orphaned_pids import DropOrphanedPIDS
 from cdr_cleaner.cleaning_rules.drop_orphaned_survey_conduct_ids import DropOrphanedSurveyConductIds
 from cdr_cleaner.cleaning_rules.deid.deidentify_aian_zip3_values import DeidentifyAIANZip3Values
 from constants.cdr_cleaner import clean_cdr_engine as ce_consts
-from constants.cdr_cleaner.clean_cdr import DataStage, DATA_CONSISTENCY
+from constants.cdr_cleaner.clean_cdr import DataStage, DATA_CONSISTENCY, CRON_RETRACTION
 
 # Third party imports
 
@@ -352,6 +352,10 @@ DATA_CONSISTENCY_CLEANING_CLASSES = [
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
+CRON_RETRACTION_CLEANING_CLASSES = [
+    (CleanMappingExtTables,),  # should be one of the last cleaning rules run
+]
+
 DATA_STAGE_RULES_MAPPING = {
     DataStage.EHR.value:
         EHR_CLEANING_CLASSES,
@@ -380,7 +384,9 @@ DATA_STAGE_RULES_MAPPING = {
     DataStage.CONTROLLED_TIER_FITBIT.value:
         CONTROLLED_TIER_FITBIT_CLEANING_CLASSES,
     DataStage.DATA_CONSISTENCY.value:
-        DATA_CONSISTENCY_CLEANING_CLASSES
+        DATA_CONSISTENCY_CLEANING_CLASSES,
+    DataStage.CRON_RETRACTION.value:
+        CRON_RETRACTION_CLEANING_CLASSES
 }
 
 
@@ -517,10 +523,10 @@ def main(args=None):
     rules = DATA_STAGE_RULES_MAPPING[args.data_stage.value]
     validate_custom_params(rules, **kwargs)
 
-    # NOTE Retraction uses DATA_CONSISTENCY data stage. For retraction,
+    # NOTE Retraction uses DATA_CONSISTENCY or CRON_RETRACTION data stage. For retraction,
     # all datasets share one sandbox dataset. Table_namer needs dataset_id so
     # the sandbox tables will not overwrite each other.
-    if args.data_stage.value == DATA_CONSISTENCY:
+    if args.data_stage.value in [DATA_CONSISTENCY, CRON_RETRACTION]:
         table_namer = f"{args.data_stage.value}_{args.dataset_id}"
     else:
         table_namer = args.data_stage.value

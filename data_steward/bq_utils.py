@@ -97,13 +97,21 @@ def get_fitbit_dataset_id():
     return os.environ.get('FITBIT_DATASET_ID')
 
 
-def get_retraction_dataset_ids():
+def get_retraction_dataset_ids_table():
     """
-    Dataset ids from which to retract, separated by spaces
-    If retraction needs to be performed on all datasets in the project, set to 'all_datasets'
-    :return: string 'all_datasets' or dataset_ids separated by spaces
+    BigQuery table containing dataset ids from which to retract, on separate rows.
+    If retraction needs to be performed on all datasets in the project, the table should contain  only "all_datasets"
+    :return: string of table id 'all_datasets' or dataset_ids separated by spaces
     """
-    return os.environ.get('RETRACTION_DATASET_IDS')
+    return os.environ.get('RETRACTION_DATASET_IDS_TABLE')
+
+
+def get_retraction_dataset_ids_dataset():
+    """
+    BigQuery dataset containing the table 'RETRACTION_DATASET_IDS_TABLE' defined above.
+    :return: string of dataset containing the table 'RETRACTION_DATASET_IDS_TABLE'
+    """
+    return os.environ.get('RETRACTION_DATASET_IDS_DATASET')
 
 
 def get_retraction_submission_folder():
