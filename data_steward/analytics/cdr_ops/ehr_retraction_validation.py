@@ -15,7 +15,7 @@
 # + tags=["parameters"]
 project_id: str = ""  # identifies the project where datasets are located
 old_dataset: str = ""  # identifies the dataset name where participants are to be retracted
-new_dataset: str = ""  # identifies the dataset name after retraction
+new_datasets: list = []  # identifies the dataset names after retraction
 lookup_table: str = ""  # lookup table name where the pids and rids needs to be retracted are stored
 lookup_table_dataset: str = ""  # the sandbox dataset where lookup table is located
 is_deidentified: str = "true"  # identifies if a dataset is pre or post deid
@@ -23,6 +23,7 @@ run_as: str = ""  # service account email to impersonate
 # -
 import pandas as pd
 import numpy as np
+from IPython.core import display as ICD
 
 from common import JINJA_ENV, CDM_TABLES
 from utils import auth
@@ -36,12 +37,12 @@ client = BigQueryClient(project_id, credentials=impersonation_creds)
 # ## List of tables with person_id column
 
 all_pid_table_list = []
-for dataset in new_dataset:
+for new_dataset in new_datasets:
     person_id_tables_query = JINJA_ENV.from_string('''
   SELECT table_name
   FROM `{{project}}.{{new_dataset}}.INFORMATION_SCHEMA.COLUMNS`
   WHERE column_name = "person_id"
-  ''').render(project=project_id, new_dataset=dataset)
+  ''').render(project=project_id, new_dataset=new_dataset)
     pid_tables = client.query(person_id_tables_query).to_dataframe().get(
         'table_name').to_list()
     pid_table_list = [
@@ -54,8 +55,9 @@ for dataset in new_dataset:
                                                  'survey_conduct')
     ]
     all_pid_table_list.append(pid_table_list)
-for table_list in all_pid_table_list:
-    print(table_list)
+for table_list, new_dataset in zip(all_pid_table_list, new_datasets):
+    print(new_dataset)
+    ICD.display(table_list)
     print("\n")
 
 # +
@@ -83,7 +85,7 @@ rids_query
 
 # +
 all_results = []
-for dataset in new_dataset:
+for new_dataset in new_datasets:
     table_check_query = JINJA_ENV.from_string('''
   SELECT
     \'{{table_name}}\' AS table_name,
@@ -109,11 +111,14 @@ for dataset in new_dataset:
   WHERE REGEXP_CONTAINS(src_id, r'(?i)EHR Site') AND src_id is not null
   {% endif %}
   ''')
+
     queries_list = []
+    is_deidentified = str("deid" in new_dataset).lower()
+
     for table in pid_table_list:
         queries_list.append(
             table_check_query.render(project=project_id,
-                                     dataset=dataset,
+                                     dataset=new_dataset,
                                      table_name=table,
                                      is_deidentified=is_deidentified,
                                      mapping_table=provenance_table_for(
@@ -127,8 +132,9 @@ for dataset in new_dataset:
     result = execute(client, retraction_status_query)
     all_results.append(result)
 
-for result in all_results:
-    print(result)
+for result, new_dataset in zip(all_results, new_datasets):
+    print(new_dataset)
+    ICD.display(result)
     print("\n")
 # -
 
@@ -137,7 +143,7 @@ for result in all_results:
 # We expect PPI/PM data to exist for the listed participants even after the retraction. So here we are checking the record count of the source data minus the EHR records is equal to the record count post retraction.
 
 all_results = []
-for dataset in new_dataset:
+for new_dataset in new_datasets:
     table_row_counts_query = JINJA_ENV.from_string('''
 
   SELECT 
@@ -173,12 +179,13 @@ for dataset in new_dataset:
 
     old_row_counts_queries_list = []
     new_row_counts_queries_list = []
+    is_deidentified = is_deidentified = str("deid" in new_dataset).lower()
 
     for table in pid_table_list:
         old_row_counts_queries_list.append(
             table_row_counts_query.render(
                 project=project_id,
-                new_dataset=dataset if not old_dataset else old_dataset,
+                new_dataset=new_dataset if not old_dataset else old_dataset,
                 is_deidentified=is_deidentified,
                 table_name=table,
                 mapping_table=provenance_table_for(table, is_deidentified),
@@ -187,7 +194,7 @@ for dataset in new_dataset:
 
         new_row_counts_queries_list.append(
             table_row_counts_query.render(project=project_id,
-                                          new_dataset=dataset,
+                                          new_dataset=new_dataset,
                                           is_deidentified=is_deidentified,
                                           table_name=table,
                                           mapping_table=provenance_table_for(
@@ -229,8 +236,9 @@ for dataset in new_dataset:
                                               table_count_status,
                                               default='PROBLEM')
     all_results.append(results)
-for result in all_results:
-    print(result)
+for result, new_dataset in zip(all_results, new_datasets):
+    print(new_dataset)
+    ICD.display(result)
     print("\n")
 
 # ## 3. Verify Death table retraction.
@@ -238,7 +246,7 @@ for result in all_results:
 # Death table is copied as-is from EHR dataset as we do not receive death data via the RDR export yett. Death table is missing the provenence table as it doesn't have a domain_id column so we will use person_id column to identify any records.
 
 all_results = []
-for dataset in new_dataset:
+for new_dataset in new_datasets:
     table_check_query = JINJA_ENV.from_string('''
   SELECT
   'death' AS table_name,
@@ -256,23 +264,26 @@ for dataset in new_dataset:
   (person_id)
   ''')
     death_query = table_check_query.render(project=project_id,
-                                           dataset=dataset,
+                                           dataset=new_dataset,
                                            table_name=table)
+
+    is_deidentified = str("deid" in new_dataset).lower()
 
     retraction_status_query = (f'{rids_query}\n{death_query}'
                                if is_deidentified.lower() == 'true' else
                                f'{pids_query}\n{death_query}')
     result = execute(client, retraction_status_query)
     all_results.append(result)
-for result in all_results:
-    print(result)
+for result, new_dataset in zip(all_results, new_datasets):
+    print(new_dataset)
+    ICD.display(result)
     print("\n")
 
 # ## 4. Verify if mapping/ext tables are cleaned after retraction
 #
 
 all_results = []
-for dataset in new_dataset:
+for new_dataset in new_datasets:
     mapping_ext_check_query = JINJA_ENV.from_string('''
   SELECT
     \'{{mapping_table}}\' as table_name,
@@ -293,17 +304,20 @@ for dataset in new_dataset:
   ''')
 
     mapping_queries_list = []
+    is_deidentified = str("deid" in new_dataset).lower()
+
     for table in pid_table_list:
         if table in CDM_TABLES and table not in ('death', 'person'):
             mapping_queries_list.append(
                 mapping_ext_check_query.render(
                     project=project_id,
-                    dataset=dataset,
+                    dataset=new_dataset,
                     table_name=table,
                     mapping_table=provenance_table_for(table, is_deidentified)))
     mapping_check = '\nUNION ALL\n'.join(mapping_queries_list)
     result = execute(client, mapping_check)
     all_results.append(result)
-for result in all_results:
-    print(result)
+for result, new_dataset in zip(all_results, new_datasets):
+    print(new_dataset)
+    ICD.display(result)
     print("\n")
