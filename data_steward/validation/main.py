@@ -1067,8 +1067,8 @@ def run_retraction_cron():
         f"SELECT * FROM {project_id}.{datasets_to_retract_dataset}.{datasets_to_retract_table}"
     )
     dataset_ids_result = dataset_query_job.result()
-    dataset_ids = dataset_ids_result.to_dataframe()["tables"].to_list()
-    logging.info(f"Dataset id/s to target from table: {dataset_ids}")
+    dataset_ids = dataset_ids_result.to_dataframe()["datasets"].to_list()
+    logging.info(f"Dataset id/s to target retrieved from table: {dataset_ids}")
     logging.info(f"Running retraction on BQ datasets")
 
     # retract from default dataset
@@ -1088,7 +1088,7 @@ def run_retraction_cron():
         cleaning_args = [
             '-p', project_id, '-d', dataset_id, '-b', sandbox_dataset_id,
             '--data_stage', CRON_RETRACTION, '--run_as',
-            bq_client.get_service_account_email(project_id), '-s'
+            f'{project_id}@appspot.gserviceaccount.com', '-s'
         ]
         all_cleaning_args = add_kwargs_to_args(cleaning_args, None)
         clean_cdr.main(args=all_cleaning_args)
