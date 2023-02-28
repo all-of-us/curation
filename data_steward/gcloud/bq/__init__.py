@@ -249,9 +249,9 @@ class BigQueryClient(Client):
         for table in tables:
             staging_table = f'{output_dataset}.{table.table_id}'
             job_config.labels.update({
-                'table_name': table.table_id,
-                'copy_from': input_dataset,
-                'copy_to': output_dataset
+                'table_name': table.table_id.lower(),
+                'copy_from': input_dataset.lower(),
+                'copy_to': output_dataset.lower()
             })
             job = self.copy_table(table, staging_table, job_config=job_config)
             job_list.append(job.job_id)
