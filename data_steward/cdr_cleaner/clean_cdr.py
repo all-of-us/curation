@@ -469,7 +469,7 @@ def _get_kwargs(args: typing.List[str]):
     for arg in args:
         key_expected = index % 2 == 0
 
-        if arg.startswith('--') and not key_expected or bad_pattern:
+        if arg.startswith('--') and not key_expected:
             bad_pattern = True
             kind = 'key'
         elif not arg.startswith('--') and key_expected:
