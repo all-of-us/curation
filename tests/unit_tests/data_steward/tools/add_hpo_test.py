@@ -117,5 +117,8 @@ class AddHPOTest(TestCase):
         self.assertEqual(actual_job, expected_job)
 
     def test_check_state_code_format(self):
-        us_state = 'HI'
+        us_state = 'XY'
         self.assertRaises(ValueError, add_hpo.check_state_code_format, us_state)
+
+        us_state = 'PIIState_XY'
+        add_hpo.check_state_code_format(us_state)
