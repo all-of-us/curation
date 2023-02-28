@@ -20,7 +20,7 @@ class AddHPOTest(TestCase):
         print('**************************************************************')
 
     def setUp(self):
-        self.project_id = app_identity.get_application_id()
+        self.project_id = 'project_id'
         self.dataset_id = 'dataset_id'
         self.sandbox_dataset_id = 'sandbox_dataset_id'
         self.table_id = 'site_maskings'
@@ -115,3 +115,7 @@ class AddHPOTest(TestCase):
         expected_job = query_job_reference_results
         mock_query.assert_any_call(update_site_masking_query)
         self.assertEqual(actual_job, expected_job)
+
+    def test_check_state_code_format(self):
+        us_state = 'HI'
+        self.assertRaises(ValueError, add_hpo.check_state_code_format, us_state)

@@ -49,33 +49,21 @@ VALUES ("{{hpo_id}}", "{{bucket_name}}", "{{service}}")
 UPDATE_SITE_MASKING_QUERY = JINJA_ENV.from_string("""
 INSERT INTO `{{project_id}}.{{pipeline_tables_dataset}}.{{site_maskings_table}}` (hpo_id, src_id, state, value_source_concept_id)
 WITH available_new_src_ids AS (
-  SELECT 
-    ROW_NUMBER() OVER(ORDER BY GENERATE_UUID()) AS temp_key,
-    CONCAT('EHR site ', new_id) AS src_id,
-    "{{us_state}}" AS state,
-    {{value_source_concept_id}} AS value_source_concept_id
-  FROM UNNEST(GENERATE_ARRAY(100, 999)) AS new_id
-  WHERE new_id NOT IN (
-    SELECT CAST(SUBSTR(src_id, -3) AS INT64) 
+   SELECT 
+     "{{hpo_id}}" AS hpo_id,
+     CONCAT('EHR site ', new_id) AS src_id,
+     "{{us_state}}" AS state,
+     {{value_source_concept_id}} AS value_source_concept_id
+   FROM UNNEST(GENERATE_ARRAY(100, 999)) AS new_id
+   WHERE new_id NOT IN (
+     SELECT CAST(SUBSTR(src_id, -3) AS INT64) 
     FROM `{{project_id}}.{{pipeline_tables_dataset}}.{{site_maskings_table}}`
     WHERE hpo_id != 'rdr'
   )
-),
-hpos_not_in_site_maskings AS (
-  SELECT
-    ROW_NUMBER() OVER() AS temp_key,
-    hpo_id
-  FROM `{{project_id}}.{{lookup_tables_dataset}}.{{hpo_site_id_mappings_table}}`
-  WHERE hpo_id IS NOT NULL 
-  AND hpo_id != '' 
-  AND LOWER(hpo_id) NOT IN (
-    SELECT LOWER(hpo_id) FROM `{{project_id}}.{{pipeline_tables_dataset}}.{{site_maskings_table}}`
-  )
 )
-SELECT LOWER(h.hpo_id), a.src_id, a.state, a.value_source_concept_id
-FROM available_new_src_ids AS a
-JOIN hpos_not_in_site_maskings AS h
-ON a.temp_key = h.temp_key
+SELECT LOWER(hpo_id), src_id, state, value_source_concept_id
+FROM available_new_src_ids
+ORDER BY RAND() LIMIT 1
 """)
 
 
@@ -302,6 +290,18 @@ def update_site_masking_table(bq_client, us_state, value_source_concept_id):
     return query_job
 
 
+def check_state_code_format(us_state):
+    """
+    Check if the us-state code format is acceptable.
+    :param us_state: State code of the Site mentioned in the command
+    :return:
+    """
+    if not us_state.startswith("PIIState_"):
+        raise ValueError(
+            f"Incorrect 'us_state' value. "
+            f"State code for the new site must start with 'PIIState_'.")
+
+
 def main(project_id, hpo_id, org_id, hpo_name, bucket_name, display_order,
          addition_type, hpo_site_mappings_path, run_as, us_state,
          value_source_concept_id):
@@ -338,6 +338,7 @@ def main(project_id, hpo_id, org_id, hpo_name, bucket_name, display_order,
         if bucket_access_configured(gcs_client, bucket_name):
             LOGGER.info(f'Accessing bucket {bucket_name} successful. '
                         f'Proceeding to add site.')
+            check_state_code_format(us_state)
             add_lookups(bq_client, hpo_id, hpo_name, org_id, bucket_name,
                         display_order)
 
@@ -382,12 +383,10 @@ if __name__ == '__main__':
                         '--bucket_name',
                         required=True,
                         help='Name of the GCS bucket')
-    parser.add_argument(
-        '-s',
-        '--us_state',
-        required=True,
-        # type=lambda x: True if x.startswith("PIIState_") else,
-        help="Site's State as PIIState_XY.")
+    parser.add_argument('-s',
+                        '--us_state',
+                        required=True,
+                        help="Site's State as PIIState_XY.")
     parser.add_argument('-v',
                         '--value_source_concept_id',
                         required=True,
