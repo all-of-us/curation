@@ -15,8 +15,7 @@ import unittest
 
 # Project imports
 from cdr_cleaner.cleaning_rules.null_concept_ids_for_numeric_ppi import NullConceptIDForNumericPPI, \
-    SAVE_TABLE_NAME, SANDBOX_QUERY, CLEAN_NUMERIC_PPI_QUERY
-from constants.bq_utils import WRITE_TRUNCATE
+    SANDBOX_QUERY, CLEAN_NUMERIC_PPI_QUERY
 from constants.cdr_cleaner import clean_cdr as clean_consts
 
 # Third party imports
@@ -64,7 +63,8 @@ class NullConceptIDForNumericPPITest(unittest.TestCase):
                 SANDBOX_QUERY.render(project=self.project_id,
                                      dataset=self.dataset_id,
                                      sandbox_dataset=self.sandbox_id,
-                                     intermediary_table=SAVE_TABLE_NAME)
+                                     intermediary_table=self.rule_instance.
+                                     get_sandbox_tablenames()[0])
         }, {
             clean_consts.QUERY:
                 CLEAN_NUMERIC_PPI_QUERY.render(project=self.project_id,
@@ -82,7 +82,7 @@ class NullConceptIDForNumericPPITest(unittest.TestCase):
             project=self.project_id,
             dataset=self.dataset_id,
             sandbox_dataset=self.sandbox_id,
-            intermediary_table=SAVE_TABLE_NAME)
+            intermediary_table=self.rule_instance.get_sandbox_tablenames()[0])
 
         select_rows_to_be_changed = CLEAN_NUMERIC_PPI_QUERY.render(
             project=self.project_id, dataset=self.dataset_id)
