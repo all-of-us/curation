@@ -32,7 +32,7 @@ UPDATE
 SET value_as_number = NULL,
 value_source_concept_id = 903096,
 value_as_concept_id = 903096,
-value_as_string = 'PMI_Skip',
+value_as_string = 'PMI Skip',
 value_source_value = 'PMI_Skip'
 WHERE value_as_number = -1
 AND observation_source_concept_id = 1585747
