@@ -443,7 +443,7 @@ def _parsed_args_to_dict(parsed_args: typing.List[str], kind: str = 'count'):
     This creates and ensures a {key: value} pair from _get_kwargs(...).
     """
 
-    if not len(parsed_args) % 2:
+    if len(parsed_args) % 2:
         raise RuntimeError(
             PARSING_ERROR_MESSAGE_FORMAT.format(kind='count', arg=parsed_args))
 
