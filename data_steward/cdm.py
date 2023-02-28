@@ -13,27 +13,6 @@ import resources
 logger = logging.getLogger(__name__)
 
 
-def create_parser():
-
-    parser = argparse.ArgumentParser(
-        description='Parse project_id and dataset_id',
-        formatter_class=argparse.RawDescriptionHelpFormatter)
-
-    parser.add_argument(
-        'dataset_id', help='Identifies the dataset to create OMOP table(s) in')
-
-    mutex = parser.add_mutually_exclusive_group(required=False)
-    mutex.add_argument(
-        '--table',
-        help='A specific CDM table to create (creates all by default)',
-        choices=resources.CDM_TABLES)
-    mutex.add_argument('--component',
-                       help='Subset of CDM tables to create',
-                       choices=common.CDM_COMPONENTS)
-
-    return parser
-
-
 def tables_to_map():
     """
     Determine which CDM tables must have ids remapped
@@ -90,7 +69,22 @@ def create_all_tables(dataset_id):
 
 def main():
     # TODO parse args, support multiple commands
-    parser = create_parser()
+    parser = argparse.ArgumentParser(
+        description='Parse project_id and dataset_id',
+        formatter_class=argparse.RawDescriptionHelpFormatter)
+
+    parser.add_argument(
+        'dataset_id', help='Identifies the dataset to create OMOP table(s) in')
+
+    mutex = parser.add_mutually_exclusive_group(required=False)
+    mutex.add_argument(
+        '--table',
+        help='A specific CDM table to create (creates all by default)',
+        choices=resources.CDM_TABLES)
+    mutex.add_argument('--component',
+                       help='Subset of CDM tables to create',
+                       choices=common.CDM_COMPONENTS)
+
     args = parser.parse_args()
 
     if args.table:
