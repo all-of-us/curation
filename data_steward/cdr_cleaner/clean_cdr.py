@@ -413,37 +413,86 @@ def get_parser():
 
 
 PARSING_ERROR_MESSAGE_FORMAT = (
-    'Error parsing %(arg)s. Please use "--key value" to specify custom arguments. '
-    'Custom arguments need an associated keyword to store their value.')
+    'An unexpected `%(kind)` was found parsing arguments near `%(arg)`.'
+    'Please check your arguments.')
 
 
-def _to_kwarg_key(arg: str):
+def _to_kwarg_key(arg: str, kind: str = '--key') -> str:
     # TODO: Move this function to as project level arg_parser so it can be reused.
     if not arg.startswith('--'):
-        raise RuntimeError(PARSING_ERROR_MESSAGE_FORMAT.format(arg=arg))
+        raise RuntimeError(
+            PARSING_ERROR_MESSAGE_FORMAT.format(kind=kind, arg=arg))
+    elif len(arg) < 3:
+        raise RuntimeError(
+            PARSING_ERROR_MESSAGE_FORMAT.format(kind=kind, arg=arg))
     key = arg[2:]
-    if not key:
-        raise RuntimeError(PARSING_ERROR_MESSAGE_FORMAT.format(arg=arg))
     return key
 
 
-def _to_kwarg_val(val: str):
+def _to_kwarg_val(val: str, kind: str = 'value') -> str:
     # TODO: Move this function to as project level arg_parser so it can be reused.
     # likely invalid use of args- allowing single dash e.g. negative values
     if val.startswith('--'):
-        raise RuntimeError(PARSING_ERROR_MESSAGE_FORMAT.format(arg=val))
+        raise RuntimeError(
+            PARSING_ERROR_MESSAGE_FORMAT.format(kind=kind, arg=val))
     return val
 
 
-def _get_kwargs(optional_args: typing.List[str]):
-    # TODO: Move this function to as project level arg_parser so it can be reused.
-    if len(optional_args) % 2:
+def _parsed_args_to_dict(parsed_args: typing.List[str]):
+    if not len(parsed_args) % 2:
         raise RuntimeError(
-            f'All provided arguments need key-value pairs in {optional_args}')
+            PARSING_ERROR_MESSAGE_FORMAT.format(kind='count', arg=parsed_args))
+
     return {
         _to_kwarg_key(arg): _to_kwarg_val(value)
-        for arg, value in zip(optional_args[0::2], optional_args[1::2])
+        for arg, value in zip(parsed_args[0::2], parsed_args[1::2])
     }
+
+
+def _get_kwargs(args: typing.List[str]) -> dict:
+    """
+    This function will check args in an alternating way using index.
+    If the index is an even value, a key is expected other wise value.
+    The bad_pattern is `True`, then a formatted RuntimeError is raised.
+
+    For example:
+    An unexpected `--key` was found parsing arguments near `--foo`...
+
+    :return: parsed args: a dict in {key: value} format
+    """
+
+    parsed_args = []
+    index = 0
+    bad_pattern = False
+    kind = ''
+
+    for arg in args:
+        key_expected = index % 2 == 0
+        if arg.startswith('--') and not key_expected:
+            bad_pattern = True
+            kind = '--key'
+        elif not arg.startswith('--') and key_expected:
+            bad_pattern = True
+            kind = 'arg'
+
+        elif arg.count('=') > 1:
+            bad_pattern = True
+            kind = '='
+        elif arg.startswith('--') and arg.count('=') == 1:
+            arg = arg.split('=')
+            index += 1
+        else:
+            arg = [arg]
+
+        if bad_pattern:
+            raise RuntimeError(
+                PARSING_ERROR_MESSAGE_FORMAT.format(kind=kind, arg=arg))
+        else:
+            parsed_args.extend(arg)
+
+        index += 1
+
+    return _parsed_args_to_dict(parsed_args=parsed_args)
 
 
 def fetch_args_kwargs(parser, args=None):
