@@ -113,7 +113,7 @@ for new_dataset in new_datasets:
   ''')
 
     queries_list = []
-    is_deidentified = str("deid" in new_dataset).lower()
+    is_deidentified = str('deid' in new_dataset).lower()
 
     for table in pid_table_list:
         queries_list.append(
@@ -145,14 +145,12 @@ for result, new_dataset in zip(all_results, new_datasets):
 all_results = []
 for new_dataset in new_datasets:
     table_row_counts_query = JINJA_ENV.from_string('''
-
   SELECT 
     '{{table_name}}' as table_id, count(*) as {{count}}
   FROM 
     `{{project}}.{{new_dataset}}.{{table_name}}`
         FOR SYSTEM_TIME AS OF TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {{days}} DAY)
-        
-  {% if days == '0'    %}
+  {% if days == '0' %}
       INNER JOIN
           pids
       USING
@@ -174,12 +172,11 @@ for new_dataset in new_datasets:
         src_hpo_id = 'rdr' 
       {% endif %} 
   {% endif %}
-
   ''')
 
     old_row_counts_queries_list = []
     new_row_counts_queries_list = []
-    is_deidentified = is_deidentified = str("deid" in new_dataset).lower()
+    is_deidentified = str('deid' in new_dataset).lower()
 
     for table in pid_table_list:
         old_row_counts_queries_list.append(
@@ -267,7 +264,7 @@ for new_dataset in new_datasets:
                                            dataset=new_dataset,
                                            table_name=table)
 
-    is_deidentified = str("deid" in new_dataset).lower()
+    is_deidentified = str('deid' in new_dataset).lower()
 
     retraction_status_query = (f'{rids_query}\n{death_query}'
                                if is_deidentified.lower() == 'true' else
@@ -304,7 +301,7 @@ for new_dataset in new_datasets:
   ''')
 
     mapping_queries_list = []
-    is_deidentified = str("deid" in new_dataset).lower()
+    is_deidentified = str('deid' in new_dataset).lower()
 
     for table in pid_table_list:
         if table in CDM_TABLES and table not in ('death', 'person'):
