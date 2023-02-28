@@ -297,9 +297,7 @@ def check_state_code_format(us_state):
     :return:
     """
     if not us_state.startswith("PIIState_"):
-        raise ValueError(
-            f"Incorrect 'us_state' value. "
-            f"State code for the new site must start with 'PIIState_'.")
+        raise ValueError()
 
 
 def main(project_id, hpo_id, org_id, hpo_name, bucket_name, display_order,
@@ -338,7 +336,6 @@ def main(project_id, hpo_id, org_id, hpo_name, bucket_name, display_order,
         if bucket_access_configured(gcs_client, bucket_name):
             LOGGER.info(f'Accessing bucket {bucket_name} successful. '
                         f'Proceeding to add site.')
-            check_state_code_format(us_state)
             add_lookups(bq_client, hpo_id, hpo_name, org_id, bucket_name,
                         display_order)
 
@@ -386,6 +383,7 @@ if __name__ == '__main__':
     parser.add_argument('-s',
                         '--us_state',
                         required=True,
+                        type=check_state_code_format,
                         help="Site's State as PIIState_XY.")
     parser.add_argument('-v',
                         '--value_source_concept_id',
