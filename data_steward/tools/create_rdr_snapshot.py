@@ -7,7 +7,6 @@ from argparse import ArgumentParser
 
 # Third-party imports
 from gcloud.bq import BigQueryClient
-from google.cloud.bigquery.job import CopyJobConfig, WriteDisposition
 
 # Project level imports
 from utils import auth
