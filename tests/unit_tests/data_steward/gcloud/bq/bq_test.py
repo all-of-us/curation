@@ -8,7 +8,6 @@ from collections import OrderedDict
 # Third party imports
 from unittest.mock import ANY
 
-
 from google.cloud import bigquery
 from google.cloud.bigquery import TableReference, DatasetReference
 from google.cloud.bigquery.table import TableListItem
