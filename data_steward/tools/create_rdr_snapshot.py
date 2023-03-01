@@ -6,12 +6,13 @@ import logging
 from argparse import ArgumentParser
 
 # Third-party imports
-from gcloud.bq import BigQueryClient
+from google.cloud.bigquery.job import CopyJobConfig, WriteDisposition
 
 # Project level imports
-from utils import auth
 from cdr_cleaner import clean_cdr
 from cdr_cleaner.args_parser import add_kwargs_to_args
+from gcloud.bq import BigQueryClient
+from utils import auth
 from utils import pipeline_logging
 from common import CDR_SCOPES
 
