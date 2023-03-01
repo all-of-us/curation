@@ -49,7 +49,7 @@ class UpdatePpiNegativePainLevel(BaseCleaningRule):
                  table_namer=None):
         desc = (
             "Update OBSERVATION table records where negative pain value '-1' for 'value_as_number' to NULL. "
-            "Accordingly, update the 'value_as_string' and 'value_source_value to 'PMI_Skip', "
+            "Accordingly, update the 'value_as_string' and 'value_source_value to 'PMI Skip', "
             "and value_source_concept_id and value_as_concept_id to '903096.")
 
         super().__init__(issue_numbers=JIRA_ISSUE_NUMBERS,
@@ -70,7 +70,7 @@ class UpdatePpiNegativePainLevel(BaseCleaningRule):
 
     def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
         """
-        This function generate the queries_list that updates negative ppi answers to pmi_skip.
+        This function generate the queries_list that updates negative ppi answers to pmi skip.
 
         This updates values in value_as_number, value_source_concept_id, value_as_concept_id,
         value_as_string, and value_source_value that matches record with observation_source_concept_id is 1585747 and
