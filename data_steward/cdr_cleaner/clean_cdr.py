@@ -257,7 +257,7 @@ REGISTERED_TIER_DEID_CLEANING_CLASSES = [
         CovidEHRVaccineConceptSuppression,),  # should run after QRIDtoRID
     (MonkeypoxConceptSuppression,),
     (VehicularAccidentConceptSuppression,),
-    (BirthInformationSuppression,),
+    (BirthInformationSuppression,),  # run after VehicularAccidentConcept
     (SectionParticipationConceptSuppression,),
     (RegisteredCopeSurveyQuestionsSuppression,),
     (ExplicitIdentifierSuppression,),
