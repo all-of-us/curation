@@ -1,9 +1,11 @@
 """
-Inserts proper values and ids into survey_conduct table for surveys with custom concepts. Ex COPE/Minute
+Inserts data representing the version of a survey into survey_conduct table for surveys with custom ids. Ex COPE/Minute
 
 Survey_conduct table is relatively new at the point of this CR's creation. Because bugs still exist in the creation of
 this table.  This CR is needed to ensure the cope/minute surveys have had their survey_concept_id and
 survey_source_value populated as expected.
+
+This process relies upon the survey version given in the `cope_survey_semantic_version_map`.
 
 There are multiple cleaning rules that clean the survey conduct table. See the dependencies.
 This CR will clean survey_concept_id and survey_source_value for the surveys with custom concept ids.
@@ -29,9 +31,10 @@ SANDBOX_SURVEY_CONDUCT = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table_id}}` AS (
 SELECT * FROM `{{project_id}}.{{dataset_id}}.survey_conduct`
 WHERE survey_conduct_id IN (SELECT questionnaire_response_id FROM `{{project_id}}.{{dataset_id}}.cope_survey_semantic_version_map`)
-AND (survey_concept_id NOT IN (SELECT concept_id FROM `{{project_id}}.{{dataset_id}}.concept` WHERE vocabulary_id IN ('PPI','AoU_Custom','AoU_General')) 
-     OR (survey_source_value NOT IN (SELECT concept_code FROM `{{project_id}}.{{dataset_id}}.concept` WHERE vocabulary_id IN ('PPI','AoU_Custom','AoU_General')) 
+AND (survey_concept_id NOT IN (2100000006, 2100000007, 2100000002, 2100000005, 2100000004, 2100000003, 905047, 905055, 765936, 1741006)
+     OR survey_source_value NOT IN ('AoUDRC_SurveyVersion_CopeDecember2020', 'AoUDRC_SurveyVersion_CopeFebruary2021', 'AoUDRC_SurveyVersion_CopeMay2020', 'AoUDRC_SurveyVersion_CopeNovember2020', 'AoUDRC_SurveyVersion_CopeJuly2020', 'AoUDRC_SurveyVersion_CopeJune2020','cope_vaccine1', 'cope_vaccine2', 'cope_vaccine3', 'cope_vaccine4')
      )
+)
 """)
 
 CLEAN_SURVEY_CONDUCT = JINJA_ENV.from_string("""
@@ -48,7 +51,7 @@ survey_concept_id = CASE
     WHEN cope_month = 'vaccine2' THEN 905055
     WHEN cope_month = 'vaccine3' THEN 765936
     WHEN cope_month = 'vaccine4' THEN 1741006
-    ELSE survey_concept_id
+    ELSE sc.survey_concept_id
     END,
 survey_source_value = CASE
     WHEN cope_month = 'dec' THEN 'AoUDRC_SurveyVersion_CopeDecember2020'
@@ -61,8 +64,8 @@ survey_source_value = CASE
     WHEN cope_month = 'vaccine2' THEN 'cope_vaccine2'
     WHEN cope_month = 'vaccine3' THEN 'cope_vaccine3'
     WHEN cope_month = 'vaccine4' THEN 'cope_vaccine4'
-    ELSE survey_source_value
-    END,
+    ELSE sc.survey_source_value
+    END
 FROM (SELECT *
       FROM `{{project_id}}.{{dataset_id}}.survey_conduct` sc
       LEFT JOIN  `{{project_id}}.{{dataset_id}}.cope_survey_semantic_version_map` m
@@ -70,6 +73,7 @@ FROM (SELECT *
       WHERE m.questionnaire_response_id IS NOT NULL
       ) sub
 WHERE sub.survey_conduct_id = sc.survey_conduct_id 
+AND sc.survey_conduct_id IN (SELECT survey_conduct_id FROM `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table_id}}`)
 """)
 
 
@@ -116,7 +120,10 @@ class CleanSurveyConductCustomSurveys(BaseCleaningRule):
 
         clean_sc_query = dict()
         clean_sc_query[cdr_consts.QUERY] = CLEAN_SURVEY_CONDUCT.render(
-            project_id=self.project_id, dataset_id=self.dataset_id)
+            project_id=self.project_id,
+            dataset_id=self.dataset_id,
+            sandbox_dataset_id = self.sandbox_dataset_id,
+            sandbox_table_id = self.sandbox_table_for(SURVEY_CONDUCT))
         queries_list.append(clean_sc_query)
 
         return queries_list
