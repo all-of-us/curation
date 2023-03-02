@@ -127,12 +127,7 @@ class ObservationSourceConceptIDRowSuppression(BaseCleaningRule):
         raise NotImplementedError("Please fix me.")
 
     def get_sandbox_tablenames(self):
-        issue_numbers = self.issue_numbers
-        primary_issue = issue_numbers[0].replace(
-            '-', '_').lower() if issue_numbers else 'UNKNOWN_ISSUE'
-
-        sandbox_table_name = f"{primary_issue}_{OBSERVATION}"
-        return [sandbox_table_name]
+        return [self.sandbox_table_for(table) for table in self.affected_tables]
 
 
 if __name__ == '__main__':
