@@ -24,7 +24,7 @@ from utils.auth import get_impersonation_credentials
 LOGGER = logging.getLogger(__name__)
 
 DEFAULT_DISPLAY_ORDER = JINJA_ENV.from_string("""
-SELECT MAX(Display_Order) + 1 AS display_order 
+SELECT MAX(Display_Order) + 1 AS display_order
 FROM `{{project_id}}.{{lookup_tables_dataset}}.{{hpo_site_id_mappings_table}}`
 """)
 
@@ -49,14 +49,14 @@ VALUES ("{{hpo_id}}", "{{bucket_name}}", "{{service}}")
 UPDATE_SITE_MASKING_QUERY = JINJA_ENV.from_string("""
 INSERT INTO `{{project_id}}.{{pipeline_tables_dataset}}.{{site_maskings_table}}` (hpo_id, src_id, state, value_source_concept_id)
 WITH available_new_src_ids AS (
-   SELECT 
+   SELECT
      "{{hpo_id}}" AS hpo_id,
      CONCAT('EHR site ', new_id) AS src_id,
      "{{us_state}}" AS state,
      {{value_source_concept_id}} AS value_source_concept_id
    FROM UNNEST(GENERATE_ARRAY(100, 999)) AS new_id
    WHERE new_id NOT IN (
-     SELECT CAST(SUBSTR(src_id, -3) AS INT64) 
+     SELECT CAST(SUBSTR(src_id, -3) AS INT64)
     FROM `{{project_id}}.{{pipeline_tables_dataset}}.{{site_maskings_table}}`
     WHERE hpo_id != 'rdr'
   )
