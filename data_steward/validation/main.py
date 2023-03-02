@@ -34,7 +34,7 @@ import constants.global_variables
 from gcloud.bq import BigQueryClient
 from gcloud.gcs import StorageClient
 import resources
-from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON, AOU_REQUIRED_FILES
+from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON
 from constants.validation import hpo_report as report_consts
 from constants.validation import main as consts
 from curation_logging.curation_gae_handler import begin_request_logging, end_request_logging, \
@@ -141,7 +141,8 @@ def run_export(datasource_id=None, folder_prefix="", target_bucket=None):
 
 
 def run_achilles(client, hpo_id=None):
-    """checks for full results and run achilles/heel
+    """
+    checks for full results and run achilles/heel
 
     :client: a BigQueryClient
     :hpo_id: hpo on which to run achilles
@@ -170,6 +171,7 @@ def _upload_achilles_files(hpo_id: str = None,
                            target_bucket: str = None) -> list:
     """
     uploads achilles web files to the corresponding hpo bucket
+    
     :hpo_id: which hpo bucket do these files go into
     :returns:
     """
@@ -356,7 +358,7 @@ def generate_metrics(project_id, hpo_id, bucket, folder_prefix, summary):
 
         # non-unique key metrics
         logging.info(f"Getting non-unique key stats for {hpo_id}")
-        nonunique_metrics_query = get_duplicate_counts_query(hpo_id)
+        nonunique_metrics_query = get_duplicate_counts_query(bq_client, hpo_id)
         report_data[
             report_consts.NONUNIQUE_KEY_METRICS_REPORT_KEY] = query_rows(
                 nonunique_metrics_query)
@@ -611,15 +613,19 @@ def get_heel_error_query(hpo_id):
     return render_query(consts.HEEL_ERROR_QUERY_VALIDATION, table_id=table_id)
 
 
-def get_duplicate_counts_query(hpo_id):
+def get_duplicate_counts_query(client, hpo_id):
     """
     Query to retrieve count of duplicate primary keys in domain tables for an HPO site
 
+    :param client: BigQueryClient
     :param hpo_id: identifies the HPO site
     :return: the query
     """
     sub_queries = []
-    all_table_ids = bq_utils.list_all_table_ids()
+    all_table_ids = [
+        table.table_id
+        for table in client.list_tables(os.environ.get('BIGQUERY_DATASET_ID'))
+    ]
     for table_name in cdm.tables_to_map():
         table_id = resources.get_table_id(table_name, hpo_id=hpo_id)
         if table_id in all_table_ids:
@@ -801,7 +807,8 @@ def _validation_done(bucket, folder):
 
 
 def basename(item_metadata):
-    """returns name of file inside folder
+    """
+    returns name of file inside folder
 
     :item_metadata: metadata as returned by get bucket times metadata
     :returns: name without folder name
@@ -974,7 +981,6 @@ def _is_string_excluded_file(gcs_file_name):
 def process_hpo_copy(hpo_id):
     """
     copies over files from hpo bucket to drc bucket
-    
     :hpo_id: hpo from which to copy
     """
 
