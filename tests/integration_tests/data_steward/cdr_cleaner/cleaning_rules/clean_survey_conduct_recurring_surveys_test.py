@@ -12,11 +12,11 @@ import pytz
 # Project imports
 from common import JINJA_ENV, COPE_SURVEY_MAP
 from app_identity import PROJECT_ID
-from cdr_cleaner.cleaning_rules.clean_survey_conduct_custom_ids import CleanSurveyConductCustomSurveys, DOMAIN_TABLES, REFERENCE_TABLES
+from cdr_cleaner.cleaning_rules.clean_survey_conduct_recurring_surveys import CleanSurveyConductRecurringSurveys, DOMAIN_TABLES, REFERENCE_TABLES
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest\
 
 
-class CleanSurveyConductCustomSurveysTest(BaseTest.CleaningRulesTestBase):
+class CleanSurveyConductRecurringSurveysTest(BaseTest.CleaningRulesTestBase):
 
     @classmethod
     def setUpClass(cls):
@@ -37,7 +37,7 @@ class CleanSurveyConductCustomSurveysTest(BaseTest.CleaningRulesTestBase):
         sandbox_id = dataset_id + '_sandbox'
         cls.sandbox_id = sandbox_id
 
-        cls.rule_instance = CleanSurveyConductCustomSurveys(
+        cls.rule_instance = CleanSurveyConductRecurringSurveys(
             project_id, dataset_id, sandbox_id)
 
         sb_table_names = cls.rule_instance.get_sandbox_tablenames()
@@ -54,13 +54,12 @@ class CleanSurveyConductCustomSurveysTest(BaseTest.CleaningRulesTestBase):
         # NOTE:  does not create empty sandbox tables.
         super().setUpClass()
 
-    def test_clean_survey_conduct_custom_ids(self):
+    def test_clean_survey_conduct_recurring_surveys(self):
         """
         Tests unit_normalization for the loaded test data
         """
 
-        COPE_SURVEY_MAP_TEMPLATE = self.jinja_env.from_string(
-            """
+        COPE_SURVEY_MAP_TEMPLATE = self.jinja_env.from_string("""
             INSERT INTO `{{project_id}}.{{dataset_id}}.{{cope_survey_map}}`
             (participant_id, questionnaire_response_id, semantic_version, cope_month)
             VALUES
@@ -72,7 +71,9 @@ class CleanSurveyConductCustomSurveysTest(BaseTest.CleaningRulesTestBase):
                 (6, 6, 'semantic_version', 'vaccine1'),                
                 (7, 7, 'semantic_version', 'july'),
                 (8, 8, 'semantic_version', 'july')
-            """).render(project_id=self.project_id, dataset_id=self.dataset_id, cope_survey_map=COPE_SURVEY_MAP)
+            """).render(project_id=self.project_id,
+                        dataset_id=self.dataset_id,
+                        cope_survey_map=COPE_SURVEY_MAP)
 
         SURVEY_CONDUCT_TEMPLATE = JINJA_ENV.from_string("""
         INSERT INTO `{{project_id}}.{{dataset_id}}.survey_conduct`
@@ -96,9 +97,7 @@ class CleanSurveyConductCustomSurveysTest(BaseTest.CleaningRulesTestBase):
               (10, 10, 1333342, '2020-01-01 00:00:00 UTC', 111, 1111, 11111, 111111,'COPE', 1111, 111111111)
         """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
-        self.load_test_data([
-            COPE_SURVEY_MAP_TEMPLATE, SURVEY_CONDUCT_TEMPLATE
-        ])
+        self.load_test_data([COPE_SURVEY_MAP_TEMPLATE, SURVEY_CONDUCT_TEMPLATE])
 
         tables_and_counts = [{
             'fq_table_name':

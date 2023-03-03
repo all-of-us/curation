@@ -79,7 +79,7 @@ AND sc.survey_conduct_id IN (SELECT survey_conduct_id FROM `{{project_id}}.{{san
 """)
 
 
-class CleanSurveyConductCustomSurveys(BaseCleaningRule):
+class CleanSurveyConductRecurringSurveys(BaseCleaningRule):
 
     def __init__(self,
                  project_id,
@@ -166,11 +166,11 @@ if __name__ == '__main__':
         clean_engine.add_console_logging()
         query_list = clean_engine.get_query_list(
             ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id,
-            [(CleanSurveyConductCustomSurveys,)])
+            [(CleanSurveyConductRecurringSurveys,)])
         for query in query_list:
             LOGGER.info(query)
     else:
         clean_engine.add_console_logging(ARGS.console_log)
         clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
                                    ARGS.sandbox_dataset_id,
-                                   [(CleanSurveyConductCustomSurveys,)])
+                                   [(CleanSurveyConductRecurringSurveys,)])
