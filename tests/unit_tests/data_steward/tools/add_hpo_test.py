@@ -27,6 +27,7 @@ class AddHPOTest(TestCase):
         self.hpo_site_mappings_path = 'hpo_site_mappings_path'
         self.us_state = 'PIIState_XY'
         self.value_source_concept_id = 9999999
+        self.hpo_id = 1010101
 
     def test_verify_hpo_mappings_up_to_date(self):
         df_1 = pd.DataFrame({'HPO_ID': ['FAKE_1', 'FAKE_2']})
@@ -100,7 +101,8 @@ class AddHPOTest(TestCase):
 
         # Test
         actual_job = add_hpo.update_site_masking_table(
-            mock_bq_client(), self.us_state, self.value_source_concept_id)
+            mock_bq_client(), self.hpo_id, self.us_state,
+            self.value_source_concept_id)
 
         # Post conditions
         update_site_masking_query = add_hpo.UPDATE_SITE_MASKING_QUERY.render(
@@ -110,6 +112,7 @@ class AddHPOTest(TestCase):
             lookup_tables_dataset=bq_consts.LOOKUP_TABLES_DATASET_ID,
             hpo_site_id_mappings_table=bq_consts.HPO_SITE_ID_MAPPINGS_TABLE_ID,
             us_state=self.us_state,
+            hpo_id=self.hpo_id,
             value_source_concept_id=self.value_source_concept_id)
 
         expected_job = query_job_reference_results

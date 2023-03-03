@@ -258,12 +258,14 @@ def bucket_access_configured(gcs_client, bucket_name: str) -> bool:
     return len(permissions) >= 1
 
 
-def update_site_masking_table(bq_client, us_state, value_source_concept_id):
+def update_site_masking_table(bq_client, hpo_id, us_state,
+                              value_source_concept_id):
     """
     Creates a unique `site_maskings` sandbox table and updates the `site_maskings` table with the
         new site maskings
 
     :param bq_client: BigQuery Client
+    :param hpo_id: HPO ID of the New Site.
     :param us_state: PIIState ID for the New Site
     :param value_source_concept_id: Value Source Concept ID of Site's State
     :return:
@@ -275,6 +277,7 @@ def update_site_masking_table(bq_client, us_state, value_source_concept_id):
         lookup_tables_dataset=bq_consts.LOOKUP_TABLES_DATASET_ID,
         hpo_site_id_mappings_table=bq_consts.HPO_SITE_ID_MAPPINGS_TABLE_ID,
         us_state=us_state,
+        hpo_id=hpo_id,
         value_source_concept_id=value_source_concept_id)
 
     LOGGER.info(
@@ -294,10 +297,11 @@ def check_state_code_format(us_state):
     """
     Check if the us-state code format is acceptable.
     :param us_state: State code of the Site mentioned in the command
-    :return:
+    :return: us_state code
     """
     if not us_state.startswith("PIIState_"):
         raise ValueError()
+    return us_state
 
 
 def main(project_id, hpo_id, org_id, hpo_name, bucket_name, display_order,
@@ -342,7 +346,7 @@ def main(project_id, hpo_id, org_id, hpo_name, bucket_name, display_order,
             LOGGER.info(
                 f'hpo_site_id_mappings table successfully updated. Updating `{bq_consts.HPO_SITE_ID_MAPPINGS_TABLE_ID}` '
                 f'table')
-            update_site_masking_table(bq_client, us_state,
+            update_site_masking_table(bq_client, hpo_id, us_state,
                                       value_source_concept_id)
 
         else:
