@@ -1,5 +1,5 @@
 """
-Integration test for clean_survey_conduct_table.py
+Integration test for clean_survey_conduct_custom_ids.py
 """
 
 # Python imports
@@ -10,9 +10,9 @@ from dateutil.parser import parse
 import pytz
 
 # Project imports
-from common import JINJA_ENV, VOCABULARY_TABLES
+from common import JINJA_ENV, COPE_SURVEY_MAP
 from app_identity import PROJECT_ID
-from cdr_cleaner.cleaning_rules.clean_survey_conduct_custom_ids import CleanSurveyConductCustomSurveys, DOMAIN_TABLES
+from cdr_cleaner.cleaning_rules.clean_survey_conduct_custom_ids import CleanSurveyConductCustomSurveys, DOMAIN_TABLES, REFERENCE_TABLES
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest\
 
 
@@ -36,51 +36,43 @@ class CleanSurveyConductCustomSurveysTest(BaseTest.CleaningRulesTestBase):
         cls.dataset_id = dataset_id
         sandbox_id = dataset_id + '_sandbox'
         cls.sandbox_id = sandbox_id
-        cls.vocabulary_id = os.environ.get('VOCABULARY_DATASET')
 
-        cls.rule_instance = CleanSurveyConductCustomSurveys(project_id, dataset_id,
-                                               sandbox_id)
+        cls.rule_instance = CleanSurveyConductCustomSurveys(
+            project_id, dataset_id, sandbox_id)
 
         sb_table_names = cls.rule_instance.get_sandbox_tablenames()
         for table_name in sb_table_names:
             cls.fq_sandbox_table_names.append(
                 f'{cls.project_id}.{cls.sandbox_id}.{table_name}')
 
-        for table_name in DOMAIN_TABLES + VOCABULARY_TABLES:
+        for table_name in DOMAIN_TABLES + REFERENCE_TABLES:
             cls.fq_table_names.append(
                 f'{cls.project_id}.{cls.dataset_id}.{table_name}')
-
-        cls.fq_table_names.append(
-            f'{cls.project_id}.{cls.dataset_id}.cope_survey_semantic_version_map')
 
         # call super to set up the client, create datasets, and create
         # empty test tables
         # NOTE:  does not create empty sandbox tables.
         super().setUpClass()
 
-        # Copy vocab tables over to the test dataset
-        for src_table in cls.client.list_tables(cls.vocabulary_id):
-            destination = f'{cls.project_id}.{cls.dataset_id}.{src_table.table_id}'
-            cls.client.copy_table(src_table, destination)
-
     def test_clean_survey_conduct_custom_ids(self):
         """
         Tests unit_normalization for the loaded test data
         """
 
-        COPE_VERSION_SEMANTIC_VERSION_MAP_TEMPLATE = self.jinja_env.from_string("""
-            INSERT INTO `{{project_id}}.{{dataset_id}}.cope_survey_semantic_version_map`
+        COPE_SURVEY_MAP_TEMPLATE = self.jinja_env.from_string(
+            """
+            INSERT INTO `{{project_id}}.{{dataset_id}}.{{cope_survey_map}}`
             (participant_id, questionnaire_response_id, semantic_version, cope_month)
             VALUES
                 (1, 1, 'semantic_version', 'nov'),
                 (2, 2, 'semantic_version', 'nov'),
                 (3, 3, 'semantic_version', 'vaccine1'),
-                (4, 4, 'semantic_version', 'vaccine1'),
+                (4, 4, 'semantic_version', 'nov'),
                 (5, 5, 'semantic_version', 'nov'),
                 (6, 6, 'semantic_version', 'vaccine1'),                
                 (7, 7, 'semantic_version', 'july'),
                 (8, 8, 'semantic_version', 'july')
-            """).render(project_id=self.project_id, dataset_id=self.dataset_id)
+            """).render(project_id=self.project_id, dataset_id=self.dataset_id, cope_survey_map=COPE_SURVEY_MAP)
 
         SURVEY_CONDUCT_TEMPLATE = JINJA_ENV.from_string("""
         INSERT INTO `{{project_id}}.{{dataset_id}}.survey_conduct`
@@ -104,7 +96,9 @@ class CleanSurveyConductCustomSurveysTest(BaseTest.CleaningRulesTestBase):
               (10, 10, 1333342, '2020-01-01 00:00:00 UTC', 111, 1111, 11111, 111111,'COPE', 1111, 111111111)
         """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
-        self.load_test_data([COPE_VERSION_SEMANTIC_VERSION_MAP_TEMPLATE, SURVEY_CONDUCT_TEMPLATE])
+        self.load_test_data([
+            COPE_SURVEY_MAP_TEMPLATE, SURVEY_CONDUCT_TEMPLATE
+        ])
 
         tables_and_counts = [{
             'fq_table_name':
@@ -121,18 +115,37 @@ class CleanSurveyConductCustomSurveysTest(BaseTest.CleaningRulesTestBase):
             'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
             'sandboxed_ids': [4, 5, 6, 7, 8],
             'cleaned_values': [
-                (1, 1, 2100000005, parse('2020-01-01 00:00:00 UTC').astimezone(pytz.utc), 111, 1111, 11111, 111111,
-                 'AoUDRC_SurveyVersion_CopeNovember2020', 2100000005, 111111111),
-                (2, 2, 2100000005, parse('2020-01-01 00:00:00 UTC').astimezone(pytz.utc), 111, 1111, 11111, 111111,
+                (1, 1, 2100000005,
+                 parse('2020-01-01 00:00:00 UTC').astimezone(pytz.utc), 111,
+                 1111, 11111, 111111, 'AoUDRC_SurveyVersion_CopeNovember2020',
+                 2100000005, 111111111),
+                (2, 2, 2100000005, parse('2020-01-01 00:00:00 UTC').astimezone(
+                    pytz.utc), 111, 1111, 11111, 111111,
                  'AoUDRC_SurveyVersion_CopeNovember2020', 222, 111111111),
-                (3, 3, 905047, parse('2020-01-01 00:00:00 UTC').astimezone(pytz.utc), 111, 1111, 11111, 111111, 'cope_vaccine1', 1111, 111111111),
-                (4, 4, 2100000005, parse('2020-01-01 00:00:00 UTC').astimezone(pytz.utc), 111, 1111, 11111, 111111, 'AoUDRC_SurveyVersion_CopeNovember2020', 1111, 111111111),
-                (5, 5, 2100000005, parse('2020-01-01 00:00:00 UTC').astimezone(pytz.utc), 111, 1111, 11111, 111111, 'AoUDRC_SurveyVersion_CopeNovember2020', 1111, 111111111),
-                (6, 6, 905047, parse('2020-01-01 00:00:00 UTC').astimezone(pytz.utc), 111, 1111, 11111, 111111, 'cope_vaccine1', 1111, 111111111),
-                (7, 7, 2100000004, parse('2020-01-01 00:00:00 UTC').astimezone(pytz.utc), 111, 1111, 11111, 111111, 'AoUDRC_SurveyVersion_CopeJuly2020', 1111, 111111111),
-                (8, 8, 2100000004, '2020-01-01 00:00:00 UTC', 111, 1111, 11111, 111111, 'AoUDRC_SurveyVersion_CopeJuly2020', 1111,111111111),
-                (9, 9, 1585855, '2020-01-01 00:00:00 UTC', 111, 1111, 11111, 111111, 'Lifestyle', 1111, 111111111),
-                (10, 10, 1333342, '2020-01-01 00:00:00 UTC', 111, 1111, 11111, 111111, 'COPE', 1111, 111111111)
+                (3, 3, 905047,
+                 parse('2020-01-01 00:00:00 UTC').astimezone(pytz.utc), 111,
+                 1111, 11111, 111111, 'cope_vaccine1', 1111, 111111111),
+                (4, 4, 2100000005, parse('2020-01-01 00:00:00 UTC').astimezone(
+                    pytz.utc), 111, 1111, 11111, 111111,
+                 'AoUDRC_SurveyVersion_CopeNovember2020', 1111, 111111111),
+                (5, 5, 2100000005, parse('2020-01-01 00:00:00 UTC').astimezone(
+                    pytz.utc), 111, 1111, 11111, 111111,
+                 'AoUDRC_SurveyVersion_CopeNovember2020', 1111, 111111111),
+                (6, 6, 905047,
+                 parse('2020-01-01 00:00:00 UTC').astimezone(pytz.utc), 111,
+                 1111, 11111, 111111, 'cope_vaccine1', 1111, 111111111),
+                (7, 7, 2100000004, parse('2020-01-01 00:00:00 UTC').astimezone(
+                    pytz.utc), 111, 1111, 11111, 111111,
+                 'AoUDRC_SurveyVersion_CopeJuly2020', 1111, 111111111),
+                (8, 8, 2100000004, parse('2020-01-01 00:00:00 UTC').astimezone(
+                    pytz.utc), 111, 1111, 11111, 111111,
+                 'AoUDRC_SurveyVersion_CopeJuly2020', 1111, 111111111),
+                (9, 9, 1585855,
+                 parse('2020-01-01 00:00:00 UTC').astimezone(pytz.utc), 111,
+                 1111, 11111, 111111, 'Lifestyle', 1111, 111111111),
+                (10, 10, 1333342,
+                 parse('2020-01-01 00:00:00 UTC').astimezone(pytz.utc), 111,
+                 1111, 11111, 111111, 'COPE', 1111, 111111111)
             ]
         }]
 

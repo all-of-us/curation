@@ -1,16 +1,17 @@
 """
 Inserts data representing the version of a survey into survey_conduct table for surveys with custom ids. Ex COPE/Minute
 
-Survey_conduct table is relatively new at the point of this CR's creation. Because bugs still exist in the creation of
-this table.  This CR is needed to ensure the cope/minute surveys have had their survey_concept_id and
-survey_source_value populated as expected.
+Recurring versions of surveys such as COPE had all of their questions and answers mapped to a single Module in the PPI
+vocabulary. The same was the case for the Minute surveys. This will make it seem like there is only one version of each
+of these surveys. Researchers need to know the version of the survey the participant took. This CR will use
+`cope_survey_semantic_version_map` which is provided to curation from the rdr team, to update the survey version in
+survey_source_concept_id and survey_source_value for each observation.
 
-This process relies upon the survey version given in the `cope_survey_semantic_version_map`.
-
-There are multiple cleaning rules that clean the survey conduct table. See the dependencies.
+There are multiple cleaning rules that clean the survey conduct table.
 This CR will clean survey_concept_id and survey_source_value for the surveys with custom concept ids.
-Another CR will clean survey_source_concept_id for all valid records.
+Another cleans survey_source_concept_id for all valid records.
 Then observations that do not have a valid survey will be dropped in another CR.
+
 Original Issues: DC-3082
 """
 # Python imports
@@ -19,18 +20,19 @@ import logging
 # Project imports
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
 from constants.cdr_cleaner import clean_cdr as cdr_consts
-from common import JINJA_ENV, SURVEY_CONDUCT
+from common import JINJA_ENV, SURVEY_CONDUCT, COPE_SURVEY_MAP
 
 LOGGER = logging.getLogger(__name__)
 
 JIRA_ISSUE_NUMBERS = ['DC-3082']
 
 DOMAIN_TABLES = [SURVEY_CONDUCT]
+REFERENCE_TABLES = [COPE_SURVEY_MAP]
 
 SANDBOX_SURVEY_CONDUCT = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table_id}}` AS (
 SELECT * FROM `{{project_id}}.{{dataset_id}}.survey_conduct`
-WHERE survey_conduct_id IN (SELECT questionnaire_response_id FROM `{{project_id}}.{{dataset_id}}.cope_survey_semantic_version_map`)
+WHERE survey_conduct_id IN (SELECT questionnaire_response_id FROM `{{project_id}}.{{dataset_id}}.{{cope_survey_map}}`)
 AND (survey_concept_id NOT IN (2100000006, 2100000007, 2100000002, 2100000005, 2100000004, 2100000003, 905047, 905055, 765936, 1741006)
      OR survey_source_value NOT IN ('AoUDRC_SurveyVersion_CopeDecember2020', 'AoUDRC_SurveyVersion_CopeFebruary2021', 'AoUDRC_SurveyVersion_CopeMay2020', 'AoUDRC_SurveyVersion_CopeNovember2020', 'AoUDRC_SurveyVersion_CopeJuly2020', 'AoUDRC_SurveyVersion_CopeJune2020','cope_vaccine1', 'cope_vaccine2', 'cope_vaccine3', 'cope_vaccine4')
      )
@@ -68,7 +70,7 @@ survey_source_value = CASE
     END
 FROM (SELECT *
       FROM `{{project_id}}.{{dataset_id}}.survey_conduct` sc
-      LEFT JOIN  `{{project_id}}.{{dataset_id}}.cope_survey_semantic_version_map` m
+      LEFT JOIN  `{{project_id}}.{{dataset_id}}.{{cope_survey_map}}` m
       ON m.questionnaire_response_id = sc.survey_conduct_id
       WHERE m.questionnaire_response_id IS NOT NULL
       ) sub
@@ -90,7 +92,9 @@ class CleanSurveyConductCustomSurveys(BaseCleaningRule):
         this SQL, append them to the list of Jira Issues.
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
-        desc = ('Updates survey_conduct rows where survey has a custom_id. (COPE/Minute)')
+        desc = (
+            'Updates survey_conduct with survey versions for the recurring surveys. (COPE/Minute)'
+        )
 
         super().__init__(issue_numbers=JIRA_ISSUE_NUMBERS,
                          description=desc,
@@ -114,6 +118,7 @@ class CleanSurveyConductCustomSurveys(BaseCleaningRule):
         sandbox_sc_query[cdr_consts.QUERY] = SANDBOX_SURVEY_CONDUCT.render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
+            cope_survey_map=COPE_SURVEY_MAP,
             sandbox_dataset_id=self.sandbox_dataset_id,
             sandbox_table_id=self.sandbox_table_for(SURVEY_CONDUCT))
         queries_list.append(sandbox_sc_query)
@@ -122,8 +127,9 @@ class CleanSurveyConductCustomSurveys(BaseCleaningRule):
         clean_sc_query[cdr_consts.QUERY] = CLEAN_SURVEY_CONDUCT.render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
-            sandbox_dataset_id = self.sandbox_dataset_id,
-            sandbox_table_id = self.sandbox_table_for(SURVEY_CONDUCT))
+            cope_survey_map=COPE_SURVEY_MAP,
+            sandbox_dataset_id=self.sandbox_dataset_id,
+            sandbox_table_id=self.sandbox_table_for(SURVEY_CONDUCT))
         queries_list.append(clean_sc_query)
 
         return queries_list
@@ -158,10 +164,9 @@ if __name__ == '__main__':
 
     if ARGS.list_queries:
         clean_engine.add_console_logging()
-        query_list = clean_engine.get_query_list(ARGS.project_id,
-                                                 ARGS.dataset_id,
-                                                 ARGS.sandbox_dataset_id,
-                                                 [(CleanSurveyConductCustomSurveys,)])
+        query_list = clean_engine.get_query_list(
+            ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id,
+            [(CleanSurveyConductCustomSurveys,)])
         for query in query_list:
             LOGGER.info(query)
     else:
