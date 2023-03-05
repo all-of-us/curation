@@ -5,7 +5,6 @@ from unittest import TestCase, mock
 import pandas as pd
 
 # Project imports
-import app_identity
 import constants.bq_utils as bq_consts
 from tools import add_hpo
 from common import PIPELINE_TABLES, SITE_MASKING_TABLE_ID
@@ -25,16 +24,20 @@ class AddHPOTest(TestCase):
         self.sandbox_dataset_id = 'sandbox_dataset_id'
         self.table_id = 'site_maskings'
         self.hpo_site_mappings_path = 'hpo_site_mappings_path'
+        self.hpo_id_bucket_name_path = 'hpo_id_bucket_name_path'
         self.us_state = 'PIIState_XY'
         self.value_source_concept_id = 9999999
+        self.hpo_id = 1010101
 
-    def test_verify_hpo_mappings_up_to_date(self):
+    def test_verify_hpo_site_info_up_to_date(self):
         df_1 = pd.DataFrame({'HPO_ID': ['FAKE_1', 'FAKE_2']})
         df_2 = pd.DataFrame({'hpo_id': ['fake_1', 'fake_2']})
-        add_hpo.verify_hpo_mappings_up_to_date(df_1, df_2)
+        add_hpo.verify_hpo_site_info_up_to_date(df_1, df_2, 'site_mapping')
         df_3 = pd.DataFrame({'hpo_id': ['fake_1', 'fake_3']})
-        self.assertRaises(ValueError, add_hpo.verify_hpo_mappings_up_to_date,
-                          df_1, df_3)
+        self.assertRaises(ValueError, add_hpo.verify_hpo_site_info_up_to_date,
+                          df_1, df_3, 'site_mapping')
+        self.assertRaises(ValueError, add_hpo.verify_hpo_site_info_up_to_date,
+                          df_2, df_3, 'bucket_name')
 
     @mock.patch('bq_utils.get_hpo_info')
     @mock.patch('tools.add_hpo.pd.read_csv')
@@ -100,7 +103,8 @@ class AddHPOTest(TestCase):
 
         # Test
         actual_job = add_hpo.update_site_masking_table(
-            mock_bq_client(), self.us_state, self.value_source_concept_id)
+            mock_bq_client(), self.hpo_id, self.us_state,
+            self.value_source_concept_id)
 
         # Post conditions
         update_site_masking_query = add_hpo.UPDATE_SITE_MASKING_QUERY.render(
@@ -110,6 +114,7 @@ class AddHPOTest(TestCase):
             lookup_tables_dataset=bq_consts.LOOKUP_TABLES_DATASET_ID,
             hpo_site_id_mappings_table=bq_consts.HPO_SITE_ID_MAPPINGS_TABLE_ID,
             us_state=self.us_state,
+            hpo_id=self.hpo_id,
             value_source_concept_id=self.value_source_concept_id)
 
         expected_job = query_job_reference_results
@@ -122,3 +127,70 @@ class AddHPOTest(TestCase):
 
         us_state = 'PIIState_XY'
         add_hpo.check_state_code_format(us_state)
+
+    def test_add_hpo_site_to_csv_files(self):
+        new_site = {
+            'org_id': 'fake_org',
+            'hpo_id': 'fake',
+            'hpo_name': 'fake_name',
+            'display_order': 3,
+            'bucket_name': 'fake_bucket'
+        }
+        hpo_site_csv_path = 'hpo_site_csv_files'
+
+        # This test will pass because by default, 'hpo_site_csv_files' folder is not present
+        # in Curation repo.
+        self.assertRaises(RuntimeError, add_hpo.add_hpo_site_to_csv_files,
+                          new_site['hpo_id'], new_site['hpo_name'],
+                          new_site['org_id'], new_site['bucket_name'],
+                          hpo_site_csv_path, new_site['display_order'])
+
+    @mock.patch('bq_utils.get_hpo_bucket_info')
+    @mock.patch('tools.add_hpo.pd.read_csv')
+    def test_add_hpo_id_bucket_name_file_df(self, mock_read_csv,
+                                            mock_hpo_bucket_info):
+        mock_hpo_bucket_info.return_value = [{
+            'hpo_id': 'fake_1',
+            'bucket_name': 'fake_bucket_name_1'
+        }, {
+            'hpo_id': 'fake_2',
+            'bucket_name': 'fake_bucket_name_2'
+        }, {
+            'hpo_id': 'fake_4',
+            'bucket_name': 'fake_bucket_name_4'
+        }]
+        mock_read_csv.return_value = pd.DataFrame({
+            'hpo_id': ['fake_1', 'fake_2', 'fake_4'],
+            'bucket_name': [
+                'fake_bucket_name_1', 'fake_bucket_name_2', 'fake_bucket_name_4'
+            ],
+            'service': ['default', 'default', 'default']
+        })
+
+        new_site = {
+            'org_id': 'fake_org_3',
+            'hpo_id': 'fake_3',
+            'hpo_name': 'fake_name_3',
+            'display_order': 3,
+            'bucket_name': 'fake_bucket_name_3'
+        }
+        actual_df = add_hpo.add_hpo_id_bucket_name_file_df(
+            new_site['hpo_id'], new_site['bucket_name'],
+            self.hpo_id_bucket_name_path)
+
+        expected_df = pd.DataFrame({
+            'hpo_id': ['fake_1', 'fake_2', 'fake_4', 'fake_3'],
+            'bucket_name': [
+                'fake_bucket_name_1', 'fake_bucket_name_2',
+                'fake_bucket_name_4', 'fake_bucket_name_3'
+            ],
+            'service': ['default', 'default', 'default', 'default']
+        })
+
+        pd.testing.assert_frame_equal(actual_df.reset_index(drop=True),
+                                      expected_df.reset_index(drop=True))
+
+        # Check for adding a site that exist in hpo_id_bucket_name.csv file.
+        self.assertRaises(ValueError, add_hpo.add_hpo_id_bucket_name_file_df,
+                          new_site['hpo_id'], new_site['bucket_name'],
+                          self.hpo_id_bucket_name_path)

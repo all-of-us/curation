@@ -8,6 +8,7 @@ Note: GAE environment must still be set manually
 # Python imports
 import logging
 import csv
+from pathlib import Path
 
 # Third party imports
 import pandas as pd
@@ -67,20 +68,28 @@ ORDER BY RAND() LIMIT 1
 """)
 
 
-def verify_hpo_mappings_up_to_date(hpo_file_df, hpo_table_df):
+def verify_hpo_site_info_up_to_date(hpo_file_df, hpo_table_df, file_type):
     """
-    Verifies that the hpo_mappings.csv file is up to date with lookup_tables.hpo_site_id_mappings
+    Verifies that the hpo_mappings.csv and hpo_id_bucket_name.csv files are
+    up-to-date with lookup_tables.hpo_site_id_mappings and lookup_tables.hpo_id_bucket_name
 
-    :param hpo_file_df: df loaded from config/hpo_site_mappings.csv
-    :param hpo_table_df: df loaded from lookup_tables.hpo_site_id_mappings
-    :raises ValueError: If config/hpo_site_mappings.csv is out of sync
-        with lookup_tables.hpo_site_id_mappings
+    :param hpo_file_df: df loaded from config/hpo_site_mappings.csv or
+                        config/hpo_id_bucket_name.csv
+    :param hpo_table_df: df loaded from lookup_tables.hpo_site_id_mappings or
+                         lookup_tables.hpo_id_bucket_name
+    :param file_type: specify if df is from 'hpo_site_mapping' or 'hpo_id_bucket_name' csv.
+    :raises ValueError: If hpo_file_df is out of sync with hpo_table_df
     """
-    hpo_ids_df = hpo_file_df['HPO_ID'].dropna()
+    if file_type == "site_mapping":
+        hpo_ids_df = hpo_file_df['HPO_ID'].dropna()
+    else:
+        hpo_ids_df = hpo_file_df['hpo_id'].dropna()
+
     if set(hpo_table_df['hpo_id'].to_list()) != set(
             hpo_ids_df.str.lower().to_list()):
         raise ValueError(
-            f'Please update the config/hpo_site_mappings.csv file '
+            f'Please update config/hpo_site_mappings.csv and '
+            f'config/hpo_id_bucket_name.csv files '
             f'to the latest version from curation-devops repository.')
 
 
@@ -98,12 +107,15 @@ def add_hpo_site_mappings_file_df(hpo_id, hpo_name, org_id,
     """
     hpo_table = bq_utils.get_hpo_info()
     hpo_table_df = pd.DataFrame(hpo_table)
-    if hpo_id in hpo_table_df['hpo_id'] or hpo_name in hpo_table_df['name']:
+    if hpo_id in set(hpo_table_df['hpo_id']) or hpo_name in set(
+            hpo_table_df['name']):
         raise ValueError(
             f"{hpo_id}/{hpo_name} already exists in site lookup table")
 
     hpo_file_df = pd.read_csv(hpo_site_mappings_path)
-    verify_hpo_mappings_up_to_date(hpo_file_df, hpo_table_df)
+    verify_hpo_site_info_up_to_date(hpo_file_df,
+                                    hpo_table_df,
+                                    file_type='site_mapping')
 
     if display_order is None:
         display_order = hpo_file_df['Display_Order'].max() + 1
@@ -117,11 +129,38 @@ def add_hpo_site_mappings_file_df(hpo_id, hpo_name, org_id,
     return hpo_file_df.sort_values(by='Display_Order')
 
 
-def add_hpo_site_mappings_csv(hpo_id,
-                              hpo_name,
-                              org_id,
-                              hpo_site_mappings_path,
-                              display_order=None):
+def add_hpo_id_bucket_name_file_df(hpo_id, bucket_name,
+                                   hpo_id_bucket_name_path):
+    """
+        Creates dataframe with hpo_id, bucket_name, and service
+
+        :param hpo_id: hpo_ identifier
+        :param bucket_name: GCS bucket name of the site
+        :param hpo_id_bucket_name_path: path to csv file containing hpo site information
+        :raises ValueError if hpo_id already exists in the lookup table
+        """
+    hpo_table = bq_utils.get_hpo_bucket_info()
+    hpo_table_df = pd.DataFrame(hpo_table)
+    if hpo_id in set(hpo_table_df['hpo_id']) or bucket_name in set(
+            hpo_table_df['bucket_name']):
+        raise ValueError(
+            f"{hpo_id}/{bucket_name} already exists in site lookup table")
+
+    hpo_file_df = pd.read_csv(hpo_id_bucket_name_path)
+    verify_hpo_site_info_up_to_date(hpo_file_df,
+                                    hpo_table_df,
+                                    file_type='bucket_name')
+
+    # 'service' column of the hpo_file_df has 'default' as fixed value.
+    hpo_file_df.loc[len(hpo_file_df.index)] = [hpo_id, bucket_name, 'default']
+    LOGGER.info(f'Added new entry for hpo_id {hpo_id} in '
+                f'config/hpo_id_bucket_name.csv. '
+                f'Please upload to curation-devops repo.')
+    return hpo_file_df
+
+
+def add_hpo_site_mappings_csv(hpo_id, hpo_name, org_id, hpo_site_mappings_path,
+                              display_order):
     """
     Writes df with hpo_id, hpo_name, org_id, display_order to the hpo_site_id_mappings config file
 
@@ -138,6 +177,60 @@ def add_hpo_site_mappings_csv(hpo_id,
     hpo_file_df.to_csv(hpo_site_mappings_path,
                        quoting=csv.QUOTE_ALL,
                        index=False)
+
+
+def add_hpo_id_bucket_name_csv(hpo_id, bucket_name, hpo_id_bucket_name_path):
+    """
+    Writes df with hpo_id and bucket_name to the hpo_id_bucket_name config file
+
+    :param hpo_id: hpo_ identifier
+    :param bucket_name: GCS bucket name for the site.
+    :param hpo_id_bucket_name_path: path to csv file containing hpo site information
+    :return:
+    """
+    hpo_file_df = add_hpo_id_bucket_name_file_df(hpo_id, bucket_name,
+                                                 hpo_id_bucket_name_path)
+    hpo_file_df.to_csv(hpo_id_bucket_name_path,
+                       quoting=csv.QUOTE_ALL,
+                       index=False)
+
+
+def add_hpo_site_to_csv_files(hpo_id,
+                              hpo_name,
+                              org_id,
+                              bucket_name,
+                              hpo_site_csv_path,
+                              display_order=None):
+    """
+    Update both csv files from devops to include data for the newly added site.
+
+    :param hpo_id: hpo_ identifier
+    :param hpo_name: name of the hpo
+    :param org_id: hpo organization identifier
+    :param bucket_name: GCS bucket name of the site
+    :param hpo_site_csv_path: path to csv file containing hpo site information
+    :param display_order: index number in which hpo should be added in table
+    :return:
+    """
+    # Check if csv files exist in given path.
+    hpo_site_mappings_path = hpo_site_csv_path + '/hpo_site_mappings.csv'
+    hpo_id_bucket_name_path = hpo_site_csv_path + '/hpo_id_bucket_name.csv'
+    if not all([
+            Path(hpo_site_mappings_path).is_file(),
+            Path(hpo_id_bucket_name_path).is_file()
+    ]):
+        raise RuntimeError(
+            f"Either 'hpo_site_mappings.csv' or 'hpo_id_bucket_name.csv' "
+            f"or both files does not exist in 'hpo_site_csv_files' folder. "
+            f"Please make sure above files exist in 'hpo_site_csv_files' folder."
+        )
+
+    # Update hpo_site_mappings.csv file
+    add_hpo_site_mappings_csv(hpo_id, hpo_name, org_id, hpo_site_mappings_path,
+                              display_order)
+
+    # Update hpo_id_bucket_name.csv file
+    add_hpo_id_bucket_name_csv(hpo_id, bucket_name, hpo_id_bucket_name_path)
 
 
 def get_last_display_order(bq_client):
@@ -258,12 +351,14 @@ def bucket_access_configured(gcs_client, bucket_name: str) -> bool:
     return len(permissions) >= 1
 
 
-def update_site_masking_table(bq_client, us_state, value_source_concept_id):
+def update_site_masking_table(bq_client, hpo_id, us_state,
+                              value_source_concept_id):
     """
     Creates a unique `site_maskings` sandbox table and updates the `site_maskings` table with the
         new site maskings
 
     :param bq_client: BigQuery Client
+    :param hpo_id: HPO ID of the New Site.
     :param us_state: PIIState ID for the New Site
     :param value_source_concept_id: Value Source Concept ID of Site's State
     :return:
@@ -275,6 +370,7 @@ def update_site_masking_table(bq_client, us_state, value_source_concept_id):
         lookup_tables_dataset=bq_consts.LOOKUP_TABLES_DATASET_ID,
         hpo_site_id_mappings_table=bq_consts.HPO_SITE_ID_MAPPINGS_TABLE_ID,
         us_state=us_state,
+        hpo_id=hpo_id,
         value_source_concept_id=value_source_concept_id)
 
     LOGGER.info(
@@ -294,14 +390,15 @@ def check_state_code_format(us_state):
     """
     Check if the us-state code format is acceptable.
     :param us_state: State code of the Site mentioned in the command
-    :return:
+    :return: us_state code
     """
     if not us_state.startswith("PIIState_"):
         raise ValueError()
+    return us_state
 
 
 def main(project_id, hpo_id, org_id, hpo_name, bucket_name, display_order,
-         addition_type, hpo_site_mappings_path, run_as, us_state,
+         addition_type, hpo_site_csv_path, run_as, us_state,
          value_source_concept_id):
     """
     adds HPO name and details in to hpo_csv and adds HPO to the lookup tables in bigquery
@@ -315,7 +412,7 @@ def main(project_id, hpo_id, org_id, hpo_name, bucket_name, display_order,
     :param addition_type: indicates if hpo is added to config file or to lookup tables
         This is necessary because a config update will need to be verified in the curation_devops repo
         before updating the lookup tables. Can take values "update_config" or "update_lookup_tables"
-    :param hpo_site_mappings_path: path to csv file containing hpo site information
+    :param hpo_site_csv_path: path to csv file containing hpo site information
     :param run_as: Service Account for impersonation
     :param us_state: Site's PIIState ID in PIIState_XY format
     :param value_source_concept_id: Value Source Concept ID for the State.
@@ -330,25 +427,25 @@ def main(project_id, hpo_id, org_id, hpo_name, bucket_name, display_order,
                                credentials=impersonation_creds)
 
     if addition_type == "update_config":
-        add_hpo_site_mappings_csv(hpo_id, hpo_name, org_id,
-                                  hpo_site_mappings_path, display_order)
-    elif addition_type == "update_lookup_tables":
-        if bucket_access_configured(gcs_client, bucket_name):
-            LOGGER.info(f'Accessing bucket {bucket_name} successful. '
-                        f'Proceeding to add site.')
-            add_lookups(bq_client, hpo_id, hpo_name, org_id, bucket_name,
-                        display_order)
-
-            LOGGER.info(
-                f'hpo_site_id_mappings table successfully updated. Updating `{bq_consts.HPO_SITE_ID_MAPPINGS_TABLE_ID}` '
-                f'table')
-            update_site_masking_table(bq_client, us_state,
-                                      value_source_concept_id)
-
-        else:
-            raise RuntimeError(
-                f'{addition_type} was skipped because the bucket {bucket_name} is inaccessible.'
-            )
+        add_hpo_site_to_csv_files(hpo_id, hpo_name, org_id, bucket_name,
+                                  hpo_site_csv_path, display_order)
+    # elif addition_type == "update_lookup_tables":
+    #     if bucket_access_configured(gcs_client, bucket_name):
+    #         LOGGER.info(f'Accessing bucket {bucket_name} successful. '
+    #                     f'Proceeding to add site.')
+    #         add_lookups(bq_client, hpo_id, hpo_name, org_id, bucket_name,
+    #                     display_order)
+    #
+    #         LOGGER.info(
+    #             f'hpo_site_id_mappings table successfully updated. Updating `{bq_consts.HPO_SITE_ID_MAPPINGS_TABLE_ID}` '
+    #             f'table')
+    #         update_site_masking_table(bq_client, hpo_id, us_state,
+    #                                   value_source_concept_id)
+    #
+    #     else:
+    #         raise RuntimeError(
+    #             f'{addition_type} was skipped because the bucket {bucket_name} is inaccessible.'
+    #         )
 
 
 if __name__ == '__main__':
@@ -398,10 +495,11 @@ if __name__ == '__main__':
         'in the curation_devops repo before updating the lookup tables. '
         'Can take values "update_config" or "update_lookup_tables"')
 
-    parser.add_argument('-f',
-                        '--hpo_site_mappings_path',
-                        required=True,
-                        help='File containing HPO site information')
+    parser.add_argument(
+        '-f',
+        '--hpo_site_csv_path',
+        required=True,
+        help='Directory which contains devops csv for hpo sites info')
 
     parser.add_argument(
         '-d',
@@ -414,5 +512,5 @@ if __name__ == '__main__':
     args = parser.parse_args()
     main(args.project_id, args.hpo_id, args.org_id, args.hpo_name,
          args.bucket_name, args.display_order, args.addition_type,
-         args.hpo_site_mappings_path, args.run_as, args.us_state,
+         args.hpo_site_csv_path, args.run_as, args.us_state,
          args.value_source_concept_id)
