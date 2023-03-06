@@ -8,15 +8,15 @@ Original Issues: DC-1692
 import logging
 from datetime import datetime
 
+# Third party imports
+from google.cloud.exceptions import GoogleCloudError
+
 # Project imports
 from cdr_cleaner.cleaning_rules.deid.concept_suppression import AbstractBqLookupTableConceptSuppression
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from common import JINJA_ENV, CDM_TABLES
-from utils.bq import validate_bq_date_string
+from resources import validate_date_string
 from utils import pipeline_logging
-
-# Third party imports
-from google.cloud.exceptions import GoogleCloudError
 
 LOGGER = logging.getLogger(__name__)
 
@@ -107,7 +107,7 @@ class CovidEHRVaccineConceptSuppression(AbstractBqLookupTableConceptSuppression
 
         try:
             # set to provided date string if the date string is valid
-            self.cutoff_date = validate_bq_date_string(cutoff_date)
+            self.cutoff_date = validate_date_string(cutoff_date)
         except (TypeError, ValueError):
             # otherwise, default to using today's date as the date string
             self.cutoff_date = str(datetime.now().date())

@@ -14,9 +14,8 @@ from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, quer
 from constants.cdr_cleaner.clean_cdr import COMBINED, QUERY, UNIONED
 from common import CONDITION_OCCURRENCE, DEVICE_EXPOSURE, DRUG_EXPOSURE, JINJA_ENV, MEASUREMENT, OBSERVATION, \
     OBSERVATION_PERIOD, PROCEDURE_OCCURRENCE, SPECIMEN, VISIT_OCCURRENCE, VISIT_DETAIL
-from resources import fields_for
+from resources import fields_for, validate_date_string
 from utils import pipeline_logging
-from utils.bq import validate_bq_date_string
 
 LOGGER = logging.getLogger(__name__)
 
@@ -195,7 +194,7 @@ if __name__ == '__main__':
                             dest='cutoff_date',
                             action='store',
                             help='EHR/RDR date cutoff of format YYYY-MM-DD',
-                            type=validate_bq_date_string,
+                            type=validate_date_string,
                             required=True)
 
     ext_parser.add_argument(

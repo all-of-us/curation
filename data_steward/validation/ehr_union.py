@@ -93,7 +93,6 @@ import resources
 from cdr_cleaner.cleaning_rules.drop_race_ethnicity_gender_observation import DropRaceEthnicityGenderObservation
 from constants.validation import ehr_union as eu_constants
 from utils import pipeline_logging
-from utils.bq import validate_bq_date_string
 from gcloud.bq import BigQueryClient
 
 UNION_ALL = '''
@@ -923,7 +922,7 @@ if __name__ == '__main__':
         dest='ehr_cutoff_date',
         help=
         "Date to set for observation table rows transferred from person table",
-        type=validate_bq_date_string)
+        type=resources.validate_date_string)
 
     # HPOs to exclude. If nothing given, exclude nothing.
     args = parser.parse_args()
