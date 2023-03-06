@@ -207,3 +207,12 @@ class ResourcesTest(unittest.TestCase):
             self.assertRaises(ValueError,
                               resources.get_and_validate_schema_fields,
                               schema_filepath)
+
+    def test_validate_date_string(self):
+        self.assertRaises(TypeError, resources.validate_date_string, None)
+        self.assertRaises(TypeError, resources.validate_date_string, 18)
+        self.assertRaises(ValueError, resources.validate_date_string,
+                          '01-11-2019')
+
+        self.assertEqual(resources.validate_date_string('2021-01-01'),
+                         '2021-01-01')
