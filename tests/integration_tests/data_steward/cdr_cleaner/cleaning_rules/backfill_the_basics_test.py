@@ -1,7 +1,6 @@
 """
 Integration test for BackfillTheBasics.
 """
-
 # Python Imports
 import os
 
@@ -104,6 +103,7 @@ class BackfillTheBasicsTest(BaseTest.CleaningRulesTestBase):
         person_id = 3:
             It has some missing TheBasics records. Backfill happens.
             Backfilled skip records have this participant's MAX observation_date ('2022-01-01') as its date.
+            Backfilled skip records have the newly assigned observation_ids.
         """
         tables_and_counts = [{
             'fq_table_name':

@@ -14,10 +14,10 @@ sub-group (e.g. we only backfill menstruation questions for female participants)
 Original issue: DC-3096
 """
 # Python imports
+import logging
 from typing import Dict, List
 
 # Project imports
-import logging
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
 from constants.cdr_cleaner.clean_cdr import QUERY
 from common import JINJA_ENV, OBSERVATION, PERSON
@@ -120,7 +120,7 @@ FROM missing_survey
 
 class AbstractBackfillSurveyRecords(BaseCleaningRule):
     """
-    Abstract class for creating backfill rules
+    Abstract class for backfill cleaning rules.
     """
 
     def __init__(self,
@@ -136,9 +136,9 @@ class AbstractBackfillSurveyRecords(BaseCleaningRule):
                  table_namer=None):
         """
         Args that are unique to this abstract class:
-        - backfill_concepts
+        - backfill_concepts (mandatory)
             List of the concept IDs that need backfilling.            
-        - additional_backfill_conditions
+        - additional_backfill_conditions (optional)
             Dict of the additional condition for backfilling.
             Key: Concept ID that the additional condition is applied to.
             Value: Condition written using BigQuery operators('=', '!=', '<', etc)
