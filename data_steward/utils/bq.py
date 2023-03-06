@@ -646,7 +646,7 @@ def copy_datasets(client: bigquery.Client, input_dataset, output_dataset):
         client.copy_table(table, staging_table)
 
 
-@deprecated(reason='Use resources.validate_bq_date_string(date_string) instead')
+@deprecated(reason='Use resources.validate_date_string(date_string) instead')
 def validate_bq_date_string(date_string):
     """
     Validates the date string is a valid date in the YYYY-MM-DD format.
