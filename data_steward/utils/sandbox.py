@@ -36,6 +36,7 @@ OPTIONS(
 def create_sandbox_dataset(project_id, dataset_id):
     """
     A helper function create a sandbox dataset if the sandbox dataset doesn't exist
+
     :param project_id: project_id
     :param dataset_id: any dataset_id
     :return: the sandbox dataset_id
@@ -57,6 +58,7 @@ def create_sandbox_dataset(project_id, dataset_id):
 def get_sandbox_dataset_id(dataset_id):
     """
     A helper function to create the sandbox dataset_id
+
     :param dataset_id: any dataset_id
     :return:
     """
@@ -99,7 +101,8 @@ def get_sandbox_labels_string(src_dataset_name,
                               class_name,
                               table_tag,
                               shared_lookup=False):
-    """A helper function that formats a set of labels for BigQuery
+    """
+    A helper function that formats a set of labels for BigQuery
 
     :param str src_dataset_name: A dataset name
     :param str class_name: A class name
@@ -139,7 +142,8 @@ def get_sandbox_labels_string(src_dataset_name,
 
 
 def get_sandbox_table_description_string(description):
-    """A helper function that returns a formatted description for BigQuery
+    """
+    A helper function that returns a formatted description for BigQuery
 
     :param str description: A table description
     :return: A formatted table description
@@ -159,7 +163,8 @@ def get_sandbox_options(dataset_name,
                         table_tag,
                         desc,
                         shared_lookup=False):
-    """A function that assembles a BigQuery table options clause from labels and descriptions
+    """
+    A function that assembles a BigQuery table options clause from labels and descriptions
 
     :param str dataset_name: A dataset name
     :param str class_name: A class name
