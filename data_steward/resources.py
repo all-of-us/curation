@@ -8,6 +8,7 @@ import logging
 import os
 import re
 import cachetools
+from datetime import datetime
 
 from git import Repo, TagReference
 from google.cloud import bigquery
@@ -616,3 +617,20 @@ def get_new_dataset_name(src_dataset_name: str, release_tag: str) -> str:
     Returns: Name of the new dataset.
     """
     return re.sub(r'\d{4}q[1-4]r\d{1,3}', release_tag, src_dataset_name)
+
+
+def validate_date_string(date_string):
+    """
+    Validates the date string is a valid date in the YYYY-MM-DD format.
+
+    If the string is valid, the string is returned.  Otherwise, strptime
+    raises either a ValueError or TypeError.
+
+    :param date_string: The string to validate adheres to YYYY-MM-DD format
+
+    :return:  a valid date string
+    :raises:  A ValueError if the date string is not a valid date or
+        doesn't conform to the specified format.
+    """
+    datetime.strptime(date_string, '%Y-%m-%d')
+    return date_string
