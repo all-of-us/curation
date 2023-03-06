@@ -93,6 +93,7 @@ def create_snapshot(client: BigQueryClient, release_tag: str) -> str:
     dataset = Dataset(f'{client.project}.{dataset_id}')
     dataset.description = f'{DRC_OPS} + {release_tag}_ehr'
     dataset.labels = {
+        'owner': 'curation',
         'release_tag': release_tag,
         DE_IDENTIFIED: 'false',
         'phase': 'clean'
