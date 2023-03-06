@@ -429,23 +429,23 @@ def main(project_id, hpo_id, org_id, hpo_name, bucket_name, display_order,
     if addition_type == "update_config":
         add_hpo_site_to_csv_files(hpo_id, hpo_name, org_id, bucket_name,
                                   hpo_site_csv_path, display_order)
-    # elif addition_type == "update_lookup_tables":
-    #     if bucket_access_configured(gcs_client, bucket_name):
-    #         LOGGER.info(f'Accessing bucket {bucket_name} successful. '
-    #                     f'Proceeding to add site.')
-    #         add_lookups(bq_client, hpo_id, hpo_name, org_id, bucket_name,
-    #                     display_order)
-    #
-    #         LOGGER.info(
-    #             f'hpo_site_id_mappings table successfully updated. Updating `{bq_consts.HPO_SITE_ID_MAPPINGS_TABLE_ID}` '
-    #             f'table')
-    #         update_site_masking_table(bq_client, hpo_id, us_state,
-    #                                   value_source_concept_id)
-    #
-    #     else:
-    #         raise RuntimeError(
-    #             f'{addition_type} was skipped because the bucket {bucket_name} is inaccessible.'
-    #         )
+    elif addition_type == "update_lookup_tables":
+        if bucket_access_configured(gcs_client, bucket_name):
+            LOGGER.info(f'Accessing bucket {bucket_name} successful. '
+                        f'Proceeding to add site.')
+            add_lookups(bq_client, hpo_id, hpo_name, org_id, bucket_name,
+                        display_order)
+
+            LOGGER.info(
+                f'hpo_site_id_mappings table successfully updated. Updating `{bq_consts.HPO_SITE_ID_MAPPINGS_TABLE_ID}` '
+                f'table')
+            update_site_masking_table(bq_client, hpo_id, us_state,
+                                      value_source_concept_id)
+
+        else:
+            raise RuntimeError(
+                f'{addition_type} was skipped because the bucket {bucket_name} is inaccessible.'
+            )
 
 
 if __name__ == '__main__':
