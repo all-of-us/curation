@@ -16,6 +16,7 @@ from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from common import JINJA_ENV, AOU_REQUIRED
 from constants import bq_utils as bq_consts
 from utils import pipeline_logging
+from resources import fields_for
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 
 LOGGER = logging.getLogger(__name__)
