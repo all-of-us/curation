@@ -24,11 +24,9 @@ class SandboxTest(unittest.TestCase):
         self.dataset_id = os.environ.get('UNIONED_DATASET_ID')
         self.sandbox_id = sandbox.get_sandbox_dataset_id(self.dataset_id)
         self.fq_sandbox_id = f'{self.project_id}.{self.sandbox_id}'
-        # Removing any existing datasets that might interfere with the test
         self.bq_client = BigQueryClient(self.project_id)
-        self.bq_client.delete_dataset(self.fq_sandbox_id,
-                                      delete_contents=True,
-                                      not_found_ok=True)
+        # Removing any existing datasets that might interfere with the test
+        self.tearDown()
 
     def test_create_sandbox_dataset(self):
         # pre-conditions
