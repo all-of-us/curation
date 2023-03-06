@@ -28,24 +28,24 @@ INSERT_RAW_DATA_OBS = JINJA_ENV.from_string("""
        observation_source_concept_id,
        value_source_concept_id,
        value_source_value
-       )
-     VALUES
+    )
+    VALUES
        (1,101,0,'2020-01-01',1,2,'',100,1585249,100,'Test Value'),
        (2,102,0,'2020-01-01',1,2,'',100,1585250,100,'Test Value'),
        (3,103,0,'2020-01-01',1,2,'',100,1585249,100,'Test Value'),
        (4,104,0,'2020-01-01',1,2,'',100,1585248,100,'Test Value')
  """)
 
-INSERT_RAW_DATA_MAPPING = JINJA_ENV.from_string("""
-   INSERT INTO `{{project_id}}.{{dataset_id}}._mapping_observation` (
+INSERT_RAW_DATA_EXT = JINJA_ENV.from_string("""
+   INSERT INTO `{{project_id}}.{{dataset_id}}.observation_ext`(
        observation_id,
-       src_hpo_id
-       )
-     VALUES
-       (1,'uamc_uofa'),
-       (2,'rdr'),
-       (3,'rdr'),
-       (4,'saou_umc')
+       src_id
+   )
+   VALUES
+       (1,'EHR site 119'),
+       (2,'PPI/PM'),
+       (3,'PPI/PM'),
+       (4,'EHR site 131')
  """)
 
 
@@ -73,7 +73,7 @@ class ConflictingHpoStateGeneralizeTest(BaseTest.CleaningRulesTestBase):
         for table in [OBSERVATION]:
             cls.fq_table_names.extend([
                 f'{cls.project_id}.{cls.dataset_id}.{table}',
-                f'{cls.project_id}.{cls.dataset_id}._mapping_{table}'
+                f'{cls.project_id}.{cls.dataset_id}.{table}_ext'
             ])
 
         for table in cls.rule_instance.get_sandbox_tablenames():
@@ -89,7 +89,7 @@ class ConflictingHpoStateGeneralizeTest(BaseTest.CleaningRulesTestBase):
 
         raw_data_load_query_obs = INSERT_RAW_DATA_OBS.render(
             project_id=self.project_id, dataset_id=self.dataset_id)
-        raw_data_load_query_mapping = INSERT_RAW_DATA_MAPPING. \
+        raw_data_load_query_mapping = INSERT_RAW_DATA_EXT. \
             render(project_id=self.project_id, dataset_id=self.dataset_id)
 
         self.date = parse('2020-01-01').date()
@@ -130,6 +130,3 @@ class ConflictingHpoStateGeneralizeTest(BaseTest.CleaningRulesTestBase):
         }]
 
         self.default_test(tables_and_counts)
-
-    def tearDown(self):
-        super().tearDown()

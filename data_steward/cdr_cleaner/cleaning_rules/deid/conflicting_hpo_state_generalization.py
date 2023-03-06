@@ -29,22 +29,22 @@ SCHEMA_MAP_TABLE = [{
     "description": "the person_id of someone with an ehr record"
 }, {
     "type": "string",
-    "name": "hpo_id",
+    "name": "src_id",
     "mode": "required",
-    "description": "the src_hpo_id of an ehr record"
+    "description": "the src_id of an ehr record"
 }]
 
 HPO_ID_NOT_RDR_QUERY = JINJA_ENV.from_string("""
   SELECT
-  DISTINCT person_id, src_hpo_id
+  DISTINCT person_id, src_id
   FROM
-    `{{project_id}}.{{dataset_id}}._mapping_{{table}}`
+    `{{project_id}}.{{dataset_id}}.{{table}}_ext`
   JOIN
     `{{project_id}}.{{dataset_id}}.{{table}}`
   USING
     ({{table}}_id)
   WHERE
-    src_hpo_id NOT LIKE 'rdr'
+    src_id NOT LIKE 'PPI/PM'
 """)
 
 LIST_PERSON_ID_TABLES = JINJA_ENV.from_string("""
@@ -52,12 +52,17 @@ LIST_PERSON_ID_TABLES = JINJA_ENV.from_string("""
   DISTINCT table_name
   FROM `{{project_id}}.{{dataset_id}}.INFORMATION_SCHEMA.COLUMNS`
   WHERE lower(column_name) = 'person_id'
+  and lower(table_name) || "_ext" in (
+    select distinct lower(table_id) 
+    from `{{project_id}}.{{dataset_id}}.__TABLES__` 
+    where REGEXP_CONTAINS(table_id, r'(?i)_ext$')
+  )
 """)
 
 INSERT_TO_MAP_TABLE_NAME = JINJA_ENV.from_string("""
   INSERT INTO `{{project_id}}.{{sandbox_dataset_id}}.{{table_name}}`
   (person_id,
-   hpo_id)
+   src_id)
   {{select_query}}
 """)
 
@@ -65,12 +70,12 @@ SANDBOX_QUERY_TO_FIND_RECORDS = JINJA_ENV.from_string("""
   CREATE OR REPLACE TABLE
   `{{project_id}}.{{sandbox_dataset_id}}.{{target_table}}` AS (
   SELECT observation_id FROM (
-    SELECT DISTINCT hpo_id, obs.person_id, value_source_concept_id, observation_id
+    SELECT DISTINCT src_id, obs.person_id, value_source_concept_id, observation_id
     FROM `{{project_id}}.{{sandbox_dataset_id}}.{{map_table_name}}` AS person_hpos
     JOIN `{{project_id}}.{{dataset_id}}.{{target_table}}` AS obs
     USING (person_id)
     LEFT JOIN `{{project_id}}.pipeline_tables.site_maskings`
-    USING (hpo_id, value_source_concept_id)
+    USING (src_id, value_source_concept_id)
     WHERE observation_source_concept_id = 1585249  AND state IS NULL))
 """)
 
@@ -121,32 +126,11 @@ class ConflictingHpoStateGeneralize(BaseCleaningRule):
         # Currently this rule is only run for 'OBSERVATION' table.
         # To include more tables in the future, update 'affected_tables' in __init__ args.
 
-        # List Dataset Content
-        dataset_tables = client.list_tables(self.dataset_id)
-        dataset_table_ids = [table.table_id for table in dataset_tables]
-
-        mapped_tables = [
-            table[9:]
-            for table in dataset_table_ids
-            if table.startswith('_mapping_')
-        ]
-
-        # Make sure all mapped_tables exists
-        check_tables = [
-            table for table in mapped_tables if table in dataset_table_ids
-        ]
-
-        # Make sure check_tables contains person_id field
-        person_id_query = LIST_PERSON_ID_TABLES.render(
+        # Get all the tables that has extension tables and has person_id column
+        person_id_tables_query = LIST_PERSON_ID_TABLES.render(
             project_id=self.project_id, dataset_id=self.dataset_id)
-        result = client.query(person_id_query).result()
-
-        # List of mapped tables that exists in given dataset with 'person_id' column.
-        person_id_tables = []
-        for row in result:
-            table = row.get('table_name')
-            if table in check_tables:
-                person_id_tables.append(table)
+        result = client.query(person_id_tables_query).result()
+        person_id_tables = [row.get('table_name') for row in result]
 
         # Run UNION DISTINCT query to join person_id_tables
         sql_statements = []
