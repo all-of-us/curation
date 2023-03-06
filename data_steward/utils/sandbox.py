@@ -8,8 +8,6 @@ from common import JINJA_ENV
 
 SANDBOX_SUFFIX = 'sandbox'
 
-LOGGER = logging.getLogger(__name__)
-
 TABLE_LABELS_STRING = JINJA_ENV.from_string("""
     {%- if labels %}
     labels=[
