@@ -83,7 +83,6 @@ def check_and_create_sandbox_dataset(client, dataset_id):
     :param dataset_id: the dataset_id to verify
     :return: the sandbox dataset_name that either exists or was created
     """
-    # client = get_client(project_id)
     sandbox_dataset = get_sandbox_dataset_id(dataset_id)
     dataset_objs = list(client.list_datasets())
     datasets = [d.dataset_id for d in dataset_objs]
