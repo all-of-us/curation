@@ -1,9 +1,7 @@
-import logging
+# Python imports
 from collections import OrderedDict
 
-from google.cloud import bigquery
-
-from utils.bq import get_client, create_dataset
+# Project Imports
 from common import JINJA_ENV
 
 SANDBOX_SUFFIX = 'sandbox'
@@ -45,12 +43,6 @@ def create_sandbox_dataset(client, dataset_id):
     friendly_name = f'Sandbox for {dataset_id}'
     description = f'Sandbox created for storing records affected by the cleaning rules applied to {dataset_id}'
     label_or_tag = {'label': '', 'tag': ''}
-    # create_dataset(project_id=project_id,
-    #                dataset_id=sandbox_dataset_id,
-    #                friendly_name=friendly_name,
-    #                description=description,
-    #                label_or_tag=label_or_tag,
-    #                overwrite_existing=False)
     sandbox_dataset = client.define_dataset(dataset_id=sandbox_dataset_id,
                                             description=description,
                                             label_or_tag=label_or_tag)
