@@ -2,15 +2,12 @@
 Cleaning rule to generalize conflicting HPO states
 """
 import logging
-import os
 
 from google.cloud import bigquery
-from google.api_core.exceptions import Conflict
 
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
-from constants.cdr_cleaner import clean_cdr as cdr_consts
 from common import JINJA_ENV, OBSERVATION
-from resources import DEID_PATH
+from constants.cdr_cleaner import clean_cdr as cdr_consts
 
 LOGGER = logging.getLogger(__name__)
 
@@ -20,7 +17,7 @@ JIRA_ISSUE_URL = [
     'https://precisionmedicineinitiative.atlassian.net/browse/DC-834'
 ]
 
-MAP_TABLE_NAME = "_mapping_person_src_hpos"
+MAP_TABLE_NAME = "person_src_hpos_ext"
 
 SCHEMA_MAP_TABLE = [{
     "type": "integer",
@@ -53,8 +50,8 @@ LIST_PERSON_ID_TABLES = JINJA_ENV.from_string("""
   FROM `{{project_id}}.{{dataset_id}}.INFORMATION_SCHEMA.COLUMNS`
   WHERE lower(column_name) = 'person_id'
   and lower(table_name) || "_ext" in (
-    select distinct lower(table_id) 
-    from `{{project_id}}.{{dataset_id}}.__TABLES__` 
+    select distinct lower(table_id)
+    from `{{project_id}}.{{dataset_id}}.__TABLES__`
     where REGEXP_CONTAINS(table_id, r'(?i)_ext$')
   )
 """)
@@ -68,8 +65,9 @@ INSERT_TO_MAP_TABLE_NAME = JINJA_ENV.from_string("""
 
 SANDBOX_QUERY_TO_FIND_RECORDS = JINJA_ENV.from_string("""
   CREATE OR REPLACE TABLE
-  `{{project_id}}.{{sandbox_dataset_id}}.{{target_table}}` AS (
-  SELECT observation_id FROM (
+  -- Use sandboxed table name to make pipeline debugging easier. Also ensures table name uniqueness. --
+  `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table}}` AS (
+  SELECT * FROM (
     SELECT DISTINCT src_id, obs.person_id, value_source_concept_id, observation_id
     FROM `{{project_id}}.{{sandbox_dataset_id}}.{{map_table_name}}` AS person_hpos
     JOIN `{{project_id}}.{{dataset_id}}.{{target_table}}` AS obs
@@ -177,6 +175,7 @@ class ConflictingHpoStateGeneralize(BaseCleaningRule):
                         dataset_id=self.dataset_id,
                         sandbox_dataset_id=self.sandbox_dataset_id,
                         target_table=target_table,
+                        sandbox_table=self.sandbox_table_for(target_table),
                         map_table_name=MAP_TABLE_NAME)
             }
 
@@ -187,7 +186,7 @@ class ConflictingHpoStateGeneralize(BaseCleaningRule):
                         dataset_id=self.dataset_id,
                         sandbox_dataset_id=self.sandbox_dataset_id,
                         updated_table=target_table,
-                        target_table=target_table)
+                        target_table=self.sandbox_table_for(target_table))
             }
 
         return [
@@ -198,8 +197,12 @@ class ConflictingHpoStateGeneralize(BaseCleaningRule):
     def get_sandbox_tablenames(self):
         """
         Generate SandBox Table Names
+
+        The lookup table name is also returned.  This provides greater info and allows for test cleanup.
         """
-        return [self.sandbox_table_for(table) for table in self.affected_tables]
+        return [
+            self.sandbox_table_for(table) for table in self.affected_tables
+        ] + [MAP_TABLE_NAME]
 
     def validate_rule(self, client, *args, **keyword_args):
         """

@@ -260,9 +260,9 @@ class BaseTest:
                 dictionary defines table expectations for each OMOP table to
                 validate with rule execution.  The dictionaries require:
              'fq_table_name':  the fully qualified name of the table being cleaned
-             'fq_sanbox_table_name':  the fully qualified name of the sandbox
-                                      table the rule will create if one is
-                                      expected.
+             'fq_sandbox_table_name':  the fully qualified name of the sandbox
+                                       table the rule will create if one is
+                                       expected.
              'loaded_ids':  The list of ids loaded by the sql insert statement
              'sandboxed_ids':  the list of ids that will be in the sandbox if
                                the rule sandboxes information

@@ -30,10 +30,10 @@ INSERT_RAW_DATA_OBS = JINJA_ENV.from_string("""
        value_source_value
     )
     VALUES
-       (1,101,0,'2020-01-01',1,2,'',100,1585249,100,'Test Value'),
-       (2,102,0,'2020-01-01',1,2,'',100,1585250,100,'Test Value'),
-       (3,103,0,'2020-01-01',1,2,'',100,1585249,100,'Test Value'),
-       (4,104,0,'2020-01-01',1,2,'',100,1585248,100,'Test Value')
+       (1,101,0,'2020-01-01',1,2,'',100,1585249,100,'Generalize This Value'),
+       (2,101,0,'2020-01-01',1,2,'',100,1500000,100,'Test Value'),
+       (3,103,0,'2020-01-01',1,2,'',100,1585249,1585261,'Do Not Generalize This Value'),
+       (4,103,0,'2020-01-01',1,2,'',100,1585248,100,'Test Value')
  """)
 
 INSERT_RAW_DATA_EXT = JINJA_ENV.from_string("""
@@ -42,10 +42,10 @@ INSERT_RAW_DATA_EXT = JINJA_ENV.from_string("""
        src_id
    )
    VALUES
-       (1,'EHR site 119'),
-       (2,'PPI/PM'),
+       (1,'PPI/PM'),
+       (2,'EHR site 000'),
        (3,'PPI/PM'),
-       (4,'EHR site 131')
+       (4,'EHR site 807')
  """)
 
 
@@ -109,24 +109,32 @@ class ConflictingHpoStateGeneralizeTest(BaseTest.CleaningRulesTestBase):
             'fq_table_name':
                 f'{self.project_id}.{self.dataset_id}.{OBSERVATION}',
             'fq_sandbox_table_name':
-                f'{self.project_id}.{self.sandbox_id}.{OBSERVATION}',
+                f'{self.project_id}.{self.sandbox_id}.{self.rule_instance.get_sandbox_tablenames()[0]}',
+            # The following tables are created when `setup_rule` runs,
+            # so this will break the sandboxing check that runs in 'default_test()'
+            # We get around the check by declaring these tables are created before
+            # the rule runs and this is expected.
+            'tables_created_on_setup': [
+                f'{self.project_id}.{self.sandbox_id}.{self.rule_instance.get_sandbox_tablenames()[-1]}'
+            ],
             'loaded_ids': [1, 2, 3, 4],
             'sandboxed_ids': [1],
             'fields': [
-                'observation_id', 'person_id', 'observation_concept_id',
-                'observation_date', 'observation_type_concept_id',
-                'value_as_number', 'value_as_string', 'value_as_concept_id',
-                'observation_source_concept_id', 'value_source_concept_id',
-                'value_source_value'
+                'observation_id', 'person_id', 'observation_date',
+                'value_as_concept_id', 'observation_source_concept_id',
+                'value_source_concept_id', 'value_source_value'
             ],
-            'cleaned_values': [(1, 101, 0, self.date, 1, 2, '', 2000000011,
-                                1585249, 2000000011, 'Test Value'),
-                               (2, 102, 0, self.date, 1, 2, '', 100, 1585250,
-                                100, 'Test Value'),
-                               (3, 103, 0, self.date, 1, 2, '', 100, 1585249,
-                                100, 'Test Value'),
-                               (4, 104, 0, self.date, 1, 2, '', 100, 1585248,
-                                100, 'Test Value')]
+            'cleaned_values': [
+                (1, 101, self.date, 2000000011, 1585249, 2000000011,
+                 'Generalize This Value'),
+                (2, 101, self.date, 100, 1500000, 100, 'Test Value'),
+                (3, 103, self.date, 100, 1585249, 1585261,
+                 'Do Not Generalize This Value'),
+                (4, 103, self.date, 100, 1585248, 100, 'Test Value')
+            ]
         }]
 
+        # this rule requires the logic in setup rules to run, so we should run the setup.
+        self.rule_instance.setup_rule(self.client)
+        # now we can run the tests
         self.default_test(tables_and_counts)
