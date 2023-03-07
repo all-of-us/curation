@@ -2,7 +2,7 @@
 AOU - De-identification Engine
 Steve L. Nyemba <steve.l.nyemba@vanderbilt.edu>
 
-This engine will run de-identificataion rules againsts a given table, certain
+This engine will run de-identification rules against a given table, certain
 rules are applied to all tables (if possible).  We have divided rules and application
 of the rules, in order to have granular visibility into what is happening.
 
@@ -17,19 +17,19 @@ DESIGN:
     We defined a vocabulary of rule specifications:
         -fields         Attributes upon which a given rule can be applied
         -values         conditional values that determine an out-come of a rule (can be followed by an operation like REGEXP)
-                            If followed by "apply": "REGEXP" the the values are assumed to be applied using regular expressions
-                            If NOT followed by anything the values are assumed to be integral values and and the IN operator in used instead
+                            If followed by "apply": "REGEXP" the values are assumed to be applied using regular expressions
+                            If NOT followed by anything the values are assumed to be integral values and the IN operator is used instead
         -into           outcome related to a rule
         -key_field      attribute to be used as a filter that can be specified by value_field or values
         -value_field    value associated with a key_field
         -on             suggests a meta table and will have filter condition when generalization or a field name for row based suppression
-        -copy_to        defined for generalizations.  uses the values associated with one field
-                        to update another field.  to the user, it acts like a "copy new value to this field too" rule
-        -dataset        defined for generalizations using aggregating rules.  helps develop the sub-query used
-                        by the aggregate.  ':idataset' is default.  uses the dataset name
-        -alias          defined for generalizations using aggregating rules.  allows a sub-query to
+        -copy_to        defined for generalizations. Uses the values associated with one field
+                        to update another field. To the user, it acts like a "copy new value to this field too" rule
+        -dataset        defined for generalizations using aggregating rules. Helps develop the sub-query used
+                        by the aggregate. ':idataset' is default. uses the dataset name
+        -alias          defined for generalizations using aggregating rules. Allows a sub-query to
                         construct a temporary table named by this field
-        -key_row        defined for generlizations using aggregating rules.  allows a sub-query to
+        -key_row        defined for generalizations using aggregating rules. Allows a sub-query to
                         define which field to use for joins
 
 
@@ -38,35 +38,35 @@ DESIGN:
 
     - The constraints:
 
-        1. Bigquery is designed to be used as a warehouse not an RDBMS.That being said
+        1. Bigquery is designed to be used as a warehouse not an RDBMS. That being said
             a. it lends itself to uncontrollable information redundancies and proliferation.
-            b. There is not referential integrity support in bigquery.
-            As a result thre is no mechanism that guarantees data-integrity.
+            b. There is no referential integrity support in bigquery.
+            As a result there is no mechanism that guarantees data-integrity.
 
 
         2. We have a method "simulate" that acts as a sampler to provide some visibility
         into what this engine has done given an attribute and the value space of the data.
-        This potentially adds to data redundancies.  It must remain internal.
+        This potentially adds to data redundancies. It must remain internal.
 
     LIMITATIONS:
         - The engine is not able to validate the rules without having to submit the job.
-        - The engine can not simulate complex cases.  It's intent is to help in
+        - The engine can not simulate complex cases. Its intent is to help in
         providing information about basic scenarios,
-        - The engine does not resolve issues of consistency with data for instance:
+        - The engine does not resolve issues of inconsistency with data for instance:
         if a record has M, F on two fields for gender ... this issue is out of the scope of deid.
         Because it relates to data-integrity.
 
     USAGE:
 
         python aou.py --rules <path.json> --idataset <name> --private_key <file> --table <table.json> --action [submit, simulate|debug] [--cluster] [--log <path>]
-        --rule  will point to the JSON file contianing rules
+        --rule  will point to the JSON file containing rules
         --idataset  name of the input dataset (an output dataset with suffix _deid will be generated)
         --table     path of that specify how rules are to be applied on a table
         --private_key   service account file location
         --pipeline      specifies operations and the order in which operations are to be undertaken.
                         Operations should be comma separated
-                        By default the pipeline is generalize, suppress, shift, compute
-        --age-limit     This parameter is optional and sets the age limit by default it will apply 89 years
+                        By default, the pipeline is generalize, suppress, shift, compute
+        --age-limit     This parameter is optional and sets the age limit. By default, it will apply 89 years
         --action        what to do:
                         simulate    will generate simulation without creating an output table
                         submit      will create an output table
@@ -78,6 +78,7 @@ import logging
 import os
 import time
 from copy import copy
+from datetime import datetime
 
 # Third party imports
 import numpy as np
@@ -87,6 +88,8 @@ from google.oauth2 import service_account
 
 # Project imports
 import bq_utils
+from gcloud.bq import BigQueryClient
+import app_identity
 import constants.bq_utils as bq_consts
 from common import PIPELINE_TABLES
 from constants.deid.deid import MAX_AGE
@@ -99,90 +102,14 @@ LOGGER = logging.getLogger(__name__)
 MEASUREMENT_TIME = 'measurement_time'
 
 
-def create_person_id_src_hpo_map(client, input_dataset):
+def milliseconds_since_epoch():
     """
-    Create a table containing person_ids and src_hpo_ids
+    Helper method to get the number of milliseconds from the epoch to now
 
-    :param client: a BigQueryClient
-    :param input_dataset:  the input dataset to deid
+    :return:  an integer number of milliseconds
     """
-    map_tablename = "_mapping_person_src_hpos"
-    sql = ("select distinct person_id, src_hpo_id "
-           "from {input_dataset}._mapping_{table} "
-           "join {input_dataset}.{table} "
-           "using ({table}_id) "
-           "where src_hpo_id not like 'rdr'")
-
-    # list dataset contents
-    dataset_tables = client.list_tables(input_dataset)
-    dataset_table_ids = [table.table_id for table in dataset_tables]
-
-    mapping_tables = []
-    mapped_tables = []
-    for table in dataset_table_ids:
-        if table.startswith('_mapping_'):
-            mapping_tables.append(table)
-            mapped_tables.append(table[9:])
-
-    # make sure mapped tables all exist
-    check_tables = []
-    for table in mapped_tables:
-        if table in dataset_table_ids:
-            check_tables.append(table)
-
-    # make sure check_tables contain person_id fields
-    person_id_tables = []
-    for table in check_tables:
-        table_obj = client.get_table(f'{input_dataset}.{table}')
-        for schema_field in table_obj.schema:
-            if 'person_id' in schema_field.name:
-                person_id_tables.append(table)
-
-    # revamp mapping tables to contain only mapping tables for tables
-    # with person_id fields
-    mapping_tables = [f'_mapping_{table}' for table in person_id_tables]
-
-    sql_statement = []
-    for table in person_id_tables:
-        sql_statement.append(
-            sql.format(table=table, input_dataset=input_dataset))
-
-    final_query = ' UNION DISTINCT '.join(sql_statement)
-
-    # create the mapping table
-    if map_tablename not in dataset_table_ids:
-        fields = [{
-            "type": "integer",
-            "name": "person_id",
-            "mode": "required",
-            "description": "the person_id of someone with an ehr record"
-        }, {
-            "type": "string",
-            "name": "src_hpo_id",
-            "mode": "required",
-            "description": "the src_hpo_id of an ehr record"
-        }]
-        bq_utils.create_table(map_tablename, fields, dataset_id=input_dataset)
-
-    bq_utils.query(final_query,
-                   destination_table_id=map_tablename,
-                   destination_dataset_id=input_dataset,
-                   write_disposition=bq_consts.WRITE_TRUNCATE)
-    LOGGER.info(f"Created mapping table:\t{input_dataset}.{map_tablename}")
-
-
-def create_allowed_states_table(input_dataset, credentials):
-    """
-    Create a mapping table of src_hpos to states they are located in.
-    """
-
-    map_tablename = f'{input_dataset}._mapping_src_hpos_to_allowed_states'
-    data = pd.read_csv(
-        os.path.join(DEID_PATH, 'config', 'internal_tables',
-                     'src_hpos_to_allowed_states.csv'))
-
-    # write this to bigquery.
-    data.to_gbq(map_tablename, credentials=credentials, if_exists='replace')
+    return int(
+        (datetime.utcnow() - datetime(1970, 1, 1)).total_seconds() * 1000)
 
 
 def create_concept_id_lookup_table(client, input_dataset, credentials):
@@ -194,7 +121,7 @@ def create_concept_id_lookup_table(client, input_dataset, credentials):
     :param credentials: bigquery credentials
     """
 
-    lookup_tablename = f'{input_dataset}._concept_ids_suppression'
+    lookup_tablename = input_dataset + "._concept_ids_suppression"
     columns = [
         'vocabulary_id', 'concept_code', 'concept_name', 'concept_id',
         'domain_id', 'rule', 'question'
@@ -217,6 +144,8 @@ class AOU(Press):
             self.private_key)
         self.partition = args.get('cluster', False)
         self.priority = args.get('interactive', 'BATCH')
+        self.project_id = app_identity.get_application_id()
+        self.bq_client = BigQueryClient(project_id=self.project_id)
 
         if 'shift' in self.deid_rules:
             #
@@ -236,16 +165,14 @@ class AOU(Press):
         age_limit = args.get('age_limit', MAX_AGE)
         LOGGER.info(f"Using participant age limit of {age_limit}")
 
+        million = 1000000
         map_tablename = self.idataset + "._deid_map"
+
+        map_table = pd.DataFrame()
 
         # Create concept_id lookup table for suppressions
         create_concept_id_lookup_table(self.bq_client, self.idataset,
                                        self.credentials)
-
-        # only need to create these tables deidentifying the observation table
-        if 'observation' in self.get_tablename().lower().split('.'):
-            create_allowed_states_table(self.idataset, self.credentials)
-            create_person_id_src_hpo_map(self.bq_client, self.idataset)
 
         # ensure mapping table only contains participants within age limits
         sql = (
@@ -409,7 +336,7 @@ class AOU(Press):
                 "value_field": self.tablename + ".person_id"
             })
 
-    def _add_dml_statements_rules(self):
+    def _add_dml_statements_rules(self, columns):
         """
         Add default duplicate records dropping configuration, if not specified in the config file.
         """
@@ -460,7 +387,7 @@ class AOU(Press):
         self._add_suppression_rules(columns)
         self._add_temporal_shifting_rules(columns)
         self._add_compute_rules(columns)
-        self._add_dml_statements_rules()
+        self._add_dml_statements_rules(columns)
 
     def submit(self, sql, create, dml=None):
         """
