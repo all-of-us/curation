@@ -16,7 +16,6 @@ from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from common import JINJA_ENV, AOU_REQUIRED
 from constants import bq_utils as bq_consts
 from utils import pipeline_logging
-from utils.bq import validate_bq_date_string
 from resources import fields_for
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 
@@ -62,7 +61,7 @@ class EhrSubmissionDataCutoff(BaseCleaningRule):
         """
         try:
             # set to provided date string if the date string is valid
-            self.cutoff_date = validate_bq_date_string(cutoff_date)
+            self.cutoff_date = validate_date_string(cutoff_date)
         except (TypeError, ValueError):
             # otherwise, default to using today's date as the date string
             self.cutoff_date = str(datetime.now().date())
@@ -222,7 +221,7 @@ if __name__ == '__main__':
         ('Cutoff date for data based on <table_name>_date and <table_name>_datetime fields.  '
          'Should be in the form YYYY-MM-DD.'),
         required=True,
-        type=validate_bq_date_string,
+        type=validate_date_string,
     )
 
     ARGS = ext_parser.parse_args()
