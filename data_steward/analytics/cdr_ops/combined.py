@@ -527,7 +527,7 @@ fig
 # ## Verify dataset properties
 # The dataset metadata must have
 # 1. a description indicating the version of the pipeline run and the input datasets
-# 2. labels `phase`, `release_tag`, `de_identified` with appropriate values
+# 2. labels `owner`, `phase`, `release_tag`, `de_identified` with appropriate values
 #
 # In the future this should try to find the dataset using labels supplied via notebook
 # parameters (e.g. `combined`, `release_tag=2021q3r1`, `phase=clean`). Currently
@@ -539,7 +539,7 @@ def verify_dataset_labels(dataset):
     """
     Print a warning if labels are missing or do not have expected values
     """
-    expected_keys = ['phase', 'de_identified', 'release_tag']
+    expected_keys = ['owner', 'phase', 'de_identified', 'release_tag']
     missing_keys = list(expected_keys - dataset.labels.keys())
     if missing_keys:
         print(
@@ -550,7 +550,7 @@ def verify_dataset_labels(dataset):
             f"[SUCCEEDED] Check 1/3: All mandatory keys ({', '.join(expected_keys)}) exist in '{dataset.dataset_id}'"
         )
 
-    expected = {'phase': 'clean', 'de_identified': 'false'}
+    expected = {'owner': 'curation', 'phase': 'clean', 'de_identified': 'false'}
     for key, value in expected.items():
         if key not in missing_keys:
             if dataset.labels[key] != expected[key]:

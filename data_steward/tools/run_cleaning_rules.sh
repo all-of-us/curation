@@ -72,7 +72,7 @@ export DATASET_SANDBOX="${dataset}_sandbox"
 export BIGQUERY_DATASET_ID="${DATASET_STAGING}"
 
 # snapshotting dataset to apply cleaning rules
-bq mk --dataset --description "Snapshot of ${DATASET}" --label "phase:staging"  ${app_id}:${DATASET_STAGING}
+bq mk --dataset --description "Snapshot of ${DATASET}" --label "owner:curation" --label "phase:staging"  ${app_id}:${DATASET_STAGING}
 
 "${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${DATASET} --target_dataset ${DATASET_STAGING}
 
@@ -97,7 +97,7 @@ then
     export FITBIT_DATASET_ID="${DATASET_STAGING}"
 fi
 
-bq mk --dataset --description "Sandbox created for storing records affected by the cleaning rules applied to ${DATASET_STAGING}" --label "phase:sandbox" --label "de_identified:false" "${app_id}":"${DATASET_STAGING_SANDBOX}"
+bq mk --dataset --description "Sandbox created for storing records affected by the cleaning rules applied to ${DATASET_STAGING}" --label "owner:curation" --label "phase:sandbox" --label "de_identified:false" "${app_id}":"${DATASET_STAGING_SANDBOX}"
 
 # run cleaning_rules on a dataset
 python "${CLEANER_DIR}/clean_cdr.py" --project_id "${app_id}" --dataset_id "${DATASET}" --sandbox_dataset_id "${DATASET_STAGING_SANDBOX}" --data_stage "${data_stage}" -s 2>&1 | tee cleaning_rules_log.txt
@@ -109,7 +109,7 @@ python "${TOOLS_DIR}/snapshot_by_query.py" -p "${app_id}" -d "${DATASET_STAGING}
 "${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset "${DATASET_STAGING_SANDBOX}" --target_dataset "${DATASET_SANDBOX}"
 
 # Update sandbox description
-bq update --description "Sandbox created for storing records affected by the cleaning rules applied to ${DATASET}" --set_label "phase:sandbox" "${app_id}":"${DATASET_SANDBOX}"
+bq update --description "Sandbox created for storing records affected by the cleaning rules applied to ${DATASET}" -- set_label "owner:curation" --set_label "phase:sandbox" "${app_id}":"${DATASET_SANDBOX}"
 
 # Remove staging datasets
 bq rm -r -d "${DATASET_STAGING_SANDBOX}"
