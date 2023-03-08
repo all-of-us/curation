@@ -112,7 +112,7 @@ from cdr_cleaner.cleaning_rules.deid.string_fields_suppression import StringFiel
 from cdr_cleaner.cleaning_rules.generalize_sex_gender_concepts import GeneralizeSexGenderConcepts
 from cdr_cleaner.cleaning_rules.generalize_state_by_population import GeneralizeStateByPopulation
 from cdr_cleaner.cleaning_rules.section_participation_concept_suppression import SectionParticipationConceptSuppression
-from cdr_cleaner.cleaning_rules.covid_ehr_vaccine_concept_suppression import CovidEHRVaccineConceptSuppression
+from cdr_cleaner.cleaning_rules.recent_concept_suppression import RecentConceptSuppression
 from cdr_cleaner.cleaning_rules.missing_concept_record_suppression import MissingConceptRecordSuppression
 from cdr_cleaner.cleaning_rules.monkeypox_concept_suppression import MonkeypoxConceptSuppression
 from cdr_cleaner.cleaning_rules.create_deid_questionnaire_response_map import CreateDeidQuestionnaireResponseMap
@@ -254,7 +254,7 @@ REGISTERED_TIER_DEID_CLEANING_CLASSES = [
     # Data suppressions
     ####################################
     (
-        CovidEHRVaccineConceptSuppression,),  # should run after QRIDtoRID
+        RecentConceptSuppression,),  # should run after QRIDtoRID
     (MonkeypoxConceptSuppression,),
     (VehicularAccidentConceptSuppression,),
     (SectionParticipationConceptSuppression,),

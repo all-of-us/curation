@@ -1,7 +1,7 @@
 """
-Suppress COVID EHR vaccine concepts.
+Suppress Non-PPI Concepts created within past year
 
-Original Issues: DC-1692
+Original Issues: DC-1692, DC-2789
 """
 
 # Python imports
@@ -20,73 +20,19 @@ from google.cloud.exceptions import GoogleCloudError
 
 LOGGER = logging.getLogger(__name__)
 
-SUPPRESSION_RULE_CONCEPT_TABLE = 'covid_vaccine_concepts'
+SUPPRESSION_RULE_CONCEPT_TABLE = 'recent_concepts'
 
-COVID_VACCINE_CONCEPT_QUERY = JINJA_ENV.from_string("""
+RECENT_CONCEPT_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_id}}.{{concept_suppression_lookup_table}}` AS
-with covid_vacc as (
-    SELECT *
-    FROM `{{project_id}}.{{dataset_id}}.concept` 
-    WHERE (
-        -- done by name and vocab --
-        REGEXP_CONTAINS(concept_name, r'(?i)(COVID)') AND
-        REGEXP_CONTAINS(concept_name, r'(?i)(VAC)') AND 
-        vocabulary_id not in ('PPI')
-    ) OR (
-        -- done by code  and vocab --
-        REGEXP_CONTAINS(concept_code, r'(207)|(208)|(210)|(211)|(212)')
-        and vocabulary_id = 'CVX'
-    ) OR (
-        -- done by code and vocab --
-        REGEXP_CONTAINS(concept_code, r'(91300)|(91301)|(91302)|(91303)|(91304)')
-        and vocabulary_id = 'CPT4'
-    )
-),
-concepts_via_cr as (
-select distinct c.*
-from `{{project_id}}.{{dataset_id}}.concept`as c
-left join `{{project_id}}.{{dataset_id}}.concept_relationship`
-on c.concept_id = concept_id_1
-where concept_id_2 in (select concept_id from covid_vacc)
-# and concept_id_1 not in (select concept_id from covid_vacc)
-and (
-        relationship_id not in ('Subsumes', 'RxNorm dose form of', 'Dose form group of', 'RxNorm - SPL') OR 
-            (relationship_id = 'RxNorm - SPL' and REGEXP_CONTAINS(concept_name, r'(?i)(COVID)'))
-    )
-),
-concepts_via_ca as (
-  select c.*
-    from `{{project_id}}.{{dataset_id}}.concept`as c
-    left join `{{project_id}}.{{dataset_id}}.concept_ancestor` as ca
-    on c.concept_id = ca.descendant_concept_id
-    where ca.ancestor_concept_id in (select concept_id from covid_vacc)  
-),
-  unioned_result AS (
-  SELECT
-    DISTINCT *
-  FROM
-    covid_vacc
-  UNION DISTINCT
-  SELECT
-    DISTINCT *
-  FROM
-    concepts_via_ca
-  UNION DISTINCT
-  SELECT
-    DISTINCT *
-  FROM
-    concepts_via_cr)
-SELECT
-  *
-FROM
-  unioned_result
+SELECT *
+FROM `{{project_id}}.{{dataset_id}}.concept` 
 WHERE
   valid_start_date >= DATE_SUB(DATE('{{cutoff_date}}'), INTERVAL 1 YEAR)
+    AND vocabulary_id <> 'PPI'
 """)
 
 
-class CovidEHRVaccineConceptSuppression(AbstractBqLookupTableConceptSuppression
-                                       ):
+class RecentConceptSuppression(AbstractBqLookupTableConceptSuppression):
 
     def __init__(
         self,
@@ -113,7 +59,7 @@ class CovidEHRVaccineConceptSuppression(AbstractBqLookupTableConceptSuppression
             self.cutoff_date = str(datetime.now().date())
 
         super().__init__(
-            issue_numbers=['DC1692'],
+            issue_numbers=['DC1692', 'DC2789'],
             description=desc,
             affected_datasets=[cdr_consts.REGISTERED_TIER_DEID],
             affected_tables=CDM_TABLES,
@@ -124,7 +70,7 @@ class CovidEHRVaccineConceptSuppression(AbstractBqLookupTableConceptSuppression
             table_namer=table_namer)
 
     def create_suppression_lookup_table(self, client):
-        concept_suppression_lookup_query = COVID_VACCINE_CONCEPT_QUERY.render(
+        concept_suppression_lookup_query = RECENT_CONCEPT_QUERY.render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
             sandbox_id=self.sandbox_dataset_id,
@@ -183,11 +129,11 @@ if __name__ == '__main__':
 
     if ARGS.list_queries:
         clean_engine.add_console_logging()
-        query_list = clean_engine.get_query_list(
-            ARGS.project_id,
-            ARGS.dataset_id,
-            ARGS.sandbox_dataset_id, [(CovidEHRVaccineConceptSuppression,)],
-            cutoff_date=ARGS.cutoff_date)
+        query_list = clean_engine.get_query_list(ARGS.project_id,
+                                                 ARGS.dataset_id,
+                                                 ARGS.sandbox_dataset_id,
+                                                 [(RecentConceptSuppression,)],
+                                                 cutoff_date=ARGS.cutoff_date)
 
         for query in query_list:
             LOGGER.info(query)
@@ -196,5 +142,5 @@ if __name__ == '__main__':
         clean_engine.clean_dataset(ARGS.project_id,
                                    ARGS.dataset_id,
                                    ARGS.sandbox_dataset_id,
-                                   [(CovidEHRVaccineConceptSuppression,)],
+                                   [(RecentConceptSuppression,)],
                                    cutoff_date=ARGS.cutoff_date)
