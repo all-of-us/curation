@@ -127,7 +127,11 @@ def create_datasets(client, name, input_dataset, tier, release_tag):
     deid_datasets = [final_dataset_id, staging_dataset_id]
 
     # base labels and tags for the datasets
-    base_labels_and_tags = {'release_tag': release_tag, 'data_tier': tier}
+    base_labels_and_tags = {
+        'owner': 'curation',
+        'release_tag': release_tag,
+        'data_tier': tier
+    }
 
     description = f'dataset created from {input_dataset} for {tier}{release_tag} CDR run'
 
@@ -140,6 +144,7 @@ def create_datasets(client, name, input_dataset, tier, release_tag):
         if dataset_id in deid_datasets:
             new_labels = client.update_labels_and_tags(dataset_id,
                                                        base_labels_and_tags, {
+                                                           'owner': 'curation',
                                                            'phase': phase,
                                                            DE_IDENTIFIED: 'true'
                                                        })
@@ -149,6 +154,7 @@ def create_datasets(client, name, input_dataset, tier, release_tag):
         else:
             new_labels = client.update_labels_and_tags(
                 dataset_id, base_labels_and_tags, {
+                    'owner': 'curation',
                     'phase': phase,
                     DE_IDENTIFIED: 'false'
                 })

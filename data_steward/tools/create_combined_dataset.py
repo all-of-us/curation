@@ -169,6 +169,7 @@ def create_dataset(client, release_tag, dataset_type) -> str:
             'name': f'{release_tag}_combined',
             'desc': f'{version} Clean version of {release_tag}_combined_backup',
             'labels': {
+                "owner": "curation",
                 "phase": "clean",
                 "release_tag": release_tag,
                 "de_identified": "false"
@@ -180,6 +181,7 @@ def create_dataset(client, release_tag, dataset_type) -> str:
             'desc':
                 f'Combined raw version of {release_tag}_rdr + {release_tag}_unioned_ehr',
             'labels': {
+                "owner": "curation",
                 "phase": "backup",
                 "release_tag": release_tag,
                 "de_identified": "false"
@@ -191,6 +193,7 @@ def create_dataset(client, release_tag, dataset_type) -> str:
             'desc':
                 f'Intermediary dataset to apply cleaning rules on {release_tag}_combined_backup',
             'labels': {
+                "owner": "curation",
                 "phase": "staging",
                 "release_tag": release_tag,
                 "de_identified": "false"
@@ -202,6 +205,7 @@ def create_dataset(client, release_tag, dataset_type) -> str:
                 (f'Sandbox created for storing records affected by the '
                  f'cleaning rules applied to {release_tag}_combined_staging'),
             'labels': {
+                "owner": "curation",
                 "phase": "sandbox",
                 "release_tag": release_tag,
                 "de_identified": "false"
@@ -211,6 +215,7 @@ def create_dataset(client, release_tag, dataset_type) -> str:
             'name': f'{release_tag}_combined_release',
             'desc': f'{version} Release version of {release_tag}_combined',
             'labels': {
+                "owner": "curation",
                 "phase": "release",
                 "release_tag": release_tag,
                 "de_identified": "false"

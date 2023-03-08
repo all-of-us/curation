@@ -118,7 +118,11 @@ def check_and_create_staging_dataset(dst_dataset_id: str, bucket_name: str,
         bq_client.get_dataset(staging_dataset)
     except NotFound:
         staging_dataset.description = f'Vocabulary loaded from gs://{bucket_name}'
-        staging_dataset.labels = {'type': 'vocabulary', 'phase': 'staging'}
+        staging_dataset.labels = {
+            'owner': 'curation',
+            'type': 'vocabulary',
+            'phase': 'staging'
+        }
         staging_dataset.location = "US"
         staging_dataset = bq_client.create_dataset(staging_dataset)
         LOGGER.info(f'Successfully created dataset {staging_dataset_id}')
@@ -211,7 +215,7 @@ def load(project_id: str, bq_client: BigQueryClient, src_dataset_id: str,
     """
     dst_dataset = Dataset(f'{bq_client.project}.{dst_dataset_id}')
     dst_dataset.description = f'Vocabulary cleaned and loaded from {src_dataset_id}'
-    dst_dataset.labels = {'type': 'vocabulary'}
+    dst_dataset.labels = {'owner': 'curation', 'type': 'vocabulary'}
     dst_dataset.location = "US"
     bq_client.create_dataset(dst_dataset, exists_ok=True)
     src_tables = list(bq_client.list_tables(dataset=src_dataset_id))
