@@ -1,12 +1,10 @@
-import logging
+# Python imports
 from collections import OrderedDict
 
-from utils.bq import get_client, create_dataset
+# Project Imports
 from common import JINJA_ENV
 
 SANDBOX_SUFFIX = 'sandbox'
-
-LOGGER = logging.getLogger(__name__)
 
 TABLE_LABELS_STRING = JINJA_ENV.from_string("""
     {%- if labels %}
@@ -33,10 +31,11 @@ OPTIONS(
 """)
 
 
-def create_sandbox_dataset(project_id, dataset_id):
+def create_sandbox_dataset(client, dataset_id):
     """
     A helper function create a sandbox dataset if the sandbox dataset doesn't exist
-    :param project_id: project_id
+
+    :param project_id: a BigQueryClient
     :param dataset_id: any dataset_id
     :return: the sandbox dataset_id
     """
@@ -44,19 +43,18 @@ def create_sandbox_dataset(project_id, dataset_id):
     friendly_name = f'Sandbox for {dataset_id}'
     description = f'Sandbox created for storing records affected by the cleaning rules applied to {dataset_id}'
     label_or_tag = {'label': '', 'tag': ''}
-    create_dataset(project_id=project_id,
-                   dataset_id=sandbox_dataset_id,
-                   friendly_name=friendly_name,
-                   description=description,
-                   label_or_tag=label_or_tag,
-                   overwrite_existing=False)
-
+    sandbox_dataset = client.define_dataset(dataset_id=sandbox_dataset_id,
+                                            description=description,
+                                            label_or_tag=label_or_tag)
+    sandbox_dataset.friendly_name = friendly_name
+    client.create_dataset(sandbox_dataset, exists_ok=False)
     return sandbox_dataset_id
 
 
 def get_sandbox_dataset_id(dataset_id):
     """
     A helper function to create the sandbox dataset_id
+
     :param dataset_id: any dataset_id
     :return:
     """
@@ -77,21 +75,20 @@ def get_sandbox_table_name(table_namer, base_name):
     return base_name
 
 
-def check_and_create_sandbox_dataset(project_id, dataset_id):
+def check_and_create_sandbox_dataset(client, dataset_id):
     """
     A helper function to check if sandbox dataset exisits. If it does not, it will create.
 
-    :param project_id: the project_id that the dataset is in
+    :param project_id: a BigQueryClient
     :param dataset_id: the dataset_id to verify
     :return: the sandbox dataset_name that either exists or was created
     """
-    client = get_client(project_id)
     sandbox_dataset = get_sandbox_dataset_id(dataset_id)
-    dataset_objs = list(client.list_datasets(project_id))
+    dataset_objs = list(client.list_datasets())
     datasets = [d.dataset_id for d in dataset_objs]
 
     if sandbox_dataset not in datasets:
-        create_sandbox_dataset(project_id, dataset_id)
+        create_sandbox_dataset(client, dataset_id)
     return sandbox_dataset
 
 
@@ -99,7 +96,8 @@ def get_sandbox_labels_string(src_dataset_name,
                               class_name,
                               table_tag,
                               shared_lookup=False):
-    """A helper function that formats a set of labels for BigQuery
+    """
+    A helper function that formats a set of labels for BigQuery
 
     :param str src_dataset_name: A dataset name
     :param str class_name: A class name
@@ -139,7 +137,8 @@ def get_sandbox_labels_string(src_dataset_name,
 
 
 def get_sandbox_table_description_string(description):
-    """A helper function that returns a formatted description for BigQuery
+    """
+    A helper function that returns a formatted description for BigQuery
 
     :param str description: A table description
     :return: A formatted table description
@@ -159,7 +158,8 @@ def get_sandbox_options(dataset_name,
                         table_tag,
                         desc,
                         shared_lookup=False):
-    """A function that assembles a BigQuery table options clause from labels and descriptions
+    """
+    A function that assembles a BigQuery table options clause from labels and descriptions
 
     :param str dataset_name: A dataset name
     :param str class_name: A class name

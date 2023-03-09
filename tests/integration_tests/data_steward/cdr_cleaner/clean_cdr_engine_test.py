@@ -4,10 +4,10 @@ from unittest import TestCase
 
 # Third party imports
 from google.cloud.exceptions import NotFound
-
 import cdr_cleaner.clean_cdr_engine as ce
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from app_identity import get_application_id
+
 # Project imports
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from utils import sandbox
@@ -24,10 +24,10 @@ class CleanCDREngineTest(TestCase):
 
     def setUp(self):
         self.project_id = get_application_id()
+        self.bq_client = BigQueryClient(self.project_id)
         self.dataset_id = os.environ.get('UNIONED_DATASET_ID')
         self.sandbox_dataset_id = sandbox.check_and_create_sandbox_dataset(
-            self.project_id, self.dataset_id)
-        self.bq_client = BigQueryClient(self.project_id)
+            self.bq_client, self.dataset_id)
         self.delete_sandbox()
 
     def test_clean_dataset(self):
