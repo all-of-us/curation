@@ -17,7 +17,8 @@ import argparse
 
 # Project imports
 import resources
-from utils import bq, auth
+from utils import auth
+from resources import get_bq_fields_sql
 from gcloud.bq import BigQueryClient
 from common import JINJA_ENV, DRC_OPS, CDR_SCOPES, EHR_OPS, PERSON
 from constants.validation.participants.identity_match import IDENTITY_MATCH_TABLE
@@ -75,7 +76,7 @@ def create_drc_validation_table(client, table_id, drc_dataset_id=DRC_OPS):
     create_table = CREATE_TABLE.render(project_id=client.project,
                                        drc_dataset_id=drc_dataset_id,
                                        id_match_table_id=table_id,
-                                       fields=bq.get_bq_fields_sql(fields))
+                                       fields=get_bq_fields_sql(fields))
     job = client.query(create_table)
     job.result()
 
