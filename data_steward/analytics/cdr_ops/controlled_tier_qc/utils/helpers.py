@@ -202,7 +202,7 @@ def highlight(row):
     """
 
     s = row['n_row_violation']
-    if s > 0:
+    if s != 0:
         css = 'background-color: yellow'
     else:
         css = ''
