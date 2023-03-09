@@ -13,7 +13,7 @@ import pytz
 from common import JINJA_ENV, COPE_SURVEY_MAP
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.clean_survey_conduct_recurring_surveys import CleanSurveyConductRecurringSurveys, DOMAIN_TABLES, REFERENCE_TABLES
-from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest\
+from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
 
 class CleanSurveyConductRecurringSurveysTest(BaseTest.CleaningRulesTestBase):

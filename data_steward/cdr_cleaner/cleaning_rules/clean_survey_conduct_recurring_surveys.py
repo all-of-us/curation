@@ -1,5 +1,5 @@
 """
-Inserts data representing the version of a survey into survey_conduct table for surveys with custom ids. Ex COPE/Minute
+Updates data representing the version of a survey into survey_conduct table for surveys with custom ids. Ex COPE/Minute
 
 Recurring versions of surveys such as COPE had all of their questions and answers mapped to a single Module in the PPI
 vocabulary. The same was the case for the Minute surveys. This will make it seem like there is only one version of each
@@ -9,8 +9,8 @@ survey_source_concept_id and survey_source_value for each observation.
 
 There are multiple cleaning rules that clean the survey conduct table.
 This CR will clean survey_concept_id and survey_source_value for the surveys with custom concept ids.
-Another cleans survey_source_concept_id for all valid records.
-Then observations that do not have a valid survey will be dropped in another CR.
+`UpdateSurveySourceConceptId` cleans survey_source_concept_id for all valid records.
+Then `DropUnverifiedSurveyData` observations that do not have a valid survey will be dropped in another CR.
 
 Original Issues: DC-3082
 """
@@ -70,7 +70,7 @@ survey_source_value = CASE
     END
 FROM (SELECT *
       FROM `{{project_id}}.{{dataset_id}}.survey_conduct` sc
-      LEFT JOIN  `{{project_id}}.{{dataset_id}}.{{cope_survey_map}}` m
+      JOIN  `{{project_id}}.{{dataset_id}}.{{cope_survey_map}}` m
       ON m.questionnaire_response_id = sc.survey_conduct_id
       WHERE m.questionnaire_response_id IS NOT NULL
       ) sub
