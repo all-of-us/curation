@@ -10,6 +10,7 @@ import logging
 # Project imports
 import cdr_cleaner.clean_cdr_engine as clean_engine
 from cdr_cleaner.cleaning_rules.backfill_pmi_skip_codes import BackfillPmiSkipCodes
+from cdr_cleaner.cleaning_rules.backfill_the_basics import BackfillTheBasics
 from cdr_cleaner.cleaning_rules.clean_by_birth_year import CleanByBirthYear
 from cdr_cleaner.cleaning_rules.convert_pre_post_coordinated_concepts import ConvertPrePostCoordinatedConcepts
 from cdr_cleaner.cleaning_rules.create_expected_ct_list import StoreExpectedCTList
@@ -167,7 +168,8 @@ RDR_CLEANING_CLASSES = [
     (UpdateFieldsNumbersAsStrings,),
     (UpdateCopeFluQuestionConcept,),
     (MapsToValuePpiVocabUpdate,),
-    (BackfillPmiSkipCodes,),
+    (BackfillPmiSkipCodes,),  # Will be removed by DC-3100
+    (BackfillTheBasics,),
     (CleanPPINumericFieldsUsingParameters,),
     (RemoveMultipleRaceEthnicityAnswersQueries,),
     (UpdatePpiNegativePainLevel,),
