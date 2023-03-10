@@ -413,83 +413,44 @@ def get_parser():
 
 
 PARSING_ERROR_MESSAGE_FORMAT = (
-    'An unexpected `{kind}` was found parsing arguments near `{arg}`.'
-    'Please check your arguments.')
+    'Error parsing %(arg)s. Please use "--key value" or "--key=value" to specify custom arguments. '
+    'Custom arguments need an associated keyword to store their value.')
 
 
-def _to_kwarg_key(key: str, kind: str = 'key') -> str:
+def _to_kwarg_key(arg) -> str:
     # TODO: Move this function to as project level arg_parser so it can be reused.
-    if not key.startswith('--'):
-        raise RuntimeError(
-            PARSING_ERROR_MESSAGE_FORMAT.format(kind=kind, arg=key))
-    elif len(key) < 3:
-        raise RuntimeError(
-            PARSING_ERROR_MESSAGE_FORMAT.format(kind=kind, arg=key))
-    key = key[2:]
+    if not arg.startswith('--'):
+        raise RuntimeError(PARSING_ERROR_MESSAGE_FORMAT.format(arg=arg))
+    key = arg[2:]
+    if not key:
+        raise RuntimeError(PARSING_ERROR_MESSAGE_FORMAT.format(arg=arg))
     return key
 
 
-def _to_kwarg_val(val: str, kind: str = 'value') -> str:
+def _to_kwarg_val(val: str) -> str:
     # TODO: Move this function to as project level arg_parser so it can be reused.
     # likely invalid use of args- allowing single dash e.g. negative values
     if val.startswith('--'):
-        raise RuntimeError(
-            PARSING_ERROR_MESSAGE_FORMAT.format(kind=kind, arg=val))
+        raise RuntimeError(PARSING_ERROR_MESSAGE_FORMAT.format(arg=val))
     return val
 
 
-def _parsed_args_to_dict(parsed_args: typing.List[str], kind: str = 'count'):
+def _get_kwargs(optional_args: typing.List[str]) -> typing.Dict:
     """
     This creates and ensures a {key: value} pair from _get_kwargs(...).
     """
+    arg_list = []
+    for arg in optional_args:
+        arg_list.extend(arg.split("="))
 
-    if len(parsed_args) % 2:
-        raise RuntimeError(
-            PARSING_ERROR_MESSAGE_FORMAT.format(kind='count', arg=parsed_args))
+    if len(arg_list) % 2:
+        raise RuntimeError(PARSING_ERROR_MESSAGE_FORMAT.format(arg=arg_list))
 
     # _to_kwarg_key(...) and _to_kwargs_val(...) are validators
     return {
         _to_kwarg_key(arg): _to_kwarg_val(value)
-        for arg, value in zip(parsed_args[0::2], parsed_args[1::2])
+        for arg, value in zip(arg_list[0::2], arg_list[1::2])
     }
-
-
-def _get_kwargs(args: typing.List[str]):
-    """
-    This function separates arguments containing the `=` sign. Because this may introduce
-    other errors (e.g an odd number of elements, two keys `--keys=--key`) some basic validation
-    occurs. The complete validation uses _to_kwarg_[key|val] with additional checks.
-    """
-
-    parsed_args = []
-    index = 0
-    bad_pattern = False
-    kind = ''
-
-    for arg in args:
-        key_expected = index % 2 == 0
-
-        if arg.startswith('--') and not key_expected:
-            bad_pattern = True
-            kind = 'key'
-        elif not arg.startswith('--') and key_expected:
-            bad_pattern = True
-            kind = 'value'
-        elif arg.count('=') > 1:
-            bad_pattern = True
-            kind = '='
-        elif arg.startswith('--') and arg.count('=') == 1:
-            arg = arg.split('=')
-            parsed_args.extend(arg)
-            continue  # arg had both --key and value on '=' split
-
-        if bad_pattern:
-            raise RuntimeError(
-                PARSING_ERROR_MESSAGE_FORMAT.format(kind=kind, arg=arg))
-        parsed_args.extend([arg])
-        index += 1
-
-    return _parsed_args_to_dict(parsed_args=parsed_args)
 
 
 def fetch_args_kwargs(parser, args=None):
