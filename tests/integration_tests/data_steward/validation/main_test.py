@@ -98,15 +98,11 @@ class ValidationMainTest(unittest.TestCase):
                 dataset=self.dataset_id, vocab=common.VOCABULARY_DATASET)
             bq_utils.query(q)
 
-    def table_has_clustering(self, table_info):
-        clustering = table_info.get('clustering')
-        self.assertIsNotNone(clustering)
-        fields = clustering.get('fields')
-        self.assertSetEqual(set(fields), {'person_id'})
-        time_partitioning = table_info.get('timePartitioning')
-        self.assertIsNotNone(time_partitioning)
-        tpe = time_partitioning.get('type')
-        self.assertEqual(tpe, 'DAY')
+    def _table_has_clustering(self, table_obj):
+        self.assertIsNotNone(table_obj.clustering_fields)
+        self.assertSetEqual(set(table_obj.clustering_fields), {'person_id'})
+        self.assertIsNotNone(table_obj.time_partitioning)
+        self.assertEqual(table_obj.time_partitioning.type_, 'DAY')
 
     @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def test_all_files_unparseable_output(self):
@@ -181,11 +177,11 @@ class ValidationMainTest(unittest.TestCase):
         for table in resources.CDM_TABLES + common.PII_TABLES:
             table_id: str = resources.get_table_id(table,
                                                    hpo_id=test_util.FAKE_HPO_ID)
-            table_info = bq_utils.get_table_info(table_id)
-            fields = resources.fields_for(table)
-            field_names: list = [field['name'] for field in fields]
+            table_obj = self.bq_client.get_table(
+                f'{os.environ.get("BIGQUERY_DATASET_ID")}.{table_id}')
+            field_names: list = [field.name for field in table_obj.schema]
             if 'person_id' in field_names:
-                self.table_has_clustering(table_info)
+                self._table_has_clustering(table_obj)
 
     def test_check_processed(self):
 

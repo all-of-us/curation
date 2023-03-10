@@ -88,22 +88,11 @@ class BqUtilsTest(unittest.TestCase):
             FAKE_HPO_ID)
         self.storage_client.empty_bucket(self.hpo_bucket)
 
-    def _drop_tables(self):
-        tables = bq_utils.list_tables()
-        for table in tables:
-            table_id = table['tableReference']['tableId']
-            if table_id not in common.VOCABULARY_TABLES:
-                bq_utils.delete_table(table_id)
-
-    def _table_has_clustering(self, table_info):
-        clustering = table_info.get('clustering')
-        self.assertIsNotNone(clustering)
-        fields = clustering.get('fields')
-        self.assertSetEqual(set(fields), {'person_id'})
-        time_partitioning = table_info.get('timePartitioning')
-        self.assertIsNotNone(time_partitioning)
-        tpe = time_partitioning.get('type')
-        self.assertEqual(tpe, 'DAY')
+    def _table_has_clustering(self, table):
+        self.assertIsNotNone(table.clustering_fields)
+        self.assertSetEqual(set(table.clustering_fields), {'person_id'})
+        self.assertIsNotNone(table.time_partitioning)
+        self.assertEqual(table.time_partitioning.type_, 'DAY')
 
     def test_load_csv(self):
         table_name = 'achilles_analysis'
@@ -138,9 +127,9 @@ class BqUtilsTest(unittest.TestCase):
         incomplete_jobs = bq_utils.wait_on_jobs([load_job_id])
         self.assertEqual(len(incomplete_jobs), 0,
                          'loading table {} timed out'.format(table_id))
-        table_info = bq_utils.get_table_info(table_id)
-        num_rows = table_info.get('numRows')
-        self.assertEqual(num_rows, '5')
+        table = self.bq_client.get_table(
+            f'{os.environ.get("BIGQUERY_DATASET_ID")}.{table_id}')
+        self.assertEqual(table.num_rows, 5)
 
     @mock.patch("gcloud.gcs.LOOKUP_TABLES_DATASET_ID", dataset_id)
     def test_query_result(self):
@@ -166,8 +155,9 @@ class BqUtilsTest(unittest.TestCase):
         result = bq_utils.create_table(table_id, fields)
         self.assertTrue('kind' in result)
         self.assertEqual(result['kind'], 'bigquery#table')
-        table_info = bq_utils.get_table_info(table_id)
-        self._table_has_clustering(table_info)
+        table = self.bq_client.get_table(
+            f'{os.environ.get("BIGQUERY_DATASET_ID")}.{table_id}')
+        self._table_has_clustering(table)
 
     def test_create_existing_table_without_drop_raises_error(self):
         table_id = 'some_random_table_id'

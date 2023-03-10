@@ -103,9 +103,9 @@ class UpdatePpiNegativePainLevelTest(BaseTest.CleaningRulesTestBase):
                 'value_source_value'
             ],
             'cleaned_values': [
-                (1, 1, 0, self.date, 1, None, 'PMI_Skip', 903096, 1585747,
+                (1, 1, 0, self.date, 1, None, 'PMI Skip', 903096, 1585747,
                  903096, 'PMI_Skip'),
-                (2, 1, 0, self.date, 1, None, 'PMI_Skip', 903096, 1585747,
+                (2, 1, 0, self.date, 1, None, 'PMI Skip', 903096, 1585747,
                  903096, 'PMI_Skip'),
                 (3, 1, 0, self.date, 1, 3, '', 0, 1585747, 1, 'Test Value'),
                 (4, 1, 0, self.date, 1, 4, '', 0, 1585747, 1, 'Test Value')

@@ -37,6 +37,7 @@ from retraction.retract_data_bq import run_bq_retraction, RETRACTION_ONLY_EHR, R
 from retraction.retract_utils import is_fitbit_dataset
 from utils import pipeline_logging
 from utils.auth import get_impersonation_credentials
+from utils.parameter_validators import validate_release_tag_param
 
 LOGGER = logging.getLogger(__name__)
 
@@ -113,6 +114,7 @@ def create_sandbox_dataset(client: BigQueryClient, release_tag) -> None:
         sb_dataset_name,
         f'Sandbox created for storing records affected by retraction for {release_tag}.',
         {
+            "owner": "curation",
             "phase": "sandbox",
             "release_tag": release_tag,
             "de_identified": "false"
@@ -189,6 +191,7 @@ def parse_args(raw_args=None):
         action='store',
         dest='new_release_tag',
         required=True,
+        type=validate_release_tag_param,
         help='Release tag for the new datasets after retraction.')
     parser.add_argument(
         '--lookup_creation_sql_file_path',

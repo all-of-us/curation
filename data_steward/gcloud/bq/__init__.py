@@ -12,6 +12,8 @@ from time import sleep
 from google.api_core import retry
 from google.cloud import bigquery
 from google.cloud.bigquery import Client
+from google.cloud.bigquery.job import CopyJobConfig, WriteDisposition
+
 from google.auth import default
 from google.api_core.exceptions import GoogleAPIError, BadRequest
 from google.cloud.exceptions import NotFound
@@ -132,7 +134,7 @@ class BigQueryClient(Client):
             field.mode, field.description, field.fields)
 
     def get_validated_schema_fields(
-            schema_filepath: str) -> [bigquery.SchemaField]:
+            schema_filepath: str) -> typing.List[bigquery.SchemaField]:
         """
         Read and validate the table schema file
 
@@ -227,20 +229,31 @@ class BigQueryClient(Client):
 
         return dataset
 
-    def copy_dataset(self, input_dataset: str, output_dataset: str) -> list:
+    def copy_dataset(self,
+                     input_dataset: str,
+                     output_dataset: str,
+                     job_config: CopyJobConfig = None) -> list:
         """
         Copies tables from source dataset to a destination datasets
 
         :param input_dataset: fully qualified name of the input(source) dataset
         :param output_dataset: fully qualified name of the output(destination) dataset
+        :param job_config: An optional google.cloud.bigquery.job.CopyJobConfig
         :return: incomplete jobs
         """
+        job_config = job_config if job_config else CopyJobConfig(
+            write_disposition=WriteDisposition.WRITE_EMPTY)
         # Copy input dataset tables to backup and staging datasets
         tables = super(BigQueryClient, self).list_tables(input_dataset)
         job_list = []
         for table in tables:
             staging_table = f'{output_dataset}.{table.table_id}'
-            job = self.copy_table(table, staging_table)
+            job_config.labels.update({
+                'table_name': table.table_id.lower(),
+                'copy_from': input_dataset.lower(),
+                'copy_to': output_dataset.lower()
+            })
+            job = self.copy_table(table, staging_table, job_config=job_config)
             job_list.append(job.job_id)
         self.wait_on_jobs(job_list)
         return job_list

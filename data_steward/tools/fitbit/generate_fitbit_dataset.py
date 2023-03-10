@@ -55,6 +55,7 @@ def create_fitbit_datasets(client, release_tag):
 
     for phase in fitbit_datasets:
         labels = {
+            "owner": "curation",
             "phase": phase,
             "release_tag": release_tag,
             "de_identified": "false"

@@ -10,6 +10,7 @@ import logging
 # Project imports
 import cdr_cleaner.clean_cdr_engine as clean_engine
 from cdr_cleaner.cleaning_rules.backfill_pmi_skip_codes import BackfillPmiSkipCodes
+from cdr_cleaner.cleaning_rules.backfill_the_basics import BackfillTheBasics
 from cdr_cleaner.cleaning_rules.clean_by_birth_year import CleanByBirthYear
 from cdr_cleaner.cleaning_rules.convert_pre_post_coordinated_concepts import ConvertPrePostCoordinatedConcepts
 from cdr_cleaner.cleaning_rules.create_expected_ct_list import StoreExpectedCTList
@@ -18,6 +19,7 @@ import cdr_cleaner.cleaning_rules.drop_duplicate_states as drop_duplicate_states
 from cdr_cleaner.cleaning_rules.drop_extreme_measurements import DropExtremeMeasurements
 from cdr_cleaner.cleaning_rules.drop_multiple_measurements import DropMultipleMeasurements
 from cdr_cleaner.cleaning_rules.drop_participants_without_any_basics import DropParticipantsWithoutAnyBasics
+from cdr_cleaner.cleaning_rules.clean_survey_conduct_recurring_surveys import CleanSurveyConductRecurringSurveys
 from cdr_cleaner.cleaning_rules.drop_unverified_survey_data import DropUnverifiedSurveyData
 from cdr_cleaner.cleaning_rules.drug_refills_days_supply import DrugRefillsDaysSupply
 from cdr_cleaner.cleaning_rules.maps_to_value_ppi_vocab_update import MapsToValuePpiVocabUpdate
@@ -128,7 +130,7 @@ from cdr_cleaner.cleaning_rules.drop_orphaned_survey_conduct_ids import DropOrph
 from cdr_cleaner.cleaning_rules.clean_survey_conduct_table import CleanSurveyConduct
 from cdr_cleaner.cleaning_rules.deid.deidentify_aian_zip3_values import DeidentifyAIANZip3Values
 from constants.cdr_cleaner import clean_cdr_engine as ce_consts
-from constants.cdr_cleaner.clean_cdr import DataStage, DATA_CONSISTENCY
+from constants.cdr_cleaner.clean_cdr import DataStage, DATA_CONSISTENCY, CRON_RETRACTION
 
 # Third party imports
 
@@ -168,7 +170,8 @@ RDR_CLEANING_CLASSES = [
     (UpdateFieldsNumbersAsStrings,),
     (UpdateCopeFluQuestionConcept,),
     (MapsToValuePpiVocabUpdate,),
-    (BackfillPmiSkipCodes,),
+    (BackfillPmiSkipCodes,),  # Will be removed by DC-3100
+    (BackfillTheBasics,),
     (CleanPPINumericFieldsUsingParameters,),
     (RemoveMultipleRaceEthnicityAnswersQueries,),
     (UpdatePpiNegativePainLevel,),
@@ -189,7 +192,7 @@ RDR_CLEANING_CLASSES = [
     (DropMultipleMeasurements,),
     (CleanByBirthYear,),
     (UpdateInvalidZipCodes,),
-    (CleanSurveyConduct,),
+    (CleanSurveyConductRecurringSurveys,),
     (DropUnverifiedSurveyData,),
     (DropParticipantsWithoutAnyBasics,),
     (StoreExpectedCTList,),
@@ -223,6 +226,10 @@ COMBINED_CLEANING_CLASSES = [
     (RemoveNonMatchingParticipant,),
     (DropOrphanedSurveyConductIds,),
     (DropOrphanedPIDS,),
+    (GenerateExtTables,),
+    (COPESurveyVersionTask,
+    ),  # Should run after GenerateExtTables and before CleanMappingExtTables
+    (PopulateSurveyConductExt,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
@@ -237,15 +244,10 @@ FITBIT_CLEANING_CLASSES = [
 REGISTERED_TIER_DEID_CLEANING_CLASSES = [
     # Data mappings/re-mappings
     ####################################
-    (
-        GenerateExtTables,),
-    (COPESurveyVersionTask,
-    ),  # Should run after GenerateExtTables and before CleanMappingExtTables
     # TODO: Uncomment rule after date-shift removed from deid module
     # (SurveyConductDateShiftRule,),
     (
-        PopulateSurveyConductExt,),
-    (QRIDtoRID,),  # Should run before any row suppression rules
+        QRIDtoRID,),  # Should run before any row suppression rules
 
     # Data generalizations
     ####################################
@@ -300,10 +302,6 @@ REGISTERED_TIER_FITBIT_CLEANING_CLASSES = [
 
 CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     (RtCtPIDtoRID,),
-    (GenerateExtTables,),
-    (COPESurveyVersionTask,
-    ),  # Should run after GenerateExtTables and before CleanMappingExtTables
-    (PopulateSurveyConductExt,),
     (QRIDtoRID,),  # Should run before any row suppression rules
     (TruncateEraTables,),
     (NullPersonBirthdate,),
@@ -359,6 +357,10 @@ DATA_CONSISTENCY_CLEANING_CLASSES = [
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
+CRON_RETRACTION_CLEANING_CLASSES = [
+    (CleanMappingExtTables,),  # should be one of the last cleaning rules run
+]
+
 DATA_STAGE_RULES_MAPPING = {
     DataStage.EHR.value:
         EHR_CLEANING_CLASSES,
@@ -387,7 +389,9 @@ DATA_STAGE_RULES_MAPPING = {
     DataStage.CONTROLLED_TIER_FITBIT.value:
         CONTROLLED_TIER_FITBIT_CLEANING_CLASSES,
     DataStage.DATA_CONSISTENCY.value:
-        DATA_CONSISTENCY_CLEANING_CLASSES
+        DATA_CONSISTENCY_CLEANING_CLASSES,
+    DataStage.CRON_RETRACTION.value:
+        CRON_RETRACTION_CLEANING_CLASSES
 }
 
 
@@ -524,10 +528,10 @@ def main(args=None):
     rules = DATA_STAGE_RULES_MAPPING[args.data_stage.value]
     validate_custom_params(rules, **kwargs)
 
-    # NOTE Retraction uses DATA_CONSISTENCY data stage. For retraction,
+    # NOTE Retraction uses DATA_CONSISTENCY or CRON_RETRACTION data stage. For retraction,
     # all datasets share one sandbox dataset. Table_namer needs dataset_id so
     # the sandbox tables will not overwrite each other.
-    if args.data_stage.value == DATA_CONSISTENCY:
+    if args.data_stage.value in [DATA_CONSISTENCY, CRON_RETRACTION]:
         table_namer = f"{args.data_stage.value}_{args.dataset_id}"
     else:
         table_namer = args.data_stage.value

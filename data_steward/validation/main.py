@@ -27,10 +27,14 @@ import app_identity
 import bq_utils
 import cdm
 import common
+from cdr_cleaner import clean_cdr
+from cdr_cleaner.args_parser import add_kwargs_to_args
+from constants.cdr_cleaner.clean_cdr import CRON_RETRACTION
+import constants.global_variables
 from gcloud.bq import BigQueryClient
 from gcloud.gcs import StorageClient
 import resources
-from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON, AOU_REQUIRED_FILES
+from common import ACHILLES_EXPORT_PREFIX_STRING, ACHILLES_EXPORT_DATASOURCES_JSON
 from constants.validation import hpo_report as report_consts
 from constants.validation import main as consts
 from curation_logging.curation_gae_handler import begin_request_logging, end_request_logging, \
@@ -137,7 +141,8 @@ def run_export(datasource_id=None, folder_prefix="", target_bucket=None):
 
 
 def run_achilles(client, hpo_id=None):
-    """checks for full results and run achilles/heel
+    """
+    checks for full results and run achilles/heel
 
     :client: a BigQueryClient
     :hpo_id: hpo on which to run achilles
@@ -151,7 +156,7 @@ def run_achilles(client, hpo_id=None):
     if hpo_id is not None:
         logging.info(f"Running achilles_heel for hpo_id '{hpo_id}'")
     achilles_heel.create_tables(hpo_id, True)
-    achilles_heel.run_heel(hpo_id=hpo_id)
+    achilles_heel.run_heel(client, hpo_id=hpo_id)
 
 
 @api_util.auth_required_cron
@@ -166,6 +171,7 @@ def _upload_achilles_files(hpo_id: str = None,
                            target_bucket: str = None) -> list:
     """
     uploads achilles web files to the corresponding hpo bucket
+    
     :hpo_id: which hpo bucket do these files go into
     :returns:
     """
@@ -352,7 +358,7 @@ def generate_metrics(project_id, hpo_id, bucket, folder_prefix, summary):
 
         # non-unique key metrics
         logging.info(f"Getting non-unique key stats for {hpo_id}")
-        nonunique_metrics_query = get_duplicate_counts_query(hpo_id)
+        nonunique_metrics_query = get_duplicate_counts_query(bq_client, hpo_id)
         report_data[
             report_consts.NONUNIQUE_KEY_METRICS_REPORT_KEY] = query_rows(
                 nonunique_metrics_query)
@@ -607,15 +613,19 @@ def get_heel_error_query(hpo_id):
     return render_query(consts.HEEL_ERROR_QUERY_VALIDATION, table_id=table_id)
 
 
-def get_duplicate_counts_query(hpo_id):
+def get_duplicate_counts_query(client, hpo_id):
     """
     Query to retrieve count of duplicate primary keys in domain tables for an HPO site
 
+    :param client: BigQueryClient
     :param hpo_id: identifies the HPO site
     :return: the query
     """
     sub_queries = []
-    all_table_ids = bq_utils.list_all_table_ids()
+    all_table_ids = [
+        table.table_id
+        for table in client.list_tables(os.environ.get('BIGQUERY_DATASET_ID'))
+    ]
     for table_name in cdm.tables_to_map():
         table_id = resources.get_table_id(table_name, hpo_id=hpo_id)
         if table_id in all_table_ids:
@@ -797,7 +807,8 @@ def _validation_done(bucket, folder):
 
 
 def basename(item_metadata):
-    """returns name of file inside folder
+    """
+    returns name of file inside folder
 
     :item_metadata: metadata as returned by get bucket times metadata
     :returns: name without folder name
@@ -1006,7 +1017,8 @@ def process_hpo_copy(hpo_id):
 @api_util.auth_required_cron
 @log_traceback
 def copy_files(hpo_id):
-    """endpoint to copy files for hpo_id
+    """
+    endpoint to copy files for hpo_id
 
     :hpo_id: hpo from which to copy
     :return: json string indicating the job has finished
@@ -1037,34 +1049,72 @@ def union_ehr():
 @api_util.auth_required_cron
 @log_traceback
 def run_retraction_cron():
+    """
+    Run a cron job to mimic the run_retraction.py script
+    """
+    constants.global_variables.DISABLE_SANDBOX = True
     project_id = bq_utils.app_identity.get_application_id()
     hpo_id = bq_utils.get_retraction_hpo_id()
     retraction_type = bq_utils.get_retraction_type()
     pid_table_id = bq_utils.get_retraction_pid_table_id()
     sandbox_dataset_id = bq_utils.get_retraction_sandbox_dataset_id()
 
+    # Dataset and table containing list of datasets
+    datasets_to_retract_dataset = bq_utils.get_retraction_dataset_ids_dataset()
+    datasets_to_retract_table = bq_utils.get_retraction_dataset_ids_table()
+
     # retract from bq
-    dataset_ids = bq_utils.get_retraction_dataset_ids()
-    logging.info(f"Dataset id/s to target from env variable: {dataset_ids}")
+    if not datasets_to_retract_table or not datasets_to_retract_dataset:
+        logging.info(
+            f"Retraction cannot run without RETRACTION_DATASET_IDS_TABLE and RETRACTION_DATASET_IDS_DATASET"
+        )
+        return 'retraction-skipped'
+
+    bq_client = BigQueryClient(project_id)
+    dataset_query_job = bq_client.query(
+        f"SELECT * FROM {project_id}.{datasets_to_retract_dataset}.{datasets_to_retract_table}"
+    )
+    dataset_ids_result = dataset_query_job.result()
+    dataset_ids = dataset_ids_result.to_dataframe()["datasets"].to_list()
+    logging.info(f"Dataset id/s to target retrieved from table: {dataset_ids}")
     logging.info(f"Running retraction on BQ datasets")
 
     # retract from default dataset
-    retract_data_bq.run_bq_retraction(project_id, sandbox_dataset_id,
-                                      pid_table_id, hpo_id, dataset_ids,
-                                      retraction_type)
+    retract_data_bq.run_bq_retraction(project_id,
+                                      sandbox_dataset_id,
+                                      pid_table_id,
+                                      hpo_id,
+                                      dataset_ids,
+                                      retraction_type,
+                                      skip_sandboxing=True,
+                                      bq_client=bq_client)
     logging.info(f"Completed retraction on BQ datasets")
 
-    # retract from gcs
-    folder = bq_utils.get_retraction_submission_folder()
-    logging.info(f"Submission folder/s to target from env variable: {folder}")
-    logging.info(f"Running retraction from internal bucket folders")
-    retract_data_gcs.run_gcs_retraction(project_id,
-                                        sandbox_dataset_id,
-                                        pid_table_id,
-                                        hpo_id,
-                                        folder,
-                                        force_flag=True)
-    logging.info(f"Completed retraction from internal bucket folders")
+    # Run cleaning rules
+    for dataset_id in dataset_ids:
+        logging.info(f"Running CRs for {dataset_id}...")
+        cleaning_args = [
+            '-p', project_id, '-d', dataset_id, '-b', sandbox_dataset_id,
+            '--data_stage', CRON_RETRACTION, '--run_as',
+            f'{project_id}@appspot.gserviceaccount.com', '-s'
+        ]
+        all_cleaning_args = add_kwargs_to_args(cleaning_args, None)
+        clean_cdr.main(args=all_cleaning_args)
+        logging.info(f"Completed running CRs for {dataset_id}...")
+
+        # retract from gcs
+    if retraction_type == 'bucket':
+        folder = bq_utils.get_retraction_submission_folder()
+        logging.info(
+            f"Submission folder/s to target from env variable: {folder}")
+        logging.info(f"Running retraction from internal bucket folders")
+        retract_data_gcs.run_gcs_retraction(project_id,
+                                            sandbox_dataset_id,
+                                            pid_table_id,
+                                            hpo_id,
+                                            folder,
+                                            force_flag=True)
+        logging.info(f"Completed retraction from internal bucket folders")
     return 'retraction-complete'
 
 

@@ -97,13 +97,21 @@ def get_fitbit_dataset_id():
     return os.environ.get('FITBIT_DATASET_ID')
 
 
-def get_retraction_dataset_ids():
+def get_retraction_dataset_ids_table():
     """
-    Dataset ids from which to retract, separated by spaces
-    If retraction needs to be performed on all datasets in the project, set to 'all_datasets'
-    :return: string 'all_datasets' or dataset_ids separated by spaces
+    BigQuery table containing dataset ids from which to retract, on separate rows.
+    If retraction needs to be performed on all datasets in the project, the table should contain  only "all_datasets"
+    :return: string of table id 'all_datasets' or dataset_ids separated by spaces
     """
-    return os.environ.get('RETRACTION_DATASET_IDS')
+    return os.environ.get('RETRACTION_DATASET_IDS_TABLE')
+
+
+def get_retraction_dataset_ids_dataset():
+    """
+    BigQuery dataset containing the table 'RETRACTION_DATASET_IDS_TABLE' defined above.
+    :return: string of dataset containing the table 'RETRACTION_DATASET_IDS_TABLE'
+    """
+    return os.environ.get('RETRACTION_DATASET_IDS_DATASET')
 
 
 def get_retraction_submission_folder():
@@ -158,6 +166,8 @@ def get_table_id(hpo_id, table_name):
     return hpo_id + '_' + table_name
 
 
+@deprecated(reason='Use gcloud.bq.BigQueryClient.get_table(self, table) instead'
+           )
 def get_table_info(table_id, dataset_id=None, project_id=None):
     """
     Get metadata describing a table
@@ -293,6 +303,10 @@ def load_from_csv(hpo_id, table_name, source_folder_prefix=""):
     return load_cdm_csv(hpo_id, table_name, source_folder_prefix)
 
 
+@deprecated(
+    reason=
+    'see: https://cloud.google.com/python/docs/reference/bigquery/latest/google.cloud.bigquery.client.Client#google_cloud_bigquery_client_Client_delete_table'
+)
 def delete_table(table_id, dataset_id=None):
     """
     Delete bigquery table by id
@@ -740,6 +754,10 @@ def _transform_row(row, schema):
     return log
 
 
+@deprecated(
+    reason=
+    'Use gcloud.bq.BigQueryClient.list_tables(self, dataset: typing.Union[bigquery.DatasetReference, str]) instead'
+)
 def list_all_table_ids(dataset_id=None):
     tables = list_tables(dataset_id)
     return [table['tableReference']['tableId'] for table in tables]

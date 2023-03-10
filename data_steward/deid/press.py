@@ -14,7 +14,8 @@ import pandas as pd
 import numpy as np
 
 # Project imports
-import bq_utils
+from gcloud.bq import BigQueryClient
+import app_identity
 from resources import fields_for
 from deid.rules import Deid, create_on_string
 
@@ -71,6 +72,8 @@ class Press(ABC):
         self.tablepath = args.get('table')
         self.tablename = os.path.basename(
             self.tablepath).split('.json')[0].strip()
+        self.project_id = app_identity.get_application_id()
+        self.bq_client = BigQueryClient(project_id=self.project_id)
 
         self.logpath = args.get('logs', 'logs')
         set_up_logging(self.logpath, self.idataset)
@@ -107,12 +110,6 @@ class Press(ABC):
         self.action = [term.strip() for term in args['action'].split(',')
                       ] if 'action' in args else ['submit']
 
-    def meta(self, data_frame):
-        return pd.DataFrame({
-            "names": list(data_frame.dtypes.to_dict().keys()),
-            "types": list(data_frame.dtypes.to_dict().values())
-        })
-
     def initialize(self, **args):
         #
         # Let us update and see if the default filters apply at all
@@ -128,13 +125,11 @@ class Press(ABC):
         """
         Return a list of columns for the given table name.
         """
-        info = bq_utils.get_table_info(tablename, dataset_id=self.idataset)
-        schema = info.get('schema', {})
-        fields = schema.get('fields')
+        table_obj = self.bq_client.get_table(f'{self.idataset}.{tablename}')
 
         field_names = []
-        for field in fields:
-            field_names.append(field.get('name'))
+        for field in table_obj.schema:
+            field_names.append(field.name)
 
         return field_names
 
@@ -246,7 +241,7 @@ class Press(ABC):
         LOGGER.info(f"FINISHED de-identification on table:\t{self.tablename}")
 
     def get_tablename(self):
-        return self.idataset + "." + self.tablename if self.idataset else self.tablename
+        return f'{self.idataset}.{self.tablename}' if self.idataset else self.tablename
 
     def debug(self, info):
         for row in info:
@@ -265,7 +260,7 @@ class Press(ABC):
                     - label is the flag for the operation (generalize, suppress, compute, shift)
                     - name  is the attribute name on which the rule gets applied
         """
-        table_name = self.idataset + "." + self.tablename
+        table_name = f'{self.idataset}.{self.tablename}'
         suppression_filters = self.deid_rules['suppress']['FILTERS']
         out = pd.DataFrame()
         counts = {}
@@ -290,7 +285,7 @@ class Press(ABC):
                 continue
 
             field = item['name']
-            alias = 'original_' + field
+            alias = f'original_{field}'
             sql_list = [
                 "SELECT DISTINCT ", field, 'AS ', alias, ",", item['apply'],
                 " FROM ", table_name
@@ -352,7 +347,7 @@ class Press(ABC):
 
             r = self.get_dataframe(
                 sql=" ".join(sql_list).replace(":idataset", self.idataset))
-            table_name = self.idataset + "." + self.tablename
+            table_name = f'{self.idataset}.{self.tablename}'
 
             rdf = pd.DataFrame({
                 "operation": ["row-suppression"],
@@ -380,8 +375,8 @@ class Press(ABC):
         stats.reset_index()
 
         _map = {
-            os.path.join(root, 'samples-' + self.tablename + '.csv'): out,
-            os.path.join(root, 'stats-' + self.tablename + '.csv'): stats
+            os.path.join(root, f'samples-{self.tablename}.csv'): out,
+            os.path.join(root, f'stats-{self.tablename}.csv'): stats
         }
         for path in _map:
             _data_frame = _map[path]

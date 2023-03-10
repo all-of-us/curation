@@ -12,7 +12,6 @@ from google.cloud import bigquery
 from google.api_core.exceptions import NotFound
 
 from utils import auth
-from utils import bq
 from gcloud.bq import BigQueryClient
 from utils import pipeline_logging
 from common import CDR_SCOPES
@@ -38,7 +37,7 @@ def parse_rdr_args(raw_args=None):
                         required=True)
     parser.add_argument('--export_date',
                         action='store',
-                        type=bq.validate_bq_date_string,
+                        type=resources.validate_date_string,
                         dest='export_date',
                         help='Date the RDR dump was exported to curation.',
                         required=True)

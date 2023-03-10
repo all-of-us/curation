@@ -349,6 +349,7 @@ class BaseTest:
                     destination, schema=schema),
                                                      exists_ok=True)
                 self.client.copy_table(src_table, dst_table)
+                self.fq_table_names.append(destination)
 
     class DeidRulesTestBase(CleaningRulesTestBase):
         """
