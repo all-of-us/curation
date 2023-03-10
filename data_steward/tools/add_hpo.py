@@ -213,12 +213,13 @@ def add_hpo_site_to_csv_files(hpo_id,
     :return:
     """
     # Check if csv files exist in given path.
-    hpo_site_mappings_path = hpo_site_csv_path + '/hpo_site_mappings.csv'
-    hpo_id_bucket_name_path = hpo_site_csv_path + '/hpo_id_bucket_name.csv'
-    if not all([
-            Path(hpo_site_mappings_path).is_file(),
-            Path(hpo_id_bucket_name_path).is_file()
-    ]):
+    hpo_csv_path = Path(hpo_site_csv_path)
+    hpo_site_mappings_path = hpo_csv_path / bq_consts.MAPPING_CSV_FILE
+    hpo_id_bucket_name_path = hpo_csv_path / bq_consts.BUCKET_NAME_CSV_FILE
+
+    if not all(
+        [hpo_site_mappings_path.is_file(),
+         hpo_id_bucket_name_path.is_file()]):
         raise RuntimeError(
             f"Either 'hpo_site_mappings.csv' or 'hpo_id_bucket_name.csv' "
             f"or both files does not exist in 'hpo_site_csv_files' folder. "

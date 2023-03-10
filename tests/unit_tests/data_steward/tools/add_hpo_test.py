@@ -7,6 +7,7 @@ import pandas as pd
 # Project imports
 import constants.bq_utils as bq_consts
 from tools import add_hpo
+from tools.add_hpo import Path
 from common import PIPELINE_TABLES, SITE_MASKING_TABLE_ID
 
 
@@ -131,19 +132,49 @@ class AddHPOTest(TestCase):
     def test_add_hpo_site_to_csv_files(self):
         new_site = {
             'org_id': 'fake_org',
-            'hpo_id': 'fake',
+            'hpo_id': 'fake_3',
             'hpo_name': 'fake_name',
             'display_order': 3,
             'bucket_name': 'fake_bucket'
         }
         hpo_site_csv_path = 'hpo_site_csv_files'
+        mock_mapping_file_path = Path(
+            hpo_site_csv_path) / bq_consts.MAPPING_CSV_FILE
+        mock_bucket_file_path = Path(
+            hpo_site_csv_path) / bq_consts.BUCKET_NAME_CSV_FILE
 
-        # This test will pass because by default, 'hpo_site_csv_files' folder is not present
-        # in Curation repo.
-        self.assertRaises(RuntimeError, add_hpo.add_hpo_site_to_csv_files,
-                          new_site['hpo_id'], new_site['hpo_name'],
-                          new_site['org_id'], new_site['bucket_name'],
-                          hpo_site_csv_path, new_site['display_order'])
+        with mock.patch.object(Path, 'is_file') as mock_is_file:
+            mock_is_file.return_value = False
+            mock_mapping_file_path.is_file()
+            mock_bucket_file_path.is_file()
+
+            self.assertRaises(RuntimeError, add_hpo.add_hpo_site_to_csv_files,
+                              new_site['hpo_id'], new_site['hpo_name'],
+                              new_site['org_id'], new_site['bucket_name'],
+                              hpo_site_csv_path, new_site['display_order'])
+
+            add_hpo.add_hpo_site_mappings_csv = mock.MagicMock()
+            add_hpo.add_hpo_id_bucket_name_csv = mock.MagicMock()
+
+            # Setting file exists at both mock_bucket_file_path and mock_mapping_file_path to True
+            mock_is_file.return_value = True
+            mock_mapping_file_path.is_file()
+            mock_bucket_file_path.is_file()
+
+            add_hpo.add_hpo_site_to_csv_files(new_site['hpo_id'],
+                                              new_site['hpo_name'],
+                                              new_site['org_id'],
+                                              new_site['bucket_name'],
+                                              hpo_site_csv_path,
+                                              new_site['display_order'])
+
+            add_hpo.add_hpo_site_mappings_csv.assert_called_with(
+                new_site['hpo_id'], new_site['hpo_name'], new_site['org_id'],
+                mock_mapping_file_path, new_site['display_order'])
+
+            add_hpo.add_hpo_id_bucket_name_csv.assert_called_with(
+                new_site['hpo_id'], new_site['bucket_name'],
+                mock_bucket_file_path)
 
     @mock.patch('bq_utils.get_hpo_bucket_info')
     @mock.patch('tools.add_hpo.pd.read_csv')

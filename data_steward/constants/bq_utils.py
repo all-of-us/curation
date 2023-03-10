@@ -48,6 +48,9 @@ ORG_ID = 'Org_ID'
 SITE_NAME = 'Site_Name'
 BUCKET_NAME = 'bucket_name'
 
+MAPPING_CSV_FILE = 'hpo_site_mappings.csv'
+BUCKET_NAME_CSV_FILE = 'hpo_id_bucket_name.csv'
+
 # Dataset Environment variable names
 MATCH_DATASET = 'VALIDATION_RESULTS_DATASET_ID'
 
