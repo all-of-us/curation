@@ -72,14 +72,14 @@ df1 = execute(client, q)
 if df1.loc[0].sum() == 0:
     df = df.append(
         {
-            'query': 'Query1 No person exists over 89 in the dataset',
+            'query': f'Query1 No person exists over {max_age} in the dataset',
             'result': 'PASS'
         },
         ignore_index=True)
 else:
     df = df.append(
         {
-            'query': 'Query1 No person exists over 89 in the dataset',
+            'query': f'Query1 No person exists over {max_age} in the dataset',
             'result': 'Failure'
         },
         ignore_index=True)
