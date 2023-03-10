@@ -147,7 +147,7 @@ class AbstractBackfillSurveyRecords(BaseCleaningRule):
                 An example for concept ID = 1585784 if it needs to be
                 backfilled only when the partiticipant's
                 gender_concept_id is 8532:
-                '''        
+                '''
                 additional_backfill_conditions = {
                     1585784: 'gender_concept_id = 8532',
                 }
