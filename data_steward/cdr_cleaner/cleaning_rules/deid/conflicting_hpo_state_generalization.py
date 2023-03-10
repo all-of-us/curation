@@ -6,7 +6,7 @@ import logging
 from google.cloud import bigquery
 
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
-from common import JINJA_ENV, OBSERVATION
+from common import JINJA_ENV, OBSERVATION, PIPELINE_TABLES
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 import resources
 
@@ -52,18 +52,30 @@ INSERT_TO_MAP_TABLE_NAME = JINJA_ENV.from_string("""
   {{select_query}}
 """)
 
-SANDBOX_QUERY_TO_FIND_RECORDS = JINJA_ENV.from_string("""
-  CREATE OR REPLACE TABLE
+SANDBOX_RECORDS_LOOKUP_TABLE = JINJA_ENV.from_string("""
+  CREATE OR REPLACE TABLE -- this is creating the identifier lookup table --
   -- Use sandboxed table name to make pipeline debugging easier. Also ensures table name uniqueness. --
-  `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table}}` AS (
+  `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_lookup_table}}` AS (
   SELECT * FROM (
     SELECT DISTINCT src_id, obs.person_id, value_source_concept_id, observation_id
     FROM `{{project_id}}.{{sandbox_dataset_id}}.{{map_table_name}}` AS person_hpos
     JOIN `{{project_id}}.{{dataset_id}}.{{target_table}}` AS obs
     USING (person_id)
-    LEFT JOIN `{{project_id}}.pipeline_tables.site_maskings`
+    LEFT JOIN `{{project_id}}.{{pipeline_lookup_tables}}.site_maskings`
     USING (src_id, value_source_concept_id)
     WHERE observation_source_concept_id = 1585249  AND state IS NULL))
+""")
+
+SANDBOX_RECORDS_QUERY = JINJA_ENV.from_string("""
+  CREATE OR REPLACE TABLE -- this is sandboxing the entire observation record --
+  -- Use sandboxed table name to make pipeline debugging easier. Also ensures table name uniqueness. --
+  `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table}}` AS (
+  SELECT *
+  FROM `{{project_id}}.{{dataset_id}}.{{target_table}}` AS obs
+  WHERE observation_id in (
+      SELECT DISTINCT {{target_table}}_id
+      FROM `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_lookup_table}}`
+  ))
 """)
 
 GENERALIZE_STATE_QUERY = JINJA_ENV.from_string("""
@@ -138,12 +150,14 @@ class ConflictingHpoStateGeneralize(BaseCleaningRule):
 
         # 1. Create 'person_id' and 'src_hpo_id' lookup table (MAP_TABLE_NAME table) in sandbox
         # for mapping person data to source hpo_site.
-        client.query(
+        q_job = client.query(
             INSERT_TO_MAP_TABLE_NAME.render(
                 project_id=self.project_id,
                 sandbox_dataset_id=self.sandbox_dataset_id,
                 table_name=MAP_TABLE_NAME,
                 select_query=final_hpo_id_not_rdr_query))
+        # Wait for the query to finish before exiting the setup
+        q_job.result()
         LOGGER.info(
             f"Created mapping table:\t{self.sandbox_dataset_id}.{MAP_TABLE_NAME}"
         )
@@ -155,22 +169,35 @@ class ConflictingHpoStateGeneralize(BaseCleaningRule):
         """
         Interface to return a list of query dictionaries.
         """
-        identify_conflicting_hpo_state_data_query = {}
-        conflicting_hpo_state_generalize_query = {}
+        queries = []
 
         for target_table in self.affected_tables:
-            identify_conflicting_hpo_state_data_query = {
+            queries.append({
                 cdr_consts.QUERY:
-                    SANDBOX_QUERY_TO_FIND_RECORDS.render(
+                    SANDBOX_RECORDS_LOOKUP_TABLE.render(
                         project_id=self.project_id,
                         dataset_id=self.dataset_id,
                         sandbox_dataset_id=self.sandbox_dataset_id,
                         target_table=target_table,
-                        sandbox_table=self.sandbox_table_for(target_table),
+                        sandbox_lookup_table=self.sandbox_table_for(
+                            f"{target_table}_identifier"),
+                        pipeline_lookup_tables=PIPELINE_TABLES,
                         map_table_name=MAP_TABLE_NAME)
-            }
+            })
 
-            conflicting_hpo_state_generalize_query = {
+            queries.append({
+                cdr_consts.QUERY:
+                    SANDBOX_RECORDS_QUERY.render(
+                        project_id=self.project_id,
+                        dataset_id=self.dataset_id,
+                        sandbox_dataset_id=self.sandbox_dataset_id,
+                        sandbox_lookup_table=self.sandbox_table_for(
+                            f"{target_table}_identifier"),
+                        sandbox_table=self.sandbox_table_for(target_table),
+                        target_table=target_table)
+            })
+
+            queries.append({
                 cdr_consts.QUERY:
                     GENERALIZE_STATE_QUERY.render(
                         project_id=self.project_id,
@@ -178,12 +205,9 @@ class ConflictingHpoStateGeneralize(BaseCleaningRule):
                         sandbox_dataset_id=self.sandbox_dataset_id,
                         updated_table=target_table,
                         target_table=self.sandbox_table_for(target_table))
-            }
+            })
 
-        return [
-            identify_conflicting_hpo_state_data_query,
-            conflicting_hpo_state_generalize_query
-        ]
+        return queries
 
     def get_sandbox_tablenames(self):
         """

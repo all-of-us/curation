@@ -4,6 +4,7 @@
  Original Issue: DC-512
  """
 # Python imports
+import mock
 import os
 
 # Third Party Imports
@@ -12,7 +13,7 @@ from dateutil.parser import parse
 # Project Imports
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.deid.conflicting_hpo_state_generalization import ConflictingHpoStateGeneralize
-from common import JINJA_ENV, OBSERVATION
+from common import JINJA_ENV, OBSERVATION, PIPELINE_TABLES
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
 INSERT_RAW_DATA_OBS = JINJA_ENV.from_string("""
@@ -43,10 +44,20 @@ INSERT_RAW_DATA_EXT = JINJA_ENV.from_string("""
    )
    VALUES
        (1,'PPI/PM'),
-       (2,'EHR site 000'),
-       (3,'PPI/PM'),
-       (4,'EHR site 807')
+       (2, 'bar 000'),
+       (3, 'PPI/PM'),
+       (4, 'bar 123')
  """)
+
+INSERT_TEMP_MASK_TABLE = JINJA_ENV.from_string("""
+    INSERT INTO `{{project_id}}.{{dataset_id}}.site_maskings` (
+        hpo_id,
+        src_id,
+        state,
+        value_source_concept_id)
+    VALUES
+        ('foo', 'bar 123', 'PIIState_AL', 1585261)
+""")
 
 
 class ConflictingHpoStateGeneralizeTest(BaseTest.CleaningRulesTestBase):
@@ -70,11 +81,9 @@ class ConflictingHpoStateGeneralizeTest(BaseTest.CleaningRulesTestBase):
             cls.project_id, cls.dataset_id, cls.sandbox_id)
 
         # Generates list of fully qualified table names and their corresponding sandbox table names
-        for table in [OBSERVATION]:
-            cls.fq_table_names.extend([
-                f'{cls.project_id}.{cls.dataset_id}.{table}',
-                f'{cls.project_id}.{cls.dataset_id}.{table}_ext'
-            ])
+        for table in [OBSERVATION, f'{OBSERVATION}_ext', 'site_maskings']:
+            cls.fq_table_names.append(
+                f'{cls.project_id}.{cls.dataset_id}.{table}')
 
         for table in cls.rule_instance.get_sandbox_tablenames():
             cls.fq_sandbox_table_names.append(
@@ -89,15 +98,20 @@ class ConflictingHpoStateGeneralizeTest(BaseTest.CleaningRulesTestBase):
 
         raw_data_load_query_obs = INSERT_RAW_DATA_OBS.render(
             project_id=self.project_id, dataset_id=self.dataset_id)
+
         raw_data_load_query_mapping = INSERT_RAW_DATA_EXT. \
             render(project_id=self.project_id, dataset_id=self.dataset_id)
+
+        # The location of the table will be mocked in the test
+        temp_mask_query = INSERT_TEMP_MASK_TABLE.render(
+            project_id=self.project_id, dataset_id=self.dataset_id)
 
         self.date = parse('2020-01-01').date()
 
         # Load test data
         self.load_test_data([
-            raw_data_load_query_obs,
-            raw_data_load_query_mapping,
+            raw_data_load_query_obs, raw_data_load_query_mapping,
+            temp_mask_query
         ])
 
     def test_conflicting_hpo_id(self):
@@ -134,7 +148,9 @@ class ConflictingHpoStateGeneralizeTest(BaseTest.CleaningRulesTestBase):
             ]
         }]
 
-        # this rule requires the logic in setup rules to run, so we should run the setup.
-        self.rule_instance.setup_rule(self.client)
-        # now we can run the tests
-        self.default_test(tables_and_counts)
+        # mock the PIPELINE_TABLES variable so tests on different branches
+        # don't overwrite each other.
+        with mock.patch(
+                'cdr_cleaner.cleaning_rules.deid.conflicting_hpo_state_generalization.PIPELINE_TABLES',
+                self.dataset_id):
+            self.default_test(tables_and_counts)
