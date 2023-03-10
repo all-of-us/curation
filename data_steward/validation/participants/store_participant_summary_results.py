@@ -46,7 +46,7 @@ def get_hpo_org_info(client: BigQueryClient) -> List[Dict]:
     hpo_table_query = bq_consts.GET_HPO_CONTENTS_QUERY.format(
         project_id=client.project,
         LOOKUP_TABLES_DATASET_ID=bq_consts.LOOKUP_TABLES_DATASET_ID,
-        HPO_SITE_ID_MAPPINGS_TABLE_ID=bq_consts.HPO_SITE_ID_MAPPINGS_TABLE_ID)
+        HPO_SITE_TABLE=bq_consts.HPO_SITE_ID_MAPPINGS_TABLE_ID)
     hpo_job = client.query(hpo_table_query)
     hpo_table_contents = hpo_job.result()
     for hpo_table_row in hpo_table_contents:
