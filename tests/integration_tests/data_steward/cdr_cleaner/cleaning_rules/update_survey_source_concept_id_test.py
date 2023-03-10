@@ -1,5 +1,5 @@
 """
-Integration test for clean_survey_conduct_table.py
+Integration test for update_survey_source_concept_id.py
 
 """
 
@@ -13,11 +13,11 @@ import pytz
 # Project imports
 from common import JINJA_ENV, VOCABULARY_TABLES
 from app_identity import PROJECT_ID
-from cdr_cleaner.cleaning_rules.clean_survey_conduct_table import CleanSurveyConduct, DOMAIN_TABLES
+from cdr_cleaner.cleaning_rules.update_survey_source_concept_id import UpdateSurveySourceConceptId, DOMAIN_TABLES
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest\
 
 
-class CleanSurveyConductTest(BaseTest.CleaningRulesTestBase):
+class UpdateSurveySourceConceptIdTest(BaseTest.CleaningRulesTestBase):
 
     @classmethod
     def setUpClass(cls):
@@ -39,8 +39,8 @@ class CleanSurveyConductTest(BaseTest.CleaningRulesTestBase):
         cls.sandbox_id = sandbox_id
         cls.vocabulary_id = os.environ.get('VOCABULARY_DATASET')
 
-        cls.rule_instance = CleanSurveyConduct(project_id, dataset_id,
-                                               sandbox_id)
+        cls.rule_instance = UpdateSurveySourceConceptId(project_id, dataset_id,
+                                                        sandbox_id)
 
         sb_table_names = cls.rule_instance.get_sandbox_tablenames()
         for table_name in sb_table_names:
@@ -61,7 +61,7 @@ class CleanSurveyConductTest(BaseTest.CleaningRulesTestBase):
             destination = f'{cls.project_id}.{cls.dataset_id}.{src_table.table_id}'
             cls.client.copy_table(src_table, destination)
 
-    def test_clean_survey_conduct_data(self):
+    def test_clean_survey_source_concept_id(self):
         """
         Tests unit_normalization for the loaded test data
         """

@@ -1,5 +1,5 @@
 """
-Ensures the survey conduct table is populated as expected.
+Updates survey_source_concept_id to match the valid survey_concept_id or set both to 0.
 
 Survey_conduct table is relatively new at the point of this CR's creation. Because bugs still exist in the creation of
 this table.  This CR is needed to ensure all survey concept_id fields are populated as expected.
@@ -10,9 +10,10 @@ same as survey_concept_id.
 If survey_concept_id does not join to a valid ppi or custom concept from the vocabulary, survey_concept_id and
 survey_source_concept_id will be updated to 0.
 
-Dependencies:
-The surveys requiring a AOU custom id should have had their fields updated in a previously run CR.
-Observations that do not have a valid survey will be dropped in a CR that runs after this one.
+Several CRs update the survey_conduct table
+The surveys requiring a AOU custom id should have had their fields updated in CleanSurveyConductRecurringSurveys
+Then this CR will run updating the correct survey_source_concept_id.
+Then observations that do not have valid survey concept_id will be dropped in DropUnverifiedSurveyData
 
 Original Issues: DC-3013
 """
@@ -21,7 +22,7 @@ import logging
 
 # Project imports
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
-from cdr_cleaner.cleaning_rules.drop_unverified_survey_data import DropUnverifiedSurveyData
+from cdr_cleaner.cleaning_rules.clean_survey_conduct_recurring_surveys import CleanSurveyConductRecurringSurveys
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from common import JINJA_ENV, SURVEY_CONDUCT
 
@@ -55,7 +56,7 @@ WHERE survey_conduct_id IS NOT NULL
 """)
 
 
-class CleanSurveyConduct(BaseCleaningRule):
+class UpdateSurveySourceConceptId(BaseCleaningRule):
 
     def __init__(self,
                  project_id,
@@ -69,7 +70,7 @@ class CleanSurveyConduct(BaseCleaningRule):
         this SQL, append them to the list of Jira Issues.
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
-        desc = ('Updates/Cleans survey_conduct concept_id fields.')
+        desc = ('Updates/Cleans survey_source_concept_id.')
 
         super().__init__(issue_numbers=JIRA_ISSUE_NUMBERS,
                          description=desc,
@@ -78,7 +79,7 @@ class CleanSurveyConduct(BaseCleaningRule):
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
-                         depends_on=[DropUnverifiedSurveyData],
+                         depends_on=[CleanSurveyConductRecurringSurveys],
                          table_namer=table_namer)
 
     def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
@@ -136,14 +137,13 @@ if __name__ == '__main__':
 
     if ARGS.list_queries:
         clean_engine.add_console_logging()
-        query_list = clean_engine.get_query_list(ARGS.project_id,
-                                                 ARGS.dataset_id,
-                                                 ARGS.sandbox_dataset_id,
-                                                 [(CleanSurveyConduct,)])
+        query_list = clean_engine.get_query_list(
+            ARGS.project_id, ARGS.dataset_id, ARGS.sandbox_dataset_id,
+            [(UpdateSurveySourceConceptId,)])
         for query in query_list:
             LOGGER.info(query)
     else:
         clean_engine.add_console_logging(ARGS.console_log)
         clean_engine.clean_dataset(ARGS.project_id, ARGS.dataset_id,
                                    ARGS.sandbox_dataset_id,
-                                   [(CleanSurveyConduct,)])
+                                   [(UpdateSurveySourceConceptId,)])
