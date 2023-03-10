@@ -11,7 +11,6 @@ import cachetools
 from datetime import datetime
 
 from git import Repo, TagReference
-from google.cloud import bigquery
 
 from common import (VOCABULARY, ACHILLES, PROCESSED_TXT, RESULTS_HTML,
                     FITBIT_TABLES, PID_RID_MAPPING, COPE_SURVEY_MAP,
