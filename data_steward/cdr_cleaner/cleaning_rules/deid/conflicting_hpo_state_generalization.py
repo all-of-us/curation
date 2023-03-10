@@ -8,6 +8,7 @@ from google.cloud import bigquery
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
 from common import JINJA_ENV, OBSERVATION
 from constants.cdr_cleaner import clean_cdr as cdr_consts
+import resources
 
 LOGGER = logging.getLogger(__name__)
 
@@ -17,19 +18,7 @@ JIRA_ISSUE_URL = [
     'https://precisionmedicineinitiative.atlassian.net/browse/DC-834'
 ]
 
-MAP_TABLE_NAME = "person_src_hpos_ext"
-
-SCHEMA_MAP_TABLE = [{
-    "type": "integer",
-    "name": "person_id",
-    "mode": "required",
-    "description": "the person_id of someone with an ehr record"
-}, {
-    "type": "string",
-    "name": "src_id",
-    "mode": "required",
-    "description": "the src_id of an ehr record"
-}]
+MAP_TABLE_NAME = SCHEMA_MAP_TABLE = "person_src_hpos_ext"
 
 HPO_ID_NOT_RDR_QUERY = JINJA_ENV.from_string("""
   SELECT
@@ -140,9 +129,11 @@ class ConflictingHpoStateGeneralize(BaseCleaningRule):
         final_hpo_id_not_rdr_query = ' UNION ALL '.join(sql_statements)
 
         # Create the mapping table in Sandbox if it does not exist
+        map_table_schema = resources.fields_for(
+            SCHEMA_MAP_TABLE, sub_path='internal/lookup_tables')
         if MAP_TABLE_NAME not in client.list_tables(self.sandbox_dataset_id):
             table_name = f"{self.project_id}.{self.sandbox_dataset_id}.{MAP_TABLE_NAME}"
-            table = bigquery.Table(table_name, schema=SCHEMA_MAP_TABLE)
+            table = bigquery.Table(table_name, schema=map_table_schema)
             client.create_table(table, exists_ok=True)
 
         # 1. Create 'person_id' and 'src_hpo_id' lookup table (MAP_TABLE_NAME table) in sandbox
