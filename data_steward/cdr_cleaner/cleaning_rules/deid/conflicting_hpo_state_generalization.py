@@ -217,6 +217,9 @@ class ConflictingHpoStateGeneralize(BaseCleaningRule):
         """
         return [
             self.sandbox_table_for(table) for table in self.affected_tables
+        ] + [
+            self.sandbox_table_for(f"{table}_identifier")
+            for table in self.affected_tables
         ] + [MAP_TABLE_NAME]
 
     def validate_rule(self, client, *args, **keyword_args):
