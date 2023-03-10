@@ -56,7 +56,8 @@ INSERT_TEMP_MASK_TABLE = JINJA_ENV.from_string("""
         state,
         value_source_concept_id)
     VALUES
-        ('foo', 'bar 123', 'PIIState_AL', 1585261)
+        ('foo', 'bar 123', 'PIIState_AL', 1585261),
+        ('bar', 'bar 000', 'PIIState_CA', 1585266)
 """)
 
 
