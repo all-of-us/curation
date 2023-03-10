@@ -939,7 +939,7 @@ def get_hpo_info():
     hpo_table_query = bq_consts.GET_HPO_CONTENTS_QUERY.format(
         project_id=project_id,
         LOOKUP_TABLES_DATASET_ID=bq_consts.LOOKUP_TABLES_DATASET_ID,
-        HPO_SITE_ID_MAPPINGS_TABLE_ID=bq_consts.HPO_SITE_ID_MAPPINGS_TABLE_ID)
+        HPO_SITE_TABLE=bq_consts.HPO_SITE_ID_MAPPINGS_TABLE_ID)
     hpo_response = query(hpo_table_query)
     hpo_table_contents = response2rows(hpo_response)
     for hpo_table_row in hpo_table_contents:
@@ -947,6 +947,24 @@ def get_hpo_info():
         hpo_name = hpo_table_row[bq_consts.SITE_NAME]
         if hpo_id and hpo_name:
             hpo_dict = {"hpo_id": hpo_id, "name": hpo_name}
+            hpo_list.append(hpo_dict)
+    return hpo_list
+
+
+def get_hpo_bucket_info():
+    hpo_list = []
+    project_id = app_identity.get_application_id()
+    hpo_table_query = bq_consts.GET_HPO_CONTENTS_QUERY.format(
+        project_id=project_id,
+        LOOKUP_TABLES_DATASET_ID=bq_consts.LOOKUP_TABLES_DATASET_ID,
+        HPO_SITE_TABLE=bq_consts.HPO_ID_BUCKET_NAME_TABLE_ID)
+    hpo_response = query(hpo_table_query)
+    hpo_table_contents = response2rows(hpo_response)
+    for hpo_table_row in hpo_table_contents:
+        hpo_id = hpo_table_row[bq_consts.HPO_ID.lower()].lower()
+        hpo_bucket = hpo_table_row[bq_consts.BUCKET_NAME].lower()
+        if hpo_id and hpo_bucket:
+            hpo_dict = {"hpo_id": hpo_id, "bucket_name": hpo_bucket}
             hpo_list.append(hpo_dict)
     return hpo_list
 
