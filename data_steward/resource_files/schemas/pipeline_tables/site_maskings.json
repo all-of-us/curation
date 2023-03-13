@@ -10,5 +10,17 @@
     "name": "src_id",
     "mode": "required",
     "description": "The masked id of the hpo site/RDR."
+  },
+  {
+    "type": "string",
+    "name": "state",
+    "mode": "required",
+    "description": "The PIIState name the hpo is primarily located in."
+  },
+  {
+    "type": "integer",
+    "name": "value_source_concept_id",
+    "mode": "required",
+    "description": "The concept_id of the PIIState the hpo is primarily located in."
   }
 ]
