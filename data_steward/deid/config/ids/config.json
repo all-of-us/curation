@@ -27,28 +27,6 @@
                 "qualifier": "IN"
             }
         ],
-        "STATE": [
-            {
-                "comment": [
-                    "generalize participant state when PIIState doesn't match ",
-                    "participant EHR state.  requires the reference tables ",
-                    "_mapping_person_src_hpos and _mapping_src_hpos_to_allowed_states ",
-                    "to be built during initialization."
-                ],
-                "apply": "SQL",
-                "statement": [
-                    "observation_id IN (SELECT observation_id FROM ( ",
-                    "SELECT DISTINCT src_hpo_id, obs.person_id, value_source_concept_id, observation_id ",
-                    "FROM :idataset._mapping_person_src_hpos AS person_hpos ",
-                    "JOIN :idataset.observation AS obs ",
-                    "USING (person_id) ",
-                    "LEFT JOIN :idataset._mapping_src_hpos_to_allowed_states ",
-                    "USING (src_hpo_id, value_source_concept_id) ",
-                    "WHERE observation_source_concept_id = 1585249  AND state IS NULL))"
-                ],
-                "into": 2000000011
-            }
-        ],
         "SEXUAL-ORIENTATION":[
             {
                 "comment": [

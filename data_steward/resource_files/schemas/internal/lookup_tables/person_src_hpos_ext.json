@@ -1,0 +1,11 @@
+[{
+    "type": "integer",
+    "name": "person_id",
+    "mode": "required",
+    "description": "the person_id of someone with an ehr record"
+}, {
+    "type": "string",
+    "name": "src_id",
+    "mode": "required",
+    "description": "the src_id of an ehr record"
+}]
