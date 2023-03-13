@@ -18,7 +18,8 @@ JIRA_ISSUE_URL = [
     'https://precisionmedicineinitiative.atlassian.net/browse/DC-834'
 ]
 
-MAP_TABLE_NAME = SCHEMA_MAP_TABLE = "person_src_hpos_ext"
+MAP_TABLE_NAME = "person_src_hpos_lookup_ext"
+SCHEMA_MAP_TABLE = "person_src_hpos_ext"
 
 HPO_ID_NOT_RDR_QUERY = JINJA_ENV.from_string("""
   SELECT
