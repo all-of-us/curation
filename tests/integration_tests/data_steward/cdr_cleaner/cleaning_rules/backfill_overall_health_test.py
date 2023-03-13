@@ -61,7 +61,7 @@ VALUES
 """)
 
 
-class BackfillTheBasicsTest(BaseTest.CleaningRulesTestBase):
+class BackfillOverallHealthTest(BaseTest.CleaningRulesTestBase):
 
     @classmethod
     def setUpClass(cls):
@@ -103,20 +103,20 @@ class BackfillTheBasicsTest(BaseTest.CleaningRulesTestBase):
         queries = [insert_observation, insert_person]
         self.load_test_data(queries)
 
-    def test_backfill_the_basics(self):
+    def test_backfill_overall_health(self):
         """
         Test cases:
         person_id = 1:
-            It has all TheBasics records. Nothing happens.
+            It has all the OverallHealth records. Nothing happens.
         person_id = 2:
-            It has NO TheBasics records. Nothing happens.
+            It has NO OverallHealth records. Nothing happens.
         person_id = 3:
-            It has some missing TheBasics records. Backfill happens.
+            It has some missing OverallHealth records. Backfill happens.
             FEMALE participant (gender_concept_id==8532), 1585784 will be backfilled.
             Backfilled skip records have this participant's MAX observation_date ('2022-01-01') as its date.
             Backfilled skip records have the newly assigned observation_ids.
         person_id = 4:
-            It has some missing TheBasics records. Backfill happens.
+            It has some missing OverallHealth records. Backfill happens.
             NOT-FEMALE participant (gender_concept_id!=8532), 1585784 will NOT be backfilled.
             Backfilled skip records have this participant's MAX observation_date ('2021-01-01') as its date.
             Backfilled skip records have the newly assigned observation_ids.
