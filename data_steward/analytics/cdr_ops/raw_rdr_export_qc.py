@@ -326,6 +326,26 @@ ORDER BY MIN(observation_date)
 query = tpl.render(new_rdr=new_rdr, project_id=project_id)
 execute(client, query)
 
+# # Check the expectations of survey_conduct cleaning rules
+#
+# This query checks the validity of cope_survey_semantic_version_map table which contains the version of each COPE and/or Minute module that each participant took. This table is created by RDR and is included in the rdr export.
+#
+# The series of CRs applied to the survey_conduct table rely on the assumption that the values in `cope_month` do not change and it is expected that none should be added.
+#
+# **An empty df is a passing check.** <br>
+# Contact the rdr team if there are any unexpected cope_month values. CRs that use this field may need to be updated. Ex:RDR_CLEANING_CLASS:CleanSurveyConductRecurringSurveys
+
+tpl = JINJA_ENV.from_string("""
+SELECT
+cope_month AS unexpected_cope_month
+,COUNT(*) AS n_records
+FROM `{{project_id}}.{{new_rdr}}.cope_survey_semantic_version_map`
+WHERE cope_month NOT IN ('dec' ,'feb', 'may', 'nov', 'july', 'june', 'vaccine1','vaccine2','vaccine3','vaccine4')
+GROUP BY cope_month
+""")
+query = tpl.render(new_rdr=new_rdr, project_id=project_id)
+execute(client, query)
+
 # # Class of PPI Concepts using vocabulary.py
 # Concept codes which appear in `observation.observation_source_value` should belong to concept class Question.
 # Concept codes which appear in `observation.value_source_value` should belong to concept class Answer.
