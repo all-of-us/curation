@@ -31,7 +31,7 @@ HPO_ID_NOT_RDR_QUERY = JINJA_ENV.from_string("""
   USING
     ({{table}}_id)
   WHERE
-    src_id NOT LIKE 'PPI/PM'
+    NOT REGEXP_CONTAINS(src_id, r'(?i)(ppi)|(pm)')
 """)
 
 LIST_PERSON_ID_TABLES = JINJA_ENV.from_string("""
@@ -39,10 +39,10 @@ LIST_PERSON_ID_TABLES = JINJA_ENV.from_string("""
   DISTINCT table_name
   FROM `{{project_id}}.{{dataset_id}}.INFORMATION_SCHEMA.COLUMNS`
   WHERE lower(column_name) = 'person_id'
-  and lower(table_name) || "_ext" in (
-    select distinct lower(table_id)
-    from `{{project_id}}.{{dataset_id}}.__TABLES__`
-    where REGEXP_CONTAINS(table_id, r'(?i)_ext$')
+  AND lower(table_name) || "_ext" in (
+    SELECT distinct lower(table_id)
+    FROM `{{project_id}}.{{dataset_id}}.__TABLES__`
+    WHERE REGEXP_CONTAINS(table_id, r'(?i)_ext$')
   )
 """)
 
