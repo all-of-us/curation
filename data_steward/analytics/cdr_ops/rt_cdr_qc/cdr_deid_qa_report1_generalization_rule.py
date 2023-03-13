@@ -252,7 +252,7 @@ query = JINJA_ENV.from_string("""
 WITH df1 AS (
 SELECT m.research_id AS person_id,count (distinct ob.value_source_value) AS countp
 FROM `{{project_id}}.{{com_cdr}}.observation` ob
-JOIN `{{project_id}}.{{pipeline}}.primary_pid_rid_mappin` m
+JOIN `{{project_id}}.{{pipeline}}.primary_pid_rid_mapping` m
 ON ob.person_id = m.person_id
 WHERE REGEXP_CONTAINS(ob.observation_source_value, 'TheBasics_SexualOrientation')
 GROUP BY 1),
@@ -454,7 +454,7 @@ query = JINJA_ENV.from_string("""
 WITH df1 AS (
 SELECT m.research_id AS person_id
 FROM  `{{project_id}}.{{com_cdr}}.observation` ob
-JOIN  `{{project_id}}.{{pipeline}}.primary_pid_rid_mappin` m 
+JOIN  `{{project_id}}.{{pipeline}}.primary_pid_rid_mapping` m 
 ON ob.person_id=m.person_id
 WHERE value_source_value IN ('SexAtBirth_Female' ,'GenderIdentity_Man')
 GROUP BY m.research_id
@@ -502,7 +502,7 @@ WITH df1 AS (
 
 SELECT m.research_id AS person_id
 FROM `{{project_id}}.{{com_cdr}}.observation` ob
-JOIN  `{{project_id}}.{{pipeline}}.primary_pid_rid_mappin` m 
+JOIN  `{{project_id}}.{{pipeline}}.primary_pid_rid_mapping` m 
 ON ob.person_id=m.person_id
 WHERE value_source_value IN ('SexAtBirth_Male' ,'GenderIdentity_Woman')
 GROUP BY m.research_id
