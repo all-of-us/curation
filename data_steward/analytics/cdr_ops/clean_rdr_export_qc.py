@@ -26,7 +26,7 @@ rdr_cutoff_date = ""
 # # QC for RDR Export
 #
 # Quality checks performed on a new RDR dataset and comparison with previous RDR dataset.
-from common import JINJA_ENV, PIPELINE_TABLES
+from common import CATI_TABLES, DEATH, FACT_RELATIONSHIP, JINJA_ENV, PIPELINE_TABLES
 from utils import auth
 from gcloud.bq import BigQueryClient
 from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES, render_message
@@ -76,9 +76,7 @@ execute(client, query)
 # Rows that are greater than 999,999,999,999,999 the will be listed out here.
 
 domain_table_list = [
-    'condition_occurrence', 'device_exposure', 'drug_exposure', 'location',
-    'measurement', 'note', 'observation', 'procedure_occurrence', 'provider',
-    'specimen', 'visit_occurrence'
+    table for table in CATI_TABLES if table not in [DEATH, FACT_RELATIONSHIP]
 ]
 queries = []
 for table in domain_table_list:
