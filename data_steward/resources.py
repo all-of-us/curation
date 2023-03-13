@@ -644,7 +644,6 @@ def get_bq_col_type(col_type):
     Return correct SQL column type representation.
 
     :param col_type: The type of column as defined in json schema files.
-
     :return: A SQL column type compatible with BigQuery
     """
     lower_col_type = col_type.lower()
@@ -683,7 +682,6 @@ def get_bq_mode(mode):
     Return correct SQL for column mode.
 
     :param mode:  either nullable or required as defined in json schema files.
-
     :return: NOT NULL or empty string
     """
     lower_mode = mode.lower()
@@ -701,7 +699,6 @@ def get_bq_fields_sql(fields):
     Get the SQL compliant fields definition from json fields object.
 
     :param fields: table schema in json format
-
     :return: a string that can be added to SQL to generate a correct
         table.
     """
