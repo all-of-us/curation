@@ -290,15 +290,14 @@ df1
 # has to be deid_base
 query = JINJA_ENV.from_string("""
 
-
 SELECT COUNT (distinct p.person_id) AS n_PERSON_ID_not_pass
 FROM  `{{project_id}}.{{com_cdr}}.observation` com
 JOIN  `{{project_id}}.{{pipeline}}.pid_rid_mapping` m 
 ON com.person_id=m.person_id
 JOIN  `{{project_id}}.{{deid_base_cdr}}.observation` p
-ON p.person_id=m.research_id
+ON p.person_id=m.research_id AND p.observation_id=com.observation_id
 WHERE com.value_source_concept_id = 701374
-AND p.observation_source_value='Gender_GenderIdentity'
+AND p.observation_source_concept_id = 1585348
 AND p.value_source_concept_id !=2000000002
 """)
 q = query.render(project_id=project_id,
@@ -622,4 +621,3 @@ def highlight_cells(val):
 
 
 df.style.applymap(highlight_cells).set_properties(**{'text-align': 'left'})
-# -
