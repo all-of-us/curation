@@ -60,25 +60,26 @@ cdr_cutoff_date
 # + papermill={"duration": 4.105203, "end_time": "2021-02-02T22:30:36.813460", "exception": false, "start_time": "2021-02-02T22:30:32.708257", "status": "completed"} tags=[]
 query = JINJA_ENV.from_string("""
 
-SELECT COUNT(*) as n_participants_over_89 FROM `{{project_id}}.{{rt_cdr_deid}}.person`
+SELECT COUNT(*) as n_participants_over_{{max_age}} FROM `{{project_id}}.{{rt_cdr_deid}}.person`
 WHERE FLOOR(DATE_DIFF(DATE('{{cdr_cutoff_date}}'),DATE(birth_datetime), DAY)/365.25) > {{max_age}}
 """)
 q = query.render(project_id=project_id,
                  rt_cdr_deid=rt_cdr_deid,
-                 cdr_cutoff_date=cdr_cutoff_date)
+                 cdr_cutoff_date=cdr_cutoff_date,
+                 max_age=max_age)
 
 df1 = execute(client, q)
 if df1.loc[0].sum() == 0:
     df = df.append(
         {
-            'query': 'Query1 No person exists over 89 in the dataset',
+            'query': f'Query1 No person exists over {max_age} in the dataset',
             'result': 'PASS'
         },
         ignore_index=True)
 else:
     df = df.append(
         {
-            'query': 'Query1 No person exists over 89 in the dataset',
+            'query': f'Query1 No person exists over {max_age} in the dataset',
             'result': 'Failure'
         },
         ignore_index=True)
