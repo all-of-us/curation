@@ -20,14 +20,14 @@ FROM `{{project}}.{{admin_dataset}}.id_violations_in_lower_envs`
 WHERE monitor_date = CURRENT_DATE()
 """
 
-# These three messages are used for GCP monitoring and alerting.
+# These two messages are used for GCP monitoring and alerting.
 # If you update the messages here, you also need to update the corresponding
 # metrics in logging from GCP console.
 HEADER_SCHEDULED_QUERY_FAILED = 'Daily ID violation check failed to run today.'
 HEADER_ID_VIOLATION_FOUND = 'ID violation is found.'
-HEADER_CHECK_COMPLETED = 'Daily ID violation check completed.'
 
 # These messages are not used for GCP monitoring or alerting.
+HEADER_CHECK_COMPLETED = 'Daily ID violation check completed.'
 HEADER_NO_ID_VIOLATION_FOUND = 'No ID violation is found today.'
 BODY_SCHEDULED_QUERY_FAILED = (
     'id_violations_in_lower_envs does not have a record of the check result for '
