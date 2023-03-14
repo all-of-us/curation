@@ -170,10 +170,7 @@ class ConvertPrePostCoordinatedConcepts(BaseCleaningRule):
         observation_concept_ids and value_as_concept_ids.
         New observation_id is generated as:
             100,000,000,000 * ((n)th record from the mapping table for the value_source_concept_id) + original observation_id.
-
-        Note: "backfill_pmi_skip_codes" has a similar logic. It generates new observation_ids with 1,000,000,000,000.
-              This CR generates the IDs with 100,000,000,000 - 400,000,000,000. So, the IDs do not overlap with the ones from
-              "backfill_pmi_skip_codes".
+            "n" can be 1 - 4. So, the newly generated IDs will be in the range of 100,000,000,000 - 499,999,999,999.
         """
         sandbox_query_dict = {
             cdr_consts.QUERY:
