@@ -723,5 +723,5 @@ def replace_special_characters_for_labels(label_name: str):
     :param label_name: string to be replaced
     :return: string with replaced characters
     """
-    return label_name.lower.replace('.', '_').replace(',',
-                                                      '_').replace(' ', '_')
+    return label_name.lower().replace('.', '_').replace(',',
+                                                        '_').replace(' ', '_')
