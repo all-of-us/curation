@@ -6,6 +6,7 @@ to the query engine.
 """
 # Python imports
 import logging
+import typing
 
 # Project imports
 import cdr_cleaner.clean_cdr_engine as clean_engine
@@ -426,11 +427,11 @@ def get_parser():
 
 
 PARSING_ERROR_MESSAGE_FORMAT = (
-    'Error parsing %(arg)s. Please use "--key value" to specify custom arguments. '
+    'Error parsing %(arg)s. Please use "--key value" or "--key=value" to specify custom arguments. '
     'Custom arguments need an associated keyword to store their value.')
 
 
-def _to_kwarg_key(arg):
+def _to_kwarg_key(arg) -> str:
     # TODO: Move this function to as project level arg_parser so it can be reused.
     if not arg.startswith('--'):
         raise RuntimeError(PARSING_ERROR_MESSAGE_FORMAT.format(arg=arg))
@@ -440,7 +441,7 @@ def _to_kwarg_key(arg):
     return key
 
 
-def _to_kwarg_val(val):
+def _to_kwarg_val(val: str) -> str:
     # TODO: Move this function to as project level arg_parser so it can be reused.
     # likely invalid use of args- allowing single dash e.g. negative values
     if val.startswith('--'):
@@ -448,15 +449,21 @@ def _to_kwarg_val(val):
     return val
 
 
-def _get_kwargs(optional_args):
-    # TODO: Move this function to as project level arg_parser so it can be reused.
-    # TODO: Move this function to as project level arg_parser so it can be reused.
-    if len(optional_args) % 2:
-        raise RuntimeError(
-            f'All provided arguments need key-value pairs in {optional_args}')
+def _get_kwargs(optional_args: typing.List[str]) -> typing.Dict:
+    """
+    This creates and ensures a {key: value} pair from _get_kwargs(...).
+    """
+    arg_list = []
+    for arg in optional_args:
+        arg_list.extend(arg.split("="))
+
+    if len(arg_list) % 2:
+        raise RuntimeError(PARSING_ERROR_MESSAGE_FORMAT.format(arg=arg_list))
+
+    # _to_kwarg_key(...) and _to_kwargs_val(...) are validators
     return {
         _to_kwarg_key(arg): _to_kwarg_val(value)
-        for arg, value in zip(optional_args[0::2], optional_args[1::2])
+        for arg, value in zip(arg_list[0::2], arg_list[1::2])
     }
 
 

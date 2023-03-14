@@ -54,17 +54,38 @@ class CleanCDRTest(unittest.TestCase):
 
     def test_get_kwargs(self):
         expected = {'k1': 'v1', 'k2': 'v2'}
+
+        # All spaces
         actual_result = cc._get_kwargs(['--k1', 'v1', '--k2', 'v2'])
         self.assertEqual(expected, actual_result)
 
-        with self.assertRaises(RuntimeError) as c:
-            cc._get_kwargs(['--k1', 'v1', '--f1'])
+        # Space and `=`
+        actual_result = cc._get_kwargs(['--k1', 'v1', '--k2=v2'])
+        self.assertEqual(expected, actual_result)
 
-        with self.assertRaises(RuntimeError) as c:
+        # All `=`
+        actual_result = cc._get_kwargs(['--k1=v1', '--k2=v2'])
+        self.assertEqual(expected, actual_result)
+
+        # key mismatch, correct count
+        with self.assertRaises(RuntimeError):
+            cc._get_kwargs(['--k1', '--k2', 'v1', 'v2'])
+
+        # value mismatch, correct count
+        with self.assertRaises(RuntimeError):
+            cc._get_kwargs(['--k1', 'v1', 'v2', '--k2'])
+
+        # bad count
+        with self.assertRaises(RuntimeError):
+            cc._get_kwargs(['--k1=v1', '--k2'])
+
+        # `=` mismatched
+        with self.assertRaises(RuntimeError):
+            cc._get_kwargs(['--k1=v1=v2'])
+
+        # Empty key
+        with self.assertRaises(RuntimeError):
             cc._get_kwargs(['--', 'v1'])
-
-        with self.assertRaises(RuntimeError) as c:
-            cc._get_kwargs(['--k1', '--k2'])
 
     def test_to_kwarg_key(self):
         expected_result = 'k1'
