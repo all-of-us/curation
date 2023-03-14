@@ -30,7 +30,10 @@ class BirthInformationSuppression(AbstractInMemoryLookupTableConceptSuppression
             'relating to birth information. ')
         super().__init__(issue_numbers=ISSUE_NUMBERS,
                          description=desc,
-                         affected_datasets=[cdr_consts.CONTROLLED_TIER_DEID],
+                         affected_datasets=[
+                             cdr_consts.CONTROLLED_TIER_DEID,
+                             cdr_consts.REGISTERED_TIER_DEID
+                         ],
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
