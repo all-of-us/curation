@@ -14,7 +14,6 @@ from google.cloud import bigquery
 import app_identity
 from gcloud.bq import BigQueryClient
 from gcloud.gsm import SecretManager
-from utils import bq
 from constants.utils import bq as bq_consts
 from constants.validation import email_notification as consts
 from resources import achilles_images_path
@@ -43,13 +42,11 @@ def get_hpo_contact_info(project_id):
         dataset=bq_consts.LOOKUP_TABLES_DATASET_ID,
         contact_table=bq_consts.HPO_ID_CONTACT_LIST_TABLE_ID)
 
-    # contact_df = bq.query_sheet_linked_bq_table(project_id,
-    #                                             contact_list_query,
-    #                                             external_data_scopes=scopes)
     bq_client = BigQueryClient(project_id=project_id, scopes=scopes)
     query_job_config = bigquery.job.QueryJobConfig(use_query_cache=False)
     contact_df = bq_client.query(contact_list_query,
                                  job_config=query_job_config).to_dataframe()
+    bq_client.close()
 
     contact_df = contact_df[contact_df.hpo_id.notnull()]
     contact_df = contact_df.set_index('hpo_id')
