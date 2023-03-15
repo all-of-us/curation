@@ -20,7 +20,8 @@ import deid.aou as aou
 from deid.parser import odataset_name_verification
 from resources import fields_for, fields_path, DEID_PATH
 from gcloud.bq import BigQueryClient
-from common import JINJA_ENV, PIPELINE_TABLES
+from google.cloud.bigquery.job import CopyJobConfig, WriteDisposition
+from common import JINJA_ENV, PIPELINE_TABLES, EXT_SUFFIX
 
 LOGGER = logging.getLogger(__name__)
 DEID_TABLES = [
@@ -274,7 +275,6 @@ def copy_deid_map_table(client, deid_map_table, lookup_dataset_id,
 
 
 def load_deid_map_table(client, deid_map_dataset_name, age_limit):
-
     # Create _deid_map table in input dataset
     deid_map_table = f'{client.project}.{deid_map_dataset_name}._deid_map'
 
@@ -289,6 +289,34 @@ def load_deid_map_table(client, deid_map_dataset_name, age_limit):
         raise RuntimeError(
             f'{DEID_MAP_TABLE} is not available in {client.project}.{PIPELINE_TABLES_DATASET}'
         )
+
+
+def copy_ext_tables(bq_client, input_dataset: str, output_dataset: str) -> list:
+    """
+    Copy extension tables to the deid dataset
+
+    :param bq_client: a BigQueryClient
+    :param input_dataset: Name of the input dataset
+    :param output_dataset: Name of the output dataset
+    :return: job_list: list of job_ids
+    """
+    source_tables = bq_client.list_tables(
+        f'{bq_client.project}.{input_dataset}')
+    job_config = CopyJobConfig(write_disposition=WriteDisposition.WRITE_EMPTY)
+    job_list = []
+    for table in source_tables:
+        if table.table_id.endswith(EXT_SUFFIX):
+            destination_table = f'{output_dataset}.{table.table_id}'
+            job_config.labels.update({
+                'table_name': table.table_id.lower(),
+                'copy_from': input_dataset.lower(),
+                'copy_to': output_dataset.lower()
+            })
+            job = bq_client.copy_table(table,
+                                       destination_table,
+                                       job_config=job_config)
+            job_list.append(job.job_id)
+    return job_list
 
 
 def main(raw_args=None):
@@ -352,6 +380,14 @@ def main(raw_args=None):
             successes.append(table)
 
     copy_suppressed_table_schemas(known_tables, args.odataset)
+
+    logging.info(
+        f"Copying ext tables from {args.input_dataset} dataset to {args.odataset} dataset..."
+    )
+    copy_job_list = copy_ext_tables(bq_client, args.input_dataset,
+                                    args.odataset)
+    bq_client.wait_on_jobs(copy_job_list)
+    logging.info(f"Finished copying ext tables.")
 
     LOGGER.info(
         "Deid has finished.  Successfully executed on tables: {}".format(

@@ -93,6 +93,7 @@ class RunDeidTest(unittest.TestCase):
         # Post conditions
         self.assertEqual(correct_parameter_dict, results_dict)
 
+    @patch('tools.run_deid.copy_ext_tables')
     @patch('tools.run_deid.BigQueryClient')
     @patch('tools.run_deid.fields_for')
     @patch('tools.run_deid.copy_suppressed_table_schemas')
@@ -101,7 +102,8 @@ class RunDeidTest(unittest.TestCase):
     @patch('tools.run_deid.load_deid_map_table')
     @patch('tools.run_deid.get_output_tables')
     def test_main(self, mock_tables, mock_load, mock_copy, mock_main,
-                  mock_suppressed, mock_fields, mock_bq_client):
+                  mock_suppressed, mock_fields, mock_bq_client,
+                  mock_copy_ext_tables):
         # Tests if incorrect parameters are given
         self.assertRaises(SystemExit, run_deid.main,
                           self.incorrect_parameter_list)
@@ -122,6 +124,7 @@ class RunDeidTest(unittest.TestCase):
             '--odataset', self.output_dataset, '--age-limit', self.max_age
         ])
         self.assertEqual(mock_main.call_count, 1)
+        self.assertEqual(mock_copy_ext_tables.call_count, 1)
 
     @patch('tools.run_deid.os.walk')
     def test_known_tables(self, mock_walk):
