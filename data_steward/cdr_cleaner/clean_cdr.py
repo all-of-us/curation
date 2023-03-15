@@ -21,6 +21,7 @@ from cdr_cleaner.cleaning_rules.drop_extreme_measurements import DropExtremeMeas
 from cdr_cleaner.cleaning_rules.drop_multiple_measurements import DropMultipleMeasurements
 from cdr_cleaner.cleaning_rules.drop_participants_without_any_basics import DropParticipantsWithoutAnyBasics
 from cdr_cleaner.cleaning_rules.clean_survey_conduct_recurring_surveys import CleanSurveyConductRecurringSurveys
+from cdr_cleaner.cleaning_rules.update_survey_source_concept_id import UpdateSurveySourceConceptId
 from cdr_cleaner.cleaning_rules.drop_unverified_survey_data import DropUnverifiedSurveyData
 from cdr_cleaner.cleaning_rules.drug_refills_days_supply import DrugRefillsDaysSupply
 from cdr_cleaner.cleaning_rules.maps_to_value_ppi_vocab_update import MapsToValuePpiVocabUpdate
@@ -195,6 +196,7 @@ RDR_CLEANING_CLASSES = [
     (CleanByBirthYear,),
     (UpdateInvalidZipCodes,),
     (CleanSurveyConductRecurringSurveys,),
+    (UpdateSurveySourceConceptId,),
     (DropUnverifiedSurveyData,),
     (DropParticipantsWithoutAnyBasics,),
     (StoreExpectedCTList,),
