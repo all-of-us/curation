@@ -21,7 +21,7 @@ from deid.parser import odataset_name_verification
 from resources import fields_for, fields_path, DEID_PATH
 from gcloud.bq import BigQueryClient
 from google.cloud.bigquery.job import CopyJobConfig, WriteDisposition
-from common import JINJA_ENV, PIPELINE_TABLES
+from common import JINJA_ENV, PIPELINE_TABLES, EXT_SUFFIX
 
 LOGGER = logging.getLogger(__name__)
 DEID_TABLES = [
@@ -291,7 +291,7 @@ def load_deid_map_table(client, deid_map_dataset_name, age_limit):
         )
 
 
-def copy_ext_tables(bq_client, input_dataset: str, output_dataset: str):
+def copy_ext_tables(bq_client, input_dataset: str, output_dataset: str) -> list:
     """
     Copy extension tables to the deid dataset
 
@@ -305,7 +305,7 @@ def copy_ext_tables(bq_client, input_dataset: str, output_dataset: str):
     job_config = CopyJobConfig(write_disposition=WriteDisposition.WRITE_EMPTY)
     job_list = []
     for table in source_tables:
-        if table.table_id.endswith('_ext'):
+        if table.table_id.endswith(EXT_SUFFIX):
             destination_table = f'{output_dataset}.{table.table_id}'
             job_config.labels.update({
                 'table_name': table.table_id.lower(),
@@ -384,7 +384,9 @@ def main(raw_args=None):
     logging.info(
         f"Copying ext tables from {args.input_dataset} dataset to {args.odataset} dataset..."
     )
-    copy_ext_tables(bq_client, args.input_dataset, args.odataset)
+    copy_job_list = copy_ext_tables(bq_client, args.input_dataset,
+                                    args.odataset)
+    bq_client.wait_on_jobs(copy_job_list)
     logging.info(f"Finished copying ext tables.")
 
     LOGGER.info(
