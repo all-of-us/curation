@@ -736,6 +736,7 @@ def build_and_copy_contents(client, src_dataset, dest_dataset):
                 f'`{src_dataset}`, to schemaed dataset, `{dest_dataset}`.')
 
 
+@deprecated(reason='Use resources.get_bq_col_type(col_type) instead')
 def get_bq_col_type(col_type):
     """
     Return correct SQL column type representation.
@@ -775,6 +776,7 @@ def get_bq_col_type(col_type):
     return 'UNSET'
 
 
+@deprecated(reason='Use resources.get_bq_mode(mode) instead')
 def get_bq_mode(mode):
     """
     Return correct SQL for column mode.
@@ -793,6 +795,7 @@ def get_bq_mode(mode):
     return 'UNSET'
 
 
+@deprecated(reason='Use resources.get_bq_fields_sql(fields) instead')
 def get_bq_fields_sql(fields):
     """
     Get the SQL compliant fields definition from json fields object.
