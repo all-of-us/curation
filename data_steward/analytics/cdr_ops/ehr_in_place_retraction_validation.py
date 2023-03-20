@@ -52,7 +52,8 @@ for new_dataset in new_datasets:
         # and we don't have to retract from them
         # Ignoring Death as it does not have mapping table and below validation queries rely on mapping table.
         # A separate check for death table is added to verify retraction.
-        if table in CDM_TABLES and table not in ('survey_conduct')
+        if table in CDM_TABLES and table not in ('person', 'death',
+                                                 'survey_conduct')
     ]
     all_pid_table_list.append(pid_table_list)
 for table_list, new_dataset in zip(all_pid_table_list, new_datasets):
