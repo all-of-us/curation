@@ -386,8 +386,8 @@ df1
 
 query = JINJA_ENV.from_string("""
 SELECT COUNT (*) AS n_row_not_pass
-FROM  `{{project_id}}.{{pipeline}}.pid_rid_mapping`
-WHERE shift <=0
+FROM  `{{project_id}}.{{pipeline}}.primary_pid_rid_mapping`
+WHERE shift BETWEEN 1 AND 364
 
 """)
 q = query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr)  
@@ -519,7 +519,7 @@ FROM  `{{project_id}}.{{com_cdr}}.survey_conduct` non_deid
 JOIN `{{project_id}}.{{deid_questionnaire_response_map_dataset}}._deid_questionnaire_response_map` m
 ON m.questionnaire_response_id=non_deid.survey_conduct_id
 JOIN `{{project_id}}.{{deid_cdr}}.survey_conduct` deid USING(survey_conduct_id)
-WHERE SAFE_CAST(deid.survey_source_identifier AS FLOAT64) != m.research_response_id
+WHERE SAFE_CAST(deid.survey_source_identifier AS INT64) != m.research_response_id
 ),
 df3 AS (
 SELECT COUNT (*) AS n_row_not_pass
