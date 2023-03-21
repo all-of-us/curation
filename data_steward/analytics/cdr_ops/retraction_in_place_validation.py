@@ -14,8 +14,7 @@
 
 # + tags=["parameters"]
 project_id: str = ""  # identifies the project where datasets are located
-old_dataset: str = ""  # identifies the dataset name where participants are to be retracted
-new_dataset: str = ""  # identifies the dataset name after retraction
+dataset: str = ""  # identifies the dataset name after retraction
 lookup_table: str = ""  # lookup table name where the pids and rids needs to be retracted are stored
 lookup_table_dataset: str = ""  # the sandbox dataset where lookup table is located
 is_deidentified: str = "true"  # identifies if a dataset is pre or post deid
@@ -37,9 +36,9 @@ client = BigQueryClient(project_id, credentials=impersonation_creds)
 
 person_id_tables_query = JINJA_ENV.from_string('''
 SELECT table_name
-FROM `{{project}}.{{new_dataset}}.INFORMATION_SCHEMA.COLUMNS`
+FROM `{{project}}.{{dataset}}.INFORMATION_SCHEMA.COLUMNS`
 WHERE column_name = "person_id"
-''').render(project=project_id, new_dataset=new_dataset)
+''').render(project=project_id, dataset=dataset)
 pid_table_list = client.query(person_id_tables_query).to_dataframe().get(
     'table_name').to_list()
 pid_table_list
@@ -81,7 +80,7 @@ queries_list = []
 for table in pid_table_list:
     queries_list.append(
         table_check_query.render(project=project_id,
-                                 dataset=new_dataset,
+                                 dataset=dataset,
                                  table_name=table))
 
 union_all_query = '\nUNION ALL\n'.join(queries_list)
@@ -101,7 +100,7 @@ table_row_counts_query = JINJA_ENV.from_string('''
 SELECT 
    '{{table_name}}' as table_id, count(*) as {{count}}
  FROM 
-   `{{project}}.{{new_dataset}}.{{table_name}}`
+   `{{project}}.{{dataset}}.{{table_name}}`
        FOR SYSTEM_TIME AS OF TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {{days}} DAY)
  {% if days != '0' %}
  WHERE person_id NOT IN (
@@ -119,16 +118,15 @@ new_row_counts_queries_list = []
 
 for table in pid_table_list:
     old_row_counts_queries_list.append(
-        table_row_counts_query.render(
-            project=project_id,
-            new_dataset=new_dataset if not old_dataset else old_dataset,
-            table_name=table,
-            count='old_minus_aian_row_count',
-            days='1'))
+        table_row_counts_query.render(project=project_id,
+                                      dataset=dataset,
+                                      table_name=table,
+                                      count='old_minus_aian_row_count',
+                                      days='1'))
 
     new_row_counts_queries_list.append(
         table_row_counts_query.render(project=project_id,
-                                      new_dataset=new_dataset,
+                                      dataset=dataset,
                                       table_name=table,
                                       count='new_row_count',
                                       days='0'))
@@ -193,7 +191,7 @@ ON
   fr.fact_id_2 = p2.person_id
 WHERE
   domain_concept_id_1 = 56
-''').render(project=project_id, dataset=new_dataset)
+''').render(project=project_id, dataset=dataset)
 retraction_status_query = f'{pids_query}\n{fact_relationship_retraction}'
 if is_deidentified == 'false':
     execute(client, retraction_status_query)
@@ -225,7 +223,7 @@ for table in pid_table_list:
     if table in CDM_TABLES and table not in ('death', 'person'):
         mapping_queries_list.append(
             mapping_ext_check_query.render(project=project_id,
-                                           dataset=new_dataset,
+                                           dataset=dataset,
                                            table_name=table,
                                            mapping_table=provenance_table_for(
                                                table, is_deidentified)))
