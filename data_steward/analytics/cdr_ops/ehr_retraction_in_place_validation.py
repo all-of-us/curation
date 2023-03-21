@@ -12,6 +12,8 @@
 #     name: python3
 # ---
 
+# This notebook is not meant to work with ehr datasets
+
 # + tags=["parameters"]
 project_id: str = ""  # identifies the project where datasets are located
 datasets: list = []  # identifies the dataset names after retraction
