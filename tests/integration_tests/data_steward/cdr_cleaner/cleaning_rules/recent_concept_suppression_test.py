@@ -38,9 +38,8 @@ class RecentConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
         # set the expected test datasets
         dataset_id = os.environ.get('COMBINED_DATASET_ID')
         cls.dataset_id = dataset_id
-        sandbox_id = dataset_id + '_sandbox'
+        sandbox_id = f"{dataset_id}_sandbox"
         cls.sandbox_id = sandbox_id
-        cls.vocabulary_id = os.environ.get('VOCABULARY_DATASET')
 
         # Update cutoff_date if necessary. Cutoff date now set to current date
         cls.cutoff_date = date.today()
@@ -58,9 +57,10 @@ class RecentConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
             f'{project_id}.{dataset_id}.{OBSERVATION}',
         ]
 
-        cls.fq_sandbox_table_names.append(
-            f'{cls.project_id}.{cls.sandbox_id}.{cls.rule_instance.sandbox_table_for(OBSERVATION)}'
-        )
+        cls.fq_sandbox_table_names.extend([
+            f'{cls.project_id}.{cls.sandbox_id}.{cls.rule_instance.sandbox_table_for(OBSERVATION)}',
+            f'{cls.project_id}.{cls.sandbox_id}.{cls.rule_instance.concept_suppression_lookup_table}'
+        ])
 
         # call super to set up the client, create datasets, and create
         # empty test tables
@@ -86,7 +86,7 @@ class RecentConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
         Tests that the specifications perform as designed.
 
         Validates pre conditions, tests execution, and post conditions based on the load
-        statements and the tables_and_counts variable.        
+        statements and the tables_and_counts variable.
         """
 
         INSERT_CONCEPTS_QUERY = JINJA_ENV.from_string("""
@@ -103,17 +103,21 @@ class RecentConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
 
                 -- New Non-PPI Concepts (Suppressed: valid_start_date >= cutoff_date - 1 year) --
                 (1615361, 'COVID-19 VACCINE MRNA', 'Drug', 'VANDF', 'Drug Product', '4039850', date('{{recent_date}}'), date('3999-01-01')),
-                (36661764, 'SARS-CoV-2 (COVID-19) Ag', 'Observation', 'LOINC', 'LOINC Component', 'LP418019-8', date('{{recent_date}}'), date('3999-01-01'))
+                (36661764, 'SARS-CoV-2 (COVID-19) Ag', 'Observation', 'LOINC', 'LOINC Component', 'LP418019-8', date('{{recent_date}}'), date('3999-01-01')),
+
+                -- Default Value valid_start_date  --
+                (123, 'foo', 'obs', 'bar', 'obs', 'abc', '1970-01-01', '2099-12-31'),
+                (456, 'foo2', 'obs2', 'bax', 'obs', 'def', '1970-01-01', '2099-12-31')
         """).render(fq_dataset_name=self.fq_dataset_name,
                     recent_date=self.recent_date_str,
                     old_date=self.old_date_str)
 
         INSERT_OBSERVATIONS_QUERY = JINJA_ENV.from_string("""
             INSERT INTO `{{fq_dataset_name}}.observation`
-                (observation_id, person_id, observation_concept_id, observation_source_concept_id, observation_date, 
+                (observation_id, person_id, observation_concept_id, observation_source_concept_id, observation_date,
                 observation_type_concept_id)
             VALUES
-                -- Not suppressed: Is PPI valid_start_date < cutoff_date - 1 year --                
+                -- Not suppressed: Is PPI valid_start_date < cutoff_date - 1 year --
                 (1, 101, 1310093, 0, date('2020-05-05'), 1),
                 (2, 115, 765936, 0, date('2020-05-05'), 2),
 
@@ -123,9 +127,17 @@ class RecentConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
 
                 -- Suppressed: Non-PPI and valid_start_date >= cutoff_date - 1 year --
                 (5, 102, 0, 1615361, date('2020-05-05'), 2),
-                (6, 103, 36661764, 0, date('2020-05-05'), 3)
+                (6, 103, 36661764, 0, date('2020-05-05'), 3),
 
-        """).render(fq_dataset_name=self.fq_dataset_name)
+                -- Suppressed:  Default valid_start_date and first usage in less than 12 months --
+                (7, 103, 123, 0, '{{recent_date}}', 0),
+
+                -- Not Suppressed:  Default valid_start_date and first usage more than 12 months ago --
+                (8, 103, 456, 0, '{{old_date}}', 0)
+
+        """).render(fq_dataset_name=self.fq_dataset_name,
+                    recent_date=self.recent_date_str,
+                    old_date=self.old_date_str)
 
         queries = [INSERT_CONCEPTS_QUERY, INSERT_OBSERVATIONS_QUERY]
 
@@ -136,8 +148,8 @@ class RecentConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
                 '.'.join([self.fq_dataset_name, OBSERVATION]),
             'fq_sandbox_table_name':
                 self.fq_sandbox_table_names[0],
-            'loaded_ids': [1, 2, 3, 4, 5, 6],
-            'sandboxed_ids': [5, 6],
+            'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8],
+            'sandboxed_ids': [5, 6, 7],
             'fields': [
                 'observation_id', 'person_id', 'observation_concept_id',
                 'observation_source_concept_id', 'observation_date',
@@ -146,7 +158,8 @@ class RecentConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
             'cleaned_values': [(1, 101, 1310093, 0, self.date, 1),
                                (2, 115, 765936, 0, self.date, 2),
                                (3, 116, 37310268, 98, self.date, 1),
-                               (4, 116, 0, 37310268, self.date, 1)]
+                               (4, 116, 0, 37310268, self.date, 1),
+                               (8, 103, 456, 0, self.old_date, 0)]
         }]
 
         self.default_test(tables_and_counts)
