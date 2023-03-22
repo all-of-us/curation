@@ -12,7 +12,21 @@
 #     name: python3
 # ---
 
-# This notebook is not meant to work with ehr datasets
+# ---
+# This notebook validates in-place `only_ehr` retraction for the following datasets. It assumes time travel is enabled for them:
+# - `only_ehr`: combined/ combined release datasets
+# - `only_ehr`: CT deid base/ clean datasets
+# - `only_ehr`: RT deid base/ clean datasets
+# This notebook does NOT validate the following datasets:
+# - `only_ehr`: EHR datasets
+# - `only_ehr`: Unioned EHR datasets
+# - `rdr_and_ehr`: All datasets
+# - For the datasets above, use `retraction_in_place_validation.py` instead.
+# - `only_ehr`: RDR datasets (If `only_ehr`, it skips retraction for RDR)
+# This notebook is not tested against the following datasets. Use it carefully:
+# - `only_ehr`: Backup datasets
+# - `only_ehr`: Sandbox datasets
+# ---
 
 # + tags=["parameters"]
 project_id: str = ""  # identifies the project where datasets are located
@@ -38,7 +52,7 @@ client = BigQueryClient(project_id, credentials=impersonation_creds)
 
 # ## List of tables with person_id column
 
-all_pid_table_list = []
+all_pid_tables_lists = []
 for dataset in datasets:
     person_id_tables_query = JINJA_ENV.from_string('''
   SELECT table_name
@@ -56,8 +70,8 @@ for dataset in datasets:
         if table in CDM_TABLES and table not in ('person', 'death',
                                                  'survey_conduct')
     ]
-    all_pid_table_list.append(pid_table_list)
-for table_list, dataset in zip(all_pid_table_list, datasets):
+    all_pid_tables_lists.append(pid_table_list)
+for table_list, dataset in zip(all_pid_tables_lists, datasets):
     print(dataset)
     ICD.display(table_list)
     print("\n")
@@ -87,7 +101,7 @@ rids_query
 
 # +
 all_results = []
-for dataset in datasets:
+for dataset, pid_table_list in zip(datasets, all_pid_tables_lists):
     table_check_query = JINJA_ENV.from_string('''
   SELECT
     \'{{table_name}}\' AS table_name,
@@ -145,7 +159,7 @@ for result, dataset in zip(all_results, datasets):
 # We expect PPI/PM data to exist for the listed participants even after the retraction. So here we are checking the record count of the source data minus the EHR records is equal to the record count post retraction.
 
 all_results = []
-for dataset in datasets:
+for dataset, pid_table_list in zip(datasets, all_pid_tables_lists):
     table_row_counts_query = JINJA_ENV.from_string('''
   SELECT 
     '{{table_name}}' as table_id, count(*) as {{count}}
@@ -282,7 +296,7 @@ for result, dataset in zip(all_results, datasets):
 #
 
 all_results = []
-for dataset in datasets:
+for dataset, pid_table_list in zip(datasets, all_pid_tables_lists):
     mapping_ext_check_query = JINJA_ENV.from_string('''
   SELECT
     \'{{mapping_table}}\' as table_name,
