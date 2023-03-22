@@ -11,23 +11,75 @@ from datetime import datetime
 # Project imports
 from cdr_cleaner.cleaning_rules.deid.concept_suppression import AbstractBqLookupTableConceptSuppression
 from constants.cdr_cleaner import clean_cdr as cdr_consts
-from common import JINJA_ENV, CDM_TABLES
-from utils.bq import validate_bq_date_string
+from common import JINJA_ENV, CDM_TABLES, DEFAULT_CONCEPT_VALID_START_DATE
+from utils.bq import validate_bq_date_string, list_tables
 from utils import pipeline_logging
+from resources import get_concept_id_fields, get_primary_key, get_primary_date_field
+from gcloud.bq import BigQueryClient
 
 # Third party imports
 from google.cloud.exceptions import GoogleCloudError
+from google.cloud import bigquery
 
 LOGGER = logging.getLogger(__name__)
 
 SUPPRESSION_RULE_CONCEPT_TABLE = 'recent_concepts'
+CONCEPT_FIRST_USE_TABLE = 'concept_first_use'
+
+RETRIEVE_CONCEPT_FIRST_USES_QUERY = JINJA_ENV.from_string("""
+CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_id}}.{{concept_first_use_table}}` AS
+    SELECT
+        c.concept_id,
+        CASE 
+            WHEN c.valid_start_date = '{{ default_valid_start_date }}' AND min_uses.min_use_date IS NOT NULL
+                THEN min_uses.min_use_date
+            ELSE
+                c.valid_start_date
+        END valid_start_date
+    FROM (
+        SELECT
+            concept_id, MIN(min_use_date) min_use_date
+        FROM (
+            {% for table_info in table_infos  %}
+            -- Get min date of unpivoted concept id fields --
+            (
+                WITH concept_id_fields AS (
+                SELECT
+                    {{ table_info['concept_id_fields'] | join(', ') }},
+                    {{ table_info['primary_datefield'] }}
+                FROM `{{project_id}}.{{dataset_id}}.{{table_info['table_name']}}` c
+                ),
+                unpivoted_concept_if_fields AS (
+                SELECT
+                    *
+                FROM concept_id_fields
+                UNPIVOT(concept_id FOR concept_id_field IN ({{ table_info['concept_id_fields'] | join(', ') }}))
+                )
+                SELECT
+                concept_id, MIN({{ table_info['primary_datefield'] }}) min_use_date
+                FROM unpivoted_concept_if_fields
+                GROUP BY concept_id
+            )
+            {% if not loop.last %}
+            UNION ALL
+            {% endif %}
+            {% endfor %}
+        ) combined
+        GROUP BY concept_id    
+    ) min_uses
+    RIGHT JOIN `{{project_id}}.{{dataset_id}}.concept` c
+        ON c.concept_id = min_uses.concept_id
+
+""")
 
 RECENT_CONCEPT_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_id}}.{{concept_suppression_lookup_table}}` AS
-SELECT *
-FROM `{{project_id}}.{{dataset_id}}.concept` 
+SELECT c.*
+FROM `{{project_id}}.{{dataset_id}}.concept` c
+JOIN `{{project_id}}.{{sandbox_id}}.{{concept_first_use_table}}` first_use
+    ON first_use.concept_id = c.concept_id
 WHERE
-  valid_start_date >= DATE_SUB(DATE('{{cutoff_date}}'), INTERVAL 1 YEAR)
+  first_use.valid_start_date >= DATE_SUB(DATE('{{cutoff_date}}'), INTERVAL 1 YEAR)
     AND vocabulary_id <> 'PPI'
 """)
 
@@ -70,14 +122,54 @@ class RecentConceptSuppression(AbstractBqLookupTableConceptSuppression):
             table_namer=table_namer)
 
     def create_suppression_lookup_table(self, client):
+        self.retrieve_all_concept_first_uses(client)
+
         concept_suppression_lookup_query = RECENT_CONCEPT_QUERY.render(
             project_id=self.project_id,
             dataset_id=self.dataset_id,
             sandbox_id=self.sandbox_dataset_id,
             concept_suppression_lookup_table=self.
             concept_suppression_lookup_table,
-            cutoff_date=self.cutoff_date)
+            cutoff_date=self.cutoff_date,
+            concept_first_use_table=CONCEPT_FIRST_USE_TABLE)
         query_job = client.query(concept_suppression_lookup_query)
+        result = query_job.result()
+
+        if hasattr(result, 'errors') and result.errors:
+            LOGGER.error(f"Error running job {result.job_id}: {result.errors}")
+            raise GoogleCloudError(
+                f"Error running job {result.job_id}: {result.errors}")
+
+    def retrieve_all_concept_first_uses(self, client):
+
+        table_infos = []
+        dataset_ref = bigquery.DatasetReference(self.project_id,
+                                                self.dataset_id)
+        tables_in_dataset = BigQueryClient.list_tables(client, dataset_ref)
+        tables_in_dataset = [table.table_id for table in tables_in_dataset]
+
+        for table_name in CDM_TABLES:
+            primary_key = get_primary_key(table_name)
+            concept_id_fields = get_concept_id_fields(table_name)
+            primary_date_field = get_primary_date_field(table_name)
+
+            if concept_id_fields and primary_date_field and table_name in tables_in_dataset:
+                table_infos.append({
+                    'table_name': table_name,
+                    'primary_key': primary_key,
+                    'primary_datefield': primary_date_field,
+                    'concept_id_fields': concept_id_fields
+                })
+
+        retrieve_all_concepts_first_uses = RETRIEVE_CONCEPT_FIRST_USES_QUERY.render(
+            table_infos=table_infos,
+            project_id=self.project_id,
+            dataset_id=self.dataset_id,
+            sandbox_id=self.sandbox_dataset_id,
+            concept_first_use_table=CONCEPT_FIRST_USE_TABLE,
+            default_valid_start_date=DEFAULT_CONCEPT_VALID_START_DATE)
+
+        query_job = client.query(retrieve_all_concepts_first_uses)
         result = query_job.result()
 
         if hasattr(result, 'errors') and result.errors:

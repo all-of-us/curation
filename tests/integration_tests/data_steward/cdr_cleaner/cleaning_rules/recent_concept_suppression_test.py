@@ -13,7 +13,7 @@ import os
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.recent_concept_suppression import RecentConceptSuppression
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
-from common import JINJA_ENV, OBSERVATION, CONCEPT, CONCEPT_RELATIONSHIP, CONCEPT_ANCESTOR
+from common import JINJA_ENV, OBSERVATION, DRUG_EXPOSURE, CONCEPT, CONCEPT_RELATIONSHIP, CONCEPT_ANCESTOR
 
 # Third party imports
 from dateutil.parser import parse
@@ -55,10 +55,12 @@ class RecentConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
         cls.fq_table_names = [
             f'{project_id}.{dataset_id}.{CONCEPT}',
             f'{project_id}.{dataset_id}.{OBSERVATION}',
+            f'{project_id}.{dataset_id}.{DRUG_EXPOSURE}',
         ]
 
         cls.fq_sandbox_table_names.extend([
             f'{cls.project_id}.{cls.sandbox_id}.{cls.rule_instance.sandbox_table_for(OBSERVATION)}',
+            f'{cls.project_id}.{cls.sandbox_id}.{cls.rule_instance.sandbox_table_for(DRUG_EXPOSURE)}',
             f'{cls.project_id}.{cls.sandbox_id}.{cls.rule_instance.concept_suppression_lookup_table}'
         ])
 
@@ -78,6 +80,7 @@ class RecentConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
         self.old_date_str = self.old_date.isoformat()
 
         self.date = parse('2020-05-05').date()
+        self.datetime = parse('2020-05-05 00:00:00 UTC')
 
         super().setUp()
 
@@ -139,7 +142,36 @@ class RecentConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
                     recent_date=self.recent_date_str,
                     old_date=self.old_date_str)
 
-        queries = [INSERT_CONCEPTS_QUERY, INSERT_OBSERVATIONS_QUERY]
+        INSERT_DRUG_EXPOSURES_QUERY = JINJA_ENV.from_string("""
+            INSERT INTO `{{fq_dataset_name}}.drug_exposure`
+                (drug_exposure_id, person_id, drug_concept_id, drug_source_concept_id, drug_exposure_start_date, drug_exposure_start_datetime, drug_type_concept_id)
+            VALUES
+                -- Not suppressed: Is PPI valid_start_date < cutoff_date - 1 year --
+                (1, 101, 1310093, 0, date('2020-05-05'), timestamp('2020-05-05 00:00:00 UTC'), 1),
+                (2, 115, 765936, 0, date('2020-05-05'), timestamp('2020-05-05'), 2),
+
+                -- Not suppressed: valid_start_date < cutoff_date - 1 year --
+                (3, 116, 37310268, 98, date('2020-05-05'), timestamp('2020-05-05 00:00:00 UTC'), 1),
+                (4, 116, 0, 37310268, date('2020-05-05'), timestamp('2020-05-05 00:00:00 UTC'), 1),
+
+                -- Suppressed: Non-PPI and valid_start_date >= cutoff_date - 1 year --
+                (5, 102, 0, 1615361, date('2020-05-05'), timestamp('2020-05-05 00:00:00 UTC'), 2),
+                (6, 103, 36661764, 0, date('2020-05-05'), timestamp('2020-05-05 00:00:00 UTC'), 3),
+
+                -- Suppressed:  Default valid_start_date and first usage in less than 12 months --
+                (7, 103, 123, 0, '{{recent_date}}', timestamp('2020-05-05 00:00:00 UTC'), 0),
+
+                -- Not Suppressed:  Default valid_start_date and first usage more than 12 months ago --
+                (8, 103, 456, 0, '{{old_date}}', timestamp('2020-05-05 00:00:00 UTC'), 0)
+
+        """).render(fq_dataset_name=self.fq_dataset_name,
+                    recent_date=self.recent_date_str,
+                    old_date=self.old_date_str)
+
+        queries = [
+            INSERT_CONCEPTS_QUERY, INSERT_OBSERVATIONS_QUERY,
+            INSERT_DRUG_EXPOSURES_QUERY
+        ]
 
         self.load_test_data(queries)
 
@@ -160,6 +192,25 @@ class RecentConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
                                (3, 116, 37310268, 98, self.date, 1),
                                (4, 116, 0, 37310268, self.date, 1),
                                (8, 103, 456, 0, self.old_date, 0)]
+        }, {
+            'fq_table_name':
+                '.'.join([self.fq_dataset_name, DRUG_EXPOSURE]),
+            'fq_sandbox_table_name':
+                self.fq_sandbox_table_names[1],
+            'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8],
+            'sandboxed_ids': [5, 6, 7],
+            'fields': [
+                'drug_exposure_id', 'person_id', 'drug_concept_id',
+                'drug_source_concept_id', 'drug_exposure_start_date',
+                'drug_exposure_start_datetime', 'drug_type_concept_id'
+            ],
+            'cleaned_values': [
+                (1, 101, 1310093, 0, self.date, self.datetime, 1),
+                (2, 115, 765936, 0, self.date, self.datetime, 2),
+                (3, 116, 37310268, 98, self.date, self.datetime, 1),
+                (4, 116, 0, 37310268, self.date, self.datetime, 1),
+                (8, 103, 456, 0, self.old_date, self.datetime, 0)
+            ]
         }]
 
         self.default_test(tables_and_counts)

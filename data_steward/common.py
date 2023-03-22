@@ -285,3 +285,6 @@ CDR_SCOPES = [
     'https://www.googleapis.com/auth/devstorage.read_write',
     'https://www.googleapis.com/auth/trace.append'
 ]
+
+# Default Concept valid_start_date
+DEFAULT_CONCEPT_VALID_START_DATE = '1970-01-01'
