@@ -12,7 +12,21 @@
 #     name: python3
 # ---
 
-# Notebook to QA ehr datasets
+# ---
+# This notebook validates in-place retraction for the following datasets.  It assumes time travel is enabled for them:
+# - `only_ehr`: EHR datasets
+# - `only_ehr`: Unioned EHR datasets
+# - `rdr_and_ehr`: RDR datasets
+# - `rdr_and_ehr`: combined/ combined release datasets
+# - `rdr_and_ehr`: CT deid base/ clean datasets
+# - `rdr_and_ehr`: RT deid base/ clean datasets
+# This notebook does NOT validate the following datasets:
+# - `only_ehr`: All datasets except EHR and Unioned EHR datasets
+# - For the datasets above, use `ehr_retraction_in_place_validation.py` instead.
+# This notebook is not tested against the following datasets. Use it carefully:
+# - `rdr_and_ehr`: Backup datasets
+# - `rdr_and_ehr`: Sandbox datasets
+# ---
 
 # + tags=["parameters"]
 project_id: str = ""  # identifies the project where datasets are located
@@ -37,7 +51,7 @@ client = BigQueryClient(project_id, credentials=impersonation_creds)
 
 # ## List of tables with person_id column
 
-all_pid_table_list = []
+all_pid_tables_lists = []
 for dataset in datasets:
     person_id_tables_query = JINJA_ENV.from_string('''
   SELECT table_name
@@ -46,8 +60,8 @@ for dataset in datasets:
   ''').render(project=project_id, dataset=dataset)
     pid_table_list = client.query(person_id_tables_query).to_dataframe().get(
         'table_name').to_list()
-    all_pid_table_list.append(pid_table_list)
-for table_list, dataset in zip(all_pid_table_list, datasets):
+    all_pid_tables_lists.append(pid_table_list)
+for table_list, dataset in zip(all_pid_tables_lists, datasets):
     print(dataset)
     ICD.display(table_list)
     print("\n")
@@ -73,7 +87,7 @@ WITH
 
 # +
 all_results = []
-for dataset in datasets:
+for dataset, pid_table_list in zip(datasets, all_pid_tables_lists):
     table_check_query = JINJA_ENV.from_string('''
   SELECT
     \'{{table_name}}\' AS table_name,
@@ -113,7 +127,7 @@ for result, dataset in zip(all_results, datasets):
 # ## 2. Verify Row counts of source dataset minus the retracted participants  data is equal to the
 
 all_results = []
-for dataset in datasets:
+for dataset, pid_table_list in zip(datasets, all_pid_tables_lists):
     table_row_counts_query = JINJA_ENV.from_string('''
   SELECT 
     '{{table_name}}' as table_id, count(*) as {{count}}
@@ -231,7 +245,7 @@ for result, dataset in zip(all_results, datasets):
 # ## 4. Verify if mapping/ext tables are cleaned after retraction
 
 all_results = []
-for dataset in datasets:
+for dataset, pid_table_list in zip(datasets, all_pid_tables_lists):
     mapping_ext_check_query = JINJA_ENV.from_string('''
   SELECT
     \'{{mapping_table}}\' as table_name,
