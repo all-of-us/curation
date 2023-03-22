@@ -536,6 +536,7 @@ def create_dataset(project_id,
     return dataset
 
 
+@deprecated(reason='query_sheet_linked_bq_table is deprecated')
 def query_sheet_linked_bq_table(project_id, table_content_query,
                                 external_data_scopes):
     """
