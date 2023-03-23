@@ -581,8 +581,8 @@ class BigQueryClient(Client):
             backoff *= 2
         return incomplete_jobs
 
-    def point_in_time(self, dataset_id: str, tables: typing.Union[list, str], as_of: datetime) -> list:
-
+    def point_in_time(self, dataset_id: str, tables: typing.Union[list, str],
+                      as_of: datetime) -> datetime:
         """
         generate a table or list of tables at a specific point in time.
 
@@ -590,44 +590,31 @@ class BigQueryClient(Client):
         :param tables: a table or list of tables to infer
         :param as_of: The table's contents at specific point in
 
-        :return: a list of table names created
+        :return: the time of creation
         """
         if isinstance(tables, str):
             tables = [tables]
 
-        time_delta = (datetime.now() - as_of)
+        now = datetime.now()
+        time_delta = (now - as_of)
         interval = time_delta.days * 24 * 60 * 60 + time_delta.seconds
 
         q = JINJA_ENV.from_string("""
-            CREATE OR REPLACE TABLE `{{project_id}}.{{dataset_id}}.{{table_id}}_{{year}}_{{month}}_{{day}}_{{hour}}_{{minutes}}_{{second}}` AS
+            CREATE OR REPLACE TABLE `{{project_id}}.{{dataset_id}}.{{table_id}}_restore` AS
             SELECT * FROM `{{project_id}}.{{dataset_id}}.{{table_id}}`
                 FOR SYSTEM_TIME AS OF
                 TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {{interval}} SECOND)
         """)
 
         queries = []
-        new_tables = []
         for table_id in tables:
             queries.append(
-                q.render(
-                    project_id=self.project,
-                    dataset_id=dataset_id,
-                    table_id=table_id,
-                    year=as_of.year
-                    month=as_of.month
-                    day=as_of.day,
-                    hour=as_of.hour,
-                    minutes=as_of.minute,
-                    second=as_of.second,
-                    interval=interval)
-                )
-            new_tables.append(
-                (f'{self.project}.{dataset_id}.{table_id}_'
-                f'{as_of.year}_{as_of.month}_{as_of.day}_'
-                f'{as_of.hour}_{as_of.minute}_{as_of.second}')
-            )
+                q.render(project_id=self.project,
+                         dataset_id=dataset_id,
+                         table_id=table_id,
+                         interval=interval))
 
         for query in queries:
             self.query(query, job_config=None)
 
-        return new_tables
+        return now
