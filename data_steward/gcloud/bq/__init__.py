@@ -592,12 +592,15 @@ class BigQueryClient(Client):
 
         :return: the time of creation
         """
-        if isinstance(tables, str):
-            tables = [tables]
 
         now = datetime.now()
         time_delta = (now - as_of)
-        interval = time_delta.days * 24 * 60 * 60 + time_delta.seconds
+        if time_delta.days > 6:
+            raise ValueError(
+                f'`as_of` date is too far in the past {time_delta.days} > 6')
+
+        if isinstance(tables, str):
+            tables = [tables]
 
         q = JINJA_ENV.from_string("""
             CREATE OR REPLACE TABLE `{{project_id}}.{{dataset_id}}.{{table_id}}_restore` AS
@@ -607,6 +610,8 @@ class BigQueryClient(Client):
         """)
 
         queries = []
+        interval = time_delta.days * 24 * 60 * 60 + time_delta.seconds
+
         for table_id in tables:
             queries.append(
                 q.render(project_id=self.project,
