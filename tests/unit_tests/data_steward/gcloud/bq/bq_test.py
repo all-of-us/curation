@@ -435,3 +435,27 @@ class BQCTest(TestCase):
         self.assertEqual(result, False)
         mock_environ_get.assert_called_once()
         mock_get_table.assert_called_with(table_name)
+
+    @patch.object(BigQueryClient, 'query')
+    @patch.object(BigQueryClient, 'update_dataset')
+    @patch.object(BigQueryClient, 'create_dataset')
+    @patch.object(BigQueryClient, 'list_tables')
+    @patch.object(BigQueryClient, 'get_dataset')
+    def test_restore_from_time(self, mock_get_dataset, mock_list_tables,
+                               mock_create_dataset, mock_update_dataset,
+                               mock_query):
+
+        with self.assertRaises(ValueError):
+            self.client.restore_from_time([self.dataset_id], 99)
+
+        mock_get_dataset.return_value = MagicMock()
+        mock_get_dataset.dataset_id = 'dataset_id_foo'
+
+        mock_table = MagicMock()
+        mock_table.table_id = 'table_id_bar'
+        mock_list_tables.return_value = [mock_table]
+
+        mock_create_dataset.return_value = MagicMock()
+        mock_create_dataset.labels = {'key_foo': 'value_bar'}
+
+        self.client.restore_from_time([self.dataset_id], 6)
