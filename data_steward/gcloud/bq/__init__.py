@@ -3,7 +3,7 @@ Interact with Google Cloud BigQuery
 """
 # Python stl imports
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 import typing
 import logging
 from time import sleep
@@ -583,7 +583,7 @@ class BigQueryClient(Client):
 
     def restore_from_time(self,
                           datasets: typing.List[str],
-                          as_of: datetime,
+                          days_ago: int,
                           job_config: QueryJobConfig = None) -> datetime:
         """
         restore a list of datasets from a specific point in time.
@@ -595,18 +595,15 @@ class BigQueryClient(Client):
         :return: the time of creation
         """
         #* Create, evaluate, and template time information
-        now = datetime.now()
-        time_delta = (now - as_of)
-        if time_delta.days > 6:
+        if days_ago > 6:
             raise ValueError(
-                f'`as_of` date is too far in the past {time_delta.days} > 6')
+                f'`days_ago` is too far in the past: {days_ago} > 6')
 
-        interval = time_delta.days * 24 * 60 * 60 + time_delta.seconds
         time_travel_q = JINJA_ENV.from_string("""
             CREATE TABLE `{{project_id}}.{{dataset_id}}_restore.{{table_id}}_restore`
             CLONE `{{project_id}}.{{dataset_id}}.{{table_id}}`
                 FOR SYSTEM_TIME AS OF
-                TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {{interval}} SECOND)
+                TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {{days_ago}} DAYS)
         """)
 
         #* Labels and Job information
@@ -635,13 +632,11 @@ class BigQueryClient(Client):
             queries = []
             for table in org_tables:
                 queries.append(
-                    time_travel_q.render(project_id=self.project,
-                                         dataset_id=dset.dataset_id,
-                                         table_id=table.table_id,
-                                         interval=interval))
+                time_travel_q.render(project_id=self.project,
+                                     dataset_id=rest_dset.dataset_id,
+                                     table_id=table.table_id,
+                                     days_ago=days_ago))
 
             # Execute each query
             for query in queries:
                 self.query(query, job_config=job_config)
-
-        return now
