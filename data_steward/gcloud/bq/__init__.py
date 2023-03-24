@@ -12,10 +12,10 @@ from time import sleep
 from google.api_core import retry
 from google.cloud import bigquery
 from google.cloud.bigquery import Client
-from google.cloud.bigquery.job import CopyJobConfig, WriteDisposition
+from google.cloud.bigquery.job import CopyJobConfig, WriteDisposition, QueryJobConfig
 
 from google.auth import default
-from google.api_core.exceptions import GoogleAPIError, BadRequest
+from google.api_core.exceptions import GoogleAPIError, BadRequest, Conflict
 from google.cloud.exceptions import NotFound
 from opentelemetry import trace
 from opentelemetry.exporter.cloud_trace import CloudTraceSpanExporter
@@ -581,45 +581,67 @@ class BigQueryClient(Client):
             backoff *= 2
         return incomplete_jobs
 
-    def point_in_time(self, dataset_id: str, tables: typing.Union[list, str],
-                      as_of: datetime) -> datetime:
+    def restore_from_time(self,
+                          datasets: typing.List[str],
+                          as_of: datetime,
+                          job_config: QueryJobConfig = None) -> datetime:
         """
-        generate a table or list of tables at a specific point in time.
+        restore a list of datasets from a specific point in time.
+        tables within each dataset are restored.
 
-        :param dataset_id: the dataset id containing the table or tables
-        :param tables: a table or list of tables to infer
+        :param datasets: the dataset list
         :param as_of: The table's contents at specific point in
-
+        :param job_config: An optional config
         :return: the time of creation
         """
-
+        #* Create, evaluate, and template time information
         now = datetime.now()
         time_delta = (now - as_of)
         if time_delta.days > 6:
             raise ValueError(
                 f'`as_of` date is too far in the past {time_delta.days} > 6')
 
-        if isinstance(tables, str):
-            tables = [tables]
-
-        q = JINJA_ENV.from_string("""
-            CREATE OR REPLACE TABLE `{{project_id}}.{{dataset_id}}.{{table_id}}_restore` AS
-            SELECT * FROM `{{project_id}}.{{dataset_id}}.{{table_id}}`
+        interval = time_delta.days * 24 * 60 * 60 + time_delta.seconds
+        time_travel_q = JINJA_ENV.from_string("""
+            CREATE TABLE `{{project_id}}.{{dataset_id}}_restore.{{table_id}}_restore`
+            CLONE `{{project_id}}.{{dataset_id}}.{{table_id}}`
                 FOR SYSTEM_TIME AS OF
                 TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {{interval}} SECOND)
         """)
 
-        queries = []
-        interval = time_delta.days * 24 * 60 * 60 + time_delta.seconds
+        #* Labels and Job information
+        job_config = job_config if job_config else QueryJobConfig()
+        job_config.labels.update({'temp': ''})
 
-        for table_id in tables:
-            queries.append(
-                q.render(project_id=self.project,
-                         dataset_id=dataset_id,
-                         table_id=table_id,
-                         interval=interval))
+        for dset in datasets:
+            # for each dataset, get a list of tables and create the recovery dataset
+            # org -> original, rest -> restore
+            org_dset = self.get_dataset(dset)
+            org_tables = list(self.list_tables(org_dset))
 
-        for query in queries:
-            self.query(query, job_config=None)
+            try:
+                rest_dset = self.create_dataset(
+                    f'{org_dset.dataset_id}_restore')
+            except Conflict:
+                RuntimeError((
+                    f'The dataset {rest_dset.dataset_id} already exists.  '
+                    f'Delete the dataset first to prevent an accidental overwrite.'
+                ))
+            # add the label to include 'temp'
+            rest_dset.labels.update({'temp': ''})
+            self.update_dataset(rest_dset, ["labels"])
+
+            # Generate a list of queries for each table from a template
+            queries = []
+            for table in org_tables:
+                queries.append(
+                    time_travel_q.render(project_id=self.project,
+                                         dataset_id=dset.dataset_id,
+                                         table_id=table.table_id,
+                                         interval=interval))
+
+            # Execute each query
+            for query in queries:
+                self.query(query, job_config=job_config)
 
         return now
