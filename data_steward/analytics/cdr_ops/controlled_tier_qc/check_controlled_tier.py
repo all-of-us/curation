@@ -27,19 +27,17 @@ from analytics.cdr_ops.controlled_tier_qc.code.controlled_tier_qc import run_qc,
 
 pd.set_option('display.max_colwidth', -1)
 pd.set_option('display.width', None)
-# -
 
-# If you want to run all the QC rules: to_include = []
-# If you want to run specific QC rule(s): Add those rules to to_include
-# to_include = ['DC-1370', 'DC-1377', 'DC-1346', 'DC-1348', 'DC-1355', 'DC-1357', 'DC-1359',
-#             'DC-1362', 'DC-1364', 'DC-1366', 'DC-1368', 'DC-1373', 'DC-1382', 'DC-1388',
-#             'DC-1496', 'DC-1527', 'DC-1535']
-to_include = []
+#  If you want to ignore specific QC rule(s): Remove those rules from to_include
+to_include = ['DC-1370', 'DC-1377', 'DC-1346', 'DC-1348', 'DC-1355', 'DC-1357', 'DC-1359',
+            'DC-1362', 'DC-1364', 'DC-1366', 'DC-1368', 'DC-1373', 'DC-1382', 'DC-1388',
+            'DC-1496', 'DC-1527', 'DC-1535']
 checks = run_qc(project_id,
                 post_deid_dataset,
                 pre_deid_dataset,
                 mapping_dataset,
                 rule_code=to_include)
+# -
 
 # For more information on each rule, click on the title. That will take you to the JIRA ticket that has more details of what the rule is supposed to check.
 
