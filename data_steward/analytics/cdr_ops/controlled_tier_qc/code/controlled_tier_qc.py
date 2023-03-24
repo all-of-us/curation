@@ -88,20 +88,26 @@ def display_check_summary_by_rule(checks_df, to_include):
         nothing_to_report = set(to_include) - set(by_rule['rule'])
 
         by_rule = by_rule.merge(check_description, how='outer', on='rule')
+
+        by_rule['n_row_violation'] = by_rule['n_row_violation'].fillna(
+            0).astype(int)
+
         by_rule.loc[by_rule['rule'].isin(rules_not_run), 'note'] = 'NOT RUN'
         by_rule.loc[by_rule['rule'].isin(nothing_to_report),
                     'note'] = 'NOTHING TO REPORT'
-        by_rule['n_row_violation'] = by_rule['n_row_violation'].fillna(
-            0).astype(int)
+        by_rule.loc[by_rule['n_row_violation'] != 0,
+                    'note'] = 'PROBLEM, INVESTIGATE'
     else:
         by_rule = check_description.copy()
         by_rule['n_row_violation'] = 0
+
+        by_rule['n_row_violation'] = by_rule['n_row_violation'].fillna(
+            0).astype(int)
+
         by_rule['note'] = 'NOT RUN'
         by_rule.loc[by_rule['rule'].isin(to_include),
                     'note'] = 'NOTHING TO REPORT'
 
-        by_rule['n_row_violation'] = by_rule['n_row_violation'].fillna(
-            0).astype(int)
         col_order = [col for col in check_description
                     ] + ['n_row_violation', 'note']
         by_rule = by_rule[col_order]
