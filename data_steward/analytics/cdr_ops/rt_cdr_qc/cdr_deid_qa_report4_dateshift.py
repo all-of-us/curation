@@ -393,10 +393,10 @@ WHERE shift BETWEEN 1 AND 364
 q = query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr)  
 df1=execute(client, q) 
 if df1.eq(0).any().any():
- df = df.append({'query' : 'Query13 date shifted in non_deid', 'result' : 'PASS'},  
+ df = df.append({'query' : 'Query14 date shifted in non_deid', 'result' : 'Failure'},
                 ignore_index = True) 
 else:
- df = df.append({'query' : 'Query13 date shifited in non_deid', 'result' : 'Failure'},  
+ df = df.append({'query' : 'Query14 date shifited in non_deid', 'result' : 'PASS'},
                 ignore_index = True) 
 df1
 
@@ -494,10 +494,10 @@ JOIN df8 USING(n_row_not_pass)
 q = query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr)  
 df1=execute(client, q) 
 if df1.eq(0).any().any():
- df = df.append({'query' : 'Query14.3 person_id replaed by research_id in other 8 tables', 'result' : 'PASS'},  
+ df = df.append({'query' : 'Query15 person_id replaed by research_id in other 8 tables', 'result' : 'PASS'},
                 ignore_index = True) 
 else:
- df = df.append({'query' : 'Query14.3 person_id replaed by research_id in other 8 tables', 'result' : 'Failure'},  
+ df = df.append({'query' : 'Query15 person_id replaed by research_id in other 8 tables', 'result' : 'Failure'},
                 ignore_index = True) 
 df1
 
