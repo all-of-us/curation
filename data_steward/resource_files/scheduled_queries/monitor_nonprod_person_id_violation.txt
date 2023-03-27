@@ -58,20 +58,21 @@ BEGIN
 
   -- 2. Loop for every `batch_size` datasets from 1:
   LOOP
-    IF num_nonprod_datasets <= tail THEN BREAK; END IF;
-
     SET head = tail + 1; 
     SET tail = head + batch_size;
+
+    IF num_nonprod_datasets < head THEN BREAK; END IF;
     
     -- 2-1. Collect info about tables (1) with person_id (2) that are last updated within 3 days into a temp table.
     EXECUTE IMMEDIATE CONCAT(
     "  CREATE OR REPLACE TEMP TABLE tmp_tables_with_person_id (project_id STRING, dataset_id STRING, table_id STRING, row_num INT64)",
-    "  AS ", (SELECT STRING_AGG(CONCAT(
+    "  AS ", 
+    "  SELECT project_id, dataset_id, table_id, ROW_NUMBER() OVER (ORDER BY project_id, dataset_id, table_id) AS row_num",
+    "  FROM (", (SELECT STRING_AGG(CONCAT(
     "  SELECT",
     "    table_catalog AS project_id,",
     "    table_schema AS dataset_id,",
     "    table_name AS table_id,",
-    "    ROW_NUMBER() OVER (ORDER BY table_catalog, table_catalog) AS row_num",
     "  FROM `", project_id, ".", dataset_id, ".INFORMATION_SCHEMA.COLUMNS`",
     "  WHERE LOWER(COLUMN_NAME) = 'person_id'",
     "  AND table_name IN (",
@@ -79,6 +80,7 @@ BEGIN
     "    WHERE TIMESTAMP_DIFF(CURRENT_TIMESTAMP(), TIMESTAMP_MILLIS(last_modified_time), DAY) <= 3",
     "  )"), 
     "  UNION ALL \n") FROM tmp_nonprod_datasets WHERE row_num BETWEEN head AND tail)
+    , ")"
     );
 
     -- Log message. Move to the next loop if none is found in 2-1.
@@ -98,15 +100,16 @@ BEGIN
     END IF;
 
     -- Count how many tables with person_id are there in this loop.
-    SET num_nonprod_datasets = (SELECT COUNT(*) FROM tmp_tables_with_person_id);
+    SET num_tables_with_pid = (SELECT COUNT(*) FROM tmp_tables_with_person_id);
 
     -- 2-2. Loop for every `batch_size` tables from 2-1
+    SET sub_head = 0;
+    SET sub_tail = 0;
     LOOP
-      IF num_nonprod_datasets <= sub_tail THEN BREAK; END IF;
-
       SET sub_head = sub_tail + 1; 
       SET sub_tail = sub_head + batch_size;
 
+      IF num_tables_with_pid < sub_head THEN BREAK; END IF;
 
       -- 2-2-1. Check if any tables from 2-1 have violated person_ids. If yes, insert the info to id_violations_in_lower_envs.
       EXECUTE IMMEDIATE CONCAT(
@@ -123,7 +126,11 @@ BEGIN
       "      SELECT person_id FROM `", proj_prod, ".", mapping_dataset, ".primary_pid_rid_mapping`",
       "    )",
       "    HAVING count(*) > 0"), 
-      "    UNION ALL \n") FROM (SELECT project_id, dataset_id, table_id FROM tmp_tables_with_person_id)), 
+      "    UNION ALL \n") FROM (
+        SELECT project_id, dataset_id, table_id 
+        FROM tmp_tables_with_person_id
+        WHERE row_num BETWEEN sub_head AND sub_tail
+      )), 
       "  )",
       "  UNION DISTINCT",
       "  SELECT project_id, dataset_id, table_id, num_violation, 'research_id' AS violation_type, CURRENT_DATE() AS monitor_date",
@@ -151,7 +158,7 @@ BEGIN
   -- 3. Check if any violation is found in this execution. 
   EXECUTE IMMEDIATE CONCAT(
   "  SELECT COUNT(*) FROM `", proj_prod, ".", admin_dataset, ".id_violations_in_lower_envs`",
-  "  WHERE monitor_date = CURRENT_DATE()"
+  "  WHERE monitor_date = CURRENT_DATE() AND project_id != 'No violation found'"
   ) INTO num_violated_tables
   ;
 
