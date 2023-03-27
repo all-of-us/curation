@@ -626,16 +626,16 @@ class BigQueryClient(Client):
                 ))
             # add the label to include 'temp'
             rest_dset.labels.update({'temp': ''})
-            self.update_dataset(rest_dset, ["labels"])
+            self.update_dataset(rest_dset, ['labels'])
 
             # Generate a list of queries for each table from a template
             queries = []
             for table in org_tables:
                 queries.append(
-                time_travel_q.render(project_id=self.project,
-                                     dataset_id=rest_dset.dataset_id,
-                                     table_id=table.table_id,
-                                     days_ago=days_ago))
+                    time_travel_q.render(project_id=self.project,
+                                         dataset_id=rest_dset.dataset_id,
+                                         table_id=table.table_id,
+                                         days_ago=days_ago))
 
             # Execute each query
             for query in queries:
