@@ -607,8 +607,7 @@ def get_primary_key(table):
     :return: Primary key if the CDM table contains a primary key field, None otherwise
     """
     if has_primary_key(table):
-        id_field = table + '_id'
-        return id_field
+        return f'{table}_id'
 
     return None
 
