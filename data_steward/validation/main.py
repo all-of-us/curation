@@ -1096,7 +1096,7 @@ def run_retraction_cron():
         cleaning_args = [
             '-p', project_id, '-d', dataset_id, '-b', sandbox_dataset_id,
             '--data_stage', CRON_RETRACTION, '--run_as',
-            f'{project_id}@appspot.gserviceaccount.com', '-s'
+            f'{project_id}@appspot.gserviceaccount.com'
         ]
         all_cleaning_args = add_kwargs_to_args(cleaning_args, None)
         clean_cdr.main(args=all_cleaning_args)
