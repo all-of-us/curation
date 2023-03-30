@@ -527,10 +527,7 @@ def get_primary_date_field(table_name):
     :return: field_name
     """
     if len(get_date_fields(table_name)) > 0:
-        if table_name in PRIMARY_DATE_FIELDS:
-            primary_date_field = PRIMARY_DATE_FIELDS[table_name]
-
-            return primary_date_field
+        return PRIMARY_DATE_FIELDS.get(table_name)
 
     return None
 
