@@ -216,7 +216,20 @@ if __name__ == '__main__':
     import cdr_cleaner.args_parser as parser
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
-    ARGS = parser.parse_args()
+    ext_parser = parser.get_argument_parser()
+    ext_parser.add_argument(
+        '-c',
+        '--cutoff_date',
+        dest='cutoff_date',
+        action='store',
+        help=
+        ('Cutoff date for data based on <table_name>_date and <table_name>_datetime fields.  '
+         'Should be in the form YYYY-MM-DD.'),
+        required=True,
+        type=validate_bq_date_string,
+    )
+
+    ARGS = ext_parser.parse_args()
     pipeline_logging.configure(level=logging.DEBUG, add_console_handler=True)
 
     if ARGS.list_queries:
