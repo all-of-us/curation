@@ -101,7 +101,7 @@ class RecentConceptSuppression(AbstractBqLookupTableConceptSuppression):
         this SQL, append them to the list of Jira Issues.
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
-        desc = "Suppress COVID EHR vaccine concepts."
+        desc = "Suppress all concepts whose intial use was within 1 year"
 
         try:
             # set to provided date string if the date string is valid

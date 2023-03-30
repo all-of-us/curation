@@ -519,7 +519,7 @@ def get_datetime_fields(table_name) -> List[str]:
     ]
 
 
-def get_primary_date_field(table_name):
+def get_primary_date_field(table_name: str) -> List[str]:
     """
     Get the primary date field in the table.
 
@@ -599,7 +599,7 @@ def has_primary_key(table):
                if field['type'] == 'integer' and field['name'] == id_field)
 
 
-def get_primary_key(table):
+def get_primary_key(table: str) -> List[str]:
     """
     Get primary key of the table if it exists
 
