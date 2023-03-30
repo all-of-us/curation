@@ -49,7 +49,7 @@ CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_id}}.{{concept_first_use_table
                     {{ table_info['primary_datefield'] }}
                 FROM `{{project_id}}.{{dataset_id}}.{{table_info['table_name']}}` c
                 ),
-                unpivoted_concept_if_fields AS (
+                unpivoted_concept_id_fields AS (
                 SELECT
                     *
                 FROM concept_id_fields
@@ -57,7 +57,7 @@ CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_id}}.{{concept_first_use_table
                 )
                 SELECT
                 concept_id, MIN({{ table_info['primary_datefield'] }}) min_use_date
-                FROM unpivoted_concept_if_fields
+                FROM unpivoted_concept_id_fields
                 GROUP BY concept_id
             )
             {% if not loop.last %}
