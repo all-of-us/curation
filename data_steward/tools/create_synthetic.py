@@ -132,8 +132,10 @@ def _fix_survey_conduct_records(client, project_id, staging_ds, sandbox_ds):
                      staging_ds=staging_ds,
                      sandbox_ds=sandbox_ds)
 
-    resp = client.query(que)
-    resp.result()
+    # This is now done in the pipeline.
+    # IF the next fix is implemented in the pipeline, this function can be removed.
+    # resp = client.query(que)
+    # resp.result()
 
     # fix cope survey responses
     que = (f"""
@@ -194,7 +196,7 @@ def _fix_survey_conduct_records(client, project_id, staging_ds, sandbox_ds):
                      staging_ds=staging_ds,
                      sandbox_ds=sandbox_ds)
     resp = client.query(que)
-    resp.result()
+    return resp.result()
 
 
 def _create_empty_fitbit_tables(bq_client, project_id, final_dataset_name):
@@ -249,11 +251,6 @@ def create_tier(project_id: str, input_dataset: str, release_tag: str,
     bq_client.copy_dataset(f'{project_id}.{input_dataset}',
                            f'{project_id}.{datasets[consts.STAGING]}')
 
-    import time
-    LOGGER.info("sleeping after the copy")
-    time.sleep(30)
-    LOGGER.info("Done sleeping after copy")
-
     # 1. add mapping tables
     # EHR consent table is not added because we are not generating
     # synthetic EHR data.  There will not be any to map.
@@ -274,10 +271,6 @@ def create_tier(project_id: str, input_dataset: str, release_tag: str,
         "If unnecessary, remove the function and the call line.")
     _fix_survey_conduct_records(bq_client, project_id, datasets[consts.STAGING],
                                 datasets[consts.SANDBOX])
-
-    LOGGER.info("sleeping after generating mapping tables")
-    time.sleep(30)
-    LOGGER.info("Done sleeping generating mapping tables")
 
     # Run cleaning rules
     cleaning_args = [
