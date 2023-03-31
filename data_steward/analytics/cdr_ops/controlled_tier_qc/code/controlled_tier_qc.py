@@ -37,6 +37,7 @@ logger = logging.getLogger()
 def run_qc(project_id,
            post_deid_dataset,
            pre_deid_dataset,
+           questionnaire_response_dataset,
            mapping_dataset=None,
            rule_code=None) -> pd.DataFrame:
     """
@@ -45,6 +46,7 @@ def run_qc(project_id,
     :param project_id: Project ID of the dataset.
     :param post_deid_dataset: ID of the dataset after DEID.
     :param pre_deid_dataset: ID of the dataset before DEID.
+    :param questionnaire_response_dataset: the dataset where this dataset is created
     :param mapping_dataset: ID of the dataset for mapping.
     :param rule_code: str or list. The rule code(s) to be checked.
                       If None, all the rule codes in CHECK_LIST_CSV_FILE are checked.
@@ -65,7 +67,7 @@ def run_qc(project_id,
         check_df = filter_data_by_rule(check_file, rule)
         check_function = eval(row['code'])
         df = check_function(check_df, project_id, post_deid_dataset,
-                            pre_deid_dataset, mapping_dataset)
+                            pre_deid_dataset, questionnaire_response_dataset, mapping_dataset)
         checks.append(df)
     return pd.concat(checks, sort=True).reset_index(drop=True)
 
