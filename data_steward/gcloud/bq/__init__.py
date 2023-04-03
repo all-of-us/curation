@@ -617,8 +617,8 @@ class BigQueryClient(Client):
                 rest_dset = self.create_dataset(
                     f'{org_dset.dataset_id}_restore')
             except Conflict:
-                RuntimeError((
-                    f'The dataset {rest_dset.dataset_id} already exists.  '
+                raise RuntimeError((
+                    f'The dataset {org_dset.dataset_id}_restore already exists.  '
                     f'Delete the dataset first to prevent an accidental overwrite.'
                 ))
             # add the label to include 'temp'
