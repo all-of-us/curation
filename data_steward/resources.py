@@ -532,16 +532,17 @@ def get_primary_date_field(table_name: str) -> List[str]:
     return None
 
 
-def has_domain_table_id(table_name):
+def has_domain_table_id(table_name: str) -> str:
     """
     Determines if a table has domain_table_id
 
     :param table_name: Name of a cdm domain table
     :return: True/False if domain_table_id is available is table schemas
     """
-    return f'{table_name}_id' in [
+    id_field = f'{table_name}_id'
+    return id_field if id_field in [
         field.get('name', '') for field in fields_for(table_name)
-    ]
+    ] else None
 
 
 def get_field_type(table_name, field_name):
