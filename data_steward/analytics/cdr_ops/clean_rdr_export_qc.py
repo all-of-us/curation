@@ -604,6 +604,60 @@ WHERE primary.research_id <> rdr.research_id
 query = tpl.render(new_rdr=new_rdr, project_id=project_id)
 execute(client, query)
 
+# # Primary_pid_rid_mapping cleaning checks
+#
+# The query will check for three types of issue pertaining to the pipeline_tables.primary_pid_rid_mapping. <br>
+# **The resulting dataframe will be empty if there are no problems with the table.** <br>
+# **If the dataframe is not empty the information below will help troubleshoot.**
+#
+# Background: RDR sends pid_rid_mapping in the rdr export. A cleaning rule `store_pid_rid_mappings.py` appends any pid/rid mappings from the rdr export into pipeline_tables.primary_pid_rid_mapping if they aren't already there and generates the shift column.
+#
+# The first check is for finding any duplicates that exist in primary_pid_rid_mapping table. If there are issues, `'duplicates_in_pprm'` will appear in the output dataframe along with the count of this occurance. This check failing implies the CR did not run as expected and created the duplicates in primary_pid_rid_mapping.
+#
+# The second check is for finding any records in the rdr export pid_rid_mapping table that don't exist in the primary_pid_rid_mapping table. If there are issues, `'prm_missing_from_pprm'` will appear in the output dataframe along with the count of this occurance. This check failing implies the CR did not run as expected. All new records should have been appended to primary_pid_rid_mapping.
+#
+# The third check ensures the shift column contains numbers between 1 and 135(exclusive). If there are issues, `'shift_off_spec'` will appear in the output dataframe along with the count of this occurance. This check failing implies the CR did not run as expected. All records in pprm should have a shift between 1 and 365. 
+#
+
+tpl = JINJA_ENV.from_string('''
+
+WITH issues AS (
+SELECT
+    'duplicates_in_pprm' as issue_type
+    ,person_id
+FROM `{{project_id}}.pipeline_tables.primary_pid_rid_mapping` as pprm
+GROUP BY person_id
+HAVING COUNT(person_id) > 1
+
+UNION ALL
+
+SELECT 
+    'prm_missing_from_pprm' as issue_type
+    ,person_id
+FROM `{{project_id}}.{{new_rdr}}.pid_rid_mapping` prm
+LEFT JOIN `{{project_id}}.pipeline_tables.primary_pid_rid_mapping` pprm
+USING (person_id, research_id)
+WHERE pprm.person_id IS NULL
+
+UNION ALL
+
+SELECT 
+    'shift_off_spec' as issue_type
+    ,person_id
+FROM `{{project_id}}.pipeline_tables.primary_pid_rid_mapping` pprm
+WHERE shift NOT BETWEEN 1 AND 364
+)
+
+SELECT 
+    issue_type,
+    COUNT(person_id) as count_issue
+FROM issues
+GROUP BY issue_type
+
+''')
+query = tpl.render(new_rdr=new_rdr, project_id=project_id)
+execute(client, query)
+
 # # Checks for basics survey module
 # Participants with data in other survey modules must also have data from the basics survey module.
 # This check identifies survey responses associated with participants that do not have any responses
