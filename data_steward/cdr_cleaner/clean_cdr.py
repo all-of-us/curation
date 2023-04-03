@@ -133,6 +133,7 @@ from cdr_cleaner.cleaning_rules.dedup_measurement_value_as_concept_id import Ded
 from cdr_cleaner.cleaning_rules.drop_orphaned_pids import DropOrphanedPIDS
 from cdr_cleaner.cleaning_rules.drop_orphaned_survey_conduct_ids import DropOrphanedSurveyConductIds
 from cdr_cleaner.cleaning_rules.deid.deidentify_aian_zip3_values import DeidentifyAIANZip3Values
+import constants.global_variables
 from constants.cdr_cleaner import clean_cdr_engine as ce_consts
 from constants.cdr_cleaner.clean_cdr import DataStage, DATA_CONSISTENCY, CRON_RETRACTION
 
@@ -562,7 +563,9 @@ def main(args=None):
         for query in query_list:
             LOGGER.info(query)
     else:
-        clean_engine.add_console_logging(args.console_log)
+        # Disable logging if running retraction cron
+        if not constants.global_variables.DISABLE_SANDBOX:
+            clean_engine.add_console_logging(args.console_log)
         clean_engine.clean_dataset(project_id=args.project_id,
                                    dataset_id=args.dataset_id,
                                    sandbox_dataset_id=args.sandbox_dataset_id,

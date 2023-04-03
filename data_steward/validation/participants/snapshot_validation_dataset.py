@@ -13,6 +13,7 @@ from google.cloud.bigquery import Table, Dataset
 # Project imports
 from utils import auth, pipeline_logging
 from gcloud.bq import BigQueryClient
+from resources import replace_special_characters_for_labels
 from common import DRC_OPS, CDR_SCOPES, IDENTITY_MATCH, DE_IDENTIFIED
 from constants.validation.participants.snapshot_validaiton_dataset import (
     PARTITIONS_QUERY, SNAPSHOT_TABLE_QUERY)
@@ -94,7 +95,7 @@ def create_snapshot(client: BigQueryClient, release_tag: str) -> str:
     dataset.description = f'{DRC_OPS} + {release_tag}_ehr'
     dataset.labels = {
         'owner': 'curation',
-        'release_tag': release_tag,
+        'release_tag': replace_special_characters_for_labels(release_tag),
         DE_IDENTIFIED: 'false',
         'phase': 'clean'
     }
