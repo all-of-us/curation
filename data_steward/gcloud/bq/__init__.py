@@ -24,7 +24,7 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
 # Project imports
 from utils import auth
-from resources import fields_for, get_and_validate_schema_fields
+from resources import fields_for, get_and_validate_schema_fields, replace_special_characters_for_labels
 from constants.utils import bq as consts
 from common import JINJA_ENV, IDENTITY_MATCH, PARTICIPANT_MATCH
 
@@ -249,9 +249,12 @@ class BigQueryClient(Client):
         for table in tables:
             staging_table = f'{output_dataset}.{table.table_id}'
             job_config.labels.update({
-                'table_name': table.table_id.lower(),
-                'copy_from': input_dataset.lower().replace('.', '_'),
-                'copy_to': output_dataset.lower().replace('.', '_')
+                'table_name':
+                    replace_special_characters_for_labels(table.table_id),
+                'copy_from':
+                    replace_special_characters_for_labels(input_dataset),
+                'copy_to':
+                    replace_special_characters_for_labels(output_dataset)
             })
             job = self.copy_table(table, staging_table, job_config=job_config)
             job_list.append(job.job_id)
