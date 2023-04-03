@@ -714,3 +714,14 @@ def get_bq_fields_sql(fields):
 
     fields_str = ','.join(fields_list)
     return fields_str
+
+
+def replace_special_characters_for_labels(label_name: str):
+    """
+    Replace all .'s ,'s and spaces with _ in a string
+
+    :param label_name: string to be replaced
+    :return: string with replaced characters
+    """
+    return label_name.lower().replace('.', '_').replace(',',
+                                                        '_').replace(' ', '_')
