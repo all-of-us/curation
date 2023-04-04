@@ -16,3 +16,4 @@ DC-1388,Field,check_field_freetext_response_suppression,Verify Free text survey 
 DC-1496,Concept,check_concept_suppression,Verify suppression of some COPE survey responses
 DC-1527,Concept,check_concept_suppression,Verify suppression of organ transplant concepts
 DC-1535,Field,check_field_geolocation_records_suppression,Verify suppression of geolocation records
+DC-2112,Concept,check_concept_suppression,Verify suppression of some COPE survey responses
