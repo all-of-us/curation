@@ -627,6 +627,7 @@ class BigQueryClient(Client):
 
             # Generate a list of queries for each table from a template
             queries = []
+            job_list = []
             for table in org_tables:
                 queries.append(
                     time_travel_q.render(project_id=self.project,
