@@ -584,7 +584,7 @@ class BigQueryClient(Client):
     def restore_from_time(self,
                           datasets: typing.List[str],
                           days_ago: int,
-                          job_config: QueryJobConfig = None) -> datetime:
+                          job_config: QueryJobConfig = None) -> typing.List:
         """
         restore a list of datasets from a specific point in time.
         tables within each dataset are restored.
@@ -613,28 +613,28 @@ class BigQueryClient(Client):
         for dset in datasets:
             # for each dataset, get a list of tables and create the recovery dataset
             # org -> original, rest -> restore
-            org_dset = self.get_dataset(dset)
-            org_tables = list(self.list_tables(org_dset))
+            orginal_dataset = self.get_dataset(dset)
+            orginal_tables = list(self.list_tables(orginal_dataset))
 
             try:
-                rest_dset = self.create_dataset(
-                    f'{org_dset.dataset_id}_restore')
+                restored_dataset = self.create_dataset(
+                    f'{orginal_dataset.dataset_id}_restore')
             except Conflict:
                 raise RuntimeError((
-                    f'The dataset {org_dset.dataset_id}_restore already exists.  '
+                    f'The dataset {orginal_dataset.dataset_id}_restore already exists.  '
                     f'Delete the dataset first to prevent an accidental overwrite.'
                 ))
             # add the label to include 'temp'
-            rest_dset.labels.update({'temp': ''})
-            self.update_dataset(rest_dset, ['labels'])
+            restored_dataset.labels.update({'temp': ''})
+            self.update_dataset(restored_dataset, ['labels'])
 
             # Generate a list of queries for each table from a template
             queries = []
             job_list = []
-            for table in org_tables:
+            for table in orginal_tables:
                 queries.append(
                     time_travel_q.render(project_id=self.project,
-                                         dataset_id=rest_dset.dataset_id,
+                                         dataset_id=restored_dataset.dataset_id,
                                          table_id=table.table_id,
                                          days_ago=days_ago))
 
@@ -642,6 +642,5 @@ class BigQueryClient(Client):
             for query in queries:
                 job = self.query(query, job_config=job_config)
                 job_list.append(job.job_id)
-      self.wait_on_jobs(job_list)
-      return job_list
-                self.query(query, job_config=job_config)
+            self.wait_on_jobs(job_list)
+        return job_list
