@@ -877,7 +877,7 @@ def list_submitted_bucket_items(folder_bucketitems):
             f"since files were recently uploaded. Latest file was uploaded "
             f"less than {hrs} hours ago.")
     else:
-        logging.warn(
+        logging.info(
             "Not all required files are found in the folder, and some files "
             "are reaching or already reached the retention period. "
             "Validation will not run on this folder. "
