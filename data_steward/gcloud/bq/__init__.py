@@ -587,7 +587,7 @@ class BigQueryClient(Client):
         tables within each dataset are restored.
 
         :param datasets: the dataset list
-        :param as_of: The table's contents at specific point in
+        :param days_ago: The table's contents at specific point in
         :param job_config: An optional config
         :return: the time of creation
         """
