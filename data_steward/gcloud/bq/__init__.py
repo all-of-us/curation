@@ -639,4 +639,8 @@ class BigQueryClient(Client):
 
             # Execute each query
             for query in queries:
+                job = self.query(query, job_config=job_config)
+                job_list.append(job.job_id)
+      self.wait_on_jobs(job_list)
+      return job_list
                 self.query(query, job_config=job_config)
