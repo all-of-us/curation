@@ -47,9 +47,11 @@ HPO_ID = 'HPO_ID'
 ORG_ID = 'Org_ID'
 SITE_NAME = 'Site_Name'
 BUCKET_NAME = 'bucket_name'
+HPO_STATE = 'state'
 
 MAPPING_CSV_FILE = 'hpo_site_mappings.csv'
 BUCKET_NAME_CSV_FILE = 'hpo_id_bucket_name.csv'
+SRC_HPOS_TO_ALLOWED_STATES = 'src_hpos_to_allowed_states.csv'
 
 # Dataset Environment variable names
 MATCH_DATASET = 'VALIDATION_RESULTS_DATASET_ID'
@@ -67,5 +69,5 @@ VALUES {mapping_list}
 
 GET_HPO_CONTENTS_QUERY = """
 SELECT *
-FROM `{project_id}.{LOOKUP_TABLES_DATASET_ID}.{HPO_SITE_TABLE}`
+FROM `{project_id}.{TABLES_DATASET_ID}.{HPO_SITE_TABLE}`
 """

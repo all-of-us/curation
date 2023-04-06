@@ -82,14 +82,17 @@ def verify_hpo_site_info_up_to_date(hpo_file_df, hpo_table_df, file_type):
     """
     if file_type == "site_mapping":
         hpo_ids_df = hpo_file_df['HPO_ID'].dropna()
-    else:
+    elif file_type == "bucket_name":
         hpo_ids_df = hpo_file_df['hpo_id'].dropna()
+    elif file_type == "site_maskings":
+        hpo_ids_df = hpo_file_df['src_hpo_id'].dropna()
 
     if set(hpo_table_df['hpo_id'].to_list()) != set(
             hpo_ids_df.str.lower().to_list()):
         raise ValueError(
-            f'Please update config/hpo_site_mappings.csv and '
-            f'config/hpo_id_bucket_name.csv files '
+            f'Please update config/hpo_site_mappings.csv, '
+            f'config/hpo_id_bucket_name.csv and '
+            f'config/src_hpos_to_allowed_states.csv files '
             f'to the latest version from curation-devops repository.')
 
 
@@ -132,13 +135,13 @@ def add_hpo_site_mappings_file_df(hpo_id, hpo_name, org_id,
 def add_hpo_id_bucket_name_file_df(hpo_id, bucket_name,
                                    hpo_id_bucket_name_path):
     """
-        Creates dataframe with hpo_id, bucket_name, and service
+    Creates dataframe with hpo_id, bucket_name, and service
 
-        :param hpo_id: hpo_ identifier
-        :param bucket_name: GCS bucket name of the site
-        :param hpo_id_bucket_name_path: path to csv file containing hpo site information
-        :raises ValueError if hpo_id already exists in the lookup table
-        """
+    :param hpo_id: hpo_ identifier
+    :param bucket_name: GCS bucket name of the site
+    :param hpo_id_bucket_name_path: path to csv file containing hpo site information
+    :raises ValueError if hpo_id already exists in the lookup table
+    """
     hpo_table = bq_utils.get_hpo_bucket_info()
     hpo_table_df = pd.DataFrame(hpo_table)
     if hpo_id in set(hpo_table_df['hpo_id']) or bucket_name in set(
@@ -155,6 +158,39 @@ def add_hpo_id_bucket_name_file_df(hpo_id, bucket_name,
     hpo_file_df.loc[len(hpo_file_df.index)] = [hpo_id, bucket_name, 'default']
     LOGGER.info(f'Added new entry for hpo_id {hpo_id} in '
                 f'config/hpo_id_bucket_name.csv. '
+                f'Please upload to curation-devops repo.')
+    return hpo_file_df
+
+
+def add_src_hpos_allowed_state_file_df(hpo_id, us_state,
+                                       value_source_concept_id,
+                                       src_hpos_allowed_state_path):
+    """
+    Creates dataframe with hpo_id, bucket_name, and service
+
+    :param hpo_id: hpo_ identifier
+    :param us_state: state-code of the site.
+    :param value_source_concept_id: concept_id of the site's state
+    :param src_hpos_allowed_state_path: path to csv file containing hpo site information
+    :raises ValueError if hpo_id already exists in the lookup table
+    """
+    hpo_table = bq_utils.get_hpo_site_state_info()
+    hpo_table_df = pd.DataFrame(hpo_table)
+    if hpo_id in set(hpo_table_df['hpo_id']) and us_state in set(
+            hpo_table_df['state']):
+        raise ValueError(
+            f"{hpo_id}/{us_state} already exists in site lookup table")
+
+    hpo_file_df = pd.read_csv(src_hpos_allowed_state_path)
+    verify_hpo_site_info_up_to_date(hpo_file_df,
+                                    hpo_table_df,
+                                    file_type='site_maskings')
+
+    # 'service' column of the hpo_file_df has 'default' as fixed value.
+    hpo_file_df.loc[len(
+        hpo_file_df.index)] = [us_state, value_source_concept_id, hpo_id]
+    LOGGER.info(f'Added new entry for hpo_id {hpo_id} in '
+                f'config/src_hpos_to_allowed_states.csv. '
                 f'Please upload to curation-devops repo.')
     return hpo_file_df
 
@@ -195,11 +231,32 @@ def add_hpo_id_bucket_name_csv(hpo_id, bucket_name, hpo_id_bucket_name_path):
                        index=False)
 
 
+def add_src_hpos_allowed_state_csv(hpo_id, us_state, value_source_concept_id,
+                                   src_hpos_allowed_state_path):
+    """
+    Writes df with hpo_id, us_state, and value_source_concept_id to
+    src_hpos_to_allowed_state config file
+
+    :param hpo_id: hpo_ identifier
+    :param us_state: state-code of the site.
+    :param value_source_concept_id: concept_id of the site's state
+    :param src_hpos_allowed_state_path: path to csv file containing hpo site information
+    :return:
+    """
+    hpo_file_df = add_src_hpos_allowed_state_file_df(
+        hpo_id, us_state, value_source_concept_id, src_hpos_allowed_state_path)
+    hpo_file_df.to_csv(src_hpos_allowed_state_path,
+                       quoting=csv.QUOTE_ALL,
+                       index=False)
+
+
 def add_hpo_site_to_csv_files(hpo_id,
                               hpo_name,
                               org_id,
                               bucket_name,
                               hpo_site_csv_path,
+                              us_state,
+                              value_source_concept_id,
                               display_order=None):
     """
     Update both csv files from devops to include data for the newly added site.
@@ -210,21 +267,26 @@ def add_hpo_site_to_csv_files(hpo_id,
     :param bucket_name: GCS bucket name of the site
     :param hpo_site_csv_path: path to csv file containing hpo site information
     :param display_order: index number in which hpo should be added in table
+    :param us_state: state-code of site's location
+    :param value_source_concept_id: value_source_concept_id of the state-code
     :return:
     """
     # Check if csv files exist in given path.
     hpo_csv_path = Path(hpo_site_csv_path)
     hpo_site_mappings_path = hpo_csv_path / bq_consts.MAPPING_CSV_FILE
     hpo_id_bucket_name_path = hpo_csv_path / bq_consts.BUCKET_NAME_CSV_FILE
+    src_hpos_allowed_state_path = hpo_csv_path / bq_consts.SRC_HPOS_TO_ALLOWED_STATES
 
-    if not all(
-        [hpo_site_mappings_path.is_file(),
-         hpo_id_bucket_name_path.is_file()]):
+    if not all([
+            hpo_site_mappings_path.is_file(),
+            hpo_id_bucket_name_path.is_file(),
+            src_hpos_allowed_state_path.is_file()
+    ]):
         raise RuntimeError(
-            f"Either 'hpo_site_mappings.csv' or 'hpo_id_bucket_name.csv' "
-            f"or both files does not exist in 'hpo_site_csv_files' folder. "
-            f"Please make sure above files exist in 'hpo_site_csv_files' folder."
-        )
+            f"Either '{bq_consts.MAPPING_CSV_FILE}' or '{bq_consts.BUCKET_NAME_CSV_FILE}' "
+            f"or '{bq_consts.SRC_HPOS_TO_ALLOWED_STATES}' or all files does not "
+            f"exist in '{hpo_site_csv_path}' folder. Please make sure above "
+            f"files exist in '{hpo_site_csv_path}' folder.")
 
     # Update hpo_site_mappings.csv file
     add_hpo_site_mappings_csv(hpo_id, hpo_name, org_id, hpo_site_mappings_path,
@@ -232,6 +294,10 @@ def add_hpo_site_to_csv_files(hpo_id,
 
     # Update hpo_id_bucket_name.csv file
     add_hpo_id_bucket_name_csv(hpo_id, bucket_name, hpo_id_bucket_name_path)
+
+    # Update src_hpos_to_allowed_states.csv file
+    add_src_hpos_allowed_state_csv(hpo_id, us_state, value_source_concept_id,
+                                   src_hpos_allowed_state_path)
 
 
 def get_last_display_order(bq_client):
@@ -429,7 +495,8 @@ def main(project_id, hpo_id, org_id, hpo_name, bucket_name, display_order,
 
     if addition_type == "update_config":
         add_hpo_site_to_csv_files(hpo_id, hpo_name, org_id, bucket_name,
-                                  hpo_site_csv_path, display_order)
+                                  hpo_site_csv_path, us_state,
+                                  value_source_concept_id, display_order)
     elif addition_type == "update_lookup_tables":
         if bucket_access_configured(gcs_client, bucket_name):
             LOGGER.info(f'Accessing bucket {bucket_name} successful. '
