@@ -172,7 +172,8 @@ def get_retraction_queries(client: BigQueryClient,
     :param lookup_table_id: table containing the person_ids and research_ids
     :param skip_sandboxing: True if you wish not to sandbox the retracted data.
     :param retraction_type: string indicating whether all data needs to be removed including RDR,
-        or if RDR data needs to be kept intact. Can take the values 'rdr_and_ehr' or 'only_ehr'
+        or if RDR data needs to be kept intact. Can take the values 'rdr_and_ehr', 'only_ehr', or None.
+        'rdr_and_ehr' and None work the same way (= not reference mapping tables).
     :return: list of queries
     """
     tables_to_retract = get_tables_to_retract(client,
@@ -389,19 +390,10 @@ def skip_dataset_retraction(dataset_id, retraction_type) -> bool:
     msg_no_ehr = (
         f'because {RETRACTION_ONLY_EHR} is specified. This is a {get_dataset_type(dataset_id)}'
         ' dataset and it does not contain data from EHR.')
-    msg_no_mapping = (
-        f'because the script could not find mapping info for identifying which data came from EHR.'
-    )
 
     if retraction_type == RETRACTION_ONLY_EHR:
         if is_rdr_dataset(dataset_id) or is_fitbit_dataset(dataset_id):
             LOGGER.warning(f'{msg_skip}{msg_no_ehr}')
-            return True
-
-        # TODO Remove this if statement when this script is ready to handle OTHER and sandbox datasets.
-        if get_dataset_type(dataset_id) == OTHER or is_sandbox_dataset(
-                dataset_id):
-            LOGGER.warning(f'{msg_skip}{msg_no_mapping}')
             return True
 
     return False
@@ -459,7 +451,6 @@ def run_bq_retraction(project_id,
 
     client = bq_client if bq_client else BigQueryClient(project_id)
 
-    # NOTE get_datasets_list() excludes sandbox datasets and datasets that are type=OTHER.
     dataset_ids = get_datasets_list(client, dataset_list)
 
     for dataset in dataset_ids:
@@ -470,9 +461,12 @@ def run_bq_retraction(project_id,
         # Argument hpo_id is effective for only EHR dataset.
         hpo_id = hpo_id if is_ehr_dataset(dataset) else ''
 
-        # retraction type should be set none for ehr and unioned_ehr datasets
-        retraction_type = None if is_ehr_dataset(dataset) or is_unioned_dataset(
-            dataset) else retraction_type
+        # Following datasets must not reference mapping tables
+        # So retraction_type must be None (act same as RDR_AND_EHR)
+        if (is_ehr_dataset(dataset) or is_unioned_dataset(dataset) or
+                is_sandbox_dataset(dataset) or
+                get_dataset_type(dataset) == OTHER):
+            retraction_type = None
 
         queries = get_retraction_queries(client,
                                          dataset,

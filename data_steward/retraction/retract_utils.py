@@ -86,9 +86,6 @@ def get_datasets_list(client, dataset_ids_list):
     :param dataset_ids_list: list of datasets to retract from. If set to 'all_datasets',
         retracts from all datasets. If set to 'none', skips retraction from BigQuery datasets
     :return: List of dataset_ids to retract from
-
-    NOTE sandbox datasets and OTHER datasets are excluded from retraction
-
     """
     all_dataset_ids = [
         dataset.dataset_id for dataset in list(client.list_datasets())
@@ -113,13 +110,6 @@ def get_datasets_list(client, dataset_ids_list):
         LOGGER.info(
             f"Datasets specified and existing in project {client.project}: {dataset_ids}"
         )
-
-    # NOTE Excludes sandbox and OTHER datasets
-    dataset_ids = [
-        dataset_id for dataset_id in dataset_ids
-        if get_dataset_type(dataset_id) != OTHER and
-        not is_sandbox_dataset(dataset_id)
-    ]
 
     LOGGER.info(f"Found datasets to retract from: {', '.join(dataset_ids)}")
 

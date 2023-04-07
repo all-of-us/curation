@@ -902,8 +902,9 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
                            mock_rdb_is_sandbox):
         """
         Test for dataset that is none of the above.
-        retract_utils.get_datasets_list() excludes such datasets from retraction
-        regardless of `retraction_type`.
+        Retraction runs as `rdr_and_ehr` regardless of `retraction_type` because
+        this type of dataset does not have mapping tables.
+        Retraction runs for person_id, not for research_id.
         """
         for mock_ in [
                 mock_is_rdr, mock_is_ehr, mock_is_unioned, mock_is_combined,
@@ -913,8 +914,22 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
             mock_.return_value = False
         mock_rdb_get_dataset_type.return_value = mock_ru_get_dataset_type.return_value = OTHER
 
-        dataset_list = get_datasets_list(self.client, [self.other_id])
-        self.assertEqual(dataset_list, [])
+        project_id, sandbox_id, dataset_id = self.project_id, self.sandbox_id, self.unioned_ehr_id
+
+        run_bq_retraction(project_id, sandbox_id, self.lookup_table_id, NONE,
+                          [dataset_id], RETRACTION_ONLY_EHR, False, self.client)
+
+        self.assertRowIDsMatch(f'{project_id}.{dataset_id}.{PERSON}',
+                               ['person_id'], PERS_PID_AFTER_RETRACTION)
+        self.assertRowIDsMatch(
+            f'{project_id}.{sandbox_id}.retract_{dataset_id}_{PERSON}',
+            ['person_id'], PERS_PID_TO_RETRACT)
+
+        self.assertRowIDsMatch(f'{project_id}.{dataset_id}.{OBSERVATION}',
+                               ['observation_id'], OBS_PID_AFTER_RETRACTION)
+        self.assertRowIDsMatch(
+            f'{project_id}.{sandbox_id}.retract_{dataset_id}_{OBSERVATION}',
+            ['observation_id'], OBS_PID_TO_RETRACT)
 
     @mock_patch_bundle
     def test_retract_sandbox(self, mock_ru_get_dataset_type,
@@ -923,9 +938,10 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
                              mock_is_deid, mock_is_fitbit, mock_ru_is_sandbox,
                              mock_rdb_is_sandbox):
         """
-        Test for sandbox datasets with both retraction_type = 'only_ehr' and 'rdr_and_ehr'.
-        retract_utils.get_datasets_list() excludes sandbox datasets from retraction
-        regardless of `retraction_type`.
+        Test for sandbox datasets.
+        Retraction runs as `rdr_and_ehr` regardless of `retraction_type` because
+        sandbox datasets do not have mapping tables.
+        Retraction runs for person_id, not for research_id.
         """
         for mock_ in [
                 mock_is_rdr, mock_is_ehr, mock_is_unioned, mock_is_combined,
@@ -937,8 +953,63 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
         mock_rdb_is_sandbox.return_value = mock_ru_is_sandbox.return_value = True
         mock_rdb_get_dataset_type.return_value = mock_ru_get_dataset_type.return_value = COMBINED
 
-        dataset_list = get_datasets_list(self.client, [self.sandbox_id])
-        self.assertEqual(dataset_list, [])
+        project_id, sandbox_id, dataset_id = self.project_id, self.sandbox_id, self.unioned_ehr_id
+
+        run_bq_retraction(project_id, sandbox_id, self.lookup_table_id, NONE,
+                          [dataset_id], RETRACTION_ONLY_EHR, False, self.client)
+
+        self.assertRowIDsMatch(f'{project_id}.{dataset_id}.{PERSON}',
+                               ['person_id'], PERS_PID_AFTER_RETRACTION)
+        self.assertRowIDsMatch(
+            f'{project_id}.{sandbox_id}.retract_{dataset_id}_{PERSON}',
+            ['person_id'], PERS_PID_TO_RETRACT)
+
+        self.assertRowIDsMatch(f'{project_id}.{dataset_id}.{OBSERVATION}',
+                               ['observation_id'], OBS_PID_AFTER_RETRACTION)
+        self.assertRowIDsMatch(
+            f'{project_id}.{sandbox_id}.retract_{dataset_id}_{OBSERVATION}',
+            ['observation_id'], OBS_PID_TO_RETRACT)
+
+    @mock_patch_bundle
+    def test_retract_deid_sandbox(self, mock_ru_get_dataset_type,
+                                  mock_rdb_get_dataset_type, mock_is_rdr,
+                                  mock_is_ehr, mock_is_unioned,
+                                  mock_is_combined, mock_is_deid,
+                                  mock_is_fitbit, mock_ru_is_sandbox,
+                                  mock_rdb_is_sandbox):
+        """
+        Test for DEID sandbox datasets.
+        Retraction runs as `rdr_and_ehr` regardless of `retraction_type` because
+        sandbox datasets do not have mapping tables.
+        Retraction runs for research_id, not for person_id.
+        """
+        for mock_ in [
+                mock_is_rdr, mock_is_ehr, mock_is_unioned, mock_is_combined,
+                mock_is_deid, mock_is_fitbit, mock_ru_is_sandbox,
+                mock_rdb_is_sandbox
+        ]:
+            mock_.return_value = False
+        mock_is_combined.return_value = True
+        mock_is_deid.return_value = True
+        mock_rdb_is_sandbox.return_value = mock_ru_is_sandbox.return_value = True
+        mock_rdb_get_dataset_type.return_value = mock_ru_get_dataset_type.return_value = COMBINED
+
+        project_id, sandbox_id, dataset_id = self.project_id, self.sandbox_id, self.unioned_ehr_id
+
+        run_bq_retraction(project_id, sandbox_id, self.lookup_table_id, NONE,
+                          [dataset_id], RETRACTION_ONLY_EHR, False, self.client)
+
+        self.assertRowIDsMatch(f'{project_id}.{dataset_id}.{PERSON}',
+                               ['person_id'], PERS_RID_AFTER_RETRACTION)
+        self.assertRowIDsMatch(
+            f'{project_id}.{sandbox_id}.retract_{dataset_id}_{PERSON}',
+            ['person_id'], PERS_RID_TO_RETRACT)
+
+        self.assertRowIDsMatch(f'{project_id}.{dataset_id}.{OBSERVATION}',
+                               ['observation_id'], OBS_RID_AFTER_RETRACTION)
+        self.assertRowIDsMatch(
+            f'{project_id}.{sandbox_id}.retract_{dataset_id}_{OBSERVATION}',
+            ['observation_id'], OBS_RID_TO_RETRACT)
 
     @mock_patch_bundle
     def test_retract_skip_sandboxing(self, mock_ru_get_dataset_type,
