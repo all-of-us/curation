@@ -51,7 +51,7 @@ HPO_STATE = 'state'
 
 MAPPING_CSV_FILE = 'hpo_site_mappings.csv'
 BUCKET_NAME_CSV_FILE = 'hpo_id_bucket_name.csv'
-SRC_HPOS_TO_ALLOWED_STATES = 'src_hpos_to_allowed_states.csv'
+SITE_MASKINGS_CSV_FILE = 'src_hpos_to_allowed_states.csv'
 
 # Dataset Environment variable names
 MATCH_DATASET = 'VALIDATION_RESULTS_DATASET_ID'

@@ -275,7 +275,7 @@ def add_hpo_site_to_csv_files(hpo_id,
     hpo_csv_path = Path(hpo_site_csv_path)
     hpo_site_mappings_path = hpo_csv_path / bq_consts.MAPPING_CSV_FILE
     hpo_id_bucket_name_path = hpo_csv_path / bq_consts.BUCKET_NAME_CSV_FILE
-    src_hpos_allowed_state_path = hpo_csv_path / bq_consts.SRC_HPOS_TO_ALLOWED_STATES
+    src_hpos_allowed_state_path = hpo_csv_path / bq_consts.SITE_MASKINGS_CSV_FILE
 
     if not all([
             hpo_site_mappings_path.is_file(),
@@ -284,7 +284,7 @@ def add_hpo_site_to_csv_files(hpo_id,
     ]):
         raise RuntimeError(
             f"Either '{bq_consts.MAPPING_CSV_FILE}' or '{bq_consts.BUCKET_NAME_CSV_FILE}' "
-            f"or '{bq_consts.SRC_HPOS_TO_ALLOWED_STATES}' or all files does not "
+            f"or '{bq_consts.SITE_MASKINGS_CSV_FILE}' or all files does not "
             f"exist in '{hpo_site_csv_path}' folder. Please make sure above "
             f"files exist in '{hpo_site_csv_path}' folder.")
 

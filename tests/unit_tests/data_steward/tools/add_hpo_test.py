@@ -148,7 +148,7 @@ class AddHPOTest(TestCase):
         mock_bucket_file_path = Path(
             hpo_site_csv_path) / bq_consts.BUCKET_NAME_CSV_FILE
         mock_src_hpos_file_path = Path(
-            hpo_site_csv_path) / bq_consts.SRC_HPOS_TO_ALLOWED_STATES
+            hpo_site_csv_path) / bq_consts.SITE_MASKINGS_CSV_FILE
 
         with mock.patch.object(Path, 'is_file') as mock_is_file:
             mock_is_file.return_value = False
