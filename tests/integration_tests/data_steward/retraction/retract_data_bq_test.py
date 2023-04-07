@@ -1050,17 +1050,13 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
     def test_retract_all(self):
         """
         When ['all_datasets'] specified for dataset_list, BQ retraction runs against all the datasets
-        excluding sandbox datasets and OTHER datasets.
-        NOTE This exclusion rule might be revisited.
+        including sandbox datasets and OTHER datasets.
         """
         actual = set(get_datasets_list(self.client, [ALL_DATASETS]))
         all_datasets = set([
             dataset.dataset_id for dataset in list(self.client.list_datasets())
         ])
-        datasets_to_exclude = set([
-            dataset for dataset in all_datasets
-            if is_sandbox_dataset(dataset) or get_dataset_type(dataset) == OTHER
-        ])
+        datasets_to_exclude = set([])
 
         self.assertTrue(actual.issubset(all_datasets))
         self.assertTrue(actual.intersection(datasets_to_exclude) == set())
