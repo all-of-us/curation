@@ -24,12 +24,13 @@ def parse_rdr_args(raw_args=None):
     parser = ArgumentParser(
         description='Arguments pertaining to an RDR raw load')
 
-    parser.add_argument(
-        '--rdr_bucket',
-        action='store',
-        dest='bucket',
-        help='Bucket directory not including the "gs://" portion of the name',
-        required=True)
+    # parser.add_argument('--rdr_bucket',
+    #                     action='store',
+    #                     dest='bucket',
+    #                     help=('Bucket directory not including the '
+    #                           '"gs://" portion of the name'),
+    #                     type=verify_bucket_name,
+    #                     required=True)
     parser.add_argument('--run_as',
                         action='store',
                         dest='run_as_email',
@@ -74,58 +75,87 @@ def create_rdr_tables(client, rdr_dataset, bucket):
     :param bucket: the gcs bucket containing the file data.
     """
     schema_dict = cdm_schemas()
-    schema_dict.update(rdr_specific_schemas())
 
     for table, schema in schema_dict.items():
         schema_list = client.get_table_schema(table, schema)
+        schema_list.extend([{
+            "type":
+                "string",
+            "name":
+                "data_origin_id",
+            "mode":
+                "required",
+            "description":
+                "A string identifying the data originator for this record.  Should identify the vendor or source entity."
+        }])
         table_id = f'{client.project}.{rdr_dataset}.{table}'
-        job_config = bigquery.LoadJobConfig(
-            schema=schema_list,
-            skip_leading_rows=1,
-            source_format=bigquery.SourceFormat.CSV,
-            field_delimiter=',',
-            allow_quoted_newlines=True,
-            quote_character='"',
-            write_disposition=bigquery.job.WriteDisposition.WRITE_TRUNCATE)
-        if table == 'observation_period':
-            job_config.allow_jagged_rows = True
 
-        for schema_item in schema_list:
-            if 'person_id' in schema_item.name and table.lower(
-            ) != 'pid_rid_mapping':
-                job_config.clustering_fields = 'person_id'
-                job_config.time_partitioning = bigquery.table.TimePartitioning(
-                    type_='DAY')
+        LOGGER.info(f'Creating empty CDM table, `{table}`')
+        destination_table = bigquery.Table(table_id, schema=schema_list)
+        destination_table = client.create_table(destination_table)
+        LOGGER.info(f'Created empty table `{destination_table.table_id}`')
 
-        # path to bucketed csv file
-        uri = f'gs://{bucket}/{table}.csv'
+    schema_dict = rdr_specific_schemas()
+    for table, schema in schema_dict.items():
+        schema_list = client.get_table_schema(table, schema)
+        table_id = f'{client.project}.{rdr_dataset}.{table}'
 
-        # job_id defined to the second precision
-        job_id = f'rdr_load_{table.lower()}_{datetime.now().strftime("%Y%m%d_%H%M%S")}'
+        LOGGER.info(f'Creating empty CDM table, `{table}`')
+        destination_table = bigquery.Table(table_id, schema=schema_list)
+        destination_table = client.create_table(destination_table)
+        LOGGER.info(f'Created empty table `{destination_table.table_id}`')
 
-        LOGGER.info(f'Loading `{uri}` into `{table_id}`')
-        try:
-            load_job = client.load_table_from_uri(
-                uri, table_id, job_config=job_config,
-                job_id=job_id)  # Make an API request.
+    tables_loaded = []
+    #     job_config = bigquery.LoadJobConfig(
+    #         schema=schema_list,
+    #         skip_leading_rows=1,
+    #         source_format=bigquery.SourceFormat.CSV,
+    #         field_delimiter=',',
+    #         allow_quoted_newlines=True,
+    #         quote_character='"',
+    #         write_disposition=bigquery.job.WriteDisposition.WRITE_TRUNCATE)
+    #     if table == 'observation_period':
+    #         job_config.allow_jagged_rows = True
 
-            load_job.result()  # Waits for the job to complete.
-        except NotFound:
-            LOGGER.info(
-                f'{table} not provided by RDR team.  Creating empty table '
-                f'in dataset: `{rdr_dataset}`')
+    #     for schema_item in schema_list:
+    #         if 'person_id' in schema_item.name and table.lower(
+    #         ) != 'pid_rid_mapping':
+    #             job_config.clustering_fields = 'person_id'
+    #             job_config.time_partitioning = bigquery.table.TimePartitioning(
+    #                 type_='DAY')
 
-            LOGGER.info(f'Creating empty CDM table, `{table}`')
-            destination_table = bigquery.Table(table_id, schema=schema_list)
-            destination_table = client.create_table(destination_table)
-            LOGGER.info(f'Created empty table `{destination_table.table_id}`')
-        else:
-            destination_table = client.get_table(
-                table_id)  # Make an API request.
-        LOGGER.info(f'Loaded {destination_table.num_rows} rows into '
-                    f'`{destination_table.table_id}`.')
+    #     # path to bucketed csv file
+    #     uri = f'gs://{bucket}/{table}.csv'
 
-    LOGGER.info(f"Finished RDR table LOAD from bucket gs://{bucket}")
+    #     # job_id defined to the second precision
+    #     job_id = f'rdr_load_{table.lower()}_{datetime.now().strftime("%Y%m%d_%H%M%S")}'
+
+    #     LOGGER.info(f'Loading `{uri}` into `{table_id}`')
+    #     try:
+    #         load_job = client.load_table_from_uri(
+    #             uri, table_id, job_config=job_config,
+    #             job_id=job_id)  # Make an API request.
+
+    #         load_job.result()  # Waits for the job to complete.
+    #     except NotFound:
+    #         LOGGER.warning(
+    #             f'{table} not provided by RDR team.  Creating empty table '
+    #             f'in dataset: `{rdr_dataset}`')
+
+    #         LOGGER.info(f'Creating empty CDM table, `{table}`')
+    #         destination_table = bigquery.Table(table_id, schema=schema_list)
+    #         destination_table = client.create_table(destination_table)
+    #         LOGGER.info(f'Created empty table `{destination_table.table_id}`')
+    #     else:
+    #         destination_table = client.get_table(
+    #             table_id)  # Make an API request.
+    #     LOGGER.info(f'Loaded {destination_table.num_rows} rows into '
+    #                 f'`{destination_table.table_id}`.')
+    #     tables_loaded.append(uri.split('/')[-1])
+
+    # LOGGER.info(f"Finished RDR table LOAD from bucket gs://{bucket}")
+
+    # return tables_loaded
 
 
 def copy_vocab_tables(client, rdr_dataset, vocab_dataset):
@@ -187,8 +217,9 @@ def main(raw_args=None):
     pipeline_logging.configure(level=logging.INFO,
                                add_console_handler=args.console_log)
 
-    description = f'RDR DUMP loaded from {args.bucket} dated {args.export_date}'
+    description = f'Test RDR data schema for v8 handoff'
     export_date = args.export_date.replace('-', '')
+    # change new_dataset_name to whatever value you prefer
     new_dataset_name = f'rdr{export_date}'
 
     # get credentials and create client
@@ -202,8 +233,22 @@ def main(raw_args=None):
                                               {'export_date': args.export_date})
     bq_client.create_dataset(dataset_object)
 
-    create_rdr_tables(bq_client, new_dataset_name, args.bucket)
-    copy_vocab_tables(bq_client, new_dataset_name, args.vocabulary)
+    # storage_client = StorageClient(args.curation_project_id,
+    #                                credentials=impersonation_creds)
+    # tables_listed = get_etl_tables(storage_client, args.bucket.split('/')[0])
+
+    tables_loaded = create_rdr_tables(bq_client, new_dataset_name,
+                                      None)  #args.bucket)
+
+    # warn us if we are not loading some data sent by the producing team
+    # unknown_tables = set(tables_listed) - set(tables_loaded)
+    # if unknown_tables:
+    #     LOGGER.warning(f"\n\nThe following tables were sent by the RDR team, "
+    #                    f"but were not loaded by this script.  Review with the "
+    #                    f"team lead and RDR team about the appropriate "
+    #                    f"mitigation.\n{unknown_tables}\n")
+
+    # copy_vocab_tables(bq_client, new_dataset_name, args.vocabulary)
 
 
 if __name__ == '__main__':
