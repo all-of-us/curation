@@ -33,7 +33,7 @@ class AddHPOTest(TestCase):
     def test_verify_hpo_site_info_up_to_date(self):
         df_1 = pd.DataFrame({'HPO_ID': ['FAKE_1', 'FAKE_2']})
         df_2 = pd.DataFrame({'hpo_id': ['fake_1', 'fake_2']})
-        df_3 = pd.DataFrame({'src_hpo_id': ['fake_2', 'fake_3']})
+        df_3 = pd.DataFrame({'hpo_id': ['fake_2', 'fake_3']})
         add_hpo.verify_hpo_site_info_up_to_date(df_1, df_2, 'site_mapping')
         df_4 = pd.DataFrame({'hpo_id': ['fake_1', 'fake_4']})
         self.assertRaises(ValueError, add_hpo.verify_hpo_site_info_up_to_date,
@@ -258,7 +258,7 @@ class AddHPOTest(TestCase):
         mock_read_csv.return_value = pd.DataFrame({
             'State': ['PIIState_fake1', 'PIIState_fake2', 'PIIState_fake4'],
             'value_source_concept_id': [1101011, 1101010, 1011101],
-            'src_hpo_id': ['fake_1', 'fake_2', 'fake_4']
+            'hpo_id': ['fake_1', 'fake_2', 'fake_4']
         })
 
         new_site = {
@@ -280,7 +280,7 @@ class AddHPOTest(TestCase):
                 'PIIState_fake3'
             ],
             'value_source_concept_id': [1101011, 1101010, 1011101, 1011010],
-            'src_hpo_id': ['fake_1', 'fake_2', 'fake_4', 'fake_3']
+            'hpo_id': ['fake_1', 'fake_2', 'fake_4', 'fake_3']
         })
 
         pd.testing.assert_frame_equal(actual_df.reset_index(drop=True),

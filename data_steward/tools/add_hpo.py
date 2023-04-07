@@ -82,10 +82,8 @@ def verify_hpo_site_info_up_to_date(hpo_file_df, hpo_table_df, file_type):
     """
     if file_type == "site_mapping":
         hpo_ids_df = hpo_file_df['HPO_ID'].dropna()
-    elif file_type == "bucket_name":
+    elif file_type in ["bucket_name", "site_maskings"]:
         hpo_ids_df = hpo_file_df['hpo_id'].dropna()
-    elif file_type == "site_maskings":
-        hpo_ids_df = hpo_file_df['src_hpo_id'].dropna()
 
     if set(hpo_table_df['hpo_id'].to_list()) != set(
             hpo_ids_df.str.lower().to_list()):
