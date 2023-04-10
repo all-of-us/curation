@@ -114,7 +114,11 @@ WHERE {{ column_name }}
 {% endif %}
  NOT IN (
     SELECT {{ new_id }}
+    {% if mapping_table == 'site_maskings' %}
+    FROM `{{ project_id }}.{{ pipeline_dataset }}.{{ mapping_table }}`
+    {% else %}
     FROM `{{ project_id }}.{{ mapping_dataset }}.{{ mapping_table }}`
+    {% endif %}
 )
 """
 
@@ -129,10 +133,14 @@ SELECT
     CAST(post_deid.{{ column_name }} AS INT64) AS output_pid
 FROM `{{ project_id }}.{{ post_deid_dataset }}.{{ table_name }}` post_deid
 LEFT JOIN `{{ project_id }}.{{ pre_deid_dataset }}.{{ table_name }}` pre_deid USING({{ primary_key }})
-LEFT JOIN `{{ project_id }}.{{ mapping_dataset }}.{{ mapping_table }}` map 
-{% if mapping_table == '_deid_map'  or mapping_table == 'site_maskings' %}
+{% if mapping_table == 'site_maskings' %}
+LEFT JOIN `{{ project_id }}.{{ pipeline_dataset }}.{{ mapping_table }}` map
+ON pre_deid.{{ column_name }} = map.{{ column_name }}
+{% elif mapping_table == '_deid_map' %}
+LEFT JOIN `{{ project_id }}.{{ mapping_dataset }}.{{ mapping_table }}` map
 ON pre_deid.{{ column_name }} = map.{{ column_name }}
 {% else %}
+LEFT JOIN `{{ project_id }}.{{ mapping_dataset }}.{{ mapping_table }}` map
 ON CAST(pre_deid.{{ column_name }} AS INT64) = map.questionnaire_response_id
 {% endif %}
 )
@@ -149,7 +157,7 @@ SELECT
     post_deid.{{ column_name }} AS output_pid
 FROM `{{ project_id }}.{{ post_deid_dataset }}.{{ table_name }}` post_deid
 LEFT JOIN `{{ project_id }}.{{ pre_deid_dataset }}._mapping_{{ table_name|replace("_ext","") }}` pre_deid USING({{ primary_key }})
-LEFT JOIN `{{ project_id }}.pipeline_tables.{{ mapping_table }}` map ON pre_deid.src_hpo_id = map.hpo_id
+LEFT JOIN `{{ project_id }}.{{ pipeline_dataset }}.{{ mapping_table }}` map ON pre_deid.src_hpo_id = map.hpo_id
 )
 SELECT
     '{{ table_name }}' AS table_name,
