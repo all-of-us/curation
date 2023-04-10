@@ -72,13 +72,17 @@ BEGIN
     "  SELECT",
     "    table_catalog AS project_id,",
     "    table_schema AS dataset_id,",
-    "    table_name AS table_id,",
+    "    table_name AS table_id",
     "  FROM `", project_id, ".", dataset_id, ".INFORMATION_SCHEMA.COLUMNS`",
     "  WHERE LOWER(COLUMN_NAME) = 'person_id'",
     "  AND table_name IN (",
     "    SELECT table_id FROM `", project_id, ".", dataset_id, ".__TABLES__`",
     "    WHERE TIMESTAMP_DIFF(CURRENT_TIMESTAMP(), TIMESTAMP_MILLIS(last_modified_time), DAY) <= 3",
-    "  )"), 
+    "  )", 
+    "  AND table_name NOT IN (",
+    "    SELECT table_name FROM `", project_id, ".", dataset_id, ".INFORMATION_SCHEMA.TABLES`",
+    "    WHERE table_type = 'VIEW'",
+    "  )"),
     "  UNION ALL \n") FROM tmp_nonprod_datasets WHERE row_num BETWEEN head AND tail)
     , ")"
     );
