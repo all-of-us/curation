@@ -831,6 +831,12 @@ def map_ehr_person_to_observation(output_dataset_id, ehr_cutoff_date=None):
     query(q, dst_table_id, dst_dataset_id, write_disposition='WRITE_APPEND')
 
 
+def create_and_load_all_death():
+    """_summary_
+    """
+    pass
+
+
 def main(input_dataset_id,
          output_dataset_id,
          project_id,
@@ -908,6 +914,10 @@ def main(input_dataset_id,
                                    ehr_cutoff_date=ehr_cutoff_date)
 
     logging.info('Completed Person to Observation')
+
+    logging.info('')
+    create_and_load_all_death()
+    logging.info('')
 
 
 if __name__ == '__main__':
