@@ -94,9 +94,13 @@ import app_identity
 import bq_utils
 import cdm
 import cdr_cleaner.clean_cdr_engine as clean_engine
-import common
 import resources
 from cdr_cleaner.cleaning_rules.drop_race_ethnicity_gender_observation import DropRaceEthnicityGenderObservation
+from common import (ALL_DEATH, CARE_SITE, DEATH, FACT_RELATIONSHIP,
+                    ID_CONSTANT_FACTOR, JINJA_ENV, LOCATION,
+                    MEASUREMENT_DOMAIN_CONCEPT_ID, OBSERVATION, PERSON,
+                    PERSON_DOMAIN_CONCEPT_ID, SURVEY_CONDUCT, UNIONED_EHR,
+                    VISIT_DETAIL, VISIT_OCCURRENCE)
 from constants.validation import ehr_union as eu_constants
 from utils import pipeline_logging
 from gcloud.bq import BigQueryClient
@@ -108,7 +112,7 @@ UNION_ALL = '''
 '''
 
 # TODO update the primary_death_record logic
-LOAD_ALL_DEATH = common.JINJA_ENV.from_string("""
+LOAD_ALL_DEATH = JINJA_ENV.from_string("""
 INSERT INTO `{{project}}.{{dataset}}.{{all_death}}`
 WITH union_all_death AS (
     {% for hpo_id in hpo_ids %}
@@ -150,7 +154,7 @@ def get_hpo_offsets(hpo_ids):
     result = dict()
     i = eu_constants.EHR_ID_MULTIPLIER_START
     for hpo_id in hpo_ids:
-        result[hpo_id] = i * common.ID_CONSTANT_FACTOR
+        result[hpo_id] = i * ID_CONSTANT_FACTOR
         i += 1
     return result
 
@@ -179,7 +183,7 @@ def _mapping_subqueries(client, table_name, hpo_ids, dataset_id, project_id):
     # Until dynamic queries are refactored to use either a single template or dynamic SQL,
     # defining template locally (rather than top of module) so it is closer to code
     # that references it below
-    hpo_subquery_tpl = common.JINJA_ENV.from_string('''
+    hpo_subquery_tpl = JINJA_ENV.from_string('''
     (SELECT '{{table_id}}' AS src_table_id,
       {{table_name}}_id AS src_{{table_name}}_id,
       -- offset is added to the destination key only if add_hpo_offset == True --
@@ -196,7 +200,7 @@ def _mapping_subqueries(client, table_name, hpo_ids, dataset_id, project_id):
         table_id = resources.get_table_id(table_name, hpo_id=hpo_id)
         hpo_offset = hpo_unique_identifiers[hpo_id]
         if table_id in all_table_ids:
-            add_hpo_offset = table_name != common.PERSON
+            add_hpo_offset = table_name != PERSON
             subquery = hpo_subquery_tpl.render(table_id=table_id,
                                                table_name=table_name,
                                                add_hpo_offset=add_hpo_offset,
@@ -318,17 +322,17 @@ def fact_relationship_hpo_subquery(hpo_id, input_dataset_id, output_dataset_id):
     :param output_dataset_id: identifies dataset where output is saved
     :return: the query
     """
-    table_id = resources.get_table_id(common.FACT_RELATIONSHIP, hpo_id=hpo_id)
+    table_id = resources.get_table_id(FACT_RELATIONSHIP, hpo_id=hpo_id)
     fact_query = f'''SELECT F.domain_concept_id_1,
         CASE
-            WHEN F.domain_concept_id_1= {common.MEASUREMENT_DOMAIN_CONCEPT_ID} THEN M1.measurement_id
-            WHEN F.domain_concept_id_1= {common.PERSON_DOMAIN_CONCEPT_ID} THEN fact_id_1
+            WHEN F.domain_concept_id_1= {MEASUREMENT_DOMAIN_CONCEPT_ID} THEN M1.measurement_id
+            WHEN F.domain_concept_id_1= {PERSON_DOMAIN_CONCEPT_ID} THEN fact_id_1
             ELSE 0
         END AS fact_id_1,
         F.domain_concept_id_2,
         CASE
-            WHEN F.domain_concept_id_2= {common.MEASUREMENT_DOMAIN_CONCEPT_ID} THEN M2.measurement_id
-            WHEN F.domain_concept_id_2= {common.PERSON_DOMAIN_CONCEPT_ID} THEN fact_id_2
+            WHEN F.domain_concept_id_2= {MEASUREMENT_DOMAIN_CONCEPT_ID} THEN M2.measurement_id
+            WHEN F.domain_concept_id_2= {PERSON_DOMAIN_CONCEPT_ID} THEN fact_id_2
             ELSE 0
         END AS fact_id_2,
         relationship_concept_id
@@ -338,12 +342,12 @@ def fact_relationship_hpo_subquery(hpo_id, input_dataset_id, output_dataset_id):
             `{output_dataset_id}._mapping_measurement` AS M1
         ON
             M1.src_measurement_id = F.fact_id_1
-            AND (F.domain_concept_id_1 = {common.MEASUREMENT_DOMAIN_CONCEPT_ID}) AND (M1.src_hpo_id = '{hpo_id}')
+            AND (F.domain_concept_id_1 = {MEASUREMENT_DOMAIN_CONCEPT_ID}) AND (M1.src_hpo_id = '{hpo_id}')
         LEFT JOIN
             `{output_dataset_id}._mapping_measurement` AS M2
         ON
             M2.src_measurement_id = F.fact_id_2
-            AND (F.domain_concept_id_2 = {common.MEASUREMENT_DOMAIN_CONCEPT_ID}) AND (M2.src_hpo_id = '{hpo_id}')'''
+            AND (F.domain_concept_id_2 = {MEASUREMENT_DOMAIN_CONCEPT_ID}) AND (M2.src_hpo_id = '{hpo_id}')'''
     return fact_query
 
 
@@ -456,9 +460,9 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
         if has_visit_occurrence_id:
             # Include a join to mapping visit occurrence table
             # Note: Using left join in order to keep records that aren't mapped to visits
-            mvo = mapping_table_for(common.VISIT_OCCURRENCE)
+            mvo = mapping_table_for(VISIT_OCCURRENCE)
             src_visit_occurrence_table_id = resources.get_table_id(
-                common.VISIT_OCCURRENCE, hpo_id=hpo_id)
+                VISIT_OCCURRENCE, hpo_id=hpo_id)
             visit_occurrence_join_expr = f'''
             LEFT JOIN `{output_dataset_id}.{mvo}` mvo 
               ON t.visit_occurrence_id = mvo.src_visit_occurrence_id 
@@ -468,9 +472,9 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
         if has_preceding_visit_occurrence_id:
             # Include a join to mapping visit occurrence table for preceding visit occurrence
             # Note: Using left join in order to keep records that aren't mapped to visits
-            pvo = mapping_table_for(common.VISIT_OCCURRENCE)
+            pvo = mapping_table_for(VISIT_OCCURRENCE)
             src_visit_occurrence_table_id = resources.get_table_id(
-                common.VISIT_OCCURRENCE, hpo_id=hpo_id)
+                VISIT_OCCURRENCE, hpo_id=hpo_id)
             preceding_visit_occurrence_join_expr = f'''
             LEFT JOIN `{output_dataset_id}.{pvo}` pvo 
               ON t.preceding_visit_occurrence_id = pvo.src_visit_occurrence_id 
@@ -480,9 +484,9 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
         if has_visit_detail_id:
             # Include a join to mapping visit detail table
             # Note: Using left join in order to keep records that aren't mapped to visits
-            mvd = mapping_table_for(common.VISIT_DETAIL)
-            src_visit_detail_table_id = resources.get_table_id(
-                common.VISIT_DETAIL, hpo_id=hpo_id)
+            mvd = mapping_table_for(VISIT_DETAIL)
+            src_visit_detail_table_id = resources.get_table_id(VISIT_DETAIL,
+                                                               hpo_id=hpo_id)
             visit_detail_join_expr = f'''
             LEFT JOIN `{output_dataset_id}.{mvd}` mvd 
               ON t.visit_detail_id = mvd.src_visit_detail_id 
@@ -492,9 +496,9 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
         if has_preceding_visit_detail_id:
             # Include a join to mapping visit detail table for preceding visit detail
             # Note: Using left join in order to keep records that aren't mapped to visits
-            pvd = mapping_table_for(common.VISIT_DETAIL)
-            src_visit_detail_table_id = resources.get_table_id(
-                common.VISIT_DETAIL, hpo_id=hpo_id)
+            pvd = mapping_table_for(VISIT_DETAIL)
+            src_visit_detail_table_id = resources.get_table_id(VISIT_DETAIL,
+                                                               hpo_id=hpo_id)
             preceding_visit_detail_join_expr = f'''
             LEFT JOIN `{output_dataset_id}.{pvd}` pvd 
               ON t.preceding_visit_detail_id = pvd.src_visit_detail_id
@@ -504,9 +508,9 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
         if has_visit_detail_parent_id:
             # Include a join to mapping visit detail table for parent visit detail
             # Note: Using left join in order to keep records that aren't mapped to visits
-            ppvd = mapping_table_for(common.VISIT_DETAIL)
-            src_visit_detail_table_id = resources.get_table_id(
-                common.VISIT_DETAIL, hpo_id=hpo_id)
+            ppvd = mapping_table_for(VISIT_DETAIL)
+            src_visit_detail_table_id = resources.get_table_id(VISIT_DETAIL,
+                                                               hpo_id=hpo_id)
             visit_detail_parent_join_expr = f'''
             LEFT JOIN `{output_dataset_id}.{ppvd}` ppvd 
               ON t.visit_detail_parent_id = ppvd.src_visit_detail_id
@@ -516,8 +520,8 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
         if has_care_site_id:
             # Include a join to mapping visit table
             # Note: Using left join in order to keep records that aren't mapped to visits
-            cs = mapping_table_for(common.CARE_SITE)
-            src_care_site_table_id = resources.get_table_id(common.CARE_SITE,
+            cs = mapping_table_for(CARE_SITE)
+            src_care_site_table_id = resources.get_table_id(CARE_SITE,
                                                             hpo_id=hpo_id)
             care_site_join_expr = f'''
             LEFT JOIN `{output_dataset_id}.{cs}` mcs 
@@ -528,8 +532,8 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
         if has_location_id:
             # Include a join to mapping visit table
             # Note: Using left join in order to keep records that aren't mapped to visits
-            lc = mapping_table_for(common.LOCATION)
-            src_location_table_id = resources.get_table_id(common.LOCATION,
+            lc = mapping_table_for(LOCATION)
+            src_location_table_id = resources.get_table_id(LOCATION,
                                                            hpo_id=hpo_id)
             location_join_expr = f'''
             LEFT JOIN `{output_dataset_id}.{lc}` loc 
@@ -537,7 +541,7 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
                 AND loc.src_table_id = '{src_location_table_id}'
             '''
 
-        if table_name == common.PERSON:
+        if table_name == PERSON:
             return f'''
                     SELECT {cols} 
                     FROM `{input_dataset_id}.{table_id}` t
@@ -545,7 +549,7 @@ def table_hpo_subquery(table_name, hpo_id, input_dataset_id, output_dataset_id):
                        {care_site_join_expr} 
                     '''
 
-        if table_name == common.VISIT_DETAIL:
+        if table_name == VISIT_DETAIL:
             visit_detail_filter_expr = f'''
             AND mvo.{eu_constants.VISIT_OCCURRENCE_ID} IS NOT NULL
             '''
@@ -600,7 +604,7 @@ def _union_subqueries(client, table_name, hpo_ids, input_dataset_id,
     for hpo_id in hpo_ids:
         table_id = resources.get_table_id(table_name, hpo_id=hpo_id)
         if table_id in all_table_ids:
-            if table_name == common.FACT_RELATIONSHIP:
+            if table_name == FACT_RELATIONSHIP:
                 subquery = fact_relationship_hpo_subquery(
                     hpo_id, input_dataset_id, output_dataset_id)
                 result.append(subquery)
@@ -673,7 +677,7 @@ def load(client, cdm_table, hpo_ids, input_dataset_id, output_dataset_id):
         f'Loading union of {cdm_table} tables from {hpo_ids} into {output_table}'
     )
 
-    if cdm_table == common.FACT_RELATIONSHIP:
+    if cdm_table == FACT_RELATIONSHIP:
         q = fact_table_union_query(client, cdm_table, hpo_ids, input_dataset_id,
                                    output_dataset_id)
     else:
@@ -809,7 +813,7 @@ def move_ehr_person_to_observation(output_dataset_id, ehr_cutoff_date=None):
     logging.info(
         f'Copying EHR person table from {bq_utils.get_dataset_id()} to unioned dataset. Query is `{q}`'
     )
-    dst_table_id = output_table_for(common.OBSERVATION)
+    dst_table_id = output_table_for(OBSERVATION)
     dst_dataset_id = output_dataset_id
     query(q, dst_table_id, dst_dataset_id, write_disposition='WRITE_APPEND')
 
@@ -821,7 +825,7 @@ def map_ehr_person_to_observation(output_dataset_id, ehr_cutoff_date=None):
     :param output_dataset_id:
     :param hpo_id:
     """
-    table_name = common.OBSERVATION
+    table_name = OBSERVATION
 
     q = '''
         SELECT
@@ -868,10 +872,10 @@ def load_all_death(bq_client, project_id, dataset_id, hpo_ids):
     """
     query = LOAD_ALL_DEATH.render(project=project_id,
                                   dataset=dataset_id,
-                                  all_death=common.ALL_DEATH,
+                                  all_death=f'{UNIONED_EHR}_{ALL_DEATH}',
                                   hpo_ids=hpo_ids)
     job = bq_client.query(query)
-    result = job.result()
+    _ = job.result()
 
 
 def main(input_dataset_id,
@@ -898,11 +902,11 @@ def main(input_dataset_id,
         hpo_ids = [hpo_id for hpo_id in hpo_ids if hpo_id not in hpo_ids_ex]
 
     # Create empty output tables to ensure proper schema, clustering, etc.
-    for table in resources.CDM_TABLES + [common.ALL_DEATH]:
+    for table in resources.CDM_TABLES + [ALL_DEATH]:
         result_table = output_table_for(table)
-        if table == common.DEATH:
+        if table == DEATH:
             logging.info(
-                f'Skipping {result_table} creation. {common.ALL_DEATH} will be created instead.'
+                f'Skipping {result_table} creation. {ALL_DEATH} will be created instead.'
             )
             continue
         logging.info(f'Creating {output_dataset_id}.{result_table}...')
@@ -913,7 +917,7 @@ def main(input_dataset_id,
 
     # Create mapping tables
     for domain_table in cdm.tables_to_map():
-        if domain_table == common.SURVEY_CONDUCT:
+        if domain_table == SURVEY_CONDUCT:
             continue
         logging.info(f'Mapping {domain_table}...')
         mapping(domain_table, hpo_ids, input_dataset_id, output_dataset_id,
@@ -921,20 +925,20 @@ def main(input_dataset_id,
 
     # Load all tables with union of submitted tables
     for table_name in resources.CDM_TABLES:
-        if table_name in [common.DEATH, common.SURVEY_CONDUCT]:
+        if table_name in [DEATH, SURVEY_CONDUCT]:
             continue
         logging.info(f'Creating union of table {table_name}...')
         load(bq_client, table_name, hpo_ids, input_dataset_id,
              output_dataset_id)
 
-    logging.info(f'Loading {common.ALL_DEATH}...')
+    logging.info(f'Loading {ALL_DEATH}...')
     load_all_death(bq_client, project_id, output_dataset_id, hpo_ids)
-    logging.info(f'Completed {common.ALL_DEATH} load.')
+    logging.info(f'Completed {ALL_DEATH} load.')
 
     logging.info('Creation of Unioned EHR complete')
 
     # create person mapping table
-    domain_table = common.PERSON
+    domain_table = PERSON
     logging.info(f'Mapping {domain_table}...')
     mapping(domain_table, hpo_ids, input_dataset_id, output_dataset_id,
             project_id, bq_client)
