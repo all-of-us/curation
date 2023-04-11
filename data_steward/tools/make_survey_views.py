@@ -108,6 +108,36 @@ PPI_NEEDS = [{
 }, {
     "survey_name": "cope_vaccine2",
     "survey_concept_id": 905055
+}, {
+    "survey_name": "cope_dec",
+    "cope_month": "dec"
+}, {
+    "survey_name": "cope_feb",
+    "cope_month": "feb"
+}, {
+    "survey_name": "cope_may",
+    "cope_month": "may"
+}, {
+    "survey_name": "cope_nov",
+    "cope_month": "nov"
+}, {
+    "survey_name": "cope_july",
+    "cope_month": "july"
+}, {
+    "survey_name": "cope_june",
+    "cope_month": "june"
+}, {
+    "survey_name": "minute_1",
+    "cope_month": "vaccine1"
+}, {
+    "survey_name": "minute_2",
+    "cope_month": "vaccine2"
+}, {
+    "survey_name": "minute_3",
+    "cope_month": "vaccine3"
+}, {
+    "survey_name": "minute_4",
+    "cope_month": "vaccine4"
 }]
 
 
@@ -122,32 +152,59 @@ def create_ppi_views(client, project, dataset):
     for ppi_info in PPI_NEEDS:
         survey_name = ppi_info.get("survey_name")
         survey_concept_id = ppi_info.get("survey_concept_id")
-        view_id = f'{project}.{dataset}.observation_{survey_name}'
+        cope_month = ppi_info.get("cope_month")
+        view_id = f'{project}.{dataset}.v_observation_{survey_name}'
         view = bigquery.Table(view_id)
 
+        # create a materialized view
+        #view.mview_query = JINJA_ENV.from_string("""
+        # create a view
         view.view_query = JINJA_ENV.from_string("""
-        SELECT *
+        SELECT obs.*
         FROM `{{project}}.{{dataset}}.observation` obs
+        {% if survey_concept_id %}
         JOIN `{{project}}.{{dataset}}.survey_conduct` sc
         ON obs.questionnaire_response_id = sc.survey_conduct_id
         WHERE sc.survey_concept_id = {{survey_concept_id}}
+        {% elif cope_month %}
+        JOIN `{{project}}.{{dataset}}.cope_survey_semantic_version_map` cssvm
+        USING (questionnaire_response_id)
+        WHERE cssvm.cope_month = '{{cope_month}}'
+        {% else %}
+        -- prevent getting the entire table if we can't tell which criteria to use --
+        limit 1
+        {% endif %}
         """).render(project=project,
                     dataset=dataset,
-                    survey_concept_id=survey_concept_id)
+                    survey_concept_id=survey_concept_id,
+                    cope_month=cope_month)
 
         view = client.create_table(view)
         LOGGER.info(f'Created {view.table_type}: {str(view.reference)}')
 
-        sc_view_id = f'{project}.{dataset}.survey_conduct_{survey_name}'
+        sc_view_id = f'{project}.{dataset}.v_survey_conduct_{survey_name}'
         sc_view = bigquery.Table(sc_view_id)
 
+        # create a materialized view
+        #sc_view.mview_query = JINJA_ENV.from_string("""
+        # create a view
         sc_view.view_query = JINJA_ENV.from_string("""
-        SELECT *
+        SELECT sc.*
         FROM `{{project}}.{{dataset}}.survey_conduct` sc
+        {% if survey_concept_id %}
         WHERE sc.survey_concept_id = {{survey_concept_id}}
+        {% elif cope_month %}
+        JOIN `{{project}}.{{dataset}}.cope_survey_semantic_version_map` cssvm
+        ON cssvm.questionnaire_response_id = sc.survey_conduct_id
+        WHERE cssvm.cope_month = '{{cope_month}}'
+        {% else %}
+        -- prevent getting the entire table if we can't tell which criteria to use --
+        limit 1
+        {% endif %}
         """).render(project=project,
                     dataset=dataset,
-                    survey_concept_id=survey_concept_id)
+                    survey_concept_id=survey_concept_id,
+                    cope_month=cope_month)
 
         sc_view = client.create_table(sc_view)
         LOGGER.info(f'Created {sc_view.table_type}: {str(sc_view.reference)}')
@@ -180,14 +237,14 @@ def main(raw_args=None):
     })
     # set table expiration options
     dataset_object.default_table_expiration_ms = 180 * 24 * 60 * 60 * 1000  # In milliseconds.
-    bq_client.create_dataset(dataset_object)
+    # bq_client.create_dataset(dataset_object)
 
-    bq_client.copy_dataset(f'{args.project_id}.{args.rdr_dataset_id}',
-                           f'{args.project_id}.{new_dataset_name}')
-    bq_client.copy_dataset(f'{args.project_id}.{args.vocabulary}',
-                           f'{args.project_id}.{new_dataset_name}')
+    # bq_client.copy_dataset(f'{args.project_id}.{args.rdr_dataset_id}',
+    #                        f'{args.project_id}.{new_dataset_name}')
+    # bq_client.copy_dataset(f'{args.project_id}.{args.vocabulary}',
+    #                        f'{args.project_id}.{new_dataset_name}')
     create_ppi_views(bq_client, args.project_id, new_dataset_name)
-    LOGGER.info("Now I need to address the problematic COPE surveys")
+    LOGGER.info("PPI Survey View creations completed.")
 
 
 if __name__ == '__main__':
