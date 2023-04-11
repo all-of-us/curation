@@ -889,7 +889,7 @@ def load_all_death(bq_client, project_id, dataset_id, hpo_ids):
     query = LOAD_ALL_DEATH.render(project=project_id,
                                   dataset=dataset_id,
                                   all_death=f'{UNIONED_EHR}_{ALL_DEATH}',
-                                  death=DEATH
+                                  death=DEATH,
                                   hpo_ids=hpo_ids)
     job = bq_client.query(query)
     _ = job.result()
