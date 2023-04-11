@@ -97,7 +97,7 @@ import cdr_cleaner.clean_cdr_engine as clean_engine
 import resources
 from cdr_cleaner.cleaning_rules.drop_race_ethnicity_gender_observation import DropRaceEthnicityGenderObservation
 from common import (ALL_DEATH, CARE_SITE, DEATH, FACT_RELATIONSHIP,
-                    ID_CONSTANT_FACTOR, JINJA_ENV, LOCATION,
+                    ID_CONSTANT_FACTOR, JINJA_ENV, LOCATION, MAPPING_PREFIX,
                     MEASUREMENT_DOMAIN_CONCEPT_ID, OBSERVATION, PERSON,
                     PERSON_DOMAIN_CONCEPT_ID, SURVEY_CONDUCT, UNIONED_EHR,
                     VISIT_DETAIL, VISIT_OCCURRENCE)
@@ -139,8 +139,24 @@ SELECT
     cause_source_value,
     cause_source_concept_id,
     src_id,
-    NULL AS primary_death_record
+    FALSE AS primary_death_record
 FROM union_all_death
+""")
+
+UPDATE_PRIMARY_DEATH = JINJA_ENV.from_string("""
+UPDATE `{{project}}.{{dataset}}.{{all_death}}`
+SET primary_death_record = TRUE
+WHERE aou_death_id IN (
+    SELECT aou_death_id FROM `{{project}}.{{dataset}}.{{all_death}}`
+    QUALIFY rank() OVER (
+        PARITION BY person_id 
+        ORDER BY
+            src_id!='PPI/PM' DESC, 
+            death_date ASC, 
+            death_datetime ASC NULLS LAST, 
+            src_id ASC
+    ) = 1   
+)
 """)
 
 
@@ -166,7 +182,7 @@ def output_table_for(table_id):
     :param table_id: name of a CDM table
     :return: name of the table where results of the union will be stored
     """
-    return f'unioned_ehr_{table_id}'
+    return f'{UNIONED_EHR}_{table_id}'
 
 
 def _mapping_subqueries(client, table_name, hpo_ids, dataset_id, project_id):
@@ -258,7 +274,7 @@ def mapping_table_for(domain_table):
     :param domain_table: one of the domain tables (e.g. 'visit_occurrence', 'condition_occurrence')
     :return:
     """
-    return f'_mapping_{domain_table}'
+    return f'{MAPPING_PREFIX}{domain_table}'
 
 
 def mapping(domain_table, hpo_ids, input_dataset_id, output_dataset_id,
@@ -873,7 +889,14 @@ def load_all_death(bq_client, project_id, dataset_id, hpo_ids):
     query = LOAD_ALL_DEATH.render(project=project_id,
                                   dataset=dataset_id,
                                   all_death=f'{UNIONED_EHR}_{ALL_DEATH}',
+                                  death=DEATH
                                   hpo_ids=hpo_ids)
+    job = bq_client.query(query)
+    _ = job.result()
+
+    query = UPDATE_PRIMARY_DEATH.render(project=project_id,
+                                        dataset=dataset_id,
+                                        all_death=f'{UNIONED_EHR}_{ALL_DEATH}')
     job = bq_client.query(query)
     _ = job.result()
 
