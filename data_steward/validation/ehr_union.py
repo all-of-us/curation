@@ -107,6 +107,38 @@ UNION_ALL = '''
 
 '''
 
+# TODO update the primary_death_record logic
+LOAD_ALL_DEATH = common.JINJA_ENV.from_string("""
+INSERT INTO `{{project}}.{{dataset}}.{{all_death}}`
+WITH union_all_death AS (
+    {% for hpo_id in hpo_ids %}
+    SELECT
+        person_id,
+        death_date,
+        death_datetime,
+        death_type_concept_id,
+        cause_concept_id,
+        cause_source_value,
+        cause_source_concept_id,
+        {{hpo_id}} AS src_id
+    FROM `{{project}}.{{dataset}}.{{hpo_id}}_{{death}}`
+    {% if not loop.last -%} UNION ALL {% endif %}
+    {% endfor %}
+)
+SELECT
+    GENERATE_UUID() AS aou_death_id,
+    person_id,
+    death_date,
+    death_datetime,
+    death_type_concept_id,
+    cause_concept_id,
+    cause_source_value,
+    cause_source_concept_id,
+    src_id,
+    NULL AS primary_death_record
+FROM union_all_death
+""")
+
 
 def get_hpo_offsets(hpo_ids):
     """
@@ -831,10 +863,15 @@ def map_ehr_person_to_observation(output_dataset_id, ehr_cutoff_date=None):
     query(q, dst_table_id, dst_dataset_id, write_disposition='WRITE_APPEND')
 
 
-def create_and_load_all_death():
+def load_all_death(bq_client, project_id, dataset_id, hpo_ids):
     """_summary_
     """
-    pass
+    query = LOAD_ALL_DEATH.render(project=project_id,
+                                  dataset=dataset_id,
+                                  all_death=common.ALL_DEATH,
+                                  hpo_ids=hpo_ids)
+    job = bq_client.query(query)
+    result = job.result()
 
 
 def main(input_dataset_id,
@@ -861,11 +898,11 @@ def main(input_dataset_id,
         hpo_ids = [hpo_id for hpo_id in hpo_ids if hpo_id not in hpo_ids_ex]
 
     # Create empty output tables to ensure proper schema, clustering, etc.
-    for table in resources.CDM_TABLES:
+    for table in resources.CDM_TABLES + [common.ALL_DEATH]:
         result_table = output_table_for(table)
         if table == common.DEATH:
             logging.info(
-                f'Skipping {result_table} creation. AOU_DEATH will be created instead.'
+                f'Skipping {result_table} creation. {common.ALL_DEATH} will be created instead.'
             )
             continue
         logging.info(f'Creating {output_dataset_id}.{result_table}...')
@@ -889,6 +926,10 @@ def main(input_dataset_id,
         logging.info(f'Creating union of table {table_name}...')
         load(bq_client, table_name, hpo_ids, input_dataset_id,
              output_dataset_id)
+
+    logging.info(f'Loading {common.ALL_DEATH}...')
+    load_all_death(bq_client, project_id, output_dataset_id, hpo_ids)
+    logging.info(f'Completed {common.ALL_DEATH} load.')
 
     logging.info('Creation of Unioned EHR complete')
 
@@ -914,10 +955,6 @@ def main(input_dataset_id,
                                    ehr_cutoff_date=ehr_cutoff_date)
 
     logging.info('Completed Person to Observation')
-
-    logging.info('')
-    create_and_load_all_death()
-    logging.info('')
 
 
 if __name__ == '__main__':
