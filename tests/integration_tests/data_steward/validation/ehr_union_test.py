@@ -17,6 +17,7 @@ from common import (ALL_DEATH, CARE_SITE, DEATH, LOCATION, OBSERVATION, PERSON,
 from constants.validation import ehr_union as eu_constants
 from gcloud.bq import BigQueryClient
 from gcloud.gcs import StorageClient
+from resources import fields_for
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 import resources
 from tests.test_util import (delete_all_tables, drop_hpo_id_bucket_name_table,
@@ -663,7 +664,7 @@ class EhrUnionAllDeath(BaseTest.BigQueryTestBase):
         cls.project_id = os.environ.get(PROJECT_ID)
         cls.dataset_id = os.environ.get('UNIONED_DATASET_ID')
 
-        cls.hpo_ids = [PITT_HPO_ID, NYC_HPO_ID, FAKE_HPO_ID]
+        cls.hpo_ids = [FAKE_HPO_ID, NYC_HPO_ID, PITT_HPO_ID]
 
         cls.fq_table_names = [
             f'{cls.project_id}.{cls.dataset_id}.{UNIONED_EHR}_{ALL_DEATH}'
@@ -677,15 +678,68 @@ class EhrUnionAllDeath(BaseTest.BigQueryTestBase):
     def setUp(self):
 
         create_death_tmpl = self.jinja_env.from_string("""
-                                                       """)
+            CREATE TABLE `{{project_id}}.{{dataset_id}}.{{hpo}}_{{death}}`
+            (person_id INT NOT NULL, death_date DATE NOT NULL, death_datetime TIMESTAMP,
+             death_type_concept_id INT NOT NULL, cause_concept_id INT, 
+             cause_source_value STRING, cause_source_concept_id INT)
+            """)
 
-        insert_death_tmpl = self.jinja_env.from_string("""
+        insert_fake = self.jinja_env.from_string("""
             INSERT INTO `{{project_id}}.{{dataset_id}}.{{hpo}}_{{death}}`
             VALUES
-                (111, date('2018-11-26')),
-                (222, date('2019-11-26')),
-                (333, date('2020-11-26'))
-        """)
+            (1, '2020-01-01', NULL, 0, NULL, NULL, NULL), -- only --
+            (2, '2020-01-01', '2020-01-01 00:00:00', 0, NULL, NULL, NULL), -- exactly same --
+            (3, '2020-01-01', NULL, 0, NULL, NULL, NULL), -- datetime NULL vs non-NULL --
+            (4, '2020-01-01', '2020-01-01 00:00:00', 0, NULL, NULL, NULL), -- old vs new dates --
+            (5, '2020-01-01', '2020-01-01 12:00:00', 0, NULL, NULL, NULL) -- old vs new datetimes --
+        """).render(project_id=self.project_id,
+                    dataset_id=self.dataset_id,
+                    hpo=FAKE_HPO_ID,
+                    death=DEATH)
 
-    def test_hpo_subquery(self):
-        pass
+        insert_nyc = self.jinja_env.from_string("""
+            INSERT INTO `{{project_id}}.{{dataset_id}}.{{hpo}}_{{death}}`
+            VALUES
+            (2, '2020-01-01', '2020-01-01 00:00:00', 0, NULL, NULL, NULL),
+            (3, '2020-01-01', '2020-01-01 00:00:00', 0, NULL, NULL, NULL)
+        """).render(project_id=self.project_id,
+                    dataset_id=self.dataset_id,
+                    hpo=NYC_HPO_ID,
+                    death=DEATH)
+
+        insert_pitt = self.jinja_env.from_string("""
+            INSERT INTO `{{project_id}}.{{dataset_id}}.{{hpo}}_{{death}}`
+            VALUES
+            (4, '2019-12-31', '2019-12-31 00:00:00', 0, NULL, NULL, NULL),
+            (5, '2020-01-01', '2020-01-01 00:00:00', 0, NULL, NULL, NULL)
+        """).render(projecti_id=self.project_id,
+                    dataset_id=self.dataset_id,
+                    hpo=PITT_HPO_ID,
+                    death=DEATH)
+
+        queries = [
+            create_death_tmpl.render(project_id=self.project_id,
+                                     dataset_id=self.dataset_id,
+                                     hpo=hpo_id,
+                                     death=DEATH) for hpo_id in self.hpo_ids
+        ] + [insert_fake, insert_nyc, insert_pitt]
+
+        self.load_test_data(queries)
+
+    def test_create_load_all_death(self):
+        ehr_union.create_load_all_death(self.client, self.project_id,
+                                        self.dataset_id, self.hpo_ids)
+
+        self.assertTableValuesMatch(
+            f'{self.project_id}.{self.dataset_id}.{UNIONED_EHR}_{ALL_DEATH}',
+            ['person_id', 'src_id', 'primary_death_record'], [
+                (1, FAKE_HPO_ID, True),
+                (2, FAKE_HPO_ID, True),
+                (3, FAKE_HPO_ID, False),
+                (4, FAKE_HPO_ID, False),
+                (5, FAKE_HPO_ID, False),
+                (2, NYC_HPO_ID, False),
+                (3, NYC_HPO_ID, True),
+                (4, PITT_HPO_ID, True),
+                (5, PITT_HPO_ID, True),
+            ])

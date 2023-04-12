@@ -114,7 +114,8 @@ UNION_ALL = '''
 
 # TODO update the primary_death_record logic
 LOAD_ALL_DEATH = JINJA_ENV.from_string("""
-INSERT INTO `{{project}}.{{dataset}}.{{all_death}}`
+CREATE TABLE `{{project}}.{{dataset}}.{{all_death}}`
+AS
 WITH union_all_death AS (
     {% for hpo_id in hpo_ids %}
     SELECT
@@ -125,7 +126,7 @@ WITH union_all_death AS (
         cause_concept_id,
         cause_source_value,
         cause_source_concept_id,
-        {{hpo_id}} AS src_id
+        '{{hpo_id}}' AS src_id
     FROM `{{project}}.{{dataset}}.{{hpo_id}}_{{death}}`
     {% if not loop.last -%} UNION ALL {% endif %}
     {% endfor %}
@@ -149,8 +150,8 @@ UPDATE `{{project}}.{{dataset}}.{{all_death}}`
 SET primary_death_record = TRUE
 WHERE aou_death_id IN (
     SELECT aou_death_id FROM `{{project}}.{{dataset}}.{{all_death}}`
-    QUALIFY rank() OVER (
-        PARITION BY person_id 
+    QUALIFY RANK() OVER (
+        PARTITION BY person_id 
         ORDER BY
             src_id!='PPI/PM' DESC, 
             death_date ASC, 
