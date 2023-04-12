@@ -7,8 +7,9 @@ from analytics.cdr_ops.controlled_tier_qc.sql.query_templates import (
     QUERY_SITE_ID_NOT_MAPPED_PROPERLY, QUERY_ZIP_CODE_GENERALIZATION)
 
 
-def check_mapping(check_df, project_id, post_dataset_id, pre_deid_dataset,
-                  questionnaire_response_dataset, mapping_dataset):
+def check_mapping(check_df, project_id, post_dataset_id,
+                  questionnaire_response_dataset, pre_deid_dataset,
+                  mapping_dataset):
     """Run mapping verification rules
 
     Parameters
