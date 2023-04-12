@@ -399,14 +399,14 @@ class EhrUnionTest(unittest.TestCase):
         obs_rows.extend([dob_row, gender_row, race_row, ethnicity_row])
         return obs_rows
 
-    @mock.patch('validation.ehr_union.create_load_all_death')
     @mock.patch('bq_utils.get_hpo_info')
-    @mock.patch('resources.CDM_TABLES', [
+    @mock.patch('validation.ehr_union.CDM_TABLES', [
         PERSON, OBSERVATION, LOCATION, CARE_SITE, VISIT_OCCURRENCE, VISIT_DETAIL
     ])
     @mock.patch('cdm.tables_to_map')
-    def test_ehr_person_to_observation(self, mock_tables_map, mock_hpo_info,
-                                       mock_all_death):
+    @mock.patch('validation.ehr_union.create_load_all_death')
+    def test_ehr_person_to_observation(self, mock_all_death, mock_tables_map,
+                                       mock_hpo_info):
         # ehr person table converts to observation records
         self._load_datasets()
         mock_tables_map.return_value = [
@@ -471,14 +471,14 @@ class EhrUnionTest(unittest.TestCase):
 
         self.assertCountEqual(expected, actual)
 
-    @mock.patch('validation.ehr_union.create_load_all_death')
     @mock.patch('bq_utils.get_hpo_info')
-    @mock.patch('resources.CDM_TABLES', [
+    @mock.patch('validation.ehr_union.CDM_TABLES', [
         PERSON, OBSERVATION, LOCATION, CARE_SITE, VISIT_OCCURRENCE, VISIT_DETAIL
     ])
     @mock.patch('cdm.tables_to_map')
-    def test_ehr_person_to_observation_counts(self, mock_tables_map,
-                                              mock_hpo_info, mock_all_death):
+    @mock.patch('validation.ehr_union.create_load_all_death')
+    def test_ehr_person_to_observation_counts(self, mock_all_death,
+                                              mock_tables_map, mock_hpo_info):
         self._load_datasets()
         mock_tables_map.return_value = [
             OBSERVATION, LOCATION, CARE_SITE, VISIT_OCCURRENCE, VISIT_DETAIL
