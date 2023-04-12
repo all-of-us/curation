@@ -9,16 +9,20 @@ import dpath
 import moz_sql_parser
 
 # Project imports
-import app_identity
 import bq_utils
 import cdm
-import common
+from app_identity import get_application_id, PROJECT_ID
+from common import (ALL_DEATH, CARE_SITE, DEATH, LOCATION, OBSERVATION, PERSON,
+                    SURVEY_CONDUCT, UNIONED_EHR, VISIT_DETAIL, VISIT_OCCURRENCE)
 from constants.validation import ehr_union as eu_constants
 from gcloud.bq import BigQueryClient
 from gcloud.gcs import StorageClient
+from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 import resources
-import tests.test_util as test_util
-from tests.test_util import FAKE_HPO_ID, NYC_HPO_ID, PITT_HPO_ID
+from tests.test_util import (delete_all_tables, drop_hpo_id_bucket_name_table,
+                             setup_hpo_id_bucket_name_table, FAKE_HPO_ID,
+                             FIVE_PERSONS_PATH, NYC_HPO_ID,
+                             PITT_FIVE_PERSONS_PATH, PITT_HPO_ID, RDR_PATH)
 from validation import ehr_union
 
 EXCLUDED_HPO_ID = FAKE_HPO_ID
@@ -37,7 +41,7 @@ def first_or_none(l):
 
 class EhrUnionTest(unittest.TestCase):
     dataset_id = bq_utils.get_dataset_id()
-    project_id = app_identity.get_application_id()
+    project_id = get_application_id()
     bq_client = BigQueryClient(project_id)
 
     @classmethod
@@ -45,7 +49,7 @@ class EhrUnionTest(unittest.TestCase):
         print('**************************************************************')
         print(cls.__name__)
         print('**************************************************************')
-        test_util.setup_hpo_id_bucket_name_table(cls.bq_client, cls.dataset_id)
+        setup_hpo_id_bucket_name_table(cls.bq_client, cls.dataset_id)
 
     def setUp(self):
         self.hpo_ids = [PITT_HPO_ID, NYC_HPO_ID, EXCLUDED_HPO_ID]
@@ -128,9 +132,9 @@ class EhrUnionTest(unittest.TestCase):
                 result = bq_utils.load_cdm_csv(hpo_id, cdm_table)
                 running_jobs.append(result['jobReference']['jobId'])
 
-                if hpo_id != EXCLUDED_HPO_ID and cdm_table != common.VISIT_DETAIL:
+                if hpo_id != EXCLUDED_HPO_ID and cdm_table != VISIT_DETAIL:
                     expected_tables[output_table] += list(csv_rows)
-                elif hpo_id != EXCLUDED_HPO_ID and cdm_table == common.VISIT_DETAIL:
+                elif hpo_id != EXCLUDED_HPO_ID and cdm_table == VISIT_DETAIL:
                     # All rows are included in the mapping table for visit_detail,
                     # but the rows with invalid visit_occurrence_id are excluded
                     # from the unioned visit_detail table
@@ -148,9 +152,8 @@ class EhrUnionTest(unittest.TestCase):
                     expected_tables[output_table] += list(csv_rows)
 
         # ensure person to observation output is as expected
-        output_table_person: str = ehr_union.output_table_for(common.PERSON)
-        output_table_observation: str = ehr_union.output_table_for(
-            common.OBSERVATION)
+        output_table_person: str = ehr_union.output_table_for(PERSON)
+        output_table_observation: str = ehr_union.output_table_for(OBSERVATION)
         expected_tables[output_table_observation] += 4 * expected_tables[
             output_table_person]
 
@@ -173,15 +176,13 @@ class EhrUnionTest(unittest.TestCase):
         cdm_filepath: str = ''
 
         if hpo_id == NYC_HPO_ID:
-            cdm_filepath = os.path.join(test_util.FIVE_PERSONS_PATH,
-                                        cdm_filename)
+            cdm_filepath = os.path.join(FIVE_PERSONS_PATH, cdm_filename)
         elif hpo_id == PITT_HPO_ID:
-            cdm_filepath = os.path.join(test_util.PITT_FIVE_PERSONS_PATH,
-                                        cdm_filename)
+            cdm_filepath = os.path.join(PITT_FIVE_PERSONS_PATH, cdm_filename)
         elif hpo_id == EXCLUDED_HPO_ID and cdm_table in [
                 'observation', 'person', 'visit_occurrence'
         ]:
-            cdm_filepath = os.path.join(test_util.RDR_PATH, cdm_filename)
+            cdm_filepath = os.path.join(RDR_PATH, cdm_filename)
 
         return cdm_filepath
 
@@ -192,7 +193,7 @@ class EhrUnionTest(unittest.TestCase):
         :param hpo_ids: identifies which HPOs to include in union
         :return: list of valid occurrence IDs.
         """
-        cdm_filepath = self._get_cdm_filepath(common.VISIT_OCCURRENCE, hpo_id)
+        cdm_filepath = self._get_cdm_filepath(VISIT_OCCURRENCE, hpo_id)
 
         if not os.path.exists(cdm_filepath):
             return []
@@ -216,8 +217,9 @@ class EhrUnionTest(unittest.TestCase):
         tables = self.bq_client.list_tables(dataset_id)
         return [table.table_id for table in tables]
 
+    @mock.patch('ehr_union.create_load_all_death')
     @mock.patch('bq_utils.get_hpo_info')
-    def test_union_ehr(self, mock_hpo_info):
+    def test_union_ehr(self, mock_hpo_info, mock_all_death):
         self._load_datasets()
         input_tables_before = set(self._dataset_tables(self.input_dataset_id))
 
@@ -225,13 +227,13 @@ class EhrUnionTest(unittest.TestCase):
         output_tables_before = self._dataset_tables(self.output_dataset_id)
         mapping_tables = [
             ehr_union.mapping_table_for(table)
-            for table in cdm.tables_to_map() + [common.PERSON]
-            if not table == common.SURVEY_CONDUCT
+            for table in cdm.tables_to_map() + [PERSON]
+            if not table == SURVEY_CONDUCT
         ]
         output_cdm_tables = [
             ehr_union.output_table_for(table)
             for table in resources.CDM_TABLES
-            if not table == common.DEATH
+            if not table == DEATH
         ]
         sandbox_tables = [
             f'{self.output_dataset_id}_dc2340_unioned_ehr_observation'
@@ -278,7 +280,7 @@ class EhrUnionTest(unittest.TestCase):
         # mapping tables
         tables_to_map = cdm.tables_to_map()
         for table_to_map in tables_to_map:
-            if not table_to_map == common.SURVEY_CONDUCT:
+            if not table_to_map == SURVEY_CONDUCT:
                 mapping_table = ehr_union.mapping_table_for(table_to_map)
                 expected_fields = {
                     'src_table_id',
@@ -293,7 +295,7 @@ class EhrUnionTest(unittest.TestCase):
                     mapping_table, actual_fields, expected_fields)
                 self.assertSetEqual(expected_fields, actual_fields, message)
 
-                if table_to_map == common.VISIT_DETAIL:
+                if table_to_map == VISIT_DETAIL:
                     expected_num_rows = len(self.expected_tables[mapping_table])
                 else:
                     result_table = ehr_union.output_table_for(table_to_map)
@@ -306,7 +308,7 @@ class EhrUnionTest(unittest.TestCase):
 
         # check for each output table
         for table_name in resources.CDM_TABLES:
-            if not table_name in [common.SURVEY_CONDUCT, common.DEATH]:
+            if not table_name in [SURVEY_CONDUCT, DEATH]:
                 # output table exists and row count is sum of those submitted by hpos
                 result_table = ehr_union.output_table_for(table_name)
                 expected_rows = self.expected_tables[result_table]
@@ -397,18 +399,18 @@ class EhrUnionTest(unittest.TestCase):
         obs_rows.extend([dob_row, gender_row, race_row, ethnicity_row])
         return obs_rows
 
+    @mock.patch('ehr_union.create_load_all_death')
     @mock.patch('bq_utils.get_hpo_info')
     @mock.patch('resources.CDM_TABLES', [
-        common.PERSON, common.OBSERVATION, common.LOCATION, common.CARE_SITE,
-        common.VISIT_OCCURRENCE, common.VISIT_DETAIL
+        PERSON, OBSERVATION, LOCATION, CARE_SITE, VISIT_OCCURRENCE, VISIT_DETAIL
     ])
     @mock.patch('cdm.tables_to_map')
-    def test_ehr_person_to_observation(self, mock_tables_map, mock_hpo_info):
+    def test_ehr_person_to_observation(self, mock_tables_map, mock_hpo_info,
+                                       mock_all_death):
         # ehr person table converts to observation records
         self._load_datasets()
         mock_tables_map.return_value = [
-            common.OBSERVATION, common.LOCATION, common.CARE_SITE,
-            common.VISIT_OCCURRENCE, common.VISIT_DETAIL
+            OBSERVATION, LOCATION, CARE_SITE, VISIT_OCCURRENCE, VISIT_DETAIL
         ]
 
         mock_hpo_info.return_value = [{
@@ -469,18 +471,17 @@ class EhrUnionTest(unittest.TestCase):
 
         self.assertCountEqual(expected, actual)
 
+    @mock.patch('ehr_union.create_load_all_death')
     @mock.patch('bq_utils.get_hpo_info')
     @mock.patch('resources.CDM_TABLES', [
-        common.PERSON, common.OBSERVATION, common.LOCATION, common.CARE_SITE,
-        common.VISIT_OCCURRENCE, common.VISIT_DETAIL
+        PERSON, OBSERVATION, LOCATION, CARE_SITE, VISIT_OCCURRENCE, VISIT_DETAIL
     ])
     @mock.patch('cdm.tables_to_map')
     def test_ehr_person_to_observation_counts(self, mock_tables_map,
-                                              mock_hpo_info):
+                                              mock_hpo_info, mock_all_death):
         self._load_datasets()
         mock_tables_map.return_value = [
-            common.OBSERVATION, common.LOCATION, common.CARE_SITE,
-            common.VISIT_OCCURRENCE, common.VISIT_DETAIL
+            OBSERVATION, LOCATION, CARE_SITE, VISIT_OCCURRENCE, VISIT_DETAIL
         ]
 
         mock_hpo_info.return_value = [{
@@ -630,7 +631,7 @@ class EhrUnionTest(unittest.TestCase):
         # Key fields should be populated using associated mapping tables
         for table in resources.CDM_TABLES:
             # This condition is to exempt person table from table hpo sub query
-            if table != common.PERSON:
+            if table != PERSON:
                 subquery_fail = self.get_table_hpo_subquery_error(
                     table, input_dataset_id, output_dataset_id)
                 if subquery_fail is not None:
@@ -641,9 +642,46 @@ class EhrUnionTest(unittest.TestCase):
 
     def tearDown(self):
         self._empty_hpo_buckets()
-        test_util.delete_all_tables(self.bq_client, self.input_dataset_id)
-        test_util.delete_all_tables(self.bq_client, self.output_dataset_id)
+        delete_all_tables(self.bq_client, self.input_dataset_id)
+        delete_all_tables(self.bq_client, self.output_dataset_id)
 
     @classmethod
     def tearDownClass(cls):
-        test_util.drop_hpo_id_bucket_name_table(cls.bq_client, cls.dataset_id)
+        drop_hpo_id_bucket_name_table(cls.bq_client, cls.dataset_id)
+
+
+class EhrUnionAllDeath(BaseTest.BigQueryTestBase):
+
+    @classmethod
+    def setUpClass(cls):
+        print('**************************************************************')
+        print(cls.__name__)
+        print('**************************************************************')
+
+        super().initialize_class_vars()
+
+        cls.project_id = os.environ.get(PROJECT_ID)
+        cls.dataset_id = os.environ.get('UNIONED_DATASET_ID')
+
+        cls.hpo_ids = [PITT_HPO_ID, NYC_HPO_ID, FAKE_HPO_ID]
+
+        # Setting the tables in fq_sandbox_table_names so they are deleted at tearDown()
+        cls.fq_sandbox_table_names = [
+            f'{cls.project_id}.{cls.dataset_id}.{UNIONED_EHR}_{ALL_DEATH}'
+        ] + [
+            f'{cls.project_id}.{cls.dataset_id}.{hpo}_{DEATH}'
+            for hpo in cls.hpo_ids
+        ]
+
+    def setUp(self):
+
+        insert_death_tmpl = self.jinja_env.from_string("""
+            INSERT INTO `{{project_id}}.{{dataset_id}}.{{hpo}}_{{death}}`
+            VALUES
+                (111, date('2018-11-26')),
+                (222, date('2019-11-26')),
+                (333, date('2020-11-26'))
+        """)
+
+    def test_hpo_subquery(self):
+        pass
