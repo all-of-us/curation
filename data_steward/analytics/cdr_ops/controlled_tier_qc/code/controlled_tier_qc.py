@@ -36,8 +36,8 @@ logger = logging.getLogger()
 
 def run_qc(project_id,
            post_deid_dataset,
-           pre_deid_dataset,
            questionnaire_response_dataset,
+           pre_deid_dataset,
            mapping_dataset=None,
            rule_code=None) -> pd.DataFrame:
     """
@@ -67,7 +67,8 @@ def run_qc(project_id,
         check_df = filter_data_by_rule(check_file, rule)
         check_function = eval(row['code'])
         df = check_function(check_df, project_id, post_deid_dataset,
-                            pre_deid_dataset, questionnaire_response_dataset, mapping_dataset)
+                            pre_deid_dataset, questionnaire_response_dataset,
+                            mapping_dataset)
         checks.append(df)
     return pd.concat(checks, sort=True).reset_index(drop=True)
 
