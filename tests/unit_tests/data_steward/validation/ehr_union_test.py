@@ -294,7 +294,7 @@ class EhrUnionTest(unittest.TestCase):
                                       dataset_id,
                                       write_disposition='WRITE_APPEND')
 
-    @mock.patch('validation.ehr_union.load_all_death')
+    @mock.patch('validation.ehr_union.create_load_all_death')
     @mock.patch('validation.ehr_union.clean_engine.clean_dataset')
     @mock.patch('validation.ehr_union.move_ehr_person_to_observation')
     @mock.patch('validation.ehr_union.map_ehr_person_to_observation')

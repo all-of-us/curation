@@ -217,7 +217,7 @@ class EhrUnionTest(unittest.TestCase):
         tables = self.bq_client.list_tables(dataset_id)
         return [table.table_id for table in tables]
 
-    @mock.patch('ehr_union.create_load_all_death')
+    @mock.patch('validation.ehr_union.create_load_all_death')
     @mock.patch('bq_utils.get_hpo_info')
     def test_union_ehr(self, mock_hpo_info, mock_all_death):
         self._load_datasets()
@@ -399,7 +399,7 @@ class EhrUnionTest(unittest.TestCase):
         obs_rows.extend([dob_row, gender_row, race_row, ethnicity_row])
         return obs_rows
 
-    @mock.patch('ehr_union.create_load_all_death')
+    @mock.patch('validation.ehr_union.create_load_all_death')
     @mock.patch('bq_utils.get_hpo_info')
     @mock.patch('resources.CDM_TABLES', [
         PERSON, OBSERVATION, LOCATION, CARE_SITE, VISIT_OCCURRENCE, VISIT_DETAIL
@@ -471,7 +471,7 @@ class EhrUnionTest(unittest.TestCase):
 
         self.assertCountEqual(expected, actual)
 
-    @mock.patch('ehr_union.create_load_all_death')
+    @mock.patch('validation.ehr_union.create_load_all_death')
     @mock.patch('bq_utils.get_hpo_info')
     @mock.patch('resources.CDM_TABLES', [
         PERSON, OBSERVATION, LOCATION, CARE_SITE, VISIT_OCCURRENCE, VISIT_DETAIL
@@ -665,15 +665,19 @@ class EhrUnionAllDeath(BaseTest.BigQueryTestBase):
 
         cls.hpo_ids = [PITT_HPO_ID, NYC_HPO_ID, FAKE_HPO_ID]
 
-        # Setting the tables in fq_sandbox_table_names so they are deleted at tearDown()
-        cls.fq_sandbox_table_names = [
+        cls.fq_table_names = [
             f'{cls.project_id}.{cls.dataset_id}.{UNIONED_EHR}_{ALL_DEATH}'
         ] + [
             f'{cls.project_id}.{cls.dataset_id}.{hpo}_{DEATH}'
             for hpo in cls.hpo_ids
         ]
 
+        super().setUpClass()
+
     def setUp(self):
+
+        create_death_tmpl = self.jinja_env.from_string("""
+                                                       """)
 
         insert_death_tmpl = self.jinja_env.from_string("""
             INSERT INTO `{{project_id}}.{{dataset_id}}.{{hpo}}_{{death}}`
