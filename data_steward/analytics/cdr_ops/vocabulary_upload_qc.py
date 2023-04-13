@@ -27,6 +27,11 @@ from gcloud.bq import BigQueryClient
 from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
 import pandas as pd
 
+# + tags=["parameters"]
+project_id = ''
+old_vocabulary = ''
+new_vocabulary = ''
+run_as = ''
 # -
 
 # These are the AoU_Custom and AoU_General concepts. Look for added concepts in the aou_vocab/CONCEPT.csv. Link Above. 
@@ -105,7 +110,8 @@ execute(client, query, max_rows=True)
 # # Verify the updates made to the vocabulary in the upload process
 
 # ## All AoU_Custom and AoU_General concepts are present in the new vocabulary
-# In the process of updating the vocabulary the custom concepts are added to the vocabulary. The list of concepts should have been updated at the start of this notebook.
+# In the process of updating the vocabulary custom concepts are added to the vocabulary. <br>
+# The list of concepts should have been updated at the start of this notebook.<br>
 #
 # If the check fails, investigate. It is important that all of the custom concepts are added to the vocabulary.
 
@@ -131,8 +137,8 @@ print('This check passes if the total is ' + str(len(custom_concepts)))
 # ## Tables row count comparison
 #
 # > - The difference between the number of rows in each table of the datasets.  <br>
-# > - Generally, all 'changes' should increase, but with the occasional edge case. <br>
-# > - Investigate any negative values, the release notes are a great starting reference. <br>
+# > - **Generally, all 'changes' should increase**, but with the occasional edge case. <br>
+# > - **Investigate any negative values**, the release notes are a great starting reference. <br>
 # > - [Release notes](https://github.com/OHDSI/Vocabulary-v5.0/releases).   <br>
 
 tpl = JINJA_ENV.from_string('''
@@ -191,7 +197,7 @@ execute(client, query, max_rows=True)
 
 # # Row count comparison by vocabulary_id
 # > - Shows the number of individual concepts added or removed from each vocabulary.<br>
-# > - Generally the count should only increase (when it does change).<br>
+# > - **Generally the count should only increase** (when it does change).<br>
 # > - Investigate any negative differences.<br>
 # > - Changes to AoU_Custom and AoU_General can be validated by looking for Jira issues that affect the<br>
 #     data_steward/resource_files/aou_vocab/CONCEPT.csv file.<br>
@@ -230,5 +236,3 @@ order by grantee
 ''')
 query = tpl.render(project_id=project_id, new_vocabulary=new_vocabulary)
 execute(client, query)
-
-
