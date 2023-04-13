@@ -20,6 +20,8 @@ def check_mapping(check_df, project_id, post_dataset_id,
         Google Bigquery project_id
     post_dataset_id: str
         Bigquery dataset after de-id rules were run
+    questionnaire_response_dataset
+        ID of the dataset containing questionnaire_response deid mapping table
     pre_deid_dataset: str
         Bigquery dataset before de-id rules were run
 
@@ -75,6 +77,8 @@ def check_site_mapping(check_df, project_id, post_dataset_id,
         Google Bigquery project_id
     post_dataset_id: str
         Bigquery dataset after de-id rules were run
+    questionnaire_response_dataset
+        ID of the dataset containing questionnaire_response deid mapping table
     pre_deid_dataset: str
         Bigquery dataset before de-id rules were run
 
@@ -120,6 +124,8 @@ def check_mapping_zipcode_generalization(check_df, project_id, post_dataset_id,
         Google Bigquery project_id
     post_dataset_id: str
         Bigquery dataset after de-id rules were run
+    questionnaire_response_dataset
+        ID of the dataset containing questionnaire_response deid mapping table
     pre_deid_dataset: str
         Bigquery dataset before de-id rules were run
 
@@ -127,9 +133,11 @@ def check_mapping_zipcode_generalization(check_df, project_id, post_dataset_id,
     -------
     pd.DataFrame
     """
+
+
+
     zip_check = run_check_by_row(check_df, QUERY_ZIP_CODE_GENERALIZATION,
                                  project_id, post_dataset_id,
-                                 questionnaire_response_dataset,
                                  pre_deid_dataset,
                                  "Zip code value generalized and transformed")
 

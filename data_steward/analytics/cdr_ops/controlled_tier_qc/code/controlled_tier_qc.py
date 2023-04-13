@@ -46,7 +46,7 @@ def run_qc(project_id,
     :param project_id: Project ID of the dataset.
     :param post_deid_dataset: ID of the dataset after DEID.
     :param pre_deid_dataset: ID of the dataset before DEID.
-    :param questionnaire_response_dataset: the dataset where this dataset is created
+    :param questionnaire_response_dataset: ID of the dataset containing questionnaire_response deid mapping table
     :param mapping_dataset: ID of the dataset for mapping.
     :param rule_code: str or list. The rule code(s) to be checked.
                       If None, all the rule codes in CHECK_LIST_CSV_FILE are checked.
