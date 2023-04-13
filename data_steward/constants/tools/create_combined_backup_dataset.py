@@ -1,19 +1,16 @@
 import cdm
-from common import JINJA_ENV
+from common import (JINJA_ENV, PERSON, SURVEY_CONDUCT)
 
 SOURCE_VALUE_EHR_CONSENT = 'EHRConsentPII_ConsentPermission'
 CONCEPT_ID_CONSENT_PERMISSION_YES = 1586100  # ConsentPermission_Yes
 EHR_CONSENT_TABLE_ID = '_ehr_consent'
-PERSON_TABLE = 'person'
-VISIT_DETAIL = 'visit_detail'
 VISIT_OCCURRENCE_ID = 'visit_occurrence_id'
 PERSON_ID = 'person_id'
-OBSERVATION_TABLE = 'observation'
 FOREIGN_KEYS_FIELDS = [
     'visit_occurrence_id', 'location_id', 'care_site_id', 'provider_id',
     'visit_detail_id'
 ]
-RDR_TABLES_TO_COPY = ['person', 'survey_conduct']
+RDR_TABLES_TO_COPY = [PERSON, SURVEY_CONDUCT]
 EHR_TABLES_TO_COPY = ['death']
 DOMAIN_TABLES = list(
     set(cdm.tables_to_map()) - set(RDR_TABLES_TO_COPY + EHR_TABLES_TO_COPY))

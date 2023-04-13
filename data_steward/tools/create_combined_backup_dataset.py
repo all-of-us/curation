@@ -41,9 +41,12 @@ from google.cloud.exceptions import GoogleCloudError
 from google.cloud import bigquery
 
 # Project imports
-import common
-import resources
-from resources import mapping_table_for
+from common import (CDR_SCOPES, FACT_RELATIONSHIP,
+                    MEASUREMENT_DOMAIN_CONCEPT_ID,
+                    OBSERVATION_DOMAIN_CONCEPT_ID, PERSON, RDR_ID_CONSTANT,
+                    SURVEY_CONDUCT, VISIT_DETAIL)
+from resources import (fields_for, get_git_tag, has_person_id,
+                       mapping_table_for, CDM_TABLES)
 from utils import auth, pipeline_logging
 from gcloud.bq import BigQueryClient
 from constants.bq_utils import WRITE_APPEND, WRITE_TRUNCATE
@@ -95,7 +98,7 @@ def create_cdm_tables(client: BigQueryClient, combined_backup: str):
 
     Note: Recreates any existing tables
     """
-    for table in resources.CDM_TABLES:
+    for table in CDM_TABLES:
         LOGGER.info(f'Creating table {combined_backup}.{table}...')
         schema_list = client.get_table_schema(table_name=table)
         dest_table = f'{client.project}.{combined_backup}.{table}'
@@ -176,7 +179,7 @@ def copy_ehr_table(client: BigQueryClient, table: str, unioned_ehr_dataset: str,
 
     :return: None
     """
-    fields = resources.fields_for(table)
+    fields = fields_for(table)
     field_names = [field['name'] for field in fields]
     if 'person_id' not in field_names:
         raise RuntimeError(
@@ -207,8 +210,8 @@ def mapping_query(domain_table: str, rdr_dataset: str, unioned_ehr_dataset: str,
         ehr_dataset_id=unioned_ehr_dataset,
         combined_sandbox_dataset_id=combined_sandbox,
         domain_table=domain_table,
-        mapping_constant=common.RDR_ID_CONSTANT,
-        person_id_flag=resources.has_person_id(domain_table),
+        mapping_constant=RDR_ID_CONSTANT,
+        person_id_flag=has_person_id(domain_table),
         ehr_consent_table_id=combine_consts.EHR_CONSENT_TABLE_ID)
 
 
@@ -227,13 +230,13 @@ def generate_combined_mapping_tables(client: BigQueryClient, domain_table: str,
     :param combined_sandbox: combined_sandbox dataset identifier
     :return:
     """
-    if domain_table in combine_consts.DOMAIN_TABLES + [common.SURVEY_CONDUCT]:
+    if domain_table in combine_consts.DOMAIN_TABLES + [SURVEY_CONDUCT]:
         q = mapping_query(domain_table, rdr_dataset, unioned_ehr_dataset,
                           combined_sandbox)
         mapping_table = mapping_table_for(domain_table)
         LOGGER.info(f'Query for {combined_backup}.{mapping_table} is {q}')
         fq_mapping_table = f'{client.project}.{combined_backup}.{mapping_table}'
-        schema = resources.fields_for(mapping_table)
+        schema = fields_for(mapping_table)
         table = bigquery.Table(fq_mapping_table, schema=schema)
         table = client.create_table(table, exists_ok=True)
         query(client, q, combined_backup, mapping_table, WRITE_APPEND)
@@ -251,9 +254,7 @@ def join_expression_generator(domain_table, combined_backup):
     :param combined_backup: name of the dataset where the tables are present
     :return: returns cols and join expression strings.
     """
-    field_names = [
-        field['name'] for field in resources.fields_for(domain_table)
-    ]
+    field_names = [field['name'] for field in fields_for(domain_table)]
     fields_to_join = []
     primary_key = []
     join_expression = []
@@ -280,7 +281,7 @@ def join_expression_generator(domain_table, combined_backup):
 
     for key in combine_consts.FOREIGN_KEYS_FIELDS:
         if key in fields_to_join:
-            if domain_table == combine_consts.PERSON_TABLE:
+            if domain_table == PERSON:
                 table_alias = mapping_table_for(f'{key[:-3]}')
                 join_expression.append(
                     combine_consts.LEFT_JOIN_PERSON.render(
@@ -290,7 +291,7 @@ def join_expression_generator(domain_table, combined_backup):
                         field=key,
                         table=table_alias))
 
-            elif domain_table == combine_consts.VISIT_DETAIL and key == combine_consts.VISIT_OCCURRENCE_ID:
+            elif domain_table == VISIT_DETAIL and key == combine_consts.VISIT_OCCURRENCE_ID:
                 table_alias = mapping_table_for(f'{key[:-3]}')
                 join_expression.append(
                     combine_consts.JOIN_VISIT.render(
@@ -373,11 +374,10 @@ def load_fact_relationship(client: BigQueryClient, rdr_dataset: str,
         mapping_measurement=mapping_table_for('measurement'),
         ehr_dataset=unioned_ehr_dataset,
         mapping_observation=mapping_table_for('observation'),
-        measurement_domain_concept_id=common.MEASUREMENT_DOMAIN_CONCEPT_ID,
-        observation_domain_concept_id=common.OBSERVATION_DOMAIN_CONCEPT_ID)
-    LOGGER.info(
-        f'Query for {combined_backup}.{common.FACT_RELATIONSHIP} is {q}')
-    query(client, q, combined_backup, common.FACT_RELATIONSHIP, WRITE_APPEND)
+        measurement_domain_concept_id=MEASUREMENT_DOMAIN_CONCEPT_ID,
+        observation_domain_concept_id=OBSERVATION_DOMAIN_CONCEPT_ID)
+    LOGGER.info(f'Query for {combined_backup}.{FACT_RELATIONSHIP} is {q}')
+    query(client, q, combined_backup, FACT_RELATIONSHIP, WRITE_APPEND)
 
 
 def person_query(table_name: str, combined_backup: str):
@@ -395,13 +395,9 @@ def person_query(table_name: str, combined_backup: str):
 
 
 def load_mapped_person(client: BigQueryClient, combined_backup: str):
-    q = person_query(common.PERSON, combined_backup)
-    LOGGER.info(f'Query for {combined_backup}.{common.PERSON} table is {q}')
-    query(client,
-          q,
-          combined_backup,
-          common.PERSON,
-          write_disposition=WRITE_TRUNCATE)
+    q = person_query(PERSON, combined_backup)
+    LOGGER.info(f'Query for {combined_backup}.{PERSON} table is {q}')
+    query(client, q, combined_backup, PERSON, write_disposition=WRITE_TRUNCATE)
 
 
 def parse_combined_args(raw_args=None):
@@ -469,7 +465,7 @@ def main(raw_args=None):
                                add_console_handler=args.console_log)
 
     impersonation_creds = auth.get_impersonation_credentials(
-        args.run_as_email, common.CDR_SCOPES)
+        args.run_as_email, CDR_SCOPES)
 
     client = BigQueryClient(args.project_id, credentials=impersonation_creds)
 
@@ -507,7 +503,7 @@ def main(raw_args=None):
                        combined_sandbox)
 
     LOGGER.info('Generating combined mapping tables ...')
-    for domain_table in combine_consts.DOMAIN_TABLES + [common.SURVEY_CONDUCT]:
+    for domain_table in combine_consts.DOMAIN_TABLES + [SURVEY_CONDUCT]:
         LOGGER.info(f'Mapping {domain_table}...')
         generate_combined_mapping_tables(client, domain_table, args.rdr_dataset,
                                          args.unioned_ehr_dataset,
@@ -535,7 +531,7 @@ def main(raw_args=None):
     add_cdr_metadata.main([
         '--component', add_cdr_metadata.INSERT, '--project_id', client.project,
         '--target_dataset', combined_backup, '--etl_version',
-        resources.get_git_tag(), '--ehr_source', args.unioned_ehr_dataset,
+        get_git_tag(), '--ehr_source', args.unioned_ehr_dataset,
         '--ehr_cutoff_date', args.ehr_cutoff_date, '--rdr_source',
         args.rdr_dataset, '--cdr_generation_date', today,
         '--vocabulary_version', args.vocab_dataset, '--rdr_export_date',
