@@ -1,0 +1,62 @@
+[
+  {
+    "type": "string",
+    "name": "aou_death_id",
+    "mode": "required",
+    "description": "A unique identifier for each death record. This column is GUID, not integer. Note that more than one death record can exist in this table per person."
+  },
+  {
+    "type": "integer",
+    "name": "person_id",
+    "mode": "required",
+    "description": "A foreign key identifier to the deceased person. The demographic details of that person are stored in the person table."
+  },
+  {
+    "type": "date",
+    "name": "death_date",
+    "mode": "required",
+    "description": "The date the person was deceased. If the precise date including day or month is not known or not allowed, December is used as the default month, and the last day of the month the default day."
+  },
+  {
+    "type": "timestamp",
+    "name": "death_datetime",
+    "mode": "nullable",
+    "description": "The date and time the person was deceased. If the precise date including day or month is not known or not allowed, December is used as the default month, and the last day of the month the default day."
+  },
+  {
+    "type": "integer",
+    "name": "death_type_concept_id",
+    "mode": "required",
+    "description": "A foreign key referring to the predefined concept identifier in the Standardized Vocabularies reflecting how the death was represented in the source data."
+  },
+  {
+    "type": "integer",
+    "name": "cause_concept_id",
+    "mode": "nullable",
+    "description": "A foreign key referring to a standard concept identifier in the Standardized Vocabularies for conditions."
+  },
+  {
+    "type": "string",
+    "name": "cause_source_value",
+    "mode": "nullable",
+    "description": "The source code for the cause of death as it appears in the source data. This code is mapped to a standard concept in the Standardized Vocabularies and the original code is, stored here for reference."
+  },
+  {
+    "type": "integer",
+    "name": "cause_source_concept_id",
+    "mode": "nullable",
+    "description": "A foreign key to the concept that refers to the code used in the source. Note, this variable name is abbreviated to ensure it will be allowable across database platforms."
+  },
+  {
+    "type": "string",
+    "name": "src_id",
+    "mode": "required",
+    "description": "The source of the record."
+  },
+  {
+    "type": "bool",
+    "name": "primary_death_record",
+    "mode": "required",
+    "description": "Boolean flag to determine whether this is the primary death record for the person. The record will appear in DEATH if this value is True."
+  }
+]
