@@ -35,9 +35,9 @@ to_include = ['DC-1370', 'DC-1377', 'DC-1346', 'DC-1348', 'DC-1355', 'DC-1357', 
             'DC-1496', 'DC-1527', 'DC-1535', 'DC-2112']
 checks = run_qc(project_id,
                 post_deid_dataset,
-                questionnaire_response_dataset,
                 pre_deid_dataset,
                 mapping_dataset,
+                questionnaire_response_dataset,
                 rule_code=to_include)
 # -
 

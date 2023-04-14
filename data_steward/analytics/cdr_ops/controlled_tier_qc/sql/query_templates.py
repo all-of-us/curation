@@ -80,11 +80,7 @@ QUERY_ID_NOT_OF_CORRECT_TYPE = """
 SELECT
     table_name,
     CASE WHEN data_type != '{{ data_type }}' THEN 1 ELSE 0 END AS n_row_violation
-{% if column_name == 'questionnaire_response_id' and table_name == 'observation' %}
-FROM `{{ project_id }}.{{ questionnaire_response_dataset }}.INFORMATION_SCHEMA.COLUMNS`
-{% else %}
 FROM `{{ project_id }}.{{ post_deid_dataset }}.INFORMATION_SCHEMA.COLUMNS`
-{% endif %}
 WHERE column_name = '{{ column_name }}'
 AND table_name = '{{ table_name }}'
 """
