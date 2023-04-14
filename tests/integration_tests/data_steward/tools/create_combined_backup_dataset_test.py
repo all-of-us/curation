@@ -12,7 +12,8 @@ import resources
 from gcloud.gcs import StorageClient
 from gcloud.bq import BigQueryClient
 from tests import test_util
-from constants.tools.create_combined_backup_dataset import EHR_CONSENT_TABLE_ID, RDR_TABLES_TO_COPY, DOMAIN_TABLES
+from constants.tools.create_combined_backup_dataset import (
+    EHR_CONSENT_TABLE_ID, RDR_TABLES_TO_COPY, DOMAIN_TABLES)
 from tools.create_combined_backup_dataset import (ehr_consent,
                                                   create_cdm_tables)
 from resources import mapping_table_for

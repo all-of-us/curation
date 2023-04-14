@@ -11,7 +11,7 @@ FOREIGN_KEYS_FIELDS = [
     'visit_detail_id'
 ]
 RDR_TABLES_TO_COPY = [PERSON, SURVEY_CONDUCT]
-EHR_TABLES_TO_COPY = ['death']
+EHR_TABLES_TO_COPY = ['death']  # TODO what do we do for this one?
 DOMAIN_TABLES = list(
     set(cdm.tables_to_map()) - set(RDR_TABLES_TO_COPY + EHR_TABLES_TO_COPY))
 TABLES_TO_PROCESS = RDR_TABLES_TO_COPY + EHR_TABLES_TO_COPY + DOMAIN_TABLES

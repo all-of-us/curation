@@ -41,7 +41,7 @@ from google.cloud.exceptions import GoogleCloudError
 from google.cloud import bigquery
 
 # Project imports
-from common import (CDR_SCOPES, FACT_RELATIONSHIP,
+from common import (ALL_DEATH, CDR_SCOPES, FACT_RELATIONSHIP,
                     MEASUREMENT_DOMAIN_CONCEPT_ID,
                     OBSERVATION_DOMAIN_CONCEPT_ID, PERSON, RDR_ID_CONSTANT,
                     SURVEY_CONDUCT, VISIT_DETAIL)
@@ -84,6 +84,7 @@ def assert_ehr_and_rdr_tables(client: BigQueryClient,
 
     :return: None
     """
+    # TODO this check needs some tweak
     assert_tables_in(client, unioned_ehr_dataset_id)
     assert_tables_in(client, rdr_dataset_id)
 
@@ -91,6 +92,7 @@ def assert_ehr_and_rdr_tables(client: BigQueryClient,
 def create_cdm_tables(client: BigQueryClient, combined_backup: str):
     """
     Create all CDM tables
+    NOTE ALL_DEATH is also created here though it is not technically a CDM table.
 
     :param client: BigQueryClient
     :param combined_backup: Combined backup dataset name
@@ -98,7 +100,7 @@ def create_cdm_tables(client: BigQueryClient, combined_backup: str):
 
     Note: Recreates any existing tables
     """
-    for table in CDM_TABLES:
+    for table in CDM_TABLES + [ALL_DEATH]:
         LOGGER.info(f'Creating table {combined_backup}.{table}...')
         schema_list = client.get_table_schema(table_name=table)
         dest_table = f'{client.project}.{combined_backup}.{table}'
