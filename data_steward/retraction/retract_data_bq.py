@@ -52,7 +52,10 @@ FROM `{{project}}.{{dataset}}.{{table}}`
 WHERE person_id IN (
     SELECT {{person_id}} FROM `{{project}}.{{sb_dataset}}.{{lookup_table_id}}`
 )
-{% if table != 'death' and retraction_type == 'only_ehr' %}
+{% if 'sandbox' in dataset %}
+    -- TODO add some logic here --
+    -- TODO need to get OMOP table name out of the sandbox table name --
+{% elif table != 'death' and retraction_type == 'only_ehr' %}
 AND {{table}}_id IN (
     {% if is_deid %}
     SELECT {{table}}_id FROM `{{project}}.{{dataset}}.{{table}}_ext` WHERE src_id LIKE 'EHR%'
@@ -451,6 +454,7 @@ def run_bq_retraction(project_id,
 
     client = bq_client if bq_client else BigQueryClient(project_id)
 
+    # NOTE get_datasets_list() excludes datasets that are type=OTHER.
     dataset_ids = get_datasets_list(client, dataset_list)
 
     for dataset in dataset_ids:

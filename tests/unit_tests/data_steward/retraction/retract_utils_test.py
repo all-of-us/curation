@@ -176,17 +176,19 @@ class RetractUtilsTest(unittest.TestCase):
     @mock.patch('retraction.retract_utils.BigQueryClient')
     def test_get_datasets_list(self, mock_bq_client):
         #pre-conditions
+        removed_datasets = [
+            data_ref('foo', 'vocabulary20201010'),
+        ]
         expected_datasets = [
             data_ref('foo', '2021q1r1_rdr'),
             data_ref('foo', 'C2020q1r1_deid'),
             data_ref('foo', 'R2019q4r1_deid'),
             data_ref('foo', '2018q4r1_rdr'),
-            data_ref('foo', 'vocabulary20201010'),
             data_ref('foo', 'R2019q4r1_deid_sandbox')
         ]
         expected_list = [dataset.dataset_id for dataset in expected_datasets]
 
-        mock_bq_client.list_datasets.return_value = expected_datasets
+        mock_bq_client.list_datasets.return_value = removed_datasets + expected_datasets
         type(mock_bq_client).project = mock.PropertyMock(
             return_value='fake_project_id')
 
