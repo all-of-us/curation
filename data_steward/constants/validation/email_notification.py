@@ -20,7 +20,7 @@ SITE_POINT_OF_CONTACT = 'site_point_of_contact'
 # Mandrill API constants
 MAIL_TO = 'mail_to'
 
-EHR_OPS_SITE_URL = 'https://aou-ehr-ops.zendesk.com/hc'
+TRANSFER_DATA_DRC_URL = 'https://aou-ehr-ops.zendesk.com/hc/en-us/articles/1500012461721-Transferring-Data-to-the-DRC'
 
 # Email content
 EMAIL_BODY = """
@@ -36,8 +36,8 @@ If any of your files have not been successfully uploaded, please run the
  <a href="https://github.com/all-of-us/aou-ehr-file-check">local file check</a> before making your submission.<br>  
 To view the full set of curation reports, please visit the submission folder in your
  GCS bucket <a href="{{ submission_folder_url }}">here</a>.<br>
-For more information on the reports and how to download them, please refer to our
- <a href="{{ ehr_ops_site_url }}">EHR Ops website</a>.</p>
+For more information on the reports and how to download them, please refer to
+ <a href="{{ transfer_data_drc_url }}">Transferring data to the DRC</a>.</p>
 
 <p style="font-size:115%;">You are receiving this email because you are listed as a point of contact
  for HPO Site <em>{{ site_name }}</em>.<br>

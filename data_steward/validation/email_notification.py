@@ -113,7 +113,7 @@ def generate_html_body(site_name, folder_uri, report_data):
         'gs://', 'https://console.cloud.google.com/storage/browser/')
     html_email_body = Template(consts.EMAIL_BODY).render(
         site_name=site_name,
-        ehr_ops_site_url=consts.EHR_OPS_SITE_URL,
+        transfer_data_drc_url=consts.TRANSFER_DATA_DRC_URL,
         submission_folder_url=submission_folder_url,
         eo_zendesk=consts.EHR_OPS_ZENDESK,
         aou_logo=consts.AOU_LOGO,
