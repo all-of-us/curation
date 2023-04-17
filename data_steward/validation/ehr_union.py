@@ -1,10 +1,13 @@
 """
 Create a new CDM dataset which is the union of all EHR datasets submitted by HPOs
+NOTE We DO NOT create unioned_ehr_death in this script. We create unioned_ehr_aou_death instead.
+     We use aou_death here, not death, because we want to keep the src info and assign unique 
+     keys to the death records. 
 
  1) Create empty output tables to ensure proper schema, clustering, etc.
 
- 2) For all tables -EXCEPT person- that have numeric primary key columns, create mapping tables used to assign new
-    IDs in output.
+ 2) For all tables -EXCEPT person, death, and aou_death- that have numeric primary key columns, 
+    create mapping tables used to assign new IDs in output.
 
     The structure of the mapping table follows this convention:
 
@@ -56,9 +59,12 @@ Create a new CDM dataset which is the union of all EHR datasets submitted by HPO
       SUBSTR(src_table_id, 1, STRPOS(src_table_id, "_measurement")-1) AS src_hpo_id
     FROM all_measurement
 
- 3) For all tables, compose a query to fetch the union of records submitted by all HPOs and save the results in output.
+ 3) For all tables -EXCEPT death and aou_death-, compose a query to fetch the union of 
+    records submitted by all HPOs and save the results in output.
    * Use new primary keys in output where applicable
    * Use new visit_occurrence_id where applicable
+
+ 4) Create and load aou_death. death is not created in this process.
 
 ## Notes
 Currently the following environment variables must be set:
@@ -851,6 +857,11 @@ def main(input_dataset_id,
     # Create empty output tables to ensure proper schema, clustering, etc.
     for table in resources.CDM_TABLES:
         result_table = output_table_for(table)
+        if table == common.DEATH:
+            logging.info(
+                f'Skipping {result_table} creation. AOU_DEATH will be created instead.'
+            )
+            continue
         logging.info(f'Creating {output_dataset_id}.{result_table}...')
         bq_utils.create_standard_table(table,
                                        result_table,
@@ -859,17 +870,19 @@ def main(input_dataset_id,
 
     # Create mapping tables
     for domain_table in cdm.tables_to_map():
-        if not domain_table == common.SURVEY_CONDUCT:
-            logging.info(f'Mapping {domain_table}...')
-            mapping(domain_table, hpo_ids, input_dataset_id, output_dataset_id,
-                    project_id, bq_client)
+        if domain_table == common.SURVEY_CONDUCT:
+            continue
+        logging.info(f'Mapping {domain_table}...')
+        mapping(domain_table, hpo_ids, input_dataset_id, output_dataset_id,
+                project_id, bq_client)
 
     # Load all tables with union of submitted tables
     for table_name in resources.CDM_TABLES:
-        if not table_name == common.SURVEY_CONDUCT:
-            logging.info(f'Creating union of table {table_name}...')
-            load(bq_client, table_name, hpo_ids, input_dataset_id,
-                 output_dataset_id)
+        if table_name in [common.DEATH, common.SURVEY_CONDUCT]:
+            continue
+        logging.info(f'Creating union of table {table_name}...')
+        load(bq_client, table_name, hpo_ids, input_dataset_id,
+             output_dataset_id)
 
     logging.info('Creation of Unioned EHR complete')
 
