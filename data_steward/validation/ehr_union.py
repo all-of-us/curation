@@ -95,7 +95,7 @@ import bq_utils
 import cdm
 import cdr_cleaner.clean_cdr_engine as clean_engine
 from cdr_cleaner.cleaning_rules.drop_race_ethnicity_gender_observation import DropRaceEthnicityGenderObservation
-from common import (ALL_DEATH, CARE_SITE, DEATH, FACT_RELATIONSHIP,
+from common import (AOU_DEATH, CARE_SITE, DEATH, FACT_RELATIONSHIP,
                     ID_CONSTANT_FACTOR, JINJA_ENV, LOCATION, MAPPING_PREFIX,
                     MEASUREMENT_DOMAIN_CONCEPT_ID, OBSERVATION, PERSON,
                     PERSON_DOMAIN_CONCEPT_ID, SURVEY_CONDUCT, UNIONED_EHR,
@@ -112,10 +112,10 @@ UNION_ALL = '''
 
 '''
 
-LOAD_ALL_DEATH = JINJA_ENV.from_string("""
-CREATE TABLE `{{project}}.{{output_dataset}}.{{all_death}}`
+LOAD_AOU_DEATH = JINJA_ENV.from_string("""
+CREATE TABLE `{{project}}.{{output_dataset}}.{{aou_death}}`
 AS
-WITH union_all_death AS (
+WITH union_aou_death AS (
     {% for hpo_id in hpo_ids %}
     SELECT
         person_id,
@@ -141,22 +141,20 @@ SELECT
     cause_source_concept_id,
     src_id,
     FALSE AS primary_death_record -- this value is re-calculated at UPDATE_PRIMARY_DEATH --
-FROM union_all_death
+FROM union_aou_death
 """)
 
-# TODO The condition src_id != 'rdr' needs to be re-visited once we know how we receive CE data.
 UPDATE_PRIMARY_DEATH = JINJA_ENV.from_string("""
-UPDATE `{{project}}.{{output_dataset}}.{{all_death}}`
+UPDATE `{{project}}.{{output_dataset}}.{{aou_death}}`
 SET primary_death_record = TRUE
 WHERE aou_death_id IN (
-    SELECT aou_death_id FROM `{{project}}.{{output_dataset}}.{{all_death}}`
+    SELECT aou_death_id FROM `{{project}}.{{output_dataset}}.{{aou_death}}`
     QUALIFY RANK() OVER (
         PARTITION BY person_id 
         ORDER BY
-            src_id != 'rdr' DESC, -- EHR records are chosen over RDR ones --
-            death_date ASC, -- Earlier death_date records are chosen over later ones --
-            death_datetime ASC NULLS LAST, -- Earlier non-NULL death_datetime records are chosen over later or NULL ones --
-            src_id ASC -- EHR site that alphabetically comes first --
+            death_date ASC, -- Earliest death_date records are chosen over later ones --
+            death_datetime ASC NULLS LAST, -- Earliest non-NULL death_datetime records are chosen over later or NULL ones --
+            src_id ASC -- EHR site that alphabetically comes first is chosen --
     ) = 1   
 )
 """)
@@ -883,19 +881,19 @@ def map_ehr_person_to_observation(output_dataset_id, ehr_cutoff_date=None):
     query(q, dst_table_id, dst_dataset_id, write_disposition='WRITE_APPEND')
 
 
-def create_load_all_death(bq_client, project_id, input_dataset_id,
+def create_load_aou_death(bq_client, project_id, input_dataset_id,
                           output_dataset_id, hpo_ids) -> None:
-    """Create and load ALL_DEATH table.
+    """Create and load AOU_DEATH table.
     :param project_id: project containing the datasets
     :param input_dataset_id identifies a dataset containing multiple CDMs, one for each HPO submission
     :param output_dataset_id identifies the dataset to store the new CDM in
-    :param hpo_ids: identifies which HPOs to include in ALL_DEATH creation
+    :param hpo_ids: identifies which HPOs to include in AOU_DEATH creation
     :param ehr_cutoff_date: (optional) cutoff date for ehr data(same as CDR cutoff date)
     """
-    query = LOAD_ALL_DEATH.render(project=project_id,
+    query = LOAD_AOU_DEATH.render(project=project_id,
                                   input_dataset=input_dataset_id,
                                   output_dataset=output_dataset_id,
-                                  all_death=f'{UNIONED_EHR}_{ALL_DEATH}',
+                                  aou_death=f'{UNIONED_EHR}_{AOU_DEATH}',
                                   death=DEATH,
                                   hpo_ids=hpo_ids)
     job = bq_client.query(query)
@@ -903,7 +901,7 @@ def create_load_all_death(bq_client, project_id, input_dataset_id,
 
     query = UPDATE_PRIMARY_DEATH.render(project=project_id,
                                         output_dataset=output_dataset_id,
-                                        all_death=f'{UNIONED_EHR}_{ALL_DEATH}')
+                                        aou_death=f'{UNIONED_EHR}_{AOU_DEATH}')
     job = bq_client.query(query)
     _ = job.result()
 
@@ -932,11 +930,12 @@ def main(input_dataset_id,
         hpo_ids = [hpo_id for hpo_id in hpo_ids if hpo_id not in hpo_ids_ex]
 
     # Create empty output tables to ensure proper schema, clustering, etc.
+    # AOU_DEATH and DEATH are not created here.
     for table in CDM_TABLES:
         result_table = output_table_for(table)
         if table == DEATH:
             logging.info(f'Skipping {result_table} creation. '
-                         f'{UNIONED_EHR}_{ALL_DEATH} will be created instead.')
+                         f'{UNIONED_EHR}_{AOU_DEATH} will be created instead.')
             continue
         logging.info(f'Creating {output_dataset_id}.{result_table}...')
         bq_utils.create_standard_table(table,
@@ -944,7 +943,7 @@ def main(input_dataset_id,
                                        drop_existing=True,
                                        dataset_id=output_dataset_id)
 
-    # Create mapping tables
+    # Create mapping tables. AOU_DEATH and DEATH are not included here.
     for domain_table in cdm.tables_to_map():
         if domain_table == SURVEY_CONDUCT:
             continue
@@ -953,6 +952,7 @@ def main(input_dataset_id,
                 project_id, bq_client)
 
     # Load all tables with union of submitted tables
+    # AOU_DEATH and DEATH are not loaded here.
     for table_name in CDM_TABLES:
         if table_name in [DEATH, SURVEY_CONDUCT]:
             continue
@@ -960,10 +960,11 @@ def main(input_dataset_id,
         load(bq_client, table_name, hpo_ids, input_dataset_id,
              output_dataset_id)
 
-    logging.info(f'Creating and loading {UNIONED_EHR}_{ALL_DEATH}...')
-    create_load_all_death(bq_client, project_id, input_dataset_id,
+    # AOU_DEATH is created and loaded here.
+    logging.info(f'Creating and loading {UNIONED_EHR}_{AOU_DEATH}...')
+    create_load_aou_death(bq_client, project_id, input_dataset_id,
                           output_dataset_id, hpo_ids)
-    logging.info(f'Completed {UNIONED_EHR}_{ALL_DEATH} load.')
+    logging.info(f'Completed {UNIONED_EHR}_{AOU_DEATH} load.')
 
     logging.info('Creation of Unioned EHR complete')
 
