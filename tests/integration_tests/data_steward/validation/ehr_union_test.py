@@ -12,7 +12,7 @@ import moz_sql_parser
 import bq_utils
 import cdm
 from app_identity import get_application_id, PROJECT_ID
-from common import (ALL_DEATH, CARE_SITE, DEATH, LOCATION, OBSERVATION, PERSON,
+from common import (AOU_DEATH, CARE_SITE, DEATH, LOCATION, OBSERVATION, PERSON,
                     SURVEY_CONDUCT, UNIONED_EHR, VISIT_DETAIL, VISIT_OCCURRENCE)
 from constants.validation import ehr_union as eu_constants
 from gcloud.bq import BigQueryClient
@@ -217,9 +217,9 @@ class EhrUnionTest(unittest.TestCase):
         tables = self.bq_client.list_tables(dataset_id)
         return [table.table_id for table in tables]
 
-    @mock.patch('validation.ehr_union.create_load_all_death')
+    @mock.patch('validation.ehr_union.create_load_aou_death')
     @mock.patch('bq_utils.get_hpo_info')
-    def test_union_ehr(self, mock_hpo_info, mock_all_death):
+    def test_union_ehr(self, mock_hpo_info, mock_aou_death):
         self._load_datasets()
         input_tables_before = set(self._dataset_tables(self.input_dataset_id))
 
@@ -404,8 +404,8 @@ class EhrUnionTest(unittest.TestCase):
         PERSON, OBSERVATION, LOCATION, CARE_SITE, VISIT_OCCURRENCE, VISIT_DETAIL
     ])
     @mock.patch('cdm.tables_to_map')
-    @mock.patch('validation.ehr_union.create_load_all_death')
-    def test_ehr_person_to_observation(self, mock_all_death, mock_tables_map,
+    @mock.patch('validation.ehr_union.create_load_aou_death')
+    def test_ehr_person_to_observation(self, mock_aou_death, mock_tables_map,
                                        mock_hpo_info):
         # ehr person table converts to observation records
         self._load_datasets()
@@ -476,8 +476,8 @@ class EhrUnionTest(unittest.TestCase):
         PERSON, OBSERVATION, LOCATION, CARE_SITE, VISIT_OCCURRENCE, VISIT_DETAIL
     ])
     @mock.patch('cdm.tables_to_map')
-    @mock.patch('validation.ehr_union.create_load_all_death')
-    def test_ehr_person_to_observation_counts(self, mock_all_death,
+    @mock.patch('validation.ehr_union.create_load_aou_death')
+    def test_ehr_person_to_observation_counts(self, mock_aou_death,
                                               mock_tables_map, mock_hpo_info):
         self._load_datasets()
         mock_tables_map.return_value = [
@@ -666,7 +666,7 @@ class EhrUnionAllDeath(BaseTest.BigQueryTestBase):
         cls.hpo_ids = [FAKE_HPO_ID, NYC_HPO_ID, PITT_HPO_ID]
 
         cls.fq_table_names = [
-            f'{cls.project_id}.{cls.dataset_id}.{UNIONED_EHR}_{ALL_DEATH}'
+            f'{cls.project_id}.{cls.dataset_id}.{UNIONED_EHR}_{AOU_DEATH}'
         ] + [
             f'{cls.project_id}.{cls.dataset_id}.{hpo}_{DEATH}'
             for hpo in cls.hpo_ids
@@ -725,21 +725,21 @@ class EhrUnionAllDeath(BaseTest.BigQueryTestBase):
 
         self.load_test_data(queries)
 
-    def test_create_load_all_death(self):
+    def test_create_load_aou_death(self):
         """
-        Test cases for ALL_DEATH data:
+        Test cases for AOU_DEATH data:
         person_id = 1: Only one record from FAKE.
         person_id = 2: Exactly same records exist in FAKE and NYC. FAKE alphabetically becomes primary.
         person_id = 3: The only difference between FAKE and NYC is NYC has non-NULL death_datetime. NYC becomes primary.
         person_id = 4: PITT's death_date is earlier than FAKE. PITT becomes primary.
         person_id = 5: PITT's death_datetime is earlier than FAKE. PITT becomes primary.
         """
-        ehr_union.create_load_all_death(self.client, self.project_id,
+        ehr_union.create_load_aou_death(self.client, self.project_id,
                                         self.dataset_id, self.dataset_id,
                                         self.hpo_ids)
 
         self.assertTableValuesMatch(
-            f'{self.project_id}.{self.dataset_id}.{UNIONED_EHR}_{ALL_DEATH}',
+            f'{self.project_id}.{self.dataset_id}.{UNIONED_EHR}_{AOU_DEATH}',
             ['person_id', 'src_id', 'primary_death_record'], [
                 (1, FAKE_HPO_ID, True),
                 (2, FAKE_HPO_ID, True),
