@@ -436,6 +436,7 @@ class BQCTest(TestCase):
         mock_environ_get.assert_called_once()
         mock_get_table.assert_called_with(table_name)
 
+    @patch.object(BigQueryClient, 'wait_on_jobs')
     @patch.object(BigQueryClient, 'query')
     @patch.object(BigQueryClient, 'update_dataset')
     @patch.object(BigQueryClient, 'create_dataset')
@@ -443,7 +444,7 @@ class BQCTest(TestCase):
     @patch.object(BigQueryClient, 'get_dataset')
     def test_restore_from_time(self, mock_get_dataset, mock_list_tables,
                                mock_create_dataset, mock_update_dataset,
-                               mock_query):
+                               mock_query, mock_wait_on_jobs):
 
         # Mock Table
         mock_table = MagicMock()
