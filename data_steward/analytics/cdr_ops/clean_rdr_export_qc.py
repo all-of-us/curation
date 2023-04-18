@@ -17,7 +17,7 @@
 project_id = ""
 old_rdr = ""
 new_rdr = ""
-raw_rdr = "default"  # do not need to provide this if running on a raw rdr import
+raw_rdr = ""
 new_rdr_sandbox = ""
 run_as = ""
 rdr_cutoff_date = ""
@@ -26,7 +26,7 @@ rdr_cutoff_date = ""
 # # QC for RDR Export
 #
 # Quality checks performed on a new RDR dataset and comparison with previous RDR dataset.
-from common import JINJA_ENV, PIPELINE_TABLES
+from common import CATI_TABLES, DEATH, FACT_RELATIONSHIP, JINJA_ENV, PIPELINE_TABLES
 from utils import auth
 from gcloud.bq import BigQueryClient
 from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES, render_message
@@ -76,9 +76,7 @@ execute(client, query)
 # Rows that are greater than 999,999,999,999,999 the will be listed out here.
 
 domain_table_list = [
-    'condition_occurrence', 'device_exposure', 'drug_exposure', 'location',
-    'measurement', 'note', 'observation', 'procedure_occurrence', 'provider',
-    'specimen', 'visit_occurrence'
+    table for table in CATI_TABLES if table not in [DEATH, FACT_RELATIONSHIP]
 ]
 queries = []
 for table in domain_table_list:
@@ -660,11 +658,14 @@ SELECT
     STRING_AGG(observation_source_value) AS observation_source_value
 FROM `{{project_id}}.{{new_rdr}}.observation`
 WHERE observation_type_concept_id = 45905771 -- is a survey response --
-AND NOT (observation_id >= 1000000000000 AND value_as_concept_id = 903096) -- exclude records from backfill pmi skip --
+AND NOT (
+    observation_id >= (SELECT MAX(observation_id) FROM `{{project_id}}.{{raw_rdr}}.observation`)
+    AND value_as_concept_id = 903096
+) -- exclude records from backfill pmi skip --
 AND questionnaire_response_id IS NULL
 GROUP BY 1
 ''')
-query = tpl.render(new_rdr=new_rdr, project_id=project_id)
+query = tpl.render(new_rdr=new_rdr, raw_rdr=raw_rdr, project_id=project_id)
 execute(client, query)
 
 # # Check if concepts for operational use still exist in the data

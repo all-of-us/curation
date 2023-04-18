@@ -25,6 +25,14 @@ class ValidationMainTest(TestCase):
         print('**************************************************************')
 
     def setUp(self):
+        self.mock_bq_client_patcher = mock.patch(
+            'validation.main.BigQueryClient')
+        self.mock_bq_client = self.mock_bq_client_patcher.start()
+        self.addCleanup(self.mock_bq_client_patcher.stop)
+        self.mock_storage_client_patcher = mock.patch(
+            'validation.main.StorageClient')
+        self.mock_storage_client = self.mock_storage_client_patcher.start()
+        self.addCleanup(self.mock_storage_client_patcher.stop)
         self.hpo_id = 'fake_hpo_id'
         self.hpo_bucket = 'fake_aou_000'
         self.project_id = 'fake_project_id'
@@ -286,17 +294,16 @@ class ValidationMainTest(TestCase):
         self.assertCountEqual(expected_errors, actual_result.get('errors'))
         self.assertCountEqual(expected_warnings, actual_result.get('warnings'))
 
-    @mock.patch('validation.main.StorageClient')
     @mock.patch('bq_utils.get_hpo_info')
     @mock.patch('logging.exception')
     @mock.patch('api_util.check_cron')
     def test_validate_all_hpos_exception(self, check_cron, mock_logging_error,
-                                         mock_hpo_csv, mock_storage_client):
+                                         mock_hpo_csv):
 
         http_error_string = 'fake http error'
         mock_hpo_csv.return_value = [{'hpo_id': self.hpo_id}]
         mock_client = mock.MagicMock()
-        mock_storage_client.return_value = mock_client
+        self.mock_storage_client.return_value = mock_client
         mock_client.get_bucket_items_metadata.side_effect = mock_google_cloud_error(
             content=http_error_string.encode())
         with main.app.test_client() as c:
@@ -306,12 +313,8 @@ class ValidationMainTest(TestCase):
                 f"HTTP error: {http_error_string}")
             self.assertIn(expected_call, mock_logging_error.mock_calls)
 
-    @mock.patch(
-        'validation.participants.validate.BigQueryClient',
-        mock.MagicMock(query=lambda: mock.MagicMock(result=lambda: None)))
     @mock.patch('validation.main.setup_and_validate_participants',
                 mock.MagicMock())
-    @mock.patch('validation.main.BigQueryClient', mock.MagicMock())
     @mock.patch('bq_utils.query')
     @mock.patch('validation.main.is_valid_folder_prefix_name')
     @mock.patch('validation.main.run_export')
@@ -325,9 +328,8 @@ class ValidationMainTest(TestCase):
     @mock.patch('validation.main._has_all_required_files')
     @mock.patch('validation.main.is_first_validation_run')
     @mock.patch('validation.main.is_valid_rdr')
-    @mock.patch('validation.main.StorageClient')
     def test_process_hpo_ignore_dirs(
-        self, mock_storage_client, mock_valid_rdr, mock_first_validation,
+        self, mock_valid_rdr, mock_first_validation,
         mock_has_all_required_files, mock_folder_items, mock_validation,
         mock_get_hpo_name, mock_get_duplicate_counts_query, mock_query_rows,
         mock_all_required_files_loaded, mock_run_achilles, mock_export,
@@ -359,7 +361,7 @@ class ValidationMainTest(TestCase):
         mock_client = mock.MagicMock()
         mock_bucket = mock.MagicMock()
         mock_blob = mock.MagicMock()
-        mock_storage_client.return_value = mock_client
+        self.mock_storage_client.return_value = mock_client
         mock_client.get_hpo_bucket.return_value = mock_bucket
         type(mock_bucket).name = mock.PropertyMock(
             return_value='fake_bucket_name')
@@ -438,9 +440,8 @@ class ValidationMainTest(TestCase):
             self.assertTrue(filepath.startswith(submission_path))
         mock_client.get_blob_metadata.assert_called()
 
-    @mock.patch('validation.main.StorageClient')
     @mock.patch('api_util.check_cron')
-    def test_copy_files_ignore_all(self, mock_check_cron, mock_storage_client):
+    def test_copy_files_ignore_all(self, mock_check_cron):
         """
         Test copying files to the drc internal bucket.
         This should copy anything in the site's bucket except for files named
@@ -450,7 +451,6 @@ class ValidationMainTest(TestCase):
         test ran as expected and the get and copy blobs methods were never called.
 
         :param mock_check_cron: mocks the cron decorator.
-        :param mock_storage_client: mocks the StorageClient which has bucket and blob functionality.
         """
         # pre-conditions
         mock_client = mock.MagicMock()
@@ -473,7 +473,7 @@ class ValidationMainTest(TestCase):
             'name': 'Participant/site_3/person.csv',
         }]
 
-        mock_storage_client.return_value = mock_client
+        self.mock_storage_client.return_value = mock_client
 
         # test
         result = main.copy_files('fake_hpo_id')
@@ -492,9 +492,8 @@ class ValidationMainTest(TestCase):
         mock_hpo_bucket.get_blob.assert_not_called()
         mock_hpo_bucket.copy_blob.assert_not_called()
 
-    @mock.patch('validation.main.StorageClient')
     @mock.patch('api_util.check_cron')
-    def test_copy_files_accept_all(self, mock_check_cron, mock_storage_client):
+    def test_copy_files_accept_all(self, mock_check_cron):
         """
         Test copying files to the drc internal bucket.
         This should copy anything in the site's bucket except for files named
@@ -505,7 +504,6 @@ class ValidationMainTest(TestCase):
         environment.
 
         :param mock_check_cron: mocks the cron decorator.
-        :param mock_storage_client: mocks the StorageClient which has bucket and blob functionality.
         """
         # pre-conditions
         mock_client = mock.MagicMock()
@@ -526,7 +524,7 @@ class ValidationMainTest(TestCase):
             'name': 'SUBMISSION/measurement.csv',
         }]
 
-        mock_storage_client.return_value = mock_client
+        self.mock_storage_client.return_value = mock_client
 
         # test
         result = main.copy_files('fake_hpo_id')
@@ -551,12 +549,8 @@ class ValidationMainTest(TestCase):
         self.assertEqual(mock_hpo_bucket.copy_blob.call_count, 2)
         mock_hpo_bucket.copy_blob.assert_has_calls(expected, any_order=True)
 
-    @mock.patch(
-        'validation.participants.validate.BigQueryClient',
-        mock.MagicMock(query=lambda: mock.MagicMock(result=lambda: None)))
     @mock.patch('validation.main.setup_and_validate_participants',
                 mock.MagicMock())
-    @mock.patch('validation.main.BigQueryClient', mock.MagicMock())
     @mock.patch('bq_utils.query', mock.MagicMock())
     def test_generate_metrics(self):
         summary = {
@@ -581,7 +575,7 @@ class ValidationMainTest(TestCase):
                                          reason='baz',
                                          content=b'bar')
 
-        def get_duplicate_counts_query(hpo_id):
+        def get_duplicate_counts_query(bq_client, hpo_id):
             return ''
 
         def is_valid_rdr(rdr_dataset_id):
@@ -637,7 +631,6 @@ class ValidationMainTest(TestCase):
         self.assertIn(incorrect_folder_prefix,
                       report_data[report_consts.SUBMISSION_ERROR_REPORT_KEY])
 
-    @mock.patch('validation.main.BigQueryClient')
     @mock.patch('validation.main._upload_achilles_files')
     @mock.patch('validation.main.run_export')
     @mock.patch('validation.main.run_achilles')
@@ -649,14 +642,14 @@ class ValidationMainTest(TestCase):
     def test_union_ehr(self, mock_check_cron, mock_get_application_id,
                        mock_get_dataset_id, mock_get_unioned_dataset_id,
                        mock_ehr_union_main, mock_run_achilles, mock_run_export,
-                       mock_upload_achilles_files, mock_bq_client):
+                       mock_upload_achilles_files):
 
         application_id = 'application_id'
         input_dataset = 'input_dataset'
         output_dataset = 'output_dataset'
         mock_client = mock.MagicMock()
 
-        mock_bq_client.return_value = mock_client
+        self.mock_bq_client.return_value = mock_client
         mock_check_cron.return_value = True
         mock_get_application_id.return_value = application_id
         mock_get_dataset_id.return_value = input_dataset

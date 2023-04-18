@@ -229,7 +229,9 @@ class EhrUnionTest(unittest.TestCase):
             if not table == common.SURVEY_CONDUCT
         ]
         output_cdm_tables = [
-            ehr_union.output_table_for(table) for table in resources.CDM_TABLES
+            ehr_union.output_table_for(table)
+            for table in resources.CDM_TABLES
+            if not table == common.DEATH
         ]
         sandbox_tables = [
             f'{self.output_dataset_id}_dc2340_unioned_ehr_observation'
@@ -304,7 +306,7 @@ class EhrUnionTest(unittest.TestCase):
 
         # check for each output table
         for table_name in resources.CDM_TABLES:
-            if not table_name == common.SURVEY_CONDUCT:
+            if not table_name in [common.SURVEY_CONDUCT, common.DEATH]:
                 # output table exists and row count is sum of those submitted by hpos
                 result_table = ehr_union.output_table_for(table_name)
                 expected_rows = self.expected_tables[result_table]

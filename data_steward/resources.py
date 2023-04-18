@@ -8,9 +8,9 @@ import logging
 import os
 import re
 import cachetools
+from datetime import datetime
 
 from git import Repo, TagReference
-from google.cloud import bigquery
 
 from common import (VOCABULARY, ACHILLES, PROCESSED_TXT, RESULTS_HTML,
                     FITBIT_TABLES, PID_RID_MAPPING, COPE_SURVEY_MAP,
@@ -18,7 +18,7 @@ from common import (VOCABULARY, ACHILLES, PROCESSED_TXT, RESULTS_HTML,
                     DRUG_EXPOSURE, MEASUREMENT, NOTE, OBSERVATION,
                     PROCEDURE_OCCURRENCE, SPECIMEN, VISIT_OCCURRENCE,
                     VISIT_DETAIL, CONDITION_ERA, DRUG_ERA, DOSE_ERA,
-                    PAYER_PLAN_PERIOD, OBSERVATION_PERIOD, NOTE_NLP)
+                    PAYER_PLAN_PERIOD, OBSERVATION_PERIOD, NOTE_NLP, JINJA_ENV)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -117,6 +117,10 @@ PRIMARY_DATE_FIELDS = {
     OBSERVATION_PERIOD: 'observation_period_start_date',
     NOTE_NLP: 'nlp_date',
 }
+
+FIELDS_TMPL = JINJA_ENV.from_string("""
+    {{name}} {{col_type}} {{mode}} OPTIONS(description="{{desc}}")
+""")
 
 
 @cachetools.cached(cache={})
@@ -663,3 +667,108 @@ def get_new_dataset_name(src_dataset_name: str, release_tag: str) -> str:
     Returns: Name of the new dataset.
     """
     return re.sub(r'\d{4}q[1-4]r\d{1,3}', release_tag, src_dataset_name)
+
+
+def validate_date_string(date_string):
+    """
+    Validates the date string is a valid date in the YYYY-MM-DD format.
+
+    If the string is valid, the string is returned.  Otherwise, strptime
+    raises either a ValueError or TypeError.
+
+    :param date_string: The string to validate adheres to YYYY-MM-DD format
+
+    :return:  a valid date string
+    :raises:  A ValueError if the date string is not a valid date or
+        doesn't conform to the specified format.
+    """
+    datetime.strptime(date_string, '%Y-%m-%d')
+    return date_string
+
+
+def get_bq_col_type(col_type):
+    """
+    Return correct SQL column type representation.
+
+    :param col_type: The type of column as defined in json schema files.
+    :return: A SQL column type compatible with BigQuery
+    """
+    lower_col_type = col_type.lower()
+    if lower_col_type == 'integer':
+        return 'INT64'
+
+    if lower_col_type == 'string':
+        return 'STRING'
+
+    if lower_col_type == 'float':
+        return 'FLOAT64'
+
+    if lower_col_type == 'numeric':
+        return 'DECIMAL'
+
+    if lower_col_type == 'time':
+        return 'TIME'
+
+    if lower_col_type == 'timestamp':
+        return 'TIMESTAMP'
+
+    if lower_col_type == 'date':
+        return 'DATE'
+
+    if lower_col_type == 'datetime':
+        return 'DATETIME'
+
+    if lower_col_type == 'bool':
+        return 'BOOL'
+
+    return 'UNSET'
+
+
+def get_bq_mode(mode):
+    """
+    Return correct SQL for column mode.
+
+    :param mode:  either nullable or required as defined in json schema files.
+    :return: NOT NULL or empty string
+    """
+    lower_mode = mode.lower()
+    if lower_mode == 'nullable':
+        return ''
+
+    if lower_mode == 'required':
+        return 'NOT NULL'
+
+    return 'UNSET'
+
+
+def get_bq_fields_sql(fields):
+    """
+    Get the SQL compliant fields definition from json fields object.
+
+    :param fields: table schema in json format
+    :return: a string that can be added to SQL to generate a correct
+        table.
+    """
+    fields_list = []
+    for field in fields:
+        rendered = FIELDS_TMPL.render(name=field.get('name'),
+                                      col_type=get_bq_col_type(
+                                          field.get('type')),
+                                      mode=get_bq_mode(field.get('mode')),
+                                      desc=field.get('description'))
+
+        fields_list.append(rendered)
+
+    fields_str = ','.join(fields_list)
+    return fields_str
+
+
+def replace_special_characters_for_labels(label_name: str):
+    """
+    Replace all .'s ,'s and spaces with _ in a string
+
+    :param label_name: string to be replaced
+    :return: string with replaced characters
+    """
+    return label_name.lower().replace('.', '_').replace(',',
+                                                        '_').replace(' ', '_')

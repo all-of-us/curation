@@ -8,7 +8,6 @@ from collections import OrderedDict
 # Third party imports
 from unittest.mock import ANY
 
-from google.api_core import retry
 from google.cloud import bigquery
 from google.cloud.bigquery import TableReference, DatasetReference
 from google.cloud.bigquery.table import TableListItem
@@ -254,6 +253,8 @@ class BQCTest(TestCase):
             jobs.append(fake_job)
         mock_copy_table.side_effect = jobs
         mock_list_jobs.return_value = jobs
+        mock_job_config = MagicMock()
+        mock_job_config.labels = {'foo_key': 'bar_value'}
 
         full_table_ids = [
             f'{self.client.project}.{self.dataset_id}.{table_id}'
@@ -267,15 +268,17 @@ class BQCTest(TestCase):
 
         self.client.copy_dataset(
             f'{self.client.project}.{self.dataset_id}',
-            f'{self.client.project}.{self.dataset_id}_snapshot')
+            f'{self.client.project}.{self.dataset_id}_snapshot',
+            job_config=mock_job_config)
         mock_list_tables.assert_called_once_with(
             f'{self.client.project}.{self.dataset_id}')
         self.assertEqual(mock_copy_table.call_count, len(list_tables_results))
         expected_calls = [
             call(
                 table_object,
-                f'{self.client.project}.{self.dataset_id}_snapshot.{table_object.table_id}'
-            ) for table_object in list_tables_results
+                f'{self.client.project}.{self.dataset_id}_snapshot.{table_object.table_id}',
+                job_config=mock_job_config)
+            for table_object in list_tables_results
         ]
         mock_copy_table.assert_has_calls(expected_calls)
 

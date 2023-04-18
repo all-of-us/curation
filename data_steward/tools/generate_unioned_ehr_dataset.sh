@@ -96,7 +96,7 @@ unioned_ehr_dataset_staging="${unioned_ehr_dataset}_staging"
 
 #---------------------------------------------------------------------
 # Step 1 Create an empty dataset
-bq mk --dataset --description "copy unioned_ehr tables from ${ehr_snapshot}" --label "phase:backup" --label "release_tag:${dataset_release_tag}" --label "de_identified:false" ${app_id}:${unioned_ehr_dataset_backup}
+bq mk --dataset --description "copy unioned_ehr tables from ${ehr_snapshot}" --label "owner:curation" --label "phase:backup" --label "release_tag:${dataset_release_tag}" --label "de_identified:false" ${app_id}:${unioned_ehr_dataset_backup}
 
 #----------------------------------------------------------------------
 # Step 2 Create the clinical tables for unioned EHR data set
@@ -130,7 +130,7 @@ bq rm -f ${unioned_ehr_dataset_backup}._mapping_ipmc_nu_visit_occurrence
 
 # Run cleaning rules on unioned_ehr_dataset
 # create an intermediary table to apply cleaning rules on
-bq mk --dataset --description "intermediary dataset to apply cleaning rules on ${unioned_ehr_dataset_backup}" --label "phase:staging" --label "release_tag:${dataset_release_tag}" --label "de_identified:false" ${app_id}:${unioned_ehr_dataset_staging}
+bq mk --dataset --description "intermediary dataset to apply cleaning rules on ${unioned_ehr_dataset_backup}" --label "owner:curation" --label "phase:staging" --label "release_tag:${dataset_release_tag}" --label "de_identified:false" ${app_id}:${unioned_ehr_dataset_staging}
 
 "${TOOLS_DIR}/table_copy.sh" --source_app_id ${app_id} --target_app_id ${app_id} --source_dataset ${unioned_ehr_dataset_backup} --target_dataset ${unioned_ehr_dataset_staging}
 
@@ -140,7 +140,7 @@ export VOCABULARY_DATASET="${vocab_dataset}" # required by populate_route_ids cl
 data_stage='unioned'
 
 # create sandbox dataset
-bq mk --dataset --description "Sandbox created for storing records affected by the cleaning rules applied to ${unioned_ehr_dataset}" --label "phase:sandbox" --label "release_tag:${dataset_release_tag}" --label "de_identified:false" ${app_id}:${unioned_ehr_dataset_sandbox}
+bq mk --dataset --description "Sandbox created for storing records affected by the cleaning rules applied to ${unioned_ehr_dataset}" --label "owner:curation" --label "phase:sandbox" --label "release_tag:${dataset_release_tag}" --label "de_identified:false" ${app_id}:${unioned_ehr_dataset_sandbox}
 
 unset GOOGLE_APPLICATION_CREDENTIALS
 gcloud config set account "${pmi_email}"
@@ -154,10 +154,10 @@ gcloud auth activate-service-account --key-file=${key_file}
 # Create a snapshot dataset with the result
 python "${TOOLS_DIR}/snapshot_by_query.py" --project_id "${app_id}" --dataset_id "${unioned_ehr_dataset_staging}" --snapshot_dataset_id "${unioned_ehr_dataset}"
 
-bq update --description "${version} clean version of ${unioned_ehr_dataset_backup}" --set_label "phase:clean" --set_label "release_tag:${dataset_release_tag}" --set_label "de_identified:false" ${app_id}:${unioned_ehr_dataset}
+bq update --description "${version} clean version of ${unioned_ehr_dataset_backup}" --set_label "owner:curation" --set_label "phase:clean" --set_label "release_tag:${dataset_release_tag}" --set_label "de_identified:false" ${app_id}:${unioned_ehr_dataset}
 
 # Update sandbox description
-bq update --description "Sandbox created for storing records affected by the cleaning rules applied to ${unioned_ehr_dataset}" --set_label "phase:sandbox" --set_label "release_tag:${dataset_release_tag}" --set_label "de_identified:false" ${app_id}:${unioned_ehr_dataset_sandbox}
+bq update --description "Sandbox created for storing records affected by the cleaning rules applied to ${unioned_ehr_dataset}" --set_label "owner:curation" --set_label "phase:sandbox" --set_label "release_tag:${dataset_release_tag}" --set_label "de_identified:false" ${app_id}:${unioned_ehr_dataset_sandbox}
 
 
 unset PYTHONPATH

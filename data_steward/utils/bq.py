@@ -479,6 +479,10 @@ def get_latest_validation_dataset_id(project_id):
     return None
 
 
+@deprecated(
+    reason=
+    'see: https://cloud.google.com/python/docs/reference/bigquery/latest/google.cloud.bigquery.client.Client#google_cloud_bigquery_client_Client_create_dataset'
+)
 def create_dataset(project_id,
                    dataset_id,
                    description=None,
@@ -532,6 +536,7 @@ def create_dataset(project_id,
     return dataset
 
 
+@deprecated(reason='query_sheet_linked_bq_table is deprecated')
 def query_sheet_linked_bq_table(project_id, table_content_query,
                                 external_data_scopes):
     """
@@ -646,6 +651,7 @@ def copy_datasets(client: bigquery.Client, input_dataset, output_dataset):
         client.copy_table(table, staging_table)
 
 
+@deprecated(reason='Use resources.validate_date_string(date_string) instead')
 def validate_bq_date_string(date_string):
     """
     Validates the date string is a valid date in the YYYY-MM-DD format.
@@ -731,6 +737,7 @@ def build_and_copy_contents(client, src_dataset, dest_dataset):
                 f'`{src_dataset}`, to schemaed dataset, `{dest_dataset}`.')
 
 
+@deprecated(reason='Use resources.get_bq_col_type(col_type) instead')
 def get_bq_col_type(col_type):
     """
     Return correct SQL column type representation.
@@ -770,6 +777,7 @@ def get_bq_col_type(col_type):
     return 'UNSET'
 
 
+@deprecated(reason='Use resources.get_bq_mode(mode) instead')
 def get_bq_mode(mode):
     """
     Return correct SQL for column mode.
@@ -788,6 +796,7 @@ def get_bq_mode(mode):
     return 'UNSET'
 
 
+@deprecated(reason='Use resources.get_bq_fields_sql(fields) instead')
 def get_bq_fields_sql(fields):
     """
     Get the SQL compliant fields definition from json fields object.

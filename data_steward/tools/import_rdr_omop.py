@@ -12,11 +12,10 @@ from google.cloud import bigquery
 from google.api_core.exceptions import NotFound
 
 from utils import auth
-from utils import bq
 from gcloud.bq import BigQueryClient
 from utils import pipeline_logging
 from common import CDR_SCOPES
-import resources
+from resources import replace_special_characters_for_labels, validate_date_string, cdm_schemas, rdr_specific_schemas
 
 LOGGER = logging.getLogger(__name__)
 
@@ -38,7 +37,7 @@ def parse_rdr_args(raw_args=None):
                         required=True)
     parser.add_argument('--export_date',
                         action='store',
-                        type=bq.validate_bq_date_string,
+                        type=validate_date_string,
                         dest='export_date',
                         help='Date the RDR dump was exported to curation.',
                         required=True)
@@ -74,8 +73,8 @@ def create_rdr_tables(client, rdr_dataset, bucket):
     :param rdr_dataset: The existing dataset to load file data into
     :param bucket: the gcs bucket containing the file data.
     """
-    schema_dict = resources.cdm_schemas()
-    schema_dict.update(resources.rdr_specific_schemas())
+    schema_dict = cdm_schemas()
+    schema_dict.update(rdr_specific_schemas())
 
     for table, schema in schema_dict.items():
         schema_list = client.get_table_schema(table, schema)
@@ -153,9 +152,12 @@ def copy_vocab_tables(client, rdr_dataset, vocab_dataset):
 
     for table_item in vocab_tables:
         job_config.labels = {
-            'table_name': table_item.table_id,
-            'copy_from': vocab_dataset,
-            'copy_to': rdr_dataset
+            'table_name':
+                replace_special_characters_for_labels(table_item.table_id),
+            'copy_from':
+                replace_special_characters_for_labels(vocab_dataset),
+            'copy_to':
+                replace_special_characters_for_labels(rdr_dataset)
         }
 
         destination_table = f'{client.project}.{rdr_dataset}.{table_item.table_id}'

@@ -94,6 +94,10 @@ OTHER_CDM_TABLES = [
 
 CDM_TABLES = AOU_REQUIRED + OTHER_CDM_TABLES
 
+# AoU custom tables
+AOU_DEATH = 'aou_death'
+AOU_CUSTOM_TABLES = [AOU_DEATH]
+
 AOU_REQUIRED_FILES = [f'{table}.csv' for table in AOU_REQUIRED]
 PII_FILES = [f'{table}.csv' for table in PII_TABLES]
 NOTE_JSONL = 'note.jsonl'

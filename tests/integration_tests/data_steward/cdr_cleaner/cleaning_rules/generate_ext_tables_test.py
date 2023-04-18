@@ -75,11 +75,11 @@ class GenerateExtTablesTest(BaseTest.CleaningRulesTestBase):
         # pre-conditions
         site_mask_tmpl = self.jinja_env.from_string("""
         INSERT INTO `{{site_mask_name}}`
-            (hpo_id, src_id)
+            (hpo_id, src_id, state, value_source_concept_id)
         VALUES
-            ('foo', 'site bar'),
-            ('baz', 'pi/pm'),
-            ('phi', 'site yum')
+            ('foo', 'site bar', 'PIIState_XY', 1010101),
+            ('baz', 'pi/pm', 'PIIState_XY', 1010101),
+            ('phi', 'site yum', 'PIIState_XY', 1010101)
         """).render(site_mask_name=self.stable_map_name)
 
         mapping_obs_tmpl = self.jinja_env.from_string("""

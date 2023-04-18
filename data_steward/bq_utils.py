@@ -97,13 +97,21 @@ def get_fitbit_dataset_id():
     return os.environ.get('FITBIT_DATASET_ID')
 
 
-def get_retraction_dataset_ids():
+def get_retraction_dataset_ids_table():
     """
-    Dataset ids from which to retract, separated by spaces
-    If retraction needs to be performed on all datasets in the project, set to 'all_datasets'
-    :return: string 'all_datasets' or dataset_ids separated by spaces
+    BigQuery table containing dataset ids from which to retract, on separate rows.
+    If retraction needs to be performed on all datasets in the project, the table should contain  only "all_datasets"
+    :return: string of table id 'all_datasets' or dataset_ids separated by spaces
     """
-    return os.environ.get('RETRACTION_DATASET_IDS')
+    return os.environ.get('RETRACTION_DATASET_IDS_TABLE')
+
+
+def get_retraction_dataset_ids_dataset():
+    """
+    BigQuery dataset containing the table 'RETRACTION_DATASET_IDS_TABLE' defined above.
+    :return: string of dataset containing the table 'RETRACTION_DATASET_IDS_TABLE'
+    """
+    return os.environ.get('RETRACTION_DATASET_IDS_DATASET')
 
 
 def get_retraction_submission_folder():
@@ -746,6 +754,10 @@ def _transform_row(row, schema):
     return log
 
 
+@deprecated(
+    reason=
+    'Use gcloud.bq.BigQueryClient.list_tables(self, dataset: typing.Union[bigquery.DatasetReference, str]) instead'
+)
 def list_all_table_ids(dataset_id=None):
     tables = list_tables(dataset_id)
     return [table['tableReference']['tableId'] for table in tables]
@@ -927,7 +939,7 @@ def get_hpo_info():
     hpo_table_query = bq_consts.GET_HPO_CONTENTS_QUERY.format(
         project_id=project_id,
         LOOKUP_TABLES_DATASET_ID=bq_consts.LOOKUP_TABLES_DATASET_ID,
-        HPO_SITE_ID_MAPPINGS_TABLE_ID=bq_consts.HPO_SITE_ID_MAPPINGS_TABLE_ID)
+        HPO_SITE_TABLE=bq_consts.HPO_SITE_ID_MAPPINGS_TABLE_ID)
     hpo_response = query(hpo_table_query)
     hpo_table_contents = response2rows(hpo_response)
     for hpo_table_row in hpo_table_contents:
@@ -935,6 +947,24 @@ def get_hpo_info():
         hpo_name = hpo_table_row[bq_consts.SITE_NAME]
         if hpo_id and hpo_name:
             hpo_dict = {"hpo_id": hpo_id, "name": hpo_name}
+            hpo_list.append(hpo_dict)
+    return hpo_list
+
+
+def get_hpo_bucket_info():
+    hpo_list = []
+    project_id = app_identity.get_application_id()
+    hpo_table_query = bq_consts.GET_HPO_CONTENTS_QUERY.format(
+        project_id=project_id,
+        LOOKUP_TABLES_DATASET_ID=bq_consts.LOOKUP_TABLES_DATASET_ID,
+        HPO_SITE_TABLE=bq_consts.HPO_ID_BUCKET_NAME_TABLE_ID)
+    hpo_response = query(hpo_table_query)
+    hpo_table_contents = response2rows(hpo_response)
+    for hpo_table_row in hpo_table_contents:
+        hpo_id = hpo_table_row[bq_consts.HPO_ID.lower()].lower()
+        hpo_bucket = hpo_table_row[bq_consts.BUCKET_NAME].lower()
+        if hpo_id:
+            hpo_dict = {"hpo_id": hpo_id, "bucket_name": hpo_bucket}
             hpo_list.append(hpo_dict)
     return hpo_list
 

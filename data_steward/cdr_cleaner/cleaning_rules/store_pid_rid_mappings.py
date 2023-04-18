@@ -20,8 +20,7 @@ import constants.cdr_cleaner.clean_cdr as cdr_consts
 from common import (JINJA_ENV, MAX_DEID_DATE_SHIFT, PID_RID_MAPPING,
                     PIPELINE_TABLES, PRIMARY_PID_RID_MAPPING)
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
-from resources import fields_for
-from utils.bq import validate_bq_date_string
+from resources import fields_for, validate_date_string
 
 LOGGER = logging.getLogger(__name__)
 
@@ -112,7 +111,7 @@ class StoreNewPidRidMappings(BaseCleaningRule):
 
         # set export date
         try:
-            self.export_date = validate_bq_date_string(export_date)
+            self.export_date = validate_date_string(export_date)
             LOGGER.info(f'Using provided export_date: `{export_date}`')
         except (TypeError, ValueError):
             # otherwise, default to using today's date
@@ -201,7 +200,7 @@ if __name__ == '__main__':
         dest='export_date',
         help=('Date of the RDR export. Should adhere to '
               'YYYY-MM-DD format'),
-        type=validate_bq_date_string,
+        type=validate_date_string,
     )
 
     ARGS = ext_parser.parse_args()

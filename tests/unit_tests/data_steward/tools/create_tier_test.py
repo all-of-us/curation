@@ -37,6 +37,7 @@ class CreateTierTest(unittest.TestCase):
 
         self.description = f'dataset created from {self.input_dataset} for {self.tier}{self.release_tag} CDR run'
         self.labels_and_tags = {
+            'owner': 'curation',
             'release_tag': self.release_tag,
             'data_tier': self.tier,
         }
@@ -274,12 +275,15 @@ class CreateTierTest(unittest.TestCase):
     def test_create_datasets(self):
         # Preconditions
         mocked_labels = [{
+            'owner': 'curation',
             DE_IDENTIFIED: 'true',
             'phase': consts.CLEAN
         }, {
+            'owner': 'curation',
             DE_IDENTIFIED: 'true',
             'phase': consts.STAGING
         }, {
+            'owner': 'curation',
             DE_IDENTIFIED: 'false',
             'phase': consts.SANDBOX
         }]

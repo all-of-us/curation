@@ -24,7 +24,7 @@ rdr_cutoff_date = ""
 # # QC for RDR Export
 #
 # Quality checks performed on a new RDR dataset and comparison with previous RDR dataset.
-from common import JINJA_ENV, PIPELINE_TABLES
+from common import CATI_TABLES, DEATH, FACT_RELATIONSHIP, JINJA_ENV, PIPELINE_TABLES
 from utils import auth
 from gcloud.bq import BigQueryClient
 from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES, render_message
@@ -74,9 +74,7 @@ execute(client, query)
 # Rows that are greater than 999,999,999,999,999 the will be listed out here.
 
 domain_table_list = [
-    'condition_occurrence', 'device_exposure', 'drug_exposure', 'location',
-    'measurement', 'note', 'observation', 'procedure_occurrence', 'provider',
-    'specimen', 'visit_occurrence'
+    table for table in CATI_TABLES if table not in [DEATH, FACT_RELATIONSHIP]
 ]
 queries = []
 for table in domain_table_list:
@@ -324,6 +322,26 @@ FROM `{{project_id}}.{{new_rdr}}.observation`
 JOIN `{{project_id}}.{{new_rdr}}.cope_survey_semantic_version_map` USING (questionnaire_response_id)
 GROUP BY 1
 ORDER BY MIN(observation_date)
+""")
+query = tpl.render(new_rdr=new_rdr, project_id=project_id)
+execute(client, query)
+
+# # Check the expectations of survey_conduct cleaning rules
+#
+# This query checks the validity of cope_survey_semantic_version_map table which contains the version of each COPE and/or Minute module that each participant took. This table is created by RDR and is included in the rdr export.
+#
+# The series of CRs applied to the survey_conduct table rely on the assumption that the values in `cope_month` do not change and it is expected that none should be added.
+#
+# **An empty df is a passing check.** <br>
+# Contact the rdr team if there are any unexpected cope_month values. CRs that use this field may need to be updated. Ex:RDR_CLEANING_CLASS:CleanSurveyConductRecurringSurveys
+
+tpl = JINJA_ENV.from_string("""
+SELECT
+cope_month AS unexpected_cope_month
+,COUNT(*) AS n_records
+FROM `{{project_id}}.{{new_rdr}}.cope_survey_semantic_version_map`
+WHERE cope_month NOT IN ('dec' ,'feb', 'may', 'nov', 'july', 'june', 'vaccine1','vaccine2','vaccine3','vaccine4')
+GROUP BY cope_month
 """)
 query = tpl.render(new_rdr=new_rdr, project_id=project_id)
 execute(client, query)

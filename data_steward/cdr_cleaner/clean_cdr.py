@@ -6,10 +6,13 @@ to the query engine.
 """
 # Python imports
 import logging
+import typing
 
 # Project imports
 import cdr_cleaner.clean_cdr_engine as clean_engine
-from cdr_cleaner.cleaning_rules.backfill_pmi_skip_codes import BackfillPmiSkipCodes
+from cdr_cleaner.cleaning_rules.backfill_lifestyle import BackfillLifestyle
+from cdr_cleaner.cleaning_rules.backfill_overall_health import BackfillOverallHealth
+from cdr_cleaner.cleaning_rules.backfill_the_basics import BackfillTheBasics
 from cdr_cleaner.cleaning_rules.clean_by_birth_year import CleanByBirthYear
 from cdr_cleaner.cleaning_rules.convert_pre_post_coordinated_concepts import ConvertPrePostCoordinatedConcepts
 from cdr_cleaner.cleaning_rules.create_expected_ct_list import StoreExpectedCTList
@@ -18,6 +21,8 @@ import cdr_cleaner.cleaning_rules.drop_duplicate_states as drop_duplicate_states
 from cdr_cleaner.cleaning_rules.drop_extreme_measurements import DropExtremeMeasurements
 from cdr_cleaner.cleaning_rules.drop_multiple_measurements import DropMultipleMeasurements
 from cdr_cleaner.cleaning_rules.drop_participants_without_any_basics import DropParticipantsWithoutAnyBasics
+from cdr_cleaner.cleaning_rules.clean_survey_conduct_recurring_surveys import CleanSurveyConductRecurringSurveys
+from cdr_cleaner.cleaning_rules.update_survey_source_concept_id import UpdateSurveySourceConceptId
 from cdr_cleaner.cleaning_rules.drop_unverified_survey_data import DropUnverifiedSurveyData
 from cdr_cleaner.cleaning_rules.drug_refills_days_supply import DrugRefillsDaysSupply
 from cdr_cleaner.cleaning_rules.maps_to_value_ppi_vocab_update import MapsToValuePpiVocabUpdate
@@ -52,6 +57,8 @@ from cdr_cleaner.cleaning_rules.deid.remove_fitbit_data_if_max_age_exceeded impo
 from cdr_cleaner.cleaning_rules.deid.rt_ct_pid_rid_map import RtCtPIDtoRID
 from cdr_cleaner.cleaning_rules.deid.repopulate_person_controlled_tier import \
     RepopulatePersonControlledTier
+from cdr_cleaner.cleaning_rules.deid.conflicting_hpo_state_generalization import \
+    ConflictingHpoStateGeneralize
 from cdr_cleaner.cleaning_rules.deid.generalize_cope_insurance_answers import GeneralizeCopeInsuranceAnswers
 from cdr_cleaner.cleaning_rules.drop_cope_duplicate_responses import DropCopeDuplicateResponses
 from cdr_cleaner.cleaning_rules.drop_duplicate_ppi_questions_and_answers import \
@@ -126,8 +133,9 @@ from cdr_cleaner.cleaning_rules.dedup_measurement_value_as_concept_id import Ded
 from cdr_cleaner.cleaning_rules.drop_orphaned_pids import DropOrphanedPIDS
 from cdr_cleaner.cleaning_rules.drop_orphaned_survey_conduct_ids import DropOrphanedSurveyConductIds
 from cdr_cleaner.cleaning_rules.deid.deidentify_aian_zip3_values import DeidentifyAIANZip3Values
+import constants.global_variables
 from constants.cdr_cleaner import clean_cdr_engine as ce_consts
-from constants.cdr_cleaner.clean_cdr import DataStage, DATA_CONSISTENCY
+from constants.cdr_cleaner.clean_cdr import DataStage, DATA_CONSISTENCY, CRON_RETRACTION
 
 # Third party imports
 
@@ -167,7 +175,9 @@ RDR_CLEANING_CLASSES = [
     (UpdateFieldsNumbersAsStrings,),
     (UpdateCopeFluQuestionConcept,),
     (MapsToValuePpiVocabUpdate,),
-    (BackfillPmiSkipCodes,),
+    (BackfillTheBasics,),
+    (BackfillLifestyle,),
+    (BackfillOverallHealth,),
     (CleanPPINumericFieldsUsingParameters,),
     (RemoveMultipleRaceEthnicityAnswersQueries,),
     (UpdatePpiNegativePainLevel,),
@@ -188,6 +198,8 @@ RDR_CLEANING_CLASSES = [
     (DropMultipleMeasurements,),
     (CleanByBirthYear,),
     (UpdateInvalidZipCodes,),
+    (CleanSurveyConductRecurringSurveys,),
+    (UpdateSurveySourceConceptId,),
     (DropUnverifiedSurveyData,),
     (DropParticipantsWithoutAnyBasics,),
     (StoreExpectedCTList,),
@@ -247,7 +259,8 @@ REGISTERED_TIER_DEID_CLEANING_CLASSES = [
     # Data generalizations
     ####################################
     (
-        GeneralizeStateByPopulation,),
+        ConflictingHpoStateGeneralize,),
+    (GeneralizeStateByPopulation,),
     (GeneralizeCopeInsuranceAnswers,),
     # (GeneralizeSexGenderConcepts,),
 
@@ -257,6 +270,7 @@ REGISTERED_TIER_DEID_CLEANING_CLASSES = [
         RecentConceptSuppression,),  # should run after QRIDtoRID
     (MonkeypoxConceptSuppression,),
     (VehicularAccidentConceptSuppression,),
+    (BirthInformationSuppression,),  # run after VehicularAccidentConcept
     (SectionParticipationConceptSuppression,),
     (RegisteredCopeSurveyQuestionsSuppression,),
     (ExplicitIdentifierSuppression,),
@@ -352,6 +366,10 @@ DATA_CONSISTENCY_CLEANING_CLASSES = [
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
+CRON_RETRACTION_CLEANING_CLASSES = [
+    (CleanMappingExtTables,),  # should be one of the last cleaning rules run
+]
+
 DATA_STAGE_RULES_MAPPING = {
     DataStage.EHR.value:
         EHR_CLEANING_CLASSES,
@@ -380,7 +398,9 @@ DATA_STAGE_RULES_MAPPING = {
     DataStage.CONTROLLED_TIER_FITBIT.value:
         CONTROLLED_TIER_FITBIT_CLEANING_CLASSES,
     DataStage.DATA_CONSISTENCY.value:
-        DATA_CONSISTENCY_CLEANING_CLASSES
+        DATA_CONSISTENCY_CLEANING_CLASSES,
+    DataStage.CRON_RETRACTION.value:
+        CRON_RETRACTION_CLEANING_CLASSES
 }
 
 
@@ -412,11 +432,11 @@ def get_parser():
 
 
 PARSING_ERROR_MESSAGE_FORMAT = (
-    'Error parsing %(arg)s. Please use "--key value" to specify custom arguments. '
+    'Error parsing %(arg)s. Please use "--key value" or "--key=value" to specify custom arguments. '
     'Custom arguments need an associated keyword to store their value.')
 
 
-def _to_kwarg_key(arg):
+def _to_kwarg_key(arg) -> str:
     # TODO: Move this function to as project level arg_parser so it can be reused.
     if not arg.startswith('--'):
         raise RuntimeError(PARSING_ERROR_MESSAGE_FORMAT.format(arg=arg))
@@ -426,7 +446,7 @@ def _to_kwarg_key(arg):
     return key
 
 
-def _to_kwarg_val(val):
+def _to_kwarg_val(val: str) -> str:
     # TODO: Move this function to as project level arg_parser so it can be reused.
     # likely invalid use of args- allowing single dash e.g. negative values
     if val.startswith('--'):
@@ -434,15 +454,21 @@ def _to_kwarg_val(val):
     return val
 
 
-def _get_kwargs(optional_args):
-    # TODO: Move this function to as project level arg_parser so it can be reused.
-    # TODO: Move this function to as project level arg_parser so it can be reused.
-    if len(optional_args) % 2:
-        raise RuntimeError(
-            f'All provided arguments need key-value pairs in {optional_args}')
+def _get_kwargs(optional_args: typing.List[str]) -> typing.Dict:
+    """
+    This creates and ensures a {key: value} pair from _get_kwargs(...).
+    """
+    arg_list = []
+    for arg in optional_args:
+        arg_list.extend(arg.split("="))
+
+    if len(arg_list) % 2:
+        raise RuntimeError(PARSING_ERROR_MESSAGE_FORMAT.format(arg=arg_list))
+
+    # _to_kwarg_key(...) and _to_kwargs_val(...) are validators
     return {
         _to_kwarg_key(arg): _to_kwarg_val(value)
-        for arg, value in zip(optional_args[0::2], optional_args[1::2])
+        for arg, value in zip(arg_list[0::2], arg_list[1::2])
     }
 
 
@@ -517,10 +543,10 @@ def main(args=None):
     rules = DATA_STAGE_RULES_MAPPING[args.data_stage.value]
     validate_custom_params(rules, **kwargs)
 
-    # NOTE Retraction uses DATA_CONSISTENCY data stage. For retraction,
+    # NOTE Retraction uses DATA_CONSISTENCY or CRON_RETRACTION data stage. For retraction,
     # all datasets share one sandbox dataset. Table_namer needs dataset_id so
     # the sandbox tables will not overwrite each other.
-    if args.data_stage.value == DATA_CONSISTENCY:
+    if args.data_stage.value in [DATA_CONSISTENCY, CRON_RETRACTION]:
         table_namer = f"{args.data_stage.value}_{args.dataset_id}"
     else:
         table_namer = args.data_stage.value
@@ -537,7 +563,9 @@ def main(args=None):
         for query in query_list:
             LOGGER.info(query)
     else:
-        clean_engine.add_console_logging(args.console_log)
+        # Disable logging if running retraction cron
+        if not constants.global_variables.DISABLE_SANDBOX:
+            clean_engine.add_console_logging(args.console_log)
         clean_engine.clean_dataset(project_id=args.project_id,
                                    dataset_id=args.dataset_id,
                                    sandbox_dataset_id=args.sandbox_dataset_id,

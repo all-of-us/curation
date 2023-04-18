@@ -2,6 +2,9 @@
 import os
 import unittest
 
+# Third party imports
+from google.cloud.exceptions import Conflict
+
 # Project Imports
 import app_identity
 from utils import sandbox
@@ -21,11 +24,9 @@ class SandboxTest(unittest.TestCase):
         self.dataset_id = os.environ.get('UNIONED_DATASET_ID')
         self.sandbox_id = sandbox.get_sandbox_dataset_id(self.dataset_id)
         self.fq_sandbox_id = f'{self.project_id}.{self.sandbox_id}'
-        # Removing any existing datasets that might interfere with the test
         self.bq_client = BigQueryClient(self.project_id)
-        self.bq_client.delete_dataset(self.fq_sandbox_id,
-                                      delete_contents=True,
-                                      not_found_ok=True)
+        # Removing any existing datasets that might interfere with the test
+        self.tearDown()
 
     def test_create_sandbox_dataset(self):
         # pre-conditions
@@ -35,7 +36,7 @@ class SandboxTest(unittest.TestCase):
 
         # Create sandbox dataset
         sandbox_dataset = sandbox.create_sandbox_dataset(
-            self.project_id, self.dataset_id)
+            self.bq_client, self.dataset_id)
 
         # Post condition checks
         post_test_datasets_obj = list(
@@ -46,10 +47,9 @@ class SandboxTest(unittest.TestCase):
         self.assertTrue(sandbox_dataset not in pre_test_datasets)
         # make sure it was actually created
         self.assertTrue(sandbox_dataset in post_test_datasets)
-
         # Try to create same sandbox, which now already exists
-        self.assertRaises(RuntimeError, sandbox.create_sandbox_dataset,
-                          self.project_id, self.dataset_id)
+        self.assertRaises(Conflict, sandbox.create_sandbox_dataset,
+                          self.bq_client, self.dataset_id)
 
     def tearDown(self):
         # Remove fake dataset created in project

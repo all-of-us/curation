@@ -20,7 +20,7 @@ from constants.cdr_cleaner.clean_cdr import (COMBINED, CONTROLLED_TIER_DEID,
                                              RDR, REGISTERED_TIER_DEID,
                                              REGISTERED_TIER_DEID_BASE,
                                              REGISTERED_TIER_DEID_CLEAN)
-from resources import ext_table_for, mapping_table_for
+from resources import ext_table_for, fields_for, mapping_table_for
 from retraction.retract_utils import (is_combined_release_dataset,
                                       is_deid_dataset, is_deid_release_dataset,
                                       is_rdr_dataset)
@@ -235,8 +235,8 @@ AND i.person_id NOT IN (
 """)
 
 GENERIC_INSERT = JINJA_ENV.from_string("""
-INSERT INTO `{{project}}.{{dataset}}.{{table}}`
-SELECT * FROM `{{project}}.{{incremental_dataset}}.{{table}}`
+INSERT INTO `{{project}}.{{dataset}}.{{table}}` ({{columns}})
+SELECT {{columns}} FROM `{{project}}.{{incremental_dataset}}.{{table}}` 
 WHERE person_id IN ( -- Include only existing participants --
     SELECT DISTINCT person_id
     FROM 
@@ -352,6 +352,9 @@ class RemediateBasics(BaseCleaningRule):
                     sandbox_table_obs=self.sandbox_table_for(OBSERVATION),
                     incremental_dataset=self.incremental_dataset_id,
                     table=table,
+                    columns=', '.join([
+                        field['name'] for field in fields_for(table)
+                    ]) if template == GENERIC_INSERT else None,
                     new_obs_id_lookup=NEW_OBS_ID_LOOKUP,
                     dataset_with_largest_observation_id=self.
                     dataset_with_largest_observation_id,

@@ -212,11 +212,16 @@ else:
             (SURVEY_CONDUCT, mapping_table_for(SURVEY_CONDUCT)),
             (SURVEY_CONDUCT, ext_table_for(SURVEY_CONDUCT)),
         ]
-    elif is_deid_dataset(new_dataset):
+    elif is_deid_release_dataset(new_dataset):
         map_ext_tuples = [
             (OBSERVATION, ext_table_for(OBSERVATION)),
             (SURVEY_CONDUCT, ext_table_for(SURVEY_CONDUCT)),
             (PERSON, ext_table_for(PERSON)),
+        ]
+    elif is_deid_dataset(new_dataset):
+        map_ext_tuples = [
+            (OBSERVATION, ext_table_for(OBSERVATION)),
+            (SURVEY_CONDUCT, ext_table_for(SURVEY_CONDUCT)),
         ]
     else:
         map_ext_tuples = [
@@ -473,9 +478,12 @@ query = JINJA_ENV.from_string('''
             AND concept_class_id = 'Module'
             AND concept_name IN ('The Basics') 
             AND questionnaire_response_id is not null
-            AND observation_source_value NOT LIKE 'Second%' 
-            AND observation_source_value NOT LIKE 'PersonOne%'
-            AND observation_source_value NOT LIKE 'SocialSecurity%'
+            AND (observation_source_value IS NULL 
+                OR (observation_source_value NOT LIKE 'Second%' 
+                    AND observation_source_value NOT LIKE 'PersonOne%'
+                    AND observation_source_value NOT LIKE 'SocialSecurity%'
+                    )
+                )
         )
     ), source_missing AS (
         SELECT COUNT(DISTINCT person_id) AS count_missing_basics
@@ -492,10 +500,13 @@ query = JINJA_ENV.from_string('''
             AND concept_class_id = 'Module'
             AND concept_name IN ('The Basics') 
             AND questionnaire_response_id is not null
-            AND observation_source_value NOT LIKE 'Second%' 
-            AND observation_source_value NOT LIKE 'PersonOne%'
-            AND observation_source_value NOT LIKE 'SocialSecurity%'
-        )
+            AND (observation_source_value IS NULL 
+                OR (observation_source_value NOT LIKE 'Second%' 
+                    AND observation_source_value NOT LIKE 'PersonOne%'
+                    AND observation_source_value NOT LIKE 'SocialSecurity%'
+                    )
+                )
+            )
     ), new_all AS (
         SELECT COUNT(*) AS count_new_all
         FROM `{{project}}.{{new_dataset}}.person`

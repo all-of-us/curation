@@ -21,6 +21,8 @@ import logging
 
 # Project imports
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
+from cdr_cleaner.cleaning_rules.clean_survey_conduct_recurring_surveys import CleanSurveyConductRecurringSurveys
+from cdr_cleaner.cleaning_rules.update_survey_source_concept_id import UpdateSurveySourceConceptId
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from common import JINJA_ENV, OBSERVATION, SURVEY_CONDUCT
 
@@ -100,6 +102,10 @@ class DropUnverifiedSurveyData(BaseCleaningRule):
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
+                         depends_on=[
+                             CleanSurveyConductRecurringSurveys,
+                             UpdateSurveySourceConceptId
+                         ],
                          table_namer=table_namer)
 
         self.counts_query = COUNTS_QUERY.render(project_id=self.project_id,
