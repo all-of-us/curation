@@ -41,7 +41,7 @@ from google.cloud.exceptions import GoogleCloudError
 from google.cloud import bigquery
 
 # Project imports
-from common import (ALL_DEATH, CDR_SCOPES, FACT_RELATIONSHIP,
+from common import (AOU_DEATH, CDR_SCOPES, DEATH, FACT_RELATIONSHIP,
                     MEASUREMENT_DOMAIN_CONCEPT_ID,
                     OBSERVATION_DOMAIN_CONCEPT_ID, PERSON, RDR_ID_CONSTANT,
                     SURVEY_CONDUCT, VISIT_DETAIL)
@@ -84,15 +84,13 @@ def assert_ehr_and_rdr_tables(client: BigQueryClient,
 
     :return: None
     """
-    # TODO this check needs some tweak
     assert_tables_in(client, unioned_ehr_dataset_id)
     assert_tables_in(client, rdr_dataset_id)
 
 
 def create_cdm_tables(client: BigQueryClient, combined_backup: str):
     """
-    Create all CDM tables
-    NOTE ALL_DEATH is also created here though it is not technically a CDM table.
+    Create all CDM tables. NOTE AOU_DEATH is not included.
 
     :param client: BigQueryClient
     :param combined_backup: Combined backup dataset name
@@ -100,7 +98,7 @@ def create_cdm_tables(client: BigQueryClient, combined_backup: str):
 
     Note: Recreates any existing tables
     """
-    for table in CDM_TABLES + [ALL_DEATH]:
+    for table in CDM_TABLES:
         LOGGER.info(f'Creating table {combined_backup}.{table}...')
         schema_list = client.get_table_schema(table_name=table)
         dest_table = f'{client.project}.{combined_backup}.{table}'
@@ -166,34 +164,6 @@ def ehr_consent(client: BigQueryClient, rdr_dataset_id: str,
           dst_dataset_id=combined_sandbox,
           dst_table_id=combine_consts.EHR_CONSENT_TABLE_ID,
           write_disposition=WRITE_APPEND)
-
-
-def copy_ehr_table(client: BigQueryClient, table: str, unioned_ehr_dataset: str,
-                   combined_backup: str, combined_sandbox: str):
-    """
-    Copy table from EHR (consenting participants only) to the combined backup dataset without regenerating ids.
-
-    :param client: a BigQueryClient
-    :param table: a table to copy from unioned ehr dataset to combined backup dataset
-    :param unioned_ehr_dataset: unioned ehr dataset name
-    :param combined_backup: combined backup dataset name
-    :param combined_sandbox: combined sandbox dataset name
-
-    :return: None
-    """
-    fields = fields_for(table)
-    field_names = [field['name'] for field in fields]
-    if 'person_id' not in field_names:
-        raise RuntimeError(
-            f'Cannot copy EHR table {table}. It is missing columns needed for consent filter'
-        )
-    q = combine_consts.COPY_EHR_QUERY.render(
-        ehr_dataset_id=unioned_ehr_dataset,
-        table=table,
-        ehr_consent_table_id=combine_consts.EHR_CONSENT_TABLE_ID,
-        combined_sandbox_dataset_id=combined_sandbox)
-    LOGGER.info(f'Query for {combined_backup}.{table} is `{q}`')
-    query(client, q, combined_backup, table, WRITE_APPEND)
 
 
 def mapping_query(domain_table: str, rdr_dataset: str, unioned_ehr_dataset: str,
@@ -402,6 +372,30 @@ def load_mapped_person(client: BigQueryClient, combined_backup: str):
     query(client, q, combined_backup, PERSON, write_disposition=WRITE_TRUNCATE)
 
 
+def create_load_aou_death(bq_client, project_id, combined_dataset, rdr_dataset,
+                          unioned_ehr_dataset) -> None:
+    """Create and load AOU_DEATH table.
+    :param project_id: project containing the datasets
+    TODO Add comments
+    """
+    query = combine_consts.LOAD_AOU_DEATH.render(
+        project=project_id,
+        combined_dataset=combined_dataset,
+        rdr_dataset=rdr_dataset,
+        unioned_ehr_dataset=unioned_ehr_dataset,
+        aou_death=AOU_DEATH,
+        death=DEATH)
+    job = bq_client.query(query)
+    _ = job.result()
+
+    query = combine_consts.UPDATE_PRIMARY_DEATH.render(
+        project=project_id,
+        combined_dataset=combined_dataset,
+        aou_death=AOU_DEATH)
+    job = bq_client.query(query)
+    _ = job.result()
+
+
 def parse_combined_args(raw_args=None):
     parser = ArgumentParser(
         description='Arguments pertaining to an combined dataset generation')
@@ -497,13 +491,6 @@ def main(raw_args=None):
         client.copy_table(f'{client.project}.{args.rdr_dataset}.{table}',
                           f'{client.project}.{combined_backup}.{table}')
 
-    LOGGER.info(
-        f'Translating {combine_consts.EHR_TABLES_TO_COPY} table from EHR...')
-    for table in combine_consts.EHR_TABLES_TO_COPY:
-        LOGGER.info(f'Copying {table} table from EHR...')
-        copy_ehr_table(client, table, args.unioned_ehr_dataset, combined_backup,
-                       combined_sandbox)
-
     LOGGER.info('Generating combined mapping tables ...')
     for domain_table in combine_consts.DOMAIN_TABLES + [SURVEY_CONDUCT]:
         LOGGER.info(f'Mapping {domain_table}...')
@@ -523,8 +510,12 @@ def main(raw_args=None):
     LOGGER.info('Loading foreign key Mapped Person table...')
     load_mapped_person(client, combined_backup)
 
-    LOGGER.info(f'Adding _cdr_metadata table to {combined_backup}')
+    logging.info(f'Creating and loading {AOU_DEATH}...')
+    create_load_aou_death(client, args.project_id, combined_backup,
+                          args.rdr_dataset, args.unioned_ehr_dataset)
+    logging.info(f'Completed {AOU_DEATH} load.')
 
+    LOGGER.info(f'Adding _cdr_metadata table to {combined_backup}')
     add_cdr_metadata.main([
         '--component', add_cdr_metadata.CREATE, '--project_id', client.project,
         '--target_dataset', combined_backup

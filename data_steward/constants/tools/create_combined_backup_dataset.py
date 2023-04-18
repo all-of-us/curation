@@ -1,5 +1,5 @@
 import cdm
-from common import (JINJA_ENV, PERSON, SURVEY_CONDUCT)
+from common import (DEATH, JINJA_ENV, PERSON, SURVEY_CONDUCT)
 
 SOURCE_VALUE_EHR_CONSENT = 'EHRConsentPII_ConsentPermission'
 CONCEPT_ID_CONSENT_PERMISSION_YES = 1586100  # ConsentPermission_Yes
@@ -11,10 +11,9 @@ FOREIGN_KEYS_FIELDS = [
     'visit_detail_id'
 ]
 RDR_TABLES_TO_COPY = [PERSON, SURVEY_CONDUCT]
-EHR_TABLES_TO_COPY = ['death']  # TODO what do we do for this one?
 DOMAIN_TABLES = list(
-    set(cdm.tables_to_map()) - set(RDR_TABLES_TO_COPY + EHR_TABLES_TO_COPY))
-TABLES_TO_PROCESS = RDR_TABLES_TO_COPY + EHR_TABLES_TO_COPY + DOMAIN_TABLES
+    set(cdm.tables_to_map()) - set(RDR_TABLES_TO_COPY) - set([DEATH]))
+TABLES_TO_PROCESS = RDR_TABLES_TO_COPY + DOMAIN_TABLES
 LEFT_JOIN = JINJA_ENV.from_string("""
 LEFT JOIN
   (
@@ -84,13 +83,6 @@ AND value_source_concept_id = {{concept_id_consent_permission_yes}}
 
 COPY_RDR_QUERY = JINJA_ENV.from_string(
     """SELECT * FROM `{{rdr_dataset_id}}.{{table}}`""")
-
-COPY_EHR_QUERY = JINJA_ENV.from_string("""
-SELECT * FROM `{{ehr_dataset_id}}.{{table}}` AS t
-WHERE EXISTS
-   (SELECT 1 FROM `{{combined_sandbox_dataset_id}}.{{ehr_consent_table_id}}` AS c
-    WHERE t.person_id = c.person_id)
-""")
 
 MAPPING_QUERY = JINJA_ENV.from_string("""
 SELECT DISTINCT
@@ -212,4 +204,52 @@ FROM (
  SELECT * from `{{ehr_dataset}}.fact_relationship`)
 WHERE fact_id_1 IS NOT NULL
 AND fact_id_2 IS NOT NULL
+""")
+
+LOAD_AOU_DEATH = JINJA_ENV.from_string("""
+CREATE TABLE `{{project}}.{{combined_dataset}}.{{aou_death}}`
+AS
+SELECT
+    aou_death_id,
+    person_id,
+    death_date,
+    death_datetime,
+    death_type_concept_id,
+    cause_concept_id,
+    cause_source_value,
+    cause_source_concept_id,
+    src_id,
+    FALSE AS primary_death_record -- this value is re-calculated at UPDATE_PRIMARY_DEATH --
+FROM `{{project}}.{{unioned_ehr_dataset}}.{{aou_death}}`
+UNION ALL
+SELECT
+    GENERATE_UUID() AS aou_death_id, -- NOTE this is STR, not INT --
+    person_id,
+    death_date,
+    death_datetime,
+    death_type_concept_id,
+    cause_concept_id,
+    cause_source_value,
+    cause_source_concept_id,
+    'rdr' AS src_id, -- TODO update this logic once we know how we receive data --
+    FALSE AS primary_death_record -- this value is re-calculated at UPDATE_PRIMARY_DEATH --
+FROM `{{project}}.{{rdr_dataset}}.{{death}}`
+""")
+
+# TODO The condition src_id != 'rdr' needs to be re-visited once we know how we receive CE data.
+UPDATE_PRIMARY_DEATH = JINJA_ENV.from_string("""
+UPDATE `{{project}}.{{combined_dataset}}.{{aou_death}}`
+SET primary_death_record = TRUE
+WHERE aou_death_id IN (
+    SELECT aou_death_id FROM `{{project}}.{{combined_dataset}}.{{aou_death}}`
+    QUALIFY RANK() OVER (
+        PARTITION BY person_id 
+        ORDER BY
+            -- update logic here for RDR vs EHR --
+            src_id != 'rdr' DESC, -- EHR records are chosen over RDR ones --
+            death_date ASC, -- Earliest death_date records are chosen over later ones --
+            death_datetime ASC NULLS LAST, -- Earliest non-NULL death_datetime records are chosen over later or NULL ones --
+            src_id ASC -- EHR site that alphabetically comes first is chosen --
+    ) = 1   
+)
 """)
