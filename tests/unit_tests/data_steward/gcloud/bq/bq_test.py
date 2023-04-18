@@ -11,8 +11,8 @@ from unittest.mock import ANY
 from google.cloud import bigquery
 from google.cloud.bigquery import TableReference, DatasetReference
 from google.cloud.bigquery.table import TableListItem
-from google.cloud.exceptions import NotFound
-from mock import patch, MagicMock, Mock, call
+from google.cloud.exceptions import NotFound, Conflict
+from mock import patch, MagicMock, Mock, call, PropertyMock
 
 # Project imports
 from gcloud.bq import BigQueryClient
@@ -435,3 +435,48 @@ class BQCTest(TestCase):
         self.assertEqual(result, False)
         mock_environ_get.assert_called_once()
         mock_get_table.assert_called_with(table_name)
+
+    @patch.object(BigQueryClient, 'wait_on_jobs')
+    @patch.object(BigQueryClient, 'query')
+    @patch.object(BigQueryClient, 'update_dataset')
+    @patch.object(BigQueryClient, 'create_dataset')
+    @patch.object(BigQueryClient, 'list_tables')
+    @patch.object(BigQueryClient, 'get_dataset')
+    def test_restore_from_time(self, mock_get_dataset, mock_list_tables,
+                               mock_create_dataset, mock_update_dataset,
+                               mock_query, mock_wait_on_jobs):
+
+        # Mock Table
+        mock_table = MagicMock()
+        mock_list_tables.return_value = [mock_table]
+
+        # Mock Datasets
+        mock_labels = PropertyMock(return_value={'key_foo': 'value_foo'})
+
+        mock_created_dataset = MagicMock()
+        type(mock_created_dataset).labels = mock_labels
+        mock_create_dataset.return_value = mock_created_dataset
+
+        mock_original_dataset = MagicMock()
+        mock_get_dataset.return_value = mock_original_dataset
+
+        # TEST
+        self.client.restore_from_time([self.dataset_id], 1)
+
+        # Post test
+        self.assertIn('temp', mock_created_dataset.labels)
+        mock_get_dataset.assert_called_once_with(self.dataset_id)
+        mock_list_tables.assert_called_once_with(mock_original_dataset)
+        mock_create_dataset.assert_called_once_with(
+            f'{mock_original_dataset.dataset_id}_restore')
+        mock_update_dataset.assert_called_once_with(mock_created_dataset,
+                                                    ['labels'])
+
+        # Dataset already exists
+        mock_create_dataset.side_effect = Conflict('conflict_message_foo')
+        with self.assertRaises(RuntimeError):
+            self.client.restore_from_time([self.dataset_id], 1)
+
+        # Too far back in time
+        with self.assertRaises(ValueError):
+            self.client.restore_from_time([self.dataset_id], 7)
