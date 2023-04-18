@@ -13,7 +13,7 @@ import os
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.deid.recent_concept_suppression import RecentConceptSuppression
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
-from common import JINJA_ENV, OBSERVATION, DRUG_EXPOSURE, CONCEPT, CONCEPT_RELATIONSHIP, CONCEPT_ANCESTOR
+from common import OBSERVATION, DRUG_EXPOSURE, CONCEPT
 
 # Third party imports
 from dateutil.parser import parse
@@ -50,19 +50,15 @@ class RecentConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
         cls.rule_instance = RecentConceptSuppression(project_id, dataset_id,
                                                      sandbox_id)
 
-        cls.vocab_tables = [CONCEPT]
-
         cls.fq_table_names = [
             f'{project_id}.{dataset_id}.{CONCEPT}',
             f'{project_id}.{dataset_id}.{OBSERVATION}',
             f'{project_id}.{dataset_id}.{DRUG_EXPOSURE}',
         ]
 
-        cls.fq_sandbox_table_names.extend([
-            f'{cls.project_id}.{cls.sandbox_id}.{cls.rule_instance.sandbox_table_for(OBSERVATION)}',
-            f'{cls.project_id}.{cls.sandbox_id}.{cls.rule_instance.sandbox_table_for(DRUG_EXPOSURE)}',
-            f'{cls.project_id}.{cls.sandbox_id}.{cls.rule_instance.concept_suppression_lookup_table}'
-        ])
+        for table in cls.rule_instance.get_sandbox_tablenames():
+            cls.fq_sandbox_table_names.append(
+                f'{cls.project_id}.{cls.sandbox_id}.{table}')
 
         # call super to set up the client, create datasets, and create
         # empty test tables
@@ -92,7 +88,7 @@ class RecentConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
         statements and the tables_and_counts variable.
         """
 
-        INSERT_CONCEPTS_QUERY = JINJA_ENV.from_string("""
+        INSERT_CONCEPTS_QUERY = self.jinja_env.from_string("""
             INSERT INTO `{{fq_dataset_name}}.concept`
                 (concept_id, concept_name, domain_id, vocabulary_id, concept_class_id, concept_code, valid_start_date, valid_end_date)
             VALUES
@@ -115,7 +111,7 @@ class RecentConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
                     recent_date=self.recent_date_str,
                     old_date=self.old_date_str)
 
-        INSERT_OBSERVATIONS_QUERY = JINJA_ENV.from_string("""
+        INSERT_OBSERVATIONS_QUERY = self.jinja_env.from_string("""
             INSERT INTO `{{fq_dataset_name}}.observation`
                 (observation_id, person_id, observation_concept_id, observation_source_concept_id, observation_date,
                 observation_type_concept_id)
@@ -142,7 +138,7 @@ class RecentConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
                     recent_date=self.recent_date_str,
                     old_date=self.old_date_str)
 
-        INSERT_DRUG_EXPOSURES_QUERY = JINJA_ENV.from_string("""
+        INSERT_DRUG_EXPOSURES_QUERY = self.jinja_env.from_string("""
             INSERT INTO `{{fq_dataset_name}}.drug_exposure`
                 (drug_exposure_id, person_id, drug_concept_id, drug_source_concept_id, drug_exposure_start_date, drug_exposure_start_datetime, drug_type_concept_id)
             VALUES

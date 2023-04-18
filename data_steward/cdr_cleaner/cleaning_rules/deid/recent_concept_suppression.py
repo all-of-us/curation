@@ -12,7 +12,7 @@ from datetime import datetime
 from cdr_cleaner.cleaning_rules.deid.concept_suppression import AbstractBqLookupTableConceptSuppression
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from common import JINJA_ENV, CDM_TABLES, DEFAULT_CONCEPT_VALID_START_DATE
-from utils.bq import validate_bq_date_string, list_tables
+from utils.bq import validate_bq_date_string
 from utils import pipeline_logging
 from resources import get_concept_id_fields, get_primary_key, get_primary_date_field
 from gcloud.bq import BigQueryClient
@@ -210,6 +210,11 @@ class RecentConceptSuppression(AbstractBqLookupTableConceptSuppression):
 
         """
         raise NotImplementedError("Please fix me.")
+
+    def get_sandbox_tablenames(self):
+        return super().get_sandbox_tablenames() + [
+            SUPPRESSION_RULE_CONCEPT_TABLE, CONCEPT_FIRST_USE_TABLE
+        ]
 
 
 if __name__ == '__main__':

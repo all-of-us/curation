@@ -526,10 +526,8 @@ def get_primary_date_field(table_name: str) -> List[str]:
     :param table_name:
     :return: field_name
     """
-    if len(get_date_fields(table_name)) > 0:
-        return PRIMARY_DATE_FIELDS.get(table_name)
-
-    return None
+    return PRIMARY_DATE_FIELDS.get(table_name) if len(
+        get_date_fields(table_name)) > 0 else None
 
 
 def has_domain_table_id(table_name: str) -> str:
@@ -607,10 +605,7 @@ def get_primary_key(table: str) -> List[str]:
     :param table: name of a CDM table
     :return: Primary key if the CDM table contains a primary key field, None otherwise
     """
-    if has_primary_key(table):
-        return f'{table}_id'
-
-    return None
+    return f'{table}_id' if has_primary_key(table) else None
 
 
 def get_git_tag():
