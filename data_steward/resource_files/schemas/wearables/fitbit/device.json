@@ -1,0 +1,44 @@
+[
+  {
+    "type": "integer",
+    "name": "person_id",
+    "mode": "nullable",
+    "description": ""
+  }, {
+    "type": "string",
+    "name": "device_id",
+    "mode": "nullable",
+    "description": ""
+  }, {
+    "type": "date",
+    "name": "date",
+    "mode": "nullable",
+    "description": ""
+  }, {
+    "type": "string",
+    "name": "battery",
+    "mode": "nullable",
+    "description": ""
+  }, {
+    "type": "integer",
+    "name": "battery_level",
+    "mode": "nullable",
+    "description": ""
+  }, {
+    "type": "string",
+    "name": "device_version",
+    "mode": "nullable",
+    "description": ""
+  }, {
+    "type": "string",
+    "name": "device_type",
+    "mode": "nullable",
+    "description": ""
+  },
+  {
+    "type": "datetime",
+    "name": "last_sync_time",
+    "mode": "nullable",
+    "description": ""
+  }
+]
