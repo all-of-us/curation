@@ -11,7 +11,7 @@ import os
 
 # Project imports
 from app_identity import PROJECT_ID
-from cdr_cleaner.cleaning_rules.recent_concept_suppression import RecentConceptSuppression
+from cdr_cleaner.cleaning_rules.deid.recent_concept_suppression import RecentConceptSuppression
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 from common import JINJA_ENV, OBSERVATION, DRUG_EXPOSURE, CONCEPT, CONCEPT_RELATIONSHIP, CONCEPT_ANCESTOR
 
