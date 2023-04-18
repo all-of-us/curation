@@ -650,7 +650,7 @@ class EhrUnionTest(unittest.TestCase):
         drop_hpo_id_bucket_name_table(cls.bq_client, cls.dataset_id)
 
 
-class EhrUnionAllDeath(BaseTest.BigQueryTestBase):
+class EhrUnionAllDeathTest(BaseTest.BigQueryTestBase):
 
     @classmethod
     def setUpClass(cls):
