@@ -3,7 +3,7 @@ Interact with Google Cloud BigQuery
 """
 # Python stl imports
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 import typing
 import logging
 from time import sleep
@@ -12,10 +12,10 @@ from time import sleep
 from google.api_core import retry
 from google.cloud import bigquery
 from google.cloud.bigquery import Client
-from google.cloud.bigquery.job import CopyJobConfig, WriteDisposition
+from google.cloud.bigquery.job import CopyJobConfig, WriteDisposition, QueryJobConfig
 
 from google.auth import default
-from google.api_core.exceptions import GoogleAPIError, BadRequest
+from google.api_core.exceptions import GoogleAPIError, BadRequest, Conflict
 from google.cloud.exceptions import NotFound
 from opentelemetry import trace
 from opentelemetry.exporter.cloud_trace import CloudTraceSpanExporter
@@ -580,3 +580,67 @@ class BigQueryClient(Client):
             sleep(backoff)
             backoff *= 2
         return incomplete_jobs
+
+    def restore_from_time(self,
+                          datasets: typing.List[str],
+                          days_ago: int,
+                          job_config: QueryJobConfig = None) -> typing.List:
+        """
+        restore a list of datasets from a specific point in time.
+        tables within each dataset are restored.
+
+        :param datasets: the dataset list
+        :param days_ago: The table's contents so many days ago
+        :param job_config: An optional config
+        :return: the time of creation
+        """
+        #* Create, evaluate, and template time information
+        if days_ago > 6:
+            raise ValueError(
+                f'`days_ago` is too far in the past: {days_ago} > 6')
+
+        time_travel_q = JINJA_ENV.from_string("""
+            CREATE TABLE `{{project_id}}.{{dataset_id}}_restore.{{table_id}}_restore`
+            CLONE `{{project_id}}.{{dataset_id}}.{{table_id}}`
+                FOR SYSTEM_TIME AS OF
+                TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {{days_ago}} DAYS)
+        """)
+
+        #* Labels and Job information
+        job_config = job_config if job_config else QueryJobConfig()
+        job_config.labels.update({'temp': ''})
+
+        for dset in datasets:
+            # for each dataset, get a list of tables and create the recovery dataset
+            # org -> original, rest -> restore
+            orginal_dataset = self.get_dataset(dset)
+            orginal_tables = list(self.list_tables(orginal_dataset))
+
+            try:
+                restored_dataset = self.create_dataset(
+                    f'{orginal_dataset.dataset_id}_restore')
+            except Conflict:
+                raise RuntimeError((
+                    f'The dataset {orginal_dataset.dataset_id}_restore already exists.  '
+                    f'Delete the dataset first to prevent an accidental overwrite.'
+                ))
+            # add the label to include 'temp'
+            restored_dataset.labels.update({'temp': ''})
+            self.update_dataset(restored_dataset, ['labels'])
+
+            # Generate a list of queries for each table from a template
+            queries = []
+            job_list = []
+            for table in orginal_tables:
+                queries.append(
+                    time_travel_q.render(project_id=self.project,
+                                         dataset_id=restored_dataset.dataset_id,
+                                         table_id=table.table_id,
+                                         days_ago=days_ago))
+
+            # Execute each query
+            for query in queries:
+                job = self.query(query, job_config=job_config)
+                job_list.append(job.job_id)
+            self.wait_on_jobs(job_list)
+        return job_list
