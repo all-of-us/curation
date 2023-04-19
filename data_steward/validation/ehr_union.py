@@ -888,7 +888,6 @@ def create_load_aou_death(bq_client, project_id, input_dataset_id,
     :param input_dataset_id identifies a dataset containing multiple CDMs, one for each HPO submission
     :param output_dataset_id identifies the dataset to store the new CDM in
     :param hpo_ids: identifies which HPOs to include in AOU_DEATH creation
-    :param ehr_cutoff_date: (optional) cutoff date for ehr data(same as CDR cutoff date)
     """
     query = LOAD_AOU_DEATH.render(project=project_id,
                                   input_dataset=input_dataset_id,
