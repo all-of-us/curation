@@ -5,13 +5,10 @@ Original Issue: DC-392
 # Python imports
 import os
 
-# Third party imports
-from google.cloud import bigquery
-
 # Project Imports
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.clean_by_birth_year import (CleanByBirthYear)
-from common import JINJA_ENV, AOU_REQUIRED, OBSERVATION, PERSON
+from common import AOU_DEATH, CATI_TABLES, JINJA_ENV, OBSERVATION, PERSON
 from resources import get_person_id_tables
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import (
     BaseTest)
@@ -92,7 +89,7 @@ class CleanByBirthYearTest(BaseTest.CleaningRulesTestBase):
 
     def test_setup_rule(self):
 
-        has_person_id = get_person_id_tables(AOU_REQUIRED)
+        has_person_id = get_person_id_tables(CATI_TABLES + [AOU_DEATH])
         self.assertEqual(set(has_person_id),
                          set(self.rule_instance.affected_tables))
 
