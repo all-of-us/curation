@@ -97,7 +97,8 @@ class CleanByBirthYear(BaseCleaningRule):
         NOTE This CR runs on both RDR and UNIONED_EHR. RDR does not have
         AOU_DEATH, and UNIONED_EHR does not have SURVEY_CONDUCT. That is why
         the default affected_tables is AOU_REQUIRED. This setup_rule() will
-        add any tables with person_id that are missing in AOU_REQUIRED.        
+        add any tables with person_id that are missing in AOU_REQUIRED to
+        affected_tables.
         """
         columns_query = LIST_PERSON_ID_TABLES.render(project_id=self.project_id,
                                                      dataset_id=self.dataset_id)
