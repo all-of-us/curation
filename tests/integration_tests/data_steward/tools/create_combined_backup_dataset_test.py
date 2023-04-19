@@ -320,6 +320,7 @@ class CreateCombinedBackupDatasetAllDeathTest(BaseTest.BigQueryTestBase):
 
         cls.project_id = os.environ.get(PROJECT_ID)
         cls.dataset_id = os.environ.get('COMBINED_DATASET_ID')
+        cls.sandbox_id = os.environ.get('BIGQUERY_DATASET_ID')
         cls.rdr_id = os.environ.get('RDR_DATASET_ID')
         cls.unioned_id = os.environ.get('UNIONED_EHR_DATASET_ID')
 
@@ -327,6 +328,7 @@ class CreateCombinedBackupDatasetAllDeathTest(BaseTest.BigQueryTestBase):
             f'{cls.project_id}.{cls.dataset_id}.{AOU_DEATH}',
             f'{cls.project_id}.{cls.rdr_id}.{DEATH}',
             f'{cls.project_id}.{cls.unioned_id}.{AOU_DEATH}',
+            f'{cls.project_id}.{cls.sandbox_id}.{EHR_CONSENT_TABLE_ID}'
         ]
 
         super().setUpClass()
@@ -334,14 +336,14 @@ class CreateCombinedBackupDatasetAllDeathTest(BaseTest.BigQueryTestBase):
     def setUp(self):
 
         create_rdr_death = self.jinja_env.from_string("""
-            CREATE TABLE `{{project_id}}.{{rdr_id}}.{{death}}`
+            CREATE OR REPLACE TABLE `{{project_id}}.{{rdr_id}}.{{death}}`
             (person_id INT NOT NULL, death_date DATE NOT NULL, death_datetime TIMESTAMP,
              death_type_concept_id INT NOT NULL, cause_concept_id INT, 
              cause_source_value STRING, cause_source_concept_id INT)
         """).render(project_id=self.project_id, rdr_id=self.rdr_id, death=DEATH)
 
         create_unioned_ehr_aou_death = self.jinja_env.from_string("""
-            CREATE TABLE `{{project_id}}.{{unioned_id}}.{{aou_death}}`
+            CREATE OR REPLACE TABLE `{{project_id}}.{{unioned_id}}.{{aou_death}}`
             (aou_death_id STRING NOT NULL, person_id INT NOT NULL, 
              death_date DATE NOT NULL, death_datetime TIMESTAMP,
              death_type_concept_id INT NOT NULL, cause_concept_id INT, 
@@ -358,31 +360,44 @@ class CreateCombinedBackupDatasetAllDeathTest(BaseTest.BigQueryTestBase):
             (2, '2020-01-01', '2020-01-01 00:00:00', 0, NULL, NULL, NULL),
             (3, '2020-01-01', NULL, 0, NULL, NULL, NULL),
             (4, '2020-01-01', '2020-01-01 00:00:00', 0, NULL, NULL, NULL),
-            (5, '2020-01-01', '2020-01-01 12:00:00', 0, NULL, NULL, NULL)
+            (5, '2020-01-01', '2020-01-01 12:00:00', 0, NULL, NULL, NULL),
+            (6, '2020-01-01', NULL, 0, NULL, NULL, NULL)
         """).render(project_id=self.project_id, rdr_id=self.rdr_id, death=DEATH)
 
         insert_ehr = self.jinja_env.from_string("""
             INSERT INTO `{{project_id}}.{{unioned_id}}.{{aou_death}}`
             VALUES
             ('5597-4a2', 2, '2020-01-01', '2020-01-01 00:00:00', 0, NULL, NULL, NULL, 'hpo a', False),
-            ('0-ac18-4', 3, '2020-01-01', NULL, 0, NULL, NULL, NULL, 'hpo a', False),
-            ('4c2e69fa', 4, '2020-01-02', '2020-01-02 00:00:00', 0, NULL, NULL, NULL, 'hpo a', False),
-            ('eb9fe66b', 5, '2020-01-01', '2020-01-01 12:00:00', 0, NULL, NULL, NULL, 'hpo a', False),
             ('b2e8594f', 2, '2020-01-01', '2020-01-01 00:00:00', 0, NULL, NULL, NULL, 'hpo b', False),
-            ('a35510e4', 3, '2020-01-01', '2020-01-01 00:00:00', 0, NULL, NULL, NULL, 'hpo b', False),
-            ('28c-c4bc', 4, '2020-01-03', '2020-01-03 00:00:00', 0, NULL, NULL, NULL, 'hpo b', False),
-            ('rg4375-8', 5, '2020-01-01', '2020-01-01 06:00:00', 0, NULL, NULL, NULL, 'hpo b', False),
             ('af7bc10c', 2, '2020-01-01', '2020-01-01 00:00:00', 0, NULL, NULL, NULL, 'hpo c', False),
+            ('0-ac18-4', 3, '2020-01-01', NULL, 0, NULL, NULL, NULL, 'hpo a', False),
+            ('a35510e4', 3, '2020-01-01', '2020-01-01 00:00:00', 0, NULL, NULL, NULL, 'hpo b', False),
             ('7b9bf804', 3, '2020-01-01', NULL, 0, NULL, NULL, NULL, 'hpo c', False),
+            ('4c2e69fa', 4, '2020-01-02', '2020-01-02 00:00:00', 0, NULL, NULL, NULL, 'hpo a', False),
+            ('28c-c4bc', 4, '2020-01-03', '2020-01-03 00:00:00', 0, NULL, NULL, NULL, 'hpo b', False),
             ('49fe-984', 4, '2020-01-01', '2020-01-01 00:00:00', 0, NULL, NULL, NULL, 'hpo c', False),
-            ('3e8a-4-7', 5, '2020-01-01', '2020-01-01 00:00:00', 0, NULL, NULL, NULL, 'hpo c', False)
+            ('eb9fe66b', 5, '2020-01-01', '2020-01-01 12:00:00', 0, NULL, NULL, NULL, 'hpo a', False),
+            ('rg4375-8', 5, '2020-01-01', '2020-01-01 06:00:00', 0, NULL, NULL, NULL, 'hpo b', False),
+            ('3e8a-4-7', 5, '2020-01-01', '2020-01-01 00:00:00', 0, NULL, NULL, NULL, 'hpo c', False),
+            ('a309f2fb', 6, '2020-01-01', NULL, 0, NULL, NULL, NULL, 'hpo a', False),
+            ('3fd2e818', 6, '2020-01-01', NULL, 0, NULL, NULL, NULL, 'hpo b', False),
+            ('75db-410', 6, '2020-01-01', NULL, 0, NULL, NULL, NULL, 'hpo c', False)
         """).render(project_id=self.project_id,
                     unioned_id=self.unioned_id,
                     aou_death=AOU_DEATH)
 
+        create_ehr_consent = self.jinja_env.from_string(
+            """
+            CREATE OR REPLACE TABLE `{{project_id}}.{{combined_sandbox}}.{{ehr_consent}}`
+            AS
+            SELECT person_id FROM UNNEST([1, 2, 3, 4, 5]) AS person_id"""
+        ).render(project_id=self.project_id,
+                 combined_sandbox=self.sandbox_id,
+                 ehr_consent=EHR_CONSENT_TABLE_ID)
+
         queries = [
             create_rdr_death, create_unioned_ehr_aou_death, insert_rdr,
-            insert_ehr
+            insert_ehr, create_ehr_consent
         ]
 
         self.load_test_data(queries)
@@ -390,34 +405,35 @@ class CreateCombinedBackupDatasetAllDeathTest(BaseTest.BigQueryTestBase):
     def test_create_load_aou_death(self):
         """
         Test cases for AOU_DEATH data:
-        TODO Add comments
-        person_id = 1: Only one record from RDR.
-        person_id = 2: Exactly same records exist in FAKE and NYC. 'hpo a' alphabetically becomes primary.
-        person_id = 3: The only difference between FAKE and NYC is 'hpo b' has non-NULL death_datetime. NYC becomes primary.
-        person_id = 4: PITT's death_date is earlier than FAKE. 'hpo c' becomes primary.
-        person_id = 5: PITT's death_datetime is earlier than FAKE. PITT becomes primary.
+        person_id = 1: Only one record from RDR. RDR becomes primary.
+        person_id = 2: Exactly same records exists. 'hpo a' alphabetically becomes primary.
+        person_id = 3: The only difference between is 'hpo b' has non-NULL death_datetime. 'hpo b' becomes primary.
+        person_id = 4: 'hpo c''s death_date is earlier than the rest. 'hpo c' becomes primary.
+        person_id = 5: 'hpo c''s death_datetime is earlier than the rest. 'hpo c' becomes primary.
+        person_id = 6: Not EHR consented. Only RDR record comes in and becomes primary.
         """
         create_load_aou_death(self.client, self.project_id, self.dataset_id,
-                              self.rdr_id, self.unioned_id)
+                              self.sandbox_id, self.rdr_id, self.unioned_id)
 
         self.assertTableValuesMatch(
             f'{self.project_id}.{self.dataset_id}.{AOU_DEATH}',
             ['person_id', 'src_id', 'primary_death_record'], [
                 (1, 'rdr', True),
                 (2, 'rdr', False),
-                (3, 'rdr', False),
-                (4, 'rdr', False),
-                (5, 'rdr', False),
                 (2, 'hpo a', True),
-                (3, 'hpo a', False),
-                (4, 'hpo a', False),
-                (5, 'hpo a', False),
                 (2, 'hpo b', False),
-                (3, 'hpo b', True),
-                (4, 'hpo b', False),
-                (5, 'hpo b', False),
                 (2, 'hpo c', False),
+                (3, 'rdr', False),
+                (3, 'hpo a', False),
+                (3, 'hpo b', True),
                 (3, 'hpo c', False),
+                (4, 'rdr', False),
+                (4, 'hpo a', False),
+                (4, 'hpo b', False),
                 (4, 'hpo c', True),
+                (5, 'rdr', False),
+                (5, 'hpo a', False),
+                (5, 'hpo b', False),
                 (5, 'hpo c', True),
+                (6, 'rdr', True),
             ])

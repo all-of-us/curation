@@ -207,7 +207,7 @@ AND fact_id_2 IS NOT NULL
 """)
 
 LOAD_AOU_DEATH = JINJA_ENV.from_string("""
-CREATE TABLE `{{project}}.{{combined_dataset}}.{{aou_death}}`
+CREATE TABLE `{{project}}.{{combined_backup}}.{{aou_death}}`
 AS
 SELECT
     aou_death_id,
@@ -220,7 +220,10 @@ SELECT
     cause_source_concept_id,
     src_id,
     FALSE AS primary_death_record -- this value is re-calculated at UPDATE_PRIMARY_DEATH --
-FROM `{{project}}.{{unioned_ehr_dataset}}.{{aou_death}}`
+FROM `{{project}}.{{unioned_ehr_dataset}}.{{aou_death}}` ad
+WHERE EXISTS
+   (SELECT 1 FROM `{{project}}.{{combined_sandbox}}.{{ehr_consent}}` AS ec
+    WHERE ad.person_id = ec.person_id)
 UNION ALL
 SELECT
     GENERATE_UUID() AS aou_death_id, -- NOTE this is STR, not INT --
@@ -238,10 +241,10 @@ FROM `{{project}}.{{rdr_dataset}}.{{death}}`
 
 # TODO The condition src_id != 'rdr' needs to be re-visited once we know how we receive CE data.
 UPDATE_PRIMARY_DEATH = JINJA_ENV.from_string("""
-UPDATE `{{project}}.{{combined_dataset}}.{{aou_death}}`
+UPDATE `{{project}}.{{combined_backup}}.{{aou_death}}`
 SET primary_death_record = TRUE
 WHERE aou_death_id IN (
-    SELECT aou_death_id FROM `{{project}}.{{combined_dataset}}.{{aou_death}}`
+    SELECT aou_death_id FROM `{{project}}.{{combined_backup}}.{{aou_death}}`
     QUALIFY RANK() OVER (
         PARTITION BY person_id 
         ORDER BY

@@ -1,13 +1,11 @@
 """
-Combine data sets `ehr` and `rdr` to form another data set `combined_backup`
+Combine data sets `unioned_ehr` and `rdr` to form another data set `combined_backup`
 
  * Create all the CDM tables in `combined_backup`
 
  * Load `person_id` of those who have consented to share EHR data in `combined_sandbox.ehr_consent`
 
  * Copy all `rdr.person` records to `combined_backup.person`
-
- * Copy `ehr.death` records that link to `combined_sandbox.ehr_consent`
 
  * Load `combined_backup.visit_mapping(dst_visit_occurrence_id, src_dataset, src_visit_occurrence_id)`
    with UNION ALL of:
@@ -17,6 +15,10 @@ Combine data sets `ehr` and `rdr` to form another data set `combined_backup`
  * Load tables `combined_backup.{visit_occurrence, condition_occurrence, procedure_occurrence}` etc. from UNION ALL
    of `ehr` and `rdr` records that link to `combined_backup.person`. Use `combined_backup.visit_mapping.dest_visit_occurrence_id`
    for records that have a (valid) `visit_occurrence_id`.
+
+ * Load `combined_backup.aou_death` with UNION ALL of:
+     1) all `rdr.death`s and
+     2) `unioned_ehr.aou_death`s that link to `combined_sandbox.ehr_consent`
 
 ## Notes
 Assumptions made:
@@ -90,7 +92,8 @@ def assert_ehr_and_rdr_tables(client: BigQueryClient,
 
 def create_cdm_tables(client: BigQueryClient, combined_backup: str):
     """
-    Create all CDM tables. NOTE AOU_DEATH is not included.
+    Create all CDM tables
+    NOTE AOU_DEATH is not included.
 
     :param client: BigQueryClient
     :param combined_backup: Combined backup dataset name
@@ -372,27 +375,33 @@ def load_mapped_person(client: BigQueryClient, combined_backup: str):
     query(client, q, combined_backup, PERSON, write_disposition=WRITE_TRUNCATE)
 
 
-def create_load_aou_death(bq_client, project_id, combined_dataset, rdr_dataset,
-                          unioned_ehr_dataset) -> None:
+def create_load_aou_death(client, project_id, combined_backup, combined_sandbox,
+                          rdr_dataset, unioned_ehr_dataset) -> None:
     """Create and load AOU_DEATH table.
+    :param client: a BigQuery client object
     :param project_id: project containing the datasets
-    TODO Add comments
+    :param combined_backup: identifies combined dataset name
+    :param combined_sandbox: combined_sandbox dataset identifier
+    :param rdr_dataset: identifies RDR dataset name
+    :param unioned_ehr_dataset: identifies unioned ehr dataset name
     """
     query = combine_consts.LOAD_AOU_DEATH.render(
         project=project_id,
-        combined_dataset=combined_dataset,
+        combined_backup=combined_backup,
+        combined_sandbox=combined_sandbox,
         rdr_dataset=rdr_dataset,
         unioned_ehr_dataset=unioned_ehr_dataset,
         aou_death=AOU_DEATH,
-        death=DEATH)
-    job = bq_client.query(query)
+        death=DEATH,
+        ehr_consent=combine_consts.EHR_CONSENT_TABLE_ID)
+    job = client.query(query)
     _ = job.result()
 
     query = combine_consts.UPDATE_PRIMARY_DEATH.render(
         project=project_id,
-        combined_dataset=combined_dataset,
+        combined_backup=combined_backup,
         aou_death=AOU_DEATH)
-    job = bq_client.query(query)
+    job = client.query(query)
     _ = job.result()
 
 
@@ -512,7 +521,8 @@ def main(raw_args=None):
 
     logging.info(f'Creating and loading {AOU_DEATH}...')
     create_load_aou_death(client, args.project_id, combined_backup,
-                          args.rdr_dataset, args.unioned_ehr_dataset)
+                          combined_sandbox, args.rdr_dataset,
+                          args.unioned_ehr_dataset)
     logging.info(f'Completed {AOU_DEATH} load.')
 
     LOGGER.info(f'Adding _cdr_metadata table to {combined_backup}')
