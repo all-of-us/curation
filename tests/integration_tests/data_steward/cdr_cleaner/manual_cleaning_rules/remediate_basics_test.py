@@ -349,7 +349,7 @@ class RemediateBasicsTest(BaseTest.CleaningRulesTestBase):
                         pers_ext=PERS_EXT)
 
         create_exclusion_table = self.jinja_env.from_string("""
-        CREATE TABLE `{{fq_exclusion_table}}` (person_id INT64, research_id INT64)
+        CREATE OR REPLACE TABLE `{{fq_exclusion_table}}` (person_id INT64, research_id INT64)
         """).render(fq_exclusion_table=self.fq_exclusion_table)
 
         insert_exclusion_table = self.jinja_env.from_string("""
