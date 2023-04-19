@@ -9,7 +9,7 @@ import logging
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 import resources
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
-from common import AOU_DEATH, CATI_TABLES, JINJA_ENV, PERSON
+from common import JINJA_ENV, PERSON, AOU_REQUIRED
 
 LOGGER = logging.getLogger(__name__)
 
@@ -70,8 +70,7 @@ class CleanByBirthYear(BaseCleaningRule):
             'indicates he/she was born before 1800, in the last 17 years, or in '
             'the future.')
 
-        person_id_tables = resources.get_person_id_tables(CATI_TABLES +
-                                                          [AOU_DEATH])
+        person_id_tables = resources.get_person_id_tables(AOU_REQUIRED)
 
         super().__init__(issue_numbers=ISSUE_NUMBERS,
                          description=desc,
@@ -92,8 +91,13 @@ class CleanByBirthYear(BaseCleaningRule):
         For thoroughness, this will query to get the table names
         of all tables in the dataset containing a person_id.  This
         will then be used to create the queries.  If setup_rule is not run,
-        then the list will default to the set of (1) AoU Required tables with a
-        person_id column, (2) survey_conduct, and (3) aou_death.
+        then the list will default to the set of AoU Required tables with a
+        person_id column.
+        
+        NOTE This CR runs on both RDR and UNIONED_EHR. RDR does not have
+        AOU_DEATH, and UNIONED_EHR does not have SURVEY_CONDUCT. That is why
+        the default affected_tables is AOU_REQUIRED. This setup_rule() will
+        add any tables with person_id that are missing in AOU_REQUIRED.        
         """
         columns_query = LIST_PERSON_ID_TABLES.render(project_id=self.project_id,
                                                      dataset_id=self.dataset_id)
