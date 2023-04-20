@@ -677,7 +677,7 @@ class EhrUnionAllDeathTest(BaseTest.BigQueryTestBase):
     def setUp(self):
 
         create_death_tmpl = self.jinja_env.from_string("""
-            CREATE TABLE `{{project_id}}.{{dataset_id}}.{{hpo}}_{{death}}`
+            CREATE OR REPLACE TABLE `{{project_id}}.{{dataset_id}}.{{hpo}}_{{death}}`
             (person_id INT NOT NULL, death_date DATE NOT NULL, death_datetime TIMESTAMP,
              death_type_concept_id INT NOT NULL, cause_concept_id INT, 
              cause_source_value STRING, cause_source_concept_id INT)
