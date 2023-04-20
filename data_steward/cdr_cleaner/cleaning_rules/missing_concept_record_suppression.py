@@ -68,9 +68,8 @@ class MissingConceptRecordSuppression(AbstractBqLookupTableConceptSuppression):
         queries = []
         union_distinct = "\nUNION DISTINCT\n"
         for table in tables:
-            concept_id_fields = get_concept_id_fields(table)
             concept_id_fields = [
-                field for field in concept_id_fields
+                field for field in get_concept_id_fields(table)
                 if 'source_concept_id' not in field
             ]
             for concept_id_field in concept_id_fields:
