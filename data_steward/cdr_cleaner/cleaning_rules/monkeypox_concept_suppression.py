@@ -15,7 +15,7 @@ import logging
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.bq_utils import WRITE_EMPTY
 from constants.cdr_cleaner import clean_cdr as cdr_consts
-from common import CATI_TABLES, JINJA_ENV
+from common import AOU_DEATH, CATI_TABLES, JINJA_ENV
 from resources import get_concept_id_fields, get_date_fields, get_datetime_fields, MONKEYPOX_CONCEPTS_PATH
 from utils import pipeline_logging
 
@@ -102,7 +102,7 @@ class MonkeypoxConceptSuppression(BaseCleaningRule):
         super().__init__(issue_numbers=['DC2711'],
                          description=desc,
                          affected_datasets=[cdr_consts.REGISTERED_TIER_DEID],
-                         affected_tables=CATI_TABLES,
+                         affected_tables=CATI_TABLES + [AOU_DEATH],
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
