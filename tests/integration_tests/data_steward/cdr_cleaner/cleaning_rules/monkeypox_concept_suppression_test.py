@@ -9,11 +9,11 @@ import mock
 
 # Project imports
 from app_identity import PROJECT_ID
-from cdr_cleaner.cleaning_rules.monkeypox_concept_suppression import MonkeypoxConceptSuppression, LOGGER, SUPPRESSION_RULE_CONCEPT_TABLE
+from cdr_cleaner.cleaning_rules.monkeypox_concept_suppression import (
+    MonkeypoxConceptSuppression, LOGGER, SUPPRESSION_RULE_CONCEPT_TABLE)
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
-from common import CARE_SITE, DEATH, DEID_MAP, FACT_RELATIONSHIP, JINJA_ENV, OBSERVATION, SURVEY_CONDUCT
-
-# Third party imports
+from common import (AOU_DEATH, CARE_SITE, DEATH, DEID_MAP, FACT_RELATIONSHIP,
+                    JINJA_ENV, OBSERVATION, SURVEY_CONDUCT)
 
 
 class MonkeypoxConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
@@ -41,6 +41,7 @@ class MonkeypoxConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
         cls.fq_table_names = [
             f'{cls.project_id}.{cls.dataset_id}.{OBSERVATION}',
             f'{cls.project_id}.{cls.dataset_id}.{SURVEY_CONDUCT}',
+            f'{cls.project_id}.{cls.dataset_id}.{AOU_DEATH}',
             f'{cls.project_id}.{cls.dataset_id}.{DEATH}',
             f'{cls.project_id}.{cls.dataset_id}.{CARE_SITE}',
             f'{cls.project_id}.{cls.dataset_id}.{FACT_RELATIONSHIP}',
@@ -50,6 +51,7 @@ class MonkeypoxConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
         cls.fq_sandbox_table_names = [
             f'{cls.project_id}.{cls.sandbox_id}.{cls.rule_instance.sandbox_table_for(OBSERVATION)}',
             f'{cls.project_id}.{cls.sandbox_id}.{cls.rule_instance.sandbox_table_for(SURVEY_CONDUCT)}',
+            f'{cls.project_id}.{cls.sandbox_id}.{cls.rule_instance.sandbox_table_for(AOU_DEATH)}',
             f'{cls.project_id}.{cls.sandbox_id}.{cls.rule_instance.sandbox_table_for(DEATH)}',
             f'{cls.project_id}.{cls.sandbox_id}.{SUPPRESSION_RULE_CONCEPT_TABLE}',
         ]
@@ -61,7 +63,10 @@ class MonkeypoxConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
 
     @mock.patch(
         'cdr_cleaner.cleaning_rules.monkeypox_concept_suppression.MonkeypoxConceptSuppression.affected_tables',
-        [OBSERVATION, SURVEY_CONDUCT, DEATH, CARE_SITE, FACT_RELATIONSHIP])
+        [
+            OBSERVATION, SURVEY_CONDUCT, AOU_DEATH, DEATH, CARE_SITE,
+            FACT_RELATIONSHIP
+        ])
     def test_monkeypox_concept_suppression(self):
         """
         Tests that the specifications perform as designed.
@@ -79,6 +84,10 @@ class MonkeypoxConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
             23... Not suppress: A monkeypox record but the un-shifted date/datetime is after the suppression end date.
             24... Suppress: A monkeypox record and the un-shifted start datetime within the suppression period.
             25... Suppress: A monkeypox record and the un-shifted end datetime within the suppression period.
+
+        AOU_DEATH: This is an AOU custom table. Its primary key is "aou_death_id".
+            31... Not suppress: Not a monkeypox record.
+            32... Suppress: A monkeypox record and the un-shifted death date within the suppression period.
 
         DEATH: Unlike other tables, its primary key is "person_id", not "death_id".
             31... Not suppress: Not a monkeypox record.
@@ -128,6 +137,14 @@ class MonkeypoxConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
                 (25, 105, 443405, NULL, NULL, NULL, timestamp('2023-05-12 00:00:00'), 0, 0, 0, 0, 0, 0)
         """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
+        INSERT_AOU_DEATH_QUERY = JINJA_ENV.from_string("""
+            INSERT INTO `{{project_id}}.{{dataset_id}}.aou_death`
+                (aou_death_id, person_id, death_date, death_type_concept_id, cause_concept_id, src_id, primary_death_record)
+            VALUES
+                ('aaa', 101, date('2022-09-01'), 0, 0, 'foo', True),
+                ('bbb', 102, date('2022-09-01'), 0, 443405, 'bar', True)
+        """).render(project_id=self.project_id, dataset_id=self.dataset_id)
+
         INSERT_DEATH_QUERY = JINJA_ENV.from_string("""
             INSERT INTO `{{project_id}}.{{dataset_id}}.death`
                 (person_id, death_date, death_type_concept_id, cause_concept_id)
@@ -137,10 +154,9 @@ class MonkeypoxConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
         """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
         queries = [
-            INSERT_DEID_MAP_QUERY,
-            INSERT_OBSERVATIONS_QUERY,
-            INSERT_SURVEY_CONDUCT_QUERY,
-            INSERT_DEATH_QUERY,
+            INSERT_DEID_MAP_QUERY, INSERT_OBSERVATIONS_QUERY,
+            INSERT_SURVEY_CONDUCT_QUERY, INSERT_AOU_DEATH_QUERY,
+            INSERT_DEATH_QUERY
         ]
 
         self.load_test_data(queries)
@@ -165,9 +181,18 @@ class MonkeypoxConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
             'cleaned_values': [(21,), (22,), (23,)]
         }, {
             'fq_table_name':
-                '.'.join([self.project_id, self.dataset_id, DEATH]),
+                '.'.join([self.project_id, self.dataset_id, AOU_DEATH]),
             'fq_sandbox_table_name':
                 self.fq_sandbox_table_names[2],
+            'loaded_ids': ['aaa', 'bbb'],
+            'sandboxed_ids': ['bbb'],
+            'fields': ['aou_death_id'],
+            'cleaned_values': [('aaa',)]
+        }, {
+            'fq_table_name':
+                '.'.join([self.project_id, self.dataset_id, DEATH]),
+            'fq_sandbox_table_name':
+                self.fq_sandbox_table_names[3],
             'loaded_ids': [101, 102],
             'sandboxed_ids': [102],
             'fields': ['person_id'],
