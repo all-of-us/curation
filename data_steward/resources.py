@@ -14,7 +14,11 @@ from git import Repo, TagReference
 
 from common import (VOCABULARY, ACHILLES, PROCESSED_TXT, RESULTS_HTML,
                     FITBIT_TABLES, PID_RID_MAPPING, COPE_SURVEY_MAP,
-                    UNIONED_EHR, JINJA_ENV)
+                    UNIONED_EHR, CONDITION_OCCURRENCE, DEATH, DEVICE_EXPOSURE,
+                    DRUG_EXPOSURE, MEASUREMENT, NOTE, OBSERVATION,
+                    PROCEDURE_OCCURRENCE, SPECIMEN, VISIT_OCCURRENCE,
+                    VISIT_DETAIL, CONDITION_ERA, DRUG_ERA, DOSE_ERA,
+                    PAYER_PLAN_PERIOD, OBSERVATION_PERIOD, NOTE_NLP, JINJA_ENV)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -92,6 +96,27 @@ VALIDATION_CITY_CSV = os.path.join(resource_files_path, 'validation',
 # The source: https://pe.usps.com/text/pub28/28apb.htm
 VALIDATION_STATE_CSV = os.path.join(resource_files_path, 'validation',
                                     'participants', 'abbreviation_state.csv')
+
+# primary date fields
+PRIMARY_DATE_FIELDS = {
+    CONDITION_OCCURRENCE: 'condition_start_date',
+    DEATH: 'death_date',
+    DEVICE_EXPOSURE: 'device_exposure_start_date',
+    DRUG_EXPOSURE: 'drug_exposure_start_date',
+    MEASUREMENT: 'measurement_date',
+    NOTE: 'note_date',
+    OBSERVATION: 'observation_date',
+    PROCEDURE_OCCURRENCE: 'procedure_date',
+    SPECIMEN: 'specimen_date',
+    VISIT_OCCURRENCE: 'visit_start_date',
+    VISIT_DETAIL: 'visit_detail_start_date',
+    CONDITION_ERA: 'condition_era_start_date',
+    DRUG_ERA: 'drug_era_start_date',
+    DOSE_ERA: 'dose_era_start_date',
+    PAYER_PLAN_PERIOD: 'payer_plan_period_start_date',
+    OBSERVATION_PERIOD: 'observation_period_start_date',
+    NOTE_NLP: 'nlp_date',
+}
 
 FIELDS_TMPL = JINJA_ENV.from_string("""
     {{name}} {{col_type}} {{mode}} OPTIONS(description="{{desc}}")
@@ -498,16 +523,28 @@ def get_datetime_fields(table_name) -> List[str]:
     ]
 
 
-def has_domain_table_id(table_name):
+def get_primary_date_field(table_name: str) -> List[str]:
+    """
+    Get the primary date field in the table.
+
+    :param table_name:
+    :return: field_name
+    """
+    return PRIMARY_DATE_FIELDS.get(table_name) if len(
+        get_date_fields(table_name)) > 0 else None
+
+
+def has_domain_table_id(table_name: str) -> str:
     """
     Determines if a table has domain_table_id
 
     :param table_name: Name of a cdm domain table
     :return: True/False if domain_table_id is available is table schemas
     """
-    return f'{table_name}_id' in [
+    id_field = f'{table_name}_id'
+    return id_field if id_field in [
         field.get('name', '') for field in fields_for(table_name)
-    ]
+    ] else None
 
 
 def get_field_type(table_name, field_name):
@@ -563,6 +600,16 @@ def has_primary_key(table):
     id_field = table + '_id'
     return any(field for field in fields
                if field['type'] == 'integer' and field['name'] == id_field)
+
+
+def get_primary_key(table: str) -> List[str]:
+    """
+    Get primary key of the table if it exists
+
+    :param table: name of a CDM table
+    :return: Primary key if the CDM table contains a primary key field, None otherwise
+    """
+    return f'{table}_id' if has_primary_key(table) else None
 
 
 def get_git_tag():
