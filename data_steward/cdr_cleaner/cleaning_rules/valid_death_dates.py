@@ -12,28 +12,31 @@ date. A death date is considered "valid" if it is after the program start date a
 import logging
 
 # Project imports
-import common
+from common import AOU_DEATH, DEATH, JINJA_ENV
 from constants.bq_utils import WRITE_TRUNCATE
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 
 LOGGER = logging.getLogger(__name__)
 
-death = common.DEATH
 program_start_date = '2017-01-01'
 current_date = 'CURRENT_DATE()'
 
 # Keeps any rows where the death_date is after the AoU program start or before the current date by comparing person_ids
 # of the death table and sandbox tables. If the person_id is not in the sandbox table the row is kept, else, dropped.
-KEEP_VALID_DEATH_DATE_ROWS = common.JINJA_ENV.from_string("""
+KEEP_VALID_DEATH_DATE_ROWS = JINJA_ENV.from_string("""
 SELECT * FROM `{{project_id}}.{{dataset_id}}.{{table}}` 
-WHERE person_id NOT IN (
-SELECT person_id FROM `{{project_id}}.{{sandbox_id}}.{{sandbox_table}}`)
+{% if table == 'death' %}
+WHERE person_id NOT IN (SELECT person_id 
+{% elif table == 'aou_death' %}
+WHERE aou_death_id NOT IN (SELECT aou_death_id 
+{% endif %}
+FROM `{{project_id}}.{{sandbox_id}}.{{sandbox_table}}`)
 """)
 
 # Selects all the invalid rows. Invalid means the death_date occurs before the AoU program start
 # or after the current date.
-SANDBOX_INVALID_DEATH_DATE_ROWS = common.JINJA_ENV.from_string("""
+SANDBOX_INVALID_DEATH_DATE_ROWS = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_id}}.{{sandbox_table}}` AS (
 SELECT d.*
 FROM `{{project_id}}.{{dataset_id}}.{{table}}` d
@@ -48,11 +51,11 @@ LEFT JOIN (
         GROUP BY person_id
 ) last_ppi_date
     ON last_ppi_date.person_id = d.person_id
-WHERE {{table}}_date < '{{program_start_date}}' OR {{table}}_date > {{current_date}}
+WHERE death_date < '{{program_start_date}}' OR death_date > {{current_date}}
     -- Sandbox death record if it is >=1 day before latest PPI observation or no PPI observation exists --
     OR (
         last_ppi_date.person_id IS NULL 
-        OR DATE_DIFF(last_ppi_date.last_ppi_date, d.{{table}}_date, DAY) >= 1
+        OR DATE_DIFF(last_ppi_date.last_ppi_date, d.death_date, DAY) >= 1
     ) 
 )
 """)
@@ -72,14 +75,14 @@ class ValidDeathDates(BaseCleaningRule):
         this SQL, append them to the list of Jira Issues.
         DO NOT REMOVE ORIGINAL JIRA ISSUE NUMBERS!
         """
-        desc = 'All rows in the death table that contain a death_date which occurs before the start of the AoU ' \
+        desc = 'All rows in the death and aou_death tables that contain a death_date which occurs before the start of the AoU ' \
                'program (Jan 1, 2017) or after the current date will be sandboxed and dropped.' \
                'Valid Death dates needs to be applied before no data after death as running no data after death is' \
                ' wiping out the needed consent related data for cleaning'
         super().__init__(issue_numbers=['DC822'],
                          description=desc,
                          affected_datasets=[cdr_consts.COMBINED],
-                         affected_tables=death,
+                         affected_tables=[AOU_DEATH, DEATH],
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id)
@@ -92,35 +95,35 @@ class ValidDeathDates(BaseCleaningRule):
             and a specification for how to execute that query. The specifications
             are optional but the query is required.
         """
-        keep_valid_death_dates = {
+        keep_valid_death_dates = [{
             cdr_consts.QUERY:
                 KEEP_VALID_DEATH_DATE_ROWS.render(
                     project_id=self.project_id,
                     dataset_id=self.dataset_id,
-                    table=death,
+                    table=table,
                     sandbox_id=self.sandbox_dataset_id,
-                    sandbox_table=self.sandbox_table_for(death)),
+                    sandbox_table=self.sandbox_table_for(table)),
             cdr_consts.DESTINATION_TABLE:
-                death,
+                table,
             cdr_consts.DESTINATION_DATASET:
                 self.dataset_id,
             cdr_consts.DISPOSITION:
                 WRITE_TRUNCATE
-        }
+        } for table in self.affected_tables]
 
-        sandbox_invalid_death_dates = {
+        sandbox_invalid_death_dates = [{
             cdr_consts.QUERY:
                 SANDBOX_INVALID_DEATH_DATE_ROWS.render(
                     project_id=self.project_id,
                     sandbox_id=self.sandbox_dataset_id,
-                    sandbox_table=self.sandbox_table_for(death),
+                    sandbox_table=self.sandbox_table_for(table),
                     dataset_id=self.dataset_id,
-                    table=death,
+                    table=table,
                     program_start_date=program_start_date,
                     current_date=current_date)
-        }
+        } for table in self.affected_tables]
 
-        return [sandbox_invalid_death_dates, keep_valid_death_dates]
+        return sandbox_invalid_death_dates + keep_valid_death_dates
 
     def setup_rule(self, client, *args, **keyword_args):
         """
