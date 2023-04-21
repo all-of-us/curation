@@ -171,11 +171,19 @@ class RecentConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
 
         self.load_test_data(queries)
 
+        observation_sandbox = ''
+        drug_exp_sandbox = ''
+        for table in self.fq_sandbox_table_names:
+            if table.endswith(OBSERVATION):
+                observation_sandbox = table
+            if table.endswith(DRUG_EXPOSURE):
+                drug_exp_sandbox = table
+
         tables_and_counts = [{
             'fq_table_name':
                 '.'.join([self.fq_dataset_name, OBSERVATION]),
             'fq_sandbox_table_name':
-                self.fq_sandbox_table_names[0],
+                observation_sandbox,
             'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8],
             'sandboxed_ids': [5, 6, 7],
             'fields': [
@@ -192,7 +200,7 @@ class RecentConceptSuppressionTest(BaseTest.CleaningRulesTestBase):
             'fq_table_name':
                 '.'.join([self.fq_dataset_name, DRUG_EXPOSURE]),
             'fq_sandbox_table_name':
-                self.fq_sandbox_table_names[1],
+                drug_exp_sandbox,
             'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8],
             'sandboxed_ids': [5, 6, 7],
             'fields': [
