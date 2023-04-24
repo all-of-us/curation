@@ -294,6 +294,7 @@ class EhrUnionTest(unittest.TestCase):
                                       dataset_id,
                                       write_disposition='WRITE_APPEND')
 
+    @mock.patch('validation.ehr_union.create_load_aou_death')
     @mock.patch('validation.ehr_union.clean_engine.clean_dataset')
     @mock.patch('validation.ehr_union.move_ehr_person_to_observation')
     @mock.patch('validation.ehr_union.map_ehr_person_to_observation')
@@ -303,7 +304,8 @@ class EhrUnionTest(unittest.TestCase):
     @mock.patch('bq_utils.get_hpo_info')
     def test_excluded_hpo_ids(self, mock_hpo_info, mock_create_std_tbl,
                               mock_mapping, mock_load, mock_map_person,
-                              mock_move_person, mock_clean_dataset):
+                              mock_move_person, mock_clean_dataset,
+                              mock_load_aou_death):
         mock_hpo_info.return_value = [{
             'hpo_id': hpo_id
         } for hpo_id in self.hpo_ids]
