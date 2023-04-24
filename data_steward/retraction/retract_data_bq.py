@@ -14,9 +14,10 @@ from itertools import product
 # Project imports
 from utils import pipeline_logging
 from gcloud.bq import BigQueryClient
-from common import (CARE_SITE, CATI_TABLES, DEATH, FACT_RELATIONSHIP, JINJA_ENV,
-                    LOCATION, MEASUREMENT, OBSERVATION, OBSERVATION_PERIOD,
-                    OTHER, PERSON, PII_TABLES, PROVIDER, UNIONED_EHR)
+from common import (AOU_REQUIRED, CARE_SITE, CATI_TABLES, DEATH,
+                    FACT_RELATIONSHIP, ID_CONSTANT_FACTOR, JINJA_ENV, LOCATION,
+                    MEASUREMENT, OBSERVATION, OBSERVATION_PERIOD, OTHER, PERSON,
+                    PII_TABLES, PROVIDER, UNIONED_EHR)
 from resources import mapping_table_for
 from retraction.retract_utils import (get_datasets_list, get_dataset_type,
                                       is_combined_dataset, is_deid_dataset,
@@ -52,9 +53,10 @@ FROM `{{project}}.{{dataset}}.{{table}}`
 WHERE person_id IN (
     SELECT {{person_id}} FROM `{{project}}.{{sb_dataset}}.{{lookup_table_id}}`
 )
-{% if 'sandbox' in dataset %}
-    -- TODO add some logic here --
-    -- TODO need to get OMOP table name out of the sandbox table name --
+{% if is_sandbox and retraction_type == 'only_ehr' %}
+-- NOTE Though 'only_ehr', this condition also drops RDR data that are affected by --
+-- the CR `domain_alignment`. We cannot avoid it under our current pipeline design. --
+AND {{domain_id}} > {{id_const}}
 {% elif table != 'death' and retraction_type == 'only_ehr' %}
 AND {{table}}_id IN (
     {% if is_deid %}
@@ -206,6 +208,9 @@ def get_retraction_queries(client: BigQueryClient,
                 table=table,
                 person_id=person_id,
                 lookup_table_id=lookup_table_id,
+                is_sandbox=is_sandbox_dataset(dataset_id),
+                domain_id=get_primary_key_for_sandbox_table(table),
+                id_const=2 * ID_CONSTANT_FACTOR,
                 retraction_type=retraction_type,
                 is_deid=is_deid_dataset(dataset_id))
             queries.append(q)
@@ -354,6 +359,9 @@ def skip_table_retraction(client: BigQueryClient, dataset_id, table_id,
         f"Skipping {table_id} table because it does not have a extension table or a mapping table."
     )
     msg_view = f"Skipping {table_id} since it's a VIEW."
+    msg_unknown_domain_sb_table = (
+        f"Skipping {table_id}. This sandbox table either has an irregular naming "
+        "or only contains non-EHR data.")
 
     if client.get_table(
             f'{client.project}.{dataset_id}.{table_id}').table_type == 'VIEW':
@@ -361,6 +369,13 @@ def skip_table_retraction(client: BigQueryClient, dataset_id, table_id,
         return True
 
     if retraction_type == RETRACTION_ONLY_EHR:
+
+        if is_sandbox_dataset(dataset_id):
+            if get_primary_key_for_sandbox_table(table_id):
+                return False
+            else:
+                LOGGER.info(msg_unknown_domain_sb_table)
+                return True
 
         if table_id == DEATH:
             return False
@@ -400,6 +415,31 @@ def skip_dataset_retraction(dataset_id, retraction_type) -> bool:
             return True
 
     return False
+
+
+def get_primary_key_for_sandbox_table(table: str) -> str:
+    """
+    NOTE This is intended for `only_ehr` retraction for sandbox datasets.
+    
+    When retracting sandbox tables for `only_ehr`, map/ext tables do not
+    exist for them. We must look at its primary key instead, in addition to person_id.
+    
+    This function looks at the sandbox table name, gets its domain, and returns the key
+    we must use for retraction. 
+
+    :param table: name of the sandbox table that needs retraction
+    :return: column name that the retraction must run on. 
+        Returns '' if the domain table cannot be identified, the domain table
+        does not contain person_id, or the domain table does not contain EHR data.
+    """
+    domain_tables = set(AOU_REQUIRED) - set(NON_PID_TABLES)
+
+    for domain in domain_tables:
+        if domain in table:
+            if domain == DEATH:
+                return f"{PERSON}_id"
+            return f"{domain}_id"
+    return ''
 
 
 def retraction_query_runner(client: BigQueryClient, queries):
@@ -468,7 +508,6 @@ def run_bq_retraction(project_id,
         # Following datasets must not reference mapping tables
         # So retraction_type must be None (act same as RDR_AND_EHR)
         if (is_ehr_dataset(dataset) or is_unioned_dataset(dataset) or
-                is_sandbox_dataset(dataset) or
                 get_dataset_type(dataset) == OTHER):
             retraction_type = None
 
