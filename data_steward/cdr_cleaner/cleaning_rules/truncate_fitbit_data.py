@@ -4,8 +4,7 @@ Remove all FitBit data after the cutoff date for participants
 Original Issue: DC-1046
 
 The intent is to ensure there is no data after the cutoff date for participants in
-Activity Summary, Heart Rate Minute Level, Heart Rate Summary, and Steps Intraday tables
-by sandboxing the applicable records and then dropping them.
+the fitbit tables by sandboxing the applicable records and then dropping them.
 """
 
 # Python Imports
@@ -13,7 +12,9 @@ import logging
 from datetime import datetime
 
 # Project Imports
-import common
+from common import JINJA_ENV, FITBIT_TABLES, ACTIVITY_SUMMARY,\
+    HEART_RATE_SUMMARY, SLEEP_LEVEL, SLEEP_DAILY_SUMMARY,\
+    HEART_RATE_MINUTE_LEVEL, STEPS_INTRADAY, DEVICE
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 from constants.bq_utils import WRITE_TRUNCATE
@@ -21,31 +22,33 @@ from constants.bq_utils import WRITE_TRUNCATE
 LOGGER = logging.getLogger(__name__)
 
 FITBIT_DATE_TABLES = [
-    common.ACTIVITY_SUMMARY, common.HEART_RATE_SUMMARY, common.SLEEP_LEVEL,
-    common.SLEEP_DAILY_SUMMARY
+    ACTIVITY_SUMMARY, HEART_RATE_SUMMARY, SLEEP_LEVEL,
+    SLEEP_DAILY_SUMMARY, DEVICE
 ]
-FITBIT_DATETIME_TABLES = [common.HEART_RATE_MINUTE_LEVEL, common.STEPS_INTRADAY]
+FITBIT_DATETIME_TABLES = [HEART_RATE_MINUTE_LEVEL, STEPS_INTRADAY, DEVICE]
 
 FITBIT_TABLES_DATE_FIELDS = {
-    common.ACTIVITY_SUMMARY: 'date',
-    common.HEART_RATE_SUMMARY: 'date',
-    common.SLEEP_DAILY_SUMMARY: 'sleep_date',
-    common.SLEEP_LEVEL: 'sleep_date'
+    ACTIVITY_SUMMARY: 'date',
+    HEART_RATE_SUMMARY: 'date',
+    SLEEP_DAILY_SUMMARY: 'sleep_date',
+    SLEEP_LEVEL: 'sleep_date',
+    DEVICE: 'device_date'
 }
 FITBIT_TABLES_DATETIME_FIELDS = {
-    common.HEART_RATE_MINUTE_LEVEL: 'datetime',
-    common.STEPS_INTRADAY: 'datetime',
+    HEART_RATE_MINUTE_LEVEL: 'datetime',
+    STEPS_INTRADAY: 'datetime',
+    DEVICE: 'last_sync_time'
 }
 
 # Save rows that will be dropped to a sandboxed dataset
-SANDBOX_QUERY = common.JINJA_ENV.from_string("""
+SANDBOX_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project}}.{{sandbox}}.{{intermediary_table}}` AS (
 SELECT * 
 FROM `{{project}}.{{dataset}}.{{table_name}}`
 WHERE {{date_field}} > {{cutoff_date}})""")
 
 # Drop any FitBit data that is newer than the cutoff date
-TRUNCATE_FITBIT_DATA_QUERY = common.JINJA_ENV.from_string("""
+TRUNCATE_FITBIT_DATA_QUERY = JINJA_ENV.from_string("""
 SELECT * FROM `{{project}}.{{dataset}}.{{table_name}}` t
 EXCEPT DISTINCT
 SELECT * FROM `{{project}}.{{sandbox}}.{{intermediary_table}}`""")
@@ -81,10 +84,10 @@ class TruncateFitbitData(BaseCleaningRule):
         desc = (
             f'All rows of data in the Fitbit dataset {dataset_id} with dates after '
             f'{self.truncation_date} will be sandboxed and dropped.')
-        super().__init__(issue_numbers=['DC1046'],
+        super().__init__(issue_numbers=['DC1046', 'DC3163'],
                          description=desc,
                          affected_datasets=[cdr_consts.FITBIT],
-                         affected_tables=common.FITBIT_TABLES,
+                         affected_tables=FITBIT_TABLES,
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id)
