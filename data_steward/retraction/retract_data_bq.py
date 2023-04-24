@@ -507,8 +507,7 @@ def run_bq_retraction(project_id,
 
         # Following datasets must not reference mapping tables
         # So retraction_type must be None (act same as RDR_AND_EHR)
-        if (is_ehr_dataset(dataset) or is_unioned_dataset(dataset) or
-                get_dataset_type(dataset) == OTHER):
+        if (is_ehr_dataset(dataset) or is_unioned_dataset(dataset)):
             retraction_type = None
 
         queries = get_retraction_queries(client,

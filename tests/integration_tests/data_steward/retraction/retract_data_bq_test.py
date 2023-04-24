@@ -16,6 +16,7 @@ from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_te
 from retraction.retract_data_bq import (NONE, RETRACTION_ONLY_EHR,
                                         RETRACTION_RDR_EHR, get_datasets_list,
                                         run_bq_retraction)
+from retraction.retract_utils import get_dataset_type, is_sandbox_dataset
 from constants.retraction.retract_utils import ALL_DATASETS
 
 CREATE_LOOKUP_TMPL = JINJA_ENV.from_string("""
@@ -1168,7 +1169,10 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
         all_datasets = set([
             dataset.dataset_id for dataset in list(self.client.list_datasets())
         ])
-        datasets_to_exclude = set([])
+        datasets_to_exclude = set([
+            dataset for dataset in all_datasets
+            if get_dataset_type(dataset) == OTHER
+        ])
 
         self.assertTrue(actual.issubset(all_datasets))
         self.assertTrue(actual.intersection(datasets_to_exclude) == set())
