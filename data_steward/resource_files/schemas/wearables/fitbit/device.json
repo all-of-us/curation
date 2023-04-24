@@ -3,42 +3,42 @@
     "type": "integer",
     "name": "person_id",
     "mode": "nullable",
-    "description": ""
+    "description": "A foreign key identifier to the person for whom the device data was recorded."
   }, {
     "type": "string",
     "name": "device_id",
     "mode": "nullable",
-    "description": ""
+    "description": "Identifies a device."
   }, {
     "type": "date",
-    "name": "date",
+    "name": "device_date",
     "mode": "nullable",
-    "description": ""
+    "description": "The date the device data was recorded."
   }, {
     "type": "string",
     "name": "battery",
     "mode": "nullable",
-    "description": ""
+    "description": "The battery level of the device. Supported: High | Medium | Low | Empty."
   }, {
     "type": "integer",
     "name": "battery_level",
     "mode": "nullable",
-    "description": ""
+    "description": "The battery level percentage of the device."
   }, {
     "type": "string",
     "name": "device_version",
     "mode": "nullable",
-    "description": ""
+    "description": "The product name of the device."
   }, {
     "type": "string",
     "name": "device_type",
     "mode": "nullable",
-    "description": ""
+    "description": "The device type. Supported : TRACKER | SCALE"
   },
   {
     "type": "datetime",
     "name": "last_sync_time",
     "mode": "nullable",
-    "description": ""
+    "description": "Represents the last time the device was synced with the Fitbit mobile application."
   }
 ]
