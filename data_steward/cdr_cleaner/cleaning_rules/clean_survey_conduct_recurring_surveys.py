@@ -74,7 +74,7 @@ FROM (SELECT *
       ON m.questionnaire_response_id = sc.survey_conduct_id
       WHERE m.questionnaire_response_id IS NOT NULL
       ) sub
-WHERE sub.survey_conduct_id = sc.survey_conduct_id 
+WHERE sub.survey_conduct_id = sc.survey_conduct_id
 AND sc.survey_conduct_id IN (SELECT survey_conduct_id FROM `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table_id}}`)
 """)
 
@@ -103,7 +103,8 @@ class CleanSurveyConductRecurringSurveys(BaseCleaningRule):
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
-                         table_namer=table_namer)
+                         table_namer=table_namer,
+                         run_for_synthetic=True)
 
     def get_query_specs(self, *args, **keyword_args) -> query_spec_list:
         """

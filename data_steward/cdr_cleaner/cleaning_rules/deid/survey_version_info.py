@@ -69,7 +69,8 @@ class COPESurveyVersionTask(BaseCleaningRule):
                  dataset_id,
                  sandbox_dataset_id,
                  clean_survey_dataset_id=None,
-                 table_namer=None):
+                 table_namer=None,
+                 run_for_synthetic=True):
         """
         Initialize the class with proper info.
 

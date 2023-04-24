@@ -37,7 +37,7 @@ CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table_i
     SELECT o.*
     FROM `{{project_id}}.{{dataset_id}}.observation` o
     LEFT JOIN `{{project_id}}.{{dataset_id}}.survey_conduct` sc
-    ON sc.survey_conduct_id = o.questionnaire_response_id 
+    ON sc.survey_conduct_id = o.questionnaire_response_id
     WHERE sc.survey_source_concept_id = 0 OR sc.survey_concept_id = 0
 )
 """)
@@ -53,7 +53,7 @@ CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table_i
 CLEAN_OBSERVATION = JINJA_ENV.from_string("""
 DELETE FROM `{{project_id}}.{{dataset_id}}.observation`
 WHERE questionnaire_response_id IN (
-    SELECT questionnaire_response_id 
+    SELECT questionnaire_response_id
     FROM `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table_id}}`
     )
 """)
@@ -61,7 +61,7 @@ WHERE questionnaire_response_id IN (
 CLEAN_SURVEY_CONDUCT = JINJA_ENV.from_string("""
 DELETE FROM `{{project_id}}.{{dataset_id}}.survey_conduct`
 WHERE survey_conduct_id IN (
-    SELECT survey_conduct_id 
+    SELECT survey_conduct_id
     FROM `{{project_id}}.{{sandbox_dataset_id}}.{{sandbox_table_id}}`
     )
 """)
@@ -72,7 +72,7 @@ SELECT COUNT(CASE WHEN survey_concept_id = 0 THEN 1 ELSE 0 END) as invalid_surve
 COUNT(CASE WHEN questionnaire_response_id IS NOT NULL THEN 1 ELSE  0 END) as invalid_obs
 FROM `{{project_id}}.{{dataset_id}}.survey_conduct`  sc
 LEFT JOIN `{{project_id}}.{{dataset_id}}.observation` o
-ON sc.survey_conduct_id = o.questionnaire_response_id 
+ON sc.survey_conduct_id = o.questionnaire_response_id
 WHERE sc.survey_source_concept_id = 0 OR sc.survey_concept_id = 0
 """)
 
@@ -106,7 +106,8 @@ class DropUnverifiedSurveyData(BaseCleaningRule):
                              CleanSurveyConductRecurringSurveys,
                              UpdateSurveySourceConceptId
                          ],
-                         table_namer=table_namer)
+                         table_namer=table_namer,
+                         run_for_synthetic=True)
 
         self.counts_query = COUNTS_QUERY.render(project_id=self.project_id,
                                                 dataset_id=self.dataset_id)

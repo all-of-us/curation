@@ -10,7 +10,7 @@ from google.cloud import bigquery
 # Project imports
 from cdr_cleaner import clean_cdr
 from cdr_cleaner.args_parser import add_kwargs_to_args
-from common import CDR_SCOPES, FITBIT_TABLES, ID_CONSTANT_FACTOR, JINJA_ENV
+from common import CDR_SCOPES, FITBIT_TABLES, ID_CONSTANT_FACTOR, JINJA_ENV, SURVEY_CONDUCT
 from constants.cdr_cleaner import clean_cdr as consts
 from constants.tools import create_combined_backup_dataset as combine_consts
 from gcloud.bq import BigQueryClient
@@ -114,91 +114,6 @@ def create_datasets(client: BigQueryClient, name: str, input_dataset: str,
     return datasets
 
 
-def _fix_survey_conduct_records(client, project_id, staging_ds, sandbox_ds):
-    # sandbox and drop orphaned records
-    que = JINJA_ENV.from_string("""
-        CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_ds}}.rdr_dc2714_rm_orphan_survey_conduct` AS (
-        SELECT * FROM `{{project_id}}.{{staging_ds}}.survey_conduct` sc
-        WHERE NOT EXISTS (
-         SELECT 1 FROM `{{project_id}}.{{staging_ds}}.observation` o
-         WHERE sc.survey_conduct_id = o.questionnaire_response_id));
-
-        DELETE FROM `{{project_id}}.{{staging_ds}}.survey_conduct` sc
-        WHERE EXISTS (
-         SELECT 1 FROM `{{project_id}}.{{sandbox_ds}}.rdr_dc2714_rm_orphan_survey_conduct` sb
-         WHERE sc.survey_conduct_id = sb.survey_conduct_id
-        );""")
-    que = que.render(project_id=project_id,
-                     staging_ds=staging_ds,
-                     sandbox_ds=sandbox_ds)
-
-    # This is now done in the pipeline.
-    # IF the next fix is implemented in the pipeline, this function can be removed.
-    # resp = client.query(que)
-    # resp.result()
-
-    # fix cope survey responses
-    que = (f"""
-        -- save all cope and minute survey responses --
-        CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_ds}}.rdr_dc2713_survey_conduct` AS (
-        SELECT *
-        FROM `{{project_id}}.{{staging_ds}}.survey_conduct`
-        WHERE REGEXP_CONTAINS(survey_source_value, r'(?i)(^cope$)|(^cope_)')
-    );
-
-    -- update cope and minute survey responses --
-    UPDATE `{{project_id}}.{{staging_ds}}.survey_conduct` s
-    SET survey_concept_id =  CASE WHEN m.cope_month = 'may' THEN 2100000002
-      WHEN m.cope_month = 'june' THEN 2100000003
-      WHEN m.cope_month = 'july' THEN 2100000004
-      WHEN m.cope_month = 'nov' THEN 2100000005
-      WHEN m.cope_month = 'dec' THEN 2100000006
-      WHEN m.cope_month = 'feb' THEN 2100000007
-      WHEN m.cope_month = 'vaccine1' THEN 905047
-      WHEN m.cope_month = 'vaccine2' THEN 905055
-      WHEN m.cope_month = 'vaccine3' THEN 765936
-      WHEN m.cope_month = 'vaccine4' THEN 1741006
-      ELSE s.survey_concept_id
-      END,
-    survey_source_concept_id = CASE
-      WHEN m.cope_month = 'may' THEN 2100000002
-      WHEN m.cope_month = 'june' THEN 2100000003
-      WHEN m.cope_month = 'july' THEN 2100000004
-      WHEN m.cope_month = 'nov' THEN 2100000005
-      WHEN m.cope_month = 'dec' THEN 2100000006
-      WHEN m.cope_month = 'feb' THEN 2100000007
-      WHEN m.cope_month = 'vaccine1' THEN 905047
-      WHEN m.cope_month = 'vaccine2' THEN 905055
-      WHEN m.cope_month = 'vaccine3' THEN 765936
-      WHEN m.cope_month = 'vaccine4' THEN 1741006
-      ELSE s.survey_concept_id
-    END
-    FROM `{{project_id}}.{{staging_ds}}.cope_survey_semantic_version_map` m
-    WHERE s.survey_conduct_id = m.questionnaire_response_id;
-
-    -- save all records that will be changed --
-    CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_ds}}.rdr_dc2713_survey_conduct_source_value` AS (
-     SELECT *
-     FROM `{{project_id}}.{{staging_ds}}.survey_conduct` s
-     LEFT JOIN `{{project_id}}.{{staging_ds}}.concept` c
-     ON s.survey_concept_id = c.concept_id
-     AND survey_concept_id = 0
-    );
-
-     -- update the survey_source_value field --
-    UPDATE `{{project_id}}.{{staging_ds}}.survey_conduct` s
-     SET s.survey_source_value = c.concept_code
-     FROM `{{project_id}}.{{staging_ds}}.concept` c
-     WHERE s.survey_concept_id = c.concept_id
-     AND s.survey_concept_id > 0;
-     """)
-    que = que.render(project_id=project_id,
-                     staging_ds=staging_ds,
-                     sandbox_ds=sandbox_ds)
-    resp = client.query(que)
-    return resp.result()
-
-
 def _create_empty_fitbit_tables(bq_client, project_id, final_dataset_name):
     for table in FITBIT_TABLES:
         schema_list = fields_for(table)
@@ -254,7 +169,7 @@ def create_tier(project_id: str, input_dataset: str, release_tag: str,
     # 1. add mapping tables
     # EHR consent table is not added because we are not generating
     # synthetic EHR data.  There will not be any to map.
-    for domain_table in combine_consts.DOMAIN_TABLES:
+    for domain_table in combine_consts.DOMAIN_TABLES + [SURVEY_CONDUCT]:
         LOGGER.info(f'Mapping {domain_table}...')
         generate_combined_mapping_tables(bq_client, domain_table,
                                          datasets[consts.STAGING], '',
@@ -265,12 +180,6 @@ def create_tier(project_id: str, input_dataset: str, release_tag: str,
             _update_domain_table_id(
                 bq_client,
                 f'{project_id}.{datasets[consts.STAGING]}.{domain_table}')
-
-    LOGGER.warning(
-        "Is `_fix_survey_conduct_records` still needed for generating synthetic data?  "
-        "If unnecessary, remove the function and the call line.")
-    _fix_survey_conduct_records(bq_client, project_id, datasets[consts.STAGING],
-                                datasets[consts.SANDBOX])
 
     # Run cleaning rules
     cleaning_args = [
@@ -378,6 +287,12 @@ def main(raw_args=None) -> dict:
     datasets = create_tier(args.project_id, dataset_id, args.release_tag,
                            args.target_principal, **kwargs)
 
+    LOGGER.info(
+        f"Dataset with synthetic survey data created at `{args.project_id}.{dataset_id}`.\n"
+        f"Review dataset before publishing to CB dev environment.\n"
+        f"If changes are needed (schema, data, etc.), make them as appropriate.  If changes are\n"
+        f"made to data only, be sure to make tickets to change the synthetic script."
+    )
     return datasets
 
 
