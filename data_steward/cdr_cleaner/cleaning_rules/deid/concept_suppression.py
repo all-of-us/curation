@@ -5,7 +5,7 @@ from google.cloud.exceptions import GoogleCloudError
 
 from cdr_cleaner.clean_cdr_utils import get_tables_in_dataset
 from resources import get_concept_id_fields, has_domain_table_id
-from common import JINJA_ENV
+from common import AOU_DEATH, DEATH, JINJA_ENV
 from constants import bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list, \
@@ -24,8 +24,16 @@ class AbstractConceptSuppression(BaseCleaningRule):
       d.*
     FROM `{{project}}.{{dataset}}.{{domain_table}}` AS d
     LEFT JOIN `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` AS s
+    {% if domain_table == 'death' %}
+        ON d.person_id = s.person_id
+        WHERE s.person_id IS NULL
+    {% elif domain_table == 'aou_death' %}
+        ON d.aou_death_id = s.aou_death_id
+        WHERE s.aou_death_id IS NULL
+    {% else %}
         ON d.{{domain_table}}_id = s.{{domain_table}}_id
-    WHERE s.{{domain_table}}_id IS NULL
+        WHERE s.{{domain_table}}_id IS NULL
+    {% endif %}
     """)
 
     def __init__(self,
@@ -47,8 +55,8 @@ class AbstractConceptSuppression(BaseCleaningRule):
 
         affected_tables = [
             table_name for table_name in affected_tables
-            if (get_concept_id_fields(table_name) and
-                has_domain_table_id(table_name))
+            if (get_concept_id_fields(table_name) and has_domain_table_id(
+                table_name)) or table_name in [AOU_DEATH, DEATH]
         ]
 
         super().__init__(issue_numbers=issue_numbers,
