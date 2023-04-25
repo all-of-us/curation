@@ -15,6 +15,7 @@ from datetime import datetime
 #Project imports
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.negative_ages import NegativeAges
+from common import AOU_DEATH, DEATH, MEASUREMENT, OBSERVATION, PERSON
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
 
@@ -41,7 +42,7 @@ class NegativeAgesTest(BaseTest.CleaningRulesTestBase):
         cls.rule_instance = NegativeAges(project_id, dataset_id, sandbox_id)
 
         # adding person table for setup/cleanup utilities
-        for table in cls.rule_instance.affected_tables + ['person']:
+        for table in cls.rule_instance.affected_tables + [PERSON]:
             cls.fq_table_names.append(
                 f'{cls.project_id}.{cls.dataset_id}.{table}')
             cls.fq_sandbox_table_names.append(
@@ -115,9 +116,22 @@ class NegativeAgesTest(BaseTest.CleaningRulesTestBase):
                 (6, date('2020-08-15'), 0)
             """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
+        # test data for negative age at aou_death
+        aou_death_data_query = self.jinja_env.from_string("""
+            INSERT INTO
+                `{{project_id}}.{{dataset_id}}.aou_death`
+                (aou_death_id, person_id, death_date, death_type_concept_id, src_id, primary_death_record)
+            VALUES
+                ('a5', 5, date('1915-05-05'), 0, 'rdr', False),
+                ('b5', 5, date('2020-08-15'), 0, 'hpo_b', False),
+                ('c5', 5, date('1900-05-05'), 0, 'hpo_c', True),
+                ('d5', 5, date('2022-08-15'), 0, 'hpo_d', False),
+                ('a6', 6, date('2020-08-15'), 0, 'rdr', False)
+            """).render(project_id=self.project_id, dataset_id=self.dataset_id)
+
         self.load_test_data([
             person_data_query, death_data_query, measurement_data_query,
-            observation_data_query
+            observation_data_query, aou_death_data_query
         ])
 
     def test_negative_ages_cleaning(self):
@@ -130,7 +144,7 @@ class NegativeAgesTest(BaseTest.CleaningRulesTestBase):
 
         tables_and_counts = [{
             'fq_table_name':
-                '.'.join([self.fq_dataset_name, 'measurement']),
+                '.'.join([self.fq_dataset_name, MEASUREMENT]),
             'fields': ['measurement_id', 'person_id', 'measurement_date'],
             'loaded_ids': [123, 456, 789],
             'cleaned_values': [
@@ -139,7 +153,7 @@ class NegativeAgesTest(BaseTest.CleaningRulesTestBase):
             ]
         }, {
             'fq_table_name':
-                '.'.join([self.fq_dataset_name, 'observation']),
+                '.'.join([self.fq_dataset_name, OBSERVATION]),
             'fields': ['observation_id', 'person_id', 'observation_date'],
             'loaded_ids': [111, 222, 333, 444],
             'cleaned_values': [
@@ -148,10 +162,15 @@ class NegativeAgesTest(BaseTest.CleaningRulesTestBase):
                 (333, 3, datetime.fromisoformat('2021-02-17').date())
             ]
         }, {
-            'fq_table_name': '.'.join([self.fq_dataset_name, 'death']),
+            'fq_table_name': '.'.join([self.fq_dataset_name, DEATH]),
             'fields': ['person_id', 'death_date'],
             'loaded_ids': [5, 6],
             'cleaned_values': [(6, datetime.fromisoformat('2020-08-15').date())]
+        }, {
+            'fq_table_name': '.'.join([self.fq_dataset_name, AOU_DEATH]),
+            'fields': ['aou_death_id'],
+            'loaded_ids': ['a5', 'b5', 'c5', 'd5', 'a6'],
+            'cleaned_values': [('b5',), ('d5',), ('a6',)]
         }]
 
         self.default_test(tables_and_counts)

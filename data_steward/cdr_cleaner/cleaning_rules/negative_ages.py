@@ -9,7 +9,7 @@ import logging
 import common
 from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as cdr_consts
-from common import JINJA_ENV
+from common import AOU_DEATH, DEATH, JINJA_ENV, PERSON
 from utils import pipeline_logging
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
 
@@ -32,11 +32,9 @@ date_fields = {
     common.DEVICE_EXPOSURE: 'device_exposure_start_date'
 }
 
-person = common.PERSON
-death = common.DEATH
 MAX_AGE = 150
 affected_tables = list(date_fields.keys())
-affected_tables.append(death)
+affected_tables.extend([AOU_DEATH, DEATH])
 
 #sandbox rows to be removed
 SANDBOX_NEGATIVE_AND_MAX_AGE_QUERY = JINJA_ENV.from_string("""
@@ -82,9 +80,11 @@ SELECT
 FROM
   `{{project_id}}.{{dataset_id}}.{{table}}`
 WHERE
-  person_id IN (
-  SELECT
-    d.person_id
+  {% if table == 'death' %}
+  person_id IN (SELECT d.person_id
+  {% elif table == 'aou_death' %}
+  aou_death_id IN (SELECT d.aou_death_id
+  {% endif %}
   FROM
     `{{project_id}}.{{dataset_id}}.{{table}}` d
   JOIN
@@ -147,9 +147,11 @@ SELECT
 FROM
   `{{project_id}}.{{dataset_id}}.{{table}}`
 WHERE
-  person_id NOT IN (
-  SELECT
-    d.person_id
+  {% if table == 'death' %}
+  person_id NOT IN (SELECT d.person_id
+  {% elif table == 'aou_death' %}
+  aou_death_id NOT IN (SELECT d.aou_death_id
+  {% endif %}
   FROM
     `{{project_id}}.{{dataset_id}}.{{table}}` d
   JOIN
@@ -204,7 +206,7 @@ class NegativeAges(BaseCleaningRule):
                     sandbox_id=self.sandbox_dataset_id,
                     intermediary_table=self.sandbox_table_for(table),
                     table=table,
-                    person_table=person,
+                    person_table=PERSON,
                     table_date=date_fields[table],
                     MAX_AGE=MAX_AGE)
             queries.append(sandbox_query)
@@ -212,7 +214,7 @@ class NegativeAges(BaseCleaningRule):
                 project_id=self.project_id,
                 dataset_id=self.dataset_id,
                 table=table,
-                person_table=person,
+                person_table=PERSON,
                 table_date=date_fields[table])
             query_na[cdr_consts.DESTINATION_TABLE] = table
             query_na[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
@@ -221,7 +223,7 @@ class NegativeAges(BaseCleaningRule):
                 project_id=self.project_id,
                 dataset_id=self.dataset_id,
                 table=table,
-                person_table=person,
+                person_table=PERSON,
                 table_date=date_fields[table],
                 MAX_AGE=MAX_AGE)
             query_ma[cdr_consts.DESTINATION_TABLE] = table
@@ -230,26 +232,28 @@ class NegativeAges(BaseCleaningRule):
             queries.extend([query_na, query_ma])
 
         # query for death before birthdate
-        sandbox_query = dict()
-        query = dict()
-        sandbox_query[
-            cdr_consts.QUERY] = SANDBOX_NEGATIVE_AGE_DEATH_QUERY.render(
+        for table in [AOU_DEATH, DEATH]:
+            sandbox_query = dict()
+            query = dict()
+            sandbox_query[
+                cdr_consts.QUERY] = SANDBOX_NEGATIVE_AGE_DEATH_QUERY.render(
+                    project_id=self.project_id,
+                    dataset_id=self.dataset_id,
+                    sandbox_id=self.sandbox_dataset_id,
+                    intermediary_table=self.sandbox_table_for(table),
+                    table=table,
+                    person_table=PERSON)
+            queries.append(sandbox_query)
+            query[cdr_consts.QUERY] = NEGATIVE_AGE_DEATH_QUERY.render(
                 project_id=self.project_id,
                 dataset_id=self.dataset_id,
-                sandbox_id=self.sandbox_dataset_id,
-                intermediary_table=self.sandbox_table_for(death),
-                table=death,
-                person_table=person)
-        queries.append(sandbox_query)
-        query[cdr_consts.QUERY] = NEGATIVE_AGE_DEATH_QUERY.render(
-            project_id=self.project_id,
-            dataset_id=self.dataset_id,
-            table=death,
-            person_table=person)
-        query[cdr_consts.DESTINATION_TABLE] = death
-        query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
-        query[cdr_consts.DESTINATION_DATASET] = self.dataset_id
-        queries.append(query)
+                table=table,
+                person_table=PERSON)
+            query[cdr_consts.DESTINATION_TABLE] = table
+            query[cdr_consts.DISPOSITION] = bq_consts.WRITE_TRUNCATE
+            query[cdr_consts.DESTINATION_DATASET] = self.dataset_id
+            queries.append(query)
+
         return queries
 
     def setup_rule(self, client, *args, **keyword_args):
