@@ -616,7 +616,7 @@ execute(client, query)
 #
 # The second check is for finding any records in the rdr export pid_rid_mapping table that don't exist in the primary_pid_rid_mapping table. If there are issues, `'prm_missing_from_pprm'` will appear in the output dataframe along with the count of this occurance. This check failing implies the CR did not run as expected. All new records should have been appended to primary_pid_rid_mapping.
 #
-# The third check ensures the shift column contains numbers between 1 and 135(exclusive). If there are issues, `'shift_off_spec'` will appear in the output dataframe along with the count of this occurance. This check failing implies the CR did not run as expected. All records in pprm should have a shift between 1 and 365. 
+# The third check ensures the shift column contains numbers between 1 and 365(exclusive). If there are issues, `'shift_off_spec'` will appear in the output dataframe along with the count of this occurance. This check failing implies the CR did not run as expected. All records in pprm should have a shift between 1 and 365.
 #
 
 tpl = JINJA_ENV.from_string('''
