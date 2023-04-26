@@ -9,7 +9,8 @@ import pytz
 from dateutil import parser
 
 # Project Imports
-from common import PERSON, VISIT_OCCURRENCE, OBSERVATION, CONDITION_OCCURRENCE, DEVICE_EXPOSURE
+from common import (AOU_DEATH, PERSON, VISIT_OCCURRENCE, OBSERVATION,
+                    CONDITION_OCCURRENCE, DEVICE_EXPOSURE)
 from common import JINJA_ENV
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.no_data_30_days_after_death import (
@@ -26,12 +27,14 @@ VALUES
       (3, '1970-01-01 00:00:00 EST', 0, 1970, 0, 0)
 """)
 
-DEATH_DATA_TEMPLATE = JINJA_ENV.from_string("""
-INSERT INTO `{{project_id}}.{{dataset_id}}.death`
-(person_id, death_date, death_type_concept_id)
+AOU_DEATH_DATA_TEMPLATE = JINJA_ENV.from_string("""
+INSERT INTO `{{project_id}}.{{dataset_id}}.aou_death`
+(aou_death_id, person_id, death_date, death_type_concept_id, src_id, primary_death_record)
 VALUES
-      (1, '1969-01-01', 0),
-      (2, '2020-01-01', 0)
+      ('a1', 1, '1969-01-01', 0, 'rdr', False),
+      ('b1', 1, '2023-01-01', 0, 'hpo_a', True),
+      ('a2', 2, '2020-01-01', 0, 'hpo_b', True),
+      ('b2', 2, '2023-01-01', 0, 'hpo_c', False)
 """)
 
 VISIT_OCCURRENCE_DATA_TEMPLATE = JINJA_ENV.from_string("""
@@ -95,8 +98,8 @@ class NoDataAfterDeathTest(BaseTest.CleaningRulesTestBase):
                                              cls.sandbox_id)
 
         # Generates list of fully qualified table names and their corresponding sandbox table names
-        # adding death table name for setup/cleanup operations
-        for table_name in get_affected_tables() + ['death']:
+        # adding aou_death table name for setup/cleanup operations
+        for table_name in get_affected_tables() + [AOU_DEATH]:
             cls.fq_table_names.append(
                 f'{cls.project_id}.{cls.dataset_id}.{table_name}')
             sandbox_table_name = cls.rule_instance.sandbox_table_for(table_name)
@@ -114,7 +117,7 @@ class NoDataAfterDeathTest(BaseTest.CleaningRulesTestBase):
         super().setUp()
 
         templates = [
-            PERSON_DATA_TEMPLATE, DEATH_DATA_TEMPLATE,
+            PERSON_DATA_TEMPLATE, AOU_DEATH_DATA_TEMPLATE,
             VISIT_OCCURRENCE_DATA_TEMPLATE, OBSERVATION_DATA_TEMPLATE,
             CONDITION_OCCURRENCE_DATA_TEMPLATE, DEVICE_EXPOSURE_DATA_TEMPLATE
         ]

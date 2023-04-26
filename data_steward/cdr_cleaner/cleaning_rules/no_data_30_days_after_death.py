@@ -1,7 +1,7 @@
 """
 If there is a death_date listed for a person_id, ensure that no temporal fields
 (see the CDR cleaning spreadsheet tab labeled all temporal here) for that person_id exist more than
-30 days after the death_date.
+30 days after the earliest death_date.
 """
 
 # Python Imports
@@ -45,7 +45,7 @@ TEMPORAL_TABLES_WITH_DATE = {
 }
 
 # Join AOU_DEATH to domain_table ON person_id
-# check date field is not more than 30 days after the death date
+# check date field is not more than 30 days after the earliest death date
 # select domain_table_id from the result
 # use the above generated domain_table_ids as a list
 # select rows in a domain_table where the domain_table_ids not in above generated list of ids
