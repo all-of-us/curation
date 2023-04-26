@@ -11,7 +11,8 @@ from unittest import mock
 # Project imports
 from app_identity import PROJECT_ID
 from common import (ACTIVITY_SUMMARY, COMBINED, DEID, EHR, FITBIT, JINJA_ENV,
-                    OBSERVATION, OTHER, PERSON, RDR, UNIONED_EHR)
+                    OBSERVATION, OBSERVATION_PERIOD, OTHER, PERSON, RDR,
+                    UNIONED_EHR)
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 from retraction.retract_data_bq import (NONE, RETRACTION_ONLY_EHR,
                                         RETRACTION_RDR_EHR, get_datasets_list,
@@ -99,6 +100,18 @@ VALUES
     (1000000000000202, 202, 0, date('2021-01-01'), 0),
     (2000000000000203, 203, 0, date('2021-01-01'), 0),
     (2000000000000204, 204, 0, date('2021-01-01'), 0)
+""")
+INSERT_SANDBOX_OBS_PERIOD_TMPL = JINJA_ENV.from_string("""
+CREATE OR REPLACE TABLE `{{project}}.{{dataset}}.dc111_dc-222_observation_period` 
+AS
+SELECT 1000000000000101 AS observation_period_id, 101 AS person_id UNION ALL
+SELECT 1000000000000102 AS observation_period_id, 102 AS person_id UNION ALL
+SELECT 2000000000000103 AS observation_period_id, 103 AS person_id UNION ALL
+SELECT 2000000000000104 AS observation_period_id, 104 AS person_id UNION ALL
+SELECT 1000000000000201 AS observation_period_id, 201 AS person_id UNION ALL
+SELECT 1000000000000202 AS observation_period_id, 202 AS person_id UNION ALL
+SELECT 2000000000000203 AS observation_period_id, 203 AS person_id UNION ALL
+SELECT 2000000000000204 AS observation_period_id, 204 AS person_id
 """)
 
 PERS_ALL = [101, 102, 103, 104, 201, 202, 203, 204]
@@ -219,6 +232,8 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
         cls.fq_sandbox_table_names.extend([
             f'{project_id}.{cls.ehr_id}.dc111_dc-222_{OBSERVATION}',
             f'{project_id}.{sandbox_id}.retract_{cls.ehr_id}_dc111_dc-222_{OBSERVATION}',
+            f'{project_id}.{cls.ehr_id}.dc111_dc-222_{OBSERVATION_PERIOD}',
+            f'{project_id}.{sandbox_id}.retract_{cls.ehr_id}_dc111_dc-222_{OBSERVATION_PERIOD}',
         ])
         for hpo in [cls.hpo_id, UNIONED_EHR, 'foo']:
             cls.fq_sandbox_table_names.extend([
@@ -248,7 +263,9 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
             src_table=OBSERVATION)
         insert_sb_obs = INSERT_SANDBOX_OBS_TMPL.render(project=self.project_id,
                                                        dataset=self.ehr_id)
-        queries.extend([create_sb_obs, insert_sb_obs])
+        insert_sb_obs_period = INSERT_SANDBOX_OBS_PERIOD_TMPL.render(
+            project=self.project_id, dataset=self.ehr_id)
+        queries.extend([create_sb_obs, insert_sb_obs, insert_sb_obs_period])
 
         # omop tables
         for dataset in [
@@ -977,20 +994,24 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
         self.assertRowIDsMatch(
             f'{project_id}.{dataset_id}.dc111_dc-222_{OBSERVATION}',
             ['observation_id'], [
-                1000000000000101,
-                2000000000000103,
-                1000000000000201,
-                1000000000000202,
-                2000000000000203,
-                2000000000000204,
+                1000000000000101, 2000000000000103, 1000000000000201,
+                1000000000000202, 2000000000000203, 2000000000000204
             ])
 
         self.assertRowIDsMatch(
             f'{project_id}.{sandbox_id}.retract_{dataset_id}_dc111_dc-222_{OBSERVATION}',
-            ['observation_id'], [
-                1000000000000102,
-                2000000000000104,
+            ['observation_id'], [1000000000000102, 2000000000000104])
+
+        self.assertRowIDsMatch(
+            f'{project_id}.{dataset_id}.dc111_dc-222_{OBSERVATION_PERIOD}',
+            ['observation_period_id'], [
+                1000000000000101, 2000000000000103, 1000000000000201,
+                1000000000000202, 2000000000000203, 2000000000000204
             ])
+
+        self.assertRowIDsMatch(
+            f'{project_id}.{sandbox_id}.retract_{dataset_id}_dc111_dc-222_{OBSERVATION_PERIOD}',
+            ['observation_period_id'], [1000000000000102, 2000000000000104])
 
     @mock_patch_bundle
     def test_retract_sandbox_only_ehr(self, mock_ru_get_dataset_type,
@@ -1022,20 +1043,26 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
         self.assertRowIDsMatch(
             f'{project_id}.{dataset_id}.dc111_dc-222_{OBSERVATION}',
             ['observation_id'], [
-                1000000000000101,
-                1000000000000102,
-                2000000000000103,
-                1000000000000201,
-                1000000000000202,
-                2000000000000203,
-                2000000000000204,
+                1000000000000101, 1000000000000102, 2000000000000103,
+                1000000000000201, 1000000000000202, 2000000000000203,
+                2000000000000204
             ])
 
         self.assertRowIDsMatch(
             f'{project_id}.{sandbox_id}.retract_{dataset_id}_dc111_dc-222_{OBSERVATION}',
-            ['observation_id'], [
-                2000000000000104,
+            ['observation_id'], [2000000000000104])
+
+        self.assertRowIDsMatch(
+            f'{project_id}.{dataset_id}.dc111_dc-222_{OBSERVATION_PERIOD}',
+            ['observation_period_id'], [
+                1000000000000101, 1000000000000102, 2000000000000103,
+                1000000000000201, 1000000000000202, 2000000000000203,
+                2000000000000204
             ])
+
+        self.assertRowIDsMatch(
+            f'{project_id}.{sandbox_id}.retract_{dataset_id}_dc111_dc-222_{OBSERVATION_PERIOD}',
+            ['observation_period_id'], [2000000000000104])
 
     @mock_patch_bundle
     def test_retract_deid_sandbox_rdr_and_ehr(
@@ -1065,20 +1092,24 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
         self.assertRowIDsMatch(
             f'{project_id}.{dataset_id}.dc111_dc-222_{OBSERVATION}',
             ['observation_id'], [
-                1000000000000101,
-                1000000000000102,
-                2000000000000103,
-                2000000000000104,
-                1000000000000201,
-                2000000000000203,
+                1000000000000101, 1000000000000102, 2000000000000103,
+                2000000000000104, 1000000000000201, 2000000000000203
             ])
 
         self.assertRowIDsMatch(
             f'{project_id}.{sandbox_id}.retract_{dataset_id}_dc111_dc-222_{OBSERVATION}',
-            ['observation_id'], [
-                1000000000000202,
-                2000000000000204,
+            ['observation_id'], [1000000000000202, 2000000000000204])
+
+        self.assertRowIDsMatch(
+            f'{project_id}.{dataset_id}.dc111_dc-222_{OBSERVATION_PERIOD}',
+            ['observation_period_id'], [
+                1000000000000101, 1000000000000102, 2000000000000103,
+                2000000000000104, 1000000000000201, 2000000000000203
             ])
+
+        self.assertRowIDsMatch(
+            f'{project_id}.{sandbox_id}.retract_{dataset_id}_dc111_dc-222_{OBSERVATION_PERIOD}',
+            ['observation_period_id'], [1000000000000202, 2000000000000204])
 
     @mock_patch_bundle
     def test_retract_deid_sandbox_only_ehr(
@@ -1109,20 +1140,26 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
         self.assertRowIDsMatch(
             f'{project_id}.{dataset_id}.dc111_dc-222_{OBSERVATION}',
             ['observation_id'], [
-                1000000000000101,
-                1000000000000102,
-                2000000000000103,
-                2000000000000104,
-                1000000000000201,
-                1000000000000202,
-                2000000000000203,
+                1000000000000101, 1000000000000102, 2000000000000103,
+                2000000000000104, 1000000000000201, 1000000000000202,
+                2000000000000203
             ])
 
         self.assertRowIDsMatch(
             f'{project_id}.{sandbox_id}.retract_{dataset_id}_dc111_dc-222_{OBSERVATION}',
-            ['observation_id'], [
-                2000000000000204,
+            ['observation_id'], [2000000000000204])
+
+        self.assertRowIDsMatch(
+            f'{project_id}.{dataset_id}.dc111_dc-222_{OBSERVATION_PERIOD}',
+            ['observation_period_id'], [
+                1000000000000101, 1000000000000102, 2000000000000103,
+                2000000000000104, 1000000000000201, 1000000000000202,
+                2000000000000203
             ])
+
+        self.assertRowIDsMatch(
+            f'{project_id}.{sandbox_id}.retract_{dataset_id}_dc111_dc-222_{OBSERVATION_PERIOD}',
+            ['observation_period_id'], [2000000000000204])
 
     @mock_patch_bundle
     def test_retract_skip_sandboxing(self, mock_ru_get_dataset_type,
