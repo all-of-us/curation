@@ -35,10 +35,7 @@ run_as = ''
 # -
 
 # These are the AoU_Custom and AoU_General concepts. Look for added concepts in the aou_vocab/CONCEPT.csv. Link Above. 
-custom_concepts = [2000000000,2000000001,2000000002,2000000003,2000000004,2000000005,
-                   2000000006,2000000007,2000000008,2000000009,2000000010,2000000011,
-                   2000000012,2000000013,2100000000,2100000001,2100000002,2100000003,
-                   2100000004,2100000005,2100000006,2100000007]
+custom_concepts = list(range(2000000000,2000000013+1)) + list(range(2100000000,2100000007+1))
 
 vocabulary_dataset_old = f'{project_id}.{old_vocabulary}'
 vocabulary_dataset_new = f'{project_id}.{new_vocabulary}'
@@ -113,23 +110,28 @@ execute(client, query, max_rows=True)
 # In the process of updating the vocabulary custom concepts are added to the vocabulary. <br>
 # The list of concepts should have been updated at the start of this notebook.<br>
 #
-# If the check fails, investigate. It is important that all of the custom concepts are added to the vocabulary.
+# **If the check fails**, investigate. It is important that all of the custom concepts are added to the vocabulary. To troubleshoot: Check that all concepts in the aou_vocab/CONCEPT.csv are accounted for in the custom_concepts list. Check the printed dataframe against the custom_concepts list
 
 # +
 tpl = JINJA_ENV.from_string('''
 SELECT
-COUNT(concept_code) as total
+concept_id
 FROM `{{vocabulary_dataset_new}}.concept` c
 WHERE vocabulary_id in ('AoU_Custom', 'AoU_General')
 OR concept_code IN ('AOU generated') 
+ORDER BY concept_id
 ''')
 query = tpl.render(vocabulary_dataset_old=vocabulary_dataset_old,
                    vocabulary_dataset_new=vocabulary_dataset_new,
                   custom_concepts=custom_concepts)
 df = execute(client, query, max_rows=True)
 
-display(df)
-print('This check passes if the total is ' + str(len(custom_concepts)))
+
+if len(df) != len(custom_concepts):
+    print(' \n FAILING! Look in the check description for more.')
+    display(df)
+else:
+    print(' \n This check passes!')
 # -
 
 # # Vocabulary Summary Queries
