@@ -1,0 +1,146 @@
+[
+    {
+        "name": "survey_conduct_id",
+        "type": "integer",
+        "description": "Unique identifier for each completed survey.\tFor each instance of a survey completion create a unique identifier.",
+        "mode": "required"
+    },
+    {
+        "name": "person_id",
+        "type": "integer",
+        "mode": "required",
+        "description": ""
+    },
+    {
+        "name": "survey_concept_id",
+        "description": "This is the Concept that represents the survey that was completed.\tPut the CONCEPT_ID that identifies the survey that the Person completed. There is no specified domain for this table but the concept class ‘staging/scales’ contains many common surveys. Accepted Concepts.",
+        "type": "integer",
+        "mode": "required"
+    },
+    {
+        "name": "survey_start_date",
+        "description": "Date on which the survey was started.",
+        "type": "date",
+        "mode": "nullable"
+    },
+    {
+        "name": "survey_start_datetime",
+        "description": "If no time given, set to midnight.",
+        "type": "timestamp",
+        "mode": "nullable"
+    },
+    {
+        "name": "survey_end_date",
+        "description": "Date on which the survey was completed.",
+        "type": "date",
+        "mode": "nullable"
+    },
+    {
+        "name": "survey_end_datetime",
+        "description": "If no time given, set to midnight.",
+        "type": "timestamp",
+        "mode": "required"
+    },
+    {
+        "name": "provider_id",
+        "description": "This is the Provider associated with the survey completion.\tThe ETL may need to make a choice as to which Provider to put here. This could either be the provider that ordered the survey or the provider who observed the completion of the survey.",
+        "type": "integer",
+        "mode": "nullable"
+    },
+    {
+        "name": "assisted_concept_id",
+        "description": "This is a Concept that represents whether the survey was completed with assistance or independently.\tThere is no specific domain or class for this field, just choose the one that best represents the value given in the source.",
+        "type": "integer",
+        "mode": "required"
+    },
+    {
+        "name": "respondent_type_concept_id",
+        "description": "",
+        "type": "integer",
+        "mode": "required"
+    },
+    {
+        "name": "timing_concept_id",
+        "description": "This is a Concept that represents the timing of the survey. For example this could be the 3-month follow-up appointment.\tThere is no specific domain or class for this field, just choose the one that best represents the value given in the source.",
+        "type": "integer",
+        "mode": "required"
+    },
+    {
+        "name": "collection_method_concept_id",
+        "description": "This Concept represents how the responses were collected.\tUse the concepts that have the relationship ‘Has Answer’ with the CONCEPT_ID 42529316.",
+        "type": "integer",
+        "mode": "required"
+    },
+    {
+        "name": "assisted_source_value",
+        "description": "Source value representing whether patient required assistance to complete the survey. Example: ‘Completed without assistance’, ‘Completed with assistance’.",
+        "type": "string",
+        "mode": "nullable"
+    },
+    {
+        "name": "respondent_type_source_value",
+        "description": "",
+        "type": "string",
+        "mode": "nullable"
+    },
+    {
+        "name": "timing_source_value",
+        "description": "Text string representing the timing of the survey. Example: Baseline, 6-month follow-up.",
+        "type": "string",
+        "mode": "nullable"
+    },
+    {
+        "name": "collection_method_source_value",
+        "description": "The collection method as it appears in the source data.",
+        "type": "string",
+        "mode": "nullable"
+    },
+    {
+        "name": "survey_source_value",
+        "description": "The survey name as it appears in the source data.",
+        "type": "string",
+        "mode": "nullable"
+    },
+    {
+        "name": "survey_source_concept_id",
+        "description": "If unavailable, set to 0.",
+        "type": "integer",
+        "mode": "required"
+    },
+    {
+        "name": "survey_source_identifier",
+        "description": "Unique identifier for each completed survey in source system.",
+        "type": "string",
+        "mode": "nullable"
+    },
+    {
+        "name": "validated_survey_concept_id",
+        "description": "If unavailable, set to 0.",
+        "type": "integer",
+        "mode": "required"
+    },
+    {
+        "name": "validated_survey_source_value",
+        "description": "Source value representing the validation status of the survey.",
+        "type": "integer",
+        "mode": "nullable"
+    },
+    {
+        "name": "survey_version_number",
+        "description": "Version number of the questionnaire or survey used.",
+        "type": "string",
+        "mode": "nullable"
+    },
+    {
+        "name": "visit_occurrence_id",
+        "description": "The Visit during which the Survey occurred.",
+        "type": "integer",
+        "mode": "nullable"
+    },
+    {
+        "name": "response_visit_occurrence_id",
+        "description": "The Visit during which any treatment related to the Survey was carried out.",
+        "type": "integer",
+        "mode": "nullable"
+    }
+]

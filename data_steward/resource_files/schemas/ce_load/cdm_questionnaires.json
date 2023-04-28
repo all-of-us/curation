@@ -1,0 +1,20 @@
+[
+    {
+        "type": "integer",
+        "name": "research_id",
+        "mode": "nullable",
+        "description": ""
+    },
+    {
+        "type": "integer",
+        "name": "questionnaire_response_id",
+        "mode": "nullable",
+        "description": ""
+    },
+    {
+        "type": "string",
+        "name": "survey_name",
+        "mode": "nullable",
+        "description": ""
+    }
+]
