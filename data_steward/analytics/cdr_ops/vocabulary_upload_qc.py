@@ -12,17 +12,12 @@
 #     name: python3
 # ---
 
-# + tags=["parameters"]
-project_id = ''
-old_vocabulary = ''
-new_vocabulary = ''
-run_as = ''
-# -
-
 #
-# # Description:
+# # Purpose:
+# This notebook is used to validate new uploads of the OMOP vocabularys prior to implementing in production.<br>
 #
-# > - These queries will ensure the new vocabulary is reliable prior to implementing in production. <br>
+#
+#  **Link to get the latest custom concepts [HERE](https://github.com/all-of-us/curation/blame/develop/data_steward/resource_files/aou_vocab/CONCEPT.csv).**
 #
 
 # # + Import packages
@@ -32,7 +27,15 @@ from gcloud.bq import BigQueryClient
 from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
 import pandas as pd
 
+# + tags=["parameters"]
+project_id = ''
+old_vocabulary = ''
+new_vocabulary = ''
+run_as = ''
 # -
+
+# These are the AoU_Custom and AoU_General concepts. Look for added concepts in the aou_vocab/CONCEPT.csv. Link Above.
+custom_concepts = list(range(2000000000,2000000013+1)) + list(range(2100000000,2100000007+1))
 
 vocabulary_dataset_old = f'{project_id}.{old_vocabulary}'
 vocabulary_dataset_new = f'{project_id}.{new_vocabulary}'
@@ -44,13 +47,14 @@ client = BigQueryClient(project_id, credentials=impersonation_creds)
 
 pd.set_option('max_colwidth', None)
 
+# # Validate PPI
+
+# ## Review the new PPI concepts
+# The dataframe will contain all new PPI concepts. <br>
+# Generally there will be additions to the PPI vocabulary between uploads, but it is also possible that the update contains changes only to the EHR vocabularies.<br>
 #
-# # PPI concept comparison, new concepts
-#
-# > - The dataframe will contain all new PPI concepts. <br>
-# > - Generally there will be additions to the PPI vocabulary between uploads, but not always.<br>
-# > - It is also possible that the update contains changes only to the EHR vocabularies.<br>
-# > - If the dataframe is empty, get confirmation from the survey team that no new PPI concepts are expected.<br>
+# > - **If the dataframe is not empty** - Manually review the new concepts cross referencing the vocabulary upload Jira ticket which should include the expected PPI updates to look for. If the ticket does not have this information contact the ticket reporter. <br>
+# > - **If the dataframe is empty** - There are no new PPI concepts. Verify this by referencing the 'vocabulary upload' Jira ticket which should include the expected PPI updates. If the ticket does not have this information contact the ticket reporter. <br>
 
 tpl = JINJA_ENV.from_string('''
 SELECT
@@ -66,16 +70,17 @@ query = tpl.render(vocabulary_dataset_old=vocabulary_dataset_old,
                    vocabulary_dataset_new=vocabulary_dataset_new)
 execute(client, query, max_rows=True)
 
+# # Review the retired or removed concepts
+# The dataframe will contain all PPI concepts that were newly deprecated or removed from Athena. <br>
+# Generally none would be deprecated or removed. <br>
 #
-# # PPI concept comparison, retired or removed concepts 
-#
-# > - The dataframe will contain all PPI concepts that were newly deprecated or removed from Athena. <br>
-# > - Generally none would be deprecated or removed. <br>
-# > - If the dataframe is not empty contact the survey team to inquire about the concepts.<br>
+# **If the dataframe is not empty** - Manually review the retired or removed concepts, cross referencing the vocabulary upload Jira ticket which should include the expected PPI updates to look for. If the ticket does not have this information contact the ticket reporter. <br>
+# **If the dataframe is empty** - There are no deprecated or removed PPI concepts. Verify this by referencing the 'vocabulary upload' Jira ticket which should include the expected PPI updates. If the ticket does not have this information contact the ticket reporter. <br>
 
 tpl = JINJA_ENV.from_string('''
 SELECT
-c.concept_code 
+c.concept_code,
+'removed' AS status
 FROM `{{vocabulary_dataset_old}}.concept` c
 WHERE c.concept_code NOT IN (SELECT concept_code 
                             FROM `{{vocabulary_dataset_new}}.concept`  
@@ -85,7 +90,8 @@ AND c.vocabulary_id LIKE "PPI"
 UNION ALL
 
 SELECT
-c.concept_code
+c.concept_code,
+'recently_deprecated' as status
 FROM `{{vocabulary_dataset_new}}.concept` c
 WHERE c.concept_code NOT IN (SELECT concept_code 
                             FROM `{{vocabulary_dataset_old}}.concept` 
@@ -98,27 +104,43 @@ query = tpl.render(vocabulary_dataset_old=vocabulary_dataset_old,
                    vocabulary_dataset_new=vocabulary_dataset_new)
 execute(client, query, max_rows=True)
 
-# +
-# How has relationship changed?
+# # Verify the updates made to the vocabulary in the upload process
 
-# changed_ppi_relationships=execute(f'''
-# SELECT SUM(CASE WHEN r1.is_hierarchical  != r2.is_hierarchical THEN 1 ELSE 0 END) change_hierarchy,
-#        SUM(CASE WHEN r1.defines_ancestry != r2.defines_ancestry THEN 1 ELSE 0 END) change_ancestry,
-#        SUM(CASE WHEN r1.reverse_relationship_id != r2.reverse_relationship_id THEN 1 ELSE 0 END) change_reverse_rel,
-#        SUM(CASE WHEN r1.relationship_concept_id != r2.relationship_concept_id THEN 1 ELSE 0 END) change_rel_concept
-# FROM `{vocabulary_dataset_old}.relationship` r1
-# JOIN `{vocabulary_dataset_new}.relationship` r2 ON r1.relationship_id = r2.relationship_id
-# JOIN `{vocabulary_dataset_new}.concept` c ON r1.relationship_concept_id = c.concept_id
-# WHERE c.vocabulary_id LIKE "PPI"
-# ''')
+# ## All AoU_Custom and AoU_General concepts are present in the new vocabulary
+# In the process of updating the vocabulary custom concepts are added to the vocabulary. <br>
+# The list of concepts should have been updated at the start of this notebook.<br>
+#
+# **If the check fails**, investigate. It is important that all of the custom concepts are added to the vocabulary. To troubleshoot: Check that all concepts in the aou_vocab/CONCEPT.csv are accounted for in the custom_concepts list. Check the printed dataframe against the custom_concepts list
+
+# +
+tpl = JINJA_ENV.from_string('''
+SELECT
+concept_id
+FROM `{{vocabulary_dataset_new}}.concept` c
+WHERE vocabulary_id in ('AoU_Custom', 'AoU_General')
+OR concept_code IN ('AOU generated') 
+ORDER BY concept_id
+''')
+query = tpl.render(vocabulary_dataset_old=vocabulary_dataset_old,
+                   vocabulary_dataset_new=vocabulary_dataset_new,
+                  custom_concepts=custom_concepts)
+df = execute(client, query, max_rows=True)
+
+
+if len(df) != len(custom_concepts):
+    print(' \n FAILING! Look in the check description for more.')
+    display(df)
+else:
+    print(' \n This check passes!')
 # -
 
-#
-# # Tables row count comparison
+# # Vocabulary Summary Queries
+
+# ## Tables row count comparison
 #
 # > - The difference between the number of rows in each table of the datasets.  <br>
-# > - Generally, all 'changes' should increase, but with the occasional edge case. <br>
-# > - Investigate any negative values, the release notes are a great starting reference. <br>
+# > - **Generally, all 'changes' should increase**, but with the occasional edge case. <br>
+# > - **Investigate any negative values**, the release notes are a great starting reference. <br>
 # > - [Release notes](https://github.com/OHDSI/Vocabulary-v5.0/releases).   <br>
 
 tpl = JINJA_ENV.from_string('''
@@ -147,27 +169,29 @@ execute(client, query, max_rows=True)
 # # Vocabulary_id comparison
 # > - The table will show the vocabulary_ids that exist in either the new or old datasets but not both. <br>
 # > - Generally, the same vocabularies should exist in each dataset, so the table below should be empty. <br>
-# > - Investigate if any are missing or added. [release notes](https://github.com/OHDSI/Vocabulary-v5.0/releases).  <br>
+#
+# **If the dataframe is empty** and a new vocabulary was not expected. This check passes.
+#
+# **If the dataframe is not empty** a vocabulary was either added or removed since the last upload. If this is not expected, investigate. [release notes](https://github.com/OHDSI/Vocabulary-v5.0/releases).
 
 tpl = JINJA_ENV.from_string('''
 WITH new_table_info AS (
-   SELECT vocabulary_id , count(vocabulary_id) AS c
-   FROM `{{vocabulary_dataset_new}}.vocabulary`
+   SELECT COUNT(vocabulary_id) AS new_concept_count, vocabulary_id
+   FROM `{{vocabulary_dataset_new}}.concept`
    GROUP BY vocabulary_id
 ),
 old_table_info AS (
-   SELECT vocabulary_id, count(vocabulary_id) AS c
-   FROM `{{vocabulary_dataset_old}}.vocabulary`
+   SELECT COUNT(vocabulary_id) AS old_concept_count, vocabulary_id
+   FROM `{{vocabulary_dataset_old}}.concept`
    GROUP BY vocabulary_id
 )
-
-SELECT
-n.vocabulary_id, n.c AS new_count, o.c AS old_count , o.vocabulary_id
-FROM new_table_info AS n
-FULL OUTER JOIN old_table_info AS o
+SELECT vocabulary_id,old_concept_count,new_concept_count, new_concept_count - old_concept_count AS diff
+FROM new_table_info
+FULL OUTER JOIN old_table_info
 USING (vocabulary_id)
-WHERE n.c != o.c
-ORDER BY n.vocabulary_id
+WHERE new_concept_count IS NULL
+OR old_concept_count IS NULL
+ORDER BY vocabulary_id
 ''')
 query = tpl.render(vocabulary_dataset_old=vocabulary_dataset_old,
                    vocabulary_dataset_new=vocabulary_dataset_new)
@@ -175,7 +199,7 @@ execute(client, query, max_rows=True)
 
 # # Row count comparison by vocabulary_id
 # > - Shows the number of individual concepts added or removed from each vocabulary.<br>
-# > - Generally the count should only increase (when it does change).<br>
+# > - **Generally the count should only increase** (when it does change).<br>
 # > - Investigate any negative differences.<br>
 # > - Changes to AoU_Custom and AoU_General can be validated by looking for Jira issues that affect the<br>
 #     data_steward/resource_files/aou_vocab/CONCEPT.csv file.<br>
@@ -214,5 +238,3 @@ order by grantee
 ''')
 query = tpl.render(project_id=project_id, new_vocabulary=new_vocabulary)
 execute(client, query)
-
-
