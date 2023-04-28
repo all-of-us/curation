@@ -17,7 +17,7 @@ from google.cloud.exceptions import GoogleCloudError
 # Project Imports
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
-from common import AOU_REQUIRED, JINJA_ENV, DEATH, PERSON
+from common import AOU_DEATH, AOU_REQUIRED, JINJA_ENV, DEATH, PERSON
 
 LOGGER = logging.getLogger(__name__)
 
@@ -53,10 +53,9 @@ class YearOfBirthRecordsSuppression(BaseCleaningRule):
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
-                         affected_tables=AOU_REQUIRED,
+                         affected_tables=AOU_REQUIRED + [AOU_DEATH],
                          table_namer=table_namer)
 
-        # default values
         self.tables_and_columns = {}
         self.observation_concept_id_columns = []
 
