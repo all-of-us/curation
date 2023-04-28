@@ -15,7 +15,7 @@ from utils import auth
 from gcloud.bq import BigQueryClient
 from utils import pipeline_logging
 from common import CDR_SCOPES
-from resources import replace_special_characters_for_labels, validate_date_string, cdm_schemas, rdr_specific_schemas
+from resources import replace_special_characters_for_labels, validate_date_string, cdm_schemas, rdr_specific_schemas, ce_schemas
 
 LOGGER = logging.getLogger(__name__)
 
@@ -73,8 +73,8 @@ def create_rdr_tables(client, rdr_dataset, bucket):
     :param rdr_dataset: The existing dataset to load file data into
     :param bucket: the gcs bucket containing the file data.
     """
-    schema_dict = cdm_schemas()
-    schema_dict.update(rdr_specific_schemas())
+    schema_dict = ce_schemas()
+    # schema_dict.update(rdr_specific_schemas())
 
     for table, schema in schema_dict.items():
         schema_list = client.get_table_schema(table, schema)

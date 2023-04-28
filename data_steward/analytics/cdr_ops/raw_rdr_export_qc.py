@@ -73,9 +73,7 @@ execute(client, query)
 # Combine step may break if any row IDs in the RDR are larger than the added constant(1,000,000,000,000,000).
 # Rows that are greater than 999,999,999,999,999 the will be listed out here.
 
-domain_table_list = [
-    table for table in CATI_TABLES if table not in [DEATH, FACT_RELATIONSHIP]
-]
+domain_table_list = ['person', 'observation', 'survey_conduct']
 queries = []
 for table in domain_table_list:
     tpl = JINJA_ENV.from_string('''

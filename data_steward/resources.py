@@ -34,6 +34,8 @@ resource_files_path = os.path.join(base_path, 'resource_files')
 config_path = os.path.join(base_path, 'config')
 fields_path = os.path.join(resource_files_path, 'schemas')
 cdm_fields_path = os.path.join(fields_path, 'cdm')
+ce_fields_path = os.path.join(fields_path, 'ce_load')
+
 vocabulary_fields_path = os.path.join(cdm_fields_path, 'vocabulary')
 rdr_fields_path = os.path.join(fields_path, 'rdr')
 internal_fields_path = os.path.join(fields_path, 'internal')
@@ -354,6 +356,28 @@ def cdm_schemas(include_achilles=False, include_vocabulary=False):
     for dir_path, dirs, files in os.walk(cdm_fields_path, topdown=True):
         # The following line updates the dirs list gathered by os.walk to exclude directories in exclude_directories[]
         dirs[:] = [d for d in dirs if d not in set(exclude_directories)]
+        for f in files:
+            file_path = os.path.join(dir_path, f)
+            with open(file_path, 'r', encoding='utf-8') as fp:
+                file_name = os.path.basename(f)
+                table_name = file_name.split('.')[0]
+                schema = json.load(fp)
+                result[table_name] = schema
+    return result
+
+
+def ce_schemas():
+    """
+    Get a dictionary mapping table_name -> schema
+
+    :param include_achilles:
+    :param include_vocabulary:
+    :return:
+    """
+    result = dict()
+    for dir_path, dirs, files in os.walk(ce_fields_path, topdown=True):
+        # The following line updates the dirs list gathered by os.walk to exclude directories in exclude_directories[]
+        dirs[:] = [d for d in dirs]
         for f in files:
             file_path = os.path.join(dir_path, f)
             with open(file_path, 'r', encoding='utf-8') as fp:
