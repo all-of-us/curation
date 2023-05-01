@@ -432,7 +432,7 @@ def hash_dir(in_dir):
     return hash_obj.hexdigest()
 
 
-CDM_TABLES = list(cdm_schemas().keys())
+CDM_TABLES = list(cdm_schemas().keys())  # NOTE it excludes AOU_DEATH
 MAPPING_TABLES = list(mapping_schemas().keys())
 ACHILLES_INDEX_FILES = achilles_index_files()
 CDM_CSV_FILES = [f'{table}.csv' for table in CDM_TABLES]
