@@ -1252,7 +1252,7 @@ class RetractDataBqGetPKforSBTableTest(BaseTest.BigQueryTestBase):
             f'{cls.project_id}.{cls.dataset_id}.dc111_dc-111_{OBSERVATION}',
             f'{cls.project_id}.{cls.dataset_id}.dc888_dc-888_{OBSERVATION}',
             f'{cls.project_id}.{cls.dataset_id}.dc999_dc-999_{OBSERVATION}',
-            f'{cls.project_id}.{cls.dataset_id}.dc999_dc-999_{MAPPING_PREFIX}{OBSERVATION}',
+            f'{cls.project_id}.{cls.dataset_id}.dc999_dc-999{MAPPING_PREFIX}{OBSERVATION}',
             f'{cls.project_id}.{cls.dataset_id}.dc111_dc-111_{OBSERVATION_PERIOD}',
         ])
 
