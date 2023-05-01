@@ -10,14 +10,15 @@ from unittest import mock
 
 # Project imports
 from app_identity import PROJECT_ID
-from common import (ACTIVITY_SUMMARY, COMBINED, DEID, EHR, FITBIT, JINJA_ENV,
-                    OBSERVATION, OBSERVATION_PERIOD, OTHER, PERSON, RDR,
-                    UNIONED_EHR)
+from common import (ACTIVITY_SUMMARY, COMBINED, DEATH, DEID, EHR, FITBIT,
+                    JINJA_ENV, MAPPING_PREFIX, OBSERVATION, OBSERVATION_PERIOD,
+                    OTHER, PERSON, RDR, UNIONED_EHR)
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 from retraction.retract_data_bq import (NONE, RETRACTION_ONLY_EHR,
                                         RETRACTION_RDR_EHR, get_datasets_list,
+                                        get_primary_key_for_sandbox_table,
                                         run_bq_retraction)
-from retraction.retract_utils import get_dataset_type, is_sandbox_dataset
+from retraction.retract_utils import get_dataset_type
 from constants.retraction.retract_utils import ALL_DATASETS
 
 CREATE_LOOKUP_TMPL = JINJA_ENV.from_string("""
@@ -1223,3 +1224,108 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
         for dataset_ids in [[NONE], [], None]:
             dataset_list = get_datasets_list(self.client, dataset_ids)
             self.assertEqual(dataset_list, [])
+
+
+class RetractDataBqGetPKforSBTableTest(BaseTest.BigQueryTestBase):
+
+    @classmethod
+    def setUpClass(cls):
+        print('**************************************************************')
+        print(cls.__name__)
+        print('**************************************************************')
+
+        super().initialize_class_vars()
+
+        cls.project_id = os.environ.get(PROJECT_ID)
+        cls.dataset_id = os.environ.get('BIGQUERY_DATASET_ID')
+
+        cls.fq_table_names.extend(
+            [f'{cls.project_id}.{cls.dataset_id}.{PERSON}'])
+
+        # tables for EHR dataset and sandbox dataset are in fq_sandbox_table_names
+        # because they have a prefix and create_table for fq_table_names do
+        # not work for tables with such naming.
+        cls.fq_sandbox_table_names.extend([
+            f'{cls.project_id}.{cls.dataset_id}.dc111_dc-111_{PERSON}',
+            f'{cls.project_id}.{cls.dataset_id}.dc111_dc-111_{DEATH}',
+            f'{cls.project_id}.{cls.dataset_id}.dc999_dc-999_{DEATH}',
+            f'{cls.project_id}.{cls.dataset_id}.dc111_dc-111_{OBSERVATION}',
+            f'{cls.project_id}.{cls.dataset_id}.dc888_dc-888_{OBSERVATION}',
+            f'{cls.project_id}.{cls.dataset_id}.dc999_dc-999_{OBSERVATION}',
+            f'{cls.project_id}.{cls.dataset_id}.dc999_dc-999_{MAPPING_PREFIX}{OBSERVATION}',
+            f'{cls.project_id}.{cls.dataset_id}.dc111_dc-111_{OBSERVATION_PERIOD}',
+        ])
+
+        super().setUpClass()
+
+    def setUp(self):
+        super().setUp()
+
+        create_sb_pers = self.jinja_env.from_string("""
+        CREATE OR REPLACE TABLE `{{project}}.{{dataset}}.dc111_dc-111_person`
+        (person_id INT64)
+        """).render(project=self.project_id, dataset=self.dataset_id)
+
+        create_sb_death = self.jinja_env.from_string("""
+        CREATE OR REPLACE TABLE `{{project}}.{{dataset}}.dc111_dc-111_death`
+        (person_id INT64)
+        """).render(project=self.project_id, dataset=self.dataset_id)
+
+        create_sb_deat_no_pk = self.jinja_env.from_string("""
+        CREATE OR REPLACE TABLE `{{project}}.{{dataset}}.dc999_dc-999_death`
+        (dummy_id INT64)
+        """).render(project=self.project_id, dataset=self.dataset_id)
+
+        create_sb_obs = self.jinja_env.from_string("""
+        CREATE OR REPLACE TABLE `{{project}}.{{dataset}}.dc111_dc-111_observation`
+        (observation_id INT64, person_id INT64)
+        """).render(project=self.project_id, dataset=self.dataset_id)
+
+        create_sb_obs_no_pk = self.jinja_env.from_string("""
+        CREATE OR REPLACE TABLE `{{project}}.{{dataset}}.dc888_dc-888_observation`
+        (person_id INT64)
+        """).render(project=self.project_id, dataset=self.dataset_id)
+
+        create_sb_obs_no_person_id = self.jinja_env.from_string("""
+        CREATE OR REPLACE TABLE `{{project}}.{{dataset}}.dc999_dc-999_observation`
+        (observation_id INT64)
+        """).render(project=self.project_id, dataset=self.dataset_id)
+
+        create_sb_obs_mapping = self.jinja_env.from_string("""
+        CREATE OR REPLACE TABLE `{{project}}.{{dataset}}.dc999_dc-999_mapping_observation`
+        (observation_id INT64, person_id INT64)
+        """).render(project=self.project_id, dataset=self.dataset_id)
+
+        create_sb_obs_period = self.jinja_env.from_string("""
+        CREATE OR REPLACE TABLE `{{project}}.{{dataset}}.dc111_dc-111_observation_period`
+        (observation_period_id INT64, person_id INT64)
+        """).render(project=self.project_id, dataset=self.dataset_id)
+
+        self.load_test_data([
+            create_sb_pers, create_sb_death, create_sb_deat_no_pk,
+            create_sb_obs, create_sb_obs_no_pk, create_sb_obs_no_person_id,
+            create_sb_obs_mapping, create_sb_obs_period
+        ])
+
+    def test_get_primary_key_for_sandbox_table(self):
+        """
+        Test for get_primary_key_for_sandbox_table() to confirm it returns
+        the primary key column that we can use for `only_ehr` retraction in
+        sandbox datasets.
+        """
+        expected_primary_keys = {
+            f"dc111_dc-111_{PERSON}": f"{PERSON}_id",
+            f"dc111_dc-111_{DEATH}": f"{PERSON}_id",
+            f"dc999_dc-999_{DEATH}": '',
+            f"dc111_dc-111_{OBSERVATION}": f"{OBSERVATION}_id",
+            f"dc888_dc-888_{OBSERVATION}": '',
+            f"dc999_dc-999_{OBSERVATION}": '',
+            f"dc999_dc-999_{MAPPING_PREFIX}{OBSERVATION}": '',
+            f"dc111_dc-111_{OBSERVATION_PERIOD}": f"{OBSERVATION_PERIOD}_id",
+        }
+
+        for table in expected_primary_keys:
+            self.assertTrue(
+                get_primary_key_for_sandbox_table(self.client, self.dataset_id,
+                                                  table) ==
+                expected_primary_keys[table])

@@ -16,9 +16,9 @@ from utils import pipeline_logging
 from gcloud.bq import BigQueryClient
 from common import (AOU_REQUIRED, CARE_SITE, CATI_TABLES, CONDITION_ERA, DEATH,
                     DOSE_ERA, DRUG_ERA, FACT_RELATIONSHIP, ID_CONSTANT_FACTOR,
-                    JINJA_ENV, LOCATION, MEASUREMENT, NOTE_NLP, OBSERVATION,
-                    OBSERVATION_PERIOD, PAYER_PLAN_PERIOD, PERSON, PII_TABLES,
-                    PROVIDER, UNIONED_EHR)
+                    JINJA_ENV, LOCATION, MAPPING_PREFIX, MEASUREMENT, NOTE_NLP,
+                    OBSERVATION, OBSERVATION_PERIOD, PAYER_PLAN_PERIOD, PERSON,
+                    PII_TABLES, PROVIDER, UNIONED_EHR)
 from resources import mapping_table_for
 from retraction.retract_utils import (get_datasets_list, get_dataset_type,
                                       is_combined_dataset, is_deid_dataset,
@@ -433,17 +433,28 @@ def get_primary_key_for_sandbox_table(client: BigQueryClient, dataset,
 
     This function looks at the sandbox table name, gets its domain, checks if 
     the domain_id and person_id columns exists in the table, and returns the domain_id
-    we can use for retraction. 
+    we can use for retraction. Sandbox tables for mapping/ext tables are skipped.
 
     :param client: BigQuery client
     :param dataset: Dataset to run retraction on
     :param table: name of the sandbox table that needs retraction
     :return: column name that the retraction must run on. 
         Returns '' if the domain table cannot be identified, the domain table
-        does not contain person_id and/or domain_id, or the domain table does 
-        not contain EHR data.
+        does not contain person_id and/or domain_id, the domain table does 
+        not contain EHR data, or the table is a sandbox table for a mapping/ext table.
     """
     domain_tables = set(AOU_REQUIRED + OTHER_PID_TABLES) - set(NON_PID_TABLES)
+
+    if MAPPING_PREFIX in table:
+        return ''
+
+    col_names = [
+        col.name for col in client.get_table(
+            f'{client.project}.{dataset}.{table}').schema
+    ]
+
+    if all(col_name != f"{PERSON}_id" for col_name in col_names):
+        return ''
 
     for domain in domain_tables:
         if table.endswith(domain):
@@ -451,14 +462,10 @@ def get_primary_key_for_sandbox_table(client: BigQueryClient, dataset,
             if domain == DEATH:
                 domain_id = f"{PERSON}_id"
 
-            elif domain == OBSERVATION and OBSERVATION_PERIOD in table:
-                domain_id = f"{OBSERVATION_PERIOD}_id"
-
             else:
                 domain_id = f"{domain}_id"
 
-            if any(col.name == domain_id for col in client.get_table(
-                    f'{client.project}.{dataset}.{table}').schema):
+            if any(col_name == domain_id for col_name in col_names):
                 return domain_id
 
     return ''
