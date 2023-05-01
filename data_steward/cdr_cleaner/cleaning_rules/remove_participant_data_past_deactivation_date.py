@@ -80,6 +80,10 @@ WHERE (start_datetime IS NOT NULL AND TIMESTAMP(start_datetime) >= d.deactivated
     OR (sleep_date IS NOT NULL AND sleep_date >= DATE(d.deactivated_datetime))
 {% elif table_ref.table_id == 'sleep_daily_summary' %}
 WHERE (sleep_date IS NOT NULL AND sleep_date >= DATE(d.deactivated_datetime))
+{% elif table_ref.table_id == 'device' %}
+WHERE (device_date IS NULL OR last_sync_time IS NULL)
+    OR (device_date >= DATE(d.deactivated_datetime))
+    OR (last_sync_time >= d.deactivated_datetime)
 {% else %}
 WHERE ({{datetime}} IS NOT NULL AND {{datetime}} >= d.deactivated_datetime)
 OR ({{datetime}} IS NULL AND {{date}} >= DATE(d.deactivated_datetime))

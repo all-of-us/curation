@@ -19,7 +19,7 @@ from google.cloud.bigquery import TableReference
 # Project imports
 from common import (AOU_DEATH, JINJA_ENV, OBSERVATION, DRUG_EXPOSURE, DEATH,
                     PERSON, SURVEY_CONDUCT, HEART_RATE_MINUTE_LEVEL,
-                    SLEEP_LEVEL, STEPS_INTRADAY)
+                    SLEEP_LEVEL, STEPS_INTRADAY, DEVICE)
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.remove_participant_data_past_deactivation_date import (
     RemoveParticipantDataPastDeactivationDate, DEACTIVATED_PARTICIPANTS, DATE,
@@ -182,6 +182,26 @@ class RemoveParticipantDataPastDeactivationDateTest(
         VALUES
         (1, '2010-01-01','true', 'light', '2010-01-01T00:00:00', 3.5),
         (1, '2008-11-18','false', 'wake', '2008-11-18T05:00:00', 4.5)
+        """),
+            DEVICE:
+                JINJA_ENV.from_string("""
+        INSERT INTO `{{table.project}}.{{table.dataset_id}}.{{table.table_id}}`
+        (person_id, device_date, last_sync_time)
+        VALUES
+        -- Both date fields occur after deactivation. Sandboxed --
+        (1, '2010-01-01', '2010-01-01T00:00:00'),
+        -- Both date fields occur before deactivation. No change. --
+        (1, '2008-11-18', '2008-11-18T05:00:00'),
+        -- last_sync_time occurs after deactivation. Sandboxed --
+        (2, '2008-01-01', '2010-01-01T00:00:00'),
+        -- date occurs after deactivation. Sandboxed. --
+        (2, '2010-11-18', '2008-11-18T05:00:00'),
+        -- date is NULL. Sandboxed --
+        (3, NULL, '2010-01-01T00:00:00'),
+        -- last_sync_time is NULL Sandboxed. --
+        (3, '2010-11-18', NULL),
+        -- Both date fields are null --
+        (3, NULL, NULL)
         """)
         }
 
@@ -361,6 +381,17 @@ class RemoveParticipantDataPastDeactivationDateTest(
             'fields': ['person_id', 'duration_in_min'],
             'loaded_ids': [1, 1],
             'sandboxed_ids': [1],
+            'cleaned_values': [(1, 4.5)]
+        }, {
+            'name':
+                DEVICE,
+            'fq_table_name':
+                f'{self.project_id}.{self.dataset_id}.{DEVICE}',
+            'fq_sandbox_table_name':
+                f'{self.project_id}.{self.sandbox_id}.{self.rule_instance.sandbox_table_for(DEVICE)}',
+            'fields': ['person_id', 'duration_in_min'],
+            'loaded_ids': [1, 1, 2, 2, 3, 3, 3],
+            'sandboxed_ids': [1, 2, 2, 3, 3, 3],
             'cleaned_values': [(1, 4.5)]
         }]
 
