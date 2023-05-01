@@ -33,12 +33,15 @@ class AddHPOTest(TestCase):
     def test_verify_hpo_site_info_up_to_date(self):
         df_1 = pd.DataFrame({'HPO_ID': ['FAKE_1', 'FAKE_2']})
         df_2 = pd.DataFrame({'hpo_id': ['fake_1', 'fake_2']})
+        df_3 = pd.DataFrame({'hpo_id': ['fake_2', 'fake_3']})
         add_hpo.verify_hpo_site_info_up_to_date(df_1, df_2, 'site_mapping')
-        df_3 = pd.DataFrame({'hpo_id': ['fake_1', 'fake_3']})
+        df_4 = pd.DataFrame({'hpo_id': ['fake_1', 'fake_4']})
         self.assertRaises(ValueError, add_hpo.verify_hpo_site_info_up_to_date,
-                          df_1, df_3, 'site_mapping')
+                          df_1, df_4, 'site_mapping')
         self.assertRaises(ValueError, add_hpo.verify_hpo_site_info_up_to_date,
-                          df_2, df_3, 'bucket_name')
+                          df_2, df_4, 'bucket_name')
+        self.assertRaises(ValueError, add_hpo.verify_hpo_site_info_up_to_date,
+                          df_3, df_4, 'site_maskings')
 
     @mock.patch('bq_utils.get_hpo_info')
     @mock.patch('tools.add_hpo.pd.read_csv')
@@ -135,38 +138,46 @@ class AddHPOTest(TestCase):
             'hpo_id': 'fake_3',
             'hpo_name': 'fake_name',
             'display_order': 3,
-            'bucket_name': 'fake_bucket'
+            'bucket_name': 'fake_bucket',
+            'us_state': 'PIIState_fake3',
+            'value_source_concept_id': 1011010
         }
         hpo_site_csv_path = 'hpo_site_csv_files'
         mock_mapping_file_path = Path(
             hpo_site_csv_path) / bq_consts.MAPPING_CSV_FILE
         mock_bucket_file_path = Path(
             hpo_site_csv_path) / bq_consts.BUCKET_NAME_CSV_FILE
+        mock_src_hpos_file_path = Path(
+            hpo_site_csv_path) / bq_consts.SITE_MASKINGS_CSV_FILE
 
         with mock.patch.object(Path, 'is_file') as mock_is_file:
             mock_is_file.return_value = False
             mock_mapping_file_path.is_file()
             mock_bucket_file_path.is_file()
+            mock_src_hpos_file_path.is_file()
 
             self.assertRaises(RuntimeError, add_hpo.add_hpo_site_to_csv_files,
                               new_site['hpo_id'], new_site['hpo_name'],
                               new_site['org_id'], new_site['bucket_name'],
-                              hpo_site_csv_path, new_site['display_order'])
+                              hpo_site_csv_path, new_site['us_state'],
+                              new_site['value_source_concept_id'],
+                              new_site['display_order'])
 
             add_hpo.add_hpo_site_mappings_csv = mock.MagicMock()
             add_hpo.add_hpo_id_bucket_name_csv = mock.MagicMock()
+            add_hpo.add_src_hpos_allowed_state_csv = mock.MagicMock()
 
             # Setting file exists at both mock_bucket_file_path and mock_mapping_file_path to True
             mock_is_file.return_value = True
             mock_mapping_file_path.is_file()
             mock_bucket_file_path.is_file()
+            mock_src_hpos_file_path.is_file()
 
-            add_hpo.add_hpo_site_to_csv_files(new_site['hpo_id'],
-                                              new_site['hpo_name'],
-                                              new_site['org_id'],
-                                              new_site['bucket_name'],
-                                              hpo_site_csv_path,
-                                              new_site['display_order'])
+            add_hpo.add_hpo_site_to_csv_files(
+                new_site['hpo_id'], new_site['hpo_name'], new_site['org_id'],
+                new_site['bucket_name'], hpo_site_csv_path,
+                new_site['us_state'], new_site['value_source_concept_id'],
+                new_site['display_order'])
 
             add_hpo.add_hpo_site_mappings_csv.assert_called_with(
                 new_site['hpo_id'], new_site['hpo_name'], new_site['org_id'],
@@ -175,6 +186,10 @@ class AddHPOTest(TestCase):
             add_hpo.add_hpo_id_bucket_name_csv.assert_called_with(
                 new_site['hpo_id'], new_site['bucket_name'],
                 mock_bucket_file_path)
+
+            add_hpo.add_src_hpos_allowed_state_csv.assert_called_with(
+                new_site['hpo_id'], new_site['us_state'],
+                new_site['value_source_concept_id'], mock_src_hpos_file_path)
 
     @mock.patch('bq_utils.get_hpo_bucket_info')
     @mock.patch('tools.add_hpo.pd.read_csv')
@@ -224,4 +239,56 @@ class AddHPOTest(TestCase):
         # Check for adding a site that exist in hpo_id_bucket_name.csv file.
         self.assertRaises(ValueError, add_hpo.add_hpo_id_bucket_name_file_df,
                           new_site['hpo_id'], new_site['bucket_name'],
+                          self.hpo_id_bucket_name_path)
+
+    @mock.patch('bq_utils.get_hpo_site_state_info')
+    @mock.patch('tools.add_hpo.pd.read_csv')
+    def test_add_src_hpos_allowed_state_file_df(self, mock_read_csv,
+                                                mock_hpo_site_state_info):
+        mock_hpo_site_state_info.return_value = [{
+            'hpo_id': 'fake_1',
+            'state': 'PIIState_fake1'
+        }, {
+            'hpo_id': 'fake_2',
+            'state': 'PIIState_fake2'
+        }, {
+            'hpo_id': 'fake_4',
+            'state': 'PIIState_fake4'
+        }]
+        mock_read_csv.return_value = pd.DataFrame({
+            'State': ['PIIState_fake1', 'PIIState_fake2', 'PIIState_fake4'],
+            'value_source_concept_id': [1101011, 1101010, 1011101],
+            'hpo_id': ['fake_1', 'fake_2', 'fake_4']
+        })
+
+        new_site = {
+            'org_id': 'fake_org_3',
+            'hpo_id': 'fake_3',
+            'hpo_name': 'fake_name_3',
+            'display_order': 3,
+            'bucket_name': 'fake_bucket_name_3',
+            'us_state': 'PIIState_fake3',
+            'value_source_concept_id': 1011010
+        }
+        actual_df = add_hpo.add_src_hpos_allowed_state_file_df(
+            new_site['hpo_id'], new_site['us_state'],
+            new_site['value_source_concept_id'], self.hpo_id_bucket_name_path)
+
+        expected_df = pd.DataFrame({
+            'State': [
+                'PIIState_fake1', 'PIIState_fake2', 'PIIState_fake4',
+                'PIIState_fake3'
+            ],
+            'value_source_concept_id': [1101011, 1101010, 1011101, 1011010],
+            'hpo_id': ['fake_1', 'fake_2', 'fake_4', 'fake_3']
+        })
+
+        pd.testing.assert_frame_equal(actual_df.reset_index(drop=True),
+                                      expected_df.reset_index(drop=True))
+
+        # Check for adding a site that exist in src_hpos_to_allowed_states.csv file.
+        self.assertRaises(ValueError,
+                          add_hpo.add_src_hpos_allowed_state_file_df,
+                          new_site['hpo_id'], new_site['us_state'],
+                          new_site['value_source_concept_id'],
                           self.hpo_id_bucket_name_path)
