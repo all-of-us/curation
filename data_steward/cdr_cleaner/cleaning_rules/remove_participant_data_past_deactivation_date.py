@@ -16,7 +16,7 @@ import logging
 from pandas import DataFrame
 
 # Project imports
-from common import FITBIT_TABLES, JINJA_ENV
+from common import AOU_DEATH, FITBIT_TABLES, JINJA_ENV
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 import utils.participant_summary_requests as psr
 from constants.bq_utils import WRITE_TRUNCATE
@@ -62,7 +62,7 @@ OR ({{end_datetime}} IS NULL AND {{end_date}} IS NULL AND {{start_datetime}} IS 
 OR verbatim_end_date >= DATE(d.deactivated_datetime))
 {% else %} )
 {% endif %}
-{% elif table_ref.table_id == 'death' %}
+{% elif table_ref.table_id in ['death', 'aou_death'] %}
 WHERE (death_datetime IS NOT NULL AND death_datetime >= d.deactivated_datetime)
 OR (death_datetime IS NULL AND death_date >= DATE(d.deactivated_datetime))
 {% elif table_ref.table_id in ['activity_summary', 'heart_rate_summary'] %}
@@ -141,7 +141,8 @@ class RemoveParticipantDataPastDeactivationDate(BaseCleaningRule):
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
-                         affected_tables=CDM_TABLES + FITBIT_TABLES,
+                         affected_tables=CDM_TABLES + FITBIT_TABLES +
+                         [AOU_DEATH],
                          table_namer=table_namer)
         self.api_project_id = api_project_id
         self.destination_table = (f'{self.project_id}.{self.sandbox_dataset_id}'

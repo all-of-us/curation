@@ -17,8 +17,9 @@ import pandas as pd
 from google.cloud.bigquery import TableReference
 
 # Project imports
-from common import JINJA_ENV, OBSERVATION, DRUG_EXPOSURE, DEATH, PERSON, SURVEY_CONDUCT, HEART_RATE_MINUTE_LEVEL, \
-    SLEEP_LEVEL, STEPS_INTRADAY
+from common import (AOU_DEATH, JINJA_ENV, OBSERVATION, DRUG_EXPOSURE, DEATH,
+                    PERSON, SURVEY_CONDUCT, HEART_RATE_MINUTE_LEVEL,
+                    SLEEP_LEVEL, STEPS_INTRADAY)
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.remove_participant_data_past_deactivation_date import (
     RemoveParticipantDataPastDeactivationDate, DEACTIVATED_PARTICIPANTS, DATE,
@@ -117,6 +118,17 @@ class RemoveParticipantDataPastDeactivationDateTest(
         (3,'2011-01-18','2011-01-18 05:00:00 UTC',6),
         (4,'2009-11-25','2009-11-25 00:30:00 UTC',6),
         (5,'2009-09-20',NULL,6)
+        """),
+            AOU_DEATH:
+                JINJA_ENV.from_string("""
+        INSERT INTO `{{table.project}}.{{table.dataset_id}}.{{table.table_id}}`
+        (aou_death_id, person_id, death_date, death_datetime, death_type_concept_id, src_id, primary_death_record)
+        VALUES
+        ('a2', 2, '2008-03-12', '2008-03-12 05:00:00 UTC', 8, 'hpo_a', True),
+        ('b2', 2, '2018-03-12', '2018-03-12 05:00:00 UTC', 8, 'hpo_b', False),
+        ('a3', 3, '2011-01-18', '2011-01-18 05:00:00 UTC', 6, 'rdr', True),
+        ('a4', 4, '2009-11-25', '2009-11-25 00:30:00 UTC', 6, 'hpo_c', True),
+        ('a5', 5, '2009-09-20', NULL, 6, 'hpo_a', True)
         """),
             DRUG_EXPOSURE:
                 JINJA_ENV.from_string("""
@@ -306,6 +318,17 @@ class RemoveParticipantDataPastDeactivationDateTest(
             'loaded_ids': [2, 3, 4, 5],
             'sandboxed_ids': [3, 5],
             'cleaned_values': [(2,), (4,)]
+        }, {
+            'name':
+                AOU_DEATH,
+            'fq_table_name':
+                f'{self.project_id}.{self.dataset_id}.{AOU_DEATH}',
+            'fq_sandbox_table_name':
+                f'{self.project_id}.{self.sandbox_id}.{self.rule_instance.sandbox_table_for(AOU_DEATH)}',
+            'fields': ['aou_death_id'],
+            'loaded_ids': ['a2', 'b2', 'a3', 'a4', 'a5'],
+            'sandboxed_ids': ['b2', 'a3', 'a5'],
+            'cleaned_values': [('a2',), ('a4',)]
         }, {
             'name':
                 HEART_RATE_MINUTE_LEVEL,
