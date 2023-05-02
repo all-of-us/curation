@@ -18,7 +18,8 @@ from common import (VOCABULARY, ACHILLES, PROCESSED_TXT, RESULTS_HTML,
                     DRUG_EXPOSURE, MEASUREMENT, NOTE, OBSERVATION,
                     PROCEDURE_OCCURRENCE, SPECIMEN, VISIT_OCCURRENCE,
                     VISIT_DETAIL, CONDITION_ERA, DRUG_ERA, DOSE_ERA,
-                    PAYER_PLAN_PERIOD, OBSERVATION_PERIOD, NOTE_NLP, JINJA_ENV)
+                    PAYER_PLAN_PERIOD, OBSERVATION_PERIOD, NOTE_NLP, JINJA_ENV,
+                    AOU_DEATH)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -100,6 +101,7 @@ VALIDATION_STATE_CSV = os.path.join(resource_files_path, 'validation',
 # primary date fields
 PRIMARY_DATE_FIELDS = {
     CONDITION_OCCURRENCE: 'condition_start_date',
+    AOU_DEATH: 'death_date',
     DEATH: 'death_date',
     DEVICE_EXPOSURE: 'device_exposure_start_date',
     DRUG_EXPOSURE: 'drug_exposure_start_date',
@@ -589,17 +591,19 @@ def get_base_table_name(table_id, hpo_id=None):
 
 def has_primary_key(table):
     """
-    Determines if a CDM table contains a numeric primary key field
-
-    :param table: name of a CDM table
-    :return: True if the CDM table contains a primary key field, False otherwise
+    Determines if a table has a primary key field.
+    If the table is a CDM table, the key is numeric.
+    If the table is AOU_DEATH, the key is string.
+    :param table: name of a table
+    :return: True if the table contains a primary key field, False otherwise
     """
-    if table not in CDM_TABLES:
+    if table not in CDM_TABLES + [AOU_DEATH]:
         raise AssertionError()
     fields = fields_for(table)
     id_field = table + '_id'
+    data_type = 'string' if table == AOU_DEATH else 'integer'
     return any(field for field in fields
-               if field['type'] == 'integer' and field['name'] == id_field)
+               if field['type'] == data_type and field['name'] == id_field)
 
 
 def get_primary_key(table: str) -> List[str]:
