@@ -1092,6 +1092,9 @@ def run_retraction_cron():
 
     # Run cleaning rules
     for dataset_id in dataset_ids:
+        if 'sandbox' in dataset_id.lower():
+            continue
+
         logging.info(f"Running CRs for {dataset_id}...")
         cleaning_args = [
             '-p', project_id, '-d', dataset_id, '-b', sandbox_dataset_id,
@@ -1102,7 +1105,7 @@ def run_retraction_cron():
         clean_cdr.main(args=all_cleaning_args)
         logging.info(f"Completed running CRs for {dataset_id}...")
 
-        # retract from gcs
+    # retract from gcs
     if retraction_type == 'bucket':
         folder = bq_utils.get_retraction_submission_folder()
         logging.info(
