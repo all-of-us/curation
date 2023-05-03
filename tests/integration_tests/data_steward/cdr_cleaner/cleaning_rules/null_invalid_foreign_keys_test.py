@@ -18,10 +18,12 @@ from dateutil import parser
 
 # Project imports
 from app_identity import PROJECT_ID
+from common import (AOU_DEATH, CARE_SITE, LOCATION, MAPPING_PREFIX, PERSON,
+                    PROCEDURE_OCCURRENCE, PROVIDER, VISIT_OCCURRENCE)
 from cdr_cleaner.cleaning_rules.null_invalid_foreign_keys import NullInvalidForeignKeys
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
-sandbox_table_names = ['procedure_occurrence', 'person']
+sandbox_table_names = [AOU_DEATH, PROCEDURE_OCCURRENCE, PERSON]
 
 
 class NullInvalidForeignKeysTest(BaseTest.CleaningRulesTestBase):
@@ -41,16 +43,17 @@ class NullInvalidForeignKeysTest(BaseTest.CleaningRulesTestBase):
         # set the expected test datasets
         dataset_id = os.environ.get('UNIONED_DATASET_ID')
         cls.dataset_id = dataset_id
-        sandbox_id = dataset_id + '_sandbox'
+        sandbox_id = f'{dataset_id}_sandbox'
         cls.sandbox_id = sandbox_id
 
         cls.rule_instance = NullInvalidForeignKeys(project_id, dataset_id,
                                                    sandbox_id)
 
         selected_table_names = [
-            '_mapping_provider', '_mapping_visit_occurrence',
-            '_mapping_location', '_mapping_care_site', 'procedure_occurrence',
-            'person'
+            f'{MAPPING_PREFIX}{PROVIDER}',
+            f'{MAPPING_PREFIX}{VISIT_OCCURRENCE}',
+            f'{MAPPING_PREFIX}{LOCATION}', f'{MAPPING_PREFIX}{CARE_SITE}',
+            PROCEDURE_OCCURRENCE, PERSON, AOU_DEATH
         ]
 
         for table_name in sandbox_table_names:
@@ -95,7 +98,7 @@ class NullInvalidForeignKeysTest(BaseTest.CleaningRulesTestBase):
         statements and the tables_and_counts variable.
         """
         # mocks the return value of get_affected_tables as we only want to loop through the
-        # procedure_occurrence and person tables, not all of the CDM tables
+        # procedure_occurrence, person, and aou_death tables, not all of the CDM tables
         mock_get_affected_tables.return_value = sandbox_table_names
 
         # load statements for the mapping tables
@@ -150,15 +153,27 @@ class NullInvalidForeignKeysTest(BaseTest.CleaningRulesTestBase):
             (777, 101, 1995, 101, 101, 3, 1, 4)""").render(
             fq_dataset_name=self.fq_dataset_name)
 
+        aou_death = self.jinja_env.from_string("""
+        INSERT INTO `{{fq_dataset_name}}.aou_death`
+            (aou_death_id, person_id, death_date, death_type_concept_id, cause_concept_id, cause_source_concept_id, src_id, primary_death_record)
+        VALUES
+            -- Valid person_id. Nothing happens. --
+            ('a1', 555, date('2020-05-05'), 0, 0, 0, 'rdr', False),
+            ('a2', 555, date('2021-05-05'), 0, 0, 0, 'hpo_b', False),
+            -- Invalid person_id. person_id will be nulled --
+            ('a3', 9999, date('2020-05-05'), 0, 0, 0, 'rdr', False),
+            ('a4', 9999, date('2021-05-05'), 0, 0, 0, 'hpo_b', False)
+        """).render(fq_dataset_name=self.fq_dataset_name)
+
         self.load_test_data([
             mapping_procedure, mapping_visit_occurrence, mapping_location,
-            mapping_care_site, procedure_occurrence, person
+            mapping_care_site, procedure_occurrence, person, aou_death
         ])
 
         tables_and_counts = [
             {
                 'fq_table_name':
-                    '.'.join([self.fq_dataset_name, 'procedure_occurrence']),
+                    '.'.join([self.fq_dataset_name, PROCEDURE_OCCURRENCE]),
                 'fields': [
                     'procedure_occurrence_id', 'person_id',
                     'procedure_concept_id', 'procedure_date',
@@ -178,7 +193,7 @@ class NullInvalidForeignKeysTest(BaseTest.CleaningRulesTestBase):
             },
             {
                 'fq_table_name':
-                    '.'.join([self.fq_dataset_name, 'person']),
+                    '.'.join([self.fq_dataset_name, PERSON]),
                 'fields': [
                     'person_id', 'gender_concept_id', 'year_of_birth',
                     'race_concept_id', 'ethnicity_concept_id', 'location_id',
@@ -193,6 +208,15 @@ class NullInvalidForeignKeysTest(BaseTest.CleaningRulesTestBase):
                     # valid test values, no changes
                     (777, 101, 1995, 101, 101, 3, 1, 4)
                 ]
+            },
+            {
+                'fq_table_name':
+                    '.'.join([self.fq_dataset_name, AOU_DEATH]),
+                'fields': ['aou_death_id', 'person_id'],
+                'loaded_ids': ['a1', 'a2', 'a3', 'a4'],
+                'sandboxed_ids': ['a3', 'a4'],
+                'cleaned_values': [('a1', 555), ('a2', 555), ('a3', None),
+                                   ('a4', None)]
             }
         ]
 

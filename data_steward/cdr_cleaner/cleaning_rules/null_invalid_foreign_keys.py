@@ -17,7 +17,7 @@ import logging
 
 # Project Imports
 import resources
-from common import JINJA_ENV
+from common import AOU_DEATH, JINJA_ENV, MAPPING_PREFIX
 from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
@@ -84,7 +84,7 @@ class NullInvalidForeignKeys(BaseCleaningRule):
         
         :return: list of affected tables
         """
-        return resources.CDM_TABLES
+        return resources.CDM_TABLES + [AOU_DEATH]
 
     def get_mapping_table(self, domain_table):
         """
@@ -94,7 +94,7 @@ class NullInvalidForeignKeys(BaseCleaningRule):
             'condition_occurrence')
         :return: mapping table name
         """
-        return '_mapping_' + domain_table
+        return f'{MAPPING_PREFIX}{domain_table}'
 
     def get_field_names(self, table):
         """
