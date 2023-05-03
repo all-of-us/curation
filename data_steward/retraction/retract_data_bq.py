@@ -59,11 +59,15 @@ FROM `{{project}}.{{dataset}}.{{table}}`
 WHERE person_id IN (
     SELECT {{person_id}} FROM `{{project}}.{{sb_dataset}}.{{lookup_table_id}}`
 )
-{% if is_sandbox and retraction_type == 'only_ehr' %}
--- NOTE Though 'only_ehr', this condition also drops RDR data that are affected by --
--- the CR `domain_alignment`. We cannot avoid it under our current pipeline design. --
+{% if retraction_type == 'rdr_and_ehr' %}
+    -- No additional condition is needed for rdr_and_ehr retraction --
+{% elif is_ehr_dataset or is_unioned_dataset %}
+    -- No additional condition is needed for EHR/UnionedEHR retraction --
+{% elif is_sandbox %}
+    -- NOTE Though 'only_ehr', this condition also drops RDR data that are affected by --
+    -- the CR `domain_alignment`. We cannot avoid it under our current pipeline design. --
 AND {{domain_id}} > {{id_const}}
-{% elif table != 'death' and retraction_type == 'only_ehr' %}
+{% elif table != 'death' %}
 AND {{table}}_id IN (
     {% if is_deid %}
     SELECT {{table}}_id FROM `{{project}}.{{dataset}}.{{table}}_ext` WHERE src_id LIKE 'EHR%'
@@ -215,6 +219,8 @@ def get_retraction_queries(client: BigQueryClient,
                 person_id=person_id,
                 lookup_table_id=lookup_table_id,
                 is_sandbox=is_sandbox_dataset(dataset_id),
+                is_ehr_dataset=is_ehr_dataset(dataset_id),
+                is_unioned_dataset=is_unioned_dataset(dataset_id),
                 domain_id=get_primary_key_for_sandbox_table(
                     client, dataset_id, table),
                 id_const=2 * ID_CONSTANT_FACTOR,
@@ -374,6 +380,9 @@ def skip_table_retraction(client: BigQueryClient, dataset_id, table_id,
             f'{client.project}.{dataset_id}.{table_id}').table_type == 'VIEW':
         LOGGER.info(msg_view)
         return True
+
+    if is_ehr_dataset(dataset_id) or is_unioned_dataset(dataset_id):
+        return False
 
     if retraction_type == RETRACTION_ONLY_EHR:
 
@@ -541,16 +550,13 @@ def run_bq_retraction(project_id,
         # Argument hpo_id is effective for only EHR dataset.
         hpo_id = hpo_id if is_ehr_dataset(dataset) else ''
 
-        queries = get_retraction_queries(
-            client,
-            dataset,
-            sandbox_dataset_id,
-            lookup_table_id,
-            skip_sandboxing,
-            retraction_type=retraction_type
-            if not (is_ehr_dataset(dataset) and is_unioned_dataset(dataset))
-            else '',
-            hpo_id=hpo_id)
+        queries = get_retraction_queries(client,
+                                         dataset,
+                                         sandbox_dataset_id,
+                                         lookup_table_id,
+                                         skip_sandboxing,
+                                         retraction_type=retraction_type,
+                                         hpo_id=hpo_id)
 
         LOGGER.info(f"Started retracting from dataset {dataset}")
         retraction_query_runner(client, queries)
