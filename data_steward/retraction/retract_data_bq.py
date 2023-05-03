@@ -541,18 +541,16 @@ def run_bq_retraction(project_id,
         # Argument hpo_id is effective for only EHR dataset.
         hpo_id = hpo_id if is_ehr_dataset(dataset) else ''
 
-        # Following datasets must not reference mapping tables
-        # So retraction_type must be None (act same as RDR_AND_EHR)
-        if (is_ehr_dataset(dataset) or is_unioned_dataset(dataset)):
-            retraction_type = None
-
-        queries = get_retraction_queries(client,
-                                         dataset,
-                                         sandbox_dataset_id,
-                                         lookup_table_id,
-                                         skip_sandboxing,
-                                         retraction_type=retraction_type,
-                                         hpo_id=hpo_id)
+        queries = get_retraction_queries(
+            client,
+            dataset,
+            sandbox_dataset_id,
+            lookup_table_id,
+            skip_sandboxing,
+            retraction_type=retraction_type
+            if not (is_ehr_dataset(dataset) and is_unioned_dataset(dataset))
+            else '',
+            hpo_id=hpo_id)
 
         LOGGER.info(f"Started retracting from dataset {dataset}")
         retraction_query_runner(client, queries)
