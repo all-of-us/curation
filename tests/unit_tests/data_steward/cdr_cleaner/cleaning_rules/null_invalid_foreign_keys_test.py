@@ -208,5 +208,5 @@ class NullInvalidForeignKeys(unittest.TestCase):
 
         # Post conditions
         self.assertEqual(self.rule_instance.affected_tables,
-                         resources.CDM_TABLES)
+                         resources.CDM_TABLES + [common.AOU_DEATH])
         self.assertEqual(results_list, expected_list)
