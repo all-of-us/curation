@@ -16,9 +16,10 @@ from utils import pipeline_logging
 from gcloud.bq import BigQueryClient
 from common import (AOU_REQUIRED, CARE_SITE, CATI_TABLES, CONDITION_ERA, DEATH,
                     DOSE_ERA, DRUG_ERA, FACT_RELATIONSHIP, ID_CONSTANT_FACTOR,
-                    JINJA_ENV, LOCATION, MAPPING_PREFIX, MEASUREMENT, NOTE_NLP,
-                    OBSERVATION, OBSERVATION_PERIOD, PAYER_PLAN_PERIOD, PERSON,
-                    PII_TABLES, PROVIDER, UNIONED_EHR)
+                    JINJA_ENV, LOCATION, MAPPING_PREFIX, MEASUREMENT, NOTE,
+                    NOTE_NLP, OBSERVATION, OBSERVATION_PERIOD,
+                    PAYER_PLAN_PERIOD, PERSON, PII_TABLES, PROVIDER,
+                    UNIONED_EHR)
 from resources import mapping_table_for
 from retraction.retract_utils import (get_datasets_list, get_dataset_type,
                                       is_combined_dataset, is_deid_dataset,
@@ -457,10 +458,16 @@ def get_primary_key_for_sandbox_table(client: BigQueryClient, dataset,
         return ''
 
     for domain in domain_tables:
-        if table.endswith(domain):
+        if domain in table:
 
             if domain == DEATH:
                 domain_id = f"{PERSON}_id"
+
+            elif domain == OBSERVATION and OBSERVATION_PERIOD in table:
+                domain_id = f"{OBSERVATION_PERIOD}_id"
+
+            elif domain == NOTE and NOTE_NLP in table:
+                domain_id = f"{NOTE_NLP}_id"
 
             else:
                 domain_id = f"{domain}_id"

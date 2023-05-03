@@ -90,7 +90,7 @@ VALUES
 
 # test data for retracting sandbox tables
 INSERT_SANDBOX_OBS_TMPL = JINJA_ENV.from_string("""
-INSERT INTO `{{project}}.{{dataset}}.dc111_dc-222_observation` 
+INSERT INTO `{{project}}.{{dataset}}.dc111_dc-222_observation_DC685` 
     (observation_id, person_id, observation_concept_id, observation_date, observation_type_concept_id)
 VALUES
     (1000000000000101, 101, 0, date('2021-01-01'), 0),
@@ -231,8 +231,8 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
         # because they have a prefix and create_table for fq_table_names do
         # not work for tables with such naming.
         cls.fq_sandbox_table_names.extend([
-            f'{project_id}.{cls.ehr_id}.dc111_dc-222_{OBSERVATION}',
-            f'{project_id}.{sandbox_id}.retract_{cls.ehr_id}_dc111_dc-222_{OBSERVATION}',
+            f'{project_id}.{cls.ehr_id}.dc111_dc-222_{OBSERVATION}_DC685',
+            f'{project_id}.{sandbox_id}.retract_{cls.ehr_id}_dc111_dc-222_{OBSERVATION}_DC685',
             f'{project_id}.{cls.ehr_id}.dc111_dc-222_{OBSERVATION_PERIOD}',
             f'{project_id}.{sandbox_id}.retract_{cls.ehr_id}_dc111_dc-222_{OBSERVATION_PERIOD}',
         ])
@@ -259,7 +259,7 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
         create_sb_obs = CREATE_AS_SELECT_TMPL.render(
             project=self.project_id,
             dataset=self.ehr_id,
-            table=f'dc111_dc-222_{OBSERVATION}',
+            table=f'dc111_dc-222_{OBSERVATION}_DC685',
             src_dataset=self.rdr_id,
             src_table=OBSERVATION)
         insert_sb_obs = INSERT_SANDBOX_OBS_TMPL.render(project=self.project_id,
@@ -993,14 +993,14 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
                           [dataset_id], RETRACTION_RDR_EHR, False, self.client)
 
         self.assertRowIDsMatch(
-            f'{project_id}.{dataset_id}.dc111_dc-222_{OBSERVATION}',
+            f'{project_id}.{dataset_id}.dc111_dc-222_{OBSERVATION}_DC685',
             ['observation_id'], [
                 1000000000000101, 2000000000000103, 1000000000000201,
                 1000000000000202, 2000000000000203, 2000000000000204
             ])
 
         self.assertRowIDsMatch(
-            f'{project_id}.{sandbox_id}.retract_{dataset_id}_dc111_dc-222_{OBSERVATION}',
+            f'{project_id}.{sandbox_id}.retract_{dataset_id}_dc111_dc-222_{OBSERVATION}_DC685',
             ['observation_id'], [1000000000000102, 2000000000000104])
 
         self.assertRowIDsMatch(
@@ -1042,7 +1042,7 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
                           [dataset_id], RETRACTION_ONLY_EHR, False, self.client)
 
         self.assertRowIDsMatch(
-            f'{project_id}.{dataset_id}.dc111_dc-222_{OBSERVATION}',
+            f'{project_id}.{dataset_id}.dc111_dc-222_{OBSERVATION}_DC685',
             ['observation_id'], [
                 1000000000000101, 1000000000000102, 2000000000000103,
                 1000000000000201, 1000000000000202, 2000000000000203,
@@ -1050,7 +1050,7 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
             ])
 
         self.assertRowIDsMatch(
-            f'{project_id}.{sandbox_id}.retract_{dataset_id}_dc111_dc-222_{OBSERVATION}',
+            f'{project_id}.{sandbox_id}.retract_{dataset_id}_dc111_dc-222_{OBSERVATION}_DC685',
             ['observation_id'], [2000000000000104])
 
         self.assertRowIDsMatch(
@@ -1091,14 +1091,14 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
         run_bq_retraction(project_id, sandbox_id, self.lookup_table_id, NONE,
                           [dataset_id], RETRACTION_RDR_EHR, False, self.client)
         self.assertRowIDsMatch(
-            f'{project_id}.{dataset_id}.dc111_dc-222_{OBSERVATION}',
+            f'{project_id}.{dataset_id}.dc111_dc-222_{OBSERVATION}_DC685',
             ['observation_id'], [
                 1000000000000101, 1000000000000102, 2000000000000103,
                 2000000000000104, 1000000000000201, 2000000000000203
             ])
 
         self.assertRowIDsMatch(
-            f'{project_id}.{sandbox_id}.retract_{dataset_id}_dc111_dc-222_{OBSERVATION}',
+            f'{project_id}.{sandbox_id}.retract_{dataset_id}_dc111_dc-222_{OBSERVATION}_DC685',
             ['observation_id'], [1000000000000202, 2000000000000204])
 
         self.assertRowIDsMatch(
@@ -1139,7 +1139,7 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
                           [dataset_id], RETRACTION_ONLY_EHR, False, self.client)
 
         self.assertRowIDsMatch(
-            f'{project_id}.{dataset_id}.dc111_dc-222_{OBSERVATION}',
+            f'{project_id}.{dataset_id}.dc111_dc-222_{OBSERVATION}_DC685',
             ['observation_id'], [
                 1000000000000101, 1000000000000102, 2000000000000103,
                 2000000000000104, 1000000000000201, 1000000000000202,
@@ -1147,7 +1147,7 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
             ])
 
         self.assertRowIDsMatch(
-            f'{project_id}.{sandbox_id}.retract_{dataset_id}_dc111_dc-222_{OBSERVATION}',
+            f'{project_id}.{sandbox_id}.retract_{dataset_id}_dc111_dc-222_{OBSERVATION}_DC685',
             ['observation_id'], [2000000000000204])
 
         self.assertRowIDsMatch(
@@ -1249,7 +1249,7 @@ class RetractDataBqGetPKforSBTableTest(BaseTest.BigQueryTestBase):
             f'{cls.project_id}.{cls.dataset_id}.dc111_dc-111_{PERSON}',
             f'{cls.project_id}.{cls.dataset_id}.dc111_dc-111_{DEATH}',
             f'{cls.project_id}.{cls.dataset_id}.dc999_dc-999_{DEATH}',
-            f'{cls.project_id}.{cls.dataset_id}.dc111_dc-111_{OBSERVATION}',
+            f'{cls.project_id}.{cls.dataset_id}.dc111_dc-111_{OBSERVATION}_DC685',
             f'{cls.project_id}.{cls.dataset_id}.dc888_dc-888_{OBSERVATION}',
             f'{cls.project_id}.{cls.dataset_id}.dc999_dc-999_{OBSERVATION}',
             f'{cls.project_id}.{cls.dataset_id}.dc999_dc-999{MAPPING_PREFIX}{OBSERVATION}',
@@ -1277,7 +1277,7 @@ class RetractDataBqGetPKforSBTableTest(BaseTest.BigQueryTestBase):
         """).render(project=self.project_id, dataset=self.dataset_id)
 
         create_sb_obs = self.jinja_env.from_string("""
-        CREATE OR REPLACE TABLE `{{project}}.{{dataset}}.dc111_dc-111_observation`
+        CREATE OR REPLACE TABLE `{{project}}.{{dataset}}.dc111_dc-111_observation_DC685`
         (observation_id INT64, person_id INT64)
         """).render(project=self.project_id, dataset=self.dataset_id)
 
@@ -1317,7 +1317,7 @@ class RetractDataBqGetPKforSBTableTest(BaseTest.BigQueryTestBase):
             f"dc111_dc-111_{PERSON}": f"{PERSON}_id",
             f"dc111_dc-111_{DEATH}": f"{PERSON}_id",
             f"dc999_dc-999_{DEATH}": '',
-            f"dc111_dc-111_{OBSERVATION}": f"{OBSERVATION}_id",
+            f"dc111_dc-111_{OBSERVATION}_DC685": f"{OBSERVATION}_id",
             f"dc888_dc-888_{OBSERVATION}": '',
             f"dc999_dc-999_{OBSERVATION}": '',
             f"dc999_dc-999_{MAPPING_PREFIX}{OBSERVATION}": '',
