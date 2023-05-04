@@ -16,6 +16,7 @@ from dateutil import parser
 
 # Project imports
 from app_identity import PROJECT_ID
+from common import AOU_DEATH
 from cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency import EnsureDateDatetimeConsistency, TABLE_DATES
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
@@ -81,7 +82,7 @@ class EnsureDateDatetimeConsistencyTest(BaseTest.CleaningRulesTestBase):
         Tests possible values of a required date and nullable datetime field pair.
         """
 
-        tmpl = self.jinja_env.from_string("""
+        obs_query = self.jinja_env.from_string("""
         INSERT INTO `{{fq_dataset_name}}.observation`
         (observation_id, person_id, observation_concept_id, observation_date,
          observation_type_concept_id, observation_datetime)
@@ -90,10 +91,20 @@ class EnsureDateDatetimeConsistencyTest(BaseTest.CleaningRulesTestBase):
           (802, 129884, 0, date('2016-05-01'), 0, timestamp('2016-05-01 11:00:00')),
           (803, 337361, 0, date('2016-05-01'), 0, timestamp('2016-05-08 11:00:00')),
           (804, 129884, 0, date('2016-05-01'), 0, timestamp('2016-04-07 11:00:00'))
-        """)
+        """).render(fq_dataset_name=self.fq_dataset_name)
 
-        query = tmpl.render(fq_dataset_name=self.fq_dataset_name)
-        self.load_test_data([query])
+        aou_death_query = self.jinja_env.from_string("""
+        INSERT INTO `{{fq_dataset_name}}.{{aou_death}}`
+        (aou_death_id, person_id, death_date, death_datetime, death_type_concept_id,
+         src_id, primary_death_record)
+        VALUES
+          ('aaa', 1, date('2016-05-01'), null, 0, 'foo', True),
+          ('bbb', 2, date('2016-05-01'), timestamp('2016-05-01 11:00:00'), 0, 'foo', True),
+          ('ccc', 3, date('2016-05-01'), timestamp('2016-05-08 11:00:00'), 0, 'foo', True),
+          ('ddd', 4, date('2016-05-01'), timestamp('2016-04-07 11:00:00'), 0, 'foo', True)
+        """).render(fq_dataset_name=self.fq_dataset_name, aou_death=AOU_DEATH)
+
+        self.load_test_data([obs_query, aou_death_query])
 
         tables_and_counts = [{
             'fq_table_name':
@@ -110,6 +121,19 @@ class EnsureDateDatetimeConsistencyTest(BaseTest.CleaningRulesTestBase):
                                (802, self.start_date, self.start_datetime),
                                (803, self.start_date, self.start_datetime),
                                (804, self.start_date, self.start_datetime)]
+        }, {
+            'fq_table_name':
+                '.'.join([self.fq_dataset_name, AOU_DEATH]),
+            'fq_sandbox_table_name':
+                '',
+            'loaded_ids': [1, 2, 3, 4],
+            'sandboxed_ids': [],
+            'fields': ['person_id', 'death_date', 'death_datetime'],
+            'cleaned_values': [(1, self.start_date,
+                                self.start_default_datetime),
+                               (2, self.start_date, self.start_datetime),
+                               (3, self.start_date, self.start_datetime),
+                               (4, self.start_date, self.start_datetime)]
         }]
 
         self.default_test(tables_and_counts)

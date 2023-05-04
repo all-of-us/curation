@@ -13,6 +13,8 @@ import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules import field_mapping
 from cdr_cleaner.cleaning_rules.ensure_date_datetime_consistency import EnsureDateDatetimeConsistency, TABLE_DATES, \
     FIX_DATETIME_QUERY, FIX_NULL_OR_INCORRECT_DATETIME_QUERY
+from common import AOU_DEATH
+from resources import fields_for
 
 
 class EnsureDateDatetime(unittest.TestCase):
@@ -52,7 +54,10 @@ class EnsureDateDatetime(unittest.TestCase):
             result_list = self.rule_instance.get_cols(table)
 
             # post conditions
-            table_fields = field_mapping.get_domain_fields(table)
+            if table == AOU_DEATH:
+                table_fields = [field['name'] for field in fields_for(table)]
+            else:
+                table_fields = field_mapping.get_domain_fields(table)
 
             expected_list = []
             for field in table_fields:

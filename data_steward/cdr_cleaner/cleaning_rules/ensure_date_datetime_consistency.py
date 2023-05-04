@@ -10,16 +10,20 @@ field is null or incorrect.
 # Python imports
 import logging
 
-import common
 # Project imports
+import common
 import constants.bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules import field_mapping
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
+from resources import fields_for
 
 LOGGER = logging.getLogger(__name__)
 
 TABLE_DATES = {
+    common.AOU_DEATH: {
+        'death_datetime': 'death_date'
+    },
     common.CONDITION_OCCURRENCE: {
         'condition_start_datetime': 'condition_start_date',
         'condition_end_datetime': 'condition_end_date'
@@ -115,8 +119,9 @@ class EnsureDateDatetimeConsistency(BaseCleaningRule):
             dataset_id=dataset_id,
             sandbox_dataset_id=sandbox_dataset_id,
             affected_tables=[
-                common.CONDITION_OCCURRENCE, common.DRUG_EXPOSURE,
-                common.DEVICE_EXPOSURE, common.MEASUREMENT, common.OBSERVATION,
+                common.AOU_DEATH, common.CONDITION_OCCURRENCE,
+                common.DRUG_EXPOSURE, common.DEVICE_EXPOSURE,
+                common.MEASUREMENT, common.OBSERVATION,
                 common.PROCEDURE_OCCURRENCE, common.SPECIMEN,
                 common.SURVEY_CONDUCT, common.DEATH, common.NOTE,
                 common.OBSERVATION_PERIOD, common.VISIT_OCCURRENCE,
@@ -132,7 +137,11 @@ class EnsureDateDatetimeConsistency(BaseCleaningRule):
         :param table: table for which the fields are pulled
         :return: cols
         """
-        table_fields = field_mapping.get_domain_fields(table)
+        if table == common.AOU_DEATH:
+            table_fields = [field['name'] for field in fields_for(table)]
+        else:
+            table_fields = field_mapping.get_domain_fields(table)
+
         col_exprs = []
         for field in table_fields:
             if field in TABLE_DATES[table]:
