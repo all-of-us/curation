@@ -10,8 +10,8 @@ import os
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.remove_non_matching_participant import (
     RemoveNonMatchingParticipant, NOT_MATCH_TABLE)
-from common import (JINJA_ENV, IDENTITY_MATCH, OBSERVATION, PARTICIPANT_MATCH,
-                    PERSON)
+from common import (AOU_DEATH, JINJA_ENV, IDENTITY_MATCH, OBSERVATION,
+                    PARTICIPANT_MATCH, PERSON)
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 
 HPO_1, HPO_2, HPO_3, HPO_4 = 'fake', 'pitt', 'nyc', 'chs'
@@ -175,6 +175,44 @@ POPULATE_STATEMENTS = {
         (403, 'no', 'no'),
         (404, 'no', 'no')
         """),
+    AOU_DEATH:
+        JINJA_ENV.from_string("""
+        INSERT INTO `{{fq_table_name}}` 
+        (aou_death_id, person_id, death_date, death_type_concept_id, cause_concept_id, cause_source_concept_id, src_id, primary_death_record)
+        VALUES
+        ('a10101', 101, date('2020-05-05'), 0, 0, 0, 'rdr', False),
+        ('a10102', 101, date('2020-05-05'), 0, 0, 0, '{{hpo_1}}', False),
+        ('a10201', 102, date('2020-05-05'), 0, 0, 0, 'rdr', False),
+        ('a10202', 102, date('2020-05-05'), 0, 0, 0, '{{hpo_1}}', False),
+        ('a10301', 103, date('2020-05-05'), 0, 0, 0, 'rdr', False),
+        ('a10302', 103, date('2020-05-05'), 0, 0, 0, '{{hpo_1}}', False),
+        ('a10401', 104, date('2020-05-05'), 0, 0, 0, 'rdr', False),
+        ('a10402', 104, date('2020-05-05'), 0, 0, 0, '{{hpo_1}}', False),
+        ('a20101', 201, date('2020-05-05'), 0, 0, 0, 'rdr', False),
+        ('a20102', 201, date('2020-05-05'), 0, 0, 0, '{{hpo_2}}', False),
+        ('a20201', 202, date('2020-05-05'), 0, 0, 0, 'rdr', False),
+        ('a20202', 202, date('2020-05-05'), 0, 0, 0, '{{hpo_2}}', False),
+        ('a20301', 203, date('2020-05-05'), 0, 0, 0, 'rdr', False),
+        ('a20302', 203, date('2020-05-05'), 0, 0, 0, '{{hpo_2}}', False),
+        ('a20401', 204, date('2020-05-05'), 0, 0, 0, 'rdr', False),
+        ('a20402', 204, date('2020-05-05'), 0, 0, 0, '{{hpo_2}}', False),
+        ('a30101', 301, date('2020-05-05'), 0, 0, 0, 'rdr', False),
+        ('a30102', 301, date('2020-05-05'), 0, 0, 0, '{{hpo_3}}', False),
+        ('a30201', 302, date('2020-05-05'), 0, 0, 0, 'rdr', False),
+        ('a30202', 302, date('2020-05-05'), 0, 0, 0, '{{hpo_3}}', False),
+        ('a30301', 303, date('2020-05-05'), 0, 0, 0, 'rdr', False),
+        ('a30302', 303, date('2020-05-05'), 0, 0, 0, '{{hpo_3}}', False),
+        ('a30401', 304, date('2020-05-05'), 0, 0, 0, 'rdr', False),
+        ('a30402', 304, date('2020-05-05'), 0, 0, 0, '{{hpo_3}}', False),
+        ('a40101', 401, date('2020-05-05'), 0, 0, 0, 'rdr', False),
+        ('a40102', 401, date('2020-05-05'), 0, 0, 0, '{{hpo_4}}', False),
+        ('a40201', 402, date('2020-05-05'), 0, 0, 0, 'rdr', False),
+        ('a40202', 402, date('2020-05-05'), 0, 0, 0, '{{hpo_4}}', False),
+        ('a40301', 403, date('2020-05-05'), 0, 0, 0, 'rdr', False),
+        ('a40302', 403, date('2020-05-05'), 0, 0, 0, '{{hpo_4}}', False),
+        ('a40401', 404, date('2020-05-05'), 0, 0, 0, 'rdr', False),
+        ('a40402', 404, date('2020-05-05'), 0, 0, 0, '{{hpo_4}}', False)
+        """),
 }
 
 
@@ -208,12 +246,14 @@ class RemoveNonMatchingParticipantTest(BaseTest.CleaningRulesTestBase):
             validation_dataset_id=cls.validation_dataset_id)
 
         cls.fq_table_names = []
-        for cdm_table in [PERSON, OBSERVATION, '_mapping_observation']:
+        for cdm_table in [
+                PERSON, OBSERVATION, '_mapping_observation', AOU_DEATH
+        ]:
             fq_table_name = f'{cls.project_id}.{cls.dataset_id}.{cdm_table}'
             cls.fq_table_names.append(fq_table_name)
 
         # Overwriting affected_tables, as only PERSON and OBSERVATION are prepared for this test.
-        cls.rule_instance.affected_tables = [OBSERVATION]
+        cls.rule_instance.affected_tables = [OBSERVATION, AOU_DEATH]
 
         sb_table_names = cls.rule_instance.get_sandbox_tablenames()
         for table_name in sb_table_names + [NOT_MATCH_TABLE]:
@@ -309,7 +349,8 @@ class RemoveNonMatchingParticipantTest(BaseTest.CleaningRulesTestBase):
             3. From EHR.
             * Person table is not affected by this CR since all the data is from RDR.
 
-        The test records that meet all the criteria are [20402, 30302, 30402] in observation.
+        The test records that meet all the criteria are [20402, 30302, 30402] in observation
+        and ['a20402', 'a30302', 'a30402'] in aou_death. 
         """
         tables_and_counts = [
             {
@@ -355,6 +396,41 @@ class RemoveNonMatchingParticipantTest(BaseTest.CleaningRulesTestBase):
                                    (40101, 401), (40102, 401), (40201, 402),
                                    (40202, 402), (40301, 403), (40302, 403),
                                    (40401, 404), (40402, 404)]
+            },
+            {
+                'name':
+                    AOU_DEATH,
+                'fq_table_name':
+                    f'{self.project_id}.{self.dataset_id}.{AOU_DEATH}',
+                'fq_sandbox_table_name': [
+                    table for table in self.fq_sandbox_table_names
+                    if AOU_DEATH in table
+                ][0],
+                'fields': ['aou_death_id', 'person_id'],
+                'loaded_ids': [
+                    'a10101', 'a10102', 'a10201', 'a10202', 'a10301', 'a10302',
+                    'a10401', 'a10402', 'a20101', 'a20102', 'a20201', 'a20202',
+                    'a20301', 'a20302', 'a20401', 'a20402', 'a30101', 'a30102',
+                    'a30201', 'a30202', 'a30301', 'a30302', 'a30401', 'a30402',
+                    'a40101', 'a40102', 'a40201', 'a40202', 'a40301', 'a40302',
+                    'a40401', 'a40402'
+                ],
+                'sandboxed_ids': ['a20402', 'a30302', 'a30402'],
+                'cleaned_values': [('a10101', 101), ('a10102', 101),
+                                   ('a10201', 102), ('a10202', 102),
+                                   ('a10301', 103), ('a10302', 103),
+                                   ('a10401', 104), ('a10402', 104),
+                                   ('a20101', 201), ('a20102', 201),
+                                   ('a20201', 202), ('a20202', 202),
+                                   ('a20301', 203), ('a20302', 203),
+                                   ('a20401', 204), ('a30101', 301),
+                                   ('a30102', 301), ('a30201', 302),
+                                   ('a30202', 302), ('a30301', 303),
+                                   ('a30401', 304), ('a40101', 401),
+                                   ('a40102', 401), ('a40201', 402),
+                                   ('a40202', 402), ('a40301', 403),
+                                   ('a40302', 403), ('a40401', 404),
+                                   ('a40402', 404)]
             },
         ]
 

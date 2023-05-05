@@ -6,7 +6,6 @@ from gcloud.bq import BigQueryClient
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 
 # Query to create tables in sandbox with rows that will be removed per cleaning rule
-# TODO this `rdr` condition needs to be revisited
 SANDBOX_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{intermediary_table}}` AS (
 SELECT t.* FROM `{{project}}.{{dataset}}.{{table}}` t
@@ -16,7 +15,11 @@ ON t.{{table}}_id = m.{{table}}_id AND LOWER(m.src_hpo_id) != 'rdr'
 {% endif %}
 WHERE person_id IN (
     SELECT person_id FROM `{{project}}.{{sandbox_dataset}}.{{lookup_table}}`
-))
+)
+{% if ehr_only and table == 'aou_death' %}
+AND t.src_id != 'rdr'
+{% endif %}
+)
 """)
 
 # Query to truncate existing tables to remove PIDs based on cleaning rule criteria
@@ -25,12 +28,12 @@ DELETE FROM `{{project}}.{{dataset}}.{{table}}`
 WHERE person_id IN (
     SELECT DISTINCT person_id FROM `{{project}}.{{sandbox_dataset}}.{{lookup_table}}`
 )
-{% if ehr_only and table not in ['death', 'aou_death'] %}
+{% if ehr_only and table != 'death' %}
 AND {{table}}_id IN (
     SELECT DISTINCT {{table}}_id FROM `{{project}}.{{sandbox_dataset}}.{{intermediary_table}}`
 )
 {% endif %}
-{% if table in ['death', 'aou_death'] %}
+{% if table == 'death' %}
 AND person_id IN (
     SELECT DISTINCT person_id FROM `{{project}}.{{sandbox_dataset}}.{{intermediary_table}}`
 )
