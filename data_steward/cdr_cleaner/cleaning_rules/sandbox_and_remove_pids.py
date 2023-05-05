@@ -1,7 +1,7 @@
 # Project imports
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from resources import CDM_TABLES
-from common import JINJA_ENV
+from common import AOU_DEATH, JINJA_ENV
 from gcloud.bq import BigQueryClient
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 
@@ -100,7 +100,7 @@ class SandboxAndRemovePids(BaseCleaningRule):
         self.affected_tables = [
             table.get('table_name')
             for table in person_tables
-            if table.get('table_name') in CDM_TABLES
+            if table.get('table_name') in CDM_TABLES + [AOU_DEATH]
         ]
 
     def get_sandbox_queries(self,

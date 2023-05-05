@@ -252,7 +252,7 @@ class RemoveNonMatchingParticipantTest(BaseTest.CleaningRulesTestBase):
             fq_table_name = f'{cls.project_id}.{cls.dataset_id}.{cdm_table}'
             cls.fq_table_names.append(fq_table_name)
 
-        # Overwriting affected_tables, as only PERSON and OBSERVATION are prepared for this test.
+        # Overwriting affected_tables, as only PERSON, OBSERVATION, and AOU_DEATH are prepared for this test.
         cls.rule_instance.affected_tables = [OBSERVATION, AOU_DEATH]
 
         sb_table_names = cls.rule_instance.get_sandbox_tablenames()
