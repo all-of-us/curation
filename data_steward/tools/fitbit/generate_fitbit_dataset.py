@@ -20,10 +20,35 @@ SCOPES = [
     'https://www.googleapis.com/auth/cloud-platform'
 ]
 
+# These fields will be added to each of the created fitbit tables
+SUPPLEMENTARY_FIELDS = {
+    "id": {
+        "field": "id",
+        "data_type": "INT64",
+        "formula": "(1000000 + ROW_NUMBER() OVER(ORDER BY GENERATE_UUID()))",
+        "description": "A universally unique identifier"
+    },
+    "src_id": {
+        "field": "src_id",
+        "data_type": "STRING",
+        "formula": "'PTSC'",
+        "description": "Identifies the data source"
+    }
+}
+
 INSERT_QUERY = JINJA_ENV.from_string("""
 INSERT INTO `{{fq_dest_table}}` ({{fields}})
-SELECT {{fields_casted}}
-FROM `{{client.project}}.{{from_dataset}}.{{table_prefix}}{{table}}`""")
+SELECT {{values}}
+FROM (SELECT view.*, 
+     {{additional_values}}
+     FROM `{{client.project}}.{{from_dataset}}.{{table_prefix}}{{table}}` view)
+LIMIT 100
+""")
+
+ALTER_TABLES_QUERY = JINJA_ENV.from_string("""
+ALTER TABLE `{{fq_dest_table}}`
+{{add_column_statements}}
+""")
 
 
 def create_fitbit_datasets(client, release_tag):
@@ -69,7 +94,7 @@ def create_fitbit_datasets(client, release_tag):
     return fitbit_datasets
 
 
-def cast_to_schema_type(field, schema_type):
+def cast_to_schema_type(formula, type, field):
     """
     generates cast expression to the type specified by the schema
 
@@ -79,10 +104,10 @@ def cast_to_schema_type(field, schema_type):
     """
     bq_int_float = {'integer': 'INT64', 'float': 'FLOAT64'}
 
-    if schema_type.lower() not in bq_int_float:
-        col = f'SAFE_CAST({field} AS {schema_type.upper()}) AS {field}'
+    if type.lower() not in bq_int_float:
+        col = f'SAFE_CAST({formula} AS {type.upper()}) AS {field}'
     else:
-        col = f'SAFE_CAST({field} AS {bq_int_float[schema_type.lower()]}) AS {field}'
+        col = f'SAFE_CAST({formula} AS {bq_int_float[type.lower()]}) AS {field}'
     return col
 
 
@@ -97,6 +122,8 @@ def copy_fitbit_tables_from_views(client, from_dataset, to_dataset,
     :param table_prefix: prefix added to table_ids
     :return:
     """
+
+    queries_list = []
     for table in FITBIT_TABLES:
         schema_list = client.get_table_schema(table)
         fq_dest_table = f'{client.project}.{to_dataset}.{table}'
@@ -104,20 +131,54 @@ def copy_fitbit_tables_from_views(client, from_dataset, to_dataset,
         dest_table = client.create_table(dest_table)
         LOGGER.info(f'Created empty table {fq_dest_table}')
 
+        # formatting the schema fields
         fields_name_str = ',\n'.join([item.name for item in schema_list])
         fields_casted_str = ',\n'.join([
-            cast_to_schema_type(item.name, item.field_type)
+            cast_to_schema_type(item.name, item.field_type, item.name)
             for item in schema_list
         ])
-        content_query = INSERT_QUERY.render(fq_dest_table=fq_dest_table,
-                                            fields=fields_name_str,
-                                            fields_casted=fields_casted_str,
-                                            client=client,
-                                            from_dataset=from_dataset,
-                                            table_prefix=table_prefix,
-                                            table=table)
-        job = client.query(content_query)
-        job.result()
+
+        # formatting the supplementary fields
+        additional_fields = ',\n'.join(
+            [field for field in SUPPLEMENTARY_FIELDS])
+        additional_values_casted = ',\n'.join([
+            cast_to_schema_type(key["formula"], key["data_type"], key["field"])
+            for key in SUPPLEMENTARY_FIELDS.values()
+        ])
+
+        # combining the fields given in the table schemas with the supplemental fields
+        all_fields = fields_name_str + ',\n' + additional_fields
+        all_values = fields_casted_str + ',\n' + additional_values_casted
+
+        # creating the add column statements for all supplemental fields
+        add_column_statements = ',\n'.join([
+            f'ADD COLUMN {key["field"]} {key["data_type"]} SET OPTIONS ({key["description"]})'
+            for key in SUPPLEMENTARY_FIELDS.values()
+        ])
+
+        queries_list.append(
+            ALTER_TABLES_QUERY.render(
+                fq_dest_table=fq_dest_table,
+                add_column_statements=add_column_statements))
+        queries_list.append(
+            INSERT_QUERY.render(fq_dest_table=fq_dest_table,
+                                fields=all_fields,
+                                values=all_values,
+                                additional_values=additional_values_casted,
+                                client=client,
+                                from_dataset=from_dataset,
+                                table_prefix=table_prefix,
+                                table=table))
+
+        for q in queries_list:
+            LOGGER.info(f'Running query -- {q}')
+            job = client.query(q)
+            if job.errors:
+                raise RuntimeError(
+                    f"Job {job.job_id} failed with error {job.errors} for query"
+                    f"{q}")
+            else:
+                LOGGER.info(f'{job.result()}')
 
     LOGGER.info(f'Copied fitbit tables from `{from_dataset}` to `{to_dataset}`')
 
