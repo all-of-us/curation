@@ -1,18 +1,12 @@
 [
   {
-    "type": "float",
-    "name": "id",
-    "mode": "required",
-    "description": "A universally unique identifier."
-  },
-  {
     "type": "integer",
     "name": "person_id",
     "mode": "nullable",
     "description": "A foreign key identifier to the person for whom the device data was recorded."
   },
   {
-    "type": "integer",
+    "type": "string",
     "name": "device_id",
     "mode": "nullable",
     "description": "Identifies a device."
@@ -52,11 +46,5 @@
     "name": "last_sync_time",
     "mode": "nullable",
     "description": "Represents the last time the device was synced with the Fitbit mobile application."
-  },
-  {
-    "type": "string",
-    "name": "data_origin_id",
-    "mode": "required",
-    "description": "Identifies the data source."
   }
 ]
