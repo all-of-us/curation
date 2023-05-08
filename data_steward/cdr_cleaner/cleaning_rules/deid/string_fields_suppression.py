@@ -5,7 +5,7 @@ from google.api_core.exceptions import GoogleAPIError
 from google.cloud.exceptions import GoogleCloudError, NotFound
 
 import resources
-from common import CDM_TABLES, OBSERVATION, JINJA_ENV
+from common import AOU_DEATH, CDM_TABLES, OBSERVATION, JINJA_ENV
 from constants import bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.cancer_concept_suppression import CancerConceptSuppression
@@ -92,14 +92,25 @@ class SuppressionException(NamedTuple):
 
 def get_string_fields(domain_table):
     """
-    Get string fields associated for the table
+    Get string fields associated for the table.
+    For aou_death, excludes `aou_death_id` and `src_id` because we must not
+    suppress them with this cleaning rule.
     :param domain_table: 
     :return: 
     """
-    return [
-        field for field in resources.fields_for(domain_table)
-        if field['type'] == 'string'
-    ]
+    if domain_table == AOU_DEATH:
+        fields = [
+            field for field in resources.fields_for(domain_table)
+            if field['type'] == 'string' and
+            field['name'] not in ['aou_death_id', 'src_id']
+        ]
+    else:
+        fields = [
+            field for field in resources.fields_for(domain_table)
+            if field['type'] == 'string'
+        ]
+
+    return fields
 
 
 class StringFieldsSuppression(BaseCleaningRule):
@@ -133,7 +144,7 @@ class StringFieldsSuppression(BaseCleaningRule):
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,
-                         affected_tables=CDM_TABLES,
+                         affected_tables=CDM_TABLES + [AOU_DEATH],
                          table_namer=table_namer)
 
     def setup_rule(self, client, *args, **keyword_args):

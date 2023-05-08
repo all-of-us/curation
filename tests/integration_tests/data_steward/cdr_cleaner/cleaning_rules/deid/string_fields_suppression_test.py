@@ -1,5 +1,5 @@
 """
-Integration test for motor_vehicle_accident_suppression module
+Integration test for StringFieldsSuppression module
 
 Original Issues: DC-1369
 
@@ -9,7 +9,7 @@ The intent is to null all STRING type fields in all OMOP common data model table
 import os
 
 # Project Imports
-from common import CONDITION_OCCURRENCE, OBSERVATION
+from common import AOU_DEATH, CONDITION_OCCURRENCE, OBSERVATION
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.deid.string_fields_suppression import StringFieldsSuppression
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import \
@@ -31,14 +31,14 @@ class StringFieldsSuppressionTestBase(BaseTest.CleaningRulesTestBase):
 
         # Set the expected test datasets
         cls.dataset_id = os.environ.get('COMBINED_DATASET_ID')
-        cls.sandbox_id = cls.dataset_id + '_sandbox'
+        cls.sandbox_id = f"{cls.dataset_id}_sandbox"
 
         cls.rule_instance = StringFieldsSuppression(cls.project_id,
                                                     cls.dataset_id,
                                                     cls.sandbox_id)
 
         # Generates list of fully qualified table names
-        for table_name in [CONDITION_OCCURRENCE, OBSERVATION]:
+        for table_name in [CONDITION_OCCURRENCE, OBSERVATION, AOU_DEATH]:
             cls.fq_table_names.append(
                 f'{cls.project_id}.{cls.dataset_id}.{table_name}')
 
@@ -57,7 +57,7 @@ class StringFieldsSuppressionTestBase(BaseTest.CleaningRulesTestBase):
         super().setUp()
 
         # Load the test data
-        condition_occurrence_data_template = self.jinja_env.from_string("""
+        insert_condition_occurrence = self.jinja_env.from_string("""
             CREATE OR REPLACE TABLE `{{project_id}}.{{dataset_id}}.condition_occurrence`
             (
               condition_occurrence_id int64, 
@@ -89,10 +89,9 @@ class StringFieldsSuppressionTestBase(BaseTest.CleaningRulesTestBase):
                 condition_source_value,
                 condition_status_source_value 
             FROM w, UNNEST(w.col))
-            """)
+            """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
-        # Load the test data
-        observation_data_template = self.jinja_env.from_string("""
+        insert_observation = self.jinja_env.from_string("""
             CREATE OR REPLACE TABLE `{{project_id}}.{{dataset_id}}.observation`
             (
                 observation_id int64,
@@ -137,26 +136,25 @@ class StringFieldsSuppressionTestBase(BaseTest.CleaningRulesTestBase):
                 qualifier_source_value,
                 value_source_value 
             FROM w, UNNEST(w.col))
-            """)
+            """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
-        insert_condition_query = condition_occurrence_data_template.render(
-            project_id=self.project_id, dataset_id=self.dataset_id)
+        insert_aou_death = self.jinja_env.from_string("""
+        INSERT INTO `{{project_id}}.{{dataset_id}}.aou_death`
+            (aou_death_id, person_id, death_date, death_type_concept_id, cause_concept_id, cause_source_value, cause_source_concept_id, src_id, primary_death_record)
+        VALUES
+            ('a1', 1, date('2020-05-05'), 0, 0, 'dummy concept value', 0, 'rdr', False),
+            ('a2', 1, date('2021-05-05'), 0, 0, NULL, 0, 'hpo_a', True)
+        """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
-        insert_observation_query = observation_data_template.render(
-            project_id=self.project_id, dataset_id=self.dataset_id)
-
-        # Load test data
-        self.load_test_data([
-            f'''{insert_condition_query};
-                {insert_observation_query};'''
-        ])
+        self.load_test_data(
+            [insert_condition_occurrence, insert_observation, insert_aou_death])
 
     def test_string_suppression(self):
 
         # Expected results list
         tables_and_counts = [{
             'fq_table_name':
-                f'{self.project_id}.{self.dataset_id}.condition_occurrence',
+                f'{self.project_id}.{self.dataset_id}.{CONDITION_OCCURRENCE}',
             'loaded_ids': [1, 2, 3, 4],
             'sandboxed_ids': [],
             'fields': [
@@ -170,7 +168,7 @@ class StringFieldsSuppressionTestBase(BaseTest.CleaningRulesTestBase):
                                (4, 1, 0, None, None, None)]
         }, {
             'fq_table_name':
-                f'{self.project_id}.{self.dataset_id}.observation',
+                f'{self.project_id}.{self.dataset_id}.{OBSERVATION}',
             'fq_sandbox_table_name':
                 self.fq_sandbox_table_names[0],
             'loaded_ids': [1, 2, 3, 4, 5, 6],
@@ -189,6 +187,12 @@ class StringFieldsSuppressionTestBase(BaseTest.CleaningRulesTestBase):
                 (5, 1, 0, 0, None, None, None, None, None),
                 (6, 1, 0, 715711, 'foo_date', None, None, None, None)
             ]
+        }, {
+            'fq_table_name': f'{self.project_id}.{self.dataset_id}.{AOU_DEATH}',
+            'loaded_ids': ['a1', 'a2'],
+            'sandboxed_ids': [],
+            'fields': ['aou_death_id', 'cause_source_value', 'src_id'],
+            'cleaned_values': [('a1', None, 'rdr'), ('a2', None, 'hpo_a')]
         }]
 
         self.default_test(tables_and_counts)
