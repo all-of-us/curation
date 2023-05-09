@@ -1,8 +1,8 @@
 """
 DC - 399
 
-De-id for registered tier removes all free text fields. We are re-populating those fields with the concept_code
-value for the concept_id where possible to improve the clarity/readability of the resource.
+De-id for registered tier and controlled tier removes all free text fields with the cleaning rule StringFieldsSuppression. 
+We are re-populating those fields with the concept_code value for the concept_id where possible to improve the clarity/readability of the resource.
 
 list of free text source_value fields which will be re-populated with concept_code using concept_ids from the columns
 mentioned below.
@@ -14,7 +14,10 @@ device_exposure - [device_source_value : device_source_concept_id]
 measurement - [measurement_source_value : measurement_source_concept_id,
                unit_source_value : unit_concept_id,
                value_source_value : value_as_concept_id]
+
 death - [cause_source_value : cause_source_concept_id]
+aou_death - [cause_source_value : cause_source_concept_id]
+
 procedure_occurrence - [procedure_source_value : procedure_source_concept_id,
                         qualifier_source_value : modifier_concept_id]
 provider - [specialty_source_value : specialty_source_concept_id,
@@ -52,7 +55,8 @@ import logging
 
 import resources
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule, query_spec_list
-from common import JINJA_ENV, OBSERVATION
+from cdr_cleaner.cleaning_rules.deid.string_fields_suppression import StringFieldsSuppression
+from common import AOU_DEATH, JINJA_ENV, OBSERVATION
 from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as cdr_consts
 
@@ -70,7 +74,7 @@ FIELD_REPLACE_QUERY = JINJA_ENV.from_string("""select {{columns}}
 
 
 def get_affected_tables():
-    return resources.CDM_TABLES
+    return resources.CDM_TABLES + [AOU_DEATH]
 
 
 def get_fields_dict(table_name, fields):
@@ -201,8 +205,6 @@ class FillSourceValueTextFields(BaseCleaningRule):
             'Populates each free text value field with the concept_code from the concept table that matches the '
             'concept_id field')
 
-        # get all affected tables by combining the two dicts
-
         super().__init__(issue_numbers=JIRA_ISSUE_NUMBERS,
                          description=desc,
                          affected_datasets=[
@@ -210,6 +212,7 @@ class FillSourceValueTextFields(BaseCleaningRule):
                              cdr_consts.CONTROLLED_TIER_DEID_BASE
                          ],
                          affected_tables=get_affected_tables(),
+                         depends_on=[StringFieldsSuppression],
                          project_id=project_id,
                          dataset_id=dataset_id,
                          sandbox_dataset_id=sandbox_dataset_id,

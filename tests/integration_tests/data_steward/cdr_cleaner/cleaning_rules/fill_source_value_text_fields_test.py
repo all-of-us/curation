@@ -18,8 +18,7 @@ from dateutil import parser
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.fill_source_value_text_fields import FillSourceValueTextFields
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
-from common import OBSERVATION, CONCEPT, VOCABULARY_TABLES
-from resources import CDM_TABLES
+from common import AOU_DEATH, OBSERVATION, VOCABULARY_TABLES
 
 
 class FillSourceValueTextFieldsTest(BaseTest.CleaningRulesTestBase):
@@ -39,13 +38,14 @@ class FillSourceValueTextFieldsTest(BaseTest.CleaningRulesTestBase):
         # set the expected test datasets
         dataset_id = os.environ.get('COMBINED_DATASET_ID')
         cls.dataset_id = dataset_id
-        sandbox_id = dataset_id + '_sandbox'
+        sandbox_id = f"{dataset_id}_sandbox"
         cls.sandbox_id = sandbox_id
+        cls.vocabulary_dataset = os.getenv('VOCABULARY_DATASET')
 
         cls.rule_instance = FillSourceValueTextFields(project_id, dataset_id,
                                                       sandbox_id)
 
-        table_names = CDM_TABLES + VOCABULARY_TABLES
+        table_names = cls.rule_instance.affected_tables + VOCABULARY_TABLES
 
         cls.fq_table_names = [
             f'{project_id}.{dataset_id}.{table}' for table in table_names
@@ -69,12 +69,48 @@ class FillSourceValueTextFieldsTest(BaseTest.CleaningRulesTestBase):
 
         super().setUp()
 
+    def test_source_value_text_fields(self):
+        """
+        Test to validate source_value fields are re-populated with concept_code using concept_ids.
+        """
+        self.copy_vocab_tables(self.vocabulary_dataset)
+
+        insert_aou_death = self.jinja_env.from_string("""
+        INSERT INTO `{{fq_dataset_name}}.aou_death`
+            (aou_death_id, person_id, death_date, death_type_concept_id, cause_concept_id, cause_source_value, cause_source_concept_id, src_id, primary_death_record)
+        VALUES
+            ('a1', 1, date('2020-05-05'), 0, 0, NULL, NULL, 'rdr', False),
+            ('a2', 1, date('2021-05-05'), 0, 0, NULL, 0, 'hpo_a', True),
+            ('a3', 1, date('2021-05-05'), 0, 0, NULL, 1569168, 'hpo_b', True)
+        """).render(fq_dataset_name=self.fq_dataset_name)
+
+        queries = [insert_aou_death]
+        self.load_test_data(queries)
+
+        tables_and_counts = [{
+            'fq_table_name':
+                '.'.join([self.fq_dataset_name, AOU_DEATH]),
+            'fq_sandbox_table_name':
+                '',
+            'loaded_ids': ['a1', 'a2', 'a3'],
+            'sandboxed_ids': [],
+            'fields': [
+                'aou_death_id', 'cause_source_value', 'cause_source_concept_id'
+            ],
+            'cleaned_values': [
+                ('a1', None, None),
+                ('a2', 'No matching concept', 0),
+                ('a3', 'I46', 1569168),
+            ]
+        }]
+
+        self.default_test(tables_and_counts)
+
     def test_aggregate_zip_codes_cleaning(self):
         """
-        Tests that the specifications for queries perform as designed.
-
-        Validates pre conditions, tests execution, and post conditions based on the load
-        statements and the tables_and_counts variable.
+        Test for observaton's additional condition.
+        Generalized zip codes in observation must be filled differently than the rest.
+        See DC-1510.
         """
 
         create_concepts_query_tmpl = self.jinja_env.from_string("""
@@ -114,7 +150,7 @@ class FillSourceValueTextFieldsTest(BaseTest.CleaningRulesTestBase):
 
         tables_and_counts = [{
             'fq_table_name':
-                '.'.join([self.fq_dataset_name, 'observation']),
+                '.'.join([self.fq_dataset_name, OBSERVATION]),
             'fq_sandbox_table_name':
                 '',
             'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
