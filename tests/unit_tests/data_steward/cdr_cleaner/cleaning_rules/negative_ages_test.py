@@ -13,10 +13,8 @@ Original Issues: DC-393, DC-811
 import unittest
 
 # Project imports
-from constants import bq_utils as bq_consts
 from constants.cdr_cleaner import clean_cdr as cdr_consts
-from cdr_cleaner.cleaning_rules.negative_ages import NegativeAges, date_fields, person, NEGATIVE_AGE_DEATH_QUERY, \
-    NEGATIVE_AGES_QUERY, MAX_AGE, MAX_AGE_QUERY, SANDBOX_NEGATIVE_AND_MAX_AGE_QUERY, SANDBOX_NEGATIVE_AGE_DEATH_QUERY
+from cdr_cleaner.cleaning_rules.negative_ages import NegativeAges
 
 
 class NegativeAgesTest(unittest.TestCase):
