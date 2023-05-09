@@ -50,12 +50,9 @@ class TruncateFitbitDataTest(BaseTest.CleaningRulesTestBase):
                                                truncation_date=truncation_date)
 
         # Generates list of fully qualified sandbox table names
-        sb_date_table_names, sb_datetime_table_names = cls.rule_instance.get_sandbox_tablenames(
+        sb_table_names = cls.rule_instance.get_sandbox_tablenames(
         )
-        for table_name in sb_date_table_names:
-            cls.fq_sandbox_table_names.append(
-                f'{project_id}.{sandbox_id}.{table_name}')
-        for table_name in sb_datetime_table_names:
+        for table_name in sb_table_names:
             cls.fq_sandbox_table_names.append(
                 f'{project_id}.{sandbox_id}.{table_name}')
 
@@ -139,15 +136,20 @@ class TruncateFitbitDataTest(BaseTest.CleaningRulesTestBase):
 
         device_query = self.jinja_env.from_string("""
             INSERT INTO `{{fq_dataset_name}}.{{fitbit_table}}` 
-            (person_id, date, datetime)
+            (person_id, date, last_sync_time)
             VALUES
                 -- The date occurs on or after the cutoff. Sandboxed and dropped. --
-            (111, date('2019-11-26'), (DATETIME '2018-11-26 00:00:00')),
-            (222, date('2018-11-26'), (DATETIME '2018-11-26 00:00:00')),
+            (111, date('2020-11-26'), (DATETIME '2018-11-26 00:00:00')),
+            (111, date('2020-11-26'), (DATETIME '2018-11-26 00:00:00')),
                 -- The datetime occurs after the cutoff. Sandboxed and dropped. --
-            (333, date('2018-11-26'), (DATETIME '2020-11-26 00:00:00')),
-                -- The date and datetime occur before the cutoff date. No affect.
-            (444, date('2018-11-26'), (DATETIME '2018-11-26 00:00:00'))""").render(
+            (222, date('2018-11-26'), (DATETIME '2021-11-26 00:00:00')),
+                -- The date and datetime occur before the cutoff date. No affect. --
+            (222, date('2017-11-26'), (DATETIME '2017-11-26 00:00:00')),
+                -- The date occurs before the cutoff date. No affect. --
+            (333, date('2018-11-26'), NULL),
+                -- The date occurs after the cutoff. Sandboxed and dropped. --
+            (333, date('2021-11-26'), NULL)
+            """).render(
             fq_dataset_name=self.fq_dataset_name,
             fitbit_table=DEVICE)
         queries.append(device_query)
@@ -211,10 +213,11 @@ class TruncateFitbitDataTest(BaseTest.CleaningRulesTestBase):
                 table for table in self.fq_sandbox_table_names
                 if DEVICE in table
             ][0],
-            'fields': ['person_id','date', 'datetime'],
-            'loaded_ids': [111, 222, 333, 444],
-            'sandboxed_ids': [111, 222, 333],
-            'cleaned_values': [(444,parser.parse('2019-11-26').date(), parser.parse('2018-11-26 00:00:00'))]
+            'fields': ['person_id','date', 'last_sync_time'],
+            'loaded_ids': [111, 111, 222, 222, 333, 333],
+            'sandboxed_ids': [111, 111, 222, 333],
+            'cleaned_values': [(222 ,parser.parse('2017-11-26').date(), parser.parse('2017-11-26 00:00:00')),
+                               (333, parser.parse('2018-11-26').date(), None)]
         }]
 
         self.default_test(tables_and_counts)

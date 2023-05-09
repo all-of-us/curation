@@ -25,10 +25,13 @@ SANDBOX_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_id}}.{{intermediary_table}}` AS (
 SELECT * 
 FROM `{{project_id}}.{{dataset_id}}.{{fitbit_table}}`
-WHERE
-    (GREATEST({{date_fields}}) > DATE("{{truncation_date}}"))
-{% if datetime_fields != '' %}
-    AND (GREATEST({{datetime_fields}}) > TIMESTAMP("{{truncation_date}}"))
+{% if datetime_fields and date_fields %}
+  WHERE (GREATEST({{date_fields}}) > DATE("{{truncation_date}}"))
+  OR (GREATEST({{datetime_fields}}) > TIMESTAMP("{{truncation_date}}"))
+{% elif datetime_fields %}
+  WHERE (GREATEST({{datetime_fields}}) > TIMESTAMP("{{truncation_date}}"))
+{% elif date_fields %}
+  WHERE (GREATEST({{date_fields}}) > DATE("{{truncation_date}}"))
 {% endif %}
 )
 """)
