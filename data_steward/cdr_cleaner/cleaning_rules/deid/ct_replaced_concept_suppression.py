@@ -15,7 +15,7 @@ import pandas as pd
 # Project imports
 from resources import REPLACED_PRIVACY_CONCEPTS_PATH
 from gcloud.bq import bigquery
-from common import CDM_TABLES
+from common import AOU_DEATH, CDM_TABLES
 from utils import pipeline_logging
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.deid.concept_suppression import \
@@ -53,7 +53,7 @@ class ControlledTierReplacedConceptSuppression(
             project_id=project_id,
             dataset_id=dataset_id,
             sandbox_dataset_id=sandbox_dataset_id,
-            affected_tables=CDM_TABLES,
+            affected_tables=CDM_TABLES + [AOU_DEATH],
             concept_suppression_lookup_table=SUPPRESSION_RULE_CONCEPT_TABLE,
             table_namer=table_namer)
 
