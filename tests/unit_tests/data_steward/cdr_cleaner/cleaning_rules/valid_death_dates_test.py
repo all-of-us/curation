@@ -3,7 +3,6 @@ Unit test for valid_death_dates.py
 
 Removes data containing death_dates which fall outside of the AoU program dates or after the current date
 
-
 Original Issues: DC-431, DC-822
 
 The intent is to ensure there are no death dates that occur before the start of the AoU program or after the current
@@ -15,11 +14,11 @@ we chose Jan 1, 2017 as the program start date.
 import unittest
 
 # Project imports
-import common
 from constants.bq_utils import WRITE_TRUNCATE
 from constants.cdr_cleaner import clean_cdr as cdr_consts
-from cdr_cleaner.cleaning_rules.valid_death_dates import ValidDeathDates, KEEP_VALID_DEATH_DATE_ROWS,\
-    SANDBOX_INVALID_DEATH_DATE_ROWS, program_start_date, current_date
+from cdr_cleaner.cleaning_rules.valid_death_dates import (
+    ValidDeathDates, KEEP_VALID_DEATH_DATE_ROWS,
+    SANDBOX_INVALID_DEATH_DATE_ROWS, program_start_date, current_date)
 
 
 class ValidDeathDatesTest(unittest.TestCase):
@@ -62,27 +61,25 @@ class ValidDeathDatesTest(unittest.TestCase):
                 SANDBOX_INVALID_DEATH_DATE_ROWS.render(
                     project_id=self.project_id,
                     sandbox_id=self.sandbox_dataset_id,
-                    sandbox_table=self.rule_instance.sandbox_table_for(
-                        common.DEATH),
+                    sandbox_table=self.rule_instance.sandbox_table_for(table),
                     dataset_id=self.dataset_id,
-                    table=common.DEATH,
+                    table=table,
                     program_start_date=program_start_date,
                     current_date=current_date)
-        }, {
+        } for table in self.rule_instance.affected_tables] + [{
             cdr_consts.QUERY:
                 KEEP_VALID_DEATH_DATE_ROWS.render(
                     project_id=self.project_id,
                     dataset_id=self.dataset_id,
-                    table=common.DEATH,
+                    table=table,
                     sandbox_id=self.sandbox_dataset_id,
-                    sandbox_table=self.rule_instance.sandbox_table_for(
-                        common.DEATH)),
+                    sandbox_table=self.rule_instance.sandbox_table_for(table)),
             cdr_consts.DESTINATION_TABLE:
-                common.DEATH,
+                table,
             cdr_consts.DESTINATION_DATASET:
                 self.dataset_id,
             cdr_consts.DISPOSITION:
                 WRITE_TRUNCATE
-        }]
+        } for table in self.rule_instance.affected_tables]
 
         self.assertEqual(result_list, expected_list)
