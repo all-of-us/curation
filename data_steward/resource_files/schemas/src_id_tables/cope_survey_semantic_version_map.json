@@ -1,0 +1,32 @@
+[
+    {
+        "type": "integer",
+        "name": "participant_id",
+        "mode": "required",
+        "description": "An unique identifier for each person."
+    },
+    {
+        "type": "integer",
+        "name": "questionnaire_response_id",
+        "mode": "required",
+        "description": "An ID for a questionnaire response that produced this observation. This is applicable to AllOfUs questionnaire answers only. All answers with the same questionnaire response ID were submitted in the same response."
+    },
+    {
+        "type": "string",
+        "name": "semantic_version",
+        "mode": "required",
+        "description": "An internal identifier used by Care Evolution and PTSC"
+    },
+    {
+        "type": "string",
+        "name": "cope_month",
+        "mode": "required",
+        "description": "Survey version release month"
+    },
+    {
+        "type": "string",
+        "name": "src_id",
+        "mode": "required",
+        "description": "The source of the record."
+    }
+]
