@@ -1,0 +1,91 @@
+[
+  {
+    "type": "integer",
+    "name": "procedure_occurrence_id",
+    "mode": "required",
+    "description": "A system-generated unique identifier for each Procedure Occurrence."
+  },
+  {
+    "type": "integer",
+    "name": "person_id",
+    "mode": "required",
+    "description": "A foreign key identifier to the Person who is subjected to the Procedure. The demographic details of that Person are stored in the PERSON table."
+  },
+  {
+    "type": "integer",
+    "name": "procedure_concept_id",
+    "mode": "required",
+    "description": "A foreign key that refers to a standard procedure Concept identifier in the Standardized Vocabularies."
+  },
+  {
+    "type": "date",
+    "name": "procedure_date",
+    "mode": "required",
+    "description": "The date on which the Procedure was performed."
+  },
+  {
+    "type": "timestamp",
+    "name": "procedure_datetime",
+    "mode": "required",
+    "description": "The date and time on which the Procedure was performed."
+  },
+  {
+    "type": "integer",
+    "name": "procedure_type_concept_id",
+    "mode": "required",
+    "description": "A foreign key to the predefined Concept identifier in the Standardized Vocabularies reflecting the type of source data from which the procedure record is derived."
+  },
+  {
+    "type": "integer",
+    "name": "modifier_concept_id",
+    "mode": "nullable",
+    "description": "A foreign key to a Standard Concept identifier for a modifier to the Procedure (e.g. bilateral)"
+  },
+  {
+    "type": "integer",
+    "name": "quantity",
+    "mode": "nullable",
+    "description": "The quantity of procedures ordered or administered."
+  },
+  {
+    "type": "integer",
+    "name": "provider_id",
+    "mode": "nullable",
+    "description": "A foreign key to the provider in the PROVIDER table who was responsible for carrying out the procedure."
+  },
+  {
+    "type": "integer",
+    "name": "visit_occurrence_id",
+    "mode": "nullable",
+    "description": "A foreign key to the Visit in the VISIT_OCCURRENCE table during which the Procedure was carried out."
+  },
+  {
+    "type": "integer",
+    "name": "visit_detail_id",
+    "mode": "nullable",
+    "description": "The VISIT_DETAIL record during which the Procedure occurred. For example, if the Person was in the ICU at the time of the Procedure the VISIT_OCCURRENCE record would reflect the overall hospital stay and the VISIT_DETAIL record would reflect the ICU stay during the hospital visit."
+  },
+  {
+    "type": "string",
+    "name": "procedure_source_value",
+    "mode": "nullable",
+    "description": "The source code for the Procedure as it appears in the source data. This code is mapped to a standard procedure Concept in the Standardized Vocabularies and the original code is, stored here for reference. Procedure source codes are typically ICD-9-Proc, CPT-4, HCPCS or OPCS-4 codes."
+  },
+  {
+    "type": "integer",
+    "name": "procedure_source_concept_id",
+    "mode": "nullable",
+    "description": "A foreign key to a Procedure Concept that refers to the code used in the source."
+  },
+  {
+    "type": "string",
+    "name": "modifier_source_value",
+    "mode": "nullable"
+  },
+  {
+    "type": "string",
+    "name": "src_id",
+    "mode": "required",
+    "description": "The source of the record."
+  }
+]
