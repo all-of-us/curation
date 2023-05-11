@@ -1,0 +1,43 @@
+[
+  {
+    "type": "integer",
+    "name": "metadata_concept_id",
+    "mode": "required"
+  },
+  {
+    "type": "integer",
+    "name": "metadata_type_concept_id",
+    "mode": "required"
+  },
+  {
+    "type": "string",
+    "name": "name",
+    "mode": "required"
+  },
+  {
+    "type": "string",
+    "name": "value_as_string",
+    "mode": "nullable"
+  },
+  {
+    "type": "integer",
+    "name": "value_as_concept_id",
+    "mode": "nullable"
+  },
+  {
+    "type": "date",
+    "name": "metadata_date",
+    "mode": "nullable"
+  },
+  {
+    "type": "timestamp",
+    "name": "metadata_datetime",
+    "mode": "nullable"
+  },
+  {
+    "type": "string",
+    "name": "src_id",
+    "mode": "required",
+    "description": "The source of the record."
+  }
+]
