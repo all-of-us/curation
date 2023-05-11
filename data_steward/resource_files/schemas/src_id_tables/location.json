@@ -1,0 +1,56 @@
+[
+  {
+    "type": "integer",
+    "name": "location_id",
+    "mode": "required",
+    "description": "A unique identifier for each geographic location."
+  },
+  {
+    "type": "string",
+    "name": "address_1",
+    "mode": "nullable",
+    "description": "The address field 1, typically used for the street address, as it appears in the source data."
+  },
+  {
+    "type": "string",
+    "name": "address_2",
+    "mode": "nullable",
+    "description": "The address field 2, typically used for additional detail such as buildings, suites, floors, as it appears in the source data."
+  },
+  {
+    "type": "string",
+    "name": "city",
+    "mode": "nullable",
+    "description": "The city field as it appears in the source data."
+  },
+  {
+    "type": "string",
+    "name": "state",
+    "mode": "nullable",
+    "description": "The state field as it appears in the source data."
+  },
+  {
+    "type": "string",
+    "name": "zip",
+    "mode": "nullable",
+    "description": "The zip or postal code."
+  },
+  {
+    "type": "string",
+    "name": "county",
+    "mode": "nullable",
+    "description": "The county."
+  },
+  {
+    "type": "string",
+    "name": "location_source_value",
+    "mode": "nullable",
+    "description": "The verbatim information that is used to uniquely identify the location as it appears in the source data."
+  },
+  {
+    "type": "string",
+    "name": "src_id",
+    "mode": "required",
+    "description": "The source of the record."
+  }
+]
