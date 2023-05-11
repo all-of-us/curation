@@ -1,0 +1,44 @@
+[
+    {
+        "type": "integer",
+        "name": "care_site_id",
+        "mode": "required",
+        "description": "A unique identifier for each Care Site."
+    },
+    {
+        "type": "string",
+        "name": "care_site_name",
+        "mode": "nullable",
+        "description": "The verbatim description or name of the Care Site as in data source"
+    },
+    {
+        "type": "integer",
+        "name": "place_of_service_concept_id",
+        "mode": "nullable",
+        "description": "A foreign key that refers to a Place of Service Concept ID in the Standardized Vocabularies."
+    },
+    {
+        "type": "integer",
+        "name": "location_id",
+        "mode": "nullable",
+        "description": "A foreign key to the geographic Location in the LOCATION table, where the detailed address information is stored."
+    },
+    {
+        "type": "string",
+        "name": "care_site_source_value",
+        "mode": "nullable",
+        "description": "The identifier for the Care Site in the source data, stored here for reference."
+    },
+    {
+        "type": "string",
+        "name": "place_of_service_source_value",
+        "mode": "nullable",
+        "description": "The source code for the Place of Service as it appears in the source data, stored here for reference."
+    },
+    {
+        "type": "string",
+        "name": "src_id",
+        "mode": "required",
+        "description": "The source of the record."
+    }
+]
