@@ -1,0 +1,26 @@
+[
+  {
+    "type": "integer",
+    "name": "questionnaire_response_id",
+    "mode": "nullable",
+    "description": ""
+  },
+  {
+    "type": "string",
+    "name": "type",
+    "mode": "nullable",
+    "description": "Response type in [NON_PARTICIPANT_AUTHOR_INDICATOR, CODE, LANGUAGE]"
+  },
+  {
+    "type": "string",
+    "name": "value",
+    "mode": "nullable",
+    "description": "Values in { LANGUAGE: [en, es], NON_PARTICIPANT_AUTHOR_INDICATOR: [CATI]}, CODE: [survey taken]"
+  },
+  {
+    "type": "string",
+    "name": "src_id",
+    "mode": "required",
+    "description": "The source of the record."
+  }
+]
