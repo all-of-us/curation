@@ -1,0 +1,146 @@
+[
+  {
+    "type": "integer",
+    "name": "drug_exposure_id",
+    "mode": "required",
+    "description": "A system-generated unique identifier for each Drug utilization event."
+  },
+  {
+    "type": "integer",
+    "name": "person_id",
+    "mode": "required",
+    "description": "A foreign key identifier to the person who is subjected to the Drug. The demographic details of that person are stored in the person table."
+  },
+  {
+    "type": "integer",
+    "name": "drug_concept_id",
+    "mode": "required",
+    "description": "A foreign key that refers to a Standard Concept identifier in the Standardized Vocabularies for the Drug concept."
+  },
+  {
+    "type": "date",
+    "name": "drug_exposure_start_date",
+    "mode": "required",
+    "description": "The start date for the current instance of Drug utilization. Valid entries include a start date of a prescription, the date a prescription was filled, or the date on which a Drug administration procedure was recorded."
+  },
+  {
+    "type": "timestamp",
+    "name": "drug_exposure_start_datetime",
+    "mode": "required",
+    "description": "The start date and time for the current instance of Drug utilization. Valid entries include a start date of a prescription, the date a prescription was filled, or the date on which a Drug administration procedure was recorded."
+  },
+  {
+    "type": "date",
+    "name": "drug_exposure_end_date",
+    "mode": "nullable",
+    "description": "The end date for the current instance of Drug utilization. It is not available from all sources."
+  },
+  {
+    "type": "timestamp",
+    "name": "drug_exposure_end_datetime",
+    "mode": "nullable",
+    "description": "The end date and time for the current instance of Drug utilization. It is not available from all sources."
+  },
+  {
+    "type": "date",
+    "name": "verbatim_end_date",
+    "mode": "nullable",
+    "description": "The known end date of a drug_exposure as provided by the source"
+  },
+  {
+    "type": "integer",
+    "name": "drug_type_concept_id",
+    "mode": "required",
+    "description": "A foreign key to the predefined Concept identifier in the Standardized Vocabularies reflecting the type of Drug Exposure recorded. It indicates how the Drug Exposure was represented in the source data."
+  },
+  {
+    "type": "string",
+    "name": "stop_reason",
+    "mode": "nullable",
+    "description": "The reason the Drug was stopped. Reasons include regimen completed, changed, removed, etc."
+  },
+  {
+    "type": "integer",
+    "name": "refills",
+    "mode": "nullable",
+    "description": "The number of refills after the initial prescription. The initial prescription is not counted, values start with 0."
+  },
+  {
+    "type": "float",
+    "name": "quantity",
+    "mode": "nullable",
+    "description": "The quantity of drug as recorded in the original prescription or dispensing record."
+  },
+  {
+    "type": "integer",
+    "name": "days_supply",
+    "mode": "nullable",
+    "description": "The number of days of supply of the medication as recorded in the original prescription or dispensing record."
+  },
+  {
+    "type": "string",
+    "name": "sig",
+    "mode": "nullable",
+    "description": "The directions (\"signetur\") on the Drug prescription as recorded in the original prescription (and printed on the container) or dispensing record."
+  },
+  {
+    "type": "integer",
+    "name": "route_concept_id",
+    "mode": "nullable",
+    "description": "A foreign key to a predefined concept in the Standardized Vocabularies reflecting the route of administration."
+  },
+  {
+    "type": "string",
+    "name": "lot_number",
+    "mode": "nullable",
+    "description": "An identifier assigned to a particular quantity or lot of Drug product from the manufacturer."
+  },
+  {
+    "type": "integer",
+    "name": "provider_id",
+    "mode": "nullable",
+    "description": "A foreign key to the provider in the PROVIDER table who initiated (prescribed or administered) the Drug Exposure."
+  },
+  {
+    "type": "integer",
+    "name": "visit_occurrence_id",
+    "mode": "nullable",
+    "description": "A foreign key to the Visit in the VISIT_OCCURRENCE table during which the Drug Exposure was initiated."
+  },
+  {
+    "type": "integer",
+    "name": "visit_detail_id",
+    "mode": "nullable",
+    "description": "The VISIT_DETAIL record during which the drug exposure occurred. For example, if the person was in the ICU at the time of the drug administration the VISIT_OCCURRENCE record would reflect the overall hospital stay and the VISIT_DETAIL record would reflect the ICU stay during the hospital visit."
+  },
+  {
+    "type": "string",
+    "name": "drug_source_value",
+    "mode": "nullable",
+    "description": "The source code for the Drug as it appears in the source data. This code is mapped to a Standard Drug concept in the Standardized Vocabularies and the original code is, stored here for reference."
+  },
+  {
+    "type": "integer",
+    "name": "drug_source_concept_id",
+    "mode": "nullable",
+    "description": "A foreign key to a Drug Concept that refers to the code used in the source."
+  },
+  {
+    "type": "string",
+    "name": "route_source_value",
+    "mode": "nullable",
+    "description": "The information about the route of administration as detailed in the source."
+  },
+  {
+    "type": "string",
+    "name": "dose_unit_source_value",
+    "mode": "nullable",
+    "description": "The information about the dose unit as detailed in the source."
+  },
+  {
+    "type": "string",
+    "name": "src_id",
+    "mode": "required",
+    "description": "The source of the record."
+  }
+]
