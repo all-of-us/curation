@@ -1,0 +1,98 @@
+[
+  {
+    "type": "integer",
+    "name": "device_exposure_id",
+    "mode": "required",
+    "description": "A system-generated unique identifier for each Device Exposure."
+  },
+  {
+    "type": "integer",
+    "name": "person_id",
+    "mode": "required",
+    "description": "A foreign key identifier to the Person who is subjected to the Device. The demographic details of that person are stored in the Person table."
+  },
+  {
+    "type": "integer",
+    "name": "device_concept_id",
+    "mode": "required",
+    "description": "A foreign key that refers to a Standard Concept identifier in the Standardized Vocabularies for the Device concept."
+  },
+  {
+    "type": "date",
+    "name": "device_exposure_start_date",
+    "mode": "required",
+    "description": "The date the Device or supply was applied or used."
+  },
+  {
+    "type": "timestamp",
+    "name": "device_exposure_start_datetime",
+    "mode": "required",
+    "description": "The date and time the Device or supply was applied or used."
+  },
+  {
+    "type": "date",
+    "name": "device_exposure_end_date",
+    "mode": "nullable",
+    "description": "The date the Device or supply was removed from use."
+  },
+  {
+    "type": "timestamp",
+    "name": "device_exposure_end_datetime",
+    "mode": "nullable",
+    "description": "The date and time the Device or supply was removed from use."
+  },
+  {
+    "type": "integer",
+    "name": "device_type_concept_id",
+    "mode": "required",
+    "description": "A foreign key to the predefined Concept identifier in the Standardized Vocabularies reflecting the type of Device Exposure recorded. It indicates how the Device Exposure was represented in the source data."
+  },
+  {
+    "type": "string",
+    "name": "unique_device_id",
+    "mode": "nullable",
+    "description": "A UDI or equivalent identifying the instance of the Device used in the Person."
+  },
+  {
+    "type": "integer",
+    "name": "quantity",
+    "mode": "nullable",
+    "description": "The number of individual Devices used for the exposure."
+  },
+  {
+    "type": "integer",
+    "name": "provider_id",
+    "mode": "nullable",
+    "description": "A foreign key to the provider in the PROVIDER table who initiated of administered the Device."
+  },
+  {
+    "type": "integer",
+    "name": "visit_occurrence_id",
+    "mode": "nullable",
+    "description": "A foreign key to the visit in the VISIT_OCCURRENCE table during which the device was used."
+  },
+  {
+    "type": "integer",
+    "name": "visit_detail_id",
+    "mode": "nullable",
+    "description": "The Visit Detail during which the device was prescribed or given."
+  },
+  {
+    "type": "string",
+    "name": "device_source_value",
+    "mode": "nullable",
+    "description": "The source code for the Device as it appears in the source data. This code is mapped to a standard Device Concept in the Standardized Vocabularies and the original code is stored here for reference."
+  },
+  {
+    "type": "integer",
+    "name": "device_source_concept_id",
+    "mode": "nullable",
+    "description": "This is the concept representing the device source value and may not necessarily be standard. This field is discouraged from use in analysis because it is not required to contain Standard Concepts that are used across the OHDSI community, and should only be used when Standard Concepts do not adequately represent the source detail for the Device necessary for a given analytic use case. Consider using DEVICE_CONCEPT_ID instead to enable standardized analytics that can be consistent across the network."
+  },
+  {
+    "type": "string",
+    "name": "src_id",
+    "mode": "required",
+    "description": "The source of the record."
+  }
+]
