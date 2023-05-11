@@ -1,0 +1,139 @@
+[
+  {
+    "type": "integer",
+    "name": "cost_id",
+    "mode": "required",
+    "description": "A unique identifier for each COST record."
+  },
+  {
+    "type": "integer",
+    "name": "cost_event_id",
+    "mode": "required",
+    "description": "A foreign key identifier to the event (e.g. Measurement, Procedure, Visit, Drug Exposure, etc) record for which cost data are recorded."
+  },
+  {
+    "type": "string",
+    "name": "cost_domain_id",
+    "mode": "required",
+    "description": "The concept representing the domain of the cost event, from which the corresponding table can be inferred that contains the entity for which cost information is recorded."
+  },
+  {
+    "type": "integer",
+    "name": "cost_type_concept_id",
+    "mode": "required",
+    "description": "A foreign key identifier to a concept in the CONCEPT table for the provenance or the source of the COST data: Calculated from insurance claim information, provider revenue, calculated from cost-to-charge ratio, reported from accounting database, etc."
+  },
+  {
+    "type": "integer",
+    "name": "currency_concept_id",
+    "mode": "nullable",
+    "description": "A foreign key identifier to the concept representing the 3-letter code used to delineate international currencies, such as USD for US Dollar."
+  },
+  {
+    "type": "float",
+    "name": "total_charge",
+    "mode": "nullable",
+    "description": "The total amount charged by some provider of goods or services (e.g. hospital, physician pharmacy, dme provider) to payers (insurance companies, the patient)."
+  },
+  {
+    "type": "float",
+    "name": "total_cost",
+    "mode": "nullable",
+    "description": "The cost incurred by the provider of goods or services."
+  },
+  {
+    "type": "float",
+    "name": "total_paid",
+    "mode": "nullable",
+    "description": "The total amount actually paid from all payers for goods or services of the provider."
+  },
+  {
+    "type": "float",
+    "name": "paid_by_payer",
+    "mode": "nullable",
+    "description": "The amount paid by the Payer for the goods or services."
+  },
+  {
+    "type": "float",
+    "name": "paid_by_patient",
+    "mode": "nullable",
+    "description": "The total amount paid by the Person as a share of the expenses."
+  },
+  {
+    "type": "float",
+    "name": "paid_patient_copay",
+    "mode": "nullable",
+    "description": "The amount paid by the Person as a fixed contribution to the expenses."
+  },
+  {
+    "type": "float",
+    "name": "paid_patient_coinsurance",
+    "mode": "nullable",
+    "description": "The amount paid by the Person as a joint assumption of risk. Typically, this is a percentage of the expenses defined by the Payer Plan after the Person's deductible is exceeded."
+  },
+  {
+    "type": "float",
+    "name": "paid_patient_deductible",
+    "mode": "nullable",
+    "description": "The amount paid by the Person that is counted toward the deductible defined by the Payer Plan. paid_patient_deductible does contribute to the paid_by_patient variable."
+  },
+  {
+    "type": "float",
+    "name": "paid_by_primary",
+    "mode": "nullable",
+    "description": "The amount paid by a primary Payer through the coordination of benefits."
+  },
+  {
+    "type": "float",
+    "name": "paid_ingredient_cost",
+    "mode": "nullable",
+    "description": "The amount paid by the Payer to a pharmacy for the drug, excluding the amount paid for dispensing the drug.  paid_ingredient_cost contributes to the paid_by_payer field if this field is populated with a nonzero value."
+  },
+  {
+    "type": "float",
+    "name": "paid_dispensing_fee",
+    "mode": "nullable",
+    "description": "The amount paid by the Payer to a pharmacy for dispensing a drug, excluding the amount paid for the drug ingredient. paid_dispensing_fee contributes to the paid_by_payer field if this field is populated with a nonzero value."
+  },
+  {
+    "type": "integer",
+    "name": "payer_plan_period_id",
+    "mode": "nullable",
+    "description": "A foreign key to the PAYER_PLAN_PERIOD table, where the details of the Payer, Plan and Family are stored.  Record the payer_plan_id that relates to the payer who contributed to the paid_by_payer field."
+  },
+  {
+    "type": "float",
+    "name": "amount_allowed",
+    "mode": "nullable",
+    "description": "The contracted amount agreed between the payer and provider."
+  },
+  {
+    "type": "integer",
+    "name": "revenue_code_concept_id",
+    "mode": "nullable",
+    "description": "A foreign key referring to a Standard Concept ID in the Standardized Vocabularies for Revenue codes."
+  },
+  {
+    "type": "string",
+    "name": "revenue_code_source_value",
+    "mode": "nullable",
+    "description": "Revenue codes are a method to charge for a class of procedures and conditions in the U.S. hospital system."
+  },
+  {
+    "type": "integer",
+    "name": "drg_concept_id",
+    "mode": "nullable"
+  },
+  {
+    "type": "string",
+    "name": "drg_source_value",
+    "mode": "nullable",
+    "description": "Diagnosis Related Groups are US codes used to classify hospital cases into one of approximately 500 groups. "
+  },
+  {
+    "type": "string",
+    "name": "src_id",
+    "mode": "required",
+    "description": "The source of the record."
+  }
+]
