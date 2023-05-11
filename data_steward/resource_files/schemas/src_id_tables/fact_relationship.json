@@ -1,0 +1,38 @@
+[
+  {
+    "type": "integer",
+    "name": "domain_concept_id_1",
+    "mode": "required",
+    "description": "The concept representing the domain of fact one, from which the corresponding table can be inferred."
+  },
+  {
+    "type": "integer",
+    "name": "fact_id_1",
+    "mode": "required",
+    "description": "The unique identifier in the table corresponding to the domain of fact one."
+  },
+  {
+    "type": "integer",
+    "name": "domain_concept_id_2",
+    "mode": "required",
+    "description": "The concept representing the domain of fact two, from which the corresponding table can be inferred."
+  },
+  {
+    "type": "integer",
+    "name": "fact_id_2",
+    "mode": "required",
+    "description": "The unique identifier in the table corresponding to the domain of fact two."
+  },
+  {
+    "type": "integer",
+    "name": "relationship_concept_id",
+    "mode": "required",
+    "description": "A foreign key to a Standard Concept ID of relationship in the Standardized Vocabularies."
+  },
+  {
+    "type": "string",
+    "name": "src_id",
+    "mode": "required",
+    "description": "The source of the record."
+  }
+]
