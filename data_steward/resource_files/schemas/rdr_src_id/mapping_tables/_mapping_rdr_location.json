@@ -1,0 +1,14 @@
+[
+    {
+        "type": "integer",
+        "name": "location_id",
+        "mode": "nullable",
+        "description": ""
+    },
+    {
+        "type": "string",
+        "name": "src_id",
+        "mode": "nullable",
+        "description": ""
+    }
+]
