@@ -1,0 +1,14 @@
+[
+    {
+        "type": "integer",
+        "name": "procedure_occurrence_id",
+        "mode": "nullable",
+        "description": ""
+    },
+    {
+        "type": "string",
+        "name": "src_id",
+        "mode": "nullable",
+        "description": ""
+    }
+]
