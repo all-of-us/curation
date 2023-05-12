@@ -11,7 +11,7 @@ from datetime import datetime
 # Project imports
 from cdr_cleaner.cleaning_rules.deid.concept_suppression import AbstractBqLookupTableConceptSuppression
 from constants.cdr_cleaner import clean_cdr as cdr_consts
-from common import JINJA_ENV, CDM_TABLES, DEFAULT_CONCEPT_VALID_START_DATE
+from common import AOU_DEATH, JINJA_ENV, CDM_TABLES, DEFAULT_CONCEPT_VALID_START_DATE
 from utils.bq import validate_bq_date_string
 from utils import pipeline_logging
 from resources import get_concept_id_fields, get_primary_key, get_primary_date_field
@@ -114,7 +114,7 @@ class RecentConceptSuppression(AbstractBqLookupTableConceptSuppression):
             issue_numbers=['DC1692', 'DC2789'],
             description=desc,
             affected_datasets=[cdr_consts.REGISTERED_TIER_DEID],
-            affected_tables=CDM_TABLES,
+            affected_tables=CDM_TABLES + [AOU_DEATH],
             project_id=project_id,
             dataset_id=dataset_id,
             sandbox_dataset_id=sandbox_dataset_id,
@@ -148,7 +148,7 @@ class RecentConceptSuppression(AbstractBqLookupTableConceptSuppression):
         tables_in_dataset = BigQueryClient.list_tables(client, dataset_ref)
         tables_in_dataset = [table.table_id for table in tables_in_dataset]
 
-        for table_name in CDM_TABLES:
+        for table_name in self.affected_tables:
             primary_key = get_primary_key(table_name)
             concept_id_fields = get_concept_id_fields(table_name)
             primary_date_field = get_primary_date_field(table_name)
