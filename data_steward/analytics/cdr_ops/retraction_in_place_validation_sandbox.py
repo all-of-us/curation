@@ -12,6 +12,13 @@
 #     name: python3
 # ---
 
+# ---
+# This notebook validates in-place EHR data retraction for the sandbox datasets only, excluding ehr datasets.
+# Note:
+#   1. Tables that have 'person' in the name were not retracted from because the records come from RDR.
+#   2. Tables with 'ehr' in the name or that don't have one of the domain table names as part of the name, contain unknown records. This means
+#      that we can't know for sure whether the records are from rdr or ehr.
+
 # + tags=["parameters"]
 project_id: str = ""  # identifies the project where datasets are located
 datasets: list = []  # identifies the dataset names after retraction
@@ -24,10 +31,19 @@ import pandas as pd
 import numpy as np
 from IPython.core import display as ICD
 
-from common import JINJA_ENV, CDM_TABLES
 from utils import auth
 from gcloud.bq import BigQueryClient
-from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES, provenance_table_for
+from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
+from common import (JINJA_ENV, AOU_REQUIRED, CARE_SITE, CONDITION_ERA, DOSE_ERA,
+                    DRUG_ERA, FACT_RELATIONSHIP, JINJA_ENV, LOCATION, NOTE_NLP,
+                    OBSERVATION_PERIOD, PAYER_PLAN_PERIOD, PROVIDER)
+
+NON_PID_TABLES = [CARE_SITE, LOCATION, FACT_RELATIONSHIP, PROVIDER]
+OTHER_PID_TABLES = [
+    CONDITION_ERA, DOSE_ERA, DRUG_ERA, NOTE_NLP, OBSERVATION_PERIOD,
+    PAYER_PLAN_PERIOD
+]
+domain_tables = set(AOU_REQUIRED + OTHER_PID_TABLES) - set(NON_PID_TABLES)
 
 impersonation_creds = auth.get_impersonation_credentials(
     run_as, target_scopes=IMPERSONATION_SCOPES)
@@ -75,24 +91,78 @@ for dataset, pid_table_list in zip(datasets, all_pid_tables_lists):
     table_check_query = JINJA_ENV.from_string('''
   SELECT
     \'{{table_name}}\' AS table_name,
-    Case when count(tb.person_id) = 0 then 'OK'
-    ELSE 
-    'PROBLEM' end as retraction_status
+
+    {% if domain_id != 'ehr' and domain_id != 'person' and domain_id != 'death' and domain_id != ''%}
+        Case when count(tb.{{domain_id}}_id) = 0 then 'OK'
+        ELSE 
+        'PROBLEM' end as retraction_status,
+        'EHR_domain_id' as source,
+        '{{domain_id}}' as domain
+
+    {% elif domain_id == 'death' %}
+        Case when count(tb.person_id) = 0 then 'OK'
+        ELSE 
+        'PROBLEM' end as retraction_status,
+        'EHR_person_id' as source,
+        '{{domain_id}}' as domain
+
+    {% elif domain_id == 'person' %}
+        Case when count(tb.person_id) = 0 then 'OK'
+        ELSE 
+        'OK' end as retraction_status,
+        'EHR_person_id' as source,
+        '{{domain_id}} from RDR' as domain
+
+    {% elif domain_id == 'ehr' or domain_id == '' %}
+        Case when count(tb.person_id) = 0 then 'OK'
+        ELSE 
+        'OK' end as retraction_status,
+        'EHR_person_id' as source,
+        'UNKNOWN' as domain
+    {% endif %}        
+
   FROM
+
     `{{project}}.{{dataset}}.{{table_name}}` as tb
-  right JOIN
-    pids as p
-  USING(person_id)
+    right JOIN 
+        pids as p
+    USING(person_id)
+
+    {% if domain_id != 'ehr' and domain_id != 'person' and domain_id != 'death' and domain_id != ''%}
+      where {{domain_id}}_id > 2000000000000000
+    {% endif %}
+
   ''')
 
     queries_list = []
     is_deidentified = str('deid' in dataset).lower()
 
     for table in pid_table_list:
+        domain_id = ''
+        if 'ehr' in table:
+            domain_id = 'ehr'
+        elif 'person' in table:
+            domain_id = 'person'
+        elif 'death' in table:
+            domain_id = 'death'
+        else:
+            for name in domain_tables:
+                if name in table:
+                    if 'observation' in name:
+                        if 'observation_period' in table:
+                            domain_id = 'observation_period'
+                        else:
+                            domain_id = 'observation'
+                        break
+                    else:
+                        domain_id = name
+                        break
+
         queries_list.append(
             table_check_query.render(project=project_id,
                                      dataset=dataset,
-                                     table_name=table))
+                                     table_name=table,
+                                     domain_id=domain_id))
 
     union_all_query = '\nUNION ALL\n'.join(queries_list)
 
