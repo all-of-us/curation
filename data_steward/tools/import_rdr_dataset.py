@@ -17,7 +17,7 @@ from google.api_core.exceptions import NotFound
 from utils import auth, pipeline_logging
 from gcloud.bq import BigQueryClient
 from common import CDR_SCOPES
-from resources import replace_special_characters_for_labels, validate_date_string, cdm_schemas, rdr_specific_schemas
+from resources import replace_special_characters_for_labels, validate_date_string, rdr_src_id_schemas
 
 LOGGER = logging.getLogger(__name__)
 
@@ -63,7 +63,7 @@ def parse_rdr_args(raw_args=None):
     return parser.parse_args(raw_args)
 
 
-def create_rdr_tables(client, rdr_dataset, bucket):
+def create_rdr_tables(client, destination_dataset, rdr_source_dataset):
     """
     Create tables from the data in the RDR dataset.
 
@@ -71,50 +71,48 @@ def create_rdr_tables(client, rdr_dataset, bucket):
     a table.
 
     :param client: a BigQueryClient
-    :param rdr_dataset: The existing dataset to load file data into
-    :param bucket: the gcs bucket containing the file data.
+    :param rdr_destination_dataset: The existing local dataset to load file data into
+    :param rdr_source_dataset: the source rdr dataset containing the data.
     """
-    schema_dict = cdm_schemas()
-    schema_dict.update(rdr_specific_schemas())
+    schema_dict = rdr_src_id_schemas()
 
     for table, schema in schema_dict.items():
+
         schema_list = client.get_table_schema(table, schema)
-        table_id = f'{client.project}.{rdr_dataset}.{table}'
-        job_config = bigquery.LoadJobConfig(
-            schema=schema_list,
-            skip_leading_rows=1,
-            source_format=bigquery.SourceFormat.CSV,
-            field_delimiter=',',
-            allow_quoted_newlines=True,
-            quote_character='"',
-            write_disposition=bigquery.job.WriteDisposition.WRITE_TRUNCATE)
-        if table == 'observation_period':
-            job_config.allow_jagged_rows = True
+        table_id = f'{client.project}.{destination_dataset}.{table}'
+
+        destination_table = bigquery.Table(table_id, schema=schema_list)
 
         for schema_item in schema_list:
             if 'person_id' in schema_item.name and table.lower(
             ) != 'pid_rid_mapping':
-                job_config.clustering_fields = 'person_id'
-                job_config.time_partitioning = bigquery.table.TimePartitioning(
+                destination_table.clustering_fields = 'person_id'
+                destination_table.time_partitioning = bigquery.table.TimePartitioning(
                     type_='DAY')
 
-        # path to bucketed csv file
-        uri = f'gs://{bucket}/{table}.csv'
-
-        # job_id defined to the second precision
-        job_id = f'rdr_load_{table.lower()}_{datetime.now().strftime("%Y%m%d_%H%M%S")}'
-
-        LOGGER.info(f'Loading `{uri}` into `{table_id}`')
+        LOGGER.info(f'Loading `{rdr_source_dataset}.{table}` into `{table_id}`')
         try:
-            load_job = client.load_table_from_uri(
-                uri, table_id, job_config=job_config,
-                job_id=job_id)  # Make an API request.
+            source_table_name = f'{rdr_source_dataset}.{table}'
+            LOGGER.info(f'Get table `{source_table_name}` in RDR')
+            source_table = client.get_table(source_table_name)
 
-            load_job.result()  # Waits for the job to complete.
+            LOGGER.info(f'Creating empty CDM table, `{table}`')
+            destination_table = client.create_table(destination_table)
+
+            LOGGER.info(
+                f'Copying source table `{source_table_name}` to destination table `{destination_table.table_id}`'
+            )
+
+            copy_job = client.copy_table(source_table, destination_table)
+
+            copy_job.result()  # Waits for the job to complete.
+            LOGGER.info(
+                f'Copied source table `{source_table_name}` to destination table `{destination_table.table_id}` successfully'
+            )
         except NotFound:
             LOGGER.info(
                 f'{table} not provided by RDR team.  Creating empty table '
-                f'in dataset: `{rdr_dataset}`')
+                f'in dataset: `{destination_dataset}`')
 
             LOGGER.info(f'Creating empty CDM table, `{table}`')
             destination_table = bigquery.Table(table_id, schema=schema_list)
@@ -126,7 +124,7 @@ def create_rdr_tables(client, rdr_dataset, bucket):
         LOGGER.info(f'Loaded {destination_table.num_rows} rows into '
                     f'`{destination_table.table_id}`.')
 
-    LOGGER.info(f"Finished RDR table LOAD from bucket gs://{bucket}")
+    LOGGER.info(f"Finished RDR table LOAD from dataset {rdr_source_dataset}")
 
 
 def copy_vocab_tables(client, rdr_dataset, vocab_dataset):
