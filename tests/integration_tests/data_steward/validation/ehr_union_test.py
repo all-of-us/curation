@@ -727,12 +727,10 @@ class EhrUnionAllDeathTest(BaseTest.BigQueryTestBase):
 
     def test_create_load_aou_death(self):
         """
-        Test cases for AOU_DEATH data:
-        person_id = 1: Only one record from FAKE.
-        person_id = 2: Exactly same records exist in FAKE and NYC. FAKE alphabetically becomes primary.
-        person_id = 3: The only difference between FAKE and NYC is NYC has non-NULL death_datetime. NYC becomes primary.
-        person_id = 4: PITT's death_date is earlier than FAKE. PITT becomes primary.
-        person_id = 5: PITT's death_datetime is earlier than FAKE. PITT becomes primary.
+        Test cases for AOU_DEATH data.
+        NOTE: `primary_death_record` is all `False` at this point. The CR
+            `CalculatePrimaryDeathRecord` updates the table at the end of the
+            Unioned EHR data tier creation.
         """
         ehr_union.create_load_aou_death(self.client, self.project_id,
                                         self.dataset_id, self.dataset_id,
@@ -741,13 +739,13 @@ class EhrUnionAllDeathTest(BaseTest.BigQueryTestBase):
         self.assertTableValuesMatch(
             f'{self.project_id}.{self.dataset_id}.{UNIONED_EHR}_{AOU_DEATH}',
             ['person_id', 'src_id', 'primary_death_record'], [
-                (1, FAKE_HPO_ID, True),
-                (2, FAKE_HPO_ID, True),
+                (1, FAKE_HPO_ID, False),
+                (2, FAKE_HPO_ID, False),
                 (3, FAKE_HPO_ID, False),
                 (4, FAKE_HPO_ID, False),
                 (5, FAKE_HPO_ID, False),
                 (2, NYC_HPO_ID, False),
-                (3, NYC_HPO_ID, True),
-                (4, PITT_HPO_ID, True),
-                (5, PITT_HPO_ID, True),
+                (3, NYC_HPO_ID, False),
+                (4, PITT_HPO_ID, False),
+                (5, PITT_HPO_ID, False),
             ])
