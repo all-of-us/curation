@@ -121,7 +121,6 @@ from cdr_cleaner.cleaning_rules.generalize_state_by_population import Generalize
 from cdr_cleaner.cleaning_rules.section_participation_concept_suppression import SectionParticipationConceptSuppression
 from cdr_cleaner.cleaning_rules.deid.recent_concept_suppression import RecentConceptSuppression
 from cdr_cleaner.cleaning_rules.missing_concept_record_suppression import MissingConceptRecordSuppression
-from cdr_cleaner.cleaning_rules.monkeypox_concept_suppression import MonkeypoxConceptSuppression
 from cdr_cleaner.cleaning_rules.create_deid_questionnaire_response_map import CreateDeidQuestionnaireResponseMap
 from cdr_cleaner.cleaning_rules.set_unmapped_question_answer_survey_concepts import (
     SetConceptIdsForSurveyQuestionsAnswers)
@@ -268,7 +267,6 @@ REGISTERED_TIER_DEID_CLEANING_CLASSES = [
     ####################################
     (
         RecentConceptSuppression,),  # should run after QRIDtoRID
-    (MonkeypoxConceptSuppression,),
     (VehicularAccidentConceptSuppression,),
     (BirthInformationSuppression,),  # run after VehicularAccidentConcept
     (SectionParticipationConceptSuppression,),

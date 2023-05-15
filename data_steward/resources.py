@@ -85,9 +85,6 @@ PPI_BRANCHING_RULE_PATHS = [
     HEALTHCARE_ACCESS_CSV_PATH, LIFESTYLE_CSV_PATH, OVERALL_HEALTH_CSV_PATH,
     PERSONAL_MEDICAL_HISTORY_CSV_PATH
 ]
-MONKEYPOX_CONCEPTS_PATH = os.path.join(CDR_CLEANER_PATH,
-                                       'monkeypox_concept_suppression',
-                                       'monkeypox_concepts.csv')
 
 VALIDATION_STREET_CSV = os.path.join(resource_files_path, 'validation',
                                      'participants', 'abbreviation_street.csv')
