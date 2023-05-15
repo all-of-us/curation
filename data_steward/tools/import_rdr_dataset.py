@@ -80,7 +80,6 @@ def create_rdr_tables(client, destination_dataset, rdr_source_dataset):
 
         schema_list = client.get_table_schema(table, schema)
         table_id = f'{client.project}.{destination_dataset}.{table}'
-
         destination_table = bigquery.Table(table_id, schema=schema_list)
 
         for schema_item in schema_list:
