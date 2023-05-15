@@ -34,9 +34,13 @@ DEID_PATH = os.path.join(base_path, 'deid')
 resource_files_path = os.path.join(base_path, 'resource_files')
 config_path = os.path.join(base_path, 'config')
 fields_path = os.path.join(resource_files_path, 'schemas')
+
 cdm_fields_path = os.path.join(fields_path, 'cdm')
 vocabulary_fields_path = os.path.join(cdm_fields_path, 'vocabulary')
 rdr_fields_path = os.path.join(fields_path, 'rdr')
+
+rdr_src_id_fields_path = os.path.join(fields_path, 'rdr_src_id')
+
 internal_fields_path = os.path.join(fields_path, 'internal')
 mapping_fields_path = os.path.join(internal_fields_path, 'mapping_tables')
 extension_fields_path = os.path.join(fields_path, 'extension_tables')
@@ -358,6 +362,29 @@ def cdm_schemas(include_achilles=False, include_vocabulary=False):
             with open(file_path, 'r', encoding='utf-8') as fp:
                 file_name = os.path.basename(f)
                 table_name = file_name.split('.')[0]
+                schema = json.load(fp)
+                result[table_name] = schema
+    return result
+
+
+def rdr_src_id_schemas():
+    """
+    Get a dictionary mapping table_name -> schema
+
+    :return: result
+    """
+    result = dict()
+    exclude_directories = list()
+    exclude_directories.append('mapping_tables')
+    for dir_path, dirs, files in os.walk(rdr_src_id_fields_path, topdown=True):
+        # The following line updates the dirs list gathered by os.walk to exclude directories in exclude_directories[]
+        dirs[:] = [d for d in dirs if d not in set(exclude_directories)]
+        for f in files:
+            file_path = os.path.join(dir_path, f)
+            with open(file_path, 'r', encoding='utf-8') as fp:
+                file_name = os.path.basename(f)
+                table_name = file_name.split('.')[0]
+                table_name = table_name.replace("rdr_", "")
                 schema = json.load(fp)
                 result[table_name] = schema
     return result
