@@ -186,22 +186,15 @@ class RemoveParticipantDataPastDeactivationDateTest(
             DEVICE:
                 JINJA_ENV.from_string("""
         INSERT INTO `{{table.project}}.{{table.dataset_id}}.{{table.table_id}}`
-        (person_id, device_date, last_sync_time)
+        (person_id, device_id, date, last_sync_time)
         VALUES
-        -- Both date fields occur after deactivation. Sandboxed --
-        (1, '2010-01-01', '2010-01-01T00:00:00'),
-        -- Both date fields occur before deactivation. No change. --
-        (1, '2008-11-18', '2008-11-18T05:00:00'),
-        -- last_sync_time occurs after deactivation. Sandboxed --
-        (2, '2008-01-01', '2010-01-01T00:00:00'),
-        -- date occurs after deactivation. Sandboxed. --
-        (2, '2010-11-18', '2008-11-18T05:00:00'),
-        -- date is NULL. Sandboxed --
-        (3, NULL, '2010-01-01T00:00:00'),
-        -- last_sync_time is NULL Sandboxed. --
-        (3, '2010-11-18', NULL),
-        -- Both date fields are null --
-        (3, NULL, NULL)
+        (1, '11', '2010-01-01', '2010-01-01T00:00:00'),
+        (1, '12', '2008-11-18', '2008-11-18T05:00:00'),
+        (2, '13', '2008-01-01', '2010-01-01T00:00:00'),
+        (2, '14', '2010-11-18', '2008-11-18T05:00:00'),
+        (3, '15', NULL, '2010-01-01T00:00:00'),
+        (3, '16', '2010-11-18', NULL),
+        (3, '17', NULL, NULL)
         """)
         }
 
@@ -389,10 +382,10 @@ class RemoveParticipantDataPastDeactivationDateTest(
                 f'{self.project_id}.{self.dataset_id}.{DEVICE}',
             'fq_sandbox_table_name':
                 f'{self.project_id}.{self.sandbox_id}.{self.rule_instance.sandbox_table_for(DEVICE)}',
-            'fields': ['person_id', 'duration_in_min'],
+            'fields': ['person_id', 'device_id'],
             'loaded_ids': [1, 1, 2, 2, 3, 3, 3],
             'sandboxed_ids': [1, 2, 2, 3, 3, 3],
-            'cleaned_values': [(1, 4.5)]
+            'cleaned_values': [((1, '12'))]
         }]
 
         self.default_test(tables_and_counts)

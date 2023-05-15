@@ -6,7 +6,7 @@ Original Issue: DC-686
 The intent is to sandbox and drop records dated after the date of deactivation for participants
 who have deactivated from the Program.
 
-Subsequent issues: DC-686, DC-1184, DC-1799, DC-1791, DC-1896, DC-2129
+Subsequent issues: DC-686, DC-1184, DC-1799, DC-1791, DC-1896, DC-2129, DC-3164
 """
 
 # Python imports
@@ -34,7 +34,7 @@ DEACTIVATED_PARTICIPANTS_COLUMNS = [
 
 # For reference
 DEACTIVATION_ISSUE_NUMBERS = ['DC686', 'DC1184', 'DC1799']
-ISSUE_NUMBERS = ['DC1791', 'DC1896', 'DC2129', 'DC2631']
+ISSUE_NUMBERS = ['DC1791', 'DC1896', 'DC2129', 'DC2631', 'DC3164']
 
 TABLE_INFORMATION_SCHEMA = JINJA_ENV.from_string(  # language=JINJA2
     """
@@ -77,13 +77,13 @@ WHERE COALESCE({{table_ref.table_id + '_end_date'}},
 {{table_ref.table_id + '_start_date'}}) >= d.deactivated_datetime
 {% elif table_ref.table_id == 'sleep_level' %}
 WHERE (start_datetime IS NOT NULL AND TIMESTAMP(start_datetime) >= d.deactivated_datetime)
-    OR (sleep_date IS NOT NULL AND sleep_date >= DATE(d.deactivated_datetime))
+OR (sleep_date IS NOT NULL AND sleep_date >= DATE(d.deactivated_datetime))
 {% elif table_ref.table_id == 'sleep_daily_summary' %}
 WHERE (sleep_date IS NOT NULL AND sleep_date >= DATE(d.deactivated_datetime))
 {% elif table_ref.table_id == 'device' %}
-WHERE (device_date IS NULL OR last_sync_time IS NULL)
-    OR (device_date >= DATE(d.deactivated_datetime))
-    OR (last_sync_time >= d.deactivated_datetime)
+WHERE (date IS NOT NULL AND date >= DATE(d.deactivated_datetime))
+OR (last_sync_time IS NOT NULL AND last_sync_time >= DATETIME(d.deactivated_datetime))
+OR (last_sync_time IS NULL AND date IS NULL)
 {% else %}
 WHERE ({{datetime}} IS NOT NULL AND {{datetime}} >= d.deactivated_datetime)
 OR ({{datetime}} IS NULL AND {{date}} >= DATE(d.deactivated_datetime))
