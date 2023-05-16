@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
-# Imports RDR ETL results from GCS into a dataset in BigQuery.
+# Imports RDR ETL results into a dataset in BigQuery.
 # Assumes you have already activated a service account that is able to
-# access the files in GCS.
+# access the dataset in BigQuery.
 
 # Python imports
 from argparse import ArgumentParser
@@ -18,6 +18,7 @@ from utils import auth, pipeline_logging
 from gcloud.bq import BigQueryClient
 from common import CDR_SCOPES
 from resources import replace_special_characters_for_labels, validate_date_string, rdr_src_id_schemas
+from tools.snapshot_by_query import BIGQUERY_DATA_TYPES
 
 LOGGER = logging.getLogger(__name__)
 
@@ -71,16 +72,19 @@ def create_rdr_tables(client, destination_dataset, rdr_source_dataset):
     a table.
 
     :param client: a BigQueryClient
-    :param rdr_destination_dataset: The existing local dataset to load file data into
-    :param rdr_source_dataset: the source rdr dataset containing the data.
+    :param rdr_destination_dataset: the existing local dataset to load file data into
+    :param rdr_source_dataset: the source rdr dataset containing the data
     """
     schema_dict = rdr_src_id_schemas()
 
     for table, schema in schema_dict.items():
 
+        destination_table_id = f'{client.project}.{destination_dataset}.{table}'
+        source_table_id = f'{rdr_source_dataset}.{table}'
+
         schema_list = client.get_table_schema(table, schema)
-        table_id = f'{client.project}.{destination_dataset}.{table}'
-        destination_table = bigquery.Table(table_id, schema=schema_list)
+        destination_table = bigquery.Table(destination_table_id,
+                                           schema=schema_list)
 
         for schema_item in schema_list:
             if 'person_id' in schema_item.name and table.lower(
@@ -89,37 +93,55 @@ def create_rdr_tables(client, destination_dataset, rdr_source_dataset):
                 destination_table.time_partitioning = bigquery.table.TimePartitioning(
                     type_='DAY')
 
-        LOGGER.info(f'Loading `{rdr_source_dataset}.{table}` into `{table_id}`')
+        LOGGER.info(
+            f'Loading `{source_table_id}` into `{destination_table_id}`')
+
         try:
-            source_table_name = f'{rdr_source_dataset}.{table}'
-            LOGGER.info(f'Get table `{source_table_name}` in RDR')
-            source_table = client.get_table(source_table_name)
+            LOGGER.info(f'Get table `{source_table_id}` in RDR')
+            client.get_table(source_table_id)
 
             LOGGER.info(f'Creating empty CDM table, `{table}`')
-            destination_table = client.create_table(destination_table)
+            destination_table = client.create_table(
+                destination_table)  # Make an API request.
 
             LOGGER.info(
-                f'Copying source table `{source_table_name}` to destination table `{destination_table.table_id}`'
+                f'Copying source table `{source_table_id}` to destination table `{destination_table_id}`'
             )
 
-            copy_job = client.copy_table(source_table, destination_table)
+            sc_list = []
+            for item in schema_list:
+                field_cast = f'CAST({item.name} AS {BIGQUERY_DATA_TYPES[item.field_type.lower()]}) AS {item.name}'
+                sc_list.append(field_cast)
 
-            copy_job.result()  # Waits for the job to complete.
-            LOGGER.info(
-                f'Copied source table `{source_table_name}` to destination table `{destination_table.table_id}` successfully'
-            )
+            fields_name_str = ',\n'.join(sc_list)
+
+            # copy contents from non-schemaed source to schemaed dest
+            sql = (f'SELECT {fields_name_str} ' f'FROM `{source_table_id}`')
+
+            job_config = bigquery.job.QueryJobConfig(
+                write_disposition=bigquery.job.WriteDisposition.WRITE_EMPTY,
+                priority=bigquery.job.QueryPriority.BATCH,
+                destination=destination_table,
+                labels={
+                    'table_name': table.lower(),
+                    'copy_from': rdr_source_dataset.split('.')[1].lower(),
+                    'copy_to': destination_dataset.lower()
+                })
+            job_id = (f'schemaed_copy_{table}_'
+                      f'{datetime.now().strftime("%Y%m%d_%H%M%S")}')
+            job = client.query(sql, job_config=job_config, job_id=job_id)
+            job.result()  # Wait for the job to complete.
         except NotFound:
             LOGGER.info(
                 f'{table} not provided by RDR team.  Creating empty table '
                 f'in dataset: `{destination_dataset}`')
 
             LOGGER.info(f'Creating empty CDM table, `{table}`')
-            destination_table = bigquery.Table(table_id, schema=schema_list)
             destination_table = client.create_table(destination_table)
             LOGGER.info(f'Created empty table `{destination_table.table_id}`')
         else:
             destination_table = client.get_table(
-                table_id)  # Make an API request.
+                destination_table_id)  # Make an API request.
         LOGGER.info(f'Loaded {destination_table.num_rows} rows into '
                     f'`{destination_table.table_id}`.')
 
