@@ -19,7 +19,7 @@ from google.cloud.bigquery import TableReference
 # Project imports
 from common import (AOU_DEATH, JINJA_ENV, OBSERVATION, DRUG_EXPOSURE, DEATH,
                     PERSON, SURVEY_CONDUCT, HEART_RATE_MINUTE_LEVEL,
-                    SLEEP_LEVEL, STEPS_INTRADAY)
+                    SLEEP_LEVEL, STEPS_INTRADAY, DEVICE)
 from app_identity import PROJECT_ID
 from cdr_cleaner.cleaning_rules.remove_participant_data_past_deactivation_date import (
     RemoveParticipantDataPastDeactivationDate, DEACTIVATED_PARTICIPANTS, DATE,
@@ -182,6 +182,19 @@ class RemoveParticipantDataPastDeactivationDateTest(
         VALUES
         (1, '2010-01-01','true', 'light', '2010-01-01T00:00:00', 3.5),
         (1, '2008-11-18','false', 'wake', '2008-11-18T05:00:00', 4.5)
+        """),
+            DEVICE:
+                JINJA_ENV.from_string("""
+        INSERT INTO `{{table.project}}.{{table.dataset_id}}.{{table.table_id}}`
+        (person_id, device_id, date, last_sync_time)
+        VALUES
+        (1, '11', '2010-01-01', '2010-01-01T00:00:00'),
+        (1, '12', '2008-11-18', '2008-11-18T05:00:00'),
+        (2, '13', '2008-01-01', '2010-01-01T00:00:00'),
+        (2, '14', '2010-11-18', '2008-11-18T05:00:00'),
+        (3, '15', NULL, '2010-01-01T00:00:00'),
+        (3, '16', '2010-11-18', NULL),
+        (3, '17', NULL, NULL)
         """)
         }
 
@@ -362,6 +375,17 @@ class RemoveParticipantDataPastDeactivationDateTest(
             'loaded_ids': [1, 1],
             'sandboxed_ids': [1],
             'cleaned_values': [(1, 4.5)]
+        }, {
+            'name':
+                DEVICE,
+            'fq_table_name':
+                f'{self.project_id}.{self.dataset_id}.{DEVICE}',
+            'fq_sandbox_table_name':
+                f'{self.project_id}.{self.sandbox_id}.{self.rule_instance.sandbox_table_for(DEVICE)}',
+            'fields': ['person_id', 'device_id'],
+            'loaded_ids': [1, 1, 2, 2, 3, 3, 3],
+            'sandboxed_ids': [1, 2, 2, 3, 3, 3],
+            'cleaned_values': [((1, '12'))]
         }]
 
         self.default_test(tables_and_counts)

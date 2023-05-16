@@ -13,7 +13,7 @@
   },
   {
     "type": "date",
-    "name": "device_date",
+    "name": "date",
     "mode": "nullable",
     "description": "The date the device data was recorded."
   },
