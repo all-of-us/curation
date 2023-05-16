@@ -34,13 +34,10 @@ DEID_PATH = os.path.join(base_path, 'deid')
 resource_files_path = os.path.join(base_path, 'resource_files')
 config_path = os.path.join(base_path, 'config')
 fields_path = os.path.join(resource_files_path, 'schemas')
-
 cdm_fields_path = os.path.join(fields_path, 'cdm')
 vocabulary_fields_path = os.path.join(cdm_fields_path, 'vocabulary')
 rdr_fields_path = os.path.join(fields_path, 'rdr')
-
 rdr_src_id_fields_path = os.path.join(fields_path, 'rdr_src_id')
-
 internal_fields_path = os.path.join(fields_path, 'internal')
 mapping_fields_path = os.path.join(internal_fields_path, 'mapping_tables')
 extension_fields_path = os.path.join(fields_path, 'extension_tables')
