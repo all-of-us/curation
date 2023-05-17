@@ -16,7 +16,9 @@ import app_identity
 import bq_utils
 from utils import auth
 from utils import pipeline_logging
-from common import CDR_SCOPES, DEATH, MAPPING_PREFIX
+from common import (CDR_SCOPES, DEATH, MAPPING_PREFIX, METADATA,
+                    PID_RID_MAPPING, QUESTIONNAIRE_RESPONSE_ADDITIONAL_INFO,
+                    FACT_RELATIONSHIP, COPE_SURVEY_MAP)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -119,7 +121,7 @@ def main(raw_args=None):
     ]
 
     for domain_table in domain_tables:
-        if domain_table == DEATH:
+        if domain_table == DEATH or domain_table == METADATA:
             continue
         else:
             logging.info(f'Mapping {domain_table}...')
@@ -224,11 +226,10 @@ def mapping_query(table_name, dataset_id=None, project_id=None):
     if project_id is None:
         project_id = app_identity.get_application_id()
     domain_ids = {
-        "cope_survey_semantic_version_map": "participant_id",
-        "fact_relationship": "relationship_concept_id",
-        "metadata": "metadata_concept_id",
-        "pid_rid_mapping": "person_id",
-        "questionnaire_response_additional_info": "questionnaire_response_id"
+        COPE_SURVEY_MAP: "questionnaire_response_id",
+        FACT_RELATIONSHIP: "relationship_concept_id",
+        PID_RID_MAPPING: "person_id",
+        QUESTIONNAIRE_RESPONSE_ADDITIONAL_INFO: "questionnaire_response_id"
     }
     if table_name in domain_ids:
         domain_id = domain_ids[table_name]
