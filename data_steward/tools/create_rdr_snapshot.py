@@ -194,5 +194,21 @@ def create_datasets(client, rdr_dataset, release_tag):
     return {'clean': rdr_clean, 'staging': rdr_staging, 'sandbox': rdr_sandbox}
 
 
+def mapping(client, input_dataset_id, domain_table):
+    """
+    Create and load a  mappping table that stores the domain id and src_id.
+    Note: Overwrites destination table if it already exists
+
+    :param client: a BigQueryClient
+    :param input_dataset_id: identifies dataset containing the domain table.
+    :param domain_table: name of domain table to create mapping table for.
+    :return:
+    """
+    query = mapping_query(domain_table, input_dataset_id, client.project)
+    mapping_table = mapping_table_for(domain_table)
+    logging.info(f'Query for {mapping_table} is {query}')
+    client.query(query)
+
+
 if __name__ == '__main__':
     main()
