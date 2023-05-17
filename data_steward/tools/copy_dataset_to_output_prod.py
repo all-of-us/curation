@@ -9,6 +9,7 @@ import argparse
 
 # Project imports
 from gcloud.bq import BigQueryClient
+from tools.populate_death import populate_death
 from tools.recreate_person import update_person
 from utils import auth, pipeline_logging
 from utils.parameter_validators import validate_output_release_tag_param
@@ -205,6 +206,10 @@ def generate_output_prod(tier,
     #Append extra columns to person table
     LOGGER.info(f'Appending extract columns to the person table...')
     update_person(bq_client, output_dataset_name)
+
+    #Add records to death table using aou_death table
+    LOGGER.info(f'Populating death table using aou_death table...')
+    populate_death(bq_client, output_prod_project_id, output_dataset_name)
 
     LOGGER.info(f'Completed successfully.')
 
