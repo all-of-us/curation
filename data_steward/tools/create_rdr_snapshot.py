@@ -210,5 +210,39 @@ def mapping(client, input_dataset_id, domain_table):
     client.query(query)
 
 
+def mapping_query(table_name, dataset_id=None, project_id=None):
+    """
+    Get query used to generate the new mapping table
+
+    :param table_name: name of CDM table
+    :param dataset_id: identifies the BQ dataset containing the input table
+    :param project_id: identifies the GCP project containing the dataset
+    :return: the query
+    """
+    if dataset_id is None:
+        dataset_id = bq_utils.get_dataset_id()
+    if project_id is None:
+        project_id = app_identity.get_application_id()
+    domain_ids = {
+        "cope_survey_semantic_version_map": "participant_id",
+        "fact_relationship": "relationship_concept_id",
+        "metadata": "metadata_concept_id",
+        "pid_rid_mapping": "person_id",
+        "questionnaire_response_additional_info": "questionnaire_response_id"
+    }
+    if table_name in domain_ids:
+        domain_id = domain_ids[table_name]
+    else:
+        domain_id = f'{table_name}_id'
+    return f'''
+        CREATE OR REPLACE AS `{project_id}.{dataset_id}.{MAPPING_PREFIX}{table_name}` AS (
+        SELECT
+            dt.{domain_id}, dt.src_id
+        FROM
+            `{project_id}.{dataset_id}.{table_name}` as dt 
+        )
+    '''
+
+
 if __name__ == '__main__':
     main()
