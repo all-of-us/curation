@@ -371,11 +371,9 @@ def rdr_src_id_schemas():
     :return: result
     """
     result = dict()
-    exclude_directories = list()
-    exclude_directories.append('mapping_tables')
     for dir_path, dirs, files in os.walk(rdr_src_id_fields_path, topdown=True):
         # The following line updates the dirs list gathered by os.walk to exclude directories in exclude_directories[]
-        dirs[:] = [d for d in dirs if d not in set(exclude_directories)]
+        dirs[:] = [d for d in dirs]
         for f in files:
             file_path = os.path.join(dir_path, f)
             with open(file_path, 'r', encoding='utf-8') as fp:
