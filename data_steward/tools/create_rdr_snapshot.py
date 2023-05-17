@@ -12,9 +12,11 @@ from google.cloud.bigquery.job import CopyJobConfig, WriteDisposition
 from cdr_cleaner import clean_cdr
 from cdr_cleaner.args_parser import add_kwargs_to_args
 from gcloud.bq import BigQueryClient
+import app_identity
+import bq_utils
 from utils import auth
 from utils import pipeline_logging
-from common import CDR_SCOPES
+from common import CDR_SCOPES, DEATH, MAPPING_PREFIX
 
 LOGGER = logging.getLogger(__name__)
 
@@ -109,6 +111,19 @@ def main(raw_args=None):
     LOGGER.info(
         f'RDR dataset COPY from `{args.rdr_dataset}` to `{datasets.get("staging")}` has completed'
     )
+
+    # Create the mapping tables. Death is not included
+    domain_tables = [
+        table.table_id for table in bq_client.list_tables(
+            f'{bq_client.project}.{datasets.get("staging")}')
+    ]
+
+    for domain_table in domain_tables:
+        if domain_table == DEATH:
+            continue
+        else:
+            logging.info(f'Mapping {domain_table}...')
+            mapping(bq_client, datasets.get("staging"), domain_table)
 
     # clean the RDR staging dataset
     cleaning_args = [
