@@ -130,7 +130,7 @@ def main(raw_args=None):
             if domain_table not in [METADATA, FACT_RELATIONSHIP]:
                 logging.info(f'Mapping {domain_table}...')
                 mapping(bq_client, datasets.get("staging"), domain_table)
-            # TODO function to remove src_id column
+            drop_src_id(bq_client, datasets.get("staging"), domain_table)
 
     # clean the RDR staging dataset
     cleaning_args = [
@@ -199,6 +199,22 @@ def create_datasets(client, rdr_dataset, release_tag):
     LOGGER.info(f'Created dataset `{client.project}.{rdr_clean}`')
 
     return {'clean': rdr_clean, 'staging': rdr_staging, 'sandbox': rdr_sandbox}
+
+
+def drop_src_id(client, dataset, table):
+    """
+    Drop the src_id field from a table
+
+    :param client: a BigQueryClient
+    :param dataset: identifies the BQ dataset containing the input table
+    :param table: identifies the table containing the src_id field
+    """
+    query = f'''
+        ALTER TABLE `{client.project}.{dataset}.{table}`
+        DROP COLUMN src_id
+    '''
+    query_job = client.query(query)
+    query_job.result()
 
 
 def mapping(client, input_dataset_id, domain_table):
