@@ -115,7 +115,7 @@ def create_rdr_tables(client, destination_dataset, rdr_source_dataset):
 
             fields_name_str = ',\n'.join(sc_list)
 
-            # copy contents from non-schemaed source to schemaed dest
+            # copy contents from source dataset to destination dataset
             sql = (f'SELECT {fields_name_str} ' f'FROM `{source_table_id}`')
 
             job_config = bigquery.job.QueryJobConfig(
