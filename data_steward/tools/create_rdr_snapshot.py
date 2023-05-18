@@ -114,7 +114,7 @@ def main(raw_args=None):
         f'RDR dataset COPY from `{args.rdr_dataset}` to `{datasets.get("staging")}` has completed'
     )
 
-    # Create the mapping tables. Death is not included
+    # Create the mapping tables. Death and Metadata are not included
     domain_tables = [
         table.table_id for table in bq_client.list_tables(
             f'{bq_client.project}.{datasets.get("staging")}')
