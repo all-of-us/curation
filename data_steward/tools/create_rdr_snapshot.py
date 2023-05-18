@@ -209,7 +209,8 @@ def mapping(client, input_dataset_id, domain_table):
     query = mapping_query(domain_table, input_dataset_id, client.project)
     mapping_table = mapping_table_for(domain_table)
     logging.info(f'Query for {mapping_table} is {query}')
-    client.query(query)
+    query_job = client.query(query)
+    query_job.result()
 
 
 def mapping_query(table_name, dataset_id=None, project_id=None):
@@ -236,7 +237,7 @@ def mapping_query(table_name, dataset_id=None, project_id=None):
     else:
         domain_id = f'{table_name}_id'
     return f'''
-        CREATE OR REPLACE AS `{project_id}.{dataset_id}.{MAPPING_PREFIX}{table_name}` AS (
+        CREATE OR REPLACE TABLE `{project_id}.{dataset_id}.{MAPPING_PREFIX}{table_name}` AS (
         SELECT
             dt.{domain_id}, dt.src_id
         FROM
