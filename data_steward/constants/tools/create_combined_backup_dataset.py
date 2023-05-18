@@ -218,9 +218,11 @@ SELECT
     cause_concept_id,
     cause_source_value,
     cause_source_concept_id,
-    src_id,
-    FALSE AS primary_death_record -- this value is re-calculated at UPDATE_PRIMARY_DEATH --
+    s.src_id,
+    FALSE AS primary_death_record -- this value is re-calculated at CalculatePrimaryDeathRecord --
 FROM `{{project}}.{{unioned_ehr_dataset}}.{{aou_death}}` ad
+JOIN `{{project}}.{{combined_sandbox}}.{{site_masking}}` s
+ON ad.src_id = s.hpo_id
 WHERE EXISTS
    (SELECT 1 FROM `{{project}}.{{combined_sandbox}}.{{ehr_consent}}` AS ec
     WHERE ad.person_id = ec.person_id)
@@ -234,25 +236,7 @@ SELECT
     cause_concept_id,
     cause_source_value,
     cause_source_concept_id,
-    'rdr' AS src_id, -- TODO update this logic once we know how we receive data --
-    FALSE AS primary_death_record -- this value is re-calculated at UPDATE_PRIMARY_DEATH --
+    'Staff Portal: HealthPro' AS src_id,
+    FALSE AS primary_death_record -- this value is re-calculated at CalculatePrimaryDeathRecord --
 FROM `{{project}}.{{rdr_dataset}}.{{death}}`
-""")
-
-# TODO The condition src_id != 'rdr' needs to be re-visited once we know how we receive CE data.
-UPDATE_PRIMARY_DEATH = JINJA_ENV.from_string("""
-UPDATE `{{project}}.{{combined_backup}}.{{aou_death}}`
-SET primary_death_record = TRUE
-WHERE aou_death_id IN (
-    SELECT aou_death_id FROM `{{project}}.{{combined_backup}}.{{aou_death}}`
-    QUALIFY RANK() OVER (
-        PARTITION BY person_id 
-        ORDER BY
-            -- update logic here for RDR vs EHR --
-            src_id != 'rdr' DESC, -- EHR records are chosen over RDR ones --
-            death_date ASC, -- Earliest death_date records are chosen over later ones --
-            death_datetime ASC NULLS LAST, -- Earliest non-NULL death_datetime records are chosen over later or NULL ones --
-            src_id ASC -- EHR site that alphabetically comes first is chosen --
-    ) = 1   
-)
 """)

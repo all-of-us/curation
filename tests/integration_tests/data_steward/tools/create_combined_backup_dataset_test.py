@@ -9,7 +9,7 @@ import mock
 import bq_utils
 import resources
 from app_identity import get_application_id, PROJECT_ID
-from common import AOU_DEATH, DEATH
+from common import AOU_DEATH, DEATH, SITE_MASKING_TABLE_ID
 from gcloud.gcs import StorageClient
 from gcloud.bq import BigQueryClient
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
@@ -322,36 +322,23 @@ class CreateCombinedBackupDatasetAllDeathTest(BaseTest.BigQueryTestBase):
         cls.dataset_id = os.environ.get('COMBINED_DATASET_ID')
         cls.sandbox_id = os.environ.get('BIGQUERY_DATASET_ID')
         cls.rdr_id = os.environ.get('RDR_DATASET_ID')
-        cls.unioned_id = os.environ.get('UNIONED_EHR_DATASET_ID')
+        cls.unioned_id = os.environ.get('UNIONED_DATASET_ID')
 
         cls.fq_table_names = [
-            f'{cls.project_id}.{cls.dataset_id}.{AOU_DEATH}',
             f'{cls.project_id}.{cls.rdr_id}.{DEATH}',
             f'{cls.project_id}.{cls.unioned_id}.{AOU_DEATH}',
-            f'{cls.project_id}.{cls.sandbox_id}.{EHR_CONSENT_TABLE_ID}'
+            f'{cls.project_id}.{cls.dataset_id}.{SITE_MASKING_TABLE_ID}'
+        ]
+        cls.fq_sandbox_table_names = [
+            f'{cls.project_id}.{cls.sandbox_id}.{EHR_CONSENT_TABLE_ID}',
+            f'{cls.project_id}.{cls.dataset_id}.{AOU_DEATH}',
         ]
 
         super().setUpClass()
 
     def setUp(self):
 
-        create_rdr_death = self.jinja_env.from_string("""
-            CREATE OR REPLACE TABLE `{{project_id}}.{{rdr_id}}.{{death}}`
-            (person_id INT NOT NULL, death_date DATE NOT NULL, death_datetime TIMESTAMP,
-             death_type_concept_id INT NOT NULL, cause_concept_id INT, 
-             cause_source_value STRING, cause_source_concept_id INT)
-        """).render(project_id=self.project_id, rdr_id=self.rdr_id, death=DEATH)
-
-        create_unioned_ehr_aou_death = self.jinja_env.from_string("""
-            CREATE OR REPLACE TABLE `{{project_id}}.{{unioned_id}}.{{aou_death}}`
-            (aou_death_id STRING NOT NULL, person_id INT NOT NULL, 
-             death_date DATE NOT NULL, death_datetime TIMESTAMP,
-             death_type_concept_id INT NOT NULL, cause_concept_id INT, 
-             cause_source_value STRING, cause_source_concept_id INT,
-             src_id STRING NOT NULL, primary_death_record BOOL NOT NULL)
-        """).render(project_id=self.project_id,
-                    unioned_id=self.unioned_id,
-                    aou_death=AOU_DEATH)
+        super().setUp()
 
         insert_rdr = self.jinja_env.from_string("""
             INSERT INTO `{{project_id}}.{{rdr_id}}.{{death}}`
@@ -386,54 +373,69 @@ class CreateCombinedBackupDatasetAllDeathTest(BaseTest.BigQueryTestBase):
                     unioned_id=self.unioned_id,
                     aou_death=AOU_DEATH)
 
-        create_ehr_consent = self.jinja_env.from_string(
-            """
+        create_ehr_consent = self.jinja_env.from_string("""
             CREATE OR REPLACE TABLE `{{project_id}}.{{combined_sandbox}}.{{ehr_consent}}`
             AS
-            SELECT person_id FROM UNNEST([1, 2, 3, 4, 5]) AS person_id"""
-        ).render(project_id=self.project_id,
-                 combined_sandbox=self.sandbox_id,
-                 ehr_consent=EHR_CONSENT_TABLE_ID)
+            SELECT person_id FROM UNNEST([1, 2, 3, 4, 5]) AS person_id
+        """).render(project_id=self.project_id,
+                    combined_sandbox=self.sandbox_id,
+                    ehr_consent=EHR_CONSENT_TABLE_ID)
+
+        insert_site_masking = self.jinja_env.from_string("""
+        INSERT INTO `{{project_id}}.{{dataset_id}}.{{site_masking}}`
+            (hpo_id, src_id, state, value_source_concept_id)
+        VALUES
+            ('healthpro', 'Staff Portal: HealthPro', 'PIIState_XY', 0),
+            ('hpo a', 'EHR 1', 'PIIState_XY', 0),
+            ('hpo b', 'EHR 2', 'PIIState_XY', 0),
+            ('hpo c', 'EHR 3', 'PIIState_XY', 0)
+        """).render(project_id=self.project_id,
+                    dataset_id=self.dataset_id,
+                    site_masking=SITE_MASKING_TABLE_ID)
 
         queries = [
-            create_rdr_death, create_unioned_ehr_aou_death, insert_rdr,
-            insert_ehr, create_ehr_consent
+            #create_rdr_death, create_unioned_ehr_aou_death,
+            insert_rdr,
+            insert_ehr,
+            create_ehr_consent,
+            insert_site_masking
         ]
 
         self.load_test_data(queries)
 
     def test_create_load_aou_death(self):
         """
-        Test cases for AOU_DEATH data:
-        person_id = 1: Only one record from RDR. RDR becomes primary.
-        person_id = 2: Exactly same records exists. 'hpo a' alphabetically becomes primary.
-        person_id = 3: The only difference between is 'hpo b' has non-NULL death_datetime. 'hpo b' becomes primary.
-        person_id = 4: 'hpo c''s death_date is earlier than the rest. 'hpo c' becomes primary.
-        person_id = 5: 'hpo c''s death_datetime is earlier than the rest. 'hpo c' becomes primary.
-        person_id = 6: Not EHR consented. Only RDR record comes in and becomes primary.
+        Test cases for AOU_DEATH data
+        NOTE: `primary_death_record` is all `False` at this point. The CR
+            `CalculatePrimaryDeathRecord` updates the table at the end of the
+            Combined data tier creation.
         """
-        create_load_aou_death(self.client, self.project_id, self.dataset_id,
-                              self.sandbox_id, self.rdr_id, self.unioned_id)
+        # mock the PIPELINE_TABLES variable so tests on different branches
+        # don't overwrite each other.
+        with mock.patch('tools.create_combined_backup_dataset.PIPELINE_TABLES',
+                        self.dataset_id):
+            create_load_aou_death(self.client, self.project_id, self.dataset_id,
+                                  self.sandbox_id, self.rdr_id, self.unioned_id)
 
         self.assertTableValuesMatch(
             f'{self.project_id}.{self.dataset_id}.{AOU_DEATH}',
             ['person_id', 'src_id', 'primary_death_record'], [
-                (1, 'rdr', True),
-                (2, 'rdr', False),
-                (2, 'hpo a', True),
-                (2, 'hpo b', False),
-                (2, 'hpo c', False),
-                (3, 'rdr', False),
-                (3, 'hpo a', False),
-                (3, 'hpo b', True),
-                (3, 'hpo c', False),
-                (4, 'rdr', False),
-                (4, 'hpo a', False),
-                (4, 'hpo b', False),
-                (4, 'hpo c', True),
-                (5, 'rdr', False),
-                (5, 'hpo a', False),
-                (5, 'hpo b', False),
-                (5, 'hpo c', True),
-                (6, 'rdr', True),
+                (1, 'Staff Portal: HealthPro', False),
+                (2, 'Staff Portal: HealthPro', False),
+                (2, 'EHR 1', False),
+                (2, 'EHR 2', False),
+                (2, 'EHR 3', False),
+                (3, 'Staff Portal: HealthPro', False),
+                (3, 'EHR 1', False),
+                (3, 'EHR 2', False),
+                (3, 'EHR 3', False),
+                (4, 'Staff Portal: HealthPro', False),
+                (4, 'EHR 1', False),
+                (4, 'EHR 2', False),
+                (4, 'EHR 3', False),
+                (5, 'Staff Portal: HealthPro', False),
+                (5, 'EHR 1', False),
+                (5, 'EHR 2', False),
+                (5, 'EHR 3', False),
+                (6, 'Staff Portal: HealthPro', False),
             ])

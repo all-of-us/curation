@@ -19,6 +19,7 @@ Combine data sets `unioned_ehr` and `rdr` to form another data set `combined_bac
  * Load `combined_backup.aou_death` with UNION ALL of:
      1) all `rdr.death`s and
      2) `unioned_ehr.aou_death`s that link to `combined_sandbox.ehr_consent`
+ * Site masking for `aou_death` happens here, too. (Other tables are site masked by GenerateExtTables)
 
 ## Notes
 Assumptions made:
@@ -39,14 +40,15 @@ from argparse import ArgumentParser
 from datetime import datetime
 
 # Third party imports
-from google.cloud.exceptions import GoogleCloudError
+from google.cloud.exceptions import GoogleCloudError, NotFound
 from google.cloud import bigquery
 
 # Project imports
 from common import (AOU_DEATH, CDR_SCOPES, DEATH, FACT_RELATIONSHIP,
                     MEASUREMENT_DOMAIN_CONCEPT_ID,
-                    OBSERVATION_DOMAIN_CONCEPT_ID, PERSON, RDR_ID_CONSTANT,
-                    SURVEY_CONDUCT, VISIT_DETAIL)
+                    OBSERVATION_DOMAIN_CONCEPT_ID, PERSON, PIPELINE_TABLES,
+                    RDR_ID_CONSTANT, SITE_MASKING_TABLE_ID, SURVEY_CONDUCT,
+                    VISIT_DETAIL)
 from resources import (fields_for, get_git_tag, has_person_id,
                        mapping_table_for, CDM_TABLES)
 from utils import auth, pipeline_logging
@@ -378,6 +380,11 @@ def load_mapped_person(client: BigQueryClient, combined_backup: str):
 def create_load_aou_death(client, project_id, combined_backup, combined_sandbox,
                           rdr_dataset, unioned_ehr_dataset) -> None:
     """Create and load AOU_DEATH table.
+    NOTE: `primary_death_record` is all `False` at this point. The CR
+        `CalculatePrimaryDeathRecord` updates the table at the end of the
+        Unioned EHR data tier creation.
+    NOTE: Site masking for `aou_death` happens here, too. 
+        (Other tables are site masked by GenerateExtTables)
     :param client: a BigQuery client object
     :param project_id: project containing the datasets
     :param combined_backup: identifies combined dataset name
@@ -385,6 +392,17 @@ def create_load_aou_death(client, project_id, combined_backup, combined_sandbox,
     :param rdr_dataset: identifies RDR dataset name
     :param unioned_ehr_dataset: identifies unioned ehr dataset name
     """
+    try:
+        client.get_table(
+            f'{project_id}.{combined_sandbox}.{SITE_MASKING_TABLE_ID}')
+    except NotFound:
+        job = client.copy_table(
+            f'{project_id}.{PIPELINE_TABLES}.{SITE_MASKING_TABLE_ID}',
+            f'{project_id}.{combined_sandbox}.{SITE_MASKING_TABLE_ID}')
+        job.result()
+        LOGGER.info(f'Copied {PIPELINE_TABLES}.{SITE_MASKING_TABLE_ID} to '
+                    f'{combined_sandbox}.{SITE_MASKING_TABLE_ID}')
+
     query = combine_consts.LOAD_AOU_DEATH.render(
         project=project_id,
         combined_backup=combined_backup,
@@ -393,14 +411,8 @@ def create_load_aou_death(client, project_id, combined_backup, combined_sandbox,
         unioned_ehr_dataset=unioned_ehr_dataset,
         aou_death=AOU_DEATH,
         death=DEATH,
-        ehr_consent=combine_consts.EHR_CONSENT_TABLE_ID)
-    job = client.query(query)
-    _ = job.result()
-
-    query = combine_consts.UPDATE_PRIMARY_DEATH.render(
-        project=project_id,
-        combined_backup=combined_backup,
-        aou_death=AOU_DEATH)
+        ehr_consent=combine_consts.EHR_CONSENT_TABLE_ID,
+        site_masking=SITE_MASKING_TABLE_ID)
     job = client.query(query)
     _ = job.result()
 
