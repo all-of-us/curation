@@ -121,7 +121,7 @@ def main(raw_args=None):
     ]
 
     for domain_table in domain_tables:
-        if domain_table == DEATH or domain_table == METADATA:
+        if domain_table == DEATH:
             continue
         else:
             logging.info(f'Mapping {domain_table}...')
