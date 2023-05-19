@@ -372,7 +372,6 @@ def rdr_src_id_schemas():
     """
     result = dict()
     for dir_path, dirs, files in os.walk(rdr_src_id_fields_path, topdown=True):
-        # The following line updates the dirs list gathered by os.walk to exclude directories in exclude_directories[]
         dirs[:] = [d for d in dirs]
         for f in files:
             file_path = os.path.join(dir_path, f)
