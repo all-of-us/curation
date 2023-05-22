@@ -50,8 +50,7 @@ class TruncateFitbitDataTest(BaseTest.CleaningRulesTestBase):
                                                truncation_date=truncation_date)
 
         # Generates list of fully qualified sandbox table names
-        sb_table_names = cls.rule_instance.get_sandbox_tablenames(
-        )
+        sb_table_names = cls.rule_instance.get_sandbox_tablenames()
         for table_name in sb_table_names:
             cls.fq_sandbox_table_names.append(
                 f'{project_id}.{sandbox_id}.{table_name}')
@@ -94,8 +93,7 @@ class TruncateFitbitDataTest(BaseTest.CleaningRulesTestBase):
             (222, date('2019-11-26')),
             (333, date('2020-11-26')),
             (444, date('2021-11-26'))""").render(
-            fq_dataset_name=self.fq_dataset_name,
-            fitbit_table=ACTIVITY_SUMMARY)
+            fq_dataset_name=self.fq_dataset_name, fitbit_table=ACTIVITY_SUMMARY)
         queries.append(as_query)
 
         hr_query = self.jinja_env.from_string("""
@@ -130,8 +128,7 @@ class TruncateFitbitDataTest(BaseTest.CleaningRulesTestBase):
             (222, (DATETIME '2019-11-26 00:00:00')),
             (333, (DATETIME '2020-11-26 00:00:00')),
             (444, (DATETIME '2021-11-26 00:00:00'))""").render(
-            fq_dataset_name=self.fq_dataset_name,
-            fitbit_table=STEPS_INTRADAY)
+            fq_dataset_name=self.fq_dataset_name, fitbit_table=STEPS_INTRADAY)
         queries.append(sid_query)
 
         device_query = self.jinja_env.from_string("""
@@ -143,15 +140,14 @@ class TruncateFitbitDataTest(BaseTest.CleaningRulesTestBase):
             (111, date('2020-11-26'), (DATETIME '2018-11-26 00:00:00')),
                 -- The datetime occurs after the cutoff. Sandboxed and dropped. --
             (222, date('2018-11-26'), (DATETIME '2021-11-26 00:00:00')),
-                -- The date and datetime occur before the cutoff date. No affect. --
+                -- The date and datetime occur before the cutoff date. Not affected. --
             (222, date('2017-11-26'), (DATETIME '2017-11-26 00:00:00')),
-                -- The date occurs before the cutoff date. No affect. --
+                -- The date occurs before the cutoff date. Not affected. --
             (333, date('2018-11-26'), NULL),
                 -- The date occurs after the cutoff. Sandboxed and dropped. --
             (333, date('2021-11-26'), NULL)
-            """).render(
-            fq_dataset_name=self.fq_dataset_name,
-            fitbit_table=DEVICE)
+            """).render(fq_dataset_name=self.fq_dataset_name,
+                        fitbit_table=DEVICE)
         queries.append(device_query)
 
         self.load_test_data(queries)
@@ -171,8 +167,7 @@ class TruncateFitbitDataTest(BaseTest.CleaningRulesTestBase):
                                (222, parser.parse('2019-11-26').date())]
         }, {
             'fq_table_name':
-                '.'.join([self.fq_dataset_name,
-                          HEART_RATE_MINUTE_LEVEL]),
+                '.'.join([self.fq_dataset_name, HEART_RATE_MINUTE_LEVEL]),
             'fq_sandbox_table_name': [
                 table for table in self.fq_sandbox_table_names
                 if HEART_RATE_MINUTE_LEVEL in table
@@ -213,10 +208,11 @@ class TruncateFitbitDataTest(BaseTest.CleaningRulesTestBase):
                 table for table in self.fq_sandbox_table_names
                 if DEVICE in table
             ][0],
-            'fields': ['person_id','date', 'last_sync_time'],
+            'fields': ['person_id', 'date', 'last_sync_time'],
             'loaded_ids': [111, 111, 222, 222, 333, 333],
             'sandboxed_ids': [111, 111, 222, 333],
-            'cleaned_values': [(222 ,parser.parse('2017-11-26').date(), parser.parse('2017-11-26 00:00:00')),
+            'cleaned_values': [(222, parser.parse('2017-11-26').date(),
+                                parser.parse('2017-11-26 00:00:00')),
                                (333, parser.parse('2018-11-26').date(), None)]
         }]
 

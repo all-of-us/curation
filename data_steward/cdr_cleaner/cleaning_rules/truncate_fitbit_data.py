@@ -27,9 +27,9 @@ SELECT *
 FROM `{{project_id}}.{{dataset_id}}.{{fitbit_table}}`
 {% if datetime_fields and date_fields %}
   WHERE (GREATEST({{date_fields}}) > DATE("{{truncation_date}}"))
-  OR (GREATEST({{datetime_fields}}) > TIMESTAMP("{{truncation_date}}"))
+  OR (GREATEST({{datetime_fields}}) > DATETIME("{{truncation_date}}"))
 {% elif datetime_fields %}
-  WHERE (GREATEST({{datetime_fields}}) > TIMESTAMP("{{truncation_date}}"))
+  WHERE (GREATEST({{datetime_fields}}) > DATETIME("{{truncation_date}}"))
 {% elif date_fields %}
   WHERE (GREATEST({{date_fields}}) > DATE("{{truncation_date}}"))
 {% endif %}
@@ -106,9 +106,9 @@ class TruncateFitbitData(BaseCleaningRule):
                         f'COALESCE({field["name"]}, DATE("1900-01-01"))')
 
                 # appends only the datetime columns to the datetime_fields list
-                if field['type'] in ['timestamp']:
+                if field['type'] in ["datetime"]:
                     datetime_fields.append(
-                        f'COALESCE({field["name"]}, TIMESTAMP("1900-01-01"))')
+                        f'COALESCE({field["name"]}, DATETIME("1900-01-01"))')
 
             # will render the queries only if a table contains a date or datetime field
             # will ignore the tables that do not have a date or datetime field
@@ -178,14 +178,15 @@ if __name__ == '__main__':
     import cdr_cleaner.clean_cdr_engine as clean_engine
 
     ext_parser = parser.get_argument_parser()
-    ext_parser.add_argument('-t',
-                            '--truncation_date',
-                            action='store',
-                            dest='truncation_date',
-                            help=
-                            ('Cutoff date for data based on <table_name>_date and <table_name>_datetime fields.  '
-                             'Should be in the form YYYY-MM-DD.'),
-                            required=True)
+    ext_parser.add_argument(
+        '-t',
+        '--truncation_date',
+        action='store',
+        dest='truncation_date',
+        help=
+        ('Cutoff date for data based on <table_name>_date and <table_name>_datetime fields.  '
+         'Should be in the form YYYY-MM-DD.'),
+        required=True)
 
     ARGS = ext_parser.parse_args()
 
