@@ -1,7 +1,7 @@
 """
 If there is a death_date listed for a person_id, ensure that no temporal fields
 (see the CDR cleaning spreadsheet tab labeled all temporal here) for that person_id exist more than
-30 days after the death_date.
+30 days after the earliest death_date.
 """
 
 # Python Imports
@@ -44,8 +44,8 @@ TEMPORAL_TABLES_WITH_DATE = {
     'specimen': 'specimen_date'
 }
 
-# Join Death to domain_table ON person_id
-# check date field is not more than 30 days after the death date
+# Join AOU_DEATH to domain_table ON person_id
+# check date field is not more than 30 days after the earliest death date
 # select domain_table_id from the result
 # use the above generated domain_table_ids as a list
 # select rows in a domain_table where the domain_table_ids not in above generated list of ids
@@ -54,7 +54,7 @@ SANDBOX_DEATH_DATE_WITH_END_DATES_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` AS (
 SELECT ma.*
 FROM `{{project}}.{{dataset}}.{{table_name}}` AS ma
-JOIN `{{project}}.{{dataset}}.death` AS d
+JOIN `{{project}}.{{dataset}}.aou_death` AS d
 ON ma.person_id = d.person_id
 WHERE date_diff(GREATEST(CAST(COALESCE(ma.{{start_date}}, ma.{{end_date}}) AS DATE), 
 CAST(COALESCE(ma.{{end_date}}, ma.{{start_date}}) AS DATE)), d.death_date, DAY) > 30
@@ -65,7 +65,7 @@ SANDBOX_DEATH_DATE_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{sandbox_table}}` AS (
 SELECT ma.*
 FROM `{{project}}.{{dataset}}.{{table_name}}` AS ma
-JOIN `{{project}}.{{dataset}}.death` AS d
+JOIN `{{project}}.{{dataset}}.aou_death` AS d
 ON ma.person_id = d.person_id
 WHERE date_diff(CAST({{date_column}} AS DATE), death_date, DAY) > 30
 )
