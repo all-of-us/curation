@@ -1,0 +1,16 @@
+{
+    "suppress": [
+        {
+            "comment": "removing rows containing values along the following ICD9CM and ICD10CM parent codes using a lookup table for all concept_ids to be suppressed for cause_source_concept_id",
+            "on": " exists (select * from `:idataset.aou_death` as record2 where aou_death.person_id = record2.person_id and cause_source_concept_id in (select concept_id from `:idataset._concept_ids_suppression`)) "
+        },
+        {
+            "comment": "removing rows containing values along the following ICD9CM and ICD10CM parent codes using a lookup table for all concept_ids to be suppressed for death_type_concept_id",
+            "on": " exists (select * from `:idataset.aou_death` as record2 where aou_death.person_id = record2.person_id and death_type_concept_id in (select concept_id from `:idataset._concept_ids_suppression`)) "
+        },
+        {
+            "comment": "removing rows containing values along the following ICD9CM and ICD10CM parent codes using a lookup table for all concept_ids to be suppressed for cause_concept_id",
+            "on": " exists (select * from `:idataset.aou_death` as record2 where aou_death.person_id = record2.person_id and cause_concept_id in (select concept_id from `:idataset._concept_ids_suppression`)) "
+        }
+    ]
+}

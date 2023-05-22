@@ -28,7 +28,7 @@ DEID_TABLES = [
     'person', 'observation', 'visit_occurrence', 'visit_detail',
     'condition_occurrence', 'drug_exposure', 'procedure_occurrence',
     'device_exposure', 'death', 'measurement', 'location', 'care_site',
-    'specimen', 'observation_period', 'provider', 'survey_conduct'
+    'specimen', 'observation_period', 'provider', 'survey_conduct', 'aou_death'
 ]
 # these tables will be suppressed.  This means an empty table with the same schema will
 # exist.  It overrides the DEID_TABLES list
