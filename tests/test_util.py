@@ -6,6 +6,7 @@ from typing import Optional
 # Third party imports
 import googleapiclient.errors
 from google.cloud.exceptions import GoogleCloudError
+from google.api_core.exceptions import ServiceUnavailable
 import requests
 
 # Project imports
@@ -388,3 +389,6 @@ def drop_hpo_id_bucket_name_table(client, dataset_id):
 
 def mock_google_cloud_error(content: bytes = b'418: I\'m a teapot'):
     return GoogleCloudError(message=content.decode())
+
+def mock_google_service_unavailable_error(content: bytes = b'418: I\'m a teapot'):
+    return ServiceUnavailable(message=content.decode())
