@@ -1,5 +1,5 @@
 """
-DEID rule to change PIDs to RIDs for OMOP tables
+DEID rule to change PIDs to RIDs for OMOP tables and aou_death
 """
 # Python Imports
 import logging
@@ -9,7 +9,7 @@ import google.cloud.bigquery as gbq
 
 # Project imports
 from cdr_cleaner.cleaning_rules.deid.pid_rid_map import PIDtoRID
-from common import JINJA_ENV, DEID_MAP
+from common import AOU_DEATH, JINJA_ENV, DEID_MAP
 from resources import CDM_TABLES
 
 LOGGER = logging.getLogger(__name__)
@@ -47,7 +47,7 @@ class RtCtPIDtoRID(PIDtoRID):
                          sandbox_dataset_id=sandbox_dataset_id,
                          mapping_dataset_id=sandbox_dataset_id,
                          mapping_table_id=DEID_MAP,
-                         affected_tables=CDM_TABLES,
+                         affected_tables=CDM_TABLES + [AOU_DEATH],
                          issue_numbers=ISSUE_NUMBERS,
                          table_namer=table_namer)
 
