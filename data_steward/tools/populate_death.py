@@ -50,8 +50,8 @@ def populate_death(client, project_id, dataset_id):
     It also ensures death table is empty before populating it with the data.
     :return:
     """
-    if not death_is_empty(client, project_id, dataset_id):
-        raise AssertionError("DEATH table must be empty.")
+    assert death_is_empty(client, project_id,
+                          dataset_id), "DEATH table must be empty."
 
     populate_death = POPULATE_DEATH.render(project=project_id,
                                            dataset=dataset_id,
