@@ -18,6 +18,7 @@ import cdr_cleaner.cleaning_rules.truncate_fitbit_data as truncate_fitbit
 from constants.bq_utils import WRITE_TRUNCATE
 from common import DEVICE
 
+
 class TruncateFitbitDataTest(unittest.TestCase):
 
     @classmethod
