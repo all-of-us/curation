@@ -4,16 +4,17 @@ Integration test for motor_vehicle_accident_suppression module
 Original Issues: DC-1367
 
 The intent is to suppress the vehicle accident related concepts across all *concept_id fields in 
-all domain tables """
+all domain tables 
+"""
 
 # Python Imports
 import os
 
 # Project Imports
-from common import CONDITION_OCCURRENCE, OBSERVATION, VOCABULARY_TABLES
+from common import AOU_DEATH, CONDITION_OCCURRENCE, DEATH, OBSERVATION, VOCABULARY_TABLES
 from app_identity import PROJECT_ID
-from cdr_cleaner.cleaning_rules.deid.motor_vehicle_accident_suppression import \
-    MotorVehicleAccidentSuppression, SUPPRESSION_RULE_CONCEPT_TABLE
+from cdr_cleaner.cleaning_rules.deid.motor_vehicle_accident_suppression import (
+    MotorVehicleAccidentSuppression, SUPPRESSION_RULE_CONCEPT_TABLE)
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import \
     BaseTest
 
@@ -28,24 +29,20 @@ class MotorVehicleAccidentSuppressionTestBase(BaseTest.CleaningRulesTestBase):
 
         super().initialize_class_vars()
 
-        # Set the test project identifier
         cls.project_id = os.environ.get(PROJECT_ID)
-
-        # Set the expected test datasets
         cls.dataset_id = os.environ.get('COMBINED_DATASET_ID')
-        cls.sandbox_id = cls.dataset_id + '_sandbox'
+        cls.sandbox_id = f'{cls.dataset_id}_sandbox'
         cls.vocabulary_id = os.environ.get('VOCABULARY_DATASET')
 
         cls.rule_instance = MotorVehicleAccidentSuppression(
             cls.project_id, cls.dataset_id, cls.sandbox_id)
 
-        # Generates list of fully qualified table names
-        for table_name in [CONDITION_OCCURRENCE, OBSERVATION
+        for table_name in [AOU_DEATH, CONDITION_OCCURRENCE, DEATH, OBSERVATION
                           ] + VOCABULARY_TABLES:
             cls.fq_table_names.append(
                 f'{cls.project_id}.{cls.dataset_id}.{table_name}')
 
-        for table_name in [CONDITION_OCCURRENCE, OBSERVATION]:
+        for table_name in [AOU_DEATH, CONDITION_OCCURRENCE, DEATH, OBSERVATION]:
             sandbox_table_name = cls.rule_instance.sandbox_table_for(table_name)
             cls.fq_sandbox_table_names.append(
                 f'{cls.project_id}.{cls.sandbox_id}.{sandbox_table_name}')
@@ -70,8 +67,7 @@ class MotorVehicleAccidentSuppressionTestBase(BaseTest.CleaningRulesTestBase):
         # Create domain tables required for the test
         super().setUp()
 
-        # Load the test data
-        condition_occurrence_data_template = self.jinja_env.from_string("""
+        insert_condition_occurrence = self.jinja_env.from_string("""
             INSERT INTO `{{project_id}}.{{dataset_id}}.condition_occurrence`
             (
                 condition_occurrence_id, 
@@ -101,10 +97,9 @@ class MotorVehicleAccidentSuppressionTestBase(BaseTest.CleaningRulesTestBase):
               (8, 1, 0, 0, 320128, 0, '2020-01-01', '2020-01-01 00:00:00 UTC'),
               (9, 1, 0, 0, 0, 320128, '2020-01-01', '2020-01-01 00:00:00 UTC'),
               (10, 1, 201826, 201826, 320128, 320128, '2020-01-01', '2020-01-01 00:00:00 UTC')
-            """)
+            """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
-        # Load the test data
-        observation_data_template = self.jinja_env.from_string("""
+        insert_observation = self.jinja_env.from_string("""
             INSERT INTO `{{project_id}}.{{dataset_id}}.observation`
             (
                 observation_id, 
@@ -141,29 +136,47 @@ class MotorVehicleAccidentSuppressionTestBase(BaseTest.CleaningRulesTestBase):
               (9, 1, 0, 0, 43533330, 0, 0, 0, 0, '2020-01-01'),
               (10, 1, 0, 0, 0, 43533330, 0, 0, 0, '2020-01-01'),
               (11, 1, 42628400, 1332785, 43533330, 43533330, 0, 0, 0, '2020-01-01')
-            """)
+            """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
-        insert_condition_query = condition_occurrence_data_template.render(
-            project_id=self.project_id, dataset_id=self.dataset_id)
+        insert_death = self.jinja_env.from_string("""
+            INSERT INTO `{{project_id}}.{{dataset_id}}.death`
+                (person_id, death_date, death_type_concept_id, cause_concept_id, cause_source_concept_id)
+            VALUES
+                -- NOT dropped. No motor vehicle accident concept --
+                (1, date('2020-05-05'), 38003569, 321042, 1569168),
+                -- Dropped. One or more columns have motor vehicle accident concept --
+                (2, date('2020-05-05'), 4145511, 321042, 1569168),
+                (3, date('2020-05-05'), 38003569, 4145511, 1569168),
+                (4, date('2020-05-05'), 38003569, 321042, 4145511),
+                (5, date('2020-05-05'), 4145511, 4145511, 4145511)
+            """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
-        insert_observation_query = observation_data_template.render(
-            project_id=self.project_id, dataset_id=self.dataset_id)
+        insert_aou_death = self.jinja_env.from_string("""
+            INSERT INTO `{{project_id}}.{{dataset_id}}.aou_death`
+                (aou_death_id, person_id, death_date, death_type_concept_id, cause_concept_id, cause_source_concept_id, src_id, primary_death_record)
+            VALUES
+                -- NOT dropped. No motor vehicle accident concept --
+                ('a', 1, date('2020-05-05'), 38003569, 321042, 1569168, 'rdr', False),
+                -- Dropped. One or more columns have motor vehicle accident concept --
+                ('b', 1, date('2020-05-05'), 4145511, 321042, 1569168, 'hpo_b', True),
+                ('c', 1, date('2020-05-05'), 38003569, 4145511, 1569168, 'hpo_c', False),
+                ('d', 1, date('2020-05-05'), 38003569, 321042, 4145511, 'hpo_d', False),
+                ('e', 1, date('2020-05-05'), 4145511, 4145511, 4145511, 'hpo_e', False)
+            """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
-        # Load test data
         self.load_test_data([
-            f'''{insert_condition_query};
-                {insert_observation_query};'''
+            insert_condition_occurrence, insert_observation, insert_death,
+            insert_aou_death
         ])
 
     def test_motor_vehicle_accident(self):
 
-        # Expected results list
         tables_and_counts = [{
             'fq_table_name':
-                f'{self.project_id}.{self.dataset_id}.condition_occurrence',
+                f'{self.project_id}.{self.dataset_id}.{CONDITION_OCCURRENCE}',
             'fq_sandbox_table_name':
                 f'{self.project_id}.{self.sandbox_id}.'
-                f'{self.rule_instance.sandbox_table_for("condition_occurrence")}',
+                f'{self.rule_instance.sandbox_table_for(CONDITION_OCCURRENCE)}',
             'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
             'sandboxed_ids': [1, 2, 3, 4, 5],
             'fields': [
@@ -176,10 +189,10 @@ class MotorVehicleAccidentSuppressionTestBase(BaseTest.CleaningRulesTestBase):
                                (10, 1, 201826, 201826, 320128, 320128)]
         }, {
             'fq_table_name':
-                f'{self.project_id}.{self.dataset_id}.observation',
+                f'{self.project_id}.{self.dataset_id}.{OBSERVATION}',
             'fq_sandbox_table_name':
                 f'{self.project_id}.{self.sandbox_id}.'
-                f'{self.rule_instance.sandbox_table_for("observation")}',
+                f'{self.rule_instance.sandbox_table_for(OBSERVATION)}',
             'loaded_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
             'sandboxed_ids': [1, 2, 3, 4, 5, 6],
             'fields': [
@@ -194,6 +207,24 @@ class MotorVehicleAccidentSuppressionTestBase(BaseTest.CleaningRulesTestBase):
                                (10, 1, 0, 0, 0, 43533330, 0, 0, 0),
                                (11, 1, 42628400, 1332785, 43533330, 43533330, 0,
                                 0, 0)]
+        }, {
+            'fq_table_name': f'{self.project_id}.{self.dataset_id}.{DEATH}',
+            'fq_sandbox_table_name':
+                f'{self.project_id}.{self.sandbox_id}.'
+                f'{self.rule_instance.sandbox_table_for(DEATH)}',
+            'loaded_ids': [1, 2, 3, 4, 5],
+            'sandboxed_ids': [2, 3, 4, 5],
+            'fields': ['person_id'],
+            'cleaned_values': [(1,)]
+        }, {
+            'fq_table_name': f'{self.project_id}.{self.dataset_id}.{AOU_DEATH}',
+            'fq_sandbox_table_name':
+                f'{self.project_id}.{self.sandbox_id}.'
+                f'{self.rule_instance.sandbox_table_for(AOU_DEATH)}',
+            'loaded_ids': ['a', 'b', 'c', 'd', 'e'],
+            'sandboxed_ids': ['b', 'c', 'd', 'e'],
+            'fields': ['aou_death_id'],
+            'cleaned_values': [('a',)]
         }]
 
         self.default_test(tables_and_counts)

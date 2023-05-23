@@ -2,7 +2,7 @@ import logging
 from google.cloud.exceptions import GoogleCloudError
 
 import resources
-from common import JINJA_ENV, AOU_REQUIRED
+from common import AOU_DEATH, AOU_REQUIRED, JINJA_ENV
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from cdr_cleaner.cleaning_rules.deid.concept_suppression import \
     AbstractBqLookupTableConceptSuppression
@@ -135,7 +135,7 @@ class MotorVehicleAccidentSuppression(AbstractBqLookupTableConceptSuppression):
             project_id=project_id,
             dataset_id=dataset_id,
             sandbox_dataset_id=sandbox_dataset_id,
-            affected_tables=AOU_REQUIRED,
+            affected_tables=AOU_REQUIRED + [AOU_DEATH],
             concept_suppression_lookup_table=SUPPRESSION_RULE_CONCEPT_TABLE,
             table_namer=table_namer)
 
