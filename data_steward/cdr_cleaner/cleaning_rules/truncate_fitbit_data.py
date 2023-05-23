@@ -92,7 +92,7 @@ class TruncateFitbitData(BaseCleaningRule):
         sandbox_queries = []
         truncate_queries = []
 
-        for table in FITBIT_TABLES:
+        for table in self.get_affected_tables():
             # gets all fields from the affected table
             fields = fields_for(table)
 
@@ -153,6 +153,18 @@ class TruncateFitbitData(BaseCleaningRule):
         Function to run any data upload options before executing a query.
         """
         pass
+
+    def get_affected_tables(self):
+        """
+        This method gets all the tables that are affected by this cleaning rule.
+
+        :return: list of affected tables
+        """
+        tables = []
+        for table in FITBIT_TABLES:
+            tables.append(table)
+
+        return tables
 
     def setup_validation(self, client):
         """
