@@ -1,11 +1,11 @@
 """
 Integration test for remove_fitbit_data_if_max_age_exceeded module
 
-Original Issues: DC-1001, DC-1037, DC-2429, DC-2135
+Original Issues: DC-1001, DC-1037, DC-2429, DC-2135, DC-3165
 
 The intent is to ensure there is no data for participants over the age of 89 in
 Activity Summary, Heart Rate Minute Level, Heart Rate Summary, Steps Intraday,
-Sleep Daily Summary, and Sleep Level tables by sandboxing the applicable records
+Sleep Daily Summary, Sleep Level, and Device tables by sandboxing the applicable records
 and then dropping them.
 """
 
@@ -85,7 +85,7 @@ class RemoveFitbitDataIfMaxAgeExceededTest(BaseTest.CleaningRulesTestBase):
 
         # Create the string(s) to load the data
         for tmpl in self.insert_fake_fitbit_data_tmpls:
-            for i in range(1, 7):
+            for i in range(1, len(FITBIT_TABLES) + 1):
                 query = tmpl.render(fq_table_name=self.fq_table_names[i])
                 self.load_statements.append(query)
 
@@ -123,7 +123,7 @@ class RemoveFitbitDataIfMaxAgeExceededTest(BaseTest.CleaningRulesTestBase):
         self.load_test_data(self.load_statements)
 
         tables_and_counts_list = []
-        for i in range(0, 6):
+        for i in range(0, len(FITBIT_TABLES)):
             tables_and_counts = {
                 'fq_table_name': self.fq_table_names[i + 1],
                 'fq_sandbox_table_name': self.fq_sandbox_table_names[i],
