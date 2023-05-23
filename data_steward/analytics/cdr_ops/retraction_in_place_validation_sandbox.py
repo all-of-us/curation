@@ -94,37 +94,37 @@ for dataset, pid_table_list in zip(datasets, all_pid_tables_lists):
 
     {% if domain_id != 'ehr' and domain_id != 'person' and domain_id != 'death' and domain_id != ''%}
         Case when count(tb.{{domain_id}}_id) = 0 then 'OK'
-        ELSE 
+        ELSE
         'PROBLEM' end as retraction_status,
         'EHR_domain_id' as source,
         '{{domain_id}}' as domain
 
     {% elif domain_id == 'death' %}
         Case when count(tb.person_id) = 0 then 'OK'
-        ELSE 
+        ELSE
         'PROBLEM' end as retraction_status,
         'EHR_person_id' as source,
         '{{domain_id}}' as domain
 
     {% elif domain_id == 'person' %}
         Case when count(tb.person_id) = 0 then 'OK'
-        ELSE 
+        ELSE
         'OK' end as retraction_status,
         'EHR_person_id' as source,
         '{{domain_id}} from RDR' as domain
 
     {% elif domain_id == 'ehr' or domain_id == '' %}
         Case when count(tb.person_id) = 0 then 'OK'
-        ELSE 
+        ELSE
         'OK' end as retraction_status,
         'EHR_person_id' as source,
         'UNKNOWN' as domain
-    {% endif %}        
+    {% endif %}
 
   FROM
 
     `{{project}}.{{dataset}}.{{table_name}}` as tb
-    right JOIN 
+    right JOIN
         pids as p
     USING(person_id)
 
@@ -184,18 +184,50 @@ all_results = []
 for dataset, pid_table_list in zip(datasets, all_pid_tables_lists):
     table_row_counts_query = JINJA_ENV.from_string('''
   SELECT 
-    '{{table_name}}' as table_id, count(*) as {{count}}
+
+    {% if domain_id != 'ehr' and domain_id != 'person' and domain_id != 'death' and domain_id != ''%}
+        '{{table_name}}' as table_id, 
+         count(*) as {{count}},
+        'EHR_domain_id' as source,
+         '{{domain_id}}' as domain
+
+    {% elif domain_id == 'death' %}
+        '{{table_name}}' as table_id, 
+         count(*) as {{count}},
+        'person_id'  as source,
+         '{{domain_id}}' as domain
+
+    {% elif domain_id == 'person' %}
+        '{{table_name}}' as table_id, 
+         count(*) as {{count}},
+        'person_id'  as source,
+         '{{domain_id}} from RDR' as domain
+
+    {% elif domain_id == 'ehr' or domain_id == '' %}
+        '{{table_name}}' as table_id, 
+         count(*) as {{count}},
+        'person_id'  as source,
+         'UNKNOWN' as domain
+    {% endif %}
   FROM 
     `{{project}}.{{dataset}}.{{table_name}}`
         FOR SYSTEM_TIME AS OF TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {{days}} DAY)
   {% if days != '0' %}
-  WHERE person_id NOT IN (
-      SELECT
-          person_id
-      FROM
-          pids
-      WHERE person_id IS NOT NULL
-  )
+    WHERE person_id NOT IN (
+        SELECT
+            person_id
+        FROM
+            pids
+        WHERE person_id IS NOT NULL
+    )
+    {% if domain_id != 'ehr' and domain_id != 'person' and domain_id != 'death' and domain_id != ''%}
+        and {{domain_id}}_id > 2000000000000000
+    {% endif %}
+    
+  {% else %}
+    {% if domain_id != 'ehr' and domain_id != 'person' and domain_id != 'death' and domain_id != ''%}
+        where {{domain_id}}_id > 2000000000000000
+    {% endif %}
   {% endif %}
   ''')
 
@@ -204,19 +236,41 @@ for dataset, pid_table_list in zip(datasets, all_pid_tables_lists):
     is_deidentified = str('deid' in dataset).lower()
 
     for table in pid_table_list:
+        domain_id = ''
+        if 'ehr' in table:
+            domain_id = 'ehr'
+        elif 'person' in table:
+            domain_id = 'person'
+        elif 'death' in table:
+            domain_id = 'death'
+        else:
+            for name in domain_tables:
+                if name in table:
+                    if 'observation' in name:
+                        if 'observation_period' in table:
+                            domain_id = 'observation_period'
+                        else:
+                            domain_id = 'observation'
+                        break
+                    else:
+                        domain_id = name
+                        break
+
         old_row_counts_queries_list.append(
             table_row_counts_query.render(project=project_id,
                                           dataset=dataset,
                                           table_name=table,
                                           count='old_minus_aian_row_count',
-                                          days='1'))
+                                          days='1',
+                                          domain_id=domain_id))
 
         new_row_counts_queries_list.append(
             table_row_counts_query.render(project=project_id,
                                           dataset=dataset,
                                           table_name=table,
                                           count='new_row_count',
-                                          days='0'))
+                                          days='0',
+                                          domain_id=domain_id))
 
     old_row_counts_union_all_query = '\nUNION ALL\n'.join(
         old_row_counts_queries_list)
@@ -237,7 +291,10 @@ for dataset, pid_table_list in zip(datasets, all_pid_tables_lists):
     old_count = execute(client, old_retraction_table_count_query)
     new_count = execute(client, new_retraction_table_count_query)
 
-    results = pd.merge(old_count, new_count, on='table_id', how='outer')
+    results = pd.merge(old_count,
+                       new_count,
+                       on=['table_id', 'source', 'domain'],
+                       how='inner')
 
     conditions = [
         (results['old_minus_aian_row_count'] == results['new_row_count']) |
@@ -252,6 +309,10 @@ for dataset, pid_table_list in zip(datasets, all_pid_tables_lists):
     results['table_count_status'] = np.select(conditions,
                                               table_count_status,
                                               default='PROBLEM')
+    results = results.reindex(columns=[
+        'table_id', 'old_minus_aian_row_count', 'new_row_count',
+        'table_count_status', 'source', 'domain'
+    ])
     all_results.append(results)
 for result, dataset in zip(all_results, datasets):
     print(dataset)
