@@ -227,7 +227,7 @@ with duplicates AS (
    -- ,questionnaire_response_id --
      ,COUNT(1) AS n_data
     FROM `{{project_id}}.{{new_rdr}}.observation`
-    INNER JOIN `{{project_id}}.{{new_rdr}}.cope_survey_semantic_version_map` 
+    INNER JOIN `{{project_id}}.{{new_rdr}}.cope_survey_semantic_version_map`
         USING (questionnaire_response_id) -- For COPE only --
     GROUP BY 1,2,3,4,5,6
 )
@@ -454,7 +454,7 @@ BASICS_MODULE_CONCEPT_ID = 1586134
 # Note: This assumes that concept_ancestor sufficiently
 # represents the hierarchy
 tpl = JINJA_ENV.from_string("""
-WITH 
+WITH
 
  -- all PPI question concepts in the basics survey module --
  basics_concept AS
@@ -473,7 +473,7 @@ WITH
  -- maps pids to all their associated basics questions in the rdr --
 ,pid_basics AS
  (SELECT
-   person_id 
+   person_id
   ,ARRAY_AGG(DISTINCT c.concept_code IGNORE NULLS) basics_codes
   FROM `{{DATASET_ID}}.observation` o
   JOIN basics_concept c
@@ -482,7 +482,7 @@ WITH
   GROUP BY 1)
 
  -- list all pids for whom no basics questions are found --
-SELECT * 
+SELECT *
 FROM `{{DATASET_ID}}.person`
 WHERE person_id not in (select person_id from pid_basics)
 """)
@@ -502,9 +502,9 @@ SELECT
     observation_id
     ,person_id
     ,value_as_string
-FROM `{{project_id}}.{{new_rdr}}.observation` 
+FROM `{{project_id}}.{{new_rdr}}.observation`
 WHERE observation_source_concept_id = 715711
-AND SAFE_CAST(value_as_string AS DATE) IS NULL 
+AND SAFE_CAST(value_as_string AS DATE) IS NULL
 AND value_as_string != 'PMI Skip'
 ''')
 query = tpl.render(new_rdr=new_rdr, project_id=project_id)
@@ -554,17 +554,17 @@ SELECT
     'missing_person' as issue_type
     ,person_id
 FROM `{{project_id}}.{{new_rdr}}.pid_rid_mapping`
-WHERE person_id NOT IN 
+WHERE person_id NOT IN
 (SELECT person_id
 FROM `{{project_id}}.{{new_rdr}}.person`)
 
 UNION ALL
 
-SELECT 
+SELECT
     'unmapped_person' as issue_type
     ,person_id
 FROM `{{project_id}}.{{new_rdr}}.person`
-WHERE person_id NOT IN 
+WHERE person_id NOT IN
 (SELECT person_id
 FROM `{{project_id}}.{{new_rdr}}.pid_rid_mapping`)
 ''')
@@ -600,10 +600,10 @@ execute(client, query)
 # In ideal circumstances, this query will not return any results.
 
 tpl = JINJA_ENV.from_string('''
-SELECT DISTINCT person_id FROM `{{project_id}}.{{new_rdr}}.observation` 
+SELECT DISTINCT person_id FROM `{{project_id}}.{{new_rdr}}.observation`
 JOIN `{{project_id}}.{{new_rdr}}.concept` on (observation_source_concept_id=concept_id)
 WHERE vocabulary_id = 'PPI' AND person_id NOT IN (
-SELECT DISTINCT person_id FROM `{{project_id}}.{{new_rdr}}.concept` 
+SELECT DISTINCT person_id FROM `{{project_id}}.{{new_rdr}}.concept`
 JOIN `{{project_id}}.{{new_rdr}}.concept_ancestor` on (concept_id=ancestor_concept_id)
 JOIN `{{project_id}}.{{new_rdr}}.observation` on (descendant_concept_id=observation_concept_id)
 WHERE concept_class_id='Module'
@@ -640,7 +640,7 @@ execute(client, query)
 # Any violations should be reported to the RDR team.
 
 tpl = JINJA_ENV.from_string("""
-SELECT 
+SELECT
     observation_source_value,
     COUNT(1) AS n_row_violation
 FROM `{{project_id}}.{{new_rdr}}.observation`
@@ -719,8 +719,8 @@ cope_question_concept_ids = [
 tpl = JINJA_ENV.from_string("""
 WITH question_topic_module AS (
   SELECT
-      cr1.concept_id_1 AS question, 
-      cr1.concept_id_2 AS topic, 
+      cr1.concept_id_1 AS question,
+      cr1.concept_id_2 AS topic,
       cr2.concept_id_2 AS module
   FROM `{{projcet_id}}.{{dataset}}.concept_relationship` cr1
   JOIN `{{projcet_id}}.{{dataset}}.concept` c1 ON cr1.concept_id_2 = c1.concept_id
@@ -791,3 +791,51 @@ WHERE
             rdr_cutoff_date=rdr_cutoff_date)
 
 execute(client, query)
+
+# # DEATH table - HealthPro deceased records validation
+
+# From CDR V8, Curation receives HealthPro deceased records from RDR. We must ensure the incoming records follow the requirement.
+# Here is the highlight of the technical requirement of the incoming `death` records from RDR.
+# - Person_id, death_date, death_datetime, death_type_concept_id populated
+# - Map all deceased records from HealthPro as “Case Report Form” (concept ID: 32809)
+# - Cause_concept_id, cause_source_value, and cause_source_concept_id columns, set value to NULL
+# - Src_id filled in with “healthpro”
+
+# +
+tpl_if_empty = JINJA_ENV.from_string("""
+SELECT COUNT(*)
+FROM `{{project_id}}.{{dataset}}.death`
+HAVING COUNT(*) = 0
+""")
+query_if_empty = tpl_if_empty.render(project_id=project_id, dataset=new_rdr)
+df_if_empty = execute(client, query_if_empty)
+
+tpl = JINJA_ENV.from_string("""
+SELECT
+    person_id
+FROM `{{project_id}}.{{dataset}}.death`
+WHERE death_type_concept_id != 32809
+OR cause_concept_id IS NOT NULL
+OR cause_source_value IS NOT NULL
+OR cause_source_concept_id IS NOT NULL
+OR src_id != 'healthpro'
+""")
+query = tpl.render(project_id=project_id, dataset=new_rdr)
+df = execute(client, query)
+
+success_msg_if_empty = 'Death table has some records.'
+failure_msg_if_empty = '''
+    Death table is empty. We expect HealthPro deceased records. Contact RDR and have them send HealthPro deceased records.
+'''
+success_msg = 'All death records follow the technical requirement for the CDR V8 release.'
+failure_msg = '''
+    <b>{code_count}</b> records do not follow the technical requirement for the CDR V8 release. 
+    Investigate and confirm if (a) bad data is coming from RDR, (b) the requirement has changed, or (c) something else.
+'''
+render_message(df_if_empty, success_msg_if_empty, failure_msg_if_empty)
+if len(df_if_empty) == 0:
+    render_message(df,
+                   success_msg,
+                   failure_msg,
+                   failure_msg_args={'code_count': len(df)})
+# -
