@@ -802,15 +802,22 @@ execute(client, query)
 # - Src_id filled in with “healthpro”
 
 # +
-tpl_if_empty = JINJA_ENV.from_string("""
+query_if_empty = JINJA_ENV.from_string("""
 SELECT COUNT(*)
 FROM `{{project_id}}.{{dataset}}.death`
 HAVING COUNT(*) = 0
-""")
-query_if_empty = tpl_if_empty.render(project_id=project_id, dataset=new_rdr)
+""").render(project_id=project_id, dataset=new_rdr)
 df_if_empty = execute(client, query_if_empty)
 
-tpl = JINJA_ENV.from_string("""
+query_if_duplicate = JINJA_ENV.from_string("""
+SELECT person_id, COUNT(*) 
+FROM `{{project_id}}.{{dataset}}.death`
+GROUP BY person_id
+HAVING COUNT(*) > 1
+""").render(project_id=project_id, dataset=new_rdr)
+df_if_duplicate = execute(client, query_if_duplicate)
+
+query = JINJA_ENV.from_string("""
 SELECT
     person_id
 FROM `{{project_id}}.{{dataset}}.death`
@@ -818,14 +825,18 @@ WHERE death_type_concept_id != 32809
 OR cause_concept_id IS NOT NULL
 OR cause_source_value IS NOT NULL
 OR cause_source_concept_id IS NOT NULL
-OR src_id != 'healthpro'
-""")
-query = tpl.render(project_id=project_id, dataset=new_rdr)
+-- OR src_id != 'healthpro' --
+""").render(project_id=project_id, dataset=new_rdr)
 df = execute(client, query)
 
 success_msg_if_empty = 'Death table has some records.'
 failure_msg_if_empty = '''
     Death table is empty. We expect HealthPro deceased records. Contact RDR and have them send HealthPro deceased records.
+'''
+success_msg_if_duplicate = 'Death records are up to one record per person_id.'
+failure_msg_if_duplicate = '''
+    <b>{code_count}</b> participants have more than one death records. We expect only up to one death record per person_id from RDR.
+    Investigate and confirm if (a) bad data is coming from RDR, (b) the requirement has changed, or (c) something else.
 '''
 success_msg = 'All death records follow the technical requirement for the CDR V8 release.'
 failure_msg = '''
@@ -833,7 +844,14 @@ failure_msg = '''
     Investigate and confirm if (a) bad data is coming from RDR, (b) the requirement has changed, or (c) something else.
 '''
 render_message(df_if_empty, success_msg_if_empty, failure_msg_if_empty)
+
 if len(df_if_empty) == 0:
+    render_message(df_if_duplicate,
+                   success_msg_if_duplicate,
+                   failure_msg_if_duplicate,
+                   failure_msg_args={'code_count': len(df_if_duplicate)})
+
+if len(df_if_empty) == 0 and len(df_if_duplicate) == 0:
     render_message(df,
                    success_msg,
                    failure_msg,

@@ -229,7 +229,7 @@ with duplicates AS (
    -- ,questionnaire_response_id --
      ,COUNT(1) AS n_data
     FROM `{{project_id}}.{{new_rdr}}.observation`
-    INNER JOIN `{{project_id}}.{{new_rdr}}.cope_survey_semantic_version_map` 
+    INNER JOIN `{{project_id}}.{{new_rdr}}.cope_survey_semantic_version_map`
         USING (questionnaire_response_id) -- For COPE only --
     GROUP BY 1,2,3,4,5,6
 )
@@ -465,7 +465,7 @@ BASICS_MODULE_CONCEPT_ID = 1586134
 # Note: This assumes that concept_ancestor sufficiently
 # represents the hierarchy
 tpl = JINJA_ENV.from_string("""
-WITH 
+WITH
 
  -- all PPI question concepts in the basics survey module --
  basics_concept AS
@@ -484,7 +484,7 @@ WITH
  -- maps pids to all their associated basics questions in the rdr --
 ,pid_basics AS
  (SELECT
-   person_id 
+   person_id
   ,ARRAY_AGG(DISTINCT c.concept_code IGNORE NULLS) basics_codes
   FROM `{{DATASET_ID}}.observation` o
   JOIN basics_concept c
@@ -493,7 +493,7 @@ WITH
   GROUP BY 1)
 
  -- list all pids for whom no basics questions are found --
-SELECT * 
+SELECT *
 FROM `{{DATASET_ID}}.person`
 WHERE person_id not in (select person_id from pid_basics)
 """)
@@ -513,9 +513,9 @@ SELECT
     observation_id
     ,person_id
     ,value_as_string
-FROM `{{project_id}}.{{new_rdr}}.observation` 
+FROM `{{project_id}}.{{new_rdr}}.observation`
 WHERE observation_source_concept_id = 715711
-AND SAFE_CAST(value_as_string AS DATE) IS NULL 
+AND SAFE_CAST(value_as_string AS DATE) IS NULL
 AND value_as_string != 'PMI Skip'
 ''')
 query = tpl.render(new_rdr=new_rdr, project_id=project_id)
@@ -565,17 +565,17 @@ SELECT
     'missing_person' as issue_type
     ,person_id
 FROM `{{project_id}}.{{new_rdr}}.pid_rid_mapping`
-WHERE person_id NOT IN 
+WHERE person_id NOT IN
 (SELECT person_id
 FROM `{{project_id}}.{{new_rdr}}.person`)
 
 UNION ALL
 
-SELECT 
+SELECT
     'unmapped_person' as issue_type
     ,person_id
 FROM `{{project_id}}.{{new_rdr}}.person`
-WHERE person_id NOT IN 
+WHERE person_id NOT IN
 (SELECT person_id
 FROM `{{project_id}}.{{new_rdr}}.pid_rid_mapping`)
 ''')
@@ -631,7 +631,7 @@ HAVING COUNT(person_id) > 1
 
 UNION ALL
 
-SELECT 
+SELECT
     'prm_missing_from_pprm' as issue_type
     ,person_id
 FROM `{{project_id}}.{{new_rdr}}.pid_rid_mapping` prm
@@ -641,14 +641,14 @@ WHERE pprm.person_id IS NULL
 
 UNION ALL
 
-SELECT 
+SELECT
     'shift_off_spec' as issue_type
     ,person_id
 FROM `{{project_id}}.pipeline_tables.primary_pid_rid_mapping` pprm
 WHERE shift NOT BETWEEN 1 AND 364
 )
 
-SELECT 
+SELECT
     issue_type,
     COUNT(person_id) as count_issue
 FROM issues
@@ -665,10 +665,10 @@ execute(client, query)
 # In ideal circumstances, this query will not return any results.
 
 tpl = JINJA_ENV.from_string('''
-SELECT DISTINCT person_id FROM `{{project_id}}.{{new_rdr}}.observation` 
+SELECT DISTINCT person_id FROM `{{project_id}}.{{new_rdr}}.observation`
 JOIN `{{project_id}}.{{new_rdr}}.concept` on (observation_source_concept_id=concept_id)
 WHERE vocabulary_id = 'PPI' AND person_id NOT IN (
-SELECT DISTINCT person_id FROM `{{project_id}}.{{new_rdr}}.concept` 
+SELECT DISTINCT person_id FROM `{{project_id}}.{{new_rdr}}.concept`
 JOIN `{{project_id}}.{{new_rdr}}.concept_ancestor` on (concept_id=ancestor_concept_id)
 JOIN `{{project_id}}.{{new_rdr}}.observation` on (descendant_concept_id=observation_concept_id)
 WHERE concept_class_id='Module'
@@ -707,8 +707,8 @@ execute(client, query)
 # [DC-2254](https://precisionmedicineinitiative.atlassian.net/browse/DC-2254).
 
 tpl = JINJA_ENV.from_string('''
-SELECT 
-    person_id, 
+SELECT
+    person_id,
     STRING_AGG(observation_source_value) AS observation_source_value
 FROM `{{project_id}}.{{new_rdr}}.observation`
 WHERE observation_type_concept_id = 45905771 -- is a survey response --
@@ -729,7 +729,7 @@ execute(client, query)
 # Any violations should be reported to the RDR team.
 
 tpl = JINJA_ENV.from_string("""
-SELECT 
+SELECT
     observation_source_value,
     COUNT(1) AS n_row_violation
 FROM `{{project_id}}.{{new_rdr}}.observation`
@@ -777,7 +777,7 @@ tpl = JINJA_ENV.from_string("""
 WITH question_codes AS (
   SELECT
     pmi_code
-  FROM `{{project_id}}.{{sandbox_dataset}}.old_map_short_codes` 
+  FROM `{{project_id}}.{{sandbox_dataset}}.old_map_short_codes`
   WHERE type = 'Question'
 )
 SELECT
@@ -815,7 +815,7 @@ tpl = JINJA_ENV.from_string("""
 WITH answer_codes AS (
   SELECT
     pmi_code
-  FROM `{{project_id}}.{{sandbox_dataset}}.old_map_short_codes` 
+  FROM `{{project_id}}.{{sandbox_dataset}}.old_map_short_codes`
   WHERE type = 'Answer'
 )
 SELECT
@@ -853,7 +853,7 @@ tpl = JINJA_ENV.from_string("""
 WITH answer_codes AS (
   SELECT
     pmi_code
-  FROM `{{project_id}}.{{sandbox_dataset}}.old_map_short_codes` 
+  FROM `{{project_id}}.{{sandbox_dataset}}.old_map_short_codes`
   WHERE type = 'Answer'
 )
 SELECT
@@ -929,8 +929,8 @@ cope_question_concept_ids = [
 tpl = JINJA_ENV.from_string("""
 WITH question_topic_module AS (
   SELECT
-      cr1.concept_id_1 AS question, 
-      cr1.concept_id_2 AS topic, 
+      cr1.concept_id_1 AS question,
+      cr1.concept_id_2 AS topic,
       cr2.concept_id_2 AS module
   FROM `{{projcet_id}}.{{dataset}}.concept_relationship` cr1
   JOIN `{{projcet_id}}.{{dataset}}.concept` c1 ON cr1.concept_id_2 = c1.concept_id
@@ -1001,3 +1001,68 @@ WHERE
             rdr_cutoff_date=rdr_cutoff_date)
 
 execute(client, query)
+
+# # DEATH table - HealthPro deceased records validation
+
+# From CDR V8, Curation receives HealthPro deceased records from RDR. We must ensure the records still follow the requirement after the clean RDR process.
+# Here is the highlight of the technical requirement of the `death` records in RDR data stage.
+# - Person_id, death_date, death_datetime, death_type_concept_id populated
+# - Map all deceased records from HealthPro as “Case Report Form” (concept ID: 32809)
+# - Cause_concept_id, cause_source_value, and cause_source_concept_id columns, set value to NULL
+
+# +
+query_if_empty = JINJA_ENV.from_string("""
+SELECT COUNT(*)
+FROM `{{project_id}}.{{dataset}}.death`
+HAVING COUNT(*) = 0
+""").render(project_id=project_id, dataset=new_rdr)
+df_if_empty = execute(client, query_if_empty)
+
+query_if_duplicate = JINJA_ENV.from_string("""
+SELECT person_id, COUNT(*) 
+FROM `{{project_id}}.{{dataset}}.death`
+GROUP BY person_id
+HAVING COUNT(*) > 1
+""").render(project_id=project_id, dataset=new_rdr)
+df_if_duplicate = execute(client, query_if_duplicate)
+
+query = JINJA_ENV.from_string("""
+SELECT
+    person_id
+FROM `{{project_id}}.{{dataset}}.death`
+WHERE death_type_concept_id != 32809
+OR cause_concept_id IS NOT NULL
+OR cause_source_value IS NOT NULL
+OR cause_source_concept_id IS NOT NULL
+""").render(project_id=project_id, dataset=new_rdr)
+df = execute(client, query)
+
+success_msg_if_empty = 'Death table has some records.'
+failure_msg_if_empty = '''
+    Death table is empty. We expect HealthPro deceased records. Investigate if it is our cleaning process issue or if the source data is empty. 
+    If it is our cleaning rule process issue, fix it. If the source data is empty, contact RDR and have them send HealthPro deceased records.
+'''
+success_msg_if_duplicate = 'Death records are up to one record per person_id.'
+failure_msg_if_duplicate = '''
+    <b>{code_count}</b> participants have more than one death records. We expect only up to one death record per person_id from RDR.
+    Investigate and confirm if (a) bad data is coming from RDR, (b) the requirement has changed, or (c) something else.
+'''
+success_msg = 'All death records follow the technical requirement for the CDR V8 release.'
+failure_msg = '''
+    <b>{code_count}</b> records do not follow the technical requirement for the CDR V8 release. 
+    Investigate and confirm if (a) bad data is coming from RDR, (b) the requirement has changed, or (c) something else.
+'''
+render_message(df_if_empty, success_msg_if_empty, failure_msg_if_empty)
+
+if len(df_if_empty) == 0:
+    render_message(df_if_duplicate,
+                   success_msg_if_duplicate,
+                   failure_msg_if_duplicate,
+                   failure_msg_args={'code_count': len(df_if_duplicate)})
+
+if len(df_if_empty) == 0 and len(df_if_duplicate) == 0:
+    render_message(df,
+                   success_msg,
+                   failure_msg,
+                   failure_msg_args={'code_count': len(df)})
+# -
