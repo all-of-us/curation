@@ -16,7 +16,7 @@
 # This notebook validates in-place EHR data retraction for the sandbox datasets only, excluding ehr datasets.
 # Note:
 #   1. Tables that have 'person' in the name were not retracted from because the records come from RDR.
-#   2. Tables with 'ehr' in the name or that don't have one of the domain table names as part of the name, contain unknown records. This means
+#   2. Tables with 'ehr' in the name, or that don't have one of the domain table names as part of the name, contain unknown records. This means
 #      that we can't know for sure whether the records are from rdr or ehr.
 
 # + tags=["parameters"]
@@ -103,21 +103,21 @@ for dataset, pid_table_list in zip(datasets, all_pid_tables_lists):
         Case when count(tb.person_id) = 0 then 'OK'
         ELSE
         'PROBLEM' end as retraction_status,
-        'EHR_person_id' as source,
+        'person_id' as source,
         '{{domain_id}}' as domain
 
     {% elif domain_id == 'person' %}
         Case when count(tb.person_id) = 0 then 'OK'
         ELSE
         'OK' end as retraction_status,
-        'EHR_person_id' as source,
-        '{{domain_id}} from RDR' as domain
+        'person_id' as source,
+        '{{domain_id}}' as domain
 
     {% elif domain_id == 'ehr' or domain_id == '' %}
         Case when count(tb.person_id) = 0 then 'OK'
         ELSE
         'OK' end as retraction_status,
-        'EHR_person_id' as source,
+        'person_id' as source,
         'UNKNOWN' as domain
     {% endif %}
 
@@ -174,7 +174,7 @@ for dataset, pid_table_list in zip(datasets, all_pid_tables_lists):
 
 for result, dataset in zip(all_results, datasets):
     print(dataset)
-    ICD.display(result)
+    ICD.display(result.to_string())
     print("\n")
 # -
 
@@ -201,7 +201,7 @@ for dataset, pid_table_list in zip(datasets, all_pid_tables_lists):
         '{{table_name}}' as table_id, 
          count(*) as {{count}},
         'person_id'  as source,
-         '{{domain_id}} from RDR' as domain
+         '{{domain_id}}' as domain
 
     {% elif domain_id == 'ehr' or domain_id == '' %}
         '{{table_name}}' as table_id, 
@@ -316,5 +316,5 @@ for dataset, pid_table_list in zip(datasets, all_pid_tables_lists):
     all_results.append(results)
 for result, dataset in zip(all_results, datasets):
     print(dataset)
-    ICD.display(result)
+    ICD.display(result.to_string())
     print("\n")
