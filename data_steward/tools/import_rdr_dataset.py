@@ -17,7 +17,7 @@ from google.api_core.exceptions import NotFound
 from utils import auth, pipeline_logging
 from gcloud.bq import BigQueryClient
 from common import CDR_SCOPES
-from resources import replace_special_characters_for_labels, validate_date_string, rdr_src_id_schemas
+from resources import replace_special_characters_for_labels, validate_date_string, rdr_src_id_schemas, cdm_schemas
 from tools.snapshot_by_query import BIGQUERY_DATA_TYPES
 
 LOGGER = logging.getLogger(__name__)
@@ -75,7 +75,8 @@ def create_rdr_tables(client, destination_dataset, rdr_source_dataset):
     :param rdr_destination_dataset: the existing local dataset to load file data into
     :param rdr_source_dataset: the source rdr dataset containing the data
     """
-    schema_dict = rdr_src_id_schemas()
+    schema_dict = cdm_schemas()
+    schema_dict.update(rdr_src_id_schemas())
 
     for table, schema in schema_dict.items():
 
