@@ -91,28 +91,24 @@ for dataset, pid_table_list in zip(datasets, all_pid_tables_lists):
     table_check_query = JINJA_ENV.from_string('''
   SELECT
     \'{{table_name}}\' AS table_name,
-
     {% if domain_id != 'ehr' and domain_id != 'person' and domain_id != 'death' and domain_id != ''%}
         Case when count(tb.{{domain_id}}_id) = 0 then 'OK'
         ELSE
         'PROBLEM' end as retraction_status,
         'EHR_domain_id' as source,
         '{{domain_id}}' as domain
-
     {% elif domain_id == 'death' %}
         Case when count(tb.person_id) = 0 then 'OK'
         ELSE
         'PROBLEM' end as retraction_status,
         'person_id' as source,
         '{{domain_id}}' as domain
-
     {% elif domain_id == 'person' %}
         Case when count(tb.person_id) = 0 then 'OK'
         ELSE
         'OK' end as retraction_status,
         'person_id' as source,
         '{{domain_id}}' as domain
-
     {% elif domain_id == 'ehr' or domain_id == '' %}
         Case when count(tb.person_id) = 0 then 'OK'
         ELSE
@@ -120,18 +116,14 @@ for dataset, pid_table_list in zip(datasets, all_pid_tables_lists):
         'person_id' as source,
         'UNKNOWN' as domain
     {% endif %}
-
   FROM
-
     `{{project}}.{{dataset}}.{{table_name}}` as tb
     right JOIN
         pids as p
     USING(person_id)
-
     {% if domain_id != 'ehr' and domain_id != 'person' and domain_id != 'death' and domain_id != ''%}
       where {{domain_id}}_id > 2000000000000000
     {% endif %}
-
   ''')
 
     queries_list = []
@@ -174,7 +166,7 @@ for dataset, pid_table_list in zip(datasets, all_pid_tables_lists):
 
 for result, dataset in zip(all_results, datasets):
     print(dataset)
-    ICD.display(result.to_string())
+    ICD.display(result)
     print("\n")
 # -
 
@@ -184,25 +176,21 @@ all_results = []
 for dataset, pid_table_list in zip(datasets, all_pid_tables_lists):
     table_row_counts_query = JINJA_ENV.from_string('''
   SELECT 
-
     {% if domain_id != 'ehr' and domain_id != 'person' and domain_id != 'death' and domain_id != ''%}
         '{{table_name}}' as table_id, 
          count(*) as {{count}},
         'EHR_domain_id' as source,
          '{{domain_id}}' as domain
-
     {% elif domain_id == 'death' %}
         '{{table_name}}' as table_id, 
          count(*) as {{count}},
         'person_id'  as source,
          '{{domain_id}}' as domain
-
     {% elif domain_id == 'person' %}
         '{{table_name}}' as table_id, 
          count(*) as {{count}},
         'person_id'  as source,
          '{{domain_id}}' as domain
-
     {% elif domain_id == 'ehr' or domain_id == '' %}
         '{{table_name}}' as table_id, 
          count(*) as {{count}},
@@ -220,14 +208,11 @@ for dataset, pid_table_list in zip(datasets, all_pid_tables_lists):
             pids
         WHERE person_id IS NOT NULL
     )
-    {% if domain_id != 'ehr' and domain_id != 'person' and domain_id != 'death' and domain_id != ''%}
-        and {{domain_id}}_id > 2000000000000000
-    {% endif %}
-    
-  {% else %}
-    {% if domain_id != 'ehr' and domain_id != 'person' and domain_id != 'death' and domain_id != ''%}
-        where {{domain_id}}_id > 2000000000000000
-    {% endif %}
+  {% endif %}
+  {% if domain_id != 'ehr' and domain_id != 'person' and domain_id != 'death' and domain_id != '' and days != '0' %}
+    and {{domain_id}}_id > 2000000000000000
+  {% elif domain_id != 'ehr' and domain_id != 'person' and domain_id != 'death' and domain_id != '' and days == '0' %}
+    where {{domain_id}}_id > 2000000000000000
   {% endif %}
   ''')
 
@@ -316,5 +301,5 @@ for dataset, pid_table_list in zip(datasets, all_pid_tables_lists):
     all_results.append(results)
 for result, dataset in zip(all_results, datasets):
     print(dataset)
-    ICD.display(result.to_string())
+    ICD.display(result)
     print("\n")
