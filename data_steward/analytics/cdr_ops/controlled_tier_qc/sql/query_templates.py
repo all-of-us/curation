@@ -140,7 +140,7 @@ ON pre_deid.{{ column_name }} = map.{{ column_name }}
 LEFT JOIN `{{ project_id }}.{{ mapping_dataset }}.{{ mapping_table }}` map
 ON pre_deid.{{ column_name }} = map.{{ column_name }}
 {% else %}
-LEFT JOIN `{{ project_id }}.{{ mapping_dataset }}.{{ mapping_table }}` map
+LEFT JOIN `{{ project_id }}.{{ questionnaire_response_dataset }}.{{ mapping_table }}` map
 ON CAST(pre_deid.{{ column_name }} AS INT64) = map.questionnaire_response_id
 {% endif %}
 )
