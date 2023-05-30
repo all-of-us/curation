@@ -863,7 +863,7 @@ if len(df_if_empty) == 0 and len(df_if_duplicate) == 0:
 # +
 queries = []
 SRC_ID_TABLES = []
-ids = JINJA_ENV.from_string("""
+ids_template = JINJA_ENV.from_string("""
 with ids as (
   SELECT 
     hpo_id 
@@ -873,9 +873,9 @@ with ids as (
     REGEXP_CONTAINS(src_id, r'(?i)(PPI/PM)|(EHR site)')
 )
 """)
-table_ids = ids.render(project_id=project_id,
-                       pipeline=PIPELINE_TABLES,
-                       site_maskings=SITE_MASKING_TABLE_ID)
+table_ids = ids_template.render(project_id=project_id,
+                                pipeline=PIPELINE_TABLES,
+                                site_maskings=SITE_MASKING_TABLE_ID)
 for table in SRC_ID_TABLES:
     tpl = JINJA_ENV.from_string("""
     SELECT
