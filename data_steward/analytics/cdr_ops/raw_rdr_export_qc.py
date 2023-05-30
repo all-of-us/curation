@@ -24,7 +24,7 @@ rdr_cutoff_date = ""
 # # QC for RDR Export
 #
 # Quality checks performed on a new RDR dataset and comparison with previous RDR dataset.
-from common import CATI_TABLES, DEATH, FACT_RELATIONSHIP, JINJA_ENV, PIPELINE_TABLES, SITE_MASKING_TABLE_ID
+from common import CATI_TABLES, DEATH, FACT_RELATIONSHIP, JINJA_ENV, PIPELINE_TABLES, SITE_MASKING_TABLE_ID, SRC_ID_TABLES
 from utils import auth
 from gcloud.bq import BigQueryClient
 from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES, render_message
@@ -862,7 +862,6 @@ if len(df_if_empty) == 0 and len(df_if_duplicate) == 0:
 
 # +
 queries = []
-SRC_ID_TABLES = []
 ids_template = JINJA_ENV.from_string("""
 with ids as (
   SELECT 
@@ -873,9 +872,9 @@ with ids as (
     REGEXP_CONTAINS(src_id, r'(?i)(PPI/PM)|(EHR site)')
 )
 """)
-table_ids = ids_template.render(project_id=project_id,
-                                pipeline=PIPELINE_TABLES,
-                                site_maskings=SITE_MASKING_TABLE_ID)
+src_ids_table = ids_template.render(project_id=project_id,
+                                    pipeline=PIPELINE_TABLES,
+                                    site_maskings=SITE_MASKING_TABLE_ID)
 for table in SRC_ID_TABLES:
     tpl = JINJA_ENV.from_string("""
     SELECT
@@ -894,5 +893,5 @@ for table in SRC_ID_TABLES:
     query = tpl.render(project_id=project_id, new_rdr=new_rdr, table_name=table)
     queries.append(query)
 all_queries = '\nUNION ALL\n'.join(queries)
-execute(client, f'{table_ids}\n{all_queries}')
+execute(client, f'{src_ids_table}\n{all_queries}')
 # -
