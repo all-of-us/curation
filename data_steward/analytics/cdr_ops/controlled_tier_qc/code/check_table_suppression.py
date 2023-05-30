@@ -8,7 +8,8 @@ def check_table_suppression(check_df,
                             project_id,
                             post_dataset_id,
                             pre_deid_dataset=None,
-                            mapping_dataset=None):
+                            mapping_dataset=None,
+                            questionnaire_response_dataset=None):
     """Run table suppression check
     
     Parameters
@@ -21,6 +22,10 @@ def check_table_suppression(check_df,
         Bigquery dataset after de-id rules were run
     pre_deid_dataset: str
         Bigquery dataset before de-id rules were run
+    mapping_dataset: str
+        *_deid sandbox dataset
+    questionnaire_response_dataset
+        ID of the dataset containing questionnaire_response deid mapping table
 
     Returns
     -------

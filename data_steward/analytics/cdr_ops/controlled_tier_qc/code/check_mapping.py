@@ -8,9 +8,9 @@ from analytics.cdr_ops.controlled_tier_qc.sql.query_templates import (
 
 
 def check_mapping(check_df, project_id, post_dataset_id, pre_deid_dataset,
-                  mapping_dataset):
+                  mapping_dataset, questionnaire_response_dataset):
     """Run mapping verification rules
-    
+
     Parameters
     ----------
     check_df: pd.DataFrame
@@ -21,6 +21,10 @@ def check_mapping(check_df, project_id, post_dataset_id, pre_deid_dataset,
         Bigquery dataset after de-id rules were run
     pre_deid_dataset: str
         Bigquery dataset before de-id rules were run
+    mapping_dataset: str
+        *_deid sandbox dataset
+    questionnaire_response_dataset
+        ID of the dataset containing questionnaire_response deid mapping table
 
     Returns
     -------
@@ -42,12 +46,14 @@ def check_mapping(check_df, project_id, post_dataset_id, pre_deid_dataset,
     # new id not in mapping
     id_not_in_mapping_check = run_check_by_row(
         check_df, QUERY_ID_NOT_IN_MAPPING, project_id, post_dataset_id,
-        pre_deid_dataset, "New ID not found in mapping table", mapping_dataset)
+        pre_deid_dataset, "New ID not found in mapping table", mapping_dataset,
+        questionnaire_response_dataset)
 
     # # new id properly mapped to old id
     id_properly_mapped_check = run_check_by_row(
         check_df, QUERY_ID_NOT_MAPPED_PROPERLY, project_id, post_dataset_id,
-        pre_deid_dataset, "ID not properly mapped", mapping_dataset)
+        pre_deid_dataset, "ID not properly mapped", mapping_dataset,
+        questionnaire_response_dataset)
 
     return pd.concat([
         type_check, id_map_check, id_not_in_mapping_check,
@@ -57,9 +63,9 @@ def check_mapping(check_df, project_id, post_dataset_id, pre_deid_dataset,
 
 
 def check_site_mapping(check_df, project_id, post_dataset_id, pre_deid_dataset,
-                       mapping_dataset):
+                       mapping_dataset, questionnaire_response_dataset):
     """Run mapping verification rules
-    
+
     Parameters
     ----------
     check_df: pd.DataFrame
@@ -70,6 +76,10 @@ def check_site_mapping(check_df, project_id, post_dataset_id, pre_deid_dataset,
         Bigquery dataset after de-id rules were run
     pre_deid_dataset: str
         Bigquery dataset before de-id rules were run
+    mapping_dataset: str
+        *_deid sandbox dataset
+    questionnaire_response_dataset
+        ID of the dataset containing questionnaire_response deid mapping table
 
     Returns
     -------
@@ -99,9 +109,10 @@ def check_site_mapping(check_df, project_id, post_dataset_id, pre_deid_dataset,
 
 
 def check_mapping_zipcode_generalization(check_df, project_id, post_dataset_id,
-                                         pre_deid_dataset, mapping_dataset):
+                                         pre_deid_dataset, mapping_dataset,
+                                         questionnaire_response_dataset):
     """Run zipcode generalization and transformation check
-    
+
     Parameters
     ----------
     check_df: pd.DataFrame
@@ -112,11 +123,16 @@ def check_mapping_zipcode_generalization(check_df, project_id, post_dataset_id,
         Bigquery dataset after de-id rules were run
     pre_deid_dataset: str
         Bigquery dataset before de-id rules were run
+    mapping_dataset: str
+        *_deid sandbox dataset
+    questionnaire_response_dataset
+        ID of the dataset containing questionnaire_response deid mapping table
 
     Returns
     -------
     pd.DataFrame
     """
+
     zip_check = run_check_by_row(check_df, QUERY_ZIP_CODE_GENERALIZATION,
                                  project_id, post_dataset_id, pre_deid_dataset,
                                  "Zip code value generalized and transformed")

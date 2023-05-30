@@ -13,7 +13,8 @@ def check_field_suppression(check_df,
                             project_id,
                             post_dataset_id,
                             pre_deid_dataset=None,
-                            mapping_dataset=None):
+                            mapping_dataset=None,
+                            questionnaire_response_dataset=None):
     """Run field suppression check
     
     Parameters
@@ -26,6 +27,10 @@ def check_field_suppression(check_df,
         Bigquery dataset after de-id rules were run
     pre_deid_dataset: str
         Bigquery dataset before de-id rules were run
+    mapping_dataset: str
+        *_deid sandbox dataset
+    questionnaire_response_dataset: str
+        ID of questionnaire response dataset
 
     Returns
     -------
@@ -60,7 +65,8 @@ def check_vehicle_accident_suppression(check_df,
                                        project_id,
                                        post_deid_dataset,
                                        pre_deid_dataset=None,
-                                       mapping_dataset=None):
+                                       mapping_dataset=None,
+                                       questionnaire_response_dataset=None):
     """Run motor vehicle accident suppression check
     
     Parameters
@@ -69,10 +75,14 @@ def check_vehicle_accident_suppression(check_df,
         Dataframe containing the checks that need to be done
     project_id: str
         Google Bigquery project_id
-    post_dataset_id: str
+    post_deid_dataset: str
         Bigquery dataset after de-id rules were run
     pre_deid_dataset: str
         Bigquery dataset before de-id rules were run
+    mapping_dataset: str
+        *_deid sandbox dataset
+    questionnaire_response_dataset: str
+        ID of questionnaire response dataset
 
     Returns
     -------
@@ -91,7 +101,8 @@ def check_field_cancer_concept_suppression(check_df,
                                            project_id,
                                            post_deid_dataset,
                                            pre_deid_dataset=None,
-                                           mapping_dataset=None):
+                                           mapping_dataset=None,
+                                           questionnaire_response_dataset=None):
     """Run suppression check for some cancer concepts
     
     Parameters
@@ -100,10 +111,14 @@ def check_field_cancer_concept_suppression(check_df,
         Dataframe containing the checks that need to be done
     project_id: str
         Google Bigquery project_id
-    post_dataset_id: str
+    post_deid_dataset: str
         Bigquery dataset after de-id rules were run
     pre_deid_dataset: str
         Bigquery dataset before de-id rules were run
+    mapping_dataset: str
+        *_deid sandbox dataset
+    questionnaire_response_dataset: str
+        ID of questionnaire response dataset
 
     Returns
     -------
@@ -115,21 +130,25 @@ def check_field_cancer_concept_suppression(check_df,
     return cancer_concept
 
 
-def check_field_freetext_response_suppression(check_df,
-                                              project_id,
-                                              post_deid_dataset,
-                                              pre_deid_dataset=None,
-                                              mapping_dataset=None):
+def check_field_freetext_response_suppression(
+    check_df,
+    project_id,
+    post_deid_dataset,
+    pre_deid_dataset=None,
+    mapping_dataset=None,
+    questionnaire_response_dataset=None):
     free_text_concept = run_check_by_row(check_df,
                                          QUERY_SUPPRESSED_FREE_TEXT_RESPONSE,
                                          project_id, post_deid_dataset)
     return free_text_concept
 
 
-def check_field_geolocation_records_suppression(check_df,
-                                                project_id,
-                                                post_deid_dataset,
-                                                pre_deid_dataset=None,
-                                                mapping_dataset=None):
+def check_field_geolocation_records_suppression(
+    check_df,
+    project_id,
+    post_deid_dataset,
+    pre_deid_dataset=None,
+    mapping_dataset=None,
+    questionnaire_response_dataset=None):
     return run_check_by_row(check_df, QUERY_GEOLOCATION_SUPPRESSION, project_id,
                             post_deid_dataset)

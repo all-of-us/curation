@@ -20,6 +20,7 @@ project_id: str = ""  # identifies the project where datasets are located
 post_deid_dataset: str = ""  # the CT deid dataset
 pre_deid_dataset: str = ""  # the combined dataset
 mapping_dataset: str = ""  # the sandbox dataset where mappings are
+questionnaire_response_dataset: str = ""  # ID of the dataset containing questionnaire_response deid mapping table
 
 # +
 import pandas as pd
@@ -36,6 +37,7 @@ checks = run_qc(project_id,
                 post_deid_dataset,
                 pre_deid_dataset,
                 mapping_dataset,
+                questionnaire_response_dataset,
                 rule_code=to_include)
 # -
 

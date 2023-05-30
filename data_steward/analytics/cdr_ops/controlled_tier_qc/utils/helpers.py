@@ -14,8 +14,8 @@ def load_check_description(rule_code=None) -> pd.DataFrame:
     """Extract the csv file containing the descriptions of checks
     :param rule_code: str or list. Contains all the rule codes to be checked.
                       If None, all the rule codes in CHECK_LIST_CSV_FILE are checked.
-    :returns: dataframe that has the data from CHECK_LIST_CSV_FILE. 
-              If rule_code is valid, this data frame is filtered to have 
+    :returns: dataframe that has the data from CHECK_LIST_CSV_FILE.
+              If rule_code is valid, this data frame is filtered to have
               only the rows that are related to the rule.
     """
     check_df = pd.read_csv(CSV_FOLDER / CHECK_LIST_CSV_FILE, dtype='object')
@@ -38,7 +38,7 @@ def make_header(message) -> bool:
 
 def is_rule_valid(check_df, code) -> bool:
     """Check if the rule is in the CSV file.
-    :param check_df: dataframe that has the data from CHECK_LIST_CSV_FILE. 
+    :param check_df: dataframe that has the data from CHECK_LIST_CSV_FILE.
     :param code: str. Rule code.
     :returns: True or False
     """
@@ -47,7 +47,7 @@ def is_rule_valid(check_df, code) -> bool:
 
 def extract_valid_codes_to_run(check_df, rule_code) -> list:
     """Out of the given rule_code, only return the ones that are defined in the CSV file.
-    :param check_df: dataframe that has the data from CHECK_LIST_CSV_FILE. 
+    :param check_df: dataframe that has the data from CHECK_LIST_CSV_FILE.
     :param rule_code: str or list. The rule code(s) to be checked.
     :returns: list of the valid rule codes
     """
@@ -58,7 +58,7 @@ def extract_valid_codes_to_run(check_df, rule_code) -> list:
 
 def filter_data_by_rule(check_df, rule_code) -> pd.DataFrame:
     """Filter specific check rules by using the rule code
-    :param check_df: dataframe that has the data from either 
+    :param check_df: dataframe that has the data from either
                      CONCEPT_CSV_FILE, FIELD_CSV_FILE, TABLE_CSV_FILE, or MAPPING_CSV_FILE
     :param rule_code: str or list. The rule code(s) to be checked.
     :returns: Filtered dataframe. It has only the rows that are related to the rule.
@@ -91,7 +91,7 @@ def form_field_param_from_row(row, field):
 
 def get_list_of_common_columns_for_merge(check_df, results_df):
     """Extract common columns from the two dataframes
-    :param check_df: dataframe that has the data from either 
+    :param check_df: dataframe that has the data from either
                      CONCEPT_CSV_FILE, FIELD_CSV_FILE, TABLE_CSV_FILE, or MAPPING_CSV_FILE
     :param results_df: dataframe that has the result of SQL run
     :returns: list of columns that exist both in check_df and result_df
@@ -105,8 +105,8 @@ def format_cols_to_string(df):
     2) the columns with data type 'float' are casted to 'int'
 
     :param df: dataframe that needs this reformatting
-    :returns: dataframe with reformatted columns. 
-    
+    :returns: dataframe with reformatted columns.
+
     This reformatting is necessary for the result of run_check_by_row()
     to look pretty.
     """
@@ -127,16 +127,19 @@ def run_check_by_row(df,
                      post_deid_dataset,
                      pre_deid_dataset=None,
                      mapping_issue_description=None,
-                     mapping_dataset=None):
+                     mapping_dataset=None,
+                     questionnaire_response_dataset=None):
     """Run all the checks from the QC rules dataframe one by one
-    :param check_df: dataframe that has the data from either 
-                     CONCEPT_CSV_FILE, FIELD_CSV_FILE, TABLE_CSV_FILE, or MAPPING_CSV_FILE
+    :param df: dataframe that has the data from either
+               CONCEPT_CSV_FILE, FIELD_CSV_FILE, TABLE_CSV_FILE, or MAPPING_CSV_FILE
     :param template_query: query template for the QC.
     :param project_id: Project ID of the dataset.
     :param post_deid_dataset: ID of the dataset after DEID.
     :param pre_deid_dataset: ID of the dataset before DEID.
     :param mapping_issue_description: Description of the issue.
     :param mapping_dataset: ID of the dataset for mapping.
+    :param questionnaire_response_dataset: ID of the dataset containing
+                                           questionnaire_response deid mapping table
     :returns: dataframe that has the results of this QC.
     """
     if df.empty:
@@ -157,6 +160,7 @@ def run_check_by_row(df,
         query = Template(template_query).render(
             project_id=project_id,
             post_deid_dataset=post_deid_dataset,
+            questionnaire_response_dataset=questionnaire_response_dataset,
             pre_deid_dataset=pre_deid_dataset,
             table_name=row['table_name'],
             column_name=column_name,
@@ -195,7 +199,7 @@ def run_check_by_row(df,
 
 def highlight(row):
     """Highlight if violations (row counts > 0) are found
-    
+
     Parameters
     ----------
     row: pd.DataFrame
