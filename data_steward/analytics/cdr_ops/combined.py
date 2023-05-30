@@ -30,7 +30,7 @@ from gcloud.bq import BigQueryClient
 from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES, render_message
 
 import matplotlib.pyplot as plt
-#from matplotlib_venn import venn3_unweighted
+from matplotlib_venn import venn3_unweighted
 from tqdm import tqdm
 import math
 from IPython.display import display, HTML
