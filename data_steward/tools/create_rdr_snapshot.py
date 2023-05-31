@@ -12,6 +12,7 @@ from google.cloud.bigquery.job import CopyJobConfig, WriteDisposition
 from cdr_cleaner import clean_cdr
 from cdr_cleaner.args_parser import add_kwargs_to_args
 from gcloud.bq import BigQueryClient
+from utils import auth, pipeline_logging
 import app_identity
 import bq_utils
 from resources import mapping_table_for
