@@ -15,6 +15,7 @@ from cdr_cleaner.args_parser import add_kwargs_to_args
 import resources
 from common import CDR_SCOPES
 from gcloud.bq import BigQueryClient
+from tools.populate_death import populate_death
 from utils import auth
 from utils import pipeline_logging
 
@@ -149,6 +150,10 @@ def main(raw_args=None):
     bq_client.copy_dataset(combined_clean, combined_release)
     LOGGER.info(
         f' Snapshotting `{combined_clean}` into {combined_release} is completed.'
+    )
+    populate_death(bq_client, bq_client.project, combined_release)
+    LOGGER.info(
+        f' Populating death table using aou_death table for {combined_release} is completed.'
     )
 
 
