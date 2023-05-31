@@ -124,8 +124,10 @@ def main(raw_args=None):
         if domain_table == DEATH:
             continue
         else:
-            logging.info(f'Mapping {domain_table}...')
-            mapping(bq_client, datasets.get("staging"), domain_table)
+            if domain_table not in [METADATA, FACT_RELATIONSHIP]:
+                logging.info(f'Mapping {domain_table}...')
+                mapping(bq_client, datasets.get("staging"), domain_table)
+            # TODO function to remove src_id column
 
     # clean the RDR staging dataset
     cleaning_args = [
@@ -228,7 +230,6 @@ def mapping_query(table_name, dataset_id=None, project_id=None):
         project_id = app_identity.get_application_id()
     domain_ids = {
         COPE_SURVEY_MAP: "questionnaire_response_id",
-        FACT_RELATIONSHIP: "relationship_concept_id",
         PID_RID_MAPPING: "person_id",
         QUESTIONNAIRE_RESPONSE_ADDITIONAL_INFO: "questionnaire_response_id"
     }
