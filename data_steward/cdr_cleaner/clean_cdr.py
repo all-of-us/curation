@@ -203,6 +203,7 @@ RDR_CLEANING_CLASSES = [
     (DropParticipantsWithoutAnyBasics,),
     (StoreExpectedCTList,),
     (DropOrphanedSurveyConductIds,),
+    (CleanMappingExtTables,),
 ]
 
 COMBINED_CLEANING_CLASSES = [
