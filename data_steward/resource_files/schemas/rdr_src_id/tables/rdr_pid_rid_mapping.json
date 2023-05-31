@@ -1,0 +1,26 @@
+[
+  {
+    "type": "integer",
+    "name": "person_id",
+    "mode": "nullable",
+    "description": "Synonymous with the AoU Participant_ID"
+  },
+  {
+    "type": "integer",
+    "name": "research_id",
+    "mode": "nullable",
+    "description": "Research ID to replace the person_id in de-identified datasets"
+  },
+  {
+    "type": "integer",
+    "name": "vibrent_id",
+    "mode": "nullable",
+    "description": "External ID used by Vibrent, used to map the fitbit data to the correct person_id"
+  },
+  {
+    "type": "string",
+    "name": "src_id",
+    "mode": "required",
+    "description": "The source of the record."
+  }
+]

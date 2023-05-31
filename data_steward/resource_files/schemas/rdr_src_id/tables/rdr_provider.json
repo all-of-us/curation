@@ -1,0 +1,86 @@
+[
+  {
+    "type": "integer",
+    "name": "provider_id",
+    "mode": "required",
+    "description": "A unique identifier for each Provider."
+  },
+  {
+    "type": "string",
+    "name": "provider_name",
+    "mode": "nullable",
+    "description": "A description of the Provider."
+  },
+  {
+    "type": "string",
+    "name": "npi",
+    "mode": "nullable",
+    "description": "This is the National Provider Number issued to health care providers in the US by the Centers for Medicare and Medicaid Services (CMS)."
+  },
+  {
+    "type": "string",
+    "name": "dea",
+    "mode": "nullable",
+    "description": "This is the identifier issued by the DEA, a US federal agency, that allows a provider to write prescriptions for controlled substances."
+  },
+  {
+    "type": "integer",
+    "name": "specialty_concept_id",
+    "mode": "nullable",
+    "description": "A foreign key to a Standard Specialty Concept ID in the Standardized Vocabularies."
+  },
+  {
+    "type": "integer",
+    "name": "care_site_id",
+    "mode": "nullable",
+    "description": "A foreign key to the main Care Site where the provider is practicing."
+  },
+  {
+    "type": "integer",
+    "name": "year_of_birth",
+    "mode": "nullable",
+    "description": "The year of birth of the Provider."
+  },
+  {
+    "type": "integer",
+    "name": "gender_concept_id",
+    "mode": "nullable",
+    "description": "The gender of the Provider."
+  },
+  {
+    "type": "string",
+    "name": "provider_source_value",
+    "mode": "nullable",
+    "description": "The identifier used for the Provider in the source data, stored here for reference."
+  },
+  {
+    "type": "string",
+    "name": "specialty_source_value",
+    "mode": "nullable",
+    "description": "The source code for the Provider specialty as it appears in the source data, stored here for reference."
+  },
+  {
+    "type": "integer",
+    "name": "specialty_source_concept_id",
+    "mode": "nullable",
+    "description": "A foreign key to a Concept that refers to the code used in the source."
+  },
+  {
+    "type": "string",
+    "name": "gender_source_value",
+    "mode": "nullable",
+    "description": "The gender code for the Provider as it appears in the source data, stored here for reference."
+  },
+  {
+    "type": "integer",
+    "name": "gender_source_concept_id",
+    "mode": "nullable",
+    "description": "A foreign key to a Concept that refers to the code used in the source."
+  },
+  {
+    "type": "string",
+    "name": "src_id",
+    "mode": "required",
+    "description": "The source of the record."
+  }
+]

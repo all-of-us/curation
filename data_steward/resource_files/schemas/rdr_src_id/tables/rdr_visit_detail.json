@@ -1,0 +1,116 @@
+[
+  {
+    "type": "integer",
+    "name": "visit_detail_id",
+    "mode": "required",
+    "description": "Use this to identify unique interactions between a person and the health care system. This identifier links across the other CDM event tables to associate events with a visit detail."
+  },
+  {
+    "type": "integer",
+    "name": "person_id",
+    "mode": "required"
+  },
+  {
+    "type": "integer",
+    "name": "visit_detail_concept_id",
+    "mode": "required",
+    "description": "This field contains a concept id representing the kind of visit detail, like inpatient or outpatient. All concepts in this field should be standard and belong to the Visit domain."
+  },
+  {
+    "type": "date",
+    "name": "visit_detail_start_date",
+    "mode": "required",
+    "description": "This is the date of the start of the encounter. This may or may not be equal to the date of the Visit the Visit Detail is associated with."
+  },
+  {
+    "type": "timestamp",
+    "name": "visit_detail_start_datetime",
+    "mode": "nullable"
+  },
+  {
+    "type": "date",
+    "name": "visit_detail_end_date",
+    "mode": "required",
+    "description": "This the end date of the patient-provider interaction."
+  },
+  {
+    "type": "timestamp",
+    "name": "visit_detail_end_datetime",
+    "mode": "nullable"
+  },
+  {
+    "type": "integer",
+    "name": "visit_detail_type_concept_id",
+    "mode": "required",
+    "description": "Use this field to understand the provenance of the visit detail record, or where the record comes from."
+  },
+  {
+    "type": "integer",
+    "name": "provider_id",
+    "mode": "nullable",
+    "description": "There will only be one provider per  **visit** record and the ETL document should clearly state how they were chosen (attending, admitting, etc.). This is a typical reason for leveraging the VISIT_DETAIL table as even though each VISIT_DETAIL record can only have one provider, there is no limit to the number of VISIT_DETAIL records that can be associated to a VISIT_OCCURRENCE record."
+  },
+  {
+    "type": "integer",
+    "name": "care_site_id",
+    "mode": "nullable",
+    "description": "This field provides information about the Care Site where the Visit Detail took place."
+  },
+  {
+    "type": "string",
+    "name": "visit_detail_source_value",
+    "mode": "nullable",
+    "description": "This field houses the verbatim value from the source data representing the kind of visit detail that took place (inpatient, outpatient, emergency, etc.)"
+  },
+  {
+    "type": "integer",
+    "name": "visit_detail_source_concept_id",
+    "mode": "nullable"
+  },
+  {
+    "type": "string",
+    "name": "admitting_source_value",
+    "mode": "nullable"
+  },
+  {
+    "type": "integer",
+    "name": "admitting_source_concept_id",
+    "mode": "nullable",
+    "description": "Use this field to determine where the patient was admitted from. This concept is part of the visit domain and can indicate if a patient was admitted to the hospital from a long-term care facility, for example."
+  },
+  {
+    "type": "string",
+    "name": "discharge_to_source_value",
+    "mode": "nullable"
+  },
+  {
+    "type": "integer",
+    "name": "discharge_to_concept_id",
+    "mode": "nullable",
+    "description": "Use this field to determine where the patient was discharged to after a visit detail record. This concept is part of the visit domain and can indicate if a patient was discharged to home or sent to a long-term care facility, for example."
+  },
+  {
+    "type": "integer",
+    "name": "preceding_visit_detail_id",
+    "mode": "nullable",
+    "description": "Use this field to find the visit detail that occurred for the person prior to the given visit detail record. There could be a few days or a few years in between."
+  },
+  {
+    "type": "integer",
+    "name": "visit_detail_parent_id",
+    "mode": "nullable",
+    "description": "Use this field to find the visit detail that subsumes the given visit detail record. This is used in the case that a visit detail record needs to be nested beyond the VISIT_OCCURRENCE/VISIT_DETAIL relationship."
+  },
+  {
+    "type": "integer",
+    "name": "visit_occurrence_id",
+    "mode": "required",
+    "description": "Use this field to link the VISIT_DETAIL record to its VISIT_OCCURRENCE."
+  },
+  {
+    "type": "string",
+    "name": "src_id",
+    "mode": "required",
+    "description": "The source of the record."
+  }
+]

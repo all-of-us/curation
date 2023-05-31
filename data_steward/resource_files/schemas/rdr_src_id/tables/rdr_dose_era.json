@@ -1,0 +1,50 @@
+[
+  {
+    "type": "integer",
+    "name": "dose_era_id",
+    "mode": "required",
+    "description": "A unique identifier for each Dose Era."
+  },
+  {
+    "type": "integer",
+    "name": "person_id",
+    "mode": "required",
+    "description": "A foreign key identifier to the Person who is subjected to the drug during the drug era. The demographic details of that Person are stored in the PERSON table."
+  },
+  {
+    "type": "integer",
+    "name": "drug_concept_id",
+    "mode": "required",
+    "description": "A foreign key that refers to a Standard Concept identifier in the Standardized Vocabularies for the active Ingredient Concept."
+  },
+  {
+    "type": "integer",
+    "name": "unit_concept_id",
+    "mode": "required",
+    "description": "A foreign key that refers to a Standard Concept identifier in the Standardized Vocabularies for the unit concept."
+  },
+  {
+    "type": "float",
+    "name": "dose_value",
+    "mode": "required",
+    "description": "The numeric value of the dose."
+  },
+  {
+    "type": "timestamp",
+    "name": "dose_era_start_date",
+    "mode": "required",
+    "description": "The start date for the drug era constructed from the individual instances of drug exposures. It is the start date of the very first chronologically recorded instance of utilization of a drug."
+  },
+  {
+    "type": "timestamp",
+    "name": "dose_era_end_date",
+    "mode": "required",
+    "description": "The end date for the drug era constructed from the individual instance of drug exposures. It is the end date of the final continuously recorded instance of utilization of a drug."
+  },
+  {
+    "type": "string",
+    "name": "src_id",
+    "mode": "required",
+    "description": "The source of the record."
+  }
+]

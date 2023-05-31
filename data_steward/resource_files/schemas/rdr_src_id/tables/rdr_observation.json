@@ -1,0 +1,134 @@
+[
+  {
+    "type": "integer",
+    "name": "observation_id",
+    "mode": "required",
+    "description": "A unique identifier for each observation."
+  },
+  {
+    "type": "integer",
+    "name": "person_id",
+    "mode": "required",
+    "description": "A foreign key identifier to the Person about whom the observation was recorded. The demographic details of that Person are stored in the PERSON table."
+  },
+  {
+    "type": "integer",
+    "name": "observation_concept_id",
+    "mode": "required",
+    "description": "A foreign key to the standard observation concept identifier in the Standardized Vocabularies."
+  },
+  {
+    "type": "date",
+    "name": "observation_date",
+    "mode": "required",
+    "description": "The date of the observation."
+  },
+  {
+    "type": "timestamp",
+    "name": "observation_datetime",
+    "mode": "nullable",
+    "description": "The date and time of the observation."
+  },
+  {
+    "type": "integer",
+    "name": "observation_type_concept_id",
+    "mode": "required",
+    "description": "A foreign key to the predefined concept identifier in the Standardized Vocabularies reflecting the type of the observation."
+  },
+  {
+    "type": "float",
+    "name": "value_as_number",
+    "mode": "nullable",
+    "description": "The observation result stored as a number. This is applicable to observations where the result is expressed as a numeric value."
+  },
+  {
+    "type": "string",
+    "name": "value_as_string",
+    "mode": "nullable",
+    "description": "The observation result stored as a string. This is applicable to observations where the result is expressed as verbatim text."
+  },
+  {
+    "type": "integer",
+    "name": "value_as_concept_id",
+    "mode": "nullable",
+    "description": "A foreign key to an observation result stored as a Concept ID. This is applicable to observations where the result can be expressed as a Standard Concept from the Standardized Vocabularies (e.g., positive/negative, present/absent, low/high, etc.)."
+  },
+  {
+    "type": "integer",
+    "name": "qualifier_concept_id",
+    "mode": "nullable",
+    "description": "A foreign key to a Standard Concept ID for a qualifier (e.g., severity of drug-drug interaction alert)"
+  },
+  {
+    "type": "integer",
+    "name": "unit_concept_id",
+    "mode": "nullable",
+    "description": "A foreign key to a Standard Concept ID of measurement units in the Standardized Vocabularies."
+  },
+  {
+    "type": "integer",
+    "name": "provider_id",
+    "mode": "nullable",
+    "description": "A foreign key to the provider in the PROVIDER table who was responsible for making the observation."
+  },
+  {
+    "type": "integer",
+    "name": "visit_occurrence_id",
+    "mode": "nullable",
+    "description": "A foreign key to the visit in the VISIT_OCCURRENCE table during which the observation was recorded."
+  },
+  {
+    "type": "integer",
+    "name": "visit_detail_id",
+    "mode": "nullable",
+    "description": "The VISIT_DETAIL record during which the Observation occurred. For example, if the Person was in the ICU at the time the VISIT_OCCURRENCE record would reflect the overall hospital stay and the VISIT_DETAIL record would reflect the ICU stay during the hospital visit."
+  },
+  {
+    "type": "string",
+    "name": "observation_source_value",
+    "mode": "nullable",
+    "description": "The observation code as it appears in the source data. This code is mapped to a Standard Concept in the Standardized Vocabularies and the original code is, stored here for reference."
+  },
+  {
+    "type": "integer",
+    "name": "observation_source_concept_id",
+    "mode": "nullable",
+    "description": "A foreign key to a Concept that refers to the code used in the source."
+  },
+  {
+    "type": "string",
+    "name": "unit_source_value",
+    "mode": "nullable",
+    "description": "The source code for the unit as it appears in the source data. This code is mapped to a standard unit concept in the Standardized Vocabularies and the original code is, stored here for reference."
+  },
+  {
+    "type": "string",
+    "name": "qualifier_source_value",
+    "mode": "nullable",
+    "description": "The source value associated with a qualifier to characterize the observation"
+  },
+  {
+    "type": "integer",
+    "name": "value_source_concept_id",
+    "mode": "nullable",
+    "description": "A foreign key to a Concept for the value in the source data. This is applicable to observations where the result can be expressed as a non-standard concept."
+  },
+  {
+    "type": "string",
+    "name": "value_source_value",
+    "mode": "nullable",
+    "description": "The name of the concept referred to be value_source_concept_id. This is applicable to observations where the result can be expressed as a non-standard concept."
+  },
+  {
+    "type": "integer",
+    "name": "questionnaire_response_id",
+    "mode": "nullable",
+    "description": "An ID for a questionnaire response that produced this observation. This is applicable to AllOfUs questionnaire answers only. All answers with the same questionnaire response ID were submitted in the same response."
+  },
+  {
+    "type": "string",
+    "name": "src_id",
+    "mode": "required",
+    "description": "The source of the record."
+  }
+]

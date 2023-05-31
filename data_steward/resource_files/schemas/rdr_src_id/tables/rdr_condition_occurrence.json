@@ -1,0 +1,104 @@
+[
+  {
+    "type": "integer",
+    "name": "condition_occurrence_id",
+    "mode": "required",
+    "description": "A unique identifier for each Condition Occurrence event."
+  },
+  {
+    "type": "integer",
+    "name": "person_id",
+    "mode": "required",
+    "description": "A foreign key identifier to the Person who is experiencing the condition. The demographic details of that Person are stored in the PERSON table."
+  },
+  {
+    "type": "integer",
+    "name": "condition_concept_id",
+    "mode": "required",
+    "description": "A foreign key that refers to a Standard Condition Concept identifier in the Standardized Vocabularies."
+  },
+  {
+    "type": "date",
+    "name": "condition_start_date",
+    "mode": "required",
+    "description": "The date when the instance of the Condition is recorded."
+  },
+  {
+    "type": "timestamp",
+    "name": "condition_start_datetime",
+    "mode": "required",
+    "description": "The date and time when the instance of the Condition is recorded."
+  },
+  {
+    "type": "date",
+    "name": "condition_end_date",
+    "mode": "nullable",
+    "description": "The date when the instance of the Condition is considered to have ended."
+  },
+  {
+    "type": "timestamp",
+    "name": "condition_end_datetime",
+    "mode": "nullable",
+    "description": "The date when the instance of the Condition is considered to have ended."
+  },
+  {
+    "type": "integer",
+    "name": "condition_type_concept_id",
+    "mode": "required",
+    "description": "A foreign key to the predefined Concept identifier in the Standardized Vocabularies reflecting the source data from which the condition was recorded, the level of standardization, and the type of occurrence."
+  },
+  {
+    "type": "integer",
+    "name": "condition_status_concept_id",
+    "mode": "nullable",
+    "description": "A foreign key to the predefined Concept in the Standard Vocabulary reflecting the condition status"
+  },
+  {
+    "type": "string",
+    "name": "stop_reason",
+    "mode": "nullable",
+    "description": "The reason that the condition was no longer present, as indicated in the source data."
+  },
+  {
+    "type": "integer",
+    "name": "provider_id",
+    "mode": "nullable",
+    "description": "A foreign key to the Provider in the PROVIDER table who was responsible for capturing (diagnosing) the Condition."
+  },
+  {
+    "type": "integer",
+    "name": "visit_occurrence_id",
+    "mode": "nullable",
+    "description": "A foreign key to the visit in the VISIT_OCCURRENCE table during which the Condition was determined (diagnosed)."
+  },
+  {
+    "type": "integer",
+    "name": "visit_detail_id",
+    "mode": "nullable",
+    "description": "The VISIT_DETAIL record during which the condition occurred. For example, if the person was in the ICU at the time of the diagnosis the VISIT_OCCURRENCE record would reflect the overall hospital stay and the VISIT_DETAIL record would reflect the ICU stay during the hospital visit."
+  },
+  {
+    "type": "string",
+    "name": "condition_source_value",
+    "mode": "nullable",
+    "description": "The source code for the condition as it appears in the source data. This code is mapped to a standard condition concept in the Standardized Vocabularies and the original code is stored here for reference."
+  },
+  {
+    "type": "integer",
+    "name": "condition_source_concept_id",
+    "mode": "nullable",
+    "description": "A foreign key to a Condition Concept that refers to the code used in the source."
+  },
+  {
+    "type": "string",
+    "name": "condition_status_source_value",
+    "mode": "nullable",
+    "description": "The source code for the condition status as it appears in the source data."
+  },
+  {
+    "type": "string",
+    "name": "src_id",
+    "mode": "required",
+    "description": "The source of the record."
+  }
+]
