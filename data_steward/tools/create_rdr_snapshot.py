@@ -19,6 +19,9 @@ from utils import auth, pipeline_logging
 from common import (CDR_SCOPES, DEATH, MAPPING_PREFIX, METADATA,
                     PID_RID_MAPPING, QUESTIONNAIRE_RESPONSE_ADDITIONAL_INFO,
                     FACT_RELATIONSHIP, COPE_SURVEY_MAP)
+from utils import auth
+from utils import pipeline_logging
+from common import CDR_SCOPES, FACT_RELATIONSHIP, METADATA, DEATH
 
 LOGGER = logging.getLogger(__name__)
 
