@@ -14,8 +14,7 @@ from cdr_cleaner.args_parser import add_kwargs_to_args
 from gcloud.bq import BigQueryClient
 import app_identity
 import bq_utils
-from utils import auth
-from utils import pipeline_logging
+from utils import auth, pipeline_logging
 from common import (CDR_SCOPES, DEATH, MAPPING_PREFIX, METADATA,
                     PID_RID_MAPPING, QUESTIONNAIRE_RESPONSE_ADDITIONAL_INFO,
                     FACT_RELATIONSHIP, COPE_SURVEY_MAP)
