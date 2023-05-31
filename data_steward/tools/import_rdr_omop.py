@@ -15,7 +15,8 @@ from utils import auth
 from gcloud.bq import BigQueryClient
 from utils import pipeline_logging
 from common import CDR_SCOPES
-from resources import replace_special_characters_for_labels, validate_date_string, cdm_schemas, rdr_specific_schemas
+from resources import replace_special_characters_for_labels, validate_date_string, cdm_schemas, rdr_specific_schemas, \
+    rdr_src_id_schemas
 
 LOGGER = logging.getLogger(__name__)
 
@@ -52,6 +53,13 @@ def parse_rdr_args(raw_args=None):
         dest='vocabulary',
         help='Vocabulary dataset used by RDR to create this data dump.',
         required=True)
+    parser.add_argument(
+        '--with_src_id',
+        action='store',
+        dest='with_src_id',
+        help=
+        'Boolean Flag that indicates if the files have src_id column. Choose between TRUE/FALSE.',
+        required=True)
     parser.add_argument('-l',
                         '--console_log',
                         dest='console_log',
@@ -62,7 +70,7 @@ def parse_rdr_args(raw_args=None):
     return parser.parse_args(raw_args)
 
 
-def create_rdr_tables(client, rdr_dataset, bucket):
+def create_rdr_tables(client, rdr_dataset, bucket, with_src_id=False):
     """
     Create tables from the data in the RDR bucket.
 
@@ -72,9 +80,13 @@ def create_rdr_tables(client, rdr_dataset, bucket):
     :param client: a BigQueryClient
     :param rdr_dataset: The existing dataset to load file data into
     :param bucket: the gcs bucket containing the file data.
+    :param with_src_id: Boolean flag that indicates if the files have src_id column.
     """
-    schema_dict = cdm_schemas()
-    schema_dict.update(rdr_specific_schemas())
+    if with_src_id:
+        schema_dict = rdr_src_id_schemas()
+    else:
+        schema_dict = cdm_schemas()
+        schema_dict.update(rdr_specific_schemas())
 
     for table, schema in schema_dict.items():
         schema_list = client.get_table_schema(table, schema)
@@ -190,6 +202,7 @@ def main(raw_args=None):
     description = f'RDR DUMP loaded from {args.bucket} dated {args.export_date}'
     export_date = args.export_date.replace('-', '')
     new_dataset_name = f'rdr{export_date}'
+    with_src_id = True if args.with_src_id == 'TRUE' else False
 
     # get credentials and create client
     impersonation_creds = auth.get_impersonation_credentials(
@@ -202,7 +215,7 @@ def main(raw_args=None):
                                               {'export_date': args.export_date})
     bq_client.create_dataset(dataset_object)
 
-    create_rdr_tables(bq_client, new_dataset_name, args.bucket)
+    create_rdr_tables(bq_client, new_dataset_name, args.bucket, with_src_id)
     copy_vocab_tables(bq_client, new_dataset_name, args.vocabulary)
 
 
