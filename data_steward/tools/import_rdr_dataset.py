@@ -69,7 +69,8 @@ def parse_rdr_args(raw_args=None):
     return parser.parse_args(raw_args)
 
 
-def create_rdr_tables(client, destination_dataset, rdr_source_dataset):
+def create_rdr_tables(client, destination_dataset, rdr_project,
+                      rdr_source_dataset):
     """
     Create tables from the data in the RDR dataset.
 
@@ -77,7 +78,8 @@ def create_rdr_tables(client, destination_dataset, rdr_source_dataset):
     a table.
 
     :param client: a BigQueryClient
-    :param rdr_destination_dataset: the existing local dataset to load file data into
+    :param destination_dataset: the existing local dataset to load file data into
+    :param rdr_project: the source rdr project containing the data
     :param rdr_source_dataset: the source rdr dataset containing the data
     """
     schema_dict = cdm_schemas()
