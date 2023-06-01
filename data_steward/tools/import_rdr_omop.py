@@ -82,11 +82,11 @@ def create_rdr_tables(client, rdr_dataset, bucket, with_src_id=False):
     :param bucket: the gcs bucket containing the file data.
     :param with_src_id: Boolean flag that indicates if the files have src_id column.
     """
+
+    schema_dict = cdm_schemas()
+    schema_dict.update(rdr_specific_schemas())
     if with_src_id:
-        schema_dict = rdr_src_id_schemas()
-    else:
-        schema_dict = cdm_schemas()
-        schema_dict.update(rdr_specific_schemas())
+        schema_dict.update(rdr_src_id_schemas())
 
     for table, schema in schema_dict.items():
         schema_list = client.get_table_schema(table, schema)
