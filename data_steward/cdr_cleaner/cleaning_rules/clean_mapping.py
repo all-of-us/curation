@@ -14,10 +14,10 @@ import logging
 from common import EXT, EXT_SUFFIX, JINJA_ENV, MAPPING, MAPPING_PREFIX, UNIONED_EHR
 import constants.bq_utils as bq_consts
 import constants.cdr_cleaner.clean_cdr as cdr_consts
-import resources
-from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 import constants.global_variables
+import resources
 from utils import bq
+from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 
 LOGGER = logging.getLogger(__name__)
 
