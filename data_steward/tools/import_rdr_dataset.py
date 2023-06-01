@@ -162,53 +162,6 @@ def create_rdr_tables(client, destination_dataset, rdr_project,
     )
 
 
-def copy_vocab_tables(client, rdr_dataset, vocab_dataset):
-    """
-    Copy vocabulary tables into the new RDR dataset.
-
-    Assumes the vocabulary and rdr datasets reside in the project the
-    client object is built to access.  This is just a copy for now,
-    because these tables are not partitioned yet.
-
-    :param client: a BigQueryClient
-    :param rdr_dataset:  the rdr dataset that tables will be copied into
-    :param vocab_dataset: the vocabulary dataset id the tables will be copied from
-    """
-    LOGGER.info(
-        f'Beginning COPY of vocab tables from `{vocab_dataset}` to `{rdr_dataset}`'
-    )
-    # get list of tables
-    vocab_tables = client.list_tables(vocab_dataset)
-
-    # create a copy job config
-    job_config = bigquery.job.CopyJobConfig(
-        write_disposition=bigquery.job.WriteDisposition.WRITE_EMPTY)
-
-    for table_item in vocab_tables:
-        job_config.labels = {
-            'table_name':
-                replace_special_characters_for_labels(table_item.table_id),
-            'copy_from':
-                replace_special_characters_for_labels(vocab_dataset),
-            'copy_to':
-                replace_special_characters_for_labels(rdr_dataset)
-        }
-
-        destination_table = f'{client.project}.{rdr_dataset}.{table_item.table_id}'
-        # job_id defined to the second precision
-        job_id = (f'rdr_vocab_copy_{table_item.table_id.lower()}_'
-                  f'{datetime.now().strftime("%Y%m%d_%H%M%S")}')
-        # copy each table to rdr dataset
-        client.copy_table(table_item.reference,
-                          destination_table,
-                          job_id=job_id,
-                          job_config=job_config)
-
-    LOGGER.info(
-        f'Vocabulary table COPY from `{vocab_dataset}` to `{rdr_dataset}` is complete'
-    )
-
-
 def main(raw_args=None):
     """
     Run a full RDR import.
