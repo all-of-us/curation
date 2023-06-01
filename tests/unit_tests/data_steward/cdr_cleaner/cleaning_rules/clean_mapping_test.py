@@ -42,8 +42,8 @@ class CleanMappingTest(unittest.TestCase):
         self.rule_instance.setup_rule(self.client)
 
         self.assertEqual(self.rule_instance.affected_datasets, [
-            clean_consts.EHR, clean_consts.UNIONED, clean_consts.COMBINED,
-            clean_consts.REGISTERED_TIER_DEID,
+            clean_consts.EHR, clean_consts.UNIONED, clean_consts.RDR,
+            clean_consts.COMBINED, clean_consts.REGISTERED_TIER_DEID,
             clean_consts.REGISTERED_TIER_DEID_BASE,
             clean_consts.REGISTERED_TIER_DEID_CLEAN,
             clean_consts.CONTROLLED_TIER_DEID,
