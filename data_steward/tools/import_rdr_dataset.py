@@ -27,10 +27,15 @@ def parse_rdr_args(raw_args=None):
     parser = ArgumentParser(
         description='Arguments pertaining to an RDR raw load')
 
+    parser.add_argument('--rdr_project',
+                        action='store',
+                        dest='rdr_project_id',
+                        help='RDR project to load RDR data from.',
+                        required=True)
     parser.add_argument('--rdr_dataset',
                         action='store',
                         dest='rdr_dataset',
-                        help='Fully qualified dataset name.',
+                        help='rdr source dataset name.',
                         required=True)
     parser.add_argument('--run_as',
                         action='store',
@@ -208,7 +213,7 @@ def main(raw_args=None):
     pipeline_logging.configure(level=logging.INFO,
                                add_console_handler=args.console_log)
 
-    description = f'RDR DUMP loaded from {args.rdr_dataset} dated {args.export_date}'
+    description = f'RDR DUMP loaded from {args.rdr_project_id}.{args.rdr_dataset} dated {args.export_date}'
     export_date = args.export_date.replace('-', '')
     new_dataset_name = f'rdr{export_date}'
 
@@ -223,7 +228,8 @@ def main(raw_args=None):
                                               {'export_date': args.export_date})
     bq_client.create_dataset(dataset_object)
 
-    create_rdr_tables(bq_client, new_dataset_name, args.rdr_dataset)
+    create_rdr_tables(bq_client, new_dataset_name, args.rdr_project_id,
+                      args.rdr_dataset)
     copy_vocab_tables(bq_client, new_dataset_name, args.vocabulary)
 
 
