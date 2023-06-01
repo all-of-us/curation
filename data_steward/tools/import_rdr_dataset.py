@@ -19,6 +19,7 @@ from gcloud.bq import BigQueryClient
 from common import CDR_SCOPES
 from resources import replace_special_characters_for_labels, validate_date_string, rdr_src_id_schemas, cdm_schemas
 from tools.snapshot_by_query import BIGQUERY_DATA_TYPES
+from tools.import_rdr_omop import copy_vocab_tables
 
 LOGGER = logging.getLogger(__name__)
 
