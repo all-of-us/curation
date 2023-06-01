@@ -825,7 +825,7 @@ WHERE death_type_concept_id != 32809
 OR cause_concept_id IS NOT NULL
 OR cause_source_value IS NOT NULL
 OR cause_source_concept_id IS NOT NULL
--- OR src_id != 'healthpro' --
+OR src_id != 'healthpro'
 """).render(project_id=project_id, dataset=new_rdr)
 df = execute(client, query)
 
