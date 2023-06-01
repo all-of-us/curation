@@ -82,7 +82,7 @@ class CleanMappingExtTables(BaseCleaningRule):
         super().__init__(issue_numbers=ISSUE_NUMBERS,
                          description=desc,
                          affected_datasets=[
-                             cdr_consts.EHR, cdr_consts.UNIONED,
+                             cdr_consts.EHR, cdr_consts.UNIONED, cdr_consts.RDR,
                              cdr_consts.COMBINED,
                              cdr_consts.REGISTERED_TIER_DEID,
                              cdr_consts.REGISTERED_TIER_DEID_BASE,
