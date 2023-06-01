@@ -88,7 +88,7 @@ def create_rdr_tables(client, destination_dataset, rdr_project,
     for table, schema in schema_dict.items():
 
         destination_table_id = f'{client.project}.{destination_dataset}.{table}'
-        source_table_id = f'{rdr_source_dataset}.{table}'
+        source_table_id = f'{rdr_project}.{rdr_source_dataset}.{table}'
 
         schema_list = client.get_table_schema(table, schema)
         destination_table = bigquery.Table(destination_table_id,
@@ -131,9 +131,13 @@ def create_rdr_tables(client, destination_dataset, rdr_project,
                 priority=bigquery.job.QueryPriority.BATCH,
                 destination=destination_table,
                 labels={
-                    'table_name': table.lower(),
-                    'copy_from': rdr_source_dataset.split('.')[1].lower(),
-                    'copy_to': destination_dataset.lower()
+                    'table_name':
+                        table.lower(),
+                    'copy_from':
+                        replace_special_characters_for_labels(source_table_id),
+                    'copy_to':
+                        replace_special_characters_for_labels(
+                            destination_table_id)
                 })
             job_id = (f'schemaed_copy_{table}_'
                       f'{datetime.now().strftime("%Y%m%d_%H%M%S")}')
@@ -153,7 +157,9 @@ def create_rdr_tables(client, destination_dataset, rdr_project,
         LOGGER.info(f'Loaded {destination_table.num_rows} rows into '
                     f'`{destination_table.table_id}`.')
 
-    LOGGER.info(f"Finished RDR table LOAD from dataset {rdr_source_dataset}")
+    LOGGER.info(
+        f"Finished RDR table LOAD from dataset {rdr_project}.{rdr_source_dataset}"
+    )
 
 
 def copy_vocab_tables(client, rdr_dataset, vocab_dataset):
