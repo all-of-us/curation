@@ -857,8 +857,9 @@ if len(df_if_empty) == 0 and len(df_if_duplicate) == 0:
                    failure_msg,
                    failure_msg_args={'code_count': len(df)})
 # -
+
 # # Check src_ids
-# Check that every record contains a valid src_id.
+# Check that every record contains a valid src_id. The check passes if no records are returned.
 
 # +
 queries = []
