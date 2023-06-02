@@ -297,7 +297,7 @@ for dataset, pid_table_list in zip(datasets, all_pid_tables_lists):
     results = results.reindex(columns=[
         'table_id', 'old_minus_ehr_retraction_row_count', 'new_row_count',
         'table_count_status', 'source', 'domain'
-    ])
+    ]).sort_values(by='table_count_status')
     all_results.append(results)
 for result, dataset in zip(all_results, datasets):
     print(dataset)
