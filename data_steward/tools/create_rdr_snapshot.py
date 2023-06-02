@@ -119,9 +119,12 @@ def main(raw_args=None):
         table.table_id for table in bq_client.list_tables(
             f'{bq_client.project}.{datasets.get("staging")}')
     ]
-
+    skip_tables = [
+        DEATH, COPE_SURVEY_MAP, PID_RID_MAPPING,
+        QUESTIONNAIRE_RESPONSE_ADDITIONAL_INFO
+    ]
     for domain_table in domain_tables:
-        if domain_table == DEATH:
+        if domain_table in skip_tables:
             continue
         else:
             if domain_table not in [METADATA, FACT_RELATIONSHIP]:
@@ -228,17 +231,10 @@ def mapping_query(table_name, dataset_id=None, project_id=None):
         dataset_id = bq_utils.get_dataset_id()
     if project_id is None:
         project_id = app_identity.get_application_id()
-    domain_ids = {
-        COPE_SURVEY_MAP: "questionnaire_response_id",
-        PID_RID_MAPPING: "person_id",
-        QUESTIONNAIRE_RESPONSE_ADDITIONAL_INFO: "questionnaire_response_id"
-    }
-    if table_name in domain_ids:
-        domain_id = domain_ids[table_name]
-    else:
-        domain_id = f'{table_name}_id'
+
+    domain_id = f'{table_name}_id'
     return f'''
-        CREATE OR REPLACE TABLE `{project_id}.{dataset_id}.{MAPPING_PREFIX}{table_name}` AS (
+        CREATE OR REPLACE TABLE `{project_id}.{dataset_id}.{mapping_table_for(table_name)}` AS (
         SELECT
             dt.{domain_id}, dt.src_id
         FROM
