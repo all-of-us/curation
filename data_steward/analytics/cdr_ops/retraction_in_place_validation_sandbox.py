@@ -91,7 +91,7 @@ for dataset, pid_table_list in zip(datasets, all_pid_tables_lists):
     table_check_query = JINJA_ENV.from_string('''
   SELECT
     \'{{table_name}}\' AS table_name,
-    {% if domain_id != 'ehr' and domain_id != 'person' and domain_id != 'death' and domain_id != ''%}
+    {% if domain_id not in ['ehr', 'person', 'death', ''] %}
         Case when count(tb.{{domain_id}}_id) = 0 then 'OK'
         ELSE
         'PROBLEM' end as retraction_status,
@@ -121,7 +121,7 @@ for dataset, pid_table_list in zip(datasets, all_pid_tables_lists):
     right JOIN
         pids as p
     USING(person_id)
-    {% if domain_id != 'ehr' and domain_id != 'person' and domain_id != 'death' and domain_id != ''%}
+    {% if domain_id not in ['ehr', 'person', 'death', ''] %}
       where {{domain_id}}_id > 2000000000000000
     {% endif %}
   ''')
@@ -156,7 +156,7 @@ for dataset, pid_table_list in zip(datasets, all_pid_tables_lists):
                                      table_name=table,
                                      domain_id=domain_id))
 
-    union_all_query = '\nUNION ALL\n'.join(queries_list)
+    union_all_query = f"{' UNION ALL '.join(queries_list)} ORDER BY retraction_status"
 
     retraction_status_query = (f'{rids_query}\n{union_all_query}'
                                if is_deidentified == 'true' else
@@ -176,7 +176,7 @@ all_results = []
 for dataset, pid_table_list in zip(datasets, all_pid_tables_lists):
     table_row_counts_query = JINJA_ENV.from_string('''
   SELECT 
-    {% if domain_id != 'ehr' and domain_id != 'person' and domain_id != 'death' and domain_id != ''%}
+    {% if domain_id not in ['ehr', 'person', 'death', ''] %}
         '{{table_name}}' as table_id, 
          count(*) as {{count}},
         'EHR_domain_id' as source,
@@ -209,9 +209,9 @@ for dataset, pid_table_list in zip(datasets, all_pid_tables_lists):
         WHERE person_id IS NOT NULL
     )
   {% endif %}
-  {% if domain_id != 'ehr' and domain_id != 'person' and domain_id != 'death' and domain_id != '' and days != '0' %}
+  {% if domain_id not in ['ehr', 'person', 'death', ''] and days != '0' %}
     and {{domain_id}}_id > 2000000000000000
-  {% elif domain_id != 'ehr' and domain_id != 'person' and domain_id != 'death' and domain_id != '' and days == '0' %}
+  {% elif domain_id not in ['ehr', 'person', 'death', ''] and days == '0' %}
     where {{domain_id}}_id > 2000000000000000
   {% endif %}
   ''')
