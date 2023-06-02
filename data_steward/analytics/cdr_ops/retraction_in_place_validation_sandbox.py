@@ -282,14 +282,17 @@ for dataset, pid_table_list in zip(datasets, all_pid_tables_lists):
                        on=['table_id', 'source', 'domain'],
                        how='inner')
 
-    conditions = [(results['old_minus_ehr_retraction_row_count'] ==
-                   results['new_row_count']) |
-                  (results['old_minus_ehr_retraction_row_count'] is None) &
-                  (results['new_row_count'] is None),
-                  (results['old_minus_ehr_retraction_row_count'] is not None) &
-                  (results['new_row_count'] is None),
-                  (results['old_minus_ehr_retraction_row_count'] is None) &
-                  (results['new_row_count'] is not None)]
+    conditions = [
+        (results['domain'] == 'UNKNOWN') | (results['domain'] == 'person') |
+        (results['old_minus_ehr_retraction_row_count'] ==
+         results['new_row_count']) |
+        (results['old_minus_ehr_retraction_row_count'] is None) &
+        (results['new_row_count'] is None),
+        (results['old_minus_ehr_retraction_row_count'] is not None) &
+        (results['new_row_count'] is None),
+        (results['old_minus_ehr_retraction_row_count'] is None) &
+        (results['new_row_count'] is not None)
+    ]
     table_count_status = ['OK', 'POTENTIAL PROBLEM', 'PROBLEM']
     results['table_count_status'] = np.select(conditions,
                                               table_count_status,
