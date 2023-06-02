@@ -246,15 +246,5 @@ def mapping_query(table_name, dataset_id=None, project_id=None):
     '''
 
 
-def mapping_table_for(domain_table):
-    """
-    Get name of mapping table generated for a domain table
-
-    :param domain_table: one of the domain tables (e.g. 'visit_occurrence', 'condition_occurrence')
-    :return:
-    """
-    return f'{MAPPING_PREFIX}{domain_table}'
-
-
 if __name__ == '__main__':
     main()
