@@ -170,7 +170,7 @@ for result, dataset in zip(all_results, datasets):
     print("\n")
 # -
 
-# ## 2. Verify Row counts of source dataset minus the retracted participants  data is equal to the
+# ## 2. Verify that the difference between before and after the retraction is only the participants listed to be dropped in the lookup table.
 
 all_results = []
 for dataset, pid_table_list in zip(datasets, all_pid_tables_lists):
