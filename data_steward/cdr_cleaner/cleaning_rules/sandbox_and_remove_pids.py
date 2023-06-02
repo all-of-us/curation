@@ -17,7 +17,7 @@ WHERE person_id IN (
     SELECT person_id FROM `{{project}}.{{sandbox_dataset}}.{{lookup_table}}`
 )
 {% if ehr_only and table == 'aou_death' %}
-AND t.src_id != 'rdr'
+AND LOWER(t.src_id) NOT LIKE '%healthpro%'
 {% endif %}
 )
 """)
