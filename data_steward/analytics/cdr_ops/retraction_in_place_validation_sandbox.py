@@ -242,12 +242,13 @@ for dataset, pid_table_list in zip(datasets, all_pid_tables_lists):
                         break
 
         old_row_counts_queries_list.append(
-            table_row_counts_query.render(project=project_id,
-                                          dataset=dataset,
-                                          table_name=table,
-                                          count='old_minus_aian_row_count',
-                                          days='1',
-                                          domain_id=domain_id))
+            table_row_counts_query.render(
+                project=project_id,
+                dataset=dataset,
+                table_name=table,
+                count='old_minus_ehr_retraction_row_count',
+                days='1',
+                domain_id=domain_id))
 
         new_row_counts_queries_list.append(
             table_row_counts_query.render(project=project_id,
@@ -281,21 +282,20 @@ for dataset, pid_table_list in zip(datasets, all_pid_tables_lists):
                        on=['table_id', 'source', 'domain'],
                        how='inner')
 
-    conditions = [
-        (results['old_minus_aian_row_count'] == results['new_row_count']) |
-        (results['old_minus_aian_row_count'] is None) &
-        (results['new_row_count'] is None),
-        (results['old_minus_aian_row_count'] is not None) &
-        (results['new_row_count'] is None),
-        (results['old_minus_aian_row_count'] is None) &
-        (results['new_row_count'] is not None)
-    ]
+    conditions = [(results['old_minus_ehr_retraction_row_count'] ==
+                   results['new_row_count']) |
+                  (results['old_minus_ehr_retraction_row_count'] is None) &
+                  (results['new_row_count'] is None),
+                  (results['old_minus_ehr_retraction_row_count'] is not None) &
+                  (results['new_row_count'] is None),
+                  (results['old_minus_ehr_retraction_row_count'] is None) &
+                  (results['new_row_count'] is not None)]
     table_count_status = ['OK', 'POTENTIAL PROBLEM', 'PROBLEM']
     results['table_count_status'] = np.select(conditions,
                                               table_count_status,
                                               default='PROBLEM')
     results = results.reindex(columns=[
-        'table_id', 'old_minus_aian_row_count', 'new_row_count',
+        'table_id', 'old_minus_ehr_retraction_row_count', 'new_row_count',
         'table_count_status', 'source', 'domain'
     ])
     all_results.append(results)
