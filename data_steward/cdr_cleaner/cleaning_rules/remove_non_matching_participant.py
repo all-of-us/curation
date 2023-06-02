@@ -19,7 +19,7 @@ import logging
 # Project imports
 from gcloud.bq import BigQueryClient
 import resources
-from common import JINJA_ENV, IDENTITY_MATCH, PARTICIPANT_MATCH, PERSON
+from common import AOU_DEATH, JINJA_ENV, IDENTITY_MATCH, PARTICIPANT_MATCH, PERSON
 from validation.participants import readers
 from cdr_cleaner.cleaning_rules.sandbox_and_remove_pids import SandboxAndRemovePids
 from constants.cdr_cleaner import clean_cdr as cdr_consts
@@ -100,7 +100,7 @@ class RemoveNonMatchingParticipant(SandboxAndRemovePids):
         self.validation_dataset_id = validation_dataset_id
 
         affected_tables = [
-            table for table in resources.CDM_TABLES
+            table for table in resources.CDM_TABLES + [AOU_DEATH]
             if any(field['name'] == 'person_id'
                    for field in resources.fields_for(table)) and table != PERSON
         ]

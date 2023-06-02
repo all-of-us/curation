@@ -1,7 +1,7 @@
 # Project imports
 import constants.cdr_cleaner.clean_cdr as cdr_consts
 from resources import CDM_TABLES
-from common import JINJA_ENV
+from common import AOU_DEATH, JINJA_ENV
 from gcloud.bq import BigQueryClient
 from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 
@@ -9,13 +9,17 @@ from cdr_cleaner.cleaning_rules.base_cleaning_rule import BaseCleaningRule
 SANDBOX_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project}}.{{sandbox_dataset}}.{{intermediary_table}}` AS (
 SELECT t.* FROM `{{project}}.{{dataset}}.{{table}}` t
-{% if ehr_only and table != 'death' %}
+{% if ehr_only and table not in ['death', 'aou_death'] %}
 JOIN `{{project}}.{{dataset}}._mapping_{{table}}` m
 ON t.{{table}}_id = m.{{table}}_id AND LOWER(m.src_hpo_id) != 'rdr'
 {% endif %}
 WHERE person_id IN (
     SELECT person_id FROM `{{project}}.{{sandbox_dataset}}.{{lookup_table}}`
-))
+)
+{% if ehr_only and table == 'aou_death' %}
+AND LOWER(t.src_id) NOT LIKE '%healthpro%'
+{% endif %}
+)
 """)
 
 # Query to truncate existing tables to remove PIDs based on cleaning rule criteria
@@ -96,7 +100,7 @@ class SandboxAndRemovePids(BaseCleaningRule):
         self.affected_tables = [
             table.get('table_name')
             for table in person_tables
-            if table.get('table_name') in CDM_TABLES
+            if table.get('table_name') in CDM_TABLES + [AOU_DEATH]
         ]
 
     def get_sandbox_queries(self,
