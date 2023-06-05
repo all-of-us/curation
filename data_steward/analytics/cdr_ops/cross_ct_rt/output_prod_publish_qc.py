@@ -23,12 +23,12 @@ run_as = ""  # using impersonation, run all these queries as this service accoun
 
 # # QC for Publishing Datasets to output-prod Environment
 #
-# Quality checks performed on a newly published dataset. 
+# Quality checks performed on a newly published dataset.
 
 from common import JINJA_ENV
 from utils import auth
 from utils.bq import get_client
-from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
+from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES, render_message
 
 impersonation_creds = auth.get_impersonation_credentials(
     run_as, target_scopes=IMPERSONATION_SCOPES)
@@ -38,7 +38,7 @@ client = get_client(src_project_id, credentials=impersonation_creds)
 # ## Table Comparison
 #
 # The copied tables should be the same and have the same row counts across datasets.<br>
-# If the status column indicates a problem, some portion of the copy failed.  
+# If the status column indicates a problem, some portion of the copy failed.
 
 # +
 tpl = JINJA_ENV.from_string('''
@@ -449,3 +449,89 @@ query = tpl.render(dest_project_id=dest_project_id,
                    prev_dest_dataset_id=prev_dest_dataset_id,
                    dest_dataset_id=dest_dataset_id)
 execute(client, query)
+
+# # QC for AOU_DEATH table
+
+# From CDR V8, Curation generates the AOU_DEATH table for output. AOU_DEATH allows more than one death record per participant.
+# It has the column `primary_death_record` and it flags the primary records for each participant.
+# The logic for deciding which is primary comes from the following business requirements:
+# - If multiple death records exist from across sources, provide the first date EHR death record in the death table
+# - If death_datetime is not available and multiple death records exist for the same death_date, provide the fullest record in the death table
+# - Example: Order by HPO site name and insert the first into the death table
+#
+# This QC confirms that the logic for the primary records are applied as expected in the `AOU_DEATH` table.
+
+# +
+query = JINJA_ENV.from_string("""
+WITH qc_aou_death AS (
+    SELECT 
+        aou_death_id, 
+        CASE WHEN aou_death_id IN (
+            SELECT aou_death_id FROM `{{project_id}}.{{dataset_id}}.aou_death`
+            QUALIFY RANK() OVER (
+                PARTITION BY person_id 
+                ORDER BY
+                    LOWER(src_id) NOT LIKE '%healthpro%' DESC, -- EHR records are chosen over HealthPro ones --
+                    death_date ASC, -- Earliest death_date records are chosen over later ones --
+                    death_datetime ASC NULLS LAST, -- Earliest non-NULL death_datetime records are chosen over later or NULL ones --
+                    src_id ASC -- EHR site that alphabetically comes first is chosen --
+            ) = 1   
+        ) THEN TRUE ELSE FALSE END AS primary_death_record
+    FROM `{{project}}.{{dataset}}.aou_death`    
+)
+SELECT ad.aou_death_id
+FROM `{{project_id}}.{{dataset}}.aou_death` ad
+LEFT JOIN qc_aou_death qad
+ON ad.aou_death_id = qad.aou_death_id
+WHERE ad.primary_death_record != qad.primary_death_record
+""").render(project_id=dest_project_id, dataset=dest_dataset_id)
+df = execute(client, query)
+
+success_msg = 'All death records have the correct `primary_death_record` values.'
+failure_msg = '''
+    <b>{code_count}</b> records do not have the correct `primary_death_record` values. 
+    Investigate and confirm if (a) any logic is incorrect, (b) the requirement has changed, or (c) something else.
+'''
+render_message(df,
+               success_msg,
+               failure_msg,
+               failure_msg_args={'code_count': len(df)})
+# -
+
+# # QC for DEATH table
+
+# From CDR V8, the DEATH table must exist and have the primary death records from AOU_DEATH in the output data stage.
+# This QC confirms that the DEATH table is there and has correct data.
+
+# +
+query_if_empty = JINJA_ENV.from_string("""
+WITH primary_aou_death AS (
+    SELECT person_id, death_date, death_datetime, death_type_concept_id, cause_concept_id, cause_source_value, cause_source_concept_id
+    FROM `{{project_id}}.{{dataset}}.aou_death`
+    WHERE primary_death_record = TRUE
+)
+(
+    SELECT person_id, death_date, death_datetime, death_type_concept_id, cause_concept_id, cause_source_value, cause_source_concept_id
+    FROM primary_aou_death
+    EXCEPT DISTINCT
+    SELECT person_id, death_date, death_datetime, death_type_concept_id, cause_concept_id, cause_source_value, cause_source_concept_id
+    FROM `{{project_id}}.{{dataset}}.death`
+)
+UNION ALL
+(
+    SELECT person_id, death_date, death_datetime, death_type_concept_id, cause_concept_id, cause_source_value, cause_source_concept_id
+    FROM `{{project_id}}.{{dataset}}.death`
+    EXCEPT DISTINCT
+    SELECT person_id, death_date, death_datetime, death_type_concept_id, cause_concept_id, cause_source_value, cause_source_concept_id
+    FROM primary_aou_death
+)
+""").render(project_id=dest_project_id, dataset=dest_dataset_id)
+df_if_empty = execute(client, query_if_empty)
+
+success_msg_if_empty = 'DEATH table has correct and complete data.'
+failure_msg_if_empty = '''
+    There are some discrepancies between DEATH records and AOU_DEATH records with primary_death_record=TRUE.
+    Investigation needed.
+'''
+render_message(df_if_empty, success_msg_if_empty, failure_msg_if_empty)
+# -
