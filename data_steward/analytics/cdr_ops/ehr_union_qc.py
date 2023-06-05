@@ -25,10 +25,10 @@ RUN_AS = ""  # service account email to impersonate
 # -
 
 # +
+from common import JINJA_ENV
 from utils import auth
 from gcloud.bq import BigQueryClient
-from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
-
+from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES, render_message
 # -
 
 impersonation_creds = auth.get_impersonation_credentials(
@@ -283,4 +283,72 @@ SELECT * FROM result;
 """
 
 execute(client, query)
+# -
+
+# # QC for AOU_DEATH table
+
+# From CDR V8, Curation generates the AOU_DEATH table in Unioned_EHR. AOU_DEATH allows more than one death record per participant.
+# It has the column `primary_death_record` and it flags the primary records for each participant.
+# The logic for deciding which is primary comes from the following business requirements:
+# - If multiple death records exist from across sources, provide the first date EHR death record in the death table
+# - If death_datetime is not available and multiple death records exist for the same death_date, provide the fullest record in the death table
+# - Example: Order by HPO site name and insert the first into the death table
+#
+# This QC confirms that the logic for the primary records are applied as expected in the `AOU_DEATH` table.
+
+# +
+query = JINJA_ENV.from_string("""
+WITH qc_aou_death AS (
+    SELECT 
+        aou_death_id, 
+        CASE WHEN aou_death_id IN (
+            SELECT aou_death_id FROM `{{project_id}}.{{dataset_id}}.aou_death`
+            QUALIFY RANK() OVER (
+                PARTITION BY person_id 
+                ORDER BY
+                    LOWER(src_id) NOT LIKE '%healthpro%' DESC, -- EHR records are chosen over HealthPro ones --
+                    death_date ASC, -- Earliest death_date records are chosen over later ones --
+                    death_datetime ASC NULLS LAST, -- Earliest non-NULL death_datetime records are chosen over later or NULL ones --
+                    src_id ASC -- EHR site that alphabetically comes first is chosen --
+            ) = 1   
+        ) THEN TRUE ELSE FALSE END AS primary_death_record
+    FROM `{{project}}.{{dataset}}.aou_death`    
+)
+SELECT ad.aou_death_id
+FROM `{{project_id}}.{{dataset}}.aou_death` ad
+LEFT JOIN qc_aou_death qad
+ON ad.aou_death_id = qad.aou_death_id
+WHERE ad.primary_death_record != qad.primary_death_record
+""").render(project_id=PROJECT_ID, dataset=CURRENT_UNIONED_EHR_DATASET_ID)
+df = execute(client, query)
+
+success_msg = 'All death records have the correct `primary_death_record` values.'
+failure_msg = '''
+    <b>{code_count}</b> records do not have the correct `primary_death_record` values. 
+    Investigate and confirm if (a) any logic is incorrect, (b) the requirement has changed, or (c) something else.
+'''
+render_message(df,
+               success_msg,
+               failure_msg,
+               failure_msg_args={'code_count': len(df)})
+# -
+
+# # QC for DEATH table
+
+# From CDR V8, Unioned_EHR data stage will have all the death records in the AOU_DEATH table. The DEATH table must exist but must have no records.
+# This QC confirms that the DEATH table is there and is empty.
+
+# +
+query_if_empty = JINJA_ENV.from_string("""
+SELECT COUNT(*)
+FROM `{{project_id}}.{{dataset}}.death`
+HAVING COUNT(*) > 0
+""").render(project_id=PROJECT_ID, dataset=CURRENT_UNIONED_EHR_DATASET_ID)
+df_if_empty = execute(client, query_if_empty)
+
+success_msg_if_empty = 'Death table is empty.'
+failure_msg_if_empty = '''
+    Death table is NOT empty. We expect DEATH table to be empty in Unioned_EHR. Investigate why DEATH is not empty and fix it.
+'''
+render_message(df_if_empty, success_msg_if_empty, failure_msg_if_empty)
 # -
