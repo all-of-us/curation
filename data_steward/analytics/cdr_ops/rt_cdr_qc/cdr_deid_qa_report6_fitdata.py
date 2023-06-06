@@ -17,7 +17,7 @@
 
 import urllib
 import pandas as pd
-from common import JINJA_ENV
+from common import JINJA_ENV, FITBIT_TABLES
 from utils import auth
 from gcloud.bq import BigQueryClient
 from analytics.cdr_ops.notebook_utils import execute, IMPERSONATION_SCOPES
@@ -45,9 +45,9 @@ client = BigQueryClient(project_id, credentials=impersonation_creds)
 # -
 
 # df will have a summary in the end
-df = pd.DataFrame(columns = ['query', 'result']) 
+df = pd.DataFrame(columns = ['query', 'result'])
 
-# This notebook was updated per [DC-1786]. 
+# This notebook was updated per [DC-1786].
 #
 #
 
@@ -92,16 +92,59 @@ JOIN df3 USING (col)
 JOIN df4 USING (col)
 
 """)
-q =query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr,non_deid_fitbit=non_deid_fitbit,deid_cdr_fitbit=deid_cdr_fitbit,truncation_date=truncation_date,maximum_age=maximum_age)  
-df1=execute(client, q)  
+q =query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr,non_deid_fitbit=non_deid_fitbit,deid_cdr_fitbit=deid_cdr_fitbit,truncation_date=truncation_date,maximum_age=maximum_age)
+df1=execute(client, q)
 df1=df1.iloc[:,1:5]
 if df1.loc[0].sum()==0:
- df = df.append({'query' : 'Query1 cutoff date in fitbit datasets', 'result' : 'PASS'},  
-                ignore_index = True) 
+ df = df.append({'query' : 'Query1 cutoff date in fitbit datasets', 'result' : 'PASS'},
+                ignore_index = True)
 else:
- df = df.append({'query' : 'Query1 cutoff date in fitbit datasets', 'result' : 'Failure'},  
-                ignore_index = True) 
+ df = df.append({'query' : 'Query1 cutoff date in fitbit datasets', 'result' : 'Failure'},
+                ignore_index = True)
 df1
+
+# +
+
+date_columns = {
+    'activity_summary': 'date',
+    'heart_rate_summary': 'date',
+    'heart_rate_minute_level': 'datetime',
+    'steps_intraday': 'datetime',
+    'sleep_level': 'sleep_date',
+    'sleep_daily_summary': 'sleep_date',
+    'device': 'date',
+}
+
+secondary_date_column = {
+    'device': 'last_sync_time'
+}
+
+health_sharing_consent_check = JINJA_ENV.from_string('''SELECT
+  \'{{table_name}}\' as table,
+  COUNT(1) bad_rows
+FROM
+  `{{project}}.{{dataset}}.{{table_name}}` a
+  JOIN `{{project}}.{{pipeline}}.pid_rid_mapping` m
+ON m.research_id = a.person_id
+WHERE DATE_ADD(date({{column_date}}), INTERVAL m.shift DAY) > '{{truncation_date}}'
+  {% if secondary_date_column -%}
+  OR DATE_ADD(date({{secondary_date_column}}), INTERVAL m.shift DAY) > '{{truncation_date}}'
+  {% endif %}
+''')
+queries_list = []
+for table in FITBIT_TABLES:
+    queries_list.append(
+        health_sharing_consent_check.render(project=project_id,
+                                            dataset=non_deid_fitbit,
+                                            table_name=table,
+                                            column_date=date_columns[table],
+                                            secondary_date_column=secondary_date_column.get(table),
+                                            truncation_date=truncation_date,
+                                            pipeline=pipeline))
+
+union_all_query = '\nUNION ALL\n'.join(queries_list)
+execute(client, union_all_query)
+# -
 
 # # Verify if that the fitdata data is removed FROM the fitbit tables for participants exceeding allowable age (maximum_age, i.e.,89). ((row counts = 0))
 #
@@ -149,26 +192,25 @@ SELECT * from df1
 JOIN df2 USING (col)
 JOIN df3 USING (col)
 JOIN df4 USING (col)
-
 """)
-q =query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr,non_deid_fitbit=non_deid_fitbit,deid_cdr_fitbit=deid_cdr_fitbit,truncation_date=truncation_date,maximum_age=maximum_age)  
-df1=execute(client, q)  
+q =query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr,non_deid_fitbit=non_deid_fitbit,deid_cdr_fitbit=deid_cdr_fitbit,truncation_date=truncation_date,maximum_age=maximum_age)
+df1=execute(client, q)
 df1=df1.iloc[:,1:5]
 if df1.loc[0].sum()==0:
- df = df.append({'query' : 'Query2 no maximum_age in fitbit datasets', 'result' : 'PASS'},  
-                ignore_index = True) 
+ df = df.append({'query' : 'Query2 no maximum_age in fitbit datasets', 'result' : 'PASS'},
+                ignore_index = True)
 else:
- df = df.append({'query' : 'Query2 no maximum_age in fitbit datasets', 'result' : 'Failure'},  
-                ignore_index = True) 
-df1               
+ df = df.append({'query' : 'Query2 no maximum_age in fitbit datasets', 'result' : 'Failure'},
+                ignore_index = True)
+df1
 
 # # Verify that correct date shift is applied to the fitbit data
 #
 # DC-1005
 #
-# objective: 
+# objective:
 #
-# find the difference between the non-deid date and the deid date to validate that the dateshift is applied as specified in the map . 
+# find the difference between the non-deid date and the deid date to validate that the dateshift is applied as specified in the map .
 #
 # the original code uses min(date) to have the difference, but not sure why min(), not max(), or any date.
 #
@@ -191,21 +233,21 @@ SELECT d.person_id,
 CONCAT(d.person_id, '_', DATE_ADD(d.date, INTERVAL m.shift DAY))  d_newc
 FROM `{{project_id}}.{{pipeline}}.pid_rid_mapping` m
 JOIN `{{project_id}}.{{deid_cdr_fitbit}}.activity_summary` d
-ON m.research_id = d.person_id 
+ON m.research_id = d.person_id
 )
 
 SELECT COUNT (*) n_row_not_pass FROM df2
 WHERE d_newc NOT IN (SELECT i_newc FROM df1)
 """)
-q =query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr,non_deid_fitbit=non_deid_fitbit,deid_cdr_fitbit=deid_cdr_fitbit,truncation_date=truncation_date,maximum_age=maximum_age)  
-df1=execute(client, q)  
+q =query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr,non_deid_fitbit=non_deid_fitbit,deid_cdr_fitbit=deid_cdr_fitbit,truncation_date=truncation_date,maximum_age=maximum_age)
+df1=execute(client, q)
 if df1.eq(0).any().any():
- df = df.append({'query' : 'Query3.1 Date shifted in activity_summary', 'result' : 'PASS'},  
-                ignore_index = True) 
+ df = df.append({'query' : 'Query3.1 Date shifted in activity_summary', 'result' : 'PASS'},
+                ignore_index = True)
 else:
- df = df.append({'query' : 'Query3.1 Date shifted in activity_summary', 'result' : 'Failure'},  
-                ignore_index = True) 
-df1        
+ df = df.append({'query' : 'Query3.1 Date shifted in activity_summary', 'result' : 'Failure'},
+                ignore_index = True)
+df1
 
 # heart_rate_summary
 query = JINJA_ENV.from_string("""
@@ -223,21 +265,21 @@ SELECT d.person_id,
 CONCAT(d.person_id, '_', DATE_ADD(d.date, INTERVAL m.shift DAY)) AS d_newc
 FROM `{{project_id}}.{{pipeline}}.pid_rid_mapping` m
 JOIN `{{project_id}}.{{deid_cdr_fitbit}}.heart_rate_summary` d
-ON m.research_id = d.person_id 
+ON m.research_id = d.person_id
 )
 
 SELECT COUNT (*) n_row_not_pass FROM df2
 WHERE d_newc NOT IN (SELECT i_newc FROM df1)
 """)
-q =query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr,non_deid_fitbit=non_deid_fitbit,deid_cdr_fitbit=deid_cdr_fitbit,truncation_date=truncation_date,maximum_age=maximum_age)  
-df1=execute(client, q)  
+q =query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr,non_deid_fitbit=non_deid_fitbit,deid_cdr_fitbit=deid_cdr_fitbit,truncation_date=truncation_date,maximum_age=maximum_age)
+df1=execute(client, q)
 if df1.eq(0).any().any():
- df = df.append({'query' : 'Query3.2 Date shifted in heart_rate_summary', 'result' : 'PASS'},  
-                ignore_index = True) 
+ df = df.append({'query' : 'Query3.2 Date shifted in heart_rate_summary', 'result' : 'PASS'},
+                ignore_index = True)
 else:
- df = df.append({'query' : 'Query3.2 Date shifted in heart_rate_summary', 'result' : 'Failure'},  
-                ignore_index = True) 
-df1        
+ df = df.append({'query' : 'Query3.2 Date shifted in heart_rate_summary', 'result' : 'Failure'},
+                ignore_index = True)
+df1
 
 # +
 # heart_rate_minute_level
@@ -257,21 +299,21 @@ SELECT d.person_id,
 CONCAT(d.person_id, '_', DATE_ADD(d.datetime, INTERVAL m.shift DAY)) AS d_newc
 FROM `{{project_id}}.{{pipeline}}.pid_rid_mapping` m
 JOIN `{{project_id}}.{{deid_cdr_fitbit}}.heart_rate_minute_level` d
-ON m.research_id = d.person_id 
+ON m.research_id = d.person_id
 )
 
 SELECT COUNT (*) n_row_not_pass FROM df2
 WHERE d_newc NOT IN (SELECT i_newc FROM df1)
 """)
-q =query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr,non_deid_fitbit=non_deid_fitbit,deid_cdr_fitbit=deid_cdr_fitbit,truncation_date=truncation_date,maximum_age=maximum_age)  
-df1=execute(client, q)  
+q =query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr,non_deid_fitbit=non_deid_fitbit,deid_cdr_fitbit=deid_cdr_fitbit,truncation_date=truncation_date,maximum_age=maximum_age)
+df1=execute(client, q)
 if df1.eq(0).any().any():
- df = df.append({'query' : 'Query3.3 Date shifted in heart_rate_minute_level', 'result' : 'PASS'},  
-                ignore_index = True) 
+ df = df.append({'query' : 'Query3.3 Date shifted in heart_rate_minute_level', 'result' : 'PASS'},
+                ignore_index = True)
 else:
- df = df.append({'query' : 'Query3.3 Date shifted in heart_rate_minute_level', 'result' : 'Failure'},  
-                ignore_index = True) 
-df1       
+ df = df.append({'query' : 'Query3.3 Date shifted in heart_rate_minute_level', 'result' : 'Failure'},
+                ignore_index = True)
+df1
 
 # +
 # steps_intraday
@@ -291,24 +333,24 @@ SELECT d.person_id,
 CONCAT(d.person_id, '_', DATE_ADD(d.datetime, INTERVAL m.shift DAY)) AS d_newc
 FROM `{{project_id}}.{{pipeline}}.pid_rid_mapping` m
 JOIN `{{project_id}}.{{deid_cdr_fitbit}}.steps_intraday` d
-ON m.research_id = d.person_id 
+ON m.research_id = d.person_id
 )
 
 SELECT COUNT (*) n_row_not_pass FROM df2
 WHERE d_newc NOT IN (SELECT i_newc FROM df1)
 """)
-q =query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr,non_deid_fitbit=non_deid_fitbit,deid_cdr_fitbit=deid_cdr_fitbit,truncation_date=truncation_date,maximum_age=maximum_age)  
-df1=execute(client, q)  
+q =query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr,non_deid_fitbit=non_deid_fitbit,deid_cdr_fitbit=deid_cdr_fitbit,truncation_date=truncation_date,maximum_age=maximum_age)
+df1=execute(client, q)
 if df1.eq(0).any().any():
- df = df.append({'query' : 'Query3.4 Date shifted in steps_intraday', 'result' : 'PASS'},  
-                ignore_index = True) 
+ df = df.append({'query' : 'Query3.4 Date shifted in steps_intraday', 'result' : 'PASS'},
+                ignore_index = True)
 else:
- df = df.append({'query' : 'Query3.4 Date shifted in steps_intraday', 'result' : 'Failure'},  
-                ignore_index = True) 
-df1   
+ df = df.append({'query' : 'Query3.4 Date shifted in steps_intraday', 'result' : 'Failure'},
+                ignore_index = True)
+df1
 # -
 
-# # Verify that the participants are correctly mapped to their Research ID 
+# # Verify that the participants are correctly mapped to their Research ID
 #
 # DC-1000
 
@@ -331,15 +373,15 @@ SELECT COUNT (*) n_row_not_pass_activity_summary FROM df1
 JOIN df2 USING (research_id)
 WHERE research_id != deid_pid
 """)
-q =query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr,non_deid_fitbit=non_deid_fitbit,deid_cdr_fitbit=deid_cdr_fitbit,truncation_date=truncation_date,maximum_age=maximum_age)  
-df1=execute(client, q)  
+q =query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr,non_deid_fitbit=non_deid_fitbit,deid_cdr_fitbit=deid_cdr_fitbit,truncation_date=truncation_date,maximum_age=maximum_age)
+df1=execute(client, q)
 if df1.eq(0).any().any():
- df = df.append({'query' : 'Query4.1 resarch_id=person_id in activity_summary', 'result' : 'PASS'},  
-                ignore_index = True) 
+ df = df.append({'query' : 'Query4.1 resarch_id=person_id in activity_summary', 'result' : 'PASS'},
+                ignore_index = True)
 else:
- df = df.append({'query' : 'Query4.1 resarch_id=person_id in activity_summary', 'result' : 'Failure'},  
-                ignore_index = True) 
-df1        
+ df = df.append({'query' : 'Query4.1 resarch_id=person_id in activity_summary', 'result' : 'Failure'},
+                ignore_index = True)
+df1
 
 # heart_rate_summary
 query = JINJA_ENV.from_string("""
@@ -360,15 +402,15 @@ SELECT COUNT (*) n_row_not_pass_heart_rate_summary FROM df1
 JOIN df2 USING (research_id)
 WHERE research_id != deid_pid
 """)
-q =query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr,non_deid_fitbit=non_deid_fitbit,deid_cdr_fitbit=deid_cdr_fitbit,truncation_date=truncation_date,maximum_age=maximum_age)  
-df1=execute(client, q)  
+q =query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr,non_deid_fitbit=non_deid_fitbit,deid_cdr_fitbit=deid_cdr_fitbit,truncation_date=truncation_date,maximum_age=maximum_age)
+df1=execute(client, q)
 if df1.eq(0).any().any():
- df = df.append({'query' : 'Query4.2 resarch_id=person_id in heart_rate_summary', 'result' : 'PASS'},  
-                ignore_index = True) 
+ df = df.append({'query' : 'Query4.2 resarch_id=person_id in heart_rate_summary', 'result' : 'PASS'},
+                ignore_index = True)
 else:
- df = df.append({'query' : 'Query4.2 resarch_id=person_id in heart_rate_summary', 'result' : 'Failure'},  
-                ignore_index = True) 
-df1     
+ df = df.append({'query' : 'Query4.2 resarch_id=person_id in heart_rate_summary', 'result' : 'Failure'},
+                ignore_index = True)
+df1
 
 # heart_rate_minute_level
 query = JINJA_ENV.from_string("""
@@ -389,15 +431,15 @@ SELECT COUNT (*) n_row_not_pass_heart_rate_minute_level FROM df1
 JOIN df2 USING (research_id)
 WHERE research_id != deid_pid
 """)
-q =query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_bcdr=deid_cdr,non_deid_fitbit=non_deid_fitbit,deid_cdr_fitbit=deid_cdr_fitbit,truncation_date=truncation_date,maximum_age=maximum_age)  
-df1=execute(client, q)  
+q =query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_bcdr=deid_cdr,non_deid_fitbit=non_deid_fitbit,deid_cdr_fitbit=deid_cdr_fitbit,truncation_date=truncation_date,maximum_age=maximum_age)
+df1=execute(client, q)
 if df1.eq(0).any().any():
- df = df.append({'query' : 'Query4.3 resarch_id=person_id in heart_rate_minute_level', 'result' : 'PASS'},  
-                ignore_index = True) 
+ df = df.append({'query' : 'Query4.3 resarch_id=person_id in heart_rate_minute_level', 'result' : 'PASS'},
+                ignore_index = True)
 else:
- df = df.append({'query' : 'Query4.3 resarch_id=person_id in heart_rate_minute_level', 'result' : 'Failure'},  
-                ignore_index = True) 
-df1     
+ df = df.append({'query' : 'Query4.3 resarch_id=person_id in heart_rate_minute_level', 'result' : 'Failure'},
+                ignore_index = True)
+df1
 
 # steps_intraday
 query = JINJA_ENV.from_string("""
@@ -419,15 +461,15 @@ JOIN df2 USING (research_id)
 WHERE research_id != deid_pid
 
 """)
-q =query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr,non_deid_fitbit=non_deid_fitbit,deid_cdr_fitbit=deid_cdr_fitbit,truncation_date=truncation_date,maximum_age=maximum_age)  
-df1=execute(client, q)  
+q =query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr,non_deid_fitbit=non_deid_fitbit,deid_cdr_fitbit=deid_cdr_fitbit,truncation_date=truncation_date,maximum_age=maximum_age)
+df1=execute(client, q)
 if df1.eq(0).any().any():
- df = df.append({'query' : 'Query4.4 resarch_id=person_id in steps_intraday', 'result' : 'PASS'},  
-                ignore_index = True) 
+ df = df.append({'query' : 'Query4.4 resarch_id=person_id in steps_intraday', 'result' : 'PASS'},
+                ignore_index = True)
 else:
- df = df.append({'query' : 'Query4.4 resarch_id=person_id in steps_intraday', 'result' : 'Failure'},  
-                ignore_index = True) 
-df1     
+ df = df.append({'query' : 'Query4.4 resarch_id=person_id in steps_intraday', 'result' : 'Failure'},
+                ignore_index = True)
+df1
 
 # # Verify all person_ids in fitbit datasets exsit in deid_cdr person table
 #
@@ -439,17 +481,17 @@ query = JINJA_ENV.from_string("""
 
 WITH df1 AS (
 SELECT '1' AS col , COUNT (DISTINCT person_id)  AS n_person_id_not_pass_activity_summary
-FROM `{{project_id}}.{{deid_cdr_fitbit}}.activity_summary` 
+FROM `{{project_id}}.{{deid_cdr_fitbit}}.activity_summary`
 WHERE person_id NOT IN (SELECT person_id FROM `{{project_id}}.{{deid_cdr}}.person`)),
 
 df2 AS (
 SELECT '1' AS col, COUNT (DISTINCT person_id)  AS n_person_id_not_pass_heart_rate_summary
-FROM `{{project_id}}.{{deid_cdr_fitbit}}.heart_rate_summary` 
+FROM `{{project_id}}.{{deid_cdr_fitbit}}.heart_rate_summary`
 WHERE person_id NOT IN (SELECT person_id FROM `{{project_id}}.{{deid_cdr}}.person`)),
 
 df3 AS (
 SELECT '1' AS col,COUNT (DISTINCT person_id)  AS n_person_id_not_pass_heart_rate_minute_level
-FROM `{{project_id}}.{{deid_cdr_fitbit}}.heart_rate_minute_level` 
+FROM `{{project_id}}.{{deid_cdr_fitbit}}.heart_rate_minute_level`
 WHERE person_id NOT IN (SELECT person_id FROM `{{project_id}}.{{deid_cdr}}.person`)),
 
 df4 AS (
@@ -462,16 +504,16 @@ JOIN df2 USING (col)
 JOIN df3 USING (col)
 JOIN df4 USING (col)
 """)
-q =query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr,non_deid_fitbit=non_deid_fitbit,deid_cdr_fitbit=deid_cdr_fitbit,truncation_date=truncation_date,maximum_age=maximum_age)  
-df1=execute(client, q)  
+q =query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr,non_deid_fitbit=non_deid_fitbit,deid_cdr_fitbit=deid_cdr_fitbit,truncation_date=truncation_date,maximum_age=maximum_age)
+df1=execute(client, q)
 df1=df1.iloc[:,1:5]
 if df1.loc[0].sum()==0:
- df = df.append({'query' : 'Query5 person_ids in fitbit exist in deid.person table', 'result' : 'PASS'},  
-                ignore_index = True) 
+ df = df.append({'query' : 'Query5 person_ids in fitbit exist in deid.person table', 'result' : 'PASS'},
+                ignore_index = True)
 else:
- df = df.append({'query' : 'Query5 person_ids in fitbit exist in deid.person table', 'result' : 'Failure'},  
-                ignore_index = True) 
-df1.T             
+ df = df.append({'query' : 'Query5 person_ids in fitbit exist in deid.person table', 'result' : 'Failure'},
+                ignore_index = True)
+df1.T
 
 # # Verify that all records with invalid level values are being dropped from sleep_level table
 #
@@ -485,22 +527,22 @@ df1.T
 query = JINJA_ENV.from_string("""
 
 WITH df1 AS (
-  SELECT 
+  SELECT
     level, 'dropped' AS dropped_status, count(*) as n_violations
-  FROM 
+  FROM
     `{{project_id}}.{{fitbit_sandbox_dataset}}.{{sleep_level_sandbox_table}}`
   GROUP BY 1, 2
   ORDER BY n_violations
 ),
 
 df2 AS (
-  SELECT 
+  SELECT
     level, 'not dropped' AS dropped_status, count(*) as n_violations
-  FROM 
+  FROM
     `{{project_id}}.{{fitbit_dataset}}.sleep_level`
-  WHERE 
+  WHERE
   (
-      LOWER(level) NOT IN 
+      LOWER(level) NOT IN
           ('awake','light','asleep','deep','restless','wake','rem','unknown') OR level IS NULL
   )
   GROUP BY 1, 2
@@ -513,7 +555,7 @@ select *
 from df2
 """)
 
-q =query.render(project_id=project_id,fitbit_sandbox_dataset=fitbit_sandbox_dataset,fitbit_dataset=fitbit_dataset,sleep_level_sandbox_table=sleep_level_sandbox_table)  
+q =query.render(project_id=project_id,fitbit_sandbox_dataset=fitbit_sandbox_dataset,fitbit_dataset=fitbit_dataset,sleep_level_sandbox_table=sleep_level_sandbox_table)
 
 df2 = execute(client, q)
 
@@ -541,7 +583,7 @@ df2
 # +
 def highlight_cells(val):
     color = 'red' if 'Failure' in val else 'white'
-    return f'background-color: {color}' 
+    return f'background-color: {color}'
 
 df.style.applymap(highlight_cells).set_properties(**{'text-align': 'left'})
 # -
