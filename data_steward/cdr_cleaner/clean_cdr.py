@@ -13,6 +13,7 @@ import cdr_cleaner.clean_cdr_engine as clean_engine
 from cdr_cleaner.cleaning_rules.backfill_lifestyle import BackfillLifestyle
 from cdr_cleaner.cleaning_rules.backfill_overall_health import BackfillOverallHealth
 from cdr_cleaner.cleaning_rules.backfill_the_basics import BackfillTheBasics
+from cdr_cleaner.cleaning_rules.calculate_primary_death_record import CalculatePrimaryDeathRecord
 from cdr_cleaner.cleaning_rules.clean_by_birth_year import CleanByBirthYear
 from cdr_cleaner.cleaning_rules.convert_pre_post_coordinated_concepts import ConvertPrePostCoordinatedConcepts
 from cdr_cleaner.cleaning_rules.create_expected_ct_list import StoreExpectedCTList
@@ -152,6 +153,7 @@ UNIONED_EHR_CLEANING_CLASSES = [
     (EnsureDateDatetimeConsistency,),
     (RemoveRecordsWithWrongDate,),
     (RemoveInvalidProcedureSourceRecords,),
+    (CalculatePrimaryDeathRecord,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
@@ -237,6 +239,7 @@ COMBINED_CLEANING_CLASSES = [
     (COPESurveyVersionTask,
     ),  # Should run after GenerateExtTables and before CleanMappingExtTables
     (PopulateSurveyConductExt,),
+    (CalculatePrimaryDeathRecord,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
@@ -278,6 +281,7 @@ REGISTERED_TIER_DEID_CLEANING_CLASSES = [
     (FreeTextSurveyResponseSuppression,),
     (DropOrphanedSurveyConductIds,),
     (DropOrphanedPIDS,),
+    (CalculatePrimaryDeathRecord,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
@@ -286,6 +290,7 @@ REGISTERED_TIER_DEID_BASE_CLEANING_CLASSES = [
     (RepopulatePersonPostDeid,),
     (DateUnShiftCopeResponses,),
     (CreatePersonExtTable,),
+    (CalculatePrimaryDeathRecord,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
@@ -298,6 +303,7 @@ REGISTERED_TIER_DEID_CLEAN_CLEANING_CLASSES = [
     (UnitNormalization,),  # dependent on CleanHeightAndWeight
     (DropZeroConceptIDs,),
     (DropOrphanedSurveyConductIds,),
+    (CalculatePrimaryDeathRecord,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
@@ -335,6 +341,7 @@ CONTROLLED_TIER_DEID_CLEANING_CLASSES = [
     (DropOrphanedSurveyConductIds,),
     (DropOrphanedPIDS,),
     (RemoveExtraTables,),  # Should be last cleaning rule to be run
+    (CalculatePrimaryDeathRecord,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
@@ -342,6 +349,7 @@ CONTROLLED_TIER_DEID_BASE_CLEANING_CLASSES = [
     (FillSourceValueTextFields,),
     (RepopulatePersonControlledTier,),
     (CreatePersonExtTable,),
+    (CalculatePrimaryDeathRecord,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
@@ -351,6 +359,7 @@ CONTROLLED_TIER_DEID_CLEAN_CLEANING_CLASSES = [
     (UnitNormalization,),  # dependent on CleanHeightAndWeight
     (DropZeroConceptIDs,),
     (DropOrphanedSurveyConductIds,),
+    (CalculatePrimaryDeathRecord,),
     (CleanMappingExtTables,),  # should be one of the last cleaning rules run
 ]
 
