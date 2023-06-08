@@ -394,11 +394,7 @@ class CreateCombinedBackupDatasetAllDeathTest(BaseTest.BigQueryTestBase):
                     site_masking=SITE_MASKING_TABLE_ID)
 
         queries = [
-            #create_rdr_death, create_unioned_ehr_aou_death,
-            insert_rdr,
-            insert_ehr,
-            create_ehr_consent,
-            insert_site_masking
+            insert_rdr, insert_ehr, create_ehr_consent, insert_site_masking
         ]
 
         self.load_test_data(queries)
