@@ -12,9 +12,13 @@ from google.cloud.bigquery.job import CopyJobConfig, WriteDisposition
 from cdr_cleaner import clean_cdr
 from cdr_cleaner.args_parser import add_kwargs_to_args
 from gcloud.bq import BigQueryClient
-from utils import auth
-from utils import pipeline_logging
-from common import CDR_SCOPES
+import app_identity
+import bq_utils
+from resources import mapping_table_for
+from utils import auth, pipeline_logging
+from common import (CDR_SCOPES, DEATH, MAPPING_PREFIX, METADATA,
+                    PID_RID_MAPPING, QUESTIONNAIRE_RESPONSE_ADDITIONAL_INFO,
+                    FACT_RELATIONSHIP, COPE_SURVEY_MAP)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -110,6 +114,24 @@ def main(raw_args=None):
         f'RDR dataset COPY from `{args.rdr_dataset}` to `{datasets.get("staging")}` has completed'
     )
 
+    # Create the mapping tables. Death and Metadata are not included
+    domain_tables = [
+        table.table_id for table in bq_client.list_tables(
+            f'{bq_client.project}.{datasets.get("staging")}')
+    ]
+    skip_tables = [
+        DEATH, COPE_SURVEY_MAP, PID_RID_MAPPING,
+        QUESTIONNAIRE_RESPONSE_ADDITIONAL_INFO
+    ]
+    for domain_table in domain_tables:
+        if domain_table in skip_tables:
+            continue
+        else:
+            if domain_table not in [METADATA, FACT_RELATIONSHIP]:
+                logging.info(f'Mapping {domain_table}...')
+                mapping(bq_client, datasets.get("staging"), domain_table)
+            # TODO function to remove src_id column
+
     # clean the RDR staging dataset
     cleaning_args = [
         '-p', args.curation_project_id, '-d',
@@ -177,6 +199,48 @@ def create_datasets(client, rdr_dataset, release_tag):
     LOGGER.info(f'Created dataset `{client.project}.{rdr_clean}`')
 
     return {'clean': rdr_clean, 'staging': rdr_staging, 'sandbox': rdr_sandbox}
+
+
+def mapping(client, input_dataset_id, domain_table):
+    """
+    Create and load a  mappping table that stores the domain id and src_id.
+    Note: Overwrites destination table if it already exists
+
+    :param client: a BigQueryClient
+    :param input_dataset_id: identifies dataset containing the domain table.
+    :param domain_table: name of domain table to create mapping table for.
+    :return:
+    """
+    query = mapping_query(domain_table, input_dataset_id, client.project)
+    mapping_table = mapping_table_for(domain_table)
+    logging.info(f'Query for {mapping_table} is {query}')
+    query_job = client.query(query)
+    query_job.result()
+
+
+def mapping_query(table_name, dataset_id=None, project_id=None):
+    """
+    Get query used to generate the new mapping table
+
+    :param table_name: name of CDM table
+    :param dataset_id: identifies the BQ dataset containing the input table
+    :param project_id: identifies the GCP project containing the dataset
+    :return: the query
+    """
+    if dataset_id is None:
+        dataset_id = bq_utils.get_dataset_id()
+    if project_id is None:
+        project_id = app_identity.get_application_id()
+
+    domain_id = f'{table_name}_id'
+    return f'''
+        CREATE OR REPLACE TABLE `{project_id}.{dataset_id}.{mapping_table_for(table_name)}` AS (
+        SELECT
+            dt.{domain_id}, dt.src_id
+        FROM
+            `{project_id}.{dataset_id}.{table_name}` as dt 
+        )
+    '''
 
 
 if __name__ == '__main__':
