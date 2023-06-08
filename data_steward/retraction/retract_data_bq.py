@@ -8,15 +8,17 @@ Retraction is performed for each dataset based on its data stage.
 import argparse
 import logging
 from itertools import product
-
-# Third party imports
+from typing import List, Optional
 
 # Project imports
 from utils import pipeline_logging
 from gcloud.bq import BigQueryClient
-from common import (CARE_SITE, CATI_TABLES, DEATH, FACT_RELATIONSHIP, JINJA_ENV,
-                    LOCATION, MEASUREMENT, OBSERVATION, OBSERVATION_PERIOD,
-                    OTHER, PERSON, PII_TABLES, PROVIDER, UNIONED_EHR)
+from common import (AOU_REQUIRED, CARE_SITE, CATI_TABLES, CONDITION_ERA, DEATH,
+                    DOSE_ERA, DRUG_ERA, FACT_RELATIONSHIP, ID_CONSTANT_FACTOR,
+                    JINJA_ENV, LOCATION, MAPPING_PREFIX, MEASUREMENT, NOTE,
+                    NOTE_NLP, OBSERVATION, OBSERVATION_PERIOD,
+                    PAYER_PLAN_PERIOD, PERSON, PII_TABLES, PROVIDER,
+                    UNIONED_EHR)
 from resources import mapping_table_for
 from retraction.retract_utils import (get_datasets_list, get_dataset_type,
                                       is_combined_dataset, is_deid_dataset,
@@ -31,13 +33,17 @@ RETRACTION_RDR_EHR = 'rdr_and_ehr'
 RETRACTION_ONLY_EHR = 'only_ehr'
 
 NON_PID_TABLES = [CARE_SITE, LOCATION, FACT_RELATIONSHIP, PROVIDER]
-OTHER_PID_TABLES = [OBSERVATION_PERIOD]
+OTHER_PID_TABLES = [
+    CONDITION_ERA, DOSE_ERA, DRUG_ERA, NOTE_NLP, OBSERVATION_PERIOD,
+    PAYER_PLAN_PERIOD
+]
 
 # person from RDR data should not be removed, while person EHR data may be
 # removed.  If retracting the entire record, then the data will be dropped
 # from the person table.  But if only retracting EHR data, the data will
 # not be dropped from the person table.
 NON_EHR_TABLES = [PERSON]
+
 TABLES_FOR_RETRACTION = set(PII_TABLES + CATI_TABLES +
                             OTHER_PID_TABLES) - set(NON_PID_TABLES +
                                                     NON_EHR_TABLES)
@@ -52,14 +58,26 @@ FROM `{{project}}.{{dataset}}.{{table}}`
 WHERE person_id IN (
     SELECT {{person_id}} FROM `{{project}}.{{sb_dataset}}.{{lookup_table_id}}`
 )
-{% if table != 'death' and retraction_type == 'only_ehr' %}
-AND {{table}}_id IN (
-    {% if is_deid %}
-    SELECT {{table}}_id FROM `{{project}}.{{dataset}}.{{table}}_ext` WHERE src_id LIKE 'EHR%'
+{% if retraction_type == 'rdr_and_ehr' %}
+    -- No additional condition is needed for rdr_and_ehr retraction --
+{% elif retraction_type == 'only_ehr' %}
+    {% if is_ehr_dataset or is_unioned_dataset %}
+        -- No additional condition is needed for EHR/UnionedEHR retraction --
+    {% elif 'death' in table %}
+        -- No additional condition is needed for death table retraction --
+    {% elif is_sandbox %}
+        -- NOTE Though 'only_ehr', this condition also drops RDR data that are affected by --
+        -- the CR `domain_alignment`. We cannot avoid it under our current pipeline design. --
+        AND {{domain_id}} > {{id_const}}
     {% else %}
-    SELECT {{table}}_id FROM `{{project}}.{{dataset}}._mapping_{{table}}` WHERE src_hpo_id != 'rdr'
+        AND {{table}}_id IN (
+            {% if is_deid %}
+            SELECT {{table}}_id FROM `{{project}}.{{dataset}}.{{table}}_ext` WHERE src_id LIKE 'EHR%'
+            {% else %}
+            SELECT {{table}}_id FROM `{{project}}.{{dataset}}._mapping_{{table}}` WHERE src_hpo_id != 'rdr'
+            {% endif %}
+        )
     {% endif %}
-)
 {% endif %}
 """
 
@@ -162,8 +180,8 @@ def get_retraction_queries(client: BigQueryClient,
                            sb_dataset_id,
                            lookup_table_id,
                            skip_sandboxing,
-                           retraction_type=None,
-                           hpo_id=None) -> list:
+                           retraction_type,
+                           hpo_id: Optional[str] = None) -> List[str]:
     """
     Gets list of queries for retraction.
     :param client: BigQuery client
@@ -172,7 +190,8 @@ def get_retraction_queries(client: BigQueryClient,
     :param lookup_table_id: table containing the person_ids and research_ids
     :param skip_sandboxing: True if you wish not to sandbox the retracted data.
     :param retraction_type: string indicating whether all data needs to be removed including RDR,
-        or if RDR data needs to be kept intact. Can take the values 'rdr_and_ehr' or 'only_ehr'
+        or if RDR data needs to be kept intact. Can take the values 'rdr_and_ehr' or 'only_ehr'.
+    :param hpo_id: HPO ID that needs retraction. If None is specified, it looks at all the HPO IDs.
     :return: list of queries
     """
     tables_to_retract = get_tables_to_retract(client,
@@ -202,6 +221,12 @@ def get_retraction_queries(client: BigQueryClient,
                 table=table,
                 person_id=person_id,
                 lookup_table_id=lookup_table_id,
+                is_sandbox=is_sandbox_dataset(dataset_id),
+                is_ehr_dataset=is_ehr_dataset(dataset_id),
+                is_unioned_dataset=is_unioned_dataset(dataset_id),
+                domain_id=get_primary_key_for_sandbox_table(
+                    client, dataset_id, table),
+                id_const=2 * ID_CONSTANT_FACTOR,
                 retraction_type=retraction_type,
                 is_deid=is_deid_dataset(dataset_id))
             queries.append(q)
@@ -218,13 +243,14 @@ def get_retraction_queries(client: BigQueryClient,
     return queries
 
 
-def get_retraction_queries_fact_relationship(client: BigQueryClient,
-                                             dataset_id,
-                                             sb_dataset_id,
-                                             lookup_table_id,
-                                             skip_sandboxing,
-                                             retraction_type=None,
-                                             hpo_id=None) -> list:
+def get_retraction_queries_fact_relationship(
+        client: BigQueryClient,
+        dataset_id,
+        sb_dataset_id,
+        lookup_table_id,
+        skip_sandboxing,
+        retraction_type,
+        hpo_id: Optional[str] = None) -> List[str]:
     """
     Get list of queries for retracting fact_relationship table.
 
@@ -235,6 +261,7 @@ def get_retraction_queries_fact_relationship(client: BigQueryClient,
     :param skip_sandboxing: True if you wish not to sandbox the retracted data.
     :param retraction_type: string indicating whether all data needs to be removed including RDR,
         or if RDR data needs to be kept intact. Can take the values 'rdr_and_ehr' or 'only_ehr'
+    :param hpo_id: HPO ID that needs retraction. If None is specified, it looks at all the HPO IDs.
     :return: list of queries
     """
     if not client.table_exists(FACT_RELATIONSHIP, dataset_id):
@@ -289,10 +316,12 @@ def get_retraction_queries_fact_relationship(client: BigQueryClient,
     return queries
 
 
-def get_tables_to_retract(client: BigQueryClient,
-                          dataset,
-                          hpo_id='',
-                          retraction_type=None) -> list:
+def get_tables_to_retract(
+        client: BigQueryClient,
+        dataset,
+        retraction_type,
+        hpo_id: Optional[str] = None,
+) -> List[str]:
     """
     Creates a list of tables that need retraction in the dataset.
     :param client: BigQuery client
@@ -345,29 +374,51 @@ def skip_table_retraction(client: BigQueryClient, dataset_id, table_id,
         or if RDR data needs to be kept intact. Can take the values 'rdr_and_ehr' or 'only_ehr'
     :return: True if the table should be skipped. False if we need to retract the table.
     """
-    msg_only_rdr = f"Skipping {PERSON} table because it has only RDR data."
+    msg_only_rdr = f"Skipping {table_id} table because it has only RDR data."
     msg_no_mapping_table = (
         f"Skipping {table_id} table because it does not have a extension table or a mapping table."
     )
     msg_view = f"Skipping {table_id} since it's a VIEW."
+    msg_unknown_domain_sb_table = (
+        f"Skipping {table_id}. This sandbox table either has an irregular naming, "
+        "does not have `domain`_id column, or only contains non-EHR data.")
 
     if client.get_table(
             f'{client.project}.{dataset_id}.{table_id}').table_type == 'VIEW':
         LOGGER.info(msg_view)
         return True
 
-    if retraction_type == RETRACTION_ONLY_EHR:
+    if retraction_type == RETRACTION_RDR_EHR:
+        return False
 
-        if table_id == DEATH:
-            return False
+    if is_ehr_dataset(dataset_id) or is_unioned_dataset(dataset_id):
+        return False
 
-        elif table_id == PERSON:
+    if table_id == DEATH:
+        return False
+
+    if is_sandbox_dataset(dataset_id):
+
+        if PERSON in table_id:
             LOGGER.info(msg_only_rdr)
             return True
+
+        if not get_primary_key_for_sandbox_table(client, dataset_id, table_id):
+            LOGGER.info(msg_unknown_domain_sb_table)
+            return True
+
+        return False
+
+    else:
+        if table_id == PERSON:
+            LOGGER.info(msg_only_rdr)
+            return True
+
         elif is_deid_dataset(dataset_id) and not client.table_exists(
                 f'{table_id}_ext', dataset_id):
             LOGGER.info(msg_no_mapping_table)
             return True
+
         elif is_combined_dataset(dataset_id) and not client.table_exists(
                 mapping_table_for(table_id), dataset_id):
             LOGGER.info(msg_no_mapping_table)
@@ -389,22 +440,67 @@ def skip_dataset_retraction(dataset_id, retraction_type) -> bool:
     msg_no_ehr = (
         f'because {RETRACTION_ONLY_EHR} is specified. This is a {get_dataset_type(dataset_id)}'
         ' dataset and it does not contain data from EHR.')
-    msg_no_mapping = (
-        f'because the script could not find mapping info for identifying which data came from EHR.'
-    )
 
     if retraction_type == RETRACTION_ONLY_EHR:
         if is_rdr_dataset(dataset_id) or is_fitbit_dataset(dataset_id):
             LOGGER.warning(f'{msg_skip}{msg_no_ehr}')
             return True
 
-        # TODO Remove this if statement when this script is ready to handle OTHER and sandbox datasets.
-        if get_dataset_type(dataset_id) == OTHER or is_sandbox_dataset(
-                dataset_id):
-            LOGGER.warning(f'{msg_skip}{msg_no_mapping}')
-            return True
-
     return False
+
+
+def get_primary_key_for_sandbox_table(client: BigQueryClient, dataset,
+                                      table: str) -> str:
+    """
+    NOTE This is intended for `only_ehr` retraction for sandbox datasets.
+
+    When retracting sandbox tables for `only_ehr`, map/ext tables do not
+    exist for them. We must look at its primary key instead, in addition to person_id.
+
+    This function looks at the sandbox table name, gets its domain, checks if 
+    the domain_id and person_id columns exists in the table, and returns the domain_id
+    we can use for retraction. Sandbox tables for mapping/ext tables are skipped.
+
+    :param client: BigQuery client
+    :param dataset: Dataset to run retraction on
+    :param table: name of the sandbox table that needs retraction
+    :return: column name that the retraction must run on. 
+        Returns '' if the domain table cannot be identified, the domain table
+        does not contain person_id and/or domain_id, the domain table does 
+        not contain EHR data, or the table is a sandbox table for a mapping/ext table.
+    """
+    domain_tables = set(AOU_REQUIRED + OTHER_PID_TABLES) - set(NON_PID_TABLES)
+
+    if MAPPING_PREFIX in table:
+        return ''
+
+    col_names = [
+        col.name for col in client.get_table(
+            f'{client.project}.{dataset}.{table}').schema
+    ]
+
+    if all(col_name != f"{PERSON}_id" for col_name in col_names):
+        return ''
+
+    for domain in domain_tables:
+        if domain in table:
+
+            if domain == DEATH:
+                domain_id = f"{PERSON}_id"
+
+            elif domain == OBSERVATION and OBSERVATION_PERIOD in table:
+                domain_id = f"{OBSERVATION_PERIOD}_id"
+
+            elif domain == NOTE and NOTE_NLP in table:
+                domain_id = f"{NOTE_NLP}_id"
+
+            else:
+                domain_id = f"{domain}_id"
+
+            if any(col_name == domain_id for col_name in col_names):
+                return domain_id
+
+    return ''
 
 
 def retraction_query_runner(client: BigQueryClient, queries):
@@ -416,7 +512,7 @@ def retraction_query_runner(client: BigQueryClient, queries):
     for query in queries:
         job = client.query(query)
         LOGGER.info(f'Running query for job_id {job.job_id}. Query:\n{query}')
-        result = job.result()
+        _ = job.result()
         LOGGER.info(
             f'Removed {job.num_dml_affected_rows} rows for job_id {job.job_id}')
 
@@ -459,7 +555,7 @@ def run_bq_retraction(project_id,
 
     client = bq_client if bq_client else BigQueryClient(project_id)
 
-    # NOTE get_datasets_list() excludes sandbox datasets and datasets that are type=OTHER.
+    # NOTE get_datasets_list() excludes datasets that are type=OTHER.
     dataset_ids = get_datasets_list(client, dataset_list)
 
     for dataset in dataset_ids:
@@ -469,10 +565,6 @@ def run_bq_retraction(project_id,
 
         # Argument hpo_id is effective for only EHR dataset.
         hpo_id = hpo_id if is_ehr_dataset(dataset) else ''
-
-        # retraction type should be set none for ehr and unioned_ehr datasets
-        retraction_type = None if is_ehr_dataset(dataset) or is_unioned_dataset(
-            dataset) else retraction_type
 
         queries = get_retraction_queries(client,
                                          dataset,
