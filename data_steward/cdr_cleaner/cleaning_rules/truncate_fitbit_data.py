@@ -25,14 +25,7 @@ SANDBOX_QUERY = JINJA_ENV.from_string("""
 CREATE OR REPLACE TABLE `{{project_id}}.{{sandbox_id}}.{{intermediary_table}}` AS (
 SELECT * 
 FROM `{{project_id}}.{{dataset_id}}.{{fitbit_table}}`
-{% if datetime_fields and date_fields %}
-  WHERE (GREATEST({{date_fields}}) > DATE("{{truncation_date}}"))
-  OR (GREATEST({{datetime_fields}}) > DATETIME("{{truncation_date}}"))
-{% elif datetime_fields %}
-  WHERE (GREATEST({{datetime_fields}}) > DATETIME("{{truncation_date}}"))
-{% elif date_fields %}
-  WHERE (GREATEST({{date_fields}}) > DATE("{{truncation_date}}"))
-{% endif %}
+WHERE (GREATEST({{date_fields}}) > DATE("{{truncation_date}}"))
 )
 """)
 
@@ -93,26 +86,20 @@ class TruncateFitbitData(BaseCleaningRule):
         truncate_queries = []
 
         for table in self.get_affected_tables():
-            # gets all fields from the affected table
+            # gets all fields from the affected tables
             fields = fields_for(table)
 
             date_fields = []
-            datetime_fields = []
 
             for field in fields:
-                # appends only the date columns to the date_fields list
-                if field['type'] in ['date']:
+                # appends date and datetime columns to the date_fields list
+                if field['type'].lower() in ['date', 'datetime']:
                     date_fields.append(
                         f'COALESCE({field["name"]}, DATE("1900-01-01"))')
 
-                # appends only the datetime columns to the datetime_fields list
-                if field['type'] in ["datetime"]:
-                    datetime_fields.append(
-                        f'COALESCE({field["name"]}, DATETIME("1900-01-01"))')
-
             # will render the queries only if a table contains a date or datetime field
             # will ignore the tables that do not have a date or datetime field
-            if date_fields or datetime_fields:
+            if date_fields:
                 sandbox_query = {
                     QUERY:
                         SANDBOX_QUERY.render(
@@ -122,7 +109,6 @@ class TruncateFitbitData(BaseCleaningRule):
                             dataset_id=self.dataset_id,
                             fitbit_table=table,
                             date_fields=(", ".join(date_fields)),
-                            datetime_fields=(", ".join(datetime_fields)),
                             truncation_date=self.truncation_date),
                 }
 
@@ -160,11 +146,7 @@ class TruncateFitbitData(BaseCleaningRule):
 
         :return: list of affected tables
         """
-        tables = []
-        for table in FITBIT_TABLES:
-            tables.append(table)
-
-        return tables
+        return self.affected_tables
 
     def setup_validation(self, client):
         """
@@ -195,9 +177,8 @@ if __name__ == '__main__':
         '--truncation_date',
         action='store',
         dest='truncation_date',
-        help=
-        ('Cutoff date for data based on <table_name>_date and <table_name>_datetime fields.  '
-         'Should be in the form YYYY-MM-DD.'),
+        help=('Cutoff date for data based on fitbit date and datetime fields.  '
+              'Should be in the form YYYY-MM-DD.'),
         required=True)
 
     ARGS = ext_parser.parse_args()
