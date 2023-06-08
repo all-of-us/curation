@@ -34,5 +34,11 @@
     "name": "duration_in_min",
     "type": "float",
     "description": "Total number of minutes the user appeared in the sleep level."
+  },
+  {
+    "type": "string",
+    "name": "src_id",
+    "mode": "nullable",
+    "description": "This id functions as a denotation to signify the provenance of this entry"
   }
 ]

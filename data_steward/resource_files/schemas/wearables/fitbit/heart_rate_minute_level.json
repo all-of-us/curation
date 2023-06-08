@@ -16,5 +16,11 @@
     "name": "person_id",
     "mode": "nullable",
     "description": "A foreign key identifier to the person for whom the data was recorded."
+  },
+  {
+    "type": "string",
+    "name": "src_id",
+    "mode": "nullable",
+    "description": "This id functions as a denotation to signify the provenance of this entry"
   }
 ]

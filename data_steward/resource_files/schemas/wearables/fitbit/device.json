@@ -46,5 +46,11 @@
     "name": "last_sync_time",
     "mode": "nullable",
     "description": "Represents the last time the device was synced with the Fitbit mobile application."
+  },
+  {
+    "type": "string",
+    "name": "src_id",
+    "mode": "nullable",
+    "description": "This id functions as a denotation to signify the provenance of this entry"
   }
 ]

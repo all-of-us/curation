@@ -39,6 +39,13 @@
     "type": "float",
     "name": "calorie_count",
     "mode": "nullable",
+    "description": ""
+  },
+  {
+    "type": "string",
+    "name": "src_id",
+    "mode": "nullable",
+    "description": "This id functions as a denotation to signify the provenance of a datum."
     "description": "Number calories burned within the custom heart rate zone."
   }
 ]
