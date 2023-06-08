@@ -1,11 +1,11 @@
 """
 Remove all FitBit data for participants exceeding the maximum age of 89
 
-Original Issue: DC-1001, DC-1037, DC-2429, DC-2135
+Original Issue: DC-1001, DC-1037, DC-2429, DC-2135, DC-3165
 
 The intent is to ensure there is no data for participants over the age of 89 in
 Activity Summary, Heart Rate Minute Level, Heart Rate Summary, Steps Intraday,
-Sleep Daily Summary, and Sleep Level tables by sandboxing the applicable records 
+Sleep Daily Summary, Sleep Level and Device tables by sandboxing the applicable records
 and then dropping them.
 """
 
@@ -67,14 +67,15 @@ class RemoveFitbitDataIfMaxAgeExceeded(BaseCleaningRule):
         """
         desc = (
             'Drops all FitBit data from participants whose max age exceeds 89')
-        super().__init__(issue_numbers=['DC1001', 'DC1037', 'DC2429', 'DC2135'],
-                         description=desc,
-                         affected_datasets=[cdr_consts.FITBIT],
-                         affected_tables=FITBIT_TABLES,
-                         project_id=project_id,
-                         dataset_id=dataset_id,
-                         sandbox_dataset_id=sandbox_dataset_id,
-                         table_namer=table_namer)
+        super().__init__(
+            issue_numbers=['DC1001', 'DC1037', 'DC2429', 'DC2135', 'DC3165'],
+            description=desc,
+            affected_datasets=[cdr_consts.FITBIT],
+            affected_tables=FITBIT_TABLES,
+            project_id=project_id,
+            dataset_id=dataset_id,
+            sandbox_dataset_id=sandbox_dataset_id,
+            table_namer=table_namer)
 
         self.person = gbq.TableReference.from_string(
             f'{project_id}.{combined_dataset_id}.person')
