@@ -57,74 +57,13 @@ df = pd.DataFrame(columns = ['query', 'result'])
 #
 # by adding m.shift back to deid_table and see if any date is newer than cutoff date.
 
-query = JINJA_ENV.from_string("""
-WITH df1 AS (
-SELECT '1' as col ,COUNT (*) AS n_row_not_pass_activity_summary
-FROM `{{project_id}}.{{deid_cdr_fitbit}}.activity_summary`  a
-JOIN `{{project_id}}.{{pipeline}}.pid_rid_mapping` m
-ON m.research_id = a.person_id
-WHERE DATE_ADD(date(a.date), INTERVAL m.shift DAY) > '{{truncation_date}}'),
-
-df2 AS (
-SELECT '1' as col ,COUNT (*) n_row_not_pass_heart_rate_summary
-FROM `{{project_id}}.{{deid_cdr_fitbit}}.heart_rate_summary`  a
-JOIN `{{project_id}}.{{pipeline}}.pid_rid_mapping` m
-ON m.research_id = a.person_id
-WHERE DATE_ADD(date(a.date), INTERVAL m.shift DAY) > '{{truncation_date}}' ),
-
-df3 AS (
-SELECT '1' as col ,COUNT (*) n_row_not_pass_heart_rate_minute_level
-FROM `{{project_id}}.{{deid_cdr_fitbit}}.heart_rate_minute_level`  a
-JOIN `{{project_id}}.{{pipeline}}.pid_rid_mapping` m
-ON m.research_id = a.person_id
-WHERE DATE_ADD(date(a.datetime), INTERVAL m.shift DAY) > '{{truncation_date}}'),
-
-df4 AS (
-SELECT '1' as col ,COUNT (*) n_row_not_pass_steps_intraday
-FROM `{{project_id}}.{{deid_cdr_fitbit}}.steps_intraday`  a
-JOIN `{{project_id}}.{{pipeline}}.pid_rid_mapping` m
-ON m.research_id = a.person_id
-WHERE DATE_ADD(date(a.datetime), INTERVAL m.shift DAY) > '{{truncation_date}}' )
-
-SELECT * from df1
-JOIN df2 USING (col)
-JOIN df3 USING (col)
-JOIN df4 USING (col)
-
-""")
-q =query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr,non_deid_fitbit=non_deid_fitbit,deid_cdr_fitbit=deid_cdr_fitbit,truncation_date=truncation_date,maximum_age=maximum_age)
-df1=execute(client, q)
-df1=df1.iloc[:,1:5]
-if df1.loc[0].sum()==0:
- df = df.append({'query' : 'Query1 cutoff date in fitbit datasets', 'result' : 'PASS'},
-                ignore_index = True)
-else:
- df = df.append({'query' : 'Query1 cutoff date in fitbit datasets', 'result' : 'Failure'},
-                ignore_index = True)
-df1
-
 # +
-
-date_columns = {
-    'activity_summary': 'date',
-    'heart_rate_summary': 'date',
-    'heart_rate_minute_level': 'datetime',
-    'steps_intraday': 'datetime',
-    'sleep_level': 'sleep_date',
-    'sleep_daily_summary': 'sleep_date',
-    'device': 'date',
-}
-
-secondary_date_column = {
-    'device': 'last_sync_time'
-}
-
 health_sharing_consent_check = JINJA_ENV.from_string('''SELECT
   \'{{table_name}}\' as table,
   COUNT(1) bad_rows
 FROM
-  `{{project}}.{{dataset}}.{{table_name}}` a
-  JOIN `{{project}}.{{pipeline}}.pid_rid_mapping` m
+  `{{project_id}}.{{dataset_id}}.{{table_name}}` a
+  JOIN `{{project_id}}.{{pipeline}}.pid_rid_mapping` m
 ON m.research_id = a.person_id
 WHERE DATE_ADD(date({{column_date}}), INTERVAL m.shift DAY) > '{{truncation_date}}'
   {% if secondary_date_column -%}
@@ -134,8 +73,8 @@ WHERE DATE_ADD(date({{column_date}}), INTERVAL m.shift DAY) > '{{truncation_date
 queries_list = []
 for table in FITBIT_TABLES:
     queries_list.append(
-        health_sharing_consent_check.render(project=project_id,
-                                            dataset=non_deid_fitbit,
+        health_sharing_consent_check.render(project_id=project_id,
+                                            dataset_id=non_deid_fitbit,
                                             table_name=table,
                                             column_date=date_columns[table],
                                             secondary_date_column=secondary_date_column.get(table),
@@ -148,7 +87,41 @@ execute(client, union_all_query)
 
 # # Verify if that the fitdata data is removed FROM the fitbit tables for participants exceeding allowable age (maximum_age, i.e.,89). ((row counts = 0))
 #
+#
+#
+#
 # DC-1001
+
+# +
+query = JINJA_ENV.from_string(
+"""
+SELECT
+  \'{{table_name}}\' as table,
+  COUNT(1) bad_rows
+FROM
+    `{{project_id}}.{{dataset_id}}.{{table_name}}` a
+JOIN `{{project_id}}.{{pipeline}}.pid_rid_mapping` m
+ON m.research_id = d.person_id
+JOIN `{{project_id}}.{{combined_cdr}}.person` i
+ON m.person_id = i.person_id
+WHERE FLOOR(DATE_DIFF(CURRENT_DATE(), DATE(i.birth_datetime), YEAR)) > {{maximum_age}})
+"""
+)
+
+queries_list = []
+for table in FITBIT_TABLES:
+    queries_list.append(
+        health_sharing_consent_check.render(project_id=project_id,
+                                            dataset_id=non_deid_fitbit,
+                                            table_name=table,
+                                            truncation_date=truncation_date,
+                                            combined_cdr=combined_cdr,
+                                            pipeline=pipeline))
+
+union_all_query = '\nUNION ALL\n'.join(queries_list)
+execute(client, union_all_query)
+
+# -
 
 query = JINJA_ENV.from_string("""
 
