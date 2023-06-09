@@ -68,7 +68,7 @@ SET tables = ["observation", "observation_period", "condition_occurrence",
 "care_site", "condition_era", "device_cost", "device_exposure", "dose_era",
 "drug_exposure", "location", "measurement", "note", "note_nlp", "person",
 "procedure_cost", "procedure_occurrence", "provider", "specimen",
-"survey_conduct", "visit_cost", "visit_detail", "visit_occurrence"];
+"survey_conduct", "visit_cost", "visit_detail", "visit_occurrence", "aou_death"];
 
 CREATE TEMPORARY TABLE non_unique_primary_keys(table_name STRING, key_column int64);
 
@@ -144,12 +144,14 @@ execute(client, query)
 # ## PPI records should never follow death date
 # Make sure no one could die before the program began or have PPI records after their death.
 
+# +
+query = JINJA_ENV.from_string("""
 query = f'''
 WITH
 
  ppi_concept AS
  (SELECT concept_id
-  FROM `{DATASET_ID}.concept` c
+  FROM `{{dataset}}.concept` c
   WHERE vocabulary_id = 'PPI')
 
 ,pid_ppi AS
@@ -162,8 +164,8 @@ WITH
   -- in case of multiple death rows, use earliest for most rigid check --
   ,MIN(d.death_date)       AS min_death_date
 
-  FROM `{DATASET_ID}.death` d
-   JOIN `{DATASET_ID}.observation` o
+  FROM `{{dataset}}.aou_death` d
+   JOIN `{{dataset}}.observation` o
     USING (person_id)
    JOIN ppi_concept c
     ON o.observation_source_concept_id = c.concept_id
@@ -172,8 +174,22 @@ WITH
 SELECT *
 FROM pid_ppi
 WHERE min_death_date < max_ppi_date
+""").render(dataset=DATASET_ID)
+df = execute(client, query)
+
+success_msg = 'No PPI records follow death date.'
+failure_msg = '''
+    Some PPI are recorded after death date. Potential causes:
+        1. The participant's non-primary record (primary_death_record=FALSE) occurs before the PPI.
+           It can be because the source death record has incorrect death date. Discuss within Curation
+           about next steps (e.g., move forward CDR generation or hot-fix the non-primary death record).
+        2. The participant's primary record (primary_death_record=TRUE) occurs before the PPI.
+           This should not happen, since the CR NoDataAfterDeath cleans such records before this QC run.
+           Investigate and discuss within Curation about next steps.
+        3. None of the above. Investigate and discuss within Curation about next steps.
 '''
-execute(client, query)
+render_message(df, success_msg, failure_msg)
+# -
 
 # ## Consent required for EHR Data
 # If EHR records are found for participants who have not consented this may
@@ -802,4 +818,3 @@ failure_msg_if_empty = '''
     Death table is NOT empty. We expect DEATH table to be empty in Combined. Investigate why DEATH is not empty and fix it.
 '''
 render_message(df_if_empty, success_msg_if_empty, failure_msg_if_empty)
-# -
