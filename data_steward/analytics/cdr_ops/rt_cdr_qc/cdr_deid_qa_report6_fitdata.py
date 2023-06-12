@@ -237,37 +237,67 @@ else:
                 ignore_index = True)
 df1
 
+# +
 # heart_rate_summary
 query = JINJA_ENV.from_string("""
+
+
+
+
 
 WITH df1 AS (
 SELECT m.research_id,
 CONCAT(m.research_id, '_', i.date) as i_newc
 FROM `{{project_id}}.{{pipeline}}.pid_rid_mapping` m
-JOIN `{{project_id}}.{{non_deid_fitbit}}.heart_rate_summary` i
+JOIN `{{project_id}}.{{non_deid_fitbit}}.{{table}}` i
 ON m.person_id = i.person_id
 ),
+
+
+
 
 df2 AS (
 SELECT d.person_id,
 CONCAT(d.person_id, '_', DATE_ADD(d.date, INTERVAL m.shift DAY)) AS d_newc
 FROM `{{project_id}}.{{pipeline}}.pid_rid_mapping` m
-JOIN `{{project_id}}.{{deid_cdr_fitbit}}.heart_rate_summary` d
+JOIN `{{project_id}}.{{deid_cdr_fitbit}}.{{table}}` d
 ON m.research_id = d.person_id
 )
+
+
+
+
 
 SELECT COUNT (*) n_row_not_pass FROM df2
 WHERE d_newc NOT IN (SELECT i_newc FROM df1)
 """)
-q =query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr,non_deid_fitbit=non_deid_fitbit,deid_cdr_fitbit=deid_cdr_fitbit,truncation_date=truncation_date,maximum_age=maximum_age)
-df1=execute(client, q)
-if df1.eq(0).any().any():
- df = df.append({'query' : 'Query3.2 Date shifted in heart_rate_summary', 'result' : 'PASS'},
-                ignore_index = True)
-else:
- df = df.append({'query' : 'Query3.2 Date shifted in heart_rate_summary', 'result' : 'Failure'},
-                ignore_index = True)
-df1
+
+query_list = []
+results = []
+for table in ["heart_rate_summary", "activity_summary"]:
+    q = (query.render(project_id=project_id,
+                      table=table,
+                      pipeline=pipeline,
+                      combined_cdr=combined_cdr,
+                      deid_cdr=deid_cdr,
+                      non_deid_fitbit=non_deid_fitbit,
+                      deid_cdr_fitbit=deid_cdr_fitbit,
+                      truncation_date=truncation_date,
+                      maximum_age=maximum_age))
+
+    results.append(execute(client, q))
+
+# res_list = []
+# for query in query_list:
+#     res_list.append(execute(client, query))
+#     if res.eq(0).any().any():
+#          df = df.append({'query' : 'Query3.2 Date shifted in heart_rate_summary', 'result' : 'PASS'},
+#                 ignore_index = True)
+#     else:
+#          df = df.append({'query' : 'Query3.2 Date shifted in heart_rate_summary', 'result' : 'Failure'},
+#                 ignore_index = True)
+
+results
 
 # +
 # heart_rate_minute_level
