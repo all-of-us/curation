@@ -1,11 +1,11 @@
 """
 Unit test for remove_fitbit_data_if_max_age_exceeded module
 
-Original Issue: DC-1001, DC-1037, DC-2429, DC-2135
+Original Issue: DC-1001, DC-1037, DC-2429, DC-2135, DC-3165
 
 Ensures any participant with FitBit data who is over the age of 89 is dropped from
 Activity Summary, Heart Rate Minute Level, Heart Rate Summary, Steps Intraday,
-Sleep Daily Summary, and Sleep Level FitBit tables.
+Sleep Daily Summary, Sleep Level, and Device FitBit tables.
 """
 
 # Python imports

@@ -6,17 +6,17 @@ Integration test for BigQuery retraction.
 import os
 from unittest import mock
 
-# Third party imports
-
 # Project imports
 from app_identity import PROJECT_ID
-from common import (ACTIVITY_SUMMARY, COMBINED, DEID, EHR, FITBIT, JINJA_ENV,
-                    OBSERVATION, OTHER, PERSON, RDR, UNIONED_EHR)
+from common import (ACTIVITY_SUMMARY, COMBINED, DEATH, DEID, EHR, FITBIT,
+                    JINJA_ENV, MAPPING_PREFIX, OBSERVATION, OBSERVATION_PERIOD,
+                    OTHER, PERSON, RDR, UNIONED_EHR)
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
 from retraction.retract_data_bq import (NONE, RETRACTION_ONLY_EHR,
                                         RETRACTION_RDR_EHR, get_datasets_list,
+                                        get_primary_key_for_sandbox_table,
                                         run_bq_retraction)
-from retraction.retract_utils import get_dataset_type, is_sandbox_dataset
+from retraction.retract_utils import get_dataset_type
 from constants.retraction.retract_utils import ALL_DATASETS
 
 CREATE_LOOKUP_TMPL = JINJA_ENV.from_string("""
@@ -24,14 +24,14 @@ CREATE TABLE `{{project}}.{{dataset}}.pid_rid_to_retract`
 (person_id INT64, research_id INT64)
 """)
 
-LOOKUP_TMPL = JINJA_ENV.from_string("""
+INSERT_LOOKUP_TMPL = JINJA_ENV.from_string("""
 INSERT INTO `{{project}}.{{dataset}}.pid_rid_to_retract` 
     (person_id, research_id)
 VALUES
     (102, 202), (104, 204)
 """)
 
-PERSON_TMPL = JINJA_ENV.from_string("""
+INSERT_PERS_TMPL = JINJA_ENV.from_string("""
 INSERT INTO `{{project}}.{{dataset}}.{{table}}` 
     (person_id, gender_concept_id, year_of_birth, race_concept_id, ethnicity_concept_id)
 VALUES
@@ -40,7 +40,7 @@ VALUES
 {% endfor %}
 """)
 
-OBSERVATION_TMPL = JINJA_ENV.from_string("""
+INSERT_OBS_TMPL = JINJA_ENV.from_string("""
 INSERT INTO `{{project}}.{{dataset}}.{{table}}` 
     (observation_id, person_id, observation_concept_id, observation_date, observation_type_concept_id)
 VALUES
@@ -50,12 +50,12 @@ VALUES
 {% endfor %}
 """)
 
-EHR_TMPL = JINJA_ENV.from_string("""
+CREATE_AS_SELECT_TMPL = JINJA_ENV.from_string("""
 CREATE TABLE `{{project}}.{{dataset}}.{{table}}` 
 AS SELECT * FROM `{{project}}.{{src_dataset}}.{{src_table}}` 
 """)
 
-MAPPING_OBSERVATION_TMPL = JINJA_ENV.from_string("""
+INSERT_MAPPING_OBS_TMPL = JINJA_ENV.from_string("""
 INSERT INTO `{{project}}.{{dataset}}._mapping_observation` 
     (observation_id, src_hpo_id)
 VALUES
@@ -66,7 +66,7 @@ VALUES
 {% endfor %}
 """)
 
-OBSERVATION_EXT_TMPL = JINJA_ENV.from_string("""
+INSERT_OBS_EXT_TMPL = JINJA_ENV.from_string("""
 INSERT INTO `{{project}}.{{dataset}}.observation_ext` 
     (observation_id, src_id)
 VALUES
@@ -77,7 +77,7 @@ VALUES
 {% endfor %}
 """)
 
-ACTIVITY_SUMMARY_TMPL = JINJA_ENV.from_string("""
+INSERT_ACTIVITY_SUMMARY_TMPL = JINJA_ENV.from_string("""
 INSERT INTO `{{project}}.{{dataset}}.activity_summary` 
     (person_id)
 VALUES
@@ -198,9 +198,8 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
                 f'{project_id}.{sandbox_id}.retract_{dataset}_{ACTIVITY_SUMMARY}'
             )
 
-        # tables for EHR dataset
-        # person and observation tables are in fq_sandbox_table_names for EHR dataset
-        # because they have the prefix({hpo}) and create_table for fq_table_names do
+        # tables for EHR dataset are in fq_sandbox_table_names
+        # because they have a prefix and create_table for fq_table_names do
         # not work for tables with such naming.
         for hpo in [cls.hpo_id, UNIONED_EHR, 'foo']:
             cls.fq_sandbox_table_names.extend([
@@ -225,51 +224,53 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
         for dataset in [
                 self.rdr_id, self.unioned_ehr_id, self.combined_id, self.deid_id
         ]:
-            insert_pers = PERSON_TMPL.render(project=self.project_id,
-                                             dataset=dataset,
-                                             table=PERSON,
-                                             person_ids=PERS_ALL)
-            insert_obs = OBSERVATION_TMPL.render(project=self.project_id,
-                                                 dataset=dataset,
-                                                 table=OBSERVATION,
-                                                 person_ids=PERS_ALL)
+            insert_pers = INSERT_PERS_TMPL.render(project=self.project_id,
+                                                  dataset=dataset,
+                                                  table=PERSON,
+                                                  person_ids=PERS_ALL)
+            insert_obs = INSERT_OBS_TMPL.render(project=self.project_id,
+                                                dataset=dataset,
+                                                table=OBSERVATION,
+                                                person_ids=PERS_ALL)
             queries.extend([insert_pers, insert_obs])
 
         # mapping tables/ ext tables
-        insert_map_obs = MAPPING_OBSERVATION_TMPL.render(
+        insert_map_obs = INSERT_MAPPING_OBS_TMPL.render(
             project=self.project_id,
             dataset=self.combined_id,
             observation_ids=OBS_ALL)
-        insert_obs_ext = OBSERVATION_EXT_TMPL.render(project=self.project_id,
-                                                     dataset=self.deid_id,
-                                                     observation_ids=OBS_ALL)
+        insert_obs_ext = INSERT_OBS_EXT_TMPL.render(project=self.project_id,
+                                                    dataset=self.deid_id,
+                                                    observation_ids=OBS_ALL)
         queries.extend([insert_map_obs, insert_obs_ext])
 
         # fitbit tables
         for dataset in [self.deid_id, self.fitbit_id]:
-            insert_activity_summary = ACTIVITY_SUMMARY_TMPL.render(
+            insert_activity_summary = INSERT_ACTIVITY_SUMMARY_TMPL.render(
                 project=self.project_id, dataset=dataset, person_ids=PERS_ALL)
             queries.extend([insert_activity_summary])
 
         # tables for EHR dataset
         for hpo in [self.hpo_id, UNIONED_EHR, 'foo']:
-            create_pers_ehr = EHR_TMPL.render(project=self.project_id,
-                                              dataset=self.ehr_id,
-                                              table=f'{hpo}_{PERSON}',
-                                              src_dataset=self.rdr_id,
-                                              src_table=PERSON)
-            create_obs_ehr = EHR_TMPL.render(project=self.project_id,
-                                             dataset=self.ehr_id,
-                                             table=f'{hpo}_{OBSERVATION}',
-                                             src_dataset=self.rdr_id,
-                                             src_table=OBSERVATION)
+            create_pers_ehr = CREATE_AS_SELECT_TMPL.render(
+                project=self.project_id,
+                dataset=self.ehr_id,
+                table=f'{hpo}_{PERSON}',
+                src_dataset=self.rdr_id,
+                src_table=PERSON)
+            create_obs_ehr = CREATE_AS_SELECT_TMPL.render(
+                project=self.project_id,
+                dataset=self.ehr_id,
+                table=f'{hpo}_{OBSERVATION}',
+                src_dataset=self.rdr_id,
+                src_table=OBSERVATION)
             queries.extend([create_pers_ehr, create_obs_ehr])
 
         # lookup table
         create_lookup = CREATE_LOOKUP_TMPL.render(project=self.project_id,
                                                   dataset=self.sandbox_id)
-        insert_lookup = LOOKUP_TMPL.render(project=self.project_id,
-                                           dataset=self.sandbox_id)
+        insert_lookup = INSERT_LOOKUP_TMPL.render(project=self.project_id,
+                                                  dataset=self.sandbox_id)
         queries.extend([create_lookup, insert_lookup])
 
         self.load_test_data(queries)
@@ -917,30 +918,6 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
         self.assertEqual(dataset_list, [])
 
     @mock_patch_bundle
-    def test_retract_sandbox(self, mock_ru_get_dataset_type,
-                             mock_rdb_get_dataset_type, mock_is_rdr,
-                             mock_is_ehr, mock_is_unioned, mock_is_combined,
-                             mock_is_deid, mock_is_fitbit, mock_ru_is_sandbox,
-                             mock_rdb_is_sandbox):
-        """
-        Test for sandbox datasets with both retraction_type = 'only_ehr' and 'rdr_and_ehr'.
-        retract_utils.get_datasets_list() excludes sandbox datasets from retraction
-        regardless of `retraction_type`.
-        """
-        for mock_ in [
-                mock_is_rdr, mock_is_ehr, mock_is_unioned, mock_is_combined,
-                mock_is_deid, mock_is_fitbit, mock_ru_is_sandbox,
-                mock_rdb_is_sandbox
-        ]:
-            mock_.return_value = False
-        mock_is_combined.return_value = True
-        mock_rdb_is_sandbox.return_value = mock_ru_is_sandbox.return_value = True
-        mock_rdb_get_dataset_type.return_value = mock_ru_get_dataset_type.return_value = COMBINED
-
-        dataset_list = get_datasets_list(self.client, [self.sandbox_id])
-        self.assertEqual(dataset_list, [])
-
-    @mock_patch_bundle
     def test_retract_skip_sandboxing(self, mock_ru_get_dataset_type,
                                      mock_rdb_get_dataset_type, mock_is_rdr,
                                      mock_is_ehr, mock_is_unioned,
@@ -979,8 +956,7 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
     def test_retract_all(self):
         """
         When ['all_datasets'] specified for dataset_list, BQ retraction runs against all the datasets
-        excluding sandbox datasets and OTHER datasets.
-        NOTE This exclusion rule might be revisited.
+        excluding OTHER datasets.
         """
         actual = set(get_datasets_list(self.client, [ALL_DATASETS]))
         all_datasets = set([
@@ -988,7 +964,7 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
         ])
         datasets_to_exclude = set([
             dataset for dataset in all_datasets
-            if is_sandbox_dataset(dataset) or get_dataset_type(dataset) == OTHER
+            if get_dataset_type(dataset) == OTHER
         ])
 
         self.assertTrue(actual.issubset(all_datasets))
@@ -1003,3 +979,431 @@ class RetractDataBqTest(BaseTest.BigQueryTestBase):
         for dataset_ids in [[NONE], [], None]:
             dataset_list = get_datasets_list(self.client, dataset_ids)
             self.assertEqual(dataset_list, [])
+
+
+class RetractDataBqSandboxTablesTest(BaseTest.BigQueryTestBase):
+    """
+    This test class is to test retraction for tables in sandbox datasets.
+    Sandbox tables' retraction logic is complex, so it gets its dedicated
+    test class.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        print('**************************************************************')
+        print(cls.__name__)
+        print('**************************************************************')
+
+        super().initialize_class_vars()
+
+        project_id = os.environ.get(PROJECT_ID)
+        cls.project_id = project_id
+        sandbox_id = f"{os.environ.get('RDR_DATASET_ID')}_sandbox"
+        cls.sandbox_id = sandbox_id
+        dataset_id = os.environ.get('BIGQUERY_DATASET_ID')
+        cls.dataset_id = dataset_id
+
+        cls.hpo_id = 'fake'
+        cls.lookup_table_id = 'pid_rid_to_retract'
+
+        # fq_table_names cannot be empty. OBSERVATION is listed here but not used in this test.
+        cls.fq_table_names = [
+            f'{project_id}.{dataset_id}.{OBSERVATION}',
+        ]
+
+        # tables for sandbox dataset are in fq_sandbox_table_names
+        # because they have a prefix and create_table for fq_table_names do
+        # not work for tables with such naming.
+        cls.fq_sandbox_table_names.extend([
+            f'{project_id}.{dataset_id}.dc111_dc-222_{OBSERVATION}_DC685',
+            f'{project_id}.{sandbox_id}.retract_{dataset_id}_dc111_dc-222_{OBSERVATION}_DC685',
+            f'{project_id}.{dataset_id}.dc111_dc-222_{OBSERVATION_PERIOD}',
+            f'{project_id}.{sandbox_id}.retract_{dataset_id}_dc111_dc-222_{OBSERVATION_PERIOD}',
+            f'{project_id}.{dataset_id}.dc111_dc-222_{PERSON}',
+            f'{project_id}.{sandbox_id}.retract_{dataset_id}_dc111_dc-222_{PERSON}',
+            f'{project_id}.{sandbox_id}.retract_{dataset_id}_{OBSERVATION}'  # <- This last one is dummy
+        ])
+
+        # lookup table
+        cls.fq_sandbox_table_names.append(
+            f'{project_id}.{sandbox_id}.{cls.lookup_table_id}')
+
+        super().setUpClass()
+
+    def setUp(self):
+        super().setUp()
+
+        lookup_data_query = self.jinja_env.from_string("""
+        CREATE OR REPLACE TABLE `{{project}}.{{dataset}}.pid_rid_to_retract` 
+        AS
+        SELECT 102 AS person_id, 202 AS research_id UNION ALL
+        SELECT 104 AS person_id, 204 AS research_id
+        """).render(project=self.project_id, dataset=self.sandbox_id)
+
+        sb_obs_data_query = self.jinja_env.from_string("""
+        CREATE OR REPLACE TABLE `{{project}}.{{dataset}}.dc111_dc-222_observation_DC685` 
+        AS
+        SELECT 1000000000000101 AS observation_id, 101 AS person_id UNION ALL
+        SELECT 1000000000000102 AS observation_id, 102 AS person_id UNION ALL
+        SELECT 2000000000000103 AS observation_id, 103 AS person_id UNION ALL
+        SELECT 2000000000000104 AS observation_id, 104 AS person_id UNION ALL
+        SELECT 1000000000000201 AS observation_id, 201 AS person_id UNION ALL
+        SELECT 1000000000000202 AS observation_id, 202 AS person_id UNION ALL
+        SELECT 2000000000000203 AS observation_id, 203 AS person_id UNION ALL
+        SELECT 2000000000000204 AS observation_id, 204 AS person_id
+        """).render(project=self.project_id, dataset=self.dataset_id)
+
+        sb_obs_period_data_query = self.jinja_env.from_string("""
+        CREATE OR REPLACE TABLE `{{project}}.{{dataset}}.dc111_dc-222_observation_period` 
+        AS
+        SELECT 1000000000000101 AS observation_period_id, 101 AS person_id UNION ALL
+        SELECT 1000000000000102 AS observation_period_id, 102 AS person_id UNION ALL
+        SELECT 2000000000000103 AS observation_period_id, 103 AS person_id UNION ALL
+        SELECT 2000000000000104 AS observation_period_id, 104 AS person_id UNION ALL
+        SELECT 1000000000000201 AS observation_period_id, 201 AS person_id UNION ALL
+        SELECT 1000000000000202 AS observation_period_id, 202 AS person_id UNION ALL
+        SELECT 2000000000000203 AS observation_period_id, 203 AS person_id UNION ALL
+        SELECT 2000000000000204 AS observation_period_id, 204 AS person_id
+        """).render(project=self.project_id, dataset=self.dataset_id)
+
+        sb_pers_data_query = self.jinja_env.from_string("""
+        CREATE OR REPLACE TABLE `{{project}}.{{dataset}}.dc111_dc-222_person` 
+        AS
+        SELECT 101 AS person_id UNION ALL
+        SELECT 201 AS person_id UNION ALL
+        SELECT 102 AS person_id UNION ALL
+        SELECT 202 AS person_id
+        """).render(project=self.project_id, dataset=self.dataset_id)
+
+        queries = [
+            lookup_data_query, sb_obs_data_query, sb_obs_period_data_query,
+            sb_pers_data_query
+        ]
+
+        self.load_test_data(queries)
+
+    @mock_patch_bundle
+    def test_retract_sandbox_rdr_and_ehr(self, mock_ru_get_dataset_type,
+                                         mock_rdb_get_dataset_type, mock_is_rdr,
+                                         mock_is_ehr, mock_is_unioned,
+                                         mock_is_combined, mock_is_deid,
+                                         mock_is_fitbit, mock_ru_is_sandbox,
+                                         mock_rdb_is_sandbox):
+        """
+        Test for sandbox datasets.
+        - run_bq_retraction with retraction_type = 'rdr_and_ehr'.
+        - Retraction runs based on person_id, not research_id.
+        - Person tables are retracted regardless of data tiers.
+        - skip_sandboxing is enabled for efficiency.
+        """
+        for mock_ in [
+                mock_is_rdr, mock_is_ehr, mock_is_unioned, mock_is_combined,
+                mock_is_deid, mock_is_fitbit, mock_ru_is_sandbox,
+                mock_rdb_is_sandbox
+        ]:
+            mock_.return_value = False
+        mock_is_combined.return_value = True
+        mock_rdb_is_sandbox.return_value = mock_ru_is_sandbox.return_value = True
+        mock_rdb_get_dataset_type.return_value = mock_ru_get_dataset_type.return_value = COMBINED
+
+        project_id, sandbox_id, dataset_id = self.project_id, self.sandbox_id, self.dataset_id
+
+        run_bq_retraction(project_id, sandbox_id, self.lookup_table_id, NONE,
+                          [dataset_id], RETRACTION_RDR_EHR, True, self.client)
+
+        self.assertRowIDsMatch(
+            f'{project_id}.{dataset_id}.dc111_dc-222_{OBSERVATION}_DC685',
+            ['observation_id'], [
+                1000000000000101, 2000000000000103, 1000000000000201,
+                1000000000000202, 2000000000000203, 2000000000000204
+            ])
+
+        self.assertRowIDsMatch(
+            f'{project_id}.{dataset_id}.dc111_dc-222_{OBSERVATION_PERIOD}',
+            ['observation_period_id'], [
+                1000000000000101, 2000000000000103, 1000000000000201,
+                1000000000000202, 2000000000000203, 2000000000000204
+            ])
+
+        self.assertRowIDsMatch(
+            f'{project_id}.{dataset_id}.dc111_dc-222_{PERSON}', ['person_id'],
+            [101, 201, 202])
+
+    @mock_patch_bundle
+    def test_retract_sandbox_only_ehr(self, mock_ru_get_dataset_type,
+                                      mock_rdb_get_dataset_type, mock_is_rdr,
+                                      mock_is_ehr, mock_is_unioned,
+                                      mock_is_combined, mock_is_deid,
+                                      mock_is_fitbit, mock_ru_is_sandbox,
+                                      mock_rdb_is_sandbox):
+        """
+        Test for sandbox datasets.
+        - run_bq_retraction with retraction_type = 'only_ehr'.
+        - Retraction runs based on person_id, not research_id.
+        - {domain}_id is also referenced to avoid retracting RDR records to the best of our effort.
+        - If the dataset is EHR sandbox or UnionedEHR sandbox, person sandbox tables are retracted.
+          Otherwise, person sandbox tables are not retracted because all the person records come from
+          RDR dataset for non-EHR/non-UnionedEHR datasets.
+        - skip_sandboxing is enabled for efficiency.
+        """
+        for mock_ in [
+                mock_is_rdr, mock_is_ehr, mock_is_unioned, mock_is_combined,
+                mock_is_deid, mock_is_fitbit, mock_ru_is_sandbox,
+                mock_rdb_is_sandbox
+        ]:
+            mock_.return_value = False
+        mock_is_combined.return_value = True
+        mock_rdb_is_sandbox.return_value = mock_ru_is_sandbox.return_value = True
+        mock_rdb_get_dataset_type.return_value = mock_ru_get_dataset_type.return_value = COMBINED
+
+        project_id, sandbox_id, dataset_id = self.project_id, self.sandbox_id, self.dataset_id
+
+        run_bq_retraction(project_id, sandbox_id, self.lookup_table_id, NONE,
+                          [dataset_id], RETRACTION_ONLY_EHR, True, self.client)
+
+        self.assertRowIDsMatch(
+            f'{project_id}.{dataset_id}.dc111_dc-222_{OBSERVATION}_DC685',
+            ['observation_id'], [
+                1000000000000101, 1000000000000102, 2000000000000103,
+                1000000000000201, 1000000000000202, 2000000000000203,
+                2000000000000204
+            ])
+
+        self.assertRowIDsMatch(
+            f'{project_id}.{dataset_id}.dc111_dc-222_{OBSERVATION_PERIOD}',
+            ['observation_period_id'], [
+                1000000000000101, 1000000000000102, 2000000000000103,
+                1000000000000201, 1000000000000202, 2000000000000203,
+                2000000000000204
+            ])
+
+        # Person sandbox table is not retracted since it is Commbined sandbox dataset.
+        self.assertRowIDsMatch(
+            f'{project_id}.{dataset_id}.dc111_dc-222_{PERSON}', ['person_id'],
+            [101, 102, 201, 202])
+
+        # Run retraction again as EHR sandbox dataset.
+        mock_is_combined.return_value = False
+        mock_is_ehr.return_value = True
+        mock_rdb_get_dataset_type.return_value = mock_ru_get_dataset_type.return_value = EHR
+        run_bq_retraction(project_id, sandbox_id, self.lookup_table_id, NONE,
+                          [dataset_id], RETRACTION_ONLY_EHR, True, self.client)
+
+        # Person sandbox table is retracted this time based on person_id.
+        self.assertRowIDsMatch(
+            f'{project_id}.{dataset_id}.dc111_dc-222_{PERSON}', ['person_id'],
+            [101, 201, 202])
+
+    @mock_patch_bundle
+    def test_retract_deid_sandbox_rdr_and_ehr(
+        self, mock_ru_get_dataset_type, mock_rdb_get_dataset_type, mock_is_rdr,
+        mock_is_ehr, mock_is_unioned, mock_is_combined, mock_is_deid,
+        mock_is_fitbit, mock_ru_is_sandbox, mock_rdb_is_sandbox):
+        """
+        Test for sandbox datasets.
+        - run_bq_retraction with retraction_type = 'rdr_and_ehr'.
+        - Retraction runs based on research_id, not person_id.
+        - Person tables are retracted regardless of data tiers
+        - skip_sandboxing is enabled for efficiency.
+        """
+        for mock_ in [
+                mock_is_rdr, mock_is_ehr, mock_is_unioned, mock_is_combined,
+                mock_is_deid, mock_is_fitbit, mock_ru_is_sandbox,
+                mock_rdb_is_sandbox
+        ]:
+            mock_.return_value = False
+        mock_is_combined.return_value = True
+        mock_is_deid.return_value = True
+        mock_rdb_is_sandbox.return_value = mock_ru_is_sandbox.return_value = True
+        mock_rdb_get_dataset_type.return_value = mock_ru_get_dataset_type.return_value = COMBINED
+
+        project_id, sandbox_id, dataset_id = self.project_id, self.sandbox_id, self.dataset_id
+
+        run_bq_retraction(project_id, sandbox_id, self.lookup_table_id, NONE,
+                          [dataset_id], RETRACTION_RDR_EHR, True, self.client)
+        self.assertRowIDsMatch(
+            f'{project_id}.{dataset_id}.dc111_dc-222_{OBSERVATION}_DC685',
+            ['observation_id'], [
+                1000000000000101, 1000000000000102, 2000000000000103,
+                2000000000000104, 1000000000000201, 2000000000000203
+            ])
+
+        self.assertRowIDsMatch(
+            f'{project_id}.{dataset_id}.dc111_dc-222_{OBSERVATION_PERIOD}',
+            ['observation_period_id'], [
+                1000000000000101, 1000000000000102, 2000000000000103,
+                2000000000000104, 1000000000000201, 2000000000000203
+            ])
+
+        self.assertRowIDsMatch(
+            f'{project_id}.{dataset_id}.dc111_dc-222_{PERSON}', ['person_id'],
+            [101, 102, 201])
+
+    @mock_patch_bundle
+    def test_retract_deid_sandbox_only_ehr(
+        self, mock_ru_get_dataset_type, mock_rdb_get_dataset_type, mock_is_rdr,
+        mock_is_ehr, mock_is_unioned, mock_is_combined, mock_is_deid,
+        mock_is_fitbit, mock_ru_is_sandbox, mock_rdb_is_sandbox):
+        """
+        Test for sandbox datasets.
+        - run_bq_retraction with retraction_type = 'only_ehr'.
+        - Retraction runs based on research_id, not person_id.
+        - {domain}_id is also referenced to avoid retracting RDR records to the best of our effort.
+        - If the dataset is EHR sandbox or UnionedEHR sandbox, person sandbox tables are retracted.
+          Otherwise, person sandbox tables are not retracted because all the person records come from
+          RDR dataset for non-EHR/non-UnionedEHR datasets.
+        - skip_sandboxing is enabled for efficiency.
+        """
+        for mock_ in [
+                mock_is_rdr, mock_is_ehr, mock_is_unioned, mock_is_combined,
+                mock_is_deid, mock_is_fitbit, mock_ru_is_sandbox,
+                mock_rdb_is_sandbox
+        ]:
+            mock_.return_value = False
+        mock_is_combined.return_value = True
+        mock_is_deid.return_value = True
+        mock_rdb_is_sandbox.return_value = mock_ru_is_sandbox.return_value = True
+        mock_rdb_get_dataset_type.return_value = mock_ru_get_dataset_type.return_value = COMBINED
+
+        project_id, sandbox_id, dataset_id = self.project_id, self.sandbox_id, self.dataset_id
+
+        run_bq_retraction(project_id, sandbox_id, self.lookup_table_id, NONE,
+                          [dataset_id], RETRACTION_ONLY_EHR, True, self.client)
+
+        self.assertRowIDsMatch(
+            f'{project_id}.{dataset_id}.dc111_dc-222_{OBSERVATION}_DC685',
+            ['observation_id'], [
+                1000000000000101, 1000000000000102, 2000000000000103,
+                2000000000000104, 1000000000000201, 1000000000000202,
+                2000000000000203
+            ])
+
+        self.assertRowIDsMatch(
+            f'{project_id}.{dataset_id}.dc111_dc-222_{OBSERVATION_PERIOD}',
+            ['observation_period_id'], [
+                1000000000000101, 1000000000000102, 2000000000000103,
+                2000000000000104, 1000000000000201, 1000000000000202,
+                2000000000000203
+            ])
+
+        # Person sandbox table is not retracted since it is Commbined sandbox dataset.
+        self.assertRowIDsMatch(
+            f'{project_id}.{dataset_id}.dc111_dc-222_{PERSON}', ['person_id'],
+            [101, 102, 201, 202])
+
+        # Run retraction again as UNIONED_EHR sandbox dataset.
+        mock_is_combined.return_value = False
+        mock_is_unioned.return_value = True
+        mock_rdb_get_dataset_type.return_value = mock_ru_get_dataset_type.return_value = UNIONED_EHR
+        run_bq_retraction(project_id, sandbox_id, self.lookup_table_id, NONE,
+                          [dataset_id], RETRACTION_ONLY_EHR, True, self.client)
+
+        # Person sandbox table is retracted this time based on research_id.
+        self.assertRowIDsMatch(
+            f'{project_id}.{dataset_id}.dc111_dc-222_{PERSON}', ['person_id'],
+            [101, 102, 201])
+
+
+class RetractDataBqGetPKforSBTableTest(BaseTest.BigQueryTestBase):
+
+    @classmethod
+    def setUpClass(cls):
+        print('**************************************************************')
+        print(cls.__name__)
+        print('**************************************************************')
+
+        super().initialize_class_vars()
+
+        cls.project_id = os.environ.get(PROJECT_ID)
+        cls.dataset_id = os.environ.get('BIGQUERY_DATASET_ID')
+
+        cls.fq_table_names.extend(
+            [f'{cls.project_id}.{cls.dataset_id}.{PERSON}'])
+
+        # tables for EHR dataset and sandbox dataset are in fq_sandbox_table_names
+        # because they have a prefix and create_table for fq_table_names do
+        # not work for tables with such naming.
+        cls.fq_sandbox_table_names.extend([
+            f'{cls.project_id}.{cls.dataset_id}.dc111_dc-111_{PERSON}',
+            f'{cls.project_id}.{cls.dataset_id}.dc111_dc-111_{DEATH}',
+            f'{cls.project_id}.{cls.dataset_id}.dc999_dc-999_{DEATH}',
+            f'{cls.project_id}.{cls.dataset_id}.dc111_dc-111_{OBSERVATION}_DC685',
+            f'{cls.project_id}.{cls.dataset_id}.dc888_dc-888_{OBSERVATION}',
+            f'{cls.project_id}.{cls.dataset_id}.dc999_dc-999_{OBSERVATION}',
+            f'{cls.project_id}.{cls.dataset_id}.dc999_dc-999{MAPPING_PREFIX}{OBSERVATION}',
+            f'{cls.project_id}.{cls.dataset_id}.dc111_dc-111_{OBSERVATION_PERIOD}',
+        ])
+
+        super().setUpClass()
+
+    def setUp(self):
+        super().setUp()
+
+        create_sb_pers = self.jinja_env.from_string("""
+        CREATE OR REPLACE TABLE `{{project}}.{{dataset}}.dc111_dc-111_person`
+        (person_id INT64)
+        """).render(project=self.project_id, dataset=self.dataset_id)
+
+        create_sb_death = self.jinja_env.from_string("""
+        CREATE OR REPLACE TABLE `{{project}}.{{dataset}}.dc111_dc-111_death`
+        (person_id INT64)
+        """).render(project=self.project_id, dataset=self.dataset_id)
+
+        create_sb_deat_no_pk = self.jinja_env.from_string("""
+        CREATE OR REPLACE TABLE `{{project}}.{{dataset}}.dc999_dc-999_death`
+        (dummy_id INT64)
+        """).render(project=self.project_id, dataset=self.dataset_id)
+
+        create_sb_obs = self.jinja_env.from_string("""
+        CREATE OR REPLACE TABLE `{{project}}.{{dataset}}.dc111_dc-111_observation_DC685`
+        (observation_id INT64, person_id INT64)
+        """).render(project=self.project_id, dataset=self.dataset_id)
+
+        create_sb_obs_no_pk = self.jinja_env.from_string("""
+        CREATE OR REPLACE TABLE `{{project}}.{{dataset}}.dc888_dc-888_observation`
+        (person_id INT64)
+        """).render(project=self.project_id, dataset=self.dataset_id)
+
+        create_sb_obs_no_person_id = self.jinja_env.from_string("""
+        CREATE OR REPLACE TABLE `{{project}}.{{dataset}}.dc999_dc-999_observation`
+        (observation_id INT64)
+        """).render(project=self.project_id, dataset=self.dataset_id)
+
+        create_sb_obs_mapping = self.jinja_env.from_string("""
+        CREATE OR REPLACE TABLE `{{project}}.{{dataset}}.dc999_dc-999_mapping_observation`
+        (observation_id INT64, person_id INT64)
+        """).render(project=self.project_id, dataset=self.dataset_id)
+
+        create_sb_obs_period = self.jinja_env.from_string("""
+        CREATE OR REPLACE TABLE `{{project}}.{{dataset}}.dc111_dc-111_observation_period`
+        (observation_period_id INT64, person_id INT64)
+        """).render(project=self.project_id, dataset=self.dataset_id)
+
+        self.load_test_data([
+            create_sb_pers, create_sb_death, create_sb_deat_no_pk,
+            create_sb_obs, create_sb_obs_no_pk, create_sb_obs_no_person_id,
+            create_sb_obs_mapping, create_sb_obs_period
+        ])
+
+    def test_get_primary_key_for_sandbox_table(self):
+        """
+        Test for get_primary_key_for_sandbox_table() to confirm it returns
+        the primary key column that we can use for `only_ehr` retraction in
+        sandbox datasets.
+        """
+        expected_primary_keys = {
+            f"dc111_dc-111_{PERSON}": f"{PERSON}_id",
+            f"dc111_dc-111_{DEATH}": f"{PERSON}_id",
+            f"dc999_dc-999_{DEATH}": '',
+            f"dc111_dc-111_{OBSERVATION}_DC685": f"{OBSERVATION}_id",
+            f"dc888_dc-888_{OBSERVATION}": '',
+            f"dc999_dc-999_{OBSERVATION}": '',
+            f"dc999_dc-999_{MAPPING_PREFIX}{OBSERVATION}": '',
+            f"dc111_dc-111_{OBSERVATION_PERIOD}": f"{OBSERVATION_PERIOD}_id",
+        }
+
+        for table in expected_primary_keys:
+            self.assertTrue(
+                get_primary_key_for_sandbox_table(self.client, self.dataset_id,
+                                                  table) ==
+                expected_primary_keys[table])

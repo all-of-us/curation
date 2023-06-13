@@ -1,13 +1,11 @@
 """
-Combine data sets `ehr` and `rdr` to form another data set `combined_backup`
+Combine data sets `unioned_ehr` and `rdr` to form another data set `combined_backup`
 
  * Create all the CDM tables in `combined_backup`
 
  * Load `person_id` of those who have consented to share EHR data in `combined_sandbox.ehr_consent`
 
  * Copy all `rdr.person` records to `combined_backup.person`
-
- * Copy `ehr.death` records that link to `combined_sandbox.ehr_consent`
 
  * Load `combined_backup.visit_mapping(dst_visit_occurrence_id, src_dataset, src_visit_occurrence_id)`
    with UNION ALL of:
@@ -17,6 +15,11 @@ Combine data sets `ehr` and `rdr` to form another data set `combined_backup`
  * Load tables `combined_backup.{visit_occurrence, condition_occurrence, procedure_occurrence}` etc. from UNION ALL
    of `ehr` and `rdr` records that link to `combined_backup.person`. Use `combined_backup.visit_mapping.dest_visit_occurrence_id`
    for records that have a (valid) `visit_occurrence_id`.
+
+ * Load `combined_backup.aou_death` with UNION ALL of:
+     1) all `rdr.death`s and
+     2) `unioned_ehr.aou_death`s that link to `combined_sandbox.ehr_consent`
+ * Site masking for `aou_death` happens here, too. (Other tables are site masked by GenerateExtTables)
 
 ## Notes
 Assumptions made:
@@ -37,13 +40,17 @@ from argparse import ArgumentParser
 from datetime import datetime
 
 # Third party imports
-from google.cloud.exceptions import GoogleCloudError
+from google.cloud.exceptions import GoogleCloudError, NotFound
 from google.cloud import bigquery
 
 # Project imports
-import common
-import resources
-from resources import mapping_table_for
+from common import (AOU_DEATH, CDR_SCOPES, DEATH, FACT_RELATIONSHIP,
+                    MEASUREMENT_DOMAIN_CONCEPT_ID,
+                    OBSERVATION_DOMAIN_CONCEPT_ID, PERSON, PIPELINE_TABLES,
+                    RDR_ID_CONSTANT, SITE_MASKING_TABLE_ID, SURVEY_CONDUCT,
+                    VISIT_DETAIL)
+from resources import (fields_for, get_git_tag, has_person_id,
+                       mapping_table_for, CDM_TABLES)
 from utils import auth, pipeline_logging
 from gcloud.bq import BigQueryClient
 from constants.bq_utils import WRITE_APPEND, WRITE_TRUNCATE
@@ -88,6 +95,7 @@ def assert_ehr_and_rdr_tables(client: BigQueryClient,
 def create_cdm_tables(client: BigQueryClient, combined_backup: str):
     """
     Create all CDM tables
+    NOTE AOU_DEATH is not included.
 
     :param client: BigQueryClient
     :param combined_backup: Combined backup dataset name
@@ -95,7 +103,7 @@ def create_cdm_tables(client: BigQueryClient, combined_backup: str):
 
     Note: Recreates any existing tables
     """
-    for table in resources.CDM_TABLES:
+    for table in CDM_TABLES:
         LOGGER.info(f'Creating table {combined_backup}.{table}...')
         schema_list = client.get_table_schema(table_name=table)
         dest_table = f'{client.project}.{combined_backup}.{table}'
@@ -163,34 +171,6 @@ def ehr_consent(client: BigQueryClient, rdr_dataset_id: str,
           write_disposition=WRITE_APPEND)
 
 
-def copy_ehr_table(client: BigQueryClient, table: str, unioned_ehr_dataset: str,
-                   combined_backup: str, combined_sandbox: str):
-    """
-    Copy table from EHR (consenting participants only) to the combined backup dataset without regenerating ids.
-
-    :param client: a BigQueryClient
-    :param table: a table to copy from unioned ehr dataset to combined backup dataset
-    :param unioned_ehr_dataset: unioned ehr dataset name
-    :param combined_backup: combined backup dataset name
-    :param combined_sandbox: combined sandbox dataset name
-
-    :return: None
-    """
-    fields = resources.fields_for(table)
-    field_names = [field['name'] for field in fields]
-    if 'person_id' not in field_names:
-        raise RuntimeError(
-            f'Cannot copy EHR table {table}. It is missing columns needed for consent filter'
-        )
-    q = combine_consts.COPY_EHR_QUERY.render(
-        ehr_dataset_id=unioned_ehr_dataset,
-        table=table,
-        ehr_consent_table_id=combine_consts.EHR_CONSENT_TABLE_ID,
-        combined_sandbox_dataset_id=combined_sandbox)
-    LOGGER.info(f'Query for {combined_backup}.{table} is `{q}`')
-    query(client, q, combined_backup, table, WRITE_APPEND)
-
-
 def mapping_query(domain_table: str, rdr_dataset: str, unioned_ehr_dataset: str,
                   combined_sandbox: str):
     """
@@ -207,8 +187,8 @@ def mapping_query(domain_table: str, rdr_dataset: str, unioned_ehr_dataset: str,
         ehr_dataset_id=unioned_ehr_dataset,
         combined_sandbox_dataset_id=combined_sandbox,
         domain_table=domain_table,
-        mapping_constant=common.RDR_ID_CONSTANT,
-        person_id_flag=resources.has_person_id(domain_table),
+        mapping_constant=RDR_ID_CONSTANT,
+        person_id_flag=has_person_id(domain_table),
         ehr_consent_table_id=combine_consts.EHR_CONSENT_TABLE_ID)
 
 
@@ -227,13 +207,13 @@ def generate_combined_mapping_tables(client: BigQueryClient, domain_table: str,
     :param combined_sandbox: combined_sandbox dataset identifier
     :return:
     """
-    if domain_table in combine_consts.DOMAIN_TABLES + [common.SURVEY_CONDUCT]:
+    if domain_table in combine_consts.DOMAIN_TABLES + [SURVEY_CONDUCT]:
         q = mapping_query(domain_table, rdr_dataset, unioned_ehr_dataset,
                           combined_sandbox)
         mapping_table = mapping_table_for(domain_table)
         LOGGER.info(f'Query for {combined_backup}.{mapping_table} is {q}')
         fq_mapping_table = f'{client.project}.{combined_backup}.{mapping_table}'
-        schema = resources.fields_for(mapping_table)
+        schema = fields_for(mapping_table)
         table = bigquery.Table(fq_mapping_table, schema=schema)
         table = client.create_table(table, exists_ok=True)
         query(client, q, combined_backup, mapping_table, WRITE_APPEND)
@@ -251,9 +231,7 @@ def join_expression_generator(domain_table, combined_backup):
     :param combined_backup: name of the dataset where the tables are present
     :return: returns cols and join expression strings.
     """
-    field_names = [
-        field['name'] for field in resources.fields_for(domain_table)
-    ]
+    field_names = [field['name'] for field in fields_for(domain_table)]
     fields_to_join = []
     primary_key = []
     join_expression = []
@@ -280,7 +258,7 @@ def join_expression_generator(domain_table, combined_backup):
 
     for key in combine_consts.FOREIGN_KEYS_FIELDS:
         if key in fields_to_join:
-            if domain_table == combine_consts.PERSON_TABLE:
+            if domain_table == PERSON:
                 table_alias = mapping_table_for(f'{key[:-3]}')
                 join_expression.append(
                     combine_consts.LEFT_JOIN_PERSON.render(
@@ -290,7 +268,7 @@ def join_expression_generator(domain_table, combined_backup):
                         field=key,
                         table=table_alias))
 
-            elif domain_table == combine_consts.VISIT_DETAIL and key == combine_consts.VISIT_OCCURRENCE_ID:
+            elif domain_table == VISIT_DETAIL and key == combine_consts.VISIT_OCCURRENCE_ID:
                 table_alias = mapping_table_for(f'{key[:-3]}')
                 join_expression.append(
                     combine_consts.JOIN_VISIT.render(
@@ -373,11 +351,10 @@ def load_fact_relationship(client: BigQueryClient, rdr_dataset: str,
         mapping_measurement=mapping_table_for('measurement'),
         ehr_dataset=unioned_ehr_dataset,
         mapping_observation=mapping_table_for('observation'),
-        measurement_domain_concept_id=common.MEASUREMENT_DOMAIN_CONCEPT_ID,
-        observation_domain_concept_id=common.OBSERVATION_DOMAIN_CONCEPT_ID)
-    LOGGER.info(
-        f'Query for {combined_backup}.{common.FACT_RELATIONSHIP} is {q}')
-    query(client, q, combined_backup, common.FACT_RELATIONSHIP, WRITE_APPEND)
+        measurement_domain_concept_id=MEASUREMENT_DOMAIN_CONCEPT_ID,
+        observation_domain_concept_id=OBSERVATION_DOMAIN_CONCEPT_ID)
+    LOGGER.info(f'Query for {combined_backup}.{FACT_RELATIONSHIP} is {q}')
+    query(client, q, combined_backup, FACT_RELATIONSHIP, WRITE_APPEND)
 
 
 def person_query(table_name: str, combined_backup: str):
@@ -395,13 +372,49 @@ def person_query(table_name: str, combined_backup: str):
 
 
 def load_mapped_person(client: BigQueryClient, combined_backup: str):
-    q = person_query(common.PERSON, combined_backup)
-    LOGGER.info(f'Query for {combined_backup}.{common.PERSON} table is {q}')
-    query(client,
-          q,
-          combined_backup,
-          common.PERSON,
-          write_disposition=WRITE_TRUNCATE)
+    q = person_query(PERSON, combined_backup)
+    LOGGER.info(f'Query for {combined_backup}.{PERSON} table is {q}')
+    query(client, q, combined_backup, PERSON, write_disposition=WRITE_TRUNCATE)
+
+
+def create_load_aou_death(client, project_id, combined_backup, combined_sandbox,
+                          rdr_dataset, unioned_ehr_dataset) -> None:
+    """Create and load AOU_DEATH table.
+    NOTE: `primary_death_record` is all `False` at this point. The CR
+        `CalculatePrimaryDeathRecord` updates the table at the end of the
+        Unioned EHR data tier creation.
+    NOTE: Site masking for `aou_death` happens here, too. 
+        (Other tables are site masked by GenerateExtTables)
+    :param client: a BigQuery client object
+    :param project_id: project containing the datasets
+    :param combined_backup: identifies combined dataset name
+    :param combined_sandbox: combined_sandbox dataset identifier
+    :param rdr_dataset: identifies RDR dataset name
+    :param unioned_ehr_dataset: identifies unioned ehr dataset name
+    """
+    try:
+        client.get_table(
+            f'{project_id}.{combined_sandbox}.{SITE_MASKING_TABLE_ID}')
+    except NotFound:
+        job = client.copy_table(
+            f'{project_id}.{PIPELINE_TABLES}.{SITE_MASKING_TABLE_ID}',
+            f'{project_id}.{combined_sandbox}.{SITE_MASKING_TABLE_ID}')
+        job.result()
+        LOGGER.info(f'Copied {PIPELINE_TABLES}.{SITE_MASKING_TABLE_ID} to '
+                    f'{combined_sandbox}.{SITE_MASKING_TABLE_ID}')
+
+    query = combine_consts.LOAD_AOU_DEATH.render(
+        project=project_id,
+        combined_backup=combined_backup,
+        combined_sandbox=combined_sandbox,
+        rdr_dataset=rdr_dataset,
+        unioned_ehr_dataset=unioned_ehr_dataset,
+        aou_death=AOU_DEATH,
+        death=DEATH,
+        ehr_consent=combine_consts.EHR_CONSENT_TABLE_ID,
+        site_masking=SITE_MASKING_TABLE_ID)
+    job = client.query(query)
+    _ = job.result()
 
 
 def parse_combined_args(raw_args=None):
@@ -469,7 +482,7 @@ def main(raw_args=None):
                                add_console_handler=args.console_log)
 
     impersonation_creds = auth.get_impersonation_credentials(
-        args.run_as_email, common.CDR_SCOPES)
+        args.run_as_email, CDR_SCOPES)
 
     client = BigQueryClient(args.project_id, credentials=impersonation_creds)
 
@@ -499,15 +512,8 @@ def main(raw_args=None):
         client.copy_table(f'{client.project}.{args.rdr_dataset}.{table}',
                           f'{client.project}.{combined_backup}.{table}')
 
-    LOGGER.info(
-        f'Translating {combine_consts.EHR_TABLES_TO_COPY} table from EHR...')
-    for table in combine_consts.EHR_TABLES_TO_COPY:
-        LOGGER.info(f'Copying {table} table from EHR...')
-        copy_ehr_table(client, table, args.unioned_ehr_dataset, combined_backup,
-                       combined_sandbox)
-
     LOGGER.info('Generating combined mapping tables ...')
-    for domain_table in combine_consts.DOMAIN_TABLES + [common.SURVEY_CONDUCT]:
+    for domain_table in combine_consts.DOMAIN_TABLES + [SURVEY_CONDUCT]:
         LOGGER.info(f'Mapping {domain_table}...')
         generate_combined_mapping_tables(client, domain_table, args.rdr_dataset,
                                          args.unioned_ehr_dataset,
@@ -525,8 +531,13 @@ def main(raw_args=None):
     LOGGER.info('Loading foreign key Mapped Person table...')
     load_mapped_person(client, combined_backup)
 
-    LOGGER.info(f'Adding _cdr_metadata table to {combined_backup}')
+    logging.info(f'Creating and loading {AOU_DEATH}...')
+    create_load_aou_death(client, args.project_id, combined_backup,
+                          combined_sandbox, args.rdr_dataset,
+                          args.unioned_ehr_dataset)
+    logging.info(f'Completed {AOU_DEATH} load.')
 
+    LOGGER.info(f'Adding _cdr_metadata table to {combined_backup}')
     add_cdr_metadata.main([
         '--component', add_cdr_metadata.CREATE, '--project_id', client.project,
         '--target_dataset', combined_backup
@@ -535,7 +546,7 @@ def main(raw_args=None):
     add_cdr_metadata.main([
         '--component', add_cdr_metadata.INSERT, '--project_id', client.project,
         '--target_dataset', combined_backup, '--etl_version',
-        resources.get_git_tag(), '--ehr_source', args.unioned_ehr_dataset,
+        get_git_tag(), '--ehr_source', args.unioned_ehr_dataset,
         '--ehr_cutoff_date', args.ehr_cutoff_date, '--rdr_source',
         args.rdr_dataset, '--cdr_generation_date', today,
         '--vocabulary_version', args.vocab_dataset, '--rdr_export_date',

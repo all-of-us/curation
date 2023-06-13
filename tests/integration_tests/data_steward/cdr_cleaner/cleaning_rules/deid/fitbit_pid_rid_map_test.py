@@ -6,7 +6,7 @@ from datetime import datetime
 from app_identity import PROJECT_ID
 import cdr_cleaner.cleaning_rules.deid.fitbit_pid_rid_map as pr
 from tests.integration_tests.data_steward.cdr_cleaner.cleaning_rules.bigquery_tests_base import BaseTest
-from common import ACTIVITY_SUMMARY, HEART_RATE_SUMMARY, HEART_RATE_MINUTE_LEVEL, STEPS_INTRADAY, SLEEP_DAILY_SUMMARY, SLEEP_LEVEL, DEID_MAP
+from common import ACTIVITY_SUMMARY, HEART_RATE_SUMMARY, HEART_RATE_MINUTE_LEVEL, STEPS_INTRADAY, SLEEP_DAILY_SUMMARY, SLEEP_LEVEL, DEVICE, DEID_MAP
 
 
 class FitbitPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
@@ -158,6 +158,18 @@ class FitbitPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
             fq_dataset_name=self.fq_dataset_name, fitbit_table=SLEEP_LEVEL)
         queries.append(sl_query)
 
+        device_query = self.jinja_env.from_string("""
+        INSERT INTO `{{fq_dataset_name}}.{{fitbit_table}}`
+        (person_id, date, battery)
+        VALUES
+            (1234, date('2020-08-17'), "Medium"),
+            (5678, date('2020-08-17'), "Medium"),
+            (2345, date('2020-08-17'), "Medium"),
+            (6789, date('2020-08-17'), "Medium"),
+            (3456, date('2020-08-17'), "Medium")""").render(
+            fq_dataset_name=self.fq_dataset_name, fitbit_table=DEVICE)
+        queries.append(device_query)
+
         pid_query = self.jinja_env.from_string("""
         INSERT INTO `{{fq_dataset_name}}.person`
         (person_id, gender_concept_id, year_of_birth, race_concept_id, ethnicity_concept_id)
@@ -266,6 +278,20 @@ class FitbitPIDtoRIDTest(BaseTest.CleaningRulesTestBase):
                 (678, datetime.fromisoformat('2020-08-17').date(), 15),
                 (345, datetime.fromisoformat('2020-08-17').date(), 22),
                 (789, datetime.fromisoformat('2020-08-17').date(), 56)
+            ]
+        }, {
+            'fq_table_name':
+                '.'.join([self.fq_dataset_name, DEVICE]),
+            'fq_sandbox_table_name':
+                self.fq_sandbox_table_names[6],
+            'fields': ['person_id', 'date', 'battery'],
+            'loaded_ids': [1234, 5678, 2345, 6789, 3456],
+            'sandboxed_ids': [3456],
+            'cleaned_values': [
+                (234, datetime.fromisoformat('2020-08-17').date(), "Medium"),
+                (678, datetime.fromisoformat('2020-08-17').date(), "Medium"),
+                (345, datetime.fromisoformat('2020-08-17').date(), "Medium"),
+                (789, datetime.fromisoformat('2020-08-17').date(), "Medium")
             ]
         }]
 

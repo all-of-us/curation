@@ -1,23 +1,19 @@
 import cdm
-from common import JINJA_ENV
+from common import (DEATH, JINJA_ENV, PERSON, SURVEY_CONDUCT)
 
 SOURCE_VALUE_EHR_CONSENT = 'EHRConsentPII_ConsentPermission'
 CONCEPT_ID_CONSENT_PERMISSION_YES = 1586100  # ConsentPermission_Yes
 EHR_CONSENT_TABLE_ID = '_ehr_consent'
-PERSON_TABLE = 'person'
-VISIT_DETAIL = 'visit_detail'
 VISIT_OCCURRENCE_ID = 'visit_occurrence_id'
 PERSON_ID = 'person_id'
-OBSERVATION_TABLE = 'observation'
 FOREIGN_KEYS_FIELDS = [
     'visit_occurrence_id', 'location_id', 'care_site_id', 'provider_id',
     'visit_detail_id'
 ]
-RDR_TABLES_TO_COPY = ['person', 'survey_conduct']
-EHR_TABLES_TO_COPY = ['death']
+RDR_TABLES_TO_COPY = [PERSON, SURVEY_CONDUCT]
 DOMAIN_TABLES = list(
-    set(cdm.tables_to_map()) - set(RDR_TABLES_TO_COPY + EHR_TABLES_TO_COPY))
-TABLES_TO_PROCESS = RDR_TABLES_TO_COPY + EHR_TABLES_TO_COPY + DOMAIN_TABLES
+    set(cdm.tables_to_map()) - set(RDR_TABLES_TO_COPY) - set([DEATH]))
+TABLES_TO_PROCESS = RDR_TABLES_TO_COPY + DOMAIN_TABLES
 LEFT_JOIN = JINJA_ENV.from_string("""
 LEFT JOIN
   (
@@ -87,13 +83,6 @@ AND value_source_concept_id = {{concept_id_consent_permission_yes}}
 
 COPY_RDR_QUERY = JINJA_ENV.from_string(
     """SELECT * FROM `{{rdr_dataset_id}}.{{table}}`""")
-
-COPY_EHR_QUERY = JINJA_ENV.from_string("""
-SELECT * FROM `{{ehr_dataset_id}}.{{table}}` AS t
-WHERE EXISTS
-   (SELECT 1 FROM `{{combined_sandbox_dataset_id}}.{{ehr_consent_table_id}}` AS c
-    WHERE t.person_id = c.person_id)
-""")
 
 MAPPING_QUERY = JINJA_ENV.from_string("""
 SELECT DISTINCT
@@ -215,4 +204,39 @@ FROM (
  SELECT * from `{{ehr_dataset}}.fact_relationship`)
 WHERE fact_id_1 IS NOT NULL
 AND fact_id_2 IS NOT NULL
+""")
+
+LOAD_AOU_DEATH = JINJA_ENV.from_string("""
+CREATE TABLE `{{project}}.{{combined_backup}}.{{aou_death}}`
+AS
+SELECT
+    aou_death_id,
+    person_id,
+    death_date,
+    death_datetime,
+    death_type_concept_id,
+    cause_concept_id,
+    cause_source_value,
+    cause_source_concept_id,
+    s.src_id,
+    FALSE AS primary_death_record -- this value is re-calculated at CalculatePrimaryDeathRecord --
+FROM `{{project}}.{{unioned_ehr_dataset}}.{{aou_death}}` ad
+JOIN `{{project}}.{{combined_sandbox}}.{{site_masking}}` s
+ON ad.src_id = s.hpo_id
+WHERE EXISTS
+   (SELECT 1 FROM `{{project}}.{{combined_sandbox}}.{{ehr_consent}}` AS ec
+    WHERE ad.person_id = ec.person_id)
+UNION ALL
+SELECT
+    GENERATE_UUID() AS aou_death_id, -- NOTE this is STR, not INT --
+    person_id,
+    death_date,
+    death_datetime,
+    death_type_concept_id,
+    cause_concept_id,
+    cause_source_value,
+    cause_source_concept_id,
+    'Staff Portal: HealthPro' AS src_id,
+    FALSE AS primary_death_record -- this value is re-calculated at CalculatePrimaryDeathRecord --
+FROM `{{project}}.{{rdr_dataset}}.{{death}}`
 """)

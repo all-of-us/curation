@@ -178,13 +178,13 @@ class RetractUtilsTest(unittest.TestCase):
         #pre-conditions
         removed_datasets = [
             data_ref('foo', 'vocabulary20201010'),
-            data_ref('foo', 'R2019q4r1_deid_sandbox')
         ]
         expected_datasets = [
             data_ref('foo', '2021q1r1_rdr'),
             data_ref('foo', 'C2020q1r1_deid'),
             data_ref('foo', 'R2019q4r1_deid'),
-            data_ref('foo', '2018q4r1_rdr')
+            data_ref('foo', '2018q4r1_rdr'),
+            data_ref('foo', 'R2019q4r1_deid_sandbox')
         ]
         expected_list = [dataset.dataset_id for dataset in expected_datasets]
 
