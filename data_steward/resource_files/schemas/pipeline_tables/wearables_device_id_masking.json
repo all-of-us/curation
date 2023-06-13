@@ -1,0 +1,28 @@
+[
+  {
+    "type": "integer",
+    "name": "person_id",
+    "mode": "required",
+    "description": ""
+  },  {
+    "type": "string",
+    "name": "device_id",
+    "mode": "required",
+    "description": ""
+  },  {
+    "type": "string",
+    "name": "research_device_id",
+    "mode": "required",
+    "description": ""
+  },  {
+    "type": "string",
+    "name": "wearable_type",
+    "mode": "required",
+    "description": ""
+  },  {
+    "type": "date",
+    "name": "import_date",
+    "mode": "required",
+    "description": ""
+  }
+]
