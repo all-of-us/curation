@@ -504,34 +504,34 @@ render_message(df,
 # This QC confirms that the DEATH table is there and has correct data.
 
 # +
-query_if_empty = JINJA_ENV.from_string("""
+query = JINJA_ENV.from_string("""
 WITH primary_aou_death AS (
     SELECT person_id, death_date, death_datetime, death_type_concept_id, cause_concept_id, cause_source_value, cause_source_concept_id
     FROM `{{project_id}}.{{dataset}}.aou_death`
     WHERE primary_death_record = TRUE
-)
-(
+), primary_records_missing_from_death AS (
     SELECT person_id, death_date, death_datetime, death_type_concept_id, cause_concept_id, cause_source_value, cause_source_concept_id
     FROM primary_aou_death
     EXCEPT DISTINCT
     SELECT person_id, death_date, death_datetime, death_type_concept_id, cause_concept_id, cause_source_value, cause_source_concept_id
     FROM `{{project_id}}.{{dataset}}.death`
+), unexpected_records_in_death AS (
+    SELECT person_id, death_date, death_datetime, death_type_concept_id, cause_concept_id, cause_source_value, cause_source_concept_id
+    FROM `{{project_id}}.{{dataset}}.death`
+    EXCEPT DISTINCT
+    SELECT person_id, death_date, death_datetime, death_type_concept_id, cause_concept_id, cause_source_value, cause_source_concept_id
+    FROM primary_aou_death
 )
+SELECT "primary_records_missing_from_death" AS issue, * FROM primary_records_missing_from_death
 UNION ALL
-(
-    SELECT person_id, death_date, death_datetime, death_type_concept_id, cause_concept_id, cause_source_value, cause_source_concept_id
-    FROM `{{project_id}}.{{dataset}}.death`
-    EXCEPT DISTINCT
-    SELECT person_id, death_date, death_datetime, death_type_concept_id, cause_concept_id, cause_source_value, cause_source_concept_id
-    FROM primary_aou_death
-)
+SELECT "unexpected_records_in_death" AS issue, * FROM unexpected_records_in_death
 """).render(project_id=dest_project_id, dataset=dest_dataset_id)
-df_if_empty = execute(client, query_if_empty)
+df = execute(client, query)
 
-success_msg_if_empty = 'DEATH table has correct and complete data.'
-failure_msg_if_empty = '''
+success_msg = 'DEATH table has correct and complete data.'
+failure_msg = '''
     There are some discrepancies between DEATH records and AOU_DEATH records with primary_death_record=TRUE.
     Investigation needed.
 '''
-render_message(df_if_empty, success_msg_if_empty, failure_msg_if_empty)
+render_message(df, success_msg, failure_msg)
 # -
