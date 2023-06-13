@@ -43,7 +43,8 @@ date_columns = {
 
 # For tables that have a second date field that needs to be checked for their cutoff date/deactivation dates
 secondary_date_column = {
-    'device': 'last_sync_time'
+    'device': 'last_sync_time',
+    'sleep_level': 'start_datetime'
 }
 # -
 
