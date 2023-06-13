@@ -38,21 +38,8 @@ fitbit_dataset = ""
 run_as=""
 
 # +
-date_columns = {
-    'activity_summary': 'date',
-    'heart_rate_summary': 'date',
-    'heart_rate_minute_level': 'datetime',
-    'steps_intraday': 'datetime',
-    'sleep_level': 'sleep_date',
-    'sleep_daily_summary': 'sleep_date',
-    'device': 'date',
-}
 
-secondary_date_column = {
-    'device': 'last_sync_time'
-}
 
-# +
 impersonation_creds = auth.get_impersonation_credentials(
     run_as, target_scopes=IMPERSONATION_SCOPES)
 
@@ -116,28 +103,29 @@ SELECT
 FROM
     `{{project_id}}.{{dataset_id}}.{{table_name}}` a
 JOIN `{{project_id}}.{{pipeline}}.pid_rid_mapping` m
-ON m.research_id = d.person_id
+ON m.research_id = a.person_id
 JOIN `{{project_id}}.{{combined_cdr}}.person` i
 ON m.person_id = i.person_id
-WHERE FLOOR(DATE_DIFF(CURRENT_DATE(), DATE(i.birth_datetime), YEAR)) > {{maximum_age}})
+WHERE FLOOR(DATE_DIFF(CURRENT_DATE(), DATE(i.birth_datetime), YEAR)) > {{maximum_age}}
 """
 )
 
 queries_list = []
 for table in FITBIT_TABLES:
     queries_list.append(
-        health_sharing_consent_check.render(project_id=project_id,
+        query.render(project_id=project_id,
                                             dataset_id=non_deid_fitbit,
                                             table_name=table,
-                                            truncation_date=truncation_date,
+                                            # truncation_date=truncation_date,
                                             combined_cdr=combined_cdr,
+                                            maximum_age=maximum_age,
                                             pipeline=pipeline))
 
 union_all_query = '\nUNION ALL\n'.join(queries_list)
 execute(client, union_all_query)
 
-# -
 
+# +
 query = JINJA_ENV.from_string("""
 
 WITH df1 AS (
@@ -145,43 +133,20 @@ SELECT '1' as col ,COUNT (*) n_row_not_pass_activity_summary
 FROM `{{project_id}}.{{deid_cdr_fitbit}}.activity_summary` d
 JOIN `{{project_id}}.{{pipeline}}.pid_rid_mapping` m
 ON m.research_id = d.person_id
-JOIN `{{project_id}}.{{com_cdr}}.person` i
+JOIN `{{project_id}}.{{combined_cdr}}.person` i
 ON m.person_id = i.person_id
-WHERE  FLOOR(DATE_DIFF(CURRENT_DATE(),DATE(i.birth_datetime), YEAR)) >{{maximum_age}}),
-
-df2 AS (
-SELECT '1' as col ,COUNT (*) n_row_not_pass_heart_rate_summary
-FROM `{{project_id}}.{{deid_cdr_fitbit}}.heart_rate_summary` d
-JOIN `{{project_id}}.{{pipeline}}.pid_rid_mapping` m
-ON m.research_id = d.person_id
-JOIN `{{project_id}}.{{com_cdr}}.person` i
-ON m.person_id = i.person_id
-WHERE  FLOOR(DATE_DIFF(CURRENT_DATE(),DATE(i.birth_datetime), YEAR)) >{{maximum_age}}),
-
-df3 AS (
-SELECT '1' as col ,COUNT (*) n_row_not_pass_heart_rate_minute_level
-FROM `{{project_id}}.{{deid_cdr_fitbit}}.heart_rate_minute_level` d
-JOIN `{{project_id}}.{{pipeline}}.pid_rid_mapping` m
-ON m.research_id = d.person_id
-JOIN `{{project_id}}.{{com_cdr}}.person` i
-ON m.person_id = i.person_id
-WHERE  FLOOR(DATE_DIFF(CURRENT_DATE(),DATE(i.birth_datetime), YEAR)) >{{maximum_age}}),
-
-df4 AS (
-SELECT '1' as col ,COUNT (*) n_row_not_pass_steps_intraday
-FROM `{{project_id}}.{{deid_cdr_fitbit}}.steps_intraday` d
-JOIN `{{project_id}}.{{pipeline}}.pid_rid_mapping` m
-ON m.research_id = d.person_id
-JOIN `{{project_id}}.{{com_cdr}}.person` i
-ON m.person_id = i.person_id
-WHERE  FLOOR(DATE_DIFF(CURRENT_DATE(),DATE(i.birth_datetime), YEAR)) >{{maximum_age}})
-
-SELECT * from df1
-JOIN df2 USING (col)
-JOIN df3 USING (col)
-JOIN df4 USING (col)
+WHERE  FLOOR(DATE_DIFF(CURRENT_DATE(),DATE(i.birth_datetime), YEAR)) > {{maximum_age}}),
 """)
-q =query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr,non_deid_fitbit=non_deid_fitbit,deid_cdr_fitbit=deid_cdr_fitbit,truncation_date=truncation_date,maximum_age=maximum_age)
+
+#* LOCATE_
+q =query.render(project_id=project_id,
+                pipeline=pipeline,
+                combined_cdr=combined_cdr,
+                deid_cdr=deid_cdr,
+                non_deid_fitbit=non_deid_fitbit,
+                deid_cdr_fitbit=deid_cdr_fitbit,
+                truncation_date=truncation_date,
+                maximum_age=maximum_age)
 df1=execute(client, q)
 df1=df1.iloc[:,1:5]
 if df1.loc[0].sum()==0:
@@ -191,6 +156,7 @@ else:
  df = df.append({'query' : 'Query2 no maximum_age in fitbit datasets', 'result' : 'Failure'},
                 ignore_index = True)
 df1
+# -
 
 # # Verify that correct date shift is applied to the fitbit data
 #
@@ -238,16 +204,13 @@ else:
 df1
 
 # +
-# heart_rate_summary
 query = JINJA_ENV.from_string("""
 
 
 
-
-
-WITH df1 AS (
+WITH non_shifted_tables AS (
 SELECT m.research_id,
-CONCAT(m.research_id, '_', i.date) as i_newc
+CONCAT(m.research_id, '_', i.{{date_type}}) as i_newc
 FROM `{{project_id}}.{{pipeline}}.pid_rid_mapping` m
 JOIN `{{project_id}}.{{non_deid_fitbit}}.{{table}}` i
 ON m.person_id = i.person_id
@@ -256,9 +219,9 @@ ON m.person_id = i.person_id
 
 
 
-df2 AS (
+deid_and_reverse_shifted AS (
 SELECT d.person_id,
-CONCAT(d.person_id, '_', DATE_ADD(d.date, INTERVAL m.shift DAY)) AS d_newc
+CONCAT(d.person_id, '_', DATE_ADD(d.{{date_type}}, INTERVAL m.shift DAY)) AS d_newc
 FROM `{{project_id}}.{{pipeline}}.pid_rid_mapping` m
 JOIN `{{project_id}}.{{deid_cdr_fitbit}}.{{table}}` d
 ON m.research_id = d.person_id
@@ -267,9 +230,8 @@ ON m.research_id = d.person_id
 
 
 
-
-SELECT COUNT (*) n_row_not_pass FROM df2
-WHERE d_newc NOT IN (SELECT i_newc FROM df1)
+SELECT COUNT (*) n_row_not_pass FROM deid_and_reverse_shifted
+WHERE d_newc NOT IN (SELECT i_newc FROM non_shifted_tables)
 """)
 
 query_list = []
@@ -278,6 +240,7 @@ for table in ["heart_rate_summary", "activity_summary"]:
     q = (query.render(project_id=project_id,
                       table=table,
                       pipeline=pipeline,
+                      date_type=date_columns[table],
                       combined_cdr=combined_cdr,
                       deid_cdr=deid_cdr,
                       non_deid_fitbit=non_deid_fitbit,
@@ -297,7 +260,8 @@ for table in ["heart_rate_summary", "activity_summary"]:
 #          df = df.append({'query' : 'Query3.2 Date shifted in heart_rate_summary', 'result' : 'Failure'},
 #                 ignore_index = True)
 
-results
+
+display(results)
 
 # +
 # heart_rate_minute_level
@@ -323,7 +287,7 @@ ON m.research_id = d.person_id
 SELECT COUNT (*) n_row_not_pass FROM df2
 WHERE d_newc NOT IN (SELECT i_newc FROM df1)
 """)
-q =query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr,non_deid_fitbit=non_deid_fitbit,deid_cdr_fitbit=deid_cdr_fitbit,truncation_date=truncation_date,maximum_age=maximum_age)
+q = query.render(project_id=project_id,pipeline=pipeline,com_cdr=com_cdr,deid_cdr=deid_cdr,non_deid_fitbit=non_deid_fitbit,deid_cdr_fitbit=deid_cdr_fitbit,truncation_date=truncation_date,maximum_age=maximum_age)
 df1=execute(client, q)
 if df1.eq(0).any().any():
  df = df.append({'query' : 'Query3.3 Date shifted in heart_rate_minute_level', 'result' : 'PASS'},
@@ -592,6 +556,26 @@ else:
         },
         ignore_index=True)
 df2
+
+# +
+query = JINJA_ENV.from_string("""
+WITH not_research_ids AS (
+SELECT DISTINCT device_id
+FROM `{{aou-res-curation-prod}}.R2022q4r5_fitbit.device`
+WHERE device_id NOT IN (SELECT research_device_id FROM `aou-res-curation-prod.pipeline_tables.wearables_device_id_masking`)
+)
+
+SELECT
+'device' as table,
+COUNT(*) as bad_rows
+FROM not_research_ids
+""")
+
+JINJA_ENV.from_string(foo)
+
+q = render(
+    foo='foo'
+    )
 
 
 # -
