@@ -61,18 +61,27 @@ class GenerateResearchDeviceIdsTest(BaseTest.CleaningRulesTestBase):
             INSERT INTO `{{project_id}}.{{dataset_id}}.device`
                 (person_id, device_id, battery)
             VALUES 
+            -- Test multiple records with the same person/device pair. Result is one new research_device_id --
                 (1, 'AAA', 'high'),
                 (1, 'AAA', 'low'),
+            -- Test the possibility of multiple devices per person. Result, another research_device_id is created --
                 (1, 'BBB', 'high'),
-                (2, 'BBB', 'high'),
+            -- Test devices used by multiple participants. Result, another research_device_id is created -- 
+                (2, 'BBB', 'low'),
+            -- Test that existing maskings are not overwritten --
                 (2, 'CCC', 'high')
             """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
+        # Alters the masking table schema. research_device_id mode from REQUIRED to NULLABLE for the test.
         wearables_device_id_masking_query = self.jinja_env.from_string("""
+            ALTER TABLE `{{project_id}}.{{dataset_id}}.wearables_device_id_masking`
+            ALTER COLUMN research_device_id
+            DROP NOT NULL;
+            
             INSERT INTO `{{project_id}}.{{dataset_id}}.wearables_device_id_masking` (
                     person_id, device_id, research_device_id, wearable_type, import_date)
             VALUES
-                    (2, 'CCC', 'UUID_HERE', 'fitbit', '2022-01-01')
+                    (2, 'CCC', 'UUID_HERE', 'fitbit', '2022-01-01');
             """).render(project_id=self.project_id, dataset_id=self.dataset_id)
 
         # load the test data
@@ -81,6 +90,8 @@ class GenerateResearchDeviceIdsTest(BaseTest.CleaningRulesTestBase):
     def test_queries(self):
         """
         Validates pre-conditions, test execution and post conditions based on the tables_and_counts variable.
+
+        Tests that new research_device_ids were created for only new person_id/device_id pairs.
         """
         tables_and_counts = [{
             'name':
@@ -88,24 +99,18 @@ class GenerateResearchDeviceIdsTest(BaseTest.CleaningRulesTestBase):
             'fq_table_name':
                 self.fq_table_names[0],
             'fields': [
-                'person_id', 'device_id', 'research_device_id', 'wearable_type',
-                'import_date'
+                'person_id', 'device_id', 'wearable_type', 'import_date'
             ],
             'loaded_ids': [2],
             'sandboxed_ids': [],
             'cleaned_values': [
-                (1, 'AAA', 'UUID_HERE', 'fitbit',
-                 datetime.datetime.now().date()),
-                (1, 'BBB', 'UUID_HERE', 'fitbit',
-                 datetime.datetime.now().date()),
-                (2, 'CCC', 'UUID_HERE', 'fitbit',
+                (1, 'AAA', 'fitbit', datetime.datetime.now().date()),
+                (1, 'BBB', 'fitbit', datetime.datetime.now().date()),
+                (2, 'CCC', 'fitbit',
                  datetime.datetime.strptime('2022-01-01', '%Y-%m-%d').date()),
-                (2, 'BBB', 'UUID_HERE', 'fitbit',
-                 datetime.datetime.now().date())
+                (2, 'BBB', 'fitbit', datetime.datetime.now().date())
             ]
         }]
-
-        self.maxDiff = None
 
         # mock the PIPELINE_TABLES variable
         with mock.patch(
